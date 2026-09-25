@@ -534,8 +534,12 @@ describe('useAgentConversationStore', () => {
         )
       )
     ).toBe(false)
-    // Nor re-adopted as the live turn: it is parked on an ask we answered.
-    expect(store.activeTurnId).toBeNull()
+    // The TURN is still adopted, though: answering the card is what lets it
+    // resume, so it is live and must keep routing. Dropping it here would
+    // strand the row mid-flight with every later frame discarded.
+    expect(store.activeTurnId).toBe('assistant-message-1')
+    store.ingest(delta('assistant-message-1', 'Running it now.'))
+    expect(partTexts(store)).toContain('Running it now.')
   })
 
   it('retireAsk drops a card that ingest can no longer route a resolution to', () => {

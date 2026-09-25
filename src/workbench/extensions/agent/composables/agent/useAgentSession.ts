@@ -640,10 +640,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
       return
     }
     // PM-1658: deliberately NOT gated on an active turn. The endpoint is keyed
-    // by thread and ask alone, and the server parks a consent card with no
-    // interrupt timeout precisely so it can be answered long after the turn
-    // that raised it stopped streaming to this client.
+    // by thread and ask alone — it never looks a turn up — and the server
+    // parks a run approval for days, so a card can still be answered long
+    // after the turn that raised it stopped streaming to this client.
     if (answeringAskIds.value.has(askId)) return
+    conversationStore.recordAskSelection(askId, selection)
     conversationStore.setAskAnswering(askId, true)
     try {
       await sendAnswer(currentThreadId, askId, selection)
@@ -677,6 +678,36 @@ export function useAgentSession(deps: AgentSessionDeps) {
       conversationStore.retireAsk(askId)
       pushError(i18n.global.t('agent.runApproval.answerUncertain'))
     }
+  }
+
+  /**
+   * PM-1658: the server commits the FIRST answer an ask receives and takes
+   * every later one with 202 while replaying the stored selection, so another
+   * tab — or this one before a reload — can decide a card this client also
+   * answered. The resolution frame names the selection that actually won, so
+   * when it disagrees with ours, the card is about to disappear on someone
+   * else's choice and the user has to be told rather than left reading the
+   * dismissal as their own.
+   */
+  function reportSupersededAnswer(
+    askId: string,
+    settled: string[] | null
+  ): void {
+    const submitted = conversationStore.submittedAskSelection(askId)
+    if (
+      submitted === undefined ||
+      settled === null ||
+      settled.length === 0 ||
+      settled.includes(submitted)
+    )
+      return
+    reportError(
+      new Error(
+        `run approval resolved as ${settled.join(',')}, not ${submitted}`
+      ),
+      { errorType: 'agent_ask_answer_superseded' }
+    )
+    pushError(i18n.global.t('agent.runApproval.answerSuperseded'))
   }
 
   async function sendAnswer(
@@ -757,8 +788,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     // Not just un-busying it: `ingest` routes this frame through the owning
     // turn's transport, and the turn is gone in exactly the case that matters,
     // so on its own it would re-enable a card it cannot remove.
-    if (event.type === 'agent_ask_resolved')
+    if (event.type === 'agent_ask_resolved') {
+      reportSupersededAnswer(event.data.ask_id, event.data.selected)
       conversationStore.retireAsk(event.data.ask_id)
+    }
     switch (event.type) {
       case 'agent_active_tab':
         // Every thread records the link in its own transcript; only the thread

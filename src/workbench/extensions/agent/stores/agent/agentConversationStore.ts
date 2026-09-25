@@ -17,6 +17,8 @@ export type { UserAttachment }
 
 type ConversationStatus = 'idle' | 'thinking' | 'streaming'
 
+export type AskSelection = 'run' | 'cancel'
+
 interface UserEntry {
   id: TurnId
   role: 'user'
@@ -191,6 +193,7 @@ export const useAgentConversationStore = defineStore(
         entry.transport.dropAskPart(askId)
       resolvedAskIds.add(askId)
       clearAskResolutionWatchdog(askId)
+      submittedAskSelections.delete(askId)
       setAskAnswering(askId, false)
     }
 
@@ -204,6 +207,22 @@ export const useAgentConversationStore = defineStore(
      * `hydrate` once the server stops naming the ask at all.
      */
     const resolvedAskIds = new Set<string>()
+    /**
+     * PM-1658: which way this client answered each ask. The server takes a
+     * second answer from anywhere with 202 while committing only the FIRST, so
+     * without a record of what we sent, a resolution naming someone else's
+     * choice is indistinguishable from confirmation of our own.
+     */
+    const submittedAskSelections = new Map<string, AskSelection>()
+
+    function recordAskSelection(askId: string, selection: AskSelection): void {
+      submittedAskSelections.set(askId, selection)
+    }
+
+    function submittedAskSelection(askId: string): AskSelection | undefined {
+      return submittedAskSelections.get(askId)
+    }
+
     const askResolutionWatchdogs = new Map<
       string,
       ReturnType<typeof setTimeout>
@@ -537,41 +556,38 @@ export const useAgentConversationStore = defineStore(
     /**
      * PM-1658: strips cards this client has already retired from a freshly
      * fetched transcript, and forgets ids the server no longer names so the
-     * record cannot grow without bound. Returns whether the transcript's
-     * pending turn is still genuinely pending — a row parked on an ask we have
-     * answered must not be re-adopted as the live turn.
+     * record cannot grow without bound. Touches parts only — the turn that
+     * raised the card is left exactly as the transcript describes it.
      */
     function dropResolvedAsks(
       transcript: ReturnType<typeof normalizeAgentTranscript>
-    ): boolean {
-      if (resolvedAskIds.size > 0) {
-        const named = new Set(
-          transcript.messages.flatMap((message) =>
-            message.parts.flatMap((part) =>
-              part.type === 'runApproval' ? [part.askId] : []
-            )
+    ): void {
+      if (resolvedAskIds.size === 0) return
+      const named = new Set(
+        transcript.messages.flatMap((message) =>
+          message.parts.flatMap((part) =>
+            part.type === 'runApproval' ? [part.askId] : []
           )
         )
-        for (const askId of resolvedAskIds)
-          if (!named.has(askId)) resolvedAskIds.delete(askId)
-        for (const message of transcript.messages)
-          message.parts = message.parts.filter(
-            (part) =>
-              part.type !== 'runApproval' || !resolvedAskIds.has(part.askId)
-          )
-      }
-      return (
-        transcript.pending?.message.parts.some(
-          (part) => part.type === 'runApproval'
-        ) ?? false
       )
+      for (const askId of resolvedAskIds)
+        if (!named.has(askId)) resolvedAskIds.delete(askId)
+      for (const message of transcript.messages)
+        message.parts = message.parts.filter(
+          (part) =>
+            part.type !== 'runApproval' || !resolvedAskIds.has(part.askId)
+        )
     }
 
     function hydrate(history: AgentMessages): void {
       disposeActiveAndSettledTransports()
       clearActive()
       const transcript = normalizeAgentTranscript(history)
-      const stillPending = dropResolvedAsks(transcript)
+      // Only the card is retired, never the turn: answering it is what lets
+      // the turn RESUME, so it is still live and still needs a transport, or
+      // every frame of the rest of it is dropped and the row stays "Working…"
+      // with nothing able to settle it.
+      dropResolvedAsks(transcript)
       messages.value = transcript.messages
       userTexts.value = transcript.userTexts
       userTags.value = new Map()
@@ -581,7 +597,7 @@ export const useAgentConversationStore = defineStore(
       hydratedAssistantTurnIds = transcript.assistantTurnIds
       dropAttachmentPreviews()
       userAttachments.value = transcript.userAttachments
-      if (transcript.pending && stillPending) {
+      if (transcript.pending) {
         liveMessage = transcript.pending.message
         activeTurnId.value = transcript.pending.messageId
         activeIndex.value = messages.value.indexOf(transcript.pending.message)
@@ -652,6 +668,8 @@ export const useAgentConversationStore = defineStore(
       setPaywallsResolved,
       answeringAskIds,
       setAskAnswering,
+      recordAskSelection,
+      submittedAskSelection,
       commitAsk,
       retireAsk,
       dismissCommittedAsks,
