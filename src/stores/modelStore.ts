@@ -315,6 +315,8 @@ export const useModelStore = defineStore('models', () => {
 
   let modelFoldersRequestId = 0
   const pendingReloads = new Set<Promise<boolean>>()
+  // Set when a capability reload fails, leaving folders bound to the old source.
+  let foldersStale = false
 
   /**
    * Whether anything has consumed this store's model data (sidebar loads,
@@ -360,6 +362,7 @@ export const useModelStore = defineStore('models', () => {
   function commitModelFolders({ names, folders }: PreparedModelFolders): void {
     modelFolderNames.value = names
     modelFolderByName.value = folders
+    foldersStale = false
   }
 
   /** Loads the model folder structure from the server; false when superseded. */
@@ -374,6 +377,7 @@ export const useModelStore = defineStore('models', () => {
     folderName: string
   ): Promise<ModelFolder | null> {
     modelDataConsumed = true
+    if (foldersStale) await loadModelFolders()
     const folder = Object.hasOwn(modelFolderByName.value, folderName)
       ? modelFolderByName.value[folderName]
       : undefined
@@ -395,7 +399,7 @@ export const useModelStore = defineStore('models', () => {
     // until a load of ours commits (even a genuinely empty result) or a
     // concurrent one has populated the list. Bounded as a safety net.
     for (let attempt = 0; attempt < 3; attempt++) {
-      if (modelFolderNames.value.length > 0) break
+      if (modelFolderNames.value.length > 0 && !foldersStale) break
       if (await loadModelFolders()) break
     }
     return Promise.all(modelFolders.value.map((folder) => folder.load()))
@@ -549,26 +553,20 @@ export const useModelStore = defineStore('models', () => {
    * safe by design: prepareModelFolders()'s request-id discipline makes the
    * stale response a no-op, so no debouncing is needed here.
    */
-  watch(
-    () => flags.assetsEnabled,
-    () => {
-      reloadModels().catch((error) => {
-        reportError(error, {
-          errorType: 'error_reloading_model_library_after_capability_change'
-        })
+  function reloadForCapabilityChange() {
+    reloadModels().catch((error) => {
+      foldersStale = true
+      reportError(error, {
+        errorType: 'error_reloading_model_library_after_capability_change'
       })
-    }
-  )
+    })
+  }
+
+  watch(() => flags.assetsEnabled, reloadForCapabilityChange)
 
   watch(
     () => flags.supportsModelTypeTags,
-    () =>
-      flags.assetsEnabled &&
-      reloadModels().catch((error) => {
-        reportError(error, {
-          errorType: 'error_reloading_model_library_after_capability_change'
-        })
-      })
+    () => flags.assetsEnabled && reloadForCapabilityChange()
   )
 
   return {

@@ -719,6 +719,21 @@ describe('useModelStore', () => {
       expect(api.getModels).not.toHaveBeenCalled()
       expect(assetService.getAssetModels).toHaveBeenCalledTimes(2)
     })
+
+    it('rebuilds from the asset source on the next folder read after the capability reload fails', async () => {
+      enableMocks(false)
+      store = useModelStore()
+      await store.loadModelFolders()
+      vi.mocked(api.getModelFolders).mockRejectedValueOnce(new Error('offline'))
+
+      featureState.serverFeatures.assets = true
+      await vi.waitFor(() => expect(reportError).toHaveBeenCalled())
+      const folder = await store.getLoadedModelFolder('checkpoints')
+
+      expect(folder!.state).toBe(ResourceState.Loaded)
+      expect(api.getModels).not.toHaveBeenCalled()
+      expect(assetService.getAssetModels).toHaveBeenCalledWith('checkpoints')
+    })
   })
 
   describe('model-type capability change', () => {
