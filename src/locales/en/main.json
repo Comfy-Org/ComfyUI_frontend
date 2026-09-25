@@ -2829,6 +2829,7 @@
     "cancelTimeout": "Subscription cancellation timed out"
   },
   "subscription": {
+    "billingTabBlocked": "Couldn't open the billing page. Allow pop-ups for this site and try again.",
     "plansForWorkspace": "Plans for {workspace}",
     "personalWorkspace": "Personal Workspace",
     "teamWorkspace": "Team Workspace",

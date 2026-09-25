@@ -10,10 +10,12 @@ import {
 import type { PreviewSubscribeInput } from '@comfyorg/account-core/billing'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { t } from '@/i18n'
 import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBillingPlans'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { useTelemetry } from '@/platform/telemetry'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { reportError } from '@/platform/telemetry/reportError'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import type {
@@ -28,7 +30,7 @@ import {
   WorkspaceApiError,
   workspaceApi
 } from '@/platform/workspace/api/workspaceApi'
-import { openHostedBillingTab } from '@/platform/workspace/billing/openHostedBillingTab'
+import { openHostedBillingTabOutcome } from '@/platform/workspace/billing/openHostedBillingTab'
 import { registerRefreshOnReturn } from '@/platform/workspace/billing/refreshOnReturn'
 import { useBillingSdkStore } from '@/platform/workspace/billing/sdk/billingSdkStore'
 import type {
@@ -513,28 +515,22 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     }
   }
 
-  function openPortalWindow(url: string): boolean {
-    // The handle arms the return refresh, so adding `noopener` here (which
-    // nulls it) silently stops billing state from re-reading on return.
-    const portalWindow = window.open(url, '_blank')
-    if (!portalWindow) return false
-    refreshOnPortalReturn()
-    return true
+  function reportBillingTabBlocked(): void {
+    useToastStore().add({
+      severity: 'warn',
+      summary: t('g.warning'),
+      detail: t('subscription.billingTabBlocked')
+    })
   }
 
-  // Layer C first; the rail, and then the legacy client, only when the tab
-  // before them was refused. Each step opens a different destination, so a
-  // block on one says nothing about the next.
-  async function manageSubscription(): Promise<void> {
-    error.value = null
-    if (openHostedBillingTab('payment-methods')) return
-
+  /** The rail's portal URL, or the legacy client's when the rail declines. */
+  async function requestPortalUrl(): Promise<string | undefined> {
     const rail = useSubscriptionRail()
     if (rail) {
       const url = await onSubscriptionRail(() =>
         rail.openPaymentPortal(window.location.href)
       )
-      if (url !== DECLINED && openPortalWindow(url)) return
+      if (url !== DECLINED) return url
     }
 
     isLoading.value = true
@@ -542,13 +538,38 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     try {
       const returnUrl = window.location.href
       const response = await workspaceApi.getPaymentPortalUrl(returnUrl)
-      if (response.url) openPortalWindow(response.url)
+      return response.url || undefined
     } catch (err) {
       error.value =
         err instanceof Error ? err.message : 'Failed to open billing portal'
       throw err
     } finally {
       isLoading.value = false
+    }
+  }
+
+  // Layer C first; the rail, and then the legacy client, only when the one
+  // before them doesn't serve this workspace. The portal tab is reserved
+  // before the first request: one opened after it resolves has lost the
+  // click's activation, and a refused reservation mints no portal session.
+  async function manageSubscription(): Promise<void> {
+    error.value = null
+    const hosted = openHostedBillingTabOutcome('payment-methods')
+    if (hosted === 'opened') return
+    if (hosted === 'blocked') return reportBillingTabBlocked()
+
+    // The handle arms the return refresh, so adding `noopener` here (which
+    // nulls it) silently stops billing state from re-reading on return.
+    const portalTab = window.open('', '_blank')
+    if (!portalTab) return reportBillingTabBlocked()
+    try {
+      const url = await requestPortalUrl()
+      if (!url) return portalTab.close()
+      portalTab.location.href = url
+      refreshOnPortalReturn()
+    } catch (err) {
+      portalTab.close()
+      throw err
     }
   }
 
