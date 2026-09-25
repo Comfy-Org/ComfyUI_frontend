@@ -1,4 +1,5 @@
 import { expect } from '@playwright/test'
+import type { Locator } from '@playwright/test'
 
 import { agentExecutionTest as test } from '@e2e/fixtures/agentExecutionFixture'
 import { QueuePanel } from '@e2e/fixtures/components/QueuePanel'
@@ -6,8 +7,29 @@ import {
   SOURCE_NODE_ID,
   TARGET_ID
 } from '@e2e/fixtures/data/agent/agentCrdtMultiAutogrowRealignFixture'
+import type { MultiAutogrowRealignHarness } from '@e2e/fixtures/helpers/MultiAutogrowRealignHarness'
 import { TestIds } from '@e2e/fixtures/selectors'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+
+/**
+ * An executed run's output image on a node, served from the fixture's
+ * `/api/view`. One locator for the positive and negative cases alike: the
+ * completed case proves it matches when an output arrives, which is what makes
+ * `toHaveCount(0)` in the failed and stalled cases mean something.
+ *
+ * Outputs are asserted on the *source* node throughout. A node's media type is
+ * inferred from its inputs, so the autogrow target's video inputs would render
+ * this image as a `<video>` — an `img` locator on the target reads zero whether
+ * or not a run produced anything.
+ */
+function outputImage(
+  harness: MultiAutogrowRealignHarness,
+  nodeId: number | string
+): Locator {
+  return harness.vueNodes
+    .getNodeLocator(String(nodeId))
+    .locator('img[src*="/api/view"]')
+}
 
 /**
  * Capability proof for the agent harness's execution surface
@@ -37,20 +59,16 @@ test.describe(
       const jobId = execution.lastSubmittedJobId()
 
       await execution.startJob(jobId)
-      // On the source node: media type is inferred from a node's inputs, and
-      // the target's video inputs would render this image as a <video>.
-      const outputNodeId = String(SOURCE_NODE_ID)
       await execution.completeJob(jobId, {
-        nodeId: outputNodeId,
+        nodeId: String(SOURCE_NODE_ID),
         filename: 'agent-exec-out.png'
       })
 
       // "Shows me the output": the executed frame's image renders on the
       // node, served from the fixture's /api/view.
-      const nodeImage = harness.vueNodes
-        .getNodeLocator(outputNodeId)
-        .locator('img[src*="agent-exec-out.png"]')
+      const nodeImage = outputImage(harness, SOURCE_NODE_ID)
       await expect(nodeImage).toBeVisible()
+      await expect(nodeImage).toHaveAttribute('src', /agent-exec-out\.png/)
 
       // And the completed job is a real history row on the queue surface.
       const queuePanel = new QueuePanel(page)
@@ -75,8 +93,10 @@ test.describe(
       })
 
       await expect(page.getByTestId(TestIds.dialogs.errorDialog)).toBeVisible()
-      // The failure produced no output anywhere.
-      await expect(harness.targetNode.locator('img')).toHaveCount(0)
+      // The failure produced no output: asserted with the same locator, on
+      // the same node, that the completed case proves matches a real output.
+      // An output reaching the node would fail here rather than pass unseen.
+      await expect(outputImage(harness, SOURCE_NODE_ID)).toHaveCount(0)
     })
 
     test('a stalled server-side run stays visibly running with no terminal state', async ({
@@ -94,7 +114,9 @@ test.describe(
         harness.targetNode.getByTestId('node-state-outline-overlay')
       ).toBeVisible()
       // ...and no terminal state ever arrives: no output, no error dialog.
-      await expect(harness.targetNode.locator('img')).toHaveCount(0)
+      // Same locator and node as the completed case, so a run that quietly
+      // finished and put its output on the canvas would turn this red.
+      await expect(outputImage(harness, SOURCE_NODE_ID)).toHaveCount(0)
       await expect(page.getByTestId(TestIds.dialogs.errorDialog)).toHaveCount(0)
     })
   }
