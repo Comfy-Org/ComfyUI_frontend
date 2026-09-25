@@ -6,7 +6,6 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { ModelFile } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import { isCloud } from '@/platform/distribution/types'
-import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 
 /** (Internal helper) finds a value in a metadata object from any of a list of keys. */
@@ -314,8 +313,6 @@ export const useModelStore = defineStore('models', () => {
   }
 
   let modelFoldersRequestId = 0
-  const pendingReloads = new Set<Promise<boolean>>()
-  let committedAssetsEnabled: boolean | undefined
 
   /**
    * Whether anything has consumed this store's model data (sidebar loads,
@@ -328,7 +325,6 @@ export const useModelStore = defineStore('models', () => {
     requestId: number
     names: string[]
     folders: Record<string, ModelFolder>
-    assetsEnabled: boolean
   }
 
   /**
@@ -356,22 +352,12 @@ export const useModelStore = defineStore('models', () => {
         flags.assetsEnabled ? effectiveModelExtensions(folder.extensions) : []
       )
     }
-    return {
-      requestId,
-      names: resData.map((folder) => folder.name),
-      folders,
-      assetsEnabled: flags.assetsEnabled
-    }
+    return { requestId, names: resData.map((folder) => folder.name), folders }
   }
 
-  function commitModelFolders({
-    names,
-    folders,
-    assetsEnabled
-  }: PreparedModelFolders): void {
+  function commitModelFolders({ names, folders }: PreparedModelFolders): void {
     modelFolderNames.value = names
     modelFolderByName.value = folders
-    committedAssetsEnabled = assetsEnabled
   }
 
   /** Loads the model folder structure from the server; false when superseded. */
@@ -382,28 +368,10 @@ export const useModelStore = defineStore('models', () => {
     return true
   }
 
-  async function ensureCurrentModelFolders() {
-    // A superseded rebuild commits nothing; bounded retry until one commits.
-    for (let attempt = 0; attempt < 3; attempt++) {
-      // Folders a pending reload replaces would finish loading into detached objects.
-      while (pendingReloads.size > 0) await Promise.allSettled(pendingReloads)
-      const current =
-        modelFolderNames.value.length > 0 &&
-        committedAssetsEnabled === flags.assetsEnabled
-      if (current) return
-      const rebuilt =
-        modelFolderNames.value.length > 0
-          ? await reloadModels()
-          : await loadModelFolders()
-      if (rebuilt) return
-    }
-  }
-
   async function getLoadedModelFolder(
     folderName: string
   ): Promise<ModelFolder | null> {
     modelDataConsumed = true
-    await ensureCurrentModelFolders()
     const folder = Object.hasOwn(modelFolderByName.value, folderName)
       ? modelFolderByName.value[folderName]
       : undefined
@@ -418,7 +386,14 @@ export const useModelStore = defineStore('models', () => {
    */
   async function loadModels() {
     modelDataConsumed = true
-    await ensureCurrentModelFolders()
+    // A load superseded by a newer concurrent one commits nothing, which
+    // would leave the folder list empty and silently load no models; retry
+    // until a load of ours commits (even a genuinely empty result) or a
+    // concurrent one has populated the list. Bounded as a safety net.
+    for (let attempt = 0; attempt < 3; attempt++) {
+      if (modelFolderNames.value.length > 0) break
+      if (await loadModelFolders()) break
+    }
     return Promise.all(modelFolders.value.map((folder) => folder.load()))
   }
 
@@ -469,16 +444,6 @@ export const useModelStore = defineStore('models', () => {
    * one — the winning load populates the fresh data.
    */
   async function reloadModels(): Promise<boolean> {
-    const reload = rebuildModelFolders()
-    pendingReloads.add(reload)
-    try {
-      return await reload
-    } finally {
-      pendingReloads.delete(reload)
-    }
-  }
-
-  async function rebuildModelFolders(): Promise<boolean> {
     assetService.invalidateModelBuckets()
     // Loading counts as previously loaded: a scan-complete reload can land
     // while the eager load is still in flight, and replacing those folder
@@ -533,19 +498,18 @@ export const useModelStore = defineStore('models', () => {
   }
 
   /**
-   * Scan completions arrive as one event per scanned root and can land in
-   * bursts; coalesce them into one trailing reload instead of one full
-   * library walk per event.
+   * Scan completions and capability changes can land in bursts; coalesce
+   * them into one trailing reload instead of one full library walk per event.
    */
-  const SCAN_RELOAD_DEBOUNCE_MS = 500
+  const MODEL_RELOAD_DEBOUNCE_MS = 500
 
-  const reloadAfterScan = debounce(async () => {
+  const scheduleModelReload = debounce(async () => {
     try {
       await reloadModels()
     } catch (error) {
-      console.error('Failed to reload the model library after a scan', error)
+      console.error('Failed to reload the model library', error)
     }
-  }, SCAN_RELOAD_DEBOUNCE_MS)
+  }, MODEL_RELOAD_DEBOUNCE_MS)
 
   const unsubscribeModelsScanned = assetService.onModelsScanned(() => {
     // A scan changes bucket contents even when no UI has read this store
@@ -553,10 +517,10 @@ export const useModelStore = defineStore('models', () => {
     // skip the reload nothing is displaying.
     assetService.invalidateModelBuckets()
     if (!modelDataConsumed) return
-    reloadAfterScan()
+    scheduleModelReload()
   })
   onScopeDispose(() => {
-    reloadAfterScan.cancel()
+    scheduleModelReload.cancel()
     unsubscribeModelsScanned()
   })
 
@@ -564,23 +528,9 @@ export const useModelStore = defineStore('models', () => {
    * The WS `feature_flags` handshake can land after createGetModelsFunc()
    * already captured its data-source choice at store-init time, so a flag
    * flip after boot must force a reload to switch the sidebar's source.
-   *
-   * One handshake carrying both `assetsEnabled` and `supportsModelTypeTags`
-   * fires both watchers, issuing two concurrent reloadModels() calls. That is
-   * safe by design: prepareModelFolders()'s request-id discipline makes the
-   * stale response a no-op, so no debouncing is needed here.
    */
-  function reloadForCapabilityChange() {
-    reloadModels().catch((error) => {
-      reportError(error, { errorType: 'model_library_capability_reload' })
-    })
-  }
-
-  watch(() => flags.assetsEnabled, reloadForCapabilityChange)
-
-  watch(
-    () => flags.supportsModelTypeTags,
-    () => flags.assetsEnabled && reloadForCapabilityChange()
+  watch([() => flags.assetsEnabled, () => flags.supportsModelTypeTags], () =>
+    scheduleModelReload()
   )
 
   return {
