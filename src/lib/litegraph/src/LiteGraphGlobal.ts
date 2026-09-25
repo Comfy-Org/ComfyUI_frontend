@@ -933,14 +933,11 @@ export class LiteGraphGlobal {
     }
     hex = hex.toUpperCase()
     const hex_alphabets = '0123456789ABCDEF'
-    const value = new Array(3)
-    let k = 0
-    let int1, int2
+    const value: number[] = []
     for (let i = 0; i < 6; i += 2) {
-      int1 = hex_alphabets.indexOf(hex.charAt(i))
-      int2 = hex_alphabets.indexOf(hex.charAt(i + 1))
-      value[k] = int1 * 16 + int2
-      k++
+      const int1 = hex_alphabets.indexOf(hex.charAt(i))
+      const int2 = hex_alphabets.indexOf(hex.charAt(i + 1))
+      value.push(int1 * 16 + int2)
     }
     return value
   }

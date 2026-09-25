@@ -4,6 +4,7 @@ import { workshopContract } from './workshop-contract-catalog'
 import { WORKSHOP_ROUTER_BASE_URL } from './workshop-env'
 import { WorkshopRouterError } from './workshop-router-errors'
 import { runWorkshopRouter } from './workshop-router-queue'
+import { workshopFailureAnalytics } from '../scripts/workshop-analytics'
 
 const MODEL = 'bfl/flux-2-pro'
 const REQUEST_ID = '6f1a1a6e-6a53-4a5f-9d3a-2b3b0a1f9c21'
@@ -77,6 +78,30 @@ async function settle<T>(run: Promise<T>): Promise<T> {
   return settled.value
 }
 
+async function withoutStaticAbortSignalHelpers<T>(
+  action: () => Promise<T>
+): Promise<T> {
+  const nativeAny = Object.getOwnPropertyDescriptor(AbortSignal, 'any')
+  const nativeTimeout = Object.getOwnPropertyDescriptor(AbortSignal, 'timeout')
+  Object.defineProperty(AbortSignal, 'any', {
+    configurable: true,
+    value: undefined
+  })
+  Object.defineProperty(AbortSignal, 'timeout', {
+    configurable: true,
+    value: undefined
+  })
+  try {
+    return await action()
+  } finally {
+    if (nativeAny) Object.defineProperty(AbortSignal, 'any', nativeAny)
+    else Reflect.deleteProperty(AbortSignal, 'any')
+    if (nativeTimeout)
+      Object.defineProperty(AbortSignal, 'timeout', nativeTimeout)
+    else Reflect.deleteProperty(AbortSignal, 'timeout')
+  }
+}
+
 function requestedUrls(calls: ReturnType<typeof stubFetch>) {
   return calls.mock.calls.map(([url, init]) => `${init?.method} ${String(url)}`)
 }
@@ -107,6 +132,22 @@ describe('queued Router delivery', () => {
       'logical-run'
     )
     expect(submit?.body).toBe('{"prompt":"Private prompt"}')
+  })
+
+  it('runs when Safari lacks the static AbortSignal helpers', async () => {
+    const calls = stubFetch(admitted(), result())
+    const controller = new AbortController()
+
+    const rendered = await withoutStaticAbortSignalHelpers(() =>
+      runWorkshopRouter(options(controller.signal))
+    )
+
+    expect(rendered.outputs[0].url).toBe('https://media.example/result.png')
+    expect(calls).toHaveBeenCalledTimes(2)
+    expect(
+      calls.mock.calls.every(([, init]) => init?.signal?.aborted === true)
+    ).toBe(true)
+    expect(controller.signal.aborted).toBe(false)
   })
 
   it('keeps collecting the same run when the connection drops mid-generation', async () => {
@@ -260,11 +301,189 @@ describe('queued Router delivery', () => {
 
   it('reports the stored failure of a finished run', async () => {
     stubFetch(admitted(), pending(), refusal(502, 'provider_error'))
-    await expect(settle(runWorkshopRouter(options()))).rejects.toMatchObject({
+    const failure: unknown = await settle(runWorkshopRouter(options())).catch(
+      (error: unknown) => error
+    )
+
+    assert.instanceOf(failure, WorkshopRouterError)
+    expect(failure).toMatchObject({
       reason: 'provider',
       requestId: REQUEST_ID,
       response: { status: 502 },
       requestSettlement: 'terminal'
+    })
+    expect(workshopFailureAnalytics(failure)).not.toHaveProperty(
+      'exception_name'
+    )
+  })
+
+  it('attributes a Kling HDR refusal to the source video field', async () => {
+    const contract = workshopContract('kling/kling-v3-omni')
+    assert.exists(contract)
+    stubFetch(
+      admitted(),
+      Response.json(
+        {
+          code: 0,
+          data: {
+            task_status: 'failed',
+            task_status_msg: 'VideoNormalize failed, HDR video is not supported'
+          }
+        },
+        {
+          status: 502,
+          headers: { 'X-Comfy-Error-Type': 'provider_error' }
+        }
+      )
+    )
+
+    await expect(
+      settle(runWorkshopRouter({ ...options(), contract }))
+    ).rejects.toMatchObject({
+      reason: 'validation',
+      fieldErrors: { video_url: 'videoHdrUnsupported' },
+      response: { status: 502, errorType: 'provider_error' },
+      requestSettlement: 'terminal'
+    })
+  })
+
+  it('attributes a Seedream layer-decomposition refusal to the source image', async () => {
+    const contract = workshopContract('byteplus/seedream-5-0-pro-260628')
+    assert.exists(contract)
+    stubFetch(
+      admitted(),
+      Response.json(
+        {
+          error: {
+            code: 'InvalidParameter',
+            message:
+              'The image content is too complex to decompose into layers',
+            param: 'image'
+          }
+        },
+        {
+          status: 400,
+          headers: { 'X-Comfy-Error-Type': 'invalid_input' }
+        }
+      )
+    )
+
+    await expect(
+      settle(
+        runWorkshopRouter({
+          ...options(),
+          contract,
+          body: {
+            prompt: 'Separate this image',
+            image: 'data:image/png;base64,AA==',
+            layer_decomposition: true
+          }
+        })
+      )
+    ).rejects.toMatchObject({
+      reason: 'validation',
+      fieldErrors: { images: 'imageLayerDecompositionUnsupported' },
+      response: { status: 400, errorType: 'invalid_input' },
+      requestSettlement: 'terminal'
+    })
+  })
+
+  it.for([
+    {
+      name: 'layer separation was not requested',
+      body: { image: 'data:image/png;base64,AA==' },
+      message: 'The image content is too complex to decompose into layers'
+    },
+    {
+      name: 'the provider rejected a different image constraint',
+      body: {
+        image: 'data:image/png;base64,AA==',
+        layer_decomposition: true
+      },
+      message: 'The image width is invalid'
+    }
+  ])(
+    'does not attribute Seedream validation when $name',
+    async ({ body, message }) => {
+      const contract = workshopContract('byteplus/seedream-5-0-pro-260628')
+      assert.exists(contract)
+      stubFetch(
+        admitted(),
+        Response.json(
+          { error: { code: 'InvalidParameter', message, param: 'image' } },
+          {
+            status: 400,
+            headers: { 'X-Comfy-Error-Type': 'invalid_input' }
+          }
+        )
+      )
+
+      await expect(
+        settle(runWorkshopRouter({ ...options(), contract, body }))
+      ).rejects.toMatchObject({
+        reason: 'validation',
+        fieldErrors: {},
+        response: { status: 400, errorType: 'invalid_input' }
+      })
+    }
+  )
+
+  it('reports a stored provider moderation payload as a terminal policy refusal', async () => {
+    stubFetch(
+      admitted(),
+      Response.json(
+        {
+          code: 'DataInspectionFailed',
+          message:
+            'Green net check failed for image (input): Input data may contain inappropriate content.'
+        },
+        {
+          status: 502,
+          headers: { 'X-Comfy-Error-Type': 'provider_error' }
+        }
+      )
+    )
+
+    await expect(settle(runWorkshopRouter(options()))).rejects.toMatchObject({
+      reason: 'policy',
+      requestId: REQUEST_ID,
+      response: { status: 502, errorType: 'provider_error' },
+      requestSettlement: 'terminal'
+    })
+  })
+
+  it('settles a successful HTTP result with a BFL moderation status', async () => {
+    stubFetch(
+      admitted(),
+      Response.json({
+        id: 'bfl-task',
+        status: 'Content Moderated',
+        result: null
+      })
+    )
+
+    await expect(settle(runWorkshopRouter(options()))).rejects.toMatchObject({
+      reason: 'policy',
+      requestId: REQUEST_ID,
+      response: { status: 200, errorType: null },
+      requestSettlement: 'terminal'
+    })
+  })
+
+  it('retains a queued response parser exception for analytics', async () => {
+    const malformed = () =>
+      new Response('{', { headers: { 'Content-Type': 'application/json' } })
+    stubFetch(admitted(), malformed(), malformed(), malformed())
+
+    const failure: unknown = await settle(runWorkshopRouter(options())).catch(
+      (error: unknown) => error
+    )
+
+    assert.instanceOf(failure, WorkshopRouterError)
+    expect(workshopFailureAnalytics(failure)).toMatchObject({
+      reason: 'response',
+      request_id: REQUEST_ID,
+      exception_name: 'SyntaxError'
     })
   })
 

@@ -14,6 +14,7 @@ import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useTelemetry } from '@/platform/telemetry'
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
@@ -33,7 +34,6 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
-const mockShowSettings = vi.fn()
 const mockToastAdd = vi.fn()
 
 const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
@@ -61,12 +61,7 @@ vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
-vi.mock<unknown>(
-  import('@/platform/settings/composables/useSettingsDialog'),
-  () => ({
-    useSettingsDialog: () => ({ show: mockShowSettings })
-  })
-)
+vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
 
 vi.mock(import('@/platform/telemetry'))
 
@@ -105,9 +100,14 @@ function topupResponse(
   }
 }
 
-function renderDialog() {
+function renderDialog(
+  props: Partial<
+    InstanceType<typeof TopUpCreditsDialogContentWorkspace>['$props']
+  > = {}
+) {
   mockBillingContext()
   return render(TopUpCreditsDialogContentWorkspace, {
+    props,
     global: {
       plugins: [i18n],
       stubs: {
@@ -155,7 +155,6 @@ beforeEach(() => {
   vi.mocked(useDialogStore().closeDialog).mockImplementation(() => {})
   Object.assign(useAuthStore(), { userId: 'user-1' })
   Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-1' })
-  vi.mocked(useTelemetry()?.trackCheckoutJourneyEvent)?.mockClear()
   sessionStorage.clear()
   clearCheckoutJourney()
 })
@@ -216,6 +215,72 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       outcome: 'pending',
       operation_type: 'topup'
     })
+  })
+
+  it('attributes the topup journey to the surface that opened the dialog', async () => {
+    renderDialog({ source: 'agent_paywall' })
+
+    await waitFor(() =>
+      expect(useTelemetry()?.trackCheckoutJourneyEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          phase: 'entered',
+          entry_flow: 'topup',
+          entry_source: 'agent_paywall'
+        })
+      )
+    )
+  })
+
+  it('keeps the settings-billing attribution when no source is named', async () => {
+    renderDialog()
+
+    await waitFor(() =>
+      expect(useTelemetry()?.trackCheckoutJourneyEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          phase: 'entered',
+          entry_source: 'settings_billing'
+        })
+      )
+    )
+  })
+
+  it('does not inherit a prior surface when a top-up is opened from a different one', async () => {
+    resolveCheckoutJourney({
+      actorUid: 'user-1',
+      workspaceId: 'workspace-1',
+      entryFlow: 'topup',
+      entrySource: 'settings_billing',
+      assignment: { status: 'unavailable' }
+    })
+
+    renderDialog({ source: 'agent_paywall' })
+
+    await waitFor(() =>
+      expect(useTelemetry()?.trackCheckoutJourneyEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          phase: 'entered',
+          entry_source: 'agent_paywall'
+        })
+      )
+    )
+    expect(getActiveCheckoutJourney()?.entry_source).toBe('agent_paywall')
+  })
+
+  it('still resumes a journey from the same surface rather than restarting it', async () => {
+    const first = resolveCheckoutJourney({
+      actorUid: 'user-1',
+      workspaceId: 'workspace-1',
+      entryFlow: 'topup',
+      entrySource: 'settings_billing',
+      intent: 'settings_billing',
+      assignment: { status: 'unavailable' }
+    })
+    assert(first.status === 'active')
+
+    renderDialog()
+    await nextTick()
+
+    expect(getActiveCheckoutJourney()?.journey_id).toBe(first.record.journey_id)
   })
 
   it('enters a topup journey on mount and correlates the purchase', async () => {
@@ -797,7 +862,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
 
     expect(mockBillingContext().fetchBalance).toHaveBeenCalledOnce()
     expect(mockBillingContext().fetchStatus).toHaveBeenCalledOnce()
-    expect(mockShowSettings).toHaveBeenCalledWith('workspace')
+    expect(useSettingsDialog().show).toHaveBeenCalledWith('workspace')
     expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'topup',
       stage: 'succeeded',
@@ -856,7 +921,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     await clickAddCredits()
     await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
 
-    expect(mockShowSettings).toHaveBeenCalledWith('credits')
+    expect(useSettingsDialog().show).toHaveBeenCalledWith('credits')
   })
 
   it('keeps completed top-up telemetry successful when refresh fails', async () => {
@@ -882,7 +947,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       billing_op_id: 'op-1',
       duration_ms: expect.any(Number)
     })
-    expect(mockShowSettings).toHaveBeenCalledWith('workspace')
+    expect(useSettingsDialog().show).toHaveBeenCalledWith('workspace')
   })
 
   it('does not refresh balance or status for a pending top-up', async () => {

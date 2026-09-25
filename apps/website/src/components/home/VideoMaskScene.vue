@@ -89,7 +89,7 @@ function makeBezier(p1x: number, p1y: number, p2x: number, p2y: number) {
 }
 
 function lerpKf(kfs: Keyframe[], t: number, dim: number): number[] {
-  if (!kfs.length) return new Array(dim).fill(0)
+  if (!kfs.length) return Array.from({ length: dim }, () => 0)
   if (kfs.length === 1 || t <= kfs[0].t) return kfs[0].v.slice(0, dim)
   const last = kfs[kfs.length - 1]
   if (t >= last.t) return last.v.slice(0, dim)

@@ -81,7 +81,7 @@ function fakeSession(initial: SessionSnapshot = authenticated(credential())) {
     scopeSource: sessionBillingScopeSource(fake),
     moveTo(next: SessionSnapshot) {
       snapshot = next
-      for (const listener of [...listeners]) listener(snapshot)
+      for (const listener of Array.from(listeners)) listener(snapshot)
     }
   }
 }
@@ -471,6 +471,41 @@ describe('createBillingOperationLifecycle', () => {
       expect(calls).toHaveLength(3)
       await vi.advanceTimersByTimeAsync(1)
       expect(calls).toHaveLength(4)
+    })
+
+    it('keeps the backoff while a blocked phase leaves the customer nothing to act on, so a lagging authentication state reaches the challenge', async () => {
+      const awaitingInvoice = {
+        phase: 'awaiting_invoice_payment',
+        payment_intent_client_secret: 'pi_secret'
+      } as const
+      const { lifecycle, calls } = harness({
+        embedded: true,
+        answers: [
+          httpOk(opStatus({ phase: 'in_progress' })),
+          httpOk(
+            opStatus({ ...awaitingInvoice, authentication_state: 'processing' })
+          ),
+          httpOk(
+            opStatus({
+              ...awaitingInvoice,
+              authentication_state: 'requires_action'
+            })
+          )
+        ]
+      })
+      await lifecycle.begin('subscription', issued())
+      await flush()
+      await vi.advanceTimersByTimeAsync(OPERATION_POLL_TIMING.initialMs * 1.5)
+      expect(calls).toHaveLength(2)
+      expect(lifecycle.get('op-1')).toMatchObject({ challenge: undefined })
+
+      await vi.advanceTimersByTimeAsync(OPERATION_POLL_TIMING.maxMs)
+
+      expect(calls).toHaveLength(3)
+      expect(lifecycle.get('op-1')).toMatchObject({
+        presentation: 'embedded',
+        challenge: { clientSecret: 'pi_secret', status: 'required' }
+      })
     })
 
     it('joins a wake to the poll in flight rather than issuing a second request', async () => {
