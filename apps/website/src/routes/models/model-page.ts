@@ -1,3 +1,4 @@
+import { interpolate } from '../../config/auth-schemas'
 import { catalogSearch, useCaseFor } from '../../config/models-catalogue'
 import { getWorkshopModel } from '../../config/workshop-browse-content'
 import {
@@ -8,9 +9,17 @@ import { relatedModels } from '../../config/workshop-related'
 import { estimateWorkshopNodePrice } from '../../config/workshop-node-pricing'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import { splitPriceLabel } from '../../lib/workshop/price-label'
 import { useCaseLabelKey } from '../../lib/workshop/use-case-label'
 
 const TAGS_SHOWN = 3
+const META_DESCRIPTION_TARGET = 160
+const META_DESCRIPTION_MAX = 170
+const PROVIDER_BRANDS: Record<string, readonly string[]> = {
+  'Black Forest Labs': ['FLUX'],
+  ByteDance: ['Seedance', 'Seedream'],
+  Google: ['Nano Banana', 'Veo']
+}
 
 function splitShownTags<T>(tags: readonly T[]) {
   const shownTags = tags.slice(0, TAGS_SHOWN)
@@ -64,4 +73,64 @@ export async function prepareModelPage(
     tags,
     ...splitShownTags(tags)
   }
+}
+
+function nameCarriesProvider(name: string, provider: string) {
+  const lowerName = name.toLowerCase()
+  return [provider, ...(PROVIDER_BRANDS[provider] ?? [])].some((brand) =>
+    lowerName.includes(brand.toLowerCase())
+  )
+}
+
+function cutAtWord(text: string, maxLength: number) {
+  const cut = text.slice(0, Math.max(0, maxLength - 1))
+  const lastSpace = cut.lastIndexOf(' ')
+  return `${(lastSpace > 0 ? cut.slice(0, lastSpace) : cut).replace(/[\s,;:.]+$/, '')}…`
+}
+
+export function modelMetaDescription(
+  page: {
+    model: { name: string; provider?: string; summary?: string }
+    priceEstimate?: string
+  },
+  locale: Locale = 'en'
+) {
+  const { name, provider, summary } = page.model
+  const who =
+    provider && !nameCarriesProvider(name, provider)
+      ? interpolate(t('workshop.model.meta.byProvider', locale), {
+          name,
+          provider
+        })
+      : name
+  const lead = (shownSummary: string | undefined) =>
+    shownSummary
+      ? interpolate(t('workshop.model.meta.lead', locale), {
+          who,
+          summary: shownSummary
+        })
+      : interpolate(t('workshop.model.meta.leadNoSummary', locale), { who })
+  const price = page.priceEstimate
+    ? splitPriceLabel(page.priceEstimate)
+    : undefined
+  const priceClause = price
+    ? interpolate(t('workshop.model.meta.price', locale), {
+        amount: price.amount,
+        unit: (price.per?.slice(1) ?? 'Run').toLowerCase()
+      })
+    : undefined
+  const compose = (...parts: (string | undefined)[]) =>
+    parts.filter(Boolean).join(' ')
+
+  for (const cta of [
+    t('workshop.model.meta.cta', locale),
+    t('workshop.model.meta.ctaShort', locale)
+  ]) {
+    const description = compose(lead(summary), cta, priceClause)
+    if (description.length <= META_DESCRIPTION_TARGET) return description
+  }
+  const bare = compose(lead(summary), priceClause)
+  if (!summary || bare.length <= META_DESCRIPTION_MAX) return bare
+  const summaryRoom = summary.length - (bare.length - META_DESCRIPTION_MAX)
+  return compose(lead(cutAtWord(summary, summaryRoom)), priceClause)
 }
