@@ -193,8 +193,7 @@ test.describe('Node search box', { tag: '@node' }, () => {
       const panel = comfyPage.searchBox.filterSelectionPanel
       await panel.header.waitFor({ state: 'visible' })
       await comfyPage.page
-        .locator('.p-dialog-mask')
-        .filter({ has: panel.header })
+        .getByTestId('node-search-filter-overlay')
         .click({ position: { x: 10, y: 10 } })
 
       // Verify the filter selection panel is hidden
@@ -212,6 +211,19 @@ test.describe('Node search box', { tag: '@node' }, () => {
             name: 'Close'
           })
         ).toBeFocused()
+      })
+
+      test('ignores Escape during IME composition', async ({ comfyPage }) => {
+        const panel = comfyPage.searchBox.filterSelectionPanel
+        await panel.root.dispatchEvent('keydown', {
+          key: 'Escape',
+          isComposing: true
+        })
+        await expect(panel.header).toBeVisible()
+        await expect(comfyPage.searchBox.input).toBeVisible()
+        await comfyPage.page.keyboard.press('Escape')
+        await expect(panel.header).toBeHidden()
+        await expect(comfyPage.searchBox.input).toBeFocused()
       })
 
       test('keeps search open when the filter has keyboard focus', async ({

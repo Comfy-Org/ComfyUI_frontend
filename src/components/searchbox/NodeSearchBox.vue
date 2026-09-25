@@ -21,19 +21,28 @@
     >
       <i class="pi pi-filter" />
     </Button>
-    <Dialog
-      v-model:visible="filterVisible"
-      class="min-w-96"
-      dismissable-mask
-      modal
-      @hide="reFocusInput"
-    >
-      <template #header>
-        <h3>{{ $t('g.addNodeFilterCondition') }}</h3>
-      </template>
-      <div class="_dialog-body">
-        <NodeSearchFilter @add-filter="onAddFilter" />
-      </div>
+    <Dialog :open="filterVisible" @update:open="onFilterDialogOpenChange">
+      <DialogPortal>
+        <DialogOverlay
+          v-reka-z-index
+          data-testid="node-search-filter-overlay"
+          @pointerdown.self.stop="filterVisible = false"
+        />
+        <DialogContent
+          v-reka-z-index
+          class="min-w-96"
+          @escape-key-down="$event.isComposing && $event.preventDefault()"
+          @close-auto-focus="onFilterDialogCloseAutoFocus"
+        >
+          <DialogHeader>
+            <DialogTitle>{{ $t('g.addNodeFilterCondition') }}</DialogTitle>
+            <DialogClose />
+          </DialogHeader>
+          <div class="px-4 py-2">
+            <NodeSearchFilter @add-filter="onAddFilter" />
+          </div>
+        </DialogContent>
+      </DialogPortal>
     </Dialog>
 
     <SearchAutocomplete
@@ -79,14 +88,21 @@
 <script setup lang="ts">
 import { watchDebounced } from '@vueuse/core'
 import { debounce } from 'es-toolkit/compat'
-import Dialog from 'primevue/dialog'
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
 import NodePreview from '@/components/node/NodePreview.vue'
 import NodeSearchFilter from '@/components/searchbox/NodeSearchFilter.vue'
 import NodeSearchItem from '@/components/searchbox/NodeSearchItem.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Dialog from '@/components/ui/dialog/Dialog.vue'
+import DialogClose from '@/components/ui/dialog/DialogClose.vue'
+import DialogContent from '@/components/ui/dialog/DialogContent.vue'
+import DialogHeader from '@/components/ui/dialog/DialogHeader.vue'
+import DialogOverlay from '@/components/ui/dialog/DialogOverlay.vue'
+import DialogPortal from '@/components/ui/dialog/DialogPortal.vue'
+import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import SearchAutocomplete from '@/components/ui/search-input/SearchAutocomplete.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
@@ -174,6 +190,15 @@ const reFocusInput = async () => {
   await nextTick()
   searchAutocomplete.value?.focus()
   searchAutocomplete.value?.open()
+}
+
+function onFilterDialogOpenChange(open: boolean) {
+  filterVisible.value = open
+}
+
+function onFilterDialogCloseAutoFocus(event: Event) {
+  event.preventDefault()
+  void reFocusInput()
 }
 
 onMounted(() => {
