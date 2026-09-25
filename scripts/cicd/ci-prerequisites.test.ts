@@ -84,12 +84,12 @@ describe('candidate prerequisites', () => {
   )
 
   it.for([
-    ['test', { PREFLIGHT: 'failure', UNIT: 'skipped' }, 1],
+    ['test', { PREFLIGHT: 'skipped', UNIT: 'skipped' }, 1],
     ['test', { PREFLIGHT: 'success', UNIT: 'success' }, 0],
     [
       'e2e-status',
       {
-        PREFLIGHT: 'failure',
+        PREFLIGHT: 'skipped',
         CHANGES: 'success',
         SHOULD_RUN: 'false',
         SHARDED: 'skipped',

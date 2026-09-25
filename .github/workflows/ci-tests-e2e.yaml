@@ -110,7 +110,7 @@ jobs:
 
   preflight:
     needs: [changes, setup, lint-and-format, fallow]
-    if: ${{ always() }}
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     permissions: {}
     steps:

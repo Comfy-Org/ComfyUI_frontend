@@ -133,7 +133,7 @@ jobs:
   # Single stable branch-protection context over the parallel jobs above.
   lint-and-format:
     needs: [lint, typecheck, typecheck-aux, repo-checks]
-    if: ${{ always() }}
+    if: ${{ always() && github.event_name == 'push' }}
     runs-on: ubuntu-latest
     steps:
       - name: Verify every lint and format job passed

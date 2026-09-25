@@ -83,6 +83,8 @@ point avoids that migration in this prototype.
 - E2E workflow completion consumers now wait for unit and ecosystem jobs too.
 - A rerun of the coordinator includes the other suites. Partial reruns need
   live GitHub validation before rollout.
+- Required final checks still allocate runners after cancellation to reject
+  incomplete results. A saturated runner queue can delay replacement runs.
 - Website, billing, Storybook, performance, post-merge, and manual workflows
   remain independent in this first prototype. Browser-based custom-node tests
   are already nightly/manual-only and remain unchanged.
