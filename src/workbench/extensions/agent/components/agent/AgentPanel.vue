@@ -117,6 +117,7 @@ const emit = defineEmits<{
   feedback: [turnId: string, vote: 'up' | 'down' | null]
   paywallAction: [action: AgentPaywallAction]
   newChat: []
+  startTour: []
   toggleSize: []
   close: []
   openHistory: []
@@ -249,6 +250,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
     <PanelHeader
       :is-maximized
       @new-chat="onNewChat"
+      @start-tour="emit('startTour')"
       @toggle-size="emit('toggleSize')"
       @close="emit('close')"
     />

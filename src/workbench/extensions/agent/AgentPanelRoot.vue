@@ -71,6 +71,7 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import {
   adoptSharedOnboardingFlag,
   hasSeenCoach,
+  resetCoach,
   scopedOnboardingKey,
   trackCoachDeferral
 } from './composables/agent/useOnboarding'
@@ -358,6 +359,13 @@ watch(
   },
   { immediate: true }
 )
+const coachRun = ref(0)
+function restartCoach(): void {
+  const key = onboardingKey.value
+  if (!key) return
+  resetCoach(key)
+  coachRun.value += 1
+}
 const graphMutationsByWorkflow = new Map<
   string,
   ReturnType<typeof createGraphMutations>
@@ -1633,6 +1641,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       @show-target="onShowTarget"
       @paywall-action="onPaywallAction"
       @new-chat="onNewChat('new_chat_button')"
+      @start-tour="restartCoach"
       @toggle-size="agentPanelStore.toggleMaximize()"
       @close="onClosePanel"
       @open-history="refreshHistory()"
@@ -1648,6 +1657,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
     </AgentPanel>
     <OnboardingCoach
       v-if="consentAccepted && onboardingKey && coachDeferredBy === null"
+      :key="coachRun"
       :steps="coachSteps"
       :storage-key="onboardingKey"
     />

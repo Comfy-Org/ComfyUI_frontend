@@ -5253,6 +5253,7 @@
     "latest": "Latest",
     "copyUnavailable": "Only the current conversation can be copied in this version",
     "alpha": "ALPHA",
+    "takeTour": "Take the tour",
     "targetForThisChat": "Agent target for this chat",
     "newChat": "New chat",
     "newChatTitle": "Untitled",

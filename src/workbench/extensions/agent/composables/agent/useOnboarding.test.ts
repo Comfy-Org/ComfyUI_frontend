@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import type { CoachStep } from './useOnboarding'
 import {
   adoptSharedOnboardingFlag,
+  resetCoach,
   scopedOnboardingKey,
   useOnboarding
 } from './useOnboarding'
@@ -18,6 +19,18 @@ const STEPS: CoachStep[] = Array.from({ length: 4 }, (_, index) => ({
 
 describe('useOnboarding', () => {
   beforeEach(() => window.localStorage.clear())
+
+  it('starts again from the first card after a finished tour is reset', async () => {
+    const finished = useOnboarding(STEPS, KEY)
+    finished.finish()
+    await nextTick()
+
+    resetCoach(KEY)
+
+    const restarted = useOnboarding(STEPS, KEY)
+    expect(restarted.active.value).toBe(true)
+    expect(restarted.step.value).toEqual(STEPS[0])
+  })
 
   it('advances in order and persists completion only after the final card', async () => {
     const tour = useOnboarding(STEPS, KEY)
