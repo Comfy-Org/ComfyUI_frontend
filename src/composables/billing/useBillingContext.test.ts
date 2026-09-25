@@ -89,7 +89,9 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock(import('@/platform/cloud/subscription/composables/useSubscriptionDialog'))
+vi.mock(
+  import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
+)
 
 vi.mock(import('@/composables/auth/useAuthActions'))
 
