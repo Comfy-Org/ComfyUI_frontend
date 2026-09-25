@@ -16,7 +16,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
  * const { trackShiftKey } = useShiftKeySync()
  *
  * function startDrag(event: PointerEvent) {
- *   const stopTracking = trackShiftKey(event)
+ *   const stopTracking = trackShiftKey(event.shiftKey)
  *   // ... drag logic
  *   // Call stopTracking() on pointerup to cleanup listeners
  * }
@@ -59,13 +59,13 @@ export function useShiftKeySync() {
    * Attaches window-level keyboard event listeners for the duration of the operation.
    * Listeners are automatically cleaned up when the returned function is called.
    *
-   * @param initialEvent - Initial pointer event containing shift key state at drag/resize start
+   * @param initialShiftKey - Shift state when drag/resize begins
    * @returns Cleanup function that removes event listeners - must be called when operation ends
    *
    * @example
    * ```ts
    * function startDrag(event: PointerEvent) {
-   *   const stopTracking = trackShiftKey(event)
+   *   const stopTracking = trackShiftKey(event.shiftKey)
    *
    *   const handlePointerUp = () => {
    *     stopTracking() // Cleanup listeners
@@ -73,9 +73,9 @@ export function useShiftKeySync() {
    * }
    * ```
    */
-  function trackShiftKey(initialEvent: PointerEvent): () => void {
+  function trackShiftKey(initialShiftKey: boolean): () => void {
     // Sync initial shift state
-    syncShiftState(initialEvent.shiftKey)
+    syncShiftState(initialShiftKey)
 
     // Listen for shift key press/release during the operation
     const handleKeyEvent = (e: KeyboardEvent) => {
