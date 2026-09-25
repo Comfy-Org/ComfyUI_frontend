@@ -35,9 +35,19 @@ describe('modelsHubMeta', () => {
   })
 
   it('leaves out the names clause when no family is in the catalogue', () => {
-    const { description } = modelsHubMeta([{ name: 'Grok Imagine' }])
+    const { description } = modelsHubMeta([
+      { name: 'Grok Imagine' },
+      { name: 'Wan 2.7' }
+    ])
     expect(description).toBe(
-      'Browse 1 AI models in ComfyUI. Try any model in your browser, then call it from your code.'
+      'Browse 2 AI models in ComfyUI. Try any model in your browser, then call it from your code.'
+    )
+  })
+
+  it('uses the singular for a one-model catalogue', () => {
+    const { description } = modelsHubMeta([{ name: 'Veo 3 Text-to-Video' }])
+    expect(description).toBe(
+      'Browse 1 AI model in ComfyUI, including Veo. Try it in your browser, then call it from your code.'
     )
   })
 })
