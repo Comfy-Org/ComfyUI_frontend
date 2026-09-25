@@ -87,6 +87,13 @@ describe('workflow catalogue ordering and shared links', () => {
       '/models/workflows/restore/'
     ])
 
+    await user.click(screen.getByTestId('filter-model-Wan 2.2'))
+    expect(visibleOutcomes()).toEqual([
+      '/models/workflows/animate/',
+      '/models/workflows/connect/',
+      '/models/workflows/restore/'
+    ])
+
     await user.click(screen.getByTestId('workshop-filter-clear'))
     expect(visibleOutcomes()).toEqual([
       '/models/workflows/animate/',
