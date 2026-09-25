@@ -12,9 +12,10 @@
  * The points come from the analysis's preview-sized depth, but they can be
  * drawn onto a larger canvas, the size of the output. There the node's 25
  * passes would leave a hatched pattern (points no longer land one per pixel,
- * and the last pass wins), so each point is drawn once as a square just wide
- * enough to meet its neighbours, and the depth test keeps the nearest. At the
- * source's own size the node's passes run as they are: the parity test.
+ * and the last pass wins), so each point is drawn once as a square wide
+ * enough to meet its neighbours on the same surface, measured by projecting
+ * them too, and the depth test keeps the nearest. At the source's own size the node's passes
+ * run as they are: the parity test.
  */
 
 import type { Mat4 } from './camera'
@@ -36,6 +37,25 @@ uniform float uThreshold;
 uniform ivec2 uOffset;
 uniform float uPointSize;
 out vec2 vUv;
+// A source pixel with depth z seen from the target camera, in output pixels.
+vec3 seen(ivec2 q, float z) {
+  vec2 size = vec2(uSize);
+  vec3 src = vec3((float(q.x) - size.x * 0.5) / uSrcFx * z,
+                  (float(q.y) - size.y * 0.5) / uSrcFx * z, z);
+  vec3 d = (uInvTarget * vec4(src, 1.0)).xyz;
+  return vec3(d.xy / d.z * uFx + uCenter, d.z);
+}
+// How far a neighbour on the same surface lands from this point; a depth
+// jump is an edge, where the gap is real and stays open.
+float reach(ivec2 p, ivec2 step, float z, vec2 at) {
+  ivec2 q = clamp(p + step, ivec2(0), uSize - 1);
+  float zq = texelFetch(uDepth, q, 0).r;
+  if (!(zq > 0.0 && abs(zq - z) < 0.05 * z)) return 0.0;
+  vec3 n = seen(q, zq);
+  if (n.z <= 0.0) return 0.0;
+  vec2 gap = abs(n.xy - at);
+  return max(gap.x, gap.y);
+}
 void main() {
   int w = uSize.x;
   ivec2 p = ivec2(gl_VertexID % w, gl_VertexID / w);
@@ -43,15 +63,26 @@ void main() {
   // NaN fails every comparison, so no-geometry pixels drop out here too
   if (!(z > 0.0 && z < uThreshold)) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; }
   vec2 size = vec2(uSize);
-  vec3 src = vec3((float(p.x) - size.x * 0.5) / uSrcFx * z,
-                  (float(p.y) - size.y * 0.5) / uSrcFx * z, z);
-  vec3 d = (uInvTarget * vec4(src, 1.0)).xyz;
+  vec3 d = seen(p, z);
   if (d.z <= 0.0) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; }
-  vec2 px = roundEven(d.xy / d.z * uFx + uCenter) + vec2(uOffset);
+  vec2 px = roundEven(d.xy) + vec2(uOffset);
   // pixel centre -> clip space; y flips because row 0 is the top of the frame
   vec2 ndc = (px + 0.5) / vec2(uOutSize) * 2.0 - 1.0;
   gl_Position = vec4(ndc.x, -ndc.y, d.z / (d.z + uThreshold) * 2.0 - 1.0, 1.0);
-  gl_PointSize = uPointSize;
+  if (uPointSize > 0.0) {
+    // the node's passes: one pixel, offset per pass
+    gl_PointSize = uPointSize;
+  } else {
+    // wide enough to meet the neighbours on its own surface, however the
+    // new camera stretches it: nearer, or seen at a slant. A slant stretches
+    // a surface a few times at most; past that the "surface" is a smeared
+    // edge (pixels between two depths), which should stay small specks.
+    float gap = max(
+      max(reach(p, ivec2(1, 0), z, d.xy), reach(p, ivec2(-1, 0), z, d.xy)),
+      max(reach(p, ivec2(0, 1), z, d.xy), reach(p, ivec2(0, -1), z, d.xy)));
+    float nearer = uFx / uSrcFx * z / d.z;
+    gl_PointSize = clamp(ceil(min(gap, nearer * 2.5)) + 1.0, 1.0, 24.0);
+  }
   vUv = (vec2(p) + 0.5) / size;
 }`
 
@@ -206,7 +237,7 @@ export class WarpRenderer {
     }
     gl.clear(gl.DEPTH_BUFFER_BIT)
     gl.uniform2i(u.uOffset, 0, 0)
-    gl.uniform1f(u.uPointSize, Math.ceil(this.outWidth / this.width) + 1)
+    gl.uniform1f(u.uPointSize, 0)
     gl.drawArrays(gl.POINTS, 0, points)
   }
 
