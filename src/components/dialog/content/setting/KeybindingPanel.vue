@@ -113,6 +113,7 @@ import TableSortHead from '@/components/ui/table/TableSortHead.vue'
 import { filterByQuery, sortByText } from '@/components/ui/table/tableUtils'
 import type { TableSortDirection } from '@/components/ui/table/tableUtils'
 import { useEditKeybindingDialog } from '@/composables/useEditKeybindingDialog'
+import { useOverlayChildStyle } from '@/composables/usePopoverSizing'
 import type { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
@@ -137,6 +138,8 @@ const commandStore = useCommandStore()
 const dialogStore = useDialogStore()
 const { t } = useI18n()
 const toast = useToast()
+const primeVueOverlay = useOverlayChildStyle()
+const keybindingOverlayContentStyle = primeVueOverlay.contentStyle
 
 const presetNames = ref<string[]>([])
 
