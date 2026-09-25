@@ -13,6 +13,7 @@ import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 
 import { promptHistoryTest as test } from '@e2e/fixtures/agentPromptHistoryFixture'
+import type { WorkflowSelection } from '@e2e/fixtures/agentWorkflowSelectionFixture'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 
@@ -137,7 +138,7 @@ async function serveHistory(
 
 async function openAgentPanel(
   page: Page,
-  workflowSelection: { savedPaths: string[]; finishSave: (ok: boolean) => void }
+  workflowSelection: WorkflowSelection
 ): Promise<Locator> {
   await page
     .getByRole('button', { name: enMessages.agent.entryButton, exact: true })

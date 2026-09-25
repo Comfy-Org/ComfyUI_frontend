@@ -125,7 +125,16 @@ function attachmentIconClass(name: string): string {
  * so a mis-declared type now outranks a correct extension -- the same
  * mime-before-name order the service itself applies.
  */
-const GRID_KINDS = new Set<MediaType>(['image', 'video', 'audio', '3D'])
+const GRID_KINDS: ReadonlySet<MediaType> = new Set<ReplyAsset['kind']>([
+  'image',
+  'video',
+  'audio',
+  '3D'
+])
+
+function isGridKind(kind: MediaType): kind is ReplyAsset['kind'] {
+  return GRID_KINDS.has(kind)
+}
 
 function attachmentUrl(item: UserAttachment): string | undefined {
   if (item.previewUrl !== undefined) return item.previewUrl
@@ -136,8 +145,8 @@ function attachmentUrl(item: UserAttachment): string | undefined {
 function gridAsset(item: UserAttachment): ReplyAsset | undefined {
   const kind = item.kind ?? getMediaTypeFromFilename(item.name)
   const url = attachmentUrl(item)
-  if (!url || !GRID_KINDS.has(kind)) return undefined
-  return { url, filename: item.name, kind: kind as ReplyAsset['kind'] }
+  if (!url || !isGridKind(kind)) return undefined
+  return { url, filename: item.name, kind }
 }
 
 const splitAttachments = computed(() => {

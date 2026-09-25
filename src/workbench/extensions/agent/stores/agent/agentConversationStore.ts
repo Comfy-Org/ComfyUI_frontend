@@ -82,12 +82,21 @@ export const useAgentConversationStore = defineStore(
      * The name the user attached, keyed by the storage ref the turn was posted
      * under. A persisted row names every file by that ref and nothing on the
      * request carries the name (PM-1705), so within a session this is the only
-     * place it survives. Deliberately not cleared by reset(): a ref names the
-     * exact bytes it was minted from, so an entry stays true for as long as
-     * the page does and a New chat must not cost the user their labels. A
-     * reload starts it empty, which is exactly the boundary PM-1705 draws.
+     * place it survives. Keyed by thread as well as ref: two asset rows can
+     * share a hash, so an unscoped ref could hand one thread a name the user
+     * only ever typed in another. Deliberately not cleared by reset(): a New
+     * chat must not cost the user their labels, and a reload starts it empty,
+     * which is exactly the boundary PM-1705 draws.
      */
-    const attachmentNamesByRef = new Map<string, string>()
+    const attachmentNamesByThread = new Map<string, Map<string, string>>()
+
+    function rememberAttachmentName(ref: string, name: string): void {
+      const thread = threadId.value
+      if (thread === null) return
+      const names = attachmentNamesByThread.get(thread) ?? new Map()
+      names.set(ref, name)
+      attachmentNamesByThread.set(thread, names)
+    }
     const settledActiveTransports = new Set<AgentEventTransport>()
     const backgroundTurns = new Map<string, BackgroundTurn>()
     let hydratedTurnIdsByRowId = new Map<string, TurnId>()
@@ -148,7 +157,7 @@ export const useAgentConversationStore = defineStore(
       if (attachments !== undefined && attachments.length > 0) {
         userAttachments.value.set(turnId, attachments)
         for (const { name, ref } of attachments)
-          if (ref) attachmentNamesByRef.set(ref, name)
+          if (ref) rememberAttachmentName(ref, name)
       }
       if (tags !== undefined && tags.length > 0)
         userTags.value.set(turnId, tags)
@@ -461,13 +470,23 @@ export const useAgentConversationStore = defineStore(
       )
     }
 
-    function holdsMoreReply(
+    /**
+     * Whether the row can stand in for the stash. Equal counts as superseding:
+     * a stash that received every delta but never the done frame holds exactly
+     * what the row holds, and reinstating it would leave the turn streaming
+     * with no transport left to finish it. Both dimensions have to be covered
+     * -- text for the reply, part count for the tool calls the row may not
+     * have caught up on -- so a stash holding anything extra still wins.
+     */
+    function supersedesLiveReply(
       hydrated: AssistantMessage,
       live: AssistantMessage
     ): boolean {
-      return live.parts.length === 0
-        ? hydrated.parts.length > 0
-        : replyTextLength(hydrated) > replyTextLength(live)
+      if (live.parts.length === 0) return hydrated.parts.length > 0
+      return (
+        replyTextLength(hydrated) >= replyTextLength(live) &&
+        hydrated.parts.length >= live.parts.length
+      )
     }
 
     function adoptHydratedTurn(
@@ -489,7 +508,7 @@ export const useAgentConversationStore = defineStore(
       // would strand the turn with no transport left to finish it.
       if (
         !hydratedStreamingTurnIds.has(hydratedTurnId) &&
-        holdsMoreReply(hydrated, entry.message)
+        supersedesLiveReply(hydrated, entry.message)
       )
         return { keeps: 'hydrated', turnId: hydratedTurnId }
       kept.splice(index, 1)
@@ -597,13 +616,15 @@ export const useAgentConversationStore = defineStore(
       hydratedAssistantTurnIds = transcript.assistantTurnIds
       hydratedStreamingTurnIds = transcript.streamingTurnIds
       dropAttachmentPreviews()
+      const names =
+        threadId.value === null
+          ? undefined
+          : attachmentNamesByThread.get(threadId.value)
       userAttachments.value = new Map(
         [...transcript.userAttachments].map(([turnId, attachments]) => [
           turnId,
           attachments.map((attachment) => {
-            const name = attachment.ref
-              ? attachmentNamesByRef.get(attachment.ref)
-              : undefined
+            const name = attachment.ref ? names?.get(attachment.ref) : undefined
             return name === undefined ? attachment : { ...attachment, name }
           })
         ])
