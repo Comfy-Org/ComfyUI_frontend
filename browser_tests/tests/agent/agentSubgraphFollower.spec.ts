@@ -12,6 +12,7 @@ import {
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import {
   AGENT_NESTED_SUBGRAPH_ID,
+  AGENT_INNER_HOST_ID,
   AGENT_SUBGRAPH_EDITED_SEED,
   AGENT_SUBGRAPH_HOST_ID,
   AGENT_SUBGRAPH_INITIAL_SEED,
@@ -19,7 +20,8 @@ import {
   AGENT_SUBGRAPH_LINK_ID,
   AGENT_SUBGRAPH_WORKFLOW_ID,
   agentSubgraphNodeDefs,
-  agentSubgraphFrames
+  agentSubgraphFrames,
+  agentOutOfOrderSubgraphFrames
 } from '@e2e/fixtures/data/agentSubgraphFollower'
 
 const test = mergeTests(agentTest, webSocketFixture)
@@ -217,6 +219,66 @@ test.describe(
           path: test.info().outputPath('subgraph-text-edited.png')
         })
       })
+    })
+
+    test('keeps dependency-inverted subgraph definitions navigable', async ({
+      page,
+      getWebSocket
+    }) => {
+      await page.setViewportSize({ width: 1920, height: 1280 })
+      await page.addInitScript(() => {
+        localStorage.setItem('Comfy.Agent.CrdtFollower', 'true')
+      })
+      await bootAgentApp(page, true, {
+        onboardingCompleted: true,
+        settings: { 'Comfy.VueNodes.Enabled': true },
+        objectInfo: agentSubgraphNodeDefs,
+        beforeNavigate: async (page) => {
+          await mockAgentTurnApi(page, {
+            message_id: 'fc35d783-3592-447b-ae39-849074a353cf',
+            thread_id: '3aa821e0-933e-45eb-a3b5-63e45b875daa',
+            workflow_id: AGENT_SUBGRAPH_WORKFLOW_ID
+          })
+          await mockWorkflowPersistence(page, AGENT_SUBGRAPH_WORKFLOW_ID)
+        }
+      })
+      const socket = await getWebSocket()
+
+      const agentPanel = new AgentPanel(page)
+      await agentPanel.open()
+      await agentPanel.selectWorkflow()
+      await agentPanel.root
+        .getByRole('textbox', { name: /^Describe ideas/ })
+        .fill('Build the nested subgraph')
+      await agentPanel.root.getByRole('button', { name: 'Send' }).click()
+
+      const outboundFrames: string[] = []
+      socket.onMessage((message) => outboundFrames.push(String(message)))
+      await expect
+        .poll(() => outboundFrames, { timeout: 15_000 })
+        .toContainEqual(expect.stringContaining(AGENT_SUBGRAPH_WORKFLOW_ID))
+      for (const frame of agentOutOfOrderSubgraphFrames()) {
+        socket.send(JSON.stringify(frame))
+      }
+
+      const nodes = new VueNodeHelpers(page)
+      const outerHost = nodes.getNodeLocator(String(AGENT_SUBGRAPH_HOST_ID))
+      await expect(outerHost).toBeVisible()
+      await expect(outerHost).toContainText('Outer Agent Subgraph')
+
+      await page.evaluate((hostId) => {
+        const node = window.app!.rootGraph.nodes.find(
+          ({ id }) => String(id) === hostId
+        )
+        if (!node?.isSubgraphNode()) throw new Error('outer host is not usable')
+        window.app!.canvas.openSubgraph(node.subgraph, node)
+      }, String(AGENT_SUBGRAPH_HOST_ID))
+
+      const innerHost = nodes.getNodeLocator(String(AGENT_INNER_HOST_ID))
+      await expect(innerHost).toBeVisible()
+      await expect(innerHost).toContainText('New Subgraph')
+      await expect(page.getByText('Outer Agent Subgraph')).toBeVisible()
+      await expect(page.getByText('New Subgraph')).toBeVisible()
     })
   }
 )
