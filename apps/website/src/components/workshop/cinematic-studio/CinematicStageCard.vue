@@ -34,6 +34,7 @@ const emit = defineEmits<{
   again: []
   reference: [url: string, name: string]
   animate: [url: string, name: string]
+  edit: [url: string, name: string]
   switchModel: [slug: string]
   editScene: []
 }>()
@@ -95,6 +96,7 @@ const otherModel = computed(() => {
           @again="emit('again')"
           @reference="(url, name) => emit('reference', url, name)"
           @animate="(url, name) => emit('animate', url, name)"
+          @edit="(url, name) => emit('edit', url, name)"
         />
       </template>
 

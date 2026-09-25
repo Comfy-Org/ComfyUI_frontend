@@ -11,8 +11,13 @@ import CinematicMenu from './CinematicMenu.vue'
 import CinematicStudio from './CinematicStudio.vue'
 import CinematicStudioPanel from './CinematicStudioPanel.vue'
 
-const { models, locale = 'en' } = defineProps<{
+const {
+  models,
+  editingModels = [],
+  locale = 'en'
+} = defineProps<{
   models: readonly CinematicModel[]
+  editingModels?: readonly CinematicModel[]
   locale?: Locale
 }>()
 
@@ -44,8 +49,13 @@ function pickLayout(id: string) {
 <template>
   <WorkshopGate>
     <CinematicAppsHub v-if="layout === 'hub'" :locale />
-    <CinematicStudioPanel v-else-if="layout === 'd'" :models :locale />
-    <CinematicStudio v-else :models :locale />
+    <CinematicStudioPanel
+      v-else-if="layout === 'd'"
+      :models
+      :editing-models="editingModels"
+      :locale
+    />
+    <CinematicStudio v-else :models :editing-models="editingModels" :locale />
     <CinematicMenu
       :model-value="layout"
       :options="layoutOptions"

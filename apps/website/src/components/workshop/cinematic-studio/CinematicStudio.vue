@@ -5,6 +5,12 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import { useCinematicLeaveGuard } from '../../../composables/useCinematicLeaveGuard'
 import { useCinematicPopover } from '../../../composables/useCinematicPopover'
+import CinematicCreativeEditor from './CinematicCreativeEditor.vue'
+import CinematicSceneBuilder from './CinematicSceneBuilder.vue'
+import CinematicEditDialog from './CinematicEditDialog.vue'
+import CinematicLibrary from './CinematicLibrary.vue'
+import Button from '../../ui/button/Button.vue'
+import { libraryCopy } from '../../../lib/workshop/cinematic-studio/library-copy'
 import { useCinematicShot } from '../../../composables/useCinematicShot'
 import type { DirectionPart } from '../../../lib/workshop/cinematic-studio/catalog'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
@@ -24,13 +30,30 @@ import CinematicVideoControls from './CinematicVideoControls.vue'
 import type { PopoverKey } from './picker-key'
 import { pickerGroups, popoverTitle } from './picker-key'
 
-const { models, locale = 'en' } = defineProps<{
+const {
+  models,
+  editingModels = [],
+  locale = 'en'
+} = defineProps<{
   models: readonly CinematicModel[]
+  editingModels?: readonly CinematicModel[]
   locale?: Locale
 }>()
 
 const {
   studio,
+  namespace,
+  creative,
+  creativeOpen,
+  builderOpen,
+  edit,
+  editSource,
+  closeEdit,
+  reviewEdit,
+  library,
+  libraryOpen,
+  reuse,
+  restored,
   mode,
   availableModels,
   selectedModel,
@@ -62,7 +85,7 @@ const {
   choose,
   start: startShot,
   generate: generateShot
-} = useCinematicShot(models)
+} = useCinematicShot(models, editingModels)
 const {
   open: popover,
   toggle: togglePopover,
@@ -117,6 +140,11 @@ async function useAsReference(url: string, name: string) {
   })
 }
 
+function applyBuiltScene(value: string) {
+  scene.value = value
+  direction.value = { ...direction.value, shot: 'auto' }
+}
+
 function generate() {
   closePopover()
   generateShot()
@@ -133,6 +161,80 @@ function generateOn(slug: string) {
     class="mb-12 flex min-h-[calc(100svh-5rem)] flex-col lg:mb-20 lg:min-h-[calc(100svh-7rem)]"
     data-testid="cinematic"
   >
+    <CinematicLibrary
+      v-model:open="libraryOpen"
+      :models="[...models, ...editingModels]"
+      :items="library.items.value"
+      :urls="library.urls.value"
+      :loading="library.loading.value"
+      :error="library.error.value"
+      :locale
+      @reuse="reuse"
+      @animate="animate"
+      @edit="edit"
+      @remove="library.remove"
+      @rename="library.rename"
+      @favorite="library.favorite"
+      @retry="library.retry"
+    />
+    <div
+      class="mx-auto my-3 flex w-full max-w-7xl flex-wrap items-center gap-3 px-4"
+    >
+      <Button
+        variant="outline"
+        :disabled="studio.rendering.value"
+        @click="libraryOpen = true"
+        >{{ libraryCopy('title', locale) }}</Button
+      >
+      <Button
+        variant="outline"
+        :disabled="studio.rendering.value"
+        @click="builderOpen = true"
+        >{{ libraryCopy('builder', locale) }}</Button
+      >
+      <Button
+        variant="outline"
+        :disabled="studio.rendering.value"
+        @click="creativeOpen = true"
+        >{{ libraryCopy('creative', locale) }}</Button
+      >
+      <p
+        v-if="restored"
+        role="status"
+        class="text-xs text-primary-comfy-canvas"
+      >
+        {{ libraryCopy('reuseNotice', locale) }}
+      </p>
+      <p
+        v-if="library.error.value"
+        role="alert"
+        class="text-xs text-primary-comfy-canvas"
+      >
+        {{ libraryCopy('error', locale) }}
+      </p>
+    </div>
+    <CinematicCreativeEditor
+      v-model="creative"
+      v-model:open="creativeOpen"
+      :mode
+      :namespace="namespace ?? 'guest'"
+      :locale
+    />
+    <CinematicSceneBuilder
+      v-model:open="builderOpen"
+      :scene
+      :namespace="namespace ?? 'guest'"
+      :locale
+      @apply="applyBuiltScene"
+    />
+    <CinematicEditDialog
+      :source="editSource"
+      :models="editingModels"
+      :direction
+      :locale
+      @close="closeEdit"
+      @review="reviewEdit"
+    />
     <CinematicReviewDialog
       :review
       :can-confirm="canConfirm"
@@ -149,7 +251,7 @@ function generateOn(slug: string) {
     <CinematicStage
       v-else
       :reel="modeReel"
-      :models
+      :models="[...models, ...editingModels]"
       :locale
       :starter
       @select="studio.select"
@@ -157,6 +259,7 @@ function generateOn(slug: string) {
       @again="generate"
       @reference="useAsReference"
       @animate="animate"
+      @edit="edit"
       @switch-model="generateOn"
       @edit-scene="focusScene"
     />

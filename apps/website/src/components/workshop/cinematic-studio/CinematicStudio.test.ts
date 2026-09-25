@@ -19,6 +19,7 @@ import {
 import { t } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
+import { runnableCinematicEditingModels } from '../../../lib/workshop/cinematic-studio/editing'
 import { runnableCinematicModels } from '../../../lib/workshop/cinematic-studio/models'
 import CinematicStudio from './CinematicStudio.vue'
 import CinematicStudioPage from './CinematicStudioPage.vue'
@@ -31,6 +32,9 @@ vi.mock(import('../../../config/router-render'), () => ({
 }))
 
 const models = runnableCinematicModels(getRouterWorkshopModelDetail)
+const editingModels = runnableCinematicEditingModels(
+  getRouterWorkshopModelDetail
+)
 const [first, second] = models
 
 const { fetchData } = vi.hoisted(() => ({ fetchData: vi.fn<typeof fetch>() }))
@@ -66,7 +70,12 @@ const credential: AccountCredential = {
 const signedIn = ref<AccountCredential>()
 
 function renderStudio(studioModels: readonly CinematicModel[] = models) {
-  render(CinematicStudio, { props: { models: studioModels } })
+  render(CinematicStudio, {
+    props: {
+      models: studioModels,
+      editingModels: studioModels.length ? editingModels : []
+    }
+  })
   return userEvent.setup()
 }
 
@@ -247,6 +256,73 @@ describe('CinematicStudio', () => {
     expect(values?.last_frame_url).toMatchObject({ file: lastFrame })
   })
 
+  it('reviews an edit with the selected source and preserves instructions when returning', async () => {
+    vi.mocked(router_render).mockImplementation(async (slug) => rendered(slug))
+    const user = renderStudio()
+    await user.type(screen.getByLabelText('Scene'), 'A traveler by the sea')
+    await user.click(generateButton())
+    await confirmShot(user)
+    await user.click(await screen.findByRole('button', { name: 'Edit image' }))
+    const editor = await screen.findByRole('dialog', {
+      name: 'Edit this frame'
+    })
+    await user.click(
+      within(editor).getByRole('button', { name: 'Camera view' })
+    )
+    const instruction = within(editor).getByRole('textbox', {
+      name: 'Edit instruction'
+    })
+    await user.clear(instruction)
+    await user.type(
+      instruction,
+      'Move the camera to the left. Keep the red coat.'
+    )
+    await user.click(within(editor).getByRole('button', { name: /Review/ }))
+    const review = screen.getByRole('dialog', { name: 'Review your shot' })
+    expect(review).toHaveTextContent('shot.png')
+    expect(review).toHaveTextContent('Keep the red coat.')
+    expect(router_render).toHaveBeenCalledTimes(1)
+    await user.click(
+      within(review).getByRole('button', { name: 'Back to editing' })
+    )
+    expect(instruction).toHaveValue(
+      'Move the camera to the left. Keep the red coat.'
+    )
+    await user.click(within(editor).getByRole('button', { name: /Review/ }))
+    await confirmShot(user)
+    await vi.waitFor(() => expect(router_render).toHaveBeenCalledTimes(2))
+    const [slug, parameters, options] = vi.mocked(router_render).mock.calls[1]
+    expect(slug).toContain('edit-images')
+    expect(parameters).toEqual({})
+    expect(options.form?.values.prompt).toContain('Keep the red coat.')
+    expect(options.form?.values.images).toEqual([
+      expect.objectContaining({ file: expect.any(File) })
+    ])
+  })
+
+  it('does not submit remaining variations after a provider failure', async () => {
+    vi.mocked(router_render).mockRejectedValue(
+      new WorkshopRouterError('provider')
+    )
+    const user = renderStudio()
+    await user.type(screen.getByLabelText('Scene'), 'A quiet harbor')
+    await addTake(user)
+    await user.click(generateButton())
+    await confirmShot(user)
+    await vi.waitFor(() => expect(router_render).toHaveBeenCalledTimes(1))
+    await user.click(
+      await screen.findByRole('button', {
+        name: tc('cinematic.stage.thumb')
+          .replace('{shot}', '1')
+          .replace('{take}', 'B')
+      })
+    )
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      t('workshop.output.cancelled')
+    )
+    expect(router_render).toHaveBeenCalledTimes(1)
+  })
+
   it('renders one Router request per take with the directed prompt', async () => {
     vi.mocked(router_render).mockImplementation(async (slug) => rendered(slug))
     const user = renderStudio()
@@ -321,13 +397,11 @@ describe('CinematicStudio', () => {
       ...credential,
       workspace: { ...credential.workspace, id: 'workspace-2' }
     }
-    await vi.waitFor(() =>
-      expect(
-        within(dialog).getByRole('button', { name: 'Generate shot' })
-      ).toBeDisabled()
-    )
+    await vi.waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    expect(dialog).not.toBeInTheDocument()
+    expect(screen.getByLabelText('Scene')).toHaveValue('')
     expect(router_render).not.toHaveBeenCalled()
-    await user.keyboard('{Escape}')
+    await user.type(screen.getByLabelText('Scene'), 'A lighthouse in a storm')
     await user.click(generateButton())
     await confirmShot(user)
     await screen.findByAltText(/A lighthouse in a storm/)

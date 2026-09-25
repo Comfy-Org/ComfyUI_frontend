@@ -3,6 +3,7 @@ import { Film, ImagePlus, RotateCcw } from '@lucide/vue'
 
 import type { Take } from '../../../lib/workshop/cinematic-studio/reel'
 import type { Locale } from '../../../i18n/translations'
+import { libraryCopy } from '../../../lib/workshop/cinematic-studio/library-copy'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 
 const { take, locale = 'en' } = defineProps<{
@@ -14,6 +15,7 @@ const emit = defineEmits<{
   again: []
   reference: [url: string, name: string]
   animate: [url: string, name: string]
+  edit: [url: string, name: string]
 }>()
 
 const actionClass =
@@ -25,6 +27,14 @@ const actionClass =
     <button type="button" :class="actionClass" @click="emit('again')">
       <RotateCcw class="size-3.5" aria-hidden="true" />
       {{ tc('cinematic.stage.again', locale) }}
+    </button>
+    <button
+      v-if="take.output.kind === 'image'"
+      type="button"
+      :class="actionClass"
+      @click="emit('edit', take.output.url, take.output.fileName)"
+    >
+      {{ libraryCopy('edit', locale) }}
     </button>
     <button
       v-if="take.output.kind === 'image'"

@@ -1,6 +1,14 @@
 import { useMounted } from '@vueuse/core'
-import { computed, onScopeDispose, readonly, shallowRef, watch } from 'vue'
+import {
+  computed,
+  onScopeDispose,
+  shallowReadonly,
+  shallowRef,
+  watch
+} from 'vue'
 
+import { cinematicEditingForm } from '../lib/workshop/cinematic-studio/editing'
+import type { CreationSettings } from '../lib/workshop/cinematic-studio/creations'
 import type { WorkshopModelDetail } from '../config/models-catalogue'
 import { fetchModelsPage } from '../config/models-page-data'
 import { router_render } from '../config/router-render'
@@ -34,7 +42,10 @@ export interface ShotRequest {
   readonly takes: number
   readonly references: readonly File[]
   readonly preview?: string
+  readonly settings?: CreationSettings
+  readonly seed?: number
   readonly video?: CinematicVideoSettings
+  readonly editing?: { readonly sourceFile: File; readonly resolution?: string }
 }
 
 /**
@@ -110,18 +121,29 @@ export function useCinematicStudioRun(modelCount: number) {
         throw new WorkshopRouterError('validation')
       const result = await router_render(
         model.slug,
-        request.video
+        request.video || request.editing
           ? {}
           : {
               prompt: request.prompt,
               aspect_ratio: request.aspect,
               resolution: request.resolutionPixels,
+              ...(request.seed !== undefined ? { seed: request.seed } : {}),
               ...(request.references.length
                 ? { reference_images: request.references }
                 : {})
             },
         {
           model,
+          ...(request.editing
+            ? {
+                form: cinematicEditingForm(model, {
+                  sourceFile: request.editing.sourceFile,
+                  prompt: request.prompt,
+                  aspect: request.aspect,
+                  resolution: request.editing.resolution
+                })
+              }
+            : {}),
           ...(request.video
             ? {
                 form: cinematicVideoForm(
@@ -148,12 +170,13 @@ export function useCinematicStudioRun(modelCount: number) {
       releaseRouterOutputs(result.outputs.slice(1))
       if (signal.aborted) {
         if (output) releaseRouterOutputs([output])
-        return
+        return false
       }
       if (!output) throw new WorkshopRouterError('response', result.requestId)
       dispatch({ type: 'takeSucceeded', id, output })
+      return true
     } catch (error) {
-      if (signal.aborted) return
+      if (signal.aborted) return false
       dispatch(
         error instanceof WorkshopRouterError
           ? {
@@ -164,6 +187,7 @@ export function useCinematicStudioRun(modelCount: number) {
             }
           : { type: 'takeFailed', id, reason: 'client' }
       )
+      return false
     }
   }
 
@@ -180,17 +204,27 @@ export function useCinematicStudioRun(modelCount: number) {
       modelSlug: request.modelSlug,
       aspect: request.aspect,
       startedAt: Date.now(),
-      preview: request.preview
+      preview: request.preview,
+      settings: request.settings
     })
     const attempt = new AbortController()
     controller = attempt
     try {
       const model = await loadModel(request.modelSlug)
-      await Promise.all(
-        ids.map((id) =>
-          renderTake(id, model, request, startedFor, attempt.signal)
+      for (const id of ids) {
+        if (attempt.signal.aborted) break
+        const completed = await renderTake(
+          id,
+          model,
+          request,
+          startedFor,
+          attempt.signal
         )
-      )
+        if (!completed) {
+          dispatch({ type: 'rendersCancelled' })
+          break
+        }
+      }
     } catch {
       if (!attempt.signal.aborted)
         ids.forEach((id) =>
@@ -211,7 +245,15 @@ export function useCinematicStudioRun(modelCount: number) {
   watch(
     () => [session.value?.uid, session.value?.workspace.id],
     ([uid, workspace], [previousUid, previousWorkspace]) => {
-      if (uid !== previousUid || workspace !== previousWorkspace) cancel()
+      if (uid !== previousUid || workspace !== previousWorkspace) {
+        cancel()
+        releaseRouterOutputs(
+          reel.value.takes.flatMap((take) =>
+            take.status === 'done' ? [take.output] : []
+          )
+        )
+        reel.value = EMPTY_REEL
+      }
     }
   )
 
@@ -225,7 +267,7 @@ export function useCinematicStudioRun(modelCount: number) {
   })
 
   return {
-    reel: readonly(reel),
+    reel: shallowReadonly(reel),
     gate,
     session,
     rendering,

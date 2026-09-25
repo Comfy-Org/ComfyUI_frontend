@@ -1,4 +1,5 @@
 import type { RunFailure, RunOutput } from '../../../config/workshop-run'
+import type { CreationSettings } from './creations'
 import type { AspectRatio } from './catalog'
 
 interface TakeBase {
@@ -10,6 +11,7 @@ interface TakeBase {
   readonly aspect: AspectRatio
   readonly startedAt: number
   readonly preview?: string
+  readonly settings?: CreationSettings
 }
 
 export type Take =
@@ -36,6 +38,7 @@ export type ReelEvent =
       readonly aspect: AspectRatio
       readonly startedAt: number
       readonly preview?: string
+      readonly settings?: CreationSettings
     }
   | {
       readonly type: 'takeSucceeded'
@@ -85,6 +88,7 @@ export function reduceReel(reel: Reel, event: ReelEvent): Reel {
         aspect: event.aspect,
         startedAt: event.startedAt,
         preview: event.preview,
+        settings: event.settings,
         status: 'rendering'
       }))
       return { takes: [...reel.takes, ...added], selectedId: added[0]?.id }

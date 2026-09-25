@@ -1,4 +1,19 @@
-import { computed, onMounted, ref, shallowRef } from 'vue'
+import {
+  defaultCreativeSettings,
+  creativePrompt,
+  validateCreativeSettings
+} from '../lib/workshop/cinematic-studio/creative'
+import { creationNamespace } from '../lib/workshop/cinematic-studio/creations'
+import type { SavedCreation } from '../lib/workshop/cinematic-studio/creations'
+import { useCinematicLibrary } from './useCinematicLibrary'
+import {
+  computed,
+  onMounted,
+  onScopeDispose,
+  ref,
+  shallowRef,
+  watch
+} from 'vue'
 
 import type {
   AspectRatio,
@@ -31,10 +46,34 @@ export interface CinematicReview {
 }
 
 /** The shot being directed, shared by every Cinematic Studio layout. */
-export function useCinematicShot(models: readonly CinematicModel[]) {
+export function useCinematicShot(
+  models: readonly CinematicModel[],
+  editingModels: readonly CinematicModel[] = []
+) {
   const studio = isCinematicDemo()
     ? useCinematicDemoRun()
-    : useCinematicStudioRun(models.length)
+    : useCinematicStudioRun(models.length + editingModels.length)
+
+  const namespace = computed(() =>
+    isCinematicDemo()
+      ? creationNamespace({ mode: 'demo' })
+      : studio.session.value
+        ? creationNamespace({
+            mode: 'live',
+            uid: studio.session.value.uid,
+            workspaceId: studio.session.value.workspace.id
+          })
+        : undefined
+  )
+  const library = useCinematicLibrary(
+    () => namespace.value,
+    () => studio.reel.value.takes
+  )
+  const creative = ref(defaultCreativeSettings())
+  const creativeOpen = ref(false)
+  const builderOpen = ref(false)
+  const libraryOpen = ref(false)
+  const restored = ref(false)
 
   const mode = ref<'image' | 'video'>('image')
   const imageModel = ref(
@@ -113,8 +152,97 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
     }
   })
   const audio = ref(false)
+  let mediaEpoch = 0
+  onScopeDispose(() => {
+    mediaEpoch += 1
+  })
+  const editSource = shallowRef<{ file: File; url: string; name: string }>()
+  function closeEdit() {
+    if (editSource.value) URL.revokeObjectURL(editSource.value.url)
+    editSource.value = undefined
+  }
+  onScopeDispose(closeEdit)
+  async function edit(url: string, name: string) {
+    if (studio.rendering.value || frameLoading.value || !editingModels.length)
+      return
+    const currentEpoch = mediaEpoch
+    frameLoading.value = true
+    frameError.value = false
+    try {
+      const response = await fetch(url)
+      if (!response.ok) throw new Error('Source unavailable')
+      const blob = await response.blob()
+      if (currentEpoch !== mediaEpoch) return
+      if (!['image/png', 'image/jpeg', 'image/webp'].includes(blob.type))
+        throw new Error('Unsupported source')
+      closeEdit()
+      editSource.value = {
+        file: new File([blob], name, { type: blob.type }),
+        name,
+        url: URL.createObjectURL(blob)
+      }
+    } catch {
+      if (currentEpoch === mediaEpoch) frameError.value = true
+    } finally {
+      if (currentEpoch === mediaEpoch) frameLoading.value = false
+    }
+  }
+  function reviewEdit(input: {
+    modelSlug: string
+    prompt: string
+    aspect: AspectRatio
+    sourceFile: File
+    operation: 'edit' | 'camera' | 'look' | 'relight'
+  }) {
+    const model = editingModels.find(
+      (candidate) => candidate.slug === input.modelSlug
+    )
+    if (!model || studio.rendering.value || studio.gate.value !== 'ready')
+      return
+    review.value = {
+      modelName: model.name,
+      resolution: '2K',
+      workspaceId: studio.session.value?.workspace.id,
+      userId: studio.session.value?.uid,
+      request: {
+        modelSlug: model.slug,
+        prompt: input.prompt,
+        aspect: input.aspect,
+        takes: 1,
+        resolutionPixels: 2048,
+        references: [input.sourceFile],
+        editing: { sourceFile: input.sourceFile, resolution: '2K' },
+        settings: {
+          mode: 'image',
+          scene: input.prompt,
+          enhance: false,
+          direction: { ...direction.value },
+          operation: input.operation,
+          aspect: input.aspect
+        }
+      }
+    }
+  }
   const frameLoading = ref(false)
   const frameError = ref(false)
+  watch(namespace, () => {
+    mediaEpoch += 1
+    closeEdit()
+    firstFrame.value = undefined
+    lastFrame.value = undefined
+    cast.value = undefined
+    palette.value = undefined
+    review.value = undefined
+    imageScene.value = ''
+    videoScene.value = ''
+    creative.value = defaultCreativeSettings()
+    direction.value = DEFAULT_DIRECTION
+    builderOpen.value = false
+    creativeOpen.value = false
+    libraryOpen.value = false
+    frameLoading.value = false
+    frameError.value = false
+  })
   const canReview = computed(
     () =>
       !!selectedModel.value &&
@@ -145,12 +273,14 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
       (candidate) => candidate.video?.firstFrame === 'required'
     )
     if (!model) return
+    const currentEpoch = mediaEpoch
     frameLoading.value = true
     frameError.value = false
     try {
       const response = await fetch(url)
       if (!response.ok) throw new Error('Starting frame unavailable')
       const blob = await response.blob()
+      if (currentEpoch !== mediaEpoch) return
       if (!['image/png', 'image/jpeg', 'image/webp'].includes(blob.type))
         throw new Error('Unsupported starting frame')
       firstFrame.value = new File([blob], name, { type: blob.type })
@@ -158,9 +288,9 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
       videoModel.value = model.slug
       mode.value = 'video'
     } catch {
-      frameError.value = true
+      if (currentEpoch === mediaEpoch) frameError.value = true
     } finally {
-      frameLoading.value = false
+      if (currentEpoch === mediaEpoch) frameLoading.value = false
     }
   }
 
@@ -189,7 +319,17 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
     cast: mode.value === 'image' && !!cast.value,
     palette: mode.value === 'image' && !!palette.value
   }))
-  const promptSegments = computed(() => cinematicPromptSegments(brief.value))
+  const promptSegments = computed(() => [
+    ...cinematicPromptSegments(brief.value),
+    ...(creativePrompt(creative.value, mode.value)
+      ? [
+          {
+            text: creativePrompt(creative.value, mode.value),
+            source: 'direction' as const
+          }
+        ]
+      : [])
+  ])
   const references = computed(() =>
     (mode.value === 'video'
       ? [
@@ -229,7 +369,12 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
       userId: studio.session.value?.uid,
       request: {
         modelSlug: modelSlug.value,
-        prompt: cinematicPrompt(brief.value),
+        prompt: [
+          cinematicPrompt(brief.value),
+          creativePrompt(creative.value, mode.value)
+        ]
+          .filter(Boolean)
+          .join(' '),
         aspect: aspect.value,
         resolutionPixels:
           RESOLUTIONS.find((option) => option.id === resolution.value)
@@ -253,6 +398,27 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
               }
             }
           : {}),
+        settings: {
+          creative: validateCreativeSettings(creative.value),
+          scene: scene.value,
+          mode: mode.value,
+          enhance: enhance.value,
+          direction: { ...direction.value },
+          aspect: aspect.value,
+          resolution: resolution.value,
+          takes: takeCount.value,
+          operation: 'generate',
+          ...(mode.value === 'video'
+            ? {
+                duration: duration.value,
+                video: {
+                  durationSeconds: duration.value,
+                  resolution: videoResolution.value,
+                  generateAudio: audio.value
+                }
+              }
+            : {})
+        },
         preview: directionOption('look', direction.value).preview
       }
     }
@@ -267,15 +433,62 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
       review.value.userId === studio.session.value?.uid
   )
 
+  function reuse(item: SavedCreation) {
+    if (
+      studio.rendering.value ||
+      (item.settings?.operation && item.settings.operation !== 'generate')
+    )
+      return
+    mode.value = item.kind
+    const supported = availableModels.value.find(
+      (model) => model.slug === item.modelSlug
+    )
+    if (supported) modelSlug.value = supported.slug
+    scene.value = item.settings?.scene ?? item.prompt
+    enhance.value = item.settings?.enhance ?? false
+    if (item.settings) direction.value = { ...item.settings.direction }
+    aspect.value = item.aspect
+    resolution.value = item.settings?.resolution ?? '2K'
+    takes.value = item.settings?.takes ?? 1
+    duration.value =
+      item.settings?.video?.durationSeconds ?? item.settings?.duration ?? 5
+    videoResolution.value = item.settings?.video?.resolution ?? '720p'
+    audio.value = item.settings?.video?.generateAudio ?? false
+    cast.value = undefined
+    palette.value = undefined
+    firstFrame.value = undefined
+    lastFrame.value = undefined
+    creative.value = item.settings?.creative
+      ? validateCreativeSettings(item.settings.creative)
+      : defaultCreativeSettings()
+    restored.value = true
+  }
+
   function confirm() {
     if (!review.value || !canConfirm.value) return
     const request = review.value.request
+    if (request.editing) {
+      closeEdit()
+      mode.value = 'image'
+    }
     review.value = undefined
     void studio.generate(request)
   }
 
   return {
     studio,
+    namespace,
+    creative,
+    creativeOpen,
+    builderOpen,
+    edit,
+    editSource,
+    closeEdit,
+    reviewEdit,
+    library,
+    libraryOpen,
+    reuse,
+    restored,
     mode,
     availableModels,
     selectedModel,

@@ -2,10 +2,14 @@
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import CinematicStudioPage from '../../components/workshop/cinematic-studio/CinematicStudioPage.vue'
 import { getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
+import { runnableCinematicEditingModels } from '../../lib/workshop/cinematic-studio/editing'
 import { runnableCinematicModels } from '../../lib/workshop/cinematic-studio/models'
 import { tc } from '../../lib/workshop/cinematic-studio/copy'
 
 const models = runnableCinematicModels(getRouterWorkshopModelDetail)
+const editingModels = runnableCinematicEditingModels(
+  getRouterWorkshopModelDetail
+)
 if (!models.length) throw new Error('Cinematic Studio has no runnable models')
 ---
 
@@ -14,7 +18,11 @@ if (!models.length) throw new Error('Cinematic Studio has no runnable models')
   description={tc('cinematic.meta.description')}
   noindex
 >
-  <CinematicStudioPage models={models} client:load />
+  <CinematicStudioPage
+    editingModels={editingModels}
+    models={models}
+    client:load
+  />
   <noscript>
     <p class="p-8 text-center">{tc('cinematic.unavailable.title')}</p>
   </noscript>

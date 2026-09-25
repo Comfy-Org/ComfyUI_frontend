@@ -1,5 +1,5 @@
 import { useMounted } from '@vueuse/core'
-import { computed, onScopeDispose, readonly, shallowRef } from 'vue'
+import { computed, onScopeDispose, shallowReadonly, shallowRef } from 'vue'
 
 import type { ShotRequest } from './useCinematicStudioRun'
 import type { RunFailure } from '../config/workshop-run'
@@ -35,6 +35,7 @@ const DEMO_FAILURES: Readonly<Record<string, RunFailure>> = {
 }
 
 interface DemoShot {
+  readonly settings?: ShotRequest['settings']
   readonly video?: ShotRequest['video']
   readonly modelSlug: string
   readonly prompt: string
@@ -106,7 +107,8 @@ export function useCinematicDemoRun() {
       modelSlug: shot.modelSlug,
       aspect: shot.aspect,
       startedAt: Date.now(),
-      preview: shot.preview
+      preview: shot.preview,
+      settings: shot.settings
     })
     const renderMs = scenario === 'slow' ? SLOW_RENDER_MS : DEMO_RENDER_MS
     ids.forEach((id, index) => {
@@ -130,7 +132,7 @@ export function useCinematicDemoRun() {
   onScopeDispose(cancel)
 
   return {
-    reel: readonly(reel),
+    reel: shallowReadonly(reel),
     gate,
     session: shallowRef<WorkshopSession>(),
     rendering,
