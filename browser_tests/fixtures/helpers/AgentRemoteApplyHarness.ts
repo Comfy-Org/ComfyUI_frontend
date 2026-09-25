@@ -245,8 +245,8 @@ export class AgentRemoteApplyHarness {
    */
   async reconnect(missedOps: RecordedGraphOperation[] = []): Promise<void> {
     const before = this.hostSocket.subscribeCount()
-    await this.hostSocket.disconnect()
     if (missedOps.length > 0) this.applyOnHost(missedOps)
+    await this.hostSocket.disconnect()
     await expect
       .poll(() => this.hostSocket.subscribeCount(), {
         message: 'the follower never resubscribed after the socket dropped',
