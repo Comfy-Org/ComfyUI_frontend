@@ -150,6 +150,210 @@ describe('native Router output handling', () => {
     }
   })
 
+  it.for([
+    {
+      name: 'prompt block',
+      response: { promptFeedback: { blockReason: 'SAFETY' } }
+    },
+    {
+      name: 'candidate image safety finish',
+      response: { candidates: [{ finishReason: 'IMAGE_SAFETY' }] }
+    },
+    {
+      name: 'candidate prohibited-content finish',
+      response: {
+        candidates: [{ finishReason: 'IMAGE_PROHIBITED_CONTENT' }]
+      }
+    }
+  ])(
+    'reports a successful HTTP response with $name as policy',
+    async ({ response }) => {
+      await expect(
+        parseRouterResponse(contract, Response.json(response))
+      ).rejects.toMatchObject({ reason: 'policy', stage: 'response' })
+    }
+  )
+
+  it.for([
+    {
+      name: 'error text',
+      response: { error: { code: 'content_filter', text: 'Request rejected' } }
+    },
+    {
+      name: 'an echoed request',
+      response: {
+        error: { code: 'content_filter' },
+        request: { text: 'Original prompt' }
+      }
+    },
+    {
+      name: 'an echoed prompt',
+      response: {
+        error: { code: 'content_filter' },
+        prompt: { text: 'Original prompt' }
+      }
+    },
+    {
+      name: 'a diagnostic media URL',
+      response: {
+        error: {
+          code: 'content_filter',
+          diagnostic: 'https://assets.example/rejected.png'
+        }
+      }
+    }
+  ])('does not treat $name as generated output', async ({ response }) => {
+    await expect(
+      parseRouterResponse(contract, Response.json(response))
+    ).rejects.toMatchObject({ reason: 'policy', stage: 'response' })
+  })
+
+  it.for([
+    {
+      name: 'a partially moderated Gemini candidate',
+      response: {
+        candidates: [
+          {
+            content: {
+              parts: [{ text: 'Here is the first half of the story' }]
+            },
+            finishReason: 'SAFETY'
+          }
+        ]
+      },
+      text: 'Here is the first half of the story'
+    },
+    {
+      name: 'a usable Gemini candidate beside a moderated candidate',
+      response: {
+        candidates: [
+          {
+            content: { parts: [{ text: 'A complete answer' }] },
+            finishReason: 'STOP'
+          },
+          { finishReason: 'IMAGE_SAFETY' }
+        ]
+      },
+      text: 'A complete answer'
+    },
+    {
+      name: 'an incomplete OpenAI response with partial text',
+      response: {
+        status: 'incomplete',
+        incomplete_details: { reason: 'content_filter' },
+        output: [
+          {
+            type: 'message',
+            content: [
+              { type: 'output_text', text: 'A partial but usable answer' }
+            ]
+          }
+        ]
+      },
+      text: 'A partial but usable answer'
+    }
+  ])('preserves $name', async ({ response, text }) => {
+    const outputs = await parseRouterResponse(contract, Response.json(response))
+    try {
+      expect(outputs).toHaveLength(1)
+      expect(outputs[0]).toMatchObject({
+        kind: 'text',
+        text: expect.stringContaining(text)
+      })
+    } finally {
+      releaseRouterOutputs(outputs)
+    }
+  })
+
+  it('keeps usable output from a partially moderated response', async () => {
+    const outputs = await parseRouterResponse(
+      contract,
+      Response.json({
+        results: [
+          { b64_json: png },
+          {
+            code: 'DataInspectionFailed',
+            message: 'Input data may contain inappropriate content.'
+          }
+        ]
+      })
+    )
+    try {
+      expect(outputs.map(({ kind }) => kind)).toEqual(['image', 'text'])
+    } finally {
+      releaseRouterOutputs(outputs)
+    }
+  })
+
+  it('classifies policy before rejecting a failed terminal status', async () => {
+    const selected = {
+      ...contract,
+      output: {
+        format: 'json' as const,
+        schema: { type: 'object' },
+        success: {
+          path: '/status',
+          values: ['ready'],
+          caseInsensitive: false
+        },
+        selectors: [
+          {
+            path: '/result/sample',
+            kind: 'image' as const,
+            encoding: 'url' as const
+          }
+        ]
+      }
+    }
+
+    await expect(
+      parseRouterResponse(
+        selected,
+        Response.json({
+          status: 'failed',
+          error: { code: 'content_filter' }
+        })
+      )
+    ).rejects.toMatchObject({ reason: 'policy', stage: 'response' })
+  })
+
+  it('classifies policy before rejecting a response that violates its output schema', async () => {
+    const selected = {
+      ...contract,
+      output: {
+        format: 'json' as const,
+        schema: {
+          type: 'object' as const,
+          required: ['result'],
+          properties: {
+            result: {
+              type: 'object' as const,
+              required: ['sample'],
+              properties: { sample: { type: 'string' as const } }
+            }
+          }
+        },
+        selectors: [
+          {
+            path: '/result/sample',
+            kind: 'image' as const,
+            encoding: 'url' as const
+          }
+        ]
+      }
+    }
+
+    await expect(
+      parseRouterResponse(
+        selected,
+        Response.json({
+          status: 'failed',
+          error: { code: 'content_filter' }
+        })
+      )
+    ).rejects.toMatchObject({ reason: 'policy', stage: 'response' })
+  })
+
   it('keeps declared text outputs visible beside media', async () => {
     const selected = workshopContractSchema.parse({
       ...contract,

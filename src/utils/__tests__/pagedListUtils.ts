@@ -6,7 +6,7 @@ export function mockPagedList<T>(overlay: Partial<PagedList<T>>): PagedList<T> {
     invalidate: async () => undefined,
     isLoading: false,
     items: [],
-    loadMore: async () => undefined,
+    loadMore: async () => false,
     loadNew: async () => undefined,
     ...overlay
   }

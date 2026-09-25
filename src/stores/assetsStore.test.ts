@@ -1,6 +1,6 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, watch } from 'vue'
+import { nextTick, toValue, watch } from 'vue'
 
 import { useAssetsStore } from '@/stores/assetsStore'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
@@ -9,6 +9,8 @@ import type {
   AssetResponse
 } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
+import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+import { api } from '@/scripts/api'
 
 // Mock the api module
 vi.mock<unknown>(import('@/scripts/api'), () => ({
@@ -17,6 +19,7 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
     internalURL: vi.fn((path) => `http://localhost:3000${path}`),
     apiURL: vi.fn((path) => `http://localhost:3000/api${path}`),
     addEventListener: vi.fn(),
+    fetchApi: vi.fn(),
     removeEventListener: vi.fn(),
     getServerFeature: vi.fn(() => false),
     user: 'test-user'
@@ -85,6 +88,80 @@ vi.mock<unknown>(
   })
 )
 
+function createHistoryPage(start: number): JobListItem[] {
+  return Array.from({ length: 200 }, (_, index) => {
+    const id = `job_${start + index}`
+    return {
+      id,
+      status: 'completed',
+      create_time: start + index,
+      priority: 0,
+      outputs_count: 1,
+      previewable_outputs_count: 1,
+      preview_output: {
+        filename: `${id}.png`,
+        mediaType: 'images',
+        nodeId: '1',
+        subfolder: '',
+        type: 'output'
+      }
+    }
+  })
+}
+
+describe('assetsStore - OSS history pagination', () => {
+  beforeEach(() => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => Response.json([]))
+    )
+  })
+
+  it('serializes refresh with pagination without skipping the next offset', async () => {
+    let resolveFirstPage!: (jobs: JobListItem[]) => void
+    const firstPage = new Promise<JobListItem[]>((resolve) => {
+      resolveFirstPage = resolve
+    })
+    vi.mocked(api.getHistory)
+      .mockImplementationOnce(() => firstPage)
+      .mockResolvedValueOnce([])
+    const store = useAssetsStore()
+
+    const refresh = store.outputAssets.invalidate()
+    const pagination = store.outputAssets.loadMore()
+    await vi.waitFor(() => expect(api.getHistory).toHaveBeenCalledTimes(1))
+
+    resolveFirstPage(createHistoryPage(0))
+    await Promise.all([refresh, pagination])
+
+    expect(
+      vi.mocked(api.getHistory).mock.calls.map(([, options]) => options)
+    ).toEqual([{ offset: 0 }, { offset: 200 }])
+  })
+
+  it('loads history pages until it finds the requested output asset', async () => {
+    vi.mocked(api.getHistory)
+      .mockResolvedValueOnce(createHistoryPage(0))
+      .mockResolvedValueOnce(createHistoryPage(200))
+    const store = useAssetsStore()
+
+    await expect(store.loadOutputAsset('job_200')).resolves.toBe(true)
+
+    expect(
+      vi.mocked(api.getHistory).mock.calls.map(([, options]) => options)
+    ).toEqual([{ offset: 0 }, { offset: 200 }])
+  })
+
+  it('stops looking when history has no more pages', async () => {
+    vi.mocked(api.getHistory).mockResolvedValueOnce([])
+    const store = useAssetsStore()
+
+    await expect(store.loadOutputAsset('missing-job')).resolves.toBe(false)
+
+    expect(api.getHistory).toHaveBeenCalledOnce()
+  })
+})
+
 describe('assetsStore - Model Assets Cache (Cloud)', () => {
   beforeEach(() => {
     mockIsCloud.value = true
@@ -113,6 +190,39 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
     total: assets.length,
     has_more: page.has_more ?? false,
     ...(page.next_cursor === undefined ? {} : { next_cursor: page.next_cursor })
+  })
+
+  it('bounds output lookup when pagination never reports exhaustion', async () => {
+    let outputPage = 0
+    vi.mocked(api.fetchApi).mockImplementation(async (url) => {
+      const isInputQuery = url.includes('tags_any=input')
+      const body: AssetResponse = isInputQuery
+        ? makePage([])
+        : makePage(
+            [
+              fromPartial<AssetItem>({
+                id: `output-${++outputPage}`,
+                name: `output-${outputPage}.png`,
+                loader_path: `output-${outputPage}.png`,
+                tags: ['output'],
+                created_at: '2026-09-22T00:00:00Z',
+                updated_at: '2026-09-22T00:00:00Z'
+              })
+            ],
+            { has_more: true, next_cursor: `page-${outputPage + 1}` }
+          )
+      return new Response(JSON.stringify(body), {
+        headers: { 'Content-Type': 'application/json' }
+      })
+    })
+    const store = useAssetsStore()
+    await vi.waitFor(() =>
+      expect(toValue(store.outputAssets.isLoading)).toBe(false)
+    )
+
+    await expect(store.loadOutputAsset('missing-output')).resolves.toBe(false)
+
+    expect(outputPage).toBe(21)
   })
 
   describe('getAssets cache invalidation', () => {

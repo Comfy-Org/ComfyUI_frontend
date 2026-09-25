@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
@@ -8,25 +9,12 @@ import {
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 
-vi.mock<unknown>(import('@/renderer/core/layout/store/layoutStore'), () => ({
-  layoutStore: {
-    querySlotAtPoint: vi.fn(),
-    queryRerouteAtPoint: vi.fn(),
-    queryLinkSegmentAtPoint: vi.fn(),
-    getNodeLayoutRef: vi.fn(() => ({ value: null })),
-    getNodeLayout: vi.fn(),
-    getSlotLayout: vi.fn(),
-    setSource: vi.fn(),
-    batchUpdateNodeBounds: vi.fn(),
-    applyOperation: vi.fn(),
-    allocateZIndex: vi.fn(() => 0),
-    readNodeRect: vi.fn(() => false),
-    contentSizeOf: vi.fn(),
-    getGroupLayout: vi.fn()
-  }
-}))
+vi.mock(import('@/renderer/core/layout/store/layoutStore'))
+
+const CLONABLE_NODE_TYPE = 'test/clonable'
 
 function createHarness() {
   const canvasElement = document.createElement('canvas')
@@ -59,11 +47,54 @@ function createHarness() {
   return { canvas, graph, firstNode, secondNode }
 }
 
+function createRenderedLink(harness: ReturnType<typeof createHarness>) {
+  const { canvas, firstNode, secondNode } = harness
+  firstNode.addOutput('out', 'number')
+  secondNode.addInput('in', 'number')
+  const link = firstNode.connect(0, secondNode, 0)
+  if (!link) throw new Error('link was not created')
+  canvas.renderedPaths.add(link)
+  vi.mocked(layoutStore.queryLinkSegmentAtPoint).mockReturnValue({
+    linkId: link.id,
+    rerouteId: null
+  })
+  return link
+}
+
 describe('LGraphCanvas selectOnly', () => {
   beforeEach(() => {
     LiteGraph.vueNodesMode = false
     LiteGraph.middle_click_slot_add_default_node = false
+    LiteGraph.alt_drag_do_clone_nodes = false
+    LiteGraph.registerNodeType(CLONABLE_NODE_TYPE, LGraphNode)
   })
+
+  it.for([
+    { selectOnly: false, nodeCount: 4 },
+    { selectOnly: true, nodeCount: 3 }
+  ])(
+    'alt-click with selectOnly=$selectOnly leaves $nodeCount nodes on the graph',
+    ({ selectOnly, nodeCount }) => {
+      const { canvas, graph } = createHarness()
+      const clonable = LiteGraph.createNode(CLONABLE_NODE_TYPE)
+      if (!clonable) throw new Error('clonable node type is not registered')
+      clonable.pos = [700, 100]
+      graph.add(clonable)
+      LiteGraph.alt_drag_do_clone_nodes = true
+      canvas.selectOnly = selectOnly
+
+      canvas['_processPrimaryButton'](
+        fromPartial<CanvasPointerEvent>({
+          canvasX: 710,
+          canvasY: 110,
+          altKey: true
+        }),
+        clonable
+      )
+
+      expect(graph.nodes).toHaveLength(nodeCount)
+    }
+  )
 
   it('accumulates ordinary node clicks and toggles a clicked node off', () => {
     const { canvas, firstNode, secondNode } = createHarness()
@@ -105,12 +136,12 @@ describe('LGraphCanvas selectOnly', () => {
 
   it('keeps collapse clicks as node selection clicks', () => {
     const { canvas, firstNode } = createHarness()
-    const event = { canvasX: 110, canvasY: 80 } as CanvasPointerEvent
+    const event = fromPartial<CanvasPointerEvent>({ canvasX: 110, canvasY: 80 })
     const collapseSpy = vi.spyOn(firstNode, 'collapse')
     canvas.selectOnly = true
 
     expect(firstNode.isPointInCollapse(event.canvasX, event.canvasY)).toBe(true)
-    canvas['_processNodeClick'](event, false, firstNode)
+    canvas['_processPrimaryButton'](event, firstNode)
     canvas.pointer.onClick?.(event)
 
     expect(collapseSpy).not.toHaveBeenCalled()
@@ -155,19 +186,20 @@ describe('LGraphCanvas selectOnly', () => {
   it('does not resize groups', () => {
     const { canvas, graph } = createHarness()
     const group = new LGraphGroup('Group')
-    const event = { canvasX: 399, canvasY: 399 } as CanvasPointerEvent
+    const event = fromPartial<CanvasPointerEvent>({
+      canvasX: 399,
+      canvasY: 399
+    })
     group._bounding.set([300, 300, 100, 100])
     graph.add(group)
     const resizeSpy = vi.spyOn(group, 'resize')
     canvas.selectOnly = true
 
     canvas['_processPrimaryButton'](event, undefined)
-    canvas.pointer.onDrag?.({
-      canvasX: 450,
-      canvasY: 450
-    } as CanvasPointerEvent)
+    canvas.pointer.onDrag?.(
+      fromPartial<CanvasPointerEvent>({ canvasX: 450, canvasY: 450 })
+    )
 
-    expect(canvas.pointer.onDrag).toBeDefined()
     expect(resizeSpy).not.toHaveBeenCalled()
   })
 
@@ -179,7 +211,7 @@ describe('LGraphCanvas selectOnly', () => {
     canvas.selectOnly = true
 
     canvas['_processMiddleButton'](
-      { canvasX, canvasY } as CanvasPointerEvent,
+      fromPartial<CanvasPointerEvent>({ canvasX, canvasY }),
       firstNode
     )
 
@@ -188,21 +220,34 @@ describe('LGraphCanvas selectOnly', () => {
 
   it('selects nodes without starting a drag', () => {
     const { canvas, firstNode } = createHarness()
+    const event = fromPartial<CanvasPointerEvent>({
+      canvasX: 150,
+      canvasY: 140
+    })
     canvas.allow_dragnodes = true
     canvas.selectOnly = true
 
-    canvas['_startDraggingItems'](firstNode, canvas.pointer, true)
+    canvas['_processPrimaryButton'](event, firstNode)
+    canvas.pointer.onDragStart?.(canvas.pointer)
+    canvas.pointer.onClick?.(event)
 
     expect(canvas.selectedItems).toEqual(new Set([firstNode]))
+    expect(canvas.pointer.onDragStart).toBeUndefined()
     expect(canvas.isDragging).toBe(false)
   })
 
   it('does not start dragging groups', () => {
-    const { canvas } = createHarness()
+    const { canvas, graph } = createHarness()
     const group = new LGraphGroup('Group')
+    group._bounding.set([300, 300, 100, 100])
+    graph.add(group)
     canvas.selectOnly = true
 
-    canvas['_startDraggingItems'](group, canvas.pointer, true)
+    canvas['_processPrimaryButton'](
+      fromPartial<CanvasPointerEvent>({ canvasX: 350, canvasY: 310 }),
+      undefined
+    )
+    canvas.pointer.onDragStart?.(canvas.pointer)
 
     expect(group.selected).toBeFalsy()
     expect(canvas.isDragging).toBe(false)
@@ -219,7 +264,7 @@ describe('LGraphCanvas selectOnly', () => {
 
   it('retains the normal replace-and-clear selection behavior when disabled', () => {
     const { canvas, firstNode, secondNode } = createHarness()
-    const event = {} as CanvasPointerEvent
+    const event = fromPartial<CanvasPointerEvent>({})
 
     canvas.processSelect(firstNode, event)
     canvas.processSelect(secondNode, event)
@@ -240,4 +285,206 @@ describe('LGraphCanvas selectOnly', () => {
     expect(canvas.selectedItems.size).toBe(0)
     expect(firstNode.selected).toBe(false)
   })
+
+  it.for([
+    { selectOnly: false, snaps: 1 },
+    { selectOnly: true, snaps: 0 }
+  ])(
+    'ending a group title-bar drag with selectOnly=$selectOnly snaps the selected items $snaps times',
+    ({ selectOnly, snaps }) => {
+      const { canvas, graph } = createHarness()
+      const group = new LGraphGroup('Group')
+      group._bounding.set([300, 300, 100, 100])
+      graph.add(group)
+      const snapToGrid = vi.spyOn(graph, 'snapToGrid')
+      canvas.selectOnly = selectOnly
+
+      canvas['_processPrimaryButton'](
+        fromPartial<CanvasPointerEvent>({ canvasX: 350, canvasY: 310 }),
+        undefined
+      )
+      canvas.pointer.onDragEnd?.(
+        fromPartial<CanvasPointerEvent>({ shiftKey: true })
+      )
+
+      expect(snapToGrid).toHaveBeenCalledTimes(snaps)
+    }
+  )
+
+  it.for([
+    { selectOnly: false, reorders: 1 },
+    { selectOnly: true, reorders: 0 }
+  ])(
+    'clicking a node with selectOnly=$selectOnly brings it to the front $reorders times',
+    ({ selectOnly, reorders }) => {
+      const { canvas, firstNode } = createHarness()
+      const bringToFront = vi
+        .spyOn(canvas, 'bringToFront')
+        .mockImplementation(() => {})
+      canvas.selectOnly = selectOnly
+
+      canvas['_processPrimaryButton'](
+        fromPartial<CanvasPointerEvent>({ canvasX: 150, canvasY: 140 }),
+        firstNode
+      )
+
+      expect(bringToFront).toHaveBeenCalledTimes(reorders)
+    }
+  )
+
+  it.for([
+    { selectOnly: false, searchBoxes: 1 },
+    { selectOnly: true, searchBoxes: 0 }
+  ])(
+    'double-clicking empty canvas with selectOnly=$selectOnly opens the node search $searchBoxes times',
+    ({ selectOnly, searchBoxes }) => {
+      const { canvas } = createHarness()
+      const showSearchBox = vi
+        .spyOn(canvas, 'showSearchBox')
+        .mockReturnValue(document.createElement('div'))
+      const event = fromPartial<CanvasPointerEvent>({
+        canvasX: 700,
+        canvasY: 500,
+        preventDefault: vi.fn()
+      })
+      canvas.selectOnly = selectOnly
+
+      canvas['_processPrimaryButton'](event, undefined)
+      canvas.pointer.onDoubleClick?.(event)
+
+      expect(showSearchBox).toHaveBeenCalledTimes(searchBoxes)
+      expect(canvas.pointer.onClick).toBeDefined()
+    }
+  )
+
+  it.for([
+    { selectOnly: false, events: 1 },
+    { selectOnly: true, events: 0 }
+  ])(
+    'double-clicking a group body with selectOnly=$selectOnly emits group-double-click $events times',
+    ({ selectOnly, events }) => {
+      const { canvas, graph } = createHarness()
+      const group = new LGraphGroup('Group')
+      group._bounding.set([300, 300, 100, 100])
+      graph.add(group)
+      const emitEvent = vi.spyOn(canvas, 'emitEvent')
+      const event = fromPartial<CanvasPointerEvent>({
+        canvasX: 350,
+        canvasY: 360
+      })
+      canvas.selectOnly = selectOnly
+
+      canvas['_processPrimaryButton'](event, undefined)
+      canvas.pointer.onDoubleClick?.(event)
+
+      expect(emitEvent).toHaveBeenCalledTimes(events)
+    }
+  )
+
+  it.for([
+    {
+      selectOnly: false,
+      modifiers: { shiftKey: true, altKey: false },
+      linkDrags: 1,
+      reroutes: 0
+    },
+    {
+      selectOnly: true,
+      modifiers: { shiftKey: true, altKey: false },
+      linkDrags: 0,
+      reroutes: 0
+    },
+    {
+      selectOnly: false,
+      modifiers: { shiftKey: false, altKey: true },
+      linkDrags: 0,
+      reroutes: 1
+    },
+    {
+      selectOnly: true,
+      modifiers: { shiftKey: false, altKey: true },
+      linkDrags: 0,
+      reroutes: 0
+    }
+  ])(
+    'clicking a link with $modifiers and selectOnly=$selectOnly starts $linkDrags link drags and creates $reroutes reroutes',
+    ({ selectOnly, modifiers, linkDrags, reroutes }) => {
+      const harness = createHarness()
+      const { canvas, graph } = harness
+      createRenderedLink(harness)
+      const dragFromLinkSegment = vi
+        .spyOn(canvas.linkConnector, 'dragFromLinkSegment')
+        .mockImplementation(() => {})
+      canvas.selectOnly = selectOnly
+
+      canvas['_processPrimaryButton'](
+        fromPartial<CanvasPointerEvent>({
+          canvasX: 300,
+          canvasY: 140,
+          ...modifiers
+        }),
+        undefined
+      )
+
+      expect(dragFromLinkSegment).toHaveBeenCalledTimes(linkDrags)
+      expect(graph.reroutes.size).toBe(reroutes)
+    }
+  )
+
+  it.for([
+    { selectOnly: false, linkDrags: 1 },
+    { selectOnly: true, linkDrags: 0 }
+  ])(
+    'shift-clicking a reroute with selectOnly=$selectOnly starts $linkDrags link drags',
+    ({ selectOnly, linkDrags }) => {
+      const harness = createHarness()
+      const { canvas, graph } = harness
+      const link = createRenderedLink(harness)
+      const reroute = graph.createReroute([300, 300], link)
+      if (!reroute) throw new Error('reroute was not created')
+      canvas._visibleReroutes.add(reroute)
+      const dragFromReroute = vi
+        .spyOn(canvas.linkConnector, 'dragFromReroute')
+        .mockImplementation(() => {})
+      canvas.selectOnly = selectOnly
+
+      canvas['_processPrimaryButton'](
+        fromPartial<CanvasPointerEvent>({
+          canvasX: 300,
+          canvasY: 300,
+          shiftKey: true
+        }),
+        undefined
+      )
+
+      expect(dragFromReroute).toHaveBeenCalledTimes(linkDrags)
+    }
+  )
+
+  it.for([
+    { type: 'keydown', selectOnly: false, calls: 1 },
+    { type: 'keydown', selectOnly: true, calls: 0 },
+    { type: 'keyup', selectOnly: false, calls: 1 },
+    { type: 'keyup', selectOnly: true, calls: 0 }
+  ] as const)(
+    '$type with selectOnly=$selectOnly reaches the selected node callback $calls times',
+    ({ type, selectOnly, calls }) => {
+      const { canvas, firstNode } = createHarness()
+      const callback = vi.fn()
+      firstNode[type === 'keydown' ? 'onKeyDown' : 'onKeyUp'] = callback
+      canvas.select(firstNode)
+      canvas.selectOnly = selectOnly
+
+      canvas.processKey(
+        fromPartial<KeyboardEvent>({
+          type,
+          key: 'ArrowRight',
+          shiftKey: false,
+          target: canvas.canvas
+        })
+      )
+
+      expect(callback).toHaveBeenCalledTimes(calls)
+    }
+  )
 })

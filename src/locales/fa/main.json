@@ -2008,6 +2008,7 @@
     "removeAll": "حذف همه",
     "removeAllKeybindingsMessage": "همه کلیدهای میانبر این فرمان حذف خواهند شد",
     "removeAllKeybindingsTitle": "حذف همه کلیدهای میانبر؟",
+    "removeFilter": "حذف فیلتر {label}",
     "removeImage": "حذف تصویر",
     "removeKeybinding": "حذف کلید میانبر",
     "removeTag": "حذف برچسب",
@@ -2222,8 +2223,10 @@
     "star": "ستاره"
   },
   "imageCompare": {
+    "afterAlt": "تصویر پس از",
     "batchLabelA": "A:",
     "batchLabelB": "B:",
+    "beforeAlt": "تصویر پیش از",
     "noImages": "تصویری برای مقایسه وجود ندارد"
   },
   "imageCrop": {
@@ -2758,6 +2761,9 @@
     "installationQueue": "صف نصب",
     "installingDependencies": "در حال نصب وابستگی‌ها...",
     "lastUpdated": "آخرین به‌روزرسانی",
+    "latestActive": "آخرین فعال",
+    "latestInstallable": "آخرین قابل نصب",
+    "latestStableVersion": "آخرین پایدار",
     "latestVersion": "آخرین نسخه",
     "legacyManagerSearchTip": "دنبال ComfyUI-Manager هستید؟ می‌توانید رابط کاربری مدیر قدیمی را با اجرای ComfyUI و استفاده از پرچم --enable-manager-legacy-ui فعال کنید.",
     "legacyManagerUI": "استفاده از رابط کاربری قدیمی",
@@ -2779,10 +2785,13 @@
       "updatesAvailable": "به‌روزرسانی‌های موجود"
     },
     "nightlyVersion": "نسخه nightly",
+    "noActiveVersions": "این بسته هیچ انتشار فعالی ندارد.",
+    "noActiveVersionsFlagged": "این بسته هیچ انتشار فعالی ندارد. برای درخواست نصب، یک انتشار علامت‌گذاری‌شده را انتخاب کنید؛ این درخواست مشروط به تنظیمات امنیتی Manager است.",
     "noDescription": "توضیحی موجود نیست",
     "noNodesFound": "نودی یافت نشد",
     "noNodesFoundDescription": "نودهای این بسته قابل تجزیه نبودند یا این بسته فقط یک افزونه فرانت‌اند است و نودی ندارد.",
     "noResultsFound": "نتیجه‌ای مطابق با جستجوی شما یافت نشد.",
+    "noUpdateVersion": "هیچ انتشاری برای گزینه به‌روزرسانی انتخاب‌شده موجود نیست.",
     "nodePack": "بسته نود",
     "nodePackInfo": "اطلاعات Node Pack",
     "notAvailable": "در دسترس نیست",
@@ -2790,9 +2799,11 @@
       "nodeIdRequired": "شناسه node برای نصب الزامی است"
     },
     "packsSelected": "بسته انتخاب شد",
+    "queueWaitingToContinue": "وظایف در انتظار هستند. برای ادامه دوباره تلاش کنید.",
     "repository": "مخزن",
     "restartToApplyChanges": "برای اعمال تغییرات، لطفاً ComfyUI را مجدداً راه‌اندازی کنید",
     "restartingBackend": "در حال راه‌اندازی مجدد backend برای اعمال تغییرات...",
+    "retryQueueStart": "تلاش مجدد",
     "searchPlaceholder": "جستجو",
     "selectVersion": "انتخاب نسخه",
     "selected": "انتخاب شده",
@@ -2833,9 +2844,15 @@
     },
     "update": "به‌روزرسانی",
     "updateAll": "به‌روزرسانی همه",
+    "updateFailed": "تغییر نسخه بسته ممکن نشد. لطفاً دوباره تلاش کنید.",
+    "updateLatestActiveTooltip": "تغییر به آخرین نسخه فعال (پیش‌فرض).",
+    "updateLatestInstallableTooltip": "تغییر به آخرین نسخه قابل نصب، شامل انتشارهای علامت‌گذاری‌شده و در انتظار. تنظیمات امنیتی Manager همچنان اعمال می‌شوند.",
+    "updateOptions": "گزینه‌های به‌روزرسانی",
     "updateSelected": "به‌روزرسانی انتخاب‌شده‌ها",
+    "updateVersionInstalled": "نسخه {version} از قبل نصب شده است.",
     "updatingAllPacks": "در حال به‌روزرسانی همه بسته‌ها",
-    "version": "نسخه"
+    "version": "نسخه",
+    "versionLoadFailed": "نسخه‌ها بارگذاری نشدند. این انتخاب‌گر را ببندید و دوباره تلاش کنید."
   },
   "maskEditor": {
     "activateLayer": "فعال‌سازی لایه",
@@ -4794,6 +4811,7 @@
     },
     "clearAllFilters": "حذف همه فیلترها",
     "error": {
+      "loading": "باز کردن الگو ممکن نشد. لطفاً دوباره تلاش کنید.",
       "templateNotFound": "قالب \"{templateName}\" یافت نشد"
     },
     "filtersApplied": "{count} فیلتر اعمال شد | {count} فیلتر اعمال شدند",
@@ -5074,6 +5092,7 @@
   },
   "workspace": {
     "addedToWorkspace": "شما به این مورد افزوده شده‌اید:",
+    "deepLinkStayed": "باز کردن آن فضای کاری ممکن نشد. همچنان در {workspaceName} هستید.",
     "inviteAccepted": "دعوت پذیرفته شد",
     "inviteFailed": "پذیرش دعوت ناموفق بود",
     "switchFailed": "تغییر ورک‌اسپیس ناموفق بود. لطفاً دوباره تلاش کنید.",

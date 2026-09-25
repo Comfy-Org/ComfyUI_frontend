@@ -80,7 +80,7 @@ const asPagedList = (items: AssetItem[]) =>
     invalidate: async () => {},
     isLoading: false,
     items,
-    loadMore: async () => {},
+    loadMore: async () => false,
     loadNew: async () => {}
   }) satisfies PagedList<AssetItem>
 

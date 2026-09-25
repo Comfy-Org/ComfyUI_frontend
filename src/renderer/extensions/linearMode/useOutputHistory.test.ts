@@ -70,7 +70,9 @@ function makeResult(
 
 let mockOutputAssets!: PagedList<AssetItem>
 beforeEach(() => {
-  mockOutputAssets = mockPagedList({ loadMore: vi.fn() })
+  mockOutputAssets = mockPagedList({
+    loadMore: vi.fn().mockResolvedValue(false)
+  })
   Object.assign(useAssetsStore(), { outputAssets: mockOutputAssets })
   vi.mocked(useLinearOutputStore().selectAsLatest).mockImplementation(
     () => undefined

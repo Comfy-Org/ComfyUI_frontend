@@ -4,9 +4,11 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 
 import PrimeVue from 'primevue/config'
-import { ref } from 'vue'
+import { reactive, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 
 import FormDropdown from './FormDropdown.vue'
 import { DROPDOWN_PANEL_CLASS } from './shared'
@@ -18,16 +20,7 @@ function createItem(id: string, name: string): FormDropdownItem {
 
 const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
 
-const transformState = vi.hoisted(() => ({ camera: { x: 0, y: 0, z: 1 } }))
-
-vi.mock<unknown>(
-  import('@/renderer/core/layout/transform/useTransformState'),
-  async () => {
-    const { reactive } = await import('vue')
-    transformState.camera = reactive(transformState.camera)
-    return { useTransformState: () => ({ camera: transformState.camera }) }
-  }
-)
+vi.mock(import('@/renderer/core/layout/transform/useTransformState'))
 
 const MockFormDropdownMenu = {
   name: 'FormDropdownMenu',
@@ -142,12 +135,6 @@ beforeEach(() => {
 })
 
 describe('FormDropdown', () => {
-  beforeEach(() => {
-    transformState.camera.x = 0
-    transformState.camera.y = 0
-    transformState.camera.z = 1
-  })
-
   describe('filteredItems updates when items prop changes', () => {
     it('updates displayed items when items prop changes', async () => {
       const { rerender, user } = mountDropdown([
@@ -441,6 +428,8 @@ describe('FormDropdown', () => {
   })
 
   it('closes when the canvas viewport moves', async () => {
+    const camera = reactive({ x: 0, y: 0, z: 1 })
+    vi.mocked(useTransformState()).camera = camera
     const onUpdateIsOpen = vi.fn()
     const { user } = mountDropdown([createItem('1', 'alpha')], {
       onUpdateIsOpen
@@ -449,7 +438,7 @@ describe('FormDropdown', () => {
 
     expect(onUpdateIsOpen).toHaveBeenLastCalledWith(true)
 
-    transformState.camera.x += 77
+    camera.x += 77
     await flushPromises()
 
     expect(onUpdateIsOpen).toHaveBeenLastCalledWith(false)

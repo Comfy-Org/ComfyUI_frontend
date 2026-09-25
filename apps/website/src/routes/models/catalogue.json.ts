@@ -1,5 +1,5 @@
-import { workshopModels } from '../../config/workshop-browse-content'
+import { workshopPages } from '../../config/workshop-page-content'
 
 export function GET() {
-  return Response.json(workshopModels)
+  return Response.json(workshopPages)
 }
