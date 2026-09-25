@@ -268,7 +268,7 @@ const paywallCapabilities = vi.hoisted(() => ({
 const paywallBilling = vi.hoisted(() => ({
   tier: 'STANDARD' as SubscriptionTier | null
 }))
-const paywallHasFunds = ref(false)
+const paywallHasFunds = ref<boolean | null>(false)
 
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'), {
   spy: true
@@ -335,7 +335,9 @@ beforeEach(() => {
   vi.mocked(useBillingContext).mockReturnValue(
     fromPartial({
       subscription: computed(() =>
-        fromPartial({ hasFunds: paywallHasFunds.value })
+        paywallHasFunds.value === null
+          ? null
+          : fromPartial({ hasFunds: paywallHasFunds.value })
       ),
       tier: computed(() => paywallBilling.tier)
     })
@@ -784,6 +786,98 @@ describe('AgentPanelRoot paywall actions', () => {
 
     await vi.waitFor(() =>
       expect(screen.queryByText('Out of credits')).not.toBeInTheDocument()
+    )
+  })
+
+  it('dismisses an existing paywall when remounting after a top-up', async () => {
+    paywallCapabilities.canTopUp = false
+    const panel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentConversationStore().recordPaywall(
+      toTurnId('msg-paywall'),
+      'continue'
+    )
+    expect(
+      await screen.findByRole('button', { name: 'Subscribe' })
+    ).toBeInTheDocument()
+
+    panel.unmount()
+    paywallHasFunds.value = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await vi.waitFor(() =>
+      expect(screen.queryByText('Out of credits')).not.toBeInTheDocument()
+    )
+  })
+
+  it('shows a fresh denial while the cached billing state still has funds', async () => {
+    paywallCapabilities.canTopUp = false
+    paywallHasFunds.value = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    expect(await screen.findByRole('textbox')).toBeInTheDocument()
+
+    useAgentConversationStore().recordPaywall(
+      toTurnId('msg-paywall'),
+      'render one more frame'
+    )
+
+    expect(
+      await screen.findByRole('button', { name: 'Subscribe' })
+    ).toBeInTheDocument()
+  })
+
+  it('keeps a resolved paywall hidden while billing state is unknown', async () => {
+    paywallCapabilities.canTopUp = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentConversationStore().recordPaywall(
+      toTurnId('msg-paywall'),
+      'continue'
+    )
+    expect(
+      await screen.findByRole('button', { name: 'Subscribe' })
+    ).toBeInTheDocument()
+
+    paywallHasFunds.value = true
+    await vi.waitFor(() =>
+      expect(
+        screen.queryByRole('button', { name: 'Subscribe' })
+      ).not.toBeInTheDocument()
+    )
+
+    paywallHasFunds.value = null
+    await nextTick()
+    expect(screen.queryByText('Out of credits')).not.toBeInTheDocument()
+  })
+
+  it('shows only a new denial after funds run out again', async () => {
+    paywallCapabilities.canTopUp = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentConversationStore().recordPaywall(
+      toTurnId('msg-paywall'),
+      'continue'
+    )
+    expect(
+      await screen.findByRole('button', { name: 'Subscribe' })
+    ).toBeInTheDocument()
+
+    paywallHasFunds.value = true
+    await vi.waitFor(() =>
+      expect(
+        screen.queryByRole('button', { name: 'Subscribe' })
+      ).not.toBeInTheDocument()
+    )
+
+    paywallHasFunds.value = false
+    await nextTick()
+    expect(screen.queryByText('Out of credits')).not.toBeInTheDocument()
+
+    useAgentConversationStore().recordPaywall(
+      toTurnId('msg-paywall-2'),
+      'try again'
+    )
+    await vi.waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Subscribe' })
+      ).toBeInTheDocument()
     )
   })
 
