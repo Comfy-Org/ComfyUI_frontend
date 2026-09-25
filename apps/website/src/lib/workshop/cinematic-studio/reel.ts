@@ -49,6 +49,11 @@ export type ReelEvent =
       readonly requestId?: string
     }
   | { readonly type: 'rendersCancelled' }
+  | {
+      readonly type: 'takeRetried'
+      readonly id: string
+      readonly startedAt: number
+    }
   | { readonly type: 'selected'; readonly id: string }
 
 export const EMPTY_REEL: Reel = { takes: [] }
@@ -69,6 +74,21 @@ function settle(
     takes: reel.takes.map((take) =>
       take.id === id && take.status === 'rendering' ? settleTake(take) : take
     )
+  }
+}
+
+function restart(take: Take, startedAt: number): Take {
+  const { id, shot, letter, prompt, modelSlug, aspect, preview } = take
+  return {
+    id,
+    shot,
+    letter,
+    prompt,
+    modelSlug,
+    aspect,
+    preview,
+    startedAt,
+    status: 'rendering'
   }
 }
 
@@ -108,6 +128,16 @@ export function reduceReel(reel: Reel, event: ReelEvent): Reel {
         takes: reel.takes.map((take) =>
           take.status === 'rendering' ? { ...take, status: 'cancelled' } : take
         )
+      }
+    case 'takeRetried':
+      return {
+        takes: reel.takes.map((take) =>
+          take.id === event.id &&
+          (take.status === 'failed' || take.status === 'cancelled')
+            ? restart(take, event.startedAt)
+            : take
+        ),
+        selectedId: event.id
       }
     case 'selected':
       return reel.takes.some((take) => take.id === event.id)

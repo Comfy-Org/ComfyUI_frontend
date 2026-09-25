@@ -112,6 +112,16 @@ export function useCinematicDemoRun() {
     })
   }
 
+  function retry(id: string) {
+    if (rendering.value) return
+    dispatch({ type: 'takeRetried', id, startedAt: Date.now() })
+    const timer = setTimeout(() => {
+      timers.delete(timer)
+      settle(id, 0, null)
+    }, DEMO_RENDER_MS)
+    timers.add(timer)
+  }
+
   function cancel() {
     timers.forEach(clearTimeout)
     timers.clear()
@@ -126,6 +136,7 @@ export function useCinematicDemoRun() {
     session: shallowRef<WorkshopSession>(),
     rendering,
     generate,
+    retry,
     cancel,
     select: (id: string) => dispatch({ type: 'selected', id })
   }

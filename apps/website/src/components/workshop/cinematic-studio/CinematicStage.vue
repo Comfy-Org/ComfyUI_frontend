@@ -33,6 +33,7 @@ const emit = defineEmits<{
   select: [id: string]
   start: [shot: StarterShot]
   again: []
+  retry: [id: string]
   reference: [url: string, name: string]
   switchModel: [slug: string]
   editScene: []
@@ -74,7 +75,7 @@ const otherModel = computed(() =>
           :other-model="otherModel"
           :height="FRAME_HEIGHT"
           :locale
-          @again="emit('again')"
+          @retry="emit('retry', current.id)"
           @switch-model="emit('switchModel', $event)"
           @edit-scene="emit('editScene')"
         >

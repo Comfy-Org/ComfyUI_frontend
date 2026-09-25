@@ -124,6 +124,7 @@ function generateOn(slug: string) {
       @select="studio.select"
       @start="start"
       @again="generate"
+      @retry="studio.retry"
       @reference="useAsReference"
       @switch-model="generateOn"
       @edit-scene="focusScene"

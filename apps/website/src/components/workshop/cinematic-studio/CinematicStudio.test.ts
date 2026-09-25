@@ -5,8 +5,14 @@ import { computed, ref } from 'vue'
 
 import type { AccountCredential } from '@comfyorg/account-core/session'
 
-import { router_render } from '../../../config/router-render'
-import type { RouterRenderResult } from '../../../config/router-render'
+import {
+  resolveModelRouterRender,
+  router_render
+} from '../../../config/router-render'
+import type {
+  PreparedRouterRender,
+  RouterRenderResult
+} from '../../../config/router-render'
 import { useWorkshopCredits } from '../../../config/workshop-credits'
 import { getRouterWorkshopModelDetail } from '../../../config/workshop-router-content'
 import { WorkshopRouterError } from '../../../config/workshop-router-errors'
@@ -26,9 +32,7 @@ import CinematicStudioPage from './CinematicStudioPage.vue'
 vi.mock(import('../../../config/workshop-session-state'))
 vi.mock(import('../../../config/workshop-credits'))
 vi.mock(import('../../../scripts/posthog'))
-vi.mock(import('../../../config/router-render'), () => ({
-  router_render: vi.fn()
-}))
+vi.mock(import('../../../config/router-render'), { spy: true })
 
 const models = runnableCinematicModels(getRouterWorkshopModelDetail)
 const [first, second] = models
@@ -93,7 +97,9 @@ describe('CinematicStudio', () => {
       credits: 100
     }))
     signedIn.value = credential
-    vi.mocked(router_render).mockReset()
+    vi.mocked(router_render)
+      .mockReset()
+      .mockRejectedValue(new WorkshopRouterError('client'))
     vi.stubGlobal('fetch', fetchData)
     fetchData.mockImplementation(servePageData)
     window.history.replaceState(null, '', '/cinematic-studio')
@@ -373,14 +379,43 @@ describe('CinematicStudio', () => {
   })
 
   it.for([
-    { settlement: 'pending' as const, reusesKey: true },
-    { settlement: 'terminal' as const, reusesKey: false }
+    {
+      layout: 'the stage',
+      ux: '',
+      inFormat: true,
+      settlement: 'pending' as const
+    },
+    {
+      layout: 'the stage',
+      ux: '',
+      inFormat: true,
+      settlement: 'terminal' as const
+    },
+    {
+      layout: 'the side panel',
+      ux: '?ux=d',
+      inFormat: false,
+      settlement: 'pending' as const
+    }
   ])(
-    'tries a $settlement take again with the same key: $reusesKey',
-    async ({ settlement, reusesKey }) => {
-      vi.mocked(router_render)
-        .mockRejectedValueOnce(
-          new WorkshopRouterError(
+    'tries only the failed take again on $layout after a $settlement failure',
+    async ({ ux, inFormat, settlement }) => {
+      window.history.replaceState(null, '', `/cinematic-studio${ux}`)
+      const first: {
+        key: unknown
+        prepared: PreparedRouterRender
+      }[] = []
+      vi.mocked(router_render).mockImplementation(
+        async (slug, parameters, options) => {
+          if (first.length >= 2) return rendered(slug)
+          const prepared = {
+            ...resolveModelRouterRender(options.model, parameters),
+            body: { take: first.length }
+          }
+          await options.onPrepared?.(prepared)
+          first.push({ key: options.idempotencyKey, prepared })
+          if (first.length === 1) return rendered(slug)
+          throw new WorkshopRouterError(
             'network',
             'request-7',
             {},
@@ -388,23 +423,34 @@ describe('CinematicStudio', () => {
             'response',
             { requestSettlement: settlement }
           )
-        )
-        .mockImplementation(async (slug) => rendered(slug))
-      const user = renderStudio()
+        }
+      )
+      render(CinematicStudioPage, { props: { models } })
+      const user = userEvent.setup()
 
-      await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+      await user.type(await screen.findByLabelText('Scene'), 'A diner at dawn')
+      if (inFormat)
+        await user.click(screen.getByRole('button', { name: /^Format/ }))
+      await user.click(screen.getByRole('button', { name: 'More takes' }))
       await user.click(generateButton())
+      await user.click(await screen.findByRole('radio', { name: 'B' }))
       await user.click(
         within(await screen.findByRole('status')).getByRole('button', {
           name: t('workshop.error.retry')
         })
       )
 
-      await screen.findByAltText(/A diner at dawn/)
-      const [firstKey, retryKey] = vi
-        .mocked(router_render)
-        .mock.calls.map(([, , options]) => options.idempotencyKey)
-      expect(firstKey === retryKey).toBe(reusesKey)
+      await vi.waitFor(() =>
+        expect(vi.mocked(router_render)).toHaveBeenCalledTimes(3)
+      )
+      const [, , retry] = vi.mocked(router_render).mock.calls[2]
+      if (settlement === 'pending') {
+        expect(retry.idempotencyKey).toBe(first[1].key)
+        expect(retry.prepared).toBe(first[1].prepared)
+      } else {
+        expect(retry.prepared).toBeUndefined()
+        expect([first[0].key, first[1].key]).not.toContain(retry.idempotencyKey)
+      }
     }
   )
 

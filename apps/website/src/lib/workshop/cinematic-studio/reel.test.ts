@@ -56,6 +56,37 @@ describe('reduceReel', () => {
     expect(isRendering(reel)).toBe(false)
   })
 
+  it.for([
+    ['a failed take', { type: 'takeFailed', id: 'b', reason: 'network' }],
+    ['a cancelled take', { type: 'rendersCancelled' }]
+  ] as const)(
+    'renders %s again on its own, leaving its finished sibling done',
+    ([, settled]) => {
+      const reel = play([
+        started(['a', 'b']),
+        { type: 'takeSucceeded', id: 'a', output },
+        settled,
+        { type: 'takeRetried', id: 'b', startedAt: 9 }
+      ])
+      expect(
+        reel.takes.map((take) => [take.letter, take.status, take.startedAt])
+      ).toEqual([
+        ['A', 'done', 0],
+        ['B', 'rendering', 9]
+      ])
+      expect(selectedTake(reel)?.id).toBe('b')
+    }
+  )
+
+  it('ignores a retry for a take that finished', () => {
+    const reel = play([
+      started(['a']),
+      { type: 'takeSucceeded', id: 'a', output },
+      { type: 'takeRetried', id: 'a', startedAt: 9 }
+    ])
+    expect(reel.takes[0].status).toBe('done')
+  })
+
   it('ignores a result for a take that already settled', () => {
     const reel = play([
       started(['a']),

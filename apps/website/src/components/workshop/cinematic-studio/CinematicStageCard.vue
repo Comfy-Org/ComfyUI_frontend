@@ -28,7 +28,7 @@ const {
   locale?: Locale
 }>()
 
-const emit = defineEmits<{ select: [id: string] }>()
+const emit = defineEmits<{ select: [id: string]; retry: [id: string] }>()
 
 const current = computed(() => selectedTake(reel))
 const modelName = computed(
@@ -54,7 +54,11 @@ const siblings = computed(() =>
       class="flex min-h-72 flex-col items-center justify-center gap-4 p-4 sm:p-6 lg:min-h-112"
     >
       <template v-if="current">
-        <CinematicTakeFrame :current :locale />
+        <CinematicTakeFrame
+          :current
+          :locale
+          @retry="emit('retry', current.id)"
+        />
         <CinematicTakeBar
           :current
           :siblings

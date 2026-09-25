@@ -26,7 +26,7 @@ const {
 }>()
 
 const emit = defineEmits<{
-  again: []
+  retry: []
   switchModel: [slug: string]
   editScene: []
 }>()
@@ -97,7 +97,7 @@ const requestId = computed(() =>
         {{ tc('cinematic.state.editScene', locale) }}
       </Button>
       <template v-else>
-        <Button size="sm" class="rounded-full" @click="emit('again')">
+        <Button size="sm" class="rounded-full" @click="emit('retry')">
           {{ t('workshop.error.retry', locale) }}
         </Button>
         <Button

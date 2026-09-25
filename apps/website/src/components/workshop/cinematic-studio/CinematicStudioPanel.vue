@@ -99,6 +99,7 @@ function generate() {
           :models
           :locale
           @select="studio.select"
+          @retry="studio.retry"
         />
         <div
           v-if="picker"
