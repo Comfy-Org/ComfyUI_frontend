@@ -698,6 +698,54 @@ describe('useModelStore', () => {
       expect(api.getModels).not.toHaveBeenCalled()
     })
 
+    it('reads the rebuilt folder when a read starts mid-rebuild', async () => {
+      enableMocks(false)
+      store = useModelStore()
+      await store.loadModelFolders()
+      const folders = await api.getModelFolders()
+      let releaseRebuild!: () => void
+      vi.mocked(api.getModelFolders).mockReturnValueOnce(
+        new Promise((resolve) => {
+          releaseRebuild = () => resolve(folders)
+        })
+      )
+
+      featureState.serverFeatures.assets = true
+      await vi.waitFor(() =>
+        expect(api.getModelFolders).toHaveBeenCalledTimes(3)
+      )
+      const read = store.getLoadedModelFolder('checkpoints')
+      releaseRebuild()
+      const folder = await read
+
+      expect(folder).toBe(store.modelFolders[0])
+      expect(folder!.state).toBe(ResourceState.Loaded)
+      expect(api.getModels).not.toHaveBeenCalled()
+    })
+
+    it('keeps the committed folders when a superseded capability reload fails', async () => {
+      enableMocks(false)
+      store = useModelStore()
+      await store.loadModelFolders()
+      const bootFolder = store.modelFolders[0]
+      let failSupersededReload!: () => void
+      vi.mocked(api.getModelFolders).mockReturnValueOnce(
+        new Promise((_, reject) => {
+          failSupersededReload = () => reject(new Error('offline'))
+        })
+      )
+
+      featureState.serverFeatures.assets = true
+      remoteConfig.value = { supports_model_type_tags: true }
+      await vi.waitFor(() => expect(store.modelFolders[0]).not.toBe(bootFolder))
+      failSupersededReload()
+      await vi.waitFor(() => expect(reportError).toHaveBeenCalled())
+      await store.loadModels()
+
+      expect(api.getModelFolders).toHaveBeenCalledTimes(3)
+      expect(api.getModels).not.toHaveBeenCalled()
+    })
+
     it('rebuilds from the asset source on the next load after the capability reload fails', async () => {
       enableMocks(false)
       store = useModelStore()
@@ -707,7 +755,7 @@ describe('useModelStore', () => {
       featureState.serverFeatures.assets = true
       await vi.waitFor(() =>
         expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
-          errorType: 'error_reloading_model_library_after_capability_change'
+          errorType: 'model_library_capability_reload'
         })
       )
       await store.loadModels()
