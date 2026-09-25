@@ -24,6 +24,9 @@ const wanSlugs = [
   'wan--image-to-video-3.0-prime--animate-images'
 ]
 const ltxSlug = 'ltx--text-to-video-v2--generate-videos'
+const klingSlug = 'kling--v3--generate-videos'
+const klingOmniSlug = 'kling--omni-pro-text-to-video--generate-videos'
+const ltxFastSlug = 'ltx--ltx-2-5-fast--generate-videos'
 const originalDemoSlugs = [
   'byteplus--seedance-2-text-to-video--generate-videos',
   'byteplus--seedance-2-image-to-video--animate-images',
@@ -40,7 +43,16 @@ function modelFor(slug: string) {
 }
 
 describe('cinematic video Router contract', () => {
-  it.for([textSlug, frameSlug, ...wanSlugs, ltxSlug, ...originalDemoSlugs])(
+  it.for([
+    textSlug,
+    frameSlug,
+    ...wanSlugs,
+    ltxSlug,
+    ltxFastSlug,
+    klingSlug,
+    klingOmniSlug,
+    ...originalDemoSlugs
+  ])(
     'prepares %s with the same Router request path and no catalogue media',
     async (slug) => {
       const model = modelFor(slug)
@@ -93,6 +105,51 @@ describe('cinematic video Router contract', () => {
         })
     }
   )
+
+  it.for(['std', 'pro'])(
+    'sends Kling quality %s, native string duration and audio through the shared Router form',
+    async (quality) => {
+      const model = modelFor(klingSlug)
+      const form = cinematicVideoForm(model, 'A train approaches.', '9:16', {
+        durationSeconds: 7,
+        resolution: quality,
+        generateAudio: true
+      })
+      const prepared = await prepareModelRouterRender(model, {}, { form })
+      expect(prepared.body).toMatchObject({
+        prompt: 'A train approaches.',
+        aspect_ratio: '9:16',
+        duration: '7',
+        mode: quality,
+        sound: 'on'
+      })
+      expect(prepared.body).not.toHaveProperty('resolution')
+      expect(prepared.body).not.toHaveProperty('image')
+    }
+  )
+
+  it('keeps Kling O3 on its authored single-shot text route', async () => {
+    const model = modelFor(klingOmniSlug)
+    const form = cinematicVideoForm(model, 'A train approaches.', '16:9', {
+      durationSeconds: 6,
+      resolution: '1080p',
+      generateAudio: false
+    })
+    const prepared = await prepareModelRouterRender(model, {}, { form })
+    expect(prepared.expectedKind).toBe('video')
+    expect(prepared.body).toMatchObject({
+      prompt: 'A train approaches.',
+      duration: '6'
+    })
+    expect(() =>
+      cinematicVideoForm(model, 'A train approaches.', '16:9', {
+        durationSeconds: 6,
+        resolution: '1080p',
+        generateAudio: false,
+        firstFrame: new File(['frame'], 'frame.png', { type: 'image/png' })
+      })
+    ).toThrow('validation')
+  })
 
   it('uses the LTX Pro resolution matrix without advertising Fast-only sizes', () => {
     const model = modelFor(ltxSlug)

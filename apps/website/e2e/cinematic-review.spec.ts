@@ -33,6 +33,52 @@ test('browses the full model catalog without losing the Studio draft', async ({
 })
 
 for (const layout of ['e', 'd']) {
+  test(`reviews Kling quality and LTX Fast framing in layout ${layout}`, async ({
+    page
+  }) => {
+    await page.goto(`/cinematic-studio?demo=success&ux=${layout}`)
+    await page.getByRole('button', { name: 'Video', exact: true }).click()
+    await page
+      .getByRole('textbox', { name: 'Scene', exact: true })
+      .fill('A train approaches in the rain.')
+    await page
+      .getByRole('button', { name: /Model · via Comfy Router:/ })
+      .click()
+    await page
+      .getByRole('menuitemradio', { name: 'Kling 3.0 Text-to-Video' })
+      .click()
+    if (layout === 'e')
+      await page.getByRole('button', { name: /^Format/ }).click()
+    await page
+      .getByRole('combobox', { name: 'Quality', exact: true })
+      .selectOption('pro')
+    await page.getByRole('combobox', { name: /^Duration/ }).selectOption('7')
+    await page.getByLabel('Generate audio', { exact: true }).check()
+    if (layout === 'e') await page.keyboard.press('Escape')
+    await page.reload()
+    await page.getByRole('button', { name: 'Review shot', exact: true }).click()
+    const review = page.getByRole('dialog', { name: 'Review your shot' })
+    await expect(review).toContainText('Kling 3.0 Text-to-Video')
+    await expect(review).toContainText('pro · 7s')
+    await review.getByRole('button', { name: 'Back to editing' }).click()
+    await page
+      .getByRole('button', { name: /Model · via Comfy Router:/ })
+      .click()
+    await page.getByRole('menuitemradio', { name: 'LTX 2.5 Fast' }).click()
+    if (layout === 'e')
+      await page.getByRole('button', { name: /^Format/ }).click()
+    await page
+      .getByRole('combobox', { name: /^Aspect ratio/ })
+      .selectOption('9:16')
+    await page
+      .getByRole('combobox', { name: /^Resolution/ })
+      .selectOption('720x1280')
+    if (layout === 'e') await page.keyboard.press('Escape')
+    await page.getByRole('button', { name: 'Review shot', exact: true }).click()
+    await expect(review).toContainText('LTX 2.5 Fast')
+    await expect(review).toContainText('720x1280')
+  })
+
   test(`reviews a shot before generating in layout ${layout}`, async ({
     page
   }) => {

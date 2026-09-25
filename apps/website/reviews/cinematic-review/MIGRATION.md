@@ -33,8 +33,9 @@ API-key backend, copied private output library, or additional dependency.
 
 ## Validation
 
-- 327 focused unit/component/contract tests across 31 files passed.
-- 16 production browser tests passed across both Studio layouts, including
+- 333 focused Studio tests, two LTX Fast route tests and 731 shared contract
+  tests passed across 33 files (1,066 tests total).
+- 18 production browser tests passed across both Studio layouts, including
   crop pixels, assets, edit review, prompt suggestions, plans, recipe import,
   motion comparison and transition reference restoration after reload.
 - Website build, website typecheck, knip and Astro formatting passed.
@@ -43,13 +44,13 @@ API-key backend, copied private output library, or additional dependency.
 
 ## Original demo parity follow-up
 
-- All models opens an in-place searchable browser of the same 148 visible
+- All models opens an in-place searchable browser of the same 149 visible
   catalog entries as `/models`, with modality filters and explicit availability.
   Current-mode Studio models can be selected without losing the draft. Other
   entries open their native model page in a new tab. This uses the bundled catalog,
   not a live inventory of every model on the Router service, and does not add
   generation support for previously unsupported Studio models.
-- The rendered picker now exposes 14 image choices and 16 video routes.
+- The rendered picker now exposes 14 image choices and 19 video routes.
   Model-specific image framing and reference limits come from authored contracts.
   Native model controls remain available through the separate `/models` catalog.
 - Independent image/video drafts survive reload, including settings and stored
@@ -65,11 +66,18 @@ API-key backend, copied private output library, or additional dependency.
   atlas, not a copied Higgsfield asset. Examples are illustrative and not references
   sent to generation. Existing Rob branch design tokens and layouts remain the base.
 
-This is not complete model or visual parity. LTX routes are not exposed by the
-current Studio descriptor (LTX 2.5 Fast also lacks a matching authored page),
-MiniMax H3 lacks usable authored execution inputs, and Kling 3's native controls
-remain in `/models`. Bria relighting has no bundled contract. GPT Image 2, Flare
-and Sunburst do not have authored reference-edit bindings. Native catalog outputs
+Kling 3.0 text-to-video now uses native Standard/Professional quality, 3–15 second
+duration and audio settings. Kling O3 text-to-video uses its authored resolution
+and duration controls. LTX 2.5 Fast has a distinct authored page bound to its own
+existing Router contract, including portrait/landscape dimensions and audio;
+Studio uses the native default 25 fps. All three currently expose text-only
+generation, without claiming starting-frame support or live output verification.
+
+This is not complete model or visual parity. LTX Pro remains disabled by the
+shared catalog after provider invalid-input failures. MiniMax H3 lacks usable
+authored execution inputs. Bria relighting has no bundled contract. GPT Image 2,
+Flare and Sunburst reference editing remain explicitly disabled because the
+Router routes reject edit media. Native catalog outputs
 do not share Studio's local history, and the original camera carousel interaction
 has not been recreated. Do not present these routes as live-verified Studio tools.
 

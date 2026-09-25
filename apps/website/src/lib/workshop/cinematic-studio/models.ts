@@ -225,6 +225,9 @@ const VIDEO_SLUGS = new Set([
   'wan--text-to-video-3.0-prime--generate-videos',
   'wan--image-to-video-3.0-prime--animate-images',
   'ltx--text-to-video-v2--generate-videos',
+  'ltx--ltx-2-5-fast--generate-videos',
+  'kling--v3--generate-videos',
+  'kling--omni-pro-text-to-video--generate-videos',
   'byteplus--seedance-2-text-to-video--generate-videos',
   'byteplus--seedance-2-image-to-video--animate-images',
   'byteplus--seedance-2-fast-text-to-video--generate-videos',
@@ -269,7 +272,9 @@ const CINEMATIC_MODEL_LOGOS: Readonly<Record<string, string>> = {
             ? '/icons/ai-models/ltxv.svg'
             : slug.startsWith('byteplus--')
               ? '/icons/ai-models/bytedance.svg'
-              : '/icons/ai-models/grok.svg'
+              : slug.startsWith('kling--')
+                ? '/icons/ai-models/kling.svg'
+                : '/icons/ai-models/grok.svg'
       ])
   )
 }

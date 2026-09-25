@@ -6,6 +6,9 @@ import type { Locale, LocalizedText } from '../../../i18n/translations'
  * not add to every other page's script budget.
  */
 const copy = {
+  'cinematic.video.quality': { en: 'Quality', 'zh-CN': '质量' },
+  'cinematic.video.standard': { en: 'Standard', 'zh-CN': '标准' },
+  'cinematic.video.professional': { en: 'Professional', 'zh-CN': '专业' },
   'cinematic.catalog.close': {
     en: 'Close model catalog',
     'zh-CN': '关闭模型目录'

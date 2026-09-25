@@ -49,10 +49,23 @@ const fieldClass =
         </select>
       </label>
       <label class="text-xs text-primary-comfy-canvas"
-        >{{ tc('cinematic.output.resolution', locale) }}
+        >{{
+          tc(
+            model.video.resolutionField === 'mode'
+              ? 'cinematic.video.quality'
+              : 'cinematic.output.resolution',
+            locale
+          )
+        }}
         <select v-model="resolution" :class="fieldClass">
           <option v-for="value in resolutions" :key="value" :value="value">
-            {{ value }}
+            {{
+              value === 'std'
+                ? tc('cinematic.video.standard', locale)
+                : value === 'pro'
+                  ? tc('cinematic.video.professional', locale)
+                  : value
+            }}
           </option>
         </select>
       </label>

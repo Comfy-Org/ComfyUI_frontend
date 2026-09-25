@@ -1,4 +1,8 @@
 {
+  "ltx--ltx-2-5-fast--generate-videos": {
+    "routerId": "ltx/ltx-2-5-fast",
+    "options": {}
+  },
   "ideogram--v4--generate-images": {
     "routerId": "ideogram/ideogram-v4",
     "options": { "mode": "json" }

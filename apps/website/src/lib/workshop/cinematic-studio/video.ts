@@ -50,7 +50,7 @@ export function cinematicVideoDescriptor(
   const original = object(parameters?.properties)
   const properties = Object.fromEntries(
     Object.entries(original).map(([key, value]) => [
-      key.replace(/^param_/, ''),
+      key.replace(/^(param_|setting_)/, ''),
       value
     ])
   )
@@ -61,12 +61,26 @@ export function cinematicVideoDescriptor(
     !['text', 'image'].includes(String(request.options.mode))
   )
     return
-  const durations = options(properties.duration).filter(
-    (value): value is number => typeof value === 'number' && value > 0
-  )
-  const resolutionField = Object.keys(original).find((name) =>
-    ['resolution', 'param_resolution', 'param_size'].includes(name)
-  )
+  const durations = options(properties.duration)
+    .map((value) =>
+      typeof value === 'string' && /^\d+$/.test(value) ? Number(value) : value
+    )
+    .filter((value): value is number => typeof value === 'number' && value > 0)
+  const resolutionField =
+    Object.keys(original).find((name) =>
+      [
+        'resolution',
+        'param_resolution',
+        'setting_resolution',
+        'param_size'
+      ].includes(name)
+    ) ??
+    (options(properties.mode).length &&
+    options(properties.mode).every(
+      (value) => value === 'std' || value === 'pro'
+    )
+      ? 'mode'
+      : undefined)
   const resolutionProperty = resolutionField
     ? original[resolutionField]
     : undefined
@@ -75,7 +89,7 @@ export function cinematicVideoDescriptor(
   )
   if (!durations.length || !resolutions.length) return
   const required = parameters?.required
-  const duration = object(properties.duration).default
+  const duration = Number(object(properties.duration).default)
   const resolution = object(resolutionProperty).default
   const sourceField = properties.first_frame_url
     ? 'first_frame_url'
@@ -112,7 +126,10 @@ export function cinematicVideoDescriptor(
         ? 'required'
         : 'optional',
     lastFrame: Boolean(properties.last_frame_url),
-    generateAudio: Boolean(properties.generate_audio),
+    generateAudio:
+      Boolean(properties.generate_audio) ||
+      (options(properties.sound).includes('on') &&
+        options(properties.sound).includes('off')),
     ...(resolutionField ? { resolutionField } : {}),
     ...(typeof seed.minimum === 'number' && typeof seed.maximum === 'number'
       ? { seed: { minimum: seed.minimum, maximum: seed.maximum } }
@@ -182,13 +199,15 @@ export function cinematicVideoForm(
   const parameters: RouterRenderParameters = {
     prompt,
     ...(descriptor.aspects.length ? { aspect_ratio: aspect } : {}),
-    ...(dimensions(nativeResolution)
-      ? {
-          model_specific: {
-            [descriptor.resolutionField ?? 'resolution']: nativeResolution
+    ...(descriptor.resolutionField === 'mode'
+      ? { quality: nativeResolution }
+      : dimensions(nativeResolution)
+        ? {
+            model_specific: {
+              [descriptor.resolutionField ?? 'resolution']: nativeResolution
+            }
           }
-        }
-      : { resolution: nativeResolution }),
+        : { resolution: nativeResolution }),
     duration_seconds: settings.durationSeconds,
     ...(descriptor.generateAudio
       ? { generate_audio: settings.generateAudio }

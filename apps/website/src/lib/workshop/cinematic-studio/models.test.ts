@@ -91,7 +91,10 @@ describe('runnableCinematicModels', () => {
         'wan--image-to-video-3.0--animate-images',
         'wan--text-to-video-3.0-prime--generate-videos',
         'wan--image-to-video-3.0-prime--animate-images',
-        'ltx--text-to-video-v2--generate-videos'
+        'ltx--text-to-video-v2--generate-videos',
+        'ltx--ltx-2-5-fast--generate-videos',
+        'kling--v3--generate-videos',
+        'kling--omni-pro-text-to-video--generate-videos'
       ].map((slug) => ({
         slug,
         firstFrame: slug.includes('--image-to-video')
