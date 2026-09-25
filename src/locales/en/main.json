@@ -5233,8 +5233,8 @@
     "loadFailed": "The agent panel failed to load.",
     "entryButton": "Agent",
     "feedbackCaption": "Share feedback",
-    "runNotice": "The agent can modify the graph. Check Run permissions before allowing it to execute the workflow.",
-    "runNoticeExpanded": "The agent can modify your workflow. Check Run permissions before allowing it to execute.",
+    "runNotice": "The agent can modify the graph. Use Run permissions in the composer toolbar to control whether it asks before executing.",
+    "runNoticeExpanded": "The agent can modify your workflow. Use Run permissions in the composer toolbar to control whether it asks before executing.",
     "workflowEditNotice": "The agent can now edit {workflow}. It works on 1 workflow at a time, and you can switch workflows during chat.",
     "runApproval": {
       "lead": "This tool wants to run the workflow:",

@@ -173,6 +173,21 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await expect(panel.getByText('Resize image node')).toBeVisible()
   })
 
+  test('defers the targetless run notice until composer focus', async ({
+    agentPanel
+  }) => {
+    await agentPanel.open()
+
+    const notice = agentPanel.root.getByRole('note')
+    await expect(notice).toHaveCount(0)
+
+    await agentPanel.composer.focus()
+
+    await expect(notice).toContainText(
+      'Use Run permissions in the composer toolbar'
+    )
+  })
+
   test('shows an admission paywall without losing the rejected prompt', async ({
     agentPanel,
     comfyPage
