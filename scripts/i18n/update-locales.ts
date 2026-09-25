@@ -61,9 +61,8 @@ import { isMainModule } from '../isMainModule'
 
 interface SourceManifest {
   files: Record<string, string>
-  // Transitional baseline: leaf path keys per entry file whose committed
-  // translations violated token validation when the manifest was recorded.
-  // The check exempts them; a successful locale run heals and drops them.
+  // Transitional baseline: exact locale-scoped validation errors per entry
+  // file. A successful locale run heals and drops them.
   knownViolations?: Record<string, string[]>
   version: 1
 }
@@ -75,7 +74,7 @@ interface SourcePlan {
   invalidated: Set<string>
   previousLeafCount: number
   degraded: boolean
-  knownViolationKeys: ReadonlySet<string>
+  knownViolations: ReadonlySet<string>
 }
 
 interface LocaleFileState {
@@ -347,7 +346,8 @@ function loadLocaleFileStates(
           source,
           existing,
           plan.invalidated,
-          leafTokensDiffer
+          (source, target) =>
+            leafTokensDiffer(source, target, config.strictProtectedTokens)
         ),
         strayPaths
       }
@@ -377,7 +377,19 @@ export function formatUsageSummary(
   return `OpenAI usage: ${requestCount} HTTP requests for ${usages.length} responses; ${inputTokens} input, ${outputTokens} output (${reasoningTokens} reasoning), ${totalTokens} total tokens.`
 }
 
-function reportCheck(states: readonly LocaleFileState[]): number {
+function knownLocaleViolations(state: LocaleFileState): ReadonlySet<string> {
+  const localePrefix = `${state.locale.code}: `
+  return new Set(
+    [...state.plan.knownViolations]
+      .filter((error) => error.startsWith(localePrefix))
+      .map((error) => error.slice(localePrefix.length))
+  )
+}
+
+function reportCheck(
+  states: readonly LocaleFileState[],
+  strictProtectedTokens: boolean
+): number {
   let pendingTotal = 0
   let strayTotal = 0
   const auditErrors: string[] = []
@@ -402,19 +414,27 @@ function reportCheck(states: readonly LocaleFileState[]): number {
     }
     // Skip keys queued because the English source changed (comparing an old
     // translation against new English is meaningless) and baseline violations
-    // recorded in the manifest; a key newly corrupted beyond those must fail
-    // the check. Degraded plans (recorded source unavailable) cannot tell
-    // staleness from corruption, so they skip the audit.
-    const skipKeys = new Set([
-      ...state.plan.invalidated,
-      ...state.plan.knownViolationKeys
-    ])
+    // recorded in the manifest; an error beyond those must fail the check.
+    // Degraded plans (recorded source unavailable) cannot tell staleness from
+    // corruption, so they skip the audit.
+    const knownViolations = knownLocaleViolations(state)
     const machineErrors = state.plan.degraded
       ? []
-      : auditProtectedLiterals(state.source, state.existing, skipKeys)
+      : auditProtectedLiterals(
+          state.source,
+          state.existing,
+          state.plan.invalidated,
+          strictProtectedTokens,
+          knownViolations
+        )
     for (const error of [
       ...machineErrors,
-      ...auditRetainedTranslations(state.plan.source, state.retained)
+      ...auditRetainedTranslations(
+        state.plan.source,
+        state.retained,
+        strictProtectedTokens,
+        knownViolations
+      )
     ]) {
       auditErrors.push(`${label}: ${error}`)
     }
@@ -437,12 +457,15 @@ function isTranslationTarget(
   return name !== undefined && Object.hasOwn(translationTargets, name)
 }
 
-/** `--target <name>` selects which catalogs to translate; the app is the default. */
+/** `--target <name>` or `--target=<name>` selects which catalogs to translate; the app is the default. */
 export function resolveTargetConfig(
   argv: readonly string[]
 ): TranslationPipelineConfig {
   const flagIndex = argv.indexOf('--target')
-  const name = flagIndex === -1 ? 'app' : argv.at(flagIndex + 1)
+  const inlineTarget = argv.find((arg) => arg.startsWith('--target='))
+  const name =
+    inlineTarget?.slice('--target='.length) ??
+    (flagIndex === -1 ? 'app' : argv.at(flagIndex + 1))
   if (!isTranslationTarget(name)) {
     throw new Error(
       `Unknown translation target "${name ?? ''}"; expected one of: ${Object.keys(translationTargets).join(', ')}.`
@@ -500,7 +523,7 @@ async function run(argv: readonly string[]): Promise<void> {
       ),
       previousLeafCount: collectLeaves(previous).size,
       degraded: recorded === undefined,
-      knownViolationKeys: new Set(manifest.knownViolations?.[filename] ?? [])
+      knownViolations: new Set(manifest.knownViolations?.[filename] ?? [])
     }
   })
 
@@ -559,7 +582,7 @@ async function run(argv: readonly string[]): Promise<void> {
         `${relative(repoRoot, orphan)}: the English source file was removed; this locale file will be deleted`
       )
     }
-    process.exitCode = reportCheck(states)
+    process.exitCode = reportCheck(states, config.strictProtectedTokens)
     return
   }
 
@@ -577,6 +600,7 @@ async function run(argv: readonly string[]): Promise<void> {
         fetchFn: counter.fetch,
         model: config.model,
         reasoningEffort: config.reasoningEffort,
+        translationContext: config.translationContext,
         glossary: config.glossary,
         maxTruncationSplitDepth: config.maxTruncationSplitDepth,
         onUsage: (usage) => {
@@ -666,10 +690,31 @@ async function run(argv: readonly string[]): Promise<void> {
   const rebuilt = outcomes.flatMap((outcome) =>
     'output' in outcome ? [outcome] : []
   )
+  const retainedViolations = new Map<string, string[]>()
   for (const { state, generated } of rebuilt) {
+    const known = knownLocaleViolations(state)
+    const stillKnown = auditRetainedTranslations(
+      state.plan.source,
+      state.retained,
+      config.strictProtectedTokens
+    ).filter((error) => known.has(error))
+    retainedViolations.set(state.plan.filename, [
+      ...(retainedViolations.get(state.plan.filename) ?? []),
+      ...stillKnown.map((error) => `${state.locale.code}: ${error}`)
+    ])
     for (const error of [
-      ...validateLocale(state.source, generated, state.plan.changes),
-      ...auditRetainedTranslations(state.plan.source, state.retained)
+      ...validateLocale(
+        state.source,
+        generated,
+        state.plan.changes,
+        config.strictProtectedTokens
+      ),
+      ...auditRetainedTranslations(
+        state.plan.source,
+        state.retained,
+        config.strictProtectedTokens,
+        known
+      )
     ]) {
       addFailure(
         state.plan.filename,
@@ -710,13 +755,15 @@ async function run(argv: readonly string[]): Promise<void> {
         return hash ? [[filename, hash] as const] : []
       })
     ),
-    // A completed file's translations were fully revalidated, so its baseline
-    // violations are healed and dropped; failed files keep theirs
+    // A completed file's generated translations were fully revalidated, so
+    // only baseline violations that retained reviewed copy still has survive;
+    // failed files keep their whole baseline
     Object.fromEntries(
       filenames.flatMap((filename) => {
-        if (completedFilenames.has(filename)) return []
-        const keys = manifest.knownViolations?.[filename]
-        return keys && keys.length > 0 ? [[filename, keys] as const] : []
+        const errors = completedFilenames.has(filename)
+          ? retainedViolations.get(filename)?.toSorted()
+          : manifest.knownViolations?.[filename]
+        return errors && errors.length > 0 ? [[filename, errors] as const] : []
       })
     )
   )
