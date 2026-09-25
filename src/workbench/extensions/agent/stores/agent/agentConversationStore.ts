@@ -158,14 +158,6 @@ export const useAgentConversationStore = defineStore(
     }
 
     /**
-     * PM-1658: drops a run-approval part the way an `agent_ask_resolved` frame
-     * would, for the one case `ingest` cannot serve. A socket drop aborts the
-     * active turn, which disposes the transport that frame routes through while
-     * leaving the turn's card on screen; answering that card then has nothing
-     * to dismiss it with. Live turns keep using `ingest` — this is only for a
-     * card whose own turn is already gone.
-     */
-    /**
      * PM-1658: retires a run-approval card that must never be offered again,
      * the way an `agent_ask_resolved` frame would. `ingest` cannot serve this:
      * it routes only to the active turn, and the cases this exists for are

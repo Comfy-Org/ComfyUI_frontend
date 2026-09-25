@@ -28,6 +28,10 @@ test.describe(
       await turnLock.parkOnRunApproval(await getWebSocket())
     })
 
+    // The card looking usable is what made this bug invisible - both buttons
+    // stayed enabled throughout, so the clicks that reached nothing looked
+    // exactly like clicks that worked. Pin the appearance AND the effect
+    // together, so the appearance alone can never carry this case.
     test('leaves both actions usable after the socket reconnects', async ({
       turnLock
     }) => {
@@ -36,6 +40,9 @@ test.describe(
       await expect(turnLock.approvalCard).toBeVisible()
       await expect(turnLock.approveButton).toBeEnabled()
       await expect(turnLock.cancelApprovalButton).toBeEnabled()
+
+      await turnLock.cancelApprovalButton.click()
+      await expect.poll(() => turnLock.answerAttempts()).toEqual([['cancel']])
     })
 
     test('sends Run after the socket reconnects, and dismisses the card', async ({

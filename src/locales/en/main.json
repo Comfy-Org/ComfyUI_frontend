@@ -5232,7 +5232,7 @@
       "cancel": "Cancel",
       "run": "Run",
       "answerFailed": "Could not send your answer. Reload the page and try again.",
-      "answerUncertain": "Could not confirm your answer reached the agent. It may still have been applied — check the chat before asking again."
+      "answerUncertain": "Could not confirm your answer reached the agent. It may still have been applied — reload the page to see where things stand."
     },
     "dismiss": "Dismiss",
     "latest": "Latest",

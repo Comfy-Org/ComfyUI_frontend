@@ -102,6 +102,19 @@ const PREPARE_TIMEOUT_MS = 3000
  */
 const TERMINAL_ANSWER_STATUSES = new Set([403, 404, 409])
 
+/**
+ * PM-1658: backoff between re-drives of a consent answer. The server documents
+ * 5xx here as retryable and re-drives the STORED selection, so resending the
+ * same answer is always safe and is the only recovery that cannot turn into a
+ * contradictory second choice. Short, because the card is held disabled for the
+ * whole sequence.
+ */
+const ANSWER_RETRY_BACKOFF_MS = [200, 600]
+
+function isRetryableAnswerFailure(error: unknown): boolean {
+  return error instanceof AgentApiError ? error.status >= 500 : true
+}
+
 let sessionGeneration = 0
 
 /**
@@ -611,6 +624,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
         }
       )
       pushError(i18n.global.t('agent.runApproval.answerFailed'))
+      // Nothing can ever answer this card, so retire it rather than let every
+      // further click raise another toast and another telemetry event.
+      conversationStore.retireAsk(askId)
       return
     }
     // PM-1658: deliberately NOT gated on an active turn. The endpoint is keyed
@@ -620,7 +636,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (answeringAskIds.value.has(askId)) return
     conversationStore.setAskAnswering(askId, true)
     try {
-      await rest.answerAsk(currentThreadId, askId, [selection])
+      await sendAnswer(currentThreadId, askId, selection)
       conversationStore.commitAsk(askId)
     } catch (error) {
       if (
@@ -635,16 +651,39 @@ export function useAgentSession(deps: AgentSessionDeps) {
         return
       }
       reportError(error, { errorType: 'agent_ask_answer_failed' })
-      // The server CASes the answer onto the row BEFORE it wakes the turn and
-      // reports a 500 for the wake alone, so a failure here may already have
-      // authorized the run. Putting both buttons back would invite the
-      // opposite click, which the server answers by replaying THIS selection
-      // while the card disappears as though the new one had taken effect — on
-      // a spend authorization, the wrong way to be wrong. Retire the card and
-      // say the outcome is unknown instead. An answer that never landed leaves
-      // the turn parked, which the server's own approval backstop releases.
+      // Every re-drive above has been spent. The card cannot simply go back
+      // into service: the server CASes an answer onto the row BEFORE it wakes
+      // the turn and reports 500 for the wake alone, so this may already have
+      // authorized the run, and it answers any later click by replaying THIS
+      // selection while the card disappears as though the new one had taken
+      // effect. On a spend authorization that is the wrong way to be wrong, so
+      // retire the card and send the user somewhere that shows the truth: a
+      // reload re-reads the ask from the thread and renders it again if it is
+      // genuinely still pending.
       conversationStore.retireAsk(askId)
       pushError(i18n.global.t('agent.runApproval.answerUncertain'))
+    }
+  }
+
+  async function sendAnswer(
+    threadId: string,
+    askId: string,
+    selection: 'run' | 'cancel'
+  ): Promise<void> {
+    for (let attempt = 0; ; attempt++) {
+      try {
+        await rest.answerAsk(threadId, askId, [selection])
+        return
+      } catch (error) {
+        if (
+          attempt >= ANSWER_RETRY_BACKOFF_MS.length ||
+          !isRetryableAnswerFailure(error)
+        )
+          throw error
+        await new Promise((resolve) =>
+          setTimeout(resolve, ANSWER_RETRY_BACKOFF_MS[attempt])
+        )
+      }
     }
   }
 
@@ -701,8 +740,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
       return
     }
     const event = parsed.data
+    // Not just un-busying it: `ingest` routes this frame through the owning
+    // turn's transport, and the turn is gone in exactly the case that matters,
+    // so on its own it would re-enable a card it cannot remove.
     if (event.type === 'agent_ask_resolved')
-      conversationStore.setAskAnswering(event.data.ask_id, false)
+      conversationStore.retireAsk(event.data.ask_id)
     switch (event.type) {
       case 'agent_active_tab':
         // Every thread records the link in its own transcript; only the thread

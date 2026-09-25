@@ -732,6 +732,60 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(session.answeringAskIds.value.size).toBe(0)
     })
 
+    // `asks.go` documents 5xx here as the retryable status and re-drives the
+    // STORED selection, so resending the same answer is both what the server
+    // asks for and the only recovery that cannot become a second, contradictory
+    // choice.
+    it('re-drives the same selection when the server asks the client to retry', async () => {
+      const answerAsk = vi
+        .fn<AgentRestClient['answerAsk']>()
+        .mockRejectedValueOnce(
+          new AgentApiError('failed to wake the turn', 500, undefined)
+        )
+        .mockResolvedValueOnce({ status: 'answered' })
+      const events = fakeEvents()
+      const session = useAgentSession({
+        rest: fakeRest({ answerAsk }),
+        events: events.source
+      })
+      session.start()
+      events.status(true)
+      await session.sendMessage('build it and run it')
+      events.emit(runApproval('msg-1'))
+
+      await session.answerAsk('turn-1:call-1', 'run')
+
+      expect(answerAsk).toHaveBeenCalledTimes(2)
+      expect(answerAsk.mock.calls).toEqual([
+        ['th-1', 'turn-1:call-1', ['run']],
+        ['th-1', 'turn-1:call-1', ['run']]
+      ])
+      expect(session.notices.value).toEqual([])
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('does not re-drive an answer the server has already refused', async () => {
+      const answerAsk = vi
+        .fn<AgentRestClient['answerAsk']>()
+        .mockRejectedValue(
+          new AgentApiError('ask already resolved', 409, undefined)
+        )
+      const events = fakeEvents()
+      const session = useAgentSession({
+        rest: fakeRest({ answerAsk }),
+        events: events.source
+      })
+      session.start()
+      events.status(true)
+      await session.sendMessage('build it and run it')
+      events.emit(runApproval('msg-1'))
+
+      await session.answerAsk('turn-1:call-1', 'run')
+
+      expect(answerAsk).toHaveBeenCalledTimes(1)
+      expect(cardOnScreen()).toBe(false)
+    })
+
     // The card lives in the conversation store, which outlives the panel, so
     // the record of having answered it has to as well. A remount that forgot
     // would render the surviving card enabled and take a second answer the
