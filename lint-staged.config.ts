@@ -1,5 +1,18 @@
 import path from 'node:path'
 
+// lint-staged calls this config once per concurrent chunk in one process.
+// Claim each fixed-scope command once so only its first matching chunk runs it.
+const claimed = new Set<string>()
+
+function repoWide(command: string) {
+  if (claimed.has(command)) {
+    return []
+  }
+
+  claimed.add(command)
+  return [command]
+}
+
 export default function lintStaged(stagedFiles: string[]) {
   const relativePaths = stagedFiles.map(toRelativePath)
 
@@ -17,6 +30,10 @@ export default function lintStaged(stagedFiles: string[]) {
   )
   const styleFiles = relativePaths.filter((fileName) =>
     /\.(css|vue)$/.test(fileName)
+  )
+  const astroFiles = relativePaths.filter(
+    (fileName) =>
+      fileName.startsWith('apps/website/src/') && fileName.endsWith('.astro')
   )
   const designFiles = relativePaths.filter((fileName) =>
     /\.(astro|css|vue)$/.test(fileName)
@@ -39,7 +56,11 @@ export default function lintStaged(stagedFiles: string[]) {
       formattableFiles,
       'pnpm exec oxfmt --write --no-error-on-unmatched-pattern'
     ),
-    ...lintCommands(codeFiles, styleFiles),
+    ...lintCommands(codeFiles, styleFiles, astroFiles),
+    ...commandsWithFiles(
+      astroFiles.map((fileName) => fileName.slice('apps/website/'.length)),
+      'pnpm --dir apps/website exec prettier --write'
+    ),
     ...(designFiles.length > 0 ? ['pnpm lint:design-system --staged'] : []),
     ...(designSystemSourceFiles.length > 0
       ? ['pnpm design-system:docs:check']
@@ -48,34 +69,63 @@ export default function lintStaged(stagedFiles: string[]) {
   ]
 }
 
-function lintCommands(codeFiles: string[], styleFiles: string[]) {
-  if (new Set([...codeFiles, ...styleFiles]).size > 10) {
-    return ['pnpm lint']
-  }
-
+function lintCommands(
+  codeFiles: string[],
+  styleFiles: string[],
+  astroFiles: string[]
+) {
   return [
-    ...commandsWithFiles(styleFiles, 'pnpm exec stylelint --allow-empty-input'),
+    ...commandsWithFiles(
+      styleFiles,
+      'pnpm exec stylelint --cache --cache-strategy content --allow-empty-input'
+    ),
     ...commandsWithFiles(
       codeFiles,
-      'pnpm exec oxlint --type-aware --no-error-on-unmatched-pattern --fix',
-      'pnpm exec eslint --cache --fix --no-warn-ignored'
+      'pnpm exec oxlint --type-aware --no-error-on-unmatched-pattern --fix'
+    ),
+    ...commandsWithFiles(
+      [...codeFiles, ...astroFiles],
+      'pnpm exec eslint --cache --cache-strategy content --concurrency auto --fix --no-warn-ignored'
     )
   ]
 }
 
+// Directories outside the root program, each with its own tsconfig.
+const standaloneTypecheckScripts = {
+  'browser_tests/': 'typecheck:browser',
+  'scripts/': 'typecheck:scripts',
+  'tools/': 'typecheck:tools',
+  'apps/website/': 'typecheck:website',
+  'apps/billing-web/': 'typecheck:billing-web'
+}
+
+// The root program consumes these, so a package change also rechecks the root.
+const packageTypecheckScripts = {
+  'packages/account-core/': 'typecheck:account-core',
+  'packages/account-ui/': 'typecheck:account-ui',
+  'packages/billing-contract/': 'typecheck:billing-contract'
+}
+
 function typecheckCommands(fileNames: string[]) {
-  if (fileNames.length === 0) {
-    return []
-  }
+  const isStandalone = (fileName: string) =>
+    Object.keys(standaloneTypecheckScripts).some((directory) =>
+      fileName.startsWith(directory)
+    )
+
+  const projectScripts = Object.entries({
+    ...standaloneTypecheckScripts,
+    ...packageTypecheckScripts
+  })
+    .filter(([directory]) =>
+      fileNames.some((fileName) => fileName.startsWith(directory))
+    )
+    .map(([, script]) => `pnpm ${script}`)
 
   return [
-    'pnpm typecheck',
-    ...(fileNames.some((fileName) => fileName.startsWith('browser_tests/'))
-      ? ['pnpm typecheck:browser']
+    ...(fileNames.some((fileName) => !isStandalone(fileName))
+      ? repoWide('pnpm typecheck:app')
       : []),
-    ...(fileNames.some((fileName) => fileName.startsWith('apps/website/'))
-      ? ['pnpm typecheck:website']
-      : [])
+    ...projectScripts.flatMap(repoWide)
   ]
 }
 

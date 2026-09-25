@@ -6,11 +6,13 @@
     "strict": true,
     "skipLibCheck": true,
     "composite": true,
+    "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "types": ["vite/client"],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "astro:env/client": ["./.storybook/astroEnv.ts"]
     }
   },
   "include": [".storybook/**/*.ts", "src/**/*.stories.ts", "vitest.shims.d.ts"]

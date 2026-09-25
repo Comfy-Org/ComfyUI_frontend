@@ -71,7 +71,7 @@
             v-if="invitedEmails.length > 0"
             ref="invitedMessage"
             tabindex="-1"
-            class="text-success-foreground m-0 text-sm"
+            class="m-0 text-sm text-success-background"
           >
             {{
               $t(
@@ -93,7 +93,8 @@
             source="post_upgrade_success"
             :submit-label="$t('subscription.success.sendInvites')"
             :placeholder="$t('subscription.success.inviteEmailsPlaceholder')"
-            :max-seats="invitableSeats"
+            :max-seats="inviteFormMaxSeats"
+            :occupied-seats="inviteFormOccupiedSeats"
             @submitted="onInvited"
           />
         </div>
@@ -215,12 +216,8 @@ const creditsUnitLabel = computed(() =>
   isYearly.value ? t('subscription.perYear') : t('subscription.perMonth')
 )
 
-const invitableSeats = computed(() => {
-  if (maxSeats.value === null || occupiedSeats.value === null) return undefined
-  if (maxSeats.value === 0) return undefined
-  return Math.max(0, maxSeats.value - occupiedSeats.value)
-})
-
+const inviteFormMaxSeats = computed(() => maxSeats.value)
+const inviteFormOccupiedSeats = computed(() => occupiedSeats.value)
 const showInviteBlock = computed(
   () => maxSeats.value === 0 || (maxSeats.value ?? 0) > 1
 )

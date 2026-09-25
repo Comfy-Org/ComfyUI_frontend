@@ -3,7 +3,11 @@
     "core": "b08e6cf35fac50d3ca8470dffb3f9a1fbb7187d2",
     "pin": "e27a505b3ba6ce42687fe00500deda103d9d6071"
   },
-  "schema": 1,
+  "schema": 3,
+  "corpus": {
+    "count": 244,
+    "nodeTypesSha256": "4648dd72edcd4c7a3efe185ed7f10941e79f7a04d1df38057b41b690fa0e6100"
+  },
   "nodes": {
     "AddLabel": {
       "connectFirst": [],
@@ -11,12 +15,12 @@
       "disconnect": []
     },
     "AddNoiseToTrackPath": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "AppendInstanceDiffusionTracking": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
@@ -26,18 +30,18 @@
       "disconnect": []
     },
     "ApplyRifleXRoPE_HunuyanVideo": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "ApplyRifleXRoPE_WanVideo": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "AudioConcatenate": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "BatchCLIPSeg": {
@@ -62,22 +66,22 @@
     },
     "BatchUncropAdvanced": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "BboxToInt": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "BboxVisualize": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "BlockifyMask": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "BOOLConstant": {
@@ -87,21 +91,21 @@
     },
     "CameraPoseVisualizer": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "CFGZeroStarAndInit": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "CheckpointLoaderKJ": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "CheckpointPerturbWeights": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
@@ -122,33 +126,33 @@
     },
     "ConditioningMultiCombine": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "ConditioningSetMaskAndCombine": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "ConditioningSetMaskAndCombine3": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "ConditioningSetMaskAndCombine4": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "ConditioningSetMaskAndCombine5": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "CondPassThrough": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "ConsolidateMasksKJ": {
       "connectFirst": [],
@@ -156,9 +160,9 @@
       "disconnect": []
     },
     "ContextWindowsVisualizerKJ": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "CreateAudioMask": {
       "connectFirst": [],
@@ -172,7 +176,7 @@
     },
     "CreateFadeMaskAdvanced": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "CreateFluidMask": {
@@ -201,17 +205,17 @@
       "disconnect": []
     },
     "CreateShapeImageOnPath": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "CreateShapeMask": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "CreateShapeMaskOnPath": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
@@ -242,7 +246,7 @@
     },
     "CustomControlNetWeightsFluxFromList": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "CustomSigmas": {
@@ -257,33 +261,33 @@
     },
     "DecodeAndSaveVideo": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "DifferentialDiffusionAdvanced": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "DiffusionModelLoaderKJ": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "DiffusionModelSelector": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": "SAME_AS_FIRST",
-      "disconnect": []
+      "disconnect": "NO_PRODUCER"
     },
     "DiTBlockLoraLoader": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "DownloadAndLoadCLIPSeg": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": "SAME_AS_FIRST",
-      "disconnect": []
+      "disconnect": "NO_PRODUCER"
     },
     "DrawInstanceDiffusionTracking": {
       "connectFirst": [],
@@ -292,7 +296,7 @@
     },
     "DrawMaskOnImage": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "DummyOut": {
@@ -301,19 +305,19 @@
       "disconnect": []
     },
     "EmptyLatentImageCustomPresets": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "EmptyLatentImagePresets": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "EncodeVideoComponents": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "EndRecordCUDAMemoryHistory": {
       "connectFirst": [],
@@ -336,7 +340,7 @@
       "disconnect": []
     },
     "FlipSigmasAdjusted": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
@@ -362,7 +366,7 @@
     },
     "GenerateNoise": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "GetImageRangeFromBatch": {
@@ -387,7 +391,7 @@
     },
     "GetLatentsFromBatchIndexed": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "GetLatentSizeAndCount": {
@@ -401,22 +405,22 @@
       "disconnect": []
     },
     "GetPreviewOverrideFramesKJ": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "GetTrackRange": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "GGUFLoaderKJ": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "GLIGENTextBoxApplyBatchCoords": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
@@ -432,7 +436,7 @@
     },
     "HDRPreviewKJ": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "HunyuanVideoBlockLoraSelect": {
@@ -441,12 +445,12 @@
       "disconnect": []
     },
     "HunyuanVideoEncodeKeyframesToCond": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "Ideogram4OptimizationsKJ": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
@@ -477,7 +481,7 @@
     },
     "ImageBatchJoinWithTransition": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "ImageBatchMulti": {
@@ -496,7 +500,7 @@
       "disconnect": []
     },
     "ImageConcanate": {
-      "connectFirst": [],
+      "connectFirst": ["+output:output:IMAGE", "-output:output:*"],
       "connectLast": [],
       "disconnect": []
     },
@@ -582,18 +586,18 @@
     },
     "ImageResizeKJ": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "ImageResizeKJv2": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "ImageSharpenKJ": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": ["+output:output:IMAGE", "-output:output:*"],
+      "connectLast": "NO_PRODUCER",
+      "disconnect": ["+output:output:*", "-output:output:IMAGE"]
     },
     "ImageTensorList": {
       "connectFirst": [],
@@ -601,24 +605,24 @@
       "disconnect": []
     },
     "ImageTransformByNormalizedAmplitude": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "ImageTransformKJ": {
-      "connectFirst": [],
+      "connectFirst": ["+output:output:IMAGE", "-output:output:*"],
       "connectLast": [],
       "disconnect": []
     },
     "ImageUncropByMask": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "ImageUpscaleWithModelBatched": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "InjectNoiseToLatent": {
       "connectFirst": [],
@@ -627,12 +631,12 @@
     },
     "InsertImageBatchByIndexes": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "InsertImagesToBatchIndexed": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "InsertLatentToIndexed": {
@@ -661,12 +665,12 @@
       "disconnect": []
     },
     "Krea2PromptWeight": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "LatentInpaintTTM": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
@@ -676,12 +680,12 @@
       "disconnect": []
     },
     "LeapfusionHunyuanI2VPatcher": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "LoadAndResizeImage": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
@@ -696,27 +700,27 @@
       "disconnect": []
     },
     "LoraExtractKJ": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "LoraReduceRankKJ": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "LTX2_NAG": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "LTX2AttentionTunerPatch": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "LTX2AudioLatentNormalizingSampling": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
@@ -726,49 +730,49 @@
       "disconnect": []
     },
     "LTX2LoraLoaderAdvanced": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "LTX2MemoryEfficientSageAttentionPatch": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "LTX2SamplingPreviewOverride": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "LTXVAddGuideMulti": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "LTXVAddGuidesFromBatch": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "LTXVAudioVideoMask": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "LTXVChunkFeedForward": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "LTXVEnhanceAVideoKJ": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "LTXVImgToVideoInplaceKJ": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "MaskBatchMulti": {
       "connectFirst": [],
@@ -776,7 +780,7 @@
       "disconnect": []
     },
     "MaskOrImageToWeight": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
@@ -786,57 +790,57 @@
       "disconnect": []
     },
     "ModelMemoryUsageFactorOverride": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "ModelMemoryUseReportPatch": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": "SAME_AS_FIRST",
-      "disconnect": []
+      "disconnect": "NO_PRODUCER"
     },
     "ModelPassThrough": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": "SAME_AS_FIRST",
-      "disconnect": []
+      "disconnect": "NO_PRODUCER"
     },
     "ModelPatchTorchSettings": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "ModelPreviewOverrideKJ": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "ModelSaveKJ": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "NABLA_AttentionKJ": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "NormalizedAmplitudeToFloatList": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": "SAME_AS_FIRST",
-      "disconnect": []
+      "disconnect": "NO_PRODUCER"
     },
     "NormalizedAmplitudeToMask": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "OffsetMask": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "OffsetMaskByNormalizedAmplitude": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
@@ -846,24 +850,24 @@
       "disconnect": []
     },
     "PatchFlashAttentionKJ": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "PatchModelPatcherOrder": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "PathchSageAttentionKJ": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "PiDColorBiasCorrection": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "PlaySoundKJ": {
       "connectFirst": [],
@@ -896,7 +900,7 @@
       "disconnect": []
     },
     "RandomImageFromBatch": {
-      "connectFirst": [],
+      "connectFirst": ["+output:output:IMAGE", "-output:output:*"],
       "connectLast": [],
       "disconnect": []
     },
@@ -917,7 +921,7 @@
     },
     "ResizeMask": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "ReverseImageBatch": {
@@ -931,7 +935,7 @@
       "disconnect": []
     },
     "SamplerSelfRefineVideo": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
@@ -956,7 +960,7 @@
       "disconnect": []
     },
     "ScheduledCFGGuidance": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
@@ -976,9 +980,9 @@
       "disconnect": []
     },
     "SetShakkerLabsUnionControlNetType": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "ShuffleImageBatch": {
       "connectFirst": [],
@@ -986,9 +990,9 @@
       "disconnect": []
     },
     "SigmasToFloat": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": "SAME_AS_FIRST",
-      "disconnect": []
+      "disconnect": "NO_PRODUCER"
     },
     "SimpleCalculatorKJ": {
       "connectFirst": [],
@@ -996,7 +1000,7 @@
       "disconnect": []
     },
     "SkipLayerGuidanceWanVideo": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
@@ -1021,7 +1025,7 @@
       "disconnect": []
     },
     "SplitBboxes": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
@@ -1031,7 +1035,7 @@
       "disconnect": []
     },
     "StableZero123_BatchSchedule": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
@@ -1056,7 +1060,7 @@
       "disconnect": []
     },
     "StyleModelApplyAdvanced": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
@@ -1066,19 +1070,19 @@
       "disconnect": []
     },
     "SV3D_BatchSchedule": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "TimerNodeKJ": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "TorchCompileControlNet": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "TorchCompileCosmosModel": {
       "connectFirst": [],
@@ -1091,7 +1095,7 @@
       "disconnect": []
     },
     "TorchCompileModelAdvanced": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
@@ -1101,7 +1105,7 @@
       "disconnect": []
     },
     "TorchCompileModelFluxAdvancedV2": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
@@ -1121,18 +1125,18 @@
       "disconnect": []
     },
     "TorchCompileModelWanVideoV2": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "TorchCompileVAE": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "TransitionImagesInBatch": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "TransitionImagesMulti": {
@@ -1146,12 +1150,12 @@
       "disconnect": []
     },
     "VAELoaderKJ": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "VAEMergeKJ": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
@@ -1161,13 +1165,13 @@
       "disconnect": []
     },
     "VisualizeSigmasKJ": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "VRAM_Debug": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "Wan21BlockLoraSelect": {
@@ -1176,34 +1180,34 @@
       "disconnect": []
     },
     "WanChunkFeedForward": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "WanImageToVideoSVIPro": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "WanVideoEnhanceAVideoKJ": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "WanVideoMemoryEfficientSageAttentionPatch": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": "SAME_AS_FIRST",
-      "disconnect": []
+      "disconnect": "NO_PRODUCER"
     },
     "WanVideoNAG": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "WanVideoTeaCacheKJ": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "WebcamCaptureCV2": {
       "connectFirst": [],
@@ -1217,7 +1221,7 @@
     },
     "WeightScheduleExtend": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "WidgetToString": {

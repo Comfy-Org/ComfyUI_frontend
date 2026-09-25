@@ -9,6 +9,8 @@ import {
   generateRecordingTemplate,
   recordedCodePath,
   recordingTarget,
+  removeLegacyCustomStorageState,
+  storageStateKey,
   storageStatePath
 } from './template'
 import { runCommand } from '../cli/run'
@@ -35,7 +37,7 @@ interface RecordingResult {
 export function findProjectRoot(): string {
   let dir = process.cwd()
   const { root } = parse(dir)
-  while (true) {
+  for (;;) {
     if (existsSync(join(dir, 'playwright.config.ts'))) {
       return dir
     }
@@ -86,7 +88,10 @@ export async function runRecording(
 
   let storageStateFile: string | undefined
   if (target === 'cloud') {
-    storageStateFile = storageStatePath(options.distribution?.id ?? 'cloud')
+    storageStateFile = storageStatePath(storageStateKey(options.distribution))
+    if (options.distribution?.id === 'custom') {
+      removeLegacyCustomStorageState(storageStateFile)
+    }
     ensureStorageStateDir(storageStateFile)
   }
 

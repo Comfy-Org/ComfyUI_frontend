@@ -20,7 +20,7 @@ const faqs = [
     id: 'models',
     question: 'Which models are supported?',
     answer:
-      'Explore the [supported models directory](/models) for current examples.'
+      'View the [supported models directory](/models) for current examples.'
   }
 ]
 

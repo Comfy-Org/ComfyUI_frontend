@@ -13,11 +13,13 @@ import { useTelemetry } from '@/platform/telemetry'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import type { SubscriptionCheckoutSelection } from '@/platform/workspace/composables/useSubscriptionCheckout'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useBillingSdkStore } from '@/platform/workspace/billing/sdk/billingSdkStore'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useAuthStore } from '@/stores/authStore'
 import {
   clearPendingSubscriptionCheckout,
+  clearPendingSubscriptionCheckoutIfTerminal,
   getPendingSubscriptionCheckout
 } from '@/platform/workspace/utils/pendingSubscriptionCheckout'
 import type { PendingSubscriptionCheckout } from '@/platform/workspace/utils/pendingSubscriptionCheckout'
@@ -27,6 +29,7 @@ const RESUME_PRICING_KEY = 'comfy:resume-team-pricing'
 
 export interface SubscriptionDialogOptions {
   reason?: PaymentIntentSource
+  paymentIntentSource?: PaymentIntentSource
   /**
    * Forces the unified pricing dialog to open on a specific plan tab,
    * overriding the workspace-derived default (e.g. an "Upgrade to Team" CTA
@@ -100,6 +103,8 @@ export const useSubscriptionDialog = () => {
 
     trackModalOpened(options?.reason)
 
+    const paymentIntentSource = options?.paymentIntentSource ?? options?.reason
+
     const legacyPricingDialogProps = {
       renderer: 'reka',
       size: 'full',
@@ -134,6 +139,7 @@ export const useSubscriptionDialog = () => {
           props: {
             onClose: hide,
             reason: options?.reason,
+            paymentIntentSource,
             ...(personalInitialCheckout
               ? {
                   initialCheckout: personalInitialCheckout,
@@ -161,6 +167,7 @@ export const useSubscriptionDialog = () => {
         props: {
           onClose: hide,
           reason: options?.reason,
+          paymentIntentSource,
           embeddedCheckoutEnabled: flags.embeddedCheckoutEnabled,
           initialCheckout: options?.initialCheckout,
           initialPlanMode: getInitialPlanMode(
@@ -197,6 +204,7 @@ export const useSubscriptionDialog = () => {
       props: {
         onClose: hide,
         reason: options?.reason,
+        paymentIntentSource,
         onChooseTeam: () => startTeamWorkspaceUpgradeFlow()
       },
       dialogComponentProps: legacyPricingDialogProps
@@ -288,30 +296,40 @@ export const useSubscriptionDialog = () => {
       return
     }
 
-    const billingOperationStore = useBillingOperationStore()
-    try {
-      const operation = await billingOperationStore.startOperation(
-        pending.operationId,
-        'subscription',
-        {
-          tier:
-            pending.selection.planMode === 'personal'
-              ? pending.selection.tierKey
-              : 'team',
-          cycle: pending.selection.billingCycle,
-          attemptStartedAt: pending.attemptedAt
-        }
-      )
-      if (operation.status !== 'failed') return
-
-      const initialCheckout = await restoreCheckoutSelection(pending)
-      showPricingTable({
-        planMode: pending.selection.planMode,
-        ...(initialCheckout && { initialCheckout })
-      })
-    } finally {
+    // The host pointer stays as it is: it carries the tier/cycle selection the
+    // pricing dialog restores below, which the SDK's scope-keyed pointer
+    // deliberately does not. Only who drives the operation moves.
+    const operation = flags.billingSdkSubscriptionRailEnabled
+      ? await useBillingSdkStore().recoverPendingOperation(pending.operationId)
+      : await useBillingOperationStore().startOperation(
+          pending.operationId,
+          'subscription',
+          {
+            tier:
+              pending.selection.planMode === 'personal'
+                ? pending.selection.tierKey
+                : 'team',
+            cycle: pending.selection.billingCycle,
+            attemptStartedAt: pending.attemptedAt
+          }
+        )
+    // Nothing to adopt: the server names no pending operation for this scope,
+    // so the parked pointer is stale and the customer is not mid-checkout.
+    if (!operation) {
       clearPendingSubscriptionCheckout(pending.operationId)
+      return
     }
+    clearPendingSubscriptionCheckoutIfTerminal(
+      pending.operationId,
+      operation.status
+    )
+    if (operation.status !== 'failed') return
+
+    const initialCheckout = await restoreCheckoutSelection(pending)
+    showPricingTable({
+      planMode: pending.selection.planMode,
+      ...(initialCheckout && { initialCheckout })
+    })
   }
 
   function resumePendingPricingFlow(): Promise<void> | void {

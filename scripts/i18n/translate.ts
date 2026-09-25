@@ -1,10 +1,12 @@
 import OpenAI from 'openai'
-
+import { zodTextFormat } from 'openai/helpers/zod'
 import type {
-  OutputLocale,
-  ReasoningEffort,
-  TranslationPipelineConfig
-} from './config'
+  Response,
+  ResponseUsage
+} from 'openai/resources/responses/responses'
+import { z } from 'zod'
+
+import type { OutputLocale, TranslationPipelineConfig } from './config'
 import { tokenErrors } from './protected-tokens'
 
 export interface TranslationItem {
@@ -22,34 +24,113 @@ export type TranslateBatch = (
 
 const defaultRequestTimeoutMs = 120_000
 const maxNetworkRetries = 3
-const maxMalformedResponseRetries = 3
+const maxResponseRetries = 1
+
+const tokenCountSchema = z.number().int().nonnegative()
+const responseUsageSchema = z.object({
+  input_tokens: tokenCountSchema,
+  output_tokens: tokenCountSchema,
+  total_tokens: tokenCountSchema,
+  input_tokens_details: z.object({
+    cached_tokens: tokenCountSchema,
+    cache_write_tokens: tokenCountSchema.default(0)
+  }),
+  output_tokens_details: z.object({ reasoning_tokens: tokenCountSchema })
+}) satisfies z.ZodType<ResponseUsage, z.ZodTypeDef, unknown>
+
+const usageEnvelopeSchema = z.object({ usage: responseUsageSchema.nullish() })
+const responseMetadataSchema = z.object({
+  status: z
+    .enum([
+      'completed',
+      'failed',
+      'in_progress',
+      'cancelled',
+      'queued',
+      'incomplete'
+    ])
+    .optional(),
+  error: z
+    .object({
+      code: z.enum([
+        'server_error',
+        'rate_limit_exceeded',
+        'invalid_prompt',
+        'data_residency_mismatch',
+        'bio_policy',
+        'vector_store_timeout',
+        'invalid_image',
+        'invalid_image_format',
+        'invalid_base64_image',
+        'invalid_image_url',
+        'image_too_large',
+        'image_too_small',
+        'image_parse_error',
+        'image_content_policy_violation',
+        'invalid_image_mode',
+        'image_file_too_large',
+        'unsupported_image_media_type',
+        'empty_image_file',
+        'failed_to_download_image',
+        'image_file_not_found'
+      ]),
+      message: z.string()
+    })
+    .nullable(),
+  incomplete_details: z
+    .object({
+      reason: z.enum(['max_output_tokens', 'content_filter']).optional()
+    })
+    .nullable()
+}) satisfies z.ZodType<
+  Pick<Response, 'status' | 'error' | 'incomplete_details'>,
+  z.ZodTypeDef,
+  unknown
+>
+const responseEnvelopeSchema = responseMetadataSchema.extend({
+  output: z.array(
+    z.discriminatedUnion('type', [
+      z.object({ type: z.literal('reasoning') }),
+      z.object({
+        type: z.literal('message'),
+        content: z.array(
+          z.discriminatedUnion('type', [
+            z.object({ type: z.literal('output_text'), text: z.string() }),
+            z.object({ type: z.literal('refusal') })
+          ])
+        )
+      })
+    ])
+  )
+})
 
 // Unlike es-toolkit's mapAsync, which dispatches every item up front, this
 // pool stops dispatching once any task fails so a fatal error does not keep
-// spending API requests whose results nobody will consume
+// spending API requests whose results nobody will consume; in-flight tasks
+// settle before the first failure is rethrown so no work outlives the call
 export async function mapWithConcurrency<T, R>(
   items: readonly T[],
   concurrency: number,
   task: (item: T) => Promise<R>
 ): Promise<R[]> {
-  const results: R[] = new Array(items.length)
+  const results: R[] = []
   let next = 0
-  let failed = false
+  let firstFailure: { reason: unknown } | undefined
   const workers = Array.from(
     { length: Math.min(concurrency, items.length) },
     async () => {
-      while (!failed && next < items.length) {
+      while (!firstFailure && next < items.length) {
         const index = next++
         try {
           results[index] = await task(items[index])
         } catch (error) {
-          failed = true
-          throw error
+          firstFailure ??= { reason: error }
         }
       }
     }
   )
   await Promise.all(workers)
+  if (firstFailure) throw firstFailure.reason
   return results
 }
 
@@ -82,39 +163,117 @@ export function buildSystemPrompt(
   locale: OutputLocale,
   glossary: string
 ): string {
-  return `You are a professional software localization translator for ComfyUI, a node-based interface for generative AI models.
-Translate each item's "source" string from English into ${locale.name}.
+  return `Translate each source from English into ${locale.name} for ComfyUI,
+a node-based generative AI application. Return each translation
+under its item's id.
 
-Rules:
-- Respond with a JSON object that maps every item "id" to its translated string — every id, no other keys, no commentary.
-- Every substring listed in an item's "preserve" array must appear in the translation exactly as written, byte for byte. Never translate, transliterate, or renumber them.
-- Interpolation placeholders such as {name} stay exactly as written.
-- The | character separates plural forms. Keep the same number of forms and translate each form.
-- The "context" field is the JSON path of the string in the UI resources; use it to resolve ambiguity. Keep values that are technical identifiers (node type names, parameter names, file names) unchanged when translating them would break meaning.
-- Match the brevity and professional tone of the source.
+Use context to resolve meaning. Preserve the source's meaning,
+tone, and level of detail. Keep code identifiers unchanged.
+Reproduce every preserve substring byte for byte. Never translate,
+transliterate, or renumber it. Keep interpolation placeholders unchanged.
+Retain the number and order of | separated plural forms.
 
 ${glossary}
 ${locale.guidance ? `\n${locale.name} guidelines:\n${locale.guidance}\n` : ''}`
 }
 
-function parseBatchResponse(content: string): Record<string, string> {
-  const parsed: unknown = JSON.parse(content)
-  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-    throw new Error('translation response is not a JSON object')
+export interface RequestCounter {
+  fetch: typeof fetch
+  requestCount: () => number
+}
+
+export function createRequestCounter(
+  fetchFn: typeof fetch = globalThis.fetch
+): RequestCounter {
+  let requests = 0
+  const countingFetch: typeof fetch = async (input, init) => {
+    requests++
+    return fetchFn(input, init)
   }
-  const record: Record<string, string> = {}
-  for (const [key, value] of Object.entries(parsed)) {
-    if (typeof value === 'string') record[key] = value
+  return { fetch: countingFetch, requestCount: () => requests }
+}
+
+function splitTruncatedBatch(items: TranslationItem[]): TranslationItem[][] {
+  const totalChars = items.reduce((sum, item) => sum + item.source.length, 0)
+  return chunkItems(
+    items,
+    Math.ceil(items.length / 2),
+    Math.ceil(totalChars / 2)
+  )
+}
+
+type TranslationAttempt =
+  | { status: 'translated'; translations: Record<string, string> }
+  | { status: 'truncated' }
+  | { status: 'retry' | 'defer'; reason: string }
+
+function classifyResponseStatus(
+  response: z.infer<typeof responseEnvelopeSchema>
+): TranslationAttempt | undefined {
+  if (
+    response.status === 'incomplete' &&
+    response.incomplete_details?.reason === 'max_output_tokens'
+  ) {
+    return { status: 'truncated' }
   }
-  return record
+  if (response.status !== undefined && response.status !== 'completed') {
+    return {
+      status:
+        response.status === 'failed' && response.error?.code === 'server_error'
+          ? 'retry'
+          : 'defer',
+      reason: `response status ${response.status}: ${JSON.stringify({ error: response.error, incomplete_details: response.incomplete_details })}`
+    }
+  }
+}
+
+function parseTranslationResponse(
+  body: unknown,
+  schema: z.ZodType<Record<string, string>>
+): TranslationAttempt {
+  const response = responseEnvelopeSchema.safeParse(body)
+  if (!response.success) {
+    return { status: 'retry', reason: 'invalid response envelope' }
+  }
+  const status = classifyResponseStatus(response.data)
+  if (status) return status
+  const content = response.data.output.flatMap((item) =>
+    item.type === 'message' ? item.content : []
+  )
+  if (content.some((item) => item.type === 'refusal')) {
+    return { status: 'defer', reason: 'the model refused the translation' }
+  }
+  const text = content
+    .flatMap((item) => (item.type === 'output_text' ? [item.text] : []))
+    .join('')
+  return parseTranslationOutput(text, schema)
+}
+
+function parseTranslationOutput(
+  text: string,
+  schema: z.ZodType<Record<string, string>>
+): TranslationAttempt {
+  let output: unknown
+  try {
+    output = JSON.parse(text)
+  } catch (error) {
+    if (!(error instanceof SyntaxError)) throw error
+    return { status: 'retry', reason: error.message }
+  }
+  const parsed = schema.safeParse(output)
+  return parsed.success
+    ? { status: 'translated', translations: parsed.data }
+    : { status: 'retry', reason: parsed.error.message }
 }
 
 interface OpenAiTranslatorOptions {
   apiKey: string
   model: string
-  reasoningEffort: ReasoningEffort
+  reasoningEffort: TranslationPipelineConfig['reasoningEffort']
   glossary: string
+  maxTruncationSplitDepth: number
   fetchFn?: typeof fetch
+  onUsage?: (usage: ResponseUsage | undefined) => void
   requestTimeoutMs?: number
 }
 
@@ -127,41 +286,84 @@ export function createOpenAiTranslator(
     timeout: options.requestTimeoutMs ?? defaultRequestTimeoutMs,
     maxRetries: maxNetworkRetries
   })
-  return async (locale, items) => {
-    let lastError = new Error('translation request was not attempted')
-    for (let attempt = 0; attempt <= maxMalformedResponseRetries; attempt++) {
-      const completion = await client.chat.completions.create({
-        model: options.model,
-        reasoning_effort: options.reasoningEffort,
-        response_format: { type: 'json_object' },
-        messages: [
-          {
-            role: 'system',
-            content: buildSystemPrompt(locale, options.glossary)
-          },
-          { role: 'user', content: JSON.stringify({ items }) }
-        ]
-      })
-      const choice = completion.choices[0]
-      if (choice?.finish_reason === 'length') {
-        lastError = new Error(
-          'OpenAI response was truncated (finish_reason "length"); lower maxItemsPerRequest or maxSourceCharsPerRequest'
-        )
-        continue
-      }
-      const content = choice?.message.content
-      if (typeof content !== 'string') {
-        lastError = new Error('OpenAI response has no message content')
-        continue
-      }
-      try {
-        return parseBatchResponse(content)
-      } catch (error) {
-        lastError = error instanceof Error ? error : new Error(String(error))
-      }
+
+  async function requestTranslation(
+    locale: OutputLocale,
+    items: TranslationItem[],
+    schema: z.ZodType<Record<string, string>>
+  ): Promise<TranslationAttempt> {
+    const request = client.responses.create({
+      model: options.model,
+      reasoning: { effort: options.reasoningEffort },
+      store: false,
+      text: { format: zodTextFormat(schema, 'translations') },
+      instructions: buildSystemPrompt(locale, options.glossary),
+      input: JSON.stringify({ items })
+    })
+    let body: unknown
+    try {
+      const response = await request.asResponse()
+      body = await response.json()
+    } catch (error) {
+      if (!(error instanceof SyntaxError)) throw error
+      options.onUsage?.(undefined)
+      return { status: 'retry', reason: error.message }
     }
-    throw lastError
+    const usage = usageEnvelopeSchema.safeParse(body)
+    options.onUsage?.(
+      usage.success ? (usage.data.usage ?? undefined) : undefined
+    )
+    if (!usage.success) {
+      return { status: 'retry', reason: 'invalid token usage' }
+    }
+    return parseTranslationResponse(body, schema)
   }
+
+  async function translateBatch(
+    locale: OutputLocale,
+    items: TranslationItem[],
+    splitDepth: number
+  ): Promise<Record<string, string>> {
+    if (items.length === 0) return {}
+    const schema = z
+      .object(Object.fromEntries(items.map((item) => [item.id, z.string()])))
+      .strict()
+    let deferralReason = 'the request was not attempted'
+    for (let attempt = 0; attempt <= maxResponseRetries; attempt++) {
+      const result = await requestTranslation(locale, items, schema)
+      if (result.status === 'translated') return result.translations
+      if (result.status !== 'truncated') {
+        deferralReason = result.reason
+        if (result.status === 'defer') break
+        continue
+      }
+      if (items.length === 1) {
+        deferralReason = `the response was truncated (max_output_tokens) for the single string ${items[0].context}`
+        continue
+      }
+      if (splitDepth >= options.maxTruncationSplitDepth) {
+        deferralReason = `${items.length} strings were still truncated (max_output_tokens) at maxTruncationSplitDepth ${options.maxTruncationSplitDepth}`
+        break
+      }
+      const settled = await Promise.allSettled(
+        splitTruncatedBatch(items).map((chunk) =>
+          translateBatch(locale, chunk, splitDepth + 1)
+        )
+      )
+      return Object.fromEntries(
+        settled.flatMap((result) => {
+          if (result.status === 'rejected') throw result.reason
+          return Object.entries(result.value)
+        })
+      )
+    }
+    console.warn(
+      `${locale.code}: deferring ${items.length} strings for retry: ${deferralReason}`
+    )
+    return {}
+  }
+
+  return (locale, items) => translateBatch(locale, items, 0)
 }
 
 export async function translateLocaleItems(

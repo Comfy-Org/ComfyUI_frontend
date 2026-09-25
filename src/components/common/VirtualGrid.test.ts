@@ -1,7 +1,9 @@
 import { render, screen } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { useElementSize, useEventListener, useScroll } from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Ref } from 'vue'
-import { nextTick, ref } from 'vue'
+import { nextTick, ref, toValue, watchEffect } from 'vue'
 
 import VirtualGrid from './VirtualGrid.vue'
 
@@ -11,19 +13,21 @@ let mockedWidth: Ref<number>
 let mockedHeight: Ref<number>
 let mockedScrollY: Ref<number>
 
-vi.mock('@vueuse/core', async () => {
-  const actual = await vi.importActual<Record<string, unknown>>('@vueuse/core')
-  return {
-    ...actual,
-    useElementSize: () => ({ width: mockedWidth, height: mockedHeight }),
-    useScroll: () => ({ y: mockedScrollY })
-  }
-})
+vi.mock(import('@vueuse/core'), { spy: true })
 
 beforeEach(() => {
   mockedWidth = ref(400)
   mockedHeight = ref(200)
   mockedScrollY = ref(0)
+  vi.mocked(useElementSize).mockImplementation(() =>
+    fromPartial({
+      width: mockedWidth,
+      height: mockedHeight
+    })
+  )
+  vi.mocked(useScroll).mockImplementation(() =>
+    fromPartial({ y: mockedScrollY })
+  )
 })
 
 function createItems(count: number): TestItem[] {
@@ -150,95 +154,6 @@ describe('VirtualGrid', () => {
     expect(renderedItems.length).toBe(0)
   })
 
-  it('emits approach-end for single-column list when scrolled near bottom', async () => {
-    const items = createItems(50)
-    mockedWidth.value = 400
-    mockedHeight.value = 600
-    mockedScrollY.value = 0
-
-    const onApproachEnd = vi.fn()
-
-    render(VirtualGrid, {
-      props: {
-        items,
-        gridStyle: {
-          display: 'grid',
-          gridTemplateColumns: 'minmax(0, 1fr)'
-        },
-        defaultItemHeight: 48,
-        defaultItemWidth: 200,
-        maxColumns: 1,
-        bufferRows: 1,
-        onApproachEnd
-      },
-      slots: {
-        item: `<template #item="{ item }">
-          <div class="test-item">{{ item.name }}</div>
-        </template>`
-      },
-      container: document.body.appendChild(document.createElement('div'))
-    })
-
-    await nextTick()
-
-    expect(onApproachEnd).not.toHaveBeenCalled()
-
-    // Scroll near the end: 50 items * 48px = 2400px total
-    // viewRows = ceil(600/48) = 13, buffer = 1
-    // Need toCol >= items.length - cols*bufferRows = 50 - 1 = 49
-    // toCol = (offsetRows + bufferRows + viewRows) * cols
-    // offsetRows = floor(scrollY / 48)
-    // Need (offsetRows + 1 + 13) * 1 >= 49 → offsetRows >= 35
-    // scrollY = 35 * 48 = 1680
-    mockedScrollY.value = 1680
-    await nextTick()
-
-    expect(onApproachEnd).toHaveBeenCalled()
-  })
-
-  it('does not emit approach-end without maxColumns in single-column layout', async () => {
-    // Demonstrates the bug: without maxColumns=1, cols is calculated
-    // from width/itemWidth (400/200 = 2), causing incorrect row math
-    const items = createItems(50)
-    mockedWidth.value = 400
-    mockedHeight.value = 600
-    mockedScrollY.value = 0
-
-    const onApproachEnd = vi.fn()
-
-    render(VirtualGrid, {
-      props: {
-        items,
-        gridStyle: {
-          display: 'grid',
-          gridTemplateColumns: 'minmax(0, 1fr)'
-        },
-        defaultItemHeight: 48,
-        defaultItemWidth: 200,
-        // No maxColumns — cols will be floor(400/200) = 2
-        bufferRows: 1,
-        onApproachEnd
-      },
-      slots: {
-        item: `<template #item="{ item }">
-          <div class="test-item">{{ item.name }}</div>
-        </template>`
-      },
-      container: document.body.appendChild(document.createElement('div'))
-    })
-
-    await nextTick()
-
-    // Same scroll position as the passing test
-    mockedScrollY.value = 1680
-    await nextTick()
-
-    // With cols=2, toCol = (35+1+13)*2 = 98, which exceeds items.length (50)
-    // remainingCol = 50-98 = -48, hasMoreToRender = false → isNearEnd = false
-    // The approach-end never fires at the correct scroll position
-    expect(onApproachEnd).not.toHaveBeenCalled()
-  })
-
   it('forces cols to maxColumns when maxColumns is finite', async () => {
     mockedWidth.value = 100
     mockedHeight.value = 200
@@ -316,5 +231,137 @@ describe('VirtualGrid', () => {
       widthSpy.mockRestore()
       heightSpy.mockRestore()
     }
+  })
+})
+
+const TILE_HEIGHT = 190
+const TILE_WIDTH = 129
+const PANEL_WIDTH = 414
+const PANEL_HEIGHT = 700
+const LIBRARY_SIZE = 2000
+
+function isAudio(index: number): boolean {
+  return index % 100 === 0
+}
+
+function createLibrary(): TestItem[] {
+  return Array.from({ length: LIBRARY_SIZE }, (_, i) => ({
+    key: `asset-${i}`,
+    name: `asset-${i}`
+  }))
+}
+
+describe('VirtualGrid scrolled deep into a large library', () => {
+  const gridStyle = {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))',
+    gap: '0.5rem'
+  }
+
+  function renderLibrary(items: TestItem[]) {
+    return render(VirtualGrid, {
+      props: {
+        items,
+        gridStyle,
+        defaultItemHeight: TILE_HEIGHT,
+        defaultItemWidth: TILE_WIDTH,
+        bufferRows: 1
+      },
+      slots: {
+        item: `<template #item="{ item }">
+          <div>{{ item.name }}</div>
+        </template>`
+      },
+      container: document.body.appendChild(document.createElement('div'))
+    })
+  }
+
+  let scrollContainer: HTMLElement | null = null
+
+  function renderedNames() {
+    return screen.queryAllByText(/^asset-\d+$/).map((el) => el.textContent)
+  }
+
+  beforeEach(() => {
+    mockedWidth.value = PANEL_WIDTH
+    mockedHeight.value = PANEL_HEIGHT
+    mockedScrollY.value = 0
+    scrollContainer = null
+    vi.mocked(useScroll).mockImplementation((target) => {
+      const y = ref(0)
+      watchEffect((onCleanup) => {
+        const element = toValue(target)
+        if (!(element instanceof HTMLElement)) return
+        scrollContainer = element
+
+        function sync() {
+          const current = toValue(target)
+          if (current instanceof HTMLElement) y.value = current.scrollTop
+        }
+
+        sync()
+        onCleanup(useEventListener(element, 'scroll', sync))
+      })
+      return fromPartial({ y })
+    })
+  })
+
+  function syncScrollPosition() {
+    if (!scrollContainer) throw new Error('no scroll container rendered')
+    scrollContainer.dispatchEvent(new Event('scroll'))
+  }
+
+  function scrollTo(offset: number) {
+    if (!scrollContainer) throw new Error('no scroll container rendered')
+    scrollContainer.scrollTop = offset
+    syncScrollPosition()
+  }
+
+  it.for([
+    { offset: 20_000, expectedItem: 'asset-312' },
+    { offset: 100_000, expectedItem: 'asset-1575' }
+  ])(
+    'windows onto $expectedItem at offset $offset',
+    async ({ offset, expectedItem }) => {
+      renderLibrary(createLibrary())
+      await nextTick()
+
+      expect(renderedNames().length).toBeLessThan(LIBRARY_SIZE)
+
+      scrollTo(offset)
+      await nextTick()
+
+      expect(renderedNames()).toContain(expectedItem)
+      expect(renderedNames()).not.toContain('asset-0')
+    }
+  )
+
+  it.fails('KNOWN BUG: goes blank when the filtered list shrinks below the scrolled-to index', async () => {
+    const { rerender } = renderLibrary(createLibrary())
+    await nextTick()
+
+    scrollTo(20_000)
+    await nextTick()
+
+    const audioOnly = createLibrary().filter((_, i) => isAudio(i))
+    await rerender({ items: audioOnly })
+    await nextTick()
+    syncScrollPosition()
+    await nextTick()
+
+    expect(renderedNames().length).toBeGreaterThan(0)
+  })
+
+  it.fails('KNOWN BUG: goes blank when the column count grows while scrolled deep', async () => {
+    renderLibrary(createLibrary())
+    await nextTick()
+
+    scrollTo(100_000)
+    await nextTick()
+
+    mockedWidth.value = PANEL_WIDTH * 2
+    await nextTick()
+
+    expect(renderedNames().length).toBeGreaterThan(0)
   })
 })

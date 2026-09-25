@@ -1,23 +1,27 @@
 import { ref, shallowRef } from 'vue'
 import { createSharedComposable } from '@vueuse/core'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { reportError } from '@/platform/telemetry/reportError'
 
 function hasV2DraftHistory(raw: string | null): boolean {
   if (!raw) return false
+  let parsed: unknown
   try {
-    const parsed = JSON.parse(raw) as {
-      order?: unknown
-      entries?: unknown
-    }
-    const orderLength = Array.isArray(parsed.order) ? parsed.order.length : 0
-    const entriesCount =
-      parsed.entries && typeof parsed.entries === 'object'
-        ? Object.keys(parsed.entries as Record<string, unknown>).length
-        : 0
-    return orderLength > 0 || entriesCount > 0
+    parsed = JSON.parse(raw)
   } catch {
+    reportError(new Error('Workflow draft index is not valid JSON'), {
+      errorType: 'error_parsing_workflow_draft_index',
+      level: 'warning',
+      context: { length: raw.length }
+    })
     return false
   }
+  if (!parsed || typeof parsed !== 'object') return false
+  const { order, entries } = parsed as { order?: unknown; entries?: unknown }
+  const orderLength = Array.isArray(order) ? order.length : 0
+  const entriesCount =
+    entries && typeof entries === 'object' ? Object.keys(entries).length : 0
+  return orderLength > 0 || entriesCount > 0
 }
 
 function _useNewUserService() {

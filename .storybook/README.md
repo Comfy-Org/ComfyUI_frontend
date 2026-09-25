@@ -57,7 +57,7 @@ Stories are located alongside components in `src/` directories with the pattern 
 
 ```typescript
 // MyComponent.stories.ts
-import type { Meta, StoryObj } from '@storybook/vue3'
+import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import MyComponent from './MyComponent.vue'
 
 const meta: Meta<typeof MyComponent> = {

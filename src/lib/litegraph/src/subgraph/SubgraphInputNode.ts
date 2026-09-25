@@ -139,7 +139,7 @@ export class SubgraphInputNode
       const uniqueName = nextUniqueName(inputSlot.slot.name, existingNames)
       const newSubgraphInput = this.subgraph.addInput(
         uniqueName,
-        String(inputSlot.slot.type ?? '')
+        String(inputSlot.slot.type)
       )
       const newSlotIndex = this.slots.indexOf(newSubgraphInput)
       if (newSlotIndex === -1) {

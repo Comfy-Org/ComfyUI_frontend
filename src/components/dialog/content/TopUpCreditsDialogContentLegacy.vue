@@ -12,7 +12,7 @@
         }}
       </h2>
       <button
-        class="focus-visible:ring-secondary-foreground cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none"
+        class="cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none"
         :aria-label="$t('g.close')"
         @click="() => handleClose()"
       >
@@ -40,7 +40,7 @@
           size="lg"
           :class="
             cn(
-              'focus-visible:ring-secondary-foreground h-10 w-full text-base font-medium',
+              'h-10 w-full text-base font-medium focus-visible:ring-border-default',
               selectedPreset === amount && 'bg-secondary-background-selected'
             )
           "
@@ -158,11 +158,9 @@ import { creditsToUsd, usdToCredits } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
 import FormattedNumberStepper from '@/components/ui/stepper/FormattedNumberStepper.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
-import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { useExternalLink } from '@/composables/useExternalLink'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useTelemetry } from '@/platform/telemetry'
-import { clearTopupTracking } from '@/platform/telemetry/topupTracker'
+import { usePendingTopup } from '@/composables/billing/usePendingTopup'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -179,9 +177,7 @@ const settingsDialog = useSettingsDialog()
 const telemetry = useTelemetry()
 const toast = useToast()
 const { buildDocsUrl, docsPaths } = useExternalLink()
-const { shouldUseWorkspaceBilling } = useBillingRouting()
 
-const { isSubscriptionEnabled } = useSubscription()
 // Constants
 const PRESET_AMOUNTS = [10, 25, 50, 100]
 const MIN_AMOUNT = 5
@@ -244,7 +240,7 @@ function handlePresetClick(amount: number) {
 
 function handleClose(clearTracking = true) {
   if (clearTracking) {
-    clearTopupTracking()
+    usePendingTopup().clearPendingTopup()
   }
   dialogStore.closeDialog({ key: 'top-up-credits' })
 }
@@ -258,14 +254,14 @@ async function handleBuy() {
     telemetry?.trackApiCreditTopupButtonPurchaseClicked(payAmount.value)
     await authActions.purchaseCreditsDirect(payAmount.value)
 
-    // Close top-up dialog (keep tracking) and open credits panel to show updated balance
+    // Close top-up dialog (keep tracking) and open Plan & Credits to show the
+    // updated balance. The destination is the V1 panel for every session: the
+    // legacy `credits` panel is hidden from the settings menu, and keying this
+    // off the billing rail sent rail-less sessions (API key, pre-workspace
+    // bootstrap) to that hidden screen.
     handleClose(false)
 
-    const settingsPanel =
-      shouldUseWorkspaceBilling.value || isSubscriptionEnabled()
-        ? 'workspace'
-        : 'credits'
-    settingsDialog.show(settingsPanel)
+    settingsDialog.show('workspace')
   } catch (error) {
     console.error('Purchase failed:', error)
 

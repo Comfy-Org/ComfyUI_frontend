@@ -55,6 +55,8 @@ function isTeamPlanSlug(planSlug: string | null | undefined): boolean {
  *
  * @example
  * ```typescript
+ * import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
+ *
  * const {
  *   type,
  *   subscription,
@@ -72,10 +74,10 @@ function isTeamPlanSlug(planSlug: string | null | undefined): boolean {
  *   console.log(`Tier: ${subscription.value.tier}`)
  * }
  *
- * // Check balance
+ * // Check balance (the *Micros fields are cents - see BalanceInfo)
  * if (balance.value) {
- *   const dollars = balance.value.amountMicros / 1_000_000
- *   console.log(`Balance: $${dollars.toFixed(2)}`)
+ *   const credits = formatCreditsFromCents({ cents: balance.value.amountMicros })
+ *   console.log(`Balance: ${credits} credits`)
  * }
  * ```
  */
@@ -147,16 +149,13 @@ function useBillingContextInternal(): BillingContext {
     toValue(activeContext.value.canAccessSubscriptionFeatures)
   )
 
-  // Alias kept for backward compatibility; equals canAccessSubscriptionFeatures.
-  const isActiveSubscription = canAccessSubscriptionFeatures
-
   const isFreeTier = computed(() => subscription.value?.tier === 'FREE')
 
   const freeTierQuota = useFreeTierQuota()
 
   const canRunWorkflows = computed(
     () =>
-      isActiveSubscription.value &&
+      canAccessSubscriptionFeatures.value &&
       (!isFreeTier.value ||
         !freeTierQuota.quotaEnabled.value ||
         freeTierQuota.freeTierExecutionPermitted.value)
@@ -180,9 +179,9 @@ function useBillingContextInternal(): BillingContext {
 
   // Plan identity, independent of subscription health: the per-credit Team plan
   // carries a credit stop, the retired seat-based ones a `team-` slug. Kept off
-  // isActiveSubscription on purpose — paused and payment_failed both force
-  // is_active=false, which is exactly when callers still need to know this is a
-  // team plan.
+  // canAccessSubscriptionFeatures on purpose — paused and payment_failed
+  // both force is_active=false, which is exactly when callers still need
+  // to know this is a team plan.
   const isTeamPlan = computed(
     () =>
       type.value === 'workspace' &&
@@ -356,10 +355,9 @@ function useBillingContextInternal(): BillingContext {
     occupiedSeats,
     isLoading,
     error,
-    isActiveSubscription,
-    canRunWorkflows,
     showsSubscribeToRunPrompt,
     canAccessSubscriptionFeatures,
+    canRunWorkflows,
     isFreeTier,
     isLegacyTeamPlan,
     isTeamPlan,

@@ -1,7 +1,5 @@
 import { render, screen } from '@testing-library/vue'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import TabGlobalParameters from './TabGlobalParameters.vue'
@@ -27,10 +25,6 @@ function renderTab() {
 }
 
 describe('TabGlobalParameters', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('renders the shared search header', () => {
     renderTab()
 

@@ -56,7 +56,10 @@ const config: StorybookConfig = {
       ],
       resolve: {
         alias: {
-          '@': websiteSource
+          '@': websiteSource,
+          'astro:env/client': fileURLToPath(
+            new URL('./astroEnv.ts', import.meta.url)
+          )
         }
       },
       optimizeDeps: {

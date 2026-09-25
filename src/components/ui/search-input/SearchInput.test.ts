@@ -6,7 +6,7 @@ import { createI18n } from 'vue-i18n'
 
 import SearchInput from './SearchInput.vue'
 
-vi.mock('@vueuse/core', () => ({
+vi.mock(import('@vueuse/core'), () => ({
   watchDebounced: vi.fn((source, cb, opts) => {
     let timer: ReturnType<typeof setTimeout> | null = null
     return watch(source, (val: string) => {

@@ -1,4 +1,6 @@
-import { expect, test } from '@playwright/test'
+import { expect } from '@playwright/test'
+
+import { test } from './fixtures/blockExternalMedia'
 
 test.describe('Supported model FAQ @smoke', () => {
   test('renders the same questions as the FAQPage schema', async ({ page }) => {
@@ -17,7 +19,7 @@ test.describe('Supported model FAQ @smoke', () => {
       .locator('script[type="application/ld+json"]')
       .evaluateAll((scripts) => {
         const nodes = scripts.flatMap((script) => {
-          const value = JSON.parse(script.textContent ?? '{}') as {
+          const value = JSON.parse(script.innerHTML) as {
             '@graph'?: Array<Record<string, unknown>>
           }
           return value['@graph'] ?? []

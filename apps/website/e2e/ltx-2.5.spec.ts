@@ -19,7 +19,7 @@ const HIGHLIGHT_CTA = t('ltx.reviews.highlightCta', 'en')
 const MCP_ROUTE = getRoutes('en').mcp
 const FIRST_REVIEW = creatorReviews[0]
 const LTX_RUN_TEMPLATE = 'https://cloud.comfy.org/?template=video_ltx2_5_i2v'
-const LTX_HUB_MODEL = 'https://comfy.org/workflows/model/ltx'
+const LTX_HUB_MODEL = 'https://comfy.org/workflows/model/ltx/'
 
 // Counts are the launch requirement, not a snapshot of the config: deriving them
 // would let a dropped badge, card or Q&A entry pass.
@@ -190,10 +190,7 @@ test.describe('LTX 2.5 Q&A', () => {
           'script[type="application/ld+json"]'
         )
       )
-      return (
-        scripts.find((s) => (s.textContent ?? '').includes('FAQPage'))
-          ?.textContent ?? null
-      )
+      return scripts.find((s) => s.text.includes('FAQPage'))?.text ?? null
     })
     expect(faqJsonLd, 'FAQ JSON-LD script').not.toBeNull()
     const graph = JSON.parse(faqJsonLd!)['@graph'] as {

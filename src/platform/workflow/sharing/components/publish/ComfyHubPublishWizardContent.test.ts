@@ -3,11 +3,12 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
+import { useErrorHandling } from '@/composables/useErrorHandling'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import ComfyHubPublishWizardContent from './ComfyHubPublishWizardContent.vue'
 import type { ComfyHubPublishFormData } from '@/platform/workflow/sharing/types/comfyHubTypes'
 
 const mockCheckProfile = vi.hoisted(() => vi.fn())
-const mockToastErrorHandler = vi.hoisted(() => vi.fn())
 const mockHasProfile = ref<boolean | null>(true)
 const mockIsFetchingProfile = ref(false)
 const mockProfile = ref<{ username: string; name?: string } | null>({
@@ -15,8 +16,8 @@ const mockProfile = ref<{ username: string; name?: string } | null>({
   name: 'Test User'
 })
 
-vi.mock(
-  '@/platform/workflow/sharing/composables/useComfyHubProfileGate',
+vi.mock<unknown>(
+  import('@/platform/workflow/sharing/composables/useComfyHubProfileGate'),
   () => ({
     useComfyHubProfileGate: () => ({
       checkProfile: mockCheckProfile,
@@ -27,22 +28,9 @@ vi.mock(
   })
 )
 
-vi.mock('@/composables/useErrorHandling', () => ({
-  useErrorHandling: () => ({
-    toastErrorHandler: mockToastErrorHandler
-  })
-}))
+vi.mock(import('@/composables/useErrorHandling'))
 
-const mockFlags = vi.hoisted(() => ({
-  comfyHubProfileGateEnabled: true
-}))
-
-vi.mock('@/composables/useFeatureFlags', () => ({
-  useFeatureFlags: () => ({
-    flags: mockFlags
-  })
-}))
-
+vi.mock(import('@/composables/useFeatureFlags'))
 function createDefaultFormData(): ComfyHubPublishFormData {
   return {
     name: 'Test Workflow',
@@ -77,12 +65,12 @@ describe('ComfyHubPublishWizardContent', () => {
   const onGateClose = vi.fn()
 
   beforeEach(() => {
+    vi.mocked(useFeatureFlags().flags).comfyHubProfileGateEnabled = true
     onPublish.mockResolvedValue(undefined)
     mockCheckProfile.mockResolvedValue(true)
     mockHasProfile.value = true
     mockIsFetchingProfile.value = false
     mockProfile.value = { username: 'testuser', name: 'Test User' }
-    mockFlags.comfyHubProfileGateEnabled = true
   })
 
   function renderComponent(
@@ -117,9 +105,6 @@ describe('ComfyHubPublishWizardContent', () => {
           'comfy-hub-create-profile-form': {
             template: '<div data-testid="publish-gate-flow" />',
             props: ['onProfileCreated', 'onClose', 'showCloseButton']
-          },
-          Skeleton: {
-            template: '<div class="skeleton" />'
           },
           ComfyHubDescribeStep: {
             template: '<div data-testid="describe-step" />'
@@ -206,13 +191,13 @@ describe('ComfyHubPublishWizardContent', () => {
       await userEvent.click(screen.getByTestId('publish-btn'))
       await flushPromises()
 
-      expect(mockToastErrorHandler).toHaveBeenCalledWith(error)
+      expect(useErrorHandling().toastErrorHandler).toHaveBeenCalledWith(error)
       expect(onPublish).not.toHaveBeenCalled()
       expect(onRequireProfile).not.toHaveBeenCalled()
     })
 
     it('calls onPublish directly when profile gate is disabled', async () => {
-      mockFlags.comfyHubProfileGateEnabled = false
+      vi.mocked(useFeatureFlags().flags).comfyHubProfileGateEnabled = false
 
       renderComponent()
       await userEvent.click(screen.getByTestId('publish-btn'))
@@ -250,7 +235,9 @@ describe('ComfyHubPublishWizardContent', () => {
       await flushPromises()
 
       expect(onPublish).toHaveBeenCalledOnce()
-      expect(mockToastErrorHandler).toHaveBeenCalledWith(publishError)
+      expect(useErrorHandling().toastErrorHandler).toHaveBeenCalledWith(
+        publishError
+      )
       expect(onGateClose).not.toHaveBeenCalled()
     })
 
@@ -310,7 +297,7 @@ describe('ComfyHubPublishWizardContent', () => {
     })
 
     it('enables publish when gate is disabled regardless of profile', () => {
-      mockFlags.comfyHubProfileGateEnabled = false
+      vi.mocked(useFeatureFlags().flags).comfyHubProfileGateEnabled = false
       mockHasProfile.value = null
       renderComponent()
 

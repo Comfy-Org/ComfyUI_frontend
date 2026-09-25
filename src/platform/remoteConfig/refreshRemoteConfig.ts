@@ -9,7 +9,7 @@ import {
 
 // Cap the bootstrap fetch so a wedged /features endpoint can never block app.mount indefinitely.
 // A same-origin GET against the local comfyui server should resolve in well under a second;
-// on timeout the catch below clears remoteConfig and consumers fall back to build-time defaults.
+// on timeout consumers retain the last known config or use build-time defaults.
 const FEATURES_FETCH_TIMEOUT_MS = 5_000
 
 interface RefreshRemoteConfigOptions {
@@ -28,8 +28,15 @@ export function invalidateRemoteConfig(): void {
   refreshGeneration++
   for (const controller of activeRefreshControllers) controller.abort()
   activeRefreshControllers.clear()
-  window.__CONFIG__ = {}
-  remoteConfig.value = {}
+  const { comfy_api_base_url, comfy_cloud_base_url, comfy_platform_base_url } =
+    remoteConfig.value
+  const retainedConfig = {
+    ...(comfy_api_base_url && { comfy_api_base_url }),
+    ...(comfy_cloud_base_url && { comfy_cloud_base_url }),
+    ...(comfy_platform_base_url && { comfy_platform_base_url })
+  }
+  window.__CONFIG__ = retainedConfig
+  remoteConfig.value = retainedConfig
   remoteConfigErrorStatus.value = null
   remoteConfigState.value = 'unloaded'
   cachedLegacyBillingMigrationEnabled.value = undefined
@@ -110,8 +117,6 @@ export async function refreshRemoteConfig(
     if (generation !== refreshGeneration) return
     if (signal?.aborted) return
     console.error('Failed to fetch remote config:', error)
-    window.__CONFIG__ = {}
-    remoteConfig.value = {}
     remoteConfigErrorStatus.value = null
     if (useAuth) cachedLegacyBillingMigrationEnabled.value = undefined
     remoteConfigState.value = 'error'

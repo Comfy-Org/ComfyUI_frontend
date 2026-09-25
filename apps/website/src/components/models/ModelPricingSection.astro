@@ -1,11 +1,12 @@
 ---
 import { Coins as CreditsIcon } from '@lucide/vue'
 
+import type { Locale } from '../../config/locales'
 import { t } from '../../i18n/translations'
 
 interface Props {
   isPartnerNode: boolean
-  locale?: 'en' | 'zh-CN'
+  locale?: Locale
 }
 
 const { isPartnerNode, locale = 'en' } = Astro.props

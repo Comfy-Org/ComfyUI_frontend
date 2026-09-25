@@ -1,49 +1,28 @@
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render } from '@testing-library/vue'
-import { describe, expect, it, vi } from 'vitest'
 
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowAutoSave } from '@/platform/workflow/persistence/composables/useWorkflowAutoSave'
 import { api } from '@/scripts/api'
 
-vi.mock('@/scripts/api', () => ({
-  api: {
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn()
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
-vi.mock('@/platform/workflow/core/services/workflowService', () => ({
-  useWorkflowService: vi.fn(() => ({
-    saveWorkflow: vi.fn()
-  }))
-}))
+vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: vi.fn(() => ({
-    get: vi.fn((key) => {
-      if (key === 'Comfy.Workflow.AutoSave') return mockAutoSaveSetting
-      if (key === 'Comfy.Workflow.AutoSaveDelay') return mockAutoSaveDelay
-      return null
-    })
-  }))
-}))
-
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: vi.fn(() => ({
-    activeWorkflow: mockActiveWorkflow
-  }))
-}))
-
-let mockAutoSaveSetting: string = 'off'
-let mockAutoSaveDelay: number = 1000
-let mockActiveWorkflow: { isModified: boolean; isPersisted?: boolean } | null =
-  null
+beforeEach(() => {
+  useSettingStore().settingValues['Comfy.Workflow.AutoSave'] = 'off'
+  useSettingStore().settingValues['Comfy.Workflow.AutoSaveDelay'] = 1000
+})
 
 describe('useWorkflowAutoSave', () => {
   it('should auto-save workflow after delay when modified and autosave enabled', async () => {
-    mockAutoSaveSetting = 'after delay'
-    mockAutoSaveDelay = 1000
-    mockActiveWorkflow = { isModified: true, isPersisted: true }
+    useSettingStore().settingValues['Comfy.Workflow.AutoSave'] = 'after delay'
+    useSettingStore().settingValues['Comfy.Workflow.AutoSaveDelay'] = 1000
+    Object.assign(useWorkflowStore(), {
+      activeWorkflow: { isModified: true, isPersisted: true }
+    })
 
     render({
       template: `<div></div>`,
@@ -55,16 +34,17 @@ describe('useWorkflowAutoSave', () => {
 
     vi.advanceTimersByTime(1000)
 
-    const serviceInstance = vi.mocked(useWorkflowService).mock.results[0].value
-    expect(serviceInstance.saveWorkflow).toHaveBeenCalledWith(
-      mockActiveWorkflow
+    expect(useWorkflowService().saveWorkflow).toHaveBeenCalledWith(
+      useWorkflowStore().activeWorkflow
     )
   })
 
   it('should not auto-save workflow after delay when not modified and autosave enabled', async () => {
-    mockAutoSaveSetting = 'after delay'
-    mockAutoSaveDelay = 1000
-    mockActiveWorkflow = { isModified: false, isPersisted: true }
+    useSettingStore().settingValues['Comfy.Workflow.AutoSave'] = 'after delay'
+    useSettingStore().settingValues['Comfy.Workflow.AutoSaveDelay'] = 1000
+    Object.assign(useWorkflowStore(), {
+      activeWorkflow: { isModified: false, isPersisted: true }
+    })
 
     render({
       template: `<div></div>`,
@@ -76,16 +56,17 @@ describe('useWorkflowAutoSave', () => {
 
     vi.advanceTimersByTime(1000)
 
-    const serviceInstance = vi.mocked(useWorkflowService).mock.results[0].value
-    expect(serviceInstance.saveWorkflow).not.toHaveBeenCalledWith(
-      mockActiveWorkflow
+    expect(useWorkflowService().saveWorkflow).not.toHaveBeenCalledWith(
+      useWorkflowStore().activeWorkflow
     )
   })
 
   it('should not auto save workflow when autosave is off', async () => {
-    mockAutoSaveSetting = 'off'
-    mockAutoSaveDelay = 1000
-    mockActiveWorkflow = { isModified: true, isPersisted: true }
+    useSettingStore().settingValues['Comfy.Workflow.AutoSave'] = 'off'
+    useSettingStore().settingValues['Comfy.Workflow.AutoSaveDelay'] = 1000
+    Object.assign(useWorkflowStore(), {
+      activeWorkflow: { isModified: true, isPersisted: true }
+    })
 
     render({
       template: `<div></div>`,
@@ -95,16 +76,17 @@ describe('useWorkflowAutoSave', () => {
       }
     })
 
-    vi.advanceTimersByTime(mockAutoSaveDelay)
+    vi.advanceTimersByTime(1000)
 
-    const serviceInstance = vi.mocked(useWorkflowService).mock.results[0].value
-    expect(serviceInstance.saveWorkflow).not.toHaveBeenCalled()
+    expect(useWorkflowService().saveWorkflow).not.toHaveBeenCalled()
   })
 
   it('should respect the user specified auto save delay', async () => {
-    mockAutoSaveSetting = 'after delay'
-    mockAutoSaveDelay = 2000
-    mockActiveWorkflow = { isModified: true, isPersisted: true }
+    useSettingStore().settingValues['Comfy.Workflow.AutoSave'] = 'after delay'
+    useSettingStore().settingValues['Comfy.Workflow.AutoSaveDelay'] = 2000
+    Object.assign(useWorkflowStore(), {
+      activeWorkflow: { isModified: true, isPersisted: true }
+    })
 
     render({
       template: `<div></div>`,
@@ -116,18 +98,19 @@ describe('useWorkflowAutoSave', () => {
 
     vi.advanceTimersByTime(1000)
 
-    const serviceInstance = vi.mocked(useWorkflowService).mock.results[0].value
-    expect(serviceInstance.saveWorkflow).not.toHaveBeenCalled()
+    expect(useWorkflowService().saveWorkflow).not.toHaveBeenCalled()
 
     vi.advanceTimersByTime(1000)
 
-    expect(serviceInstance.saveWorkflow).toHaveBeenCalled()
+    expect(useWorkflowService().saveWorkflow).toHaveBeenCalled()
   })
 
   it('should debounce save requests', async () => {
-    mockAutoSaveSetting = 'after delay'
-    mockAutoSaveDelay = 2000
-    mockActiveWorkflow = { isModified: true, isPersisted: true }
+    useSettingStore().settingValues['Comfy.Workflow.AutoSave'] = 'after delay'
+    useSettingStore().settingValues['Comfy.Workflow.AutoSaveDelay'] = 2000
+    Object.assign(useWorkflowStore(), {
+      activeWorkflow: { isModified: true, isPersisted: true }
+    })
 
     render({
       template: `<div></div>`,
@@ -137,7 +120,6 @@ describe('useWorkflowAutoSave', () => {
       }
     })
 
-    const serviceInstance = vi.mocked(useWorkflowService).mock.results[0].value
     const graphChangedCallback = vi.mocked(api.addEventListener).mock
       .calls[0][1]
 
@@ -148,16 +130,18 @@ describe('useWorkflowAutoSave', () => {
     graphChangedCallback?.({} as Parameters<typeof graphChangedCallback>[0])
 
     vi.advanceTimersByTime(1999)
-    expect(serviceInstance.saveWorkflow).not.toHaveBeenCalled()
+    expect(useWorkflowService().saveWorkflow).not.toHaveBeenCalled()
 
     vi.advanceTimersByTime(1)
-    expect(serviceInstance.saveWorkflow).toHaveBeenCalledTimes(1)
+    expect(useWorkflowService().saveWorkflow).toHaveBeenCalledTimes(1)
   })
 
   it('should handle save error gracefully', async () => {
-    mockAutoSaveSetting = 'after delay'
-    mockAutoSaveDelay = 1000
-    mockActiveWorkflow = { isModified: true, isPersisted: true }
+    useSettingStore().settingValues['Comfy.Workflow.AutoSave'] = 'after delay'
+    useSettingStore().settingValues['Comfy.Workflow.AutoSaveDelay'] = 1000
+    Object.assign(useWorkflowStore(), {
+      activeWorkflow: { isModified: true, isPersisted: true }
+    })
 
     const consoleErrorSpy = vi
       .spyOn(console, 'error')
@@ -172,9 +156,9 @@ describe('useWorkflowAutoSave', () => {
         }
       })
 
-      const serviceInstance =
-        vi.mocked(useWorkflowService).mock.results[0].value
-      serviceInstance.saveWorkflow.mockRejectedValue(new Error('Test Error'))
+      vi.mocked(useWorkflowService()).saveWorkflow.mockRejectedValue(
+        new Error('Test Error')
+      )
 
       vi.advanceTimersByTime(1000)
       await Promise.resolve()
@@ -189,9 +173,11 @@ describe('useWorkflowAutoSave', () => {
   })
 
   it('should queue autosave requests during saving and reschedule after save completes', async () => {
-    mockAutoSaveSetting = 'after delay'
-    mockAutoSaveDelay = 1000
-    mockActiveWorkflow = { isModified: true, isPersisted: true }
+    useSettingStore().settingValues['Comfy.Workflow.AutoSave'] = 'after delay'
+    useSettingStore().settingValues['Comfy.Workflow.AutoSaveDelay'] = 1000
+    Object.assign(useWorkflowStore(), {
+      activeWorkflow: { isModified: true, isPersisted: true }
+    })
 
     render({
       template: `<div></div>`,
@@ -201,13 +187,14 @@ describe('useWorkflowAutoSave', () => {
       }
     })
 
-    const serviceInstance = vi.mocked(useWorkflowService).mock.results[0].value
-    let resolveSave: () => void
-    const firstSavePromise = new Promise<void>((resolve) => {
+    let resolveSave: (saved: boolean) => void
+    const firstSavePromise = new Promise<boolean>((resolve) => {
       resolveSave = resolve
     })
 
-    serviceInstance.saveWorkflow.mockImplementationOnce(() => firstSavePromise)
+    vi.mocked(useWorkflowService()).saveWorkflow.mockImplementationOnce(
+      () => firstSavePromise
+    )
 
     vi.advanceTimersByTime(1000)
 
@@ -215,15 +202,15 @@ describe('useWorkflowAutoSave', () => {
       .calls[0][1]
     graphChangedCallback?.({} as Parameters<typeof graphChangedCallback>[0])
 
-    resolveSave!()
+    resolveSave!(true)
     await Promise.resolve()
 
     vi.advanceTimersByTime(1000)
-    expect(serviceInstance.saveWorkflow).toHaveBeenCalledTimes(2)
+    expect(useWorkflowService().saveWorkflow).toHaveBeenCalledTimes(2)
   })
 
   it('should clean up event listeners on component unmount', async () => {
-    mockAutoSaveSetting = 'after delay'
+    useSettingStore().settingValues['Comfy.Workflow.AutoSave'] = 'after delay'
 
     const { unmount } = render({
       template: `<div></div>`,
@@ -239,9 +226,11 @@ describe('useWorkflowAutoSave', () => {
   })
 
   it('should handle edge case delay values properly', async () => {
-    mockAutoSaveSetting = 'after delay'
-    mockAutoSaveDelay = 0
-    mockActiveWorkflow = { isModified: true, isPersisted: true }
+    useSettingStore().settingValues['Comfy.Workflow.AutoSave'] = 'after delay'
+    useSettingStore().settingValues['Comfy.Workflow.AutoSaveDelay'] = 0
+    Object.assign(useWorkflowStore(), {
+      activeWorkflow: { isModified: true, isPersisted: true }
+    })
 
     render({
       template: `<div></div>`,
@@ -253,11 +242,10 @@ describe('useWorkflowAutoSave', () => {
 
     await vi.runAllTimersAsync()
 
-    const serviceInstance = vi.mocked(useWorkflowService).mock.results[0].value
-    expect(serviceInstance.saveWorkflow).toHaveBeenCalledTimes(1)
-    serviceInstance.saveWorkflow.mockClear()
+    expect(useWorkflowService().saveWorkflow).toHaveBeenCalledTimes(1)
+    vi.mocked(useWorkflowService()).saveWorkflow.mockClear()
 
-    mockAutoSaveDelay = -500
+    useSettingStore().settingValues['Comfy.Workflow.AutoSaveDelay'] = -500
 
     const graphChangedCallback = vi.mocked(api.addEventListener).mock
       .calls[0][1]
@@ -265,13 +253,15 @@ describe('useWorkflowAutoSave', () => {
 
     await vi.runAllTimersAsync()
 
-    expect(serviceInstance.saveWorkflow).toHaveBeenCalledTimes(1)
+    expect(useWorkflowService().saveWorkflow).toHaveBeenCalledTimes(1)
   })
 
   it('should not autosave if workflow is not persisted', async () => {
-    mockAutoSaveSetting = 'after delay'
-    mockAutoSaveDelay = 1000
-    mockActiveWorkflow = { isModified: true, isPersisted: false }
+    useSettingStore().settingValues['Comfy.Workflow.AutoSave'] = 'after delay'
+    useSettingStore().settingValues['Comfy.Workflow.AutoSaveDelay'] = 1000
+    Object.assign(useWorkflowStore(), {
+      activeWorkflow: { isModified: true, isPersisted: false }
+    })
 
     render({
       template: `<div></div>`,
@@ -283,9 +273,8 @@ describe('useWorkflowAutoSave', () => {
 
     vi.advanceTimersByTime(1000)
 
-    const serviceInstance = vi.mocked(useWorkflowService).mock.results[0].value
-    expect(serviceInstance.saveWorkflow).not.toHaveBeenCalledWith(
-      mockActiveWorkflow
+    expect(useWorkflowService().saveWorkflow).not.toHaveBeenCalledWith(
+      useWorkflowStore().activeWorkflow
     )
   })
 })

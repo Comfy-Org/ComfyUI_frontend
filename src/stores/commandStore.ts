@@ -2,6 +2,8 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import type { CanvasInteractionModeReader } from '@/lib/litegraph/src/canvas/CanvasInteractionMode'
+import { EDITABLE_INTERACTION_MODE } from '@/lib/litegraph/src/canvas/CanvasInteractionMode'
 import type { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import type { ComfyExtension } from '@/types/comfy'
@@ -19,6 +21,14 @@ export interface ComfyCommand {
   source?: string
   active?: () => boolean // Getter to check if the command is active/toggled on
   category?: 'essentials' | 'view-controls' // For shortcuts panel organization
+  /** Refused by `execute()` while the canvas interaction mode is select-only. */
+  mutatesGraph?: boolean | (() => boolean)
+}
+
+function mutatesGraph(command: ComfyCommand): boolean {
+  return typeof command.mutatesGraph === 'function'
+    ? command.mutatesGraph()
+    : command.mutatesGraph === true
 }
 
 export class ComfyCommandImpl implements ComfyCommand {
@@ -33,6 +43,7 @@ export class ComfyCommandImpl implements ComfyCommand {
   source?: string
   active?: () => boolean
   category?: 'essentials' | 'view-controls'
+  mutatesGraph?: boolean | (() => boolean)
 
   constructor(command: ComfyCommand) {
     this.id = command.id
@@ -46,6 +57,7 @@ export class ComfyCommandImpl implements ComfyCommand {
     this.source = command.source
     this.active = command.active
     this.category = command.category
+    this.mutatesGraph = command.mutatesGraph
   }
 
   get label() {
@@ -67,7 +79,7 @@ export class ComfyCommandImpl implements ComfyCommand {
   }
 
   get keybinding(): KeybindingImpl | null {
-    return useKeybindingStore().getKeybindingByCommandId(this.id)
+    return useKeybindingStore().getKeybindingByCommandId(this.id) ?? null
   }
 }
 
@@ -76,7 +88,7 @@ export const useCommandStore = defineStore('command', () => {
   const commands = computed(() => Object.values(commandsById.value))
 
   const registerCommand = (command: ComfyCommand) => {
-    if (commandsById.value[command.id]) {
+    if (command.id in commandsById.value) {
       console.warn(`Command ${command.id} already registered`)
     }
     commandsById.value[command.id] = new ComfyCommandImpl(command)
@@ -92,6 +104,11 @@ export const useCommandStore = defineStore('command', () => {
     return commandsById.value[command]
   }
 
+  let interactionMode: CanvasInteractionModeReader = EDITABLE_INTERACTION_MODE
+  const setInteractionMode = (mode: CanvasInteractionModeReader) => {
+    interactionMode = mode
+  }
+
   const { wrapWithErrorHandlingAsync } = useErrorHandling()
   const execute = async (
     commandId: string,
@@ -100,15 +117,15 @@ export const useCommandStore = defineStore('command', () => {
       metadata?: Record<string, unknown>
     }
   ) => {
-    const command = getCommand(commandId)
-    if (command) {
-      await wrapWithErrorHandlingAsync(
-        () => command.function(options?.metadata),
-        options?.errorHandler
-      )()
-    } else {
+    if (!(commandId in commandsById.value)) {
       throw new Error(`Command ${commandId} not found`)
     }
+    const command = getCommand(commandId)
+    if (interactionMode.isSelectOnly() && mutatesGraph(command)) return
+    await wrapWithErrorHandlingAsync(
+      () => command.function(options?.metadata),
+      options?.errorHandler
+    )()
   }
 
   const isRegistered = (command: string) => {
@@ -140,6 +157,7 @@ export const useCommandStore = defineStore('command', () => {
     registerCommand,
     registerCommands,
     isRegistered,
+    setInteractionMode,
     loadExtensionCommands,
     formatKeySequence
   }

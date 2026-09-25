@@ -1,6 +1,5 @@
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
-// eslint-disable-next-line unused-imports/no-unused-imports -- used in typeof
-import type { LGraphBadge } from '@/lib/litegraph/src/LGraphBadge'
+import type { LGraphBadge as LGraphBadgeClass } from '@/lib/litegraph/src/LGraphBadge'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LiteGraphGlobal } from '@/lib/litegraph/src/LiteGraphGlobal'
 import type { ComfyApp } from '@/scripts/app'
@@ -11,13 +10,18 @@ import type { useWorkspaceStore } from '@/stores/workspaceStore'
  * Provides typed access to graph internals without requiring `any`.
  */
 export interface TestGraphAccess {
-  _nodes_by_id: Record<string, LGraphNode>
+  _nodes_by_id: Partial<Record<string, LGraphNode>>
 }
 
 interface AppReadiness {
   featureFlagsReceived: boolean
   apiInitialized: boolean
   appInitialized: boolean
+}
+
+export interface TabSwitchLens {
+  afterConfigure: string[][]
+  removed: string[]
 }
 
 interface CapturedMessages {
@@ -37,6 +41,7 @@ declare global {
     TestCommand?: boolean
     changeCount?: number
     widgetValue?: unknown
+    __commandExecutionCounts?: Record<string, number>
 
     // Feature flags test globals
     __capturedMessages?: CapturedMessages
@@ -47,12 +52,20 @@ declare global {
      * @see browser_tests/fixtures/ws.ts
      */
     __ws__?: Record<string, WebSocket>
+
+    /**
+     * Node ids observed at two moments of a workflow tab return: right after
+     * the canvas was rebuilt from the tab's snapshot, and every node removed
+     * from the live graph since the observer was installed.
+     * @see browser_tests/tests/agent/agentHumanAddTabSwitch.spec.ts
+     */
+    __tabSwitchLens?: TabSwitchLens
   }
 
   const app: ComfyApp | undefined
   const graph: LGraph | undefined
   const LiteGraph: LiteGraphGlobal | undefined
-  const LGraphBadge: typeof LGraphBadge | undefined
+  const LGraphBadge: typeof LGraphBadgeClass | undefined
 }
 
 /**

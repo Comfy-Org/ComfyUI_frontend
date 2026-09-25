@@ -1,5 +1,6 @@
+import type { Locale } from '../config/locales'
+import { resolveLocale } from '../config/locales'
 import { externalLinks } from '../config/routes'
-import type { Locale } from '../i18n/translations'
 
 export type JsonLdNode = Record<string, unknown> & { '@type': string }
 
@@ -55,9 +56,10 @@ export function pageContext(
   pathname: string,
   currentLocale: string | undefined
 ): PageContext & { url: string } {
+  const locale = resolveLocale(currentLocale)
   return {
     siteUrl: siteUrlFrom(site),
-    locale: currentLocale === 'zh-CN' ? 'zh-CN' : 'en',
+    locale,
     url: absoluteUrl(site, pathname)
   }
 }
@@ -415,9 +417,15 @@ export interface VideoObjectInput {
   thumbnailUrl: string
   /** Self-hosted media URL; omit for embed-only videos (set embedUrl instead). */
   contentUrl?: string
-  uploadDate: string
+  /** ISO 8601 date; required by VideoObjectInput but callers without a
+   * verified upload date should still omit `uploadDate` from the node —
+   * see videoObjectNode's `uploadDate` handling below. */
+  uploadDate?: string
   locale: Locale
   embedUrl?: string
+  /** ISO 8601 duration (e.g. "PT4M32S"); omit when unverified rather than
+   * estimating — see data/customerVideos.ts `isoDuration`. */
+  duration?: string
 }
 
 export function videoObjectNode(input: VideoObjectInput): JsonLdNode {
@@ -430,6 +438,7 @@ export function videoObjectNode(input: VideoObjectInput): JsonLdNode {
     contentUrl: input.contentUrl,
     embedUrl: input.embedUrl,
     uploadDate: input.uploadDate,
+    duration: input.duration,
     inLanguage: input.locale,
     publisher: { '@id': organizationId(input.siteUrl) },
     isPartOf: { '@id': jsonLdId(input.pageUrl, 'webpage') }

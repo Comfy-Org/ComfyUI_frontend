@@ -72,10 +72,10 @@ function linkTarget(item: CardWorkflowItem): AnchorHTMLAttributes['target'] {
   <div
     :class="
       cn(
-        'bg-transparency-white-t4 group relative flex flex-col',
+        'group relative flex flex-col bg-transparency-white-t4',
         variant === 'default'
           ? 'rounded-4.5xl px-2 pt-2 pb-8'
-          : 'rounded-5xl gap-4 p-2',
+          : 'gap-4 rounded-5xl p-2',
         item.href &&
           'transition-colors duration-200 hover:bg-transparency-white-t8',
         className
@@ -88,14 +88,14 @@ function linkTarget(item: CardWorkflowItem): AnchorHTMLAttributes['target'] {
       :target="linkTarget(item)"
       :rel="resolveRel({ target: linkTarget(item) })"
       :aria-label="item.title"
-      class="focus-visible:ring-primary-comfy-yellow absolute inset-0 z-10 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+      class="absolute inset-0 z-10 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow focus-visible:ring-offset-2 focus-visible:outline-none"
       :class="variant === 'default' ? 'rounded-4.5xl' : 'rounded-5xl'"
     />
 
     <div
       :class="
         cn(
-          'bg-transparency-white-t4 relative overflow-hidden',
+          'relative overflow-hidden bg-transparency-white-t4',
           variant === 'feature'
             ? 'aspect-video rounded-4xl'
             : 'aspect-4/3 rounded-[2.25rem]'
@@ -215,8 +215,8 @@ function linkTarget(item: CardWorkflowItem): AnchorHTMLAttributes['target'] {
             cn(
               'flex shrink-0 items-center justify-center rounded-full transition-colors duration-200',
               variant === 'feature'
-                ? 'bg-primary-comfy-yellow size-8 text-primary-comfy-ink group-hover:bg-primary-comfy-canvas'
-                : 'group-hover:bg-primary-comfy-yellow size-11 bg-transparency-white-t20 text-primary-comfy-canvas group-hover:text-primary-comfy-ink'
+                ? 'size-8 bg-primary-comfy-yellow text-primary-comfy-ink group-hover:bg-primary-comfy-canvas'
+                : 'size-11 bg-transparency-white-t20 text-primary-comfy-canvas group-hover:bg-primary-comfy-yellow group-hover:text-primary-comfy-ink'
             )
           "
         >

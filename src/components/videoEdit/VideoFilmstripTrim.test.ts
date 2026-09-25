@@ -4,14 +4,14 @@ import { defineComponent, h, ref } from 'vue'
 import type { Ref } from 'vue'
 
 const { activeHandle } = vi.hoisted(() => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  // oxlint-disable-next-line typescript/no-require-imports
   const { ref: createRef } = require('vue')
   return {
     activeHandle: createRef(null) as Ref<'min' | 'max' | 'midpoint' | null>
   }
 })
 
-vi.mock('@/composables/useRangeEditor', () => ({
+vi.mock<unknown>(import('@/composables/useRangeEditor'), () => ({
   useRangeEditor: () => ({
     startDrag: vi.fn(),
     activeHandle

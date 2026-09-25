@@ -37,6 +37,7 @@ export interface Model {
   readonly workflowCount: number
   readonly categories: readonly ModelCategory[]
   readonly workflowPreviews: readonly ModelWorkflowPreview[]
+  readonly whatIsBacklinkUrl?: string
 }
 
 export interface ModelWorkflowPreview {

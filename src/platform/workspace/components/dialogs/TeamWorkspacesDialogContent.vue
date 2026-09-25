@@ -23,7 +23,7 @@
         </p>
       </div>
       <button
-        class="focus-visible:ring-secondary-foreground -mt-1 cursor-pointer rounded-sm border-none bg-transparent p-2 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none"
+        class="-mt-1 cursor-pointer rounded-sm border-none bg-transparent p-2 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none"
         :aria-label="$t('g.close')"
         @click="onCancel"
       >
@@ -46,12 +46,13 @@
       >
         <li v-for="workspace in ownedTeamWorkspaces" :key="workspace.id">
           <button
-            class="focus-visible:ring-secondary-foreground flex w-full cursor-pointer items-center gap-3 rounded-lg border border-border-default bg-transparent px-4 py-3 transition-colors hover:bg-secondary-background-hover focus-visible:ring-1 focus-visible:outline-none"
+            class="flex w-full cursor-pointer items-center gap-3 rounded-lg border border-border-default bg-transparent px-4 py-3 transition-colors hover:bg-secondary-background-hover focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none"
             @click="handleSwitch(workspace.id)"
           >
             <WorkspaceProfilePic
               class="size-9 shrink-0 text-sm"
               :workspace-name="workspace.name"
+              :subscription-tier="workspace.subscriptionTier"
             />
             <div class="flex min-w-0 flex-1 flex-col items-start gap-1">
               <div class="flex items-center gap-1.5">
@@ -68,7 +69,7 @@
                 </span>
               </div>
             </div>
-            <span class="text-primary-foreground shrink-0 text-sm font-medium">
+            <span class="shrink-0 text-sm font-medium text-muted-foreground">
               {{ $t('teamWorkspacesDialog.switch') }}
               <i class="pi pi-arrow-right text-xs" aria-hidden="true" />
             </span>
@@ -101,7 +102,7 @@
           id="workspace-name-input"
           v-model="workspaceName"
           type="text"
-          class="focus:ring-secondary-foreground w-full rounded-lg border border-border-default bg-transparent px-3 py-2 text-sm text-base-foreground placeholder:text-muted-foreground focus:ring-1 focus:outline-none"
+          class="w-full rounded-lg border border-border-default bg-transparent px-3 py-2 text-sm text-base-foreground placeholder:text-muted-foreground focus:ring-1 focus:ring-border-default focus:outline-none"
           :placeholder="$t('teamWorkspacesDialog.namePlaceholder')"
           :aria-invalid="workspaceName.length > 0 && !isValidName"
           :aria-describedby="
@@ -114,7 +115,7 @@
         <p
           v-if="workspaceName.length > 0 && !isValidName"
           id="workspace-name-error"
-          class="text-danger m-0 text-xs"
+          class="m-0 text-xs text-destructive-background"
         >
           {{ $t('teamWorkspacesDialog.nameValidationError') }}
         </p>

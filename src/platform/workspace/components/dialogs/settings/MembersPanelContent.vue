@@ -1,7 +1,7 @@
 <template>
   <div class="grow overflow-auto pt-6">
     <div
-      class="border-inter flex size-full flex-col gap-2 rounded-2xl border border-interface-stroke p-6"
+      class="flex size-full flex-col gap-2 rounded-2xl border border-interface-stroke p-6"
     >
       <!-- Section Header -->
       <div class="flex w-full items-center gap-9">
@@ -235,7 +235,7 @@ import { useMembersPanel } from '@/platform/workspace/composables/useMembersPane
 import { cn } from '@comfyorg/tailwind-utils'
 
 const TEAM_PLAN_REQUEST_URL =
-  'https://comfy-org.portal.usepylon.com/forms/team-plan-requests'
+  'https://comfysupport.portal.usepylon.com/forms/team-plan-requests'
 
 const {
   searchQuery,

@@ -10,22 +10,33 @@ export interface ModelFaq {
   readonly answer: string
 }
 
-const dirDescriptionKeys: Partial<Record<Model['directory'], TranslationKey>> =
-  {
-    diffusion_models: 'models.dirDescription.diffusion_models',
-    checkpoints: 'models.dirDescription.checkpoints',
-    loras: 'models.dirDescription.loras',
-    controlnet: 'models.dirDescription.controlnet',
-    clip_vision: 'models.dirDescription.clip_vision',
-    vae: 'models.dirDescription.vae',
-    text_encoders: 'models.dirDescription.text_encoders',
-    audio_encoders: 'models.dirDescription.audio_encoders',
-    upscale_models: 'models.dirDescription.upscale_models',
-    latent_upscale_models: 'models.dirDescription.latent_upscale_models',
-    style_models: 'models.dirDescription.style_models',
-    model_patches: 'models.dirDescription.model_patches',
-    partner_nodes: 'models.dirDescription.partner_nodes'
-  }
+// Values are `| undefined` because `directory` is a generated string asserted to
+// ModelDirectory without runtime validation, so a new upstream directory reaches
+// this lookup as a miss. Keys stay exhaustive: Record still requires every known
+// directory to be listed.
+const dirDescriptionKeys: Record<
+  Model['directory'],
+  TranslationKey | undefined
+> = {
+  diffusion_models: 'models.dirDescription.diffusion_models',
+  checkpoints: 'models.dirDescription.checkpoints',
+  loras: 'models.dirDescription.loras',
+  controlnet: 'models.dirDescription.controlnet',
+  clip_vision: 'models.dirDescription.clip_vision',
+  vae: 'models.dirDescription.vae',
+  text_encoders: 'models.dirDescription.text_encoders',
+  audio_encoders: 'models.dirDescription.audio_encoders',
+  upscale_models: 'models.dirDescription.upscale_models',
+  latent_upscale_models: 'models.dirDescription.latent_upscale_models',
+  style_models: 'models.dirDescription.style_models',
+  model_patches: 'models.dirDescription.model_patches',
+  partner_nodes: 'models.dirDescription.partner_nodes',
+  geometry_estimation: 'models.dirDescription.geometry_estimation',
+  background_removal: 'models.dirDescription.background_removal',
+  detection: 'models.dirDescription.detection',
+  frame_interpolation: 'models.dirDescription.frame_interpolation',
+  optical_flow: 'models.dirDescription.optical_flow'
+}
 
 function fill(
   template: string,

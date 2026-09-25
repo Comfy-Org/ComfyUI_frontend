@@ -25,6 +25,7 @@ export class ComfyActionbar {
   public readonly root: Locator
   public readonly card: Locator
   public readonly queueButton: ComfyQueueButton
+  public readonly cancelButton: Locator
   public readonly propertiesButton: Locator
   public readonly dragHandle: Locator
   public readonly inlineProgress: Locator
@@ -34,6 +35,9 @@ export class ComfyActionbar {
     this.root = page.locator('.actionbar-container')
     this.card = page.getByTestId(TestIds.topbar.actionBarCard)
     this.queueButton = new ComfyQueueButton(this)
+    this.cancelButton = this.root.getByRole('button', {
+      name: 'Cancel current run'
+    })
     this.propertiesButton = this.root.getByLabel('Toggle properties panel')
     this.dragHandle = this.root.locator('.drag-handle')
     this.inlineProgress = page.getByTestId(TestIds.topbar.queueInlineProgress)
@@ -84,10 +88,9 @@ export class ComfyActionbar {
   }
 
   async isDocked() {
-    const className = await this.root
+    return this.root
       .locator('.actionbar')
-      .getAttribute('class')
-    return className?.includes('static') ?? false
+      .evaluate((element) => getComputedStyle(element).position === 'static')
   }
 
   /** After the action completes, keeps observing until maxRequests or timeout. */

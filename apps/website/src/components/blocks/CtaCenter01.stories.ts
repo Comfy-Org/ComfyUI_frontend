@@ -10,8 +10,11 @@ const meta: Meta<typeof CtaCenter01> = {
     heading: 'Build the next generation of creative tools',
     subtitle:
       'Start locally, move to the cloud, and keep complete control of every workflow.',
-    primaryCta: { label: 'GET STARTED', href: '#' },
-    secondaryCta: { label: 'VIEW DOCUMENTATION', href: '#' },
+    primaryCta: { label: 'GET STARTED', href: '/download/' },
+    secondaryCta: {
+      label: 'VIEW DOCUMENTATION',
+      href: 'https://docs.comfy.org/'
+    },
     termsLink: { label: 'View usage terms', href: '#' }
   }
 }

@@ -1,18 +1,19 @@
 import { useRunButtonTelemetry } from '@/composables/useRunButtonTelemetry'
 import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
-import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { runMintPortsIntentionalClear } from '@/workbench/extensions/agent/crdt/mintPortWiring'
 import { useTelemetry } from '@/platform/telemetry'
 import { WORKFLOW_ACCEPT_STRING } from '@/platform/workflow/core/types/formats'
-import { type StatusWsMessageStatus } from '@/schemas/apiSchema'
+import type { StatusWsMessageStatus } from '@/platform/remote/comfyui/execution/types'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 import { api } from './api'
-import { ComfyApp, app } from './app'
+import type { ComfyApp } from './app'
+import { app } from './app'
 import { ComfyDialog as _ComfyDialog } from './ui/dialog'
 import { ComfySettingsDialog } from './ui/settings'
 import { toggleSwitch } from './ui/toggleSwitch'
@@ -60,13 +61,7 @@ export function $el<TTag extends string>(
     if (Array.isArray(propsOrChildren)) {
       element.append(...propsOrChildren)
     } else {
-      const {
-        parent,
-        $: cb,
-        dataset,
-        style,
-        ...rest
-      } = propsOrChildren as Props
+      const { parent, $: cb, dataset, style, ...rest } = propsOrChildren
 
       if (rest.for) {
         element.setAttribute('for', rest.for)
@@ -99,7 +94,7 @@ export function $el<TTag extends string>(
 
 // @ts-expect-error fixme ts strict error
 function dragElement(dragEl): () => void {
-  var posDiffX = 0,
+  let posDiffX = 0,
     posDiffY = 0,
     posStartX = 0,
     posStartY = 0,
@@ -281,14 +276,14 @@ class ComfyList {
         ? { history: await api.getHistory() }
         : await api.getQueue()
     this.element.replaceChildren(
-      ...Object.keys(items).flatMap((section) => [
+      ...Object.entries(items).flatMap(([section, sectionItems]) => [
         $el('h4', {
           textContent: section
         }),
-        $el('div.comfy-list-items', [
-          // @ts-expect-error fixme ts strict error
-          ...(this._reverse ? items[section].reverse() : items[section]).map(
-            (item: JobListItem) => {
+        $el(
+          'div.comfy-list-items',
+          (this._reverse ? sectionItems.reverse() : sectionItems).map(
+            (item) => {
               // Allow items to specify a custom remove action (e.g. for interrupt current prompt)
               const removeAction =
                 section === 'Running'
@@ -323,7 +318,7 @@ class ComfyList {
               ])
             }
           )
-        ])
+        )
       ]),
       $el('div.comfy-list-actions', [
         $el('button', {
@@ -363,7 +358,7 @@ class ComfyList {
       this.hide()
       return false
     } else {
-      this.show()
+      void this.show()
       return true
     }
   }
@@ -404,8 +399,8 @@ export class ComfyUI {
     this.history = new ComfyList('History', 'history', true)
 
     api.addEventListener('status', () => {
-      this.queue.update()
-      this.history.update()
+      void this.queue.update()
+      void this.history.update()
     })
 
     this.setup(document.body)
@@ -449,7 +444,6 @@ export class ComfyUI {
         }
       ],
       {
-        // @ts-expect-error fixme ts strict error
         onChange: (value) => {
           this.autoQueueMode = value.item.value
         }
@@ -458,10 +452,10 @@ export class ComfyUI {
     autoQueueModeEl.style.display = 'none'
 
     api.addEventListener('autoQueueGraphChanged', () => {
-      if (this.autoQueueMode === 'change' && this.autoQueueEnabled === true) {
+      if (this.autoQueueMode === 'change' && this.autoQueueEnabled) {
         if (this.lastQueueSize === 0) {
           this.graphHasChanged = false
-          app.queuePrompt(0, this.batchCount, {
+          void app.queuePrompt(0, this.batchCount, {
             intent: { trigger_source: 'auto_queue' }
           })
         } else {
@@ -514,7 +508,7 @@ export class ComfyUI {
             } as const
             useRunButtonTelemetry().trackRunButton(workflowQueueIntent)
             useTelemetry()?.trackWorkflowExecution()
-            app.queuePrompt(0, this.batchCount, {
+            void app.queuePrompt(0, this.batchCount, {
               intent: workflowQueueIntent
             })
           }
@@ -625,7 +619,7 @@ export class ComfyUI {
               } as const
               useRunButtonTelemetry().trackRunButton(workflowQueueIntent)
               useTelemetry()?.trackWorkflowExecution()
-              app.queuePrompt(-1, this.batchCount, {
+              void app.queuePrompt(-1, this.batchCount, {
                 intent: workflowQueueIntent
               })
             }
@@ -655,7 +649,7 @@ export class ComfyUI {
           id: 'comfy-save-button',
           textContent: 'Save',
           onclick: () => {
-            useCommandStore().execute('Comfy.ExportWorkflow')
+            void useCommandStore().execute('Comfy.ExportWorkflow')
           }
         }),
         $el('button', {
@@ -663,7 +657,7 @@ export class ComfyUI {
           textContent: 'Save (API Format)',
           style: { width: '100%', display: 'none' },
           onclick: () => {
-            useCommandStore().execute('Comfy.ExportWorkflowAPI')
+            void useCommandStore().execute('Comfy.ExportWorkflowAPI')
           }
         }),
         $el('button', {
@@ -691,7 +685,7 @@ export class ComfyUI {
               !useSettingStore().get('Comfy.ConfirmClear') ||
               confirm('Clear workflow?')
             ) {
-              app.clean()
+              runMintPortsIntentionalClear(() => app.clean())
               useLitegraphService().resetView()
               api.dispatchCustomEvent('graphCleared')
             }
@@ -724,8 +718,7 @@ export class ComfyUI {
 
     this.restoreMenuPosition = dragElement(this.menuContainer)
 
-    // @ts-expect-error
-    this.setStatus({ exec_info: { queue_remaining: 'X' } })
+    this.queueSize.textContent = 'Queue size: X'
   }
 
   setStatus(status: StatusWsMessageStatus | null) {
@@ -740,7 +733,7 @@ export class ComfyUI {
       (this.autoQueueMode === 'instant' || this.graphHasChanged) &&
       !app.lastExecutionError
     ) {
-      app.queuePrompt(0, this.batchCount, {
+      void app.queuePrompt(0, this.batchCount, {
         intent: { trigger_source: 'auto_queue' }
       })
       this.graphHasChanged = false

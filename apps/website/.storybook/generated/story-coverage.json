@@ -1,15 +1,15 @@
 {
   "schemaVersion": 2,
-  "componentCount": 266,
-  "documentedComponentCount": 62,
-  "missingStoryCount": 204,
+  "componentCount": 486,
+  "documentedComponentCount": 74,
+  "missingStoryCount": 412,
   "dispositionCounts": {
     "compound-part": 28,
     "icon": 5,
     "integration": 3,
-    "page-local": 103,
-    "reusable-candidate": 14,
-    "template-local": 51
+    "page-local": 241,
+    "reusable-candidate": 19,
+    "template-local": 116
   },
   "classifications": [
     {
@@ -34,6 +34,61 @@
     },
     {
       "source": "src/components/about/ValuesSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/agent/AgentBetaWaitlistForm.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/auth/AuthEmailForm.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/auth/AuthFlagTimeout.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/auth/AuthForgotPassword.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/auth/AuthHeroCarousel.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/auth/AuthPasswordField.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/auth/AuthSignIn.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/auth/AuthSignInPanel.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/auth/AuthSpinnerIcon.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/auth/AuthToast.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/auth/AuthToastMessage.vue",
       "disposition": "page-local",
       "reason": "Feature or page-specific section; not an independent design-system primitive."
     },
@@ -133,6 +188,11 @@
       "reason": "Shared location indicates reuse potential; requires an explicit contract before promotion."
     },
     {
+      "source": "src/components/common/HeaderMain/LogoContextMenu.vue",
+      "disposition": "reusable-candidate",
+      "reason": "Shared location indicates reuse potential; requires an explicit contract before promotion."
+    },
+    {
       "source": "src/components/common/HeaderMain/NavColumn.vue",
       "disposition": "reusable-candidate",
       "reason": "Shared location indicates reuse potential; requires an explicit contract before promotion."
@@ -153,7 +213,27 @@
       "reason": "Shared location indicates reuse potential; requires an explicit contract before promotion."
     },
     {
+      "source": "src/components/common/HubspotFormEmbed.vue",
+      "disposition": "integration",
+      "reason": "External integration boundary; verify in its owning page or integration test."
+    },
+    {
+      "source": "src/components/common/InlineCodeText.vue",
+      "disposition": "reusable-candidate",
+      "reason": "Shared location indicates reuse potential; requires an explicit contract before promotion."
+    },
+    {
+      "source": "src/components/common/MinimaxLicenseHeroSection.vue",
+      "disposition": "reusable-candidate",
+      "reason": "Shared location indicates reuse potential; requires an explicit contract before promotion."
+    },
+    {
       "source": "src/components/common/ProductCardsSection.vue",
+      "disposition": "reusable-candidate",
+      "reason": "Shared location indicates reuse potential; requires an explicit contract before promotion."
+    },
+    {
+      "source": "src/components/common/SurfaceToggle.vue",
       "disposition": "reusable-candidate",
       "reason": "Shared location indicates reuse potential; requires an explicit contract before promotion."
     },
@@ -168,17 +248,17 @@
       "reason": "Feature or page-specific section; not an independent design-system primitive."
     },
     {
-      "source": "src/components/contact/HubspotFormEmbed.vue",
-      "disposition": "integration",
-      "reason": "External integration boundary; verify in its owning page or integration test."
-    },
-    {
       "source": "src/components/customers/ArticleNav.vue",
       "disposition": "page-local",
       "reason": "Feature or page-specific section; not an independent design-system primitive."
     },
     {
       "source": "src/components/customers/ContactSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/customers/CustomerWatchPage.vue",
       "disposition": "page-local",
       "reason": "Feature or page-specific section; not an independent design-system primitive."
     },
@@ -208,7 +288,12 @@
       "reason": "Feature or page-specific section; not an independent design-system primitive."
     },
     {
-      "source": "src/components/customers/VideoSection.vue",
+      "source": "src/components/customers/VideoStoryCard.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/customers/WatchSection.vue",
       "disposition": "page-local",
       "reason": "Feature or page-specific section; not an independent design-system primitive."
     },
@@ -273,17 +358,52 @@
       "reason": "Feature or page-specific section; not an independent design-system primitive."
     },
     {
+      "source": "src/components/hero/AngleNode.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/hero/ColorNode.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/hero/GraphLinks.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/hero/HeroGraph.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/hero/HeroGraphSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/hero/HeroHeadline.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/hero/HeroImageCard.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/hero/HeroMobileFlow.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/hero/NodeGradientSlider.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
       "source": "src/components/home/BlobMedia.vue",
-      "disposition": "page-local",
-      "reason": "Feature or page-specific section; not an independent design-system primitive."
-    },
-    {
-      "source": "src/components/home/BlobRail.vue",
-      "disposition": "page-local",
-      "reason": "Feature or page-specific section; not an independent design-system primitive."
-    },
-    {
-      "source": "src/components/home/BuildWhatSection.vue",
       "disposition": "page-local",
       "reason": "Feature or page-specific section; not an independent design-system primitive."
     },
@@ -293,12 +413,32 @@
       "reason": "Feature or page-specific section; not an independent design-system primitive."
     },
     {
+      "source": "src/components/home/DeveloperPlatformSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/home/FeaturedWorkflowsSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
       "source": "src/components/home/GetStartedSection.vue",
       "disposition": "page-local",
       "reason": "Feature or page-specific section; not an independent design-system primitive."
     },
     {
-      "source": "src/components/home/HeroSection.vue",
+      "source": "src/components/home/IndustriesSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/home/LottieScene.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/home/ModelDiscoverySection.vue",
       "disposition": "page-local",
       "reason": "Feature or page-specific section; not an independent design-system primitive."
     },
@@ -318,7 +458,62 @@
       "reason": "Feature or page-specific section; not an independent design-system primitive."
     },
     {
-      "source": "src/components/home/UseCaseSection.vue",
+      "source": "src/components/home/VideoMaskScene.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/home/WorkshopSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/hub/BrowseToolbar.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/hub/HubBrowse.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/hub/HubTypeBadge.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/hub/HubUseCaseNav.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/hub/HubWorkflowCard.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/hub/IconApps.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/hub/IconModel.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/hub/IconWorkflow.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/hub/TagRow.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/hub/WorkflowGrid.vue",
       "disposition": "page-local",
       "reason": "Feature or page-specific section; not an independent design-system primitive."
     },
@@ -438,6 +633,11 @@
       "reason": "Feature or page-specific section; not an independent design-system primitive."
     },
     {
+      "source": "src/components/pricing/MinimaxLicensePricingSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
       "source": "src/components/pricing/PricingCard.vue",
       "disposition": "page-local",
       "reason": "Feature or page-specific section; not an independent design-system primitive."
@@ -488,26 +688,6 @@
       "reason": "Feature or page-specific section; not an independent design-system primitive."
     },
     {
-      "source": "src/components/product/api/AutomationSection.vue",
-      "disposition": "page-local",
-      "reason": "Feature or page-specific section; not an independent design-system primitive."
-    },
-    {
-      "source": "src/components/product/api/HeroSection.vue",
-      "disposition": "page-local",
-      "reason": "Feature or page-specific section; not an independent design-system primitive."
-    },
-    {
-      "source": "src/components/product/api/ReasonSection.vue",
-      "disposition": "page-local",
-      "reason": "Feature or page-specific section; not an independent design-system primitive."
-    },
-    {
-      "source": "src/components/product/api/StepsSection.vue",
-      "disposition": "page-local",
-      "reason": "Feature or page-specific section; not an independent design-system primitive."
-    },
-    {
       "source": "src/components/product/cloud/AudienceSection.vue",
       "disposition": "page-local",
       "reason": "Feature or page-specific section; not an independent design-system primitive."
@@ -538,32 +718,12 @@
       "reason": "Feature or page-specific section; not an independent design-system primitive."
     },
     {
-      "source": "src/components/product/enterprise/BYOKeySection.vue",
+      "source": "src/components/product/enterprise/DistributionsScene.vue",
       "disposition": "page-local",
       "reason": "Feature or page-specific section; not an independent design-system primitive."
     },
     {
-      "source": "src/components/product/enterprise/DataOwnershipSection.vue",
-      "disposition": "page-local",
-      "reason": "Feature or page-specific section; not an independent design-system primitive."
-    },
-    {
-      "source": "src/components/product/enterprise/HeroSection.vue",
-      "disposition": "page-local",
-      "reason": "Feature or page-specific section; not an independent design-system primitive."
-    },
-    {
-      "source": "src/components/product/enterprise/OrchestrationSection.vue",
-      "disposition": "page-local",
-      "reason": "Feature or page-specific section; not an independent design-system primitive."
-    },
-    {
-      "source": "src/components/product/enterprise/ReasonSection.vue",
-      "disposition": "page-local",
-      "reason": "Feature or page-specific section; not an independent design-system primitive."
-    },
-    {
-      "source": "src/components/product/enterprise/TeamSection.vue",
+      "source": "src/components/product/enterprise/EnterpriseHeroScene.vue",
       "disposition": "page-local",
       "reason": "Feature or page-specific section; not an independent design-system primitive."
     },
@@ -608,17 +768,7 @@
       "reason": "Feature or page-specific section; not an independent design-system primitive."
     },
     {
-      "source": "src/components/product/shared/CardGridSection.vue",
-      "disposition": "page-local",
-      "reason": "Feature or page-specific section; not an independent design-system primitive."
-    },
-    {
       "source": "src/components/product/shared/CloudBannerSection.vue",
-      "disposition": "page-local",
-      "reason": "Feature or page-specific section; not an independent design-system primitive."
-    },
-    {
-      "source": "src/components/product/shared/FeatureShowcaseSection.vue",
       "disposition": "page-local",
       "reason": "Feature or page-specific section; not an independent design-system primitive."
     },
@@ -778,6 +928,571 @@
       "reason": "Compound component part documented through its cataloged root composition."
     },
     {
+      "source": "src/components/ui/tooltip/InfoTooltip.vue",
+      "disposition": "reusable-candidate",
+      "reason": "Shared location indicates reuse potential; requires an explicit contract before promotion."
+    },
+    {
+      "source": "src/components/workshop/ApiTab.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/BuyCreditsDialog.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/CardRow.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/CatalogueBackLink.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/CatalogueTabs.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/DialogueInput.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/ExampleReplaceDialog.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/ExamplesTab.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/FacetSheet.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/FeaturedBanner.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/FileSourceInput.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/FrameRatioNotice.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/HeaderAccount.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/HeaderAccountMenu.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/HeaderWorkspaceMenu.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/HighlightedCode.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/ImageSourcePreview.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/ModelDetail.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/ModelPage.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/ModelPrice.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/ModelStatus.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/ModelSupport.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/ModelsCatalogue.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/ModelsPage.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/OutputTransport.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/PlaygroundField.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/PlaygroundForm.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/PlaygroundOutput.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/RunLeaveDialog.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/SavedAssetMedia.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/SavedAssetPager.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/SavedAssetPreview.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/SavedAssetTile.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/SavedAssetsStrip.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/SelectedFileRow.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/SplitReveal.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/StaticFrame.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/TagOverflow.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/VideoSourcePreview.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/WorkflowApi.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/WorkflowCatalogue.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/WorkflowExamplePreview.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/WorkflowPage.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/WorkflowPlayground.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/WorkflowPreview.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/WorkflowResults.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/WorkflowRunControls.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/WorkshopCardMedia.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/WorkshopCatalog.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/WorkshopField.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/WorkshopFilterMenu.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/WorkshopFilterPanel.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/WorkshopForm.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/WorkshopGate.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/WorkshopHero.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/WorkshopLoading.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/WorkshopModelCard.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/WorkshopModelsGrid.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/WorkshopPlayground.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/WorkshopSearchField.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/WorkshopSearchPanel.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/WorkshopSections.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/WorkshopSortMenu.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/cinematic-studio/AppsBackLink.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/cinematic-studio/CinematicAppCard.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/cinematic-studio/CinematicAppsHub.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/cinematic-studio/CinematicComposer.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/cinematic-studio/CinematicDirectionChips.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/cinematic-studio/CinematicDirectionGrid.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/cinematic-studio/CinematicFirstRun.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/cinematic-studio/CinematicGenerateAction.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/cinematic-studio/CinematicMenu.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/cinematic-studio/CinematicOptionGrid.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/cinematic-studio/CinematicOptionIcon.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/cinematic-studio/CinematicOptionList.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/cinematic-studio/CinematicOutputControls.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/cinematic-studio/CinematicPanel.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/cinematic-studio/CinematicPicker.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/cinematic-studio/CinematicPickerTabs.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/cinematic-studio/CinematicPopover.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/cinematic-studio/CinematicReferenceSlot.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/cinematic-studio/CinematicScenarioMenu.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/cinematic-studio/CinematicSceneField.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/cinematic-studio/CinematicSequence.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/cinematic-studio/CinematicStage.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/cinematic-studio/CinematicStageCard.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/cinematic-studio/CinematicStudio.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/cinematic-studio/CinematicStudioPage.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/cinematic-studio/CinematicStudioPanel.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/cinematic-studio/CinematicTakeActions.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/cinematic-studio/CinematicTakeBar.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/cinematic-studio/CinematicTakeFrame.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/cinematic-studio/CinematicTakeNotice.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/cinematic-studio/CinematicTakeProgress.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/cinematic-studio/reshoot/ReshootAimRig.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/cinematic-studio/reshoot/ReshootBarField.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/cinematic-studio/reshoot/ReshootDisclosure.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/cinematic-studio/reshoot/ReshootExamples.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/cinematic-studio/reshoot/ReshootFormat.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/cinematic-studio/reshoot/ReshootGlobe.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/cinematic-studio/reshoot/ReshootHeader.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/cinematic-studio/reshoot/ReshootMoveControls.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/cinematic-studio/reshoot/ReshootOutputBar.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/cinematic-studio/reshoot/ReshootSide.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/cinematic-studio/reshoot/ReshootSlider.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/cinematic-studio/reshoot/ReshootStage.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/cinematic-studio/reshoot/ReshootStudio.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/cinematic-studio/reshoot/ReshootTakeView.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/cinematic-studio/reshoot/ReshootTakes.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/cinematic-studio/reshoot/ReshootUpload.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/cinematic-studio/reshoot/ReshootViewport.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/cinematic-studio/reshoot/ReshootZone.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
       "source": "src/templates/affiliate/AudienceSection.vue",
       "disposition": "template-local",
       "reason": "Template-specific section; compose from cataloged blocks before promoting."
@@ -848,7 +1563,82 @@
       "reason": "Template-specific section; compose from cataloged blocks before promoting."
     },
     {
-      "source": "src/templates/drops/AnnouncementBanner.vue",
+      "source": "src/templates/cli/AgentsSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/cli/ComfyCliTerminal.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/cli/FAQSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/cli/HeroSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/cli/HowItWorksSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/cli/SessionSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/cli/SetupSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/cli/SkillsSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/cli/WhySection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/cloud-nodes/ClosingCtaSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/cloud-nodes/FAQSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/cloud-nodes/HeroSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/cloud-nodes/HowItWorksSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/cloud-nodes/ModelsSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/cloud-nodes/SetupSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/cloud-nodes/WhySection.vue",
       "disposition": "template-local",
       "reason": "Template-specific section; compose from cataloged blocks before promoting."
     },
@@ -878,17 +1668,52 @@
       "reason": "Template-specific section; compose from cataloged blocks before promoting."
     },
     {
+      "source": "src/templates/events/EventsAgendaView.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/events/EventsCardsView.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/events/EventsDirectoryCardMedia.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/events/EventsDirectoryCta.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/events/EventsDirectoryList.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/events/EventsDirectoryRow.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/events/EventsDirectorySection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
       "source": "src/templates/events/EventsHeroSection.vue",
       "disposition": "template-local",
       "reason": "Template-specific section; compose from cataloged blocks before promoting."
     },
     {
-      "source": "src/templates/events/PastEventsSection.vue",
+      "source": "src/templates/events/HostEventSection.vue",
       "disposition": "template-local",
       "reason": "Template-specific section; compose from cataloged blocks before promoting."
     },
     {
-      "source": "src/templates/events/UpcomingEventsSection.vue",
+      "source": "src/templates/events/PastEventsSection.vue",
       "disposition": "template-local",
       "reason": "Template-specific section; compose from cataloged blocks before promoting."
     },
@@ -988,6 +1813,11 @@
       "reason": "Template-specific section; compose from cataloged blocks before promoting."
     },
     {
+      "source": "src/templates/model-launch/ModelLaunchComparisonSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
       "source": "src/templates/model-launch/ModelLaunchCtaSection.vue",
       "disposition": "template-local",
       "reason": "Template-specific section; compose from cataloged blocks before promoting."
@@ -1004,6 +1834,11 @@
     },
     {
       "source": "src/templates/model-launch/ModelLaunchHeroCtaButtons.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/model-launch/ModelLaunchHeroLogoMask.vue",
       "disposition": "template-local",
       "reason": "Template-specific section; compose from cataloged blocks before promoting."
     },
@@ -1031,6 +1866,211 @@
       "source": "src/templates/model-launch/ModelLaunchStepsSection.vue",
       "disposition": "template-local",
       "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/platform/BuilderEnterpriseSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/platform/BuilderHero.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/platform/BuilderPillarsSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/platform/BuilderProblemSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/platform/BuilderVisual.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/platform/ClosingCtaColumnField.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/platform/ClosingCtaSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/platform/CodeTabs.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/platform/CodeTabsCode.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/platform/CodeTabsPicker.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/platform/FeatureCard.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/platform/HeroSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/platform/IsometricColumnIllustration.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/platform/LiveTerminal.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/platform/ModelsApiGallery.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/platform/ModelsApiHero.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/platform/PlatformFeatureGrid.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/platform/PlatformHeroBadge.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/platform/PricingSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/platform/ProductsSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/platform/RouterCapabilitiesSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/platform/RouterCodeSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/platform/RouterMigrationBanner.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/platform/RouterProofStripSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/platform/RouterProviderCoverageSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/platform/RouterProviderLogoMarqueeRow.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/platform/RouterProviderLogoRow.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/platform/RouterRoadmapIllustration.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/platform/RouterRoadmapSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/platform/RouterVideoSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/platform/ServerlessAutoscaleAnimation.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/platform/ServerlessDeploySection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/platform/ServerlessHero.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/platform/ServerlessHowItWorksSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/platform/ServerlessImageHeatmapAnimation.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/platform/ServerlessIsometricStudy.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/platform/ServerlessLogsAnimation.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/platform/ServerlessScaleSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/platform/ServerlessVisual.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/platform/ServerlessWorkerAnimation.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/platform/TerminalAsciiShader.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
     }
   ],
   "missingStories": [
@@ -1039,6 +2079,17 @@
     "src/components/about/OurValuesSection.vue",
     "src/components/about/StorySection.vue",
     "src/components/about/ValuesSection.vue",
+    "src/components/agent/AgentBetaWaitlistForm.vue",
+    "src/components/auth/AuthEmailForm.vue",
+    "src/components/auth/AuthFlagTimeout.vue",
+    "src/components/auth/AuthForgotPassword.vue",
+    "src/components/auth/AuthHeroCarousel.vue",
+    "src/components/auth/AuthPasswordField.vue",
+    "src/components/auth/AuthSignIn.vue",
+    "src/components/auth/AuthSignInPanel.vue",
+    "src/components/auth/AuthSpinnerIcon.vue",
+    "src/components/auth/AuthToast.vue",
+    "src/components/auth/AuthToastMessage.vue",
     "src/components/blocks/HeroLivestream01.vue",
     "src/components/blocks/PlayOverlay.vue",
     "src/components/blocks/WatchPageLayout.vue",
@@ -1058,22 +2109,28 @@
     "src/components/common/GlassCard.vue",
     "src/components/common/HeaderMain/HeaderMainDesktop.vue",
     "src/components/common/HeaderMain/HeaderMainMobile.vue",
+    "src/components/common/HeaderMain/LogoContextMenu.vue",
     "src/components/common/HeaderMain/NavColumn.vue",
     "src/components/common/HeaderMain/NavFeaturedCard.vue",
     "src/components/common/HeaderMain/NavLinkContent.vue",
     "src/components/common/HeaderMain/NewBadge.vue",
+    "src/components/common/HubspotFormEmbed.vue",
+    "src/components/common/InlineCodeText.vue",
+    "src/components/common/MinimaxLicenseHeroSection.vue",
     "src/components/common/ProductCardsSection.vue",
+    "src/components/common/SurfaceToggle.vue",
     "src/components/common/WireNodeLayout.vue",
     "src/components/contact/FormSection.vue",
-    "src/components/contact/HubspotFormEmbed.vue",
     "src/components/customers/ArticleNav.vue",
     "src/components/customers/ContactSection.vue",
+    "src/components/customers/CustomerWatchPage.vue",
     "src/components/customers/DetailHeroSection.vue",
     "src/components/customers/FeedbackSection.vue",
     "src/components/customers/HeroSection.vue",
     "src/components/customers/StoryCard.vue",
     "src/components/customers/StorySection.vue",
-    "src/components/customers/VideoSection.vue",
+    "src/components/customers/VideoStoryCard.vue",
+    "src/components/customers/WatchSection.vue",
     "src/components/customers/WhatsNextSection.vue",
     "src/components/customers/content/ReadMore.vue",
     "src/components/demos/ArcadeEmbed.vue",
@@ -1086,16 +2143,38 @@
     "src/components/gallery/GalleryItemAttribution.vue",
     "src/components/gallery/GallerySection.vue",
     "src/components/gallery/HeroSection.vue",
+    "src/components/hero/AngleNode.vue",
+    "src/components/hero/ColorNode.vue",
+    "src/components/hero/GraphLinks.vue",
+    "src/components/hero/HeroGraph.vue",
+    "src/components/hero/HeroGraphSection.vue",
+    "src/components/hero/HeroHeadline.vue",
+    "src/components/hero/HeroImageCard.vue",
+    "src/components/hero/HeroMobileFlow.vue",
+    "src/components/hero/NodeGradientSlider.vue",
     "src/components/home/BlobMedia.vue",
-    "src/components/home/BlobRail.vue",
-    "src/components/home/BuildWhatSection.vue",
     "src/components/home/CaseStudySpotlightSection.vue",
+    "src/components/home/DeveloperPlatformSection.vue",
+    "src/components/home/FeaturedWorkflowsSection.vue",
     "src/components/home/GetStartedSection.vue",
-    "src/components/home/HeroSection.vue",
+    "src/components/home/IndustriesSection.vue",
+    "src/components/home/LottieScene.vue",
+    "src/components/home/ModelDiscoverySection.vue",
     "src/components/home/ModelReleaseSection.vue",
     "src/components/home/ProductCardsSection.vue",
     "src/components/home/ProductShowcaseSection.vue",
-    "src/components/home/UseCaseSection.vue",
+    "src/components/home/VideoMaskScene.vue",
+    "src/components/home/WorkshopSection.vue",
+    "src/components/hub/BrowseToolbar.vue",
+    "src/components/hub/HubBrowse.vue",
+    "src/components/hub/HubTypeBadge.vue",
+    "src/components/hub/HubUseCaseNav.vue",
+    "src/components/hub/HubWorkflowCard.vue",
+    "src/components/hub/IconApps.vue",
+    "src/components/hub/IconModel.vue",
+    "src/components/hub/IconWorkflow.vue",
+    "src/components/hub/TagRow.vue",
+    "src/components/hub/WorkflowGrid.vue",
     "src/components/icons/BreadthumbIcon.vue",
     "src/components/icons/CheckIcon.vue",
     "src/components/icons/NodeUnionIcon.vue",
@@ -1119,6 +2198,7 @@
     "src/components/models/explore/ModelMediaPlaceholder.vue",
     "src/components/payment/PaymentStatusSection.vue",
     "src/components/pricing/CloudPricingSection.vue",
+    "src/components/pricing/MinimaxLicensePricingSection.vue",
     "src/components/pricing/PricingCard.vue",
     "src/components/pricing/PricingContactBand.vue",
     "src/components/pricing/PricingCredits.vue",
@@ -1129,22 +2209,14 @@
     "src/components/pricing/PricingSection.vue",
     "src/components/pricing/PricingTeamCard.vue",
     "src/components/pricing/WhatsIncludedSection.vue",
-    "src/components/product/api/AutomationSection.vue",
-    "src/components/product/api/HeroSection.vue",
-    "src/components/product/api/ReasonSection.vue",
-    "src/components/product/api/StepsSection.vue",
     "src/components/product/cloud/AudienceSection.vue",
     "src/components/product/cloud/FAQSection.vue",
     "src/components/product/cloud/HeroSection.vue",
     "src/components/product/cloud/PricingSection.vue",
     "src/components/product/cloud/ProductCardsSection.vue",
     "src/components/product/cloud/ReasonSection.vue",
-    "src/components/product/enterprise/BYOKeySection.vue",
-    "src/components/product/enterprise/DataOwnershipSection.vue",
-    "src/components/product/enterprise/HeroSection.vue",
-    "src/components/product/enterprise/OrchestrationSection.vue",
-    "src/components/product/enterprise/ReasonSection.vue",
-    "src/components/product/enterprise/TeamSection.vue",
+    "src/components/product/enterprise/DistributionsScene.vue",
+    "src/components/product/enterprise/EnterpriseHeroScene.vue",
     "src/components/product/local/DownloadLocalButton.vue",
     "src/components/product/local/EcoSystemSection.vue",
     "src/components/product/local/FAQSection.vue",
@@ -1153,9 +2225,7 @@
     "src/components/product/local/ProductCardsSection.vue",
     "src/components/product/local/ReasonSection.vue",
     "src/components/product/shared/AIModelsSection.vue",
-    "src/components/product/shared/CardGridSection.vue",
     "src/components/product/shared/CloudBannerSection.vue",
-    "src/components/product/shared/FeatureShowcaseSection.vue",
     "src/components/ui/accordion/AccordionContent.vue",
     "src/components/ui/accordion/AccordionItem.vue",
     "src/components/ui/accordion/AccordionTrigger.vue",
@@ -1187,6 +2257,119 @@
     "src/components/ui/sheet/SheetTrigger.vue",
     "src/components/ui/task-tile/TaskTile.vue",
     "src/components/ui/toggle-group/ToggleGroupItem.vue",
+    "src/components/ui/tooltip/InfoTooltip.vue",
+    "src/components/workshop/ApiTab.vue",
+    "src/components/workshop/BuyCreditsDialog.vue",
+    "src/components/workshop/CardRow.vue",
+    "src/components/workshop/CatalogueBackLink.vue",
+    "src/components/workshop/CatalogueTabs.vue",
+    "src/components/workshop/DialogueInput.vue",
+    "src/components/workshop/ExampleReplaceDialog.vue",
+    "src/components/workshop/ExamplesTab.vue",
+    "src/components/workshop/FacetSheet.vue",
+    "src/components/workshop/FeaturedBanner.vue",
+    "src/components/workshop/FileSourceInput.vue",
+    "src/components/workshop/FrameRatioNotice.vue",
+    "src/components/workshop/HeaderAccount.vue",
+    "src/components/workshop/HeaderAccountMenu.vue",
+    "src/components/workshop/HeaderWorkspaceMenu.vue",
+    "src/components/workshop/HighlightedCode.vue",
+    "src/components/workshop/ImageSourcePreview.vue",
+    "src/components/workshop/ModelDetail.vue",
+    "src/components/workshop/ModelPage.vue",
+    "src/components/workshop/ModelPrice.vue",
+    "src/components/workshop/ModelStatus.vue",
+    "src/components/workshop/ModelSupport.vue",
+    "src/components/workshop/ModelsCatalogue.vue",
+    "src/components/workshop/ModelsPage.vue",
+    "src/components/workshop/OutputTransport.vue",
+    "src/components/workshop/PlaygroundField.vue",
+    "src/components/workshop/PlaygroundForm.vue",
+    "src/components/workshop/PlaygroundOutput.vue",
+    "src/components/workshop/RunLeaveDialog.vue",
+    "src/components/workshop/SavedAssetMedia.vue",
+    "src/components/workshop/SavedAssetPager.vue",
+    "src/components/workshop/SavedAssetPreview.vue",
+    "src/components/workshop/SavedAssetTile.vue",
+    "src/components/workshop/SavedAssetsStrip.vue",
+    "src/components/workshop/SelectedFileRow.vue",
+    "src/components/workshop/SplitReveal.vue",
+    "src/components/workshop/StaticFrame.vue",
+    "src/components/workshop/TagOverflow.vue",
+    "src/components/workshop/VideoSourcePreview.vue",
+    "src/components/workshop/WorkflowApi.vue",
+    "src/components/workshop/WorkflowCatalogue.vue",
+    "src/components/workshop/WorkflowExamplePreview.vue",
+    "src/components/workshop/WorkflowPage.vue",
+    "src/components/workshop/WorkflowPlayground.vue",
+    "src/components/workshop/WorkflowPreview.vue",
+    "src/components/workshop/WorkflowResults.vue",
+    "src/components/workshop/WorkflowRunControls.vue",
+    "src/components/workshop/WorkshopCardMedia.vue",
+    "src/components/workshop/WorkshopCatalog.vue",
+    "src/components/workshop/WorkshopField.vue",
+    "src/components/workshop/WorkshopFilterMenu.vue",
+    "src/components/workshop/WorkshopFilterPanel.vue",
+    "src/components/workshop/WorkshopForm.vue",
+    "src/components/workshop/WorkshopGate.vue",
+    "src/components/workshop/WorkshopHero.vue",
+    "src/components/workshop/WorkshopLoading.vue",
+    "src/components/workshop/WorkshopModelCard.vue",
+    "src/components/workshop/WorkshopModelsGrid.vue",
+    "src/components/workshop/WorkshopPlayground.vue",
+    "src/components/workshop/WorkshopSearchField.vue",
+    "src/components/workshop/WorkshopSearchPanel.vue",
+    "src/components/workshop/WorkshopSections.vue",
+    "src/components/workshop/WorkshopSortMenu.vue",
+    "src/components/workshop/cinematic-studio/AppsBackLink.vue",
+    "src/components/workshop/cinematic-studio/CinematicAppCard.vue",
+    "src/components/workshop/cinematic-studio/CinematicAppsHub.vue",
+    "src/components/workshop/cinematic-studio/CinematicComposer.vue",
+    "src/components/workshop/cinematic-studio/CinematicDirectionChips.vue",
+    "src/components/workshop/cinematic-studio/CinematicDirectionGrid.vue",
+    "src/components/workshop/cinematic-studio/CinematicFirstRun.vue",
+    "src/components/workshop/cinematic-studio/CinematicGenerateAction.vue",
+    "src/components/workshop/cinematic-studio/CinematicMenu.vue",
+    "src/components/workshop/cinematic-studio/CinematicOptionGrid.vue",
+    "src/components/workshop/cinematic-studio/CinematicOptionIcon.vue",
+    "src/components/workshop/cinematic-studio/CinematicOptionList.vue",
+    "src/components/workshop/cinematic-studio/CinematicOutputControls.vue",
+    "src/components/workshop/cinematic-studio/CinematicPanel.vue",
+    "src/components/workshop/cinematic-studio/CinematicPicker.vue",
+    "src/components/workshop/cinematic-studio/CinematicPickerTabs.vue",
+    "src/components/workshop/cinematic-studio/CinematicPopover.vue",
+    "src/components/workshop/cinematic-studio/CinematicReferenceSlot.vue",
+    "src/components/workshop/cinematic-studio/CinematicScenarioMenu.vue",
+    "src/components/workshop/cinematic-studio/CinematicSceneField.vue",
+    "src/components/workshop/cinematic-studio/CinematicSequence.vue",
+    "src/components/workshop/cinematic-studio/CinematicStage.vue",
+    "src/components/workshop/cinematic-studio/CinematicStageCard.vue",
+    "src/components/workshop/cinematic-studio/CinematicStudio.vue",
+    "src/components/workshop/cinematic-studio/CinematicStudioPage.vue",
+    "src/components/workshop/cinematic-studio/CinematicStudioPanel.vue",
+    "src/components/workshop/cinematic-studio/CinematicTakeActions.vue",
+    "src/components/workshop/cinematic-studio/CinematicTakeBar.vue",
+    "src/components/workshop/cinematic-studio/CinematicTakeFrame.vue",
+    "src/components/workshop/cinematic-studio/CinematicTakeNotice.vue",
+    "src/components/workshop/cinematic-studio/CinematicTakeProgress.vue",
+    "src/components/workshop/cinematic-studio/reshoot/ReshootAimRig.vue",
+    "src/components/workshop/cinematic-studio/reshoot/ReshootBarField.vue",
+    "src/components/workshop/cinematic-studio/reshoot/ReshootDisclosure.vue",
+    "src/components/workshop/cinematic-studio/reshoot/ReshootExamples.vue",
+    "src/components/workshop/cinematic-studio/reshoot/ReshootFormat.vue",
+    "src/components/workshop/cinematic-studio/reshoot/ReshootGlobe.vue",
+    "src/components/workshop/cinematic-studio/reshoot/ReshootHeader.vue",
+    "src/components/workshop/cinematic-studio/reshoot/ReshootMoveControls.vue",
+    "src/components/workshop/cinematic-studio/reshoot/ReshootOutputBar.vue",
+    "src/components/workshop/cinematic-studio/reshoot/ReshootSide.vue",
+    "src/components/workshop/cinematic-studio/reshoot/ReshootSlider.vue",
+    "src/components/workshop/cinematic-studio/reshoot/ReshootStage.vue",
+    "src/components/workshop/cinematic-studio/reshoot/ReshootStudio.vue",
+    "src/components/workshop/cinematic-studio/reshoot/ReshootTakeView.vue",
+    "src/components/workshop/cinematic-studio/reshoot/ReshootTakes.vue",
+    "src/components/workshop/cinematic-studio/reshoot/ReshootUpload.vue",
+    "src/components/workshop/cinematic-studio/reshoot/ReshootViewport.vue",
+    "src/components/workshop/cinematic-studio/reshoot/ReshootZone.vue",
     "src/templates/affiliate/AudienceSection.vue",
     "src/templates/affiliate/BenefitsSection.vue",
     "src/templates/affiliate/BrandAssetsSection.vue",
@@ -1201,15 +2384,37 @@
     "src/templates/brand/BrandQuestionsSection.vue",
     "src/templates/brand/BrandTrademarkSection.vue",
     "src/templates/brand/BrandVoiceSection.vue",
-    "src/templates/drops/AnnouncementBanner.vue",
+    "src/templates/cli/AgentsSection.vue",
+    "src/templates/cli/ComfyCliTerminal.vue",
+    "src/templates/cli/FAQSection.vue",
+    "src/templates/cli/HeroSection.vue",
+    "src/templates/cli/HowItWorksSection.vue",
+    "src/templates/cli/SessionSection.vue",
+    "src/templates/cli/SetupSection.vue",
+    "src/templates/cli/SkillsSection.vue",
+    "src/templates/cli/WhySection.vue",
+    "src/templates/cloud-nodes/ClosingCtaSection.vue",
+    "src/templates/cloud-nodes/FAQSection.vue",
+    "src/templates/cloud-nodes/HeroSection.vue",
+    "src/templates/cloud-nodes/HowItWorksSection.vue",
+    "src/templates/cloud-nodes/ModelsSection.vue",
+    "src/templates/cloud-nodes/SetupSection.vue",
+    "src/templates/cloud-nodes/WhySection.vue",
     "src/templates/drops/CtaSection.vue",
     "src/templates/drops/DropsSection.vue",
     "src/templates/drops/HeroSection.vue",
     "src/templates/drops/LaunchesHeroLogo.vue",
     "src/templates/events/EventVideoDialog.vue",
+    "src/templates/events/EventsAgendaView.vue",
+    "src/templates/events/EventsCardsView.vue",
+    "src/templates/events/EventsDirectoryCardMedia.vue",
+    "src/templates/events/EventsDirectoryCta.vue",
+    "src/templates/events/EventsDirectoryList.vue",
+    "src/templates/events/EventsDirectoryRow.vue",
+    "src/templates/events/EventsDirectorySection.vue",
     "src/templates/events/EventsHeroSection.vue",
+    "src/templates/events/HostEventSection.vue",
     "src/templates/events/PastEventsSection.vue",
-    "src/templates/events/UpcomingEventsSection.vue",
     "src/templates/fdct/BuildersSection.vue",
     "src/templates/fdct/ClosingCtaSection.vue",
     "src/templates/fdct/CtaBandsSection.vue",
@@ -1229,14 +2434,57 @@
     "src/templates/mcp/WhySection.vue",
     "src/templates/model-launch/ModelLaunchAudioGallerySection.vue",
     "src/templates/model-launch/ModelLaunchAudioSampleCard.vue",
+    "src/templates/model-launch/ModelLaunchComparisonSection.vue",
     "src/templates/model-launch/ModelLaunchCtaSection.vue",
     "src/templates/model-launch/ModelLaunchFaqSection.vue",
     "src/templates/model-launch/ModelLaunchGallerySection.vue",
     "src/templates/model-launch/ModelLaunchHeroCtaButtons.vue",
+    "src/templates/model-launch/ModelLaunchHeroLogoMask.vue",
     "src/templates/model-launch/ModelLaunchHeroSection.vue",
     "src/templates/model-launch/ModelLaunchPricingSection.vue",
     "src/templates/model-launch/ModelLaunchReviewsSection.vue",
     "src/templates/model-launch/ModelLaunchRunOptionsSection.vue",
-    "src/templates/model-launch/ModelLaunchStepsSection.vue"
+    "src/templates/model-launch/ModelLaunchStepsSection.vue",
+    "src/templates/platform/BuilderEnterpriseSection.vue",
+    "src/templates/platform/BuilderHero.vue",
+    "src/templates/platform/BuilderPillarsSection.vue",
+    "src/templates/platform/BuilderProblemSection.vue",
+    "src/templates/platform/BuilderVisual.vue",
+    "src/templates/platform/ClosingCtaColumnField.vue",
+    "src/templates/platform/ClosingCtaSection.vue",
+    "src/templates/platform/CodeTabs.vue",
+    "src/templates/platform/CodeTabsCode.vue",
+    "src/templates/platform/CodeTabsPicker.vue",
+    "src/templates/platform/FeatureCard.vue",
+    "src/templates/platform/HeroSection.vue",
+    "src/templates/platform/IsometricColumnIllustration.vue",
+    "src/templates/platform/LiveTerminal.vue",
+    "src/templates/platform/ModelsApiGallery.vue",
+    "src/templates/platform/ModelsApiHero.vue",
+    "src/templates/platform/PlatformFeatureGrid.vue",
+    "src/templates/platform/PlatformHeroBadge.vue",
+    "src/templates/platform/PricingSection.vue",
+    "src/templates/platform/ProductsSection.vue",
+    "src/templates/platform/RouterCapabilitiesSection.vue",
+    "src/templates/platform/RouterCodeSection.vue",
+    "src/templates/platform/RouterMigrationBanner.vue",
+    "src/templates/platform/RouterProofStripSection.vue",
+    "src/templates/platform/RouterProviderCoverageSection.vue",
+    "src/templates/platform/RouterProviderLogoMarqueeRow.vue",
+    "src/templates/platform/RouterProviderLogoRow.vue",
+    "src/templates/platform/RouterRoadmapIllustration.vue",
+    "src/templates/platform/RouterRoadmapSection.vue",
+    "src/templates/platform/RouterVideoSection.vue",
+    "src/templates/platform/ServerlessAutoscaleAnimation.vue",
+    "src/templates/platform/ServerlessDeploySection.vue",
+    "src/templates/platform/ServerlessHero.vue",
+    "src/templates/platform/ServerlessHowItWorksSection.vue",
+    "src/templates/platform/ServerlessImageHeatmapAnimation.vue",
+    "src/templates/platform/ServerlessIsometricStudy.vue",
+    "src/templates/platform/ServerlessLogsAnimation.vue",
+    "src/templates/platform/ServerlessScaleSection.vue",
+    "src/templates/platform/ServerlessVisual.vue",
+    "src/templates/platform/ServerlessWorkerAnimation.vue",
+    "src/templates/platform/TerminalAsciiShader.vue"
   ]
 }

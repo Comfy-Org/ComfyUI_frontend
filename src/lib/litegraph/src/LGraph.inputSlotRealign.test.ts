@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { registerNodeState } from '@/core/graph/nodeShell/nodeShellState'
@@ -10,6 +8,7 @@ import {
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import {
   normalizeConfiguredTopology,
+  realignGroupWidgetChildLinks,
   realignInputLinkSlots
 } from '@/lib/litegraph/src/linkDeduplication'
 import type {
@@ -339,15 +338,19 @@ describe('normalizeConfiguredTopology', () => {
     expect(normalized.links?.map((link) => link.id)).toEqual([2, 3])
     expect(normalized.nodes?.[1].inputs?.[0].link).toBe(2)
     expect(console.warn).toHaveBeenCalledWith(
-      'Dropping competing link to occupied input 2:0',
-      expect.objectContaining({ droppedLinkId: 2, survivorLinkId: 1 })
+      expect.any(String),
+      expect.objectContaining({
+        droppedLinkId: 1,
+        survivorLinkId: 2,
+        targetNodeId: toNodeId(2),
+        targetSlot: 0
+      })
     )
   })
 })
 
 describe('LGraph.configure input slot realignment (#3348)', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     LiteGraph.registerNodeType('test/RealignSource', SourceNode)
     LiteGraph.registerNodeType('test/RealignTarget', ReorderTargetNode)
   })
@@ -366,9 +369,7 @@ describe('LGraph.configure input slot realignment (#3348)', () => {
       const graph = new LGraph()
       graph.configure(savedWorkflow(options))
       const configuredGraph =
-        'insideSubgraph' in options && options.insideSubgraph
-          ? graph.subgraphs.get(SUBGRAPH_ID)!
-          : graph
+        'insideSubgraph' in options ? graph.subgraphs.get(SUBGRAPH_ID)! : graph
 
       assertLinksRealigned(configuredGraph, targetNodeId)
     }
@@ -575,7 +576,7 @@ function unmatchedInputLinkState(graph: LGraph) {
   return {
     graphLinkIds: [...graph.links.keys()],
     inputLinkIds: target.inputs.map((_, slot) => target.getInputLink(slot)?.id),
-    serializedLinkIds: (serialized.links ?? []).map(([id]) => toLinkId(id)),
+    serializedLinkIds: serialized.links.map(([id]) => toLinkId(id)),
     reloadedGraphLinkIds: [...reloaded.links.keys()],
     reloadedInputLinkIds: reloadedTarget.inputs.map(
       (_, slot) => reloadedTarget.getInputLink(slot)?.id
@@ -585,7 +586,6 @@ function unmatchedInputLinkState(graph: LGraph) {
 
 describe('LGraph.configure realignment with an unmatched input name (#15581)', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     LiteGraph.registerNodeType('test/RealignSource', SourceNode)
     LiteGraph.registerNodeType(
       'test/DroppedInputTarget',
@@ -634,10 +634,6 @@ describe('LGraph.configure realignment with an unmatched input name (#15581)', (
 })
 
 describe('realignInputLinkSlots with a rejected batch (#15581)', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('atomically removes an unmatched blocker and moves links', () => {
     const graph = new LGraph()
     const source = new LGraphNode('Source')
@@ -693,10 +689,6 @@ describe('realignInputLinkSlots with a rejected batch (#15581)', () => {
 })
 
 describe('realignInputLinkSlots', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('rekeys a serialized link', () => {
     const graph = new LGraph()
     const source = new LGraphNode('Source')
@@ -725,7 +717,7 @@ describe('realignInputLinkSlots', () => {
     )
   })
 
-  it('rejects all moves when one link cannot be realigned', () => {
+  it('realigns remaining links when one move is rejected', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     const graph = new LGraph()
     const source = new LGraphNode('Source')
@@ -751,10 +743,139 @@ describe('realignInputLinkSlots', () => {
     realignInputLinkSlots(graph, [[target.id, nodeData]])
 
     expect(blocked.target_slot).toBe(0)
-    expect(movable.target_slot).toBe(2)
+    expect(movable.target_slot).toBe(3)
     expect(console.error).toHaveBeenCalledWith(
       'Failed to realign input link slots',
       expect.objectContaining({ code: 'occupied-target' })
     )
+  })
+
+  it('replays a successful retry after a rejected move', () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const graph = new LGraph()
+    const source = new LGraphNode('Source')
+    source.addOutput('out', 'number')
+    const target = new LGraphNode('Target')
+    target.addInput('first', 'number')
+    target.addInput('occupied', 'number')
+    target.addInput('third', 'number')
+    target.addInput('destination', 'number')
+    graph.add(source)
+    graph.add(target)
+    const blocked = source.connect(0, target, 0)!
+    source.connect(0, target, 1)
+    const movable = source.connect(0, target, 2)!
+    const nodeData = target.serialize()
+    nodeData.inputs = [
+      { ...nodeData.inputs![0], name: 'occupied', link: blocked.id },
+      { ...nodeData.inputs![1], name: 'removed', link: null },
+      { ...nodeData.inputs![2], link: null },
+      { ...nodeData.inputs![3], link: movable.id }
+    ]
+    target.onConnectionsChange = (_type, slot, connected) => {
+      if (!connected || slot !== 3) return
+      const destination = target.inputs[3]
+      target.addInput('inserted', 'number')
+      target.inputs[3] = target.inputs[4]
+      target.inputs[4] = destination
+    }
+
+    realignInputLinkSlots(graph, [[target.id, nodeData]])
+
+    expect(movable.target_slot).toBe(4)
+  })
+})
+
+describe('realignGroupWidgetChildLinks (FE-258)', () => {
+  function groupWidgetSetup(inputNames: string[], groupWidgetName: string) {
+    const graph = new LGraph()
+    const source = new LGraphNode('Source')
+    source.addOutput('out', 'number')
+    const target = new LGraphNode('Target')
+    for (const name of inputNames) target.addInput(name, 'number')
+    target.addWidget('combo', groupWidgetName, 'scale dimensions', () => {}, {
+      values: ['scale dimensions', 'scale by multiplier']
+    })
+    graph.add(source)
+    graph.add(target)
+    return { graph, source, target }
+  }
+
+  function serializedInputs(
+    target: LGraphNode,
+    links: Record<string, number | null>
+  ) {
+    return target.inputs.map((input) => ({
+      name: input.name,
+      type: 'number',
+      link: links[input.name] ?? null
+    }))
+  }
+
+  it('moves a child link off the slot the default option laid out', () => {
+    const { graph, source, target } = groupWidgetSetup(
+      ['input', 'resize_type.width', 'resize_type', 'resize_type.multiplier'],
+      'resize_type'
+    )
+    const link = source.connect(0, target, 1)!
+
+    realignGroupWidgetChildLinks(target, {
+      id: target.id,
+      inputs: serializedInputs(target, { 'resize_type.multiplier': link.id })
+    })
+
+    expect(link.target_slot).toBe(3)
+    expect(
+      useLinkStore().getInputSlotLink(graphScopeOf(graph), target.id, 3)?.id
+    ).toBe(link.id)
+  })
+
+  it.for([
+    { label: 'a plain ordinary', ordinaryName: 'roll' },
+    { label: 'a dotted ordinary', ordinaryName: 'metadata.scale' }
+  ])(
+    'moves $label input link that holds a child destination slot',
+    ({ ordinaryName }) => {
+      const { source, target } = groupWidgetSetup(
+        [
+          'image',
+          'resize_type.width',
+          'resize_type',
+          ordinaryName,
+          'resize_type.multiplier'
+        ],
+        'resize_type'
+      )
+      const child = source.connect(0, target, 1)!
+      const ordinary = source.connect(0, target, 4)!
+
+      realignGroupWidgetChildLinks(target, {
+        id: target.id,
+        inputs: serializedInputs(target, {
+          'resize_type.multiplier': child.id,
+          [ordinaryName]: ordinary.id
+        })
+      })
+
+      expect({
+        child: child.target_slot,
+        ordinary: ordinary.target_slot
+      }).toEqual({ child: 4, ordinary: 3 })
+    }
+  )
+
+  it('leaves a node that has no group widget child input', () => {
+    const { source, target } = groupWidgetSetup(
+      ['first', 'second', 'resize_type'],
+      'resize_type'
+    )
+    const link = source.connect(0, target, 0)!
+
+    realignGroupWidgetChildLinks(target, {
+      id: target.id,
+      inputs: serializedInputs(target, { second: link.id })
+    })
+
+    expect(link.target_slot).toBe(0)
   })
 })

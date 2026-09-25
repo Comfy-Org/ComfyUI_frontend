@@ -11,8 +11,8 @@
     ],
     "unknownPattern": "Treat as a gap; do not invent a local substitute."
   },
-  "componentCount": 63,
-  "storyCount": 208,
+  "componentCount": 75,
+  "storyCount": 264,
   "components": [
     {
       "component": "AddToCalendarButton",
@@ -64,7 +64,16 @@
         "importPath": "@/components/blocks/BenefitsGrid01",
         "storybookPath": "/?path=/story/website-blocks-benefitsgrid01--default",
         "docsPath": "/?path=/docs/website-blocks-benefitsgrid01--docs",
-        "states": ["Default", "WithTitlesAndFootnote", "Mobile"],
+        "states": [
+          "Default",
+          "WithTitlesAndFootnote",
+          "WithTitlesFootnoteAndAction",
+          "WithTitlesFootnoteAndActionTablet",
+          "WithTitlesFootnoteAndActionMobile",
+          "WithTitlesFootnoteAndTwoActions",
+          "TwoColumnsUnnumbered",
+          "Mobile"
+        ],
         "hasInteractionTest": false,
         "hasResponsiveStories": true,
         "compositionSafe": true
@@ -77,6 +86,26 @@
         {
           "exportName": "WithTitlesAndFootnote",
           "storyId": "website-blocks-benefitsgrid01--with-titles-and-footnote"
+        },
+        {
+          "exportName": "WithTitlesFootnoteAndAction",
+          "storyId": "website-blocks-benefitsgrid01--with-titles-footnote-and-action"
+        },
+        {
+          "exportName": "WithTitlesFootnoteAndActionTablet",
+          "storyId": "website-blocks-benefitsgrid01--with-titles-footnote-and-action-tablet"
+        },
+        {
+          "exportName": "WithTitlesFootnoteAndActionMobile",
+          "storyId": "website-blocks-benefitsgrid01--with-titles-footnote-and-action-mobile"
+        },
+        {
+          "exportName": "WithTitlesFootnoteAndTwoActions",
+          "storyId": "website-blocks-benefitsgrid01--with-titles-footnote-and-two-actions"
+        },
+        {
+          "exportName": "TwoColumnsUnnumbered",
+          "storyId": "website-blocks-benefitsgrid01--two-columns-unnumbered"
         },
         {
           "exportName": "Mobile",
@@ -120,6 +149,69 @@
         {
           "exportName": "Mobile",
           "storyId": "website-blocks-brandassetsgrid01--mobile"
+        }
+      ]
+    },
+    {
+      "component": "BuildConfiguratorSplit01",
+      "source": "src/components/blocks/BuildConfiguratorSplit01.vue",
+      "storyFile": "src/components/blocks/BuildConfiguratorSplit01.stories.ts",
+      "title": "Website/Blocks/BuildConfiguratorSplit01",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": ["responsive-layout"],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/blocks/BuildConfiguratorSplit01.vue"
+      },
+      "agent": {
+        "importPath": "@/components/blocks/BuildConfiguratorSplit01",
+        "storybookPath": "/?path=/story/website-blocks-buildconfiguratorsplit01--default",
+        "docsPath": "/?path=/docs/website-blocks-buildconfiguratorsplit01--docs",
+        "states": [
+          "Default",
+          "WithoutFeatures",
+          "WithPanelTitle",
+          "Mobile",
+          "ConfiguratorDesktop",
+          "ConfiguratorTablet",
+          "ConfiguratorMobile"
+        ],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": true,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-buildconfiguratorsplit01--default"
+        },
+        {
+          "exportName": "WithoutFeatures",
+          "storyId": "website-blocks-buildconfiguratorsplit01--without-features"
+        },
+        {
+          "exportName": "WithPanelTitle",
+          "storyId": "website-blocks-buildconfiguratorsplit01--with-panel-title"
+        },
+        {
+          "exportName": "Mobile",
+          "storyId": "website-blocks-buildconfiguratorsplit01--mobile"
+        },
+        {
+          "exportName": "ConfiguratorDesktop",
+          "storyId": "website-blocks-buildconfiguratorsplit01--configurator-desktop"
+        },
+        {
+          "exportName": "ConfiguratorTablet",
+          "storyId": "website-blocks-buildconfiguratorsplit01--configurator-tablet"
+        },
+        {
+          "exportName": "ConfiguratorMobile",
+          "storyId": "website-blocks-buildconfiguratorsplit01--configurator-mobile"
         }
       ]
     },
@@ -269,6 +361,41 @@
       ]
     },
     {
+      "component": "CardSplitContent02",
+      "source": "src/components/blocks/CardSplitContent02.vue",
+      "storyFile": "src/components/blocks/CardSplitContent02.stories.ts",
+      "title": "Website/Blocks/CardSplitContent02",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": ["linked-content", "responsive-layout"],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/blocks/CardSplitContent02.vue"
+      },
+      "agent": {
+        "importPath": "@/components/blocks/CardSplitContent02",
+        "storybookPath": "/?path=/story/website-blocks-cardsplitcontent02--default",
+        "docsPath": "/?path=/docs/website-blocks-cardsplitcontent02--docs",
+        "states": ["Default", "Reversed"],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": false,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-cardsplitcontent02--default"
+        },
+        {
+          "exportName": "Reversed",
+          "storyId": "website-blocks-cardsplitcontent02--reversed"
+        }
+      ]
+    },
+    {
       "component": "CardWorkflow01",
       "source": "src/components/blocks/CardWorkflow01.vue",
       "storyFile": "src/components/blocks/CardWorkflow01.stories.ts",
@@ -398,6 +525,45 @@
       ]
     },
     {
+      "component": "CompareTable01",
+      "source": "src/components/blocks/CompareTable01.vue",
+      "storyFile": "src/components/blocks/CompareTable01.stories.ts",
+      "title": "Website/Blocks/CompareTable01",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": [],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/blocks/CompareTable01.vue"
+      },
+      "agent": {
+        "importPath": "@/components/blocks/CompareTable01",
+        "storybookPath": "/?path=/story/website-blocks-comparetable01--default",
+        "docsPath": "/?path=/docs/website-blocks-comparetable01--docs",
+        "states": ["Default", "WithoutSubtitle", "Mobile"],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": true,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-comparetable01--default"
+        },
+        {
+          "exportName": "WithoutSubtitle",
+          "storyId": "website-blocks-comparetable01--without-subtitle"
+        },
+        {
+          "exportName": "Mobile",
+          "storyId": "website-blocks-comparetable01--mobile"
+        }
+      ]
+    },
+    {
       "component": "CtaBands01",
       "source": "src/components/blocks/CtaBands01.vue",
       "storyFile": "src/components/blocks/CtaBands01.stories.ts",
@@ -416,7 +582,13 @@
         "importPath": "@/components/blocks/CtaBands01",
         "storybookPath": "/?path=/story/website-blocks-ctabands01--default",
         "docsPath": "/?path=/docs/website-blocks-ctabands01--docs",
-        "states": ["Default", "SingleBand", "ExternalCta", "Mobile"],
+        "states": [
+          "Default",
+          "SingleBand",
+          "ExternalCta",
+          "Highlight",
+          "Mobile"
+        ],
         "hasInteractionTest": false,
         "hasResponsiveStories": true,
         "compositionSafe": true
@@ -433,6 +605,10 @@
         {
           "exportName": "ExternalCta",
           "storyId": "website-blocks-ctabands01--external-cta"
+        },
+        {
+          "exportName": "Highlight",
+          "storyId": "website-blocks-ctabands01--highlight"
         },
         {
           "exportName": "Mobile",
@@ -597,6 +773,41 @@
         {
           "exportName": "Mobile",
           "storyId": "website-blocks-featurerows01--mobile"
+        }
+      ]
+    },
+    {
+      "component": "FeatureRows02",
+      "source": "src/components/blocks/FeatureRows02.vue",
+      "storyFile": "src/components/blocks/FeatureRows02.stories.ts",
+      "title": "Website/Blocks/FeatureRows02",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": [],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/blocks/FeatureRows02.vue"
+      },
+      "agent": {
+        "importPath": "@/components/blocks/FeatureRows02",
+        "storybookPath": "/?path=/story/website-blocks-featurerows02--default",
+        "docsPath": "/?path=/docs/website-blocks-featurerows02--docs",
+        "states": ["Default", "WithFootnote"],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": false,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-featurerows02--default"
+        },
+        {
+          "exportName": "WithFootnote",
+          "storyId": "website-blocks-featurerows02--with-footnote"
         }
       ]
     },
@@ -775,6 +986,69 @@
       ]
     },
     {
+      "component": "HeroProduct01",
+      "source": "src/components/blocks/HeroProduct01.vue",
+      "storyFile": "src/components/blocks/HeroProduct01.stories.ts",
+      "title": "Website/Blocks/HeroProduct01",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": ["responsive-layout"],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/blocks/HeroProduct01.vue"
+      },
+      "agent": {
+        "importPath": "@/components/blocks/HeroProduct01",
+        "storybookPath": "/?path=/story/website-blocks-heroproduct01--default",
+        "docsPath": "/?path=/docs/website-blocks-heroproduct01--docs",
+        "states": [
+          "Default",
+          "WithoutTag",
+          "WithSecondaryCta",
+          "AsSecondaryHeading",
+          "ManagedBuildsDesktop",
+          "ManagedBuildsTablet",
+          "ManagedBuildsMobile"
+        ],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": true,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-heroproduct01--default"
+        },
+        {
+          "exportName": "WithoutTag",
+          "storyId": "website-blocks-heroproduct01--without-tag"
+        },
+        {
+          "exportName": "WithSecondaryCta",
+          "storyId": "website-blocks-heroproduct01--with-secondary-cta"
+        },
+        {
+          "exportName": "AsSecondaryHeading",
+          "storyId": "website-blocks-heroproduct01--as-secondary-heading"
+        },
+        {
+          "exportName": "ManagedBuildsDesktop",
+          "storyId": "website-blocks-heroproduct01--managed-builds-desktop"
+        },
+        {
+          "exportName": "ManagedBuildsTablet",
+          "storyId": "website-blocks-heroproduct01--managed-builds-tablet"
+        },
+        {
+          "exportName": "ManagedBuildsMobile",
+          "storyId": "website-blocks-heroproduct01--managed-builds-mobile"
+        }
+      ]
+    },
+    {
       "component": "HeroSplit01",
       "source": "src/components/blocks/HeroSplit01.vue",
       "storyFile": "src/components/blocks/HeroSplit01.stories.ts",
@@ -793,7 +1067,14 @@
         "importPath": "@/components/blocks/HeroSplit01",
         "storybookPath": "/?path=/story/website-blocks-herosplit01--default",
         "docsPath": "/?path=/docs/website-blocks-herosplit01--docs",
-        "states": ["Default", "ImageLeft", "Mobile"],
+        "states": [
+          "Default",
+          "ImageLeft",
+          "Mobile",
+          "EnterpriseDesktop",
+          "EnterpriseTablet",
+          "EnterpriseMobile"
+        ],
         "hasInteractionTest": false,
         "hasResponsiveStories": true,
         "compositionSafe": true
@@ -810,6 +1091,168 @@
         {
           "exportName": "Mobile",
           "storyId": "website-blocks-herosplit01--mobile"
+        },
+        {
+          "exportName": "EnterpriseDesktop",
+          "storyId": "website-blocks-herosplit01--enterprise-desktop"
+        },
+        {
+          "exportName": "EnterpriseTablet",
+          "storyId": "website-blocks-herosplit01--enterprise-tablet"
+        },
+        {
+          "exportName": "EnterpriseMobile",
+          "storyId": "website-blocks-herosplit01--enterprise-mobile"
+        }
+      ]
+    },
+    {
+      "component": "HeroWaitlist01",
+      "source": "src/components/blocks/HeroWaitlist01.vue",
+      "storyFile": "src/components/blocks/HeroWaitlist01.stories.ts",
+      "title": "Website/Blocks/HeroWaitlist01",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": ["responsive-layout"],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/blocks/HeroWaitlist01.vue"
+      },
+      "agent": {
+        "importPath": "@/components/blocks/HeroWaitlist01",
+        "storybookPath": "/?path=/story/website-blocks-herowaitlist01--default",
+        "docsPath": "/?path=/docs/website-blocks-herowaitlist01--docs",
+        "states": ["Default", "NoBadge", "TitleOnly", "OtherWaitlist"],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": false,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-herowaitlist01--default"
+        },
+        {
+          "exportName": "NoBadge",
+          "storyId": "website-blocks-herowaitlist01--no-badge"
+        },
+        {
+          "exportName": "TitleOnly",
+          "storyId": "website-blocks-herowaitlist01--title-only"
+        },
+        {
+          "exportName": "OtherWaitlist",
+          "storyId": "website-blocks-herowaitlist01--other-waitlist"
+        }
+      ]
+    },
+    {
+      "component": "MapPins01",
+      "source": "src/components/blocks/MapPins01.vue",
+      "storyFile": "src/components/blocks/MapPins01.stories.ts",
+      "title": "Website/Blocks/MapPins01",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": [],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/blocks/MapPins01.vue"
+      },
+      "agent": {
+        "importPath": "@/components/blocks/MapPins01",
+        "storybookPath": "/?path=/story/website-blocks-mappins01--default",
+        "docsPath": "/?path=/docs/website-blocks-mappins01--docs",
+        "states": ["Default", "SingleMarker", "Empty"],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": false,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-mappins01--default"
+        },
+        {
+          "exportName": "SingleMarker",
+          "storyId": "website-blocks-mappins01--single-marker"
+        },
+        {
+          "exportName": "Empty",
+          "storyId": "website-blocks-mappins01--empty"
+        }
+      ]
+    },
+    {
+      "component": "OfferGrid01",
+      "source": "src/components/blocks/OfferGrid01.vue",
+      "storyFile": "src/components/blocks/OfferGrid01.stories.ts",
+      "title": "Website/Blocks/OfferGrid01",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": ["responsive-layout"],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/blocks/OfferGrid01.vue"
+      },
+      "agent": {
+        "importPath": "@/components/blocks/OfferGrid01",
+        "storybookPath": "/?path=/story/website-blocks-offergrid01--desktop",
+        "docsPath": "/?path=/docs/website-blocks-offergrid01--docs",
+        "states": [
+          "Desktop",
+          "Tablet",
+          "Mobile",
+          "WithoutFeaturedLabelDesktop",
+          "WithoutFeaturedLabelTablet",
+          "WithoutFeaturedLabelMobile",
+          "TwoUpHeaderlessDesktop",
+          "TwoUpHeaderlessMobile"
+        ],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": true,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Desktop",
+          "storyId": "website-blocks-offergrid01--desktop"
+        },
+        {
+          "exportName": "Tablet",
+          "storyId": "website-blocks-offergrid01--tablet"
+        },
+        {
+          "exportName": "Mobile",
+          "storyId": "website-blocks-offergrid01--mobile"
+        },
+        {
+          "exportName": "WithoutFeaturedLabelDesktop",
+          "storyId": "website-blocks-offergrid01--without-featured-label-desktop"
+        },
+        {
+          "exportName": "WithoutFeaturedLabelTablet",
+          "storyId": "website-blocks-offergrid01--without-featured-label-tablet"
+        },
+        {
+          "exportName": "WithoutFeaturedLabelMobile",
+          "storyId": "website-blocks-offergrid01--without-featured-label-mobile"
+        },
+        {
+          "exportName": "TwoUpHeaderlessDesktop",
+          "storyId": "website-blocks-offergrid01--two-up-headerless-desktop"
+        },
+        {
+          "exportName": "TwoUpHeaderlessMobile",
+          "storyId": "website-blocks-offergrid01--two-up-headerless-mobile"
         }
       ]
     },
@@ -845,6 +1288,119 @@
         {
           "exportName": "WithoutHighlight",
           "storyId": "website-blocks-reasonssplit01--without-highlight"
+        }
+      ]
+    },
+    {
+      "component": "SectionIntro01",
+      "source": "src/components/blocks/SectionIntro01.vue",
+      "storyFile": "src/components/blocks/SectionIntro01.stories.ts",
+      "title": "Website/Blocks/SectionIntro01",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": ["responsive-layout"],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/blocks/SectionIntro01.vue"
+      },
+      "agent": {
+        "importPath": "@/components/blocks/SectionIntro01",
+        "storybookPath": "/?path=/story/website-blocks-sectionintro01--desktop",
+        "docsPath": "/?path=/docs/website-blocks-sectionintro01--docs",
+        "states": ["Desktop", "HeadingOnly", "Mobile"],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": true,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Desktop",
+          "storyId": "website-blocks-sectionintro01--desktop"
+        },
+        {
+          "exportName": "HeadingOnly",
+          "storyId": "website-blocks-sectionintro01--heading-only"
+        },
+        {
+          "exportName": "Mobile",
+          "storyId": "website-blocks-sectionintro01--mobile"
+        }
+      ]
+    },
+    {
+      "component": "StepsAccordion01",
+      "source": "src/components/blocks/StepsAccordion01.vue",
+      "storyFile": "src/components/blocks/StepsAccordion01.stories.ts",
+      "title": "Website/Blocks/StepsAccordion01",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": [],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/blocks/StepsAccordion01.vue"
+      },
+      "agent": {
+        "importPath": "@/components/blocks/StepsAccordion01",
+        "storybookPath": "/?path=/story/website-blocks-stepsaccordion01--default",
+        "docsPath": "/?path=/docs/website-blocks-stepsaccordion01--docs",
+        "states": ["Default", "SecondStepOpen", "WithoutCta", "Empty"],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": false,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-stepsaccordion01--default"
+        },
+        {
+          "exportName": "SecondStepOpen",
+          "storyId": "website-blocks-stepsaccordion01--second-step-open"
+        },
+        {
+          "exportName": "WithoutCta",
+          "storyId": "website-blocks-stepsaccordion01--without-cta"
+        },
+        {
+          "exportName": "Empty",
+          "storyId": "website-blocks-stepsaccordion01--empty"
+        }
+      ]
+    },
+    {
+      "component": "StepsCards01",
+      "source": "src/components/blocks/StepsCards01.vue",
+      "storyFile": "src/components/blocks/StepsCards01.stories.ts",
+      "title": "Website/Blocks/StepsCards01",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": ["linked-content"],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/blocks/StepsCards01.vue"
+      },
+      "agent": {
+        "importPath": "@/components/blocks/StepsCards01",
+        "storybookPath": "/?path=/story/website-blocks-stepscards01--default",
+        "docsPath": "/?path=/docs/website-blocks-stepscards01--docs",
+        "states": ["Default"],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": false,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-stepscards01--default"
         }
       ]
     },
@@ -2636,6 +3192,45 @@
         {
           "exportName": "Multiple",
           "storyId": "website-ui-togglegroup--multiple"
+        }
+      ]
+    },
+    {
+      "component": "AnnouncementBanner",
+      "source": "src/templates/drops/AnnouncementBanner.vue",
+      "storyFile": "src/templates/drops/AnnouncementBanner.stories.ts",
+      "title": "Website/Common/AnnouncementBanner",
+      "status": "stable",
+      "category": "common",
+      "capabilities": [],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/templates/drops/AnnouncementBanner.vue"
+      },
+      "agent": {
+        "importPath": "@/templates/drops/AnnouncementBanner",
+        "storybookPath": "/?path=/story/website-common-announcementbanner--desktop",
+        "docsPath": "/?path=/docs/website-common-announcementbanner--docs",
+        "states": ["Desktop", "Tablet", "Mobile"],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": true,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Desktop",
+          "storyId": "website-common-announcementbanner--desktop"
+        },
+        {
+          "exportName": "Tablet",
+          "storyId": "website-common-announcementbanner--tablet"
+        },
+        {
+          "exportName": "Mobile",
+          "storyId": "website-common-announcementbanner--mobile"
         }
       ]
     }

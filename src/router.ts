@@ -17,8 +17,9 @@ import LayoutDefault from '@/views/layouts/LayoutDefault.vue'
 
 import { captureOAuthRequestId } from '@/platform/cloud/oauth/oauthState'
 import { installDesktopLoginRedemption } from '@/platform/cloud/onboarding/desktopLoginRedemption'
+import { PRESERVED_QUERY_DEFINITIONS } from '@/platform/navigation/preservedQueryDefinitions'
 import { installPreservedQueryTracker } from '@/platform/navigation/preservedQueryTracker'
-import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+import { unmatchedRouteRedirect } from '@/platform/navigation/unmatchedRoute'
 import { preserveLoggedOutShareAuthAttribution } from '@/platform/workflow/sharing/utils/shareAuthAttribution'
 
 const cloudOnboardingRoutes = isCloud
@@ -37,7 +38,7 @@ const isFileProtocol = window.location.protocol === 'file:'
  */
 function getBasePath(): string {
   if (isDesktop) return '/'
-  if (isCloud) return import.meta.env?.BASE_URL || '/'
+  if (isCloud) return import.meta.env.BASE_URL || '/'
   return window.location.pathname
 }
 
@@ -84,10 +85,7 @@ const router = createRouter({
         }
       ]
     },
-    // Catch-all: unknown paths redirect to root rather than hanging on the
-    // splash screen with no route match. The global auth guard then routes
-    // unauthenticated users to /cloud/login as normal.
-    { path: '/:pathMatch(.*)*', redirect: '/' }
+    { path: '/:pathMatch(.*)*', redirect: unmatchedRouteRedirect }
   ],
 
   scrollBehavior(_to, _from, savedPosition) {
@@ -99,46 +97,7 @@ const router = createRouter({
   }
 })
 
-installPreservedQueryTracker(router, [
-  {
-    namespace: PRESERVED_QUERY_NAMESPACES.TEMPLATE,
-    keys: ['template', 'source', 'mode']
-  },
-  {
-    namespace: PRESERVED_QUERY_NAMESPACES.SHARE,
-    keys: ['share']
-  },
-  {
-    namespace: PRESERVED_QUERY_NAMESPACES.INVITE,
-    keys: ['invite']
-  },
-  {
-    namespace: PRESERVED_QUERY_NAMESPACES.CREATE_WORKSPACE,
-    keys: ['create_workspace']
-  },
-  {
-    namespace: PRESERVED_QUERY_NAMESPACES.OAUTH,
-    keys: ['oauth_request_id']
-  },
-  {
-    namespace: PRESERVED_QUERY_NAMESPACES.PRICING,
-    keys: ['pricing', 'stop', 'cycle'],
-    requiredKey: 'pricing'
-  },
-  {
-    namespace: PRESERVED_QUERY_NAMESPACES.TOPUP,
-    keys: ['topup']
-  },
-  {
-    namespace: PRESERVED_QUERY_NAMESPACES.SETTINGS,
-    keys: ['settings']
-  },
-  {
-    namespace: PRESERVED_QUERY_NAMESPACES.DESKTOP_LOGIN,
-    keys: ['desktop_login_code'],
-    stripAfterCapture: true
-  }
-])
+installPreservedQueryTracker(router, PRESERVED_QUERY_DEFINITIONS)
 
 router.beforeEach((to, _from, next) => {
   captureOAuthRequestId(to.query)
@@ -243,7 +202,7 @@ if (isCloud) {
 
     // User is logged in - check if they need onboarding (when enabled)
     // For root path, check actual user status to handle waitlisted users
-    if (!isDesktop && isLoggedIn && to.path === '/') {
+    if (!isDesktop && to.path === '/') {
       if (!flags.onboardingSurveyEnabled) {
         return next()
       }
@@ -252,7 +211,9 @@ if (isCloud) {
         await import('@/platform/cloud/onboarding/auth')
       try {
         // Check user's actual status
-        const surveyCompleted = await getSurveyCompletedStatus()
+        const surveyCompleted = await getSurveyCompletedStatus(
+          useAuthStore().userId
+        )
 
         // Survey is required for all users (when feature flag enabled)
         if (!surveyCompleted) {

@@ -264,7 +264,7 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          pnpm dlx wrangler@^4.0.0 pages deploy storybook-static \
+          pnpx wrangler@^4.0.0 pages deploy storybook-static \
             --project-name=comfy-storybook \
             --branch=main
 

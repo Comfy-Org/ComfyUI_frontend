@@ -17,7 +17,8 @@ import {
   organizationId,
   pageContext,
   productNode,
-  softwareApplicationNode
+  softwareApplicationNode,
+  videoObjectNode
 } from './jsonLd'
 
 const siteUrl = 'https://comfy.org'
@@ -43,6 +44,7 @@ describe('pageContext', () => {
       url: 'https://comfy.org/about/'
     })
     expect(pageContext(site, '/zh-CN/', 'zh-CN').locale).toBe('zh-CN')
+    expect(pageContext(site, '/ja/', 'ja').locale).toBe('ja')
   })
 })
 
@@ -283,6 +285,29 @@ describe('buildPageGraph', () => {
   })
 })
 
+describe('videoObjectNode', () => {
+  const base = {
+    siteUrl,
+    id: `${siteUrl}/x/#video`,
+    pageUrl: `${siteUrl}/x/`,
+    name: 'A video',
+    description: 'A description',
+    thumbnailUrl: `${siteUrl}/poster.webp`,
+    locale: 'en' as const
+  }
+
+  it('includes duration when given an ISO 8601 value', () => {
+    const node = videoObjectNode({ ...base, duration: 'PT4M32S' })
+    expect(node.duration).toBe('PT4M32S')
+  })
+
+  it('omits duration and uploadDate rather than defaulting them', () => {
+    const node = videoObjectNode(base)
+    expect(node.duration).toBeUndefined()
+    expect(node.uploadDate).toBeUndefined()
+  })
+})
+
 describe('escapeJsonLd on a built graph', () => {
   it('neutralizes a </script> breakout in a page name', () => {
     const graph = buildPageGraph(
@@ -293,4 +318,25 @@ describe('escapeJsonLd on a built graph', () => {
     expect(serialized).not.toContain('</script>')
     expect(serialized).toContain('\\u003c')
   })
+
+  it.for([
+    { description: 'U+2028 line', separator: '\u2028', escaped: '\\u2028' },
+    {
+      description: 'U+2029 paragraph',
+      separator: '\u2029',
+      escaped: '\\u2029'
+    }
+  ] as const)(
+    'escapes a $description separator in a page name',
+    ({ separator, escaped }) => {
+      const name = `before${separator}after`
+      const graph = buildPageGraph(
+        { siteUrl, locale: 'en' },
+        { url: `${siteUrl}/x/`, name }
+      )
+      const serialized = escapeJsonLd(graph)
+      expect(serialized).not.toContain(separator)
+      expect(serialized).toContain(`before${escaped}after`)
+    }
+  )
 })
