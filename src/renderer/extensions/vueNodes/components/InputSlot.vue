@@ -40,9 +40,9 @@
     <div class="flex h-full min-w-0 items-center">
       <EditableText
         v-if="!props.dotOnly && !hasNoLabel"
-        :class="
+        :label-class="
           cn(
-            'truncate text-node-component-slot-text',
+            'inline-block truncate text-node-component-slot-text',
             hasError && 'font-medium text-error'
           )
         "
