@@ -9,6 +9,7 @@ import type { DocUpdate } from './docFrameClient'
 import type { FollowerDoc } from './followerDoc'
 import { LiveGraphApplier } from './liveGraphApplier'
 import type {
+  ApplyMode,
   FrameChanges,
   LiveGraphApplierDeps,
   RemoteApplyContext
@@ -49,6 +50,7 @@ function docNodeDelta(changes: FrameChanges): DocNodeDelta {
  */
 export class AgentCrdtProjection {
   private readonly targets = new Map<string, BoundTarget>()
+  private readonly replacedLineages = new Set<string>()
   private readonly applier: LiveGraphApplier
 
   constructor(
@@ -85,10 +87,16 @@ export class AgentCrdtProjection {
     if (!this.getGraph())
       return { applied: false, nodes: docNodeDelta(target.collector.peek()) }
     const changes = target.collector.take()
-    const createdNodeIds = this.apply(update.workflowId, target, changes, {
-      actor: update.actor ?? 'agent-remote',
-      opIds: update.opIds?.filter((id) => id.length > 0) ?? []
-    })
+    const createdNodeIds = this.apply(
+      update.workflowId,
+      target,
+      changes,
+      {
+        actor: update.actor ?? 'agent-remote',
+        opIds: update.opIds?.filter((id) => id.length > 0) ?? []
+      },
+      this.takeApplyMode(update.workflowId)
+    )
     return { applied: true, nodes: docNodeDelta(changes), createdNodeIds }
   }
 
@@ -100,10 +108,13 @@ export class AgentCrdtProjection {
   applyCollected(workflowId: string): NodeId[] {
     const target = this.targets.get(workflowId)
     if (!target || !this.getGraph()) return []
-    return this.apply(workflowId, target, target.collector.take(), {
-      actor: 'agent-collected',
-      opIds: []
-    })
+    return this.apply(
+      workflowId,
+      target,
+      target.collector.take(),
+      { actor: 'agent-collected', opIds: [] },
+      this.takeApplyMode(workflowId)
+    )
   }
 
   /**
@@ -122,10 +133,20 @@ export class AgentCrdtProjection {
     })
   }
 
-  /** Explicit lineage reset only: the document was replaced, so is the graph. */
-  clearForReset(workflowId: string, context: RemoteApplyContext): void {
+  /**
+   * Explicit lineage reset (`doc_reset`): the old lineage's undelivered
+   * changes are dropped and the new lineage's first frame, which carries its
+   * whole state, replaces the graph. Nothing is cleared before that frame
+   * arrives, so a first mint of the canvas the user already sees changes
+   * nothing visible.
+   */
+  replaceOnNextFrame(workflowId: string): void {
     this.targets.get(workflowId)?.collector.discard()
-    this.applier.clear(context)
+    this.replacedLineages.add(workflowId)
+  }
+
+  private takeApplyMode(workflowId: string): ApplyMode {
+    return this.replacedLineages.delete(workflowId) ? 'replace' : 'merge'
   }
 
   /** Drops a frame the graph already holds, reporting what it changed in the document. */
@@ -137,18 +158,21 @@ export class AgentCrdtProjection {
   destroy(): void {
     for (const workflowId of Array.from(this.targets.keys()))
       this.unbind(workflowId)
+    this.replacedLineages.clear()
   }
 
   private apply(
     workflowId: string,
     target: BoundTarget,
     changes: FrameChanges,
-    context: RemoteApplyContext
+    context: RemoteApplyContext,
+    mode: ApplyMode = 'merge'
   ): NodeId[] {
     const { createdNodeIds } = this.applier.applyChanges(
       target.follower.doc,
       changes,
-      context
+      context,
+      mode
     )
     if (createdNodeIds.length > 0) {
       recordDevEvent('agent_node_adapters_materialized', {

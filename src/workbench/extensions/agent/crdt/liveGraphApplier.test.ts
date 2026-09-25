@@ -309,7 +309,7 @@ describe('LiveGraphApplier', () => {
 
   it('scopes every write to the remote actor', () => {
     const actors: string[] = []
-    const { applier, applyCollected } = setup(
+    const { doc, collector, applier, applyCollected } = setup(
       { nodes: [sourceNode(1)], links: [] },
       {
         withRemoteActor: (actor, fn) => {
@@ -320,9 +320,71 @@ describe('LiveGraphApplier', () => {
     )
 
     applyCollected({ actor: 'agent:remote', opIds: [] })
-    applier.clear({ actor: 'agent:reset', opIds: [] })
+    applier.applyChanges(
+      doc,
+      collector.take(),
+      { actor: 'agent:reset', opIds: [] },
+      'replace'
+    )
 
     expect(actors).toEqual(['agent:remote', 'agent:reset'])
+  })
+
+  it('replaces the graph with a new lineage: shared nodes stay the same instance, the rest leaves, nothing is re-parked', () => {
+    const viewport = { x: 0, y: 0, width: 1000, height: 1000 }
+    const { graph, applier, applyCollected } = setup(
+      {
+        nodes: [
+          sourceNode(1, {
+            outputs: [{ name: 'image', type: 'IMAGE', links: [7] }]
+          }),
+          {
+            ...sinkNode(2),
+            inputs: [{ name: 'image', type: 'IMAGE', link: 7 }]
+          },
+          sourceNode(9, { pos: [0, 300] })
+        ],
+        links: [[7, 1, 0, 2, 0, 'IMAGE']]
+      },
+      { viewportBounds: () => viewport }
+    )
+    applyCollected()
+    const shared = graph.getNodeById(toNodeId(1))
+    const lineage = followedDoc(
+      {
+        nodes: [
+          sourceNode(1, {
+            title: 'kept by id',
+            outputs: [{ name: 'image', type: 'IMAGE', links: [8] }]
+          }),
+          {
+            ...sinkNode(3, [9000, 9000]),
+            inputs: [{ name: 'image', type: 'IMAGE', link: 8 }]
+          }
+        ],
+        links: [[8, 1, 0, 3, 0, 'IMAGE']]
+      },
+      CATALOG
+    )
+
+    const result = applier.applyChanges(
+      lineage.doc,
+      lineage.collector.take(),
+      CONTEXT,
+      'replace'
+    )
+
+    expect(result.createdNodeIds).toEqual([toNodeId(3)])
+    expect(graph._nodes.map((node) => node.id).sort()).toEqual([
+      toNodeId(1),
+      toNodeId(3)
+    ])
+    expect(graph.getNodeById(toNodeId(1))).toBe(shared)
+    expect(shared?.title).toBe('kept by id')
+    expect([...(graph.getNodeById(toNodeId(3))?.pos ?? [])]).toEqual([
+      9000, 9000
+    ])
+    expect([...graph.links.keys()]).toEqual([toLinkId(8)])
   })
 })
 
@@ -344,8 +406,8 @@ function envelope(body: OpBody): Op {
 
 /**
  * A canvas that only records the undo bracket: `emitBeforeChange` /
- * `emitAfterChange` are what the change tracker listens for, `setDirty` and
- * `clear` are the only other canvas calls a frame makes.
+ * `emitAfterChange` are what the change tracker listens for; the rest are the
+ * calls a frame's node and link writes make on the way through.
  */
 function recordingCanvas() {
   const events: Array<'before' | 'after'> = []
@@ -355,7 +417,8 @@ function recordingCanvas() {
     setDirty: () => {},
     clear: () => {},
     deselect: () => {},
-    checkPanels: () => {}
+    checkPanels: () => {},
+    selected_nodes: {}
   })
   return { canvas, events }
 }
@@ -456,21 +519,23 @@ describe('LiveGraphApplier change bracket', () => {
     }
   )
 
-  it('brackets a document reset and a catch-up frame once each, and never without a graph', () => {
+  it('brackets a catch-up frame and a lineage replacement once each, and never without a graph', () => {
     const { graph, doc, collector, applier } = setup(seed)
     const { canvas, events } = recordingCanvas()
     graph.list_of_graphcanvas = [canvas]
     const catchUp = collector.peek()
+    const empty = followedDoc({ nodes: [], links: [] }, CATALOG)
 
     applier.applyChanges(doc, collector.take(), CONTEXT)
-    applier.clear(CONTEXT)
+    applier.applyChanges(empty.doc, empty.collector.take(), CONTEXT, 'replace')
 
     expect(events).toEqual(['before', 'after', 'before', 'after'])
     expect(graph._nodes).toEqual([])
+    expect(reportError).not.toHaveBeenCalled()
 
     const detached = new LiveGraphApplier({ getGraph: () => null })
     detached.applyChanges(doc, catchUp, CONTEXT)
-    detached.clear(CONTEXT)
+    detached.applyChanges(empty.doc, empty.collector.take(), CONTEXT, 'replace')
     expect(events).toHaveLength(4)
   })
 })

@@ -35,10 +35,7 @@ import type { DocOpsResult } from './docFrameClient'
 import type { GraphOperation } from './graphOperations'
 import type { ClassifiedDocUpdate } from './layoutFollowerBridge'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
-import type {
-  LiveGraphApplierDeps,
-  RemoteApplyContext
-} from './liveGraphApplier'
+import type { LiveGraphApplierDeps } from './liveGraphApplier'
 import { readDocSlotNames } from './liveGraphApplier'
 import { createOpCoalescer } from './opCoalescer'
 import { createOpSender } from './opSender'
@@ -478,19 +475,11 @@ function startAgentCrdtFollower(
   const onDocReset: EventListener = (event) => {
     const detail =
       event instanceof CustomEvent
-        ? (event.detail as {
-            workflowId?: string
-            actor?: string
-            seq?: number
-          })
+        ? (event.detail as { workflowId?: string })
         : undefined
     incrementOutcome('reset')
     if (!isCurrentWorkflow(detail?.workflowId)) return
-    const context: RemoteApplyContext = {
-      actor: detail.actor ?? 'agent-reset',
-      opIds: [`doc-reset:${detail.seq ?? 'unknown'}`]
-    }
-    projection.clearForReset(detail.workflowId, context)
+    projection.replaceOnNextFrame(detail.workflowId)
     sender.abortAll()
     events.onReset?.(detail.workflowId)
     connected.value = false

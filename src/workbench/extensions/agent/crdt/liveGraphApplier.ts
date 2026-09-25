@@ -71,6 +71,13 @@ export interface ApplyResult {
 }
 
 /**
+ * `merge` applies one frame's changes on top of the live graph. `replace`
+ * applies the first frame of a new document lineage: the document is the
+ * whole graph, so live nodes and links it does not hold are removed.
+ */
+export type ApplyMode = 'merge' | 'replace'
+
+/**
  * Node-map keys mirrored onto a live node when the document edits them.
  * Structural keys (`inputs`, `outputs`, `pos`, `size`, widget storage) are
  * excluded: slots follow links, layout stays local.
@@ -343,11 +350,13 @@ export class LiveGraphApplier {
   applyChanges(
     doc: Y.Doc,
     changes: FrameChanges,
-    context: RemoteApplyContext
+    context: RemoteApplyContext,
+    mode: ApplyMode = 'merge'
   ): ApplyResult {
     const graph = this.deps.getGraph()
     if (!graph) return { createdNodeIds: [] }
     return this.write(graph, context, () => {
+      if (mode === 'replace') this.removeAbsent(graph, doc, context)
       const created: NodeId[] = []
       const touchedNodes = new Set<string>()
       this.registerDefinitions(graph, doc)
@@ -380,16 +389,28 @@ export class LiveGraphApplier {
       }
 
       this.applyLinks(graph, doc, [...changes.links], context)
-      this.placeBatch(graph, created)
+      if (mode === 'merge') this.placeBatch(graph, created)
       return { createdNodeIds: created }
     })
   }
 
-  /** Empties the live graph, as a document reset replaces everything. */
-  clear(context: RemoteApplyContext): void {
-    const graph = this.deps.getGraph()
-    if (!graph) return
-    this.write(graph, context, () => graph.clear())
+  private removeAbsent(
+    graph: LGraph,
+    doc: Y.Doc,
+    context: RemoteApplyContext
+  ): void {
+    const docNodes = nodesMap(doc)
+    const absentNodes = graph._nodes.filter(
+      (node) => !docNodes.has(String(node.id))
+    )
+    for (const node of absentNodes) {
+      this.try(context, () => graph.remove(node))
+    }
+    const docLinks = linksMap(doc)
+    for (const id of graph.links.keys()) {
+      if (docLinks.has(String(id))) continue
+      this.try(context, () => graph.removeLink(id))
+    }
   }
 
   /**

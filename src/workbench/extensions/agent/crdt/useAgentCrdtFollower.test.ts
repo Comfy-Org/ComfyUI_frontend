@@ -76,7 +76,7 @@ const projectionState = vi.hoisted(() => {
     revertRejected: vi.fn(
       (_workflowId: string, _ops: readonly Op[]): NodeId[] => []
     ),
-    clearForReset: vi.fn(),
+    replaceOnNextFrame: vi.fn(),
     discardPending: vi.fn((_workflowId: string): DocNodeDelta => NO_NODES),
     destroy: vi.fn()
   }
@@ -130,7 +130,7 @@ vi.mock<unknown>(import('./agentCrdtProjection'), () => ({
     applyFrame = projectionState.applyFrame
     applyCollected = projectionState.applyCollected
     revertRejected = projectionState.revertRejected
-    clearForReset = projectionState.clearForReset
+    replaceOnNextFrame = projectionState.replaceOnNextFrame
     discardPending = projectionState.discardPending
     destroy = projectionState.destroy
   }
@@ -661,11 +661,11 @@ describe('useAgentCrdtFollower', () => {
 
     expect(status().connected).toBe(false)
     expect(bridge().resubscribe).toHaveBeenCalled()
-    expect(projectionState.clearForReset).not.toHaveBeenCalled()
+    expect(projectionState.replaceOnNextFrame).not.toHaveBeenCalled()
     unmount()
   })
 
-  it('clears only for an explicit reset and rebinds after replacement', () => {
+  it('arms a lineage replacement only for an explicit reset and rebinds after replacement', () => {
     const { unmount, status } = mountFollower('wf-1')
     expect(projectionState.bind).toHaveBeenCalledTimes(1)
 
@@ -674,10 +674,7 @@ describe('useAgentCrdtFollower', () => {
       actor: 'agent:turn',
       seq: 43
     })
-    expect(projectionState.clearForReset).toHaveBeenCalledWith('wf-1', {
-      actor: 'agent:turn',
-      opIds: ['doc-reset:43']
-    })
+    expect(projectionState.replaceOnNextFrame).toHaveBeenCalledWith('wf-1')
 
     bridge().follower.updatesApplied = 3
     dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 44 })
@@ -689,7 +686,7 @@ describe('useAgentCrdtFollower', () => {
 
     dispatchFrame('follower_replaced', { workflowId: 'wf-1' })
     expect(status().updatesApplied).toBe(0)
-    expect(projectionState.clearForReset).toHaveBeenCalledTimes(1)
+    expect(projectionState.replaceOnNextFrame).toHaveBeenCalledTimes(1)
     expect(projectionState.discardPending).toHaveBeenLastCalledWith('wf-1')
     expect(projectionState.bind).toHaveBeenCalledTimes(2)
     expect(projectionState.bind).toHaveBeenLastCalledWith(
@@ -857,7 +854,7 @@ describe('useAgentCrdtFollower', () => {
       })
 
       expect(status().outcomes.reset).toBe(1)
-      expect(projectionState.clearForReset).not.toHaveBeenCalled()
+      expect(projectionState.replaceOnNextFrame).not.toHaveBeenCalled()
       unmount()
     })
 
@@ -1026,7 +1023,7 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
-    it('clears the graph on a doc_reset and rebinds the replacement document', () => {
+    it('arms a lineage replacement on a doc_reset and rebinds the replacement document', () => {
       const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
       const replacementDoc = { getMap: () => ({ toJSON: () => ({}) }) }
 
@@ -1038,10 +1035,9 @@ describe('useAgentCrdtFollower', () => {
       bridge().follower = { updatesApplied: 0, doc: replacementDoc }
       dispatchFrame('follower_replaced', { workflowId: 'wf-1' })
 
-      expect(projectionState.clearForReset).toHaveBeenCalledExactlyOnceWith(
-        'wf-1',
-        { actor: 'agent:turn', opIds: ['doc-reset:43'] }
-      )
+      expect(
+        projectionState.replaceOnNextFrame
+      ).toHaveBeenCalledExactlyOnceWith('wf-1')
       expect(projectionState.bind).toHaveBeenLastCalledWith(
         'wf-1',
         bridge().follower

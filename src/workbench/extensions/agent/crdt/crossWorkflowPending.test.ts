@@ -63,7 +63,7 @@ const projectionState = vi.hoisted(() => ({
   })),
   applyCollected: vi.fn(() => []),
   revertRejected: vi.fn(() => []),
-  clearForReset: vi.fn(),
+  replaceOnNextFrame: vi.fn(),
   discardPending: vi.fn(() => ({ added: [], removed: [] })),
   destroy: vi.fn()
 }))
@@ -113,7 +113,7 @@ vi.mock<unknown>(import('./agentCrdtProjection'), () => ({
     applyFrame = projectionState.applyFrame
     applyCollected = projectionState.applyCollected
     revertRejected = projectionState.revertRejected
-    clearForReset = projectionState.clearForReset
+    replaceOnNextFrame = projectionState.replaceOnNextFrame
     discardPending = projectionState.discardPending
     destroy = projectionState.destroy
   }

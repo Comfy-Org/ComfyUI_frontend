@@ -116,9 +116,13 @@ one applier, and it is not in the frontend.
   appears, `AgentCrdtProjection.applyCollected` applies exactly that
   accumulated delta and nothing else. A live node, title, or widget value the
   document never wrote about is never touched, so the local human's in-flight
-  edits need no skip list. A `doc_reset` is the one whole-document path: it
-  clears the graph (`graph.clear()` under the remote source) and the follower
-  doc, then replays.
+  edits need no skip list. A `doc_reset` is the one whole-document path: the
+  follower doc is replaced and the new lineage's first frame, which carries its
+  whole state, is applied in `replace` mode — shared node ids are updated in
+  place and live nodes and links the new document lacks are removed. Nothing
+  is cleared before that frame, so the backend's lazy first mint (actor
+  `system:mint`, whose replacement holds the canvas already on screen) changes
+  nothing visible.
 - **A refused human batch is put back from the document, register by
   register.** When `doc_ops_result` reports `ok: false`, the follower reverts
   only the ops the host did not apply: `changesForRejectedOps` reads each
