@@ -12,7 +12,6 @@ import CinematicAppCard from './CinematicAppCard.vue'
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const HUB_PROTOTYPE = 'https://comfy-website-preview-pr-17804.vercel.app/hub/'
-const RESHOOT_PROTOTYPE = `${HUB_PROTOTYPE}workflow/crossview_warp_h3/`
 
 const TAB_LABEL = {
   models: 'cinematic.hub.models',
@@ -49,7 +48,8 @@ const apps = computed<readonly HubApp[]>(() => [
     summary: 'cinematic.hub.reshootSummary',
     badge: 'cinematic.hub.prototype',
     meta: 'cinematic.hub.reshootMeta',
-    href: RESHOOT_PROTOTYPE
+    // opens the Re-shoot app in this studio, as the studio card does
+    href: `${getRoutes(locale).cinematicStudio}?app=reshoot`
   },
   {
     key: 'image-to-3d',

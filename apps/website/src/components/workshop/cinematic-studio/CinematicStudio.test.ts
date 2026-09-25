@@ -729,7 +729,7 @@ describe('CinematicStudio', () => {
       ).toHaveAttribute('href', '/cinematic-studio?ux=e')
       expect(
         within(secondApp).getByRole('link', { name: 'Re-shoot a video' })
-      ).toHaveAttribute('href', expect.stringContaining('crossview_warp_h3'))
+      ).toHaveAttribute('href', '/cinematic-studio?app=reshoot')
     })
 
     it('runs a shot from the side panel on the model picked there', async () => {
