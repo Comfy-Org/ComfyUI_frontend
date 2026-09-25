@@ -144,7 +144,11 @@ export function useNodePointerInteractions(
     const pinned = !!toValue(nodeStateRef).flags.pinned
     if (!pinned) bringNodeToFront(nodeId)
     const captureTarget =
-      event.currentTarget instanceof Element ? event.currentTarget : undefined
+      event.target instanceof Element
+        ? event.target
+        : event.currentTarget instanceof Element
+          ? event.currentTarget
+          : undefined
     captureTarget?.setPointerCapture(event.pointerId)
     press = { nodeId, event, pinned, pointerId: event.pointerId, captureTarget }
     dispatch(
