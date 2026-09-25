@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue'
+import { computed, onScopeDispose, ref, watch } from 'vue'
 
 import { i18n } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -108,6 +108,12 @@ let sessionGeneration = 0
  */
 let rememberedWorkflowId: string | null = null
 
+/**
+ * Firebase ID tokens live an hour; the local agent keeps the newest credential
+ * any request carried, so a running turn re-sends one well inside that window.
+ */
+export const CREDENTIAL_REFRESH_INTERVAL_MS = 4 * 60 * 1000
+
 function parseAdmissionError(error: unknown) {
   if (!(error instanceof AgentApiError)) return undefined
   const parsed = zAgentAdmissionError.safeParse(error.body)
@@ -149,6 +155,28 @@ export function useAgentSession(deps: AgentSessionDeps) {
     else next.delete(askId)
     answeringAskIds.value = next
   }
+
+  // A turn can outlive the auth token it started with; while one runs — the
+  // displayed turn or one a thread switch moved to the background — the user's
+  // header is re-presented so the local agent always holds a current
+  // credential. One cheap request every few minutes, unused by the cloud.
+  let refreshTimer: ReturnType<typeof setInterval> | undefined
+  const stopCredentialRefresh = (): void => {
+    clearInterval(refreshTimer)
+    refreshTimer = undefined
+  }
+  watch(
+    () => conversationStore.hasUnfinishedTurn,
+    (running) => {
+      stopCredentialRefresh()
+      if (!running) return
+      refreshTimer = setInterval(() => {
+        rest.refreshCredential().catch(() => undefined)
+      }, CREDENTIAL_REFRESH_INTERVAL_MS)
+    },
+    { immediate: true }
+  )
+  onScopeDispose(stopCredentialRefresh, true)
 
   function nextLocalErrorId(): TurnId {
     return toTurnId(`local-error-${createUuidv4()}`)

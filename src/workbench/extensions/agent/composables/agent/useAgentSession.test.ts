@@ -1,6 +1,6 @@
 import type { AgentAdmissionError } from '@comfyorg/ingest-types'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { effectScope, nextTick } from 'vue'
 
 import { reportError } from '@/platform/telemetry/reportError'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
@@ -31,7 +31,10 @@ import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflo
 
 import type { SelectedNode } from './useCanvasSelection'
 import type { AgentEventSource, TurnOrigin } from './useAgentSession'
-import { useAgentSession } from './useAgentSession'
+import {
+  CREDENTIAL_REFRESH_INTERVAL_MS,
+  useAgentSession
+} from './useAgentSession'
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
@@ -72,6 +75,7 @@ function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
     answerAsk: vi.fn(
       async (): Promise<AgentAnswerAccepted> => ({ status: 'answered' })
     ),
+    refreshCredential: vi.fn(async () => {}),
     uploadImage: vi.fn(
       async (): Promise<UploadImageResult> => ({
         name: 'n',
@@ -2680,5 +2684,106 @@ describe('thread resume (B17)', () => {
     const threads = await session.listThreads()
     expect(threads).toHaveLength(1)
     expect(threads[0]).toMatchObject({ id: 'th-9', title: 'build a duck' })
+  })
+})
+
+describe('useAgentSession credential refresh', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+
+  it('re-sends the credential every interval while a turn runs and stops when it ends', async () => {
+    const refreshCredential = vi.fn(async () => {})
+    const { source, emit } = fakeEvents()
+    const scope = effectScope()
+    const session = scope.run(() =>
+      useAgentSession({ rest: fakeRest({ refreshCredential }), events: source })
+    )!
+    session.start()
+
+    await vi.advanceTimersByTimeAsync(CREDENTIAL_REFRESH_INTERVAL_MS)
+    expect(refreshCredential).not.toHaveBeenCalled()
+
+    await session.sendMessage('build it')
+    await vi.advanceTimersByTimeAsync(CREDENTIAL_REFRESH_INTERVAL_MS * 2)
+    expect(refreshCredential).toHaveBeenCalledTimes(2)
+
+    emit(done('msg-1'))
+    await vi.advanceTimersByTimeAsync(CREDENTIAL_REFRESH_INTERVAL_MS * 2)
+    expect(refreshCredential).toHaveBeenCalledTimes(2)
+    scope.stop()
+  })
+
+  // A thread switch stashes the running turn; it keeps running server-side and
+  // still needs a current credential until its done event arrives.
+  it('keeps refreshing for a turn a thread switch moved to the background', async () => {
+    const refreshCredential = vi.fn(async () => {})
+    const { source, emit } = fakeEvents()
+    const scope = effectScope()
+    const session = scope.run(() =>
+      useAgentSession({ rest: fakeRest({ refreshCredential }), events: source })
+    )!
+    session.start()
+
+    await session.sendMessage('build it')
+    session.newChat()
+    expect(useAgentConversationStore().isStreaming).toBe(false)
+    await vi.advanceTimersByTimeAsync(CREDENTIAL_REFRESH_INTERVAL_MS * 2)
+    expect(refreshCredential).toHaveBeenCalledTimes(2)
+
+    emit(done('msg-1'))
+    await vi.advanceTimersByTimeAsync(CREDENTIAL_REFRESH_INTERVAL_MS * 2)
+    expect(refreshCredential).toHaveBeenCalledTimes(2)
+    scope.stop()
+  })
+
+  it('stops refreshing when the panel scope is disposed mid-turn', async () => {
+    const refreshCredential = vi.fn(async () => {})
+    const { source } = fakeEvents()
+    const scope = effectScope()
+    const session = scope.run(() =>
+      useAgentSession({ rest: fakeRest({ refreshCredential }), events: source })
+    )!
+    session.start()
+    await session.sendMessage('build it')
+
+    scope.stop()
+    await vi.advanceTimersByTimeAsync(CREDENTIAL_REFRESH_INTERVAL_MS * 2)
+
+    expect(refreshCredential).not.toHaveBeenCalled()
+  })
+})
+
+// An unbound tab on an existing thread has no workflow the thread could own,
+// so its canvas stays out of someone else's thread. Every backend now serves
+// the saved-workflow index, so there is one rule, not one per distribution.
+describe('useAgentSession drafts for an unbound tab on an existing thread', () => {
+  it.for([
+    { distribution: 'cloud', standalone: 'false' },
+    { distribution: 'the standalone agent harness', standalone: 'true' }
+  ])('in $distribution, does not send the draft', async ({ standalone }) => {
+    vi.stubEnv('VITE_AGENT_STANDALONE', standalone)
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
+      thread_id: 'th-1',
+      message_id: 'msg-1'
+    }))
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source,
+      workflow: {
+        current: () => ({ tabPath: 'workflows/local.json' }),
+        adopted: vi.fn(),
+        draft: () => ({
+          content: { nodes: [{ id: 1, type: 'LoadImage' }], links: [] }
+        })
+      }
+    })
+    session.start()
+    useAgentConversationStore().setThreadId('th-1')
+
+    await session.sendMessage('use my open workflow')
+
+    expect(postMessage.mock.calls[0][0]).toBe('th-1')
+    expect(postMessage.mock.calls[0][1].draft).toBeUndefined()
   })
 })

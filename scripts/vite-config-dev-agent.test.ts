@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest'
 
 const execFileAsync = promisify(execFile)
 const printAgentConfig =
-  "import('./vite.config.mts').then(({ default: config }) => process.stdout.write(JSON.stringify({ headers: config.server?.proxy?.['/api/agent']?.headers, host: config.server?.host })))"
+  "import('./vite.config.mts').then(({ default: config }) => process.stdout.write(JSON.stringify({ headers: config.server?.proxy?.['/api/agent']?.headers, workflowsHeaders: config.server?.proxy?.['/api/workflows']?.headers, host: config.server?.host })))"
 
 async function importConfig(
   devAgentUrl: string,
@@ -51,15 +51,22 @@ describe('dev agent proxy transport', () => {
   })
 })
 
+// Both agent routes — /api/agent and the saved-workflow index at
+// /api/workflows — must carry the same session and credential headers.
+function expectAgentHeaders(stdout: string, headers: Record<string, string>) {
+  expect(JSON.parse(stdout)).toEqual({ headers, workflowsHeaders: headers })
+}
+
 describe('dev agent comfy credential', () => {
   it('forwards the token while keeping the dev server local', async () => {
     const { stdout } = await importConfig('http://127.0.0.1:8095', {
       DEV_AGENT_COMFY_TOKEN: 'comfyui-test-key',
       VITE_REMOTE_DEV: 'true'
     })
-    expect(stdout).toBe(
-      '{"headers":{"Authorization":"Bearer test-session-token","X-Comfy-Token":"comfyui-test-key"}}'
-    )
+    expectAgentHeaders(stdout, {
+      'X-Comfy-Agent-Session': 'test-session-token',
+      'X-API-KEY': 'comfyui-test-key'
+    })
   })
 
   it('refuses to bind all interfaces while holding a comfy credential', async () => {
@@ -70,12 +77,75 @@ describe('dev agent comfy credential', () => {
     expect(stdout).not.toContain('0.0.0.0')
   })
 
+  it('presents a non-key token as the bearer, the way ingest reads it', async () => {
+    const { stdout } = await importConfig('http://127.0.0.1:8095', {
+      DEV_AGENT_COMFY_TOKEN: 'a-firebase-jwt'
+    })
+    expectAgentHeaders(stdout, {
+      'X-Comfy-Agent-Session': 'test-session-token',
+      Authorization: 'Bearer a-firebase-jwt'
+    })
+  })
+
   it('omits the comfy header when the token is unset', async () => {
     const { stdout } = await importConfig('http://127.0.0.1:8095', {
       DEV_AGENT_COMFY_TOKEN: undefined
     })
-    expect(stdout).toBe(
-      '{"headers":{"Authorization":"Bearer test-session-token"}}'
+    expectAgentHeaders(stdout, {
+      'X-Comfy-Agent-Session': 'test-session-token'
+    })
+  })
+})
+
+// The events socket must be proxied as a WebSocket in every dev setup: the
+// catch-all /api route proxies plain HTTP only. With a local agent the
+// /api/agent route (which also upgrades) must match first.
+const printProxyRoutes =
+  "import('./vite.config.mts').then(({ default: config }) => { const proxy = config.server?.proxy ?? {}; process.stdout.write(JSON.stringify({ order: Object.keys(proxy), eventsWs: proxy['/api/agent/events']?.ws ?? null, agentWs: proxy['/api/agent']?.ws ?? null })) })"
+
+async function proxyRoutes(overrides: NodeJS.ProcessEnv) {
+  const { stdout } = await execFileAsync(
+    process.execPath,
+    ['--import', 'tsx', '--eval', printProxyRoutes],
+    {
+      cwd: process.cwd(),
+      env: {
+        ...process.env,
+        VITE_AGENT_STANDALONE: undefined,
+        VITE_REMOTE_DEV: undefined,
+        DISTRIBUTION: undefined,
+        DEV_AGENT_URL: undefined,
+        DEV_AGENT_SESSION_TOKEN: undefined,
+        ...overrides
+      }
+    }
+  )
+  return JSON.parse(stdout) as {
+    order: string[]
+    eventsWs: boolean | null
+    agentWs: boolean | null
+  }
+}
+
+describe('agent events socket dev proxy', () => {
+  it('upgrades /api/agent/events ahead of the plain /api route without a local agent', async () => {
+    const routes = await proxyRoutes({ DISTRIBUTION: 'cloud' })
+
+    expect(routes.eventsWs).toBe(true)
+    expect(routes.order.indexOf('/api/agent/events')).toBeLessThan(
+      routes.order.indexOf('/api')
+    )
+  })
+
+  it('lets the local agent route, which also upgrades, match first', async () => {
+    const routes = await proxyRoutes({
+      DEV_AGENT_URL: 'http://127.0.0.1:8095',
+      DEV_AGENT_SESSION_TOKEN: 'test-session-token'
+    })
+
+    expect(routes.agentWs).toBe(true)
+    expect(routes.order.indexOf('/api/agent')).toBeLessThan(
+      routes.order.indexOf('/api/agent/events')
     )
   })
 })

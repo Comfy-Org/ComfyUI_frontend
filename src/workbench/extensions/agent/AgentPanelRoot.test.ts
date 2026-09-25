@@ -5,6 +5,7 @@ import type {
   AgentThreadSummary,
   SubscriptionTier
 } from '@comfyorg/ingest-types'
+import type { User } from 'firebase/auth'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -13,6 +14,7 @@ import { computed, defineComponent, h, nextTick, ref } from 'vue'
 import { useClipboard } from '@vueuse/core'
 
 vi.mock(import('firebase/auth'))
+vi.mock(import('@/services/dialogService'))
 
 import { i18n } from '@/i18n'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -34,6 +36,8 @@ import { useBillingCapabilities } from '@/platform/workspace/composables/useBill
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { app } from '@/scripts/app'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
+import { useAuthStore } from '@/stores/authStore'
+import { useDialogService } from '@/services/dialogService'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -318,6 +322,11 @@ beforeEach(() => {
   vi.mocked(resolveAgentIdentity).mockReturnValue({
     userId: ref('account-a'),
     stop: () => {}
+  })
+  // The panel runs signed in: every agent request carries the user's auth
+  // header and a send is gated on having one. Signed-out cases say so.
+  vi.spyOn(useAuthStore(), 'getUserAuthHeader').mockResolvedValue({
+    Authorization: 'Bearer id-token'
   })
   useCurrentUser().isLoggedIn = computed(() => true)
   useCurrentUser().userDisplayName = computed(() => 'Jo Rivera')
@@ -7006,11 +7015,112 @@ describe('AgentPanelRoot workflow binding', () => {
   })
 })
 
+describe('AgentPanelRoot against the local agent', () => {
+  beforeEach(() => {
+    useAgentPanelStore().enabled = true
+    vi.mocked(useDialogService().showSignInDialog).mockReset()
+  })
+
+  function stubLocalAgent(
+    workflowId: string,
+    index: { id: string; name: string }[] = []
+  ) {
+    const bodies: Record<string, unknown>[] = []
+    const authHeaders: (string | null)[] = []
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url.includes('/messages') && init?.method === 'POST') {
+        bodies.push(JSON.parse(String(init.body)))
+        authHeaders.push(new Headers(init.headers).get('Authorization'))
+        return json(202, ack(workflowId))
+      }
+      if (url.includes('/messages')) return json(200, [])
+      if (url.includes('/agent/threads')) return json(200, agentThreadList())
+      if (url.includes('/workflows'))
+        return json(200, {
+          data: index,
+          pagination: {
+            offset: 0,
+            limit: 100,
+            total: index.length,
+            has_more: false
+          }
+        })
+      return new Response('{}', { status: 200 })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    return { bodies, authHeaders, fetchMock }
+  }
+
+  it('asks a signed-out user to sign in instead of sending, keeping the draft', async () => {
+    vi.mocked(useAuthStore().getUserAuthHeader).mockResolvedValue(null)
+    vi.mocked(useDialogService().showSignInDialog).mockResolvedValue(false)
+    const tab = addTab('workflows/current.json', { isTemporary: true })
+    workflowStore.activeWorkflow = tab
+    const { bodies } = stubLocalAgent('wf-minted')
+    renderWithSelectedTarget()
+
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('build here')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    await vi.waitFor(() =>
+      expect(useDialogService().showSignInDialog).toHaveBeenCalledOnce()
+    )
+    await vi.waitFor(() =>
+      expect(useAgentComposerStore().draft).toBe('build here')
+    )
+    expect(bodies).toHaveLength(0)
+  })
+
+  // The local agent serves the saved-workflow index over ComfyUI's workflows
+  // directory, so a saved local file resolves exactly as a cloud one does.
+  it('sends a saved local file under the id the local workflow index gives it', async () => {
+    const activeState = fromPartial<ComfyWorkflowJSON>({
+      nodes: [{ id: 1, type: 'LoadImage' }],
+      links: []
+    })
+    const tab = addTab('workflows/Portrait.json', {
+      isTemporary: false,
+      activeState
+    })
+    workflowStore.activeWorkflow = tab
+    const { bodies, authHeaders, fetchMock } = stubLocalAgent('wf-portrait', [
+      { id: 'wf-portrait', name: 'Portrait' }
+    ])
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('build here')
+    await userEvent.keyboard('{Enter}')
+    await userEvent.click(
+      await screen.findByRole('menuitemradio', { name: 'Portrait' })
+    )
+    await vi.waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    await vi.waitFor(() => expect(bodies).toHaveLength(1))
+    expect(bodies[0]).toMatchObject({
+      content: 'build here',
+      workflow_id: 'wf-portrait',
+      draft: { content: activeState }
+    })
+    // The local agent reads the user's credential the way ingest does.
+    expect(authHeaders).toEqual(['Bearer id-token'])
+    expect(workflowService.saveWorkflowAs).not.toHaveBeenCalled()
+    expect(
+      fetchMock.mock.calls.some(([url]) => url.includes('/workflows'))
+    ).toBe(true)
+  })
+})
+
 describe('AgentPanelRoot agent socket identity (#17469)', () => {
   beforeEach(() => {
     // A spy-mode mock resets to the real lookup.
     vi.mocked(resolveAgentIdentity).mockReset()
     vi.mocked(reportError).mockImplementation(() => {})
+    // A standalone send forwards the signed-in account's credential (#18284).
+    useAuthStore().currentUser = fromPartial<User>({ uid: 'user-1' })
+    vi.mocked(useAuthStore().getIdToken).mockResolvedValue('id-token')
   })
 
   afterEach(() => {

@@ -206,6 +206,22 @@ const DEV_AGENT_URL = process.env.DEV_AGENT_URL
 const DEV_AGENT_SESSION_TOKEN = process.env.DEV_AGENT_SESSION_TOKEN
 const DEV_AGENT_COMFY_TOKEN = process.env.DEV_AGENT_COMFY_TOKEN
 
+// What the dev server adds to every request it proxies to the local agent: the
+// agent's own session token on its dedicated header, and — only when a
+// developer supplies one — a Comfy credential presented the way ingest reads
+// it (an API key as X-API-KEY, anything else as a bearer token). Without one,
+// the browser's own signed-in auth header passes through untouched.
+const DEV_AGENT_PROXY_HEADERS: Record<string, string> = {
+  ...(DEV_AGENT_SESSION_TOKEN
+    ? { 'X-Comfy-Agent-Session': DEV_AGENT_SESSION_TOKEN }
+    : {}),
+  ...(DEV_AGENT_COMFY_TOKEN
+    ? DEV_AGENT_COMFY_TOKEN.startsWith('comfyui-')
+      ? { 'X-API-KEY': DEV_AGENT_COMFY_TOKEN }
+      : { Authorization: `Bearer ${DEV_AGENT_COMFY_TOKEN}` }
+    : {})
+}
+
 if (Boolean(DEV_AGENT_URL) !== Boolean(DEV_AGENT_SESSION_TOKEN)) {
   throw new Error(
     'DEV_AGENT_URL and DEV_AGENT_SESSION_TOKEN must be configured together.'
@@ -383,9 +399,7 @@ export default defineConfig({
             // cloud; the local agent answers the same contract.
             '/api/workflows': {
               target: DEV_AGENT_URL,
-              headers: {
-                Authorization: `Bearer ${DEV_AGENT_SESSION_TOKEN}`
-              },
+              headers: DEV_AGENT_PROXY_HEADERS,
               rewrite: (path: string) => path.replace(/^\/api/, ''),
               bypass: (req, res) => {
                 if (!res || !isCrossOrigin(req)) return null
@@ -397,12 +411,7 @@ export default defineConfig({
             '/api/agent': {
               target: DEV_AGENT_URL,
               ws: true,
-              headers: {
-                Authorization: `Bearer ${DEV_AGENT_SESSION_TOKEN}`,
-                ...(DEV_AGENT_COMFY_TOKEN
-                  ? { 'X-Comfy-Token': DEV_AGENT_COMFY_TOKEN }
-                  : {})
-              },
+              headers: DEV_AGENT_PROXY_HEADERS,
               rewrite: (path: string) => path.replace(/^\/api/, ''),
               configure: (proxy) => {
                 proxy.on('proxyReqWs', (_proxyReq, req, socket) => {
@@ -418,6 +427,16 @@ export default defineConfig({
             }
           }
         : {}),
+
+      // The agent events socket in every other setup (ComfyUI behind a
+      // cloud backend serves it at /api/agent/events). The catch-all /api
+      // route below proxies plain HTTP only, so the upgrade needs its own
+      // entry; with a local agent the /api/agent route above wins.
+      '/api/agent/events': {
+        target: DEV_SERVER_COMFYUI_URL,
+        ws: true,
+        ...cloudProxyConfig
+      },
 
       '/api': {
         target: DEV_SERVER_COMFYUI_URL,

@@ -4,6 +4,12 @@ const fetchApi = vi.hoisted(() =>
   vi.fn<(route: string, init?: RequestInit) => Promise<Response>>()
 )
 vi.mock<unknown>(import('@/scripts/api'), () => ({ api: { fetchApi } }))
+// The api mock is partial, so the real auth store cannot load here; the
+// transport's auth header is not what these tests are about.
+vi.mock(import('../../services/agent/agentAuth'), () => ({
+  withAgentAuth: async (init: RequestInit) => init,
+  ensureSignedIn: async () => true
+}))
 
 import { useAgentRunModeStore } from './agentRunModeStore'
 
@@ -156,6 +162,8 @@ describe('agentRunModeStore', () => {
 
     const first = store.save('auto_limited', 20)
     const second = store.save('auto', null)
+    // A request is dispatched once its auth header resolves, not synchronously.
+    await vi.waitFor(() => expect(fetchApi).toHaveBeenCalledTimes(2))
     resolveSecond(jsonResponse(200, { mode: 'auto', credit_limit: null }))
     await second
     resolveFirst(jsonResponse(200, { mode: 'auto_limited', credit_limit: 20 }))
@@ -185,6 +193,7 @@ describe('agentRunModeStore', () => {
 
     const first = store.save('auto_limited', 20)
     const second = store.save('auto', null)
+    await vi.waitFor(() => expect(fetchApi).toHaveBeenCalledTimes(2))
 
     resolveSecond(jsonResponse(500, { error: 'boom' }))
     await expect(second).rejects.toThrow()

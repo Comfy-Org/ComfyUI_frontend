@@ -186,6 +186,19 @@ describe('api.fetchApi', () => {
         })
       )
     })
+
+    it('forwards the redirect policy to fetch', async () => {
+      const mockFetch = vi
+        .mocked(global.fetch)
+        .mockResolvedValue(new Response())
+
+      await api.fetchApi('/test', { redirect: 'error' })
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ redirect: 'error' })
+      )
+    })
   })
 
   describe('URL construction', () => {

@@ -33,6 +33,12 @@ const fetchApi = vi.hoisted(() =>
   vi.fn<(route: string, init?: RequestInit) => Promise<Response>>()
 )
 vi.mock<unknown>(import('@/scripts/api'), () => ({ api: { fetchApi } }))
+// The api mock is partial, so the real auth store cannot load here; the
+// transport's auth header is not what these tests are about.
+vi.mock(import('../../services/agent/agentAuth'), () => ({
+  withAgentAuth: async (init: RequestInit) => init,
+  ensureSignedIn: async () => true
+}))
 
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
