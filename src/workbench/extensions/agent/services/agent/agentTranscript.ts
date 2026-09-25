@@ -48,13 +48,17 @@ export interface NormalizedAgentTranscript {
   }
 }
 
+function isNamedAttachment(name: unknown): name is string {
+  return typeof name === 'string' && name !== ''
+}
+
 function attachmentRefNames(value: unknown): string[] {
   if (!Array.isArray(value)) return []
   return (value as unknown[]).flatMap((entry) => {
     if (typeof entry !== 'object' || entry === null || !('name' in entry))
       return []
     const { name } = entry
-    return typeof name === 'string' ? [name] : []
+    return isNamedAttachment(name) ? [name] : []
   })
 }
 
@@ -108,9 +112,7 @@ function parseUserAttachments(
 ): UserAttachment[] | undefined {
   const resolved = resolvedAttachmentRefs(content?.attachment_refs)
   const names = Array.isArray(content?.attachments)
-    ? content.attachments.filter(
-        (name): name is string => typeof name === 'string'
-      )
+    ? content.attachments.filter(isNamedAttachment)
     : attachmentRefNames(content?.attachment_refs)
   return names.length > 0
     ? names.map((name) => ({ name, ref: name, ...resolved.get(name) }))
