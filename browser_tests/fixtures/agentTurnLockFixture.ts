@@ -67,6 +67,27 @@ export const TURN_DONE_EVENT: AgentWsEvent = {
   data: { message_id: TURN_ID, thread_id: THREAD_ID }
 }
 
+const ASK_ID = `${TURN_ID}:call-run`
+
+export const RUN_APPROVAL_EVENT: AgentWsEvent = {
+  type: 'agent_ask',
+  data: {
+    thread_id: THREAD_ID,
+    message_id: TURN_ID,
+    ask_id: ASK_ID,
+    kind: 'run_approval',
+    context: { workflow_id: WORKFLOW_ID, workflow_name: 'Unsaved Workflow' },
+    prompt: 'Run workflow “Unsaved Workflow”?',
+    options: [
+      { id: 'run', label: 'Run' },
+      { id: 'cancel', label: 'Cancel' }
+    ],
+    min_selections: 1,
+    max_selections: 1,
+    allow_other: false
+  }
+}
+
 /**
  * The server's half of a turn, modelled on the real single-active-turn guard:
  * an assistant row goes `streaming` when a turn starts and only leaves that
@@ -83,6 +104,15 @@ class TurnLockServer {
   private prompt = ''
   private rejected = 0
   private posts = 0
+  private readonly answers: string[][] = []
+
+  get answeredSelections(): string[][] {
+    return this.answers
+  }
+
+  recordAnswer(selected: string[]): void {
+    this.answers.push(selected)
+  }
 
   get turnIsStreaming(): boolean {
     return this.streaming
@@ -160,6 +190,14 @@ async function routeTurnLock(
     })
   })
 
+  await page.route('**/api/agent/threads/*/asks/*/answer', (route) => {
+    const { selected } = route.request().postDataJSON() as {
+      selected: string[]
+    }
+    server.recordAnswer(selected)
+    return route.fulfill({ ...jsonRoute({ status: 'answered' }), status: 202 })
+  })
+
   await page.route('**/api/agent/threads/*/messages/*/cancel', (route) => {
     server.completeTurn()
     const accepted: AgentCancelAccepted = { status: 'cancelling' }
@@ -175,6 +213,9 @@ export class AgentTurnLockHarness {
   public readonly workSummary: Locator
   public readonly workingRow: Locator
   public readonly userBubbles: Locator
+  public readonly approvalCard: Locator
+  public readonly approveButton: Locator
+  public readonly cancelApprovalButton: Locator
   private readonly agentPanel: AgentPanel
 
   constructor(
@@ -210,10 +251,33 @@ export class AgentTurnLockHarness {
       exact: true
     })
     this.userBubbles = this.panel.getByTestId('user-message-bubble')
+    this.approvalCard = this.panel.getByText(
+      enMessages.agent.runApproval.lead,
+      { exact: true }
+    )
+    // Panel-scoped: the topbar's own Run button carries the same label.
+    this.approveButton = this.panel.getByRole('button', {
+      name: enMessages.agent.runApproval.run,
+      exact: true
+    })
+    this.cancelApprovalButton = this.panel.getByRole('button', {
+      name: enMessages.agent.runApproval.cancel,
+      exact: true
+    })
   }
 
   rejectedPosts(): number {
     return this.server.rejectedPosts
+  }
+
+  answeredSelections(): string[][] {
+    return this.server.answeredSelections
+  }
+
+  /** Streams the turn to the point where it is parked on a consent card. */
+  async parkOnRunApproval(ws: WebSocketRoute): Promise<void> {
+    this.push(ws, RUN_APPROVAL_EVENT)
+    await expect(this.approvalCard).toBeVisible()
   }
 
   postAttempts(): number {
