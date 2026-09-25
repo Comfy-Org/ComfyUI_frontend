@@ -14,7 +14,7 @@ const { class: className } = defineProps<{
     data-slot="number-field-input"
     :class="
       cn(
-        'min-w-0 flex-1 border-none bg-transparent text-center text-sm text-base-foreground focus-visible:outline-none',
+        'min-w-0 flex-1 border-none bg-transparent text-center text-base text-base-foreground focus-visible:outline-none',
         className
       )
     "
