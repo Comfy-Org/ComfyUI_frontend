@@ -229,6 +229,14 @@ export function useAgentWorkflowSelection({
       target =
         boundOrOpenWorkflowFor(workflowId) ?? storedWorkflowFor(workflowId)
     }
+    return openRestoredWorkflow(target, workflowId, isCurrent)
+  }
+
+  async function openRestoredWorkflow(
+    target: ComfyWorkflow | null,
+    workflowId: string,
+    isCurrent: () => boolean
+  ): Promise<boolean> {
     try {
       if (target === null) {
         await workflowStore.syncWorkflows()

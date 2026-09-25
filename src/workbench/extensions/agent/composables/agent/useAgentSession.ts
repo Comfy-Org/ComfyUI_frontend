@@ -265,6 +265,19 @@ export function useAgentSession(deps: AgentSessionDeps) {
     notices.value.push({ level: 'error', text })
   }
 
+  function initializeWorkflowContext(hasThread: boolean): void {
+    workflow?.initialize?.(hasThread)
+    // The binding only outlives a remount together with its thread: a page
+    // with no surviving thread has no resumed turn the binding could serve.
+    if (
+      conversationStore.threadId === null &&
+      localStorage.getItem(threadStorageKey) === null
+    ) {
+      rememberedWorkflowId = null
+      boundWorkflowId.value = null
+    }
+  }
+
   function start({ restore = true }: { restore?: boolean } = {}): void {
     readyThreadId.value = null
     ownedGeneration = ++sessionGeneration
@@ -275,32 +288,29 @@ export function useAgentSession(deps: AgentSessionDeps) {
         ? localStorage.getItem(threadStorageKey)
         : null
     const initialThreadId = surviving ?? stored
-    workflow?.initialize?.(surviving !== null || stored !== null)
-    // The binding only outlives a remount together with its thread: a page
-    // with no surviving thread has no resumed turn the binding could serve.
-    if (
-      conversationStore.threadId === null &&
-      localStorage.getItem(threadStorageKey) === null
-    ) {
-      rememberedWorkflowId = null
-      boundWorkflowId.value = null
-    }
+    initializeWorkflowContext(initialThreadId !== null)
     unsubscribe = events.subscribe(onRaw)
     if (events.onStatus) unsubscribeStatus = events.onStatus(onStatus)
     if (!restore) return
     onThreadActivated?.(initialThreadId)
     if (initialThreadId === null) return
+    void restoreInitialThread(initialThreadId, surviving)
+  }
+
+  async function restoreInitialThread(
+    initialThreadId: string,
+    surviving: string | null
+  ): Promise<void> {
     const generation = ++loadGeneration
     const isCurrent = () =>
       generation === loadGeneration && ownedGeneration === sessionGeneration
     if (surviving !== null) conversationStore.stashActiveTurn()
     else conversationStore.setThreadId(initialThreadId)
-    void hydrateFromServer(initialThreadId, isCurrent).then(() => {
-      if (!isCurrent()) return
-      if (conversationStore.threadId === null) onThreadActivated?.(null)
-      else if (surviving !== null && conversationStore.threadId === surviving)
-        conversationStore.resumeBackgroundTurn()
-    })
+    await hydrateFromServer(initialThreadId, isCurrent)
+    if (!isCurrent()) return
+    if (conversationStore.threadId === null) onThreadActivated?.(null)
+    else if (surviving !== null && conversationStore.threadId === surviving)
+      conversationStore.resumeBackgroundTurn()
   }
 
   async function hydrateFromServer(
@@ -321,16 +331,20 @@ export function useAgentSession(deps: AgentSessionDeps) {
       return true
     } catch (error) {
       if (!isCurrent()) return false
-      if (error instanceof AgentApiError && error.status === 404) {
-        if (conversationStore.threadId === threadId)
-          conversationStore.setThreadId(null)
-        if (localStorage.getItem(threadStorageKey) === threadId)
-          localStorage.removeItem(threadStorageKey)
-        return false
-      }
-      pushError(error instanceof Error ? error.message : String(error))
+      handleHistoryLoadError(threadId, error)
       return false
     }
+  }
+
+  function handleHistoryLoadError(threadId: string, error: unknown): void {
+    if (error instanceof AgentApiError && error.status === 404) {
+      if (conversationStore.threadId === threadId)
+        conversationStore.setThreadId(null)
+      if (localStorage.getItem(threadStorageKey) === threadId)
+        localStorage.removeItem(threadStorageKey)
+      return
+    }
+    pushError(error instanceof Error ? error.message : String(error))
   }
 
   function stop(): void {

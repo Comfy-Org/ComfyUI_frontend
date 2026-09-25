@@ -15,6 +15,8 @@ import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 
+import ChatHistorySelectButton from './ChatHistorySelectButton.vue'
+
 import type {
   ChatSession,
   HistoryGroups
@@ -187,38 +189,12 @@ function onRenameKeydown(session: ChatSession, event: KeyboardEvent): void {
             />
           </div>
           <template v-else>
-            <Button
-              type="button"
-              variant="muted-textonly"
-              size="unset"
-              :aria-busy="loadingId === session.id"
-              :aria-label="session.title.trim() || t('agent.untitledChat')"
-              :disabled="loadingId === session.id"
-              class="min-w-0 flex-1 justify-start text-left text-xs font-normal"
-              @click="pick(session)"
-            >
-              <span
-                v-if="loadingId === session.id"
-                role="status"
-                :aria-label="t('g.loading')"
-                class="icon-[lucide--loader-circle] size-4 shrink-0 animate-spin"
-              />
-              <span
-                v-else
-                class="icon-[lucide--circle-check] size-4 shrink-0"
-              />
-              <span class="flex min-w-0 flex-col">
-                <span class="truncate">{{
-                  session.title.trim() || t('agent.untitledChat')
-                }}</span>
-                <span
-                  v-if="failedId === session.id"
-                  role="alert"
-                  class="text-xs whitespace-normal text-destructive-background"
-                  >{{ t('agent.historyOpenFailed') }}</span
-                >
-              </span>
-            </Button>
+            <ChatHistorySelectButton
+              :title="session.title"
+              :loading="loadingId === session.id"
+              :failed="failedId === session.id"
+              @select="pick(session)"
+            />
             <AccessibleTooltip
               :label="t('agent.copyMarkdown')"
               :skip-delay-duration="0"
