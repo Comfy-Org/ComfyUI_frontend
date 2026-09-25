@@ -38,6 +38,24 @@ the pattern to follow for the rest of the marketing content.
 3. Build the listing and detail pages that read it with `getCollection`.
 4. Reuse the block components above.
 
+## Workshop workflow data
+
+`workshop-display.json` owns page copy, INPUTS controls, examples, the primary
+category, and `recommendedRank` within that category. Keep its entries sorted by
+id; the rank defines editorial card order. `workshop-workflow-categories.json`
+owns category order, translated labels, and the highlighted workflow in each.
+
+`workshop-workflows.jsonl` supplies each workflow's prepared native Cloud graph,
+input bindings, and selected outputs. A page is visible only when its id matches
+an execution entry. Prepare this data offline when adding a workflow; the website
+does not inspect APP widgets or compile graphs. Keep downloadable graphs and SVG
+previews under `public/workflows/prepared/` consistent with the prepared request.
+
+Pair each example with its actual input media and output. Pin external assets to
+immutable revisions, check their media type and CORS headers, and validate the
+example with the shared form. Static validation does not prove Cloud runtime
+compatibility, output quality, latency, or cost; record those checks before launch.
+
 ## Gotchas worth knowing
 
 - `src/env.d.ts` must reference `../.astro/types.d.ts`, otherwise `getCollection` is

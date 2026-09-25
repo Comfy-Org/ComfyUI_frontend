@@ -17,6 +17,7 @@ const {
   models,
   inputId = 'workshop-search',
   compact = false,
+  kind = 'models',
   locale = 'en'
 } = defineProps<{
   models: readonly WorkshopModel[]
@@ -24,11 +25,31 @@ const {
   /** In a crowded toolbar a phone gets a button, and the field fills the
    * screen once it is tapped. */
   compact?: boolean
+  kind?: 'models' | 'workflows'
   locale?: Locale
 }>()
 
 const query = defineModel<string>({ required: true })
 const mounted = useMounted()
+const label = computed(() =>
+  t(kind === 'models' ? 'workshop.search.label' : 'workshop.hub.search', locale)
+)
+const shortLabel = computed(() =>
+  t(
+    kind === 'models'
+      ? 'workshop.search.short'
+      : 'workshop.catalogue.searchWorkflows',
+    locale
+  )
+)
+const showLabel = computed(() =>
+  t(
+    kind === 'models'
+      ? 'workshop.search.show'
+      : 'workshop.catalogue.showWorkflows',
+    locale
+  )
+)
 
 const sheetOpen = ref(false)
 const sheetInput = useTemplateRef<HTMLInputElement>('sheetInput')
@@ -72,7 +93,7 @@ const clearButtonClass =
       ref="sheetTrigger"
       type="button"
       :disabled="!mounted"
-      :aria-label="t('workshop.search.label', locale)"
+      :aria-label="label"
       data-testid="workshop-search-button"
       :class="
         cn(
@@ -84,13 +105,13 @@ const clearButtonClass =
     >
       <Search class="size-4 shrink-0" aria-hidden="true" />
       <span class="truncate">
-        {{ query || t('workshop.search.short', locale) }}
+        {{ query || shortLabel }}
       </span>
     </button>
 
     <div :class="cn('relative', compact && 'max-sm:hidden')">
       <label :for="inputId" class="sr-only">
-        {{ t('workshop.search.label', locale) }}
+        {{ label }}
       </label>
       <Search :class="leadingIconClass" aria-hidden="true" />
       <input
@@ -98,10 +119,8 @@ const clearButtonClass =
         v-model="query"
         type="search"
         :disabled="!mounted"
-        :placeholder="
-          t(compact ? 'workshop.search.short' : 'workshop.search.label', locale)
-        "
-        :aria-label="t('workshop.search.label', locale)"
+        :placeholder="compact ? shortLabel : label"
+        :aria-label="label"
         data-testid="workshop-search"
         :class="fieldClass"
       />
@@ -127,9 +146,7 @@ const clearButtonClass =
           @open-auto-focus.prevent="sheetInput?.focus()"
           @close-auto-focus.prevent="sheetTrigger?.focus()"
         >
-          <DialogTitle class="sr-only">{{
-            t('workshop.search.label', locale)
-          }}</DialogTitle>
+          <DialogTitle class="sr-only">{{ label }}</DialogTitle>
           <div
             class="flex items-center gap-3 border-b border-transparency-white-t8 p-3"
           >
@@ -139,8 +156,8 @@ const clearButtonClass =
                 ref="sheetInput"
                 v-model="query"
                 type="search"
-                :placeholder="t('workshop.search.label', locale)"
-                :aria-label="t('workshop.search.label', locale)"
+                :placeholder="label"
+                :aria-label="label"
                 data-testid="workshop-search-sheet-input"
                 :class="fieldClass"
               />
@@ -168,6 +185,7 @@ const clearButtonClass =
           <WorkshopSearchPanel
             :models
             :query
+            :kind
             :locale
             variant="sheet"
             @pick="
@@ -196,9 +214,7 @@ const clearButtonClass =
               data-testid="workshop-search-sheet-apply"
               @click="sheetOpen = false"
             >
-              {{
-                t('workshop.search.show', locale).replace('{n}', `${matches}`)
-              }}
+              {{ showLabel.replace('{n}', `${matches}`) }}
             </button>
           </div>
         </DialogContent>

@@ -186,6 +186,27 @@ export const zWorkflowApiAssetsRequest = z.object({
 })
 
 /**
+ * The user a web session belongs to
+ */
+export const zWebSessionUser = z.object({
+  email: z.string(),
+  email_verified: z.boolean(),
+  id: z.string(),
+  name: z.string().optional(),
+  sign_in_provider: z.string().optional()
+})
+
+/**
+ * The live web session and the user it belongs to
+ */
+export const zWebSessionResponse = z.object({
+  absolute_expires_at: z.string().datetime(),
+  csrf_token: z.string(),
+  expires_at: z.string().datetime(),
+  user: zWebSessionUser
+})
+
+/**
  * Details of a single validation error encountered during asset operations.
  */
 export const zValidationError = z.object({
@@ -2269,7 +2290,8 @@ export const zCreateHubProfileRequest = z.object({
 export const zChurnkeyAuthResponse = z.object({
   auth_hash: z.string(),
   customer_id: z.string(),
-  mode: z.enum(['live', 'test', 'sandbox'])
+  mode: z.enum(['live', 'test', 'sandbox']),
+  offer_subscription_id: z.string().min(1).optional()
 })
 
 /**
@@ -3300,6 +3322,11 @@ export const zRedeemDesktopLoginCodeResponse = zDesktopLoginCodeRedeemResponse
 export const zDeleteSessionResponse2 = zDeleteSessionResponse
 
 /**
+ * The live session
+ */
+export const zGetSessionResponse = zWebSessionResponse
+
+/**
  * Session created successfully
  */
 export const zCreateSessionResponse2 = zCreateSessionResponse
@@ -3482,6 +3509,7 @@ export const zGetExtensionsResponse = z.array(z.string())
  * Success
  */
 export const zGetFeaturesResponse = z.object({
+  billing_web_url: z.string().optional(),
   free_tier_balance: z
     .object({
       allowance: z.number().int(),

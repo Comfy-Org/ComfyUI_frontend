@@ -37,7 +37,7 @@
       class="flex flex-col items-start gap-3 rounded-2xl border border-interface-stroke p-6"
     >
       <div class="flex items-center gap-2 text-text-secondary">
-        <i class="pi pi-exclamation-circle text-danger" />
+        <i class="pi pi-exclamation-circle text-destructive-background" />
         <span class="text-sm">{{ $t('subscription.planLoadError') }}</span>
       </div>
       <Button

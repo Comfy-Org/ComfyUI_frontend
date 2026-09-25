@@ -5,6 +5,7 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useAppMode } from '@/composables/useAppMode'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { t } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -16,6 +17,9 @@ import { useBuilderSave } from './useBuilderSave'
 beforeEach(() => {
   vi.mocked(useAppModeStore().exitBuilder).mockImplementation(() => {})
   vi.mocked(useDialogStore().closeDialog).mockImplementation(() => {})
+  vi.mocked(t).mockImplementation((key: unknown, params?: unknown) =>
+    params ? `${String(key)}:${JSON.stringify(params)}` : String(key)
+  )
 })
 
 vi.mock(import('@/composables/useAppMode'))
@@ -30,12 +34,7 @@ vi.mock(import('@/services/dialogService'))
 
 vi.mock(import('@/components/dialog/confirm/confirmDialog'))
 
-vi.mock<unknown>(import('@/i18n'), () => ({
-  t: (key: string, params?: Record<string, string>) => {
-    if (params) return `${key}:${JSON.stringify(params)}`
-    return key
-  }
-}))
+vi.mock(import('@/i18n'))
 
 vi.mock<unknown>(import('./BuilderSaveDialogContent.vue'), () => ({
   default: { template: '<div />' }
@@ -70,9 +69,7 @@ describe('useBuilderSave', () => {
 
       await save()
 
-      expect(
-        vi.mocked(useWorkflowService().saveWorkflow)
-      ).not.toHaveBeenCalled()
+      expect(useWorkflowService().saveWorkflow).not.toHaveBeenCalled()
     })
 
     it('saves workflow directly without showing a dialog', async () => {
@@ -85,9 +82,7 @@ describe('useBuilderSave', () => {
 
       await save()
 
-      expect(
-        vi.mocked(useWorkflowService().saveWorkflow)
-      ).toHaveBeenCalledOnce()
+      expect(useWorkflowService().saveWorkflow).toHaveBeenCalledOnce()
       expect(showConfirmDialog).not.toHaveBeenCalled()
     })
 
@@ -102,9 +97,7 @@ describe('useBuilderSave', () => {
 
       await save()
 
-      expect(
-        vi.mocked(useErrorHandling().toastErrorHandler)
-      ).toHaveBeenCalledWith(error)
+      expect(useErrorHandling().toastErrorHandler).toHaveBeenCalledWith(error)
       expect(showConfirmDialog).not.toHaveBeenCalled()
     })
 
@@ -125,9 +118,7 @@ describe('useBuilderSave', () => {
       expect(isSaving.value).toBe(true)
 
       await save()
-      expect(
-        vi.mocked(useWorkflowService().saveWorkflow)
-      ).toHaveBeenCalledOnce()
+      expect(useWorkflowService().saveWorkflow).toHaveBeenCalledOnce()
 
       resolveSave(true)
       await firstSave
@@ -196,12 +187,13 @@ describe('useBuilderSave', () => {
 
       await onSave('new-name', true)
 
-      expect(
-        vi.mocked(useWorkflowService().saveWorkflowAs)
-      ).toHaveBeenCalledWith(useWorkflowStore().activeWorkflow, {
-        filename: 'new-name',
-        isApp: true
-      })
+      expect(useWorkflowService().saveWorkflowAs).toHaveBeenCalledWith(
+        useWorkflowStore().activeWorkflow,
+        {
+          filename: 'new-name',
+          isApp: true
+        }
+      )
       expect(useTelemetry()?.trackDefaultViewSet).toHaveBeenCalledWith({
         default_view: 'app'
       })
@@ -213,12 +205,13 @@ describe('useBuilderSave', () => {
 
       await onSave('new-name', false)
 
-      expect(
-        vi.mocked(useWorkflowService().saveWorkflowAs)
-      ).toHaveBeenCalledWith(useWorkflowStore().activeWorkflow, {
-        filename: 'new-name',
-        isApp: false
-      })
+      expect(useWorkflowService().saveWorkflowAs).toHaveBeenCalledWith(
+        useWorkflowStore().activeWorkflow,
+        {
+          filename: 'new-name',
+          isApp: false
+        }
+      )
       expect(useTelemetry()?.trackDefaultViewSet).toHaveBeenCalledWith({
         default_view: 'graph'
       })
@@ -293,9 +286,7 @@ describe('useBuilderSave', () => {
 
       await onSave('new-name', false)
 
-      expect(
-        vi.mocked(useErrorHandling().toastErrorHandler)
-      ).toHaveBeenCalledWith(error)
+      expect(useErrorHandling().toastErrorHandler).toHaveBeenCalledWith(error)
       expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
         key: SAVE_DIALOG_KEY
       })
@@ -314,9 +305,7 @@ describe('useBuilderSave', () => {
       expect(firstSave).toBeInstanceOf(Promise)
 
       await onSave('other-name', true)
-      expect(
-        vi.mocked(useWorkflowService().saveWorkflowAs)
-      ).toHaveBeenCalledOnce()
+      expect(useWorkflowService().saveWorkflowAs).toHaveBeenCalledOnce()
 
       resolveSaveAs(true)
       await firstSave
