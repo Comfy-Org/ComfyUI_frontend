@@ -145,8 +145,10 @@ const { workspaceRole } = useWorkspaceUI()
 const { subscription, tier: subscriptionTier } = useBillingContext()
 const conversationStore = useAgentConversationStore()
 watch(
-  () => subscription.value?.hasFunds,
-  (hasFunds) => conversationStore.setPaywallsResolved(hasFunds === true),
+  subscription,
+  (currentSubscription) => {
+    if (currentSubscription?.hasFunds) conversationStore.resolvePaywalls()
+  },
   { immediate: true }
 )
 const {
