@@ -715,6 +715,25 @@ describe('drawConnections', () => {
         expect(canvas.renderedPaths.size).toBe(0)
       }
     })
+
+    it.for([
+      { name: 'while links are hidden', moved: true, invalidated: true },
+      { name: 'while the viewport is still', moved: false, invalidated: false }
+    ])(
+      'unbinding events $name invalidates the background: $invalidated',
+      ({ moved, invalidated }) => {
+        advance(16)
+        if (moved) canvas.ds.offset[0] += 10
+        canvas.draw(true, true)
+        canvas.dirty_bgcanvas = false
+
+        canvas.unbindEvents()
+
+        expect(canvas.dirty_bgcanvas).toBe(invalidated)
+        canvas.draw(true, true)
+        expect([...canvas.renderedPaths]).toEqual([link])
+      }
+    )
   })
 })
 

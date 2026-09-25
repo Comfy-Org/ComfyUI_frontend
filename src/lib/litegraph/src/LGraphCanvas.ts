@@ -2169,7 +2169,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    */
   unbindEvents(): void {
     if (clearRevealedLinks(this)) this.dirty_bgcanvas = true
-    this.viewportMotion.dispose()
+    if (this.viewportMotion.dispose()) this.dirty_bgcanvas = true
     if (!this._events_binded) {
       console.warn('LGraphCanvas: no events bound')
       return

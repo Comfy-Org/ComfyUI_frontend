@@ -41,8 +41,12 @@ export class ViewportMotionTracker {
     return this.enabled && now < this.movingUntil
   }
 
-  dispose(): void {
+  /** @returns `true` if links were hidden and still need to be redrawn. */
+  dispose(): boolean {
+    const wasHidingLinks = this.settleTimer !== undefined
     clearTimeout(this.settleTimer)
     this.settleTimer = undefined
+    this.movingUntil = 0
+    return wasHidingLinks
   }
 }
