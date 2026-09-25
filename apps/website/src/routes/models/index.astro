@@ -5,7 +5,7 @@ import { workshopModels } from '../../config/workshop-browse-content'
 import { t } from '../../i18n/translations'
 
 const directory = workshopModels.toSorted((a, b) =>
-  a.name.localeCompare(b.name, 'en')
+  a.name.localeCompare(b.name, 'en', { numeric: true })
 )
 ---
 
@@ -45,7 +45,9 @@ const directory = workshopModels.toSorted((a, b) =>
         >
           {model.name}
         </a>
-        <span class="text-primary-warm-gray">· {model.provider}</span>
+        {model.provider && <span class="text-primary-warm-gray"
+          >· {model.provider}</span
+        >}
       </li>)}
     </ul>
   </section>
