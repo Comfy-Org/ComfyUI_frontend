@@ -32,7 +32,11 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useAppMode } from '@/composables/useAppMode'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
-import { fetchDroppedAsset, getDroppedAsset } from '@/utils/eventUtils'
+import {
+  fetchDroppedAsset,
+  getDroppedAsset,
+  markDropEventHandled
+} from '@/utils/eventUtils'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { AGENT_ATTACH_ACCEPT, isAgentAttachable } from './utils/attachableFiles'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
@@ -1543,12 +1547,18 @@ function onPanelDragOver(event: DragEvent): void {
   if (isAttachableDrag(event)) event.preventDefault()
 }
 
+function claimPanelDrop(event: DragEvent): void {
+  event.preventDefault()
+  event.stopPropagation()
+  markDropEventHandled(event)
+}
+
 async function onPanelDrop(event: DragEvent): Promise<void> {
   clearAssetDrag()
   // A dropped asset card carries a URI, not a File, so the claim must happen
   // before the async fetch resolves it into one.
   if ((event.dataTransfer?.files.length ?? 0) === 0 && isAssetDrag(event)) {
-    event.preventDefault()
+    claimPanelDrop(event)
     void attachDroppedAsset(event).then((attached) => {
       if (attached)
         useTelemetry()?.trackAgentAttachButtonClicked({ method: 'drag_drop' })
@@ -1561,7 +1571,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
     isAgentAttachable
   )
   if (files.length === 0) return
-  event.preventDefault()
+  claimPanelDrop(event)
   if (await attachment.addFiles(files))
     useTelemetry()?.trackAgentAttachButtonClicked({ method: 'drag_drop' })
 }
