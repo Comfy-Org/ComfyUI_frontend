@@ -1932,7 +1932,7 @@
   },
   "ByteDanceSeedreamLayerSeparationNode": {
     "description": "將一張圖片分解為背景底圖以及最多 16 個可重新定位的透明圖層，每個圖層具有堆疊順序、邊界框、名稱與描述。",
-    "display_name": "ByteDance Seedream 5.0 Pro 圖層分離",
+    "display_name": "ByteDance Seedream 5.0 Pro 圖層分離（舊版）",
     "inputs": {
       "control_after_generate": {
         "name": "生成後控制"
@@ -1990,6 +1990,62 @@
       "5": {
         "name": "圖層堆疊",
         "tooltip": "可編輯的圖層文件（供 Create Layered Image 使用）：基底底圖加上每個元素作為獨立命名、緊密裁切的圖層，保留其實際位置與堆疊順序。可直接連接，或用 Add Layer 擴充。"
+      }
+    }
+  },
+  "ByteDanceSeedreamLayerSeparationNodeV2": {
+    "description": "將影像分解為背景底板，以及最多 16 個可重新定位的透明圖層；每個圖層皆包含堆疊順序、邊界框、名稱與描述。",
+    "display_name": "ByteDance Seedream 5.0 圖層分離",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_crop_layers": {
+        "name": "crop_layers"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_prompt_optimization": {
+        "name": "prompt_optimization"
+      },
+      "model_seed": {
+        "name": "種子"
+      },
+      "model_size": {
+        "name": "尺寸"
+      },
+      "model_watermark": {
+        "name": "浮水印"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "base_image",
+        "tooltip": "圖層所堆疊於其上的基底影像（背景底板）。"
+      },
+      "1": {
+        "name": "base_mask",
+        "tooltip": "基底影像的透明度（1 = 透明，依 LoadImage 慣例）；目前一律完全不透明。"
+      },
+      "2": {
+        "name": "layers",
+        "tooltip": "由下至上排列的透明圖層。完整畫布模式：依其邊界框位置放置在黑色、與基底相同尺寸的畫布上。最小尺寸模式：裁切至其邊界框，以左上角為錨點，並填補至最大圖層尺寸。"
+      },
+      "3": {
+        "name": "masks",
+        "tooltip": "各圖層的透明度，索引與 layers 批次對齊（1 = 透明，依 LoadImage 慣例）。若要使用 ImageCompositeMasked 類型的合成，請先加入 InvertMask。"
+      },
+      "4": {
+        "name": "bboxes",
+        "tooltip": "每個圖層一個放置框，索引與 layers 批次對齊（將兩者連同 masks 輸入 Layers From Bounding Boxes，以重建各圖層的位置）：{x, y, width, height, metadata: {name, desc, z_index, native_size, content_rect, flags}}。content_rect = [left, top, width, height] 為圖層在自身影格內的內容區域；它會以放置框位置加上該偏移量後置於畫布上。"
+      },
+      "5": {
+        "name": "layer_stack",
+        "tooltip": "可直接編輯、供 Create Layered Image 使用的圖層文件：包含基底板及每個元素，各自作為具名稱、緊密裁切的圖層，位於其正確位置與堆疊順序。可直接連接，或使用 Add Layer 擴充。"
       }
     }
   },
@@ -16893,7 +16949,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "模型在回答前進行多少推理。'default' 會將選擇權交由模型。支援的等級因模型而異：GPT-6 Astra low-max、GPT-5.6 none-max（不含 minimal）、GPT-5.5 none-xhigh、GPT-5.5 Pro medium-xhigh、GPT-5 minimal-high、o-series low-high；GPT-4.1 不具推理能力。不支援的等級會在傳送請求前遭到拒絕。"
+        "tooltip": "模型在回答前進行推理的程度。'default' 會將選擇權交由模型決定。各模型支援的等級不同：GPT-6 Astra 為 low-max、GPT-6 Sol/Luna 與 GPT-5.6 為 none-max（不含 minimal）、GPT-5.5 為 none-xhigh、GPT-5.5 Pro 為 medium-xhigh、GPT-5 為 minimal-high、o 系列為 low-high；GPT-4.1 不具推理功能。不支援的等級會在傳送請求前遭拒絕。"
       },
       "truncation": {
         "name": "truncation",
@@ -23884,6 +23940,30 @@
       },
       "2": {
         "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeMingImageEdit": {
+    "display_name": "文字編碼 Ming 影像編輯",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "影像",
+        "tooltip": "選用的參考影像，文字編碼器可見，並會以無雜訊影格附加至 latent 序列。後續影像會調整為與第一張相同的尺寸，採樣的 latent 應符合該尺寸。"
+      },
+      "prompt": {
+        "name": "提示詞"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "若沒有 VAE，影像僅會透過視覺塔為文字編碼器提供條件。"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
