@@ -553,7 +553,9 @@ export const useModelStore = defineStore('models', () => {
     () => flags.assetsEnabled,
     () => {
       reloadModels().catch((error) => {
-        reportError(error, { errorType: 'model_library_capability_reload' })
+        reportError(error, {
+          errorType: 'error_reloading_model_library_after_capability_change'
+        })
       })
     }
   )
@@ -563,7 +565,9 @@ export const useModelStore = defineStore('models', () => {
     () =>
       flags.assetsEnabled &&
       reloadModels().catch((error) => {
-        reportError(error, { errorType: 'model_library_capability_reload' })
+        reportError(error, {
+          errorType: 'error_reloading_model_library_after_capability_change'
+        })
       })
   )
 
