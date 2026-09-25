@@ -1,0 +1,56 @@
+<script setup lang="ts">
+import { computed } from 'vue'
+
+import { cn } from '@comfyorg/tailwind-utils'
+
+import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
+
+export type CatalogueTab = 'models' | 'workflows' | 'apps'
+
+const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const active = defineModel<CatalogueTab>({ required: true })
+const tabs = ['models', 'workflows', 'apps'] as const
+const labels = {
+  models: 'workshop.hub.kind.models',
+  workflows: 'workshop.hub.workflows',
+  apps: 'workshop.catalogue.apps'
+} as const
+const marker = computed(
+  () => `translateX(${tabs.indexOf(active.value) * 100}%)`
+)
+</script>
+
+<template>
+  <div
+    class="relative grid w-fit shrink-0 grid-cols-3 rounded-2xl bg-transparency-white-t8 p-1"
+    role="group"
+    :aria-label="t('workshop.catalogue.show', locale)"
+    data-testid="catalogue-tabs"
+  >
+    <div class="pointer-events-none absolute inset-1 grid grid-cols-3">
+      <div
+        class="rounded-xl bg-primary-warm-white transition-transform duration-300 ease-out motion-reduce:transition-none"
+        :style="{ transform: marker }"
+      />
+    </div>
+    <button
+      v-for="tab in tabs"
+      :key="tab"
+      type="button"
+      :aria-pressed="active === tab"
+      :data-testid="`catalogue-tab-${tab}`"
+      :class="
+        cn(
+          'relative inline-flex h-9 cursor-pointer items-center justify-center rounded-xl px-5 text-sm font-semibold whitespace-nowrap transition-colors duration-300 ease-out outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 motion-reduce:transition-none max-sm:px-3',
+          active === tab
+            ? 'text-page'
+            : 'text-content-secondary hover:text-content-bright'
+        )
+      "
+      @click="active = tab"
+    >
+      {{ t(labels[tab], locale) }}
+    </button>
+  </div>
+</template>

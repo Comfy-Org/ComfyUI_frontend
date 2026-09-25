@@ -2,7 +2,10 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { markRaw } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { registerCoreKeybindingCommands } from '@/platform/keybindings/__fixtures__/registerCoreKeybindingCommands'
+import { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
+import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useCommandStore } from '@/stores/commandStore'
 import type { DialogInstance } from '@/stores/dialogStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -41,6 +44,7 @@ describe('keybindingService - dialog gate', () => {
     const dialogStore = useDialogStore()
     dialogStore.dialogStack.length = 0
 
+    registerCoreKeybindingCommands()
     keybindingService = useKeybindingService()
     keybindingService.registerCoreKeybindings()
   })
@@ -77,6 +81,29 @@ describe('keybindingService - dialog gate', () => {
     await keybindingService.keybindHandler(event)
 
     expect(useCommandStore().execute).not.toHaveBeenCalled()
+  })
+
+  it('does not execute a canvas keybinding while a dialog is open', () => {
+    useCommandStore().registerCommand({
+      id: 'Test.CanvasCommand',
+      function: () => {}
+    })
+    useKeybindingStore().addUserKeybinding(
+      new KeybindingImpl({
+        commandId: 'Test.CanvasCommand',
+        combo: { key: 'F9' },
+        targetElementId: 'graph-canvas-container'
+      })
+    )
+    useDialogStore().dialogStack.push(
+      createTestDialogInstance('templates-dialog')
+    )
+
+    const event = createKeyboardEvent('F9')
+
+    expect(keybindingService.executeCanvasKeybinding(event)).toBe(false)
+    expect(useCommandStore().execute).not.toHaveBeenCalled()
+    expect(event.defaultPrevented).toBe(false)
   })
 
   it('does NOT execute a global keybinding from inside an open dialog', async () => {

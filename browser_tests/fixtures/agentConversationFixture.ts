@@ -939,6 +939,12 @@ export class AgentConversationHarness {
     await this.selectWorkflowTarget()
   }
 
+  // Sends one more doc_update that resyncs `widget` on `nodeId` to its
+  // current doc value — the same effect on a live widget as a stale echo,
+  // a reconnect resync, or an unrelated full-graph reconcile has whenever
+  // that frame's changed-widgets sweep happens to touch it. Lets a test
+  // race this deterministically against a live keystroke instead of
+  // waiting on the timing a real run happens to produce.
   async resyncWidget(nodeId: string, widget: string): Promise<void> {
     const widgets = z
       .record(z.string(), z.unknown())

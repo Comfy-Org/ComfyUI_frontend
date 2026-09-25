@@ -1,4 +1,4 @@
-type Locale = 'en' | 'zh-CN' | 'ja'
+import type { Locale } from '../config/locales'
 
 const translations = {
   'home.workshop.heading': {
@@ -23,6 +23,49 @@ const translations = {
     'zh-CN': '在 Comfy 上浏览并运行最新的 AI 图像、视频和音频模型。'
   },
   'workshop.hero.eyebrow': { en: 'Models', 'zh-CN': '模型' },
+  'workshop.catalogue.apps': { en: 'Apps', 'zh-CN': '应用' },
+  'workshop.catalogue.categories': { en: 'Categories', 'zh-CN': '分类' },
+  'workshop.catalogue.show': { en: 'Browse', 'zh-CN': '浏览' },
+  'workshop.catalogue.subtitle': {
+    en: 'Models and the workflows built on them, by what you want to make.',
+    'zh-CN': '按你想创作的内容浏览模型及其工作流。'
+  },
+  'workshop.catalogue.appsSoon': {
+    en: 'Apps are coming soon',
+    'zh-CN': '应用即将上线'
+  },
+  'workshop.catalogue.appsHint': {
+    en: 'For now, explore ready-to-run workflows or try a model with your own ideas.',
+    'zh-CN': '现在可以先探索现成的工作流，或用自己的创意试用模型。'
+  },
+  'workshop.catalogue.noWorkflows': {
+    en: 'No workflows match your search and filters.',
+    'zh-CN': '没有符合搜索和筛选条件的工作流。'
+  },
+  'workshop.catalogue.backToWorkflows': {
+    en: 'Back to workflows',
+    'zh-CN': '返回工作流'
+  },
+  'workshop.catalogue.allWorkflows': {
+    en: 'All workflows',
+    'zh-CN': '全部工作流'
+  },
+  'workshop.sort.recommended': {
+    en: 'Recommended',
+    'zh-CN': '推荐顺序'
+  },
+  'workshop.catalogue.browseAllWorkflows': {
+    en: 'Browse all workflows',
+    'zh-CN': '浏览全部工作流'
+  },
+  'workshop.catalogue.searchWorkflows': {
+    en: 'Search workflows…',
+    'zh-CN': '搜索工作流…'
+  },
+  'workshop.catalogue.showWorkflows': {
+    en: 'Show {n} workflows',
+    'zh-CN': '显示 {n} 个工作流'
+  },
   'workshop.hero.heading': {
     en: 'What will you make next?',
     'zh-CN': '接下来你想创造什么？'
@@ -6172,9 +6215,9 @@ Enterprise`
     'zh-CN': 'Comfy 企业版包含什么？'
   },
   'contact.faq.a3': {
-    en: 'Cloud or in-house deployment with data ownership, bring-your-own-key support, orchestration, support from the team that builds the engine, and add-ons like MiniMax commercial licensing. [See Comfy Enterprise](https://comfy.org/cloud/enterprise), or request a demo through this form.',
+    en: 'Cloud or in-house deployment with data ownership, bring-your-own-key support, orchestration, support from the team that builds the engine, and add-ons like MiniMax commercial licensing. [See Comfy Enterprise](https://comfy.org/enterprise/), or request a demo through this form.',
     'zh-CN':
-      '云端或自有环境部署，数据归属权、自带密钥支持、编排能力、来自引擎开发团队的支持，以及 MiniMax 商业许可等附加项。[了解 Comfy 企业版](https://comfy.org/zh-CN/cloud/enterprise)，或通过此表单预约演示。'
+      '云端或自有环境部署，数据归属权、自带密钥支持、编排能力、来自引擎开发团队的支持，以及 MiniMax 商业许可等附加项。[了解 Comfy 企业版](https://comfy.org/zh-CN/enterprise/)，或通过此表单预约演示。'
   },
   'contact.faq.q4': {
     en: 'Is Comfy SOC 2 compliant?',
@@ -10284,8 +10327,8 @@ Enterprise`
   'workshop.output.download': { en: 'Download', 'zh-CN': '下载' },
   'workshop.output.openOriginal': { en: 'Open output', 'zh-CN': '打开输出' },
   'workshop.output.downloadFallback': {
-    en: 'Automatic download failed. Open the output to save it.',
-    'zh-CN': '自动下载失败。请打开输出文件后保存。'
+    en: 'If your download did not start, open the output to save a copy.',
+    'zh-CN': '如果下载未开始，请打开输出文件并保存副本。'
   },
   'workshop.output.useInCode': {
     en: 'Use these settings in code',
@@ -10696,10 +10739,6 @@ Enterprise`
   'workshop.workflow.explore': {
     en: 'Explore the possibilities',
     'zh-CN': '探索更多可能'
-  },
-  'workshop.workflow.templateExample': {
-    en: 'Template example {n}',
-    'zh-CN': '模板示例 {n}'
   },
   'workshop.workflow.by': { en: 'by {author}', 'zh-CN': '作者 {author}' },
   'workshop.workflow.nodeGraph': { en: 'Node Graph', 'zh-CN': '节点图' },
