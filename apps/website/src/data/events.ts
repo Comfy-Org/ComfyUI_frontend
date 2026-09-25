@@ -398,7 +398,8 @@ const events: readonly ComfyEvent[] = [
       src: '/images/events/nyc-creative-ai-september-forum.png',
       alt: {
         en: 'NYC Creative AI, September 2026 — presented by Flora, Daydream, and ZeroSpace',
-        'zh-CN': 'NYC Creative AI 2026年9月论坛 — 由 Flora、Daydream 与 ZeroSpace 呈现'
+        'zh-CN':
+          'NYC Creative AI 2026年9月论坛 — 由 Flora、Daydream 与 ZeroSpace 呈现'
       }
     }
   },
