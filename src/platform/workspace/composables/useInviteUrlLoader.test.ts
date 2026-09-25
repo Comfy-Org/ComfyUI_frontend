@@ -45,7 +45,7 @@ vi.mock<unknown>(import('vue-router'), () => ({
 
 const mockToastAdd = vi.hoisted(() => vi.fn())
 vi.mock<unknown>(
-  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
+  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
   () => ({
     useToast: () => ({
       add: mockToastAdd
