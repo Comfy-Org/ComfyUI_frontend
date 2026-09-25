@@ -14,6 +14,25 @@ set -euo pipefail
 base_sha="${1:?usage: check-ai-co-authors.sh <base_sha> <head_sha>}"
 head_sha="${2:?usage: check-ai-co-authors.sh <base_sha> <head_sha>}"
 
+# Agent display names, matched by name rather than by address. One list drives
+# both checks below, so the trailer and identity forms cannot drift apart --
+# adding an agent here covers it in both places.
+AGENT_NAMES=(
+    '[Cc]laude'
+    '[Cc]opilot'
+    '[Cc]ursor'
+    '[Cc]odex'
+    '[Gg]emini'
+    '[Aa]ider'
+    '[Dd]evin'
+    '[Ww]indsurf'
+    '[Cc]line'
+    '[Aa]mazon Q'
+    '[Jj]ules'
+    'OpenCode'
+    '[Aa]mp'
+)
+
 # Known AI coding-agent trailer patterns (case-insensitive).
 # Each entry is an extended-regex fragment matched against Co-authored-by lines.
 AGENT_PATTERNS=(
@@ -49,20 +68,13 @@ AGENT_PATTERNS=(
     'continue@continue\.dev'
     # Sourcegraph
     'noreply@sourcegraph\.com'
-    # Generic catch-alls for common agent name patterns
-    'Co-authored-by:.*\b[Cc]laude\b'
-    'Co-authored-by:.*\b[Cc]opilot\b'
-    'Co-authored-by:.*\b[Cc]ursor\b'
-    'Co-authored-by:.*\b[Cc]odex\b'
-    'Co-authored-by:.*\b[Gg]emini\b'
-    'Co-authored-by:.*\b[Aa]ider\b'
-    'Co-authored-by:.*\b[Dd]evin\b'
-    'Co-authored-by:.*\b[Ww]indsurf\b'
-    'Co-authored-by:.*\b[Cc]line\b'
-    'Co-authored-by:.*\b[Aa]mazon Q\b'
-    'Co-authored-by:.*\b[Jj]ules\b'
-    'Co-authored-by:.*\bOpenCode\b'
 )
+
+# Same names, trailer-shaped. Generated from AGENT_NAMES so the two checks stay
+# in step.
+for name in "${AGENT_NAMES[@]}"; do
+    AGENT_PATTERNS+=("Co-authored-by:.*\\b${name}\\b")
+done
 
 # Build a single alternation regex from all patterns.
 regex=""
@@ -76,30 +88,35 @@ done
 
 # Identity-shaped patterns, matched against "author <email>" rather than against
 # a Co-authored-by line. These are the ones GitHub turns into trailers on squash.
+# Addresses and bot handles. Valid in both a Co-authored-by line and an author
+# identity, so they feed both regexes unchanged.
 AGENT_IDENTITY_PATTERNS=(
-    'noreply@anthropic\.com'
-    'claude\[bot\]'
-    'amp@ampcode\.com'
-    'cursoragent@cursor\.com'
-    'copilot-swe-agent\[bot\]'
-    'copilot@github\.com'
-    'noreply@openai\.com'
-    'codex@openai\.com'
-    'aider@aider\.chat'
-    'gemini@google\.com'
-    'jules@google\.com'
-    '@codeium\.com'
-    'devin-ai-integration\[bot\]'
-    'devin@cognition\.ai'
-    'devin@cognition-labs\.com'
+    'noreply@anthropic\\.com'
+    'claude\\[bot\\]'
+    'amp@ampcode\\.com'
+    'cursoragent@cursor\\.com'
+    'copilot-swe-agent\\[bot\\]'
+    'copilot@github\\.com'
+    'noreply@openai\\.com'
+    'codex@openai\\.com'
+    'aider@aider\\.chat'
+    'gemini@google\\.com'
+    'jules@google\\.com'
+    '@codeium\\.com'
+    'devin-ai-integration\\[bot\\]'
+    'devin@cognition\\.ai'
+    'devin@cognition-labs\\.com'
     'cline-bot'
-    'cline@cline\.ai'
+    'cline@cline\\.ai'
     'continue-agent'
-    'continue@continue\.dev'
-    'noreply@sourcegraph\.com'
-    '^[^<]*\b[Cc]laude\b[^<]*<'
-    '^[^<]*\bOpenCode\b[^<]*<'
+    'continue@continue\\.dev'
+    'noreply@sourcegraph\\.com'
 )
+
+# An identity renders as "Name <addr>", so anchor the name before the bracket.
+for name in "${AGENT_NAMES[@]}"; do
+    AGENT_IDENTITY_PATTERNS+=("^[^<]*\\b${name}\\b[^<]*<")
+done
 
 identity_regex=""
 for pattern in "${AGENT_IDENTITY_PATTERNS[@]}"; do
@@ -135,6 +152,11 @@ if [[ -n "$identity_violations" ]]; then
     echo ""
     echo "To fix, rewrite the authorship as well as the message:"
     echo "  git rebase ${base_sha} --exec 'git commit --amend --no-edit --reset-author'"
+    echo ""
+    echo "If those commits also carry Co-authored-by trailers for the same agent,"
+    echo "remove them in the same pass, otherwise the trailer check below still fails:"
+    echo "  git rebase -i ${base_sha}   # mark the commits 'edit', drop the lines,"
+    echo "                              # then git commit --amend and git rebase --continue"
     echo ""
     echo "then force-push your branch."
     echo ""
