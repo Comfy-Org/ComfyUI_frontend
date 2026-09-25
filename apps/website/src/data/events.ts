@@ -388,10 +388,60 @@ const events: readonly ComfyEvent[] = [
       newTab: true
     },
     ctaLabel: { en: 'Register', 'zh-CN': '报名' },
-    media: eventImage('nyc-creative-ai-september-forum.png', {
-      en: 'ZeroSpace: NYC Creative AI September Forum',
-      'zh-CN': 'ZeroSpace：NYC Creative AI 九月论坛'
-    })
+    // TODO: temporarily self-hosted under public/images/events (the
+    // #NYCCreativeAI card Allyson attached on this PR, confirmed to show
+    // Flora/Daydream/ZeroSpace for the September forum) because this
+    // session has no upload access to media.comfy.org; migrate to the CDN
+    // and switch back to eventImage() when available.
+    media: {
+      type: 'image',
+      src: '/images/events/nyc-creative-ai-september-forum.png',
+      alt: {
+        en: 'NYC Creative AI, September 2026 — presented by Flora, Daydream, and ZeroSpace',
+        'zh-CN': 'NYC Creative AI 2026年9月论坛 — 由 Flora、Daydream 与 ZeroSpace 呈现'
+      }
+    }
+  },
+  {
+    id: 'dev-platform-oct-1',
+    category: 'livestream',
+    organizer: 'comfy',
+    // TODO: liveVideoId 3pBDHdgVD1E was given by Allyson on this PR's Slack
+    // thread for this Oct 1 livestream, but that same ID is already used by
+    // the Sept 15 `comfy-agent-ga` entry above. Flagging for confirmation
+    // which entry has the correct video ID rather than guessing which is
+    // wrong — left both as given.
+    title: {
+      en: 'Comfy Developer Platform: Building with Comfy API & Comfy Router',
+      'zh-CN': 'Comfy 开发者平台：使用 Comfy API 与 Comfy Router 构建应用'
+    },
+    description: {
+      en: 'Deep Mehta joins hosts Allyson and Purz to explore building with the Comfy Developer Platform, covering the Comfy API and Comfy Router.',
+      'zh-CN':
+        'Deep Mehta 做客本场直播，与主持人 Allyson 和 Purz 一起探讨如何使用 Comfy 开发者平台，涵盖 Comfy API 与 Comfy Router 的相关内容。'
+    },
+    location: { en: 'Online', 'zh-CN': '线上' },
+    // TODO: start time is a best guess (matches the usual 10AM PT slot for
+    // Comfy livestreams) — not shown in the promo clip this still was
+    // extracted from.
+    dateLabel: {
+      en: 'October 1, 2026 · 10AM PT',
+      'zh-CN': '2026年10月1日 · 上午10点（PT）'
+    },
+    startDateTime: '2026-10-01T10:00:00-07:00',
+    liveVideoId: '3pBDHdgVD1E',
+    // TODO: temporarily self-hosted under public/images/events (a still
+    // frame from the promo clip Allyson attached on this PR) because this
+    // session has no upload access to media.comfy.org; migrate to the CDN
+    // and switch to eventImage() when available.
+    media: {
+      type: 'image',
+      src: '/images/events/dev-platform-oct-1-still.jpg',
+      alt: {
+        en: 'Comfy Developer Platform: Building with Comfy API & Comfy Router livestream',
+        'zh-CN': 'Comfy 开发者平台直播：使用 Comfy API 与 Comfy Router 构建应用'
+      }
+    }
   },
   {
     id: 'sf-tech-week-tool-panel',
@@ -421,7 +471,19 @@ const events: readonly ComfyEvent[] = [
       },
       newTab: true
     },
-    ctaLabel: { en: 'RSVP', 'zh-CN': '报名' }
+    ctaLabel: { en: 'RSVP', 'zh-CN': '报名' },
+    // TODO: temporarily self-hosted under public/images/events because this
+    // session has no upload access to media.comfy.org; migrate to the CDN
+    // and switch to eventImage() when available.
+    media: {
+      type: 'image',
+      src: '/images/events/sf-tech-week-tool-panel.png',
+      alt: {
+        en: 'SF Tech Week panel: Comfy, KlingAI, and TOOL — panelists Tony Pu and Yannik Marek, moderated by Dustin Callif',
+        'zh-CN':
+          'SF Tech Week 圆桌讨论：Comfy、KlingAI 与 TOOL — 嘉宾 Tony Pu 与 Yannik Marek，主持人 Dustin Callif'
+      }
+    }
   },
   {
     id: 'la-tech-week-tool-panel',
@@ -451,7 +513,19 @@ const events: readonly ComfyEvent[] = [
       },
       newTab: true
     },
-    ctaLabel: { en: 'RSVP', 'zh-CN': '报名' }
+    ctaLabel: { en: 'RSVP', 'zh-CN': '报名' },
+    // TODO: temporarily self-hosted under public/images/events because this
+    // session has no upload access to media.comfy.org; migrate to the CDN
+    // and switch to eventImage() when available.
+    media: {
+      type: 'image',
+      src: '/images/events/la-tech-week-tool-panel.png',
+      alt: {
+        en: 'LA Tech Week panel: Comfy, Runway, and TOOL — panelists Ian Sansavera and Justin Offerman, moderated by Dustin Callif',
+        'zh-CN':
+          'LA Tech Week 圆桌讨论：Comfy、Runway 与 TOOL — 嘉宾 Ian Sansavera 与 Justin Offerman，主持人 Dustin Callif'
+      }
+    }
   },
   {
     id: 'machine-cinema-wip-salon',
