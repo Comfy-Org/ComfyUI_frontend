@@ -8,6 +8,7 @@ import type { MockCloud } from './fixtures/cloud'
 import { E2E_USER } from './fixtures/env'
 import {
   challengeRequiredOperation,
+  contactSupportOperation,
   declinedOperation,
   pendingOperation,
   succeededOperation
@@ -145,6 +146,28 @@ test('a declined payment shows the reason and stays on checkout', async ({
 
   expect(await fakeStripeCalls(page, 'confirmationTokens')).toBe(1)
   expect(await fakeStripeCalls(page, 'nextActions')).toBe(0)
+})
+
+test('a failure the server routes to support offers support, not a retry', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  withEmbeddedPaymentMethod(cloud)
+  cloud.scenario.operations.op_subscribe =
+    contactSupportOperation('op_subscribe')
+  await signIn(CHECKOUT)
+
+  await page.getByRole('button', { name: 'Pay and subscribe' }).click()
+
+  await expect(
+    page.getByRole('heading', { name: 'Payment could not be processed' })
+  ).toBeVisible()
+  await expect(page.getByText(/Contact support@comfy\.org/)).toBeVisible()
+  await expect(
+    page.getByRole('link', { name: 'Contact support' })
+  ).toHaveAttribute('href', 'mailto:support@comfy.org')
+  await expect(page.getByRole('button', { name: 'Try again' })).toBeHidden()
 })
 
 test('a 3DS challenge is driven by the fake and settles as success', async ({
