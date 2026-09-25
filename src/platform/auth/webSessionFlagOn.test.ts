@@ -20,6 +20,10 @@ import type { ComfyApp } from '@/scripts/app'
 import type { useExtensionService } from '@/services/extensionService'
 import { useAuthStore } from '@/stores/authStore'
 import type { ComfyExtension } from '@/types/comfy'
+import {
+  resultItemUrl,
+  resultItemVhsAdvancedPreviewUrl
+} from '@/utils/resultItemUrl'
 
 type IdentityObserver = (user: User | null) => void
 
@@ -535,5 +539,151 @@ describe('cloud API requests on the shared web session', () => {
       '403'
     )
     expect(workspaceAuth.currentWorkspace).toBeNull()
+  })
+})
+
+class FakeSocket extends EventTarget {
+  static readonly CONNECTING = 0
+  static readonly OPEN = 1
+  static readonly CLOSING = 2
+  static readonly CLOSED = 3
+  static created: FakeSocket[] = []
+  readyState = FakeSocket.CONNECTING
+  binaryType = 'blob'
+  readonly path: string
+  constructor(url: string | URL) {
+    super()
+    const parsed = new URL(String(url))
+    this.path = parsed.pathname + parsed.search
+    FakeSocket.created.push(this)
+  }
+  send() {}
+  close() {
+    this.readyState = FakeSocket.CLOSED
+  }
+  closeFromServer() {
+    this.close()
+    this.dispatchEvent(new Event('close'))
+  }
+}
+
+const MEDIA_ITEM = {
+  filename: 'output.png',
+  subfolder: '',
+  type: 'output',
+  nodeId: '1',
+  mediaType: 'images'
+} as const
+
+describe('live updates and media on the shared web session', () => {
+  beforeEach(() => {
+    identity.reset()
+    firebaseSignOut.mockReset()
+    firebaseSignOut.mockImplementation(async () => identity.signOut())
+    FakeSocket.created = []
+    vi.stubGlobal('WebSocket', FakeSocket)
+    window.name = ''
+    api.socket = null
+  })
+
+  afterEach(() => {
+    remoteConfig.value = {}
+    localStorage.clear()
+  })
+
+  async function bootWithSocket() {
+    const ingest = await bootOnSession()
+    await api.init()
+    return ingest
+  }
+
+  it('opens the socket on the cookie and reconnects it into each workspace without minting a token', async () => {
+    const ingest = await bootWithSocket()
+    const workspaceAuth = useWorkspaceAuthStore()
+    expect(FakeSocket.created.map(({ path }) => path)).toEqual(['/ws'])
+
+    await workspaceAuth.switchWorkspace('ws-team')
+    await vi.waitFor(() =>
+      expect(api.socket).toEqual(
+        expect.objectContaining({ path: '/ws?workspace_id=ws-team' })
+      )
+    )
+    await workspaceAuth.switchWorkspace('ws-personal')
+    await vi.waitFor(() =>
+      expect(api.socket).toEqual(expect.objectContaining({ path: '/ws' }))
+    )
+
+    expect(api.socket).toBe(FakeSocket.created.at(-1))
+    const replaced = FakeSocket.created.slice(0, -1)
+    expect(replaced.map(({ readyState }) => readyState)).toEqual(
+      replaced.map(() => FakeSocket.CLOSED)
+    )
+    expect(
+      FakeSocket.created.filter(({ path }) => path.includes('token'))
+    ).toEqual([])
+    expect(ingest.requests.map(({ path }) => path)).not.toContain(
+      '/api/auth/token'
+    )
+  })
+
+  it.for([
+    { workspace: 'ws-team', suffix: '&workspace_id=ws-team' },
+    { workspace: 'ws-personal', suffix: '' }
+  ])(
+    'media URLs name the workspace only for a team ($workspace)',
+    async ({ workspace, suffix }) => {
+      await bootOnSession()
+      await useWorkspaceAuthStore().switchWorkspace(workspace)
+
+      expect([
+        resultItemUrl(MEDIA_ITEM),
+        resultItemVhsAdvancedPreviewUrl(MEDIA_ITEM),
+        api.apiURL('/vhs/viewvideo?filename=a.mp4'),
+        api.apiURL('/api/view?filename=a.png'),
+        api.apiURL('/assets/asset-1/content?disposition=inline'),
+        api.apiURL('/queue?view=1')
+      ]).toEqual([
+        `/api/view?filename=output.png&type=output&subfolder=${suffix}`,
+        `/api/viewvideo?filename=output.png&type=output&subfolder=${suffix}`,
+        `/api/vhs/viewvideo?filename=a.mp4${suffix}`,
+        `/api/view?filename=a.png${suffix}`,
+        `/api/assets/asset-1/content?disposition=inline${suffix}`,
+        '/api/queue?view=1'
+      ])
+    }
+  )
+
+  it('a server close while signed in reconnects on the session', async () => {
+    await bootWithSocket()
+    await useWorkspaceAuthStore().switchWorkspace('ws-team')
+    await vi.waitFor(() =>
+      expect(api.socket).toEqual(
+        expect.objectContaining({ path: '/ws?workspace_id=ws-team' })
+      )
+    )
+    const closed = api.socket
+    assert.instanceOf(closed, FakeSocket)
+
+    closed.closeFromServer()
+    await vi.advanceTimersByTimeAsync(300)
+
+    await vi.waitFor(() => expect(api.socket).not.toBe(closed))
+    expect(api.socket).toEqual(
+      expect.objectContaining({ path: '/ws?workspace_id=ws-team' })
+    )
+  })
+
+  it('sign-out closes the socket and opens no other', async () => {
+    await bootWithSocket()
+    const sessionSocket = api.socket
+    assert.instanceOf(sessionSocket, FakeSocket)
+
+    await useAuthStore().logout()
+    sessionSocket.closeFromServer()
+    await vi.advanceTimersByTimeAsync(1_000)
+
+    expect(sessionSocket.readyState).toBe(FakeSocket.CLOSED)
+    expect(FakeSocket.created).toEqual([sessionSocket])
+    expect(api.socket).toBeNull()
   })
 })

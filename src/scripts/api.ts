@@ -17,6 +17,7 @@ import { trimEnd } from 'es-toolkit'
 import { ref } from 'vue'
 
 import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json' with { type: 'json' }
+import { scopeMediaRoute } from '@/platform/auth/session/sessionMediaUrl'
 import { webSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import {
   fetchWithUnifiedRemint,
@@ -518,8 +519,12 @@ export class ComfyApi extends EventTarget {
   }
 
   apiURL(route: string): string {
-    if (route.startsWith('/api')) return this.api_base + route
-    return this.api_base + '/api' + route
+    const requests = webSessionRequests()
+    const scoped = requests
+      ? scopeMediaRoute(route, requests.workspaceId())
+      : route
+    if (scoped.startsWith('/api')) return this.api_base + scoped
+    return this.api_base + '/api' + scoped
   }
 
   fileURL(route: string): string {
@@ -856,6 +861,31 @@ export class ComfyApi extends EventTarget {
     }, 1000)
   }
 
+  /** False when the web session is on and no one is signed in to open it. */
+  private async addSocketAuth(params: URLSearchParams): Promise<boolean> {
+    const requests = webSessionRequests()
+    const sessionScope = requests && (await requests.scope())
+    if (sessionScope?.workspaceId) {
+      params.set('workspace_id', sessionScope.workspaceId)
+    }
+    if (sessionScope) return true
+
+    // Get auth token and set cloud params if available
+    // Uses workspace token (if enabled) or Firebase token
+    try {
+      const authStore = await this.getAuthStore()
+      const authToken = await authStore?.getAuthToken()
+      if (authToken) {
+        params.set('token', authToken)
+      }
+    } catch (error) {
+      void trackWsTokenUnavailable()
+      // Continue without auth token if there's an error
+      console.warn('Could not get auth token for WebSocket connection:', error)
+    }
+    return !requests || params.has('token')
+  }
+
   /**
    * Creates and connects a WebSocket for realtime updates
    * @param {boolean} isReconnect If the socket is connection is a reconnect attempt
@@ -876,24 +906,7 @@ export class ComfyApi extends EventTarget {
       params.set('clientId', existingSession)
     }
 
-    // Get auth token and set cloud params if available
-    // Uses workspace token (if enabled) or Firebase token
-    if (isCloud) {
-      try {
-        const authStore = await this.getAuthStore()
-        const authToken = await authStore?.getAuthToken()
-        if (authToken) {
-          params.set('token', authToken)
-        }
-      } catch (error) {
-        void trackWsTokenUnavailable()
-        // Continue without auth token if there's an error
-        console.warn(
-          'Could not get auth token for WebSocket connection:',
-          error
-        )
-      }
-    }
+    if (isCloud && !(await this.addSocketAuth(params))) return
 
     const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
     const baseUrl = `${protocol}://${this.api_host}${this.api_base}/ws`
@@ -1118,16 +1131,29 @@ export class ComfyApi extends EventTarget {
    * events over a handshake that was authenticated as that account.
    */
   async resetSocket(): Promise<void> {
-    const previous = this.socket
-    // Detach before closing so the previous socket's close handler sees it is
-    // no longer the active socket and does not start a competing reconnect.
-    this.socket = null
     // Clear every handshake identity source: createSocket() reads the client id
     // from window.name (mirrored in session storage), not this.clientId, so the
     // next connect must not inherit the prior account's id.
     this.clientId = undefined
     window.name = ''
     sessionStorage.removeItem('clientId')
+    await this.replaceSocket()
+  }
+
+  /**
+   * Re-handshakes the socket for the same account, keeping its client id, so
+   * a new web session workspace takes effect. Does nothing before init().
+   */
+  async reconnectSocket(): Promise<void> {
+    if (this.socketGeneration === 0) return
+    await this.replaceSocket()
+  }
+
+  private async replaceSocket(): Promise<void> {
+    const previous = this.socket
+    // Detach before closing so the previous socket's close handler sees it is
+    // no longer the active socket and does not start a competing reconnect.
+    this.socket = null
     if (previous && previous.readyState !== WebSocket.CLOSED) {
       try {
         previous.close()
