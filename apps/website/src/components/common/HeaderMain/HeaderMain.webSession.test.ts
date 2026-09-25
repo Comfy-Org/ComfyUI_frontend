@@ -7,6 +7,8 @@ import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { readonly, ref } from 'vue'
 
+import { COMFY_CLIENT } from '@comfyorg/account-core/requestAuth'
+
 import { WORKSHOP_CLOUD_BASE_URL } from '../../../config/workshop-env'
 import { ACCOUNT_SOURCE_CAP_MS } from '../../../config/workshop-web-session-identity'
 
@@ -19,23 +21,34 @@ vi.mock(import('../../../config/workshop-firebase'))
 
 const FEATURES = `${WORKSHOP_CLOUD_BASE_URL}/api/features`
 const SESSION = `${WORKSHOP_CLOUD_BASE_URL}/api/auth/session`
+const BALANCE = `${WORKSHOP_CLOUD_BASE_URL}/api/billing/balance`
 
 interface SentRequest {
   readonly method: string
   readonly url: string
   readonly credentials?: RequestCredentials
+  readonly authorization?: string
+  readonly client?: string
 }
 
 const ANONYMOUS_PROBE: SentRequest = { method: 'GET', url: FEATURES }
 const CREDENTIALED_FLAGS: SentRequest = {
   method: 'GET',
   url: FEATURES,
-  credentials: 'include'
+  credentials: 'include',
+  client: COMFY_CLIENT
 }
 const SESSION_READ: SentRequest = {
   method: 'GET',
   url: SESSION,
   credentials: 'include'
+}
+
+const SESSION_BALANCE_READ: SentRequest = {
+  method: 'GET',
+  url: BALANCE,
+  credentials: 'include',
+  client: COMFY_CLIENT
 }
 
 const LIVE_SESSION = {
@@ -61,32 +74,47 @@ interface CloudAnswers {
   readonly anonymous: Record<string, unknown>
   readonly perUser?: Record<string, unknown>
   readonly session?: { readonly status: number; readonly body: unknown }
+  readonly balance?: { readonly status: number; readonly body: unknown }
   /** Every answer waits for it; a pending one is a hung Cloud. */
   readonly answered?: Promise<void>
+}
+
+function recordRequest(url: string, init: RequestInit = {}): SentRequest {
+  const { credentials } = init
+  const headers = new Headers(init.headers)
+  const authorization = headers.get('Authorization')
+  const client = headers.get('X-Comfy-Client')
+  return {
+    method: init.method ?? 'GET',
+    url,
+    ...(credentials ? { credentials } : {}),
+    ...(authorization ? { authorization } : {}),
+    ...(client ? { client } : {})
+  }
 }
 
 function stubCloud({
   anonymous,
   perUser = {},
-  session,
+  session = refusal('no_session'),
+  balance,
   answered
 }: CloudAnswers) {
   const sent: SentRequest[] = []
+  const byUrl: Record<string, CloudAnswers['session']> = {
+    [SESSION]: session,
+    [BALANCE]: balance
+  }
   vi.stubGlobal(
     'fetch',
     vi.fn<typeof fetch>(async (input, init) => {
       const url = String(input)
-      const { credentials } = init ?? {}
-      sent.push({
-        method: init?.method ?? 'GET',
-        url,
-        ...(credentials ? { credentials } : {})
-      })
+      sent.push(recordRequest(url, init))
       await answered
-      const answer =
-        url === SESSION
-          ? (session ?? refusal('no_session'))
-          : { status: 200, body: credentials ? perUser : anonymous }
+      const answer = byUrl[url] ?? {
+        status: 200,
+        body: init?.credentials ? perUser : anonymous
+      }
       return new Response(JSON.stringify(answer.body), {
         status: answer.status
       })
@@ -151,11 +179,19 @@ describe('HeaderMain account source', () => {
     }
   )
 
-  it('flag on with a live session: shows the session account and never starts Firebase', async () => {
+  it('flag on with a live session: shows the session account and balance and never starts Firebase', async () => {
     const sent = stubCloud({
       anonymous: { web_session_probe: true },
       perUser: { unified_web_session: true },
-      session: LIVE_SESSION
+      session: LIVE_SESSION,
+      balance: {
+        status: 200,
+        body: {
+          amount_micros: 211,
+          currency: 'usd',
+          effective_balance_micros: 211
+        }
+      }
     })
     const { useWorkshopSession } = await renderHeader()
 
@@ -164,11 +200,22 @@ describe('HeaderMain account source', () => {
     })
     expect(accounts).toHaveLength(2)
     expect(accounts[0]).toHaveTextContent('AL')
+    const credits = await screen.findAllByTestId('header-session-credits')
+    expect(credits).toHaveLength(2)
+    expect(credits[0]).toHaveTextContent('445 credits')
     expect(
       useWorkshopSession,
       'neither the header nor the credits dialog may start the Firebase lifecycle'
     ).not.toHaveBeenCalled()
-    expect(sent).toEqual([ANONYMOUS_PROBE, CREDENTIALED_FLAGS, SESSION_READ])
+    expect(
+      sent,
+      'the balance rides the cookie: no Authorization, no token mint'
+    ).toEqual([
+      ANONYMOUS_PROBE,
+      CREDENTIALED_FLAGS,
+      SESSION_READ,
+      SESSION_BALANCE_READ
+    ])
     expect(
       sent.filter(({ url }) => /identitytoolkit|securetoken/.test(url))
     ).toEqual([])

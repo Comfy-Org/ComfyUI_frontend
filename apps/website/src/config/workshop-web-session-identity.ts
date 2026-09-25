@@ -6,9 +6,12 @@
  */
 import type { User } from 'firebase/auth'
 import type { Ref } from 'vue'
-import { readonly, shallowRef } from 'vue'
+import { computed, readonly, shallowRef } from 'vue'
 
-import type { WebSessionUser } from '@comfyorg/account-core/webSession'
+import type {
+  WebSession,
+  WebSessionUser
+} from '@comfyorg/account-core/webSession'
 import type {
   RememberedLogin,
   WebSessionIdentity
@@ -44,12 +47,16 @@ const rememberedWorkshopLogin: RememberedLogin = {
   }
 }
 
-const sessionUser = shallowRef<WebSessionUser>()
+const webSession = shallowRef<WebSession>()
+
+export function useWorkshopWebSession(): Readonly<Ref<WebSession | undefined>> {
+  return readonly(webSession)
+}
 
 export function useWorkshopSessionAccount(): Readonly<
   Ref<WebSessionUser | undefined>
 > {
-  return readonly(sessionUser)
+  return computed(() => webSession.value?.user)
 }
 
 /** Past this, the Firebase header mounts for the page load and never swaps. */
@@ -86,7 +93,7 @@ function decideAccountSource(): Promise<WorkshopAccountSource> {
       identity = createWorkshopWebSessionIdentity()
       identity.subscribe((state) => {
         if (state.phase === 'signed_in') {
-          sessionUser.value = state.session.user
+          webSession.value = state.session
           decide('session')
         } else if (state.phase === 'signed_out') {
           decide('firebase')
