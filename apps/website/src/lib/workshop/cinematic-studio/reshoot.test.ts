@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
 import type { ReshootZone } from './reshoot'
-import { DEFAULT_CAMERA, cameraZone, clampAxis, withKey } from './reshoot'
+import {
+  DEFAULT_CAMERA,
+  cameraZone,
+  clampAxis,
+  clipFits,
+  withKey
+} from './reshoot'
 
 describe('cameraZone', () => {
   it.for<[number, number, ReshootZone]>([
@@ -32,5 +38,16 @@ describe('withKey', () => {
     const moved = { frame: 10, camera: { ...DEFAULT_CAMERA, azimuth: 20 } }
 
     expect(withKey(withKey([late], early), moved)).toEqual([moved, late])
+  })
+})
+
+describe('clipFits', () => {
+  it.for<[number, boolean]>([
+    [4.9, false],
+    [5, true],
+    [15, true],
+    [15.1, false]
+  ])('accepts a %f second clip: %s', ([seconds, fits]) => {
+    expect(clipFits(seconds)).toBe(fits)
   })
 })

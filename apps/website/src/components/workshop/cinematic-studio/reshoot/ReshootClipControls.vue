@@ -31,6 +31,7 @@ const {
 const upload = defineModel<File | undefined>('upload')
 const aspect = defineModel<ReshootAspect>('aspect', { required: true })
 const size = defineModel<ReshootSize>('size', { required: true })
+const seed = defineModel<number>('seed', { required: true })
 
 const aspectLabel = (id: ReshootAspect) =>
   id === 'source' ? rc('reshoot.aspect.source', locale) : id
@@ -122,5 +123,16 @@ function choose(event: Event) {
         </button>
       </div>
     </div>
+    <label class="flex items-center justify-between gap-3 text-xs">
+      <span class="text-primary-comfy-canvas">{{
+        rc('reshoot.seed', locale)
+      }}</span>
+      <input
+        v-model.number="seed"
+        type="number"
+        min="0"
+        class="h-9 w-28 rounded-xl border border-transparency-white-t20 bg-transparent px-3 font-mono text-sm text-primary-warm-white tabular-nums outline-none focus-visible:border-primary-comfy-yellow"
+      />
+    </label>
   </div>
 </template>

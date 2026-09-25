@@ -25,6 +25,67 @@ const copy = {
     en: "Built on Cseti's CrossView-Warp LoRA and node",
     'zh-CN': '基于 Cseti 的 CrossView-Warp LoRA 与节点'
   },
+  'reshoot.pick.lead': {
+    en: 'Pick a clip, aim a new camera at it, and get the same moment from another angle.',
+    'zh-CN': '选择一个片段，设置新的机位，从另一个角度得到同一时刻。'
+  },
+  'reshoot.pick.drop': { en: 'Drop a video here', 'zh-CN': '将视频拖到这里' },
+  'reshoot.pick.upload': { en: 'Upload a video', 'zh-CN': '上传视频' },
+  'reshoot.pick.example': {
+    en: 'Or start from the example',
+    'zh-CN': '或从示例开始'
+  },
+  'reshoot.pick.exampleMeta': {
+    en: 'Try it without uploading anything',
+    'zh-CN': '无需上传即可试用'
+  },
+  'reshoot.aim.title': { en: 'Aim the new camera', 'zh-CN': '设置新机位' },
+  'reshoot.aim.hint': {
+    en: 'The picture follows the camera as you drag. Nothing is generated until you press Generate.',
+    'zh-CN': '拖动时画面会跟随机位变化。按下“生成”之前不会生成任何内容。'
+  },
+  'reshoot.aim.globe': {
+    en: 'Hold and drag to aim the camera',
+    'zh-CN': '按住并拖动以设置机位'
+  },
+  'reshoot.aim.original': { en: 'Original', 'zh-CN': '原片' },
+  'reshoot.aim.more': {
+    en: 'More: lens, height, keep aim',
+    'zh-CN': '更多：镜头、高度、保持朝向'
+  },
+  'reshoot.aim.less': { en: 'Less', 'zh-CN': '收起' },
+  'reshoot.aim.reset': { en: 'Reset', 'zh-CN': '重置' },
+  'reshoot.aim.apply': { en: 'Apply angle', 'zh-CN': '应用机位' },
+  'reshoot.aim.reading': {
+    en: 'Reading the scene',
+    'zh-CN': '正在读取场景'
+  },
+  'reshoot.axis.rotation': { en: 'Rotation', 'zh-CN': '旋转' },
+  'reshoot.axis.tilt': { en: 'Tilt', 'zh-CN': '俯仰' },
+  'reshoot.axis.lens': { en: 'Lens', 'zh-CN': '镜头' },
+  'reshoot.axis.height': { en: 'Height', 'zh-CN': '高度' },
+  'reshoot.view.result': { en: 'Result', 'zh-CN': '结果' },
+  'reshoot.view.warp': { en: 'Warp guide', 'zh-CN': '变形引导' },
+  'reshoot.view.source': { en: 'Source', 'zh-CN': '原片' },
+  'reshoot.views': { en: 'Show', 'zh-CN': '显示' },
+  'reshoot.sound': { en: 'Sound', 'zh-CN': '声音' },
+  'reshoot.sound.generated': { en: 'Generated', 'zh-CN': '生成的声音' },
+  'reshoot.sound.original': { en: 'Original clip', 'zh-CN': '原片声音' },
+  'reshoot.warpNote': {
+    en: 'The warp guide of a real run shows here: the clip pushed to the new camera, magenta where it has to be invented.',
+    'zh-CN':
+      '真实运行时这里显示变形引导：片段被推到新机位，洋红色为需要生成的部分。'
+  },
+  'reshoot.seed': { en: 'Seed', 'zh-CN': '种子' },
+  'reshoot.prompt.dialogue': {
+    en: 'The model also makes the sound: if your video has dialogue, write the lines here so the new take says them.',
+    'zh-CN':
+      '模型也会生成声音：如果视频中有对白，请在这里写下台词，新镜头就会说出来。'
+  },
+  'reshoot.clip.length': {
+    en: 'This clip is {seconds} s long. Use one between 5 and 15 seconds.',
+    'zh-CN': '该片段长 {seconds} 秒，请使用 5 到 15 秒的片段。'
+  },
   'reshoot.section.camera': { en: 'New camera', 'zh-CN': '新机位' },
   'reshoot.section.move': { en: 'Camera move', 'zh-CN': '运镜' },
   'reshoot.section.prompt': {

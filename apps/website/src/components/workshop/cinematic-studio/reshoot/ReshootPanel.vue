@@ -54,6 +54,7 @@ const keepAim = defineModel<boolean>('keepAim', { required: true })
 const frame = defineModel<number>('frame', { required: true })
 const motion = defineModel<ReshootMotion>('motion', { required: true })
 const prompt = defineModel<string>('prompt', { required: true })
+const seed = defineModel<number>('seed', { required: true })
 </script>
 
 <template>
@@ -83,6 +84,7 @@ const prompt = defineModel<string>('prompt', { required: true })
         v-model:aspect="aspect"
         v-model:size="size"
         v-model:prompt="prompt"
+        v-model:seed="seed"
         :clip
         :clip-name="clipName"
         :is-example="isExample"

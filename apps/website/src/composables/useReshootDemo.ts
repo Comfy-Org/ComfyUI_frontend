@@ -42,14 +42,16 @@ const EXAMPLE_TAKE: ReshootTake = {
 /**
  * The Re-shoot mock's whole state. Analysis and generation are timers: the
  * page shows the flow of the CrossView app without its deployment, and every
- * take plays the worked example's result.
+ * take plays the worked example's result. With `autoRead`, picking a clip or
+ * changing its format reads the depth again without asking.
  */
-export function useReshootDemo() {
+export function useReshootDemo({ autoRead = false } = {}) {
   const upload = shallowRef<File>()
   const uploadUrl = useObjectUrl(upload)
   const clip = computed(() => uploadUrl.value ?? RESHOOT_EXAMPLE.clip)
   const clipName = computed(() => upload.value?.name ?? RESHOOT_EXAMPLE.name)
   const isExample = computed(() => upload.value === undefined)
+  const picked = ref(false)
 
   const aspect = ref<ReshootAspect>('source')
   const size = ref<ReshootSize>('480p')
@@ -61,6 +63,7 @@ export function useReshootDemo() {
   const keys = ref<CameraKey[]>([])
   const motion = ref<ReshootMotion>('smooth')
   const prompt = ref('')
+  const seed = ref(42)
   const takes = ref<ReshootTake[]>([EXAMPLE_TAKE])
   const selected = ref<string>('example')
 
@@ -75,12 +78,19 @@ export function useReshootDemo() {
   onScopeDispose(() => timers.forEach(clearTimeout))
 
   watch([aspect, size], () => {
-    if (depth.value === 'ready') depth.value = 'stale'
+    if (depth.value !== 'ready') return
+    if (autoRead) analyze()
+    else depth.value = 'stale'
   })
-  watch(upload, () => {
-    depth.value = 'none'
-    keys.value = []
-  })
+  watch(
+    upload,
+    () => {
+      depth.value = 'none'
+      keys.value = []
+      if (autoRead && picked.value) analyze()
+    },
+    { flush: 'sync' }
+  )
 
   const rendering = computed(() =>
     takes.value.some((take) => take.status === 'rendering')
@@ -101,6 +111,12 @@ export function useReshootDemo() {
   function prepare() {
     if (depth.value === 'ready') step.value = 2
     else analyze()
+  }
+
+  function pick(file?: File) {
+    picked.value = true
+    if (upload.value === file) analyze()
+    else upload.value = file
   }
 
   function back() {
@@ -157,11 +173,17 @@ export function useReshootDemo() {
     keys.value = keys.value.filter((key) => key.frame !== at)
   }
 
+  function resetCamera() {
+    Object.assign(camera, DEFAULT_CAMERA)
+    keys.value = []
+  }
+
   return {
     upload,
     clip,
     clipName,
     isExample,
+    picked,
     aspect,
     size,
     depth,
@@ -172,16 +194,19 @@ export function useReshootDemo() {
     keys,
     motion,
     prompt,
+    seed,
     takes,
     selected,
     current,
     rendering,
     prepare,
+    pick,
     back,
     generate,
     cancel,
     aim,
     addKey,
-    removeKey
+    removeKey,
+    resetCamera
   }
 }

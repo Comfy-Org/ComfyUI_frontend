@@ -45,7 +45,7 @@ const emit = defineEmits<{
     <div
       class="relative aspect-video w-[min(100%,calc(52svh*16/9))] rounded-md ring-1 ring-transparency-white-t8"
     >
-      <ReshootTakeView v-if="current" :take="current" :locale />
+      <ReshootTakeView v-if="current" :take="current" :clip :locale />
       <ReshootViewport
         v-else
         :clip

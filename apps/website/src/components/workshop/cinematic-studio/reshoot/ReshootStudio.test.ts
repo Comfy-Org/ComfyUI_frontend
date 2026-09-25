@@ -5,28 +5,73 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import ReshootStudio from './ReshootStudio.vue'
 import ReshootStudioPanel from './ReshootStudioPanel.vue'
 
-const layouts = [
-  { name: 'bottom composer', component: ReshootStudio },
-  { name: 'side panel', component: ReshootStudioPanel }
-]
-
-function setup(component: (typeof layouts)[number]['component']) {
+function setup(component: typeof ReshootStudio | typeof ReshootStudioPanel) {
   render(component)
   return userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
 }
 
-async function openCamera(user: ReturnType<typeof setup>) {
-  const chip = screen.queryByRole('button', { name: /^New camera/ })
-  if (chip) await user.click(chip)
-}
+beforeEach(() => {
+  vi.useFakeTimers({ shouldAdvanceTime: true })
+})
 
-describe.for(layouts)('Re-shoot in the $name layout', ({ component }) => {
-  beforeEach(() => {
-    vi.useFakeTimers({ shouldAdvanceTime: true })
+describe('Re-shoot with the bottom composer', () => {
+  async function pickExampleAndApply(user: ReturnType<typeof setup>) {
+    await user.click(screen.getByTestId('reshoot-example'))
+    await vi.advanceTimersByTimeAsync(3000)
+    await user.click(screen.getByTestId('reshoot-apply'))
+  }
+
+  it('reads the scene as soon as a clip is picked, then aims in its own view', async () => {
+    const user = setup(ReshootStudio)
+    expect(screen.queryByTestId('reshoot-action')).toBeNull()
+
+    await user.click(screen.getByTestId('reshoot-example'))
+
+    expect(screen.getByRole('status')).toHaveTextContent('Estimating depth')
+    expect(screen.getByTestId('reshoot-apply')).toBeDisabled()
+    expect(screen.getByRole('slider', { name: 'Rotation' })).toBeDisabled()
+
+    await vi.advanceTimersByTimeAsync(3000)
+    screen.getByTestId('reshoot-globe').focus()
+    await user.keyboard('{ArrowRight}')
+
+    expect(screen.getByRole('slider', { name: 'Rotation' })).toHaveValue('-25')
+
+    await user.click(screen.getByTestId('reshoot-apply'))
+
+    expect(screen.queryByTestId('reshoot-aim')).toBeNull()
+    expect(screen.getByTestId('reshoot-action')).toBeEnabled()
+    expect(
+      screen.getByRole('button', { name: /New camera\s*-25° · 15°/ })
+    ).toBeInTheDocument()
   })
 
+  it('generates a take from the applied angle and cancels it', async () => {
+    const user = setup(ReshootStudio)
+    await pickExampleAndApply(user)
+
+    await user.click(screen.getByTestId('reshoot-action'))
+
+    expect(
+      screen.getByRole('button', { name: 'Take 1 · az -30° el 15°' })
+    ).toHaveAttribute('aria-current', 'true')
+    await user.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(screen.getByRole('status')).toHaveTextContent('Cancelled')
+  })
+
+  it('reopens the aim view from the camera chip', async () => {
+    const user = setup(ReshootStudio)
+    await pickExampleAndApply(user)
+
+    await user.click(screen.getByRole('button', { name: /^New camera/ }))
+
+    expect(screen.getByTestId('reshoot-aim')).toBeInTheDocument()
+  })
+})
+
+describe('Re-shoot with the side panel', () => {
   it('opens on step 1 and unlocks aiming in step 2 once depth is analyzed', async () => {
-    const user = setup(component)
+    const user = setup(ReshootStudioPanel)
 
     expect(
       screen.getByRole('button', { name: 'Example result', current: true })
@@ -45,30 +90,32 @@ describe.for(layouts)('Re-shoot in the $name layout', ({ component }) => {
       'step'
     )
     expect(screen.getByTestId('reshoot-action')).toHaveTextContent('Generate')
-    await openCamera(user)
     expect(screen.getByRole('slider', { name: /Azimuth/ })).toBeEnabled()
   })
 
   it('adds a take for the aimed camera, then shows its result', async () => {
-    const user = setup(component)
+    const user = setup(ReshootStudioPanel)
     await user.click(screen.getByTestId('reshoot-action'))
     await vi.advanceTimersByTimeAsync(3000)
 
     await user.click(screen.getByTestId('reshoot-action'))
 
-    const take = screen.getByRole('button', {
-      name: 'Take 1 · az -30° el 15°'
-    })
-    expect(take).toHaveAttribute('aria-current', 'true')
+    expect(
+      screen.getByRole('button', { name: 'Take 1 · az -30° el 15°' })
+    ).toHaveAttribute('aria-current', 'true')
     expect(screen.getByRole('status')).toHaveTextContent(
       'Generating the new view'
     )
     await vi.advanceTimersByTimeAsync(6500)
-    expect(screen.getByRole('link', { name: 'Download' })).toBeInTheDocument()
+    await user.click(screen.getByRole('radio', { name: 'Original clip' }))
+    expect(screen.getByRole('link', { name: 'Download' })).toHaveAttribute(
+      'download',
+      'crossview-take-1-original-audio.mp4'
+    )
   })
 
   it('cancels a take that is still generating', async () => {
-    const user = setup(component)
+    const user = setup(ReshootStudioPanel)
     await user.click(screen.getByTestId('reshoot-action'))
     await vi.advanceTimersByTimeAsync(3000)
     await user.click(screen.getByTestId('reshoot-action'))

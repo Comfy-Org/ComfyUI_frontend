@@ -24,6 +24,7 @@ const {
   keys,
   motion,
   prompt,
+  seed,
   takes,
   selected,
   current,
@@ -71,6 +72,7 @@ function go(target: 1 | 2) {
         v-model:frame="frame"
         v-model:motion="motion"
         v-model:prompt="prompt"
+        v-model:seed="seed"
         :clip
         :clip-name="clipName"
         :is-example="isExample"

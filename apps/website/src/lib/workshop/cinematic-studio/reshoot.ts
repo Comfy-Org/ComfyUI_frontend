@@ -11,6 +11,13 @@ export const RESHOOT_EXAMPLE = {
   result: `${MEDIA}/example-result.mp4`
 } as const
 
+const MIN_SECONDS = 5
+const MAX_SECONDS = 15
+
+export function clipFits(seconds: number): boolean {
+  return seconds >= MIN_SECONDS && seconds <= MAX_SECONDS
+}
+
 const RESHOOT_FPS = 24
 export const RESHOOT_FRAMES = 17 * 11 + 5
 
