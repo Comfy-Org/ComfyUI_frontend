@@ -66,7 +66,7 @@ describe('core import guard', () => {
 
   it('scans the web session sources', () => {
     expect(sources.map(({ name }) => name)).toEqual(
-      expect.arrayContaining(['webSession.ts', 'webSessionDraftContract.ts'])
+      expect.arrayContaining(['webSession.ts'])
     )
   })
 
@@ -79,7 +79,7 @@ describe('core import guard', () => {
     )
 
     expect([...closure.keys()].map((file) => relative(CORE_DIR, file))).toEqual(
-      expect.arrayContaining(['webSession.ts', 'webSessionDraftContract.ts'])
+      expect.arrayContaining(['webSession.ts'])
     )
     expect(firebaseImports).toEqual([])
   })

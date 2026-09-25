@@ -6,7 +6,8 @@
 import {
   zCreateSessionResponse,
   zDeleteSessionResponse,
-  zErrorResponse
+  zErrorResponse,
+  zGetSessionResponse
 } from '@comfyorg/ingest-types/zod'
 
 import type {
@@ -15,7 +16,6 @@ import type {
   WebSessionFailure,
   WebSessionResult
 } from './sessionContracts.js'
-import { zWebSessionResponse } from './webSessionDraftContract.js'
 
 export type {
   WebSession,
@@ -72,7 +72,7 @@ async function classifyFailure(response: Response): Promise<WebSessionFailure> {
     return failure('SESSION_UNAVAILABLE', status)
   }
   const parsed = zErrorResponse.safeParse(await readJson(response))
-  if (!parsed.success) return failure('SESSION_UNAVAILABLE', status)
+  if (!parsed.success) return failure('SESSION_REQUEST_REFUSED', status)
   const serverCode = parsed.data.code
   const byServerCode =
     status === 401
@@ -111,8 +111,8 @@ export async function readWebSession(
   if (!('response' in sent)) return sent
 
   const { status } = sent.response
-  const parsed = zWebSessionResponse.safeParse(await readJson(sent.response))
-  if (!parsed.success) return failure('SESSION_UNAVAILABLE', status)
+  const parsed = zGetSessionResponse.safeParse(await readJson(sent.response))
+  if (!parsed.success) return failure('SESSION_REQUEST_REFUSED', status)
   const { user, csrf_token, expires_at, absolute_expires_at } = parsed.data
   if (expectedUserId !== undefined && user.id !== expectedUserId) {
     return failure('IDENTITY_CHANGED', status)
@@ -140,7 +140,8 @@ export async function readWebSession(
  */
 export async function createWebSession(
   options: WebSessionOptions,
-  getIdentityProof: () => Promise<string>
+  getIdentityProof: () => Promise<string>,
+  { expectedUserId }: { readonly expectedUserId?: string } = {}
 ): Promise<WebSessionResult> {
   const proof = await getIdentityProof()
   const sent = await send(options, '/auth/session', {
@@ -153,7 +154,7 @@ export async function createWebSession(
   if (!parsed.success || !parsed.data.success) {
     return failure('SESSION_UNAVAILABLE', sent.response.status)
   }
-  return readWebSession(options)
+  return readWebSession(options, { expectedUserId })
 }
 
 /** Sends no CSRF token: sign-out must work against a dead session. */
@@ -168,15 +169,4 @@ export async function deleteWebSession(
     return failure('SESSION_UNAVAILABLE', sent.response.status)
   }
   return { status: 'ok' }
-}
-
-export async function revokeAllWebSessions(
-  options: WebSessionOptions,
-  csrfToken: string
-): Promise<WebSessionCommandResult> {
-  const sent = await send(options, '/auth/sessions/revoke-all', {
-    method: 'POST',
-    headers: { 'X-CSRF-Token': csrfToken }
-  })
-  return 'response' in sent ? { status: 'ok' } : sent
 }
