@@ -360,7 +360,7 @@ describe('graphMutations', () => {
       expect(useWidgetValueStore().isLocallyDirty(id)).toBe(false)
     })
 
-    it('also resolves via an explicit single-widget setWidget op regardless of value', () => {
+    it('holds against an explicit single-widget setWidget op until the value matches', () => {
       const graph = mutations()
       graph.addNode(node(1), context)
       registerLiveWidgets(1, samplerWidgets)
@@ -374,12 +374,18 @@ describe('graphMutations', () => {
       ).toBe(true)
       expect(useWidgetValueStore().isLocallyDirty(id)).toBe(true)
 
-      // An intentional remote write for this exact widget bypasses the
-      // guard entirely (it never goes through `applyWidgetValues`), so it
-      // resolves the mark even though its value differs from both the local
-      // edit and the stale snapshot.
+      // PM-1191/PM-1697 flipped the old escape hatch: a single-widget op
+      // used to bypass the guard "regardless of value", but the host echoes
+      // every human keystroke back as exactly such an op, so the bypass is
+      // what deleted text under the cursor. A differing remote write now
+      // waits like a reconcile does...
       expect(graph.setWidget(toNodeId(1), 'steps', 30, context)).toBe(true)
-      expect(useWidgetValueStore().getWidget(id)?.value).toBe(30)
+      expect(useWidgetValueStore().getWidget(id)?.value).toBe(99)
+      expect(useWidgetValueStore().isLocallyDirty(id)).toBe(true)
+
+      // ...and the op that finally carries the local value clears the mark.
+      expect(graph.setWidget(toNodeId(1), 'steps', 99, context)).toBe(true)
+      expect(useWidgetValueStore().getWidget(id)?.value).toBe(99)
       expect(useWidgetValueStore().isLocallyDirty(id)).toBe(false)
     })
 
@@ -520,11 +526,22 @@ describe('graphMutations', () => {
         expect(widgetStore.isLocallyDirty(id)).toBe(true)
       }
 
-      // Only an explicit single-widget op, or a reconcile that finally
-      // carries the value already sitting on the widget, resolves it.
+      // Since PM-1191/PM-1697 an explicit single-widget op no longer
+      // bypasses the guard (the host echoes every keystroke as one, so the
+      // bypass was the typing-garble path). A stranded widget therefore
+      // holds against a differing remote write too...
+      expect(graph.setWidget(toNodeId(1), 'steps', 30, context)).toBe(true)
+      expect(widgetStore.getWidget(id)?.value).toBe(20)
+      expect(widgetStore.isLocallyDirty(id)).toBe(true)
+
+      // ...and only a remote write carrying the value already on the widget
+      // resolves it. That makes missing suppression stickier than before —
+      // which is the point of the suppression bracket this describe pins.
+      expect(graph.setWidget(toNodeId(1), 'steps', 20, context)).toBe(true)
+      expect(widgetStore.getWidget(id)?.value).toBe(20)
+      expect(widgetStore.isLocallyDirty(id)).toBe(false)
       expect(graph.setWidget(toNodeId(1), 'steps', 30, context)).toBe(true)
       expect(widgetStore.getWidget(id)?.value).toBe(30)
-      expect(widgetStore.isLocallyDirty(id)).toBe(false)
     })
   })
 
@@ -1259,7 +1276,7 @@ describe('graphMutations', () => {
     )
   })
 
-  it.fails('preserves a locally newer widget value across a direct setWidget op', () => {
+  it('preserves a locally newer widget value across a direct setWidget op', () => {
     const graph = mutations()
     graph.addNode(node(1, { text: 'a photo of a pier' }), context)
     const id = widgetId(scope.rootGraphId, toNodeId(1), 'text')
@@ -1271,6 +1288,37 @@ describe('graphMutations', () => {
     expect(useWidgetValueStore().getWidget(id)?.value).toBe(
       'a photo of a pier at sunset'
     )
+  })
+
+  // PM-1191/PM-1697: the typing-garble round trip. Each keystroke's own echo
+  // comes back as a stale whole-value set_widget; every stale echo must be
+  // skipped, and the echo that finally matches the local value must clear the
+  // dirty mark so later remote writes (e.g. a genuine agent edit) land again.
+  it('skips stale keystroke echoes and resumes remote writes once the doc catches up', () => {
+    const graph = mutations()
+    graph.addNode(node(1, { text: '' }), context)
+    const id = widgetId(scope.rootGraphId, toNodeId(1), 'text')
+    const store = useWidgetValueStore()
+
+    // The user types "hi" — two local (context-less) writes, two minted ops.
+    store.setValue(id, 'h')
+    store.setValue(id, 'hi')
+
+    // The echo of the first keystroke arrives while "hi" is already live.
+    expect(graph.setWidget(toNodeId(1), 'text', 'h', context)).toBe(true)
+    expect(store.getWidget(id)?.value).toBe('hi')
+
+    // The echo of the second keystroke matches: the doc has caught up, the
+    // write lands (a no-op value-wise) and clears the local-dirty mark.
+    expect(graph.setWidget(toNodeId(1), 'text', 'hi', context)).toBe(true)
+    expect(store.getWidget(id)?.value).toBe('hi')
+
+    // With the mark cleared, a later remote write is applied normally — the
+    // agent can still set the widget once no local edit is in flight.
+    expect(graph.setWidget(toNodeId(1), 'text', 'agent value', context)).toBe(
+      true
+    )
+    expect(store.getWidget(id)?.value).toBe('agent value')
   })
 
   it('resyncs scalar fields without touching slots, widgets, or layout', () => {
