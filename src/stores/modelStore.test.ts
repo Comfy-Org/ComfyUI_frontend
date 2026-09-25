@@ -811,6 +811,23 @@ describe('useModelStore', () => {
       expect(assetService.getAssetModels).toHaveBeenCalledTimes(2)
     })
 
+    it('reloads every loaded folder from the asset source when a read follows a failed capability reload', async () => {
+      enableMocks(false)
+      store = useModelStore()
+      await store.loadModels()
+      vi.mocked(api.getModelFolders).mockRejectedValueOnce(new Error('offline'))
+
+      featureState.serverFeatures.assets = true
+      await vi.waitFor(() => expect(reportError).toHaveBeenCalled())
+      await store.getLoadedModelFolder('checkpoints')
+
+      expect(store.modelFolders.map((folder) => folder.state)).toStrictEqual([
+        ResourceState.Loaded,
+        ResourceState.Loaded
+      ])
+      expect(assetService.getAssetModels).toHaveBeenCalledWith('vae')
+    })
+
     it('rebuilds from the asset source on the next folder read after the capability reload fails', async () => {
       enableMocks(false)
       store = useModelStore()
