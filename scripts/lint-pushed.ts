@@ -32,44 +32,59 @@ function isLintable(fileName: string): boolean {
   return /\.(?:js|ts|tsx|vue|mts|astro)$/.test(fileName)
 }
 
-function git(...args: string[]): string | undefined {
-  const result = spawnSync('git', args, { encoding: 'utf8', windowsHide: true })
+function git(cwd: string, ...args: string[]): string | undefined {
+  const result = spawnSync('git', args, {
+    cwd,
+    encoding: 'utf8',
+    windowsHide: true
+  })
   return result.status === 0 ? result.stdout.trim() : undefined
 }
 
-function baseOf({ localSha, remoteSha }: PushedRange): string | undefined {
+function baseOf(cwd: string, { localSha, remoteSha }: PushedRange) {
   const candidates = [remoteSha, 'origin/main', 'origin/HEAD'].filter(
     (ref) => ref !== undefined
   )
   for (const ref of candidates) {
-    const base = git('merge-base', ref, localSha)
+    const base = git(cwd, 'merge-base', ref, localSha)
     if (base !== undefined) return base
   }
   return undefined
 }
 
-function changedFiles(range: PushedRange): string[] {
-  const base = baseOf(range)
-  if (base === undefined) {
-    process.stderr.write(
-      `lint-pushed: no base found for ${range.localSha}; CI lint will cover it\n`
-    )
-    return []
-  }
+function skip(sha: string, reason: string): [] {
+  process.stderr.write(
+    `lint-pushed: ${reason} for ${sha}; CI lint will cover it\n`
+  )
+  return []
+}
+
+function changedFiles(cwd: string, range: PushedRange): string[] {
+  const base = baseOf(cwd, range)
+  if (base === undefined) return skip(range.localSha, 'no base found')
   return execFileSync(
     'git',
     ['diff', '--name-only', '-z', '--diff-filter=ACMR', base, range.localSha],
-    { encoding: 'utf8' }
+    { cwd, encoding: 'utf8' }
   )
     .split('\0')
     .filter(isLintable)
 }
 
-function main() {
-  const files = [
-    ...new Set(pushedRanges(readPrePushInput()).flatMap(changedFiles))
-  ].filter((file) => existsSync(file))
+// ESLint reads the working tree, so only the checked-out commit can be linted
+// faithfully; pushes of other local branches are left to CI.
+export function filesToLint(prePushInput: string, cwd: string): string[] {
+  const head = git(cwd, 'rev-parse', 'HEAD')
+  const files = pushedRanges(prePushInput).flatMap((range) =>
+    range.localSha === head
+      ? changedFiles(cwd, range)
+      : skip(range.localSha, 'not the checked-out commit')
+  )
+  return [...new Set(files)].filter((file) => existsSync(path.join(cwd, file)))
+}
 
+function main() {
+  const files = filesToLint(readPrePushInput(), process.cwd())
   if (files.length === 0) return
 
   const eslintEntry = path.resolve('node_modules/eslint/bin/eslint.js')
@@ -83,6 +98,7 @@ function main() {
       '--concurrency',
       'auto',
       '--no-warn-ignored',
+      '--',
       ...files
     ],
     { stdio: 'inherit', windowsHide: true }
