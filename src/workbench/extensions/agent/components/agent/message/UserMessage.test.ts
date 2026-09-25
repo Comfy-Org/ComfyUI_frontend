@@ -216,28 +216,29 @@ describe('UserMessage', () => {
    * drag — over an extensionless ref. Create-time cannot desynchronize the
    * two, since the row's name and the hash's extension come off the same
    * string, so this needs that direct PUT and no shipped client issues one
-   * today; the component gap it exposes does not depend on the route. Live an image also carries the
-   * `previewUrl` captured at drop, and video and audio still reach the grid
-   * on the reconstructed `/view` URL because the gate read their displayable
-   * name; after a refresh only the ref survives, `getMediaTypeFromFilename`
-   * finds no extension on it and answers 'other', and all three drop to a
-   * grey tile.
+   * today; the component behavior it exercises does not depend on the route.
+   * Live, an image also carries the `previewUrl` captured at drop, and video
+   * and audio reach the grid on the reconstructed `/view` URL because the gate
+   * read their displayable name; after a refresh only the ref survives, and
+   * `getMediaTypeFromFilename` finds no extension on it and answers 'other' —
+   * which would drop all three to a grey tile if the name were the only thing
+   * classifying them.
    *
    * The service resolved and persisted the kind on `attachment_refs`, so the
-   * fact needed to classify it did survive the round trip — `UserMessage` is
-   * simply not given it, because `parseUserAttachments` drops it. Closing the
-   * sibling pin in agentTranscript.test.ts is therefore necessary but not
-   * sufficient for this one: the component must also prefer the resolved kind
-   * over the extension it infers.
+   * fact needed to classify it survives the round trip; the component prefers
+   * it over the extension it would otherwise infer. Carrying the resolution
+   * through `parseUserAttachments` is necessary but not sufficient on its own,
+   * which is why this case is asserted here rather than only in
+   * agentTranscript.test.ts.
    *
    * Run over the service's whole kind vocabulary so that assuming any single
    * kind for an unclassifiable ref cannot discharge it. Props come from the
    * real parser rather than being written by hand, so no assumption about the
-   * repaired `UserAttachment` shape is baked in. Only `kind` is asserted: a
+   * `UserAttachment` shape is baked in. Only `kind` is asserted: a later
    * repair that also restores the human-readable filename would change
-   * `filename` here, and should retire this pin rather than be failed by it.
+   * `filename` here, and should not be failed by this case.
    */
-  it.fails.for(['image', 'video', 'audio'])(
+  it.for(['image', 'video', 'audio'])(
     'previews a rehydrated %s asset whose ref has no extension',
     (kind) => {
       const bareDigest = 'a'.repeat(64)
