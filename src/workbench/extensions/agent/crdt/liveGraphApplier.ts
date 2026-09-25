@@ -442,8 +442,10 @@ export class LiveGraphApplier {
     const missing = allSubgraphDefinitions(readSubgraphDefinitions(doc))
       .map((definition) => ({ ...definition, definitions: undefined }))
       .filter((definition) => !rootGraph.subgraphs.has(definition.id))
+    if (missing.length === 0) return
+    const reserved = docRootIds(doc)
     for (const definition of topologicalSortSubgraphs(missing)) {
-      const failure = tryCreateSubgraph(rootGraph, definition)
+      const failure = tryCreateSubgraph(rootGraph, definition, reserved)
       if (failure === undefined) {
         this.reported.delete(`definition:${definition.id}`)
         continue
@@ -818,9 +820,26 @@ function resolveSlot(
   return docIndex < liveNames.length ? docIndex : -1
 }
 
+/**
+ * Root ids the document owns. Definitions register before the frame's root
+ * nodes and links exist live, so id deduplication has to be told about them
+ * or it hands a definition interior an id the root graph is about to need.
+ */
+function docRootIds(doc: Y.Doc): { nodeIds: NodeId[]; linkIds: number[] } {
+  const nodeIds: NodeId[] = []
+  nodesMap(doc).forEach((_, id) => nodeIds.push(toNodeId(id)))
+  const linkIds: number[] = []
+  linksMap(doc).forEach((_, key) => {
+    const id = parseLinkId(key)
+    if (id !== undefined) linkIds.push(id)
+  })
+  return { nodeIds, linkIds }
+}
+
 function tryCreateSubgraph(
   rootGraph: LGraph,
-  definition: ExportedSubgraph
+  definition: ExportedSubgraph,
+  reserved: { nodeIds: NodeId[]; linkIds: number[] }
 ): unknown {
   if (!isUuidShapedSubgraphId(definition.id)) {
     return new Error(
@@ -828,7 +847,9 @@ function tryCreateSubgraph(
     )
   }
   try {
-    withNamedValuesRestore(() => rootGraph.createSubgraph(definition))
+    withNamedValuesRestore(() =>
+      rootGraph.createSubgraphs([definition], reserved)
+    )
     return undefined
   } catch (cause) {
     const halfBuilt = rootGraph.subgraphs.get(definition.id)

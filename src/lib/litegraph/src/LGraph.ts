@@ -2097,15 +2097,27 @@ export class LGraph
     return this.createSubgraphs([data])[0]
   }
 
-  createSubgraphs(data: ExportedSubgraph[]): Subgraph[] {
+  /**
+   * @param reserved Ids that are not live yet but must not be handed to the
+   * definitions' interiors, such as root entities a document is about to
+   * materialize alongside these definitions.
+   */
+  createSubgraphs(
+    data: ExportedSubgraph[],
+    reserved: { nodeIds?: Iterable<NodeId>; linkIds?: Iterable<number> } = {}
+  ): Subgraph[] {
     if (!data.length) return []
 
+    const nodeIds = this.collectReservedNodeIds()
+    for (const id of reserved.nodeIds ?? []) nodeIds.add(id)
+    const linkIds = collectReservedLinkIds(this.rootGraph)
+    for (const id of reserved.linkIds ?? []) linkIds.add(id)
     const normalized = normalizeSubgraphDefinitions(
       data,
       {
-        nodeIds: this.collectReservedNodeIds(),
+        nodeIds,
         groupIds: collectReservedGroupIds(this.rootGraph),
-        linkIds: collectReservedLinkIds(this.rootGraph),
+        linkIds,
         rerouteIds: collectReservedRerouteIds(this.rootGraph)
       },
       this.state

@@ -94,6 +94,8 @@ interface FixtureOptions {
    * promoted-widget interior) so a host can be retyped between definitions.
    */
   secondDefinition?: boolean
+  /** Serialize the root `source` node with the interior node's id (7). */
+  rootIdCollidesWithInterior?: boolean
 }
 
 function promotedWorkflow(options: FixtureOptions = {}): WorkflowJSON {
@@ -151,6 +153,10 @@ function promotedWorkflow(options: FixtureOptions = {}): WorkflowJSON {
   const hostNode = serialized.nodes.find((n) => n.id === 1)
   if (options.stripHostInputs && hostNode) hostNode.inputs = []
   if (options.emptyHostWidgets && hostNode) hostNode.widgets_values = []
+  // litegraph remaps a root id that collides with an interior, so the
+  // collision only exists in the serialized shape a document can carry.
+  const sourceNode = serialized.nodes.find((n) => n.id === 2)
+  if (options.rootIdCollidesWithInterior && sourceNode) sourceNode.id = 7
   // Same cast the production path takes: serialized litegraph JSON is the
   // workflow shape cmp mints from.
   return serialized as unknown as WorkflowJSON
@@ -234,6 +240,18 @@ beforeEach(() => {
 })
 
 describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
+  it('keeps a definition interior off the ids the document owns at root', () => {
+    const { graph, instance } = startFollower({
+      rootIdCollidesWithInterior: true
+    })
+
+    expect(graph.getNodeById(toNodeId(7))?.type).toBe('source')
+    const interiorIds = instance.subgraph.nodes.map((node) => node.id)
+    expect(interiorIds).toHaveLength(1)
+    expect(interiorIds).not.toContain(toNodeId(7))
+    expect(instance.widgets[0]?.value).toBe(HOST_INITIAL_VALUE)
+  })
+
   it('S1 reflects a promoted host widgets_values write on the surface widget', () => {
     const state = startFollower()
     deliver(
