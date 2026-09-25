@@ -67,9 +67,7 @@ async function download(): Promise<void> {
       />
     </Button>
     <div class="flex min-w-0 flex-1 flex-col">
-      <span class="truncate text-sm/4 font-normal text-base-foreground">{{
-        title
-      }}</span>
+      <span class="truncate text-sm/4 text-base-foreground">{{ title }}</span>
       <div class="flex h-6 items-center gap-4">
         <span
           class="text-xs whitespace-nowrap text-muted-foreground tabular-nums"
