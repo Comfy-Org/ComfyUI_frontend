@@ -310,7 +310,7 @@ export function previewOf(
     credits_next_period_cents: 6900,
     effective_at: '2026-10-01T00:00:00.000Z',
     is_immediate: true,
-    transition_type: 'upgrade',
+    transition_type: 'new_subscription',
     new_plan: {
       credits_cents: 6900,
       duration: 'MONTHLY',

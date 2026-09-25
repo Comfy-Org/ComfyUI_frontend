@@ -32,6 +32,10 @@ test('choosing a plan quotes it from the server and continues to checkout', asyn
   cloud,
   signIn
 }) => {
+  cloud.scenario.preview = {
+    ...cloud.scenario.preview,
+    transition_type: 'upgrade'
+  }
   await signIn(SUBSCRIPTION)
 
   await page.getByRole('button', { name: 'Choose Pro · Monthly' }).click()
@@ -54,11 +58,15 @@ test('choosing a plan quotes it from the server and continues to checkout', asyn
   ).toBeVisible()
   await expect(page.getByText('Pro · Monthly')).toBeVisible()
   await expect(page.getByText('Total due today')).toBeVisible()
+  // An upgrade on an existing subscription charges the saved payment method
+  // server-side, so no card form is needed here — see checkout.spec.ts for
+  // that path's full coverage.
   await expect(
-    page.getByText("The payment form isn't available right now.", {
-      exact: false
-    })
+    page.getByRole('button', { name: 'Pay and subscribe' })
   ).toBeVisible()
+  await expect(
+    page.getByText("The payment form isn't available right now.")
+  ).not.toBeVisible()
 })
 
 test('a checkout link naming a team credit stop quotes it along with the plan', async ({
