@@ -77,6 +77,23 @@ describe('Workshop visibility', () => {
     vi.resetModules()
   })
 
+  it('requires workflow enablement and clears it when the caller changes', async () => {
+    const { initPostHog, identifyWorkshopUser, useWorkshopWorkflowsEnabled } =
+      await import('./posthog')
+    initPostHog()
+    expect(useWorkshopWorkflowsEnabled().value).toBe(false)
+    hoisted.mockIsFeatureEnabled.mockImplementation(
+      (key) => key === 'workshop-enabled'
+    )
+    emitFeatureFlags()
+    expect(useWorkshopWorkflowsEnabled().value).toBe(false)
+    hoisted.mockIsFeatureEnabled.mockReturnValue(true)
+    emitFeatureFlags()
+    expect(useWorkshopWorkflowsEnabled().value).toBe(true)
+    identifyWorkshopUser({ uid: 'another-workflow-caller' })
+    expect(useWorkshopWorkflowsEnabled().value).toBe(false)
+  })
+
   it('requires an explicit enable and keeps the last answer through load failures', async () => {
     const { initPostHog, useWorkshopEnabled } = await import('./posthog')
     const enabled = useWorkshopEnabled()

@@ -10,6 +10,7 @@ import { createI18n } from 'vue-i18n'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingTreeNode } from '@/platform/settings/settingStore'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 import { useSettingUI as useSettingUIComposable } from './useSettingUI'
 
@@ -27,12 +28,7 @@ const env = vi.hoisted(() => {
       | 'error',
     partnerNodeGovernanceProviders: [] as { id: string }[]
   }
-  const fakeRef = <K extends keyof typeof state>(key: K) => ({
-    get value() {
-      return state[key]
-    }
-  })
-  return { state, fakeRef }
+  return { state }
 })
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
@@ -52,14 +48,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useWorkspaceUI'),
-  () => ({
-    useWorkspaceUI: () => ({
-      workspaceRole: env.fakeRef('workspaceRole')
-    })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
 interface MockSettingParams {
   id: string
@@ -139,6 +128,9 @@ describe('useSettingUI', () => {
       partnerNodeGovernanceStatus: 'inactive',
       partnerNodeGovernanceProviders: []
     })
+    vi.mocked(useWorkspaceUI()).workspaceRole = computed(
+      () => env.state.workspaceRole
+    )
 
     Object.assign(useSettingStore(), { settingsById: mockSettings })
   })

@@ -365,6 +365,28 @@ describe('useFirstRunTourController', () => {
       ).toBe(false)
     })
 
+    it('cancels before starting when its caller becomes ineligible', async () => {
+      useSettingStore().settingValues['Comfy.VueNodes.Enabled'] = false
+      let cancelled = false
+      const controller = await freshController()
+
+      const starting = controller.beginTour(
+        'image_z_image_turbo',
+        () => cancelled
+      )
+      await vi.advanceTimersByTimeAsync(0)
+      cancelled = true
+      await vi.advanceTimersByTimeAsync(INTRO_PREVIEW_MS)
+
+      await expect(starting).resolves.toBe(false)
+      expect(
+        vi.mocked(useOnboardingTourStore().startTour)
+      ).not.toHaveBeenCalled()
+      expect(useSettingStore().settingValues['Comfy.VueNodes.Enabled']).toBe(
+        false
+      )
+    })
+
     it('leaves the workflow undimmed before taking the screen over', async () => {
       mocks.steps = [runStep()]
       const controller = await freshController()

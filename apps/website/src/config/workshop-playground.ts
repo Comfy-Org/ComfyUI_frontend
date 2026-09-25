@@ -114,7 +114,12 @@ export type FieldErrorCode =
   | 'uploadFailed'
   | 'fileUnreadable'
   | 'incompatible'
+  | 'imageAspectRatioOutOfRange'
+  | 'imageLayerDecompositionUnsupported'
+  | 'imageUnreadable'
   | 'videoTooLong'
+  | 'videoWidthOutOfRange'
+  | 'videoHdrUnsupported'
   | 'videoUnreadable'
   | 'rejected'
 export type FieldErrors = Readonly<Record<string, FieldErrorCode>>
@@ -487,7 +492,12 @@ export function validateForm(
   }
   const inlineFiles = schema.flatMap((field) => {
     const value = values[field.name]
-    if (field.kind !== 'file' || typeof value !== 'object') return []
+    if (
+      field.kind !== 'file' ||
+      field.presentation?.urlUpload ||
+      typeof value !== 'object'
+    )
+      return []
     return (Array.isArray(value) ? value : [value]).map((file) => ({
       name: field.name,
       file: file.file ?? file

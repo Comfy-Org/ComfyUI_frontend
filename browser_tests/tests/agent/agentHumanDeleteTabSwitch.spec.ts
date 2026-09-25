@@ -34,7 +34,7 @@ test.describe(
             .filter((frame) => frame.type === 'doc_ops')
             .map((frame) => frame.ops)
         )
-        .toEqual([[`delete_node:${FIRST_DELETED_NODE_ID}`]])
+        .toEqual([['disconnect:', 'disconnect:', 'disconnect:']])
 
       await agentConversation.vueNodes.deleteNode(SECOND_DELETED_NODE_ID)
       await expect(
