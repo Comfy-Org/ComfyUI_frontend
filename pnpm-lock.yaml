@@ -21,6 +21,9 @@ catalogs:
     '@astrojs/vue':
       specifier: ^7.0.2
       version: 7.0.2
+    '@comfyorg/comfy-multi-player':
+      specifier: 0.3.6
+      version: 0.3.6
     '@comfyorg/comfyui-desktop-bridge-types':
       specifier: 0.2.0
       version: 0.2.0
@@ -33,6 +36,9 @@ catalogs:
     '@customerio/cdp-analytics-browser':
       specifier: ^0.5.3
       version: 0.5.6
+    '@datadog/browser-logs':
+      specifier: 6.33.0
+      version: 6.33.0
     '@datadog/browser-rum':
       specifier: ^6.33.0
       version: 6.33.0
@@ -153,6 +159,9 @@ catalogs:
     '@types/three':
       specifier: ^0.184.1
       version: 0.184.1
+    '@typescript-eslint/utils':
+      specifier: ^8.69.0
+      version: 8.69.0
     '@vee-validate/zod':
       specifier: ^4.15.1
       version: 4.15.1
@@ -451,8 +460,8 @@ catalogs:
       specifier: ^6.2.1
       version: 6.2.1
     yjs:
-      specifier: ^13.6.27
-      version: 13.6.31
+      specifier: ^13.6.32
+      version: 13.6.32
     zod:
       specifier: ^3.23.8
       version: 3.25.76
@@ -504,8 +513,8 @@ importers:
         specifier: workspace:*
         version: link:packages/billing-contract
       '@comfyorg/comfy-multi-player':
-        specifier: 0.3.0
-        version: 0.3.0
+        specifier: 'catalog:'
+        version: 0.3.6
       '@comfyorg/comfyui-desktop-bridge-types':
         specifier: 'catalog:'
         version: 0.2.0
@@ -535,7 +544,7 @@ importers:
         version: 0.5.6
       '@datadog/browser-rum':
         specifier: 'catalog:'
-        version: 6.33.0
+        version: 6.33.0(@datadog/browser-logs@6.33.0)
       '@floating-ui/vue':
         specifier: 'catalog:'
         version: 1.1.11(vue@3.5.42(typescript@6.0.3))
@@ -697,7 +706,7 @@ importers:
         version: 6.2.1(three@0.184.0)
       yjs:
         specifier: 'catalog:'
-        version: 13.6.31
+        version: 13.6.32
       zod:
         specifier: 'catalog:'
         version: 3.25.76
@@ -765,6 +774,9 @@ importers:
       '@types/three':
         specifier: 'catalog:'
         version: 0.184.1
+      '@typescript-eslint/utils':
+        specifier: 'catalog:'
+        version: 8.69.0(eslint@10.10.0(jiti@2.7.0))(typescript@6.0.3)
       '@vitejs/plugin-vue':
         specifier: 'catalog:'
         version: 6.0.8(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))(vue@3.5.42(typescript@6.0.3))
@@ -1069,6 +1081,9 @@ importers:
       '@customerio/cdp-analytics-browser':
         specifier: 'catalog:'
         version: 0.5.6
+      '@datadog/browser-logs':
+        specifier: 'catalog:'
+        version: 6.33.0(@datadog/browser-rum@6.33.0)
       '@lucide/vue':
         specifier: 'catalog:'
         version: 1.24.0(vue@3.5.42(typescript@6.0.3))
@@ -1291,6 +1306,9 @@ importers:
 
   packages/billing-contract:
     devDependencies:
+      '@comfyorg/account-core':
+        specifier: workspace:^
+        version: link:../account-core
       '@types/node':
         specifier: 'catalog:'
         version: 25.9.5
@@ -1946,8 +1964,8 @@ packages:
     resolution: {integrity: sha512-y7/yvZ2TPAnR9+jnc00klvNNLkJiXFFrQA/hlLCcxA9a2A4zQIOimyFQ9XfwYKiGD1fb5GY8vbKIIgO8d5Tb2A==}
     engines: {node: '>= 20.12.0'}
 
-  '@comfyorg/comfy-multi-player@0.3.0':
-    resolution: {integrity: sha512-s0jt4KpnCWnUd9vbdljGrbClMcXbpzor3aZWmn6qPVM0YqfwepocXmAYOEgt/kohnwPzGR+/xM6ckbCsErHgVg==}
+  '@comfyorg/comfy-multi-player@0.3.6':
+    resolution: {integrity: sha512-6mC4E43YH+58gV4I+tmUR4pIYxqUeiY8ShS1WjjDEYxsBKGbzU1rRNGZHKgrzP3cOKGzK/JSP663/SIN50kfeQ==}
 
   '@comfyorg/comfyui-desktop-bridge-types@0.2.0':
     resolution: {integrity: sha512-V5Wj5KXDzTDm5GJAa0xBISjmndNIY5P79pRHQbLkkqJxgp/GPb/QGvcI+xG4ogol0ODJ4j/UBnUmkzpSafw8Aw==}
@@ -2038,6 +2056,14 @@ packages:
 
   '@datadog/browser-core@6.33.0':
     resolution: {integrity: sha512-h/xuBuY4Xi32CbBHkChMMWlOQ4al/mFF08x3o0hqrderfJvX7VO5tD3OVNwF+pfMXOGlDtBCIhwazr9sn24h3g==}
+
+  '@datadog/browser-logs@6.33.0':
+    resolution: {integrity: sha512-WZ1XEIIYK2sijR0hUG3hTPu2kQs8hE/PpoJcMDE7p0/NPXX3TR3dGVrwag+gvIVyBaszRkITiBsHQfnRvxV1DA==}
+    peerDependencies:
+      '@datadog/browser-rum': 6.33.0
+    peerDependenciesMeta:
+      '@datadog/browser-rum':
+        optional: true
 
   '@datadog/browser-rum-core@6.33.0':
     resolution: {integrity: sha512-Ais4x7zQBrBI6JyILYwFAmjUsqy0iQp2C7JcEEfzU4YYYcVO3DGpyVuYYrqHT27jY1QToHY8EnQUr3Yaj6saDA==}
@@ -9893,8 +9919,8 @@ packages:
     resolution: {integrity: sha512-2rAgRKu54VsHkqI0/tYkmluGXHD4KW7yZoycuqDQ15QOTnc2VVfy0nN/1eMhnQLO00A+dwtK20xuCnc1YGeUyg==}
     engines: {node: ^20.19.0 || ^22.12.0 || >=23}
 
-  yjs@13.6.31:
-    resolution: {integrity: sha512-Eq+5BRfbeGyqGVrTJL3bEcr8gKkxPuyuoHmAwpk52fDb8kOVMrfVSTRPd6yiGgX5Fskb96qCRjzjbRjrL4YEnw==}
+  yjs@13.6.32:
+    resolution: {integrity: sha512-lfiJIIC4Xayt5ItynE407ehlE03pCjeOc4hkR4yxxvvNJ4kuiN25B0g+Qp8XagYz361LLL7DCzR5bvFJ81QKtQ==}
     engines: {node: '>=16.0.0', npm: '>=8.0.0'}
 
   yocto-queue@0.1.0:
@@ -10587,9 +10613,9 @@ snapshots:
       fast-wrap-ansi: 0.2.2
       sisteransi: 1.0.5
 
-  '@comfyorg/comfy-multi-player@0.3.0':
+  '@comfyorg/comfy-multi-player@0.3.6':
     dependencies:
-      yjs: 13.6.31
+      yjs: 13.6.32
 
   '@comfyorg/comfyui-desktop-bridge-types@0.2.0': {}
 
@@ -10675,14 +10701,22 @@ snapshots:
 
   '@datadog/browser-core@6.33.0': {}
 
+  '@datadog/browser-logs@6.33.0(@datadog/browser-rum@6.33.0)':
+    dependencies:
+      '@datadog/browser-core': 6.33.0
+    optionalDependencies:
+      '@datadog/browser-rum': 6.33.0(@datadog/browser-logs@6.33.0)
+
   '@datadog/browser-rum-core@6.33.0':
     dependencies:
       '@datadog/browser-core': 6.33.0
 
-  '@datadog/browser-rum@6.33.0':
+  '@datadog/browser-rum@6.33.0(@datadog/browser-logs@6.33.0)':
     dependencies:
       '@datadog/browser-core': 6.33.0
       '@datadog/browser-rum-core': 6.33.0
+    optionalDependencies:
+      '@datadog/browser-logs': 6.33.0(@datadog/browser-rum@6.33.0)
 
   '@dimforge/rapier3d-compat@0.12.0': {}
 
@@ -19189,7 +19223,7 @@ snapshots:
       y18n: 5.0.8
       yargs-parser: 22.0.0
 
-  yjs@13.6.31:
+  yjs@13.6.32:
     dependencies:
       lib0: 0.2.117
 

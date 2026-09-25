@@ -77,6 +77,23 @@ describe('Workshop visibility', () => {
     vi.resetModules()
   })
 
+  it('requires workflow enablement and clears it when the caller changes', async () => {
+    const { initPostHog, identifyWorkshopUser, useWorkshopWorkflowsEnabled } =
+      await import('./posthog')
+    initPostHog()
+    expect(useWorkshopWorkflowsEnabled().value).toBe(false)
+    hoisted.mockIsFeatureEnabled.mockImplementation(
+      (key) => key === 'workshop-enabled'
+    )
+    emitFeatureFlags()
+    expect(useWorkshopWorkflowsEnabled().value).toBe(false)
+    hoisted.mockIsFeatureEnabled.mockReturnValue(true)
+    emitFeatureFlags()
+    expect(useWorkshopWorkflowsEnabled().value).toBe(true)
+    identifyWorkshopUser({ uid: 'another-workflow-caller' })
+    expect(useWorkshopWorkflowsEnabled().value).toBe(false)
+  })
+
   it('requires an explicit enable and keeps the last answer through load failures', async () => {
     const { initPostHog, useWorkshopEnabled } = await import('./posthog')
     const enabled = useWorkshopEnabled()
@@ -489,6 +506,46 @@ describe('capturePageview', () => {
 describe('Workshop analytics transport', () => {
   beforeEach(() => {
     vi.resetModules()
+  })
+
+  it('sends sanitized run exceptions through the initialized website stream', async () => {
+    const { initPostHog, captureWorkshopEvent } = await import('./posthog')
+    const { workshopFailureAnalytics } = await import('./workshop-analytics')
+    const { WorkshopRouterError } =
+      await import('../config/workshop-router-errors')
+    const cause = new DOMException('Private filename.png', 'NotReadableError')
+    const properties = {
+      model_slug: 'image-edit',
+      attempt_id: 'attempt-1',
+      user_id: 'user-1',
+      workspace_id: 'workspace-1',
+      duration_ms: 50,
+      ...workshopFailureAnalytics(
+        new WorkshopRouterError(
+          'client',
+          null,
+          { images: 'fileUnreadable' },
+          undefined,
+          'file_read',
+          { cause }
+        )
+      ),
+      status: 'failed' as const
+    }
+    initPostHog()
+    captureWorkshopEvent({ name: 'run_finished', properties })
+
+    expect(hoisted.mockCapture).toHaveBeenCalledWith(
+      'website:workshop_run_finished',
+      expect.objectContaining({
+        attempt_id: 'attempt-1',
+        failure_stage: 'file_read',
+        exception_name: 'NotReadableError'
+      })
+    )
+    expect(JSON.stringify(hoisted.mockCapture.mock.calls)).not.toContain(
+      'filename.png'
+    )
   })
 
   it('uses the website PostHog stream and cannot interrupt interaction when capture fails', async () => {

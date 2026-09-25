@@ -255,6 +255,33 @@ describe('agentWorkflowTabBindingStore', () => {
     expect(bindings.matchesWorkflow('wf-first', replacement)).toBe(false)
   })
 
+  it('keeps in-session binds for saved drafts that share a default name', async () => {
+    const workflows = useWorkflowStore()
+    const first = workflows.createTemporary()
+    const second = workflows.createTemporary('Unsaved Workflow (2).json')
+    const third = workflows.createTemporary('Unsaved Workflow (3).json')
+    workflows.openWorkflowsInBackground({
+      right: [first.path, second.path, third.path]
+    })
+    first.size = 1
+    second.size = 1
+    third.size = 1
+    const bindings = useAgentWorkflowTabBindingStore()
+    bindings.bind('wf-1', first.path)
+    bindings.bind('wf-2', second.path)
+    bindings.bind('wf-3', third.path)
+    await nextTick()
+
+    expect([
+      bindings.tabPathFor('wf-1'),
+      bindings.tabPathFor('wf-2'),
+      bindings.tabPathFor('wf-3')
+    ]).toEqual([first.path, second.path, third.path])
+    expect(bindings.matchesWorkflow('wf-1', first)).toBe(true)
+    expect(bindings.matchesWorkflow('wf-2', second)).toBe(true)
+    expect(bindings.matchesWorkflow('wf-3', third)).toBe(true)
+  })
+
   it('prunes bindings not confirmed within the TTL at store creation', () => {
     seedBindings({
       'wf-expired': {
@@ -390,6 +417,23 @@ describe('agentWorkflowTabBindingStore', () => {
         confirmedAt: Date.now()
       }
     })
+  })
+
+  it('unbindWorkflow drops only the named workflow, wherever it now sits', () => {
+    const store = useAgentWorkflowTabBindingStore()
+    store.bind('wf-1', 'workflows/a.json')
+    store.bind('wf-2', 'workflows/b.json')
+
+    store.bind('wf-3', 'workflows/a.json')
+    store.unbindWorkflow('wf-1')
+
+    expect(store.tabPathFor('wf-3')).toBe('workflows/a.json')
+    expect(store.workflowIdFor('workflows/a.json')).toBe('wf-3')
+    expect(store.tabPathFor('wf-2')).toBe('workflows/b.json')
+    expect(store.tabPathFor('wf-1')).toBeUndefined()
+
+    store.unbindWorkflow('wf-unknown')
+    expect(store.tabPathFor('wf-3')).toBe('workflows/a.json')
   })
 
   it('resolves both directions after a bind', () => {

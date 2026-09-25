@@ -7955,6 +7955,87 @@
       }
     }
   },
+  "HunyuanImageEditApi": {
+    "description": "يحرّر أو يدمج ما يصل إلى 5 صور مرجعية بتوجيه من مطالبة نصية باستخدام نموذج Hunyuan Image من Tencent.",
+    "display_name": "Tencent HY Image: تحرير",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "نموذج",
+        "tooltip": "النموذج المراد استخدامه."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_height": {
+        "name": "الارتفاع"
+      },
+      "model_prompt": {
+        "name": "الموجّه"
+      },
+      "model_reference_detail": {
+        "name": "reference_detail"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      },
+      "model_watermark": {
+        "name": "العلامة المائية"
+      },
+      "model_width": {
+        "name": "العرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HunyuanImageTextToImageApi": {
+    "description": "يولّد صورًا من مطالبة نصية باستخدام نموذج Hunyuan Image من Tencent.",
+    "display_name": "Tencent HY Image: نص إلى صورة",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "نموذج",
+        "tooltip": "النموذج المراد استخدامه."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_height": {
+        "name": "الارتفاع"
+      },
+      "model_prompt": {
+        "name": "الموجّه"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      },
+      "model_watermark": {
+        "name": "العلامة المائية"
+      },
+      "model_width": {
+        "name": "العرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HunyuanImageToVideo": {
     "display_name": "Hunyuan صورة إلى فيديو",
     "inputs": {
@@ -9137,6 +9218,7 @@
     }
   },
   "JsonExtractString": {
+    "description": "استخرج قيمة مفتاح من أول كائن JSON صالح في النص، بما في ذلك كتل الشيفرة البرمجية في Markdown.",
     "display_name": "استخراج سلسلة من JSON",
     "inputs": {
       "json_string": {
@@ -13234,6 +13316,10 @@
       "ultra_mode": {
         "name": "ultra_mode",
         "tooltip": "شغّل تمريرة تحسين إضافية للحصول على هندسة أعلى دقة وتفاصيل سطح أدق."
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "دقة تمرير ultra: يعمل 2k بدقة 2048³، و4k بدقة 4096³ للحصول على أدق تفاصيل السطح. يتطلب 4k الإصدار meshy-7.1 أو أحدث. يُستخدم فقط عند تمكين ultra_mode."
       }
     },
     "outputs": {
@@ -13300,6 +13386,10 @@
       },
       "symmetry_mode": {
         "name": "symmetry_mode"
+      },
+      "ultra_mode": {
+        "name": "ultra_mode",
+        "tooltip": "شغّل تمرير تحسين إضافيًا بدقة 2048³ للحصول على هندسة أعلى دقة مع تفاصيل سطح أدق."
       }
     },
     "outputs": {
@@ -13441,6 +13531,10 @@
       "ultra_mode": {
         "name": "ultra_mode",
         "tooltip": "شغّل تمريرة تحسين إضافية للحصول على هندسة أعلى دقة وتفاصيل سطح أدق."
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "دقة تمرير ultra: يعمل 2k بدقة 2048³، و4k بدقة 4096³ للحصول على أدق تفاصيل السطح. يتطلب 4k الإصدار meshy-7.1 أو أحدث. يُستخدم فقط عند تمكين ultra_mode."
       }
     },
     "outputs": {
@@ -18353,6 +18447,10 @@
       "model_top_p": {
         "name": "top_p"
       },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "مقدار الاستدلال الذي ينفقه النموذج قبل الرسم. تحسّن المستويات الأعلى التفاصيل وتستهلك رموزًا أكثر. يُستخدم فقط بواسطة نماذج Arrow 2."
+      },
       "seed": {
         "name": "seed",
         "tooltip": "البذرة لتحديد ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج الفعلية غير حتمية بغض النظر عن البذرة."
@@ -18391,6 +18489,10 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "وصف نصي لمخرجات SVG المطلوبة."
+      },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "مقدار الاستدلال الذي ينفقه النموذج قبل الرسم. تحسّن المستويات الأعلى التفاصيل وتستهلك رموزًا أكثر. يُستخدم فقط بواسطة نماذج Arrow 2."
       },
       "reference_images": {
         "name": "reference_images",
@@ -19062,7 +19164,7 @@
       },
       "model": {
         "name": "النموذج",
-        "tooltip": "الطراز المستخدم للتوليد. طُرز recraftv4_styles مصممة لتوليد متسق في النمط وتتطلب دائمًا style_id أو style_references."
+        "tooltip": "النموذج المراد استخدامه للتوليد. صُممت نماذج recraftv4_styles لتوليد متسق في الأسلوب، وتتطلب دائمًا style_id أو style_references؛ أما recraftv4_1_flash فهو النموذج الأسرع والأقل تكلفة ولا يدعم أي أنماط على الإطلاق."
       },
       "model_size": {
         "name": "الحجم"
@@ -23955,6 +24057,10 @@
       "sampling_mode_top_p": {
         "name": "أعلى p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "يستبدل موجّه النظام في قالب الدردشة الخاص بالنموذج. يُتجاهل عند عدم استخدام القالب الافتراضي."
+      },
       "thinking": {
         "name": "التفكير",
         "tooltip": "التشغيل في وضع التفكير إذا كان النموذج يدعم ذلك."
@@ -23971,6 +24077,10 @@
     "outputs": {
       "0": {
         "name": "النص المولّد",
+        "tooltip": null
+      },
+      "1": {
+        "name": "التفكير",
         "tooltip": null
       }
     }
@@ -24021,6 +24131,10 @@
       "sampling_mode_top_p": {
         "name": "أعلى p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "يستبدل موجّه النظام في قالب الدردشة الخاص بالنموذج. يُتجاهل عند عدم استخدام القالب الافتراضي."
+      },
       "thinking": {
         "name": "التفكير",
         "tooltip": "التشغيل في وضع التفكير إذا كان النموذج يدعم ذلك."
@@ -24037,6 +24151,10 @@
     "outputs": {
       "0": {
         "name": "النص المُولّد",
+        "tooltip": null
+      },
+      "1": {
+        "name": "التفكير",
         "tooltip": null
       }
     }

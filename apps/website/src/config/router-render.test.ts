@@ -31,6 +31,31 @@ function queueNotEnabled() {
 }
 
 describe('shared Router rendering', () => {
+  it('preserves unexpected preparation errors without dispatching a generation', async () => {
+    const cause = new TypeError('Unexpected encoder failure')
+    vi.spyOn(globalThis, 'btoa').mockImplementation(() => {
+      throw cause
+    })
+    const fetch = vi.fn<typeof globalThis.fetch>()
+    vi.stubGlobal('fetch', fetch)
+
+    await expect(
+      router_render(
+        'byteplus--seedream-5-pro--edit-images',
+        {
+          prompt: 'Edit',
+          reference_images: [new Blob([png], { type: 'image/png' })]
+        },
+        { token: 'test-key' }
+      )
+    ).rejects.toMatchObject({
+      reason: 'client',
+      stage: 'input_preparation',
+      cause
+    })
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
   it('reuses uploaded bytes and the same request body for an explicit retry', async () => {
     const source = new Blob([png], { type: 'image/png' })
     let grants = 0
@@ -126,8 +151,12 @@ describe('shared Router rendering', () => {
     }
   })
 
-  it('downloads URL inputs and encodes bytes for a Base64 endpoint', async () => {
+  it('downloads URL inputs and uploads them for a Gemini fileData endpoint', async () => {
     const source = 'https://media.example/reference.png'
+    const grant = {
+      upload_url: 'https://storage.example/input-upload',
+      download_url: 'https://storage.example/input.png'
+    }
     const calls: string[] = []
     vi.stubGlobal(
       'fetch',
@@ -138,6 +167,13 @@ describe('shared Router rendering', () => {
           expect(new Headers(init?.headers).has('Authorization')).toBe(false)
           return new Response(png, { headers: { 'Content-Type': 'image/png' } })
         }
+        if (url === `${WORKSHOP_ROUTER_BASE_URL}/customers/storage`)
+          return Response.json(grant)
+        if (url === grant.upload_url) {
+          expect(init?.method).toBe('PUT')
+          expect(new Headers(init?.headers).has('Authorization')).toBe(false)
+          return new Response(null)
+        }
         expect(url).toBe(
           `${WORKSHOP_ROUTER_BASE_URL}/v2/models/vertexai/gemini-3-pro-image`
         )
@@ -147,8 +183,8 @@ describe('shared Router rendering', () => {
               parts: [
                 { text: 'Paint this in watercolor' },
                 {
-                  inlineData: {
-                    data: btoa(String.fromCharCode(...png)),
+                  fileData: {
+                    fileUri: grant.download_url,
                     mimeType: 'image/png'
                   }
                 }
@@ -180,7 +216,7 @@ describe('shared Router rendering', () => {
       { token: 'test-key' }
     )
     try {
-      expect(calls).toHaveLength(2)
+      expect(calls).toHaveLength(4)
       expect(result.outputs[0].kind).toBe('image')
     } finally {
       releaseRouterOutputs(result.outputs)

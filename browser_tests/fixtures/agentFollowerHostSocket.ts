@@ -10,7 +10,10 @@ import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApi
 
 import type { HostDoc, HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { isValidDocOpsBatch, parseWireOps } from '@e2e/fixtures/agentWireFrame'
-import type { ParsedWireBatch } from '@e2e/fixtures/agentWireFrame'
+import type {
+  ParsedWireBatch,
+  WireOpEnvelope
+} from '@e2e/fixtures/agentWireFrame'
 
 const SUBSCRIBE_TIMEOUT = 15_000
 
@@ -54,6 +57,10 @@ function stringOrNull(value: unknown): string | null {
   return typeof value === 'string' ? value : null
 }
 
+function opLabel(op: WireOpEnvelope): string {
+  return `${op.op}:${'node_id' in op ? String(op.node_id) : ''}`
+}
+
 function parseClientDocFrame(
   raw: string | Buffer
 ): ParsedClientDocFrame | null {
@@ -76,6 +83,7 @@ export class AgentFollowerHostSocket {
   private subscribes = 0
   private readonly createdAt = Date.now()
   private readonly clientFrames: ClientDocFrame[] = []
+  private readonly heldOps: WireOpEnvelope[] = []
   private readonly humanOutcomes: ApplyOutcome[] = []
   private resolveSubscribed: (() => void) | null = null
   private readonly subscribed = new Promise<void>((resolve) => {
@@ -140,21 +148,48 @@ export class AgentFollowerHostSocket {
   private onClientFrame(raw: string | Buffer): void {
     const frame = parseClientDocFrame(raw)
     if (!frame) return
+    this.recordClientFrame(frame)
+    if (frame.workflowId !== this.workflowId) {
+      this.rejectForeignOps(frame)
+      return
+    }
+    this.routeClientDocFrame(frame)
+  }
+
+  private recordClientFrame(frame: ParsedClientDocFrame): void {
     const ops = frame.opsResult.ok ? frame.opsResult.ops : []
     this.clientFrames.push({
       atMs: Date.now() - this.createdAt,
       type: frame.type,
       workflowId: frame.workflowId,
-      ops: ops.map(
-        (op) => `${op.op}:${'node_id' in op ? String(op.node_id) : ''}`
-      ),
+      ops: ops.map((op) => opLabel(op)),
       opIds: ops.map((op) => op.op_id)
     })
-    if (frame.workflowId !== this.workflowId) return
-    if (frame.type === 'doc_subscribe' && frame.stateVector !== null)
+  }
+
+  /** Dispatches a frame already confirmed to target this host's workflow. */
+  private routeClientDocFrame(frame: ParsedClientDocFrame): void {
+    if (frame.type === 'doc_subscribe' && frame.stateVector !== null) {
       this.answerSubscribe(frame.stateVector)
-    else if (frame.type === 'doc_ops' && this.humanOpsHost === 'apply')
+      return
+    }
+    if (frame.type === 'doc_ops' && this.humanOpsHost === 'apply') {
       this.judgeHumanOps(frame.opsResult)
+      return
+    }
+    if (frame.type === 'doc_ops' && frame.opsResult.ok) {
+      this.heldOps.push(...frame.opsResult.ops)
+    }
+  }
+
+  /**
+   * Every human op a `hold` host is still sitting on, oldest first. A test
+   * that holds a batch to control WHEN it reaches the document (e.g. after a
+   * competing write has claimed the same register) applies these itself,
+   * through `HostDoc.applyWire`.
+   */
+  heldClientOps(): WireOpEnvelope[] {
+    return [...this.heldOps]
   }
 
   /**
@@ -199,6 +234,25 @@ export class AgentFollowerHostSocket {
     if (update) this.send(update)
   }
 
+  // A doc_ops batch for a workflow this host does not serve gets a failed
+  // doc_ops_result for that workflow, so the sender settles it instead of
+  // waiting forever; any other foreign frame is ignored.
+  private rejectForeignOps(frame: ParsedClientDocFrame): void {
+    if (frame.type !== 'doc_ops' || frame.workflowId === null) return
+    this.send({
+      type: 'doc_ops_result',
+      data: {
+        v: DOC_PROTOCOL_VERSION,
+        workflow_id: frame.workflowId,
+        ok: false,
+        applied: [],
+        skipped: [],
+        code: 'unknown_workflow',
+        message: 'the fake host serves one workflow'
+      }
+    })
+  }
+
   private invalidFrameResult(): HostFrame {
     return {
       type: 'doc_ops_result',
@@ -215,6 +269,11 @@ export class AgentFollowerHostSocket {
   /** Rises once per follower subscribe, after the catch-up frame was sent. */
   subscribeCount(): number {
     return this.subscribes
+  }
+
+  async disconnect(): Promise<void> {
+    if (!this.socket) throw new Error('the app has not opened /ws yet')
+    await this.socket.close()
   }
 
   /** Every `doc_*` frame the page has sent so far, oldest first. */

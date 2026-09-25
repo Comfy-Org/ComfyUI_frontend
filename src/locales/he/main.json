@@ -53,7 +53,6 @@
     "copy": "העתק",
     "copyMarkdown": "העתק כ-Markdown",
     "copyUnavailable": "בגרסה זו ניתן להעתיק רק את השיחה הנוכחית",
-    "credits": "זיכויים",
     "currentTab": "הלשונית הנוכחית",
     "delete": "מחק",
     "diagnosticReport": {
@@ -66,6 +65,7 @@
     "dismiss": "סגור",
     "downloadAssets": "הורדת נכסים",
     "dragAndDropAssets": "גרור ושחרר נכסים כאן",
+    "editWhileWorking": "אפשר להמשיך לערוך בזמן שהוא פועל",
     "entryButton": "סוכן",
     "feedbackCaption": "שיתוף משוב",
     "focusNode": "הצג בקנבס",
@@ -100,6 +100,7 @@
       "selectNode": "בחר צומת"
     },
     "nodes": "צמתים",
+    "nodesAdded": "הסוכן הוסיף צומת אחד לגרף | הסוכן הוסיף {count} צמתים לגרף",
     "notHelpful": "לא מועיל",
     "openWorkflowTab": "פתיחת {name}",
     "otherOpenWorkflows": "תהליכי עבודה פתוחים אחרים",
@@ -146,7 +147,6 @@
     "runNoticeExpanded": "הסוכן יכול לשנות את תהליך העבודה שלך. בדוק את הרשאות ההפעלה לפני שתאפשר לו לבצע אותו.",
     "runPermissions": "הרשאות הפעלה",
     "runPermissionsDescription": "בחר מתי הסוכן זקוק להסכמתך",
-    "saveChanges": "שמור שינויים",
     "savingWorkflow": "שומר תהליך עבודה",
     "searchWorkflows": "חפש תהליכי עבודה",
     "selectWorkflowForAgent": "בחרו תהליך עבודה שבו הסוכן יעבוד",
@@ -185,7 +185,9 @@
     "unavailableWorkflowReference": "{name} (לא זמין)",
     "unsavedWorkflow": "לא נשמר",
     "untitledChat": "ללא כותרת",
+    "updatingGraph": "הסוכן מעדכן את הגרף",
     "uploading": "מעלה",
+    "viewAddedNodes": "הצג צומת | הצג צמתים",
     "worked": "בוצע",
     "workedForMinutes": "עבד במשך {minutes}m {seconds}s",
     "workedForSeconds": "עבד במשך {seconds} שניות",
@@ -2006,6 +2008,7 @@
     "removeAll": "הסרת הכול",
     "removeAllKeybindingsMessage": "כל מקשי הקיצור עבור פקודה זו יוסרו",
     "removeAllKeybindingsTitle": "להסיר את כל מקשי הקיצור?",
+    "removeFilter": "הסר מסנן {label}",
     "removeImage": "הסרת תמונה",
     "removeKeybinding": "הסרת מקש הקיצור",
     "removeTag": "הסרת תגית",
@@ -2220,8 +2223,10 @@
     "star": "כוכב"
   },
   "imageCompare": {
+    "afterAlt": "תמונה לאחר",
     "batchLabelA": "א:",
     "batchLabelB": "ב:",
+    "beforeAlt": "תמונה לפני",
     "noImages": "אין תמונות להשוואה"
   },
   "imageCrop": {
@@ -2463,7 +2468,9 @@
     "cancelThisRun": "ביטול הרצה זו",
     "deleteAllAssets": "מחיקת כל הנכסים מהרצה זו",
     "downloadAll": "הורדת {count} נכסים מהרצה זו",
+    "dragAndDropAudio": "לחצו לעיון או גררו קובץ שמע",
     "dragAndDropImage": "לחץ לעיון או גרור תמונה",
+    "dragAndDropVideo": "לחצו לעיון או גררו סרטון",
     "emptyWorkflowExplanation": "תהליך העבודה שלך ריק. אתה זקוק תחילה לכמה צמתים כדי להתחיל לבנות יישום.",
     "enterNodeGraph": "כניסה לגרף הצמתים",
     "error": {
@@ -2754,6 +2761,9 @@
     "installationQueue": "תור ההתקנות",
     "installingDependencies": "מתקין תלויות...",
     "lastUpdated": "עודכן לאחרונה",
+    "latestActive": "הפעילה העדכנית ביותר",
+    "latestInstallable": "הניתנת להתקנה העדכנית ביותר",
+    "latestStableVersion": "היציבה העדכנית ביותר",
     "latestVersion": "האחרונה",
     "legacyManagerSearchTip": "מחפש את ComfyUI-Manager? ניתן להפעיל את ממשק המנהל הישן על-ידי הפעלת ComfyUI עם הדגל --enable-manager-legacy-ui.",
     "legacyManagerUI": "שימוש בממשק הישן",
@@ -2775,10 +2785,13 @@
       "updatesAvailable": "עדכונים זמינים"
     },
     "nightlyVersion": "Nightly",
+    "noActiveVersions": "לחבילה זו אין מהדורות פעילות.",
+    "noActiveVersionsFlagged": "לחבילה זו אין מהדורות פעילות. בחר מהדורה מסומנת כדי לבקש התקנה, בכפוף להגדרות האבטחה של המנהל.",
     "noDescription": "אין תיאור זמין",
     "noNodesFound": "לא נמצאו צמתים",
     "noNodesFoundDescription": "לא ניתן היה לנתח את צמתי החבילה, או שהחבילה היא הרחבת פרונטאנד בלבד ואין בה צמתים.",
     "noResultsFound": "לא נמצאו תוצאות התואמות לחיפוש שלך.",
+    "noUpdateVersion": "אין מהדורה זמינה עבור אפשרות העדכון שנבחרה.",
     "nodePack": "חבילת צמתים",
     "nodePackInfo": "מידע על חבילת הצמתים",
     "notAvailable": "לא זמין",
@@ -2786,9 +2799,11 @@
       "nodeIdRequired": "מזהה צומת נדרש לצורך ההתקנה"
     },
     "packsSelected": "חבילות נבחרו",
+    "queueWaitingToContinue": "משימות ממתינות. נסה שוב כדי להמשיך.",
     "repository": "מאגר",
     "restartToApplyChanges": "כדי להחיל את השינויים, אנא הפעל מחדש את ComfyUI",
     "restartingBackend": "מפעיל מחדש את השרת כדי להחיל את השינויים...",
+    "retryQueueStart": "נסה שוב",
     "searchPlaceholder": "חיפוש",
     "selectVersion": "בחירת גרסה",
     "selected": "נבחר",
@@ -2829,9 +2844,15 @@
     },
     "update": "עדכון",
     "updateAll": "עדכון הכול",
+    "updateFailed": "לא ניתן היה לשנות את גרסת החבילה. נסה שוב.",
+    "updateLatestActiveTooltip": "עבור לגרסה הפעילה העדכנית ביותר (ברירת מחדל).",
+    "updateLatestInstallableTooltip": "עבור לגרסה העדכנית ביותר הניתנת להתקנה, כולל מהדורות מסומנות וממתינות. הגדרות האבטחה של המנהל עדיין חלות.",
+    "updateOptions": "אפשרויות עדכון",
     "updateSelected": "עדכון הנבחרים",
+    "updateVersionInstalled": "גרסה {version} כבר מותקנת.",
     "updatingAllPacks": "מעדכן את כל החבילות",
-    "version": "גרסה"
+    "version": "גרסה",
+    "versionLoadFailed": "לא ניתן היה לטעון גרסאות. סגור בורר זה ונסה שוב."
   },
   "maskEditor": {
     "activateLayer": "הפעלת השכבה",
@@ -3105,6 +3126,8 @@
     "linearMode_appModeToolbar_apps": "linearMode.appModeToolbar.apps"
   },
   "minimap": {
+    "highlightedNodes": "צמתים מודגשים: {count}",
+    "label": "מפה ממוזערת",
     "nodeColors": "צבעי הצמתים",
     "renderBypassState": "הצגת מצב העקיפה",
     "renderErrorState": "הצגת מצב השגיאה",
@@ -4788,6 +4811,7 @@
     },
     "clearAllFilters": "נקה את כל המסננים",
     "error": {
+      "loading": "לא ניתן היה לפתוח את התבנית. נסו שוב.",
       "templateNotFound": "התבנית \"{templateName}\" לא נמצאה"
     },
     "filtersApplied": "{count} מסנן הופעל | {count} מסננים הופעלו",
@@ -4829,6 +4853,7 @@
   "toastMessages": {
     "a1111CoreNodesUnavailable": "לא ניתן לטעון את תהליך העבודה כי התקנת ComfyUI זו חסרה צמתים חיוניים. בדוק שהשרת האחורי הופעל כראוי.",
     "a1111EmbeddingsUnavailable": "לא ניתן היה לטעון Embeddings מהשרת. תהליך העבודה יובא, אך שמות ה-embeddings נותרו כטקסט פשוט.",
+    "assetDropFailed": "לא ניתן לטעון את הנכס שנגרר",
     "cannotCreateSubgraph": "לא ניתן ליצור תת-גרף",
     "couldNotDetermineFileType": "לא ניתן היה לקבוע את סוג הקובץ",
     "dropFileError": "לא ניתן לעבד את הפריט שנגרר: {error}",
@@ -5067,6 +5092,7 @@
   },
   "workspace": {
     "addedToWorkspace": "נוספת אל:",
+    "deepLinkStayed": "לא ניתן היה לפתוח את סביבת העבודה הזו. אתם עדיין נמצאים ב-{workspaceName}.",
     "inviteAccepted": "ההזמנה התקבלה",
     "inviteFailed": "קבלת ההזמנה נכשלה",
     "switchFailed": "המעבר לסביבת העבודה נכשל. אנא נסה שוב.",

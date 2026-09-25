@@ -8,7 +8,11 @@ import type { App } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
+import type { SubscriptionInfo } from '@/composables/billing/types'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import type { BillingSubscriptionStatus } from '@/platform/workspace/api/workspaceApi'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import type {
   WorkspacePendingInvite,
   WorkspaceMember
@@ -259,10 +263,6 @@ describe('sortPendingInvites', () => {
 })
 
 const mockToastAdd = vi.fn()
-const mockResendInvite =
-  vi.fn<(inviteId: string) => Promise<WorkspacePendingInvite>>()
-
-const mockShowSubscriptionDialog = vi.fn()
 
 const {
   mockMaxSeats,
@@ -308,12 +308,12 @@ const {
     mockCanAccessSubscriptionFeatures: ref(true),
     mockIsInitialized: ref(true),
     mockIsTeamPlan: ref(true),
-    mockSubscriptionStatus: ref<string | null>('active'),
+    mockSubscriptionStatus: ref<BillingSubscriptionStatus | null>('active'),
     mockWorkspaceRole: ref<'owner' | 'member'>('owner'),
-    mockSubscription: ref<{ tier: string; isCancelled?: boolean } | null>({
-      tier: 'PRO',
-      isCancelled: false
-    })
+    mockSubscription: ref<Pick<
+      SubscriptionInfo,
+      'tier' | 'isCancelled'
+    > | null>({ tier: 'PRO', isCancelled: false })
   }
 })
 
@@ -382,16 +382,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useWorkspaceUI'),
-  () => ({
-    useWorkspaceUI: () => ({
-      permissions: mockPermissions,
-      uiConfig: mockUiConfig,
-      workspaceRole: mockWorkspaceRole
-    })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
@@ -399,40 +390,11 @@ vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
-vi.mock<unknown>(
-  import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
-  () => ({
-    useSubscriptionDialog: () => ({ show: mockShowSubscriptionDialog })
-  })
+vi.mock(
+  import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
 )
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    canAccessSubscriptionFeatures: mockCanAccessSubscriptionFeatures,
-    isInitialized: mockIsInitialized,
-    isTeamPlan: mockIsTeamPlan,
-    subscription: mockSubscription,
-    subscriptionStatus: mockSubscriptionStatus,
-    maxSeats: mockMaxSeats,
-    occupiedSeats: mockOccupiedSeats,
-    getMaxSeats: (tierKey: string) => {
-      const seats: Record<string, number> = {
-        free: 1,
-        standard: 1,
-        creator: 5,
-        pro: 20
-      }
-      return seats[tierKey] ?? 1
-    }
-  })
-}))
-
-vi.mock<unknown>(
-  import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
-  () => ({
-    useSubscriptionDialog: () => ({ show: vi.fn() })
-  })
-)
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock(import('@/services/dialogService'))
 
@@ -442,14 +404,61 @@ describe('useMembersPanel', () => {
   let pinia: Pinia
 
   beforeEach(() => {
+    const workspaceUI = vi.mocked(useWorkspaceUI())
+    const defaultPermissions = workspaceUI.permissions.value
+    workspaceUI.permissions = computed(() => ({
+      ...defaultPermissions,
+      ...mockPermissions.value
+    }))
+    const defaultUiConfig = workspaceUI.uiConfig.value
+    workspaceUI.uiConfig = computed(() => ({
+      ...defaultUiConfig,
+      ...mockUiConfig.value,
+      workspaceMenuAction:
+        mockUiConfig.value.workspaceMenuAction === 'delete' ? 'delete' : null
+    }))
+    workspaceUI.workspaceRole = computed(() => mockWorkspaceRole.value)
+    const billingContext = useBillingContext()
+    billingContext.canAccessSubscriptionFeatures = computed(
+      () => mockCanAccessSubscriptionFeatures.value
+    )
+    billingContext.isInitialized = mockIsInitialized
+    billingContext.isTeamPlan = computed(() => mockIsTeamPlan.value)
+    billingContext.subscription = computed(() =>
+      mockSubscription.value
+        ? {
+            isActive: true,
+            duration: null,
+            planSlug: null,
+            scheduledChange: null,
+            renewalDate: null,
+            endDate: null,
+            hasFunds: true,
+            ...mockSubscription.value
+          }
+        : null
+    )
+    billingContext.subscriptionStatus = computed(
+      () => mockSubscriptionStatus.value
+    )
+    billingContext.maxSeats = computed(() => mockMaxSeats.value)
+    billingContext.occupiedSeats = computed(() => mockOccupiedSeats.value)
+    vi.mocked(billingContext.getMaxSeats).mockImplementation((tierKey) => {
+      const seats: Record<string, number> = {
+        free: 1,
+        standard: 1,
+        creator: 5,
+        pro: 20
+      }
+      return seats[tierKey] ?? 1
+    })
+    vi.mocked(useBillingContext).mockReturnValue(billingContext)
     useCurrentUser().userPhotoUrl = computed(() => null)
     useCurrentUser().userEmail = computed(() => 'owner@example.com')
     useCurrentUser().userDisplayName = computed(() => 'Owner User')
     pinia = getActivePinia()!
     workspaceStore = useTeamWorkspaceStore(pinia)
-    vi.spyOn(workspaceStore, 'resendInvite').mockImplementation(
-      mockResendInvite
-    )
+    vi.spyOn(workspaceStore, 'resendInvite')
     workspaceType = 'personal'
     workspaceMembers = []
     workspacePendingInvites = []
@@ -666,10 +675,12 @@ describe('useMembersPanel', () => {
 
   describe('handleResendInvite', () => {
     it('resends the invite and shows a success toast', async () => {
-      mockResendInvite.mockResolvedValue(createInvite({ id: 'inv-1' }))
+      vi.mocked(workspaceStore.resendInvite).mockResolvedValue(
+        createInvite({ id: 'inv-1' })
+      )
       const panel = await setup()
       await panel.handleResendInvite(createInvite({ id: 'inv-1' }))
-      expect(mockResendInvite).toHaveBeenCalledWith('inv-1')
+      expect(workspaceStore.resendInvite).toHaveBeenCalledWith('inv-1')
       expect(mockToastAdd).toHaveBeenCalledWith(
         expect.objectContaining({
           severity: 'success',
@@ -679,7 +690,9 @@ describe('useMembersPanel', () => {
     })
 
     it('shows error toast on failure', async () => {
-      mockResendInvite.mockRejectedValue(new Error('fail'))
+      vi.mocked(workspaceStore.resendInvite).mockRejectedValue(
+        new Error('fail')
+      )
       const panel = await setup()
       await panel.handleResendInvite(createInvite({ id: 'inv-1' }))
       expect(mockToastAdd).toHaveBeenCalledWith(
@@ -1065,7 +1078,7 @@ describe('useMembersPanel', () => {
       panel.handleRevokeInvite(createInvite({ id: 'inv-1' }))
       panel.handleInviteMember()
 
-      expect(mockResendInvite).not.toHaveBeenCalled()
+      expect(workspaceStore.resendInvite).not.toHaveBeenCalled()
       expect(useDialogService().showRevokeInviteDialog).not.toHaveBeenCalled()
       expect(useDialogService().showInviteMemberDialog).not.toHaveBeenCalled()
     })

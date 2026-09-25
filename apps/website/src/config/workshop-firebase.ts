@@ -16,6 +16,7 @@ import {
 } from '@comfyorg/account-core/provisioning'
 
 import { captureSignupRollbackFailure } from '../scripts/posthog'
+import { createTimeoutSignal } from '../utils/abortSignal'
 import {
   WORKSHOP_FIREBASE_OPTIONS,
   WORKSHOP_ROUTER_BASE_URL
@@ -69,7 +70,7 @@ export async function provisionCustomer(
       authHeaders: { Authorization: `Bearer ${token}` },
       signupSource: 'comfy-workshop',
       turnstileToken,
-      signal: AbortSignal.timeout(PROVISIONING_TIMEOUT_MS)
+      signal: createTimeoutSignal(PROVISIONING_TIMEOUT_MS)
     })
   )
   if (!response.ok) {
