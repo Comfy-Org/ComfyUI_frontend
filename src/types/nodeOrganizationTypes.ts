@@ -64,5 +64,5 @@ export interface NodeSection {
   /** Section title (i18n key) for tabs that don't use category-based labels */
   title?: string
   /** Tree of nodes in this section */
-  tree: TreeNode
+  tree: TreeNode<ComfyNodeDefImpl>
 }

@@ -17,14 +17,15 @@ const i18n = createI18n({
 })
 
 const ChartStub = defineComponent({
-  name: 'Chart',
+  name: 'WidgetChartCanvas',
   props: {
     type: { type: String, default: '' },
     data: { type: Object, default: () => ({}) },
-    options: { type: Object, default: () => ({}) }
+    options: { type: Object, default: () => ({}) },
+    label: { type: String, default: '' }
   },
   template:
-    '<div data-testid="chart" :data-chart-type="type" :data-chart-data="JSON.stringify(data)" v-bind="$attrs" />'
+    '<div data-testid="chart" :data-chart-type="type" :data-chart-data="JSON.stringify(data)" :aria-label="label" />'
 })
 
 function makeWidget(
@@ -49,7 +50,7 @@ function renderChart(
     template: '<WidgetChart :widget="widget" v-model="value" />'
   })
   const utils = render(Harness, {
-    global: { plugins: [i18n], stubs: { Chart: ChartStub } }
+    global: { plugins: [i18n], stubs: { WidgetChartCanvas: ChartStub } }
   })
   return { ...utils, value }
 }

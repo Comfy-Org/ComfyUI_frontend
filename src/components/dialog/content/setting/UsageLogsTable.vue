@@ -6,102 +6,79 @@
     <div v-else-if="error" class="p-4">
       <Message severity="error">{{ error }}</Message>
     </div>
-    <DataTable
-      v-else
-      :value="events"
-      :paginator="true"
-      :rows="pagination.limit"
-      :total-records="pagination.total"
-      :first="dataTableFirst"
-      :lazy="true"
-      class="p-datatable-sm custom-datatable"
-      @page="onPageChange"
-    >
-      <Column field="event_type" :header="$t('credits.eventType')">
-        <template #body="{ data }">
-          <Badge
-            variant="badge"
-            :severity="customerEventService.getEventSeverity(data.event_type)"
-          >
-            {{ customerEventService.formatEventType(data.event_type) }}
-          </Badge>
-        </template>
-      </Column>
-      <Column field="details" :header="$t('credits.details')">
-        <template #body="{ data }">
-          <div class="event-details">
-            <!-- Credits Added -->
-            <template v-if="data.event_type === EventType.CREDIT_ADDED">
-              <div class="font-semibold text-green-500">
-                {{ $t('credits.added') }} ${{
-                  customerEventService.formatAmount(data.params?.amount)
-                }}
-              </div>
-            </template>
-
-            <!-- Account Created -->
-            <template v-else-if="data.event_type === EventType.ACCOUNT_CREATED">
-              <div>{{ $t('credits.accountInitialized') }}</div>
-            </template>
-
-            <!-- API Usage -->
-            <template
-              v-else-if="data.event_type === EventType.API_USAGE_COMPLETED"
+    <Table v-else class="rounded-lg border border-border-default">
+      <TableHeader>
+        <TableRow>
+          <TableHead>{{ $t('credits.eventType') }}</TableHead>
+          <TableHead>{{ $t('credits.details') }}</TableHead>
+          <TableHead>{{ $t('credits.time') }}</TableHead>
+          <TableHead>{{ $t('credits.additionalInfo') }}</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        <TableRow
+          v-for="(event, index) in events"
+          :key="event.event_id ?? index"
+        >
+          <TableCell>
+            <Badge
+              variant="badge"
+              :severity="
+                customerEventService.getEventSeverity(event.event_type ?? '')
+              "
             >
-              <div class="flex flex-col gap-1">
-                <div class="font-semibold">
-                  {{ data.params?.api_name || 'API' }}
-                </div>
-                <div class="text-sm text-smoke-400">
-                  {{ $t('credits.model') }}: {{ data.params?.model || '-' }}
-                </div>
-              </div>
-            </template>
-          </div>
-        </template>
-      </Column>
-      <Column field="createdAt" :header="$t('credits.time')">
-        <template #body="{ data }">
-          {{ customerEventService.formatDate(data.createdAt) }}
-        </template>
-      </Column>
-      <Column field="params" :header="$t('credits.additionalInfo')">
-        <template #body="{ data }">
-          <Button
-            v-if="customerEventService.hasAdditionalInfo(data)"
-            v-tooltip.top="{
-              escape: false,
-              value: tooltipContentMap.get(data.event_id) || '',
-              pt: {
-                text: {
-                  style: {
-                    width: 'max-content !important'
-                  }
-                }
-              }
-            }"
-            variant="textonly"
-            size="icon-sm"
-            :aria-label="$t('credits.additionalInfo')"
-          >
-            <i class="pi pi-info-circle" />
-          </Button>
-        </template>
-      </Column>
-    </DataTable>
+              {{ customerEventService.formatEventType(event.event_type ?? '') }}
+            </Badge>
+          </TableCell>
+          <TableCell>
+            <UsageLogEventDetails :event />
+          </TableCell>
+          <TableCell>
+            {{ customerEventService.formatDate(event.createdAt ?? '') }}
+          </TableCell>
+          <TableCell>
+            <Button
+              v-if="customerEventService.hasAdditionalInfo(event)"
+              v-tooltip.top="{
+                escape: false,
+                value: tooltipContentMap.get(event.event_id ?? '') || ''
+              }"
+              variant="textonly"
+              size="icon-sm"
+              :aria-label="$t('credits.additionalInfo')"
+            >
+              <i class="pi pi-info-circle" />
+            </Button>
+          </TableCell>
+        </TableRow>
+      </TableBody>
+    </Table>
+    <Pagination
+      v-if="!loading && !error && pagination.totalPages > 1"
+      :page="pagination.page"
+      :total="pagination.total"
+      :items-per-page="pagination.limit"
+      class="mt-3 flex justify-center"
+      @update:page="onPageChange"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import Column from 'primevue/column'
-import DataTable from 'primevue/datatable'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import Badge from '@/components/ui/badge/Badge.vue'
 import Message from '@/components/ui/message/Message.vue'
+import Pagination from '@/components/ui/pagination/Pagination.vue'
 import Spinner from '@/components/ui/spinner/Spinner.vue'
+import Table from '@/components/ui/table/Table.vue'
+import TableBody from '@/components/ui/table/TableBody.vue'
+import TableCell from '@/components/ui/table/TableCell.vue'
+import TableHead from '@/components/ui/table/TableHead.vue'
+import TableHeader from '@/components/ui/table/TableHeader.vue'
+import TableRow from '@/components/ui/table/TableRow.vue'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { useTelemetry } from '@/platform/telemetry'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
@@ -110,10 +87,9 @@ import { useBillingReadRail } from '@/platform/workspace/composables/useBillingR
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { usePendingTopup } from '@/composables/billing/usePendingTopup'
 import type { AuditLog } from '@/services/customerEventsService'
-import {
-  EventType,
-  useCustomerEventsService
-} from '@/services/customerEventsService'
+import { useCustomerEventsService } from '@/services/customerEventsService'
+
+import UsageLogEventDetails from './UsageLogEventDetails.vue'
 
 const { t } = useI18n()
 
@@ -131,10 +107,6 @@ const pagination = ref({
   total: 0,
   totalPages: 0
 })
-
-const dataTableFirst = computed(
-  () => (pagination.value.page - 1) * pagination.value.limit
-)
 
 const tooltipContentMap = computed(() => {
   const map = new Map<string, string>()
@@ -225,8 +197,8 @@ const loadEvents = async () => {
   }
 }
 
-const onPageChange = (event: { page: number }) => {
-  pagination.value.page = event.page + 1
+const onPageChange = (page: number) => {
+  pagination.value.page = page
   loadEvents().catch((error) => {
     console.error('Error loading events:', error)
   })
