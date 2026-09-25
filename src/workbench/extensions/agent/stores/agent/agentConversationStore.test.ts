@@ -761,9 +761,9 @@ describe('useAgentConversationStore', () => {
   })
 
   /**
-   * PM-1643 / PM-717. Switching threads mid-turn stashes the turn; returning
-   * hydrates the rows the service already holds, which mid-turn is both of
-   * them — `StartTurn` writes the user row and the streaming assistant row in
+   * PM-1643 / PM-1149 / PM-717. Switching threads mid-turn stashes the turn;
+   * returning hydrates the rows the service already holds, which mid-turn is
+   * both of them — `StartTurn` writes the user row and the streaming row in
    * one transaction, under a `turn_id` that is a fresh server uuid, while the
    * ack hands the client the assistant ROW's id as its live turn id
    * (services/agent/server/agent_handler.go, internal/persist/turnstart.go).
@@ -808,6 +808,65 @@ describe('useAgentConversationStore', () => {
       'user',
       'assistant'
     ])
+  })
+
+  /**
+   * PM-1643 / PM-1149 / PM-717. The ask the turn is waiting on was persisted
+   * on the row, never broadcast, so it exists only on the copy resume drops.
+   * Losing it with the copy leaves the turn unanswerable — worse than the
+   * duplicate, which at least kept the card reachable.
+   */
+  it('keeps a run approval the dropped hydrated copy was carrying', () => {
+    const userRow = historyRow(1, 'user', 'server-turn', 'run it')
+    userRow.content = { text: 'run it', attachments: ['beach.png'] }
+    const [askingRow] = zAgentMessages.parse([
+      {
+        id: 't1',
+        thread_id: 'th',
+        seq: 2,
+        role: 'assistant',
+        status: 'streaming',
+        turn_id: 'server-turn',
+        pending_ask: {
+          message_id: 't1',
+          ask_id: 'server-turn:call-1',
+          kind: 'run_approval',
+          context: {
+            workflow_id: 'workflow-1',
+            workflow_name: 'Portrait workflow'
+          },
+          prompt: 'Run workflow “Portrait workflow”?',
+          options: [
+            { id: 'run', label: 'Run' },
+            { id: 'cancel', label: 'Cancel' }
+          ],
+          min_selections: 1,
+          max_selections: 1,
+          allow_other: false
+        }
+      }
+    ])
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'run it')
+    store.ingest(delta('t1', 'working on it'))
+    store.stashActiveTurn()
+
+    store.setThreadId('th-other')
+    store.hydrate([])
+    store.setThreadId('th')
+    store.hydrate([userRow, askingRow])
+    store.resumeBackgroundTurn()
+
+    expect(store.messages).toHaveLength(1)
+    expect(store.messages[0].parts).toContainEqual({
+      type: 'runApproval',
+      askId: 'server-turn:call-1',
+      workflowId: 'workflow-1',
+      workflowName: 'Portrait workflow'
+    })
+    expect(partTexts(store)).toEqual(['working on it'])
   })
 
   it('hydrates persisted tool calls into the same parts array the live work-summary UI reads', () => {

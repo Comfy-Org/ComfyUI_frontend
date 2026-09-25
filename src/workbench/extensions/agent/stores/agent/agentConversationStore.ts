@@ -368,6 +368,10 @@ export const useAgentConversationStore = defineStore(
         entry.transport.dispose()
         return
       }
+      // A hydrate that landed on a mid-ask row left its own transport in the
+      // active slot, and this resume supersedes it. Dispose rather than
+      // overwrite, or it is orphaned until its own STALE_AFTER_MS fallback.
+      if (transport && transport !== entry.transport) transport.dispose()
       activeTurnId.value = entry.messageId
       activeIndex.value = index
       transport = entry.transport
@@ -383,6 +387,33 @@ export const useAgentConversationStore = defineStore(
       if (value === undefined) return
       record.value.delete(from)
       record.value.set(to, value)
+    }
+
+    function moveUserRecord(from: TurnId, to: TurnId): void {
+      moveTurnRecord(userTexts, from, to)
+      moveTurnRecord(userAttachments, from, to)
+      moveTurnRecord(userWorkflowReferences, from, to)
+    }
+
+    /**
+     * A run_approval the hydrated copy was carrying has no counterpart on the
+     * live message: it was persisted on the row, not broadcast over the
+     * transport the stash holds. Dropping the copy without it leaves the ask
+     * unanswerable, so it rides across, keyed on askId like the live path.
+     */
+    function adoptPendingAsks(
+      hydrated: AssistantMessage,
+      live: AssistantMessage
+    ): void {
+      const answered = new Set(
+        live.parts.flatMap((part) =>
+          part.type === 'runApproval' ? [part.askId] : []
+        )
+      )
+      const asks = hydrated.parts.filter(
+        (part) => part.type === 'runApproval' && !answered.has(part.askId)
+      )
+      if (asks.length > 0) live.parts = [...live.parts, ...asks]
     }
 
     /**
@@ -404,10 +435,9 @@ export const useAgentConversationStore = defineStore(
         return
       const index = kept.findIndex((message) => message.id === hydratedTurnId)
       if (index < 0) return
-      kept.splice(index, 1)
-      moveTurnRecord(userTexts, hydratedTurnId, entry.message.id)
-      moveTurnRecord(userAttachments, hydratedTurnId, entry.message.id)
-      moveTurnRecord(userWorkflowReferences, hydratedTurnId, entry.message.id)
+      const [hydrated] = kept.splice(index, 1)
+      adoptPendingAsks(hydrated, entry.message)
+      moveUserRecord(hydratedTurnId, entry.message.id)
     }
 
     function removeHydratedCopy(
@@ -423,7 +453,7 @@ export const useAgentConversationStore = defineStore(
       )
         return false
       kept.pop()
-      userTexts.value.delete(last.id)
+      moveUserRecord(last.id, entry.message.id)
       return true
     }
 

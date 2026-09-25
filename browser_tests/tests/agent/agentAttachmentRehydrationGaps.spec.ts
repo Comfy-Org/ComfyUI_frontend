@@ -8,6 +8,7 @@ import type {
 } from '@comfyorg/ingest-types'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 
 import { promptHistoryTest as test } from '@e2e/fixtures/agentPromptHistoryFixture'
@@ -21,7 +22,7 @@ import { assetPath } from '@e2e/fixtures/utils/paths'
  * extension alone; these cases cover the rows where the stored name cannot
  * carry the file — a library asset attached under its bare content hash, a
  * blank name the API let through, a name the wire has no slot for, and a turn
- * that was mid-flight when the user left the thread.
+ * that was mid-flight when the user left the thread (PM-1149).
  *
  * Each case drives the real composer and a real reload, and stands in for one
  * thing only: the history GET the reload hydrates from. The agent service
@@ -44,7 +45,7 @@ const PLAIN_FILENAME = 'ComfyUI_00002_.png'
 interface DroppedLibraryAsset {
   displayName: string
   ref: string
-  kind: 'image' | 'video' | 'audio'
+  kind: MediaKind
 }
 
 /** The shape the asset library puts on the DataTransfer (assetDragUtil.ts). */
