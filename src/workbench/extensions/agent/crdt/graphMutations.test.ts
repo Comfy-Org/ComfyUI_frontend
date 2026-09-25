@@ -1259,6 +1259,10 @@ describe('graphMutations', () => {
     )
   })
 
+  // Same defect, reached through the plain `setWidget` op the incremental
+  // (non-reconcile) path uses for a single changed widget — proving the
+  // missing guard lives in `setWidgetValue` itself, not only in the
+  // full-reconcile call site.
   it.fails('preserves a locally newer widget value across a direct setWidget op', () => {
     const graph = mutations()
     graph.addNode(node(1, { text: 'a photo of a pier' }), context)
