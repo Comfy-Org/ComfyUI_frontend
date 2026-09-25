@@ -15,7 +15,7 @@ const { autocomplete, info, path, runChecks, runCommand } = vi.hoisted(() => ({
   runCommand: vi.fn(() => ({ status: 0, stdout: Buffer.from('main') }))
 }))
 
-vi.mock('@clack/prompts', () => ({
+vi.mock<unknown>(import('@clack/prompts'), () => ({
   autocomplete,
   cancel: vi.fn(),
   confirm: vi.fn(),
@@ -26,17 +26,17 @@ vi.mock('@clack/prompts', () => ({
   spinner: vi.fn(() => ({ start: vi.fn(), stop: vi.fn() })),
   text: vi.fn()
 }))
-vi.mock('./check', () => ({ runChecks }))
-vi.mock('../cli/run', () => ({ runCommand }))
-vi.mock('../devserver/envInfo', () => ({
+vi.mock<unknown>(import('./check'), () => ({ runChecks }))
+vi.mock<unknown>(import('../cli/run'), () => ({ runCommand }))
+vi.mock<unknown>(import('../devserver/envInfo'), () => ({
   fetchEnvInfo: vi.fn(async () => ({ ok: false }))
 }))
-vi.mock('../recorder/runner', () => ({
+vi.mock(import('../recorder/runner'), () => ({
   findProjectRoot: vi.fn(() => '/project'),
   listWorkflows: vi.fn(() => ['default']),
   runRecording: vi.fn()
 }))
-vi.mock('../ui/logger', () => ({
+vi.mock(import('../ui/logger'), () => ({
   alert: vi.fn(),
   blank: vi.fn(),
   box: vi.fn(),
@@ -45,7 +45,7 @@ vi.mock('../ui/logger', () => ({
   pass: vi.fn(),
   warn: vi.fn()
 }))
-vi.mock('../ui/steps', () => ({ stepHeader: vi.fn() }))
+vi.mock(import('../ui/steps'), () => ({ stepHeader: vi.fn() }))
 
 const originalIsTTY = process.stdin.isTTY
 

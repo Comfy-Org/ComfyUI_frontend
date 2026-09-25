@@ -13,7 +13,10 @@ import {
   storeWorkshopDraft
 } from '../config/workshop-draft-storage'
 import type { FieldSchema, FormValues } from '../config/workshop-playground'
-import { restoreFormValues } from '../config/workshop-playground'
+import {
+  restoreFormValues,
+  urlUploadField
+} from '../config/workshop-playground'
 import { onBeforeSignInLeave } from '../config/workshop-return'
 import { workshopIdempotencyKey } from '../config/workshop-snippets'
 
@@ -22,13 +25,15 @@ export function useWorkshopFormDraft(
   schema: Readonly<Ref<readonly FieldSchema[]>>,
   values: Ref<FormValues>,
   nativeJson: Ref<boolean>,
-  allowNativeJson: boolean
+  allowNativeJson: boolean,
+  { persistFiles = false }: { persistFiles?: boolean } = {}
 ) {
   const key = `comfy-workshop-form:${slug}`
   const mediaKey = `${key}:media`
   const activity = ref<'idle' | 'restoring' | 'saving'>('idle')
   let restoration: Promise<void> | undefined
   let saving: Promise<void> | undefined
+  let saveRevision = 0
   const restoreFailed = ref(false)
   const controller = new AbortController()
 
@@ -52,10 +57,13 @@ export function useWorkshopFormDraft(
     activity.value = 'saving'
     persistScalars()
     try {
-      const token = workshopIdempotencyKey()
+      const previousToken = persistFiles && sessionStorage.getItem(mediaKey)
+      const token = previousToken || workshopIdempotencyKey()
       sessionStorage.setItem(mediaKey, token)
       const files = packWorkshopFiles(schema.value, values.value)
       if (!Object.keys(files).length) {
+        if (previousToken)
+          await deleteWorkshopDraft(previousToken, controller.signal)
         sessionStorage.removeItem(mediaKey)
         return
       }
@@ -68,10 +76,27 @@ export function useWorkshopFormDraft(
   }
 
   function stash() {
-    saving ??= saveFiles().finally(() => {
+    saveRevision++
+    saving ??= (async () => {
+      let revision: number
+      do {
+        revision = saveRevision
+        await saveFiles()
+      } while (revision !== saveRevision && !controller.signal.aborted)
+    })().finally(() => {
       saving = undefined
     })
     return saving
+  }
+
+  async function consumeFiles(token: string) {
+    if (persistFiles) return
+    await deleteWorkshopDraft(token, controller.signal)
+    if (
+      !controller.signal.aborted &&
+      sessionStorage.getItem(mediaKey) === token
+    )
+      sessionStorage.removeItem(mediaKey)
   }
 
   async function restore() {
@@ -97,12 +122,7 @@ export function useWorkshopFormDraft(
         ...clearWorkshopFiles(fields),
         ...restored
       }
-      await deleteWorkshopDraft(token, controller.signal)
-      if (
-        !controller.signal.aborted &&
-        sessionStorage.getItem(mediaKey) === token
-      )
-        sessionStorage.removeItem(mediaKey)
+      await consumeFiles(token)
     } catch {
       if (!controller.signal.aborted) restoreFailed.value = true
     } finally {
@@ -113,6 +133,15 @@ export function useWorkshopFormDraft(
     restoration = restore().finally(() => {
       restoration = undefined
     })
+    if (persistFiles)
+      watch(
+        schema.value
+          .filter((field) => field.kind === 'file' || urlUploadField(field))
+          .map((field) => () => values.value[field.name]),
+        () => {
+          if (!restoration) void stash()
+        }
+      )
   })
   watch(
     [values, nativeJson],
@@ -129,5 +158,23 @@ export function useWorkshopFormDraft(
     stop()
     controller.abort()
   })
-  return { pending: computed(() => activity.value !== 'idle'), restoreFailed }
+  return {
+    pending: computed(() => activity.value !== 'idle'),
+    restoreFailed,
+    stash
+  }
+}
+
+export function transferWorkshopFormDraft(
+  fromSlug: string,
+  toSlug: string
+): void {
+  for (const suffix of ['', ':mode', ':media']) {
+    const source = `comfy-workshop-form:${fromSlug}${suffix}`
+    const value = sessionStorage.getItem(source)
+    if (value !== null) {
+      sessionStorage.setItem(`comfy-workshop-form:${toSlug}${suffix}`, value)
+      sessionStorage.removeItem(source)
+    }
+  }
 }

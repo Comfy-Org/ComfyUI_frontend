@@ -81,7 +81,38 @@ export const useAgentConversationStore = defineStore(
     const backgroundTurns = new Map<string, BackgroundTurn>()
     let hydratedMessageIds = new Set<string>()
     let hydratedAssistantTurnIds = new Set<TurnId>()
+    const reportedPaywallImpressions = new Set<TurnId>()
+    const approvalShownAtByAsk = new Map<string, number>()
+    const shownApprovalIds = new Set<string>()
     const activeIndex = ref(-1)
+
+    function recordApprovalShown(askId: string, shownAt: number): boolean {
+      if (shownApprovalIds.has(askId)) return false
+      shownApprovalIds.add(askId)
+      approvalShownAtByAsk.set(askId, shownAt)
+      return true
+    }
+
+    function approvalShownAt(askId: string): number | undefined {
+      return approvalShownAtByAsk.get(askId)
+    }
+
+    function forgetApprovalTiming(askId: string): void {
+      approvalShownAtByAsk.delete(askId)
+    }
+
+    function forgetApproval(askId: string): void {
+      forgetApprovalTiming(askId)
+      shownApprovalIds.delete(askId)
+    }
+
+    // Approval dedupe/timing belongs to one conversation: a remount of the
+    // same thread keeps it (hydrate alone must not re-arm a shown card), while
+    // leaving the thread drops the abandoned asks with it.
+    function forgetAllApprovals(): void {
+      approvalShownAtByAsk.clear()
+      shownApprovalIds.clear()
+    }
 
     function replaceActive(message: AssistantMessage): void {
       // PM-1575: looked up by id, not `activeIndex.value`. A turn's own
@@ -111,6 +142,7 @@ export const useAgentConversationStore = defineStore(
     }
 
     function setThreadId(id: string | null): void {
+      if (id !== threadId.value) forgetAllApprovals()
       threadId.value = id
     }
 
@@ -153,6 +185,12 @@ export const useAgentConversationStore = defineStore(
         }
       }
       resolvedPaywallIds.value = resolved
+    }
+
+    function claimPaywallImpression(turnId: TurnId): boolean {
+      if (reportedPaywallImpressions.has(turnId)) return false
+      reportedPaywallImpressions.add(turnId)
+      return true
     }
 
     function startTurn(turnId: TurnId): void {
@@ -411,8 +449,10 @@ export const useAgentConversationStore = defineStore(
       resolvedPaywallIds.value = new Set()
       dropAttachmentPreviews()
       threadId.value = null
+      forgetAllApprovals()
       hydratedMessageIds = new Set()
       hydratedAssistantTurnIds = new Set()
+      reportedPaywallImpressions.clear()
       clearActive()
     }
 
@@ -477,6 +517,7 @@ export const useAgentConversationStore = defineStore(
     const activeMessage = computed(() =>
       activeIndex.value >= 0 ? messages.value[activeIndex.value] : null
     )
+    const activeMessageId = computed(() => activeMessage.value?.id ?? null)
     const isStreaming = computed(() => activeMessage.value?.streaming ?? false)
     const status = computed<ConversationStatus>(() => {
       const message = activeMessage.value
@@ -488,15 +529,21 @@ export const useAgentConversationStore = defineStore(
       messages,
       entries,
       activeTurnId,
+      activeMessageId,
       threadId,
       isStreaming,
       status,
       latestWorkflowId,
+      recordApprovalShown,
+      approvalShownAt,
+      forgetApprovalTiming,
+      forgetApproval,
       recordUser,
       setThreadId,
       recordFailedSend,
       recordPaywall,
       resolvePaywalls,
+      claimPaywallImpression,
       startTurn,
       ingest,
       setCanvasSyncGate,

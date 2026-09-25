@@ -167,7 +167,7 @@ onBeforeUnmount(() => {
           v-for="(log, index) in focusedLogs"
           :key="log.taskId"
           open
-          class="group/log shadow-elevation-1 mt-2 rounded-lg border border-interface-stroke bg-interface-panel-surface"
+          class="group/log mt-2 rounded-lg border border-interface-stroke bg-interface-panel-surface shadow-interface"
         >
           <summary
             class="flex w-full cursor-pointer list-none items-center justify-between px-4 py-2 [&::-webkit-details-marker]:hidden"

@@ -924,16 +924,19 @@ describe('useSubscription', () => {
   })
 
   describe('action handlers', () => {
-    it('should open usage history URL', () => {
+    it('should open usage history URL in the active workspace', () => {
       const windowOpenSpy = vi
         .spyOn(window, 'open')
         .mockImplementation(() => null)
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'ws-team-1'
+      })
 
       const { handleViewUsageHistory } = useSubscriptionWithScope()
       handleViewUsageHistory()
 
       expect(windowOpenSpy).toHaveBeenCalledWith(
-        'https://stagingplatform.comfy.org/profile/usage',
+        'https://stagingplatform.comfy.org/profile/usage?workspace=ws-team-1',
         '_blank'
       )
 
