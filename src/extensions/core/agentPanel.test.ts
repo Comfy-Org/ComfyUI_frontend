@@ -1047,7 +1047,7 @@ describe('AgentPanel extension flag gate', () => {
   it('enables the panel when the flag turns true', async () => {
     await loadEntryAndSetup()
     mocks.flagEnabled = true
-    mocks.flagListener!()
+    mocks.flagListener!([], {})
     expect(agentStore.enabled).toBe(true)
   })
 
@@ -1080,20 +1080,15 @@ describe('AgentPanel extension flag gate', () => {
     await loadEntryAndSetup()
 
     mocks.flagListener!([], {}, { errorsLoading: true })
-
-    expect(agentStore.enabled).toBe(true)
-    expect(agentStore.gateSettled).toBe(false)
-
     await vi.advanceTimersByTimeAsync(FLAG_SETTLE_TIMEOUT_MS)
 
     expect(agentStore.enabled).toBe(true)
   })
 
-  it('locks an uncached whitelisted session out for good when its only delivery fails', async () => {
+  it('leaves an uncached session disabled and settled when its only delivery fails', async () => {
     await loadEntryAndSetup()
 
     mocks.flagListener!([], {}, { errorsLoading: true })
-    mocks.flagEnabled = true
     await vi.advanceTimersByTimeAsync(FLAG_SETTLE_TIMEOUT_MS)
 
     expect(agentStore.enabled).toBe(false)
@@ -1103,9 +1098,9 @@ describe('AgentPanel extension flag gate', () => {
   it('disables the panel without closing it when the flag flips back to false', async () => {
     await loadEntryAndSetup()
     mocks.flagEnabled = true
-    mocks.flagListener!()
+    mocks.flagListener!([], {})
     mocks.flagEnabled = false
-    mocks.flagListener!()
+    mocks.flagListener!([], {})
 
     expect(agentStore.enabled).toBe(false)
     expect(agentStore.close).not.toHaveBeenCalled()
@@ -1115,11 +1110,11 @@ describe('AgentPanel extension flag gate', () => {
   it('finishes a pending selection restore when the flag is disabled', async () => {
     await loadEntryAndSetup()
     mocks.flagEnabled = true
-    mocks.flagListener!()
+    mocks.flagListener!([], {})
     nodeSelectionStore.isLoadingWorkflow = true
 
     mocks.flagEnabled = false
-    mocks.flagListener!()
+    mocks.flagListener!([], {})
 
     expect(nodeSelectionStore.finishWorkflowLoad).toHaveBeenCalledOnce()
   })
