@@ -26,9 +26,10 @@ describe('WorkshopModelCard', () => {
     render(WorkshopModelCard, { props: { model: base } })
     const link = screen.getByTestId('workshop-model-card')
     expect(link.getAttribute('href')).toBe('/models/flux/')
-    expect(screen.getByText('Flux')).toBeTruthy()
-    expect(screen.getByRole('img', { name: 'Black Forest Labs' })).toBeTruthy()
     expect(screen.getByTestId('model-card-name').textContent).toBe('Flux')
+    expect(screen.getByTestId('model-card-provider')).toHaveTextContent(
+      'Black Forest Labs'
+    )
     expect(screen.getByTestId('model-card-task').textContent).toBe(
       'Image to Image'
     )
