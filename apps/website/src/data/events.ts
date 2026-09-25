@@ -360,27 +360,6 @@ const events: readonly ComfyEvent[] = [
     }
   },
   {
-    id: 'dev-platform-comfy-router',
-    category: 'livestream',
-    organizer: 'comfy',
-    title: {
-      en: 'Comfy Developer Platform: Building with Comfy API & Comfy Router',
-      'zh-CN': 'Comfy 开发者平台：使用 Comfy API 与 Comfy Router 构建应用'
-    },
-    description: {
-      en: 'Deep Mehta joins hosts Allyson and Purz for a live look at building with the Comfy developer API and Comfy Router.',
-      'zh-CN':
-        'Deep Mehta 做客本场直播，与主持人 Allyson 和 Purz 一起现场演示如何使用 Comfy 开发者 API 与 Comfy Router 构建应用。'
-    },
-    location: { en: 'Online', 'zh-CN': '线上' },
-    dateLabel: {
-      en: 'October 1, 2026 · 10AM PT',
-      'zh-CN': '2026年10月1日 · 上午10点（PT）'
-    },
-    startDateTime: '2026-10-01T10:00:00-07:00',
-    liveVideoId: '3pBDHdgVD1E'
-  },
-  {
     id: 'nyc-creative-ai-september-forum',
     category: 'meetup',
     organizer: 'community',
