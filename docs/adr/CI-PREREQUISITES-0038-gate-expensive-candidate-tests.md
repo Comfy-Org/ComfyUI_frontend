@@ -254,24 +254,130 @@ coordinated run. No new key retroactively cancels those runs.
 
 ### Evaluate turnaround before rollout
 
-The proposed primary outcomes are p95 time to complete, actionable PR feedback
-and p95 time from merge-queue entry to completion. A fast prerequisite failure
-alone does not count as complete feedback about the independent suites.
+The following is a proposed experiment plan, not an implemented collector or
+an approved rollout. Measure developer feedback and merge-queue turnaround
+alongside compute. A fast prerequisite failure does not count as complete
+feedback about independent suites. The current sample cannot establish a net
+benefit or isolate the cause of runner waits.
 
-Compare the prototype with parallel scheduling at similar load and change
-scope. Separate PR and merge-group events, passing and failing candidates, and
-busy and quiet periods. Record:
+#### Compare scheduling policies with the same requirements
 
-- Time an eligible job waits for a runner, including p95 and p99, separately
-  from dependency waits, concurrency waits, and execution time where observable.
-- Median and p95 completion time for passing candidates.
-- Additional fix/push cycles before authors discover independent test failures.
-- Runner-minutes avoided, including the cost of extra builds and summary jobs.
+| Policy                        | Scheduling                                                                                                            | Question                                                                        |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| A: parallel control           | Keep suites independent, retaining existing build dependencies and the same final requirements as the other policies. | What does complete parallel feedback cost at current load?                      |
+| B: full gate                  | Run this prototype's prerequisite gate before Playwright, Vitest, and the ecosystem matrix.                           | Does avoided compute compensate for delayed diagnostics and passing runs?       |
+| C: matrix-only gate           | Gate Playwright and the ecosystem matrix; keep Vitest parallel.                                                       | Can most capacity savings coexist with earlier unit-test feedback?              |
+| D: cancel on failure          | Start suites in parallel, then cancel expensive work on prerequisite failure.                                         | Does less delay on passing runs outweigh compute used before cancellation?      |
+| E: reduced matrix concurrency | Keep parallel scheduling but test one concrete concurrency limit at a time, such as half the current matrix fan-out.  | Does a lower concurrent runner demand reduce queue tails despite longer suites? |
 
-Agree on an acceptable passing-candidate slowdown before rollout. Reduced
-runner-minutes alone are insufficient evidence to adopt the gate. The current
-sample does not measure these turnaround outcomes or isolate the cause of the
-observed runner waits.
+Keep required-check policy, path selection, runner types, and shard counts
+identical except for each policy's intended scheduling change. In policy E,
+limit concurrent shards without reducing total test coverage. Making Fallow
+required must not confound the scheduling comparison. Apply the same final
+requirement in the parallel control and report extra unit-only builds
+separately. Do not credit B with the existing build-to-Playwright dependency.
+
+Do not assume GitHub provides general job priority. Reserved runner pools would
+be a separate infrastructure experiment with their own capacity and cost.
+
+#### Extend collection before testing a policy
+
+The current script selects the latest PR run and attempt per workflow and
+source SHA. Extend collection to all runs and attempts, including merge groups,
+superseded revisions, cancellations, skips, and incomplete work. Retain:
+
+- PR number, source SHA, tested merge SHA, scheduling policy, workflow version,
+  event type, and run, attempt, and job IDs.
+- Creation, start, completion, and step timestamps; runner labels, conclusions,
+  and selected suites, including the reason a suite did not execute.
+- PR updates and merge-queue entry, group creation, removal, requeue, and merge
+  events. Do not substitute workflow creation for queue entry.
+- Failure identifiers from test reports. Classify independent test defects,
+  prerequisite failures, setup failures, and infrastructure failures separately.
+
+Use the REST per-attempt jobs endpoint for historical backfills. Collect future
+events outside CI runners so saturated CI does not delay the measurement itself.
+Record missing events and timestamps rather than silently excluding their runs.
+
+Validate timestamp meanings before naming a metric. In
+[run 36084625665](https://github.com/Comfy-Org/ComfyUI_frontend/actions/runs/36084625665),
+the first `changes` job was created at `2026-09-25T02:07:08Z`, started at
+`02:14:47Z`, and completed at `02:14:56Z`. The `Set up job` step also started at
+`02:14:47Z`. That gives a 7m39s pre-start interval and 9s execution. Call it a
+pre-start interval unless evidence separates dependency waits, concurrency
+waits, and runner-supply waits. Dashboard queue aggregates are useful context,
+not a substitute for these event-level measurements.
+
+#### Report feedback, queueing, and compute separately
+
+For each policy, separate PRs from merge groups, prerequisite-passing from
+prerequisite-failing candidates, and busy from quiet periods. Define the busy
+periods from load before treatment rather than from the resulting queue delay.
+Use a recorded candidate event, such as a PR update or merge-group creation,
+as the start of candidate-duration metrics.
+
+| Metric                     | Definition and reporting                                                                                                                                                       |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| First actionable feedback  | Candidate event to first actionable failure. For passing candidates, use the final selected-suite result. Report median and p95 separately for each outcome.                   |
+| Diagnostic completeness    | Fraction of selected suites that executed and produced usable results. Distinguish path-based skips from gate-blocked suites and unfinished runs.                              |
+| Passing-candidate latency  | Candidate event to all required checks succeeding. Report median and p95.                                                                                                      |
+| Merge-queue turnaround     | Queue entry to merge, with checks-ready time reported separately. Include removals and requeues rather than analyzing only merged candidates.                                  |
+| Job wait                   | Median, p95, and p99 pre-start intervals, plus the fraction over 5 and 15 minutes. Attribute dependency, concurrency, and runner waits only where observable.                  |
+| Compute                    | Runner-minutes across every job and attempt, including summaries, extra builds, retries, cancellations, and diagnostic audits. Report per candidate and across the experiment. |
+| Cancellation latency       | Prerequisite failure to actual expensive-job termination, plus expensive execution consumed after the failure.                                                                 |
+| Additional feedback cycles | Pushes and elapsed time from a prerequisite failure to a fully checked passing revision. Separate observable CI wait from author time and unclassified intervals.              |
+
+Retain cancelled, superseded, and incomplete observations with their status
+and observation cutoff. Do not treat them as zero-duration successes or drop
+them from denominators. Report completion rates and unresolved observations
+alongside latency percentiles so a policy cannot look faster by finishing
+fewer candidates. Skipped expensive suites never count as complete feedback.
+
+#### Measure the diagnostics a gate would delay
+
+In the parallel control, identify revisions with both prerequisite and
+expensive-suite failures. Classify whether each test failure is an independent
+defect, a common cause of both failures, a flake, or an infrastructure failure.
+Record when each result became available, whether the test failure persisted
+after the prerequisite fix, and the additional pushes after discovery.
+
+If there are too few examples, predefine a small random sample of gate-failing
+revisions whose expensive suites may finish for a diagnostic audit. Include
+that audit's compute in the policy cost. The eight failing revisions in the
+initial sample are insufficient to estimate additional diagnostic cycles.
+
+#### Use separate experiments for author feedback and shared capacity
+
+Stable random assignment per PR, retained across revisions, can compare
+feedback cycles. It cannot isolate repository-wide queue savings: runners
+freed by a gated PR also help parallel-control PRs.
+
+For shared-capacity effects, randomly assign repository-wide time blocks to
+policies. Use blocks longer than typical runs, balance weekdays and hours, and
+record work carried over between blocks. Track other repositories sharing the
+runner quota and GitHub incidents as possible confounders. Report uncertainty
+with resampling at the PR or time-block level, not by treating matrix shards
+as independent samples. Use a pilot to determine sample size and block length.
+
+Start with A versus C, then compare the winner with B or D. Test E separately
+instead of dividing a small sample among all five policies at once.
+
+#### Agree on decision thresholds before rollout
+
+These thresholds are provisional proposals, not measured results or agreed
+acceptance criteria:
+
+- At least 20% lower busy-period p95 time from merge-queue entry to checks ready.
+- At most 2 minutes of median and 5 minutes of p95 passing-candidate slowdown.
+- An agreed limit on additional diagnostic cycles, chosen before the trial.
+  Report both how often independent failures are delayed and the added cycles.
+- No missing required contexts, incorrect skips, or infrastructure regressions.
+
+Report effect sizes with uncertainty, not only whether a point estimate crosses
+a threshold. Lower runner-minutes alone do not justify adoption. The recommended
+sequence is to improve collection, establish the parallel baseline, and then
+trial the matrix-only gate. This PR still implements B as a prototype; it does
+not implement those experiments or claim that full gating is the best policy.
 
 ## Notes
 
