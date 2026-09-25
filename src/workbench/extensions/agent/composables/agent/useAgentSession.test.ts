@@ -30,7 +30,6 @@ import type {
   AgentRestClient,
   PostMessageInput
 } from '../../services/agent/agentRestClient'
-import { useAgentChatHistoryStore } from '../../stores/agent/agentChatHistoryStore'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
 import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
 
@@ -274,52 +273,6 @@ describe('useAgentSession (v1 composition root)', () => {
       finishHydration([])
     })
 
-    it.fails('rejects a thread-list response from the prior workspace epoch', async () => {
-      let workspaceId = 'workspace-a'
-      let finishHistory: (threads: AgentThreadSummary[]) => void = () => {}
-      const listThreads = vi.fn(
-        () =>
-          new Promise<AgentThreadSummary[]>((resolve) => {
-            expect(workspaceId).toBe('workspace-a')
-            finishHistory = resolve
-          })
-      )
-      const session = useAgentSession({
-        rest: fakeRest({ listThreads }),
-        events: fakeEvents().source
-      })
-      const history = useAgentChatHistoryStore()
-      const refresh = session.listThreads().then((threads) =>
-        history.replaceAll(
-          threads.map((thread) => ({
-            id: thread.id,
-            title: thread.title,
-            updatedAt: Date.parse(thread.updated_at)
-          }))
-        )
-      )
-
-      rotateWorkspaceIdentity()
-      workspaceId = 'workspace-b'
-      history.replaceAll([])
-      finishHistory([
-        {
-          created_at: '2026-09-01T00:00:00Z',
-          id: 'workspace-a-thread',
-          last_message_at: '2026-09-01T00:00:00Z',
-          message_count: 1,
-          preview: 'workspace A prompt',
-          status: 'active',
-          title: 'Workspace A chat',
-          updated_at: '2026-09-01T00:00:00Z',
-          workflow_id: 'workflow-a'
-        }
-      ])
-      await refresh
-
-      expect(history.sessions).toHaveLength(0)
-    })
-
     it.fails('rejects a failed POST result from the prior workspace epoch', async () => {
       let workspaceId = 'workspace-a'
       let rejectPost: (error: AgentApiError) => void = () => {}
@@ -336,6 +289,7 @@ describe('useAgentSession (v1 composition root)', () => {
       })
       session.start()
       const sending = session.sendMessage('workspace A prompt')
+      await vi.waitFor(() => expect(postMessage).toHaveBeenCalledOnce())
 
       rotateWorkspaceIdentity()
       workspaceId = 'workspace-b'

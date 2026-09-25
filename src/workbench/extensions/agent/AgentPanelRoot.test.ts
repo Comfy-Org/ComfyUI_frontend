@@ -2931,6 +2931,47 @@ describe('AgentPanelRoot history', () => {
     ws.clear()
   })
 
+  it.fails('rejects a thread-list response from the prior workspace epoch', async () => {
+    let finishHistory: (response: Response) => void = () => {}
+    const fetchMock = vi.fn((url: string): Promise<Response> => {
+      if (url.endsWith('/api/agent/threads')) {
+        return new Promise((resolve) => {
+          finishHistory = resolve
+        })
+      }
+      return Promise.resolve(json(200, []))
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    const history = useAgentChatHistoryStore()
+
+    renderWithSelectedTarget()
+    await vi.waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith('/api/agent/threads')
+    )
+
+    const workspace = useTeamWorkspaceStore()
+    const generation = workspace.workspaceTransitionGeneration
+    workspace.resetForIdentityChange()
+    expect(workspace.workspaceTransitionGeneration).toBe(generation + 1)
+    finishHistory(
+      json(
+        200,
+        agentThreadList([
+          agentThread({
+            id: 'workspace-a-thread',
+            title: 'Workspace A chat',
+            last_message_at: '2026-09-01T00:00:00Z',
+            preview: 'workspace A prompt',
+            workflow_id: 'workflow-a'
+          })
+        ])
+      )
+    )
+    await vi.waitFor(() => expect(history.replaceAll).toHaveBeenCalledOnce())
+
+    expect(history.sessions).toHaveLength(0)
+  })
+
   async function renderWithActiveThread(): Promise<void> {
     vi.stubGlobal(
       'fetch',
