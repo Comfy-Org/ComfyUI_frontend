@@ -946,6 +946,37 @@ describe('useAgentConversationStore', () => {
   })
 
   /**
+   * The blind spot in the case above: a live transport also emits thinking and
+   * tab links, which a persisted row never carries, so a narrated stash holds
+   * MORE parts than the finished row while holding LESS of the reply. Comparing
+   * anything but reply text here strands exactly the turns this rescues. The
+   * tab link rides onto the row, since the service never wrote it there.
+   */
+  it('settles on the persisted reply when the stash narrated before it', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'upscale this')
+    store.ingest(thinking('t1', 'considering the crop'))
+    store.ingest(activeTab('workflow-7', 't1'))
+    store.ingest(delta('t1', 'All '))
+    store.stashActiveTurn()
+
+    store.setThreadId('th-other')
+    store.hydrate([])
+    store.setThreadId('th')
+    store.hydrate([
+      historyRow(1, 'user', 'server-turn', 'upscale this'),
+      historyRow(2, 'assistant', 'server-turn', 'All done.', 't1')
+    ])
+    store.resumeBackgroundTurn()
+
+    expect(partTexts(store)).toEqual(['All done.'])
+    expect(store.isStreaming).toBe(false)
+    expect(tabLinkIds(store)).toEqual(['workflow-7'])
+  })
+
+  /**
    * Two asset rows can share a content hash, so the same ref can be attached
    * under a different name in another thread. A thread must not be handed a
    * name the user only ever typed somewhere else.
