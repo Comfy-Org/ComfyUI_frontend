@@ -96,6 +96,22 @@ export class Topbar {
     return this.tabs.nth(index)
   }
 
+  /**
+   * Opens a second, blank workflow tab and returns to the first one — the
+   * lever agent tab-switch specs use to force the agent CRDT follower to
+   * unbind and rebind against the original workflow.
+   */
+  async openBlankTabAndReturn(): Promise<void> {
+    await expect(this.tabs).toHaveCount(1)
+    await this.newWorkflowButton.click()
+    await expect(this.tabs).toHaveCount(2)
+    await expect(this.getTab(1).and(this.getActiveTab())).toBeVisible()
+    await expect(this.page.getByTestId('node-title')).toHaveCount(0)
+    await this.getTab(0).click()
+    await expect(this.getTab(0).and(this.getActiveTab())).toBeVisible()
+    await expect(this.getTab(1).and(this.getActiveTab())).toHaveCount(0)
+  }
+
   getActiveTab(): Locator {
     return this.tabs.filter({
       has: this.page.getByRole('tab', { selected: true })
