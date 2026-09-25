@@ -26,6 +26,7 @@ import type { FacetMenuOption } from './WorkshopFilterMenu.vue'
 import WorkshopFilterMenu from './WorkshopFilterMenu.vue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
 import FeaturedBanner from './FeaturedBanner.vue'
+import { modelSlides } from '../../lib/workshop/featured-slides'
 import WorkshopSearchField from './WorkshopSearchField.vue'
 import WorkshopSections from './WorkshopSections.vue'
 import WorkshopSortMenu from './WorkshopSortMenu.vue'
@@ -145,6 +146,7 @@ const featured = computed(() => {
     'popular'
   )
 })
+const featuredSlides = computed(() => modelSlides(featured.value, locale))
 
 function openSection(value: UseCase | 'other') {
   useCase.value = value
@@ -248,7 +250,7 @@ watch(browseAll, (on) => on && resetFilters())
 
       <FeaturedBanner
         v-if="browsing && featured.length"
-        :models="featured"
+        :slides="featuredSlides"
         :locale
         class="mb-10 short:mb-6"
       />

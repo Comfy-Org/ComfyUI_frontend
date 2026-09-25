@@ -19,6 +19,30 @@ describe('CatalogueBackLink', () => {
     expect(link.getAttribute('href')).toBe('/models')
   })
 
+  // A second catalogue answers for its own pages, under its own name.
+  it('returns to the listing it was given', () => {
+    history.replaceState(null, '', '/hub/model/demo/')
+    render(CatalogueBackLink, {
+      props: { catalogue: '/hub', fallback: 'Back to the Hub' }
+    })
+
+    const link = screen.getByTestId('model-back')
+    expect(link.textContent.trim()).toBe('Back to the Hub')
+    expect(link.getAttribute('href')).toBe('/hub')
+  })
+
+  it('carries the shelf back to that listing too', async () => {
+    history.replaceState(null, '', '/hub/model/demo/')
+    rememberShelf('generate-videos', '/hub/model/demo/')
+    render(CatalogueBackLink, { props: { catalogue: '/hub' } })
+
+    await waitFor(() =>
+      expect(screen.getByTestId('model-back').getAttribute('href')).toBe(
+        '/hub?useCase=generate-videos'
+      )
+    )
+  })
+
   it('offers the shelf the visitor came from', async () => {
     history.replaceState(null, '', '/models/demo/')
     rememberShelf('generate-videos', '/models/demo/')

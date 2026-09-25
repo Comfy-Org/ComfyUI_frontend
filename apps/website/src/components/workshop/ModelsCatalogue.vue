@@ -75,12 +75,16 @@ watch(
 <template>
   <WorkshopHero
     v-if="!inSection"
-    :subtitle-key="
-      activeTab === 'models'
-        ? 'workshop.hero.subtitle'
-        : 'workshop.catalogue.subtitle'
+    :eyebrow="t('workshop.hero.eyebrow', locale)"
+    :heading="t('workshop.hero.heading', locale)"
+    :subtitle="
+      t(
+        activeTab === 'models'
+          ? 'workshop.hero.subtitle'
+          : 'workshop.catalogue.subtitle',
+        locale
+      )
     "
-    :locale
   >
     <template v-if="workflows.length" #eyebrow>
       <CatalogueTabs
