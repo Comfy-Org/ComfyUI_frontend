@@ -32,7 +32,6 @@ import {
   hasVideoType
 } from '@/utils/eventUtils'
 import { useAssetsStore } from '@/stores/assetsStore'
-import { useAuthStore } from '@/stores/authStore'
 import { AGENT_ATTACH_ACCEPT, isAgentAttachable } from './utils/attachableFiles'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 // eslint-disable-next-line import-x/no-restricted-paths
@@ -101,6 +100,7 @@ import { useAgentSession } from './composables/agent/useAgentSession'
 import { useAgentDraftSubmission } from './composables/agent/useAgentDraftSubmission'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
 import { createAgentRestClient } from './services/agent/agentRestClient'
+import { agentSocketToken, ensureSignedIn } from './services/agent/agentAuth'
 import type { DraftSnapshot } from './services/agent/agentRestClient'
 import type { AgentPaywallAction } from './services/agent/agentPaywallPresentation'
 import {
@@ -160,19 +160,10 @@ const userName = computed(
 )
 
 /**
- * The agent's one socket, `/api/agent/events`, on every backend. It carries
- * the credential `api.fetchApi` sends — workspace-scoped in the cloud — as
- * `?token=`, since a browser cannot set headers on a WebSocket.
+ * The agent's one socket, `/api/agent/events`, on every backend, carrying the
+ * caller's credential as `?token=` (see agentSocketToken).
  */
-const events = createAgentEventSource({
-  async getToken() {
-    const header = await useAuthStore().getAuthHeader()
-    if (!header) return undefined
-    return 'X-API-KEY' in header
-      ? header['X-API-KEY']
-      : header.Authorization.slice('Bearer '.length)
-  }
-})
+const events = createAgentEventSource({ getToken: agentSocketToken })
 
 /** Document frames ride the same socket, so following never reconnects chat. */
 const docTransport = createAgentDocFrameTransport(events)
@@ -1027,7 +1018,10 @@ const { submit: onSend } = useAgentDraftSubmission({
     replace: replaceSelectionTags,
     exit: exitNodeSelectionMode
   },
-  send: (text, attachments, nodes, references) => {
+  send: async (text, attachments, nodes, references) => {
+    // A turn runs as the signed-in Comfy account, so a signed-out user is
+    // asked to sign in rather than sending a turn that cannot run.
+    if (!(await ensureSignedIn())) return false
     useTelemetry()?.trackAgentMessageSent({
       attachment_count: attachments.length,
       node_tag_count: nodes.length

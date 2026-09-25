@@ -1,9 +1,14 @@
+vi.mock(import('firebase/auth'))
+vi.mock(import('@/services/dialogService'))
 import type { GlobalSetting } from '@comfyorg/ingest-types'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useAuthStore } from '@/stores/authStore'
 
 import {
   GlobalSettingsApiError,
   getGlobalSetting,
+  getGlobalSettingsAuthHeader,
   setGlobalSetting
 } from './globalSettingsApi'
 
@@ -18,6 +23,7 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
 }))
 const fetchWithUnifiedRemint = vi.hoisted(() => vi.fn())
 vi.mock(import('@/platform/auth/unified/remintRetry'), () => ({
+  attachUnifiedRemintInterceptor: vi.fn(),
   fetchWithUnifiedRemint,
   shouldRemintCloudRequest: () => Promise.resolve(false)
 }))
@@ -41,7 +47,7 @@ describe('Global Settings transport', () => {
   })
 
   it.for([true, false])(
-    'reads with captured workspace credentials (Cloud=%s)',
+    'reads with the credential it is handed (Cloud=%s)',
     async (cloud) => {
       distribution.isCloud = cloud
       respondWith(stored)
@@ -132,4 +138,32 @@ describe('Global Settings transport', () => {
       setGlobalSetting({ key, value: true }, authHeader)
     ).rejects.toMatchObject({ status: 500 })
   })
+
+  // The endpoint and its credential are chosen together. A workspace token is
+  // minted by the cloud and valid only at ingest; sent to the Comfy API it is
+  // rejected as an invalid auth token, which is what a signed-in local build
+  // with an active workspace used to hit on every consent read and write.
+  it.for([
+    { cloud: true, source: 'getWorkspaceAuthHeader' as const },
+    { cloud: false, source: 'getUserAuthHeader' as const }
+  ])(
+    "authenticates Cloud=$cloud with the store's $source",
+    async ({ cloud, source }) => {
+      distribution.isCloud = cloud
+      const authStore = useAuthStore()
+      vi.mocked(authStore.getWorkspaceAuthHeader).mockResolvedValue({
+        Authorization: 'Bearer workspace-token'
+      })
+      vi.mocked(authStore.getUserAuthHeader).mockResolvedValue({
+        Authorization: 'Bearer user-token'
+      })
+
+      await expect(getGlobalSettingsAuthHeader()).resolves.toEqual({
+        Authorization:
+          source === 'getWorkspaceAuthHeader'
+            ? 'Bearer workspace-token'
+            : 'Bearer user-token'
+      })
+    }
+  )
 })
