@@ -66,11 +66,15 @@ describe('core import guard', () => {
 
   it('scans the web session sources', () => {
     expect(sources.map(({ name }) => name)).toEqual(
-      expect.arrayContaining(['webSession.ts', 'sessionTokenMint.ts'])
+      expect.arrayContaining([
+        'webSession.ts',
+        'sessionTokenMint.ts',
+        'webSessionIdentity.ts'
+      ])
     )
   })
 
-  it.for(['webSession.ts', 'sessionTokenMint.ts'])(
+  it.for(['webSession.ts', 'sessionTokenMint.ts', 'webSessionIdentity.ts'])(
     'keeps %s and everything it imports off Firebase',
     (entry) => {
       const closure = relativeImportClosure(entry)

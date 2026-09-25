@@ -16,7 +16,8 @@ const models: WorkflowWorkshopModel[] = [
     categoryOrder: 4,
     recommendedRank: 1,
     workflowCount: 1,
-    capabilities: []
+    capabilities: [],
+    models: ['SeedVR2']
   },
   {
     type: 'CLOUD',
@@ -28,7 +29,8 @@ const models: WorkflowWorkshopModel[] = [
     categoryOrder: 0,
     recommendedRank: 2,
     workflowCount: 1,
-    capabilities: []
+    capabilities: [],
+    models: ['Wan 2.2', 'SeedVR2']
   },
   {
     type: 'CLOUD',
@@ -40,7 +42,8 @@ const models: WorkflowWorkshopModel[] = [
     categoryOrder: 0,
     recommendedRank: 1,
     workflowCount: 1,
-    capabilities: []
+    capabilities: [],
+    models: ['Wan 2.2']
   }
 ]
 
@@ -70,6 +73,48 @@ describe('workflow catalogue ordering and shared links', () => {
       '/models/workflows/connect/',
       '/models/workflows/restore/',
       '/models/workflows/animate/'
+    ])
+  })
+
+  it('narrows the outcomes to the model they run on, and lets go of it', async () => {
+    const user = userEvent.setup()
+    render(WorkflowCatalogue, { props: { models } })
+    await user.click(screen.getByTestId('workshop-filter'))
+    await user.click(await screen.findByTestId('workshop-facet-model'))
+    await user.click(await screen.findByTestId('filter-model-SeedVR2'))
+    expect(visibleOutcomes()).toEqual([
+      '/models/workflows/connect/',
+      '/models/workflows/restore/'
+    ])
+
+    await user.click(screen.getByTestId('filter-model-Wan 2.2'))
+    expect(visibleOutcomes()).toEqual([
+      '/models/workflows/animate/',
+      '/models/workflows/connect/',
+      '/models/workflows/restore/'
+    ])
+
+    await user.click(screen.getByTestId('workshop-filter-clear'))
+    expect(visibleOutcomes()).toEqual([
+      '/models/workflows/animate/',
+      '/models/workflows/connect/',
+      '/models/workflows/restore/'
+    ])
+  })
+
+  it('restores a known model from a shared URL and drops one it does not list', async () => {
+    history.replaceState(
+      null,
+      '',
+      '/models/?type=workflows&model=Wan+2.2&model=Nano+Banana'
+    )
+    render(WorkflowCatalogue, { props: { models } })
+    await waitFor(() =>
+      expect(screen.getByTestId('workshop-filter-count')).toHaveTextContent('1')
+    )
+    expect(visibleOutcomes()).toEqual([
+      '/models/workflows/animate/',
+      '/models/workflows/connect/'
     ])
   })
 
