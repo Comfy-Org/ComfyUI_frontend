@@ -1,8 +1,9 @@
-import { computed, shallowReactive, watch } from 'vue'
+import { shallowReactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LLink } from '@/lib/litegraph/src/litegraph'
+import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
@@ -154,47 +155,36 @@ function onCustomComboCreated(this: LGraphNode) {
 
 function onBranchSelectorCreated(this: LGraphNode) {
   this.applyToGraph = applyToGraph
-
   this.widgets?.pop()
-  const labels = computed(() =>
-    this.inputs
-      .filter((i) => i.name.startsWith('autogrow.') && i.link)
-      .map((inp) => inp.label || inp.localized_name)
-  )
+
+  const getLinkedInputs = () =>
+    this.inputs.filter((i) => i.name.startsWith('autogrow.') && i.link)
+  const nameToLabel = (name: unknown) => {
+    const inp = getLinkedInputs().find((i) => i.name === name)
+    return inp ? inputToLabel(inp) : ''
+  }
+  const inputToLabel = (input: INodeInputSlot) =>
+    input.label ?? input.localized_name ?? input.name
 
   const comboWidget = this.addWidget('combo', 'branch', 'branch0', () => {}, {
-    values: () => labels.value
+    values: () => getLinkedInputs().map((i) => i.name),
+    getOptionLabel: nameToLabel
   })
+  comboWidget.serializeValue = () => nameToLabel(comboWidget.value)
 
   const namesIndex = this.inputs.findIndex((inp) => inp.name === 'branch_names')
   if (namesIndex !== -1) this.removeInput(namesIndex)
-  const names_widget = this.addCustomWidget({
+
+  this.addCustomWidget({
     computeSize: () => [0, -4],
     draw: () => undefined,
     name: 'branch_names',
     options: { hidden: true },
     serialize: false,
+    serializeValue: () => getLinkedInputs().map(inputToLabel),
     type: 'hidden',
-    value: [],
     y: 0
   })
-
-  function onLabelUpdate() {
-    if (app.configuringGraph) return
-
-    names_widget.value = labels.value
-    if (labels.value.includes(`${comboWidget.value}`)) return
-
-    comboWidget.value = labels.value[0] ?? ''
-    comboWidget.callback?.(comboWidget.value)
-  }
-
-  let stopWatch: (() => void) | undefined
-  this.onAdded = useChainCallback(this.onAdded, () => {
-    stopWatch?.()
-    stopWatch = watch(labels, onLabelUpdate, { immediate: true })
-  })
-  this.onRemoved = useChainCallback(this.onRemoved, () => stopWatch?.())
 }
 
 function onCustomIntCreated(this: LGraphNode) {
