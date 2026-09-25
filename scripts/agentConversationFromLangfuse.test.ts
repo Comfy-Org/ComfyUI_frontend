@@ -676,6 +676,10 @@ describe('the documented tsx capture commands', () => {
       })
       const output = `${result.stdout}${result.stderr}`
 
+      // A subprocess killed by the timeout, or one that never spawned, would
+      // leave the output assertions to pass on an empty string.
+      expect(result.error).toBeUndefined()
+      expect(result.status).toBe(1)
       expect(output).not.toMatch(/is not defined/)
       expect(output).toContain('usage:')
     }
