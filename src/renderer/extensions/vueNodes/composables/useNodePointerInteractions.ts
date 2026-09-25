@@ -80,33 +80,47 @@ export function useNodePointerInteractions(
     }
   }
 
-  function runEffect(effect: GestureEffect, event: PointerEvent) {
-    if (!press) return
+  function selectNode(activePress: Press, sticky = false) {
     const { canvas } = canvasStore
-    const node = canvasStore.currentGraph?.getNodeById(press.nodeId)
+    const node = canvasStore.currentGraph?.getNodeById(activePress.nodeId)
+    if (node) canvas?.processSelect(node, activePress.event, sticky)
+  }
+
+  function startNodeDrag(activePress: Press, event: PointerEvent) {
+    selectNode(activePress, true)
+    if (!canDrag()) return
+    layoutStore.isDraggingVueNodes.value = true
+    activePress.dragStarted = true
+    startDrag(activePress.event, activePress.nodeId, event.shiftKey)
+  }
+
+  function endNodeDrag(activePress: Press, event: PointerEvent) {
+    try {
+      if (activePress.dragStarted) endDrag(event, activePress.nodeId)
+    } finally {
+      layoutStore.isDraggingVueNodes.value = false
+    }
+  }
+
+  function runEffect(effect: GestureEffect, event: PointerEvent) {
+    const activePress = press
+    if (!activePress) return
     switch (effect) {
       case 'click':
       case 'doubleClick':
-        if (node) canvas?.processSelect(node, press.event)
+        selectNode(activePress)
         return
       case 'startDrag':
-        if (node) canvas?.processSelect(node, press.event, true)
-        if (!canDrag()) return
-        layoutStore.isDraggingVueNodes.value = true
-        press.dragStarted = true
-        startDrag(press.event, press.nodeId, event.shiftKey)
+        startNodeDrag(activePress, event)
         return
       case 'movePress':
         return
       case 'moveDrag':
-        if (press.dragStarted && canDrag()) handleDrag(event, press.nodeId)
+        if (activePress.dragStarted && canDrag())
+          handleDrag(event, activePress.nodeId)
         return
       case 'endDrag':
-        try {
-          if (press.dragStarted) endDrag(event, press.nodeId)
-        } finally {
-          layoutStore.isDraggingVueNodes.value = false
-        }
+        endNodeDrag(activePress, event)
         return
     }
     effect satisfies never
