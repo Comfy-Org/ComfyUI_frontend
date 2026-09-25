@@ -33,6 +33,7 @@ import type { Subgraph } from './Subgraph'
 import type { SubgraphInput } from './SubgraphInput'
 import type { SubgraphOutput } from './SubgraphOutput'
 
+/** @internal */
 export abstract class SubgraphIONodeBase<
   TSlot extends SubgraphInput | SubgraphOutput
 >
