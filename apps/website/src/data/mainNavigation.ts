@@ -41,9 +41,31 @@ export type NavItem =
       featured?: never
     }
 
-export function getMainNavigation(locale: Locale): NavItem[] {
+export function getMainNavigation(
+  locale: Locale,
+  workshopInBuild = false
+): NavItem[] {
   const routes = getRoutes(locale)
+  const modelsEntry: NavItem[] = workshopInBuild
+    ? [
+        {
+          label: t('nav.workshop', locale),
+          href: routes.workshop,
+          badge: 'new'
+        }
+      ]
+    : []
+  const productEntry: NavColumnItem[] = workshopInBuild
+    ? [
+        {
+          label: t('nav.comfyWorkshop', locale),
+          href: routes.workshop,
+          badge: 'new'
+        }
+      ]
+    : []
   return [
+    ...modelsEntry,
     {
       label: t('nav.products', locale),
       badge: 'new',
@@ -61,6 +83,7 @@ export function getMainNavigation(locale: Locale): NavItem[] {
         {
           header: t('nav.products', locale),
           items: [
+            ...productEntry,
             { label: t('nav.comfyLocal', locale), href: routes.download },
             { label: t('nav.comfyCloud', locale), href: routes.cloud },
             {
@@ -90,8 +113,7 @@ export function getMainNavigation(locale: Locale): NavItem[] {
             },
             {
               label: t('nav.comfyCli', locale),
-              href: routes.cli,
-              badge: 'new'
+              href: routes.cli
             },
             // TODO: no page yet — re-enable when landing pages ship
             // { label: t('nav.appMode', locale), href: '#' },
@@ -142,13 +164,11 @@ export function getMainNavigation(locale: Locale): NavItem[] {
             },
             {
               label: t('nav.affiliates', locale),
-              href: routes.affiliates,
-              badge: 'new'
+              href: routes.affiliates
             },
             {
               label: t('nav.learning', locale),
-              href: routes.learning,
-              badge: 'new'
+              href: routes.learning
             }
           ]
         },

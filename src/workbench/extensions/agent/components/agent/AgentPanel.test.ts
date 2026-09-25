@@ -1,14 +1,28 @@
+import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 import { getActivePinia } from 'pinia'
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { defineComponent, nextTick, ref } from 'vue'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+// The node preview constructs its observer at import time; jsdom omits this API.
+vi.hoisted(() => {
+  globalThis.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+})
 
 import { i18n } from '@/i18n'
 import type { ComposerAttachment } from '../../composables/agent/useComposer'
-import type { TurnId } from '../../schemas/agentApiSchema'
+import { toTurnId } from '../../schemas/agentApiSchema'
+import type { WorkflowReference } from '../../types/workflowReference'
 
 import AgentPanel from './AgentPanel.vue'
+import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSetup'
+
+setupInlinePromptEditorDom()
 
 const createHistoryGroups = () => ({
   current: [],
@@ -19,7 +33,12 @@ const createHistoryGroups = () => ({
 
 function mount(isMaximized = false) {
   return render(AgentPanel, {
-    props: { entries: [], historyGroups: createHistoryGroups(), isMaximized },
+    props: {
+      entries: [],
+      historyGroups: createHistoryGroups(),
+      isMaximized,
+      activeTab: { path: 'workflows/portrait.json', name: 'portrait' }
+    },
     global: {
       plugins: [i18n],
       stubs: {
@@ -111,7 +130,6 @@ const eventComposerStub = defineComponent({
     'openAssets',
     'selectNodes',
     'removeTag',
-    'focusTag',
     'mentionPick'
   ],
   setup(_, { expose }) {
@@ -142,7 +160,6 @@ const eventComposerStub = defineComponent({
       <button type="button" @click="$emit('openAssets')">Composer assets</button>
       <button type="button" @click="$emit('selectNodes')">Composer select nodes</button>
       <button type="button" @click="$emit('removeTag', 'tag-1')">Composer remove tag</button>
-      <button type="button" @click="$emit('focusTag', 'tag-1')">Composer focus tag</button>
       <button type="button" @click="$emit('mentionPick', { id: 'node-1', title: 'KSampler' })">Composer mention</button>
     </div>
   `
@@ -166,16 +183,6 @@ const eventConversationViewStub = defineComponent({
   `
 })
 
-const eventWorkflowChipStub = defineComponent({
-  emits: ['selectTab', 'clear'],
-  template: `
-    <div>
-      <button type="button" @click="$emit('selectTab', 'workflow-1')">Select workflow</button>
-      <button type="button" @click="$emit('clear')">Clear workflow</button>
-    </div>
-  `
-})
-
 const eventPanelHeaderStub = defineComponent({
   emits: ['newChat', 'toggleSize', 'close'],
   template: `
@@ -189,6 +196,7 @@ const eventPanelHeaderStub = defineComponent({
 
 describe('AgentPanel', () => {
   beforeEach(() => {
+    vi.useRealTimers()
     localStorage.clear()
     attachmentCalls.add.length = 0
     attachmentCalls.update.length = 0
@@ -197,27 +205,25 @@ describe('AgentPanel', () => {
     draftCalls.replaceDraft.length = 0
   })
 
-  it('shows the minimized run notice and disclaimer by default', () => {
+  it('passes the editable workflow into the minimized run notice', () => {
     mount()
 
+    expect(screen.getByRole('note')).toHaveTextContent(
+      'The agent can now edit portrait. It works on 1 workflow at a time, and you can switch workflows during chat.'
+    )
     expect(
-      screen.getByText(i18n.global.t('agent.runNotice'))
-    ).toBeInTheDocument()
-    expect(
-      screen.getByText('The AI agent can make mistakes')
+      screen.getByRole('button', { name: 'Share feedback' })
     ).toBeInTheDocument()
   })
 
-  it('shows the expanded run notice and disclaimer when maximized', () => {
+  it('passes the editable workflow into the expanded run notice', () => {
     mount(true)
 
+    expect(screen.getByRole('note')).toHaveTextContent(
+      'The agent can now edit portrait. It works on 1 workflow at a time, and you can switch workflows during chat.'
+    )
     expect(
-      screen.getByText(i18n.global.t('agent.runNoticeExpanded'))
-    ).toBeInTheDocument()
-    expect(
-      screen.getByText(
-        'The AI agent can make mistakes. Double check your response.'
-      )
+      screen.getByRole('button', { name: 'Share feedback' })
     ).toBeInTheDocument()
   })
 
@@ -276,7 +282,7 @@ describe('AgentPanel', () => {
     await user.click(suggestion)
     await nextTick()
 
-    expect(textarea).toHaveValue(prompt)
+    expect(textarea).toHaveTextContent(prompt)
     expect(textarea).toHaveFocus()
 
     await user.click(screen.getByRole('button', { name: 'New chat' }))
@@ -285,37 +291,79 @@ describe('AgentPanel', () => {
     expect(textarea).not.toHaveFocus()
   })
 
-  it('replaces and focuses the composer draft when editing the eligible prompt', async () => {
-    const user = userEvent.setup()
-    const pinia = getActivePinia()!
-    const prompt = 'Generate a yellow duck with a hockey mask'
-    const { emitted } = render(AgentPanel, {
-      props: {
-        editableTurnId: 'msg-1' as TurnId,
-        entries: [{ id: 'msg-1' as TurnId, role: 'user', text: prompt }],
-        historyGroups: createHistoryGroups()
-      },
-      global: {
-        plugins: [pinia, i18n],
-        directives: { tooltip: {} },
-        stubs: { WorkflowSelectorChip: true }
-      }
-    })
-    const textarea = screen.getByRole('textbox')
-    await user.type(textarea, 'unfinished draft')
+  it.for([true, false])(
+    'restores the edited prompt and its references (references: %s)',
+    async (hasReferences) => {
+      const user = userEvent.setup()
+      const pinia = getActivePinia()!
+      const prompt = 'Compare  with  please.'
+      const turnId = toTurnId('msg-1')
+      const references: WorkflowReference[] = hasReferences
+        ? [
+            { id: 'wf-b', name: 'Flow B', textOffset: 8 },
+            { id: 'wf-a', name: 'Flow A', textOffset: 14 }
+          ]
+        : []
+      useAgentComposerStore().setWorkflowReferences([
+        { id: 'stale', name: 'Stale draft reference', textOffset: 0 }
+      ])
+      const { emitted } = render(AgentPanel, {
+        props: {
+          editableTurnId: turnId,
+          entries: [
+            {
+              id: turnId,
+              role: 'user',
+              text: prompt,
+              workflowReferences: references
+            }
+          ],
+          historyGroups: createHistoryGroups()
+        },
+        global: {
+          plugins: [pinia, i18n],
+          directives: { tooltip: {} },
+          stubs: { WorkflowSelectorChip: true }
+        }
+      })
+      const textarea = screen.getByRole('textbox')
+      useAgentComposerStore().setText('unfinished draft')
 
-    await user.click(screen.getByRole('button', { name: 'Edit' }))
-    await nextTick()
+      await user.click(screen.getByRole('button', { name: 'Edit' }))
 
-    expect(textarea).toHaveValue(prompt)
-    expect(textarea).toHaveFocus()
+      expect(textarea).toHaveTextContent(
+        hasReferences
+          ? 'Compare Flow B with Flow A please.'
+          : 'Compare with please.'
+      )
+      expect(
+        within(textarea).queryByText('Stale draft reference')
+      ).not.toBeInTheDocument()
+      expect(textarea).toHaveFocus()
 
-    await user.clear(textarea)
-    await user.type(textarea, 'Generate a yellow duck at sunrise')
-    await user.click(screen.getByRole('button', { name: 'Send' }))
+      await user.pointer({ target: textarea, offset: 0, keys: '[MouseLeft]' })
+      await user.paste('Updated. ')
+      expect(screen.getByTestId('user-message-bubble')).toHaveTextContent(
+        hasReferences
+          ? 'Compare Flow B with Flow A please.'
+          : 'Compare with please.'
+      )
+      await user.click(screen.getByRole('button', { name: 'Send' }))
 
-    expect(emitted().send[0]).toEqual(['Generate a yellow duck at sunrise', []])
-  })
+      expect(emitted().send[0]).toEqual(
+        hasReferences
+          ? [
+              `Updated. ${prompt}`,
+              [],
+              references.map((reference) => ({
+                ...reference,
+                textOffset: reference.textOffset + 9
+              }))
+            ]
+          : [`Updated. ${prompt}`, []]
+      )
+    }
+  )
 
   it('switches into history mode and routes history actions', async () => {
     const user = userEvent.setup()
@@ -564,7 +612,7 @@ describe('AgentPanel', () => {
     expect(emitted().deleteHistory).toBeUndefined()
   })
 
-  it('forwards header, composer, and workflow chip actions', async () => {
+  it('forwards header and composer actions', async () => {
     const user = userEvent.setup()
     const { emitted } = render(AgentPanel, {
       props: { entries: [], historyGroups: createHistoryGroups() },
@@ -575,7 +623,7 @@ describe('AgentPanel', () => {
           Composer: eventComposerStub,
           EmptyState: true,
           PanelHeader: eventPanelHeaderStub,
-          WorkflowSelectorChip: eventWorkflowChipStub
+          WorkflowSelectorChip: true
         }
       }
     })
@@ -603,10 +651,7 @@ describe('AgentPanel', () => {
     await user.click(
       screen.getByRole('button', { name: 'Composer remove tag' })
     )
-    await user.click(screen.getByRole('button', { name: 'Composer focus tag' }))
     await user.click(screen.getByRole('button', { name: 'Composer mention' }))
-    await user.click(screen.getByRole('button', { name: 'Select workflow' }))
-    await user.click(screen.getByRole('button', { name: 'Clear workflow' }))
 
     expect(emitted().newChat).toHaveLength(1)
     expect(emitted().toggleSize).toHaveLength(1)
@@ -617,12 +662,9 @@ describe('AgentPanel', () => {
     expect(emitted().openAssets).toHaveLength(1)
     expect(emitted().selectNodes).toHaveLength(1)
     expect(emitted().removeTag[0]).toEqual(['tag-1'])
-    expect(emitted().focusTag[0]).toEqual(['tag-1'])
     expect(emitted().mentionPick[0]).toEqual([
       { id: 'node-1', title: 'KSampler' }
     ])
-    expect(emitted().selectTab[0]).toEqual(['workflow-1'])
-    expect(emitted().clearWorkflow).toHaveLength(1)
   })
 
   it('delegates attachment changes to the composer', async () => {
@@ -675,7 +717,7 @@ describe('AgentPanel', () => {
     const user = userEvent.setup()
     render(AgentPanel, {
       props: {
-        entries: [{ id: 'msg-1' as TurnId, role: 'user', text: editedPrompt }],
+        entries: [{ id: toTurnId('msg-1'), role: 'user', text: editedPrompt }],
         historyGroups: createHistoryGroups()
       },
       global: {

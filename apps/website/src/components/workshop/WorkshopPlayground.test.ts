@@ -1,12 +1,19 @@
-// @vitest-environment happy-dom
 import type { UserEvent } from '@testing-library/user-event'
 import userEvent from '@testing-library/user-event'
-import { fireEvent, render, screen } from '@testing-library/vue'
-import { nextTick } from 'vue'
-import { describe, expect, it, vi } from 'vitest'
+import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, nextTick } from 'vue'
 
 import type { WorkshopDetailModel } from '../../config/workshop-detail'
+import {
+  popWorkshopForm,
+  runBeforeSignInLeave,
+  stashWorkshopForm
+} from '../../config/workshop-return'
+import { useWorkshopSession } from '../../config/workshop-session-state'
 import WorkshopPlayground from './WorkshopPlayground.vue'
+
+vi.mock(import('../../config/workshop-session-state'))
 
 const model: WorkshopDetailModel = {
   id: 'bfl/flux-3',
@@ -24,6 +31,15 @@ const model: WorkshopDetailModel = {
       required: true,
       multiline: true,
       valueType: 'string'
+    },
+    {
+      kind: 'number',
+      name: 'steps',
+      label: 'Steps',
+      required: false,
+      integer: true,
+      step: 1,
+      defaultValue: 20
     }
   ]
 }
@@ -57,6 +73,80 @@ const jsonModel: WorkshopDetailModel = {
 }
 
 describe('WorkshopPlayground', () => {
+  beforeEach(() => sessionStorage.clear())
+
+  it('restores a stash once and keeps defaults for omitted fields', async () => {
+    stashWorkshopForm(model.slug, model.fields, { prompt: 'Stashed red fox' })
+
+    render(WorkshopPlayground, { props: { model } })
+
+    const prompt = screen.getByRole('textbox', {
+      name: /Prompt/
+    }) as HTMLTextAreaElement
+    await waitFor(() => expect(prompt.value).toBe('Stashed red fox'))
+    expect(
+      sessionStorage.getItem(`comfy.workshop.form.${model.slug}`),
+      'the stash is consumed by the restore'
+    ).toBeNull()
+
+    expect(
+      screen.getByText(/"steps": 20/),
+      'a default not present in the stash must survive the restore merge'
+    ).toBeTruthy()
+  })
+
+  it('keeps a deliberately cleared number field empty', async () => {
+    stashWorkshopForm(model.slug, model.fields, {
+      prompt: 'a fox',
+      steps: undefined
+    })
+
+    render(WorkshopPlayground, { props: { model } })
+
+    const steps = screen.getByRole('spinbutton', {
+      name: /Steps/
+    }) as HTMLInputElement
+    await waitFor(() => expect(steps.value).toBe(''))
+  })
+
+  it('stashes the current values when the sign-in navigation fires', async () => {
+    const user = userEvent.setup()
+    const { unmount } = render(WorkshopPlayground, { props: { model } })
+    await user.type(screen.getByRole('textbox', { name: /Prompt/ }), 'Red fox')
+
+    await runBeforeSignInLeave()
+
+    expect(
+      popWorkshopForm(model.slug, model.fields),
+      'without a save on the way out there is never anything to restore on the way back'
+    ).toMatchObject({ prompt: 'Red fox' })
+
+    unmount()
+    await runBeforeSignInLeave()
+    expect(
+      popWorkshopForm(model.slug, model.fields),
+      'an unmounted island must not keep writing stale values'
+    ).toBeUndefined()
+  })
+
+  it('keeps a live island stashing after a sibling instance unmounts', async () => {
+    const user = userEvent.setup()
+    const first = render(WorkshopPlayground, { props: { model } })
+    const second = render(WorkshopPlayground, { props: { model } })
+    const [firstPrompt] = screen.getAllByRole('textbox', { name: /Prompt/ })
+    await user.type(firstPrompt, 'First fox')
+    // The later registration fires last; a stale one would clobber the live value.
+    second.unmount()
+
+    await runBeforeSignInLeave()
+
+    expect(
+      popWorkshopForm(model.slug, model.fields),
+      'an unmounted sibling must not overwrite the live island'
+    ).toMatchObject({ prompt: 'First fox' })
+    first.unmount()
+  })
+
   it('updates every snippet from the current form values', async () => {
     const user = userEvent.setup()
     render(WorkshopPlayground, { props: { model } })
@@ -232,5 +322,42 @@ describe('WorkshopPlayground', () => {
 
     await vi.advanceTimersByTimeAsync(900)
     expect(screen.getByRole('button', { name: 'Copy code' })).toBeTruthy()
+  })
+
+  describe('API key link', () => {
+    const credential = {
+      token: 'jwt',
+      expiresAt: Number.MAX_SAFE_INTEGER,
+      uid: 'user-1',
+      workspace: { id: 'ws-team', name: 'Comfy', type: 'team' as const },
+      role: 'owner',
+      permissions: []
+    } satisfies NonNullable<
+      ReturnType<typeof useWorkshopSession>['session']['value']
+    >
+
+    it('sends the get-key link as a models onboarding arrival for this model', () => {
+      render(WorkshopPlayground, { props: { model } })
+      expect(
+        screen
+          .getByRole('link', { name: 'Get your API key' })
+          .getAttribute('href')
+      ).toBe(
+        'https://platform.comfy.org/profile/api-keys?onboarding=models&model=bfl--flux-3'
+      )
+    })
+
+    it('carries the active workspace once signed in', () => {
+      useWorkshopSession().session = computed(() => credential)
+
+      render(WorkshopPlayground, { props: { model } })
+
+      expect(
+        screen.getByRole('link', { name: 'Get your API key' })
+      ).toHaveAttribute(
+        'href',
+        'https://platform.comfy.org/profile/api-keys?onboarding=models&model=bfl--flux-3&workspace=ws-team'
+      )
+    })
   })
 })

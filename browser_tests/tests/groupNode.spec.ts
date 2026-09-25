@@ -30,6 +30,58 @@ test.describe('Group node migration', { tag: '@node' }, () => {
     expect(state.hasGroupNodesExtra).toBe(false)
   })
 
+  // QA found this broken on 2026-09-10 while running the 1.54 test plan:
+  // converting a v1.3.3 group node misaligns widget values by two positions, so
+  // denoise receives 'euler' and filename_prefix receives 'normal'. Saving then
+  // writes the wrong values back, silently corrupting the workflow. Pinned with
+  // test.fail() so the fix flips this to passing.
+  test('Preserves group node widget values through subgraph conversion', async ({
+    comfyPage
+  }) => {
+    await comfyPage.workflow.loadWorkflow('groupnodes/group_node_v1.3.3')
+
+    const interiorNodes = await comfyPage.page.evaluate(() =>
+      [...window.app!.graph.subgraphs.values()].flatMap((subgraph) =>
+        subgraph.nodes.map((node) => ({
+          type: node.type,
+          widgets: Object.fromEntries(
+            (node.widgets ?? []).map((widget) => [widget.name, widget.value])
+          )
+        }))
+      )
+    )
+
+    // Structure first, while a failure here is still unexpected. test.fail()
+    // below makes everything after it expected to fail, so a conversion that
+    // stopped producing these nodes at all would otherwise be swallowed by
+    // the known widget defect.
+    const ksampler = interiorNodes.find((node) => node.type === 'KSampler')
+    expect(
+      ksampler,
+      'converted subgraph should contain a KSampler'
+    ).toBeDefined()
+    const saveImage = interiorNodes.find((node) => node.type === 'SaveImage')
+    expect(
+      saveImage,
+      'converted subgraph should contain a SaveImage'
+    ).toBeDefined()
+
+    // Below is the known defect. groupNode.ts maps widgets by name through
+    // findIndex, and this fixture has two CLIPTextEncode nodes both exposing
+    // `text`, so values land two slots back. filename_prefix is on the wrong
+    // side of that same shift, which is why it stays below the marker.
+    test.fail()
+    expect(ksampler!.widgets).toMatchObject({
+      seed: 156680208700286,
+      steps: 20,
+      cfg: 8,
+      sampler_name: 'euler',
+      scheduler: 'normal',
+      denoise: 1
+    })
+    expect(saveImage!.widgets).toMatchObject({ filename_prefix: 'ComfyUI' })
+  })
+
   test(
     'Loads a legacy ("/") separator group node without error and converts it',
     { tag: ['@vue-nodes'] },

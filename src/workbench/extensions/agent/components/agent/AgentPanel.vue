@@ -10,10 +10,17 @@ import {
 import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { buildAgentTooltipConfig } from '@/composables/useTooltipConfig'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import Button from '@/components/ui/button/Button.vue'
+import Input from '@/components/ui/input/Input.vue'
+import { buildTooltipConfig } from '@/composables/useTooltipConfig'
+import type { AgentStopMethod } from '@/platform/telemetry/types'
 
 import type { ActiveTab } from '../../types/activeTab'
+import type {
+  WorkflowReference,
+  WorkflowReferenceMetadata,
+  WorkflowReferenceOption
+} from '../../types/workflowReference'
 import type { TurnId } from '../../schemas/agentApiSchema'
 import type { ComposerAttachment } from '../../composables/agent/useComposer'
 import type { SelectedNode } from '../../composables/agent/useCanvasSelection'
@@ -25,6 +32,7 @@ import type {
 import type { ConversationEntry } from '../../stores/agent/agentConversationStore'
 import type { HistoryGroups } from '../../stores/agent/agentChatHistoryStore'
 
+import AgentFeedbackCaption from './AgentFeedbackCaption.vue'
 import ChatHistoryScreen from './ChatHistoryScreen.vue'
 import Composer from './Composer.vue'
 import ConversationView from './ConversationView.vue'
@@ -42,11 +50,18 @@ const {
   canOpenAssets = false,
   isMaximized = false,
   selectionTags = [],
+  nodeReferenceDisabledReason,
+  availableWorkflows = [],
+  selectWorkflowReference,
+  savingReference = false,
+  editableWorkflowId,
   activeTab = null,
   workflowTabs = [],
+  visibleTabPath = null,
+  selectingTabPath = null,
+  selectTab = async () => false,
   workflowDetached = false,
   getMentionNodes = () => [],
-  getMentionAssets = async () => [],
   paywallPresentation = DEFAULT_AGENT_PAYWALL_PRESENTATION,
   sessionId = null,
   customTitle,
@@ -62,11 +77,20 @@ const {
   canOpenAssets?: boolean
   isMaximized?: boolean
   selectionTags?: SelectedNode[]
+  nodeReferenceDisabledReason?: string
+  availableWorkflows?: WorkflowReferenceOption[]
+  selectWorkflowReference?: (
+    workflow: WorkflowReferenceOption
+  ) => Promise<WorkflowReferenceMetadata | undefined>
+  savingReference?: boolean
+  editableWorkflowId?: string
   activeTab?: ActiveTab | null
   workflowTabs?: ActiveTab[]
+  visibleTabPath?: string | null
+  selectingTabPath?: string | null
+  selectTab?: (path: string) => Promise<boolean>
   workflowDetached?: boolean
   getMentionNodes?: () => SelectedNode[]
-  getMentionAssets?: () => AssetItem[] | Promise<AssetItem[]>
   paywallPresentation?: AgentPaywallPresentation
   sessionId?: string | null
   customTitle?: string
@@ -75,18 +99,21 @@ const {
   answeringAskIds?: ReadonlySet<string>
 }>()
 const emit = defineEmits<{
-  send: [text: string, attachments: ComposerAttachment[]]
-  stop: []
+  send: [
+    text: string,
+    attachments: ComposerAttachment[],
+    workflowReferences?: WorkflowReference[]
+  ]
+  stop: [method: AgentStopMethod]
   attach: []
   openAssets: []
   selectNodes: []
   removeTag: [id: string]
-  focusTag: [id: string]
   mentionPick: [node: SelectedNode]
+  requestWorkflowReferences: []
+  removeWorkflowReference: [id: string]
   feedback: [turnId: string, vote: 'up' | 'down' | null]
   paywallAction: [action: AgentPaywallAction]
-  selectTab: [path: string]
-  clearWorkflow: []
   newChat: []
   toggleSize: []
   close: []
@@ -97,7 +124,9 @@ const emit = defineEmits<{
   renameHistory: [id: string, title: string]
   renameChat: [title: string]
   answerAsk: [askId: string, selection: 'run' | 'cancel']
-  openWorkflow: [workflowId: string, workflowName?: string]
+  openWorkflow: [askId: string, workflowId: string, workflowName?: string]
+  approvalShown: [askId: string, turnId: string, workflowId: string | null]
+  openReferenceWorkflow: [workflowId: string, workflowName: string]
 }>()
 
 const showHistory = ref(false)
@@ -116,6 +145,11 @@ function onSelectHistory(id: string): void {
 }
 
 const composerRef = ref<InstanceType<typeof Composer>>()
+const workflowSelectorRef = ref<InstanceType<typeof WorkflowSelectorChip>>()
+
+function onWorkflowTargetRequired(): void {
+  workflowSelectorRef.value?.openPicker()
+}
 
 const { t } = useI18n()
 
@@ -130,8 +164,8 @@ const sessionTitle = computed(() => {
 
 const renaming = ref(false)
 const renameDraft = ref('')
-const renameInput = ref<HTMLInputElement>()
-const titleButton = ref<HTMLButtonElement>()
+const renameInput = ref<InstanceType<typeof Input>>()
+const titleButton = ref<InstanceType<typeof Button>>()
 
 async function startRename(): Promise<void> {
   renameDraft.value = sessionTitle.value ?? ''
@@ -144,7 +178,8 @@ async function startRename(): Promise<void> {
 async function exitRename(): Promise<void> {
   renaming.value = false
   await nextTick()
-  titleButton.value?.focus()
+  const button: unknown = titleButton.value?.$el
+  if (button instanceof HTMLButtonElement) button.focus()
 }
 
 function onRenameKeydown(event: KeyboardEvent): void {
@@ -170,8 +205,8 @@ function onDeleteChat(): void {
   if (sessionId !== null) emit('deleteHistory', sessionId)
 }
 
-function addAttachment(attachment: ComposerAttachment): void {
-  composerRef.value?.addAttachment(attachment)
+function addAttachment(attachment: ComposerAttachment): boolean {
+  return composerRef.value?.addAttachment(attachment) ?? false
 }
 
 function updateAttachment(
@@ -185,15 +220,24 @@ function removeAttachment(id: string): void {
   composerRef.value?.removeAttachment(id)
 }
 
+function onComposerSend(
+  text: string,
+  attachments: ComposerAttachment[],
+  references?: WorkflowReference[]
+): void {
+  if (references !== undefined) emit('send', text, attachments, references)
+  else emit('send', text, attachments)
+}
+
 defineExpose({ addAttachment, updateAttachment, removeAttachment })
 </script>
 
 <template>
   <section
-    class="bg-agent-surface text-agent-fg @container flex h-full flex-col overflow-hidden"
+    class="@container flex h-full flex-col overflow-hidden bg-base-background text-base-foreground"
   >
     <PanelHeader
-      :is-maximized="isMaximized"
+      :is-maximized
       @new-chat="onNewChat"
       @toggle-size="emit('toggleSize')"
       @close="emit('close')"
@@ -213,22 +257,25 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
 
     <template v-else>
       <div class="flex h-10 shrink-0 items-center px-2">
-        <button
-          v-tooltip.bottom="buildAgentTooltipConfig(t('agent.showChatHistory'))"
+        <Button
+          id="agent-chat-history"
+          v-tooltip.bottom="buildTooltipConfig(t('agent.showChatHistory'))"
           type="button"
+          variant="muted-textonly"
+          size="icon-sm"
           :aria-label="t('agent.showChatHistory')"
-          class="text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg focus-visible:ring-agent-accent flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-sm transition-colors focus-visible:ring-2 focus-visible:outline-none"
+          class="size-6 shrink-0"
           @click="onOpenHistory"
         >
           <span class="icon-[lucide--history] size-4 shrink-0" />
-        </button>
+        </Button>
         <template v-if="renaming">
-          <input
+          <Input
             ref="renameInput"
             v-model="renameDraft"
             type="text"
             :aria-label="t('g.rename')"
-            class="text-agent-fg border-agent-accent h-6 min-w-0 flex-1 rounded-lg border px-2 py-1 text-xs outline-none"
+            class="h-6 flex-1 px-2 py-1 text-xs"
             @keydown="onRenameKeydown"
             @blur="commitRename"
           />
@@ -239,44 +286,50 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           :aria-label="t('agent.chatOptions')"
           class="flex w-fit max-w-full min-w-0 items-center"
         >
-          <button
+          <Button
             ref="titleButton"
             type="button"
+            variant="muted-textonly"
+            size="sm"
             :disabled="sessionId === null"
-            class="text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg disabled:hover:text-agent-fg-muted focus-visible:ring-agent-accent flex h-6 min-w-0 cursor-pointer items-center rounded-sm px-2 py-1 text-left text-xs transition-colors focus-visible:ring-2 focus-visible:outline-none disabled:cursor-default disabled:hover:bg-transparent"
+            class="min-w-0 justify-start text-left"
             @click="startRename"
           >
             <span class="min-w-0 truncate">{{
               sessionTitle || t('agent.newChatTitle')
             }}</span>
-          </button>
+          </Button>
           <DropdownMenuRoot v-if="sessionId">
-            <DropdownMenuTrigger
-              v-tooltip.bottom="buildAgentTooltipConfig(t('agent.chatOptions'))"
-              :aria-label="t('agent.chatOptions')"
-              class="text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-sm transition-colors"
-            >
-              <span class="icon-[lucide--chevron-down] size-3" />
+            <DropdownMenuTrigger as-child>
+              <Button
+                v-tooltip.bottom="buildTooltipConfig(t('agent.chatOptions'))"
+                variant="muted-textonly"
+                size="icon-sm"
+                :aria-label="t('agent.chatOptions')"
+                class="size-6 shrink-0"
+              >
+                <span class="icon-[lucide--chevron-down] size-3" />
+              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuPortal>
               <DropdownMenuContent
                 side="bottom"
                 align="start"
                 :side-offset="4"
-                class="agent-scope rounded-agent bg-agent-surface-raised z-1100 flex h-16 w-32 flex-col gap-1 p-1 shadow-lg"
+                class="agent-scope z-1100 flex h-16 w-32 flex-col gap-1 rounded-xl bg-secondary-background p-1 shadow-lg"
               >
                 <DropdownMenuItem
-                  class="text-agent-fg data-highlighted:bg-agent-surface-hover flex h-6 w-full shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-xs outline-none"
+                  class="flex h-6 w-full shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-xs text-base-foreground outline-none data-highlighted:bg-secondary-background-hover"
                   @select="startRename"
                 >
                   <span class="icon-[lucide--pencil] size-4 shrink-0" />
                   <span class="truncate">{{ t('g.rename') }}</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator
-                  class="before:bg-agent-border relative h-0 w-full shrink-0 before:absolute before:inset-x-0 before:top-0 before:h-px"
+                  class="relative h-0 w-full shrink-0 before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-component-node-border"
                 />
                 <DropdownMenuItem
-                  class="text-agent-fg data-highlighted:bg-agent-surface-hover data-highlighted:text-agent-danger flex h-6 w-full shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-xs outline-none"
+                  class="flex h-6 w-full shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-xs text-base-foreground outline-none data-highlighted:bg-secondary-background-hover data-highlighted:text-destructive-background"
                   @select="onDeleteChat"
                 >
                   <span class="icon-[lucide--trash-2] size-4 shrink-0" />
@@ -291,23 +344,31 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
       <div class="min-h-0 flex-1">
         <EmptyState
           v-if="!entries.length"
-          :user-name="userName"
+          :user-name
           @insert="composerRef?.insert($event)"
         />
         <ConversationView
           v-else
-          :entries="entries"
-          :editable-turn-id="editableTurnId"
-          :answering-ask-ids="answeringAskIds"
-          :paywall-presentation="paywallPresentation"
+          :entries
+          :editable-turn-id
+          :answering-ask-ids
+          :paywall-presentation
           @edit-prompt="composerRef?.replaceDraft($event)"
           @feedback="(id, vote) => emit('feedback', id, vote)"
           @answer-ask="
             (askId, selection) => emit('answerAsk', askId, selection)
           "
+          @approval-shown="
+            (askId, turnId, workflowId) =>
+              emit('approvalShown', askId, turnId, workflowId)
+          "
           @open-workflow="
+            (askId, workflowId, workflowName) =>
+              emit('openWorkflow', askId, workflowId, workflowName)
+          "
+          @open-reference-workflow="
             (workflowId, workflowName) =>
-              emit('openWorkflow', workflowId, workflowName)
+              emit('openReferenceWorkflow', workflowId, workflowName)
           "
           @paywall-action="emit('paywallAction', $event)"
         />
@@ -318,38 +379,53 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
       <slot name="instrument" />
       <footer class="shrink-0 py-3">
         <div class="mx-auto flex w-full max-w-[640px] flex-col gap-4 px-4">
-          <RunNoticeBanner :expanded="isMaximized" />
+          <RunNoticeBanner
+            :expanded="isMaximized"
+            :workflow-name="workflowDetached ? undefined : activeTab?.name"
+          />
           <Composer
             ref="composerRef"
-            :streaming="streaming"
-            :submitting="submitting"
-            :can-attach="canAttach"
-            :can-open-assets="canOpenAssets"
-            :selection-tags="selectionTags"
-            :get-mention-nodes="getMentionNodes"
-            :get-mention-assets="getMentionAssets"
-            @send="(text, attachments) => emit('send', text, attachments)"
-            @stop="emit('stop')"
+            :streaming
+            :submitting
+            :can-attach
+            :can-open-assets
+            :selection-tags
+            :node-reference-disabled-reason
+            :select-workflow-reference
+            :available-workflows
+            :editable-workflow-id
+            :has-workflow-target="!workflowDetached"
+            :workflow-selecting="selectingTabPath !== null || savingReference"
+            :get-mention-nodes
+            @send="onComposerSend"
+            @stop="emit('stop', $event)"
             @attach="emit('attach')"
             @open-assets="emit('openAssets')"
             @select-nodes="emit('selectNodes')"
             @remove-tag="emit('removeTag', $event)"
-            @focus-tag="emit('focusTag', $event)"
             @mention-pick="emit('mentionPick', $event)"
+            @request-workflow-references="emit('requestWorkflowReferences')"
+            @remove-workflow-reference="emit('removeWorkflowReference', $event)"
+            @open-reference-workflow="
+              (workflowId, workflowName) =>
+                emit('openReferenceWorkflow', workflowId, workflowName)
+            "
+            @workflow-target-required="onWorkflowTargetRequired"
           >
             <template #header>
               <WorkflowSelectorChip
-                :active-tab="activeTab"
+                ref="workflowSelectorRef"
+                :active-tab
                 :tabs="workflowTabs"
+                :visible-tab-path
+                :selecting-tab-path
+                :select-tab
                 :detached="workflowDetached"
-                @select-tab="emit('selectTab', $event)"
-                @clear="emit('clearWorkflow')"
+                :disabled="streaming || submitting || savingReference"
               />
             </template>
           </Composer>
-          <p class="text-agent-fg-muted -mt-1.5 mb-0 text-center text-xs">
-            {{ t(isMaximized ? 'agent.captionExpanded' : 'agent.caption') }}
-          </p>
+          <AgentFeedbackCaption />
         </div>
       </footer>
     </template>

@@ -1,35 +1,107 @@
 <script setup lang="ts">
-import { useClipboard } from '@vueuse/core'
-import { computed } from 'vue'
+import { useClipboard, useClipboardItems } from '@vueuse/core'
+import { computed, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
+import Button from '@/components/ui/button/Button.vue'
+import Tag from '@/components/chip/Tag.vue'
+import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { api } from '@/scripts/api'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
 import type { UserAttachment } from '../../../stores/agent/agentConversationStore'
+import type {
+  PromptSnapshot,
+  WorkflowReference
+} from '../../../types/workflowReference'
 import type { ReplyAsset } from '../../../utils/replyAssets'
-import AgentTooltip from '../AgentTooltip.vue'
+import { agentMessageText } from '../../../utils/agentMessageText'
+import { workflowReferenceParts } from '../../../utils/workflowReferenceParts'
 import ReplyAssetGroup from './ReplyAssetGroup.vue'
+import {
+  selectedUserMessageClipboard,
+  userMessageClipboard
+} from './userMessageClipboard'
 
 const {
   text,
   attachments = [],
   tags = [],
+  workflowReferences = [],
   editable = false
 } = defineProps<{
   text: string
   attachments?: UserAttachment[]
   tags?: string[]
+  workflowReferences?: WorkflowReference[]
   editable?: boolean
 }>()
 const emit = defineEmits<{
-  edit: [text: string]
+  edit: [prompt: PromptSnapshot]
+  openReferenceWorkflow: [workflowId: string, workflowName: string]
 }>()
 
 const { t } = useI18n()
-const { copy, copied } = useClipboard({ copiedDuring: 2000, legacy: true })
+const promptParts = computed(() =>
+  workflowReferenceParts(text, workflowReferences)
+)
+const readableText = computed(() =>
+  agentMessageText({ text, workflowReferences, tags, attachments })
+)
+const bubble = useTemplateRef<HTMLElement>('bubble')
+const plainClipboard = useClipboard({ copiedDuring: 2000, legacy: true })
+const richClipboard = useClipboardItems({ copiedDuring: 2000 })
+const copied = computed(
+  () => plainClipboard.copied.value || richClipboard.copied.value
+)
+
+async function copyMessage(): Promise<void> {
+  if (
+    workflowReferences.length &&
+    richClipboard.isSupported.value &&
+    typeof ClipboardItem !== 'undefined'
+  ) {
+    const content = userMessageClipboard({
+      text,
+      workflowReferences,
+      tags,
+      attachments
+    })
+    try {
+      await richClipboard.copy([
+        new ClipboardItem({
+          'text/plain': new Blob([content.text], { type: 'text/plain' }),
+          'text/html': new Blob([content.html], { type: 'text/html' })
+        })
+      ])
+      return
+    } catch {
+      await plainClipboard.copy(content.text)
+      return
+    }
+  }
+  await plainClipboard.copy(readableText.value)
+}
+
+function copySelection(event: ClipboardEvent): void {
+  if (!bubble.value || !event.clipboardData) return
+  const content = selectedUserMessageClipboard(
+    bubble.value,
+    document.getSelection()
+  )
+  if (!content) return
+  event.clipboardData.setData('text/plain', content.text)
+  event.clipboardData.setData('text/html', content.html)
+  event.preventDefault()
+  event.stopPropagation()
+}
+
+function openReference(reference: WorkflowReference): void {
+  if (reference.unavailable) return
+  emit('openReferenceWorkflow', reference.id, reference.name)
+}
 
 /* The shared map's 'other' glyph is a checkmark, which reads as a status
    rather than a file on this surface. */
@@ -50,9 +122,13 @@ const splitAttachments = computed(() => {
   const plain: UserAttachment[] = []
   for (const item of attachments) {
     const kind = getMediaTypeFromFilename(item.name)
-    const url = item.ref
-      ? api.apiURL(`/view?filename=${encodeURIComponent(item.ref)}&type=input`)
-      : item.previewUrl
+    const url =
+      item.previewUrl ??
+      (item.ref
+        ? api.apiURL(
+            `/view?filename=${encodeURIComponent(item.ref)}&type=input`
+          )
+        : undefined)
     if (
       url &&
       (kind === 'image' ||
@@ -70,16 +146,19 @@ const splitAttachments = computed(() => {
 </script>
 
 <template>
-  <div class="group flex flex-col items-end gap-2 pl-16">
+  <div class="group flex flex-col items-end gap-2 pl-16" @copy="copySelection">
     <div v-if="tags.length" class="flex flex-wrap justify-end gap-1">
-      <span
+      <Tag
         v-for="(tag, index) in tags"
         :key="`${tag}:${index}`"
-        class="rounded-agent bg-agent-pill text-agent-fg-muted inline-flex items-center gap-1 px-1.5 py-0.5 text-xs"
+        :label="tag"
+        shape="rounded"
+        class="max-w-48"
       >
-        <span class="icon-[lucide--at-sign] size-3 shrink-0" />
-        <span class="max-w-40 truncate">{{ tag }}</span>
-      </span>
+        <template #icon>
+          <span class="icon-[lucide--at-sign] size-3 shrink-0" />
+        </template>
+      </Tag>
     </div>
     <div v-if="splitAttachments.grid.length" class="w-full">
       <ReplyAssetGroup :assets="splitAttachments.grid" />
@@ -94,56 +173,114 @@ const splitAttachments = computed(() => {
         class="m-0"
       >
         <div
-          class="bg-agent-surface-raised flex aspect-square w-full items-center justify-center rounded-lg"
+          class="flex aspect-square w-full items-center justify-center rounded-lg bg-secondary-background"
         >
           <span
             :class="
-              cn(attachmentIconClass(item.name), 'text-agent-fg-subtle size-6')
+              cn(attachmentIconClass(item.name), 'size-6 text-muted-foreground')
             "
           />
         </div>
-        <figcaption class="text-agent-fg-muted mt-0.5 truncate text-xs">
+        <figcaption class="mt-0.5 truncate text-xs text-muted-foreground">
           {{ item.name }}
         </figcaption>
       </figure>
     </div>
     <div
-      v-if="text"
-      class="border-agent-border bg-agent-surface-raised text-agent-fg w-fit max-w-full rounded-[10px] border px-2.5 py-1.5 text-sm wrap-break-word whitespace-pre-wrap"
+      v-if="text || workflowReferences.length"
+      ref="bubble"
+      data-testid="user-message-bubble"
+      class="w-fit max-w-full rounded-lg border border-component-node-border bg-secondary-background px-2.5 py-1.5 text-sm/7 font-normal wrap-break-word whitespace-pre-wrap text-muted-foreground"
     >
-      {{ text }}
+      <template v-for="(part, index) in promptParts" :key="index">
+        <Tag
+          v-if="part.type === 'workflow'"
+          interactive
+          :label="part.reference.name"
+          class="max-w-64 align-middle"
+          :aria-label="
+            part.reference.unavailable
+              ? t('agent.unavailableWorkflowReference', {
+                  name: part.reference.name
+                })
+              : t('agent.openWorkflowTab', { name: part.reference.name })
+          "
+          data-testid="workflow-reference-chip"
+          data-comfy-workflow="1"
+          :data-workflow-id="part.reference.id"
+          :data-workflow-unavailable="
+            part.reference.unavailable ? 'true' : undefined
+          "
+          :aria-disabled="part.reference.unavailable"
+          :aria-description="
+            part.reference.unavailable
+              ? t('agent.workflowReferenceUnavailableReason')
+              : undefined
+          "
+          :title="
+            part.reference.unavailable
+              ? t('agent.workflowReferenceUnavailableReason')
+              : undefined
+          "
+          @click="openReference(part.reference)"
+        >
+          <template #icon>
+            <span class="icon-[comfy--workflow] size-3 shrink-0" />
+          </template>
+        </Tag>
+        <template v-else>{{ part.text }}</template>
+      </template>
     </div>
     <div
-      v-if="text"
-      class="text-agent-fg-subtle flex opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 touch:opacity-100"
+      v-if="readableText"
+      class="flex text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 touch:opacity-100"
     >
-      <AgentTooltip v-if="editable" :label="t('g.edit')">
-        <button
-          type="button"
-          :aria-label="t('g.edit')"
-          class="hover:bg-agent-surface-hover hover:text-agent-fg flex size-6 cursor-pointer items-center justify-center rounded-lg p-1 transition-colors"
-          @click="emit('edit', text)"
-        >
-          <span class="icon-[lucide--pencil] size-3" />
-        </button>
-      </AgentTooltip>
-      <AgentTooltip :label="copied ? t('agent.copied') : t('agent.copy')">
-        <button
-          type="button"
-          :aria-label="copied ? t('agent.copied') : t('agent.copy')"
-          class="hover:bg-agent-surface-hover hover:text-agent-fg flex size-6 cursor-pointer items-center justify-center rounded-lg p-1 transition-colors"
-          @click="copy(text)"
-        >
-          <span
-            :class="
-              cn(
-                'size-3',
-                copied ? 'icon-[lucide--check]' : 'icon-[lucide--copy]'
-              )
-            "
-          />
-        </button>
-      </AgentTooltip>
+      <AccessibleTooltip
+        v-if="editable && (text || workflowReferences.length)"
+        :label="t('g.edit')"
+        :skip-delay-duration="0"
+        disable-hoverable-content
+        :collision-padding="8"
+      >
+        <template #trigger>
+          <Button
+            type="button"
+            variant="muted-textonly"
+            size="icon-sm"
+            :aria-label="t('g.edit')"
+            class="size-6 rounded-lg"
+            @click="emit('edit', { text, workflowReferences })"
+          >
+            <span class="icon-[lucide--pencil] size-3" />
+          </Button>
+        </template>
+      </AccessibleTooltip>
+      <AccessibleTooltip
+        :label="copied ? t('agent.copied') : t('agent.copy')"
+        :skip-delay-duration="0"
+        disable-hoverable-content
+        :collision-padding="8"
+      >
+        <template #trigger>
+          <Button
+            type="button"
+            variant="muted-textonly"
+            size="icon-sm"
+            :aria-label="copied ? t('agent.copied') : t('agent.copy')"
+            class="size-6 rounded-lg"
+            @click="copyMessage"
+          >
+            <span
+              :class="
+                cn(
+                  'size-3',
+                  copied ? 'icon-[lucide--check]' : 'icon-[lucide--copy]'
+                )
+              "
+            />
+          </Button>
+        </template>
+      </AccessibleTooltip>
     </div>
   </div>
 </template>
