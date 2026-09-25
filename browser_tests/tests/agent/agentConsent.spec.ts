@@ -286,7 +286,7 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
       const video = page.getByTestId('agent-consent-video')
       await expect(video).toHaveJSProperty(
         'currentSrc',
-        'https://media.comfy.org/website/comfy-agent/agent-consent-1280.mp4'
+        'https://media.comfy.org/website/comfy-agent/agent-consent-v2-1280.mp4'
       )
       await expect
         .poll(() =>
