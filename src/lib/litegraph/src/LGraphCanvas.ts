@@ -6062,8 +6062,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (
       this.viewportMotion.isMoving(LiteGraph.getTime()) &&
       !this.linkConnector.isConnecting
-    )
+    ) {
+      this._visibleReroutes.clear()
       return
+    }
 
     const { graph, subgraph } = this
     if (!graph) throw new NullGraphError()

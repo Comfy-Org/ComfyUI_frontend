@@ -707,6 +707,23 @@ describe('drawConnections', () => {
       expect([...canvas.renderedPaths]).toEqual([link])
     })
 
+    it('keeps reroutes out of hit testing while links are hidden', () => {
+      const reroute = graph.createReroute([200, 110], link)
+      if (!reroute) throw new Error('Failed to create test reroute')
+      advance(16)
+      canvas.draw(true, true)
+      expect(canvas._visibleReroutes.has(reroute)).toBe(true)
+
+      advance(16)
+      canvas.ds.offset[0] += 10
+      canvas.draw(true, true)
+      expect(canvas._visibleReroutes.size).toBe(0)
+
+      advance(LINKS_RESTORE_DELAY_MS)
+      canvas.draw()
+      expect(canvas._visibleReroutes.has(reroute)).toBe(true)
+    })
+
     it('restarts the delay while the viewport keeps moving', () => {
       for (let frame = 0; frame < 20; frame++) {
         advance(16)
