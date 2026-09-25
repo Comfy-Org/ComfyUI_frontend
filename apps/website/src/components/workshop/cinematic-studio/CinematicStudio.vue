@@ -93,10 +93,11 @@ function start(shot: StarterShot) {
 }
 
 async function useAsReference(url: string, name: string) {
-  const response = await fetch(url)
-  cast.value = new File([await response.blob()], name, {
-    type: response.headers.get('content-type') ?? 'image/png'
-  })
+  const blob = await fetch(url)
+    .then((response) => (response.ok ? response.blob() : undefined))
+    .catch(() => undefined)
+  if (blob)
+    cast.value = new File([blob], name, { type: blob.type || 'image/png' })
 }
 
 function generate() {

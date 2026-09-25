@@ -30,6 +30,8 @@ vi.mock(
 
 const net = {
   holdTakes: false,
+  holdAnalyze: false,
+  finishAnalyze: () => {},
   submitted: [] as Record<string, { inputs: Record<string, unknown> }>[]
 }
 
@@ -40,6 +42,7 @@ function setup() {
 
 beforeEach(() => {
   net.holdTakes = false
+  net.holdAnalyze = false
   net.submitted = []
   vi.stubGlobal(
     'fetch',
@@ -55,6 +58,12 @@ beforeEach(() => {
     (id, _onUpdate, signal) =>
       new Promise((resolve, reject) => {
         const done = { id, status: 'succeeded', outputs: [] }
+        // a held analysis finishes when told, even after it was cancelled:
+        // the page has to drop a result that arrives too late
+        if (id === 'analyze-job' && net.holdAnalyze) {
+          net.finishAnalyze = () => resolve(done)
+          return
+        }
         if (id !== 'take-job' || !net.holdTakes) return resolve(done)
         signal.addEventListener('abort', () =>
           reject(new DOMException('Stopped', 'AbortError'))
@@ -114,6 +123,25 @@ describe('Re-shoot, run for real', () => {
     screen.getByTestId('reshoot-globe').focus()
     await user.keyboard('{ArrowRight}')
     expect(screen.getByRole('slider', { name: 'Rotation' })).toHaveValue('-25')
+  })
+
+  it('drops a depth reading once the clip it was for is replaced', async () => {
+    net.holdAnalyze = true
+    const user = setup()
+    await user.click(screen.getByRole('button', { name: /Sci-fi pilot/ }))
+    await user.click(screen.getByTestId('reshoot-analyze'))
+    await waitUntil(() => expect(net.submitted).toHaveLength(1))
+
+    await user.upload(
+      screen.getByLabelText('Change'),
+      new File(['clip'], 'another.mp4', { type: 'video/mp4' })
+    )
+    net.finishAnalyze()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(vi.mocked(cancel)).toHaveBeenCalledWith('analyze-job')
+    expect(screen.getByTestId('reshoot-action')).toBeDisabled()
+    expect(screen.getByTestId('reshoot-analyze')).toBeEnabled()
   })
 
   it.for([

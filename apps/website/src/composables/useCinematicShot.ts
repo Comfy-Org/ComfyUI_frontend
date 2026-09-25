@@ -67,7 +67,15 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
     aspect.value = shot.aspect
   }
 
+  const canGenerate = computed(
+    () =>
+      studio.gate.value === 'ready' &&
+      scene.value.trim().length > 0 &&
+      !(references.value.length > 0 && !model.value?.referenceSlug)
+  )
+
   function generate() {
+    if (!canGenerate.value) return
     void studio.generate({
       modelSlug: modelSlug.value,
       referenceSlug: model.value?.referenceSlug,

@@ -20,7 +20,9 @@ const { label, disabled = false } = defineProps<{
     :aria-disabled="disabled"
   >
     <summary
+      :tabindex="disabled ? -1 : undefined"
       class="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase select-none hover:text-primary-warm-white [&::-webkit-details-marker]:hidden"
+      @click="disabled && $event.preventDefault()"
     >
       {{ label }}
       <ChevronDown

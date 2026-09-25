@@ -5,6 +5,7 @@ import { provideStudioSwitchGuard } from '../../../composables/useStudioSwitchGu
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import { useWorkshopWorkflowsEnabled } from '../../../scripts/posthog'
 import { rc } from '../../../lib/workshop/cinematic-studio/reshoot-copy'
 import RunLeaveDialog from '../RunLeaveDialog.vue'
 import WorkshopGate from '../WorkshopGate.vue'
@@ -27,6 +28,7 @@ const LAYOUTS = [
 
 const APPS = ['studio', 'reshoot'] as const
 
+const studioEnabled = useWorkshopWorkflowsEnabled()
 const layout = ref('e')
 const app = ref('studio')
 const layoutOptions = computed(() =>
@@ -86,7 +88,7 @@ function pickApp(id: string) {
 </script>
 
 <template>
-  <WorkshopGate>
+  <WorkshopGate :allowed="studioEnabled">
     <CinematicAppsHub v-if="layout === 'hub'" :locale />
     <ReshootStudio v-else-if="app === 'reshoot'" :locale />
     <CinematicStudioPanel v-else-if="layout === 'd'" :models :locale />

@@ -37,8 +37,10 @@ async function accept(file: File) {
 
 function choose(event: Event) {
   const input = event.target
-  if (input instanceof HTMLInputElement && input.files?.[0])
-    void accept(input.files[0])
+  if (!(input instanceof HTMLInputElement)) return
+  const file = input.files?.[0]
+  input.value = ''
+  if (file) void accept(file)
 }
 
 function drop(event: DragEvent) {

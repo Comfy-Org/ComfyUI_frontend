@@ -27,6 +27,7 @@ import WorkshopFilterMenu from './WorkshopFilterMenu.vue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
 import FeaturedBanner from './FeaturedBanner.vue'
 import { modelSlides, studioSlide } from '../../lib/workshop/featured-slides'
+import { useWorkshopWorkflowsEnabled } from '../../scripts/posthog'
 import WorkshopSearchField from './WorkshopSearchField.vue'
 import WorkshopSections from './WorkshopSections.vue'
 import WorkshopSortMenu from './WorkshopSortMenu.vue'
@@ -146,8 +147,9 @@ const featured = computed(() => {
     'popular'
   )
 })
+const studioEnabled = useWorkshopWorkflowsEnabled()
 const featuredSlides = computed(() => [
-  studioSlide(locale),
+  ...(studioEnabled.value ? [studioSlide(locale)] : []),
   ...modelSlides(featured.value, locale)
 ])
 

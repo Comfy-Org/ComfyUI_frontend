@@ -83,8 +83,10 @@ const framesText = computed(() =>
 
 function choose(event: Event) {
   const input = event.target
-  if (input instanceof HTMLInputElement && input.files?.[0])
-    upload.value = input.files[0]
+  if (!(input instanceof HTMLInputElement)) return
+  const file = input.files?.[0]
+  input.value = ''
+  if (file) upload.value = file
 }
 </script>
 
@@ -142,6 +144,7 @@ function choose(event: Event) {
         <ReshootMoveControls
           v-model:frame="frame"
           :keys
+          :disabled="!ready"
           :locale
           @remove="emit('removeKey', $event)"
         />

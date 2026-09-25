@@ -50,6 +50,7 @@ const frame = defineModel<number>('frame', { required: true })
       >
         <button
           type="button"
+          :disabled
           class="flex h-full items-center gap-1 pl-2.5"
           :aria-label="
             rc('reshoot.move.goTo', locale).replace(
@@ -66,6 +67,7 @@ const frame = defineModel<number>('frame', { required: true })
         </button>
         <button
           type="button"
+          :disabled
           class="grid size-5 place-items-center rounded-md text-primary-warm-gray hover:text-primary-warm-white"
           :aria-label="
             rc('reshoot.move.remove', locale).replace(

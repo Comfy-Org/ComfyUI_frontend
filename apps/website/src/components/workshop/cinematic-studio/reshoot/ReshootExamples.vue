@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+
 import type { PlaygroundExample } from '../../../../config/workshop-playground'
 import { RESHOOT_EXAMPLE } from '../../../../lib/workshop/cinematic-studio/reshoot'
 import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
@@ -12,7 +14,8 @@ const { activeId, locale = 'en' } = defineProps<{
 
 const emit = defineEmits<{ pick: [] }>()
 
-const EXAMPLES: readonly PlaygroundExample[] = [
+// computed, so the titles follow the page's language
+const examples = computed<readonly PlaygroundExample[]>(() => [
   {
     id: 'crossview-example',
     title: rc('reshoot.pick.exampleTitle', locale),
@@ -23,12 +26,12 @@ const EXAMPLES: readonly PlaygroundExample[] = [
   }
   // Only the worked example: the other tiles were stills with no clip behind
   // them, which a page that really runs could not keep its word on.
-]
+])
 </script>
 
 <template>
   <ExamplesTab
-    :examples="EXAMPLES"
+    :examples="examples"
     :active-id="activeId"
     :locale
     @open="emit('pick')"

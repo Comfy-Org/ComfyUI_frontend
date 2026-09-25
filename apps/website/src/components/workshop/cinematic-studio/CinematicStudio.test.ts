@@ -20,7 +20,8 @@ import { useWorkshopSession } from '../../../config/workshop-session-state'
 import { prepareModelPage } from '../../../routes/models/model-page'
 import {
   useWorkshopEnabled,
-  useWorkshopEnabledSettled
+  useWorkshopEnabledSettled,
+  useWorkshopWorkflowsEnabled
 } from '../../../scripts/posthog'
 import { t } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
@@ -28,6 +29,7 @@ import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/mode
 import { runnableCinematicModels } from '../../../lib/workshop/cinematic-studio/models'
 import CinematicStudio from './CinematicStudio.vue'
 import CinematicStudioPage from './CinematicStudioPage.vue'
+import CinematicStudioPanel from './CinematicStudioPanel.vue'
 
 vi.mock(import('../../../config/workshop-session-state'))
 vi.mock(import('../../../config/workshop-credits'))
@@ -86,6 +88,7 @@ describe('CinematicStudio', () => {
     vi.stubEnv('PUBLIC_WORKSHOP_ROUTER_RUN', '1')
     vi.mocked(useWorkshopEnabled).mockReturnValue(computed(() => true))
     vi.mocked(useWorkshopEnabledSettled).mockReturnValue(computed(() => true))
+    vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(computed(() => true))
     const session = useWorkshopSession()
     session.session = computed(() => signedIn.value)
     vi.mocked(session.ensureFresh).mockResolvedValue({
@@ -475,38 +478,60 @@ describe('CinematicStudio', () => {
     expect(signals[0].aborted).toBe(true)
   })
 
-  it('asks before a link leaves a take that is still rendering', async () => {
-    const signals: AbortSignal[] = []
-    vi.mocked(router_render).mockImplementation(
-      (_slug, _parameters, options) =>
-        new Promise(() => {
-          if (options.signal) signals.push(options.signal)
+  it.for([
+    { layout: 'bottom composer', component: CinematicStudio },
+    { layout: 'side panel', component: CinematicStudioPanel }
+  ])(
+    'asks before a link leaves a take still rendering in the $layout',
+    async ({ component }) => {
+      const signals: AbortSignal[] = []
+      vi.mocked(router_render).mockImplementation(
+        (_slug, _parameters, options) =>
+          new Promise(() => {
+            if (options.signal) signals.push(options.signal)
+          })
+      )
+      const assign = vi
+        .spyOn(window.location, 'assign')
+        .mockImplementation(() => {})
+      render(component, { props: { models } })
+      const user = userEvent.setup()
+      const away = document.body.appendChild(document.createElement('a'))
+      away.href = '/pricing'
+      away.textContent = 'Pricing'
+
+      await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+      await user.click(generateButton())
+      await user.click(away)
+      const dialog = await screen.findByRole('dialog', {
+        name: t('workshop.run.leaveTitle')
+      })
+      await user.click(
+        within(dialog).getByRole('button', {
+          name: t('workshop.run.leaveAnyway')
         })
-    )
-    const assign = vi
-      .spyOn(window.location, 'assign')
-      .mockImplementation(() => {})
+      )
+
+      expect(signals[0].aborted).toBe(true)
+      expect(assign).toHaveBeenCalledWith(`${location.origin}/pricing`)
+      away.remove()
+      assign.mockRestore()
+    }
+  )
+
+  it('does not generate again once the scene is cleared', async () => {
+    vi.mocked(router_render).mockImplementation(async (slug) => rendered(slug))
     const user = renderStudio()
-    const away = document.body.appendChild(document.createElement('a'))
-    away.href = '/pricing'
-    away.textContent = 'Pricing'
 
     await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
     await user.click(generateButton())
-    await user.click(away)
-    const dialog = await screen.findByRole('dialog', {
-      name: t('workshop.run.leaveTitle')
-    })
+    await screen.findByAltText(/A diner at dawn/)
+    await user.clear(screen.getByLabelText('Scene'))
     await user.click(
-      within(dialog).getByRole('button', {
-        name: t('workshop.run.leaveAnyway')
-      })
+      screen.getByRole('button', { name: tc('cinematic.stage.again') })
     )
 
-    expect(signals[0].aborted).toBe(true)
-    expect(assign).toHaveBeenCalledWith(`${location.origin}/pricing`)
-    away.remove()
-    assign.mockRestore()
+    expect(router_render).toHaveBeenCalledTimes(1)
   })
 
   it('moves between takes with the arrow keys', async () => {
@@ -566,6 +591,30 @@ describe('CinematicStudio', () => {
     )
   })
 
+  it('keeps the scene unreferenced when a take can no longer be read', async () => {
+    fetchData.mockImplementation(async (input) =>
+      String(input).startsWith('blob:')
+        ? Promise.reject(new TypeError('Revoked'))
+        : servePageData(input)
+    )
+    vi.mocked(router_render).mockImplementation(async (slug) => rendered(slug))
+    const user = renderStudio()
+    await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+    await user.click(generateButton())
+    await screen.findByAltText(/A diner at dawn/)
+
+    await user.click(
+      screen.getByRole('button', { name: tc('cinematic.stage.useAsReference') })
+    )
+    await user.click(
+      screen.getByRole('button', { name: tc('cinematic.stage.again') })
+    )
+
+    await vi.waitFor(() => expect(router_render).toHaveBeenCalledTimes(2))
+    const [, parameters] = vi.mocked(router_render).mock.calls[1]
+    expect(parameters?.reference_images).toBeUndefined()
+  })
+
   it('renders sample frames in demo mode without calling the Router', async () => {
     window.history.replaceState(null, '', '/cinematic-studio?demo=1')
     signedIn.value = undefined
@@ -581,6 +630,18 @@ describe('CinematicStudio', () => {
     )
     expect(frame.getAttribute('src')).toMatch(/^\/images\/cinematic-studio\//)
     expect(router_render).not.toHaveBeenCalled()
+  })
+
+  it('withholds the studio from visitors outside the staff rollout', async () => {
+    vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(
+      computed(() => false)
+    )
+    render(CinematicStudioPage, { props: { models } })
+
+    expect(
+      await screen.findByText(tc('cinematic.unavailable.title'))
+    ).toBeInTheDocument()
+    expect(screen.queryByTestId('cinematic')).toBeNull()
   })
 
   describe('layout switch', () => {

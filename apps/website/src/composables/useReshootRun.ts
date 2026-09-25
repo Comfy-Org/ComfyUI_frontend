@@ -148,12 +148,24 @@ export function useReshootRun(locale: Locale = 'en') {
       : undefined
   )
 
+  // A newer clip, or new settings for it, retire the analysis in flight: its
+  // job is cancelled and whatever it still returns is dropped, so depth read
+  // for one clip never lands on another.
+  let reading = 0
+  function retireReading() {
+    reading++
+    cancelAnalysis()
+  }
   watch([aspect, size], () => {
-    if (depth.value === 'ready') depth.value = 'stale'
+    if (depth.value === 'analyzing') {
+      retireReading()
+      depth.value = geometry.value ? 'stale' : 'none'
+    } else if (depth.value === 'ready') depth.value = 'stale'
   })
   watch(
     upload,
     () => {
+      retireReading()
       depth.value = 'none'
       geometry.value = undefined
       keys.value = []
@@ -283,7 +295,8 @@ export function useReshootRun(locale: Locale = 'en') {
         controller.signal
       )
     } finally {
-      running.delete(key)
+      // a newer run under the same key may have taken the slot already
+      if (running.get(key) === run) running.delete(key)
     }
   }
 
@@ -294,26 +307,33 @@ export function useReshootRun(locale: Locale = 'en') {
   async function analyze() {
     if (clipError.value || depth.value === 'analyzing') return
     const before = depth.value
+    const mine = ++reading
     error.value = undefined
     depth.value = 'analyzing'
     selected.value = 'aim'
     status.value = rc('reshoot.stage.uploading', locale)
     try {
       const settings = await clipSettings()
+      // retired while the clip was still uploading: submit nothing
+      if (mine !== reading) return
       const job = await track(
         'analyze',
         analyzeWorkflow(settings),
         rc('reshoot.analyzing', locale),
         (stage) => (status.value = stage)
       )
+      if (mine !== reading) return
       status.value = rc('reshoot.stage.fetching', locale)
       const blob = await download(job, '.cvgeo')
-      geometry.value = await readGeometry(await blob.arrayBuffer())
+      const read = await readGeometry(await blob.arrayBuffer())
+      if (mine !== reading) return
+      geometry.value = read
       keys.value = []
       frame.value = 0
       depth.value = 'ready'
       step.value = 2
     } catch (e) {
+      if (mine !== reading) return
       depth.value = before === 'ready' ? 'stale' : before
       if (!aborted(e)) error.value = failure(e)
     }
