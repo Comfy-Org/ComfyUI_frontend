@@ -343,7 +343,9 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
     await test.step('move outside pan range and cancel drag', async () => {
       await comfyPage.page.mouse.move(400, 400, { steps: 20 })
       await ksampler.header.evaluate((node) =>
-        node.dispatchEvent(new PointerEvent('pointercancel', { bubbles: true }))
+        node.dispatchEvent(
+          new PointerEvent('pointercancel', { bubbles: true, pointerId: 1 })
+        )
       )
     })
 

@@ -236,6 +236,20 @@ describe('useNodePointerInteractions', () => {
     expect(captured).toBe(false)
   })
 
+  it('captures a button press on the button', () => {
+    const target = document.createElement('div')
+    const button = target.appendChild(document.createElement('button'))
+    const rootCapture = vi.spyOn(target, 'setPointerCapture')
+    const buttonCapture = vi.spyOn(button, 'setPointerCapture')
+    const down = onTarget(pointerEvent('pointerdown', 10, 10), target)
+    Object.defineProperty(down, 'target', { value: button })
+
+    handlers.onPointerdown(down)
+
+    expect(rootCapture).not.toHaveBeenCalled()
+    expect(buttonCapture).toHaveBeenCalledWith(1)
+  })
+
   it('ignores events from pointers other than the press owner', () => {
     const { startDrag, handleDrag, endDrag } = useNodeDrag()
     press(handlers, 10, 10, { pointerId: 1 })
