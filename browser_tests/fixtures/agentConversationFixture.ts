@@ -14,6 +14,8 @@ import type {
   AgentWsEvent
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import { parseServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
+import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
 
 import {
   agentTest,
@@ -537,7 +539,20 @@ export class AgentConversationHarness {
   // What the canvas shows after the given turn, judged the way a user would
   // (which nodes, under which titles, with which widget values, wired on
   // both slot rows) against the workflow the production library projects.
-  async expectCanvasReplayed(throughTurn: number): Promise<void> {
+  //
+  // `skipTitleCheckForNodeIds` opts specific node ids out of the per-node
+  // title assertion below. It exists for callers that deliberately hold a
+  // node's live title away from the doc's own projected title (e.g. a known,
+  // unfixed "local rename doesn't survive reconcile" repro) — asserting the
+  // doc's stale title there would hard-code the very gap under test, and
+  // would keep hard-failing even once a real fix makes the live title
+  // outlive the reconcile, since this host's projection only reflects
+  // replayed ops and has no way to observe that local rename either way.
+  // Every other node, and every other caller, keeps the full contract check.
+  async expectCanvasReplayed(
+    throughTurn: number,
+    skipTitleCheckForNodeIds: ReadonlySet<string> = new Set()
+  ): Promise<void> {
     const projected = this.host.projection()
     const nodes = projected.nodes.map((node) => zProjectedNode.parse(node))
     const present = new Set(nodes.map((node) => String(node.id)))
@@ -559,7 +574,10 @@ export class AgentConversationHarness {
         this.displayNames.get(node.type),
         materialized
       )
-      await expect(locator.getByTestId('node-title')).toHaveText(expectedTitle)
+      if (!skipTitleCheckForNodeIds.has(id))
+        await expect(locator.getByTestId('node-title')).toHaveText(
+          expectedTitle
+        )
     }
     await expect(this.page.getByTestId('node-title')).toHaveCount(nodes.length)
 
@@ -879,7 +897,7 @@ export class AgentConversationHarness {
   }
 
   async switchAwayAndBack(nodeId: string, widget: string): Promise<void> {
-    const tabs = this.topbar.workflowTabs.locator('.p-togglebutton')
+    const tabs = this.topbar.tabs
     await expect(tabs).toHaveCount(1)
     await this.topbar.newWorkflowButton.click()
     await expect(tabs).toHaveCount(2)
@@ -887,7 +905,9 @@ export class AgentConversationHarness {
 
     const subscribes = this.subscribeCount()
     await this.topbar.getTab(0).click()
-    await expect(this.topbar.getTab(0)).toHaveClass(/p-togglebutton-checked/)
+    await expect(
+      this.topbar.getTab(0).and(this.topbar.getActiveTab())
+    ).toBeVisible()
     await expect.poll(() => this.subscribeCount()).toBe(subscribes + 1)
     await this.waitForPendingFrames(
       nodeId,
@@ -917,6 +937,83 @@ export class AgentConversationHarness {
     })
     await expect(this.panel).toBeVisible({ timeout: PANEL_MOUNT_TIMEOUT })
     await this.selectWorkflowTarget()
+  }
+
+  // Sends one more doc_update that resyncs `widget` on `nodeId` to its
+  // current doc value — the same effect on a live widget as a stale echo,
+  // a reconnect resync, or an unrelated full-graph reconcile has whenever
+  // that frame's changed-widgets sweep happens to touch it. Lets a test
+  // race this deterministically against a live keystroke instead of
+  // waiting on the timing a real run happens to produce.
+  async resyncWidget(nodeId: string, widget: string): Promise<void> {
+    const widgets = z
+      .record(z.string(), z.unknown())
+      .optional()
+      .parse(this.host.graph().nodes[nodeId]?.widgets)
+    const value = widgets?.[widget]
+    if (value === undefined)
+      throw new Error(`Host widget ${nodeId}.${widget} does not exist`)
+    const operation = {
+      op: 'set_widget',
+      node_id: nodeId,
+      widget,
+      value,
+      old: value
+    } satisfies GraphOperation
+    const frame = this.host.apply([operation])
+    const parsedFrame = parseServerDocFrame(frame)
+    if (parsedFrame?.type !== 'doc_update')
+      throw new Error('Host widget resync did not produce a doc_update')
+
+    const receipt = crypto.randomUUID()
+    await this.page.evaluate(
+      ({ receipt, workflowId, seq }) => {
+        const api = window.app!.api
+        const attribute = 'data-agent-crdt-update-receipt'
+        const cleanupType = `agent-crdt-update-cleanup-${receipt}`
+        const removeReceiptListener = () => {
+          api.removeCustomEventListener('doc_update', recordReceipt)
+          document.removeEventListener(cleanupType, removeReceiptListener)
+        }
+        const recordReceipt = (event: CustomEvent<unknown>) => {
+          if (typeof event.detail !== 'object' || event.detail === null) return
+          if (
+            !('workflow_id' in event.detail) ||
+            event.detail.workflow_id !== workflowId ||
+            !('seq' in event.detail) ||
+            event.detail.seq !== seq
+          )
+            return
+          document.documentElement.setAttribute(attribute, receipt)
+          removeReceiptListener()
+        }
+        api.addCustomEventListener('doc_update', recordReceipt)
+        document.addEventListener(cleanupType, removeReceiptListener, {
+          once: true
+        })
+      },
+      {
+        receipt,
+        workflowId: parsedFrame.data.workflowId,
+        seq: parsedFrame.data.seq
+      }
+    )
+    try {
+      this.hostSocket.send(frame)
+      await expect(this.page.locator('html')).toHaveAttribute(
+        'data-agent-crdt-update-receipt',
+        receipt
+      )
+    } finally {
+      await this.page.evaluate((receipt) => {
+        document.dispatchEvent(
+          new CustomEvent(`agent-crdt-update-cleanup-${receipt}`)
+        )
+        document.documentElement.removeAttribute(
+          'data-agent-crdt-update-receipt'
+        )
+      }, receipt)
+    }
   }
 }
 

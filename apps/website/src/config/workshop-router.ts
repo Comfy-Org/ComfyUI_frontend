@@ -1,8 +1,11 @@
+import { combineAbortSignals } from '../utils/abortSignal'
 import type { WorkshopContract } from './workshop-contract'
+import { workshopContentPolicyBody } from './workshop-content-policy'
 import { WORKSHOP_ROUTER_BASE_URL } from './workshop-env'
 import { serializeRouterInput } from './workshop-request'
 import { parseRouterResponse, releaseRouterOutputs } from './workshop-response'
 import type { RunFailure, RunOutput } from './workshop-run'
+import type { FieldErrors } from './workshop-playground'
 import {
   WorkshopRouterError,
   workshopResponseDetails
@@ -53,28 +56,42 @@ export function waitFor(ms: number, signal: AbortSignal): Promise<void> {
 async function failureDetails(response: Response) {
   const reader = response.body?.getReader()
   let body = ''
+  let bodyComplete = reader === undefined
   if (reader) {
     const decoder = new TextDecoder()
     let remaining = 16_384
     try {
       while (remaining > 0) {
         const { done, value } = await reader.read()
-        if (done) break
-        body += decoder.decode(value.subarray(0, remaining), { stream: true })
-        remaining -= value.byteLength
+        if (done) {
+          bodyComplete = true
+          break
+        }
+        const included = value.subarray(0, remaining)
+        body += decoder.decode(included, { stream: true })
+        remaining -= included.byteLength
+        if (included.byteLength < value.byteLength) break
       }
       body += decoder.decode()
     } catch (cause) {
-      return { response: workshopResponseDetails(response), cause }
+      return {
+        response: workshopResponseDetails(response),
+        bodyComplete: false,
+        cause
+      }
     } finally {
       await reader.cancel().catch(() => {})
       reader.releaseLock()
     }
   }
-  return { response: workshopResponseDetails(response, body) }
+  return { response: workshopResponseDetails(response, body), bodyComplete }
 }
 
-function failureFor(response: Response): RunFailure {
+function failureFor(
+  response: Response,
+  body: string,
+  bodyComplete: boolean
+): RunFailure {
   const bucket = response.headers.get('X-Comfy-Error-Type')
   if (bucket === 'insufficient_credits') return 'noCredits'
   if (bucket === 'content_policy_violation') return 'policy'
@@ -83,13 +100,70 @@ function failureFor(response: Response): RunFailure {
   if (response.status === 402) return 'noCredits'
   if (response.status === 429) return 'rateLimit'
   if (response.status === 409) return 'conflict'
-  if (response.status === 400 || response.status === 422) return 'validation'
   if ([401, 403, 404].includes(response.status)) return 'unavailable'
   if (response.status === 504) return 'timeout'
+  if (bodyComplete && workshopContentPolicyBody(body)) return 'policy'
+  if (response.status === 400 || response.status === 422) return 'validation'
   return 'provider'
 }
 
+function providerFieldErrors(
+  contract: WorkshopContract,
+  requestBody: Readonly<Record<string, unknown>>,
+  body: string,
+  bodyComplete: boolean
+): FieldErrors {
+  if (!bodyComplete || !body.trim()) return {}
+  if (contract.id === 'kling/kling-v3-omni' && isKlingHdrRefusal(body))
+    return { video_url: 'videoHdrUnsupported' }
+  if (
+    contract.id === 'byteplus/seedream-5-0-pro-260628' &&
+    requestBody.layer_decomposition === true &&
+    isSeedreamLayerRefusal(body)
+  )
+    return { images: 'imageLayerDecompositionUnsupported' }
+  return {}
+}
+
+function parseJsonObject(body: string): object | undefined {
+  try {
+    const payload: unknown = JSON.parse(body)
+    if (payload !== null && typeof payload === 'object') return payload
+  } catch {
+    return undefined
+  }
+  return undefined
+}
+
+function isKlingHdrRefusal(body: string): boolean {
+  const payload = parseJsonObject(body)
+  if (!payload) return false
+  const data = Reflect.get(payload, 'data')
+  return (
+    data !== null &&
+    typeof data === 'object' &&
+    Reflect.get(data, 'task_status') === 'failed' &&
+    Reflect.get(data, 'task_status_msg') ===
+      'VideoNormalize failed, HDR video is not supported'
+  )
+}
+
+function isSeedreamLayerRefusal(body: string): boolean {
+  const payload = parseJsonObject(body)
+  if (!payload) return false
+  const error = Reflect.get(payload, 'error')
+  return (
+    error !== null &&
+    typeof error === 'object' &&
+    Reflect.get(error, 'code') === 'InvalidParameter' &&
+    Reflect.get(error, 'param') === 'image' &&
+    String(Reflect.get(error, 'message')).trim().toLowerCase() ===
+      'the image content is too complex to decompose into layers'
+  )
+}
+
 export interface RouterRunOptions {
+  readonly comfy_save_asset?: boolean
   readonly contract: WorkshopContract
   readonly body: Readonly<Record<string, unknown>>
   readonly token: string
@@ -184,7 +258,45 @@ export function throwRunFailure(
     requestId,
     {},
     undefined,
-    'request'
+    'request',
+    { cause: error }
+  )
+}
+
+function attributedResponseError(
+  error: unknown,
+  requestId: string | null,
+  response: Response
+): WorkshopRouterError {
+  const responseDetails = workshopResponseDetails(response)
+  if (!(error instanceof WorkshopRouterError))
+    return new WorkshopRouterError(
+      'response',
+      requestId,
+      {},
+      responseDetails,
+      'response',
+      { cause: error }
+    )
+  const attributedRequestId = error.requestId ?? requestId
+  const attributedResponse = error.response ?? responseDetails
+  if (
+    attributedRequestId === error.requestId &&
+    attributedResponse === error.response
+  )
+    return error
+  return new WorkshopRouterError(
+    error.reason,
+    attributedRequestId,
+    error.fieldErrors,
+    attributedResponse,
+    error.stage,
+    {
+      ...(error.cause === undefined ? {} : { cause: error.cause }),
+      ...(error.requestSettlement
+        ? { requestSettlement: error.requestSettlement }
+        : {})
+    }
   )
 }
 
@@ -197,13 +309,21 @@ export async function settleRouterResponse(
   try {
     if (!response.ok) {
       const details = await failureDetails(response)
+      const fieldErrors = providerFieldErrors(
+        options.contract,
+        options.body,
+        details.response.body,
+        details.bodyComplete
+      )
       throw new WorkshopRouterError(
-        failureFor(response),
+        Object.keys(fieldErrors).length
+          ? 'validation'
+          : failureFor(response, details.response.body, details.bodyComplete),
         requestId,
-        {},
+        fieldErrors,
         details.response,
         'request',
-        { cause: details.cause }
+        details.cause === undefined ? undefined : { cause: details.cause }
       )
     }
     const outputs = await parseRouterResponse(
@@ -227,14 +347,7 @@ export async function settleRouterResponse(
         workshopResponseDetails(response),
         'response'
       )
-    if (error instanceof WorkshopRouterError) throw error
-    throw new WorkshopRouterError(
-      'response',
-      requestId,
-      {},
-      workshopResponseDetails(response),
-      'response'
-    )
+    throw attributedResponseError(error, requestId, response)
   }
 }
 
@@ -350,7 +463,7 @@ export function createAttemptContext(
     options,
     body: serializeRouterInput(options.body),
     controller,
-    signal: AbortSignal.any([controller.signal, options.signal]),
+    signal: combineAbortSignals([controller.signal, options.signal]),
     deadlineAt: Date.now() + TOTAL_RUN_TIMEOUT_MS
   }
 }
@@ -383,5 +496,7 @@ export async function runSynchronousWorkshopRouter(
     options.signal.throwIfAborted()
     if (error instanceof WorkshopRouterError) throw error
     return throwRunFailure(error, context, state.requestId)
+  } finally {
+    context.controller.abort()
   }
 }

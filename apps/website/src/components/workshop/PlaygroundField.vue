@@ -58,7 +58,13 @@ const errorKey: Record<FieldErrorCode, TranslationKey> = {
   uploadFailed: 'workshop.form.uploadFailed',
   fileUnreadable: 'workshop.form.fileUnreadable',
   incompatible: 'workshop.form.incompatible',
+  imageAspectRatioOutOfRange: 'workshop.form.imageAspectRatioOutOfRange',
+  imageLayerDecompositionUnsupported:
+    'workshop.form.imageLayerDecompositionUnsupported',
+  imageUnreadable: 'workshop.form.imageUnreadable',
   videoTooLong: 'workshop.form.videoTooLong',
+  videoWidthOutOfRange: 'workshop.form.videoWidthOutOfRange',
+  videoHdrUnsupported: 'workshop.form.videoHdrUnsupported',
   videoUnreadable: 'workshop.form.videoUnreadable',
   rejected: 'workshop.form.rejected'
 }
@@ -80,19 +86,41 @@ const fieldError = computed(() =>
     ? validateForm([field], values.value)[field.name]
     : errors[field.name]
 )
-const errorMessage = computed(() => {
-  if (!fieldError.value) return ''
-  if (fieldError.value === 'incompatible' && field.hint) return field.hint
 
-  return t(errorKey[fieldError.value], locale, {
-    limit: formatWorkshopUploadLimit(
-      (field.kind === 'file' ? field : urlUploadField(field))?.maxBytes ??
-        MAX_UPLOAD_BYTES,
-      locale
+function uploadLimit(): number {
+  if (field.kind === 'file') return field.maxBytes ?? MAX_UPLOAD_BYTES
+  return urlUploadField(field)?.maxBytes ?? MAX_UPLOAD_BYTES
+}
+
+function videoDurationLimit(): string {
+  return String(field.presentation?.maxVideoDurationSeconds ?? '')
+}
+
+function videoWidthMinimum(): string {
+  return String(field.presentation?.videoWidthPixels?.minimum ?? '')
+}
+
+function videoWidthMaximum(): string {
+  return String(field.presentation?.videoWidthPixels?.maximum ?? '')
+}
+
+function messageForError(error: FieldErrorCode): string {
+  if (error === 'incompatible' && field.hint) return field.hint
+  return t(errorKey[error], locale, {
+    limit: formatWorkshopUploadLimit(uploadLimit(), locale),
+    seconds: videoDurationLimit(),
+    minimum: String(
+      field.presentation?.imageAspectRatio?.minimum ?? videoWidthMinimum()
     ),
-    seconds: field.presentation?.maxVideoDurationSeconds ?? ''
+    maximum: String(
+      field.presentation?.imageAspectRatio?.maximum ?? videoWidthMaximum()
+    )
   })
-})
+}
+
+const errorMessage = computed(() =>
+  fieldError.value ? messageForError(fieldError.value) : ''
+)
 const invalid = () => fieldError.value !== undefined
 const describedBy = computed(
   () =>
@@ -150,6 +178,7 @@ const declaredDefault = computed(() =>
   field.kind === 'file' ||
   field.kind === 'select' ||
   field.kind === 'toggle' ||
+  (field.kind === 'text' && field.multiline) ||
   isSlider.value
     ? undefined
     : field.defaultValue

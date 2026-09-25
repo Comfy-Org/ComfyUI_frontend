@@ -16,6 +16,7 @@ export function useWorkshopDelivery() {
     | {
         analytics: WorkshopRunAnalytics
         requestId: string | null
+        deadlineStarted: boolean
         startedAt: number
         output: RunOutput
         timer: ReturnType<typeof setTimeout> | undefined
@@ -45,19 +46,26 @@ export function useWorkshopDelivery() {
 
   function cancel() {
     finish(
-      pending?.output.kind === 'audio' && pending.timer === undefined
+      pending?.output.kind === 'audio' && !pending.deadlineStarted
         ? 'unverified'
         : 'cancelled'
     )
+  }
+
+  function pauseDeadline() {
+    if (pending?.timer === undefined) return
+    clearTimeout(pending.timer)
+    pending = { ...pending, timer: undefined }
   }
 
   function armDeadline() {
     if (!pending || pending.timer !== undefined) return
     pending = {
       ...pending,
+      deadlineStarted: true,
       startedAt: Date.now(),
       timer: setTimeout(() => {
-        if (document.visibilityState === 'hidden') cancel()
+        if (document.visibilityState === 'hidden') pauseDeadline()
         else finish('failed', 'media_timeout')
       }, 120_000)
     }
@@ -69,7 +77,8 @@ export function useWorkshopDelivery() {
       url !== (pending.output.urls?.[0] ?? pending.output.url)
     )
       return
-    if (document.visibilityState === 'hidden') cancel()
+    if (document.visibilityState === 'hidden')
+      pending = { ...pending, deadlineStarted: true }
     else armDeadline()
   }
 
@@ -83,13 +92,14 @@ export function useWorkshopDelivery() {
       analytics,
       requestId,
       output,
+      deadlineStarted: output.kind !== 'audio',
       startedAt: Date.now(),
       timer: undefined
     }
     if (output.nsfw || !['image', 'video', 'audio'].includes(output.kind))
       finish('unverified')
-    else if (document.visibilityState === 'hidden') cancel()
-    else if (output.kind !== 'audio') armDeadline()
+    else if (document.visibilityState !== 'hidden' && output.kind !== 'audio')
+      armDeadline()
   }
 
   // `cancelled` is the media element for that URL being torn down before it
@@ -104,7 +114,8 @@ export function useWorkshopDelivery() {
     () => globalThis.document,
     'visibilitychange',
     () => {
-      if (document.visibilityState === 'hidden') cancel()
+      if (document.visibilityState === 'hidden') pauseDeadline()
+      else if (pending?.deadlineStarted) armDeadline()
     }
   )
   onScopeDispose(cancel)

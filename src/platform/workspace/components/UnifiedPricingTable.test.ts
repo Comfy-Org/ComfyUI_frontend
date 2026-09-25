@@ -1,8 +1,4 @@
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import type {
-  ScheduledPlanChange,
-  SubscriptionTier
-} from '@comfyorg/ingest-types'
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -11,12 +7,15 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
+import type { SubscriptionInfo } from '@/composables/billing/types'
 import enMessages from '@/locales/en/main.json'
 import type {
   BillingSubscriptionStatus,
   Plan
 } from '@/platform/workspace/api/workspaceApi'
 import UnifiedPricingTable from '@/platform/workspace/components/UnifiedPricingTable.vue'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 function apiPlan(
   tier: Plan['tier'],
@@ -39,12 +38,12 @@ function apiPlan(
   }
 }
 
-interface MockSubscription {
-  tier: SubscriptionTier | null
-  isCancelled?: boolean
-  duration?: string
-  scheduledChange?: ScheduledPlanChange
-}
+interface MockSubscription
+  extends
+    Pick<SubscriptionInfo, 'tier'>,
+    Partial<
+      Pick<SubscriptionInfo, 'isCancelled' | 'duration' | 'scheduledChange'>
+    > {}
 
 interface MockTeamStop {
   id: string
@@ -66,30 +65,13 @@ const mockPermissions = ref({
 const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
 const mockApiPlans = vi.hoisted(() => ({ value: [] as Plan[] }))
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    plans: computed(() => mockApiPlans.value),
-    currentPlanSlug: computed(() => mockCurrentPlanSlug.value),
-    fetchPlans: vi.fn(),
-    isTeamPlan: computed(() => mockIsTeamPlan.value),
-    subscription: computed(() => mockSubscription.value),
-    subscriptionStatus: computed(() => mockSubscriptionStatus.value),
-    currentTeamCreditStop: computed(() => mockCurrentTeamCreditStop.value)
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useWorkspaceUI'),
-  () => ({
-    useWorkspaceUI: () => ({
-      permissions: computed(() => mockPermissions.value)
-    })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
 const i18n = createI18n({
   legacy: false,
@@ -119,6 +101,38 @@ function renderComponent(props: Record<string, unknown> = {}) {
 
 beforeEach(() => {
   mockApiPlans.value = []
+  const billingContext = useBillingContext()
+  billingContext.plans = computed(() => mockApiPlans.value)
+  billingContext.currentPlanSlug = computed(() => mockCurrentPlanSlug.value)
+  billingContext.isTeamPlan = computed(() => mockIsTeamPlan.value)
+  billingContext.subscription = computed(() =>
+    mockSubscription.value
+      ? {
+          isActive: true,
+          duration: null,
+          planSlug: null,
+          scheduledChange: null,
+          renewalDate: null,
+          endDate: null,
+          isCancelled: false,
+          hasFunds: true,
+          ...mockSubscription.value
+        }
+      : null
+  )
+  billingContext.subscriptionStatus = computed(
+    () => mockSubscriptionStatus.value
+  )
+  billingContext.currentTeamCreditStop = computed(
+    () => mockCurrentTeamCreditStop.value
+  )
+  vi.mocked(useBillingContext).mockReturnValue(billingContext)
+  const workspaceUI = vi.mocked(useWorkspaceUI())
+  const defaultPermissions = workspaceUI.permissions.value
+  workspaceUI.permissions = computed(() => ({
+    ...defaultPermissions,
+    ...mockPermissions.value
+  }))
 })
 
 describe('UnifiedPricingTable plan CTA labels', () => {

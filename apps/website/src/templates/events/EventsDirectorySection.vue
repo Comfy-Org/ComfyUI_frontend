@@ -123,7 +123,7 @@ const VIEWS: ReadonlyArray<{
 ]
 
 const controlClass =
-  'bg-transparency-white-t5 h-11 rounded-full border border-white/15 text-sm text-primary-comfy-canvas'
+  'bg-transparency-white-t4 h-11 rounded-full border border-white/15 text-sm text-primary-comfy-canvas'
 
 // `appearance-none` drops the native arrow, so each select is wrapped and gets
 // a ChevronDown overlaid, the same icon the rest of the site uses.

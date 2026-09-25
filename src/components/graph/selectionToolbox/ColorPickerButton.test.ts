@@ -16,7 +16,7 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import type { CanvasEventDetail } from '@/lib/litegraph/src/types/events'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useSelectionStore } from '@/renderer/core/canvas/selectionStore'
+import { useSelectionStore } from '@/core/selection/selectionStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toGroupId } from '@/types/groupId'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
@@ -29,7 +29,7 @@ function createMockPositionable(): Positionable {
   return fromPartial<Positionable>({ id: toGroupId(1), pos: [0, 0] })
 }
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({ app: {} }))
+vi.mock(import('@/scripts/app'))
 
 describe('ColorPickerButton', () => {
   const i18n = createI18n({

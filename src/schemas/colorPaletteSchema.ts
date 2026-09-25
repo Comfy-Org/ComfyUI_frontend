@@ -78,6 +78,7 @@ export const comfyBaseSchema = z.object({
   ['interface-panel-surface']: z.string().optional(),
   ['interface-panel-box-shadow']: z.string().optional(),
   ['interface-panel-drop-shadow']: z.string().optional(),
+  ['interface-floating-panel-shadow']: z.string().optional(),
   ['interface-panel-hover-surface']: z.string().optional(),
   ['interface-panel-selected-surface']: z.string().optional(),
   ['interface-button-hover-surface']: z.string().optional()

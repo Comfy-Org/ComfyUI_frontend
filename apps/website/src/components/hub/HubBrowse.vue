@@ -242,8 +242,8 @@ const filteredTemplates = computed(() => {
   <section :class="cn(!embedded && 'pb-32')" data-testid="workshop-hub">
     <WorkshopHero
       v-if="!embedded"
-      heading-key="workshop.hub.title"
-      :locale
+      :eyebrow="t('workshop.hero.eyebrow', locale)"
+      :heading="t('workshop.hub.title', locale)"
       data-testid="hub-heading"
     />
 
