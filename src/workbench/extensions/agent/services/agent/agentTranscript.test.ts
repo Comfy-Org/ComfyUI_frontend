@@ -305,6 +305,28 @@ describe('normalizeAgentTranscript', () => {
     })
 
     /**
+     * The two keys disagree about whitespace: `attachmentRefsForRow` trims the
+     * name it stores on a ref while the handler stores `attachments` verbatim,
+     * so a padded name reaches this parser under two spellings. It still has
+     * to find its own resolution — and keep asking `/view?filename=` for the
+     * name the row was actually stored under.
+     */
+    it('resolves a padded name against the trimmed ref the server stored', () => {
+      const message = row(1, 'user', 'turn-a', 'check this clip', 'row-1')
+      message.content = {
+        text: 'check this clip',
+        attachments: [' clip.dat '],
+        attachment_refs: [{ name: 'clip.dat', id: 'asset-7', kind: 'video' }]
+      }
+
+      const transcript = normalizeAgentTranscript([message])
+
+      expect(transcript.userAttachments.get(toTurnId('turn-a'))).toEqual([
+        { name: ' clip.dat ', ref: ' clip.dat ', id: 'asset-7', kind: 'video' }
+      ])
+    })
+
+    /**
      * Reachable through the API rather than through this client: the writer
      * stores `attachments` verbatim and has never filtered it, so a blank name
      * posted by any client persists. `contentAttachments` drops it — a blank

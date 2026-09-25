@@ -1293,57 +1293,15 @@ describe('useAgentSession (v1 composition root)', () => {
    * see the client's body allowlist (`agentRestClient.postMessage`), which
    * drops any DTO field it does not name. This drives the real client so the
    * arrange below is exercised unmarked, per the note above (g3)/(g4).
+   *
+   * It also owns the absence assertions (h-gap) reasons from, since under
+   * `it.fails` the first throw satisfies the expectation and every assertion
+   * after it stops guarding anything. Here they are load-bearing: they say a
+   * plain attachment send fills no other slot the schema declares, which is
+   * what makes (h-gap)'s substring check evidence that the name is nowhere on
+   * the wire rather than evidence about one key.
    */
   it('(h-wire) serializes the attachment refs onto the POST body', async () => {
-    const { postedBody, send } = wireSend()
-
-    await send('upscale this', [{ ref: storedRef, name: 'Beach photo.png' }])
-
-    expect(zAgentPostMessageRequest.parse(postedBody())).toMatchObject({
-      content: 'upscale this',
-      attachments: [storedRef]
-    })
-  })
-
-  /**
-   * PM-1643 / PM-717 item 3. A ref is the storage name — `asset.hash` for an
-   * asset dragged out of the library, the deduplicated name the upload
-   * returned otherwise — so the name the user recognises never reaches the
-   * message row a refresh reads back. It is not lost to the server: the
-   * upload puts it on the asset row (`asset.Name`, common/assets), one join
-   * from the `id` on `attachment_refs`. It is only the turn that forgets it.
-   *
-   * The body is read back through `zAgentPostMessageRequest`, generated from
-   * cloud's openapi.yaml and declaring no passthrough, so an invented
-   * top-level key is stripped before the substring check — sending one would
-   * put the name nowhere the Go binding reads, and parsing first stops that
-   * from retiring the pin. The remaining assertions close the routes a
-   * repair would plausibly take while still losing the name: `content` rules
-   * out smuggling it into the prompt text, `attachments` rules out appending
-   * it there (the service stores that key verbatim, minting a phantom second
-   * file), `selection`/`draft` rule out the two free-form `z.record` fields
-   * the schema does let through, and the tab, workflow-id and
-   * workflow-reference fields cover every remaining string slot the schema
-   * declares, so no in-schema field can carry the name past the substring
-   * check while the turn still loses it.
-   *
-   * What remains is a widening of the attachment contract; resolving the
-   * name from the asset behind `attachment_refs[].id` is the other repair,
-   * and would retire this pin rather than satisfy it. The `attachments`
-   * assertion assumes a widening adds a sibling key rather than reshaping
-   * `attachments` itself — the house rule cloud states for exactly this pair
-   * (persist/threads.go) — so revisit it if that key is reshaped instead, or
-   * this pin stays red past its own fix.
-   *
-   * Neither repair is reachable from this repo alone: the widening is a
-   * change to `AgentPostMessageRequest` in cloud's services/ingest/openapi.yaml
-   * followed by regenerating `packages/ingest-types`, whose openapi.yaml is
-   * not even checked in here. The sibling pins for item 3 all closed; this one
-   * stays red deliberately. What the user is left looking at is the
-   * `test.fail()` case in
-   * browser_tests/tests/agent/agentAttachmentRehydrationGaps.spec.ts.
-   */
-  it.fails('(h-gap) carries the attached filename, not only the storage ref', async () => {
     const { postedBody, send } = wireSend()
 
     await send('upscale this', [{ ref: storedRef, name: 'Beach photo.png' }])
@@ -1359,6 +1317,54 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(body.current_tab).toBeUndefined()
     expect(body.workflow_id).toBeUndefined()
     expect(body.workflow_references).toEqual([])
+  })
+
+  /**
+   * PM-1643 / PM-717 item 3. A ref is the storage name — `asset.hash` for an
+   * asset dragged out of the library, the deduplicated name the upload
+   * returned otherwise — so the name the user recognises never reaches the
+   * message row a refresh reads back. It is not lost to the server: the
+   * upload puts it on the asset row (`asset.Name`, common/assets), one join
+   * from the `id` on `attachment_refs`. It is only the turn that forgets it.
+   *
+   * The body is read back through `zAgentPostMessageRequest`, generated from
+   * cloud's openapi.yaml and declaring no passthrough, so an invented
+   * top-level key is stripped before the substring check — sending one would
+   * put the name nowhere the Go binding reads, and parsing first stops that
+   * from retiring the pin. The routes a repair would plausibly take while
+   * still losing the name are closed by (h-wire) above, which drives this same
+   * arrange unmarked: `content` rules out smuggling it into the prompt text,
+   * `attachments` rules out appending it there (the service stores that key
+   * verbatim, minting a phantom second file), `selection`/`draft` rule out the
+   * two free-form `z.record` fields the schema does let through, and the tab,
+   * workflow-id and workflow-reference fields cover every remaining string
+   * slot the schema declares. So no in-schema field can carry the name past
+   * the substring check below while the turn still loses it.
+   *
+   * What remains is a widening of the attachment contract; resolving the
+   * name from the asset behind `attachment_refs[].id` is the other repair,
+   * and would retire this pin rather than satisfy it. The `attachments`
+   * assertion assumes a widening adds a sibling key rather than reshaping
+   * `attachments` itself — the house rule cloud states for exactly this pair
+   * (persist/threads.go) — so revisit it if that key is reshaped instead, or
+   * this pin stays red past its own fix.
+   *
+   * The widening is not reachable from this repo: it is a change to
+   * `AgentPostMessageRequest` in cloud's services/ingest/openapi.yaml followed
+   * by regenerating `packages/ingest-types`, whose openapi.yaml is not even
+   * checked in here. The read-path repair is reachable —
+   * `assetService.getAssetDetails` already fetches the asset behind an id, at
+   * the cost of a request per attachment on hydrate. The sibling pins for item
+   * 3 all closed; this one stays red deliberately. What the user is left
+   * looking at is the `test.fail()` case in
+   * browser_tests/tests/agent/agentAttachmentRehydrationGaps.spec.ts.
+   */
+  it.fails('(h-gap) carries the attached filename, not only the storage ref', async () => {
+    const { postedBody, send } = wireSend()
+
+    await send('upscale this', [{ ref: storedRef, name: 'Beach photo.png' }])
+
+    const body = zAgentPostMessageRequest.parse(postedBody())
     expect(JSON.stringify(body)).toContain('Beach photo.png')
   })
 

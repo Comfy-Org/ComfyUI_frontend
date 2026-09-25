@@ -246,15 +246,18 @@ test(
 )
 
 /**
- * Still red, and not closable from this repo: `AgentPostMessageRequest`
- * declares `attachments` as filenames and has no slot for the name the user
- * recognises (services/ingest/openapi.yaml), so the turn is posted knowing
- * only the storage ref and no reload can recover what was never sent. Closing
- * it needs the wire contract widened in cloud and `packages/ingest-types`
- * regenerated — or the read path resolving the name from the asset behind
- * `attachment_refs[].id`, which would retire this case rather than turn it
- * green. Twin of the `(h-gap)` pin in useAgentSession.test.ts, kept here
- * because only the browser shows what the user is left looking at.
+ * Still red: `AgentPostMessageRequest` declares `attachments` as filenames and
+ * has no slot for the name the user recognises (services/ingest/openapi.yaml),
+ * so the turn is posted knowing only the storage ref and no reload can recover
+ * what was never sent. Widening that contract is out of reach here — it is a
+ * cloud change followed by regenerating `packages/ingest-types`, whose
+ * openapi.yaml is not checked in. The other repair is reachable: the read path
+ * can resolve the name from the asset behind `attachment_refs[].id`, which
+ * `assetService.getAssetDetails` already fetches, at the cost of a request per
+ * attachment on hydrate — and it would retire this case rather than turn it
+ * green, since this arrange routes no asset endpoint. Twin of the `(h-gap)`
+ * pin in useAgentSession.test.ts, kept here because only the browser shows
+ * what the user is left looking at.
  */
 test(
   'labels a refreshed attachment with the filename the user attached',
