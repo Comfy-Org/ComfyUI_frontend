@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 import type { ComposerAttachment } from './useComposer'
 import { useComposer } from './useComposer'
 
@@ -121,6 +122,16 @@ describe('useComposer', () => {
 
     expect(composer.draft.value).toBe('first second')
     expect(onSend).not.toHaveBeenCalled()
+  })
+
+  it('attributes an inserted suggestion chip to the suggestion origin', () => {
+    const { composer } = setup()
+    const store = useAgentComposerStore()
+    expect(store.promptOrigin).toBe('typed')
+
+    composer.insert('Upscale this image')
+
+    expect(store.promptOrigin).toBe('suggestion')
   })
 
   it('a recreated composer rehydrates the pending draft and attachments', () => {

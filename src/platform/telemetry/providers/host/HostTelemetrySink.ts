@@ -5,7 +5,10 @@ import type {
 import type {
   AddCreditsClickMetadata,
   AgentConsentNotOfferedMetadata,
+  AgentConsentResolvedMetadata,
+  AgentConsentShownMetadata,
   AgentOnboardingNotShownMetadata,
+  AgentOnboardingStepMetadata,
   AuthMetadata,
   BeginCheckoutMetadata,
   BillingTelemetryEvent,
@@ -293,6 +296,22 @@ export class HostTelemetrySink implements TelemetryProvider {
 
   trackUiButtonClicked(metadata: UiButtonClickMetadata): void {
     this.capture(TelemetryEvents.UI_BUTTON_CLICKED, metadata)
+  }
+
+  trackAgentConsentShown(metadata: AgentConsentShownMetadata): void {
+    this.capture(TelemetryEvents.AGENT_CONSENT_SHOWN, metadata)
+  }
+
+  trackAgentConsentResolved(metadata: AgentConsentResolvedMetadata): void {
+    this.capture(TelemetryEvents.AGENT_CONSENT_RESOLVED, metadata)
+  }
+
+  trackAgentOnboardingShown(): void {
+    this.capture(TelemetryEvents.AGENT_ONBOARDING_SHOWN)
+  }
+
+  trackAgentOnboardingStep(metadata: AgentOnboardingStepMetadata): void {
+    this.capture(TelemetryEvents.AGENT_ONBOARDING_STEP, metadata)
   }
 
   trackAgentConsentNotOffered(metadata: AgentConsentNotOfferedMetadata): void {
