@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import type { WorkshopModelDetail } from '../../../config/models-catalogue'
 import { Ellipsis } from '@lucide/vue'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, provide, ref } from 'vue'
+import { cinematicCatalogKey } from '../../../lib/workshop/cinematic-studio/model-catalog'
+import type { CinematicCatalogEntry } from '../../../lib/workshop/cinematic-studio/model-catalog'
 
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
 import type { Locale } from '../../../i18n/translations'
@@ -14,15 +16,19 @@ import CinematicStudioPanel from './CinematicStudioPanel.vue'
 
 const {
   models,
+  catalog = [],
   editingModels = [],
   enhancementModel,
   locale = 'en'
 } = defineProps<{
   models: readonly CinematicModel[]
+  catalog?: readonly CinematicCatalogEntry[]
   editingModels?: readonly CinematicModel[]
   enhancementModel?: WorkshopModelDetail
   locale?: Locale
 }>()
+
+provide(cinematicCatalogKey, { entries: catalog, locale })
 
 const LAYOUTS = [
   { id: 'e', label: 'cinematic.ux.composer' },

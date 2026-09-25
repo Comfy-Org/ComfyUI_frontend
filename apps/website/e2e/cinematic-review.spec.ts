@@ -2,6 +2,36 @@ import { expect } from '@playwright/test'
 
 import { test } from './fixtures/modelsAccount'
 
+test('browses the full model catalog without losing the Studio draft', async ({
+  page
+}) => {
+  await page.goto('/cinematic-studio?demo=success')
+  const scene = page.getByRole('textbox', { name: 'Scene', exact: true })
+  await scene.fill('Keep this scene while browsing models.')
+  await page.getByRole('button', { name: /Model · via Comfy Router:/ }).click()
+  await page.getByRole('menuitem', { name: /^All models \(/ }).click()
+  const catalog = page.getByRole('dialog', { name: 'All models', exact: true })
+  const search = catalog.getByRole('searchbox', {
+    name: 'Search models or providers'
+  })
+  await search.fill('Kling')
+  const links = catalog.getByRole('link', { name: 'Open model page (new tab)' })
+  await expect(links.first()).toHaveAttribute('href', /^\/models\//)
+  await expect(links.first()).toHaveAttribute('target', '_blank')
+  await expect(catalog).toContainText('Use model page controls')
+  await catalog
+    .getByRole('combobox', { name: 'Model type' })
+    .selectOption('image')
+  await expect(catalog).toContainText('No matching models')
+  await search.fill('Seedream 4.5')
+  await catalog.getByRole('button', { name: 'Use in Studio' }).first().click()
+  await expect(catalog).not.toBeVisible()
+  await expect(scene).toHaveValue('Keep this scene while browsing models.')
+  await expect(
+    page.getByRole('button', { name: /Model · via Comfy Router:/ })
+  ).toBeFocused()
+})
+
 for (const layout of ['e', 'd']) {
   test(`reviews a shot before generating in layout ${layout}`, async ({
     page

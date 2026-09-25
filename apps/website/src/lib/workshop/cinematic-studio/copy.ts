@@ -6,6 +6,49 @@ import type { Locale, LocalizedText } from '../../../i18n/translations'
  * not add to every other page's script budget.
  */
 const copy = {
+  'cinematic.catalog.close': {
+    en: 'Close model catalog',
+    'zh-CN': '关闭模型目录'
+  },
+  'cinematic.catalog.title': { en: 'All models', 'zh-CN': '所有模型' },
+  'cinematic.catalog.description': {
+    en: 'Browse the same catalog as Models. Choose a model for this Studio mode, or open its own controls in a new tab. The catalog reflects this version of the app; availability can change.',
+    'zh-CN':
+      '浏览与模型页面相同的目录。为当前工作室模式选择模型，或在新标签页打开模型专属控件。目录对应此应用版本，可用性可能变化。'
+  },
+  'cinematic.catalog.search': {
+    en: 'Search models or providers',
+    'zh-CN': '搜索模型或提供商'
+  },
+  'cinematic.catalog.type': { en: 'Model type', 'zh-CN': '模型类型' },
+  'cinematic.catalog.all': { en: 'All types', 'zh-CN': '所有类型' },
+  'cinematic.catalog.image': { en: 'Image', 'zh-CN': '图像' },
+  'cinematic.catalog.video': { en: 'Video', 'zh-CN': '视频' },
+  'cinematic.catalog.audio': { en: 'Audio', 'zh-CN': '音频' },
+  'cinematic.catalog.3d': { en: '3D', 'zh-CN': '3D' },
+  'cinematic.catalog.text': { en: 'Text', 'zh-CN': '文本' },
+  'cinematic.catalog.other': { en: 'Other', 'zh-CN': '其他' },
+  'cinematic.catalog.empty': {
+    en: 'No matching models. Try another search or type.',
+    'zh-CN': '没有匹配的模型。请更改搜索词或类型。'
+  },
+  'cinematic.catalog.studio': {
+    en: 'Available in this Studio mode',
+    'zh-CN': '可用于当前工作室模式'
+  },
+  'cinematic.catalog.native': {
+    en: 'Use model page controls',
+    'zh-CN': '使用模型页面控件'
+  },
+  'cinematic.catalog.unavailable': {
+    en: 'Listed in catalog · generation unavailable in this version',
+    'zh-CN': '目录中已列出 · 此版本无法生成'
+  },
+  'cinematic.catalog.use': { en: 'Use in Studio', 'zh-CN': '在工作室中使用' },
+  'cinematic.catalog.open': {
+    en: 'Open model page (new tab)',
+    'zh-CN': '打开模型页面（新标签页）'
+  },
   'cinematic.video.audioOn': { en: 'On', 'zh-CN': '开启' },
   'cinematic.video.audioOff': { en: 'Off', 'zh-CN': '关闭' },
   'cinematic.video.enhanceHint': {

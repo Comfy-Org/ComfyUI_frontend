@@ -10,7 +10,10 @@ import {
   DropdownMenuRoot,
   DropdownMenuTrigger
 } from 'reka-ui'
-import { computed } from 'vue'
+import { computed, inject, ref } from 'vue'
+import { cinematicCatalogKey } from '../../../lib/workshop/cinematic-studio/model-catalog'
+import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import CinematicModelCatalog from './CinematicModelCatalog.vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -29,6 +32,13 @@ const { options, heading, triggerClass, browseLabel } = defineProps<{
 }>()
 
 const value = defineModel<string>({ required: true })
+const catalog = inject(cinematicCatalogKey, undefined)
+const catalogOpen = ref(false)
+let returnFocus: HTMLElement | undefined
+function rememberTrigger(event: FocusEvent) {
+  if (event.currentTarget instanceof HTMLElement)
+    returnFocus = event.currentTarget
+}
 const triggerLabel = computed(() => {
   const selected = options.find((option) => option.id === value.value)
   return selected ? `${heading}: ${selected.label}` : heading
@@ -45,6 +55,7 @@ const triggerLabel = computed(() => {
           triggerClass
         )
       "
+      @focus="rememberTrigger"
     >
       <slot />
     </DropdownMenuTrigger>
@@ -87,6 +98,14 @@ const triggerLabel = computed(() => {
             />
           </DropdownMenuRadioItem>
         </DropdownMenuRadioGroup>
+        <DropdownMenuItem
+          v-if="browseLabel && catalog?.entries.length"
+          class="mt-1 shrink-0 cursor-pointer rounded-lg px-2.5 py-3 text-sm text-primary-comfy-yellow outline-none data-highlighted:bg-transparency-white-t8"
+          @select="catalogOpen = true"
+        >
+          {{ tc('cinematic.catalog.title', catalog.locale) }}
+          ({{ catalog.entries.length }})
+        </DropdownMenuItem>
         <DropdownMenuItem v-if="browseLabel" as-child>
           <a
             href="/models"
@@ -99,4 +118,13 @@ const triggerLabel = computed(() => {
       </DropdownMenuContent>
     </DropdownMenuPortal>
   </DropdownMenuRoot>
+  <CinematicModelCatalog
+    v-if="browseLabel && catalog"
+    v-model:open="catalogOpen"
+    :entries="catalog.entries"
+    :selectable="options.map((option) => option.id)"
+    :locale="catalog.locale"
+    @select="value = $event"
+    @return-focus="returnFocus?.focus()"
+  />
 </template>

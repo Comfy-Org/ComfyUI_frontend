@@ -34,7 +34,7 @@ API-key backend, copied private output library, or additional dependency.
 ## Validation
 
 - 327 focused unit/component/contract tests across 31 files passed.
-- 15 production browser tests passed across both Studio layouts, including
+- 16 production browser tests passed across both Studio layouts, including
   crop pixels, assets, edit review, prompt suggestions, plans, recipe import,
   motion comparison and transition reference restoration after reload.
 - Website build, website typecheck, knip and Astro formatting passed.
@@ -43,6 +43,12 @@ API-key backend, copied private output library, or additional dependency.
 
 ## Original demo parity follow-up
 
+- All models opens an in-place searchable browser of the same 148 visible
+  catalog entries as `/models`, with modality filters and explicit availability.
+  Current-mode Studio models can be selected without losing the draft. Other
+  entries open their native model page in a new tab. This uses the bundled catalog,
+  not a live inventory of every model on the Router service, and does not add
+  generation support for previously unsupported Studio models.
 - The rendered picker now exposes 14 image choices and 16 video routes.
   Model-specific image framing and reference limits come from authored contracts.
   Native model controls remain available through the separate `/models` catalog.

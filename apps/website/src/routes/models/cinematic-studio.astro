@@ -6,6 +6,22 @@ import { getRouterWorkshopModelDetail } from '../../config/workshop-router-conte
 import { runnableCinematicEditingModels } from '../../lib/workshop/cinematic-studio/editing'
 import { runnableCinematicModels } from '../../lib/workshop/cinematic-studio/models'
 import { tc } from '../../lib/workshop/cinematic-studio/copy'
+import { workshopModels } from '../../config/workshop-browse-content'
+import { canRunModel } from '../../lib/workshop/cinematic-studio/gate'
+import type { CinematicCatalogEntry } from '../../lib/workshop/cinematic-studio/model-catalog'
+
+const catalog = workshopModels.map<CinematicCatalogEntry>((model) => {
+  const detail = getRouterWorkshopModelDetail(model.slug)
+  return {
+    slug: model.slug,
+    name: model.name,
+    provider: model.provider ?? '',
+    routerId: model.routerId,
+    modality: model.modality ?? 'other',
+    href: model.href,
+    runnable: Boolean(detail && canRunModel(detail))
+  }
+})
 
 const enhancementModel = cinematicEnhancementModel()
 const models = runnableCinematicModels(getRouterWorkshopModelDetail)
@@ -21,6 +37,7 @@ if (!models.length) throw new Error('Cinematic Studio has no runnable models')
   noindex
 >
   <CinematicStudioPage
+    catalog={catalog}
     enhancementModel={enhancementModel}
     editingModels={editingModels}
     models={models}
