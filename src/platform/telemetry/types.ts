@@ -241,6 +241,8 @@ export interface RunButtonProperties {
   view_mode: AppMode
   is_app_mode: boolean
   dock_state: ActionbarDockState
+  /** Whether the agent panel was open when the run was submitted. */
+  agent_panel_open: boolean
 }
 
 /**
