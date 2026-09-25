@@ -192,7 +192,8 @@ export class GtmTelemetryProvider implements TelemetryProvider {
       trigger_source: properties.trigger_source ?? 'unknown',
       view_mode: properties.view_mode,
       is_app_mode: properties.is_app_mode,
-      dock_state: properties.dock_state
+      dock_state: properties.dock_state,
+      agent_panel_open: properties.agent_panel_open
     })
   }
 
