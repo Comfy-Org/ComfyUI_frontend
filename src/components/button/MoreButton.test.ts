@@ -1,6 +1,5 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -45,7 +44,7 @@ describe('MoreButton inside a modal Reka dialog', () => {
     const user = userEvent.setup()
     render(GlobalDialog, {
       global: {
-        plugins: [PrimeVue, i18n],
+        plugins: [i18n],
         stubs: { transition: false, 'transition-group': false }
       }
     })

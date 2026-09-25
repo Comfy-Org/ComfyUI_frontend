@@ -1,15 +1,22 @@
 <template>
-  <div
+  <button
     v-tooltip="{
       value: t('sideToolbar.labels.menu'),
       showDelay: 300,
       hideDelay: 300
     }"
-    class="comfy-menu-button-wrapper flex shrink-0 cursor-pointer flex-col items-center justify-center p-2 transition-colors"
-    :class="{
-      'comfy-menu-button-active': menuRef?.visible
-    }"
     data-testid="comfy-menu-button"
+    type="button"
+    :aria-label="t('sideToolbar.labels.menu')"
+    :aria-expanded="menuRef?.visible"
+    aria-haspopup="menu"
+    :class="
+      cn(
+        'flex h-(--sidebar-item-height) w-(--sidebar-width) shrink-0 cursor-pointer flex-col items-center justify-center border-none bg-transparent p-2 transition-colors hover:bg-interface-panel-hover-surface',
+        menuRef?.visible &&
+          'bg-interface-panel-selected-surface hover:bg-interface-panel-selected-surface'
+      )
+    "
     @click="onLogoMenuClick($event)"
   >
     <div class="grid place-items-center-safe gap-0.5">
@@ -22,42 +29,34 @@
         mode="fill"
       />
     </div>
-  </div>
+  </button>
 
-  <TieredMenu
-    ref="menuRef"
-    :model="translatedItems"
-    :pt="{ item: nodes2MenuItemProps }"
-    :popup="true"
-    class="comfy-command-menu"
-    @show="onMenuShow"
-  >
+  <Menu ref="menuRef" :model="translatedItems" class="comfy-command-menu">
     <template #item="{ item, props }">
       <a
         v-if="item.key !== 'nodes-2.0-toggle'"
-        class="p-menubar-item-link px-4 py-2"
+        class="flex w-full items-center gap-2 px-4 py-2"
         v-bind="props.action"
         :href="item.url"
         target="_blank"
         :class="typeof item.class === 'function' ? item.class() : item.class"
-        @mousedown="
-          isZoomCommand(item) ? handleZoomMouseDown(item, $event) : undefined
-        "
+        @mousedown="handleZoomMouseDown(item, $event)"
         @click="handleItemClick(item, $event)"
       >
         <i
           v-if="hasActiveStateSiblings(item)"
-          class="p-menubar-item-icon pi pi-check text-sm"
+          data-testid="menu-item-indicator"
+          class="icon-[lucide--check] size-4"
           :class="{ invisible: !item.comfyCommand?.active?.() }"
         />
         <span
           v-else-if="
             item.icon && item.comfyCommand?.id !== 'Comfy.NewBlankWorkflow'
           "
-          class="p-menubar-item-icon text-sm"
+          class="size-4"
           :class="item.icon"
         />
-        <span class="p-menubar-item-label text-nowrap">{{ item.label }}</span>
+        <span class="text-nowrap">{{ item.label }}</span>
         <i
           v-if="item.comfyCommand?.id === 'Comfy.NewBlankWorkflow'"
           class="ml-auto"
@@ -65,21 +64,21 @@
         />
         <span
           v-if="item?.comfyCommand?.keybinding"
-          class="keybinding-tag ml-auto rounded-sm border border-surface p-1 text-xs text-nowrap text-muted"
+          class="ml-auto rounded-sm border border-border-default bg-interface-menu-component-surface-hovered p-1 text-xs text-nowrap text-muted"
         >
           {{ item.comfyCommand.keybinding.combo.toString() }}
         </span>
-        <i v-if="item.items" class="pi pi-angle-right ml-auto" />
+        <i
+          v-if="item.items"
+          class="ml-auto icon-[lucide--chevron-right] size-4"
+        />
       </a>
       <div
         v-else
-        v-bind="props.action"
         class="flex cursor-pointer items-center justify-between px-4 py-2 select-none"
         data-testid="nodes-2-toggle-item"
-        @mousedown.prevent
-        @click.stop="onNodes2ToggleChange(!nodes2Enabled)"
       >
-        <span class="p-menubar-item-label text-nowrap">{{ item.label }}</span>
+        <span class="text-nowrap">{{ item.label }}</span>
         <Switch
           :model-value="nodes2Enabled"
           class="pointer-events-none ml-4"
@@ -89,21 +88,18 @@
         />
       </div>
     </template>
-  </TieredMenu>
+  </Menu>
 </template>
 
 <script setup lang="ts">
-import type { MenuItem } from 'primevue/menuitem'
-import TieredMenu from 'primevue/tieredmenu'
-import type {
-  TieredMenuMethods,
-  TieredMenuPassThroughMethodOptions,
-  TieredMenuState
-} from 'primevue/tieredmenu'
-import { computed, nextTick, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
 import ComfyLogo from '@/components/icons/ComfyLogo.vue'
+import Menu from '@/components/ui/menu/Menu.vue'
+import type { MenuItem } from '@/components/ui/menu/types'
 import Switch from '@/components/ui/switch/Switch.vue'
 import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -128,9 +124,7 @@ const settingsDialog = useSettingsDialog()
 const managerState = useManagerState()
 const settingStore = useSettingStore()
 
-const menuRef = ref<
-  ({ dirty: boolean } & TieredMenuMethods & TieredMenuState) | null
->(null)
+const menuRef = ref<InstanceType<typeof Menu> | null>(null)
 
 const nodes2Enabled = computed(
   () => settingStore.get('Comfy.VueNodes.Enabled') ?? false
@@ -193,7 +187,9 @@ const extraMenuItems = computed(() => [
   },
   {
     key: 'nodes-2.0-toggle',
-    label: 'Nodes 2.0'
+    label: 'Nodes 2.0',
+    checked: nodes2Enabled.value,
+    command: () => onNodes2ToggleChange(!nodes2Enabled.value)
   },
   { separator: true },
   {
@@ -262,15 +258,6 @@ const translatedItems = computed(() => {
   return items
 })
 
-const onMenuShow = () => {
-  void nextTick(() => {
-    // Force the menu to show submenus on hover
-    if (menuRef.value) {
-      menuRef.value.dirty = true
-    }
-  })
-}
-
 const isZoomCommand = (item: MenuItem) => {
   return (
     item.comfyCommand?.id === 'Comfy.Canvas.ZoomIn' ||
@@ -279,11 +266,13 @@ const isZoomCommand = (item: MenuItem) => {
 }
 
 const handleZoomMouseDown = (item: MenuItem, event: MouseEvent) => {
-  if (item.comfyCommand) {
+  if (!isZoomCommand(item)) return
+  const commandId = item.comfyCommand?.id
+  if (commandId) {
     whileMouseDown(
       event,
       async () => {
-        await commandStore.execute(item.comfyCommand!.id)
+        await commandStore.execute(commandId)
       },
       50
     )
@@ -307,7 +296,7 @@ const handleItemClick = (item: MenuItem, event: MouseEvent) => {
 
 const hasActiveStateSiblings = (item: MenuItem): boolean => {
   // Check if this item has siblings with active state (either from store or theme items)
-  return (
+  return Boolean(
     item.parentPath &&
     (item.parentPath === 'theme' ||
       menuItemStore.menuItemHasActiveStateChildren[item.parentPath])
@@ -321,56 +310,4 @@ const onNodes2ToggleChange = async (value: boolean) => {
     element_group: 'sidebar'
   })
 }
-
-function nodes2MenuItemProps({
-  context
-}: TieredMenuPassThroughMethodOptions<unknown>) {
-  if (context.item.key !== 'nodes-2.0-toggle') return
-
-  return {
-    'aria-checked': nodes2Enabled.value,
-    role: 'menuitemcheckbox'
-  }
-}
 </script>
-
-<style scoped>
-.comfy-menu-button-wrapper {
-  width: var(--sidebar-width);
-  height: var(--sidebar-item-height);
-}
-
-.comfy-menu-button-wrapper:hover {
-  background: var(--interface-panel-hover-surface);
-}
-
-.comfy-menu-button-active,
-.comfy-menu-button-active:hover {
-  background: var(--interface-panel-selected-surface);
-}
-
-.keybinding-tag {
-  background: var(--p-content-hover-background);
-  border-color: var(--p-content-border-color);
-  border-style: solid;
-}
-</style>
-
-<style>
-.comfy-command-menu {
-  --p-tieredmenu-item-focus-background: color-mix(
-    in srgb,
-    var(--fg-color) 15%,
-    transparent
-  );
-  --p-tieredmenu-item-active-background: color-mix(
-    in srgb,
-    var(--fg-color) 10%,
-    transparent
-  );
-}
-
-.comfy-command-menu ul {
-  background-color: var(--comfy-menu-bg) !important;
-}
-</style>

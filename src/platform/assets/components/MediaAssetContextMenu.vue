@@ -1,17 +1,15 @@
 <template>
   <ContextMenu
+    :id="contextMenuId"
     ref="contextMenu"
     :model="contextMenuItems"
-    :pt="{
-      root: {
-        id: contextMenuId,
-        class: cn(
-          'rounded-lg',
-          'bg-secondary-background text-base-foreground',
-          'shadow-lg'
-        )
-      }
-    }"
+    :class="
+      cn(
+        'rounded-lg',
+        'bg-secondary-background text-base-foreground',
+        'shadow-lg'
+      )
+    "
     @hide="onMenuHide"
   >
     <template #item="{ item, props }">
@@ -30,12 +28,12 @@
 </template>
 
 <script setup lang="ts">
-import ContextMenu from 'primevue/contextmenu'
-import type { MenuItem } from 'primevue/menuitem'
 import { computed, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import ContextMenu from '@/components/ui/menu/ContextMenu.vue'
+import type { MenuItem } from '@/components/ui/menu/types'
 import { useDismissableOverlay } from '@/composables/useDismissableOverlay'
 import { isCloud } from '@/platform/distribution/types'
 import { supportsWorkflowMetadata } from '@/platform/workflow/utils/workflowExtractionUtil'

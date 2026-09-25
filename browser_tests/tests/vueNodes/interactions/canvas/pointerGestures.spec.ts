@@ -247,7 +247,7 @@ test.describe(
         'data-node-id',
         '3'
       )
-      await expect(comfyPage.contextMenu.primeVueMenu).toBeVisible()
+      await expect(comfyPage.contextMenu.applicationMenu).toBeVisible()
       await expect(comfyPage.contextMenu.menuItem('Pin')).toBeVisible()
       await press.disposeAsync()
     })

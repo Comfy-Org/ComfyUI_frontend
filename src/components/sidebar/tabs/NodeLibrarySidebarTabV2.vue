@@ -106,7 +106,7 @@
 <script setup lang="ts">
 import { useLocalStorage } from '@vueuse/core'
 import { mapValues } from 'es-toolkit'
-import type { MenuItem } from 'primevue/menuitem'
+import type { MenuItem } from '@/components/ui/menu/types'
 import { DropdownMenuRadioGroup, DropdownMenuRadioItem } from 'reka-ui'
 import {
   computed,

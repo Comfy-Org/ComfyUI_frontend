@@ -10,31 +10,28 @@
     >
       <i class="pi pi-ellipsis-h" />
     </Button>
-    <Menu
-      ref="menu"
-      :model="menuItems"
-      :popup="true"
-      class="max-h-[40vh] overflow-auto"
-    >
-      <template #item="{ item, props: itemProps }">
-        <a v-bind="itemProps.action">
-          <i v-if="item.icon" v-bind="itemProps.icon" />
-          <WorkflowAgentTargetIndicator :workflow-path="item.workflowPath" />
-          <span v-bind="itemProps.label">{{ item.label }}</span>
-        </a>
+    <Menu ref="menu" :model="menuItems" class="max-h-[40vh] overflow-auto">
+      <template #item="{ item }">
+        <i v-if="item.icon" :class="item.icon" />
+        <WorkflowAgentTargetIndicator
+          v-if="item.key"
+          :workflow-path="item.key"
+        />
+        <span>{{ item.label }}</span>
       </template>
     </Menu>
   </div>
 </template>
 
 <script setup lang="ts">
-import Menu from 'primevue/menu'
 import { computed, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
-import WorkflowAgentTargetIndicator from './WorkflowAgentTargetIndicator.vue'
+import Menu from '@/components/ui/menu/Menu.vue'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+
+import WorkflowAgentTargetIndicator from './WorkflowAgentTargetIndicator.vue'
 
 const props = defineProps<{
   workflows: ComfyWorkflow[]
@@ -47,7 +44,7 @@ const workflowService = useWorkflowService()
 const menuItems = computed(() =>
   props.workflows.map((workflow: ComfyWorkflow) => ({
     label: workflow.filename,
-    workflowPath: workflow.path,
+    key: workflow.path,
     icon:
       props.activeWorkflow?.key === workflow.key ? 'pi pi-check' : undefined,
     command: () => {
