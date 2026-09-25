@@ -7,12 +7,14 @@ import {
   ref,
   watch
 } from 'vue'
+import type { Component } from 'vue'
 import { useMounted } from '@vueuse/core'
 
 import type { Locale } from '../../../i18n/translations.ts'
 import { t } from '../../../i18n/translations.ts'
 import { externalLinks, getRoutes } from '../../../config/routes.ts'
 import { subscribeToWorkshopBuyCredits } from '../../../config/workshop-buy-credits.ts'
+import { resolveWorkshopAccountSource } from '../../../config/workshop-web-session-identity.ts'
 import {
   useWorkshopAuthFlag,
   useWorkshopEnabled
@@ -42,12 +44,24 @@ const showWorkshop = computed(
 const showAccount = computed(
   () => showWorkshop.value && workshopAuthEnabled.value
 )
-const HeaderAccount = defineAsyncComponent(
-  () => import('../../workshop/HeaderAccount.vue')
-)
-const BuyCreditsDialog = defineAsyncComponent(
-  () => import('../../workshop/BuyCreditsDialog.vue')
-)
+// Each loader waits for the account source, so a visitor the web session
+// knows never mounts an island that would start Firebase.
+const HeaderAccount = defineAsyncComponent(async () => {
+  const [source, firebaseHeader] = await Promise.all([
+    resolveWorkshopAccountSource(),
+    import('../../workshop/HeaderAccount.vue')
+  ])
+  return source === 'session'
+    ? import('../../workshop/HeaderSessionAccount.vue')
+    : firebaseHeader
+})
+const BuyCreditsDialog = defineAsyncComponent<Component>(async () => {
+  const [source, dialog] = await Promise.all([
+    resolveWorkshopAccountSource(),
+    import('../../workshop/BuyCreditsDialog.vue')
+  ])
+  return source === 'session' ? { render: () => null } : dialog
+})
 const buyingCredits = ref(false)
 const buyCreditsDialogMounted = ref(false)
 let stopBuyCreditsRequests: (() => void) | undefined
