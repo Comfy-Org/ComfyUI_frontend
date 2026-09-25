@@ -13,9 +13,14 @@ import type { Alternate } from '../src/utils/hreflangRoutes'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
 
-import { auditBuiltSite, sitemapChunkNames } from '../src/utils/hreflangAudit'
+import {
+  auditBuiltSite,
+  routeOfHref,
+  sitemapChunkNames
+} from '../src/utils/hreflangAudit'
 
 const DIST = join(process.cwd(), 'dist')
+const PUBLIC = join(process.cwd(), 'public')
 const ORIGIN = 'https://comfy.org'
 
 function htmlFiles(dir: string): string[] {
@@ -76,20 +81,32 @@ function sitemapAlternates(): Map<string, Alternate[]> | null {
     const alternates = [
       ...block.matchAll(/hreflang="([^"]+)"\s+href="([^"]+)"/g)
     ].map((match) => ({ hreflang: match[1], href: match[2] }))
-    entries.set(loc.slice(ORIGIN.length) || '/', alternates)
+    entries.set(routeOfHref(loc, ORIGIN), alternates)
   }
   return entries
 }
 
-const files = htmlFiles(DIST)
-const pages = new Map<string, Alternate[]>(
-  files.map((file) => [
-    routeOf(file),
-    alternatesIn(readFileSync(file, 'utf-8'))
-  ])
+const publicHtmlPaths = new Set(
+  existsSync(PUBLIC)
+    ? htmlFiles(PUBLIC).map((file) => relative(PUBLIC, file))
+    : []
 )
+const files = htmlFiles(DIST).filter(
+  (file) => !publicHtmlPaths.has(relative(DIST, file))
+)
+const pages = new Map<string, Alternate[]>()
+const canonicals = new Map<string, string>()
+
+for (const file of files) {
+  const route = routeOf(file)
+  const html = readFileSync(file, 'utf-8')
+  const alternates = alternatesIn(html)
+  pages.set(route, alternates)
+  const canonical = /<link\s+rel="canonical"\s+href="([^"]+)"/.exec(html)?.[1]
+  if (canonical !== undefined) canonicals.set(route, canonical)
+}
 const sitemap = sitemapAlternates()
-const errors = auditBuiltSite({ pages, sitemap, origin: ORIGIN })
+const errors = auditBuiltSite({ pages, canonicals, sitemap, origin: ORIGIN })
 
 const withCluster = [...pages.values()].filter((list) => list.length > 0).length
 // The repo's lint config allows console.warn and console.error only, and this

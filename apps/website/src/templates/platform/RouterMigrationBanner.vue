@@ -10,7 +10,7 @@ import BrandButton from '../../components/common/BrandButton.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
-const { copy, copied } = useClipboard({ copiedDuring: 2000 })
+const { copy, copied } = useClipboard({ copiedDuring: 2000, legacy: true })
 </script>
 
 <template>

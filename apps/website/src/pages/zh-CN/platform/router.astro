@@ -10,6 +10,7 @@ import RouterCodeSection from '../../../templates/platform/RouterCodeSection.vue
 import RouterVideoSection from '../../../templates/platform/RouterVideoSection.vue'
 import RouterMigrationBanner from '../../../templates/platform/RouterMigrationBanner.vue'
 import RouterProofStripSection from '../../../templates/platform/RouterProofStripSection.vue'
+import RouterProviderCoverageSection from '../../../templates/platform/RouterProviderCoverageSection.vue'
 import RouterRoadmapSection from '../../../templates/platform/RouterRoadmapSection.vue'
 import { externalLinks } from '../../../config/routes'
 import { t } from '../../../i18n/translations'
@@ -21,12 +22,13 @@ import { routerFaq, routerT } from '../../../templates/platform/routerCopy'
   description={t('platform.products.models.description', 'zh-CN')}
 >
   <ModelsApiHero locale="zh-CN" client:load />
+  <RouterVideoSection locale="zh-CN" client:idle />
+  <RouterCapabilitiesSection locale="zh-CN" />
   <RouterMigrationBanner locale="zh-CN" client:visible />
   <RouterProofStripSection locale="zh-CN" />
   <ModelsApiGallery locale="zh-CN" client:visible />
   <RouterCodeSection locale="zh-CN" client:visible />
-  <RouterVideoSection locale="zh-CN" client:visible />
-  <RouterCapabilitiesSection locale="zh-CN" />
+  <RouterProviderCoverageSection locale="zh-CN" />
   <RouterRoadmapSection locale="zh-CN" client:visible />
   <FAQSection
     locale="zh-CN"

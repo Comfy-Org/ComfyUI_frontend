@@ -3,6 +3,7 @@ import { Download, ExternalLink, Play } from '@lucide/vue'
 import { useEventListener, useMounted, useTimestamp } from '@vueuse/core'
 import {
   computed,
+  onMounted,
   onScopeDispose,
   onUnmounted,
   ref,
@@ -17,6 +18,7 @@ import CopyTextButton from '@/components/ui/copy-text-button/CopyTextButton.vue'
 import { useWorkshopFormDraft } from '../../composables/useWorkshopFormDraft'
 import { useWorkshopDelivery } from '../../composables/useWorkshopDelivery'
 import { sameFormValues } from '../../lib/workshop/form-values'
+import { validateWorkshopMediaInputs } from '../../config/workshop-media-validation'
 import { leaveForSignIn } from '../../config/workshop-return'
 import { useSignInHref } from '../../composables/useSignInHref'
 import { useTablist } from '../../composables/useTablist'
@@ -55,6 +57,7 @@ import { retainRunHistory } from '../../config/workshop-run-history'
 import { reportWorkshopRun } from '../../config/workshop-run-state'
 import { modelDocsHref } from '../../lib/workshop/model-docs'
 import { linkLeavingPage } from '../../lib/workshop/leaving-link'
+import { routerSavesAssets } from '../../lib/workshop/asset-saving'
 import type { WorkshopSession } from '../../config/workshop-session-state'
 import { useWorkshopSession } from '../../config/workshop-session-state'
 import { workshopIdempotencyKey } from '../../config/workshop-snippets'
@@ -79,6 +82,9 @@ import PlaygroundOutput from './PlaygroundOutput.vue'
 import ExampleReplaceDialog from './ExampleReplaceDialog.vue'
 import RunLeaveDialog from './RunLeaveDialog.vue'
 import ModelSupport from './ModelSupport.vue'
+import SavedAssetsStrip from './SavedAssetsStrip.vue'
+import { WORKSHOP_LEAVE_RUNNING } from '../../config/workshop-router-queue'
+import { WORKSHOP_ASSETS_URL } from '../../config/workshop-env'
 
 const {
   model,
@@ -201,6 +207,12 @@ const runState = ref<RunState>(
     ? { status: 'example', output: exampleOutput(firstExample) }
     : IDLE
 )
+// With Cloud keeping every generation, a run outlives the page that started it:
+// the reader can close the tab and find the result in their assets. Without it,
+// the run exists only here, so leaving has to stop it.
+const savesAssets =
+  import.meta.env.PUBLIC_WORKSHOP_SAVE_ASSETS === '1' &&
+  routerSavesAssets(model.routerId)
 const runs = ref<RunRecord[]>([])
 const earlier = computed(() => runs.value.slice(1))
 const attachments = computed(() =>
@@ -328,6 +340,33 @@ useEventListener(
 // this one route off the page can be asked in our own words. The rest still
 // reach the guards above.
 const leavingTo = ref<string>()
+// Carrying on is only worth offering where the cloud would keep the result,
+// and only once the Router has admitted the run: before that it exists on this
+// page alone, so leaving it running would leave nothing running.
+const leaveAction = computed(() =>
+  savesAssets && requestId.value ? 'leaveSaved' : 'leave'
+)
+const assetsHref = computed(() =>
+  leaveAction.value === 'leaveSaved' ? WORKSHOP_ASSETS_URL : undefined
+)
+
+// A kept result does not expire, so the note beneath it would be untrue. A run
+// the cloud failed to keep expires like any other, and the reader has to hear
+// that while the result is still there to download.
+const saveFailed = ref(false)
+const showsExpiry = computed(
+  () =>
+    runState.value.status === 'succeeded' && (!savesAssets || saveFailed.value)
+)
+
+// The strip belongs to one workspace's runs of one Router model, so it waits
+// for both and has nothing to show for a model the Router does not serve.
+const savedAssetsFor = computed(() =>
+  savesAssets && session.value && model.routerId
+    ? { modelId: model.routerId, key: session.value }
+    : undefined
+)
+
 useEventListener(
   () => (isRunning.value ? globalThis.document : undefined),
   'click',
@@ -344,6 +383,18 @@ function leaveForLink() {
   leavingTo.value = undefined
   if (!href) return
   cancelRun()
+  location.assign(href)
+}
+
+// The reader who started a long render on purpose and meant to walk away. A
+// run admitted between the dialog opening and this click is the only one that
+// can be left; anything else would be abandoned rather than kept.
+function keepAndLeave() {
+  const href = leavingTo.value
+  leavingTo.value = undefined
+  if (!href) return
+  if (requestId.value) stopObserving()
+  else cancelRun()
   location.assign(href)
 }
 
@@ -401,8 +452,74 @@ function cancelRun() {
     })
     activeRun = undefined
     pendingRequest = undefined
+    rememberRequestId(null)
   }
   runState.value = transition(runState.value, { type: 'cancel' })
+}
+
+// Stop watching a run that Cloud is keeping. The reader finds it in their
+// assets, so the machine stays busy on work they will still get.
+function stopObserving() {
+  activeRun?.controller.abort(WORKSHOP_LEAVE_RUNNING)
+  activeRun = undefined
+  runState.value = IDLE
+  reportWorkshopRun(undefined)
+}
+
+/**
+ * The address carries the run so that a reload finds it again. It belongs to
+ * that run alone: one that ended, or one whose workspace is no longer this
+ * reader's, takes it back rather than leaving an id for the next load to
+ * restore as though it were still theirs.
+ */
+function rememberRequestId(id: string | null) {
+  requestId.value = id
+  if (!savesAssets) return
+  const url = new URL(window.location.href)
+  if (id) url.searchParams.set('request_id', id)
+  else url.searchParams.delete('request_id')
+  window.history.replaceState(window.history.state, '', url)
+}
+
+// A reload lands on the run the address remembers, so the strip can show it
+// still working rather than an empty shelf.
+onMounted(() => {
+  if (!savesAssets) return
+  const id = new URL(window.location.href).searchParams.get('request_id')
+  if (id && /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(id))
+    requestId.value = id
+})
+
+// The results on screen belong to the workspace that paid for them, so an
+// owner who changes takes them with them. Only a saved run survives the change,
+// and it survives in their assets rather than here.
+function leaveOwner() {
+  cancelRun()
+  if (!savesAssets) return
+  pendingRequest = undefined
+  releaseRouterOutputs(
+    runs.value.flatMap((run) => [run.output, ...run.attachments])
+  )
+  runs.value = []
+  rememberRequestId(null)
+}
+
+// The strip asks for its own credential, and refuses one minted for anybody
+// but the owner it started with, so a workspace that changed mid-request never
+// reads another workspace's assets.
+async function historyToken(): Promise<string> {
+  const owner = session.value
+  const result = await ensureFresh()
+  if (
+    !owner ||
+    result?.status !== 'ok' ||
+    result.session.uid !== owner.uid ||
+    result.session.workspace.id !== owner.workspace.id ||
+    session.value?.uid !== owner.uid ||
+    session.value?.workspace.id !== owner.workspace.id
+  )
+    throw new WorkshopRouterError('unavailable')
+  return result.session.token
 }
 
 const personalSwitchPending = ref(false)
@@ -434,13 +551,13 @@ onUnmounted(() => {
 watch(
   () => session.value?.uid,
   (uid, previous) => {
-    if (uid !== previous) cancelRun()
+    if (previous !== undefined && uid !== previous) leaveOwner()
   }
 )
 watch(
   () => session.value?.workspace.id,
   (workspace, previous) => {
-    if (workspace !== previous) cancelRun()
+    if (previous !== undefined && workspace !== previous) leaveOwner()
   }
 )
 
@@ -497,6 +614,7 @@ async function renderRun(
     {},
     {
       model,
+      comfy_save_asset: savesAssets,
       form: { schema: schema.value, values: values.value },
       signal: attempt.controller.signal,
       token: async () => (await freshCredentialFor(startedFor, attempt)).token,
@@ -511,7 +629,7 @@ async function renderRun(
       },
       idempotencyKey: (body) => idempotencyKeyFor(startedFor, body),
       onRequestId: (id) => {
-        if (runIsActive(attempt)) requestId.value = id
+        if (runIsActive(attempt)) rememberRequestId(id)
       }
     }
   )
@@ -523,7 +641,7 @@ function finishRun(result: RouterRenderResult, attempt: ActiveRun): void {
     return
   }
   pendingRequest = undefined
-  requestId.value = result.requestId
+  rememberRequestId(result.requestId)
   const [output, ...attachments] = result.outputs
   if (!output)
     throw new WorkshopRouterError(
@@ -570,7 +688,7 @@ function failRun(error: unknown, attempt: ActiveRun): void {
           cause: error
         })
   if (!workshopRunMayStillSettle(failure)) pendingRequest = undefined
-  requestId.value = failure.requestId
+  rememberRequestId(failure.requestId)
   runState.value = transition(runState.value, {
     type: 'fail',
     reason: failure.reason,
@@ -582,7 +700,7 @@ function failRun(error: unknown, attempt: ActiveRun): void {
       ...attempt.analytics,
       status: 'failed',
       duration_ms: Date.now() - attempt.startedAt,
-      ...workshopFailureAnalytics(failure),
+      ...workshopFailureAnalytics(failure, schema.value),
       ...(credentialFailures.has(attempt)
         ? { failure_stage: 'credential' }
         : {})
@@ -599,7 +717,10 @@ async function run() {
       name: 'run_validation_failed',
       properties: {
         ...modelAnalytics,
-        field_error_codes: workshopFieldErrorCodes(fieldErrors)
+        field_error_codes: workshopFieldErrorCodes(fieldErrors),
+        field_error_names: schema.value
+          .filter((field) => Object.hasOwn(fieldErrors, field.name))
+          .map((field) => field.name)
       }
     })
     runState.value = transition(runState.value, {
@@ -624,9 +745,15 @@ async function run() {
   }
   activeRun = attempt
   captureWorkshopEvent({ name: 'run_started', properties: analytics })
-  requestId.value = null
+  rememberRequestId(null)
   runState.value = transition(runState.value, { type: 'start', at: startedAt })
   try {
+    await validateWorkshopMediaInputs(
+      schema.value,
+      values.value,
+      attempt.controller.signal
+    )
+    if (!runIsActive(attempt)) return
     finishRun(await renderRun(startedFor, attempt), attempt)
   } catch (error) {
     failRun(error, attempt)
@@ -945,7 +1072,7 @@ function useInCode() {
           class="flex flex-col gap-1"
         >
           <p
-            v-if="runState.status === 'succeeded'"
+            v-if="showsExpiry"
             class="text-xs text-primary-warm-gray"
             data-testid="output-expires"
           >
@@ -970,6 +1097,16 @@ function useInCode() {
             />
           </div>
         </div>
+
+        <SavedAssetsStrip
+          v-if="savedAssetsFor"
+          :key="`${savedAssetsFor.key.uid}:${savedAssetsFor.key.workspace.id}`"
+          :model-id="savedAssetsFor.modelId"
+          :active-request-id="requestId"
+          :token="historyToken"
+          :locale
+          @save-failed="saveFailed = $event"
+        />
 
         <!-- Once the result is in view, taking the workflow home is the other
           thing to do with it, and it should not shout over the run's own
@@ -1016,14 +1153,23 @@ function useInCode() {
       role="tabpanel"
       aria-labelledby="tab-api"
     >
-      <ApiTab :contract="model.execution" :values :locale />
+      <ApiTab
+        :contract="model.execution"
+        :values
+        :workspace-id="session?.workspace.id"
+        :locale
+        :model-slug="model.slug"
+      />
     </section>
 
     <RunLeaveDialog
       :open="leavingTo !== undefined"
+      :action="leaveAction"
+      :assets-href="assetsHref"
       :locale
       @update:open="(value: boolean) => !value && (leavingTo = undefined)"
       @leave="leaveForLink"
+      @keep="keepAndLeave"
     />
 
     <ExampleReplaceDialog

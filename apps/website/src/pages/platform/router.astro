@@ -10,6 +10,7 @@ import RouterCodeSection from '../../templates/platform/RouterCodeSection.vue'
 import RouterVideoSection from '../../templates/platform/RouterVideoSection.vue'
 import RouterMigrationBanner from '../../templates/platform/RouterMigrationBanner.vue'
 import RouterProofStripSection from '../../templates/platform/RouterProofStripSection.vue'
+import RouterProviderCoverageSection from '../../templates/platform/RouterProviderCoverageSection.vue'
 import RouterRoadmapSection from '../../templates/platform/RouterRoadmapSection.vue'
 import { externalLinks } from '../../config/routes'
 import { t } from '../../i18n/translations'
@@ -21,12 +22,13 @@ import { routerFaq, routerT } from '../../templates/platform/routerCopy'
   description={t('platform.products.models.description', 'en')}
 >
   <ModelsApiHero locale="en" client:load />
+  <RouterVideoSection locale="en" client:idle />
+  <RouterCapabilitiesSection locale="en" />
   <RouterMigrationBanner locale="en" client:visible />
   <RouterProofStripSection locale="en" />
   <ModelsApiGallery locale="en" client:visible />
   <RouterCodeSection locale="en" client:visible />
-  <RouterVideoSection locale="en" client:visible />
-  <RouterCapabilitiesSection locale="en" />
+  <RouterProviderCoverageSection locale="en" />
   <RouterRoadmapSection locale="en" client:visible />
   <FAQSection
     locale="en"

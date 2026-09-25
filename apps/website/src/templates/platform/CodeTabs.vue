@@ -111,7 +111,7 @@ function cycleValue(values: string[]): string {
   return values[(selectedIndex ?? cycleIndex.value) % values.length]
 }
 
-const { copy, copied } = useClipboard({ copiedDuring: 2000 })
+const { copy, copied } = useClipboard({ copiedDuring: 2000, legacy: true })
 const copiedTab = ref<string>()
 
 function copyTab(tabId: string, tab: CodeTab): void {

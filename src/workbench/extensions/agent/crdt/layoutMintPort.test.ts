@@ -81,7 +81,9 @@ describe('attachLayoutMintPort', () => {
         }
       },
       session,
-      severedLinks: { take: (nodeId) => severed.get(nodeId) ?? [] },
+      severedLinks: {
+        take: (graphId, nodeId) => severed.get(`${graphId}:${nodeId}`) ?? []
+      },
       localActorPrefix: LOCAL_PREFIX,
       isEnabled: () => enabled,
       isDocBound: () => bound,
@@ -685,7 +687,7 @@ describe('attachLayoutMintPort', () => {
   })
 
   it('mints delete_node carrying the severed link ids from the capture', () => {
-    severed.set('1', [17, 18])
+    severed.set('root:1', [17, 18])
     deliver(deleteChange('1'))
 
     expect(minted).toEqual([

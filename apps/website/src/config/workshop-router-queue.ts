@@ -1,3 +1,4 @@
+import { combineAbortSignals, createTimeoutSignal } from '../utils/abortSignal'
 import { WORKSHOP_ROUTER_BASE_URL } from './workshop-env'
 import type {
   AttemptContext,
@@ -15,6 +16,17 @@ import {
 } from './workshop-router'
 import { WorkshopRouterError } from './workshop-router-errors'
 import type { RunOutput } from './workshop-run'
+
+/**
+ * Abort a run with this reason to stop watching it without stopping it. Only a
+ * run the reader can come back to may be left this way; every other abort is a
+ * reader who is done with the run, and the router cancels it rather than hold a
+ * paid machine for nobody.
+ */
+export const WORKSHOP_LEAVE_RUNNING = new DOMException(
+  'Generation left running',
+  'AbortError'
+)
 
 const REQUEST_TIMEOUT_MS = 120_000
 const POLL_DEFAULT_MS = 2_000
@@ -130,26 +142,75 @@ async function routerFetch(
             'Idempotency-Key': options.idempotencyKey
           })
     },
-    signal: AbortSignal.any([
+    signal: combineAbortSignals([
       context.signal,
-      AbortSignal.timeout(REQUEST_TIMEOUT_MS)
+      createTimeoutSignal(REQUEST_TIMEOUT_MS)
     ])
   })
+}
+
+function acknowledgedSaving(handle: unknown): boolean {
+  return (
+    typeof handle === 'object' &&
+    handle !== null &&
+    'comfy_save_asset' in handle &&
+    handle.comfy_save_asset === true
+  )
+}
+
+// An older router answers the queue endpoint with this and means "use the
+// synchronous path instead". A run that must be saved cannot take that path,
+// so for it the refusal is the end rather than a fallback.
+function offersSynchronousInstead(
+  response: Response,
+  context: QueueContext
+): boolean {
+  return (
+    !context.options.comfy_save_asset &&
+    response.status === 403 &&
+    response.headers.get('X-Comfy-Error-Type') === 'not_enabled'
+  )
+}
+
+function submitUrl(context: QueueContext): string {
+  const url = requestsUrl(context)
+  return context.options.comfy_save_asset ? `${url}?comfy_save_asset=true` : url
+}
+
+/**
+ * Saving is the whole point of a run that asked for it, so a router that took
+ * the request without acknowledging the control would keep nothing. The request
+ * was admitted, so the machine is already running, and this throws from
+ * `submit`, where the outer catch has no request id left to cancel: stopping it
+ * here is the only chance.
+ */
+function assertSaving(
+  handle: unknown,
+  requestId: string,
+  context: QueueContext
+): void {
+  if (!context.options.comfy_save_asset || acknowledgedSaving(handle)) return
+  requestCancellation(context, requestId)
+  throw new WorkshopRouterError(
+    'unavailable',
+    requestId,
+    {},
+    undefined,
+    'response',
+    { requestSettlement: 'pending' }
+  )
 }
 
 async function submit(
   state: Submitting,
   context: QueueContext
 ): Promise<QueuedRun> {
-  const response = await routerFetch(context, requestsUrl(context), {
+  const response = await routerFetch(context, submitUrl(context), {
     method: 'POST',
     body: context.body
   })
   const callId = response.headers.get('X-Comfy-Request-Id')
-  if (
-    response.status === 403 &&
-    response.headers.get('X-Comfy-Error-Type') === 'not_enabled'
-  ) {
+  if (offersSynchronousInstead(response, context)) {
     await response.body?.cancel().catch(() => {})
     return { phase: 'synchronous' }
   }
@@ -162,10 +223,7 @@ async function submit(
       next: { ...state, inFlightRetries: state.inFlightRetries + 1 }
     }
   }
-  if (!response.ok) {
-    context.options.onRequestId?.(callId)
-    await settleRouterResponse(response, callId, context)
-  }
+  if (!response.ok) await settleRouterResponse(response, callId, context)
   const handle: unknown = await response.json().catch((error: unknown) => {
     if (error instanceof SyntaxError) return undefined
     throw error
@@ -174,6 +232,7 @@ async function submit(
   if (!requestId)
     throw new WorkshopRouterError('response', callId, {}, undefined, 'response')
   context.options.onRequestId?.(requestId)
+  assertSaving(handle, requestId, context)
   return { phase: 'collect', requestId, interruptions: 0, unreadableResults: 0 }
 }
 
@@ -236,7 +295,8 @@ async function settleQueuedResult(
       {
         cause: error,
         requestSettlement:
-          errorType && TERMINAL_RESULT_ERRORS.has(errorType)
+          error.reason === 'policy' ||
+          (errorType && TERMINAL_RESULT_ERRORS.has(errorType))
             ? 'terminal'
             : 'pending'
       }
@@ -368,19 +428,25 @@ export async function runWorkshopRouter(
         advance(active, context)
       )
     }
+    if (state.phase === 'synchronous')
+      return await runSynchronousWorkshopRouter(options, context)
+    return {
+      outputs: state.outputs,
+      requestId: state.requestId,
+      deadlineCollections: 0
+    }
   } catch (error) {
     const requestId = runRequestId(state)
-    if (options.signal.aborted && requestId)
+    if (
+      options.signal.aborted &&
+      options.signal.reason !== WORKSHOP_LEAVE_RUNNING &&
+      requestId
+    )
       requestCancellation(context, requestId)
     options.signal.throwIfAborted()
     if (error instanceof WorkshopRouterError) throw error
     return throwRunFailure(error, context, requestId)
-  }
-  if (state.phase === 'synchronous')
-    return runSynchronousWorkshopRouter(options, context)
-  return {
-    outputs: state.outputs,
-    requestId: state.requestId,
-    deadlineCollections: 0
+  } finally {
+    context.controller.abort()
   }
 }

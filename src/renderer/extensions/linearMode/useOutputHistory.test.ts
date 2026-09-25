@@ -68,9 +68,7 @@ function makeResult(
 
 beforeEach(() => {
   useAssetsStore().outputAssets.hasMore = false
-  vi.spyOn(useAssetsStore().outputAssets, 'loadMore').mockResolvedValue(
-    undefined
-  )
+  vi.spyOn(useAssetsStore().outputAssets, 'loadMore').mockResolvedValue(false)
   vi.mocked(useLinearOutputStore().selectAsLatest).mockImplementation(
     () => undefined
   )

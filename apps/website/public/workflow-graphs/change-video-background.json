@@ -1,0 +1,218 @@
+{
+  "id": "7a06a6de-067d-4d41-b7bf-7d6add20ec8c",
+  "revision": 0,
+  "last_node_id": 39,
+  "last_link_id": 32,
+  "nodes": [
+    {
+      "id": 16,
+      "type": "SaveVideo",
+      "pos": [460, 7830],
+      "size": [699.984375, 125.9375],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 32
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": null
+        }
+      ],
+      "properties": {},
+      "widgets_values": ["video/Seedance2.5_video_edit", "auto", "auto"],
+      "widgets_values_named": {
+        "filename_prefix": "video/Seedance2.5_video_edit",
+        "format": "auto",
+        "codec": "auto"
+      }
+    },
+    {
+      "id": 35,
+      "type": "LoadVideo",
+      "pos": [-640, 7850],
+      "size": [329.984375, 469.984375],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [27]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadVideo"
+      },
+      "widgets_values": ["kitten_cop.mp4", "image"],
+      "widgets_values_named": {
+        "file": "kitten_cop.mp4",
+        "upload": "image"
+      }
+    },
+    {
+      "id": 36,
+      "type": "Video Slice",
+      "pos": [-270, 7850],
+      "size": [269.984375, 149.984375],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 27
+        }
+      ],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [29]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "Video Slice"
+      },
+      "widgets_values": [0, 5, false],
+      "widgets_values_named": {
+        "start_time": 0,
+        "duration": 5,
+        "strict_duration": false
+      }
+    },
+    {
+      "id": 37,
+      "type": "MarkdownNote",
+      "pos": [20, 8490],
+      "size": [389.984375, 119.984375],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "- Change the `task_type` to switch to video editing mode\n- It takes the duration and aspect from the input video"
+      ],
+      "widgets_values_named": {
+        "text": "- Change the `task_type` to switch to video editing mode\n- It takes the duration and aspect from the input video"
+      },
+      "color": "#222",
+      "bgcolor": "#000"
+    },
+    {
+      "id": 39,
+      "type": "ByteDance2ReferenceNodeV2",
+      "pos": [20, 7840],
+      "size": [399.640625, 462.859375],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "image_1",
+          "name": "model.reference_images.image_1",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "label": "video_1",
+          "name": "model.reference_videos.video_1",
+          "shape": 7,
+          "type": "VIDEO",
+          "link": 29
+        },
+        {
+          "label": "video_2",
+          "name": "model.reference_videos.video_2",
+          "shape": 7,
+          "type": "VIDEO",
+          "link": null
+        },
+        {
+          "label": "audio_1",
+          "name": "model.reference_audios.audio_1",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": null
+        },
+        {
+          "label": "asset_1",
+          "name": "model.reference_assets.asset_1",
+          "shape": 7,
+          "type": "STRING",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [32]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ByteDance2ReferenceNodeV2"
+      },
+      "widgets_values": [
+        "Seedance 2.5",
+        "Transform the input video to clay style. Keep the motion, characters, composition, and timing exactly the same, only change the visual rendering. No additional content.",
+        "720p",
+        "16:9",
+        5,
+        true,
+        "edit",
+        "mp4",
+        true,
+        false,
+        0,
+        "randomize",
+        false
+      ],
+      "widgets_values_named": {
+        "model": "Seedance 2.5",
+        "model.prompt": "Transform the input video to clay style. Keep the motion, characters, composition, and timing exactly the same, only change the visual rendering. No additional content.",
+        "model.resolution": "720p",
+        "model.ratio": "16:9",
+        "model.duration": 5,
+        "model.generate_audio": true,
+        "model.task_type": "edit",
+        "model.output_format": "mp4",
+        "model.auto_downscale": true,
+        "model.auto_upscale": false,
+        "seed": 0,
+        "control_after_generate": "randomize",
+        "watermark": false
+      },
+      "color": "#432",
+      "bgcolor": "#653"
+    }
+  ],
+  "links": [
+    [27, 35, 0, 36, 0, "VIDEO"],
+    [29, 36, 0, 39, 1, "VIDEO"],
+    [32, 39, 0, 16, 0, "VIDEO"]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.4821835091442201,
+      "offset": [1605.3948267084736, -6836.553866012357]
+    },
+    "frontendVersion": "1.49.6"
+  },
+  "version": 0.4
+}

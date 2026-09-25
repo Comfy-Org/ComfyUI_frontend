@@ -80,7 +80,7 @@ const activeTab = defineModel<string>({ required: true })
         )
       "
     >
-      <span class="ppformula-text-center">{{ tab.name }}</span>
+      <span class="ppformula-text-center inline-block">{{ tab.name }}</span>
     </TabsTrigger>
   </TabsList>
 </template>

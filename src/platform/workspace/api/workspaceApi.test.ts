@@ -31,9 +31,7 @@ vi.mock<unknown>(import('axios'), () => ({
   }
 }))
 
-vi.mock(import('@/i18n'), () => ({
-  t: vi.fn((key: string) => key)
-}))
+vi.mock(import('@/i18n'))
 
 vi.mock(import('./workspaceApiUrl'), () => ({
   workspaceApiUrl: (path: string) => `/api${path}`

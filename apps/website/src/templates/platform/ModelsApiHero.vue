@@ -24,7 +24,7 @@ const routes = getRoutes(locale)
     media-wrapper-class="hidden min-w-0 lg:flex lg:flex-col"
     :subtitle="t('platform.modelsHero.subtitle', locale)"
     :primary-cta="{
-      label: routerT('platform.router.cta.getApiKey', locale),
+      label: t('platform.modelsHero.getApiKey', locale),
       href: externalLinks.routerApiKeys,
       target: '_blank'
     }"

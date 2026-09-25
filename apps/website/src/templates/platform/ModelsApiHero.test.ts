@@ -31,4 +31,14 @@ describe('ModelsApiHero', () => {
     for (const link of browseModels)
       expect(link.getAttribute('href')).toBe('/models')
   })
+
+  it('sends the get-key link as a Router onboarding arrival', () => {
+    render(ModelsApiHero, { props: { locale: 'en' } })
+
+    expect(
+      screen
+        .getByRole('link', { name: t('platform.modelsHero.getApiKey', 'en') })
+        .getAttribute('href')
+    ).toBe('https://platform.comfy.org/profile/api-keys?onboarding=router')
+  })
 })
