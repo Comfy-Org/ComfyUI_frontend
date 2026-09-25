@@ -4,19 +4,23 @@
     data-testid="load3d-animation-strip"
     @wheel.stop
   >
-    <button
-      v-tooltip.top="tip(playLabel)"
-      :class="iconBtnClass"
-      type="button"
-      :aria-label="playLabel"
-      @click="playing = !playing"
-    >
-      <i
-        :class="
-          cn(playing ? 'icon-[lucide--pause]' : 'icon-[lucide--play]', 'size-4')
-        "
-      />
-    </button>
+    <Tooltip :config="tip(playLabel)" side="top">
+      <button
+        :class="iconBtnClass"
+        type="button"
+        :aria-label="playLabel"
+        @click="playing = !playing"
+      >
+        <i
+          :class="
+            cn(
+              playing ? 'icon-[lucide--pause]' : 'icon-[lucide--play]',
+              'size-4'
+            )
+          "
+        />
+      </button>
+    </Tooltip>
 
     <Slider
       :model-value="[animationProgress]"
@@ -38,15 +42,16 @@
 
     <Popover v-model:open="speedOpen">
       <PopoverTrigger as-child>
-        <button
-          v-tooltip.top="tip(t('load3d.menuBar.playbackSpeed'))"
-          :class="chipClass"
-          type="button"
-          :aria-label="t('load3d.menuBar.playbackSpeed')"
-        >
-          {{ speedLabel }}
-          <i class="icon-[lucide--chevron-down] size-4 opacity-70" />
-        </button>
+        <Tooltip :config="tip(t('load3d.menuBar.playbackSpeed'))" side="top">
+          <button
+            :class="chipClass"
+            type="button"
+            :aria-label="t('load3d.menuBar.playbackSpeed')"
+          >
+            {{ speedLabel }}
+            <i class="icon-[lucide--chevron-down] size-4 opacity-70" />
+          </button>
+        </Tooltip>
       </PopoverTrigger>
       <PopoverContent
         side="top"
@@ -70,16 +75,17 @@
 
     <Popover v-model:open="clipOpen">
       <PopoverTrigger as-child>
-        <button
-          v-tooltip.top="tip(t('load3d.menuBar.animationClip'))"
-          :class="cn(chipClass, 'max-w-40')"
-          type="button"
-          :aria-label="t('load3d.menuBar.animationClip')"
-        >
-          <i class="icon-[lucide--clapperboard] size-4 shrink-0" />
-          <span v-if="!compact" class="truncate">{{ selectedClipName }}</span>
-          <i class="icon-[lucide--chevron-down] size-4 shrink-0 opacity-70" />
-        </button>
+        <Tooltip :config="tip(t('load3d.menuBar.animationClip'))" side="top">
+          <button
+            :class="cn(chipClass, 'max-w-40')"
+            type="button"
+            :aria-label="t('load3d.menuBar.animationClip')"
+          >
+            <i class="icon-[lucide--clapperboard] size-4 shrink-0" />
+            <span v-if="!compact" class="truncate">{{ selectedClipName }}</span>
+            <i class="icon-[lucide--chevron-down] size-4 shrink-0 opacity-70" />
+          </button>
+        </Tooltip>
       </PopoverTrigger>
       <PopoverContent
         side="top"
@@ -123,6 +129,7 @@ import { usePopoverExclusivity } from '@/components/load3d/menubar/usePopoverExc
 import Popover from '@/components/ui/popover/Popover.vue'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
 import Slider from '@/components/ui/slider/Slider.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import type { AnimationItem } from '@/extensions/core/load3d/interfaces'
 import { cn } from '@comfyorg/tailwind-utils'
 

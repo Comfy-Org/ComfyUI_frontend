@@ -1,74 +1,90 @@
 <template>
   <div v-if="!hasBackgroundImage || hdriConfig?.hdriPath" class="flex flex-col">
-    <Button
-      v-tooltip.right="{
+    <Tooltip
+      :config="{
         value: hdriConfig?.hdriPath
           ? $t('load3d.hdri.changeFile')
           : $t('load3d.hdri.uploadFile'),
         showDelay: 300
       }"
-      size="icon"
-      variant="textonly"
-      class="rounded-full"
-      :aria-label="
-        hdriConfig?.hdriPath
-          ? $t('load3d.hdri.changeFile')
-          : $t('load3d.hdri.uploadFile')
-      "
-      @click="triggerFileInput"
+      side="right"
     >
-      <i class="icon-[lucide--upload] text-lg text-base-foreground" />
-    </Button>
-
-    <template v-if="hdriConfig?.hdriPath">
       <Button
-        v-tooltip.right="{
-          value: $t('load3d.hdri.label'),
-          showDelay: 300
-        }"
-        size="icon"
-        variant="textonly"
-        :class="
-          cn('rounded-full', hdriConfig?.enabled && 'ring-2 ring-white/50')
-        "
-        :aria-label="$t('load3d.hdri.label')"
-        @click="toggleEnabled"
-      >
-        <i class="icon-[lucide--globe] text-lg text-base-foreground" />
-      </Button>
-
-      <Button
-        v-tooltip.right="{
-          value: $t('load3d.hdri.showAsBackground'),
-          showDelay: 300
-        }"
-        size="icon"
-        variant="textonly"
-        :class="
-          cn(
-            'rounded-full',
-            hdriConfig?.showAsBackground && 'ring-2 ring-white/50'
-          )
-        "
-        :aria-label="$t('load3d.hdri.showAsBackground')"
-        @click="toggleShowAsBackground"
-      >
-        <i class="icon-[lucide--image] text-lg text-base-foreground" />
-      </Button>
-
-      <Button
-        v-tooltip.right="{
-          value: $t('load3d.hdri.removeFile'),
-          showDelay: 300
-        }"
         size="icon"
         variant="textonly"
         class="rounded-full"
-        :aria-label="$t('load3d.hdri.removeFile')"
-        @click="onRemoveHDRI"
+        :aria-label="
+          hdriConfig?.hdriPath
+            ? $t('load3d.hdri.changeFile')
+            : $t('load3d.hdri.uploadFile')
+        "
+        @click="triggerFileInput"
       >
-        <i class="icon-[lucide--x] text-lg text-base-foreground" />
+        <i class="icon-[lucide--upload] text-lg text-base-foreground" />
       </Button>
+    </Tooltip>
+
+    <template v-if="hdriConfig?.hdriPath">
+      <Tooltip
+        :config="{
+          value: $t('load3d.hdri.label'),
+          showDelay: 300
+        }"
+        side="right"
+      >
+        <Button
+          size="icon"
+          variant="textonly"
+          :class="
+            cn('rounded-full', hdriConfig?.enabled && 'ring-2 ring-white/50')
+          "
+          :aria-label="$t('load3d.hdri.label')"
+          @click="toggleEnabled"
+        >
+          <i class="icon-[lucide--globe] text-lg text-base-foreground" />
+        </Button>
+      </Tooltip>
+
+      <Tooltip
+        :config="{
+          value: $t('load3d.hdri.showAsBackground'),
+          showDelay: 300
+        }"
+        side="right"
+      >
+        <Button
+          size="icon"
+          variant="textonly"
+          :class="
+            cn(
+              'rounded-full',
+              hdriConfig?.showAsBackground && 'ring-2 ring-white/50'
+            )
+          "
+          :aria-label="$t('load3d.hdri.showAsBackground')"
+          @click="toggleShowAsBackground"
+        >
+          <i class="icon-[lucide--image] text-lg text-base-foreground" />
+        </Button>
+      </Tooltip>
+
+      <Tooltip
+        :config="{
+          value: $t('load3d.hdri.removeFile'),
+          showDelay: 300
+        }"
+        side="right"
+      >
+        <Button
+          size="icon"
+          variant="textonly"
+          class="rounded-full"
+          :aria-label="$t('load3d.hdri.removeFile')"
+          @click="onRemoveHDRI"
+        >
+          <i class="icon-[lucide--x] text-lg text-base-foreground" />
+        </Button>
+      </Tooltip>
     </template>
 
     <input
@@ -82,6 +98,8 @@
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 

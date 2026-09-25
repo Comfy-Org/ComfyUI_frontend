@@ -1,19 +1,25 @@
 <template>
-  <Button
-    v-show="isVisible"
-    v-tooltip.top="{
+  <Tooltip
+    :config="{
       value: $t('commands.Comfy_PublishSubgraph.label'),
       showDelay: 1000
     }"
-    variant="muted-textonly"
-    :aria-label="$t('commands.Comfy_PublishSubgraph.label')"
-    @click="() => commandStore.execute('Comfy.PublishSubgraph')"
+    side="top"
   >
-    <i class="icon-[lucide--book-open]" />
-  </Button>
+    <Button
+      v-show="isVisible"
+      variant="muted-textonly"
+      :aria-label="$t('commands.Comfy_PublishSubgraph.label')"
+      @click="() => commandStore.execute('Comfy.PublishSubgraph')"
+    >
+      <i class="icon-[lucide--book-open]" />
+    </Button>
+  </Tooltip>
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import { computed } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'

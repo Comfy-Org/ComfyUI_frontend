@@ -23,7 +23,7 @@ type RenderProps = Partial<ComponentProps<typeof AnimationMenuStrip>>
 function renderStrip(props: RenderProps = {}) {
   const result = render(AnimationMenuStrip, {
     props: { animations: clips, animationDuration: 10, ...props },
-    global: { plugins: [i18n], directives: { tooltip: () => {} } }
+    global: { plugins: [i18n] }
   })
   return { ...result, user: userEvent.setup() }
 }
@@ -36,7 +36,10 @@ describe('AnimationMenuStrip', () => {
       'onUpdate:playing': onUpdatePlaying
     })
 
-    await user.click(screen.getByRole('button', { name: 'Play' }))
+    const play = screen.getByRole('button', { name: 'Play' })
+    await user.hover(play)
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('Play')
+    await user.click(play)
 
     expect(onUpdatePlaying).toHaveBeenCalledWith(true)
   })

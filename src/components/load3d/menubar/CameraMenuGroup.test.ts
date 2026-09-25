@@ -22,7 +22,7 @@ function makeConfig(
 function renderGroup(config = makeConfig(), compact = false) {
   const result = render(CameraMenuGroup, {
     props: { config, compact },
-    global: { plugins: [i18n], directives: { tooltip: () => {} } }
+    global: { plugins: [i18n] }
   })
   return { ...result, user: userEvent.setup(), config }
 }
@@ -63,10 +63,21 @@ describe('CameraMenuGroup', () => {
     }
     const { user } = renderGroup(config)
 
-    await user.click(screen.getByRole('button', { name: 'Custom up' }))
+    const customUpButton = screen.getByRole('button', { name: 'Custom up' })
+    await user.hover(customUpButton)
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      'Reset camera up to Y'
+    )
+    await user.click(customUpButton)
     expect(config.useCustomUp).toBe(false)
 
-    await user.click(screen.getByRole('button', { name: 'Natural up' }))
+    const naturalUpButton = screen.getByRole('button', { name: 'Natural up' })
+    await user.unhover(naturalUpButton)
+    await user.hover(naturalUpButton)
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      'Restore camera up from input'
+    )
+    await user.click(naturalUpButton)
     expect(config.useCustomUp).toBe(true)
   })
 

@@ -1,3 +1,4 @@
+import { useToast } from '@/components/ui/toast'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
@@ -34,7 +35,7 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
-const mockToastAdd = vi.fn()
+const mockToastAdd = vi.hoisted(() => vi.fn())
 
 const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
 
@@ -71,12 +72,21 @@ vi.mock<unknown>(import('@/composables/billing/usePendingTopup'), () => ({
   usePendingTopup: () => ({ clearPendingTopup: mockClearPendingTopup })
 }))
 
-vi.mock<unknown>(
-  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
-  () => ({
-    useToast: () => ({ add: mockToastAdd })
-  })
-)
+beforeEach(() => {
+  const toast = useToast()
+  for (const kind of [
+    'success',
+    'error',
+    'info',
+    'warning',
+    'loading'
+  ] as const) {
+    vi.mocked(toast[kind]).mockImplementation((...args) => {
+      mockToastAdd(kind, ...args)
+      return 0
+    })
+  }
+})
 
 vi.mock(import('@/base/credits/comfyCredits'), () => ({
   creditsToUsd: (credits: number) => credits,
@@ -449,9 +459,9 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       })
     )
     expect(mockToastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({
-        summary: 'Failed to open the billing portal. Please try again.'
-      })
+      'error',
+      'Failed to open the billing portal. Please try again.',
+      { duration: 5000 }
     )
   })
 
@@ -471,8 +481,10 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
 
     await waitFor(() =>
       expect(mockToastAdd).toHaveBeenCalledWith(
+        'error',
+        expect.any(String),
         expect.objectContaining({
-          detail:
+          description:
             'No payment method is saved for this workspace. Add one via Settings → Plan & Credits → Manage billing, then retry the top-up.'
         })
       )
@@ -579,9 +591,10 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
 
     await waitFor(() =>
       expect(mockToastAdd).toHaveBeenCalledWith(
+        'error',
+        expect.any(String),
         expect.objectContaining({
-          severity: 'error',
-          detail: expect.stringContaining('credit purchase is still open')
+          description: expect.stringContaining('credit purchase is still open')
         })
       )
     )
@@ -827,10 +840,8 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     await waitFor(() =>
       expect(screen.getByRole('button', { name: 'Pay $50.00' })).toBeEnabled()
     )
-    expect(mockToastAdd).toHaveBeenCalledWith({
-      severity: 'error',
-      summary: 'Purchase Failed',
-      detail: 'Failed to purchase credits: An unknown error occurred'
+    expect(mockToastAdd).toHaveBeenCalledWith('error', 'Purchase Failed', {
+      description: 'Failed to purchase credits: An unknown error occurred'
     })
     expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'topup',

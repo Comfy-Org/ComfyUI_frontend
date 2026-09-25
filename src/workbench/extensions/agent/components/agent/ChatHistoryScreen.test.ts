@@ -89,12 +89,12 @@ describe('ChatHistoryScreen', () => {
     const back = screen.getByRole('button', {
       name: 'Back to previous chat'
     })
-    expect(screen.queryByRole('tooltip', { hidden: true })).toBeNull()
+    expect(screen.queryByRole('tooltip')).toBeNull()
     await user.hover(back)
 
-    expect(
-      await screen.findByRole('tooltip', { hidden: true })
-    ).toHaveTextContent('Back to previous chat')
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      'Back to previous chat'
+    )
   })
 
   it('emits back when the back control is clicked', async () => {
@@ -181,9 +181,9 @@ describe('ChatHistoryScreen', () => {
 
     await user.hover(screen.getByRole('button', { name: 'Copy as markdown' }))
 
-    expect(
-      await screen.findByRole('tooltip', { hidden: true })
-    ).toHaveTextContent('Copy as markdown')
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      'Copy as markdown'
+    )
   })
 
   it('opens a selected inline edit from the history-row menu', async () => {

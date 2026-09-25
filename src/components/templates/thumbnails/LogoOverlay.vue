@@ -9,41 +9,51 @@
       data-testid="logo-pill"
       class="flex items-center gap-1"
     >
-      <AccessibleTooltip
+      <Tooltip
         v-for="badge in logo.badges"
         :key="badge.provider"
-        :label="badge.provider"
-        test-id="logo-badge"
-        :delay-duration="0"
-        ring-class="focus-visible:ring-white"
-        trigger-class="flex size-7 items-center justify-center rounded-full bg-black/30 backdrop-blur-[20px]"
+        :config="{ value: badge.provider, showDelay: 0 }"
+        open-on-click
+        suppress-description
       >
-        <i
-          v-if="badge.iconClass"
-          data-testid="logo-icon"
-          :class="cn('size-3.5 text-white', badge.iconClass)"
-          aria-hidden="true"
-        />
-        <img
-          v-else
-          data-testid="logo-img"
-          :src="badge.logoUrl"
-          alt=""
-          class="size-4 rounded-full object-cover"
-          draggable="false"
-          @error="onImageError(badge.provider)"
-        />
-      </AccessibleTooltip>
-      <AccessibleTooltip
+        <button
+          type="button"
+          :aria-label="badge.provider"
+          data-testid="logo-badge"
+          class="flex size-7 cursor-pointer items-center justify-center rounded-full border-none bg-black/30 p-0 backdrop-blur-[20px] focus-visible:ring-1 focus-visible:ring-white focus-visible:outline-none"
+        >
+          <i
+            v-if="badge.iconClass"
+            data-testid="logo-icon"
+            :class="cn('size-3.5 text-white', badge.iconClass)"
+            aria-hidden="true"
+          />
+          <img
+            v-else
+            data-testid="logo-img"
+            :src="badge.logoUrl"
+            alt=""
+            class="size-4 rounded-full object-cover"
+            draggable="false"
+            @error="onImageError(badge.provider)"
+          />
+        </button>
+      </Tooltip>
+      <Tooltip
         v-if="logo.extraProviders.length"
-        :label="logo.extraProviders"
-        test-id="logo-extra"
-        :delay-duration="0"
-        ring-class="focus-visible:ring-white"
-        trigger-class="flex h-7 min-w-7 items-center justify-center rounded-full bg-black/30 px-1.5 text-xs font-medium text-white backdrop-blur-[20px]"
+        :config="{ value: logo.extraProviders, showDelay: 0 }"
+        open-on-click
+        suppress-description
       >
-        +{{ logo.extraProviders.length }}
-      </AccessibleTooltip>
+        <button
+          type="button"
+          :aria-label="logo.extraProviders.join(', ')"
+          data-testid="logo-extra"
+          class="flex h-7 min-w-7 cursor-pointer items-center justify-center rounded-full border-none bg-black/30 px-1.5 text-xs font-medium text-white backdrop-blur-[20px] focus-visible:ring-1 focus-visible:ring-white focus-visible:outline-none"
+        >
+          +{{ logo.extraProviders.length }}
+        </button>
+      </Tooltip>
     </div>
   </div>
 </template>
@@ -51,7 +61,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
-import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import type { LogoInfo } from '@/platform/workflow/templates/types/template'
 import type { ProviderBadge } from '@/platform/workflow/templates/utils/templateDisplay'
 import { getProviderBadges } from '@/platform/workflow/templates/utils/templateDisplay'

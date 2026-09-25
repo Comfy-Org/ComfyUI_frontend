@@ -134,22 +134,10 @@
                     )
                   }}
                 </Button>
-                <DropdownMenu
+                <SubscriptionMenu
                   v-if="showInactiveTeamSubscription && menuEntries.length > 0"
                   :entries="menuEntries"
-                >
-                  <template #button>
-                    <Button
-                      v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
-                      variant="secondary"
-                      size="icon-lg"
-                      class="rounded-lg bg-interface-menu-component-surface-selected text-text-primary"
-                      :aria-label="$t('g.moreOptions')"
-                    >
-                      <i class="pi pi-ellipsis-h" />
-                    </Button>
-                  </template>
-                </DropdownMenu>
+                />
               </div>
             </template>
 
@@ -194,22 +182,10 @@
                 >
                   {{ $t('subscription.subscribe') }}
                 </Button>
-                <DropdownMenu
+                <SubscriptionMenu
                   v-if="menuEntries.length > 0"
                   :entries="menuEntries"
-                >
-                  <template #button>
-                    <Button
-                      v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
-                      variant="secondary"
-                      size="icon-lg"
-                      class="rounded-lg bg-interface-menu-component-surface-selected text-text-primary"
-                      :aria-label="$t('g.moreOptions')"
-                    >
-                      <i class="pi pi-ellipsis-h" />
-                    </Button>
-                  </template>
-                </DropdownMenu>
+                />
               </div>
             </template>
 
@@ -291,22 +267,10 @@
                       : $t('subscription.changePlan')
                   }}
                 </Button>
-                <DropdownMenu
+                <SubscriptionMenu
                   v-if="menuEntries.length > 0"
                   :entries="menuEntries"
-                >
-                  <template #button>
-                    <Button
-                      v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
-                      variant="secondary"
-                      size="icon-lg"
-                      class="rounded-lg bg-interface-menu-component-surface-selected text-text-primary"
-                      :aria-label="$t('g.moreOptions')"
-                    >
-                      <i class="pi pi-ellipsis-h" />
-                    </Button>
-                  </template>
-                </DropdownMenu>
+                />
               </div>
             </template>
           </div>
@@ -403,7 +367,6 @@ import { useI18n } from 'vue-i18n'
 
 import CreditsTile from '@/platform/cloud/subscription/components/CreditsTile.vue'
 import SubscriptionFooterLinks from '@/platform/cloud/subscription/components/SubscriptionFooterLinks.vue'
-import DropdownMenu from '@/components/common/DropdownMenu.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
@@ -425,6 +388,7 @@ import {
   formatSubscriptionDate,
   resolveSubscriptionTierKey
 } from './subscriptionPanelWorkspace.logic'
+import SubscriptionMenu from './SubscriptionMenu.vue'
 
 const workspaceStore = useTeamWorkspaceStore()
 const { isWorkspaceSubscribed, isInPersonalWorkspace } =

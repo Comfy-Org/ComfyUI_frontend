@@ -1,37 +1,23 @@
 <template>
-  <Popover v-if="isOriginalMaterial" v-model:open="intensityOpen">
-    <PopoverTrigger as-child>
-      <button
-        v-tooltip.bottom="tip(t('load3d.menuBar.intensity'))"
-        :class="actionClass(false)"
-        type="button"
-        :aria-label="compact ? t('load3d.menuBar.intensity') : undefined"
-      >
-        <i class="icon-[lucide--sun] size-4" />
-        <span v-if="!compact">{{ t('load3d.menuBar.intensity') }}</span>
-      </button>
-    </PopoverTrigger>
-    <PopoverContent
-      side="bottom"
-      align="start"
-      :side-offset="8"
-      :class="cn(panelClass, 'w-56')"
-    >
-      <div class="flex flex-col gap-2 p-1">
-        <span class="text-sm text-base-foreground">{{
-          t('load3d.lightIntensity')
-        }}</span>
-        <Slider
-          :model-value="[sliderValue]"
-          :min="sliderMin"
-          :max="sliderMax"
-          :step="sliderStep"
-          class="w-full"
-          @update:model-value="onIntensityUpdate"
-        />
-      </div>
-    </PopoverContent>
-  </Popover>
+  <MenuPopover
+    v-if="isOriginalMaterial"
+    v-model:open="intensityOpen"
+    :label="t('load3d.menuBar.intensity')"
+    :compact
+    icon="icon-[lucide--sun]"
+  >
+    <span class="text-sm text-base-foreground">{{
+      t('load3d.lightIntensity')
+    }}</span>
+    <Slider
+      :model-value="[sliderValue]"
+      :min="sliderMin"
+      :max="sliderMax"
+      :step="sliderStep"
+      class="w-full"
+      @update:model-value="onIntensityUpdate"
+    />
+  </MenuPopover>
   <span v-else class="px-2 text-sm text-muted">{{
     t('load3d.menuBar.originalMaterialOnly')
   }}</span>
@@ -41,19 +27,11 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import {
-  actionClass,
-  panelClass,
-  tip
-} from '@/components/load3d/menubar/menuBarStyles'
+import MenuPopover from '@/components/load3d/menubar/MenuPopover.vue'
 import { usePopoverExclusivity } from '@/components/load3d/menubar/usePopoverExclusivity'
-import Popover from '@/components/ui/popover/Popover.vue'
-import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
 import Slider from '@/components/ui/slider/Slider.vue'
 import type { LightConfig } from '@/extensions/core/load3d/interfaces'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { cn } from '@comfyorg/tailwind-utils'
-import { PopoverTrigger } from 'reka-ui'
 
 const { compact = false, isOriginalMaterial = false } = defineProps<{
   compact?: boolean

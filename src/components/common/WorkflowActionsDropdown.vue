@@ -6,6 +6,8 @@ let restoreFocusOnMount = false
 </script>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import { cn } from '@comfyorg/tailwind-utils'
 import {
   DropdownMenuContent,
@@ -36,6 +38,11 @@ interface ViewModeSegment {
   active: boolean
   /** Frame-lagged mirror of {@link active} that drives the morph order. */
   displayActive: boolean
+  tooltip: string
+  tooltipContentClass?: string
+  ariaLabel: string
+  buttonClass: string
+  labelClass: string
 }
 
 const { source, align = 'start' } = defineProps<{
@@ -85,7 +92,29 @@ const segments = computed<ViewModeSegment[]>(() =>
   ).map((seg) => ({
     ...seg,
     active: appModeStore.viewMode === seg.mode,
-    displayActive: appModeStore.displayViewMode === seg.mode
+    displayActive: appModeStore.displayViewMode === seg.mode,
+    tooltip:
+      appModeStore.viewMode === seg.mode
+        ? t('breadcrumbsMenu.workflowActions')
+        : seg.switchTooltip,
+    tooltipContentClass:
+      appModeStore.viewMode === seg.mode ? undefined : 'w-max max-w-none',
+    ariaLabel:
+      appModeStore.viewMode === seg.mode
+        ? t('breadcrumbsMenu.activeModeWorkflowActions', { mode: seg.label })
+        : seg.switchLabel,
+    buttonClass: cn(
+      'relative flex h-8 items-center gap-0 rounded-lg font-normal transition-[background-color,color,transform] duration-200',
+      appModeStore.displayViewMode === seg.mode
+        ? 'bg-secondary-background pr-2 pl-2.5 text-base-foreground group-data-[state=open]:bg-secondary-background-hover group-data-[state=open]:shadow-interface hover:bg-secondary-background'
+        : 'w-8 justify-center bg-transparent text-muted-foreground hover:bg-secondary-background hover:text-base-foreground'
+    ),
+    labelClass: cn(
+      'grid transition-[grid-template-columns,opacity] duration-200',
+      appModeStore.displayViewMode === seg.mode
+        ? 'ml-1.5 grid-cols-[1fr] opacity-100'
+        : 'grid-cols-[0fr] opacity-0'
+    )
   }))
 )
 
@@ -148,22 +177,6 @@ onMounted(async () => {
   await nextTick()
   focusActiveSegment()
 })
-
-const tooltipPt = {
-  root: {
-    style: {
-      transform: 'translateX(calc(50% - 16px))',
-      whiteSpace: 'nowrap',
-      maxWidth: 'none'
-    }
-  },
-  text: {
-    style: { whiteSpace: 'nowrap' }
-  },
-  arrow: {
-    style: { left: '16px' }
-  }
-}
 </script>
 
 <template>
@@ -187,67 +200,47 @@ const tooltipPt = {
           move-class="transition-[background-color,color,transform] duration-200"
           class="flex items-center gap-1"
         >
-          <Button
+          <Tooltip
             v-for="seg in orderedSegments"
             :key="seg.mode"
-            v-tooltip.bottom="{
-              value: seg.active
-                ? t('breadcrumbsMenu.workflowActions')
-                : seg.switchTooltip,
+            :config="{
+              value: seg.tooltip,
               showDelay: 300,
-              hideDelay: 300,
-              pt: seg.active ? undefined : tooltipPt
+              hideDelay: 300
             }"
-            type="button"
-            variant="textonly"
-            size="unset"
-            :aria-label="
-              seg.active
-                ? t('breadcrumbsMenu.activeModeWorkflowActions', {
-                    mode: seg.label
-                  })
-                : seg.switchLabel
-            "
-            :aria-haspopup="seg.active ? 'menu' : undefined"
-            :aria-expanded="seg.active ? dropdownOpen : undefined"
-            :class="
-              cn(
-                'relative flex h-8 items-center gap-0 rounded-lg font-normal transition-[background-color,color,transform] duration-200',
-                seg.displayActive
-                  ? 'bg-secondary-background pr-2 pl-2.5 text-base-foreground group-data-[state=open]:bg-secondary-background-hover group-data-[state=open]:shadow-interface hover:bg-secondary-background'
-                  : 'w-8 justify-center bg-transparent text-muted-foreground hover:bg-secondary-background hover:text-base-foreground'
-              )
-            "
-            @click="onSegmentClick(seg, $event)"
-            @keydown="onSegmentKeydown(seg, $event)"
+            side="bottom"
+            :content-class="seg.tooltipContentClass"
           >
-            <i :class="cn('size-4 shrink-0', seg.icon)" aria-hidden="true" />
-            <span
-              :class="
-                cn(
-                  'grid transition-[grid-template-columns,opacity] duration-200',
-                  seg.displayActive
-                    ? 'ml-1.5 grid-cols-[1fr] opacity-100'
-                    : 'grid-cols-[0fr] opacity-0'
-                )
-              "
+            <Button
+              type="button"
+              variant="textonly"
+              size="unset"
+              :aria-label="seg.ariaLabel"
+              :aria-haspopup="seg.active ? 'menu' : undefined"
+              :aria-expanded="seg.active ? dropdownOpen : undefined"
+              :class="seg.buttonClass"
+              @click="onSegmentClick(seg, $event)"
+              @keydown="onSegmentKeydown(seg, $event)"
             >
-              <span
-                class="flex min-w-0 items-center overflow-hidden text-sm leading-none whitespace-nowrap"
-              >
-                {{ seg.label }}
-                <i
-                  class="ml-1 icon-[lucide--chevron-down] size-4 shrink-0 text-muted-foreground"
-                  aria-hidden="true"
-                />
+              <i :class="cn('size-4 shrink-0', seg.icon)" aria-hidden="true" />
+              <span :class="seg.labelClass">
+                <span
+                  class="flex min-w-0 items-center overflow-hidden text-sm leading-none whitespace-nowrap"
+                >
+                  {{ seg.label }}
+                  <i
+                    class="ml-1 icon-[lucide--chevron-down] size-4 shrink-0 text-muted-foreground"
+                    aria-hidden="true"
+                  />
+                </span>
               </span>
-            </span>
-            <span
-              v-if="seg.active && hasUnseenItems"
-              aria-hidden="true"
-              class="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-primary-background"
-            />
-          </Button>
+              <span
+                v-if="seg.active && hasUnseenItems"
+                aria-hidden="true"
+                class="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-primary-background"
+              />
+            </Button>
+          </Tooltip>
         </TransitionGroup>
       </div>
     </DropdownMenuTrigger>

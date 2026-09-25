@@ -16,17 +16,21 @@
         </div>
         <!-- All installed: Show update (if nightly) and uninstall buttons -->
         <template v-else-if="isAllInstalled">
-          <Button
+          <Tooltip
             v-if="hasNightlyPacks"
-            v-tooltip.top="$t('manager.tryUpdateTooltip')"
-            variant="textonly"
-            size="md"
-            :disabled="isUpdatingSelected"
-            @click="updateSelectedNightlyPacks"
+            :config="$t('manager.tryUpdateTooltip')"
+            side="top"
           >
-            <DotSpinner v-if="isUpdatingSelected" duration="1s" :size="16" />
-            <span>{{ updateSelectedLabel }}</span>
-          </Button>
+            <Button
+              variant="textonly"
+              size="md"
+              :disabled="isUpdatingSelected"
+              @click="updateSelectedNightlyPacks"
+            >
+              <DotSpinner v-if="isUpdatingSelected" duration="1s" :size="16" />
+              <span>{{ updateSelectedLabel }}</span>
+            </Button>
+          </Tooltip>
           <PackUninstallButton size="md" :node-packs="installedPacks" />
         </template>
         <!-- None installed: Show install button -->
@@ -70,6 +74,8 @@
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import { useAsyncState } from '@vueuse/core'
 import { computed, onUnmounted, ref, toRef } from 'vue'
 import { useI18n } from 'vue-i18n'

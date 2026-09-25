@@ -1,3 +1,4 @@
+import { useToast } from '@/components/ui/toast'
 import { computed, ref } from 'vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
@@ -89,16 +90,6 @@ vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
 vi.mock(import('@/platform/telemetry'))
 
-vi.mock<unknown>(
-  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
-
-  () => ({
-    useToast: vi.fn(() => ({
-      add: mockToastAdd
-    }))
-  })
-)
-
 function renderComponent(
   props: { cancelAt?: string; flowAlreadyOpened?: boolean } = {}
 ) {
@@ -118,6 +109,19 @@ function renderComponent(
 
 describe('CancelSubscriptionDialogContent', () => {
   beforeEach(() => {
+    const toast = useToast()
+    for (const kind of [
+      'success',
+      'error',
+      'info',
+      'warning',
+      'loading'
+    ] as const) {
+      vi.mocked(toast[kind]).mockImplementation((...args) => {
+        mockToastAdd(kind, ...args)
+        return 0
+      })
+    }
     const billing = vi.mocked(useBillingContext())
     billing.subscription = computed(() => null)
     billing.tier = computed(() => 'STANDARD')
@@ -230,8 +234,8 @@ describe('CancelSubscriptionDialogContent', () => {
       )
 
       await waitFor(() =>
-        expect(mockToastAdd).toHaveBeenCalledWith(
-          expect.objectContaining({ severity: 'error' })
+        expect(mockToastAdd.mock.calls.map(([method]) => method)).toContain(
+          'error'
         )
       )
       expect(
@@ -290,9 +294,10 @@ describe('CancelSubscriptionDialogContent', () => {
 
       await waitFor(() =>
         expect(mockToastAdd).toHaveBeenCalledWith(
+          'error',
+          expect.any(String),
           expect.objectContaining({
-            severity: 'error',
-            detail: 'Subscription cancellation timed out'
+            description: 'Subscription cancellation timed out'
           })
         )
       )
@@ -316,8 +321,8 @@ describe('CancelSubscriptionDialogContent', () => {
         })
       )
       expect(useBillingContext().fetchStatus).toHaveBeenCalled()
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'success' })
+      expect(mockToastAdd.mock.calls.map(([method]) => method)).toContain(
+        'success'
       )
     })
 
@@ -394,8 +399,8 @@ describe('CancelSubscriptionDialogContent', () => {
       )
 
       await waitFor(() =>
-        expect(mockToastAdd).toHaveBeenCalledWith(
-          expect.objectContaining({ severity: 'success' })
+        expect(mockToastAdd.mock.calls.map(([method]) => method)).toContain(
+          'success'
         )
       )
       expect(useDialogStore().closeDialog).toHaveBeenCalledWith({

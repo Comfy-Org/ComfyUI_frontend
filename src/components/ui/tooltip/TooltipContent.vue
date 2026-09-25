@@ -1,0 +1,56 @@
+<script setup lang="ts">
+import type { TooltipContentEmits, TooltipContentProps } from 'reka-ui'
+import {
+  TooltipArrow,
+  TooltipContent,
+  TooltipPortal,
+  useForwardPropsEmits
+} from 'reka-ui'
+import type { HTMLAttributes } from 'vue'
+import { computed } from 'vue'
+
+import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
+import { cn } from '@comfyorg/tailwind-utils'
+
+const {
+  class: className,
+  open = false,
+  sideOffset = 6,
+  ...restProps
+} = defineProps<
+  TooltipContentProps & { class?: HTMLAttributes['class']; open?: boolean }
+>()
+const emits = defineEmits<TooltipContentEmits>()
+const forwarded = useForwardPropsEmits(
+  computed(() => ({ sideOffset, ...restProps })),
+  emits
+)
+const contentStyle = useModalLiftedZIndex(() => open)
+</script>
+
+<template>
+  <TooltipPortal>
+    <div class="pointer-events-none">
+      <TooltipContent
+        v-bind="forwarded"
+        data-testid="tooltip-positioner"
+        :style="contentStyle"
+        :class="
+          cn(
+            'z-1700 max-w-96 rounded-md border border-border-default bg-base-background px-3 py-2 text-xs/tight text-base-foreground shadow-interface',
+            className
+          )
+        "
+      >
+        <div role="tooltip" data-slot="tooltip-content">
+          <slot />
+        </div>
+        <TooltipArrow
+          :width="10"
+          :height="5"
+          class="fill-base-background stroke-border-default"
+        />
+      </TooltipContent>
+    </div>
+  </TooltipPortal>
+</template>

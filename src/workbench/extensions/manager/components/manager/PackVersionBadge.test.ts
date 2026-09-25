@@ -3,8 +3,6 @@
 /* eslint-disable testing-library/prefer-user-event */
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import PrimeVue from 'primevue/config'
-import Tooltip from 'primevue/tooltip'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -76,10 +74,7 @@ describe('PackVersionBadge', () => {
         ...props
       },
       global: {
-        plugins: [PrimeVue, i18n],
-        directives: {
-          tooltip: Tooltip
-        },
+        plugins: [i18n],
         stubs: {
           PackVersionSelectorPopover: PackVersionSelectorPopoverStub
         }
@@ -178,7 +173,7 @@ describe('PackVersionBadge', () => {
       await rerender({ nodePack: mockNodePack, isSelected: false })
       await nextTick()
 
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      expect(screen.getByRole('dialog')).toHaveAttribute('data-state', 'closed')
     })
 
     it('does not close the popover when card is selected', async () => {

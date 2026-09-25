@@ -1,3 +1,4 @@
+import { useToast } from '@/components/ui/toast'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -14,7 +15,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 
 import TopUpCreditsDialogContentLegacy from './TopUpCreditsDialogContentLegacy.vue'
 
-const mockToastAdd = vi.fn()
+const mockToastAdd = vi.hoisted(() => vi.fn())
 
 const mockShouldUseWorkspaceBilling = vi.hoisted(() => ({ value: false }))
 
@@ -33,13 +34,21 @@ vi.mock<unknown>(import('@/composables/billing/usePendingTopup'), () => ({
   usePendingTopup: () => ({ clearPendingTopup: mockClearPendingTopup })
 }))
 
-vi.mock<unknown>(
-  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
-
-  () => ({
-    useToast: () => ({ add: mockToastAdd })
-  })
-)
+beforeEach(() => {
+  const toast = useToast()
+  for (const kind of [
+    'success',
+    'error',
+    'info',
+    'warning',
+    'loading'
+  ] as const) {
+    vi.mocked(toast[kind]).mockImplementation((...args) => {
+      mockToastAdd(kind, ...args)
+      return 0
+    })
+  }
+})
 
 vi.mock(import('@/base/credits/comfyCredits'), () => ({
   creditsToUsd: (credits: number) => credits,
@@ -201,12 +210,9 @@ describe('TopUpCreditsDialogContentLegacy', () => {
       outcome: 'failure',
       failure_category: 'unknown'
     })
-    expect(mockToastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({
-        severity: 'error',
-        summary: 'Purchase Failed'
-      })
-    )
+    expect(mockToastAdd).toHaveBeenCalledWith('error', 'Purchase Failed', {
+      description: 'Failed to purchase credits: declined for person@example.com'
+    })
     expect(useSettingsDialog().show).not.toHaveBeenCalled()
   })
 

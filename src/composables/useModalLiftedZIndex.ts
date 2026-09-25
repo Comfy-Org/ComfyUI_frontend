@@ -1,6 +1,6 @@
 import { ZIndex } from '@primeuix/utils/zindex'
-import type { Ref } from 'vue'
-import { computed } from 'vue'
+import type { MaybeRefOrGetter } from 'vue'
+import { computed, toValue } from 'vue'
 
 // Shared base for @primeuix's auto-incrementing 'modal' z-index counter.
 const MODAL_BASE_Z_INDEX = 1700
@@ -12,9 +12,9 @@ const MODAL_BASE_Z_INDEX = 1700
  * `v-reka-z-index` or PrimeVue's mask) is open above it; then lift past that
  * dialog so the content isn't hidden behind the dialog or its scrim.
  */
-export function useModalLiftedZIndex(open: Ref<boolean>) {
+export function useModalLiftedZIndex(open: MaybeRefOrGetter<boolean>) {
   return computed(() => {
-    if (!open.value) return undefined
+    if (!toValue(open)) return undefined
     const topZIndex = ZIndex.getCurrent('modal')
     return topZIndex >= MODAL_BASE_Z_INDEX
       ? { zIndex: topZIndex + 1 }

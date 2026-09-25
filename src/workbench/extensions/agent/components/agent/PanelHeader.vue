@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -45,33 +46,39 @@ const sizeToggleLabel = computed(() =>
     </span>
 
     <div class="ml-auto flex items-center gap-2">
-      <Button
-        v-tooltip.bottom="buildTooltipConfig(t('agent.newChat'))"
-        variant="muted-textonly"
-        size="icon"
-        :aria-label="t('agent.newChat')"
-        @click="emit('newChat')"
-      >
-        <span class="icon-[lucide--message-circle-plus] size-4" />
-      </Button>
-      <Button
-        v-tooltip.bottom="buildTooltipConfig(sizeToggleLabel)"
-        variant="muted-textonly"
-        size="icon"
-        :aria-label="sizeToggleLabel"
-        @click="emit('toggleSize')"
-      >
-        <span :class="cn(sizeToggleIcon, 'size-4')" />
-      </Button>
-      <Button
-        v-tooltip.bottom="buildTooltipConfig(t('agent.close'))"
-        variant="muted-textonly"
-        size="icon"
-        :aria-label="t('agent.close')"
-        @click="emit('close')"
-      >
-        <span class="icon-[lucide--x] size-4" />
-      </Button>
+      <Tooltip :config="buildTooltipConfig(t('agent.newChat'))" side="bottom">
+        <Button
+          variant="muted-textonly"
+          size="icon"
+          class="rounded-xl hover:text-base-foreground focus-visible:ring-2 focus-visible:ring-primary-background"
+          :aria-label="t('agent.newChat')"
+          @click="emit('newChat')"
+        >
+          <span class="icon-[lucide--message-circle-plus] size-4" />
+        </Button>
+      </Tooltip>
+      <Tooltip :config="buildTooltipConfig(sizeToggleLabel)" side="bottom">
+        <Button
+          variant="muted-textonly"
+          size="icon"
+          class="rounded-xl hover:text-base-foreground focus-visible:ring-2 focus-visible:ring-primary-background"
+          :aria-label="sizeToggleLabel"
+          @click="emit('toggleSize')"
+        >
+          <span :class="cn(sizeToggleIcon, 'size-4')" />
+        </Button>
+      </Tooltip>
+      <Tooltip :config="buildTooltipConfig(t('agent.close'))" side="bottom">
+        <Button
+          variant="muted-textonly"
+          size="icon"
+          class="rounded-xl hover:text-base-foreground focus-visible:ring-2 focus-visible:ring-primary-background"
+          :aria-label="t('agent.close')"
+          @click="emit('close')"
+        >
+          <span class="icon-[lucide--x] size-4" />
+        </Button>
+      </Tooltip>
     </div>
   </header>
 </template>
