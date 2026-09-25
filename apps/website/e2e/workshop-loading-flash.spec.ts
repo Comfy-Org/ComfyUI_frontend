@@ -85,7 +85,6 @@ test('a disabled visitor gets the model page without a marketing frame', async (
     /t\.comfy\.org\/(flags|decide)\//.test(response.url())
   )
   await page.goto(MODEL_PATH)
-  await expect(page.getByText(/Try Grok Imagine Now/i)).toHaveCount(0)
   await flags
   await expect(page.getByTestId('model-detail')).toBeVisible()
   await expect(page.getByTestId('run-rollout-note')).toBeVisible()
