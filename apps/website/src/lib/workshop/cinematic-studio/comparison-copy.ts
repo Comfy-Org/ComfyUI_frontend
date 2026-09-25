@@ -48,6 +48,11 @@ const copy = {
     en: 'No additional settings were saved.',
     'zh-CN': '未保存其他设置。'
   },
+  editReuseUnavailable: {
+    en: 'Edited results cannot reuse generation settings. Animate this image or edit it from Your creations.',
+    'zh-CN':
+      '编辑结果无法复用生成设置。可将此图像制作为动画，或在“你的作品”中编辑。'
+  },
   close: { en: 'Close', 'zh-CN': '关闭' }
 } as const satisfies Record<string, LocalizedText>
 

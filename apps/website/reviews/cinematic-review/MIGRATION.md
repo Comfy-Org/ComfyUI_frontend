@@ -33,15 +33,19 @@ API-key backend, copied private output library, or additional dependency.
 
 ## Validation
 
-- Latest run: 313 focused Studio tests passed across 33 component, library and
+- Latest run: 316 focused Studio tests passed across 33 component, library and
   composable files. Earlier route validation also passed two LTX Fast tests and
   731 shared contract tests; these were not rerun for the capability UI change.
-- 19 production browser tests passed across both Studio layouts, including
+- 21 production browser tests passed across both Studio layouts, including
   crop pixels, assets, edit review, prompt suggestions, plans, recipe import,
   motion comparison and transition reference restoration after reload.
 - Website build, website typecheck, knip and Astro formatting passed.
 - Desktop and mobile visual review uses feature-flag mocks and sample media.
 - No paid generation or production workspace verification was performed.
+
+See [PARITY.md](./PARITY.md) for the latest workflow comparison and explicit
+remaining differences. Comparison now offers Reuse settings and Animate per
+result, using the existing guarded actions without submitting a generation.
 
 ## Original demo parity follow-up
 

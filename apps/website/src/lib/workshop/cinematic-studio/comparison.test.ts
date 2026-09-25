@@ -189,3 +189,77 @@ describe('CinematicCompare', () => {
     expect(original.name).toBe('Creation original')
   })
 })
+
+describe('comparison actions', () => {
+  it('reuses the chosen result and closes comparison', async () => {
+    const user = userEvent.setup()
+    const items = [creation('a'), creation('b')]
+    const { emitted } = render(CinematicCompare, {
+      props: { open: true, items, urls: {} }
+    })
+    const right = await screen.findByRole('region', { name: 'Second creation' })
+    await user.click(
+      within(right).getByRole('button', { name: 'Reuse settings' })
+    )
+    expect(emitted('reuse')).toEqual([[items[1]]])
+    expect(emitted('update:open')).toEqual([[false]])
+  })
+
+  it('requires revealing flagged images before animating and never offers video animation', async () => {
+    const user = userEvent.setup()
+    const { emitted } = render(CinematicCompare, {
+      props: {
+        open: true,
+        items: [
+          creation('a', { nsfw: true }),
+          creation('b', { kind: 'video' })
+        ],
+        urls: { a: 'blob:a', b: 'blob:b' }
+      }
+    })
+    const left = await screen.findByRole('region', { name: 'First creation' })
+    const animate = within(left).getByRole('button', { name: 'Animate' })
+    expect(animate).toBeDisabled()
+    expect(screen.getAllByRole('button', { name: 'Animate' })).toHaveLength(1)
+    await user.click(
+      within(left).getByRole('button', { name: 'Reveal creation' })
+    )
+    await user.click(animate)
+    expect(emitted('animate')).toEqual([['blob:a', 'a.png']])
+    expect(emitted('update:open')).toEqual([[false]])
+  })
+
+  it('blocks editing-setting reuse, unavailable animation and actions during generation', async () => {
+    const user = userEvent.setup()
+    const items = [
+      creation('a', {
+        settings: {
+          scene: 'Edit',
+          mode: 'image',
+          enhance: false,
+          direction: AUTO_DIRECTION,
+          operation: 'camera'
+        }
+      }),
+      creation('b')
+    ]
+    const { emitted, rerender } = render(CinematicCompare, {
+      props: { open: true, items, urls: {} }
+    })
+    const left = await screen.findByRole('region', { name: 'First creation' })
+    expect(
+      within(left).getByRole('button', { name: 'Reuse settings' })
+    ).toBeDisabled()
+    expect(within(left).getByText(/Edited results cannot reuse/)).toBeVisible()
+    expect(within(left).getByRole('button', { name: 'Animate' })).toBeDisabled()
+    await rerender({ busy: true, urls: { a: 'blob:a', b: 'blob:b' } })
+    for (const button of screen.getAllByRole('button', {
+      name: /^(Reuse settings|Animate)$/
+    })) {
+      expect(button).toBeDisabled()
+      await user.click(button)
+    }
+    expect(emitted('reuse')).toBeUndefined()
+    expect(emitted('animate')).toBeUndefined()
+  })
+})

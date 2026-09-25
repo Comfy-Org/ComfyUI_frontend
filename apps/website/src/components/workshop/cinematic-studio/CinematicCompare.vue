@@ -8,6 +8,7 @@ import {
   lookGroups,
   directionOption
 } from '../../../lib/workshop/cinematic-studio/catalog'
+import { libraryCopy } from '../../../lib/workshop/cinematic-studio/library-copy'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import {
   comparisonCanShow,
@@ -28,15 +29,21 @@ const {
   items,
   urls,
   models = [],
+  busy = false,
   locale = 'en'
 } = defineProps<{
   open: boolean
   items: readonly SavedCreation[]
   urls: Readonly<Record<string, string>>
+  busy?: boolean
   models?: readonly { slug: string; name: string }[]
   locale?: Locale
 }>()
-const emit = defineEmits<{ 'update:open': [boolean] }>()
+const emit = defineEmits<{
+  'update:open': [boolean]
+  reuse: [item: SavedCreation]
+  animate: [url: string, name: string]
+}>()
 const open = computed({
   get: () => isOpen,
   set: (value: boolean) => emit('update:open', value)
@@ -78,6 +85,25 @@ watch(
 watch([leftId, rightId], () => {
   revealed.value = []
 })
+function reuse(item: SavedCreation) {
+  if (
+    busy ||
+    (item.settings?.operation && item.settings.operation !== 'generate')
+  )
+    return
+  emit('reuse', item)
+  open.value = false
+}
+function animate(item: SavedCreation) {
+  if (
+    busy ||
+    item.kind !== 'image' ||
+    !comparisonCanShow(item, revealed.value, urls[item.id])
+  )
+    return
+  emit('animate', urls[item.id], item.fileName)
+  open.value = false
+}
 function reveal(id: string) {
   revealed.value = [...revealed.value, id]
 }
@@ -186,6 +212,39 @@ function directionLabels(item: SavedCreation) {
                 {{ t('unavailable') }}
               </p>
             </div>
+            <div class="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                :disabled="
+                  busy ||
+                  (!!panel.item.settings?.operation &&
+                    panel.item.settings.operation !== 'generate')
+                "
+                @click="reuse(panel.item)"
+                >{{ libraryCopy('reuse', locale) }}</Button
+              >
+              <Button
+                v-if="panel.item.kind === 'image'"
+                variant="outline"
+                size="sm"
+                :disabled="
+                  busy ||
+                  !comparisonCanShow(panel.item, revealed, urls[panel.item.id])
+                "
+                @click="animate(panel.item)"
+                >{{ libraryCopy('animate', locale) }}</Button
+              >
+            </div>
+            <p
+              v-if="
+                panel.item.settings?.operation &&
+                panel.item.settings.operation !== 'generate'
+              "
+              class="text-sm text-primary-comfy-canvas"
+            >
+              {{ t('editReuseUnavailable') }}
+            </p>
             <dl class="grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
               <dt class="text-primary-comfy-canvas">{{ t('model') }}</dt>
               <dd class="wrap-break-word">{{ panel.modelName }}</dd>

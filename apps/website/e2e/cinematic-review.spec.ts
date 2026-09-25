@@ -737,3 +737,62 @@ test('starts the next shot with the saved scene and the selected frame', async (
     page.getByRole('dialog', { name: 'Review your shot' })
   ).toContainText('Keep the character from reference image 1.')
 })
+
+for (const layout of ['e', 'd']) {
+  test(`reuses and animates selected comparison images in layout ${layout}`, async ({
+    page
+  }) => {
+    await page.goto(`/cinematic-studio?demo=success&ux=${layout}`)
+    const scene = page.getByRole('textbox', { name: 'Scene', exact: true })
+    const prompts = [
+      'A traveler waits beside the station.',
+      'A traveler steps into the neon night.'
+    ]
+    for (const prompt of prompts) {
+      await scene.fill(prompt)
+      await page
+        .getByRole('button', { name: 'Review shot', exact: true })
+        .click()
+      await page
+        .getByRole('dialog', { name: 'Review your shot' })
+        .getByRole('button', { name: 'Generate shot', exact: true })
+        .click()
+      await expect(page.getByAltText(new RegExp(prompt)).first()).toBeVisible()
+    }
+    await page
+      .getByRole('button', { name: 'Compare results', exact: true })
+      .click()
+    const comparison = page.getByRole('dialog', { name: 'Compare creations' })
+    const first = comparison.getByRole('region', { name: 'First creation' })
+    await first.getByText('Full prompt', { exact: true }).click()
+    const chosenPrompt = await first
+      .locator('details')
+      .first()
+      .locator('p')
+      .innerText()
+    await first
+      .getByRole('button', { name: 'Reuse settings', exact: true })
+      .click()
+    await expect(comparison).not.toBeVisible()
+    const expectedScene = prompts.find((prompt) =>
+      chosenPrompt.includes(prompt)
+    )
+    expect(expectedScene).toBeDefined()
+    await expect(scene).toHaveValue(expectedScene ?? '')
+    await page
+      .getByRole('button', { name: 'Compare results', exact: true })
+      .click()
+    const second = comparison.getByRole('region', { name: 'Second creation' })
+    await second.getByRole('button', { name: 'Animate', exact: true }).click()
+    await expect(comparison).not.toBeVisible()
+    await expect(
+      page.getByRole('button', { name: 'Video', exact: true })
+    ).toHaveAttribute('aria-pressed', 'true')
+    await scene.fill('The traveler slowly turns toward the station.')
+    await page.getByRole('button', { name: 'Review shot', exact: true }).click()
+    const review = page.getByRole('dialog', { name: 'Review your shot' })
+    await expect(
+      review.getByRole('img', { name: 'Starting frame' })
+    ).toBeVisible()
+  })
+}

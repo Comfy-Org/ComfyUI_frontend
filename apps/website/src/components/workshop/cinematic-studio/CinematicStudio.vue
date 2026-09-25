@@ -212,6 +212,9 @@ function generateOn(slug: string) {
       :urls="library.urls.value"
       :models="[...models, ...editingModels]"
       :locale
+      :busy="studio.rendering.value || frameLoading"
+      @reuse="reuse"
+      @animate="animate"
     />
     <CinematicRecipeImport
       v-model:open="recipeOpen"
