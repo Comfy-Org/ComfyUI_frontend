@@ -23,6 +23,7 @@ import { releaseRouterOutputs } from './workshop-response'
 const upload = createWorkshopUrlUploader()
 
 export interface RouterRenderOptions {
+  readonly comfy_save_asset?: boolean
   readonly token?: string | (() => Promise<string>)
   readonly idempotencyKey?:
     | string
@@ -163,6 +164,7 @@ export async function router_render(
       ? options.idempotencyKey(prepared.body)
       : (options.idempotencyKey ?? crypto.randomUUID())
   const result = await runWorkshopRouter({
+    comfy_save_asset: options.comfy_save_asset,
     contract: prepared.contract,
     body: prepared.body,
     token,

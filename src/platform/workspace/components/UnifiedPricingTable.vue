@@ -862,10 +862,7 @@ function getPriceFromApi(tier: PricingTierConfig): number | null {
   return currentBillingCycle.value === 'yearly' ? price / 12 : price
 }
 
-// The catalog grant for the selected duration is authoritative; the static
-// per-month figure is only the pre-resolve (loading / OSS) fallback.
 const creditsForTier = (tier: PricingTierConfig): number =>
-  getApiPlanForTier(tier.key, currentBillingCycle.value)?.credits_cents ??
   amountForCurrentCycle(tier.pricing.credits)
 
 const videoEstimateForTier = (tier: PricingTierConfig): number =>
