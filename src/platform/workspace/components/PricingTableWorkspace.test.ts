@@ -133,6 +133,22 @@ describe('PricingTableWorkspace credit allotment copy', () => {
     }
   )
 
+  it('shows the raw credit grant when the catalog sends one', async () => {
+    state.plans = TESTCLOUD_CATALOG.map((plan) =>
+      plan.slug === 'standard-annual' ? { ...plan, credits: 60_000 } : plan
+    )
+    const user = userEvent.setup()
+    renderComponent()
+
+    expect(screen.getByText('60,000')).toBeTruthy()
+    expect(screen.queryByText('50,400')).toBeNull()
+
+    await user.click(screen.getByTestId('cycle-monthly'))
+    await nextTick()
+
+    expect(screen.getByText('4,200')).toBeTruthy()
+  })
+
   it('states the whole-year per-member allotment on the yearly cycle', () => {
     renderComponent()
 

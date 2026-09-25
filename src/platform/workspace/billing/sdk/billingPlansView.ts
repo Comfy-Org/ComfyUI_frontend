@@ -21,7 +21,12 @@ type StopPrice = TeamCreditStops['stops'][number]['monthly']
  * the whole projection, so a catalog is never published with a rounded price.
  * Nothing is filtered, ranked or priced here.
  */
-function projectPlan(plan: DecodedPlan): Plan | undefined {
+function projectPlan({
+  credits: rawCredits,
+  ...plan
+}: DecodedPlan): Plan | undefined {
+  const credits =
+    rawCredits === undefined ? undefined : asSafeNumber(rawCredits)
   const credits_cents = asSafeNumber(plan.credits_cents)
   const max_seats = asSafeNumber(plan.max_seats)
   const price_cents = asSafeNumber(plan.price_cents)
@@ -30,6 +35,7 @@ function projectPlan(plan: DecodedPlan): Plan | undefined {
     plan.seat_summary.total_credits_cents
   )
   if (
+    (rawCredits !== undefined && credits === undefined) ||
     credits_cents === undefined ||
     max_seats === undefined ||
     price_cents === undefined ||
@@ -39,6 +45,7 @@ function projectPlan(plan: DecodedPlan): Plan | undefined {
     return undefined
   return {
     ...plan,
+    ...(credits !== undefined && { credits }),
     credits_cents,
     max_seats,
     price_cents,
