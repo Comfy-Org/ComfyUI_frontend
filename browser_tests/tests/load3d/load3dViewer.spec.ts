@@ -57,11 +57,6 @@ test.describe('Load3D Viewer', { tag: '@vue-nodes' }, () => {
     load3d,
     viewer
   }) => {
-    // ViewerControls.vue overrides the inset-aware `size: 'full'` variant with
-    // `left-1/2 sm:max-w-[80vw]`, both relative to the whole viewport, so the
-    // dialog spans the docked panel. Issue #18918.
-    test.fail()
-
     await comfyPage.page.evaluate(() => {
       document.documentElement.style.setProperty(
         '--workspace-inset-right',
