@@ -158,6 +158,7 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
   // over from the rollout flag merely invalidating it. Folding both into
   // `live()` would leave a flag-invalidated detach with no way back to idle.
   let startedAttempts = 0
+  let lastAuthenticatedAttempt = 0
 
   function dispatch(event: AuthSignInEvent) {
     const before = state.value
@@ -281,6 +282,7 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
     let authenticatedUid: string | undefined
     let detached = false
     let finishAttempt: (() => void) | undefined
+    let identityBefore: string | undefined
     const attemptNumber = ++startedAttempts
     // Detaching hands the controls to the visitor; from then on this attempt
     // idles the page only while no successor has taken the controls over.
@@ -350,10 +352,9 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
       // activation it needs and leave the retry pop-up blocked. Firebase's new
       // `PopupOperation` does cancel `currentPopupAction`, but only by
       // rejecting its promise: a token exchange already in flight still runs
-      // to completion and still writes `currentUser`. So the popup path trades
-      // a narrow window — a predecessor whose exchange outlives the settle
-      // delay, plus a retry click inside the overlap — for a retry that works
-      // at all. Tracked in FE-2179 follow-up rather than fixed here.
+      // to completion and still writes `currentUser`. The identity that leaves
+      // behind is cleared in this function's `finally`, which is what lets the
+      // popup path skip the wait rather than merely accept the race.
       if (provider === 'email' && pendingAuthentication) {
         const settledFirst = await withinOperationDeadline(
           pendingAuthentication
@@ -383,7 +384,7 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
       // still decides the outcome. Email is a non-interactive round-trip, so
       // it stays bounded like the other steps.
       let notifyPopupClosed = () => {}
-      const identityBefore = user.value?.uid
+      identityBefore = user.value?.uid
       const attempt = authenticate(firebase, () => notifyPopupClosed())
       if (provider !== 'email') {
         const popupClosed = new Promise<typeof POPUP_CLOSED>((resolve) => {
@@ -431,6 +432,7 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
       // abandon from here on must roll it back even if the flag has since flipped.
       authenticated = true
       authenticatedUid = credential.user.uid
+      lastAuthenticatedAttempt = attemptNumber
       if (!live()) {
         await abandon()
         return
@@ -502,6 +504,25 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
         }
       }
     } finally {
+      // Firebase cancels a superseded pop-up by rejecting its promise, but an
+      // exchange already in flight still finishes and still writes
+      // `currentUser`. Nothing owns that identity — this attempt never got a
+      // credential to roll back, and any successor that had authenticated
+      // would have claimed it — so clear it, and publish the sign-out before
+      // releasing the gate so a waiting attempt cannot authenticate over it.
+      const strayIdentity =
+        detached &&
+        !authenticated &&
+        lastAuthenticatedAttempt < attemptNumber &&
+        !!user.value &&
+        user.value.uid !== identityBefore
+      if (strayIdentity && firebase) {
+        const rollback = firebase.signOutWorkshop().catch(() => {})
+        pendingRollback = rollback
+        void rollback.finally(() => {
+          if (pendingRollback === rollback) pendingRollback = undefined
+        })
+      }
       finishAttempt?.()
     }
   }

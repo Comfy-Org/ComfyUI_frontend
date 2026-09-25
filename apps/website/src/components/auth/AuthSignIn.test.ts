@@ -741,6 +741,80 @@ describe('AuthSignIn', () => {
     ).not.toHaveBeenCalled()
   })
 
+  it('clears an identity a cancelled pop-up published behind it', async () => {
+    let closePopup: (() => void) | undefined
+    let cancelPopup: ((reason: unknown) => void) | undefined
+    vi.mocked(signInWorkshopWithGoogle).mockImplementation((options) => {
+      closePopup = options?.onPopupClosed
+      return new Promise<UserCredential>((_resolve, reject) => {
+        cancelPopup = reject
+      })
+    })
+    vi.mocked(signInWorkshopWithGitHub).mockReturnValue(new Promise(() => {}))
+    render(AuthSignIn)
+
+    await clickGoogle()
+    closePopup?.()
+    await waitFor(() =>
+      expect(githubButton().hasAttribute('disabled')).toBe(false)
+    )
+    await userEvent.setup().click(githubButton())
+
+    // Firebase cancels the superseded pop-up by rejecting, but its token
+    // exchange had already landed and written currentUser.
+    authUser.value = testFirebaseUser({
+      uid: 'stray-user',
+      email: 'user@example.com',
+      displayName: null
+    })
+    cancelPopup?.({ code: 'auth/cancelled-popup-request', message: 'x' })
+
+    await waitFor(() =>
+      expect(
+        signOutWorkshop,
+        'nobody owns that identity, so leaving it signs the visitor in as an account with no customer record'
+      ).toHaveBeenCalledOnce()
+    )
+    expect(replace).not.toHaveBeenCalled()
+  })
+
+  it('leaves the identity alone when the attempt that superseded it owns one', async () => {
+    let closePopup: (() => void) | undefined
+    let cancelPopup: ((reason: unknown) => void) | undefined
+    vi.mocked(signInWorkshopWithGoogle).mockImplementation((options) => {
+      closePopup = options?.onPopupClosed
+      return new Promise<UserCredential>((_resolve, reject) => {
+        cancelPopup = reject
+      })
+    })
+    const githubUser = testFirebaseUser({
+      uid: 'github-user',
+      email: 'user@example.com',
+      displayName: null
+    })
+    vi.mocked(signInWorkshopWithGitHub).mockImplementation(async () => {
+      authUser.value = githubUser
+      return testCredential(githubUser)
+    })
+    render(AuthSignIn)
+
+    await clickGoogle()
+    closePopup?.()
+    await waitFor(() =>
+      expect(githubButton().hasAttribute('disabled')).toBe(false)
+    )
+    await userEvent.setup().click(githubButton())
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/'))
+
+    cancelPopup?.({ code: 'auth/cancelled-popup-request', message: 'x' })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(
+      signOutWorkshop,
+      'the successor authenticated, so the identity is its own and not a stray'
+    ).not.toHaveBeenCalled()
+  })
+
   it('rolls a late credential back when the visitor has moved on to another attempt', async () => {
     let closePopup: (() => void) | undefined
     let completeSignIn: ((credential: UserCredential) => void) | undefined
