@@ -5,12 +5,12 @@ import { onScopeDispose, shallowRef, watch } from 'vue'
 import type {
   WebSessionAccountChange,
   WebSessionIdentity,
-  WebSessionIdentityState
+  WebSessionIdentityState,
+  WebSessionSharedMessage
 } from '@comfyorg/account-core/webSessionIdentity'
 import type {
   WebSession,
-  WebSessionOptions,
-  WebSessionResult
+  WebSessionOptions
 } from '@comfyorg/account-core/webSession'
 import { readWebSession } from '@comfyorg/account-core/webSession'
 import { createWebSessionIdentity } from '@comfyorg/account-core/webSessionIdentity'
@@ -81,7 +81,7 @@ function sessionOptions(): WebSessionOptions {
 
 function createCloudIdentity(): WebSessionIdentity {
   const visibility = createWebVisibilityPort()
-  const crossTab = createWebCrossTabRefreshPort<WebSessionResult>()
+  const crossTab = createWebCrossTabRefreshPort<WebSessionSharedMessage>()
   return createWebSessionIdentity({
     session: sessionOptions(),
     principal: {
