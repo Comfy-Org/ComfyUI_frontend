@@ -34,7 +34,10 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
-import { FLAG_SETTLE_TIMEOUT_MS } from '@/workbench/extensions/agent/utils/postHogFlagSource'
+import {
+  AGENT_PANEL_FLAG,
+  FLAG_SETTLE_TIMEOUT_MS
+} from '@/workbench/extensions/agent/utils/postHogFlagSource'
 import type { PostHogLike } from '@/workbench/extensions/agent/utils/postHogFlagSource'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 import { isLGraphNode } from '@/utils/litegraphUtil'
@@ -135,6 +138,13 @@ vi.mock(import('posthog-js'), () => ({
 
 const flush = (): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, 0))
+
+const deliverFlags = (context?: { errorsLoading?: boolean }): void =>
+  mocks.flagListener!(
+    mocks.flagEnabled === true ? [AGENT_PANEL_FLAG] : [],
+    {},
+    context
+  )
 
 const notOffered = async () =>
   vi.mocked(
@@ -1047,14 +1057,14 @@ describe('AgentPanel extension flag gate', () => {
   it('enables the panel when the flag turns true', async () => {
     await loadEntryAndSetup()
     mocks.flagEnabled = true
-    mocks.flagListener!([], {})
+    deliverFlags()
     expect(agentStore.enabled).toBe(true)
   })
 
   it('settles the gate on a delivery that loaded successfully', async () => {
     await loadEntryAndSetup()
 
-    mocks.flagListener!([], {}, { errorsLoading: false })
+    deliverFlags({ errorsLoading: false })
 
     expect(agentStore.gateSettled).toBe(true)
   })
@@ -1062,7 +1072,7 @@ describe('AgentPanel extension flag gate', () => {
   it('leaves the gate unsettled on a delivery that reports a load error', async () => {
     await loadEntryAndSetup()
 
-    mocks.flagListener!([], {}, { errorsLoading: true })
+    deliverFlags({ errorsLoading: true })
 
     expect(agentStore.gateSettled).toBe(false)
   })
@@ -1075,20 +1085,20 @@ describe('AgentPanel extension flag gate', () => {
     expect(agentStore.gateSettled).toBe(true)
   })
 
-  it('keeps a cached whitelisted session enabled when a later delivery reports a load error', async () => {
+  it('keeps a cached whitelisted session enabled through a failed refresh and the settle fallback', async () => {
     mocks.flagEnabled = true
     await loadEntryAndSetup()
 
-    mocks.flagListener!([], {}, { errorsLoading: true })
+    deliverFlags({ errorsLoading: true })
     await vi.advanceTimersByTimeAsync(FLAG_SETTLE_TIMEOUT_MS)
 
     expect(agentStore.enabled).toBe(true)
   })
 
-  it('leaves an uncached session disabled and settled when its only delivery fails', async () => {
+  it('leaves an uncached session disabled through a failed delivery and the settle fallback', async () => {
     await loadEntryAndSetup()
 
-    mocks.flagListener!([], {}, { errorsLoading: true })
+    deliverFlags({ errorsLoading: true })
     await vi.advanceTimersByTimeAsync(FLAG_SETTLE_TIMEOUT_MS)
 
     expect(agentStore.enabled).toBe(false)
@@ -1098,9 +1108,9 @@ describe('AgentPanel extension flag gate', () => {
   it('disables the panel without closing it when the flag flips back to false', async () => {
     await loadEntryAndSetup()
     mocks.flagEnabled = true
-    mocks.flagListener!([], {})
+    deliverFlags()
     mocks.flagEnabled = false
-    mocks.flagListener!([], {})
+    deliverFlags()
 
     expect(agentStore.enabled).toBe(false)
     expect(agentStore.close).not.toHaveBeenCalled()
@@ -1110,11 +1120,11 @@ describe('AgentPanel extension flag gate', () => {
   it('finishes a pending selection restore when the flag is disabled', async () => {
     await loadEntryAndSetup()
     mocks.flagEnabled = true
-    mocks.flagListener!([], {})
+    deliverFlags()
     nodeSelectionStore.isLoadingWorkflow = true
 
     mocks.flagEnabled = false
-    mocks.flagListener!([], {})
+    deliverFlags()
 
     expect(nodeSelectionStore.finishWorkflowLoad).toHaveBeenCalledOnce()
   })
