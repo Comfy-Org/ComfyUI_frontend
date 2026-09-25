@@ -724,6 +724,15 @@ describe('drawConnections', () => {
       expect(canvas._visibleReroutes.has(reroute)).toBe(true)
     })
 
+    it('clears the hovered link tooltip when motion hides links', () => {
+      canvas.over_link_center = link
+      advance(16)
+      canvas.ds.offset[0] += 10
+      canvas.draw(true, true)
+
+      expect(canvas.over_link_center).toBeUndefined()
+    })
+
     it('restarts the delay while the viewport keeps moving', () => {
       for (let frame = 0; frame < 20; frame++) {
         advance(16)

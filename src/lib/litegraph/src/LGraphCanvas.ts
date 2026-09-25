@@ -6064,6 +6064,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       !this.linkConnector.isConnecting
     ) {
       this._visibleReroutes.clear()
+      this.over_link_center = undefined
       return
     }
 
