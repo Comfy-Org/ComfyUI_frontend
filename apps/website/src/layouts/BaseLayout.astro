@@ -51,7 +51,7 @@ const {
   description = 'Comfy is the AI creation engine for visual professionals who demand control.',
   keywords,
   ogImage = DEFAULT_OG_IMAGE,
-  ogImageAlt = 'Comfy',
+  ogImageAlt = ogImage === DEFAULT_OG_IMAGE ? 'Comfy' : title,
   noindex = false,
   pageType,
   breadcrumbs,
