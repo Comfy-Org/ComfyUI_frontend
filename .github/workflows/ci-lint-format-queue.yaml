@@ -1,10 +1,5 @@
 # Description: Lint and format verification for GitHub merge queue runs and
 # post-merge pushes to the default and release branches.
-# Paired with ci-lint-format.yaml — workflow name and the gate job name
-# `lint-and-format` must match so branch protection resolves a single
-# required check in both the pull_request and merge_group contexts. This
-# file runs verify-only steps with a read-only token; auto-fix and PR comments
-# live in the PR workflow.
 # The push trigger catches merge-skew accumulation. Pre-merge checks only look
 # at proposed state: pull_request evaluates a single PR's diff, and merge_group
 # evaluates the temporary merge-queue ref (the projected post-merge result of
@@ -14,7 +9,7 @@
 name: 'CI: Lint Format'
 
 on:
-  merge_group:
+  workflow_call:
   push:
     branches:
       - main
@@ -22,7 +17,7 @@ on:
       - 'core/**'
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-lint-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
