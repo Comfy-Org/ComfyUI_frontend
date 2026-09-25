@@ -699,6 +699,48 @@ describe('AuthSignIn', () => {
     ).not.toHaveAttribute('aria-disabled')
   })
 
+  it('leaves an identity that is no longer its own alone when it rolls back', async () => {
+    let closePopup: (() => void) | undefined
+    let completeSignIn: ((credential: UserCredential) => void) | undefined
+    vi.mocked(signInWorkshopWithGoogle).mockImplementation((options) => {
+      closePopup = options?.onPopupClosed
+      return new Promise<UserCredential>((resolve) => {
+        completeSignIn = resolve
+      })
+    })
+    render(AuthSignIn)
+
+    await clickGoogle()
+    closePopup?.()
+    await waitFor(() =>
+      expect(useEmailButton().hasAttribute('disabled')).toBe(false)
+    )
+
+    // Somebody else's identity reaches `currentUser` while this attempt is
+    // detached, and the flag then invalidates the attempt.
+    authUser.value = testFirebaseUser({
+      uid: 'another-user',
+      email: 'other@example.com',
+      displayName: null
+    })
+    authFlag.value = false
+    completeSignIn?.(
+      testCredential(
+        testFirebaseUser({
+          uid: 'google-user',
+          email: 'user@example.com',
+          displayName: null
+        })
+      )
+    )
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(
+      signOutWorkshop,
+      'signOutWorkshop is global, so rolling back here would sign out whoever currentUser now belongs to'
+    ).not.toHaveBeenCalled()
+  })
+
   it('rolls a late credential back when the visitor has moved on to another attempt', async () => {
     let closePopup: (() => void) | undefined
     let completeSignIn: ((credential: UserCredential) => void) | undefined

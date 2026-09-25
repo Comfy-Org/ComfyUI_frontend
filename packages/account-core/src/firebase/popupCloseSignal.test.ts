@@ -46,20 +46,20 @@ describe('withPopupCloseSignal', () => {
     nativeOpen = window.open
   })
 
-  afterEach(() => {
+  // The installed-patch flag is module state, so a test that leaves a call
+  // in flight would make every later one take the unwatched early return and
+  // pass without exercising anything. Fail loudly instead.
+  afterEach(async () => {
     window.open = nativeOpen
-  })
-
-  it('starts each call unlatched, so a leaked patch cannot mute the next', () => {
-    const before = window.open
-    let patchedDuringRun: boolean | undefined
-
-    void withPopupCloseSignal(async () => {
-      patchedDuringRun = window.open !== before
-      return 'credential'
+    let patched = false
+    await withPopupCloseSignal(async () => {
+      patched = window.open !== nativeOpen
+      return null
     }, vi.fn())
-
-    expect(patchedDuringRun ?? window.open !== before).toBe(true)
+    expect(
+      patched,
+      'withPopupCloseSignal stayed latched from a prior test'
+    ).toBe(true)
   })
 
   it('signals once the visitor closes the popup', async () => {

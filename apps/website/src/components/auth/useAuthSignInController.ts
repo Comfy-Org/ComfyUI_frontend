@@ -344,10 +344,16 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
       firebase = loaded
       // A detached predecessor may still publish an identity, so an email
       // attempt waits it out rather than adding a second credential to the one
-      // `currentUser` both would write. A popup attempt does not wait: its
-      // `PopupOperation` constructor cancels `currentPopupAction`, so Firebase
-      // serializes those itself, and waiting would spend the visitor's click
-      // activation and leave the retry pop-up blocked.
+      // `currentUser` both would write.
+      //
+      // A popup attempt does not wait, because waiting would spend the click
+      // activation it needs and leave the retry pop-up blocked. Firebase's new
+      // `PopupOperation` does cancel `currentPopupAction`, but only by
+      // rejecting its promise: a token exchange already in flight still runs
+      // to completion and still writes `currentUser`. So the popup path trades
+      // a narrow window — a predecessor whose exchange outlives the settle
+      // delay, plus a retry click inside the overlap — for a retry that works
+      // at all. Tracked in FE-2179 follow-up rather than fixed here.
       if (provider === 'email' && pendingAuthentication) {
         const settledFirst = await withinOperationDeadline(
           pendingAuthentication
