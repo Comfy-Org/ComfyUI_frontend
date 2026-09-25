@@ -11,10 +11,13 @@ describe('PricingSection', () => {
     for (const gpu of ['RTX PRO 6000', 'H100', 'H200', 'B200']) {
       expect(screen.getAllByText(gpu)).toHaveLength(2)
     }
-    expect(screen.getAllByText('$4.54/hr')).toHaveLength(2)
+    for (const price of ['$4.54/hr', '$6.23/hr', '$7.71/hr', '$11.23/hr']) {
+      expect(screen.getAllByText(price)).toHaveLength(2)
+    }
     expect(
       screen.getAllByText(t('platform.pricing.storage.containerDisk', 'en'))
     ).toHaveLength(2)
+    expect(screen.getAllByText('$0.20/GB/mo')).toHaveLength(6)
     expect(screen.getAllByText('$0.15/GB/mo')).toHaveLength(2)
   })
 
