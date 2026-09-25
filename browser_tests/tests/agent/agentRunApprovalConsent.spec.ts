@@ -87,11 +87,30 @@ function toolCall(name: string, status: 'running' | 'success'): AgentWsEvent {
   }
 }
 
+/**
+ * One POST the app made to the ask-answer endpoint. The URL is recorded
+ * alongside the body because the body alone cannot show *which* ask was
+ * answered — `{"selected":["run"]}` aimed at the wrong thread or a stale ask
+ * would satisfy a body-only assertion while authorizing the wrong spend.
+ */
+interface AnswerCall {
+  /** Decoded pathname, so the `:` inside `ASK_ID` compares literally. */
+  path: string
+  body: unknown
+}
+
 interface Turn {
   panel: Locator
   send: (frame: AgentWsEvent | HostFrame) => void
-  /** Bodies of every POST the app made to the ask-answer endpoint. */
-  answers: () => unknown[]
+  /** Every POST the app made to the ask-answer endpoint, in order. */
+  answers: () => AnswerCall[]
+}
+
+/** The one path a legitimate answer to this suite's ask may target. */
+const ANSWER_PATH = `/api/agent/threads/${THREAD_ID}/asks/${ASK_ID}/answer`
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
 }
 
 // Boots the panel against fully mocked endpoints and sends one user message.
@@ -108,14 +127,18 @@ async function startTurn(
     if (!socket) throw new Error('the app has not opened /ws yet')
     socket.send(JSON.stringify(frame))
   }
-  const answerBodies: unknown[] = []
+  const answerCalls: AnswerCall[] = []
 
   const runMode: AgentRunMode = { mode: storedMode, credit_limit: null }
   await page.route('**/api/agent/run-mode', (route) =>
     route.fulfill(jsonRoute(runMode))
   )
   await page.route('**/api/agent/threads/*/asks/*/answer', (route) => {
-    answerBodies.push(route.request().postDataJSON())
+    const request = route.request()
+    answerCalls.push({
+      path: decodeURIComponent(new URL(request.url()).pathname),
+      body: request.postDataJSON()
+    })
     return route.fulfill(jsonRoute({ status: 'answered' }))
   })
   await page.route('**/api/agent/threads', (route) =>
@@ -141,14 +164,10 @@ async function startTurn(
     )
     ws.onMessage((raw) => {
       const frame: unknown = JSON.parse(raw.toString())
-      if (typeof frame !== 'object' || frame === null) return
-      const { type, data } = frame as { type?: unknown; data?: unknown }
-      if (type !== 'doc_subscribe' || typeof data !== 'object' || data === null)
-        return
-      const { workflow_id, state_vector_b64 } = data as {
-        workflow_id?: unknown
-        state_vector_b64?: unknown
-      }
+      if (!isRecord(frame)) return
+      const { type, data } = frame
+      if (type !== 'doc_subscribe' || !isRecord(data)) return
+      const { workflow_id, state_vector_b64 } = data
       if (workflow_id !== WORKFLOW_ID || typeof state_vector_b64 !== 'string')
         return
       send(host.subscribed())
@@ -226,7 +245,7 @@ async function startTurn(
   await panel.getByRole('textbox', { name: COMPOSER_LABEL }).fill(prompt)
   await panel.getByRole('button', { name: SEND_LABEL }).click()
   await expect(panel.getByText(prompt).first()).toBeVisible()
-  return { panel, send, answers: () => answerBodies }
+  return { panel, send, answers: () => answerCalls }
 }
 
 test.describe(
@@ -255,11 +274,14 @@ test.describe(
       // server-held run has not been authorized.
       expect(answers()).toHaveLength(0)
 
-      // The user's click is the consent: exactly one answer, and it carries
-      // exactly what they picked.
+      // The user's click is the consent: exactly one answer, aimed at exactly
+      // the ask they were shown, carrying exactly what they picked.
       await runButton.click()
       await expect.poll(() => answers().length).toBe(1)
-      expect(answers()[0]).toEqual({ selected: ['run'] })
+      expect(answers()[0]).toEqual({
+        path: ANSWER_PATH,
+        body: { selected: ['run'] }
+      })
 
       // Until the canonical resolution arrives, the card cannot answer again.
       await expect(runButton).toBeDisabled()
@@ -268,7 +290,16 @@ test.describe(
       // Only now does the run happen, in full view of the user.
       send(askResolved(['run']))
       await expect(panel.getByText(CARD_LEAD)).toHaveCount(0)
+
+      // The run becomes visible to the user as activity, not just as a final
+      // message: the running frame puts a `run` row in the activity trace.
+      // Asserted absent first so this cannot pass on some other 'Run' text —
+      // the card's own button is already gone by here.
+      const runActivity = panel.getByRole('listitem').filter({ hasText: 'Run' })
+      await expect(runActivity).toHaveCount(0)
       send(toolCall('run', 'running'))
+      await expect(runActivity.first()).toBeVisible()
+
       send(toolCall('run', 'success'))
       const done = 'Submitted. I will report back when it finishes.'
       send({ type: 'agent_message_delta', data: { delta: done, ...ids } })
@@ -293,7 +324,10 @@ test.describe(
         .getByRole('button', { name: CANCEL_LABEL, exact: true })
         .click()
       await expect.poll(() => answers().length).toBe(1)
-      expect(answers()[0]).toEqual({ selected: ['cancel'] })
+      expect(answers()[0]).toEqual({
+        path: ANSWER_PATH,
+        body: { selected: ['cancel'] }
+      })
 
       send(askResolved(['cancel']))
       await expect(panel.getByText(CARD_LEAD)).toHaveCount(0)
