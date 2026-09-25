@@ -760,6 +760,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     return this.selectionView.highlightedLinks
   }
 
+  /** @deprecated Link highlights are derived from selected nodes. */
+  set highlighted_links(links: Dictionary<boolean>) {
+    void links
+  }
+
   private selectionViewCache?: SelectionViewCache
 
   private get selectionView(): SelectionView {
@@ -1694,13 +1699,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       node.collapse()
     }
 
-    const graphcanvas = LGraphCanvas.active_canvas
-    if (Object.keys(graphcanvas.selected_nodes).length <= 1) {
+    const selectedNodes = Object.values(
+      LGraphCanvas.active_canvas.selected_nodes
+    )
+    if (selectedNodes.length <= 1) {
       fApplyMultiNode(node)
     } else {
-      for (const i in graphcanvas.selected_nodes) {
-        fApplyMultiNode(graphcanvas.selected_nodes[i])
-      }
+      for (const selectedNode of selectedNodes) fApplyMultiNode(selectedNode)
     }
 
     node.graph.afterChange()
@@ -1720,13 +1725,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       node.toggleAdvanced()
     }
 
-    const graphcanvas = LGraphCanvas.active_canvas
-    if (Object.keys(graphcanvas.selected_nodes).length <= 1) {
+    const selectedNodes = Object.values(
+      LGraphCanvas.active_canvas.selected_nodes
+    )
+    if (selectedNodes.length <= 1) {
       fApplyMultiNode(node)
     } else {
-      for (const i in graphcanvas.selected_nodes) {
-        fApplyMultiNode(graphcanvas.selected_nodes[i])
-      }
+      for (const selectedNode of selectedNodes) fApplyMultiNode(selectedNode)
     }
     node.graph.afterChange()
   }
@@ -8691,10 +8696,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         {
           content: node.pinned ? 'Unpin' : 'Pin',
           callback: () => {
-            for (const i in this.selected_nodes) {
-              const node = this.selected_nodes[i]
-              node.pin()
-            }
+            for (const node of Object.values(this.selected_nodes)) node.pin()
             this.setDirty(true, true)
           }
         },
