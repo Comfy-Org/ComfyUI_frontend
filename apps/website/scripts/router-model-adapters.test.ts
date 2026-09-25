@@ -98,6 +98,128 @@ describe('Seedream layer-separation input adapter', () => {
   })
 })
 
+describe('Grok reference-video input adapter', () => {
+  it('restricts only reference requests to 720p', () => {
+    const published = workshopContractSchema.parse(
+      contracts.find((item) => item.id === 'xai/grok-imagine-video-1.5')
+    )
+    const existingRule = { not: { required: ['legacy_disallowed'] } }
+    const contract = adaptRouterModel({
+      ...published,
+      inputSchema: { ...published.inputSchema, allOf: [existingRule] }
+    })
+    const reference = {
+      prompt: 'Animate this reference',
+      reference_images: [{ url: 'https://example.com/reference.png' }]
+    }
+
+    expect(contract.inputSchema.allOf).toEqual(
+      expect.arrayContaining([existingRule])
+    )
+    expect(
+      validateWorkshopInput(
+        { ...reference, resolution: '1080p' },
+        contract.inputSchema
+      )
+    ).toBe(false)
+    expect(
+      validateWorkshopInput(
+        { ...reference, resolution: '720p' },
+        contract.inputSchema
+      )
+    ).toBe(true)
+    expect(validateWorkshopInput(reference, contract.inputSchema)).toBe(true)
+    expect(
+      validateWorkshopInput(
+        { prompt: 'A landscape', resolution: '1080p' },
+        contract.inputSchema
+      )
+    ).toBe(true)
+    expect(
+      validateWorkshopInput(
+        { prompt: 'A landscape', legacy_disallowed: true },
+        contract.inputSchema
+      )
+    ).toBe(false)
+  })
+})
+
+describe('Seedance edit-video input adapter', () => {
+  it('allows only automatic duration for edit-video requests', () => {
+    const published = workshopContractSchema.parse(
+      contracts.find(
+        (item) => item.id === 'byteplus/dreamina-seedance-2-5-260628'
+      )
+    )
+    const existingRule = { not: { required: ['legacy_disallowed'] } }
+    const contract = adaptRouterModel({
+      ...published,
+      inputSchema: { ...published.inputSchema, allOf: [existingRule] }
+    })
+    const prompt = { type: 'text', text: 'Restyle this video' }
+    const source = {
+      type: 'video_url',
+      role: 'reference_video',
+      video_url: { url: 'https://example.com/source.mp4' }
+    }
+
+    expect(contract.inputSchema.allOf).toEqual(
+      expect.arrayContaining([existingRule])
+    )
+    expect(
+      validateWorkshopInput(
+        {
+          content: [prompt, source],
+          duration: 5,
+          omni_reference_task_type: 'edit'
+        },
+        contract.inputSchema
+      )
+    ).toBe(false)
+    expect(
+      validateWorkshopInput(
+        {
+          content: [prompt, source],
+          duration: -1,
+          omni_reference_task_type: 'edit'
+        },
+        contract.inputSchema
+      )
+    ).toBe(true)
+    expect(
+      validateWorkshopInput(
+        {
+          content: [prompt, source],
+          omni_reference_task_type: 'edit'
+        },
+        contract.inputSchema
+      )
+    ).toBe(true)
+    expect(
+      validateWorkshopInput(
+        {
+          content: [prompt, source],
+          duration: 5,
+          omni_reference_task_type: 'reference'
+        },
+        contract.inputSchema
+      )
+    ).toBe(true)
+    expect(
+      validateWorkshopInput(
+        { content: [prompt], duration: 5 },
+        contract.inputSchema
+      )
+    ).toBe(true)
+    expect(
+      validateWorkshopInput(
+        { content: [prompt], legacy_disallowed: true },
+        contract.inputSchema
+      )
+    ).toBe(false)
+  })
+})
+
 describe('Bria generation response adapter', () => {
   it('accepts a completed image whose optional echoed refined prompt is null', async () => {
     if (source.output.format === 'binary' || !source.output.schema)

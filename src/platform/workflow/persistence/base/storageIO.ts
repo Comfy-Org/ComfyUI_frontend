@@ -455,6 +455,14 @@ const legacyLocalRestoreKeys = [
   'workflow'
 ]
 
+const legacyAgentKeys = [
+  'Comfy.Agent.ThreadId',
+  'Comfy.Agent.WorkflowTabBindings',
+  'Comfy.Agent.WorkflowTabBindings.v2',
+  'Comfy.Agent.ChatTitles',
+  'Comfy.Agent.DeletedThreads'
+]
+
 const sessionRestorePrefixes = [
   StorageKeys.prefixes.activePath,
   StorageKeys.prefixes.openPaths,
@@ -494,6 +502,10 @@ function removeStorageKeys(
   } catch {
     return
   }
+}
+
+export function clearLegacyAgentStorage(): void {
+  removeStorageKeys(localStorage, legacyAgentKeys)
 }
 
 export function clearWorkflowRestoreState(): void {
@@ -566,4 +578,19 @@ export function clearAllWorkflowStorage(): void {
 
   removeStorageKeys(localStorage, legacyLocalRestoreKeys, localPrefixes)
   removeStorageKeys(sessionStorage, sessionRestoreKeys, sessionRestorePrefixes)
+}
+
+export function clearAllWorkspaceStorage(): void {
+  clearAllWorkflowStorage()
+  clearLegacyAgentStorage()
+  removeStorageKeys(
+    localStorage,
+    [],
+    [
+      StorageKeys.prefixes.agentThread,
+      StorageKeys.prefixes.agentWorkflowTabBindings,
+      StorageKeys.prefixes.agentChatTitles,
+      StorageKeys.prefixes.agentDeletedThreads
+    ]
+  )
 }

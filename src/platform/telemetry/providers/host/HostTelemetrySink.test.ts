@@ -37,7 +37,8 @@ describe('HostTelemetrySink', () => {
       trigger_source: 'button',
       view_mode: 'graph',
       is_app_mode: false,
-      dock_state: 'docked'
+      dock_state: 'docked',
+      agent_panel_open: true
     })
 
     expect(state.capture).toHaveBeenCalledExactlyOnceWith(
@@ -56,7 +57,8 @@ describe('HostTelemetrySink', () => {
         trigger_source: 'button',
         view_mode: 'graph',
         is_app_mode: false,
-        dock_state: 'docked'
+        dock_state: 'docked',
+        agent_panel_open: true
       }
     )
   })
@@ -155,6 +157,26 @@ describe('HostTelemetrySink', () => {
     )
   })
 
+  it('forwards agent paywall impressions with their reason', () => {
+    new HostTelemetrySink().trackAgentPaywallShown({
+      reason: 'subscription_inactive'
+    })
+
+    expect(state.capture).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.AGENT_PAYWALL_SHOWN,
+      { reason: 'subscription_inactive' }
+    )
+  })
+
+  it('forwards agent paywall CTA clicks with their cta', () => {
+    new HostTelemetrySink().trackAgentPaywallCtaClicked({ cta: 'add_credits' })
+
+    expect(state.capture).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.AGENT_PAYWALL_CTA_CLICKED,
+      { cta: 'add_credits' }
+    )
+  })
+
   it('forwards canonical billing events using the derived name and payload', () => {
     new HostTelemetrySink().trackBillingEvent({
       operation: 'operation',
@@ -209,11 +231,13 @@ describe('HostTelemetrySink', () => {
       track: (sink: HostTelemetrySink) =>
         sink.trackAgentMessageFeedback({
           message_id: 'message-1',
+          turn_id: 'message-1',
           vote: 'up',
           workflow_id: 'workflow-1'
         }),
       properties: {
         message_id: 'message-1',
+        turn_id: 'message-1',
         vote: 'up',
         workflow_id: 'workflow-1'
       }
@@ -315,8 +339,69 @@ describe('HostTelemetrySink', () => {
     },
     {
       name: TelemetryEvents.AGENT_ATTACH_BUTTON_CLICKED,
-      track: (sink: HostTelemetrySink) => sink.trackAgentAttachButtonClicked(),
-      properties: undefined
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentAttachButtonClicked({ method: 'drag_drop' }),
+      properties: { method: 'drag_drop' }
+    },
+    {
+      name: TelemetryEvents.AGENT_STOP_CLICKED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentStopClicked({
+          method: 'button',
+          turn_id: 'turn-1',
+          turn_elapsed_ms: 250
+        }),
+      properties: {
+        method: 'button',
+        turn_id: 'turn-1',
+        turn_elapsed_ms: 250
+      }
+    },
+    {
+      name: TelemetryEvents.AGENT_WORKFLOW_BOUND,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentWorkflowBound({
+          thread_id: 'thread-1',
+          workflow_id: 'workflow-2',
+          prev_workflow_id: 'workflow-1',
+          bind_source: 'active_tab'
+        }),
+      properties: {
+        thread_id: 'thread-1',
+        workflow_id: 'workflow-2',
+        prev_workflow_id: 'workflow-1',
+        bind_source: 'active_tab'
+      }
+    },
+    {
+      name: TelemetryEvents.AGENT_RUN_APPROVAL_SHOWN,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentRunApprovalShown({
+          turn_id: 'turn-1',
+          workflow_id: 'workflow-1'
+        }),
+      properties: { turn_id: 'turn-1', workflow_id: 'workflow-1' }
+    },
+    {
+      name: TelemetryEvents.AGENT_RUN_APPROVAL_RESOLVED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentRunApprovalResolved({
+          decision: 'cancel',
+          time_to_decide_ms: 300
+        }),
+      properties: { decision: 'cancel', time_to_decide_ms: 300 }
+    },
+    {
+      name: TelemetryEvents.AGENT_RUN_MODE_CHANGED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentRunModeChanged({ from: 'ask_approval', to: 'auto' }),
+      properties: { from: 'ask_approval', to: 'auto' }
+    },
+    {
+      name: TelemetryEvents.AGENT_THREAD_STARTED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentThreadStarted({ source: 'new_chat_button' }),
+      properties: { source: 'new_chat_button' }
     },
     {
       name: TelemetryEvents.AGENT_WORKFLOW_APPLIED,

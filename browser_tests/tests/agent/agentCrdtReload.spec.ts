@@ -6,10 +6,8 @@ import type {
 
 import type { ModelFolderInfo } from '@/platform/assets/schemas/assetSchema'
 import { AGENT_CRDT_DOC_ID_SESSION_KEY } from '@/platform/workflow/persistence/base/storageKeyConstants'
-import {
-  AGENT_WORKFLOW_TAB_BINDINGS_STORAGE_KEY,
-  readPersistedAgentWorkflowTabPath
-} from '@/workbench/extensions/agent/stores/agent/agentWorkflowTabBindingStorage'
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
+import { readPersistedAgentWorkflowTabPath } from '@/workbench/extensions/agent/stores/agent/agentWorkflowTabBindingStorage'
 import {
   agentTest,
   bootAgentApp,
@@ -115,7 +113,7 @@ test.describe('Agent CRDT reload', { tag: '@cloud' }, () => {
 
     const rawBindings = await page.evaluate(
       (key) => localStorage.getItem(key),
-      AGENT_WORKFLOW_TAB_BINDINGS_STORAGE_KEY
+      StorageKeys.agentWorkflowTabBindings('personal')
     )
     const boundPath = readPersistedAgentWorkflowTabPath(rawBindings, workflowId)
     if (!boundPath) throw new Error('Persisted workflow tab binding is missing')

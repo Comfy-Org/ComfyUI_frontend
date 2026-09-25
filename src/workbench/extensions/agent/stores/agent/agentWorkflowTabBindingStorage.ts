@@ -1,8 +1,5 @@
 import { MAX_AGENT_STORAGE_CLOCK_SKEW_MS } from '@/workbench/extensions/agent/persistenceTime'
 
-export const AGENT_WORKFLOW_TAB_BINDINGS_STORAGE_KEY =
-  'Comfy.Agent.WorkflowTabBindings.v2'
-
 const BINDING_TTL_MS = 30 * 24 * 60 * 60 * 1000
 
 export interface PersistedAgentWorkflowTabBinding {
