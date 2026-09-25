@@ -50,6 +50,7 @@ import { badgeDrawObjects, badgeRows } from './nodeBadgeDraw'
 import { LGraphButton } from './LGraphButton'
 import type { LGraphButtonOptions } from './LGraphButton'
 import { LGraphCanvas } from './LGraphCanvas'
+import { realignGroupWidgetChildLinks } from './linkDeduplication'
 import { LLink, replaceLinkTopology, slotFloatingLinks } from './LLink'
 import {
   inputHasLink,
@@ -1160,6 +1161,8 @@ export class LGraphNode
     // SubgraphNode callback.
     this._internalConfigureAfterSlots?.()
 
+    realignGroupWidgetChildLinks(this, info)
+
     const restoration = createWidgetRestorationState(
       info,
       this.constructor.nodeData?.fallbackWidgetsValuesNames
@@ -1983,10 +1986,12 @@ export class LGraphNode
 
     if (graph) {
       const previous = captureInputLayout(this)
+      const nextInputs = [...previous.inputs]
+      nextInputs.splice(slot, 1)
       const result = replaceNodeInputs(
         this,
         previous,
-        previous.inputs.toSpliced(slot, 1),
+        nextInputs,
         previous.links,
         true
       )

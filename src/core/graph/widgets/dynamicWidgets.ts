@@ -247,7 +247,11 @@ function dynamicComboWidget(
     }
     const result = commitMutatedInputs(node, previous, inputLinks)
     if (!result.ok) return
-    for (const { input, link, slot } of result.replacements) {
+    //A callback can grow the group it lands on, shifting every input after
+    //it, so the slot captured before the batch is stale for later entries.
+    for (const { input, link } of result.replacements) {
+      const slot = node.inputs.indexOf(input)
+      if (slot === -1) continue
       node.onConnectionsChange?.(LiteGraph.INPUT, slot, true, link, input)
     }
     restoreRemovedValues(value, addedWidgetNames)
@@ -594,6 +598,10 @@ export function liveAutogrowGroupOf(
 function autogrowInputDisconnected(index: number, node: AutogrowNode) {
   const input = node.inputs.at(index)
   if (!input) return
+  //The slot was reconnected before this deferred compaction ran (e.g. a
+  //connect/disconnect/reconnect sequence in immediate succession); the
+  //compaction is stale and must not run against the slot's new link.
+  if (node.getInputLink(index)) return
   const groupName = input.name.slice(0, input.name.lastIndexOf('.'))
   const autogrowGroup = Object.hasOwn(node.comfyDynamic.autogrow, groupName)
     ? node.comfyDynamic.autogrow[groupName]
@@ -675,12 +683,40 @@ function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
   node.comfyDynamic.autogrow = {}
 
   let pendingConnection: number | undefined
-  let swappingConnection = false
+  //Whether the input-side `connect` event for `pendingConnection` has
+  //already fired. `connectSlots` (LGraphNode.ts) calls `onConnectInput`
+  //synchronously before it does anything else, then - only when the slot
+  //is replacing an existing link (a real swap) - fires the *disconnect*
+  //event for the old link before the *connect* event for the new one, all
+  //in the same synchronous call. So a disconnect that arrives for
+  //`pendingConnection` before its connect event has been seen is the
+  //synchronous tail of that swap. A disconnect that arrives *after* the
+  //connect event has already fired is a separate, later operation (e.g.
+  //the user - or an agent applying CRDT ops with no render yield between
+  //them - immediately disconnecting the slot it just connected) and must
+  //not be mistaken for a swap just because it lands within the same
+  //rAF-bounded window (PM-1496).
+  let pendingConnectionSeen = false
+  //Which slot, if any, is mid a same-slot swap: `connectSlots` just fired
+  //that slot's disconnect (the swap's tail, detected above) and its
+  //matching connect event is expected synchronously right after. Scoped
+  //to a single slot - not node-wide - so a genuine connect on a
+  //*different* slot of this node in between is never mistaken for the
+  //swap's own connect and silently dropped. Cleared deterministically by
+  //the connection lifecycle itself (the matching connect event) rather
+  //than solely by a frame boundary, so it cannot stay armed indefinitely
+  //while `requestAnimationFrame` is suspended (e.g. a hidden background
+  //tab); the frame-boundary reset below is only a defensive fallback.
+  let swappingSlot: number | undefined
 
   const originalOnConnectInput = node.onConnectInput
   node.onConnectInput = function (slot: number, ...args) {
     pendingConnection = slot
-    requestAnimationFrame(() => (pendingConnection = undefined))
+    pendingConnectionSeen = false
+    requestAnimationFrame(() => {
+      pendingConnection = undefined
+      pendingConnectionSeen = false
+    })
     return originalOnConnectInput?.apply(this, [slot, ...args]) ?? true
   }
 
@@ -704,12 +740,19 @@ function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
       if (app.configuringGraph && input.widget)
         ensureWidgetForInput(node, input)
       if (iscon) {
-        if (swappingConnection || !linf) return
+        if (pendingConnection === slot) pendingConnectionSeen = true
+        if (swappingSlot === slot) {
+          swappingSlot = undefined
+          return
+        }
+        if (!linf) return
         autogrowInputConnected(slot, this)
       } else {
-        if (pendingConnection === slot) {
-          swappingConnection = true
-          requestAnimationFrame(() => (swappingConnection = false))
+        if (pendingConnection === slot && !pendingConnectionSeen) {
+          swappingSlot = slot
+          requestAnimationFrame(() => {
+            if (swappingSlot === slot) swappingSlot = undefined
+          })
           return
         }
         requestAnimationFrame(() => autogrowInputDisconnected(slot, this))

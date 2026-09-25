@@ -334,6 +334,13 @@ describe('LGraph', () => {
     expect(graph.last_node_id).toBe(7)
   })
 
+  it.for(['constructor', 'toString', '__proto__'])(
+    'does not return inherited property %s as a node',
+    (id) => {
+      expect(new LGraph().getNodeById(toNodeId(id))).toBeNull()
+    }
+  )
+
   describe('duplicate node-instance invariants', () => {
     function createGraphsSharingANodeId() {
       const ownerGraph = new LGraph()

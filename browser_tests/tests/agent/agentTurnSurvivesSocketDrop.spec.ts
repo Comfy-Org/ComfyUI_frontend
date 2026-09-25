@@ -68,15 +68,33 @@ test.describe(
       turnLock
     }) => {
       await expect(turnLock.stopButton).toBeVisible()
+      await expect(turnLock.workSummary).toHaveCount(0)
 
       await turnLock.dropSocket()
 
       // `abortActiveTurn()` calls `transport.settle()`, which flips
-      // `message.streaming` to false. Stop reverts to Send while the server
-      // still owns the turn.
+      // `message.streaming` to false. AgentMessage.vue swaps ActivityTrace for
+      // WorkSummary on exactly that flag, so the live rows collapse into the
+      // "Worked for ..." button the user saw, the Working... row disappears and
+      // Stop reverts to Send — while the server still owns the turn.
       test.fail()
       await expect(turnLock.stopButton).toBeVisible()
-      await expect(turnLock.activityRow).toBeVisible()
+      await expect(turnLock.workSummary).toHaveCount(0)
+      await expect(turnLock.workingRow).toBeVisible()
+    })
+
+    // PM-916 / PM-938. The composer remains editable while a turn is active,
+    // but Enter must preserve the next draft instead of becoming a hidden Stop.
+    test('preserves a new draft when Enter is pressed during an active turn', async ({
+      turnLock
+    }) => {
+      const nextDraft = 'make the output warmer'
+      await turnLock.composer.fill(nextDraft)
+      await turnLock.composer.press('Enter')
+
+      await expect(turnLock.composer).toHaveText(nextDraft)
+      await expect(turnLock.stopButton).toBeVisible()
+      expect(turnLock.postAttempts()).toBe(1)
     })
 
     test('does not reject the next message after the socket reconnects', async ({
@@ -115,13 +133,18 @@ test.describe(
       expect(turnLock.rejectedPosts()).toBe(0)
     })
 
-    test('returns the composer to idle when a turn ends normally', async ({
+    // Keeps the `workSummary` locator honest. Every other use of it above is a
+    // toHaveCount(0), which a locator that matched nothing would satisfy for
+    // free; this shows it does resolve once a turn ends.
+    test('summarises a turn that ends normally', async ({
       turnLock,
       getWebSocket
     }) => {
+      await expect(turnLock.workSummary).toHaveCount(0)
+
       turnLock.push(await getWebSocket(), TURN_DONE_EVENT)
 
-      await expect(turnLock.activityRow).toBeVisible()
+      await expect(turnLock.workSummary).toBeVisible()
       await expect(turnLock.sendButton).toBeVisible()
     })
 
@@ -138,7 +161,7 @@ test.describe(
       await turnLock.decodeAudioLikeAPreview()
 
       await expect(turnLock.stopButton).toBeVisible()
-      await expect(turnLock.activityRow).toBeVisible()
+      await expect(turnLock.workSummary).toHaveCount(0)
 
       turnLock.push(ws, POST_RECONNECT_EVENT)
       await expect(turnLock.panel.getByText(POST_RECONNECT_TEXT)).toBeVisible()

@@ -63,6 +63,7 @@ catalog:
   '@types/node': ^25.9.5
   '@types/semver': ^7.8.0
   '@types/three': ^0.184.1
+  '@typescript-eslint/utils': ^8.69.0
   '@vee-validate/zod': ^4.15.1
   '@vercel/analytics': ^2.0.1
   '@vitejs/plugin-vue': ^6.0.8
@@ -83,6 +84,7 @@ catalog:
   eslint: ^10.8.1
   eslint-config-prettier: ^10.1.8
   eslint-import-resolver-typescript: ^4.4.5
+  eslint-plugin-astro: ^1.7.0
   eslint-plugin-better-tailwindcss: ^4.7.0
   eslint-plugin-import-x: ^4.17.1
   eslint-plugin-oxlint: 1.78.0
@@ -119,6 +121,8 @@ catalog:
   pinia: ^4.0.2
   postcss-html: ^1.8.0
   posthog-js: ^1.358.1
+  prettier: 3.9.5
+  prettier-plugin-astro: ^1.0.0
   pretty-bytes: ^7.1.0
   primeicons: ^7.0.0
   primevue: 4.2.5

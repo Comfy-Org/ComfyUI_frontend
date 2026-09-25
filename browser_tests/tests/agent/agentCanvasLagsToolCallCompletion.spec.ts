@@ -91,7 +91,7 @@ const CATALOG: WidgetCatalog = {
 }
 const SEED: WorkflowJSON = { nodes: [], links: [] }
 
-const OPEN_AGENT_LABEL = enMessages.agent.askComfyAgent
+const OPEN_AGENT_LABEL = enMessages.agent.entryButton
 const SEND_LABEL = enMessages.agent.send
 const COMPOSER_LABEL = createI18n({
   legacy: false,
@@ -350,7 +350,7 @@ async function driveThroughToolCallDone(
   // the composer is free again and the turn's own "Worked for Xs" summary is
   // up -- while the canvas (asserted by the caller) has nothing yet.
   await expect(panel.getByRole('button', { name: SEND_LABEL })).toBeVisible()
-  await expect(panel.getByRole('button', { name: /^Ran/ })).toBeVisible()
+  await expect(panel.getByRole('button', { name: /^Worked/ })).toBeVisible()
 
   return {
     vueNodes,
@@ -379,7 +379,7 @@ test.describe(
       // the fix under test lives one level down, on the tool call's OWN
       // displayed state inside that summary: expand it to look.
       const panel = page.locator('#agent-panel-root')
-      const workSummary = panel.getByRole('button', { name: /^Ran/ })
+      const workSummary = panel.getByRole('button', { name: /^Worked/ })
       await expandToolCallGroup(workSummary)
 
       const addNodeRow = panel
@@ -440,7 +440,7 @@ test.describe(
       )
 
       const panel = page.locator('#agent-panel-root')
-      const workSummary = panel.getByRole('button', { name: /^Ran/ })
+      const workSummary = panel.getByRole('button', { name: /^Worked/ })
       await expandToolCallGroup(workSummary)
 
       const addNodeRow = panel

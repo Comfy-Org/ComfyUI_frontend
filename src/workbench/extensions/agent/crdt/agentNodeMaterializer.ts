@@ -6,7 +6,11 @@ import {
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import { realignInputLinkSlots } from '@/lib/litegraph/src/linkDeduplication'
 import { materializeLinkAdapter } from '@/lib/litegraph/src/LLink'
-import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraphNode,
+  LiteGraph,
+  SubgraphNode
+} from '@/lib/litegraph/src/litegraph'
 import { topologicalSortSubgraphs } from '@/lib/litegraph/src/subgraph/subgraphDeduplication'
 import type {
   ExportedSubgraph,
@@ -354,6 +358,13 @@ function materialize(
   }
   if (!added) return rollback('LGraph.add returned no node')
 
+  // This is a rendering-layer materialization of the same logical node, not
+  // a content change: the record's CRDT reconcile baseline must survive it,
+  // or the next reconcile sees a node with no baseline at all and treats an
+  // unrelated local edit (e.g. a title set outside the doc) as unproven,
+  // replaying the doc's possibly-stale value over it.
+  added._state.titleReconcileBaseline = state.titleReconcileBaseline
+
   // Only report once the node this id now belongs to is actually live: a
   // failed add rolls the orphan back onto the id via `rollback()`/`restore()`,
   // so a report emitted before this point would claim a drop that a
@@ -362,9 +373,22 @@ function materialize(
 
   try {
     const savedInputs = serialised.inputs?.map((input) => ({ ...input }))
-    withNamedValuesRestore(() =>
+    const configureNode = () =>
       node.configure(withNamedWidgetValues(serialised, widgets))
-    )
+    // A SubgraphNode instance restores its promoted-input values through
+    // `_applyPromotedWidgetValues`, not the named-values path — and that
+    // method is the only place `proxyWidgetErrorQuarantine` overrides a
+    // stale value. `SubgraphNode.configure()` skips it precisely when
+    // `widgets_values_named` is set AND `namedValuesRestore` is on, so
+    // forcing the flag here would silently resurrect a quarantined value on
+    // every agent-materialized subgraph instance. Ordinary nodes have no
+    // such guard, so they still need the flag to restore their own
+    // `widgets_values` (PM-1580).
+    if (node instanceof SubgraphNode) {
+      configureNode()
+    } else {
+      withNamedValuesRestore(configureNode)
+    }
     replayUpdatedWidgetCallbacks(node, serialised, widgets)
     // After configure and any widget-driven restructuring, re-point the saved
     // links at their named inputs (CRDT-INPUTS-0030).

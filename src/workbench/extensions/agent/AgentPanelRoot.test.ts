@@ -58,6 +58,8 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
+import { registerTour } from '@/platform/onboarding/onboardingTours'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import {
   createMockLoadedWorkflow,
@@ -234,7 +236,9 @@ const telemetry = vi.hoisted(() => ({
   trackAgentAttachButtonClicked: vi.fn(),
   trackAgentCloseButtonClicked: vi.fn(),
   trackAgentPanelOpened: vi.fn(),
-  trackAgentPanelClosed: vi.fn()
+  trackAgentPanelClosed: vi.fn(),
+  trackAgentOnboardingNotShown: vi.fn(),
+  trackOnboardingTour: vi.fn()
 }))
 vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => telemetry
@@ -263,7 +267,7 @@ const paywallCapabilities = vi.hoisted(() => ({
 const paywallBilling = vi.hoisted(() => ({
   tier: 'STANDARD' as SubscriptionTier | null
 }))
-const paywallHasFunds = ref(false)
+const paywallHasFunds = ref<boolean | null>(false)
 
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'), {
   spy: true
@@ -274,7 +278,7 @@ vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'), {
 })
 
 import type { AgentMessages, TurnId } from './schemas/agentApiSchema'
-import { zAgentWsEvent } from './schemas/agentApiSchema'
+import { toTurnId, zAgentWsEvent } from './schemas/agentApiSchema'
 import { MAX_ATTACHMENT_BYTES } from './composables/agent/useAttachment'
 import type { AgentChatEvent } from './services/agent/agentEventTransport'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
@@ -329,7 +333,9 @@ beforeEach(() => {
   vi.mocked(useBillingContext).mockReturnValue(
     fromPartial({
       subscription: computed(() =>
-        fromPartial({ hasFunds: paywallHasFunds.value })
+        paywallHasFunds.value === null
+          ? null
+          : fromPartial({ hasFunds: paywallHasFunds.value })
       ),
       tier: computed(() => paywallBilling.tier)
     })
@@ -443,7 +449,8 @@ function renderWithSelectedTarget() {
 async function sendFromComposer(text: string): Promise<void> {
   const textbox = screen.getByRole('textbox')
   await userEvent.click(textbox)
-  await userEvent.keyboard('{ArrowRight}')
+  window.getSelection()?.collapseToEnd()
+  document.dispatchEvent(new Event('selectionchange'))
   await userEvent.keyboard(text)
   await userEvent.click(screen.getByRole('button', { name: 'Send' }))
   await screen.findByRole('button', { name: 'Stop' })
@@ -531,6 +538,99 @@ describe('AgentPanelRoot onboarding', () => {
       await screen.findByRole('dialog', { name: 'Meet your Comfy Agent' })
     ).toBeInTheDocument()
     expect(localStorage.getItem(SCOPED_KEY)).not.toBe('true')
+  })
+
+  it('reports a coach held back by another tour', async () => {
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-tour'
+    })
+    const firstRunHolds = ref(true)
+    registerTour(
+      'firstRun',
+      () =>
+        Promise.resolve([
+          { kind: 'spotlight', name: 'run', placement: 'center' }
+        ]),
+      firstRunHolds
+    )
+    const tourStore = useOnboardingTourStore()
+    tourStore.replayTour('firstRun')
+    await vi.waitFor(() => expect(tourStore.activeTour).toBe('firstRun'))
+    try {
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+      expect(
+        screen.queryByRole('dialog', { name: 'Meet your Comfy Agent' })
+      ).not.toBeInTheDocument()
+      expect(
+        telemetry.trackAgentOnboardingNotShown
+      ).toHaveBeenCalledExactlyOnceWith({ reason: 'tour_active' })
+    } finally {
+      firstRunHolds.value = false
+    }
+  })
+
+  it('stays quiet when App Mode pauses a coach that was already on screen', async () => {
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-interrupted'
+    })
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    expect(
+      await screen.findByRole('dialog', { name: 'Meet your Comfy Agent' })
+    ).toBeInTheDocument()
+
+    canvasStore.linearMode = true
+    await vi.waitFor(() =>
+      expect(
+        screen.queryByRole('dialog', { name: 'Meet your Comfy Agent' })
+      ).not.toBeInTheDocument()
+    )
+
+    expect(telemetry.trackAgentOnboardingNotShown).not.toHaveBeenCalled()
+  })
+
+  it('reports the deferral once the workspace resolves after mount', async () => {
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: null })
+    canvasStore.linearMode = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    expect(telemetry.trackAgentOnboardingNotShown).not.toHaveBeenCalled()
+
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-late'
+    })
+
+    await vi.waitFor(() =>
+      expect(
+        telemetry.trackAgentOnboardingNotShown
+      ).toHaveBeenCalledExactlyOnceWith({ reason: 'app_mode' })
+    )
+  })
+
+  it('reports a deferral once however often the panel remounts', async () => {
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-remount'
+    })
+    canvasStore.linearMode = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } }).unmount()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    expect(
+      telemetry.trackAgentOnboardingNotShown
+    ).toHaveBeenCalledExactlyOnceWith({ reason: 'app_mode' })
+  })
+
+  it('says nothing about App Mode to a user who already finished the tour', async () => {
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-seen'
+    })
+    localStorage.setItem(
+      'Comfy.AgentPanel.onboarded.account-a.workspace-seen',
+      'true'
+    )
+    canvasStore.linearMode = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    expect(telemetry.trackAgentOnboardingNotShown).not.toHaveBeenCalled()
   })
 
   it('walks through the four cards and leaves the composer usable after Done', async () => {
@@ -648,6 +748,98 @@ describe('AgentPanelRoot paywall actions', () => {
 
     await vi.waitFor(() =>
       expect(screen.queryByText('Out of credits')).not.toBeInTheDocument()
+    )
+  })
+
+  it('dismisses an existing paywall when remounting after a top-up', async () => {
+    paywallCapabilities.canTopUp = false
+    const panel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentConversationStore().recordPaywall(
+      toTurnId('msg-paywall'),
+      'continue'
+    )
+    expect(
+      await screen.findByRole('button', { name: 'Subscribe' })
+    ).toBeInTheDocument()
+
+    panel.unmount()
+    paywallHasFunds.value = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await vi.waitFor(() =>
+      expect(screen.queryByText('Out of credits')).not.toBeInTheDocument()
+    )
+  })
+
+  it('shows a fresh denial while the cached billing state still has funds', async () => {
+    paywallCapabilities.canTopUp = false
+    paywallHasFunds.value = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    expect(await screen.findByRole('textbox')).toBeInTheDocument()
+
+    useAgentConversationStore().recordPaywall(
+      toTurnId('msg-paywall'),
+      'render one more frame'
+    )
+
+    expect(
+      await screen.findByRole('button', { name: 'Subscribe' })
+    ).toBeInTheDocument()
+  })
+
+  it('keeps a resolved paywall hidden while billing state is unknown', async () => {
+    paywallCapabilities.canTopUp = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentConversationStore().recordPaywall(
+      toTurnId('msg-paywall'),
+      'continue'
+    )
+    expect(
+      await screen.findByRole('button', { name: 'Subscribe' })
+    ).toBeInTheDocument()
+
+    paywallHasFunds.value = true
+    await vi.waitFor(() =>
+      expect(
+        screen.queryByRole('button', { name: 'Subscribe' })
+      ).not.toBeInTheDocument()
+    )
+
+    paywallHasFunds.value = null
+    await nextTick()
+    expect(screen.queryByText('Out of credits')).not.toBeInTheDocument()
+  })
+
+  it('shows only a new denial after funds run out again', async () => {
+    paywallCapabilities.canTopUp = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentConversationStore().recordPaywall(
+      toTurnId('msg-paywall'),
+      'continue'
+    )
+    expect(
+      await screen.findByRole('button', { name: 'Subscribe' })
+    ).toBeInTheDocument()
+
+    paywallHasFunds.value = true
+    await vi.waitFor(() =>
+      expect(
+        screen.queryByRole('button', { name: 'Subscribe' })
+      ).not.toBeInTheDocument()
+    )
+
+    paywallHasFunds.value = false
+    await nextTick()
+    expect(screen.queryByText('Out of credits')).not.toBeInTheDocument()
+
+    useAgentConversationStore().recordPaywall(
+      toTurnId('msg-paywall-2'),
+      'try again'
+    )
+    await vi.waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Subscribe' })
+      ).toBeInTheDocument()
     )
   })
 
@@ -1431,16 +1623,15 @@ describe('AgentPanelRoot attach flow', () => {
 
       dispatchDrag(target, 'dragenter', dragData)
       await nextTick()
-      expect(screen.getByRole('status')).toHaveTextContent(
-        'Drag and drop assets here'
-      )
+      const dropTarget = screen.getByRole('status')
+      expect(dropTarget).toHaveTextContent('Drag and drop assets here')
 
       expect(dispatchDrag(target, 'dragover', dragData)).toBe(true)
 
       const claimed = dispatchDrag(target, 'drop', dragData)
       expect(claimed).toBe(true)
       await nextTick()
-      expect(screen.queryByRole('status')).not.toBeInTheDocument()
+      expect(dropTarget).not.toBeInTheDocument()
 
       expect(
         within(await screen.findByTestId('composer-asset-section')).getByText(
@@ -2295,6 +2486,16 @@ describe('AgentPanelRoot feedback capture', () => {
     store.startTurn(turnId)
     store.ingest(
       zAgentWsEventForTest({
+        type: 'agent_active_tab',
+        data: {
+          workflow_id: 'wf-rated',
+          message_id: 'turn-9',
+          thread_id: 'th'
+        }
+      })
+    )
+    store.ingest(
+      zAgentWsEventForTest({
         type: 'agent_message_delta',
         data: { delta: 'Here is a cat', message_id: 'turn-9', thread_id: 'th' }
       })
@@ -2315,8 +2516,80 @@ describe('AgentPanelRoot feedback capture', () => {
     )
 
     expect(telemetry.trackAgentMessageFeedback.mock.calls).toEqual([
-      [{ message_id: 'turn-9', vote: 'up', workflow_id: null }],
-      [{ message_id: 'turn-9', vote: null, workflow_id: null }]
+      [{ message_id: 'turn-9', vote: 'up', workflow_id: 'wf-rated' }],
+      [{ message_id: 'turn-9', vote: null, workflow_id: 'wf-rated' }]
+    ])
+  })
+
+  it('attributes the vote to the last tab the rated message linked', async () => {
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    const store = useAgentConversationStore()
+    const turnId = 'turn-10' as TurnId
+    store.recordUser(turnId, 'make two cats')
+    store.startTurn(turnId)
+    for (const workflowId of ['wf-first', 'wf-last']) {
+      store.ingest(
+        zAgentWsEventForTest({
+          type: 'agent_active_tab',
+          data: {
+            workflow_id: workflowId,
+            message_id: 'turn-10',
+            thread_id: 'th'
+          }
+        })
+      )
+    }
+    store.ingest(
+      zAgentWsEventForTest({
+        type: 'agent_message_delta',
+        data: { delta: 'Two cats', message_id: 'turn-10', thread_id: 'th' }
+      })
+    )
+    store.ingest(
+      zAgentWsEventForTest({
+        type: 'agent_message_done',
+        data: { message_id: 'turn-10', thread_id: 'th', usage: null }
+      })
+    )
+    await nextTick()
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Helpful' })
+    )
+
+    expect(telemetry.trackAgentMessageFeedback.mock.calls).toEqual([
+      [{ message_id: 'turn-10', vote: 'up', workflow_id: 'wf-last' }]
+    ])
+  })
+
+  it('reports a null workflow when the rated message never linked a tab', async () => {
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    const store = useAgentConversationStore()
+    const turnId = 'turn-11' as TurnId
+    store.recordUser(turnId, 'hello')
+    store.startTurn(turnId)
+    store.ingest(
+      zAgentWsEventForTest({
+        type: 'agent_message_delta',
+        data: { delta: 'Hi there', message_id: 'turn-11', thread_id: 'th' }
+      })
+    )
+    store.ingest(
+      zAgentWsEventForTest({
+        type: 'agent_message_done',
+        data: { message_id: 'turn-11', thread_id: 'th', usage: null }
+      })
+    )
+    await nextTick()
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Helpful' })
+    )
+
+    expect(telemetry.trackAgentMessageFeedback.mock.calls).toEqual([
+      [{ message_id: 'turn-11', vote: 'up', workflow_id: null }]
     ])
   })
 })
@@ -3506,17 +3779,8 @@ describe('AgentPanelRoot workflow binding', () => {
   // `doc_subscribed` frame, so the follower never connects; with the wrong
   // gate, a mutating tool call's own successful frame was held at
   // 'streaming' forever, since nothing was ever going to call
-  // `notifyCanvasCaughtUp()` to release it.
-  //
-  // core/1.54 predates the `AgentMessage.vue` "composing" status row (main's
-  // `agent.working` / "Working..." indicator, shown once every part has
-  // settled but the turn is still streaming) -- that's an unrelated,
-  // unbackported UI redesign, not this bug fix, so this branch's
-  // `AgentMessage.vue` has no such row at all (see PR discussion). Here the
-  // settle is only observable through `ToolCallGroup.vue`'s own trigger,
-  // which renders the settled "Ran N tool calls" label -- rather than
-  // sitting stuck on the spinner glyph -- the moment the tool call's part
-  // flips from 'streaming' to 'done'.
+  // `notifyCanvasCaughtUp()` to release it. The composing "Working..."
+  // status (every part settled, turn still streaming) never appeared.
   it('settles a mutating tool call immediately when no CRDT doc subscription is connected', async () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
@@ -3533,9 +3797,7 @@ describe('AgentPanelRoot workflow binding', () => {
     })
 
     expect(
-      await screen.findByRole('button', {
-        name: 'Ran 1 tool call for 0.1 seconds'
-      })
+      await screen.findByText(i18n.global.t('agent.working'))
     ).toBeInTheDocument()
   })
 
@@ -5179,6 +5441,61 @@ describe('AgentPanelRoot workflow binding', () => {
         String(frame).includes('doc_subscribe')
       )
     ).toBe(false)
+  })
+
+  it('a new chat after clearing the canvas keeps the saved target and posts the cleared canvas as its first draft', async () => {
+    const tab = makeTab('wf-42')
+    tab.activeState = fromPartial<ComfyWorkflowJSON>({
+      id: 'wf-42',
+      nodes: [{ id: 1, type: 'LoadImage' }]
+    })
+    const posted: { threadId: string; body: Record<string, unknown> }[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (url.includes('/messages') && init?.method === 'POST') {
+          posted.push({
+            threadId: url.split('/threads/')[1].split('/')[0],
+            body: JSON.parse(String(init.body))
+          })
+          return json(202, ack('wf-42', `m-${posted.length}`))
+        }
+        if (url.includes('/messages')) return json(200, [])
+        if (url.includes('/agent/threads'))
+          return json(200, agentThreadList([]))
+        if (url.includes('/workflows'))
+          return json(200, {
+            data: [{ id: 'wf-42', name: 'current' }],
+            pagination: { offset: 0, limit: 100, total: 1, has_more: false }
+          })
+        return new Response('{}', { status: 200 })
+      })
+    )
+
+    await renderAndSend('build a duck')
+    ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
+    await screen.findByRole('button', { name: 'Send' })
+    expect(posted[0]).toMatchObject({
+      threadId: 'new',
+      body: { workflow_id: 'wf-42', draft: { content: { nodes: [{ id: 1 }] } } }
+    })
+
+    tab.activeState = fromPartial<ComfyWorkflowJSON>({ id: 'wf-42', nodes: [] })
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.chatOptions') })
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: i18n.global.t('g.delete') })
+    )
+    expect(useAgentConversationStore().threadId).toBeNull()
+
+    await sendFromComposer('start over')
+
+    expect(posted[1]).toMatchObject({
+      threadId: 'new',
+      body: { workflow_id: 'wf-42', draft: { content: { nodes: [] } } }
+    })
+    expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-42')).toBe(tab.path)
   })
 
   it('does not bind an unsaved tab to a workflow that already has an open tab', async () => {
