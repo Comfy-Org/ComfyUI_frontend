@@ -235,6 +235,9 @@ const placeholderHint = computed(() => {
   const [text = '', mentionNodes = ''] = t('agent.placeholder').split('\n')
   return { text, mentionNodes }
 })
+const placeholderVisible = computed(
+  () => !composer.draft.value && composer.prompt.value.references.length === 0
+)
 
 function onEnter(event: KeyboardEvent): void {
   if (event.isComposing || event.shiftKey) return
@@ -542,9 +545,7 @@ defineExpose({
           />
 
           <div
-            v-if="
-              !composer.draft.value && !composer.prompt.value.references.length
-            "
+            v-if="placeholderVisible"
             class="pointer-events-none relative z-10 -mt-7 font-inter text-[14px]/[20px] font-normal text-muted-foreground"
           >
             <span>{{ placeholderHint.text }} </span>
