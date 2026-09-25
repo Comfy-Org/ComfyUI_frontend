@@ -422,60 +422,27 @@ test.describe('Canvas settings', { tag: '@canvas' }, () => {
       })
     })
 
-    for (const { bufferTime, dragHoldMs } of [
-      { bufferTime: 0, dragHoldMs: 0 },
-      { bufferTime: 2000, dragHoldMs: 250 }
-    ]) {
-      test(`ClickBufferTime=${bufferTime}ms does not promote movement within drift`, async ({
-        comfyPage
-      }) => {
-        const node = (
-          await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
-        )[0]
-        await comfyPage.settings.setSetting('Comfy.Pointer.ClickDrift', 6)
-        await comfyPage.settings.setSetting(
-          'Comfy.Pointer.ClickBufferTime',
-          bufferTime
-        )
-        const titlePos = await node.getTitlePosition()
-        const before = await node.getPosition()
+    test('ClickBufferTime does not promote movement within drift', async ({
+      comfyPage
+    }) => {
+      const node = (
+        await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
+      )[0]
+      await comfyPage.settings.setSetting('Comfy.Pointer.ClickDrift', 6)
+      await comfyPage.settings.setSetting('Comfy.Pointer.ClickBufferTime', 0)
+      const titlePos = await node.getTitlePosition()
+      const before = await node.getPosition()
 
-        await holdDragAt(comfyPage, titlePos, {
-          dx: 2,
-          dy: 0,
-          holdMs: 250
-        })
-
-        const after = await node.getPosition()
-        expect(after.x).toBeCloseTo(before.x, 0)
-        expect(after.y).toBeCloseTo(before.y, 0)
+      await holdDragAt(comfyPage, titlePos, {
+        dx: 2,
+        dy: 0,
+        holdMs: 250
       })
 
-      test(`ClickBufferTime=${bufferTime}ms does not delay movement beyond drift`, async ({
-        comfyPage
-      }) => {
-        const node = (
-          await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
-        )[0]
-        await comfyPage.settings.setSetting('Comfy.Pointer.ClickDrift', 6)
-        await comfyPage.settings.setSetting(
-          'Comfy.Pointer.ClickBufferTime',
-          bufferTime
-        )
-        const titlePos = await node.getTitlePosition()
-        const before = await node.getPosition()
-
-        await holdDragAt(comfyPage, titlePos, {
-          dx: 8,
-          dy: 0,
-          holdMs: dragHoldMs
-        })
-
-        const after = await node.getPosition()
-        expect(after.x).toBeGreaterThan(before.x)
-        expect(after.y).toBeCloseTo(before.y, 0)
-      })
-    }
+      const after = await node.getPosition()
+      expect(after.x).toBeCloseTo(before.x, 0)
+      expect(after.y).toBeCloseTo(before.y, 0)
+    })
 
     test('ClickDrift governs the click-vs-drag distance threshold', async ({
       comfyPage

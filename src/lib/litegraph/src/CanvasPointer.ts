@@ -65,13 +65,6 @@ export class CanvasPointer {
     return this.state.phase === 'dragging'
   }
 
-  set dragStarted(value: boolean) {
-    const lastClick = this.state.lastClick
-    this.state = value
-      ? { phase: 'dragging', lastClick }
-      : { phase: 'idle', lastClick }
-  }
-
   private state: GestureState = idleGesture
 
   /** Used downstream for touch event support. */

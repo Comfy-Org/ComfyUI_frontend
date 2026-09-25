@@ -135,16 +135,6 @@ function recordCallbacks(canvas: LGraphCanvas, node: LGraphNode) {
 }
 
 describe('CanvasPointer lifecycle callbacks', () => {
-  it('preserves writable dragStarted compatibility', () => {
-    const pointer = new CanvasPointer(document.createElement('canvas'))
-
-    pointer.dragStarted = true
-    expect(pointer.dragStarted).toBe(true)
-
-    pointer.dragStarted = false
-    expect(pointer.dragStarted).toBe(false)
-  })
-
   it('passes the release event to click and then runs final cleanup', () => {
     const pointer = new CanvasPointer(document.createElement('canvas'))
     const onClick = vi.fn()
