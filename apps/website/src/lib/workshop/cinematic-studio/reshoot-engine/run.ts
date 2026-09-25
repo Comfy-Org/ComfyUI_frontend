@@ -17,10 +17,57 @@ const FAILED = new Set([
 
 export type ReshootRunPhase = 'starting' | 'queued' | 'running'
 
+const isNotReady = (error: unknown) =>
+  error instanceof ReshootError && error.code === 'deployment_not_ready'
+
+/** Where a polled job stands: done, failed, or still waiting in a phase. */
+export function jobPhase(
+  status: string
+): ReshootRunPhase | 'succeeded' | 'failed' {
+  if (status === 'succeeded') return 'succeeded'
+  if (FAILED.has(status)) return 'failed'
+  return QUEUED.has(status) ? 'queued' : 'running'
+}
+
+/** `deployment_not_ready` is a wait, not a failure: retry until it takes. */
+async function submitWhenReady(
+  transport: ReshootTransport,
+  workflow: object,
+  onPhase: (phase: ReshootRunPhase) => void,
+  signal: AbortSignal
+): Promise<ReshootJob> {
+  for (;;) {
+    try {
+      // A fresh key per attempt: a refused submission created no job.
+      return await transport.submit(workflow, crypto.randomUUID(), signal)
+    } catch (error) {
+      if (!isNotReady(error)) throw error
+      onPhase('starting')
+      await waitFor(NOT_READY_RETRY_MS, signal)
+    }
+  }
+}
+
+async function pollUntilSucceeded(
+  transport: ReshootTransport,
+  submitted: ReshootJob,
+  onPhase: (phase: ReshootRunPhase) => void,
+  signal: AbortSignal
+): Promise<ReshootJob> {
+  let job = submitted
+  for (let phase = jobPhase(job.status); phase !== 'succeeded';) {
+    if (phase === 'failed') throw new ReshootError('job_failed')
+    onPhase(phase)
+    await waitFor(POLL_MS, signal)
+    job = await transport.job(job.id, signal)
+    phase = jobPhase(job.status)
+  }
+  return job
+}
+
 /**
- * Submits, riding out a deployment still coming up (`deployment_not_ready`
- * is a wait, not a failure), then polls until the job succeeds. Outputs are
- * only served once it has, so nothing is downloaded before this returns.
+ * Submits, then polls until the job succeeds. Outputs are only served once
+ * it has, so nothing is downloaded before this returns. Stopping cancels it.
  */
 export async function runJob(
   transport: ReshootTransport,
@@ -28,26 +75,9 @@ export async function runJob(
   onPhase: (phase: ReshootRunPhase) => void,
   signal: AbortSignal
 ): Promise<ReshootJob> {
-  let job: ReshootJob | undefined
-  while (!job) {
-    try {
-      // A fresh key per attempt: a refused submission created no job.
-      job = await transport.submit(workflow, crypto.randomUUID(), signal)
-    } catch (error) {
-      if (!(error instanceof ReshootError)) throw error
-      if (error.code !== 'deployment_not_ready') throw error
-      onPhase('starting')
-      await waitFor(NOT_READY_RETRY_MS, signal)
-    }
-  }
+  const job = await submitWhenReady(transport, workflow, onPhase, signal)
   try {
-    while (job.status !== 'succeeded') {
-      if (FAILED.has(job.status)) throw new ReshootError('job_failed')
-      onPhase(QUEUED.has(job.status) ? 'queued' : 'running')
-      await waitFor(POLL_MS, signal)
-      job = await transport.job(job.id, signal)
-    }
-    return job
+    return await pollUntilSucceeded(transport, job, onPhase, signal)
   } catch (error) {
     if (signal.aborted) void transport.cancel(job.id)
     throw error

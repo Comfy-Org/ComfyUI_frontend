@@ -97,45 +97,13 @@ export function sourceAim(pivot: Vec3): Vec3 {
   return [0, 0, Math.max(norm(pivot), 1e-3)]
 }
 
-/**
- * Inverse of a rigid pose (rotation transposed, translation rotated back).
- * @knipIgnoreUsedByStackedPR the WebGL warp preview
- */
-export function invertPose(c: Mat4): Mat4 {
-  const [r0, r1, r2, d0, d1, d2, f0, f1, f2] = [
-    c[0],
-    c[1],
-    c[2],
-    c[4],
-    c[5],
-    c[6],
-    c[8],
-    c[9],
-    c[10]
-  ]
-  const [ex, ey, ez] = [c[12], c[13], c[14]]
-  // prettier-ignore
-  return new Float32Array([
-    r0, d0, f0, 0,
-    r1, d1, f1, 0,
-    r2, d2, f2, 0,
-    -(r0 * ex + r1 * ey + r2 * ez),
-    -(d0 * ex + d1 * ey + d2 * ez),
-    -(f0 * ex + f1 * ey + f2 * ez),
-    1
-  ])
-}
-
 /** Focal length in pixels for a horizontal field of view across `width`. */
 export function focalPx(width: number, hfovDeg: number): number {
   return width / (2 * Math.tan((hfovDeg * DEG) / 2))
 }
 
-/**
- * numpy.percentile with its default linear interpolation, on a sorted array.
- * @knipIgnoreUsedByStackedPR the WebGL warp preview
- */
-export function percentileSorted(sorted: ArrayLike<number>, q: number): number {
+/** numpy.percentile with its default linear interpolation, on a sorted array. */
+function percentileSorted(sorted: ArrayLike<number>, q: number): number {
   if (sorted.length === 0) return 0
   const idx = ((sorted.length - 1) * q) / 100
   const lo = Math.floor(idx)

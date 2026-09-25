@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { downloadOutput, runJob } from './run'
+import { downloadOutput, jobPhase, runJob } from './run'
 import type { ReshootJob, ReshootTransport } from './transport'
 import { ReshootError } from './transport'
 
@@ -101,6 +101,20 @@ describe('runJob', () => {
     stop.abort()
     await stopped
     expect(transport.cancel).toHaveBeenCalledWith('job-1')
+  })
+})
+
+describe('jobPhase', () => {
+  it.for<[string, string]>([
+    ['succeeded', 'succeeded'],
+    ['failed', 'failed'],
+    ['cancelled', 'failed'],
+    ['queued', 'queued'],
+    ['pending', 'queued'],
+    ['running', 'running'],
+    ['in_progress', 'running']
+  ])('reads %s as %s', ([status, phase]) => {
+    expect(jobPhase(status)).toBe(phase)
   })
 })
 
