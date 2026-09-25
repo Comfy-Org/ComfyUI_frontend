@@ -32,6 +32,7 @@ import {
   hasVideoType
 } from '@/utils/eventUtils'
 import { useAssetsStore } from '@/stores/assetsStore'
+import { useAuthStore } from '@/stores/authStore'
 import { AGENT_ATTACH_ACCEPT, isAgentAttachable } from './utils/attachableFiles'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 // eslint-disable-next-line import-x/no-restricted-paths
@@ -195,6 +196,18 @@ const agentIdentity = resolveAgentIdentity({
   }
 })
 onBeforeUnmount(() => agentIdentity.stop())
+
+// Signing out or switching accounts must not leave the agent socket
+// authenticated as the previous account, nor canvas ops stamped with its
+// actor: reconnect with a fresh token and look the identity up again.
+const authStore = useAuthStore()
+watch(
+  () => authStore.userId ?? null,
+  () => {
+    events.reconnect()
+    agentIdentity.reset()
+  }
+)
 
 function onPaywallAction(action: AgentPaywallAction): void {
   openAccountPrecondition(action === 'addCredits' ? 'credits' : 'subscription')

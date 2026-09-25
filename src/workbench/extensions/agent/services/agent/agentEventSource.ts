@@ -20,6 +20,12 @@ export interface AgentEventSocket extends AgentEventSource {
    * aborts.
    */
   send(frame: string): boolean
+  /**
+   * Drops the current connection and opens a new one with a freshly read
+   * token, e.g. when the signed-in account changes, so the socket never stays
+   * authenticated as the previous account.
+   */
+  reconnect(): void
 }
 
 interface AgentEventSourceOptions {
@@ -149,6 +155,11 @@ export function createAgentEventSource({
   }
 
   return {
+    reconnect() {
+      disconnect()
+      failedConnects = 0
+      void connect()
+    },
     send(frame) {
       if (socket?.readyState !== WebSocket.OPEN) return false
       socket.send(frame)

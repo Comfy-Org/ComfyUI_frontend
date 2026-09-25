@@ -38,6 +38,45 @@ async function flush(): Promise<void> {
 }
 
 describe('resolveAgentIdentity (#17469)', () => {
+  it('forgets the identity on reset and looks it up again', async () => {
+    vi.useFakeTimers()
+    const getIdentity = vi
+      .fn<() => Promise<{ userId: string }>>()
+      .mockResolvedValueOnce({ userId: 'account-a' })
+      .mockResolvedValueOnce({ userId: 'account-b' })
+    const identity = harness(getIdentity)
+    await flush()
+    expect(identity.userId.value).toBe('account-a')
+
+    identity.reset()
+    expect(identity.userId.value).toBeNull()
+    await flush()
+
+    expect(identity.userId.value).toBe('account-b')
+  })
+
+  it('discards a lookup that was still in flight for the previous account', async () => {
+    vi.useFakeTimers()
+    let finishStale!: (value: { userId: string }) => void
+    const getIdentity = vi
+      .fn<() => Promise<{ userId: string }>>()
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            finishStale = resolve
+          })
+      )
+      .mockResolvedValueOnce({ userId: 'account-b' })
+    const identity = harness(getIdentity)
+
+    identity.reset()
+    await flush()
+    finishStale({ userId: 'account-a' })
+    await flush()
+
+    expect(identity.userId.value).toBe('account-b')
+  })
+
   it('takes the identity from the first successful lookup', async () => {
     vi.useFakeTimers()
     const getIdentity = vi.fn(async () => ({ userId: 'local-user' }))

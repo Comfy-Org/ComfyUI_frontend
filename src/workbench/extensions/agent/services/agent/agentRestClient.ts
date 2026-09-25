@@ -37,7 +37,12 @@ const CLOUD_WORKFLOW_PAGE_SIZE = 100
 // One promise for every request, so concurrent first requests load it once.
 let agentAuth: Promise<typeof AgentAuth> | undefined
 function loadAgentAuth(): Promise<typeof AgentAuth> {
-  agentAuth ??= import('./agentAuth')
+  // A failed chunk load (a deploy, a network drop) is forgotten, so the next
+  // request retries it instead of every request failing until a reload.
+  agentAuth ??= import('./agentAuth').catch((error: unknown) => {
+    agentAuth = undefined
+    throw error
+  })
   return agentAuth
 }
 
