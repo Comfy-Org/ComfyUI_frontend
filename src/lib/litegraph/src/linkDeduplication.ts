@@ -192,14 +192,15 @@ function isGroupWidgetChildInput(node: LGraphNode, inputName: string): boolean {
 /**
  * Autogrow groups renumber their own slots as the graph configures, so their
  * links belong to {@link LGraph.configure}'s final pass rather than to an
- * early realignment. A group is not a widget, and the dotted name alone will
- * not serve — `INodeInputSlot.name` is arbitrary, so an ordinary input may be
- * dotted without belonging to any group — so ownership comes from the registry
- * `applyAutogrow` populates. That registry only covers groups the selected
- * option laid out; children of an unselected option still reach this filter,
- * because `ComfyNode.configure` appends every serialized input the definition
- * lacks, and are safe to realign since their group's handler bails on the same
- * missing key.
+ * early realignment, which destroys them. A group is not a widget, and the
+ * dotted name alone will not serve — `INodeInputSlot.name` is arbitrary, so an
+ * ordinary input may be dotted without belonging to any group — so ownership
+ * comes from the registry `applyAutogrow` populates.
+ *
+ * That registry only covers groups the selected option laid out. Children of
+ * an unselected option still reach this filter, because `ComfyNode.configure`
+ * appends every serialized input the definition lacks. Realigning those is
+ * safe: their group's handler bails on the same missing key.
  *
  * @see browser_tests/tests/subgraph/subgraphConvertAutogrowInputs.spec.ts
  * "loads with both reference images connected"
