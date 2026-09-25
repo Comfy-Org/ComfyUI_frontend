@@ -76,6 +76,10 @@ lint, format, Knip, application and auxiliary typechecks, and repo checks.
 Path filters and report jobs are omitted. The gate waits for all prerequisites;
 it does not cancel the remaining prerequisites on the first failure.
 
+Blue nodes mark required status checks, including their failure outcome. The
+color does not indicate success. `website-e2e` and `cla-assistant` are also
+required but remain outside these graphs.
+
 <details>
 <summary>Before: independent workflows</summary>
 
@@ -90,6 +94,8 @@ flowchart TD
     Build --> Playwright[Frontend Playwright]
     Unit --> UnitStatus[test]
     Playwright --> E2EStatus[e2e-status]
+    classDef required fill:#dbeafe,stroke:#2563eb,color:#172554,stroke-width:3px
+    class LintStatus,UnitStatus,E2EStatus required
 ```
 
 </details>
@@ -115,6 +121,8 @@ flowchart TD
     Blocked --> Failed[test and e2e-status fail]
     Unit --> UnitStatus[test]
     Playwright --> E2EStatus[e2e-status]
+    classDef required fill:#dbeafe,stroke:#2563eb,color:#172554,stroke-width:3px
+    class LintStatus,UnitStatus,E2EStatus,Failed required
 ```
 
 </details>
