@@ -119,6 +119,9 @@ function eventPageHref(id: string): LocalizedText {
 export const eventVideoId = (event: ComfyEvent): string | undefined =>
   event.recordingVideoId ?? event.liveVideoId
 
+export const eventOgImage = ({ media }: ComfyEvent): string | undefined =>
+  media?.type === 'image' ? media.src : media?.poster
+
 const EVENT_DURATION_MS = 60 * 60 * 1000
 const SITE_ORIGIN = 'https://comfy.org'
 
