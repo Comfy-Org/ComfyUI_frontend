@@ -9,13 +9,7 @@ vi.mock<unknown>(import('@/composables/queue/useJobMenu'), () => ({
   useJobMenu: () => ({ jobMenuEntries: [] })
 }))
 
-vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
-  useErrorHandling: () => ({
-    wrapWithErrorHandlingAsync: <T extends (...args: never[]) => unknown>(
-      fn: T
-    ) => fn
-  })
-}))
+vi.mock(import('@/composables/useErrorHandling'))
 
 import QueueOverlayExpanded from '@/components/queue/QueueOverlayExpanded.vue'
 

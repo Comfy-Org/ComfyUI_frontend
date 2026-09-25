@@ -15,7 +15,7 @@ import {
   isLevelEnabled
 } from './crdtDebugGate'
 import type { CrdtLogScope, DevEventKind } from './devPanelLog'
-import { recordDevEvent } from './devPanelLog'
+import { recordDevEvent, sanitizeDevEventDetail } from './devPanelLog'
 
 /**
  * Console tint per scope, so a busy log reads as layers rather than as one
@@ -62,7 +62,8 @@ function crdtLog(entry: CrdtLogEntry): void {
   // fail-closed follower is never silent. The MESSAGE is what earns that
   // exemption — dumping document state into an opted-out user's console does
   // not. The detail is still in the ring buffer for whoever opted in.
-  if (detail !== undefined && isCrdtDebugEnabled()) args.push(detail)
+  if (detail !== undefined && isCrdtDebugEnabled())
+    args.push(sanitizeDevEventDetail(detail))
   console[CONSOLE_METHOD[level]](...args)
 }
 

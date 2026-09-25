@@ -1,18 +1,8 @@
-// @vitest-environment jsdom
 import userEvent from '@testing-library/user-event'
 import { render, screen, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
-
-// jsdom lacks ResizeObserver, which the asset-preview import chain references.
-vi.hoisted(() => {
-  globalThis.ResizeObserver = class {
-    observe(): void {}
-    unobserve(): void {}
-    disconnect(): void {}
-  }
-})
 
 import { i18n } from '@/i18n'
 
@@ -179,6 +169,33 @@ describe('UserMessage', () => {
       }
     ])
     expect(screen.getByText('use these')).toBeInTheDocument()
+  })
+
+  // Dragging a non-first batch output (e.g. "layer 2" of a multi-output job)
+  // into the composer attaches it with `ref` set to the bare output filename
+  // (no content hash — see outputAssetUtil.ts's deliberate omission) and a
+  // correct `previewUrl` captured at drop time. splitAttachments must prefer
+  // that previewUrl over reconstructing `/view?...&type=input`, which does
+  // not resolve to the dragged output.
+  it('shows the dragged batch output, not a type=input lookup, for a non-first output asset', () => {
+    renderMessage({
+      text: 'use this one',
+      attachments: [
+        {
+          name: 'ComfyUI_00002_.png',
+          ref: 'ComfyUI_00002_.png',
+          previewUrl: 'blob:comfy/correct-batch-output-2'
+        }
+      ]
+    })
+
+    expect(stubbedAssets()).toEqual([
+      {
+        url: 'blob:comfy/correct-batch-output-2',
+        filename: 'ComfyUI_00002_.png',
+        kind: 'image'
+      }
+    ])
   })
 
   it('keeps non-media attachments as compact tiles beside the grid', () => {

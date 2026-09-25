@@ -31,25 +31,29 @@ const fixtures = vi.hoisted(() => {
     id: template.name,
     sourceModule: 'default',
     workflowName: template.title,
-    workflow: {
-      nodes: [
-        {
-          id: 1,
-          type: 'CheckpointLoaderSimple',
-          title: 'Active loader',
-          properties: { models: [activeModel] },
-          widgets_values: [activeModel.name]
-        },
-        {
-          id: 2,
-          type: 'LoraLoaderModelOnly',
-          title: 'Bypassed loader',
-          mode: 4,
-          properties: { models: [bypassedModel] },
-          widgets_values: [bypassedModel.name]
-        }
-      ],
-      links: []
+    controller: new AbortController(),
+    data: {
+      template: undefined,
+      json: {
+        nodes: [
+          {
+            id: 1,
+            type: 'CheckpointLoaderSimple',
+            title: 'Active loader',
+            properties: { models: [activeModel] },
+            widgets_values: [activeModel.name]
+          },
+          {
+            id: 2,
+            type: 'LoraLoaderModelOnly',
+            title: 'Bypassed loader',
+            mode: 4,
+            properties: { models: [bypassedModel] },
+            widgets_values: [bypassedModel.name]
+          }
+        ],
+        links: []
+      }
     }
   }
 
@@ -67,8 +71,9 @@ const mocks = vi.hoisted(() => ({
   loadTemplates: vi.fn(async () => true),
   loadWorkflowTemplate: vi.fn(async () => true),
   onClose: vi.fn(),
-  openPreparedWorkflowTemplate: vi.fn(async () => true),
-  prepareWorkflowTemplateForOpen: vi.fn(async () => fixtures.prepared),
+  discardPreparedWorkflowTemplate: vi.fn(),
+  openPreparedWorkflowTemplate: vi.fn(async () => 'loaded' as const),
+  prepareWorkflowTemplate: vi.fn(async () => fixtures.prepared),
   resolveAvailability: vi.fn<
     () => Promise<ResolvedTemplateModelAvailability[]>
   >(async () => [{ model: fixtures.activeModel, status: 'missing' }]),
@@ -103,8 +108,10 @@ vi.mock<unknown>(
       getTemplateTitle: mocks.getTemplateTitle,
       loadTemplates: mocks.loadTemplates,
       loadWorkflowTemplate: mocks.loadWorkflowTemplate,
+      loadingTemplateId: computed(() => null),
       openPreparedWorkflowTemplate: mocks.openPreparedWorkflowTemplate,
-      prepareWorkflowTemplateForOpen: mocks.prepareWorkflowTemplateForOpen
+      prepareWorkflowTemplate: mocks.prepareWorkflowTemplate,
+      discardPreparedWorkflowTemplate: mocks.discardPreparedWorkflowTemplate
     })
   })
 )
@@ -242,8 +249,8 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
     vi.mocked(workflowTemplatesStore.loadWorkflowTemplates).mockResolvedValue()
     runtime.isCloud = false
     runtime.isDesktop = true
-    mocks.prepareWorkflowTemplateForOpen.mockResolvedValue(fixtures.prepared)
-    mocks.openPreparedWorkflowTemplate.mockResolvedValue(true)
+    mocks.prepareWorkflowTemplate.mockResolvedValue(fixtures.prepared)
+    mocks.openPreparedWorkflowTemplate.mockResolvedValue('loaded')
     mocks.resolveAvailability.mockResolvedValue([
       { model: fixtures.activeModel, status: 'missing' }
     ])
@@ -257,7 +264,7 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
       name: fixtures.template.title
     })
     expect(detail).toHaveFocus()
-    expect(mocks.prepareWorkflowTemplateForOpen).toHaveBeenCalledWith(
+    expect(mocks.prepareWorkflowTemplate).toHaveBeenCalledWith(
       fixtures.template.name,
       'default'
     )
@@ -317,7 +324,7 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
     let resolvePreparation:
       | ((prepared: typeof fixtures.prepared) => void)
       | undefined
-    mocks.prepareWorkflowTemplateForOpen.mockImplementationOnce(
+    mocks.prepareWorkflowTemplate.mockImplementationOnce(
       () =>
         new Promise((resolve) => {
           resolvePreparation = resolve
@@ -333,7 +340,7 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
     resolvePreparation?.(fixtures.prepared)
 
     await waitFor(() => {
-      expect(mocks.prepareWorkflowTemplateForOpen).toHaveBeenCalledOnce()
+      expect(mocks.prepareWorkflowTemplate).toHaveBeenCalledOnce()
     })
     expect(screen.queryByRole('article')).not.toBeInTheDocument()
     expect(mocks.openPreparedWorkflowTemplate).not.toHaveBeenCalled()

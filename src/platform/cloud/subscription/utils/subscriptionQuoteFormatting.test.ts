@@ -2,6 +2,7 @@ import type { PreviewSubscribeResponse } from '@comfyorg/ingest-types'
 import { describe, expect, it } from 'vitest'
 
 import {
+  amountDueTodayChanged,
   formatAmountDueToday,
   formatRenewalAmount,
   resolveRenewalDate
@@ -59,6 +60,37 @@ describe('formatAmountDueToday', () => {
   it('honours a non-USD exact quote', () => {
     const preview = exactPreview({ currency: 'eur' })
     expect(formatAmountDueToday(preview, 'en')).toBe('€15.00')
+  })
+})
+
+describe('amountDueTodayChanged', () => {
+  it.for([
+    [
+      'a change when the exact amount moves behind an unchanged legacy cost',
+      exactPreview({ amount_due_cents: 1600 }),
+      exactPreview({ amount_due_cents: 2400 }),
+      true
+    ],
+    [
+      'a change when the currency moves at the same amount',
+      exactPreview({ currency: 'usd' }),
+      exactPreview({ currency: 'eur' }),
+      true
+    ],
+    [
+      'no change when a legacy quote is replaced by an exact quote of the same value',
+      legacyPreview({ cost_today_cents: 1600 }),
+      exactPreview({ amount_due_cents: 1600, currency: 'usd' }),
+      false
+    ],
+    [
+      'no change when only the legacy cost behind an exact quote moves',
+      exactPreview({ cost_today_cents: 1600 }),
+      exactPreview({ cost_today_cents: 2400 }),
+      false
+    ]
+  ] as const)('reports %s', ([, installed, refreshed, expected]) => {
+    expect(amountDueTodayChanged(installed, refreshed)).toBe(expected)
   })
 })
 

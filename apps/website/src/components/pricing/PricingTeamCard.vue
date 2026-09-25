@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
+import type { Locale, TranslationKey } from '../../i18n/translations'
 import type { PlanFeatureGroup } from './PricingPlanFeatureList.vue'
 import { computed, ref } from 'vue'
 
@@ -19,9 +19,14 @@ import PricingPlanFeatureList from './PricingPlanFeatureList.vue'
 import PricingPlanLabel from './PricingPlanLabel.vue'
 import PricingPrice from './PricingPrice.vue'
 
-const { locale = 'en', billingPeriod } = defineProps<{
+const {
+  locale = 'en',
+  billingPeriod,
+  inviteMembersKey = 'pricing.feature.inviteMembers'
+} = defineProps<{
   billingPeriod: 'monthly' | 'yearly'
   locale?: Locale
+  inviteMembersKey?: TranslationKey
 }>()
 
 const teamCreditTierIndex = ref<number[]>([2])
@@ -68,11 +73,11 @@ const teamSaving = computed<string | undefined>(() => {
     .replace('{amount}', fmtPrice(base - discounted))
 })
 
-const featureGroups: PlanFeatureGroup[] = [
+const featureGroups = computed<PlanFeatureGroup[]>(() => [
   {
     titleKey: 'pricing.plan.team.everythingInProPlus',
     features: [
-      { text: 'pricing.feature.inviteMembers' },
+      { text: inviteMembersKey },
       { text: 'pricing.feature.concurrentWorkflows' },
       { text: 'pricing.feature.sharedCreditPool' },
       { text: 'pricing.feature.roleBasedPermissions' }
@@ -85,7 +90,7 @@ const featureGroups: PlanFeatureGroup[] = [
       { text: 'pricing.plan.team.projects', status: 'coming' }
     ]
   }
-]
+])
 
 const ctaHref = computed(() =>
   subscribeUrl(

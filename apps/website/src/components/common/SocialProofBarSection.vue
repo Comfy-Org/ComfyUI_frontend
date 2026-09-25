@@ -24,7 +24,7 @@ const mobileRow2Logos = logos.slice(6)
       <div
         v-for="copy in 2"
         :key="copy"
-        class="animate-marquee flex shrink-0 items-center gap-2"
+        class="flex shrink-0 animate-marquee items-center gap-2"
         style="--marquee-gap: 0.5rem"
         :aria-hidden="copy === 2 ? 'true' : undefined"
       >
@@ -47,7 +47,7 @@ const mobileRow2Logos = logos.slice(6)
         <div
           v-for="copy in 2"
           :key="copy"
-          class="animate-marquee flex shrink-0 items-center gap-8"
+          class="flex shrink-0 animate-marquee items-center gap-8"
           style="--marquee-gap: 2rem"
           :aria-hidden="copy === 2 ? 'true' : undefined"
         >
@@ -64,7 +64,7 @@ const mobileRow2Logos = logos.slice(6)
         <div
           v-for="copy in 2"
           :key="copy"
-          class="animate-marquee-reverse flex shrink-0 items-center gap-8"
+          class="flex shrink-0 animate-marquee-reverse items-center gap-8"
           style="--marquee-gap: 2rem"
           :aria-hidden="copy === 2 ? 'true' : undefined"
         >

@@ -1,10 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, reactive, ref } from 'vue'
+import { nextTick, reactive } from 'vue'
 
 import { assetService } from '@/platform/assets/services/assetService'
 import type * as DistributionTypes from '@/platform/distribution/types'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
-import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import { api } from '@/scripts/api'
 import {
   ResourceState,
@@ -18,21 +17,9 @@ const mockDistribution = vi.hoisted(
   (): { isCloud: typeof DistributionTypes.isCloud } => ({ isCloud: false })
 )
 
-vi.mock<unknown>(
-  import('@/platform/distribution/types'),
-  () => mockDistribution
-)
+vi.mock(import('@/platform/distribution/types'), () => mockDistribution)
 
-const remoteConfigHolder = await vi.hoisted(async () => {
-  const { ref } = await import('vue')
-  return { current: ref<RemoteConfig>({}) }
-})
-
-vi.mock<unknown>(import('@/platform/remoteConfig/remoteConfig'), () => ({
-  get remoteConfig() {
-    return remoteConfigHolder.current
-  }
-}))
+vi.mock(import('@/platform/remoteConfig/remoteConfig'))
 
 const featureState = vi.hoisted(() => ({
   serverFeatures: {} as Record<string, unknown>
@@ -113,7 +100,7 @@ describe('useModelStore', () => {
   beforeEach(async () => {
     mockDistribution.isCloud = false
     featureState.serverFeatures = reactive({ assets: false })
-    remoteConfigHolder.current = ref({})
+    remoteConfig.value = {}
   })
 
   it('should load models', async () => {

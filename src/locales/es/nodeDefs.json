@@ -5002,7 +5002,7 @@
     }
   },
   "EmptyCosmosLatentVideo": {
-    "display_name": "EmptyCosmosLatentVideo",
+    "display_name": "Vídeo latente Cosmos vacío",
     "inputs": {
       "batch_size": {
         "name": "tamaño_del_lote"
@@ -5063,7 +5063,7 @@
     }
   },
   "EmptyHunyuanImageLatent": {
-    "display_name": "ImagenLatenteHunyuanVacía",
+    "display_name": "Imagen latente Hunyuan vacía",
     "inputs": {
       "batch_size": {
         "name": "tamaño_lote"
@@ -5082,7 +5082,7 @@
     }
   },
   "EmptyHunyuanLatentVideo": {
-    "display_name": "EmptyHunyuanLatentVideo",
+    "display_name": "Vídeo latente Hunyuan Video 1.0 vacío",
     "inputs": {
       "batch_size": {
         "name": "tamaño_del_lote"
@@ -5104,7 +5104,7 @@
     }
   },
   "EmptyHunyuanVideo15Latent": {
-    "display_name": "Empty HunyuanVideo 1.5 Latent",
+    "display_name": "Vídeo latente Hunyuan Video 1.5 vacío",
     "inputs": {
       "batch_size": {
         "name": "tamaño_lote"
@@ -5143,7 +5143,7 @@
     }
   },
   "EmptyLTXVLatentVideo": {
-    "display_name": "EmptyLTXVLatentVideo",
+    "display_name": "Vídeo latente LTXV vacío",
     "inputs": {
       "batch_size": {
         "name": "tamaño_del_lote"
@@ -5182,7 +5182,7 @@
     }
   },
   "EmptyLatentHunyuan3Dv2": {
-    "display_name": "EmptyLatentHunyuan3Dv2",
+    "display_name": "Latente Hunyuan 3D v2 vacío",
     "inputs": {
       "batch_size": {
         "name": "tamaño_del_lote",
@@ -5323,7 +5323,7 @@
     }
   },
   "EmptyTrellis2LatentStructure": {
-    "display_name": "EmptyTrellis2LatentStructure",
+    "display_name": "Estructura latente Trellis2 vacía",
     "inputs": {
       "batch_size": {
         "name": "batch_size",
@@ -5349,6 +5349,33 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "EndLoop": {
+    "display_name": "Finalizar bucle",
+    "inputs": {
+      "accumulate": {
+        "name": "accumulate",
+        "tooltip": "Devuelve output_value de cada iteración cuando está activado; de lo contrario, devuelve solo la iteración final."
+      },
+      "next_iteration_value": {
+        "name": "next_iteration_value",
+        "tooltip": "Valor enviado desde Finalizar bucle de vuelta a Iniciar bucle para la siguiente iteración."
+      },
+      "output_value": {
+        "name": "output_value",
+        "tooltip": "Valor devuelto por Finalizar bucle. Devuelve la iteración final o todas las iteraciones según accumulate."
+      },
+      "terminations": {
+        "name": "terminations",
+        "tooltip": "Conecta salidas que deben ejecutarse en cada iteración. Sus valores no se devuelven."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "salidas",
+        "tooltip": "El output_value de la iteración final, o los valores acumulados entre iteraciones cuando accumulate está activado."
       }
     }
   },
@@ -6825,6 +6852,42 @@
       }
     }
   },
+  "GeminiNodeV3": {
+    "description": "Genera respuestas de texto con los modelos Gemini de Google. Proporciona un prompt de texto y, opcionalmente, una o más imágenes, clips de audio, vídeos o archivos como contexto multimodal.",
+    "display_name": "Google Gemini",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "El modelo Gemini utilizado para generar la respuesta."
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      },
+      "model_thinking_level": {
+        "name": "thinking_level"
+      },
+      "model_video_processing": {
+        "name": "video_processing"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GeminiVideoOmni": {
     "description": "Genera un video con audio a partir de un prompt de texto usando el modelo Gemini Omni Flash de Google. Opcionalmente, proporciona imágenes y/o videos de referencia para guiar o editar el resultado. Describe la duración deseada (3-10s) y la relación de aspecto (16:9 o 9:16) directamente en el prompt.",
     "display_name": "Google Gemini Omni (Video)",
@@ -7012,6 +7075,22 @@
       },
       "2": {
         "name": "tamaño_de_lote",
+        "tooltip": null
+      }
+    }
+  },
+  "GetItemFromList": {
+    "display_name": "Obtener elemento de la lista",
+    "inputs": {
+      "index": {
+        "name": "index"
+      },
+      "list": {
+        "name": "list"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -7876,6 +7955,87 @@
       }
     }
   },
+  "HunyuanImageEditApi": {
+    "description": "Edita o combina hasta 5 imágenes de referencia guiado por un prompt de texto mediante el modelo Hunyuan Image de Tencent.",
+    "display_name": "Tencent HY Image: Editar",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo que se utilizará."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_height": {
+        "name": "altura"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reference_detail": {
+        "name": "reference_detail"
+      },
+      "model_resolution": {
+        "name": "resolución"
+      },
+      "model_seed": {
+        "name": "semilla"
+      },
+      "model_watermark": {
+        "name": "marca de agua"
+      },
+      "model_width": {
+        "name": "anchura"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HunyuanImageTextToImageApi": {
+    "description": "Genera imágenes a partir de un prompt de texto mediante el modelo Hunyuan Image de Tencent.",
+    "display_name": "Tencent HY Image: Texto a imagen",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo que se utilizará."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_height": {
+        "name": "altura"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolución"
+      },
+      "model_seed": {
+        "name": "semilla"
+      },
+      "model_watermark": {
+        "name": "marca de agua"
+      },
+      "model_width": {
+        "name": "anchura"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HunyuanImageToVideo": {
     "display_name": "HunyuanImageToVideo",
     "inputs": {
@@ -7993,7 +8153,7 @@
     }
   },
   "HunyuanVideo15LatentUpscaleWithModel": {
-    "display_name": "Hunyuan Video 15 Latent Upscale With Model",
+    "display_name": "Reescalado de latente Hunyuan Video 1.5 con modelo",
     "inputs": {
       "crop": {
         "name": "recorte"
@@ -9058,6 +9218,7 @@
     }
   },
   "JsonExtractString": {
+    "description": "Extrae el valor de una clave del primer objeto JSON válido del texto, incluidos los bloques de código Markdown.",
     "display_name": "Extraer cadena de JSON",
     "inputs": {
       "json_string": {
@@ -10435,7 +10596,7 @@
     }
   },
   "LTXVEmptyLatentAudio": {
-    "display_name": "LTXV Audio Latente Vacío",
+    "display_name": "Audio latente LTXV vacío",
     "inputs": {
       "audio_vae": {
         "name": "audio_vae",
@@ -11623,6 +11784,73 @@
       "1": {
         "name": "texts",
         "tooltip": "Lista de subtítulos de texto."
+      }
+    }
+  },
+  "LoopIteration": {
+    "display_name": "LoopIteration",
+    "inputs": {
+      "current_iteration_value": {
+        "name": "current_iteration_value"
+      },
+      "is_first": {
+        "name": "is_first"
+      },
+      "is_last": {
+        "name": "is_last"
+      },
+      "iteration_index": {
+        "name": "iteration_index"
+      },
+      "list_item": {
+        "name": "list_item"
+      },
+      "reuse_cache": {
+        "name": "reuse_cache"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      },
+      "2": {
+        "tooltip": null
+      },
+      "3": {
+        "tooltip": null
+      },
+      "4": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoopProgress": {
+    "display_name": "LoopProgress",
+    "inputs": {
+      "position": {
+        "name": "position"
+      },
+      "start_id": {
+        "name": "start_id"
+      },
+      "total": {
+        "name": "total"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoopResult": {
+    "display_name": "LoopResult",
+    "inputs": {
+      "close_id": {
+        "name": "close_id"
       }
     }
   },
@@ -13088,6 +13316,10 @@
       "ultra_mode": {
         "name": "modo ultra",
         "tooltip": "Ejecuta una pasada de refinamiento adicional para obtener una geometría de mayor fidelidad con detalles de superficie más finos."
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "Resolución de la pasada ultra: 2k la ejecuta a 2048³, 4k a 4096³ para el máximo detalle de superficie. 4k requiere meshy-7.1 o posterior. Se usa solo cuando ultra_mode está activado."
       }
     },
     "outputs": {
@@ -13154,6 +13386,10 @@
       },
       "symmetry_mode": {
         "name": "modo de simetría"
+      },
+      "ultra_mode": {
+        "name": "ultra_mode",
+        "tooltip": "Ejecuta una pasada adicional de refinamiento a 2048³ para una geometría de mayor fidelidad con detalles de superficie más finos."
       }
     },
     "outputs": {
@@ -13295,6 +13531,10 @@
       "ultra_mode": {
         "name": "modo ultra",
         "tooltip": "Ejecuta una pasada de refinamiento adicional para obtener una geometría de mayor fidelidad con detalles de superficie más finos."
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "Resolución de la pasada ultra: 2k la ejecuta a 2048³, 4k a 4096³ para el máximo detalle de superficie. 4k requiere meshy-7.1 o posterior. Se usa solo cuando ultra_mode está activado."
       }
     },
     "outputs": {
@@ -14053,6 +14293,10 @@
       "moge_model": {
         "name": "moge_model"
       },
+      "refine_steps": {
+        "name": "refine_steps",
+        "tooltip": "Solo MoGe-3: pasadas de refinamiento volumétrico disperso sobre la profundidad predicha. Más pasadas aumentan la nitidez de los detalles finos y los bordes con un coste aproximadamente lineal. 0 desactiva el refinamiento. Ignorado por MoGe-1 / MoGe-2."
+      },
       "resolution_level": {
         "name": "resolution_level",
         "tooltip": "0 = más rápido, 9 = mayor detalle."
@@ -14083,6 +14327,10 @@
       },
       "moge_model": {
         "name": "moge_model"
+      },
+      "refine_steps": {
+        "name": "refine_steps",
+        "tooltip": "Solo MoGe-3: pasadas de refinamiento volumétrico disperso sobre la profundidad predicha. Más pasadas aumentan la nitidez de los detalles finos y los bordes con un coste aproximadamente lineal. 0 desactiva el refinamiento. Ignorado por MoGe-1 / MoGe-2."
       },
       "resolution_level": {
         "name": "resolution_level",
@@ -17276,7 +17524,7 @@
     }
   },
   "Pixal3DConditioning": {
-    "display_name": "Pixal3DConditioning",
+    "display_name": "Condicionamiento Pixal3D",
     "inputs": {
       "camera_angle_x": {
         "name": "camera_angle_x",
@@ -18058,6 +18306,93 @@
       }
     }
   },
+  "PrunaImageToVideoNode": {
+    "description": "Anima una imagen para convertirla en un vídeo mediante los modelos de vídeo de Pruna, con un último fotograma, sonido generado o pista de audio opcionales.",
+    "display_name": "Pruna P-Video-2 Imagen a vídeo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo que se utilizará."
+      },
+      "model_draft": {
+        "name": "borrador"
+      },
+      "model_duration": {
+        "name": "duración"
+      },
+      "model_enhance_prompt": {
+        "name": "enhance_prompt"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolución"
+      },
+      "model_seed": {
+        "name": "semilla"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaTextToVideoNode": {
+    "description": "Genera un vídeo a partir de un prompt de texto mediante modelos de vídeo de Pruna, con sonido generado opcional o una pista de audio para controlarlo.",
+    "display_name": "Pruna P-Video-2 de texto a vídeo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo que se utilizará."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_draft": {
+        "name": "borrador"
+      },
+      "model_duration": {
+        "name": "duración"
+      },
+      "model_enhance_prompt": {
+        "name": "enhance_prompt"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolución"
+      },
+      "model_seed": {
+        "name": "semilla"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QuadrupleCLIPLoader": {
     "description": "[Recetas]\n\nhidream: long clip-l, long clip-g, t5xxl, llama_8b_3.1_instruct",
     "display_name": "QuadrupleCLIPLoader",
@@ -18112,6 +18447,10 @@
       "model_top_p": {
         "name": "top_p"
       },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "Cuánto razonamiento emplea el modelo antes de dibujar. Los niveles más altos mejoran el detalle y consumen más tokens. Solo lo utilizan los modelos Arrow 2."
+      },
       "seed": {
         "name": "semilla",
         "tooltip": "Semilla para determinar si el nodo debe ejecutarse de nuevo; los resultados reales son no deterministas independientemente de la semilla."
@@ -18151,6 +18490,10 @@
         "name": "prompt",
         "tooltip": "Descripción en texto del SVG deseado."
       },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "Cuánto razonamiento emplea el modelo antes de dibujar. Los niveles más altos mejoran el detalle y consumen más tokens. Solo lo utilizan los modelos Arrow 2."
+      },
       "reference_images": {
         "name": "imágenes_de_referencia",
         "tooltip": "Hasta 4 imágenes de referencia para guiar la generación."
@@ -18158,6 +18501,28 @@
       "seed": {
         "name": "semilla",
         "tooltip": "Semilla para determinar si el nodo debe ejecutarse de nuevo; los resultados reales son no deterministas independientemente de la semilla."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QwenImage21Cache": {
+    "description": "Permite configurar el dispositivo y la cuantización de la caché KV; de forma predeterminada, el modelo usa la opción auto. La cuantización puede acelerar los flujos de edición cuando falta memoria ",
+    "display_name": "Caché de Qwen Image 2.1",
+    "inputs": {
+      "device": {
+        "name": "device",
+        "tooltip": "auto usa la VRAM disponible y luego la RAM. cpu (RAM) se precarga durante el cálculo y apenas afecta a la velocidad. off vuelve a calcular el prefijo en cada paso, lo que es más lento, pero es la única forma de descartar la caché."
+      },
+      "dtype": {
+        "name": "dtype",
+        "tooltip": "Precisión de almacenamiento. default no tiene pérdidas. int8 reduce la caché a la mitad con una precisión aproximada de bf16; int4 la reduce a una cuarta parte, pero aproximadamente duplica el error por paso."
+      },
+      "model": {
+        "name": "model"
       }
     },
     "outputs": {
@@ -18799,7 +19164,7 @@
       },
       "model": {
         "name": "modelo",
-        "tooltip": "El modelo que se usará para la generación. Los modelos recraftv4_styles están diseñados para una generación con estilo coherente y siempre requieren un style_id o style_references."
+        "tooltip": "El modelo que se utilizará para la generación. Los modelos recraftv4_styles están diseñados para generar resultados coherentes en estilo y siempre requieren un style_id o style_references; recraftv4_1_flash es el modelo más rápido y económico, y no admite estilos en absoluto."
       },
       "model_size": {
         "name": "tamaño"
@@ -22518,7 +22883,7 @@
     }
   },
   "StableCascade_EmptyLatentImage": {
-    "display_name": "StableCascade_EmptyLatentImage",
+    "display_name": "Imagen latente Stable Cascade vacía",
     "inputs": {
       "batch_size": {
         "name": "tamaño_del_lote"
@@ -22561,7 +22926,7 @@
     }
   },
   "StableCascade_StageC_VAEEncode": {
-    "display_name": "StableCascade_StageC_VAEEncode",
+    "display_name": "Codificación VAE de la etapa C de Stable Cascade",
     "inputs": {
       "compression": {
         "name": "compresión"
@@ -22698,6 +23063,52 @@
       "2": {
         "name": "latente",
         "tooltip": null
+      }
+    }
+  },
+  "StartLoop": {
+    "display_name": "Iniciar bucle",
+    "inputs": {
+      "cache_iterations": {
+        "name": "cache_iterations",
+        "tooltip": "Reutiliza los resultados de iteraciones sin cambios de ejecuciones anteriores. Desactívalo para ejecutar de nuevo todas las iteraciones."
+      },
+      "initial_iteration_value": {
+        "name": "initial_iteration_value",
+        "tooltip": "Valor expuesto como current_iteration_value en la primera iteración."
+      },
+      "mode": {
+        "name": "modo",
+        "tooltip": "El modo de iteración del bucle."
+      },
+      "mode_num_iterations": {
+        "name": "num_iterations"
+      },
+      "parent_iteration": {
+        "name": "parent_iteration",
+        "tooltip": "Conecta iteration_index de un Iniciar bucle externo para anidar este bucle."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "iteration_index",
+        "tooltip": "Índice de la iteración actual del bucle."
+      },
+      "1": {
+        "name": "is_first",
+        "tooltip": "Verdadero durante la primera iteración del bucle."
+      },
+      "2": {
+        "name": "is_last",
+        "tooltip": "Verdadero durante la última iteración del bucle."
+      },
+      "3": {
+        "name": "list_item",
+        "tooltip": "Elemento actual de la lista al usar el modo List. Ninguno en los modos Simple y For."
+      },
+      "4": {
+        "name": "current_iteration_value",
+        "tooltip": "Valor transportado por el bucle para la iteración actual: initial_iteration_value en la primera iteración y, después, next_iteration_value de End Loop en cada iteración posterior."
       }
     }
   },
@@ -23477,8 +23888,47 @@
       }
     }
   },
+  "TextEncodeQwenImage21": {
+    "display_name": "Codificación de texto Qwen Image 2.1",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Imágenes de referencia, vistas por el codificador de texto e insertadas en la secuencia como latentes de VAE."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Las imágenes de referencia se redimensionan a aproximadamente resolution x resolution píxeles, en múltiplos de 32 y conservando la relación de aspecto. 0 mantiene cada referencia con su propio tamaño, redondeado a un múltiplo de 32. "
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positivo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negativo",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latente",
+        "tooltip": "Latente vacío con el tamaño de la primera imagen de referencia, para coincidir con el muestreo, ya que cualquier otro tamaño desplaza la edición."
+      }
+    }
+  },
   "TextEncodeQwenImageEdit": {
-    "display_name": "TextEncodeQwenImageEdit",
+    "display_name": "Codificación de texto para edición de Qwen Image",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -23500,7 +23950,7 @@
     }
   },
   "TextEncodeQwenImageEditPlus": {
-    "display_name": "TextEncodeQwenImageEditPlus",
+    "display_name": "Codificación de texto para edición de Qwen Image Plus",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -23576,6 +24026,10 @@
       "max_length": {
         "name": "longitud_máxima"
       },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "Decodificación especulativa con la cabeza de predicción de múltiples tokens del checkpoint. No tiene efecto sin pesos MTP. auto adapta la profundidad del borrador; 2-5 la fija. La salida muestreada conserva una distribución correcta, pero difiere de la salida sin MTP para la misma semilla."
+      },
       "prompt": {
         "name": "prompt"
       },
@@ -23603,6 +24057,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Reemplaza el prompt del sistema en la plantilla de chat del modelo. Se ignora cuando no se utiliza la plantilla predeterminada."
+      },
       "thinking": {
         "name": "pensando",
         "tooltip": "Operar en modo de pensamiento si el modelo lo permite."
@@ -23619,6 +24077,10 @@
     "outputs": {
       "0": {
         "name": "texto_generado",
+        "tooltip": null
+      },
+      "1": {
+        "name": "razonamiento",
         "tooltip": null
       }
     }
@@ -23637,6 +24099,10 @@
       },
       "max_length": {
         "name": "longitud_máxima"
+      },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "Decodificación especulativa con la cabeza de predicción de múltiples tokens del checkpoint. No tiene efecto sin pesos MTP. auto adapta la profundidad del borrador; 2-5 la fija. La salida muestreada mantiene la distribución correcta, pero difiere de la salida sin MTP con la misma semilla."
       },
       "prompt": {
         "name": "mensaje"
@@ -23665,6 +24131,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Reemplaza el prompt del sistema en la plantilla de chat del modelo. Se ignora cuando no se utiliza la plantilla predeterminada."
+      },
       "thinking": {
         "name": "pensando",
         "tooltip": "Operar en modo de pensamiento si el modelo lo permite."
@@ -23681,6 +24151,10 @@
     "outputs": {
       "0": {
         "name": "texto_generado",
+        "tooltip": null
+      },
+      "1": {
+        "name": "razonamiento",
         "tooltip": null
       }
     }
@@ -24153,7 +24627,7 @@
     }
   },
   "Trellis2Conditioning": {
-    "display_name": "Trellis2Conditioning",
+    "display_name": "Condicionamiento de Trellis2",
     "inputs": {
       "clip_vision_model": {
         "name": "clip_vision_model"
@@ -24175,7 +24649,7 @@
     }
   },
   "Trellis2ShapeStage": {
-    "display_name": "Trellis2ShapeStage",
+    "display_name": "Etapa de forma de Trellis2",
     "inputs": {
       "negative": {
         "name": "negativo"
@@ -24203,7 +24677,7 @@
     }
   },
   "Trellis2TextureStage": {
-    "display_name": "Trellis2TextureStage",
+    "display_name": "Etapa de textura de Trellis2",
     "inputs": {
       "negative": {
         "name": "negativo"
@@ -24896,6 +25370,192 @@
       "2": {
         "name": "GLB",
         "tooltip": null
+      }
+    }
+  },
+  "TripoPSeriesImageToModelNode": {
+    "description": "Genera un modelo 3D de baja poligonización con topología limpia a partir de una imagen, como una malla triangular (GLB) o una malla dominada por cuadriláteros (FBX).",
+    "display_name": "Tripo P2: Imagen a modelo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Modelo de la serie P de Tripo."
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_enable_image_autofix": {
+        "name": "enable_image_autofix"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_orientation": {
+        "name": "orientation"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_quad": {
+        "name": "quad"
+      },
+      "model_texture": {
+        "name": "texture"
+      },
+      "model_texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ID de tarea del modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Vacío cuando quad está habilitado."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Solo se completa cuando quad está habilitado."
+      }
+    }
+  },
+  "TripoPSeriesMultiviewToModelNode": {
+    "description": "Genera un modelo 3D de baja poligonización con topología limpia a partir de una vista frontal más de una a tres vistas izquierda, trasera y derecha, como una malla triangular (GLB) o una malla dominada por cuadriláteros (FBX).",
+    "display_name": "Tripo P2: Multivista a modelo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Modelo de la serie P de Tripo."
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_orientation": {
+        "name": "orientation"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_quad": {
+        "name": "quad"
+      },
+      "model_texture": {
+        "name": "textura"
+      },
+      "model_texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ID de tarea del modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Vacío cuando quad está activado."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Solo se completa cuando quad está activado."
+      }
+    }
+  },
+  "TripoPSeriesTextToModelNode": {
+    "description": "Genera un modelo 3D de pocos polígonos con topología limpia a partir de un texto guía, como una malla de triángulos (GLB) o una malla predominantemente de cuadriláteros (FBX).",
+    "display_name": "Tripo P2: Texto a modelo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo de la serie P de Tripo."
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_image_seed": {
+        "name": "image_seed"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_prompt": {
+        "name": "texto guía"
+      },
+      "model_quad": {
+        "name": "quad"
+      },
+      "model_texture": {
+        "name": "textura"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ID de tarea del modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Vacío cuando quad está activado."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Solo se completa cuando quad está activado."
       }
     }
   },
@@ -25697,7 +26357,7 @@
     }
   },
   "VAEDecodeHunyuan3D": {
-    "display_name": "VAEDecodeHunyuan3D",
+    "display_name": "Decodificación VAE de Hunyuan 3D",
     "inputs": {
       "num_chunks": {
         "name": "num_chunks"
@@ -26005,7 +26665,7 @@
     }
   },
   "VaeDecodeShapeTrellis": {
-    "display_name": "VaeDecodeShapeTrellis",
+    "display_name": "Decodificación de forma VAE de Trellis2",
     "inputs": {
       "samples": {
         "name": "muestras"
@@ -26026,7 +26686,7 @@
     }
   },
   "VaeDecodeStructureTrellis2": {
-    "display_name": "VaeDecodeStructureTrellis2",
+    "display_name": "Decodificación de estructura VAE de Trellis2",
     "inputs": {
       "resolution": {
         "name": "resolution"
@@ -26046,7 +26706,7 @@
     }
   },
   "VaeDecodeTextureTrellis": {
-    "display_name": "VaeDecodeTextureTrellis",
+    "display_name": "Decodificación de textura VAE de Trellis2",
     "inputs": {
       "samples": {
         "name": "samples"
@@ -29001,6 +29661,10 @@
       "abc": {
         "name": "abc",
         "tooltip": "Conecte el generador ABC o proporcione una partitura editada. Déjelo vacío para usar automáticamente el modo desactivado."
+      },
+      "cfg_scale": {
+        "name": "cfg_scale",
+        "tooltip": "Guía autorregresiva para el estilo y las letras. 1.0 desactiva CFG, igualando el flujo de trabajo ABC. Usa 1.01 para igualar la guía original en modo desactivado."
       },
       "clip": {
         "name": "clip"

@@ -8,14 +8,15 @@
 import type { User, UserCredential } from 'firebase/auth'
 import { getAdditionalUserInfo } from 'firebase/auth'
 
-import { createFirebaseIdentity } from '@comfyorg/account/firebase'
+import { createFirebaseIdentity } from '@comfyorg/account-core/firebase'
 import {
   CUSTOMER_PROVISIONING_PATH,
   customerProvisioningRequest,
   signUpWithProvisioning
-} from '@comfyorg/account/provisioning'
+} from '@comfyorg/account-core/provisioning'
 
 import { captureSignupRollbackFailure } from '../scripts/posthog'
+import { createTimeoutSignal } from '../utils/abortSignal'
 import {
   WORKSHOP_FIREBASE_OPTIONS,
   WORKSHOP_ROUTER_BASE_URL
@@ -69,7 +70,7 @@ export async function provisionCustomer(
       authHeaders: { Authorization: `Bearer ${token}` },
       signupSource: 'comfy-workshop',
       turnstileToken,
-      signal: AbortSignal.timeout(PROVISIONING_TIMEOUT_MS)
+      signal: createTimeoutSignal(PROVISIONING_TIMEOUT_MS)
     })
   )
   if (!response.ok) {
@@ -143,6 +144,5 @@ export function signOutWorkshop(): Promise<void> {
   return identity.signOut()
 }
 
-/** Fires with the restored user (or null) once Firebase settles, then on every change. */
-/** The identity the session client attaches; only the package can mint one. */
+/** Reached only through workshop-account's lazy port, so this chunk stays off the flag-off path. */
 export const workshopIdentity = identity

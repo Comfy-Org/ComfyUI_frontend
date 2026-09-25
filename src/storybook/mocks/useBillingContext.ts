@@ -37,11 +37,12 @@ export function setBillingContextMock(next: Partial<BillingContextMockState>) {
 /**
  * Storybook mock for `useBillingContext`.
  *
- * The real facade lazily instantiates the legacy billing adapter, which pulls
- * in Firebase auth (`setPersistence`) and crashes in the Storybook environment
- * (no Firebase). This stub lets billing components — e.g. UnifiedPricingTable,
- * BillingStatusBanner — render without any network or auth. It defaults to the
- * unsubscribed state; call `setBillingContextMock` to drive a specific one.
+ * The real facade lazily instantiates the legacy billing adapter, which
+ * resolves the identity module's Firebase while remote config is unloaded and
+ * throws in Storybook. This stub lets billing components — e.g.
+ * UnifiedPricingTable, BillingStatusBanner — render without any network or
+ * auth. It defaults to the unsubscribed state; call `setBillingContextMock` to
+ * drive a specific one.
  *
  * Typed against `BillingContext` so the stub stays in lockstep with the real
  * composable's return shape: drifted or removed keys fail to compile.
