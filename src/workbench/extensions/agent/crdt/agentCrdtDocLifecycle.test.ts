@@ -480,4 +480,35 @@ describe('AgentCrdtDocLifecycle schema_version_mismatch refusal', () => {
 
     expect(resubscribe).toHaveBeenCalledTimes(1)
   })
+
+  it('a redelivered refusal after already giving up does not re-run the latch', () => {
+    const { lifecycle, onGaveUp } = wire()
+    lifecycle.onSubscribeSent(WORKFLOW_ID)
+    lifecycle.onSubscribeRefused('schema_version_mismatch')
+    expect(onGaveUp).toHaveBeenCalledTimes(1)
+    expect(reportError).toHaveBeenCalledTimes(1)
+    vi.mocked(recordDevEvent).mockClear()
+
+    // A duplicate/redelivered doc_subscribed refusal frame for the same,
+    // already-latched attempt must not double the toast/telemetry.
+    lifecycle.onSubscribeRefused('schema_version_mismatch')
+
+    expect(onGaveUp).toHaveBeenCalledTimes(1)
+    expect(reportError).toHaveBeenCalledTimes(1)
+    expect(devEvents()).toEqual([])
+  })
+
+  it('giving up permanently cancels an already-armed retryable backoff', () => {
+    const { lifecycle, resubscribe } = wire()
+    lifecycle.onSubscribeSent(WORKFLOW_ID)
+    // Schedules a 500 ms retryable backoff.
+    lifecycle.onSubscribeRefused('doc_not_found')
+    // A later permanent refusal must cancel that still-armed timer, not let
+    // it fire a resubscribe after the channel has been given up on.
+    lifecycle.onSubscribeRefused('schema_version_mismatch')
+
+    vi.advanceTimersByTime(10 * SUBSCRIBE_ACK_TIMEOUT_MS)
+
+    expect(resubscribe).not.toHaveBeenCalled()
+  })
 })

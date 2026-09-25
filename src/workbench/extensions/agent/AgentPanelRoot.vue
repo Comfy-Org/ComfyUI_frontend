@@ -22,6 +22,7 @@ import type { AgentMessageSentMetadata } from '@/platform/telemetry/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { LiveAutogrowGroupAnswer } from '@/workbench/extensions/agent/crdt/graphMutations'
 import { createGraphMutations } from '@/workbench/extensions/agent/crdt/graphMutations'
+import { formatWorkflowSyncErrorDetail } from '@/workbench/extensions/agent/crdt/workflowSyncErrorDetail'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -716,8 +717,12 @@ const {
       toast.add({
         severity: 'error',
         summary: t('agent.workflowSyncFailedTitle'),
-        detail: message || t('agent.workflowSyncFailedDetail'),
-        life: 5000
+        detail: formatWorkflowSyncErrorDetail(t, message),
+        // Sticky: this is a permanent, unrecoverable desync (PM-1604 /
+        // BE-11437) — the canvas can silently stay stale well past a 5 s
+        // toast, so this one specific error must wait for the person to
+        // dismiss it rather than expiring on its own.
+        life: 0
       })
   }
 )

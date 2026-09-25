@@ -21,6 +21,7 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 import type { MaterializableGraph } from './agentNodeMaterializer'
 import {
   AgentCrdtDocLifecycle,
+  SCHEMA_VERSION_MISMATCH_CODE,
   STALE_AFTER_MS,
   SUBSCRIBE_CATCHUP_GRACE_MS
 } from './agentCrdtDocLifecycle'
@@ -127,21 +128,28 @@ function emitPendingMaterializations(
   events.onMaterialized?.({ workflowId, actor, nodeIds })
 }
 
+interface SubscribeRefusalOutcome {
+  shouldNotify: boolean
+  message?: string
+}
+
 // PM-1604 / BE-11437: a subscribe refusal carries a `code` that is either
 // retryable (the lifecycle keeps retrying on its own) or a permanent
-// `schema_version_mismatch`, the one case the lifecycle won't recover from
-// by itself — surface it to the person via `onSyncError`.
+// `SCHEMA_VERSION_MISMATCH_CODE`, the one case the lifecycle won't recover
+// from by itself — surface it to the person via `onSyncError`. The caller
+// notifies only after its own held-ops cleanup, matching `onDocReset`'s
+// cleanup-before-notify order, so a throw from consumer code reaching into
+// the toast store can't strand an in-flight op batch.
 function handleSubscribeRefusal(
   detail: { code?: unknown; message?: unknown } | null,
-  lifecycle: AgentCrdtDocLifecycle,
-  events: AgentCrdtFollowerEvents
-): void {
+  lifecycle: AgentCrdtDocLifecycle
+): SubscribeRefusalOutcome {
   const code = typeof detail?.code === 'string' ? detail.code : undefined
   lifecycle.onSubscribeRefused(code)
-  if (code === 'schema_version_mismatch') {
-    events.onSyncError?.(
-      typeof detail?.message === 'string' ? detail.message : undefined
-    )
+  if (code !== SCHEMA_VERSION_MISMATCH_CODE) return { shouldNotify: false }
+  return {
+    shouldNotify: true,
+    message: typeof detail?.message === 'string' ? detail.message : undefined
   }
 }
 
@@ -462,12 +470,13 @@ function startAgentCrdtFollower(
       lifecycle.onSubscribeConfirmed()
       resumeHeldOpsIfSubscribed()
     } else {
-      handleSubscribeRefusal(detail, lifecycle, events)
+      const refusal = handleSubscribeRefusal(detail, lifecycle)
       // FE #16637 residual: a refusal is the earliest signal the sender can
       // get that its in-flight batch's doc is gone — don't make it wait out
       // the 10 s result-silence window to notice on its own.
       releaseHeldOps()
       sender.abortIfUnbound()
+      if (refusal.shouldNotify) events.onSyncError?.(refusal.message)
     }
   }
   const onUpdate: EventListener = (event) => {

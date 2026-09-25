@@ -1497,6 +1497,54 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('settles a stranded in-flight batch before notifying onSyncError of a permanent refusal', async () => {
+    vi.useFakeTimers()
+    const { recordDevEvent } = await import('./devPanelLog')
+    const workflowId = ref<string | null>('wf-1')
+    const onSyncError = vi.fn()
+    let enqueue!: ReturnType<
+      typeof useAgentCrdtFollower
+    >['enqueueHumanOperations']
+    const host = defineComponent({
+      setup() {
+        const { enqueueHumanOperations } = useAgentCrdtFollower(
+          workflowId,
+          graphMutations,
+          () => null,
+          ref(true),
+          () => null,
+          { onSyncError }
+        )
+        enqueue = enqueueHumanOperations
+        return () => null
+      }
+    })
+    const { unmount } = render(host)
+
+    enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    await Promise.resolve()
+    expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+
+    bridge().subscribedWorkflowId = null
+    dispatchFrame('doc_subscribed', {
+      ok: false,
+      workflowId: 'wf-1',
+      code: 'schema_version_mismatch'
+    })
+
+    expect(onSyncError).toHaveBeenCalledTimes(1)
+    const settleCallIndex = vi
+      .mocked(recordDevEvent)
+      .mock.calls.findIndex(([event]) => event === 'human_ops_settled')
+    expect(settleCallIndex).toBeGreaterThanOrEqual(0)
+    const settleOrder =
+      vi.mocked(recordDevEvent).mock.invocationCallOrder[settleCallIndex]
+    // onDocReset's precedent: cleanup that could strand held/in-flight ops
+    // runs before notifying consumer code (the toast store) that could throw.
+    expect(settleOrder).toBeLessThan(onSyncError.mock.invocationCallOrder[0])
+    unmount()
+  })
+
   it('a doc switch settles the transmitted in-flight batch for the old doc unconfirmed immediately, without waiting the resend', async () => {
     vi.useFakeTimers()
     const { recordDevEvent } = await import('./devPanelLog')

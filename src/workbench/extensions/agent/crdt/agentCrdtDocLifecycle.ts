@@ -44,7 +44,7 @@ const SUBSCRIBE_RETRY_MAX_ATTEMPTS = 6
 // amount of backoff retry changes that outcome, so this one code skips the
 // retry ladder entirely and latches the same give-up exit an unanswered ack
 // times out into.
-const SCHEMA_VERSION_MISMATCH_CODE = 'schema_version_mismatch'
+export const SCHEMA_VERSION_MISMATCH_CODE = 'schema_version_mismatch'
 
 /**
  * A `doc_subscribe` that left the transport and was never answered is retried
@@ -317,7 +317,15 @@ export class AgentCrdtDocLifecycle {
   }
 
   private giveUpPermanently(code: string): void {
+    // A redelivered/duplicate refusal frame answers nothing new once the
+    // latch is already set — without this guard it would re-run the report
+    // and the caller's `onGaveUp` (toast/telemetry) a second time.
+    if (this.gaveUp) return
     this.gaveUp = true
+    // An already-armed retry from an earlier, retryable refusal must not
+    // survive the permanent latch: its callback checks only `workflowId()`,
+    // not `gaveUp`, so left alone it would still fire a resubscribe later.
+    this.clearSubscribeRetry()
     recordDevEvent(
       'subscribe_refused_permanent',
       { code, terminal: true },
