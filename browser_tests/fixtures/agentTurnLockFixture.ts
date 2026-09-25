@@ -104,14 +104,28 @@ class TurnLockServer {
   private prompt = ''
   private rejected = 0
   private posts = 0
-  private readonly answers: string[][] = []
+  private readonly answerRequests: string[][] = []
+  private committed: string[] | null = null
 
-  get answeredSelections(): string[][] {
-    return this.answers
+  /** Every selection the client sent, in order, accepted or not. */
+  get answerAttempts(): string[][] {
+    return this.answerRequests
   }
 
-  recordAnswer(selected: string[]): void {
-    this.answers.push(selected)
+  /** The selection the server actually stored — first writer wins. */
+  get committedAnswer(): string[] | null {
+    return this.committed
+  }
+
+  /**
+   * Mirrors `server/asks.go`: the first answer CASes onto the row, and every
+   * later one is answered by REPLAYING the stored selection rather than
+   * committing the new one. A fake that accepted the second answer would let a
+   * client that re-offers an already-answered card look correct here.
+   */
+  answerAsk(selected: string[]): void {
+    this.answerRequests.push(selected)
+    this.committed ??= selected
   }
 
   get turnIsStreaming(): boolean {
@@ -194,7 +208,7 @@ async function routeTurnLock(
     const { selected } = route.request().postDataJSON() as {
       selected: string[]
     }
-    server.recordAnswer(selected)
+    server.answerAsk(selected)
     return route.fulfill({ ...jsonRoute({ status: 'answered' }), status: 202 })
   })
 
@@ -270,8 +284,12 @@ export class AgentTurnLockHarness {
     return this.server.rejectedPosts
   }
 
-  answeredSelections(): string[][] {
-    return this.server.answeredSelections
+  answerAttempts(): string[][] {
+    return this.server.answerAttempts
+  }
+
+  committedAnswer(): string[] | null {
+    return this.server.committedAnswer
   }
 
   /** Streams the turn to the point where it is parked on a consent card. */

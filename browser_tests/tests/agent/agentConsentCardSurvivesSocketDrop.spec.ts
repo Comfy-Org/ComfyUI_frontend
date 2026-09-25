@@ -45,7 +45,7 @@ test.describe(
 
       await turnLock.approveButton.click()
 
-      await expect.poll(() => turnLock.answeredSelections()).toEqual([['run']])
+      await expect.poll(() => turnLock.answerAttempts()).toEqual([['run']])
       await expect(turnLock.approvalCard).toHaveCount(0)
     })
 
@@ -56,28 +56,32 @@ test.describe(
 
       await turnLock.cancelApprovalButton.click()
 
-      await expect
-        .poll(() => turnLock.answeredSelections())
-        .toEqual([['cancel']])
+      await expect.poll(() => turnLock.answerAttempts()).toEqual([['cancel']])
       await expect(turnLock.approvalCard).toHaveCount(0)
     })
 
     // The card is deliberately held disabled between a click and the server's
-    // resolution frame. A drop inside that window used to strand it there, so
-    // this is the same defect wearing the opposite symptom.
-    test('re-enables a card whose resolution frame the drop cut off', async ({
+    // resolution frame. A drop inside that window strands it there, and the
+    // card must come off the screen rather than back into service: the server
+    // has already committed this answer, and it replays that stored selection
+    // for any repeat, so a second click would be discarded while the card
+    // vanished as though the new choice had taken effect.
+    test('dismisses a card whose resolution frame the drop cut off', async ({
       turnLock,
       getWebSocket
     }) => {
       const live = await getWebSocket()
       await turnLock.approveButton.click()
-      await expect.poll(() => turnLock.answeredSelections()).toEqual([['run']])
+      await expect.poll(() => turnLock.answerAttempts()).toEqual([['run']])
       await expect(turnLock.approveButton).toBeDisabled()
 
       await live.close()
 
-      await expect(turnLock.approveButton).toBeEnabled()
-      await expect(turnLock.cancelApprovalButton).toBeEnabled()
+      await expect(turnLock.approvalCard).toHaveCount(0)
+      await expect(turnLock.approveButton).toHaveCount(0)
+      await expect(turnLock.cancelApprovalButton).toHaveCount(0)
+      expect(turnLock.committedAnswer()).toEqual(['run'])
+      expect(turnLock.answerAttempts()).toEqual([['run']])
     })
   }
 )

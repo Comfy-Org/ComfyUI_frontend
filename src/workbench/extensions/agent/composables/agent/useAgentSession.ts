@@ -93,6 +93,15 @@ export interface AgentSessionDeps {
 const THREAD_STORAGE_KEY = 'Comfy.Agent.ThreadId'
 const PREPARE_TIMEOUT_MS = 3000
 
+/**
+ * Statuses the answer endpoint uses to say this ask will never be answerable
+ * by this client: 409 once it is resolved, 403 for a thread/workspace or
+ * ownership mismatch, 404 once the ask or its thread is gone. Retrying any of
+ * them just reproduces it, so the card is dropped rather than re-offered. 5xx
+ * is deliberately absent — the server documents it as retryable.
+ */
+const TERMINAL_ANSWER_STATUSES = new Set([403, 404, 409])
+
 let sessionGeneration = 0
 
 /**
@@ -136,11 +145,23 @@ export function useAgentSession(deps: AgentSessionDeps) {
   const promptEditState = ref<PromptEditState>({ phase: 'idle' })
   const sending = ref(false)
   const answeringAskIds = ref<ReadonlySet<string>>(new Set())
+  /**
+   * PM-1658: the answers within `answeringAskIds` the server has already
+   * accepted, still holding their card disabled while they wait on the
+   * resolution frame. Tracked apart from the ones still in flight because the
+   * two must not be recovered the same way: the server replays the STORED
+   * selection for any repeat answer, so re-offering a committed card takes a
+   * second click and discards it while looking like it landed.
+   */
+  const committedAskIds = new Set<string>()
 
   function setAskAnswering(askId: string, answering: boolean): void {
     const next = new Set(answeringAskIds.value)
     if (answering) next.add(askId)
-    else next.delete(askId)
+    else {
+      next.delete(askId)
+      committedAskIds.delete(askId)
+    }
     answeringAskIds.value = next
   }
 
@@ -619,10 +640,18 @@ export function useAgentSession(deps: AgentSessionDeps) {
     setAskAnswering(askId, true)
     try {
       await rest.answerAsk(currentThreadId, askId, [selection])
+      committedAskIds.add(askId)
       dismissDetachedAsk(askId)
     } catch (error) {
       setAskAnswering(askId, false)
-      if (error instanceof AgentApiError && error.status === 409) {
+      if (
+        error instanceof AgentApiError &&
+        TERMINAL_ANSWER_STATUSES.has(error.status)
+      ) {
+        // A 409 is the ordinary double-click; the rest mean this client was
+        // never able to answer this ask, which is worth knowing about.
+        if (error.status !== 409)
+          reportError(error, { errorType: 'agent_ask_answer_refused' })
         const messageId = conversationStore.activeTurnId
         if (messageId === null || !conversationStore.activeTurnOwnsAsk(askId))
           conversationStore.resolveDetachedAsk(askId)
@@ -640,7 +669,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
         return
       }
       reportError(error, { errorType: 'agent_ask_answer_failed' })
-      pushError(error instanceof Error ? error.message : String(error))
+      // A rejected request carries a server message worth showing; an aborted
+      // or timed-out one carries only transport wording.
+      pushError(
+        error instanceof AgentApiError
+          ? error.message
+          : i18n.global.t('agent.runApproval.answerFailed')
+      )
     }
   }
 
@@ -748,12 +783,29 @@ export function useAgentSession(deps: AgentSessionDeps) {
     // interrupted. An initial `false` (socket not open yet) is not a
     // reconnect and must not abort a turn that survived a remount.
     if (!everLive) return
-    // PM-1658: the socket that would carry an answered card's resolution frame
-    // is gone, so an answer still waiting on one has nothing left to re-enable
-    // its card. Release them here rather than strand the card disabled.
-    if (answeringAskIds.value.size > 0) answeringAskIds.value = new Set()
     conversationStore.abortActiveTurn()
     conversationStore.dropBackgroundTurns()
+    // After the teardown, never before: disposing a transport republishes its
+    // own copy of the message, which would put a dismissed card back.
+    dismissCommittedAsks()
+  }
+
+  /**
+   * PM-1658: the resolution frame that would release an accepted answer rides
+   * the socket that just went down, so it is never arriving. Dismiss those
+   * cards rather than re-offer them — the answer is already committed, and a
+   * second click would be replayed by the server as the FIRST selection while
+   * the card disappears as though the new one took effect. Answers still in
+   * flight are left disabled on purpose: their own response settles them, and
+   * `answerAsk` carries a timeout so one that never answers still does.
+   */
+  function dismissCommittedAsks(): void {
+    const committed = Array.from(committedAskIds)
+    committedAskIds.clear()
+    for (const askId of committed) {
+      conversationStore.resolveDetachedAsk(askId)
+      setAskAnswering(askId, false)
+    }
   }
 
   const isSending = computed(() => sending.value)

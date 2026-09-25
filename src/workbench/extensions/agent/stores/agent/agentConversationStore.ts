@@ -166,14 +166,21 @@ export const useAgentConversationStore = defineStore(
      * card whose own turn is already gone.
      */
     function resolveDetachedAsk(askId: string): void {
-      messages.value = messages.value.map((message) => {
-        const parts = message.parts.filter(
+      const withoutAsk = (parts: AssistantMessage['parts']) =>
+        parts.filter(
           (part) => part.type !== 'runApproval' || part.askId !== askId
         )
+      messages.value = messages.value.map((message) => {
+        const parts = withoutAsk(message.parts)
         return parts.length === message.parts.length
           ? message
           : { ...message, parts }
       })
+      // A stashed turn holds the transport's own mutable message, not the
+      // published clone above, so resumeBackgroundTurn would otherwise put the
+      // dismissed card back on screen.
+      for (const entry of backgroundTurns.values())
+        entry.message.parts = withoutAsk(entry.message.parts)
     }
 
     function startTurn(turnId: TurnId): void {

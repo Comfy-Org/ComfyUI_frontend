@@ -615,15 +615,82 @@ describe('useAgentSession (v1 composition root)', () => {
     // The mirror image of the same defect: answering while the socket is live
     // deliberately holds the card disabled until the canonical resolution frame
     // arrives, so a drop inside that window strands it disabled instead.
-    it('re-enables an answer still waiting on a frame the dropped socket cannot deliver', async () => {
+    it('dismisses an accepted answer whose frame the dropped socket cannot deliver', async () => {
       const { session, status } = await parkedOnApproval()
       await session.answerAsk('turn-1:call-1', 'run')
       expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(true)
+      expect(cardOnScreen()).toBe(true)
 
       status(false)
 
-      expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(false)
+      // Dismissed rather than re-offered. The server has committed 'run' and
+      // replays that selection for any repeat, so putting the card back would
+      // take a second click and discard it while looking like it landed.
+      expect(cardOnScreen()).toBe(false)
+      expect(session.answeringAskIds.value.size).toBe(0)
     })
+
+    it('holds an answer still in flight when the socket drops, then dismisses it', async () => {
+      let accept: ((value: AgentAnswerAccepted) => void) | undefined
+      const answerAsk = vi.fn(
+        () =>
+          new Promise<AgentAnswerAccepted>((resolve) => {
+            accept = resolve
+          })
+      )
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({
+        rest: fakeRest({ answerAsk }),
+        events: source
+      })
+      session.start()
+      status(true)
+      await session.sendMessage('build it and run it')
+      emit(runApproval('msg-1'))
+      const pending = session.answerAsk('turn-1:call-1', 'run')
+
+      status(false)
+
+      // Still disabled: this request may yet reach the server, and re-offering
+      // the card invites a second answer the server would discard.
+      expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(true)
+
+      accept?.({ status: 'answered' })
+      await pending
+
+      expect(cardOnScreen()).toBe(false)
+      expect(session.answeringAskIds.value.size).toBe(0)
+    })
+
+    it.for([403, 404] as const)(
+      'dismisses and reports a card the server refuses with %i',
+      async (status) => {
+        const answerAsk = vi
+          .fn<AgentRestClient['answerAsk']>()
+          .mockRejectedValue(
+            new AgentApiError('no longer yours', status, undefined)
+          )
+        const events = fakeEvents()
+        const session = useAgentSession({
+          rest: fakeRest({ answerAsk }),
+          events: events.source
+        })
+        session.start()
+        events.status(true)
+        await session.sendMessage('build it and run it')
+        events.emit(runApproval('msg-1'))
+
+        await session.answerAsk('turn-1:call-1', 'run')
+
+        // Retrying reproduces it, so the card goes rather than sitting there
+        // reporting a server string at every click.
+        expect(cardOnScreen()).toBe(false)
+        expect(session.notices.value).toEqual([])
+        expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
+          errorType: 'agent_ask_answer_refused'
+        })
+      }
+    )
 
     // startTurn aborts whatever turn preceded it, so a card left over from the
     // dropped turn is detached by the NEW turn too — and an ask_resolved frame

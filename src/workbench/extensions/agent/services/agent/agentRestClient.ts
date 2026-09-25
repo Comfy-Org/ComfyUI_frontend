@@ -29,6 +29,13 @@ import type {
 
 const CLOUD_WORKFLOW_PAGE_SIZE = 100
 
+/**
+ * PM-1658: bounds the one request a consent card's buttons wait on. The card
+ * is held disabled from the click until this settles, and a socket-level hang
+ * has no other continuation — without a deadline it stays disabled for good.
+ */
+const ANSWER_ASK_TIMEOUT_MS = 30_000
+
 export class AgentApiError extends Error {
   readonly status: number
   readonly body: unknown
@@ -454,7 +461,10 @@ export function createAgentRestClient() {
   ): Promise<AgentAnswerAccepted> {
     return request(
       `/agent/threads/${encodeURIComponent(threadId)}/asks/${encodeURIComponent(askId)}/answer`,
-      jsonInit('POST', { selected }),
+      {
+        ...jsonInit('POST', { selected }),
+        signal: AbortSignal.timeout(ANSWER_ASK_TIMEOUT_MS)
+      },
       zAgentAnswerAccepted
     )
   }
