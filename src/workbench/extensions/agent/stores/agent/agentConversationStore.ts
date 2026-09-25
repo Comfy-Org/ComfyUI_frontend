@@ -165,7 +165,15 @@ export const useAgentConversationStore = defineStore(
      * to dismiss it with. Live turns keep using `ingest` — this is only for a
      * card whose own turn is already gone.
      */
-    function resolveDetachedAsk(askId: string): void {
+    /**
+     * PM-1658: retires a run-approval card that must never be offered again,
+     * the way an `agent_ask_resolved` frame would. `ingest` cannot serve this:
+     * it routes only to the active turn, and the cases this exists for are
+     * exactly the ones where that turn is gone. Every holder of the message
+     * has to be told, or whichever one is asked to republish next puts the
+     * card back.
+     */
+    function retireAsk(askId: string): void {
       const withoutAsk = (parts: AssistantMessage['parts']) =>
         parts.filter(
           (part) => part.type !== 'runApproval' || part.askId !== askId
@@ -176,11 +184,57 @@ export const useAgentConversationStore = defineStore(
           ? message
           : { ...message, parts }
       })
-      // A stashed turn holds the transport's own mutable message, not the
-      // published clone above, so resumeBackgroundTurn would otherwise put the
-      // dismissed card back on screen.
+      transport?.dropAskPart(askId)
+      for (const settledTransport of settledActiveTransports)
+        settledTransport.dropAskPart(askId)
       for (const entry of backgroundTurns.values())
-        entry.message.parts = withoutAsk(entry.message.parts)
+        entry.transport.dropAskPart(askId)
+      setAskAnswering(askId, false)
+    }
+
+    /**
+     * PM-1658: the answers the server has accepted, whose card is still held
+     * disabled waiting on the resolution frame. Kept apart from the ones still
+     * in flight because the two cannot be recovered the same way — the server
+     * replays the STORED selection for any repeat answer, so re-offering a
+     * committed card takes a second click and discards it while looking like
+     * it landed. Lives here rather than in the session composable so a panel
+     * remount cannot lose it and re-enable the card.
+     */
+    const committedAskIds = new Set<string>()
+    const answeringAskIds = ref<ReadonlySet<string>>(new Set())
+
+    function setAskAnswering(askId: string, answering: boolean): void {
+      const next = new Set(answeringAskIds.value)
+      if (answering) next.add(askId)
+      else {
+        next.delete(askId)
+        committedAskIds.delete(askId)
+      }
+      answeringAskIds.value = next
+    }
+
+    /**
+     * Records that the server accepted this answer. A card whose turn is still
+     * attached keeps waiting for the canonical frame; a detached one has none
+     * coming, so it is retired now.
+     */
+    function commitAsk(askId: string): void {
+      committedAskIds.add(askId)
+      if (!activeTurnOwnsAsk(askId)) retireAsk(askId)
+    }
+
+    /**
+     * PM-1658: the socket carrying every pending resolution frame has gone, so
+     * accepted answers will never be released by one. Retire their cards
+     * rather than re-offer them. Answers still in flight keep their card
+     * disabled on purpose — their own response, or `answerAsk`'s deadline,
+     * settles those.
+     */
+    function dismissCommittedAsks(): void {
+      const committed = Array.from(committedAskIds)
+      committedAskIds.clear()
+      for (const askId of committed) retireAsk(askId)
     }
 
     function startTurn(turnId: TurnId): void {
@@ -525,8 +579,11 @@ export const useAgentConversationStore = defineStore(
       recordFailedSend,
       recordPaywall,
       setPaywallsResolved,
-      resolveDetachedAsk,
-      activeTurnOwnsAsk,
+      answeringAskIds,
+      setAskAnswering,
+      commitAsk,
+      retireAsk,
+      dismissCommittedAsks,
       startTurn,
       ingest,
       setCanvasSyncGate,

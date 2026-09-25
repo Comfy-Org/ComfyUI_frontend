@@ -144,26 +144,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   const notices = ref<SessionNotice[]>([])
   const promptEditState = ref<PromptEditState>({ phase: 'idle' })
   const sending = ref(false)
-  const answeringAskIds = ref<ReadonlySet<string>>(new Set())
-  /**
-   * PM-1658: the answers within `answeringAskIds` the server has already
-   * accepted, still holding their card disabled while they wait on the
-   * resolution frame. Tracked apart from the ones still in flight because the
-   * two must not be recovered the same way: the server replays the STORED
-   * selection for any repeat answer, so re-offering a committed card takes a
-   * second click and discards it while looking like it landed.
-   */
-  const committedAskIds = new Set<string>()
-
-  function setAskAnswering(askId: string, answering: boolean): void {
-    const next = new Set(answeringAskIds.value)
-    if (answering) next.add(askId)
-    else {
-      next.delete(askId)
-      committedAskIds.delete(askId)
-    }
-    answeringAskIds.value = next
-  }
+  const answeringAskIds = computed(() => conversationStore.answeringAskIds)
 
   function nextLocalErrorId(): TurnId {
     return toTurnId(`local-error-${createUuidv4()}`)
@@ -637,13 +618,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
     // interrupt timeout precisely so it can be answered long after the turn
     // that raised it stopped streaming to this client.
     if (answeringAskIds.value.has(askId)) return
-    setAskAnswering(askId, true)
+    conversationStore.setAskAnswering(askId, true)
     try {
       await rest.answerAsk(currentThreadId, askId, [selection])
-      committedAskIds.add(askId)
-      dismissDetachedAsk(askId)
+      conversationStore.commitAsk(askId)
     } catch (error) {
-      setAskAnswering(askId, false)
       if (
         error instanceof AgentApiError &&
         TERMINAL_ANSWER_STATUSES.has(error.status)
@@ -652,45 +631,21 @@ export function useAgentSession(deps: AgentSessionDeps) {
         // never able to answer this ask, which is worth knowing about.
         if (error.status !== 409)
           reportError(error, { errorType: 'agent_ask_answer_refused' })
-        const messageId = conversationStore.activeTurnId
-        if (messageId === null || !conversationStore.activeTurnOwnsAsk(askId))
-          conversationStore.resolveDetachedAsk(askId)
-        else
-          conversationStore.ingest({
-            type: 'agent_ask_resolved',
-            data: {
-              thread_id: currentThreadId,
-              message_id: messageId,
-              ask_id: askId,
-              status: 'answered',
-              selected: null
-            }
-          })
+        conversationStore.retireAsk(askId)
         return
       }
       reportError(error, { errorType: 'agent_ask_answer_failed' })
-      // A rejected request carries a server message worth showing; an aborted
-      // or timed-out one carries only transport wording.
-      pushError(
-        error instanceof AgentApiError
-          ? error.message
-          : i18n.global.t('agent.runApproval.answerFailed')
-      )
+      // The server CASes the answer onto the row BEFORE it wakes the turn and
+      // reports a 500 for the wake alone, so a failure here may already have
+      // authorized the run. Putting both buttons back would invite the
+      // opposite click, which the server answers by replaying THIS selection
+      // while the card disappears as though the new one had taken effect — on
+      // a spend authorization, the wrong way to be wrong. Retire the card and
+      // say the outcome is unknown instead. An answer that never landed leaves
+      // the turn parked, which the server's own approval backstop releases.
+      conversationStore.retireAsk(askId)
+      pushError(i18n.global.t('agent.runApproval.answerUncertain'))
     }
-  }
-
-  /**
-   * PM-1658: an answered card is normally left disabled until the server's
-   * `agent_ask_resolved` frame arrives and drops it, which is why the live
-   * path below does nothing. That frame routes through the transport of the
-   * turn holding the card, so once a socket drop or a newer turn has detached
-   * that message nothing can ever deliver it — dismiss the card here instead
-   * of leaving it on screen, answered and disabled, for good.
-   */
-  function dismissDetachedAsk(askId: string): void {
-    if (conversationStore.activeTurnOwnsAsk(askId)) return
-    setAskAnswering(askId, false)
-    conversationStore.resolveDetachedAsk(askId)
   }
 
   let loadGeneration = 0
@@ -747,7 +702,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
     const event = parsed.data
     if (event.type === 'agent_ask_resolved')
-      setAskAnswering(event.data.ask_id, false)
+      conversationStore.setAskAnswering(event.data.ask_id, false)
     switch (event.type) {
       case 'agent_active_tab':
         // Every thread records the link in its own transcript; only the thread
@@ -787,25 +742,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     conversationStore.dropBackgroundTurns()
     // After the teardown, never before: disposing a transport republishes its
     // own copy of the message, which would put a dismissed card back.
-    dismissCommittedAsks()
-  }
-
-  /**
-   * PM-1658: the resolution frame that would release an accepted answer rides
-   * the socket that just went down, so it is never arriving. Dismiss those
-   * cards rather than re-offer them — the answer is already committed, and a
-   * second click would be replayed by the server as the FIRST selection while
-   * the card disappears as though the new one took effect. Answers still in
-   * flight are left disabled on purpose: their own response settles them, and
-   * `answerAsk` carries a timeout so one that never answers still does.
-   */
-  function dismissCommittedAsks(): void {
-    const committed = Array.from(committedAskIds)
-    committedAskIds.clear()
-    for (const askId of committed) {
-      conversationStore.resolveDetachedAsk(askId)
-      setAskAnswering(askId, false)
-    }
+    conversationStore.dismissCommittedAsks()
   }
 
   const isSending = computed(() => sending.value)

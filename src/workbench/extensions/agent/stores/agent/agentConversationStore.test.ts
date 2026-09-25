@@ -487,7 +487,7 @@ describe('useAgentConversationStore', () => {
     expect(store.isStreaming).toBe(false)
   })
 
-  it('resolveDetachedAsk drops a card that ingest can no longer route a resolution to', () => {
+  it('retireAsk drops a card that ingest can no longer route a resolution to', () => {
     const store = useAgentConversationStore()
     store.setThreadId('th')
     store.hydrate([
@@ -529,7 +529,7 @@ describe('useAgentConversationStore', () => {
     store.ingest(askResolved('assistant-message-1', 'turn-1:call-1'))
     expect(hasCard()).toBe(true)
 
-    store.resolveDetachedAsk('turn-1:call-1')
+    store.retireAsk('turn-1:call-1')
 
     expect(hasCard()).toBe(false)
     expect(store.entries.map((entry) => entry.role)).toEqual([

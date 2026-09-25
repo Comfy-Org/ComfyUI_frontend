@@ -68,10 +68,19 @@ test.describe(
     // vanished as though the new choice had taken effect.
     test('dismisses a card whose resolution frame the drop cut off', async ({
       turnLock,
-      getWebSocket
+      getWebSocket,
+      page
     }) => {
       const live = await getWebSocket()
+      // Awaited before the close so the answer is provably COMMITTED, not
+      // still in flight — otherwise the card could be dismissed by the
+      // in-flight path and this would pass without covering its subject.
+      const accepted = page.waitForResponse(
+        (response) =>
+          response.url().includes('/answer') && response.status() === 202
+      )
       await turnLock.approveButton.click()
+      await accepted
       await expect.poll(() => turnLock.answerAttempts()).toEqual([['run']])
       await expect(turnLock.approveButton).toBeDisabled()
 

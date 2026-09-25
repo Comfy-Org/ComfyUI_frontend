@@ -5231,7 +5231,8 @@
       "thisWorkflow": "this workflow",
       "cancel": "Cancel",
       "run": "Run",
-      "answerFailed": "Could not send your answer. Reload the page and try again."
+      "answerFailed": "Could not send your answer. Reload the page and try again.",
+      "answerUncertain": "Could not confirm your answer reached the agent. It may still have been applied — check the chat before asking again."
     },
     "dismiss": "Dismiss",
     "latest": "Latest",

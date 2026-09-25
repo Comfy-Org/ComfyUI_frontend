@@ -30,9 +30,10 @@ import type {
 const CLOUD_WORKFLOW_PAGE_SIZE = 100
 
 /**
- * PM-1658: bounds the one request a consent card's buttons wait on. The card
- * is held disabled from the click until this settles, and a socket-level hang
- * has no other continuation — without a deadline it stays disabled for good.
+ * PM-1658: tightens `fetchApi`'s shared 60s header deadline for the one
+ * request a consent card's buttons wait on, since the card is held disabled
+ * from the click until this settles. Goes through `timeoutMs` rather than a
+ * raw signal so a timeout still raises fetchApi's own telemetry.
  */
 const ANSWER_ASK_TIMEOUT_MS = 30_000
 
@@ -461,10 +462,7 @@ export function createAgentRestClient() {
   ): Promise<AgentAnswerAccepted> {
     return request(
       `/agent/threads/${encodeURIComponent(threadId)}/asks/${encodeURIComponent(askId)}/answer`,
-      {
-        ...jsonInit('POST', { selected }),
-        signal: AbortSignal.timeout(ANSWER_ASK_TIMEOUT_MS)
-      },
+      { ...jsonInit('POST', { selected }), timeoutMs: ANSWER_ASK_TIMEOUT_MS },
       zAgentAnswerAccepted
     )
   }

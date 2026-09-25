@@ -505,7 +505,12 @@ describe('useAgentSession (v1 composition root)', () => {
     ).toBe(false)
   })
 
-  it('retains and re-enables an approval after a non-409 answer failure', async () => {
+  // A 500 here is ambiguous, not a clean miss: `asks.go` CASes the answer onto
+  // the row and only then tries to wake the turn, reporting 500 for the wake
+  // alone. Re-offering the card would invite the opposite click, which the
+  // server answers by replaying the FIRST selection while the card disappears
+  // as though the new one had landed. So the card is retired, not retried.
+  it('retires an approval after an answer failure that may still have landed', async () => {
     const answerAsk = vi
       .fn<AgentRestClient['answerAsk']>()
       .mockRejectedValue(new AgentApiError('backend blip', 500, undefined))
@@ -523,24 +528,26 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
       errorType: 'agent_ask_answer_failed'
     })
+    // Not the raw server string: the user is told the outcome is unknown,
+    // because it is.
     expect(session.notices.value).toEqual([
-      { level: 'error', text: 'backend blip' }
+      { level: 'error', text: expect.not.stringContaining('backend blip') }
     ])
     expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(false)
     expect(
       useAgentConversationStore().messages[0].parts.some(
         (part) => part.type === 'runApproval'
       )
-    ).toBe(true)
+    ).toBe(false)
   })
 
   // PM-1658. A live->down socket transition aborts the active turn, which
   // nulls activeTurnId and disposes the transport, while the turn's parts -- a
-  // pending consent card among them -- stay on screen. Every case below is
-  // about a card in that detached state. It is still rendered and still
-  // enabled, so a click on it can never be a no-op, and nothing that answers it
-  // may leave it on screen with no way to release it.
-  describe('a consent card detached by a socket drop', () => {
+  // pending consent card among them -- stay on screen. Most cases below put
+  // the card in that detached state. Together they hold the whole answer path
+  // to two rules: a click on a rendered card is never a no-op, and nothing
+  // that answers it may leave it on screen with no way to release it.
+  describe('answering a consent card', () => {
     const parkedOnApproval = async () => {
       const answerAsk = vi.fn(
         async (): Promise<AgentAnswerAccepted> => ({ status: 'answered' })
@@ -723,6 +730,24 @@ describe('useAgentSession (v1 composition root)', () => {
 
       expect(cardOnScreen()).toBe(false)
       expect(session.answeringAskIds.value.size).toBe(0)
+    })
+
+    // The card lives in the conversation store, which outlives the panel, so
+    // the record of having answered it has to as well. A remount that forgot
+    // would render the surviving card enabled and take a second answer the
+    // server would discard.
+    it('keeps a committed answer locked across a panel remount', async () => {
+      const { session } = await parkedOnApproval()
+      await session.answerAsk('turn-1:call-1', 'run')
+      expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(true)
+      expect(cardOnScreen()).toBe(true)
+
+      const remounted = useAgentSession({
+        rest: fakeRest(),
+        events: fakeEvents().source
+      })
+
+      expect(remounted.answeringAskIds.value.has('turn-1:call-1')).toBe(true)
     })
 
     it('reports a click it has no thread to send on instead of swallowing it', async () => {
