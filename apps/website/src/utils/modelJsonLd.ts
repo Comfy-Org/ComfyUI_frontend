@@ -24,7 +24,7 @@ const usdFormat = new Intl.NumberFormat('en-US', {
 })
 
 function offerFor(price: ModelPageJsonLdInput['price']) {
-  if (!price || !(price.usd > 0)) return undefined
+  if (!price || !Number.isFinite(price.usd) || price.usd <= 0) return undefined
   const amount = usdFormat.format(price.usd)
   return {
     '@type': 'Offer',

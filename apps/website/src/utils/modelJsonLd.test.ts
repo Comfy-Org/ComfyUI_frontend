@@ -90,7 +90,9 @@ describe('modelPageJsonLd', () => {
     ['no price', undefined, undefined],
     ['a zero price', 0, undefined],
     ['a sub-cent price, kept above $0', 0.57 / 211, '0.002701'],
-    ['a dollar price, to the cent', 1.5, '1.5']
+    ['a non-finite price', Infinity, undefined],
+    ['a dollar price, to the cent', 1.5, '1.5'],
+    ['a large price, to the cent', 1234.5678, '1234.57']
   ] as const)('handles %s', ([, usd, price]) => {
     const node = software({
       price: usd === undefined ? undefined : { usd, settings: '1024x1024' }
