@@ -9,7 +9,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import type {
+  ISerialisedNode,
+  LGraphCanvas
+} from '@/lib/litegraph/src/litegraph'
 import { reportError } from '@/platform/telemetry/reportError'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
@@ -38,9 +41,28 @@ class TestSink extends LGraphNode {
   }
 }
 
+/** Keeps the definition's output names through `configure`, as `ComfyNode` does. */
+class TestDefinedSource extends LGraphNode {
+  constructor() {
+    super('Test Defined Source')
+    this.addOutput('image', 'IMAGE')
+  }
+
+  override configure(info: ISerialisedNode): void {
+    super.configure({
+      ...info,
+      outputs: info.outputs?.map((output, index) => ({
+        ...output,
+        name: this.outputs[index]?.name ?? output.name
+      }))
+    })
+  }
+}
+
 const CATALOG: WidgetCatalog = {
   types: {
     TestSource: { widget_order: ['steps'] },
+    TestDefinedSource: { widget_order: [] },
     TestSink: { widget_order: [] }
   }
 }
@@ -87,6 +109,7 @@ function setup(
 
 beforeEach(() => {
   LiteGraph.registerNodeType('TestSource', TestSource)
+  LiteGraph.registerNodeType('TestDefinedSource', TestDefinedSource)
   LiteGraph.registerNodeType('TestSink', TestSink)
 })
 
@@ -224,6 +247,30 @@ describe('LiveGraphApplier', () => {
     if (!origin || !target) throw new Error('nodes 3 and 4 were not created')
 
     expect(origin.connect(0, target, 0)?.id).toBeGreaterThan(40)
+  })
+
+  it('connects a link from an output whose document name predates the definition, by position', () => {
+    const { graph, applyCollected } = setup({
+      nodes: [
+        {
+          ...sourceNode(1, { type: 'TestDefinedSource' }),
+          outputs: [{ name: 'IMAGE', type: 'IMAGE', links: [] }],
+          widgets_values: []
+        },
+        sinkNode(2)
+      ],
+      links: [[7, 1, 0, 2, 0, 'IMAGE']]
+    })
+
+    applyCollected()
+
+    expect(graph.getNodeById(toNodeId(1))?.outputs[0]?.name).toBe('image')
+    expect(graph.links.get(toLinkId(7))).toMatchObject({
+      origin_id: toNodeId(1),
+      origin_slot: 0,
+      target_id: toNodeId(2)
+    })
+    expect(reportError).not.toHaveBeenCalled()
   })
 
   it('removes a live link whose document entry now names a slot the node lacks', () => {

@@ -752,12 +752,14 @@ export class LiveGraphApplier {
     const originSlot = resolveSlot(
       origin.outputs.map((output) => output.name),
       readDocSlotName(doc, link.origin, 'outputs', link.originSlot),
-      link.originSlot
+      link.originSlot,
+      'positional'
     )
     const targetSlot = resolveSlot(
       target.inputs.map((input) => input.name),
       readDocSlotName(doc, link.target, 'inputs', link.targetSlot),
-      link.targetSlot
+      link.targetSlot,
+      'none'
     )
     if (originSlot < 0 || targetSlot < 0) {
       if (graph.links.has(link.id)) graph.removeLink(link.id)
@@ -797,11 +799,6 @@ export class LiveGraphApplier {
   }
 }
 
-/**
- * Resolves a document slot to a live slot index: by name when the document
- * names the slot (a name the live node lacks is a real mismatch, never a
- * positional guess), otherwise by position when that position exists live.
- */
 function isLinkPresent(
   graph: LGraph,
   origin: LGraphNode,
@@ -860,12 +857,24 @@ function applyAppearance(node: LGraphNode, source: ISerialisedNode): void {
   }
 }
 
+/**
+ * Resolves a document slot to a live slot index, by name first. `ComfyNode.configure`
+ * keeps every document input name live (definition or extra), so an input
+ * name the live node lacks is a real mismatch and never a positional guess.
+ * It matches outputs by index and lets the definition's names win over the
+ * document's, so an output resolves by position when its document name is
+ * stale.
+ */
 function resolveSlot(
   liveNames: readonly string[],
   docName: string | undefined,
-  docIndex: number
+  docIndex: number,
+  fallback: 'positional' | 'none'
 ): number {
-  if (docName !== undefined) return liveNames.indexOf(docName)
+  const byName = docName === undefined ? -1 : liveNames.indexOf(docName)
+  if (byName >= 0 || (docName !== undefined && fallback === 'none')) {
+    return byName
+  }
   return docIndex < liveNames.length ? docIndex : -1
 }
 
