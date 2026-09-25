@@ -591,6 +591,30 @@ describe('CinematicStudio', () => {
     )
   })
 
+  it('keeps the scene unreferenced when a take can no longer be read', async () => {
+    fetchData.mockImplementation(async (input) =>
+      String(input).startsWith('blob:')
+        ? Promise.reject(new TypeError('Revoked'))
+        : servePageData(input)
+    )
+    vi.mocked(router_render).mockImplementation(async (slug) => rendered(slug))
+    const user = renderStudio()
+    await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+    await user.click(generateButton())
+    await screen.findByAltText(/A diner at dawn/)
+
+    await user.click(
+      screen.getByRole('button', { name: tc('cinematic.stage.useAsReference') })
+    )
+    await user.click(
+      screen.getByRole('button', { name: tc('cinematic.stage.again') })
+    )
+
+    await vi.waitFor(() => expect(router_render).toHaveBeenCalledTimes(2))
+    const [, parameters] = vi.mocked(router_render).mock.calls[1]
+    expect(parameters?.reference_images).toBeUndefined()
+  })
+
   it('renders sample frames in demo mode without calling the Router', async () => {
     window.history.replaceState(null, '', '/cinematic-studio?demo=1')
     signedIn.value = undefined
