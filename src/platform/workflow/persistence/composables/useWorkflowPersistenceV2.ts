@@ -32,9 +32,7 @@ import {
 import { PERSIST_DEBOUNCE_MS } from '../base/draftTypes'
 import type { StartupOutcome } from '../base/draftTypes'
 import {
-  clearAllWorkspaceStorage,
   completeWorkflowLogoutTransition,
-  prepareWorkflowLogoutTransition,
   registerWorkflowPersistenceFlush
 } from '../base/storageIO'
 import { migrateV1toV2 } from '../migration/migrateV1toV2'
@@ -58,7 +56,7 @@ export function useWorkflowPersistenceV2() {
   const draftStore = useWorkflowDraftStoreV2()
   const tabState = useWorkflowTabState()
   const toast = useToast()
-  const { onUserLogout, onUserResolved } = useCurrentUser()
+  const { onUserResolved } = useCurrentUser()
   const teamWorkspaceStore = useTeamWorkspaceStore()
   let stopWorkspaceReadinessWatcher: (() => void) | undefined
 
@@ -147,13 +145,17 @@ export function useWorkflowPersistenceV2() {
   )
   window.addEventListener('pagehide', flushPendingPersistence)
 
-  onUserLogout(() => {
-    if (!isCloud) return
-    stopPendingWorkspaceReadinessWatcher()
-    debouncedPersist.cancel()
-    prepareWorkflowLogoutTransition()
-    clearAllWorkspaceStorage()
-  })
+  // Sign-out cleanup is NOT driven from here. `resolvedUserInfo` reports the
+  // auth state this window observes, not an action this window took, and
+  // Firebase's browserLocalPersistence syncs that state between windows over
+  // `storage` events: a second window that merely boots rewrites the shared
+  // `firebase:authUser:*` record, and this window sees its user drop to null
+  // without anyone having signed out. Clearing and fencing on that signal
+  // destroyed every draft in the browser and left writes fenced with nothing
+  // left to release them (the release below waits on a workspace init that
+  // only a full boot re-runs). The sign-out command owns both steps already
+  // and runs them synchronously, before navigation, with the user's intent in
+  // hand - see useAuthActions.logout.
   onUserResolved(() => {
     if (!isCloud) return
     stopPendingWorkspaceReadinessWatcher()
