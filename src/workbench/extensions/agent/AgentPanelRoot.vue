@@ -199,6 +199,7 @@ const {
   isSelecting: workflowSelecting,
   selectingTarget,
   savingReference,
+  onVisibleWorkflowChanged,
   selectTarget: onSelectWorkflowTarget,
   selectReference: onSelectWorkflowReference,
   restoreTarget: onWorkflowRestored,
@@ -437,6 +438,7 @@ const {
     get: () => composerStore.nodes,
     set: composerStore.setNodes
   }),
+  onNodesAdded: agentPanelStore.retainWorkflowTarget,
   retainWhenNotLive: true,
   selection: selectedNodes,
   enabled: () => agentEnabled.value && selectedTarget.value !== null,
@@ -606,6 +608,7 @@ const {
   rest,
   events,
   workflow: {
+    initialize: agentPanelStore.initializeTargetTracking,
     current: targetWorkflowTurnContext,
     adopted: onWorkflowAdopted,
     restored: onWorkflowRestored,
@@ -837,6 +840,16 @@ async function onNavigateToReferenceWorkflow(
   }
 }
 
+async function onShowTarget(): Promise<void> {
+  const target = selectedTarget.value
+  if (target === null) return
+  try {
+    if (!(await workflowService.openWorkflow(target))) warnWorkflowUnavailable()
+  } catch {
+    warnWorkflowUnavailable()
+  }
+}
+
 function agentTabFilename(name: string | undefined): string | undefined {
   const cleaned = [
     ...(name ?? '')
@@ -921,7 +934,6 @@ async function onAgentActiveTab(
   }
 }
 
-start()
 void refreshCloudWorkflowIds()
 onBeforeUnmount(() => {
   ++activeTabGeneration
@@ -992,7 +1004,7 @@ void refreshHistory()
 async function onSelectHistory(id: string): Promise<void> {
   composerStore.invalidateSubmission()
   cancelWorkflowSelection()
-  agentPanelStore.resetWorkflowTarget()
+  agentPanelStore.beginWorkflowRestoration()
   exitNodeSelectionMode()
   await loadThread(id)
   void refreshHistory()
@@ -1046,6 +1058,7 @@ const coachSteps = computed<CoachStep[]>(() => [
 
 const { submit: onSend } = useAgentDraftSubmission({
   canSubmit: () => !workflowSelecting.value && !isSending.value,
+  onSubmit: agentPanelStore.retainWorkflowTarget,
   target: () => selectedTarget.value,
   editableWorkflowId: () => editableWorkflowId.value,
   selection: {
@@ -1092,8 +1105,9 @@ function onNewChat(): void {
   exitNodeSelectionMode()
   composerStore.setWorkflowReferences([])
   composerStore.resetPromptHistory()
-  agentPanelStore.setWorkflowTarget(workflowStore.activeWorkflow)
   newChat()
+  if (selectionTags.value.length) agentPanelStore.retainWorkflowTarget()
+  else agentPanelStore.startFollowingVisibleWorkflow()
 }
 
 const panelRef = ref<InstanceType<typeof AgentPanel>>()
@@ -1144,8 +1158,6 @@ watch(
   }
 )
 
-watch(() => workflowStore.activeWorkflow, exitNodeSelectionMode)
-
 watch(
   selectedTarget,
   (target, previous) => {
@@ -1157,6 +1169,19 @@ watch(
   },
   { flush: 'sync' }
 )
+
+watch(
+  () => workflowStore.activeWorkflow,
+  () => {
+    exitNodeSelectionMode()
+    onVisibleWorkflowChanged()
+  },
+  { flush: 'sync' }
+)
+
+// Target startup is an explicit session event, not a read of a thread ID that
+// happens to have been assigned by start(). Register scope cleanup first.
+start()
 
 watch(
   () => canvasStore.currentGraph,
@@ -1400,6 +1425,7 @@ function onPanelDrop(event: DragEvent): void {
       :active-tab="selectedTargetTab"
       :workflow-tabs="workflowTabs"
       :visible-tab-path="workflowStore.activeWorkflow?.path ?? null"
+      :follows-visible-workflow="agentPanelStore.followsVisibleWorkflow"
       :selecting-tab-path="selectingTarget?.path ?? null"
       :select-tab="onSelectWorkflowTarget"
       :workflow-detached="workflowDetached"
@@ -1418,6 +1444,7 @@ function onPanelDrop(event: DragEvent): void {
       @answer-ask="answerAsk"
       @open-workflow="onOpenApprovalWorkflow"
       @open-reference-workflow="onNavigateToReferenceWorkflow"
+      @show-target="onShowTarget"
       @paywall-action="onPaywallAction"
       @new-chat="onNewChat"
       @toggle-size="agentPanelStore.toggleMaximize()"
