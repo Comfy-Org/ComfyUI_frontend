@@ -1077,6 +1077,17 @@ describe('AgentPanel extension flag gate', () => {
     expect(agentStore.gateSettled).toBe(false)
   })
 
+  it('enables an uncached whitelisted session on the first delivery to succeed after an errored one', async () => {
+    await loadEntryAndSetup()
+    deliverFlags({ errorsLoading: true })
+
+    mocks.flagEnabled = true
+    deliverFlags({ errorsLoading: false })
+
+    expect(agentStore.enabled).toBe(true)
+    expect(agentStore.gateSettled).toBe(true)
+  })
+
   it('settles the gate on the fallback when no delivery ever arrives', async () => {
     await loadEntryAndSetup()
 
