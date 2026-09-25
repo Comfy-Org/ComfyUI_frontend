@@ -16,12 +16,10 @@ const PROVIDER_NAMES: Readonly<Record<string, string>> = {
 }
 
 export function providerName(provider: string): string {
-  return (
-    PROVIDER_NAMES[provider] ??
-    provider
-      .split('-')
-      .filter(Boolean)
-      .map((word) => word[0].toUpperCase() + word.slice(1))
-      .join(' ')
-  )
+  if (Object.hasOwn(PROVIDER_NAMES, provider)) return PROVIDER_NAMES[provider]
+  return provider
+    .split('-')
+    .filter(Boolean)
+    .map((word) => word[0].toUpperCase() + word.slice(1))
+    .join(' ')
 }

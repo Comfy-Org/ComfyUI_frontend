@@ -123,6 +123,12 @@ describe('Models route preparation', () => {
       provider: 'xAI',
       capabilities: ['grok', 'xai', 'video', '1.5', 'reference', 'voice'],
       shown: ['voice']
+    },
+    {
+      name: 'Seedream 4.0 Text-to-Image',
+      provider: 'ByteDance',
+      capabilities: ['byteplus', 'seedream', 'image-to-image', '写实'],
+      shown: ['image-to-image', '写实']
     }
   ])(
     'hides provider IDs, bare versions and name echoes on $name',

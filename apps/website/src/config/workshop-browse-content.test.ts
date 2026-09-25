@@ -342,17 +342,19 @@ describe('model summaries', () => {
           ([key, slugs]) =>
             `Duplicate summary on ${slugs.join(', ')}: "${key}". Write a distinct summary.`
         ),
-      ...[...known]
-        .filter(([key, slugs]) => {
-          const current = slugsBySummary.get(key) ?? []
-          return (
-            current.length < 2 || slugs.some((slug) => !current.includes(slug))
-          )
-        })
-        .map(
-          ([key]) =>
+      ...[...known].flatMap(([key, slugs]) => {
+        const current = slugsBySummary.get(key) ?? []
+        const gone = slugs.filter((slug) => !current.includes(slug))
+        if (current.length < 2)
+          return [
             `Stale entry, remove it from KNOWN_DUPLICATE_SUMMARIES: "${key}"`
-        )
+          ]
+        if (gone.length > 0)
+          return [
+            `Stale slugs, remove ${gone.join(', ')} from the KNOWN_DUPLICATE_SUMMARIES entry "${key}"`
+          ]
+        return []
+      })
     ]
 
     expect(problems).toEqual([])

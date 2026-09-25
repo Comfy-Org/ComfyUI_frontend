@@ -27,8 +27,17 @@ function describesCapability(
     providerName(tag.toLowerCase()) === model.provider
   )
     return false
-  const nameWords = new Set(words(model.name))
-  return !words(tag).every((word) => nameWords.has(word))
+  const tagWords = words(tag)
+  return tagWords.length === 0 || !isInOrder(tagWords, words(model.name))
+}
+
+function isInOrder(
+  needle: readonly string[],
+  haystack: readonly string[]
+): boolean {
+  let next = 0
+  for (const word of haystack) if (word === needle[next]) next++
+  return next === needle.length
 }
 
 function splitShownTags<T>(tags: readonly T[]) {
