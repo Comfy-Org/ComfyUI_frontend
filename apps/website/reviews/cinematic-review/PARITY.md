@@ -46,12 +46,20 @@ guidance and zero/false values; absent settings are explicitly unrecorded.
 Original media opens in a separate tab and can be downloaded after any required
 reveal. These controls do not measure visual similarity.
 
+Model output follow-up: Your creations now groups Studio scenes and Model & tool
+results in the same dialog. New successful native model-page runs automatically
+save their output files to browser storage scoped to the submitting account and
+workspace. Save status and a storage-only retry are visible on the model page;
+the library link opens the corresponding section. Image/video/audio previews,
+downloads for all output types, search/type filters and confirmed deletion are
+available. Revealed images can be edited or animated in Studio. Raw response
+metadata and form inputs are not archived, and past unsaved runs cannot be
+recovered. Model records do not pretend to have Studio recipes or scene settings.
+
 ## Remaining differences
 
 These are explicit follow-ups, not claims that the migration is a complete replica.
 
-- Output organization: native model-page outputs do not join the Studio library.
-  The original's combined Scenes / Model & tool results organization is absent.
 - Equipment presentation: the original illustrated camera/lens carousel is not
   reproduced. The corresponding choices use the current Studio controls.
 

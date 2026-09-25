@@ -22,6 +22,13 @@ API-key backend, copied private output library, or additional dependency.
   legacy combined presets remain available with explicit full-settings behavior.
 - Account/workspace-scoped local creations, favorites, rename, comparison,
   source lineage, downloads, validated recipe import/export and settings reuse.
+- Your creations includes a Model & tool results section for newly completed
+  native model runs. Files are saved under the submitting account/workspace,
+  including multi-output image/video/audio/text/3D/other results; raw response
+  metadata and form inputs are excluded. Save failures offer storage-only retry.
+  Search, type filters, guarded previews/downloads, image edit/animate shortcuts,
+  and confirmed deletion are available. Past unsaved runs are not imported.
+  Each scope retains up to 100 model results / 512 MiB without silent eviction.
 - Named character/location/prop assets, pixel crop and ordered reference roles.
   Actual provider bodies retain every selected reference image.
 - Guided scene building and editable plans with captured studio settings,
@@ -40,10 +47,10 @@ API-key backend, copied private output library, or additional dependency.
 
 ## Validation
 
-- Latest run: 350 focused Studio tests passed across 37 component, library and
+- Latest run: 461 focused Studio/model-page tests passed across 42 component, library and
   composable files. Earlier route validation also passed two LTX Fast tests and
   731 shared contract tests; these were not rerun for the capability UI change.
-- 25 production browser tests passed across both Studio layouts, including
+- 27 production browser tests passed across both Studio layouts, including
   crop pixels, assets, edit review, prompt suggestions, plans, recipe import,
   motion comparison and transition reference restoration after reload.
 - Website build, website typecheck, knip and Astro formatting passed.

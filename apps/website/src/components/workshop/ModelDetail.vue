@@ -16,6 +16,9 @@ import Button from '@/components/ui/button/Button.vue'
 import CopyTextButton from '@/components/ui/copy-text-button/CopyTextButton.vue'
 import { useWorkshopFormDraft } from '../../composables/useWorkshopFormDraft'
 import { useWorkshopDelivery } from '../../composables/useWorkshopDelivery'
+import { useModelResultArchive } from '../../composables/useModelResultArchive'
+import { creationNamespace } from '../../lib/workshop/cinematic-studio/creations'
+import { tcModelResults } from '../../lib/workshop/cinematic-studio/model-results-copy'
 import { sameFormValues } from '../../lib/workshop/form-values'
 import { validateWorkshopMediaInputs } from '../../config/workshop-media-validation'
 import { leaveForSignIn } from '../../config/workshop-return'
@@ -215,6 +218,16 @@ const revealed = ref(false)
 
 const { user, session, sessionFailure, settled, ensureFresh, remint } =
   useWorkshopSession()
+const resultArchive = useModelResultArchive(() =>
+  session.value
+    ? creationNamespace({
+        mode: 'live',
+        uid: session.value.uid,
+        workspaceId: session.value.workspace.id
+      })
+    : undefined
+)
+const archiveStatus = resultArchive.status
 const { balance } = useWorkshopCredits()
 const workshopEnabled = useWorkshopEnabled()
 const authEnabled = useWorkshopAuthFlag()
@@ -374,6 +387,7 @@ interface ActiveRun {
   readonly controller: AbortController
   readonly analytics: WorkshopRunAnalytics
   readonly startedAt: number
+  readonly archiveTicket: ReturnType<typeof resultArchive.begin>
 }
 
 let activeRun: ActiveRun | undefined
@@ -556,6 +570,7 @@ function finishRun(result: RouterRenderResult, attempt: ActiveRun): void {
     output,
     nsfw: output.nsfw === true
   })
+  void resultArchive.archive(attempt.archiveTicket, result.outputs)
   captureWorkshopEvent({
     name: 'run_finished',
     properties: {
@@ -630,7 +645,13 @@ async function run() {
   const attempt: ActiveRun = {
     controller: new AbortController(),
     analytics,
-    startedAt
+    startedAt,
+    archiveTicket: resultArchive.begin({
+      id: analytics.attempt_id,
+      name: model.name,
+      modelSlug: model.slug,
+      createdAt: startedAt
+    })
   }
   activeRun = attempt
   captureWorkshopEvent({ name: 'run_started', properties: analytics })
@@ -1001,6 +1022,36 @@ function useInCode() {
           </div>
         </div>
 
+        <div
+          v-if="runState.status === 'succeeded' && archiveStatus !== 'idle'"
+          class="flex flex-wrap items-center gap-3 text-sm"
+        >
+          <p role="status">
+            {{
+              tcModelResults(
+                archiveStatus === 'saving'
+                  ? 'saving'
+                  : archiveStatus === 'saved'
+                    ? 'saved'
+                    : 'error',
+                locale
+              )
+            }}
+          </p>
+          <Button
+            v-if="archiveStatus === 'error'"
+            variant="outline"
+            size="sm"
+            @click="resultArchive.retry()"
+            >{{ tcModelResults('retry', locale) }}</Button
+          >
+          <a
+            v-if="archiveStatus === 'saved'"
+            :href="`${getRoutes(locale).cinematicStudio}?library=model-results`"
+            class="underline"
+            >{{ tcModelResults('openLibrary', locale) }}</a
+          >
+        </div>
         <!-- Once the result is in view, taking the workflow home is the other
           thing to do with it, and it should not shout over the run's own
           buttons. -->

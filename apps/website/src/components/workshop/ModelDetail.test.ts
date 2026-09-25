@@ -57,6 +57,18 @@ vi.mock(import('../../config/workshop-output-download'), () => ({
 }))
 
 vi.mock(import('../../config/workshop-credits'))
+// Archive download/storage behavior has its own composable and browser tests.
+vi.mock(import('../../composables/useModelResultArchive'), async () => {
+  const { ref } = await import('vue')
+  return {
+    useModelResultArchive: (namespace) => ({
+      status: ref('idle' as const),
+      begin: (identity) => ({ ...identity, namespace: namespace(), epoch: 0 }),
+      archive: vi.fn().mockResolvedValue(undefined),
+      retry: vi.fn().mockResolvedValue(undefined)
+    })
+  }
+})
 
 const auth = {
   session: ref<AccountCredential>(),

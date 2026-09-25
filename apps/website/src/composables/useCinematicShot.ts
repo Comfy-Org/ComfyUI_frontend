@@ -549,7 +549,6 @@ export function useCinematicShot(
     selectedAssets.value = []
     assetLimitReached.value = false
     creativeOpen.value = false
-    libraryOpen.value = false
     frameLoading.value = false
     frameError.value = false
   }
