@@ -29,9 +29,9 @@ export interface BalanceReader {
 }
 
 /** Ceiling on a balance read; a hung fetch must not pin the state stale. */
-export const BALANCE_TIMEOUT_MS = 15_000
+const BALANCE_TIMEOUT_MS = 15_000
 
-export function readBalanceCents(body: unknown): number | undefined {
+function readBalanceCents(body: unknown): number | undefined {
   const parsed = zBillingBalanceResponse.safeParse(body)
   if (!parsed.success) return undefined
   // The schema admits infinities; a non-finite balance can never render.

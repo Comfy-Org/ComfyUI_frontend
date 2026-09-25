@@ -9,10 +9,10 @@ import { readonly, shallowRef } from 'vue'
 
 import { createRequestAuthorizer } from '@comfyorg/account-core/requestAuth'
 import type { WebSession } from '@comfyorg/account-core/webSession'
+import { zBillingBalanceResponse } from '@comfyorg/ingest-types/zod'
 import { centsToCredits } from '@comfyorg/shared-frontend-utils/creditsUtil'
 
 import { createTimeoutSignal } from '../utils/abortSignal'
-import { BALANCE_TIMEOUT_MS, readBalanceCents } from './workshop-balance'
 import { WORKSHOP_CLOUD_BASE_URL } from './workshop-env'
 
 export type SessionBalanceState =
@@ -22,6 +22,16 @@ export type SessionBalanceState =
   | { readonly status: 'session_ended' }
 
 export const SESSION_BALANCE_URL = `${WORKSHOP_CLOUD_BASE_URL}/api/billing/balance`
+
+const BALANCE_TIMEOUT_MS = 15_000
+
+function readBalanceCents(body: unknown): number | undefined {
+  const parsed = zBillingBalanceResponse.safeParse(body)
+  if (!parsed.success) return undefined
+  const cents =
+    parsed.data.effective_balance_micros ?? parsed.data.amount_micros
+  return Number.isFinite(cents) ? cents : undefined
+}
 
 const authorize = createRequestAuthorizer({
   getWorkspaceToken: () =>
