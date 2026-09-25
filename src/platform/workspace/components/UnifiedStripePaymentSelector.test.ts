@@ -1,5 +1,6 @@
 import { cleanup, render, screen } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { StripePaymentPhase } from '@comfyorg/account-ui/billing/stripe'
@@ -9,6 +10,7 @@ import {
   clearCheckoutJourney,
   resolveCheckoutJourney
 } from '@/platform/workspace/utils/checkoutJourney'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
 import UnifiedStripePaymentSelector from './UnifiedStripePaymentSelector.vue'
 
@@ -40,7 +42,8 @@ vi.mock<unknown>(import('@comfyorg/account-ui/billing/stripe'), () => ({
       paymentMethodConfigurationId: { type: String, default: '' },
       isLoading: { type: Boolean, default: false },
       verificationPending: { type: Boolean, default: false },
-      canSubmit: { type: Boolean, default: true }
+      canSubmit: { type: Boolean, default: true },
+      themeKey: { type: String, default: '' }
     },
     emits: ['confirm', 'submittingChange', 'phase'],
     setup(
@@ -119,6 +122,16 @@ describe('UnifiedStripePaymentSelector', () => {
       unavailable: 'Stripe is unavailable',
       genericError: 'Error'
     })
+  })
+
+  it('re-keys the form theme when the active colour palette changes', async () => {
+    renderSelector()
+    const colorPaletteStore = useColorPaletteStore()
+
+    colorPaletteStore.activePaletteId = 'light'
+    await nextTick()
+
+    expect(formProps.value.themeKey).toBe('light')
   })
 
   it('renders the pay action into the form through the submit slot', () => {
