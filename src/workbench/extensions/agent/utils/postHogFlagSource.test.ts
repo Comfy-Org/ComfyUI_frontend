@@ -8,6 +8,7 @@ type FlagsDelivery = Parameters<PostHogLike['onFeatureFlags']>[0]
 function fakePostHog(initial: boolean | undefined): {
   posthog: PostHogLike
   setFlag: (value: boolean | undefined) => void
+  replayOnRegistration: () => void
   failReload: () => void
 } {
   let value = initial
@@ -26,8 +27,9 @@ function fakePostHog(initial: boolean | undefined): {
     },
     setFlag: (next) => {
       value = next
-      deliver()
+      deliver({ errorsLoading: false })
     },
+    replayOnRegistration: () => deliver(),
     failReload: () => deliver({ errorsLoading: true })
   }
 }
@@ -53,16 +55,25 @@ describe('createPostHogFlagSource', () => {
   })
 
   it('does not notify listeners for a delivery that reports a load error', () => {
-    const { posthog, setFlag, failReload } = fakePostHog(undefined)
+    const { posthog, failReload } = fakePostHog(true)
     const source = createPostHogFlagSource(posthog)
     const onChange = vi.fn()
     source.onChange?.(onChange)
-    setFlag(true)
-    onChange.mockClear()
 
     failReload()
 
     expect(onChange).not.toHaveBeenCalled()
+  })
+
+  it('notifies listeners for the context-free replay at registration', () => {
+    const { posthog, replayOnRegistration } = fakePostHog(true)
+    const source = createPostHogFlagSource(posthog)
+    const onChange = vi.fn()
+    source.onChange?.(onChange)
+
+    replayOnRegistration()
+
+    expect(onChange).toHaveBeenCalledTimes(1)
   })
 
   it('unsubscribing stops further notifications', () => {

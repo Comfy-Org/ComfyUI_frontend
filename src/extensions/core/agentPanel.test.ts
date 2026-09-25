@@ -1054,22 +1054,34 @@ describe('AgentPanel extension flag gate', () => {
   it('settles the gate on a delivery that loaded successfully', async () => {
     await loadEntryAndSetup()
 
-    mocks.flagListener!([], {})
+    mocks.flagListener!([], {}, { errorsLoading: false })
 
     expect(agentStore.gateSettled).toBe(true)
   })
 
-  it('holds the gate unsettled until the fallback when the flags request fails', async () => {
+  it('leaves the gate unsettled on a delivery that reports a load error', async () => {
     await loadEntryAndSetup()
 
     mocks.flagListener!([], {}, { errorsLoading: true })
 
-    expect(agentStore.enabled).toBe(false)
     expect(agentStore.gateSettled).toBe(false)
+  })
+
+  it('settles the gate on the fallback when no delivery ever arrives', async () => {
+    await loadEntryAndSetup()
 
     await vi.advanceTimersByTimeAsync(FLAG_SETTLE_TIMEOUT_MS)
 
     expect(agentStore.gateSettled).toBe(true)
+  })
+
+  it('keeps a cached whitelisted session enabled when a later delivery reports a load error', async () => {
+    mocks.flagEnabled = true
+    await loadEntryAndSetup()
+
+    mocks.flagListener!([], {}, { errorsLoading: true })
+
+    expect(agentStore.enabled).toBe(true)
   })
 
   it('disables the panel without closing it when the flag flips back to false', async () => {
