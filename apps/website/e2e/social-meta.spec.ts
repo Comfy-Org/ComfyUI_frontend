@@ -25,7 +25,7 @@ test.describe('Social share tags', () => {
   test('describe a model page share image with the model name', async ({
     page
   }) => {
-    await page.goto('/models/vertexai--veo-3--animate-images/')
+    await page.goto('/models/beeble--switchx-image-edit--edit-images/')
     await expect(meta(page, 'twitter:site')).toHaveAttribute(
       'content',
       '@ComfyUI'
