@@ -306,7 +306,10 @@ describe('FeaturedBanner', () => {
       expect(
         screen.getByTestId('featured-slide-link').getAttribute('href')
       ).toBe('/models/flux/')
-      expect(screen.getByRole('link', { name: /Try/i })).toBeTruthy()
+      expect(screen.getByRole('link', { name: /Try/i })).toHaveAttribute(
+        'href',
+        '/models/flux/'
+      )
     }
   )
 })
