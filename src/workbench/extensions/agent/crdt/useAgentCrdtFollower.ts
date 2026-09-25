@@ -187,12 +187,15 @@ export interface AgentCrdtFollowerEvents {
    * changed — the widget-only edits `onMaterialized` cannot report, because
    * that one fires per materialized node.
    *
-   * Two kinds of frame are deliberately excluded. Catch-up replay on
-   * (re)subscribe is not a new edit, so a bound tab that was in the
-   * background still relies on its own activation path. This tab's own ops
-   * come back as effect frames that apply like any other, and they are
-   * already covered by whatever local interaction minted them — notifying
-   * on those would fire once per keystroke.
+   * A subscribe's catch-up frame counts: it carries everything this
+   * follower's state vector lacked, so after a reconnect it is the only
+   * frame the missed edits ever arrive on.
+   *
+   * This tab's own ops come back as effect frames that apply like any other,
+   * and those are excluded — whatever local interaction minted them already
+   * covers them, and notifying would fire once per keystroke. The comparison
+   * is advisory (attribution can be absent, and the user id can resolve
+   * between mint and frame), so it fails open into an extra notification.
    */
   onApplied?: (event: { workflowId: string; actor: string | undefined }) => void
   onReset?: (workflowId: string) => void
@@ -440,8 +443,8 @@ function startAgentCrdtFollower(
         : []
     }
   }
-  const isRemoteLiveEdit = (update: ClassifiedDocUpdate): boolean =>
-    !update.catchUp && update.actor !== localActor()
+  const isRemoteEdit = (update: ClassifiedDocUpdate): boolean =>
+    update.actor !== localActor()
 
   const onSubscribed: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
@@ -497,7 +500,7 @@ function startAgentCrdtFollower(
     )
     // Last, and after the reconcile: the consumer reads the live graph, and
     // a host callback that throws must not strand the bookkeeping above.
-    if (applied && isRemoteLiveEdit(update)) {
+    if (applied && isRemoteEdit(update)) {
       events.onApplied?.({
         workflowId: update.workflowId,
         actor: update.actor

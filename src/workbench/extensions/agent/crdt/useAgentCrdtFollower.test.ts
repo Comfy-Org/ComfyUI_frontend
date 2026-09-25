@@ -1408,16 +1408,34 @@ describe('useAgentCrdtFollower', () => {
         unmount()
       })
 
+      // A subscribe's catch-up frame is the whole delta this follower's state
+      // vector lacked (see `catchUpPending` in layoutFollowerBridge.ts), so
+      // after a reconnect it is the only frame the missed edits arrive on.
+      it('reports a reconnect catch-up frame', () => {
+        const onApplied = vi.fn()
+        const { unmount } = mountFollower('wf-1', true, () => fakeGraph, {
+          onApplied
+        })
+
+        dispatchFrame('doc_update', {
+          workflowId: 'wf-1',
+          seq: 9,
+          actor: 'agent:thread:turn',
+          catchUp: true
+        })
+
+        expect(onApplied).toHaveBeenCalledExactlyOnceWith({
+          workflowId: 'wf-1',
+          actor: 'agent:thread:turn'
+        })
+        unmount()
+      })
+
       it.for([
         {
           case: 'the adapter skipped the frame',
           applied: false,
           detail: { workflowId: 'wf-1', seq: 9, catchUp: false }
-        },
-        {
-          case: 'the frame is reconnect catch-up',
-          applied: true,
-          detail: { workflowId: 'wf-1', seq: 9, catchUp: true }
         },
         {
           case: 'the frame belongs to another workflow',

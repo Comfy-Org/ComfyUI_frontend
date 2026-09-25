@@ -2863,7 +2863,7 @@ describe('AgentPanelRoot canvas draft on remote edit', () => {
     expect(captureCanvasState).toHaveBeenCalledOnce()
   })
 
-  it('captures once per frame rather than per materialized node', () => {
+  it('drives the capture from onApplied, not from onMaterialized', () => {
     const captureCanvasState = vi.fn()
     workflowStore.activeWorkflow = addTab('workflows/remote_edit.json', {
       changeTracker: createMockChangeTracker({ captureCanvasState })
