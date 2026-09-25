@@ -619,25 +619,22 @@ describe('PostHogTelemetryProvider', () => {
       }
     })
 
-    // The two events one run produces must agree. Closing the panel between
-    // submitting the run and execution starting would otherwise split the pair.
-    it('carries the run button panel state onto execution start', async () => {
+    // Not every tracked click reaches an execution: the subscribe CTA in
+    // SubscribeToRun.vue queues nothing, and useCoreCommands returns early on a
+    // blocked subscription, an empty selection, or a failed path resolution.
+    // Staging the click's panel state would leave it to be picked up by the
+    // next unrelated run, so execution_start reads fresh state instead.
+    it('does not carry a panel state from a click that never executed', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()
       hoisted.agentPanelOpen = true
       provider.trackRunButton(runButtonProperties({ agent_panel_open: true }))
 
-      // The user closes the panel while the run is being submitted.
+      // That click never executed; the panel is closed by the time an
+      // unrelated run starts.
       hoisted.agentPanelOpen = false
       provider.trackWorkflowExecution()
 
-      expect(hoisted.mockCapture).toHaveBeenLastCalledWith(
-        TelemetryEvents.EXECUTION_START,
-        expect.objectContaining({ agent_panel_open: true })
-      )
-
-      // The carry-over is consumed, so an unattributed run reads fresh state.
-      provider.trackWorkflowExecution()
       expect(hoisted.mockCapture).toHaveBeenLastCalledWith(
         TelemetryEvents.EXECUTION_START,
         expect.objectContaining({ agent_panel_open: false })

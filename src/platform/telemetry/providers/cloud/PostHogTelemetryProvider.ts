@@ -156,13 +156,6 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   private pendingFirstAuthAt = new Map<string, string>()
   private isInitialized = false
   private lastTriggerSource: ExecutionTriggerSource | undefined
-  /**
-   * Carried from the run button to execution_start, like lastTriggerSource, so
-   * the two events a single run produces agree. Reading the panel state again
-   * at execution_start would let a user who closed the panel while the run was
-   * being submitted report `true` on the click and `false` on the start.
-   */
-  private lastAgentPanelOpen: boolean | undefined
   private disabledEvents = new Set<TelemetryEventName>(DEFAULT_DISABLED_EVENTS)
   private desktopEntryProps: DesktopEntryProps | null = null
   private stopSubscriptionTierWatch: WatchStopHandle | null = null
@@ -535,7 +528,6 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackRunButton(properties: RunButtonProperties): void {
     this.lastTriggerSource = properties.trigger_source
-    this.lastAgentPanelOpen = properties.agent_panel_open
     this.trackEvent(TelemetryEvents.RUN_BUTTON_CLICKED, properties)
   }
 
@@ -690,12 +682,16 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.captureRaw(TelemetryEvents.EXECUTION_START, {
       ...getExecutionContext(),
       trigger_source: this.lastTriggerSource ?? 'unknown',
-      // Falls back to a fresh read for a run the button did not start.
-      agent_panel_open: this.lastAgentPanelOpen ?? getAgentPanelOpen(),
+      // Read fresh rather than carried from the click. The two calls are
+      // synchronous neighbours at every call site, so a carried value would
+      // equal this read for a run the button started — while for a click that
+      // never executed (the subscribe CTA, and the early returns in
+      // useCoreCommands) it would linger and attach a stale panel state to an
+      // unrelated later run.
+      agent_panel_open: getAgentPanelOpen(),
       event_source: EXECUTION_EVENT_SOURCE
     })
     this.lastTriggerSource = undefined
-    this.lastAgentPanelOpen = undefined
   }
 
   trackExecutionError(metadata: ExecutionErrorMetadata): void {
