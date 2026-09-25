@@ -10046,6 +10046,8 @@ Enterprise`
       '视频只有一个宽高比，比例不符的那一帧会被拉伸以适应。可以直接生成，或上传比例相同的两帧。'
   },
   'workshop.field.file': { en: 'File', 'zh-CN': '文件' },
+  'workshop.field.play': { en: 'Play', 'zh-CN': '播放' },
+  'workshop.field.pause': { en: 'Pause', 'zh-CN': '暂停' },
   'workshop.field.replaceFile': {
     en: 'Replace {name}',
     'zh-CN': '替换 {name}'
