@@ -4,6 +4,7 @@ import { createSSRApp, h, readonly, ref } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 
 import type { WorkshopModelDetail } from '../../config/models-catalogue'
+import { workshopContract } from '../../config/workshop-contract-catalog'
 import { useWorkshopEnabled } from '../../scripts/posthog'
 import ModelDetail from './ModelDetail.vue'
 
@@ -49,5 +50,24 @@ describe('ModelDetail on the server', () => {
 
     expect(html).toContain('Playground')
     expect(html).toContain('Prompt')
+  })
+
+  it('renders the same run area whatever the flag says, so a cached flag cannot break hydration', async () => {
+    vi.stubEnv('PUBLIC_WORKSHOP_ROUTER_RUN', '1')
+    const runnable = {
+      ...model,
+      execution: workshopContract('bfl/flux-2-pro')
+    }
+    const render = async (enabled: boolean) => {
+      vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(ref(enabled)))
+      return renderToString(
+        createSSRApp({ render: () => h(ModelDetail, { model: runnable }) })
+      )
+    }
+
+    const flagOff = await render(false)
+
+    expect(flagOff).toContain('data-testid="run-rollout-note"')
+    expect(await render(true)).toBe(flagOff)
   })
 })

@@ -1926,6 +1926,7 @@ describe('ModelDetail', () => {
   it('waits for session initialization before offering sign-in', async () => {
     auth.settled.value = false
     mountDetail({ model: runnable })
+    await nextTick()
     expect(
       screen
         .getByRole('button', { name: 'Checking your session…' })

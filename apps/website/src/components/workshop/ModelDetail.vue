@@ -258,8 +258,8 @@ const canRunModel = computed(
 )
 const gate = computed(() => {
   if (!canRunModel.value) return 'unavailable'
-  if (!workshopEnabled.value) return 'rollingOut'
-  if (!mounted.value || draftPending.value) return 'pending'
+  if (!mounted.value || !workshopEnabled.value) return 'rollingOut'
+  if (draftPending.value) return 'pending'
   if (!authEnabled.value || sessionFailure.value) return 'unavailable'
   if (!settled.value || (user.value && !session.value)) return 'pending'
   if (!session.value) return 'signedOut'
