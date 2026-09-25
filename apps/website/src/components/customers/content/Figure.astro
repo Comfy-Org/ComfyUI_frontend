@@ -20,11 +20,9 @@ const hasCaptionSlot = Astro.slots.has('default')
     decoding="async"
     class="w-full rounded-2xl object-cover"
   />
-  {
-    (hasCaptionSlot || caption) && (
-      <figcaption class="mt-3 text-xs text-primary-comfy-canvas">
-        {hasCaptionSlot ? <slot /> : caption}
-      </figcaption>
-    )
-  }
+  {(hasCaptionSlot || caption) && <figcaption
+    class="mt-3 text-xs text-primary-comfy-canvas"
+  >
+    {hasCaptionSlot ? <slot /> : caption}
+  </figcaption>}
 </figure>

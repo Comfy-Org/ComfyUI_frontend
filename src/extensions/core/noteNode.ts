@@ -1,5 +1,8 @@
-import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraphCanvas,
+  LiteGraph,
+  LGraphNode
+} from '@/lib/litegraph/src/litegraph'
 
 import { app } from '../../scripts/app'
 import { ComfyWidgets } from '../../scripts/widgets'
@@ -23,9 +26,6 @@ app.registerExtension({
         this.color = LGraphCanvas.node_colors.yellow.color
         this.bgcolor = LGraphCanvas.node_colors.yellow.bgcolor
 
-        if (!this.properties) {
-          this.properties = { text: '' }
-        }
         ComfyWidgets.STRING(
           this,
           'text',
@@ -63,9 +63,6 @@ app.registerExtension({
         this.color = LGraphCanvas.node_colors.yellow.color
         this.bgcolor = LGraphCanvas.node_colors.yellow.bgcolor
 
-        if (!this.properties) {
-          this.properties = { text: '' }
-        }
         ComfyWidgets.MARKDOWN(
           this,
           'text',

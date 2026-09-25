@@ -30,7 +30,7 @@ const MCP_REASON_ID = '5'
       <a
         v-if="reason.id === MCP_REASON_ID"
         :href="getRoutes(locale).mcp"
-        class="text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 mt-4 inline-block rounded-sm text-xs font-bold tracking-wider uppercase underline underline-offset-4 transition-opacity hover:opacity-70 focus-visible:ring-2 focus-visible:outline-none"
+        class="mt-4 inline-block rounded-sm text-xs font-bold tracking-wider text-primary-comfy-yellow uppercase underline underline-offset-4 transition-opacity hover:opacity-70 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
       >
         {{ t('cli.why.mcpLinkLabel', locale) }}
       </a>

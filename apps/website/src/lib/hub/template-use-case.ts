@@ -17,12 +17,13 @@ function uniqueModel(models: readonly WorkshopModel[]) {
 function taskUseCases(template: HubTemplate): Set<UseCase> {
   return new Set(
     template.tags.flatMap((tag) => {
-      // This authored HappyHorse reference operation lives in animate-images.
-      // Other reference models have distinct generate-videos pages; changing
-      // the global tag would send them to first/last-frame operations instead.
+      // These authored reference operations live in animate-images. Other
+      // reference models have distinct generate-videos pages; changing the
+      // global tag would send them to first/last-frame operations instead.
       const useCase =
-        template.name === 'api_happyhorse1_1_r2v' &&
-        tag === 'Reference to Video'
+        ['api_happyhorse1_1_r2v', 'api_seedance2_5_r2v'].includes(
+          template.name
+        ) && tag === 'Reference to Video'
           ? 'animate-images'
           : TASK_TAGS[tag]
       return useCase ? [useCase] : []
@@ -64,15 +65,11 @@ export function partnerModelFor(
   joinedSlug = JOINED_SLUG.get(template.name)
 ): WorkshopModel | undefined {
   if (!template.tags.includes('API')) return undefined
-  const named = modelNamedBy(template, models)
-  if (named) return named
   const target = uniqueModel(
     models.filter((model) => model.slug === joinedSlug)
   )
-  if (!target) return undefined
-  // A generated row names a particular content page, not merely a Router ID.
-  // Two operations can share both that ID and a broad use-case category.
-  return modelsForTask(template, models).includes(target) ? target : undefined
+  if (target && modelsForTask(template, models).includes(target)) return target
+  return modelNamedBy(template, models)
 }
 
 // What the workflow does, in the vocabulary the models catalogue already uses.

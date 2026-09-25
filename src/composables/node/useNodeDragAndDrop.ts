@@ -1,7 +1,7 @@
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { parseAssetInfo } from '@/platform/assets/schemas/mediaAssetSchema'
-import type { ResultItem } from '@/schemas/apiSchema'
+import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
 
 type DragHandler = (e: DragEvent) => boolean
 type DropHandler<T> = (files: File[]) => Promise<T[]>
@@ -73,7 +73,9 @@ export const useNodeDragAndDrop = <T>(
     try {
       const resp = await fetch(uri)
       const fileName =
-        uri.searchParams.get('filename') ?? baseUri.split('/').at(-1)
+        asset?.filename ??
+        uri.searchParams.get('filename') ??
+        baseUri.split('/').at(-1)
       if (!fileName || !resp.ok) return false
 
       const blob = await resp.blob()

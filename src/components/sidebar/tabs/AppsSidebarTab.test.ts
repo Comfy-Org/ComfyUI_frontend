@@ -1,8 +1,10 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useAppMode } from '@/composables/useAppMode'
 import {
   useWorkflowStore,
   useWorkflowBookmarkStore
@@ -12,9 +14,9 @@ import { useCommandStore } from '@/stores/commandStore'
 
 import AppsSidebarTab from './AppsSidebarTab.vue'
 vi.mock(import('firebase/auth'))
-vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 
 beforeEach(() => {
+  useAppMode().isAppMode = computed(() => true)
   vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)
   vi.mocked(useWorkflowStore().syncWorkflows).mockResolvedValue(undefined)
   vi.mocked(useWorkflowBookmarkStore().loadBookmarks).mockResolvedValue(
@@ -22,12 +24,7 @@ beforeEach(() => {
   )
 })
 
-vi.mock<unknown>(
-  import('@/platform/workflow/core/services/workflowService'),
-  () => ({
-    useWorkflowService: () => ({})
-  })
-)
+vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
 vi.mock(
   import('@/platform/telemetry/searchQuery/useSearchQueryTracking'),
@@ -36,10 +33,7 @@ vi.mock(
   })
 )
 
-vi.mock<unknown>(import('@/composables/useAppMode'), async () => {
-  const { computed } = await import('vue')
-  return { useAppMode: () => ({ isAppMode: computed(() => true) }) }
-})
+vi.mock(import('@/composables/useAppMode'))
 
 const i18n = createI18n({
   legacy: false,
@@ -73,12 +67,6 @@ const i18n = createI18n({
   }
 })
 
-const noResultsPlaceholderStub = {
-  props: ['buttonLabel'],
-  emits: ['action'],
-  template: '<button @click="$emit(\'action\')">{{ buttonLabel }}</button>'
-}
-
 function renderTab({ hasResults = true }: { hasResults?: boolean } = {}) {
   const user = userEvent.setup()
   const result = render(AppsSidebarTab, {
@@ -87,8 +75,7 @@ function renderTab({ hasResults = true }: { hasResults?: boolean } = {}) {
       stubs: {
         BaseWorkflowsSidebarTab: {
           template: `<div><slot name="header-actions" :has-results="${hasResults}" /><slot name="empty-state" /></div>`
-        },
-        NoResultsPlaceholder: noResultsPlaceholderStub
+        }
       }
     }
   })
@@ -113,9 +100,7 @@ function renderTabWithRealBase() {
             '<div><slot name="alt-title" /><slot name="tool-buttons" /><slot name="header" /><slot name="body" /></div>'
         },
         SidebarTopArea: { template: '<div><slot /></div>' },
-        SearchInput: { template: '<input />', methods: { focus() {} } },
-        TreeExplorer: { template: '<div data-testid="tree-explorer" />' },
-        NoResultsPlaceholder: noResultsPlaceholderStub
+        TreeExplorer: { template: '<div data-testid="tree-explorer" />' }
       }
     }
   })

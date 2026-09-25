@@ -3,6 +3,10 @@ import type { z } from 'zod'
 import { zListWorkspacesResponse } from '@comfyorg/ingest-types/zod'
 
 import { WORKSHOP_CLOUD_BASE_URL } from '../../config/workshop-env'
+import {
+  combineAbortSignals,
+  createTimeoutSignal
+} from '../../utils/abortSignal'
 
 export type WorkspaceWithRole = z.infer<
   typeof zListWorkspacesResponse
@@ -22,9 +26,9 @@ export async function listWorkspaces(
   token: string,
   options: ListWorkspacesOptions = {}
 ): Promise<readonly WorkspaceWithRole[]> {
-  const timeout = AbortSignal.timeout(options.timeoutMs ?? 15_000)
+  const timeout = createTimeoutSignal(options.timeoutMs ?? 15_000)
   const signal = options.signal
-    ? AbortSignal.any([options.signal, timeout])
+    ? combineAbortSignals([options.signal, timeout])
     : timeout
   const response = await fetch(
     new URL('/api/workspaces', WORKSHOP_CLOUD_BASE_URL),

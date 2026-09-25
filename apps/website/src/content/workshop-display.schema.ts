@@ -1,5 +1,8 @@
 import { z } from 'astro/zod'
 
+import { workshopInputDefinitionSchema } from '../config/workshop-input-definition'
+import { workshopTemplateSchema } from '../config/workshop-workflow-definition'
+
 /**
  * How a media asset should be presented. Carried explicitly rather than
  * guessed from the URL: assets are served from a CDN and several are named by
@@ -93,7 +96,7 @@ export const workshopDisplaySourceSchema = z.object({
 
 export type WorkshopDisplaySource = z.infer<typeof workshopDisplaySourceSchema>
 
-const contentSlug = z.string().regex(/^[a-z0-9][a-z0-9._-]*$/)
+const contentSlug = z.string().regex(/^(?:workflows\/)?[a-z0-9][a-z0-9._-]*$/)
 
 export function workshopContentSlug(modelId: string, useCase: string): string {
   return `${modelId.replace('/', '--')}--${useCase}`
@@ -105,6 +108,12 @@ export const workshopDisplaySchema = workshopDisplaySourceSchema
     id: contentSlug,
     slug: contentSlug,
     modelId: workshopDisplaySourceSchema.shape.id,
+    type: z.enum(['MODEL', 'CLOUD', 'SERVERLESS']).optional(),
+    description: z.string().optional(),
+    inputs: z.record(z.string(), workshopInputDefinitionSchema).optional(),
+    template: workshopTemplateSchema.optional(),
+    category: z.string().min(1).optional(),
+    recommendedRank: z.number().int().nonnegative().optional(),
     useCase: workshopUseCaseSchema,
     withheldContent: z
       .object({
@@ -117,8 +126,16 @@ export const workshopDisplaySchema = workshopDisplaySourceSchema
   .refine(
     (entry) =>
       entry.id === entry.slug &&
-      entry.slug === workshopContentSlug(entry.modelId, entry.useCase),
+      (entry.type === 'CLOUD' || entry.type === 'SERVERLESS'
+        ? entry.slug === entry.modelId && entry.slug.startsWith('workflows/')
+        : entry.slug === workshopContentSlug(entry.modelId, entry.useCase)),
     'Content id/slug must be model plus use case; modelId stays separate'
+  )
+  .refine(
+    (entry) =>
+      (entry.type !== 'CLOUD' && entry.type !== 'SERVERLESS') ||
+      (entry.inputs !== undefined && entry.displayName !== undefined),
+    'Workflow pages require a display name and declared inputs'
   )
   .refine(
     (entry) => entry.examples.length <= (entry.media.samples?.length ?? 0),

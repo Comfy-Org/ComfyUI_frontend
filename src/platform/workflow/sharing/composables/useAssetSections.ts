@@ -1,7 +1,7 @@
 import { partition } from 'es-toolkit'
 import { computed, ref, watch } from 'vue'
 
-import type { AssetInfo } from '@/schemas/apiSchema'
+import type { AssetInfo } from '@comfyorg/ingest-types'
 
 type SectionId = 'media' | 'models'
 

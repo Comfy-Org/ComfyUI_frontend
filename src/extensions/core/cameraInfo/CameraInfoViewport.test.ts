@@ -5,7 +5,7 @@ const { createViewport3dMock } = vi.hoisted(() => ({
   createViewport3dMock: vi.fn()
 }))
 
-vi.mock('@/extensions/core/load3d/createViewport3d', () => ({
+vi.mock(import('@/extensions/core/load3d/createViewport3d'), () => ({
   createViewport3d: createViewport3dMock
 }))
 

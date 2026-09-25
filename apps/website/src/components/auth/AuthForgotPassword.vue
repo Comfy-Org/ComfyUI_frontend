@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import {
-  AUTH_TOAST_SUMMARIES,
   classifyAuthError,
   isFirebaseAuthErrorLike,
   severityForAuthError
-} from '@comfyorg/account/firebaseAuthError'
+} from '@comfyorg/account-core/firebaseAuthError'
+import { useGenerationGuard } from '@comfyorg/account-ui/auth/useGenerationGuard'
 import { cn } from '@comfyorg/tailwind-utils'
+import { useMounted } from '@vueuse/core'
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { authSchemasFor } from '../../config/auth-schemas'
@@ -14,12 +15,7 @@ import { addToast } from '../../config/auth-toast-state'
 import { requestedReturnPath } from '../../config/workshop-return'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
-import {
-  captureAuthFailed,
-  useWorkshopAuthFlag,
-  useWorkshopAuthFlagSettled
-} from '../../scripts/posthog'
-import AuthFlagTimeout from './AuthFlagTimeout.vue'
+import { captureAuthFailed, useWorkshopAuthFlag } from '../../scripts/posthog'
 import AuthSpinnerIcon from './AuthSpinnerIcon.vue'
 import {
   AUTH_BRAND_SOLID_BUTTON_CLASS,
@@ -35,14 +31,11 @@ const { locale = 'en' } = defineProps<{
 /** The cloud page returns to login this long after a send. */
 const RETURN_TO_LOGIN_MS = 3000
 const TOAST_LIFE_MS = 5000
-/** The cloud app's router gives auth this long to answer before its timeout view. */
-const AUTH_FLAG_TIMEOUT_MS = 16_000
 /** A stalled Firebase load or send is dropped here so the controls become retryable again. */
 const RESET_TIMEOUT_MS = 16_000
 
 const enabled = useWorkshopAuthFlag()
-const flagSettled = useWorkshopAuthFlagSettled()
-const flagTimedOut = ref(false)
+const mounted = useMounted()
 const email = ref('')
 const errorMessage = ref('')
 const hostname = typeof window === 'undefined' ? '' : window.location.hostname
@@ -52,17 +45,16 @@ type ResetState = 'idle' | 'sending' | 'sent' | 'error'
 const state = ref<ResetState>('idle')
 const signInHref = ref('/login/')
 let returnTimer: ReturnType<typeof setTimeout> | undefined
-let flagTimer: ReturnType<typeof setTimeout> | undefined
 let boundTimer: ReturnType<typeof setTimeout> | undefined
 
 // Any rollout-flag transition, an unmount, or a bounding timeout invalidates the
 // in-flight send, so a late resolve of an abandoned request cannot toast success
 // or redirect. Sync so even a same-tick flicker is counted, not collapsed.
-let resetGeneration = 0
+const operation = useGenerationGuard()
 watch(
   enabled,
   (isEnabled) => {
-    resetGeneration++
+    operation.abandon()
     // Disabling mid-send abandons the request; drop the control back to idle so
     // a flag flicker back on leaves the form immediately retryable, not stuck
     // disabled until the bounding timeout elapses.
@@ -109,12 +101,12 @@ function validEmail(): boolean {
  * timeout firing), so a late resolve falls through instead of settling the UI.
  */
 function beginBoundedSend(): () => boolean {
-  const attempt = resetGeneration
+  const attempt = operation.capture()
   boundTimer = setTimeout(() => {
-    resetGeneration++
+    operation.abandon()
     state.value = 'idle'
   }, RESET_TIMEOUT_MS)
-  return () => attempt === resetGeneration && enabled.value
+  return () => attempt.live() && enabled.value
 }
 
 async function deliverReset(live: () => boolean) {
@@ -164,7 +156,7 @@ function reportSendFailure(error: unknown) {
   const severity = severityForAuthError(classification)
   addToast({
     severity,
-    summary: AUTH_TOAST_SUMMARIES[locale][severity],
+    summary: t(severity === 'warn' ? 'g.warning' : 'g.error', locale),
     detail: signInErrorMessage(classification, locale, hostname)
   })
 }
@@ -184,21 +176,10 @@ function reportSent() {
 
 onMounted(() => {
   signInHref.value = signInDestination()
-  if (flagSettled.value) return
-  flagTimer = setTimeout(() => {
-    flagTimedOut.value = !flagSettled.value
-  }, AUTH_FLAG_TIMEOUT_MS)
-})
-
-// A late answer, whichever way it goes, ends the timeout screen.
-watch(flagSettled, (settled) => {
-  if (settled) flagTimedOut.value = false
 })
 
 onBeforeUnmount(() => {
-  resetGeneration++
   clearTimeout(returnTimer)
-  clearTimeout(flagTimer)
   clearTimeout(boundTimer)
 })
 </script>
@@ -240,6 +221,7 @@ onBeforeUnmount(() => {
           name="email"
           autocomplete="email"
           required
+          :disabled="!mounted"
           :placeholder="t('auth.email.placeholder', locale)"
           :class="AUTH_FIELD_CLASS"
           :aria-invalid="Boolean(errorMessage) || undefined"
@@ -278,5 +260,4 @@ onBeforeUnmount(() => {
       {{ t('auth.forgot.didntReceive', locale) }}
     </p>
   </section>
-  <AuthFlagTimeout v-else-if="flagTimedOut" :locale="locale" />
 </template>

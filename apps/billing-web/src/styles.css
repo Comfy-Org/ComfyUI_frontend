@@ -1,0 +1,4 @@
+@import 'tailwindcss/preflight' layer(base);
+@import '@comfyorg/design-system/css/style.css';
+
+@source './**/*.{ts,vue}';

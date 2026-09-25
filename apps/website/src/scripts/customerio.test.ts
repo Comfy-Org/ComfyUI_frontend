@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type * as CustomerioSdk from '@customerio/cdp-analytics-browser'

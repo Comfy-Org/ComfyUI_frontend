@@ -6,8 +6,8 @@ import {
   authErrorMessage,
   classifyAuthError,
   severityForAuthError
-} from '@comfyorg/account/firebaseAuthError'
-import type { AuthErrorCopy } from '@comfyorg/account/firebaseAuthError'
+} from '@comfyorg/account-core/firebaseAuthError'
+import type { AuthErrorCopy } from '@comfyorg/account-core/firebaseAuthError'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { watchForTopupBalanceUpdate } from '@/composables/billing/topupBalanceRefresh'
@@ -20,7 +20,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import type { AuthFlowAction } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import {
-  clearAllWorkflowStorage,
+  clearAllWorkspaceStorage,
   prepareWorkflowLogoutTransition
 } from '@/platform/workflow/persistence/base/storageIO'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -36,7 +36,7 @@ import { usdToMicros } from '@/utils/formatUtil'
  * The key set is the app's, so a code added to main.json renders without the
  * package having to know it.
  */
-const localizedAuthErrorCopy = (): AuthErrorCopy => ({
+export const localizedAuthErrorCopy = (): AuthErrorCopy => ({
   ...Object.fromEntries(
     Object.keys(enMessages.auth.errors).map((key) => [
       key,
@@ -135,7 +135,7 @@ export const useAuthActions = () => {
     await authStore.logout()
     if (isCloud) {
       prepareWorkflowLogoutTransition()
-      clearAllWorkflowStorage()
+      clearAllWorkspaceStorage()
     }
 
     toastStore.add({
