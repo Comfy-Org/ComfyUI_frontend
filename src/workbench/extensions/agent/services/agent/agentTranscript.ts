@@ -54,6 +54,8 @@ export interface NormalizedAgentTranscript {
   turnIdsByRowId: Map<string, TurnId>
   /** Tracks turns with assistant rows, including rows that produce no parts. */
   assistantTurnIds: Set<TurnId>
+  /** Turns the service still considers unfinished, by its own row status. */
+  streamingTurnIds: Set<TurnId>
   pending?: {
     messageId: TurnId
     message: AssistantMessage
@@ -437,6 +439,7 @@ export function normalizeAgentTranscript(
   const turnOrder: TurnId[] = []
   const seenTurns = new Set<TurnId>()
   const turnIdsByRowId = new Map<string, TurnId>()
+  const streamingTurnIds = new Set<TurnId>()
   let pending: NormalizedAgentTranscript['pending']
   let latestWorkflowId: string | undefined
 
@@ -457,6 +460,7 @@ export function normalizeAgentTranscript(
       if (workflowId) latestWorkflowId = workflowId
     }
     if (row.role === 'assistant') {
+      if (row.status === 'streaming') streamingTurnIds.add(turnId)
       const rowPending = recordAssistantRow(row, turnId, text, assistants)
       if (rowPending) pending = rowPending
     }
@@ -476,6 +480,7 @@ export function normalizeAgentTranscript(
     latestWorkflowId,
     turnIdsByRowId,
     assistantTurnIds: new Set(assistants.keys()),
+    streamingTurnIds,
     pending
   }
 }

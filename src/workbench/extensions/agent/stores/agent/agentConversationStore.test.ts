@@ -799,8 +799,8 @@ describe('useAgentConversationStore', () => {
     expect(partTexts(store)).toEqual(['working on it'])
     expect(store.isStreaming).toBe(true)
     // The name is the half a refresh cannot recover (PM-1705): the row names
-    // the file by its ref, and only the stash still holds what the user
-    // attached. A thread switch never left the session, so it keeps it.
+    // the file by its ref, and the session is the only place the name the user
+    // attached still exists. A thread switch never left it.
     expect(store.entries.filter((entry) => entry.role === 'user')).toEqual([
       expect.objectContaining({
         text: 'upscale this',
@@ -810,6 +810,46 @@ describe('useAgentConversationStore', () => {
     expect(store.entries.map((entry) => entry.role)).toEqual([
       'user',
       'assistant'
+    ])
+  })
+
+  /**
+   * The same name, on the paths resume never reaches: a turn the agent
+   * finished while the user was away takes the hydrated copy and discards the
+   * stash, and a thread with nothing in flight never stashes at all. Both
+   * still go through hydrate, which is where the session's names are applied.
+   */
+  it.for([
+    { label: 'a turn that settled while away', settleWhileAway: true },
+    { label: 'a thread with nothing in flight', settleWhileAway: false }
+  ])('keeps the attached filename across $label', ({ settleWhileAway }) => {
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    const userRow = historyRow(1, 'user', 'server-turn', 'upscale this')
+    userRow.content = { text: 'upscale this', attachments: [storedRef] }
+    const assistantRow = historyRow(2, 'assistant', 'server-turn', 'Done', 't1')
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'upscale this', [
+      { name: 'Beach photo.png', ref: storedRef, previewUrl: 'blob:beach' }
+    ])
+    if (settleWhileAway) {
+      store.stashActiveTurn()
+      store.ingest(done('t1'))
+    } else {
+      store.ingest(done('t1'))
+    }
+
+    store.setThreadId('th-other')
+    store.hydrate([])
+    store.setThreadId('th')
+    store.hydrate([userRow, assistantRow])
+    store.resumeBackgroundTurn()
+
+    expect(store.entries.filter((entry) => entry.role === 'user')).toEqual([
+      expect.objectContaining({
+        attachments: [{ name: 'Beach photo.png', ref: storedRef }]
+      })
     ])
   })
 
@@ -842,6 +882,38 @@ describe('useAgentConversationStore', () => {
       'assistant'
     ])
     expect(store.isStreaming).toBe(false)
+  })
+
+  /**
+   * The row is the fuller copy only once the service calls the turn finished.
+   * A streaming row already carries its terminal tool calls, so keeping it
+   * would leave the turn looking done with no transport left to finish it.
+   */
+  it('resumes the live turn when the fuller hydrated copy is still streaming', () => {
+    const streamingRow = historyRow(2, 'assistant', 'server-turn', '', 't1')
+    streamingRow.status = 'streaming'
+    streamingRow.content = {
+      tool_calls: [{ id: 'call-1', tool_name: 'search_nodes', status: 'ok' }]
+    }
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'upscale this')
+    store.stashActiveTurn()
+
+    store.setThreadId('th-other')
+    store.hydrate([])
+    store.setThreadId('th')
+    store.hydrate([
+      historyRow(1, 'user', 'server-turn', 'upscale this'),
+      streamingRow
+    ])
+    store.resumeBackgroundTurn()
+
+    store.ingest(delta('t1', 'still going'))
+
+    expect(partTexts(store)).toEqual(['still going'])
+    expect(store.isStreaming).toBe(true)
   })
 
   /**
