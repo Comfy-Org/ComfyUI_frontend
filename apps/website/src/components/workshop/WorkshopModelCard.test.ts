@@ -40,6 +40,23 @@ describe('WorkshopModelCard', () => {
     expect(screen.queryByLabelText('Flux')).toBeNull()
   })
 
+  // The artwork is decorative: the mark says who made this and the heading
+  // says what it is, so a reader hears each of them once.
+  it('names the card link by its provider and then the model', () => {
+    render(WorkshopModelCard, {
+      props: {
+        model: {
+          ...base,
+          thumbnail: { kind: 'image', url: 'https://assets.example/flux' }
+        }
+      }
+    })
+    expect(screen.getByRole('link')).toHaveAccessibleName(
+      /^Black Forest Labs Flux Image to Image/
+    )
+    expect(screen.queryByRole('img', { name: 'Flux' })).toBeNull()
+  })
+
   it.for([
     { locale: 'en', label: 'Incomplete' },
     { locale: 'zh-CN', label: '尚未完善' }
@@ -84,7 +101,7 @@ describe('WorkshopModelCard', () => {
       }
     })
     await nextTick()
-    const video = screen.getByLabelText<HTMLVideoElement>('Flux')
+    const video = screen.getByTestId<HTMLVideoElement>('model-card-media')
     expect(video).not.toHaveAttribute('src')
     expect(video.paused).toBe(true)
     expect(screen.getByRole('link', { name: /Flux/ })).toHaveAttribute(
@@ -107,7 +124,7 @@ describe('WorkshopModelCard', () => {
       }
     })
     await setAllIntersecting(true)
-    expect(screen.getByLabelText('Flux')).toHaveAttribute(
+    expect(screen.getByTestId('model-card-media')).toHaveAttribute(
       'src',
       'https://assets.example/preview.mp4'
     )

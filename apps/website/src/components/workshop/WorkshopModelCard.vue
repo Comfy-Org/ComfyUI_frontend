@@ -57,6 +57,10 @@ const pillClass =
     <div
       class="relative aspect-4/3 overflow-hidden rounded-3.5xl bg-hub-surface"
     >
+      <!-- First in the link, so the reader hears who answers for the card
+        before its name rather than after everything else on it. -->
+      <WorkshopCardMark :label="providerName" :logo />
+
       <!-- Only the hub mixes graphs, apps and models in one grid, so only
         there does a card have to say which it is. -->
       <HubTypeBadge v-if="providerBadge" kind="model" :locale />
@@ -77,8 +81,6 @@ const pillClass =
       >
         {{ thumbnailLabel }}
       </span>
-
-      <WorkshopCardMark :label="providerName" :logo />
     </div>
 
     <div class="flex flex-col gap-3 px-3">
