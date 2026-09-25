@@ -34,7 +34,8 @@ const { t } = useI18n()
 const emit = defineEmits<{
   feedback: [vote: 'up' | 'down' | null]
   answerAsk: [askId: string, selection: 'run' | 'cancel']
-  openWorkflow: [workflowId: string, workflowName?: string]
+  openWorkflow: [askId: string, workflowId: string, workflowName?: string]
+  approvalShown: [askId: string, turnId: string, workflowId: string | null]
   paywallAction: [action: AgentPaywallAction]
 }>()
 
@@ -131,9 +132,13 @@ const status = computed(() => {
         :answering-ask-ids="answeringAskIds"
         :paywall-presentation="paywallPresentation"
         @answer="(askId, selection) => emit('answerAsk', askId, selection)"
+        @approval-shown="
+          (askId, workflowId) =>
+            emit('approvalShown', askId, message.id, workflowId)
+        "
         @open-workflow="
-          (workflowId, workflowName) =>
-            emit('openWorkflow', workflowId, workflowName)
+          (askId, workflowId, workflowName) =>
+            emit('openWorkflow', askId, workflowId, workflowName)
         "
         @paywall-action="emit('paywallAction', $event)"
       />

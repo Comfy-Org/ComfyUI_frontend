@@ -1,11 +1,24 @@
 import { computed, ref } from 'vue'
 
 import { i18n } from '@/i18n'
+import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
+import type {
+  AgentStopClickedMetadata,
+  AgentStopMethod,
+  AgentThreadStartSource,
+  AgentWorkflowBindSource
+} from '@/platform/telemetry/types'
+import { clearLegacyAgentStorage } from '@/platform/workflow/persistence/base/storageIO'
+import {
+  getWorkspaceId,
+  StorageKeys
+} from '@/platform/workflow/persistence/base/storageKeys'
 import { createUuidv4 } from '@/utils/uuid'
 import type {
   AgentActiveTabData,
   AgentTurnAccepted,
+  AgentWsEvent,
   TurnId
 } from '../../schemas/agentApiSchema'
 import {
@@ -66,17 +79,34 @@ type PromptEditState =
   | { phase: 'stopping'; turnId: TurnId }
   | { phase: 'ready'; turnId: TurnId }
 
+/**
+ * Thread starts the session attributes through its pending source;
+ * `history_select` is reported where the history picker resolves instead.
+ */
+export type AgentSessionThreadStartSource = Exclude<
+  AgentThreadStartSource,
+  'history_select'
+>
+
 export interface AgentSessionDeps {
   rest: AgentRestClient
   events: AgentEventSource
+  onThreadStarted?: (source: AgentSessionThreadStartSource) => void
+  onAskResolved?: (askId: string) => void
   workflow?: {
+    /** Resolve fresh versus restored startup before asynchronous hydration. */
+    initialize?(hasThread: boolean): void
     // origin, when given, pins resolution to the tab that initiated the send
     // instead of the target selected when this is called - it is read
     // after prepare() so cloud ids it resolves are fresh, but must still
     // describe the pre-await originating tab, not a later switch. See
     // TurnOrigin for why "no origin tab" is a value rather than an omission.
     current(origin?: TurnOrigin): WorkflowTurnContext | undefined
-    adopted(workflowId: string, sent: WorkflowTurnContext | undefined): void
+    adopted(
+      workflowId: string,
+      sent: WorkflowTurnContext | undefined,
+      previousWorkflowId: string | null
+    ): void
     restored?(
       workflowId: string | undefined,
       isCurrent: () => boolean
@@ -90,7 +120,6 @@ export interface AgentSessionDeps {
   }
 }
 
-const THREAD_STORAGE_KEY = 'Comfy.Agent.ThreadId'
 const PREPARE_TIMEOUT_MS = 3000
 
 /**
@@ -133,6 +162,22 @@ let sessionGeneration = 0
  * newChat/loadThread clear it.
  */
 let rememberedWorkflowId: string | null = null
+const turnStartedAt = new Map<TurnId, number>()
+
+/**
+ * Module-level like `turnStartedAt`: a POST outlives the panel that sent it,
+ * so a stop clicked from a remounted panel before the acknowledgement must
+ * reach the continuation that acks. One owner: armed while a send is in
+ * flight, consumed exactly once at ack.
+ */
+let sendInFlight = false
+let stopPendingAck: { method: AgentStopMethod | undefined } | null = null
+
+function consumeStopPendingAck() {
+  const pending = stopPendingAck
+  stopPendingAck = null
+  return pending
+}
 
 function parseAdmissionError(error: unknown) {
   if (!(error instanceof AgentApiError)) return undefined
@@ -153,7 +198,9 @@ function disownsWorkflow(error: unknown): boolean {
 }
 
 export function useAgentSession(deps: AgentSessionDeps) {
-  const { rest, events, workflow } = deps
+  const { rest, events, onThreadStarted, onAskResolved, workflow } = deps
+  const threadStorageKey = StorageKeys.agentThread(getWorkspaceId())
+  clearLegacyAgentStorage()
 
   const conversationStore = useAgentConversationStore()
   const bindingStore = useAgentWorkflowTabBindingStore()
@@ -164,10 +211,57 @@ export function useAgentSession(deps: AgentSessionDeps) {
    */
   const boundWorkflowId = ref<string | null>(rememberedWorkflowId)
 
+  /**
+   * H8 reporting state, kept beside the binding it describes: the workflow
+   * last reported for the current thread (suppresses the ack's re-report of a
+   * transition already committed by a selection), and a target selection
+   * committed before its thread exists, consumed by the ack that binds it.
+   */
+  let reportedWorkflowBind: { threadId: string; workflowId: string } | null =
+    null
+  let pendingWorkflowBind: {
+    workflowId: string
+    previousWorkflowId: string | null
+    source: 'selector_chip' | 'restored'
+  } | null = null
+
+  function reportWorkflowBound(
+    workflowId: string,
+    previousWorkflowId: string | null,
+    source: AgentWorkflowBindSource
+  ): void {
+    const currentThreadId = conversationStore.threadId
+    if (currentThreadId === null) {
+      if (source === 'selector_chip' || source === 'restored')
+        pendingWorkflowBind = { workflowId, previousWorkflowId, source }
+      return
+    }
+    const pending =
+      pendingWorkflowBind?.workflowId === workflowId
+        ? pendingWorkflowBind
+        : null
+    pendingWorkflowBind = null
+    const lastReported =
+      reportedWorkflowBind?.threadId === currentThreadId
+        ? reportedWorkflowBind.workflowId
+        : (pending?.previousWorkflowId ?? previousWorkflowId)
+    if (workflowId === lastReported) return
+    reportedWorkflowBind = { threadId: currentThreadId, workflowId }
+    useTelemetry()?.trackAgentWorkflowBound({
+      thread_id: currentThreadId,
+      workflow_id: workflowId,
+      prev_workflow_id: lastReported,
+      bind_source: pending?.source ?? source
+    })
+  }
+
   const notices = ref<SessionNotice[]>([])
   const promptEditState = ref<PromptEditState>({ phase: 'idle' })
   const sending = ref(false)
   const answeringAskIds = computed(() => conversationStore.answeringAskIds)
+  const pendingThreadSource = ref<AgentSessionThreadStartSource | null>(
+    'first_open'
+  )
 
   function nextLocalErrorId(): TurnId {
     return toTurnId(`local-error-${createUuidv4()}`)
@@ -190,18 +284,23 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function start(): void {
     ownedGeneration = ++sessionGeneration
     everLive = false
+    const surviving = conversationStore.threadId
+    const stored =
+      conversationStore.messages.length === 0
+        ? localStorage.getItem(threadStorageKey)
+        : null
+    workflow?.initialize?.(surviving !== null || stored !== null)
     // The binding only outlives a remount together with its thread: a page
     // with no surviving thread has no resumed turn the binding could serve.
     if (
       conversationStore.threadId === null &&
-      localStorage.getItem(THREAD_STORAGE_KEY) === null
+      localStorage.getItem(threadStorageKey) === null
     ) {
       rememberedWorkflowId = null
       boundWorkflowId.value = null
     }
     unsubscribe = events.subscribe(onRaw)
     if (events.onStatus) unsubscribeStatus = events.onStatus(onStatus)
-    const surviving = conversationStore.threadId
     if (surviving !== null) {
       const generation = ++loadGeneration
       const isCurrent = () =>
@@ -213,18 +312,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
       })
       return
     }
-    if (conversationStore.messages.length === 0) {
-      const stored = localStorage.getItem(THREAD_STORAGE_KEY)
-      if (stored !== null) {
-        const generation = ++loadGeneration
-        conversationStore.setThreadId(stored)
-        void hydrateFromServer(
-          stored,
-          () =>
-            generation === loadGeneration &&
-            ownedGeneration === sessionGeneration
-        )
-      }
+    if (stored !== null) {
+      const generation = ++loadGeneration
+      conversationStore.setThreadId(stored)
+      void hydrateFromServer(
+        stored,
+        () =>
+          generation === loadGeneration && ownedGeneration === sessionGeneration
+      )
     }
   }
 
@@ -244,7 +339,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       if (error instanceof AgentApiError && error.status === 404) {
         if (conversationStore.threadId === threadId)
           conversationStore.setThreadId(null)
-        localStorage.removeItem(THREAD_STORAGE_KEY)
+        localStorage.removeItem(threadStorageKey)
         return false
       }
       pushError(error instanceof Error ? error.message : String(error))
@@ -260,6 +355,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const stoppedGeneration = ownedGeneration
     queueMicrotask(() => {
       if (stoppedGeneration !== sessionGeneration) return
+      loadGeneration++
+      turnStartedAt.clear()
       conversationStore.abortActiveTurn()
       conversationStore.dropBackgroundTurns()
     })
@@ -415,6 +512,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
+  function recordTurnStarted(turnId: TurnId, startsThread: boolean): void {
+    turnStartedAt.set(turnId, Date.now())
+    if (startsThread && pendingThreadSource.value !== null) {
+      onThreadStarted?.(pendingThreadSource.value)
+      pendingThreadSource.value = null
+    }
+  }
+
   function acceptTurn(
     ack: AgentTurnAccepted,
     text: string,
@@ -423,8 +528,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
     tags?: SentTag[],
     workflowReferences?: WorkflowReference[]
   ): void {
+    const startsThread = conversationStore.threadId === null
     conversationStore.setThreadId(ack.thread_id)
-    localStorage.setItem(THREAD_STORAGE_KEY, ack.thread_id)
+    localStorage.setItem(threadStorageKey, ack.thread_id)
     if (ack.workflow_id !== undefined) {
       const boundAtAck = boundWorkflowId.value
       bindWorkflow(ack.workflow_id)
@@ -432,9 +538,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
         wfContext?.id !== undefined ||
         (ack.workflow_id !== boundAtAck &&
           bindingStore.tabPathFor(ack.workflow_id) === undefined)
-      if (shouldAdopt) workflow?.adopted(ack.workflow_id, wfContext)
+      if (shouldAdopt) workflow?.adopted(ack.workflow_id, wfContext, boundAtAck)
     }
-    const turnId = ack.message_id as TurnId
+    const turnId = toTurnId(ack.message_id)
     conversationStore.recordUser(
       turnId,
       text,
@@ -447,10 +553,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
       workflowReferences
     )
     conversationStore.startTurn(turnId)
-    if (wasStopRequestedWhileSending()) {
-      stopRequestedWhileSending.value = false
-      void stopTurn()
-    }
+    recordTurnStarted(turnId, startsThread)
+    const pendingStop = consumeStopPendingAck()
+    if (pendingStop !== null) void stopTurn(pendingStop.method)
   }
 
   function recordSendError(error: unknown, text: string): void {
@@ -580,7 +685,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
     promptEditState.value = { phase: 'idle' }
     sending.value = true
-    stopRequestedWhileSending.value = false
+    sendInFlight = true
+    stopPendingAck = null
     try {
       return await performSend(
         text,
@@ -591,39 +697,79 @@ export function useAgentSession(deps: AgentSessionDeps) {
       )
     } finally {
       sending.value = false
+      sendInFlight = false
     }
   }
 
-  const stopRequestedWhileSending = ref(false)
-  const wasStopRequestedWhileSending = () => stopRequestedWhileSending.value
+  function captureStopMetadata(
+    turnId: TurnId,
+    method: AgentStopMethod | undefined
+  ): AgentStopClickedMetadata | null {
+    if (method === undefined) return null
+    const startedAt = turnStartedAt.get(turnId)
+    return {
+      method,
+      turn_id: turnId,
+      turn_elapsed_ms:
+        startedAt === undefined ? null : Math.max(0, Date.now() - startedAt)
+    }
+  }
 
-  async function stopTurn(): Promise<void> {
+  function forgetActiveTurnStartedAt(): void {
+    const activeTurnId = conversationStore.activeTurnId
+    if (activeTurnId !== null) turnStartedAt.delete(activeTurnId)
+  }
+
+  function isStoppingTurn(turnId: TurnId): boolean {
+    return (
+      promptEditState.value.phase === 'stopping' &&
+      promptEditState.value.turnId === turnId
+    )
+  }
+
+  function trackCommittedStop(metadata: AgentStopClickedMetadata | null): void {
+    if (metadata !== null) useTelemetry()?.trackAgentStopClicked(metadata)
+  }
+
+  function handleStopFailure(error: unknown): void {
+    if (error instanceof AgentApiError) {
+      if (error.status === 409) return
+      promptEditState.value = { phase: 'idle' }
+      pushError(error.message)
+      return
+    }
+    promptEditState.value = { phase: 'idle' }
+    pushError(error instanceof Error ? error.message : String(error))
+  }
+
+  async function stopTurn(method?: AgentStopMethod): Promise<void> {
     const threadId = conversationStore.threadId
     const turnId = conversationStore.activeTurnId
     if (threadId === null || turnId === null) {
       // The POST has not acked yet; remember the intent and cancel on ack.
-      if (sending.value) stopRequestedWhileSending.value = true
+      // sendInFlight, not this instance's sending: the panel that posted may
+      // have been remounted, and the stop arrives through the new instance.
+      if (sendInFlight) stopPendingAck = { method }
       return
     }
+    if (isStoppingTurn(turnId)) return
     promptEditState.value = { phase: 'stopping', turnId }
+    const stopMetadata = captureStopMetadata(
+      conversationStore.activeMessageId ?? turnId,
+      method
+    )
     try {
       await rest.cancelMessage(threadId, turnId)
+      trackCommittedStop(stopMetadata)
     } catch (error) {
-      if (error instanceof AgentApiError) {
-        if (error.status === 409) return
-        promptEditState.value = { phase: 'idle' }
-        pushError(error.message)
-        return
-      }
-      promptEditState.value = { phase: 'idle' }
-      pushError(error instanceof Error ? error.message : String(error))
+      handleStopFailure(error)
     }
   }
 
   async function answerAsk(
     askId: string,
     selection: 'run' | 'cancel'
-  ): Promise<void> {
+  ): Promise<boolean> {
     const currentThreadId = conversationStore.threadId
     if (currentThreadId === null) {
       // PM-1658: the card is on screen, so a click on it is never a no-op.
@@ -637,18 +783,19 @@ export function useAgentSession(deps: AgentSessionDeps) {
       // Nothing can ever answer this card, so retire it rather than let every
       // further click raise another toast and another telemetry event.
       conversationStore.retireAsk(askId)
-      return
+      return false
     }
     // PM-1658: deliberately NOT gated on an active turn. The endpoint is keyed
     // by thread and ask alone — it never looks a turn up — and the server
     // parks a run approval for days, so a card can still be answered long
     // after the turn that raised it stopped streaming to this client.
-    if (answeringAskIds.value.has(askId)) return
+    if (answeringAskIds.value.has(askId)) return false
     conversationStore.recordAskSelection(askId, selection)
     conversationStore.setAskAnswering(askId, true)
     try {
       await sendAnswer(currentThreadId, askId, selection)
       conversationStore.commitAsk(askId)
+      return true
     } catch (error) {
       if (
         error instanceof AgentApiError &&
@@ -663,7 +810,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
           pushError(i18n.global.t('agent.runApproval.answerFailed'))
         }
         conversationStore.retireAsk(askId)
-        return
+        return false
       }
       reportError(error, { errorType: 'agent_ask_answer_failed' })
       // Every re-drive above has been spent. The card cannot simply go back
@@ -677,6 +824,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       // genuinely still pending.
       conversationStore.retireAsk(askId)
       pushError(i18n.global.t('agent.runApproval.answerUncertain'))
+      return false
     }
   }
 
@@ -734,21 +882,25 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   let loadGeneration = 0
 
-  function newChat(): void {
+  function newChat(
+    source?: Exclude<AgentSessionThreadStartSource, 'first_open'>
+  ): void {
     loadGeneration++
     promptEditState.value = { phase: 'idle' }
     conversationStore.stashActiveTurn()
     conversationStore.reset()
     boundWorkflowId.value = null
     rememberedWorkflowId = null
-    localStorage.removeItem(THREAD_STORAGE_KEY)
+    pendingWorkflowBind = null
+    localStorage.removeItem(threadStorageKey)
+    pendingThreadSource.value = source ?? null
   }
 
   function listThreads() {
     return rest.listThreads()
   }
 
-  async function loadThread(threadId: string): Promise<void> {
+  async function loadThread(threadId: string): Promise<boolean> {
     const generation = ++loadGeneration
     promptEditState.value = { phase: 'idle' }
     const isCurrent = () =>
@@ -756,10 +908,75 @@ export function useAgentSession(deps: AgentSessionDeps) {
     conversationStore.stashActiveTurn()
     boundWorkflowId.value = null
     rememberedWorkflowId = null
+    pendingWorkflowBind = null
     conversationStore.setThreadId(threadId)
-    localStorage.setItem(THREAD_STORAGE_KEY, threadId)
+    localStorage.setItem(threadStorageKey, threadId)
     const hydrated = await hydrateFromServer(threadId, isCurrent)
     if (hydrated && isCurrent()) conversationStore.resumeBackgroundTurn()
+    return hydrated && isCurrent()
+  }
+
+  function malformedEventTurnId(raw: object): TurnId | undefined {
+    if (!('data' in raw) || typeof raw.data !== 'object' || raw.data === null)
+      return undefined
+    if (!('message_id' in raw.data)) return undefined
+    const messageId = raw.data.message_id
+    return typeof messageId === 'string' ? toTurnId(messageId) : undefined
+  }
+
+  function handleMalformedEvent(
+    type: string,
+    raw: object,
+    error: unknown
+  ): void {
+    const turnId = malformedEventTurnId(raw)
+    if (type === 'agent_message_done') {
+      if (turnId !== undefined) turnStartedAt.delete(turnId)
+      if (turnId === undefined || turnId === conversationStore.activeTurnId) {
+        forgetActiveTurnStartedAt()
+        conversationStore.abortActiveTurn()
+        pushError(i18n.global.t('agent.malformedEvent'))
+      } else {
+        conversationStore.settleBackgroundTurn(turnId)
+      }
+    }
+    console.warn('[agent] dropping malformed agent event', error)
+  }
+
+  function handleMessageDone(
+    event: Extract<AgentWsEvent, { type: 'agent_message_done' }>
+  ): void {
+    turnStartedAt.delete(toTurnId(event.data.message_id))
+    if (
+      promptEditState.value.phase === 'stopping' &&
+      event.data.message_id === promptEditState.value.turnId &&
+      event.data.thread_id === conversationStore.threadId
+    )
+      promptEditState.value = {
+        phase: 'ready',
+        turnId: promptEditState.value.turnId
+      }
+  }
+
+  function handleAgentEvent(event: AgentWsEvent): void {
+    if (event.type === 'agent_ask_resolved') {
+      reportSupersededAnswer(event.data.ask_id, event.data.selected)
+      // Not just un-busying it: `ingest` below routes this frame through the
+      // owning turn's transport, and the turn is gone in exactly the case that
+      // matters, so on its own it would re-enable a card it cannot remove.
+      conversationStore.retireAsk(event.data.ask_id)
+      onAskResolved?.(event.data.ask_id)
+    }
+    conversationStore.ingest(event)
+    if (event.type === 'agent_active_tab') {
+      if (
+        event.data.thread_id === undefined ||
+        event.data.thread_id === conversationStore.threadId
+      )
+        workflow?.activeTab?.(event.data)
+      return
+    }
+    if (event.type === 'agent_message_done') handleMessageDone(event)
   }
 
   function onRaw(raw: unknown): void {
@@ -768,54 +985,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (typeof type !== 'string' || !isAgentEvent(type)) return
     const parsed = parseAgentWsEvent(raw)
     if (!parsed.success) {
-      const messageId = (raw as { data?: { message_id?: unknown } }).data
-        ?.message_id
-      if (type === 'agent_message_done') {
-        if (
-          typeof messageId !== 'string' ||
-          messageId === conversationStore.activeTurnId
-        ) {
-          conversationStore.abortActiveTurn()
-          pushError(i18n.global.t('agent.malformedEvent'))
-        } else {
-          conversationStore.settleBackgroundTurn(messageId)
-        }
-      }
-      console.warn('[agent] dropping malformed agent event', parsed.error)
+      handleMalformedEvent(type, raw, parsed.error)
       return
     }
-    const event = parsed.data
-    // Not just un-busying it: `ingest` routes this frame through the owning
-    // turn's transport, and the turn is gone in exactly the case that matters,
-    // so on its own it would re-enable a card it cannot remove.
-    if (event.type === 'agent_ask_resolved') {
-      reportSupersededAnswer(event.data.ask_id, event.data.selected)
-      conversationStore.retireAsk(event.data.ask_id)
-    }
-    switch (event.type) {
-      case 'agent_active_tab':
-        // Every thread records the link in its own transcript; only the thread
-        // on screen is allowed to move the user's tabs.
-        conversationStore.ingest(event)
-        if (
-          event.data.thread_id === undefined ||
-          event.data.thread_id === conversationStore.threadId
-        )
-          workflow?.activeTab?.(event.data)
-        return
-      default:
-        conversationStore.ingest(event)
-        if (
-          event.type === 'agent_message_done' &&
-          promptEditState.value.phase === 'stopping' &&
-          event.data.message_id === promptEditState.value.turnId &&
-          event.data.thread_id === conversationStore.threadId
-        )
-          promptEditState.value = {
-            phase: 'ready',
-            turnId: promptEditState.value.turnId
-          }
-    }
+    handleAgentEvent(parsed.data)
   }
 
   function onStatus(live: boolean): void {
@@ -827,6 +1000,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     // interrupted. An initial `false` (socket not open yet) is not a
     // reconnect and must not abort a turn that survived a remount.
     if (!everLive) return
+    turnStartedAt.clear()
     conversationStore.abortActiveTurn()
     conversationStore.dropBackgroundTurns()
     // After the teardown, never before: settling a transport republishes its
@@ -849,6 +1023,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   return {
     boundWorkflowId: computed(() => boundWorkflowId.value),
     bindWorkflow,
+    reportWorkflowBound,
     isSending,
     editableTurnId,
     start,

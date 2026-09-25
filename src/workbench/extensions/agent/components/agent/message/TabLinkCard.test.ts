@@ -40,7 +40,6 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
 }))
 
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
-const workflowService = vi.mocked(useWorkflowService())
 
 const { useAgentWorkflowTabBindingStore } =
   await import('../../../stores/agent/agentWorkflowTabBindingStore')
@@ -86,7 +85,7 @@ describe('TabLinkCard', () => {
 
     await userEvent.click(link)
 
-    expect(workflowService.openWorkflow).toHaveBeenCalledWith(tab)
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(tab)
   })
 
   it('falls back to the local tab name when no backend name is present', () => {
@@ -212,7 +211,7 @@ describe('TabLinkCard', () => {
     mount('wf-1', 'Portrait upscale')
 
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
-    expect(workflowService.openWorkflow).not.toHaveBeenCalled()
+    expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
   })
 
   it('navigates an explicit node reference through its target workflow', async () => {
@@ -237,7 +236,7 @@ describe('TabLinkCard', () => {
       workflowId: 'wf-1',
       locatorId: 'root-a:42'
     })
-    expect(workflowService.openWorkflow).not.toHaveBeenCalled()
+    expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
   })
 
   it('shows recovery feedback when a node target is no longer available', async () => {

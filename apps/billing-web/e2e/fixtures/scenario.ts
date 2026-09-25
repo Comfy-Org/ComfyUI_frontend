@@ -77,6 +77,20 @@ export function declinedOperation(id: string): BillingOpStatusResponse {
   }
 }
 
+/** The live failure a misconfigured charge settles as: no retry, support only. */
+export function contactSupportOperation(id: string): BillingOpStatusResponse {
+  const now = new Date().toISOString()
+  return {
+    id,
+    status: 'failed',
+    error_message: 'parameter_missing',
+    recovery_action: 'contact_support',
+    retryable: false,
+    started_at: now,
+    completed_at: now
+  }
+}
+
 /** A poll response asking the tab to drive an embedded 3DS challenge. */
 export function challengeRequiredOperation(
   id: string,
@@ -155,7 +169,7 @@ export function defaultScenario(): CloudScenario {
     ],
     preview: {
       allowed: true,
-      transition_type: 'upgrade',
+      transition_type: 'new_subscription',
       is_immediate: true,
       effective_at: new Date().toISOString(),
       renewal_at: inAnHour(),

@@ -57,6 +57,7 @@ export const useAgentConversationStore = defineStore(
     const userTags = ref(new Map<TurnId, string[]>())
     const userWorkflowReferences = ref(new Map<TurnId, WorkflowReference[]>())
     const latestWorkflowId = ref<string>()
+    const resolvedPaywallIds = ref(new Set<TurnId>())
     let transport: AgentEventTransport | null = null
     let liveMessage: AssistantMessage | null = null
     // PM-1575: whether a newly-created transport should hold a tool-call's
@@ -90,7 +91,38 @@ export const useAgentConversationStore = defineStore(
     const backgroundTurns = new Map<string, BackgroundTurn>()
     let hydratedMessageIds = new Set<string>()
     let hydratedAssistantTurnIds = new Set<TurnId>()
+    const reportedPaywallImpressions = new Set<TurnId>()
+    const approvalShownAtByAsk = new Map<string, number>()
+    const shownApprovalIds = new Set<string>()
     const activeIndex = ref(-1)
+
+    function recordApprovalShown(askId: string, shownAt: number): boolean {
+      if (shownApprovalIds.has(askId)) return false
+      shownApprovalIds.add(askId)
+      approvalShownAtByAsk.set(askId, shownAt)
+      return true
+    }
+
+    function approvalShownAt(askId: string): number | undefined {
+      return approvalShownAtByAsk.get(askId)
+    }
+
+    function forgetApprovalTiming(askId: string): void {
+      approvalShownAtByAsk.delete(askId)
+    }
+
+    function forgetApproval(askId: string): void {
+      forgetApprovalTiming(askId)
+      shownApprovalIds.delete(askId)
+    }
+
+    // Approval dedupe/timing belongs to one conversation: a remount of the
+    // same thread keeps it (hydrate alone must not re-arm a shown card), while
+    // leaving the thread drops the abandoned asks with it.
+    function forgetAllApprovals(): void {
+      approvalShownAtByAsk.clear()
+      shownApprovalIds.clear()
+    }
 
     function replaceActive(message: AssistantMessage): void {
       // PM-1575: looked up by id, not `activeIndex.value`. A turn's own
@@ -120,6 +152,7 @@ export const useAgentConversationStore = defineStore(
     }
 
     function setThreadId(id: string | null): void {
+      if (id !== threadId.value) forgetAllApprovals()
       threadId.value = id
     }
 
@@ -155,16 +188,19 @@ export const useAgentConversationStore = defineStore(
     }
 
     function resolvePaywalls(): void {
-      messages.value = messages.value.map((message) => {
-        const parts = message.parts.filter((part) => part.type !== 'paywall')
-        return parts.length === message.parts.length
-          ? message
-          : { ...message, parts }
-      })
+      const resolved = new Set(resolvedPaywallIds.value)
+      for (const message of messages.value) {
+        if (message.parts.some((part) => part.type === 'paywall')) {
+          resolved.add(message.id)
+        }
+      }
+      resolvedPaywallIds.value = resolved
     }
 
-    function setPaywallsResolved(resolved: boolean): void {
-      if (resolved) resolvePaywalls()
+    function claimPaywallImpression(turnId: TurnId): boolean {
+      if (reportedPaywallImpressions.has(turnId)) return false
+      reportedPaywallImpressions.add(turnId)
+      return true
     }
 
     /**
@@ -560,10 +596,13 @@ export const useAgentConversationStore = defineStore(
       userTags.value = new Map()
       userWorkflowReferences.value = new Map()
       latestWorkflowId.value = undefined
+      resolvedPaywallIds.value = new Set()
       dropAttachmentPreviews()
       threadId.value = null
+      forgetAllApprovals()
       hydratedMessageIds = new Set()
       hydratedAssistantTurnIds = new Set()
+      reportedPaywallImpressions.clear()
       clearActive()
     }
 
@@ -602,6 +641,7 @@ export const useAgentConversationStore = defineStore(
       // with nothing able to settle it.
       dropResolvedAsks(transcript)
       messages.value = transcript.messages
+      resolvedPaywallIds.value = new Set()
       userTexts.value = transcript.userTexts
       userTags.value = new Map()
       userWorkflowReferences.value = transcript.userWorkflowReferences
@@ -624,21 +664,33 @@ export const useAgentConversationStore = defineStore(
     }
 
     const entries = computed<ConversationEntry[]>(() =>
-      messages.value.flatMap((message) => {
+      messages.value.flatMap((recordedMessage) => {
+        const isPaywallResolved = resolvedPaywallIds.value.has(
+          recordedMessage.id
+        )
+        const message = isPaywallResolved
+          ? {
+              ...recordedMessage,
+              parts: recordedMessage.parts.filter(
+                (part) => part.type !== 'paywall'
+              )
+            }
+          : recordedMessage
         const text = userTexts.value.get(message.id)
-        return text === undefined
-          ? [message]
-          : [
-              {
-                id: message.id,
-                role: 'user',
-                text,
-                attachments: userAttachments.value.get(message.id),
-                tags: userTags.value.get(message.id),
-                workflowReferences: userWorkflowReferences.value.get(message.id)
-              },
-              message
-            ]
+        const assistantEntries =
+          isPaywallResolved && message.parts.length === 0 ? [] : [message]
+        if (text === undefined) return assistantEntries
+        return [
+          {
+            id: message.id,
+            role: 'user',
+            text,
+            attachments: userAttachments.value.get(message.id),
+            tags: userTags.value.get(message.id),
+            workflowReferences: userWorkflowReferences.value.get(message.id)
+          },
+          ...assistantEntries
+        ]
       })
     )
 
@@ -659,6 +711,7 @@ export const useAgentConversationStore = defineStore(
       )
     }
 
+    const activeMessageId = computed(() => activeMessage.value?.id ?? null)
     const isStreaming = computed(() => activeMessage.value?.streaming ?? false)
     const status = computed<ConversationStatus>(() => {
       const message = activeMessage.value
@@ -670,15 +723,21 @@ export const useAgentConversationStore = defineStore(
       messages,
       entries,
       activeTurnId,
+      activeMessageId,
       threadId,
       isStreaming,
       status,
       latestWorkflowId,
+      recordApprovalShown,
+      approvalShownAt,
+      forgetApprovalTiming,
+      forgetApproval,
       recordUser,
       setThreadId,
       recordFailedSend,
       recordPaywall,
-      setPaywallsResolved,
+      resolvePaywalls,
+      claimPaywallImpression,
       answeringAskIds,
       setAskAnswering,
       recordAskSelection,

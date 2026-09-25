@@ -1,4 +1,10 @@
-import type { Locale } from '../i18n/translations'
+import {
+  DEFAULT_LOCALE,
+  LOCALES,
+  localeHasRoute,
+  normalizeRoute
+} from './locales'
+import type { Locale } from './locales'
 
 const baseRoutes = {
   home: '/',
@@ -57,10 +63,9 @@ type RouteKey = keyof typeof baseRoutes
 
 type Routes = Readonly<Record<RouteKey, string>>
 
-// Routes that are served only at their canonical path regardless of the
-// active locale. Localized variants of these routes intentionally do not
-// exist, so getRoutes(<non-en>) must not prefix them — emitting
-// /zh-CN/<route> would produce a dead link.
+// English-only routes: navigation and language metadata keep them on the
+// English path, because a locale prefix would link to a page that does not
+// exist. Remove a route from this list once its translation ships.
 //
 // affiliateTerms: legal-reviewed English-only document. See the comment
 // header in src/pages/affiliates/terms.astro and the affiliate-terms i18n
@@ -90,8 +95,6 @@ const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
   'affiliateTerms',
   'termsOfService',
   'enterpriseMsa',
-  'enterprise',
-  'managedBuilds',
   'models',
   'minimaxLicenseProfessionalRequest',
   'workshop',
@@ -126,26 +129,40 @@ const LOCALE_INVARIANT_PATHS = new Set<string>([
   ...LOCALE_INVARIANT_EXTRA_PATHS
 ])
 
-/**
- * Prefix an internal path with the locale (`/mcp` → `/zh-CN/mcp`). External
- * URLs and locale-invariant routes pass through unchanged.
- */
 /** True for a locale-invariant route or anything nested under one. */
-export function isLocaleInvariantPath(pathname: string): boolean {
+function isLocaleInvariantPath(pathname: string): boolean {
   return [...LOCALE_INVARIANT_PATHS].some(
     (path) => pathname === path || pathname.startsWith(`${path}/`)
   )
 }
 
-export function localizeHref(href: string, locale: Locale = 'en'): string {
-  if (locale === 'en' || !href.startsWith('/')) return href
-  if (isLocaleInvariantPath(href.split(/[?#]/, 1)[0])) return href
-  if (locale === 'ja') return href === '/' ? '/ja/' : href
-  return `/${locale}${href}`
+const NOT_FOUND_PATHS = new Set(['/404', '/404.html'])
+
+export function supportsLocaleRoute(locale: Locale, pathname: string): boolean {
+  return (
+    !NOT_FOUND_PATHS.has(normalizeRoute(pathname)) &&
+    !isLocaleInvariantPath(pathname) &&
+    localeHasRoute(locale, pathname)
+  )
 }
 
-export function getRoutes(locale: Locale = 'en'): Routes {
-  if (locale === 'en') return baseRoutes
+/**
+ * Prefix an internal path with the locale (`/mcp` → `/zh-CN/mcp`). External
+ * URLs and locale-invariant routes pass through unchanged.
+ */
+export function localizeHref(
+  href: string,
+  locale: Locale = DEFAULT_LOCALE
+): string {
+  if (locale === DEFAULT_LOCALE || !href.startsWith('/')) return href
+  const suffixAt = href.search(/[?#]/)
+  const path = suffixAt === -1 ? href : href.slice(0, suffixAt)
+  if (!supportsLocaleRoute(locale, path)) return href
+  return `${LOCALES[locale].prefix}${href}`
+}
+
+export function getRoutes(locale: Locale = DEFAULT_LOCALE): Routes {
+  if (locale === DEFAULT_LOCALE) return baseRoutes
   return Object.fromEntries(
     Object.entries(baseRoutes).map(([key, path]) => [
       key,
