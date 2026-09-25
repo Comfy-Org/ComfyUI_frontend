@@ -275,9 +275,11 @@ describe('ModelDetail', () => {
     vi.stubEnv('PUBLIC_WORKSHOP_SAVE_ASSETS', '1')
     auth.session.value = credential
     vi.mocked(listWorkshopGenerations).mockResolvedValue({ requests: [] })
-    vi.mocked(runWorkshopRouter).mockReturnValue(
-      Promise.withResolvers<typeof routerResult>().promise
-    )
+    // The Router takes the request, which is what puts a run on offer to keep.
+    vi.mocked(runWorkshopRouter).mockImplementation((options) => {
+      options.onRequestId?.('18655193-3f73-4abf-b49c-1c6a058355bc')
+      return Promise.withResolvers<typeof routerResult>().promise
+    })
     const assign = vi.spyOn(location, 'assign').mockImplementation(() => {})
     onTestFinished(() => assign.mockRestore())
     const link = document.createElement('a')
@@ -303,6 +305,43 @@ describe('ModelDetail', () => {
     expect(assign).toHaveBeenCalledWith(link.href)
     const run = vi.mocked(runWorkshopRouter).mock.calls[0][0]
     expect(run.signal.reason === WORKSHOP_LEAVE_RUNNING).toBe(keeps)
+  })
+
+  // Pressing Run puts the page in its running state well before the Router has
+  // taken the request. Offering to leave that running would promise a
+  // generation that never starts, so until there is a run to keep, leaving
+  // stops it and says so.
+  it('offers no way to keep a run the router has not taken', async () => {
+    vi.stubEnv('PUBLIC_WORKSHOP_SAVE_ASSETS', '1')
+    auth.session.value = credential
+    vi.mocked(listWorkshopGenerations).mockResolvedValue({ requests: [] })
+    vi.mocked(runWorkshopRouter).mockReturnValue(
+      Promise.withResolvers<typeof routerResult>().promise
+    )
+    const assign = vi.spyOn(location, 'assign').mockImplementation(() => {})
+    onTestFinished(() => assign.mockRestore())
+    const link = document.createElement('a')
+    link.href = `${location.origin}/models/another-model/`
+    document.body.append(link)
+    onTestFinished(() => link.remove())
+    mountDetail({ model: runnable })
+    await user().type(screen.getByTestId('field-prompt'), 'A teapot')
+    await user().click(screen.getByTestId('run-button'))
+    await vi.waitFor(() => expect(runWorkshopRouter).toHaveBeenCalledOnce())
+
+    link.dispatchEvent(
+      new MouseEvent('click', { bubbles: true, cancelable: true })
+    )
+    await screen.findByTestId('run-leave-dialog')
+
+    expect(screen.queryByTestId('run-leave-keep')).toBeNull()
+    expect(screen.getByTestId('run-leave-stay')).toBeVisible()
+    expect(screen.queryByTestId('run-leave-assets')).toBeNull()
+
+    await user().click(screen.getByTestId('run-leave-confirm'))
+
+    const run = vi.mocked(runWorkshopRouter).mock.calls[0][0]
+    expect(run.signal.reason === WORKSHOP_LEAVE_RUNNING).toBe(false)
   })
 
   it('links a documented provider in a new tab', () => {

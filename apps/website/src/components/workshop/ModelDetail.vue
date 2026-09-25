@@ -337,10 +337,14 @@ useEventListener(
 // this one route off the page can be asked in our own words. The rest still
 // reach the guards above.
 const leavingTo = ref<string>()
-// Only where the cloud would keep the result is carrying on worth offering.
-const leaveAction = computed(() => (savesAssets ? 'leaveSaved' : 'leave'))
+// Carrying on is only worth offering where the cloud would keep the result,
+// and only once the Router has admitted the run: before that it exists on this
+// page alone, so leaving it running would leave nothing running.
+const leaveAction = computed(() =>
+  savesAssets && requestId.value ? 'leaveSaved' : 'leave'
+)
 const assetsHref = computed(() =>
-  savesAssets ? WORKSHOP_ASSETS_URL : undefined
+  leaveAction.value === 'leaveSaved' ? WORKSHOP_ASSETS_URL : undefined
 )
 
 // A kept result does not expire, so the note beneath it would be untrue.
@@ -375,12 +379,15 @@ function leaveForLink() {
   location.assign(href)
 }
 
-// The reader who started a long render on purpose and meant to walk away.
+// The reader who started a long render on purpose and meant to walk away. A
+// run admitted between the dialog opening and this click is the only one that
+// can be left; anything else would be abandoned rather than kept.
 function keepAndLeave() {
   const href = leavingTo.value
   leavingTo.value = undefined
   if (!href) return
-  stopObserving()
+  if (requestId.value) stopObserving()
+  else cancelRun()
   location.assign(href)
 }
 
@@ -451,6 +458,21 @@ function stopObserving() {
   reportWorkshopRun(undefined)
 }
 
+/**
+ * The address carries the run so that a reload finds it again. It belongs to
+ * that run alone: one that ended, or one whose workspace is no longer this
+ * reader's, takes it back rather than leaving an id for the next load to
+ * restore as though it were still theirs.
+ */
+function rememberRequestId(id: string | null) {
+  requestId.value = id
+  if (!savesAssets) return
+  const url = new URL(window.location.href)
+  if (id) url.searchParams.set('request_id', id)
+  else url.searchParams.delete('request_id')
+  window.history.replaceState(window.history.state, '', url)
+}
+
 // A reload lands on the run the address remembers, so the strip can show it
 // still working rather than an empty shelf.
 onMounted(() => {
@@ -471,7 +493,7 @@ function leaveOwner() {
     runs.value.flatMap((run) => [run.output, ...run.attachments])
   )
   runs.value = []
-  requestId.value = null
+  rememberRequestId(null)
 }
 
 // The strip asks for its own credential, and refuses one minted for anybody
@@ -599,13 +621,7 @@ async function renderRun(
       },
       idempotencyKey: (body) => idempotencyKeyFor(startedFor, body),
       onRequestId: (id) => {
-        if (!runIsActive(attempt)) return
-        requestId.value = id
-        if (savesAssets && id) {
-          const url = new URL(window.location.href)
-          url.searchParams.set('request_id', id)
-          window.history.replaceState(window.history.state, '', url)
-        }
+        if (runIsActive(attempt)) rememberRequestId(id)
       }
     }
   )
@@ -617,7 +633,7 @@ function finishRun(result: RouterRenderResult, attempt: ActiveRun): void {
     return
   }
   pendingRequest = undefined
-  requestId.value = result.requestId
+  rememberRequestId(result.requestId)
   const [output, ...attachments] = result.outputs
   if (!output)
     throw new WorkshopRouterError(
@@ -664,7 +680,7 @@ function failRun(error: unknown, attempt: ActiveRun): void {
           cause: error
         })
   if (!workshopRunMayStillSettle(failure)) pendingRequest = undefined
-  requestId.value = failure.requestId
+  rememberRequestId(failure.requestId)
   runState.value = transition(runState.value, {
     type: 'fail',
     reason: failure.reason,
@@ -721,7 +737,7 @@ async function run() {
   }
   activeRun = attempt
   captureWorkshopEvent({ name: 'run_started', properties: analytics })
-  requestId.value = null
+  rememberRequestId(null)
   runState.value = transition(runState.value, { type: 'start', at: startedAt })
   try {
     await validateWorkshopMediaInputs(
