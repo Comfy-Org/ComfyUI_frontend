@@ -12,6 +12,7 @@
       <span
         v-if="!props.dotOnly && !hasNoLabel"
         class="truncate text-node-component-slot-text"
+        @contextmenu.stop.prevent="onLabelContextMenu"
       >
         {{
           slotData.label ||
@@ -26,6 +27,7 @@
       class="w-3 translate-x-1/2"
       :slot-data
       @pointerdown="onPointerDown"
+      @contextmenu.stop.prevent="onSlotContextMenu"
     />
   </div>
 </template>
@@ -40,6 +42,11 @@ import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
+import {
+  showSlotMenu,
+  showSlotLabelMenu
+} from '@/renderer/extensions/vueNodes/composables/useSlotContextMenu'
+import { useSlotElementTracking } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
 import { useSlotLinkReveal } from '@/renderer/extensions/vueNodes/composables/useSlotLinkReveal'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -125,4 +132,22 @@ const { onPointerDown } = useSlotLinkInteraction({
   index: props.index,
   type: 'output'
 })
+
+function onSlotContextMenu(event: MouseEvent) {
+  if (!props.nodeId) return
+  showSlotMenu(event, {
+    nodeId: props.nodeId,
+    slotIndex: props.index,
+    isInput: false
+  })
+}
+
+function onLabelContextMenu(event: MouseEvent) {
+  if (!props.nodeId) return
+  showSlotLabelMenu(event, {
+    nodeId: props.nodeId,
+    slotIndex: props.index,
+    isInput: false
+  })
+}
 </script>
