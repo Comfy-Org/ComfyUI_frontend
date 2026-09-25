@@ -13,6 +13,7 @@ import type {
 import { isIncompatibleLinkType } from './graphMutations'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
+import { parseLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 
 import { readSubgraphDefinitions } from './agentSubgraphDefinitions'
@@ -48,6 +49,18 @@ const RESYNCED_NODE_FIELDS: ReadonlySet<string> = new Set([
 export type MutationsForTarget =
   | GraphMutations
   | ((workflowId: string) => GraphMutations)
+
+/**
+ * The local human's edits the host has not yet reflected in the doc. A full
+ * reconcile treats the doc as authoritative for everything else; without
+ * this seam it would recreate a node whose delete is still on its way.
+ */
+export interface LocalIntent {
+  /** Doc node ids (string keys) with a pending human `delete_node`. */
+  pendingDeletes(workflowId: string): ReadonlySet<string>
+}
+
+const NO_LOCAL_INTENT: LocalIntent = { pendingDeletes: () => new Set() }
 
 function plain(value: unknown): unknown {
   if (value instanceof Y.Map || value instanceof Y.Array) return value.toJSON()
@@ -204,6 +217,17 @@ function reportInvalidHostTarget(
   )
 }
 
+function resolveLinkId(raw: unknown): number | null {
+  return typeof raw === 'number' && raw >= 0 && Number.isSafeInteger(raw)
+    ? raw
+    : null
+}
+
+function resolveLinkMapKey(id: string): number | null {
+  const linkId = parseLinkId(id)
+  return linkId !== undefined && linkId >= 0 ? linkId : null
+}
+
 function readSemanticLink(
   doc: Y.Doc,
   id: string,
@@ -213,11 +237,13 @@ function readSemanticLink(
   const raw = linksMap(doc).get(id)
   const tuple = raw instanceof Y.Array ? raw.toArray() : raw
   if (!Array.isArray(tuple) || tuple.length < 5) return null
-  const linkId = Number(tuple[0] ?? id)
+  const linkId = resolveLinkId(tuple[0])
+  const mapLinkId = resolveLinkMapKey(id)
   const originSlot = Number(tuple[2])
   const targetSlot = Number(tuple[4])
   if (
-    !Number.isInteger(linkId) ||
+    linkId === null ||
+    mapLinkId !== linkId ||
     tuple[1] == null ||
     tuple[3] == null ||
     !Number.isInteger(originSlot) ||
@@ -355,7 +381,10 @@ interface TargetSession {
 export class EcsFollowerAdapter {
   private readonly targets = new Map<string, TargetSession>()
 
-  constructor(private readonly mutations: MutationsForTarget) {}
+  constructor(
+    private readonly mutations: MutationsForTarget,
+    private readonly intent: LocalIntent = NO_LOCAL_INTENT
+  ) {}
 
   bind(workflowId: string, follower: FollowerDoc): void {
     this.unbind(workflowId)
@@ -409,7 +438,8 @@ export class EcsFollowerAdapter {
   }
 
   destroy(): void {
-    for (const workflowId of [...this.targets.keys()]) this.unbind(workflowId)
+    for (const workflowId of Array.from(this.targets.keys()))
+      this.unbind(workflowId)
   }
 
   private createSession(
@@ -496,9 +526,11 @@ export class EcsFollowerAdapter {
           : null
       ])
     )
-    const removedLinkIds = [...changedLinks].flatMap(([id, link]) =>
-      link && !isIncompatibleLinkType(link) ? [] : [Number(id)]
-    )
+    const removedLinkIds = [...changedLinks].flatMap(([id, link]) => {
+      if (link && !isIncompatibleLinkType(link)) return []
+      const linkId = resolveLinkMapKey(id)
+      return linkId === null ? [] : [linkId]
+    })
     const committed = session.mutations.batch(frameContext(update), (batch) => {
       // A SubgraphNode host that is already live must never be rebuilt from
       // its doc entry: `reconcileNode` (and delete + `addNode`) replaces the
@@ -519,15 +551,18 @@ export class EcsFollowerAdapter {
       }
 
       if (reconcile) {
-        const nodes = [...session.nodes.keys()].flatMap((id) => {
-          const payload = readSemanticNode(
-            doc,
-            id,
-            definitions,
-            session.reportedErrors
-          )
-          return payload ? [payload] : []
-        })
+        const pendingDeletes = this.intent.pendingDeletes(session.workflowId)
+        const nodes = [...session.nodes.keys()]
+          .filter((id) => !pendingDeletes.has(id))
+          .flatMap((id) => {
+            const payload = readSemanticNode(
+              doc,
+              id,
+              definitions,
+              session.reportedErrors
+            )
+            return payload ? [payload] : []
+          })
         const links = excludeIncompatibleLinks(
           [...session.links.keys()].flatMap((id) => {
             const link = readSemanticLink(
@@ -536,7 +571,11 @@ export class EcsFollowerAdapter {
               definitions(),
               session.reportedErrors
             )
-            return link ? [link] : []
+            return link &&
+              !pendingDeletes.has(String(link.originNodeId)) &&
+              !pendingDeletes.has(String(link.targetNodeId))
+              ? [link]
+              : []
           }),
           session.reportedErrors
         )

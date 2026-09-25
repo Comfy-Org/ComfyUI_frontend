@@ -19,7 +19,10 @@ function isScalarValue(value: WidgetValue): boolean {
   )
 }
 
-function owningGraph(rootGraph: LGraph, scope: GraphScope): LGraph | null {
+export function owningGraph(
+  rootGraph: LGraph,
+  scope: GraphScope
+): LGraph | null {
   if (rootGraph.id !== scope.rootGraphId) return null
   return String(scope.owningGraphId) === String(scope.rootGraphId)
     ? rootGraph
@@ -114,8 +117,9 @@ function setWidgetValue(
   context: RemoteMutationContext
 ): void {
   const id = widget.widgetId
+  const previousValue = widget.value
   const updatedStore = id ? widgetStore.setValue(id, value, context) : false
-  if (!updatedStore || !Object.is(widget.value, value)) {
+  if (!updatedStore || !Object.is(previousValue, value)) {
     widget.value = value
   }
   setBackingProperty(node, widget, value)

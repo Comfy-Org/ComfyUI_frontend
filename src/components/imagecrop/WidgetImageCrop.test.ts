@@ -84,10 +84,6 @@ const i18n = createI18n({
   }
 })
 
-const Passthrough = defineComponent({
-  template: '<div><slot /></div>'
-})
-
 const WidgetBoundingBoxStub = defineComponent({
   name: 'WidgetBoundingBox',
   props: {
@@ -138,11 +134,6 @@ function renderWidget(
     global: {
       plugins: [i18n],
       stubs: {
-        Select: Passthrough,
-        SelectContent: Passthrough,
-        SelectTrigger: Passthrough,
-        SelectValue: Passthrough,
-        SelectItem: Passthrough,
         WidgetBoundingBox: WidgetBoundingBoxStub
       }
     }

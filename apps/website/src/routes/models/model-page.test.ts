@@ -9,8 +9,9 @@ const mocks = vi.hoisted(() => ({
   successor: vi.fn(),
   price: vi.fn()
 }))
-vi.mock(import('../../config/workshop-router-content'), () => ({
-  getRouterWorkshopModelDetail: mocks.lookup
+vi.mock(import('../../config/workshop-page-content'), () => ({
+  getWorkshopPageDetail: mocks.lookup,
+  workshopPages: []
 }))
 vi.mock(import('../../config/workshop-related'), () => ({
   relatedModels: mocks.related

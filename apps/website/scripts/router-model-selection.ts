@@ -1,4 +1,4 @@
-import type { WorkshopModel } from '../src/config/models-catalogue'
+import type { RouterWorkshopModel } from '../src/config/models-catalogue'
 import {
   authoredWorkshopModels,
   workshopModels
@@ -17,10 +17,10 @@ function isMediaKind(value: unknown): value is MediaKind {
 export function selectRouterModels(
   selection: RouterModelSelection,
   catalogs: {
-    authored?: readonly WorkshopModel[]
-    published?: readonly WorkshopModel[]
+    authored?: readonly RouterWorkshopModel[]
+    published?: readonly RouterWorkshopModel[]
   } = {}
-): WorkshopModel[] {
+): RouterWorkshopModel[] {
   const authored = catalogs.authored ?? authoredWorkshopModels
   const published = catalogs.published ?? workshopModels
   const explicitSlugs = selection.slugs?.length ? selection.slugs : undefined

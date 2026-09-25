@@ -13,7 +13,7 @@ import { isWorkshopInBuild } from '../config/workshop-release'
 import {
   hreflangAlternates,
   ogLocale,
-  ogLocaleAlternate
+  ogLocaleAlternates
 } from '../lib/hreflang'
 import { markdownTwinPath } from '../lib/markdown-twin-path'
 import { isHrefActive } from '../composables/useCurrentPath'
@@ -68,7 +68,7 @@ const alternates = shouldNoindex
   ? []
   : hreflangAlternates(canonicalURL.pathname, canonicalURL.origin)
 const openGraphLocale = ogLocale(locale)
-const openGraphLocaleAlternate = ogLocaleAlternate(locale, alternates)
+const openGraphLocaleAlternates = ogLocaleAlternates(locale, alternates)
 const ogImageURL = new URL(ogImage, Astro.site ?? 'https://comfy.org')
 const rawStars = await fetchGitHubStars('Comfy-Org', 'ComfyUI')
 const githubStars = rawStars ? formatStarCount(rawStars) : ''
@@ -106,7 +106,7 @@ const structuredData = shouldNoindex
 {/* <html> must stay overflow: visible — body's overflow (incl. reka-ui's
      dialog scroll lock) only propagates to the viewport when the root is
      visible. The horizontal clip lives on <body>. */}
-<html lang={locale}>
+<html lang={locale} class="ppformula-metric-fallback">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -115,6 +115,19 @@ const structuredData = shouldNoindex
     {shouldNoindex && <meta name="robots" content="noindex, nofollow" />}
     <title>{title}</title>
 
+    <!-- Safari through 26.6 ignores @font-face metric overrides. Keep the
+         component-level fallback only where the browser cannot apply them. -->
+    <script is:inline>
+      try {
+        const probe = new FontFace('__ppformula_metric_probe', 'local(Arial)', {
+          ascentOverride: '50%'
+        })
+        if (probe.ascentOverride === '50%')
+          document.documentElement.classList.remove('ppformula-metric-fallback')
+      } catch {
+        // The class already present on <html> supplies the legacy fallback.
+      }
+    </script>
     <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="shortcut icon" href="/favicon.ico" sizes="48x48" />
@@ -177,9 +190,9 @@ const structuredData = shouldNoindex
     <meta property="og:image:height" content="630" />
     <meta property="og:url" content={canonicalURL.href} />
     <meta property="og:locale" content={openGraphLocale} />
-    {openGraphLocaleAlternate && (
-      <meta property="og:locale:alternate" content={openGraphLocaleAlternate} />
-    )}
+    {openGraphLocaleAlternates.map((alternate) => (
+      <meta property="og:locale:alternate" content={alternate} />
+    ))}
     <meta property="og:site_name" content="Comfy" />
 
     <!-- Twitter -->

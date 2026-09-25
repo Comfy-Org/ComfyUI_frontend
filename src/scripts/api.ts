@@ -31,6 +31,7 @@ import { isCloud } from '@/platform/distribution/types'
 import { addBreadcrumb } from '@sentry/vue'
 import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
 import type {
   AssetDownloadWsMessage,
   AssetExportWsMessage,
@@ -264,7 +265,10 @@ interface BackendApiCalls {
 }
 
 /** Dictionary of all api calls */
-interface ApiCalls extends BackendApiCalls, FrontendApiCalls {}
+interface ApiCalls extends BackendApiCalls, FrontendApiCalls {
+  'cm-task-started': ManagerComponents['schemas']['MessageTaskStarted']
+  'cm-task-completed': ManagerComponents['schemas']['MessageTaskDone']
+}
 
 /** Used to create a discriminating union on type value. */
 interface ApiMessage<T extends keyof ApiCalls> {
@@ -399,11 +403,21 @@ export class PromptExecutionError extends Error {
 
   override toString() {
     let message = ''
-    if (typeof this.response.error === 'string') {
-      message += this.response.error
-    } else if (this.response.error) {
-      message +=
-        this.response.error.message + ': ' + this.response.error.details
+    const error = this.response.error
+    if (typeof error === 'string') {
+      message += error
+    } else if (typeof error === 'object' && error !== null) {
+      const errorMessage = 'message' in error ? error.message : undefined
+      const errorDetails = 'details' in error ? error.details : undefined
+      if (typeof errorMessage === 'string') {
+        message += errorMessage
+        if (typeof errorDetails === 'string') {
+          message += ': ' + errorDetails
+        }
+      }
+    }
+    if (!message && typeof this.response.message === 'string') {
+      message += this.response.message
     }
 
     for (const [_, nodeError] of Object.entries(
@@ -621,6 +635,43 @@ export class ComfyApi extends EventTarget {
         ? AbortSignal.any([requestOptions.signal, timeout.controller.signal])
         : (requestOptions.signal ?? timeout?.controller.signal)
 
+    let retryTimeoutId: ReturnType<typeof setTimeout> | undefined
+    const retrySignalLifecycle = timeout
+      ? {
+          clearInitialTimeout: () => {
+            if (timeoutId !== undefined) clearTimeout(timeoutId)
+          },
+          createSignal: () => {
+            const retryController = new AbortController()
+            retryTimeoutId = setTimeout(() => {
+              const method = (requestOptions.method ?? 'GET').toUpperCase()
+              const routeTemplate = getFetchRouteTemplate(route)
+
+              addBreadcrumb({
+                category: 'fetch',
+                message: `Timeout on ${method} ${routeTemplate}`,
+                level: 'warning',
+                data: { timeout_ms: timeout.duration }
+              })
+
+              useTelemetry()?.trackFetchTimeout({
+                route: routeTemplate,
+                method,
+                timeout_ms: timeout.duration
+              })
+
+              retryController.abort(
+                new DOMException('Fetch timeout', 'TimeoutError')
+              )
+            }, timeout.duration)
+
+            return requestOptions.signal
+              ? AbortSignal.any([requestOptions.signal, retryController.signal])
+              : retryController.signal
+          }
+        }
+      : undefined
+
     return fetchWithUnifiedRemint(
       this.apiURL(route),
       {
@@ -629,9 +680,11 @@ export class ComfyApi extends EventTarget {
         headers,
         signal
       },
-      unifiedRetryOn401
+      unifiedRetryOn401,
+      retrySignalLifecycle
     ).finally(() => {
       if (timeoutId !== undefined) clearTimeout(timeoutId)
+      if (retryTimeoutId !== undefined) clearTimeout(retryTimeoutId)
     })
   }
 
@@ -1564,7 +1617,7 @@ export class ComfyApi extends EventTarget {
       `/userdata/${encodeURIComponent(file)}?overwrite=${options.overwrite}&full_info=${options.full_info}`,
       {
         method: 'POST',
-        body: options?.stringify ? JSON.stringify(data) : (data as BodyInit),
+        body: options.stringify ? JSON.stringify(data) : (data as BodyInit),
         ...options
       }
     )
@@ -1599,7 +1652,7 @@ export class ComfyApi extends EventTarget {
     options = { overwrite: false }
   ) {
     const resp = await this.fetchApi(
-      `/userdata/${encodeURIComponent(source)}/move/${encodeURIComponent(dest)}?overwrite=${options?.overwrite}`,
+      `/userdata/${encodeURIComponent(source)}/move/${encodeURIComponent(dest)}?overwrite=${options.overwrite}`,
       {
         method: 'POST'
       }
@@ -1628,8 +1681,14 @@ export class ComfyApi extends EventTarget {
         `Failed to fetch global subgraph '${id}': ${resp.status} ${resp.statusText}`
       )
     }
-    const subgraph: GlobalSubgraphData = await resp.json()
-    if (!subgraph?.data) {
+    const subgraph: unknown = await resp.json()
+    if (
+      typeof subgraph !== 'object' ||
+      subgraph === null ||
+      !('data' in subgraph) ||
+      typeof subgraph.data !== 'string' ||
+      !subgraph.data
+    ) {
       throw new Error(`Global subgraph '${id}' returned empty data`)
     }
     return subgraph.data
@@ -1647,9 +1706,8 @@ export class ComfyApi extends EventTarget {
   async getLogs(): Promise<string> {
     const url = isCloud ? this.apiURL('/logs') : this.internalURL('/logs')
     const { data } = await axios.get<unknown>(url)
-    return typeof data === 'string'
-      ? data
-      : (JSON.stringify(data, null, 2) ?? '')
+    if (typeof data === 'string') return data
+    return data === undefined ? '' : JSON.stringify(data, null, 2)
   }
 
   async getRawLogs(): Promise<LogsRawResponse> {

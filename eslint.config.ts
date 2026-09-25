@@ -1,10 +1,14 @@
 // For more info, see https://github.com/storybookjs/eslint-plugin-storybook#configuration-flat-config-format
-import type { Rule } from 'eslint'
 
 import pluginJs from '@eslint/js'
 import pluginI18n from '@intlify/eslint-plugin-vue-i18n'
 import { configs as astroConfigs } from 'eslint-plugin-astro'
 import betterTailwindcss from 'eslint-plugin-better-tailwindcss'
+import { getDefaultSelectors } from 'eslint-plugin-better-tailwindcss/api/defaults'
+import {
+  MatcherType,
+  SelectorKind
+} from 'eslint-plugin-better-tailwindcss/api/types'
 import { createTypeScriptImportResolver } from 'eslint-import-resolver-typescript'
 import { importX } from 'eslint-plugin-import-x'
 import oxlint from 'eslint-plugin-oxlint'
@@ -24,9 +28,71 @@ import vueParser from 'vue-eslint-parser'
 import path from 'node:path'
 
 import { noNewErrorThrow } from './tools/eslint-plugins/noNewErrorThrow'
-import { primeVueImportAllowlist } from './scripts/primevue-import-allowlist'
 
 const extraFileExtensions = ['.vue']
+
+// Only utilities that resolve a theme token are checked, so a class like
+// `text-danger` with no `--color-danger` fails lint while custom CSS hooks
+// (`side-bar-button`, `lg-node`, PrimeIcons `pi-*`) stay allowed.
+const tailwindTokenUtilityPrefixPattern = [
+  'accent',
+  'animate',
+  'bg',
+  'border',
+  'caret',
+  'decoration',
+  'divide',
+  'fill',
+  'font',
+  'from',
+  'inset-ring',
+  'inset-shadow',
+  'outline',
+  'placeholder',
+  'ring',
+  'rounded',
+  'shadow',
+  'stroke',
+  'text',
+  'to',
+  'via'
+].join('|')
+const nonTokenUtilityClassPattern = `^(?!(?:.*:)?!?(?:${tailwindTokenUtilityPrefixPattern})-)`
+
+const themeColorUtilityPattern = [
+  'accent',
+  'bg',
+  'border(?:-[trblsexy])?',
+  'caret',
+  'decoration',
+  'divide',
+  'fill',
+  'from',
+  'inset-ring',
+  'inset-shadow',
+  'outline',
+  'placeholder',
+  'ring',
+  'shadow',
+  'stroke',
+  'text',
+  'to',
+  'via'
+].join('|')
+const specializedThemeTokenPattern = [
+  'button-',
+  'comfy-',
+  'component-',
+  'dialog-',
+  'input-surface(?:/|$)',
+  'interface-',
+  'modal-',
+  'nav-',
+  'node-',
+  'text-(?:primary|secondary)(?:/|$)',
+  'video-'
+].join('|')
+const specializedThemeClassPattern = `^(?:.*:)?!?(?:${themeColorUtilityPattern})-(?:${specializedThemeTokenPattern})`
 
 const commonGlobals = {
   ...globals.browser,
@@ -64,8 +130,6 @@ const settings = {
 
 const commonParserOptions = {
   parser: tseslintParser,
-  projectService: true,
-  tsConfigRootDir: import.meta.dirname,
   ecmaVersion: 2020,
   sourceType: 'module',
   extraFileExtensions
@@ -93,50 +157,6 @@ const reportErrorRestrictions = [
   }
 ] as const
 
-const noPrimeVueImports: Rule.RuleModule = {
-  meta: {
-    type: 'problem',
-    messages: {
-      banned:
-        'New PrimeVue usage is banned per the PrimeVue removal effort. Remove this import. scripts/primevue-import-allowlist.ts only shrinks; do not add entries.'
-    },
-    schema: []
-  },
-  create(context) {
-    function report(node: Rule.Node, source: unknown) {
-      if (
-        typeof source === 'string' &&
-        /^(?:primevue(?:\/|$)|@primevue(?:\/|$))/.test(source)
-      ) {
-        context.report({ node, messageId: 'banned' })
-      }
-    }
-
-    return {
-      ImportDeclaration(node) {
-        report(node, node.source.value)
-      },
-      ImportExpression(node) {
-        if (node.source.type === 'Literal') {
-          report(node, node.source.value)
-        }
-      },
-      ExportNamedDeclaration(node) {
-        report(node, node.source?.value)
-      },
-      ExportAllDeclaration(node) {
-        report(node, node.source.value)
-      }
-    }
-  }
-}
-
-const primeVueRemovalPlugin = {
-  rules: {
-    'no-imports': noPrimeVueImports
-  }
-}
-
 export default defineConfig([
   {
     ignores: [
@@ -160,7 +180,9 @@ export default defineConfig([
       'apps/website/coverage/**',
       'apps/website/playwright-report/**',
       'apps/website/test-results/**',
-      'vitest.setup.ts'
+      'vitest.setup.ts',
+      '.agents/checks/eslint.strict.config.js',
+      'ComfyUI/**'
     ]
   },
   {
@@ -168,25 +190,7 @@ export default defineConfig([
     settings,
     languageOptions: {
       globals: commonGlobals,
-      parserOptions: {
-        ...commonParserOptions,
-        projectService: {
-          allowDefaultProject: [
-            'packages/account-core/vitest.config.ts',
-            'packages/account-ui/vite.config.ts',
-            'packages/account-ui/vitest.config.ts',
-            'packages/billing-contract/vitest.config.ts',
-            'packages/design-system/vitest.config.ts',
-            'packages/ingest-types/openapi-ts.config.ts',
-            'packages/object-info-parser/vitest.config.ts',
-            'packages/shared-frontend-utils/vitest.config.ts',
-            'vite.electron.config.mts',
-            'vite.types.config.mts',
-            'vitest.matrix.config.mts',
-            'vitest.timer.setup.ts'
-          ]
-        }
-      }
+      parserOptions: commonParserOptions
     }
   },
   {
@@ -198,26 +202,16 @@ export default defineConfig([
       parserOptions: commonParserOptions
     }
   },
-  {
-    name: 'primevue-removal/no-imports',
-    files: ['src/**/*.{ts,tsx,vue}'],
-    plugins: {
-      'primevue-removal': primeVueRemovalPlugin
-    },
-    rules: {
-      'primevue-removal/no-imports': 'error'
-    }
-  },
-  {
-    name: 'primevue-removal/existing-imports',
-    files: [...primeVueImportAllowlist],
-    rules: {
-      'primevue-removal/no-imports': 'off'
-    }
-  },
   pluginJs.configs.recommended,
 
   tseslintConfigs.recommended,
+  {
+    // vue-tsc owns undefined-name checks in .vue script blocks
+    files: ['**/*.vue'],
+    rules: {
+      'no-undef': 'off'
+    }
+  },
   // Difference in typecheck on CI vs Local
   pluginVue.configs['flat/recommended'],
   astroConfigs['flat/recommended'],
@@ -226,18 +220,12 @@ export default defineConfig([
     settings,
     languageOptions: {
       parserOptions: {
-        parser: tseslintParser,
-        projectService: false
+        parser: tseslintParser
       }
     }
   },
   {
     files: ['apps/website/**/*.astro/*.{js,ts}'],
-    languageOptions: {
-      parserOptions: {
-        projectService: false
-      }
-    },
     rules: {
       'no-empty': ['error', { allowEmptyCatch: true }]
     }
@@ -250,18 +238,50 @@ export default defineConfig([
         entryPoint: path.resolve(
           import.meta.dirname,
           'packages/design-system/src/css/style.css'
-        )
+        ),
+        selectors: [
+          ...getDefaultSelectors(),
+          {
+            kind: SelectorKind.Callee,
+            name: '^cva$',
+            match: [{ type: MatcherType.ObjectValue, path: '^base$' }]
+          }
+        ]
       }
     },
     rules: {
-      // Off: requires whitelisting non-Tailwind classes (PrimeIcons, custom CSS)
-      'better-tailwindcss/no-unknown-classes': 'off',
+      'better-tailwindcss/no-unknown-classes': [
+        'error',
+        { ignore: [nonTokenUtilityClassPattern] }
+      ],
       // Off: may conflict with oxfmt formatting
       'better-tailwindcss/enforce-consistent-line-wrapping': 'off',
       // Off: large batch change, enable and apply with `eslint --fix`
       'better-tailwindcss/enforce-consistent-class-order': 'error',
-      'better-tailwindcss/enforce-canonical-classes': 'error',
+      // collapse (mt-2 mb-2 → my-2) is an unmemoized subset search: ~30 s per lint
+      'better-tailwindcss/enforce-canonical-classes': [
+        'error',
+        { collapse: false }
+      ],
       'better-tailwindcss/no-deprecated-classes': 'error'
+    }
+  },
+  {
+    name: 'design-system/core-ui-theme-tokens',
+    files: ['src/components/ui/**/*.{ts,vue}'],
+    rules: {
+      'better-tailwindcss/no-restricted-classes': [
+        'error',
+        {
+          restrict: [
+            {
+              pattern: specializedThemeClassPattern,
+              message:
+                'Generic UI components must use core semantic theme tokens instead of specialized tokens.'
+            }
+          ]
+        }
+      ]
     }
   },
   {
@@ -294,7 +314,6 @@ export default defineConfig([
       '@typescript-eslint/consistent-type-imports': 'error',
       'import-x/no-useless-path-segments': 'error',
       'import-x/no-relative-packages': 'error',
-      'import-x/no-named-as-default': 'error',
       'unused-imports/no-unused-imports': 'error',
       'vue/no-v-html': 'off',
       // Prohibit dark-theme: and dark: prefixes
@@ -366,15 +385,6 @@ export default defineConfig([
   {
     files: ['**/*.test.ts'],
     rules: {
-      'no-restricted-properties': [
-        'error',
-        {
-          object: 'vi',
-          property: 'doMock',
-          message:
-            'Use vi.mock() with vi.hoisted() instead of vi.doMock(). See docs/testing/vitest-patterns.md'
-        }
-      ],
       // Tests routinely define stub and harness components side-by-side with
       // the system under test and stub emits for documentation only — these
       // production-SFC rules are noise in a test file.
@@ -399,26 +409,6 @@ export default defineConfig([
   },
   {
     // Devtools extension scripts are loaded by ComfyUI in the browser.
-    files: ['tools/devtools/web/**/*.js'],
-    languageOptions: {
-      globals: {
-        ...globals.browser
-      }
-    }
-  },
-  {
-    files: ['scripts/**/*.js'],
-    languageOptions: {
-      globals: {
-        ...globals.node
-      }
-    },
-    rules: {
-      '@typescript-eslint/no-floating-promises': 'off',
-      'no-console': 'off'
-    }
-  },
-  {
     files: ['tools/devtools/web/**/*.js'],
     languageOptions: {
       globals: {
@@ -470,6 +460,7 @@ export default defineConfig([
       'import-x/export': 'off',
       'import-x/namespace': 'off',
       'import-x/no-duplicates': 'off',
+      'import-x/no-named-as-default': 'off',
       'import-x/consistent-type-specifier-style': 'off'
     }
   },

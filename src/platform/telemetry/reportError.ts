@@ -61,21 +61,37 @@ const MAX_PENDING_REPORTS = 25
 
 const isDatadogRumLive = () => datadogRum.getInitConfiguration() !== undefined
 
+const definedEntriesOf = <V>(
+  values: Record<string, V> | undefined
+): Record<string, Exclude<V, undefined>> =>
+  Object.fromEntries(
+    Object.entries(values ?? {}).filter(
+      (entry): entry is [string, Exclude<V, undefined>] =>
+        entry[1] !== undefined
+    )
+  )
+
 /** Written from `options`, so a caller tag of the same name never lands. */
 const RESERVED_TAG_KEYS = new Set(['error_type', 'level'])
 
-const definedEntriesOf = (
+let dispatching = false
+
+const definedTagsOf = (
   tags: ReportErrorOptions['tags']
 ): Record<string, string | number | boolean> =>
   Object.fromEntries(
     Object.entries(tags ?? {}).filter(
-      ([key, value]) =>
-        !RESERVED_TAG_KEYS.has(key) &&
-        (typeof value === 'string' ||
-          typeof value === 'number' ||
-          typeof value === 'boolean')
+      (entry): entry is [string, string | number | boolean] => {
+        const [key, value] = entry
+        return (
+          !RESERVED_TAG_KEYS.has(key) &&
+          (typeof value === 'string' ||
+            typeof value === 'number' ||
+            typeof value === 'boolean')
+        )
+      }
     )
-  ) as Record<string, string | number | boolean>
+  )
 
 type DesktopCaptureException = (
   error: { message: string; stack?: string },
@@ -130,51 +146,57 @@ function dispatch(
   options: ReportErrorOptions,
   alreadyDelivered: DeliveryState = NO_DELIVERY
 ): DeliveryState {
-  const { errorType, context, level } = options
-  const tags = definedEntriesOf(options.tags)
+  const { errorType, level } = options
+  const context = definedEntriesOf(options.context)
+  const tags = definedTagsOf(options.tags)
   const sentryLive = !alreadyDelivered.sentry && isSentryEnabled()
   const datadogLive = !alreadyDelivered.datadog && isDatadogRumLive()
   let sentryDelivered = alreadyDelivered.sentry
   let datadogDelivered = alreadyDelivered.datadog
   let desktopDelivered = alreadyDelivered.desktop
 
-  if (sentryLive) {
-    try {
-      captureException(error, {
-        tags: { ...tags, error_type: errorType },
-        extra: context,
-        level
-      })
-      sentryDelivered = true
-    } catch (reporterFailure) {
-      console.error(
-        '[reportError] Sentry delivery failed',
-        reporterFailure,
-        error
-      )
+  dispatching = true
+  try {
+    if (sentryLive) {
+      try {
+        captureException(error, {
+          tags: { ...tags, error_type: errorType },
+          extra: context,
+          level
+        })
+        sentryDelivered = true
+      } catch (reporterFailure) {
+        console.error(
+          '[reportError] Sentry delivery failed',
+          reporterFailure,
+          error
+        )
+      }
     }
-  }
-  if (datadogLive) {
-    try {
-      const datadogError = Object.assign(
-        new Error(error.message, { cause: error.cause }),
-        error,
-        { name: errorType, stack: error.stack }
-      )
-      datadogRum.addError(datadogError, {
-        ...context,
-        ...tags,
-        error_type: errorType,
-        ...(level ? { level } : {})
-      })
-      datadogDelivered = true
-    } catch (reporterFailure) {
-      console.error(
-        '[reportError] Datadog delivery failed',
-        reporterFailure,
-        error
-      )
+    if (datadogLive) {
+      try {
+        const datadogError = Object.assign(
+          new Error(error.message, { cause: error.cause }),
+          error,
+          { name: errorType, stack: error.stack }
+        )
+        datadogRum.addError(datadogError, {
+          ...context,
+          ...tags,
+          error_type: errorType,
+          ...(level ? { level } : {})
+        })
+        datadogDelivered = true
+      } catch (reporterFailure) {
+        console.error(
+          '[reportError] Datadog delivery failed',
+          reporterFailure,
+          error
+        )
+      }
     }
+  } finally {
+    dispatching = false
   }
   if (!desktopDelivered) {
     desktopDelivered = dispatchToDesktop(error, errorType, tags, level)
@@ -249,6 +271,16 @@ export function flushErrorReports(): void {
   }
 }
 
+function logReport(
+  cause: unknown,
+  options: ReportErrorOptions,
+  suffix = ''
+): void {
+  if (options.logToConsole === false) return
+  const log = options.level === 'warning' ? console.warn : console.error
+  log(`${REPORTED_ERROR_PREFIX}${options.errorType}${suffix}`, cause)
+}
+
 /**
  * Report an error to every observability sink at once.
  *
@@ -262,14 +294,17 @@ export function flushErrorReports(): void {
  * `initTelemetry()`, and a caller that forgot the pair went silent on dev and
  * self-hosted installs.
  *
+ * A report raised while a sink is still delivering only reaches the console.
+ *
  * Never throws — a failing error reporter must not become a second failure.
  */
 export function reportError(cause: unknown, options: ReportErrorOptions): void {
   try {
-    if (options.logToConsole !== false) {
-      const log = options.level === 'warning' ? console.warn : console.error
-      log(`${REPORTED_ERROR_PREFIX}${options.errorType}`, cause)
+    if (dispatching) {
+      logReport(cause, options, ' (suppressed: raised while reporting)')
+      return
     }
+    logReport(cause, options)
     flushErrorReports()
 
     const error = toError(cause)

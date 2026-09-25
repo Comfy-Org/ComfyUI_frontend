@@ -41,7 +41,7 @@ const {
   mockPermissions,
   mockUiConfig
 } = vi.hoisted(() => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/consistent-type-imports
+  // oxlint-disable-next-line typescript/no-require-imports, typescript/consistent-type-imports
   const { ref } = require('vue') as typeof import('vue')
 
   return {
@@ -171,21 +171,11 @@ const i18n = createI18n({
   fallbackWarn: false
 })
 
-const SearchInputStub = {
-  name: 'SearchInput',
-  template:
-    '<input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
-  props: ['modelValue', 'placeholder', 'size'],
-  emits: ['update:modelValue']
-}
-
 function renderComponent() {
   return render(MembersPanelContent, {
     global: {
       plugins: [i18n],
       stubs: {
-        SearchInput: SearchInputStub,
-        UserAvatar: true,
         WorkspaceMenuButton: true
       },
       directives: { tooltip: () => {} }

@@ -1,6 +1,14 @@
 import userEvent from '@testing-library/user-event'
 import { cleanup, render, screen, waitFor } from '@testing-library/vue'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { h } from 'vue'
 
 import type {
@@ -75,10 +83,12 @@ function renderForm(
     publishableKey?: string
     onConfirm?: (token: string) => void
     onSubmittingChange?: (submitting: boolean) => void
+    container?: HTMLElement
   } = {}
 ) {
-  const { publishableKey = 'pk_test_example', ...rest } = props
+  const { publishableKey = 'pk_test_example', container, ...rest } = props
   return render(StripePaymentForm, {
+    container,
     props: {
       publishableKey,
       amountCents,
@@ -154,6 +164,36 @@ describe('StripePaymentForm', () => {
     expect(stripeMocks.create).toHaveBeenCalledWith('address', {
       mode: 'billing'
     })
+  })
+
+  it('themes Stripe from the theme scope the form renders in, not the page body', async () => {
+    document.body.style.setProperty('--base-foreground', 'rgb(20, 20, 20)')
+    document.body.style.setProperty('--base-background', 'rgb(255, 255, 255)')
+    document.body.style.fontFamily = 'serif'
+    const darkScope = document.createElement('div')
+    darkScope.style.setProperty('--base-foreground', 'rgb(250, 250, 250)')
+    darkScope.style.setProperty('--base-background', 'rgb(30, 30, 30)')
+    darkScope.style.fontFamily = 'Inter'
+    document.body.append(darkScope)
+    onTestFinished(() => {
+      darkScope.remove()
+      document.body.removeAttribute('style')
+    })
+
+    renderForm(66500, 'pmc_test', { container: darkScope })
+    await waitFor(() => expect(stripeMocks.stripe.elements).toHaveBeenCalled())
+
+    expect(stripeMocks.stripe.elements).toHaveBeenCalledWith(
+      expect.objectContaining({
+        appearance: expect.objectContaining({
+          variables: expect.objectContaining({
+            colorText: 'rgb(250, 250, 250)',
+            colorBackground: 'rgb(30, 30, 30)',
+            fontFamily: 'Inter'
+          })
+        })
+      })
+    )
   })
 
   describe('checkout journey instrumentation', () => {
