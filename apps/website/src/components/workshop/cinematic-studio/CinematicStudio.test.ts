@@ -644,6 +644,167 @@ describe('CinematicStudio', () => {
     expect(screen.queryByTestId('cinematic')).toBeNull()
   })
 
+  describe('credits', () => {
+    const priced: readonly CinematicModel[] = models.map((model) =>
+      model.slug === first.slug
+        ? {
+            ...model,
+            prices: {
+              '21:9 2K 0': { min: 6, max: 6 },
+              '21:9 1K 0': { min: 3, max: 3 }
+            }
+          }
+        : model
+    )
+    const estimate = () => screen.findByTestId('cinematic-estimate')
+    const credits = (amount: number) =>
+      tc('cinematic.credits.estimate').replace('{credits}', String(amount))
+
+    async function shootTakes(
+      user: ReturnType<typeof userEvent.setup>,
+      takes: number
+    ) {
+      await user.click(screen.getByRole('button', { name: /^Format/ }))
+      const more = screen.getByRole('button', { name: 'More takes' })
+      for (let shown = 1; shown < takes; shown++) await user.click(more)
+    }
+
+    function withBalance(amount: number) {
+      useWorkshopCredits().balance = computed(() => ({
+        status: 'ok' as const,
+        credits: amount
+      }))
+    }
+
+    it('estimates a priced model and says an unpriced one varies', async () => {
+      const user = renderStudio(priced)
+      expect(await estimate()).toHaveTextContent(credits(6))
+
+      await user.click(screen.getByRole('button', { name: /^Model/ }))
+      await user.click(
+        await screen.findByRole('menuitemradio', {
+          name: new RegExp(second.name)
+        })
+      )
+
+      expect(await estimate()).toHaveTextContent(tc('cinematic.credits.varies'))
+      expect(await estimate()).not.toHaveTextContent(/\d/)
+    })
+
+    it('scales the estimate with takes and resolution', async () => {
+      const user = renderStudio(priced)
+
+      await addTake(user)
+      expect(await estimate()).toHaveTextContent(credits(12))
+      expect(await estimate()).toHaveTextContent('2 takes × ~6 credits')
+
+      await user.click(screen.getByRole('button', { name: 'Resolution: 2K' }))
+      await user.click(await screen.findByRole('menuitemradio', { name: '1K' }))
+
+      expect(await estimate()).toHaveTextContent(credits(6))
+      expect(await estimate()).toHaveTextContent('2 takes × ~3 credits')
+    })
+
+    it.for([
+      {
+        balance: 20,
+        takes: 4,
+        note: '4 takes need ~24 credits; you have 20.',
+        reduce: 'Use 3 takes'
+      },
+      {
+        balance: 7,
+        takes: 2,
+        note: '2 takes need ~12 credits; you have 7.',
+        reduce: 'Use 1 take'
+      },
+      {
+        balance: 5,
+        takes: 1,
+        note: '1 take needs ~6 credits; you have 5.',
+        reduce: undefined
+      }
+    ])(
+      'blocks $takes takes on a balance of $balance',
+      async ({ balance, takes, note, reduce }) => {
+        withBalance(balance)
+        const user = renderStudio(priced)
+        await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+        await shootTakes(user, takes)
+
+        expect(screen.getByTestId('cinematic-credit-note')).toHaveTextContent(
+          note
+        )
+        expect(screen.queryByTestId('cinematic-generate')).toBeNull()
+        expect(
+          screen.getByRole('button', { name: t('workshop.run.buyCredits') })
+        ).toBeInTheDocument()
+        expect(
+          screen
+            .queryByRole('button', { name: /^Use \d takes?$/ })
+            ?.textContent.trim()
+        ).toBe(reduce)
+      }
+    )
+
+    it('generates the takes a short balance covers once reduced', async () => {
+      withBalance(20)
+      vi.mocked(router_render).mockImplementation(async (slug) =>
+        rendered(slug)
+      )
+      const user = renderStudio(priced)
+      await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+      await shootTakes(user, 4)
+
+      await user.click(screen.getByRole('button', { name: 'Use 3 takes' }))
+      expect(await estimate()).toHaveTextContent(credits(18))
+      await user.click(generateButton())
+
+      expect(
+        await screen.findByRole('radio', { name: 'C' })
+      ).toBeInTheDocument()
+      expect(router_render).toHaveBeenCalledTimes(3)
+    })
+
+    it('keeps the zero-balance gate for a model without an estimate', async () => {
+      withBalance(0)
+      renderStudio()
+
+      expect(await estimate()).toHaveTextContent(tc('cinematic.credits.varies'))
+      expect(screen.queryByTestId('cinematic-generate')).toBeNull()
+      expect(
+        screen.getByRole('button', { name: t('workshop.run.buyCredits') })
+      ).toBeInTheDocument()
+    })
+
+    it('runs an unpriced model on any balance above zero', async () => {
+      withBalance(1)
+      const user = renderStudio()
+      await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+
+      expect(generateButton()).toBeEnabled()
+    })
+
+    it('sends a member to their personal workspace instead of checkout', async () => {
+      withBalance(0)
+      signedIn.value = { ...credential, role: 'member' }
+      const user = renderStudio(priced)
+
+      await user.click(
+        await screen.findByRole('button', {
+          name: t('workshop.run.switchPersonal')
+        })
+      )
+
+      expect(useWorkshopSession().remint).toHaveBeenCalledWith(undefined, {
+        preserveCredentialOnTransientFailure: true
+      })
+      expect(
+        screen.queryByRole('button', { name: t('workshop.run.buyCredits') })
+      ).toBeNull()
+    })
+  })
+
   describe('layout switch', () => {
     const panel = () =>
       screen.queryByRole('complementary', { name: 'Shot settings' })

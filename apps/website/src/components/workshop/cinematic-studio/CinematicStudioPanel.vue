@@ -33,6 +33,7 @@ const {
   cast,
   palette,
   promptSegments,
+  estimate,
   choose,
   generate: generateShot
 } = useCinematicShot(models)
@@ -88,6 +89,8 @@ function generate() {
         :gate="studio.gate.value"
         :workspace-name="studio.session.value?.workspace.name"
         :rendering="studio.rendering.value"
+        :estimate
+        :credits="studio.credits.value"
         :open-picker="picker"
         :locale
         class="lg:col-span-5"
