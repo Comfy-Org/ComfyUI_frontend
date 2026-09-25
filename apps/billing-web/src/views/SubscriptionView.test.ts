@@ -124,7 +124,12 @@ describe('SubscriptionView', () => {
   })
 
   it('quotes the chosen plan and carries it into checkout', async () => {
-    const fake = await renderSubscription()
+    const fake = await renderSubscription({
+      preview: {
+        status: 'ok',
+        value: previewOf({ transition_type: 'upgrade' })
+      }
+    })
 
     await userEvent.click(
       await screen.findByRole('button', { name: 'Choose Creator · Monthly' })
