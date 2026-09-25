@@ -15,10 +15,11 @@ const PANEL_MAX_WIDTH = 960
 const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
 const DISCOVERED_STORAGE_KEY = 'Comfy.AgentPanel.discovered'
 
-type WorkflowTargetSelection =
-  | { status: 'uninitialized' }
-  | { status: 'cleared' }
-  | { status: 'selected'; workflow: ComfyWorkflow }
+type TargetTracking =
+  | { mode: 'uninitialized' }
+  | { mode: 'following' }
+  | { mode: 'restoring' }
+  | { mode: 'retained'; workflow: ComfyWorkflow | null }
 
 export const useAgentPanelStore = defineStore('agentPanel', () => {
   const enabled = ref(false)
@@ -34,35 +35,52 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   const gateSettled = ref(false)
   const width = ref(PANEL_MIN_WIDTH)
   const dismissedSelectionSignature = ref<string | null>(null)
-  const workflowTargetSelection = ref<WorkflowTargetSelection>({
-    status: 'uninitialized'
-  })
-  const selectedWorkflow = computed(() =>
-    workflowTargetSelection.value.status === 'selected'
-      ? workflowTargetSelection.value.workflow
-      : null
+  const workflowStore = useWorkflowStore()
+  const targetTracking = ref<TargetTracking>({ mode: 'uninitialized' })
+  const followsVisibleWorkflow = computed(
+    () => targetTracking.value.mode === 'following'
   )
+  const selectedWorkflow = computed(() => {
+    const target = targetTracking.value
+    if (target.mode === 'following') return workflowStore.activeWorkflow
+    return target.mode === 'retained' ? target.workflow : null
+  })
   const canRestoreWorkflow = computed(
-    () => workflowTargetSelection.value.status === 'uninitialized'
+    () => targetTracking.value.mode === 'restoring'
   )
 
-  function resetWorkflowTarget(): void {
-    workflowTargetSelection.value = { status: 'uninitialized' }
+  function beginWorkflowRestoration(): void {
+    targetTracking.value = { mode: 'restoring' }
+  }
+
+  function initializeTargetTracking(hasThread: boolean): void {
+    if (targetTracking.value.mode !== 'uninitialized') return
+    targetTracking.value = { mode: hasThread ? 'restoring' : 'following' }
+  }
+
+  function retainWorkflowTarget(): void {
+    if (targetTracking.value.mode === 'retained') return
+    setWorkflowTarget(selectedWorkflow.value)
+  }
+
+  function startFollowingVisibleWorkflow(): void {
+    targetTracking.value = { mode: 'following' }
   }
 
   function setWorkflowTarget(workflow: ComfyWorkflow | null): void {
-    workflowTargetSelection.value = workflow
-      ? { status: 'selected', workflow }
-      : { status: 'cleared' }
+    targetTracking.value = { mode: 'retained', workflow }
   }
 
-  const workflowStore = useWorkflowStore()
+  // Only a retained target can become detached. A following target belongs to
+  // the editor, including its replacement when the visible tab closes.
   watch(
-    () => [selectedWorkflow.value, ...workflowStore.openWorkflows],
+    () => [targetTracking.value, ...workflowStore.openWorkflows],
     () => {
+      const target = targetTracking.value
       if (
-        selectedWorkflow.value !== null &&
-        !workflowStore.openWorkflows.includes(selectedWorkflow.value)
+        target.mode === 'retained' &&
+        target.workflow !== null &&
+        !workflowStore.openWorkflows.includes(target.workflow)
       )
         setWorkflowTarget(null)
     }
@@ -137,10 +155,14 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     isMaximized,
     dismissedSelectionSignature,
     open,
-    workflowTargetSelection,
+    targetTracking,
+    followsVisibleWorkflow,
+    initializeTargetTracking,
+    retainWorkflowTarget,
+    startFollowingVisibleWorkflow,
     selectedWorkflow,
     canRestoreWorkflow,
-    resetWorkflowTarget,
+    beginWorkflowRestoration,
     setWorkflowTarget,
     toggle,
     close,
