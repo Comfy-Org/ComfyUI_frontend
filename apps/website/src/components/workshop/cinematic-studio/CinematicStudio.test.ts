@@ -489,7 +489,7 @@ describe('CinematicStudio', () => {
       expect(window.location.search).toBe('?ux=d')
     })
 
-    it('swaps to the Re-shoot app and keeps the chosen layout', async () => {
+    it('swaps to the Re-shoot app, which has a single layout', async () => {
       window.history.replaceState(null, '', '/cinematic-studio?ux=d')
       render(CinematicStudioPage, { props: { models } })
       const user = userEvent.setup()
@@ -502,7 +502,7 @@ describe('CinematicStudio', () => {
       )
 
       expect(
-        screen.getByRole('complementary', { name: 'Re-shoot settings' })
+        screen.getByRole('complementary', { name: 'Your clip' })
       ).toBeInTheDocument()
       expect(panel()).toBeNull()
       expect(window.location.search).toBe('?ux=d&app=reshoot')

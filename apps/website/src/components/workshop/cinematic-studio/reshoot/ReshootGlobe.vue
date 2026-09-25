@@ -48,9 +48,7 @@ const STROKE: Readonly<Record<ReshootZone, string>> = {
 
 const SUBJECT = { w: 52, h: 32 }
 const marker = computed(() => globePoint(camera.azimuth, camera.elevation, R))
-const facing = computed(
-  () => (Math.atan2(-marker.value.y, -marker.value.x) * 180) / Math.PI
-)
+const mirrored = computed(() => marker.value.x > 0)
 const cone = computed(() => {
   const { x, y } = marker.value
   const half = SUBJECT.h / 2
@@ -203,8 +201,7 @@ function key(event: KeyboardEvent) {
         stroke-linejoin="round"
       />
       <g
-        :transform="`translate(${marker.x} ${marker.y}) rotate(${facing})`"
-        class="transition-transform duration-75"
+        :transform="`translate(${marker.x} ${marker.y}) scale(${mirrored ? -1 : 1} 1)`"
       >
         <circle r="17" class="fill-primary-comfy-ink/70" />
         <rect

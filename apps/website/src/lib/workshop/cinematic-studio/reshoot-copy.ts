@@ -101,10 +101,6 @@ const copy = {
     en: 'Prompt, dialogue, seed',
     'zh-CN': '提示词、对白、种子'
   },
-  'reshoot.magenta': {
-    en: 'Magenta: never seen by the original camera, painted in by the model',
-    'zh-CN': '洋红色：原机位从未拍到，由模型补画'
-  },
   'reshoot.distanceHelp': {
     en: 'Distance is approximate; angles give the most control.',
     'zh-CN': '距离只是近似值，角度的控制最精确。'

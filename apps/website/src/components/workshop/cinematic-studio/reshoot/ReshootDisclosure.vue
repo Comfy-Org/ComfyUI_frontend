@@ -11,7 +11,6 @@ const { label, disabled = false } = defineProps<{
 
 <template>
   <details
-    open
     :class="
       cn(
         'group rounded-2xl border border-transparency-white-t8',

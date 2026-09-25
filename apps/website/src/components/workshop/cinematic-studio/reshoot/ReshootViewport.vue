@@ -114,22 +114,11 @@ function zoom(event: WheelEvent) {
       v-else-if="ready"
       class="absolute inset-x-4 bottom-4 flex items-center justify-between gap-3 text-xs text-primary-warm-white"
     >
-      <span class="flex flex-col items-start gap-1.5">
-        <span
-          class="flex items-center gap-2 rounded-full bg-primary-comfy-ink/80 px-3 py-1.5"
-        >
-          <span
-            class="size-2.5 rounded-full bg-warp-unseen"
-            aria-hidden="true"
-          />
-          {{ rc('reshoot.magenta', locale) }}
-        </span>
-        <span
-          class="flex items-center gap-2 rounded-full bg-primary-comfy-ink/80 px-3 py-1.5"
-        >
-          <Move3d class="size-3.5" aria-hidden="true" />
-          {{ rc('reshoot.dragHint', locale) }}
-        </span>
+      <span
+        class="flex items-center gap-2 rounded-full bg-primary-comfy-ink/80 px-3 py-1.5"
+      >
+        <Move3d class="size-3.5" aria-hidden="true" />
+        {{ rc('reshoot.dragHint', locale) }}
       </span>
       <span
         class="flex items-center gap-2 rounded-full bg-primary-comfy-ink/80 px-3 py-1.5 font-mono tabular-nums"

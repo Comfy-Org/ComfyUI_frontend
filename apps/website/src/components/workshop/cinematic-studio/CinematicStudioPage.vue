@@ -11,7 +11,6 @@ import CinematicScenarioMenu from './CinematicScenarioMenu.vue'
 import CinematicStudio from './CinematicStudio.vue'
 import CinematicStudioPanel from './CinematicStudioPanel.vue'
 import ReshootStudio from './reshoot/ReshootStudio.vue'
-import ReshootStudioPanel from './reshoot/ReshootStudioPanel.vue'
 
 const { models, locale = 'en' } = defineProps<{
   models: readonly CinematicModel[]
@@ -67,10 +66,7 @@ function pickApp(id: string) {
 <template>
   <WorkshopGate>
     <CinematicAppsHub v-if="layout === 'hub'" :locale />
-    <template v-else-if="app === 'reshoot'">
-      <ReshootStudioPanel v-if="layout === 'd'" :locale />
-      <ReshootStudio v-else :locale />
-    </template>
+    <ReshootStudio v-else-if="app === 'reshoot'" :locale />
     <CinematicStudioPanel v-else-if="layout === 'd'" :models :locale />
     <CinematicStudio v-else :models :locale />
     <CinematicScenarioMenu
