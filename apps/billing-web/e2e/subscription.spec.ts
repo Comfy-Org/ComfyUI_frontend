@@ -110,8 +110,13 @@ test('cancels after a confirmation step and then offers to resubscribe', async (
       can_cancel: false,
       can_reactivate: true
     })
+    cloud.scenario.status = {
+      ...cloud.scenario.status,
+      subscription_status: 'canceled',
+      cancel_at: '2026-10-24T12:00:00Z'
+    }
     return {
-      body: { billing_op_id: 'op_cancel', cancel_at: '2026-10-01T00:00:00Z' }
+      body: { billing_op_id: 'op_cancel', cancel_at: '2026-10-24T12:00:00Z' }
     }
   })
   await signIn(SUBSCRIPTION)
@@ -120,6 +125,7 @@ test('cancels after a confirmation step and then offers to resubscribe', async (
   await expect(
     page.getByText('Cancel your subscription? You can resubscribe at any time.')
   ).toBeVisible()
+  await expect(page.getByText(/^Ends on/)).toHaveCount(0)
   expect(
     cloud.requests.some((request) =>
       request.path.startsWith('/billing/subscription/')
@@ -129,6 +135,7 @@ test('cancels after a confirmation step and then offers to resubscribe', async (
   await page.getByRole('button', { name: 'Confirm cancellation' }).click()
 
   await expect(page.getByText('Your subscription is cancelled.')).toBeVisible()
+  await expect(page.getByText('Ends on Oct 24, 2026')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Resubscribe' })).toBeVisible()
   await expect(
     page.getByRole('button', { name: 'Cancel subscription' })
