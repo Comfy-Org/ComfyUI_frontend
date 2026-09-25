@@ -32,11 +32,13 @@ const slots = useSlots()
     "
     data-testid="workshop-hero"
   >
-    <p
-      class="mb-5 text-sm font-medium tracking-widest text-primary-comfy-yellow uppercase max-sm:mb-2"
-    >
-      <SplitReveal :text="t('workshop.hero.eyebrow', locale)" />
-    </p>
+    <slot name="eyebrow">
+      <p
+        class="mb-5 text-sm font-medium tracking-widest text-primary-comfy-yellow uppercase max-sm:mb-2"
+      >
+        <SplitReveal :text="t('workshop.hero.eyebrow', locale)" />
+      </p>
+    </slot>
     <h1 class="text-3xl font-light text-primary-comfy-canvas lg:text-5xl">
       <SplitReveal :text="t(headingKey, locale)" :delay="90" />
     </h1>

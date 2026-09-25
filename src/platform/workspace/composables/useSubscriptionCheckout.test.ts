@@ -406,7 +406,7 @@ vi.mock(import('@/config/comfyApi'), () => ({
 }))
 
 vi.mock<unknown>(
-  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
+  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
   () => ({
     useToast: () => ({ add: mockToastAdd })
   })

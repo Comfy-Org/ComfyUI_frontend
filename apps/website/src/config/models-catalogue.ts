@@ -148,10 +148,15 @@ export type RouterWorkshopModel = WorkshopPresentation & {
 }
 
 export type WorkflowWorkshopModel = WorkshopPresentation & {
+  readonly categoryLabel?: { readonly en: string; readonly 'zh-CN': string }
+  readonly categoryOrder?: number
+  readonly categoryHighlight?: boolean
   readonly type: 'CLOUD' | 'SERVERLESS'
   readonly workflowId: string
   readonly routerId?: never
   readonly category?: string
+  readonly models?: readonly string[]
+  readonly author?: string
 }
 
 export type WorkshopModel = RouterWorkshopModel | WorkflowWorkshopModel
@@ -456,6 +461,9 @@ function searchText(model: WorkshopModel): string {
   return [
     model.name,
     model.provider ?? '',
+    ...(model.routerId === undefined
+      ? [model.category ?? '', model.author ?? '', ...(model.models ?? [])]
+      : []),
     ...useCasesFor(model).map((value) => value.replaceAll('-', ' ')),
     ...model.capabilities,
     modalityOf(model),
