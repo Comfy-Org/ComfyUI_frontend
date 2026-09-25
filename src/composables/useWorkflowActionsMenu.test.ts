@@ -428,4 +428,23 @@ describe('useWorkflowActionsMenu', () => {
     )
     expect(startRename).toHaveBeenCalled()
   })
+
+  it('switches to the right-clicked workflow before opening the deploy dialog', async () => {
+    vi.mocked(useDeployToComfyApiGate).mockReturnValue({ enabled: ref(true) })
+    const customWorkflow = ref({
+      path: 'other.json',
+      isPersisted: true
+    } as ComfyWorkflow)
+
+    const { menuItems } = useWorkflowActionsMenu(vi.fn(), {
+      isRoot: true,
+      workflow: customWorkflow
+    })
+    await findItem(menuItems.value, 'deployToComfyApi.buttonLabel').command?.()
+
+    expect(mockWorkflowService.openWorkflow).toHaveBeenCalledWith(
+      customWorkflow.value
+    )
+    expect(mockOpenDeployDialog).toHaveBeenCalledOnce()
+  })
 })

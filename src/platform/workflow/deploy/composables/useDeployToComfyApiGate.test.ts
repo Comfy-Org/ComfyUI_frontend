@@ -63,6 +63,34 @@ describe('createDeployToComfyApiGate', () => {
     expect(enabled.value).toBe(false)
   })
 
+  it('hides the entry when the account signs out', async () => {
+    const posthog = fakePostHog({ [DISTRIBUTIONS_FLAG]: true })
+    let signOut!: () => void
+
+    const { enabled } = createDeployToComfyApiGate(
+      () => Promise.resolve(posthog),
+      {
+        onSignOut: (hide) => {
+          signOut = hide
+        }
+      }
+    )
+    await vi.waitFor(() => expect(enabled.value).toBe(true))
+    signOut()
+
+    expect(enabled.value).toBe(false)
+  })
+
+  it('lets the next caller try again when the flags could not be loaded', async () => {
+    const onLoadFailed = vi.fn()
+
+    createDeployToComfyApiGate(() => Promise.reject(new Error('chunk')), {
+      onLoadFailed
+    })
+
+    await vi.waitFor(() => expect(onLoadFailed).toHaveBeenCalledOnce())
+  })
+
   it('stays hidden off Cloud and never asks PostHog', async () => {
     distribution.isCloud = false
     const loadFlags = vi.fn(() =>

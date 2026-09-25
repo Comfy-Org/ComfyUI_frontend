@@ -1,7 +1,8 @@
 import type { FeatureFlagsCallback } from 'posthog-js'
-import { readonly, ref } from 'vue'
+import { effectScope, readonly, ref } from 'vue'
 import type { Ref } from 'vue'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { isCloud } from '@/platform/distribution/types'
 import { reportError } from '@/platform/telemetry/reportError'
 
@@ -12,18 +13,28 @@ export interface FlagReader {
   onFeatureFlags(callback: FeatureFlagsCallback): unknown
 }
 
+interface GateHooks {
+  onSignOut?: (hide: () => void) => void
+  onLoadFailed?: () => void
+}
+
 /**
  * Whether this account may reach the platform's build wizard. It is the
  * platform's own `distributions_enabled` PostHog flag, read here for the same
  * signed-in user, so the entry appears exactly where the wizard is open. Off
  * Cloud PostHog never initialises and the entry stays hidden; a development
- * build shows it regardless, as the agent panel does.
+ * build shows it regardless, as the agent panel does. Signing out hides it
+ * until the next account's flags arrive.
  */
 export function createDeployToComfyApiGate(
-  loadFlags: () => Promise<FlagReader>
+  loadFlags: () => Promise<FlagReader>,
+  { onSignOut, onLoadFailed }: GateHooks = {}
 ): { enabled: Readonly<Ref<boolean>> } {
   const enabled = ref(import.meta.env.MODE === 'development')
   if (isCloud && !enabled.value) {
+    onSignOut?.(() => {
+      enabled.value = false
+    })
     loadFlags()
       .then((posthog) => {
         const sync = () => {
@@ -36,6 +47,7 @@ export function createDeployToComfyApiGate(
       })
       .catch((error: unknown) => {
         reportError(error, { errorType: 'error_loading_deploy_gate_flag' })
+        onLoadFailed?.()
       })
   }
   return { enabled: readonly(enabled) }
@@ -44,8 +56,16 @@ export function createDeployToComfyApiGate(
 let gate: ReturnType<typeof createDeployToComfyApiGate> | undefined
 
 export function useDeployToComfyApiGate() {
-  gate ??= createDeployToComfyApiGate(() =>
-    import('posthog-js').then((module) => module.default)
-  )
+  gate ??= effectScope(true).run(() =>
+    createDeployToComfyApiGate(
+      () => import('posthog-js').then((module) => module.default),
+      {
+        onSignOut: (hide) => useCurrentUser().onUserLogout(hide),
+        onLoadFailed: () => {
+          gate = undefined
+        }
+      }
+    )
+  )!
   return gate
 }

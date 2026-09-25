@@ -13,11 +13,15 @@ vi.mock(import('@/config/comfyApi'), () => ({
   getComfyPlatformBaseUrl: () => 'https://platform.comfy.org'
 }))
 
+const buildDocsUrl = vi.hoisted(() =>
+  vi.fn(
+    (path: string, _options?: { includeLocale?: boolean }) =>
+      `https://docs.comfy.org${path}`
+  )
+)
 vi.mock(import('@/composables/useExternalLink'), () => ({
   useExternalLink: () =>
-    fromPartial<ReturnType<typeof useExternalLink>>({
-      buildDocsUrl: (path: string) => `https://docs.comfy.org${path}`
-    })
+    fromPartial<ReturnType<typeof useExternalLink>>({ buildDocsUrl })
 }))
 
 const i18n = createI18n({
@@ -48,6 +52,9 @@ describe('DeployToComfyApiCard', () => {
         'https://docs.comfy.org/development/overview'
       )
     }
+    expect(buildDocsUrl).toHaveBeenCalledWith('/development/overview', {
+      includeLocale: true
+    })
   })
 
   it('reports dismiss from the close control', async () => {

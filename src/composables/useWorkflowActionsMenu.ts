@@ -208,7 +208,10 @@ export function useWorkflowActionsMenu(
       id: 'deploy-as-api',
       label: t('deployToComfyApi.buttonLabel'),
       icon: 'icon-[lucide--rocket]',
-      command: () => openDeployToComfyApiDialog().catch(toastErrorHandler),
+      command: async () => {
+        await ensureWorkflowActive(targetWorkflow.value)
+        await openDeployToComfyApiDialog().catch(toastErrorHandler)
+      },
       visible: isRoot && deployGate.enabled.value,
       isNew: true,
       badge: t('g.new')
