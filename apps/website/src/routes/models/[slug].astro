@@ -27,7 +27,7 @@ const { model } = page
   ogImage={model.thumbnailUrl}
   noindex
 >
-  <ModelsPage slug={model.slug} client:load>
+  <ModelsPage slug={model.slug} workflowId={model.workflowId} client:load>
     <ModelsShowcase slot="fallback" />
   </ModelsPage>
   <noscript>

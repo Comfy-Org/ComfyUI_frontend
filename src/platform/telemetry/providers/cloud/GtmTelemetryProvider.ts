@@ -87,7 +87,7 @@ export class GtmTelemetryProvider implements TelemetryProvider {
     if (typeof window.gtag !== 'function') {
       function gtag() {
         // gtag queue shape is dataLayer.push(arguments)
-        // eslint-disable-next-line prefer-rest-params
+        // oxlint-disable-next-line prefer-rest-params
         ;(window.dataLayer as unknown[] | undefined)?.push(arguments)
       }
 

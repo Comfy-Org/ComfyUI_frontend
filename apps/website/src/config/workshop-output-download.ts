@@ -47,7 +47,8 @@ function save(href: string, fileName: string, target?: '_blank'): void {
 
 export async function downloadOutput(
   url: string,
-  fileName: string
+  fileName: string,
+  { onUnavailable }: { onUnavailable?: () => void } = {}
 ): Promise<boolean> {
   if (url.startsWith('blob:') || url.startsWith('data:')) {
     save(url, fileName)
@@ -70,6 +71,11 @@ export async function downloadOutput(
         credentials: 'omit',
         signal: controller.signal
       })
+      if (onUnavailable && [401, 403, 404, 410].includes(response.status)) {
+        controller.abort()
+        onUnavailable()
+        return false
+      }
       if (!response.ok) throw new Error(`Download failed: ${response.status}`)
     } finally {
       clearTimeout(timer)
