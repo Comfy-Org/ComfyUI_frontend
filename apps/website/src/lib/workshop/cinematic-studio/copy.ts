@@ -121,7 +121,7 @@ const copy = {
     'zh-CN': '用作参考'
   },
   'cinematic.ux.app': { en: 'App', 'zh-CN': '应用' },
-  'cinematic.backToApps': { en: 'All apps', 'zh-CN': '全部应用' },
+  'cinematic.backToApps': { en: 'Back to apps', 'zh-CN': '返回应用' },
   'cinematic.ux.heading': {
     en: 'Layout to review',
     'zh-CN': '评审布局'

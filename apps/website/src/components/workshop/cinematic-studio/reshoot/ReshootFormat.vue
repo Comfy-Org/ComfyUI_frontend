@@ -1,7 +1,6 @@
 <script setup lang="ts">
+import { ChevronDown } from '@lucide/vue'
 import { computed } from 'vue'
-
-import { cn } from '@comfyorg/tailwind-utils'
 
 import type {
   ReshootAspect,
@@ -25,62 +24,71 @@ const aspectLabel = (id: ReshootAspect) =>
 const aspectOptions = computed(() =>
   RESHOOT_ASPECTS.map((id) => ({ id, label: aspectLabel(id) }))
 )
+const sizeOptions = computed(() =>
+  RESHOOT_SIZES.map((id) => ({
+    id,
+    label: id,
+    meta: rc(`reshoot.size.${id}`, locale)
+  }))
+)
+
+function pick<T extends string>(options: readonly T[], id: string) {
+  return options.find((option) => option === id)
+}
+
 const aspectValue = computed({
   get: () => aspect.value,
   set: (id: string) => {
-    const match = RESHOOT_ASPECTS.find((option) => option === id)
-    if (match) aspect.value = match
+    aspect.value = pick(RESHOOT_ASPECTS, id) ?? aspect.value
+  }
+})
+const sizeValue = computed({
+  get: () => size.value,
+  set: (id: string) => {
+    size.value = pick(RESHOOT_SIZES, id) ?? size.value
   }
 })
 
-const blockClass =
-  'flex flex-col gap-1 rounded-xl px-3 py-2 ring-1 ring-transparency-white-t8 ring-inset'
-const captionClass = 'text-[11px] text-primary-warm-gray'
+const tileClass =
+  'h-14 w-full justify-between gap-2 px-3.5 text-left ring-1 ring-transparency-white-t8 ring-inset transition-colors hover:bg-transparency-white-t4'
 </script>
 
 <template>
   <div class="grid grid-cols-2 gap-2">
-    <div :class="blockClass">
-      <span :class="captionClass">{{ rc('reshoot.aspect', locale) }}</span>
-      <CinematicMenu
-        v-model="aspectValue"
-        :options="aspectOptions"
-        :heading="rc('reshoot.aspect', locale)"
-        trigger-class="h-7 justify-between gap-1 px-0 text-[13px] text-primary-warm-white"
-      >
-        {{ aspectLabel(aspect) }}
-      </CinematicMenu>
-    </div>
-    <div :class="blockClass">
-      <span :class="captionClass">{{ rc('reshoot.size', locale) }}</span>
-      <div
-        class="grid h-7 grid-cols-2 gap-0.5"
-        role="radiogroup"
-        :aria-label="rc('reshoot.size', locale)"
-      >
-        <button
-          v-for="option in RESHOOT_SIZES"
-          :key="option"
-          type="button"
-          role="radio"
-          :aria-checked="size === option"
-          :title="rc(`reshoot.size.${option}`, locale)"
-          :class="
-            cn(
-              'rounded-md text-xs transition-colors',
-              size === option
-                ? 'bg-primary-warm-white text-primary-comfy-ink'
-                : 'text-primary-comfy-canvas hover:text-primary-warm-white'
-            )
-          "
-          @click="size = option"
-        >
-          {{ option }}
-        </button>
-      </div>
-      <span :class="captionClass">{{
-        rc(`reshoot.size.${size}`, locale)
-      }}</span>
-    </div>
+    <CinematicMenu
+      v-model="aspectValue"
+      :options="aspectOptions"
+      :heading="rc('reshoot.aspect', locale)"
+      :trigger-class="tileClass"
+    >
+      <span class="flex min-w-0 flex-col">
+        <span class="text-[11px] text-primary-warm-gray">
+          {{ rc('reshoot.aspect', locale) }}
+        </span>
+        <span class="truncate text-[13px] text-primary-warm-white">
+          {{ aspectLabel(aspect) }}
+        </span>
+      </span>
+      <ChevronDown class="size-3.5 shrink-0 text-primary-warm-gray" />
+    </CinematicMenu>
+    <CinematicMenu
+      v-model="sizeValue"
+      :options="sizeOptions"
+      :heading="rc('reshoot.size', locale)"
+      :trigger-class="tileClass"
+    >
+      <span class="flex min-w-0 flex-col">
+        <span class="text-[11px] text-primary-warm-gray">
+          {{ rc('reshoot.size', locale) }}
+        </span>
+        <span class="truncate text-[13px] text-primary-warm-white">
+          {{ size }}
+          <span class="text-primary-warm-gray">
+            · {{ rc(`reshoot.speed.${size}`, locale) }}
+          </span>
+        </span>
+      </span>
+      <ChevronDown class="size-3.5 shrink-0 text-primary-warm-gray" />
+    </CinematicMenu>
   </div>
 </template>

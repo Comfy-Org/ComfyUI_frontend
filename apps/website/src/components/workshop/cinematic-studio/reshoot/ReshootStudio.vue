@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { useReshootDemo } from '../../../../composables/useReshootDemo'
-import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
 import type { Locale } from '../../../../i18n/translations'
 import AppsBackLink from '../AppsBackLink.vue'
 import ReshootHeader from './ReshootHeader.vue'
@@ -85,9 +84,5 @@ const {
         @reuse="demo.reuse(selected)"
       />
     </div>
-    <p class="text-center text-[11px] text-primary-warm-gray">
-      {{ rc('reshoot.credit', locale) }} ·
-      {{ rc('reshoot.demoNote', locale) }}
-    </p>
   </div>
 </template>

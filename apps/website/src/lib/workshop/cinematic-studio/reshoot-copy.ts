@@ -101,13 +101,13 @@ const copy = {
     en: 'Prompt, dialogue, seed',
     'zh-CN': '提示词、对白、种子'
   },
-  'reshoot.cameraHelp': {
-    en: 'Or drag the preview itself. Magenta is what the original camera never saw; the model paints it in.',
-    'zh-CN': '也可以直接拖动预览。洋红色是原机位从未拍到的部分，由模型补画。'
+  'reshoot.magenta': {
+    en: 'Magenta: never seen by the original camera, painted in by the model',
+    'zh-CN': '洋红色：原机位从未拍到，由模型补画'
   },
   'reshoot.distanceHelp': {
-    en: 'The current LoRA follows distance loosely. Angles are what it is good at.',
-    'zh-CN': '当前 LoRA 对距离的控制较弱，更擅长角度。'
+    en: 'Distance is approximate; angles give the most control.',
+    'zh-CN': '距离只是近似值，角度的控制最精确。'
   },
   'reshoot.keepAimHelp': {
     en: 'Orbit the subject but keep looking where the original looked, as the training data does.',
@@ -129,6 +129,8 @@ const copy = {
     en: '{frames} frames at 24 fps ({seconds} s)',
     'zh-CN': '{frames} 帧，24 fps（{seconds} 秒）'
   },
+  'reshoot.speed.480p': { en: 'Faster', 'zh-CN': '更快' },
+  'reshoot.speed.768p': { en: 'Sharper', 'zh-CN': '更清晰' },
   'reshoot.section.camera': { en: 'New camera', 'zh-CN': '新机位' },
   'reshoot.section.move': { en: 'Camera move', 'zh-CN': '运镜' },
   'reshoot.section.prompt': {

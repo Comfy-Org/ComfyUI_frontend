@@ -54,11 +54,6 @@ const motion = defineModel<ReshootMotion>('motion', { required: true })
 const prompt = defineModel<string>('prompt', { required: true })
 
 const ready = computed(() => depth === 'ready')
-const moveValue = computed(() =>
-  keys.length > 1
-    ? rc('reshoot.move.keys', locale).replace('{count}', String(keys.length))
-    : rc('reshoot.move.static', locale)
-)
 const frames = rc('reshoot.frames', locale)
   .replace('{frames}', String(RESHOOT_FRAMES))
   .replace('{seconds}', (RESHOOT_FRAMES / 24).toFixed(1))
@@ -116,7 +111,6 @@ function choose(event: Event) {
       />
       <ReshootDisclosure
         :label="rc('reshoot.section.move', locale)"
-        :value="moveValue"
         :disabled="!ready"
       >
         <ReshootMoveControls
@@ -130,10 +124,7 @@ function choose(event: Event) {
         />
       </ReshootDisclosure>
       <ReshootFormat v-model:aspect="aspect" v-model:size="size" :locale />
-      <ReshootDisclosure
-        :label="rc('reshoot.advanced', locale)"
-        :value="rc('reshoot.advanced.value', locale)"
-      >
+      <ReshootDisclosure :label="rc('reshoot.advanced', locale)">
         <div class="flex flex-col gap-3">
           <div class="flex flex-col gap-1.5">
             <label
@@ -181,6 +172,11 @@ function choose(event: Event) {
     <footer
       class="flex flex-col gap-2 rounded-b-2xl border-t border-transparency-white-t8 p-4"
     >
+      <p class="text-center text-[11px] text-primary-warm-gray">
+        {{
+          rc(ready ? 'reshoot.generate.note' : 'reshoot.generate.wait', locale)
+        }}
+      </p>
       <Button
         size="lg"
         class="rounded-full"
@@ -190,11 +186,6 @@ function choose(event: Event) {
       >
         {{ rc('reshoot.generate', locale) }}
       </Button>
-      <p class="text-center text-[11px] text-primary-warm-gray">
-        {{
-          rc(ready ? 'reshoot.generate.note' : 'reshoot.generate.wait', locale)
-        }}
-      </p>
     </footer>
   </aside>
 </template>

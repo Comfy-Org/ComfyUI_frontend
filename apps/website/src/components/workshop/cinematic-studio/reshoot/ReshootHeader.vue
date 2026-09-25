@@ -15,5 +15,9 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
     <p class="text-lg text-primary-warm-gray">
       {{ rc('reshoot.pick.lead', locale) }}
     </p>
+    <p class="text-xs text-primary-warm-gray/80">
+      {{ rc('reshoot.credit', locale) }} ·
+      {{ rc('reshoot.demoNote', locale) }}
+    </p>
   </header>
 </template>
