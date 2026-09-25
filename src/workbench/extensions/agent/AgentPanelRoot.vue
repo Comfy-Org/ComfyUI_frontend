@@ -161,9 +161,14 @@ const userName = computed(
 
 /**
  * The agent's one socket, `/api/agent/events`, on every backend, carrying the
- * caller's credential as `?token=` (see agentSocketToken).
+ * caller's credential as `?token=` (see agentSocketToken). Its path comes from
+ * `api.apiURL` like every agent request, so a ComfyUI served under a sub-path
+ * reaches the same backend.
  */
-const events = createAgentEventSource({ getToken: agentSocketToken })
+const events = createAgentEventSource({
+  endpoint: api.apiURL('/agent/events'),
+  getToken: agentSocketToken
+})
 
 /** Document frames ride the same socket, so following never reconnects chat. */
 const docTransport = createAgentDocFrameTransport(events)

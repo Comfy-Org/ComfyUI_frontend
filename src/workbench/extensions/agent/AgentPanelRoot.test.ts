@@ -7113,6 +7113,21 @@ describe('AgentPanelRoot against the local agent', () => {
   })
 })
 
+describe('AgentPanelRoot agent socket (#17469)', () => {
+  // The socket's path comes from api.apiURL like every agent REST request, so
+  // a ComfyUI served under a sub-path reaches the same backend.
+  it('opens the events socket at the api path, with the caller credential as its token', async () => {
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    expect(createAgentEventSource).toHaveBeenCalledWith(
+      expect.objectContaining({
+        endpoint: '/api/agent/events',
+        getToken: expect.any(Function)
+      })
+    )
+  })
+})
+
 describe('AgentPanelRoot agent socket identity (#17469)', () => {
   beforeEach(() => {
     // A spy-mode mock resets to the real lookup.
