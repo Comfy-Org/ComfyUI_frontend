@@ -14,8 +14,6 @@
         "src/components/dialog/bodyPointerEventsRestore.test.ts",
         "src/components/dialog/content/setting/SettingItem.test.ts",
         "src/components/dialog/content/setting/UsageLogsTable.test.ts",
-        "src/components/dialog/content/signin/SignInForm.test.ts",
-        "src/components/dialog/content/signin/SignInForm.vue",
         "src/components/graph/GraphCanvasMenu.vue",
         "src/components/graph/SelectionToolbox.test.ts",
         "src/components/graph/selectionToolbox/BypassButton.test.ts",
