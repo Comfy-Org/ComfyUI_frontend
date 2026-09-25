@@ -5,7 +5,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { useOAuthPostLoginRedirect } from '@/platform/cloud/oauth/useOAuthPostLoginRedirect'
 import { getSafePreviousFullPath } from '@/platform/cloud/onboarding/utils/previousFullPath'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 
 /**
  * Shared post-authentication redirect logic used by both CloudLoginView and
@@ -20,26 +20,20 @@ export function usePostAuthRedirect(options: {
   const { t } = useI18n()
   const router = useRouter()
   const route = useRoute()
-  const toastStore = useToastStore()
+  const toastStore = useToast()
   const { resumeOAuthIfNeeded } = useOAuthPostLoginRedirect()
 
   async function onAuthSuccess() {
-    toastStore.add({
-      severity: 'success',
-      summary: options.successSummary,
-      life: 2000
-    })
+    toastStore.success(options.successSummary, { duration: 2000 })
 
     const oauthResume = await resumeOAuthIfNeeded(route.query)
     if (oauthResume.kind === 'error') {
       // authError renders only in email-form mode; surface the failure via
       // a toast so social-login users (Google / GitHub) can see it too.
       options.authError.value = oauthResume.message
-      toastStore.add({
-        severity: 'error',
-        summary: t('oauth.consent.sessionErrorToastSummary'),
-        detail: oauthResume.message,
-        life: 4000
+      toastStore.error(t('oauth.consent.sessionErrorToastSummary'), {
+        description: oauthResume.message,
+        duration: 4000
       })
       return
     }

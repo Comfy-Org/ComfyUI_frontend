@@ -2,7 +2,7 @@ import { useI18n } from 'vue-i18n'
 
 import { downloadFile, downloadFileAsBlob } from '@/base/common/downloadUtil'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 
 interface DirectAssetDownload {
   mode: 'direct'
@@ -22,7 +22,7 @@ export type AssetDownload = DirectAssetDownload | FetchedAssetDownload
 
 export function useAssetDownload() {
   const { t } = useI18n()
-  const toast = useToastStore()
+  const toast = useToast()
 
   async function downloadFiles(files: AssetDownload[]): Promise<void> {
     const pending = files.map((file) => {
@@ -49,11 +49,9 @@ export function useAssetDownload() {
     const successCount = files.length - failures.length
 
     if (successCount > 0) {
-      toast.add({
-        severity: 'success',
-        summary: t('g.success'),
-        detail: t('mediaAsset.selection.downloadsStarted', successCount),
-        life: 2000
+      toast.success(t('g.success'), {
+        description: t('mediaAsset.selection.downloadsStarted', successCount),
+        duration: 2000
       })
     }
 
@@ -64,10 +62,8 @@ export function useAssetDownload() {
           context: { filename: failure.filename }
         })
       }
-      toast.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('progressToast.downloadsFailed', failures.length)
+      toast.error(t('g.error'), {
+        description: t('progressToast.downloadsFailed', failures.length)
       })
     }
   }

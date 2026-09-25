@@ -102,7 +102,7 @@ it('shows failed installations without suggesting a successful change', async ()
   expect(screen.getByText('Failed')).toBeInTheDocument()
   const user = userEvent.setup()
   await user.click(screen.getByRole('button', { name: 'Expand' }))
-  await user.click(screen.getByRole('menuitem', { name: 'Failed' }))
+  await user.click(screen.getByRole('tab', { name: 'Failed' }))
   expect(screen.getByText('Denied')).toBeInTheDocument()
   expect(
     screen.queryByText(en.g.completedWithCheckmark)
@@ -254,7 +254,7 @@ it.for([
     ).toBeVisible()
     expect(screen.queryByText('Updating all packs')).not.toBeInTheDocument()
     expect(screen.getByText(en.g.completedWithCheckmark)).toBeVisible()
-    await user.click(screen.getByRole('menuitem', { name: 'Failed' }))
+    await user.click(screen.getByRole('tab', { name: 'Failed' }))
     expect(screen.getByText('Updating all packs')).toBeVisible()
     expect(screen.getByText('Update denied')).toBeVisible()
     expect(

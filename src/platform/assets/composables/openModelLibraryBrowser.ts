@@ -3,12 +3,12 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
 import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 
 export async function openModelLibraryBrowser(): Promise<void> {
   if (!useFeatureFlags().flags.assetsEnabled) return
 
-  const toastStore = useToastStore()
+  const toastStore = useToast()
   const assetBrowserDialog = useAssetBrowserDialog()
   await assetBrowserDialog.browse({
     assetType: 'models',
@@ -21,10 +21,8 @@ export async function openModelLibraryBrowser(): Promise<void> {
           tags: { code: error.code },
           context: { assetId: error.assetId, details: error.details }
         })
-        toastStore.add({
-          severity: 'error',
-          summary: t('g.error'),
-          detail: t('assetBrowser.failedToCreateNode')
+        toastStore.error(t('g.error'), {
+          description: t('assetBrowser.failedToCreateNode')
         })
       }
     }

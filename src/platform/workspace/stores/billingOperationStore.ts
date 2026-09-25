@@ -1,4 +1,3 @@
-import type { ToastMessageOptions } from 'primevue/toast'
 import type { PaymentIntent } from '@stripe/stripe-js'
 import { loadStripe } from '@stripe/stripe-js/pure'
 import { useEventListener } from '@vueuse/core'
@@ -6,6 +5,8 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useToast } from '@/components/ui/toast'
+import type { ToastId } from '@/components/ui/toast'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
@@ -20,7 +21,6 @@ import type {
   SubscriptionCheckoutTier,
   SubscriptionCheckoutType
 } from '@/platform/telemetry/types'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import type {
   BillingAuthenticationState,
@@ -147,7 +147,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   const operations = ref<Map<string, BillingOperation>>(new Map())
   const timeouts = new Map<string, ReturnType<typeof setTimeout>>()
   const intervals = new Map<string, number>()
-  const receivedToasts = new Map<string, ToastMessageOptions>()
+  const receivedToasts = new Map<string, ToastId>()
   const terminalResolvers = new Map<string, TerminalResolver>()
   const terminalPromises = new Map<string, Promise<BillingOperation>>()
   const autoHandledPaymentActions = new Set<string>()
@@ -215,9 +215,9 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     type: Exclude<OperationType, 'cancel'>,
     actionRequired: boolean
   ) {
-    const toastStore = useToastStore()
+    const toastStore = useToast()
     const previous = receivedToasts.get(opId)
-    if (previous) toastStore.remove(previous)
+    if (previous !== undefined) toastStore.dismiss(previous)
 
     const messageKey =
       type === 'subscription'
@@ -228,14 +228,10 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
           ? 'billingOperation.topupActionRequired'
           : 'billingOperation.topupProcessing'
 
-    const toastMessage: ToastMessageOptions = {
-      // 'warn' selects the prompt icon over the spinner in GlobalToast.
-      severity: actionRequired ? 'warn' : 'info',
-      summary: t(messageKey),
-      group: 'billing-operation'
-    }
-    receivedToasts.set(opId, toastMessage)
-    toastStore.add(toastMessage)
+    const toastId = actionRequired
+      ? toastStore.warning(t(messageKey))
+      : toastStore.loading(t(messageKey))
+    receivedToasts.set(opId, toastId)
   }
 
   function startOperation(
@@ -818,17 +814,13 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         useSettingsDialog().show(isCloud ? 'workspace' : 'credits')
       }
 
-      const toastStore = useToastStore()
+      const toastStore = useToast()
       const messageKey =
         operation.type === 'subscription'
           ? 'billingOperation.subscriptionSuccess'
           : 'billingOperation.topupSuccess'
 
-      toastStore.add({
-        severity: 'success',
-        summary: t(messageKey),
-        life: 5000
-      })
+      toastStore.success(t(messageKey), { duration: 5000 })
     } catch (error) {
       reportError(error, {
         errorType: 'failure_handling_billing_operation_success',
@@ -930,11 +922,9 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     }
 
     if (operation.type !== 'cancel' && !superseded) {
-      useToastStore().add({
-        severity: 'error',
-        summary: defaultMessage,
-        detail: detail ?? undefined,
-        life: 7000
+      useToast().error(defaultMessage, {
+        description: detail ?? undefined,
+        duration: 7000
       })
     }
 
@@ -1069,10 +1059,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     }
 
     if (operation.type !== 'cancel') {
-      useToastStore().add({
-        severity: 'error',
-        summary: message
-      })
+      useToast().error(message)
     }
 
     resolveTerminal(opId)
@@ -1215,8 +1202,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
     // Remove the "received" toast
     const receivedToast = receivedToasts.get(opId)
-    if (receivedToast) {
-      useToastStore().remove(receivedToast)
+    if (receivedToast !== undefined) {
+      useToast().dismiss(receivedToast)
       receivedToasts.delete(opId)
     }
   }

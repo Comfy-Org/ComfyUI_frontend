@@ -125,7 +125,7 @@
 </template>
 
 <script setup lang="ts">
-import { useToast } from 'primevue'
+import { useToast } from '@/components/ui/toast'
 import Skeleton from 'primevue/skeleton'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -210,12 +210,9 @@ const handleDownload = () => {
   try {
     downloadFile(currentVideoUrl.value)
   } catch (error) {
-    useToast().add({
-      severity: 'error',
-      summary: 'Error',
-      detail: t('g.failedToDownloadVideo'),
-      life: 3000,
-      group: 'video-preview'
+    useToast().error('Error', {
+      description: t('g.failedToDownloadVideo'),
+      duration: 3000
     })
   }
 }

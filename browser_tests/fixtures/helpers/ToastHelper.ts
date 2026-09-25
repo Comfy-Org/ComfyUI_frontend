@@ -8,12 +8,16 @@ export class ToastHelper {
   public readonly toastWarnings: Locator
 
   constructor(private readonly page: Page) {
-    this.visibleToasts = page.locator('.p-toast-message:visible')
-    this.toastErrors = page.locator('.p-toast-message.p-toast-message-error')
-    this.toastSuccesses = page.locator(
-      '.p-toast-message.p-toast-message-success'
-    )
-    this.toastWarnings = page.locator('.p-toast-message.p-toast-message-warn')
+    this.visibleToasts = page.getByTestId('toast').filter({ visible: true })
+    this.toastErrors = page
+      .getByTestId('toast')
+      .and(page.locator('[data-toast-kind="error"]'))
+    this.toastSuccesses = page
+      .getByTestId('toast')
+      .and(page.locator('[data-toast-kind="success"]'))
+    this.toastWarnings = page
+      .getByTestId('toast')
+      .and(page.locator('[data-toast-kind="warning"]'))
   }
 
   async closeToasts(requireCount = 0): Promise<void> {
@@ -24,9 +28,7 @@ export class ToastHelper {
     }
 
     // Clear all toasts
-    const toastCloseButtons = await this.page
-      .locator('.p-toast-close-button')
-      .all()
+    const toastCloseButtons = await this.page.getByTestId('toast-close').all()
     for (const button of toastCloseButtons) {
       await button.click()
     }

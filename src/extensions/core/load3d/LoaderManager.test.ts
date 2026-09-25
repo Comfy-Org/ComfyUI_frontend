@@ -1,8 +1,8 @@
+import { useToast } from '@/components/ui/toast'
 import * as THREE from 'three'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { isGaussianSplatPLY } from '@/scripts/metadata/ply'
 
 import type {
@@ -359,9 +359,9 @@ describe('LoaderManager', () => {
 
       await lm.loadModel('api/view?other=1')
 
-      expect(useToastStore().addAlert).toHaveBeenCalledWith(
-        'toastMessages.couldNotDetermineFileType'
-      )
+      expect(useToast().warning).toHaveBeenCalledWith('Alert', {
+        description: 'toastMessages.couldNotDetermineFileType'
+      })
       expect(modelManager.setupModel).not.toHaveBeenCalled()
       expect(meshLoad).not.toHaveBeenCalled()
     })
@@ -526,9 +526,9 @@ describe('LoaderManager', () => {
         'modelLoadingEnd',
         null
       )
-      expect(useToastStore().addAlert).toHaveBeenCalledWith(
-        'toastMessages.errorLoadingModel'
-      )
+      expect(useToast().warning).toHaveBeenCalledWith('Alert', {
+        description: 'toastMessages.errorLoadingModel'
+      })
       expect(consoleError).toHaveBeenCalled()
     })
 
@@ -547,9 +547,9 @@ describe('LoaderManager', () => {
       })
 
       expect(consoleError).toHaveBeenCalled()
-      expect(useToastStore().addAlert).not.toHaveBeenCalledWith(
-        'toastMessages.errorLoadingModel'
-      )
+      expect(useToast().warning).not.toHaveBeenCalledWith('Alert', {
+        description: 'toastMessages.errorLoadingModel'
+      })
     })
 
     it('detects a 404 from the response status field on three.js HttpError', async () => {
@@ -564,9 +564,9 @@ describe('LoaderManager', () => {
         silentOnNotFound: true
       })
 
-      expect(useToastStore().addAlert).not.toHaveBeenCalledWith(
-        'toastMessages.errorLoadingModel'
-      )
+      expect(useToast().warning).not.toHaveBeenCalledWith('Alert', {
+        description: 'toastMessages.errorLoadingModel'
+      })
     })
 
     it('still alerts on non-404 errors when silentOnNotFound is set', async () => {
@@ -578,9 +578,9 @@ describe('LoaderManager', () => {
         silentOnNotFound: true
       })
 
-      expect(useToastStore().addAlert).toHaveBeenCalledWith(
-        'toastMessages.errorLoadingModel'
-      )
+      expect(useToast().warning).toHaveBeenCalledWith('Alert', {
+        description: 'toastMessages.errorLoadingModel'
+      })
     })
 
     it('discards the result of a stale load when a newer one has started', async () => {
@@ -691,7 +691,7 @@ describe('LoaderManager', () => {
 
       await Promise.all([firstPromise, secondPromise])
 
-      expect(useToastStore().addAlert).not.toHaveBeenCalled()
+      expect(useToast().warning).not.toHaveBeenCalled()
       const endEmits = eventManager.emitEvent.mock.calls.filter(
         (call: unknown[]) => call[0] === 'modelLoadingEnd'
       )

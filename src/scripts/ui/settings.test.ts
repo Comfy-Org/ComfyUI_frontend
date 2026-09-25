@@ -1,8 +1,8 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, expectTypeOf, it, vi } from 'vitest'
 
+import { useToast } from '@/components/ui/toast'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ComfyApp } from '@/scripts/app'
 
 import { ComfySettingsDialog } from './settings'
@@ -51,10 +51,10 @@ describe('saving a setting that fails to persist', () => {
     save(dialog, accessor)
 
     await vi.waitFor(() => {
-      expect(useToastStore().messagesToAdd).toContainEqual(
+      expect(useToast().toasts).toContainEqual(
         expect.objectContaining({
-          severity: 'warn',
-          detail: expect.stringContaining(
+          kind: 'warning',
+          description: expect.stringContaining(
             'Error saving setting Comfy.EditAttention.Delta'
           )
         })

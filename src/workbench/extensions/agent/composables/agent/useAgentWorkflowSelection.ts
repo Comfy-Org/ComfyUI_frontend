@@ -2,8 +2,8 @@ import { storeToRefs } from 'pinia'
 import { computed, onScopeDispose, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useToast } from '@/components/ui/toast'
 import type { AgentWorkflowBindSource } from '@/platform/telemetry/types'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -43,7 +43,7 @@ export function useAgentWorkflowSelection({
   const composerStore = useAgentComposerStore()
   const { workflowReferences } = storeToRefs(composerStore)
   const { t } = useI18n()
-  const toast = useToastStore()
+  const toast = useToast()
   const {
     refreshCloudWorkflowIds,
     cloudIdFor,
@@ -117,11 +117,7 @@ export function useAgentWorkflowSelection({
   function warnWorkflowSelectionFailed(
     detail = t('shareWorkflow.saveFailedDescription')
   ): void {
-    toast.add({
-      severity: 'warn',
-      summary: t('shareWorkflow.saveFailedTitle'),
-      detail
-    })
+    toast.warning(t('shareWorkflow.saveFailedTitle'), { description: detail })
   }
 
   async function onSelectWorkflowTarget(path: string): Promise<boolean> {

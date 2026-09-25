@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import { useWidgetSelectActions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions'
 import { api } from '@/scripts/api'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 const mockCaptureCanvasState = vi.hoisted(() => vi.fn())
@@ -194,10 +194,9 @@ describe('useWidgetSelectActions', () => {
 
       expect(modelValue.value).toBe('original.png')
 
-      const toastStore = useToastStore()
-      expect(toastStore.addAlert).toHaveBeenCalledWith(
-        'Upload failed: Internal Server Error'
-      )
+      expect(useToast().warning).toHaveBeenCalledWith('Alert', {
+        description: 'Upload failed: Internal Server Error'
+      })
     })
 
     it('shows a status-derived toast without a dangling separator when statusText is empty', async () => {
@@ -223,9 +222,9 @@ describe('useWidgetSelectActions', () => {
 
       await handleFilesUpdate([new File(['test'], 'fail.png')])
 
-      expect(useToastStore().addAlert).toHaveBeenCalledWith(
-        'Upload failed: HTTP 502'
-      )
+      expect(useToast().warning).toHaveBeenCalledWith('Alert', {
+        description: 'Upload failed: HTTP 502'
+      })
     })
 
     it('shows a file-too-large toast on a 413 with no known upload limit', async () => {
@@ -252,9 +251,9 @@ describe('useWidgetSelectActions', () => {
 
       await handleFilesUpdate([new File(['test'], 'huge.png')])
 
-      expect(useToastStore().addAlert).toHaveBeenCalledWith(
-        'File is too large to upload.'
-      )
+      expect(useToast().warning).toHaveBeenCalledWith('Alert', {
+        description: 'File is too large to upload.'
+      })
     })
 
     it('shows a file-too-large toast with the limit on a 413 when the server reports one', async () => {
@@ -281,9 +280,9 @@ describe('useWidgetSelectActions', () => {
 
       await handleFilesUpdate([new File(['test'], 'huge.png')])
 
-      expect(useToastStore().addAlert).toHaveBeenCalledWith(
-        'File is too large to upload (limit: 100 MB).'
-      )
+      expect(useToast().warning).toHaveBeenCalledWith('Alert', {
+        description: 'File is too large to upload (limit: 100 MB).'
+      })
     })
   })
 })

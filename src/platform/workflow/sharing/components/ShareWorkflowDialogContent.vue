@@ -189,7 +189,7 @@
 <script setup lang="ts">
 import { vAutoAnimate } from '@formkit/auto-animate/vue'
 import { useAsyncState } from '@vueuse/core'
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -369,10 +369,7 @@ async function refreshDialogState() {
     console.error('Failed to load publish status:', error)
     publishResult.value = null
     dialogState.value = 'ready'
-    toast.add({
-      severity: 'error',
-      summary: t('shareWorkflow.loadFailed')
-    })
+    toast.error(t('shareWorkflow.loadFailed'))
   }
 }
 
@@ -405,10 +402,8 @@ const { isLoading: isSaving, execute: handleSave } = useAsyncState(
     immediate: false,
     onError: (error) => {
       console.error('Failed to save workflow:', error)
-      toast.add({
-        severity: 'error',
-        summary: t('shareWorkflow.saveFailedTitle'),
-        detail: t('shareWorkflow.saveFailedDescription')
+      toast.error(t('shareWorkflow.saveFailedTitle'), {
+        description: t('shareWorkflow.saveFailedDescription')
       })
     }
   }
@@ -448,10 +443,8 @@ const {
     immediate: false,
     onError: (error) => {
       console.error('Failed to publish workflow:', error)
-      toast.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: error instanceof Error ? error.message : t('g.error')
+      toast.error(t('g.error'), {
+        description: error instanceof Error ? error.message : t('g.error')
       })
     }
   }

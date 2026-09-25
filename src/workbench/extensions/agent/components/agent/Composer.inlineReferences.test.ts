@@ -10,6 +10,14 @@ import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 import Composer from './Composer.vue'
 import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSetup'
 
+vi.hoisted(() => {
+  globalThis.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+})
+
 setupInlinePromptEditorDom()
 
 function renderComposer() {
@@ -47,10 +55,11 @@ describe('inline node and asset references', () => {
 
   it('keeps upper-row removal and Undo synchronized with inline references', async () => {
     const { store, selected, editor, send } = renderComposer()
-    await userEvent.type(editor, 'Use ')
+    await userEvent.click(editor)
+    await userEvent.paste('Use ')
     selected.value = [{ id: '12', title: 'KSampler' }]
     await waitFor(() => expect(editor.textContent).toBe('Use KSampler #12 '))
-    await userEvent.keyboard('with ')
+    await userEvent.paste('with ')
     store.addAttachment({
       id: 'image',
       name: 'source.png',
@@ -107,7 +116,8 @@ describe('inline node and asset references', () => {
 
   it('does not reinsert a removed asset when its upload completes', async () => {
     const { store, editor } = renderComposer()
-    await userEvent.type(editor, 'Inspect ')
+    await userEvent.click(editor)
+    await userEvent.paste('Inspect ')
     store.addAttachment({
       id: 'image',
       name: 'pending.png',
@@ -144,17 +154,20 @@ describe('inline node and asset references', () => {
 
   it('deletes a node from the sentence without restaging the selected canvas node', async () => {
     const { store, selected, editor } = renderComposer()
-    await userEvent.type(editor, 'Use ')
+    await userEvent.click(editor)
+    await userEvent.paste('Use ')
     selected.value = [{ id: '12', title: 'KSampler' }]
     await screen.findByTestId('node-reference-chip')
-    await userEvent.keyboard('{Backspace}{Backspace}')
+    await userEvent.keyboard('{Backspace}')
+    await waitFor(() => expect(store.draft).toBe('Use '))
+    await userEvent.keyboard('{Backspace}')
     expect(editor.textContent).toBe('Use ')
     expect(store.nodes).toEqual([])
     expect(
       screen.queryByTestId('composer-node-section')
     ).not.toBeInTheDocument()
     selected.value = [{ id: '12', title: 'KSampler' }]
-    await userEvent.keyboard('another node')
+    await userEvent.paste('another node')
     expect(store.nodes).toEqual([])
   })
 

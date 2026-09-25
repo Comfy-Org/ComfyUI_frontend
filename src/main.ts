@@ -4,7 +4,6 @@ import { captureMessage } from '@sentry/vue'
 import { createPinia } from 'pinia'
 import 'primeicons/primeicons.css'
 import PrimeVue from 'primevue/config'
-import ToastService from 'primevue/toastservice'
 import Tooltip from 'primevue/tooltip'
 import { createApp } from 'vue'
 
@@ -30,7 +29,7 @@ import '@/lib/litegraph/public/css/litegraph.css'
 import router from '@/router'
 import { isDesktop, isNightly } from '@/platform/distribution/types'
 import { stripPaymentReturnParams } from '@/platform/cloud/subscription/utils/paymentReturnUrl'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
 
 import App from './App.vue'
@@ -119,11 +118,7 @@ setAssertReporter(
       reportAssertFailure(message, context)
     }
     if (isNightly) {
-      useToastStore(pinia).add({
-        severity: 'warn',
-        summary: 'Assertion failed',
-        detail: message
-      })
+      useToast(pinia).warning('Assertion failed', { description: message })
     }
   },
   { forwardsToRum: isCloud }
@@ -155,7 +150,6 @@ app
       }
     }
   })
-  .use(ToastService)
   .use(pinia)
   .use(i18n)
 

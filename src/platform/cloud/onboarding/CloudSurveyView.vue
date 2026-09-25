@@ -19,6 +19,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { isNavigationFailure, useRouter } from 'vue-router'
 
+import { useToast } from '@/components/ui/toast'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   getSurveyCompletedStatus,
@@ -31,7 +32,6 @@ import {
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAuthStore } from '@/stores/authStore'
 
 import DynamicSurveyForm from './survey/DynamicSurveyForm.vue'
@@ -100,11 +100,9 @@ const onSubmitSurvey = async (payload: Record<string, unknown>) => {
     if (replaying && useAuthStore().userId === replayOwner)
       restoreSurveyReplayRequest(replayOwner)
     reportError(error, { errorType: 'error_navigating_from_onboarding_survey' })
-    useToastStore().add({
-      severity: 'error',
-      summary: t('cloudOnboarding.survey.navigationFailed'),
-      detail: t('cloudOnboarding.survey.navigationFailedDetail'),
-      life: 5000
+    useToast().error(t('cloudOnboarding.survey.navigationFailed'), {
+      description: t('cloudOnboarding.survey.navigationFailedDetail'),
+      duration: 5000
     })
   } finally {
     isSubmitting.value = false
@@ -115,11 +113,9 @@ function reportSurveySubmissionFailure(cause: unknown) {
   reportError(cause, {
     errorType: 'error_submitting_onboarding_survey'
   })
-  useToastStore().add({
-    severity: 'error',
-    summary: t('cloudOnboarding.survey.submitFailed'),
-    detail: t('cloudOnboarding.survey.submitFailedDetail'),
-    life: 5000
+  useToast().error(t('cloudOnboarding.survey.submitFailed'), {
+    description: t('cloudOnboarding.survey.submitFailedDetail'),
+    duration: 5000
   })
 }
 </script>

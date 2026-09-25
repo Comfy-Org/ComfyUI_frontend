@@ -286,7 +286,7 @@
   },
   "src/platform/workspace/composables/useSubscriptionCheckout.ts": {
     "comfy/no-new-error-throw": {
-      "count": 6
+      "count": 5
     }
   },
   "src/platform/workspace/composables/useWorkspaceBilling.ts": {

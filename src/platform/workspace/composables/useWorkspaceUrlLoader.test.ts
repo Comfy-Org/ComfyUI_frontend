@@ -5,7 +5,7 @@ import { createApp, defineComponent } from 'vue'
 import type { App } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 
 import { useWorkspaceUrlLoader as createWorkspaceUrlLoader } from './useWorkspaceUrlLoader'
 
@@ -97,7 +97,7 @@ describe('useWorkspaceUrlLoader', () => {
 
     expect(mockRouterReplace).not.toHaveBeenCalled()
     expect(useTeamWorkspaceStore().switchWorkspace).not.toHaveBeenCalled()
-    expect(useToastStore().add).not.toHaveBeenCalled()
+    expect(useToast().info).not.toHaveBeenCalled()
   })
 
   it('switches into a member workspace named by the link', async () => {
@@ -112,7 +112,7 @@ describe('useWorkspaceUrlLoader', () => {
     expect(useTeamWorkspaceStore().switchWorkspace).toHaveBeenCalledWith(
       'workspace-2'
     )
-    expect(useToastStore().add).not.toHaveBeenCalled()
+    expect(useToast().info).not.toHaveBeenCalled()
   })
 
   it('strips the param before switching, so a reload does not re-trigger it', async () => {
@@ -157,10 +157,9 @@ describe('useWorkspaceUrlLoader', () => {
     await loadWorkspaceFromUrl()
 
     expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
-    expect(useToastStore().add).toHaveBeenCalledWith({
-      severity: 'info',
-      summary: "Couldn't open that workspace. You're still in Home Base."
-    })
+    expect(useToast().info).toHaveBeenCalledWith(
+      "Couldn't open that workspace. You're still in Home Base."
+    )
   })
 
   it('stays on the active workspace and shows a toast for an invalid link', async () => {
@@ -173,10 +172,9 @@ describe('useWorkspaceUrlLoader', () => {
 
     expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
     expect(useTeamWorkspaceStore().switchWorkspace).not.toHaveBeenCalled()
-    expect(useToastStore().add).toHaveBeenCalledWith({
-      severity: 'info',
-      summary: "Couldn't open that workspace. You're still in Home Base."
-    })
+    expect(useToast().info).toHaveBeenCalledWith(
+      "Couldn't open that workspace. You're still in Home Base."
+    )
   })
 
   it('stays on the active workspace and shows a toast for a bare ?workspace with no value', async () => {
@@ -190,10 +188,9 @@ describe('useWorkspaceUrlLoader', () => {
 
     expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
     expect(useTeamWorkspaceStore().switchWorkspace).not.toHaveBeenCalled()
-    expect(useToastStore().add).toHaveBeenCalledWith({
-      severity: 'info',
-      summary: "Couldn't open that workspace. You're still in Home Base."
-    })
+    expect(useToast().info).toHaveBeenCalledWith(
+      "Couldn't open that workspace. You're still in Home Base."
+    )
   })
 
   it('treats a repeated link with one bare entry as invalid', async () => {
@@ -206,10 +203,9 @@ describe('useWorkspaceUrlLoader', () => {
 
     expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
     expect(useTeamWorkspaceStore().switchWorkspace).not.toHaveBeenCalled()
-    expect(useToastStore().add).toHaveBeenCalledWith({
-      severity: 'info',
-      summary: "Couldn't open that workspace. You're still in Home Base."
-    })
+    expect(useToast().info).toHaveBeenCalledWith(
+      "Couldn't open that workspace. You're still in Home Base."
+    )
   })
 
   it('treats a joined stash value from a repeated login-redirect link as invalid', async () => {
@@ -227,10 +223,9 @@ describe('useWorkspaceUrlLoader', () => {
 
     expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
     expect(useTeamWorkspaceStore().switchWorkspace).not.toHaveBeenCalled()
-    expect(useToastStore().add).toHaveBeenCalledWith({
-      severity: 'info',
-      summary: "Couldn't open that workspace. You're still in Home Base."
-    })
+    expect(useToast().info).toHaveBeenCalledWith(
+      "Couldn't open that workspace. You're still in Home Base."
+    )
   })
 
   it('is a silent no-op when the link already names the active workspace', async () => {
@@ -241,7 +236,7 @@ describe('useWorkspaceUrlLoader', () => {
 
     expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
     expect(useTeamWorkspaceStore().switchWorkspace).not.toHaveBeenCalled()
-    expect(useToastStore().add).not.toHaveBeenCalled()
+    expect(useToast().info).not.toHaveBeenCalled()
   })
 
   it('restores the link after a login redirect via the preserved query', async () => {

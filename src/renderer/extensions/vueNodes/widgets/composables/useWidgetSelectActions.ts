@@ -2,9 +2,9 @@ import { toValue } from 'vue'
 import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { useToast } from '@/components/ui/toast'
 import { ServerFeatureFlag } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
@@ -41,7 +41,7 @@ interface UseWidgetSelectActionsOptions {
 
 export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
   const { modelValue, dropdownItems } = options
-  const toastStore = useToastStore()
+  const toastStore = useToast()
   const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
   function updateSelectedItems(selectedItems: Set<string>) {
@@ -76,7 +76,9 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
     })
 
     if (resp.status !== 200) {
-      toastStore.addAlert(buildUploadErrorMessage(resp))
+      toastStore.warning('Alert', {
+        description: buildUploadErrorMessage(resp)
+      })
       return null
     }
 
@@ -105,7 +107,7 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
       const uploadedPaths = await uploadFiles(files)
 
       if (uploadedPaths.length === 0) {
-        toastStore.addAlert('File upload failed')
+        toastStore.warning('Alert', { description: 'File upload failed' })
         return
       }
 

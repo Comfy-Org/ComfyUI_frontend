@@ -1,7 +1,8 @@
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
+import InviteAcceptedToast from '@/platform/workspace/components/toasts/InviteAcceptedToast.vue'
 import {
   clearPreservedQuery,
   hydratePreservedQuery,
@@ -78,10 +79,10 @@ export function useInviteUrlLoader() {
     try {
       const result = await workspaceStore.acceptInvite(inviteParam)
 
-      toast.add({
-        severity: 'success',
-        summary: t('workspace.inviteAccepted'),
-        detail: {
+      toast.custom(
+        InviteAcceptedToast,
+        {
+          title: t('workspace.inviteAccepted'),
           text: t(
             'workspace.addedToWorkspace',
             { workspaceName: result.workspaceName },
@@ -90,14 +91,12 @@ export function useInviteUrlLoader() {
           workspaceName: result.workspaceName,
           workspaceId: result.workspaceId
         },
-        group: 'invite-accepted',
-        closable: true
-      })
+        { role: 'status' }
+      )
     } catch (error) {
-      toast.add({
-        severity: 'error',
-        summary: t('workspace.inviteFailed'),
-        detail: error instanceof Error ? error.message : t('g.unknownError')
+      toast.error(t('workspace.inviteFailed'), {
+        description:
+          error instanceof Error ? error.message : t('g.unknownError')
       })
     } finally {
       cleanupUrlParams()
