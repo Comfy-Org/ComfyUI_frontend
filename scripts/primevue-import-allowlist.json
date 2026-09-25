@@ -6,8 +6,6 @@
       "excludeFiles": [
         "src/components/dialog/GlobalDialog.test.ts",
         "src/components/dialog/bodyPointerEventsRestore.test.ts",
-        "src/components/dialog/content/signin/SignInForm.test.ts",
-        "src/components/dialog/content/signin/SignInForm.vue",
         "src/components/graph/SelectionToolbox.test.ts",
         "src/components/graph/widgets/TextPreviewWidget.test.ts",
         "src/components/node/NodePreview.test.ts",
