@@ -270,15 +270,19 @@
         </Button>
       </div>
 
-      <Button
-        v-if="actionUrl && authenticationState !== 'failed_retryable'"
-        variant="inverted"
-        size="lg"
-        class="w-full rounded-lg"
-        @click="openVerification"
-      >
-        {{ $t('subscription.preview.completeVerification') }}
-      </Button>
+      <template v-if="verificationOffered">
+        <p role="status" class="m-0 text-sm text-muted-foreground">
+          {{ $t('subscription.preview.pendingVerificationDetail') }}
+        </p>
+        <Button
+          variant="inverted"
+          size="lg"
+          class="w-full rounded-lg"
+          @click="openVerification"
+        >
+          {{ $t('subscription.preview.completeVerification') }}
+        </Button>
+      </template>
 
       <UnifiedStripePaymentSelector
         v-if="captureMode && quoteReady && !parkedCheckoutRecovery"
@@ -451,12 +455,16 @@ const quoteReady = computed(
     Boolean(previewData?.quote_id) &&
     previewData?.quote_version !== undefined
 )
+const verificationOffered = computed(
+  () => Boolean(actionUrl) && authenticationState !== 'failed_retryable'
+)
 const verificationRecoveryActive = computed(
   () =>
-    embeddedCheckoutEnabled &&
-    (authenticationState === 'requires_action' ||
-      authenticationState === 'failed_retryable' ||
-      Boolean(reconciliationOperationId))
+    verificationOffered.value ||
+    (embeddedCheckoutEnabled &&
+      (authenticationState === 'requires_action' ||
+        authenticationState === 'failed_retryable' ||
+        Boolean(reconciliationOperationId)))
 )
 const quoteIsUsable = computed(() => !embeddedCheckoutEnabled || quoteIsCurrent)
 
