@@ -8,35 +8,6 @@ test.describe(
   'Link interaction at emulated display scaling',
   { tag: '@canvas' },
   () => {
-    let previousAction: string | undefined
-    let previousRenderer: boolean | undefined
-
-    test.beforeEach(async ({ comfyPage }) => {
-      previousAction = undefined
-      previousRenderer = undefined
-      previousAction = await comfyPage.settings.getSetting<string>(
-        'Comfy.LinkRelease.Action'
-      )
-      previousRenderer = await comfyPage.settings.getSetting<boolean>(
-        'Comfy.VueNodes.Enabled'
-      )
-    })
-
-    test.afterEach(async ({ comfyPage }) => {
-      if (previousAction !== undefined) {
-        await comfyPage.settings.setSetting(
-          'Comfy.LinkRelease.Action',
-          previousAction
-        )
-      }
-      if (previousRenderer !== undefined) {
-        await comfyPage.settings.setSetting(
-          'Comfy.VueNodes.Enabled',
-          previousRenderer
-        )
-      }
-    })
-
     for (const renderer of [
       { name: 'legacy', vueNodes: false },
       { name: 'Vue', vueNodes: true }

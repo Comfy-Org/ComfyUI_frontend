@@ -1,4 +1,3 @@
-import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'

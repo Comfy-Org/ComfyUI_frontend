@@ -9,28 +9,19 @@ for (const vueEnabled of [false, true] as const) {
     `API node pricing badge (${renderer})`,
     { tag: ['@node', '@widget'] },
     () => {
-      test.beforeEach(async ({ comfyPage, context }) => {
+      test.use({
+        initialSettings: {
+          'Comfy.VueNodes.Enabled': vueEnabled,
+          'Comfy.NodeBadge.ShowApiPricing': true
+        }
+      })
+
+      test.beforeEach(async ({ context }) => {
         await context.route(
           'https://comfyanonymous.github.io/ComfyUI_examples/',
           (route) =>
             route.fulfill({ contentType: 'text/html', body: '<!doctype html>' })
         )
-        await comfyPage.settings.setSetting(
-          'Comfy.VueNodes.Enabled',
-          vueEnabled
-        )
-        await comfyPage.settings.setSetting(
-          'Comfy.NodeBadge.ShowApiPricing',
-          true
-        )
-      })
-
-      test.afterEach(async ({ comfyPage }) => {
-        await comfyPage.settings.setSetting(
-          'Comfy.NodeBadge.ShowApiPricing',
-          true
-        )
-        await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
       })
 
       test('follows the Settings UI toggle', async ({ comfyPage }) => {
@@ -42,7 +33,7 @@ for (const vueEnabled of [false, true] as const) {
             )
           : undefined
         if (vueNode) {
-          await comfyPage.vueNodes.waitForNodes(1)
+          await comfyPage.vueNodes.waitForNodes()
         } else {
           await comfyPage.legacyNodeBadges.install([
             { key: 'price', title: 'Flux 1.1 [pro] Ultra Image' }

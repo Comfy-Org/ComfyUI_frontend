@@ -1,6 +1,5 @@
 import { expect } from '@playwright/test'
 
-import type { Settings } from '@/schemas/apiSchema'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test.use({ deviceScaleFactor: 1.5 })
@@ -9,48 +8,6 @@ test.describe(
   'Marquee selection at emulated display scaling',
   { tag: '@canvas' },
   () => {
-    let previousSettings:
-      | Pick<
-          Settings,
-          | 'Comfy.Canvas.LeftMouseClickBehavior'
-          | 'Comfy.Canvas.NavigationMode'
-          | 'Comfy.VueNodes.Enabled'
-        >
-      | undefined
-
-    test.beforeEach(async ({ comfyPage }) => {
-      previousSettings = undefined
-      previousSettings = {
-        'Comfy.Canvas.LeftMouseClickBehavior':
-          await comfyPage.settings.getSetting(
-            'Comfy.Canvas.LeftMouseClickBehavior'
-          ),
-        'Comfy.Canvas.NavigationMode': await comfyPage.settings.getSetting(
-          'Comfy.Canvas.NavigationMode'
-        ),
-        'Comfy.VueNodes.Enabled': await comfyPage.settings.getSetting(
-          'Comfy.VueNodes.Enabled'
-        )
-      }
-    })
-
-    test.afterEach(async ({ comfyPage }) => {
-      if (previousSettings) {
-        await comfyPage.settings.setSetting(
-          'Comfy.Canvas.LeftMouseClickBehavior',
-          previousSettings['Comfy.Canvas.LeftMouseClickBehavior']
-        )
-        await comfyPage.settings.setSetting(
-          'Comfy.Canvas.NavigationMode',
-          previousSettings['Comfy.Canvas.NavigationMode']
-        )
-        await comfyPage.settings.setSetting(
-          'Comfy.VueNodes.Enabled',
-          previousSettings['Comfy.VueNodes.Enabled']
-        )
-      }
-    })
-
     for (const renderer of [
       { name: 'legacy', vueNodes: false },
       { name: 'Vue', vueNodes: true }

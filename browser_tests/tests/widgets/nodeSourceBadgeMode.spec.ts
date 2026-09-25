@@ -10,23 +10,11 @@ for (const vueEnabled of [false, true] as const) {
     `Node source badge Settings transitions (${renderer})`,
     { tag: ['@node', '@widget'] },
     () => {
-      test.beforeEach(async ({ comfyPage }) => {
-        await comfyPage.settings.setSetting(
-          'Comfy.VueNodes.Enabled',
-          vueEnabled
-        )
-        await comfyPage.settings.setSetting(
-          'Comfy.NodeBadge.NodeSourceBadgeMode',
-          NodeBadgeMode.ShowAll
-        )
-      })
-
-      test.afterEach(async ({ comfyPage }) => {
-        await comfyPage.settings.setSetting(
-          'Comfy.NodeBadge.NodeSourceBadgeMode',
-          NodeBadgeMode.HideBuiltIn
-        )
-        await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
+      test.use({
+        initialSettings: {
+          'Comfy.VueNodes.Enabled': vueEnabled,
+          'Comfy.NodeBadge.NodeSourceBadgeMode': NodeBadgeMode.ShowAll
+        }
       })
 
       test('updates core and custom-node badges immediately without reload', async ({
