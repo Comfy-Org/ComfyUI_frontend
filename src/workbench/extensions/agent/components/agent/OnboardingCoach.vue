@@ -207,7 +207,7 @@ useEventListener(
         aria-hidden="true"
         data-testid="agent-coach-spotlight"
         :style="{ ...spotlightStyle }"
-        class="pointer-events-none absolute rounded-lg shadow-[0_0_0_9999px_var(--color-coach-scrim)]"
+        class="pointer-events-none absolute rounded-lg border-2 border-base-foreground shadow-[0_0_0_9999px_var(--color-coach-scrim)]"
       />
       <FocusScope as-child trapped loop>
         <div
@@ -240,10 +240,16 @@ useEventListener(
                   })
                 }}
               </p>
-              <h3 :id="titleId" class="m-0 text-base/normal font-semibold">
+              <h3
+                :id="titleId"
+                class="m-0 text-base/normal font-semibold text-pretty"
+              >
                 {{ step.title }}
               </h3>
-              <p :id="bodyId" class="m-0 text-sm/normal text-muted-foreground">
+              <p
+                :id="bodyId"
+                class="m-0 text-sm/normal text-pretty text-muted-foreground"
+              >
                 {{ step.body }}
               </p>
             </div>
@@ -252,6 +258,7 @@ useEventListener(
                 v-if="index > 0"
                 variant="textonly"
                 size="md"
+                class="mr-auto"
                 @click="previous"
                 >{{ $t('onboardingCoachmarks.back') }}</Button
               >
