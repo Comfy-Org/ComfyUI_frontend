@@ -6,7 +6,7 @@ import type {
   SelectableKey,
   SelectionCommand
 } from '@/core/selection/selectionState'
-import { useSelectionStore } from '@/renderer/core/canvas/selectionStore'
+import { useSelectionStore } from '@/core/selection/selectionStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import type { GraphScope } from '@/types/graphScopeId'
 import { toGroupId } from '@/types/groupId'
@@ -106,6 +106,9 @@ describe('useSelectionStore', () => {
     const once = keys.value
     store.apply(rootScope, command)
     expect(keys.value).toBe(once)
+    const revision = store.getRevision()
+    store.apply(rootScope, command)
+    expect(store.getRevision()).toBe(revision)
   })
 
   it('keeps each graph scope independent', () => {

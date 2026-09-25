@@ -36,7 +36,7 @@ test.describe(
         name: enMessages.agent.switchWorkflow
       })
 
-      // Pin this chat's target to tab A ("Unsaved Workflow").
+      // Save tab A so the existing conversation has a Cloud identity.
       await targetPicker.click()
       await page
         .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
@@ -44,6 +44,14 @@ test.describe(
       await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
       workflowSelection.finishSave(true)
       await expect(targetPicker).toHaveText('Unsaved Workflow')
+      const initialComposer = panel.getByRole('textbox', {
+        includeHidden: true
+      })
+      await initialComposer.fill('Start in this workflow')
+      await initialComposer.press('Enter')
+      await expect.poll(() => workflowSelection.postedMessages.length).toBe(1)
+      await expect(initialComposer).toHaveText('Start in this workflow')
+      await initialComposer.fill('')
 
       // Open a second workflow tab (B), then switch back to A so B is just
       // another open tab rather than the newest/active one.
@@ -103,7 +111,7 @@ test.describe(
         name: enMessages.agent.switchWorkflow
       })
 
-      // Pin this chat's target to the only tab open so far.
+      // Save the workflow before establishing this conversation.
       await targetPicker.click()
       await page
         .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
@@ -111,6 +119,14 @@ test.describe(
       await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
       workflowSelection.finishSave(true)
       await expect(targetPicker).toHaveText('Unsaved Workflow')
+      const initialComposer = panel.getByRole('textbox', {
+        includeHidden: true
+      })
+      await initialComposer.fill('Start in this workflow')
+      await initialComposer.press('Enter')
+      await expect.poll(() => workflowSelection.postedMessages.length).toBe(1)
+      await expect(initialComposer).toHaveText('Start in this workflow')
+      await initialComposer.fill('')
 
       // Create a brand new, still-unsaved tab - it becomes the one on screen.
       await page
