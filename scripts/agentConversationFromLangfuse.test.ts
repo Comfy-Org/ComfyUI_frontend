@@ -1,3 +1,4 @@
+import { spawnSync } from 'node:child_process'
 import {
   existsSync,
   mkdtempSync,
@@ -652,4 +653,31 @@ describe('main', () => {
     expect(fetchImpl).not.toHaveBeenCalled()
     expect(existsSync(s.workDir)).toBe(false)
   })
+})
+
+// Vitest runs these modules through Vite, so it defines __DISTRIBUTION__ for
+// them and cannot see this class of breakage. Both capture paths are documented
+// as tsx commands, and tsx is not Vite: the assembler's reach into src/ pulls
+// reportError, which reads the define at module scope. Spawn them the way the
+// README tells a human to, and require that they reach their own argument
+// check instead of dying while loading.
+describe('the documented tsx capture commands', () => {
+  it.for([
+    ['scripts/agentConversationFromLangfuse.ts'],
+    ['scripts/agentConversationRecord.ts']
+  ])(
+    '%s loads without a Vite define and refuses on its own terms',
+    ([script]) => {
+      const root = join(import.meta.dirname, '..')
+      const result = spawnSync(join(root, 'node_modules/.bin/tsx'), [script], {
+        cwd: root,
+        encoding: 'utf8',
+        timeout: 120_000
+      })
+      const output = `${result.stdout}${result.stderr}`
+
+      expect(output).not.toMatch(/is not defined/)
+      expect(output).toContain('usage:')
+    }
+  )
 })
