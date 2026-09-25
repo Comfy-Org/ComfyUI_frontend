@@ -38,6 +38,37 @@ describe('Re-shoot on one screen', () => {
     expect(screen.getByTestId('reshoot-action')).toBeEnabled()
   })
 
+  it.for([
+    { start: 'the globe', tilts: false },
+    { start: 'the camera handle', tilts: true }
+  ])(
+    'leaves vertical touch drags from $start to the page scroll unless it is the handle: tilts $tilts',
+    async ({ start, tilts }) => {
+      const user = setup()
+      await pickExample(user)
+      const globe = screen.getByTestId('reshoot-globe')
+      const target = screen.getByTestId(
+        start === 'the globe' ? 'reshoot-globe' : 'reshoot-globe-handle'
+      )
+
+      await user.pointer([
+        { keys: '[TouchA>]', target, coords: { clientX: 100, clientY: 100 } },
+        {
+          pointerName: 'TouchA',
+          target: globe,
+          coords: { clientX: 110, clientY: 60 }
+        }
+      ])
+
+      expect(screen.getByRole('slider', { name: 'Rotation' })).toHaveValue(
+        '-24'
+      )
+      expect(screen.getByRole('slider', { name: 'Tilt' })).toHaveValue(
+        tilts ? '31' : '15'
+      )
+    }
+  )
+
   it('lines up a take next to the picture and cancels it there', async () => {
     const user = setup()
     await pickExample(user)

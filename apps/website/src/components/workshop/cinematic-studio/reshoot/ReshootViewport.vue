@@ -39,11 +39,15 @@ const notice = computed(() =>
   depth === 'stale' ? rc('reshoot.stale', locale) : undefined
 )
 
-const dragFrom = ref<{ x: number; y: number }>()
+const dragFrom = ref<{ x: number; y: number; tilts: boolean }>()
 
 function startDrag(event: PointerEvent) {
   if (!ready.value) return
-  dragFrom.value = { x: event.clientX, y: event.clientY }
+  dragFrom.value = {
+    x: event.clientX,
+    y: event.clientY,
+    tilts: event.pointerType !== 'touch'
+  }
   if (event.target instanceof Element)
     event.target.setPointerCapture?.(event.pointerId)
 }
@@ -52,10 +56,17 @@ function drag(event: PointerEvent) {
   if (!dragFrom.value) return
   const dx = event.clientX - dragFrom.value.x
   const dy = event.clientY - dragFrom.value.y
-  dragFrom.value = { x: event.clientX, y: event.clientY }
+  dragFrom.value = { ...dragFrom.value, x: event.clientX, y: event.clientY }
   emit('aim', {
     azimuth: clampAxis('azimuth', Math.round(camera.azimuth + dx * 0.3)),
-    elevation: clampAxis('elevation', Math.round(camera.elevation - dy * 0.3))
+    ...(dragFrom.value.tilts
+      ? {
+          elevation: clampAxis(
+            'elevation',
+            Math.round(camera.elevation - dy * 0.3)
+          )
+        }
+      : {})
   })
 }
 
@@ -71,7 +82,7 @@ function zoom(event: WheelEvent) {
   <div
     :class="
       cn(
-        'relative grid size-full touch-none place-items-center overflow-hidden rounded-md bg-primary-comfy-ink select-none',
+        'relative grid size-full touch-pan-y place-items-center overflow-hidden rounded-md bg-primary-comfy-ink select-none',
         ready && 'cursor-grab active:cursor-grabbing'
       )
     "

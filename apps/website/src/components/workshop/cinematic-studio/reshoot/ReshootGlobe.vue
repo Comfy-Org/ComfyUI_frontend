@@ -59,7 +59,7 @@ const label = computed(
     `${rc('reshoot.aim.globe', locale)}: ${camera.azimuth}°, ${camera.elevation}°`
 )
 
-const dragFrom = ref<{ x: number; y: number }>()
+const dragFrom = ref<{ x: number; y: number; tilts: boolean }>()
 
 function nudge(dx: number, dy: number) {
   emit('aim', {
@@ -70,7 +70,14 @@ function nudge(dx: number, dy: number) {
 
 function startDrag(event: PointerEvent) {
   if (disabled) return
-  dragFrom.value = { x: event.clientX, y: event.clientY }
+  const onHandle =
+    event.target instanceof Element &&
+    event.target.closest('[data-globe-handle]') !== null
+  dragFrom.value = {
+    x: event.clientX,
+    y: event.clientY,
+    tilts: event.pointerType !== 'touch' || onHandle
+  }
   if (event.currentTarget instanceof Element)
     event.currentTarget.setPointerCapture?.(event.pointerId)
 }
@@ -79,8 +86,8 @@ function drag(event: PointerEvent) {
   if (!dragFrom.value) return
   const dx = event.clientX - dragFrom.value.x
   const dy = event.clientY - dragFrom.value.y
-  dragFrom.value = { x: event.clientX, y: event.clientY }
-  nudge(dx * 0.6, -dy * 0.4)
+  dragFrom.value = { ...dragFrom.value, x: event.clientX, y: event.clientY }
+  nudge(dx * 0.6, dragFrom.value.tilts ? -dy * 0.4 : 0)
 }
 
 const NUDGES = [
@@ -133,7 +140,7 @@ function key(event: KeyboardEvent) {
     :tabindex="disabled ? -1 : 0"
     :class="
       cn(
-        'relative mx-auto touch-none rounded-full outline-none select-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50',
+        'relative mx-auto touch-pan-y rounded-full outline-none select-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50',
         disabled ? 'opacity-40' : 'cursor-grab active:cursor-grabbing'
       )
     "
@@ -216,6 +223,13 @@ function key(event: KeyboardEvent) {
         <circle cx="-4" r="3" class="fill-primary-comfy-ink" />
       </g>
     </svg>
+    <span
+      data-globe-handle
+      data-testid="reshoot-globe-handle"
+      class="absolute size-12 -translate-1/2 touch-none rounded-full"
+      :style="{ left: `${C + marker.x}px`, top: `${C + marker.y}px` }"
+      aria-hidden="true"
+    />
     <button
       v-for="nudgeButton in NUDGES"
       :key="nudgeButton.key"
