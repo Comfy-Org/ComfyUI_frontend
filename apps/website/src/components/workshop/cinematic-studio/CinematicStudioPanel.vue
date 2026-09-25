@@ -163,6 +163,7 @@ function generate() {
     />
     <CinematicCompare
       v-model:open="compareOpen"
+      :namespace
       :items="library.items.value"
       :urls="library.urls.value"
       :models="[...models, ...editingModels]"

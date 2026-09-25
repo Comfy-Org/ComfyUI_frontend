@@ -1,6 +1,25 @@
 import type { Locale, LocalizedText } from '../../../i18n/translations'
 
 const copy = {
+  openOriginal: {
+    en: 'Open original (new tab)',
+    'zh-CN': '打开原始文件（新标签页）'
+  },
+  download: { en: 'Download', 'zh-CN': '下载' },
+  differenceTitle: { en: 'Compare saved settings', 'zh-CN': '对比已保存设置' },
+  difference: { en: 'difference', 'zh-CN': '项差异' },
+  differences: { en: 'differences', 'zh-CN': '项差异' },
+  differenceNote: {
+    en: 'Highlighted rows differ in the saved settings shown here. This does not measure visual similarity or guarantee matching results with the same seed.',
+    'zh-CN':
+      '高亮行表示此处已保存设置的差异。这不衡量视觉相似度，也不保证相同种子产生一致结果。'
+  },
+  setting: { en: 'Setting', 'zh-CN': '设置' },
+  changed: { en: 'Different', 'zh-CN': '不同' },
+  notRecorded: { en: 'Not recorded', 'zh-CN': '未记录' },
+  automatic: { en: 'Auto', 'zh-CN': '自动' },
+  creative: { en: 'Creative guidance', 'zh-CN': '创作指导' },
+  noCreative: { en: 'No additional guidance', 'zh-CN': '无新增指导' },
   title: { en: 'Compare creations', 'zh-CN': '对比作品' },
   description: {
     en: 'Choose two saved creations and compare their images, motion and settings. Your originals stay unchanged.',
@@ -13,11 +32,11 @@ const copy = {
     'zh-CN': '请先保存至少两件作品，再在此处进行对比。'
   },
   model: { en: 'Model', 'zh-CN': '模型' },
-  aspect: { en: 'Requested aspect', 'zh-CN': '请求的宽高比' },
-  resolution: { en: 'Requested resolution', 'zh-CN': '请求的分辨率' },
-  duration: { en: 'Requested duration', 'zh-CN': '请求的时长' },
+  aspect: { en: 'Aspect ratio', 'zh-CN': '请求的宽高比' },
+  resolution: { en: 'Resolution / quality', 'zh-CN': '分辨率 / 质量' },
+  duration: { en: 'Clip duration', 'zh-CN': '请求的时长' },
   seed: { en: 'Seed', 'zh-CN': '种子' },
-  audio: { en: 'Audio requested', 'zh-CN': '音频请求' },
+  audio: { en: 'Audio', 'zh-CN': '音频请求' },
   on: { en: 'On', 'zh-CN': '开启' },
   off: { en: 'Off', 'zh-CN': '关闭' },
   operation: { en: 'Operation', 'zh-CN': '操作' },

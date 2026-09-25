@@ -1,5 +1,11 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { cn } from '@comfyorg/tailwind-utils'
+import { creativePrompt } from '../../../lib/workshop/cinematic-studio/creative'
+import {
+  readComparisonSelection,
+  saveComparisonSelection
+} from '../../../lib/workshop/cinematic-studio/comparison-selection'
 import type { Locale } from '../../../i18n/translations'
 import type { SavedCreation } from '../../../lib/workshop/cinematic-studio/creations'
 import {
@@ -30,11 +36,13 @@ const {
   urls,
   models = [],
   busy = false,
+  namespace,
   locale = 'en'
 } = defineProps<{
   open: boolean
   items: readonly SavedCreation[]
   urls: Readonly<Record<string, string>>
+  namespace?: string
   busy?: boolean
   models?: readonly { slug: string; name: string }[]
   locale?: Locale
@@ -73,18 +81,37 @@ const panels = computed(() =>
 const fieldClass =
   'w-full min-w-0 rounded-lg border border-transparency-white-t20 bg-primary-comfy-ink px-3 py-2 text-sm text-primary-warm-white'
 watch(
-  () => [open.value, ...items.map((item) => item.id)],
+  () => namespace,
   () => {
-    const [left, right] = comparisonPair(items, leftId.value, rightId.value)
-    leftId.value = left?.id ?? ''
-    rightId.value = right?.id ?? ''
+    const saved = readComparisonSelection(namespace)
+    leftId.value = saved?.[0] ?? ''
+    rightId.value = saved?.[1] ?? ''
     revealed.value = []
   },
-  { immediate: true }
+  { immediate: true, flush: 'sync' }
 )
-watch([leftId, rightId], () => {
-  revealed.value = []
-})
+watch(
+  () => [
+    open.value,
+    ...items.map((item) => item.id),
+    leftId.value,
+    rightId.value
+  ],
+  () => {
+    revealed.value = []
+  }
+)
+function select(side: 'left' | 'right', event: Event) {
+  if (!(event.target instanceof HTMLSelectElement)) return
+  const [left, right] = comparisonPair(
+    items,
+    side === 'left' ? event.target.value : pair.value[0]?.id,
+    side === 'right' ? event.target.value : pair.value[1]?.id
+  )
+  leftId.value = left?.id ?? ''
+  rightId.value = right?.id ?? ''
+  if (left && right) saveComparisonSelection(namespace, [left.id, right.id])
+}
 function reuse(item: SavedCreation) {
   if (
     busy ||
@@ -115,6 +142,53 @@ function directionLabels(item: SavedCreation) {
     return option.id === 'auto' ? [] : [tc(option.label, locale)]
   })
 }
+const differences = computed(() => {
+  const values = (item: SavedCreation) => {
+    const settings = comparisonSettings(item)
+    return {
+      model: item.modelSlug,
+      aspect: item.aspect,
+      resolution: settings.resolution,
+      duration:
+        settings.duration === undefined ? undefined : `${settings.duration}s`,
+      seed: settings.seed?.toString(),
+      audio:
+        settings.audio === undefined
+          ? undefined
+          : t(settings.audio ? 'on' : 'off'),
+      operation: settings.operation ? t(settings.operation) : undefined,
+      direction: item.settings?.direction
+        ? directionLabels(item).join(' · ') || t('automatic')
+        : undefined,
+      creative: item.settings?.creative
+        ? creativePrompt(item.settings.creative, item.kind) || t('noCreative')
+        : undefined,
+      prompt: item.prompt
+    }
+  }
+  const [left, right] = pair.value
+  if (!left || !right) return []
+  const a = values(left)
+  const b = values(right)
+  const keys = Object.keys(a) as (keyof typeof a)[]
+  return keys
+    .filter((key) => a[key] !== undefined || b[key] !== undefined)
+    .map((key) => ({
+      key,
+      changed: a[key] !== b[key],
+      left:
+        key === 'model'
+          ? (models.find((model) => model.slug === a[key])?.name ?? a[key])
+          : a[key],
+      right:
+        key === 'model'
+          ? (models.find((model) => model.slug === b[key])?.name ?? b[key])
+          : b[key]
+    }))
+})
+const differenceCount = computed(
+  () => differences.value.filter((row) => row.changed).length
+)
 </script>
 
 <template>
@@ -137,9 +211,15 @@ function directionLabels(item: SavedCreation) {
           <label
             class="flex min-w-0 flex-col gap-2 text-sm text-primary-warm-white"
             >{{ t('first')
-            }}<select v-model="leftId" :class="fieldClass">
+            }}<select
+              :value="pair[0]?.id"
+              :class="fieldClass"
+              @change="select('left', $event)"
+            >
               <option
-                v-for="item in items.filter((value) => value.id !== rightId)"
+                v-for="item in items.filter(
+                  (value) => value.id !== pair[1]?.id
+                )"
                 :key="item.id"
                 :value="item.id"
               >
@@ -150,9 +230,15 @@ function directionLabels(item: SavedCreation) {
           <label
             class="flex min-w-0 flex-col gap-2 text-sm text-primary-warm-white"
             >{{ t('second')
-            }}<select v-model="rightId" :class="fieldClass">
+            }}<select
+              :value="pair[1]?.id"
+              :class="fieldClass"
+              @change="select('right', $event)"
+            >
               <option
-                v-for="item in items.filter((value) => value.id !== leftId)"
+                v-for="item in items.filter(
+                  (value) => value.id !== pair[0]?.id
+                )"
                 :key="item.id"
                 :value="item.id"
               >
@@ -235,6 +321,25 @@ function directionLabels(item: SavedCreation) {
                 @click="animate(panel.item)"
                 >{{ libraryCopy('animate', locale) }}</Button
               >
+              <template
+                v-if="
+                  comparisonCanShow(panel.item, revealed, urls[panel.item.id])
+                "
+              >
+                <a
+                  :href="urls[panel.item.id]"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="rounded-lg border border-transparency-white-t20 px-3 py-2 text-sm"
+                  >{{ t('openOriginal') }}</a
+                >
+                <a
+                  :href="urls[panel.item.id]"
+                  :download="panel.item.fileName"
+                  class="rounded-lg border border-transparency-white-t20 px-3 py-2 text-sm"
+                  >{{ t('download') }}</a
+                >
+              </template>
             </div>
             <p
               v-if="
@@ -307,6 +412,65 @@ function directionLabels(item: SavedCreation) {
             </details>
           </section>
         </div>
+        <details
+          open
+          class="rounded-xl border border-transparency-white-t20 p-3 text-primary-warm-white"
+        >
+          <summary class="cursor-pointer text-sm font-semibold">
+            {{ t('differenceTitle') }} · {{ differenceCount }}
+            {{ t(differenceCount === 1 ? 'difference' : 'differences') }}
+          </summary>
+          <p class="my-3 text-xs text-primary-comfy-canvas">
+            {{ t('differenceNote') }}
+          </p>
+          <table class="w-full table-fixed text-left text-xs sm:text-sm">
+            <caption class="sr-only">
+              {{
+                t('differenceTitle')
+              }}
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col" class="w-[35%] p-2">{{ t('setting') }}</th>
+                <th scope="col" class="w-[32.5%] p-2">{{ t('first') }}</th>
+                <th scope="col" class="w-[32.5%] p-2">{{ t('second') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="row in differences"
+                :key="row.key"
+                :class="
+                  cn(
+                    'border-t border-transparency-white-t20',
+                    row.changed && 'bg-transparency-white-t8'
+                  )
+                "
+              >
+                <th scope="row" class="p-2 align-top wrap-break-word">
+                  {{ t(row.key)
+                  }}<span
+                    v-if="row.changed"
+                    class="mt-1 block text-xs font-normal"
+                    >{{ t('changed') }}</span
+                  >
+                </th>
+                <td
+                  v-for="side in ['left', 'right'] as const"
+                  :key="side"
+                  class="p-2 align-top"
+                >
+                  <div
+                    class="max-h-40 overflow-auto wrap-break-word whitespace-pre-wrap"
+                    tabindex="0"
+                  >
+                    {{ row[side] ?? t('notRecorded') }}
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </details>
       </template>
     </DialogContent>
   </Dialog>

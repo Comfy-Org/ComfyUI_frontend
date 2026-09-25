@@ -180,7 +180,11 @@ describe('CinematicCompare', () => {
       }
     })
     await screen.findByRole('dialog', { name: 'Compare creations' })
-    expect(screen.getAllByText('My image model')).toHaveLength(2)
+    expect(
+      within(screen.getByRole('region', { name: 'First creation' })).getByText(
+        'My image model'
+      )
+    ).toBeInTheDocument()
     const right = screen.getByRole('region', { name: 'Second creation' })
     expect(within(right).getByText('Creation original')).toBeInTheDocument()
     expect(within(right).getByText('Relight')).toBeInTheDocument()
@@ -262,4 +266,83 @@ describe('comparison actions', () => {
     expect(emitted('reuse')).toBeUndefined()
     expect(emitted('animate')).toBeUndefined()
   })
+})
+
+it('restores a selected pair after the library loads and keeps selections separate by workspace', async () => {
+  const user = userEvent.setup()
+  const items = [creation('a'), creation('b'), creation('c')]
+  const namespace = 'comparison-ui-workspace'
+  localStorage.removeItem(`cinematic-comparison-selection-v1:${namespace}`)
+  const initial = render(CinematicCompare, {
+    props: { open: true, namespace, items, urls: {} }
+  })
+  await user.selectOptions(
+    await screen.findByRole('combobox', { name: 'First creation' }),
+    'c'
+  )
+  initial.unmount()
+  const restored = render(CinematicCompare, {
+    props: { open: true, namespace, items: [], urls: {} }
+  })
+  await screen.findByText('Save at least two creations to compare them here.')
+  await restored.rerender({ items })
+  expect(
+    await screen.findByRole('combobox', { name: 'First creation' })
+  ).toHaveValue('c')
+  expect(screen.getByRole('combobox', { name: 'Second creation' })).toHaveValue(
+    'b'
+  )
+  await restored.rerender({ namespace: 'comparison-other-workspace' })
+  expect(screen.getByRole('combobox', { name: 'First creation' })).toHaveValue(
+    'a'
+  )
+  await restored.rerender({ items: [items[1], items[2]] })
+  expect(screen.getByRole('combobox', { name: 'First creation' })).toHaveValue(
+    'b'
+  )
+  expect(screen.getByRole('combobox', { name: 'Second creation' })).toHaveValue(
+    'c'
+  )
+})
+
+it('highlights recorded zero and audio-off against missing settings and gates original links behind reveal', async () => {
+  const user = userEvent.setup()
+  const a = creation('a', {
+    nsfw: true,
+    settings: {
+      scene: 'A',
+      mode: 'image',
+      enhance: false,
+      direction: AUTO_DIRECTION,
+      seed: 0,
+      video: { durationSeconds: 5, resolution: '720p', generateAudio: false }
+    }
+  })
+  render(CinematicCompare, {
+    props: { open: true, items: [a, creation('b')], urls: { a: 'blob:a' } }
+  })
+  const table = await screen.findByRole('table', {
+    name: 'Compare saved settings'
+  })
+  const seed = within(table).getByRole('row', {
+    name: 'Seed Different 0 Not recorded'
+  })
+  expect(seed).toBeVisible()
+  expect(
+    within(table).getByRole('row', {
+      name: 'Audio Different Off Not recorded'
+    })
+  ).toBeVisible()
+  expect(
+    screen.queryByRole('link', { name: 'Open original (new tab)' })
+  ).not.toBeInTheDocument()
+  await user.click(screen.getByRole('button', { name: 'Reveal creation' }))
+  const link = screen.getByRole('link', { name: 'Open original (new tab)' })
+  expect(link).toHaveAttribute('href', 'blob:a')
+  expect(link).toHaveAttribute('target', '_blank')
+  expect(link).toHaveAttribute('rel', 'noopener noreferrer')
+  expect(screen.getByRole('link', { name: 'Download' })).toHaveAttribute(
+    'download',
+    'a.png'
+  )
 })

@@ -38,14 +38,18 @@ Existing combined presets remain under an explicit expandable section and keep
 their original storage key and full-settings behavior. Each separate store keeps
 up to 16 named entries, with same-name replacement within that preset type only.
 
+Comparison follow-up: chosen pairs persist as two IDs in scoped browser storage.
+An asynchronously loading library does not overwrite that choice. Missing or
+deleted selections fall back to distinct available items. The comparison table
+marks differences in saved values, including prompts, camera/look, creative
+guidance and zero/false values; absent settings are explicitly unrecorded.
+Original media opens in a separate tab and can be downloaded after any required
+reveal. These controls do not measure visual similarity.
+
 ## Remaining differences
 
 These are explicit follow-ups, not claims that the migration is a complete replica.
 
-- Comparison: original `src/review.js` persists its selected pair across reload,
-  highlights changed settings in an A/B table, and offers original-size opening
-  and download inline. Current selection is in-memory and settings appear per
-  card; downloads remain available from Your creations.
 - Output organization: native model-page outputs do not join the Studio library.
   The original's combined Scenes / Model & tool results organization is absent.
 - Equipment presentation: the original illustrated camera/lens carousel is not

@@ -40,7 +40,7 @@ API-key backend, copied private output library, or additional dependency.
 
 ## Validation
 
-- Latest run: 331 focused Studio tests passed across 36 component, library and
+- Latest run: 350 focused Studio tests passed across 37 component, library and
   composable files. Earlier route validation also passed two LTX Fast tests and
   731 shared contract tests; these were not rerun for the capability UI change.
 - 25 production browser tests passed across both Studio layouts, including
@@ -53,6 +53,10 @@ API-key backend, copied private output library, or additional dependency.
 See [PARITY.md](./PARITY.md) for the latest workflow comparison and explicit
 remaining differences. Comparison now offers Reuse settings and Animate per
 result, using the existing guarded actions without submitting a generation.
+Chosen comparison pairs now survive reload per workspace, with graceful fallback
+for missing items. A highlighted saved-settings table distinguishes missing
+values from zero/false; original-view/download links require available revealed
+media. Only the two chosen creation IDs are stored for comparison selection.
 
 ## Original demo parity follow-up
 

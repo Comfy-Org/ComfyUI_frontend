@@ -944,7 +944,8 @@ for (const layout of ['e', 'd']) {
     const scene = page.getByRole('textbox', { name: 'Scene', exact: true })
     const prompts = [
       'A traveler waits beside the station.',
-      'A traveler steps into the neon night.'
+      'A traveler steps into the neon night.',
+      'A traveler returns to the sunlit platform.'
     ]
     for (const prompt of prompts) {
       await scene.fill(prompt)
@@ -961,7 +962,87 @@ for (const layout of ['e', 'd']) {
       .getByRole('button', { name: 'Compare results', exact: true })
       .click()
     const comparison = page.getByRole('dialog', { name: 'Compare creations' })
+    const leftSelect = comparison.getByRole('combobox', {
+      name: 'First creation',
+      exact: true
+    })
+    const rightSelect = comparison.getByRole('combobox', {
+      name: 'Second creation',
+      exact: true
+    })
+    await expect(leftSelect.locator('option')).toHaveCount(2)
+    const newestId = await leftSelect.inputValue()
+    const oldestId = await leftSelect
+      .locator('option')
+      .last()
+      .getAttribute('value')
+    expect(oldestId).toBeTruthy()
+    await leftSelect.selectOption(oldestId ?? '')
+    await rightSelect.selectOption(newestId)
+    const chosenPair = [oldestId, newestId]
+    await expect
+      .poll(() =>
+        page.evaluate(() =>
+          JSON.parse(
+            localStorage.getItem('cinematic-comparison-selection-v1:demo') ??
+              'null'
+          )
+        )
+      )
+      .toEqual(chosenPair)
+    await comparison.getByRole('button', { name: 'Close', exact: true }).click()
+    await page
+      .getByRole('button', { name: 'Compare results', exact: true })
+      .click()
+    await expect(leftSelect).toHaveValue(oldestId ?? '')
+    await expect(rightSelect).toHaveValue(newestId)
+    await page.reload()
+    await page
+      .getByRole('button', { name: 'Compare results', exact: true })
+      .click()
+    await expect(leftSelect).toHaveValue(oldestId ?? '')
+    await expect(rightSelect).toHaveValue(newestId)
+    await expect
+      .poll(() =>
+        page.evaluate(() =>
+          JSON.parse(
+            localStorage.getItem('cinematic-comparison-selection-v1:demo') ??
+              'null'
+          )
+        )
+      )
+      .toEqual(chosenPair)
+    const settingsTable = comparison.getByRole('table', {
+      name: 'Compare saved settings'
+    })
+    const promptRow = settingsTable
+      .getByRole('row')
+      .filter({ has: page.getByRole('rowheader', { name: /Full prompt/ }) })
+    await expect(promptRow).toContainText('Different')
+    await expect(promptRow).toContainText(prompts[0])
+    await expect(promptRow).toContainText(prompts[2])
+    await expect(promptRow).toHaveClass(/bg-transparency-white-t8/)
     const first = comparison.getByRole('region', { name: 'First creation' })
+    const original = first.getByRole('link', {
+      name: 'Open original (new tab)',
+      exact: true
+    })
+    await expect(original).toHaveAttribute('target', '_blank')
+    await expect(original).toHaveAttribute('rel', /noopener/)
+    await expect(original).toHaveAttribute('rel', /noreferrer/)
+    const downloadLink = first.getByRole('link', {
+      name: 'Download',
+      exact: true
+    })
+    const fileName = await downloadLink.getAttribute('download')
+    expect(fileName).toMatch(/\.jpg$/)
+    await expect(original).toHaveAttribute(
+      'href',
+      (await downloadLink.getAttribute('href')) ?? ''
+    )
+    const downloading = page.waitForEvent('download')
+    await downloadLink.click()
+    expect((await downloading).suggestedFilename()).toBe(fileName)
     await first.getByText('Full prompt', { exact: true }).click()
     const chosenPrompt = await first
       .locator('details')
