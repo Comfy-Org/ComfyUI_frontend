@@ -1,7 +1,7 @@
 import type { WorkshopModelDetail } from '../../../config/models-catalogue'
 import { useCaseFor } from '../../../config/models-catalogue'
 import { resolveModelRouterRender } from '../../../config/router-render'
-import type { WorkshopRunSettings } from '../../../config/workshop-node-pricing'
+import type { WorkshopRunSettings } from '../../../config/workshop-node-pricing-context'
 import { estimateWorkshopRunCredits } from '../../../config/workshop-node-pricing'
 import { ASPECT_RATIOS, RESOLUTIONS } from './catalog'
 import type { AspectRatio } from './catalog'

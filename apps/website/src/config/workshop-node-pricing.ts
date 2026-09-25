@@ -1,14 +1,19 @@
 import { CREDITS_PER_USD } from '@comfyorg/shared-frontend-utils/creditsUtil'
+import type { JsonataEvalContext } from '@comfyorg/shared-frontend-utils/nodePricing'
 import {
   formatPricingResult,
-  getCompiledRuleForNodeType,
-  normalizeWidgetValue
+  getCompiledRuleForNodeType
 } from '@comfyorg/shared-frontend-utils/nodePricing'
 import { z } from 'zod'
 
 import pricingJson from '../data/workshop-node-pricing.json'
 import publishedPricingJson from '../data/workshop-published-pricing.json'
 import type { UseCase, WorkshopModel } from './models-catalogue'
+import type { WorkshopRunSettings } from './workshop-node-pricing-context'
+import {
+  pricingContext,
+  referenceImages
+} from './workshop-node-pricing-context'
 import {
   workshopNodePricingSchema,
   workshopPublishedPricingSchema
@@ -21,34 +26,48 @@ const published = new Map(
   )
 )
 
-/**
- * What one run asks for, where a node's pricing rule depends on it. Anything
- * left out falls back to the node's default widget values.
- */
-export interface WorkshopRunSettings {
-  readonly width?: number
-  readonly height?: number
-  /** Reference images sent with the run. */
-  readonly images?: number
-}
-
 export interface CreditRange {
   readonly min: number
   readonly max: number
 }
 
+type PricingRule = (typeof rules)[number]
 type RunPrice =
   | { readonly kind: 'published'; readonly credits: number }
   | { readonly kind: 'rule'; readonly result: unknown }
 
-function sizeSetting(
-  widget: string,
-  settings: WorkshopRunSettings
-): number | undefined {
-  const name = widget.split('.').at(-1)
-  if (name === 'width') return settings.width
-  if (name === 'height') return settings.height
-  return undefined
+function ruleFor(routerId: string, useCase: UseCase): PricingRule | undefined {
+  return rules.find(
+    (row) =>
+      row.routerId === routerId &&
+      (!row.useCases || row.useCases.includes(useCase))
+  )
+}
+
+function publishedPrice(
+  routerId: string,
+  useCase: UseCase
+): RunPrice | undefined {
+  const rate = published.get(routerId)
+  return rate?.useCases.some((operation) => operation === useCase)
+    ? { kind: 'published', credits: rate.creditsPerRun }
+    : undefined
+}
+
+async function evaluateRule(
+  rule: PricingRule,
+  context: JsonataEvalContext
+): Promise<RunPrice | undefined> {
+  const compiled = getCompiledRuleForNodeType(
+    `${rule.nodeType}:${rule.sourceCommit}`,
+    rule.priceBadge
+  )?._compiled
+  if (!compiled) return undefined
+  try {
+    return { kind: 'rule', result: await compiled.evaluate(context) }
+  } catch {
+    return undefined
+  }
 }
 
 async function priceRun(
@@ -56,54 +75,15 @@ async function priceRun(
   useCase: UseCase | undefined,
   settings: WorkshopRunSettings
 ): Promise<RunPrice | undefined> {
-  if (!useCase || !model.routerId) return
-  const rule = rules.find(
-    (row) =>
-      row.routerId === model.routerId &&
-      (!row.useCases || row.useCases.includes(useCase))
+  if (!useCase || !model.routerId) return undefined
+  const rule = ruleFor(model.routerId, useCase)
+  if (!rule) return publishedPrice(model.routerId, useCase)
+  const context = pricingContext(
+    rule,
+    settings,
+    referenceImages(useCase, settings)
   )
-  if (!rule) {
-    const rate = published.get(model.routerId)
-    if (rate?.useCases.some((operation) => operation === useCase))
-      return { kind: 'published', credits: rate.creditsPerRun }
-    return
-  }
-  const { priceBadge } = rule
-  const images =
-    settings.images ??
-    (useCase === 'edit-images' || useCase === 'animate-images' ? 1 : 0)
-  const widgets = Object.fromEntries(
-    priceBadge.depends_on.widgets.map((dep) => [
-      dep.name,
-      normalizeWidgetValue(
-        sizeSetting(dep.name, settings) ?? rule.widgets[dep.name],
-        dep.type
-      )
-    ])
-  )
-  if (Object.values(widgets).some((value) => value === null)) return
-  const compiled = getCompiledRuleForNodeType(
-    `${rule.nodeType}:${rule.sourceCommit}`,
-    priceBadge
-  )?._compiled
-  if (!compiled) return
-  try {
-    const result: unknown = await compiled.evaluate({
-      widgets,
-      inputs: Object.fromEntries(
-        priceBadge.depends_on.inputs.map((name) => [
-          name,
-          { connected: images > 0 }
-        ])
-      ),
-      inputGroups: Object.fromEntries(
-        priceBadge.depends_on.input_groups.map((name) => [name, images])
-      )
-    })
-    return { kind: 'rule', result }
-  } catch {
-    return
-  }
+  return context && evaluateRule(rule, context)
 }
 
 export async function estimateWorkshopNodePrice(
