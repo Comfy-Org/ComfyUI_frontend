@@ -383,7 +383,9 @@ export const useModelStore = defineStore('models', () => {
   }
 
   async function ensureCurrentModelFolders() {
+    // A superseded rebuild commits nothing; bounded retry until one commits.
     for (let attempt = 0; attempt < 3; attempt++) {
+      // Folders a pending reload replaces would finish loading into detached objects.
       while (pendingReloads.size > 0) await Promise.allSettled(pendingReloads)
       const current =
         modelFolderNames.value.length > 0 &&
