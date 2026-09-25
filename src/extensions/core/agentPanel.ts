@@ -8,7 +8,6 @@ import { useAgentConsent } from '@/workbench/extensions/agent/composables/agent/
 import { registerWorkflowTabActivityTracker } from '@/workbench/extensions/agent/services/agent/workflowTabActivityTracker'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
-import { isAgentStandalone } from '@/workbench/extensions/agent/agentDistribution'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExtensionService } from '@/services/extensionService'
@@ -166,19 +165,6 @@ async function setupFlagGate(loadConsentIfEligible: () => void): Promise<void> {
   const settle = (): void => {
     agentPanelStore.gateSettled = true
   }
-  // The flag is read from PostHog, and PostHog is started only in cloud builds
-  // (platform/telemetry/initTelemetry.ts), so the local agent harness has no
-  // flag to read even though its user signs in with a Comfy account. The
-  // harness is the opt-in instead: the panel is tree-shaken out of every other
-  // non-cloud build (see extensions/core/index.ts), and vite.config.mts refuses
-  // a cloud bundle built with VITE_AGENT_STANDALONE, which would force it on
-  // for every user.
-  if (isAgentStandalone()) {
-    agentPanelStore.enabled = true
-    settle()
-    loadConsentIfEligible()
-    return
-  }
   try {
     const [
       { createPostHogFlagSource, FLAG_SETTLE_TIMEOUT_MS },
@@ -188,9 +174,21 @@ async function setupFlagGate(loadConsentIfEligible: () => void): Promise<void> {
       import('posthog-js')
     ])
     const source = createPostHogFlagSource(posthog)
-    const forceInDev = import.meta.env.MODE === 'development'
+    // Two harnesses force the panel on regardless of the flag: development,
+    // and the standalone (local agent) build. The standalone panel has no
+    // cloud identity for PostHog to evaluate the flag against, so gating it on
+    // the flag left it permanently off in a production bundle — the harness
+    // itself is the opt-in, since the panel is tree-shaken out of every other
+    // non-cloud build (see extensions/core/index.ts). VITE_AGENT_STANDALONE
+    // is independent of the distribution, so a cloud bundle carrying it
+    // would force the panel on for every user: vite.config.mts refuses that
+    // combination at build time (the standalone harness is never a cloud
+    // distribution), which is what keeps this `forcedOn` safe.
+    const forcedOn =
+      import.meta.env.MODE === 'development' ||
+      import.meta.env.VITE_AGENT_STANDALONE === 'true'
     const sync = (): void => {
-      agentPanelStore.enabled = forceInDev || source.isEnabled()
+      agentPanelStore.enabled = forcedOn || source.isEnabled()
       loadConsentIfEligible()
       if (!agentPanelStore.enabled) {
         const nodeSelectionStore = useAgentNodeSelectionStore()
@@ -203,7 +201,7 @@ async function setupFlagGate(loadConsentIfEligible: () => void): Promise<void> {
       settle()
     })
     sync()
-    if (forceInDev) settle()
+    if (forcedOn) settle()
     else setTimeout(settle, FLAG_SETTLE_TIMEOUT_MS)
   } catch (error) {
     settle()

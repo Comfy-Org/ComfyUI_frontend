@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+
 import type {
   ActivityPart,
   AgentAskAnswer
@@ -9,7 +11,6 @@ import type {
 } from '../../../services/agent/agentPaywallPresentation'
 import ActivityTrace from './ActivityTrace.vue'
 import AgentAskCard from './AgentAskCard.vue'
-import AgentNoticeCard from './AgentNoticeCard.vue'
 import AgentPaywallCard from './AgentPaywallCard.vue'
 import MarkdownStream from './MarkdownStream.vue'
 import TabLinkCard from './TabLinkCard.vue'
@@ -66,5 +67,31 @@ const emit = defineEmits<{
     :message="group.part.message"
     @paywall-action="emit('paywallAction', $event)"
   />
-  <AgentNoticeCard v-else :part="group.part" />
+  <div
+    v-else
+    :role="group.part.level === 'error' ? 'alert' : 'status'"
+    :class="
+      cn(
+        'flex items-start gap-2 rounded-xl border px-3 py-2 text-sm',
+        group.part.level === 'error'
+          ? 'border-destructive-background/40 text-destructive-background'
+          : 'border-component-node-border text-muted-foreground'
+      )
+    "
+  >
+    <span class="mt-0.5 icon-[lucide--triangle-alert] size-4 shrink-0" />
+    <span class="flex flex-col gap-0.5">
+      <span>{{ group.part.text }}</span>
+      <span
+        v-if="group.part.retryAfterSeconds !== undefined"
+        class="text-xs text-muted-foreground"
+      >
+        {{
+          $t('agent.retryAfterSeconds', {
+            seconds: group.part.retryAfterSeconds
+          })
+        }}
+      </span>
+    </span>
+  </div>
 </template>

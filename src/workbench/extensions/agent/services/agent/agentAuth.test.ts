@@ -6,7 +6,7 @@ import { useDialogService } from '@/services/dialogService'
 import { useAuthStore } from '@/stores/authStore'
 import type { AuthHeader } from '@/types/authTypes'
 
-import { ensureSignedIn, withAgentAuth } from './agentAuth'
+import { agentSocketToken, ensureSignedIn, withAgentAuth } from './agentAuth'
 
 function userHeader(header: AuthHeader | null): void {
   vi.spyOn(useAuthStore(), 'getUserAuthHeader').mockResolvedValue(header)
@@ -81,6 +81,33 @@ describe('withAgentAuth', () => {
     const init = await withAgentAuth({ method: 'GET' })
 
     expect(init.redirect).toBeUndefined()
+  })
+})
+
+describe('agentSocketToken', () => {
+  // The socket carries what api.fetchApi sends, so it lands in the same
+  // workspace as every other request.
+  it.for([
+    {
+      label: 'a bearer token',
+      header: { Authorization: 'Bearer workspace-jwt' } as AuthHeader,
+      token: 'workspace-jwt'
+    },
+    {
+      label: 'an API key',
+      header: { 'X-API-KEY': 'comfyui-key' } as AuthHeader,
+      token: 'comfyui-key'
+    }
+  ])('passes $label as the socket token', async ({ header, token }) => {
+    vi.spyOn(useAuthStore(), 'getAuthHeader').mockResolvedValue(header)
+
+    expect(await agentSocketToken()).toBe(token)
+  })
+
+  it('connects without a token when signed out', async () => {
+    vi.spyOn(useAuthStore(), 'getAuthHeader').mockResolvedValue(null)
+
+    expect(await agentSocketToken()).toBeUndefined()
   })
 })
 

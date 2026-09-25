@@ -6,6 +6,7 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+
 import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 import { useAgentPanelStore } from '../../stores/agent/agentPanelStore'
 import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
@@ -70,34 +71,6 @@ export function useAgentWorkflowSelection({
     composerStore.removeWorkflowReference(workflowId)
   }
 
-  type SelectionStep = 'ok' | 'failed' | 'stale'
-
-  async function refreshIndexFor(
-    isCurrent: () => boolean
-  ): Promise<SelectionStep> {
-    if (!(await refreshCloudWorkflowIds())) return 'failed'
-    return isCurrent() ? 'ok' : 'stale'
-  }
-
-  /** Saves an unsaved tab so the cloud index can give it an id. */
-  async function saveUnsavedTab(
-    tab: ComfyWorkflow,
-    isCurrent: () => boolean
-  ): Promise<SelectionStep> {
-    if (tab.isTemporary && cloudIdFor(tab) === undefined) {
-      const refreshed = await refreshIndexFor(isCurrent)
-      if (refreshed !== 'ok') return refreshed
-      const filename = nextSaveFilename(tab)
-      if (!(await workflowService.saveWorkflowAs(tab, { filename })))
-        return 'failed'
-    }
-    return isCurrent() ? 'ok' : 'stale'
-  }
-
-  /**
-   * The workflow id a tab is sent under, from the saved-workflow index every
-   * backend serves: an unsaved tab is saved first so the index can name it.
-   */
   async function prepareWorkflowSelection(
     tab: ComfyWorkflow,
     isCurrent: () => boolean
@@ -107,12 +80,20 @@ export function useAgentWorkflowSelection({
       return undefined
     }
     try {
-      let step = await saveUnsavedTab(tab, isCurrent)
-      if (step === 'ok' && cloudIdFor(tab) === undefined)
-        step = await refreshIndexFor(isCurrent)
-      if (step === 'failed') return fail()
-      if (step === 'stale') return undefined
-      const workflowId = cloudIdFor(tab)
+      if (tab.isTemporary && cloudIdFor(tab) === undefined) {
+        if (!(await refreshCloudWorkflowIds())) return fail()
+        if (!isCurrent()) return
+        const filename = nextSaveFilename(tab)
+        if (!(await workflowService.saveWorkflowAs(tab, { filename })))
+          return fail()
+      }
+      if (!isCurrent()) return
+      let workflowId = cloudIdFor(tab)
+      if (workflowId === undefined) {
+        if (!(await refreshCloudWorkflowIds())) return fail()
+        if (!isCurrent()) return
+        workflowId = cloudIdFor(tab)
+      }
       if (workflowId === undefined) warnWorkflowUnavailable()
       return workflowId
     } catch (error) {
@@ -130,21 +111,6 @@ export function useAgentWorkflowSelection({
     })
   }
 
-  async function openWorkflowTarget(
-    tab: ComfyWorkflow,
-    workflowId: string,
-    isCurrent: () => boolean
-  ): Promise<boolean> {
-    if (!(await workflowService.openWorkflow(tab))) {
-      if (isCurrent())
-        warnWorkflowSelectionFailed(t('agent.targetNavigationUnavailable'))
-      return false
-    }
-    if (!isCurrent()) return false
-    commitWorkflowTarget(tab, workflowId)
-    return true
-  }
-
   async function onSelectWorkflowTarget(path: string): Promise<boolean> {
     const tab = workflowStore.getWorkflowByPath(path)
     if (!tab || workflowSelection.value || !canSelectTarget()) return false
@@ -156,7 +122,14 @@ export function useAgentWorkflowSelection({
     try {
       const workflowId = await prepareWorkflowSelection(tab, isCurrent)
       if (workflowId === undefined || !isCurrent()) return false
-      return await openWorkflowTarget(tab, workflowId, isCurrent)
+      if (!(await workflowService.openWorkflow(tab))) {
+        if (isCurrent())
+          warnWorkflowSelectionFailed(t('agent.targetNavigationUnavailable'))
+        return false
+      }
+      if (!isCurrent()) return false
+      commitWorkflowTarget(tab, workflowId)
+      return true
     } catch (error) {
       if (isCurrent())
         warnWorkflowSelectionFailed(

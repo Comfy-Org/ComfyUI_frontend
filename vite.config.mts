@@ -428,6 +428,16 @@ export default defineConfig({
           }
         : {}),
 
+      // The agent events socket in every other setup (ComfyUI behind a
+      // cloud backend serves it at /api/agent/events). The catch-all /api
+      // route below proxies plain HTTP only, so the upgrade needs its own
+      // entry; with a local agent the /api/agent route above wins.
+      '/api/agent/events': {
+        target: DEV_SERVER_COMFYUI_URL,
+        ws: true,
+        ...cloudProxyConfig
+      },
+
       '/api': {
         target: DEV_SERVER_COMFYUI_URL,
         ...cloudProxyConfig,

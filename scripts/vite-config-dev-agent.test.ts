@@ -97,6 +97,59 @@ describe('dev agent comfy credential', () => {
   })
 })
 
+// The events socket must be proxied as a WebSocket in every dev setup: the
+// catch-all /api route proxies plain HTTP only. With a local agent the
+// /api/agent route (which also upgrades) must match first.
+const printProxyRoutes =
+  "import('./vite.config.mts').then(({ default: config }) => { const proxy = config.server?.proxy ?? {}; process.stdout.write(JSON.stringify({ order: Object.keys(proxy), eventsWs: proxy['/api/agent/events']?.ws ?? null, agentWs: proxy['/api/agent']?.ws ?? null })) })"
+
+async function proxyRoutes(overrides: NodeJS.ProcessEnv) {
+  const { stdout } = await execFileAsync(
+    process.execPath,
+    ['--import', 'tsx', '--eval', printProxyRoutes],
+    {
+      cwd: process.cwd(),
+      env: {
+        ...process.env,
+        VITE_AGENT_STANDALONE: undefined,
+        VITE_REMOTE_DEV: undefined,
+        DISTRIBUTION: undefined,
+        DEV_AGENT_URL: undefined,
+        DEV_AGENT_SESSION_TOKEN: undefined,
+        ...overrides
+      }
+    }
+  )
+  return JSON.parse(stdout) as {
+    order: string[]
+    eventsWs: boolean | null
+    agentWs: boolean | null
+  }
+}
+
+describe('agent events socket dev proxy', () => {
+  it('upgrades /api/agent/events ahead of the plain /api route without a local agent', async () => {
+    const routes = await proxyRoutes({ DISTRIBUTION: 'cloud' })
+
+    expect(routes.eventsWs).toBe(true)
+    expect(routes.order.indexOf('/api/agent/events')).toBeLessThan(
+      routes.order.indexOf('/api')
+    )
+  })
+
+  it('lets the local agent route, which also upgrades, match first', async () => {
+    const routes = await proxyRoutes({
+      DEV_AGENT_URL: 'http://127.0.0.1:8095',
+      DEV_AGENT_SESSION_TOKEN: 'test-session-token'
+    })
+
+    expect(routes.agentWs).toBe(true)
+    expect(routes.order.indexOf('/api/agent')).toBeLessThan(
+      routes.order.indexOf('/api/agent/events')
+    )
+  })
+})
+
 describe('standalone agent harness distribution guard', () => {
   // VITE_AGENT_STANDALONE forces the agent panel on for every user of the
   // bundle it is baked into (extensions/core/agentPanel.ts), independent of

@@ -2,16 +2,24 @@ import { useDialogService } from '@/services/dialogService'
 import { useAuthStore } from '@/stores/authStore'
 
 /**
- * Every agent request carries the signed-in user's auth header, on every
- * backend. It is the app's user-identity header (`getUserAuthHeader`): the
- * Firebase ID token for a signed-in session, the API key only when there is no
- * session — never a stored key standing in for a session whose token refresh
- * failed, which could belong to another account.
+ * How agent traffic carries the signed-in user's credential, on every backend.
  *
- * In the cloud `api.fetchApi` then applies its own workspace-scoped header on
- * top, exactly as before; the local agent reads this one, the way ingest
- * reads it, and makes its model and CLI calls as the user. Sending it where it
- * is unused is harmless, and one contract replaces a per-backend branch.
+ * This is the same hand-off partner (API) nodes already make on a local build:
+ * `queuePrompt` puts the signed-in credential in the request so the local
+ * ComfyUI can call Comfy's API as the user (`auth_token_comfy_org` /
+ * `api_key_comfy_org`). The local agent makes its model calls as the user in
+ * the same way; its requests are REST and a WebSocket rather than a queued
+ * prompt, so the credential rides the standard header (`Authorization` or
+ * `X-API-KEY`, read the way ingest reads them) and, for the socket, `?token=`.
+ * In the cloud, `api.fetchApi` still applies its workspace header on top, so
+ * nothing changes there.
+ */
+
+/**
+ * The user's auth header on every agent REST request: the Firebase ID token
+ * for a signed-in session, the API key only when there is no session — never a
+ * stored key standing in for a session whose token refresh failed, which could
+ * belong to another account.
  *
  * A request that carries the header refuses to follow redirects, so it never
  * reaches another origin (fetch strips Authorization on a cross-origin
@@ -26,9 +34,24 @@ export async function withAgentAuth(init: RequestInit): Promise<RequestInit> {
 }
 
 /**
+ * The credential for the agent socket's `?token=` (a browser cannot set
+ * headers on a WebSocket). It is the one `api.fetchApi` sends, so the socket
+ * lands in the same workspace as every other request: workspace-scoped in the
+ * cloud, the user's token (or API key) locally.
+ */
+export async function agentSocketToken(): Promise<string | undefined> {
+  const header = await useAuthStore().getAuthHeader()
+  if (!header) return undefined
+  return 'X-API-KEY' in header
+    ? header['X-API-KEY']
+    : header.Authorization.slice('Bearer '.length)
+}
+
+/**
  * Resolves whether a turn may be sent: signed in, or signed in through the
- * sign-in dialog offered here. The dev server's agent proxy can inject a
- * credential of its own, so development sends without asking.
+ * sign-in dialog offered here — the same dialog partner nodes use. The dev
+ * server's agent proxy can inject a credential of its own, so development
+ * sends without asking.
  */
 export async function ensureSignedIn(): Promise<boolean> {
   const authStore = useAuthStore()
