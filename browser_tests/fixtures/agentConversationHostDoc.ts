@@ -16,6 +16,7 @@ import type {
 } from '@comfyorg/comfy-multi-player'
 import * as Y from 'yjs'
 
+import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 import type { ServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
 import { DOC_PROTOCOL_VERSION } from '@/workbench/extensions/agent/crdt/docFrameClient'
 import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
@@ -183,6 +184,68 @@ export class HostDoc {
       HOST_ACTOR,
       ops.map((op) => op.op_id)
     )
+  }
+
+  /**
+   * Seed one subgraph definition that carries another inside its own
+   * `definitions` map, and broadcast the delta.
+   *
+   * `mint()` stores a nested `definitions` as a plain value, so minting alone
+   * never produces the map form. The map form is what a doc host folding in a
+   * raw update (or a snapshot decode) leaves behind, and it is the shape the
+   * follower's reader has to survive - the same construction
+   * `agentSubgraphDefinitions.test.ts` builds by hand.
+   *
+   * @returns the outer definition id the follower should end up registering.
+   */
+  seedNestedDefinition(
+    outer: ExportedSubgraph,
+    inner: ExportedSubgraph
+  ): { frame: HostFrame; outerId: string } {
+    const outerId = outer.id
+    const innerId = inner.id
+    const before = Y.encodeStateVector(this.doc)
+    const outerSource = mint(
+      { nodes: [], links: [], definitions: { subgraphs: [outer] } },
+      this.catalog
+    ).getMap<Y.Map<unknown>>('definitions')
+    const innerSource = mint(
+      { nodes: [], links: [], definitions: { subgraphs: [inner] } },
+      this.catalog
+    ).getMap<Y.Map<unknown>>('definitions')
+
+    const storedOuter = outerSource.get(outerId)
+    if (!storedOuter) throw new Error('the outer definition did not mint')
+    const definitions = this.doc.getMap<unknown>('definitions')
+    const clonedOuter = storedOuter.clone()
+    definitions.set(outerId, clonedOuter)
+    // The map form, not the plain form: `subgraphs` keyed by id beside the
+    // order register the reader is supposed to read it through.
+    clonedOuter.set(
+      'definitions',
+      new Y.Map<unknown>([
+        ['subgraphs', innerSource.clone()],
+        ['subgraph_order', [innerId]]
+      ])
+    )
+    this.seq += 1
+    return {
+      frame: this.updateFrame(
+        Y.encodeStateAsUpdate(this.doc, before),
+        HOST_ACTOR,
+        []
+      ),
+      outerId
+    }
+  }
+
+  nestedDefinitionIds(outerId: string): string[] {
+    const outer = this.doc.getMap<unknown>('definitions').get(outerId)
+    if (!(outer instanceof Y.Map)) return []
+    const nested = outer.get('definitions')
+    if (!(nested instanceof Y.Map)) return []
+    const subgraphs = nested.get('subgraphs')
+    return subgraphs instanceof Y.Map ? [...subgraphs.keys()] : []
   }
 
   replaceLink(link: HostLinkTuple): HostFrame {
