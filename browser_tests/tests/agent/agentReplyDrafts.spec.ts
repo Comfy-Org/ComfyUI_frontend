@@ -4,6 +4,7 @@ import { createI18n } from 'vue-i18n'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import type { WorkflowListResponse } from '@comfyorg/ingest-types'
+import { zAgentAnswerRequest } from '@comfyorg/ingest-types/zod'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
@@ -279,17 +280,21 @@ test.describe('Agent reply drafts', { tag: ['@cloud', '@agent'] }, () => {
         'The approval card remains visible after its turn completes, but its action no longer reaches the answer endpoint.'
       )
       test.setTimeout(60_000)
-      const answeredSelections: string[][] = []
+      const askId = `${MESSAGE_ID}:call-${selection}`
+      const answeredRequests: Array<{ url: string; selected: string[] }> = []
       await page.route(
         '**/api/agent/threads/*/asks/*/answer',
         async (route) => {
-          const body = route.request().postDataJSON() as { selected: string[] }
-          answeredSelections.push(body.selected)
-          await route.fulfill({ status: 202, body: '{}' })
+          const request = route.request()
+          const body = zAgentAnswerRequest.parse(request.postDataJSON())
+          answeredRequests.push({ url: request.url(), selected: body.selected })
+          await route.fulfill({
+            ...jsonRoute({ status: 'answered' }),
+            status: 202
+          })
         }
       )
       const { panel, send } = await startTurn(page, 'Run it when ready.')
-      const askId = `${MESSAGE_ID}:call-${selection}`
 
       send({
         type: 'agent_ask',
@@ -324,7 +329,16 @@ test.describe('Agent reply drafts', { tag: ['@cloud', '@agent'] }, () => {
       await expect(action).toBeVisible()
       await action.click()
 
-      await expect.poll(() => answeredSelections).toEqual([[selection]])
+      await expect
+        .poll(() => answeredRequests)
+        .toEqual([
+          {
+            url: expect.stringContaining(
+              `/threads/${THREAD_ID}/asks/${encodeURIComponent(askId)}/answer`
+            ),
+            selected: [selection]
+          }
+        ])
       await expect(action).toHaveAttribute('aria-busy', 'true')
       send({
         type: 'agent_ask_resolved',
