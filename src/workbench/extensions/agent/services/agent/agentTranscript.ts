@@ -39,7 +39,12 @@ export interface NormalizedAgentTranscript {
   userAttachments: Map<TurnId, UserAttachment[]>
   userWorkflowReferences: Map<TurnId, WorkflowReference[]>
   latestWorkflowId?: string
-  rowIds: Set<string>
+  /**
+   * Every persisted row read, mapped to the turn it landed on. A live turn id
+   * is the assistant row's own id, so this is what resolves one back to the
+   * hydrated turn it belongs to.
+   */
+  turnIdsByRowId: Map<string, TurnId>
   /** Tracks turns with assistant rows, including rows that produce no parts. */
   assistantTurnIds: Set<TurnId>
   pending?: {
@@ -416,13 +421,13 @@ export function normalizeAgentTranscript(
   const assistants = new Map<TurnId, AssistantMessage>()
   const turnOrder: TurnId[] = []
   const seenTurns = new Set<TurnId>()
-  const rowIds = new Set<string>()
+  const turnIdsByRowId = new Map<string, TurnId>()
   let pending: NormalizedAgentTranscript['pending']
   let latestWorkflowId: string | undefined
 
   for (const row of [...history].sort((a, b) => a.seq - b.seq)) {
     const turnId = row.turn_id as TurnId
-    rowIds.add(row.id)
+    turnIdsByRowId.set(row.id, turnId)
     recordTurnOrder(turnId, seenTurns, turnOrder)
     const text = typeof row.content?.text === 'string' ? row.content.text : ''
     if (row.role === 'user') {
@@ -454,7 +459,7 @@ export function normalizeAgentTranscript(
     userAttachments,
     userWorkflowReferences,
     latestWorkflowId,
-    rowIds,
+    turnIdsByRowId,
     assistantTurnIds: new Set(assistants.keys()),
     pending
   }

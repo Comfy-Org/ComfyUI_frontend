@@ -767,14 +767,15 @@ describe('useAgentConversationStore', () => {
    * one transaction, under a `turn_id` that is a fresh server uuid, while the
    * ack hands the client the assistant ROW's id as its live turn id
    * (services/agent/server/agent_handler.go, internal/persist/turnstart.go).
-   * Being distinct, the hydrated turn survives resume's own id filter; the
-   * two dedupe paths behind it then decline in turn, `removeHydratedCopy` on
-   * `hydratedAssistantTurnIds` holding the hydrated assistant row and the
-   * drop-the-stash branch on `entry.settled`, which a stash leaves false. So
-   * both copies stay and only the hydrated one carries attachments. The
-   * `'server-turn'` idiom is the one the settled-turn case below already uses.
+   * Being distinct, the hydrated turn survives resume's own id filter, and the
+   * two dedupe paths behind it both decline: `removeHydratedCopy` because
+   * `hydratedAssistantTurnIds` holds the hydrated assistant row, and the
+   * drop-the-stash branch because `entry.settled` is false on a stash. What
+   * reconciles them is the row id the ack handed over, which resolves to the
+   * hydrated turn. The `'server-turn'` idiom is the one the settled-turn case
+   * below already uses.
    */
-  it.fails('resumes a thread-switched turn once, with its attachments', () => {
+  it('resumes a thread-switched turn once, with its attachments', () => {
     vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
     const userRow = historyRow(1, 'user', 'server-turn', 'upscale this')
     userRow.content = { text: 'upscale this', attachments: ['beach.png'] }
