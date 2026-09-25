@@ -14,6 +14,16 @@ describe('PricingSection', () => {
     for (const price of ['$4.54/hr', '$6.23/hr', '$7.71/hr', '$11.23/hr']) {
       expect(screen.getAllByText(price)).toHaveLength(2)
     }
+    for (const credits of [
+      '957.94/hr',
+      '1314.53/hr',
+      '1626.81/hr',
+      '2369.53/hr'
+    ]) {
+      expect(screen.getAllByText(credits)).toHaveLength(1)
+    }
+    expect(screen.getAllByText('42.20/GB/mo')).toHaveLength(3)
+    expect(screen.getAllByText('31.65/GB/mo')).toHaveLength(1)
     expect(
       screen.getAllByText(t('platform.pricing.storage.containerDisk', 'en'))
     ).toHaveLength(2)
