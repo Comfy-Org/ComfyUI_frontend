@@ -1076,6 +1076,57 @@ describe('useAgentSession (v1 composition root)', () => {
     now.mockRestore()
   })
 
+  // The ack window is module-level while `sending` is per instance, so a
+  // remount or a second panel can have its own POST in flight. A boolean let
+  // whichever settled first disarm the others and drop their stop.
+  it('keeps a stop pending when another send is still awaiting its ack', async () => {
+    const cancelMessage = vi
+      .fn<AgentRestClient['cancelMessage']>()
+      .mockResolvedValue({ status: 'cancelling' })
+    let ackSlow: (ack: AgentTurnAccepted) => void = () => {}
+    const slowPost = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockImplementation(
+        () =>
+          new Promise<AgentTurnAccepted>((resolve) => {
+            ackSlow = resolve
+          })
+      )
+    const slow = useAgentSession({
+      rest: fakeRest({ postMessage: slowPost, cancelMessage }),
+      events: fakeEvents().source
+    })
+    // Its POST fails, so it settles without recording a thread or an active
+    // turn — leaving slow's stop with nothing to cancel directly, which is
+    // exactly the branch that depends on the ack window.
+    const quick = useAgentSession({
+      rest: fakeRest({
+        postMessage: vi
+          .fn<
+            (
+              threadId: string,
+              req: PostMessageInput
+            ) => Promise<AgentTurnAccepted>
+          >()
+          .mockRejectedValue(new Error('the quick one failed'))
+      }),
+      events: fakeEvents().source
+    })
+    slow.start()
+
+    const slowSend = slow.sendMessage('the slow one')
+    await vi.waitFor(() => expect(slowPost).toHaveBeenCalledOnce())
+    // A second, overlapping send settles while the first is still pending.
+    await quick.sendMessage('the quick one')
+
+    await slow.stopTurn('button')
+    ackSlow({ thread_id: 'th-1', message_id: 'msg-1', workflow_id: 'wf-1' })
+    await slowSend
+    await vi.waitFor(() => expect(cancelMessage).toHaveBeenCalledOnce())
+  })
+
   it('tracks a stop when completion arrives before cancellation responds', async () => {
     let currentTime = 2_000
     const now = vi.spyOn(Date, 'now').mockImplementation(() => currentTime)

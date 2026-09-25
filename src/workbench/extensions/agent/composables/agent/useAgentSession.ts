@@ -166,9 +166,24 @@ const turnStartedAt = new Map<TurnId, number>()
  * stay armed for as long as the POST can still acknowledge, or a stop clicked
  * during a slow send is dropped instead of being applied at ack. Same window
  * in the ordinary case, different failure mode on purpose.
+ *
+ * A COUNT, not a flag: `sending` is per session instance, so a remount or a
+ * second panel can have its own POST in flight, and a boolean would let the
+ * first to settle disarm the others and drop their stop.
  */
-let sendAwaitingAck = false
+let sendsAwaitingAck = 0
 let stopPendingAck: { method: AgentStopMethod | undefined } | null = null
+
+/** Arms the ack window for ONE send and returns its single-use release. */
+function beginSendAck(): () => void {
+  sendsAwaitingAck += 1
+  let released = false
+  return () => {
+    if (released) return
+    released = true
+    sendsAwaitingAck = Math.max(0, sendsAwaitingAck - 1)
+  }
+}
 
 function consumeStopPendingAck() {
   const pending = stopPendingAck
@@ -715,7 +730,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     // prepareWorkflow() first, and a run mode written during THAT wait still
     // reaches the server before the message it must not re-authorize.
     const releaseSendGate = sendGateStore.begin()
-    sendAwaitingAck = true
+    const releaseSendAck = beginSendAck()
     stopPendingAck = null
     try {
       return await performSend(
@@ -727,7 +742,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       )
     } finally {
       sending.value = false
-      sendAwaitingAck = false
+      releaseSendAck()
       releaseSendGate()
     }
   }
@@ -781,7 +796,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       // The shared send gate, not this instance's sending: the panel that
       // posted may have been remounted, and the stop arrives through the new
       // instance.
-      if (sendAwaitingAck) stopPendingAck = { method }
+      if (sendsAwaitingAck > 0) stopPendingAck = { method }
       return
     }
     if (isStoppingTurn(turnId)) return
