@@ -13,6 +13,7 @@
  * ~/.config/comfy-workshop/crossview.env or deployment.env.
  */
 import { readFileSync } from 'node:fs'
+import type { IncomingMessage, ServerResponse } from 'node:http'
 import { createServer } from 'node:http'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
@@ -21,22 +22,26 @@ import type { ReadableStream as NodeReadableStream } from 'node:stream/web'
 
 const PORT = Number(process.env.CROSSVIEW_PROXY_PORT ?? 4329)
 
+function readConfig(name: string): string {
+  try {
+    return readFileSync(join(homedir(), '.config/comfy-workshop', name), 'utf8')
+  } catch {
+    // a missing file just means the value has to come from the environment
+    return ''
+  }
+}
+
+function parseEnv(text: string, into: Record<string, string>) {
+  for (const line of text.split('\n')) {
+    const m = line.trim().match(/^(?:export\s+)?(\w+)=(.*)$/)
+    if (m) into[m[1]] = m[2].replace(/^["']|["']$/g, '')
+  }
+}
+
 function fromEnvFiles(): Partial<Record<string, string>> {
   const out: Record<string, string> = {}
-  for (const name of ['deployment.env', 'crossview.env']) {
-    try {
-      const text = readFileSync(
-        join(homedir(), '.config/comfy-workshop', name),
-        'utf8'
-      )
-      for (const line of text.split('\n')) {
-        const m = line.trim().match(/^(?:export\s+)?(\w+)=(.*)$/)
-        if (m) out[m[1]] = m[2].replace(/^["']|["']$/g, '')
-      }
-    } catch {
-      // a missing file just means the value has to come from the environment
-    }
-  }
+  for (const name of ['deployment.env', 'crossview.env'])
+    parseEnv(readConfig(name), out)
   return out
 }
 
@@ -56,48 +61,58 @@ if (!target || !key) {
 
 const LOCAL = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/
 
-createServer(async (req, res) => {
+/** Only pages served from this machine may call the proxy. */
+function allowLocalOrigin(req: IncomingMessage, res: ServerResponse) {
   const origin = req.headers.origin
-  if (origin && LOCAL.test(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin)
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-    res.setHeader(
-      'Access-Control-Allow-Headers',
-      'content-type, idempotency-key'
-    )
-  }
-  if (req.method === 'OPTIONS') {
-    res.writeHead(204).end()
-    return
-  }
-  const url = String(req.url)
-  if (!url.startsWith('/api/v2/')) {
-    res.writeHead(404).end()
-    return
-  }
+  if (!origin || !LOCAL.test(origin)) return
+  res.setHeader('Access-Control-Allow-Origin', origin)
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+  res.setHeader('Access-Control-Allow-Headers', 'content-type, idempotency-key')
+}
 
+/** The page's own headers that the deployment needs, plus the key. */
+function forwardHeaders(req: IncomingMessage): Record<string, string> {
+  const headers: Record<string, string> = { authorization: `Bearer ${key}` }
+  for (const name of ['content-type', 'idempotency-key']) {
+    const value = req.headers[name]
+    if (typeof value === 'string') headers[name] = value
+  }
+  return headers
+}
+
+const BODILESS = new Set(['GET', 'HEAD'])
+
+function upstreamInit(req: IncomingMessage): RequestInit {
+  const headers = forwardHeaders(req)
+  if (BODILESS.has(String(req.method))) return { method: req.method, headers }
+  // duplex is required by Node for a streamed request body
+  return {
+    method: req.method,
+    headers,
+    body: Readable.toWeb(req) as ReadableStream,
+    duplex: 'half'
+  } as RequestInit
+}
+
+async function relay(url: string, req: IncomingMessage, res: ServerResponse) {
+  // Redirects to signed storage are followed here; fetch drops the key on
+  // the way to another origin.
+  const upstream = await fetch(target + url, upstreamInit(req))
+  const type = upstream.headers.get('content-type')
+  res.writeHead(upstream.status, type ? { 'content-type': type } : {})
+  if (upstream.body)
+    Readable.fromWeb(upstream.body as NodeReadableStream).pipe(res)
+  else res.end()
+  process.stdout.write(`${req.method} ${url} -> ${upstream.status}\n`)
+}
+
+createServer(async (req, res) => {
+  allowLocalOrigin(req, res)
+  const url = String(req.url)
+  if (req.method === 'OPTIONS') return void res.writeHead(204).end()
+  if (!url.startsWith('/api/v2/')) return void res.writeHead(404).end()
   try {
-    const headers: Record<string, string> = { authorization: `Bearer ${key}` }
-    for (const name of ['content-type', 'idempotency-key']) {
-      const value = req.headers[name]
-      if (typeof value === 'string') headers[name] = value
-    }
-    const hasBody = req.method !== 'GET' && req.method !== 'HEAD'
-    // Redirects to signed storage are followed here; fetch drops the key on
-    // the way to another origin.
-    const upstream = await fetch(target + url, {
-      method: req.method,
-      headers,
-      body: hasBody ? (Readable.toWeb(req) as ReadableStream) : undefined,
-      // required by Node for a streamed request body
-      ...(hasBody ? { duplex: 'half' } : {})
-    })
-    const type = upstream.headers.get('content-type')
-    res.writeHead(upstream.status, type ? { 'content-type': type } : {})
-    if (upstream.body)
-      Readable.fromWeb(upstream.body as NodeReadableStream).pipe(res)
-    else res.end()
-    process.stdout.write(`${req.method} ${url} -> ${upstream.status}\n`)
+    await relay(url, req, res)
   } catch (error) {
     console.error(error)
     res.writeHead(502, { 'content-type': 'application/json' })

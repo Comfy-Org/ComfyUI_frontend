@@ -177,7 +177,11 @@ export class WarpRenderer {
     return tex
   }
 
-  /** Load one frame: its colours and its depth (half floats, metres). */
+  /**
+   * Load one frame: its colours and its depth (half floats, metres). Called
+   * from ReshootWarp.vue, which the audit's import graph does not follow.
+   */
+  // fallow-ignore-next-line unused-class-member
   setFrame(image: ImageBitmap, depthHalf: Uint16Array, depth: Float32Array) {
     const { gl } = this
     gl.bindTexture(gl.TEXTURE_2D, this.colorTex)
@@ -239,22 +243,6 @@ export class WarpRenderer {
     gl.uniform2i(u.uOffset, 0, 0)
     gl.uniform1f(u.uPointSize, 0)
     gl.drawArrays(gl.POINTS, 0, points)
-  }
-
-  /** Read the frame back, for the parity test against the node. */
-  pixels(): Uint8Array {
-    const { gl } = this
-    const out = new Uint8Array(this.outWidth * this.outHeight * 4)
-    gl.readPixels(
-      0,
-      0,
-      this.outWidth,
-      this.outHeight,
-      gl.RGBA,
-      gl.UNSIGNED_BYTE,
-      out
-    )
-    return out
   }
 
   dispose() {

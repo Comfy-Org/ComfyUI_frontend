@@ -304,6 +304,30 @@ export function useReshootRun(locale: Locale = 'en') {
   const aborted = (e: unknown) =>
     e instanceof DOMException && e.name === 'AbortError'
 
+  /** One reading of the clip's depth, or nothing if it was retired. */
+  async function readDepth(mine: number): Promise<Geometry | undefined> {
+    const settings = await clipSettings()
+    // retired while the clip was still uploading: submit nothing
+    if (mine !== reading) return
+    const job = await track(
+      'analyze',
+      analyzeWorkflow(settings),
+      rc('reshoot.analyzing', locale),
+      (stage) => (status.value = stage)
+    )
+    if (mine !== reading) return
+    status.value = rc('reshoot.stage.fetching', locale)
+    const blob = await download(job, '.cvgeo')
+    const read = await readGeometry(await blob.arrayBuffer())
+    return mine === reading ? read : undefined
+  }
+
+  function readingFailed(mine: number, before: DepthState, e: unknown) {
+    if (mine !== reading) return
+    depth.value = before === 'ready' ? 'stale' : before
+    if (!aborted(e)) error.value = failure(e)
+  }
+
   async function analyze() {
     if (clipError.value || depth.value === 'analyzing') return
     const before = depth.value
@@ -313,29 +337,15 @@ export function useReshootRun(locale: Locale = 'en') {
     selected.value = 'aim'
     status.value = rc('reshoot.stage.uploading', locale)
     try {
-      const settings = await clipSettings()
-      // retired while the clip was still uploading: submit nothing
-      if (mine !== reading) return
-      const job = await track(
-        'analyze',
-        analyzeWorkflow(settings),
-        rc('reshoot.analyzing', locale),
-        (stage) => (status.value = stage)
-      )
-      if (mine !== reading) return
-      status.value = rc('reshoot.stage.fetching', locale)
-      const blob = await download(job, '.cvgeo')
-      const read = await readGeometry(await blob.arrayBuffer())
-      if (mine !== reading) return
+      const read = await readDepth(mine)
+      if (!read) return
       geometry.value = read
       keys.value = []
       frame.value = 0
       depth.value = 'ready'
       step.value = 2
     } catch (e) {
-      if (mine !== reading) return
-      depth.value = before === 'ready' ? 'stale' : before
-      if (!aborted(e)) error.value = failure(e)
+      readingFailed(mine, before, e)
     }
   }
 
@@ -360,20 +370,71 @@ export function useReshootRun(locale: Locale = 'en') {
     )
   }
 
+  /** The camera the take is shot with: one key holds there, two or more move. */
+  function stillCamera(): ReshootCamera {
+    return { ...(keys.value[0]?.camera ?? camera), fov: camera.fov }
+  }
+
+  async function takeWorkflow(still: ReshootCamera) {
+    const moving = keys.value.length >= 2
+    return generateWorkflow({
+      clip: await clipSettings(),
+      camera: {
+        azimuth: still.azimuth,
+        elevation: still.elevation,
+        distance: still.distance,
+        hfov: still.fov,
+        verticalShift: still.shift,
+        pivot: pivot.value,
+        keepSourceAim: keepAim.value,
+        keyframes: moving ? toKeyframes(keys.value, pivot.value) : [],
+        motion: motion.value
+      },
+      prompt: prompt.value,
+      seed: seed.value ?? Math.floor(Math.random() * 2 ** 32)
+    })
+  }
+
+  const objectUrl = (blob?: Blob) =>
+    blob ? URL.createObjectURL(blob) : undefined
+
+  async function finishTake(id: string, job: Job) {
+    updateTake(id, { stage: rc('reshoot.stage.fetching', locale) })
+    const [result, original, warp] = await Promise.all([
+      download(job, 'result'),
+      download(job, 'original-audio').catch(() => undefined),
+      download(job, 'warp').catch(() => undefined)
+    ])
+    updateTake(id, {
+      status: 'done',
+      stage: undefined,
+      url: URL.createObjectURL(result),
+      originalUrl: objectUrl(original),
+      warpUrl: objectUrl(warp)
+    })
+  }
+
+  function takeFailed(id: string, e: unknown) {
+    updateTake(
+      id,
+      aborted(e)
+        ? { status: 'cancelled', stage: undefined }
+        : { status: 'failed', stage: failure(e) }
+    )
+  }
+
   async function generate() {
     if (depth.value !== 'ready' || rendering.value) return
     error.value = undefined
     const n = takes.value.length
     const id = `take-${n}`
-    // two keys make a move; a single key is where the camera holds
-    const moving = keys.value.length >= 2
-    const still = keys.value[0]?.camera ?? camera
+    const still = stillCamera()
     takes.value = [
       ...takes.value,
       {
         id,
         n,
-        camera: { ...still, fov: camera.fov },
+        camera: still,
         keys: keys.value.length,
         status: 'rendering',
         startedAt: Date.now(),
@@ -384,42 +445,14 @@ export function useReshootRun(locale: Locale = 'en') {
     try {
       const job = await track(
         id,
-        generateWorkflow({
-          clip: await clipSettings(),
-          camera: {
-            azimuth: still.azimuth,
-            elevation: still.elevation,
-            distance: still.distance,
-            hfov: camera.fov,
-            verticalShift: still.shift,
-            pivot: pivot.value,
-            keepSourceAim: keepAim.value,
-            keyframes: moving ? toKeyframes(keys.value, pivot.value) : [],
-            motion: motion.value
-          },
-          prompt: prompt.value,
-          seed: seed.value ?? Math.floor(Math.random() * 2 ** 32)
-        }),
+        await takeWorkflow(still),
         // the take's own heading already says it is generating
         '',
         (stage) => updateTake(id, { stage: stage || undefined })
       )
-      updateTake(id, { stage: rc('reshoot.stage.fetching', locale) })
-      const [result, original, warp] = await Promise.all([
-        download(job, 'result'),
-        download(job, 'original-audio').catch(() => undefined),
-        download(job, 'warp').catch(() => undefined)
-      ])
-      updateTake(id, {
-        status: 'done',
-        stage: undefined,
-        url: URL.createObjectURL(result),
-        originalUrl: original ? URL.createObjectURL(original) : undefined,
-        warpUrl: warp ? URL.createObjectURL(warp) : undefined
-      })
+      await finishTake(id, job)
     } catch (e) {
-      if (aborted(e)) updateTake(id, { status: 'cancelled', stage: undefined })
-      else updateTake(id, { status: 'failed', stage: failure(e) })
+      takeFailed(id, e)
     }
   }
 
