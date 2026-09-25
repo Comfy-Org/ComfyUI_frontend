@@ -924,6 +924,86 @@ describe('AuthSignIn', () => {
     ).not.toHaveBeenCalled()
   })
 
+  it('holds the mode links while a cancelled pop-up can still publish an identity', async () => {
+    let closePopup: (() => void) | undefined
+    let cancelPopup: ((reason: unknown) => void) | undefined
+    let failGithub: ((reason: unknown) => void) | undefined
+    vi.mocked(signInWorkshopWithGoogle).mockImplementation((options) => {
+      closePopup = options?.onPopupClosed
+      return new Promise<UserCredential>((_resolve, reject) => {
+        cancelPopup = reject
+      })
+    })
+    vi.mocked(signInWorkshopWithGitHub).mockImplementation(
+      () =>
+        new Promise<UserCredential>((_resolve, reject) => {
+          failGithub = reject
+        })
+    )
+    vi.mocked(signOutWorkshop).mockReturnValue(new Promise(() => {}))
+    window.history.replaceState({}, '', '/login/')
+    render(AuthSignIn)
+
+    await clickGoogle()
+    closePopup?.()
+    await waitFor(() =>
+      expect(githubButton().hasAttribute('disabled')).toBe(false)
+    )
+    await userEvent.setup().click(githubButton())
+    cancelPopup?.({ code: 'auth/cancelled-popup-request', message: 'x' })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    // The successor fails, so the page is in `error` rather than `detached`.
+    failGithub?.({ code: 'auth/popup-blocked', message: 'x' })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    const signUpLink = screen.getByRole('link', { name: /sign up/i })
+    expect(
+      signUpLink.getAttribute('aria-disabled'),
+      'a remount here would discard the only thing waiting to clear that identity'
+    ).toBe('true')
+    signUpLink.dispatchEvent(
+      new MouseEvent('click', { bubbles: true, cancelable: true })
+    )
+    expect(
+      screen.queryByRole('button', { name: /sign up with google/i })
+    ).toBeNull()
+
+    authUser.value = testFirebaseUser({
+      uid: 'stray-user',
+      email: 'user@example.com',
+      displayName: null
+    })
+
+    await waitFor(() => expect(signOutWorkshop).toHaveBeenCalledOnce())
+    expect(vi.mocked(useWorkshopSession().ensureFresh)).not.toHaveBeenCalled()
+    expect(replace).not.toHaveBeenCalled()
+  })
+
+  it('frees the mode links on an ordinary dismissal, which can publish nothing', async () => {
+    let closePopup: (() => void) | undefined
+    let dismissPopup: ((reason: unknown) => void) | undefined
+    vi.mocked(signInWorkshopWithGoogle).mockImplementation((options) => {
+      closePopup = options?.onPopupClosed
+      return new Promise<UserCredential>((_resolve, reject) => {
+        dismissPopup = reject
+      })
+    })
+    window.history.replaceState({}, '', '/login/')
+    render(AuthSignIn)
+
+    await clickGoogle()
+    closePopup?.()
+    // Firebase waited out its own grace with no auth event, so nothing was ever
+    // in flight; holding the links here would tax the common case.
+    dismissPopup?.({ code: 'auth/popup-closed-by-user', message: 'x' })
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('link', { name: /sign up/i })
+      ).not.toHaveAttribute('aria-disabled')
+    )
+  })
+
   it('rolls a late credential back when the visitor has moved on to another attempt', async () => {
     let closePopup: (() => void) | undefined
     let completeSignIn: ((credential: UserCredential) => void) | undefined

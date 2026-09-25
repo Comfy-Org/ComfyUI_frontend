@@ -163,9 +163,9 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
   // A cancelled attempt's identity can land well after the attempt itself has
   // gone, so the watch below outlives it. Bounded: an unclaimed record left
   // armed would eventually sign out an identity from somewhere else entirely.
-  let strayWatch:
-    | { readonly before?: string; readonly attempt: number }
-    | undefined
+  const strayWatch = ref<
+    { readonly before?: string; readonly attempt: number } | undefined
+  >()
   let strayTimer: ReturnType<typeof setTimeout> | undefined
 
   /**
@@ -180,16 +180,16 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
    * would mint a session for the account this is in the middle of discarding.
    */
   function clearStrayIdentity(): boolean {
-    const watching = strayWatch
+    const watching = strayWatch.value
     if (!watching || !firebaseForRollback) return false
     if (lastAuthenticatedAttempt >= watching.attempt) {
-      strayWatch = undefined
+      strayWatch.value = undefined
       return false
     }
     if (attemptsInFlight > 0) return false
     const current = user.value
     if (!current || current.uid === watching.before) return false
-    strayWatch = undefined
+    strayWatch.value = undefined
     const rollback = firebaseForRollback.signOutWorkshop().catch(() => {})
     pendingRollback = rollback
     void rollback.finally(() => {
@@ -201,7 +201,7 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
   let firebaseForRollback: WorkshopFirebase | undefined
   onBeforeUnmount(() => {
     clearTimeout(strayTimer)
-    strayWatch = undefined
+    strayWatch.value = undefined
   })
 
   function dispatch(event: AuthSignInEvent) {
@@ -265,9 +265,15 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
 
   // The sign-in controls come back on a detached attempt, but the mode links
   // cannot: switching remounts the panel, and the replacement controller would
-  // mint the old attempt's credential without provisioning it.
+  // mint the old attempt's credential without provisioning it. That holds until
+  // the identity can no longer arrive, not just while the attempt is detached —
+  // a successor failing leaves the page in `error` with the watch still armed,
+  // and the remount would discard the only thing waiting to clear it.
   const modeLocked = computed(
-    () => busy.value || state.value.step === 'detached'
+    () =>
+      busy.value ||
+      state.value.step === 'detached' ||
+      strayWatch.value !== undefined
   )
 
   const progressKey = computed(() => {
@@ -327,6 +333,7 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
     let detached = false
     let finishAttempt: (() => void) | undefined
     let identityBefore: string | undefined
+    let cancelledBySuccessor = false
     const attemptNumber = ++startedAttempts
     attemptsInFlight += 1
     // Detaching hands the controls to the visitor; from then on this attempt
@@ -413,7 +420,7 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
           return
         }
       }
-      if (pendingRollback) {
+      if (provider === 'email' && pendingRollback) {
         const rolledBack = await withinOperationDeadline(pendingRollback)
         if (!live()) {
           await abandon()
@@ -517,6 +524,11 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
       })
       await runMint(credential.user, live, abandon)
     } catch (error) {
+      // Recorded before the liveness check below returns: a superseded attempt
+      // is exactly the one whose exchange can still publish an identity.
+      cancelledBySuccessor =
+        isFirebaseAuthErrorLike(error) &&
+        error.code === 'auth/cancelled-popup-request'
       // Single-use token: any attempt consumes it, so refresh before the next.
       if (provider === 'email' && mode === 'signUp') {
         resetTurnstile()
@@ -556,12 +568,17 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
       // synchronous and the exchange is a network call. Arm the watch rather
       // than reading `user` once, and evaluate now too for the rare identity
       // that has already landed.
-      if (detached && !authenticated && firebase) {
+      //
+      // Only for a cancellation. `popup-closed-by-user` means Firebase waited
+      // out its own grace with no auth event, so nothing was ever in flight to
+      // arrive late, and arming there would hold the mode links on every
+      // ordinary dismissal — the case this whole change exists to speed up.
+      if (detached && !authenticated && cancelledBySuccessor && firebase) {
         firebaseForRollback = firebase
-        strayWatch = { before: identityBefore, attempt: attemptNumber }
+        strayWatch.value = { before: identityBefore, attempt: attemptNumber }
         clearTimeout(strayTimer)
         strayTimer = setTimeout(() => {
-          strayWatch = undefined
+          strayWatch.value = undefined
         }, OPERATION_TIMEOUT_MS)
       }
       clearStrayIdentity()
