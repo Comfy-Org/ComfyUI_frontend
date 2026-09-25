@@ -173,8 +173,9 @@ describe('Re-shoot transports', () => {
     },
     {
       status: 429,
-      body: '{"error_type":"concurrent_run_limit","detail":""}',
-      code: 'concurrent_run_limit'
+      body: '{"error_type":"concurrent_run_limit","detail":"","details":{"retry_after_seconds":15}}',
+      code: 'concurrent_run_limit',
+      retry: 15
     },
     {
       status: 429,

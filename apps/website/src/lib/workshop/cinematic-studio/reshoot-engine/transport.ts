@@ -80,9 +80,27 @@ function bodyField(body: string, key: string): string | undefined {
   }
 }
 
+function detailsRetryAfter(body: string): number {
+  try {
+    const parsed: unknown = JSON.parse(body)
+    const details =
+      parsed && typeof parsed === 'object'
+        ? Reflect.get(parsed, 'details')
+        : undefined
+    const value =
+      details && typeof details === 'object'
+        ? Reflect.get(details, 'retry_after_seconds')
+        : undefined
+    return typeof value === 'number' ? value : NaN
+  } catch {
+    return NaN
+  }
+}
+
 async function reshootError(response: Response): Promise<ReshootError> {
   const body = await response.text().catch(() => '')
-  const retryAfter = Number(response.headers.get('Retry-After') ?? NaN)
+  const header = response.headers.get('Retry-After')
+  const retryAfter = header === null ? detailsRetryAfter(body) : Number(header)
   const code =
     response.headers.get('X-Comfy-Error-Type') ||
     bodyField(body, 'error_type') ||
