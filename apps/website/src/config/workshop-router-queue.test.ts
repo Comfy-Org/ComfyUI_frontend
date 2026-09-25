@@ -54,6 +54,7 @@ function refusal(status: number, errorType: string, retryAfter?: string) {
     {
       status,
       headers: {
+        'X-Comfy-Request-Id': 'submit-call',
         'X-Comfy-Error-Type': errorType,
         ...(retryAfter === undefined ? {} : { 'Retry-After': retryAfter })
       }
@@ -146,11 +147,18 @@ describe('queued Router delivery', () => {
     ])
   })
 
+  // A refused submit carries a call id like any other answer, but nothing was
+  // admitted. Handing that id out would let the page offer to leave running a
+  // generation the Router never took.
   it('does not fall back to an unsaved synchronous generation when saving is refused', async () => {
     const calls = stubFetch(refusal(403, 'not_enabled'))
+    const onRequestId = vi.fn()
     await expect(
-      settle(runWorkshopRouter({ ...options(), comfy_save_asset: true }))
+      settle(
+        runWorkshopRouter({ ...options(), comfy_save_asset: true, onRequestId })
+      )
     ).rejects.toBeInstanceOf(WorkshopRouterError)
+    expect(onRequestId).not.toHaveBeenCalled()
     expect(calls).toHaveBeenCalledTimes(1)
     expect(String(calls.mock.calls[0][0])).toBe(
       `${SUBMIT_URL}?comfy_save_asset=true`

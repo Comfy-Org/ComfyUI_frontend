@@ -223,10 +223,7 @@ async function submit(
       next: { ...state, inFlightRetries: state.inFlightRetries + 1 }
     }
   }
-  if (!response.ok) {
-    context.options.onRequestId?.(callId)
-    await settleRouterResponse(response, callId, context)
-  }
+  if (!response.ok) await settleRouterResponse(response, callId, context)
   const handle: unknown = await response.json().catch((error: unknown) => {
     if (error instanceof SyntaxError) return undefined
     throw error
