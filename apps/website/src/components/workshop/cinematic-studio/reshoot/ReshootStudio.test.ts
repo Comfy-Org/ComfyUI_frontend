@@ -25,14 +25,14 @@ describe.for(layouts)('Re-shoot in the $name layout', ({ component }) => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
   })
 
-  it('opens on the example result and keeps the camera locked until depth is analyzed', async () => {
+  it('opens on step 1 and unlocks aiming in step 2 once depth is analyzed', async () => {
     const user = setup(component)
 
     expect(
       screen.getByRole('button', { name: 'Example result', current: true })
     ).toBeInTheDocument()
-    await openCamera(user)
-    expect(screen.getByRole('slider', { name: /Azimuth/ })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /Step 2/ })).toBeDisabled()
+    expect(screen.queryByRole('slider', { name: /Azimuth/ })).toBeNull()
 
     await user.click(screen.getByTestId('reshoot-action'))
     expect(screen.getByTestId('reshoot-action')).toHaveTextContent(
@@ -40,6 +40,10 @@ describe.for(layouts)('Re-shoot in the $name layout', ({ component }) => {
     )
     await vi.advanceTimersByTimeAsync(3000)
 
+    expect(screen.getByRole('button', { name: /Step 2/ })).toHaveAttribute(
+      'aria-current',
+      'step'
+    )
     expect(screen.getByTestId('reshoot-action')).toHaveTextContent('Generate')
     await openCamera(user)
     expect(screen.getByRole('slider', { name: /Azimuth/ })).toBeEnabled()
