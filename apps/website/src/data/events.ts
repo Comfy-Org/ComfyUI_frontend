@@ -360,6 +360,27 @@ const events: readonly ComfyEvent[] = [
     }
   },
   {
+    id: 'dev-platform-comfy-router',
+    category: 'livestream',
+    organizer: 'comfy',
+    title: {
+      en: 'Comfy Developer Platform: Building with Comfy API & Comfy Router',
+      'zh-CN': 'Comfy 开发者平台：使用 Comfy API 与 Comfy Router 构建应用'
+    },
+    description: {
+      en: 'Deep Mehta joins hosts Allyson and Purz for a live look at building with the Comfy developer API and Comfy Router.',
+      'zh-CN':
+        'Deep Mehta 做客本场直播，与主持人 Allyson 和 Purz 一起现场演示如何使用 Comfy 开发者 API 与 Comfy Router 构建应用。'
+    },
+    location: { en: 'Online', 'zh-CN': '线上' },
+    dateLabel: {
+      en: 'October 1, 2026 · 10AM PT',
+      'zh-CN': '2026年10月1日 · 上午10点（PT）'
+    },
+    startDateTime: '2026-10-01T10:00:00-07:00',
+    liveVideoId: '3pBDHdgVD1E'
+  },
+  {
     id: 'nyc-creative-ai-september-forum',
     category: 'meetup',
     organizer: 'community',
@@ -388,10 +409,61 @@ const events: readonly ComfyEvent[] = [
       newTab: true
     },
     ctaLabel: { en: 'Register', 'zh-CN': '报名' },
-    media: eventImage('nyc-creative-ai-september-forum.png', {
-      en: 'ZeroSpace: NYC Creative AI September Forum',
-      'zh-CN': 'ZeroSpace：NYC Creative AI 九月论坛'
-    })
+    // TODO: temporarily self-hosted under public/images/events (the
+    // #NYCCreativeAI card Allyson attached on this PR, confirmed to show
+    // Flora/Daydream/ZeroSpace for the September forum) because this
+    // session has no upload access to media.comfy.org; migrate to the CDN
+    // and switch back to eventImage() when available.
+    media: {
+      type: 'image',
+      src: '/images/events/nyc-creative-ai-september-forum.png',
+      alt: {
+        en: 'NYC Creative AI, September 2026 — presented by Flora, Daydream, and ZeroSpace',
+        'zh-CN':
+          'NYC Creative AI 2026年9月论坛 — 由 Flora、Daydream 与 ZeroSpace 呈现'
+      }
+    }
+  },
+  {
+    id: 'dev-platform-oct-1',
+    category: 'livestream',
+    organizer: 'comfy',
+    // TODO: liveVideoId 3pBDHdgVD1E was given by Allyson on this PR's Slack
+    // thread for this Oct 1 livestream, but that same ID is already used by
+    // the Sept 15 `comfy-agent-ga` entry above. Flagging for confirmation
+    // which entry has the correct video ID rather than guessing which is
+    // wrong — left both as given.
+    title: {
+      en: 'Comfy Developer Platform: Building with Comfy API & Comfy Router',
+      'zh-CN': 'Comfy 开发者平台：使用 Comfy API 与 Comfy Router 构建应用'
+    },
+    description: {
+      en: 'Deep Mehta joins hosts Allyson and Purz to explore building with the Comfy Developer Platform, covering the Comfy API and Comfy Router.',
+      'zh-CN':
+        'Deep Mehta 做客本场直播，与主持人 Allyson 和 Purz 一起探讨如何使用 Comfy 开发者平台，涵盖 Comfy API 与 Comfy Router 的相关内容。'
+    },
+    location: { en: 'Online', 'zh-CN': '线上' },
+    // TODO: start time is a best guess (matches the usual 10AM PT slot for
+    // Comfy livestreams) — not shown in the promo clip this still was
+    // extracted from.
+    dateLabel: {
+      en: 'October 1, 2026 · 10AM PT',
+      'zh-CN': '2026年10月1日 · 上午10点（PT）'
+    },
+    startDateTime: '2026-10-01T10:00:00-07:00',
+    liveVideoId: '3pBDHdgVD1E',
+    // TODO: temporarily self-hosted under public/images/events (a still
+    // frame from the promo clip Allyson attached on this PR) because this
+    // session has no upload access to media.comfy.org; migrate to the CDN
+    // and switch to eventImage() when available.
+    media: {
+      type: 'image',
+      src: '/images/events/dev-platform-oct-1-still.jpg',
+      alt: {
+        en: 'Comfy Developer Platform: Building with Comfy API & Comfy Router livestream',
+        'zh-CN': 'Comfy 开发者平台直播：使用 Comfy API 与 Comfy Router 构建应用'
+      }
+    }
   },
   {
     id: 'sf-tech-week-tool-panel',
@@ -472,6 +544,88 @@ const events: readonly ComfyEvent[] = [
         en: 'LA Tech Week: ComfyUI Panel with TOOL, featuring Ian Sansavera (Runway) and Justin Offerman (ComfyUI), moderated by Dustin Callif (Tool)',
         'zh-CN':
           'LA Tech Week：与 TOOL 共同举办的 ComfyUI 圆桌讨论，嘉宾为 Ian Sansavera（Runway）和 Justin Offerman（ComfyUI），主持人为 Dustin Callif（Tool）'
+      }
+    }
+  },
+  {
+    id: 'machine-cinema-wip-salon',
+    category: 'meetup',
+    organizer: 'partner',
+    // TODO: date and time are still a best guess (luma.com is unreachable
+    // from this session) — confirm against https://luma.com/machine-tclv
+    // before merging. Location confirmed as Los Angeles from Allyson's
+    // Luma link-preview screenshot on this PR (comment #5819753977, whose
+    // title reads "Machine Cinema LA - Work in Progress Salon").
+    coords: { lat: 34.0522, lng: -118.2437 },
+    title: {
+      en: 'Machine Cinema: Work in Progress Salon',
+      'zh-CN': 'Machine Cinema：作品进程沙龙'
+    },
+    description: {
+      en: 'Comfy joins Machine Cinema for a Work in Progress Salon, where AI creators share in-progress projects with fellow creators and take audience Q&A.',
+      'zh-CN':
+        'Comfy 将参加 Machine Cinema 举办的作品进程沙龙，AI 创作者们在此分享正在进行中的项目，并接受观众提问。'
+    },
+    location: { en: 'Los Angeles, CA', 'zh-CN': '美国加州洛杉矶' },
+    dateLabel: {
+      en: 'October 8, 2026 · 6-9 PM PT',
+      'zh-CN': '2026年10月8日 · 下午6点至9点（PT）'
+    },
+    startDateTime: '2026-10-08T18:00:00-07:00',
+    endDateTime: '2026-10-08T21:00:00-07:00',
+    link: {
+      href: {
+        en: 'https://luma.com/machine-tclv?lm_source=embed',
+        'zh-CN': 'https://luma.com/machine-tclv?lm_source=embed'
+      },
+      newTab: true
+    },
+    ctaLabel: { en: 'RSVP', 'zh-CN': '报名' },
+    // TODO: temporarily self-hosted under public/images/events because this
+    // session has no upload access to media.comfy.org; migrate to the CDN
+    // and switch to eventImage() when available.
+    media: {
+      type: 'image',
+      src: '/images/events/machine-cinema-wip-salon.png',
+      alt: {
+        en: 'Machine Cinema: Work in Progress Salon poster',
+        'zh-CN': 'Machine Cinema：作品进程沙龙海报'
+      }
+    }
+  },
+  {
+    id: 'model-jam-sept-30',
+    category: 'livestream',
+    organizer: 'comfy',
+    // TODO: start time is a best guess (matches the usual 10AM PT slot for
+    // Comfy livestreams) — the YouTube live page is unreachable from this
+    // session to confirm the exact scheduled time.
+    title: {
+      en: 'Model Jam: Latest Video & Image Model Releases',
+      'zh-CN': 'Model Jam：最新视频与图像模型发布'
+    },
+    description: {
+      en: 'Comfy Creatives Rob, Chris, Julien, and Paul join host Allyson to jam on the latest video and image model releases.',
+      'zh-CN':
+        'Comfy Creatives 团队的 Rob、Chris、Julien 与 Paul 做客本场直播，与主持人 Allyson 一起体验最新的视频与图像模型发布。'
+    },
+    location: { en: 'Online', 'zh-CN': '线上' },
+    dateLabel: {
+      en: 'October 7, 2026 · 10AM PT',
+      'zh-CN': '2026年10月7日 · 上午10点（PT）'
+    },
+    startDateTime: '2026-10-07T10:00:00-07:00',
+    liveVideoId: '7V7Aazicx-s',
+    // TODO: temporarily self-hosted under public/images/events (the official
+    // event card) because this session has no upload access to
+    // media.comfy.org; migrate to the CDN and switch to eventImage() when
+    // available.
+    media: {
+      type: 'image',
+      src: '/images/events/model-jam-oct-7-still.jpg',
+      alt: {
+        en: 'Model Jam: Latest Video & Image Model Releases livestream',
+        'zh-CN': 'Model Jam：最新视频与图像模型发布直播'
       }
     }
   },

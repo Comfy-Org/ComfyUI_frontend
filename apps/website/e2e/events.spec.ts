@@ -689,8 +689,10 @@ test.describe('Events page — desktop @smoke', () => {
     const agendaIds = await rows.evaluateAll((nodes) =>
       nodes.map((node) => node.getAttribute('data-event-id'))
     )
-    expect([...agendaIds].sort()).toEqual(
-      expected.map((event) => event.id).sort()
+    expect(
+      [...agendaIds].sort((a, b) => (a ?? '').localeCompare(b ?? ''))
+    ).toEqual(
+      expected.map((event) => event.id).sort((a, b) => a.localeCompare(b))
     )
     await expect(typeFilter).toHaveValue(category)
 

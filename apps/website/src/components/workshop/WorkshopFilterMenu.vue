@@ -1,9 +1,15 @@
-<script setup lang="ts">
+<script setup lang="ts" generic="T extends string = UseCase">
 import { ChevronDown, ListFilter } from '@lucide/vue'
-import { computed, ref, useTemplateRef, watchEffect } from 'vue'
+import {
+  computed,
+  defineAsyncComponent,
+  ref,
+  useTemplateRef,
+  watchEffect
+} from 'vue'
 
 import { onClickOutside, useMediaQuery, useWindowSize } from '@vueuse/core'
-import { FocusScope } from 'reka-ui'
+import type { ComponentExposed } from 'vue-component-type-helpers'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -12,26 +18,31 @@ import type { UseCase } from '../../config/models-catalogue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import type { FacetSheetGroup } from './FacetSheet.vue'
-import FacetSheet from './FacetSheet.vue'
 
-export interface FacetMenuOption {
-  readonly value: UseCase
+export interface FacetMenuOption<T extends string = UseCase> {
+  readonly value: T
   readonly label: string
   readonly count: number
 }
 
+const WorkshopFilterPanel = defineAsyncComponent(
+  () => import('./WorkshopFilterPanel.vue')
+)
+
 const {
   useCaseOptions,
   resultCount,
+  kind = 'models',
   locale = 'en'
 } = defineProps<{
-  useCaseOptions: readonly FacetMenuOption[]
+  useCaseOptions: readonly FacetMenuOption<T>[]
   /** What the catalogue holds under the current choices, for the way out. */
   resultCount: number
+  kind?: 'models' | 'workflows'
   locale?: Locale
 }>()
 
-const useCases = defineModel<UseCase[]>('useCases', { required: true })
+const useCases = defineModel<T[]>('useCases', { required: true })
 
 const open = ref(false)
 // A dropdown anchored to a crowded toolbar leaves a phone no room, so there
@@ -46,11 +57,18 @@ const phoneBottom = computed(() => {
     windowHeight.value - (visualOffsetTop.value + visualHeight.value)
   )
 })
-const panel = useTemplateRef<HTMLElement>('panel')
+const menu = useTemplateRef<HTMLElement>('menu')
+const panel =
+  useTemplateRef<ComponentExposed<typeof WorkshopFilterPanel>>('panel')
 const trigger = useTemplateRef<HTMLButtonElement>('trigger')
-onClickOutside(panel, () => (open.value = false), {
-  ignore: ['[data-testid="workshop-filter"]']
-})
+onClickOutside(
+  () => {
+    const element: unknown = panel.value?.$el
+    return element instanceof HTMLElement ? element : menu.value
+  },
+  () => (open.value = false),
+  { ignore: ['[data-testid="workshop-filter"]'] }
+)
 
 watchEffect((onCleanup) => {
   if (!open.value || !isPhone.value) return
@@ -62,7 +80,12 @@ watchEffect((onCleanup) => {
 const groups = computed<FacetSheetGroup[]>(() => [
   {
     key: 'useCase',
-    label: t('workshop.launch.label', locale),
+    label: t(
+      kind === 'workflows'
+        ? 'workshop.catalogue.categories'
+        : 'workshop.launch.label',
+      locale
+    ),
     options: useCaseOptions,
     selected: useCases.value
   }
@@ -90,14 +113,19 @@ const sheetLabels = computed(() => ({
   noMatches: t('workshop.filter.noMatches', locale),
   applied: t('workshop.filter.applied', locale),
   clearAll: t('workshop.filter.clearAll', locale),
-  show: t('workshop.search.show', locale),
+  show: t(
+    kind === 'models'
+      ? 'workshop.search.show'
+      : 'workshop.catalogue.showWorkflows',
+    locale
+  ),
   close: t('workshop.search.close', locale),
   resize: t('workshop.filter.resize', locale)
 }))
 </script>
 
 <template>
-  <div class="relative" @keydown.escape="open = false">
+  <div ref="menu" class="relative" @keydown.escape="open = false">
     <button
       ref="trigger"
       type="button"
@@ -143,35 +171,19 @@ const sheetLabels = computed(() => ({
         data-testid="workshop-filter-backdrop"
         @click="open = false"
       />
-      <FocusScope
+      <WorkshopFilterPanel
         v-if="open"
-        as-child
-        :trapped="isPhone"
-        loop
-        @unmount-auto-focus.prevent="trigger?.focus()"
-      >
-        <div
-          ref="panel"
-          role="dialog"
-          :aria-label="t('workshop.filter.label', locale)"
-          :aria-modal="isPhone || undefined"
-          data-testid="workshop-filter-menu"
-          :style="{
-            bottom: phoneBottom !== undefined ? `${phoneBottom}px` : undefined
-          }"
-          class="z-50 flex flex-col overflow-y-auto border border-white/10 bg-site-dropdown shadow-2xl shadow-black/50 outline-none max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:rounded-t-3xl sm:absolute sm:top-full sm:right-0 sm:mt-2 sm:max-h-[75vh] sm:w-96 sm:max-w-[calc(100vw-2rem)] sm:rounded-2xl"
-          @keydown.escape.stop.prevent="open = false"
-        >
-          <FacetSheet
-            :groups
-            :labels="sheetLabels"
-            :result-count
-            @toggle="toggle"
-            @clear-all="clearAll"
-            @close="open = false"
-          />
-        </div>
-      </FocusScope>
+        ref="panel"
+        :groups
+        :labels="sheetLabels"
+        :result-count
+        :is-phone
+        :bottom="phoneBottom"
+        @toggle="toggle"
+        @clear-all="clearAll"
+        @close="open = false"
+        @restore-focus="trigger?.focus()"
+      />
     </Teleport>
   </div>
 </template>
