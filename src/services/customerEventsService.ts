@@ -169,9 +169,9 @@ export const useCustomerEventsService = () => {
       .map(([key, value]) => {
         const formattedKey = formatJsonKey(key)
         const formattedValue = formatJsonValue(value)
-        return `<strong>${formattedKey}:</strong> ${formattedValue}`
+        return `${formattedKey}: ${formattedValue}`
       })
-      .join('<br>')
+      .join('\n')
   }
 
   function formatAmount(amountMicros?: number) {

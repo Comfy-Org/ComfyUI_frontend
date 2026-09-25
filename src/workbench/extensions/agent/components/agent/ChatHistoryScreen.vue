@@ -7,7 +7,7 @@ import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
 import type { MenuItem } from '@/components/ui/menu/types'
-import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 
 import ChatHistorySelectButton from './ChatHistorySelectButton.vue'
 
@@ -139,26 +139,25 @@ function getSessionMenuItems(session: ChatSession): MenuItem[] {
 <template>
   <div class="flex h-full flex-col overflow-hidden">
     <div class="flex h-10 shrink-0 items-center gap-1 px-2">
-      <AccessibleTooltip
-        :label="t('agent.backToPreviousChat')"
+      <Tooltip
+        :config="t('agent.backToPreviousChat')"
         side="bottom"
-        :skip-delay-duration="0"
-        disable-hoverable-content
+        :delay-duration="300"
+        :ignore-non-keyboard-focus="false"
+        disable-closing-trigger
         :collision-padding="8"
       >
-        <template #trigger>
-          <Button
-            type="button"
-            variant="muted-textonly"
-            size="icon-sm"
-            :aria-label="t('agent.backToPreviousChat')"
-            class="size-6 shrink-0"
-            @click="emit('back')"
-          >
-            <span class="icon-[lucide--chevron-left] size-4 shrink-0" />
-          </Button>
-        </template>
-      </AccessibleTooltip>
+        <Button
+          type="button"
+          variant="muted-textonly"
+          size="icon-sm"
+          :aria-label="t('agent.backToPreviousChat')"
+          class="size-6 shrink-0"
+          @click="emit('back')"
+        >
+          <span class="icon-[lucide--chevron-left] size-4 shrink-0" />
+        </Button>
+      </Tooltip>
       <h2 class="m-0 text-xs font-normal text-muted-foreground">
         {{ t('agent.history') }}
       </h2>
@@ -206,26 +205,25 @@ function getSessionMenuItems(session: ChatSession): MenuItem[] {
               :failed="failedId === session.id"
               @select="pick(session)"
             />
-            <AccessibleTooltip
-              :label="t('agent.copyMarkdown')"
-              :skip-delay-duration="0"
-              disable-hoverable-content
+            <Tooltip
+              :config="t('agent.copyMarkdown')"
+              :delay-duration="300"
+              :ignore-non-keyboard-focus="false"
+              disable-closing-trigger
               :collision-padding="8"
             >
-              <template #trigger>
-                <Button
-                  type="button"
-                  variant="muted-textonly"
-                  size="icon-sm"
-                  class="shrink-0"
-                  :aria-label="t('agent.copyMarkdown')"
-                  :disabled="loadingId === session.id"
-                  @click="emit('copyMarkdown', session.id)"
-                >
-                  <span class="icon-[lucide--copy] size-3.5" />
-                </Button>
-              </template>
-            </AccessibleTooltip>
+              <Button
+                type="button"
+                variant="muted-textonly"
+                size="icon-sm"
+                class="shrink-0"
+                :aria-label="t('agent.copyMarkdown')"
+                :disabled="loadingId === session.id"
+                @click="emit('copyMarkdown', session.id)"
+              >
+                <span class="icon-[lucide--copy] size-3.5" />
+              </Button>
+            </Tooltip>
             <Menu
               :items="getSessionMenuItems(session)"
               side="bottom"

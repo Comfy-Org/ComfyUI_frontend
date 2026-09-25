@@ -65,22 +65,26 @@
             size="lg"
             class="w-64"
           />
-          <Button
+          <Tooltip
             v-if="showInviteButton"
-            v-tooltip="
+            :config="
               inviteTooltip
                 ? { value: inviteTooltip, showDelay: 0 }
                 : { value: $t('workspacePanel.inviteMember'), showDelay: 300 }
             "
-            variant="secondary"
-            size="lg"
-            :disabled="isInviteDisabled"
-            :aria-label="$t('workspacePanel.inviteMember')"
-            @click="handleInviteMember"
+            side="right"
           >
-            {{ $t('workspacePanel.invite') }}
-            <i class="pi pi-plus text-sm" />
-          </Button>
+            <Button
+              variant="secondary"
+              size="lg"
+              :disabled="isInviteDisabled"
+              :aria-label="$t('workspacePanel.inviteMember')"
+              @click="handleInviteMember"
+            >
+              {{ $t('workspacePanel.invite') }}
+              <i class="pi pi-plus text-sm" />
+            </Button>
+          </Tooltip>
           <WorkspaceMenuButton v-if="permissions.canAccessWorkspaceMenu" />
         </div>
       </div>
@@ -268,6 +272,7 @@ import { useSettingsHeaderCollapse } from '@/platform/settings/composables/useSe
 
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import WorkspaceMenuButton from '@/platform/workspace/components/dialogs/settings/WorkspaceMenuButton.vue'
 import MemberListItem from '@/platform/workspace/components/dialogs/settings/MemberListItem.vue'
 import MemberUpsellBanner from '@/platform/workspace/components/dialogs/settings/MemberUpsellBanner.vue'

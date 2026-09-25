@@ -15,23 +15,27 @@
       <span class="min-w-0 truncate text-sm text-base-foreground">
         {{ row.email }}
       </span>
-      <Button
+      <Tooltip
         v-if="row.url"
-        v-tooltip="{ value: copyLabel(row.id), showDelay: 300 }"
-        variant="muted-textonly"
-        size="icon-lg"
-        class="shrink-0"
-        :aria-label="copyLabel(row.id)"
-        @click="copyLink(row.id, row.url)"
+        :config="{ value: copyLabel(row.id), showDelay: 300 }"
       >
-        <i
-          :class="
-            copiedId === row.id
-              ? 'icon-[lucide--check] size-4'
-              : 'icon-[lucide--link] size-4'
-          "
-        />
-      </Button>
+        <Button
+          v-if="row.url"
+          variant="muted-textonly"
+          size="icon-lg"
+          class="shrink-0"
+          :aria-label="copyLabel(row.id)"
+          @click="copyLink(row.id, row.url)"
+        >
+          <i
+            :class="
+              copiedId === row.id
+                ? 'icon-[lucide--check] size-4'
+                : 'icon-[lucide--link] size-4'
+            "
+          />
+        </Button>
+      </Tooltip>
     </li>
   </ul>
 </template>
@@ -41,6 +45,7 @@ import { refAutoReset } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import { copyTextSilently } from '@/platform/workspace/utils/inviteLinks'
 import { cn } from '@comfyorg/tailwind-utils'
 

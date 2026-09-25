@@ -7,37 +7,42 @@
     @pointerdown.capture="openPreset = null"
   >
     <template #top>
-      <button
+      <Tooltip
         v-for="option in viewModeOptions"
         :key="option.value"
-        v-tooltip.bottom="tip(option.tooltip)"
-        type="button"
-        :class="actionClass(viewMode === option.value)"
-        :aria-pressed="viewMode === option.value"
-        :aria-label="option.label"
-        @click="setViewMode(option.value)"
+        :config="tip(option.tooltip)"
+        side="bottom"
       >
-        <i :class="cn('size-4', option.icon)" />
-        <span v-if="!compact">{{ option.label }}</span>
-      </button>
+        <button
+          type="button"
+          :class="actionClass(viewMode === option.value)"
+          :aria-pressed="viewMode === option.value"
+          :aria-label="option.label"
+          @click="setViewMode(option.value)"
+        >
+          <i :class="cn('size-4', option.icon)" />
+          <span v-if="!compact">{{ option.label }}</span>
+        </button>
+      </Tooltip>
       <div class="mx-1 h-5 w-px shrink-0 bg-interface-menu-stroke" />
-      <button
-        v-tooltip.bottom="tip(previewLabel)"
-        type="button"
-        :disabled="viewMode === 'object'"
-        :class="
-          cn(
-            actionClass(viewMode === 'camera' && previewVisible),
-            viewMode === 'object' && 'cursor-not-allowed opacity-40'
-          )
-        "
-        :aria-pressed="viewMode === 'camera' && previewVisible"
-        :aria-label="previewLabel"
-        @click="setPreviewVisible(!previewVisible)"
-      >
-        <i class="icon-[lucide--picture-in-picture-2] size-4" />
-        <span v-if="!compact">{{ $t('cameraAngle.preview') }}</span>
-      </button>
+      <Tooltip :config="tip(previewLabel)" side="bottom">
+        <button
+          type="button"
+          :disabled="viewMode === 'object'"
+          :class="
+            cn(
+              actionClass(viewMode === 'camera' && previewVisible),
+              viewMode === 'object' && 'cursor-not-allowed opacity-40'
+            )
+          "
+          :aria-pressed="viewMode === 'camera' && previewVisible"
+          :aria-label="previewLabel"
+          @click="setPreviewVisible(!previewVisible)"
+        >
+          <i class="icon-[lucide--picture-in-picture-2] size-4" />
+          <span v-if="!compact">{{ $t('cameraAngle.preview') }}</span>
+        </button>
+      </Tooltip>
       <span
         class="ml-auto min-w-0 truncate text-xs text-muted-foreground"
         :title="prompt"
@@ -96,6 +101,7 @@ import SelectContent from '@/components/ui/select/SelectContent.vue'
 import SelectItem from '@/components/ui/select/SelectItem.vue'
 import SelectTrigger from '@/components/ui/select/SelectTrigger.vue'
 import SelectValue from '@/components/ui/select/SelectValue.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import { useCameraAngle } from '@/composables/useCameraAngle'
 import {
   DISTANCE_TERMS,

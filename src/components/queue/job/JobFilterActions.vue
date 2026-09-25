@@ -13,14 +13,15 @@
     >
       <Menu>
         <template #trigger>
-          <Button
-            v-tooltip.top="filterTooltipConfig"
-            variant="secondary"
-            size="icon"
-            :aria-label="t('sideToolbar.queueProgressOverlay.filterJobs')"
-            icon="icon-[lucide--list-filter]"
-            :indicator="selectedWorkflowFilter !== 'all'"
-          />
+          <Tooltip :config="filterTooltipConfig" side="top">
+            <Button
+              variant="secondary"
+              size="icon"
+              :aria-label="t('sideToolbar.queueProgressOverlay.filterJobs')"
+              icon="icon-[lucide--list-filter]"
+              :indicator="selectedWorkflowFilter !== 'all'"
+            />
+          </Tooltip>
         </template>
         <MenuRadioGroup
           v-model="selectedWorkflowFilter"
@@ -29,26 +30,31 @@
       </Menu>
       <Menu>
         <template #trigger>
-          <Button
-            v-tooltip.top="sortTooltipConfig"
-            variant="secondary"
-            size="icon"
-            :aria-label="t('sideToolbar.queueProgressOverlay.sortJobs')"
-            icon="icon-[lucide--arrow-up-down]"
-            :indicator="selectedSortMode !== 'mostRecent'"
-          />
+          <Tooltip :config="sortTooltipConfig" side="top">
+            <Button
+              variant="secondary"
+              size="icon"
+              :aria-label="t('sideToolbar.queueProgressOverlay.sortJobs')"
+              icon="icon-[lucide--arrow-up-down]"
+              :indicator="selectedSortMode !== 'mostRecent'"
+            />
+          </Tooltip>
         </template>
         <MenuRadioGroup v-model="selectedSortMode" :options="sortOptions" />
       </Menu>
-      <Button
+      <Tooltip
         v-if="showAssetsAction"
-        v-tooltip.top="showAssetsTooltipConfig"
-        variant="secondary"
-        size="icon"
-        :aria-label="t('sideToolbar.queueProgressOverlay.showAssetsPanel')"
-        icon="icon-[comfy--image-ai-edit]"
-        @click="emit('showAssets')"
-      />
+        :config="showAssetsTooltipConfig"
+        side="top"
+      >
+        <Button
+          variant="secondary"
+          size="icon"
+          :aria-label="t('sideToolbar.queueProgressOverlay.showAssetsPanel')"
+          icon="icon-[comfy--image-ai-edit]"
+          @click="emit('showAssets')"
+        />
+      </Tooltip>
     </div>
   </div>
 </template>
@@ -61,6 +67,7 @@ import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
 import MenuRadioGroup from '@/components/ui/menu/MenuRadioGroup.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import { jobSortModes } from '@/composables/queue/useJobList'
 import type { JobSortMode } from '@/composables/queue/useJobList'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'

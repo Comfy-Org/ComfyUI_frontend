@@ -53,7 +53,7 @@ describe('UserSelectView', () => {
     mountView()
 
     expect(
-      screen.getByRole('combobox', { name: 'userSelect.existingUser:' })
+      screen.getByRole('combobox', { name: 'userSelect.selectUser' })
     ).toBeInTheDocument()
   })
 

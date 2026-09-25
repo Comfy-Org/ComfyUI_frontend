@@ -1,19 +1,23 @@
 <template>
   <div class="flex flex-col">
     <div class="show-export-formats relative">
-      <Button
-        v-tooltip.right="{
+      <Tooltip
+        :config="{
           value: $t('load3d.exportModel'),
           showDelay: 300
         }"
-        size="icon"
-        variant="textonly"
-        class="rounded-full"
-        :aria-label="$t('load3d.exportModel')"
-        @click="toggleExportFormats"
+        side="right"
       >
-        <i class="pi pi-download text-lg text-base-foreground" />
-      </Button>
+        <Button
+          size="icon"
+          variant="textonly"
+          class="rounded-full"
+          :aria-label="$t('load3d.exportModel')"
+          @click="toggleExportFormats"
+        >
+          <i class="pi pi-download text-lg text-base-foreground" />
+        </Button>
+      </Tooltip>
       <div
         v-show="showExportFormats"
         class="absolute top-0 left-12 rounded-lg bg-interface-menu-surface shadow-lg"
@@ -35,6 +39,8 @@
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
