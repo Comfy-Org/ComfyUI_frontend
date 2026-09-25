@@ -9,7 +9,7 @@ const DEFAULT_ICON = 'pi-bookmark-fill'
 const DEFAULT_COLOR = '#a1a1aa'
 
 vi.mock<unknown>(
-  import('primevue/selectbutton'), // eslint-disable-line primevue-removal/no-imports
+  import('primevue/selectbutton'), // oxlint-disable-line comfy/no-primevue-imports
 
   () => ({
     default: {

@@ -9,7 +9,7 @@
       :side-offset="18"
       :collision-padding="10"
       data-testid="builder-connect-output-popover"
-      class="data-[state=open]:data-[side=bottom]:animate-slideUpAndFade z-1001 w-80 rounded-xl border border-border-default bg-base-background shadow-interface will-change-[transform,opacity]"
+      class="z-1001 w-80 rounded-xl border border-border-default bg-base-background shadow-interface will-change-[transform,opacity] data-[side=bottom]:slide-in-from-top-2 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
     >
       <div class="flex h-12 items-center justify-between px-4">
         <h3 class="text-sm font-medium text-base-foreground">

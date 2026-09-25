@@ -1,4 +1,3 @@
-import type { ComfyApp } from '@/scripts/app'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -39,10 +38,7 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
   }
 }))
 
-vi.mock(import('@/i18n'), () => ({
-  t: (key: string) => key,
-  st: vi.fn((_key: string, fallback: string) => fallback)
-}))
+vi.mock(import('@/i18n'))
 
 const fetchApiMock = vi.mocked(api.fetchApi)
 
@@ -1212,7 +1208,4 @@ describe(assetService.getAssetsForNodeType, () => {
   })
 })
 
-vi.mock(import('@/scripts/app'), async () => {
-  const { fromPartial } = await import('@total-typescript/shoehorn')
-  return { app: fromPartial<ComfyApp>({}) }
-})
+vi.mock(import('@/scripts/app'))

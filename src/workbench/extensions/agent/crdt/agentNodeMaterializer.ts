@@ -74,15 +74,21 @@ export type MaterializableGraph = Pick<
  * @param subgraphDefinitions explicitly created definitions present in the
  * document. Root nodes typed by a definition id can only materialize once the
  * definition is registered on the root graph.
+ * @param pendingDefinitionIds definition ids whose bodies were deliberately
+ * not read but whose dependent nodes must remain pending.
  * @returns ids that received a new live node.
  */
 export function reconcileAgentAdapters(
   graph: MaterializableGraph,
-  subgraphDefinitions: ExportedSubgraph[] = []
+  subgraphDefinitions: ExportedSubgraph[] = [],
+  pendingDefinitionIds: ReadonlySet<string> = new Set()
 ): NodeId[] {
   return runMintPortsSuppressed(() =>
     useWidgetValueStore().withLocalDirtyTrackingSuppressed(() => {
       const pending = registerSubgraphDefinitions(graph, subgraphDefinitions)
+      for (const id of pendingDefinitionIds) {
+        if (!graph.rootGraph.subgraphs.has(id)) pending.add(id)
+      }
       return reconcile(graph, pending)
     })
   )
@@ -93,6 +99,26 @@ export function reconcileAgentAdapters(
  * a definition that keeps failing across reconcile frames is reported once.
  */
 const reportedDefinitionFailures = new WeakMap<LGraph, Set<string>>()
+
+/**
+ * Whether an id-only projection should pay to read a definition body.
+ *
+ * A failed definition remains absent from `rootGraph.subgraphs`, but retrying
+ * its unchanged body on every unrelated frame only repeats the deep copy and
+ * a failure whose telemetry is already deduplicated. Explicit callers that
+ * supply a fresh body to `reconcileAgentAdapters` still retry registration.
+ */
+export type SubgraphDefinitionReadState = 'registered' | 'failed' | 'missing'
+
+export function subgraphDefinitionReadState(
+  rootGraph: LGraph,
+  definitionId: string
+): SubgraphDefinitionReadState {
+  if (rootGraph.subgraphs.has(definitionId)) return 'registered'
+  if (reportedDefinitionFailures.get(rootGraph)?.has(definitionId))
+    return 'failed'
+  return 'missing'
+}
 
 /**
  * Register explicitly created subgraph definitions the root graph does not
@@ -368,6 +394,13 @@ function materialize(
     return rollback(cause)
   }
   if (!added) return rollback('LGraph.add returned no node')
+
+  // This is a rendering-layer materialization of the same logical node, not
+  // a content change: the record's CRDT reconcile baseline must survive it,
+  // or the next reconcile sees a node with no baseline at all and treats an
+  // unrelated local edit (e.g. a title set outside the doc) as unproven,
+  // replaying the doc's possibly-stale value over it.
+  added._state.titleReconcileBaseline = state.titleReconcileBaseline
 
   // Only report once the node this id now belongs to is actually live: a
   // failed add rolls the orphan back onto the id via `rollback()`/`restore()`,

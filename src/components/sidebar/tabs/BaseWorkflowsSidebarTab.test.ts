@@ -7,6 +7,7 @@ import { createI18n } from 'vue-i18n'
 
 import BaseWorkflowsSidebarTab from '@/components/sidebar/tabs/BaseWorkflowsSidebarTab.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import {
   useWorkflowStore,
   useWorkflowBookmarkStore
@@ -31,8 +32,7 @@ const {
   getSearchRoot,
   resetCapturedSearchRoot,
   mockExpandNode,
-  mockToggleNodeOnEvent,
-  mockWorkflowService
+  mockToggleNodeOnEvent
 } = vi.hoisted(() => {
   let capturedSearchRoot: TreeExplorerNode<ComfyWorkflow> | null = null
 
@@ -45,15 +45,7 @@ const {
       capturedSearchRoot = null
     },
     mockExpandNode: vi.fn(),
-    mockToggleNodeOnEvent: vi.fn(),
-    mockWorkflowService: {
-      openWorkflow: vi.fn().mockResolvedValue(undefined),
-      closeWorkflow: vi.fn().mockResolvedValue(undefined),
-      renameWorkflow: vi.fn().mockResolvedValue(true),
-      deleteWorkflow: vi.fn().mockResolvedValue(true),
-      insertWorkflow: vi.fn().mockResolvedValue(undefined),
-      duplicateWorkflow: vi.fn().mockResolvedValue(undefined)
-    }
+    mockToggleNodeOnEvent: vi.fn()
   }
 })
 
@@ -119,12 +111,7 @@ vi.mock<unknown>(import('@/composables/useTreeExpansion'), () => ({
   })
 }))
 
-vi.mock<unknown>(
-  import('@/platform/workflow/core/services/workflowService'),
-  () => ({
-    useWorkflowService: () => mockWorkflowService
-  })
-)
+vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
 const i18n = createI18n({
   legacy: false,
@@ -212,7 +199,7 @@ describe('BaseWorkflowsSidebarTab', () => {
   it('propagates failed workflow deletion to the tree', async () => {
     const workflow = createMockWorkflow('workflows/test.json')
     Object.assign(useWorkflowStore(), { workflows: [workflow] })
-    mockWorkflowService.deleteWorkflow.mockResolvedValueOnce(false)
+    vi.mocked(useWorkflowService()).deleteWorkflow.mockResolvedValueOnce(false)
 
     renderComponent()
     await userEvent.type(screen.getByRole('combobox'), 'test')

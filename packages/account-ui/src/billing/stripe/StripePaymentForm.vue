@@ -12,7 +12,7 @@
     </div>
     <div
       v-if="configurationError"
-      class="border-danger-background bg-danger-background/10 text-danger rounded-lg border px-3 py-2 text-sm"
+      class="rounded-lg border border-destructive-background bg-destructive-background/10 px-3 py-2 text-sm text-destructive-background"
     >
       {{ configurationError }}
     </div>
@@ -59,6 +59,7 @@
  * design system, no i18n runtime and no telemetry sink.
  */
 import type {
+  Appearance,
   Stripe,
   StripeAddressElement,
   StripeElements,
@@ -82,7 +83,8 @@ const {
   paymentMethodConfigurationId = '',
   isLoading = false,
   verificationPending = false,
-  canSubmit = true
+  canSubmit = true,
+  themeKey = ''
 } = defineProps<{
   publishableKey: string
   amountCents: number
@@ -96,6 +98,10 @@ const {
    *  primary, so the pay button steps back. */
   verificationPending?: boolean
   canSubmit?: boolean
+  /** Changes whenever the host switches theme, so the mounted Elements
+   *  re-read their appearance in place instead of keeping the colours
+   *  resolved at creation. */
+  themeKey?: string
 }>()
 
 const emit = defineEmits<{
@@ -234,7 +240,6 @@ onMounted(async () => {
     failElementInit()
     return
   }
-
   stripeElements.value = stripe.elements({
     mode: 'subscription',
     amount: amountCents,
@@ -245,47 +250,7 @@ onMounted(async () => {
     // this account's permission for it) simply never renders.
     setupFutureUsage: 'off_session',
     paymentMethodConfiguration: paymentMethodConfigurationId,
-    appearance: {
-      variables: {
-        // Selection (radio, selected label, accordion highlight) uses the
-        // theme-aware foreground rather than brand blue.
-        colorPrimary: resolveThemeColor('--base-foreground'),
-        colorBackground: resolveThemeColor('--base-background'),
-        colorText: resolveThemeColor('--base-foreground'),
-        colorTextSecondary: resolveThemeColor('--muted-foreground'),
-        colorDanger: resolveThemeColor('--destructive-background'),
-        // Same token as the pricing table's "Save 20%" pill, so all
-        // deal/discount badges share one accent.
-        colorSuccess: resolveThemeColor('--primary-background'),
-        fontFamily: getComputedStyle(document.body).fontFamily,
-        borderRadius: '10px',
-        spacingUnit: '5px'
-      },
-      rules: {
-        '.AccordionItem': {
-          backgroundColor: resolveThemeColor('--base-background'),
-          // Transparent (not none) so rows keep their size when the
-          // selected item paints its outline.
-          border: '1px solid transparent',
-          boxShadow: 'none'
-        },
-        '.AccordionItem--selected': {
-          borderColor: resolveThemeColor('--base-foreground')
-        },
-        '.Input': {
-          backgroundColor: resolveThemeColor('--input-surface'),
-          borderColor: resolveThemeColor('--border-default'),
-          boxShadow: 'none'
-        },
-        '.Input:focus': {
-          borderColor: resolveThemeColor('--primary-background'),
-          boxShadow: `0 0 0 1px ${resolveThemeColor('--primary-background')}`
-        },
-        '.Label': {
-          fontWeight: '500'
-        }
-      }
-    }
+    appearance: resolveAppearance(paymentElementTarget.value)
   })
   mountPaymentElement(stripeElements.value, paymentElementTarget.value)
   if (addressElementTarget.value) {
@@ -308,6 +273,23 @@ watch([() => amountCents, () => currency], ([amount, nextCurrency]) => {
       })
     })
 })
+
+watch(
+  () => themeKey,
+  () => {
+    if (!stripeElements.value || !paymentElementTarget.value) return
+    stripeElements.value
+      .update({ appearance: resolveAppearance(paymentElementTarget.value) })
+      .catch(() => {
+        reportPhase({
+          phase: 'payment_element_failed',
+          element: 'payment',
+          element_phase: 'update'
+        })
+      })
+  },
+  { flush: 'post' }
+)
 
 onBeforeUnmount(() => {
   isUnmounted = true
@@ -363,10 +345,60 @@ async function submit() {
   }
 }
 
-function resolveThemeColor(variable: string) {
+/**
+ * Stripe takes appearance as concrete values, so every token is resolved
+ * against the form's own theme root, where the host's theme class applies.
+ */
+function resolveAppearance(themeRoot: HTMLElement): Appearance {
+  const resolveThemeColor = (variable: string) =>
+    resolveColorIn(themeRoot, variable)
+  return {
+    variables: {
+      // Selection (radio, selected label, accordion highlight) uses the
+      // theme-aware foreground rather than brand blue.
+      colorPrimary: resolveThemeColor('--base-foreground'),
+      colorBackground: resolveThemeColor('--base-background'),
+      colorText: resolveThemeColor('--base-foreground'),
+      colorTextSecondary: resolveThemeColor('--muted-foreground'),
+      colorDanger: resolveThemeColor('--destructive-background'),
+      // Same token as the pricing table's "Save 20%" pill, so all
+      // deal/discount badges share one accent.
+      colorSuccess: resolveThemeColor('--primary-background'),
+      fontFamily: getComputedStyle(themeRoot).fontFamily,
+      borderRadius: '10px',
+      spacingUnit: '5px'
+    },
+    rules: {
+      '.AccordionItem': {
+        backgroundColor: resolveThemeColor('--base-background'),
+        // Transparent (not none) so rows keep their size when the
+        // selected item paints its outline.
+        border: '1px solid transparent',
+        boxShadow: 'none'
+      },
+      '.AccordionItem--selected': {
+        borderColor: resolveThemeColor('--base-foreground')
+      },
+      '.Input': {
+        backgroundColor: resolveThemeColor('--input-surface'),
+        borderColor: resolveThemeColor('--border-default'),
+        boxShadow: 'none'
+      },
+      '.Input:focus': {
+        borderColor: resolveThemeColor('--primary-background'),
+        boxShadow: `0 0 0 1px ${resolveThemeColor('--primary-background')}`
+      },
+      '.Label': {
+        fontWeight: '500'
+      }
+    }
+  }
+}
+
+function resolveColorIn(themeRoot: HTMLElement, variable: string) {
   const probe = document.createElement('span')
   probe.style.color = `var(${variable})`
-  document.body.append(probe)
+  themeRoot.append(probe)
   const color = getComputedStyle(probe).color
   probe.remove()
   return color

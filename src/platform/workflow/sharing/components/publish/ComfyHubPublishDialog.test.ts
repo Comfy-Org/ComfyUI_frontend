@@ -8,11 +8,12 @@ import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { ComfyHubPublishFormData } from '@/platform/workflow/sharing/types/comfyHubTypes'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 
 const mockToastAdd = vi.hoisted(() => vi.fn())
 
 vi.mock<unknown>(
-  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
+  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
   () => ({
     useToast: () => ({ add: mockToastAdd })
   })
@@ -31,7 +32,6 @@ const mockCachePublishPrefill = vi.hoisted(() => vi.fn())
 const mockGetCachedPrefill = vi.hoisted(() => vi.fn())
 const mockSubmitToComfyHub = vi.hoisted(() => vi.fn())
 const mockGetPublishStatus = vi.hoisted(() => vi.fn())
-const mockRenameWorkflow = vi.hoisted(() => vi.fn())
 const mockFormDataHolder = vi.hoisted(
   (): { value: ComfyHubPublishFormData | null } => ({ value: null })
 )
@@ -102,15 +102,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(
-  import('@/platform/workflow/core/services/workflowService'),
-  () => ({
-    useWorkflowService: () => ({
-      renameWorkflow: mockRenameWorkflow.mockResolvedValue(true),
-      saveWorkflow: vi.fn()
-    })
-  })
-)
+vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
 function setActiveWorkflow(workflow: Partial<LoadedComfyWorkflow>) {
   useWorkflowStore().activeWorkflow = fromPartial<LoadedComfyWorkflow>(workflow)
@@ -159,7 +151,6 @@ describe('ComfyHubPublishDialog', () => {
     })
     mockFetchProfile.mockResolvedValue(null)
     mockSubmitToComfyHub.mockResolvedValue(undefined)
-    mockRenameWorkflow.mockResolvedValue(undefined)
     if (mockFormDataHolder.value) mockFormDataHolder.value.name = ''
     mockGetCachedPrefill.mockReturnValue(null)
     mockGetPublishStatus.mockResolvedValue({
@@ -279,7 +270,7 @@ describe('ComfyHubPublishDialog', () => {
     expect(mockSubmitToComfyHub).toHaveBeenCalledWith(
       expect.objectContaining({ name: 'Published title' })
     )
-    expect(mockRenameWorkflow).not.toHaveBeenCalled()
+    expect(useWorkflowService().renameWorkflow).not.toHaveBeenCalled()
   })
 
   it('does not close when publish submission fails', async () => {

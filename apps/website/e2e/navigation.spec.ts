@@ -36,6 +36,52 @@ const TOP_LEVEL_LABELS = [
   'Company'
 ] as const
 
+const RETIRED_BADGE_PANELS = [
+  {
+    section: 'Products',
+    badged: 'Comfy Agent',
+    bare: [{ label: 'Comfy CLI', href: '/cli' }]
+  },
+  {
+    section: 'Community',
+    badged: 'Events',
+    bare: [
+      { label: 'Affiliates', href: '/affiliates' },
+      { label: 'Learning', href: '/learning' }
+    ]
+  }
+] as const
+
+const BADGE_PALETTES = [
+  {
+    link: 'Developer Platform',
+    label: 'BETA',
+    text: '--color-primary-warm-white',
+    fill: '--color-primary-comfy-plum'
+  },
+  {
+    link: 'Comfy Agent',
+    label: 'NEW',
+    text: '--color-primary-comfy-ink',
+    fill: '--color-primary-comfy-yellow'
+  }
+] as const
+
+async function expectRetiredBadges(
+  panel: Locator,
+  { badged, bare }: (typeof RETIRED_BADGE_PANELS)[number]
+) {
+  await expect(
+    panel.getByRole('link', { name: badged }).getByText('NEW', { exact: true })
+  ).toBeVisible()
+  for (const { label, href } of bare) {
+    const link = panel.getByRole('link', { name: label })
+    await expect(link).toBeVisible()
+    await expect(link).toHaveAttribute('href', href)
+    await expect(link.getByText('NEW', { exact: true })).toHaveCount(0)
+  }
+}
+
 test.describe('Desktop navigation @smoke', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/')
@@ -122,6 +168,119 @@ test.describe('Desktop dropdown @interaction', () => {
     }
   })
 
+  for (const { reducedMotion, autoplay } of [
+    { reducedMotion: 'no-preference', autoplay: true },
+    { reducedMotion: 'reduce', autoplay: false }
+  ] as const) {
+    test(`Products featured video ${autoplay ? 'autoplays' : 'does not autoplay'} with ${reducedMotion} motion`, async ({
+      page
+    }) => {
+      await page.emulateMedia({ reducedMotion })
+      const nav = page.getByRole('navigation', { name: 'Main navigation' })
+      await nav
+        .getByTestId('desktop-nav-links')
+        .getByRole('button', { name: 'Products' })
+        .hover()
+
+      const card = nav.getByTestId('nav-dropdown').getByRole('link', {
+        name: 'Explore the Gemini Omni 1.1 Flash release'
+      })
+      await expect(card).toHaveAttribute('href', '/gemini-omni')
+      const video = card.locator('video')
+      await expect(video).toHaveAttribute(
+        'src',
+        'https://media.comfy.org/website/gemini-omni/card-5.webm'
+      )
+      await expect(video).toHaveJSProperty('autoplay', autoplay)
+      await expect(video).toHaveJSProperty('loop', false)
+    })
+  }
+
+  test('Community featured card links to the Product Photography tutorial', async ({
+    page
+  }) => {
+    const nav = page.getByRole('navigation', { name: 'Main navigation' })
+    await nav
+      .getByTestId('desktop-nav-links')
+      .getByRole('button', { name: 'Community' })
+      .hover()
+
+    const card = nav
+      .getByTestId('nav-dropdown')
+      .getByRole('link', { name: 'Watch the Product Photography demo' })
+    await expect(card).toHaveAttribute(
+      'href',
+      '/learning/ads/product-photography'
+    )
+    await expect(
+      card.getByRole('img', { name: 'Product Photography workflow demo image' })
+    ).toBeVisible()
+  })
+
+  for (const panel of RETIRED_BADGE_PANELS) {
+    test(`${panel.section} dropdown keeps NEW on ${panel.badged} and drops it from the retired entries`, async ({
+      page
+    }) => {
+      const nav = page.getByRole('navigation', { name: 'Main navigation' })
+      const desktopLinks = nav.getByTestId('desktop-nav-links')
+      await desktopLinks.getByRole('button', { name: panel.section }).hover()
+
+      await expectRetiredBadges(nav.getByTestId('nav-dropdown'), panel)
+    })
+  }
+
+  test('BETA badges paint plum behind warm-white while NEW stays ink on yellow', async ({
+    page
+  }) => {
+    const nav = page.getByRole('navigation', { name: 'Main navigation' })
+    const desktopLinks = nav.getByTestId('desktop-nav-links')
+    await desktopLinks.getByRole('button', { name: 'Products' }).hover()
+    const dropdown = nav.getByTestId('nav-dropdown')
+
+    for (const { link, label, text, fill } of BADGE_PALETTES) {
+      const badge = dropdown
+        .getByRole('link', { name: link })
+        .getByText(label, { exact: true })
+      await expect(badge).toBeVisible()
+
+      const expected = await page.evaluate(
+        ([textToken, fillToken]) => {
+          const probe = document.createElement('span')
+          document.body.append(probe)
+          const resolve = (name: string) => {
+            probe.style.color = `var(${name})`
+            return getComputedStyle(probe).color
+          }
+          const resolved = {
+            text: resolve(textToken),
+            fill: resolve(fillToken)
+          }
+          probe.remove()
+          return resolved
+        },
+        [text, fill] as const
+      )
+
+      await expect
+        .poll(() =>
+          badge.evaluate((el) => {
+            let host: Element | null = el
+            while (
+              host &&
+              getComputedStyle(host, '::before').backgroundColor ===
+                'rgba(0, 0, 0, 0)'
+            )
+              host = host.parentElement
+            return {
+              text: getComputedStyle(el).color,
+              fill: host && getComputedStyle(host, '::before').backgroundColor
+            }
+          })
+        )
+        .toEqual(expected)
+    }
+  })
+
   test('moving mouse away closes dropdown', async ({ page }) => {
     const nav = page.getByRole('navigation', { name: 'Main navigation' })
     const desktopLinks = nav.getByTestId('desktop-nav-links')
@@ -199,6 +358,19 @@ test.describe('Mobile menu @mobile', () => {
       menu.getByRole('link', { name: 'Pricing' }).getByText('NEW')
     ).toHaveCount(0)
   })
+
+  for (const panel of RETIRED_BADGE_PANELS) {
+    test(`${panel.section} drill-down keeps NEW on ${panel.badged} and drops it from the retired entries`, async ({
+      page
+    }) => {
+      await page.getByRole('button', { name: 'Toggle menu' }).click()
+
+      const menu = page.getByRole('dialog')
+      await menu.getByRole('button', { name: panel.section }).click()
+
+      await expectRetiredBadges(menu, panel)
+    })
+  }
 
   test('clicking section with subitems drills down and back works', async ({
     page

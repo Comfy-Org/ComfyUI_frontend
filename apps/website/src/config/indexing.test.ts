@@ -39,6 +39,7 @@ describe('indexing policy', () => {
     '/privacy-policy',
     '/privacy-policy/',
     '/zh-CN/privacy-policy',
+    '/ja/privacy-policy/',
     '/terms-of-service',
     '/zh-CN/terms-of-service/',
     '/payment/success',
