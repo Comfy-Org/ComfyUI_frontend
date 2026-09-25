@@ -1136,8 +1136,8 @@ export class LGraphNode
       }
     }
 
-    if (!info.title && this.constructor.title) {
-      this.title = this.constructor.title
+    if (!info.title) {
+      this.title = this.constructor.title ?? ''
     }
 
     this.inputs = this.inputs.map((input) =>
