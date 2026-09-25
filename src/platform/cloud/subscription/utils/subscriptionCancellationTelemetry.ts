@@ -1,3 +1,4 @@
+import { isAnnualDuration } from '@/platform/cloud/subscription/utils/planDuration'
 import type { SubscriptionCancellationMetadata } from '@/platform/telemetry/types'
 import type {
   SubscriptionDuration,
@@ -22,7 +23,7 @@ export function getSubscriptionCancellationMetadata({
     source: 'cancel_plan_menu',
     current_tier: tier?.toLowerCase(),
     ...(duration
-      ? { cycle: duration === 'ANNUAL' ? 'yearly' : 'monthly' }
+      ? { cycle: isAnnualDuration(duration) ? 'yearly' : 'monthly' }
       : {}),
     ...(effectiveEndDate ? { end_date: effectiveEndDate } : {})
   }
