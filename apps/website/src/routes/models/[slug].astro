@@ -25,6 +25,7 @@ const { model } = page
     model.name
   )}
   ogImage={model.thumbnailUrl}
+  ogImageAlt={model.thumbnailUrl && `${model.name} example output`}
   noindex
 >
   <ModelsPage slug={model.slug} workflowId={model.workflowId} client:load>
