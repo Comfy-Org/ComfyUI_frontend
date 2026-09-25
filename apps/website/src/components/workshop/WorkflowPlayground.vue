@@ -216,7 +216,7 @@ function start() {
     class="grid gap-8 lg:grid-cols-12"
   >
     <section
-      class="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4 lg:col-span-5"
+      class="flex min-w-0 flex-col rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4 lg:col-span-5"
       aria-labelledby="workflow-inputs-heading"
     >
       <form class="flex min-h-full flex-col" @submit.prevent="start">
@@ -242,7 +242,8 @@ function start() {
           </p>
         </div>
         <div
-          class="mt-auto space-y-3 border-t border-transparency-white-t8 p-3"
+          class="sticky bottom-0 z-10 mt-auto space-y-3 rounded-b-2xl border-t border-transparency-white-t8 bg-page/85 p-3 backdrop-blur-sm"
+          data-testid="workflow-run-footer"
         >
           <p
             v-if="admissionPaused"
