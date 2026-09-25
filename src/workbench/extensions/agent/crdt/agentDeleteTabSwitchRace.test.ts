@@ -11,10 +11,9 @@
  * - Locally, deleting a node removes it from the canvas and the node store
  *   immediately (`LGraph.remove()` -> `nodeDataStore.deleteNode()`), but never
  *   touches the follower's Y.Doc, which mirrors the SERVER's state.
- * - A tab (re)activation rebinds the projection and syncs the live graph from
- *   the whole doc, recreating any doc node with no live counterpart. A node
- *   whose human delete is still pending must be skipped by that sync, or it
- *   reappears until the delete's effect lands.
+ * - A tab (re)activation keeps the projection bound and applies only what
+ *   the doc collected meanwhile, so a node whose human delete is still
+ *   pending is not recreated from the doc before the delete's effect lands.
  *
  * This test drives the real `opSender`, `AgentCrdtProjection` and
  * `FollowerDoc`, forcing the suspend and the resubscribe deterministically
@@ -34,7 +33,6 @@ import type { GraphOperation } from './graphOperations'
 import { mintWireOps } from './opEnvelope'
 import type { BatchOutcome, OpsResultView } from './opSender'
 import { createOpSender } from './opSender'
-import { collectPendingLocalEdits } from './pendingLocalEdits'
 
 class DummyNode extends LGraphNode {
   constructor() {
@@ -107,19 +105,7 @@ function setupRaceUntilReturn() {
     baseVersion: () => frameSeq,
     onBatchSettled: (outcome) => settled.push(outcome)
   })
-  const projection = new AgentCrdtProjection(
-    () => graph,
-    {},
-    {
-      pendingEdits: (workflowId) =>
-        collectPendingLocalEdits(
-          sender
-            .pendingOps()
-            .filter((batch) => batch.workflowId === workflowId)
-            .flatMap((batch) => batch.ops)
-        )
-    }
-  )
+  const projection = new AgentCrdtProjection(() => graph)
   projection.bind(WORKFLOW, follower)
 
   let opSequence = 0
@@ -193,12 +179,12 @@ function setupRaceUntilReturn() {
   expect(settled.map((outcome) => outcome.state)).toEqual(['acknowledged'])
   expect(sender.pending()).toBe(1)
 
-  // The user returns: the follower rebinds the projection, syncs the live
-  // graph from the doc, resubscribes, runs the eager abort check and resumes
-  // the sender. The held delete goes out to the same workflow.
+  // The user returns: the follower binds the same follower again, applies
+  // what was collected meanwhile, resubscribes, runs the eager abort check
+  // and resumes the sender. The held delete goes out to the same workflow.
   boundWorkflow = WORKFLOW
   projection.bind(WORKFLOW, follower)
-  projection.syncFromDoc(WORKFLOW)
+  projection.applyCollected(WORKFLOW)
   expect(graph.getNodeById(toNodeId(1))).toBeNull()
   sender.abortIfUnbound()
   sender.resume()

@@ -9,12 +9,12 @@ Proposed
 Amended 2026-09-24 by
 [FE-2504](https://linear.app/comfyorg/issue/FE-2504/agentcrdt-remove-store-first-remote-apply-and-every-reconciliation):
 the sender-side hold (suspend, resume, `pendingOps`) is unchanged. The
-"rebind reconcile" this ADR guarded no longer exists; on tab return the
-follower runs `LiveGraphApplier.syncFromDoc`, an additive catch-up that
-creates or updates document nodes and links and removes nothing. The
-`LocalIntent` port now feeds that catch-up's skip set. `pendingOpLedger` was
-deleted; the sender's pending ops and confirmed-but-undrained deletes are the
-intent source. References to the reconcile and to `pendingOpLedger` below are
+"rebind reconcile" this ADR guarded no longer exists: on tab return the
+follower applies only the document changes collected while the tab was
+inactive (`AgentCrdtProjection.applyCollected`), so a live node with a pending
+human `delete_node` is never re-created and no `LocalIntent` skip set is
+needed. `pendingOpLedger` and `PendingLocalEdits` were deleted. References to
+the reconcile, to `pendingOpLedger`, and to `LocalIntent` below are
 historical.
 
 ## Context
@@ -61,12 +61,9 @@ Distinguish a paused subscription from a lost one, and hold rather than drop.
   the follower skips the abort for the remembered workflow and resumes once
   the subscribe has actually left the transport, either synchronously or from
   the later `doc_subscribed` acknowledgement; a refusal still aborts.
-- `opSender` exposes `pendingOps()`; `AgentCrdtProjection` takes an optional
-  `LocalIntent` port and its catch-up (`LiveGraphApplier.syncFromDoc`) skips a
-  document node with a pending human `delete_node`, including that node's
-  incident links. An acknowledged delete stays pending until the document no
-  longer holds the node. The port is the seam a pending `add_node` or
-  `set_widget` guard plugs into.
+- `opSender` exposes `pendingOps()` for the sender's own bookkeeping. The
+  projection no longer consults it (historical: it fed a `LocalIntent` skip
+  set for a whole-document catch-up that no longer runs).
 
 Alternatives considered:
 

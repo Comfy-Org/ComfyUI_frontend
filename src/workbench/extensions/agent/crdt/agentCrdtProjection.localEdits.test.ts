@@ -11,10 +11,10 @@ import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedGraph } from '@/lib/litegraph/src/types/serialisation'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { graphScopeOf } from '@/types/graphScopeId'
+import { toNodeId } from '@/types/nodeId'
 
 import { AgentCrdtProjection } from './agentCrdtProjection'
 import { FollowerDoc } from './followerDoc'
-import { NO_PENDING_LOCAL_EDITS } from './pendingLocalEdits'
 
 class TestSource extends LGraphNode {
   static override title = 'Test Source'
@@ -79,24 +79,16 @@ function nodeIds(graph: LGraph) {
 /**
  * A follower bound to the doc minted from the graph's own save. `tabReturn`
  * does what leaving the workflow tab and coming back does to the follower:
- * unbind, bind again over the same doc, sync the live graph from the whole
- * doc, and deliver the host's catch-up for the follower's state vector.
+ * bind again over the same doc, apply anything collected meanwhile, and
+ * deliver the host's catch-up for the follower's state vector.
  */
-function bindFollower(
-  graph: LGraph,
-  saved: ISerialisedGraph,
-  pendingAddedNodeIds: ReadonlySet<string> = new Set()
-) {
+function bindFollower(graph: LGraph, saved: ISerialisedGraph) {
   const host = mint(toWorkflowJson(saved), CATALOG)
   const follower = new FollowerDoc()
-  const projection = new AgentCrdtProjection(() => graph, undefined, {
-    pendingEdits: () => ({
-      ...NO_PENDING_LOCAL_EDITS,
-      addedNodeIds: pendingAddedNodeIds
-    })
-  })
+  let liveGraph: LGraph | null = graph
+  const projection = new AgentCrdtProjection(() => liveGraph)
   let seq = 0
-  const deliver = (update: Uint8Array): void => {
+  const deliver = (update: Uint8Array, applied = true): void => {
     follower.applyRemoteUpdate(update)
     expect(
       projection.applyFrame({
@@ -106,30 +98,36 @@ function bindFollower(
         actor: 'agent:comfy:host',
         opIds: []
       })
-    ).toMatchObject({ applied: true })
+    ).toMatchObject({ applied })
   }
   projection.bind(WORKFLOW_ID, follower)
   deliver(Y.encodeStateAsUpdate(host))
 
   /** The host applies the ops and echoes the delta, as the relay fans it out. */
-  const hostApplies = (ops: Op[]): void => {
+  const hostApplies = (ops: Op[], applied = true): void => {
     const before = Y.encodeStateVector(host)
     const { outcomes } = applyOps(host, ops, CATALOG)
     expect(outcomes.map((outcome) => outcome.outcome)).toEqual(['applied'])
-    deliver(Y.encodeStateAsUpdate(host, before))
+    deliver(Y.encodeStateAsUpdate(host, before), applied)
   }
+  /** The host refuses the ops; the projection reverts what they claimed. */
+  const hostRejects = (ops: Op[]) => projection.revertRejected(WORKFLOW_ID, ops)
   const tabReturn = (): void => {
-    projection.unbind(WORKFLOW_ID)
     projection.bind(WORKFLOW_ID, follower)
-    projection.syncFromDoc(WORKFLOW_ID)
+    projection.applyCollected(WORKFLOW_ID)
     deliver(Y.encodeStateAsUpdate(host, follower.stateVector()))
+  }
+  const withoutGraph = (fn: () => void): void => {
+    liveGraph = null
+    fn()
+    liveGraph = graph
   }
   const destroy = () => {
     projection.destroy()
     follower.destroy()
     host.destroy()
   }
-  return { hostApplies, tabReturn, destroy }
+  return { hostApplies, hostRejects, tabReturn, withoutGraph, destroy }
 }
 
 function addNodeOp(node: LGraphNode, widgetsValues: unknown[]): Op {
@@ -161,37 +159,43 @@ beforeEach(() => {
 })
 
 describe('AgentCrdtProjection after a tab return', () => {
-  it.for([
-    { name: 'keeps', pending: true },
-    { name: 'removes', pending: false }
-  ])(
-    '$name a node the user added whose add_node has not reached the doc when the add is $pending',
-    ({ pending }) => {
-      const { graph, source } = buildLiveGraph()
-      const saved = structuredClone(graph.serialize())
-      const added = createRegisteredNode('TestSource')
-      graph.add(added)
-      added.pos = [300, 20]
-      const { tabReturn, destroy } = bindFollower(
-        graph,
-        saved,
-        pending ? new Set([String(added.id)]) : new Set()
-      )
-      expect(nodeIds(graph).live).toEqual([String(source.id), String(added.id)])
+  it('keeps a node the user added whose add_node has not reached the doc', () => {
+    const { graph, source } = buildLiveGraph()
+    const saved = structuredClone(graph.serialize())
+    const added = createRegisteredNode('TestSource')
+    graph.add(added)
+    added.pos = [300, 20]
+    const { tabReturn, destroy } = bindFollower(graph, saved)
+    expect(nodeIds(graph).live).toEqual([String(source.id), String(added.id)])
 
-      tabReturn()
+    tabReturn()
 
-      const expected = pending
-        ? [String(source.id), String(added.id)]
-        : [String(source.id)]
-      expect(nodeIds(graph)).toEqual({
-        live: expected,
-        records: expected,
-        serialized: expected
-      })
-      destroy()
-    }
-  )
+    const expected = [String(source.id), String(added.id)]
+    expect(nodeIds(graph)).toEqual({
+      live: expected,
+      records: expected,
+      serialized: expected
+    })
+    destroy()
+  })
+
+  it('applies a frame delivered while no graph could take it once one is back', () => {
+    const { graph, source } = buildLiveGraph()
+    const { hostApplies, withoutGraph, tabReturn, destroy } = bindFollower(
+      graph,
+      structuredClone(graph.serialize())
+    )
+    const agentNode = createRegisteredNode('TestSource')
+    agentNode.id = toNodeId(77)
+
+    withoutGraph(() => hostApplies([addNodeOp(agentNode, [20])], false))
+    expect(nodeIds(graph).live).toEqual([String(source.id)])
+
+    tabReturn()
+
+    expect(nodeIds(graph).live).toEqual([String(source.id), '77'])
+    destroy()
+  })
 
   it.for([
     {
@@ -257,6 +261,83 @@ describe('AgentCrdtProjection after a tab return', () => {
       rejectedByHost.id,
       accepted.id
     ])
+    destroy()
+  })
+})
+
+describe('AgentCrdtProjection after the host rejects a human batch', () => {
+  it('removes the node whose add_node was refused and nothing else', () => {
+    const { graph, source } = buildLiveGraph()
+    const { hostRejects, destroy } = bindFollower(
+      graph,
+      structuredClone(graph.serialize())
+    )
+    const refused = createRegisteredNode('TestSource')
+    graph.add(refused)
+    const kept = createRegisteredNode('TestNote')
+    graph.add(kept)
+
+    expect(hostRejects([addNodeOp(refused, [20])])).toEqual([])
+
+    expect(nodeIds(graph).live).toEqual([String(source.id), String(kept.id)])
+    destroy()
+  })
+
+  it('restores the node whose delete_node was refused with its document widgets', () => {
+    const { graph, source } = buildLiveGraph()
+    source.widgets![0].value = 55
+    const { hostRejects, destroy } = bindFollower(
+      graph,
+      structuredClone(graph.serialize())
+    )
+    graph.remove(source)
+    expect(nodeIds(graph).live).toEqual([])
+
+    expect(
+      hostRejects([
+        {
+          op: 'delete_node',
+          op_id: 'human-delete',
+          actor: HUMAN_ACTOR,
+          base_version: 1,
+          stamp: [1, HUMAN_ACTOR],
+          node_id: source.id,
+          removed_links: []
+        }
+      ])
+    ).toEqual([source.id])
+
+    expect(nodeIds(graph).live).toEqual([String(source.id)])
+    expect(graph.getNodeById(source.id)?.widgets?.[0]?.value).toBe(55)
+    destroy()
+  })
+
+  it('puts back only the widget whose set_widget was refused', () => {
+    const { graph, source } = buildLiveGraph()
+    const { hostRejects, destroy } = bindFollower(
+      graph,
+      structuredClone(graph.serialize())
+    )
+    const other = createRegisteredNode('TestSource')
+    graph.add(other)
+    source.widgets![0].value = 99
+    other.widgets![0].value = 99
+
+    hostRejects([
+      {
+        op: 'set_widget',
+        op_id: 'human-set-steps',
+        actor: HUMAN_ACTOR,
+        base_version: 1,
+        stamp: [1, HUMAN_ACTOR],
+        node_id: source.id,
+        widget: 'steps',
+        value: 99
+      }
+    ])
+
+    expect(source.widgets![0].value).toBe(20)
+    expect(other.widgets![0].value).toBe(99)
     destroy()
   })
 })

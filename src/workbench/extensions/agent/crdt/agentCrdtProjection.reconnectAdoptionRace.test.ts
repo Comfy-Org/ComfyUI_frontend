@@ -232,12 +232,10 @@ describe('AgentCrdtProjection keeps a hand-wired autogrow link connected', () =>
     ])
 
     // A same-session reload (`window.app.loadGraphData()`) while the
-    // follower stays subscribed/live: rebuilds the graph from its own
-    // serialization, then the follower's next reconcile pass runs again
-    // without ever unbinding or resubscribing.
+    // follower stays subscribed/live rebuilds the graph from its own
+    // serialization; no follower pass runs over it afterwards.
     const serialized = structuredClone(graph.serialize())
     withConfiguringGraph(() => graph.configure(serialized))
-    projection.syncFromDoc(WORKFLOW_ID)
 
     expect(readSinkSlots(graph, sink.id)).toEqual(afterHandWire)
   })

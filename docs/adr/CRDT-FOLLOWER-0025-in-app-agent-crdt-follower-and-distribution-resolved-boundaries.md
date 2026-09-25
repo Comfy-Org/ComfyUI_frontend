@@ -106,19 +106,24 @@ one applier, and it is not in the frontend.
 - **One frame is one change.** The applier brackets each frame in the
   canvas's `emitBeforeChange`/`emitAfterChange`, so a remote batch is one undo
   entry and flips `isModified` once, exactly like a multi-step human edit.
-- **Catch-up makes the live graph match the document, sparing the local
-  human's in-flight edits.** On subscribe, tab return, or a sequence gap the
-  host resends the document; `LiveGraphApplier.syncFromDoc` creates or updates
-  every document node and link and removes the live nodes and links the
-  document lacks. The only exceptions are the local human's own ops the
-  document has not reflected yet (`PendingLocalEdits`: in-flight batches from
-  `opSender.pendingOps()` plus acknowledged ops whose echo frame has not
-  arrived, exposed to the projection as `LocalIntent`). A pending add keeps its
-  node, a pending delete stays deleted, a pending widget write keeps its value,
-  and a pending connect or disconnect keeps its link state, so the
-  result-to-effect window can neither resurrect nor undo a human edit. A
-  `doc_reset` clears the graph (`graph.clear()` under the remote source) and
-  replays.
+- **Nothing sweeps the live graph against the document.** Every frame is
+  applied as the changes it made to the document, recorded by
+  `DocChangeCollector` from the follower doc's Yjs events. While no graph can
+  take a frame (the workflow's tab is inactive, or the graph has not loaded)
+  the collector keeps accumulating; on the active edge, or when the graph
+  appears, `AgentCrdtProjection.applyCollected` applies exactly that
+  accumulated delta and nothing else. A live node, title, or widget value the
+  document never wrote about is never touched, so the local human's in-flight
+  edits need no skip list. A `doc_reset` is the one whole-document path: it
+  clears the graph (`graph.clear()` under the remote source) and the follower
+  doc, then replays.
+- **A refused human batch is put back from the document, register by
+  register.** When `doc_ops_result` reports `ok: false`, the follower reverts
+  only the ops the host did not apply: `changesForRejectedOps` reads each
+  refused op's node, widget, or link key back out of the document and the
+  applier settles just those keys (`AgentCrdtProjection.revertRejected`,
+  actor `agent-revert`). Ops the host did apply arrive as an echo frame and
+  are dropped as such.
 - **Layout stays its own frontend-owned Y.Doc**
   ([CRDT-LAYOUT-0003](CRDT-LAYOUT-0003-crdt-layout-intent-and-local-measurement.md)).
   `pos`, pan/zoom, live drags, and groups do not go in the shared semantic doc.
@@ -240,10 +245,12 @@ guard.
   as remote, which is correct; but a host that ever coalesces actors would
   defeat the check.
 - Widget "locally dirty" protection was removed with the store-first layer and
-  nothing replaces it: a catch-up `syncFromDoc` overwrites a live widget value
-  with the document's while a human edit's op is still in flight. If that
-  window matters in practice, the fix is in `LiveGraphApplier.syncFromDoc`
-  (skip widgets with pending own `set_widget` ops), not in the store.
+  nothing replaces it. Only a frame that writes the same widget register can
+  overwrite a live value while a human edit's op is still in flight; the
+  document then resolves both writes last-writer-wins and the human's echo
+  restores nothing if it lost. A page reload still replays the whole document
+  over an empty graph, so a field outside the op vocabulary (node color) reverts
+  there.
 - The largest distribution risk is unchanged: accidental cloud coupling in the
   same-origin `/ws` transport. Boundary tests plus at least one
   browser-observable E2E per shipping topology are required.

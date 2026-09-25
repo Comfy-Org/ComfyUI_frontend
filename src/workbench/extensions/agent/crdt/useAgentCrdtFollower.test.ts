@@ -9,7 +9,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref, shallowRef } from 'vue'
 import type { Ref } from 'vue'
-import * as Y from 'yjs'
+import type { Op } from '@comfyorg/comfy-multi-player'
 
 import { render } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
@@ -25,7 +25,6 @@ import type { DocNodeDelta, FrameOutcome } from './agentCrdtProjection'
 import type { DocFrameTransport } from './docFrameClient'
 import type { GraphOperation } from './graphOperations'
 import type { BatchOutcome, OpSenderDeps } from './opSender'
-import type { PendingLocalEdits } from './pendingLocalEdits'
 
 const bridgeState = vi.hoisted(() => {
   class FakeBridge extends EventTarget {
@@ -70,13 +69,13 @@ const projectionState = vi.hoisted(() => {
     NO_NODES,
     notApplied,
     applied,
-    intent: null as {
-      pendingEdits(workflowId: string): PendingLocalEdits
-    } | null,
     bind: vi.fn(),
     unbind: vi.fn(),
     applyFrame: vi.fn((_update: unknown): FrameOutcome => applied()),
-    syncFromDoc: vi.fn((_workflowId: string): NodeId[] => []),
+    applyCollected: vi.fn((_workflowId: string): NodeId[] => []),
+    revertRejected: vi.fn(
+      (_workflowId: string, _ops: readonly Op[]): NodeId[] => []
+    ),
     clearForReset: vi.fn(),
     discardPending: vi.fn((_workflowId: string): DocNodeDelta => NO_NODES),
     destroy: vi.fn()
@@ -126,20 +125,11 @@ vi.mock<unknown>(import('./docFrameClient'), () => ({
 
 vi.mock<unknown>(import('./agentCrdtProjection'), () => ({
   AgentCrdtProjection: class {
-    constructor(
-      _getGraph: unknown,
-      _deps: unknown,
-      intent: {
-        pendingEdits(workflowId: string): PendingLocalEdits
-      }
-    ) {
-      projectionState.intent = intent
-    }
-
     bind = projectionState.bind
     unbind = projectionState.unbind
     applyFrame = projectionState.applyFrame
-    syncFromDoc = projectionState.syncFromDoc
+    applyCollected = projectionState.applyCollected
+    revertRejected = projectionState.revertRejected
     clearForReset = projectionState.clearForReset
     discardPending = projectionState.discardPending
     destroy = projectionState.destroy
@@ -255,7 +245,8 @@ describe('useAgentCrdtFollower', () => {
     projectionState.applyFrame
       .mockReset()
       .mockReturnValue(projectionState.applied())
-    projectionState.syncFromDoc.mockReset().mockReturnValue([])
+    projectionState.applyCollected.mockReset().mockReturnValue([])
+    projectionState.revertRejected.mockReset().mockReturnValue([])
   })
 
   it('records only the length of an outbound frame that is not a JSON object', async () => {
@@ -937,7 +928,7 @@ describe('useAgentCrdtFollower', () => {
       dispatchFrame('doc_update', update)
 
       expect(projectionState.applyFrame).toHaveBeenCalledExactlyOnceWith(update)
-      expect(projectionState.syncFromDoc).not.toHaveBeenCalled()
+      expect(projectionState.applyCollected).not.toHaveBeenCalled()
       expect(status().outcomes.applied).toBe(1)
       unmount()
     })
@@ -955,17 +946,17 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
-    it('syncs from the doc once the graph appears, without waiting for another frame', async () => {
+    it('applies the collected changes once the graph appears, without waiting for another frame', async () => {
       const graph = shallowRef<LGraph | null>(null)
       const { unmount } = mountFollower('wf-1', true, () => graph.value)
 
       dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })
-      expect(projectionState.syncFromDoc).not.toHaveBeenCalled()
+      expect(projectionState.applyCollected).not.toHaveBeenCalled()
 
       graph.value = fakeGraph
       await nextTick()
 
-      expect(projectionState.syncFromDoc).toHaveBeenCalledExactlyOnceWith(
+      expect(projectionState.applyCollected).toHaveBeenCalledExactlyOnceWith(
         'wf-1'
       )
       unmount()
@@ -989,7 +980,7 @@ describe('useAgentCrdtFollower', () => {
       })
       expect(onMaterialized).not.toHaveBeenCalled()
 
-      projectionState.syncFromDoc.mockReturnValue([toNodeId(3)])
+      projectionState.applyCollected.mockReturnValue([toNodeId(3)])
       graph.value = fakeGraph
       await nextTick()
 
@@ -1001,21 +992,21 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
-    it('does not sync for a graph that appears while the target is inactive', async () => {
+    it('does not apply for a graph that appears while the target is inactive', async () => {
       const graph = shallowRef<LGraph | null>(null)
       const { unmount } = mountFollower('wf-1', false, () => graph.value)
 
       graph.value = fakeGraph
       await nextTick()
 
-      expect(projectionState.syncFromDoc).not.toHaveBeenCalled()
+      expect(projectionState.applyCollected).not.toHaveBeenCalled()
       unmount()
     })
 
-    it('syncs when the target is activated after the graph became ready', async () => {
+    it('applies the collected changes when the target is activated after the graph became ready', async () => {
       // The other readiness ordering: the graph arrives while inactive, so the
       // `getGraph` watcher correctly skips it. Activation does not change the
-      // graph identity, so nothing re-triggers that watcher -- the sync has to
+      // graph identity, so nothing re-triggers that watcher -- the apply has to
       // happen where the active binding is established.
       const graph = shallowRef<LGraph | null>(null)
       const { unmount, isTargetActive } = mountFollower(
@@ -1026,12 +1017,12 @@ describe('useAgentCrdtFollower', () => {
 
       graph.value = fakeGraph
       await nextTick()
-      expect(projectionState.syncFromDoc).not.toHaveBeenCalled()
+      expect(projectionState.applyCollected).not.toHaveBeenCalled()
 
       isTargetActive.value = true
       await nextTick()
 
-      expect(projectionState.syncFromDoc).toHaveBeenCalledWith('wf-1')
+      expect(projectionState.applyCollected).toHaveBeenCalledWith('wf-1')
       unmount()
     })
 
@@ -1230,28 +1221,34 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('re-syncs the live graph to the doc when the host rejects a human batch', async () => {
+  it('reverts only the ops the host rejected from a human batch', async () => {
     const { unmount, enqueue } = mountFollower('wf-1')
-    enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    enqueue([
+      { op: 'set_widget', node_id: '2', widget: 'steps', value: 3 },
+      { op: 'delete_node', node_id: '1', removed_links: [] }
+    ])
     await Promise.resolve()
     const [, , ops] = clientState.sendOps.mock.calls[0]
-    projectionState.syncFromDoc.mockClear()
 
     dispatchFrame('doc_ops_result', {
       workflowId: 'wf-1',
       ok: false,
-      applied: [],
+      applied: [ops[0].op_id],
       skipped: [],
-      failed: { index: 0, op_id: ops[0].op_id, code: 'unknown_node' }
+      failed: { index: 1, op_id: ops[1].op_id, code: 'unknown_node' }
     })
 
-    expect(projectionState.syncFromDoc).toHaveBeenCalledExactlyOnceWith('wf-1')
+    expect(projectionState.revertRejected).toHaveBeenCalledExactlyOnceWith(
+      'wf-1',
+      [ops[1]]
+    )
+    expect(projectionState.applyCollected).not.toHaveBeenCalled()
     expect(telemetryState.reportError).toHaveBeenCalledWith(
       expect.any(Error),
       expect.objectContaining({
         errorType: 'agent_crdt_human_ops_rejected',
         context: expect.objectContaining({
-          opId: ops[0].op_id,
+          opId: ops[1].op_id,
           code: 'unknown_node'
         })
       })
@@ -1725,30 +1722,6 @@ describe('useAgentCrdtFollower', () => {
         expect.any(String),
         [expect.objectContaining({ op: 'delete_node', node_id: '2' })]
       )
-      unmount()
-    })
-
-    it('keeps a human delete pending for the full sync until the doc no longer holds the node', async () => {
-      const { unmount, enqueue } = mountWriter('wf-1')
-      const intent = projectionState.intent!
-      const doc = new Y.Doc()
-      doc.getMap('nodes').set('1', new Y.Map())
-      bridge().follower.doc = doc
-      const pendingDeletes = (workflowId: string) => [
-        ...intent.pendingEdits(workflowId).deletedNodeIds
-      ]
-
-      enqueue([deleteNode('1')])
-      expect(pendingDeletes('wf-1')).toEqual(['1'])
-      expect(pendingDeletes('wf-2')).toEqual([])
-
-      await Promise.resolve()
-      ackSent(0)
-      expect(await settledStates()).toEqual(['acknowledged'])
-      expect(pendingDeletes('wf-1')).toEqual(['1'])
-
-      doc.getMap('nodes').delete('1')
-      expect(pendingDeletes('wf-1')).toEqual([])
       unmount()
     })
 

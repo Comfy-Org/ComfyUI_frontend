@@ -43,8 +43,6 @@ import { readDocSlotNames } from './liveGraphApplier'
 import { createOpCoalescer } from './opCoalescer'
 import { createOpSender } from './opSender'
 import type { OpsResultView } from './opSender'
-import type { PendingLocalEdits } from './pendingLocalEdits'
-import { collectPendingLocalEdits, docReflects } from './pendingLocalEdits'
 
 export { apiTransport, STALE_AFTER_MS, SUBSCRIBE_CATCHUP_GRACE_MS }
 
@@ -326,10 +324,6 @@ function startAgentCrdtFollower(
   )
   const tabId = createUuidv4()
   const ownActor = (): string => `human:${userId() ?? 'anonymous'}:${tabId}`
-  // Human ops the host has applied but whose effect frame has not yet reached
-  // the doc. Still pending for a full sync, so the result-to-effect window
-  // can neither resurrect a deleted node nor drop an added one.
-  let acknowledgedOps: Op[] = []
   const sender = createOpSender({
     sendOps: (target, tab, ops) => client.sendOps(target, tab, ops),
     onOpsResult(listener) {
@@ -355,35 +349,27 @@ function startAgentCrdtFollower(
     baseVersion: () => bridge.lastSequence,
     onBatchSettled: (outcome) => {
       recordDevEvent('human_ops_settled', outcome)
-      if (outcome.state !== 'acknowledged') return
-      const applied = new Set(outcome.result.applied)
-      acknowledgedOps.push(...outcome.ops.filter((op) => applied.has(op.op_id)))
-      if (outcome.result.ok) return
+      if (outcome.state !== 'acknowledged' || outcome.result.ok) return
       const workflowId =
         outcome.result.workflowId ?? bridge.subscribedWorkflowId
       reportRejectedHumanOps(workflowId, outcome.ops, outcome.result)
-      // The rejected edits are no longer pending, so the doc is the graph's
-      // whole truth again: put the live graph back on it.
-      if (workflowId !== null) syncAndReportPending(workflowId)
+      if (workflowId === null) return
+      const applied = new Set(outcome.result.applied)
+      const rejected = outcome.ops.filter((op) => !applied.has(op.op_id))
+      reportMaterialized(
+        workflowId,
+        projection.revertRejected(workflowId, rejected)
+      )
     }
   })
-  const pendingHumanEdits = (workflowId: string): PendingLocalEdits => {
-    const doc = bridge.follower.doc
-    acknowledgedOps = acknowledgedOps.filter((op) => !docReflects(doc, op))
-    const inFlight = sender
-      .pendingOps()
-      .filter((batch) => batch.workflowId === workflowId)
-      .flatMap((batch) => batch.ops)
-    return collectPendingLocalEdits([...acknowledgedOps, ...inFlight])
-  }
-  const projection = new AgentCrdtProjection(getGraph, applierDeps, {
-    pendingEdits: pendingHumanEdits
-  })
+  const projection = new AgentCrdtProjection(getGraph, applierDeps)
   const coalescer = createOpCoalescer(sender.admit, sender.flush)
 
   const pendingLiveNodeIds = new Set<NodeId>()
-  const syncAndReportPending = (workflowId: string): void => {
-    const materialized = projection.syncFromDoc(workflowId)
+  const reportMaterialized = (
+    workflowId: string,
+    materialized: readonly NodeId[]
+  ): void => {
     emitPendingMaterializations(
       workflowId,
       undefined,
@@ -391,6 +377,9 @@ function startAgentCrdtFollower(
       pendingLiveNodeIds,
       events
     )
+  }
+  const applyCollected = (workflowId: string): void => {
+    reportMaterialized(workflowId, projection.applyCollected(workflowId))
   }
   const incrementOutcome = (
     key: 'received' | 'applied' | 'appliedLive' | 'skipped' | 'reset'
@@ -509,7 +498,6 @@ function startAgentCrdtFollower(
     lastFrameType.value = event.type
     lifecycle.clearStaleProbe()
     pendingLiveNodeIds.clear()
-    acknowledgedOps = []
     recordDevEvent(
       'doc_reset',
       event instanceof CustomEvent ? (event.detail ?? null) : null
@@ -530,7 +518,6 @@ function startAgentCrdtFollower(
       workflowId === subscribedWorkflowId.value
     ) {
       updatesApplied.value = 0
-      acknowledgedOps = []
       projection.discardPending(workflowId)
       projection.bind(workflowId, bridge.follower)
     }
@@ -620,13 +607,11 @@ function startAgentCrdtFollower(
   // second -- cannot be caught here: `getGraph` does not change when activity
   // flips, and even if this watcher also took `isTargetActive` as a source it
   // was created before the binding watcher below, so it would run first and
-  // still see no subscribed workflow. Activation is therefore reconciled at
-  // the bind site instead, once the binding actually exists.
+  // still see no subscribed workflow. Activation therefore applies what was
+  // collected at the bind site instead, once the binding actually exists.
   watch(getGraph, (graph) => {
     const bound = subscribedWorkflowId.value
-    if (graph && bound !== null && isTargetActive.value) {
-      syncAndReportPending(bound)
-    }
+    if (graph && bound !== null && isTargetActive.value) applyCollected(bound)
   })
   const rebindProjection = (next: string | null): void => {
     const current = subscribedWorkflowId.value
@@ -678,15 +663,20 @@ function startAgentCrdtFollower(
     sender.abortIfUnbound()
   }
 
+  // A tab switch keeps the projection bound: whatever the doc collects while
+  // the tab is away is applied on return, instead of the live graph being
+  // rebuilt from the whole doc over the human's edits.
   const deactivateTarget = (
     next: string | null,
     previousWorkflowId: string | null
   ): void => {
     if (next !== null) initialBind = false
-    rebindProjection(null)
-    if (next !== null && next === previousWorkflowId)
+    if (next !== null && next === previousWorkflowId) {
       holdOpsForInactiveTab(next)
-    else retarget(null)
+      return
+    }
+    rebindProjection(null)
+    retarget(null)
   }
 
   const restorePersistedTarget = (justActivated: boolean): void => {
@@ -701,14 +691,14 @@ function startAgentCrdtFollower(
     recordDevEvent('rebind', { workflowId: persisted })
     rebindProjection(persisted)
     retarget(persisted)
-    if (justActivated) syncAndReportPending(persisted)
+    if (justActivated) applyCollected(persisted)
   }
 
   const activateTarget = (next: string, justActivated: boolean): void => {
     initialBind = false
     rebindProjection(next)
     retarget(next)
-    if (justActivated) syncAndReportPending(next)
+    if (justActivated) applyCollected(next)
   }
 
   watch(
@@ -718,8 +708,8 @@ function startAgentCrdtFollower(
       previous: [string | null | undefined, boolean | undefined] | undefined
     ) => {
       // Only the inactive->active edge, and never the `immediate` first run
-      // (`previous` is undefined there), so a plain mount or retarget keeps its
-      // existing "reconcile on frame or on graph readiness" behaviour.
+      // (`previous` is undefined there): a plain mount or retarget has no
+      // collected changes to apply, the graph watcher covers readiness.
       const justActivated = active && previous?.[1] === false
       lifecycle.clearForRetarget()
       connected.value = false

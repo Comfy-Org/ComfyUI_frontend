@@ -1,3 +1,5 @@
+import type { Op } from '@comfyorg/comfy-multi-player'
+
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { NodeId } from '@/types/nodeId'
 
@@ -11,21 +13,11 @@ import type {
   LiveGraphApplierDeps,
   RemoteApplyContext
 } from './liveGraphApplier'
-import type { PendingLocalEdits } from './pendingLocalEdits'
-import { NO_PENDING_LOCAL_EDITS } from './pendingLocalEdits'
+import { changesForRejectedOps } from './rejectedOpChanges'
 
 interface BoundTarget {
   follower: FollowerDoc
   collector: DocChangeCollector
-}
-
-export interface LocalIntent {
-  /** The local human's edits the document has not yet reflected. */
-  pendingEdits(workflowId: string): PendingLocalEdits
-}
-
-const NO_LOCAL_INTENT: LocalIntent = {
-  pendingEdits: () => NO_PENDING_LOCAL_EDITS
 }
 
 /** Document node entries one frame added and removed. */
@@ -61,13 +53,14 @@ export class AgentCrdtProjection {
 
   constructor(
     private readonly getGraph: () => LGraph | null,
-    deps: Omit<LiveGraphApplierDeps, 'getGraph'> = {},
-    private readonly intent: LocalIntent = NO_LOCAL_INTENT
+    deps: Omit<LiveGraphApplierDeps, 'getGraph'> = {}
   ) {
     this.applier = new LiveGraphApplier({ ...deps, getGraph })
   }
 
+  /** Binding the same follower again keeps its collected, unapplied changes. */
   bind(workflowId: string, follower: FollowerDoc): void {
+    if (this.targets.get(workflowId)?.follower === follower) return
     this.unbind(workflowId)
     this.targets.set(workflowId, {
       follower,
@@ -84,41 +77,49 @@ export class AgentCrdtProjection {
 
   /**
    * Applies one delivered frame's changes to the live graph. Without a graph
-   * the frame is only consumed: `syncFromDoc` rebuilds from the whole document
-   * once one appears, so nothing is lost by taking the changes now.
+   * the changes stay collected for `applyCollected` once one appears.
    */
   applyFrame(update: DocUpdate): FrameOutcome {
     const target = this.targets.get(update.workflowId)
     if (!target) return { applied: false, nodes: EMPTY_DELTA }
+    if (!this.getGraph())
+      return { applied: false, nodes: docNodeDelta(target.collector.peek()) }
     const changes = target.collector.take()
-    const nodes = docNodeDelta(changes)
-    if (!this.getGraph()) return { applied: false, nodes }
-    const { createdNodeIds } = this.applier.applyChanges(
-      target.follower.doc,
-      changes,
-      frameContext(update)
-    )
-    this.reportMaterialized(update.workflowId, createdNodeIds)
-    return { applied: true, nodes, createdNodeIds }
+    const createdNodeIds = this.apply(update.workflowId, target, changes, {
+      actor: update.actor ?? 'agent-remote',
+      opIds: update.opIds?.filter((id) => id.length > 0) ?? []
+    })
+    return { applied: true, nodes: docNodeDelta(changes), createdNodeIds }
   }
 
   /**
-   * Brings the live graph up to the bound document in full: used when the
-   * graph appears after frames were already delivered, or the tab returns to
-   * the followed workflow.
+   * Applies the changes collected while no graph could take them: frames
+   * delivered before the graph loaded, or while its tab was inactive.
    * @returns ids of nodes created live on this pass.
    */
-  syncFromDoc(workflowId: string): NodeId[] {
+  applyCollected(workflowId: string): NodeId[] {
     const target = this.targets.get(workflowId)
     if (!target || !this.getGraph()) return []
-    target.collector.discard()
-    const { createdNodeIds } = this.applier.syncFromDoc(
-      target.follower.doc,
-      { actor: 'agent-sync', opIds: [] },
-      this.intent.pendingEdits(workflowId)
-    )
-    this.reportMaterialized(workflowId, createdNodeIds)
-    return createdNodeIds
+    return this.apply(workflowId, target, target.collector.take(), {
+      actor: 'agent-collected',
+      opIds: []
+    })
+  }
+
+  /**
+   * Puts the registers a rejected human batch claimed back the way the
+   * document has them. Only those registers are touched: the rejection says
+   * nothing about the rest of the live graph.
+   * @returns ids of nodes created live on this pass.
+   */
+  revertRejected(workflowId: string, ops: readonly Op[]): NodeId[] {
+    const target = this.targets.get(workflowId)
+    if (!target || ops.length === 0 || !this.getGraph()) return []
+    const changes = changesForRejectedOps(target.follower.doc, ops)
+    return this.apply(workflowId, target, changes, {
+      actor: 'agent-revert',
+      opIds: ops.map((op) => op.op_id)
+    })
   }
 
   /** Explicit lineage reset only: the document was replaced, so is the graph. */
@@ -138,18 +139,23 @@ export class AgentCrdtProjection {
       this.unbind(workflowId)
   }
 
-  private reportMaterialized(
+  private apply(
     workflowId: string,
-    nodeIds: readonly NodeId[]
-  ): void {
-    if (nodeIds.length === 0) return
-    recordDevEvent('agent_node_adapters_materialized', { workflowId, nodeIds })
-  }
-}
-
-function frameContext(update: DocUpdate): RemoteApplyContext {
-  return {
-    actor: update.actor ?? 'agent-remote',
-    opIds: update.opIds?.filter((id) => id.length > 0) ?? []
+    target: BoundTarget,
+    changes: FrameChanges,
+    context: RemoteApplyContext
+  ): NodeId[] {
+    const { createdNodeIds } = this.applier.applyChanges(
+      target.follower.doc,
+      changes,
+      context
+    )
+    if (createdNodeIds.length > 0) {
+      recordDevEvent('agent_node_adapters_materialized', {
+        workflowId,
+        nodeIds: createdNodeIds
+      })
+    }
+    return createdNodeIds
   }
 }

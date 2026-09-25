@@ -12,7 +12,9 @@ import { SYNCED_NODE_FIELDS } from './liveGraphApplier'
  * Collects what the Y observers on one follower document report between two
  * `take()` calls, in the shape the applier consumes. Observers fire
  * synchronously inside `applyRemoteUpdate`, so the frame that delivered an
- * update sees exactly that update's changes.
+ * update sees exactly that update's changes. Changes stay collected until a
+ * graph is there to take them, so a frame delivered before the graph loads is
+ * applied once it does.
  */
 export class DocChangeCollector {
   private readonly nodes = new Map<string, NodeChange>()
@@ -29,14 +31,19 @@ export class DocChangeCollector {
     this.linksMap.observe(this.onLinksChanged)
   }
 
-  /** Returns and clears everything collected so far. */
-  take(): FrameChanges {
-    const changes: FrameChanges = {
+  /** Returns everything collected so far without clearing it. */
+  peek(): FrameChanges {
+    return {
       nodes: new Map(this.nodes),
       widgets: new Map(this.widgets),
       resyncNodes: new Set(this.resyncNodes),
       links: new Set(this.links)
     }
+  }
+
+  /** Returns and clears everything collected so far. */
+  take(): FrameChanges {
+    const changes = this.peek()
     this.discard()
     return changes
   }

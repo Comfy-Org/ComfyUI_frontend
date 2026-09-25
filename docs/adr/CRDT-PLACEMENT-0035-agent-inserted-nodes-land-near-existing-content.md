@@ -80,12 +80,12 @@ scope as the rest of the frame, so the layout store records the move under the
 remote actor and nothing mints it back.
 
 Eligibility is "created by this pass". A node the frame only updated, or
-recreated because its document `type` changed, is not moved. Catch-up
-(`syncFromDoc`) uses the same `#placeBatch` for the nodes it creates: a client
-that returns to a tab and finds nodes inserted while it was away places them
-exactly as it would have had it received them live. A fresh client replaying
-the whole document onto an empty canvas has no existing content and receives
-no offset.
+recreated because its document `type` changed, is not moved. Applying the
+changes collected while a tab was inactive (`applyCollected`) uses the same
+`#placeBatch` for the nodes it creates: a client that returns to a tab and
+finds nodes inserted while it was away places them exactly as it would have
+had it received them live. A fresh client replaying the whole document onto an
+empty canvas has no existing content and receives no offset.
 
 ### Batch granularity
 

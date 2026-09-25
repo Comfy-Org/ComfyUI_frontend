@@ -1,4 +1,4 @@
-import { applyOps, mint } from '@comfyorg/comfy-multi-player'
+import { applyOps } from '@comfyorg/comfy-multi-player'
 import type { Op, WidgetCatalog } from '@comfyorg/comfy-multi-player'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
@@ -14,7 +14,7 @@ import type { ComfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { toNodeId } from '@/types/nodeId'
 
-import { DocChangeCollector } from './docChangeCollector'
+import { followedDoc } from './__fixtures__/followedDoc'
 import { LiveGraphApplier } from './liveGraphApplier'
 
 const appState = vi.hoisted(() => ({
@@ -103,7 +103,7 @@ describe('LiveGraphApplier with the real change tracker', () => {
   it('records one undo entry holding the pre-frame graph for a frame of several operations', async () => {
     const graph = new LGraph()
     appState.rootGraph = graph
-    const doc = mint(
+    const { doc, collector } = followedDoc(
       {
         nodes: [
           {
@@ -119,15 +119,11 @@ describe('LiveGraphApplier with the real change tracker', () => {
       },
       CATALOG
     )
-    const collector = new DocChangeCollector(doc)
     const applier = new LiveGraphApplier({ getGraph: () => graph })
     onTestFinished(() => {
-      collector.destroy()
-      doc.destroy()
       appState.rootGraph = undefined
     })
-    applier.syncFromDoc(doc, CONTEXT)
-    collector.take()
+    applier.applyChanges(doc, collector.take(), CONTEXT)
 
     const beforeFrame = await workflowJson(graph)
     const tracker = markRaw(

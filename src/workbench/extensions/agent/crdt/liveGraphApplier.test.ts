@@ -1,16 +1,11 @@
-import {
-  applyOps,
-  linksMap,
-  mint,
-  nodesMap
-} from '@comfyorg/comfy-multi-player'
+import { applyOps, linksMap, nodesMap } from '@comfyorg/comfy-multi-player'
 import type {
   Op,
   WidgetCatalog,
   WorkflowJSON
 } from '@comfyorg/comfy-multi-player'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -19,10 +14,9 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 
-import { DocChangeCollector } from './docChangeCollector'
+import { followedDoc } from './__fixtures__/followedDoc'
 import { LiveGraphApplier } from './liveGraphApplier'
 import type { LiveGraphApplierDeps } from './liveGraphApplier'
-import { NO_PENDING_LOCAL_EDITS, widgetKey } from './pendingLocalEdits'
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
@@ -79,18 +73,16 @@ function setup(
   deps: Omit<LiveGraphApplierDeps, 'getGraph'> = {}
 ) {
   const graph = new LGraph()
-  const doc = mint(workflow, CATALOG)
-  const collector = new DocChangeCollector(doc)
+  const { doc, collector } = followedDoc(workflow, CATALOG)
   const applier = new LiveGraphApplier({ ...deps, getGraph: () => graph })
-  onTestFinished(() => {
-    collector.destroy()
-    doc.destroy()
-  })
+  /** Applies the catch-up frame the follower received, or anything since. */
+  const applyCollected = (context = CONTEXT) =>
+    applier.applyChanges(doc, collector.take(), context)
   const applyEdit = (edit: () => void) => {
     doc.transact(edit)
-    return applier.applyChanges(doc, collector.take(), CONTEXT)
+    return applyCollected()
   }
-  return { graph, doc, collector, applier, applyEdit }
+  return { graph, doc, collector, applier, applyCollected, applyEdit }
 }
 
 beforeEach(() => {
@@ -100,7 +92,7 @@ beforeEach(() => {
 
 describe('LiveGraphApplier', () => {
   it('creates document nodes and links with the document ids, without the placement ghost flag', () => {
-    const { graph, doc, applier } = setup({
+    const { graph, applyCollected } = setup({
       nodes: [
         sourceNode(1, { flags: { ghost: true, collapsed: true } }),
         sinkNode(2)
@@ -108,7 +100,7 @@ describe('LiveGraphApplier', () => {
       links: [[7, 1, 0, 2, 0, 'IMAGE']]
     })
 
-    const result = applier.syncFromDoc(doc, CONTEXT)
+    const result = applyCollected()
 
     expect(result.createdNodeIds).toEqual([toNodeId(1), toNodeId(2)])
     const source = graph.getNodeById(toNodeId(1))
@@ -123,11 +115,11 @@ describe('LiveGraphApplier', () => {
   })
 
   it('replaces live flags with the document flags but keeps a live placement ghost', () => {
-    const { graph, doc, applier, applyEdit } = setup({
+    const { graph, doc, applyCollected, applyEdit } = setup({
       nodes: [sourceNode(1, { flags: { pinned: true } })],
       links: []
     })
-    applier.syncFromDoc(doc, CONTEXT)
+    applyCollected()
     const node = graph.getNodeById(toNodeId(1))
     if (!node) throw new Error('node 1 was not created')
     node.flags.ghost = true
@@ -140,11 +132,11 @@ describe('LiveGraphApplier', () => {
   })
 
   it('applies the rest of a frame when one operation throws, and reports it once', () => {
-    const { graph, doc, applier, applyEdit } = setup({
+    const { graph, doc, applyCollected, applyEdit } = setup({
       nodes: [sourceNode(1)],
       links: []
     })
-    applier.syncFromDoc(doc, CONTEXT)
+    applyCollected()
     const doomed = graph.getNodeById(toNodeId(1))
     if (!doomed) throw new Error('node 1 was not created')
     doomed.onRemoved = () => {
@@ -169,11 +161,11 @@ describe('LiveGraphApplier', () => {
   })
 
   it('restores a widget and its mirrored property when a widget callback throws', () => {
-    const { graph, doc, applier, applyEdit } = setup({
+    const { graph, doc, applyCollected, applyEdit } = setup({
       nodes: [sourceNode(1)],
       links: []
     })
-    applier.syncFromDoc(doc, CONTEXT)
+    applyCollected()
     const node = graph.getNodeById(toNodeId(1))
     const widget = node?.widgets?.[0]
     if (!node || !widget) throw new Error('node 1 was not created')
@@ -197,97 +189,12 @@ describe('LiveGraphApplier', () => {
     )
   })
 
-  describe('full sync reconciles the live graph to the document', () => {
-    function reconcileSetup() {
-      const { graph, doc, applier } = setup({
-        nodes: [sourceNode(1), sourceNode(2), sinkNode(3)],
-        links: [[40, 1, 0, 3, 0, 'IMAGE']]
-      })
-      applier.syncFromDoc(doc, CONTEXT)
-      const node = (id: number) => {
-        const found = graph.getNodeById(toNodeId(id))
-        if (!found) throw new Error(`node ${id} was not created`)
-        return found
-      }
-      const addLocalNode = () => {
-        const local = LiteGraph.createNode('TestSource')
-        if (!local) throw new Error('TestSource not registered')
-        graph.add(local)
-        return local
-      }
-      return { graph, doc, applier, node, addLocalNode }
-    }
-    const liveNodeIds = (graph: LGraph) => graph._nodes.map((n) => n.id)
-
-    it('removes nodes and links the document lacks and re-creates a locally deleted document node', () => {
-      const { graph, doc, applier, node, addLocalNode } = reconcileSetup()
-      addLocalNode()
-      node(1).disconnectOutput(0)
-      node(2).connect(0, node(3), 0)
-      graph.remove(node(2))
-
-      const result = applier.syncFromDoc(doc, CONTEXT)
-
-      expect(result.createdNodeIds).toEqual([toNodeId(2)])
-      expect(liveNodeIds(graph)).toEqual([
-        toNodeId(1),
-        toNodeId(3),
-        toNodeId(2)
-      ])
-      expect([...graph.links.keys()]).toEqual([toLinkId(40)])
-    })
-
-    it('spares a pending local add and a pending local delete', () => {
-      const { graph, doc, applier, node, addLocalNode } = reconcileSetup()
-      const local = addLocalNode()
-      graph.remove(node(2))
-
-      const result = applier.syncFromDoc(doc, CONTEXT, {
-        ...NO_PENDING_LOCAL_EDITS,
-        addedNodeIds: new Set([String(local.id)]),
-        deletedNodeIds: new Set(['2'])
-      })
-
-      expect(result.createdNodeIds).toEqual([])
-      expect(liveNodeIds(graph)).toEqual([toNodeId(1), toNodeId(3), local.id])
-    })
-
-    it('keeps a pending local widget value and overwrites the rest', () => {
-      const { doc, applier, node } = reconcileSetup()
-      node(1).widgets![0].value = 30
-      node(2).widgets![0].value = 30
-
-      applier.syncFromDoc(doc, CONTEXT, {
-        ...NO_PENDING_LOCAL_EDITS,
-        widgetKeys: new Set([widgetKey(1, 'steps')])
-      })
-
-      expect(node(1).widgets![0].value).toBe(30)
-      expect(node(2).widgets![0].value).toBe(20)
-    })
-
-    it('spares a pending local disconnect and a pending local connect', () => {
-      const { graph, doc, applier, node } = reconcileSetup()
-      node(1).disconnectOutput(0)
-      const localLink = node(2).connect(0, node(3), 0)
-      if (!localLink) throw new Error('local connect failed')
-
-      applier.syncFromDoc(doc, CONTEXT, {
-        ...NO_PENDING_LOCAL_EDITS,
-        linkIds: new Set([toLinkId(40), localLink.id])
-      })
-
-      expect([...graph.links.keys()]).toEqual([localLink.id])
-      expect(node(3).inputs[0]?.link).toBe(localLink.id)
-    })
-  })
-
   it('mints a later local link above every document link id', () => {
-    const { graph, doc, applier } = setup({
+    const { graph, applyCollected } = setup({
       nodes: [sourceNode(1), sinkNode(2), sourceNode(3), sinkNode(4)],
       links: [[40, 1, 0, 2, 0, 'IMAGE']]
     })
-    applier.syncFromDoc(doc, CONTEXT)
+    applyCollected()
 
     const origin = graph.getNodeById(toNodeId(3))
     const target = graph.getNodeById(toNodeId(4))
@@ -297,11 +204,11 @@ describe('LiveGraphApplier', () => {
   })
 
   it('removes a live link whose document entry now names a slot the node lacks', () => {
-    const { graph, doc, applier, applyEdit } = setup({
+    const { graph, doc, applyCollected, applyEdit } = setup({
       nodes: [sourceNode(1), sinkNode(2)],
       links: [[7, 1, 0, 2, 0, 'IMAGE']]
     })
-    applier.syncFromDoc(doc, CONTEXT)
+    applyCollected()
     expect(graph.links.has(toLinkId(7))).toBe(true)
 
     applyEdit(() => {
@@ -319,11 +226,11 @@ describe('LiveGraphApplier', () => {
   })
 
   it('reports a document node whose slots are not arrays instead of creating it', () => {
-    const { graph, doc, applier, applyEdit } = setup({
+    const { graph, doc, applyCollected, applyEdit } = setup({
       nodes: [sourceNode(1)],
       links: []
     })
-    applier.syncFromDoc(doc, CONTEXT)
+    applyCollected()
 
     applyEdit(() => {
       nodesMap(doc).set(
@@ -348,11 +255,11 @@ describe('LiveGraphApplier', () => {
 
   it('parks a far offscreen batch beside existing content and leaves updated nodes where they are', () => {
     const viewport = { x: 0, y: 0, width: 1000, height: 1000 }
-    const { graph, doc, applier, applyEdit } = setup(
+    const { graph, doc, applyCollected, applyEdit } = setup(
       { nodes: [sourceNode(1)], links: [] },
       { viewportBounds: () => viewport }
     )
-    applier.syncFromDoc(doc, CONTEXT)
+    applyCollected()
     const existing = graph.getNodeById(toNodeId(1))
     if (!existing) throw new Error('node 1 was not created')
     const positionOf = (id: number) => [
@@ -379,7 +286,7 @@ describe('LiveGraphApplier', () => {
 
   it('scopes every write to the remote actor', () => {
     const actors: string[] = []
-    const { doc, applier } = setup(
+    const { applier, applyCollected } = setup(
       { nodes: [sourceNode(1)], links: [] },
       {
         withRemoteActor: (actor, fn) => {
@@ -389,7 +296,7 @@ describe('LiveGraphApplier', () => {
       }
     )
 
-    applier.syncFromDoc(doc, { actor: 'agent:remote', opIds: [] })
+    applyCollected({ actor: 'agent:remote', opIds: [] })
     applier.clear({ actor: 'agent:reset', opIds: [] })
 
     expect(actors).toEqual(['agent:remote', 'agent:reset'])
@@ -510,9 +417,8 @@ describe('LiveGraphApplier change bracket', () => {
   ])(
     'applies a $name frame inside exactly one before/after bracket that changes the graph',
     ({ op }) => {
-      const { graph, doc, applier, collector } = setup(seed)
-      applier.syncFromDoc(doc, CONTEXT)
-      collector.take()
+      const { graph, doc, applier, collector, applyCollected } = setup(seed)
+      applyCollected()
       const { canvas, events } = recordingCanvas()
       graph.list_of_graphcanvas = [canvas]
       const before = graph.serialize()
@@ -527,19 +433,20 @@ describe('LiveGraphApplier change bracket', () => {
     }
   )
 
-  it('brackets a document reset and a full sync once each, and never without a graph', () => {
-    const { graph, doc, applier } = setup(seed)
+  it('brackets a document reset and a catch-up frame once each, and never without a graph', () => {
+    const { graph, doc, collector, applier } = setup(seed)
     const { canvas, events } = recordingCanvas()
     graph.list_of_graphcanvas = [canvas]
+    const catchUp = collector.peek()
 
-    applier.syncFromDoc(doc, CONTEXT)
+    applier.applyChanges(doc, collector.take(), CONTEXT)
     applier.clear(CONTEXT)
 
     expect(events).toEqual(['before', 'after', 'before', 'after'])
     expect(graph._nodes).toEqual([])
 
     const detached = new LiveGraphApplier({ getGraph: () => null })
-    detached.syncFromDoc(doc, CONTEXT)
+    detached.applyChanges(doc, catchUp, CONTEXT)
     detached.clear(CONTEXT)
     expect(events).toHaveLength(4)
   })

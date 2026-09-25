@@ -137,7 +137,6 @@ function bindAndCatchUp(graph: LGraph, saved: ISerialisedGraph) {
     ).toMatchObject({ applied: true })
   }
   deliver(Y.encodeStateAsUpdate(host))
-  projection.syncFromDoc(WORKFLOW_ID)
   const hostEdit = (edit: () => void) => {
     const before = Y.encodeStateVector(host)
     host.transact(edit)
