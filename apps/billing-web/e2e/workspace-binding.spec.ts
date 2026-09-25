@@ -114,8 +114,15 @@ test('reloading a tab whose workspace was deleted surfaces that reason instead o
       body: { error: 'unauthorized' }
     }))
   }
+  const opened = new URL(page.url())
+  const openedPath = `${opened.pathname}${opened.search}`
   await page.reload()
 
+  await expect(page).toHaveURL(
+    (url) =>
+      url.pathname === '/sign-in' &&
+      url.searchParams.get('returnTo') === openedPath
+  )
   await expect(page.getByRole('alert')).toContainText(
     "This account can't access that workspace. Reopen billing from the app while signed in with the right account."
   )
