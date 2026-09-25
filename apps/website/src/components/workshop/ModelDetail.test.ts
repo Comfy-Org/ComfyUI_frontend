@@ -21,7 +21,10 @@ import type {
 import type { WorkshopModelDetail } from '../../config/models-catalogue'
 import type { Locale } from '../../i18n/translations'
 import { subscribeToWorkshopBuyCredits } from '../../config/workshop-buy-credits'
-import { runWorkshopRouter } from '../../config/workshop-router-queue'
+import {
+  runWorkshopRouter,
+  WORKSHOP_LEAVE_RUNNING
+} from '../../config/workshop-router-queue'
 import { WorkshopRouterError } from '../../config/workshop-router-errors'
 import { workshopContract } from '../../config/workshop-contract-catalog'
 import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
@@ -43,14 +46,15 @@ import {
 } from '../../scripts/posthog'
 import ModelDetail from './ModelDetail.vue'
 import WorkshopGate from './WorkshopGate.vue'
+import { listWorkshopGenerations } from '../../config/workshop-generation-assets'
 import { workshopHealthLog } from '../../scripts/workshop-health'
 
 vi.mock(import('../../config/workshop-session-state'))
 vi.mock(import('../../scripts/posthog'))
 
-vi.mock(import('../../config/workshop-router-queue'), () => ({
-  runWorkshopRouter: vi.fn()
-}))
+vi.mock(import('../../config/workshop-router-queue'), { spy: true })
+
+vi.mock(import('../../config/workshop-generation-assets'), { spy: true })
 
 vi.mock(import('../../config/workshop-output-download'), () => ({
   downloadOutput: vi.fn().mockResolvedValue(true)
@@ -232,6 +236,37 @@ describe('ModelDetail', () => {
       session: credential
     })
   })
+
+  // A run Cloud is keeping outlives the page: leaving may detach from it. A run
+  // it is not keeping exists only here, so leaving has to stop the machine.
+  it.for([
+    { saving: '1', detaches: true },
+    { saving: '0', detaches: false }
+  ])(
+    'leaves on unmount with saving $saving, detaching: $detaches',
+    async ({ saving, detaches }) => {
+      vi.stubEnv('PUBLIC_WORKSHOP_SAVE_ASSETS', saving)
+      auth.session.value = credential
+      vi.mocked(listWorkshopGenerations).mockResolvedValue({ requests: [] })
+      vi.mocked(runWorkshopRouter).mockReturnValue(
+        Promise.withResolvers<typeof routerResult>().promise
+      )
+      const { unmount } = mountDetail({ model: runnable })
+      await user().type(screen.getByTestId('field-prompt'), 'A teapot')
+      await user().click(screen.getByTestId('run-button'))
+      await vi.waitFor(() => expect(runWorkshopRouter).toHaveBeenCalledOnce())
+      const run = vi.mocked(runWorkshopRouter).mock.calls[0][0]
+      expect(run.comfy_save_asset).toBe(detaches)
+      expect(
+        window.dispatchEvent(new Event('beforeunload', { cancelable: true }))
+      ).toBe(detaches)
+
+      unmount()
+
+      expect(run.signal.aborted).toBe(true)
+      expect(run.signal.reason === WORKSHOP_LEAVE_RUNNING).toBe(detaches)
+    }
+  )
 
   it('links a documented provider in a new tab', () => {
     mountDetail({

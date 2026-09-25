@@ -3,7 +3,10 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { workshopContract } from './workshop-contract-catalog'
 import { WORKSHOP_ROUTER_BASE_URL } from './workshop-env'
 import { WorkshopRouterError } from './workshop-router-errors'
-import { runWorkshopRouter } from './workshop-router-queue'
+import {
+  runWorkshopRouter,
+  WORKSHOP_LEAVE_RUNNING
+} from './workshop-router-queue'
 import { workshopFailureAnalytics } from '../scripts/workshop-analytics'
 
 const MODEL = 'bfl/flux-2-pro'
@@ -110,6 +113,74 @@ describe('queued Router delivery', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-09-19T12:00:00Z'))
+  })
+
+  it('asks for saving in the address and leaves the provider body alone', async () => {
+    const calls = stubFetch(
+      Response.json(
+        { request_id: REQUEST_ID, status: 'IN_QUEUE', comfy_save_asset: true },
+        { status: 201 }
+      ),
+      result()
+    )
+    await settle(runWorkshopRouter({ ...options(), comfy_save_asset: true }))
+    const [url, init] = calls.mock.calls[0]
+    expect(String(url)).toBe(`${SUBMIT_URL}?comfy_save_asset=true`)
+    expect(init?.body).toBe('{"prompt":"Private prompt"}')
+  })
+
+  it('keeps the request id visible when a server ignores the save control', async () => {
+    const calls = stubFetch(admitted())
+    const onRequestId = vi.fn()
+    await expect(
+      settle(
+        runWorkshopRouter({ ...options(), comfy_save_asset: true, onRequestId })
+      )
+    ).rejects.toBeInstanceOf(WorkshopRouterError)
+    expect(onRequestId).toHaveBeenLastCalledWith(REQUEST_ID)
+    expect(calls).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not fall back to an unsaved synchronous generation when saving is refused', async () => {
+    const calls = stubFetch(refusal(403, 'not_enabled'))
+    await expect(
+      settle(runWorkshopRouter({ ...options(), comfy_save_asset: true }))
+    ).rejects.toBeInstanceOf(WorkshopRouterError)
+    expect(calls).toHaveBeenCalledTimes(1)
+    expect(String(calls.mock.calls[0][0])).toBe(
+      `${SUBMIT_URL}?comfy_save_asset=true`
+    )
+  })
+
+  it('cancels the admitted generation when its page goes away for any other reason', async () => {
+    const controller = new AbortController()
+    const calls = vi.fn<typeof fetch>(async (_, init) => {
+      if (init?.method === 'POST') return admitted()
+      controller.abort()
+      throw controller.signal.reason
+    })
+    vi.stubGlobal('fetch', calls)
+    await expect(
+      settle(runWorkshopRouter(options(controller.signal)))
+    ).rejects.toMatchObject({ name: 'AbortError' })
+    expect(requestedUrls(calls).at(-1)).toBe(`PUT ${RESULT_URL}/cancel`)
+  })
+
+  it('leaves the admitted generation running only when told to leave it running', async () => {
+    const controller = new AbortController()
+    const calls = vi.fn<typeof fetch>(async (_, init) => {
+      if (init?.method === 'POST') return admitted()
+      controller.abort(WORKSHOP_LEAVE_RUNNING)
+      throw controller.signal.reason
+    })
+    vi.stubGlobal('fetch', calls)
+    await expect(
+      settle(runWorkshopRouter(options(controller.signal)))
+    ).rejects.toMatchObject({ name: 'AbortError' })
+    expect(requestedUrls(calls)).toEqual([
+      `POST ${SUBMIT_URL}`,
+      `GET ${RESULT_URL}`
+    ])
   })
 
   it('submits once, polls until the run finishes, and reports the durable request id', async () => {
