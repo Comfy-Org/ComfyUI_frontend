@@ -47,12 +47,23 @@ test.describe(
             await output.getPosition(),
             await input.getPosition()
           )
+          // Node ids serialise as strings, so normalise before comparing
+          // rather than asserting on the current runtime type.
           await expect
-            .poll(() => input.getLink())
-            .toMatchObject({
-              origin_id: 4,
+            .poll(async () => {
+              const link = await input.getLink()
+              if (!link) return null
+              return {
+                origin_id: String(link.origin_id),
+                origin_slot: link.origin_slot,
+                target_id: String(link.target_id),
+                target_slot: link.target_slot
+              }
+            })
+            .toEqual({
+              origin_id: '4',
               origin_slot: 1,
-              target_id: 6,
+              target_id: '6',
               target_slot: 0
             })
           await output.expectLinkCount(2)

@@ -44,11 +44,9 @@ for (const vueEnabled of [false, true] as const) {
           if (vueNode) {
             await expect(vueNode.priceBadge.required).toBeVisible()
           } else {
-            await comfyPage.legacyNodeBadges.expectText(
-              'price',
-              '12.7 credits/Run',
-              true
-            )
+            await comfyPage.legacyNodeBadges.expectState([
+              { key: 'price', text: '12.7 credits/Run', visible: true }
+            ])
           }
         })
 
@@ -80,11 +78,9 @@ for (const vueEnabled of [false, true] as const) {
           if (vueNode) {
             await expect(vueNode.priceBadge.required).toBeVisible()
           } else {
-            await comfyPage.legacyNodeBadges.expectText(
-              'price',
-              '12.7 credits/Run',
-              true
-            )
+            await comfyPage.legacyNodeBadges.expectState([
+              { key: 'price', text: '12.7 credits/Run', visible: true }
+            ])
           }
         })
       })

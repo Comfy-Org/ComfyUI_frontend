@@ -61,8 +61,11 @@ export class LegacyNodeBadgeHelper {
   async expectText(key: string, text: string, visible: boolean) {
     const getTexts = async () => {
       const serialized = await this.probe.getAttribute(`data-${key}-texts`)
-      const parsed: unknown =
-        serialized === null ? null : JSON.parse(serialized)
+      // No frame has redrawn this node since install(). Return a value that
+      // matches neither `true` nor `false` so the poll keeps waiting: a probe
+      // that never draws must time out, not silently satisfy `visible: false`.
+      if (serialized === null) return null
+      const parsed: unknown = JSON.parse(serialized)
       if (
         !Array.isArray(parsed) ||
         !parsed.every((value): value is string => typeof value === 'string')
