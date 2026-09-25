@@ -130,10 +130,17 @@ comment) are handled by `pr-vercel-website-preview.yaml`.
 
 ### Keeping the careers page current
 
-A role edited in Ashby does **not** appear on comfy.org until a production
-deploy runs, because the page is rendered at build time. The `Release: Website`
-workflow is what produces that deploy: it refreshes both snapshots and opens a
-PR, and merging the PR triggers the Vercel production build.
+A role edited in Ashby appears on comfy.org only once a production deploy runs,
+because the page is rendered at build time. Any push to `main` touching
+`apps/website/**` produces one (see `ci-vercel-website-preview.yaml`), and each
+rebuild re-fetches Ashby live — so during normal development the live page
+tracks Ashby on its own.
+
+What does not keep up is the committed snapshot, which is what preview builds,
+fork PRs, local dev, and any Ashby outage render from. Refreshing that is the
+`Release: Website` workflow's job: it regenerates both snapshots and opens a
+PR, and merging the PR also triggers a production deploy — which is what makes
+it useful during a quiet week with no other website commits.
 
 It runs on three triggers:
 
@@ -149,7 +156,7 @@ Ashby cannot call GitHub directly — it sends no custom headers — so the Work
 verifies Ashby's signature and calls this workflow's dispatch endpoint. See that
 repo's `docs/ashby-webhook.md` for setup and key rotation.
 
-A run only opens a PR when a role or node actually changed; see
+A run only opens a PR when the underlying data actually changed; see
 "Refreshing the snapshot" below.
 
 ### Refreshing the snapshot
@@ -169,6 +176,13 @@ snapshots can't be accidentally committed.
 Each refresh stamps a fresh `fetchedAt`, so `scripts/snapshot-writer.ts` leaves
 the file untouched when that timestamp is the only thing that moved. Without
 that, every scheduled run would open a PR whose whole diff is a timestamp.
+
+The cloud-nodes snapshot needs the same treatment for `downloads` and
+`githubStars`, which the registry moves continuously — across two real
+snapshot commits 10 days apart, 106 of 177 changed lines were those two
+counters alone. `refresh-cloud-nodes-snapshot.ts` passes them as volatile so
+they never by themselves open a PR; they are still written, with current
+values, whenever something substantive changes.
 
 ## Cloud nodes integration
 

@@ -46,6 +46,21 @@ function cloudNodesSnapshot(fetchedAt: string, displayName = 'Basic data') {
   }
 }
 
+function packsWithCounters(
+  fetchedAt: string,
+  downloads: number,
+  displayName = 'Basic data'
+) {
+  return {
+    fetchedAt,
+    packs: [
+      { id: 'basic', displayName, downloads, githubStars: 12, nodes: ['Load'] }
+    ]
+  }
+}
+
+const COUNTERS = ['downloads', 'githubStars'] as const
+
 function seed(snapshot: { fetchedAt: string }) {
   writeFileSync(snapshotPath, JSON.stringify(snapshot, null, 2) + '\n', 'utf8')
   return readFileSync(snapshotPath, 'utf8')
@@ -133,6 +148,47 @@ describe('writeSnapshotIfChanged', () => {
     )
 
     expect(() => readFileSync(`${snapshotPath}.tmp`, 'utf8')).toThrow()
+  })
+
+  it('ignores a nested counter that drifted on its own', () => {
+    const before = seed(
+      packsWithCounters('2026-08-22T04:58:20.183Z', 2_870_000)
+    )
+
+    const wrote = writeSnapshotIfChanged(
+      snapshotPath,
+      packsWithCounters('2026-09-25T12:00:00.000Z', 2_871_433),
+      COUNTERS
+    )
+
+    expect(wrote).toBe(false)
+    expect(readFileSync(snapshotPath, 'utf8')).toBe(before)
+  })
+
+  it('still writes when a counter moves alongside a real change', () => {
+    seed(packsWithCounters('2026-08-22T04:58:20.183Z', 2_870_000))
+
+    const wrote = writeSnapshotIfChanged(
+      snapshotPath,
+      packsWithCounters('2026-09-25T12:00:00.000Z', 2_871_433, 'Renamed pack'),
+      COUNTERS
+    )
+
+    expect(wrote).toBe(true)
+    const written = JSON.parse(readFileSync(snapshotPath, 'utf8'))
+    expect(written.packs[0].displayName).toBe('Renamed pack')
+    expect(written.packs[0].downloads).toBe(2_871_433)
+  })
+
+  it('treats a counter as substantive when it is not declared volatile', () => {
+    seed(packsWithCounters('2026-08-22T04:58:20.183Z', 2_870_000))
+
+    const wrote = writeSnapshotIfChanged(
+      snapshotPath,
+      packsWithCounters('2026-09-25T12:00:00.000Z', 2_871_433)
+    )
+
+    expect(wrote).toBe(true)
   })
 
   it('detects a role removal, not just a rename', () => {

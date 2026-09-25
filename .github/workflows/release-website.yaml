@@ -15,6 +15,9 @@ on:
         required: false
         default: manual
         type: choice
+        # Comfy-Org/comfy-router sends `ashby-webhook` verbatim. Renaming or
+        # removing that option makes GitHub reject its dispatch with a 422,
+        # and nothing in this repo would report it.
         options:
           - manual
           - ashby-webhook
@@ -33,6 +36,7 @@ jobs:
   refresh-snapshots:
     if: github.repository == 'Comfy-Org/ComfyUI_frontend'
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: write
       pull-requests: write

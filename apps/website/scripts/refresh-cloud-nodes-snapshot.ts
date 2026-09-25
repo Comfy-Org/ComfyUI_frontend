@@ -17,7 +17,10 @@ if (outcome.status !== 'fresh') {
   process.exit(1)
 }
 
-const wrote = writeSnapshotIfChanged(snapshotPath, outcome.snapshot)
+const wrote = writeSnapshotIfChanged(snapshotPath, outcome.snapshot, [
+  'downloads',
+  'githubStars'
+])
 const totalNodes = outcome.snapshot.packs.reduce(
   (n, pack) => n + pack.nodes.length,
   0
