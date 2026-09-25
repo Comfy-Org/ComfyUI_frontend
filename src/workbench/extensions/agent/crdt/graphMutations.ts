@@ -680,6 +680,33 @@ function readPair(
     : fallback
 }
 
+/**
+ * A canvas rename only ever mutates the live node (see
+ * useNodeEventHandlers.ts's `handleNodeTitleUpdate`); it never writes back
+ * into the CRDT doc. So the payload's title is only as fresh as the last doc
+ * mutation that actually changed it, and `existing.titleReconcileBaseline`
+ * is the title the doc held as of the last reconcile. When the incoming
+ * title matches that baseline, nothing about the doc's title changed since
+ * then, so keep the live node's current title instead of replaying the same
+ * stale value over an unsynced local rename. An incoming title that differs
+ * from the baseline is a genuine doc-side change — e.g. the agent naming or
+ * renaming the node — and still wins. A record with no baseline at all
+ * (never reconciled) has no evidence the doc title is unchanged, so it
+ * always falls through to the payload/registered/type title.
+ */
+function resolveNodeTitle(
+  payload: SemanticNodePayload,
+  existing?: NodeState
+): string {
+  if (
+    existing?.titleReconcileBaseline !== undefined &&
+    payload.title === existing.titleReconcileBaseline.title
+  ) {
+    return nodeTitle(existing.title, payload.type)
+  }
+  return nodeTitle(payload.title, payload.type)
+}
+
 type NodeColors = Pick<NodeState, 'bgcolor' | 'boxcolor' | 'color'>
 
 function resolveColorField(
@@ -741,7 +768,7 @@ function prepareNode(
     id,
     graphId: scope.owningGraphId,
     type: payload.type,
-    title: nodeTitle(payload.title, payload.type),
+    title: resolveNodeTitle(payload, incumbent),
     flags,
     inputs: prepareInputSlots(payload.inputs, incumbent?.inputs),
     outputs: prepareOutputSlots(payload.outputs),
@@ -751,6 +778,9 @@ function prepareNode(
       ...payload,
       flags
     }) as unknown as ISerialisedNode,
+    titleReconcileBaseline: {
+      title: typeof payload.title === 'string' ? payload.title : undefined
+    },
     ...resolveNodeColors(payload, incumbent),
     ...resolveNodeDisplayFlags(payload)
   }
