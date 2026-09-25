@@ -6,7 +6,7 @@ import type { FormValues } from '../config/workshop-playground'
 import { validateForm } from '../config/workshop-playground'
 import { initialWorkshopPageState } from '../config/workshop-page-state'
 import { useWorkshopSession } from '../config/workshop-session-state'
-import { refreshWorkshopCredits } from '../config/workshop-credits'
+import { markWorkshopCreditsDirty } from '../config/workshop-credits'
 import {
   createWorkflowApi,
   WorkshopWorkflowError
@@ -22,6 +22,8 @@ import {
   workshopModelAnalytics,
   workshopWorkflowFailureAnalytics
 } from '../scripts/workshop-analytics'
+
+const CHARGE_WINDOW_MS = 5 * 60_000
 
 export function useWorkflowRun(
   model: WorkflowWorkshopModelDetail,
@@ -112,10 +114,20 @@ export function useWorkflowRun(
     }
   })
 
+  const chargedRuns = new Set<string>()
+
   async function settle(command?: Promise<void>) {
     await command
     if (lifetime.signal.aborted || !sameCaller()) return
-    if (state.value.phase === 'settled') await refreshWorkshopCredits()
+    if (state.value.phase !== 'settled') return
+    const { id, completedAt, updatedAt } = state.value.observation.run
+    if (
+      chargedRuns.has(id) ||
+      Date.now() - Date.parse(completedAt ?? updatedAt) > CHARGE_WINDOW_MS
+    )
+      return
+    chargedRuns.add(id)
+    markWorkshopCreditsDirty()
   }
 
   onMounted(async () => {

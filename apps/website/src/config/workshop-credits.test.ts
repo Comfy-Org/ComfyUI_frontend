@@ -482,3 +482,63 @@ describe('watchForTopUp', () => {
     expect(state.value).toEqual({ status: 'idle' })
   })
 })
+
+describe('markWorkshopCreditsDirty', () => {
+  async function dirtyChip(reads: number[]) {
+    vi.useFakeTimers()
+    const mod = await loadCredits()
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+    const { balance } = mod.useWorkshopCredits()
+    session.value = liveSession()
+    await nextTick()
+    publish({ status: 'ok', cents: 1000 })
+    const pending = [...reads]
+    const refresh = vi.mocked(workshopBalanceReader.refresh)
+    refresh.mockClear()
+    refresh.mockImplementation(async () => {
+      publish({ status: 'ok', cents: pending.shift() ?? 1000 })
+    })
+    return { mod, balance, refresh }
+  }
+
+  it('re-syncs until a late charge shows, then stops', async () => {
+    const { mod, balance, refresh } = await dirtyChip([1000, 1000, 900])
+
+    mod.markWorkshopCreditsDirty()
+    await vi.advanceTimersByTimeAsync(10 * 60_000)
+
+    expect(balance.value).toEqual({
+      status: 'ok',
+      credits: mod.balanceToCredits(900)
+    })
+    expect(refresh).toHaveBeenCalledTimes(3)
+    expect(refresh).toHaveBeenCalledWith({ force: true })
+  })
+
+  it('gives up after about five minutes when the balance never moves', async () => {
+    const { mod, refresh } = await dirtyChip([])
+
+    mod.markWorkshopCreditsDirty()
+    await vi.advanceTimersByTimeAsync(4 * 60_000)
+    const readsWithinWindow = refresh.mock.calls.length
+    await vi.advanceTimersByTimeAsync(60 * 60_000)
+
+    expect(readsWithinWindow).toBeGreaterThan(5)
+    expect(refresh.mock.calls.length - readsWithinWindow).toBeLessThanOrEqual(2)
+  })
+
+  it('stops re-syncing once the workspace changes', async () => {
+    const { mod, refresh } = await dirtyChip([])
+
+    mod.markWorkshopCreditsDirty()
+    await vi.advanceTimersByTimeAsync(0)
+    session.value = liveSession('token-b', 'ws-2')
+    await nextTick()
+    refresh.mockClear()
+    await vi.advanceTimersByTimeAsync(10 * 60_000)
+
+    expect(refresh).not.toHaveBeenCalled()
+  })
+})

@@ -4,7 +4,7 @@ import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { computed, defineComponent, h, ref, shallowRef } from 'vue'
 
 import type { WorkflowWorkshopModelDetail } from '../config/models-catalogue'
-import { refreshWorkshopCredits } from '../config/workshop-credits'
+import { markWorkshopCreditsDirty } from '../config/workshop-credits'
 import { initialWorkshopPageState } from '../config/workshop-page-state'
 import type { FormValues } from '../config/workshop-playground'
 import { restoreFormValues } from '../config/workshop-playground'
@@ -156,6 +156,23 @@ describe('workflow page caller lifecycle', () => {
       expect(restored.workflow.state.value.phase).toBe('settled')
     )
     expect(captureWorkshopEvent).not.toHaveBeenCalled()
+  })
+
+  it.for([
+    { name: 'a run that just finished', age: 0, marks: 1 },
+    { name: 'a run that finished long ago', age: 10 * 60_000, marks: 0 }
+  ])('marks the credits dirty once for $name', async ({ age, marks }) => {
+    const f = fixture()
+    const job = { ...finished(), update_time: Date.now() - age }
+    f.fetch
+      .mockResolvedValueOnce(Response.json({ prompt_id: runId }))
+      .mockResolvedValue(Response.json(job))
+
+    await f.workflow.start(input)
+    await f.workflow.retryDelivery()
+
+    expect(f.workflow.state.value.phase).toBe('settled')
+    expect(markWorkshopCreditsDirty).toHaveBeenCalledTimes(marks)
   })
 
   it('reports form validation separately from generation attempts', async () => {
@@ -386,7 +403,7 @@ describe('workflow page caller lifecycle', () => {
       await pending
       expect(f.workflow.state.value).toEqual(presentationBeforeSwitch)
       expect(f.workflow.observation.value).toBeUndefined()
-      expect(refreshWorkshopCredits).not.toHaveBeenCalled()
+      expect(markWorkshopCreditsDirty).not.toHaveBeenCalled()
       expect(captureWorkshopEvent).not.toHaveBeenCalledWith(
         expect.objectContaining({ name: 'run_finished' })
       )
@@ -433,7 +450,7 @@ describe('workflow page caller lifecycle', () => {
     await pending
     expect(replacement.workflow.state.value).toEqual({ phase: 'idle' })
     expect(replacement.workflow.observation.value).toBeUndefined()
-    expect(refreshWorkshopCredits).not.toHaveBeenCalled()
+    expect(markWorkshopCreditsDirty).not.toHaveBeenCalled()
     expect(f.fetch).toHaveBeenCalledTimes(2)
   })
 
@@ -458,7 +475,7 @@ describe('workflow page caller lifecycle', () => {
     expect(f.fetch).toHaveBeenCalledOnce()
   })
 
-  it('resumes a known job on reconnect without resubmission and refreshes the owner’s credits', async () => {
+  it('resumes a known job on reconnect without resubmission and marks the owner’s credits dirty', async () => {
     const f = fixture()
     f.fetch
       .mockResolvedValueOnce(
@@ -472,7 +489,7 @@ describe('workflow page caller lifecycle', () => {
     )
     f.fetch.mockResolvedValueOnce(Response.json(finished()))
     window.dispatchEvent(new Event('online'))
-    await waitFor(() => expect(refreshWorkshopCredits).toHaveBeenCalledOnce())
+    await waitFor(() => expect(markWorkshopCreditsDirty).toHaveBeenCalledOnce())
     expect(f.workflow.state.value.phase).toBe('settled')
     expect(
       vi.mocked(captureWorkshopEvent).mock.calls.map(([event]) => event.name)
