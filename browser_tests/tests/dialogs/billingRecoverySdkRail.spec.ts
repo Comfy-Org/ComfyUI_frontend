@@ -628,8 +628,11 @@ test.describe('Billing recovery on the SDK rails', { tag: '@cloud' }, () => {
       for (let visit = 0; visit < 3; visit++) {
         const polls = routes.pollRequests.length
         await returnToTab(page)
+        // The backoff reaches OPERATION_POLL_TIMING.maxMs of 8s by the last
+        // visit, so the default 5s predicate budget is shorter than the gap
+        // it is waiting on whenever the focus does not force a fresh poll.
         await expect
-          .poll(() => routes.pollRequests.length)
+          .poll(() => routes.pollRequests.length, { timeout: 45_000 })
           .toBeGreaterThan(polls)
       }
 
@@ -722,7 +725,7 @@ test.describe('Billing recovery on the SDK rails', { tag: '@cloud' }, () => {
             ...ACTIVE_STANDARD,
             pending_billing_op_id: OPERATION_ID,
             pending_billing_op_type: 'subscription'
-          })
+          } satisfies BillingStatusResponse)
         )
       )
 
@@ -730,7 +733,7 @@ test.describe('Billing recovery on the SDK rails', { tag: '@cloud' }, () => {
 
       await expect(
         page.getByText(
-          'A payment you started earlier is still going through. Finish it first, then choose a different plan.'
+          'A payment you started earlier is still going through. It has to finish before you can choose a different plan.'
         )
       ).toBeVisible()
       expect(routes.subscribeRequests).toEqual([])

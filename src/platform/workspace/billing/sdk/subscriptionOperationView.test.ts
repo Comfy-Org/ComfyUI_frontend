@@ -131,7 +131,7 @@ describe('projectSubscriptionResult', () => {
         status: undefined,
         code: 'OPERATION_ALREADY_PENDING',
         message:
-          'A payment you started earlier is still going through. Finish it first, then choose a different plan.'
+          'A payment you started earlier is still going through. It has to finish before you can choose a different plan.'
       }
     ]
   ] as const)('surfaces %o as a workspace error', ([failure, expected]) => {
