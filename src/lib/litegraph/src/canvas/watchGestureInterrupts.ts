@@ -11,7 +11,7 @@ export function watchGestureInterrupts(
   const doc = element?.ownerDocument ?? document
   const view = doc.defaultView
   function onLostPointerCapture(event: Event) {
-    if (event instanceof PointerEvent && event.pointerId === pointerId) {
+    if ('pointerId' in event && event.pointerId === pointerId) {
       onInterrupt()
     }
   }
