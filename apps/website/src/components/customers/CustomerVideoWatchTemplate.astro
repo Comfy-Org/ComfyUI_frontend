@@ -75,7 +75,7 @@ const collectionLabel = t('nav.customerStories', locale)
   title={`${story.title} - Comfy`}
   description={story.description}
   ogImage={story.poster}
-  mainEntityId={videoId}
+  mainEntityId={video ? videoId : undefined}
   breadcrumbs={[
     { name: homeLabel, url: absoluteUrl(Astro.site, '/') },
     { name: collectionLabel, url: absoluteUrl(Astro.site, routes.customers) },
