@@ -229,6 +229,39 @@ test('workflow search and category filters share the mobile controls @mobile', a
   )
 })
 
+// The outcome rows give way to a flat grid the moment a filter is on, so what
+// the model facet narrows is what the reader ends up looking at.
+test('the workflows half narrows to the model it runs on, from the menu and from a shared link', async ({
+  page,
+  context
+}) => {
+  await mockWorkflowVisibility(context, true)
+  await page.goto('/models/')
+  await expect(page.getByTestId('catalogue-tab-workflows')).toBeInViewport()
+  await page.getByTestId('catalogue-tab-workflows').click()
+  const results = page
+    .getByTestId('workflow-search-results')
+    .getByTestId('workshop-model-card')
+
+  await page.getByTestId('workshop-filter').click()
+  await page.getByTestId('workshop-facet-model').click()
+  await page.getByTestId('filter-model-LTX-2.3').click()
+  await expect(results).toHaveCount(7)
+
+  // An outcome can stand on several models, so a second choice widens the list
+  // instead of intersecting it.
+  await page.getByTestId('filter-model-SeedVR2').click()
+  await expect(results).toHaveCount(9)
+  await expect(page.getByTestId('workshop-facet-model-count')).toHaveText('2')
+
+  await page.getByTestId('workshop-filter-clear').click()
+  await expect(page.getByTestId('workshop-filter-count')).toHaveCount(0)
+
+  await page.goto('/models/?type=workflows&model=LTX-2.3')
+  await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
+  await expect(results).toHaveCount(7)
+})
+
 test('the background example pairs its input and output and restores edited inputs', async ({
   page,
   context
