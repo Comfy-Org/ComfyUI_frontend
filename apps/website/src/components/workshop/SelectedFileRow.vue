@@ -53,6 +53,23 @@ const {
   seekByKey,
   readDuration
 } = useAudioPlayback(source)
+
+// A row that can play its file, as against one that can only name it.
+const plays = computed(() => isAudio.value && source.value !== undefined)
+const playIcon = computed(() => (playing.value ? Pause : Play))
+const playLabel = computed(
+  () =>
+    `${t(playing.value ? 'player.pause' : 'player.play', locale)} ${file.name}`
+)
+
+// What the line says to a reader who cannot see it: where they are, out of how
+// far it goes, and that it goes nowhere at all until a length is known.
+const spokenPosition = computed(
+  () => `${clock(elapsed.value)} / ${clock(duration.value)}`
+)
+const seekLabel = computed(() => `${t('player.seek', locale)} ${file.name}`)
+const seekEnd = computed(() => Math.round(seekable.value ? duration.value : 0))
+const seekTabIndex = computed(() => (seekable.value ? 0 : -1))
 </script>
 
 <template>
@@ -80,15 +97,15 @@ const {
       :locale
     />
     <button
-      v-else-if="isAudio && source"
+      v-else-if="plays"
       type="button"
-      :aria-label="`${t(playing ? 'player.pause' : 'player.play', locale)} ${file.name}`"
+      :aria-label="playLabel"
       class="flex size-12 shrink-0 cursor-pointer items-center justify-center rounded-lg bg-transparency-white-t8 text-primary-warm-white transition-colors outline-none hover:bg-transparency-white-t20 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
       data-testid="audio-source-play"
       @click="toggle"
     >
       <component
-        :is="playing ? Pause : Play"
+        :is="playIcon"
         class="size-5 fill-current"
         aria-hidden="true"
       />
@@ -115,16 +132,16 @@ const {
       >
         {{ file.name }}
       </button>
-      <div v-if="isAudio && source" class="flex items-center gap-2">
+      <div v-if="plays" class="flex items-center gap-2">
         <div
           role="slider"
-          :tabindex="seekable ? 0 : -1"
+          :tabindex="seekTabIndex"
           :aria-disabled="!seekable"
-          :aria-label="`${t('player.seek', locale)} ${file.name}`"
+          :aria-label="seekLabel"
           :aria-valuemin="0"
-          :aria-valuemax="Math.round(seekable ? duration : 0)"
+          :aria-valuemax="seekEnd"
           :aria-valuenow="Math.round(elapsed)"
-          :aria-valuetext="`${clock(elapsed)} / ${clock(duration)}`"
+          :aria-valuetext="spokenPosition"
           class="group/seek min-w-0 flex-1 cursor-pointer py-2 outline-none"
           data-testid="audio-source-line"
           @click="seekToPoint"
@@ -140,7 +157,7 @@ const {
           </div>
         </div>
         <span class="shrink-0 text-2xs text-primary-warm-gray tabular-nums">
-          {{ clock(elapsed) }} / {{ clock(duration) }}
+          {{ spokenPosition }}
         </span>
         <audio
           ref="audio"
