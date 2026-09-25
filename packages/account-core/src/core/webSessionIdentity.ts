@@ -67,7 +67,7 @@ export type WebSessionIdentityEvent =
       readonly result: WebSessionResult
       readonly rememberedUserId: string | null
     }
-  | { readonly type: 'proof_missing' | 'proof_errored' }
+  | { readonly type: 'proof_missing' | 'proof_errored' | 'login_errored' }
   | { readonly type: 'retry_due' }
   /** A heartbeat answer, this tab's or one a sibling tab published. */
   | {
@@ -80,7 +80,7 @@ export type WebSessionIdentityEvent =
 
 export type WebSessionIdentityEffect =
   | { readonly type: 'read' }
-  | { readonly type: 'restore' }
+  | { readonly type: 'restore'; readonly expectedUserId: string }
   | { readonly type: 'schedule_retry'; readonly failures: number }
   | { readonly type: 'sign_out_locally' }
   | { readonly type: 'report'; readonly outcome: WebSessionBootOutcome }
@@ -158,7 +158,7 @@ function applyReadAnswered(
   if (rememberedUserId === null) return settleSignedOut('signed_out')
   return {
     state: { phase: 'restoring', failures },
-    effects: [{ type: 'restore' }]
+    effects: [{ type: 'restore', expectedUserId: rememberedUserId }]
   }
 }
 
@@ -228,7 +228,10 @@ function observeWhileSignedIn(
   if (restored) return leaveAccount('restore_failed')
   if (!isNoLiveSession(result)) return { state, effects: [] }
   if (rememberedUserId === null) return leaveAccount('signed_out')
-  return { state, effects: [{ type: 'restore' }] }
+  return {
+    state,
+    effects: [{ type: 'restore', expectedUserId: rememberedUserId }]
+  }
 }
 
 function transitionSignedIn(
@@ -274,6 +277,7 @@ function transitionRestoring(
     case 'proof_missing':
       return settleSignedOut('restore_failed')
     case 'proof_errored':
+    case 'login_errored':
       return waitToRetry(state.failures + 1)
     default:
       return { state, effects: [] }
@@ -286,6 +290,7 @@ function transitionBoot(
 ): WebSessionIdentityTransition {
   switch (state.phase) {
     case 'reading':
+      if (event.type === 'login_errored') return waitToRetry(state.failures + 1)
       return event.type === 'read_answered'
         ? applyReadAnswered(
             state.failures,
@@ -498,8 +503,13 @@ function createAccountIdentity(
     request: () => Promise<WebSessionResult>
   ): Promise<void> {
     const result = await request()
-    const rememberedUserId = await login.currentUserId().catch(() => null)
-    if (started === epoch) dispatch({ type, result, rememberedUserId })
+    const remembered = await login.currentUserId().then(
+      (value) => ({ value }),
+      () => undefined
+    )
+    if (started !== epoch) return
+    if (remembered === undefined) return dispatch({ type: 'login_errored' })
+    dispatch({ type, result, rememberedUserId: remembered.value })
   }
 
   function beat(): void {
@@ -567,7 +577,10 @@ function createAccountIdentity(
     ]
   }
 
-  async function restore(started: number): Promise<void> {
+  async function restore(
+    started: number,
+    expectedUserId: string
+  ): Promise<void> {
     const proof = await login.getProof().then(
       (value) => ({ value }),
       () => undefined
@@ -577,7 +590,7 @@ function createAccountIdentity(
     const { value } = proof
     if (value === null) return dispatch({ type: 'proof_missing' })
     await answer(started, 'restore_answered', () =>
-      createWebSession(options.session, async () => value)
+      createWebSession(options.session, async () => value, { expectedUserId })
     )
   }
 
@@ -589,7 +602,7 @@ function createAccountIdentity(
         )
         return
       case 'restore':
-        void restore(epoch)
+        void restore(epoch, effect.expectedUserId)
         return
       case 'schedule_retry':
         cancelRetry = schedule(

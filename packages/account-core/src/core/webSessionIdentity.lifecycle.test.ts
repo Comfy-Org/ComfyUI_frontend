@@ -448,7 +448,10 @@ describe('a heartbeat answer while signed in', () => {
       name: 'no session with a remembered login restores in place',
       result: failure('NO_SESSION'),
       remembered: 'user-1',
-      expected: { state: SIGNED_IN, effects: [{ type: 'restore' }] }
+      expected: {
+        state: SIGNED_IN,
+        effects: [{ type: 'restore', expectedUserId: 'user-1' }]
+      }
     },
     {
       name: 'an expired session without a remembered login signs out',
