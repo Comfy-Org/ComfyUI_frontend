@@ -1932,7 +1932,7 @@
   },
   "ByteDanceSeedreamLayerSeparationNode": {
     "description": "画像を背景プレートと、最大16個までの再配置可能な透明レイヤーに分解します。各レイヤーには積み重ね順、バウンディングボックス、名前、説明が含まれます。",
-    "display_name": "ByteDance Seedream 5.0 Pro レイヤー分離",
+    "display_name": "ByteDance Seedream 5.0 Pro レイヤー分離（レガシー）",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -1990,6 +1990,62 @@
       "5": {
         "name": "layer_stack",
         "tooltip": "Create Layered Image用の編集可能なレイヤードキュメント：ベースプレートと、各要素が本来の位置と積み重ね順で名前付き・タイトに切り抜かれたレイヤーとして含まれます。直接接続するか、Add Layerで拡張可能です。"
+      }
+    }
+  },
+  "ByteDanceSeedreamLayerSeparationNodeV2": {
+    "description": "画像を背景プレートと、位置変更可能な最大16個の透明レイヤーに分解します。各レイヤーには重ね順、バウンディングボックス、名前、説明が含まれます。",
+    "display_name": "ByteDance Seedream 5.0 レイヤー分離",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_crop_layers": {
+        "name": "crop_layers"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_prompt_optimization": {
+        "name": "prompt_optimization"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_size": {
+        "name": "size"
+      },
+      "model_watermark": {
+        "name": "watermark"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "base_image",
+        "tooltip": "レイヤーを重ねるベース画像（背景プレート）。"
+      },
+      "1": {
+        "name": "base_mask",
+        "tooltip": "ベース画像の透明度（1 = 透明、LoadImageの規則）。現在は常に完全不透明です。"
+      },
+      "2": {
+        "name": "layers",
+        "tooltip": "下から上の順に並んだ透明レイヤー。フルキャンバスモード：バウンディングボックス位置に、ベースサイズの黒いキャンバス上へ配置されます。最小サイズモード：バウンディングボックスに合わせて切り抜かれ、左上に固定され、最大レイヤーのサイズまでパディングされます。"
+      },
+      "3": {
+        "name": "masks",
+        "tooltip": "layersバッチとインデックス対応したレイヤーごとの透明度（1 = 透明、LoadImageの規則）。ImageCompositeMasked形式の合成では、先にInvertMaskを追加してください。"
+      },
+      "4": {
+        "name": "bboxes",
+        "tooltip": "layersバッチとインデックス対応した、レイヤーごとに1つの配置ボックス（レイヤーごとの配置を再構築するには、両方とmasksをLayers From Bounding Boxesへ入力します）：{x, y, width, height, metadata: {name, desc, z_index, native_size, content_rect, flags}}。content_rect = [left, top, width, height] は自身のフレーム内におけるレイヤーのコンテンツ領域です。ボックス位置にそのオフセットを加えた位置でキャンバスに配置されます。"
+      },
+      "5": {
+        "name": "layer_stack",
+        "tooltip": "Create Layered Image用の編集可能なレイヤードキュメントです。ベースプレートに加え、各要素が実際の位置と重ね順で、名前付きのタイトに切り抜かれた個別レイヤーとして含まれます。直接接続するか、Add Layerで拡張できます。"
       }
     }
   },
@@ -16893,7 +16949,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "回答前にモデルがどの程度推論するかを指定します。'default' はモデルに選択を委ねます。対応レベルはモデルごとに異なります: GPT-6 Astra は low-max、GPT-5.6 は none-max（minimal なし）、GPT-5.5 は none-xhigh、GPT-5.5 Pro は medium-xhigh、GPT-5 は minimal-high、o-series は low-high。GPT-4.1 には推論機能がありません。未対応のレベルはリクエスト送信前に拒否されます。"
+        "tooltip": "モデルが回答前にどの程度推論するかを指定します。'default'ではモデルに選択を委ねます。対応レベルはモデルごとに異なります：GPT-6 Astra low-max、GPT-6 Sol/LunaおよびGPT-5.6 none-max（minimalなし）、GPT-5.5 none-xhigh、GPT-5.5 Pro medium-xhigh、GPT-5 minimal-high、o-series low-high。GPT-4.1には推論機能がありません。非対応のレベルはリクエスト送信前に拒否されます。"
       },
       "truncation": {
         "name": "切り捨て",

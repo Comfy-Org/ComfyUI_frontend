@@ -1931,7 +1931,7 @@
     }
   },
   "ByteDanceSeedreamLayerSeparationNode": {
-    "display_name": "ByteDance Seedream 5.0 Pro Layer Separation",
+    "display_name": "ByteDance Seedream 5.0 Pro Layer Separation (Legacy)",
     "description": "Decompose an image into a background plate plus up to 16 repositionable transparent layers, each with stacking order, bounding box, name and description.",
     "inputs": {
       "image": {
@@ -1964,6 +1964,62 @@
       },
       "control_after_generate": {
         "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "base_image",
+        "tooltip": "The base image (background plate) the layers stack onto."
+      },
+      "1": {
+        "name": "base_mask",
+        "tooltip": "Transparency of the base image (1 = transparent, LoadImage convention); currently always fully opaque."
+      },
+      "2": {
+        "name": "layers",
+        "tooltip": "Transparent layers ordered bottom to top. Full canvas mode: placed on a black base-sized canvas at their bounding-box position. Minimal size mode: cropped to their bounding box, anchored top-left, padded to the largest layer."
+      },
+      "3": {
+        "name": "masks",
+        "tooltip": "Per-layer transparency, index-aligned with the layers batch (1 = transparent, LoadImage convention). For ImageCompositeMasked-style compositing, add InvertMask first."
+      },
+      "4": {
+        "name": "bboxes",
+        "tooltip": "One placement box per layer, index-aligned with the layers batch (feed both, plus masks, into Layers From Bounding Boxes to rebuild per-layer placement): {x, y, width, height, metadata: {name, desc, z_index, native_size, content_rect, flags}}. content_rect = [left, top, width, height] is the layer's content region within its own frame; it lands on the canvas at the box position plus that offset."
+      },
+      "5": {
+        "name": "layer_stack",
+        "tooltip": "Ready-to-edit layer document for Create Layered Image: the base plate plus each element as its own named, tight-cropped layer at its true position and stacking order. Connect directly, or extend with Add Layer."
+      }
+    }
+  },
+  "ByteDanceSeedreamLayerSeparationNodeV2": {
+    "display_name": "ByteDance Seedream 5.0 Layer Separation",
+    "description": "Decompose an image into a background plate plus up to 16 repositionable transparent layers, each with stacking order, bounding box, name and description.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_crop_layers": {
+        "name": "crop_layers"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_prompt_optimization": {
+        "name": "prompt_optimization"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_size": {
+        "name": "size"
+      },
+      "model_watermark": {
+        "name": "watermark"
       }
     },
     "outputs": {
@@ -16897,7 +16953,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "How much the model reasons before answering. 'default' leaves the choice to the model. Supported levels differ per model: GPT-6 Astra low-max, GPT-5.6 none-max (no minimal), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, o-series low-high; GPT-4.1 has no reasoning. Unsupported levels are rejected before the request is sent."
+        "tooltip": "How much the model reasons before answering. 'default' leaves the choice to the model. Supported levels differ per model: GPT-6 Astra low-max, GPT-6 Sol/Luna and GPT-5.6 none-max (no minimal), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, o-series low-high; GPT-4.1 has no reasoning. Unsupported levels are rejected before the request is sent."
       }
     },
     "outputs": {

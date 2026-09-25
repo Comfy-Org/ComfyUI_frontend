@@ -1932,7 +1932,7 @@
   },
   "ByteDanceSeedreamLayerSeparationNode": {
     "description": "이미지를 배경 플레이트와 최대 16개의 재배치 가능한 투명 레이어로 분해합니다. 각 레이어는 쌓이는 순서, 바운딩 박스, 이름, 설명을 가집니다.",
-    "display_name": "ByteDance Seedream 5.0 Pro 레이어 분리",
+    "display_name": "ByteDance Seedream 5.0 Pro 레이어 분리 (레거시)",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -1990,6 +1990,62 @@
       "5": {
         "name": "layer_stack",
         "tooltip": "Create Layered Image에서 편집 가능한 레이어 문서: 기본 플레이트와 각 요소가 이름이 지정된 타이트 크롭 레이어로, 실제 위치와 쌓이는 순서로 포함됩니다. 바로 연결하거나 Add Layer로 확장할 수 있습니다."
+      }
+    }
+  },
+  "ByteDanceSeedreamLayerSeparationNodeV2": {
+    "description": "이미지를 배경 플레이트와 위치를 변경할 수 있는 투명 레이어 최대 16개로 분해합니다. 각 레이어에는 쌓임 순서, 경계 상자, 이름 및 설명이 포함됩니다.",
+    "display_name": "ByteDance Seedream 5.0 레이어 분리",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "model_crop_layers": {
+        "name": "레이어 자르기"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_prompt_optimization": {
+        "name": "프롬프트 최적화"
+      },
+      "model_seed": {
+        "name": "시드"
+      },
+      "model_size": {
+        "name": "크기"
+      },
+      "model_watermark": {
+        "name": "워터마크"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "기본 이미지",
+        "tooltip": "레이어가 쌓이는 기본 이미지(배경 플레이트)입니다."
+      },
+      "1": {
+        "name": "기본 mask",
+        "tooltip": "기본 이미지의 투명도(1 = 투명, LoadImage 규칙)입니다. 현재는 항상 완전히 불투명합니다."
+      },
+      "2": {
+        "name": "레이어",
+        "tooltip": "아래에서 위 순서로 정렬된 투명 레이어입니다. 전체 캔버스 모드: 경계 상자 위치에 맞춰 검은색 기본 이미지 크기 캔버스에 배치됩니다. 최소 크기 모드: 경계 상자에 맞게 잘리고, 왼쪽 위에 고정되며, 가장 큰 레이어 크기에 맞춰 패딩이 추가됩니다."
+      },
+      "3": {
+        "name": "mask",
+        "tooltip": "레이어 배치와 인덱스가 정렬된 레이어별 투명도입니다(1 = 투명, LoadImage 규칙). ImageCompositeMasked 스타일 합성에는 먼저 InvertMask를 추가하세요."
+      },
+      "4": {
+        "name": "경계 상자",
+        "tooltip": "레이어당 하나의 배치 상자이며, 레이어 배치와 인덱스가 정렬됩니다(레이어와 masks를 함께 Layers From Bounding Boxes에 입력하여 레이어별 배치를 다시 구성합니다): {x, y, width, height, metadata: {name, desc, z_index, native_size, content_rect, flags}}. content_rect = [left, top, width, height]는 자체 프레임 내 레이어 콘텐츠 영역이며, 상자 위치에 해당 오프셋을 더한 캔버스 위치에 배치됩니다."
+      },
+      "5": {
+        "name": "레이어 스택",
+        "tooltip": "Create Layered Image를 위한 즉시 편집 가능한 레이어 문서입니다. 기본 플레이트와 각 요소가 실제 위치 및 쌓임 순서대로 이름이 지정된 꼭 맞게 잘린 개별 레이어로 포함됩니다. 직접 연결하거나 Add Layer로 확장하세요."
       }
     }
   },
@@ -16893,7 +16949,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "모델이 답변하기 전에 수행하는 추론의 정도입니다. 'default'는 모델이 선택하도록 둡니다. 지원되는 수준은 모델별로 다릅니다: GPT-6 Astra는 low-max, GPT-5.6은 none-max (minimal 없음), GPT-5.5는 none-xhigh, GPT-5.5 Pro는 medium-xhigh, GPT-5는 minimal-high, o-series는 low-high; GPT-4.1은 추론을 지원하지 않습니다. 지원되지 않는 수준은 요청이 전송되기 전에 거부됩니다."
+        "tooltip": "모델이 답변하기 전에 얼마나 추론할지 설정합니다. 'default'는 선택을 모델에 맡깁니다. 지원 수준은 모델마다 다릅니다: GPT-6 Astra low-max, GPT-6 Sol/Luna 및 GPT-5.6 none-max (minimal 없음), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, o-series low-high; GPT-4.1은 추론을 지원하지 않습니다. 지원되지 않는 수준은 요청이 전송되기 전에 거부됩니다."
       },
       "truncation": {
         "name": "트렁케이션",
