@@ -4,6 +4,7 @@ import type { IngestSubscriptionTier } from './tierPricing'
 import {
   ENTERPRISE_ENDING_NOTICE_DAYS,
   hasActivePaidPlan,
+  hasScheduledEnterpriseEnd,
   isEnterprisePlanSlug,
   isSalesManagedTier,
   isUnknownTier,
@@ -142,5 +143,28 @@ describe('isWithinEnterpriseEndingNotice', () => {
     expect(isWithinEnterpriseEndingNotice(null, NOW)).toBe(false)
     expect(isWithinEnterpriseEndingNotice(undefined, NOW)).toBe(false)
     expect(isWithinEnterpriseEndingNotice('not-a-date', NOW)).toBe(false)
+  })
+})
+
+describe('hasScheduledEnterpriseEnd', () => {
+  const END = '2027-01-15T00:00:00Z'
+
+  it('recognizes an end-dated Enterprise plan', () => {
+    expect(hasScheduledEnterpriseEnd('ENTERPRISE', END)).toBe(true)
+  })
+
+  it('needs a populated, parseable end date', () => {
+    expect(hasScheduledEnterpriseEnd('ENTERPRISE', null)).toBe(false)
+    expect(hasScheduledEnterpriseEnd('ENTERPRISE', undefined)).toBe(false)
+    expect(hasScheduledEnterpriseEnd('ENTERPRISE', 'not-a-date')).toBe(false)
+  })
+
+  it('is strictly Enterprise — self-serve and unknown tiers never qualify', () => {
+    expect(hasScheduledEnterpriseEnd('PRO', END)).toBe(false)
+    expect(hasScheduledEnterpriseEnd('TEAM', END)).toBe(false)
+    expect(
+      hasScheduledEnterpriseEnd('GALACTIC' as IngestSubscriptionTier, END)
+    ).toBe(false)
+    expect(hasScheduledEnterpriseEnd(null, END)).toBe(false)
   })
 })

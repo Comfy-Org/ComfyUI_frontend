@@ -8,6 +8,7 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import { hasScheduledEnterpriseEnd } from '@/platform/cloud/subscription/constants/tierPricing'
 import { isCloud } from '@/platform/distribution/types'
 import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
@@ -132,8 +133,21 @@ export function useMembersPanel() {
     isPlanLoading
   } = useTeamPlan()
   const subscriptionDialog = useSubscriptionDialog()
-  const { maxSeats, occupiedSeats } = useBillingContext()
+  const { maxSeats, occupiedSeats, subscription } = useBillingContext()
   const { canChangeSeats, canInviteMembers } = useBillingCapabilities()
+
+  // An Enterprise cancel_at is an agreed end date, not a lapsed plan
+  // (FE-2035): the workspace runs until that date, so member management
+  // stays live — the same quiet path the subscription panel takes. Only a
+  // self-serve cancellation greys invites and offers the Team upsell.
+  const isSelfServeCancelled = computed(
+    () =>
+      isCancelled.value &&
+      !hasScheduledEnterpriseEnd(
+        subscription.value?.tier,
+        subscription.value?.endDate
+      )
+  )
 
   const permissions = computed(() => {
     const canManageMembers =
@@ -147,7 +161,7 @@ export function useMembersPanel() {
       ...workspacePermissions.value,
       canViewOtherMembers: hasMemberSeats.value,
       canViewPendingInvites: canManageInvites,
-      canInviteMembers: canManageInvites && !isCancelled.value,
+      canInviteMembers: canManageInvites && !isSelfServeCancelled.value,
       canManageInvites,
       canManageMembers
     }
@@ -225,7 +239,7 @@ export function useMembersPanel() {
     () =>
       isPlanLoading.value ||
       !permissions.value.canInviteMembers ||
-      isCancelled.value ||
+      isSelfServeCancelled.value ||
       maxSeats.value === null ||
       occupiedSeats.value === null ||
       !hasMemberSeats.value ||
@@ -252,7 +266,7 @@ export function useMembersPanel() {
       void showInviteMemberUpsellDialog()
       return
     }
-    if (isCancelled.value || isMemberLimitReached.value) return
+    if (isSelfServeCancelled.value || isMemberLimitReached.value) return
     void showInviteMemberDialog()
   }
 
@@ -413,7 +427,7 @@ export function useMembersPanel() {
     isInPersonalWorkspace,
     hasTeamPlan,
     isOnTeamPlan,
-    isCancelled,
+    isSelfServeCancelled,
     hasLapsedTeamPlan,
     hasMemberSeats,
     isPlanLoading,

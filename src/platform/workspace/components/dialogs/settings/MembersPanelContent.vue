@@ -201,7 +201,7 @@
     <MemberUpsellBanner
       v-if="
         !isPlanLoading &&
-        ((isInPersonalWorkspace && maxSeats === 1) || isCancelled) &&
+        ((isInPersonalWorkspace && maxSeats === 1) || isSelfServeCancelled) &&
         permissions.canManageSubscription
       "
       :reactivate="hasLapsedTeamPlan"
@@ -244,7 +244,7 @@ const {
   isInPersonalWorkspace,
   hasLapsedTeamPlan,
   hasMemberSeats,
-  isCancelled,
+  isSelfServeCancelled,
   isPlanLoading,
   hasMultipleMembers,
   showSearch,

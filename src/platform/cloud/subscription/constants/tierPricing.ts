@@ -146,6 +146,18 @@ export function isWithinEnterpriseEndingNotice(
   return end - now <= ENTERPRISE_ENDING_NOTICE_DAYS * MS_PER_DAY
 }
 
+// The quiet-path test itself: an ENTERPRISE plan whose end date parses is an
+// agreed ending still running, and must not borrow the self-serve cancelled
+// treatment on any surface. An unreadable end date falls back to the stock
+// treatment; strictly ENTERPRISE for the same reasons as the notice window.
+export function hasScheduledEnterpriseEnd(
+  tier: IngestSubscriptionTier | null | undefined,
+  endDate: string | null | undefined
+): boolean {
+  if (tier !== 'ENTERPRISE' || !endDate) return false
+  return !Number.isNaN(Date.parse(endDate))
+}
+
 // Includes the workspace-level TEAM, which toTierKey maps to null: a catalog
 // key is not a usable test for "is on a paid plan".
 export function hasActivePaidPlan(
