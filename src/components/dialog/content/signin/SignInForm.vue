@@ -65,7 +65,6 @@
 <script setup lang="ts">
 import { toTypedSchema } from '@vee-validate/zod'
 import { useThrottleFn } from '@vueuse/core'
-import { useToast } from 'primevue/usetoast'
 import { Field as VeeField, useForm, useIsFieldValid } from 'vee-validate'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -79,6 +78,7 @@ import FieldGroup from '@/components/ui/field/FieldGroup.vue'
 import FieldLabel from '@/components/ui/field/FieldLabel.vue'
 import Input from '@/components/ui/input/Input.vue'
 import PasswordInput from '@/components/ui/input/PasswordInput.vue'
+import { useToast } from '@/components/ui/toast'
 import Spinner from '@/components/ui/spinner/Spinner.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { signInSchema } from '@/schemas/signInSchema'
@@ -113,11 +113,7 @@ const onSubmit = useThrottleFn(
 async function handleForgotPassword() {
   const email = values.email
   if (!email || !isEmailValid.value) {
-    toast.add({
-      severity: 'warn',
-      summary: t('auth.login.emailPlaceholder'),
-      life: 5_000
-    })
+    toast.warning(t('auth.login.emailPlaceholder'), { duration: 5_000 })
     document.getElementById(emailInputId)?.focus()
     return
   }
