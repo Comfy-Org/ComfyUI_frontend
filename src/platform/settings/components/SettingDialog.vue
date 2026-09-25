@@ -1,6 +1,5 @@
 <template>
   <BaseModalLayout content-title="" data-testid="settings-dialog" size="full">
-
     <template #leftPanel>
       <div class="px-3">
         <SearchInput
