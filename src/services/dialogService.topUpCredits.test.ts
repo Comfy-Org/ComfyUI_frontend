@@ -135,6 +135,60 @@ describe('showTopUpCreditsDialog', () => {
     expect(useDialogStore().showDialog).not.toHaveBeenCalled()
   })
 
+  it('keeps the insufficient-credits copy and still attributes the surface', async () => {
+    useBillingCapabilities().canTopUp = computed(() => false)
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
+
+    await useDialogService().showTopUpCreditsDialog({
+      isInsufficientCredits: true,
+      source: 'agent_paywall'
+    })
+
+    expect(showSubscriptionDialog).toHaveBeenCalledWith({
+      reason: 'out_of_credits',
+      paymentIntentSource: 'agent_paywall'
+    })
+  })
+
+  it('attributes the surface on the blocked path, which has no copy branch', async () => {
+    useBillingCapabilities().canTopUp = computed(() => false)
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
+
+    await useDialogService().showTopUpCreditsDialog({
+      source: 'agent_paywall'
+    })
+
+    expect(showSubscriptionDialog).toHaveBeenCalledWith({
+      reason: 'agent_paywall',
+      paymentIntentSource: 'agent_paywall'
+    })
+  })
+
+  it('passes the surface to the workspace rail content', async () => {
+    await useDialogService().showTopUpCreditsDialog({
+      isInsufficientCredits: true,
+      source: 'agent_paywall'
+    })
+
+    const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
+    expect(args.props).toEqual({
+      isInsufficientCredits: true,
+      source: 'agent_paywall'
+    })
+  })
+
+  it('withholds the surface from the legacy rail content', async () => {
+    state.type = 'legacy'
+
+    await useDialogService().showTopUpCreditsDialog({
+      isInsufficientCredits: true,
+      source: 'agent_paywall'
+    })
+
+    const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
+    expect(args.props).toEqual({ isInsufficientCredits: true })
+  })
+
   describe('non-cloud distribution', () => {
     beforeEach(() => {
       mockIsCloud.value = false

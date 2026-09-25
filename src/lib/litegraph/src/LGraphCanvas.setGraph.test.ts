@@ -136,7 +136,7 @@ describe('LGraphCanvas graph replacement', () => {
         selectableKeyOf(incoming)
       ])
       expect(node.selected).toBeFalsy()
-      expect(canvas.selectedItems.size).toBe(0)
+      expect([...canvas.selectedItems]).toEqual([incoming])
     }
   )
 })

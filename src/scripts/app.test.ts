@@ -6,7 +6,7 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => ref('') }))
@@ -15,8 +15,13 @@ import { addAutogrow } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpe
 import type { CurveData } from '@/components/curve/types'
 import type { useExtensionService } from '@/services/extensionService'
 import { t } from '@/i18n'
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraph,
+  LGraphCanvas,
+  LGraphNode,
+  LiteGraph
+} from '@/lib/litegraph/src/litegraph'
+import * as keybindingServiceModule from '@/platform/keybindings/keybindingService'
 import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
 import type {
   ComfyApiWorkflow,
@@ -3289,5 +3294,69 @@ describe('ComfyApp', () => {
         ).toEqual(errorTypes)
       }
     )
+  })
+
+  describe('canvas keybindings', () => {
+    const origProcessKey = LGraphCanvas.prototype.processKey
+
+    afterEach(() => {
+      LGraphCanvas.prototype.processKey = origProcessKey
+    })
+
+    it('routes canvas keydown through the keybinding service before litegraph', () => {
+      const executeCanvasKeybinding = vi.fn(() => true)
+      vi.spyOn(keybindingServiceModule, 'useKeybindingService').mockReturnValue(
+        fromPartial<
+          ReturnType<typeof keybindingServiceModule.useKeybindingService>
+        >({ executeCanvasKeybinding })
+      )
+      ;(
+        app as unknown as { addProcessKeyHandler(): void }
+      ).addProcessKeyHandler()
+
+      const graph = new LGraph()
+      const change = vi.spyOn(graph, 'change')
+      const canvas = fromPartial<LGraphCanvas>({ graph, selected_nodes: {} })
+      const event = new KeyboardEvent('keydown', {
+        key: 'F9',
+        cancelable: true
+      })
+
+      LGraphCanvas.prototype.processKey.call(canvas, event)
+
+      expect(executeCanvasKeybinding).toHaveBeenCalledWith(event)
+      expect(change).toHaveBeenCalledOnce()
+    })
+
+    it('falls through to litegraph when the keybinding service declines the event', () => {
+      const executeCanvasKeybinding = vi.fn(() => false)
+      vi.spyOn(keybindingServiceModule, 'useKeybindingService').mockReturnValue(
+        fromPartial<
+          ReturnType<typeof keybindingServiceModule.useKeybindingService>
+        >({ executeCanvasKeybinding })
+      )
+      const processKey = vi.fn(function (this: LGraphCanvas) {
+        this.graph?.change()
+      })
+      LGraphCanvas.prototype.processKey = processKey
+      ;(
+        app as unknown as { addProcessKeyHandler(): void }
+      ).addProcessKeyHandler()
+
+      const graph = new LGraph()
+      const change = vi.spyOn(graph, 'change')
+      const canvas = fromPartial<LGraphCanvas>({ graph, selected_nodes: {} })
+      const event = new KeyboardEvent('keydown', {
+        key: 'F9',
+        cancelable: true
+      })
+
+      LGraphCanvas.prototype.processKey.call(canvas, event)
+
+      expect(executeCanvasKeybinding).toHaveBeenCalledWith(event)
+      expect(processKey).toHaveBeenCalledWith(event)
+      expect(change).toHaveBeenCalledOnce()
+      expect(event.defaultPrevented).toBe(false)
+    })
   })
 })
