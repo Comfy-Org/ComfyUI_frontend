@@ -70,6 +70,9 @@ const shown = computed(() => (view === 'result' ? take.url : clip))
           {{ formatElapsed(elapsed) }}
         </span>
       </p>
+      <p class="max-w-xs text-center text-xs text-primary-warm-gray">
+        {{ rc('reshoot.generatingHelp', locale) }}
+      </p>
       <button
         v-if="cancellable"
         type="button"

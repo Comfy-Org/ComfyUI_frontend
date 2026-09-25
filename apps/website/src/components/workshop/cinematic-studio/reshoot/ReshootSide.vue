@@ -3,6 +3,7 @@ import { computed } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import type { DepthState } from '../../../../composables/useReshootDemo'
+import { RESHOOT_FRAMES } from '../../../../lib/workshop/cinematic-studio/reshoot'
 import type {
   CameraKey,
   ReshootAspect,
@@ -58,6 +59,10 @@ const moveValue = computed(() =>
     ? rc('reshoot.move.keys', locale).replace('{count}', String(keys.length))
     : rc('reshoot.move.static', locale)
 )
+const frames = rc('reshoot.frames', locale)
+  .replace('{frames}', String(RESHOOT_FRAMES))
+  .replace('{seconds}', (RESHOOT_FRAMES / 24).toFixed(1))
+
 function choose(event: Event) {
   const input = event.target
   if (input instanceof HTMLInputElement && input.files?.[0])
@@ -85,7 +90,11 @@ function choose(event: Event) {
           {{ isExample ? rc('reshoot.pick.exampleTitle', locale) : clipName }}
         </span>
         <span class="truncate text-[11px] text-primary-warm-gray">
-          {{ rc(ready ? 'reshoot.clip.ready' : 'reshoot.aim.reading', locale) }}
+          {{
+            ready
+              ? `${rc('reshoot.clip.ready', locale)} · ${frames}`
+              : rc('reshoot.aim.reading', locale)
+          }}
         </span>
       </span>
       <label
@@ -136,6 +145,9 @@ function choose(event: Event) {
                 · {{ rc('reshoot.optional', locale) }}
               </span>
             </label>
+            <p class="text-[11px]/relaxed text-primary-warm-gray">
+              {{ rc('reshoot.promptHelp', locale) }}
+            </p>
             <textarea
               id="reshoot-prompt"
               v-model="prompt"

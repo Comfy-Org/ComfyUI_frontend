@@ -76,6 +76,10 @@ const zone = computed(() => cameraZone(camera))
       :disabled
       @update:model-value="emit('aim', { [axis]: $event })"
     />
+    <p class="text-[11px]/relaxed text-primary-warm-gray">
+      {{ rc('reshoot.distanceHelp', locale) }}
+      {{ rc('reshoot.cameraHelp', locale) }}
+    </p>
     <button
       type="button"
       :aria-expanded="expanded"
@@ -113,6 +117,9 @@ const zone = computed(() => cameraZone(camera))
         />
         {{ rc('reshoot.keepAim', locale) }}
       </label>
+      <p class="text-[11px]/relaxed text-primary-warm-gray">
+        {{ rc('reshoot.keepAimHelp', locale) }}
+      </p>
     </div>
   </div>
 </template>

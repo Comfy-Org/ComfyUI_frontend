@@ -116,7 +116,11 @@ const fileName = computed(
     </div>
     <p class="text-xs text-primary-warm-gray">
       {{
-        current ? takeLabel(current, locale) : rc('reshoot.take.aim', locale)
+        current?.id === 'example'
+          ? rc('reshoot.take.exampleHelp', locale)
+          : current
+            ? takeLabel(current, locale)
+            : rc('reshoot.take.aim', locale)
       }}
     </p>
     <ReshootTakes :takes :selected :locale @select="emit('select', $event)" />

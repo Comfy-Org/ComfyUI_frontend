@@ -81,8 +81,9 @@ const copy = {
     'zh-CN': '需要 1.5 到 5 分钟，生成期间可以继续调整机位。'
   },
   'reshoot.generate.wait': {
-    en: 'Opens once the scene is read, about 20 to 40 seconds.',
-    'zh-CN': '场景读取完成后即可使用，约 20 到 40 秒。'
+    en: 'MoGe estimates depth for every frame, about 20 to 40 seconds. The first run after a quiet spell also starts a server.',
+    'zh-CN':
+      'MoGe 会估算每一帧的深度，约 20 到 40 秒。闲置一段时间后的首次运行还需要启动服务器。'
   },
   'reshoot.expand': { en: 'Full screen', 'zh-CN': '全屏' },
   'reshoot.collapse': { en: 'Exit full screen', 'zh-CN': '退出全屏' },
@@ -99,6 +100,34 @@ const copy = {
   'reshoot.advanced.value': {
     en: 'Prompt, dialogue, seed',
     'zh-CN': '提示词、对白、种子'
+  },
+  'reshoot.cameraHelp': {
+    en: 'Or drag the preview itself. Magenta is what the original camera never saw; the model paints it in.',
+    'zh-CN': '也可以直接拖动预览。洋红色是原机位从未拍到的部分，由模型补画。'
+  },
+  'reshoot.distanceHelp': {
+    en: 'The current LoRA follows distance loosely. Angles are what it is good at.',
+    'zh-CN': '当前 LoRA 对距离的控制较弱，更擅长角度。'
+  },
+  'reshoot.keepAimHelp': {
+    en: 'Orbit the subject but keep looking where the original looked, as the training data does.',
+    'zh-CN': '围绕主体移动，但保持原片的朝向，与训练数据一致。'
+  },
+  'reshoot.promptHelp': {
+    en: 'Describe what should fill the areas the original camera never saw.',
+    'zh-CN': '描述原机位未拍到的区域应填充什么内容。'
+  },
+  'reshoot.generatingHelp': {
+    en: 'The first run after a quiet spell also loads the model.',
+    'zh-CN': '闲置一段时间后的首次运行还需要加载模型。'
+  },
+  'reshoot.take.exampleHelp': {
+    en: 'Example result: the clip re-shot from a new angle at 768p. Aim a camera of your own on the left.',
+    'zh-CN': '示例结果：该片段以 768p 从新角度重拍。在左侧设置你自己的机位。'
+  },
+  'reshoot.frames': {
+    en: '{frames} frames at 24 fps ({seconds} s)',
+    'zh-CN': '{frames} 帧，24 fps（{seconds} 秒）'
   },
   'reshoot.section.camera': { en: 'New camera', 'zh-CN': '新机位' },
   'reshoot.section.move': { en: 'Camera move', 'zh-CN': '运镜' },
@@ -120,8 +149,14 @@ const copy = {
   'reshoot.aspect': { en: 'Aspect ratio', 'zh-CN': '画面比例' },
   'reshoot.aspect.source': { en: 'Match source', 'zh-CN': '与原片一致' },
   'reshoot.size': { en: 'Output size', 'zh-CN': '输出尺寸' },
-  'reshoot.size.480p': { en: 'Faster', 'zh-CN': '更快' },
-  'reshoot.size.768p': { en: 'Sharper, slower', 'zh-CN': '更清晰，更慢' },
+  'reshoot.size.480p': {
+    en: '0.4 MP · 864×480 · faster',
+    'zh-CN': '0.4 MP · 864×480 · 更快'
+  },
+  'reshoot.size.768p': {
+    en: '1.0 MP · 1376×768 · sharper, slower',
+    'zh-CN': '1.0 MP · 1376×768 · 更清晰，更慢'
+  },
   'reshoot.axis.azimuth': { en: 'Azimuth', 'zh-CN': '水平角' },
   'reshoot.axis.elevation': { en: 'Elevation', 'zh-CN': '俯仰角' },
   'reshoot.axis.distance': { en: 'Distance', 'zh-CN': '距离' },
@@ -132,8 +167,8 @@ const copy = {
     'zh-CN': '保持原机位的朝向'
   },
   'reshoot.zone.green': {
-    en: 'Inside the range the model was checked on.',
-    'zh-CN': '在模型验证过的范围内。'
+    en: 'Inside the range the LoRA was checked on.',
+    'zh-CN': '在 LoRA 验证过的范围内。'
   },
   'reshoot.zone.yellow': {
     en: 'Trained, but less reliable.',
@@ -158,8 +193,9 @@ const copy = {
   'reshoot.move.static': { en: 'Static', 'zh-CN': '固定机位' },
   'reshoot.move.keys': { en: '{count} keys', 'zh-CN': '{count} 个关键帧' },
   'reshoot.move.help': {
-    en: 'Scrub to a frame, aim, press Key. Two or more keys make a move.',
-    'zh-CN': '拖到某一帧，调整机位，按“关键帧”。两个以上的关键帧构成运镜。'
+    en: 'Scrub to a frame, aim, press Key. Two or more keys make a move; the camera holds before the first and after the last.',
+    'zh-CN':
+      '拖到某一帧，调整机位，按“关键帧”。两个以上的关键帧构成运镜；第一个之前和最后一个之后机位保持不动。'
   },
   'reshoot.move.frame': { en: 'Frame', 'zh-CN': '帧' },
   'reshoot.move.key': { en: 'Key', 'zh-CN': '关键帧' },
