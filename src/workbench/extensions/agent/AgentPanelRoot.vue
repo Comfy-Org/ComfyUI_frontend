@@ -153,6 +153,7 @@ const {
   canTopUp,
   canSubscribeSelfServe,
   hasResolvedCapabilities,
+  isReady: capabilityReadSettled,
   snapshotAuthoritative
 } = useBillingCapabilities()
 const paywallPresentation = computed(() => {
@@ -201,7 +202,12 @@ function onPaywallAction(action: AgentPaywallAction): void {
 const { messages: conversationMessages } = storeToRefs(conversationStore)
 watch(
   () =>
-    snapshotAuthoritative.value
+    // Gated on the read having *settled*, which includes settling as
+    // unavailable. `snapshotAuthoritative` is narrower — it excludes that
+    // outage state — and gating on it stranded those sessions: the paywall
+    // still renders, an owner still gets the fallback Add credits CTA, and its
+    // click is still reported, so the funnel saw CTAs with no impression.
+    capabilityReadSettled.value
       ? conversationMessages.value
           .filter((message) =>
             message.parts.some((part) => part.type === 'paywall')
@@ -214,7 +220,12 @@ watch(
     for (const id of paywallMessageIds) {
       if (!conversationStore.claimPaywallImpression(id)) continue
       telemetry.trackAgentPaywallShown({
-        reason: toAgentPaywallReason(paywallPresentation.value)
+        // An unavailable read leaves `canTopUp` guessing true for an owner, so
+        // the presentation would name a confident reason drawn from a fallback
+        // rather than from capabilities. Report the impression as `unknown`.
+        reason: snapshotAuthoritative.value
+          ? toAgentPaywallReason(paywallPresentation.value)
+          : 'unknown'
       })
     }
   },

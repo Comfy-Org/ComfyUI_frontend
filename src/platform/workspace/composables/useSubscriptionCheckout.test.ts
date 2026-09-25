@@ -601,6 +601,35 @@ describe('useSubscriptionCheckout', () => {
       }
     )
 
+    // Resume matches on actor, workspace, flow and intent — not source. An
+    // abandoned pricing preview for the same plan would otherwise be resumed
+    // by an agent-paywall entry and keep reporting `pricing`, so the agent's
+    // purchase would be credited to the surface the user walked away from.
+    it('does not inherit an abandoned journey entered from another source', async () => {
+      // Seeded with the bare tier:cycle intent the rail used before it keyed
+      // by source, so this is the record an abandoned pricing preview actually
+      // leaves behind.
+      resolveCheckoutJourney({
+        actorUid: 'user-1',
+        workspaceId: 'workspace-1',
+        entryFlow: 'initial_subscription',
+        entrySource: 'pricing',
+        intent: 'standard:yearly',
+        assignment: { status: 'unavailable' }
+      })
+
+      const checkout = await setup('agent_paywall')
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+
+      expect(journeyEvents().map((event) => event.entry_source)).toEqual([
+        'agent_paywall',
+        'agent_paywall'
+      ])
+    })
+
     it('emits entered, submitted, and operation_linked across a subscribe', async () => {
       const checkout = await setup()
 

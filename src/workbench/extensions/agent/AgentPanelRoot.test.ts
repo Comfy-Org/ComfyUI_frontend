@@ -906,9 +906,9 @@ describe('AgentPanelRoot paywall actions', () => {
 
   // Each unresolved input is its own wiring test: the panel reads
   // `hasResolvedCapabilities` and `workspaceRole`, so a table varying both at
-  // once would need a conditional body. Pending-versus-denied capability
-  // policy belongs to useBillingCapabilities.test.ts, which owns that split;
-  // the panel cannot tell the two apart because it never reads `isReady`.
+  // once would need a conditional body. Which states count as settled belongs
+  // to useBillingCapabilities.test.ts, which owns that split; these cases only
+  // pin what the panel renders from the inputs it is handed.
   async function expectWithheldPurchaseActions() {
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentConversationStore().messages.push({
@@ -949,6 +949,7 @@ describe('AgentPanelRoot paywall telemetry', () => {
   let canTopUp: Ref<boolean>
   let canSubscribeSelfServe: Ref<boolean>
   let hasResolvedCapabilities: Ref<boolean>
+  let capabilityReadSettled: Ref<boolean>
   let snapshotAuthoritative: Ref<boolean>
   let workspaceRole: Ref<'owner' | 'member' | undefined>
   let tier: Ref<SubscriptionTier | null>
@@ -964,6 +965,7 @@ describe('AgentPanelRoot paywall telemetry', () => {
     canTopUp = ref(true)
     canSubscribeSelfServe = ref(true)
     hasResolvedCapabilities = ref(true)
+    capabilityReadSettled = ref(true)
     snapshotAuthoritative = ref(true)
     workspaceRole = ref<'owner' | 'member' | undefined>('owner')
     tier = ref<SubscriptionTier | null>('STANDARD')
@@ -973,7 +975,7 @@ describe('AgentPanelRoot paywall telemetry', () => {
       fromPartial({
         canTopUp,
         canSubscribeSelfServe,
-        isReady: ref(true),
+        isReady: capabilityReadSettled,
         hasResolvedCapabilities,
         snapshotAuthoritative
       })
@@ -1118,6 +1120,7 @@ describe('AgentPanelRoot paywall telemetry', () => {
   it('withholds the paywall report until the capability read settles, then reports it once', async () => {
     canTopUp.value = false
     hasResolvedCapabilities.value = false
+    capabilityReadSettled.value = false
     snapshotAuthoritative.value = false
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
@@ -1127,6 +1130,7 @@ describe('AgentPanelRoot paywall telemetry', () => {
     expect(useTelemetry()!.trackAgentPaywallShown).not.toHaveBeenCalled()
 
     hasResolvedCapabilities.value = true
+    capabilityReadSettled.value = true
     snapshotAuthoritative.value = true
 
     await waitFor(() =>
@@ -1142,6 +1146,7 @@ describe('AgentPanelRoot paywall telemetry', () => {
     canTopUp.value = true
     canSubscribeSelfServe.value = false
     hasResolvedCapabilities.value = false
+    capabilityReadSettled.value = false
     snapshotAuthoritative.value = false
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
@@ -1153,6 +1158,7 @@ describe('AgentPanelRoot paywall telemetry', () => {
     canTopUp.value = false
     canSubscribeSelfServe.value = true
     hasResolvedCapabilities.value = true
+    capabilityReadSettled.value = true
     snapshotAuthoritative.value = true
 
     await waitFor(() =>
@@ -1160,6 +1166,29 @@ describe('AgentPanelRoot paywall telemetry', () => {
         useTelemetry()!.trackAgentPaywallShown
       ).toHaveBeenCalledExactlyOnceWith({
         reason: 'subscription_inactive'
+      })
+    )
+  })
+
+  // An unavailable read is settled but not authoritative, and it leaves
+  // `canTopUp` guessing true for an owner. Gating on authority alone stranded
+  // these sessions: the card renders, its Add credits CTA is reported below,
+  // and the funnel saw the click with no impression behind it.
+  it('reports an impression once when the read settles as unavailable', async () => {
+    canTopUp.value = true
+    canSubscribeSelfServe.value = true
+    hasResolvedCapabilities.value = false
+    capabilityReadSettled.value = true
+    snapshotAuthoritative.value = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    showPaywall()
+
+    await waitFor(() =>
+      expect(
+        useTelemetry()!.trackAgentPaywallShown
+      ).toHaveBeenCalledExactlyOnceWith({
+        reason: 'unknown'
       })
     )
   })
