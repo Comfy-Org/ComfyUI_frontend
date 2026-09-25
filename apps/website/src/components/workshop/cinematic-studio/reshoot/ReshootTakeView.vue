@@ -3,7 +3,7 @@ import { CircleStop, LoaderCircle } from '@lucide/vue'
 import { useTimestamp } from '@vueuse/core'
 import { computed } from 'vue'
 
-import type { ReshootTake } from '../../../../composables/useReshootDemo'
+import type { ReshootTake } from '../../../../composables/useReshootRun'
 import { formatElapsed } from '../../../../config/workshop-run'
 import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
 import type { Locale } from '../../../../i18n/translations'
@@ -29,7 +29,11 @@ const emit = defineEmits<{ cancel: [] }>()
 
 const now = useTimestamp({ interval: 1000 })
 const elapsed = computed(() => Math.max(0, now.value - take.startedAt))
-const shown = computed(() => (view === 'result' ? take.url : clip))
+const shown = computed(() => {
+  if (view === 'source') return clip
+  if (view === 'warp') return take.warpUrl ?? clip
+  return sound === 'original' && take.originalUrl ? take.originalUrl : take.url
+})
 </script>
 
 <template>
@@ -47,7 +51,7 @@ const shown = computed(() => (view === 'result' ? take.url : clip))
         class="max-h-full max-w-full"
       />
       <p
-        v-if="view === 'warp'"
+        v-if="view === 'warp' && !take.warpUrl"
         class="absolute inset-x-4 top-4 mx-auto w-fit max-w-md rounded-xl bg-primary-comfy-ink/85 px-3.5 py-2 text-center text-xs text-primary-comfy-canvas"
       >
         {{ rc('reshoot.warpNote', locale) }}
@@ -70,6 +74,9 @@ const shown = computed(() => (view === 'result' ? take.url : clip))
           {{ formatElapsed(elapsed) }}
         </span>
       </p>
+      <p v-if="take.stage" class="text-xs text-primary-comfy-canvas">
+        {{ take.stage }}
+      </p>
       <p class="max-w-xs text-center text-xs text-primary-warm-gray">
         {{ rc('reshoot.generatingHelp', locale) }}
       </p>
@@ -81,6 +88,19 @@ const shown = computed(() => (view === 'result' ? take.url : clip))
       >
         {{ rc('reshoot.cancel', locale) }}
       </button>
+    </div>
+    <div
+      v-else-if="take.status === 'failed'"
+      role="alert"
+      class="flex max-w-md flex-col items-center gap-2 px-6 text-center"
+    >
+      <p class="flex items-center gap-2.5 text-sm text-primary-warm-white">
+        <CircleStop class="size-4" aria-hidden="true" />
+        {{ rc('reshoot.take.failed', locale) }}
+      </p>
+      <p class="text-xs wrap-break-word text-primary-warm-gray">
+        {{ take.stage }}
+      </p>
     </div>
     <p
       v-else

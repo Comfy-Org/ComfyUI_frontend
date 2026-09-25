@@ -14,12 +14,7 @@ const { activeId, locale = 'en' } = defineProps<{
 
 const emit = defineEmits<{ pick: [] }>()
 
-const SAMPLES = [
-  ['street', 'neon-street'],
-  ['diner', 'diner'],
-  ['train', 'train']
-] as const
-
+// computed, so the titles follow the page's language
 const examples = computed<readonly PlaygroundExample[]>(() => [
   {
     id: 'crossview-example',
@@ -28,15 +23,9 @@ const examples = computed<readonly PlaygroundExample[]>(() => [
     values: {},
     outputUrl: RESHOOT_EXAMPLE.clip,
     mediaKind: 'video'
-  },
-  ...SAMPLES.map(([key, image]) => ({
-    id: `sample-${key}`,
-    title: rc(`reshoot.sample.${key}`, locale),
-    specs: [rc('reshoot.sample.meta', locale)],
-    values: {},
-    outputUrl: `/images/cinematic-studio/${image}.jpg`,
-    mediaKind: 'image' as const
-  }))
+  }
+  // Only the worked example: the other tiles were stills with no clip behind
+  // them, which a page that really runs could not keep its word on.
 ])
 </script>
 

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Clapperboard } from '@lucide/vue'
 
-import { useReshootDemo } from '../../../../composables/useReshootDemo'
+import { useReshootRun } from '../../../../composables/useReshootRun'
 import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
 import type { Locale } from '../../../../i18n/translations'
 import AppsBackLink from '../AppsBackLink.vue'
@@ -13,7 +13,9 @@ import ReshootUpload from './ReshootUpload.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
-const demo = useReshootDemo({ autoRead: true })
+// The real run: depth analysis and takes are jobs on the CrossView
+// deployment, and analysis waits for its button because it costs a run.
+const demo = useReshootRun(locale)
 const {
   upload,
   clip,
@@ -24,7 +26,8 @@ const {
   size,
   depth,
   step,
-  camera,
+  view,
+  onKey,
   keepAim,
   frame,
   keys,
@@ -33,7 +36,14 @@ const {
   seed,
   takes,
   selected,
-  current
+  current,
+  rendering,
+  frames,
+  clipError,
+  geometry,
+  pose,
+  status,
+  error
 } = demo
 </script>
 
@@ -54,19 +64,21 @@ const {
         v-model:seed="seed"
         v-model:keep-aim="keepAim"
         v-model:frame="frame"
-        v-model:motion="motion"
         v-model:prompt="prompt"
         :clip
         :clip-name="clipName"
         :is-example="isExample"
-        :camera
+        :camera="view"
         :keys
         :depth
+        :frames
+        :clip-error="clipError"
+        :error
+        :rendering
         :locale
         @aim="demo.aim"
-        @key="demo.addKey"
         @remove-key="demo.removeKey"
-        @clear-keys="keys = []"
+        @analyze="demo.analyze"
         @generate="demo.generate"
       />
       <div
@@ -87,20 +99,30 @@ const {
       </div>
       <ReshootStage
         v-else
+        v-model:frame="frame"
+        v-model:motion="motion"
         :clip
-        :camera
+        :camera="view"
         :depth
         :step
         :takes
         :selected
         :current
         cancellable
+        :geometry
+        :pose
+        :keep-aim="keepAim"
+        :keys
+        :keyed="onKey"
+        :status
         :locale
         class="lg:pt-2"
         @aim="demo.aim"
         @select="selected = $event"
         @cancel="demo.cancel"
         @reuse="demo.reuse(selected)"
+        @key="demo.toggleKey"
+        @clear-keys="keys = []"
       />
     </div>
     <ReshootExamples

@@ -35,8 +35,8 @@ const copy = {
     'zh-CN': '无需上传即可试用'
   },
   'reshoot.aim.globe': {
-    en: 'Drag the camera around your clip',
-    'zh-CN': '围绕片段拖动机位'
+    en: 'Drag the camera around your clip · scroll to move closer',
+    'zh-CN': '围绕片段拖动机位 · 滚动以靠近'
   },
   'reshoot.aim.more': {
     en: 'More: lens, height, keep aim',
@@ -57,17 +57,22 @@ const copy = {
   'reshoot.views': { en: 'Show', 'zh-CN': '显示' },
   'reshoot.sound': { en: 'Sound', 'zh-CN': '声音' },
   'reshoot.sound.generated': { en: 'Generated', 'zh-CN': '生成的声音' },
-  'reshoot.sound.original': { en: 'Original clip', 'zh-CN': '原片声音' },
+  'reshoot.sound.original': { en: 'Original audio', 'zh-CN': '原始音频' },
   'reshoot.warpNote': {
     en: 'The warp guide of a real run shows here: the clip pushed to the new camera, magenta where it has to be invented.',
     'zh-CN':
       '真实运行时这里显示变形引导：片段被推到新机位，洋红色为需要生成的部分。'
   },
   'reshoot.seed': { en: 'Seed', 'zh-CN': '种子' },
+  'reshoot.seed.random': { en: 'Random', 'zh-CN': '随机' },
+  'reshoot.seed.help': {
+    en: 'Leave empty for a new seed every take; enter a number to fix it.',
+    'zh-CN': '留空则每次生成使用新的种子；输入数字即可固定。'
+  },
   'reshoot.prompt.dialogue': {
-    en: 'The model also makes the sound: if your video has dialogue, write the lines here so the new take says them.',
+    en: 'The model also generates new audio: if your video has dialogue, prompt the lines here so the new generation retains it better.',
     'zh-CN':
-      '模型也会生成声音：如果视频中有对白，请在这里写下台词，新镜头就会说出来。'
+      '模型也会生成新的音频：如果视频中有对白，请在这里写下台词，新生成的内容会更好地保留它们。'
   },
   'reshoot.clip.length': {
     en: 'This clip is {seconds} s long. Use one between 5 and 15 seconds.',
@@ -77,13 +82,50 @@ const copy = {
   'reshoot.clip.change': { en: 'Change', 'zh-CN': '更换' },
   'reshoot.clip.ready': { en: 'Scene read', 'zh-CN': '场景已读取' },
   'reshoot.generate.note': {
-    en: 'Takes 1.5 to 5 minutes. Keep aiming while it renders.',
-    'zh-CN': '需要 1.5 到 5 分钟，生成期间可以继续调整机位。'
+    en: 'Keep aiming while it renders.',
+    'zh-CN': '生成期间可以继续调整机位。'
   },
   'reshoot.generate.wait': {
-    en: 'MoGe estimates depth for every frame, about 20 to 40 seconds. The first run after a quiet spell also starts a server.',
-    'zh-CN':
-      'MoGe 会估算每一帧的深度，约 20 到 40 秒。闲置一段时间后的首次运行还需要启动服务器。'
+    en: 'MoGe estimates depth for every frame, as a run on the server. The camera unlocks when it is done.',
+    'zh-CN': 'MoGe 会在服务器上运行，估算每一帧的深度。完成后即可调整机位。'
+  },
+  'reshoot.analyzeAgain': {
+    en: 'Analyze depth again',
+    'zh-CN': '重新分析深度'
+  },
+  'reshoot.generate.locked': {
+    en: 'Analyze depth first.',
+    'zh-CN': '请先分析深度。'
+  },
+  'reshoot.clipLength': {
+    en: 'This clip is {seconds} s. Use one between 5 and 15 seconds.',
+    'zh-CN': '此片段时长 {seconds} 秒，请使用 5 到 15 秒的片段。'
+  },
+  'reshoot.stage.uploading': {
+    en: 'Uploading the clip',
+    'zh-CN': '正在上传片段'
+  },
+  'reshoot.stage.queued': {
+    en: 'Waiting for a server',
+    'zh-CN': '正在等待服务器'
+  },
+  'reshoot.stage.queuedAt': {
+    en: 'Queued · position {n}',
+    'zh-CN': '排队中 · 第 {n} 位'
+  },
+  'reshoot.stage.starting': {
+    en: 'Starting a server',
+    'zh-CN': '正在启动服务器'
+  },
+  'reshoot.stage.fetching': {
+    en: 'Fetching the result',
+    'zh-CN': '正在获取结果'
+  },
+  'reshoot.take.failed': { en: 'This take failed', 'zh-CN': '此镜头生成失败' },
+  'reshoot.failed': { en: 'Something went wrong', 'zh-CN': '出现问题' },
+  'reshoot.noWebgl': {
+    en: 'This preview needs WebGL2, which this browser does not offer.',
+    'zh-CN': '此预览需要 WebGL2，当前浏览器不支持。'
   },
   'reshoot.expand': { en: 'Full screen', 'zh-CN': '全屏' },
   'reshoot.collapse': { en: 'Exit full screen', 'zh-CN': '退出全屏' },
@@ -200,12 +242,27 @@ const copy = {
   'reshoot.move.static': { en: 'Static', 'zh-CN': '固定机位' },
   'reshoot.move.keys': { en: '{count} keys', 'zh-CN': '{count} 个关键帧' },
   'reshoot.move.help': {
-    en: 'Scrub to a frame, aim, press Key. Two or more keys make a move; the camera holds before the first and after the last.',
+    en: 'Scrub the timeline under the preview, aim, press Key. Two or more keys make a move; the camera holds before the first and after the last. Aiming on a key edits it.',
     'zh-CN':
-      '拖到某一帧，调整机位，按“关键帧”。两个以上的关键帧构成运镜；第一个之前和最后一个之后机位保持不动。'
+      '拖动预览下方的时间轴，调整机位，按“关键帧”。两个以上的关键帧构成运镜；第一个之前和最后一个之后机位保持不动。在关键帧上调整机位会直接修改它。'
   },
   'reshoot.move.frame': { en: 'Frame', 'zh-CN': '帧' },
   'reshoot.move.key': { en: 'Key', 'zh-CN': '关键帧' },
+  'reshoot.move.unkey': { en: 'Remove key', 'zh-CN': '删除关键帧' },
+  'reshoot.move.noKeys': {
+    en: 'No keys: one camera for the whole clip. Key two frames to make a move.',
+    'zh-CN': '没有关键帧：整个片段使用同一机位。设置两个关键帧即可形成运镜。'
+  },
+  'reshoot.move.oneKey': {
+    en: 'One key holds the camera there. Key another frame to make a move.',
+    'zh-CN': '一个关键帧会让机位固定在此。再设置一帧即可形成运镜。'
+  },
+  'reshoot.move.goTo': {
+    en: 'Go to the key at {time}',
+    'zh-CN': '跳到 {time} 处的关键帧'
+  },
+  'reshoot.play': { en: 'Play', 'zh-CN': '播放' },
+  'reshoot.pause': { en: 'Pause', 'zh-CN': '暂停' },
   'reshoot.move.remove': {
     en: 'Remove key at {time}',
     'zh-CN': '删除 {time} 处的关键帧'
@@ -243,8 +300,8 @@ const copy = {
   'reshoot.take.cancelled': { en: 'Cancelled', 'zh-CN': '已取消' },
   'reshoot.download': { en: 'Download', 'zh-CN': '下载' },
   'reshoot.demoNote': {
-    en: 'Design prototype: no jobs run. Takes show the example result.',
-    'zh-CN': '设计原型：不会运行任务，镜头显示示例结果。'
+    en: 'Prototype: runs on a dedicated Comfy API deployment through a local proxy.',
+    'zh-CN': '原型：通过本地代理在专用的 Comfy API 部署上运行。'
   }
 } as const satisfies Record<string, LocalizedText>
 

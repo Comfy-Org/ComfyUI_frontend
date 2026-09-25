@@ -2,13 +2,11 @@
 import { computed } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
-import type { DepthState } from '../../../../composables/useReshootDemo'
-import { RESHOOT_FRAMES } from '../../../../lib/workshop/cinematic-studio/reshoot'
+import type { DepthState } from '../../../../composables/useReshootRun'
 import type {
   CameraKey,
   ReshootAspect,
   ReshootCamera,
-  ReshootMotion,
   ReshootSize
 } from '../../../../lib/workshop/cinematic-studio/reshoot'
 import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
@@ -25,6 +23,10 @@ const {
   camera,
   keys,
   depth,
+  frames,
+  clipError,
+  error,
+  rendering = false,
   locale = 'en'
 } = defineProps<{
   clip: string
@@ -33,30 +35,51 @@ const {
   camera: Readonly<ReshootCamera>
   keys: readonly CameraKey[]
   depth: DepthState
+  /** Frames the run will use, once the clip's length is known. */
+  frames?: number
+  /** Why this clip cannot be used, if it cannot. */
+  clipError?: string
+  /** The last failed analysis, said where the button is. */
+  error?: string
+  rendering?: boolean
   locale?: Locale
 }>()
 
 const emit = defineEmits<{
   aim: [patch: Partial<ReshootCamera>]
-  key: []
   removeKey: [frame: number]
-  clearKeys: []
+  analyze: []
   generate: []
 }>()
 
 const upload = defineModel<File | undefined>('upload')
 const aspect = defineModel<ReshootAspect>('aspect', { required: true })
 const size = defineModel<ReshootSize>('size', { required: true })
-const seed = defineModel<number>('seed', { required: true })
+const seed = defineModel<number | undefined>('seed')
+/** Empty is random; a number, whole and not negative, is a fixed seed. */
+const seedText = computed({
+  get: () => (seed.value === undefined ? '' : String(seed.value)),
+  // a number field's v-model already hands over a number, or '' when empty
+  set: (entry: string | number) => {
+    const value = typeof entry === 'number' ? entry : Number.parseFloat(entry)
+    seed.value = Number.isFinite(value)
+      ? Math.max(0, Math.floor(value))
+      : undefined
+  }
+})
 const keepAim = defineModel<boolean>('keepAim', { required: true })
 const frame = defineModel<number>('frame', { required: true })
-const motion = defineModel<ReshootMotion>('motion', { required: true })
 const prompt = defineModel<string>('prompt', { required: true })
 
 const ready = computed(() => depth === 'ready')
-const frames = rc('reshoot.frames', locale)
-  .replace('{frames}', String(RESHOOT_FRAMES))
-  .replace('{seconds}', (RESHOOT_FRAMES / 24).toFixed(1))
+const analyzing = computed(() => depth === 'analyzing')
+const framesText = computed(() =>
+  frames === undefined
+    ? ''
+    : rc('reshoot.frames', locale)
+        .replace('{frames}', String(frames))
+        .replace('{seconds}', (frames / 24).toFixed(1))
+)
 
 function choose(event: Event) {
   const input = event.target
@@ -88,9 +111,12 @@ function choose(event: Event) {
         </span>
         <span class="truncate text-[11px] text-primary-warm-gray">
           {{
-            ready
-              ? `${rc('reshoot.clip.ready', locale)} · ${frames}`
-              : rc('reshoot.aim.reading', locale)
+            clipError ??
+            (ready
+              ? `${rc('reshoot.clip.ready', locale)} · ${framesText}`
+              : analyzing
+                ? rc('reshoot.aim.reading', locale)
+                : framesText)
           }}
         </span>
       </span>
@@ -117,13 +143,10 @@ function choose(event: Event) {
       >
         <ReshootMoveControls
           v-model:frame="frame"
-          v-model:motion="motion"
           :keys
           :disabled="!ready"
           :locale
-          @key="emit('key')"
           @remove="emit('removeKey', $event)"
-          @clear="emit('clearKeys')"
         />
       </ReshootDisclosure>
       <ReshootFormat v-model:aspect="aspect" v-model:size="size" :locale />
@@ -157,17 +180,28 @@ function choose(event: Event) {
               {{ rc('reshoot.prompt.dialogue', locale) }}
             </p>
           </div>
-          <label class="flex items-center justify-between gap-3 text-xs">
-            <span class="font-semibold text-primary-comfy-canvas">
-              {{ rc('reshoot.seed', locale) }}
-            </span>
-            <input
-              v-model.number="seed"
-              type="number"
-              min="0"
-              class="h-9 w-28 rounded-xl bg-transparency-white-t4 px-3 font-mono text-sm text-primary-warm-white tabular-nums outline-none focus-visible:ring-1 focus-visible:ring-primary-comfy-yellow/60"
-            />
-          </label>
+          <div class="flex flex-col gap-1.5">
+            <label class="flex items-center justify-between gap-3 text-xs">
+              <span class="font-semibold text-primary-comfy-canvas">
+                {{ rc('reshoot.seed', locale) }}
+              </span>
+              <input
+                v-model.lazy="seedText"
+                type="number"
+                min="0"
+                step="1"
+                :placeholder="rc('reshoot.seed.random', locale)"
+                aria-describedby="reshoot-seed-help"
+                class="h-9 w-28 rounded-xl bg-transparency-white-t4 px-3 font-mono text-sm text-primary-warm-white tabular-nums outline-none placeholder:font-sans placeholder:text-primary-warm-gray focus-visible:ring-1 focus-visible:ring-primary-comfy-yellow/60"
+              />
+            </label>
+            <p
+              id="reshoot-seed-help"
+              class="text-[11px]/relaxed text-primary-warm-gray"
+            >
+              {{ rc('reshoot.seed.help', locale) }}
+            </p>
+          </div>
         </div>
       </ReshootDisclosure>
     </div>
@@ -175,20 +209,47 @@ function choose(event: Event) {
     <footer
       class="flex flex-col gap-2 rounded-b-2xl border-t border-transparency-white-t8 p-4"
     >
+      <p
+        v-if="error"
+        role="alert"
+        class="rounded-xl bg-transparency-white-t8 px-3 py-2 text-[11px] wrap-break-word text-primary-warm-white"
+      >
+        {{ rc('reshoot.failed', locale) }}: {{ error }}
+      </p>
       <p class="text-center text-[11px] text-primary-warm-gray">
         {{
           rc(ready ? 'reshoot.generate.note' : 'reshoot.generate.wait', locale)
         }}
       </p>
+      <!-- Analysis is a run of its own, so it waits to be asked for. -->
       <Button
+        v-if="!ready"
         size="lg"
         class="rounded-full"
-        :disabled="!ready"
+        :disabled="analyzing || !!clipError"
+        data-testid="reshoot-analyze"
+        @click="emit('analyze')"
+      >
+        {{
+          rc(
+            depth === 'stale' ? 'reshoot.analyzeAgain' : 'reshoot.analyze',
+            locale
+          )
+        }}
+      </Button>
+      <Button
+        size="lg"
+        :variant="ready ? undefined : 'outline'"
+        class="rounded-full"
+        :disabled="!ready || rendering"
         data-testid="reshoot-action"
         @click="emit('generate')"
       >
         {{ rc('reshoot.generate', locale) }}
       </Button>
+      <p v-if="!ready" class="text-center text-[11px] text-primary-warm-gray">
+        {{ rc('reshoot.generate.locked', locale) }}
+      </p>
     </footer>
   </aside>
 </template>
