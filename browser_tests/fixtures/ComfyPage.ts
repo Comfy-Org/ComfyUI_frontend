@@ -66,6 +66,7 @@ import { CommandHelper } from '@e2e/fixtures/helpers/CommandHelper'
 import { DragDropHelper } from '@e2e/fixtures/helpers/DragDropHelper'
 import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import { KeyboardHelper } from '@e2e/fixtures/helpers/KeyboardHelper'
+import { LegacyNodeBadgeHelper } from '@e2e/fixtures/helpers/LegacyNodeBadgeHelper'
 import { ModelLibraryHelper } from '@e2e/fixtures/helpers/ModelLibraryHelper'
 import { NodeOperationsHelper } from '@e2e/fixtures/helpers/NodeOperationsHelper'
 import { PerformanceHelper } from '@e2e/fixtures/helpers/PerformanceHelper'
@@ -208,6 +209,7 @@ export class ComfyPage {
   public readonly nodeOps: NodeOperationsHelper
   public readonly settings: SettingsHelper
   public readonly keyboard: KeyboardHelper
+  public readonly legacyNodeBadges: LegacyNodeBadgeHelper
   public readonly clipboard: ClipboardHelper
   public readonly workflow: WorkflowHelper
   public readonly contextMenu: ContextMenu
@@ -265,6 +267,7 @@ export class ComfyPage {
     this.nodeOps = new NodeOperationsHelper(this)
     this.settings = new SettingsHelper(page)
     this.keyboard = new KeyboardHelper(page, this.canvas)
+    this.legacyNodeBadges = new LegacyNodeBadgeHelper(page)
     this.clipboard = new ClipboardHelper(this.keyboard, page)
     this.workflow = new WorkflowHelper(this)
     this.contextMenu = new ContextMenu(page)

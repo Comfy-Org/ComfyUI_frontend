@@ -1,3 +1,4 @@
+import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
@@ -64,6 +65,15 @@ export class SettingDialog extends BaseDialog {
    */
   async toggleBooleanSetting(id: string) {
     await this.root.locator(`button[role="switch"][id="${id}"]`).click()
+  }
+
+  async selectSetting(id: string, value: string) {
+    await this.root
+      .locator(`[data-setting-id="${id}"]`)
+      .getByRole('combobox')
+      .click()
+    await this.page.getByRole('option', { name: value, exact: true }).click()
+    await expect.poll(() => this.comfyPage.settings.getSetting(id)).toBe(value)
   }
 
   category(name: string) {

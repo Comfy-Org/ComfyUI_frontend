@@ -4,11 +4,6 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test.use({ deviceScaleFactor: 1.5 })
 
-const renderers = [
-  { name: 'legacy', vueNodes: false },
-  { name: 'Vue', vueNodes: true }
-] as const
-
 test.describe(
   'Link interaction at emulated display scaling',
   { tag: '@canvas' },
@@ -42,7 +37,10 @@ test.describe(
       }
     })
 
-    for (const renderer of renderers) {
+    for (const renderer of [
+      { name: 'legacy', vueNodes: false },
+      { name: 'Vue', vueNodes: true }
+    ] as const) {
       test(`disconnects and reconnects the exact endpoint at 150 percent in the ${renderer.name} renderer`, async ({
         comfyPage
       }) => {
@@ -60,64 +58,34 @@ test.describe(
           await comfyPage.page.evaluate(() => window.devicePixelRatio)
         ).toBe(1.5)
 
-        const positions = await comfyPage.page.evaluate(() => {
-          const graph = window.app!.graph
-          const checkpoint = graph.nodes.find(
-            (node) => String(node.id) === '4'
-          )!
-          const prompt = graph.nodes.find((node) => String(node.id) === '6')!
-          const output = window.app!.canvasPosToClientPos(
-            checkpoint.getConnectionPos(false, 1)
-          )
-          const input = window.app!.canvasPosToClientPos(
-            prompt.getConnectionPos(true, 0)
-          )
-          return { input, output }
-        })
-        const clientPosition = ([x, y]: number[]) => ({ x, y })
-
-        await comfyPage.canvasOps.dragAndDrop(clientPosition(positions.input), {
-          x: 800,
-          y: 100
-        })
-        await expect
-          .poll(() =>
-            comfyPage.page.evaluate(
-              () =>
-                window.app!.graph.nodes.find((node) => String(node.id) === '6')!
-                  .inputs[0].link
-            )
-          )
-          .toBeNull()
-
-        await comfyPage.canvasOps.dragAndDrop(
-          clientPosition(positions.output),
-          clientPosition(positions.input)
-        )
-        await expect
-          .poll(() =>
-            comfyPage.page.evaluate(() => {
-              const graph = window.app!.graph
-              const prompt = graph.nodes.find(
-                (node) => String(node.id) === '6'
-              )!
-              const link = graph.links.get(prompt.inputs[0].link!)
-              return {
-                originId: String(link?.origin_id),
-                originSlot: link?.origin_slot,
-                targetId: String(link?.target_id),
-                targetSlot: link?.target_slot
-              }
-            })
-          )
-          .toEqual({
-            originId: '4',
-            originSlot: 1,
-            targetId: '6',
-            targetSlot: 0
-          })
         const checkpoint = await comfyPage.nodeOps.getNodeRefById(4)
-        await (await checkpoint.getOutput(1)).expectLinkCount(2)
+        const prompt = await comfyPage.nodeOps.getNodeRefById(6)
+        const output = await checkpoint.getOutput(1)
+        const input = await prompt.getInput(0)
+
+        await test.step('disconnect the prompt input', async () => {
+          await comfyPage.canvasOps.dragAndDrop(await input.getPosition(), {
+            x: 800,
+            y: 100
+          })
+          await input.expectLinkCount(0)
+        })
+
+        await test.step('reconnect the exact endpoint', async () => {
+          await comfyPage.canvasOps.dragAndDrop(
+            await output.getPosition(),
+            await input.getPosition()
+          )
+          await expect
+            .poll(() => input.getLink())
+            .toMatchObject({
+              origin_id: 4,
+              origin_slot: 1,
+              target_id: 6,
+              target_slot: 0
+            })
+          await output.expectLinkCount(2)
+        })
       })
     }
   }

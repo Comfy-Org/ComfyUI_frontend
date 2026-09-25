@@ -2,8 +2,6 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
-const EXPECTED_PRICE = '12.7 credits/Run'
-
 for (const vueEnabled of [false, true] as const) {
   const renderer = vueEnabled ? 'vue' : 'legacy'
 
@@ -45,78 +43,59 @@ for (const vueEnabled of [false, true] as const) {
           : undefined
         if (vueNode) {
           await comfyPage.vueNodes.waitForNodes(1)
-          await expect(vueNode.priceBadge.required).toBeVisible()
         } else {
-          await comfyPage.page.evaluate(() => {
-            const node = window.app!.graph.nodes.find(
-              ({ title }) => title === 'Flux 1.1 [pro] Ultra Image'
+          await comfyPage.legacyNodeBadges.install([
+            { key: 'price', title: 'Flux 1.1 [pro] Ultra Image' }
+          ])
+        }
+
+        await test.step('show pricing initially', async () => {
+          if (vueNode) {
+            await expect(vueNode.priceBadge.required).toBeVisible()
+          } else {
+            await comfyPage.legacyNodeBadges.expectText(
+              'price',
+              '12.7 credits/Run',
+              true
             )
-            if (!node) throw new Error('Partner API node not found')
+          }
+        })
 
-            const probe = document.createElement('output')
-            probe.id = 'legacy-pricing-badge-draw-probe'
-            probe.hidden = true
-            probe.dataset.frames = '0'
-            document.body.append(probe)
+        await test.step('hide pricing through Settings', async () => {
+          await comfyPage.settingDialog.open()
+          await comfyPage.settingDialog.category('Comfy').click()
+          await comfyPage.settingDialog.toggleBooleanSetting(
+            'Comfy.NodeBadge.ShowApiPricing'
+          )
+          await comfyPage.settingDialog.close()
 
-            const drawBadges = node.drawBadges
-            node.drawBadges = function (ctx, options) {
-              probe.textContent = ''
-              const fillText = ctx.fillText
-              ctx.fillText = function (text, ...args) {
-                fillText.call(this, text, ...args)
-                if (text === '12.7 credits/Run') probe.textContent = text
-              }
-              try {
-                drawBadges.call(this, ctx, options)
-                probe.dataset.frames = String(Number(probe.dataset.frames) + 1)
-              } finally {
-                ctx.fillText = fillText
-              }
-            }
-            window.app!.graph.setDirtyCanvas(true, true)
-          })
-        }
+          if (vueNode) {
+            await expect(vueNode.priceBadge.required).toBeHidden()
+          } else {
+            await comfyPage.legacyNodeBadges.expectState([
+              { key: 'price', text: '12.7 credits/Run', visible: false }
+            ])
+          }
+        })
 
-        const legacyDrawProbe = comfyPage.page.locator(
-          '#legacy-pricing-badge-draw-probe'
-        )
-        if (!vueEnabled) {
-          await expect(legacyDrawProbe).toHaveText(EXPECTED_PRICE)
-        }
+        await test.step('restore pricing through Settings', async () => {
+          await comfyPage.settingDialog.open()
+          await comfyPage.settingDialog.category('Comfy').click()
+          await comfyPage.settingDialog.toggleBooleanSetting(
+            'Comfy.NodeBadge.ShowApiPricing'
+          )
+          await comfyPage.settingDialog.close()
 
-        await comfyPage.settingDialog.open()
-        await comfyPage.settingDialog.category('Comfy').click()
-        await comfyPage.settingDialog.toggleBooleanSetting(
-          'Comfy.NodeBadge.ShowApiPricing'
-        )
-        await comfyPage.settingDialog.close()
-
-        if (vueNode) await expect(vueNode.priceBadge.required).toBeHidden()
-        if (!vueEnabled) {
-          const frame = await legacyDrawProbe.evaluate((probe) => {
-            window.app!.graph.setDirtyCanvas(true, true)
-            return Number((probe as HTMLOutputElement).dataset.frames)
-          })
-          await expect
-            .poll(async () =>
-              Number(await legacyDrawProbe.getAttribute('data-frames'))
+          if (vueNode) {
+            await expect(vueNode.priceBadge.required).toBeVisible()
+          } else {
+            await comfyPage.legacyNodeBadges.expectText(
+              'price',
+              '12.7 credits/Run',
+              true
             )
-            .toBeGreaterThan(frame)
-          await expect(legacyDrawProbe).toHaveText('')
-        }
-
-        await comfyPage.settingDialog.open()
-        await comfyPage.settingDialog.category('Comfy').click()
-        await comfyPage.settingDialog.toggleBooleanSetting(
-          'Comfy.NodeBadge.ShowApiPricing'
-        )
-        await comfyPage.settingDialog.close()
-
-        if (vueNode) await expect(vueNode.priceBadge.required).toBeVisible()
-        if (!vueEnabled) {
-          await expect(legacyDrawProbe).toHaveText(EXPECTED_PRICE)
-        }
+          }
+        })
       })
     }
   )

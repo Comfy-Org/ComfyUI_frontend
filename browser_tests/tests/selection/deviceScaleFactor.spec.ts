@@ -1,32 +1,34 @@
 import { expect } from '@playwright/test'
 
+import type { Settings } from '@/schemas/apiSchema'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test.use({ deviceScaleFactor: 1.5 })
-
-const renderers = [
-  { name: 'legacy', vueNodes: false },
-  { name: 'Vue', vueNodes: true }
-] as const
 
 test.describe(
   'Marquee selection at emulated display scaling',
   { tag: '@canvas' },
   () => {
     let previousSettings:
-      | { click: string; mode: string; vueNodes: boolean }
+      | Pick<
+          Settings,
+          | 'Comfy.Canvas.LeftMouseClickBehavior'
+          | 'Comfy.Canvas.NavigationMode'
+          | 'Comfy.VueNodes.Enabled'
+        >
       | undefined
 
     test.beforeEach(async ({ comfyPage }) => {
       previousSettings = undefined
       previousSettings = {
-        click: await comfyPage.settings.getSetting<string>(
-          'Comfy.Canvas.LeftMouseClickBehavior'
-        ),
-        mode: await comfyPage.settings.getSetting<string>(
+        'Comfy.Canvas.LeftMouseClickBehavior':
+          await comfyPage.settings.getSetting(
+            'Comfy.Canvas.LeftMouseClickBehavior'
+          ),
+        'Comfy.Canvas.NavigationMode': await comfyPage.settings.getSetting(
           'Comfy.Canvas.NavigationMode'
         ),
-        vueNodes: await comfyPage.settings.getSetting<boolean>(
+        'Comfy.VueNodes.Enabled': await comfyPage.settings.getSetting(
           'Comfy.VueNodes.Enabled'
         )
       }
@@ -36,20 +38,23 @@ test.describe(
       if (previousSettings) {
         await comfyPage.settings.setSetting(
           'Comfy.Canvas.LeftMouseClickBehavior',
-          previousSettings.click
+          previousSettings['Comfy.Canvas.LeftMouseClickBehavior']
         )
         await comfyPage.settings.setSetting(
           'Comfy.Canvas.NavigationMode',
-          previousSettings.mode
+          previousSettings['Comfy.Canvas.NavigationMode']
         )
         await comfyPage.settings.setSetting(
           'Comfy.VueNodes.Enabled',
-          previousSettings.vueNodes
+          previousSettings['Comfy.VueNodes.Enabled']
         )
       }
     })
 
-    for (const renderer of renderers) {
+    for (const renderer of [
+      { name: 'legacy', vueNodes: false },
+      { name: 'Vue', vueNodes: true }
+    ] as const) {
       test(`tracks the cursor and selects the exact intersected nodes at 150 percent in the ${renderer.name} renderer`, async ({
         comfyPage
       }) => {
@@ -86,36 +91,41 @@ test.describe(
         const clientPosition = ([x, y]: number[]) => ({ x, y })
         const start = clientPosition(bounds.start)
         const end = clientPosition(bounds.end)
-        await comfyPage.page.mouse.move(start.x, start.y)
-        await comfyPage.page.mouse.down()
-        await comfyPage.page.mouse.move(end.x, end.y, { steps: 10 })
-        await comfyPage.nextFrame()
-        const rectangle = await comfyPage.page.evaluate(() => {
-          const rectangle = window.app!.canvas.dragging_rectangle
-          if (!rectangle) return null
-          const start = window.app!.canvasPosToClientPos([
-            rectangle[0],
-            rectangle[1]
-          ])
-          const end = window.app!.canvasPosToClientPos([
-            rectangle[0] + rectangle[2],
-            rectangle[1] + rectangle[3]
-          ])
-          return { start, end }
+
+        await test.step('track the marquee in client coordinates', async () => {
+          await comfyPage.page.mouse.move(start.x, start.y)
+          await comfyPage.page.mouse.down()
+          await comfyPage.page.mouse.move(end.x, end.y, { steps: 10 })
+          await comfyPage.nextFrame()
+          const rectangle = await comfyPage.page.evaluate(() => {
+            const rectangle = window.app!.canvas.dragging_rectangle
+            if (!rectangle) return null
+            const start = window.app!.canvasPosToClientPos([
+              rectangle[0],
+              rectangle[1]
+            ])
+            const end = window.app!.canvasPosToClientPos([
+              rectangle[0] + rectangle[2],
+              rectangle[1] + rectangle[3]
+            ])
+            return { start, end }
+          })
+
+          await comfyPage.page.mouse.up()
+          expect(rectangle).toEqual({
+            start: [expect.closeTo(start.x, 0), expect.closeTo(start.y, 0)],
+            end: [expect.closeTo(end.x, 0), expect.closeTo(end.y, 0)]
+          })
         })
 
-        await comfyPage.page.mouse.up()
-
-        await expect
-          .poll(() =>
-            comfyPage.page.evaluate(() =>
-              Object.keys(window.app!.canvas.selected_nodes).sort()
+        await test.step('select exactly the intersected nodes', async () => {
+          await expect
+            .poll(() =>
+              comfyPage.page.evaluate(() =>
+                Object.keys(window.app!.canvas.selected_nodes).sort()
+              )
             )
-          )
-          .toEqual(['6', '7'])
-        expect(rectangle).toEqual({
-          start: [expect.closeTo(start.x, 0), expect.closeTo(start.y, 0)],
-          end: [expect.closeTo(end.x, 0), expect.closeTo(end.y, 0)]
+            .toEqual(['6', '7'])
         })
       })
     }
