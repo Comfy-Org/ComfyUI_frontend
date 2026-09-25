@@ -44,7 +44,11 @@ const activeTab = computed(() =>
   workflows.value.length ? selectedTab.value : 'models'
 )
 
+const focusTabs = ref(false)
 function changeTab(tab: CatalogueTab) {
+  focusTabs.value = Boolean(
+    document.activeElement?.closest('[data-testid="catalogue-tabs"]')
+  )
   selectedTab.value = tab
   inSection.value = false
   browseAll.value = false
@@ -75,21 +79,17 @@ watch(
 <template>
   <WorkshopHero
     v-if="!inSection"
-    :subtitle-key="
-      activeTab === 'models'
-        ? 'workshop.hero.subtitle'
-        : 'workshop.catalogue.subtitle'
+    :eyebrow="t('workshop.hero.eyebrow', locale)"
+    :heading="t('workshop.hero.heading', locale)"
+    :subtitle="
+      t(
+        activeTab === 'models'
+          ? 'workshop.hero.subtitle'
+          : 'workshop.catalogue.subtitle',
+        locale
+      )
     "
-    :locale
   >
-    <template v-if="workflows.length" #eyebrow>
-      <CatalogueTabs
-        :model-value="activeTab"
-        :locale
-        class="mb-5"
-        @update:model-value="changeTab"
-      />
-    </template>
     <template #aside>
       <button
         v-if="activeTab !== 'apps'"
@@ -113,28 +113,56 @@ watch(
       </button>
     </template>
   </WorkshopHero>
-  <CatalogueTabs
-    v-else-if="workflows.length"
-    :model-value="activeTab"
-    :locale
-    class="mb-6"
-    @update:model-value="changeTab"
-  />
   <WorkshopModelsGrid
     v-if="activeTab === 'models'"
     v-model:browse-all="browseAll"
     :models="routerModels"
     :locale
     @section="inSection = $event"
-  />
+  >
+    <template #tabs>
+      <CatalogueTabs
+        v-if="workflows.length"
+        :model-value="activeTab"
+        :locale
+        :focus-active="focusTabs"
+        @update:model-value="changeTab"
+        @focused="focusTabs = false"
+      />
+    </template>
+  </WorkshopModelsGrid>
   <WorkflowCatalogue
     v-else-if="activeTab === 'workflows'"
     v-model:browse-all="browseAll"
     :models="workflows"
     :locale
     @section="inSection = $event"
-  />
+  >
+    <template #tabs>
+      <CatalogueTabs
+        :model-value="activeTab"
+        :locale
+        :focus-active="focusTabs"
+        @update:model-value="changeTab"
+        @focused="focusTabs = false"
+      />
+    </template>
+  </WorkflowCatalogue>
   <section v-else data-testid="apps-catalogue">
+    <!-- Apps has no list of its own yet, so the tabs bring their own bar
+      rather than leaving this half with no way back. -->
+    <div
+      class="sticky top-20 z-30 -mx-1 mb-8 flex flex-wrap items-center gap-3 bg-page px-1 py-4 max-sm:mb-4 max-sm:py-2 lg:top-26"
+      data-testid="workshop-toolbar"
+    >
+      <CatalogueTabs
+        :model-value="activeTab"
+        :locale
+        :focus-active="focusTabs"
+        @update:model-value="changeTab"
+        @focused="focusTabs = false"
+      />
+    </div>
     <div class="rounded-3xl bg-hub-surface p-8">
       <h2 class="text-xl font-medium text-primary-comfy-canvas">
         {{ t('workshop.catalogue.appsSoon', locale) }}

@@ -31,11 +31,14 @@ const WorkshopFilterPanel = defineAsyncComponent(
 
 const {
   useCaseOptions,
+  modelOptions,
   resultCount,
   kind = 'models',
   locale = 'en'
 } = defineProps<{
   useCaseOptions: readonly FacetMenuOption<T>[]
+  /** The models the listing runs on, where it stands on more than its own. */
+  modelOptions?: readonly FacetMenuOption<string>[]
   /** What the catalogue holds under the current choices, for the way out. */
   resultCount: number
   kind?: 'models' | 'workflows'
@@ -43,6 +46,7 @@ const {
 }>()
 
 const useCases = defineModel<T[]>('useCases', { required: true })
+const models = defineModel<string[]>('models', { default: () => [] })
 
 const open = ref(false)
 // A dropdown anchored to a crowded toolbar leaves a phone no room, so there
@@ -88,14 +92,30 @@ const groups = computed<FacetSheetGroup[]>(() => [
     ),
     options: useCaseOptions,
     selected: useCases.value
-  }
+  },
+  ...(modelOptions?.length
+    ? [
+        {
+          key: 'model',
+          label: t('workshop.hub.models', locale),
+          options: modelOptions,
+          selected: models.value
+        }
+      ]
+    : [])
 ])
 
 const selectedCount = computed(() =>
   groups.value.reduce((total, group) => total + group.selected.length, 0)
 )
 
-function toggle(_facet: string, value: string) {
+function toggle(facet: string, value: string) {
+  if (facet === 'model') {
+    models.value = models.value.includes(value)
+      ? models.value.filter((item) => item !== value)
+      : [...models.value, value]
+    return
+  }
   const useCase = useCaseOptions.find((option) => option.value === value)?.value
   if (!useCase) return
   useCases.value = useCases.value.includes(useCase)
@@ -105,6 +125,7 @@ function toggle(_facet: string, value: string) {
 
 function clearAll() {
   useCases.value = []
+  models.value = []
 }
 
 const sheetLabels = computed(() => ({
@@ -148,7 +169,7 @@ const sheetLabels = computed(() => ({
       </span>
       <span
         v-if="selectedCount"
-        class="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary-comfy-yellow px-1 text-[10px] leading-none font-bold text-primary-comfy-ink tabular-nums max-sm:absolute max-sm:-top-1 max-sm:-right-1"
+        class="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary-comfy-yellow px-1 text-3xs leading-none font-bold text-primary-comfy-ink tabular-nums max-sm:absolute max-sm:-top-1 max-sm:-right-1"
         data-testid="workshop-filter-count"
       >
         {{ selectedCount }}
