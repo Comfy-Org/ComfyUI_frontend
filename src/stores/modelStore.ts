@@ -391,7 +391,11 @@ export const useModelStore = defineStore('models', () => {
         modelFolderNames.value.length > 0 &&
         committedAssetsEnabled === flags.assetsEnabled
       if (current) return
-      if (await loadModelFolders()) return
+      const rebuilt =
+        modelFolderNames.value.length > 0
+          ? await reloadModels()
+          : await loadModelFolders()
+      if (rebuilt) return
     }
   }
 
