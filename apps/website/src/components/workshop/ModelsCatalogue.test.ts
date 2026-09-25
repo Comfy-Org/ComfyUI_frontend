@@ -130,6 +130,33 @@ describe('ModelsCatalogue', () => {
     ).toBeNull()
   })
 
+  it.for([
+    { from: 'models', to: 'workflows' },
+    { from: 'workflows', to: 'apps' },
+    { from: 'apps', to: 'models' }
+  ])(
+    'keeps keyboard focus on the tabs when switching from $from to $to',
+    async ({ from, to }) => {
+      const user = userEvent.setup()
+      if (from !== 'models')
+        history.replaceState(null, '', `/models/?type=${from}`)
+      render(ModelsCatalogue, { props: { models: launchModels } })
+      expect(document.body).toHaveFocus()
+
+      const target = await screen.findByTestId(`catalogue-tab-${to}`)
+      target.focus()
+      await user.keyboard('{Enter}')
+
+      await waitFor(() =>
+        expect(screen.getByTestId(`catalogue-tab-${to}`)).toHaveFocus()
+      )
+      expect(screen.getByTestId(`catalogue-tab-${to}`)).toHaveAttribute(
+        'aria-pressed',
+        'true'
+      )
+    }
+  )
+
   it('keeps prototype app destinations out of the Apps tab', async () => {
     const user = userEvent.setup()
     render(ModelsCatalogue, { props: { models: launchModels } })

@@ -44,7 +44,11 @@ const activeTab = computed(() =>
   workflows.value.length ? selectedTab.value : 'models'
 )
 
+const focusTabs = ref(false)
 function changeTab(tab: CatalogueTab) {
+  focusTabs.value = Boolean(
+    document.activeElement?.closest('[data-testid="catalogue-tabs"]')
+  )
   selectedTab.value = tab
   inSection.value = false
   browseAll.value = false
@@ -121,7 +125,9 @@ watch(
         v-if="workflows.length"
         :model-value="activeTab"
         :locale
+        :focus-active="focusTabs"
         @update:model-value="changeTab"
+        @focused="focusTabs = false"
       />
     </template>
   </WorkshopModelsGrid>
@@ -136,7 +142,9 @@ watch(
       <CatalogueTabs
         :model-value="activeTab"
         :locale
+        :focus-active="focusTabs"
         @update:model-value="changeTab"
+        @focused="focusTabs = false"
       />
     </template>
   </WorkflowCatalogue>
@@ -150,7 +158,9 @@ watch(
       <CatalogueTabs
         :model-value="activeTab"
         :locale
+        :focus-active="focusTabs"
         @update:model-value="changeTab"
+        @focused="focusTabs = false"
       />
     </div>
     <div class="rounded-3xl bg-hub-surface p-8">

@@ -160,7 +160,9 @@ function leaveSection() {
       data-testid="workshop-toolbar"
     >
       <slot name="tabs" />
-      <div class="flex min-w-0 flex-1 items-center gap-3 max-sm:basis-full">
+      <div
+        class="flex min-w-0 flex-1 items-center gap-3 max-sm:basis-full sm:min-w-fit"
+      >
         <WorkshopSearchField
           v-model="query"
           :models="matchingCategories"
