@@ -21,7 +21,7 @@ export interface OutputLabel {
  * which no visitor asked for by name.
  */
 export function outputLabels(
-  outputs: readonly RunOutput[]
+  outputs: readonly Pick<RunOutput, 'kind'>[]
 ): readonly OutputLabel[] {
   const keys = outputs.map((output, index) =>
     index > 0 && output.kind === 'text'

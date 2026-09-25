@@ -1,6 +1,29 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { readWorkshopVideoMetadata } from './workshop-media-metadata'
+import {
+  readWorkshopImageMetadata,
+  readWorkshopVideoMetadata
+} from './workshop-media-metadata'
+
+function imagePlatform() {
+  const instances: StubImage[] = []
+  class StubImage {
+    onload: (() => void) | null = null
+    onerror: (() => void) | null = null
+    naturalWidth = 1200
+    naturalHeight = 800
+    src = ''
+    constructor() {
+      instances.push(this)
+    }
+  }
+  vi.stubGlobal('Image', StubImage)
+  return () => {
+    const current = instances.at(-1)
+    if (!current) throw new Error('Image was not created')
+    return current
+  }
+}
 
 function videoPlatform() {
   const video = document.createElement('video')
@@ -199,5 +222,48 @@ describe('Workshop video metadata', () => {
       readWorkshopVideoMetadata(file, controller.signal)
     ).rejects.toBe(reason)
     expect(platform.create).toHaveBeenCalledOnce()
+  })
+})
+
+describe('Workshop image metadata', () => {
+  it('reads image dimensions and releases a local object URL', async () => {
+    const current = imagePlatform()
+    const create = vi
+      .spyOn(URL, 'createObjectURL')
+      .mockReturnValue('blob:local-image')
+    const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    const file = new File(['image'], 'private.png', { type: 'image/png' })
+    const result = readWorkshopImageMetadata(file, new AbortController().signal)
+
+    expect(current().src).toBe('blob:local-image')
+    current().onload?.()
+
+    await expect(result).resolves.toEqual({
+      widthPixels: 1200,
+      heightPixels: 800
+    })
+    expect(create).toHaveBeenCalledWith(file)
+    expect(revoke).toHaveBeenCalledWith('blob:local-image')
+    expect(current().onload).toBeNull()
+    expect(current().onerror).toBeNull()
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
+  it('rejects image decode failures without exposing the source URL', async () => {
+    const current = imagePlatform()
+    const result = readWorkshopImageMetadata(
+      'https://media.example/private.png?token=secret',
+      new AbortController().signal
+    )
+
+    current().onerror?.()
+
+    await expect(result).rejects.toMatchObject({
+      name: 'NotSupportedError',
+      message: 'Image metadata could not be read'
+    })
+    expect(current().onload).toBeNull()
+    expect(current().onerror).toBeNull()
+    expect(vi.getTimerCount()).toBe(0)
   })
 })

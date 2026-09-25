@@ -211,7 +211,9 @@ if (isCloud) {
         await import('@/platform/cloud/onboarding/auth')
       try {
         // Check user's actual status
-        const surveyCompleted = await getSurveyCompletedStatus()
+        const surveyCompleted = await getSurveyCompletedStatus(
+          useAuthStore().userId
+        )
 
         // Survey is required for all users (when feature flag enabled)
         if (!surveyCompleted) {

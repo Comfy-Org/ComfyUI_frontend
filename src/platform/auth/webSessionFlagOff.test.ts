@@ -140,6 +140,7 @@ function jsonResponse(body: unknown, status = 200): Response {
 function installFetchRecorder(features: Record<string, unknown>) {
   const all: RecordedRequest[] = []
   let pending: RecordedRequest[] = []
+  let socketCloses = 0
   let mintCount = 0
 
   const mintResponse = (): ExchangeTokenResponse => {
@@ -194,6 +195,7 @@ function installFetchRecorder(features: Record<string, unknown>) {
     }
     send() {}
     close() {
+      socketCloses += 1
       this.readyState = RecordingWebSocket.CLOSED
     }
   }
@@ -213,6 +215,9 @@ function installFetchRecorder(features: Record<string, unknown>) {
     all,
     get pending() {
       return pending
+    },
+    get socketCloses() {
+      return socketCloses
     },
     take() {
       const taken = pending
@@ -448,9 +453,11 @@ describe('cloud auth requests with unified_web_session off', () => {
         resultItemPreviewUrl(MEDIA_ITEM)
       ]).toEqual(MEDIA_URLS)
 
+      expect(recorder.socketCloses).toBe(0)
       identity.signOut()
       await vi.advanceTimersByTimeAsync(1_000)
       expect(recorder.take()).toEqual(golden.signOut)
+      expect(recorder.socketCloses).toBe(1)
 
       expect(recorder.all).toEqual([
         ...FEATURES_BOOTSTRAP,

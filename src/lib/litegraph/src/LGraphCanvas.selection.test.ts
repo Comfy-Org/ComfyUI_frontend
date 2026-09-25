@@ -239,6 +239,23 @@ describe('LGraphCanvas selection', () => {
       expect(a.selected).toBe(false)
       expect(b.selected).toBe(false)
     })
+
+    it('keeps a link highlighted while either endpoint stays selected', () => {
+      a.addOutput('out', 'number')
+      b.addInput('in', 'number')
+      a.connect(0, b, 0)
+      canvas.selectItems([a, b])
+
+      canvas.deselect(a)
+      expect(Object.keys(canvas.highlighted_links)).toHaveLength(1)
+
+      canvas.select(a)
+      canvas.deselect(b)
+      expect(Object.keys(canvas.highlighted_links)).toHaveLength(1)
+
+      canvas.deselect(a)
+      expect(Object.keys(canvas.highlighted_links)).toHaveLength(0)
+    })
   })
 
   describe('programmatic API', () => {
@@ -443,6 +460,25 @@ describe('LGraphCanvas selection', () => {
         ).toBe(false)
       }
     )
+
+    it('node removal clears a legacy-only selection entry', () => {
+      canvas.selected_nodes[a.id] = a
+
+      graph.remove(a)
+
+      expect(canvas.selected_nodes).toEqual({})
+    })
+
+    it('node removal clears legacy selection before a deselection hook throws', () => {
+      canvas.select(a)
+      a.onDeselected = () => {
+        expect(canvas.selected_nodes).toEqual({})
+        throw new Error('deselection failed')
+      }
+
+      expect(() => graph.remove(a)).toThrow('deselection failed')
+      expect(canvas.selected_nodes).toEqual({})
+    })
 
     it.fails('select() reports the change', () => {
       canvas.select(a)
