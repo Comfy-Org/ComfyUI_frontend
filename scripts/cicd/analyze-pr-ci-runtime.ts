@@ -179,10 +179,14 @@ interface Options {
   refresh: boolean
 }
 
-function options(args: string[]): Options {
+export function options(args: string[]): Options {
   const get = (flag: string, fallback: string) => {
     const index = args.indexOf(flag)
-    return index < 0 ? fallback : (args.at(index + 1) ?? fallback)
+    if (index < 0) return fallback
+    const value = args.at(index + 1)
+    if (value === undefined || value.startsWith('--'))
+      throw new Error(`${flag} requires a value`)
+    return value
   }
   const cohort = Number(get('--cohort', '25'))
   const commits = Number(get('--commits', '5'))

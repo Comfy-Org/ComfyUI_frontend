@@ -1,6 +1,44 @@
 import { describe, expect, it } from 'vitest'
 
-import { analyze, classify, elapsedMinutes } from './analyze-pr-ci-runtime'
+import {
+  analyze,
+  classify,
+  elapsedMinutes,
+  options
+} from './analyze-pr-ci-runtime'
+
+describe('CI runtime CLI options', () => {
+  it.for([
+    ['--cohort'],
+    ['--commits'],
+    ['--cache'],
+    ['--output'],
+    ['--cohort', '--refresh'],
+    ['--cache', '--refresh']
+  ])('rejects a missing operand in %j', (args) => {
+    expect(() => options(args)).toThrow(`${args[0]} requires a value`)
+  })
+
+  it('uses supplied values and defaults only for absent options', () => {
+    expect(
+      options([
+        '--cohort',
+        '3',
+        '--cache',
+        'ci-cache',
+        '--output',
+        'report.json',
+        '--refresh'
+      ])
+    ).toEqual({
+      cohort: 3,
+      commits: 5,
+      cache: 'ci-cache',
+      output: 'report.json',
+      refresh: true
+    })
+  })
+})
 
 describe('CI runtime ownership', () => {
   it.for([
