@@ -7,7 +7,7 @@ import { t } from '@/i18n'
 import { useCachedRequest } from '@/composables/useCachedRequest'
 import { useServerLogs } from '@/composables/useServerLogs'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
@@ -43,7 +43,7 @@ function isTaskForRequest(taskId: string, requestId: string) {
  */
 export const useComfyManagerStore = defineStore('comfyManager', () => {
   const managerService = useComfyManagerService()
-  const toastStore = useToastStore()
+  const toast = useToast()
 
   const installedPacks = ref<InstalledPacksResponse>({})
   const enabledPacksIds = ref<Set<NodePackId>>(new Set())
@@ -304,11 +304,7 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
 
     if (requestId === queueStartRequest && isProcessingTasks.value) {
       queueError.value = managerService.error.value ?? t('g.unknownError')
-      toastStore.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: queueError.value
-      })
+      toast.error(t('g.error'), { description: queueError.value })
     }
   }
 
@@ -333,11 +329,7 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
       taskIdToPackId.value.delete(taskId)
       pendingRequests.value.delete(taskId)
       const message = managerService.error.value ?? t('g.unknownError')
-      toastStore.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: message
-      })
+      toast.error(t('g.error'), { description: message })
 
       requestFailures.value[taskId] = {
         ui_id: taskId,
@@ -398,27 +390,19 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
     })
     if (!isEnabledPackId(pack.id)) return
     if (versions === null) {
-      toastStore.add({
-        severity: 'error',
-        summary,
-        detail: registry.error.value ?? t('manager.errorConnecting')
+      toast.error(summary, {
+        description: registry.error.value ?? t('manager.errorConnecting')
       })
       return
     }
     const version = versions[0]?.version
     if (!version) {
-      toastStore.add({
-        severity: 'warn',
-        summary,
-        detail: t('manager.noUpdateVersion')
-      })
+      toast.warning(summary, { description: t('manager.noUpdateVersion') })
       return
     }
     if (version === getInstalledPackVersion(pack.id)) {
-      toastStore.add({
-        severity: 'info',
-        summary,
-        detail: t('manager.updateVersionInstalled', { version })
+      toast.info(summary, {
+        description: t('manager.updateVersionInstalled', { version })
       })
       return
     }
@@ -450,10 +434,8 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
       }
     } catch (error) {
       reportError(error, { errorType: 'failure_updating_node_packs' })
-      toastStore.add({
-        severity: 'error',
-        summary: t('manager.update'),
-        detail: t('manager.updateFailed')
+      toast.error(t('manager.update'), {
+        description: t('manager.updateFailed')
       })
     } finally {
       for (const pack of packsToUpdate) {

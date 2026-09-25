@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { i18n } from '@/i18n'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { api } from '@/scripts/api'
 
 import type { ReplyAsset } from '../../../utils/replyAssets'
@@ -149,12 +149,9 @@ describe('ReplyAudioCard', () => {
     await userEvent.click(download)
 
     await waitFor(() =>
-      expect(useToastStore().add).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error',
-          detail: '1 download failed'
-        })
-      )
+      expect(useToast().error).toHaveBeenCalledWith('Error', {
+        description: '1 download failed'
+      })
     )
 
     await userEvent.click(download)

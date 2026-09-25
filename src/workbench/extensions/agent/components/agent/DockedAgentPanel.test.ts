@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 
 import { i18n } from '@/i18n'
+import { WORKSPACE_INSET_RIGHT } from '@/composables/useWorkspaceInset'
 import { api } from '@/scripts/api'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { TurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
@@ -113,6 +114,34 @@ describe('DockedAgentPanel', () => {
         errorType: 'agent_run_mode_load_failure'
       })
     )
+  })
+
+  it('publishes its width for portaled overlays only while docked', async () => {
+    const store = openPanel()
+    renderPanel()
+
+    expect(
+      document.documentElement.style.getPropertyValue(WORKSPACE_INSET_RIGHT)
+    ).toBe(`${store.width}px`)
+
+    store.isOpen = false
+    await nextTick()
+
+    expect(
+      document.documentElement.style.getPropertyValue(WORKSPACE_INSET_RIGHT)
+    ).toBe('0px')
+  })
+
+  it('fills the panel shell and draws a seam border only beside an opaque neighbor', async () => {
+    openPanel()
+    const view = renderPanel()
+
+    const shell = screen.getByTestId('docked-agent-panel-shell')
+
+    expect(shell).toHaveClass('size-full', 'p-2')
+    expect(shell).not.toHaveClass('border-l')
+    await view.rerender({ hasOpaqueNeighbor: true })
+    expect(shell).toHaveClass('border-l', 'border-interface-stroke')
   })
 
   it('renders nothing while the panel is closed', () => {

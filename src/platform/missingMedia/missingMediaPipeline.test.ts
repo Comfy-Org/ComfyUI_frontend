@@ -1,6 +1,7 @@
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useToast } from '@/components/ui/toast'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import {
@@ -14,7 +15,6 @@ import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { t } from '@/i18n'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 
 let activeWorkflow: ComfyWorkflow
 
@@ -105,14 +105,12 @@ describe('runMissingMediaPipeline', () => {
       expect(onVerified.mock.calls).toEqual(
         completed ? [[[{ ...candidate, isMissing: resolvedMissing }]]] : []
       )
-      expect(vi.mocked(useToastStore().add).mock.calls).toEqual(
+      expect(vi.mocked(useToast().warning).mock.calls).toEqual(
         failed
           ? [
               [
-                expect.objectContaining({
-                  severity: 'warn',
-                  summary: t('toastMessages.missingMediaVerificationFailed')
-                })
+                t('toastMessages.missingMediaVerificationFailed'),
+                { duration: 5000 }
               ]
             ]
           : []

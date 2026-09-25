@@ -165,7 +165,7 @@ import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { NodeId } from '@/types/nodeId'
 import { resolveNode } from '@/utils/litegraphUtil'
@@ -197,7 +197,7 @@ const { widget, nodeId } = defineProps<{
 const { t } = useI18n()
 const maskEditor = useMaskEditor()
 const nodeOutputStore = useNodeOutputStore()
-const toastStore = useToastStore()
+const toastStore = useToast()
 
 const activeIndex = ref(0)
 const displayMode = ref<DisplayMode>('single')
@@ -353,10 +353,8 @@ function handleDownload() {
   try {
     downloadFile(src)
   } catch {
-    toastStore.add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail: t('g.failedToDownloadImage')
+    toastStore.error(t('g.error'), {
+      description: t('g.failedToDownloadImage')
     })
   }
 }

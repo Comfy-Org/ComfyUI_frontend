@@ -1,7 +1,7 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 
 import {
   deleteSecret as deleteSecretApi,
@@ -13,7 +13,7 @@ import type { SecretMetadata, SecretProviderInfo } from '../types'
 
 export function useSecrets() {
   const { t } = useI18n()
-  const toastStore = useToastStore()
+  const toastStore = useToast()
 
   const loading = ref(false)
   const secrets = ref<SecretMetadata[]>([])
@@ -30,18 +30,10 @@ export function useSecrets() {
       secrets.value = await listSecrets()
     } catch (err) {
       if (err instanceof SecretsApiError) {
-        toastStore.add({
-          severity: 'error',
-          summary: t('g.error'),
-          detail: err.message
-        })
+        toastStore.error(t('g.error'), { description: err.message })
       } else {
         console.error('Unexpected error fetching secrets:', err)
-        toastStore.add({
-          severity: 'error',
-          summary: t('g.error'),
-          detail: t('g.unknownError')
-        })
+        toastStore.error(t('g.error'), { description: t('g.unknownError') })
       }
     } finally {
       loading.value = false
@@ -63,18 +55,10 @@ export function useSecrets() {
       secrets.value = secrets.value.filter((s) => s.id !== secret.id)
     } catch (err) {
       if (err instanceof SecretsApiError) {
-        toastStore.add({
-          severity: 'error',
-          summary: t('g.error'),
-          detail: err.message
-        })
+        toastStore.error(t('g.error'), { description: err.message })
       } else {
         console.error('Unexpected error deleting secret:', err)
-        toastStore.add({
-          severity: 'error',
-          summary: t('g.error'),
-          detail: t('g.unknownError')
-        })
+        toastStore.error(t('g.error'), { description: t('g.unknownError') })
       }
     } finally {
       operatingSecretId.value = null

@@ -22,15 +22,6 @@ import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 import { useDialogService } from './dialogService'
 
 vi.mock(import('@/platform/telemetry'))
-// oxlint-disable-next-line comfy/no-primevue-imports
-vi.mock(import('primevue/usetoast'), () => ({
-  useToast: () => ({
-    add: vi.fn(),
-    remove: vi.fn(),
-    removeGroup: vi.fn(),
-    removeAllGroups: vi.fn()
-  })
-}))
 vi.mock(import('@/composables/useCopyToClipboard'), () => ({
   useCopyToClipboard: () => ({ copyToClipboard: vi.fn(async () => {}) })
 }))

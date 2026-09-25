@@ -75,7 +75,7 @@
 
 <script setup lang="ts">
 import { useAsyncState } from '@vueuse/core'
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast'
 import {
   computed,
   nextTick,
@@ -186,10 +186,8 @@ const { isLoading: isSaving, execute: handleSave } = useAsyncState(
     immediate: false,
     onError: (error) => {
       console.error('Failed to save workflow:', error)
-      toast.add({
-        severity: 'error',
-        summary: t('shareWorkflow.saveFailedTitle'),
-        detail: t('shareWorkflow.saveFailedDescription')
+      toast.error(t('shareWorkflow.saveFailedTitle'), {
+        description: t('shareWorkflow.saveFailedDescription')
       })
     }
   }
@@ -220,20 +218,16 @@ async function handlePublish(): Promise<void> {
     if (path) {
       cachePublishPrefill(path, formData.value)
     }
-    toast.add({
-      severity: 'success',
-      summary: t('comfyHubPublish.publishSuccessTitle'),
-      detail: t('comfyHubPublish.publishSuccessDescription'),
-      life: 5000
+    toast.success(t('comfyHubPublish.publishSuccessTitle'), {
+      description: t('comfyHubPublish.publishSuccessDescription'),
+      duration: 5000
     })
     onClose()
   } catch (error) {
     console.error('Failed to publish workflow:', error)
     const reason = getErrorMessage(error)
-    toast.add({
-      severity: 'error',
-      summary: t('comfyHubPublish.publishFailedTitle'),
-      detail: reason
+    toast.error(t('comfyHubPublish.publishFailedTitle'), {
+      description: reason
         ? t('comfyHubPublish.publishFailedDescriptionWithReason', { reason })
         : t('comfyHubPublish.publishFailedDescription')
     })

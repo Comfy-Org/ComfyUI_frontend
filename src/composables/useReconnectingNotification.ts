@@ -1,9 +1,9 @@
 import { useDocumentVisibility, useTimeoutFn } from '@vueuse/core'
-import type { ToastMessageOptions } from 'primevue/toast'
-import { useToast } from 'primevue/usetoast'
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useToast } from '@/components/ui/toast'
+import type { ToastId } from '@/components/ui/toast'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
 const RECONNECT_TOAST_DELAY_MS = 2000
@@ -16,18 +16,12 @@ export function useReconnectingNotification() {
   const toast = useToast()
   const settingStore = useSettingStore()
 
-  const reconnectingMessage: ToastMessageOptions = {
-    severity: 'error',
-    summary: t('g.reconnecting')
-  }
-
-  const reconnectingToastShown = ref(false)
   const toastDelayMs = ref(RECONNECT_TOAST_DELAY_MS)
+  const reconnectingToastId = ref<ToastId>()
 
   const { start, stop, isPending } = useTimeoutFn(
     () => {
-      toast.add(reconnectingMessage)
-      reconnectingToastShown.value = true
+      reconnectingToastId.value = toast.error(t('g.reconnecting'))
     },
     toastDelayMs,
     { immediate: false }
@@ -59,14 +53,10 @@ export function useReconnectingNotification() {
   function onReconnected() {
     stop()
 
-    if (reconnectingToastShown.value) {
-      toast.remove(reconnectingMessage)
-      toast.add({
-        severity: 'success',
-        summary: t('g.reconnected'),
-        life: 2000
-      })
-      reconnectingToastShown.value = false
+    if (reconnectingToastId.value !== undefined) {
+      toast.dismiss(reconnectingToastId.value)
+      toast.success(t('g.reconnected'), { duration: 2000 })
+      reconnectingToastId.value = undefined
     }
   }
 

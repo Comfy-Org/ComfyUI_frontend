@@ -3,7 +3,7 @@ import log from 'loglevel'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { PYTHON_MIRROR } from '@/constants/uvMirrors'
 import { t } from '@/i18n'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
@@ -17,7 +17,7 @@ void (async () => {
   const electronAPI = getElectronAPI()
   const desktopAppVersion = await electronAPI.getElectronVersion()
   const workflowStore = useWorkflowStore()
-  const toastStore = useToastStore()
+  const toastStore = useToast()
   const { staticUrls, buildDocsUrl } = useExternalLink()
 
   const onChangeRestartApp = async (newValue: unknown, oldValue: unknown) => {
@@ -182,10 +182,8 @@ void (async () => {
             })
 
             if (!updateInfo.isUpdateAvailable) {
-              toastStore.add({
-                severity: 'info',
-                summary: t('desktopUpdate.noUpdateFound'),
-                life: 5_000
+              toastStore.info(t('desktopUpdate.noUpdateFound'), {
+                duration: 5_000
               })
               return
             }
@@ -202,19 +200,15 @@ void (async () => {
                 await electronAPI.restartAndInstall()
               } catch (error) {
                 log.error('Error installing update:', error)
-                toastStore.add({
-                  severity: 'error',
-                  summary: t('g.error'),
-                  detail: t('desktopUpdate.errorInstallingUpdate')
+                toastStore.error(t('g.error'), {
+                  description: t('desktopUpdate.errorInstallingUpdate')
                 })
               }
             }
           } catch (error) {
             log.error('Error checking for updates:', error)
-            toastStore.add({
-              severity: 'error',
-              summary: t('g.error'),
-              detail: t('desktopUpdate.errorCheckingUpdate')
+            toastStore.error(t('g.error'), {
+              description: t('desktopUpdate.errorCheckingUpdate')
             })
           }
         }

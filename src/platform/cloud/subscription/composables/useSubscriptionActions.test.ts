@@ -1,12 +1,16 @@
-import { useDialogService } from '@/services/dialogService'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { useCommandStore } from '@/stores/commandStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useSubscriptionActions } from '@/platform/cloud/subscription/composables/useSubscriptionActions'
-import { useTelemetry } from '@/platform/telemetry'
 import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
+
+const mockShowTopUpCreditsDialog = vi.fn()
+const mockExecute = vi.fn<ReturnType<typeof useCommandStore>['execute']>(
+  async () => undefined
+)
+const mockToastAdd = vi.fn()
 
 const { mockReportError } = vi.hoisted(() => ({
   mockReportError: vi.fn()
@@ -17,15 +21,55 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
 }))
 
 vi.mock(import('@/composables/auth/useAuthActions'))
+beforeEach(() => {
+  vi.mocked(useToast().success).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('success', ...args)
+  )
+  vi.mocked(useToast().error).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('error', ...args)
+  )
+  vi.mocked(useToast().info).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('info', ...args)
+  )
+  vi.mocked(useToast().warning).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('warning', ...args)
+  )
+  vi.mocked(useToast().loading).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('loading', ...args)
+  )
+  vi.mocked(useToast().custom).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('custom', ...args)
+  )
+})
 
 vi.mock(import('@/composables/billing/useBillingContext'))
 
-vi.mock(import('@/services/dialogService'))
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
+  useDialogService: () => ({
+    showTopUpCreditsDialog: mockShowTopUpCreditsDialog
+  })
+}))
 
 // useTelemetry() returns null in OSS, a dispatcher in cloud — toggle via mockIsCloud.
-const mockIsCloud = vi.hoisted(() => ({ value: true }))
+const {
+  mockIsCloud,
+  mockTrackHelpResourceClicked,
+  mockTrackAddApiCreditButtonClicked
+} = vi.hoisted(() => ({
+  mockIsCloud: { value: true },
+  mockTrackHelpResourceClicked: vi.fn(),
+  mockTrackAddApiCreditButtonClicked: vi.fn()
+}))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
+  useTelemetry: () =>
+    mockIsCloud.value
+      ? {
+          trackHelpResourceClicked: mockTrackHelpResourceClicked,
+          trackAddApiCreditButtonClicked: mockTrackAddApiCreditButtonClicked
+        }
+      : null
+}))
 
 // Mock window.open
 const mockOpen = vi.fn()
@@ -35,11 +79,7 @@ Object.defineProperty(window, 'open', {
 })
 
 beforeEach(() => {
-  const telemetry = useTelemetry()
-  if (!telemetry) throw new Error('Expected telemetry mock')
-  vi.mocked(useTelemetry).mockImplementation(() =>
-    mockIsCloud.value ? telemetry : null
-  )
+  vi.mocked(useCommandStore().execute).mockImplementation(mockExecute)
 })
 
 describe('useSubscriptionActions', () => {
@@ -51,10 +91,10 @@ describe('useSubscriptionActions', () => {
     it('should call showTopUpCreditsDialog', () => {
       const { handleAddApiCredits } = useSubscriptionActions()
       handleAddApiCredits()
-      expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalledOnce()
-      expect(
-        useTelemetry()?.trackAddApiCreditButtonClicked
-      ).toHaveBeenCalledWith({ source: 'settings_billing_panel' })
+      expect(mockShowTopUpCreditsDialog).toHaveBeenCalledOnce()
+      expect(mockTrackAddApiCreditButtonClicked).toHaveBeenCalledWith({
+        source: 'settings_billing_panel'
+      })
     })
   })
 
@@ -69,9 +109,7 @@ describe('useSubscriptionActions', () => {
       expect(isLoadingSupport.value).toBe(true)
 
       await promise
-      expect(useCommandStore().execute).toHaveBeenCalledWith(
-        'Comfy.ContactSupport'
-      )
+      expect(mockExecute).toHaveBeenCalledWith('Comfy.ContactSupport')
       expect(isLoadingSupport.value).toBe(false)
     })
 
@@ -80,7 +118,7 @@ describe('useSubscriptionActions', () => {
 
       await handleMessageSupport()
 
-      expect(useTelemetry()?.trackHelpResourceClicked).toHaveBeenCalledWith({
+      expect(mockTrackHelpResourceClicked).toHaveBeenCalledWith({
         resource_type: 'help_feedback',
         is_external: true,
         source: 'subscription'
@@ -88,37 +126,32 @@ describe('useSubscriptionActions', () => {
     })
 
     it('does not fire telemetry when messaging support in OSS builds', async () => {
-      const telemetry = useTelemetry()
-      if (!telemetry) throw new Error('Expected telemetry mock')
       mockIsCloud.value = false
       const { handleMessageSupport } = useSubscriptionActions()
 
       await handleMessageSupport()
 
-      expect(telemetry.trackHelpResourceClicked).not.toHaveBeenCalled()
+      expect(mockTrackHelpResourceClicked).not.toHaveBeenCalled()
     })
 
     it('tells the user when contacting support fails, and stops loading', async () => {
-      vi.mocked(useCommandStore().execute).mockRejectedValueOnce(
-        new Error('Command failed')
-      )
+      mockExecute.mockRejectedValueOnce(new Error('Command failed'))
       const { handleMessageSupport, isLoadingSupport } =
         useSubscriptionActions()
 
       await handleMessageSupport()
 
       expect(isLoadingSupport.value).toBe(false)
-      expect(useToastStore().add).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error',
-          detail: 'Command failed'
-        })
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        'error',
+        expect.any(String),
+        expect.objectContaining({ description: 'Command failed' })
       )
     })
 
     it('reports a failed support request so it is visible without the user', async () => {
       const failure = new Error('Command failed')
-      vi.mocked(useCommandStore().execute).mockRejectedValueOnce(failure)
+      mockExecute.mockRejectedValueOnce(failure)
       const { handleMessageSupport } = useSubscriptionActions()
 
       await handleMessageSupport()
@@ -133,9 +166,7 @@ describe('useSubscriptionActions', () => {
     // Normalizing it is reportError's job, covered in reportError.test.ts; what
     // matters here is that the raw cause reaches the reporter at all.
     it('reports a thrown non-Error', async () => {
-      vi.mocked(useCommandStore().execute).mockRejectedValueOnce(
-        'Command failed'
-      )
+      mockExecute.mockRejectedValueOnce('Command failed')
       const { handleMessageSupport } = useSubscriptionActions()
 
       await handleMessageSupport()
@@ -165,7 +196,7 @@ describe('useSubscriptionActions', () => {
       const { handleRefresh } = useSubscriptionActions()
 
       await expect(handleRefresh()).resolves.toBeUndefined()
-      expect(useToastStore().add).not.toHaveBeenCalled()
+      expect(mockToastAdd).not.toHaveBeenCalled()
     })
   })
 

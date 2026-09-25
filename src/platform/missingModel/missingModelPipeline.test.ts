@@ -1,9 +1,10 @@
+import { useToast } from '@/components/ui/toast'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useMissingModelStore } from './missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
@@ -64,6 +65,14 @@ const { mockHandles } = vi.hoisted(() => {
           _signal: AbortSignal
         ) => undefined
       ),
+      toastStore: {
+        success: vi.fn(),
+        error: vi.fn(),
+        info: vi.fn(),
+        warning: vi.fn(),
+        loading: vi.fn(),
+        custom: vi.fn()
+      },
       assetService: {
         shouldUseWidgetAssetPicker: vi.fn()
       },
@@ -88,7 +97,6 @@ beforeEach(() => {
   vi.mocked(useExecutionErrorStore().surfaceMissingModels).mockImplementation(
     () => undefined
   )
-  vi.mocked(useToastStore().add).mockImplementation(() => undefined)
 })
 
 vi.mock<unknown>(import('@/platform/missingModel/missingModelScan'), () => ({
@@ -109,6 +117,21 @@ vi.mock<unknown>(import('@/platform/missingModel/missingModelScan'), () => ({
     signal: AbortSignal
   ) => mockHandles.verifyAssetSupportedCandidates(candidates, signal)
 }))
+
+beforeEach(() => {
+  vi.mocked(useToast().success).mockImplementation(
+    mockHandles.toastStore.success
+  )
+  vi.mocked(useToast().error).mockImplementation(mockHandles.toastStore.error)
+  vi.mocked(useToast().info).mockImplementation(mockHandles.toastStore.info)
+  vi.mocked(useToast().warning).mockImplementation(
+    mockHandles.toastStore.warning
+  )
+  vi.mocked(useToast().loading).mockImplementation(
+    mockHandles.toastStore.loading
+  )
+  vi.mocked(useToast().custom).mockImplementation(mockHandles.toastStore.custom)
+})
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
@@ -246,18 +269,16 @@ describe('missingModelPipeline', () => {
         ])
       else expect(onVerified).not.toHaveBeenCalled()
       if (outcome === 'failed') {
-        expect(useToastStore().add).toHaveBeenCalledWith(
-          expect.objectContaining({
-            severity: 'warn',
-            summary: t('toastMessages.missingModelVerificationFailed')
-          })
+        expect(useToast().warning).toHaveBeenCalledWith(
+          t('toastMessages.missingModelVerificationFailed'),
+          { duration: 5000 }
         )
         expect(reportError).toHaveBeenCalledWith(
           new Error('asset service unavailable'),
           { errorType: 'missing_model_verification_failed' }
         )
       } else {
-        expect(useToastStore().add).not.toHaveBeenCalled()
+        expect(useToast().warning).not.toHaveBeenCalled()
         expect(reportError).not.toHaveBeenCalled()
       }
     }

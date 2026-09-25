@@ -33,11 +33,6 @@ vi.mock<unknown>(import('@/platform/keybindings/presetService'), () => ({
   })
 }))
 
-vi.mock<unknown>(
-  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
-  () => ({ useToast: () => ({ add: vi.fn() }) })
-)
-
 const i18n = createI18n({
   legacy: false,
   locale: 'en',

@@ -1,7 +1,7 @@
 import { t } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingParams, Settings } from '@/platform/settings/types'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import type { ComfyApp } from '@/scripts/app'
 
 import { ComfyDialog } from './dialog'
@@ -10,7 +10,9 @@ function saveSetting<K extends keyof Settings>(id: K, value: Settings[K]) {
   useSettingStore()
     .set(id, value)
     .catch((err) => {
-      useToastStore().addAlert(t('toastMessages.errorSaveSetting', { id, err }))
+      useToast().warning('Alert', {
+        description: t('toastMessages.errorSaveSetting', { id, err })
+      })
     })
 }
 

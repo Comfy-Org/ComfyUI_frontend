@@ -30,7 +30,6 @@ import type {
 import { isCloud } from '@/platform/distribution/types'
 import { addBreadcrumb } from '@sentry/vue'
 import { useTelemetry } from '@/platform/telemetry'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
 import type {
   AssetDownloadWsMessage,
@@ -1726,6 +1725,8 @@ export class ComfyApi extends EventTarget {
    * @param {boolean} options.freeExecutionCache - If true, also frees execution cache
    */
   async freeMemory(options: { freeExecutionCache: boolean }) {
+    const { useToast } = await import('@/components/ui/toast')
+
     try {
       let mode = ''
       if (options.freeExecutionCache) {
@@ -1742,30 +1743,19 @@ export class ComfyApi extends EventTarget {
 
       if (res.status === 200) {
         if (options.freeExecutionCache) {
-          useToastStore().add({
-            severity: 'success',
-            summary: 'Models and Execution Cache have been cleared.',
-            life: 3000
+          useToast().success('Models and Execution Cache have been cleared.', {
+            duration: 3000
           })
         } else {
-          useToastStore().add({
-            severity: 'success',
-            summary: 'Models have been unloaded.',
-            life: 3000
-          })
+          useToast().success('Models have been unloaded.', { duration: 3000 })
         }
       } else {
-        useToastStore().add({
-          severity: 'error',
-          summary:
-            'Unloading of models failed. Installed ComfyUI may be an outdated version.'
-        })
+        useToast().error(
+          'Unloading of models failed. Installed ComfyUI may be an outdated version.'
+        )
       }
     } catch (error) {
-      useToastStore().add({
-        severity: 'error',
-        summary: 'An error occurred while trying to unload models.'
-      })
+      useToast().error('An error occurred while trying to unload models.')
     }
   }
 

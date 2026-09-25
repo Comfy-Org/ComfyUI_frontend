@@ -56,7 +56,7 @@
 </template>
 
 <script setup lang="ts">
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -132,10 +132,8 @@ async function onConfirmDowngrade() {
     await onConfirm(planSlug, requiresReactivation)
     dialogStore.closeDialog({ key: 'downgrade-remove-members' })
   } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: t('subscription.downgrade.failed'),
-      detail: error instanceof Error ? error.message : t('g.unknownError')
+    toast.error(t('subscription.downgrade.failed'), {
+      description: error instanceof Error ? error.message : t('g.unknownError')
     })
   } finally {
     isLoading.value = false
