@@ -292,6 +292,39 @@ describe('SavedAssetsStrip', () => {
     vi.useRealTimers()
   })
 
+  it('keeps a fresh URL a second renewal landed while the first was still out', async () => {
+    vi.useFakeTimers()
+    vi.mocked(listWorkshopGenerations).mockResolvedValue({ requests: [saved] })
+    vi.mocked(accessWorkshopAsset)
+      .mockResolvedValueOnce({
+        content_url: 'https://assets.example/saved.png',
+        expires_at: new Date(Date.now() + 60_000).toISOString()
+      })
+      .mockReturnValueOnce(new Promise<never>(() => {}))
+      .mockResolvedValue({
+        content_url: 'https://assets.example/fresh.png',
+        expires_at: new Date(Date.now() + 900_000).toISOString()
+      })
+    render(SavedAssetsStrip, { props })
+    await screen.findByTestId('saved-asset-media')
+    await vi.advanceTimersByTimeAsync(31_000)
+
+    await fireEvent.error(screen.getByTestId('saved-asset-media'))
+    await vi.waitFor(() =>
+      expect(screen.getByTestId('saved-asset-media')).toHaveAttribute(
+        'src',
+        'https://assets.example/fresh.png'
+      )
+    )
+    await vi.advanceTimersByTimeAsync(31_000)
+
+    expect(
+      screen.queryByTestId('saved-asset-media')?.getAttribute('src'),
+      'the stranded renewal only ever had the first grant to let go of, not the one that replaced it'
+    ).toBe('https://assets.example/fresh.png')
+    vi.useRealTimers()
+  })
+
   it('grants access to the asset a gone one uncovers', async () => {
     const shown = 8
     const older = Array.from({ length: shown + 1 }, (_, index) => ({

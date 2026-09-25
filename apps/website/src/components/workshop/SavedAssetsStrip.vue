@@ -168,11 +168,21 @@ function gone(error: unknown): boolean {
 /** A held URL is good until its own expiry and no longer, whatever becomes of
  * the request sent to replace it: letting the tile serve it until that request
  * settles hands a slow or hung attempt the whole fetch timeout to serve a dead
- * URL in. */
+ * URL in. It lets go of the grant it was armed for and no other, since a second
+ * request can land a fresh one while the first is still out. */
 function lapseHeld(assetId: string) {
   const held = access.value.get(assetId)
   if (!held?.url) return undefined
-  const lapse = () => access.value.set(assetId, { ...held, url: undefined })
+  const lapse = () => {
+    const current = access.value.get(assetId)
+    if (
+      !current ||
+      current.url !== held.url ||
+      current.expiresAt !== held.expiresAt
+    )
+      return
+    access.value.set(assetId, { ...held, url: undefined })
+  }
   const left = held.expiresAt - Date.now()
   if (left > 0) return setTimeout(lapse, left)
   lapse()
