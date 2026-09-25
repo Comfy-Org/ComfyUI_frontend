@@ -8,8 +8,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import type {
   AspectRatio,
   Direction,
-  DirectionPart,
-  Resolution
+  DirectionPart
 } from '../../../lib/workshop/cinematic-studio/catalog'
 import { directionOption } from '../../../lib/workshop/cinematic-studio/catalog'
 import type { StudioGate } from '../../../lib/workshop/cinematic-studio/gate'
@@ -34,18 +33,20 @@ const {
   workspaceName,
   rendering,
   openPopover,
+  canReview = true,
   locale = 'en'
 } = defineProps<{
   models: readonly CinematicModel[]
   direction: Direction
   aspect: AspectRatio
-  resolution: Resolution
+  resolution: string
   takes: number
   references: readonly File[]
   gate: StudioGate
   workspaceName?: string
   rendering: boolean
   openPopover?: PopoverKey
+  canReview?: boolean
   locale?: Locale
 }>()
 
@@ -79,7 +80,7 @@ const focalLabel = computed(() => {
 })
 const referencePreview = useObjectUrl(() => references[0])
 const canGenerate = computed(
-  () => gate === 'ready' && scene.value.trim().length > 0
+  () => canReview && gate === 'ready' && scene.value.trim().length > 0
 )
 
 function generateFromKeyboard() {

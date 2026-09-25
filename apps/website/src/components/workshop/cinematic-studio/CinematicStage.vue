@@ -34,6 +34,7 @@ const emit = defineEmits<{
   start: [shot: StarterShot]
   again: []
   reference: [url: string, name: string]
+  animate: [url: string, name: string]
   switchModel: [slug: string]
   editScene: []
 }>()
@@ -48,9 +49,17 @@ const modelName = computed(
   () =>
     models.find((model) => model.slug === current.value?.modelSlug)?.name ?? ''
 )
-const otherModel = computed(() =>
-  models.find((model) => model.slug !== current.value?.modelSlug)
-)
+const otherModel = computed(() => {
+  const selected = models.find(
+    (model) => model.slug === current.value?.modelSlug
+  )
+  return models.find(
+    (model) =>
+      model.slug !== selected?.slug &&
+      (model.mode ?? 'image') === (selected?.mode ?? 'image') &&
+      model.video?.firstFrame === selected?.video?.firstFrame
+  )
+})
 </script>
 
 <template>
@@ -72,14 +81,18 @@ const otherModel = computed(() =>
         <CinematicTakeFrame
           :current
           :other-model="otherModel"
-          :height="FRAME_HEIGHT"
+          :height="
+            current.status === 'done' && current.output.kind === 'video'
+              ? '32svh'
+              : FRAME_HEIGHT
+          "
           :locale
           @again="emit('again')"
           @switch-model="emit('switchModel', $event)"
           @edit-scene="emit('editScene')"
         >
           <div
-            v-if="current.status === 'done'"
+            v-if="current.status === 'done' && current.output.kind === 'image'"
             class="absolute inset-x-0 bottom-0 flex flex-wrap items-end justify-between gap-3 bg-linear-to-t from-primary-comfy-ink/90 via-primary-comfy-ink/50 to-transparent p-4 pt-16 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 pointer-coarse:opacity-100"
           >
             <CinematicTakeBar
@@ -94,9 +107,27 @@ const otherModel = computed(() =>
               :locale
               @again="emit('again')"
               @reference="(url, name) => emit('reference', url, name)"
+              @animate="(url, name) => emit('animate', url, name)"
             />
           </div>
         </CinematicTakeFrame>
+        <div
+          v-if="current.status === 'done' && current.output.kind === 'video'"
+          class="flex flex-wrap items-center justify-between gap-3"
+        >
+          <CinematicTakeBar
+            :current
+            :siblings
+            :model-name="modelName"
+            :locale
+            @select="emit('select', $event)"
+          />
+          <CinematicTakeActions
+            :take="current"
+            :locale
+            @again="emit('again')"
+          />
+        </div>
         <CinematicSequence
           :takes="reel.takes"
           :current-id="current.id"

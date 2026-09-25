@@ -547,8 +547,8 @@ html.ppformula-metric-fallback .ppformula-narrow-text-center {
 }
 /* Hide native play-button overlay iOS Safari shows when autoplay is blocked
    (e.g. Low Power Mode). These are decorative background videos. */
-video::-webkit-media-controls-start-playback-button,
-video::-webkit-media-controls-panel {
+video:not([controls])::-webkit-media-controls-start-playback-button,
+video:not([controls])::-webkit-media-controls-panel {
   display: none !important;
   appearance: none;
 }

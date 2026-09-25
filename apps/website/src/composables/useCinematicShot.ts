@@ -7,6 +7,7 @@ import type {
   Resolution
 } from '../lib/workshop/cinematic-studio/catalog'
 import {
+  ASPECT_RATIOS,
   DEFAULT_DIRECTION,
   RESOLUTIONS,
   directionOption
@@ -24,7 +25,7 @@ import type { ShotRequest } from './useCinematicStudioRun'
 export interface CinematicReview {
   readonly request: ShotRequest
   readonly modelName: string
-  readonly resolution: Resolution
+  readonly resolution: string
   readonly workspaceId?: string
   readonly userId?: string
 }
@@ -35,33 +36,170 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
     ? useCinematicDemoRun()
     : useCinematicStudioRun(models.length)
 
-  const modelSlug = ref(models[0]?.slug ?? '')
-  const scene = ref('')
+  const mode = ref<'image' | 'video'>('image')
+  const imageModel = ref(
+    models.find((model) => model.mode !== 'video')?.slug ?? ''
+  )
+  const videoModel = ref(
+    models.find((model) => model.mode === 'video')?.slug ?? ''
+  )
+  const availableModels = computed(() =>
+    models.filter((model) => (model.mode ?? 'image') === mode.value)
+  )
+  const modelSlug = computed({
+    get: () => (mode.value === 'video' ? videoModel.value : imageModel.value),
+    set: (slug: string) => {
+      if (mode.value === 'video') videoModel.value = slug
+      else imageModel.value = slug
+    }
+  })
+  const selectedModel = computed(() =>
+    availableModels.value.find((model) => model.slug === modelSlug.value)
+  )
+  const imageScene = ref('')
+  const videoScene = ref('')
+  const scene = computed({
+    get: () => (mode.value === 'video' ? videoScene.value : imageScene.value),
+    set: (value: string) => {
+      if (mode.value === 'video') videoScene.value = value
+      else imageScene.value = value
+    }
+  })
   const enhance = ref(true)
   const direction = ref<Direction>(DEFAULT_DIRECTION)
-  const aspect = ref<AspectRatio>('21:9')
+  const imageAspect = ref<AspectRatio>('21:9')
+  const videoAspect = ref<AspectRatio>('16:9')
+  const aspect = computed({
+    get: () => {
+      if (mode.value === 'image') return imageAspect.value
+      const allowed = selectedModel.value?.video?.aspects ?? []
+      return allowed.includes(videoAspect.value)
+        ? videoAspect.value
+        : (ASPECT_RATIOS.find((ratio) => allowed.includes(ratio.id))?.id ??
+            '16:9')
+    },
+    set: (value: AspectRatio) => {
+      if (mode.value === 'video') videoAspect.value = value
+      else imageAspect.value = value
+    }
+  })
   const resolution = ref<Resolution>('2K')
   const takes = ref(1)
   const cast = shallowRef<File>()
   const palette = shallowRef<File>()
   const review = shallowRef<CinematicReview>()
+  const firstFrame = shallowRef<File>()
+  const lastFrame = shallowRef<File>()
+  const requestedDuration = ref(5)
+  const requestedResolution = ref('720p')
+  const duration = computed({
+    get: () =>
+      selectedModel.value?.video?.durations.includes(requestedDuration.value)
+        ? requestedDuration.value
+        : (selectedModel.value?.video?.defaultDuration ?? 5),
+    set: (value: number) => {
+      requestedDuration.value = value
+    }
+  })
+  const videoResolution = computed({
+    get: () =>
+      selectedModel.value?.video?.resolutions.includes(
+        requestedResolution.value
+      )
+        ? requestedResolution.value
+        : (selectedModel.value?.video?.defaultResolution ?? '720p'),
+    set: (value: string) => {
+      requestedResolution.value = value
+    }
+  })
+  const audio = ref(false)
+  const frameLoading = ref(false)
+  const frameError = ref(false)
+  const canReview = computed(
+    () =>
+      !!selectedModel.value &&
+      !frameLoading.value &&
+      (mode.value !== 'video' ||
+        (selectedModel.value.video &&
+          (selectedModel.value.video.firstFrame !== 'required' ||
+            !!firstFrame.value)))
+  )
+  const formatLabel = computed(() =>
+    mode.value === 'video'
+      ? `${videoResolution.value} · ${duration.value}s`
+      : resolution.value
+  )
+  const takeCount = computed(() => (mode.value === 'video' ? 1 : takes.value))
+  const modeReel = computed(() => ({
+    ...studio.reel.value,
+    takes: studio.reel.value.takes.filter(
+      (take) =>
+        (models.find((model) => model.slug === take.modelSlug)?.mode ??
+          'image') === mode.value
+    )
+  }))
+
+  async function animate(url: string, name: string) {
+    if (studio.rendering.value || frameLoading.value) return
+    const model = models.find(
+      (candidate) => candidate.video?.firstFrame === 'required'
+    )
+    if (!model) return
+    frameLoading.value = true
+    frameError.value = false
+    try {
+      const response = await fetch(url)
+      if (!response.ok) throw new Error('Starting frame unavailable')
+      const blob = await response.blob()
+      if (!['image/png', 'image/jpeg', 'image/webp'].includes(blob.type))
+        throw new Error('Unsupported starting frame')
+      firstFrame.value = new File([blob], name, { type: blob.type })
+      lastFrame.value = undefined
+      videoModel.value = model.slug
+      mode.value = 'video'
+    } catch {
+      frameError.value = true
+    } finally {
+      frameLoading.value = false
+    }
+  }
 
   onMounted(() => {
     const requested = new URLSearchParams(window.location.search).get('model')
-    if (requested && models.some((model) => model.slug === requested))
-      modelSlug.value = requested
+    const selected = models.find((model) => model.slug === requested)
+    if (selected) {
+      mode.value = selected.mode ?? 'image'
+      modelSlug.value = selected.slug
+    }
   })
 
   const brief = computed(() => ({
     scene: scene.value,
     direction: direction.value,
     enhance: enhance.value,
-    cast: !!cast.value,
-    palette: !!palette.value
+    mode: mode.value,
+    firstFrame:
+      mode.value === 'video' &&
+      selectedModel.value?.video?.firstFrame === 'required' &&
+      !!firstFrame.value,
+    lastFrame:
+      mode.value === 'video' &&
+      !!selectedModel.value?.video?.lastFrame &&
+      !!lastFrame.value,
+    cast: mode.value === 'image' && !!cast.value,
+    palette: mode.value === 'image' && !!palette.value
   }))
   const promptSegments = computed(() => cinematicPromptSegments(brief.value))
   const references = computed(() =>
-    [cast.value, palette.value].filter((file): file is File => !!file)
+    (mode.value === 'video'
+      ? [
+          selectedModel.value?.video?.firstFrame === 'required'
+            ? firstFrame.value
+            : undefined,
+          selectedModel.value?.video?.lastFrame ? lastFrame.value : undefined
+        ]
+      : [cast.value, palette.value]
+    ).filter((file): file is File => !!file)
   )
 
   function choose(part: DirectionPart, id: string) {
@@ -78,6 +216,7 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
     const model = models.find((item) => item.slug === modelSlug.value)
     if (
       !model ||
+      !canReview.value ||
       !scene.value.trim() ||
       studio.rendering.value ||
       studio.gate.value !== 'ready'
@@ -85,7 +224,7 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
       return
     review.value = {
       modelName: model.name,
-      resolution: resolution.value,
+      resolution: formatLabel.value,
       workspaceId: studio.session.value?.workspace.id,
       userId: studio.session.value?.uid,
       request: {
@@ -95,8 +234,25 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
         resolutionPixels:
           RESOLUTIONS.find((option) => option.id === resolution.value)
             ?.pixels ?? 2048,
-        takes: takes.value,
-        references: [...references.value],
+        takes: takeCount.value,
+        references: mode.value === 'image' ? [...references.value] : [],
+        ...(mode.value === 'video'
+          ? {
+              video: {
+                durationSeconds: duration.value,
+                resolution: videoResolution.value,
+                generateAudio:
+                  !!selectedModel.value?.video?.generateAudio && audio.value,
+                ...(selectedModel.value?.video?.firstFrame === 'required' &&
+                firstFrame.value
+                  ? { firstFrame: firstFrame.value }
+                  : {}),
+                ...(selectedModel.value?.video?.lastFrame && lastFrame.value
+                  ? { lastFrame: lastFrame.value }
+                  : {})
+              }
+            }
+          : {}),
         preview: directionOption('look', direction.value).preview
       }
     }
@@ -120,6 +276,21 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
 
   return {
     studio,
+    mode,
+    availableModels,
+    selectedModel,
+    firstFrame,
+    lastFrame,
+    duration,
+    videoResolution,
+    audio,
+    canReview,
+    formatLabel,
+    takeCount,
+    modeReel,
+    animate,
+    frameLoading,
+    frameError,
     modelSlug,
     scene,
     enhance,

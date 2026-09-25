@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { watch } from 'vue'
+import { computed, watch } from 'vue'
 import type { CinematicReview } from '../../../composables/useCinematicShot'
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
@@ -19,6 +19,18 @@ const {
   locale?: Locale
 }>()
 const emit = defineEmits<{ confirm: []; close: [] }>()
+const referenceNames = computed(() =>
+  review
+    ? [
+        ...review.request.references,
+        review.request.video?.firstFrame,
+        review.request.video?.lastFrame
+      ]
+        .filter((file): file is File => !!file)
+        .map((file) => file.name)
+        .join(', ')
+    : ''
+)
 let returnFocus: HTMLElement | undefined
 watch(
   () => !!review,
@@ -72,9 +84,21 @@ watch(
               {{ tc('cinematic.review.references', locale) }}
             </dt>
             <dd class="mt-1 wrap-break-word">
+              {{ referenceNames || tc('cinematic.review.none', locale) }}
+            </dd>
+          </div>
+          <div v-if="review.request.video">
+            <dt class="text-primary-comfy-canvas">
+              {{ tc('cinematic.video.audio', locale) }}
+            </dt>
+            <dd class="mt-1">
               {{
-                review.request.references.map((file) => file.name).join(', ') ||
-                tc('cinematic.review.none', locale)
+                tc(
+                  review.request.video.generateAudio
+                    ? 'cinematic.video.audioOn'
+                    : 'cinematic.video.audioOff',
+                  locale
+                )
               }}
             </dd>
           </div>

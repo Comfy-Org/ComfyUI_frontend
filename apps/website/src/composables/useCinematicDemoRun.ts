@@ -1,6 +1,7 @@
 import { useMounted } from '@vueuse/core'
 import { computed, onScopeDispose, readonly, shallowRef } from 'vue'
 
+import type { ShotRequest } from './useCinematicStudioRun'
 import type { RunFailure } from '../config/workshop-run'
 import type { WorkshopSession } from '../config/workshop-session-state'
 import type { AspectRatio } from '../lib/workshop/cinematic-studio/catalog'
@@ -34,6 +35,7 @@ const DEMO_FAILURES: Readonly<Record<string, RunFailure>> = {
 }
 
 interface DemoShot {
+  readonly video?: ShotRequest['video']
   readonly modelSlug: string
   readonly prompt: string
   readonly aspect: AspectRatio
@@ -67,20 +69,27 @@ export function useCinematicDemoRun() {
   const timers = new Set<ReturnType<typeof setTimeout>>()
   let frame = 0
 
-  function settle(id: string, index: number, scenario: string | null) {
+  function settle(
+    id: string,
+    index: number,
+    scenario: string | null,
+    video: boolean
+  ) {
     const failure = scenario ? DEMO_FAILURES[scenario] : undefined
     if (failure && index === 0) {
       dispatch({ type: 'takeFailed', id, reason: failure, requestId: id })
       return
     }
-    const url = DEMO_FRAMES[frame++ % DEMO_FRAMES.length]
+    const url = video
+      ? '/animations/scene-3/assets/dusk_mountains.webm'
+      : DEMO_FRAMES[frame++ % DEMO_FRAMES.length]
     dispatch({
       type: 'takeSucceeded',
       id,
       output: {
-        kind: 'image',
+        kind: video ? 'video' : 'image',
         url,
-        fileName: `${id}.jpg`,
+        fileName: `${id}.${video ? 'webm' : 'jpg'}`,
         nsfw: scenario === 'nsfw' && index === 0
       }
     })
@@ -104,7 +113,7 @@ export function useCinematicDemoRun() {
       const timer = setTimeout(
         () => {
           timers.delete(timer)
-          settle(id, index, scenario)
+          settle(id, index, scenario, !!shot.video)
         },
         renderMs + index * 1200
       )

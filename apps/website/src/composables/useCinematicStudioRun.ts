@@ -16,6 +16,8 @@ import { workshopIdempotencyKey } from '../config/workshop-snippets'
 import { createWorkshopUrlUploader } from '../config/workshop-url-upload'
 import type { AspectRatio } from '../lib/workshop/cinematic-studio/catalog'
 import { studioGate } from '../lib/workshop/cinematic-studio/gate'
+import type { CinematicVideoSettings } from '../lib/workshop/cinematic-studio/video'
+import { cinematicVideoForm } from '../lib/workshop/cinematic-studio/video'
 import type { Reel, ReelEvent } from '../lib/workshop/cinematic-studio/reel'
 import {
   EMPTY_REEL,
@@ -32,6 +34,7 @@ export interface ShotRequest {
   readonly takes: number
   readonly references: readonly File[]
   readonly preview?: string
+  readonly video?: CinematicVideoSettings
 }
 
 /**
@@ -103,18 +106,32 @@ export function useCinematicStudioRun(modelCount: number) {
     signal: AbortSignal
   ) {
     try {
+      if ((model.modality === 'video') !== Boolean(request.video))
+        throw new WorkshopRouterError('validation')
       const result = await router_render(
         model.slug,
-        {
-          prompt: request.prompt,
-          aspect_ratio: request.aspect,
-          resolution: request.resolutionPixels,
-          ...(request.references.length
-            ? { reference_images: request.references }
-            : {})
-        },
+        request.video
+          ? {}
+          : {
+              prompt: request.prompt,
+              aspect_ratio: request.aspect,
+              resolution: request.resolutionPixels,
+              ...(request.references.length
+                ? { reference_images: request.references }
+                : {})
+            },
         {
           model,
+          ...(request.video
+            ? {
+                form: cinematicVideoForm(
+                  model,
+                  request.prompt,
+                  request.aspect,
+                  request.video
+                )
+              }
+            : {}),
           signal,
           idempotencyKey: id,
           token: () => tokenFor(startedFor, signal),

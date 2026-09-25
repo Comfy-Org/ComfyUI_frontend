@@ -1,5 +1,11 @@
 <script setup lang="ts">
-import { CircleAlert, CircleStop, LoaderCircle, ShieldAlert } from '@lucide/vue'
+import {
+  CircleAlert,
+  CircleStop,
+  Film,
+  LoaderCircle,
+  ShieldAlert
+} from '@lucide/vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -65,10 +71,15 @@ const blocked = (take: Take) =>
       @click="emit('select', take.id)"
     >
       <img
-        v-if="take.status === 'done'"
+        v-if="take.status === 'done' && take.output.kind === 'image'"
         :src="take.output.url"
         alt=""
         :class="cn('size-full object-cover', take.output.nsfw && 'blur-md')"
+      />
+      <Film
+        v-else-if="take.status === 'done'"
+        class="size-4 text-primary-comfy-canvas"
+        aria-hidden="true"
       />
       <LoaderCircle
         v-else-if="take.status === 'rendering'"

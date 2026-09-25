@@ -9,22 +9,52 @@ import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 
 const { kind, locale = 'en' } = defineProps<{
-  kind: 'cast' | 'palette'
+  kind: 'cast' | 'palette' | 'firstFrame' | 'lastFrame'
   locale?: Locale
 }>()
 
 const file = defineModel<File | undefined>()
 const preview = useObjectUrl(file)
 const input = useTemplateRef<HTMLInputElement>('input')
-const accessibleName = computed(() => {
-  const action = tc(
-    kind === 'cast'
-      ? 'cinematic.reference.castAction'
-      : 'cinematic.reference.paletteAction',
-    locale
-  )
-  return file.value ? `${action}: ${file.value.name}` : action
+const labels = computed(() => {
+  if (kind === 'firstFrame')
+    return {
+      title: tc('cinematic.video.firstFrame', locale),
+      action: tc('cinematic.video.addFirstFrame', locale),
+      hint: tc('cinematic.video.uploadFrame', locale)
+    }
+  if (kind === 'lastFrame')
+    return {
+      title: tc('cinematic.video.lastFrame', locale),
+      action: tc('cinematic.video.addLastFrame', locale),
+      hint: tc('cinematic.reference.optional', locale)
+    }
+  return {
+    title: tc(
+      kind === 'cast'
+        ? 'cinematic.reference.cast'
+        : 'cinematic.reference.palette',
+      locale
+    ),
+    action: tc(
+      kind === 'cast'
+        ? 'cinematic.reference.castAction'
+        : 'cinematic.reference.paletteAction',
+      locale
+    ),
+    hint: tc(
+      kind === 'cast'
+        ? 'cinematic.reference.castHint'
+        : 'cinematic.reference.paletteHint',
+      locale
+    )
+  }
 })
+const accessibleName = computed(() =>
+  file.value
+    ? `${labels.value.action}: ${file.value.name}`
+    : labels.value.action
+)
 
 function choose(event: Event) {
   const target = event.target
@@ -71,26 +101,10 @@ function choose(event: Event) {
       <span
         class="relative text-[10px] font-bold tracking-widest text-primary-comfy-canvas uppercase"
       >
-        {{
-          tc(
-            kind === 'cast'
-              ? 'cinematic.reference.cast'
-              : 'cinematic.reference.palette',
-            locale
-          )
-        }}
+        {{ labels.title }}
       </span>
       <span class="relative truncate text-xs text-primary-warm-white">
-        {{
-          file
-            ? file.name
-            : tc(
-                kind === 'cast'
-                  ? 'cinematic.reference.castHint'
-                  : 'cinematic.reference.paletteHint',
-                locale
-              )
-        }}
+        {{ file ? file.name : labels.hint }}
       </span>
       <Plus
         v-if="!file"

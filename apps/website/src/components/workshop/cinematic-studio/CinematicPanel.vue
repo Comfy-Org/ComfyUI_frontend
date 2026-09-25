@@ -35,6 +35,8 @@ const {
   workspaceName,
   rendering,
   openPicker,
+  mode = 'image',
+  canReview = true,
   locale = 'en'
 } = defineProps<{
   models: readonly CinematicModel[]
@@ -43,6 +45,8 @@ const {
   workspaceName?: string
   rendering: boolean
   openPicker?: PickerKey
+  mode?: 'image' | 'video'
+  canReview?: boolean
   locale?: Locale
 }>()
 
@@ -80,7 +84,7 @@ const cameraSpecs = computed(() =>
     .filter((option) => option.id !== 'auto')
 )
 const canGenerate = computed(
-  () => gate === 'ready' && scene.value.trim().length > 0
+  () => canReview && gate === 'ready' && scene.value.trim().length > 0
 )
 const labelClass =
   'text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase'
@@ -131,6 +135,7 @@ const cardClass =
         v-model:scene="scene"
         v-model:enhance="enhance"
         :prompt-segments="promptSegments"
+        :mode
         :locale
       />
 
@@ -198,7 +203,7 @@ const cardClass =
         />
       </section>
 
-      <section class="flex flex-col gap-2.5 p-5">
+      <section v-if="mode === 'image'" class="flex flex-col gap-2.5 p-5">
         <div class="flex items-center justify-between">
           <h2 :class="labelClass">
             {{ tc('cinematic.section.references', locale) }}
@@ -216,12 +221,14 @@ const cardClass =
         <h2 :class="labelClass">
           {{ tc('cinematic.section.output', locale) }}
         </h2>
-        <CinematicOutputControls
-          v-model:aspect="aspect"
-          v-model:resolution="resolution"
-          v-model:takes="takes"
-          :locale
-        />
+        <slot name="output">
+          <CinematicOutputControls
+            v-model:aspect="aspect"
+            v-model:resolution="resolution"
+            v-model:takes="takes"
+            :locale
+          />
+        </slot>
       </section>
     </div>
 

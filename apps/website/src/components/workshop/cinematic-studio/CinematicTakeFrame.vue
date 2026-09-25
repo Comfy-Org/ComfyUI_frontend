@@ -7,6 +7,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import type { Take } from '../../../lib/workshop/cinematic-studio/reel'
 import type { Locale } from '../../../i18n/translations'
 import { t } from '../../../i18n/translations'
+import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import { framedStyle } from './aspect-style'
 import CinematicTakeNotice from './CinematicTakeNotice.vue'
 import CinematicTakeProgress from './CinematicTakeProgress.vue'
@@ -64,13 +65,15 @@ function frameTone(take: Take): string | undefined {
       )
     "
     :style="
-      current.status === 'done'
+      current.status === 'done' &&
+      !(current.output.kind === 'video' && current.output.nsfw && !revealed)
         ? undefined
         : framedStyle(current.aspect, height)
     "
   >
     <template v-if="current.status === 'done'">
       <img
+        v-if="current.output.kind === 'image'"
         :src="current.output.url"
         :alt="current.prompt"
         :class="
@@ -79,6 +82,19 @@ function frameTone(take: Take): string | undefined {
             current.output.nsfw && !revealed && 'blur-2xl'
           )
         "
+        :style="{ maxHeight: height }"
+      />
+      <video
+        v-else-if="
+          current.output.kind === 'video' && (!current.output.nsfw || revealed)
+        "
+        :key="current.id"
+        :src="current.output.url"
+        :aria-label="tc('cinematic.video.preview', locale)"
+        controls
+        playsinline
+        preload="metadata"
+        class="block h-auto w-auto max-w-full"
         :style="{ maxHeight: height }"
       />
       <div

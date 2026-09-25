@@ -10,6 +10,8 @@ import CinematicPanel from './CinematicPanel.vue'
 import CinematicPicker from './CinematicPicker.vue'
 import CinematicStageCard from './CinematicStageCard.vue'
 import CinematicReviewDialog from './CinematicReviewDialog.vue'
+import CinematicModeSwitch from './CinematicModeSwitch.vue'
+import CinematicVideoControls from './CinematicVideoControls.vue'
 import type { PickerKey } from './picker-key'
 import { pickerGroups, popoverTitle } from './picker-key'
 
@@ -20,6 +22,19 @@ const { models, locale = 'en' } = defineProps<{
 
 const {
   studio,
+  mode,
+  availableModels,
+  selectedModel,
+  firstFrame,
+  lastFrame,
+  duration,
+  videoResolution,
+  audio,
+  canReview,
+  modeReel,
+  animate,
+  frameLoading,
+  frameError,
   modelSlug,
   scene,
   enhance,
@@ -43,6 +58,22 @@ const {
 } = useCinematicPopover<PickerKey>()
 
 const output = useTemplateRef<HTMLElement>('output')
+
+function focusScene() {
+  document.getElementById('cinematic-scene')?.focus()
+}
+
+async function useAsReference(url: string, name: string) {
+  const response = await fetch(url)
+  cast.value = new File([await response.blob()], name, {
+    type: response.headers.get('content-type') ?? 'image/png'
+  })
+}
+
+function generateOn(slug: string) {
+  modelSlug.value = slug
+  generate()
+}
 
 function generate() {
   closePicker()
@@ -73,6 +104,27 @@ function generate() {
         {{ tc('cinematic.beta', locale) }}
       </span>
     </div>
+    <CinematicModeSwitch
+      v-model="mode"
+      :disabled="studio.rendering.value || frameLoading"
+      :locale
+      class="mb-4 w-fit"
+      @update:model-value="closePicker"
+    />
+    <p
+      v-if="frameLoading"
+      role="status"
+      class="mb-3 text-sm text-primary-comfy-canvas"
+    >
+      {{ tc('cinematic.video.frameLoading', locale) }}
+    </p>
+    <p
+      v-if="frameError"
+      role="alert"
+      class="mb-3 text-sm text-primary-comfy-canvas"
+    >
+      {{ tc('cinematic.video.frameError', locale) }}
+    </p>
     <div class="grid gap-6 lg:grid-cols-12 lg:gap-8">
       <CinematicPanel
         v-model:model="modelSlug"
@@ -84,7 +136,9 @@ function generate() {
         v-model:takes="takes"
         v-model:cast="cast"
         v-model:palette="palette"
-        :models
+        :models="availableModels"
+        :mode
+        :can-review="canReview"
         :prompt-segments="promptSegments"
         :gate="studio.gate.value"
         :workspace-name="studio.session.value?.workspace.name"
@@ -95,17 +149,35 @@ function generate() {
         @open="togglePicker"
         @generate="generate"
         @cancel="studio.cancel"
-      />
+      >
+        <template v-if="mode === 'video'" #output>
+          <CinematicVideoControls
+            v-model:aspect="aspect"
+            v-model:duration="duration"
+            v-model:resolution="videoResolution"
+            v-model:audio="audio"
+            v-model:first-frame="firstFrame"
+            v-model:last-frame="lastFrame"
+            :model="selectedModel"
+            :locale
+          />
+        </template>
+      </CinematicPanel>
       <div
         ref="output"
         class="relative flex min-w-0 flex-col lg:sticky lg:top-26 lg:col-span-7 lg:self-start"
       >
         <CinematicStageCard
-          :reel="studio.reel.value"
+          :reel="modeReel"
           :aspect
           :models
           :locale
           @select="studio.select"
+          @animate="animate"
+          @again="generate"
+          @reference="useAsReference"
+          @switch-model="generateOn"
+          @edit-scene="focusScene"
         />
         <div
           v-if="picker"

@@ -19,6 +19,8 @@ import CinematicPopover from './CinematicPopover.vue'
 import CinematicReferenceSlot from './CinematicReferenceSlot.vue'
 import CinematicStage from './CinematicStage.vue'
 import CinematicReviewDialog from './CinematicReviewDialog.vue'
+import CinematicModeSwitch from './CinematicModeSwitch.vue'
+import CinematicVideoControls from './CinematicVideoControls.vue'
 import type { PopoverKey } from './picker-key'
 import { pickerGroups, popoverTitle } from './picker-key'
 
@@ -29,6 +31,21 @@ const { models, locale = 'en' } = defineProps<{
 
 const {
   studio,
+  mode,
+  availableModels,
+  selectedModel,
+  firstFrame,
+  lastFrame,
+  duration,
+  videoResolution,
+  audio,
+  canReview,
+  formatLabel,
+  takeCount,
+  modeReel,
+  animate,
+  frameLoading,
+  frameError,
   modelSlug,
   scene,
   enhance,
@@ -123,8 +140,15 @@ function generateOn(slug: string) {
       @close="review = undefined"
       @confirm="confirm"
     />
+    <p
+      v-if="mode === 'video' && !modeReel.takes.length"
+      class="m-auto max-w-xl px-6 py-12 text-center text-lg text-primary-comfy-canvas"
+    >
+      {{ tc('cinematic.video.start', locale) }}
+    </p>
     <CinematicStage
-      :reel="studio.reel.value"
+      v-else
+      :reel="modeReel"
       :models
       :locale
       :starter
@@ -132,6 +156,7 @@ function generateOn(slug: string) {
       @start="start"
       @again="generate"
       @reference="useAsReference"
+      @animate="animate"
       @switch-model="generateOn"
       @edit-scene="focusScene"
     />
@@ -140,6 +165,27 @@ function generateOn(slug: string) {
       class="sticky bottom-0 z-50 bg-linear-to-t from-primary-comfy-ink via-primary-comfy-ink/90 to-transparent px-3 pt-4 pb-4 sm:px-6 sm:pb-6"
     >
       <div class="relative mx-auto w-full max-w-7xl">
+        <CinematicModeSwitch
+          v-model="mode"
+          :disabled="studio.rendering.value || frameLoading"
+          :locale
+          class="mb-3 w-fit"
+          @update:model-value="closePopover"
+        />
+        <p
+          v-if="frameLoading"
+          role="status"
+          class="mb-3 text-sm text-primary-comfy-canvas"
+        >
+          {{ tc('cinematic.video.frameLoading', locale) }}
+        </p>
+        <p
+          v-if="frameError"
+          role="alert"
+          class="mb-3 text-sm text-primary-comfy-canvas"
+        >
+          {{ tc('cinematic.video.frameError', locale) }}
+        </p>
         <div
           v-if="popover"
           class="fixed inset-0 z-40 bg-black/60 lg:hidden"
@@ -165,7 +211,24 @@ function generateOn(slug: string) {
           :class="popoverClass"
           @close="closePopover"
         >
-          <div v-if="popover === 'references'" class="grid grid-cols-2 gap-2">
+          <CinematicVideoControls
+            v-if="
+              mode === 'video' &&
+              (popover === 'format' || popover === 'references')
+            "
+            v-model:aspect="aspect"
+            v-model:duration="duration"
+            v-model:resolution="videoResolution"
+            v-model:audio="audio"
+            v-model:first-frame="firstFrame"
+            v-model:last-frame="lastFrame"
+            :model="selectedModel"
+            :locale
+          />
+          <div
+            v-else-if="popover === 'references'"
+            class="grid grid-cols-2 gap-2"
+          >
             <CinematicReferenceSlot v-model="cast" kind="cast" :locale />
             <CinematicReferenceSlot v-model="palette" kind="palette" :locale />
           </div>
@@ -199,11 +262,12 @@ function generateOn(slug: string) {
         <CinematicComposer
           v-model:scene="scene"
           v-model:model="modelSlug"
-          :models
+          :models="availableModels"
+          :can-review="canReview"
           :direction
           :aspect
-          :resolution
-          :takes
+          :resolution="formatLabel"
+          :takes="takeCount"
           :references
           :gate="studio.gate.value"
           :workspace-name="studio.session.value?.workspace.name"

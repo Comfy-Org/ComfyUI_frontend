@@ -2,6 +2,9 @@ import type { Direction, DirectionPart } from './catalog'
 import { directionOption } from './catalog'
 
 export interface CinematicBrief {
+  readonly mode?: 'image' | 'video'
+  readonly firstFrame?: boolean
+  readonly lastFrame?: boolean
   readonly scene: string
   readonly direction: Direction
   readonly enhance: boolean
@@ -47,7 +50,10 @@ export function cinematicPromptSegments(
     !!shot && { text: sentence(shot), source: 'direction' },
     !!scene && { text: scene, source: 'scene' },
     brief.enhance && {
-      text: 'Cinematic film still, natural texture.',
+      text:
+        brief.mode === 'video'
+          ? 'Cinematic motion, natural texture and continuous action.'
+          : 'Cinematic film still, natural texture.',
       source: 'enhance'
     },
     camera.length > 0 && {
@@ -55,6 +61,14 @@ export function cinematicPromptSegments(
       source: 'direction'
     },
     look.length > 0 && { text: sentence(look.join(', ')), source: 'direction' },
+    !!brief.firstFrame && {
+      text: 'Begin with the supplied starting frame, preserving its composition, subject and setting.',
+      source: 'reference'
+    },
+    !!brief.lastFrame && {
+      text: 'End at the supplied final frame.',
+      source: 'reference'
+    },
     brief.cast && {
       text: 'Keep the character from reference image 1.',
       source: 'reference'

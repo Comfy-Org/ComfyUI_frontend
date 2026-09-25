@@ -115,6 +115,138 @@ describe('CinematicStudio', () => {
     expect(generateButton()).toBeEnabled()
   })
 
+  it('keeps image and video scene drafts separate while switching modes', async () => {
+    const user = renderStudio()
+    await user.type(screen.getByLabelText('Scene'), 'Still frame at dawn')
+    await user.click(screen.getByRole('button', { name: 'Video' }))
+    expect(screen.getByLabelText('Scene')).toHaveValue('')
+    await user.type(screen.getByLabelText('Scene'), 'Slow camera push in')
+    await user.click(screen.getByRole('button', { name: 'Image' }))
+    expect(screen.getByLabelText('Scene')).toHaveValue('Still frame at dawn')
+    await user.click(screen.getByRole('button', { name: 'Video' }))
+    expect(screen.getByLabelText('Scene')).toHaveValue('Slow camera push in')
+    await user.click(screen.getByRole('button', { name: /Large format/ }))
+    expect(screen.getByRole('dialog', { name: 'Camera' })).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: '85mm' })).toBeVisible()
+    expect(router_render).not.toHaveBeenCalled()
+  })
+
+  it('sends reviewed video settings through the model-page form and offers a download', async () => {
+    vi.mocked(router_render).mockImplementation(async (slug) => ({
+      ...rendered(slug),
+      expectedKind: 'video',
+      outputs: [{ kind: 'video', url: 'blob:clip', fileName: 'clip.mp4' }]
+    }))
+    const user = renderStudio()
+    await user.click(screen.getByRole('button', { name: 'Video' }))
+    await user.type(
+      screen.getByLabelText('Scene'),
+      'A slow push through the mist'
+    )
+    await user.click(screen.getByRole('button', { name: /^Format/ }))
+    await user.selectOptions(screen.getByLabelText('Duration'), '8')
+    await user.selectOptions(screen.getByLabelText('Resolution'), '1080p')
+    await user.click(screen.getByLabelText('Generate audio'))
+    await user.click(generateButton())
+    expect(
+      screen.getByRole('dialog', { name: 'Review your shot' })
+    ).toHaveTextContent('1080p · 8s')
+    expect(router_render).not.toHaveBeenCalled()
+    await confirmShot(user)
+    const download = await screen.findByRole('link', {
+      name: tc('cinematic.stage.download')
+    })
+    expect(download).toHaveAttribute('href', 'blob:clip')
+    expect(download).toHaveAttribute('download', 'clip.mp4')
+    expect(router_render).toHaveBeenCalledTimes(1)
+    const [slug, parameters, options] = vi.mocked(router_render).mock.calls[0]
+    expect(slug).toContain('text-to-video')
+    expect(parameters).toEqual({})
+    expect(options.form?.values).toMatchObject({
+      duration: 8,
+      resolution: '1080p',
+      generate_audio: true,
+      ratio: '16:9'
+    })
+    expect(options.form?.values.prompt).toContain('continuous action')
+    expect(options.form?.values.prompt).not.toContain('film still')
+  })
+
+  it('animates a generated image using the actual starting frame, without catalogue sample frames', async () => {
+    vi.mocked(router_render).mockImplementation(async (slug) => rendered(slug))
+    const user = renderStudio()
+    await user.type(screen.getByLabelText('Scene'), 'A lighthouse at dawn')
+    await user.click(generateButton())
+    await confirmShot(user)
+    await user.click(
+      await screen.findByRole('button', { name: 'Animate image' })
+    )
+    await vi.waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Video' })).toHaveAttribute(
+        'aria-pressed',
+        'true'
+      )
+    )
+    await user.type(
+      screen.getByLabelText('Scene'),
+      'Waves roll past the lighthouse'
+    )
+    await user.click(generateButton())
+    expect(
+      screen.getByRole('dialog', { name: 'Review your shot' })
+    ).toHaveTextContent('shot.png')
+    await confirmShot(user)
+    await vi.waitFor(() => expect(router_render).toHaveBeenCalledTimes(2))
+    const [slug, , options] = vi.mocked(router_render).mock.calls[1]
+    expect(slug).toContain('first-last-frame')
+    expect(options.form?.values.first_frame_url).toMatchObject({
+      file: expect.any(File),
+      name: 'shot.png'
+    })
+    expect(options.form?.values.last_frame_url).toBeFalsy()
+  })
+
+  it('requires an uploaded starting frame and includes the optional ending frame in review and request', async () => {
+    window.history.replaceState(
+      null,
+      '',
+      '/cinematic-studio?model=byteplus--seedance-2-5-first-last-frame--animate-images'
+    )
+    vi.mocked(router_render).mockImplementation(async (slug) => ({
+      ...rendered(slug),
+      expectedKind: 'video',
+      outputs: [{ kind: 'video', url: 'blob:clip', fileName: 'clip.mp4' }]
+    }))
+    const user = renderStudio()
+    await user.type(
+      screen.getByLabelText('Scene'),
+      'A slow transition into sunset'
+    )
+    expect(generateButton()).toBeDisabled()
+    await user.click(screen.getByRole('button', { name: /^Format/ }))
+    expect(
+      screen.getByText('Add a starting frame before reviewing this video.')
+    ).toBeVisible()
+    const firstFrame = new File(['first'], 'start.png', { type: 'image/png' })
+    const lastFrame = new File(['last'], 'end.png', { type: 'image/png' })
+    await user.upload(
+      screen.getByTestId('cinematic-reference-firstFrame'),
+      firstFrame
+    )
+    await user.upload(
+      screen.getByTestId('cinematic-reference-lastFrame'),
+      lastFrame
+    )
+    await user.click(generateButton())
+    const review = screen.getByRole('dialog', { name: 'Review your shot' })
+    expect(review).toHaveTextContent('start.png, end.png')
+    await confirmShot(user)
+    await screen.findByLabelText('Generated video')
+    const values = vi.mocked(router_render).mock.calls[0][2].form?.values
+    expect(values?.first_frame_url).toMatchObject({ file: firstFrame })
+    expect(values?.last_frame_url).toMatchObject({ file: lastFrame })
+  })
+
   it('renders one Router request per take with the directed prompt', async () => {
     vi.mocked(router_render).mockImplementation(async (slug) => rendered(slug))
     const user = renderStudio()

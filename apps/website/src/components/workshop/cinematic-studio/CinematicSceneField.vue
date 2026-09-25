@@ -7,8 +7,13 @@ import type { PromptSegment } from '../../../lib/workshop/cinematic-studio/promp
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 
-const { promptSegments, locale = 'en' } = defineProps<{
+const {
+  promptSegments,
+  mode = 'image',
+  locale = 'en'
+} = defineProps<{
   promptSegments: readonly PromptSegment[]
+  mode?: 'image' | 'video'
   locale?: Locale
 }>()
 
@@ -86,7 +91,14 @@ const segmentClass: Record<PromptSegment['source'], string> = {
         />
         {{ tc('cinematic.scene.enhance', locale) }}
         <span class="truncate text-primary-warm-gray">
-          {{ tc('cinematic.scene.enhanceHint', locale) }}
+          {{
+            tc(
+              mode === 'video'
+                ? 'cinematic.video.enhanceHint'
+                : 'cinematic.scene.enhanceHint',
+              locale
+            )
+          }}
         </span>
       </label>
     </div>

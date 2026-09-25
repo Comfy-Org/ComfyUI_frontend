@@ -13,6 +13,7 @@ import { t } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import { framedStyle } from './aspect-style'
 import CinematicSequence from './CinematicSequence.vue'
+import CinematicTakeActions from './CinematicTakeActions.vue'
 import CinematicTakeBar from './CinematicTakeBar.vue'
 import CinematicTakeFrame from './CinematicTakeFrame.vue'
 
@@ -28,7 +29,14 @@ const {
   locale?: Locale
 }>()
 
-const emit = defineEmits<{ select: [id: string] }>()
+const emit = defineEmits<{
+  select: [id: string]
+  again: []
+  reference: [url: string, name: string]
+  animate: [url: string, name: string]
+  switchModel: [slug: string]
+  editScene: []
+}>()
 
 const current = computed(() => selectedTake(reel))
 const modelName = computed(
@@ -38,6 +46,17 @@ const modelName = computed(
 const siblings = computed(() =>
   current.value ? takesOfShot(reel, current.value.shot) : []
 )
+const otherModel = computed(() => {
+  const selected = models.find(
+    (model) => model.slug === current.value?.modelSlug
+  )
+  return models.find(
+    (model) =>
+      model.slug !== selected?.slug &&
+      (model.mode ?? 'image') === (selected?.mode ?? 'image') &&
+      model.video?.firstFrame === selected?.video?.firstFrame
+  )
+})
 </script>
 
 <template>
@@ -54,13 +73,28 @@ const siblings = computed(() =>
       class="flex min-h-72 flex-col items-center justify-center gap-4 p-4 sm:p-6 lg:min-h-112"
     >
       <template v-if="current">
-        <CinematicTakeFrame :current :locale />
+        <CinematicTakeFrame
+          :current
+          :locale
+          :other-model="otherModel"
+          @again="emit('again')"
+          @switch-model="emit('switchModel', $event)"
+          @edit-scene="emit('editScene')"
+        />
         <CinematicTakeBar
           :current
           :siblings
           :model-name="modelName"
           :locale
           @select="emit('select', $event)"
+        />
+        <CinematicTakeActions
+          v-if="current.status === 'done'"
+          :take="current"
+          :locale
+          @again="emit('again')"
+          @reference="(url, name) => emit('reference', url, name)"
+          @animate="(url, name) => emit('animate', url, name)"
         />
       </template>
 
