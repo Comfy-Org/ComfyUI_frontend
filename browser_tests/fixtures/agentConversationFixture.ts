@@ -6,6 +6,7 @@ import { z } from 'zod'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import type { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyNodeDef, ObjectInfoResponse } from '@/schemas/nodeDefSchema'
 import { toNodeId } from '@/types/nodeId'
 import type {
@@ -16,12 +17,14 @@ import type {
 import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { parseServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
 import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
+import type { useAgentWorkflowTabBindingStore } from '@/workbench/extensions/agent/stores/agent/agentWorkflowTabBindingStore'
 
 import {
   agentTest,
   bootAgentApp,
   mockWorkflowPersistence
 } from '@e2e/fixtures/agentPanelFixture'
+import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import type {
@@ -168,6 +171,35 @@ async function withTimeout(
   } finally {
     clearTimeout(timer)
   }
+}
+
+type WorkflowBindingActions = Pick<
+  ReturnType<typeof useAgentWorkflowTabBindingStore>,
+  'tabPathFor'
+>
+
+type WorkflowLookup = Pick<
+  ReturnType<typeof useWorkflowStore>,
+  'getWorkflowByPath'
+>
+
+type WorkflowScopeAction =
+  | { kind: 'drop'; workflowId: string }
+  | {
+      kind: 'restore'
+      tabPath: string
+      graphId: string
+    }
+
+interface DroppedWorkflowScope {
+  tabPath: string
+  graphId: string
+}
+
+interface ReplayResponseOptions {
+  beforeFirstGraphOps?: () => Promise<void>
+  beforeGraphOps?: (ops: readonly RecordedGraphOperation[]) => Promise<void>
+  waitForGraphOpsDelivery?: (ops: readonly RecordedGraphOperation[]) => boolean
 }
 
 // Runs one recorded prompt/response through the real panel over a routed /ws socket.
@@ -341,12 +373,7 @@ export class AgentConversationHarness {
 
   async replayResponse(
     turn = 0,
-    beforeFirstGraphOps?: () => Promise<void>,
-    // Fires before every graph_ops entry (by its index in `response`), not
-    // just the first: a fixture that needs to act on a later graph_ops entry
-    // (e.g. the specific frame carrying a `clear` op) reads the entry's ops
-    // itself to decide whether this is the one it wants.
-    onGraphOps?: (index: number) => Promise<void>
+    options: ReplayResponseOptions = {}
   ): Promise<void> {
     const startedAt = Date.now()
     const response = this.conversation.turns[turn].response
@@ -359,9 +386,12 @@ export class AgentConversationHarness {
         this.hostSocket.send(this.stampTurn(entry.event, turn))
       else {
         await this.hostSocket.waitForSubscribe()
-        if (index === firstGraphOps) await beforeFirstGraphOps?.()
-        await onGraphOps?.(index)
-        this.hostSocket.send(this.host.apply(entry.ops))
+        if (index === firstGraphOps) await options.beforeFirstGraphOps?.()
+        await options.beforeGraphOps?.(entry.ops)
+        await this.sendHostFrame(
+          this.host.apply(entry.ops),
+          options.waitForGraphOpsDelivery?.(entry.ops) === true
+        )
         for (const id of Object.keys(this.host.graph().nodes))
           this.seenIds.add(id)
       }
@@ -376,7 +406,7 @@ export class AgentConversationHarness {
     for (const turn of this.conversation.turns.keys()) {
       const before = await this.panelCounts()
       await this.sendPrompt(turn)
-      await this.replayResponse(turn, beforeFirstGraphOps)
+      await this.replayResponse(turn, { beforeFirstGraphOps })
       await this.waitForTurnComplete()
       await this.expectTurnRendered(turn, before)
       await this.expectCanvasReplayed(turn)
@@ -929,25 +959,93 @@ export class AgentConversationHarness {
     await this.selectWorkflowTarget()
   }
 
-  async resyncWidget(nodeId: string, widget: string): Promise<void> {
-    const widgets = z
-      .record(z.string(), z.unknown())
-      .optional()
-      .parse(this.host.graph().nodes[nodeId]?.widgets)
-    const value = widgets?.[widget]
-    if (value === undefined)
-      throw new Error(`Host widget ${nodeId}.${widget} does not exist`)
-    const operation = {
-      op: 'set_widget',
-      node_id: nodeId,
-      widget,
-      value,
-      old: value
-    } satisfies GraphOperation
-    const frame = this.host.apply([operation])
+  async dropWorkflowScope(): Promise<() => Promise<void>> {
+    const workflowId = this.conversation.workflow.id
+    const dropped = await this.runWorkflowScopeAction({
+      kind: 'drop',
+      workflowId
+    })
+    if (!dropped)
+      throw new Error(`no bound tab path for workflow ${workflowId}`)
+
+    let restored = false
+    return async () => {
+      if (restored) return
+      await this.runWorkflowScopeAction({ kind: 'restore', ...dropped })
+      restored = true
+    }
+  }
+
+  async rememberRecoveryGraph(): Promise<void> {
+    await this.page.evaluate(() => {
+      if (!window.app?.rootGraph) throw new Error('root graph is unavailable')
+      window.__agentRecoveryGraph = window.app.rootGraph
+    })
+  }
+
+  async isRecoveryGraphUnchanged(): Promise<boolean> {
+    return await this.page.evaluate(
+      () => window.__agentRecoveryGraph === window.app?.rootGraph
+    )
+  }
+
+  private async runWorkflowScopeAction(
+    action: WorkflowScopeAction
+  ): Promise<DroppedWorkflowScope | undefined> {
+    return await this.page.evaluate((action) => {
+      const isBinding = (value: unknown): value is WorkflowBindingActions =>
+        typeof value === 'object' &&
+        value !== null &&
+        'tabPathFor' in value &&
+        typeof value.tabPathFor === 'function'
+      const isWorkflowLookup = (value: unknown): value is WorkflowLookup =>
+        typeof value === 'object' &&
+        value !== null &&
+        'getWorkflowByPath' in value &&
+        typeof value.getWorkflowByPath === 'function'
+
+      const mount = document.getElementById('vue-app')
+      const pinia = mount?.__vue_app__?.config.globalProperties.$pinia
+      if (!pinia) throw new Error('Pinia is not mounted')
+      const stores = [...pinia._s.values()]
+      const binding = stores.find(isBinding)
+      const workflows = stores.find(isWorkflowLookup)
+      if (!binding)
+        throw new Error('agentWorkflowTabBinding store is not mounted')
+      if (!workflows) throw new Error('workflow store is not mounted')
+
+      if (action.kind === 'drop') {
+        const tabPath = binding.tabPathFor(action.workflowId)
+        if (!tabPath)
+          throw new Error(`no bound tab path for workflow ${action.workflowId}`)
+        const tab = workflows.getWorkflowByPath(tabPath)
+        if (!tab) throw new Error(`no open tab at ${tabPath}`)
+        const graphId = tab.activeState?.id
+        if (!graphId) throw new Error(`workflow at ${tabPath} has no graph id`)
+        delete tab.activeState?.id
+        return { tabPath, graphId }
+      }
+
+      const tab = workflows.getWorkflowByPath(action.tabPath)
+      if (!tab) throw new Error(`no open tab at ${action.tabPath}`)
+      if (!tab.activeState)
+        throw new Error(`workflow at ${action.tabPath} has no active state`)
+      tab.activeState.id = action.graphId
+      return undefined
+    }, action)
+  }
+
+  private async sendHostFrame(
+    frame: HostFrame,
+    waitForDelivery = false
+  ): Promise<void> {
+    if (!waitForDelivery) {
+      this.hostSocket.send(frame)
+      return
+    }
     const parsedFrame = parseServerDocFrame(frame)
     if (parsedFrame?.type !== 'doc_update')
-      throw new Error('Host widget resync did not produce a doc_update')
+      throw new Error('Host operation did not produce a doc_update')
 
     const receipt = crypto.randomUUID()
     await this.page.evaluate(
@@ -998,6 +1096,25 @@ export class AgentConversationHarness {
         )
       }, receipt)
     }
+  }
+
+  async resyncWidget(nodeId: string, widget: string): Promise<void> {
+    const widgets = z
+      .record(z.string(), z.unknown())
+      .optional()
+      .parse(this.host.graph().nodes[nodeId]?.widgets)
+    const value = widgets?.[widget]
+    if (value === undefined)
+      throw new Error(`Host widget ${nodeId}.${widget} does not exist`)
+    const operation = {
+      op: 'set_widget',
+      node_id: nodeId,
+      widget,
+      value,
+      old: value
+    } satisfies GraphOperation
+    const frame = this.host.apply([operation])
+    await this.sendHostFrame(frame, true)
   }
 }
 

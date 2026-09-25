@@ -1,11 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
-import type { DroppedScope } from '@e2e/fixtures/agentWorkflowScopeFixture'
-import {
-  dropWorkflowScope,
-  restoreWorkflowScope
-} from '@e2e/fixtures/agentWorkflowScopeFixture'
+import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
 
 test.describe(
   'Agent delete and clear operations',
@@ -19,12 +15,9 @@ test.describe(
       }) => {
         test.setTimeout(90_000)
 
+        await agentConversation.rememberRecoveryGraph()
         await agentConversation.runTurns()
-
-        await expect(agentConversation.vueNodes.nodes).toHaveCount(5)
-        await expect(
-          agentConversation.vueNodes.getNodeLocator('2785690574723683')
-        ).toHaveCount(0)
+        expect(await agentConversation.isRecoveryGraphUnchanged()).toBe(true)
       })
     })
 
@@ -36,60 +29,56 @@ test.describe(
       }) => {
         test.setTimeout(90_000)
 
+        await agentConversation.rememberRecoveryGraph()
         await agentConversation.runTurns()
-
-        await expect(agentConversation.vueNodes.nodes).toHaveCount(0)
+        expect(await agentConversation.isRecoveryGraphUnchanged()).toBe(true)
       })
 
       test('clears the canvas on its own after the clear frame is rejected for a dropped workflow scope', async ({
-        agentConversation,
-        page
+        agentConversation
       }) => {
         test.setTimeout(90_000)
-        const workflowId = agentConversation.conversation.workflow.id
-        let dropped: DroppedScope | undefined
+        let restoreScope: (() => Promise<void>) | undefined
+        const isClear = (ops: readonly RecordedGraphOperation[]) =>
+          ops.some((op) => op.op === 'clear')
 
-        await test.step('setup: drop scope as the clear frame arrives', async () => {
-          await agentConversation.sendPrompt(0)
-          await agentConversation.replayResponse(
-            0,
-            undefined,
-            async (index) => {
-              const entry =
-                agentConversation.conversation.turns[0].response[index]
-              if (entry.kind !== 'graph_ops') return
-              if (!entry.ops.some((op) => op.op === 'clear')) return
-              // The seed workflow is empty, so the only node on screen at this
-              // point is the one the turn's own earlier add_node frame placed.
-              // hostSocket.send() does not wait for the page to receive and
-              // apply that frame before this callback runs, so without this
-              // wait the scope drop below can land before the add does,
-              // rejecting it too and leaving nothing on screen to prove the
-              // clear's rejection with.
-              await expect(agentConversation.vueNodes.nodes).not.toHaveCount(0)
-              dropped = await dropWorkflowScope(page, workflowId)
-            }
-          )
-        })
+        await agentConversation.rememberRecoveryGraph()
+        try {
+          await test.step('deliver the clear while workflow scope is unavailable', async () => {
+            await agentConversation.sendPrompt(0)
+            await agentConversation.replayResponse(0, {
+              beforeGraphOps: async (ops) => {
+                if (!isClear(ops)) return
+                await expect(agentConversation.vueNodes.nodes).not.toHaveCount(
+                  0
+                )
+                restoreScope = await agentConversation.dropWorkflowScope()
+              },
+              waitForGraphOpsDelivery: isClear
+            })
+          })
 
-        if (dropped === undefined)
-          throw new Error('the clear frame never armed the scope drop')
-        const droppedScope = dropped
+          if (!restoreScope)
+            throw new Error('the clear frame never dropped workflow scope')
+          const restore = restoreScope
 
-        await test.step('rejection: the same graph keeps its stale node', async () => {
-          // Observing the same graph the whole way through (never switching
-          // to a different tab) is what proves the clear was actually
-          // rejected here, rather than trivially passing against an
-          // already-empty replacement canvas.
-          await expect(agentConversation.vueNodes.nodes).not.toHaveCount(0)
-        })
+          await test.step('keep the same graph stale after the rejected clear', async () => {
+            await expect(agentConversation.vueNodes.nodes).not.toHaveCount(0)
+            expect(await agentConversation.isRecoveryGraphUnchanged()).toBe(
+              true
+            )
+          })
 
-        await test.step('autonomous recovery: scope returns, no new frame is sent', async () => {
-          await restoreWorkflowScope(page, workflowId, droppedScope)
-          // The self-driven retry clears the same canvas on its own; nothing
-          // sends another frame after this point.
-          await expect(agentConversation.vueNodes.nodes).toHaveCount(0)
-        })
+          await test.step('clear without another frame when scope returns', async () => {
+            await restore()
+            await expect(agentConversation.vueNodes.nodes).toHaveCount(0)
+            expect(await agentConversation.isRecoveryGraphUnchanged()).toBe(
+              true
+            )
+          })
+        } finally {
+          await restoreScope?.()
+        }
       })
     })
   }

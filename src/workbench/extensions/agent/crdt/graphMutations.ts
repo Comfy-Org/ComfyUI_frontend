@@ -176,23 +176,19 @@ export interface GraphMutationBatch {
   clearSemanticGraph(): void
 }
 
+export type GraphMutationBatchResult =
+  | { readonly kind: 'committed' }
+  | { readonly kind: 'rejected'; readonly reason: 'no-scope' | 'validation' }
+
 export interface GraphMutations {
   batch(
     context: RemoteMutationContext,
     define: (batch: GraphMutationBatch) => void
   ): boolean
-  /** Reason the most recent synchronous `batch` call returned `false`. */
-  lastBatchRejection?(): 'no-scope' | 'validation' | null
-  /**
-   * Cheap, side-effect-free check for whether `batch` would currently be
-   * rejected for lack of scope. Callers that retry a rejected `batch` (e.g.
-   * `EcsFollowerAdapter`'s self-driven reconcile retry) use this to tell a
-   * transient scope race, worth retrying, apart from a deterministic
-   * `prepare()` validation rejection that retrying can never fix. Optional
-   * so a test double that never rejects for scope reasons can omit it; a
-   * caller that only cares about `batch`'s boolean result is unaffected.
-   */
-  hasScope?(): boolean
+  batchResult(
+    context: RemoteMutationContext,
+    define: (batch: GraphMutationBatch) => void
+  ): GraphMutationBatchResult
   addNode(payload: SemanticNodePayload, context: RemoteMutationContext): boolean
   setWidget(
     nodeId: NodeId,
@@ -1277,7 +1273,6 @@ function createAutogrowMemory() {
  * provenance on every participating store action.
  */
 export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
-  let lastBatchRejection: 'no-scope' | 'validation' | null = null
   const nodeStore = useNodeDataStore()
   const linkStore = useLinkStore()
   const linkPresentationStore = useLinkPresentationStore()
@@ -2266,67 +2261,65 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     }
   }
 
+  const runBatch = (
+    context: RemoteMutationContext,
+    define: (batch: GraphMutationBatch) => void
+  ): GraphMutationBatchResult => {
+    const scope = deps.getScope()
+    if (!scope) return { kind: 'rejected', reason: 'no-scope' }
+    const queued: QueuedMutation[] = []
+    define({
+      addNode(payload) {
+        queued.push({ kind: 'addNode', payload })
+      },
+      reconcileNode(payload) {
+        queued.push({ kind: 'reconcileNode', payload })
+      },
+      reconcileNodeFields(payload) {
+        queued.push({ kind: 'reconcileNodeFields', payload })
+      },
+      setWidget(nodeId, name, value) {
+        queued.push({ kind: 'setWidget', nodeId, name, value })
+      },
+      connect(link) {
+        queued.push({ kind: 'connect', link })
+      },
+      removeMissing(retainedNodeIds, retainedLinkIds) {
+        queued.push({
+          kind: 'removeMissing',
+          retainedNodeIds,
+          retainedLinkIds
+        })
+      },
+      removeLinks(linkIds) {
+        queued.push({ kind: 'removeLinks', linkIds })
+      },
+      deleteNode(nodeId, removedLinkIds = []) {
+        queued.push({ kind: 'deleteNode', nodeId, removedLinkIds })
+      },
+      clearSemanticGraph() {
+        queued.push({ kind: 'clearSemanticGraph' })
+      }
+    })
+    const existingIds = nodeStore
+      .getGraphNodesFor(scope.rootGraphId, scope.owningGraphId)
+      .map((node) => node.id)
+    const memory = autogrowMemory.draft()
+    const prepared = prepare(memory, scope, queued)
+    if (typeof prepared === 'string') {
+      fail(prepared)
+      return { kind: 'rejected', reason: 'validation' }
+    }
+    offsetInsertedBatch(scope, existingIds, prepared)
+    commit(scope, prepared, context, memory)
+    return { kind: 'committed' }
+  }
+
   const graphMutations: GraphMutations = {
-    lastBatchRejection() {
-      return lastBatchRejection
-    },
-    hasScope() {
-      return deps.getScope() !== null
-    },
     batch(context, define) {
-      lastBatchRejection = null
-      const scope = deps.getScope()
-      if (!scope) {
-        lastBatchRejection = 'no-scope'
-        return false
-      }
-      const queued: QueuedMutation[] = []
-      define({
-        addNode(payload) {
-          queued.push({ kind: 'addNode', payload })
-        },
-        reconcileNode(payload) {
-          queued.push({ kind: 'reconcileNode', payload })
-        },
-        reconcileNodeFields(payload) {
-          queued.push({ kind: 'reconcileNodeFields', payload })
-        },
-        setWidget(nodeId, name, value) {
-          queued.push({ kind: 'setWidget', nodeId, name, value })
-        },
-        connect(link) {
-          queued.push({ kind: 'connect', link })
-        },
-        removeMissing(retainedNodeIds, retainedLinkIds) {
-          queued.push({
-            kind: 'removeMissing',
-            retainedNodeIds,
-            retainedLinkIds
-          })
-        },
-        removeLinks(linkIds) {
-          queued.push({ kind: 'removeLinks', linkIds })
-        },
-        deleteNode(nodeId, removedLinkIds = []) {
-          queued.push({ kind: 'deleteNode', nodeId, removedLinkIds })
-        },
-        clearSemanticGraph() {
-          queued.push({ kind: 'clearSemanticGraph' })
-        }
-      })
-      const existingIds = nodeStore
-        .getGraphNodesFor(scope.rootGraphId, scope.owningGraphId)
-        .map((node) => node.id)
-      const memory = autogrowMemory.draft()
-      const prepared = prepare(memory, scope, queued)
-      if (typeof prepared === 'string') {
-        lastBatchRejection = 'validation'
-        return fail(prepared)
-      }
-      offsetInsertedBatch(scope, existingIds, prepared)
-      commit(scope, prepared, context, memory)
-      return true
+      return runBatch(context, define).kind === 'committed'
     },
+    batchResult: runBatch,
     addNode(payload, context) {
       return graphMutations.batch(context, (batch) => batch.addNode(payload))
     },

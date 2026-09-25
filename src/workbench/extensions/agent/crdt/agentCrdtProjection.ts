@@ -27,7 +27,6 @@ export class AgentCrdtProjection {
     private readonly getFollowerDoc: () => Y.Doc,
     intent?: LocalIntent
   ) {
-    // Wires the adapter's store-only retry callback to the live-graph sweep.
     this.adapter = new EcsFollowerAdapter(mutations, intent, (workflowId) =>
       this.reconcileLiveGraph(workflowId)
     )

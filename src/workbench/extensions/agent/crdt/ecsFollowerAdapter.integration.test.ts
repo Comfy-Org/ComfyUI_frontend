@@ -608,9 +608,9 @@ describe('EcsFollowerAdapter integration', () => {
       const batchCalls: unknown[] = []
       const trackedMutations: GraphMutations = {
         ...mutations,
-        batch: (batchContext, define) => {
+        batchResult: (batchContext, define) => {
           batchCalls.push(batchContext)
-          return mutations.batch(batchContext, define)
+          return mutations.batchResult(batchContext, define)
         }
       }
 
@@ -699,10 +699,10 @@ describe('EcsFollowerAdapter integration', () => {
       // still fire on the existing budget afterward.
       const throwingMutations: GraphMutations = {
         ...realMutations,
-        batch: (batchContext, define) => {
+        batchResult: (batchContext, define) => {
           batchCallCount += 1
           if (batchCallCount === 2) throw failure
-          return realMutations.batch(batchContext, define)
+          return realMutations.batchResult(batchContext, define)
         }
       }
 
@@ -770,9 +770,9 @@ describe('EcsFollowerAdapter integration', () => {
       const batchCalls: unknown[] = []
       const trackedMutations: GraphMutations = {
         ...mutations,
-        batch: (batchContext, define) => {
+        batchResult: (batchContext, define) => {
           batchCalls.push(batchContext)
-          return mutations.batch(batchContext, define)
+          return mutations.batchResult(batchContext, define)
         }
       }
       const sweepFailure = new Error('live sweep failed')
@@ -828,7 +828,7 @@ describe('EcsFollowerAdapter integration', () => {
     }
   })
 
-  it('keeps retry provenance from the frame that started the rejection episode', () => {
+  it('attributes recovery to every frame folded into its authoritative snapshot', () => {
     vi.useFakeTimers()
     try {
       let scopeAvailable = true
@@ -876,15 +876,10 @@ describe('EcsFollowerAdapter integration', () => {
         scope,
         [toNodeId(99)],
         expect.objectContaining({
-          actor: 'agent:first-frame',
-          opId: 'first-op',
-          opIds: ['first-op']
+          actor: 'agent-reconcile',
+          opId: 'later-op',
+          opIds: ['first-op', 'later-op']
         })
-      )
-      expect(deleteLayouts).not.toHaveBeenCalledWith(
-        scope,
-        [toNodeId(99)],
-        expect.objectContaining({ actor: 'agent:later-frame' })
       )
 
       adapter.destroy()
@@ -909,9 +904,9 @@ describe('EcsFollowerAdapter integration', () => {
         const batchCalls: unknown[] = []
         const trackedMutations: GraphMutations = {
           ...mutations,
-          batch: (batchContext, define) => {
+          batchResult: (batchContext, define) => {
             batchCalls.push(batchContext)
-            return mutations.batch(batchContext, define)
+            return mutations.batchResult(batchContext, define)
           }
         }
         const onReconcileRetryCommitted = vi.fn()
@@ -1026,6 +1021,57 @@ describe('EcsFollowerAdapter integration', () => {
     }
   )
 
+  it.for(['clearForReset', 'discardPending'] as const)(
+    '%s called by a throwing live sweep cannot be followed by another sweep',
+    (lifecycleAction) => {
+      vi.useFakeTimers()
+      try {
+        let scopeAvailable = false
+        const mutations = createGraphMutations({
+          placement: inertPlacementPort,
+          getScope: () => (scopeAvailable ? scope : null),
+          layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+        })
+        const host = mint({ nodes: [], links: [] }, catalog)
+        const follower = new FollowerDoc()
+        const onReconcileRetryCommitted = vi.fn(() => {
+          if (lifecycleAction === 'clearForReset') {
+            adapter.clearForReset('wf', {
+              source: 'agent-remote',
+              actor: 'reset',
+              opId: 'reset'
+            })
+          } else {
+            adapter.discardPending('wf')
+          }
+          throw new Error('live sweep failed after cancellation')
+        })
+        const adapter = new EcsFollowerAdapter(
+          mutations,
+          undefined,
+          onReconcileRetryCommitted
+        )
+        adapter.bind('wf', follower)
+        const update = Y.encodeStateAsUpdate(host)
+        follower.applyRemoteUpdate(update)
+
+        expect(adapter.applyFrame({ workflowId: 'wf', seq: 1, update })).toBe(
+          false
+        )
+        scopeAvailable = true
+        vi.advanceTimersByTime(5_000)
+
+        expect(onReconcileRetryCommitted).toHaveBeenCalledTimes(1)
+
+        adapter.unbind('wf')
+        follower.destroy()
+        host.destroy()
+      } finally {
+        vi.useRealTimers()
+      }
+    }
+  )
+
   it.for(['clearForReset', 'discardPending', 'unbind'] as const)(
     'a second, later live-sweep failure cannot orphan an earlier sweep-retry timer past %s',
     (lifecycleAction) => {
@@ -1060,11 +1106,6 @@ describe('EcsFollowerAdapter integration', () => {
         vi.advanceTimersByTime(200)
         expect(onReconcileRetryCommitted).toHaveBeenCalledTimes(1)
 
-        // A second, independent rejection episode starts and its own retry
-        // commits well before the first sweep-retry timer would fire; its
-        // sweep also throws. Without idempotent scheduling this overwrites
-        // `liveSweepRetryTimer`, orphaning the first timer so nothing can
-        // ever `clearTimeout` it again.
         scopeAvailable = false
         expect(adapter.applyFrame({ workflowId: 'wf', seq: 2, update })).toBe(
           false
@@ -1181,9 +1222,9 @@ describe('EcsFollowerAdapter integration', () => {
       const batchCalls: unknown[] = []
       const mutations: GraphMutations = {
         ...realMutations,
-        batch: (context, define) => {
+        batchResult: (context, define) => {
           batchCalls.push(context)
-          return realMutations.batch(context, define)
+          return realMutations.batchResult(context, define)
         }
       }
       const adapter = new EcsFollowerAdapter(mutations)
@@ -1198,8 +1239,7 @@ describe('EcsFollowerAdapter integration', () => {
       // Retype node 1 to a type with no output, while the doc still carries
       // link 9 originating from its old output slot 0: `prepare()`'s stale
       // link revalidation rejects this deterministically (see the "FEC-4"
-      // test below). Scope stays available throughout, so this is exactly
-      // the case `hasScope()` must distinguish from a transient scope race.
+      // test below). Scope stays available throughout.
       const before = Y.encodeStateVector(host)
       const retypeOp = {
         op_id: 'retype',
@@ -1252,12 +1292,12 @@ describe('EcsFollowerAdapter integration', () => {
       getScope: () => scope,
       layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
     })
-    const realBatch = mutations.batch.bind(mutations)
+    const realBatch = mutations.batchResult.bind(mutations)
     const failure = new Error('projection failed')
     let throwNextBatch = true
     const throwingMutations: GraphMutations = {
       ...mutations,
-      batch: (context, define) => {
+      batchResult: (context, define) => {
         if (throwNextBatch) {
           throwNextBatch = false
           throw failure
@@ -2179,12 +2219,13 @@ describe('EcsFollowerAdapter integration', () => {
         clearSemanticGraph: () => undefined
       }
       return {
-        batch: (_context, define) => {
+        batch: () => true,
+        batchResult: (_context, define) => {
           events.push(`${workflowId}:start`)
           define(noopBatch)
           if (workflowId === 'wf-a') adapter.applyFrame(frameB)
           events.push(`${workflowId}:end`)
-          return true
+          return { kind: 'committed' }
         },
         addNode: () => true,
         setWidget: () => true,

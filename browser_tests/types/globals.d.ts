@@ -4,6 +4,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LiteGraphGlobal } from '@/lib/litegraph/src/LiteGraphGlobal'
 import type { ComfyApp } from '@/scripts/app'
 import type { useWorkspaceStore } from '@/stores/workspaceStore'
+import type { App } from 'vue'
 
 /**
  * Helper type for accessing nodes by ID in browser tests.
@@ -30,6 +31,10 @@ interface CapturedMessages {
 }
 
 declare global {
+  interface HTMLElement {
+    __vue_app__?: App
+  }
+
   interface Window {
     app?: ComfyApp
     graph?: LGraph
@@ -60,6 +65,7 @@ declare global {
      * @see browser_tests/tests/agent/agentHumanAddTabSwitch.spec.ts
      */
     __tabSwitchLens?: TabSwitchLens
+    __agentRecoveryGraph?: LGraph
   }
 
   const app: ComfyApp | undefined
