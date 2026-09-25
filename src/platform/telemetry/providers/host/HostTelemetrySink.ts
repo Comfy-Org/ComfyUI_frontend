@@ -15,6 +15,8 @@ import type {
   AgentOnboardingStepMetadata,
   AgentPanelClosedMetadata,
   AgentPanelOpenedMetadata,
+  AgentPaywallCtaMetadata,
+  AgentPaywallShownMetadata,
   AgentWorkflowAppliedMetadata,
   AuthMetadata,
   BeginCheckoutMetadata,
@@ -163,6 +165,14 @@ export class HostTelemetrySink implements TelemetryProvider {
 
   trackAddApiCreditButtonClicked(metadata?: AddCreditsClickMetadata): void {
     this.capture(TelemetryEvents.ADD_API_CREDIT_BUTTON_CLICKED, metadata)
+  }
+
+  trackAgentPaywallShown(metadata: AgentPaywallShownMetadata): void {
+    this.capture(TelemetryEvents.AGENT_PAYWALL_SHOWN, metadata)
+  }
+
+  trackAgentPaywallCtaClicked(metadata: AgentPaywallCtaMetadata): void {
+    this.capture(TelemetryEvents.AGENT_PAYWALL_CTA_CLICKED, metadata)
   }
 
   trackApiCreditTopupButtonPurchaseClicked(amount: number): void {
