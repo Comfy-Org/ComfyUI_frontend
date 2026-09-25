@@ -268,7 +268,7 @@ const paywallCapabilities = vi.hoisted(() => ({
 const paywallBilling = vi.hoisted(() => ({
   tier: 'STANDARD' as SubscriptionTier | null
 }))
-const paywallHasFunds = ref(false)
+const paywallHasFunds = ref<boolean | null>(false)
 
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'), {
   spy: true
@@ -335,7 +335,9 @@ beforeEach(() => {
   vi.mocked(useBillingContext).mockReturnValue(
     fromPartial({
       subscription: computed(() =>
-        fromPartial({ hasFunds: paywallHasFunds.value })
+        paywallHasFunds.value === null
+          ? null
+          : fromPartial({ hasFunds: paywallHasFunds.value })
       ),
       tier: computed(() => paywallBilling.tier)
     })
@@ -784,6 +786,98 @@ describe('AgentPanelRoot paywall actions', () => {
 
     await vi.waitFor(() =>
       expect(screen.queryByText('Out of credits')).not.toBeInTheDocument()
+    )
+  })
+
+  it('dismisses an existing paywall when remounting after a top-up', async () => {
+    paywallCapabilities.canTopUp = false
+    const panel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentConversationStore().recordPaywall(
+      toTurnId('msg-paywall'),
+      'continue'
+    )
+    expect(
+      await screen.findByRole('button', { name: 'Subscribe' })
+    ).toBeInTheDocument()
+
+    panel.unmount()
+    paywallHasFunds.value = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await vi.waitFor(() =>
+      expect(screen.queryByText('Out of credits')).not.toBeInTheDocument()
+    )
+  })
+
+  it('shows a fresh denial while the cached billing state still has funds', async () => {
+    paywallCapabilities.canTopUp = false
+    paywallHasFunds.value = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    expect(await screen.findByRole('textbox')).toBeInTheDocument()
+
+    useAgentConversationStore().recordPaywall(
+      toTurnId('msg-paywall'),
+      'render one more frame'
+    )
+
+    expect(
+      await screen.findByRole('button', { name: 'Subscribe' })
+    ).toBeInTheDocument()
+  })
+
+  it('keeps a resolved paywall hidden while billing state is unknown', async () => {
+    paywallCapabilities.canTopUp = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentConversationStore().recordPaywall(
+      toTurnId('msg-paywall'),
+      'continue'
+    )
+    expect(
+      await screen.findByRole('button', { name: 'Subscribe' })
+    ).toBeInTheDocument()
+
+    paywallHasFunds.value = true
+    await vi.waitFor(() =>
+      expect(
+        screen.queryByRole('button', { name: 'Subscribe' })
+      ).not.toBeInTheDocument()
+    )
+
+    paywallHasFunds.value = null
+    await nextTick()
+    expect(screen.queryByText('Out of credits')).not.toBeInTheDocument()
+  })
+
+  it('shows only a new denial after funds run out again', async () => {
+    paywallCapabilities.canTopUp = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentConversationStore().recordPaywall(
+      toTurnId('msg-paywall'),
+      'continue'
+    )
+    expect(
+      await screen.findByRole('button', { name: 'Subscribe' })
+    ).toBeInTheDocument()
+
+    paywallHasFunds.value = true
+    await vi.waitFor(() =>
+      expect(
+        screen.queryByRole('button', { name: 'Subscribe' })
+      ).not.toBeInTheDocument()
+    )
+
+    paywallHasFunds.value = false
+    await nextTick()
+    expect(screen.queryByText('Out of credits')).not.toBeInTheDocument()
+
+    useAgentConversationStore().recordPaywall(
+      toTurnId('msg-paywall-2'),
+      'try again'
+    )
+    await vi.waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Subscribe' })
+      ).toBeInTheDocument()
     )
   })
 
@@ -3563,7 +3657,7 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(screen.getByRole('menuitemradio', { name: 'current' })).toBeChecked()
   })
 
-  it('retains an explicitly chosen target across panel reopen and New Chat', async () => {
+  it('retains an explicitly chosen target across a plain panel reopen', async () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
     const { unmount } = render(AgentPanelRoot, { global: { plugins: [i18n] } })
@@ -3577,16 +3671,97 @@ describe('AgentPanelRoot workflow binding', () => {
     )
     await vi.waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
     unmount()
-    workflowStore.activeWorkflow = addTab('workflows/other.json')
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
-    await userEvent.click(
-      screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
-    )
     expect(
       screen.getByRole('button', {
         name: i18n.global.t('agent.switchWorkflow')
       })
     ).toHaveTextContent('current')
+  })
+
+  // PM-1321/PM-1322: onNewChat() used to leave the previous chat's target in
+  // place, so "in this workflow" silently kept acting on a tab that was no
+  // longer on screen. A new chat now targets whatever tab is active when it
+  // starts, matching onSelectHistory()'s reset-then-restore pattern.
+  it('retargets New Chat to the tab now on screen instead of the old chat target', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.switchWorkflow')
+      })
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitemradio', { name: 'current' })
+    )
+    await vi.waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
+
+    workflowStore.activeWorkflow = addTab('workflows/other.json')
+    await nextTick()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+    )
+
+    expect(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.switchWorkflow')
+      })
+    ).toHaveTextContent('other')
+  })
+
+  it('clears the New Chat target when no tab is open', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+    renderWithSelectedTarget()
+    expect(await screen.findAllByText('current')).not.toHaveLength(0)
+
+    await workflowService.closeWorkflow(workflowStore.activeWorkflow!)
+    await nextTick()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+    )
+
+    expect(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.switchWorkflow')
+      })
+    ).toHaveTextContent(i18n.global.t('agent.selectWorkflowForAgent'))
+  })
+
+  // PM-1415: the same fix must cover a brand new, still-unsaved tab, not just
+  // switching to an already-open one - activeWorkflow tracks whichever tab is
+  // on screen regardless of isTemporary.
+  it('retargets New Chat to a freshly created, unsaved tab', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.switchWorkflow')
+      })
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitemradio', { name: 'current' })
+    )
+    await vi.waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
+
+    workflowStore.activeWorkflow = addTab('workflows/new-tab.json', {
+      isTemporary: true
+    })
+    await nextTick()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+    )
+
+    expect(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.switchWorkflow')
+      })
+    ).toHaveTextContent('new-tab')
   })
 
   it('keeps the selected Agent target when the visible graph tab changes', async () => {

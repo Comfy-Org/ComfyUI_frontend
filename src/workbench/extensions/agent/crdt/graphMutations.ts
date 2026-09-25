@@ -303,6 +303,17 @@ function serialisableSlotFields(
 }
 
 /**
+ * `ghost` marks a node still following the cursor during search-box placement.
+ * The placement click clears it locally and mints no op, so a document that
+ * recorded the flag would resurrect it here and leave an already-placed node
+ * translucent and unclickable.
+ */
+function cloneNodeFlags(value: unknown): Record<string, unknown> {
+  const { ghost: _ghost, ...flags } = cloneRecord(value)
+  return flags
+}
+
+/**
  * A supplied input slot whose record has no `link` key carries no link
  * information (as opposed to `link: null`, which means unlinked). Such slots
  * keep the link of the `existing` slot at the same index, or `null` when the
@@ -669,6 +680,33 @@ function readPair(
     : fallback
 }
 
+/**
+ * A canvas rename only ever mutates the live node (see
+ * useNodeEventHandlers.ts's `handleNodeTitleUpdate`); it never writes back
+ * into the CRDT doc. So the payload's title is only as fresh as the last doc
+ * mutation that actually changed it, and `existing.titleReconcileBaseline`
+ * is the title the doc held as of the last reconcile. When the incoming
+ * title matches that baseline, nothing about the doc's title changed since
+ * then, so keep the live node's current title instead of replaying the same
+ * stale value over an unsynced local rename. An incoming title that differs
+ * from the baseline is a genuine doc-side change — e.g. the agent naming or
+ * renaming the node — and still wins. A record with no baseline at all
+ * (never reconciled) has no evidence the doc title is unchanged, so it
+ * always falls through to the payload/registered/type title.
+ */
+function resolveNodeTitle(
+  payload: SemanticNodePayload,
+  existing?: NodeState
+): string {
+  if (
+    existing?.titleReconcileBaseline !== undefined &&
+    payload.title === existing.titleReconcileBaseline.title
+  ) {
+    return nodeTitle(existing.title, payload.type)
+  }
+  return nodeTitle(payload.title, payload.type)
+}
+
 type NodeColors = Pick<NodeState, 'bgcolor' | 'boxcolor' | 'color'>
 
 function resolveColorField(
@@ -725,17 +763,24 @@ function prepareNode(
   const [x, y] = readPair(payload.pos, [0, 0])
   const [width, height] = readPair(payload.size, [270, 100])
   const mode = Number(payload.mode)
+  const flags = cloneNodeFlags(payload.flags)
   const state: NodeState = {
     id,
     graphId: scope.owningGraphId,
     type: payload.type,
-    title: nodeTitle(payload.title, payload.type),
-    flags: cloneRecord(payload.flags),
+    title: resolveNodeTitle(payload, incumbent),
+    flags,
     inputs: prepareInputSlots(payload.inputs, incumbent?.inputs),
     outputs: prepareOutputSlots(payload.outputs),
     mode: Number.isInteger(mode) ? mode : 0,
     properties: cloneRecord(payload.properties) as NodeState['properties'],
-    lastSerialization: structuredClone(payload) as unknown as ISerialisedNode,
+    lastSerialization: structuredClone({
+      ...payload,
+      flags
+    }) as unknown as ISerialisedNode,
+    titleReconcileBaseline: {
+      title: typeof payload.title === 'string' ? payload.title : undefined
+    },
     ...resolveNodeColors(payload, incumbent),
     ...resolveNodeDisplayFlags(payload)
   }
@@ -1857,9 +1902,18 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
    * changed locally (a human edit, or any write that reached the widget
    * without going through this module's own commit) since it was last read
    * from the doc. Overwriting it here would replay stale text over what the
-   * user is looking at (PM-1303/PM-1310 "hypothesis C"); an explicit
-   * single-widget `setWidget` op is unaffected, since it calls
-   * `setWidgetValue` directly rather than through this function.
+   * user is looking at (PM-1303/PM-1310 "hypothesis C").
+   *
+   * An incremental single-widget `setWidget` op is the SAME collision, not an
+   * exemption: the host echoes every human `set_widget` back as a doc frame,
+   * and each echo carries the whole value as of mint time. While the user is
+   * still typing, that echo is stale by however many keystrokes are in
+   * flight, and replaying it deletes those keystrokes under the cursor
+   * (PM-1191/PM-1697 — the agent-panel typing garble). An agent's
+   * `set_widget` onto a widget the user is mid-editing loses the same race.
+   * So `commit`'s `setWidget` case consults this guard too; the clearing
+   * rule below makes both paths converge the moment the document reflects
+   * the local value.
    *
    * Protection lasts until the document actually reflects the local value,
    * not for a single skipped reconcile: the follower has no invariant that
@@ -2096,13 +2150,22 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           break
         }
         case 'setWidget': {
-          setWidgetValue(
-            scope,
-            mutation.nodeId,
-            mutation.name,
-            mutation.value,
-            context
-          )
+          if (
+            !skipStaleReconcile(
+              scope,
+              mutation.nodeId,
+              mutation.name,
+              mutation.value
+            )
+          ) {
+            setWidgetValue(
+              scope,
+              mutation.nodeId,
+              mutation.name,
+              mutation.value,
+              context
+            )
+          }
           break
         }
         case 'connect': {
