@@ -138,7 +138,12 @@ describe('normalizeAgentTranscript', () => {
     const transcript = normalizeAgentTranscript([message])
 
     expect(transcript.userAttachments.get(toTurnId('turn-a'))).toEqual([
-      { name: 'ComfyUI_00002_.png', ref: 'ComfyUI_00002_.png' }
+      {
+        name: 'ComfyUI_00002_.png',
+        ref: 'ComfyUI_00002_.png',
+        id: 'asset-1',
+        kind: 'image'
+      }
     ])
   })
 
@@ -152,7 +157,7 @@ describe('normalizeAgentTranscript', () => {
     const transcript = normalizeAgentTranscript([message])
 
     expect(transcript.userAttachments.get(toTurnId('turn-a'))).toEqual([
-      { name: 'ComfyUI_00002_.png', ref: 'ComfyUI_00002_.png' }
+      { name: 'ComfyUI_00002_.png', ref: 'ComfyUI_00002_.png', kind: 'image' }
     ])
   })
 
@@ -259,21 +264,21 @@ describe('normalizeAgentTranscript', () => {
   })
 
   /**
-   * PM-1643 / PM-717 item 3: what a rehydrated turn still cannot say about its
-   * files after #18192. Both pins ask this parser only for what the service's
-   * own reader of these rows already does — `contentAttachments` in cloud's
+   * PM-1643 / PM-717 item 3. What a rehydrated turn can say about its files
+   * beyond their stored names, held to what the service's own reader of these
+   * rows already does — `contentAttachments` in cloud's
    * services/agent/internal/persist/threads.go.
    */
-  describe('unrestored persisted attachment shapes', () => {
+  describe('persisted attachment resolution', () => {
     /**
      * `attachmentRefsForRow` (services/agent/server/agent_handler.go) resolves
      * each name to a library asset id and to the coarse kind behind its MIME
-     * type, and `contentAttachments` reads both back. Dropping them here
-     * leaves the transcript unable to say anything about a file beyond its
-     * stored name; what the renderer would do with either is out of scope for
-     * this pin, which only asks that the resolution survive the parse.
+     * type, and `contentAttachments` reads both back. Carrying them through
+     * here is what lets a file be classified when its own name cannot classify
+     * it; what the renderer does with either is the sibling case in
+     * UserMessage.test.ts.
      */
-    it.fails('keeps the resolved asset id and media kind the server persisted on a ref', () => {
+    it('keeps the resolved asset id and media kind the server persisted on a ref', () => {
       const bareDigest = 'a'.repeat(64)
       const message = row(1, 'user', 'turn-a', 'check this clip', 'row-1')
       message.content = {
