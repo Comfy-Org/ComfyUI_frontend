@@ -15,6 +15,7 @@ import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { loadSeedIntoActiveTab } from '@e2e/fixtures/utils/seedActiveTab'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 /**
@@ -261,6 +262,7 @@ async function setUpFixture(page: Page) {
   const panel = page.locator('#agent-panel-root')
 
   await test.step('open the agent panel and target the workflow', async () => {
+    await loadSeedIntoActiveTab(page, seed)
     await page
       .getByRole('button', { name: enMessages.agent.entryButton })
       .click()

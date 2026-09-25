@@ -1,6 +1,7 @@
 import type { Locator, Page, TestInfo } from '@playwright/test'
 import { expect } from '@playwright/test'
 import type { ApplyOutcome } from '@comfyorg/comfy-multi-player'
+import type { ListAssetsResponse } from '@comfyorg/ingest-types'
 import { z } from 'zod'
 
 import { createI18n } from 'vue-i18n'
@@ -47,6 +48,7 @@ import type { TabSwitchLens, WorkspaceStore } from '@e2e/types/globals'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { assertAgentReplayNodeContract } from '@e2e/fixtures/utils/agentReplayNodeContract'
 import { mockSavedWorkflowPersistence } from '@e2e/fixtures/utils/savedWorkflowPersistence'
+import { loadSeedIntoActiveTab } from '@e2e/fixtures/utils/seedActiveTab'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
 
 const THREAD_ID = 'e9a2f3d1-7c44-4b2e-9a01-5f6d8c7b3a10'
@@ -258,7 +260,11 @@ export class AgentConversationHarness {
       .sort()
   }
 
-  async boot(agentFlag: boolean, vueNodes: boolean): Promise<void> {
+  async boot(
+    agentFlag: boolean,
+    vueNodes: boolean,
+    bootAssets: ListAssetsResponse
+  ): Promise<void> {
     await this.mockAgentApi()
     await this.hostSocket.install()
     const objectInfo = this.page.waitForResponse((response) =>
@@ -274,7 +280,8 @@ export class AgentConversationHarness {
       // Replayed nodes materialize from registered node types; the recordings use
       // core nodes only, so a case needing another node supplies its definition
       // here rather than routing /object_info a second time behind this one.
-      objectInfo: { ...agentReplayNodeDefs, ...this.extraNodeDefs }
+      objectInfo: { ...agentReplayNodeDefs, ...this.extraNodeDefs },
+      assets: bootAssets
     })
     const definitions = (await (await objectInfo).json()) as ObjectInfoResponse
     for (const [type, definition] of Object.entries(definitions))
@@ -287,6 +294,7 @@ export class AgentConversationHarness {
         `${this.page.url()} serves no node definitions for ${unregistered.join(', ')}; the replay needs a ComfyUI backend behind the dev server (browser_tests/README.md, "Replay coverage for agent bug fixes")`
       )
 
+    await loadSeedIntoActiveTab(this.page, this.conversation.workflow.seed)
     await this.page
       .getByRole('button', { name: OPEN_AGENT_LABEL, exact: true })
       .click()
@@ -1038,6 +1046,9 @@ interface ConversationFixtures {
   // Node definitions this case needs beyond the recorded core subset.
   extraNodeDefs: Record<string, ComfyNodeDef>
   humanOpsHost: HumanOpsHost
+  // Assets the boot mock serves for every /api/assets query, so combo widgets
+  // loaded with the seed already see them.
+  bootAssets: ListAssetsResponse
   agentConversation: AgentConversationHarness
 }
 
@@ -1049,6 +1060,7 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
   replayTiming: [defaultReplayTiming(), { option: true }],
   extraNodeDefs: [{}, { option: true }],
   humanOpsHost: ['hold', { option: true }],
+  bootAssets: [{ assets: [], total: 0, has_more: false }, { option: true }],
   viewport: VIEWPORT,
   video: {
     mode:
@@ -1064,7 +1076,8 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
       conversationCase,
       replayTiming,
       extraNodeDefs,
-      humanOpsHost
+      humanOpsHost,
+      bootAssets
     },
     use,
     testInfo
@@ -1084,7 +1097,7 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
       extraNodeDefs,
       humanOpsHost
     )
-    await harness.boot(agentFlagEnabled, vueNodes)
+    await harness.boot(agentFlagEnabled, vueNodes, bootAssets)
     await use(harness)
   }
 })

@@ -17,6 +17,7 @@ import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { loadSeedIntoActiveTab } from '@e2e/fixtures/utils/seedActiveTab'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
@@ -234,6 +235,7 @@ async function wireAutogrowNodeAndSwitchTabs(page: Page) {
     )
 
   await test.step('open the agent panel and target the workflow', async () => {
+    await loadSeedIntoActiveTab(page, seed)
     await agentPanel.open()
     await agentPanel.selectWorkflow()
   })
