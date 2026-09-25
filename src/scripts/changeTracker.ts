@@ -493,6 +493,7 @@ export class ChangeTracker {
    * behalf. Comparing the entry the run opened against the state it ended
    * on reproduces that single dispatch.
    */
+  // fallow-ignore-next-line unused-class-member
   closeCoalescedRun() {
     if (!this._coalescingUndo) return
     const runStart = this.undoQueue.at(-1)
