@@ -703,6 +703,43 @@ describe('reconcileAgentAdapters', () => {
       expect(graph.serialize().nodes).toHaveLength(1)
     })
 
+    /**
+     * Extracted from the PM-1293 node-replacement stack (PR #18150), which is
+     * parked. That stack modelled replacement as a state machine inside the
+     * materializer and its tests assert that machine's transition table --
+     * an implementation that is not landing, so the table is not carried over.
+     *
+     * The invariant the machine existed to enforce is carried over: replacing
+     * a node under the same id must not lose what the user can see on it. The
+     * sibling test below already covers widget values and links; the title did
+     * not have an assertion, and it is the field a user is most likely to have
+     * set by hand.
+     */
+    it('keeps the title across a replacement under the same id', () => {
+      const graph = new LGraph()
+      const scope = graphScopeOf(graph)
+      const mutations = remoteMutations(scope)
+      mutations.addNode(
+        { ...nodePayload(1), title: 'Upscale pass' },
+        { ...REMOTE, opId: 'op-1' }
+      )
+      reconcileAgentAdapters(graph)
+      const stale = graph.getNodeById(toNodeId(1))
+      expect(stale?.title).toBe('Upscale pass')
+
+      mutations.deleteNode(toNodeId(1), [], REMOTE)
+      mutations.addNode(
+        { ...nodePayload(1), title: 'Upscale pass' },
+        { ...REMOTE, opId: 'op-1-again' }
+      )
+
+      expect(reconcileAgentAdapters(graph)).toEqual([toNodeId(1)])
+
+      const replacement = graph.getNodeById(toNodeId(1))
+      expect(replacement).not.toBe(stale)
+      expect(replacement?.title).toBe('Upscale pass')
+    })
+
     it('runs stale-node lifecycle without clearing successor-owned state', () => {
       const graph = new LGraph()
       const scope = graphScopeOf(graph)

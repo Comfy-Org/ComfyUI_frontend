@@ -411,3 +411,123 @@ describe('abortIfUnbound settles delivered ops as undeliverable', () => {
     expect(settlement?.[1].state).not.toBe('undeliverable')
   })
 })
+
+/**
+ * The FakeBridge's `resubscribe` is a bare vi.fn, so a test that wants the
+ * post-reconnect subscribe ack must play the host's part itself: mark the
+ * workflow subscribed again and forward the `doc_subscribed` ok frame the
+ * bridge would have re-emitted.
+ */
+function ackResubscribe(workflowId: string): void {
+  bridge().subscribedWorkflowId = workflowId
+  bridge().dispatchEvent(
+    new CustomEvent('doc_subscribed', {
+      detail: { workflowId, ok: true, seq: 0 }
+    })
+  )
+}
+
+/**
+ * Extracted from the human-op outbox stack (PRs #18510, #18519, #18533,
+ * #18545), which is parked rather than landing: it was built on the
+ * store-first mint path the remote-apply refactor replaces.
+ *
+ * The stack's own unit tests -- the outbox's entry-state table, its
+ * write-through persistence structure, its session-storage TTL -- assert that
+ * parked design and are deliberately not carried over. What is carried over is
+ * the one property that is about the user rather than about the mechanism, and
+ * that is true of any design that solves this: an edit I made while the
+ * connection was down is not silently lost.
+ *
+ * Today it is. The sender's five-retry budget is a delivery budget, not a
+ * retention budget; once it runs out the batch settles `undeliverable` and
+ * nothing holds it. The two tests below pin both halves -- what happens now,
+ * and what should -- so the refactor can flip the second one green and the
+ * first one goes red in the same change.
+ */
+describe('a human edit made while the document connection is down', () => {
+  // The sender gives an in-flight batch five retries 500 ms apart before it
+  // retires the batch `undeliverable`.
+  const RETRY_BUDGET_MS = 5 * 500
+
+  beforeEach(() => {
+    useAgentPanelStore().enabled = true
+    bridgeState.current = null
+    bridgeState.transport.up = true
+    clientState.transportUp = true
+    clientState.attempts = []
+    clientState.sent = []
+    clientState.sendOps.mockClear()
+    devLogState.recordDevEvent.mockClear()
+    vi.useFakeTimers()
+  })
+
+  it('is abandoned once the retry budget runs out, and nothing retains it', async () => {
+    const { enqueue } = mountFollower('wf-a')
+    clientState.transportUp = false
+
+    await enqueue([deleteNode('edited-during-outage')])
+    // First send plus five retries, every one refused by the transport.
+    vi.advanceTimersByTime(RETRY_BUDGET_MS)
+    expect(clientState.attempts).toHaveLength(6)
+    expect(clientState.sent).toHaveLength(0)
+
+    const operationId = clientState.attempts[0].ops[0].op_id
+    expect(devLogState.recordDevEvent).toHaveBeenCalledWith(
+      'human_ops_settled',
+      expect.objectContaining({
+        state: 'undeliverable',
+        ops: [expect.objectContaining({ op_id: operationId })]
+      })
+    )
+
+    // The socket comes back and the host confirms the document is bound
+    // again. The edit does not go with it: it is gone.
+    clientState.transportUp = true
+    apiState.target.dispatchEvent(new Event('reconnected'))
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(1)
+    ackResubscribe('wf-a')
+    expect(clientState.sent).toHaveLength(0)
+  })
+
+  it.fails('KNOWN GAP: reaches the host once after reconnect, under its original op_id', async () => {
+    const { enqueue } = mountFollower('wf-a')
+    clientState.transportUp = false
+
+    await enqueue([deleteNode('edited-during-outage')])
+    vi.advanceTimersByTime(RETRY_BUDGET_MS)
+    expect(clientState.sent).toHaveLength(0)
+    const operationId = clientState.attempts[0].ops[0].op_id
+
+    // `reconnected` alone only re-drives the subscribe; nothing may go out
+    // until the host acks that the document is bound again.
+    clientState.transportUp = true
+    apiState.target.dispatchEvent(new Event('reconnected'))
+    expect(clientState.sent).toHaveLength(0)
+
+    ackResubscribe('wf-a')
+
+    // Delivered, toward the workflow it was minted against, carrying the id
+    // it was minted with. Re-minting would defeat the applier's op_id dedupe
+    // and let a replay apply the edit a second time.
+    expect(clientState.sent).toHaveLength(1)
+    expect(clientState.sent[0]).toMatchObject({ workflowId: 'wf-a' })
+    expect(clientState.sent[0].ops[0]).toMatchObject({
+      op_id: operationId,
+      op: 'delete_node',
+      node_id: 'edited-during-outage'
+    })
+
+    // And exactly once: after the host applies the replay, a later reconnect
+    // must not send it a third time.
+    dispatchOpsResult({
+      workflowId: 'wf-a',
+      ok: true,
+      applied: [operationId],
+      skipped: []
+    })
+    apiState.target.dispatchEvent(new Event('reconnected'))
+    ackResubscribe('wf-a')
+    expect(clientState.sent).toHaveLength(1)
+  })
+})
