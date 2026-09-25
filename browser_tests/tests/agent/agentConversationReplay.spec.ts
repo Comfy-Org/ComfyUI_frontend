@@ -11,16 +11,22 @@ import {
 import { imageLayoutNodeDefinitions } from '@e2e/fixtures/data/agent/imageLayoutNodeDefinitions'
 import { referenceGraphOps } from '@e2e/fixtures/data/minimaxAutogrowReload'
 import { wireAndReopen } from '@e2e/fixtures/utils/minimaxAutogrowReload'
-import { overlappingNodePairs } from '@e2e/fixtures/utils/nodeLayoutGeometry'
+import {
+  nodesWithoutGeometry,
+  overlappingNodePairs
+} from '@e2e/fixtures/utils/nodeLayoutGeometry'
+import { nextFrame } from '@e2e/fixtures/utils/timing'
 
 // A recording whose second turn wires two nodes; the first turn only adds.
 const WIRING_CASE = 'agent-rec-two-turn-dependent-edit'
 const WIDGET_CASE = 'agent-rec-set-widget-existing'
+const LOAD_IMAGE_SETTLE_TIMEOUT = 10_000
 
 test.describe(
   'Agent populated LoadImage layout',
   { tag: ['@cloud', '@vue-nodes', '@screenshot', '@node'] },
   () => {
+    test.describe.configure({ timeout: 90_000 })
     test.use({
       conversationCase: 'agent-load-image-layout',
       extraNodeDefs: imageLayoutNodeDefinitions,
@@ -37,10 +43,35 @@ test.describe(
         has: page.getByTestId('node-title').filter({ hasText: 'Load Image' })
       })
       await expect(loaders).toHaveCount(5)
-      await expect(page.locator('.image-preview img')).toHaveCount(5)
-      await expect.poll(() => overlappingNodePairs(loaders)).toEqual([])
+      const previews = page.locator('.image-preview img')
+      await expect(previews).toHaveCount(5)
+      await expect
+        .poll(
+          () =>
+            previews.evaluateAll((images) =>
+              images.every(
+                (image) =>
+                  image instanceof HTMLImageElement &&
+                  image.complete &&
+                  image.naturalWidth > 0
+              )
+            ),
+          { timeout: LOAD_IMAGE_SETTLE_TIMEOUT }
+        )
+        .toBe(true)
+      await expect
+        .poll(() => nodesWithoutGeometry(loaders), {
+          timeout: LOAD_IMAGE_SETTLE_TIMEOUT
+        })
+        .toEqual([])
+      await expect
+        .poll(() => overlappingNodePairs(loaders), {
+          timeout: LOAD_IMAGE_SETTLE_TIMEOUT
+        })
+        .toEqual([])
 
       await page.getByRole('button', { name: 'Fit View (.)' }).click()
+      await nextFrame(page)
       await expect(page.locator('#graph-canvas')).toHaveScreenshot(
         'agent-load-image-layout.png',
         { mask: [agentConversation.panel] }
