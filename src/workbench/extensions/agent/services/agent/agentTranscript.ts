@@ -2,7 +2,7 @@ import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
 import type { WorkflowReference } from '../../types/workflowReference'
 import { parseWorkflowReferences } from '../../utils/workflowReferenceText'
 import type { AssistantMessage } from './agentMessageParts'
-import { createAssistantMessage } from './agentMessageParts'
+import { createAssistantMessage, toAskOrNoticePart } from './agentMessageParts'
 
 /**
  * A file attached to a user turn. `ref` is the uploaded input-namespace
@@ -113,6 +113,42 @@ export function normalizeAgentTranscript(
   let pending: NormalizedAgentTranscript['pending']
   let latestWorkflowId: string | undefined
 
+  type Row = AgentMessages[number]
+
+  function recordUserRow(row: Row, turnId: TurnId, text: string): void {
+    userTexts.set(turnId, text)
+    const attachments = parseUserAttachments(row.content)
+    if (attachments) userAttachments.set(turnId, attachments)
+    if (row.workflow_id) latestWorkflowId = row.workflow_id
+    const referenceUpdate = parseUserWorkflowReferences(
+      text,
+      row.content?.workflow_references
+    )
+    if (referenceUpdate) {
+      userTexts.set(turnId, referenceUpdate.text)
+      userWorkflowReferences.set(turnId, referenceUpdate.references)
+    }
+  }
+
+  function recordAssistantRow(row: Row, turnId: TurnId, text: string): void {
+    const message = assistants.get(turnId) ?? createAssistantMessage(turnId)
+    message.streaming = false
+    if (text)
+      message.parts = [...message.parts, { type: 'text', text, state: 'done' }]
+    const pendingAskPart =
+      row.status === 'streaming' && row.pending_ask
+        ? toAskOrNoticePart(row.pending_ask)
+        : undefined
+    // The turn is waiting on this ask whether or not the panel can show it:
+    // a card or its stand-in notice alike keeps the turn live, so Stop stays.
+    if (pendingAskPart) {
+      message.parts.push(pendingAskPart)
+      message.streaming = true
+      pending = { messageId: row.id as TurnId, message }
+    }
+    assistants.set(turnId, message)
+  }
+
   for (const row of [...history].sort((a, b) => a.seq - b.seq)) {
     const turnId = row.turn_id as TurnId
     rowIds.add(row.id)
@@ -121,46 +157,8 @@ export function normalizeAgentTranscript(
       turnOrder.push(turnId)
     }
     const text = typeof row.content?.text === 'string' ? row.content.text : ''
-    if (row.role === 'user') {
-      userTexts.set(turnId, text)
-      const attachments = parseUserAttachments(row.content)
-      if (attachments) userAttachments.set(turnId, attachments)
-      if (row.workflow_id) latestWorkflowId = row.workflow_id
-      const referenceUpdate = parseUserWorkflowReferences(
-        text,
-        row.content?.workflow_references
-      )
-      if (referenceUpdate) {
-        userTexts.set(turnId, referenceUpdate.text)
-        userWorkflowReferences.set(turnId, referenceUpdate.references)
-      }
-    }
-    if (row.role === 'assistant') {
-      const message = assistants.get(turnId) ?? createAssistantMessage(turnId)
-      message.streaming = false
-      if (text)
-        message.parts = [
-          ...message.parts,
-          { type: 'text', text, state: 'done' }
-        ]
-      if (
-        row.status === 'streaming' &&
-        row.pending_ask?.kind === 'run_approval'
-      ) {
-        message.parts.push({
-          type: 'runApproval',
-          askId: row.pending_ask.ask_id,
-          workflowId: row.pending_ask.context?.workflow_id || undefined,
-          workflowName: row.pending_ask.context?.workflow_name || undefined
-        })
-        message.streaming = true
-        pending = {
-          messageId: row.id as TurnId,
-          message
-        }
-      }
-      assistants.set(turnId, message)
-    }
+    if (row.role === 'user') recordUserRow(row, turnId, text)
+    if (row.role === 'assistant') recordAssistantRow(row, turnId, text)
   }
 
   const messages = turnOrder.map((turnId) => {

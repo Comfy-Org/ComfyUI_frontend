@@ -608,8 +608,8 @@ describe('AgentMessage run approval', () => {
       ['workflow-1', 'Portrait workflow']
     ])
     expect(emitted().answerAsk).toEqual([
-      ['turn-1:call-1', 'cancel'],
-      ['turn-1:call-1', 'run']
+      ['turn-1:call-1', { selected: ['cancel'] }],
+      ['turn-1:call-1', { selected: ['run'] }]
     ])
   })
 
@@ -660,4 +660,78 @@ describe('AgentMessage run approval', () => {
       }
     }
   )
+})
+describe('AgentMessage ask_user question', () => {
+  const askMessage = (): AssistantMessage => ({
+    id: 'msg-ask' as TurnId,
+    role: 'assistant',
+    parts: [
+      {
+        type: 'askUser',
+        askId: 'turn-1:call-1',
+        prompt: 'Which model should I use?',
+        options: [
+          { id: 'sdxl', label: 'SDXL', description: 'Fast, 1024px' },
+          { id: 'flux', label: 'Flux Dev' }
+        ],
+        minSelections: 1,
+        maxSelections: 1,
+        allowOther: false
+      }
+    ],
+    streaming: true,
+    thinking: false
+  })
+
+  it('renders the question card without a working spinner and forwards the answer', async () => {
+    const { emitted } = render(AgentMessage, {
+      props: { message: askMessage() },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByText('Which model should I use?')).toBeInTheDocument()
+    expect(screen.getByText('Fast, 1024px')).toBeInTheDocument()
+    expect(screen.queryByText('Working...')).not.toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('radio', { name: 'Flux Dev' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Submit' }))
+
+    expect(emitted().answerAsk).toEqual([
+      ['turn-1:call-1', { selected: ['flux'] }]
+    ])
+  })
+
+  it('keeps an in-progress answer when an earlier ask in the message resolves', async () => {
+    const message = askMessage()
+    const withApproval: AssistantMessage = {
+      ...message,
+      parts: [
+        { type: 'runApproval', askId: 'turn-1:call-0', workflowName: 'Draft' },
+        ...message.parts
+      ]
+    }
+    const { rerender } = render(AgentMessage, {
+      props: { message: withApproval },
+      global: { plugins: [i18n] }
+    })
+    await userEvent.click(screen.getByRole('radio', { name: 'Flux Dev' }))
+
+    await rerender({ message })
+
+    expect(screen.getByRole('radio', { name: 'Flux Dev' })).toBeChecked()
+  })
+
+  it('disables the card while its answer is in flight', () => {
+    render(AgentMessage, {
+      props: {
+        message: askMessage(),
+        answeringAskIds: new Set(['turn-1:call-1'])
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByRole('button', { name: 'Submit' })).toBeDisabled()
+    for (const radio of screen.getAllByRole('radio'))
+      expect(radio).toBeDisabled()
+  })
 })

@@ -16,6 +16,12 @@ export class AgentPanel {
   public readonly fileInput: Locator
   public readonly composerAssetSection: Locator
   public readonly attachmentChips: Locator
+  public readonly composer: Locator
+  public readonly sendButton: Locator
+  public readonly askSubmitButton: Locator
+  public readonly askOtherInput: Locator
+  public readonly askCheckboxes: Locator
+  public readonly askRadios: Locator
 
   constructor(private readonly page: Page) {
     this.root = page.locator('#agent-panel-root')
@@ -41,6 +47,31 @@ export class AgentPanel {
     this.fileInput = this.root.getByTestId('agent-file-input')
     this.composerAssetSection = this.root.getByTestId('composer-asset-section')
     this.attachmentChips = this.root.getByTestId('agent-attachment-chip')
+    this.composer = this.root.getByRole('textbox', { name: /^Describe ideas/ })
+    this.sendButton = this.root.getByRole('button', {
+      name: enMessages.agent.send,
+      exact: true
+    })
+    this.askSubmitButton = this.root.getByRole('button', {
+      name: enMessages.agent.askUser.submit,
+      exact: true
+    })
+    this.askOtherInput = this.root.getByRole('textbox', {
+      name: enMessages.agent.askUser.other,
+      exact: true
+    })
+    this.askCheckboxes = this.root.getByRole('checkbox')
+    this.askRadios = this.root.getByRole('radio')
+  }
+
+  /** The ask_user checkbox for the option labelled `label`. */
+  askCheckbox(label: string): Locator {
+    return this.root.getByRole('checkbox', { name: label, exact: true })
+  }
+
+  /** The ask_user radio for the option labelled `label`. */
+  askRadio(label: string): Locator {
+    return this.root.getByRole('radio', { name: label, exact: true })
   }
 
   /**
@@ -75,6 +106,15 @@ export class AgentPanel {
     await this.workflowPicker.click()
     await this.page.getByRole('menuitemradio', { name, exact: true }).click()
     await expect(this.workflowPicker).toHaveText(name)
+  }
+
+  /** Sends `prompt` as a new turn and waits for it to show in the transcript. */
+  async sendPrompt(prompt: string): Promise<void> {
+    await this.composer.fill(prompt)
+    await this.sendButton.click()
+    await expect(
+      this.root.getByText(prompt, { exact: true }).first()
+    ).toBeVisible()
   }
 
   async turnOffOptionalReportSources(): Promise<void> {

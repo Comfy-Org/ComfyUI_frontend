@@ -150,12 +150,33 @@ describe('agentRestClient route + method', () => {
 
   it('answerAsk POSTs the selected option to the encoded ask path', async () => {
     respond(jsonResponse(202, { status: 'answered' }))
-    await makeClient().answerAsk('t7/x', 'turn-1:call/1', ['run'])
+    await makeClient().answerAsk('t7/x', 'turn-1:call/1', { selected: ['run'] })
 
     const { route, init } = lastCall()
     expect(route).toBe('/agent/threads/t7%2Fx/asks/turn-1%3Acall%2F1/answer')
     expect(init.method).toBe('POST')
     expect(JSON.parse(init.body as string)).toEqual({ selected: ['run'] })
+  })
+
+  it('answerAsk sends other_text only when the answer carries free text', async () => {
+    respond(jsonResponse(202, { status: 'answered' }))
+    await makeClient().answerAsk('t1', 'ask-1', {
+      selected: ['sdxl'],
+      otherText: 'a LoRA'
+    })
+    expect(JSON.parse(lastCall().init.body as string)).toEqual({
+      selected: ['sdxl'],
+      other_text: 'a LoRA'
+    })
+
+    respond(jsonResponse(202, { status: 'answered' }))
+    await makeClient().answerAsk('t1', 'ask-1', {
+      selected: [],
+      otherText: ''
+    })
+    expect(JSON.parse(lastCall().init.body as string)).toEqual({
+      selected: []
+    })
   })
 
   it('listCloudWorkflows GETs the paginated workflows path until has_more is false', async () => {
@@ -525,7 +546,7 @@ describe('user auth on agent requests', () => {
     ['GET messages', (c) => c.getMessages('t1'), []],
     [
       'POST answer',
-      (c) => c.answerAsk('t1', 'ask-1', ['allow']),
+      (c) => c.answerAsk('t1', 'ask-1', { selected: ['allow'] }),
       { status: 'answered' }
     ],
     ['the credential refresh', (c) => c.refreshCredential(), emptyThreadPage]

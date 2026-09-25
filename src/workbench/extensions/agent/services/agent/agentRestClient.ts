@@ -17,6 +17,7 @@ import {
   zUploadImageResult,
   zAgentIdentityWire
 } from '../../schemas/agentApiSchema'
+import type { AgentAskAnswer } from './agentMessageParts'
 import type {
   AgentAnswerAccepted,
   AgentCancelAccepted,
@@ -281,11 +282,14 @@ export function createAgentRestClient() {
   async function answerAsk(
     threadId: string,
     askId: string,
-    selected: string[]
+    { selected, otherText }: AgentAskAnswer
   ): Promise<AgentAnswerAccepted> {
     return request(
       `/agent/threads/${encodeURIComponent(threadId)}/asks/${encodeURIComponent(askId)}/answer`,
-      jsonInit('POST', { selected }),
+      jsonInit(
+        'POST',
+        otherText ? { selected, other_text: otherText } : { selected }
+      ),
       zAgentAnswerAccepted
     )
   }

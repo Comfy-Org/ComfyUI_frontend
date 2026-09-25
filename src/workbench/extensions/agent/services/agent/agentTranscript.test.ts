@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { AgentMessages } from '../../schemas/agentApiSchema'
 import { toTurnId } from '../../schemas/agentApiSchema'
@@ -55,6 +55,37 @@ describe('normalizeAgentTranscript', () => {
       'wf-a'
     )
   })
+  // The turn is waiting on the ask whether or not the panel can show it, so a
+  // restored stand-in notice keeps it live and Stop stays available.
+  it('keeps a restored turn live when its pending ask cannot be shown', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const waiting = {
+      ...row(2, 'assistant', 'turn-a', '', 'row-2'),
+      status: 'streaming',
+      pending_ask: {
+        message_id: 'row-2',
+        ask_id: 'ask-9',
+        kind: 'something_new',
+        prompt: 'Pick one',
+        options: [{ id: 'a', label: 'A' }],
+        min_selections: 1,
+        max_selections: 1,
+        allow_other: false
+      }
+    } as AgentMessages[number]
+
+    const transcript = normalizeAgentTranscript([
+      row(1, 'user', 'turn-a', 'Go', 'row-1'),
+      waiting
+    ])
+
+    expect(transcript.messages[0]).toMatchObject({
+      streaming: true,
+      parts: [{ type: 'notice', askId: 'ask-9' }]
+    })
+    expect(transcript.pending?.messageId).toBe('row-2')
+  })
+
   it('orders rows by sequence and groups them by stable turn identity', () => {
     const transcript = normalizeAgentTranscript([
       row(4, 'assistant', 'turn-b', 'Second reply', 'row-4'),

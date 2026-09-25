@@ -158,6 +158,24 @@ const runApproval = (id: string, askId = 'turn-1:call-1') =>
       allow_other: false
     }
   })
+const askUser = (id: string, askId = 'turn-1:call-1') =>
+  wire({
+    type: 'agent_ask',
+    data: {
+      thread_id: 'th-1',
+      message_id: id,
+      ask_id: askId,
+      kind: 'ask_user',
+      prompt: 'Which models?',
+      options: [
+        { id: 'sdxl', label: 'SDXL', description: 'Fast' },
+        { id: 'flux', label: 'Flux' }
+      ],
+      min_selections: 1,
+      max_selections: 2,
+      allow_other: true
+    }
+  })
 const askResolved = (id: string, askId = 'turn-1:call-1') =>
   wire({
     type: 'agent_ask_resolved',
@@ -471,13 +489,15 @@ describe('useAgentSession (v1 composition root)', () => {
     await session.sendMessage('build it')
     emit(runApproval('msg-1'))
 
-    const first = session.answerAsk('turn-1:call-1', 'run')
-    const duplicate = session.answerAsk('turn-1:call-1', 'run')
+    const first = session.answerAsk('turn-1:call-1', { selected: ['run'] })
+    const duplicate = session.answerAsk('turn-1:call-1', { selected: ['run'] })
 
     expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(true)
     await Promise.all([first, duplicate])
     expect(answerAsk).toHaveBeenCalledTimes(1)
-    expect(answerAsk).toHaveBeenCalledWith('th-1', 'turn-1:call-1', ['run'])
+    expect(answerAsk).toHaveBeenCalledWith('th-1', 'turn-1:call-1', {
+      selected: ['run']
+    })
     expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(true)
 
     emit(askResolved('msg-1'))
@@ -485,6 +505,43 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(
       useAgentConversationStore().messages[0].parts.some(
         (part) => part.type === 'runApproval'
+      )
+    ).toBe(false)
+  })
+
+  it('forwards an ask_user answer with its free text and drops the card on resolution', async () => {
+    const answerAsk = vi.fn(
+      async (): Promise<AgentAnswerAccepted> => ({ status: 'answered' })
+    )
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ answerAsk }),
+      events: source
+    })
+    session.start()
+    await session.sendMessage('pick for me')
+    emit(askUser('msg-1'))
+    expect(
+      useAgentConversationStore().messages[0].parts.find(
+        (part) => part.type === 'askUser'
+      )
+    ).toMatchObject({ askId: 'turn-1:call-1', maxSelections: 2 })
+
+    await session.answerAsk('turn-1:call-1', {
+      selected: ['sdxl'],
+      otherText: 'a LoRA'
+    })
+    expect(answerAsk).toHaveBeenCalledWith('th-1', 'turn-1:call-1', {
+      selected: ['sdxl'],
+      otherText: 'a LoRA'
+    })
+    expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(true)
+
+    emit(askResolved('msg-1'))
+    expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(false)
+    expect(
+      useAgentConversationStore().messages[0].parts.some(
+        (part) => part.type === 'askUser'
       )
     ).toBe(false)
   })
@@ -502,7 +559,7 @@ describe('useAgentSession (v1 composition root)', () => {
     await session.sendMessage('build it')
     emit(runApproval('msg-1'))
 
-    await session.answerAsk('turn-1:call-1', 'cancel')
+    await session.answerAsk('turn-1:call-1', { selected: ['cancel'] })
 
     expect(reportError).not.toHaveBeenCalled()
     expect(session.notices.value).toEqual([])
@@ -527,7 +584,7 @@ describe('useAgentSession (v1 composition root)', () => {
     await session.sendMessage('build it')
     emit(runApproval('msg-1'))
 
-    await session.answerAsk('turn-1:call-1', 'run')
+    await session.answerAsk('turn-1:call-1', { selected: ['run'] })
 
     expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
       errorType: 'agent_ask_answer_failed'

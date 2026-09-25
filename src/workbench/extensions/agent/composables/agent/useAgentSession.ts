@@ -15,6 +15,7 @@ import {
   zAgentAdmissionError,
   zDisownedWorkflowError
 } from '../../schemas/agentApiSchema'
+import type { AgentAskAnswer } from '../../services/agent/agentMessageParts'
 import { AgentApiError } from '../../services/agent/agentRestClient'
 import type {
   AgentRestClient,
@@ -578,7 +579,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   async function answerAsk(
     askId: string,
-    selection: 'run' | 'cancel'
+    answer: AgentAskAnswer
   ): Promise<void> {
     const currentThreadId = conversationStore.threadId
     const messageId = conversationStore.activeTurnId
@@ -590,7 +591,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       return
     setAskAnswering(askId, true)
     try {
-      await rest.answerAsk(currentThreadId, askId, [selection])
+      await rest.answerAsk(currentThreadId, askId, answer)
       // Keep the actions disabled until the canonical resolution frame arrives.
     } catch (error) {
       setAskAnswering(askId, false)

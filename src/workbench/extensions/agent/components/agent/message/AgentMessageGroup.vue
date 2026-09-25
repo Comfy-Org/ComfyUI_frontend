@@ -1,15 +1,18 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { ActivityPart } from '../../../services/agent/agentMessageParts'
+import type {
+  ActivityPart,
+  AgentAskAnswer
+} from '../../../services/agent/agentMessageParts'
 import type {
   AgentPaywallAction,
   AgentPaywallPresentation
 } from '../../../services/agent/agentPaywallPresentation'
 import ActivityTrace from './ActivityTrace.vue'
+import AgentAskCard from './AgentAskCard.vue'
 import AgentPaywallCard from './AgentPaywallCard.vue'
 import MarkdownStream from './MarkdownStream.vue'
-import RunApprovalCard from './RunApprovalCard.vue'
 import TabLinkCard from './TabLinkCard.vue'
 import type { AgentMessageGroup } from './agentMessageGroup'
 import WorkSummary from './WorkSummary.vue'
@@ -23,7 +26,7 @@ const { group } = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  answer: [askId: string, selection: 'run' | 'cancel']
+  answer: [askId: string, answer: AgentAskAnswer]
   openWorkflow: [workflowId: string, workflowName?: string]
   paywallAction: [action: AgentPaywallAction]
 }>()
@@ -48,11 +51,11 @@ const emit = defineEmits<{
       :name="link.name"
     />
   </div>
-  <RunApprovalCard
-    v-else-if="group.kind === 'runApproval'"
+  <AgentAskCard
+    v-else-if="group.kind === 'ask'"
     :part="group.part"
     :answering="answeringAskIds.has(group.part.askId)"
-    @answer="(askId, selection) => emit('answer', askId, selection)"
+    @answer="(askId, answer) => emit('answer', askId, answer)"
     @open-workflow="
       (workflowId, workflowName) =>
         emit('openWorkflow', workflowId, workflowName)

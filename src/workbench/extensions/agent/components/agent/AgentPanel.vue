@@ -28,6 +28,7 @@ import type {
   AgentPaywallAction,
   AgentPaywallPresentation
 } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
+import type { AgentAskAnswer } from '../../services/agent/agentMessageParts'
 import type { ConversationEntry } from '../../stores/agent/agentConversationStore'
 import type { HistoryGroups } from '../../stores/agent/agentChatHistoryStore'
 
@@ -122,7 +123,7 @@ const emit = defineEmits<{
   copyHistory: [id: string]
   renameHistory: [id: string, title: string]
   renameChat: [title: string]
-  answerAsk: [askId: string, selection: 'run' | 'cancel']
+  answerAsk: [askId: string, answer: AgentAskAnswer]
   openWorkflow: [workflowId: string, workflowName?: string]
   openReferenceWorkflow: [workflowId: string, workflowName: string]
 }>()
@@ -353,9 +354,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           :paywall-presentation
           @edit-prompt="composerRef?.replaceDraft($event)"
           @feedback="(id, vote) => emit('feedback', id, vote)"
-          @answer-ask="
-            (askId, selection) => emit('answerAsk', askId, selection)
-          "
+          @answer-ask="(askId, answer) => emit('answerAsk', askId, answer)"
           @open-workflow="
             (workflowId, workflowName) =>
               emit('openWorkflow', workflowId, workflowName)
