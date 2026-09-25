@@ -1,7 +1,7 @@
 import { groupBy, partition } from 'es-toolkit'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import type { NodeError } from '@/schemas/apiSchema'
+import type { NodeError } from '@/platform/remote/comfyui/types'
 import { tryNormalizeNodeExecutionId } from '@/types/nodeIdentification'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { isNodeLevelValidationError } from '@/utils/executionErrorUtil'

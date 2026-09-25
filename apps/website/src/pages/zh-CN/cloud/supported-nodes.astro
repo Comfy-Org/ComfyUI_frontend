@@ -9,7 +9,7 @@ import {
   absoluteUrl,
   itemListNode,
   jsonLdId,
-  pageContext,
+  pageContext
 } from '../../../utils/jsonLd'
 
 const packs = await loadPacksForBuild()
@@ -20,15 +20,15 @@ const description = t('cloudNodes.meta.description', 'zh-CN')
 const { url, locale } = pageContext(
   Astro.site,
   Astro.url.pathname,
-  Astro.currentLocale,
+  Astro.currentLocale
 )
 const packList = itemListNode(
   url,
   title,
   packs.map((pack) => ({
     name: pack.displayName,
-    url: absoluteUrl(Astro.site, `/zh-CN/cloud/supported-nodes/${pack.id}`),
-  })),
+    url: absoluteUrl(Astro.site, `/zh-CN/cloud/supported-nodes/${pack.id}`)
+  }))
 )
 ---
 
@@ -40,10 +40,10 @@ const packList = itemListNode(
   breadcrumbs={[
     {
       name: t('breadcrumb.home', locale),
-      url: absoluteUrl(Astro.site, '/zh-CN'),
+      url: absoluteUrl(Astro.site, '/zh-CN')
     },
     { name: 'Comfy Cloud', url: absoluteUrl(Astro.site, '/zh-CN/cloud') },
-    { name: t('breadcrumb.supportedNodes', locale) },
+    { name: t('breadcrumb.supportedNodes', locale) }
   ]}
   extraJsonLd={[packList]}
 >

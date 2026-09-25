@@ -1,22 +1,15 @@
-// @vitest-environment jsdom
-// dompurify is inert under happy-dom — see the tripwire note in
-// vitest.setup.ts (capricorn86/happy-dom#2182, FE-1189).
 import { render, screen } from '@testing-library/vue'
 import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 
 import type * as NodePreviewModule from '@/renderer/extensions/vueNodes/components/LGraphNodePreview.vue'
-import type { ComfyApp } from '@/scripts/app'
 import { useExecutionStore } from '@/stores/executionStore'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 
 import TextPreviewWidget from './TextPreviewWidget.vue'
-vi.mock(import('@/scripts/app'), async () => {
-  const { fromPartial } = await import('@total-typescript/shoehorn')
-  return { app: fromPartial<ComfyApp>({}) }
-})
+vi.mock(import('@/scripts/app'))
 vi.mock(
   import('@/renderer/extensions/vueNodes/components/LGraphNodePreview.vue'),
   async () => {
@@ -24,11 +17,6 @@ vi.mock(
     return fromPartial<typeof NodePreviewModule>({ default: {} })
   }
 )
-
-const SkeletonStub = defineComponent({
-  name: 'Skeleton',
-  template: '<div data-testid="skeleton" />'
-})
 
 function renderPreview(
   text: string,
@@ -42,8 +30,12 @@ function renderPreview(
   })
   return render(Harness, {
     global: {
-      plugins: [PrimeVue],
-      stubs: { Skeleton: SkeletonStub }
+      plugins: [
+        [
+          PrimeVue,
+          { pt: { skeleton: { root: { 'data-testid': 'skeleton' } } } }
+        ]
+      ]
     }
   })
 }

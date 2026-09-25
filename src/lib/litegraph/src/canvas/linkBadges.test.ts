@@ -10,6 +10,7 @@ import {
   BADGE_GAP,
   clearLinkBadgeHitAreas,
   drawHiddenLinkBadges,
+  layoutHiddenLinkBadges,
   linkBadgeText,
   queryLinkBadgeAtPoint
 } from './linkBadges'
@@ -35,16 +36,17 @@ function drawBadgesInView(
   endPos: Point,
   visibleArea: ReadOnlyRect = VISIBLE_AREA
 ) {
-  return drawHiddenLinkBadges(
+  const layout = layoutHiddenLinkBadges(
     host,
     ctx,
     link,
     { hidden: true },
     startPos,
     endPos,
-    BADGE_COLOR,
-    visibleArea
+    BADGE_COLOR
   )
+  drawHiddenLinkBadges(ctx, layout, visibleArea)
+  return layout
 }
 
 describe('linkBadgeText', () => {

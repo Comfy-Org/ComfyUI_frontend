@@ -474,57 +474,21 @@
       "defaultCandidates": ["disabled", "auto"]
     },
     {
-      "names": ["safety_tolerance"],
-      "label": "Safety tolerance",
-      "help": "Adjust the provider's content-filtering tolerance within its allowed limits.",
-      "advanced": true,
-      "defaultCandidates": [2]
-    },
-    {
-      "names": ["enable_safety_checker"],
-      "label": "Content checks",
-      "help": "Apply the provider's safety or copyright checks.",
-      "advanced": true,
-      "defaultCandidates": [true]
-    },
-    {
-      "names": ["prompt_content_moderation"],
-      "label": "Check prompt content",
-      "help": "Apply the provider's content checks to the prompt.",
-      "advanced": true,
-      "defaultCandidates": [true],
-      "control": "toggle"
-    },
-    {
-      "names": ["visual_input_content_moderation"],
-      "label": "Check input media",
-      "help": "Apply the provider's content checks to input images and masks.",
-      "advanced": true,
-      "defaultCandidates": [true],
-      "control": "toggle"
-    },
-    {
-      "names": ["visual_output_content_moderation"],
-      "label": "Check output media",
-      "help": "Apply the provider's content checks to generated images.",
-      "advanced": true,
-      "defaultCandidates": [true],
-      "control": "toggle"
-    },
-    {
-      "names": ["enable_copyright_detection"],
-      "label": "Copyright checks",
-      "help": "Check generated images for potential likeness or logo matches.",
-      "advanced": true,
-      "defaultCandidates": [true],
-      "control": "toggle"
-    },
-    {
-      "names": ["moderation"],
+      "names": [
+        "contentModeration",
+        "enable_copyright_detection",
+        "enable_safety_checker",
+        "ip_signal",
+        "moderation",
+        "prompt_content_moderation",
+        "safetySettings",
+        "safety_tolerance",
+        "visual_input_content_moderation",
+        "visual_output_content_moderation"
+      ],
       "label": "Content moderation",
-      "help": "Choose the provider's content moderation mode.",
-      "advanced": true,
-      "defaultCandidates": ["auto"]
+      "hidden": true,
+      "advanced": false
     },
     {
       "names": ["background"],
@@ -787,13 +751,6 @@
       "control": "slider"
     },
     {
-      "names": ["ip_signal"],
-      "label": "IP warnings",
-      "help": "Flag possible intellectual property references in the edit instructions.",
-      "advanced": true,
-      "control": "toggle"
-    },
-    {
       "names": ["target_polycount"],
       "label": "Target polygon count",
       "help": "",
@@ -811,13 +768,6 @@
       "names": ["generationConfig"],
       "label": "Generation settings",
       "help": "Set output limits, sampling, or image settings supported by this model.",
-      "advanced": true,
-      "control": "text-area"
-    },
-    {
-      "names": ["safetySettings"],
-      "label": "Content filters",
-      "help": "Set category-specific thresholds for filtering generated content.",
       "advanced": true,
       "control": "text-area"
     },
@@ -868,11 +818,6 @@
       },
       "mask": {
         "help": "Provide a same-size mask: white removes, black keeps."
-      }
-    },
-    "bfl/flux-2-pro": {
-      "safety_tolerance": {
-        "hidden": true
       }
     },
     "bfl/flux-3-video": {
@@ -1085,6 +1030,12 @@
         "advanced": true,
         "options": ["manual", "automatic"],
         "default": "manual"
+      },
+      "visual_input_content_moderation": {
+        "fixed": true
+      },
+      "visual_output_content_moderation": {
+        "fixed": true
       }
     },
     "bria/image-edit-expand": {
@@ -1112,11 +1063,29 @@
         "label": "Source image",
         "help": "Choose the image to expand.",
         "urlUpload": "image"
+      },
+      "prompt_content_moderation": {
+        "fixed": true
+      },
+      "visual_input_content_moderation": {
+        "fixed": true
+      },
+      "visual_output_content_moderation": {
+        "fixed": true
       }
     },
     "bria/image-edit-gen-fill": {
       "mask": {
         "help": "Provide a mask: white fills, black keeps."
+      },
+      "prompt_content_moderation": {
+        "fixed": true
+      },
+      "visual_input_content_moderation": {
+        "fixed": true
+      },
+      "visual_output_content_moderation": {
+        "fixed": true
       }
     },
     "bria/image-edit-increase-resolution": {
@@ -1127,6 +1096,12 @@
       },
       "desired_increase": {
         "options": [2, 4]
+      },
+      "visual_input_content_moderation": {
+        "fixed": true
+      },
+      "visual_output_content_moderation": {
+        "fixed": true
       }
     },
     "bria/image-edit-remove-background": {
@@ -1134,6 +1109,12 @@
         "label": "Source image",
         "help": "",
         "urlUpload": "image"
+      },
+      "visual_input_content_moderation": {
+        "fixed": true
+      },
+      "visual_output_content_moderation": {
+        "fixed": true
       }
     },
     "bria/structured-instruction": {
@@ -1179,7 +1160,7 @@
         "help": ""
       },
       "resolution": {
-        "options": ["480p", "720p"],
+        "options": ["480p", "720p", "1080p", "4k"],
         "default": "720p"
       },
       "ratio": {
@@ -1212,6 +1193,10 @@
       }
     },
     "byteplus/dreamina-seedance-2-0-mini": {
+      "resolution": {
+        "options": ["480p", "720p"],
+        "default": "720p"
+      },
       "output_format": {
         "hidden": true
       },
@@ -1445,11 +1430,22 @@
         "control": "text-area"
       },
       "size": {
-        "label": "Resolution",
+        "label": "Image size",
         "help": "",
         "advanced": false,
-        "options": ["1K", "2K", "4K"],
-        "default": "2K"
+        "options": [
+          "4K",
+          "2048x2048",
+          "2560x1440",
+          "1440x2560",
+          "2304x1728",
+          "1728x2304",
+          "2496x1664",
+          "1664x2496",
+          "3136x1344",
+          "4096x4096"
+        ],
+        "default": "2048x2048"
       },
       "sequential_image_generation": {
         "fixed": "disabled"
@@ -1481,11 +1477,22 @@
         "hidden": true
       },
       "size": {
-        "label": "Resolution",
+        "label": "Image size",
         "help": "",
         "advanced": false,
-        "options": ["2K", "4K"],
-        "default": "2K"
+        "options": [
+          "4K",
+          "2048x2048",
+          "2560x1440",
+          "1440x2560",
+          "2304x1728",
+          "1728x2304",
+          "2496x1664",
+          "1664x2496",
+          "3136x1344",
+          "4096x4096"
+        ],
+        "default": "2048x2048"
       }
     },
     "byteplus/seedream-5-0-260128": {
@@ -1508,11 +1515,22 @@
         "hidden": true
       },
       "size": {
-        "label": "Resolution",
+        "label": "Image size",
         "help": "",
         "advanced": false,
-        "options": ["2K", "3K"],
-        "default": "2K"
+        "options": [
+          "3K",
+          "2048x2048",
+          "2560x1440",
+          "1440x2560",
+          "2304x1728",
+          "1728x2304",
+          "2496x1664",
+          "1664x2496",
+          "3136x1344",
+          "3072x3072"
+        ],
+        "default": "2048x2048"
       }
     },
     "byteplus/seedream-5-0-pro-260628": {
@@ -1535,11 +1553,51 @@
         "control": "toggle"
       },
       "size": {
-        "label": "Resolution",
-        "help": "",
+        "label": "Image size",
+        "help": "Separate layers supports Auto, 1K, 1.5K or 2K. For other images, use 1K, 2K or a pixel size.",
         "advanced": false,
-        "options": ["1K", "2K"],
-        "default": "1K"
+        "options": [
+          "1024x1024",
+          "1536x1024",
+          "1024x1536",
+          "1920x1080",
+          "1080x1920",
+          "2048x2048",
+          "auto",
+          "1K",
+          "1.5K",
+          "2K"
+        ],
+        "default": "1024x1024",
+        "formConstraint": {
+          "schema": {
+            "if": {
+              "properties": {
+                "layer_decomposition": {
+                  "const": true
+                }
+              },
+              "required": ["layer_decomposition"]
+            },
+            "then": {
+              "properties": {
+                "size": {
+                  "enum": ["auto", "1K", "1.5K", "2K"]
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "size": {
+                  "not": {
+                    "enum": ["auto", "1.5K"]
+                  }
+                }
+              }
+            }
+          },
+          "error": "incompatible"
+        }
       }
     },
     "elevenlabs/eleven_sfx_v2": {
@@ -1624,6 +1682,11 @@
       }
     },
     "freepik/ai-image-upscaler-precision-v2": {
+      "image": {
+        "label": "Source image",
+        "help": "Choose the image to upscale.",
+        "urlUpload": "image"
+      },
       "ultra_detail": {
         "label": "Fine detail",
         "help": "Adjust how much intricate detail to add.",
@@ -1631,7 +1694,19 @@
         "control": "slider"
       }
     },
+    "freepik/ai-skin-enhancer-creative": {
+      "image": {
+        "label": "Source image",
+        "help": "Choose the portrait to enhance.",
+        "urlUpload": "image"
+      }
+    },
     "freepik/ai-skin-enhancer-faithful": {
+      "image": {
+        "label": "Source image",
+        "help": "Choose the portrait to enhance.",
+        "urlUpload": "image"
+      },
       "skin_detail": {
         "label": "Skin detail",
         "help": "Adjust the amount of skin texture enhancement.",
@@ -1640,6 +1715,11 @@
       }
     },
     "freepik/ai-skin-enhancer-flexible": {
+      "image": {
+        "label": "Source image",
+        "help": "Choose the portrait to enhance.",
+        "urlUpload": "image"
+      },
       "optimized_for": {
         "label": "Enhancement target",
         "help": "Choose which aspect of the image to improve.",
@@ -1819,6 +1899,9 @@
       },
       "text_prompt": {
         "help": "Describe the image, or leave empty when using Structured prompt."
+      },
+      "enable_copyright_detection": {
+        "fixed": true
       }
     },
     "ideogram/p-image-ideogram": {
@@ -1853,6 +1936,9 @@
       "resolution": {
         "options": ["1K", "2K"],
         "default": "1K"
+      },
+      "enable_copyright_detection": {
+        "fixed": true
       }
     },
     "kling/kling-3.0-turbo": {
@@ -2362,6 +2448,9 @@
         "advanced": false,
         "options": ["1024x1024", "1536x1024", "1024x1536", "auto"],
         "default": "1024x1024"
+      },
+      "moderation": {
+        "fixed": "auto"
       }
     },
     "openai/gpt-image-1.5": {
@@ -2377,6 +2466,9 @@
         "advanced": false,
         "options": ["1024x1024", "1536x1024", "1024x1536", "auto"],
         "default": "1024x1024"
+      },
+      "moderation": {
+        "fixed": "auto"
       }
     },
     "openai/gpt-image-2": {
@@ -2387,11 +2479,24 @@
         "hidden": true
       },
       "size": {
-        "label": "Resolution",
+        "label": "Image size",
         "help": "",
         "advanced": false,
-        "options": ["1024x1024", "1536x1024", "1024x1536", "auto"],
+        "options": [
+          "auto",
+          "1024x1024",
+          "1536x1024",
+          "1024x1536",
+          "2048x2048",
+          "2048x1152",
+          "1152x2048",
+          "3840x2160",
+          "2160x3840"
+        ],
         "default": "1024x1024"
+      },
+      "moderation": {
+        "fixed": "auto"
       }
     },
     "openai/gpt-image-2.5-flare": {
@@ -2399,11 +2504,24 @@
         "hidden": true
       },
       "size": {
-        "label": "Resolution",
+        "label": "Image size",
         "help": "",
         "advanced": false,
-        "options": ["1024x1024", "1536x1024", "1024x1536", "auto"],
+        "options": [
+          "auto",
+          "1024x1024",
+          "1536x1024",
+          "1024x1536",
+          "2048x2048",
+          "2048x1152",
+          "1152x2048",
+          "3840x2160",
+          "2160x3840"
+        ],
         "default": "1024x1024"
+      },
+      "moderation": {
+        "fixed": "auto"
       }
     },
     "openai/gpt-image-2.5-sunburst": {
@@ -2411,11 +2529,24 @@
         "hidden": true
       },
       "size": {
-        "label": "Resolution",
+        "label": "Image size",
         "help": "",
         "advanced": false,
-        "options": ["1024x1024", "1536x1024", "1024x1536", "auto"],
+        "options": [
+          "auto",
+          "1024x1024",
+          "1536x1024",
+          "1024x1536",
+          "2048x2048",
+          "2048x1152",
+          "1152x2048",
+          "3840x2160",
+          "2160x3840"
+        ],
         "default": "1024x1024"
+      },
+      "moderation": {
+        "fixed": "auto"
       }
     },
     "openai/o1": {
@@ -2963,12 +3094,6 @@
       }
     },
     "runway/aleph2": {
-      "contentModeration": {
-        "label": "Content checks",
-        "help": "Set how strictly recognizable public figures are filtered.",
-        "advanced": true,
-        "control": "text-area"
-      },
       "keyframes": {
         "label": "Timed guidance images",
         "help": "Provide image URIs with seconds timestamps or relative positions from 0 to 1."

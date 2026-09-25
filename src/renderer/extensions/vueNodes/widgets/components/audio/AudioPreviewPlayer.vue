@@ -25,9 +25,9 @@
         >
           <i
             v-if="!isPlaying"
-            class="text-secondary icon-[lucide--play] size-4"
+            class="icon-[lucide--play] size-4 text-muted-foreground"
           />
-          <i v-else class="text-secondary icon-[lucide--pause] size-4" />
+          <i v-else class="icon-[lucide--pause] size-4 text-muted-foreground" />
         </Button>
 
         <!-- Time Display -->
@@ -66,13 +66,16 @@
         >
           <i
             v-if="showVolumeTwo"
-            class="text-secondary icon-[lucide--volume-2] size-4"
+            class="icon-[lucide--volume-2] size-4 text-muted-foreground"
           />
           <i
             v-else-if="showVolumeOne"
-            class="text-secondary icon-[lucide--volume-1] size-4"
+            class="icon-[lucide--volume-1] size-4 text-muted-foreground"
           />
-          <i v-else class="text-secondary icon-[lucide--volume-x] size-4" />
+          <i
+            v-else
+            class="icon-[lucide--volume-x] size-4 text-muted-foreground"
+          />
         </Button>
 
         <!-- Download Button -->
@@ -85,7 +88,7 @@
           class="size-6 hover:bg-interface-menu-component-surface-hovered"
           @click="handleDownload"
         >
-          <i class="text-secondary icon-[lucide--download] size-4" />
+          <i class="icon-[lucide--download] size-4 text-muted-foreground" />
         </Button>
 
         <!-- Options Button -->
@@ -97,7 +100,9 @@
           class="size-6 rounded-sm"
           @click="toggleOptionsMenu"
         >
-          <i class="text-secondary icon-[lucide--more-vertical] size-4" />
+          <i
+            class="icon-[lucide--more-vertical] size-4 text-muted-foreground"
+          />
         </Button>
       </div>
 

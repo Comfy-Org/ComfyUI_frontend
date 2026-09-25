@@ -17,7 +17,6 @@ export const load3dViewerTest = load3dTest.extend<{
   viewer: Load3DViewerHelper
 }>({
   viewer: async ({ comfyPage }, use) => {
-    await comfyPage.settings.setSetting('Comfy.Load3D.3DViewerEnable', true)
     await use(new Load3DViewerHelper(comfyPage.page))
   }
 })

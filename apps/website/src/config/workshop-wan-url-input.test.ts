@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { prepareModelRouterRender, router_render } from './router-render'
 import { initialWorkshopPageState } from './workshop-page-state'
-import { getRouterWorkshopModelDetail } from './workshop-router-content'
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from './workshop-router-content'
 import { createWorkshopUrlUploader } from './workshop-url-upload'
 import { prepareWorkshopRouterInput } from './workshop-request'
 

@@ -119,13 +119,13 @@ function openCard() {
 
 <template>
   <div
-    class="group/pill-trigger group content-auto bg-hub-surface hover:bg-hub-surface-hover flex cursor-pointer flex-col gap-4 overflow-hidden rounded-4xl px-2 pt-2 pb-6 transition-colors duration-200"
+    class="group/pill-trigger group flex cursor-pointer flex-col gap-4 overflow-hidden rounded-4xl bg-hub-surface px-2 pt-2 pb-6 transition-colors duration-200 content-auto hover:bg-hub-surface-hover"
     data-testid="hub-card"
     :data-app="template.isApp"
     @click="openCard"
   >
     <div
-      class="bg-hub-surface relative aspect-4/3 overflow-hidden rounded-[1.75rem]"
+      class="relative aspect-4/3 overflow-hidden rounded-[1.75rem] bg-hub-surface"
     >
       <HubTypeBadge :kind="template.isApp ? 'comfyApp' : 'nodeGraph'" :locale />
       <div
@@ -155,7 +155,7 @@ function openCard() {
           />
         </div>
         <div
-          class="focus-visible:ring-primary-comfy-yellow absolute inset-y-0 w-1 cursor-ew-resize bg-white shadow-lg outline-none focus-visible:ring-2"
+          class="absolute inset-y-0 w-1 cursor-ew-resize bg-white shadow-lg outline-none focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow"
           :style="{ left: `${comparePosition}%` }"
           role="slider"
           tabindex="0"
@@ -211,7 +211,7 @@ function openCard() {
         class="flex size-full items-center justify-center bg-linear-to-br from-white/5 to-white/10"
       >
         <svg
-          class="text-content/20 size-10"
+          class="size-10 text-content/20"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -233,7 +233,7 @@ function openCard() {
       <h3
         :class="
           cn(
-            'text-content-bright pointer-events-none absolute bottom-5 left-5 z-10 line-clamp-2 text-sm/[1.35] font-medium drop-shadow-md lg:text-base',
+            'pointer-events-none absolute bottom-5 left-5 z-10 line-clamp-2 text-sm/[1.35] font-medium text-content-bright drop-shadow-md lg:text-base',
             modelLogos.length > 1 ? 'right-28' : 'right-16'
           )
         "
@@ -280,11 +280,11 @@ function openCard() {
           :href="creatorUrl"
           target="_blank"
           rel="noopener"
-          class="text-content-secondary hover:text-content flex w-fit min-w-0 items-center gap-2"
+          class="flex w-fit min-w-0 items-center gap-2 text-content-secondary hover:text-content"
           @click.stop
         >
           <span
-            class="bg-brand text-page grid size-5 shrink-0 place-items-center rounded-full text-2xs font-bold"
+            class="grid size-5 shrink-0 place-items-center rounded-full bg-brand text-2xs font-bold text-page"
             aria-hidden="true"
           >
             {{ authorName.charAt(0).toUpperCase() }}
@@ -298,20 +298,21 @@ function openCard() {
           :target="external ? '_blank' : undefined"
           :rel="external ? 'noopener' : undefined"
           :aria-label="template.title"
-          class="text-content group-hover/pill-trigger:bg-primary-comfy-yellow relative isolate inline-flex h-10 w-fit shrink-0 cursor-pointer items-center overflow-hidden rounded-2xl bg-transparent ps-9 pe-0 text-sm font-bold tracking-wider text-nowrap uppercase transition-all duration-500 group-hover/pill-trigger:pe-5 group-hover/pill-trigger:text-primary-comfy-ink"
+          class="relative isolate inline-flex h-10 w-fit shrink-0 cursor-pointer items-center overflow-hidden rounded-2xl bg-transparent ps-9 pe-0 text-sm font-bold tracking-wider text-nowrap text-content uppercase transition-all duration-500 group-hover/pill-trigger:bg-primary-comfy-yellow group-hover/pill-trigger:pe-5 group-hover/pill-trigger:text-primary-comfy-ink"
           @click.stop
         >
           <span
             class="grid grid-cols-[0fr] transition-[grid-template-columns] duration-500 group-hover/pill-trigger:grid-cols-[1fr]"
           >
             <span class="overflow-hidden">
-              <span class="ppformula-text-center relative leading-none">{{
-                tryNowLabel
-              }}</span>
+              <span
+                class="ppformula-text-center relative inline-block leading-none"
+                >{{ tryNowLabel }}</span
+              >
             </span>
           </span>
           <span
-            class="group-hover/pill-trigger:bg-primary-comfy-yellow absolute top-1/2 left-1 z-10 flex size-8 -translate-y-1/2 items-center justify-center rounded-xl bg-white/20 text-white transition-all duration-500 group-hover/pill-trigger:text-primary-comfy-ink"
+            class="absolute top-1/2 left-1 z-10 flex size-8 -translate-y-1/2 items-center justify-center rounded-xl bg-white/20 text-white transition-all duration-500 group-hover/pill-trigger:bg-primary-comfy-yellow group-hover/pill-trigger:text-primary-comfy-ink"
             aria-hidden="true"
           >
             <ChevronRight class="size-4" :stroke-width="2" />

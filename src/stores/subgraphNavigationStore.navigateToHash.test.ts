@@ -7,6 +7,7 @@ import { nextTick, ref } from 'vue'
 import type * as VueRouter from 'vue-router'
 
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
@@ -56,27 +57,28 @@ vi.mock<unknown>(import('@/scripts/app'), () => {
     _nodes: [],
     nodes: [],
     subgraphs: new Map(),
-    getNodeById: vi.fn()
+    getNodeById: vi.fn(),
+    get rootGraph() {
+      return mockRoot
+    }
   }
 
   return {
     app: {
       graph: mockRoot,
       rootGraph: mockRoot,
-      canvas: mockCanvas
+      rootGraphOrUndefined: mockRoot,
+      canvas: mockCanvas,
+      canvasOrUndefined: mockCanvas
     }
   }
 })
 
-const reportErrorMock = vi.hoisted(() => vi.fn())
-
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: reportErrorMock
+  reportError: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/services/litegraphService'), () => ({
-  useLitegraphService: () => ({ fitView: vi.fn() })
-}))
+vi.mock(import('@/services/litegraphService'))
 
 const workflowServiceMocks = vi.hoisted(() => ({
   openWorkflow: vi.fn().mockResolvedValue(undefined)
@@ -117,6 +119,7 @@ async function flushHashWatcher() {
 
 describe('useSubgraphNavigationStore - navigateToHash validation', () => {
   beforeEach(() => {
+    useCanvasStore().canvas = app.canvas
     vi.mocked(useCanvasStore().getCanvas).mockImplementation(() => app.canvas)
     app.rootGraph.id = ids.root
     app.rootGraph.subgraphs.clear()
@@ -329,7 +332,7 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
       expect(warnSpy).toHaveBeenCalledWith(
         expect.stringContaining('workflow load failed')
       )
-      expect(reportErrorMock).toHaveBeenCalledWith(expect.any(Error), {
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
         errorType: 'workflow_navigation_failure',
         level: 'warning',
         context: { stage: 'recovery' }

@@ -2,7 +2,7 @@ import { expect, it, vi } from 'vitest'
 
 import { prepareModelRouterRender } from '../src/config/router-render'
 import { loadWorkshopExampleFile } from '../src/config/workshop-example-file-loader'
-import { getRouterWorkshopModelDetail } from '../src/config/workshop-router-content'
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from '../src/config/workshop-router-content'
 import { prepareWorkshopRequestCallback } from '../src/config/workshop-request-callbacks'
 
 vi.mock(import('../src/config/workshop-example-file-loader'), () => ({

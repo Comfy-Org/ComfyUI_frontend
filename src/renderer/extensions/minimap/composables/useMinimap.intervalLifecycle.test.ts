@@ -14,6 +14,8 @@ import type {
   LGraphNode,
   LGraphCanvas
 } from '@/lib/litegraph/src/litegraph'
+import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
 import { toNodeId } from '@/types/nodeId'
 
 import {
@@ -69,29 +71,16 @@ const mockCanvas = fromPartial<LGraphCanvas>({
   setDirty: vi.fn()
 })
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    apiURL: vi.fn().mockReturnValue('http://localhost:8188')
-  }
-}))
-
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    canvas: {
-      get graph() {
-        return mockGraph
-      }
-    }
-  }
-}))
+vi.mock(import('@/scripts/api'))
+vi.mock(import('@/scripts/app'))
 
 import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
 
 const POLL_MS = 100
 
 beforeEach(() => {
+  app.canvas.graph = mockGraph
+  vi.mocked(api.apiURL).mockReturnValue('http://localhost:8188')
   useCanvasStore().canvas = fromPartial(mockCanvas)
   vi.mocked(useSettingStore().get).mockReturnValue(true)
   vi.mocked(useSettingStore().set).mockResolvedValue(undefined)

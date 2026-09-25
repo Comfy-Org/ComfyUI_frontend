@@ -28,12 +28,29 @@ elif ! docker info >/dev/null 2>&1; then
   fi
 fi
 
-docker_config="$(mktemp -d)"
+runtime_root="$(mktemp -d)"
+docker_config="$runtime_root/docker-config"
+devtools_stage="$runtime_root/devtools"
 cleanup() {
   "${docker[@]}" rm -f "$container" >/dev/null 2>&1 || true
-  rm -rf "$docker_config"
+  rm -rf "$runtime_root"
 }
 trap cleanup EXIT
+mkdir -p "$docker_config" "$devtools_stage"
+
+cp -R "$repo_root/tools/devtools/." "$devtools_stage/"
+chmod -R a+rX "$devtools_stage"
+unreadable="$(
+  find "$devtools_stage" \
+    \( \( -type f ! -perm -o=r \) -o \( -type d ! -perm -o=rx \) \) \
+    -print -quit
+)"
+if [[ -n "$unreadable" ]]; then
+  echo "Staged devtools path is unreadable by the container user: $unreadable" >&2
+  echo 'Tests using the ComfyPage fixture would fail with an unrelated' >&2
+  echo 'HTTP error. Aborting.' >&2
+  exit 1
+fi
 
 if ! "${docker[@]}" image inspect "$image" >/dev/null 2>&1; then
   token="${COMFY_CI_CONTAINER_TOKEN:-${GH_TOKEN:-}}"
@@ -76,7 +93,7 @@ fi
 "${docker[@]}" run --rm --name "$container" \
   --publish "127.0.0.1:$port:8188" \
   --mount \
-  "type=bind,src=$repo_root/tools/devtools,dst=/ComfyUI/custom_nodes/ComfyUI_devtools,readonly" \
+  "type=bind,src=$devtools_stage,dst=/ComfyUI/custom_nodes/ComfyUI_devtools,readonly" \
   "$image" \
   bash -lc \
   'cd /ComfyUI && exec python3 main.py --cpu --multi-user --listen 0.0.0.0'

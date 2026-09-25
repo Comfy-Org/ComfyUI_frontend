@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { NodeExecutionOutput } from '@/schemas/apiSchema'
+import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
 
 import { isInputPreviewOutput } from './nodeOutputUtil'
 

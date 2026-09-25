@@ -3,24 +3,17 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { i18n } from '@/i18n'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { api } from '@/scripts/api'
 
 import type { ReplyAsset } from '../../../utils/replyAssets'
 import ReplyAudioCard from './ReplyAudioCard.vue'
 
-vi.mock(import('@/components/ui/slider/Slider.vue'))
-
-const fetchApi = vi.hoisted(() =>
-  vi.fn(async () => ({ ok: true, blob: async () => new Blob(['x']) }))
-)
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    apiURL: (route: string) => `http://x/api${route}`,
-    fetchApi
-  }
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
 }))
 
-const downloadBlob = vi.hoisted(() => vi.fn())
-vi.mock(import('@/base/common/downloadUtil'), () => ({ downloadBlob }))
+vi.mock(import('@/scripts/api'))
 
 const isAssetPreviewSupported = vi.hoisted(() => vi.fn(() => false))
 const findOutputAsset = vi.hoisted(() =>
@@ -53,9 +46,18 @@ function audioElement(): HTMLAudioElement {
 }
 
 describe('ReplyAudioCard', () => {
+  let anchorClick: ReturnType<typeof vi.spyOn>
+
   beforeEach(() => {
-    fetchApi.mockClear()
-    downloadBlob.mockClear()
+    vi.mocked(api.apiURL).mockImplementation((route) => `http://x/api${route}`)
+    vi.mocked(api.fetchApi)
+      .mockReset()
+      .mockResolvedValue(new Response(new Blob(['x'])))
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:mock')
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    anchorClick = vi
+      .spyOn(HTMLAnchorElement.prototype, 'click')
+      .mockImplementation(() => {})
     isAssetPreviewSupported.mockReset().mockReturnValue(false)
     findOutputAsset.mockReset().mockResolvedValue(undefined)
   })
@@ -65,7 +67,7 @@ describe('ReplyAudioCard', () => {
 
     expect(screen.getByText('qa_audio_opus_00001')).toBeInTheDocument()
     expect(screen.getByText('0:00 / 0:00')).toBeInTheDocument()
-    expect(fetchApi).not.toHaveBeenCalled()
+    expect(api.fetchApi).not.toHaveBeenCalled()
   })
 
   it('starts playback from the play button', async () => {
@@ -100,8 +102,8 @@ describe('ReplyAudioCard', () => {
     })
 
     const slider = await screen.findByRole('slider')
-    ;(slider as HTMLInputElement).value = '50'
-    slider.dispatchEvent(new Event('input', { bubbles: true }))
+    slider.focus()
+    await userEvent.keyboard('{PageUp>50}')
 
     expect(await screen.findByText('1:00 / 2:00')).toBeInTheDocument()
   })
@@ -111,25 +113,53 @@ describe('ReplyAudioCard', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Download' }))
 
-    await waitFor(() =>
-      expect(downloadBlob).toHaveBeenCalledWith('song.mp3', expect.any(Blob))
-    )
-    expect(fetchApi).toHaveBeenCalledWith('/view?filename=song.mp3')
+    await waitFor(() => expect(anchorClick).toHaveBeenCalledOnce())
+    expect(anchorClick.mock.instances[0].download).toBe('song.mp3')
+    expect(api.fetchApi).toHaveBeenCalledWith('/view?filename=song.mp3')
   })
 
   it('downloads under the resolved display name instead of the hash', async () => {
     isAssetPreviewSupported.mockReturnValue(true)
     findOutputAsset.mockResolvedValue({ name: 'qa_audio_mp3_00001' })
+    vi.mocked(api.fetchApi).mockResolvedValue(
+      new Response(new Blob(['x']), {
+        headers: {
+          'Content-Disposition': 'attachment; filename="storage-hash.mp3"'
+        }
+      })
+    )
     renderCard()
 
     await userEvent.click(screen.getByRole('button', { name: 'Download' }))
 
-    await waitFor(() =>
-      expect(downloadBlob).toHaveBeenCalledWith(
-        'qa_audio_mp3_00001.mp3',
-        expect.any(Blob)
-      )
+    await waitFor(() => expect(anchorClick).toHaveBeenCalledOnce())
+    expect(anchorClick.mock.instances[0].download).toBe(
+      'qa_audio_mp3_00001.mp3'
     )
     expect(findOutputAsset).toHaveBeenCalledWith('song.mp3')
+  })
+
+  it('reports a rejected download and allows retry', async () => {
+    vi.mocked(api.fetchApi)
+      .mockRejectedValueOnce(new Error('network unavailable'))
+      .mockResolvedValueOnce(new Response(new Blob(['retry'])))
+    renderCard()
+    const download = screen.getByRole('button', { name: 'Download' })
+
+    await userEvent.click(download)
+
+    await waitFor(() =>
+      expect(useToastStore().add).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: 'error',
+          detail: '1 download failed'
+        })
+      )
+    )
+
+    await userEvent.click(download)
+
+    await waitFor(() => expect(api.fetchApi).toHaveBeenCalledTimes(2))
+    expect(anchorClick).toHaveBeenCalledOnce()
   })
 })

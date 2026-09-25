@@ -1,23 +1,22 @@
 import type { GlobalSetting } from '@comfyorg/ingest-types'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { api } from '@/scripts/api'
+
 import {
   GlobalSettingsApiError,
   getGlobalSetting,
   setGlobalSetting
 } from './globalSettingsApi'
 
-vi.mock<unknown>(import('@/config/comfyApi'), () => ({
+vi.mock(import('@/config/comfyApi'), () => ({
   getComfyApiBaseUrl: () => 'https://api.comfy.test'
 }))
 const distribution = vi.hoisted(() => ({ isCloud: true }))
-vi.mock<unknown>(import('@/platform/distribution/types'), () => distribution)
-const fetchApi = vi.hoisted(() => vi.fn())
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: { fetchApi, apiURL: (path: string) => `/api${path}` }
-}))
+vi.mock(import('@/platform/distribution/types'), () => distribution)
+vi.mock(import('@/scripts/api'))
 const fetchWithUnifiedRemint = vi.hoisted(() => vi.fn())
-vi.mock<unknown>(import('@/platform/auth/unified/remintRetry'), () => ({
+vi.mock(import('@/platform/auth/unified/remintRetry'), () => ({
   fetchWithUnifiedRemint,
   shouldRemintCloudRequest: () => Promise.resolve(false)
 }))
@@ -31,13 +30,14 @@ const authHeader = { Authorization: 'Bearer workspace-a-token' } as const
 
 function respondWith(body: unknown, status = 200): void {
   const response = new Response(JSON.stringify(body), { status })
-  fetchApi.mockResolvedValueOnce(response.clone())
+  vi.mocked(api.fetchApi).mockResolvedValueOnce(response.clone())
   fetchWithUnifiedRemint.mockResolvedValueOnce(response)
 }
 
 describe('Global Settings transport', () => {
   beforeEach(() => {
     distribution.isCloud = true
+    vi.mocked(api.apiURL).mockImplementation((path) => `/api${path}`)
   })
 
   it.for([true, false])(
@@ -52,7 +52,7 @@ describe('Global Settings transport', () => {
         expect.objectContaining({ cache: 'no-store', headers: authHeader }),
         false
       )
-      expect(fetchApi).not.toHaveBeenCalled()
+      expect(api.fetchApi).not.toHaveBeenCalled()
     }
   )
 
@@ -74,7 +74,7 @@ describe('Global Settings transport', () => {
         }),
         false
       )
-      expect(fetchApi).not.toHaveBeenCalled()
+      expect(api.fetchApi).not.toHaveBeenCalled()
     }
   )
 
@@ -116,7 +116,7 @@ describe('Global Settings transport', () => {
   })
 
   it('wraps invalid JSON responses', async () => {
-    fetchApi.mockResolvedValueOnce(new Response('{not-json'))
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(new Response('{not-json'))
     fetchWithUnifiedRemint.mockResolvedValueOnce(new Response('{not-json'))
     await expect(getGlobalSetting(key, authHeader)).rejects.toBeInstanceOf(
       GlobalSettingsApiError
