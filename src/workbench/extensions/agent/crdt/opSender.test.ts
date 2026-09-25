@@ -19,14 +19,28 @@ function addNode(id: number): GraphOperation {
   }
 }
 
+function disconnect(linkId: number): GraphOperation {
+  return { op: 'disconnect', link_id: linkId, to_node: 2, to_slot: 0 }
+}
+
+function connect(linkId: number): GraphOperation {
+  return {
+    op: 'connect',
+    link_id: linkId,
+    from_node: 1,
+    from_slot: 0,
+    to_node: 2,
+    to_slot: 0,
+    link_type: 'IMAGE'
+  }
+}
+
 describe('createOpSender', () => {
   let sent: Array<{ workflowId: string; tab: string; ops: Op[] }>
   let settled: BatchOutcome[]
   let resultListener: ((result: OpsResultView) => void) | null
   let transportUp: boolean
   let boundWorkflow: string | null
-  let actor: string
-  let baseVersion: number
   let sender: ReturnType<typeof createOpSender>
 
   function ackInFlight(): void {
@@ -45,8 +59,6 @@ describe('createOpSender', () => {
     resultListener = null
     transportUp = true
     boundWorkflow = WORKFLOW
-    actor = ACTOR
-    baseVersion = 41
     sender = createOpSender({
       sendOps: (workflowId, tab, ops) => {
         if (!transportUp) return false
@@ -61,8 +73,8 @@ describe('createOpSender', () => {
       },
       workflowId: () => boundWorkflow,
       tab: TAB,
-      actor: () => actor,
-      baseVersion: () => baseVersion,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
       onBatchSettled: (outcome) => settled.push(outcome)
     })
   })
@@ -78,12 +90,28 @@ describe('createOpSender', () => {
     expect(sent[0].workflowId).toBe(WORKFLOW)
     expect(sent[0].tab).toBe(TAB)
     expect(sent[0].ops).toHaveLength(2)
-    for (const op of sent[0].ops) {
+    for (const [index, op] of sent[0].ops.entries()) {
       expect(op.op_id).toMatch(/^[0-9a-f]{32}$/)
       expect(op.actor).toBe(ACTOR)
-      expect(op.base_version).toBe(41)
-      expect(op.stamp).toEqual([41, ACTOR])
+      expect(op.base_version).toBe(41 + index)
+      expect(op.stamp).toEqual([41 + index, ACTOR])
     }
+  })
+
+  it('orders a reconnect after its disconnect before the host sequence advances', () => {
+    sender.admit([disconnect(1)])
+    sender.admit([connect(2)])
+    sender.flush()
+
+    expect(sent[0].ops.map((op) => op.base_version)).toEqual([41, 42])
+  })
+
+  it('restarts local operation versions after a document reset', () => {
+    sender.enqueue([addNode(1)])
+    sender.abortAll()
+    sender.enqueue([addNode(2)])
+
+    expect(sent[1].ops[0].base_version).toBe(41)
   })
 
   it('serializes batches: the next sends only after the result settles the first', () => {
@@ -101,53 +129,6 @@ describe('createOpSender', () => {
     ackInFlight()
     expect(sender.pending()).toBe(0)
     expect(settled).toHaveLength(2)
-  })
-
-  it('never regresses an actor clock when a reconnect reports an older version', () => {
-    sender.enqueue([addNode(1)])
-    expect(sent[0].ops[0].base_version).toBe(41)
-    ackInFlight()
-
-    baseVersion = 3
-    sender.enqueue([addNode(2)])
-
-    expect(sent[1].ops[0].base_version).toBe(41)
-    expect(sent[1].ops[0].stamp).toEqual([41, ACTOR])
-  })
-
-  it('advances an actor clock when the observed version increases', () => {
-    sender.enqueue([addNode(1)])
-    ackInFlight()
-
-    baseVersion = 42
-    sender.enqueue([addNode(2)])
-
-    expect(sent[1].ops[0].base_version).toBe(42)
-    expect(sent[1].ops[0].stamp).toEqual([42, ACTOR])
-  })
-
-  it('keeps actor clocks independent within a workflow', () => {
-    sender.enqueue([addNode(1)])
-    ackInFlight()
-
-    actor = 'human:other-user:tab-1'
-    baseVersion = 3
-    sender.enqueue([addNode(2)])
-
-    expect(sent[1].ops[0].base_version).toBe(3)
-    expect(sent[1].ops[0].stamp).toEqual([3, actor])
-  })
-
-  it('keeps the actor clock high-water mark across abortAll', () => {
-    sender.enqueue([addNode(1)])
-    expect(sent[0].ops[0].base_version).toBe(41)
-
-    sender.abortAll()
-    baseVersion = 3
-    sender.enqueue([addNode(2)])
-
-    expect(sent[1].ops[0].base_version).toBe(41)
-    expect(sent[1].ops[0].stamp).toEqual([41, ACTOR])
   })
 
   it('retries a down transport with the SAME minted ops and never re-mints', () => {
@@ -508,6 +489,25 @@ describe('createOpSender', () => {
 
     sender.enqueue([addNode(4)])
     expect(sent).toHaveLength(2)
+  })
+
+  it('abortAll settles each chunk from one oversized admission', () => {
+    sender.enqueue(Array.from({ length: 300 }, (_, index) => addNode(index)))
+
+    sender.abortAll()
+
+    expect(settled.map((outcome) => outcome.state)).toEqual([
+      'unconfirmed',
+      'undeliverable'
+    ])
+    expect(
+      settled.map((outcome) =>
+        outcome.ops.map((op) => ('node_id' in op ? op.node_id : undefined))
+      )
+    ).toEqual([
+      Array.from({ length: 256 }, (_, index) => index),
+      Array.from({ length: 44 }, (_, index) => index + 256)
+    ])
   })
 
   it('does not attribute a late anonymous result from an aborted batch to the next batch', () => {

@@ -28,8 +28,7 @@ import {
   compareStampKeys,
   mint,
   nodesMap,
-  stampKey,
-  SCHEMA_VERSION
+  stampKey
 } from '@comfyorg/comfy-multi-player'
 import type { Op } from '@comfyorg/comfy-multi-player'
 import * as fc from 'fast-check'
@@ -351,14 +350,11 @@ describe('minted stamps (property) — order-independent LWW', () => {
  * a reconnect (life 1) must never defeat a live write from the same client
  * after it (life 2). This branch pins `@comfyorg/comfy-multi-player` at a
  * revision that still uses the 2-tuple `Stamp` `[base_version, actor]` with no
- * incarnation component. `SCHEMA_VERSION` is 2 for the node-incarnation wire
- * changes, but those changes do not namespace a reconnecting actor's stamp;
- * `opEnvelope.ts` still mints exactly the 2-tuple shape. The APPLIER still
- * cannot distinguish or order two incarnations of the same actor — it has no
- * component to do so with. The current mitigation lives on the SENDER: since
- * DQ-11, `opSender.ts` clamps `base_version` to be non-decreasing per
- * `(workflowId, actor)`, so a life-1 client cannot mint a stale-high
- * `base_version` after a reconnect resets its observed sequence lower.
+ * incarnation component. `opEnvelope.ts` still mints exactly the 2-tuple
+ * shape. The APPLIER still cannot distinguish or order two incarnations of the
+ * same actor — it has no component to do so with. The current mitigation lives
+ * on the SENDER: `opSender.ts` gives each locally minted operation a strictly
+ * increasing `base_version` within the active workflow lineage.
  *
  * The second test below asserts the DESIRED outcome and is marked `it.fails`
  * because this pin cannot deliver it yet. It is a tripwire: when the pin
@@ -368,8 +364,6 @@ describe('minted stamps (property) — order-independent LWW', () => {
  */
 describe('minted stamps — DQ-11 actor-incarnation gap at this pin', () => {
   it('pins the actor-incarnation-free stamp shape the write leg mints', () => {
-    expect(SCHEMA_VERSION).toBe(2)
-
     const [op] = mintWireOps([setWidget(1, 'v')], MINT)
 
     expect(op.stamp).toEqual([MINT.baseVersion, MINT.actor])

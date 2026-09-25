@@ -15,7 +15,8 @@ const h = vi.hoisted(() => ({
   sessionFailureCode: undefined as SessionErrorCode | undefined,
   signInWith: vi.fn(),
   submitEmail: vi.fn(),
-  retryMint: vi.fn()
+  retryMint: vi.fn(),
+  retryAvailability: vi.fn()
 }))
 
 vi.mock(import('@/auth/useSignInController'), async () => {
@@ -27,10 +28,11 @@ vi.mock(import('@/auth/useSignInController'), async () => {
       leaving: computed(() => false),
       errorMessage: computed(() => ''),
       sessionFailureCode: computed(() => h.sessionFailureCode),
-      available: h.available,
+      available: computed(() => h.available),
       signInWith: h.signInWith,
       submitEmail: h.submitEmail,
-      retryMint: h.retryMint
+      retryMint: h.retryMint,
+      retryAvailability: h.retryAvailability
     })
   }
 })
@@ -46,6 +48,7 @@ async function renderSignIn() {
 
 beforeEach(() => {
   h.available = true
+  h.retryAvailability.mockClear()
   h.initialState = undefined
   h.sessionFailureCode = undefined
 })
@@ -103,6 +106,23 @@ describe('SignInView', () => {
     expect(
       screen.getByRole('button', { name: 'Use email instead' })
     ).toBeDisabled()
+  })
+
+  it('offers a retry when sign-in is unavailable', async () => {
+    h.available = false
+    await renderSignIn()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
+
+    expect(h.retryAvailability).toHaveBeenCalledOnce()
+  })
+
+  it('shows no retry button once sign-in is available', async () => {
+    await renderSignIn()
+
+    expect(
+      screen.queryByRole('button', { name: 'Try again' })
+    ).not.toBeInTheDocument()
   })
 
   it.for([

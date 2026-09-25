@@ -15,6 +15,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@/components/ui/button/Button.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { reportError } from '@/platform/telemetry/reportError'
+import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
 import type { AgentRunModeValue } from '../../../stores/agent/agentRunModeStore'
@@ -39,9 +40,15 @@ async function onSelectMode(value: string): Promise<void> {
   if (!match || savingMode.value !== null) return
 
   const openedAs = openCount
+  const previousMode = store.mode
   savingMode.value = match.mode
   try {
     await store.save(match.mode, null)
+    if (previousMode !== match.mode)
+      useTelemetry()?.trackAgentRunModeChanged({
+        from: previousMode,
+        to: match.mode
+      })
     if (openedAs === openCount) open.value = false
   } catch (error) {
     reportError(error, { errorType: 'agent_run_mode_save_failure' })
@@ -113,10 +120,7 @@ const options: {
         class="agent-scope z-1100 flex w-80 flex-col gap-2.5 rounded-lg border border-border-default bg-secondary-background p-2.5 text-base-foreground shadow-lg outline-none data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
       >
         <div class="flex flex-col gap-0.5">
-          <div
-            aria-hidden="true"
-            class="text-sm/5 font-medium text-base-foreground"
-          >
+          <div aria-hidden="true" class="text-sm/5 text-base-foreground">
             {{ t('agent.runPermissions') }}
           </div>
           <div

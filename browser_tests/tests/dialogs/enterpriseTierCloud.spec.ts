@@ -14,6 +14,7 @@ import {
   TEAM_WORKSPACE
 } from '@e2e/fixtures/data/cloudWorkspace'
 import { CloudWorkspaceMockHelper } from '@e2e/fixtures/helpers/CloudWorkspaceMockHelper'
+import { recordOpenedUrl } from '@e2e/fixtures/utils/recordOpenedUrl'
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 
@@ -69,15 +70,6 @@ async function setupSalesManagedWorkspace(
   return workspace
 }
 
-async function captureOpenedUrls(page: Page) {
-  await page.addInitScript(() => {
-    window.open = (url) => {
-      document.documentElement.dataset.openedUrl = String(url)
-      return window
-    }
-  })
-}
-
 async function expectNoSelfServicePlanActions(content: Locator) {
   await expect(
     content.getByRole('button', {
@@ -112,7 +104,7 @@ test.describe('Enterprise workspace billing', { tag: '@cloud' }, () => {
   test('keeps credit top-up and billing portal access available', async ({
     page
   }) => {
-    await captureOpenedUrls(page)
+    await recordOpenedUrl(page)
     const workspace = await setupSalesManagedWorkspace(
       page,
       ACTIVE_ENTERPRISE_STATUS

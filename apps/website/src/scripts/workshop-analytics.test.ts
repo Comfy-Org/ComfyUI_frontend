@@ -1,13 +1,88 @@
 import { describe, expect, it } from 'vitest'
 
+import type { WorkshopModel } from '../config/models-catalogue'
+import { WorkshopWorkflowError } from '../config/workshop-workflow-api'
 import {
   WorkshopRouterError,
   workshopResponseDetails
 } from '../config/workshop-router-errors'
 import {
   workshopFailureAnalytics,
-  workshopRouterErrorType
+  workshopRouterErrorType,
+  workshopModelAnalytics,
+  workshopWorkflowFailureAnalytics
 } from './workshop-analytics'
+
+describe('Workshop execution attribution', () => {
+  const page = {
+    slug: 'image-edit',
+    name: 'Edit an image',
+    href: '/models/image-edit/',
+    workflowCount: 1,
+    capabilities: []
+  }
+  it.for([
+    {
+      model: { ...page, routerId: 'provider/image-edit' },
+      pageType: 'model',
+      engine: 'router'
+    },
+    {
+      model: { ...page, type: 'CLOUD', workflowId: 'workflows/image-edit' },
+      pageType: 'workflow',
+      engine: 'cloud'
+    },
+    {
+      model: {
+        ...page,
+        type: 'SERVERLESS',
+        workflowId: 'workflows/image-edit'
+      },
+      pageType: 'workflow',
+      engine: 'serverless'
+    }
+  ] satisfies Array<{
+    model: WorkshopModel
+    pageType: string
+    engine: string
+  }>)(
+    'distinguishes $engine runs without changing the shared page identifier',
+    ({ model, pageType, engine }) => {
+      expect(workshopModelAnalytics(model)).toMatchObject({
+        model_slug: 'image-edit',
+        page_type: pageType,
+        render_engine: engine
+      })
+    }
+  )
+
+  it('reports Cloud validation codes and only declared input names', () => {
+    const details = workshopWorkflowFailureAnalytics(
+      new WorkshopWorkflowError(
+        'invalid_input',
+        { image: 'required', 'private filename': 'rejected' },
+        422
+      ),
+      [
+        {
+          kind: 'file',
+          name: 'image',
+          label: 'Image',
+          accept: ['image/png'],
+          maxBytes: 1024,
+          required: true
+        }
+      ]
+    )
+    expect(details).toMatchObject({
+      reason: 'validation',
+      workflow_error_code: 'invalid_input',
+      http_status: 422,
+      field_error_names: ['image']
+    })
+    expect(JSON.stringify(details)).not.toContain('private')
+  })
+})
 
 describe('Workshop failure analytics', () => {
   it.for([
@@ -114,7 +189,12 @@ describe('Workshop failure analytics', () => {
     })
   })
 
-  it.for(['NotReadableError', 'NotFoundError', 'SecurityError'])(
+  it.for([
+    'NotReadableError',
+    'NotFoundError',
+    'NotSupportedError',
+    'SecurityError'
+  ])(
     'retains the browser exception type %s without its private message',
     (name) => {
       expect(

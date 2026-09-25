@@ -1284,7 +1284,7 @@ export class LGraph
         node[eventname]()
       } else if (params.constructor === Array) {
         // @ts-expect-error deprecated
-        // eslint-disable-next-line prefer-spread
+        // oxlint-disable-next-line prefer-spread
         node[eventname].apply(node, params)
       } else {
         // @ts-expect-error deprecated
@@ -1566,9 +1566,7 @@ export class LGraph
     const { list_of_graphcanvas } = this
     if (list_of_graphcanvas) {
       for (const canvas of list_of_graphcanvas) {
-        if (node.id in canvas.selected_nodes)
-          delete canvas.selected_nodes[node.id]
-
+        delete canvas.selected_nodes[node.id]
         canvas.deselect(node)
       }
     }
@@ -1627,7 +1625,9 @@ export class LGraph
    * Returns a node by its id.
    */
   getNodeById(id: NodeId | null | undefined): LGraphNode | null {
-    return id != null && id !== UNASSIGNED_NODE_ID
+    return id != null &&
+      id !== UNASSIGNED_NODE_ID &&
+      Object.hasOwn(this._nodes_by_id, id)
       ? (this._nodes_by_id[id] ?? null)
       : null
   }
@@ -1637,7 +1637,7 @@ export class LGraph
    * @param classObject the class itself (not an string)
    * @returns a list with all the nodes of this type
    */
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
+  // oxlint-disable-next-line typescript/no-unsafe-function-type
   findNodesByClass(classObject: Function, result?: LGraphNode[]): LGraphNode[] {
     result = result || []
     result.length = 0

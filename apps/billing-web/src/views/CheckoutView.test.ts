@@ -1,6 +1,6 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
-import { nextTick } from 'vue'
+import { nextTick, ref } from 'vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import type { BillingOperationState } from '@comfyorg/account-core/billing'
@@ -29,9 +29,12 @@ const CHECKOUT_PATH = `${ENTRY_QUERY_PATH}&plan=creator_monthly`
 /** The values this view and its surface read; a test-family key stands in for a deployment's. */
 vi.mock<unknown>(import('@/config/env'), () => ({
   BILLING_WEB_ENV: 'test',
-  CLOUD_BASE_URL: 'https://testcloud.comfy.org',
-  FIREBASE_OPTIONS: undefined,
-  STRIPE_PUBLISHABLE_KEY: 'pk_test_example'
+  CLOUD_BASE_URL: 'https://testcloud.comfy.org'
+}))
+
+vi.mock(import('@/config/stripeKey'), () => ({
+  awaitBillingWebStripeKey: () => Promise.resolve('pk_test_example'),
+  useBillingWebStripeKey: () => ref('pk_test_example')
 }))
 
 const workspace = vi.hoisted(() => ({
@@ -75,8 +78,10 @@ const challengeMocks = vi.hoisted(() => ({
 }))
 
 vi.mock(import('@/session/stripeChallengePort'), () => ({
-  createStripeChallengePort: (key: string) => {
-    challengeMocks.createPort(key)
+  createDeferredStripeChallengePort: (
+    getKey: () => string | undefined | Promise<string | undefined>
+  ) => {
+    void Promise.resolve(getKey()).then((key) => challengeMocks.createPort(key))
     return { handleNextAction: challengeMocks.handleNextAction }
   }
 }))
@@ -85,7 +90,10 @@ vi.mock(import('@/session/stripeChallengePort'), () => ({
  * The provider form is covered in the package against the real Stripe mocks.
  * Here it records what it was handed and lets a test hand back a token.
  */
-const formProps = vi.hoisted(() => ({ value: {} as Record<string, unknown> }))
+const formProps = vi.hoisted(() => ({
+  value: {} as Record<string, unknown>,
+  mounted: false
+}))
 let reportConfirm: (confirmationToken: string) => void = () => {}
 
 vi.mock<unknown>(import('@comfyorg/account-ui/billing/stripe'), () => ({
@@ -112,6 +120,7 @@ vi.mock<unknown>(import('@comfyorg/account-ui/billing/stripe'), () => ({
       }
     ) {
       formProps.value = props
+      formProps.mounted = true
       reportConfirm = (token) => emit('confirm', token)
       return () =>
         slots.submit?.({ disabled: !props.canSubmit, loading: props.isLoading })
@@ -162,6 +171,7 @@ describe('CheckoutView', () => {
   beforeEach(() => {
     workspace.session = undefined
     workspace.bound = undefined
+    formProps.mounted = false
   })
 
   it('quotes the plan the link names and prices the summary from it', async () => {
@@ -622,6 +632,42 @@ describe('CheckoutView', () => {
       `/v1/subscription?${ENTRY_QUERY}`
     )
   })
+
+  it.for([
+    ['upgrade', true, 2800] as const,
+    ['downgrade', true, 1400] as const,
+    ['duration_change', false, 0] as const
+  ])(
+    'confirms a %s plan change against the saved payment method, no card form',
+    async ([transitionType, isImmediate, costTodayCents]) => {
+      const fake = await renderCheckout(CHECKOUT_PATH, {
+        preview: {
+          status: 'ok',
+          value: previewOf({
+            transition_type: transitionType,
+            is_immediate: isImmediate,
+            cost_today_cents: costTodayCents,
+            amount_due_cents: costTodayCents
+          })
+        }
+      })
+      const pay = await screen.findByRole('button', {
+        name: 'Pay and subscribe'
+      })
+      expect(formProps.mounted).toBe(false)
+
+      await userEvent.click(pay)
+
+      await waitFor(() =>
+        expect(fake.subscribe).toHaveBeenCalledWith(
+          expect.objectContaining({ plan_slug: 'creator_monthly' })
+        )
+      )
+      expect(fake.subscribe.mock.calls[0][0]).not.toHaveProperty(
+        'confirmation_token'
+      )
+    }
+  )
 
   it('explains a quote the server refused and offers the way back', async () => {
     await renderCheckout(CHECKOUT_PATH, {

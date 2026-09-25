@@ -214,13 +214,25 @@ async function setupParity(
   }
 
   // Recorded rather than performed: the portal is an external origin, and the
-  // truthy handle is what arms the app's return refresh.
+  // truthy handle is what arms the app's return refresh. A tab reserved blank
+  // and navigated later is recorded when its location is written.
   await page.addInitScript(() => {
     const opened: string[] = []
     Object.defineProperty(window, '__openedUrls', { get: () => opened })
+    const standInTab = new Proxy(window, {
+      get: (target, property) =>
+        property === 'location'
+          ? {
+              set href(destination: string) {
+                opened.push(destination)
+              }
+            }
+          : Reflect.get(target, property),
+      set: () => true
+    })
     window.open = (url?: string | URL) => {
-      opened.push(String(url))
-      return window
+      if (url) opened.push(String(url))
+      return standInTab
     }
   })
 

@@ -26,7 +26,8 @@ const {
   available,
   signInWith,
   submitEmail,
-  retryMint
+  retryMint,
+  retryAvailability
 } = useSignInController(() => {
   void router.replace(safeReturnTo(route.query.returnTo))
 })
@@ -50,7 +51,7 @@ async function showEmail(show: boolean): Promise<void> {
 const secureContext = window.isSecureContext ?? true
 
 const noticeKey = computed(() => {
-  if (!available) return 'auth.signIn.unavailable'
+  if (!available.value) return 'auth.signIn.unavailable'
   return secureContext ? undefined : 'auth.signIn.insecureContextWarning'
 })
 const progressKey = computed(() =>
@@ -58,7 +59,7 @@ const progressKey = computed(() =>
     ? 'auth.signIn.pending'
     : 'auth.signIn.signingIn'
 )
-const blocked = computed(() => busy.value || !available)
+const blocked = computed(() => busy.value || !available.value)
 const sessionFailed = computed(
   () => state.value.step === 'signedIn' && state.value.mintFailed === true
 )
@@ -107,6 +108,14 @@ const alertClass = 'rounded-lg bg-base-background p-3 text-sm'
       >
         {{ t(noticeKey) }}
       </div>
+      <button
+        v-if="!available"
+        type="button"
+        :class="linkButtonClass"
+        @click="retryAvailability"
+      >
+        {{ t('auth.signIn.retryAvailability') }}
+      </button>
 
       <div class="mt-8 flex flex-col gap-4">
         <template v-if="!showEmailForm">

@@ -12,24 +12,7 @@ import {
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 
-vi.mock<unknown>(import('@/renderer/core/layout/store/layoutStore'), () => ({
-  layoutStore: {
-    querySlotAtPoint: vi.fn(),
-    queryRerouteAtPoint: vi.fn(),
-    queryLinkSegmentAtPoint: vi.fn(),
-    getNodeLayoutRef: vi.fn(() => ({ value: null })),
-    getNodeLayout: vi.fn(),
-    getSlotLayout: vi.fn(),
-    setSource: vi.fn(),
-    batchUpdateNodeBounds: vi.fn(),
-    applyOperation: vi.fn(),
-    allocateZIndex: vi.fn(() => 0),
-    readNodeRect: vi.fn(() => false),
-    contentSizeOf: vi.fn(),
-    getGroupLayout: vi.fn(),
-    getRerouteLayout: vi.fn()
-  }
-}))
+vi.mock(import('@/renderer/core/layout/store/layoutStore'))
 
 const CLONABLE_NODE_TYPE = 'test/clonable'
 
@@ -120,11 +103,11 @@ describe('LGraphCanvas selectOnly', () => {
     canvas.processSelect(firstNode, undefined)
     canvas.processSelect(secondNode, undefined)
 
-    expect(canvas.selectedItems).toEqual(new Set([firstNode, secondNode]))
+    expect([...canvas.selectedItems]).toEqual([firstNode, secondNode])
 
     canvas.processSelect(firstNode, undefined)
 
-    expect(canvas.selectedItems).toEqual(new Set([secondNode]))
+    expect([...canvas.selectedItems]).toEqual([secondNode])
     expect(firstNode.selected).toBe(false)
     expect(secondNode.selected).toBe(true)
   })
@@ -136,7 +119,7 @@ describe('LGraphCanvas selectOnly', () => {
 
     canvas.processSelect(null, undefined)
 
-    expect(canvas.selectedItems).toEqual(new Set([firstNode]))
+    expect([...canvas.selectedItems]).toEqual([firstNode])
     expect(firstNode.selected).toBe(true)
   })
 
@@ -162,7 +145,7 @@ describe('LGraphCanvas selectOnly', () => {
     canvas.pointer.onClick?.(event)
 
     expect(collapseSpy).not.toHaveBeenCalled()
-    expect(canvas.selectedItems).toEqual(new Set([firstNode]))
+    expect([...canvas.selectedItems]).toEqual([firstNode])
   })
 
   it('does not open a context menu on right click', () => {
@@ -248,7 +231,7 @@ describe('LGraphCanvas selectOnly', () => {
     canvas.pointer.onDragStart?.(canvas.pointer)
     canvas.pointer.onClick?.(event)
 
-    expect(canvas.selectedItems).toEqual(new Set([firstNode]))
+    expect([...canvas.selectedItems]).toEqual([firstNode])
     expect(canvas.pointer.onDragStart).toBeUndefined()
     expect(canvas.isDragging).toBe(false)
   })
@@ -286,7 +269,7 @@ describe('LGraphCanvas selectOnly', () => {
     canvas.processSelect(firstNode, event)
     canvas.processSelect(secondNode, event)
 
-    expect(canvas.selectedItems).toEqual(new Set([secondNode]))
+    expect([...canvas.selectedItems]).toEqual([secondNode])
 
     canvas.processSelect(null, event)
 
