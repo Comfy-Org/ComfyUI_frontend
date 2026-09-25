@@ -2039,6 +2039,38 @@ describe('useWorkflowService', () => {
           toRootGraphId(canvasGraphId)
         )
       })
+
+      it('republishes the same document and root graph id across an undo/redo round trip', async () => {
+        // ChangeTracker.updateState (undo/redo) calls app.loadGraphData with
+        // suppressWorkflowReset = false, which still runs the full
+        // beforeLoadNewGraph/afterLoadNewGraph pair (see PR discussion
+        // https://github.com/Comfy-Org/ComfyUI_frontend/pull/18326#issuecomment-5826280281).
+        // The root graph id never rotates on that path (clean = false skips
+        // app.clean()) and the same document is re-activated, so the round
+        // trip must land back on the same {documentId, rootGraphId} even
+        // though it passes through the empty mid-reconfigure window.
+        const documentId = openDocument()
+        existingWorkflow.documentId = documentId
+        workflowStore.activeWorkflow = existingWorkflow
+        await useWorkflowService().afterLoadNewGraph(
+          'repeat',
+          makeWorkflowData()
+        )
+        expect(activation.activeDocumentId()).toBe(documentId)
+
+        useWorkflowService().beforeLoadNewGraph(false)
+        expect(activation.activeRootGraphId()).toBeNull()
+
+        await useWorkflowService().afterLoadNewGraph(
+          'repeat',
+          makeWorkflowData()
+        )
+
+        expect(activation.activeDocumentId()).toBe(documentId)
+        expect(activation.activeRootGraphId()).toBe(
+          toRootGraphId(canvasGraphId)
+        )
+      })
     })
 
     describe('root graph id adoption', () => {
