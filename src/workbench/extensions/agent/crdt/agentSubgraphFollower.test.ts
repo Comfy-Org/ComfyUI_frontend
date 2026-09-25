@@ -149,7 +149,13 @@ function promotedWorkflow(options: FixtureOptions = {}): WorkflowJSON {
     rootWidget.id = toNodeId(3)
     graph.add(rootWidget)
   }
-  const serialized = graph.serialize()
+  return reshapeSerialized(graph.serialize(), options)
+}
+
+function reshapeSerialized(
+  serialized: ReturnType<LGraph['serialize']>,
+  options: FixtureOptions
+): WorkflowJSON {
   const hostNode = serialized.nodes.find((n) => n.id === 1)
   if (options.stripHostInputs && hostNode) hostNode.inputs = []
   if (options.emptyHostWidgets && hostNode) hostNode.widgets_values = []
