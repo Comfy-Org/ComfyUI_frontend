@@ -3,7 +3,6 @@ import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 import { useSubgraphOperations } from '@/composables/graph/useSubgraphOperations'
-import { startModelNodeDragFromAsset } from '@/composables/node/startModelNodeDragFromAsset'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useModelSelectorDialog } from '@/composables/useModelSelectorDialog'
 import { useRunButtonTelemetry } from '@/composables/useRunButtonTelemetry'
@@ -22,7 +21,7 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import type { Point } from '@/lib/litegraph/src/litegraph'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
+import { openModelLibraryBrowser } from '@/platform/assets/composables/openModelLibraryBrowser'
 import { isSalesManagedTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import { isCloud } from '@/platform/distribution/types'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
@@ -1300,52 +1299,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Experimental: Browse Model Assets',
       versionAdded: '1.28.3',
       function: async () => {
-        if (!useSettingStore().get('Comfy.Assets.UseAssetAPI')) {
-          const confirmed = await dialogService.confirm({
-            title: 'Enable Asset API',
-            message:
-              'The Asset API is currently disabled. Would you like to enable it?',
-            type: 'default'
-          })
-
-          if (!confirmed) return
-
-          const settingStore = useSettingStore()
-          await settingStore.set('Comfy.Assets.UseAssetAPI', true)
-          await workflowService.reloadCurrentWorkflow()
-        }
-        const assetBrowserDialog = useAssetBrowserDialog()
-        await assetBrowserDialog.browse({
-          assetType: 'models',
-          title: t('sideToolbar.modelLibrary'),
-          onAssetSelected: (asset) => {
-            const error = startModelNodeDragFromAsset(asset, 'asset_browser')
-            if (error) {
-              toastStore.add({
-                severity: 'error',
-                summary: t('g.error'),
-                detail: t('assetBrowser.failedToCreateNode')
-              })
-              console.error('Node creation failed:', error)
-            }
-          }
-        })
-      }
-    },
-    {
-      id: 'Comfy.ToggleAssetAPI',
-      icon: 'pi pi-database',
-      label: () =>
-        `Experimental: ${
-          useSettingStore().get('Comfy.Assets.UseAssetAPI')
-            ? 'Disable'
-            : 'Enable'
-        } AssetAPI`,
-      function: async () => {
-        const settingStore = useSettingStore()
-        const current = settingStore.get('Comfy.Assets.UseAssetAPI')
-        await settingStore.set('Comfy.Assets.UseAssetAPI', !current)
-        await useWorkflowService().reloadCurrentWorkflow() // ensure changes take effect immediately
+        await openModelLibraryBrowser()
       }
     },
     {
