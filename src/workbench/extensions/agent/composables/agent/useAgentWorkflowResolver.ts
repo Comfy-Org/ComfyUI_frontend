@@ -93,10 +93,7 @@ export function useAgentWorkflowResolver({
   }
 
   function indexedNameFor(workflowId: string): string | undefined {
-    for (const [name, id] of cloudIdsByName.value) {
-      if (id === workflowId) return name
-    }
-    return undefined
+    return cloudIndex.value.find(({ id }) => id === workflowId)?.name
   }
 
   /**
@@ -110,7 +107,7 @@ export function useAgentWorkflowResolver({
     const indexedName = indexedNameFor(workflowId)
     const boundName = cloudWorkflowName(bound)
     if (indexedName === undefined || indexedName === boundName) return false
-    const boundId = cloudIdsByName.value.get(boundName)
+    const boundId = cloudIndex.value.find(({ name }) => name === boundName)?.id
     return boundId !== undefined && boundId !== workflowId
   }
 
