@@ -62,6 +62,18 @@ test.describe(
         await expect
           .poll(() => agentConversation.subscribeCount())
           .toBeGreaterThan(subscribeCount)
+        // `subscribeCount()` rises in the mock host the instant it sends, so
+        // on its own it would let the assertions below run against a canvas
+        // the catch-up has not reached yet — and a premature read would make
+        // the pinned defect look fixed, which for a `test.fail()` case means
+        // a red "expected to fail but passed". A host widget edit lands after
+        // the catch-up in frame order, so seeing its value on the canvas
+        // proves the client applied and reconciled both.
+        await agentConversation.waitForPendingFrames(
+          '6',
+          'text',
+          'reload catch-up landed'
+        )
       })
 
       // Everything above is structure, and a failure there is still

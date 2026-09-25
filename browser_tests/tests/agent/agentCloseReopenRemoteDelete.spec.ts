@@ -85,6 +85,11 @@ test.describe(
       })
 
       await test.step('keep the remote deletion after reconciliation', async () => {
+        // The catch-up just mutated the graph. `readNodeLens()` below is a
+        // one-shot in-page read with no auto-retry, so it needs the frame
+        // boundary the browser-test guide requires after a visual graph
+        // mutation; the locator assertion above retries on its own.
+        await comfyPage.nextFrame()
         await expect(
           agentConversation.vueNodes.getNodeLocator(deletedNodeId)
         ).toHaveCount(0)
