@@ -86,10 +86,7 @@ describe('offline workflow previews', () => {
   it.for(['remove-background', 'change-material', 'product-mockup'])(
     'provides the original UI graph and nested preview for %s',
     (name) => {
-      const directory = join(
-        import.meta.dirname,
-        '../public/workflows/prepared'
-      )
+      const directory = join(import.meta.dirname, '../public/workflow-graphs')
       const raw: unknown = JSON.parse(
         readFileSync(join(directory, `${name}.json`), 'utf8')
       )
