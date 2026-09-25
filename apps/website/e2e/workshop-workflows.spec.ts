@@ -110,6 +110,25 @@ test('workflow launch groups lead to the existing shared form', async ({
     'href',
     'https://testcloud.comfy.org/?template=image_qwen_image_edit_2511'
   )
+  await page.getByRole('tab', { name: 'Workflow', exact: true }).click()
+  const graphFiles = [
+    {
+      link: page.getByRole('link', { name: 'Open full-size workflow preview' }),
+      path: '/workflow-graphs/change-material.svg',
+      type: 'image/svg+xml'
+    },
+    {
+      link: page.getByRole('link', { name: 'Download workflow JSON' }),
+      path: '/workflow-graphs/change-material.json',
+      type: 'application/json'
+    }
+  ]
+  for (const { link, path, type } of graphFiles) {
+    await expect(link).toHaveAttribute('href', path)
+    const response = await page.request.get(path)
+    expect(response.ok()).toBe(true)
+    expect(response.headers()['content-type']).toContain(type)
+  }
   await page.getByRole('link', { name: 'Back to workflows' }).click()
   await expect(page.getByTestId('catalogue-tab-workflows')).toHaveAttribute(
     'aria-pressed',
