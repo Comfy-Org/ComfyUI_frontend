@@ -108,7 +108,7 @@ const buttonClass = computed(() =>
               data-testid="cinematic-generate"
               @click="emit('generate')"
             >
-              {{ tc('cinematic.output.generate', locale) }}
+              {{ tc('cinematic.review.open', locale) }}
             </Button>
           </span>
         </TooltipTrigger>

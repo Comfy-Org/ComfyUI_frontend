@@ -24,7 +24,7 @@ import {
 } from '../lib/workshop/cinematic-studio/reel'
 import { useWorkshopAuthFlag, useWorkshopEnabled } from '../scripts/posthog'
 
-interface ShotRequest {
+export interface ShotRequest {
   readonly modelSlug: string
   readonly prompt: string
   readonly aspect: AspectRatio

@@ -19,6 +19,15 @@ import {
 import type { StarterShot } from '../lib/workshop/cinematic-studio/starters'
 import { isCinematicDemo, useCinematicDemoRun } from './useCinematicDemoRun'
 import { useCinematicStudioRun } from './useCinematicStudioRun'
+import type { ShotRequest } from './useCinematicStudioRun'
+
+export interface CinematicReview {
+  readonly request: ShotRequest
+  readonly modelName: string
+  readonly resolution: Resolution
+  readonly workspaceId?: string
+  readonly userId?: string
+}
 
 /** The shot being directed, shared by every Cinematic Studio layout. */
 export function useCinematicShot(models: readonly CinematicModel[]) {
@@ -35,6 +44,7 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
   const takes = ref(1)
   const cast = shallowRef<File>()
   const palette = shallowRef<File>()
+  const review = shallowRef<CinematicReview>()
 
   onMounted(() => {
     const requested = new URLSearchParams(window.location.search).get('model')
@@ -65,17 +75,47 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
   }
 
   function generate() {
-    void studio.generate({
-      modelSlug: modelSlug.value,
-      prompt: cinematicPrompt(brief.value),
-      aspect: aspect.value,
-      resolutionPixels:
-        RESOLUTIONS.find((option) => option.id === resolution.value)?.pixels ??
-        2048,
-      takes: takes.value,
-      references: references.value,
-      preview: directionOption('look', direction.value).preview
-    })
+    const model = models.find((item) => item.slug === modelSlug.value)
+    if (
+      !model ||
+      !scene.value.trim() ||
+      studio.rendering.value ||
+      studio.gate.value !== 'ready'
+    )
+      return
+    review.value = {
+      modelName: model.name,
+      resolution: resolution.value,
+      workspaceId: studio.session.value?.workspace.id,
+      userId: studio.session.value?.uid,
+      request: {
+        modelSlug: modelSlug.value,
+        prompt: cinematicPrompt(brief.value),
+        aspect: aspect.value,
+        resolutionPixels:
+          RESOLUTIONS.find((option) => option.id === resolution.value)
+            ?.pixels ?? 2048,
+        takes: takes.value,
+        references: [...references.value],
+        preview: directionOption('look', direction.value).preview
+      }
+    }
+  }
+
+  const canConfirm = computed(
+    () =>
+      !!review.value &&
+      studio.gate.value === 'ready' &&
+      !studio.rendering.value &&
+      review.value.workspaceId === studio.session.value?.workspace.id &&
+      review.value.userId === studio.session.value?.uid
+  )
+
+  function confirm() {
+    if (!review.value || !canConfirm.value) return
+    const request = review.value.request
+    review.value = undefined
+    void studio.generate(request)
   }
 
   return {
@@ -91,6 +131,9 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
     palette,
     promptSegments,
     references,
+    review,
+    canConfirm,
+    confirm,
     choose,
     start,
     generate

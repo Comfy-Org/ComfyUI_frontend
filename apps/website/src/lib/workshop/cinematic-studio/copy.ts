@@ -6,6 +6,29 @@ import type { Locale, LocalizedText } from '../../../i18n/translations'
  * not add to every other page's script budget.
  */
 const copy = {
+  'cinematic.review.title': { en: 'Review your shot', 'zh-CN': '检查镜头设置' },
+  'cinematic.review.description': {
+    en: 'Check the full prompt and your choices before generating.',
+    'zh-CN': '生成前，请检查完整提示词和所选设置。'
+  },
+  'cinematic.review.model': { en: 'Model', 'zh-CN': '模型' },
+  'cinematic.review.format': { en: 'Requested format', 'zh-CN': '请求的格式' },
+  'cinematic.review.takes': { en: 'Takes', 'zh-CN': '生成数量' },
+  'cinematic.review.references': { en: 'Reference files', 'zh-CN': '参考文件' },
+  'cinematic.review.none': { en: 'None', 'zh-CN': '无' },
+  'cinematic.review.prompt': { en: 'Full prompt', 'zh-CN': '完整提示词' },
+  'cinematic.review.credits': {
+    en: 'Each take is a separate generation and may use workspace credits. The model may adapt the requested format. An exact price is not available here.',
+    'zh-CN':
+      '每次生成都是独立请求，可能消耗工作区积分。模型可能会调整请求的格式。此处暂不提供准确价格。'
+  },
+  'cinematic.review.changed': {
+    en: 'Your account or generation availability changed. Go back and review again before generating.',
+    'zh-CN': '账号或生成可用状态已更改。请返回并重新检查后再生成。'
+  },
+  'cinematic.review.back': { en: 'Back to editing', 'zh-CN': '返回编辑' },
+  'cinematic.review.confirm': { en: 'Generate shot', 'zh-CN': '生成镜头' },
+  'cinematic.review.open': { en: 'Review shot', 'zh-CN': '检查镜头' },
   'cinematic.ux.hub': {
     en: 'Hub · Apps tab',
     'zh-CN': 'Hub · 应用标签页'

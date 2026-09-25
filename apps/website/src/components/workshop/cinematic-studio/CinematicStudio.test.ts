@@ -77,6 +77,13 @@ async function addTake(user: ReturnType<typeof userEvent.setup>) {
 
 const generateButton = () => screen.getByTestId('cinematic-generate')
 
+async function confirmShot(user: ReturnType<typeof userEvent.setup>) {
+  const dialog = await screen.findByRole('dialog', { name: 'Review your shot' })
+  await user.click(
+    within(dialog).getByRole('button', { name: 'Generate shot' })
+  )
+}
+
 describe('CinematicStudio', () => {
   beforeEach(() => {
     vi.stubEnv('PUBLIC_WORKSHOP_ROUTER_RUN', '1')
@@ -115,6 +122,7 @@ describe('CinematicStudio', () => {
     await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
     await addTake(user)
     await user.click(generateButton())
+    await confirmShot(user)
 
     expect(await screen.findByRole('radio', { name: 'B' })).toBeInTheDocument()
     expect(router_render).toHaveBeenCalledTimes(2)
@@ -139,6 +147,61 @@ describe('CinematicStudio', () => {
     expect(screen.getByText(`${first.name} · 21:9`)).toBeInTheDocument()
   })
 
+  it('lets the user inspect and dismiss a shot without submitting it', async () => {
+    const user = renderStudio()
+    await user.type(screen.getByLabelText('Scene'), 'A lighthouse in a storm')
+    await addTake(user)
+    await user.click(generateButton())
+
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Review your shot'
+    })
+    expect(dialog).toHaveTextContent(first.name)
+    expect(dialog).toHaveTextContent('A lighthouse in a storm')
+    expect(dialog).toHaveTextContent('21:9 · 2K')
+    expect(dialog).toHaveTextContent('Each take is a separate generation')
+    expect(router_render).not.toHaveBeenCalled()
+    expect(fetchData).not.toHaveBeenCalled()
+
+    await user.click(
+      within(dialog).getByRole('button', {
+        name: 'Back to editing'
+      })
+    )
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(screen.getByLabelText('Scene')).toHaveValue(
+      'A lighthouse in a storm'
+    )
+    await vi.waitFor(() => expect(generateButton()).toHaveFocus())
+    expect(router_render).not.toHaveBeenCalled()
+  })
+
+  it('requires a new review after switching the paying workspace', async () => {
+    vi.mocked(router_render).mockImplementation(async (slug) => rendered(slug))
+    const user = renderStudio()
+    await user.type(screen.getByLabelText('Scene'), 'A lighthouse in a storm')
+    await user.click(generateButton())
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Review your shot'
+    })
+
+    signedIn.value = {
+      ...credential,
+      workspace: { ...credential.workspace, id: 'workspace-2' }
+    }
+    await vi.waitFor(() =>
+      expect(
+        within(dialog).getByRole('button', { name: 'Generate shot' })
+      ).toBeDisabled()
+    )
+    expect(router_render).not.toHaveBeenCalled()
+    await user.keyboard('{Escape}')
+    await user.click(generateButton())
+    await confirmShot(user)
+    await screen.findByAltText(/A lighthouse in a storm/)
+    expect(router_render).toHaveBeenCalledTimes(1)
+  })
+
   it('runs the shot on the model picked in the composer', async () => {
     vi.mocked(router_render).mockImplementation(async (slug) => rendered(slug))
     const user = renderStudio()
@@ -151,6 +214,7 @@ describe('CinematicStudio', () => {
     )
     await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
     await user.click(generateButton())
+    await confirmShot(user)
 
     await screen.findByAltText(/A diner at dawn/)
     expect(vi.mocked(router_render).mock.calls[0][0]).toBe(second.slug)
@@ -182,6 +246,7 @@ describe('CinematicStudio', () => {
 
     await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
     await user.click(generateButton())
+    await confirmShot(user)
 
     const notice = await screen.findByRole('status')
     expect(notice).toHaveTextContent(t('workshop.error.provider'))
@@ -192,6 +257,7 @@ describe('CinematicStudio', () => {
       })
     )
 
+    await confirmShot(user)
     await screen.findByAltText(/A diner at dawn/)
     expect(vi.mocked(router_render).mock.calls[1][0]).toBe(second.slug)
   })
@@ -204,6 +270,7 @@ describe('CinematicStudio', () => {
 
     await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
     await user.click(generateButton())
+    await confirmShot(user)
     const notice = await screen.findByRole('status')
     expect(
       within(notice).queryByRole('button', { name: t('workshop.error.retry') })
@@ -228,6 +295,7 @@ describe('CinematicStudio', () => {
 
     await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
     await user.click(generateButton())
+    await confirmShot(user)
     const reveal = await screen.findByRole('button', {
       name: t('workshop.output.reveal')
     })
@@ -297,6 +365,7 @@ describe('CinematicStudio', () => {
       })
     ).toBeInTheDocument()
     await user.click(generateButton())
+    await confirmShot(user)
     await screen.findByAltText(/A diner at dawn/)
     expect(vi.mocked(router_render).mock.calls[0][1]?.prompt).toContain(
       'Neon light'
@@ -331,6 +400,7 @@ describe('CinematicStudio', () => {
     await user.upload(screen.getByTestId('cinematic-reference-cast'), face)
     await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
     await user.click(generateButton())
+    await confirmShot(user)
 
     await screen.findByAltText(/A diner at dawn/)
     const [, parameters] = vi.mocked(router_render).mock.calls[0]
@@ -352,6 +422,7 @@ describe('CinematicStudio', () => {
 
     await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
     await user.click(generateButton())
+    await confirmShot(user)
     await user.click(await screen.findByRole('button', { name: 'Cancel' }))
 
     expect(await screen.findByRole('status')).toHaveTextContent(
@@ -379,6 +450,7 @@ describe('CinematicStudio', () => {
 
     await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
     await user.click(generateButton())
+    await confirmShot(user)
     await user.click(away)
     const dialog = await screen.findByRole('dialog', {
       name: t('workshop.run.leaveTitle')
@@ -401,6 +473,7 @@ describe('CinematicStudio', () => {
     await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
     await addTake(user)
     await user.click(generateButton())
+    await confirmShot(user)
 
     const takeA = await screen.findByRole('radio', { name: 'A' })
     expect(takeA).toHaveAttribute('tabindex', '0')
@@ -435,6 +508,7 @@ describe('CinematicStudio', () => {
     const user = renderStudio()
     await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
     await user.click(generateButton())
+    await confirmShot(user)
     await screen.findByAltText(/A diner at dawn/)
 
     await user.click(
@@ -444,6 +518,7 @@ describe('CinematicStudio', () => {
       screen.getByRole('button', { name: tc('cinematic.stage.again') })
     )
 
+    await confirmShot(user)
     await vi.waitFor(() => expect(router_render).toHaveBeenCalledTimes(2))
     const [, parameters] = vi.mocked(router_render).mock.calls[1]
     expect(parameters?.reference_images).toEqual([expect.any(File)])
@@ -459,6 +534,7 @@ describe('CinematicStudio', () => {
 
     await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
     await user.click(generateButton())
+    await confirmShot(user)
 
     const frame = await screen.findByAltText(
       /A diner at dawn/,
@@ -519,6 +595,7 @@ describe('CinematicStudio', () => {
       )
       await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
       await user.click(generateButton())
+      await confirmShot(user)
 
       await screen.findByAltText(/A diner at dawn/)
       expect(vi.mocked(router_render).mock.calls[0][0]).toBe(second.slug)

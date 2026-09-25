@@ -18,6 +18,7 @@ import CinematicPicker from './CinematicPicker.vue'
 import CinematicPopover from './CinematicPopover.vue'
 import CinematicReferenceSlot from './CinematicReferenceSlot.vue'
 import CinematicStage from './CinematicStage.vue'
+import CinematicReviewDialog from './CinematicReviewDialog.vue'
 import type { PopoverKey } from './picker-key'
 import { pickerGroups, popoverTitle } from './picker-key'
 
@@ -38,6 +39,9 @@ const {
   cast,
   palette,
   references,
+  review,
+  canConfirm,
+  confirm,
   choose,
   start: startShot,
   generate: generateShot
@@ -112,6 +116,13 @@ function generateOn(slug: string) {
     class="mb-12 flex min-h-[calc(100svh-5rem)] flex-col lg:mb-20 lg:min-h-[calc(100svh-7rem)]"
     data-testid="cinematic"
   >
+    <CinematicReviewDialog
+      :review
+      :can-confirm="canConfirm"
+      :locale
+      @close="review = undefined"
+      @confirm="confirm"
+    />
     <CinematicStage
       :reel="studio.reel.value"
       :models
