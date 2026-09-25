@@ -326,6 +326,7 @@ describe('videoObjectNode', () => {
 
   it('omits duration rather than defaulting it', () => {
     const node = videoObjectNode({ ...base, uploadDate: '2026-07-16' })
+    expect(node).toBeDefined()
     expect(node?.duration).toBeUndefined()
   })
 

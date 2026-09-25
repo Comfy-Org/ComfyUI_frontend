@@ -32,6 +32,14 @@ describe('customerVideoStories', () => {
       expect(story.durationSeconds).toBeUndefined()
     }
   })
+
+  it('gives every story a full ISO datetime upload date', () => {
+    for (const story of customerVideoStories) {
+      expect(story.uploadDate).toMatch(
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(Z|[+-]\d{2}:\d{2})$/
+      )
+    }
+  })
 })
 
 describe('getCustomerVideoStory', () => {

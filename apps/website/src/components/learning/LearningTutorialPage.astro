@@ -64,7 +64,7 @@ const breadcrumbs = [
   title={tutorialMetaTitle(tutorial, locale)}
   description={description}
   ogImage={tutorial.poster}
-  mainEntityId={videoId}
+  mainEntityId={video ? videoId : undefined}
   breadcrumbs={breadcrumbs}
   extraJsonLd={[video]}
 >
