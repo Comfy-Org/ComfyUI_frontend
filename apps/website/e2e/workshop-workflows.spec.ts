@@ -239,27 +239,30 @@ test('the workflows half narrows to the model it runs on, from the menu and from
   await page.goto('/models/')
   await expect(page.getByTestId('catalogue-tab-workflows')).toBeInViewport()
   await page.getByTestId('catalogue-tab-workflows').click()
-  const results = page
-    .getByTestId('workflow-search-results')
+  const outcomes = page
+    .getByTestId('workflow-catalogue')
     .getByTestId('workshop-model-card')
+  await expect(outcomes).toHaveCount(30)
 
   await page.getByTestId('workshop-filter').click()
   await page.getByTestId('workshop-facet-model').click()
   await page.getByTestId('filter-model-LTX-2.3').click()
-  await expect(results).toHaveCount(7)
+  await expect(outcomes).toHaveCount(7)
 
   // An outcome can stand on several models, so a second choice widens the list
   // instead of intersecting it.
   await page.getByTestId('filter-model-SeedVR2').click()
-  await expect(results).toHaveCount(9)
+  await expect(outcomes).toHaveCount(9)
   await expect(page.getByTestId('workshop-facet-model-count')).toHaveText('2')
 
+  // Clearing gives the whole catalogue back, not just the badge.
   await page.getByTestId('workshop-filter-clear').click()
   await expect(page.getByTestId('workshop-filter-count')).toHaveCount(0)
+  await expect(outcomes).toHaveCount(30)
 
   await page.goto('/models/?type=workflows&model=LTX-2.3')
   await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
-  await expect(results).toHaveCount(7)
+  await expect(outcomes).toHaveCount(7)
 })
 
 test('the background example pairs its input and output and restores edited inputs', async ({
