@@ -45,7 +45,7 @@ export interface ProgressWsMessage {
 export interface NodeProgressState {
   value: number
   max: number
-  state: 'pending' | 'running' | 'finished' | 'error'
+  state: 'pending' | 'running' | 'finished' | 'error' | 'blocked'
   node_id: NodeId
   prompt_id: JobId
   display_node_id?: NodeId
@@ -72,7 +72,15 @@ interface ExecutionWsMessageBase {
   timestamp: number
 }
 export type ExecutionStartWsMessage = ExecutionWsMessageBase
-export type ExecutionSuccessWsMessage = ExecutionWsMessageBase
+export interface ExecutionSuccessWsMessage extends ExecutionWsMessageBase {
+  completion_status?: 'success' | 'partial_success'
+  has_errors?: boolean
+  execution_error_count?: number
+  failed_node_ids?: NodeId[]
+  blocked_node_ids?: NodeId[]
+  blocked_output_node_ids?: NodeId[]
+  successful_output_node_ids?: NodeId[]
+}
 export interface ExecutionCachedWsMessage extends ExecutionWsMessageBase {
   nodes: NodeId[]
 }
@@ -90,6 +98,9 @@ export interface ExecutionErrorWsMessage extends ExecutionWsMessageBase {
   traceback: string[]
   current_inputs?: unknown
   current_outputs?: unknown
+}
+export interface ExecutionNodeErrorWsMessage extends ExecutionErrorWsMessage {
+  display_node_id?: NodeId
 }
 export interface ProgressTextWsMessage {
   nodeId: NodeId

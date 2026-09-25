@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, ref, shallowRef, watch } from 'vue'
+import { computed, ref, shallowRef, toRaw, watch } from 'vue'
 
 import { useNodeProgressText } from '@/composables/node/useNodeProgressText'
 import { useAppMode } from '@/composables/useAppMode'
@@ -22,6 +22,7 @@ import type {
   ExecutedWsMessage,
   ExecutionCachedWsMessage,
   ExecutionErrorWsMessage,
+  ExecutionNodeErrorWsMessage,
   ExecutionInterruptedWsMessage,
   ExecutionStartWsMessage,
   ExecutionSuccessWsMessage,
@@ -118,6 +119,8 @@ function buildExecutionNodeLookup(
  */
 export const MAX_PROGRESS_JOBS = 1000
 
+type NodeId = NodeProgressState['node_id']
+
 export type WorkflowExecutionStatus = 'running' | 'completed' | 'failed'
 
 interface WorkflowStatusUpdate {
@@ -150,11 +153,15 @@ export const useExecutionStore = defineStore('execution', () => {
 
   const clientId = ref<string | null>(null)
   const activeJobId = ref<JobId | null>(null)
+  const lastJobPartialSuccess = ref(false)
   const queuedJobs = ref<Record<JobId, QueuedJob>>({})
   // This is the progress of all nodes in the currently executing workflow
   const nodeProgressStates = ref<Record<string, NodeProgressState>>({})
   const nodeProgressStatesByJob = ref<
     Record<JobId, Record<string, NodeProgressState>>
+  >({})
+  const executionErrorsByJob = ref<
+    Record<JobId, ExecutionNodeErrorWsMessage[]>
   >({})
 
   /**
@@ -454,6 +461,7 @@ export const useExecutionStore = defineStore('execution', () => {
     api.addEventListener('progress_state', handleProgressState)
     api.addEventListener('status', handleStatus)
     api.addEventListener('execution_error', handleExecutionError)
+    api.addEventListener('execution_node_error', handleExecutionNodeError)
     api.addEventListener('progress_text', handleProgressText)
   }
 
@@ -469,6 +477,7 @@ export const useExecutionStore = defineStore('execution', () => {
     api.removeEventListener('progress_state', handleProgressState)
     api.removeEventListener('status', handleStatus)
     api.removeEventListener('execution_error', handleExecutionError)
+    api.removeEventListener('execution_node_error', handleExecutionNodeError)
     api.removeEventListener('progress_text', handleProgressText)
 
     if (workflowStatus.value.size > 0) workflowStatus.value = new Map()
@@ -481,6 +490,8 @@ export const useExecutionStore = defineStore('execution', () => {
 
   function handleExecutionStart(e: CustomEvent<ExecutionStartWsMessage>) {
     executionIdToLocatorCache.clear()
+    clearPartialStates()
+    lastJobPartialSuccess.value = false
     activeJobId.value = e.detail.prompt_id
     queuedJobs.value[activeJobId.value] ??= { nodes: {} }
     clearInitializationByJobId(activeJobId.value)
@@ -536,9 +547,120 @@ export const useExecutionStore = defineStore('execution', () => {
     activeJob.value.nodes[e.detail.node] = true
   }
 
+  function failedNodeIdsFor(detail: ExecutionSuccessWsMessage): NodeId[] {
+    const nodeErrors = executionErrorsByJob.value[detail.prompt_id] ?? []
+    if (!nodeErrors.length) return detail.failed_node_ids ?? []
+    return nodeErrors
+      .map((error) => error.display_node_id ?? error.node_id)
+      .filter((nodeId): nodeId is NodeId => nodeId != null)
+  }
+
+  function fillPartialStates(
+    states: Record<string, NodeProgressState>,
+    nodeIds: NodeId[],
+    state: 'error' | 'blocked',
+    jobId: JobId
+  ) {
+    for (const nodeId of nodeIds) {
+      if (state === 'blocked' && nodeId in states) continue
+      states[nodeId] = {
+        state,
+        value: 1,
+        max: 1,
+        node_id: nodeId,
+        display_node_id: nodeId,
+        real_node_id: nodeId,
+        prompt_id: jobId
+      }
+    }
+  }
+
+  function partialFailureStates(
+    detail: ExecutionSuccessWsMessage
+  ): Record<string, NodeProgressState> {
+    progressStateCoalescer.flush()
+    const states: Record<string, NodeProgressState> = {}
+    for (const [nodeId, state] of Object.entries(nodeProgressStates.value)) {
+      if (state.state === 'error' || state.state === 'blocked') {
+        states[nodeId] = state
+      }
+    }
+    fillPartialStates(
+      states,
+      failedNodeIdsFor(detail),
+      'error',
+      detail.prompt_id
+    )
+    fillPartialStates(
+      states,
+      detail.blocked_node_ids ?? [],
+      'blocked',
+      detail.prompt_id
+    )
+    return states
+  }
+
+  const partialStatesByWorkflow = new Map<
+    ComfyWorkflow,
+    Record<string, NodeProgressState>
+  >()
+
+  watch(
+    () => workflowStore.activeWorkflow,
+    (workflow) => {
+      if (partialStatesByWorkflow.size === 0) return
+      const states = workflow
+        ? partialStatesByWorkflow.get(toRaw(workflow))
+        : undefined
+      nodeProgressStates.value = states ?? {}
+    }
+  )
+
+  watch(
+    () => workflowStore.openWorkflows,
+    (openWorkflows) => {
+      if (partialStatesByWorkflow.size === 0) return
+      const openSet = new Set(openWorkflows.map((workflow) => toRaw(workflow)))
+      for (const [workflow, states] of partialStatesByWorkflow) {
+        if (openSet.has(workflow)) continue
+        partialStatesByWorkflow.delete(workflow)
+        if (toRaw(nodeProgressStates.value) === states) {
+          nodeProgressStates.value = {}
+        }
+      }
+    }
+  )
+
+  function keepPartialStates(
+    workflow: ComfyWorkflow | undefined,
+    states: Record<string, NodeProgressState>
+  ) {
+    if (!workflow || !workflowStore.isOpen(workflow)) return
+    if (Object.keys(states).length === 0) return
+    partialStatesByWorkflow.set(toRaw(workflow), states)
+    if (toRaw(workflow) === toRaw(workflowStore.activeWorkflow)) {
+      nodeProgressStates.value = states
+    }
+  }
+
+  function clearPartialStates() {
+    for (const states of partialStatesByWorkflow.values()) {
+      if (toRaw(nodeProgressStates.value) === states) {
+        nodeProgressStates.value = {}
+      }
+    }
+    partialStatesByWorkflow.clear()
+  }
+
   function handleExecutionSuccess(e: CustomEvent<ExecutionSuccessWsMessage>) {
     const jobId = e.detail.prompt_id
     pendingExecutionErrorsByJobId.delete(jobId)
+    const workflow = jobIdToWorkflow.get(jobId)
+    lastJobPartialSuccess.value =
+      e.detail.completion_status === 'partial_success'
+    const partialProgressStates = lastJobPartialSuccess.value
+      ? partialFailureStates(e.detail)
+      : {}
     setWorkflowStatus(jobId, {
       status: 'completed',
       endTime: performance.now()
@@ -559,6 +681,7 @@ export const useExecutionStore = defineStore('execution', () => {
       }
     }
     resetExecutionState(jobId)
+    keepPartialStates(workflow, partialProgressStates)
   }
 
   function handleExecuting(e: CustomEvent<string | number | null>): void {
@@ -782,6 +905,23 @@ export const useExecutionStore = defineStore('execution', () => {
     executionErrorStore.showExecutionError(detail, runErrorKey)
     clearInitializationByJobId(detail.prompt_id)
     resetExecutionState(detail.prompt_id)
+  }
+
+  function handleExecutionNodeError(
+    e: CustomEvent<ExecutionNodeErrorWsMessage>
+  ) {
+    const jobId = e.detail.prompt_id
+    const next = { ...executionErrorsByJob.value }
+    delete next[jobId]
+    next[jobId] = [
+      ...(executionErrorsByJob.value[jobId] ?? []),
+      e.detail
+    ].slice(-100)
+    const jobIds = Object.keys(next)
+    for (const oldJobId of jobIds.slice(0, -MAX_PROGRESS_JOBS)) {
+      delete next[oldJobId]
+    }
+    executionErrorsByJob.value = next
   }
 
   function handleAccountPreconditionError(
@@ -1137,6 +1277,7 @@ export const useExecutionStore = defineStore('execution', () => {
     isIdle,
     clientId,
     activeJobId,
+    lastJobPartialSuccess,
     queuedJobs,
     executingNodeId,
     executingNodeIds,
@@ -1149,6 +1290,7 @@ export const useExecutionStore = defineStore('execution', () => {
     nodeProgressStates,
     nodeLocationProgressStates,
     nodeProgressStatesByJob,
+    executionErrorsByJob,
     runningJobIds,
     runningWorkflowCount,
     initializingJobIds,

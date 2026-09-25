@@ -88,6 +88,7 @@ import { useCommandStore } from '@/stores/commandStore'
 import { createCanvasInteractionMode } from '@/renderer/core/canvas/interaction/canvasInteractionMode'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExtensionStore } from '@/stores/extensionStore'
 import { useAuthStore } from '@/stores/authStore'
@@ -1915,6 +1916,10 @@ export class ComfyApp {
             api.apiKey = comfyOrgApiKey ?? undefined
             const res = await api.queuePrompt(number, p, {
               partialExecutionTargets: queueNodeIds,
+              nodeFailurePolicy: useQueueSettingsStore()
+                .continueIndependentBranches
+                ? 'continue_independent'
+                : undefined,
               previewMethod
             })
             const responseReceivedAt = performance.now()

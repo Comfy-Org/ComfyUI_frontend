@@ -2572,6 +2572,278 @@ describe('useExecutionStore - WebSocket event handlers', () => {
       expect(store.queuedJobs['job-1']).toBeUndefined()
     })
 
+    it('keeps partial failure states visible until the next execution starts', () => {
+      storeVisibleJob('job-1')
+      fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
+
+      fire('execution_success', {
+        prompt_id: 'job-1',
+        timestamp: 1,
+        completion_status: 'partial_success',
+        failed_node_ids: ['failed'],
+        blocked_node_ids: ['blocked']
+      })
+
+      expect(store.activeJobId).toBeNull()
+      expect(store.nodeProgressStates['failed'].state).toBe('error')
+      expect(store.nodeProgressStates['blocked'].state).toBe('blocked')
+
+      fire('execution_start', { prompt_id: 'job-2', timestamp: 2 })
+
+      expect(store.nodeProgressStates).toEqual({})
+    })
+
+    it('marks the node that raised by its display id instead of the expander', () => {
+      storeVisibleJob('job-1')
+      fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
+      fire('execution_node_error', {
+        prompt_id: 'job-1',
+        timestamp: 1,
+        node_id: 'loop',
+        display_node_id: 'body',
+        node_type: 'StartLoop',
+        executed: [],
+        exception_type: 'RuntimeError',
+        exception_message: 'boom',
+        traceback: [],
+        current_inputs: {}
+      })
+
+      fire('execution_success', {
+        prompt_id: 'job-1',
+        timestamp: 2,
+        completion_status: 'partial_success',
+        failed_node_ids: ['loop'],
+        blocked_node_ids: ['close']
+      })
+
+      expect(store.nodeProgressStates['body'].state).toBe('error')
+      expect(store.nodeProgressStates['loop']).toBeUndefined()
+      expect(store.nodeProgressStates['close'].state).toBe('blocked')
+    })
+
+    it('lets a reported failure override a blocked progress state', () => {
+      storeVisibleJob('job-1')
+      fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
+      fire('progress_state', {
+        prompt_id: 'job-1',
+        nodes: {
+          expander: {
+            state: 'blocked',
+            value: 1,
+            max: 1,
+            node_id: 'expander',
+            display_node_id: 'expander',
+            real_node_id: 'expander',
+            prompt_id: 'job-1'
+          }
+        }
+      })
+      fire('execution_node_error', {
+        prompt_id: 'job-1',
+        timestamp: 1,
+        node_id: 'expander',
+        display_node_id: 'expander',
+        node_type: 'Expander',
+        executed: [],
+        exception_type: 'RuntimeError',
+        exception_message: 'boom',
+        traceback: [],
+        current_inputs: {}
+      })
+
+      fire('execution_success', {
+        prompt_id: 'job-1',
+        timestamp: 2,
+        completion_status: 'partial_success',
+        failed_node_ids: ['expander'],
+        blocked_node_ids: ['expander']
+      })
+
+      expect(store.nodeProgressStates['expander'].state).toBe('error')
+    })
+
+    it('remembers a partial success until the next job starts', () => {
+      fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
+      fire('execution_success', {
+        prompt_id: 'job-1',
+        timestamp: 1,
+        completion_status: 'partial_success',
+        failed_node_ids: ['failed']
+      })
+      expect(store.lastJobPartialSuccess).toBe(true)
+
+      fire('execution_start', { prompt_id: 'job-2', timestamp: 2 })
+      expect(store.lastJobPartialSuccess).toBe(false)
+
+      fire('execution_success', { prompt_id: 'job-2', timestamp: 3 })
+      expect(store.lastJobPartialSuccess).toBe(false)
+    })
+
+    it('keeps nothing for a job it cannot attribute to a workflow', () => {
+      fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
+      fire('execution_success', {
+        prompt_id: 'job-1',
+        timestamp: 1,
+        completion_status: 'partial_success',
+        failed_node_ids: ['failed']
+      })
+
+      expect(store.nodeProgressStates).toEqual({})
+      expect(store.lastJobPartialSuccess).toBe(true)
+    })
+
+    it('keeps nothing for a workflow closed during the run', async () => {
+      storeVisibleJob('job-1')
+      const workflowStore = useWorkflowStore()
+      const workflow = workflowStore.activeWorkflow!
+      fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
+      Object.assign(workflowStore, { openWorkflows: [] })
+      workflowStore.activeWorkflow = null
+
+      fire('execution_success', {
+        prompt_id: 'job-1',
+        timestamp: 1,
+        completion_status: 'partial_success',
+        failed_node_ids: ['failed']
+      })
+      expect(store.nodeProgressStates).toEqual({})
+
+      Object.assign(workflowStore, { openWorkflows: [workflow] })
+      workflowStore.activeWorkflow = workflow
+      await nextTick()
+      expect(store.nodeProgressStates).toEqual({})
+    })
+
+    it('leaves the live progress of a running job alone when another job starts', () => {
+      storeVisibleJob('job-1')
+      fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
+      fire('progress_state', {
+        prompt_id: 'job-1',
+        nodes: {
+          a: {
+            state: 'running',
+            value: 0,
+            max: 1,
+            node_id: 'a',
+            display_node_id: 'a',
+            real_node_id: 'a',
+            prompt_id: 'job-1'
+          }
+        }
+      })
+      vi.advanceTimersToNextFrame()
+      expect(store.nodeProgressStates['a'].state).toBe('running')
+
+      fire('execution_start', { prompt_id: 'job-2', timestamp: 1 })
+      expect(store.nodeProgressStates['a'].state).toBe('running')
+    })
+
+    it('keeps partial failure states with their workflow across tab switches', async () => {
+      const workflowStore = useWorkflowStore()
+      const first = createQueuedWorkflow()
+      const other = createQueuedWorkflow('workflows/other.json')
+      Object.assign(workflowStore, { openWorkflows: [first, other] })
+      workflowStore.activeWorkflow = first
+      store.storeJob({
+        nodes: ['a'],
+        id: 'job-1',
+        promptOutput: { a: createPromptNode('Node A', 'NodeA') },
+        workflow: first,
+        mode: 'graph'
+      })
+      fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
+
+      fire('execution_success', {
+        prompt_id: 'job-1',
+        timestamp: 1,
+        completion_status: 'partial_success',
+        failed_node_ids: ['failed']
+      })
+      expect(store.nodeProgressStates['failed'].state).toBe('error')
+
+      workflowStore.activeWorkflow = other
+      await nextTick()
+      expect(store.nodeProgressStates).toEqual({})
+
+      workflowStore.activeWorkflow = first
+      await nextTick()
+      expect(store.nodeProgressStates['failed'].state).toBe('error')
+
+      Object.assign(workflowStore, { openWorkflows: [other] })
+      workflowStore.activeWorkflow = other
+      await nextTick()
+      workflowStore.activeWorkflow = first
+      await nextTick()
+      expect(store.nodeProgressStates).toEqual({})
+    })
+
+    it('shows partial failure states of a job queued from another workflow only there', async () => {
+      const workflowStore = useWorkflowStore()
+      const queued = createQueuedWorkflow()
+      const other = createQueuedWorkflow('workflows/other.json')
+      Object.assign(workflowStore, { openWorkflows: [queued, other] })
+      store.storeJob({
+        nodes: ['a'],
+        id: 'job-1',
+        promptOutput: { a: createPromptNode('Node A', 'NodeA') },
+        workflow: queued,
+        mode: 'graph'
+      })
+      workflowStore.activeWorkflow = other
+      fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
+
+      fire('execution_success', {
+        prompt_id: 'job-1',
+        timestamp: 1,
+        completion_status: 'partial_success',
+        failed_node_ids: ['failed']
+      })
+      expect(store.nodeProgressStates).toEqual({})
+
+      workflowStore.activeWorkflow = queued
+      await nextTick()
+      expect(store.nodeProgressStates['failed'].state).toBe('error')
+    })
+
+    it('applies a pending progress_state before keeping partial failure states', () => {
+      storeVisibleJob('job-1')
+      fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
+      fire('progress_state', {
+        prompt_id: 'job-1',
+        nodes: {
+          'loop.0.0.0_body': {
+            state: 'error',
+            value: 1,
+            max: 1,
+            node_id: 'loop.0.0.0_body',
+            display_node_id: 'body',
+            real_node_id: 'loop',
+            prompt_id: 'job-1'
+          },
+          'loop.0.0.result': {
+            state: 'blocked',
+            value: 1,
+            max: 1,
+            node_id: 'loop.0.0.result',
+            display_node_id: 'loop',
+            real_node_id: 'loop',
+            prompt_id: 'job-1'
+          }
+        }
+      })
+
+      fire('execution_success', {
+        prompt_id: 'job-1',
+        timestamp: 1,
+        completion_status: 'partial_success',
+        failed_node_ids: ['loop']
+      })
+
+      expect(store.nodeProgressStates['loop.0.0.0_body'].state).toBe('error')
+      expect(store.nodeProgressStates['loop.0.0.result'].state).toBe('blocked')
+    })
+
     it('does not track success for jobs this client did not queue', () => {
       fire('execution_success', { prompt_id: 'foreign-job', timestamp: 0 })
 
@@ -2741,6 +3013,28 @@ describe('useExecutionStore - WebSocket event handlers', () => {
   })
 
   describe('execution_error', () => {
+    it('collects execution_node_error without terminating the job', () => {
+      fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
+      const detail = {
+        prompt_id: 'job-1',
+        timestamp: 1,
+        node_id: 'n1',
+        node_type: 'SeeDanceVideo',
+        executed: [],
+        exception_type: 'RuntimeError',
+        exception_message: 'Content filtered',
+        traceback: [],
+        current_inputs: {},
+        current_outputs: {}
+      }
+
+      fire('execution_node_error', detail)
+
+      expect(store.executionErrorsByJob['job-1']).toEqual([detail])
+      expect(store.activeJobId).toBe('job-1')
+      expect(useExecutionErrorStore().lastExecutionError).toBeNull()
+    })
+
     it('routes a service-level error (no node_id) to the prompt error store', () => {
       const errorStore = useExecutionErrorStore()
       storeVisibleJob('job-1')

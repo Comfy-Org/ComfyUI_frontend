@@ -256,6 +256,17 @@ export const useLitegraphService = () => {
         return { color: '#0f0', lineWidth: 3 }
       }
     }
+    node.strokeStyles['executionOutcome'] = function (this: LGraphNode) {
+      const nodeLocatorId = useWorkflowStore().nodeIdToNodeLocatorId(this.id)
+      const state =
+        useExecutionStore().nodeLocationProgressStates[nodeLocatorId]?.state
+      if (state === 'error') {
+        return { color: LiteGraph.NODE_ERROR_COLOUR, lineWidth: 3 }
+      }
+      if (state === 'blocked') {
+        return { color: '#F59E0B', lineWidth: 3 }
+      }
+    }
     node.strokeStyles['dragOver'] = function (this: LGraphNode) {
       if (app.dragOverNode?.id == this.id) {
         return { color: 'dodgerblue' }

@@ -71,6 +71,7 @@ import { PromptExecutionError, api } from '@/scripts/api'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
@@ -1109,8 +1110,18 @@ describe('ComfyApp', () => {
         prompt_id: 'job-1',
         node_errors: nodeErrors
       })
+      api.serverFeatureFlags.value = { supports_node_failure_policy: true }
+      useQueueSettingsStore().continueIndependentBranches = true
 
       await expect(app.queuePrompt(0)).resolves.toBe(false)
+
+      expect(api.queuePrompt).toHaveBeenCalledWith(
+        0,
+        expect.any(Object),
+        expect.objectContaining({
+          nodeFailurePolicy: 'continue_independent'
+        })
+      )
 
       const errorStore = useExecutionErrorStore()
       const executionStore = useExecutionStore()

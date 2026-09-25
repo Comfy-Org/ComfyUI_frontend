@@ -20,6 +20,7 @@ import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
  */
 export enum ServerFeatureFlag {
   SUPPORTS_PREVIEW_METADATA = 'supports_preview_metadata',
+  SUPPORTS_NODE_FAILURE_POLICY = 'supports_node_failure_policy',
   MAX_UPLOAD_SIZE = 'max_upload_size',
   MANAGER_SUPPORTS_V4 = 'extension.manager.supports_v4',
   MODEL_UPLOAD_BUTTON_ENABLED = 'model_upload_button_enabled',
@@ -134,6 +135,12 @@ export function useFeatureFlags() {
   const flags = reactive({
     get supportsPreviewMetadata() {
       return api.getServerFeature(ServerFeatureFlag.SUPPORTS_PREVIEW_METADATA)
+    },
+    get supportsNodeFailurePolicy() {
+      return api.getServerFeature(
+        ServerFeatureFlag.SUPPORTS_NODE_FAILURE_POLICY,
+        false
+      )
     },
     get maxUploadSize() {
       return api.getServerFeature(ServerFeatureFlag.MAX_UPLOAD_SIZE)

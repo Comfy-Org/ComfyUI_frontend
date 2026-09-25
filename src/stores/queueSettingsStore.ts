@@ -21,6 +21,7 @@ export function isInstantRunningMode(
 export const useQueueSettingsStore = defineStore('queueSettingsStore', {
   state: () => ({
     mode: 'disabled' as AutoQueueMode,
-    batchCount: 1
+    batchCount: 1,
+    continueIndependentBranches: false
   })
 })
