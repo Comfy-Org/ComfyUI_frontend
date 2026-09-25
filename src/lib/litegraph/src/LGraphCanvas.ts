@@ -20,6 +20,7 @@ import { LayoutSource } from '@/renderer/core/layout/types'
 import {
   applyCanvasSelection,
   clearGraphSelection,
+  changeCanvasSelection,
   isCanvasItemSelected,
   ownsSelectable,
   releaseCanvasSelection,
@@ -4594,21 +4595,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       for (const item of itemsInRect) desired.add(item)
     }
 
-    let changed = false
-    for (const item of Array.from(this.selectedItems)) {
-      if (!desired.has(item)) {
-        this.deselect(item)
-        changed = true
-      }
-    }
-    for (const item of desired) {
-      if (!isCanvasItemSelected(this, item)) {
-        this.select(item)
-        changed = true
-      }
-    }
+    const dropped = [...this.selectedItems].filter((item) => !desired.has(item))
+    const removed = changeCanvasSelection(this, dropped, false)
+    const added = changeCanvasSelection(this, desired, true)
 
-    if (changed) {
+    if (removed || added) {
       this.onSelectionChange?.(this.selected_nodes)
       this.setDirty(true)
     }
@@ -4641,17 +4632,16 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const { selectedItems } = this
 
     if (e.shiftKey) {
-      // Add to selection
-      for (const item of itemsInRect) this.select(item)
+      changeCanvasSelection(this, itemsInRect, true)
     } else if (e.altKey) {
-      // Remove from selection
-      for (const item of itemsInRect) this.deselect(item)
+      changeCanvasSelection(this, itemsInRect, false)
     } else {
-      // Replace selection
-      for (const item of selectedItems.values()) {
-        if (!itemsInRect.has(item)) this.deselect(item)
-      }
-      for (const item of itemsInRect) this.select(item)
+      changeCanvasSelection(
+        this,
+        [...selectedItems].filter((item) => !itemsInRect.has(item)),
+        false
+      )
+      changeCanvasSelection(this, itemsInRect, true)
     }
 
     this.onSelectionChange?.(this.selected_nodes)
@@ -4713,32 +4703,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       selectGroupChildren = this.groupSelectChildren
     }: { selectGroupChildren?: boolean } = {}
   ): void {
-    if (!ownsSelectable(this, item)) return
-    if (this.selectOnly && !(item instanceof LGraphNode)) return
     if (isCanvasItemSelected(this, item)) return
-
-    setCanvasItemSelected(this, item, true)
-
-    if (item instanceof LGraphGroup) {
-      item.recomputeInsideNodes()
-      if (selectGroupChildren) {
-        this.traverseGroupChildren(
-          item,
-          (child) => {
-            if (!isCanvasItemSelected(this, child)) {
-              setCanvasItemSelected(this, child, true)
-            }
-          },
-          (child) => this.select(child)
-        )
-      }
-      return
-    }
-
-    if (!(item instanceof LGraphNode)) return
-
-    item.onSelected?.()
-    this.onNodeSelected?.(item)
+    changeCanvasSelection(this, [item], true, selectGroupChildren)
   }
 
   /**
@@ -4748,55 +4714,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   deselect<TPositionable extends Positionable = LGraphNode>(
     item: TPositionable
   ): void {
-    if (
-      !ownsSelectable(this, item) &&
-      !(item instanceof LGraphNode && this.graph?.nodes.includes(item))
-    )
-      return
     if (!isCanvasItemSelected(this, item)) return
-
-    setCanvasItemSelected(this, item, false)
-
-    if (item instanceof LGraphGroup && this.groupSelectChildren) {
-      this.traverseGroupChildren(
-        item,
-        (child) => {
-          if (isCanvasItemSelected(this, child)) {
-            setCanvasItemSelected(this, child, false)
-          }
-        },
-        (child) => this.deselect(child)
-      )
-      return
-    }
-
-    if (!(item instanceof LGraphNode)) return
-
-    item.onDeselected?.()
-    this.onNodeDeselected?.(item)
-  }
-
-  /**
-   * Iterative traversal of a group's descendants.
-   * Calls {@link groupAction} on nested groups and {@link leafAction} on
-   * non-group children.  Always recurses into nested groups regardless of
-   * their current selection state.
-   */
-  private traverseGroupChildren(
-    group: LGraphGroup,
-    groupAction: (child: LGraphGroup) => void,
-    leafAction: (child: Positionable) => void
-  ): void {
-    const stack: Positionable[] = [...group._children]
-    while (stack.length > 0) {
-      const child = stack.pop()!
-      if (child instanceof LGraphGroup) {
-        groupAction(child)
-        for (const nested of child._children) stack.push(nested)
-      } else {
-        leafAction(child)
-      }
-    }
+    changeCanvasSelection(this, [item], false)
   }
 
   /** @deprecated See {@link LGraphCanvas.processSelect} */
@@ -4841,7 +4760,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     )
     if (itemsToSelect.length === 0 && items?.length) return
     if (!add_to_current_selection) this.deselectAll()
-    for (const item of itemsToSelect) this.select(item)
+    changeCanvasSelection(this, itemsToSelect, true)
     this.onSelectionChange?.(this.selected_nodes)
     this.setDirty(true)
   }

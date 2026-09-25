@@ -274,7 +274,8 @@ describe('LGraphCanvas selection', () => {
       a.onSelected = () => selections.push([...store.selectedKeys(scope)])
       b.onSelected = () => selections.push([...store.selectedKeys(scope)])
 
-      canvas.selectItems([a, b])
+      canvas.select(a)
+      canvas.select(b)
 
       expect(selections).toEqual([
         [`node:${a.id}`],
@@ -511,6 +512,60 @@ describe('LGraphCanvas selection', () => {
       expect(graph.nodes).toHaveLength(0)
     })
 
+    it('selectItems() preserves incremental hook state and reports one outer change', () => {
+      const sizesSeenByHooks: number[] = []
+      canvas.onNodeSelected = () =>
+        sizesSeenByHooks.push(canvas.selectedItems.size)
+
+      canvas.selectItems([a, b])
+
+      expect(sizesSeenByHooks).toEqual([1, 2])
+      expect(onSelectionChange).toHaveBeenCalledTimes(1)
+    })
+
+    it('continues a batch from selection changed by an earlier hook', () => {
+      const secondHook = vi.fn(() => {
+        expect(b.selected).toBe(true)
+      })
+      a.onSelected = () => canvas.deselectAll()
+      b.onSelected = secondHook
+
+      canvas.selectItems([a, b])
+
+      expect(secondHook).toHaveBeenCalledOnce()
+      expect([...canvas.selectedItems]).toEqual([b])
+    })
+
+    it('reselects a later batch item cleared by an earlier hook', () => {
+      canvas.select(b)
+      a.onSelected = () => canvas.deselectAll()
+      b.onSelected = vi.fn()
+
+      canvas.selectItems([a, b], true)
+
+      expect(b.onSelected).toHaveBeenCalledOnce()
+      expect([...canvas.selectedItems]).toEqual([b])
+    })
+
+    it('skips a later batch item removed by an earlier hook', () => {
+      a.onSelected = () => graph.remove(b)
+      b.onSelected = vi.fn()
+
+      canvas.selectItems([a, b])
+
+      expect(b.onSelected).not.toHaveBeenCalled()
+      expect([...canvas.selectedItems]).toEqual([a])
+    })
+
+    it('keeps the selection view unchanged for a no-op deselect', () => {
+      canvas.select(a)
+      const selection = canvas.selectedItems
+
+      canvas.deselect(b)
+
+      expect(canvas.selectedItems).toBe(selection)
+    })
+
     it('highlights a link connected after the node was selected', () => {
       a.addOutput('out', 'number')
       b.addInput('in', 'number')
@@ -534,9 +589,10 @@ describe('LGraphCanvas selection', () => {
       expect(selectedKeys).toHaveBeenCalledOnce()
 
       canvas.deselect(a)
+      selectedKeys.mockClear()
 
       expect(canvas.selected_nodes).toEqual({})
-      expect(selectedKeys).toHaveBeenCalledTimes(2)
+      expect(selectedKeys).toHaveBeenCalledOnce()
     })
 
     it('supports legacy highlighted_links clear assignment', () => {
@@ -1022,6 +1078,73 @@ describe('LGraphCanvas selection', () => {
       click(canvas, 250, 10)
 
       expect(selectedTitles(canvas)).toEqual(['A', 'B', 'G'])
+    })
+
+    it('deselecting the group fires each child hook once', () => {
+      canvas.select(group)
+      const aDeselected = vi.fn()
+      const bDeselected = vi.fn()
+      a.onDeselected = aDeselected
+      b.onDeselected = bDeselected
+
+      canvas.deselect(group)
+
+      expect(aDeselected).toHaveBeenCalledOnce()
+      expect(bDeselected).toHaveBeenCalledOnce()
+      expect(canvas.selectedItems.size).toBe(0)
+    })
+
+    it('live marquee shrink preserves child deselect-select hook churn', () => {
+      const aSelected = vi.fn()
+      const bSelected = vi.fn()
+      const aDeselected = vi.fn()
+      const bDeselected = vi.fn()
+      a.onSelected = aSelected
+      b.onSelected = bSelected
+      a.onDeselected = aDeselected
+      b.onDeselected = bDeselected
+      canvas.select(group)
+      aSelected.mockClear()
+      bSelected.mockClear()
+      const initialSelection = new Set(canvas.selectedItems)
+      const dragRect: Rect = [10, 30, 450, 250]
+
+      canvas['handleLiveSelect'](
+        fromPartial<CanvasPointerEvent>({ canvasX: 460, canvasY: 280 }),
+        dragRect,
+        initialSelection
+      )
+
+      expect(aDeselected).toHaveBeenCalledOnce()
+      expect(bDeselected).toHaveBeenCalledOnce()
+      expect(aSelected).toHaveBeenCalledOnce()
+      expect(bSelected).toHaveBeenCalledOnce()
+      expect(selectedTitles(canvas)).toEqual(['A', 'B'])
+    })
+
+    it('visits a descendant once through nested group caches', () => {
+      const inner = addGroup(graph, 'Inner', [10, 30, 200, 200])
+      inner.recomputeInsideNodes()
+      group.recomputeInsideNodes()
+      a.onSelected = vi.fn(() => canvas.deselect(a))
+
+      canvas.select(group)
+
+      expect(a.onSelected).toHaveBeenCalledOnce()
+    })
+
+    it('does not deselect a same-ID replacement through a stale group child', () => {
+      canvas.select(group)
+      const replacement = new LGraphNode('Replacement')
+      replacement.id = a.id
+      replacement.pos = [700, 500]
+      graph.remove(a)
+      graph.add(replacement)
+      canvas.select(replacement)
+
+      canvas.deselect(group)
+
+      expect([...canvas.selectedItems]).toEqual([replacement])
     })
 
     it.fails('nested groups receive onSelected', () => {
