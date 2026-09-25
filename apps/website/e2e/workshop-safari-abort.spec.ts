@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { MODEL_PATH, test } from './fixtures/modelsAccount'
+import { openModelPage } from './fixtures/islands'
 
 test('runs a default model without Safari static abort helpers', async ({
   context,
@@ -51,7 +52,7 @@ test('runs a default model without Safari static abort helpers', async ({
   await page.getByRole('button', { name: 'Sign in', exact: true }).click()
   await expect(page).toHaveURL('/')
 
-  await page.goto(MODEL_PATH)
+  await openModelPage(page, MODEL_PATH)
   expect(
     await page.evaluate(() => [
       typeof AbortSignal.any,

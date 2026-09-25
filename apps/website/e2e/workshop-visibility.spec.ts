@@ -10,7 +10,7 @@ const MODEL_NAME = 'FLUX 2 Max Text-to-Image'
 test('public HTML excludes catalogue and playground markup', async ({
   request
 }) => {
-  for (const path of ['/', '/models/', MODEL_PATH]) {
+  for (const path of ['/', '/models/']) {
     const response = await request.get(path)
     expect(response.ok()).toBe(true)
     const html = await response.text()
@@ -110,7 +110,7 @@ test('shows model content without Run when the flag is disabled', async ({
 test.describe('without JavaScript', () => {
   test.use({ javaScriptEnabled: false })
 
-  for (const path of ['/models/', MODEL_PATH]) {
+  for (const path of ['/models/']) {
     test(`${path} shows no loader or error panel`, async ({ page }) => {
       await page.goto(path)
       await expect(page.getByTestId('workshop-loading')).toBeHidden()
@@ -121,4 +121,25 @@ test.describe('without JavaScript', () => {
       ).toBeVisible()
     })
   }
+
+  test('a model page shows the model and its related models', async ({
+    page
+  }) => {
+    await page.goto(MODEL_PATH)
+    await expect(
+      page.getByRole('heading', { level: 1, name: MODEL_NAME })
+    ).toBeVisible()
+    await expect(
+      page.getByText('Generates an image from text with up to 9 reference')
+    ).toBeVisible()
+    await expect(page.getByTestId('model-price')).toContainText('credits')
+    await expect(
+      page
+        .getByTestId('related-models')
+        .getByRole('link', { name: /FLUX 2 Pro/ })
+        .first()
+    ).toHaveAttribute('href', '/models/bfl--flux-2-pro--generate-images/')
+    await expect(page.getByTestId('workshop-loading')).toHaveCount(0)
+    await expect(page.getByText(/Grok Imagine in ComfyUI/)).toHaveCount(0)
+  })
 })

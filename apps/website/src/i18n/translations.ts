@@ -9844,10 +9844,6 @@ Enterprise`
     en: 'More from {provider}',
     'zh-CN': '{provider} 的更多模型'
   },
-  'workshop.model.relatedShort': {
-    en: 'More models',
-    'zh-CN': '更多模型'
-  },
   'workshop.model.browseAllShort': {
     en: 'Browse all',
     'zh-CN': '浏览全部'

@@ -7,6 +7,7 @@ import { modelCases } from '../acceptance/cases'
 import { useAdvancedInputs, useOwnInputs } from '../acceptance/fixtures'
 import { signIn } from './fixtures/buyCredits'
 import { test } from './fixtures/modelsAccount'
+import { openModelPage } from './fixtures/islands'
 
 test.beforeEach(async ({ context, page, modelsAccount }, testInfo) => {
   await context.route(
@@ -58,7 +59,7 @@ for (const model of modelCases) {
   test(`${model.slug}: acceptance inputs reach the generation request`, async ({
     page
   }, testInfo) => {
-    await page.goto(`/models/${model.slug}/`)
+    await openModelPage(page, `/models/${model.slug}/`)
     await useOwnInputs(page, model, testInfo.outputDir)
     await useAdvancedInputs(page, model)
     const submitted = page.waitForRequest(

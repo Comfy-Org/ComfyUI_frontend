@@ -9,6 +9,7 @@ import { zExchangeTokenRequest } from '@comfyorg/ingest-types/zod'
 
 import { AccountMenu } from './fixtures/accountMenu'
 import { MODEL_PATH, MODELS_WORKSPACE_ID, test } from './fixtures/modelsAccount'
+import { openModelPage } from './fixtures/islands'
 
 const API_KEYS_URL =
   'https://platform.comfy.org/profile/api-keys?onboarding=models&model=bfl--flux-2-max--generate-images'
@@ -82,7 +83,7 @@ async function signIn(
 test('the API key link stays a models onboarding arrival when signed out', async ({
   page
 }) => {
-  await page.goto(MODEL_PATH)
+  await openModelPage(page, MODEL_PATH)
   await page.getByTestId('tab-api').click()
   await expect(page.getByTestId('api-get-key')).toHaveAttribute(
     'href',
@@ -97,7 +98,7 @@ test('the API key link carries the active workspace, and follows a switch', asyn
   await mockWorkspaces(page)
   await signIn(page, modelsAccount)
 
-  await page.goto(MODEL_PATH)
+  await openModelPage(page, MODEL_PATH)
   await page.getByTestId('tab-api').click()
   const link = page.getByTestId('api-get-key')
   await expect(link).toHaveAttribute(

@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { MODEL_PATH, test } from './fixtures/modelsAccount'
+import { openModelPage } from './fixtures/islands'
 
 test.describe('Retired prototype routes', () => {
   test.beforeEach(async ({ page }) => {
@@ -438,7 +439,7 @@ test.describe('Models catalog', () => {
   })
 
   test('the hero medium deep-links into the catalog', async ({ page }) => {
-    await page.goto('/models/kling--avatar--animate-images/')
+    await openModelPage(page, '/models/kling--avatar--animate-images/')
     await page
       .getByTestId('model-hero')
       .getByRole('link', { name: 'Image to video', exact: true })
@@ -508,7 +509,7 @@ test.describe('Model playground', () => {
   test('puts data-declared parameters in the Advanced disclosure', async ({
     page
   }) => {
-    await page.goto(MODEL_PATH)
+    await openModelPage(page, MODEL_PATH)
     const advanced = page.getByTestId('playground-advanced')
     await expect(advanced).toBeVisible()
     await expect(page.getByTestId('field-prompt_upsampling')).not.toBeVisible()
@@ -520,7 +521,7 @@ test.describe('Model playground', () => {
   test('asks nothing about the provider moderation checks and sends nothing', async ({
     page
   }) => {
-    await page.goto(MODEL_PATH)
+    await openModelPage(page, MODEL_PATH)
     await page.getByTestId('playground-advanced').locator('summary').click()
 
     await expect(page.getByTestId('field-safety_tolerance')).toHaveCount(0)
@@ -541,7 +542,7 @@ test.describe('Model playground', () => {
     page,
     modelsAccount
   }) => {
-    await page.goto(MODEL_PATH)
+    await openModelPage(page, MODEL_PATH)
     const signIn = page.getByRole('link', {
       name: 'Sign in to run',
       exact: true
@@ -591,7 +592,7 @@ test.describe('Model playground', () => {
   test('API tab highlights snippets and mirrors the form values', async ({
     page
   }) => {
-    await page.goto(MODEL_PATH)
+    await openModelPage(page, MODEL_PATH)
     await page
       .getByRole('textbox', { name: 'Prompt', exact: true })
       .fill('neon street at night')
@@ -623,7 +624,7 @@ test.describe('Model playground', () => {
   })
 
   test('API snippets keep uploaded media local', async ({ page }) => {
-    await page.goto('/models/byteplus--seedream-4-5--edit-images/')
+    await openModelPage(page, '/models/byteplus--seedream-4-5--edit-images/')
     const [chooser] = await Promise.all([
       page.waitForEvent('filechooser'),
       page.getByRole('button', { name: /^Replace seedream-4-5-input-/ }).click()
@@ -651,7 +652,7 @@ test.describe('Model playground', () => {
   test('examples are initially visible and refill the playground', async ({
     page
   }) => {
-    await page.goto(MODEL_PATH)
+    await openModelPage(page, MODEL_PATH)
     await expect(page.getByTestId('playground-output')).toHaveAttribute(
       'data-state',
       'example'
@@ -679,7 +680,7 @@ test.describe('Model playground', () => {
   test('an example leaves a cleared prompt alone when asked to', async ({
     page
   }) => {
-    await page.goto(MODEL_PATH)
+    await openModelPage(page, MODEL_PATH)
     const prompt = page.getByRole('textbox', { name: 'Prompt', exact: true })
     await expect(prompt).not.toHaveValue('')
     await prompt.fill('')

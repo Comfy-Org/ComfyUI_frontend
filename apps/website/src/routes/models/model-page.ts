@@ -52,7 +52,6 @@ export async function prepareModelPage(
           relatedProvider
         )
       : t('workshop.model.related', locale),
-    relatedHeadingShort: t('workshop.model.relatedShort', locale),
     successor: model.successorSlug
       ? getWorkshopModel(model.successorSlug)
       : undefined,

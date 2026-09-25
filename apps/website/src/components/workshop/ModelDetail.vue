@@ -263,8 +263,9 @@ const flagOffGate = computed(() =>
 )
 const gate = computed(() => {
   if (!canRunModel.value) return 'unavailable'
+  if (!mounted.value) return 'pending'
   if (!workshopEnabled.value) return flagOffGate.value
-  if (!mounted.value || draftPending.value) return 'pending'
+  if (draftPending.value) return 'pending'
   if (!authEnabled.value || sessionFailure.value) return 'unavailable'
   if (!settled.value || (user.value && !session.value)) return 'pending'
   if (!session.value) return 'signedOut'

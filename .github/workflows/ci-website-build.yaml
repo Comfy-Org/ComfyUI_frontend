@@ -56,6 +56,9 @@ jobs:
       - name: Check hreflang clusters
         run: pnpm --filter @comfyorg/website check:hreflang
 
+      - name: Check model pages carry their model in the HTML
+        run: pnpm --filter @comfyorg/website check:models-html
+
       - name: Verify the optional Workshop build exclusion
         env:
           WEBSITE_ASHBY_API_KEY: ${{ secrets.WEBSITE_ASHBY_API_KEY }}
