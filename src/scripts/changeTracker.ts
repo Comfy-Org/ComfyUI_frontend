@@ -272,6 +272,9 @@ export class ChangeTracker {
    */
   _restoringState: boolean = false
 
+  _coalescingUndo = false
+  _squashAutoQueue = true
+
   ds?: { scale: number; offset: [number, number] }
   nodeOutputs?: Partial<Record<string, ExecutedWsMessage['output']>>
 
@@ -376,7 +379,10 @@ export class ChangeTracker {
     }
   }
 
-  updateModified(previousState?: ComfyWorkflowJSON, autoQueue = true) {
+  updateModified(
+    previousState?: ComfyWorkflowJSON,
+    { autoQueue = true }: { autoQueue?: boolean } = {}
+  ) {
     // Get the workflow from the store as ChangeTracker is raw object, i.e.
     // `this.workflow` is not reactive.
     const workflow = useWorkflowStore().getWorkflowByPath(this.workflow.path)
@@ -407,12 +413,25 @@ export class ChangeTracker {
    * INVARIANT: only the active workflow's tracker may read from the canvas.
    * Calling this on an inactive tracker would capture the wrong graph.
    *
+   * Both options describe a change *someone else* made — an agent turn or a
+   * collaborator's edit, which arrive as a run of frames rather than as one
+   * interaction. Neither applies when this call short-circuits on the guards
+   * below, so both are best-effort: a frame that lands inside one of those
+   * windows is still folded into the next ordinary capture.
+   *
    * @param autoQueue Whether an execution-graph change here may trigger
-   * auto-queue. Pass false for a change the user did not make: an agent turn
-   * lands as a run of frames, and each would queue its own prompt against a
-   * half-built graph.
+   * auto-queue. False keeps a run of frames from queueing a prompt each,
+   * against graphs that are still half-built.
+   * @param coalesceUndo Whether to fold this capture into the undo entry the
+   * previous coalesced capture opened. Keeps a whole run undoable in one
+   * step, as it was when the user's next interaction captured it — undoing
+   * to a single frame would leave a graph the shared document cannot
+   * represent.
    */
-  captureCanvasState({ autoQueue = true }: { autoQueue?: boolean } = {}) {
+  captureCanvasState({
+    autoQueue = true,
+    coalesceUndo = false
+  }: { autoQueue?: boolean; coalesceUndo?: boolean } = {}) {
     const isUndoRedoing = this._restoringState
     const isInsideChangeTransaction = this.changeCount > 0
     if (
@@ -431,14 +450,19 @@ export class ChangeTracker {
     const currentState = clone(app.rootGraph.serialize()) as ComfyWorkflowJSON
     if (!ChangeTracker.graphEqual(this.activeState, currentState)) {
       const previousState = this.activeState
-      this.undoQueue.push(previousState)
-      if (this.undoQueue.length > ChangeTracker.MAX_HISTORY) {
-        this.undoQueue.shift()
+      const continuesRun = coalesceUndo && this._coalescingUndo
+      this._coalescingUndo = coalesceUndo
+      if (!continuesRun) {
+        this.undoQueue.push(previousState)
+        if (this.undoQueue.length > ChangeTracker.MAX_HISTORY) {
+          this.undoQueue.shift()
+        }
       }
 
       this.activeState = currentState
       this.redoQueue.length = 0
-      this.updateModified(previousState, autoQueue)
+      this._squashAutoQueue = autoQueue
+      this.updateModified(previousState, { autoQueue })
       void this.squashState()
     }
   }
@@ -454,7 +478,7 @@ export class ChangeTracker {
 
     const previousState = this.activeState
     this.activeState = currentState
-    this.updateModified(previousState)
+    this.updateModified(previousState, { autoQueue: this._squashAutoQueue })
   }, 50)
 
   /** @deprecated Use {@link captureCanvasState} instead. */
@@ -479,6 +503,7 @@ export class ChangeTracker {
     if (prevState) {
       const previousState = this.activeState
       target.push(previousState)
+      this._coalescingUndo = false
       this._restoringState = true
       try {
         await app.loadGraphData(prevState, false, false, this.workflow, {

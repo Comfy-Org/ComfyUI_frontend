@@ -783,11 +783,12 @@ const {
     // `ChangeTracker.init()` installs, so without this their draft write
     // waits on an unrelated interaction — the next `mouseup` — and a
     // reload before that restores a workflow missing the agent's edit.
-    // That interaction used to collapse a whole turn into one capture, so
-    // capturing per frame must not carry auto-queue with it.
+    // That interaction used to collapse a whole run of frames into one
+    // capture, which is what both options here preserve.
     onApplied() {
       workflowStore.activeWorkflow?.changeTracker.captureCanvasState({
-        autoQueue: false
+        autoQueue: false,
+        coalesceUndo: true
       })
     },
     onReset: graphActivity.resetWorkflow

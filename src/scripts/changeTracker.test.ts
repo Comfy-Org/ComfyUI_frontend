@@ -1037,6 +1037,82 @@ describe('ChangeTracker', () => {
         expectAutoQueueGraphChangedNotDispatched()
       })
 
+      it('keeps the opt-out through the debounced squash', async () => {
+        vi.useFakeTimers()
+        const initial = createState(3)
+        const tracker = createTracker(initial)
+        const changed = structuredClone(initial)
+        changed.nodes.pop()
+        mockCanvasState(changed)
+        tracker.captureCanvasState({ autoQueue: false })
+
+        const squashed = structuredClone(changed)
+        squashed.nodes.pop()
+        mockCanvasState(squashed)
+        await vi.advanceTimersByTimeAsync(100)
+
+        expect(tracker.activeState).toEqual(squashed)
+        expectAutoQueueGraphChangedNotDispatched()
+        vi.useRealTimers()
+      })
+    })
+
+    // PM-1598: a run of remote frames used to reach the undo queue as the one
+    // entry the user's next interaction captured. An entry per frame makes
+    // Ctrl+Z rewind to a half-built graph the shared document cannot hold.
+    describe('coalesced undo for a run of remote captures', () => {
+      function captureNodeRemoval(
+        tracker: ChangeTracker,
+        state: ComfyWorkflowJSON,
+        options?: { coalesceUndo?: boolean }
+      ): ComfyWorkflowJSON {
+        const next = structuredClone(state)
+        next.nodes.pop()
+        mockCanvasState(next)
+        tracker.captureCanvasState({ autoQueue: false, ...options })
+        return next
+      }
+
+      it('folds a run into one entry that undoes the whole run', () => {
+        const initial = createState(4)
+        const tracker = createTracker(initial)
+
+        let state = captureNodeRemoval(tracker, initial, {
+          coalesceUndo: true
+        })
+        state = captureNodeRemoval(tracker, state, { coalesceUndo: true })
+        captureNodeRemoval(tracker, state, { coalesceUndo: true })
+
+        expect(tracker.undoQueue).toEqual([initial])
+      })
+
+      it('opens a new entry for an ordinary capture after a run', () => {
+        const initial = createState(4)
+        const tracker = createTracker(initial)
+
+        const afterRun = captureNodeRemoval(tracker, initial, {
+          coalesceUndo: true
+        })
+        captureNodeRemoval(tracker, afterRun)
+
+        expect(tracker.undoQueue).toEqual([initial, afterRun])
+      })
+
+      it('opens a new entry for a run that follows an ordinary capture', () => {
+        const initial = createState(4)
+        const tracker = createTracker(initial)
+
+        const afterLocal = captureNodeRemoval(tracker, initial)
+        const afterFirstFrame = captureNodeRemoval(tracker, afterLocal, {
+          coalesceUndo: true
+        })
+        captureNodeRemoval(tracker, afterFirstFrame, { coalesceUndo: true })
+
+        expect(tracker.undoQueue).toEqual([initial, afterLocal])
+      })
+    })
+
+    describe('execution-graph change detection in subgraphs', () => {
       it('ignores layout changes inside a subgraph', async () => {
         const initial = await createSubgraphState()
         const tracker = createTracker(initial)

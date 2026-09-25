@@ -2863,7 +2863,8 @@ describe('AgentPanelRoot canvas draft on remote edit', () => {
     })
 
     expect(captureCanvasState).toHaveBeenCalledExactlyOnceWith({
-      autoQueue: false
+      autoQueue: false,
+      coalesceUndo: true
     })
   })
 
