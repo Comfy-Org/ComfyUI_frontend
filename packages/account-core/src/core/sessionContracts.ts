@@ -147,3 +147,53 @@ export interface RefreshSchedulerOptions {
    */
   readonly onScheduledOutcome?: (report: ScheduledRefreshReport) => void
 }
+
+/** The signed-in principal behind the shared `__Host-comfy_session` cookie. */
+export interface WebSessionUser {
+  readonly id: string
+  readonly email: string
+  readonly name?: string
+  readonly emailVerified: boolean
+  readonly signInProvider?: string
+}
+
+export interface WebSession {
+  readonly user: WebSessionUser
+  readonly csrfToken: string
+  /** ms since epoch; the sliding idle expiry */
+  readonly expiresAt: number
+  /** ms since epoch; the hard cap regardless of activity */
+  readonly absoluteExpiresAt: number
+}
+
+/**
+ * `SESSION_UNAVAILABLE` is the only transient code: 429, 5xx, network,
+ * abort, and unreadable bodies land there so an outage never reads as a
+ * sign-out. `SESSION_REQUEST_REFUSED` is a request no fresh session can fix.
+ */
+export type WebSessionErrorCode =
+  | 'NO_SESSION'
+  | 'SESSION_EXPIRED'
+  | 'SESSION_REVOKED'
+  | 'CSRF_STALE'
+  | 'IDENTITY_CHANGED'
+  | 'WORKSPACE_ACCESS_DENIED'
+  | 'SESSION_REQUEST_REFUSED'
+  | 'SESSION_UNAVAILABLE'
+
+export interface WebSessionFailure {
+  readonly status: 'error'
+  readonly code: WebSessionErrorCode
+  readonly retryable: boolean
+  readonly httpStatus?: number
+  /** The server's `ErrorResponse.code`, when the body carried one. */
+  readonly serverCode?: string
+}
+
+export type WebSessionResult =
+  | { readonly status: 'ok'; readonly session: WebSession }
+  | WebSessionFailure
+
+export type WebSessionCommandResult =
+  | { readonly status: 'ok' }
+  | WebSessionFailure
