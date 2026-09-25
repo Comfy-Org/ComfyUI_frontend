@@ -25,15 +25,15 @@ const cloudHref = template
 <template>
   <div class="mx-auto max-w-10xl px-6 pt-5 pb-20 lg:px-8">
     <a
-      href="/models/"
+      href="/models/?type=workflows"
       class="mb-7 inline-flex min-h-11 items-center gap-1 text-sm text-primary-warm-gray hover:text-primary-comfy-yellow"
     >
       <ChevronLeft class="size-4" aria-hidden="true" />
-      {{ t('workshop.model.back') }}
+      {{ t('workshop.catalogue.backToWorkflows') }}
     </a>
     <header class="mb-9" data-testid="workflow-hero">
       <p v-if="model.category" class="mb-3 text-sm text-primary-comfy-yellow">
-        {{ model.category }}
+        {{ model.categoryLabel?.en ?? model.category }}
       </p>
       <h1
         class="max-w-4xl text-3xl font-light text-primary-comfy-canvas lg:text-5xl"

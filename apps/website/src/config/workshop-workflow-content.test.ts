@@ -1,6 +1,7 @@
 import { assert, describe, expect, it } from 'vitest'
 
 import displayJson from '../content/workshop-display.json'
+import categories from '../content/workshop-workflow-categories.json'
 import { workshopDisplayEntriesSchema } from '../content/workshop-display.schema'
 import { workshopExecutionId } from './models-catalogue'
 import { initialWorkshopPageState } from './workshop-page-state'
@@ -11,27 +12,126 @@ import {
   workshopPages
 } from './workshop-page-content'
 import { workflowCatalog } from './workshop-workflow-catalog'
-import { workflowPagesFor } from './workshop-workflow-content'
+import {
+  workflowDetailsBySlug,
+  workflowPagesFor
+} from './workshop-workflow-content'
+import { prepareWorkflowRender } from './workflow-render'
+import { workflowCloudRequest } from './workshop-workflow-api'
 
 const pages = workshopDisplayEntriesSchema.parse(displayJson)
 const source = pages.find((page) => page.slug === 'workflows/change-material')
 if (!source) throw new Error('Missing curated workflow page')
 const page = source
-const workflows = workshopPages.filter((model) => model.type === 'CLOUD')
+const workflows = workshopPages.filter((model) => model.routerId === undefined)
+
+const partialExamples: Record<string, Record<string, string>> = {
+  'workflows/remove-object': { mask: 'required' },
+  'workflows/virtual-try-on': { image1: 'required' }
+}
 
 describe('curated workflow pages', () => {
+  it.for(workflows)(
+    'opens $slug with its example in the shared form',
+    (model) => {
+      const detail = getWorkshopPageDetail(model.slug)
+      assert.exists(detail)
+      const state = initialWorkshopPageState(detail)
+      expect(validateForm(state.schema, state.values)).toEqual(
+        partialExamples[model.slug] ?? {}
+      )
+    }
+  )
+
+  it('explains that the Bria example needs a mask', () => {
+    const detail = getWorkshopPageDetail('workflows/remove-object')
+    assert.exists(detail)
+    expect(detail.examples[0].description).toContain('mask is not included')
+  })
+
+  it('opens the inpainting example with the original image and its transparency mask', () => {
+    const detail = getWorkshopPageDetail('workflows/edit-selected-region')
+    assert.exists(detail)
+    const state = initialWorkshopPageState(detail)
+
+    expect(state.values).toMatchObject({
+      image:
+        'https://cdn.jsdelivr.net/gh/Comfy-Org/workflow_templates@90c71fb78b3726392d010ff62a8e79e92d7296ad/input/flux_fill_inpaint_example_input_image.png',
+      mask: state.values.image,
+      mask_format: 'alpha'
+    })
+    expect(validateForm(state.schema, state.values)).toEqual({})
+  })
+
+  it.for(['red', 'alpha'])(
+    'binds the selected %s mask format into the Cloud render request',
+    async (channel) => {
+      const detail = workflowDetailsBySlug.get('workflows/edit-selected-region')
+      assert.exists(detail)
+      const prepared = await prepareWorkflowRender(
+        detail,
+        { mask_format: channel },
+        new AbortController().signal,
+        async () => 'uploaded-image'
+      )
+
+      expect(workflowCloudRequest(detail.workflow, prepared)).toMatchObject({
+        prompt: {
+          'workshop-mask': {
+            class_type: 'LoadImageMask',
+            inputs: { image: 'uploaded-image', channel }
+          }
+        }
+      })
+    }
+  )
+
+  it('publishes six outcomes in each launch category', () => {
+    expect(
+      Object.groupBy(workflows, (workflow) => workflow.category ?? '')
+    ).toMatchObject({
+      videos: { length: 6 },
+      characters: { length: 6 },
+      product: { length: 6 },
+      upscale: { length: 6 },
+      cleanup: { length: 6 }
+    })
+    expect(workflows).toHaveLength(30)
+  })
+
+  it.for(categories)('highlights one published workflow in $id', (category) => {
+    expect(
+      workflows
+        .filter(
+          (model) => model.category === category.id && model.categoryHighlight
+        )
+        .map(workshopExecutionId)
+    ).toEqual([category.highlight])
+  })
+
+  it.for([undefined, 'unknown-category'])(
+    'leaves unknown category %s without an editorial order',
+    (category) => {
+      const [projected] = workflowPagesFor(
+        [{ ...page, category }],
+        workflowCatalog
+      )
+      expect(projected.model.categoryOrder).toBeUndefined()
+    }
+  )
+
   it('pairs the original portrait input with one background-removed example', () => {
     const detail = getWorkshopPageDetail('workflows/remove-background')
     assert.exists(detail)
     expect(detail.examples).toHaveLength(1)
     expect(detail.examples[0]).toMatchObject({
       thumbnailUrl:
-        'https://raw.githubusercontent.com/Comfy-Org/workflow_templates/90c71fb78b3726392d010ff62a8e79e92d7296ad/templates/utility_birefnet_remove_background-1.webp',
+        'https://cloud.comfy.org/templates/utility_birefnet_remove_background-1.webp',
       sampleOnly: false
     })
     const state = initialWorkshopPageState(detail)
     expect(state.values.image).toBe(
-      'https://raw.githubusercontent.com/Comfy-Org/workflow_templates/90c71fb78b3726392d010ff62a8e79e92d7296ad/input/the_lily_veil.png'
+      'https://cdn.jsdelivr.net/gh/Comfy-Org/workflow_templates@90c71fb78b3726392d010ff62a8e79e92d7296ad/input/the_lily_veil.png'
     )
     expect(validateForm(state.schema, state.values)).toEqual({})
   })
@@ -54,10 +154,13 @@ describe('curated workflow pages', () => {
     expect(state.values.prompt).toBe(
       'Change the furniture leather difference in image 1 to the fur material in image 2.'
     )
-    expect(validateForm(state.schema, state.values)).toEqual({
-      image1: 'required',
-      image2: 'required'
+    expect(state.values).toMatchObject({
+      image1:
+        'https://cdn.jsdelivr.net/gh/Comfy-Org/workflow_templates@90c71fb78b3726392d010ff62a8e79e92d7296ad/input/leather_sofa.png',
+      image2:
+        'https://cdn.jsdelivr.net/gh/Comfy-Org/workflow_templates@90c71fb78b3726392d010ff62a8e79e92d7296ad/input/texture_fur.png'
     })
+    expect(validateForm(state.schema, state.values)).toEqual({})
   })
 
   it.for([
