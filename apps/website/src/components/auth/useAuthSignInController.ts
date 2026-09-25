@@ -159,6 +159,46 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
   // `live()` would leave a flag-invalidated detach with no way back to idle.
   let startedAttempts = 0
   let lastAuthenticatedAttempt = 0
+  let attemptsInFlight = 0
+  // A cancelled attempt's identity can land well after the attempt itself has
+  // gone, so the watch below outlives it. Bounded: an unclaimed record left
+  // armed would eventually sign out an identity from somewhere else entirely.
+  let strayWatch:
+    | { readonly before?: string; readonly attempt: number }
+    | undefined
+  let strayTimer: ReturnType<typeof setTimeout> | undefined
+
+  /**
+   * Clears an identity that a cancelled attempt's in-flight exchange published
+   * after the attempt had already given up on it. Deliberately inert while any
+   * attempt is still running: a live one owns the identity question, and its
+   * own credential reaches `currentUser` before it can claim it here.
+   */
+  function clearStrayIdentity(): void {
+    const watching = strayWatch
+    if (!watching || !firebaseForRollback) return
+    if (lastAuthenticatedAttempt >= watching.attempt) {
+      strayWatch = undefined
+      return
+    }
+    if (attemptsInFlight > 0) return
+    const current = user.value
+    if (!current || current.uid === watching.before) return
+    strayWatch = undefined
+    const rollback = firebaseForRollback.signOutWorkshop().catch(() => {})
+    pendingRollback = rollback
+    void rollback.finally(() => {
+      if (pendingRollback === rollback) pendingRollback = undefined
+    })
+  }
+
+  let firebaseForRollback: WorkshopFirebase | undefined
+  const stopStrayWatch = watch(user, clearStrayIdentity)
+  onBeforeUnmount(() => {
+    stopStrayWatch()
+    clearTimeout(strayTimer)
+    strayWatch = undefined
+  })
 
   function dispatch(event: AuthSignInEvent) {
     const before = state.value
@@ -284,6 +324,7 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
     let finishAttempt: (() => void) | undefined
     let identityBefore: string | undefined
     const attemptNumber = ++startedAttempts
+    attemptsInFlight += 1
     // Detaching hands the controls to the visitor; from then on this attempt
     // idles the page only while no successor has taken the controls over.
     const ownsControls = () => !detached || startedAttempts === attemptNumber
@@ -504,25 +545,22 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
         }
       }
     } finally {
+      attemptsInFlight -= 1
       // Firebase cancels a superseded pop-up by rejecting its promise, but an
       // exchange already in flight still finishes and still writes
-      // `currentUser`. Nothing owns that identity — this attempt never got a
-      // credential to roll back, and any successor that had authenticated
-      // would have claimed it — so clear it, and publish the sign-out before
-      // releasing the gate so a waiting attempt cannot authenticate over it.
-      const strayIdentity =
-        detached &&
-        !authenticated &&
-        lastAuthenticatedAttempt < attemptNumber &&
-        !!user.value &&
-        user.value.uid !== identityBefore
-      if (strayIdentity && firebase) {
-        const rollback = firebase.signOutWorkshop().catch(() => {})
-        pendingRollback = rollback
-        void rollback.finally(() => {
-          if (pendingRollback === rollback) pendingRollback = undefined
-        })
+      // `currentUser` — usually after this point, since the rejection is
+      // synchronous and the exchange is a network call. Arm the watch rather
+      // than reading `user` once, and evaluate now too for the rare identity
+      // that has already landed.
+      if (detached && !authenticated && firebase) {
+        firebaseForRollback = firebase
+        strayWatch = { before: identityBefore, attempt: attemptNumber }
+        clearTimeout(strayTimer)
+        strayTimer = setTimeout(() => {
+          strayWatch = undefined
+        }, OPERATION_TIMEOUT_MS)
       }
+      clearStrayIdentity()
       finishAttempt?.()
     }
   }

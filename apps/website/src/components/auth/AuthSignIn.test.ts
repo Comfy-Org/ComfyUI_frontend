@@ -750,7 +750,13 @@ describe('AuthSignIn', () => {
         cancelPopup = reject
       })
     })
-    vi.mocked(signInWorkshopWithGitHub).mockReturnValue(new Promise(() => {}))
+    let failGithub: ((reason: unknown) => void) | undefined
+    vi.mocked(signInWorkshopWithGitHub).mockImplementation(
+      () =>
+        new Promise<UserCredential>((_resolve, reject) => {
+          failGithub = reject
+        })
+    )
     render(AuthSignIn)
 
     await clickGoogle()
@@ -768,6 +774,13 @@ describe('AuthSignIn', () => {
       displayName: null
     })
     cancelPopup?.({ code: 'auth/cancelled-popup-request', message: 'x' })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(
+      signOutWorkshop,
+      'the successor is still running and owns the identity question'
+    ).not.toHaveBeenCalled()
+
+    failGithub?.({ code: 'auth/popup-blocked', message: 'x' })
 
     await waitFor(() =>
       expect(
@@ -776,6 +789,99 @@ describe('AuthSignIn', () => {
       ).toHaveBeenCalledOnce()
     )
     expect(replace).not.toHaveBeenCalled()
+  })
+
+  it('clears a stray identity that lands after the cancellation was handled', async () => {
+    let closePopup: (() => void) | undefined
+    let cancelPopup: ((reason: unknown) => void) | undefined
+    let failGithub: ((reason: unknown) => void) | undefined
+    vi.mocked(signInWorkshopWithGoogle).mockImplementation((options) => {
+      closePopup = options?.onPopupClosed
+      return new Promise<UserCredential>((_resolve, reject) => {
+        cancelPopup = reject
+      })
+    })
+    vi.mocked(signInWorkshopWithGitHub).mockImplementation(
+      () =>
+        new Promise<UserCredential>((_resolve, reject) => {
+          failGithub = reject
+        })
+    )
+    render(AuthSignIn)
+    render(AuthToast)
+
+    await clickGoogle()
+    closePopup?.()
+    await waitFor(() =>
+      expect(githubButton().hasAttribute('disabled')).toBe(false)
+    )
+    await userEvent.setup().click(githubButton())
+
+    // The rejection is synchronous; the token exchange is a network call, so
+    // the identity it publishes normally arrives after this point.
+    cancelPopup?.({ code: 'auth/cancelled-popup-request', message: 'x' })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    failGithub?.({ code: 'auth/popup-blocked', message: 'x' })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    authUser.value = testFirebaseUser({
+      uid: 'stray-user',
+      email: 'user@example.com',
+      displayName: null
+    })
+
+    await waitFor(() => expect(signOutWorkshop).toHaveBeenCalledOnce())
+    expect(
+      replace,
+      'the restore listener would otherwise mint a session for an account that was never provisioned'
+    ).not.toHaveBeenCalled()
+    expect(vi.mocked(provisionWorkshopCustomer)).not.toHaveBeenCalled()
+  })
+
+  it('leaves a successor\u2019s identity alone while that attempt is still running', async () => {
+    let closePopup: (() => void) | undefined
+    let cancelPopup: ((reason: unknown) => void) | undefined
+    let completeGithub: ((credential: UserCredential) => void) | undefined
+    vi.mocked(signInWorkshopWithGoogle).mockImplementation((options) => {
+      closePopup = options?.onPopupClosed
+      return new Promise<UserCredential>((_resolve, reject) => {
+        cancelPopup = reject
+      })
+    })
+    const githubUser = testFirebaseUser({
+      uid: 'github-user',
+      email: 'user@example.com',
+      displayName: null
+    })
+    vi.mocked(signInWorkshopWithGitHub).mockImplementation(
+      () =>
+        new Promise<UserCredential>((resolve) => {
+          completeGithub = resolve
+        })
+    )
+    render(AuthSignIn)
+
+    await clickGoogle()
+    closePopup?.()
+    await waitFor(() =>
+      expect(githubButton().hasAttribute('disabled')).toBe(false)
+    )
+    await userEvent.setup().click(githubButton())
+    cancelPopup?.({ code: 'auth/cancelled-popup-request', message: 'x' })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    // Firebase writes currentUser before resolving, so the successor's own
+    // identity appears while it is still mid-flight.
+    authUser.value = githubUser
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(
+      signOutWorkshop,
+      'a live attempt owns the identity question; signing out here would break the sign-in in progress'
+    ).not.toHaveBeenCalled()
+
+    completeGithub?.(testCredential(githubUser))
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/'))
+    expect(vi.mocked(provisionWorkshopCustomer)).toHaveBeenCalledOnce()
+    expect(signOutWorkshop).not.toHaveBeenCalled()
   })
 
   it('leaves the identity alone when the attempt that superseded it owns one', async () => {
