@@ -1,17 +1,13 @@
 import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { computed } from 'vue'
 
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import WorkspaceMembersPanelContent from './WorkspaceMembersPanelContent.vue'
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useWorkspaceUI'),
-  () => ({
-    useWorkspaceUI: () => ({ workspaceRole: ref('owner') })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
 const stubs = {
   MembersPanelContent: { template: '<div data-testid="members-body" />' }
@@ -21,6 +17,8 @@ describe('WorkspaceMembersPanelContent', () => {
   let workspaceStore: ReturnType<typeof useTeamWorkspaceStore>
 
   beforeEach(() => {
+    const workspaceUI = vi.mocked(useWorkspaceUI())
+    workspaceUI.workspaceRole = computed(() => 'owner')
     workspaceStore = useTeamWorkspaceStore()
     vi.mocked(workspaceStore.fetchMembers).mockResolvedValue([])
     vi.mocked(workspaceStore.fetchPendingInvites).mockResolvedValue([])

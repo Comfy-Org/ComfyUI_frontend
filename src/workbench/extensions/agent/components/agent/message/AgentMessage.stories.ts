@@ -1,4 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
+import { useIntervalFn } from '@vueuse/core'
+import { defineComponent, onMounted, ref } from 'vue'
+
+import Button from '@/components/ui/button/Button.vue'
 
 import type { TurnId } from '../../../schemas/agentApiSchema'
 import type {
@@ -65,7 +69,7 @@ const meta: Meta<typeof AgentMessage> = {
   decorators: [
     () => ({
       template:
-        '<div class="agent-scope bg-agent-surface-raised w-100 p-4"><story /></div>'
+        '<div class="agent-scope bg-secondary-background w-100 p-4"><story /></div>'
     })
   ]
 }
@@ -141,4 +145,68 @@ export const FailedCall: Story = {
       false
     )
   }
+}
+
+export const Approval: Story = {
+  args: {
+    message: message(
+      [{ type: 'runApproval', askId: 'approval', workflowName: 'Portrait' }],
+      false
+    )
+  }
+}
+
+export const ApprovalPending: Story = {
+  args: { ...Approval.args, answeringAskIds: new Set(['approval']) }
+}
+
+export const ErrorNotice: Story = {
+  args: {
+    message: message(
+      [{ type: 'notice', level: 'error', text: 'The workflow could not run.' }],
+      false
+    )
+  }
+}
+
+const ArrivingTurn = defineComponent({
+  components: { AgentMessage, Button },
+  setup() {
+    const parts = ref<MessagePart[]>([])
+
+    const { pause, resume } = useIntervalFn(
+      () => {
+        if (parts.value.length >= trace.length) return pause()
+        parts.value = trace.slice(0, parts.value.length + 1)
+      },
+      900,
+      { immediate: false }
+    )
+
+    const replay = () => {
+      pause()
+      parts.value = []
+      resume()
+    }
+
+    onMounted(replay)
+
+    return { parts, replay, message }
+  },
+  template: `
+    <div>
+      <Button variant="secondary" size="sm" class="mb-3" @click="replay">
+        Replay
+      </Button>
+      <AgentMessage :message="message(parts, true)" />
+    </div>
+  `
+})
+
+export const StepsArriving: Story = {
+  name: 'DES-1032 Each step fades in as it arrives',
+  render: () => ({
+    components: { ArrivingTurn },
+    template: '<ArrivingTurn />'
+  })
 }

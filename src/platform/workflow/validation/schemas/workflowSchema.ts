@@ -523,10 +523,10 @@ export type ComfyWorkflowJSON = z.infer<
 export const zLegacyLoadableWorkflow = z
   .object({
     version: z.number(),
-    last_node_id: zNodeId,
-    last_link_id: z.number(),
     nodes: z.array(z.record(z.unknown())),
-    links: z.array(z.unknown())
+    links: z.array(z.unknown()).optional(),
+    last_node_id: zNodeId.optional(),
+    last_link_id: z.number().optional()
   })
   .passthrough()
 export type LegacyLoadableWorkflow = z.infer<typeof zLegacyLoadableWorkflow>
@@ -575,9 +575,11 @@ const zNodeInputValue = z.union([
 const zNodeData = z.object({
   inputs: z.record(zNodeInputName, zNodeInputValue),
   class_type: z.string(),
-  _meta: z.object({
-    title: z.string()
-  })
+  _meta: z
+    .object({
+      title: z.string()
+    })
+    .optional()
 })
 
 export const zComfyApiWorkflow = z.record(zNodeId, zNodeData)

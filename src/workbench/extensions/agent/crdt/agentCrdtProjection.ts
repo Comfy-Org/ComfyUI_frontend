@@ -1,16 +1,20 @@
 import type * as Y from 'yjs'
 
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
+import type { NodeId } from '@/types/nodeId'
 
 import type { MaterializableGraph } from './agentNodeMaterializer'
-import { reconcileAgentAdapters } from './agentNodeMaterializer'
+import {
+  reconcileAgentAdapters,
+  subgraphDefinitionReadState
+} from './agentNodeMaterializer'
 import {
   readSubgraphDefinitionIds,
   readSubgraphDefinitions
 } from './agentSubgraphDefinitions'
 import { recordDevEvent } from './devPanelLog'
 import type { DocUpdate } from './docFrameClient'
-import type { MutationsForTarget } from './ecsFollowerAdapter'
+import type { LocalIntent, MutationsForTarget } from './ecsFollowerAdapter'
 import { EcsFollowerAdapter } from './ecsFollowerAdapter'
 import type { FollowerDoc } from './followerDoc'
 
@@ -20,9 +24,10 @@ export class AgentCrdtProjection {
   constructor(
     mutations: MutationsForTarget,
     private readonly getGraph: () => MaterializableGraph | null,
-    private readonly getFollowerDoc: () => Y.Doc
+    private readonly getFollowerDoc: () => Y.Doc,
+    intent?: LocalIntent
   ) {
-    this.adapter = new EcsFollowerAdapter(mutations)
+    this.adapter = new EcsFollowerAdapter(mutations, intent)
   }
 
   bind(workflowId: string, follower: FollowerDoc): void {
@@ -60,18 +65,30 @@ export class AgentCrdtProjection {
     this.adapter.discardPending(workflowId)
   }
 
-  reconcileLiveGraph(workflowId: string): void {
+  /** @returns ids that received a new live node on this pass. */
+  reconcileLiveGraph(workflowId: string): NodeId[] {
     const graph = this.getGraph()
-    if (!graph) return
+    if (!graph) return []
     const followerDoc = this.getFollowerDoc()
     const definitionIds = readSubgraphDefinitionIds(followerDoc)
-    const hasMissingDefinition = definitionIds.some(
-      (id) => !graph.rootGraph.subgraphs.has(id)
+    const definitionStates = definitionIds.map((id) => ({
+      id,
+      state: subgraphDefinitionReadState(graph.rootGraph, id)
+    }))
+    const needsDefinitionBody = definitionStates.some(
+      ({ state }) => state === 'missing'
     )
-    const definitions = hasMissingDefinition
-      ? readSubgraphDefinitions(followerDoc)
+    const failedDefinitionIds = new Set(
+      definitionStates
+        .filter(({ state }) => state === 'failed')
+        .map(({ id }) => id)
+    )
+    const definitions = needsDefinitionBody
+      ? readSubgraphDefinitions(followerDoc, failedDefinitionIds)
       : []
-    const nodeIds = reconcileAgentAdapters(graph, definitions)
+    const nodeIds = failedDefinitionIds.size
+      ? reconcileAgentAdapters(graph, definitions, failedDefinitionIds)
+      : reconcileAgentAdapters(graph, definitions)
     // A frame that only wires or rewires nodes moves no layout, so nothing
     // else asks the canvas to paint the new links.
     graph.setDirtyCanvas(true, true)
@@ -81,6 +98,7 @@ export class AgentCrdtProjection {
         nodeIds
       })
     }
+    return nodeIds
   }
 
   destroy(): void {

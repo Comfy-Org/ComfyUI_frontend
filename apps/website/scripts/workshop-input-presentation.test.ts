@@ -17,7 +17,7 @@ import {
 } from '../src/config/workshop-playground'
 import type { FormValues } from '../src/config/workshop-playground'
 import { prepareWorkshopRouterInput } from '../src/config/workshop-request'
-import { getRouterWorkshopModelDetail } from '../src/config/workshop-router-content'
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from '../src/config/workshop-router-content'
 import { initialWorkshopPageState } from '../src/config/workshop-page-state'
 import { prepareModelRouterRender } from '../src/config/router-render'
 import {

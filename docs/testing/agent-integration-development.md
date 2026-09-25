@@ -84,6 +84,15 @@ Paste the recorder command it prints, one `--prompt` per turn.
 4. Start a local ComfyUI backend at `http://127.0.0.1:8188`.
 5. Export `ANTHROPIC_API_KEY`. `ANTHROPIC_BASE_URL` may be used instead for a local
    compatible model endpoint.
+6. To complete a turn through the Comfy model proxy without a browser login, start the
+   harness with a Comfy API key:
+
+   ```bash
+   DEV_AGENT_COMFY_TOKEN=comfyui-… pnpm tsx scripts/dev-agent-integration.ts
+   ```
+
+   Vite forwards it to the standalone agent as `X-Comfy-Token`. Without it, the panel
+   starts but model requests return 401.
 
 The root dependency on `@comfyorg/comfy-multi-player` may use the published npm
 package or `workspace:`. The launcher warns that package source edits will not

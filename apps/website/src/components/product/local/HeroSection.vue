@@ -165,7 +165,7 @@ onUnmounted(() => {
 
 <template>
   <section
-    class="max-w-9xl relative mx-auto flex flex-col items-center overflow-visible lg:flex-row lg:items-center lg:pb-[min(8vw,10rem)]"
+    class="relative mx-auto flex max-w-9xl flex-col items-center overflow-visible lg:flex-row lg:items-center lg:pb-[min(8vw,10rem)]"
   >
     <!-- Illustration (hidden below lg, left on lg) -->
     <div
@@ -309,7 +309,7 @@ onUnmounted(() => {
         >
           <span class="ppformula-text-center inline-flex items-center gap-2">
             <i
-              class="icon-mask size-5 -translate-y-px mask-[url('/icons/social/github.svg')]"
+              class="size-5 -translate-y-px icon-mask mask-[url('/icons/social/github.svg')]"
               aria-hidden="true"
             />
             {{ t('download.hero.installGithub', locale) }}

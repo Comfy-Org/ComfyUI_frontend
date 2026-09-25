@@ -13,13 +13,13 @@ import {
   comfyUiApplicationNode,
   comfyUiSoftwareId,
   comfyUiSourceCodeNode,
-  pageContext,
+  pageContext
 } from '../utils/jsonLd'
 
 const { siteUrl, locale } = pageContext(
   Astro.site,
   Astro.url.pathname,
-  Astro.currentLocale,
+  Astro.currentLocale
 )
 ---
 
@@ -29,10 +29,23 @@ const { siteUrl, locale } = pageContext(
   mainEntityId={comfyUiSoftwareId(siteUrl)}
   breadcrumbs={[
     { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
-    { name: t('breadcrumb.download', locale) },
+    { name: t('breadcrumb.download', locale) }
   ]}
-  extraJsonLd={[comfyUiApplicationNode(siteUrl), comfyUiSourceCodeNode(siteUrl)]}
-  keywords={['comfyui app', 'comfyui desktop app', 'comfyui desktop', 'comfy ui application', 'comfyui download', 'download comfyui', 'comfyui windows', 'comfyui mac', 'comfyui linux']}
+  extraJsonLd={[
+    comfyUiApplicationNode(siteUrl),
+    comfyUiSourceCodeNode(siteUrl)
+  ]}
+  keywords={[
+    'comfyui app',
+    'comfyui desktop app',
+    'comfyui desktop',
+    'comfy ui application',
+    'comfyui download',
+    'download comfyui',
+    'comfyui windows',
+    'comfyui mac',
+    'comfyui linux'
+  ]}
 >
   <CloudBannerSection />
   <HeroSection client:load />

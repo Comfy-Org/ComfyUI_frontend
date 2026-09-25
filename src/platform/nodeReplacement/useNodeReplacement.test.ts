@@ -3,6 +3,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { st, t } from '@/i18n'
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import {
@@ -49,11 +50,7 @@ vi.mock(import('@/utils/graphTraversalUtil'), () => ({
 
 const { mockToastAdd } = vi.hoisted(() => ({ mockToastAdd: vi.fn() }))
 
-vi.mock<unknown>(import('@/i18n'), () => ({
-  st: (_key: string, fallback: string) => fallback,
-  t: (key: string, params?: Record<string, unknown>) =>
-    params ? `${key}:${JSON.stringify(params)}` : key
-}))
+vi.mock(import('@/i18n'))
 
 import { app } from '@/scripts/app'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
@@ -61,6 +58,10 @@ import { collectAllNodes } from '@/utils/graphTraversalUtil'
 import { useNodeReplacement } from './useNodeReplacement'
 
 beforeEach(() => {
+  vi.mocked(st).mockImplementation((_key, fallback) => fallback)
+  vi.mocked(t).mockImplementation((key: unknown, params?: unknown) =>
+    params ? `${String(key)}:${JSON.stringify(params)}` : String(key)
+  )
   useWorkflowStore().activeWorkflow = fromPartial({
     pendingWarnings: null,
     changeTracker: {

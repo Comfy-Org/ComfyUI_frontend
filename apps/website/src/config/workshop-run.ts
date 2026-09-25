@@ -6,6 +6,12 @@ export const OUTPUT_TTL_MS = 24 * 60 * 60 * 1000
 export type RunFailure =
   | 'validation'
   | 'provider'
+  | 'upload'
+  | 'network'
+  | 'response'
+  | 'client'
+  | 'concurrency'
+  | 'conflict'
   | 'rateLimit'
   | 'policy'
   | 'noCredits'
@@ -13,8 +19,12 @@ export type RunFailure =
   | 'timeout'
 
 export interface RunOutput {
+  readonly id?: string
   readonly kind: Modality | 'other'
+  readonly purpose?: 'response-metadata'
   readonly url: string
+  readonly download?: { readonly url: string; readonly expiresAt: number }
+  readonly expiresAt?: number
   readonly byteLength?: number
   readonly text?: string
   readonly truncated?: boolean
@@ -33,13 +43,17 @@ export interface RunRecord {
 export type RunState =
   | { readonly status: 'idle' }
   | { readonly status: 'example'; readonly output: RunOutput }
-  | { readonly status: 'running'; readonly startedAt: number }
+  | {
+      readonly status: 'running'
+      readonly startedAt: number
+      readonly label?: string
+    }
   | { readonly status: 'cancelled' }
   | {
       readonly status: 'succeeded'
       readonly output: RunOutput
       readonly completedAt: number
-      readonly expiresAt: number
+      readonly expiresAt?: number
       readonly nsfw: boolean
     }
   | {
@@ -137,7 +151,11 @@ export function runGate(input: GateInput): RunGate {
 }
 
 export function isExpired(state: RunState, now: number): boolean {
-  return state.status === 'succeeded' && now >= state.expiresAt
+  return (
+    state.status === 'succeeded' &&
+    state.expiresAt !== undefined &&
+    now >= state.expiresAt
+  )
 }
 
 export function formatElapsed(ms: number): string {

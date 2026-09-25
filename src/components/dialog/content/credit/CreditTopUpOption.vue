@@ -4,7 +4,7 @@
     :class="[
       selected
         ? 'border-2 border-border-default bg-secondary-background'
-        : 'bg-component-node-disabled border-2 border-transparent hover:bg-secondary-background'
+        : 'border-2 border-transparent bg-node-component-disabled hover:bg-secondary-background'
     ]"
     @click="$emit('select')"
   >

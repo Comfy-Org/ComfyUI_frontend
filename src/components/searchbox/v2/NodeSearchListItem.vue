@@ -4,7 +4,7 @@
   >
     <div class="flex min-w-0 flex-1 flex-col gap-1 overflow-hidden">
       <!-- Row 1: Name (left) + badges (right) -->
-      <div class="text-foreground flex items-center gap-2 text-sm">
+      <div class="flex items-center gap-2 text-sm text-base-foreground">
         <span
           v-if="isBookmarked && !hideBookmarkIcon"
           role="img"

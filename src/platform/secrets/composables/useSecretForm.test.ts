@@ -6,21 +6,22 @@ import { describe, expect, it, vi } from 'vitest'
 import type {
   SecretMetadata,
   FirstClassSecretProvider,
-  SecretProviderInfo
+  SecretProviderInfo,
+  SecretErrorCode
 } from '../types'
 import { useSecretForm as useSecretFormComposable } from './useSecretForm'
 
 const mockCreate = vi.fn()
 const mockUpdate = vi.fn()
 
-vi.mock<unknown>(import('../api/secretsApi'), () => ({
+vi.mock(import('../api/secretsApi'), () => ({
   createSecret: (payload: unknown) => mockCreate(payload),
   updateSecret: (id: string, payload: unknown) => mockUpdate(id, payload),
   SecretsApiError: class SecretsApiError extends Error {
     constructor(
       message: string,
       public readonly status?: number,
-      public readonly code?: string
+      public readonly code?: SecretErrorCode
     ) {
       super(message)
       this.name = 'SecretsApiError'

@@ -75,7 +75,7 @@ jobs:
       contents: read
       pull-requests: read
     outputs:
-      should-run: ${{ github.event_name == 'pull_request' && github.event.pull_request.changed_files >= 3000 || steps.changes.outputs.should-run }}
+      should-run: ${{ github.event_name == 'pull_request' && github.event.pull_request.changed_files >= 3000 || steps.changes.outputs.should-run-e2e }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -396,6 +396,7 @@ jobs:
               ;;
           esac
           pnpm exec playwright test browser_tests/tests/customNodes/ \
+            browser_tests/tests/subgraph/subgraphConvertAutogrowInputs.spec.ts \
             --project=custom-nodes --reporter=list,json,html --workers=1 --retries=0 \
             "${grep_args[@]}" 2>&1 | tee custom-nodes.log
 
@@ -446,8 +447,13 @@ jobs:
     if: always()
     needs: [changes, custom_nodes_e2e]
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # For the explainer section; a fork PR degrades to the job summary.
+      pull-requests: write
     steps:
       - name: Enforce suite result
+        id: gate
         shell: bash
         env:
           CHANGES_RESULT: ${{ needs.changes.result }}
@@ -473,3 +479,62 @@ jobs:
             exit 0
           fi
           [ "$E2E_RESULT" = success ] || { echo "::error::custom-node matrix ended with $E2E_RESULT"; exit 1; }
+
+      # This suite's failure strings cite step names ("Step 5c") that resolve
+      # only inside a Notion page, so a red check currently hands the reader a
+      # reference they cannot follow from here.
+      - name: Checkout repository
+        if: ${{ !cancelled() }}
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Describe the suite
+        if: ${{ !cancelled() }}
+        shell: bash
+        env:
+          SHOULD_RUN: ${{ needs.changes.outputs.should-run }}
+        run: |
+          set -euo pipefail
+          if [ "$SHOULD_RUN" = false ]; then
+            echo 'This candidate changes nothing the suite measures, so it was skipped.' > custom-nodes-explainer.md
+          else
+            {
+              echo 'Real registry packs — impact, kjnodes, VHS, was, essentials, customscripts — driven through Playwright against a live ComfyUI server, in tiers:'
+              echo
+              echo '| Tier | Asserts |'
+              echo '| --- | --- |'
+              echo '| mount | every enrolled registered node mounts on the canvas renderer |'
+              echo '| execution | the same nodes mount and run on the DOM renderer |'
+              echo '| roundtrip | save/reload outcomes match exact contracts |'
+              echo
+              echo 'A failure names the pack and the tier. Download the `playwright-report-custom-nodes-*` artifact from this run for the trace.'
+              echo
+              echo 'Failure messages cite onboarding steps by name (for example "Step 5c"). Those step headings are pinned by CI strings and pure specs, so they cannot drift silently — but they live in the Notion design doc linked below, not in this repo.'
+            } > custom-nodes-explainer.md
+          fi
+          cat custom-nodes-explainer.md
+
+      - name: Explain the verdict
+        if: ${{ !cancelled() }}
+        uses: ./.github/actions/explain-check
+        with:
+          slug: custom-nodes-e2e
+          title: Custom Nodes E2E
+          icon: '🧪'
+          # A skipped suite is not a measured pass, so it reports withheld.
+          status: ${{ steps.gate.outcome != 'success' && 'fail' || needs.changes.outputs.should-run == 'false' && 'withheld' || 'pass' }}
+          headline: >-
+            Curated real-pack regression suite. When the suite completes, a red
+            means a specific pack stopped mounting, executing or round-tripping
+            against this change; a withheld result means it never ran, so
+            nothing was measured either way.
+          details-file: custom-nodes-explainer.md
+          reproduce: |
+            # needs a ComfyUI checkout: export TEST_COMFYUI_DIR=/path/to/ComfyUI
+            pnpm test:custom-nodes:local
+            # or, against an already-running dev server, one spec:
+            pnpm test:custom-nodes:debug
+          docs: '[docs/custom-node-regression-suite.md](docs/custom-node-regression-suite.md)'
+          pr-number: ${{ github.event.pull_request.number }}
+          token: ${{ github.token }}

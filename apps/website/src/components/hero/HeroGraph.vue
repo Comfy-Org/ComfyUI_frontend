@@ -133,7 +133,7 @@ function wrapperStyle(key: ElementKey) {
         <BrandButton
           :href="externalLinks.cloudCta('hero_get_started_free')"
           variant="outline"
-          class="pointer-events-auto uppercase"
+          class="pointer-events-auto font-bold uppercase"
         >
           {{ t('hero.getStartedFree', locale) }}
         </BrandButton>
