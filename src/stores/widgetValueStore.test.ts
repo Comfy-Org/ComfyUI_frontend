@@ -8,7 +8,7 @@ import type { WidgetId } from '@/types/widgetId'
 import type { WidgetState } from '@/types/widgetState'
 import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
 
-import { useWidgetValueStore } from './widgetValueStore'
+import { stripGraphPrefix, useWidgetValueStore } from './widgetValueStore'
 
 function state<T>(
   type: string,
@@ -684,5 +684,116 @@ describe('useWidgetValueStore', () => {
       expect(store.setValue(seedA, 8)).toBe(true)
       expect(store.getWidget(seedA)?.value).toBe(8)
     })
+  })
+
+  describe('local-dirty-tracking suppression', () => {
+    it('a context-less write is locally dirty by default', () => {
+      const store = useWidgetValueStore()
+      const registered = store.registerWidget(seedA, state('number', 1))!
+
+      registered.value = 2
+
+      expect(store.isLocallyDirty(seedA)).toBe(true)
+    })
+
+    it('withLocalDirtyTrackingSuppressed keeps a context-less write clean', () => {
+      const store = useWidgetValueStore()
+      const registered = store.registerWidget(seedA, state('number', 1))!
+
+      store.withLocalDirtyTrackingSuppressed(() => {
+        registered.value = 2
+      })
+
+      expect(store.getWidget(seedA)?.value).toBe(2)
+      expect(store.isLocallyDirty(seedA)).toBe(false)
+    })
+
+    it('begin/end brackets an async window the same way', () => {
+      const store = useWidgetValueStore()
+      const registered = store.registerWidget(seedA, state('number', 1))!
+
+      store.beginLocalDirtyTrackingSuppression()
+      registered.value = 2
+      store.endLocalDirtyTrackingSuppression()
+
+      expect(store.isLocallyDirty(seedA)).toBe(false)
+
+      // Once closed, an ordinary context-less write is dirty again.
+      registered.value = 3
+      expect(store.isLocallyDirty(seedA)).toBe(true)
+    })
+
+    it('nests: an inner suppression ending early does not lift the outer one', () => {
+      const store = useWidgetValueStore()
+      const registered = store.registerWidget(seedA, state('number', 1))!
+
+      store.beginLocalDirtyTrackingSuppression()
+      store.withLocalDirtyTrackingSuppressed(() => {
+        registered.value = 2
+      })
+      // The inner bracket closed; the outer one, opened first, is still open.
+      registered.value = 3
+      expect(store.isLocallyDirty(seedA)).toBe(false)
+
+      store.endLocalDirtyTrackingSuppression()
+      registered.value = 4
+      expect(store.isLocallyDirty(seedA)).toBe(true)
+    })
+
+    it('endLocalDirtyTrackingSuppression never goes negative', () => {
+      const store = useWidgetValueStore()
+      const registered = store.registerWidget(seedA, state('number', 1))!
+
+      // An unmatched end (e.g. a load whose beforeLoadGraph never ran) must
+      // not leave the counter negative, where a single legitimate begin
+      // later would fail to suppress anything.
+      store.endLocalDirtyTrackingSuppression()
+      store.beginLocalDirtyTrackingSuppression()
+      registered.value = 2
+      expect(store.isLocallyDirty(seedA)).toBe(false)
+
+      store.endLocalDirtyTrackingSuppression()
+      registered.value = 3
+      expect(store.isLocallyDirty(seedA)).toBe(true)
+    })
+  })
+})
+
+describe('stripGraphPrefix', () => {
+  const uuidA = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
+  const uuidB = '11111111-2222-3333-4444-555555555555'
+
+  it('returns a bare id unchanged', () => {
+    expect(stripGraphPrefix('42')).toBe('42')
+  })
+
+  it('strips a single subgraph-uuid scope prefix', () => {
+    expect(stripGraphPrefix(`${uuidA}:42`)).toBe('42')
+  })
+
+  it('strips chained scope prefixes for nested subgraphs', () => {
+    expect(stripGraphPrefix(`${uuidA}:${uuidB}:42`)).toBe('42')
+  })
+
+  // PM-1580: `insert_workflow`'s remapped node ids (comfy-multi-player
+  // `remap.ts`'s `derivedId`, e.g. `insert:<opId>:root:node:<originalId>`)
+  // carry colons that have nothing to do with subgraph scoping. Widget
+  // registration (`attachNodeToStores`/`setNodeId`) always keys on the full
+  // id, never a stripped one, so collapsing it here made every widget
+  // lookup for such a node come back empty — nodes materialized with the
+  // right position/type/links but rendered with no widgets at all.
+  it('leaves a non-scoped id carrying colons for an unrelated reason intact', () => {
+    const derived = 'insert:insert-workflow-op-id-padded-to-32c:root:node:9'
+    expect(stripGraphPrefix(derived)).toBe(derived)
+  })
+
+  it('does not collapse two different non-scoped ids that share a trailing segment', () => {
+    const a = 'insert:first-op-padded-to-32-characters0:root:node:9'
+    const b = 'insert:second-op-padded-to-32-characters:root:node:9'
+    expect(stripGraphPrefix(a)).not.toBe(stripGraphPrefix(b))
+  })
+
+  it('returns null for an empty id', () => {
+    expect(stripGraphPrefix('')).toBeNull()
   })
 })

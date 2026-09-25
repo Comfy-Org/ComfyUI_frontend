@@ -7,7 +7,7 @@ function sortedParams(params: Params = {}): Record<string, ParamValue> {
   for (const k of keys) {
     const v = params[k]
     if (v === undefined) continue
-    obj[k] = Array.isArray(v) ? v.toSorted((a, b) => a.localeCompare(b)) : v
+    obj[k] = Array.isArray(v) ? [...v].sort((a, b) => a.localeCompare(b)) : v
   }
   return obj
 }

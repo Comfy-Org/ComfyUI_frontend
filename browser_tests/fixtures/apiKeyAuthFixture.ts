@@ -85,10 +85,7 @@ export const apiKeyAuthFixture = base.extend<{
     const userId = await comfyPage.setupUser(
       `playwright-api-key-${testInfo.parallelIndex}`
     )
-    await comfyPage.setupSettings({
-      'Comfy.TutorialCompleted': true,
-      'Comfy.userId': userId
-    })
+    await comfyPage.setupSettings({ userId })
 
     await page.route('https://{api,stagingapi}.comfy.org/releases**', (route) =>
       route.fulfill({ json: [] })

@@ -16,7 +16,10 @@ import type { RedirectConfig } from 'astro'
  */
 export const redirects = {
   '/cloud/enterprise': { status: 301, destination: '/enterprise/' },
-  '/zh-CN/cloud/enterprise': { status: 301, destination: '/enterprise/' },
+  '/zh-CN/cloud/enterprise': {
+    status: 301,
+    destination: '/zh-CN/enterprise/'
+  },
   '/cloud/enterprise-case-studies/comfyui-at-architectural-scale-how-moment-factory-reimagined-3d-projection-mapping':
     '/customers/moment-factory/',
   '/cloud/enterprise-case-studies/how-series-entertainment-rebuilt-game-and-video-production-with-comfyui':
@@ -25,8 +28,9 @@ export const redirects = {
   // The platform rename, added on main while this branch was open.
   '/api': '/platform/',
   '/zh-CN/api': '/zh-CN/platform/',
-  '/platform/router': '/platform/models/',
-  '/zh-CN/platform/router': '/zh-CN/platform/models/',
+  // Models API became Comfy Router and moved back to /platform/router.
+  '/platform/models': '/platform/router/',
+  '/zh-CN/platform/models': '/zh-CN/platform/router/',
   // Pricing moved out from under /cloud, also from main.
   '/cloud/pricing': '/pricing/',
   '/zh-CN/cloud/pricing': '/zh-CN/pricing/',

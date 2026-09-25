@@ -39,21 +39,9 @@ const visible = computed(() => comfyManagerStore.taskLogs.length > 0)
 const isInProgress = computed(
   () => comfyManagerStore.isProcessingTasks || isRestarting.value
 )
-
-const isTaskInProgress = (index: number) => {
-  const log = focusedLogs.value[index]
-  if (!log) return false
-
-  const taskQueue = comfyManagerStore.taskQueue
-  if (!taskQueue) return false
-
-  const allQueueTasks = [
-    ...(taskQueue.running_queue || []),
-    ...(taskQueue.pending_queue || [])
-  ]
-
-  return allQueueTasks.some((task) => task.ui_id === log.taskId)
-}
+const hasSuccessfulTasks = computed(
+  () => comfyManagerStore.succeededTasksIds.length > 0
+)
 
 const completedTasksCount = computed(() => {
   return (
@@ -179,7 +167,7 @@ onBeforeUnmount(() => {
           v-for="(log, index) in focusedLogs"
           :key="log.taskId"
           open
-          class="group/log shadow-elevation-1 mt-2 rounded-lg border border-interface-stroke bg-interface-panel-surface"
+          class="group/log mt-2 rounded-lg border border-interface-stroke bg-interface-panel-surface shadow-interface"
         >
           <summary
             class="flex w-full cursor-pointer list-none items-center justify-between px-4 py-2 [&::-webkit-details-marker]:hidden"
@@ -188,9 +176,11 @@ onBeforeUnmount(() => {
               <span>{{ log.taskName }}</span>
               <span class="text-muted">
                 {{
-                  isTaskInProgress(index)
-                    ? t('g.inProgress')
-                    : t('g.completedWithCheckmark')
+                  comfyManagerStore.isTaskFailed(log.taskId)
+                    ? t('g.failed')
+                    : comfyManagerStore.isTaskInProgress(log.taskId)
+                      ? t('g.inProgress')
+                      : t('g.completedWithCheckmark')
                 }}
               </span>
             </span>
@@ -235,7 +225,10 @@ onBeforeUnmount(() => {
       >
         <div class="flex min-w-0 items-center text-base leading-none">
           <div class="flex items-center">
-            <template v-if="isInProgress">
+            <span v-if="comfyManagerStore.queueError && isInProgress">
+              {{ t('manager.queueWaitingToContinue') }}
+            </span>
+            <template v-else-if="isInProgress">
               <DotSpinner duration="1s" class="mr-2" />
               <span>{{ currentTaskName }}</span>
             </template>
@@ -243,20 +236,36 @@ onBeforeUnmount(() => {
               <span class="mr-2">🎉</span>
               <span>{{ currentTaskName }}</span>
             </template>
-            <template v-else>
+            <template v-else-if="hasSuccessfulTasks">
               <span class="mr-2">✅</span>
               <span>{{ t('manager.restartToApplyChanges') }}</span>
             </template>
+            <span
+              v-else-if="comfyManagerStore.failedTasksIds.length"
+              class="text-error"
+              >{{ t('g.failed') }}</span
+            >
+            <span v-else>{{ t('g.completed') }}</span>
           </div>
         </div>
         <div class="flex shrink-0 items-center gap-4">
-          <span v-if="isInProgress" class="text-sm text-muted-foreground">
+          <span
+            v-if="isInProgress && !comfyManagerStore.queueError"
+            class="text-sm text-muted-foreground"
+          >
             {{ completedTasksCount }} {{ t('g.progressCountOf') }}
             {{ totalTasksCount }}
           </span>
           <div class="flex items-center">
             <Button
-              v-if="!isInProgress && !isRestartCompleted"
+              v-if="comfyManagerStore.queueError && isInProgress"
+              variant="secondary"
+              @click="comfyManagerStore.startQueue"
+            >
+              {{ t('manager.retryQueueStart') }}
+            </Button>
+            <Button
+              v-if="!isInProgress && !isRestartCompleted && hasSuccessfulTasks"
               variant="secondary"
               class="mr-4 rounded-full border-2 border-base-foreground px-3 text-base-foreground hover:bg-secondary-background-hover"
               @click="handleRestart"
@@ -264,7 +273,7 @@ onBeforeUnmount(() => {
               {{ t('manager.applyChanges') }}
             </Button>
             <Button
-              v-else-if="!isRestartCompleted"
+              v-if="!isRestartCompleted"
               variant="muted-textonly"
               size="sm"
               class="rounded-full font-bold"
@@ -282,6 +291,7 @@ onBeforeUnmount(() => {
               size="sm"
               class="rounded-full font-bold"
               :aria-label="t('g.close')"
+              :disabled="isInProgress"
               @click.stop="closeToast"
             >
               <i class="pi pi-times" />

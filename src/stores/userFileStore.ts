@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-import type { UserDataFullInfo } from '@/schemas/apiSchema'
+import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 import { api } from '@/scripts/api'
 import type { TreeExplorerNode } from '@/types/treeExplorerTypes'
 import { getPathDetails } from '@/utils/formatUtil'

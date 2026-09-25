@@ -82,7 +82,9 @@ describe('astro redirect destinations', () => {
 
   it('every destination ends with a trailing slash', () => {
     const slashless = destinations.filter(
-      (destination) => !destination.endsWith('/')
+      // A dynamic destination names a route rather than a URL, and Astro
+      // rejects it outright when it carries a trailing slash.
+      (destination) => !destination.includes('[') && !destination.endsWith('/')
     )
     expect(
       slashless,
@@ -92,25 +94,47 @@ describe('astro redirect destinations', () => {
 })
 
 describe('legacy Enterprise redirects', () => {
-  it.for([
-    '/cloud/enterprise',
-    '/cloud/enterprise/',
-    '/zh-CN/cloud/enterprise',
-    '/zh-CN/cloud/enterprise/'
-  ])('sends %s to the canonical Enterprise route permanently', (source) => {
-    const redirect = findRedirect(source)
-
-    if (!redirect) {
-      throw new Error(`${source} is missing from vercel.json`)
+  const cases = [
+    {
+      source: '/cloud/enterprise',
+      destination: `${getRoutes('en').enterprise}/`
+    },
+    {
+      source: '/zh-CN/cloud/enterprise',
+      destination: `${getRoutes('zh-CN').enterprise}/`
     }
+  ] as const
+  const vercelCases = cases.flatMap(({ source, destination }) => [
+    { source, destination },
+    { source: `${source}/`, destination }
+  ])
 
-    expect(redirect.destination).toBe('/enterprise/')
-    expect(redirect.permanent).toBe(true)
-  })
+  it.for(vercelCases)(
+    'sends $source to $destination permanently',
+    ({ source, destination }) => {
+      const redirect = findRedirect(source)
+
+      if (!redirect) {
+        throw new Error(`${source} is missing from vercel.json`)
+      }
+
+      expect(redirect.destination).toBe(destination)
+      expect(redirect.permanent).toBe(true)
+    }
+  )
+
+  it.for(cases)(
+    'sets the Astro redirect for $source',
+    ({ source, destination }) => {
+      expect(astroRedirects[source]).toEqual({ status: 301, destination })
+    }
+  )
 
   it('leaves the canonical Enterprise routes unredirected', () => {
     expect(findRedirect('/enterprise')).toBeUndefined()
     expect(findRedirect('/enterprise/')).toBeUndefined()
+    expect(findRedirect('/zh-CN/enterprise')).toBeUndefined()
+    expect(findRedirect('/zh-CN/enterprise/')).toBeUndefined()
     expect(findRedirect('/enterprise/managed-builds')).toBeUndefined()
     expect(findRedirect('/enterprise/managed-builds/')).toBeUndefined()
   })

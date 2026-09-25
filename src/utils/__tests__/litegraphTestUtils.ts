@@ -10,13 +10,16 @@ import type {
   CanvasPointerEvent,
   ISerialisedGraph,
   LGraph,
-  LGraphCanvas,
   LGraphGroup,
   LinkNetwork,
-  LLink,
   SerialisableGraph
 } from '@/lib/litegraph/src/litegraph'
-import { LGraphEventMode, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraphCanvas,
+  LGraphEventMode,
+  LGraphNode,
+  LLink
+} from '@/lib/litegraph/src/litegraph'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { vi } from 'vitest'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
@@ -44,6 +47,33 @@ export function createNodeState(overrides: Partial<NodeState> = {}): NodeState {
     type: 'TestNode',
     ...overrides,
     properties: overrides.properties ?? {}
+  }
+}
+
+interface StubPathMethods {
+  moveTo: Path2D['moveTo']
+  lineTo: Path2D['lineTo']
+  bezierCurveTo: Path2D['bezierCurveTo']
+  quadraticCurveTo: Path2D['quadraticCurveTo']
+}
+
+export class StubPath2D implements StubPathMethods {
+  calls: Array<{ method: string; args: unknown[] }> = []
+
+  moveTo(...args: unknown[]): void {
+    this.calls.push({ method: 'moveTo', args })
+  }
+
+  lineTo(...args: unknown[]): void {
+    this.calls.push({ method: 'lineTo', args })
+  }
+
+  bezierCurveTo(...args: unknown[]): void {
+    this.calls.push({ method: 'bezierCurveTo', args })
+  }
+
+  quadraticCurveTo(...args: unknown[]): void {
+    this.calls.push({ method: 'quadraticCurveTo', args })
   }
 }
 
@@ -120,9 +150,7 @@ export function createMockCanvas(
 ): LGraphCanvas {
   return {
     setDirty: vi.fn(),
-    state: {
-      selectionChanged: false
-    },
+    state: {},
     ...(overrides as Partial<LGraphCanvas>)
   } as LGraphCanvas
 }
@@ -191,6 +219,7 @@ export function createMockCanvasRenderingContext2D(
     getTransform: vi.fn(
       () => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }) as DOMMatrix
     ),
+    createPattern: vi.fn(() => null),
     font: '',
     fillStyle: '',
     strokeStyle: '',
@@ -377,6 +406,7 @@ export function createMockCanvas2DContext(
     stroke: vi.fn(),
     arc: vi.fn(),
     fill: vi.fn(),
+    createPattern: vi.fn(() => null),
     fillStyle: '',
     strokeStyle: '',
     lineWidth: 1,
@@ -421,4 +451,48 @@ export function reloadSerializedGraph(
   usePreviewExposureStore().clearGraph(payload.id)
   reloaded.configure(payload)
   return reloaded
+}
+
+/**
+ * Creates a link between two nodes by directly mutating graph state,
+ * bypassing the layout store integration in connect().
+ */
+export function createTestLink(
+  graph: LGraph,
+  sourceNode: LGraphNode,
+  outputSlot: number,
+  targetNode: LGraphNode,
+  inputSlot: number
+): LLink {
+  const linkId = toLinkId(Number(graph.state.lastLinkId) + 1)
+  graph.state.lastLinkId = linkId
+  const link = new LLink(
+    linkId,
+    sourceNode.outputs[outputSlot].type,
+    sourceNode.id,
+    outputSlot,
+    targetNode.id,
+    inputSlot
+  )
+  if (!graph._addLink(link)) {
+    throw new Error('Failed to add test link')
+  }
+  return link
+}
+
+export function createTestCanvas(
+  graph: LGraph,
+  ctx: CanvasRenderingContext2D
+): LGraphCanvas {
+  const element = document.createElement('canvas')
+  element.width = 800
+  element.height = 600
+  element.getContext = vi.fn().mockReturnValue(ctx)
+  element.getBoundingClientRect = vi.fn().mockReturnValue({
+    left: 0,
+    top: 0,
+    width: 800,
+    height: 600
+  })
+  return new LGraphCanvas(element, graph, { skip_render: true })
 }
