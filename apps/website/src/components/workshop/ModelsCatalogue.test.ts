@@ -1,5 +1,5 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen, waitFor } from '@testing-library/vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { readonly, ref, nextTick } from 'vue'
 import type { Ref } from 'vue'
@@ -105,6 +105,29 @@ describe('ModelsCatalogue', () => {
       screen.getByRole('link', { name: /Remove an image background/ })
     ).toBeVisible()
     expect(screen.queryByRole('link', { name: /Change a material/ })).toBeNull()
+  })
+
+  // The tabs belong with the controls that act on the list, not with the
+  // heading: they switch halves inside the catalogue rather than announce it.
+  // Apps has no list of its own, so it carries them anyway or there is no way
+  // back out of it.
+  it.for([
+    { tab: 'Models', named: 'the models half' },
+    { tab: 'Workflows', named: 'the workflows half' },
+    { tab: 'Apps', named: 'the apps half' }
+  ])('keeps the tabs beside the controls in $named', async ({ tab }) => {
+    const user = userEvent.setup()
+    render(ModelsCatalogue, { props: { models: launchModels } })
+    if (tab !== 'Models')
+      await user.click(screen.getByRole('button', { name: tab }))
+
+    const controls = await screen.findByTestId('workshop-toolbar')
+    expect(within(controls).getByTestId('catalogue-tabs')).toBeVisible()
+    expect(
+      within(screen.getByTestId('workshop-hero')).queryByTestId(
+        'catalogue-tabs'
+      )
+    ).toBeNull()
   })
 
   it('keeps prototype app destinations out of the Apps tab', async () => {

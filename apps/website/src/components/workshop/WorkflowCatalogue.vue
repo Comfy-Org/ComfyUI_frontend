@@ -134,7 +134,9 @@ function leaveSection() {
     </template>
     <div
       class="sticky top-20 z-30 -mx-1 mb-8 flex flex-wrap items-center gap-3 bg-page px-1 py-4 max-sm:mb-4 max-sm:py-2 lg:top-26"
+      data-testid="workshop-toolbar"
     >
+      <slot name="tabs" />
       <div class="flex min-w-0 flex-1 items-center gap-3 max-sm:basis-full">
         <WorkshopSearchField
           v-model="query"
