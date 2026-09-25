@@ -518,6 +518,32 @@ describe('ChangeTracker', () => {
         ])
       })
 
+      it('does not squash a late update while a compound operation is open', async () => {
+        const initial = createState(1)
+        const changed = structuredClone(initial)
+        changed.nodes[0].widgets_values = [2]
+        const midTransaction = structuredClone(changed)
+        midTransaction.nodes[0].widgets_values = [3]
+        const tracker = createTracker(initial)
+        mockCanvasState(changed)
+
+        tracker.captureCanvasState()
+        tracker.beforeChange()
+        mockCanvasState(midTransaction)
+        await vi.advanceTimersByTimeAsync(50)
+
+        expect(tracker.activeState).toEqual(changed)
+        expect(tracker.undoQueue).toEqual([initial])
+
+        const final = structuredClone(midTransaction)
+        final.nodes[0].widgets_values = [4]
+        mockCanvasState(final)
+        tracker.afterChange()
+
+        expect(tracker.activeState).toEqual(final)
+        expect(tracker.undoQueue).toEqual([initial, changed])
+      })
+
       it('does not emit an execution change for a late layout-only update', async () => {
         const initial = createState(1)
         const changed = structuredClone(initial)
@@ -1216,6 +1242,36 @@ describe('ChangeTracker', () => {
 
         expect(tracker.undoQueue).toHaveLength(1)
         expect(tracker.activeState).toEqual(final)
+      })
+
+      it('suppresses captureCanvasState across nested beforeChange/afterChange calls', () => {
+        const tracker = createTracker(createState(1))
+
+        tracker.beforeChange()
+        tracker.beforeChange()
+
+        mockCanvasState(createState(2))
+        tracker.afterChange()
+        expect(tracker.undoQueue).toHaveLength(0)
+
+        mockCanvasState(createState(3))
+        tracker.afterChange()
+        expect(tracker.undoQueue).toHaveLength(1)
+      })
+
+      it('does not let an unpaired afterChange desync future transactions', () => {
+        const tracker = createTracker(createState(1))
+
+        // An unpaired afterChange (no matching beforeChange) must not drive
+        // changeCount negative, or every subsequent transaction is
+        // permanently suppressed.
+        tracker.afterChange()
+
+        tracker.beforeChange()
+        mockCanvasState(createState(2))
+        tracker.afterChange()
+
+        expect(tracker.undoQueue).toHaveLength(1)
       })
 
       it('caps undoQueue at MAX_HISTORY', () => {

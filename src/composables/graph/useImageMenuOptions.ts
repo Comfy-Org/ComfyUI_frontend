@@ -31,7 +31,7 @@ async function pasteClipboardImageToNode(node: LGraphNode): Promise<void> {
         type: imageType
       })
       node.pasteFile?.(file)
-      node.pasteFiles?.([file])
+      void node.pasteFiles?.([file])
       return
     }
   } catch (error) {

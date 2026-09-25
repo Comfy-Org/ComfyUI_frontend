@@ -197,7 +197,9 @@ function createMockCanvas(): Partial<LGraphCanvas> {
     draw: vi.fn(),
     selectItems: vi.fn(),
     setDirty: vi.fn(),
-    setGraph: vi.fn()
+    setGraph: vi.fn(),
+    emitBeforeChange: vi.fn(),
+    emitAfterChange: vi.fn()
   }
 }
 
@@ -2693,7 +2695,10 @@ describe('ComfyApp', () => {
       const mockNode2 = createMockNode({ id: 2 })
       const mockBatchNode = createMockNode({ id: 3, type: 'BatchImagesNode' })
 
-      vi.mocked(pasteImageNodes).mockResolvedValue([mockNode1, mockNode2])
+      vi.mocked(pasteImageNodes).mockResolvedValue({
+        nodes: [mockNode1, mockNode2],
+        completion: Promise.resolve()
+      })
       vi.mocked(createNode).mockResolvedValue(mockBatchNode)
 
       const file1 = createTestFile('test1.png', 'image/png')
@@ -2704,18 +2709,21 @@ describe('ComfyApp', () => {
 
       expect(pasteImageNodes).toHaveBeenCalledWith(mockCanvas, files)
       expect(createNode).toHaveBeenCalledWith(mockCanvas, 'BatchImagesNode')
+      expect(mockNode1.connect).toHaveBeenCalledWith(0, mockBatchNode, 0)
+      expect(mockNode2.connect).toHaveBeenCalledWith(0, mockBatchNode, 1)
       expect(mockCanvas.selectItems).toHaveBeenCalledWith([
         mockNode1,
         mockNode2,
         mockBatchNode
       ])
-      expect(mockNode1.connect).toHaveBeenCalledWith(0, mockBatchNode, 0)
-      expect(mockNode2.connect).toHaveBeenCalledWith(0, mockBatchNode, 1)
     })
 
     it('should select single image node without batch node', async () => {
       const mockNode1 = createMockNode({ id: 1 })
-      vi.mocked(pasteImageNodes).mockResolvedValue([mockNode1])
+      vi.mocked(pasteImageNodes).mockResolvedValue({
+        nodes: [mockNode1],
+        completion: Promise.resolve()
+      })
 
       const file = createTestFile('test.png', 'image/png')
 
@@ -2801,7 +2809,7 @@ describe('ComfyApp', () => {
     it('should position batch node to the right of first node', () => {
       const mockNode1 = createMockNode({
         pos: [100, 200],
-        getBounding: vi.fn(() => new Float64Array([100, 200, 300, 400]))
+        size: [300, 400]
       })
       const mockBatchNode = createMockNode({ pos: [0, 0] })
 
@@ -2813,8 +2821,8 @@ describe('ComfyApp', () => {
     it('should stack multiple image nodes vertically', () => {
       const mockNode1 = createMockNode({
         pos: [100, 200],
-        type: 'LoadImage',
-        getBounding: vi.fn(() => new Float64Array([100, 200, 300, 400]))
+        size: [300, 400],
+        type: 'LoadImage'
       })
       const mockNode2 = createMockNode({ pos: [0, 0], type: 'LoadImage' })
       const mockNode3 = createMockNode({ pos: [0, 0], type: 'LoadImage' })
@@ -2829,7 +2837,8 @@ describe('ComfyApp', () => {
 
     it('should call graph change once for all nodes', () => {
       const mockNode1 = createMockNode({
-        getBounding: vi.fn(() => new Float64Array([100, 200, 300, 400]))
+        pos: [100, 200],
+        size: [300, 400]
       })
       const mockBatchNode = createMockNode()
 
