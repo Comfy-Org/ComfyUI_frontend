@@ -315,7 +315,6 @@ export const useModelStore = defineStore('models', () => {
 
   let modelFoldersRequestId = 0
   const pendingReloads = new Set<Promise<boolean>>()
-  // Whether the committed folders read from the asset API; unset until the first commit.
   let committedAssetsEnabled: boolean | undefined
 
   /**
@@ -383,15 +382,6 @@ export const useModelStore = defineStore('models', () => {
     return true
   }
 
-  /**
-   * Makes the committed folder structure current before its folders load:
-   * waits out pending reloads, whose replaced folders would finish loading
-   * into detached objects, and rebuilds when nothing is committed yet or the
-   * committed folders read from a data source the capability has since
-   * switched away from. A superseded rebuild commits nothing, so this retries
-   * until a load of ours commits or a concurrent one has; bounded as a
-   * safety net.
-   */
   async function ensureCurrentModelFolders() {
     for (let attempt = 0; attempt < 3; attempt++) {
       while (pendingReloads.size > 0) await Promise.allSettled(pendingReloads)
