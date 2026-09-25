@@ -392,8 +392,9 @@ describe('HostTelemetrySink', () => {
     },
     {
       name: TelemetryEvents.AGENT_ATTACH_BUTTON_CLICKED,
-      track: (sink: HostTelemetrySink) => sink.trackAgentAttachButtonClicked(),
-      properties: undefined
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentAttachButtonClicked({ method: 'drag_drop' }),
+      properties: { method: 'drag_drop' }
     },
     {
       name: TelemetryEvents.AGENT_WORKFLOW_APPLIED,
