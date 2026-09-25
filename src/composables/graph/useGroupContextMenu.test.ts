@@ -40,6 +40,7 @@ interface StubCanvas {
   graph: LGraph
   deselectAll: ReturnType<typeof vi.fn>
   select: ReturnType<typeof vi.fn>
+  setDirty: ReturnType<typeof vi.fn>
   selectedItems: Set<unknown>
 }
 
@@ -65,6 +66,7 @@ describe('useGroupContextMenu', () => {
       graph,
       deselectAll: vi.fn(),
       select: vi.fn(),
+      setDirty: vi.fn(),
       selectedItems: new Set()
     }
     stubCanvas.deselectAll.mockImplementation(() => {
@@ -115,12 +117,17 @@ describe('useGroupContextMenu', () => {
     'selects only the group through the real canvas when child cascade is %s',
     (cascade) => {
       const { canvas, node, targetGroup } = createRealCanvasHarness()
+      const selections: unknown[][] = []
+      canvas.onSelectionChange = () => {
+        selections.push([...canvas.selectedItems])
+      }
       canvas.groupSelectChildren = cascade
       canvas.select(node)
 
       canvas.processContextMenu(undefined, event)
 
       expect(canvas.selectedItems).toEqual(new Set([targetGroup]))
+      expect(selections.at(-1)).toEqual([targetGroup])
       expect(targetGroup.selected).toBe(true)
       expect(node.selected).toBe(false)
       expect(canvas.groupSelectChildren).toBe(cascade)
