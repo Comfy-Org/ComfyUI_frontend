@@ -186,6 +186,27 @@ export const zWorkflowApiAssetsRequest = z.object({
 })
 
 /**
+ * The user a web session belongs to
+ */
+export const zWebSessionUser = z.object({
+  email: z.string(),
+  email_verified: z.boolean(),
+  id: z.string(),
+  name: z.string().optional(),
+  sign_in_provider: z.string().optional()
+})
+
+/**
+ * The live web session and the user it belongs to
+ */
+export const zWebSessionResponse = z.object({
+  absolute_expires_at: z.string().datetime(),
+  csrf_token: z.string(),
+  expires_at: z.string().datetime(),
+  user: zWebSessionUser
+})
+
+/**
  * Details of a single validation error encountered during asset operations.
  */
 export const zValidationError = z.object({
@@ -3298,6 +3319,11 @@ export const zRedeemDesktopLoginCodeResponse = zDesktopLoginCodeRedeemResponse
  * Session deleted successfully
  */
 export const zDeleteSessionResponse2 = zDeleteSessionResponse
+
+/**
+ * The live session
+ */
+export const zGetSessionResponse = zWebSessionResponse
 
 /**
  * Session created successfully
