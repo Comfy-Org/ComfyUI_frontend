@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { useElementHover } from '@vueuse/core'
+import { computed, useTemplateRef } from 'vue'
 
 import AudioThumbnail from '@/components/templates/thumbnails/AudioThumbnail.vue'
 import CompareSliderThumbnail from '@/components/templates/thumbnails/CompareSliderThumbnail.vue'
@@ -22,7 +23,8 @@ const {
   hoverZoom?: number
 }>()
 
-const internalHovered = ref(false)
+const previewElement = useTemplateRef<HTMLElement>('previewElement')
+const internalHovered = useElementHover(previewElement)
 const hovered = computed(() => isHovered ?? internalHovered.value)
 const isVideo = computed(
   () => template.mediaType === 'video' || template.mediaSubtype === 'webp'
@@ -31,9 +33,8 @@ const isVideo = computed(
 
 <template>
   <div
+    ref="previewElement"
     class="relative size-full overflow-hidden rounded-lg"
-    @mouseenter="internalHovered = true"
-    @mouseleave="internalHovered = false"
   >
     <AudioThumbnail v-if="template.mediaType === 'audio'" :src="baseImageSrc" />
     <CompareSliderThumbnail

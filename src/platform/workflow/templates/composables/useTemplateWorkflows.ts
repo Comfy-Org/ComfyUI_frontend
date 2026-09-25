@@ -216,9 +216,6 @@ export function useTemplateWorkflows() {
     }
   }
 
-  /**
-   * Loads a workflow template
-   */
   const loadWorkflowTemplate = async (id: string, sourceModule: string) => {
     if (!isTemplatesLoaded.value) return false
 
