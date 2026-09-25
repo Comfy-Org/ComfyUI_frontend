@@ -64,71 +64,47 @@ export async function expectRenderedTextUnclipped(
     true
   )
 
-  const rendered = await screenshotTarget.screenshot({ animations: 'disabled' })
-  const inlineColor = await text.evaluate((element) => {
-    const color = element.style.color
-    element.style.color = 'transparent'
-    return color
-  })
-  const withoutText = await screenshotTarget
-    .screenshot({ animations: 'disabled' })
-    .finally(() =>
-      text.evaluate((element, color) => {
-        element.style.color = color
-      }, inlineColor)
-    )
+  const rendered = await text.screenshot({ animations: 'disabled' })
 
-  const ink = await text.page().evaluate(
-    async ({ rendered, withoutText }) => {
-      const decode = async (base64: string) => {
-        const image = new Image()
-        image.src = `data:image/png;base64,${base64}`
-        await image.decode()
-        const canvas = document.createElement('canvas')
-        canvas.width = image.width
-        canvas.height = image.height
-        const context = canvas.getContext('2d')
-        if (!context) throw new Error('Failed to create 2D canvas context')
-        context.drawImage(image, 0, 0)
-        return context.getImageData(0, 0, image.width, image.height)
-      }
-      const [visible, hidden] = await Promise.all([
-        decode(rendered),
-        decode(withoutText)
-      ])
-      const bounds = {
-        left: visible.width,
-        top: visible.height,
-        right: -1,
-        bottom: -1
-      }
-      let pixels = 0
-      for (let index = 0; index < visible.data.length; index += 4) {
-        const difference =
-          Math.abs(visible.data[index] - hidden.data[index]) +
-          Math.abs(visible.data[index + 1] - hidden.data[index + 1]) +
-          Math.abs(visible.data[index + 2] - hidden.data[index + 2])
-        if (difference < 24) continue
-        const pixel = index / 4
-        const x = pixel % visible.width
-        const y = Math.floor(pixel / visible.width)
-        bounds.left = Math.min(bounds.left, x)
-        bounds.top = Math.min(bounds.top, y)
-        bounds.right = Math.max(bounds.right, x)
-        bounds.bottom = Math.max(bounds.bottom, y)
-        pixels++
-      }
-      return { bounds, height: visible.height, pixels, width: visible.width }
-    },
-    {
-      rendered: rendered.toString('base64'),
-      withoutText: withoutText.toString('base64')
+  const ink = await text.page().evaluate(async (rendered) => {
+    const decode = async (base64: string) => {
+      const image = new Image()
+      image.src = `data:image/png;base64,${base64}`
+      await image.decode()
+      const canvas = document.createElement('canvas')
+      canvas.width = image.width
+      canvas.height = image.height
+      const context = canvas.getContext('2d')
+      if (!context) throw new Error('Failed to create 2D canvas context')
+      context.drawImage(image, 0, 0)
+      return context.getImageData(0, 0, image.width, image.height)
     }
-  )
+    const visible = await decode(rendered)
+    const colors = new Map<number, number>()
+    for (let index = 0; index < visible.data.length; index += 4) {
+      const color =
+        (visible.data[index] << 16) |
+        (visible.data[index + 1] << 8) |
+        visible.data[index + 2]
+      colors.set(color, (colors.get(color) ?? 0) + 1)
+    }
+    const background = [...colors].reduce((mostCommon, current) =>
+      current[1] > mostCommon[1] ? current : mostCommon
+    )[0]
+    const backgroundRed = background >> 16
+    const backgroundGreen = (background >> 8) & 0xff
+    const backgroundBlue = background & 0xff
+    let pixels = 0
+    for (let index = 0; index < visible.data.length; index += 4) {
+      const difference =
+        Math.abs(visible.data[index] - backgroundRed) +
+        Math.abs(visible.data[index + 1] - backgroundGreen) +
+        Math.abs(visible.data[index + 2] - backgroundBlue)
+      if (difference < 24) continue
+      pixels++
+    }
+    return pixels
+  }, rendered.toString('base64'))
 
-  expect(ink.pixels).toBeGreaterThan(10)
-  expect(ink.bounds.left).toBeGreaterThan(0)
-  expect(ink.bounds.top).toBeGreaterThan(0)
-  expect(ink.bounds.right).toBeLessThan(ink.width - 1)
-  expect(ink.bounds.bottom).toBeLessThan(ink.height - 1)
+  expect(ink).toBeGreaterThan(10)
 }

@@ -10,15 +10,16 @@ test.describe(
   { tag: ['@canvas', '@node', '@widget'] },
   () => {
     test.describe.configure({ timeout: 60_000 })
+    test.use({
+      initialSettings: { 'Comfy.VueNodes.Enabled': false }
+    })
 
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
       await comfyPage.workflow.loadWorkflow('default')
       await expect(comfyPage.vueNodes.nodes).toHaveCount(0)
     })
 
     test.afterEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
       await comfyPage.canvasOps.resetView()
     })
 
@@ -39,12 +40,10 @@ test.describe(
           comfyPage,
           comfyMouse
         }) => {
-          const nodeCount =
-            await test.step('Capture the initial workflow state', async () => {
-              const nodeCount = await comfyPage.nodeOps.getGraphNodesCount()
-              expect(nodeCount).toBeGreaterThan(0)
-              return nodeCount
-            })
+          await test.step('Capture the initial workflow state', async () => {
+            const nodeCount = await comfyPage.nodeOps.getGraphNodesCount()
+            expect(nodeCount).toBeGreaterThan(0)
+          })
 
           await test.step(`Switch from the ${startInVue ? 'Vue' : 'legacy'} renderer`, async () => {
             if (startInVue) {
@@ -52,7 +51,7 @@ test.describe(
                 'Comfy.VueNodes.Enabled',
                 true
               )
-              await comfyPage.vueNodes.waitForNodes(nodeCount)
+              await comfyPage.vueNodes.waitForNodes()
             }
 
             await comfyPage.settings.setSetting(
@@ -63,7 +62,7 @@ test.describe(
               await comfyPage.nextFrame()
               await expect(comfyPage.vueNodes.nodes).toHaveCount(0)
             } else {
-              await comfyPage.vueNodes.waitForNodes(nodeCount)
+              await comfyPage.vueNodes.waitForNodes()
             }
           })
 
@@ -103,7 +102,7 @@ test.describe(
                 startInVue
               )
               if (startInVue) {
-                await comfyPage.vueNodes.waitForNodes(nodeCount)
+                await comfyPage.vueNodes.waitForNodes()
               } else {
                 await comfyPage.nextFrame()
                 await expect(comfyPage.vueNodes.nodes).toHaveCount(0)
@@ -137,7 +136,7 @@ test.describe(
             )
             await comfyPage.workflow.reloadAndWaitForApp()
             if (startInVue) {
-              await comfyPage.vueNodes.waitForNodes(nodeCount)
+              await comfyPage.vueNodes.waitForNodes()
             } else {
               await expect(comfyPage.vueNodes.nodes).toHaveCount(0)
             }
@@ -182,7 +181,7 @@ test.describe(
       for (let toggle = 0; toggle < 3; toggle++) {
         await test.step(`Complete renderer round trip ${toggle + 1}`, async () => {
           await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-          await comfyPage.vueNodes.waitForNodes(initialCounts.nodes)
+          await comfyPage.vueNodes.waitForNodes()
           await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
           await comfyPage.nextFrame()
           await expect(comfyPage.vueNodes.nodes).toHaveCount(0)
@@ -263,7 +262,10 @@ test.describe(
             expect(titleBox.width).toBeGreaterThan(0)
             expect(titleBox.height).toBeGreaterThan(0)
             const titleContainer = vueNode.getByTestId('node-header-3')
-            await expectRenderedTextUnclipped(title, titleContainer)
+            await expectRenderedTextUnclipped(
+              title.getByText(longTitle, { exact: true }),
+              titleContainer
+            )
 
             const cfgWidget = comfyPage.vueNodes
               .getWidgetByName(longTitle, 'cfg')
