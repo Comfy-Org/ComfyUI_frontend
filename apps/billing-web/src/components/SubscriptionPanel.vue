@@ -1,10 +1,14 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
 import type { BillingPlansData } from '@comfyorg/account-core/billing'
-import { usePlans, usePreviewSubscribe } from '@comfyorg/account-ui/billing'
+import {
+  useBillingClient,
+  usePlans,
+  usePreviewSubscribe
+} from '@comfyorg/account-ui/billing'
 import { billingIntentPath } from '@comfyorg/billing-contract'
 
 import PlanCard from '@/components/PlanCard.vue'
@@ -15,7 +19,7 @@ import { useHostedCopy } from '@/composables/useHostedCopy'
 type CatalogPlan = BillingPlansData['plans'][number]
 
 const { t } = useI18n()
-const { coded, money } = useHostedCopy()
+const { coded, date, money } = useHostedCopy()
 const route = useRoute()
 const router = useRouter()
 const { plans, loading, failure, refresh } = usePlans()
@@ -26,7 +30,22 @@ const {
   quote
 } = usePreviewSubscribe()
 
+const { status } = useBillingClient<'status'>(undefined)
+
 const selectedSlug = ref<string | undefined>()
+const endsAt = ref<string | undefined>()
+
+async function readEndDate() {
+  const result = await status.read()
+  endsAt.value =
+    result.status === 'ok' ? result.value.status.cancel_at : undefined
+}
+
+onMounted(() => void readEndDate())
+
+async function subscriptionChanged() {
+  await Promise.all([refresh(), readEndDate()])
+}
 
 const currentSlug = computed(() => plans.value?.current_plan_slug)
 
@@ -87,8 +106,11 @@ function goToCheckout() {
           : t('hosted.subscription.noPlan')
       }}
     </p>
+    <p v-if="endsAt" class="m-0 text-sm text-muted-foreground">
+      {{ t('hosted.subscription.endsOn', { date: date(endsAt) }) }}
+    </p>
 
-    <SubscriptionActions @changed="refresh" />
+    <SubscriptionActions @changed="subscriptionChanged" />
 
     <ul class="m-0 grid list-none gap-3 p-0 sm:grid-cols-2">
       <PlanCard
