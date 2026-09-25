@@ -18,10 +18,12 @@ import ReshootSlider from './ReshootSlider.vue'
 
 const {
   keys,
+  frames = RESHOOT_FRAMES,
   disabled = false,
   locale = 'en'
 } = defineProps<{
   keys: readonly CameraKey[]
+  frames?: number
   disabled?: boolean
   locale?: Locale
 }>()
@@ -62,7 +64,7 @@ const motionValue = computed({
         :label="rc('reshoot.move.frame', locale)"
         :display="frameTime(frame)"
         :min="0"
-        :max="RESHOOT_FRAMES - 1"
+        :max="frames - 1"
         :step="1"
         :disabled
         class="flex-1"

@@ -246,10 +246,6 @@ const copy = {
     en: 'This take did not finish',
     'zh-CN': '这条镜头未能完成'
   },
-  'reshoot.stage.uploading': {
-    en: 'Uploading the clip…',
-    'zh-CN': '正在上传片段…'
-  },
   'reshoot.stage.starting': {
     en: 'Starting a server…',
     'zh-CN': '正在启动服务器…'

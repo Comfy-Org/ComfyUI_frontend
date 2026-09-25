@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Clapperboard } from '@lucide/vue'
 
-import { useReshootDemo } from '../../../../composables/useReshootDemo'
+import { useReshoot } from '../../../../composables/useReshoot'
 import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
 import type { Locale } from '../../../../i18n/translations'
 import AppsBackLink from '../AppsBackLink.vue'
@@ -13,7 +13,7 @@ import ReshootUpload from './ReshootUpload.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
-const demo = useReshootDemo({ autoRead: true })
+const reshoot = useReshoot({ locale })
 const {
   upload,
   clip,
@@ -23,6 +23,9 @@ const {
   aspect,
   size,
   depth,
+  stage,
+  notice,
+  frames,
   step,
   camera,
   keepAim,
@@ -33,8 +36,12 @@ const {
   seed,
   takes,
   selected,
-  current
-} = demo
+  current,
+  gate,
+  canGenerate,
+  priceNote,
+  session
+} = reshoot
 </script>
 
 <template>
@@ -45,7 +52,7 @@ const {
     <AppsBackLink :locale />
     <ReshootHeader :locale class="mb-4" />
     <div class="grid items-start gap-6 lg:grid-cols-[27rem_minmax(0,1fr)]">
-      <ReshootUpload v-if="!picked" :locale @pick="demo.pick" />
+      <ReshootUpload v-if="!picked" :locale @pick="reshoot.pick" />
       <ReshootSide
         v-else
         v-model:upload="upload"
@@ -62,12 +69,17 @@ const {
         :camera
         :keys
         :depth
+        :frames
+        :gate
+        :can-generate="canGenerate"
+        :price-note="priceNote"
+        :workspace-name="session?.workspace.name"
         :locale
-        @aim="demo.aim"
-        @key="demo.addKey"
-        @remove-key="demo.removeKey"
+        @aim="reshoot.aim"
+        @key="reshoot.addKey"
+        @remove-key="reshoot.removeKey"
         @clear-keys="keys = []"
-        @generate="demo.generate"
+        @generate="reshoot.generate"
       />
       <div
         v-if="!picked"
@@ -90,6 +102,8 @@ const {
         :clip
         :camera
         :depth
+        :stage
+        :notice
         :step
         :takes
         :selected
@@ -97,17 +111,17 @@ const {
         cancellable
         :locale
         class="lg:pt-2"
-        @aim="demo.aim"
+        @aim="reshoot.aim"
         @select="selected = $event"
-        @cancel="demo.cancel"
-        @reuse="demo.reuse(selected)"
+        @cancel="reshoot.cancel"
+        @reuse="reshoot.reuse(selected)"
       />
     </div>
     <ReshootExamples
       :active-id="picked && isExample ? 'crossview-example' : undefined"
       :locale
       class="mt-6"
-      @pick="demo.pick()"
+      @pick="reshoot.pick()"
     />
   </div>
 </template>
