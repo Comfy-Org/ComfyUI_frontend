@@ -34,12 +34,6 @@ interface BackgroundTurn {
   message: AssistantMessage
   transport: AgentEventTransport
   userText: string | undefined
-  /**
-   * The files as the user attached them, names included. A turn is posted
-   * under storage refs only (PM-1705), so the row this stash is reconciled
-   * against names every file by its ref; these names exist nowhere else.
-   */
-  userAttachments: UserAttachment[] | undefined
   settled: boolean
 }
 
@@ -84,10 +78,19 @@ export const useAgentConversationStore = defineStore(
     // entry while A is still holding a part, stranding A the same way. Each
     // entry prunes itself out the first time notifyCanvasCaughtUp() finds it
     // has nothing left pending.
+    /**
+     * The name the user attached, keyed by the storage ref the turn was posted
+     * under. A persisted row names every file by that ref and nothing on the
+     * request carries the name (PM-1705), so within a session this is the only
+     * place it survives. A reload starts it empty, which is exactly the
+     * boundary PM-1705 draws.
+     */
+    const attachmentNamesByRef = new Map<string, string>()
     const settledActiveTransports = new Set<AgentEventTransport>()
     const backgroundTurns = new Map<string, BackgroundTurn>()
     let hydratedTurnIdsByRowId = new Map<string, TurnId>()
     let hydratedAssistantTurnIds = new Set<TurnId>()
+    let hydratedStreamingTurnIds = new Set<TurnId>()
     const reportedPaywallImpressions = new Set<TurnId>()
     const approvalShownAtByAsk = new Map<string, number>()
     const shownApprovalIds = new Set<string>()
@@ -140,8 +143,11 @@ export const useAgentConversationStore = defineStore(
       workflowReferences?: WorkflowReference[]
     ): void {
       userTexts.value.set(turnId, text)
-      if (attachments !== undefined && attachments.length > 0)
+      if (attachments !== undefined && attachments.length > 0) {
         userAttachments.value.set(turnId, attachments)
+        for (const { name, ref } of attachments)
+          if (ref) attachmentNamesByRef.set(ref, name)
+      }
       if (tags !== undefined && tags.length > 0)
         userTags.value.set(turnId, tags)
       if (workflowReferences !== undefined && workflowReferences.length > 0)
@@ -329,7 +335,6 @@ export const useAgentConversationStore = defineStore(
         message: liveMessage,
         transport,
         userText: userTexts.value.get(liveMessage.id),
-        userAttachments: userAttachments.value.get(liveMessage.id),
         settled: false
       })
       clearActive()
@@ -361,7 +366,6 @@ export const useAgentConversationStore = defineStore(
       const adoption = poppedHydratedCopy
         ? undefined
         : adoptHydratedTurn(entry, kept)
-      restoreStashedAttachmentNames(entry, adoption?.turnId ?? entry.message.id)
       if (adoption?.keeps === 'hydrated') {
         entry.transport.dispose()
         return
@@ -412,38 +416,6 @@ export const useAgentConversationStore = defineStore(
     }
 
     /**
-     * Puts the stashed names back over the refs the row named its files by,
-     * matched on the ref the two records share. Only the name crosses: the
-     * server's `id` and `kind` are its own resolution and stay, and the
-     * stashed `previewUrl` is a blob hydrate() has already revoked, where the
-     * ref still resolves a `/view` URL.
-     */
-    function restoreStashedAttachmentNames(
-      entry: BackgroundTurn,
-      turnId: TurnId
-    ): void {
-      const restored = userAttachments.value.get(turnId)
-      if (!entry.userAttachments || !restored) return
-      const namesByRef = new Map(
-        entry.userAttachments.flatMap((attachment) =>
-          attachment.ref !== undefined
-            ? [[attachment.ref, attachment.name] as const]
-            : []
-        )
-      )
-      userAttachments.value.set(
-        turnId,
-        restored.map((attachment) => {
-          const name =
-            attachment.ref !== undefined
-              ? namesByRef.get(attachment.ref)
-              : undefined
-          return name === undefined ? attachment : { ...attachment, name }
-        })
-      )
-    }
-
-    /**
      * A run_approval the hydrated copy was carrying has no counterpart on the
      * live message: it was persisted on the row, not broadcast over the
      * transport the stash holds. Dropping the copy without it leaves the ask
@@ -487,8 +459,15 @@ export const useAgentConversationStore = defineStore(
       // The stash is the better copy only while its transport was delivering.
       // One stashed across a socket drop can hold nothing while the row behind
       // it holds the whole finished reply, and losing that is worse than the
-      // duplicate this dedupe exists to remove.
-      if (entry.message.parts.length === 0 && hydrated.parts.length > 0)
+      // duplicate this dedupe exists to remove. Only for a row the service
+      // calls finished: a streaming row can already carry terminal tool calls
+      // while its reply is still coming, and keeping that copy would strand
+      // the turn with no transport left to finish it.
+      if (
+        entry.message.parts.length === 0 &&
+        hydrated.parts.length > 0 &&
+        !hydratedStreamingTurnIds.has(hydratedTurnId)
+      )
         return { keeps: 'hydrated', turnId: hydratedTurnId }
       kept.splice(index, 1)
       adoptPendingAsks(hydrated, entry.message)
@@ -572,10 +551,12 @@ export const useAgentConversationStore = defineStore(
       latestWorkflowId.value = undefined
       resolvedPaywallIds.value = new Set()
       dropAttachmentPreviews()
+      attachmentNamesByRef.clear()
       threadId.value = null
       forgetAllApprovals()
       hydratedTurnIdsByRowId = new Map()
       hydratedAssistantTurnIds = new Set()
+      hydratedStreamingTurnIds = new Set()
       reportedPaywallImpressions.clear()
       clearActive()
     }
@@ -592,8 +573,19 @@ export const useAgentConversationStore = defineStore(
       latestWorkflowId.value = transcript.latestWorkflowId
       hydratedTurnIdsByRowId = transcript.turnIdsByRowId
       hydratedAssistantTurnIds = transcript.assistantTurnIds
+      hydratedStreamingTurnIds = transcript.streamingTurnIds
       dropAttachmentPreviews()
-      userAttachments.value = transcript.userAttachments
+      userAttachments.value = new Map(
+        [...transcript.userAttachments].map(([turnId, attachments]) => [
+          turnId,
+          attachments.map((attachment) => {
+            const name = attachment.ref
+              ? attachmentNamesByRef.get(attachment.ref)
+              : undefined
+            return name === undefined ? attachment : { ...attachment, name }
+          })
+        ])
+      )
       if (transcript.pending) {
         liveMessage = transcript.pending.message
         activeTurnId.value = transcript.pending.messageId

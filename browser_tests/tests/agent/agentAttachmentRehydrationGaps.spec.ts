@@ -48,7 +48,12 @@ interface DroppedLibraryAsset {
   kind: MediaKind
 }
 
-/** The shape the asset library puts on the DataTransfer (assetDragUtil.ts). */
+/**
+ * A deliberate subset of what `startAssetDrag` puts on the DataTransfer
+ * (assetDragUtil.ts): the keys `getDroppedAsset` reads, minus `preview_url`,
+ * so the pre-refresh preview resolves through the mocked `/view` route rather
+ * than a URL this arrange would also have to serve.
+ */
 async function dropLibraryAsset(
   page: Page,
   panel: Locator,
