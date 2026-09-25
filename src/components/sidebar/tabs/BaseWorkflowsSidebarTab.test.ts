@@ -7,6 +7,7 @@ import { createI18n } from 'vue-i18n'
 
 import BaseWorkflowsSidebarTab from '@/components/sidebar/tabs/BaseWorkflowsSidebarTab.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import {
   useWorkflowStore,
   useWorkflowBookmarkStore
@@ -198,7 +199,7 @@ describe('BaseWorkflowsSidebarTab', () => {
   it.fails('propagates failed workflow deletion to the tree', async () => {
     const workflow = createMockWorkflow('workflows/test.json')
     Object.assign(useWorkflowStore(), { workflows: [workflow] })
-    mockWorkflowService.deleteWorkflow.mockResolvedValueOnce(false)
+    vi.mocked(useWorkflowService()).deleteWorkflow.mockResolvedValueOnce(false)
 
     renderComponent()
     await userEvent.type(screen.getByRole('combobox'), 'test')

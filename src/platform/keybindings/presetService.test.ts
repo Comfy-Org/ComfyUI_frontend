@@ -224,7 +224,7 @@ describe('useKeybindingPresetService', () => {
     })
 
     it.fails('returns false without changing state when user cancels confirmation', async () => {
-      dialogService.confirm.mockResolvedValueOnce(false)
+      vi.mocked(useDialogService()).confirm.mockResolvedValueOnce(false)
       store.currentPresetName = 'vim'
 
       const service = await getPresetService()
