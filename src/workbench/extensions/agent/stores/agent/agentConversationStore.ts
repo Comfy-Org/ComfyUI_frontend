@@ -191,22 +191,32 @@ export const useAgentConversationStore = defineStore(
         settledTransport.dropAskPart(askId)
       for (const entry of backgroundTurns.values())
         entry.transport.dropAskPart(askId)
-      resolvedAskIds.add(askId)
+      retiredAsksForCurrentThread().add(askId)
       clearAskResolutionWatchdog(askId)
       submittedAskSelections.delete(askId)
       setAskAnswering(askId, false)
     }
 
     /**
-     * PM-1658: asks this client has retired. `hydrate()` rebuilds a card from
-     * the server's `pending_ask`, which still reads pending while an answer is
-     * in flight and after a resolution broadcast is lost, so a refetch would
-     * otherwise put an answered card back on screen ENABLED — and the server
-     * answers the second, contradictory click by replaying the FIRST
-     * selection. Survives a remount because the store does; pruned in
-     * `hydrate` once the server stops naming the ask at all.
+     * PM-1658: asks this client has retired, per owning thread. `hydrate()`
+     * rebuilds a card from the server's `pending_ask`, which still reads
+     * pending while an answer is in flight and after a resolution broadcast is
+     * lost, so a refetch would otherwise put an answered card back on screen
+     * ENABLED — and the server answers the second, contradictory click by
+     * replaying the FIRST selection. Survives a remount because the store
+     * does; pruned once the thread's own transcript stops naming the ask.
+     *
+     * Keyed by thread so that loading another one cannot prune these, and so
+     * nothing here rests on an ask id being unique across threads.
      */
-    const resolvedAskIds = new Set<string>()
+    const resolvedAskIds = new Map<string, Set<string>>()
+
+    function retiredAsksForCurrentThread(): Set<string> {
+      const key = threadId.value ?? ''
+      const retired = resolvedAskIds.get(key) ?? new Set<string>()
+      resolvedAskIds.set(key, retired)
+      return retired
+    }
     /**
      * PM-1658: which way this client answered each ask. The server takes a
      * second answer from anywhere with 202 while committing only the FIRST, so
@@ -562,7 +572,8 @@ export const useAgentConversationStore = defineStore(
     function dropResolvedAsks(
       transcript: ReturnType<typeof normalizeAgentTranscript>
     ): void {
-      if (resolvedAskIds.size === 0) return
+      const retired = retiredAsksForCurrentThread()
+      if (retired.size === 0) return
       const named = new Set(
         transcript.messages.flatMap((message) =>
           message.parts.flatMap((part) =>
@@ -570,12 +581,10 @@ export const useAgentConversationStore = defineStore(
           )
         )
       )
-      for (const askId of resolvedAskIds)
-        if (!named.has(askId)) resolvedAskIds.delete(askId)
+      for (const askId of retired) if (!named.has(askId)) retired.delete(askId)
       for (const message of transcript.messages)
         message.parts = message.parts.filter(
-          (part) =>
-            part.type !== 'runApproval' || !resolvedAskIds.has(part.askId)
+          (part) => part.type !== 'runApproval' || !retired.has(part.askId)
         )
     }
 

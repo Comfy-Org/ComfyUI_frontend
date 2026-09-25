@@ -2,12 +2,16 @@ import { expect, mergeTests } from '@playwright/test'
 import type { Locator, Page, WebSocketRoute } from '@playwright/test'
 
 import type {
+  AgentAnswerAccepted,
   AgentCancelAccepted,
   AgentError,
   AgentMessage,
   AgentTurnAccepted
 } from '@comfyorg/ingest-types'
-import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
+import {
+  zAgentAnswerRequest,
+  zAgentPostMessageRequest
+} from '@comfyorg/ingest-types/zod'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
@@ -207,11 +211,12 @@ async function routeTurnLock(
   })
 
   await page.route('**/api/agent/threads/*/asks/*/answer', (route) => {
-    const { selected } = route.request().postDataJSON() as {
-      selected: string[]
-    }
+    const { selected } = zAgentAnswerRequest.parse(
+      route.request().postDataJSON()
+    )
     server.answerAsk(selected)
-    return route.fulfill({ ...jsonRoute({ status: 'answered' }), status: 202 })
+    const accepted: AgentAnswerAccepted = { status: 'answered' }
+    return route.fulfill({ ...jsonRoute(accepted), status: 202 })
   })
 
   await page.route('**/api/agent/threads/*/messages/*/cancel', (route) => {

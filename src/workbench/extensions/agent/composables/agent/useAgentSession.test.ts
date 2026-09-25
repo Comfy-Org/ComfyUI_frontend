@@ -548,6 +548,12 @@ describe('useAgentSession (v1 composition root)', () => {
   // to two rules: a click on a rendered card is never a no-op, and nothing
   // that answers it may leave it on screen with no way to release it.
   describe('answering a consent card', () => {
+    // Comfortably past the composable's answer backoff and the store's
+    // resolution grace, without restating either: a test that pinned the exact
+    // values would fail on a tuning change that broke nothing.
+    const PAST_ANSWER_RETRY_BACKOFF_MS = 5_000
+    const PAST_ASK_RESOLUTION_GRACE_MS = 60_000
+
     const parkedOnApproval = async () => {
       const answerAsk = vi.fn(
         async (): Promise<AgentAnswerAccepted> => ({ status: 'answered' })
@@ -754,7 +760,14 @@ describe('useAgentSession (v1 composition root)', () => {
       await session.sendMessage('build it and run it')
       events.emit(runApproval('msg-1'))
 
-      await session.answerAsk('turn-1:call-1', 'run')
+      vi.useFakeTimers()
+      try {
+        const answered = session.answerAsk('turn-1:call-1', 'run')
+        await vi.advanceTimersByTimeAsync(PAST_ANSWER_RETRY_BACKOFF_MS)
+        await answered
+      } finally {
+        vi.useRealTimers()
+      }
 
       expect(answerAsk).toHaveBeenCalledTimes(2)
       expect(answerAsk.mock.calls).toEqual([
@@ -763,6 +776,54 @@ describe('useAgentSession (v1 composition root)', () => {
       ])
       expect(session.notices.value).toEqual([])
       expect(reportError).not.toHaveBeenCalled()
+    })
+
+    // commitAsk arms a grace timer when the turn is still attached, because
+    // the resolution frame is the normal release and can be lost. Nothing else
+    // would ever re-enable the card.
+    it('retires a committed answer whose resolution frame never arrives', async () => {
+      vi.useFakeTimers()
+      try {
+        const { session } = await parkedOnApproval()
+        await session.answerAsk('turn-1:call-1', 'run')
+        expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(true)
+        expect(cardOnScreen()).toBe(true)
+
+        await vi.advanceTimersByTimeAsync(PAST_ASK_RESOLUTION_GRACE_MS)
+
+        expect(cardOnScreen()).toBe(false)
+        expect(session.answeringAskIds.value.size).toBe(0)
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    // The server commits the FIRST answer and takes later ones with 202 while
+    // replaying the stored selection, so another tab can decide this card. The
+    // frame names the winner; a dismissal on someone else's choice must not
+    // read as confirmation of ours.
+    it('warns when the resolution names a selection other than the one it sent', async () => {
+      const { session, emit } = await parkedOnApproval()
+      await session.answerAsk('turn-1:call-1', 'cancel')
+
+      emit(askResolved('msg-1'))
+
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        errorType: 'agent_ask_answer_superseded'
+      })
+      expect(session.notices.value).toHaveLength(1)
+      expect(cardOnScreen()).toBe(false)
+    })
+
+    it('stays quiet when the resolution confirms the selection it sent', async () => {
+      const { session, emit } = await parkedOnApproval()
+      await session.answerAsk('turn-1:call-1', 'run')
+
+      emit(askResolved('msg-1'))
+
+      expect(reportError).not.toHaveBeenCalled()
+      expect(session.notices.value).toEqual([])
+      expect(cardOnScreen()).toBe(false)
     })
 
     it('does not re-drive an answer the server has already refused', async () => {
