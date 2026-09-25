@@ -112,7 +112,7 @@ export async function readWebSession(
 
   const { status } = sent.response
   const parsed = zGetSessionResponse.safeParse(await readJson(sent.response))
-  if (!parsed.success) return failure('SESSION_REQUEST_REFUSED', status)
+  if (!parsed.success) return failure('SESSION_UNAVAILABLE', status)
   const { user, csrf_token, expires_at, absolute_expires_at } = parsed.data
   if (expectedUserId !== undefined && user.id !== expectedUserId) {
     return failure('IDENTITY_CHANGED', status)
