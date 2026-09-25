@@ -137,6 +137,72 @@ jobs:
           # completeness signal the packager needs.
           if-no-files-found: error
 
+  # Sharded cloud tests.
+  #
+  # The cloud project is sharded for the same reason chromium is: it outgrew a
+  # single job. It is the only @cloud-tagged surface and the program feeding it
+  # adds specs continuously, so its runtime tracks test count almost exactly
+  # (131 tests/5.0m on 2026-08-20 -> 422 tests/18.5m on 2026-09-24, ~2.5s per
+  # test throughout). Fixed setup is ~135s and flat, so there is no cheap
+  # setup-side win to take instead.
+  #
+  # Left in the unsharded `playwright-tests` matrix it was a 6-8x outlier
+  # against its own siblings — 1204s where mobile-safari, desktop, mobile-chrome
+  # and the two chromium scale projects run 149-194s — which meant one project
+  # set the budget for all six.
+  #
+  # Four shards puts each one near the ~10-minute size the 16 chromium shards
+  # already run at, and leaves room for roughly 4x more @cloud tests before this
+  # needs revisiting.
+  playwright-tests-cloud-sharded:
+    needs: setup
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    container:
+      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.22
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    permissions:
+      contents: read
+      packages: read
+    strategy:
+      fail-fast: false
+      matrix:
+        shardIndex: [1, 2, 3, 4]
+        shardTotal: [4]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Download built frontend
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: frontend-dist-cloud
+          path: dist/
+
+      - name: Start ComfyUI server
+        uses: ./.github/actions/start-comfyui-server
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+        with:
+          node_cache: 'false'
+
+      # Run sharded tests (browsers pre-installed in container)
+      - name: Run Playwright tests (cloud, shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
+        id: playwright
+        run: pnpm exec playwright test --project=cloud --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
+        env:
+          PLAYWRIGHT_BLOB_OUTPUT_DIR: ./blob-report
+
+      - name: Upload blob report
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        if: ${{ !cancelled() }}
+        with:
+          name: blob-report-cloud-${{ matrix.shardIndex }}
+          path: blob-report/
+          retention-days: 1
+
   playwright-tests:
     # Ideally, each shard runs test in 6 minutes, but allow up to 30 minutes
     timeout-minutes: 30
@@ -160,8 +226,7 @@ jobs:
             artifact: frontend-dist
           - browser: mobile-chrome
             artifact: frontend-dist
-          - browser: cloud
-            artifact: frontend-dist-cloud
+          # cloud runs in playwright-tests-cloud-sharded, not here
           - browser: mobile-safari
             artifact: frontend-dist-cloud
           - browser: desktop
@@ -240,6 +305,41 @@ jobs:
           path: ./playwright-report/
           retention-days: 30
 
+  # Merge sharded cloud reports back into the single playwright-report-cloud
+  # artifact the unsharded job used to publish, so sharding is invisible to
+  # anyone downloading the report.
+  merge-reports-cloud:
+    needs: [changes, playwright-tests-cloud-sharded]
+    runs-on: ubuntu-latest
+    if: ${{ !cancelled() && needs.changes.outputs.should-run == 'true' }}
+    steps:
+      - name: Install pnpm
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+        with:
+          version: 10
+
+      - name: Download blob reports
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          path: ./all-blob-reports-cloud
+          pattern: blob-report-cloud-*
+          merge-multiple: true
+
+      - name: Merge into HTML Report
+        run: |
+          # Generate HTML report
+          pnpm dlx @playwright/test merge-reports --reporter=html ./all-blob-reports-cloud
+          # Generate JSON report separately with explicit output path
+          PLAYWRIGHT_JSON_OUTPUT_NAME=playwright-report/report.json \
+          pnpm dlx @playwright/test merge-reports --reporter=json ./all-blob-reports-cloud
+
+      - name: Upload HTML report
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: playwright-report-cloud
+          path: ./playwright-report/
+          retention-days: 30
+
   # Gate job — single required check that passes whether the matrix ran or was
   # skipped. Branch rulesets require this instead of the individual matrix-
   # expanded check names so PRs with no e2e-relevant changes aren't stuck.
@@ -249,6 +349,7 @@ jobs:
       [
         changes,
         playwright-tests-chromium-sharded,
+        playwright-tests-cloud-sharded,
         playwright-tests,
         playwright-video-new-tests
       ]
@@ -259,15 +360,16 @@ jobs:
           CHANGES: ${{ needs.changes.result }}
           SHOULD_RUN: ${{ needs.changes.outputs.should-run }}
           SHARDED: ${{ needs.playwright-tests-chromium-sharded.result }}
+          CLOUD: ${{ needs.playwright-tests-cloud-sharded.result }}
           BROWSERS: ${{ needs.playwright-tests.result }}
           VIDEO: ${{ needs.playwright-video-new-tests.result }}
         run: |
-          echo "changes=$CHANGES should_run=$SHOULD_RUN sharded=$SHARDED browsers=$BROWSERS video=$VIDEO"
+          echo "changes=$CHANGES should_run=$SHOULD_RUN sharded=$SHARDED cloud=$CLOUD browsers=$BROWSERS video=$VIDEO"
           [[ "$CHANGES" != "success" ]] && echo "changes gate did not complete ($CHANGES)" && exit 1
           [[ "$SHOULD_RUN" != "true" ]] && echo "E2E skipped" && exit 0
-          [[ "$SHARDED" == "failure" || "$BROWSERS" == "failure" || "$VIDEO" == "failure" ]] && echo "E2E failed" && exit 1
-          [[ "$SHARDED" == "cancelled" || "$BROWSERS" == "cancelled" || "$VIDEO" == "cancelled" ]] && echo "E2E cancelled, not failed" && exit 1
-          [[ "$SHARDED" != "success" || "$BROWSERS" != "success" || ( "$VIDEO" != "success" && "$VIDEO" != "skipped" ) ]] && echo "E2E failed" && exit 1
+          [[ "$SHARDED" == "failure" || "$CLOUD" == "failure" || "$BROWSERS" == "failure" || "$VIDEO" == "failure" ]] && echo "E2E failed" && exit 1
+          [[ "$SHARDED" == "cancelled" || "$CLOUD" == "cancelled" || "$BROWSERS" == "cancelled" || "$VIDEO" == "cancelled" ]] && echo "E2E cancelled, not failed" && exit 1
+          [[ "$SHARDED" != "success" || "$CLOUD" != "success" || "$BROWSERS" != "success" || ( "$VIDEO" != "success" && "$VIDEO" != "skipped" ) ]] && echo "E2E failed" && exit 1
           echo "E2E passed"
 
   upload-e2e-coverage:
@@ -571,7 +673,13 @@ jobs:
   # Deploy and upsert final playwright section
   deploy-and-comment:
     needs:
-      [changes, playwright-tests, merge-reports, playwright-video-new-tests]
+      [
+        changes,
+        playwright-tests,
+        merge-reports,
+        merge-reports-cloud,
+        playwright-video-new-tests
+      ]
     runs-on: ubuntu-latest
     concurrency:
       group: pr-comment-${{ github.event.pull_request.number }}
