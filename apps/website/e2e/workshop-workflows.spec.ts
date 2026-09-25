@@ -110,6 +110,25 @@ test('workflow launch groups lead to the existing shared form', async ({
     'href',
     'https://testcloud.comfy.org/?template=image_qwen_image_edit_2511'
   )
+  await page.getByRole('tab', { name: 'Workflow', exact: true }).click()
+  const graphFiles = [
+    {
+      link: page.getByRole('link', { name: 'Open full-size workflow preview' }),
+      path: '/workflow-graphs/change-material.svg',
+      type: 'image/svg+xml'
+    },
+    {
+      link: page.getByRole('link', { name: 'Download workflow JSON' }),
+      path: '/workflow-graphs/change-material.json',
+      type: 'application/json'
+    }
+  ]
+  for (const { link, path, type } of graphFiles) {
+    await expect(link).toHaveAttribute('href', path)
+    const response = await page.request.get(path)
+    expect(response.ok()).toBe(true)
+    expect(response.headers()['content-type']).toContain(type)
+  }
   await page.getByRole('link', { name: 'Back to workflows' }).click()
   await expect(page.getByTestId('catalogue-tab-workflows')).toHaveAttribute(
     'aria-pressed',
@@ -229,6 +248,42 @@ test('workflow search and category filters share the mobile controls @mobile', a
   )
 })
 
+// The outcome rows give way to a flat grid the moment a filter is on, so what
+// the model facet narrows is what the reader ends up looking at.
+test('the workflows half narrows to the model it runs on, from the menu and from a shared link', async ({
+  page,
+  context
+}) => {
+  await mockWorkflowVisibility(context, true)
+  await page.goto('/models/')
+  await expect(page.getByTestId('catalogue-tab-workflows')).toBeInViewport()
+  await page.getByTestId('catalogue-tab-workflows').click()
+  const outcomes = page
+    .getByTestId('workflow-catalogue')
+    .getByTestId('workshop-model-card')
+  await expect(outcomes).toHaveCount(30)
+
+  await page.getByTestId('workshop-filter').click()
+  await page.getByTestId('workshop-facet-model').click()
+  await page.getByTestId('filter-model-LTX-2.3').click()
+  await expect(outcomes).toHaveCount(7)
+
+  // An outcome can stand on several models, so a second choice widens the list
+  // instead of intersecting it.
+  await page.getByTestId('filter-model-SeedVR2').click()
+  await expect(outcomes).toHaveCount(9)
+  await expect(page.getByTestId('workshop-facet-model-count')).toHaveText('2')
+
+  // Clearing gives the whole catalogue back, not just the badge.
+  await page.getByTestId('workshop-filter-clear').click()
+  await expect(page.getByTestId('workshop-filter-count')).toHaveCount(0)
+  await expect(outcomes).toHaveCount(30)
+
+  await page.goto('/models/?type=workflows&model=LTX-2.3')
+  await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
+  await expect(outcomes).toHaveCount(7)
+})
+
 test('the background example pairs its input and output and restores edited inputs', async ({
   page,
   context
@@ -260,3 +315,32 @@ test('the background example pairs its input and output and restores edited inpu
   await page.reload()
   await expect(original).toBeVisible()
 })
+
+const tabletToolbars = [640, 700, 768].flatMap((width) => [
+  { width, half: 'Models', path: '/models/' },
+  {
+    width,
+    half: 'Workflows with a category selected',
+    path: '/models/?type=workflows&category=upscale'
+  }
+])
+
+for (const { width, half, path } of tabletToolbars) {
+  test(`keeps every ${half} toolbar control on screen at ${width}px`, async ({
+    page,
+    context
+  }) => {
+    await mockWorkflowVisibility(context, true)
+    await page.setViewportSize({ width, height: 900 })
+    await page.goto(path)
+    const toolbar = page.getByTestId('workshop-toolbar')
+    await expect(toolbar.getByTestId('catalogue-tabs')).toBeVisible()
+    for (const control of [
+      toolbar.getByTestId('catalogue-tabs'),
+      toolbar.getByTestId('workshop-search'),
+      toolbar.getByTestId('workshop-filter'),
+      toolbar.getByTestId('workshop-sort')
+    ])
+      await expect(control).toBeInViewport({ ratio: 1 })
+  })
+}

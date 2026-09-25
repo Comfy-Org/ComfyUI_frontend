@@ -60,6 +60,13 @@ export type WebSessionIdentityState =
   | { readonly phase: 'signed_in'; readonly session: WebSession }
   | { readonly phase: 'signed_out'; readonly outcome: SignedOutOutcome }
 
+/** Only a sibling's sign-in is news to a tab that has signed out. */
+export type SessionObservedFrom =
+  | 'this_tab'
+  | 'sibling_heartbeat'
+  | 'sibling_sign_in'
+  | 'sibling_sign_out'
+
 export type WebSessionIdentityEvent =
   | { readonly type: 'boot' }
   | {
@@ -72,6 +79,7 @@ export type WebSessionIdentityEvent =
   /** A heartbeat answer, this tab's or one a sibling tab published. */
   | {
       readonly type: 'session_observed'
+      readonly from: SessionObservedFrom
       readonly result: WebSessionResult
       readonly rememberedUserId: string | null
     }
@@ -209,7 +217,8 @@ function observeWhileSignedIn(
   state: Extract<WebSessionIdentityState, { phase: 'signed_in' }>,
   result: WebSessionResult,
   rememberedUserId: string | null,
-  restored: boolean
+  restored: boolean,
+  ownRead: boolean
 ): WebSessionIdentityTransition {
   if (result.status === 'ok') {
     return replaceSession(
@@ -220,10 +229,12 @@ function observeWhileSignedIn(
   }
   if (result.retryable) return { state, effects: [] }
   if (result.code === 'SESSION_REVOKED') {
-    return leaveAccount('revoked', [
-      signOutLocally,
-      { type: 'report_signed_out_remotely' }
-    ])
+    return leaveAccount(
+      'revoked',
+      ownRead
+        ? [signOutLocally, { type: 'report_signed_out_remotely' }]
+        : [signOutLocally]
+    )
   }
   if (restored) return leaveAccount('restore_failed')
   if (!isNoLiveSession(result)) return { state, effects: [] }
@@ -240,12 +251,20 @@ function transitionSignedIn(
 ): WebSessionIdentityTransition {
   switch (event.type) {
     case 'session_observed':
+      return observeWhileSignedIn(
+        state,
+        event.result,
+        event.rememberedUserId,
+        false,
+        event.from === 'this_tab'
+      )
     case 'restore_answered':
       return observeWhileSignedIn(
         state,
         event.result,
         event.rememberedUserId,
-        event.type === 'restore_answered'
+        true,
+        true
       )
     case 'session_created':
       return replaceSession(state.session, event.session)
@@ -317,7 +336,8 @@ function transitionSettling(
     case 'session_observed': {
       const { result } = event
       const adoptable =
-        state.phase === 'signed_out' || state.phase === 'retry_wait'
+        state.phase === 'retry_wait' ||
+        (state.phase === 'signed_out' && event.from === 'sibling_sign_in')
       if (result.status !== 'ok' || !adoptable) return { state, effects: [] }
       return {
         state: { phase: 'signed_in', session: result.session },
@@ -370,7 +390,7 @@ export interface VisibilityPort {
 export interface WebSessionHeartbeatOptions {
   readonly visibility: VisibilityPort
   /** Without it every tab reads for itself. */
-  readonly crossTab?: CrossTabRefreshPort<WebSessionResult>
+  readonly crossTab?: CrossTabRefreshPort<WebSessionSharedMessage>
   readonly intervalMs?: number
 }
 
@@ -433,6 +453,19 @@ const zSharedResult = z.discriminatedUnion('status', [
   })
 ])
 
+const zSharedMessage = z.object({
+  from: z.enum(['heartbeat', 'sign_in', 'sign_out']),
+  result: zSharedResult
+})
+
+type SharedFrom = z.infer<typeof zSharedMessage>['from']
+
+/** What one tab of a site tells its siblings, and why. */
+export interface WebSessionSharedMessage {
+  readonly from: SharedFrom
+  readonly result: WebSessionResult
+}
+
 const revoked: WebSessionResult = {
   status: 'error',
   code: 'SESSION_REVOKED',
@@ -493,13 +526,17 @@ function createAccountIdentity(
     syncLeadership()
   }
 
-  function publish(result: WebSessionResult): void {
-    heartbeat?.crossTab?.publishCredential(HEARTBEAT_KEY, result)
+  function publish(from: SharedFrom, result: WebSessionResult): void {
+    heartbeat?.crossTab?.publishCredential(HEARTBEAT_KEY, { from, result })
   }
+
+  type Answered =
+    | { readonly type: 'read_answered' | 'restore_answered' }
+    | { readonly type: 'session_observed'; readonly from: SessionObservedFrom }
 
   async function answer(
     started: number,
-    type: 'read_answered' | 'restore_answered' | 'session_observed',
+    answered: Answered,
     request: () => Promise<WebSessionResult>
   ): Promise<void> {
     const result = await request()
@@ -509,23 +546,29 @@ function createAccountIdentity(
     )
     if (started !== epoch) return
     if (remembered === undefined) return dispatch({ type: 'login_errored' })
-    dispatch({ type, result, rememberedUserId: remembered.value })
+    dispatch({ ...answered, result, rememberedUserId: remembered.value })
   }
 
   function beat(): void {
     const started = epoch
-    void answer(started, 'session_observed', async () => {
+    const observed = { type: 'session_observed', from: 'this_tab' } as const
+    void answer(started, observed, async () => {
       const result = await readWebSession(options.session)
       const shared = result.status === 'ok' || result.code === 'SESSION_REVOKED'
-      if (shared && started === epoch) publish(result)
+      if (shared && started === epoch) publish('heartbeat', result)
       return result
     })
   }
 
   function adopt(message: unknown): void {
-    const parsed = zSharedResult.safeParse(message)
+    const parsed = zSharedMessage.safeParse(message)
     if (!parsed.success) return
-    void answer(epoch, 'session_observed', async () => parsed.data)
+    const { from, result } = parsed.data
+    const observed = {
+      type: 'session_observed',
+      from: `sibling_${from}`
+    } as const
+    void answer(epoch, observed, async () => result)
   }
 
   function wantsBeat(): boolean {
@@ -589,7 +632,7 @@ function createAccountIdentity(
     if (proof === undefined) return dispatch({ type: 'proof_errored' })
     const { value } = proof
     if (value === null) return dispatch({ type: 'proof_missing' })
-    await answer(started, 'restore_answered', () =>
+    await answer(started, { type: 'restore_answered' }, () =>
       createWebSession(options.session, async () => value, { expectedUserId })
     )
   }
@@ -597,7 +640,7 @@ function createAccountIdentity(
   function run(effect: WebSessionIdentityEffect): void {
     switch (effect.type) {
       case 'read':
-        void answer(epoch, 'read_answered', () =>
+        void answer(epoch, { type: 'read_answered' }, () =>
           readWebSession(options.session)
         )
         return
@@ -662,13 +705,13 @@ function createAccountIdentity(
       const result = await createWebSession(options.session, getProof)
       if (result.status !== 'ok') return result
       dispatch({ type: 'session_created', session: result.session })
-      publish(result)
+      publish('sign_in', result)
       return result
     },
     signOut: async () => {
       dispatch({ type: 'sign_out_requested' })
       const result = await deleteWebSession(options.session)
-      if (result.status === 'ok') publish(revoked)
+      if (result.status === 'ok') publish('sign_out', revoked)
       return result
     },
     getEpoch: () => epoch,
