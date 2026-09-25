@@ -1932,7 +1932,7 @@
   },
   "ByteDanceSeedreamLayerSeparationNode": {
     "description": "Разделяет изображение на фоновую пластину и до 16 прозрачных слоёв с возможностью перемещения, каждый со своим порядком наложения, ограничивающей рамкой, именем и описанием.",
-    "display_name": "ByteDance Seedream 5.0 Pro Разделение Слоёв",
+    "display_name": "Разделение слоёв ByteDance Seedream 5.0 Pro (устаревшее)",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -1990,6 +1990,62 @@
       "5": {
         "name": "layer_stack",
         "tooltip": "Готовый к редактированию документ слоёв для Create Layered Image: базовая пластина плюс каждый элемент как отдельный именованный слой, обрезанный по содержимому, в своей позиции и порядке наложения. Подключайте напрямую или расширяйте с помощью Add Layer."
+      }
+    }
+  },
+  "ByteDanceSeedreamLayerSeparationNodeV2": {
+    "description": "Разложить изображение на фоновую подложку и до 16 перемещаемых прозрачных слоёв, каждый с порядком наложения, ограничивающей рамкой, именем и описанием.",
+    "display_name": "Разделение слоёв ByteDance Seedream 5.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_crop_layers": {
+        "name": "crop_layers"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_prompt_optimization": {
+        "name": "prompt_optimization"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_size": {
+        "name": "size"
+      },
+      "model_watermark": {
+        "name": "watermark"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "base_image",
+        "tooltip": "Базовое изображение (фоновая подложка), на которое накладываются слои."
+      },
+      "1": {
+        "name": "base_mask",
+        "tooltip": "Прозрачность базового изображения (1 = прозрачно, соглашение LoadImage); сейчас всегда полностью непрозрачное."
+      },
+      "2": {
+        "name": "layers",
+        "tooltip": "Прозрачные слои в порядке снизу вверх. Режим полного холста: размещаются на чёрном холсте размером с базовое изображение в позиции ограничивающей рамки. Режим минимального размера: обрезаются по ограничивающей рамке, привязываются к верхнему левому углу и дополняются до размера наибольшего слоя."
+      },
+      "3": {
+        "name": "masks",
+        "tooltip": "Прозрачность каждого слоя, выровненная по индексу с пакетом layers (1 = прозрачно, соглашение LoadImage). Для композитинга в стиле ImageCompositeMasked сначала добавьте InvertMask."
+      },
+      "4": {
+        "name": "bboxes",
+        "tooltip": "По одному блоку размещения на слой, выровненному по индексу с пакетом layers (передайте оба вместе с masks в Layers From Bounding Boxes, чтобы восстановить размещение каждого слоя): {x, y, width, height, metadata: {name, desc, z_index, native_size, content_rect, flags}}. content_rect = [left, top, width, height] — область содержимого слоя внутри его собственного кадра; на холсте она размещается в позиции блока с учётом этого смещения."
+      },
+      "5": {
+        "name": "layer_stack",
+        "tooltip": "Готовый к редактированию документ слоёв для Create Layered Image: базовая подложка и каждый элемент как отдельный именованный плотно обрезанный слой в своей фактической позиции и порядке наложения. Подключите напрямую или расширьте с помощью Add Layer."
       }
     }
   },
@@ -16893,7 +16949,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "Насколько глубоко модель рассуждает перед ответом. 'default' оставляет выбор за моделью. Поддерживаемые уровни различаются в зависимости от модели: GPT-6 Astra low-max, GPT-5.6 none-max (без minimal), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, o-series low-high; GPT-4.1 не поддерживает рассуждения. Неподдерживаемые уровни отклоняются до отправки запроса."
+        "tooltip": "Насколько тщательно модель рассуждает перед ответом. 'default' оставляет выбор за моделью. Поддерживаемые уровни различаются для разных моделей: GPT-6 Astra low-max, GPT-6 Sol/Luna и GPT-5.6 none-max (без minimal), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, o-series low-high; GPT-4.1 не поддерживает рассуждения. Неподдерживаемые уровни отклоняются до отправки запроса."
       },
       "truncation": {
         "name": "усечение",
@@ -23884,6 +23940,30 @@
       },
       "2": {
         "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeMingImageEdit": {
+    "display_name": "Кодирование текста для редактирования изображений Ming",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Необязательные эталонные изображения, видимые текстовому кодировщику и добавляемые к последовательности latent как чистые кадры. Последующие изображения изменяются до размера первого, а сэмплированный latent должен соответствовать этому размеру."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Без VAE изображения влияют на текстовый кодировщик только через модуль зрения."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
