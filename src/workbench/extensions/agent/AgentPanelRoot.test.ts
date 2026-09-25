@@ -4497,6 +4497,261 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(panel.selectedWorkflow?.path).toBe(other.path)
   })
 
+  it.for([
+    { targetVisible: true, restored: false },
+    { targetVisible: false, restored: false },
+    { targetVisible: true, restored: true },
+    { targetVisible: false, restored: true }
+  ])(
+    'returns to Current without refetching (targetVisible=$targetVisible, restored=$restored)',
+    async ({ targetVisible, restored }) => {
+      const target = makeTab('wf-42')
+      mockMessagesEndpoint(
+        'wf-42',
+        [{ id: 'wf-42', name: 'current' }],
+        [
+          agentThread({
+            id: 'th-1',
+            title: 'Current chat',
+            last_message_at: '2026-09-25T00:00:00Z'
+          })
+        ]
+      )
+      if (restored) {
+        useAgentConversationStore().setThreadId('th-1')
+        const originalFetch = vi.mocked(fetch).getMockImplementation()
+        assert.exists(originalFetch)
+        const messages: AgentMessages = [
+          {
+            id: 'earlier',
+            thread_id: 'th-1',
+            seq: 1,
+            role: 'user',
+            status: 'complete',
+            turn_id: 'earlier',
+            workflow_id: 'wf-42',
+            content: { text: 'Keep working on this workflow' }
+          }
+        ]
+        vi.mocked(fetch).mockImplementation((input, init) =>
+          String(input).includes('/messages')
+            ? Promise.resolve(json(200, messages))
+            : originalFetch(input, init)
+        )
+      }
+      renderWithSelectedTarget()
+      if (restored) await screen.findByTestId('user-message-bubble')
+      else await sendFromComposer('Keep working on this workflow')
+      await userEvent.click(screen.getByRole('textbox'))
+      await userEvent.paste('Keep my unsent follow-up')
+      if (!targetVisible)
+        workflowStore.activeWorkflow = addTab('workflows/other.json')
+
+      const originalFetch = vi.mocked(fetch).getMockImplementation()
+      assert.exists(originalFetch)
+      const blockedFetch = vi.fn(() => new Promise<Response>(() => {}))
+      vi.mocked(fetch).mockImplementation((input, init) =>
+        String(input).includes('/messages') ||
+        String(input).includes('/workflows')
+          ? blockedFetch()
+          : originalFetch(input, init)
+      )
+      let finishOpening = () => {}
+      const opening = new Promise<void>((resolve) => {
+        finishOpening = resolve
+      })
+      const openWorkflow = vi.mocked(useWorkflowService().openWorkflow)
+      const open = openWorkflow.getMockImplementation()
+      assert.exists(open)
+      if (!targetVisible)
+        openWorkflow.mockImplementationOnce(async (...args) => {
+          await opening
+          return open(...args)
+        })
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.showChatHistory')
+        })
+      )
+      const currentRow = await screen.findByRole('button', {
+        name: 'Current chat'
+      })
+      expect(currentRow).toBeEnabled()
+      await userEvent.click(currentRow)
+      if (!targetVisible) {
+        expect(currentRow).toHaveAttribute('aria-busy', 'true')
+        expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+        finishOpening()
+      }
+
+      expect(await screen.findByRole('textbox')).toHaveTextContent(
+        'Keep my unsent follow-up'
+      )
+      expect(screen.getByTestId('user-message-bubble')).toHaveTextContent(
+        'Keep working on this workflow'
+      )
+      if (restored)
+        expect(screen.queryByRole('button', { name: 'Stop' })).toBeNull()
+      else expect(screen.getByRole('button', { name: 'Stop' })).toBeEnabled()
+      expect(screen.queryByRole('heading', { name: 'Chat history' })).toBeNull()
+      expect(workflowStore.activeWorkflow?.path).toBe(target.path)
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(target.path)
+      expect(useAgentChatHistoryStore().activeId).toBe('th-1')
+      expect(useToastStore().messagesToAdd).toHaveLength(0)
+      expect(blockedFetch).not.toHaveBeenCalled()
+    }
+  )
+
+  it.for([
+    { failure: 'false', leaveHistory: false },
+    { failure: 'throw', leaveHistory: false },
+    { failure: 'false', leaveHistory: true },
+    { failure: 'throw', leaveHistory: true }
+  ])(
+    'handles a $failure Current switch failure with leaveHistory=$leaveHistory',
+    async ({ failure, leaveHistory }) => {
+      const target = makeTab('wf-42')
+      mockMessagesEndpoint(
+        'wf-42',
+        [{ id: 'wf-42', name: 'current' }],
+        [
+          agentThread({
+            id: 'th-1',
+            title: 'Current chat',
+            last_message_at: '2026-09-25T00:00:00Z'
+          })
+        ]
+      )
+      renderWithSelectedTarget()
+      await sendFromComposer('Keep working on this workflow')
+      const other = addTab('workflows/other.json')
+      workflowStore.activeWorkflow = other
+      let finishOpening = () => {}
+      const opening = new Promise<void>((resolve) => {
+        finishOpening = resolve
+      })
+      const openWorkflow = vi.mocked(useWorkflowService().openWorkflow)
+      openWorkflow.mockImplementationOnce(async () => {
+        await opening
+        if (failure === 'throw') throw new Error('Workflow switch failed')
+        return false
+      })
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.showChatHistory')
+        })
+      )
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Current chat' })
+      )
+      expect(
+        screen.getByRole('button', { name: 'Current chat' })
+      ).toHaveAttribute('aria-busy', 'true')
+      if (leaveHistory)
+        await userEvent.click(
+          screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+        )
+      finishOpening()
+      await Promise.allSettled(
+        openWorkflow.mock.results.map(({ value }) => value)
+      )
+      await nextTick()
+
+      if (leaveHistory) {
+        expect(
+          screen.queryByRole('heading', { name: 'Chat history' })
+        ).toBeNull()
+        expect(screen.queryByRole('alert')).toBeNull()
+        expect(useToastStore().messagesToAdd).toHaveLength(0)
+        expect(useAgentChatHistoryStore().activeId).toBeNull()
+        expect(workflowStore.activeWorkflow.path).toBe(other.path)
+      } else {
+        expect(await screen.findByRole('alert')).toHaveTextContent(
+          i18n.global.t('agent.historyOpenFailed')
+        )
+        expect(useAgentChatHistoryStore().activeId).toBe('th-1')
+        expect(useAgentPanelStore().selectedWorkflow?.path).toBe(target.path)
+        await userEvent.click(
+          screen.getByRole('button', { name: 'Current chat' })
+        )
+        expect(
+          await screen.findByTestId('user-message-bubble')
+        ).toHaveTextContent('Keep working on this workflow')
+        expect(screen.getByRole('button', { name: 'Stop' })).toBeEnabled()
+        expect(workflowStore.activeWorkflow.path).toBe(target.path)
+      }
+    }
+  )
+
+  it('restores Current after remounting an interrupted return instead of reusing stale messages', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint(
+      'wf-42',
+      [{ id: 'wf-42', name: 'current' }],
+      [
+        agentThread({
+          id: 'th-1',
+          title: 'Current chat',
+          last_message_at: '2026-09-25T00:00:00Z'
+        })
+      ]
+    )
+    const first = renderWithSelectedTarget()
+    await sendFromComposer('Before closing the panel')
+    workflowStore.activeWorkflow = addTab('workflows/other.json')
+    vi.mocked(useWorkflowService().openWorkflow).mockResolvedValueOnce(false)
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Current chat' })
+    )
+    await screen.findByRole('alert')
+    first.unmount()
+    await nextTick()
+
+    let finishHistory = () => {}
+    const pendingHistory = new Promise<void>((resolve) => {
+      finishHistory = resolve
+    })
+    const originalFetch = vi.mocked(fetch).getMockImplementation()
+    assert.exists(originalFetch)
+    const messages: AgentMessages = [
+      {
+        id: 'later',
+        thread_id: 'th-1',
+        seq: 1,
+        role: 'user',
+        status: 'complete',
+        turn_id: 'later',
+        workflow_id: 'wf-42',
+        content: { text: 'Server update while panel closed' }
+      }
+    ]
+    vi.mocked(fetch).mockImplementation(async (input, init) => {
+      if (String(input).includes('/messages')) {
+        await pendingHistory
+        return json(200, messages)
+      }
+      return originalFetch(input, init)
+    })
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Current chat' })
+    )
+    expect(
+      screen.getByRole('button', { name: 'Current chat' })
+    ).toHaveAttribute('aria-busy', 'true')
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+    finishHistory()
+    expect(await screen.findByTestId('user-message-bubble')).toHaveTextContent(
+      'Server update while panel closed'
+    )
+    expect(screen.queryByRole('button', { name: 'Stop' })).toBeNull()
+  })
+
   it.for([null, 'th-current'])(
     'reopens a saved workflow from chat history while keeping %s current until ready',
     async (previousThread) => {

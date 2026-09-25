@@ -232,6 +232,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   const notices = ref<SessionNotice[]>([])
+  const readyThreadId = ref<string | null>(null)
   const promptEditState = ref<PromptEditState>({ phase: 'idle' })
   const sending = ref(false)
   const answeringAskIds = ref<ReadonlySet<string>>(new Set())
@@ -265,6 +266,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   function start({ restore = true }: { restore?: boolean } = {}): void {
+    readyThreadId.value = null
     ownedGeneration = ++sessionGeneration
     everLive = false
     const surviving = conversationStore.threadId
@@ -309,6 +311,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       const history = await rest.getMessages(threadId)
       if (conversationStore.threadId !== threadId || !isCurrent()) return false
       conversationStore.hydrate(history)
+      readyThreadId.value = threadId
       const workflowReady = await workflow?.restored?.(
         conversationStore.latestWorkflowId,
         isCurrent
@@ -331,6 +334,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   function stop(): void {
+    readyThreadId.value = null
     unsubscribe?.()
     unsubscribeStatus?.()
     unsubscribe = null
@@ -537,6 +541,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       workflowReferences
     )
     conversationStore.startTurn(turnId)
+    readyThreadId.value = ack.thread_id
     recordTurnStarted(turnId, startsThread)
     const pendingStop = consumeStopPendingAck()
     if (pendingStop !== null) void stopTurn(pendingStop.method)
@@ -793,6 +798,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function newChat(
     source?: Exclude<AgentSessionThreadStartSource, 'first_open'>
   ): void {
+    readyThreadId.value = null
     loadGeneration++
     promptEditState.value = { phase: 'idle' }
     conversationStore.stashActiveTurn()
@@ -813,6 +819,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     threadId: string,
     isNavigationCurrent: () => boolean = () => true
   ): Promise<boolean> {
+    readyThreadId.value = null
     const generation = ++loadGeneration
     promptEditState.value = { phase: 'idle' }
     const isCurrent = () =>
@@ -935,6 +942,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
     bindWorkflow,
     reportWorkflowBound,
     isSending,
+    isTranscriptReady: computed(
+      () =>
+        readyThreadId.value !== null &&
+        readyThreadId.value === conversationStore.threadId
+    ),
     editableTurnId,
     start,
     stop,

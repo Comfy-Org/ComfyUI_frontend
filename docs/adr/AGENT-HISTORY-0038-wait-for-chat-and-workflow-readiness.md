@@ -42,6 +42,16 @@ selection and removes the deleted Back destination.
 The saved catalog is consulted before refreshing it. Identity resolution still
 refreshes Cloud metadata and uses existing binding and ambiguity checks.
 
+Current remains clickable. When its session and retained target are still
+loaded, reuse them without fetching the transcript or resolving Cloud identity
+again. The workflow service returns immediately for an already visible target
+when no graph load is queued; otherwise, keep row loading until the target is
+visible. Preserve the draft and active run. The Current label alone does not
+enable this path: the session ID must still match, the session must have completed
+hydration or accepted a turn in this mounted instance, and its target must be
+retained. A partially restored selection or an interrupted return after remount
+uses the normal guarded restoration path.
+
 Closing-related chat transitions are a separate change. This decision does not
 define whether closing an active Agent target should stop or background its run.
 

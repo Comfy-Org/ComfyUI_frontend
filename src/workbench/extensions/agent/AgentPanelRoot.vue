@@ -701,6 +701,7 @@ const {
   sendMessage,
   stopTurn,
   isSending: sessionIsSending,
+  isTranscriptReady,
   newChat,
   start,
   stop,
@@ -967,13 +968,21 @@ async function onNavigateToReferenceWorkflow(
   }
 }
 
-async function onShowTarget(): Promise<void> {
+async function onShowTarget(
+  isNavigationCurrent: () => boolean = () => true
+): Promise<boolean> {
   const target = selectedTarget.value
-  if (target === null) return
+  if (target === null) return false
+  const isCurrent = () =>
+    isNavigationCurrent() && selectedTarget.value === target
   try {
-    if (!(await workflowService.openWorkflow(target))) warnWorkflowUnavailable()
+    const opened = await workflowService.openWorkflow(target, { isCurrent })
+    if (!isCurrent()) return false
+    if (!opened) warnWorkflowUnavailable()
+    return opened
   } catch {
-    warnWorkflowUnavailable()
+    if (isCurrent()) warnWorkflowUnavailable()
+    return false
   }
 }
 
@@ -1175,6 +1184,14 @@ async function onSelectHistory(
   id: string,
   isCurrent: () => boolean
 ): Promise<boolean> {
+  if (
+    isTranscriptReady.value &&
+    id === history.activeId &&
+    id === threadId.value &&
+    selectedTarget.value !== null
+  )
+    return onShowTarget(isCurrent)
+
   composerStore.invalidateSubmission()
   cancelWorkflowSelection()
   agentPanelStore.beginWorkflowRestoration()
