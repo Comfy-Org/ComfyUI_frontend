@@ -1400,11 +1400,11 @@ describe('billingOperationStore', () => {
         )
       }
 
-      it('reaches a challenge that arrives late in the discovery window on the fast backoff', async () => {
-        answerActionlessUntil(10)
+      it('reaches a challenge on the last poll the discovery window schedules on the fast backoff', async () => {
+        answerActionlessUntil(12)
         void startSubscription()
 
-        await vi.advanceTimersByTimeAsync(60_000)
+        await vi.advanceTimersByTimeAsync(68_000)
 
         expect(mockHandleNextAction).toHaveBeenCalledWith({
           clientSecret: 'pi_secret_current'

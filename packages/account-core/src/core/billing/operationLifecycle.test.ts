@@ -527,20 +527,18 @@ describe('createBillingOperationLifecycle', () => {
         OPERATION_POLL_TIMING.actionDiscoveryMs +
         2 * OPERATION_POLL_TIMING.maxMs
 
-      it('reaches a challenge that arrives late in the discovery window on the fast backoff', async () => {
+      it('reaches a challenge on the last poll the discovery window schedules on the fast backoff', async () => {
         const { lifecycle } = harness({
           embedded: true,
           answers: [
             httpOk(opStatus({ phase: 'in_progress' })),
-            ...Array.from({ length: 8 }, () => actionless),
+            ...Array.from({ length: 10 }, () => actionless),
             challengeRequired
           ]
         })
         await lifecycle.begin('subscription', issued())
 
-        await vi.advanceTimersByTimeAsync(
-          OPERATION_POLL_TIMING.actionDiscoveryMs
-        )
+        await vi.advanceTimersByTimeAsync(68_000)
 
         expect(lifecycle.get('op-1')).toMatchObject({
           challenge: { clientSecret: 'pi_secret', status: 'required' }

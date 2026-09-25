@@ -4,6 +4,8 @@
  * gap (e.g. `Idempotency-Key` missing from `Access-Control-Allow-Headers`)
  * — that is covered by the live test plan, not here.
  */
+import type { BillingOpStatusResponse } from '@comfyorg/ingest-types'
+
 import type { MockCloud } from './fixtures/cloud'
 import { E2E_USER } from './fixtures/env'
 import {
@@ -159,25 +161,19 @@ test('a challenge whose authentication state lags the client secret is still dri
     'op_subscribe',
     'seti_e2e_secret'
   )
+  const blocked: BillingOpStatusResponse = {
+    ...challenge,
+    phase: 'awaiting_invoice_payment'
+  }
+  const actionless: BillingOpStatusResponse = {
+    ...blocked,
+    authentication_state: 'processing'
+  }
+  const replies = [actionless, actionless, blocked]
   let polls = 0
-  cloud.reply('GET', '/billing/ops/op_subscribe', () => {
-    polls += 1
-    if (polls === 1) {
-      return {
-        body: {
-          ...challenge,
-          phase: 'awaiting_invoice_payment',
-          authentication_state: 'processing'
-        }
-      }
-    }
-    return {
-      body:
-        polls === 2
-          ? { ...challenge, phase: 'awaiting_invoice_payment' }
-          : succeededOperation('op_subscribe')
-    }
-  })
+  cloud.reply('GET', '/billing/ops/op_subscribe', () => ({
+    body: replies[polls++] ?? succeededOperation('op_subscribe')
+  }))
   await signIn(CHECKOUT)
 
   await page.getByRole('button', { name: 'Pay and subscribe' }).click()
