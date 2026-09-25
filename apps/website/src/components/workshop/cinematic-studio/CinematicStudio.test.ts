@@ -101,6 +101,91 @@ async function confirmShot(user: ReturnType<typeof userEvent.setup>) {
 }
 
 describe('CinematicStudio', () => {
+  it.for(['increment', 'decrement', 'fixed'] as const)(
+    'applies %s only after a successful reviewed run',
+    async (behavior) => {
+      vi.mocked(router_render).mockImplementation(async (slug) =>
+        rendered(slug)
+      )
+      const user = renderStudio()
+      await user.type(screen.getByLabelText('Scene'), 'A quiet lake')
+      const seed = screen.getByRole('spinbutton', { name: 'Seed (optional)' })
+      await user.type(seed, '10')
+      await user.selectOptions(
+        screen.getByRole('combobox', { name: 'After run' }),
+        behavior
+      )
+      await user.click(generateButton())
+      expect(seed).toHaveValue(10)
+      expect(router_render).not.toHaveBeenCalled()
+      await confirmShot(user)
+      await vi.waitFor(() =>
+        expect(seed).toHaveValue(
+          behavior === 'increment' ? 11 : behavior === 'decrement' ? 9 : 10
+        )
+      )
+      await vi.waitFor(() => expect(router_render).toHaveBeenCalledTimes(1))
+      expect(vi.mocked(router_render).mock.calls[0][2].form?.values.seed).toBe(
+        10
+      )
+    }
+  )
+
+  it('keeps the seed after a failed run and clears it for randomize', async () => {
+    vi.mocked(router_render).mockRejectedValue(
+      new WorkshopRouterError('unavailable')
+    )
+    const user = renderStudio()
+    await user.type(screen.getByLabelText('Scene'), 'A quiet lake')
+    const seed = screen.getByRole('spinbutton', { name: 'Seed (optional)' })
+    await user.type(seed, '0')
+    await user.selectOptions(
+      screen.getByRole('combobox', { name: 'After run' }),
+      'increment'
+    )
+    await user.click(generateButton())
+    await confirmShot(user)
+    await vi.waitFor(() => expect(generateButton()).not.toBeDisabled())
+    expect(seed).toHaveValue(0)
+    await user.selectOptions(
+      screen.getByRole('combobox', { name: 'After run' }),
+      'random'
+    )
+    expect(seed).toHaveValue(null)
+  })
+
+  it('does not advance another model after switching during a run', async () => {
+    const result = Promise.withResolvers<RouterRenderResult>()
+    vi.mocked(router_render).mockReturnValue(result.promise)
+    const user = renderStudio()
+    await user.type(screen.getByLabelText('Scene'), 'A quiet lake')
+    await user.type(
+      screen.getByRole('spinbutton', { name: 'Seed (optional)' }),
+      '10'
+    )
+    await user.selectOptions(
+      screen.getByRole('combobox', { name: 'After run' }),
+      'increment'
+    )
+    await user.click(generateButton())
+    await confirmShot(user)
+    await vi.waitFor(() => expect(router_render).toHaveBeenCalledTimes(1))
+    await user.click(screen.getByRole('button', { name: /^Model/ }))
+    await user.click(
+      await screen.findByRole('menuitemradio', {
+        name: new RegExp(second.name)
+      })
+    )
+    result.resolve(rendered(first.slug))
+    await screen.findByAltText(/A quiet lake/)
+    await user.click(screen.getByRole('button', { name: /^Model/ }))
+    await user.click(
+      await screen.findByRole('menuitemradio', { name: new RegExp(first.name) })
+    )
+    expect(
+      screen.getByRole('spinbutton', { name: 'Seed (optional)' })
+    ).toHaveValue(10)
+  })
   beforeEach(() => {
     vi.stubEnv('PUBLIC_WORKSHOP_ROUTER_RUN', '1')
     vi.mocked(useWorkshopEnabled).mockReturnValue(computed(() => true))

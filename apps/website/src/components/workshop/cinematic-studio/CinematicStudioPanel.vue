@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import CinematicSeedControls from './CinematicSeedControls.vue'
 import type { WorkshopModelDetail } from '../../../config/models-catalogue'
 import { ref, useTemplateRef } from 'vue'
 
@@ -103,6 +104,7 @@ const {
   resolution,
   takes,
   requestedSeed,
+  seedBehavior,
   cast,
   palette,
   promptSegments,
@@ -305,26 +307,14 @@ function generate() {
       >
         {{ tcAssets('limit', locale) }}
       </p>
-      <label
+      <CinematicSeedControls
         v-if="selectedModel?.seed"
-        class="flex items-center gap-2 text-xs text-primary-comfy-canvas"
-        >{{ libraryCopy('seed', locale)
-        }}<input
-          :value="requestedSeed ?? ''"
-          type="number"
-          :step="selectedModel.seed.step"
-          :min="selectedModel.seed.minimum"
-          :max="selectedModel.seed.maximum"
-          :placeholder="libraryCopy('random', locale)"
-          :disabled="studio.rendering.value"
-          class="h-9 w-32 rounded-lg border border-transparency-white-t20 bg-primary-comfy-ink px-2 text-primary-warm-white"
-          @input="
-            requestedSeed =
-              ($event.target as HTMLInputElement).value === ''
-                ? undefined
-                : Number(($event.target as HTMLInputElement).value)
-          "
-      /></label>
+        v-model:seed="requestedSeed"
+        v-model:behavior="seedBehavior"
+        :bounds="selectedModel.seed"
+        :disabled="studio.rendering.value || preparing"
+        :locale
+      />
       <p
         v-if="
           mode === 'image' &&

@@ -1,3 +1,5 @@
+import { nextSeed } from '../lib/workshop/cinematic-studio/seed-behavior'
+import type { SeedBehavior } from '../lib/workshop/cinematic-studio/seed-behavior'
 import type { MotionComparisonPayload } from '../lib/workshop/cinematic-studio/motion-comparison'
 import { generationTimingNamespaceKey } from '../lib/workshop/cinematic-studio/generation-timings'
 import { useCinematicComposerDrafts } from './useCinematicComposerDrafts'
@@ -61,6 +63,12 @@ import { useCinematicStudioRun } from './useCinematicStudioRun'
 import type { ShotRequest } from './useCinematicStudioRun'
 
 export interface CinematicReview {
+  readonly seedUpdate?: {
+    modelSlug: string
+    mode: 'image' | 'video'
+    behavior: SeedBehavior
+    bounds: NonNullable<CinematicModel['seed']>
+  }
   readonly batch?: readonly ShotRequest[]
   readonly request: ShotRequest
   readonly modelName: string
@@ -101,7 +109,8 @@ export function useCinematicShot(
     enhance: true,
     resolution: '2K' as Resolution,
     takes: 1,
-    seed: undefined as number | undefined
+    seed: undefined as number | undefined,
+    seedBehavior: 'random' as SeedBehavior
   })
   const modeSettings = ref({
     image: newModeSettings(),
@@ -318,6 +327,20 @@ export function useCinematicShot(
     get: () => modeSettings.value[mode.value].seed,
     set: (value: number | undefined) => {
       modeSettings.value[mode.value].seed = value
+      if (value === undefined)
+        modeSettings.value[mode.value].seedBehavior = 'random'
+      else if (modeSettings.value[mode.value].seedBehavior === 'random')
+        modeSettings.value[mode.value].seedBehavior = 'fixed'
+    }
+  })
+  const seedBehavior = computed({
+    get: () => modeSettings.value[mode.value].seedBehavior,
+    set: (value: SeedBehavior) => {
+      const settings = modeSettings.value[mode.value]
+      settings.seedBehavior = value
+      if (value === 'random') settings.seed = undefined
+      else
+        settings.seed ??= Math.max(0, selectedModel.value?.seed?.minimum ?? 0)
     }
   })
   const seed = computed(() => {
@@ -769,6 +792,16 @@ export function useCinematicShot(
         ? model.referenceModelSlug
         : undefined
     review.value = {
+      ...(model.seed
+        ? {
+            seedUpdate: {
+              modelSlug: model.slug,
+              mode: mode.value,
+              behavior: seedBehavior.value,
+              bounds: model.seed
+            }
+          }
+        : {}),
       modelName: referenceModel
         ? (editingModels.find((entry) => entry.slug === referenceModel)?.name ??
           model.name)
@@ -905,6 +938,7 @@ export function useCinematicShot(
     resolution.value = item.settings?.resolution ?? '2K'
     takes.value = item.settings?.takes ?? 1
     requestedSeed.value = item.settings?.seed
+    seedBehavior.value = item.settings?.seed === undefined ? 'random' : 'fixed'
     if (item.kind === 'video') {
       duration.value =
         item.settings?.video?.durationSeconds ?? item.settings?.duration ?? 5
@@ -1077,6 +1111,9 @@ export function useCinematicShot(
     }
   }
 
+  const seedSubscriptions = new Set<() => void>()
+  onScopeDispose(() => seedSubscriptions.forEach((stop) => stop()))
+
   async function confirm() {
     const snapshot = review.value
     const scope = namespace.value
@@ -1111,7 +1148,49 @@ export function useCinematicShot(
               : undefined
           }))
         )
-      } else void studio.generate(request)
+      } else {
+        const previousIds = new Set(
+          studio.reel.value.takes.map((take) => take.id)
+        )
+        const completion = studio.generate(request)
+        const ids = studio.reel.value.takes
+          .filter((take) => !previousIds.has(take.id))
+          .map((take) => take.id)
+        const update = snapshot.seedUpdate
+        if (update && request.seed !== undefined && ids.length) {
+          const enteredSeed = request.seed
+          const stop = watch(
+            () => studio.reel.value,
+            (reel) => {
+              const completed = reel.takes.filter((take) =>
+                ids.includes(take.id)
+              )
+              if (completed.some((take) => take.status === 'rendering')) return
+              stop()
+              seedSubscriptions.delete(stop)
+              const settings = modeSettings.value[update.mode]
+              if (
+                namespace.value === scope &&
+                (update.mode === 'image'
+                  ? imageModel.value
+                  : videoModel.value) === update.modelSlug &&
+                completed.length === ids.length &&
+                completed.every((take) => take.status === 'done') &&
+                settings.seed === enteredSeed &&
+                settings.seedBehavior === update.behavior
+              ) {
+                settings.seed = nextSeed(
+                  enteredSeed,
+                  update.behavior,
+                  update.bounds
+                )
+              }
+            }
+          )
+          seedSubscriptions.add(stop)
+        }
+        void completion
+      }
     } catch {
       if (namespace.value === scope) referenceSaveError.value = true
     } finally {
@@ -1153,6 +1232,7 @@ export function useCinematicShot(
       resolution: settings.resolution,
       takes: settings.takes,
       seed: settings.seed,
+      seedBehavior: settings.seedBehavior,
       aspect: kind === 'image' ? imageAspect.value : videoAspect.value,
       references: composerFiles()[kind].map((entry) => entry.file.name),
       ...(kind === 'image'
@@ -1187,7 +1267,9 @@ export function useCinematicShot(
         enhance: saved.enhance,
         resolution: saved.resolution ?? '2K',
         takes: saved.takes ?? 1,
-        seed: saved.seed
+        seed: saved.seed,
+        seedBehavior:
+          saved.seedBehavior ?? (saved.seed === undefined ? 'random' : 'fixed')
       }
       const available = models.some(
         (model) =>
@@ -1307,6 +1389,7 @@ export function useCinematicShot(
     resolution,
     takes,
     requestedSeed,
+    seedBehavior,
     cast,
     palette,
     promptSegments,

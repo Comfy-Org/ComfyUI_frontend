@@ -20,6 +20,9 @@ const composerModeSchema = creationSettingsSchema
     lastSourceId: true
   })
   .extend({
+    seedBehavior: z
+      .enum(['random', 'fixed', 'increment', 'decrement'])
+      .optional(),
     modelSlug: z
       .string()
       .max(200)
