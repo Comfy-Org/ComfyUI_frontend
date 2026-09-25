@@ -79,6 +79,12 @@ function isAttachmentKind(value: unknown): value is AttachmentKind {
  * (`attachmentRefsForRow`, services/agent/server/agent_handler.go), so an
  * unresolved attachment reads the same as one written before ids existed.
  *
+ * Keyed on the trimmed name, because the two keys disagree about whitespace:
+ * the writer trims a ref's name while `attachments` is stored verbatim, so a
+ * padded name would otherwise never find its own resolution. Only the lookup
+ * key is trimmed — the name a row was stored under is what `/view?filename=`
+ * has to ask for.
+ *
  * First entry wins for a repeated name: the writer emits one ref per posted
  * name, so a duplicate is the same file resolved the same way.
  */
@@ -90,8 +96,10 @@ function resolvedAttachmentRefs(
   for (const entry of value as unknown[]) {
     if (typeof entry !== 'object' || entry === null) continue
     const { name, id, kind } = entry as Record<string, unknown>
-    if (typeof name !== 'string' || resolved.has(name)) continue
-    resolved.set(name, {
+    if (typeof name !== 'string') continue
+    const key = name.trim()
+    if (resolved.has(key)) continue
+    resolved.set(key, {
       ...(typeof id === 'string' && id !== '' ? { id } : {}),
       ...(isAttachmentKind(kind) ? { kind } : {})
     })
@@ -120,7 +128,7 @@ function parseUserAttachments(
     ? content.attachments.filter(isNamedAttachment)
     : attachmentRefNames(content?.attachment_refs)
   return names.length > 0
-    ? names.map((name) => ({ name, ref: name, ...resolved.get(name) }))
+    ? names.map((name) => ({ name, ref: name, ...resolved.get(name.trim()) }))
     : undefined
 }
 
