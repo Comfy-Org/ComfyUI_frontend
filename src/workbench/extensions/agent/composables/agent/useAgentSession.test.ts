@@ -1723,6 +1723,81 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(adopted).toHaveBeenCalledWith('wf-b', undefined, null)
   })
 
+  it('(h10) the selection owner is resolved after prepare() and stays with the staged tab through a switch during the hold', async () => {
+    // Two failure modes share this window. Resolving the selection owner
+    // before prepare() sends `selection` without a workflow_id when the tab's
+    // cloud id was still unresolved on mount (QAF-19). Resolving it from the
+    // tab active after the hold attributes the staged nodes to the tab the
+    // user switched to while waiting. The callback runs once, after the
+    // hold, and the send pins both ids to the originating tab.
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
+      thread_id: 'th-1',
+      message_id: 'msg-1',
+      workflow_id: 'wf-a'
+    }))
+    const rest = fakeRest({ postMessage })
+    const { source } = fakeEvents()
+    let releasePrepare: () => void = () => undefined
+    let prepared = false
+    const prepare = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          releasePrepare = () => {
+            prepared = true
+            resolve()
+          }
+        })
+    )
+    let activePath = 'tab-a'
+    const idForPath = (path: string) => (path === 'tab-a' ? 'wf-a' : 'wf-b')
+    const session = useAgentSession({
+      rest,
+      events: source,
+      workflow: {
+        current: (origin) => {
+          const path = pathFor(origin, activePath)
+          return path === undefined
+            ? undefined
+            : { id: idForPath(path), tabPath: path }
+        },
+        adopted: vi.fn(),
+        prepare
+      }
+    })
+    session.start()
+
+    // Mirrors AgentPanelRoot: the target is captured when Send is clicked and
+    // its cloud id is looked up lazily, so an id that prepare() resolves is
+    // only visible once the hold has released.
+    const stagedTarget = activePath
+    const selectionWorkflowId = vi.fn(() =>
+      prepared ? idForPath(stagedTarget) : undefined
+    )
+    const tags: SelectedNode[] = [{ id: '12', title: 'KSampler' }]
+    const sendPromise = session.sendMessage(
+      'explain',
+      undefined,
+      tags,
+      undefined,
+      selectionWorkflowId
+    )
+    expect(selectionWorkflowId).not.toHaveBeenCalled()
+    activePath = 'tab-b'
+    // Drain microtasks while the hold is still up: a resolver queued before
+    // prepare() settles fires here with `prepared` still false, instead of
+    // being masked by releasePrepare() flipping it synchronously.
+    await Promise.resolve()
+    expect(selectionWorkflowId).not.toHaveBeenCalled()
+    releasePrepare()
+    await sendPromise
+
+    expect(selectionWorkflowId).toHaveBeenCalledOnce()
+    expect(vi.mocked(postMessage).mock.calls[0][1]).toMatchObject({
+      workflowId: 'wf-a',
+      selection: { node_ids: ['12'], workflow_id: 'wf-a' }
+    })
+  })
+
   it('(h6) a bind landing in the prepare()/POST window makes an echoed id read as an echo', async () => {
     // Regression for the r3929083595 race: priorWorkflowId was snapshotted
     // before prepare(), so a bindWorkflow() landing in that window (a late
