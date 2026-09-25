@@ -69,7 +69,7 @@ export const TURN_DONE_EVENT: AgentWsEvent = {
 
 const ASK_ID = `${TURN_ID}:call-run`
 
-export const RUN_APPROVAL_EVENT: AgentWsEvent = {
+const RUN_APPROVAL_EVENT: AgentWsEvent = {
   type: 'agent_ask',
   data: {
     thread_id: THREAD_ID,
