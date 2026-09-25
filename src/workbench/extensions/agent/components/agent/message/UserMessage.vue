@@ -122,9 +122,13 @@ const splitAttachments = computed(() => {
   const plain: UserAttachment[] = []
   for (const item of attachments) {
     const kind = getMediaTypeFromFilename(item.name)
-    const url = item.ref
-      ? api.apiURL(`/view?filename=${encodeURIComponent(item.ref)}&type=input`)
-      : item.previewUrl
+    const url =
+      item.previewUrl ??
+      (item.ref
+        ? api.apiURL(
+            `/view?filename=${encodeURIComponent(item.ref)}&type=input`
+          )
+        : undefined)
     if (
       url &&
       (kind === 'image' ||

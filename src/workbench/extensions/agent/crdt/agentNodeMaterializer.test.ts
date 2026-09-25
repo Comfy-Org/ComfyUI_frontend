@@ -12,6 +12,7 @@ import * as Y from 'yjs'
 
 import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
 import { createGraphMutations } from './graphMutations'
+import { addAutogrow } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
 import {
   LGraph,
   LGraphNode,
@@ -884,6 +885,39 @@ describe('reconcileAgentAdapters', () => {
       await Promise.resolve()
       await Promise.resolve()
     }
+
+    it('restores a usable spare autogrow input omitted by reconciliation', async () => {
+      const node = LiteGraph.createNode('widget-node')
+      const upstream = LiteGraph.createNode('dummy')
+      if (!node || !upstream) throw new Error('Test node types not registered')
+      graph.add(node)
+      graph.add(upstream)
+      upstream.addOutput('image', 'IMAGE')
+      addAutogrow(node, {
+        input: { required: { image: ['IMAGE', {}] } },
+        names: ['image_1', 'image_2', 'image_3']
+      })
+      const firstLink = upstream.connect(0, node, 0)
+      if (!firstLink) throw new Error('Initial image connection failed')
+      const payload = {
+        ...node.serialize(),
+        inputs: node.serialize().inputs?.slice(0, 1)
+      }
+
+      expect(
+        remoteMutations(graphScopeOf(graph)).batch(REMOTE, (batch) =>
+          batch.reconcileNode(payload)
+        )
+      ).toBe(true)
+      reconcileAgentAdapters(graph)
+      await settle()
+
+      expect(node.inputs.map(({ name }) => name)).toEqual([
+        '0.image_1',
+        '0.image_2'
+      ])
+      expect(node.getInputLink(0)).toBe(firstLink)
+    })
 
     it('does not echo a remote add back as local operations', async () => {
       const scope = graphScopeOf(graph)

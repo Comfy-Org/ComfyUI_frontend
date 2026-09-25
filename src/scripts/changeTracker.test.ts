@@ -491,6 +491,23 @@ describe('ChangeTracker', () => {
         expect(tracker.undoQueue).toHaveLength(0)
       })
 
+      it('does not push when only the recomputed node execution order differs', () => {
+        const initial = createState(2)
+        const tracker = createTracker(initial)
+        const reordered = structuredClone(initial)
+        reordered.nodes[0].order = 1
+        reordered.nodes[1].order = 0
+        mockCanvasState(reordered)
+
+        tracker.captureCanvasState()
+
+        expect(tracker.undoQueue).toHaveLength(0)
+        expect(api.dispatchCustomEvent).not.toHaveBeenCalledWith(
+          'graphChanged',
+          expect.anything()
+        )
+      })
+
       it.for([
         {
           name: 'node position',

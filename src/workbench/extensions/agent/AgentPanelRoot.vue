@@ -1090,6 +1090,7 @@ function onNewChat(): void {
   exitNodeSelectionMode()
   composerStore.setWorkflowReferences([])
   composerStore.resetPromptHistory()
+  agentPanelStore.setWorkflowTarget(workflowStore.activeWorkflow)
   newChat()
 }
 
