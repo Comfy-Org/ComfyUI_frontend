@@ -31,6 +31,7 @@ import {
   getSurveyCompletedStatus,
   getUserCloudStatus
 } from '@/platform/cloud/onboarding/auth'
+import { useAuthStore } from '@/stores/authStore'
 
 import CloudLoginViewSkeleton from './skeletons/CloudLoginViewSkeleton.vue'
 import CloudSurveyViewSkeleton from './skeletons/CloudSurveyViewSkeleton.vue'
@@ -59,7 +60,7 @@ const {
 
     const [cloudUserStats, surveyStatus] = await Promise.all([
       getUserCloudStatus(),
-      getSurveyCompletedStatus()
+      getSurveyCompletedStatus(useAuthStore().userId)
     ])
 
     // Navigate based on user status

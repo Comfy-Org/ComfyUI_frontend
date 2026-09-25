@@ -30,11 +30,17 @@ export function resolveBillingWebEnv(value: unknown): BillingWebEnv {
   return BILLING_WEB_ENVS.find((env) => env === value) ?? 'test'
 }
 
+const HOST_ENVS: Record<string, BillingWebEnv> = {
+  'billing.comfy.org': 'production',
+  'stagingbilling.comfy.org': 'staging',
+  'testbilling.comfy.org': 'test'
+}
+
 /** Exact hostnames only: a suffix or substring match would let a lookalike domain claim production. */
 function resolveHostEnv(
   hostname: string | undefined
 ): BillingWebEnv | undefined {
-  return hostname === 'billing.comfy.org' ? 'production' : undefined
+  return hostname === undefined ? undefined : HOST_ENVS[hostname]
 }
 
 /** Never throws: this module also loads under happy-dom and in plain Node, where `location` can be missing or unusable. */

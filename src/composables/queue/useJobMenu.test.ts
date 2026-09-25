@@ -11,7 +11,7 @@ import type { Ref } from 'vue'
 
 import type { JobListItem } from '@/composables/queue/useJobList'
 import type { MenuEntry } from '@/composables/queue/useJobMenu'
-import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
@@ -38,27 +38,9 @@ vi.mock(import('@/composables/useCopyToClipboard'), () => ({
 
 vi.mock(import('@/i18n'))
 
-const mapTaskOutputToAssetItemMock = vi.fn()
-vi.mock(import('@/platform/assets/composables/media/assetMappers'), () => ({
-  mapTaskOutputToAssetItem: (
-    taskItem: TaskItemImpl,
-    output: AugmentedResultItem
-  ) => mapTaskOutputToAssetItemMock(taskItem, output)
-}))
-
-vi.mock(import('@/platform/assets/composables/useMediaAssetActions'))
-
 let settingStoreMock: ReturnType<typeof useSettingStore>
 
-const workflowServiceMock = {
-  openWorkflow: vi.fn()
-}
-vi.mock<unknown>(
-  import('@/platform/workflow/core/services/workflowService'),
-  () => ({
-    useWorkflowService: () => workflowServiceMock
-  })
-)
+vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
 let workflowStoreMock: ReturnType<typeof useWorkflowStore>
 
@@ -94,7 +76,6 @@ vi.mock(import('@/services/jobOutputCache'), () => ({
 
 import { useJobMenu } from '@/composables/queue/useJobMenu'
 import type { TaskItemImpl } from '@/stores/queueStore'
-import type { AugmentedResultItem } from '@/utils/resultItem'
 
 type MockTaskRef = Record<string, unknown>
 
@@ -151,11 +132,6 @@ describe('useJobMenu', () => {
     vi.mocked(queueStoreMock.update).mockResolvedValue(undefined)
     vi.mocked(queueStoreMock.delete).mockResolvedValue(undefined)
     cancelJobMock.mockResolvedValue(undefined)
-    vi.mocked(useMediaAssetActions().deleteAssets).mockResolvedValue(false)
-    mapTaskOutputToAssetItemMock.mockImplementation((task, output) => ({
-      task,
-      output
-    }))
     nodeDefStoreMock.nodeDefsByName = {
       LoadImage: fromPartial<ComfyNodeDefImpl>({ name: 'LoadImage' }),
       LoadVideo: fromPartial<ComfyNodeDefImpl>({ name: 'LoadVideo' }),
@@ -183,7 +159,7 @@ describe('useJobMenu', () => {
       'Job 55.json',
       workflow
     )
-    expect(workflowServiceMock.openWorkflow).toHaveBeenCalledWith({
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith({
       filename: 'Job 55.json',
       content: JSON.stringify(workflow)
     })
@@ -196,7 +172,7 @@ describe('useJobMenu', () => {
     await openJobWorkflow()
 
     expect(workflowStoreMock.createTemporary).not.toHaveBeenCalled()
-    expect(workflowServiceMock.openWorkflow).not.toHaveBeenCalled()
+    expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
   })
 
   it('surfaces an error dialog when workflow open fails', async () => {
@@ -204,7 +180,9 @@ describe('useJobMenu', () => {
     const workflow = { nodes: [{ type: 'rgthree.DisplayAny' }] }
     getJobWorkflowMock.mockResolvedValue(workflow)
     const loadError = new Error('configure() failed: malformed widget')
-    workflowServiceMock.openWorkflow.mockRejectedValueOnce(loadError)
+    vi.mocked(useWorkflowService().openWorkflow).mockRejectedValueOnce(
+      loadError
+    )
     setCurrentItem(createJobItem({ id: '77' }))
 
     await expect(openJobWorkflow()).resolves.toBeUndefined()
@@ -670,7 +648,6 @@ describe('useJobMenu', () => {
   })
 
   it('does not refresh queue when delete cancelled', async () => {
-    vi.mocked(useMediaAssetActions().deleteAssets).mockResolvedValue(false)
     const { jobMenuEntries } = mountJobMenu()
     setCurrentItem(
       createJobItem({

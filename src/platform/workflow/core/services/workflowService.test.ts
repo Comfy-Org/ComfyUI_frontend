@@ -88,15 +88,7 @@ function makeWorkflowDataWithId(id: string): ComfyWorkflowJSON {
 
 vi.mock(import('@/services/dialogService'))
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    canvas: { ds: { offset: [0, 0], scale: 1 } },
-    rootGraph: { serialize: vi.fn(() => ({})), extra: {}, nodes: [] },
-    loadGraphData: vi.fn(),
-    nodeOutputs: {},
-    nodePreviewImages: {}
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
 vi.mock<unknown>(
   import('@/renderer/core/thumbnail/useWorkflowThumbnail'), // eslint-disable-line import-x/no-restricted-paths

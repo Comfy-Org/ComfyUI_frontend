@@ -19,7 +19,7 @@ jobs:
     permissions:
       contents: read
     outputs:
-      should-run: ${{ steps.changes.outputs.should-run }}
+      should-run: ${{ steps.changes.outputs.should-run-unit }}
     steps:
       - uses: actions/checkout@v7
       - id: changes

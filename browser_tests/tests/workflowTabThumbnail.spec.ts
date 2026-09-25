@@ -5,10 +5,7 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Workflow Tab Thumbnails', { tag: '@workflow' }, () => {
   async function getTab(comfyPage: ComfyPage, index: number) {
-    const tab = comfyPage.page
-      .locator(`.workflow-tabs .p-togglebutton`)
-      .nth(index)
-    return tab
+    return comfyPage.menu.topbar.getTab(index)
   }
 
   async function getTabPopover(
