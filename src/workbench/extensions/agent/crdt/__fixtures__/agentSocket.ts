@@ -13,6 +13,7 @@ export function createFakeAgentSocket() {
   const statusListeners = new Set<(live: boolean) => void>()
   const send = vi.fn<(frame: string) => boolean>(() => true)
   const socket: AgentEventSocket = {
+    reconnect: () => {},
     send: (frame) => send(frame),
     subscribe(listener) {
       listeners.add(listener)

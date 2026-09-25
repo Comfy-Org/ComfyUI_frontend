@@ -86,6 +86,7 @@ const ws = vi.hoisted(() => {
   const frameListeners = new Set<(raw: unknown) => void>()
   const statusListeners = new Set<(live: boolean) => void>()
   const socket = {
+    reconnect: vi.fn(),
     send: (frame: string): boolean => {
       socketSend(frame)
       return true
@@ -321,6 +322,7 @@ beforeEach(() => {
   vi.mocked(createAgentEventSource).mockReturnValue(ws.socket)
   vi.mocked(resolveAgentIdentity).mockReturnValue({
     userId: ref('account-a'),
+    reset: vi.fn(),
     stop: () => {}
   })
   // The panel runs signed in: every agent request carries the user's auth
@@ -7114,6 +7116,23 @@ describe('AgentPanelRoot against the local agent', () => {
 })
 
 describe('AgentPanelRoot agent socket (#17469)', () => {
+  // Signing out or switching accounts must not leave the socket authenticated
+  // as the previous account, nor canvas ops stamped with its actor.
+  it('reconnects the socket and looks the identity up again when the account changes', async () => {
+    const authStore = useAuthStore()
+    authStore.currentUser = fromPartial<User>({ uid: 'account-a' })
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const identity = vi.mocked(resolveAgentIdentity).mock.results.at(-1)
+      ?.value as { reset: ReturnType<typeof vi.fn> }
+    ws.socket.reconnect.mockClear()
+
+    authStore.currentUser = fromPartial<User>({ uid: 'account-b' })
+    await nextTick()
+
+    expect(ws.socket.reconnect).toHaveBeenCalledOnce()
+    expect(identity.reset).toHaveBeenCalledOnce()
+  })
+
   // The socket's path comes from api.apiURL like every agent REST request, so
   // a ComfyUI served under a sub-path reaches the same backend.
   it('opens the events socket at the api path, with the caller credential as its token', async () => {
