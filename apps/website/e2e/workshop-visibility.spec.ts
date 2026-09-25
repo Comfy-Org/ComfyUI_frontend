@@ -90,7 +90,11 @@ test('shows model content without Run when the flag is disabled', async ({
 }) => {
   const firebaseRequests = recordFirebaseRequests(context)
   await disableWorkshopFlag(context)
+  const flags = page.waitForResponse((response) =>
+    /t\.comfy\.org\/(flags|decide)\//.test(response.url())
+  )
   await page.goto('/')
+  await flags
   await waitForIsland(
     page,
     page.getByRole('navigation', { name: 'Main navigation' })

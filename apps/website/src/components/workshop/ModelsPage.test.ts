@@ -5,6 +5,7 @@ import type { Ref } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 
 import { workshopModels } from '../../config/workshop-browse-content'
+import { workshopPages } from '../../config/workshop-page-content'
 import './ModelPage.vue'
 import './ModelsCatalogue.vue'
 import { prepareModelPage } from '../../routes/models/model-page'
@@ -87,6 +88,19 @@ describe('Models page entry', () => {
       expect(html).not.toContain('model-detail')
     }
   )
+
+  it('adds workflows to a loaded catalogue when their flag answers late', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>().mockResolvedValue(Response.json(workshopPages))
+    )
+    render(ModelsPage)
+    expect(await screen.findByTestId('workshop-search')).toBeTruthy()
+    expect(screen.queryByTestId('catalogue-tabs')).toBeNull()
+
+    workflowsEnabled.value = true
+    expect(await screen.findByTestId('catalogue-tabs')).toBeTruthy()
+  })
 
   it.for([
     { slug: undefined, visible: 'workshop-search', flag: 'off' },

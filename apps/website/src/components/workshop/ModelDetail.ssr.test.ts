@@ -67,7 +67,7 @@ describe('ModelDetail on the server', () => {
 
     const flagOff = await render(false)
 
-    expect(flagOff).toContain('data-testid="run-rollout-note"')
+    expect(flagOff).toContain('data-gate="pending"')
     expect(await render(true)).toBe(flagOff)
   })
 })

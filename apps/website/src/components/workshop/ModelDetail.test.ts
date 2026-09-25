@@ -344,6 +344,22 @@ describe('ModelDetail', () => {
     )
   })
 
+  it('holds Run as pending until the flag answers, then shows the note when it is off', async () => {
+    auth.workshopEnabled.value = false
+    auth.workshopEnabledSettled.value = false
+    mountDetail({ model: runnable })
+    await nextTick()
+    expect(screen.getByTestId('run-button').getAttribute('data-gate')).toBe(
+      'pending'
+    )
+    expect(screen.queryByTestId('run-rollout-note')).toBeNull()
+
+    auth.workshopEnabledSettled.value = true
+    await nextTick()
+    expect(screen.queryByTestId('run-button')).toBeNull()
+    expect(screen.getByTestId('run-rollout-note')).toBeTruthy()
+  })
+
   it('reports API views only while Models is enabled', async () => {
     auth.workshopEnabled.value = false
     mountDetail({ model: runnable })
@@ -1926,7 +1942,6 @@ describe('ModelDetail', () => {
   it('waits for session initialization before offering sign-in', async () => {
     auth.settled.value = false
     mountDetail({ model: runnable })
-    await nextTick()
     expect(
       screen
         .getByRole('button', { name: 'Checking your session…' })
