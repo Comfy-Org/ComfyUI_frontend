@@ -13,7 +13,12 @@ import { computed, nextTick, onBeforeUnmount, ref, useId, watch } from 'vue'
 
 import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
 import Button from '@/components/ui/button/Button.vue'
-import { clampSpotlight } from '@/platform/onboarding/coachmarkLayout'
+import { TOOLTIP_TEXT_CLASS } from '@/composables/useTooltipConfig'
+import {
+  SPOTLIGHT_PAD,
+  clampSpotlight,
+  unionRect
+} from '@/platform/onboarding/coachmarkLayout'
 import { useOnboardingOverlayStore } from '@/platform/onboarding/onboardingOverlayStore'
 import { useTelemetry } from '@/platform/telemetry'
 import type { AgentOnboardingAction } from '@/platform/telemetry/types'
@@ -25,6 +30,7 @@ import {
 
 /** Long enough for any panel layout to settle; a target still absent is a regression. */
 const TARGET_MISSING_AFTER_MS = 8000
+const COACH_HOVER_ATTRIBUTE = 'data-coach-hover'
 
 const { steps, storageKey } = defineProps<{
   steps: CoachStep[]
@@ -45,8 +51,10 @@ const visible = computed(() => active.value && target.value !== null)
 useOnboardingOverlayStore().registerSource(() => visible.value)
 const toolbar = ref<HTMLElement | null>(null)
 const card = ref<HTMLElement | null>(null)
+const tooltip = ref<HTMLElement | null>(null)
 const bounds = useElementBounding(target)
 const toolbarBounds = useElementBounding(toolbar)
+const tooltipBounds = useElementBounding(tooltip)
 const { width, height } = useWindowSize()
 let targetRetryTimer: ReturnType<typeof setTimeout> | undefined
 
@@ -126,6 +134,17 @@ onBeforeUnmount(() => {
   clearTimeout(targetRetryTimer)
 })
 
+watch([target, () => step.value?.tooltip], ([element, text], _, onCleanup) => {
+  if (!element || !text) return
+  element.setAttribute(COACH_HOVER_ATTRIBUTE, '')
+  onCleanup(() => element.removeAttribute(COACH_HOVER_ATTRIBUTE))
+})
+
+const tooltipStyle = computed(() => ({
+  left: `${bounds.right.value}px`,
+  top: `${bounds.top.value + bounds.height.value / 2}px`
+}))
+
 watch(
   [active, step],
   async () => {
@@ -173,18 +192,30 @@ const { floatingStyles, isPositioned } = useFloating(target, card, {
   whileElementsMounted: autoUpdate
 })
 
-const spotlightStyle = computed(() =>
-  clampSpotlight(
-    new DOMRect(
-      bounds.left.value,
-      bounds.top.value,
-      bounds.width.value,
-      bounds.height.value
-    ),
-    0,
+const spotlightStyle = computed(() => {
+  const targetRect = new DOMRect(
+    bounds.left.value,
+    bounds.top.value,
+    bounds.width.value,
+    bounds.height.value
+  )
+  const hasTooltip = tooltipBounds.width.value > 0
+  return clampSpotlight(
+    hasTooltip
+      ? unionRect(
+          targetRect,
+          new DOMRect(
+            tooltipBounds.left.value,
+            tooltipBounds.top.value,
+            tooltipBounds.width.value,
+            tooltipBounds.height.value
+          )
+        )
+      : targetRect,
+    hasTooltip ? SPOTLIGHT_PAD : 0,
     { width: width.value, height: height.value }
   )
-)
+})
 
 useEventListener(
   document,
@@ -209,6 +240,23 @@ useEventListener(
         :style="{ ...spotlightStyle }"
         class="pointer-events-none absolute rounded-lg border-2 border-base-foreground shadow-[0_0_0_9999px_var(--color-coach-scrim)]"
       />
+      <div
+        v-if="step.tooltip"
+        ref="tooltip"
+        role="tooltip"
+        :style="tooltipStyle"
+        class="pointer-events-none absolute flex max-w-50 -translate-y-1/2 items-center"
+      >
+        <span
+          aria-hidden="true"
+          class="size-0 border-y-4 border-r-4 border-y-transparent border-r-node-component-tooltip-border"
+        />
+        <div
+          :class="cn(TOOLTIP_TEXT_CLASS, 'wrap-break-word whitespace-pre-line')"
+        >
+          {{ step.tooltip }}
+        </div>
+      </div>
       <FocusScope as-child trapped loop>
         <div
           ref="card"

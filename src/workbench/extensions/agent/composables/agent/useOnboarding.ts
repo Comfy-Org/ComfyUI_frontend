@@ -12,6 +12,7 @@ export interface CoachStep {
   body: string
   placement: 'left-center' | 'left-end' | 'graph-bottom' | 'left-start'
   toolbarTarget?: string
+  tooltip?: string
 }
 
 const SHARED_ONBOARDING_KEY = 'Comfy.AgentPanel.onboarded'

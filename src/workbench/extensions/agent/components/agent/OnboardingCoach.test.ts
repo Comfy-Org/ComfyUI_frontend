@@ -53,6 +53,7 @@ const rectangles: Record<string, DOMRect> = {
   toolbar: new DOMRect(650, 700, 260, 40),
   history: new DOMRect(970, 104, 24, 24)
 }
+const tooltipRect = new DOMRect(998, 105, 84, 22)
 
 function mount(steps = STEPS) {
   return render(
@@ -60,7 +61,7 @@ function mount(steps = STEPS) {
       components: { OnboardingCoach },
       setup: () => ({ steps, storageKey: KEY }),
       template:
-        '<button>Outside tour</button><div id="panel" /><div id="composer" /><div id="graph"><div id="toolbar" /></div><div id="history" /><OnboardingCoach :steps="steps" :storage-key="storageKey" />'
+        '<button>Outside tour</button><div id="panel" /><div id="composer" /><div id="graph"><div id="toolbar" /></div><div id="history" data-testid="history" /><OnboardingCoach :steps="steps" :storage-key="storageKey" />'
     },
     { global: { plugins: [i18n] } }
   )
@@ -72,6 +73,7 @@ beforeEach(() => {
   telemetry().trackAgentOnboardingStep.mockClear()
   vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
     function (this: HTMLElement) {
+      if (this.getAttribute('role') === 'tooltip') return tooltipRect
       return (
         rectangles[this.id] ??
         new DOMRect(
@@ -221,6 +223,38 @@ describe('OnboardingCoach', () => {
       if (index < 3)
         await user.click(screen.getByRole('button', { name: 'Next' }))
     }
+  })
+
+  it('shows the target in its hover state with its tooltip inside the spotlight', async () => {
+    const user = userEvent.setup()
+    const steps = STEPS.map((step, index) =>
+      index === 3 ? { ...step, tooltip: 'Show chat history' } : step
+    )
+    mount(steps)
+    const history = screen.getByTestId('history')
+    await screen.findByRole('dialog', { name: STEPS[0].title })
+    for (let i = 0; i < 3; i++)
+      await user.click(screen.getByRole('button', { name: 'Next' }))
+    await screen.findByRole('dialog', { name: STEPS[3].title })
+
+    expect(screen.getByRole('tooltip')).toHaveTextContent('Show chat history')
+    expect(history).toHaveAttribute('data-coach-hover')
+    const spotlight = screen.getByTestId('agent-coach-spotlight')
+    await waitFor(() => {
+      expect(parseFloat(spotlight.style.left)).toBe(rectangles.history.left - 4)
+      expect(parseFloat(spotlight.style.top)).toBe(rectangles.history.top - 4)
+      expect(parseFloat(spotlight.style.width)).toBe(
+        tooltipRect.right - rectangles.history.left + 8
+      )
+      expect(parseFloat(spotlight.style.height)).toBe(
+        rectangles.history.height + 8
+      )
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Back' }))
+    await screen.findByRole('dialog', { name: STEPS[2].title })
+    expect(screen.queryByRole('tooltip')).toBeNull()
+    expect(history).not.toHaveAttribute('data-coach-hover')
   })
 
   it('keeps the card reachable when the viewport narrows or shortens', async () => {

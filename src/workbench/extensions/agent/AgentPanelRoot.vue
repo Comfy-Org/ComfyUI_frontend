@@ -1224,6 +1224,7 @@ const coachSteps = computed<CoachStep[]>(() => [
   {
     target: '#agent-chat-history',
     placement: 'left-start',
+    tooltip: t('agent.showChatHistory'),
     title: t('agent.coachHistoryTitle'),
     body: t('agent.coachHistoryBody')
   }
