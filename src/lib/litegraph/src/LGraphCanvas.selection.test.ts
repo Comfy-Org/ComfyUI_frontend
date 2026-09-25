@@ -509,9 +509,20 @@ describe('LGraphCanvas selection', () => {
       canvas.select(a)
       expect(Object.keys(canvas.highlighted_links)).toHaveLength(0)
 
-      a.connect(0, b, 0)
+      const link = a.connect(0, b, 0)
+      assert.exists(link)
 
-      expect(Object.keys(canvas.highlighted_links)).toHaveLength(1)
+      expect(canvas.highlighted_links).toEqual({ [link.id]: true })
+    })
+
+    it('reuses the selection view while selection and topology are unchanged', () => {
+      const selectedKeys = vi.spyOn(useSelectionStore(), 'selectedKeys')
+      canvas.select(a)
+
+      expect(canvas.selected_nodes).toEqual({ [a.id]: a })
+      expect(canvas.highlighted_links).toEqual({})
+
+      expect(selectedKeys).toHaveBeenCalledOnce()
     })
 
     it('assigning selected_nodes replaces the selection', () => {
@@ -520,6 +531,7 @@ describe('LGraphCanvas selection', () => {
       canvas.selected_nodes = { [b.id]: b }
 
       expect(selectedTitles(canvas)).toEqual(['B'])
+      expect(canvas.selected_nodes).toEqual({ [b.id]: b })
       expect(a.selected).toBe(false)
       expect(b.selected).toBe(true)
     })

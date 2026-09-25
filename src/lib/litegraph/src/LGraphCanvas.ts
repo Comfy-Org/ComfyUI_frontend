@@ -23,7 +23,6 @@ import {
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import type { SelectableKey } from '@/core/selection/selectionState'
 import {
   applyCanvasSelection,
   clearGraphSelection,
@@ -296,8 +295,8 @@ interface SelectionView {
 
 interface SelectionViewCache {
   graph: LGraph
-  keys: readonly SelectableKey[]
   graphVersion: number
+  selectionRevision: number
   view: SelectionView
 }
 
@@ -767,18 +766,19 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const { graph } = this
     if (!graph) return { selectedNodes: {}, highlightedLinks: {} }
 
-    const keys = useSelectionStore().selectedKeys(graphScopeOf(graph))
+    const selectionStore = useSelectionStore()
+    const selectionRevision = selectionStore.getRevision()
     const graphVersion = graph._version
     const cached = this.selectionViewCache
     if (
       cached?.graph === graph &&
       cached.graphVersion === graphVersion &&
-      cached.keys.length === keys.length &&
-      cached.keys.every((key, i) => key === keys[i])
+      cached.selectionRevision === selectionRevision
     ) {
       return cached.view
     }
 
+    const keys = selectionStore.selectedKeys(graphScopeOf(graph))
     const nodes = keys.flatMap((key) => {
       const item = resolveSelectable(graph, key)
       return item instanceof LGraphNode ? [item] : []
@@ -788,7 +788,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       selectedNodes: Object.fromEntries(nodes.map((node) => [node.id, node])),
       highlightedLinks: Object.fromEntries(linkIds.map((id) => [id, true]))
     }
-    this.selectionViewCache = { graph, keys, graphVersion, view }
+    this.selectionViewCache = {
+      graph,
+      graphVersion,
+      selectionRevision,
+      view
+    }
     return view
   }
 

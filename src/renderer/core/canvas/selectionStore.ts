@@ -1,6 +1,6 @@
 import { isEqual } from 'es-toolkit'
 import { defineStore } from 'pinia'
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
 
 import type {
   SelectableKey,
@@ -16,6 +16,7 @@ export const useSelectionStore = defineStore('selection', () => {
   const roots = reactive(
     new Map<RootGraphId, Map<OwningGraphId, Set<SelectableKey>>>()
   )
+  const revision = ref(0)
 
   function apply(scope: GraphScope, command: SelectionCommand): void {
     const owners = roots.get(scope.rootGraphId)
@@ -24,16 +25,20 @@ export const useSelectionStore = defineStore('selection', () => {
     switch (command.type) {
       case 'selection.add':
         if (current) {
+          if (current.has(command.key)) return
           current.add(command.key)
+          revision.value++
           return
         }
         next = new Set([command.key])
         break
       case 'selection.remove':
-        current?.delete(command.key)
+        if (current?.delete(command.key)) revision.value++
         return
       case 'selection.clear':
-        current?.clear()
+        if (!current?.size) return
+        current.clear()
+        revision.value++
         return
       case 'selection.replace':
         next = new Set(command.keys)
@@ -43,10 +48,15 @@ export const useSelectionStore = defineStore('selection', () => {
 
     if (owners) owners.set(scope.owningGraphId, next)
     else roots.set(scope.rootGraphId, new Map([[scope.owningGraphId, next]]))
+    revision.value++
   }
 
   function clearRoot(rootGraphId: RootGraphId): void {
-    roots.delete(rootGraphId)
+    if (roots.delete(rootGraphId)) revision.value++
+  }
+
+  function getRevision(): number {
+    return revision.value
   }
 
   function selectedKeys(scope: GraphScope): readonly SelectableKey[] {
@@ -59,5 +69,5 @@ export const useSelectionStore = defineStore('selection', () => {
     )
   }
 
-  return { apply, clearRoot, selectedKeys, isSelected }
+  return { apply, clearRoot, getRevision, selectedKeys, isSelected }
 })
