@@ -285,10 +285,10 @@ export function createPromotedDomWidget(
 
   // DomWidget.vue appends widget.element into the host overlay, so a second
   // host reusing the interior element would move it out of the first. The
-  // first host claims and shares the live element (widgets that mutate their
-  // DOM in place, e.g. streaming previews, stay live on it); later hosts fall
-  // back to a clone kept in sync through the source value. The claim is
-  // released when the sharing host widget is removed.
+  // first host claims and shares the live element; later hosts fall back to
+  // a clone that follows the source through value sync and a MutationObserver
+  // mirror of in-place DOM updates. The claim is released when the sharing
+  // host widget is removed.
   const sourceElement = sourceWidget.element
   const claim = Symbol('promoted-dom-host')
   const shared = !claimedElements.has(sourceElement)
@@ -391,12 +391,77 @@ export function createPromotedDomWidget(
     cloneTextarea.addEventListener('input', pushCloneEdits, { signal })
     cloneTextarea.addEventListener('change', pushCloneEdits, { signal })
   }
+  // Streaming display panels (e.g. ModelPreviewOverrideKJ) update by
+  // mutating their subtree - swapping <img src>, rewriting text - with no
+  // value writes or input events for the syncs above to catch. Mirror those
+  // mutations into clone hosts; canvas bitmap draws are invisible to the DOM
+  // and follow only structural rebuilds.
+  let inPlaceObserver: MutationObserver | undefined
+  if (!shared && !isValueBearing && !cloneTextarea) {
+    const sourcePath = (node: Node): number[] | undefined => {
+      const path: number[] = []
+      let current = node
+      while (current !== sourceElement) {
+        const parent = current.parentNode
+        if (!parent) return undefined
+        path.unshift(Array.prototype.indexOf.call(parent.childNodes, current))
+        current = parent
+      }
+      return path
+    }
+    const inClone = (path: number[]): Node | undefined =>
+      path.reduce<Node | undefined>(
+        (current, index) => current?.childNodes[index],
+        element as Node
+      )
+    const rebuild = () =>
+      element.replaceChildren(
+        ...(sourceElement.cloneNode(true) as HTMLElement).childNodes
+      )
+    const observer = new MutationObserver((records) => {
+      for (const record of records) {
+        if (record.type === 'attributes' || record.type === 'characterData') {
+          const path = sourcePath(record.target)
+          const mirror = path === undefined ? undefined : inClone(path)
+          if (!mirror) {
+            rebuild()
+            break
+          }
+          if (record.type === 'characterData') {
+            mirror.nodeValue = record.target.nodeValue
+            continue
+          }
+          const mirrorElement = mirror as Element
+          for (const attribute of (record.target as Element).attributes)
+            mirrorElement.setAttribute(attribute.name, attribute.value)
+          if (mirrorElement !== element)
+            for (const name of Array.from(
+              mirrorElement.attributes,
+              (a) => a.name
+            ))
+              if (!(record.target as Element).hasAttribute(name))
+                mirrorElement.removeAttribute(name)
+          continue
+        }
+        rebuild()
+        break
+      }
+    })
+    observer.observe(sourceElement, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      characterData: true
+    })
+    inPlaceObserver = observer
+  }
   // Setter-driven changes (a button assigning its value) fire no input event;
   // chain the same sync onto the interior callback the setter calls.
   const releaseSourceSync = addSourceCallbackSync(sourceWidget, syncToHost)
   widget.onRemove = useChainCallback(widget.onRemove, () => {
     if (shared && claimedElements.get(sourceElement) === claim)
       claimedElements.delete(sourceElement)
+    inPlaceObserver?.disconnect()
     inputListenerController.abort()
     releaseSourceSync()
   })

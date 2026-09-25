@@ -194,6 +194,55 @@ describe('createPromotedDomWidget', () => {
     widgetB.onRemove?.()
   })
 
+  it('mirrors in-place source DOM updates into clone hosts', async () => {
+    const source = document.createElement('div')
+    source.textContent = 'frame 1'
+    const widget = fromAny<IBaseWidget, unknown>({
+      name: 'preview',
+      type: 'kj_preview',
+      element: source,
+      options: {},
+      value: 'frame 1'
+    })
+    const idA = makeWidgetId('g', toNodeId('n'), 'a')
+    const idB = makeWidgetId('g', toNodeId('n'), 'b')
+
+    const hostA = promoteDom(widget, idA, 'a')
+    const hostB = promoteDom(widget, idB, 'b')
+    expect(hostA.element).toBe(source)
+    expect(hostB.element).not.toBe(source)
+
+    // The streaming pattern: child swap plus attribute update, no value or
+    // input event anywhere.
+    const img = document.createElement('img')
+    img.setAttribute('src', 'blob:frame2')
+    source.replaceChildren(img)
+    await Promise.resolve()
+
+    expect(hostB.element.querySelector('img')?.getAttribute('src')).toBe(
+      'blob:frame2'
+    )
+
+    img.setAttribute('src', 'blob:frame3')
+    await Promise.resolve()
+    expect(hostB.element.querySelector('img')?.getAttribute('src')).toBe(
+      'blob:frame3'
+    )
+
+    // Clone-host edits must not echo back into the shared source subtree.
+    const hostBImg = hostB.element.querySelector('img')!
+    hostBImg.setAttribute('data-host', 'touched')
+    expect(source.querySelector('img')?.hasAttribute('data-host')).toBe(false)
+
+    hostB.onRemove?.()
+    img.setAttribute('src', 'blob:frame4')
+    await Promise.resolve()
+    expect(hostB.element.querySelector('img')?.getAttribute('src')).toBe(
+      'blob:frame3'
+    )
+    hostA.onRemove?.()
+  })
+
   it('keeps host clone elements synchronized with a value-bearing source', () => {
     const element = document.createElement('input')
     element.value = 'live'
