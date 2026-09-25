@@ -106,6 +106,25 @@ export class HostDoc {
     }
   }
 
+  /**
+   * The server's REFUSAL of a subscribe: `docService` nil (`unsupported`), an
+   * overloaded host, or the per-session document cap
+   * (`services/agent/server/events_doc_frames.go`). The turn itself can still
+   * report success, so this is the shape that leaves a CRDT-flagged workflow
+   * with no canvas frame at all — crdtdeliv-1 case (1).
+   */
+  subscribeRefused(reason: string): HostFrame {
+    return {
+      type: 'doc_subscribed',
+      data: {
+        v: DOC_PROTOCOL_VERSION,
+        workflow_id: this.workflowId,
+        ok: false,
+        reason
+      }
+    }
+  }
+
   catchUp(stateVectorB64: string): HostFrame {
     const update = Y.encodeStateAsUpdate(this.doc, fromBase64(stateVectorB64))
     return this.updateFrame(update, HOST_ACTOR, [])

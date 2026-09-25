@@ -14,6 +14,7 @@ import {
   addAutogrow,
   addDynamicCombo
 } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
+import { liveAutogrowGroupOf } from '@/core/graph/widgets/dynamicWidgets'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { realignGroupWidgetChildLinks } from '@/lib/litegraph/src/linkDeduplication'
 import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
@@ -90,6 +91,19 @@ describe('Dynamic Combos', () => {
     expect(node.inputs.length).toBe(4)
     expect(node.inputs[1].name).toBe('0.0.0.0')
     expect(node.inputs[3].name).toBe('2.2.0.0')
+  })
+  test('liveAutogrowGroupOf reports a DynamicCombo key with an all-numeric final segment as belonging to no autogrow group', () => {
+    // `0.0.0.0` is indistinguishable from a genuine autogrow ordinal by
+    // name shape alone (see `nameShapeAutogrowGroupOf`'s documented false
+    // positive) -- `liveAutogrowGroupOf` must not be fooled by it, since
+    // this node has no `comfyDynamic.autogrow` group at all.
+    const node = testNode()
+    addDynamicCombo(node, [['INT'], ['IMAGE']])
+    addDynamicCombo(node, [['INT'], ['IMAGE']])
+    node.widgets[2].value = '1'
+    node.widgets[0].value = '1'
+    expect(node.inputs[1].name).toBe('0.0.0.0')
+    expect(liveAutogrowGroupOf(node, '0.0.0.0')).toBeUndefined()
   })
   test('Shrinking dynamic inputs preserves remaining connections and disconnects removed links', () => {
     const graph = new LGraph()
@@ -268,6 +282,21 @@ describe('Autogrow', () => {
     expect(node.inputs.length).toBe(3)
     expect(node.inputs[0].name).toBe('0.a')
     expect(node.inputs[2].name).toBe('0.c')
+  })
+  test('liveAutogrowGroupOf recognizes an explicit-names member even though it does not end in a digit', () => {
+    // `0.b` does not end in an ordinal digit, so
+    // `nameShapeAutogrowGroupOf` cannot recognize it (see its documented
+    // false negative) -- `liveAutogrowGroupOf` must, since this node's
+    // `comfyDynamic.autogrow['0']` really does own it.
+    const graph = new LGraph()
+    const node = testNode()
+    graph.add(node)
+    addAutogrow(node, { input: inputsSpec, names: ['a', 'b', 'c'] })
+    connectInput(node, 0, graph)
+    connectInput(node, 1, graph)
+    expect(node.inputs[1].name).toBe('0.b')
+    expect(liveAutogrowGroupOf(node, '0.b')).toBe('0')
+    expect(liveAutogrowGroupOf(node, 'unrelated.b')).toBeUndefined()
   })
   test('Can add autogrow with min input count', () => {
     const node = testNode()

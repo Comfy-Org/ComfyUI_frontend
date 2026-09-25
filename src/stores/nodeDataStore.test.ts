@@ -204,6 +204,97 @@ describe('useNodeDataStore', () => {
     expect(registered.title).toBe('Renamed')
   })
 
+  it('updateNode refills the live slot arrays in place across a length change', () => {
+    const store = useNodeDataStore()
+    const scope = graphScope(rootA, rootA)
+    const registered = store.registerNode(
+      scope,
+      createNodeState({
+        id: toNodeId(1),
+        graphId: rootA,
+        title: 'Host',
+        inputs: [createMockNodeInputSlot({ name: 'a', type: 'IMAGE' })],
+        outputs: []
+      })
+    )
+    assert(registered)
+    const liveInputs = registered.inputs
+    const liveOutputs = registered.outputs
+
+    expect(
+      store.updateNode(
+        scope,
+        registered.id,
+        createNodeState({
+          id: toNodeId(1),
+          graphId: rootA,
+          title: 'Renamed',
+          inputs: [
+            createMockNodeInputSlot({ name: 'a', type: 'IMAGE' }),
+            createMockNodeInputSlot({ name: 'b', type: 'MASK' })
+          ],
+          outputs: [createMockNodeOutputSlot({ name: 'out', type: 'LATENT' })]
+        })
+      )
+    ).toBe(true)
+
+    expect(registered.title).toBe('Renamed')
+    expect(registered.inputs).toBe(liveInputs)
+    expect(registered.outputs).toBe(liveOutputs)
+    expect(registered.inputs.map((slot) => [slot.name, slot.type])).toEqual([
+      ['a', 'IMAGE'],
+      ['b', 'MASK']
+    ])
+    expect(registered.outputs.map((slot) => [slot.name, slot.type])).toEqual([
+      ['out', 'LATENT']
+    ])
+  })
+
+  it('updateNode refills a slot list long enough to overflow a spread-based splice, without changing array identity', () => {
+    const store = useNodeDataStore()
+    const scope = graphScope(rootA, rootA)
+    const registered = store.registerNode(
+      scope,
+      createNodeState({
+        id: toNodeId(1),
+        graphId: rootA,
+        title: 'Host',
+        inputs: [createMockNodeInputSlot({ name: 'seed', type: 'IMAGE' })],
+        outputs: []
+      })
+    )
+    assert(registered)
+    const liveInputs = registered.inputs
+
+    // Comfortably above this runtime's spread-argument ceiling (measured
+    // around 125k on Node's current V8): `target.splice(0, target.length,
+    // ...source)` throws `RangeError: Maximum call stack size exceeded`
+    // here, while the index-by-index refill does not.
+    const length = 150_000
+    const inputs = Array.from({ length }, (_, i) =>
+      createMockNodeInputSlot({ name: `input-${i}`, type: 'IMAGE' })
+    )
+
+    expect(() =>
+      store.updateNode(
+        scope,
+        registered.id,
+        createNodeState({
+          id: toNodeId(1),
+          graphId: rootA,
+          title: 'Renamed',
+          inputs,
+          outputs: []
+        })
+      )
+    ).not.toThrow()
+
+    expect(registered.inputs).toBe(liveInputs)
+    expect(registered.inputs).toHaveLength(length)
+    expect(registered.inputs[0]?.name).toBe('input-0')
+    expect(registered.inputs[length - 1]?.name).toBe(`input-${length - 1}`)
+  })
+
   it.for([
     {
       slotKind: 'input',
@@ -306,6 +397,90 @@ describe('useNodeDataStore', () => {
       expect(read(registered)).toEqual(['new-1', 'new-2'])
     }
   )
+
+  it('replaces slots by name and occurrence without replacing shared arrays or matched slots', () => {
+    const store = useNodeDataStore()
+    const scope = graphScope(rootA, rootA)
+    const inputs = [
+      createMockNodeInputSlot({ name: 'same', label: 'old-1' }),
+      createMockNodeInputSlot({ name: 'drop' }),
+      createMockNodeInputSlot({ name: 'same', label: 'old-2' })
+    ]
+    const outputs = [
+      createMockNodeOutputSlot({ name: 'drop' }),
+      createMockNodeOutputSlot({ name: 'keep', label: 'old' })
+    ]
+    const registered = store.registerNode(
+      scope,
+      createNodeState({
+        id: toNodeId(1),
+        graphId: rootA,
+        inputs,
+        outputs
+      })
+    )
+    assert(registered)
+    const registeredInputs = registered.inputs
+    const registeredOutputs = registered.outputs
+    const [firstSame, , secondSame] = registeredInputs
+    const [, keptOutput] = registeredOutputs
+
+    expect(
+      store.replaceNodeSlots(scope, registered.id, {
+        inputs: [
+          createMockNodeInputSlot({ name: 'same', label: 'new-1' }),
+          createMockNodeInputSlot({ name: 'insert' }),
+          createMockNodeInputSlot({ name: 'same', label: 'new-2' })
+        ],
+        outputs: [
+          createMockNodeOutputSlot({ name: 'keep', label: 'new' }),
+          createMockNodeOutputSlot({ name: 'insert' })
+        ]
+      })
+    ).toBe(true)
+
+    expect(registered.inputs).toBe(registeredInputs)
+    expect(registered.outputs).toBe(registeredOutputs)
+    expect(registered.inputs.map(({ name }) => name)).toEqual([
+      'same',
+      'insert',
+      'same'
+    ])
+    expect(registered.outputs.map(({ name }) => name)).toEqual([
+      'keep',
+      'insert'
+    ])
+    expect(registered.inputs[0]).toBe(firstSame)
+    expect(registered.inputs[2]).toBe(secondSame)
+    expect(registered.outputs[0]).toBe(keptOutput)
+    expect(registered.inputs.map(({ label }) => label)).toEqual([
+      'new-1',
+      undefined,
+      'new-2'
+    ])
+    expect(registered.outputs[0]?.label).toBe('new')
+  })
+
+  it('does not replace slots through the wrong owner', () => {
+    const store = useNodeDataStore()
+    const registered = store.registerNode(
+      graphScope(rootA, rootA),
+      createNodeState({
+        id: toNodeId(1),
+        graphId: rootA,
+        inputs: [createMockNodeInputSlot({ name: 'keep' })]
+      })
+    )
+    assert(registered)
+
+    expect(
+      store.replaceNodeSlots(graphScope(rootA, 'sub-1'), registered.id, {
+        inputs: [],
+        outputs: []
+      })
+    ).toBe(false)
+    expect(registered.inputs.map(({ name }) => name)).toEqual(['keep'])
+  })
 })
 
 describe('nodeDataStore registration via LGraph', () => {

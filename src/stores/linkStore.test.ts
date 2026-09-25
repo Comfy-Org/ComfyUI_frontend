@@ -148,6 +148,28 @@ describe('useLinkStore', () => {
     ])
   })
 
+  it('atomically replaces the same-id link and its target occupant', () => {
+    const store = useLinkStore()
+    const sameId = store.registerLink(graphA, link(1, 5, 0, 8, 1))
+    const targetOccupant = store.registerLink(graphA, link(2, 6, 0, 9, 2))
+    assert(sameId)
+    assert(targetOccupant)
+
+    const replacement = link(1, 7, 0, 9, 2)
+    const registered = store.replaceLink(
+      graphA,
+      targetOccupant,
+      replacement,
+      sameId
+    )
+
+    expect(registered).toBeDefined()
+    expect(store.getTopology(graphA.rootGraphId, toLinkId(1))).toBe(registered)
+    expect(store.getTopology(graphA.rootGraphId, toLinkId(2))).toBeUndefined()
+    expect(store.getInputSlotLink(graphA, toNodeId(8), 1)).toBeUndefined()
+    expect(store.getInputSlotLink(graphA, toNodeId(9), 2)).toBe(registered)
+  })
+
   it('does not replace a target through a stale incumbent', () => {
     const store = useLinkStore()
     const incumbent = link(1, 5, 0, 9, 2)
