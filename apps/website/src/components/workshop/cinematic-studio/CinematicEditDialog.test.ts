@@ -106,7 +106,7 @@ describe('CinematicEditDialog', () => {
     ).toHaveValue(source.recipe.prompt)
     await user.click(screen.getByRole('button', { name: 'Review edit' }))
     expect(emitted('review')).toEqual([
-      [{ ...source.recipe, sourceFile: source.file }]
+      [{ ...source.recipe, takes: 1, sourceFile: source.file }]
     ])
   })
   it('reviews the selected source and exact instruction without closing the draft', async () => {
@@ -127,6 +127,7 @@ describe('CinematicEditDialog', () => {
       [
         {
           modelSlug: initial.models[0].slug,
+          takes: 1,
           prompt: 'Make the coat blue',
           aspect: '16:9',
           sourceFile: initial.source.file,
@@ -175,4 +176,45 @@ describe('CinematicEditDialog', () => {
     )
     expect(screen.getByRole('button', { name: 'Review edit' })).toBeEnabled()
   })
+})
+
+it('reviews variations and zero seed, clears seed when switching to an unsupported model', async () => {
+  const initial = props()
+  const user = userEvent.setup()
+  const { emitted } = render(CinematicEditDialog, {
+    props: {
+      ...initial,
+      models: [
+        { ...initial.models[0], seed: { minimum: 0, maximum: 100, step: 1 } },
+        { ...initial.models[0], slug: 'unseeded', name: 'Unseeded model' }
+      ]
+    }
+  })
+  await user.click(await screen.findByRole('button', { name: 'Camera view' }))
+  await user.selectOptions(
+    screen.getByRole('combobox', { name: 'Variations' }),
+    '3'
+  )
+  const seed = screen.getByRole('spinbutton', { name: 'Seed (optional)' })
+  await user.type(seed, '101')
+  expect(screen.getByRole('button', { name: 'Review edit' })).toBeDisabled()
+  await user.clear(seed)
+  await user.type(seed, '0')
+  await user.click(screen.getByRole('button', { name: 'Review edit' }))
+  expect(emitted('review')[0]).toEqual([
+    expect.objectContaining({ takes: 3, seed: 0 })
+  ])
+  await user.selectOptions(
+    screen.getByRole('combobox', { name: 'Image editing model' }),
+    'unseeded'
+  )
+  expect(
+    screen.queryByRole('spinbutton', { name: 'Seed (optional)' })
+  ).not.toBeInTheDocument()
+  await user.click(screen.getByRole('button', { name: 'Review edit' }))
+  expect(emitted('review')[1]).toEqual([expect.objectContaining({ takes: 3 })])
+  const secondReview = emitted('review')[1]
+  expect(Array.isArray(secondReview)).toBe(true)
+  if (Array.isArray(secondReview))
+    expect(secondReview[0]).not.toHaveProperty('seed')
 })

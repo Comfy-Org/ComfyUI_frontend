@@ -15,6 +15,7 @@ import { ASPECT_RATIOS, directionOption } from './catalog'
 import type { Direction, DirectionPart } from './catalog'
 import { canRunModel } from './gate'
 import type { CinematicModel } from './models'
+import { cinematicSeedDescriptor } from './models'
 
 const EDITING_MODELS: Readonly<Record<string, string>> = {
   'byteplus--seedream-4-5--edit-images': '/icons/ai-models/bytedance.svg',
@@ -41,6 +42,7 @@ export interface CinematicEditingDescriptor {
   readonly sizes: readonly string[]
   readonly defaultResolution?: string
   readonly maxReferences: number
+  readonly seed?: CinematicModel['seed']
 }
 
 export function cinematicEditingDescriptor(
@@ -65,7 +67,9 @@ export function cinematicEditingDescriptor(
   const resolutions = choices('image_imageSize')
   const resolution = schema.find((field) => field.name === 'image_imageSize')
   const aspects = choices('image_aspectRatio')
+  const seed = model.execution && cinematicSeedDescriptor(model.execution)
   return {
+    ...(seed ? { seed } : {}),
     maxReferences: sourceFields(schema).reduce(
       (sum, field) => sum + (field.maxItems ?? 1),
       0
@@ -112,6 +116,7 @@ export function runnableCinematicEditingModels(
         mode: 'image' as const,
         imageAspects: descriptor.aspects,
         referenceMax: descriptor.maxReferences,
+        ...(descriptor.seed ? { seed: descriptor.seed } : {}),
         ...(model.status === 'degraded' ? { degraded: true } : {})
       }
     ]
@@ -135,6 +140,16 @@ export function cinematicEditingForm(
   const descriptor = cinematicEditingDescriptor(model)
   if (!descriptor) throw new WorkshopRouterError('unavailable')
   const schema = workshopPageSchema(model)
+  const seed = descriptor.seed
+  if (
+    settings.seed !== undefined &&
+    (!seed ||
+      !Number.isFinite(settings.seed) ||
+      (seed.step !== 'any' && !Number.isInteger(settings.seed)) ||
+      (seed.minimum !== undefined && settings.seed < seed.minimum) ||
+      (seed.maximum !== undefined && settings.seed > seed.maximum))
+  )
+    throw new WorkshopRouterError('validation', null, { seed: 'rejected' })
   const files = [settings.sourceFile, ...(settings.sourceFiles ?? [])]
   if (
     files.some(

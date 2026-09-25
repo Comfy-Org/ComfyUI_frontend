@@ -44,6 +44,8 @@ const {
           modelSlug: string
           prompt: string
           aspect: AspectRatio
+          takes?: number
+          seed?: number
           operation: Operation
         }
       }
@@ -58,6 +60,8 @@ const emit = defineEmits<{
   close: []
   review: [
     {
+      takes: number
+      seed?: number
       modelSlug: string
       prompt: string
       aspect: AspectRatio
@@ -76,6 +80,29 @@ const operations: readonly Operation[] = ['edit', 'camera', 'look', 'relight']
 const operation = ref<Operation>('edit')
 const modelSlug = ref('')
 const aspect = ref<AspectRatio>('16:9')
+const variations = ref(1)
+const seedInput = ref<string | number>('')
+const seed = computed(() =>
+  String(seedInput.value).trim() === '' ? undefined : Number(seedInput.value)
+)
+const validSeed = computed(() => {
+  const bounds = selectedModel.value?.seed
+  if (seed.value === undefined) return true
+  return (
+    !!bounds &&
+    Number.isFinite(seed.value) &&
+    (bounds.step === 'any' || Number.isInteger(seed.value)) &&
+    (bounds.minimum === undefined || seed.value >= bounds.minimum) &&
+    (bounds.maximum === undefined || seed.value <= bounds.maximum)
+  )
+})
+watch(
+  modelSlug,
+  () => {
+    seedInput.value = ''
+  },
+  { flush: 'sync' }
+)
 const camera = ref({ ...cameraViewDefaults })
 const guidance = ref<CameraGuidance>({
   mode: 'frame',
@@ -126,6 +153,10 @@ const fieldClass =
 const ready = computed(
   () =>
     !!source &&
+    Number.isInteger(variations.value) &&
+    variations.value >= 1 &&
+    variations.value <= 4 &&
+    validSeed.value &&
     models.some((model) => model.slug === modelSlug.value) &&
     !!instruction.value.trim() &&
     aspectOptions.value.some((option) => option.id === aspect.value) &&
@@ -138,6 +169,8 @@ watch(
     operation.value = source?.recipe?.operation ?? 'edit'
     instruction.value = source?.recipe?.prompt ?? ''
     if (source?.recipe) modelSlug.value = source.recipe.modelSlug
+    variations.value = source?.recipe?.takes ?? 1
+    seedInput.value = source?.recipe?.seed?.toString() ?? ''
     additional.value = ''
     aspect.value = source?.recipe?.aspect ?? '16:9'
     camera.value = { ...cameraViewDefaults }
@@ -207,6 +240,8 @@ function selectOperation(value: Operation) {
 function review() {
   if (!source || !ready.value) return
   emit('review', {
+    takes: variations.value,
+    ...(seed.value !== undefined ? { seed: seed.value } : {}),
     modelSlug: modelSlug.value,
     prompt: [instruction.value.trim(), additional.value.trim()]
       .filter(Boolean)
@@ -530,6 +565,35 @@ function review() {
               maxlength="1500"
             />
           </label>
+          <label class="flex flex-col gap-2 text-sm"
+            >{{ t('variations') }}
+            <select v-model.number="variations" :class="fieldClass">
+              <option v-for="count in [1, 2, 3, 4]" :key="count" :value="count">
+                {{ count }}
+              </option>
+            </select>
+          </label>
+          <p class="text-xs/relaxed text-primary-comfy-canvas">
+            {{ t('variationsNote') }}
+          </p>
+          <label v-if="selectedModel?.seed" class="flex flex-col gap-2 text-sm"
+            >{{ t('seed') }}
+            <input
+              v-model="seedInput"
+              :aria-label="t('seed')"
+              type="number"
+              :min="selectedModel.seed.minimum"
+              :max="selectedModel.seed.maximum"
+              :step="selectedModel.seed.step"
+              :class="fieldClass"
+            />
+            <span class="text-xs text-primary-comfy-canvas">{{
+              t('seedNote')
+            }}</span>
+          </label>
+          <p v-if="!validSeed" role="alert" class="text-sm">
+            {{ t('invalidSeed') }}
+          </p>
           <p v-if="!models.length" role="status" class="text-sm">
             {{ t('unavailable') }}
           </p>

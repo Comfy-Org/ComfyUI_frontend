@@ -4,6 +4,7 @@ import { computed, watch } from 'vue'
 import type { CinematicReview } from '../../../composables/useCinematicShot'
 import type { Locale } from '../../../i18n/translations'
 import { libraryCopy } from '../../../lib/workshop/cinematic-studio/library-copy'
+import { tcEditing } from '../../../lib/workshop/cinematic-studio/editing-copy'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import Button from '../../ui/button/Button.vue'
 import Dialog from '../../ui/dialog/Dialog.vue'
@@ -167,6 +168,12 @@ watch(
             {{ review.request.prompt }}
           </p>
         </div>
+        <p
+          v-if="review.request.editing && review.request.takes > 1"
+          class="text-sm text-primary-comfy-canvas"
+        >
+          {{ tcEditing('variationsNote', locale) }}
+        </p>
         <p class="text-xs/relaxed text-primary-comfy-canvas">
           {{ tc('cinematic.review.credits', locale) }}
         </p>

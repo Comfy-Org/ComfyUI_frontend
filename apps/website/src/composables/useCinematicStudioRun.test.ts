@@ -93,6 +93,87 @@ async function pageResponse(url: string) {
 }
 
 describe('cinematic request recovery', () => {
+  it.for(['success', 'failure', 'cancel'] as const)(
+    'submits three seeded edits sequentially and stops on %s',
+    async (outcome) => {
+      const editSlug = 'byteplus--seedream-4-5--edit-images'
+      const entered = Promise.withResolvers<void>()
+      const release = Promise.withResolvers<void>()
+      const bodies: unknown[] = []
+      const keys: (string | null)[] = []
+      vi.stubGlobal(
+        'fetch',
+        vi.fn<typeof fetch>(async (input, init) => {
+          const url = String(input)
+          if (url.startsWith('/')) return pageResponse(url)
+          if (init?.method === 'PUT') return Response.json({}, { status: 202 })
+          if (init?.method !== 'POST')
+            return Response.json({
+              data: [{ url: `https://example.com/result-${bodies.length}.png` }]
+            })
+          expect(
+            run.reel.value.takes.filter((take) => take.status === 'done')
+          ).toHaveLength(bodies.length)
+          bodies.push(JSON.parse(String(init.body)))
+          keys.push(new Headers(init.headers).get('Idempotency-Key'))
+          if (bodies.length === 1) {
+            entered.resolve()
+            await release.promise
+          }
+          if (outcome === 'failure' && bodies.length === 2)
+            return Response.json(
+              { error: { message: 'Rejected' } },
+              { status: 400 }
+            )
+          return Response.json(
+            { request_id: keys.at(-1), status: 'IN_QUEUE' },
+            { status: 201 }
+          )
+        })
+      )
+      const { run } = mountRun()
+      await nextTick()
+      const generating = run.generate({
+        modelSlug: editSlug,
+        prompt: 'Preserve the subject, soften the light',
+        aspect: '1:1',
+        resolutionPixels: 2048,
+        takes: 3,
+        references: [],
+        seed: 0,
+        editing: {
+          sourceFile: new File(['image'], 'source.png', { type: 'image/png' })
+        }
+      })
+      await entered.promise
+      expect(bodies).toHaveLength(1)
+      expect(
+        run.reel.value.takes.filter((take) => take.status === 'done')
+      ).toHaveLength(0)
+      if (outcome === 'cancel') run.cancel()
+      release.resolve()
+      await generating
+      expect(bodies).toHaveLength(
+        outcome === 'success' ? 3 : outcome === 'failure' ? 2 : 1
+      )
+      for (const body of bodies)
+        expect(body).toMatchObject({
+          seed: 0,
+          prompt: 'Preserve the subject, soften the light',
+          image: 'data:image/png;base64,aW1hZ2U='
+        })
+      expect(keys.every(Boolean)).toBe(true)
+      expect(new Set(keys).size).toBe(keys.length)
+      expect(run.reel.value.takes).toHaveLength(3)
+      expect(
+        run.reel.value.takes.filter((take) => take.status === 'done')
+      ).toHaveLength(outcome === 'success' ? 3 : outcome === 'failure' ? 1 : 0)
+      expect(run.rendering.value).toBe(false)
+      expect(
+        run.reel.value.takes.every((take) => take.status !== 'rendering')
+      ).toBe(true)
+    }
+  )
   it.for(['cancel', 'switch-account'])(
     'does not record interrupted generation timing on %s',
     async (action) => {

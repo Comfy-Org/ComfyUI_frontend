@@ -10,6 +10,9 @@ API-key backend, copied private output library, or additional dependency.
 
 - Image/video composer drafts, frozen generation review, native playback,
   downloads, source-image edits, camera/look changes and prompt-based relight.
+- Edit variations (1–4) run sequentially with separate-charge review and stop
+  on failure/cancellation. Supported editing seeds use native contract bounds,
+  preserve zero, and remain saved in recipes; unsupported models hide the control.
 - Contract-supported video routes, durations, resolutions, audio and seeds;
   unsupported reference combinations are blocked before submission.
 - Genre/era/tempo, ordered movements, custom palettes and lighting presets.
@@ -33,7 +36,7 @@ API-key backend, copied private output library, or additional dependency.
 
 ## Validation
 
-- Latest run: 316 focused Studio tests passed across 33 component, library and
+- Latest run: 326 focused Studio tests passed across 33 component, library and
   composable files. Earlier route validation also passed two LTX Fast tests and
   731 shared contract tests; these were not rerun for the capability UI change.
 - 21 production browser tests passed across both Studio layouts, including

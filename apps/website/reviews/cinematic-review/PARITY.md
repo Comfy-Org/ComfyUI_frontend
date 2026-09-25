@@ -19,14 +19,16 @@ not a live Router quality or latency certification.
 | Comparison                  | Image/video preview and saved settings; this round adds Reuse settings and Animate directly on each result in both layouts. Animation needs available, revealed image media; reuse retains the existing edit-operation restriction. Neither action submits generation. |
 | Models                      | Bundled catalog visibility plus supported Studio routes; capability details and local observed timing are implemented. Catalog visibility is not universal Studio execution support.                                                                                   |
 
+Camera/edit variation follow-up: the editor now offers 1–4 sequential requests,
+with an explicit separate-charge notice in both setup and final review. Supported
+Seedream and Qwen routes expose contract-bounded seeds; Gemini hides seed. Zero
+is preserved in requests and recipes. Fixed seeds are reused across variations
+and may produce similar results. Failure/cancellation stops remaining requests.
+
 ## Remaining differences
 
 These are explicit follow-ups, not claims that the migration is a complete replica.
 
-- Camera edits: original `src/viewpoint.js` offers 1–4 variations and an edit
-  seed. Current `reviewEdit` in `useCinematicShot.ts` requests one take and the
-  edit dialog has no seed control. Additional controls need model-contract
-  support and a clear per-variation cost review.
 - Custom lighting: original `src/look-editor.js` includes a subject/camera/light
   positioning diagram. Current `CinematicCreativeEditor.vue` provides the light
   controls without that spatial illustration.

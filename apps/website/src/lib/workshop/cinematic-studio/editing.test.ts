@@ -30,6 +30,75 @@ function modelFor(slug: string) {
 }
 
 describe('cinematic editing contracts', () => {
+  it.for([
+    ['byteplus--seedream-4-5--edit-images', -1],
+    ['byteplus--seedream-5-pro--edit-images', -1],
+    ['qwen--qwen-image-3.0-image-edit--edit-images', 0],
+    ['qwen--qwen-image-3.0-pro-image-edit--edit-images', 0]
+  ] as const)(
+    'exposes and maps exact seed bounds for %s',
+    async ([slug, minimum]) => {
+      const model = modelFor(slug)
+      const maximum = 2147483647
+      expect(
+        runnableCinematicEditingModels(
+          getAuthoredRouterWorkshopModelDetail
+        ).find((item) => item.slug === slug)?.seed
+      ).toEqual({ minimum, maximum, step: 1 })
+      const sourceFile = new File(
+        [
+          Uint8Array.from(
+            atob(
+              'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/l9sAAAAASUVORK5CYII='
+            ),
+            (char) => char.charCodeAt(0)
+          )
+        ],
+        'source.png',
+        { type: 'image/png' }
+      )
+      for (const seed of [minimum, 0, maximum]) {
+        const form = cinematicEditingForm(model, {
+          sourceFile,
+          prompt: 'Preserve the subject',
+          aspect: '1:1',
+          seed
+        })
+        const prepared = await prepareModelRouterRender(
+          model,
+          {},
+          { form, uploadFile: async () => 'https://example.com/source.png' }
+        )
+        if (slug.startsWith('qwen'))
+          expect(prepared.body).toMatchObject({ parameters: { seed } })
+        else expect(prepared.body.seed).toBe(seed)
+      }
+      for (const seed of [minimum - 1, maximum + 1, 0.5, NaN, Infinity])
+        expect(() =>
+          cinematicEditingForm(model, { sourceFile, prompt: 'Preserve', seed })
+        ).toThrow('validation')
+    }
+  )
+  it.for([slugs[1], slugs[3]])(
+    'rejects unsupported seeds instead of silently discarding them for %s',
+    (slug) => {
+      const model = modelFor(slug)
+      expect(
+        runnableCinematicEditingModels(
+          getAuthoredRouterWorkshopModelDetail
+        ).find((item) => item.slug === slug)?.seed
+      ).toBeUndefined()
+      const sourceFile = new File(['image'], 'source.png', {
+        type: 'image/png'
+      })
+      expect(() =>
+        cinematicEditingForm(model, { sourceFile, prompt: 'Preserve', seed: 0 })
+      ).toThrow('validation')
+      expect(() =>
+        cinematicEditingForm(model, { sourceFile, prompt: 'Preserve' })
+      ).not.toThrow()
+    }
+  )
   it('does not invent GPT edit bindings absent from the authored catalogue', () => {
     for (const slug of [
       'openai--gpt-image-2--edit-images',

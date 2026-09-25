@@ -261,9 +261,20 @@ for (const layout of ['e', 'd']) {
         exact: true
       })
       .fill('Keep the red coat.')
+    await editor
+      .getByRole('combobox', { name: 'Variations', exact: true })
+      .selectOption('3')
+    await editor
+      .getByRole('spinbutton', { name: 'Seed (optional)', exact: true })
+      .fill('0')
     await editor.getByRole('button', { name: /Review/ }).click()
     const review = page.getByRole('dialog', { name: 'Review your shot' })
     await expect(review).toContainText('Keep the red coat.')
+    await expect(review).toContainText(
+      'Each variation is a separate paid request'
+    )
+    await expect(review.locator('dl')).toContainText('3')
+    await expect(review.locator('dl')).toContainText('Seed (optional)0')
     await review.getByRole('button', { name: 'Back to editing' }).click()
     await expect(
       editor.getByRole('textbox', {
@@ -280,7 +291,7 @@ for (const layout of ['e', 'd']) {
     await page
       .getByRole('button', { name: 'Your creations', exact: true })
       .click()
-    await expect(library.getByRole('article')).toHaveCount(2)
+    await expect(library.getByRole('article')).toHaveCount(4)
   })
 }
 

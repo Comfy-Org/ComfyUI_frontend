@@ -401,6 +401,8 @@ export function useCinematicShot(
       modelSlug: string
       prompt: string
       aspect: AspectRatio
+      takes?: number
+      seed?: number
       operation: 'edit' | 'camera' | 'look' | 'relight'
     }
   }>()
@@ -436,6 +438,8 @@ export function useCinematicShot(
     }
   }
   function reviewEdit(input: {
+    takes?: number
+    seed?: number
     modelSlug: string
     prompt: string
     aspect: AspectRatio
@@ -447,6 +451,19 @@ export function useCinematicShot(
       (candidate) => candidate.slug === input.modelSlug
     )
     if (!model || studio.rendering.value || studio.gate.value !== 'ready')
+      return
+    const variations = input.takes ?? 1
+    const bounds = model.seed
+    if (!Number.isInteger(variations) || variations < 1 || variations > 4)
+      return
+    if (
+      input.seed !== undefined &&
+      (!bounds ||
+        !Number.isFinite(input.seed) ||
+        (bounds.step !== 'any' && !Number.isInteger(input.seed)) ||
+        (bounds.minimum !== undefined && input.seed < bounds.minimum) ||
+        (bounds.maximum !== undefined && input.seed > bounds.maximum))
+    )
       return
     const sourceId =
       input.sourceFile === editSource.value?.file
@@ -461,7 +478,8 @@ export function useCinematicShot(
         modelSlug: model.slug,
         prompt: input.prompt,
         aspect: input.aspect,
-        takes: 1,
+        takes: variations,
+        ...(input.seed !== undefined ? { seed: input.seed } : {}),
         resolutionPixels: 2048,
         references: [input.sourceFile, ...(input.sourceFiles ?? [])],
         referenceFiles: [input.sourceFile, ...(input.sourceFiles ?? [])].map(
@@ -473,6 +491,8 @@ export function useCinematicShot(
           resolution: '2K'
         },
         settings: {
+          takes: variations,
+          ...(input.seed !== undefined ? { seed: input.seed } : {}),
           mode: 'image',
           scene: input.prompt,
           enhance: false,
@@ -965,6 +985,8 @@ export function useCinematicShot(
         name: source.name,
         url: URL.createObjectURL(source),
         recipe: {
+          takes: recipe.settings?.takes,
+          seed: recipe.settings?.seed,
           modelSlug: recipe.modelSlug,
           prompt: recipe.prompt,
           aspect: recipe.aspect,
@@ -972,6 +994,8 @@ export function useCinematicShot(
         }
       }
       reviewEdit({
+        takes: recipe.settings?.takes,
+        seed: recipe.settings?.seed,
         modelSlug: recipe.modelSlug,
         prompt: recipe.prompt,
         aspect: recipe.aspect,

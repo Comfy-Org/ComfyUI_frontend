@@ -92,6 +92,7 @@ describe('composer persistence', () => {
     const editModel = {
       ...models[0],
       slug: 'image-edit',
+      seed: { minimum: 0, maximum: 100, step: 1 },
       imageAspects: ['1:1']
     }
     const { shot } = mountShot(
@@ -114,11 +115,19 @@ describe('composer persistence', () => {
     await nextTick()
     shot.reviewEdit({
       modelSlug: editModel.slug,
+      takes: 3,
+      seed: 0,
       prompt: 'Keep the character',
       aspect: '1:1',
       sourceFile: first,
       sourceFiles: [extra],
       operation: 'edit'
+    })
+    expect(shot.review.value?.request.takes).toBe(3)
+    expect(shot.review.value?.request.seed).toBe(0)
+    expect(shot.review.value?.request.settings).toMatchObject({
+      takes: 3,
+      seed: 0
     })
     expect(shot.review.value?.request.references).toEqual([first, extra])
     expect(

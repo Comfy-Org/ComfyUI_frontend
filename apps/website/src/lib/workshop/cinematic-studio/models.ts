@@ -191,7 +191,7 @@ interface CinematicSeedDescriptor {
   readonly step: number | 'any'
 }
 
-function cinematicSeedDescriptor(
+export function cinematicSeedDescriptor(
   contract: WorkshopContract
 ): CinematicSeedDescriptor | undefined {
   const schema = schemaForModel({ fields: [], form: formForContract(contract) })

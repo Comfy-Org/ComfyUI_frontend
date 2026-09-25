@@ -1,6 +1,21 @@
 import type { Locale, LocalizedText } from '../../../i18n/translations'
 
 const copy = {
+  variations: { en: 'Variations', 'zh-CN': '变体数量' },
+  variationsNote: {
+    en: 'Each variation is a separate paid request, run one at a time. Remaining variations stop on failure or cancellation.',
+    'zh-CN':
+      '每个变体都是单独计费的请求，依次运行。失败或取消时将停止剩余变体。'
+  },
+  seed: { en: 'Seed (optional)', 'zh-CN': '种子（可选）' },
+  seedNote: {
+    en: 'Leave blank for the model default. A fixed seed is reused for every variation and may produce similar results.',
+    'zh-CN': '留空使用模型默认值。固定种子会用于每个变体，可能产生相似结果。'
+  },
+  invalidSeed: {
+    en: 'Enter a seed within this model’s allowed range, or leave it blank.',
+    'zh-CN': '请输入模型允许范围内的种子，或留空。'
+  },
   guidance: { en: 'Reference guidance', 'zh-CN': '参考图指导' },
   guidanceMode: { en: 'How to guide this shot', 'zh-CN': '如何引导此镜头' },
   frameGuidance: { en: 'Use this frame', 'zh-CN': '使用此画面' },
