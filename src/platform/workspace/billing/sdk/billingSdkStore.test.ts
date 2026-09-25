@@ -223,6 +223,38 @@ describe('useBillingSdkStore', () => {
     expect(toasts.messagesToRemove.at(-1)).toMatchObject({ severity: 'warn' })
   })
 
+  it('keeps a subscribe in step with its progress toast, as the poller did', () => {
+    useBillingSdkStore()
+    const toasts = useToastStore()
+
+    harness.publish(pendingSubscription())
+    expect(toasts.messagesToAdd).toEqual([
+      expect.objectContaining({
+        severity: 'info',
+        summary: 'Processing payment — setting up your workspace...'
+      })
+    ])
+
+    harness.publish(
+      pendingSubscription({ actionUrl: 'https://verify.example/op-1' })
+    )
+    expect(toasts.messagesToAdd.at(-1)).toMatchObject({
+      severity: 'warn',
+      summary: 'Verify your payment to finish setting up your workspace'
+    })
+
+    harness.publish(settledOperation('succeeded', 'subscription'))
+    expect(toasts.messagesToRemove.at(-1)).toMatchObject({ severity: 'warn' })
+  })
+
+  it('shows no progress toast for a cancel', () => {
+    useBillingSdkStore()
+
+    harness.publish(pendingTopup({ kind: 'cancel' }))
+
+    expect(useToastStore().messagesToAdd).toEqual([])
+  })
+
   it('drives a required in-page challenge once per operation', () => {
     useBillingSdkStore()
     const challenged = pendingTopup({
@@ -680,9 +712,11 @@ describe('useBillingSdkStore subscription commands', () => {
       'https://pay.example/op-1',
       '_blank'
     )
-    expect(toasts.messagesToAdd).toEqual([
-      expect.objectContaining({ severity: 'warn' })
-    ])
+    expect(
+      toasts.messagesToAdd.filter(
+        (message) => message.group !== 'billing-operation'
+      )
+    ).toEqual([expect.objectContaining({ severity: 'warn' })])
     expect(store.subscriptionActionUrl).toBe('https://pay.example/op-1')
   })
 
