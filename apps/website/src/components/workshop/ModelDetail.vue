@@ -70,7 +70,7 @@ import {
   captureWorkshopEvent,
   useWorkshopEnabled,
   useWorkshopAuthFlag,
-  useWorkshopWorkflowsEnabled
+  useWorkshopAppsEnabled
 } from '../../scripts/posthog'
 import type { WorkshopRunAnalytics } from '../../scripts/workshop-analytics'
 import {
@@ -231,7 +231,7 @@ const { user, session, sessionFailure, settled, ensureFresh } =
 const { balance } = useWorkshopCredits()
 const workshopEnabled = useWorkshopEnabled()
 const authEnabled = useWorkshopAuthFlag()
-const studioEnabled = useWorkshopWorkflowsEnabled()
+const studioEnabled = useWorkshopAppsEnabled()
 const mounted = useMounted()
 const signInHref = useSignInHref(locale)
 const docsHref = modelDocsHref(model)
