@@ -170,7 +170,9 @@ function onBranchSelectorCreated(this: LGraphNode) {
     values: () => getLinkedInputs().map((i) => i.name),
     getOptionLabel: nameToLabel
   })
-  comboWidget.serializeValue = () => nameToLabel(comboWidget.value)
+  comboWidget.serializeValue = function () {
+    return nameToLabel(this.value)
+  }
 
   const namesIndex = this.inputs.findIndex((inp) => inp.name === 'branch_names')
   if (namesIndex !== -1) this.removeInput(namesIndex)
