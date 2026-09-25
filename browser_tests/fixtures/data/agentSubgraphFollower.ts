@@ -13,6 +13,8 @@ export const AGENT_SUBGRAPH_INITIAL_TEXT = 'a photo of a pier'
 export const AGENT_SUBGRAPH_INITIAL_SEED = 0
 export const AGENT_SUBGRAPH_EDITED_SEED = 42
 export const AGENT_NESTED_SUBGRAPH_ID = '52e51d98-aaac-44d3-bab1-61eae17b9869'
+const AGENT_OUTER_SUBGRAPH_ID = '6e10c33b-b40d-4af5-bac8-953551c21d0e'
+export const AGENT_INNER_HOST_ID = 30
 
 export const agentSubgraphNodeDefs: Record<string, ComfyNodeDef> = {
   AgentClipSource: {
@@ -170,4 +172,40 @@ export function agentSubgraphFrames(): {
   const initial = host.initialSync()
   const followUp = host.apply([followUpOp])
   return { initial, followUp }
+}
+
+export function agentOutOfOrderSubgraphFrames(): HostFrame[] {
+  const inner = structuredClone(subgraphWorkflow.definitions.subgraphs[0])
+  const innerHost = structuredClone(subgraphWorkflow.nodes[0])
+  innerHost.id = AGENT_INNER_HOST_ID
+  innerHost.type = inner.id
+  innerHost.pos = [640, 420]
+
+  const outer = {
+    ...structuredClone(inner),
+    id: AGENT_OUTER_SUBGRAPH_ID,
+    name: 'Outer Agent Subgraph',
+    inputs: [],
+    outputs: [],
+    widgets: [],
+    nodes: [innerHost],
+    links: []
+  }
+  const outerHost = {
+    ...structuredClone(innerHost),
+    id: AGENT_SUBGRAPH_HOST_ID,
+    type: outer.id,
+    pos: [400, 300],
+    widgets_values: []
+  }
+  const host = new HostDoc(
+    AGENT_SUBGRAPH_WORKFLOW_ID,
+    {
+      nodes: [outerHost],
+      links: [],
+      definitions: { subgraphs: [outer, inner] }
+    },
+    catalog
+  )
+  return host.initialSync()
 }
