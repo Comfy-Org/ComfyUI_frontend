@@ -549,8 +549,8 @@ describe('LGraphNode', () => {
     renderLGraphNode({ nodeData: mockNodeData })
 
     const overlay = screen.getByTestId('node-state-outline-overlay')
-    expect(overlay).toHaveClass('rounded-[19px]')
-    expect(overlay).not.toHaveClass('rounded-[15px]')
+    expect(overlay).toHaveClass('rounded-node-selection-md')
+    expect(overlay).not.toHaveClass('rounded-node-selection-sm')
   })
 
   it('should apply the bypass overlay when the node is bypassed', () => {

@@ -523,9 +523,11 @@ const selectionShapeClass = computed(() => {
   return shapeVariantClass(nodeData.shape, {
     box: '',
     card: isExpanded
-      ? 'rounded-tl-[23px] rounded-br-[23px]'
-      : 'rounded-tl-[19px] rounded-br-[19px]',
-    default: isExpanded ? 'rounded-[19px]' : 'rounded-[15px]'
+      ? 'rounded-tl-node-selection-lg rounded-br-node-selection-lg'
+      : 'rounded-tl-node-selection-md rounded-br-node-selection-md',
+    default: isExpanded
+      ? 'rounded-node-selection-md'
+      : 'rounded-node-selection-sm'
   })
 })
 
