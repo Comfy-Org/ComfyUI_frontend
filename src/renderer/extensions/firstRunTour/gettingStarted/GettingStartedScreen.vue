@@ -91,11 +91,9 @@
                 class="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4"
               >
                 <GettingStartedCard
-                  v-for="(tutorial, index) in tutorialCards"
+                  v-for="tutorial in tutorialCards"
                   :key="tutorial.id"
-                  :image-src="
-                    tutorialThumbnail(tutorial.thumbnailTemplate, index)
-                  "
+                  :image-src="tutorial.thumbnail"
                   :title="t(tutorial.titleKey)"
                   :badge-icon="TUTORIAL_BADGE_ICON"
                   :testid="`getting-started-tutorial-${tutorial.id}`"
@@ -139,7 +137,6 @@ import GettingStartedCard from './GettingStartedCard.vue'
 import GettingStartedTemplateCard from './GettingStartedTemplateCard.vue'
 import { useFirstRunTourController } from '../tour/useFirstRunTourController'
 import { useFirstRunEntry } from './firstRunEntry'
-import type { TutorialCard } from './tutorialCards'
 import {
   CURATED_TEMPLATE_IDS,
   FALLBACK_TEMPLATE_IDS,
@@ -171,8 +168,7 @@ const dialogStore = useDialogStore()
 
 /** The dialog layer starts at z-1700; sitting below it and releasing the trap keeps any dialog (desktop sign-in approval, invite links) reachable. */
 const dialogOpen = computed(() => dialogStore.dialogStack.length > 0)
-const { loadWorkflowTemplate, getTemplateThumbnailUrl, loadingTemplateId } =
-  useTemplateWorkflows()
+const { loadWorkflowTemplate, loadingTemplateId } = useTemplateWorkflows()
 
 const activeTab = ref<TabValue>('templates')
 const failedTemplateId = ref<string | null>(null)
@@ -214,17 +210,6 @@ onMounted(() => {
     if (!dialogOpen.value) screenRef.value?.focus()
   })
 })
-
-function tutorialThumbnail(
-  id: TutorialCard['thumbnailTemplate'],
-  index: number
-) {
-  const fallbacks = cards.value
-  const template =
-    templatesStore.getTemplateByName(id) ??
-    (fallbacks.length ? fallbacks[index % fallbacks.length] : undefined)
-  return template ? getTemplateThumbnailUrl(template, 'default') : ''
-}
 
 function openTutorial(url: string) {
   window.open(url, '_blank', 'noopener,noreferrer')

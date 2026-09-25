@@ -11,7 +11,11 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import { useDialogStore } from '@/stores/dialogStore'
 
-import { CURATED_TEMPLATE_IDS, FALLBACK_TEMPLATE_IDS } from './tutorialCards'
+import {
+  CURATED_TEMPLATE_IDS,
+  FALLBACK_TEMPLATE_IDS,
+  tutorialCards
+} from './tutorialCards'
 
 const mocks = vi.hoisted(() => ({
   dismiss: vi.fn(),
@@ -28,6 +32,14 @@ vi.mock<unknown>(import('./firstRunEntry'), () => ({
 
 vi.mock<unknown>(import('../tour/useFirstRunTourController'), () => ({
   useFirstRunTourController: () => ({ beginTour: mocks.beginTour })
+}))
+
+vi.mock<unknown>(import('@/components/common/LazyImage.vue'), () => ({
+  default: {
+    name: 'LazyImage',
+    template: '<img :src="src" :alt="alt" draggable="false" />',
+    props: ['src', 'alt', 'imageClass', 'imageStyle']
+  }
 }))
 
 vi.mock<unknown>(
@@ -211,6 +223,34 @@ describe('GettingStartedScreen', () => {
         'getting-started-card-catalog-filler'
       ])
     })
+  })
+
+  describe('tutorials', () => {
+    async function openTutorials() {
+      await renderScreen()
+      await userEvent.click(
+        screen.getByText(enMessages.gettingStarted.tabs.tutorials)
+      )
+    }
+
+    it.for([[true], [false]])(
+      'shows each tutorial its own bundled cover, catalog loaded: %s',
+      async ([isLoaded]) => {
+        useWorkflowTemplatesStore().isLoaded = isLoaded
+
+        await openTutorials()
+
+        const sources = tutorialCards.map((tutorial) =>
+          screen
+            .getByAltText(i18n.global.t(tutorial.titleKey))
+            .getAttribute('src')
+        )
+
+        expect(sources).toEqual(
+          tutorialCards.map((tutorial) => tutorial.thumbnail)
+        )
+      }
+    )
   })
 
   describe('exits', () => {
