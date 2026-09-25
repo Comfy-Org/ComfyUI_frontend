@@ -60,8 +60,10 @@ const frames = rc('reshoot.frames', locale)
 
 function choose(event: Event) {
   const input = event.target
-  if (input instanceof HTMLInputElement && input.files?.[0])
-    upload.value = input.files[0]
+  if (!(input instanceof HTMLInputElement)) return
+  const file = input.files?.[0]
+  input.value = ''
+  if (file) upload.value = file
 }
 </script>
 
@@ -117,6 +119,7 @@ function choose(event: Event) {
           v-model:frame="frame"
           v-model:motion="motion"
           :keys
+          :disabled="!ready"
           :locale
           @key="emit('key')"
           @remove="emit('removeKey', $event)"

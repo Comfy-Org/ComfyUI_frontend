@@ -74,7 +74,9 @@ export function useReshootDemo({ autoRead = false } = {}) {
       run()
     }, ms)
     timers.add(timer)
+    return timer
   }
+  let analysis: ReturnType<typeof setTimeout> | undefined
   onScopeDispose(() => timers.forEach(clearTimeout))
 
   watch([aspect, size], () => {
@@ -100,9 +102,11 @@ export function useReshootDemo({ autoRead = false } = {}) {
   )
 
   function analyze() {
+    clearTimeout(analysis)
+    if (analysis) timers.delete(analysis)
     depth.value = 'analyzing'
     selected.value = 'aim'
-    later(ANALYZE_MS, () => {
+    analysis = later(ANALYZE_MS, () => {
       depth.value = 'ready'
       step.value = 2
     })

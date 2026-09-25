@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { useTemplateRef } from 'vue'
 
+import { useCinematicLeaveGuard } from '../../../composables/useCinematicLeaveGuard'
 import { useCinematicPopover } from '../../../composables/useCinematicPopover'
 import { useCinematicShot } from '../../../composables/useCinematicShot'
 import { reportStudioBusy } from '../../../composables/useStudioSwitchGuard'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import RunLeaveDialog from '../RunLeaveDialog.vue'
 import AppsBackLink from './AppsBackLink.vue'
 import CinematicPanel from './CinematicPanel.vue'
 import CinematicPicker from './CinematicPicker.vue'
@@ -35,6 +37,10 @@ const {
   generate: generateShot
 } = useCinematicShot(models)
 reportStudioBusy(() => studio.rendering.value)
+const { leavingTo, leave, stay } = useCinematicLeaveGuard(
+  () => studio.rendering.value,
+  () => studio.cancel()
+)
 const {
   open: picker,
   toggle: togglePicker,
@@ -119,5 +125,11 @@ function generate() {
         />
       </div>
     </div>
+    <RunLeaveDialog
+      :open="leavingTo !== undefined"
+      :locale
+      @update:open="(value: boolean) => !value && stay()"
+      @leave="leave"
+    />
   </div>
 </template>

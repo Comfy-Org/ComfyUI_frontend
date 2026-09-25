@@ -38,6 +38,20 @@ describe('Re-shoot on one screen', () => {
     expect(screen.getByTestId('reshoot-action')).toBeEnabled()
   })
 
+  it('lets only the latest scene reading finish', async () => {
+    const user = setup()
+    const example = () => screen.getByRole('button', { name: /Sci-fi pilot/ })
+
+    await user.click(example())
+    await vi.advanceTimersByTimeAsync(2000)
+    await user.click(example())
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(screen.getByTestId('reshoot-action')).toBeDisabled()
+
+    await vi.advanceTimersByTimeAsync(1500)
+    expect(screen.getByTestId('reshoot-action')).toBeEnabled()
+  })
+
   it.for([
     { start: 'the globe', tilts: false },
     { start: 'the camera handle', tilts: true }
