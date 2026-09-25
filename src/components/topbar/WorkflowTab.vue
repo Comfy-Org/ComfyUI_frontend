@@ -6,7 +6,7 @@
         data-testid="workflow-tab"
         :class="
           cn(
-            'workflow-tab group/tab relative h-full min-w-22.5 motion-safe:transition-[flex-shrink] motion-safe:duration-200 motion-safe:ease-[cubic-bezier(0.19,1,0.22,1)]',
+            'workflow-tab group/tab relative h-full min-w-22.5 motion-safe:transition-[flex-shrink] motion-safe:duration-200 motion-safe:ease-out',
             isActiveTab ? 'shrink-0' : 'shrink'
           )
         "
@@ -19,14 +19,18 @@
           :value="workflowOption.workflow.path"
           class="h-full w-full py-2 pr-2 pl-3"
         >
-          <i
-            v-if="isBuilderState"
-            class="icon-[lucide--hammer] bg-muted-foreground"
-          />
-          <i
-            v-else-if="workflowOption.workflow.initialMode === 'app'"
-            class="icon-[lucide--panels-top-left] bg-primary-background"
-          />
+          <template v-if="showModeIcon">
+            <i
+              v-if="isBuilderState"
+              data-testid="workflow-mode-icon"
+              class="icon-[lucide--hammer] bg-muted-foreground"
+            />
+            <i
+              v-else-if="workflowOption.workflow.initialMode === 'app'"
+              data-testid="workflow-mode-icon"
+              class="icon-[lucide--panels-top-left] bg-primary-background"
+            />
+          </template>
           <WorkflowAgentTargetIndicator
             :workflow-path="workflowOption.workflow.path"
           />
@@ -231,6 +235,8 @@ const isBuilderState = computed(() => {
 const isActiveTab = computed(() => {
   return workflowStore.isActive(props.workflowOption.workflow)
 })
+
+const showModeIcon = computed(() => !props.compact || isActiveTab.value)
 
 const workflowStatusIconClasses: Record<WorkflowExecutionStatus, string> = {
   running:

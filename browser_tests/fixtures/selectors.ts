@@ -110,6 +110,7 @@ export const TestIds = {
     loginButtonPopover: 'login-button-popover',
     loginButtonPopoverLearnMore: 'login-button-popover-learn-more',
     workflowTabs: 'topbar-workflow-tabs',
+    workflowTabStrip: 'workflow-tab-strip',
     workflowTab: 'workflow-tab',
     closeWorkflowButton: 'close-workflow-button',
     integratedTabBarActions: 'integrated-tab-bar-actions',

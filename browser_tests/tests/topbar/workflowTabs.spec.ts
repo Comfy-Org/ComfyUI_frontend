@@ -271,13 +271,14 @@ test.describe('Workflow tabs', () => {
     test.use({ viewport: { width: 800, height: 720 } })
 
     test(
-      'Overflowing tabs shrink to stay visible while the active tab keeps its width',
+      'Tabs shrink to the 90px floor before the strip scrolls',
       { tag: '@ui' },
       async ({ comfyPage }) => {
         const topbar = comfyPage.menu.topbar
         await topbar.openBlankWorkflows(5)
+        const [firstTabName] = await topbar.getTabNames()
 
-        await topbar.getTab(0).click()
+        await comfyPage.workflow.switchToTab(firstTabName)
 
         await expect(topbar.tabs.last()).toBeInViewport({ ratio: 1 })
         await expect
@@ -291,6 +292,27 @@ test.describe('Workflow tabs', () => {
               : null
           })
           .toBeGreaterThan(0)
+        await expect
+          .poll(async () => {
+            const widths = await topbar.tabs.evaluateAll((tabs) =>
+              tabs
+                .filter(
+                  (tab) =>
+                    !tab.querySelector('[role="tab"][aria-selected="true"]')
+                )
+                .map((tab) => tab.getBoundingClientRect().width)
+            )
+            return Math.min(...widths)
+          })
+          .toBeGreaterThanOrEqual(90)
+        await expect
+          .poll(() =>
+            topbar.tabStrip.evaluate((strip) => ({
+              fits: strip.scrollWidth <= strip.clientWidth + 1,
+              scrollLeft: strip.scrollLeft
+            }))
+          )
+          .toEqual({ fits: true, scrollLeft: 0 })
       }
     )
 
@@ -331,7 +353,7 @@ test.describe('Workflow tabs', () => {
     )
 
     test(
-      'Compact inactive tabs do not reveal a close button on hover',
+      'Compact inactive tabs reveal their close button to keyboard only',
       { tag: '@ui' },
       async ({ comfyPage }) => {
         const topbar = comfyPage.menu.topbar
@@ -352,6 +374,17 @@ test.describe('Workflow tabs', () => {
         await expect(
           activeTab.getByTestId(TestIds.topbar.closeWorkflowButton)
         ).toBeVisible()
+
+        const tabCount = await topbar.tabs.count()
+        const closeButton = inactiveTab.getByTestId(
+          TestIds.topbar.closeWorkflowButton
+        )
+        await inactiveTab.getByRole('tab').focus()
+        await comfyPage.page.keyboard.press('Tab')
+        await expect(closeButton).toBeFocused()
+        await expect(closeButton).toBeVisible()
+        await comfyPage.page.keyboard.press('Enter')
+        await expect(topbar.tabs).toHaveCount(tabCount - 1)
       }
     )
   })
@@ -374,15 +407,18 @@ test.describe('Workflow tabs', () => {
             tab.boundingBox(),
             popover.boundingBox()
           ])
-          return tabBox && popoverBox
-            ? Math.abs(
+          if (!tabBox || !popoverBox) return null
+          return {
+            centered:
+              Math.abs(
                 tabBox.x +
                   tabBox.width / 2 -
                   (popoverBox.x + popoverBox.width / 2)
-              )
-            : null
+              ) <= 1,
+            under: popoverBox.y >= tabBox.y + tabBox.height
+          }
         })
-        .toBeLessThanOrEqual(1)
+        .toEqual({ centered: true, under: true })
     }
   )
 

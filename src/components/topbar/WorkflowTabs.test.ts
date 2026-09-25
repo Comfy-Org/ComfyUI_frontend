@@ -63,10 +63,14 @@ vi.mock<unknown>(
   async () => {
     const { ref } = await import('vue')
     return {
-      useOverflowObserver: () => {
+      useOverflowObserver: (
+        _element: unknown,
+        options?: { onCheck?: (isOverflowing: boolean) => void }
+      ) => {
+        const isOverflowing = ref(false)
         const observer = {
-          isOverflowing: ref(false),
-          checkOverflow: vi.fn()
+          isOverflowing,
+          checkOverflow: vi.fn(() => options?.onCheck?.(isOverflowing.value))
         }
         overflowObservers.push(observer)
         return observer
@@ -625,6 +629,62 @@ describe('WorkflowTabs selection and overflow', () => {
 })
 
 describe('WorkflowTabs scrolling', () => {
+  it.for([
+    {
+      name: 'pixel',
+      deltaX: 0,
+      deltaY: 7,
+      deltaMode: WheelEvent.DOM_DELTA_PIXEL,
+      expectedLeft: 7,
+      prevented: true
+    },
+    {
+      name: 'line',
+      deltaX: 0,
+      deltaY: 2,
+      deltaMode: WheelEvent.DOM_DELTA_LINE,
+      expectedLeft: 32,
+      prevented: true
+    },
+    {
+      name: 'page',
+      deltaX: 0,
+      deltaY: 1,
+      deltaMode: WheelEvent.DOM_DELTA_PAGE,
+      expectedLeft: 320,
+      prevented: true
+    },
+    {
+      name: 'horizontal',
+      deltaX: 7,
+      deltaY: 0,
+      deltaMode: WheelEvent.DOM_DELTA_PIXEL,
+      expectedLeft: null,
+      prevented: false
+    }
+  ])(
+    'handles $name wheel input once',
+    ({ deltaX, deltaY, deltaMode, expectedLeft, prevented }) => {
+      renderComponent()
+      const tabStrip = screen.getByTestId('workflow-tab-strip')
+      const scrollBy = vi.fn()
+      tabStrip.scrollBy = scrollBy
+      Object.defineProperty(tabStrip, 'clientWidth', { value: 320 })
+      const event = new WheelEvent('wheel', {
+        deltaX,
+        deltaY,
+        deltaMode,
+        cancelable: true
+      })
+
+      tabStrip.dispatchEvent(event)
+
+      if (expectedLeft === null) expect(scrollBy).not.toHaveBeenCalled()
+      else expect(scrollBy).toHaveBeenCalledWith({ left: expectedLeft })
+      expect(event.defaultPrevented).toBe(prevented)
+    }
+  )
+
   it('reveals the active tab when the tab list overflows', async () => {
     const workflowStore = useWorkflowStore()
     const workflow = await workflowStore.createTemporary('active.json').load()

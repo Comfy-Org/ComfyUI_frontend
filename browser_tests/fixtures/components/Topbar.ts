@@ -10,6 +10,7 @@ export class Topbar {
   private readonly menuTrigger: Locator
   readonly newWorkflowButton: Locator
   readonly workflowTabs: Locator
+  readonly tabStrip: Locator
   readonly tabs: Locator
   readonly integratedTabBarActions: Locator
   readonly workflowPopover: Locator
@@ -21,6 +22,9 @@ export class Topbar {
     this.menuRootList = this.menuLocator.getByRole('menubar')
     this.newWorkflowButton = page.locator('.new-blank-workflow-button')
     this.workflowTabs = page.getByTestId(TestIds.topbar.workflowTabs)
+    this.tabStrip = this.workflowTabs.getByTestId(
+      TestIds.topbar.workflowTabStrip
+    )
     this.tabs = this.workflowTabs.getByTestId(TestIds.topbar.workflowTab)
     this.integratedTabBarActions = this.workflowTabs.getByTestId(
       TestIds.topbar.integratedTabBarActions

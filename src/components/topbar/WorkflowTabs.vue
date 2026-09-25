@@ -9,6 +9,7 @@
   >
     <div
       ref="tabStripRef"
+      data-testid="workflow-tab-strip"
       class="no-drag scrollbar-thin scrollbar-thumb-alpha-smoke-500-50 scrollbar-track-transparent overflow-x-auto overflow-y-hidden"
       @wheel="handleWheel"
       @transitionend="handleTabResize"
@@ -111,7 +112,6 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { useResizeObserver, whenever } from '@vueuse/core'
 import { computed, nextTick, onUpdated, ref, watch } from 'vue'
 
 import AgentEntryButton from '@/components/topbar/AgentEntryButton.vue'
@@ -240,8 +240,13 @@ const WHEEL_LINE_HEIGHT_PX = 16
 
 function handleWheel(event: WheelEvent) {
   if (event.deltaX) return
+  event.preventDefault()
   const unit =
-    event.deltaMode === WheelEvent.DOM_DELTA_LINE ? WHEEL_LINE_HEIGHT_PX : 1
+    event.deltaMode === WheelEvent.DOM_DELTA_LINE
+      ? WHEEL_LINE_HEIGHT_PX
+      : event.deltaMode === WheelEvent.DOM_DELTA_PAGE
+        ? (tabStripRef.value?.clientWidth ?? 0)
+        : 1
   tabStripRef.value?.scrollBy({ left: event.deltaY * unit })
 }
 
@@ -258,15 +263,13 @@ watch(
   { immediate: true }
 )
 
-const { isOverflowing, checkOverflow } = useOverflowObserver(tabStripRef)
-
-whenever(isOverflowing, () => void revealActiveTab())
-useResizeObserver(tabStripRef, () => void revealActiveTab())
+const { isOverflowing, checkOverflow } = useOverflowObserver(tabStripRef, {
+  onCheck: () => void revealActiveTab()
+})
 
 function handleTabResize(event: TransitionEvent) {
   if (event.propertyName !== 'flex-shrink') return
   checkOverflow()
-  void revealActiveTab()
 }
 
 onUpdated(checkOverflow)
