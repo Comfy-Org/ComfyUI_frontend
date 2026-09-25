@@ -87,6 +87,7 @@ export function useAgentWorkflowSelection({
   ): void {
     bindingStore.bind(workflowId, workflow.path)
     panelStore.setWorkflowTarget(workflow)
+    panelStore.retainWorkflowTarget()
     composerStore.removeWorkflowReference(workflowId)
     if (workflowId !== previousWorkflowId)
       onTargetBound?.(workflowId, previousWorkflowId, source)

@@ -73,13 +73,13 @@ describe('RunNoticeBanner', () => {
     expect(localStorage.getItem(STORAGE_KEY)).toBe('true')
   })
 
-  it('explains both ways to decide the target before the first Send', () => {
+  it('explains all three ways to decide the target', () => {
     render(RunNoticeBanner, {
       props: { context: 'following', workflowName: 'portrait' },
       global: { plugins: [i18n] }
     })
     expect(screen.getByRole('note')).toHaveTextContent(
-      'Target workflow follows the visible tab until you reference nodes or send a message.'
+      'Target workflow follows the visible tab until you choose a target, reference nodes, or send a message.'
     )
     expect(screen.queryByText(/The agent can now edit/)).toBeNull()
   })

@@ -3594,6 +3594,77 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(bodies[0]).toMatchObject({ workflow_id: 'wf-other' })
   })
 
+  it.for(['current', 'other'])(
+    'retains a successful explicit pick of %s before Send',
+    async (name) => {
+      const {
+        target,
+        references: [other]
+      } = setupWorkflowContext({
+        targetId: 'wf-42',
+        references: [{ path: 'workflows/other.json', workflowId: 'wf-other' }]
+      })
+      const picked = name === 'current' ? target : other
+      const viewed = name === 'current' ? other : target
+      const workflowId = name === 'current' ? 'wf-42' : 'wf-other'
+      const bodies = mockMessagesEndpoint(workflowId)
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      await userEvent.click(screen.getByRole('textbox'))
+      await userEvent.paste('keep this draft')
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.switchWorkflow')
+        })
+      )
+      await userEvent.click(await screen.findByRole('menuitemradio', { name }))
+      await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
+
+      workflowStore.activeWorkflow = viewed
+      await nextTick()
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(picked.path)
+      expect(screen.getByRole('textbox')).toHaveTextContent('keep this draft')
+      expect(screen.getByRole('note')).toHaveTextContent(
+        i18n.global.t('agent.viewingDifferentWorkflow')
+      )
+      await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+      await waitFor(() => expect(bodies).toHaveLength(1))
+      expect(bodies[0]).toMatchObject({ workflow_id: workflowId })
+    }
+  )
+
+  it('resumes following on New Chat after an explicit pick while preserving draft text', async () => {
+    const {
+      target,
+      references: [other]
+    } = setupWorkflowContext({
+      targetId: 'wf-42',
+      references: [{ path: 'workflows/other.json', workflowId: 'wf-other' }]
+    })
+    mockMessagesEndpoint('wf-other')
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('keep this draft')
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.switchWorkflow')
+      })
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitemradio', { name: 'other' })
+    )
+    await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
+    workflowStore.activeWorkflow = target
+    await nextTick()
+    expect(useAgentPanelStore().selectedWorkflow?.path).toBe(other.path)
+
+    await userEvent.click(screen.getByRole('button', { name: 'New chat' }))
+    expect(useAgentPanelStore().selectedWorkflow?.path).toBe(target.path)
+    workflowStore.activeWorkflow = other
+    await nextTick()
+    expect(useAgentPanelStore().selectedWorkflow?.path).toBe(other.path)
+    expect(screen.getByRole('textbox')).toHaveTextContent('keep this draft')
+  })
+
   it('retains the first Send target through failure, reopen and retry until New Chat', async () => {
     const {
       target,
@@ -3754,7 +3825,7 @@ describe('AgentPanelRoot workflow binding', () => {
         return true
       }
     )
-    renderWithSelectedTarget()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await userEvent.click(
       screen.getByRole('button', {
         name: i18n.global.t('agent.switchWorkflow')
@@ -3776,11 +3847,56 @@ describe('AgentPanelRoot workflow binding', () => {
       ).not.toHaveAttribute('aria-busy', 'true')
     )
     expect(useAgentPanelStore().selectedWorkflow?.path).toBe(other.path)
+    expect(useAgentPanelStore().followsVisibleWorkflow).toBe(true)
     expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
     await userEvent.keyboard('{Escape}')
     await sendFromComposer('continue here')
     expect(bodies[0]).toMatchObject({ workflow_id: 'wf-other' })
   })
+
+  it.for(['failed save', 'cancelled save', 'failed open'])(
+    'keeps following after a picker operation ends with %s',
+    async (outcome) => {
+      const {
+        target,
+        references: [other]
+      } = setupWorkflowContext({
+        targetId: 'wf-42',
+        references: [{ path: 'workflows/other.json', workflowId: 'wf-other' }]
+      })
+      addTab('workflows/scratch.json', { isTemporary: true })
+      mockMessagesEndpoint('wf-other')
+      if (outcome === 'failed save')
+        vi.mocked(useWorkflowService()).saveWorkflowAs.mockRejectedValueOnce(
+          new Error('Save failed')
+        )
+      else if (outcome === 'cancelled save')
+        vi.mocked(useWorkflowService()).saveWorkflowAs.mockResolvedValueOnce(
+          false
+        )
+      else
+        vi.mocked(useWorkflowService()).openWorkflow.mockResolvedValueOnce(
+          false
+        )
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.switchWorkflow')
+        })
+      )
+      await userEvent.click(
+        await screen.findByRole('menuitemradio', {
+          name: outcome === 'failed open' ? 'other' : 'scratch'
+        })
+      )
+      await waitFor(() => expect(useToastStore().messagesToAdd).toHaveLength(1))
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(target.path)
+      workflowStore.activeWorkflow = other
+      await nextTick()
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(other.path)
+      expect(useAgentPanelStore().followsVisibleWorkflow).toBe(true)
+    }
+  )
 
   it('keeps the menu and draft available to retry after an automatic save failure', async () => {
     makeTab('wf-42')
@@ -6229,7 +6345,7 @@ describe('AgentPanelRoot workflow binding', () => {
         return true
       }
     )
-    renderWithSelectedTarget()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await userEvent.click(screen.getByRole('textbox'))
     await userEvent.paste('Compare @')
     await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
@@ -6246,6 +6362,15 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(workflowStore.activeWorkflow).toEqual(target)
     expect(useAgentPanelStore().selectedWorkflow).toEqual(target)
     expect(useAgentComposerStore().draft).toBe('Compare  ')
+    const other = addTab('workflows/other.json')
+    workflowStore.activeWorkflow = other
+    await nextTick()
+    expect(useAgentPanelStore().selectedWorkflow?.path).toBe(other.path)
+    expect(
+      screen.getByRole('button', { name: 'Open scratch (2)' })
+    ).toBeVisible()
+    workflowStore.activeWorkflow = target
+    await nextTick()
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     await vi.waitFor(() => expect(bodies).toHaveLength(1))
     expect(bodies[0]).toMatchObject({

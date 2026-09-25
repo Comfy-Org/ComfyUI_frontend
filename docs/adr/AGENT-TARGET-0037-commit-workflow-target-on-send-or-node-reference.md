@@ -1,4 +1,4 @@
-# ADR-AGENT-TARGET-0037: Commit Workflow Target on Send or Node Reference
+# ADR-AGENT-TARGET-0037: Commit Workflow Target on Explicit User Intent
 
 Date: 2026-09-24
 
@@ -19,10 +19,13 @@ panel can also unmount while the request is pending or after it fails.
 
 ## Decision
 
-A fresh chat follows the visible workflow until the user submits a message or
-adds node references. Either action retains the target before further tab
-navigation. Success, failure, retry and removing references do not resume
-following. Explicit target selection remains available; New Chat starts
+A fresh chat follows the visible workflow until the user successfully chooses a
+target in the picker, submits a message, or adds node references. These actions
+retain the target before further tab navigation, including a picker choice of
+the already-visible workflow. Send retains before asynchronous preparation;
+a picker retains only after successful selection. Failed, cancelled or
+superseded picker operations do not commit. Success, failure, retry and removing
+references do not resume following. Explicit target selection remains available; New Chat starts
 following again unless its retained draft still contains node references.
 
 The panel store owns this policy alongside target selection so it survives
@@ -46,7 +49,7 @@ workflow is already known. Ordinary draft text does not commit a target.
 ### Positive
 
 - Fresh chat entry and New Chat use the same default without an extra save.
-- Failed sends and node references preserve the user's selected workflow.
+- Explicit choices, failed sends and node references preserve the target.
 - Mismatch feedback can reveal a different target without changing it.
 
 ### Negative
@@ -57,3 +60,10 @@ workflow is already known. Ordinary draft text does not commit a target.
   distinguish fresh following from a target committed by user input.
 - Explicit retargeting keeps the existing node-scope cleanup behavior; this
   decision only changes passive tab following.
+
+### Analytics
+
+Passive defaults do not emit synthetic picker bindings. Their acknowledged
+bindings remain `active_tab` or `minted`; explicit picker transitions retain
+`selector_chip` attribution. Removing mandatory picker interaction will reduce
+the selector-source share; this is an expected change in the interaction mix.
