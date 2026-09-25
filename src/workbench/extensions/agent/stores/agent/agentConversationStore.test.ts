@@ -816,42 +816,52 @@ describe('useAgentConversationStore', () => {
   /**
    * The same name, on the paths resume never reaches: a turn the agent
    * finished while the user was away takes the hydrated copy and discards the
-   * stash, and a thread with nothing in flight never stashes at all. Both
-   * still go through hydrate, which is where the session's names are applied.
+   * stash, a thread with nothing in flight never stashes at all, and a New
+   * chat resets the store outright. All three still go through hydrate, which
+   * is where the session's names are applied.
    */
   it.for([
     { label: 'a turn that settled while away', settleWhileAway: true },
-    { label: 'a thread with nothing in flight', settleWhileAway: false }
-  ])('keeps the attached filename across $label', ({ settleWhileAway }) => {
-    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
-    const userRow = historyRow(1, 'user', 'server-turn', 'upscale this')
-    userRow.content = { text: 'upscale this', attachments: [storedRef] }
-    const assistantRow = historyRow(2, 'assistant', 'server-turn', 'Done', 't1')
-    const store = useAgentConversationStore()
-    store.setThreadId('th')
-    store.startTurn(T1)
-    store.recordUser(T1, 'upscale this', [
-      { name: 'Beach photo.png', ref: storedRef, previewUrl: 'blob:beach' }
-    ])
-    if (settleWhileAway) {
-      store.stashActiveTurn()
+    { label: 'a thread with nothing in flight', settleWhileAway: false },
+    { label: 'a New chat in between', settleWhileAway: false, newChat: true }
+  ])(
+    'keeps the attached filename across $label',
+    ({ settleWhileAway, newChat }) => {
+      vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+      const userRow = historyRow(1, 'user', 'server-turn', 'upscale this')
+      userRow.content = { text: 'upscale this', attachments: [storedRef] }
+      const assistantRow = historyRow(
+        2,
+        'assistant',
+        'server-turn',
+        'Done',
+        't1'
+      )
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.recordUser(T1, 'upscale this', [
+        { name: 'Beach photo.png', ref: storedRef, previewUrl: 'blob:beach' }
+      ])
+      if (settleWhileAway) store.stashActiveTurn()
       store.ingest(done('t1'))
-    } else {
-      store.ingest(done('t1'))
+
+      if (newChat) store.reset()
+      else {
+        store.setThreadId('th-other')
+        store.hydrate([])
+      }
+      store.setThreadId('th')
+      store.hydrate([userRow, assistantRow])
+      store.resumeBackgroundTurn()
+
+      expect(store.entries.filter((entry) => entry.role === 'user')).toEqual([
+        expect.objectContaining({
+          attachments: [{ name: 'Beach photo.png', ref: storedRef }]
+        })
+      ])
     }
-
-    store.setThreadId('th-other')
-    store.hydrate([])
-    store.setThreadId('th')
-    store.hydrate([userRow, assistantRow])
-    store.resumeBackgroundTurn()
-
-    expect(store.entries.filter((entry) => entry.role === 'user')).toEqual([
-      expect.objectContaining({
-        attachments: [{ name: 'Beach photo.png', ref: storedRef }]
-      })
-    ])
-  })
+  )
 
   /**
    * A stash is only the fuller copy while its transport was delivering. One
@@ -881,6 +891,27 @@ describe('useAgentConversationStore', () => {
       'user',
       'assistant'
     ])
+    expect(store.isStreaming).toBe(false)
+  })
+
+  it('keeps the persisted reply when the resumed stash holds only half of it', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'upscale this')
+    store.ingest(delta('t1', 'All '))
+    store.stashActiveTurn()
+
+    store.setThreadId('th-other')
+    store.hydrate([])
+    store.setThreadId('th')
+    store.hydrate([
+      historyRow(1, 'user', 'server-turn', 'upscale this'),
+      historyRow(2, 'assistant', 'server-turn', 'All done.', 't1')
+    ])
+    store.resumeBackgroundTurn()
+
+    expect(partTexts(store)).toEqual(['All done.'])
     expect(store.isStreaming).toBe(false)
   })
 

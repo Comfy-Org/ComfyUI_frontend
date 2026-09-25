@@ -82,8 +82,10 @@ export const useAgentConversationStore = defineStore(
      * The name the user attached, keyed by the storage ref the turn was posted
      * under. A persisted row names every file by that ref and nothing on the
      * request carries the name (PM-1705), so within a session this is the only
-     * place it survives. A reload starts it empty, which is exactly the
-     * boundary PM-1705 draws.
+     * place it survives. Deliberately not cleared by reset(): a ref names the
+     * exact bytes it was minted from, so an entry stays true for as long as
+     * the page does and a New chat must not cost the user their labels. A
+     * reload starts it empty, which is exactly the boundary PM-1705 draws.
      */
     const attachmentNamesByRef = new Map<string, string>()
     const settledActiveTransports = new Set<AgentEventTransport>()
@@ -446,6 +448,22 @@ export const useAgentConversationStore = defineStore(
      * copy holds the user-side record hydrate() rebuilt; so the copy goes and
      * its record moves onto the live turn.
      */
+    function replyTextLength(message: AssistantMessage): number {
+      return message.parts.reduce(
+        (total, part) => total + (part.type === 'text' ? part.text.length : 0),
+        0
+      )
+    }
+
+    function holdsMoreReply(
+      hydrated: AssistantMessage,
+      live: AssistantMessage
+    ): boolean {
+      return live.parts.length === 0
+        ? hydrated.parts.length > 0
+        : replyTextLength(hydrated) > replyTextLength(live)
+    }
+
     function adoptHydratedTurn(
       entry: BackgroundTurn,
       kept: AssistantMessage[]
@@ -457,16 +475,15 @@ export const useAgentConversationStore = defineStore(
       if (index < 0) return undefined
       const hydrated = kept[index]
       // The stash is the better copy only while its transport was delivering.
-      // One stashed across a socket drop can hold nothing while the row behind
-      // it holds the whole finished reply, and losing that is worse than the
-      // duplicate this dedupe exists to remove. Only for a row the service
-      // calls finished: a streaming row can already carry terminal tool calls
-      // while its reply is still coming, and keeping that copy would strand
-      // the turn with no transport left to finish it.
+      // One that missed the end of its turn holds nothing, or half a reply,
+      // while the row behind it holds all of it -- and losing that is worse
+      // than the duplicate this dedupe exists to remove. Only for a row the
+      // service calls finished: a streaming row can already carry terminal
+      // tool calls while its reply is still coming, and keeping that copy
+      // would strand the turn with no transport left to finish it.
       if (
-        entry.message.parts.length === 0 &&
-        hydrated.parts.length > 0 &&
-        !hydratedStreamingTurnIds.has(hydratedTurnId)
+        !hydratedStreamingTurnIds.has(hydratedTurnId) &&
+        holdsMoreReply(hydrated, entry.message)
       )
         return { keeps: 'hydrated', turnId: hydratedTurnId }
       kept.splice(index, 1)
@@ -551,7 +568,6 @@ export const useAgentConversationStore = defineStore(
       latestWorkflowId.value = undefined
       resolvedPaywallIds.value = new Set()
       dropAttachmentPreviews()
-      attachmentNamesByRef.clear()
       threadId.value = null
       forgetAllApprovals()
       hydratedTurnIdsByRowId = new Map()

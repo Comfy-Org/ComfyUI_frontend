@@ -120,7 +120,9 @@ function attachmentIconClass(name: string): string {
  * A rehydrated attachment carries the kind the server resolved from the
  * asset's MIME type, which outranks the one guessed from the name: a library
  * asset is attached under its content hash, and a hash has no extension to
- * read a kind off.
+ * read a kind off. That column holds whatever the uploading client declared,
+ * so a mis-declared type now outranks a correct extension -- the same
+ * mime-before-name order the service itself applies.
  */
 const splitAttachments = computed(() => {
   const grid: ReplyAsset[] = []
