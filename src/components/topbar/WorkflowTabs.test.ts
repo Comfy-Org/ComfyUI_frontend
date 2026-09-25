@@ -589,15 +589,23 @@ describe('WorkflowTabs selection and overflow', () => {
   it('scrolls a newly active workflow into view', async () => {
     const scrollIntoView = vi.spyOn(HTMLElement.prototype, 'scrollIntoView')
     renderComponent()
+    await waitFor(() => expect(overflowObservers).toHaveLength(1))
+    await waitFor(() =>
+      expect(overflowObservers[0].checkOverflow).toHaveBeenCalled()
+    )
+    await nextTick()
+    overflowObservers[0].checkOverflow.mockClear()
+    scrollIntoView.mockClear()
 
     useWorkflowStore().activeWorkflow = secondWorkflow
 
-    await waitFor(() =>
+    await waitFor(() => {
+      expect(overflowObservers[0].checkOverflow).toHaveBeenCalledOnce()
       expect(scrollIntoView).toHaveBeenCalledWith({
         block: 'nearest',
         inline: 'nearest'
       })
-    )
+    })
   })
 
   it.for([
@@ -609,6 +617,9 @@ describe('WorkflowTabs selection and overflow', () => {
       const scrollIntoView = vi.spyOn(HTMLElement.prototype, 'scrollIntoView')
       renderComponent()
       await waitFor(() => expect(overflowObservers).toHaveLength(1))
+      await waitFor(() =>
+        expect(overflowObservers[0].checkOverflow).toHaveBeenCalled()
+      )
       await nextTick()
       scrollIntoView.mockClear()
       overflowObservers[0].checkOverflow.mockClear()

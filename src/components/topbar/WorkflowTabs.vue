@@ -258,15 +258,18 @@ async function revealActiveTab() {
     ?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
 }
 
-watch(
-  () => workflowStore.activeWorkflow,
-  () => void revealActiveTab(),
-  { immediate: true }
-)
-
 const { isOverflowing, checkOverflow } = useOverflowObserver(tabStripRef, {
   onCheck: () => void revealActiveTab()
 })
+
+watch(
+  () => workflowStore.activeWorkflow,
+  async () => {
+    await revealActiveTab()
+    checkOverflow()
+  },
+  { immediate: true }
+)
 
 function handleTabResize(event: TransitionEvent) {
   if (event.propertyName !== 'flex-shrink') return
