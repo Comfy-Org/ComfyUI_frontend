@@ -11,6 +11,7 @@ import {
 } from 'vue'
 
 import { cinematicEditingForm } from '../lib/workshop/cinematic-studio/editing'
+import { cinematicImageForm } from '../lib/workshop/cinematic-studio/models'
 import type { CreationSettings } from '../lib/workshop/cinematic-studio/creations'
 import type { WorkshopModelDetail } from '../config/models-catalogue'
 import { fetchModelsPage } from '../config/models-page-data'
@@ -201,19 +202,20 @@ export function useCinematicStudioRun(modelCount: number) {
         throw new WorkshopRouterError('validation')
       const result = await router_render(
         model.slug,
-        request.video || request.editing
-          ? {}
-          : {
-              prompt: request.prompt,
-              aspect_ratio: request.aspect,
-              resolution: request.resolutionPixels,
-              ...(request.seed !== undefined ? { seed: request.seed } : {}),
-              ...(request.references.length
-                ? { reference_images: request.references }
-                : {})
-            },
+        {},
         {
           model,
+          ...(!request.video && !request.editing
+            ? {
+                form: cinematicImageForm(model, {
+                  prompt: request.prompt,
+                  aspect: request.aspect,
+                  resolutionPixels: request.resolutionPixels,
+                  seed: request.seed,
+                  references: request.references
+                })
+              }
+            : {}),
           ...(request.editing
             ? {
                 form: cinematicEditingForm(model, {

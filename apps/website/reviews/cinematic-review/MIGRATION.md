@@ -33,13 +33,39 @@ API-key backend, copied private output library, or additional dependency.
 
 ## Validation
 
-- 284 focused unit/component/contract tests across 29 files passed.
-- 12 production browser tests passed across both Studio layouts, including
+- 327 focused unit/component/contract tests across 31 files passed.
+- 15 production browser tests passed across both Studio layouts, including
   crop pixels, assets, edit review, prompt suggestions, plans, recipe import,
   motion comparison and transition reference restoration after reload.
 - Website build, website typecheck, knip and Astro formatting passed.
 - Desktop and mobile visual review uses feature-flag mocks and sample media.
 - No paid generation or production workspace verification was performed.
+
+## Original demo parity follow-up
+
+- The rendered picker now exposes 14 image choices and 16 video routes.
+  Model-specific image framing and reference limits come from authored contracts.
+  Native model controls remain available through the separate `/models` catalog.
+- Independent image/video drafts survive reload, including settings and stored
+  reference bundles. Multiple named plans can be created, switched and restored.
+- Camera editing supports source-frame guidance, source plus saved references,
+  and portrait reconstruction. Review preserves the exact submitted image order;
+  portrait reconstruction does not silently include the original scene frame.
+- Completed results expose submitted reference thumbnails and a manual continuity
+  checklist. Next shot restores the saved scene and selected output frame.
+- Prompt suggestions retain editable results and recover admitted requests without
+  submitting again. Genre/era visual examples and tempo diagrams supplement controls.
+- `cinematic-film-directions.png` is the original prototype's generated illustration
+  atlas, not a copied Higgsfield asset. Examples are illustrative and not references
+  sent to generation. Existing Rob branch design tokens and layouts remain the base.
+
+This is not complete model or visual parity. LTX routes are not exposed by the
+current Studio descriptor (LTX 2.5 Fast also lacks a matching authored page),
+MiniMax H3 lacks usable authored execution inputs, and Kling 3's native controls
+remain in `/models`. Bria relighting has no bundled contract. GPT Image 2, Flare
+and Sunburst do not have authored reference-edit bindings. Native catalog outputs
+do not share Studio's local history, and the original camera carousel interaction
+has not been recreated. Do not present these routes as live-verified Studio tools.
 
 ## Limits and engineer verification
 

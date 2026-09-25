@@ -14,7 +14,7 @@ const recipeSchema = z
       .max(200)
       .regex(/^[a-zA-Z0-9._-]+$/),
     prompt: z.string().min(1).max(50000),
-    aspect: z.enum(['21:9', '16:9', '4:3', '1:1', '9:16']),
+    aspect: z.enum(['21:9', '16:9', '4:3', '3:2', '2:3', '1:1', '9:16']),
     kind: z.enum(['image', 'video']),
     settings: creationSettingsSchema.optional()
   })

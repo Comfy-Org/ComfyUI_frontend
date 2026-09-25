@@ -1,5 +1,21 @@
 import type { Locale } from '../../../i18n/translations'
 const copy = {
+  recover: ['Check existing request', '检查已有请求'],
+  newRequest: ['Start a new review', '开始新的审核'],
+  requestId: ['Router request', 'Router 请求'],
+  submissionId: ['Submission identity', '提交标识'],
+  retained: [
+    'Closing keeps this request and your editable suggestion in this browser for this workspace. Reopening never submits again.',
+    '关闭后，此工作区的请求和可编辑建议将保留在此浏览器中。重新打开不会再次提交。'
+  ],
+  noAdmission: [
+    'Admission was not confirmed. No safe status lookup is available; this request will not be replayed.',
+    '尚未确认请求受理，无法安全查询状态；不会重新提交此请求。'
+  ],
+  storageError: [
+    'This browser could not save or restore the enhancement. Keep this page open to retain the current request and suggestion.',
+    '此浏览器无法保存或恢复优化内容。请保持此页面打开以保留当前请求和建议。'
+  ],
   confirm: ['Generate suggestion · uses credits', '生成建议 · 使用积分'],
   demoConfirm: [
     'Generate demo suggestion · no credits',
@@ -52,7 +68,7 @@ const copy = {
     '我了解此文本请求会使用积分。'
   ],
   review: ['Review enhancement request', '审核优化请求'],
-  cancel: ['Cancel', '取消'],
+  cancel: ['Close without applying', '关闭而不应用'],
   unavailable: [
     'Prompt enhancement is unavailable for this session.',
     '此会话无法使用提示词优化。'

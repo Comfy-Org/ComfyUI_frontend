@@ -92,6 +92,7 @@ const {
   modeReel,
   animate,
   useAsReference,
+  nextShot,
   frameLoading,
   frameError,
   modelSlug,
@@ -218,6 +219,7 @@ function generate() {
     />
     <CinematicLibrary
       v-model:open="libraryOpen"
+      :namespace
       :models="[...models, ...editingModels]"
       :items="library.items.value"
       :urls="library.urls.value"
@@ -225,6 +227,7 @@ function generate() {
       :error="library.error.value"
       :locale
       @reuse="reuse"
+      @next-shot="nextShot"
       @animate="animate"
       @edit="edit"
       @remove="library.remove"
@@ -400,6 +403,7 @@ function generate() {
       @apply="applyBuiltScene"
     />
     <CinematicEditDialog
+      :assets="selectedAssets"
       :source="editSource"
       :models="editingModels"
       :direction

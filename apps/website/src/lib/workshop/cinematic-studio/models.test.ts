@@ -1,8 +1,13 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { workshopContract } from '../../../config/workshop-contract-catalog'
+import { prepareModelRouterRender } from '../../../config/router-render'
 import { getAuthoredRouterWorkshopModelDetail } from '../../../config/workshop-router-content'
-import { cinematicStudioHref, runnableCinematicModels } from './models'
+import {
+  cinematicStudioHref,
+  cinematicImageForm,
+  runnableCinematicModels
+} from './models'
 
 const SEEDREAM = 'byteplus--seedream-4-5--generate-images'
 const FLUX = 'bfl--flux-2-pro--generate-images'
@@ -30,7 +35,32 @@ describe('runnableCinematicModels', () => {
         referenceModelSlug: 'vertexai--gemini-3-pro-image--edit-images',
         referenceMax: 4
       },
-      { slug: FLUX, referenceModelSlug: FLUX, referenceMax: 9 }
+      { slug: FLUX, referenceModelSlug: FLUX, referenceMax: 9 },
+      {
+        slug: 'qwen--qwen-image-3.0-pro-text-to-image--generate-images',
+        referenceModelSlug: 'qwen--qwen-image-3.0-pro-image-edit--edit-images',
+        referenceMax: 3
+      },
+      {
+        slug: 'byteplus--seedream-5-pro--generate-images',
+        referenceModelSlug: 'byteplus--seedream-5-pro--edit-images',
+        referenceMax: 10
+      },
+      {
+        slug: 'bfl--flux-2-max--generate-images',
+        referenceModelSlug: 'bfl--flux-2-max--generate-images',
+        referenceMax: 9
+      },
+      {
+        slug: 'vertexai--gemini-nano-banana-2--generate-images',
+        referenceModelSlug: 'vertexai--gemini-nano-banana-2--edit-images',
+        referenceMax: 4
+      },
+      {
+        slug: 'qwen--qwen-image-3.0-text-to-image--generate-images',
+        referenceModelSlug: 'qwen--qwen-image-3.0-image-edit--edit-images',
+        referenceMax: 3
+      }
     ])
   })
   it('appends verified video routes while preserving the default image model', () => {
@@ -67,8 +97,104 @@ describe('runnableCinematicModels', () => {
         firstFrame: slug.includes('--image-to-video')
           ? 'required'
           : 'unsupported'
+      })),
+      ...[
+        'byteplus--seedance-2-text-to-video--generate-videos',
+        'byteplus--seedance-2-image-to-video--animate-images',
+        'byteplus--seedance-2-fast-text-to-video--generate-videos',
+        'byteplus--seedance-2-fast-first-last-frame--animate-images',
+        'xai--grok-imagine-video-1.5--generate-videos',
+        'xai--grok-imagine-video-1.5--animate-images'
+      ].map((slug) => ({
+        slug,
+        firstFrame: slug.endsWith('animate-images') ? 'required' : 'unsupported'
       }))
     ])
+  })
+  it.for([
+    'byteplus--seedream-5-pro--generate-images',
+    'bfl--flux-2-max--generate-images',
+    'vertexai--gemini-nano-banana-2--generate-images',
+    'qwen--qwen-image-3.0-text-to-image--generate-images',
+    'openai--gpt-image-2--generate-images',
+    'openai--gpt-image-2.5-flare--generate-images',
+    'openai--gpt-image-2.5-sunburst--generate-images',
+    'xai--grok-imagine-image-2.0--generate-images',
+    'recraft--v4.1-text-to-image--generate-images'
+  ])(
+    'prepares original demo image route %s through generic Router parameters',
+    async (slug) => {
+      const fetch = vi
+        .spyOn(globalThis, 'fetch')
+        .mockRejectedValue(new Error('Unexpected network request'))
+      const model = getAuthoredRouterWorkshopModelDetail(slug)
+      if (!model) throw new Error('Missing authored route')
+      expect(
+        runnableCinematicModels(getAuthoredRouterWorkshopModelDetail).some(
+          (entry) => entry.slug === slug
+        )
+      ).toBe(true)
+      const selected = runnableCinematicModels(
+        getAuthoredRouterWorkshopModelDetail
+      ).find((entry) => entry.slug === slug)!
+      const prepared = await prepareModelRouterRender(
+        model,
+        {},
+        {
+          form: cinematicImageForm(model, {
+            prompt: 'A cinema still',
+            aspect: selected.imageAspects?.[0] ?? '16:9',
+            resolutionPixels: 2048
+          })
+        }
+      )
+      expect(prepared.expectedKind).toBe('image')
+      expect(JSON.stringify(prepared.body)).toContain('A cinema still')
+      expect(JSON.stringify(prepared.body)).not.toMatch(
+        /media.comfy.org|cdn.jsdelivr.net/
+      )
+      expect(fetch).not.toHaveBeenCalled()
+    }
+  )
+  it('keeps fixed image sizes and supported ratios faithful to the bundled contracts', async () => {
+    const models = runnableCinematicModels(getAuthoredRouterWorkshopModelDetail)
+    const gpt = models.find(
+      (model) => model.slug === 'openai--gpt-image-2--generate-images'
+    )!
+    expect(gpt.imageAspects).toEqual(['16:9', '1:1', '9:16', '3:2', '2:3'])
+    const recraft = models.find(
+      (model) => model.slug === 'recraft--v4.1-text-to-image--generate-images'
+    )!
+    expect(recraft.imageAspects).toEqual(['1:1'])
+    const model = getAuthoredRouterWorkshopModelDetail(gpt.slug)!
+    const prepared = await prepareModelRouterRender(
+      model,
+      {},
+      {
+        form: cinematicImageForm(model, {
+          prompt: 'Portrait',
+          aspect: '2:3',
+          resolutionPixels: 2048
+        })
+      }
+    )
+    expect(prepared.body.size).toBe('1024x1536')
+    expect(gpt.referenceMax).toBeUndefined()
+    expect(() =>
+      cinematicImageForm(model, {
+        prompt: 'Portrait',
+        aspect: '4:3',
+        resolutionPixels: 2048
+      })
+    ).toThrow('validation')
+    expect(() =>
+      cinematicImageForm(model, {
+        prompt: 'Portrait',
+        aspect: '1:1',
+        resolutionPixels: 2048,
+        references: [new File(['image'], 'frame.png', { type: 'image/png' })]
+      })
+    ).toThrow('validation')
   })
   it('lists only studio models that can run, with their logos', () => {
     const models = runnableCinematicModels((slug) => {
@@ -91,7 +217,17 @@ describe('runnableCinematicModels', () => {
         name: 'Seedream 4.5',
         provider: 'ByteDance',
         logo: '/icons/ai-models/bytedance.svg',
-        seed: { step: 1 }
+        seed: { step: 1 },
+        imageAspects: [
+          '21:9',
+          '16:9',
+          '4:3',
+          '1:1',
+          '9:16',
+          '3:2',
+          '2:3',
+          '3:4'
+        ]
       }
     ])
   })

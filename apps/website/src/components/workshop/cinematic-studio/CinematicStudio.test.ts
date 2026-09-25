@@ -343,9 +343,8 @@ describe('CinematicStudio', () => {
     expect(router_render).toHaveBeenCalledTimes(2)
     const [slug, parameters, options] = vi.mocked(router_render).mock.calls[0]
     expect(slug).toBe(first.slug)
-    expect(parameters).toMatchObject({
-      aspect_ratio: '21:9',
-      resolution: 2048,
+    expect(parameters).toEqual({})
+    expect(options.form?.values).toMatchObject({
       prompt: expect.stringMatching(
         /^Medium shot\. A diner at dawn .*Shot on large format cinema camera/
       )
@@ -580,9 +579,9 @@ describe('CinematicStudio', () => {
     await user.click(generateButton())
     await confirmShot(user)
     await screen.findByAltText(/A diner at dawn/)
-    expect(vi.mocked(router_render).mock.calls[0][1]?.prompt).toContain(
-      'Neon light'
-    )
+    expect(
+      vi.mocked(router_render).mock.calls[0][2].form?.values.prompt
+    ).toContain('Neon light')
   })
 
   it('keeps the camera picker open across columns until clicked away', async () => {

@@ -25,6 +25,67 @@ function props() {
 }
 
 describe('CinematicEditDialog', () => {
+  it('reviews portrait guidance with only the selected character and keeps choices after returning', async () => {
+    const initial = props()
+    const portrait = new File(['portrait'], 'mara.png', { type: 'image/png' })
+    const assets = [
+      {
+        id: 'mara',
+        name: 'Mara',
+        kind: 'character' as const,
+        notes: 'Olive coat',
+        file: portrait
+      }
+    ]
+    const user = userEvent.setup()
+    const view = render(CinematicEditDialog, {
+      props: {
+        ...initial,
+        assets,
+        models: [
+          {
+            ...initial.models[0],
+            referenceMax: 3,
+            imageAspects: ['1:1', '3:2', '2:3']
+          }
+        ]
+      }
+    })
+    await user.click(await screen.findByRole('button', { name: 'Camera view' }))
+    expect(
+      screen.getByRole('combobox', { name: 'Output aspect ratio' })
+    ).toHaveValue('3:2')
+    await user.selectOptions(
+      screen.getByRole('combobox', { name: 'How to guide this shot' }),
+      'portrait'
+    )
+    expect(screen.getByRole('button', { name: 'Review edit' })).toBeDisabled()
+    await user.type(
+      screen.getByRole('textbox', { name: 'Scene to rebuild' }),
+      'Mara enters the lighthouse'
+    )
+    await user.click(screen.getByRole('button', { name: 'Review edit' }))
+    expect(view.emitted('review')).toEqual([
+      [
+        expect.objectContaining({
+          sourceFile: portrait,
+          sourceFiles: [],
+          cameraGuidance: expect.objectContaining({
+            mode: 'portrait',
+            assetIds: ['mara']
+          }),
+          prompt: expect.stringContaining('Image 1: character reference')
+        })
+      ]
+    ])
+    await view.rerender({ source: { ...initial.source } })
+    expect(
+      screen.getByRole('combobox', { name: 'How to guide this shot' })
+    ).toHaveValue('portrait')
+    expect(
+      screen.getByRole('textbox', { name: 'Scene to rebuild' })
+    ).toHaveValue('Mara enters the lighthouse')
+  })
   it('keeps the imported edit recipe when returning from review', async () => {
     const initial = props()
     const source = {

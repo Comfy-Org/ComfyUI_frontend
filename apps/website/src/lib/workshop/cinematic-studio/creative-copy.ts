@@ -1,6 +1,11 @@
 import type { Locale } from '../../../i18n/translations'
 
 const COPY = {
+  visualExamples: ['Visual examples', '视觉示例'],
+  illustrative: [
+    'Illustrations from the original demo. They guide your choice and are not generation references or guaranteed results.',
+    '原始演示中的示意图。仅供选择参考，不会作为生成参考图，也不保证生成效果。'
+  ],
   title: ['Creative direction', '创作指导'],
   guidance: [
     'These choices guide the prompt. Colors and lighting are not exact color transfer or physical relighting.',

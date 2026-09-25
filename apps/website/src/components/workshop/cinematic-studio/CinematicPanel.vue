@@ -111,6 +111,7 @@ const cardClass =
           v-model="modelSlug"
           :options="modelOptions"
           :heading="tc('cinematic.model.heading', locale)"
+          :browse-label="tc('cinematic.model.browse', locale)"
           :trigger-class="cn(cardClass, 'h-12 gap-3 px-3')"
         >
           <img
@@ -226,6 +227,7 @@ const cardClass =
             v-model:aspect="aspect"
             v-model:resolution="resolution"
             v-model:takes="takes"
+            :allowed-aspects="model?.imageAspects"
             :locale
           />
         </slot>

@@ -3,6 +3,7 @@ import { Check } from '@lucide/vue'
 import {
   DropdownMenuContent,
   DropdownMenuLabel,
+  DropdownMenuItem,
   DropdownMenuPortal,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
@@ -20,10 +21,11 @@ interface MenuOption {
   readonly logo?: string
 }
 
-const { options, heading, triggerClass } = defineProps<{
+const { options, heading, triggerClass, browseLabel } = defineProps<{
   options: readonly MenuOption[]
   heading: string
   triggerClass?: string
+  browseLabel?: string
 }>()
 
 const value = defineModel<string>({ required: true })
@@ -52,14 +54,17 @@ const triggerLabel = computed(() => {
         align="start"
         :side-offset="8"
         :collision-padding="8"
-        class="z-50 min-w-72 rounded-2xl border border-transparency-white-t8 bg-site-dropdown p-1.5 shadow-lg data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0"
+        class="z-50 flex max-h-(--reka-dropdown-menu-content-available-height) min-w-72 flex-col rounded-2xl border border-transparency-white-t8 bg-site-dropdown p-1.5 shadow-lg data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0"
       >
         <DropdownMenuLabel
-          class="px-2.5 pt-1.5 pb-1 text-xs text-primary-warm-gray"
+          class="shrink-0 px-2.5 pt-1.5 pb-1 text-xs text-primary-warm-gray"
         >
           {{ heading }}
         </DropdownMenuLabel>
-        <DropdownMenuRadioGroup v-model="value">
+        <DropdownMenuRadioGroup
+          v-model="value"
+          class="block max-h-[min(24rem,55vh)] min-h-0 overflow-y-auto"
+        >
           <DropdownMenuRadioItem
             v-for="option in options"
             :key="option.id"
@@ -82,6 +87,15 @@ const triggerLabel = computed(() => {
             />
           </DropdownMenuRadioItem>
         </DropdownMenuRadioGroup>
+        <DropdownMenuItem v-if="browseLabel" as-child>
+          <a
+            href="/models"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="mt-1 block shrink-0 rounded-lg border-t border-transparency-white-t8 px-2.5 py-3 text-sm text-primary-comfy-yellow outline-none data-highlighted:bg-transparency-white-t8"
+            >{{ browseLabel }} ↗</a
+          >
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenuPortal>
   </DropdownMenuRoot>

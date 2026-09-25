@@ -44,6 +44,10 @@ const {
   busy,
   error,
   canConfirm,
+  saved,
+  unresolved,
+  canRecover,
+  storageError,
   gate
 } = run
 const accepted = ref(false)
@@ -53,7 +57,6 @@ watch(
   () => [open, namespace],
   () => {
     accepted.value = false
-    run.reset()
   }
 )
 watch(
@@ -69,7 +72,6 @@ const failure = computed(
     (gate.value !== 'ready' ? gate.value : undefined)
 )
 function close() {
-  run.reset()
   emit('update:open', false)
 }
 function apply() {
@@ -155,11 +157,36 @@ function back() {
       <p v-if="busy" role="status" class="text-sm text-primary-warm-white">
         {{ t('running') }}
       </p>
+      <p
+        v-if="storageError"
+        role="alert"
+        class="text-sm text-primary-warm-white"
+      >
+        {{ t('storageError') }}
+      </p>
+      <p v-if="unresolved" class="text-sm text-primary-comfy-canvas">
+        {{ t('retained')
+        }}<span v-if="saved?.requestId" class="block break-all"
+          >{{ t('requestId') }}: {{ saved.requestId }}</span
+        ><span v-else class="block break-all"
+          >{{ t('submissionId') }}: {{ saved?.id }} ·
+          {{ t('noAdmission') }}</span
+        >
+      </p>
       <p v-if="failure" role="alert" class="text-sm text-primary-warm-white">
         {{ t(failure) }}
       </p>
       <div class="flex flex-col gap-2 sm:flex-row sm:justify-end">
         <Button variant="outline" @click="close">{{ t('cancel') }}</Button>
+        <Button v-if="canRecover" variant="outline" @click="run.recover">{{
+          t('recover')
+        }}</Button>
+        <Button
+          v-if="!busy && !unresolved && (result || error)"
+          variant="outline"
+          @click="back"
+          >{{ t('newRequest') }}</Button
+        >
         <Button v-if="result" :disabled="!proposed" @click="apply">{{
           t('apply')
         }}</Button>

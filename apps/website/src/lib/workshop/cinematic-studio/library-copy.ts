@@ -1,6 +1,39 @@
 import type { Locale } from '../../../i18n/translations'
 
 const copy = {
+  nextShot: ['Next shot from this frame', '从此帧创建下一镜头'],
+  reviewReferences: ['Review references & continuity', '检查参考图与连续性'],
+  actualReferences: [
+    'Compare the result above with the reference files submitted for this generation. Check manually; this does not guarantee a match.',
+    '将上方结果与本次生成提交的参考文件进行比较。请人工检查，这不保证一致。'
+  ],
+  noReferenceRecord: [
+    'No submitted reference images are stored for this result.',
+    '此结果未保存已提交的参考图像。'
+  ],
+  firstBoundary: ['Starting frame', '起始帧'],
+  lastBoundary: ['Ending frame', '结束帧'],
+  castReference: ['Character reference', '人物参考'],
+  paletteReference: ['Color reference', '色彩参考'],
+  editReference: ['Source image', '源图像'],
+  assetReference: ['Saved element', '已保存元素'],
+  continuityChecklist: ['Review checklist', '检查清单'],
+  checkIdentity: [
+    'Subject, clothing and important objects match.',
+    '主体、服装与重要物体一致。'
+  ],
+  checkScene: [
+    'Location, lighting and colors stay consistent.',
+    '地点、光线与色彩保持一致。'
+  ],
+  checkFraming: [
+    'Framing and perspective follow the request.',
+    '构图与视角符合要求。'
+  ],
+  checkBoundaries: [
+    'For video, inspect the opening and ending frames.',
+    '对于视频，请检查开头和结尾帧。'
+  ],
   referencePreparing: [
     'Saving references before generation…',
     '正在生成前保存参考图…'

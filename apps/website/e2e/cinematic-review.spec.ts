@@ -441,6 +441,22 @@ test('selects saved transition boundaries and restores both after reload', async
   await expect(
     library.getByRole('button', { name: 'Reuse settings', exact: true })
   ).toBeVisible()
+  await library
+    .getByRole('button', {
+      name: 'Review references & continuity',
+      exact: true
+    })
+    .click()
+  const referenceReview = library.getByRole('region', {
+    name: 'Review references & continuity'
+  })
+  await expect(
+    referenceReview.getByRole('img', { name: /^Starting frame:/ })
+  ).toBeVisible()
+  await expect(
+    referenceReview.getByRole('img', { name: /^Ending frame:/ })
+  ).toBeVisible()
+  await expect(referenceReview.getByRole('checkbox')).toHaveCount(4)
   await page.reload()
   await page
     .getByRole('button', { name: 'Your creations', exact: true })
@@ -523,4 +539,104 @@ test('reviews separate motion clips and preserves the draft on Back', async ({
     path: 'temp/cinematic-motion-comparison.png',
     fullPage: true
   })
+})
+
+test('offers original image choices with legal framing and a separate native catalog', async ({
+  page
+}) => {
+  await page.goto('/cinematic-studio?demo=success')
+  await page.getByRole('button', { name: /Model · via Comfy Router:/ }).click()
+  await expect(
+    page.getByRole('menuitemradio', { name: /Seedream 5/ })
+  ).toBeVisible()
+  await expect(
+    page.getByRole('menuitemradio', { name: /FLUX 2 Max/ })
+  ).toBeVisible()
+  await expect(
+    page.getByRole('menuitem', { name: /All models & native controls/ })
+  ).toHaveAttribute('href', '/models')
+  await page
+    .getByRole('menuitemradio', { name: /Recraft.*4\.1/, exact: false })
+    .click()
+  await expect(page.getByRole('button', { name: /^Format:/ })).toContainText(
+    '1:1'
+  )
+  await page.getByRole('button', { name: /^Format:/ }).click()
+  await page.getByRole('button', { name: /Aspect ratio: 1:1/ }).click()
+  await expect(page.getByRole('menuitemradio')).toHaveCount(1)
+  await expect(page.getByRole('menuitemradio')).toContainText('1:1')
+})
+
+test('restores independent composer drafts and multiple named plans after reload', async ({
+  page
+}) => {
+  await page.goto('/cinematic-studio?demo=success')
+  const scene = page.getByRole('textbox', { name: 'Scene', exact: true })
+  await scene.fill('Image draft at the station.')
+  await page.getByRole('button', { name: 'Video', exact: true }).click()
+  await scene.fill('Video draft of passing clouds.')
+  await page.reload()
+  await expect(scene).toHaveValue('Video draft of passing clouds.')
+  await page.getByRole('button', { name: 'Image', exact: true }).click()
+  await expect(scene).toHaveValue('Image draft at the station.')
+  await page
+    .getByRole('button', { name: 'Build your scene', exact: true })
+    .click()
+  const builder = page.getByRole('dialog', { name: 'Scene workshop' })
+  await builder.getByLabel('Plan name', { exact: true }).fill('Station plan')
+  await builder
+    .getByRole('button', { name: 'New plan from current scene' })
+    .click()
+  await builder.getByLabel('Plan name', { exact: true }).fill('Cloud plan')
+  await builder
+    .getByRole('button', { name: 'Save draft in this browser' })
+    .click()
+  await builder
+    .getByRole('combobox', { name: 'Saved plans', exact: true })
+    .selectOption({ index: 0 })
+  await expect(builder.getByLabel('Plan name', { exact: true })).toHaveValue(
+    'Station plan'
+  )
+  await page.reload()
+  await page
+    .getByRole('button', { name: 'Build your scene', exact: true })
+    .click()
+  await builder
+    .getByRole('combobox', { name: 'Saved plans', exact: true })
+    .selectOption({ index: 1 })
+  await expect(builder.getByLabel('Plan name', { exact: true })).toHaveValue(
+    'Cloud plan'
+  )
+})
+
+test('starts the next shot with the saved scene and the selected frame', async ({
+  page
+}) => {
+  await page.goto('/cinematic-studio?demo=success')
+  await page
+    .getByRole('textbox', { name: 'Scene', exact: true })
+    .fill('A train at dawn beside a quiet platform.')
+  await page.getByRole('button', { name: 'Review shot', exact: true }).click()
+  await page
+    .getByRole('dialog', { name: 'Review your shot' })
+    .getByRole('button', { name: 'Generate shot', exact: true })
+    .click()
+  await expect(page.getByAltText(/A train at dawn/).first()).toBeVisible()
+  await page
+    .getByRole('textbox', { name: 'Scene', exact: true })
+    .fill('An unrelated draft.')
+  await page
+    .getByRole('button', { name: 'Your creations', exact: true })
+    .click()
+  await page
+    .getByRole('dialog', { name: 'Your creations' })
+    .getByRole('button', { name: 'Next shot from this frame', exact: true })
+    .click()
+  await expect(
+    page.getByRole('textbox', { name: 'Scene', exact: true })
+  ).toHaveValue('A train at dawn beside a quiet platform.')
+  await page.getByRole('button', { name: 'Review shot', exact: true }).click()
+  await expect(
+    page.getByRole('dialog', { name: 'Review your shot' })
+  ).toContainText('Keep the character from reference image 1.')
 })

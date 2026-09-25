@@ -24,7 +24,7 @@ export const planSettingsSchema = z
       .max(200)
       .regex(/^[a-zA-Z0-9._-]+$/),
     modelName: z.string().max(200).optional(),
-    aspect: z.enum(['21:9', '16:9', '4:3', '1:1', '9:16']),
+    aspect: z.enum(['21:9', '16:9', '4:3', '3:2', '1:1', '2:3', '9:16']),
     resolution: z.enum(['1K', '2K']),
     takes: z.number().int().min(1).max(4),
     enhance: z.boolean().default(false),
@@ -133,6 +133,7 @@ const draftSchema = z
     plan: z
       .object({
         id: identity.default(() => crypto.randomUUID()),
+        name: z.string().max(100).default(''),
         character: text,
         setting: text,
         scene: text,
@@ -152,6 +153,66 @@ const draftSchema = z
 
 export type SceneBrief = z.infer<typeof briefSchema>
 export type SceneBuilderDraft = z.infer<typeof draftSchema>
+
+export const PLAN_LIBRARY_LIMIT = 50
+const librarySchema = z
+  .object({
+    format: z.literal('comfy-cinema-plan-library'),
+    version: z.literal(1),
+    activeId: identity,
+    drafts: z.array(draftSchema).min(1).max(PLAN_LIBRARY_LIMIT)
+  })
+  .strict()
+  .refine(
+    (library) =>
+      new Set(library.drafts.map((draft) => draft.plan.id)).size ===
+        library.drafts.length &&
+      library.drafts.some((draft) => draft.plan.id === library.activeId)
+  )
+export type ScenePlanLibrary = z.infer<typeof librarySchema>
+
+export function createScenePlanLibrary(
+  draft: SceneBuilderDraft
+): ScenePlanLibrary {
+  return librarySchema.parse({
+    format: 'comfy-cinema-plan-library',
+    version: 1,
+    activeId: draft.plan.id,
+    drafts: [draft]
+  })
+}
+
+export function parseScenePlanLibrary(json: string): ScenePlanLibrary {
+  if (json.length > 4000000) throw new Error('Plan library too large')
+  const value: unknown = JSON.parse(json)
+  const single = draftSchema.safeParse(value)
+  return single.success
+    ? createScenePlanLibrary(single.data)
+    : librarySchema.parse(value)
+}
+
+export function updateScenePlanLibrary(
+  library: ScenePlanLibrary,
+  draft: SceneBuilderDraft,
+  activeId = draft.plan.id
+): ScenePlanLibrary {
+  const exists = library.drafts.some((item) => item.plan.id === draft.plan.id)
+  return librarySchema.parse({
+    ...library,
+    activeId,
+    drafts: exists
+      ? library.drafts.map((item) =>
+          item.plan.id === draft.plan.id ? draft : item
+        )
+      : [...library.drafts, draft]
+  })
+}
+
+export function serializeScenePlanLibrary(library: ScenePlanLibrary): string {
+  const json = JSON.stringify(librarySchema.parse(library))
+  if (json.length > 4000000) throw new Error('Plan library too large')
+  return json
+}
 
 export const planShotMetadataSchema = z
   .object({

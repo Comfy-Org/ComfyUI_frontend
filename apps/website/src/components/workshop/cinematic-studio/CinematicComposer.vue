@@ -154,6 +154,7 @@ const chipClass = (key: PopoverKey) =>
           v-model="modelSlug"
           :options="modelOptions"
           :heading="tc('cinematic.model.heading', locale)"
+          :browse-label="tc('cinematic.model.browse', locale)"
           trigger-class="h-9 shrink-0 gap-2 rounded-xl px-3 text-[13px] whitespace-nowrap text-primary-warm-white hover:bg-transparency-white-t8"
         >
           <img

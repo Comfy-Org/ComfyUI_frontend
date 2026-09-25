@@ -5,7 +5,11 @@ import {
   routerParameterMappings
 } from '../../../config/router-parameters'
 import { workshopPageSchema } from '../../../config/workshop-page-state'
-import { defaultValues } from '../../../config/workshop-playground'
+import {
+  defaultValues,
+  urlUploadField
+} from '../../../config/workshop-playground'
+import type { FieldSchema } from '../../../config/workshop-playground'
 import { WorkshopRouterError } from '../../../config/workshop-router-errors'
 import { ASPECT_RATIOS, directionOption } from './catalog'
 import type { Direction, DirectionPart } from './catalog'
@@ -14,7 +18,21 @@ import type { CinematicModel } from './models'
 
 const EDITING_MODELS: Readonly<Record<string, string>> = {
   'byteplus--seedream-4-5--edit-images': '/icons/ai-models/bytedance.svg',
-  'vertexai--gemini-3-pro-image--edit-images': '/icons/ai-models/gemini.svg'
+  'vertexai--gemini-3-pro-image--edit-images': '/icons/ai-models/gemini.svg',
+  'byteplus--seedream-5-pro--edit-images': '/icons/ai-models/bytedance.svg',
+  'vertexai--gemini-nano-banana-2--edit-images': '/icons/ai-models/gemini.svg',
+  'qwen--qwen-image-3.0-image-edit--edit-images': '/icons/ai-models/qwen.svg',
+  'qwen--qwen-image-3.0-pro-image-edit--edit-images':
+    '/icons/ai-models/qwen.svg'
+}
+
+function sourceFields(schema: readonly FieldSchema[]) {
+  return schema.flatMap((field) => {
+    if (field.name !== 'images' && !/^image_url(?:_\d+)?$/.test(field.name))
+      return []
+    const media = field.kind === 'file' ? field : urlUploadField(field)
+    return media ? [media] : []
+  })
 }
 
 export interface CinematicEditingDescriptor {
@@ -22,6 +40,7 @@ export interface CinematicEditingDescriptor {
   readonly resolutions: readonly string[]
   readonly sizes: readonly string[]
   readonly defaultResolution?: string
+  readonly maxReferences: number
 }
 
 export function cinematicEditingDescriptor(
@@ -30,7 +49,7 @@ export function cinematicEditingDescriptor(
   if (!Object.hasOwn(EDITING_MODELS, model.slug) || !canRunModel(model)) return
   const schema = workshopPageSchema(model)
   if (
-    !schema.some((field) => field.name === 'images' && field.kind === 'file') ||
+    !sourceFields(schema).length ||
     !schema.some((field) => field.name === 'prompt')
   )
     return
@@ -42,11 +61,15 @@ export function cinematicEditingDescriptor(
         )
       : []
   }
-  const sizes = choices('size')
+  const sizes = [...choices('size'), ...choices('param_size')]
   const resolutions = choices('image_imageSize')
   const resolution = schema.find((field) => field.name === 'image_imageSize')
   const aspects = choices('image_aspectRatio')
   return {
+    maxReferences: sourceFields(schema).reduce(
+      (sum, field) => sum + (field.maxItems ?? 1),
+      0
+    ),
     aspects: aspects.length
       ? aspects
       : ASPECT_RATIOS.filter((aspect) => {
@@ -78,7 +101,8 @@ export function runnableCinematicEditingModels(
 ): readonly CinematicModel[] {
   return Object.entries(EDITING_MODELS).flatMap(([slug, logo]) => {
     const model = lookup(slug)
-    if (!model || !cinematicEditingDescriptor(model)) return []
+    const descriptor = model && cinematicEditingDescriptor(model)
+    if (!model || !descriptor) return []
     return [
       {
         slug: model.slug,
@@ -86,6 +110,8 @@ export function runnableCinematicEditingModels(
         provider: model.provider ?? '',
         logo,
         mode: 'image' as const,
+        imageAspects: descriptor.aspects,
+        referenceMax: descriptor.maxReferences,
         ...(model.status === 'degraded' ? { degraded: true } : {})
       }
     ]
@@ -109,18 +135,22 @@ export function cinematicEditingForm(
   const descriptor = cinematicEditingDescriptor(model)
   if (!descriptor) throw new WorkshopRouterError('unavailable')
   const schema = workshopPageSchema(model)
-  const imageField = schema.find((field) => field.name === 'images')
   const files = [settings.sourceFile, ...(settings.sourceFiles ?? [])]
   if (
     files.some(
       (file) => !(file instanceof File) || !file.type.startsWith('image/')
     ) ||
-    imageField?.kind !== 'file' ||
-    files.length > (imageField.maxItems ?? 1)
+    files.length > descriptor.maxReferences
   )
     throw new WorkshopRouterError('validation', null, { images: 'rejected' })
   if (!settings.prompt.trim())
     throw new WorkshopRouterError('validation', null, { prompt: 'rejected' })
+  if (
+    settings.aspect &&
+    descriptor.aspects.length &&
+    !descriptor.aspects.includes(settings.aspect)
+  )
+    throw new WorkshopRouterError('validation', null, { aspect: 'rejected' })
   const ratio = dimensions(settings.aspect)
   const exactSize =
     ratio &&
@@ -146,7 +176,15 @@ export function cinematicEditingForm(
         ...(settings.resolution && descriptor.resolutions.length
           ? { resolution: settings.resolution }
           : {}),
-        ...(exactSize ? { model_specific: { size: exactSize } } : {})
+        ...(exactSize
+          ? {
+              model_specific: {
+                [schema.some((field) => field.name === 'param_size')
+                  ? 'param_size'
+                  : 'size']: exactSize
+              }
+            }
+          : {})
       },
       routerParameterMappings(model.execution, model.modality)
     )

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import CinematicReferenceReview from './CinematicReferenceReview.vue'
 
 import type { Locale } from '../../../i18n/translations'
 import type { SavedCreation } from '../../../lib/workshop/cinematic-studio/creations'
@@ -17,6 +18,7 @@ const {
   urls,
   loading,
   error,
+  namespace,
   locale = 'en'
 } = defineProps<{
   models: readonly { slug: string; name: string }[]
@@ -24,11 +26,13 @@ const {
   urls: Readonly<Record<string, string>>
   loading: boolean
   error: boolean
+  namespace?: string
   locale?: Locale
 }>()
 const open = defineModel<boolean>('open', { required: true })
 const emit = defineEmits<{
   reuse: [item: SavedCreation]
+  nextShot: [item: SavedCreation]
   animate: [url: string, name: string]
   edit: [url: string, name: string]
   remove: [id: string]
@@ -43,6 +47,7 @@ const removing = ref<string>()
 const renaming = ref<string>()
 const newName = ref('')
 const revealed = ref<readonly string[]>([])
+const reviewing = ref<string>()
 const visible = computed(() =>
   items.filter(
     (item) =>
@@ -58,6 +63,10 @@ const fieldClass =
 
 function reuse(item: SavedCreation) {
   emit('reuse', item)
+  open.value = false
+}
+function nextShot(item: SavedCreation) {
+  emit('nextShot', item)
   open.value = false
 }
 function animate(item: SavedCreation) {
@@ -185,6 +194,24 @@ function recipe(item: SavedCreation) {
             }}
           </p>
           <div class="mt-3 flex flex-wrap gap-2">
+            <Button
+              v-if="
+                item.kind === 'image' &&
+                (!item.nsfw || revealed.includes(item.id))
+              "
+              size="sm"
+              variant="outline"
+              @click="nextShot(item)"
+              >{{ copy('nextShot', locale) }}</Button
+            >
+            <Button
+              v-if="!item.nsfw || revealed.includes(item.id)"
+              size="sm"
+              variant="outline"
+              :aria-expanded="reviewing === item.id"
+              @click="reviewing = reviewing === item.id ? undefined : item.id"
+              >{{ copy('reviewReferences', locale) }}</Button
+            >
             <a
               :href="urls[item.id]"
               :download="item.fileName"
@@ -232,6 +259,16 @@ function recipe(item: SavedCreation) {
               copy('remove', locale)
             }}</Button>
           </div>
+          <CinematicReferenceReview
+            v-if="
+              reviewing === item.id &&
+              (!item.nsfw || revealed.includes(item.id))
+            "
+            :key="item.id"
+            :item
+            :namespace
+            :locale
+          />
           <form
             v-if="renaming === item.id"
             class="mt-3 flex gap-2"

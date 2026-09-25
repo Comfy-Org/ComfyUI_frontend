@@ -61,7 +61,9 @@ export const creationSettingsSchema = z.object({
   enhance: z.boolean(),
   resolution: z.enum(['1K', '2K']).optional(),
   duration: z.number().positive().max(120).optional(),
-  aspect: z.enum(['21:9', '16:9', '4:3', '1:1', '9:16']).optional(),
+  aspect: z
+    .enum(['21:9', '16:9', '4:3', '3:2', '2:3', '1:1', '9:16'])
+    .optional(),
   resolutionPixels: z.number().int().positive().max(16384).optional(),
   takes: z.number().int().min(1).max(4).optional(),
   seed: z.number().finite().optional(),
@@ -99,7 +101,7 @@ const creationSchema = z.object({
   name: z.string().trim().min(1).max(200),
   modelSlug: z.string().min(1).max(200),
   prompt: z.string().max(50000),
-  aspect: z.enum(['21:9', '16:9', '4:3', '1:1', '9:16']),
+  aspect: z.enum(['21:9', '16:9', '4:3', '3:2', '2:3', '1:1', '9:16']),
   createdAt: z.number().finite().nonnegative(),
   kind: z.enum(['image', 'video']),
   fileName: z.string().min(1).max(500),

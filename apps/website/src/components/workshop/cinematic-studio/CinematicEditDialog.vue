@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import type { AssetReference } from '../../../lib/workshop/cinematic-studio/assets'
+import { cameraGuidancePlan } from '../../../lib/workshop/cinematic-studio/camera-guidance'
+import type { CameraGuidance } from '../../../lib/workshop/cinematic-studio/camera-guidance'
 import { cn } from '@comfyorg/tailwind-utils'
 import type { Locale } from '../../../i18n/translations'
 import type {
@@ -13,7 +16,6 @@ import type { EditingCopyKey } from '../../../lib/workshop/cinematic-studio/edit
 import {
   cameraViewDefaults,
   cameraViewOptions,
-  cameraViewPrompt,
   cinematicLookPrompt,
   cinematicRelightDirections,
   cinematicRelightPrompt,
@@ -30,6 +32,7 @@ const {
   source,
   models,
   direction,
+  assets = [],
   locale = 'en'
 } = defineProps<{
   source:
@@ -47,6 +50,7 @@ const {
     | undefined
   models: readonly CinematicModel[]
   direction: Direction
+  assets?: readonly AssetReference[]
   locale?: Locale
 }>()
 type Operation = 'edit' | 'camera' | 'look' | 'relight'
@@ -58,6 +62,12 @@ const emit = defineEmits<{
       prompt: string
       aspect: AspectRatio
       sourceFile: File
+      sourceFiles?: readonly File[]
+      cameraGuidance?: CameraGuidance
+      guidanceAssets?: readonly Pick<
+        AssetReference,
+        'id' | 'name' | 'kind' | 'notes'
+      >[]
       operation: Operation
     }
   ]
@@ -67,6 +77,44 @@ const operation = ref<Operation>('edit')
 const modelSlug = ref('')
 const aspect = ref<AspectRatio>('16:9')
 const camera = ref({ ...cameraViewDefaults })
+const guidance = ref<CameraGuidance>({
+  mode: 'frame',
+  assetIds: [],
+  notes: '',
+  scene: ''
+})
+const selectedModel = computed(() =>
+  models.find((model) => model.slug === modelSlug.value)
+)
+const aspectOptions = computed(() =>
+  ASPECT_RATIOS.filter(
+    (ratio) =>
+      !selectedModel.value?.imageAspects ||
+      selectedModel.value.imageAspects.includes(ratio.id)
+  )
+)
+watch(
+  [aspectOptions, aspect],
+  ([options]) => {
+    if (!options.some((option) => option.id === aspect.value) && options[0])
+      aspect.value = options[0].id
+  },
+  { immediate: true }
+)
+const guidancePlan = computed(() => {
+  if (!source) return undefined
+  try {
+    return cameraGuidancePlan(
+      source.file,
+      guidance.value,
+      assets,
+      selectedModel.value?.referenceMax ?? 1,
+      camera.value
+    )
+  } catch {
+    return undefined
+  }
+})
 const lightType = ref('golden-hour')
 const lightDirection = ref('side')
 const instruction = ref('')
@@ -79,7 +127,9 @@ const ready = computed(
   () =>
     !!source &&
     models.some((model) => model.slug === modelSlug.value) &&
-    !!instruction.value.trim()
+    !!instruction.value.trim() &&
+    aspectOptions.value.some((option) => option.id === aspect.value) &&
+    (operation.value !== 'camera' || !!guidancePlan.value)
 )
 watch(
   () => source?.file,
@@ -91,6 +141,7 @@ watch(
     additional.value = ''
     aspect.value = source?.recipe?.aspect ?? '16:9'
     camera.value = { ...cameraViewDefaults }
+    guidance.value = { mode: 'frame', assetIds: [], notes: '', scene: '' }
     lightType.value = 'golden-hour'
     lightDirection.value = 'side'
   },
@@ -108,7 +159,7 @@ function buildInstruction() {
   emptyLook.value = false
   if (operation.value === 'edit') return
   if (operation.value === 'camera')
-    instruction.value = cameraViewPrompt(camera.value)
+    instruction.value = guidancePlan.value?.prompt ?? ''
   if (operation.value === 'relight')
     instruction.value = cinematicRelightPrompt(
       lightType.value,
@@ -122,6 +173,29 @@ function buildInstruction() {
       emptyLook.value = true
     }
   }
+}
+function changeGuidance() {
+  guidance.value.assetIds =
+    guidance.value.mode === 'frame'
+      ? []
+      : assets
+          .filter(
+            (asset) =>
+              guidance.value.mode !== 'portrait' || asset.kind === 'character'
+          )
+          .slice(0, 1)
+          .map((asset) => asset.id)
+  buildInstruction()
+}
+function chooseAsset(id: string, event: Event) {
+  if (!(event.target instanceof HTMLInputElement)) return
+  guidance.value.assetIds =
+    guidance.value.mode === 'portrait'
+      ? [id]
+      : event.target.checked
+        ? [...guidance.value.assetIds, id]
+        : guidance.value.assetIds.filter((value) => value !== id)
+  buildInstruction()
 }
 function selectOperation(value: Operation) {
   if (operation.value === value) return
@@ -138,7 +212,17 @@ function review() {
       .filter(Boolean)
       .join('\n\n'),
     aspect: aspect.value,
-    sourceFile: source.file,
+    sourceFile:
+      operation.value === 'camera'
+        ? guidancePlan.value!.sourceFile
+        : source.file,
+    ...(operation.value === 'camera'
+      ? {
+          sourceFiles: guidancePlan.value!.sourceFiles,
+          cameraGuidance: guidancePlan.value!.guidance,
+          guidanceAssets: guidancePlan.value!.assets
+        }
+      : {}),
     operation: operation.value
   })
 }
@@ -209,7 +293,7 @@ function review() {
               >{{ t('aspect')
               }}<select v-model="aspect" :class="fieldClass">
                 <option
-                  v-for="ratio in ASPECT_RATIOS"
+                  v-for="ratio in aspectOptions"
                   :key="ratio.id"
                   :value="ratio.id"
                 >
@@ -219,6 +303,115 @@ function review() {
             >
           </div>
           <template v-if="operation === 'camera'">
+            <fieldset
+              class="flex min-w-0 flex-col gap-3 rounded-lg border border-transparency-white-t20 p-3"
+            >
+              <legend class="px-1 text-sm">{{ t('guidance') }}</legend>
+              <label class="flex flex-col gap-2 text-sm"
+                >{{ t('guidanceMode')
+                }}<select
+                  v-model="guidance.mode"
+                  :class="fieldClass"
+                  @change="changeGuidance"
+                >
+                  <option value="frame">{{ t('frameGuidance') }}</option>
+                  <option
+                    value="anchored"
+                    :disabled="
+                      !assets.length || (selectedModel?.referenceMax ?? 1) < 2
+                    "
+                  >
+                    {{ t('anchoredGuidance') }}
+                  </option>
+                  <option
+                    value="portrait"
+                    :disabled="
+                      !assets.some((asset) => asset.kind === 'character')
+                    "
+                  >
+                    {{ t('portraitGuidance') }}
+                  </option>
+                </select></label
+              >
+              <p class="text-xs text-primary-comfy-canvas">
+                {{
+                  t(
+                    guidance.mode === 'portrait'
+                      ? 'portraitNote'
+                      : guidance.mode === 'anchored'
+                        ? 'anchoredNote'
+                        : 'frameNote'
+                  )
+                }}
+              </p>
+              <template v-if="guidance.mode !== 'frame'">
+                <label
+                  v-for="asset in assets.filter(
+                    (asset) =>
+                      guidance.mode !== 'portrait' || asset.kind === 'character'
+                  )"
+                  :key="asset.id"
+                  class="flex items-start gap-2 text-sm"
+                  ><input
+                    :type="guidance.mode === 'portrait' ? 'radio' : 'checkbox'"
+                    name="camera-guidance-asset"
+                    :checked="guidance.assetIds.includes(asset.id)"
+                    @change="chooseAsset(asset.id, $event)"
+                  /><span class="min-w-0 wrap-break-word"
+                    >{{ asset.name
+                    }}<small class="block text-primary-comfy-canvas">{{
+                      asset.notes
+                    }}</small></span
+                  ></label
+                >
+              </template>
+              <label
+                v-if="guidance.mode === 'portrait'"
+                class="flex flex-col gap-2 text-sm"
+                >{{ t('rebuildScene')
+                }}<textarea
+                  v-model="guidance.scene"
+                  :class="fieldClass"
+                  rows="3"
+                  maxlength="1500"
+                  @input="buildInstruction"
+                />
+              </label>
+              <label class="flex flex-col gap-2 text-sm"
+                >{{ t('preserveNotes')
+                }}<textarea
+                  v-model="guidance.notes"
+                  :class="fieldClass"
+                  rows="2"
+                  maxlength="750"
+                  @input="buildInstruction"
+                />
+              </label>
+              <p v-if="guidancePlan" class="text-xs text-primary-comfy-canvas">
+                {{ t('orderedReferences') }}:
+                {{
+                  [
+                    guidance.mode === 'portrait' ? '' : `1. ${source.name}`,
+                    ...guidancePlan.assets.map(
+                      (asset, index) =>
+                        `${index + (guidance.mode === 'portrait' ? 1 : 2)}. ${asset.name}`
+                    )
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')
+                }}
+              </p>
+              <p v-else role="alert" class="text-xs">
+                {{ t('guidanceInvalid') }} {{ t('referenceCapacity') }}:
+                {{ selectedModel?.referenceMax ?? 1 }}
+              </p>
+              <p
+                v-if="!assets.length"
+                class="text-xs text-primary-comfy-canvas"
+              >
+                {{ t('noAssets') }}
+              </p>
+            </fieldset>
             <div class="grid gap-3 sm:grid-cols-3">
               <label class="flex flex-col gap-2 text-sm"
                 >{{ t('azimuth')

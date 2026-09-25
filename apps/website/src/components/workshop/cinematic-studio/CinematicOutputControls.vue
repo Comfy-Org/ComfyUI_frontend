@@ -16,14 +16,19 @@ import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import { framedStyle } from './aspect-style'
 import CinematicMenu from './CinematicMenu.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale = 'en', allowedAspects } = defineProps<{
+  locale?: Locale
+  allowedAspects?: readonly string[]
+}>()
 
 const aspect = defineModel<AspectRatio>('aspect', { required: true })
 const resolution = defineModel<Resolution>('resolution', { required: true })
 const takes = defineModel<number>('takes', { required: true })
 
 const aspectOptions = computed(() =>
-  ASPECT_RATIOS.map((ratio) => ({
+  ASPECT_RATIOS.filter(
+    (ratio) => !allowedAspects || allowedAspects.includes(ratio.id)
+  ).map((ratio) => ({
     id: ratio.id,
     label: ratio.id,
     meta: tc(ratio.label, locale)

@@ -4,7 +4,8 @@ import type { Locale } from '../../../i18n/translations'
 import type { SavedCreation } from '../../../lib/workshop/cinematic-studio/creations'
 import type {
   PlanShotMetadata,
-  PlanSettingsSnapshot
+  PlanSettingsSnapshot,
+  ScenePlanLibrary
 } from '../../../lib/workshop/cinematic-studio/scene-builder'
 import { tcBuilder } from '../../../lib/workshop/cinematic-studio/builder-copy'
 import {
@@ -13,6 +14,10 @@ import {
   composePlannedScene,
   composeSceneBrief,
   createSceneBuilderDraft,
+  createScenePlanLibrary,
+  parseScenePlanLibrary,
+  serializeScenePlanLibrary,
+  updateScenePlanLibrary,
   parseSceneBuilderDraft,
   plannedShotMetadata,
   plannedShotTakes,
@@ -59,6 +64,8 @@ const emit = defineEmits<{
   animate: [creation: SavedCreation]
 }>()
 const draft = ref(createSceneBuilderDraft(''))
+const library = ref(createScenePlanLibrary(draft.value))
+const storageReady = ref(false)
 const tab = ref<'build' | 'plan'>('build')
 const status = ref('')
 const revealed = ref<string[]>([])
@@ -74,18 +81,27 @@ watch(
     revision++
     status.value = ''
     revealed.value = []
+    storageReady.value = false
     if (!isOpen) return
     draft.value = createSceneBuilderDraft(scene.slice(0, SCENE_LIMIT))
+    library.value = createScenePlanLibrary(draft.value)
     try {
       const saved = localStorage.getItem(sceneBuilderStorageKey(namespace))
       if (saved) {
-        draft.value = parseSceneBuilderDraft(saved)
+        const restored = parseScenePlanLibrary(saved)
+        const active = restored.drafts.find(
+          (item) => item.plan.id === restored.activeId
+        )
+        if (!active) throw new Error('Missing active plan')
+        library.value = restored
+        draft.value = parseSceneBuilderDraft(serializeSceneBuilderDraft(active))
         // Persist identity migration immediately so old v1 drafts do not get new IDs on each open.
         localStorage.setItem(
           sceneBuilderStorageKey(namespace),
-          serializeSceneBuilderDraft(draft.value)
+          serializeScenePlanLibrary(restored)
         )
       }
+      storageReady.value = true
     } catch {
       status.value = t('storageError')
     }
@@ -158,13 +174,58 @@ function selectReference(index: number, id: string, event: Event) {
     ? [...new Set([...ids, id])]
     : ids.filter((value) => value !== id)
 }
-function save() {
+function persist(next: ScenePlanLibrary) {
   try {
+    if (!storageReady.value) throw new Error('Plan storage unavailable')
     localStorage.setItem(
       sceneBuilderStorageKey(namespace),
-      serializeSceneBuilderDraft(draft.value)
+      serializeScenePlanLibrary(next)
     )
+    library.value = next
     status.value = t('saved')
+    return true
+  } catch {
+    status.value = t('storageError')
+    return false
+  }
+}
+function save() {
+  try {
+    return persist(updateScenePlanLibrary(library.value, draft.value))
+  } catch {
+    status.value = t('storageError')
+    return false
+  }
+}
+function selectPlan(event: Event) {
+  if (!(event.target instanceof HTMLSelectElement)) return
+  const id = event.target.value
+  const target = library.value.drafts.find((item) => item.plan.id === id)
+  if (!target) return
+  try {
+    if (!persist(updateScenePlanLibrary(library.value, draft.value, id))) {
+      event.target.value = draft.value.plan.id
+      return
+    }
+    draft.value = parseSceneBuilderDraft(serializeSceneBuilderDraft(target))
+    revealed.value = []
+    revision++
+  } catch {
+    event.target.value = draft.value.plan.id
+    status.value = t('storageError')
+  }
+}
+function addPlan(next: typeof draft.value) {
+  try {
+    const current = updateScenePlanLibrary(library.value, draft.value)
+    if (current.drafts.some((item) => item.plan.id === next.plan.id)) {
+      status.value = t('duplicatePlan')
+      return false
+    }
+    if (!persist(updateScenePlanLibrary(current, next))) return false
+    draft.value = next
+    revealed.value = []
+    revision++
     return true
   } catch {
     status.value = t('storageError')
@@ -185,8 +246,7 @@ function useTake(action: 'view' | 'edit' | 'animate', creation: SavedCreation) {
   emit('update:open', false)
 }
 function reset() {
-  draft.value = createSceneBuilderDraft(scene.slice(0, SCENE_LIMIT))
-  status.value = ''
+  addPlan(createSceneBuilderDraft(scene.slice(0, SCENE_LIMIT)))
 }
 function exportDraft() {
   const blob = new Blob([serializeSceneBuilderDraft(draft.value)], {
@@ -209,8 +269,7 @@ async function importDraft(event: Event) {
     if (file.size > 1000000) throw new Error('File too large')
     const parsed = parseSceneBuilderDraft(await file.text())
     if (revision !== current || !open) return
-    draft.value = parsed
-    status.value = t('imported')
+    if (addPlan(parsed)) status.value = t('imported')
   } catch {
     if (revision === current) status.value = t('importError')
   }
@@ -225,6 +284,39 @@ async function importDraft(event: Event) {
     >
       <DialogTitle class="pr-12">{{ t('title') }}</DialogTitle>
       <DialogDescription>{{ t('description') }}</DialogDescription>
+      <div class="grid min-w-0 gap-3 sm:grid-cols-2">
+        <label
+          class="flex min-w-0 flex-col gap-1 text-sm text-primary-warm-white"
+          >{{ t('savedPlans') }}
+          <select
+            :value="draft.plan.id"
+            :class="fieldClass"
+            @change="selectPlan"
+          >
+            <option
+              v-for="(item, index) in library.drafts"
+              :key="item.plan.id"
+              :value="item.plan.id"
+            >
+              {{
+                item.plan.name.trim() ||
+                item.plan.scene.slice(0, 60) ||
+                t('untitledPlan')
+              }}
+              · {{ index + 1 }}
+            </option>
+          </select>
+        </label>
+        <label
+          class="flex min-w-0 flex-col gap-1 text-sm text-primary-warm-white"
+          >{{ t('planName')
+          }}<input
+            v-model="draft.plan.name"
+            :class="fieldClass"
+            maxlength="100"
+        /></label>
+      </div>
+      <p class="text-xs text-primary-comfy-canvas">{{ t('libraryNote') }}</p>
       <div class="flex flex-wrap gap-2" :aria-label="t('title')">
         <Button
           :variant="tab === 'build' ? 'default' : 'outline'"

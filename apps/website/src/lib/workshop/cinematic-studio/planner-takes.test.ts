@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import CinematicSceneBuilder from '../../../components/workshop/cinematic-studio/CinematicSceneBuilder.vue'
@@ -7,6 +7,7 @@ import { AUTO_DIRECTION } from './catalog'
 import {
   createSceneBuilderDraft,
   parseSceneBuilderDraft,
+  parseScenePlanLibrary,
   serializeSceneBuilderDraft,
   plannedShotMetadata,
   plannedShotTakes,
@@ -14,6 +15,15 @@ import {
   sceneBuilderStorageKey
 } from './scene-builder'
 import type { PlanShotMetadata } from './scene-builder'
+
+function savedDraft(namespace: string) {
+  const library = parseScenePlanLibrary(
+    localStorage.getItem(sceneBuilderStorageKey(namespace)) ?? ''
+  )
+  const draft = library.drafts.find((item) => item.plan.id === library.activeId)
+  if (!draft) throw new Error('Missing active draft')
+  return draft
+}
 
 function creation(
   plan: PlanShotMetadata,
@@ -43,6 +53,112 @@ function creation(
   }
 }
 describe('planned shot identities and takes', () => {
+  it('imports a separate plan without replacing saved plans and rejects duplicate identities', async () => {
+    const namespace = 'plan-import-library'
+    const original = createSceneBuilderDraft('Harbor')
+    original.plan.name = 'Original'
+    localStorage.setItem(
+      sceneBuilderStorageKey(namespace),
+      serializeSceneBuilderDraft(original)
+    )
+    const user = userEvent.setup()
+    render(CinematicSceneBuilder, {
+      props: { open: true, scene: 'Current', namespace }
+    })
+    const input = await screen.findByLabelText('Import JSON')
+    const imported = createSceneBuilderDraft('Forest')
+    imported.plan.name = 'Imported'
+    const file = () =>
+      new File([serializeSceneBuilderDraft(imported)], 'plan.json', {
+        type: 'application/json'
+      })
+    await user.upload(input, file())
+    expect(screen.getByLabelText('Plan name')).toHaveValue('Imported')
+    let stored = parseScenePlanLibrary(
+      localStorage.getItem(sceneBuilderStorageKey(namespace)) ?? ''
+    )
+    expect(stored.drafts.map((item) => item.plan.id)).toEqual([
+      original.plan.id,
+      imported.plan.id
+    ])
+    imported.plan.scene = 'Overwrite attempt'
+    await user.upload(input, file())
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'already in your library'
+    )
+    stored = parseScenePlanLibrary(
+      localStorage.getItem(sceneBuilderStorageKey(namespace)) ?? ''
+    )
+    expect(stored.drafts[1].plan.scene).toBe('Forest')
+  })
+  it('migrates a saved plan and keeps its settings and takes through named plan switches', async () => {
+    const namespace = 'named-plans'
+    const legacy = createSceneBuilderDraft('Harbor')
+    legacy.plan.settings = planSettingsSchema.parse({
+      modelSlug: 'model',
+      aspect: '3:2',
+      resolution: '1K',
+      takes: 1,
+      direction: AUTO_DIRECTION
+    })
+    legacy.plan.shots[0].includeSharedBrief = false
+    localStorage.setItem(
+      sceneBuilderStorageKey(namespace),
+      serializeSceneBuilderDraft(legacy)
+    )
+    const take = creation(plannedShotMetadata(legacy.plan, 0))
+    const user = userEvent.setup()
+    const view = render(CinematicSceneBuilder, {
+      props: { open: true, scene: 'New scene', namespace, creations: [take] }
+    })
+    await user.type(await screen.findByLabelText('Plan name'), 'Harbor plan')
+    await user.click(
+      screen.getByRole('button', { name: 'New plan from current scene' })
+    )
+    await user.type(screen.getByLabelText('Plan name'), 'Forest plan')
+    const freshId = savedDraft(namespace).plan.id
+    expect(freshId).not.toBe(legacy.plan.id)
+    await user.selectOptions(
+      screen.getByLabelText('Saved plans'),
+      legacy.plan.id
+    )
+    expect(screen.getByLabelText('Plan name')).toHaveValue('Harbor plan')
+    const restored = savedDraft(namespace)
+    expect(restored.plan.settings).toEqual(legacy.plan.settings)
+    expect(restored.plan.shots).toEqual(legacy.plan.shots)
+    expect(plannedShotTakes(restored.plan, 0, [take])).toEqual([
+      { creation: take, previousVersion: false }
+    ])
+    await user.selectOptions(screen.getByLabelText('Saved plans'), freshId)
+    expect(screen.getByLabelText('Plan name')).toHaveValue('Forest plan')
+    await view.rerender({ namespace: 'other-named-plans' })
+    expect(screen.getByLabelText('Plan name')).toHaveValue('')
+    expect(screen.queryByRole('option', { name: /Harbor plan/ })).toBeNull()
+    expect(view.emitted('apply')).toBeUndefined()
+  })
+
+  it('keeps the current plan and saved collection intact when saving a new plan fails', async () => {
+    const namespace = 'plan-quota'
+    const user = userEvent.setup()
+    render(CinematicSceneBuilder, {
+      props: { open: true, scene: 'Coast', namespace }
+    })
+    await user.type(await screen.findByLabelText('Plan name'), 'Keep me')
+    await user.click(
+      screen.getByRole('button', { name: 'Save draft in this browser' })
+    )
+    const before = localStorage.getItem(sceneBuilderStorageKey(namespace))
+    const write = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('Full', 'QuotaExceededError')
+    })
+    await user.click(
+      screen.getByRole('button', { name: 'New plan from current scene' })
+    )
+    expect(screen.getByLabelText('Plan name')).toHaveValue('Keep me')
+    expect(localStorage.getItem(sceneBuilderStorageKey(namespace))).toBe(before)
+    expect(screen.getByRole('status')).toHaveTextContent('could not save')
+    write.mockRestore()
+  })
   it('captures independent studio settings and applies an explicit empty reference selection', async () => {
     const sharedSettings = planSettingsSchema.parse({
       modelSlug: 'studio-model',
@@ -85,9 +201,7 @@ describe('planned shot identities and takes', () => {
       sharedSettings,
       []
     ])
-    const saved = parseSceneBuilderDraft(
-      localStorage.getItem(sceneBuilderStorageKey('planner-capture-test')) ?? ''
-    )
+    const saved = savedDraft('planner-capture-test')
     expect(saved.plan.settings?.modelSlug).toBe('studio-model')
     expect(saved.plan.shots[0].referenceIds).toEqual([])
   })
@@ -158,9 +272,7 @@ describe('planned shot identities and takes', () => {
     await user.click(
       screen.getAllByRole('button', { name: 'Use this scene' })[0]
     )
-    const saved = parseSceneBuilderDraft(
-      localStorage.getItem(sceneBuilderStorageKey(namespace)) ?? ''
-    )
+    const saved = savedDraft(namespace)
     expect(view.emitted().apply).toEqual([
       [expect.any(String), plannedShotMetadata(saved.plan, 0)]
     ])
@@ -171,11 +283,7 @@ describe('planned shot identities and takes', () => {
         name: 'Shared scene'
       })
     ).toHaveValue('A coast')
-    expect(
-      parseSceneBuilderDraft(
-        localStorage.getItem(sceneBuilderStorageKey(namespace)) ?? ''
-      ).plan.id
-    ).toBe(saved.plan.id)
+    expect(savedDraft(namespace).plan.id).toBe(saved.plan.id)
   })
   it('does not expose sensitive sources or editing actions until reveal and scopes reveal to reopening', async () => {
     const draft = createSceneBuilderDraft('A coast')

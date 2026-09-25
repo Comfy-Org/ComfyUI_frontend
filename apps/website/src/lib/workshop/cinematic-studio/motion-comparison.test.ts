@@ -116,7 +116,7 @@ describe('motion comparisons', () => {
     const model = choices.find((candidate) => candidate.seed)
     if (!model) throw new Error('Missing seeded model')
     expect(buildMotionComparison({ ...input(model), seed: 42 }).seed).toBe(42)
-    expect(choices).toHaveLength(5)
+    expect(choices).toHaveLength(8)
     expect(
       choices.every(
         (candidate) => candidate.video?.firstFrame !== 'unsupported'

@@ -10,10 +10,50 @@ import {
   serializeSceneBuilderDraft,
   planSettingsSchema,
   plannedReferenceIds,
-  plannedShotMetadata
+  plannedShotMetadata,
+  createScenePlanLibrary,
+  parseScenePlanLibrary,
+  updateScenePlanLibrary,
+  serializeScenePlanLibrary,
+  PLAN_LIBRARY_LIMIT
 } from './scene-builder'
 
 describe('scene builder', () => {
+  it('migrates a single draft and round trips independent named plans with stable identities', () => {
+    const first = createSceneBuilderDraft('Harbor')
+    first.plan.name = 'Harbor'
+    const second = createSceneBuilderDraft('Forest')
+    second.plan.name = 'Forest'
+    const migrated = parseScenePlanLibrary(serializeSceneBuilderDraft(first))
+    const library = updateScenePlanLibrary(migrated, second)
+    const restored = parseScenePlanLibrary(serializeScenePlanLibrary(library))
+    expect(restored.drafts).toEqual([first, second])
+    expect(restored.activeId).toBe(second.plan.id)
+    first.plan.shots[0].action = 'Changed outside storage'
+    expect(restored.drafts[0].plan.shots[0].action).toBe('')
+    expect(() =>
+      parseScenePlanLibrary(JSON.stringify({ ...library, activeId: 'missing' }))
+    ).toThrow()
+    expect(() =>
+      parseScenePlanLibrary(
+        JSON.stringify({ ...library, drafts: [second, second] })
+      )
+    ).toThrow()
+  })
+
+  it('rejects collection overflow without pruning saved plans', () => {
+    let library = createScenePlanLibrary(createSceneBuilderDraft('First'))
+    for (let index = 1; index < PLAN_LIBRARY_LIMIT; index++)
+      library = updateScenePlanLibrary(
+        library,
+        createSceneBuilderDraft(String(index))
+      )
+    expect(() =>
+      updateScenePlanLibrary(library, createSceneBuilderDraft('Overflow'))
+    ).toThrow()
+    expect(library.drafts).toHaveLength(PLAN_LIBRARY_LIMIT)
+    expect(library.drafts[0].plan.scene).toBe('First')
+  })
   it('persists validated settings with all, selected and no reference semantics', () => {
     const draft = createSceneBuilderDraft('A cyclist')
     const input = {

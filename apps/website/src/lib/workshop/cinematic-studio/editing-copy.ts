@@ -1,6 +1,50 @@
 import type { Locale, LocalizedText } from '../../../i18n/translations'
 
 const copy = {
+  guidance: { en: 'Reference guidance', 'zh-CN': '参考图指导' },
+  guidanceMode: { en: 'How to guide this shot', 'zh-CN': '如何引导此镜头' },
+  frameGuidance: { en: 'Use this frame', 'zh-CN': '使用此画面' },
+  anchoredGuidance: {
+    en: 'Frame + saved references',
+    'zh-CN': '画面与已保存的参考图'
+  },
+  portraitGuidance: {
+    en: 'Rebuild from a portrait',
+    'zh-CN': '从人物参考图重建'
+  },
+  frameNote: {
+    en: 'Send the selected frame as image 1.',
+    'zh-CN': '将选中的画面作为图像 1 发送。'
+  },
+  anchoredNote: {
+    en: 'Send the frame first, followed by one or two selected references. References guide appearance but can compete with the new framing.',
+    'zh-CN':
+      '先发送画面，再发送一至两张参考图。参考图可引导外观，但可能与新构图冲突。'
+  },
+  portraitNote: {
+    en: 'Send only one character reference. The full source frame shown beside these controls is not sent; the scene is reconstructed from your description.',
+    'zh-CN':
+      '仅发送一张人物参考图。不会发送旁边显示的完整原画面；场景将根据描述重建。'
+  },
+  rebuildScene: { en: 'Scene to rebuild', 'zh-CN': '要重建的场景' },
+  preserveNotes: {
+    en: 'Details to keep (optional)',
+    'zh-CN': '要保留的细节（可选）'
+  },
+  orderedReferences: {
+    en: 'Images sent in order',
+    'zh-CN': '按顺序发送的图像'
+  },
+  referenceCapacity: { en: 'Model image capacity', 'zh-CN': '模型图像容量' },
+  guidanceInvalid: {
+    en: 'Choose valid references within the model capacity; portrait mode needs one character and a scene. Anchored mode needs one or two references.',
+    'zh-CN':
+      '请选择不超过模型容量的有效参考图。人物重建需要一个角色和场景；锚定模式需要一至两张参考图。'
+  },
+  noAssets: {
+    en: 'Select characters or locations in the studio Assets library to use additional guidance.',
+    'zh-CN': '请在工作室素材库中选择角色或场景以使用额外指导。'
+  },
   title: { en: 'Edit this frame', 'zh-CN': '编辑此画面' },
   description: {
     en: 'Explore a new view or look. Your original stays in your results.',

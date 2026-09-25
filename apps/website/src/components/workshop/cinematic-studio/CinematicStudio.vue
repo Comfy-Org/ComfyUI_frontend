@@ -103,6 +103,7 @@ const {
   modeReel,
   animate,
   useAsReference,
+  nextShot,
   frameLoading,
   frameError,
   modelSlug,
@@ -263,6 +264,7 @@ function generateOn(slug: string) {
     />
     <CinematicLibrary
       v-model:open="libraryOpen"
+      :namespace
       :models="[...models, ...editingModels]"
       :items="library.items.value"
       :urls="library.urls.value"
@@ -270,6 +272,7 @@ function generateOn(slug: string) {
       :error="library.error.value"
       :locale
       @reuse="reuse"
+      @next-shot="nextShot"
       @animate="animate"
       @edit="edit"
       @remove="library.remove"
@@ -445,6 +448,7 @@ function generateOn(slug: string) {
       @apply="applyBuiltScene"
     />
     <CinematicEditDialog
+      :assets="selectedAssets"
       :source="editSource"
       :models="editingModels"
       :direction
@@ -559,6 +563,7 @@ function generateOn(slug: string) {
               v-model:aspect="aspect"
               v-model:resolution="resolution"
               v-model:takes="takes"
+              :allowed-aspects="selectedModel?.imageAspects"
               :locale
             />
             <label

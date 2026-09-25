@@ -85,7 +85,18 @@ const COPY = {
     'This browser could not save or restore the draft. Export JSON to keep a backup.',
     '此浏览器无法保存或恢复草稿。请导出 JSON 备份。'
   ],
-  reset: ['Start from current scene', '从当前场景开始'],
+  reset: ['New plan from current scene', '从当前场景新建计划'],
+  savedPlans: ['Saved plans', '已保存的计划'],
+  planName: ['Plan name', '计划名称'],
+  untitledPlan: ['Untitled plan', '未命名计划'],
+  libraryNote: [
+    'Creating, importing or selecting a plan saves your current edits first. Each plan keeps its own shot directions and saved takes.',
+    '新建、导入或选择计划前会先保存当前修改。每个计划保留各自的镜头指导和已存版本。'
+  ],
+  duplicatePlan: [
+    'This plan is already in your library. Select it from Saved plans; importing will not overwrite it.',
+    '此计划已在库中。请从已保存的计划中选择；导入不会覆盖现有计划。'
+  ],
   planNote: [
     'Save studio settings for this plan, choose each shot’s shared brief and references, then review in the studio before generating.',
     '为此计划保存工作室设置，选择各镜头的共用场景与参考图，然后在工作室中检查后再生成。'

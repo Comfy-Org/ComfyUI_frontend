@@ -247,6 +247,18 @@ const copy = {
     en: 'Model · via Comfy Router',
     'zh-CN': '模型 · 通过 Comfy Router'
   },
+  'cinematic.model.browse': {
+    en: 'All models & native controls (new tab)',
+    'zh-CN': '所有模型与原生控件（新标签页）'
+  },
+  'cinematic.aspect.landscapePhoto': {
+    en: 'Landscape photo',
+    'zh-CN': '横向照片'
+  },
+  'cinematic.aspect.portraitPhoto': {
+    en: 'Portrait photo',
+    'zh-CN': '纵向照片'
+  },
   'cinematic.composer.label': {
     en: 'Direct the shot',
     'zh-CN': '导演镜头'

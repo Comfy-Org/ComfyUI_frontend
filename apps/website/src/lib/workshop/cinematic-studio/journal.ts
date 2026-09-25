@@ -10,7 +10,7 @@ const entrySchema = z.object({
     .regex(/^[a-zA-Z0-9._-]+$/),
   contractId: z.string().regex(/^[\w.-]+\/[\w.-]+$/),
   prompt: z.string().max(50000),
-  aspect: z.enum(['21:9', '16:9', '4:3', '1:1', '9:16']),
+  aspect: z.enum(['21:9', '16:9', '4:3', '3:2', '2:3', '1:1', '9:16']),
   startedAt: z.number().finite().nonnegative(),
   requestId: z.string().uuid().optional(),
   status: z.enum([

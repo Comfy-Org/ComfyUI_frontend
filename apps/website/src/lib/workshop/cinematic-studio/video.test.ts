@@ -24,6 +24,14 @@ const wanSlugs = [
   'wan--image-to-video-3.0-prime--animate-images'
 ]
 const ltxSlug = 'ltx--text-to-video-v2--generate-videos'
+const originalDemoSlugs = [
+  'byteplus--seedance-2-text-to-video--generate-videos',
+  'byteplus--seedance-2-image-to-video--animate-images',
+  'byteplus--seedance-2-fast-text-to-video--generate-videos',
+  'byteplus--seedance-2-fast-first-last-frame--animate-images',
+  'xai--grok-imagine-video-1.5--generate-videos',
+  'xai--grok-imagine-video-1.5--animate-images'
+]
 
 function modelFor(slug: string) {
   const model = getAuthoredRouterWorkshopModelDetail(slug)
@@ -32,7 +40,7 @@ function modelFor(slug: string) {
 }
 
 describe('cinematic video Router contract', () => {
-  it.for([textSlug, frameSlug, ...wanSlugs, ltxSlug])(
+  it.for([textSlug, frameSlug, ...wanSlugs, ltxSlug, ...originalDemoSlugs])(
     'prepares %s with the same Router request path and no catalogue media',
     async (slug) => {
       const model = modelFor(slug)

@@ -18,7 +18,9 @@ import {
 
 const slugs = [
   'byteplus--seedream-4-5--edit-images',
-  'vertexai--gemini-3-pro-image--edit-images'
+  'vertexai--gemini-3-pro-image--edit-images',
+  'byteplus--seedream-5-pro--edit-images',
+  'vertexai--gemini-nano-banana-2--edit-images'
 ]
 
 function modelFor(slug: string) {
@@ -28,6 +30,78 @@ function modelFor(slug: string) {
 }
 
 describe('cinematic editing contracts', () => {
+  it('does not invent GPT edit bindings absent from the authored catalogue', () => {
+    for (const slug of [
+      'openai--gpt-image-2--edit-images',
+      'openai--gpt-image-2.5-flare--edit-images',
+      'openai--gpt-image-2.5-sunburst--edit-images'
+    ])
+      expect(getAuthoredRouterWorkshopModelDetail(slug)).toBeUndefined()
+  })
+  it.for([
+    'qwen--qwen-image-3.0-image-edit--edit-images',
+    'qwen--qwen-image-3.0-pro-image-edit--edit-images'
+  ])('prepares all three ordered Qwen references for %s', async (slug) => {
+    const model = modelFor(slug)
+    expect(cinematicEditingDescriptor(model)).toMatchObject({
+      maxReferences: 3,
+      aspects: ['3:2', '2:3', '1:1']
+    })
+    const files = [1, 2, 3].map(
+      (n) => new File(['image'], `${n}.png`, { type: 'image/png' })
+    )
+    const form = cinematicEditingForm(model, {
+      sourceFile: files[0],
+      sourceFiles: files.slice(1),
+      prompt: 'Preserve all three subjects',
+      aspect: '3:2',
+      seed: 42
+    })
+    const uploaded: string[] = []
+    const prepared = await prepareModelRouterRender(
+      model,
+      {},
+      {
+        form,
+        uploadFile: async (file) => {
+          uploaded.push(file.name)
+          return `https://example.com/${file.name}`
+        }
+      }
+    )
+    expect(uploaded).toEqual(['1.png', '2.png', '3.png'])
+    expect(prepared.body).toMatchObject({
+      input: {
+        messages: [
+          {
+            role: 'user',
+            content: [
+              { image: 'https://example.com/1.png' },
+              { image: 'https://example.com/2.png' },
+              { image: 'https://example.com/3.png' },
+              { text: 'Preserve all three subjects' }
+            ]
+          }
+        ]
+      },
+      parameters: { size: '1536*1024', seed: 42 }
+    })
+    expect(() =>
+      cinematicEditingForm(model, {
+        sourceFile: files[0],
+        sourceFiles: files,
+        prompt: 'Too many',
+        aspect: '1:1'
+      })
+    ).toThrow('validation')
+    expect(() =>
+      cinematicEditingForm(model, {
+        sourceFile: files[0],
+        prompt: 'Bad ratio',
+        aspect: '16:9'
+      })
+    ).toThrow('validation')
+  })
   it.for(slugs)(
     'prepares every reference in order and rejects excess for %s',
     async (slug) => {
@@ -97,7 +171,11 @@ describe('cinematic editing contracts', () => {
       runnableCinematicEditingModels(getAuthoredRouterWorkshopModelDetail).map(
         (model) => model.slug
       )
-    ).toEqual(slugs)
+    ).toEqual([
+      ...slugs,
+      'qwen--qwen-image-3.0-image-edit--edit-images',
+      'qwen--qwen-image-3.0-pro-image-edit--edit-images'
+    ])
     expect(
       runnableCinematicEditingModels((slug) => ({
         ...modelFor(slug),
@@ -136,10 +214,20 @@ describe('cinematic editing contracts', () => {
         }
       ])
       if (slug.startsWith('byteplus')) {
-        expect(resolved.contract.id).toBe('byteplus/seedream-4-5-251128')
-        expect(resolved.values.size).toBe('2560x1440')
+        expect(resolved.contract.id).toBe(
+          slug.includes('5-pro')
+            ? 'byteplus/seedream-5-0-pro-260628'
+            : 'byteplus/seedream-4-5-251128'
+        )
+        expect(resolved.values.size).toBe(
+          slug.includes('5-pro') ? '1920x1080' : '2560x1440'
+        )
       } else {
-        expect(resolved.contract.id).toBe('vertexai/gemini-3-pro-image')
+        expect(resolved.contract.id).toBe(
+          slug.includes('nano-banana')
+            ? 'vertexai/gemini-3.1-flash-image'
+            : 'vertexai/gemini-3-pro-image'
+        )
         expect(resolved.values.image_aspectRatio).toBe('16:9')
         expect(resolved.values.image_imageSize).toBe('2K')
       }
@@ -167,7 +255,7 @@ describe('cinematic editing contracts', () => {
 
   it('derives offered settings from each bundled contract', () => {
     expect(cinematicEditingDescriptor(modelFor(slugs[0]))).toMatchObject({
-      aspects: ['21:9', '16:9', '4:3', '1:1', '9:16'],
+      aspects: ['21:9', '16:9', '4:3', '3:2', '2:3', '1:1', '9:16'],
       resolutions: []
     })
     expect(cinematicEditingDescriptor(modelFor(slugs[1]))).toMatchObject({

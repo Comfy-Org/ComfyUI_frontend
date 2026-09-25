@@ -12,6 +12,7 @@ import {
 } from '../config/workshop-credits'
 import { useWorkshopEnabled } from '../scripts/posthog'
 import { router_render } from '../config/router-render'
+import { collectWorkshopRouter } from '../config/workshop-router-queue'
 import type { RouterRenderResult } from '../config/router-render'
 import { releaseRouterOutputs } from '../config/workshop-response'
 import CinematicEnhancer from '../components/workshop/cinematic-studio/CinematicEnhancer.vue'
@@ -20,6 +21,9 @@ vi.mock(import('../config/workshop-session-state'))
 vi.mock(import('../config/workshop-credits'))
 vi.mock(import('../scripts/posthog'))
 vi.mock(import('../config/router-render'), () => ({ router_render: vi.fn() }))
+vi.mock(import('../config/workshop-router-queue'), () => ({
+  collectWorkshopRouter: vi.fn()
+}))
 vi.mock(import('../config/workshop-response'), () => ({
   releaseRouterOutputs: vi.fn()
 }))
@@ -76,6 +80,8 @@ function harness() {
 }
 describe('cinematic enhancement execution', () => {
   beforeEach(() => {
+    localStorage.clear()
+    vi.mocked(collectWorkshopRouter).mockReset()
     vi.stubEnv('PUBLIC_WORKSHOP_ROUTER_RUN', '1')
     window.history.replaceState(null, '', '/cinematic-studio')
     identity.value = account
@@ -95,6 +101,81 @@ describe('cinematic enhancement execution', () => {
     vi.mocked(router_render).mockReset().mockResolvedValue(response())
     vi.mocked(releaseRouterOutputs).mockClear()
     vi.mocked(refreshWorkshopCredits).mockClear()
+  })
+  it('restores editable completed suggestions after remount without submitting', async () => {
+    const first = harness()
+    await nextTick()
+    first.run.prepare()
+    await first.run.confirm(true)
+    first.run.edited.value = 'My saved revision.'
+    first.view.unmount()
+    const second = harness()
+    await nextTick()
+    expect(second.run.proposed.value).toBe(
+      scene.value + '\n\nMy saved revision.'
+    )
+    expect(router_render).toHaveBeenCalledTimes(1)
+    expect(JSON.stringify(localStorage)).not.toContain('test-token')
+    identity.value = {
+      ...account,
+      workspace: { ...account.workspace, id: 'other-workspace' }
+    }
+    expect(second.run.result.value).toBeUndefined()
+    identity.value = account
+    expect(second.run.edited.value).toBe('My saved revision.')
+  })
+  it('collects an admitted uncertain request after reload without replaying submission', async () => {
+    vi.mocked(router_render).mockImplementation(
+      async (_slug, _parameters, options) => {
+        options.onQueuedRequest?.('admitted-123')
+        throw new Error('Connection lost')
+      }
+    )
+    const first = harness()
+    await nextTick()
+    first.run.prepare()
+    await first.run.confirm(true)
+    first.view.unmount()
+    const second = harness()
+    await nextTick()
+    expect(second.run.saved.value?.requestId).toBe('admitted-123')
+    second.run.prepare()
+    await second.run.confirm(true)
+    expect(router_render).toHaveBeenCalledTimes(1)
+    vi.mocked(collectWorkshopRouter).mockResolvedValue({
+      requestId: 'admitted-123',
+      outputs: [...response().outputs],
+      deadlineCollections: 0
+    })
+    await second.run.recover()
+    expect(collectWorkshopRouter).toHaveBeenCalledWith(
+      expect.objectContaining({
+        requestId: 'admitted-123',
+        cancelOnAbort: false
+      })
+    )
+    expect(router_render).toHaveBeenCalledTimes(1)
+    expect(second.run.proposed.value).toContain('Gentle ripples.')
+  })
+  it('retains an unknown admission identity and refuses reset, resubmit or status lookup', async () => {
+    vi.mocked(router_render).mockRejectedValue(
+      new Error('Submission interrupted')
+    )
+    const first = harness()
+    await nextTick()
+    first.run.prepare()
+    const id = first.run.review.value?.id
+    await first.run.confirm(true)
+    first.view.unmount()
+    const second = harness()
+    await nextTick()
+    second.run.reset()
+    second.run.prepare()
+    await second.run.confirm(true)
+    await second.run.recover()
+    expect(second.run.saved.value?.id).toBe(id)
+    expect(router_render).toHaveBeenCalledTimes(1)
+    expect(collectWorkshopRouter).not.toHaveBeenCalled()
   })
   it('requires acknowledged frozen review, executes once, then preserves editable original and releases output', async () => {
     const { run } = harness()
@@ -168,6 +249,49 @@ describe('cinematic enhancement execution', () => {
     expect(router_render).toHaveBeenCalledTimes(1)
     expect(run.error.value).toBe('request')
   })
+  it('keeps an active request running across dialog close and reopen', async () => {
+    let finish!: (result: RouterRenderResult) => void
+    vi.mocked(router_render).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve
+        })
+    )
+    const user = userEvent.setup()
+    const view = render(CinematicEnhancer, {
+      props: {
+        open: true,
+        scene: scene.value,
+        directions: '',
+        namespace: namespace.value,
+        model
+      }
+    })
+    await user.click(
+      await screen.findByRole('button', { name: 'Review enhancement request' })
+    )
+    await user.click(
+      screen.getByRole('checkbox', {
+        name: 'I understand this text request uses credits.'
+      })
+    )
+    await user.click(
+      screen.getByRole('button', { name: 'Generate suggestion · uses credits' })
+    )
+    const signal = vi.mocked(router_render).mock.calls[0][2].signal
+    await user.click(
+      screen.getAllByRole('button', { name: 'Close without applying' })[0]
+    )
+    await view.rerender({ open: false })
+    await view.rerender({ open: true })
+    expect(signal?.aborted).toBe(false)
+    expect(await screen.findByText('Preparing your suggestion…')).toBeVisible()
+    expect(router_render).toHaveBeenCalledTimes(1)
+    finish(response())
+    expect(
+      await screen.findByRole('textbox', { name: 'Editable suggestion' })
+    ).toHaveValue('Gentle ripples.')
+  })
   it('aborts an in-flight request when the account changes and discards late results', async () => {
     let resolve!: (value: RouterRenderResult) => void
     vi.mocked(router_render).mockImplementation(
@@ -236,6 +360,14 @@ describe('cinematic enhancement execution', () => {
     expect(view.emitted().apply).toBeUndefined()
     await user.clear(editor)
     await user.type(editor, 'A reviewed detail.')
+    await user.click(
+      screen.getAllByRole('button', { name: 'Close without applying' })[0]
+    )
+    await view.rerender({ open: false })
+    await view.rerender({ open: true })
+    expect(
+      await screen.findByRole('textbox', { name: 'Editable suggestion' })
+    ).toHaveValue('A reviewed detail.')
     await user.click(screen.getByRole('button', { name: 'Apply suggestion' }))
     expect(view.emitted().apply).toEqual([
       [scene.value + '\n\nA reviewed detail.']

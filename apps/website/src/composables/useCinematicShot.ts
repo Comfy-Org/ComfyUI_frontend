@@ -1,4 +1,9 @@
 import type { MotionComparisonPayload } from '../lib/workshop/cinematic-studio/motion-comparison'
+import { useCinematicComposerDrafts } from './useCinematicComposerDrafts'
+import type {
+  ComposerDrafts,
+  ComposerModeDraft
+} from '../lib/workshop/cinematic-studio/composer-drafts'
 import type { CinematicTransitionApply } from '../lib/workshop/cinematic-studio/transition'
 import {
   saveReferenceBundle,
@@ -87,7 +92,24 @@ export function useCinematicShot(
     () => namespace.value,
     () => studio.reel.value.takes
   )
-  const creative = ref(defaultCreativeSettings())
+  const newModeSettings = () => ({
+    creative: defaultCreativeSettings(),
+    direction: { ...DEFAULT_DIRECTION },
+    enhance: true,
+    resolution: '2K' as Resolution,
+    takes: 1,
+    seed: undefined as number | undefined
+  })
+  const modeSettings = ref({
+    image: newModeSettings(),
+    video: newModeSettings()
+  })
+  const creative = computed({
+    get: () => modeSettings.value[mode.value].creative,
+    set: (value) => {
+      modeSettings.value[mode.value].creative = value
+    }
+  })
   const creativeOpen = ref(false)
   const builderOpen = ref(false)
   const plannedShot = shallowRef<PlanShotMetadata>()
@@ -220,26 +242,52 @@ export function useCinematicShot(
       else imageModel.value = slug
     }
   })
-  const selectedModel = computed(() =>
-    availableModels.value.find((model) => model.slug === modelSlug.value)
-  )
+  const selectedModel = computed(() => {
+    const model = availableModels.value.find(
+      (item) => item.slug === modelSlug.value
+    )
+    const referenceModel =
+      mode.value === 'image' &&
+      (cast.value || palette.value || selectedAssets.value.length)
+        ? editingModels.find((item) => item.slug === model?.referenceModelSlug)
+        : undefined
+    return model && referenceModel
+      ? { ...model, imageAspects: referenceModel.imageAspects }
+      : model
+  })
   const imageScene = ref('')
   const videoScene = ref('')
   const scene = computed({
     get: () => (mode.value === 'video' ? videoScene.value : imageScene.value),
     set: (value: string) => {
-      plannedShot.value = undefined
+      if (mode.value === 'image') plannedShot.value = undefined
       if (mode.value === 'video') videoScene.value = value
       else imageScene.value = value
     }
   })
-  const enhance = ref(true)
-  const direction = ref<Direction>(DEFAULT_DIRECTION)
+  const enhance = computed({
+    get: () => modeSettings.value[mode.value].enhance,
+    set: (value: boolean) => {
+      modeSettings.value[mode.value].enhance = value
+    }
+  })
+  const direction = computed({
+    get: () => modeSettings.value[mode.value].direction,
+    set: (value: Direction) => {
+      modeSettings.value[mode.value].direction = value
+    }
+  })
   const imageAspect = ref<AspectRatio>('21:9')
   const videoAspect = ref<AspectRatio>('16:9')
   const aspect = computed({
     get: () => {
-      if (mode.value === 'image') return imageAspect.value
+      if (mode.value === 'image') {
+        const allowed = selectedModel.value?.imageAspects
+        return !allowed || allowed.includes(imageAspect.value)
+          ? imageAspect.value
+          : (ASPECT_RATIOS.find((ratio) => allowed.includes(ratio.id))?.id ??
+              '1:1')
+      }
       const allowed = selectedModel.value?.video?.aspects ?? []
       return allowed.includes(videoAspect.value)
         ? videoAspect.value
@@ -251,9 +299,24 @@ export function useCinematicShot(
       else imageAspect.value = value
     }
   })
-  const resolution = ref<Resolution>('2K')
-  const takes = ref(1)
-  const requestedSeed = ref<number | undefined>()
+  const resolution = computed({
+    get: () => modeSettings.value[mode.value].resolution,
+    set: (value: Resolution) => {
+      modeSettings.value[mode.value].resolution = value
+    }
+  })
+  const takes = computed({
+    get: () => modeSettings.value[mode.value].takes,
+    set: (value: number) => {
+      modeSettings.value[mode.value].takes = value
+    }
+  })
+  const requestedSeed = computed({
+    get: () => modeSettings.value[mode.value].seed,
+    set: (value: number | undefined) => {
+      modeSettings.value[mode.value].seed = value
+    }
+  })
   const seed = computed(() => {
     const bounds = selectedModel.value?.seed
     const value = requestedSeed.value
@@ -374,6 +437,7 @@ export function useCinematicShot(
     prompt: string
     aspect: AspectRatio
     sourceFile: File
+    sourceFiles?: readonly File[]
     operation: 'edit' | 'camera' | 'look' | 'relight'
   }) {
     const model = editingModels.find(
@@ -381,6 +445,10 @@ export function useCinematicShot(
     )
     if (!model || studio.rendering.value || studio.gate.value !== 'ready')
       return
+    const sourceId =
+      input.sourceFile === editSource.value?.file
+        ? editSource.value.id
+        : undefined
     review.value = {
       modelName: model.name,
       resolution: '2K',
@@ -392,23 +460,30 @@ export function useCinematicShot(
         aspect: input.aspect,
         takes: 1,
         resolutionPixels: 2048,
-        references: [input.sourceFile],
-        referenceFiles: [{ role: 'edit', file: input.sourceFile }],
-        editing: { sourceFile: input.sourceFile, resolution: '2K' },
+        references: [input.sourceFile, ...(input.sourceFiles ?? [])],
+        referenceFiles: [input.sourceFile, ...(input.sourceFiles ?? [])].map(
+          (file) => ({ role: 'edit', file })
+        ),
+        editing: {
+          sourceFile: input.sourceFile,
+          sourceFiles: input.sourceFiles ? [...input.sourceFiles] : undefined,
+          resolution: '2K'
+        },
         settings: {
           mode: 'image',
           scene: input.prompt,
           enhance: false,
           direction: { ...direction.value },
           operation: input.operation,
-          sourceId: editSource.value?.id,
+          sourceId,
           plan:
-            library.items.value.find((item) => item.id === editSource.value?.id)
-              ?.settings?.plan ??
-            studio.reel.value.takes.find(
-              (take) => take.id === editSource.value?.id
-            )?.settings?.plan,
-          references: [input.sourceFile.name],
+            library.items.value.find((item) => item.id === sourceId)?.settings
+              ?.plan ??
+            studio.reel.value.takes.find((take) => take.id === sourceId)
+              ?.settings?.plan,
+          references: [input.sourceFile, ...(input.sourceFiles ?? [])].map(
+            (file) => file.name
+          ),
           aspect: input.aspect
         }
       }
@@ -416,7 +491,7 @@ export function useCinematicShot(
   }
   const frameLoading = ref(false)
   const frameError = ref(false)
-  watch(namespace, () => {
+  function resetComposer() {
     mediaEpoch += 1
     closeEdit()
     firstFrame.value = undefined
@@ -429,11 +504,21 @@ export function useCinematicShot(
     endingSourceId.value = undefined
     referenceSaveError.value = false
     plannedShot.value = undefined
+    restored.value = false
     restoreError.value = false
     imageScene.value = ''
     videoScene.value = ''
-    creative.value = defaultCreativeSettings()
-    direction.value = DEFAULT_DIRECTION
+    modeSettings.value = { image: newModeSettings(), video: newModeSettings() }
+    mode.value = 'image'
+    imageModel.value =
+      models.find((model) => model.mode !== 'video')?.slug ?? ''
+    videoModel.value =
+      models.find((model) => model.mode === 'video')?.slug ?? ''
+    imageAspect.value = '21:9'
+    videoAspect.value = '16:9'
+    requestedDuration.value = 5
+    requestedResolution.value = '720p'
+    audio.value = false
     builderOpen.value = false
     assetsOpen.value = false
     motionOpen.value = false
@@ -444,10 +529,11 @@ export function useCinematicShot(
     libraryOpen.value = false
     frameLoading.value = false
     frameError.value = false
-  })
+  }
   const canReview = computed(
     () =>
       !!selectedModel.value &&
+      !composerDrafts.hydrating.value &&
       seedValid.value &&
       (mode.value !== 'image' ||
         !references.value.length ||
@@ -496,6 +582,40 @@ export function useCinematicShot(
     }
   }
 
+  async function nextShot(item: SavedCreation) {
+    const scope = namespace.value
+    const url = library.urls.value[item.id]
+    if (!scope || !url || studio.rendering.value || item.kind !== 'image')
+      return
+    const source =
+      library.items.value.find(
+        (candidate) => candidate.id === item.settings?.sourceId
+      ) ?? item
+    const generation = models.find(
+      (candidate) =>
+        candidate.mode !== 'video' &&
+        (candidate.slug ===
+          (source.settings?.generationModelSlug ?? source.modelSlug) ||
+          candidate.referenceModelSlug === source.modelSlug)
+    )
+    if (!generation) {
+      restoreError.value = true
+      return
+    }
+    await reuse({
+      ...source,
+      modelSlug: generation.slug,
+      settings: source.settings
+        ? {
+            ...source.settings,
+            operation: 'generate',
+            generationModelSlug: generation.slug
+          }
+        : undefined
+    })
+    if (namespace.value === scope) await useAsReference(url, item.fileName)
+  }
+
   async function animate(url: string, name: string) {
     if (studio.rendering.value || frameLoading.value) return
     const model = models.find(
@@ -523,15 +643,6 @@ export function useCinematicShot(
       if (currentEpoch === mediaEpoch) frameLoading.value = false
     }
   }
-
-  onMounted(() => {
-    const requested = new URLSearchParams(window.location.search).get('model')
-    const selected = models.find((model) => model.slug === requested)
-    if (selected) {
-      mode.value = selected.mode ?? 'image'
-      modelSlug.value = selected.slug
-    }
-  })
 
   const brief = computed(() => ({
     scene: scene.value,
@@ -772,19 +883,22 @@ export function useCinematicShot(
     resolution.value = item.settings?.resolution ?? '2K'
     takes.value = item.settings?.takes ?? 1
     requestedSeed.value = item.settings?.seed
-    duration.value =
-      item.settings?.video?.durationSeconds ?? item.settings?.duration ?? 5
-    videoResolution.value = item.settings?.video?.resolution ?? '720p'
-    audio.value = item.settings?.video?.generateAudio ?? false
-    cast.value = undefined
-    palette.value = undefined
-    firstFrame.value = undefined
-    lastFrame.value = undefined
+    if (item.kind === 'video') {
+      duration.value =
+        item.settings?.video?.durationSeconds ?? item.settings?.duration ?? 5
+      videoResolution.value = item.settings?.video?.resolution ?? '720p'
+      audio.value = item.settings?.video?.generateAudio ?? false
+      firstFrame.value = undefined
+      lastFrame.value = undefined
+    } else {
+      cast.value = undefined
+      palette.value = undefined
+      selectedAssets.value = []
+    }
     creative.value = item.settings?.creative
       ? validateCreativeSettings(item.settings.creative)
       : defaultCreativeSettings()
-    selectedAssets.value = []
-    plannedShot.value = item.settings?.plan
+    if (item.kind === 'image') plannedShot.value = item.settings?.plan
     restored.value = true
     const currentEpoch = mediaEpoch
     const scope = namespace.value
@@ -795,25 +909,30 @@ export function useCinematicShot(
           item.settings.referenceBundleId
         )
         if (currentEpoch !== mediaEpoch) return
-        cast.value = files.find((entry) => entry.role === 'cast')?.file
-        palette.value = files.find((entry) => entry.role === 'palette')?.file
-        firstFrame.value = files.find((entry) => entry.role === 'first')?.file
-        lastFrame.value = files.find((entry) => entry.role === 'last')?.file
-        animationSourceId.value = item.settings.sourceId
-        endingSourceId.value = item.settings.lastSourceId
-        selectedAssets.value = (item.settings.assets ?? []).flatMap((asset) => {
-          const entry = files.find(
-            (reference) =>
-              reference.role === 'asset' && reference.assetId === asset.id
+        if (item.kind === 'image') {
+          cast.value = files.find((entry) => entry.role === 'cast')?.file
+          palette.value = files.find((entry) => entry.role === 'palette')?.file
+          selectedAssets.value = (item.settings.assets ?? []).flatMap(
+            (asset) => {
+              const entry = files.find(
+                (reference) =>
+                  reference.role === 'asset' && reference.assetId === asset.id
+              )
+              return entry ? [{ ...asset, file: entry.file }] : []
+            }
           )
-          return entry ? [{ ...asset, file: entry.file }] : []
-        })
+        } else {
+          firstFrame.value = files.find((entry) => entry.role === 'first')?.file
+          lastFrame.value = files.find((entry) => entry.role === 'last')?.file
+          animationSourceId.value = item.settings.sourceId
+          endingSourceId.value = item.settings.lastSourceId
+        }
         return
       } catch {
         if (currentEpoch === mediaEpoch) restoreError.value = true
       }
     }
-    if (scope && item.settings?.assets?.length) {
+    if (item.kind === 'image' && scope && item.settings?.assets?.length) {
       try {
         const saved = await listAssets(scope)
         if (currentEpoch !== mediaEpoch) return
@@ -974,6 +1093,139 @@ export function useCinematicShot(
     }
   }
 
+  function composerFiles(): Record<'image' | 'video', ReferenceFile[]> {
+    return {
+      image: [
+        ...(cast.value ? [{ role: 'cast' as const, file: cast.value }] : []),
+        ...(palette.value
+          ? [{ role: 'palette' as const, file: palette.value }]
+          : []),
+        ...selectedAssets.value.map((asset) => ({
+          role: 'asset' as const,
+          assetId: asset.id,
+          file: asset.file
+        }))
+      ],
+      video: [
+        ...(firstFrame.value
+          ? [{ role: 'first' as const, file: firstFrame.value }]
+          : []),
+        ...(lastFrame.value
+          ? [{ role: 'last' as const, file: lastFrame.value }]
+          : [])
+      ]
+    }
+  }
+  function draftFor(kind: 'image' | 'video'): ComposerModeDraft {
+    const settings = modeSettings.value[kind]
+    return {
+      modelSlug: kind === 'image' ? imageModel.value : videoModel.value,
+      scene: kind === 'image' ? imageScene.value : videoScene.value,
+      direction: { ...settings.direction },
+      creative: validateCreativeSettings(settings.creative),
+      enhance: settings.enhance,
+      resolution: settings.resolution,
+      takes: settings.takes,
+      seed: settings.seed,
+      aspect: kind === 'image' ? imageAspect.value : videoAspect.value,
+      references: composerFiles()[kind].map((entry) => entry.file.name),
+      ...(kind === 'image'
+        ? {
+            assets: selectedAssets.value.map(({ id, name, kind, notes }) => ({
+              id,
+              name,
+              kind,
+              notes
+            })),
+            plan: plannedShot.value
+          }
+        : {
+            video: {
+              durationSeconds: requestedDuration.value,
+              resolution: requestedResolution.value,
+              generateAudio: audio.value
+            },
+            sourceId: animationSourceId.value,
+            lastSourceId: endingSourceId.value
+          })
+    }
+  }
+  function restoreComposer(draft: ComposerDrafts) {
+    for (const kind of ['image', 'video'] as const) {
+      const saved = draft[kind]
+      modeSettings.value[kind] = {
+        direction: { ...saved.direction },
+        creative: saved.creative
+          ? validateCreativeSettings(saved.creative)
+          : defaultCreativeSettings(),
+        enhance: saved.enhance,
+        resolution: saved.resolution ?? '2K',
+        takes: saved.takes ?? 1,
+        seed: saved.seed
+      }
+      const available = models.some(
+        (model) =>
+          model.slug === saved.modelSlug && (model.mode ?? 'image') === kind
+      )
+      if (saved.modelSlug && !available) restoreError.value = true
+      if (kind === 'image') {
+        imageModel.value = saved.modelSlug
+        imageScene.value = saved.scene
+        imageAspect.value = saved.aspect ?? '21:9'
+        plannedShot.value = saved.plan
+      } else {
+        videoModel.value = saved.modelSlug
+        videoScene.value = saved.scene
+        videoAspect.value = saved.aspect ?? '16:9'
+        requestedDuration.value = saved.video?.durationSeconds ?? 5
+        requestedResolution.value = saved.video?.resolution ?? '720p'
+        audio.value = saved.video?.generateAudio ?? false
+      }
+    }
+    mode.value = draft.mode
+  }
+  const composerDrafts = useCinematicComposerDrafts({
+    namespace: () => namespace.value,
+    read: () => ({
+      version: 1,
+      mode: mode.value,
+      image: draftFor('image'),
+      video: draftFor('video')
+    }),
+    files: composerFiles,
+    reset: resetComposer,
+    apply: restoreComposer,
+    applyFiles: (kind, files, draft) => {
+      if (kind === 'image') {
+        cast.value = files.find((entry) => entry.role === 'cast')?.file
+        palette.value = files.find((entry) => entry.role === 'palette')?.file
+        selectedAssets.value = (draft.image.assets ?? []).flatMap((asset) => {
+          const file = files.find(
+            (entry) => entry.role === 'asset' && entry.assetId === asset.id
+          )?.file
+          return file ? [{ ...asset, file }] : []
+        })
+      } else {
+        firstFrame.value = files.find((entry) => entry.role === 'first')?.file
+        lastFrame.value = files.find((entry) => entry.role === 'last')?.file
+        animationSourceId.value = draft.video.sourceId
+        endingSourceId.value = draft.video.lastSourceId
+      }
+    },
+    error: (kind) => {
+      if (kind === 'read') restoreError.value = true
+      else referenceSaveError.value = true
+    }
+  })
+  onMounted(() => {
+    const requested = new URLSearchParams(window.location.search).get('model')
+    const selected = models.find((model) => model.slug === requested)
+    if (selected) {
+      mode.value = selected.mode ?? 'image'
+      modelSlug.value = selected.slug
+    }
+  })
+
   return {
     studio,
     namespace,
@@ -1018,6 +1270,7 @@ export function useCinematicShot(
     modeReel,
     animate,
     useAsReference,
+    nextShot,
     frameLoading,
     frameError,
     modelSlug,
