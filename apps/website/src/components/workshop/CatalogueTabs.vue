@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, useTemplateRef } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -8,7 +8,11 @@ import { t } from '../../i18n/translations'
 
 export type CatalogueTab = 'models' | 'workflows' | 'apps'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale = 'en', focusActive = false } = defineProps<{
+  locale?: Locale
+  focusActive?: boolean
+}>()
+const emit = defineEmits<{ focused: [] }>()
 const active = defineModel<CatalogueTab>({ required: true })
 const tabs = ['models', 'workflows', 'apps'] as const
 const labels = {
@@ -16,6 +20,12 @@ const labels = {
   workflows: 'workshop.hub.workflows',
   apps: 'workshop.catalogue.apps'
 } as const
+const buttons = useTemplateRef<HTMLButtonElement[]>('buttons')
+onMounted(() => {
+  if (!focusActive) return
+  buttons.value?.[tabs.indexOf(active.value)]?.focus()
+  emit('focused')
+})
 const marker = computed(
   () => `translateX(${tabs.indexOf(active.value) * 100}%)`
 )
@@ -36,6 +46,7 @@ const marker = computed(
     </div>
     <button
       v-for="tab in tabs"
+      ref="buttons"
       :key="tab"
       type="button"
       :aria-pressed="active === tab"

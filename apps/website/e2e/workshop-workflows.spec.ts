@@ -260,3 +260,32 @@ test('the background example pairs its input and output and restores edited inpu
   await page.reload()
   await expect(original).toBeVisible()
 })
+
+const tabletToolbars = [640, 700, 768].flatMap((width) => [
+  { width, half: 'Models', path: '/models/' },
+  {
+    width,
+    half: 'Workflows with a category selected',
+    path: '/models/?type=workflows&category=upscale'
+  }
+])
+
+for (const { width, half, path } of tabletToolbars) {
+  test(`keeps every ${half} toolbar control on screen at ${width}px`, async ({
+    page,
+    context
+  }) => {
+    await mockWorkflowVisibility(context, true)
+    await page.setViewportSize({ width, height: 900 })
+    await page.goto(path)
+    const toolbar = page.getByTestId('workshop-toolbar')
+    await expect(toolbar.getByTestId('catalogue-tabs')).toBeVisible()
+    for (const control of [
+      toolbar.getByTestId('catalogue-tabs'),
+      toolbar.getByTestId('workshop-search'),
+      toolbar.getByTestId('workshop-filter'),
+      toolbar.getByTestId('workshop-sort')
+    ])
+      await expect(control).toBeInViewport({ ratio: 1 })
+  })
+}
