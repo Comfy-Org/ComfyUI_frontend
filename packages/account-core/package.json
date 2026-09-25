@@ -24,6 +24,7 @@
     "./boundedOperation": "./src/core/boundedOperation.ts",
     "./lazyIdentity": "./src/core/lazyIdentity.ts",
     "./session": "./src/core/session.ts",
+    "./webSession": "./src/core/webSession.ts",
     "./billing": "./src/core/billing/index.ts",
     "./firebase": "./src/firebase/index.ts",
     "./web": "./src/web/crossTabRefresh.ts",
@@ -35,6 +36,7 @@
     "./firebaseAuthError": "./src/firebaseAuthError.ts",
     "./provisioning": "./src/provisioning.ts",
     "./redirect": "./src/redirect.ts",
+    "./workspaceLink": "./src/workspaceLink.ts",
     "./telemetry": "./src/telemetry.ts",
     "./webviewDetection": "./src/webviewDetection.ts",
     "./package.json": "./package.json"
@@ -48,6 +50,10 @@
       "./session": {
         "types": "./dist/core/session.d.ts",
         "import": "./dist/core/session.js"
+      },
+      "./webSession": {
+        "types": "./dist/core/webSession.d.ts",
+        "import": "./dist/core/webSession.js"
       },
       "./billing": {
         "types": "./dist/core/billing/index.d.ts",
@@ -92,6 +98,10 @@
       "./redirect": {
         "types": "./dist/redirect.d.ts",
         "import": "./dist/redirect.js"
+      },
+      "./workspaceLink": {
+        "types": "./dist/workspaceLink.d.ts",
+        "import": "./dist/workspaceLink.js"
       },
       "./telemetry": {
         "types": "./dist/telemetry.d.ts",

@@ -7,6 +7,7 @@ import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 import WorkspaceMenuButton from './WorkspaceMenuButton.vue'
 
@@ -31,18 +32,7 @@ const mockUiConfig = ref<Record<string, unknown>>(ownerConfig)
 const mockCanLeaveWorkspace = ref(false)
 const mockCanManageSubscription = ref(true)
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useWorkspaceUI'),
-  () => ({
-    useWorkspaceUI: () => ({
-      permissions: computed(() => ({
-        canLeaveWorkspace: mockCanLeaveWorkspace.value,
-        canManageSubscription: mockCanManageSubscription.value
-      })),
-      uiConfig: mockUiConfig
-    })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
 vi.mock(import('@/services/dialogService'))
 
@@ -70,6 +60,20 @@ function renderComponent() {
 
 describe('WorkspaceMenuButton', () => {
   beforeEach(() => {
+    const workspaceUI = vi.mocked(useWorkspaceUI())
+    const defaultPermissions = workspaceUI.permissions.value
+    workspaceUI.permissions = computed(() => ({
+      ...defaultPermissions,
+      canLeaveWorkspace: mockCanLeaveWorkspace.value,
+      canManageSubscription: mockCanManageSubscription.value
+    }))
+    const defaultUiConfig = workspaceUI.uiConfig.value
+    workspaceUI.uiConfig = computed(() => ({
+      ...defaultUiConfig,
+      ...mockUiConfig.value,
+      workspaceMenuAction:
+        mockUiConfig.value.workspaceMenuAction === 'delete' ? 'delete' : null
+    }))
     mockUiConfig.value = ownerConfig
     mockCanLeaveWorkspace.value = false
     mockCanManageSubscription.value = true
