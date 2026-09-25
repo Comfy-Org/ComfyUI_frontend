@@ -105,7 +105,9 @@ import type { DraftSnapshot } from './services/agent/agentRestClient'
 import type { AgentPaywallAction } from './services/agent/agentPaywallPresentation'
 import {
   DEFAULT_AGENT_PAYWALL_PRESENTATION,
-  resolveAgentPaywallPresentation
+  resolveAgentPaywallPresentation,
+  toAgentPaywallCta,
+  toAgentPaywallReason
 } from './services/agent/agentPaywallPresentation'
 import { createAgentEventSource } from './services/agent/agentEventSource'
 import { createStandaloneAgentEventSource } from './services/agent/standaloneAgentEventSource'
@@ -137,8 +139,13 @@ watch(
   (hasFunds) => conversationStore.setPaywallsResolved(hasFunds === true),
   { immediate: true }
 )
-const { canTopUp, canSubscribeSelfServe, hasResolvedCapabilities } =
-  useBillingCapabilities()
+const {
+  canTopUp,
+  canSubscribeSelfServe,
+  hasResolvedCapabilities,
+  isReady: capabilityReadSettled,
+  snapshotAuthoritative
+} = useBillingCapabilities()
 const paywallPresentation = computed(() => {
   if (isCloud && !hasResolvedCapabilities.value && !canTopUp.value) {
     return DEFAULT_AGENT_PAYWALL_PRESENTATION
@@ -167,8 +174,53 @@ const events =
     : createAgentEventSource(api)
 
 function onPaywallAction(action: AgentPaywallAction): void {
-  openAccountPrecondition(action === 'addCredits' ? 'credits' : 'subscription')
+  useTelemetry()?.trackAgentPaywallCtaClicked({
+    cta: toAgentPaywallCta(action)
+  })
+  if (action === 'addCredits') {
+    if (canTopUp.value) {
+      useTelemetry()?.trackAddApiCreditButtonClicked({
+        source: 'agent_paywall'
+      })
+    }
+    openAccountPrecondition('credits', { source: 'agent_paywall' })
+    return
+  }
+  openAccountPrecondition('subscription', { source: 'agent_paywall' })
 }
+
+const { messages: conversationMessages } = storeToRefs(conversationStore)
+watch(
+  () =>
+    // Gated on the read having *settled*, which includes settling as
+    // unavailable. `snapshotAuthoritative` is narrower — it excludes that
+    // outage state — and gating on it stranded those sessions: the paywall
+    // still renders, an owner still gets the fallback Add credits CTA, and its
+    // click is still reported, so the funnel saw CTAs with no impression.
+    capabilityReadSettled.value
+      ? conversationMessages.value
+          .filter((message) =>
+            message.parts.some((part) => part.type === 'paywall')
+          )
+          .map((message) => message.id)
+      : [],
+  (paywallMessageIds) => {
+    const telemetry = useTelemetry()
+    if (!telemetry) return
+    for (const id of paywallMessageIds) {
+      if (!conversationStore.claimPaywallImpression(id)) continue
+      telemetry.trackAgentPaywallShown({
+        // An unavailable read leaves `canTopUp` guessing true for an owner, so
+        // the presentation would name a confident reason drawn from a fallback
+        // rather than from capabilities. Report the impression as `unknown`.
+        reason: snapshotAuthoritative.value
+          ? toAgentPaywallReason(paywallPresentation.value)
+          : 'unknown'
+      })
+    }
+  },
+  { immediate: true }
+)
 
 const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()

@@ -239,6 +239,28 @@ describe('Workshop health', () => {
         field_error_names: ['image'],
         field_error_codes: ['fileUnreadable']
       }
+    },
+    {
+      name: 'provider-declined layer separation on a complex image',
+      failure: {
+        reason: 'validation',
+        request_id: 'router-request',
+        http_status: 400,
+        router_error_type: 'invalid_input',
+        field_error_names: ['images'],
+        field_error_codes: ['imageLayerDecompositionUnsupported']
+      }
+    },
+    {
+      name: 'provider-declined HDR source video',
+      failure: {
+        reason: 'validation',
+        request_id: 'router-request',
+        http_status: 502,
+        router_error_type: 'provider_error',
+        field_error_names: ['video_url'],
+        field_error_codes: ['videoHdrUnsupported']
+      }
     }
   ] satisfies Array<{ name: string; failure: FailureDetails }>)(
     'excludes $name from service failures',

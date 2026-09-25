@@ -42,6 +42,18 @@ test.describe(
       void agentConversation.resyncWidget(NEW_NODE_ID, 'text')
       await typing
 
+      const finalValue = await field.inputValue()
+      await test.info().attach('typed-vs-final.txt', {
+        body: `typed: a photo of a pier${APPENDED}\nfinal: ${finalValue}`,
+        contentType: 'text/plain'
+      })
+      await test.info().attach('widget-after-race.png', {
+        body: await agentConversation.vueNodes
+          .getNodeLocator(NEW_NODE_ID)
+          .screenshot(),
+        contentType: 'image/png'
+      })
+
       test.fail()
       await expect(field).toHaveValue(`a photo of a pier${APPENDED}`)
     })

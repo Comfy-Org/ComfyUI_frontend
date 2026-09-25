@@ -29,6 +29,7 @@ import type {
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
 import { isCloud } from '@/platform/distribution/types'
+import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
@@ -97,8 +98,6 @@ import {
   getAncestorExecutionIds,
   tryNormalizeNodeExecutionId
 } from '@/types/nodeIdentification'
-import { KeyComboImpl } from '@/platform/keybindings/keyCombo'
-import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
 
@@ -853,22 +852,9 @@ export class ComfyApp {
         return
       }
 
-      if (e.type == 'keydown' && !e.repeat) {
-        const keyCombo = KeyComboImpl.fromEvent(e)
-        const keybindingStore = useKeybindingStore()
-        const keybinding = keybindingStore.getKeybinding(keyCombo)
-
-        if (
-          keybinding &&
-          keybinding.targetElementId === 'graph-canvas-container'
-        ) {
-          void useCommandStore().execute(keybinding.commandId)
-
-          this.graph.change()
-          e.preventDefault()
-          e.stopImmediatePropagation()
-          return
-        }
+      if (useKeybindingService().executeCanvasKeybinding(e)) {
+        this.graph.change()
+        return
       }
 
       // Fall through to Litegraph defaults
