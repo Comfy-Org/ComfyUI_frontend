@@ -1,6 +1,15 @@
 import { expect } from '@playwright/test'
 
+import type { AgentConversationHarness } from '@e2e/fixtures/agentConversationFixture'
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
+
+/** Every op this client has minted so far, in frame order, as `op:node_id`. */
+function mintedOps(agentConversation: AgentConversationHarness): string[] {
+  return agentConversation
+    .clientDocFrames()
+    .filter((frame) => frame.type === 'doc_ops')
+    .flatMap((frame) => frame.ops)
+}
 
 const CASE = 'agent-rec-text-only-answer'
 const RENAMED_NODE_ID = '4'
@@ -33,6 +42,12 @@ test.describe(
 
       await agentConversation.runTurns()
 
+      // Only the ops minted from here on are this case's business. Comparing
+      // the whole collected list would make the assertion order-dependent on
+      // anything the turn itself mints, and — worse for a `test.fail()` pin —
+      // could keep classifying a working rename as an expected failure.
+      const opsBeforeRename = mintedOps(agentConversation).length
+
       await agentConversation.vueNodes.renameNode(RENAMED_NODE_ID, NEW_TITLE)
 
       // The local half already works, and a failure here is a different
@@ -45,12 +60,7 @@ test.describe(
       test.fail()
 
       await expect
-        .poll(() =>
-          agentConversation
-            .clientDocFrames()
-            .filter((frame) => frame.type === 'doc_ops')
-            .flatMap((frame) => frame.ops)
-        )
+        .poll(() => mintedOps(agentConversation).slice(opsBeforeRename))
         .toEqual([`set_node_field:${RENAMED_NODE_ID}`])
     })
   }
