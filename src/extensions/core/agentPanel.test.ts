@@ -2,30 +2,39 @@ import { fromPartial } from '@total-typescript/shoehorn'
 vi.mock(import('firebase/auth'))
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Mocked } from 'vitest'
-import { computed, effectScope, ref } from 'vue'
+import { computed, defineComponent, effectScope, ref } from 'vue'
 import type { EffectScope } from 'vue'
 let setupScope: EffectScope
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
+import {
+  notifyMintPortsAfterGraphConfigure,
+  notifyMintPortsBeforeGraphLoad
+} from '@/workbench/extensions/agent/crdt/mintPortWiring'
+import { registerWorkflowTabActivityTracker } from '@/workbench/extensions/agent/services/agent/workflowTabActivityTracker'
 
 import type { ComfyExtension } from '@/types/comfy'
-import type { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import type { EntryPath } from '@/platform/onboarding/onboardingTours'
 import type { useFirstRunEntry } from '@/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry'
-import { useAgentConsent } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
+import {
+  CONSENT_DIALOG_KEY,
+  useAgentConsent
+} from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
 import type { ConsentOfferHooks } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
 import { useTelemetry } from '@/platform/telemetry'
+import type { AgentConsentTrigger } from '@/platform/telemetry/types'
 import type { useExtensionService } from '@/services/extensionService'
 import type { PostHog } from 'posthog-js'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyApp } from '@/scripts/app'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
+import { useDialogStore } from '@/stores/dialogStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
-import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
@@ -41,13 +50,7 @@ const firstRunTookScreen = ref(false)
 const activeTour = ref<EntryPath | null>(null)
 let startupDecision: Promise<boolean> = Promise.resolve(true)
 
-vi.mock(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: () =>
-    fromPartial<ReturnType<typeof useCurrentUser>>({
-      resolvedUserInfo: currentUser,
-      isLoggedIn: computed(() => currentUser.value !== null)
-    })
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
@@ -59,25 +62,26 @@ vi.mock(
   () => {
     const consent = fromPartial<ReturnType<typeof useAgentConsent>>({
       withConsent: vi.fn(
-        async (onAccept: () => void, hooks?: ConsentOfferHooks) => {
+        async (
+          _trigger: AgentConsentTrigger,
+          onAccept: () => void,
+          hooks?: ConsentOfferHooks
+        ) => {
           if (hooks?.canShow?.() === false) return
           hooks?.onShown?.()
           onAccept()
         }
       )
     })
-    return { useAgentConsent: () => consent }
+    const CONSENT_DIALOG_KEY = 'agent-consent' as const
+    return { CONSENT_DIALOG_KEY, useAgentConsent: () => consent }
   }
 )
 
 const mocks = vi.hoisted(() => ({
   capturedExtensions: [] as ComfyExtension[],
-  notifyAfterGraphConfigure: vi.fn(),
-  notifyBeforeGraphLoad: vi.fn(),
-  getNodeByLocatorId: vi.fn(),
   flagEnabled: undefined as boolean | undefined,
-  flagListener: null as (() => void) | null,
-  registerTracker: vi.fn(() => () => {})
+  flagListener: null as (() => void) | null
 }))
 
 vi.mock(
@@ -101,8 +105,8 @@ vi.mock(import('@/services/extensionService'), () => ({
 }))
 
 vi.mock(import('@/workbench/extensions/agent/crdt/mintPortWiring'), () => ({
-  notifyMintPortsAfterGraphConfigure: mocks.notifyAfterGraphConfigure,
-  notifyMintPortsBeforeGraphLoad: mocks.notifyBeforeGraphLoad
+  notifyMintPortsAfterGraphConfigure: vi.fn(),
+  notifyMintPortsBeforeGraphLoad: vi.fn()
 }))
 
 vi.mock(import('@/utils/litegraphUtil'), { spy: true })
@@ -111,7 +115,7 @@ vi.mock(import('@/utils/graphTraversalUtil'), { spy: true })
 vi.mock(
   import('@/workbench/extensions/agent/services/agent/workflowTabActivityTracker'),
   () => ({
-    registerWorkflowTabActivityTracker: mocks.registerTracker
+    registerWorkflowTabActivityTracker: vi.fn(() => () => {})
   })
 )
 
@@ -148,11 +152,26 @@ async function loadEntryAndSetup(): Promise<void> {
   expect(mocks.flagListener).toBeTypeOf('function')
 }
 
+const DESKTOP_APPROVAL_KEY = 'global-desktop-login-confirm'
+const EmptyDialog = defineComponent(() => () => null)
+
+function openDialog(key = DESKTOP_APPROVAL_KEY): void {
+  useDialogStore().showDialog({ key, component: EmptyDialog })
+}
+
+function closeDialog(key = DESKTOP_APPROVAL_KEY): void {
+  useDialogStore().closeDialog({ key })
+}
+
 describe('AgentPanel extension flag gate', () => {
   afterEach(() => setupScope.stop())
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.resetModules()
+    const { useCurrentUser } = await import('@/composables/auth/useCurrentUser')
+    const currentUserService = vi.mocked(useCurrentUser())
+    currentUserService.resolvedUserInfo = computed(() => currentUser.value)
+    currentUserService.isLoggedIn = computed(() => currentUser.value !== null)
     setupScope = effectScope()
     currentUser.value = { id: 'account-a' }
     consentStore = useAgentConsentStore()
@@ -168,15 +187,12 @@ describe('AgentPanel extension flag gate', () => {
       (node: unknown): node is LGraphNode =>
         typeof node === 'object' && node !== null && 'id' in node
     )
-    vi.mocked(getNodeByLocatorId).mockImplementation(mocks.getNodeByLocatorId)
     agentStore = vi.mocked(useAgentPanelStore())
     agentStore.consentAccepted = false
     nodeSelectionStore = vi.mocked(useAgentNodeSelectionStore())
     workflowStore = useWorkflowStore()
     nodeSelectionStore.restoreNodeIds.mockImplementation(() => {})
     mocks.capturedExtensions.length = 0
-    mocks.notifyAfterGraphConfigure.mockClear()
-    mocks.notifyBeforeGraphLoad.mockClear()
     agentStore.close.mockClear()
     agentStore.enabled = false
     agentStore.isOpen = true
@@ -188,9 +204,7 @@ describe('AgentPanel extension flag gate', () => {
     vi.spyOn(useOnboardingTourStore(), 'activeTour', 'get').mockImplementation(
       () => activeTour.value
     )
-    mocks.registerTracker.mockClear()
     localStorage.clear()
-    mocks.getNodeByLocatorId.mockReset()
     nodeSelectionStore.beginWorkflowLoad.mockClear()
     nodeSelectionStore.finishWorkflowLoad.mockClear()
     nodeSelectionStore.nodeIds.mockReset()
@@ -206,14 +220,8 @@ describe('AgentPanel extension flag gate', () => {
   it('attributes automatic acceptance with a restored open preference to the consent card', async () => {
     mocks.flagEnabled = true
     Object.assign(consentStore, { accepted: false, isChecking: false })
-    const trackAgentPanelOpened = vi.fn()
-    vi.mocked(useTelemetry).mockReturnValue(
-      fromPartial<NonNullable<ReturnType<typeof useTelemetry>>>({
-        trackAgentPanelOpened
-      })
-    )
     vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
-      async (onAccept, hooks) => {
+      async (_trigger, onAccept, hooks) => {
         hooks?.onShown?.()
         await Promise.resolve().then(() => {
           Object.assign(consentStore, { accepted: true })
@@ -227,10 +235,13 @@ describe('AgentPanel extension flag gate', () => {
     await vi.waitFor(() => expect(agentStore.isVisible).toBe(true))
 
     expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    expect(vi.mocked(useAgentConsent().withConsent).mock.calls[0][0]).toBe(
+      'first_load'
+    )
     expect(agentStore.open).toHaveBeenCalledExactlyOnceWith('automatic_consent')
-    expect(trackAgentPanelOpened).toHaveBeenCalledExactlyOnceWith({
-      source: 'automatic_consent'
-    })
+    expect(
+      useTelemetry()?.trackAgentPanelOpened
+    ).toHaveBeenCalledExactlyOnceWith({ source: 'automatic_consent' })
   })
 
   it('keeps the panel closed if the feature is disabled before acceptance', async () => {
@@ -242,7 +253,7 @@ describe('AgentPanel extension flag gate', () => {
       finish = resolve
     })
     vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
-      async (onAccept) => {
+      async (_trigger, onAccept) => {
         accept = onAccept
         await pending
       }
@@ -271,7 +282,7 @@ describe('AgentPanel extension flag gate', () => {
       finish = resolve
     })
     vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
-      async (_onAccept, hooks) => {
+      async (_trigger, _onAccept, hooks) => {
         show = hooks?.onShown ?? show
         await pending
       }
@@ -326,6 +337,10 @@ describe('AgentPanel extension flag gate', () => {
         firstRunTookScreen.value = true
         activeTour.value = 'appMode'
       }
+    },
+    {
+      surface: 'the desktop sign-in approval is open',
+      arrange: () => openDialog()
     }
   ])(
     'withholds the automatic offer while $surface, leaving the auto-shown key untouched',
@@ -461,7 +476,7 @@ describe('AgentPanel extension flag gate', () => {
     mocks.flagEnabled = true
     Object.assign(consentStore, { accepted: false, isChecking: false })
     vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
-      async (_onAccept, hooks) => {
+      async (_trigger, _onAccept, hooks) => {
         activeTour.value = 'appMode'
         await flush()
         if (hooks?.canShow?.() === false) return
@@ -510,6 +525,12 @@ describe('AgentPanel extension flag gate', () => {
         reason: 'tour_active',
         arrange: () => {
           activeTour.value = 'appMode'
+        }
+      },
+      {
+        reason: 'dialog_open',
+        arrange: () => {
+          openDialog()
         }
       },
       {
@@ -582,7 +603,7 @@ describe('AgentPanel extension flag gate', () => {
         'true'
       )
       vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
-        async (_onAccept, hooks) => {
+        async (_trigger, _onAccept, hooks) => {
           Object.assign(workspaceStore, { activeWorkspaceId: 'workspace-b' })
           activeTour.value = 'appMode'
           await flush()
@@ -661,6 +682,175 @@ describe('AgentPanel extension flag gate', () => {
     expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBeNull()
   })
 
+  it('offers in the same session once the dialog that held it closes', async () => {
+    mocks.flagEnabled = true
+    openDialog()
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+
+    await loadEntryAndSetup()
+    mocks.flagListener?.()
+    await flush()
+    expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+
+    closeDialog()
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    )
+    expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBe('true')
+  })
+
+  it('keeps waiting when a tour ends while a dialog is still open', async () => {
+    mocks.flagEnabled = true
+    activeTour.value = 'appMode'
+    openDialog()
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+
+    await loadEntryAndSetup()
+    mocks.flagListener?.()
+    await flush()
+    activeTour.value = null
+    await flush()
+    expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+
+    closeDialog()
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    )
+  })
+
+  it('withholds a card whose dialog opened while the offer was in flight, then re-offers', async () => {
+    mocks.flagEnabled = true
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
+      async (_trigger, _onAccept, hooks) => {
+        openDialog()
+        await flush()
+        if (hooks?.canShow?.() === false) return
+        hooks?.onShown?.()
+      }
+    )
+
+    await loadEntryAndSetup()
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    )
+    await flush()
+    expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBe('false')
+    expect(agentStore.open).not.toHaveBeenCalled()
+
+    closeDialog()
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledTimes(2)
+    )
+    expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBe('true')
+  })
+
+  it('does not re-offer after the user declines a manually opened card', async () => {
+    mocks.flagEnabled = true
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    let decide = (_: boolean) => {}
+    startupDecision = new Promise<boolean>((resolve) => {
+      decide = resolve
+    })
+
+    await loadEntryAndSetup()
+    openDialog(CONSENT_DIALOG_KEY)
+    await flush()
+    decide(true)
+    await flush()
+    closeDialog(CONSENT_DIALOG_KEY)
+    await flush()
+
+    expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+    expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBeNull()
+  })
+
+  it('skips the automatic offer for the session once the user has seen the card', async () => {
+    mocks.flagEnabled = true
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    let decide = (_: boolean) => {}
+    startupDecision = new Promise<boolean>((resolve) => {
+      decide = resolve
+    })
+
+    await loadEntryAndSetup()
+    openDialog(CONSENT_DIALOG_KEY)
+    await flush()
+    closeDialog(CONSENT_DIALOG_KEY)
+    decide(true)
+    await flush()
+
+    expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+  })
+
+  it('withholds a card whose Getting Started screen took over while the offer was in flight', async () => {
+    mocks.flagEnabled = true
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
+      async (_trigger, _onAccept, hooks) => {
+        firstRunTookScreen.value = true
+        if (hooks?.canShow?.() === false) return
+        hooks?.onShown?.()
+      }
+    )
+
+    await loadEntryAndSetup()
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    )
+    await flush()
+
+    expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBe('false')
+    expect(agentStore.open).not.toHaveBeenCalled()
+  })
+
+  it('remembers a seen card per workspace across a switch away and back', async () => {
+    mocks.flagEnabled = true
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    let decide = (_: boolean) => {}
+    startupDecision = new Promise<boolean>((resolve) => {
+      decide = resolve
+    })
+
+    await loadEntryAndSetup()
+    openDialog(CONSENT_DIALOG_KEY)
+    await flush()
+    closeDialog(CONSENT_DIALOG_KEY)
+    decide(true)
+    await flush()
+
+    Object.assign(workspaceStore, { activeWorkspaceId: 'workspace-b' })
+    Object.assign(consentStore, { identity: 'account-a/workspace-b/1' })
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    )
+
+    Object.assign(workspaceStore, { activeWorkspaceId: 'workspace-a' })
+    Object.assign(consentStore, { identity: 'account-a/workspace-a/2' })
+    await flush()
+    await flush()
+
+    expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+  })
+
+  it('does not re-read consent on every dialog close while the read keeps failing', async () => {
+    mocks.flagEnabled = true
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    vi.mocked(consentStore.load).mockRejectedValue(new Error('offline'))
+
+    await loadEntryAndSetup()
+    await flush()
+    const loadsAfterBoot = vi.mocked(consentStore.load).mock.calls.length
+    for (let cycle = 0; cycle < 3; cycle++) {
+      openDialog()
+      await flush()
+      closeDialog()
+      await flush()
+    }
+
+    expect(consentStore.load).toHaveBeenCalledTimes(loadsAfterBoot)
+  })
+
   it('stays silent when the account already accepted', async () => {
     mocks.flagEnabled = true
     Object.assign(consentStore, { accepted: true, isChecking: false })
@@ -727,6 +917,14 @@ describe('AgentPanel extension flag gate', () => {
     async ({ userId, workspaceId }) => {
       mocks.flagEnabled = true
       Object.assign(consentStore, { accepted: false, isChecking: false })
+      vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
+        async (_trigger, _onAccept, hooks) => {
+          hooks?.onShown?.()
+          openDialog(CONSENT_DIALOG_KEY)
+          await flush()
+          closeDialog(CONSENT_DIALOG_KEY)
+        }
+      )
 
       await loadEntryAndSetup()
       await flush()
@@ -803,7 +1001,7 @@ describe('AgentPanel extension flag gate', () => {
 
   it('registers the tab-activity tracker once at setup, not gated on the flag', async () => {
     await loadEntryAndSetup()
-    expect(mocks.registerTracker).toHaveBeenCalledTimes(1)
+    expect(registerWorkflowTabActivityTracker).toHaveBeenCalledTimes(1)
   })
 
   it('projects consent into the panel visibility gate', async () => {
@@ -838,7 +1036,7 @@ describe('AgentPanel extension flag gate', () => {
     agentStore.enabled = true
     agentStore.consentAccepted = false
     await extension!.beforeLoadGraph!({} as never)
-    expect(mocks.notifyBeforeGraphLoad).toHaveBeenCalledOnce()
+    expect(notifyMintPortsBeforeGraphLoad).toHaveBeenCalledOnce()
     expect(nodeSelectionStore.beginWorkflowLoad).not.toHaveBeenCalled()
   })
 
@@ -875,11 +1073,13 @@ describe('AgentPanel extension flag gate', () => {
 
   it('restores each workflow reference after the shared graph load', async () => {
     const { registerAgentPanelExtension } = await import('./agentPanel')
+    const { getNodeByLocatorId } = await import('@/utils/graphTraversalUtil')
     registerAgentPanelExtension()
     const extension = mocks.capturedExtensions.find(
       (item) => item.name === 'Comfy.AgentPanel'
     )
-    const secondNode = { id: 12 }
+    const secondNode = new LGraphNode('Second')
+    secondNode.id = toNodeId(12)
     const rootGraph = {}
     const selectItems = vi.fn()
     agentStore.enabled = true
@@ -887,12 +1087,12 @@ describe('AgentPanel extension flag gate', () => {
 
     await extension!.beforeLoadGraph!({} as never)
 
-    expect(mocks.notifyBeforeGraphLoad).toHaveBeenCalledOnce()
+    expect(notifyMintPortsBeforeGraphLoad).toHaveBeenCalledOnce()
     expect(nodeSelectionStore.beginWorkflowLoad).toHaveBeenCalledOnce()
 
     nodeSelectionStore.isLoadingWorkflow = true
     nodeSelectionStore.nodeIds.mockReturnValue(['12'])
-    mocks.getNodeByLocatorId.mockReturnValue(secondNode)
+    vi.mocked(getNodeByLocatorId).mockReturnValue(secondNode)
     workflowStore.activeWorkflow = createMockLoadedWorkflow({
       path: 'workflows/second.json'
     })
@@ -904,7 +1104,7 @@ describe('AgentPanel extension flag gate', () => {
       }
     } as never)
 
-    expect(mocks.getNodeByLocatorId).toHaveBeenCalledWith(rootGraph, '12')
+    expect(getNodeByLocatorId).toHaveBeenCalledWith(rootGraph, '12')
     expect(selectItems).toHaveBeenCalledWith([secondNode])
     expect(nodeSelectionStore.restoreNodeIds).toHaveBeenCalledWith(['12'])
     expect(nodeSelectionStore.finishWorkflowLoad).not.toHaveBeenCalled()
@@ -948,7 +1148,7 @@ describe('AgentPanel extension flag gate', () => {
 
     await extension!.afterConfigureGraph!([], {} as never)
 
-    expect(mocks.notifyAfterGraphConfigure).toHaveBeenCalledOnce()
+    expect(notifyMintPortsAfterGraphConfigure).toHaveBeenCalledOnce()
   })
 
   it('resumes ordinary local-dirty tracking after a failed load is followed by a successful one', async () => {
@@ -1049,15 +1249,18 @@ describe('AgentPanel extension flag gate', () => {
 
   it('restores a subgraph reference by its locator after graph load', async () => {
     const { registerAgentPanelExtension } = await import('./agentPanel')
+    const { getNodeByLocatorId } = await import('@/utils/graphTraversalUtil')
     registerAgentPanelExtension()
     const extension = mocks.capturedExtensions.find(
       (item) => item.name === 'Comfy.AgentPanel'
     )
     const locator = '12345678-1234-1234-1234-123456789abc:shared'
-    const subgraphNode = {
-      id: 'shared',
-      graph: { id: '12345678-1234-1234-1234-123456789abc', isRootGraph: false }
-    }
+    const subgraph = createTestSubgraph({
+      id: '12345678-1234-1234-1234-123456789abc'
+    })
+    const subgraphNode = new LGraphNode('Subgraph node')
+    subgraphNode.id = toNodeId('shared')
+    subgraph.add(subgraphNode)
     const rootGraph = {}
     const selectItems = vi.fn()
 
@@ -1065,14 +1268,14 @@ describe('AgentPanel extension flag gate', () => {
     agentStore.consentAccepted = true
     nodeSelectionStore.isLoadingWorkflow = true
     nodeSelectionStore.nodeIds.mockReturnValue([locator])
-    mocks.getNodeByLocatorId.mockReturnValue(subgraphNode)
+    vi.mocked(getNodeByLocatorId).mockReturnValue(subgraphNode)
 
     await extension!.afterLoadGraph!({
       rootGraph,
       canvas: { selectItems }
     } as never)
 
-    expect(mocks.getNodeByLocatorId).toHaveBeenCalledWith(rootGraph, locator)
+    expect(getNodeByLocatorId).toHaveBeenCalledWith(rootGraph, locator)
     expect(selectItems).toHaveBeenCalledWith([subgraphNode])
     expect(nodeSelectionStore.restoreNodeIds).toHaveBeenCalledWith([locator])
   })
@@ -1087,12 +1290,13 @@ describe('AgentPanel extension flag gate', () => {
 
     await extension!.beforeLoadGraph!({} as never)
 
-    expect(mocks.notifyBeforeGraphLoad).toHaveBeenCalledOnce()
+    expect(notifyMintPortsBeforeGraphLoad).toHaveBeenCalledOnce()
     expect(nodeSelectionStore.beginWorkflowLoad).not.toHaveBeenCalled()
   })
 
   it('finishes restoration when the panel closes during graph load', async () => {
     const { registerAgentPanelExtension } = await import('./agentPanel')
+    const { getNodeByLocatorId } = await import('@/utils/graphTraversalUtil')
     registerAgentPanelExtension()
     const extension = mocks.capturedExtensions.find(
       (item) => item.name === 'Comfy.AgentPanel'
@@ -1103,7 +1307,7 @@ describe('AgentPanel extension flag gate', () => {
     await extension!.afterLoadGraph!({} as never)
 
     expect(nodeSelectionStore.finishWorkflowLoad).toHaveBeenCalledOnce()
-    expect(mocks.getNodeByLocatorId).not.toHaveBeenCalled()
+    expect(getNodeByLocatorId).not.toHaveBeenCalled()
   })
 
   it('finishes restoration when graph configuration fails', async () => {
@@ -1133,12 +1337,13 @@ describe('AgentPanel extension flag gate', () => {
     await extension!.beforeLoadGraph!(app)
     await extension!.onGraphLoadError!(new Error('bad workflow json'), app)
 
-    expect(mocks.notifyBeforeGraphLoad).toHaveBeenCalledOnce()
-    expect(mocks.notifyAfterGraphConfigure).not.toHaveBeenCalled()
+    expect(notifyMintPortsBeforeGraphLoad).toHaveBeenCalledOnce()
+    expect(notifyMintPortsAfterGraphConfigure).not.toHaveBeenCalled()
   })
 
   it('finishes restoration when selection restoration throws', async () => {
     const { registerAgentPanelExtension } = await import('./agentPanel')
+    const { getNodeByLocatorId } = await import('@/utils/graphTraversalUtil')
     registerAgentPanelExtension()
     const extension = mocks.capturedExtensions.find(
       (item) => item.name === 'Comfy.AgentPanel'
@@ -1148,7 +1353,7 @@ describe('AgentPanel extension flag gate', () => {
     agentStore.isOpen = true
     nodeSelectionStore.isLoadingWorkflow = true
     nodeSelectionStore.nodeIds.mockReturnValue(['12'])
-    mocks.getNodeByLocatorId.mockImplementation(() => {
+    vi.mocked(getNodeByLocatorId).mockImplementation(() => {
       throw new Error('selection restore failed')
     })
 

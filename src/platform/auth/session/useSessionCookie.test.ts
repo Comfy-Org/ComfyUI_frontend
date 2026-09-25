@@ -246,6 +246,76 @@ describe('useSessionCookie', () => {
     expect(vi.mocked(globalThis.fetch).mock.calls[1][1]?.method).toBe('DELETE')
   })
 
+  it('reports a failed session deletion as auth_session_cookie_delete_failed and still resolves', async () => {
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    vi.mocked(globalThis.fetch).mockResolvedValue(
+      new Response(JSON.stringify({ message: 'cookie for user-a@x.test' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    )
+    const { useSessionCookie } = await loadUseSessionCookie()
+
+    await expect(useSessionCookie().deleteSession()).resolves.toBeUndefined()
+
+    expect(mockReportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+      errorType: 'auth_session_cookie_delete_failed',
+      tags: {
+        failure_kind: 'caught_unexpected',
+        feature_area: 'auth',
+        operation: 'auth',
+        outcome: 'failed'
+      },
+      context: { had_pending_session_mutation: false },
+      level: 'error'
+    })
+    expect(consoleWarn).not.toHaveBeenCalled()
+  })
+
+  it('keeps the server message out of the reported deletion failure', async () => {
+    vi.mocked(globalThis.fetch).mockResolvedValue(
+      new Response(JSON.stringify({ message: 'cookie for user-a@x.test' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    )
+    const { useSessionCookie } = await loadUseSessionCookie()
+
+    await useSessionCookie().deleteSession()
+
+    const [reported, options] = mockReportError.mock.calls[0]
+    expect(reported).toEqual(new Error('Session cookie deletion failed'))
+    expect(JSON.stringify(options)).not.toContain('user-a@x.test')
+  })
+
+  it('flags a concurrent session mutation when deletion fails', async () => {
+    let resolveDelete: (value: Response) => void = () => {}
+    vi.mocked(useAuthStore().getIdToken).mockResolvedValue('firebase-id-token')
+    vi.mocked(globalThis.fetch)
+      .mockReturnValueOnce(
+        new Promise<Response>((resolve) => {
+          resolveDelete = resolve
+        })
+      )
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
+    const { useSessionCookie } = await loadUseSessionCookie()
+
+    const remove = useSessionCookie().deleteSession()
+    await vi.waitFor(() => expect(globalThis.fetch).toHaveBeenCalledTimes(1))
+    // Queued behind the in-flight DELETE, so it is pending when DELETE fails.
+    const create = useSessionCookie().createSession()
+    resolveDelete(new Response(null, { status: 500 }))
+    await Promise.all([remove, create])
+
+    expect(mockReportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'auth_session_cookie_delete_failed',
+        context: { had_pending_session_mutation: true }
+      })
+    )
+  })
+
   it('createSessionOrThrow fails fast on non-success responses', async () => {
     vi.mocked(useAuthStore().getIdToken).mockResolvedValue('firebase-id-token')
     vi.mocked(globalThis.fetch).mockResolvedValue(

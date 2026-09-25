@@ -1106,7 +1106,7 @@ function fmtTime(at: number): string {
           </button>
         </div>
         <div v-if="reportCopyState.status === 'failed'" class="mt-2">
-          <p role="alert" class="text-danger m-0">
+          <p role="alert" class="m-0 text-destructive-background">
             {{
               reportCopyState.report === null
                 ? t('agent.diagnosticReport.collectionFailed')

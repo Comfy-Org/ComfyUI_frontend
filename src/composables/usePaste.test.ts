@@ -99,13 +99,7 @@ beforeEach(() => {
   mockCanvasStore.canvas = mockCanvas
 })
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    nodeOutputs: {},
-    nodePreviewImages: {},
-    loadGraphData: vi.fn()
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
 vi.mock(import('@/utils/litegraphUtil'), { spy: true })
 

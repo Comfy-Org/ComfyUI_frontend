@@ -35,7 +35,8 @@ const emit = defineEmits<{
   feedback: [turnId: string, vote: 'up' | 'down' | null]
   editPrompt: [prompt: PromptSnapshot]
   answerAsk: [askId: string, selection: 'run' | 'cancel']
-  openWorkflow: [workflowId: string, workflowName?: string]
+  openWorkflow: [askId: string, workflowId: string, workflowName?: string]
+  approvalShown: [askId: string, turnId: string, workflowId: string | null]
   openReferenceWorkflow: [workflowId: string, workflowName: string]
   paywallAction: [action: AgentPaywallAction]
 }>()
@@ -120,9 +121,13 @@ watch(
                 (askId: string, selection: 'run' | 'cancel') =>
                   emit('answerAsk', askId, selection)
               "
+              @approval-shown="
+                (askId, turnId, workflowId) =>
+                  emit('approvalShown', askId, turnId, workflowId)
+              "
               @open-workflow="
-                (workflowId: string, workflowName?: string) =>
-                  emit('openWorkflow', workflowId, workflowName)
+                (askId: string, workflowId: string, workflowName?: string) =>
+                  emit('openWorkflow', askId, workflowId, workflowName)
               "
               @paywall-action="emit('paywallAction', $event)"
             />

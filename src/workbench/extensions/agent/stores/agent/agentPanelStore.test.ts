@@ -1,12 +1,9 @@
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { useTelemetry } from '@/platform/telemetry'
 
 vi.mock(import('@/platform/telemetry'))
-const telemetryProvider = useTelemetry()
-assert.exists(telemetryProvider)
-const telemetry = vi.mocked(telemetryProvider)
 
 import { useAgentPanelStore } from './agentPanelStore'
 
@@ -30,17 +27,17 @@ describe('agentPanelStore engagement telemetry', () => {
 
     expect(store.isOpen).toBe(true)
     await nextTick()
-    expect(telemetry.trackAgentPanelOpened).not.toHaveBeenCalled()
+    expect(useTelemetry()!.trackAgentPanelOpened).not.toHaveBeenCalled()
 
     store.enabled = true
     await nextTick()
-    expect(telemetry.trackAgentPanelOpened).toHaveBeenCalledWith({
+    expect(useTelemetry()!.trackAgentPanelOpened).toHaveBeenCalledWith({
       source: 'restored'
     })
 
     vi.advanceTimersByTime(3000)
     store.close('close_button')
-    expect(telemetry.trackAgentPanelClosed).toHaveBeenCalledWith({
+    expect(useTelemetry()!.trackAgentPanelClosed).toHaveBeenCalledWith({
       source: 'close_button',
       open_duration_ms: 3000
     })
@@ -54,8 +51,8 @@ describe('agentPanelStore engagement telemetry', () => {
     store.toggle()
     await nextTick()
 
-    expect(telemetry.trackAgentPanelOpened).toHaveBeenCalledTimes(1)
-    expect(telemetry.trackAgentPanelOpened).toHaveBeenCalledWith({
+    expect(useTelemetry()!.trackAgentPanelOpened).toHaveBeenCalledTimes(1)
+    expect(useTelemetry()!.trackAgentPanelOpened).toHaveBeenCalledWith({
       source: 'topbar_button'
     })
   })
@@ -76,12 +73,12 @@ describe('agentPanelStore engagement telemetry', () => {
     vi.advanceTimersByTime(3000)
     store.close('close_button')
 
-    expect(telemetry.trackAgentPanelClosed).toHaveBeenCalledWith({
+    expect(useTelemetry()!.trackAgentPanelClosed).toHaveBeenCalledWith({
       source: 'close_button',
       open_duration_ms: 3000
     })
-    expect(telemetry.trackAgentPanelOpened).toHaveBeenCalledTimes(2)
-    expect(telemetry.trackAgentPanelOpened).toHaveBeenLastCalledWith({
+    expect(useTelemetry()!.trackAgentPanelOpened).toHaveBeenCalledTimes(2)
+    expect(useTelemetry()!.trackAgentPanelOpened).toHaveBeenLastCalledWith({
       source: 'restored'
     })
   })
@@ -95,7 +92,9 @@ describe('agentPanelStore engagement telemetry', () => {
     store.open('automatic_consent')
 
     expect(store.isVisible).toBe(true)
-    expect(telemetry.trackAgentPanelOpened).toHaveBeenCalledExactlyOnceWith({
+    expect(
+      useTelemetry()!.trackAgentPanelOpened
+    ).toHaveBeenCalledExactlyOnceWith({
       source: 'automatic_consent'
     })
   })
@@ -105,7 +104,7 @@ describe('agentPanelStore engagement telemetry', () => {
     useAgentPanelStore()
 
     await nextTick()
-    expect(telemetry.trackAgentPanelOpened).not.toHaveBeenCalled()
+    expect(useTelemetry()!.trackAgentPanelOpened).not.toHaveBeenCalled()
   })
 
   it('suppresses a restored open intent that has no consent', async () => {
@@ -116,7 +115,7 @@ describe('agentPanelStore engagement telemetry', () => {
 
     expect(store.isOpen).toBe(true)
     expect(store.isVisible).toBe(false)
-    expect(telemetry.trackAgentPanelOpened).not.toHaveBeenCalled()
+    expect(useTelemetry()!.trackAgentPanelOpened).not.toHaveBeenCalled()
 
     store.suppressRestoredOpen()
     expect(store.isOpen).toBe(false)
@@ -127,14 +126,14 @@ describe('agentPanelStore engagement telemetry', () => {
 
     store.toggle()
     expect(store.isOpen).toBe(true)
-    expect(telemetry.trackAgentPanelOpened).toHaveBeenCalledWith({
+    expect(useTelemetry()!.trackAgentPanelOpened).toHaveBeenCalledWith({
       source: 'topbar_button'
     })
 
     vi.advanceTimersByTime(5000)
     store.close('close_button')
     expect(store.isOpen).toBe(false)
-    expect(telemetry.trackAgentPanelClosed).toHaveBeenCalledWith({
+    expect(useTelemetry()!.trackAgentPanelClosed).toHaveBeenCalledWith({
       source: 'close_button',
       open_duration_ms: 5000
     })
@@ -146,7 +145,7 @@ describe('agentPanelStore engagement telemetry', () => {
     store.toggle()
     vi.advanceTimersByTime(250)
     store.toggle()
-    expect(telemetry.trackAgentPanelClosed).toHaveBeenCalledWith({
+    expect(useTelemetry()!.trackAgentPanelClosed).toHaveBeenCalledWith({
       source: 'topbar_button',
       open_duration_ms: 250
     })
@@ -157,7 +156,7 @@ describe('agentPanelStore engagement telemetry', () => {
 
     store.isOpen = true
     store.close('close_button')
-    expect(telemetry.trackAgentPanelClosed).toHaveBeenCalledWith({
+    expect(useTelemetry()!.trackAgentPanelClosed).toHaveBeenCalledWith({
       source: 'close_button',
       open_duration_ms: null
     })
@@ -168,7 +167,153 @@ describe('agentPanelStore engagement telemetry', () => {
 
     store.close('close_button')
     store.close('close_button')
-    expect(telemetry.trackAgentPanelClosed).not.toHaveBeenCalled()
+    expect(useTelemetry()!.trackAgentPanelClosed).not.toHaveBeenCalled()
+  })
+})
+
+describe('agentPanelStore pagehide teardown', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    vi.useFakeTimers()
+  })
+
+  it('reports a pagehide close once while the panel is open, without touching persisted state', async () => {
+    const store = useConsentedAgentPanelStore()
+    store.enabled = true
+    store.open()
+    await nextTick()
+    vi.advanceTimersByTime(4000)
+
+    window.dispatchEvent(new Event('pagehide'))
+
+    expect(
+      useTelemetry()!.trackAgentPanelClosed
+    ).toHaveBeenCalledExactlyOnceWith({
+      source: 'pagehide',
+      open_duration_ms: 4000
+    })
+    expect(store.isOpen).toBe(true)
+    expect(localStorage.getItem(OPEN_STORAGE_KEY)).toBe('true')
+  })
+
+  it('does not double-report across a bfcache pagehide/resume/pagehide cycle', () => {
+    const store = useConsentedAgentPanelStore()
+    store.enabled = true
+    store.open()
+
+    window.dispatchEvent(new Event('pagehide'))
+    // A bfcache restore resumes the same frozen JS heap: nothing in the store
+    // changes, so the next pagehide (background again, or the real close)
+    // must not re-report the same open interval.
+    window.dispatchEvent(new Event('pagehide'))
+
+    expect(useTelemetry()!.trackAgentPanelClosed).toHaveBeenCalledTimes(1)
+  })
+
+  function persistedPageshow(): Event {
+    const event = new Event('pageshow')
+    Object.defineProperty(event, 'persisted', { value: true })
+    return event
+  }
+
+  it('starts a fresh interval on a persisted pageshow restore, so a later close only measures time since resume', () => {
+    const store = useConsentedAgentPanelStore()
+    store.enabled = true
+    store.open()
+    vi.advanceTimersByTime(4000)
+    window.dispatchEvent(new Event('pagehide'))
+
+    vi.advanceTimersByTime(10000)
+    window.dispatchEvent(persistedPageshow())
+    vi.advanceTimersByTime(2000)
+    store.close('close_button')
+
+    expect(useTelemetry()!.trackAgentPanelClosed).toHaveBeenCalledTimes(2)
+    expect(useTelemetry()!.trackAgentPanelClosed).toHaveBeenNthCalledWith(1, {
+      source: 'pagehide',
+      open_duration_ms: 4000
+    })
+    expect(useTelemetry()!.trackAgentPanelClosed).toHaveBeenNthCalledWith(2, {
+      source: 'close_button',
+      open_duration_ms: 2000
+    })
+  })
+
+  it('can report pagehide again after a persisted pageshow resume', () => {
+    const store = useConsentedAgentPanelStore()
+    store.enabled = true
+    store.open()
+    window.dispatchEvent(new Event('pagehide'))
+
+    window.dispatchEvent(persistedPageshow())
+    vi.advanceTimersByTime(1500)
+    window.dispatchEvent(new Event('pagehide'))
+
+    expect(useTelemetry()!.trackAgentPanelClosed).toHaveBeenCalledTimes(2)
+    expect(useTelemetry()!.trackAgentPanelClosed).toHaveBeenNthCalledWith(2, {
+      source: 'pagehide',
+      open_duration_ms: 1500
+    })
+  })
+
+  it('ignores a non-persisted pageshow (a normal load, not a bfcache restore)', () => {
+    const store = useConsentedAgentPanelStore()
+    store.enabled = true
+    store.open()
+    vi.advanceTimersByTime(4000)
+    window.dispatchEvent(new Event('pagehide'))
+
+    vi.advanceTimersByTime(10000)
+    window.dispatchEvent(new Event('pageshow'))
+    vi.advanceTimersByTime(2000)
+    store.close('close_button')
+
+    expect(useTelemetry()!.trackAgentPanelClosed).toHaveBeenNthCalledWith(2, {
+      source: 'close_button',
+      open_duration_ms: 16000
+    })
+  })
+
+  it('does not report a pagehide close while the panel is not open', () => {
+    const store = useConsentedAgentPanelStore()
+    store.enabled = true
+
+    window.dispatchEvent(new Event('pagehide'))
+
+    expect(useTelemetry()!.trackAgentPanelClosed).not.toHaveBeenCalled()
+  })
+
+  it('does not report a pagehide close for an open panel gated behind consent', () => {
+    const store = useAgentPanelStore()
+    store.enabled = true
+    store.open()
+
+    window.dispatchEvent(new Event('pagehide'))
+
+    expect(useTelemetry()!.trackAgentPanelClosed).not.toHaveBeenCalled()
+  })
+
+  it('can report again for a fresh open session after a prior pagehide report', () => {
+    const store = useConsentedAgentPanelStore()
+    store.enabled = true
+    store.open()
+    window.dispatchEvent(new Event('pagehide'))
+    store.close('close_button')
+
+    store.open()
+    vi.advanceTimersByTime(1000)
+    window.dispatchEvent(new Event('pagehide'))
+
+    const pagehideCalls = vi
+      .mocked(useTelemetry())!
+      .trackAgentPanelClosed.mock.calls.filter(
+        ([metadata]) => metadata.source === 'pagehide'
+      )
+    expect(pagehideCalls).toHaveLength(2)
+    expect(pagehideCalls[1][0]).toEqual({
+      source: 'pagehide',
+      open_duration_ms: 1000
+    })
   })
 })
 
