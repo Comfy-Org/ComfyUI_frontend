@@ -10,6 +10,7 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { computeProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
 import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue'
@@ -19,6 +20,7 @@ import { useLinkStore } from '@/stores/linkStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetRenderState } from '@/stores/widgetValueStore'
 import {
+  createLeafNodeLocatorId,
   createNodeExecutionId,
   createNodeLocatorId
 } from '@/types/nodeIdentification'
@@ -403,6 +405,32 @@ describe('widget error state', () => {
     )
     expect(processWidgetNamed('ckpt_name').hasError).toBe(true)
   })
+
+  it('does not crash on an inherited Object.prototype member id', () => {
+    useExecutionErrorStore().recordNodeErrors({
+      [createNodeExecutionId([toNodeId(2)])]: {
+        errors: [
+          {
+            type: 'required_input_missing',
+            message: 'seed is required',
+            details: '',
+            extra_info: { input_name: 'seed' }
+          }
+        ],
+        class_type: 'TestNode',
+        dependent_outputs: []
+      }
+    })
+    const id = widgetId(GRAPH_ID, toNodeId('constructor'), 'seed')
+    registerWidgetState(id, { type: 'combo' })
+
+    const [processed] = processWidgets({
+      widgetIds: [id],
+      nodeId: toNodeId('constructor')
+    })
+
+    expect(processed.hasError).toBe(false)
+  })
 })
 
 describe('promoted subgraph widgets', () => {
@@ -517,6 +545,48 @@ describe('promoted subgraph widgets', () => {
 })
 
 describe('computeProcessedWidgets', () => {
+  it('renders an opaque-ID widget before its graph is ready', () => {
+    const nodeId = toNodeId('insert:abc123:root:node:5')
+    const id = widgetId(GRAPH_ID, nodeId, 'text')
+    registerWidgetState(id, { type: 'text', value: 'before' })
+    const missingModelSpy = vi.spyOn(
+      useMissingModelStore(),
+      'isWidgetMissingModel'
+    )
+    const missingMediaSpy = vi.spyOn(
+      useMissingMediaStore(),
+      'isWidgetMissingMedia'
+    )
+    const clearErrorSpy = vi.spyOn(
+      useExecutionErrorStore(),
+      'clearWidgetRelatedErrors'
+    )
+
+    const [processed] = processWidgets({ widgetIds: [id], nodeId })
+
+    expect(processed.simplified.value).toBe('before')
+    expect(processed.hasError).toBe(false)
+    expect(missingModelSpy).not.toHaveBeenCalled()
+    expect(missingMediaSpy).not.toHaveBeenCalled()
+
+    processed.updateHandler('after')
+
+    expect(useWidgetValueStore().getWidget(id)?.value).toBe('after')
+    expect(clearErrorSpy).not.toHaveBeenCalled()
+  })
+
+  it('resolves the widget locator for a root-owned opaque id whole', () => {
+    const nodeId = toNodeId('insert:abc123:root:node:5')
+    const id = widgetId(GRAPH_ID, nodeId, 'text')
+    registerWidgetState(id, { type: 'text', value: 'before' })
+
+    const [processed] = processWidgets({ widgetIds: [id], nodeId })
+
+    expect(processed.simplified.nodeLocatorId).toBe(
+      createLeafNodeLocatorId(null, nodeId)
+    )
+  })
+
   it('applies advanced border styling to advanced widgets', () => {
     const id = widgetId(GRAPH_ID, toNodeId(1), 'text')
     registerWidgetState(id, { type: 'text', options: { advanced: true } })

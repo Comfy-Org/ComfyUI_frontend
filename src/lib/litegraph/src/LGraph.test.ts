@@ -331,6 +331,31 @@ describe('LGraph', () => {
     expect(graph.last_node_id).toBe(7)
   })
 
+  it.for(['constructor', 'toString', '__proto__'])(
+    'does not return inherited property %s as a node',
+    (id) => {
+      expect(new LGraph().getNodeById(toNodeId(id))).toBeNull()
+    }
+  )
+
+  it('registers and retrieves a node whose id is __proto__ without polluting the registry', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('proto-id')
+    Reflect.set(node, 'id', '__proto__')
+
+    graph.add(node, true)
+
+    expect(graph.getNodeById(toNodeId('__proto__'))).toBe(node)
+    expect(Object.getPrototypeOf(graph._nodes_by_id)).toBeNull()
+
+    const otherNode = new LGraphNode('other')
+    graph.add(otherNode, true)
+    expect(graph.getNodeById(otherNode.id)).toBe(otherNode)
+
+    graph.remove(node)
+    expect(graph.getNodeById(toNodeId('__proto__'))).toBeNull()
+  })
+
   describe('duplicate node-instance invariants', () => {
     function createGraphsSharingANodeId() {
       const ownerGraph = new LGraph()
