@@ -705,4 +705,38 @@ test.describe('Billing recovery on the SDK rails', { tag: '@cloud' }, () => {
       )
     })
   })
+
+  test.describe('a plan change over an operation parked by an earlier attempt', () => {
+    test('says the earlier payment has to finish, and issues no second subscribe', async ({
+      page
+    }) => {
+      test.setTimeout(90_000)
+      const routes = await setupSubscription(page)
+      // Processing, so no hosted action is offered and nothing disables the
+      // confirm button. This is the state the preview guard cannot see.
+      routes.setOperation(VERIFIED_PROCESSING)
+      // Parked before this tab sends any subscribe of its own.
+      await page.route('**/api/billing/status', (route) =>
+        route.fulfill(
+          jsonRoute({
+            ...ACTIVE_STANDARD,
+            pending_billing_op_id: OPERATION_ID,
+            pending_billing_op_type: 'subscription'
+          })
+        )
+      )
+
+      await confirmUpgrade(page)
+
+      await expect(
+        page.getByText(
+          'A payment you started earlier is still going through. Finish it first, then choose a different plan.'
+        )
+      ).toBeVisible()
+      expect(routes.subscribeRequests).toEqual([])
+      await expect(
+        page.getByRole('heading', { name: "You're all set" })
+      ).toBeHidden()
+    })
+  })
 })

@@ -124,6 +124,15 @@ describe('projectSubscriptionResult', () => {
         code: 'SUPERSEDED',
         message: "We couldn't update your subscription. Please try again."
       }
+    ],
+    [
+      { status: 'error', code: 'OPERATION_ALREADY_PENDING' },
+      {
+        status: undefined,
+        code: 'OPERATION_ALREADY_PENDING',
+        message:
+          'A payment you started earlier is still going through. Finish it first, then choose a different plan.'
+      }
     ]
   ] as const)('surfaces %o as a workspace error', ([failure, expected]) => {
     const outcome = projectSubscriptionResult(failure)
