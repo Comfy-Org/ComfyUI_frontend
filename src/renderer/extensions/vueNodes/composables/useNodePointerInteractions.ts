@@ -26,15 +26,11 @@ import type { NodeId } from '@/types/nodeId'
 import type { NodeState } from '@/types/nodeState'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 
-function canDrag(press: Press) {
-  return !press.pinned
-}
-
 interface Press {
   nodeId: NodeId
   event: PointerEvent
-  pinned: boolean
   pointerId: number
+  dragStarted: boolean
   captureTarget?: Element
 }
 
@@ -49,6 +45,10 @@ export function useNodePointerInteractions(
 
   let gesture: GestureState = idleGesture
   let press: Press | null = null
+
+  function canDrag() {
+    return !toValue(nodeStateRef).flags.pinned
+  }
 
   const gesturePolicy = () => ({
     clickDrift: CanvasPointer.maxClickDrift,
@@ -91,18 +91,19 @@ export function useNodePointerInteractions(
         return
       case 'startDrag':
         if (node) canvas?.processSelect(node, press.event, true)
-        if (press.pinned) return
+        if (!canDrag()) return
         layoutStore.isDraggingVueNodes.value = true
-        startDrag(press.event, press.nodeId)
+        press.dragStarted = true
+        startDrag(press.event, press.nodeId, event.shiftKey)
         return
       case 'movePress':
         return
       case 'moveDrag':
-        if (canDrag(press)) handleDrag(event, press.nodeId)
+        if (press.dragStarted && canDrag()) handleDrag(event, press.nodeId)
         return
       case 'endDrag':
         try {
-          if (canDrag(press)) endDrag(event, press.nodeId)
+          if (press.dragStarted) endDrag(event, press.nodeId)
         } finally {
           layoutStore.isDraggingVueNodes.value = false
         }
@@ -150,7 +151,13 @@ export function useNodePointerInteractions(
           ? event.currentTarget
           : undefined
     captureTarget?.setPointerCapture(event.pointerId)
-    press = { nodeId, event, pinned, pointerId: event.pointerId, captureTarget }
+    press = {
+      nodeId,
+      event,
+      pointerId: event.pointerId,
+      dragStarted: false,
+      captureTarget
+    }
     dispatch(
       {
         type: 'down',

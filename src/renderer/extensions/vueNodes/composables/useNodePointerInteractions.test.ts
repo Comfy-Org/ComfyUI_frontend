@@ -193,7 +193,7 @@ describe('useNodePointerInteractions', () => {
     move(handlers, 10 + DRIFT + 1, 10, { shiftKey: true })
 
     expect(selectedTitles(canvas)).toEqual(['First', 'Second'])
-    expect(startDrag).toHaveBeenCalledWith(down, first.id)
+    expect(startDrag).toHaveBeenCalledWith(down, first.id, true)
     expect(handleDrag).toHaveBeenCalledOnce()
     expect(layoutStore.isDraggingVueNodes.value).toBe(true)
 
@@ -210,6 +210,18 @@ describe('useNodePointerInteractions', () => {
     move(handlers, 10 + DRIFT + 1, 10, { shiftKey: true })
 
     expect(selectedTitles(canvas)).toEqual(['First'])
+  })
+
+  it('uses current shift state when a drag starts', () => {
+    const { startDrag } = useNodeDrag()
+    canvas.select(second)
+    const down = pointerEvent('pointerdown', 10, 10, { shiftKey: true })
+    handlers.onPointerdown(down)
+
+    move(handlers, 10 + DRIFT + 1, 10)
+
+    expect(selectedTitles(canvas)).toEqual(['First', 'Second'])
+    expect(startDrag).toHaveBeenCalledWith(down, first.id, false)
   })
 
   it('captures the accepted pointer until release', () => {
@@ -327,6 +339,37 @@ describe('useNodePointerInteractions', () => {
     expect(handleDrag).not.toHaveBeenCalled()
     expect(endDrag).not.toHaveBeenCalled()
     expect(selectedTitles(canvas)).toEqual(['Second'])
+  })
+
+  it('does not start dragging a node pinned after pointerdown', () => {
+    const { startDrag, handleDrag, endDrag } = useNodeDrag()
+    const nodeState = createNodeState({ id: second.id })
+    const { pointerHandlers } = useNodePointerInteractions(nodeState)
+    press(pointerHandlers, 310, 10)
+
+    nodeState.flags.pinned = true
+    move(pointerHandlers, 340, 10)
+    release(pointerHandlers, 340, 10)
+
+    expect(startDrag).not.toHaveBeenCalled()
+    expect(handleDrag).not.toHaveBeenCalled()
+    expect(endDrag).not.toHaveBeenCalled()
+  })
+
+  it('stops moving a node pinned during a drag and still ends the drag', () => {
+    const { startDrag, handleDrag, endDrag } = useNodeDrag()
+    const nodeState = createNodeState({ id: second.id })
+    const { pointerHandlers } = useNodePointerInteractions(nodeState)
+    press(pointerHandlers, 310, 10)
+    move(pointerHandlers, 340, 10)
+
+    nodeState.flags.pinned = true
+    move(pointerHandlers, 350, 10)
+    release(pointerHandlers, 350, 10)
+
+    expect(startDrag).toHaveBeenCalledOnce()
+    expect(handleDrag).toHaveBeenCalledOnce()
+    expect(endDrag).toHaveBeenCalledOnce()
   })
 
   it('forwards presses to the canvas while node pointer events are disabled', () => {
