@@ -9,7 +9,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createGraphMutations } from './graphMutations'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 // eslint-disable-next-line import-x/no-restricted-paths
@@ -29,6 +28,7 @@ import {
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { toNodeId } from '@/types/nodeId'
 
+import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
 import { reconcileAgentAdapters } from './agentNodeMaterializer'
 import { applyLiveWidgetValue } from './liveWidgetProjection'
 
@@ -43,18 +43,9 @@ vi.mock<unknown>(import('@/composables/node/useNodeImageUpload'), () => ({
   useNodeImageUpload: () => ({ openFileSelection: vi.fn() })
 }))
 
-vi.mock(import('@/i18n'), () => ({
-  t: (key: string) => key
-}))
+vi.mock(import('@/i18n'))
 
-vi.mock(import('@/utils/litegraphUtil'), () => ({
-  addToComboValues: (widget: IComboWidget, value: string) => {
-    const values = widget.options.values
-    if (Array.isArray(values) && !values.includes(value)) {
-      values.push(value)
-    }
-  }
-}))
+vi.mock(import('@/utils/litegraphUtil'))
 
 /**
  * Same two-widget shape production LoadImage-style nodes use: a plain combo
@@ -159,7 +150,8 @@ function remoteMutations(scope: GraphScope) {
         })
       },
       deleteNodes: vi.fn()
-    }
+    },
+    placement: inertPlacementPort
   })
 }
 

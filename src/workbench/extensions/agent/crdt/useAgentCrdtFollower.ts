@@ -19,7 +19,11 @@ import { createUuidv4 } from '@/utils/uuid'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import type { MaterializableGraph } from './agentNodeMaterializer'
-import { AgentCrdtDocLifecycle, STALE_AFTER_MS } from './agentCrdtDocLifecycle'
+import {
+  AgentCrdtDocLifecycle,
+  STALE_AFTER_MS,
+  SUBSCRIBE_CATCHUP_GRACE_MS
+} from './agentCrdtDocLifecycle'
 import { AgentCrdtProjection } from './agentCrdtProjection'
 import { apiTransport, createLoggedTransport } from './agentCrdtTransport'
 import { recordDevEvent } from './devPanelLog'
@@ -30,10 +34,11 @@ import type { MutationsForTarget } from './ecsFollowerAdapter'
 import type { GraphOperation } from './graphOperations'
 import type { ClassifiedDocUpdate } from './layoutFollowerBridge'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
+import { createOpCoalescer } from './opCoalescer'
 import type { OpsResultView } from './opSender'
 import { createOpSender } from './opSender'
 
-export { apiTransport, STALE_AFTER_MS }
+export { apiTransport, STALE_AFTER_MS, SUBSCRIBE_CATCHUP_GRACE_MS }
 
 /**
  * s5-metrics-1: per-outcome counters for every `doc_update` the composable's
@@ -57,6 +62,18 @@ interface AgentCrdtOutcomeCounters {
   received: number
   /** Passed this composable's own filter and the adapter had a bound session to apply it to. */
   applied: number
+  /**
+   * PM-1575: same as `applied`, excluding a subscribe's own catch-up frame
+   * (`update.catchUp`) -- the one-time state-vector sync that lands whenever
+   * a workflow is (re)subscribed to, unrelated to any in-flight tool call.
+   * `applied` alone is unusable as a canvas-sync gate for that reason: a tool
+   * call's baseline, captured before that catch-up lands, would otherwise
+   * read the catch-up itself as "the matching update already arrived" for
+   * whichever tool call happens to be first after a (re)subscribe. Consumers
+   * that need "did a LIVE update land" (agentEventTransport.ts's canvas-sync
+   * baseline) must read this field, not `applied`.
+   */
+  appliedLive: number
   /** Received but not applied: inactive target, workflow mismatch, or no bound adapter session. */
   skipped: number
   /** The merged doc failed the KA-11 read gate (`schema_error`). */
@@ -208,6 +225,7 @@ export function useAgentCrdtFollower(
     outcomes: {
       received: 0,
       applied: 0,
+      appliedLive: 0,
       skipped: 0,
       errored: 0,
       gap: 0,
@@ -270,6 +288,7 @@ function startAgentCrdtFollower(
   const outcomes = ref<AgentCrdtOutcomeCounters>({
     received: 0,
     applied: 0,
+    appliedLive: 0,
     skipped: 0,
     errored: 0,
     gap: 0,
@@ -279,11 +298,6 @@ function startAgentCrdtFollower(
 
   const client = new DocFrameClient(createLoggedTransport())
   const bridge = new LayoutFollowerBridge(client)
-  const projection = new AgentCrdtProjection(
-    graphMutations,
-    getGraph,
-    () => bridge.follower.doc
-  )
   const lifecycle = new AgentCrdtDocLifecycle(
     () => subscribedWorkflowId.value,
     () => bridge.resubscribe(),
@@ -292,6 +306,10 @@ function startAgentCrdtFollower(
     }
   )
   const tabId = createUuidv4()
+  // Doc node ids whose human delete the host has applied but whose effect
+  // frame has not yet removed them from the doc. Kept pending for the
+  // reconcile so the result-to-effect window cannot resurrect them.
+  const confirmedDeletes = new Set<string>()
   const sender = createOpSender({
     sendOps: (target, tab, ops) => client.sendOps(target, tab, ops),
     onOpsResult(listener) {
@@ -317,8 +335,38 @@ function startAgentCrdtFollower(
     tab: tabId,
     actor: () => `human:${userId() ?? 'anonymous'}:${tabId}`,
     baseVersion: () => bridge.lastSequence,
-    onBatchSettled: (outcome) => recordDevEvent('human_ops_settled', outcome)
+    onBatchSettled: (outcome) => {
+      if (outcome.state === 'acknowledged') {
+        const applied = new Set(outcome.result.applied)
+        for (const op of outcome.ops) {
+          if (op.op === 'delete_node' && applied.has(op.op_id))
+            confirmedDeletes.add(String(op.node_id))
+        }
+      }
+      recordDevEvent('human_ops_settled', outcome)
+    }
   })
+  const pendingHumanDeletes = (workflowId: string): ReadonlySet<string> => {
+    const docNodeIds = currentDocNodeIds()
+    for (const id of confirmedDeletes) {
+      if (!docNodeIds.has(id)) confirmedDeletes.delete(id)
+    }
+    const pending = new Set(confirmedDeletes)
+    for (const batch of sender.pendingOps()) {
+      if (batch.workflowId !== workflowId) continue
+      for (const op of batch.ops) {
+        if (op.op === 'delete_node') pending.add(String(op.node_id))
+      }
+    }
+    return pending
+  }
+  const projection = new AgentCrdtProjection(
+    graphMutations,
+    getGraph,
+    () => bridge.follower.doc,
+    { pendingDeletes: pendingHumanDeletes }
+  )
+  const coalescer = createOpCoalescer(sender.admit, sender.flush)
 
   // Dev-panel tap (poc-4): track the doc's node-id set so the panel can show
   // exactly which nodes each doc_update added/removed. Rebuilt from zero on
@@ -346,7 +394,7 @@ function startAgentCrdtFollower(
     )
   }
   const incrementOutcome = (
-    key: 'received' | 'applied' | 'skipped' | 'reset'
+    key: 'received' | 'applied' | 'appliedLive' | 'skipped' | 'reset'
   ): void => {
     outcomes.value = { ...outcomes.value, [key]: outcomes.value[key] + 1 }
   }
@@ -368,6 +416,7 @@ function startAgentCrdtFollower(
   const applyAndReconcile = (update: ClassifiedDocUpdate): NodeId[] => {
     const applied = projection.applyFrame(update)
     incrementOutcome(applied ? 'applied' : 'skipped')
+    if (applied && !update.catchUp) incrementOutcome('appliedLive')
     return applied ? projection.reconcileLiveGraph(update.workflowId) : []
   }
 
@@ -380,11 +429,13 @@ function startAgentCrdtFollower(
     recordDevEvent('doc_subscribed', event.detail ?? null)
     if (ok) {
       lifecycle.onSubscribeConfirmed()
+      resumeHeldOpsIfSubscribed()
     } else {
       lifecycle.onSubscribeRefused()
       // FE #16637 residual: a refusal is the earliest signal the sender can
       // get that its in-flight batch's doc is gone — don't make it wait out
       // the 10 s result-silence window to notice on its own.
+      releaseHeldOps()
       sender.abortIfUnbound()
     }
   }
@@ -451,6 +502,7 @@ function startAgentCrdtFollower(
       opId: `doc-reset:${detail.seq ?? 'unknown'}`
     }
     projection.clearForReset(detail.workflowId, context)
+    sender.abortAll()
     events.onReset?.(detail.workflowId)
     connected.value = false
     updatesApplied.value = 0
@@ -458,6 +510,7 @@ function startAgentCrdtFollower(
     lifecycle.clearStaleProbe()
     knownDocNodeIds = new Set()
     pendingLiveNodeIds.clear()
+    confirmedDeletes.clear()
     recordDevEvent(
       'doc_reset',
       event instanceof CustomEvent ? (event.detail ?? null) : null
@@ -478,6 +531,7 @@ function startAgentCrdtFollower(
       workflowId === subscribedWorkflowId.value
     ) {
       updatesApplied.value = 0
+      confirmedDeletes.clear()
       projection.clearForReset(workflowId, {
         source: 'agent-remote',
         actor: 'agent-lineage',
@@ -548,6 +602,7 @@ function startAgentCrdtFollower(
   const onSocketActivity: EventListener = () => {
     if (lifecycle.shouldDeferSubscribe()) return
     bridge.reconcile()
+    resumeHeldOpsIfSubscribed()
   }
 
   bridge.addEventListener('doc_subscribed', onSubscribed)
@@ -578,24 +633,62 @@ function startAgentCrdtFollower(
       reconcileAndReportPending(boundWorkflowId)
     }
   })
-  // Drive the bridge's intent, then give the sender the same eager signal the
-  // refusal branch gets: `reconcile()` clears send reality synchronously when
-  // the desired doc changes, and a batch minted for the old doc would
-  // otherwise wait out the 10 s result-silence window before noticing.
+  // The bound workflow whose tab went inactive while the sender still held
+  // batches for it. A tab switch pauses the subscription without rebinding
+  // the session, so those batches are held rather than aborted (see
+  // ADR-CRDT-WRITE-0035); anything else that moves the binding releases
+  // them into the normal abort path.
+  let heldForWorkflowId: string | null = null
+  const releaseHeldOps = (): void => {
+    heldForWorkflowId = null
+    sender.resume()
+  }
+  const resumeHeldOpsIfSubscribed = (): void => {
+    if (
+      heldForWorkflowId !== null &&
+      bridge.subscribedWorkflowId === heldForWorkflowId
+    ) {
+      releaseHeldOps()
+    }
+  }
+  const holdOpsForInactiveTab = (workflowId: string): void => {
+    heldForWorkflowId = workflowId
+    sender.suspend()
+    bridge.unsubscribe()
+  }
+  // Flush first: an edit admitted this tick is pinned to the doc still bound
+  // here, and the coalescer's deferred flush would otherwise find it unbound.
+  // Then drive the bridge's intent and give the sender the same eager signal
+  // the refusal branch gets: `reconcile()` clears send reality synchronously
+  // when the desired doc changes, and a batch minted for the old doc would
+  // otherwise wait out the 10 s result-silence window before noticing. The
+  // one exception is the workflow whose ops are held: its subscribe may not
+  // have left a closed socket yet, so the abort waits for the ack instead.
   const retarget = (next: string | null): void => {
+    sender.flush()
     if (next === null) bridge.unsubscribe()
     else bridge.subscribe(next)
+    if (next !== null && next === heldForWorkflowId) {
+      resumeHeldOpsIfSubscribed()
+      return
+    }
+    releaseHeldOps()
     sender.abortIfUnbound()
   }
 
-  const deactivateTarget = (next: string | null): void => {
+  const deactivateTarget = (
+    next: string | null,
+    previousWorkflowId: string | null
+  ): void => {
     if (next !== null) initialBind = false
     if (boundWorkflowId !== null) {
       projection.unbind(boundWorkflowId)
       boundWorkflowId = null
     }
     subscribedWorkflowId.value = null
-    retarget(null)
+    if (next !== null && next === previousWorkflowId)
+      holdOpsForInactiveTab(next)
+    else retarget(null)
   }
 
   const restorePersistedTarget = (justActivated: boolean): void => {
@@ -657,7 +750,7 @@ function startAgentCrdtFollower(
       knownDocNodeIds = new Set()
       pendingLiveNodeIds.clear()
       if (!active) {
-        deactivateTarget(next)
+        deactivateTarget(next, previous?.[0] ?? null)
         return
       }
       if (next === null) {
@@ -686,6 +779,7 @@ function startAgentCrdtFollower(
       () => bridge.removeEventListener('doc_stale', onStale),
       () => bridge.removeEventListener('doc_subscribe_sent', onSubscribeSent),
       () => sender.detach(),
+      () => coalescer.detach(),
       () => projection.destroy(),
       () => bridge.destroy(),
       () => client.destroy()
@@ -713,6 +807,6 @@ function startAgentCrdtFollower(
     status: readonly(status),
     debugSnapshot,
     enqueueHumanOperations: (operations: GraphOperation[]) =>
-      sender.enqueue(operations)
+      coalescer.enqueue(operations)
   }
 }

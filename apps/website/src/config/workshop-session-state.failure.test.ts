@@ -1,5 +1,10 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { nextTick, readonly, ref } from 'vue'
 
+import { testFirebaseUser } from './__fixtures__/workshopSessionFakes'
+let { useWorkshopAuthFlag } = await import('../scripts/posthog')
+let { workshopIdentity, workshopSessionClient, subscribeAuthRefreshTelemetry } =
+  await import('./workshop-account')
 import type { WorkshopSession } from './workshop-session-state'
 
 const SIGNED_OUT = {
@@ -9,41 +14,13 @@ const SIGNED_OUT = {
   settled: false
 } as const
 
-const mocks = vi.hoisted(() => ({
-  activate: vi.fn(async () => undefined),
-  deactivate: vi.fn(),
-  subscribeAuthRefreshTelemetry: vi.fn(() => () => undefined),
-  remint: vi.fn(),
-  subscribers: new Set<(snapshot: unknown) => void>(),
-  emittedSnapshot: undefined as unknown,
-  liveSnapshot: undefined as unknown
-}))
+type Snapshot = ReturnType<typeof workshopSessionClient.getSnapshot>
+const subscribers = new Set<(snapshot: Snapshot) => void>()
+let emittedSnapshot: Snapshot
+let liveSnapshot: Snapshot
 
-vi.mock<unknown>(import('../scripts/posthog'), async () => {
-  const { ref } = await import('vue')
-  const flag = ref(true)
-  return {
-    identifyWorkshopUser: vi.fn(),
-    useWorkshopAuthFlag: () => flag
-  }
-})
-
-vi.mock<unknown>(import('./workshop-account'), () => ({
-  workshopSessionClient: {
-    subscribe: (listener: (snapshot: unknown) => void) => {
-      mocks.subscribers.add(listener)
-      listener(mocks.emittedSnapshot)
-      return () => mocks.subscribers.delete(listener)
-    },
-    ensureFresh: vi.fn(),
-    remint: mocks.remint,
-    clearStoredCredential: vi.fn(),
-    getSnapshot: () => mocks.liveSnapshot,
-    getToken: vi.fn()
-  },
-  workshopIdentity: { activate: mocks.activate, deactivate: mocks.deactivate },
-  subscribeAuthRefreshTelemetry: mocks.subscribeAuthRefreshTelemetry
-}))
+vi.mock(import('../scripts/posthog'))
+vi.mock(import('./workshop-account'))
 
 const bootSession: WorkshopSession = {
   token: 'jwt',
@@ -54,31 +31,52 @@ const bootSession: WorkshopSession = {
   role: 'owner'
 }
 
-const authenticatedSnapshot = {
+const authenticatedSnapshot: Snapshot = {
   phase: 'authenticated',
-  user: { uid: 'user-1' },
+  user: testFirebaseUser({ uid: 'user-1' }),
   session: bootSession
 }
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.resetModules()
+  ;({ useWorkshopAuthFlag } = await import('../scripts/posthog'))
+  ;({ workshopIdentity, workshopSessionClient, subscribeAuthRefreshTelemetry } =
+    await import('./workshop-account'))
+
+  const flag = ref(true)
+  vi.mocked(useWorkshopAuthFlag).mockReturnValue(readonly(flag))
+  onTestFinished(async () => {
+    flag.value = false
+    await nextTick()
+  })
   window.localStorage.removeItem('workshop:workspace')
-  mocks.subscribers.clear()
-  mocks.remint.mockReset()
-  mocks.emittedSnapshot = SIGNED_OUT
-  mocks.liveSnapshot = SIGNED_OUT
+  subscribers.clear()
+  emittedSnapshot = SIGNED_OUT
+  liveSnapshot = SIGNED_OUT
+  vi.mocked(workshopSessionClient.getSnapshot).mockImplementation(
+    () => liveSnapshot
+  )
+  vi.mocked(workshopSessionClient.subscribe).mockImplementation((listener) => {
+    subscribers.add(listener)
+    listener(emittedSnapshot)
+    return () => {
+      subscribers.delete(listener)
+    }
+  })
 })
 
 describe('useWorkshopSession initialization failure', () => {
   it('cleans up and retries on the next use instead of latching the failure', async () => {
-    mocks.activate.mockRejectedValueOnce(new Error('activate exploded'))
+    vi.mocked(workshopIdentity.activate).mockRejectedValueOnce(
+      new Error('activate exploded')
+    )
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const sessionModule = await import('./workshop-session-state')
 
     sessionModule.useWorkshopSession()
     await vi.waitFor(() => expect(errorSpy).toHaveBeenCalledOnce())
     expect(
-      mocks.subscribers.size,
+      subscribers.size,
       'a partial subscription from the failed attempt must not stay installed'
     ).toBe(0)
 
@@ -86,11 +84,11 @@ describe('useWorkshopSession initialization failure', () => {
 
     await vi.waitFor(() =>
       expect(
-        mocks.activate,
+        vi.mocked(workshopIdentity.activate),
         'the latch must reopen so a later caller retries the activation'
       ).toHaveBeenCalledTimes(2)
     )
-    expect(mocks.subscribers.size).toBe(1)
+    expect(subscribers.size).toBe(1)
     errorSpy.mockRestore()
   })
 
@@ -101,21 +99,25 @@ describe('useWorkshopSession initialization failure', () => {
       'workshop:workspace',
       JSON.stringify({ uid: 'user-1', workspaceId: 'team-9' })
     )
-    mocks.emittedSnapshot = authenticatedSnapshot
-    mocks.liveSnapshot = authenticatedSnapshot
-    let finishRestore!: (value: { status: string; code: string }) => void
-    mocks.remint.mockImplementation(
+    emittedSnapshot = authenticatedSnapshot
+    liveSnapshot = authenticatedSnapshot
+    let finishRestore!: (
+      value: Awaited<ReturnType<typeof workshopSessionClient.remint>>
+    ) => void
+    vi.mocked(workshopSessionClient.remint).mockImplementation(
       () => new Promise((resolve) => (finishRestore = resolve))
     )
-    mocks.subscribeAuthRefreshTelemetry.mockImplementation(() => {
+    vi.mocked(subscribeAuthRefreshTelemetry).mockImplementation(() => {
       throw new Error('telemetry exploded')
     })
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const sessionModule = await import('./workshop-session-state')
 
     const session = sessionModule.useWorkshopSession()
-    mocks.deactivate.mockClear()
-    await vi.waitFor(() => expect(mocks.remint).toHaveBeenCalledOnce())
+    vi.mocked(workshopIdentity.deactivate).mockClear()
+    await vi.waitFor(() =>
+      expect(vi.mocked(workshopSessionClient.remint)).toHaveBeenCalledOnce()
+    )
     await vi.waitFor(() => expect(errorSpy).toHaveBeenCalledOnce())
 
     // The restore's re-mint settles only now, after begin threw and abandoned.
@@ -128,7 +130,7 @@ describe('useWorkshopSession initialization failure', () => {
     ).toBeUndefined()
     expect(session.signedIn.value).toBe(false)
     expect(
-      mocks.deactivate,
+      vi.mocked(workshopIdentity.deactivate),
       'the failed attempt reaches deactivate(); the integration suite pins the storage effect'
     ).toHaveBeenCalledOnce()
     errorSpy.mockRestore()

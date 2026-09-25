@@ -11,6 +11,7 @@ import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 
+import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
 import type { GraphOperation } from './graphOperations'
 import {
   applyLiveWidgetValue,
@@ -54,7 +55,8 @@ function withMintWiring(
     enqueue: (operations) => minted.push(...operations),
     layoutChanges: () => () => undefined,
     localActorPrefix: 'user-',
-    getGraph: () => graph
+    getGraph: () => graph,
+    boundRootGraphId: () => toRootGraphId(graph.id)
   })
   try {
     run(minted)
@@ -76,6 +78,7 @@ describe('applyLiveWidgetValue', () => {
     const mutations = createGraphMutations({
       getScope: () => rootScope,
       layout: { createNode: vi.fn(), deleteNodes: vi.fn() },
+      placement: inertPlacementPort,
       liveWidgets: {
         rebind: (scope, nodeId, name) =>
           rebindLiveWidgetState(graph, scope, nodeId, name),
@@ -179,7 +182,7 @@ describe('applyLiveWidgetValue', () => {
       )
     ).toEqual({ status: 'applied', resolvedValue: 'after' })
     expect(widget.value).toBe('after')
-    expect(callback).toHaveBeenCalledWith('after')
+    expect(callback).toHaveBeenCalledWith('after', undefined, node)
     expect(node.onWidgetChanged).toHaveBeenCalledWith(
       'value',
       'after',
@@ -232,6 +235,29 @@ describe('applyLiveWidgetValue', () => {
     ).toEqual({ status: 'applied', resolvedValue: 'after' })
     expect(setter).toHaveBeenCalledOnce()
     expect(node.properties.mode).toBe('after')
+  })
+
+  it('invokes a custom setter even when its getter already mirrors the store write', () => {
+    const { graph, widget } = graphWithWidget()
+    const id = widget.widgetId!
+    const setter = vi.fn()
+    Object.defineProperty(widget, 'value', {
+      configurable: true,
+      get: () => useWidgetValueStore().getWidget(id)?.value,
+      set: setter
+    })
+
+    expect(
+      applyLiveWidgetValue(
+        graph,
+        rootScope,
+        toNodeId(7),
+        'value',
+        'after',
+        remoteContext
+      )
+    ).toEqual({ status: 'applied', resolvedValue: 'after' })
+    expect(setter).toHaveBeenCalledExactlyOnceWith('after')
   })
 
   it('creates an undefined backing property and syncs callback edits', () => {
@@ -311,7 +337,7 @@ describe('applyLiveWidgetValue', () => {
   })
 
   it('updates serializable scalar widget types outside the legacy allowlist', () => {
-    const { graph, widget, callback } = graphWithWidget('color')
+    const { graph, node, widget, callback } = graphWithWidget('color')
 
     expect(
       applyLiveWidgetValue(
@@ -324,7 +350,7 @@ describe('applyLiveWidgetValue', () => {
       )
     ).toEqual({ status: 'applied', resolvedValue: '#ffffff' })
     expect(widget.value).toBe('#ffffff')
-    expect(callback).toHaveBeenCalledWith('#ffffff')
+    expect(callback).toHaveBeenCalledWith('#ffffff', undefined, node)
   })
 
   it('skips object values for a text widget', () => {
@@ -565,6 +591,7 @@ describe('applyLiveWidgetValue', () => {
     const markDirty = vi.fn()
     const projection = createLiveWidgetProjection({
       getRootGraph: () => graph,
+      getCanvas: () => undefined,
       markDirty
     })
 

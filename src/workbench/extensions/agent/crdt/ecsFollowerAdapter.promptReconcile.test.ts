@@ -14,6 +14,7 @@ import { widgetId } from '@/types/widgetId'
 
 import { AgentCrdtProjection } from './agentCrdtProjection'
 import { FollowerDoc } from './followerDoc'
+import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
 import { createGraphMutations } from './graphMutations'
 
 /**
@@ -100,7 +101,11 @@ function addProgressText(node: LGraphNode) {
 const layout = { createNode: vi.fn(), deleteNodes: vi.fn() }
 
 function remoteMutations(scope: GraphScope) {
-  return createGraphMutations({ getScope: () => scope, layout })
+  return createGraphMutations({
+    getScope: () => scope,
+    layout,
+    placement: inertPlacementPort
+  })
 }
 
 function toWorkflowJson({ nodes, ...rest }: ISerialisedGraph): WorkflowJSON {
@@ -143,11 +148,13 @@ function bindAndCatchUp(graph: LGraph, saved: ISerialisedGraph) {
 
 /**
  * The node was added with an empty prompt (that save is what the doc holds),
- * the user then typed a prompt and ran a generation, which appended the
- * progress-text widget. A catch-up frame then reconciles the live node
- * against the mint-time doc entry.
+ * the user then typed a prompt and, when `runningGeneration` is set, ran a
+ * generation, which appended the progress-text widget. A catch-up frame then
+ * reconciles the live node against the mint-time doc entry.
  */
-function reconcileAfterUserTypedPrompt() {
+function reconcileAfterUserTypedPrompt({
+  runningGeneration = true
+}: { runningGeneration?: boolean } = {}) {
   const graph = new LGraph()
   const node = LiteGraph.createNode(NODE_TYPE)
   assert(node instanceof TestFlux2Image, 'Flux2ImageNode test type registered')
@@ -155,7 +162,7 @@ function reconcileAfterUserTypedPrompt() {
   const mintTimeSave = structuredClone(graph.serialize())
 
   promptOf(node).value = PROMPT_TYPED_BY_USER
-  addProgressText(node)
+  if (runningGeneration) addProgressText(node)
 
   const { committed, destroy } = bindAndCatchUp(graph, mintTimeSave)
   return { graph, node, committed, destroy }
@@ -199,12 +206,25 @@ describe('Flux2ImageNode prompt through a follower catch-up reconcile (PM-1303 /
     destroy()
   })
 
-  it.fails('hypothesis C: keeps the prompt the user typed when the doc snapshot predates it', () => {
+  it('hypothesis C: keeps the prompt the user typed when the doc snapshot predates it', () => {
     const { node, committed, destroy } = reconcileAfterUserTypedPrompt()
     expect(committed).toBe(true)
 
     // PM-1303/PM-1310 hypothesis C: applyWidgetValues overwrites the live
     // prompt with the doc's mint-time '' and the text box reads empty.
+    expect(promptOf(node).value).toBe(PROMPT_TYPED_BY_USER)
+    destroy()
+  })
+
+  it('keeps a directly-edited prompt with no generation in flight (Jo Zhang repro)', () => {
+    // PM-1524: editing an existing node's prompt directly, with no generation
+    // running, so no progress-text widget appears on the node at all. The
+    // catch-up reconcile still replays the mint-time doc snapshot, so this is
+    // the same clobber with one less widget on the node.
+    const { node, committed, destroy } = reconcileAfterUserTypedPrompt({
+      runningGeneration: false
+    })
+    expect(committed).toBe(true)
     expect(promptOf(node).value).toBe(PROMPT_TYPED_BY_USER)
     destroy()
   })

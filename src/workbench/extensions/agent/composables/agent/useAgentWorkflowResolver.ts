@@ -62,6 +62,16 @@ export function useAgentWorkflowResolver({
     }
   }
 
+  /**
+   * Drops a workflow the server has refused. `cloudIdFor` reads this index
+   * ahead of the binding store, and `refreshCloudWorkflowIds` both swallows
+   * its errors and races a timeout, so a stale entry would keep handing the
+   * refused id back to the next turn however often the binding is released.
+   */
+  function forgetCloudWorkflowId(workflowId: string): void {
+    cloudIndex.value = cloudIndex.value.filter(({ id }) => id !== workflowId)
+  }
+
   function cloudWorkflowName(workflow: ComfyWorkflow): string {
     return workflow.suffix === 'app.json'
       ? `${workflow.filename}.app`
@@ -93,10 +103,7 @@ export function useAgentWorkflowResolver({
   }
 
   function indexedNameFor(workflowId: string): string | undefined {
-    for (const [name, id] of cloudIdsByName.value) {
-      if (id === workflowId) return name
-    }
-    return undefined
+    return cloudIndex.value.find(({ id }) => id === workflowId)?.name
   }
 
   /**
@@ -110,7 +117,7 @@ export function useAgentWorkflowResolver({
     const indexedName = indexedNameFor(workflowId)
     const boundName = cloudWorkflowName(bound)
     if (indexedName === undefined || indexedName === boundName) return false
-    const boundId = cloudIdsByName.value.get(boundName)
+    const boundId = cloudIndex.value.find(({ name }) => name === boundName)?.id
     return boundId !== undefined && boundId !== workflowId
   }
 
@@ -169,8 +176,8 @@ export function useAgentWorkflowResolver({
         return true
       })
       return [
-        ...open.toSorted((a, b) => a.name.localeCompare(b.name)),
-        ...saved.toSorted((a, b) => a.name.localeCompare(b.name))
+        ...[...open].sort((a, b) => a.name.localeCompare(b.name)),
+        ...[...saved].sort((a, b) => a.name.localeCompare(b.name))
       ]
     }
   )
@@ -203,6 +210,7 @@ export function useAgentWorkflowResolver({
 
   return {
     refreshCloudWorkflowIds,
+    forgetCloudWorkflowId,
     cloudIdFor,
     cloudWorkflowName,
     boundOrOpenWorkflowFor,

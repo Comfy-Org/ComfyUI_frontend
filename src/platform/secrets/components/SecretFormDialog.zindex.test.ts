@@ -35,22 +35,6 @@ vi.mock<unknown>(import('primevue/password'), () => ({
   default: { name: 'Password', template: '<input type="password" />' }
 }))
 
-vi.mock<unknown>(import('@/components/ui/select/Select.vue'), () => ({
-  default: { name: 'Select', template: '<div><slot /></div>' }
-}))
-vi.mock<unknown>(import('@/components/ui/select/SelectContent.vue'), () => ({
-  default: { name: 'SelectContent', template: '<div><slot /></div>' }
-}))
-vi.mock<unknown>(import('@/components/ui/select/SelectItem.vue'), () => ({
-  default: { name: 'SelectItem', template: '<div><slot /></div>' }
-}))
-vi.mock<unknown>(import('@/components/ui/select/SelectTrigger.vue'), () => ({
-  default: { name: 'SelectTrigger', template: '<div><slot /></div>' }
-}))
-vi.mock<unknown>(import('@/components/ui/select/SelectValue.vue'), () => ({
-  default: { name: 'SelectValue', template: '<span />' }
-}))
-
 const i18n = createI18n({
   legacy: false,
   locale: 'en',

@@ -1,4 +1,5 @@
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -18,7 +19,10 @@ function isScalarValue(value: WidgetValue): boolean {
   )
 }
 
-function owningGraph(rootGraph: LGraph, scope: GraphScope): LGraph | null {
+export function owningGraph(
+  rootGraph: LGraph,
+  scope: GraphScope
+): LGraph | null {
   if (rootGraph.id !== scope.rootGraphId) return null
   return String(scope.owningGraphId) === String(scope.rootGraphId)
     ? rootGraph
@@ -32,6 +36,7 @@ export type LiveWidgetProjectionResult =
 
 interface LiveWidgetProjectionDeps {
   getRootGraph(): LGraph | undefined
+  getCanvas(): LGraphCanvas | undefined
   markDirty(): void
 }
 
@@ -112,8 +117,9 @@ function setWidgetValue(
   context: RemoteMutationContext
 ): void {
   const id = widget.widgetId
+  const previousValue = widget.value
   const updatedStore = id ? widgetStore.setValue(id, value, context) : false
-  if (!updatedStore || !Object.is(widget.value, value)) {
+  if (!updatedStore || !Object.is(previousValue, value)) {
     widget.value = value
   }
   setBackingProperty(node, widget, value)
@@ -180,7 +186,8 @@ export function applyLiveWidgetValue(
   nodeId: NodeId,
   name: string,
   value: WidgetValue,
-  context: RemoteMutationContext
+  context: RemoteMutationContext,
+  canvas?: LGraphCanvas
 ): LiveWidgetProjectionResult {
   if (!rootGraph) return skipped()
   const graph = owningGraph(rootGraph, scope)
@@ -205,7 +212,7 @@ export function applyLiveWidgetValue(
     runMintPortsBuffered(() => {
       try {
         setWidgetValue(widgetStore, node, widget, value, context)
-        widget.callback?.(value)
+        widget.callback?.(value, canvas, node)
         node.onWidgetChanged?.(name, value, previousValue, widget)
         setBackingProperty(node, widget, widget.value)
       } catch (error) {
@@ -261,7 +268,8 @@ export function createLiveWidgetProjection(deps: LiveWidgetProjectionDeps) {
         nodeId,
         name,
         value,
-        context
+        context,
+        deps.getCanvas()
       )
       if (result.status === 'applied') deps.markDirty()
       return result

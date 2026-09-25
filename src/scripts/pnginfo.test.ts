@@ -259,6 +259,9 @@ describe('importA1111', () => {
       if (type === 'CLIPTextEncode') {
         node.addWidget('text', 'text', '', () => {})
       }
+      if (type === 'KSampler') {
+        node.addWidget('number', 'steps', 0, () => {})
+      }
       vi.spyOn(node, 'connect').mockReturnValue(null)
       return node
     })
@@ -386,4 +389,30 @@ describe('importA1111', () => {
         .map((node) => node?.widgets?.[0].value)
     ).toEqual(['masterpiece', 'embedding:EasyNegative, blurry'])
   })
+
+  it.for([
+    ['its own step count', 'Hires steps: 12, ', [20, 12]],
+    ['the base step count', '', [20, 20]]
+  ] as const)(
+    'adds a hires sampler that uses %s',
+    async ([, hiresSteps, expectedSteps]) => {
+      const graph = new LGraph()
+      vi.mocked(api.getEmbeddings).mockResolvedValue([])
+      mockAvailableCoreNodes(graph)
+
+      const imported = await importA1111(
+        graph,
+        `${parameters}, Hires upscale: 2, ${hiresSteps}Hires upscaler: Latent`
+      )
+
+      expect(imported).toBe('imported')
+      expect(
+        vi
+          .mocked(LiteGraph.createNode)
+          .mock.results.map(({ value }) => value)
+          .filter((node) => node?.type === 'KSampler')
+          .map((node) => node?.widgets?.[0].value)
+      ).toEqual(expectedSteps)
+    }
+  )
 })

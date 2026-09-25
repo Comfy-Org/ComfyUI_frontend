@@ -1,151 +1,136 @@
+import { mint } from '@comfyorg/comfy-multi-player'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, nextTick, ref } from 'vue'
-import type { Ref } from 'vue'
+import { getActivePinia } from 'pinia'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent, ref } from 'vue'
+import * as Y from 'yjs'
 
 import { render } from '@testing-library/vue'
 
-import type { ComfyApi } from '@/scripts/api'
-import type { ComfyApp } from '@/scripts/app'
+import { api } from '@/scripts/api'
+import { useNodeDataStore } from '@/stores/nodeDataStore'
+import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
+import { toNodeId } from '@/types/nodeId'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
-import type { GraphMutations } from './graphMutations'
+import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
+import { encodeBase64 } from './docFrameClient'
+import { createGraphMutations } from './graphMutations'
+import { useAgentCrdtFollower } from './useAgentCrdtFollower'
 
-const apiState = vi.hoisted(() => {
-  const docFrames = new EventTarget()
-  const socketEvents = new EventTarget()
-  const send = vi.fn()
+const sent: string[] = []
 
-  return {
-    docFrames,
-    socketEvents,
-    send,
-    api: {
-      socket: { readyState: 1 as const, send },
-      addCustomEventListener: (type: string, listener: EventListener) =>
-        docFrames.addEventListener(type, listener),
-      removeCustomEventListener: (type: string, listener: EventListener) =>
-        docFrames.removeEventListener(type, listener),
-      addEventListener: (type: string, listener: EventListener) =>
-        socketEvents.addEventListener(type, listener),
-      removeEventListener: (type: string, listener: EventListener) =>
-        socketEvents.removeEventListener(type, listener)
-    }
-  }
-})
-
-vi.mock(import('@/scripts/api'), () => ({
-  api: fromPartial<ComfyApi>(apiState.api)
-}))
-vi.mock(import('@/scripts/app'), () => ({
-  app: fromPartial<ComfyApp>({})
-}))
-
-import { STALE_AFTER_MS, useAgentCrdtFollower } from './useAgentCrdtFollower'
-import type { AgentCrdtStatus } from './useAgentCrdtFollower'
-
-const graphMutations = fromPartial<GraphMutations>({
-  clearSemanticGraph: vi.fn(() => true)
-})
-
-function framesSent(): unknown[] {
-  return apiState.send.mock.calls.map(([frame]) => JSON.parse(frame) as unknown)
+const WORKFLOW_ID = 'wf-rejected-projection'
+const scope = {
+  rootGraphId: toRootGraphId('root'),
+  owningGraphId: toOwningGraphId('root')
 }
 
-function dispatchServerFrame(
-  type: string,
-  data: Record<string, unknown>
-): void {
-  apiState.docFrames.dispatchEvent(
-    new CustomEvent(type, { detail: { v: 1, ...data } })
+function deliver(type: string, data: unknown): void {
+  EventTarget.prototype.dispatchEvent.call(
+    api,
+    new CustomEvent(type, { detail: data })
   )
 }
 
-function mountFollower(initialWorkflowId: string | null): {
-  unmount: () => void
-  workflowId: Ref<string | null>
-  status: () => Readonly<AgentCrdtStatus>
-} {
-  const workflowId = ref(initialWorkflowId)
-  let readStatus!: () => Readonly<AgentCrdtStatus>
-  const host = defineComponent({
-    setup() {
-      const { status } = useAgentCrdtFollower(workflowId, graphMutations)
-      readStatus = () => status.value
-      return () => null
-    }
-  })
-  const { unmount } = render(host)
-  return { unmount, workflowId, status: readStatus }
+function sentFrames(type: string): unknown[] {
+  return sent
+    .map((frame): unknown => JSON.parse(frame))
+    .filter(
+      (frame) =>
+        typeof frame === 'object' &&
+        frame !== null &&
+        'type' in frame &&
+        frame.type === type
+    )
 }
 
-describe('useAgentCrdtFollower production subscription composition', () => {
+describe('useAgentCrdtFollower projection recovery', () => {
   beforeEach(() => {
+    sent.length = 0
+    vi.stubGlobal('WebSocket', { OPEN: 1 })
     useAgentPanelStore().enabled = true
-    sessionStorage.clear()
-    apiState.send.mockClear()
+    api.socket = fromPartial<WebSocket>({
+      readyState: 1,
+      send: vi.fn((frame) => {
+        if (typeof frame === 'string') sent.push(frame)
+      })
+    })
   })
 
-  it('preserves a restored same-document subscription through acknowledgement', async () => {
-    vi.useFakeTimers()
-    const initial = mountFollower('doc-a')
-    dispatchServerFrame('doc_subscribed', {
-      workflow_id: 'doc-a',
-      ok: true,
-      seq: 1
+  afterEach(() => {
+    api.socket = null
+  })
+
+  it('loses a rejected projection when resubscription has no host delta', () => {
+    let scopeAvailable = true
+    const mutations = createGraphMutations({
+      getScope: () => (scopeAvailable ? scope : null),
+      layout: { createNode: vi.fn(), deleteNodes: vi.fn() },
+      placement: inertPlacementPort
     })
-    initial.unmount()
-    apiState.send.mockClear()
-
-    const restored = mountFollower(null)
-    expect(framesSent()).toEqual([
-      expect.objectContaining({
-        type: 'doc_subscribe',
-        data: expect.objectContaining({ workflow_id: 'doc-a' })
-      })
-    ])
-    dispatchServerFrame('doc_subscribed', {
-      workflow_id: 'doc-a',
-      ok: true,
-      seq: 1
-    })
-    apiState.send.mockClear()
-
-    restored.workflowId.value = 'doc-a'
-    await nextTick()
-
-    expect(restored.status().connected).toBe(true)
-    expect(framesSent()).toEqual([])
-
-    vi.advanceTimersByTime(STALE_AFTER_MS)
-    expect(framesSent()).toEqual([
-      expect.objectContaining({
-        type: 'doc_subscribe',
-        data: expect.objectContaining({ workflow_id: 'doc-a' })
-      })
-    ])
-    expect(framesSent()).not.toContainEqual(
-      expect.objectContaining({ type: 'doc_ops' })
+    mutations.addNode(
+      { id: 99, type: 'Sink' },
+      {
+        source: 'agent-remote',
+        actor: 'local-hydration',
+        opId: 'local-seed'
+      }
     )
-    apiState.send.mockClear()
-
-    restored.workflowId.value = 'doc-b'
-    await nextTick()
-
-    expect(restored.status()).toMatchObject({
-      connected: false,
-      workflowId: 'doc-b'
-    })
-    expect(framesSent()).toEqual([
-      expect.objectContaining({
-        type: 'doc_unsubscribe',
-        data: expect.objectContaining({ workflow_id: 'doc-a' })
+    const host = mint({ nodes: [], links: [] }, { types: {} })
+    const update = Y.encodeStateAsUpdate(host)
+    const view = render(
+      defineComponent({
+        setup() {
+          useAgentCrdtFollower(ref(WORKFLOW_ID), mutations)
+          return () => null
+        }
       }),
-      expect.objectContaining({
-        type: 'doc_subscribe',
-        data: expect.objectContaining({ workflow_id: 'doc-b' })
+      { global: { plugins: [getActivePinia()!] } }
+    )
+
+    try {
+      deliver('doc_subscribed', {
+        v: 1,
+        workflow_id: WORKFLOW_ID,
+        ok: true,
+        seq: 1
       })
-    ])
-    restored.unmount()
+      scopeAvailable = false
+      deliver('doc_update', {
+        v: 1,
+        workflow_id: WORKFLOW_ID,
+        seq: 1,
+        update_b64: encodeBase64(update)
+      })
+      expect(
+        useNodeDataStore()
+          .getGraphNodesFor('root', 'root')
+          .map(({ id }) => id)
+      ).toEqual([toNodeId(99)])
+
+      scopeAvailable = true
+      api.dispatchCustomEvent('reconnected')
+      expect(sentFrames('doc_subscribe').at(-1)).toMatchObject({
+        data: {
+          state_vector_b64: encodeBase64(Y.encodeStateVector(host))
+        }
+      })
+      deliver('doc_subscribed', {
+        v: 1,
+        workflow_id: WORKFLOW_ID,
+        ok: true,
+        seq: 1
+      })
+
+      expect(
+        useNodeDataStore()
+          .getGraphNodesFor('root', 'root')
+          .map(({ id }) => id)
+      ).toEqual([toNodeId(99)])
+    } finally {
+      view.unmount()
+      host.destroy()
+    }
   })
 })

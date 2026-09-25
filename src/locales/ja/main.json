@@ -17,7 +17,6 @@
     "addNodesFromGraph": "グラフのノードに言及",
     "addToPrompt": "プロンプトに追加",
     "alpha": "アルファ",
-    "askComfyAgent": "Comfy Agentに質問",
     "assetNotAttachable": "画像、動画、音声、3Dモデル、テキストファイルを添付できます",
     "attach": "ファイルを添付",
     "attachFiles": "画像またはファイルをアップロード",
@@ -54,7 +53,6 @@
     "copy": "コピー",
     "copyMarkdown": "Markdownとしてコピー",
     "copyUnavailable": "このバージョンでは、現在の会話のみコピーできます",
-    "credits": "クレジット",
     "currentTab": "現在のタブ",
     "delete": "削除",
     "diagnosticReport": {
@@ -67,6 +65,8 @@
     "dismiss": "閉じる",
     "downloadAssets": "アセットをダウンロード",
     "dragAndDropAssets": "ここにアセットをドラッグ＆ドロップ",
+    "editWhileWorking": "処理中も編集を続けられます",
+    "entryButton": "エージェント",
     "feedbackCaption": "フィードバックを共有",
     "focusNode": "キャンバスに表示",
     "focusNodeLabel": "キャンバスに {node} を表示",
@@ -100,6 +100,7 @@
       "selectNode": "ノードを選択"
     },
     "nodes": "ノード",
+    "nodesAdded": "エージェントがグラフに1個のノードを追加しました | エージェントがグラフに{count}個のノードを追加しました",
     "notHelpful": "役に立たなかった",
     "openWorkflowTab": "{name} を開く",
     "otherOpenWorkflows": "他の開いているワークフロー",
@@ -121,6 +122,7 @@
     "remove": "削除",
     "removeNodeLabel": "{node} の参照を削除",
     "removeWorkflowReference": "{name}の参照を削除",
+    "retryAfterSeconds": "{seconds}秒後に再試行できます。",
     "runApproval": {
       "cancel": "キャンセル",
       "lead": "このツールはワークフローを実行しようとしています：",
@@ -145,7 +147,6 @@
     "runNoticeExpanded": "エージェントはワークフローを変更できます。実行を許可する前に、実行権限を確認してください。",
     "runPermissions": "実行権限",
     "runPermissionsDescription": "エージェントが同意を必要とするタイミングを選択",
-    "saveChanges": "変更を保存",
     "savingWorkflow": "ワークフローを保存中",
     "searchWorkflows": "ワークフローを検索",
     "selectWorkflowForAgent": "エージェントが作業するワークフローを選択",
@@ -184,7 +185,9 @@
     "unavailableWorkflowReference": "{name}（利用不可）",
     "unsavedWorkflow": "未保存",
     "untitledChat": "無題",
+    "updatingGraph": "エージェントがグラフを更新しています",
     "uploading": "アップロード中",
+    "viewAddedNodes": "ノードを表示 | ノードを表示",
     "worked": "完了",
     "workedForMinutes": "{minutes}分{seconds}秒間処理しました",
     "workedForSeconds": "{seconds}秒間処理しました",
@@ -419,7 +422,7 @@
       "contactSupport": "アカウントを削除するには、{email} までご連絡ください"
     },
     "errors": {
-      "auth/account-exists-with-different-credential": "この方法ではサインインできませんでした。別のサインイン方法をお試しいただくか、パスワードをリセットしてください。",
+      "auth/account-exists-with-different-credential": "この方法ではサインインできませんでした。別のサインイン方法を試すか、パスワードをリセットして続行してください。",
       "auth/cancelled-popup-request": "別のサインインウィンドウがすでに開いていたため、このリクエストはキャンセルされました。もう一度お試しください。",
       "auth/email-already-in-use": "このメールアドレスではアカウントを作成できませんでした。代わりにサインインするか、パスワードをリセットしてください。",
       "auth/invalid-credential": "ログイン認証情報が無効です。メールアドレスとパスワードを確認してください。",
@@ -528,6 +531,8 @@
     "index": "{current} / {total}"
   },
   "billingOperation": {
+    "authenticatePaymentBlockedDetail": "銀行がこの支払いを承認しませんでした。別の購入を試す前に、銀行にお問い合わせください。",
+    "authenticatePaymentDetail": "この支払いを銀行が承認する必要があります。もう一度お試しいただき、表示されたら銀行で支払いを確認してください。",
     "authenticationFailedDetail": "支払いの確認を完了できませんでした。もう一度お試しください。",
     "authenticationUnavailable": "安全な支払い認証を利用できません。更新してもう一度お試しください。",
     "cancelFailed": "サブスクリプションのキャンセルに失敗しました",
@@ -998,9 +1003,11 @@
       "addMoreCredits": "クレジットを追加",
       "addMoreCreditsToRun": "実行するためにクレジットを追加",
       "amountToPayLabel": "支払う金額（ドル）",
+      "awaitingBankApprovalBody": "クレジットが追加される前に、この支払いを銀行が承認する必要があります。銀行のアプリまたはこの購入の支払いリンクから完了できます。この支払いが完了または期限切れになるまで、新しいチャージは開始できません。",
       "buy": "購入",
       "buyCredits": "支払いに進む",
       "buyNow": "今すぐ購入",
+      "changeInProgressError": "別のクレジット購入がまだ進行中です。完了または期限切れになるまで待ってから、新しい購入を開始してください。",
       "chargedImmediatelyNote": "保存済みのお支払い方法に直ちに請求されます。",
       "confirmSubtitle": "お支払いが完了すると、クレジットがこのワークスペースに追加されます。",
       "confirmTitle": "確認",
@@ -2001,6 +2008,7 @@
     "removeAll": "すべて削除",
     "removeAllKeybindingsMessage": "このコマンドのすべてのキーバインドが削除されます",
     "removeAllKeybindingsTitle": "すべてのキーバインドを削除しますか？",
+    "removeFilter": "{label} フィルターを削除",
     "removeImage": "画像を削除",
     "removeKeybinding": "キーバインドを削除",
     "removeTag": "タグを削除",
@@ -2060,6 +2068,7 @@
     "status": "ステータス",
     "stopPlayback": "再生を停止",
     "stopRecording": "録音停止",
+    "subgraphUnpackFailed": "選択したサブグラフを展開できません。",
     "submit": "送信",
     "success": "成功",
     "switchToGridView": "グリッドビューに切り替え",
@@ -2214,8 +2223,10 @@
     "star": "星"
   },
   "imageCompare": {
+    "afterAlt": "処理後の画像",
     "batchLabelA": "A：",
     "batchLabelB": "B：",
+    "beforeAlt": "処理前の画像",
     "noImages": "比較する画像がありません"
   },
   "imageCrop": {
@@ -2457,7 +2468,9 @@
     "cancelThisRun": "この実行をキャンセル",
     "deleteAllAssets": "この実行からすべてのアセットを削除",
     "downloadAll": "この実行から{count}個のアセットをダウンロード",
+    "dragAndDropAudio": "クリックして参照するか、音声ファイルをドラッグしてください",
     "dragAndDropImage": "画像をドラッグ＆ドロップ",
+    "dragAndDropVideo": "クリックして参照するか、動画をドラッグしてください",
     "emptyWorkflowExplanation": "ワークフローが空です。アプリを作成するには、まずノードを追加してください。",
     "enterNodeGraph": "ノードグラフに入る",
     "error": {
@@ -2748,6 +2761,9 @@
     "installationQueue": "インストールキュー",
     "installingDependencies": "依存関係をインストール中...",
     "lastUpdated": "最終更新日",
+    "latestActive": "最新のアクティブ版",
+    "latestInstallable": "最新のインストール可能版",
+    "latestStableVersion": "最新の安定版",
     "latestVersion": "最新",
     "legacyManagerSearchTip": "ComfyUI-Managerをお探しですか？ComfyUIを--enable-manager-legacy-uiフラグ付きで起動すると、レガシーマネージャーUIを有効にできます。",
     "legacyManagerUI": "レガシーUIを使用する",
@@ -2769,10 +2785,13 @@
       "updatesAvailable": "アップデートあり"
     },
     "nightlyVersion": "ナイトリー",
+    "noActiveVersions": "このパックにはアクティブなリリースがありません。",
+    "noActiveVersionsFlagged": "このパックにはアクティブなリリースがありません。マネージャーのセキュリティ設定に従い、フラグ付きリリースを選択してインストールをリクエストしてください。",
     "noDescription": "説明はありません",
     "noNodesFound": "ノードが見つかりません",
     "noNodesFoundDescription": "パックのノードは解析できなかったか、パックがフロントエンドの拡張機能のみでノードがない可能性があります。",
     "noResultsFound": "検索に一致する結果が見つかりませんでした。",
+    "noUpdateVersion": "選択した更新オプションに利用可能なリリースはありません。",
     "nodePack": "ノードパック",
     "nodePackInfo": "ノードパック情報",
     "notAvailable": "利用不可",
@@ -2780,9 +2799,11 @@
       "nodeIdRequired": "インストールにはノードIDが必要です"
     },
     "packsSelected": "選択したパック",
+    "queueWaitingToContinue": "タスクが保留中です。続行するには再試行してください。",
     "repository": "リポジトリ",
     "restartToApplyChanges": "変更を適用するには、ComfyUIを再起動してください",
     "restartingBackend": "変更を適用するためにバックエンドを再起動しています...",
+    "retryQueueStart": "再試行",
     "searchPlaceholder": "検索",
     "selectVersion": "バージョンを選択",
     "selected": "選択済み",
@@ -2823,9 +2844,15 @@
     },
     "update": "更新",
     "updateAll": "すべて更新",
+    "updateFailed": "パッケージのバージョンを変更できませんでした。もう一度お試しください。",
+    "updateLatestActiveTooltip": "最新のアクティブ版（デフォルト）に切り替えます。",
+    "updateLatestInstallableTooltip": "フラグ付きおよび保留中のリリースを含む、最新のインストール可能版に切り替えます。マネージャーのセキュリティ設定は引き続き適用されます。",
+    "updateOptions": "更新オプション",
     "updateSelected": "選択したものを更新",
+    "updateVersionInstalled": "バージョン {version} はすでにインストールされています。",
     "updatingAllPacks": "すべてのパッケージを更新中",
-    "version": "バージョン"
+    "version": "バージョン",
+    "versionLoadFailed": "バージョンを読み込めませんでした。この選択画面を閉じて、もう一度お試しください。"
   },
   "maskEditor": {
     "activateLayer": "レイヤーを有効化",
@@ -3099,6 +3126,8 @@
     "linearMode_appModeToolbar_apps": "linearMode.appModeToolbar.apps"
   },
   "minimap": {
+    "highlightedNodes": "ハイライトされたノード: {count}",
+    "label": "ミニマップ",
     "nodeColors": "ノードの色",
     "renderBypassState": "バイパス状態を表示",
     "renderErrorState": "エラー状態を表示",
@@ -3234,7 +3263,6 @@
     "hidream": "HiDream",
     "hooks": "フック",
     "humo": "humo",
-    "hunyhuan video": "hunyhuan video",
     "hunyuan 3d": "hunyuan 3d",
     "hunyuan image": "hunyuan image",
     "hunyuan video": "hunyuan video",
@@ -3280,6 +3308,7 @@
     "schedulers": "スケジューラー",
     "scheduling": "スケジューリング",
     "sd": "sd",
+    "seedvr": "seedvr",
     "sensenova": "sensenova",
     "shader": "shader",
     "sigmas": "シグマ",
@@ -3299,7 +3328,6 @@
     "training": "トレーニング",
     "transform": "変換",
     "trellis": "trellis",
-    "trellis2": "trellis2",
     "triposplat": "triposplat",
     "unet": "U-Net",
     "upscaling": "アップスケーリング",
@@ -3645,6 +3673,7 @@
   "rightSidePanel": {
     "addFavorite": "お気に入りに追加",
     "advancedInputs": "詳細入力",
+    "blockedLastRun": "前回の実行はブロックされました",
     "bypass": "バイパス",
     "collapse": "折りたたむ",
     "color": "ノードカラー",
@@ -4782,6 +4811,7 @@
     },
     "clearAllFilters": "すべてのフィルターをクリア",
     "error": {
+      "loading": "テンプレートを開けませんでした。もう一度お試しください。",
       "templateNotFound": "テンプレート「{templateName}」が見つかりません"
     },
     "filtersApplied": "{count} 件のフィルターが適用されました",
@@ -4823,6 +4853,7 @@
   "toastMessages": {
     "a1111CoreNodesUnavailable": "このComfyUIインストールにはコアノードが不足しているため、ワークフローを読み込めませんでした。バックエンドが正しく起動しているか確認してください。",
     "a1111EmbeddingsUnavailable": "Embeddingをサーバーから読み込めませんでした。ワークフローはインポートされましたが、Embedding名はプレーンテキストのままです。",
+    "assetDropFailed": "ドロップしたアセットを読み込めません",
     "cannotCreateSubgraph": "サブグラフを作成できません",
     "couldNotDetermineFileType": "ファイルタイプを判断できませんでした",
     "dropFileError": "ドロップされたアイテムを処理できません: {error}",
@@ -5061,6 +5092,7 @@
   },
   "workspace": {
     "addedToWorkspace": "次のワークスペースに追加されました：",
+    "deepLinkStayed": "そのワークスペースを開けませんでした。引き続き{workspaceName}にいます。",
     "inviteAccepted": "招待を承諾しました",
     "inviteFailed": "招待の承諾に失敗しました",
     "switchFailed": "ワークスペースの切り替えに失敗しました。もう一度お試しください。",
