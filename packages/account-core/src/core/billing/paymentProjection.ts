@@ -41,6 +41,11 @@ export type PaymentReasonKey =
 export interface PaymentProjection {
   readonly step: PaymentStep
   readonly reasonKey?: PaymentReasonKey
+  /**
+   * What the server tells the customer to do next. A failed operation the
+   * server marks non-retryable without naming a recovery reads as
+   * `contact_support`, so no dead end ever offers a retry.
+   */
   readonly recoveryAction?: BillingRecoveryAction
   /** Present whenever an operation backs the projection; the id support can act on. */
   readonly operationId?: string
@@ -57,6 +62,24 @@ const PROCESSING_REASONS: ReadonlySet<PaymentReasonKey> = new Set([
   'generic'
 ])
 
+const RECOVERY_ACTIONS: Readonly<Record<BillingRecoveryAction, true>> = {
+  retry: true,
+  replace_payment_method: true,
+  authenticate_payment: true,
+  contact_support: true
+}
+
+/** A recovery action this build cannot act on reads as none named. */
+function knownRecoveryAction(
+  action: string | undefined
+): BillingRecoveryAction | undefined {
+  return action !== undefined && isRecoveryAction(action) ? action : undefined
+}
+
+function isRecoveryAction(action: string): action is BillingRecoveryAction {
+  return Object.hasOwn(RECOVERY_ACTIONS, action)
+}
+
 function stepForReason(reason: PaymentReasonKey): PaymentStep {
   return PROCESSING_REASONS.has(reason) ? 'processing_error' : 'declined'
 }
@@ -71,13 +94,12 @@ function projectPending(
     state.declineReason ??
     (state.challenge?.status === 'failed' ? 'authentication_failed' : undefined)
   if (reason !== undefined) {
+    const recoveryAction = knownRecoveryAction(state.recoveryAction)
     return {
       ...base,
       step: stepForReason(reason),
       reasonKey: reason,
-      ...(state.recoveryAction === undefined
-        ? {}
-        : { recoveryAction: state.recoveryAction })
+      ...(recoveryAction === undefined ? {} : { recoveryAction })
     }
   }
   const parked = state.challenge !== undefined || state.actionUrl !== undefined
@@ -97,15 +119,17 @@ export function projectPaymentStep(
       return projectPending(operation, hostStep)
     case 'succeeded':
       return { ...base, step: 'success' }
-    case 'failed':
+    case 'failed': {
+      const recoveryAction =
+        knownRecoveryAction(operation.recoveryAction) ??
+        (operation.retryable ? undefined : 'contact_support')
       return {
         ...base,
         step: stepForReason(operation.declineReason),
         reasonKey: operation.declineReason,
-        ...(operation.recoveryAction === undefined
-          ? {}
-          : { recoveryAction: operation.recoveryAction })
+        ...(recoveryAction === undefined ? {} : { recoveryAction })
       }
+    }
     case 'reconciliation_needed':
       return { ...base, step: 'processing_error', reasonKey: 'generic' }
     case 'timed_out':
