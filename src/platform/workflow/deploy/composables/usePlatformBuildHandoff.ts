@@ -31,6 +31,8 @@ const zHandoffReady = z.object({
 const NONCE_ALPHABET =
   'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-'
 const TAB_CLOSED_POLL_MS = 1000
+const HANDOFF_DEADLINE_MS = 60_000
+const MAX_LOOKUP_PAGES = 20
 
 type PlatformBuildArrival =
   | { kind: 'cloud'; workflowId: string }
@@ -46,31 +48,47 @@ function platformBuildImportUrl(arrival: PlatformBuildArrival): string {
   return url.href
 }
 
+/** One page of Cloud workflows whose name matches exactly, and the next cursor. */
+async function fetchExactMatches(
+  name: string,
+  cursor: string | undefined
+): Promise<{ ids: string[]; next?: string } | undefined> {
+  const after = cursor ? `&after=${encodeURIComponent(cursor)}` : ''
+  const response = await api.fetchApi(
+    `/workflows?name=${encodeURIComponent(name)}&limit=${CLOUD_WORKFLOW_PAGE_SIZE}${after}`
+  )
+  if (!response.ok) return undefined
+  const page = zCloudWorkflowPage.safeParse(await response.json())
+  if (!page.success) return undefined
+  const { data, pagination } = page.data
+  return {
+    ids: data.filter((entry) => entry.name === name).map((entry) => entry.id),
+    next: pagination.has_more ? pagination.next_cursor : undefined
+  }
+}
+
 /**
  * The id of the one Cloud workflow with exactly this name. The server's name
- * filter is a partial match, so pages are read until the exact match is found;
- * a name shared by two workflows is treated as no match, because the wizard
- * could otherwise preselect the wrong one.
+ * filter is a partial match, so pages are read until the exact match is found.
+ * A name shared by two workflows, a cursor seen before, or a walk cut short at
+ * the page cap all count as no match: the wizard could otherwise preselect
+ * the wrong workflow.
  */
 async function findCloudWorkflowId(name: string): Promise<string | undefined> {
   const matches: string[] = []
+  const seen = new Set<string>()
   let cursor: string | undefined
-  do {
-    const after = cursor ? `&after=${encodeURIComponent(cursor)}` : ''
-    const response = await api.fetchApi(
-      `/workflows?name=${encodeURIComponent(name)}&limit=${CLOUD_WORKFLOW_PAGE_SIZE}${after}`
-    )
-    if (!response.ok) return undefined
-    const page = zCloudWorkflowPage.safeParse(await response.json())
-    if (!page.success) return undefined
-    for (const entry of page.data.data)
-      if (entry.name === name) matches.push(entry.id)
-    const next = page.data.pagination.has_more
-      ? page.data.pagination.next_cursor
-      : undefined
-    cursor = next === cursor ? undefined : next
-  } while (cursor && matches.length < 2)
-  return matches.length === 1 ? matches[0] : undefined
+  for (let pages = 0; pages < MAX_LOOKUP_PAGES; pages++) {
+    const page = await fetchExactMatches(name, cursor)
+    if (!page) return undefined
+    matches.push(...page.ids)
+    if (matches.length > 1) return undefined
+    if (!page.next) return matches[0]
+    if (seen.has(page.next)) return undefined
+    seen.add(page.next)
+    cursor = page.next
+  }
+  return undefined
 }
 
 function handoffNonce(): string {
@@ -79,36 +97,51 @@ function handoffNonce(): string {
 }
 
 /**
- * Answers the wizard's ready message with the workflow, once. The nonce ties
- * the reply to this click and the reply goes to the origin the ready message
- * came from, never to `*`. The listener outlives the deploy dialog on purpose:
- * the dialog closes as soon as the tab is on its way, before the wizard has
- * mounted, so it ends when the workflow is sent or the tab closes instead.
+ * Answers the wizard's ready message with the workflow, once. Only a message
+ * from the tab we opened, from the platform's origin, carrying this click's
+ * nonce counts, and the reply goes to that origin alone. The listener is
+ * armed as soon as the tab opens, before the graph is serialized, so an early
+ * ready message is not missed. It outlives the deploy dialog on purpose, and
+ * ends when the workflow is sent, the tab closes, or the wizard has had long
+ * enough to ask. If the graph cannot be serialized the tab is sent to the
+ * plain import step instead of waiting on a reply that will never come.
  */
 function armHandoff(
   tab: Window,
   nonce: string,
   filename: string,
-  workflow: ComfyWorkflowJSON
+  graph: Promise<ComfyWorkflowJSON>
 ): void {
+  const platformOrigin = new URL(getComfyPlatformBaseUrl()).origin
   function onMessage(event: MessageEvent) {
-    if (event.source !== tab) return
+    if (event.source !== tab || event.origin !== platformOrigin) return
     const ready = zHandoffReady.safeParse(event.data)
     if (!ready.success || ready.data.nonce !== nonce) return
     stop()
-    tab.postMessage(
-      { type: HANDOFF_WORKFLOW, nonce, filename, workflow },
-      event.origin
+    void graph.then(
+      (workflow) =>
+        tab.postMessage(
+          { type: HANDOFF_WORKFLOW, nonce, filename, workflow },
+          platformOrigin
+        ),
+      () => undefined
     )
   }
   function stop() {
     window.removeEventListener('message', onMessage)
     clearInterval(closedPoll)
+    clearTimeout(deadline)
   }
   const closedPoll = setInterval(() => {
     if (tab.closed) stop()
   }, TAB_CLOSED_POLL_MS)
+  const deadline = setTimeout(stop, HANDOFF_DEADLINE_MS)
   window.addEventListener('message', onMessage)
+  graph.catch((error: unknown) => {
+    reportHandoffError(error)
+    stop()
+    tab.location.href = platformBuildImportUrl({ kind: 'bare' })
+  })
 }
 
 function reportHandoffError(error: unknown): void {
@@ -168,7 +201,9 @@ export function usePlatformBuildHandoff() {
 
     if (isDesktop) {
       if (workflow)
-        await workflowService.exportWorkflow(workflow.filename, 'workflow')
+        await workflowService
+          .exportWorkflow(workflow.filename, 'workflow')
+          .catch(reportHandoffError)
       window.open(bare, '_blank', 'noopener')
       return true
     }
@@ -191,14 +226,12 @@ export function usePlatformBuildHandoff() {
         .catch(reportHandoffError)
       return tellBlocked(bare)
     }
-    const { workflow: graph } = await app
-      .graphToPrompt()
-      .catch((error: unknown) => {
-        reportHandoffError(error)
-        return { workflow: undefined }
-      })
-    if (graph)
-      armHandoff(tab, nonce, `${cloudWorkflowName(workflow)}.json`, graph)
+    armHandoff(
+      tab,
+      nonce,
+      `${cloudWorkflowName(workflow)}.json`,
+      app.graphToPrompt().then(({ workflow: graph }) => graph)
+    )
     return true
   }
 

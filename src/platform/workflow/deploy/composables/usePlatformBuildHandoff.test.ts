@@ -38,7 +38,7 @@ const IMPORT_STEP = 'https://platform.comfy.org/profile/builds/new?step=import'
 const HANDOFF_LINK = new RegExp(
   `^${IMPORT_STEP.replaceAll('?', '\\?')}&handoff=[A-Za-z0-9_-]{16,64}$`
 )
-const WIZARD_ORIGIN = 'http://localhost:3000'
+const WIZARD_ORIGIN = 'https://platform.comfy.org'
 
 function listing(entries: { id: string; name: string }[], nextCursor?: string) {
   return fromPartial<Response>({
@@ -80,7 +80,7 @@ async function openCard() {
 }
 
 describe('usePlatformBuildHandoff', () => {
-  let tab: { postMessage: Mock; closed: boolean }
+  let tab: { postMessage: Mock; closed: boolean; location: { href: string } }
   let open: ReturnType<typeof vi.spyOn>
 
   function openedUrl(): string {
@@ -107,7 +107,7 @@ describe('usePlatformBuildHandoff', () => {
   beforeEach(() => {
     distribution.isCloud = true
     distribution.isDesktop = false
-    tab = { postMessage: vi.fn(), closed: false }
+    tab = { postMessage: vi.fn(), closed: false, location: { href: '' } }
     open = vi
       .spyOn(window, 'open')
       .mockImplementation(() => fromPartial<Window>(tab))
@@ -207,6 +207,16 @@ describe('usePlatformBuildHandoff', () => {
         )
     },
     {
+      reason: 'the listing cycles back to a cursor it already gave',
+      arrange: () =>
+        fetchApi
+          .mockResolvedValueOnce(listing([], 'c1'))
+          .mockResolvedValueOnce(listing([], 'c2'))
+          .mockResolvedValue(
+            listing([{ id: 'wf_123', name: 'portrait-upscale' }], 'c1')
+          )
+    },
+    {
       reason: 'the lookup fails',
       arrange: () =>
         fetchApi.mockResolvedValue(fromPartial<Response>({ ok: false }))
@@ -242,7 +252,7 @@ describe('usePlatformBuildHandoff', () => {
     expect(openedUrl()).toMatch(HANDOFF_LINK)
   })
 
-  it('answers the wizard that carries its nonce with the workflow, once, at the origin it spoke from', async () => {
+  it('answers the wizard that carries its nonce with the workflow, once, at the platform origin only', async () => {
     distribution.isCloud = false
     setActiveWorkflow({
       path: 'workflows/portrait-upscale.app.json',
@@ -253,6 +263,7 @@ describe('usePlatformBuildHandoff', () => {
     const nonce = handoffNonce()
     wizardSays({ type: 'comfy-build-handoff:ready', nonce })
     wizardSays({ type: 'comfy-build-handoff:ready', nonce })
+    await new Promise((resolve) => setTimeout(resolve))
 
     expect(fetchApi).not.toHaveBeenCalled()
     expect(tab.postMessage).toHaveBeenCalledOnce()
@@ -296,16 +307,28 @@ describe('usePlatformBuildHandoff', () => {
         nonce
       }),
       source: fromPartial<Window>({})
+    },
+    {
+      reason: 'a page on another origin in that tab',
+      says: (nonce: string | null) => ({
+        type: 'comfy-build-handoff:ready',
+        nonce
+      }),
+      origin: 'https://idp.example.com'
     }
-  ])('keeps the workflow to itself on $reason', async ({ says, source }) => {
-    distribution.isCloud = false
-    setActiveWorkflow()
+  ])(
+    'keeps the workflow to itself on $reason',
+    async ({ says, source, origin }) => {
+      distribution.isCloud = false
+      setActiveWorkflow()
 
-    await usePlatformBuildHandoff().open()
-    wizardSays(says(handoffNonce()), { source })
+      await usePlatformBuildHandoff().open()
+      wizardSays(says(handoffNonce()), { source, origin })
+      await new Promise((resolve) => setTimeout(resolve))
 
-    expect(tab.postMessage).not.toHaveBeenCalled()
-  })
+      expect(tab.postMessage).not.toHaveBeenCalled()
+    }
+  )
 
   it('stops listening once the tab is closed', async () => {
     vi.useFakeTimers()
@@ -324,18 +347,54 @@ describe('usePlatformBuildHandoff', () => {
     expect(tab.postMessage).not.toHaveBeenCalled()
   })
 
-  it('keeps the tab and reports it when the graph cannot be serialized', async () => {
+  it('answers a ready message that arrives before the graph is serialized', async () => {
+    distribution.isCloud = false
+    setActiveWorkflow()
+    let finish!: (value: { workflow: typeof GRAPH; output: object }) => void
+    graphToPrompt.mockReturnValueOnce(
+      new Promise((resolve) => {
+        finish = resolve
+      })
+    )
+
+    await usePlatformBuildHandoff().open()
+    wizardSays({ type: 'comfy-build-handoff:ready', nonce: handoffNonce() })
+    finish({ workflow: GRAPH, output: {} })
+    await new Promise((resolve) => setTimeout(resolve))
+
+    expect(tab.postMessage).toHaveBeenCalledOnce()
+  })
+
+  it('sends the tab to the plain import step when the graph cannot be serialized', async () => {
     distribution.isCloud = false
     setActiveWorkflow()
     graphToPrompt.mockRejectedValueOnce(new Error('cannot serialize'))
 
     await expect(usePlatformBuildHandoff().open()).resolves.toBe(true)
+    await new Promise((resolve) => setTimeout(resolve))
 
-    expect(openedUrl()).toMatch(HANDOFF_LINK)
+    expect(tab.location.href).toBe(IMPORT_STEP)
     expect(reportError).toHaveBeenCalledWith(
       expect.any(Error),
       expect.objectContaining({ errorType: expect.any(String) })
     )
+  })
+
+  it('gives up on the handoff once the wizard has had long enough to ask', async () => {
+    vi.useFakeTimers()
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+    distribution.isCloud = false
+    setActiveWorkflow()
+
+    await usePlatformBuildHandoff().open()
+    const nonce = handoffNonce()
+    await vi.advanceTimersByTimeAsync(60_000)
+    wizardSays({ type: 'comfy-build-handoff:ready', nonce })
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(tab.postMessage).not.toHaveBeenCalled()
   })
 
   it('exports the file and opens the bare import step on Desktop, where new windows go to the system browser', async () => {
@@ -348,6 +407,18 @@ describe('usePlatformBuildHandoff', () => {
     expect(exportWorkflow).toHaveBeenCalledOnce()
     expect(open).toHaveBeenCalledOnce()
     expect(open).toHaveBeenCalledWith(IMPORT_STEP, '_blank', 'noopener')
+  })
+
+  it('still opens the import step on Desktop when the export fails', async () => {
+    distribution.isCloud = false
+    distribution.isDesktop = true
+    setActiveWorkflow()
+    exportWorkflow.mockRejectedValueOnce(new Error('disk full'))
+
+    await expect(usePlatformBuildHandoff().open()).resolves.toBe(true)
+
+    expect(open).toHaveBeenCalledWith(IMPORT_STEP, '_blank', 'noopener')
+    expect(reportError).toHaveBeenCalledOnce()
   })
 
   it('exports the file and gives the link in a toast when the popup was blocked', async () => {
