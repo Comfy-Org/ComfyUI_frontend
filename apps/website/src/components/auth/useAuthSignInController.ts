@@ -154,6 +154,10 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
   // settle (and to roll back) before it authenticates, so two credentials can
   // never race for the one identity the whole page reads.
   let pendingAuthentication: Promise<unknown> | undefined
+  // Counts attempts started, so a detached one can tell a successor taking
+  // over from the rollout flag merely invalidating it. Folding both into
+  // `live()` would leave a flag-invalidated detach with no way back to idle.
+  let startedAttempts = 0
 
   function dispatch(event: AuthSignInEvent) {
     const before = state.value
@@ -277,9 +281,10 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
     let authenticatedUid: string | undefined
     let detached = false
     let finishAttempt: (() => void) | undefined
+    const attemptNumber = ++startedAttempts
     // Detaching hands the controls to the visitor; from then on this attempt
-    // idles the page only while nothing newer has taken the controls over.
-    const ownsControls = () => !detached || live()
+    // idles the page only while no successor has taken the controls over.
+    const ownsControls = () => !detached || startedAttempts === attemptNumber
     // Roll a persisted identity back before the reducer leaves `pending`, so no
     // retry can start while the sign-out is still in flight: `signOutWorkshop`
     // is global, and an unawaited one from an abandoned attempt would clear the
@@ -339,9 +344,10 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
       firebase = loaded
       // A detached predecessor may still publish an identity, so an email
       // attempt waits it out rather than adding a second credential to the one
-      // `currentUser` both would write. A popup attempt does not wait: opening
-      // one cancels the outstanding popup inside Firebase, and waiting would
-      // spend the visitor's click activation and get the retry pop-up blocked.
+      // `currentUser` both would write. A popup attempt does not wait: its
+      // `PopupOperation` constructor cancels `currentPopupAction`, so Firebase
+      // serializes those itself, and waiting would spend the visitor's click
+      // activation and leave the retry pop-up blocked.
       if (provider === 'email' && pendingAuthentication) {
         const settledFirst = await withinOperationDeadline(
           pendingAuthentication
@@ -371,12 +377,12 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
       // still decides the outcome. Email is a non-interactive round-trip, so
       // it stays bounded like the other steps.
       let notifyPopupClosed = () => {}
-      const popupClosed = new Promise<typeof POPUP_CLOSED>((resolve) => {
-        notifyPopupClosed = () => resolve(POPUP_CLOSED)
-      })
       const identityBefore = user.value?.uid
       const attempt = authenticate(firebase, () => notifyPopupClosed())
       if (provider !== 'email') {
+        const popupClosed = new Promise<typeof POPUP_CLOSED>((resolve) => {
+          notifyPopupClosed = () => resolve(POPUP_CLOSED)
+        })
         const settled = await Promise.race([attempt, popupClosed])
         // An identity published since this attempt began means the window
         // closed on a sign-in that is completing, not on an abandonment, so

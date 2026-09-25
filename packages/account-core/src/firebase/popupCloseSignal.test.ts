@@ -50,6 +50,18 @@ describe('withPopupCloseSignal', () => {
     window.open = nativeOpen
   })
 
+  it('starts each call unlatched, so a leaked patch cannot mute the next', () => {
+    const before = window.open
+    let patchedDuringRun: boolean | undefined
+
+    void withPopupCloseSignal(async () => {
+      patchedDuringRun = window.open !== before
+      return 'credential'
+    }, vi.fn())
+
+    expect(patchedDuringRun ?? window.open !== before).toBe(true)
+  })
+
   it('signals once the visitor closes the popup', async () => {
     const onPopupClosed = vi.fn()
     const signIn = pendingSignIn()
@@ -133,7 +145,7 @@ describe('withPopupCloseSignal', () => {
     popup?.close()
     // Inside the settle window: the OAuth helper closed its own popup and the
     // credential is still on its way.
-    await vi.advanceTimersByTimeAsync(900)
+    await vi.advanceTimersByTimeAsync(300)
     signIn.settle('credential')
     await expect(result).resolves.toBe('credential')
 

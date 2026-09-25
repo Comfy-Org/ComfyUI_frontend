@@ -669,6 +669,36 @@ describe('AuthSignIn', () => {
     expect(vi.mocked(provisionWorkshopCustomer)).toHaveBeenCalledOnce()
   })
 
+  it('returns a detached attempt to idle when the flag invalidates it rather than a successor', async () => {
+    let closePopup: (() => void) | undefined
+    let dismissPopup: ((reason: unknown) => void) | undefined
+    vi.mocked(signInWorkshopWithGoogle).mockImplementation((options) => {
+      closePopup = options?.onPopupClosed
+      return new Promise<UserCredential>((_resolve, reject) => {
+        dismissPopup = reject
+      })
+    })
+    window.history.replaceState({}, '', '/login/')
+    render(AuthSignIn)
+
+    await clickGoogle()
+    closePopup?.()
+    await waitFor(() =>
+      expect(useEmailButton().hasAttribute('disabled')).toBe(false)
+    )
+
+    // A flicker leaves `live()` false forever, but no successor ever started.
+    authFlag.value = false
+    authFlag.value = true
+    dismissPopup?.({ code: 'auth/popup-closed-by-user', message: 'x' })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(
+      await screen.findByRole('link', { name: /sign up/i }),
+      'detached is the only state with no exit of its own, so it must not outlive its attempt'
+    ).not.toHaveAttribute('aria-disabled')
+  })
+
   it('rolls a late credential back when the visitor has moved on to another attempt', async () => {
     let closePopup: (() => void) | undefined
     let completeSignIn: ((credential: UserCredential) => void) | undefined

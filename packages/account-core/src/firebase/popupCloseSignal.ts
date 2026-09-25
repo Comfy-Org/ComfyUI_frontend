@@ -21,6 +21,11 @@
  * nothing is captured — but Firebase holds no window handle there either and
  * never raises `popup-closed-by-user`, so there is no delay to shorten. The
  * auth emulator serves `emulator/auth/handler`, which this does not match.
+ *
+ * A `Cross-Origin-Opener-Policy: same-origin` header would sever the handle
+ * and make `closed` read true at once, detaching every sign-in about a second
+ * in. The site sends no such header, and Firebase reads the same property for
+ * its own cancellation poll, so popup auth would already be broken if it did.
  */
 
 /** Far below Firebase's own 2s poll, and cheap: one `closed` read per tick. */
