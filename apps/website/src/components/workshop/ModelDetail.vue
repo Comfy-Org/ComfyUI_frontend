@@ -65,6 +65,7 @@ import { t } from '../../i18n/translations'
 import {
   captureWorkshopEvent,
   useWorkshopEnabled,
+  useWorkshopEnabledSettled,
   useWorkshopAuthFlag
 } from '../../scripts/posthog'
 import type { WorkshopRunAnalytics } from '../../scripts/workshop-analytics'
@@ -213,6 +214,7 @@ const attachments = computed(() =>
 const revealed = ref(false)
 
 const workshopEnabled = useWorkshopEnabled()
+const workshopEnabledSettled = useWorkshopEnabledSettled()
 function startAccountServices() {
   return { ...useWorkshopSession(), balance: useWorkshopCredits().balance }
 }
@@ -258,7 +260,8 @@ const canRunModel = computed(
 )
 const gate = computed(() => {
   if (!canRunModel.value) return 'unavailable'
-  if (!workshopEnabled.value) return 'rollingOut'
+  if (!workshopEnabled.value)
+    return workshopEnabledSettled.value ? 'rollingOut' : 'pending'
   if (!mounted.value || draftPending.value) return 'pending'
   if (!authEnabled.value || sessionFailure.value) return 'unavailable'
   if (!settled.value || (user.value && !session.value)) return 'pending'
