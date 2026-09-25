@@ -1,15 +1,19 @@
 <template>
-  <div class="shrink-0 self-center">
-    <Button
-      v-tooltip="{ value: $t('g.moreWorkflows'), showDelay: 300 }"
-      class="rounded-lg"
-      variant="muted-textonly"
-      size="icon"
-      :aria-label="$t('g.moreWorkflows')"
-      @click="menu?.toggle($event)"
+  <div>
+    <Tooltip
+      :config="{ value: $t('g.moreWorkflows'), showDelay: 300 }"
+      side="right"
     >
-      <i class="pi pi-ellipsis-h" />
-    </Button>
+      <Button
+        class="aspect-square h-full w-auto rounded-none"
+        variant="muted-textonly"
+        size="icon"
+        :aria-label="$t('g.moreWorkflows')"
+        @click="menu?.toggle($event)"
+      >
+        <i class="pi pi-ellipsis-h" />
+      </Button>
+    </Tooltip>
     <Menu ref="menu" :model="menuItems" class="max-h-[40vh] overflow-auto">
       <template #item="{ item }">
         <i v-if="item.icon" :class="item.icon" />
@@ -24,6 +28,8 @@
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import { computed, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'

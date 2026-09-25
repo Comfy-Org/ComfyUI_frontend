@@ -72,47 +72,56 @@
                 class="shrink-0"
               />
               <LoginButton v-else-if="!isIntegratedTabBar" />
-              <Button
+              <Tooltip
                 v-if="managerState.shouldShowExtensionsButton.value"
-                v-tooltip.bottom="customNodesManagerTooltipConfig"
-                variant="secondary"
-                size="icon"
-                :aria-label="t('menu.manageExtensions')"
-                @click="openCustomNodeManager"
+                :config="customNodesManagerTooltipConfig"
+                side="bottom"
               >
-                <i class="icon-[comfy--extensions-blocks] size-4" />
-                <span
-                  v-if="shouldShowRedDot"
-                  class="absolute top-0.5 right-1 size-2 rounded-full bg-red-500"
-                />
-              </Button>
-              <Button
-                v-if="isCloud && flags.workflowSharingEnabled"
-                v-tooltip.bottom="shareTooltipConfig"
-                variant="secondary"
-                size="icon"
-                :aria-label="t('actionbar.shareTooltip')"
-                @click="() => openShareDialog().catch(toastErrorHandler)"
-                @pointerenter="prefetchShareDialog"
-              >
-                <i class="icon-[comfy--send] size-4" />
-              </Button>
-              <div v-if="!isRightSidePanelOpen" class="relative">
                 <Button
-                  v-tooltip.bottom="rightSidePanelTooltipConfig"
-                  :class="
-                    cn(
-                      showErrorIndicatorOnPanelButton &&
-                        'outline-1 outline-destructive-background'
-                    )
-                  "
                   variant="secondary"
                   size="icon"
-                  :aria-label="t('rightSidePanel.togglePanel')"
-                  @click="openRightSidePanel"
+                  :aria-label="t('menu.manageExtensions')"
+                  @click="openCustomNodeManager"
                 >
-                  <i class="icon-[lucide--panel-right] size-4" />
+                  <i class="icon-[comfy--extensions-blocks] size-4" />
+                  <span
+                    v-if="shouldShowRedDot"
+                    class="absolute top-0.5 right-1 size-2 rounded-full bg-red-500"
+                  />
                 </Button>
+              </Tooltip>
+              <Tooltip
+                v-if="isCloud && flags.workflowSharingEnabled"
+                :config="shareTooltipConfig"
+                side="bottom"
+              >
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  :aria-label="t('actionbar.shareTooltip')"
+                  @click="() => openShareDialog().catch(toastErrorHandler)"
+                  @pointerenter="prefetchShareDialog"
+                >
+                  <i class="icon-[comfy--send] size-4" />
+                </Button>
+              </Tooltip>
+              <div v-if="!isRightSidePanelOpen" class="relative">
+                <Tooltip :config="rightSidePanelTooltipConfig" side="bottom">
+                  <Button
+                    :class="
+                      cn(
+                        showErrorIndicatorOnPanelButton &&
+                          'outline-1 outline-destructive-background'
+                      )
+                    "
+                    variant="secondary"
+                    size="icon"
+                    :aria-label="t('rightSidePanel.togglePanel')"
+                    @click="openRightSidePanel"
+                  >
+                    <i class="icon-[lucide--panel-right] size-4" />
+                  </Button>
+                </Tooltip>
                 <StatusBadge
                   v-if="showErrorIndicatorOnPanelButton"
                   variant="dot"
@@ -163,6 +172,8 @@
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import { useLocalStorage, useMutationObserver } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'

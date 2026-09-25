@@ -25,16 +25,16 @@ vi.mock(import('@/platform/assets/utils/assetPreviewUtil'), () => ({
 }))
 
 vi.mock(import('@vueuse/core'), { spy: true })
-vi.mocked(useClipboard).mockImplementation(
-  () =>
-    ({
-      copy: clipboard.copy,
-      copyPending: ref(false),
-      copied: ref(false),
-      isSupported: computed(() => true),
-      text: ref('')
-    }) satisfies ReturnType<typeof useClipboard>
-)
+
+beforeEach(() => {
+  vi.mocked(useClipboard).mockReturnValue({
+    copy: clipboard.copy,
+    copyPending: ref(false),
+    copied: ref(false),
+    isSupported: computed(() => true),
+    text: ref('')
+  })
+})
 
 const markdownSource = '# Title\n\n**bold** move'
 
@@ -100,9 +100,7 @@ describe('MessageFeedback', () => {
 
       await user.hover(action)
 
-      expect(
-        await screen.findByRole('tooltip', { hidden: true })
-      ).toHaveTextContent(label)
+      expect(await screen.findByRole('tooltip')).toHaveTextContent(label)
     }
   )
 

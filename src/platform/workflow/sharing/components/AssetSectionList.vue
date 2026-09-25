@@ -46,12 +46,11 @@
                 onThumbnailError($event.name, $event.previewUrl)
               "
             />
-            <span
-              v-tooltip="buildTooltipConfig(item.name)"
-              class="truncate text-xs text-base-foreground"
-            >
-              {{ item.name }}
-            </span>
+            <Tooltip :config="buildTooltipConfig(item.name)" side="right">
+              <span class="truncate text-xs text-base-foreground">
+                {{ item.name }}
+              </span>
+            </Tooltip>
             <span
               v-if="item.in_library"
               class="ml-auto shrink-0 text-xs text-muted-foreground"
@@ -66,6 +65,8 @@
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import {
   CollapsibleContent,
   CollapsibleRoot,

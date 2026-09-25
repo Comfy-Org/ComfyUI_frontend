@@ -226,9 +226,9 @@ describe('UserMessage', () => {
     await user.hover(screen.getByText('make it cinematic'))
     const copyButton = screen.getByRole('button', { name: t('agent.copy') })
     await user.hover(copyButton)
-    expect(
-      await screen.findByRole('tooltip', { hidden: true })
-    ).toHaveTextContent(t('agent.copy'))
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      t('agent.copy')
+    )
     await user.click(copyButton)
 
     expect(clipboard.copy).toHaveBeenCalledWith('make it cinematic')
@@ -282,9 +282,7 @@ describe('UserMessage', () => {
 
     const editButton = screen.getByRole('button', { name: t('g.edit') })
     await user.hover(editButton)
-    expect(
-      await screen.findByRole('tooltip', { hidden: true })
-    ).toHaveTextContent(t('g.edit'))
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(t('g.edit'))
     await user.click(editButton)
 
     expect(emitted().edit).toEqual([[{ text: prompt, workflowReferences: [] }]])

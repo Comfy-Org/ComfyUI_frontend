@@ -1,3 +1,4 @@
+import { useToast } from '@/components/ui/toast'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, createApp, defineComponent, ref } from 'vue'
 import type { App } from 'vue'
@@ -31,12 +32,14 @@ vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
 vi.mock(import('@/platform/telemetry'))
 
-vi.mock<unknown>(
-  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
-  () => ({
-    useToast: () => ({ add: state.toastAdd })
-  })
-)
+beforeEach(() => {
+  vi.mocked(useToast().success).mockImplementation(state.toastAdd)
+  vi.mocked(useToast().error).mockImplementation(state.toastAdd)
+  vi.mocked(useToast().info).mockImplementation(state.toastAdd)
+  vi.mocked(useToast().warning).mockImplementation(state.toastAdd)
+  vi.mocked(useToast().loading).mockImplementation(state.toastAdd)
+  vi.mocked(useToast().custom).mockImplementation(state.toastAdd)
+})
 
 const apps: App<Element>[] = []
 
@@ -174,9 +177,9 @@ describe('useResubscribe', () => {
     // Exactly one started event on the legacy success rail: the pre-call start,
     // with no duplicate post-await started/pending emitted after resubscribe() resolves.
     expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledTimes(1)
-    expect(state.toastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'success' })
-    )
+    expect(state.toastAdd).toHaveBeenCalledWith(expect.any(String), {
+      duration: 5000
+    })
   })
 
   it('shows an error and resets loading when resubscription fails', async () => {
@@ -189,9 +192,9 @@ describe('useResubscribe', () => {
 
     expect(mockBillingContext().resubscribe).toHaveBeenCalledOnce()
     expect(state.toastAdd).toHaveBeenCalledWith(
+      expect.any(String),
       expect.objectContaining({
-        severity: 'error',
-        detail: 'Resubscribe failed for person@example.com'
+        description: 'Resubscribe failed for person@example.com'
       })
     )
     expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({

@@ -1,23 +1,27 @@
 <template>
   <ButtonGroup class="shrink-0">
-    <Button
-      v-tooltip.top="
+    <Tooltip
+      :config="
         hasDisabledUpdatePacks
           ? $t('manager.disabledNodesWontUpdate')
           : $t('manager.updateLatestActiveTooltip')
       "
-      variant="primary"
-      :size
-      class="flex-1 rounded-r-none"
-      :disabled="isUpdating || !enabledPacks.length"
-      @click="manager.updatePacks(nodePacks)"
+      side="top"
     >
-      <DotSpinner v-if="isUpdating" duration="1s" />
-      <i v-else class="icon-[lucide--refresh-cw]" />
-      <span>{{
-        nodePacks.length > 1 ? $t('manager.updateAll') : $t('manager.update')
-      }}</span>
-    </Button>
+      <Button
+        variant="primary"
+        :size
+        class="flex-1 rounded-r-none"
+        :disabled="isUpdating || !enabledPacks.length"
+        @click="manager.updatePacks(nodePacks)"
+      >
+        <DotSpinner v-if="isUpdating" duration="1s" />
+        <i v-else class="icon-[lucide--refresh-cw]" />
+        <span>{{
+          nodePacks.length > 1 ? $t('manager.updateAll') : $t('manager.update')
+        }}</span>
+      </Button>
+    </Tooltip>
     <DropdownMenu :entries="updateOptions" align="end">
       <template #button>
         <Button
@@ -44,6 +48,7 @@ import DropdownMenu from '@/components/common/DropdownMenu.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { ButtonVariants } from '@/components/ui/button/button.variants'
 import ButtonGroup from '@/components/ui/button-group/ButtonGroup.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import type { components } from '@/types/comfyRegistryTypes'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 

@@ -1,3 +1,4 @@
+import { useToast } from '@/components/ui/toast'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import axios from 'axios'
@@ -30,7 +31,7 @@ const distribution = vi.hoisted(() => ({
 }))
 
 const managerState = vi.hoisted(() => ({ isNewManagerUI: { value: false } }))
-const addToast = vi.hoisted(() => vi.fn())
+const mockToastAdd = vi.hoisted(() => vi.fn())
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
@@ -60,13 +61,21 @@ vi.mock<unknown>(
 
 vi.mock(import('@/workbench/extensions/manager/composables/useManagerState'))
 
-vi.mock<unknown>(
-  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
-
-  () => ({
-    useToast: () => ({ add: addToast })
-  })
-)
+beforeEach(() => {
+  const toast = useToast()
+  for (const kind of [
+    'success',
+    'error',
+    'info',
+    'warning',
+    'loading'
+  ] as const) {
+    vi.mocked(toast[kind]).mockImplementation((...args) => {
+      mockToastAdd(kind, ...args)
+      return 0
+    })
+  }
+})
 
 vi.mock(import('@/components/icons/PuzzleIcon.vue'), () => ({
   default: defineComponent({
@@ -239,8 +248,10 @@ describe('HelpCenterMenuContent ComfyUI update', () => {
     expect(request).toHaveBeenCalledWith(
       expect.objectContaining({ method: 'post', url: 'manager/queue/start' })
     )
-    expect(addToast).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'success' })
+    expect(mockToastAdd).toHaveBeenCalledWith(
+      'success',
+      expect.any(String),
+      expect.anything()
     )
   })
 
@@ -259,18 +270,19 @@ describe('HelpCenterMenuContent ComfyUI update', () => {
     await user.click(screen.getByRole('menuitem', { name: 'Update ComfyUI' }))
 
     await waitFor(() => {
-      expect(addToast).toHaveBeenCalledWith(
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        'error',
+        expect.any(String),
         expect.objectContaining({
-          severity: 'error',
-          detail: expect.stringContaining('Update request rejected')
+          description: expect.stringContaining('Update request rejected')
         })
       )
     })
     expect(request).not.toHaveBeenCalledWith(
       expect.objectContaining({ url: 'manager/reboot' })
     )
-    expect(addToast).not.toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'success' })
+    expect(mockToastAdd.mock.calls.map(([kind]) => kind)).not.toContain(
+      'success'
     )
   })
 })

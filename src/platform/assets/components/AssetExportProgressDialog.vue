@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -51,8 +53,7 @@ const footerIconClass = computed(() => {
 
 const tooltipConfig = computed(() => ({
   value: footerLabel.value,
-  disabled: isExpanded.value,
-  pt: { root: { class: 'z-10000!' } }
+  disabled: isExpanded.value
 }))
 
 function progressPercent(job: AssetExport): number {
@@ -181,10 +182,9 @@ function closeDialog() {
         class="flex h-12 min-w-0 flex-1 items-center justify-between gap-2 border-t border-border-default px-4"
       >
         <div class="flex min-w-0 flex-1 items-center gap-2 text-sm">
-          <i
-            v-tooltip.top="tooltipConfig"
-            :class="cn('size-4 shrink-0', footerIconClass)"
-          />
+          <Tooltip :config="tooltipConfig" content-class="z-10000" side="top">
+            <i :class="cn('size-4 shrink-0', footerIconClass)" />
+          </Tooltip>
           <span
             :class="
               cn(

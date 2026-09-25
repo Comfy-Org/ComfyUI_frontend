@@ -70,19 +70,23 @@
       :workflows="workflowStore.openWorkflows"
       :active-workflow="workflowStore.activeWorkflow"
     />
-    <Button
-      v-tooltip="{
+    <Tooltip
+      :config="{
         value: $t('sideToolbar.newBlankWorkflow'),
         showDelay: 300
       }"
-      class="new-blank-workflow-button no-drag shrink-0 self-center rounded-lg"
-      variant="muted-textonly"
-      size="icon"
-      :aria-label="$t('sideToolbar.newBlankWorkflow')"
-      @click="() => commandStore.execute('Comfy.NewBlankWorkflow')"
+      side="right"
     >
-      <i class="pi pi-plus" />
-    </Button>
+      <Button
+        class="new-blank-workflow-button no-drag shrink-0 self-center rounded-lg"
+        variant="muted-textonly"
+        size="icon"
+        :aria-label="$t('sideToolbar.newBlankWorkflow')"
+        @click="() => commandStore.execute('Comfy.NewBlankWorkflow')"
+      >
+        <i class="pi pi-plus" />
+      </Button>
+    </Tooltip>
     <div
       v-if="isIntegratedTabBar"
       data-testid="integrated-tab-bar-actions"
@@ -96,17 +100,21 @@
         data-testid="environment-badge-separator"
         class="h-5 w-px shrink-0 bg-border-subtle"
       />
-      <Button
+      <Tooltip
         v-if="isCloud || isNightly"
-        v-tooltip="{ value: $t('actionbar.feedbackTooltip'), showDelay: 300 }"
-        variant="muted-textonly"
-        size="icon"
-        class="size-6 shrink-0 rounded-sm p-0"
-        :aria-label="$t('actionbar.feedback')"
-        @click="openFeedback"
+        :config="{ value: $t('actionbar.feedbackTooltip'), showDelay: 300 }"
+        side="right"
       >
-        <i class="icon-[lucide--megaphone] size-4" />
-      </Button>
+        <Button
+          variant="muted-textonly"
+          size="icon"
+          class="size-6 shrink-0 rounded-sm p-0"
+          :aria-label="$t('actionbar.feedback')"
+          @click="openFeedback"
+        >
+          <i class="icon-[lucide--megaphone] size-4" />
+        </Button>
+      </Tooltip>
       <CurrentUserButton v-if="showCurrentUser" compact class="shrink-0 p-1" />
       <LoginButton v-else class="p-1" />
       <template v-if="showAgentEntry">
@@ -147,6 +155,7 @@ import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Tabs from '@/components/ui/tabs/Tabs.vue'
 import TabsList from '@/components/ui/tabs/TabsList.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useWorkflowStatusDismissal } from '@/composables/useWorkflowStatusDismissal'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'

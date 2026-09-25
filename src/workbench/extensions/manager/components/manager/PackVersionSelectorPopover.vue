@@ -38,16 +38,20 @@
         >
           <div class="flex items-center gap-2">
             <div v-if="option.value === 'nightly'" class="w-4"></div>
-            <i
+            <Tooltip
               v-else-if="option.hasConflict"
-              v-tooltip="{
+              :config="{
                 value: option.conflictMessage,
                 showDelay: 300
               }"
-              class="icon-[lucide--triangle-alert] text-warning-background"
-              role="img"
-              :aria-label="option.conflictMessage"
-            />
+              side="right"
+            >
+              <i
+                class="icon-[lucide--triangle-alert] text-warning-background"
+                role="img"
+                :aria-label="option.conflictMessage"
+              />
+            </Tooltip>
             <VerifiedIcon v-else :size="20" class="relative right-0.5" />
             <span>{{ option.label }}</span>
             <PackStatusMessage
@@ -104,6 +108,7 @@ import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import VerifiedIcon from '@/components/icons/VerifiedIcon.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Spinner from '@/components/ui/spinner/Spinner.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
 import type { components } from '@/types/comfyRegistryTypes'
 import PackStatusMessage from '@/workbench/extensions/manager/components/manager/PackStatusMessage.vue'

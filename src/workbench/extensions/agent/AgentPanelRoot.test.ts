@@ -1763,8 +1763,8 @@ describe('AgentPanelRoot attach flow', () => {
     expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
     expect(useToast().toasts).toContainEqual(
       expect.objectContaining({
-        severity: 'warn',
-        detail: 'movie.mp4 is larger than 24 MB'
+        kind: 'warning',
+        title: 'movie.mp4 is larger than 24 MB'
       })
     )
     expect(screen.queryByText('movie.mp4')).not.toBeInTheDocument()
@@ -2025,8 +2025,8 @@ describe('AgentPanelRoot attach flow', () => {
     expect(uploaded).toEqual([])
     expect(useToast().toasts).toContainEqual(
       expect.objectContaining({
-        severity: 'warn',
-        detail: 'big.mp3 is larger than 24 MB'
+        kind: 'warning',
+        title: 'big.mp3 is larger than 24 MB'
       })
     )
   })
@@ -2675,8 +2675,8 @@ describe('AgentPanelRoot attach flow', () => {
     expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
     expect(useToast().toasts).toContainEqual(
       expect.objectContaining({
-        severity: 'warn',
-        detail: 'cat.png could not be uploaded'
+        kind: 'warning',
+        title: 'cat.png could not be uploaded'
       })
     )
     expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
@@ -4321,7 +4321,7 @@ describe('AgentPanelRoot workflow binding', () => {
           expect(useToast().toasts).toEqual(
             expect.arrayContaining([
               expect.objectContaining({
-                detail: i18n.global.t('agent.targetNavigationUnavailable')
+                title: i18n.global.t('agent.targetNavigationUnavailable')
               })
             ])
           )
@@ -5522,8 +5522,8 @@ describe('AgentPanelRoot workflow binding', () => {
       await vi.waitFor(() =>
         expect(useToast().toasts).toContainEqual(
           expect.objectContaining({
-            severity: 'warn',
-            detail: i18n.global.t('agent.targetNavigationUnavailable')
+            kind: 'warning',
+            title: i18n.global.t('agent.targetNavigationUnavailable')
           })
         )
       )
@@ -6456,7 +6456,7 @@ describe('AgentPanelRoot workflow binding', () => {
       await vi.waitFor(() =>
         expect(useToast().toasts).toEqual(
           expect.arrayContaining([
-            expect.objectContaining({ detail: 'Save unavailable' })
+            expect.objectContaining({ description: 'Save unavailable' })
           ])
         )
       )
@@ -6758,7 +6758,7 @@ describe('AgentPanelRoot workflow binding', () => {
         expect(useToast().toasts).toEqual(
           expect.arrayContaining([
             expect.objectContaining({
-              detail: i18n.global.t('agent.targetNavigationUnavailable')
+              title: i18n.global.t('agent.targetNavigationUnavailable')
             })
           ])
         )

@@ -1,7 +1,7 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, defineComponent, h } from 'vue'
+import { computed, defineComponent, h, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -39,12 +39,32 @@ const CurrentUserPopoverWorkspaceStub = defineComponent({
   props: {
     accountActionsOnly: Boolean
   },
-  setup(props) {
+  setup(props, { expose }) {
+    expose({ refreshBalance: vi.fn() })
     return () =>
       h('div', [
         h('span', 'Workspace Popover Content'),
         props.accountActionsOnly ? h('span', 'Account Actions Only') : ''
       ])
+  }
+})
+
+const PopoverStub = defineComponent({
+  name: 'Popover',
+  emits: ['show', 'hide'],
+  setup(_, { emit, expose, slots }) {
+    const open = ref(false)
+    expose({
+      toggle: () => {
+        open.value = !open.value
+        emit(open.value ? 'show' : 'hide')
+      },
+      hide: () => {
+        open.value = false
+        emit('hide')
+      }
+    })
+    return () => (open.value ? slots.default?.() : null)
   }
 })
 
@@ -96,6 +116,7 @@ describe('CurrentUserButton', () => {
       global: {
         plugins: [i18n],
         stubs: {
+          Popover: PopoverStub,
           CurrentUserPopoverWorkspace: CurrentUserPopoverWorkspaceStub
         }
       }
@@ -130,7 +151,9 @@ describe('CurrentUserButton', () => {
 
       await user.click(screen.getByRole('button', { name: 'Current user' }))
 
-      expect(screen.getByText('Workspace Popover Content')).toBeInTheDocument()
+      expect(
+        await screen.findByText('Workspace Popover Content')
+      ).toBeInTheDocument()
       expect(screen.getByText('Account Actions Only')).toBeInTheDocument()
     }
   )
@@ -187,7 +210,9 @@ describe('CurrentUserButton', () => {
 
     await user.click(screen.getByRole('button', { name: 'Current user' }))
 
-    expect(screen.getByText('Workspace Popover Content')).toBeInTheDocument()
+    expect(
+      await screen.findByText('Workspace Popover Content')
+    ).toBeInTheDocument()
     expect(screen.queryByText('Popover Content')).not.toBeInTheDocument()
   })
 })

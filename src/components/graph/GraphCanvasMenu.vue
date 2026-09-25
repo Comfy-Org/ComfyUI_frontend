@@ -21,85 +21,84 @@
 
       <div class="h-[27px] w-px self-center bg-node-divider" />
 
-      <Button
-        v-tooltip.top="fitViewTooltip"
-        variant="secondary"
-        :aria-label="fitViewTooltip"
-        :style="stringifiedMinimapStyles.buttonStyles"
-        class="size-8 bg-transparent p-0 hover:bg-interface-button-hover-surface"
-        @click="() => commandStore.execute('Comfy.Canvas.FitView')"
-      >
-        <i class="icon-[lucide--focus] size-4" aria-hidden="true" />
-      </Button>
+      <Tooltip :config="fitViewTooltip" side="top">
+        <Button
+          variant="secondary"
+          :aria-label="fitViewTooltip"
+          :style="stringifiedMinimapStyles.buttonStyles"
+          class="size-8 bg-transparent p-0 hover:bg-interface-button-hover-surface"
+          @click="() => commandStore.execute('Comfy.Canvas.FitView')"
+        >
+          <i class="icon-[lucide--focus] size-4" aria-hidden="true" />
+        </Button>
+      </Tooltip>
 
-      <Button
-        v-tooltip.top="t('zoomControls.label')"
-        variant="secondary"
-        :class="
-          cn(
-            'h-8 w-15 bg-transparent p-0 hover:bg-interface-button-hover-surface',
-            isModalVisible && 'not-active:bg-interface-panel-selected-surface'
-          )
-        "
-        :aria-label="t('zoomControls.label')"
-        data-testid="zoom-controls-button"
-        :style="stringifiedMinimapStyles.buttonStyles"
-        @click="toggleModal"
-      >
-        <span class="inline-flex items-center gap-1 px-2 text-xs">
-          <span>{{ canvasStore.appScalePercentage }}%</span>
-          <i class="icon-[lucide--chevron-down] size-4" aria-hidden="true" />
-        </span>
-      </Button>
+      <Tooltip :config="t('zoomControls.label')" side="top">
+        <Button
+          variant="secondary"
+          :class="
+            cn(
+              'h-8 w-15 bg-transparent p-0 hover:bg-interface-button-hover-surface',
+              isModalVisible && 'not-active:bg-interface-panel-selected-surface'
+            )
+          "
+          :aria-label="t('zoomControls.label')"
+          data-testid="zoom-controls-button"
+          :style="stringifiedMinimapStyles.buttonStyles"
+          @click="toggleModal"
+        >
+          <span class="inline-flex items-center gap-1 px-2 text-xs">
+            <span>{{ canvasStore.appScalePercentage }}%</span>
+            <i class="icon-[lucide--chevron-down] size-4" aria-hidden="true" />
+          </span>
+        </Button>
+      </Tooltip>
 
       <div class="h-[27px] w-px self-center bg-node-divider" />
 
-      <Button
-        v-tooltip.top="minimapTooltip"
-        variant="secondary"
-        :aria-label="minimapTooltip"
-        data-testid="toggle-minimap-button"
-        :style="stringifiedMinimapStyles.buttonStyles"
-        :class="
-          cn(
-            'size-8 bg-transparent p-0 hover:bg-interface-button-hover-surface',
-            settingStore.get('Comfy.Minimap.Visible') &&
-              'not-active:bg-interface-panel-selected-surface'
-          )
-        "
-        @click="onMinimapToggleClick"
-      >
-        <i class="icon-[lucide--map] size-4" aria-hidden="true" />
-      </Button>
+      <Tooltip :config="minimapTooltip" side="top">
+        <Button
+          variant="secondary"
+          :aria-label="minimapTooltip"
+          data-testid="toggle-minimap-button"
+          :style="stringifiedMinimapStyles.buttonStyles"
+          :class="
+            cn(
+              'size-8 bg-transparent p-0 hover:bg-interface-button-hover-surface',
+              settingStore.get('Comfy.Minimap.Visible') &&
+                'not-active:bg-interface-panel-selected-surface'
+            )
+          "
+          @click="onMinimapToggleClick"
+        >
+          <i class="icon-[lucide--map] size-4" aria-hidden="true" />
+        </Button>
+      </Tooltip>
 
-      <Button
-        v-tooltip.top="{
-          value: linkVisibilityTooltip,
-          pt: {
-            root: {
-              style: 'z-index: 2; transform: translateY(-20px);'
-            }
-          }
-        }"
-        variant="secondary"
-        :class="
-          cn(
-            'size-8 bg-transparent p-0 hover:bg-interface-button-hover-surface',
-            linkHidden && 'not-active:bg-interface-panel-selected-surface'
-          )
-        "
-        :aria-label="linkVisibilityAriaLabel"
-        data-testid="toggle-link-visibility-button"
-        :style="stringifiedMinimapStyles.buttonStyles"
-        @click="onLinkVisibilityToggleClick"
-      >
-        <i class="icon-[lucide--route-off] size-4" aria-hidden="true" />
-      </Button>
+      <Tooltip :config="linkVisibilityTooltip" side="top" :side-offset="26">
+        <Button
+          variant="secondary"
+          :class="
+            cn(
+              'size-8 bg-transparent p-0 hover:bg-interface-button-hover-surface',
+              linkHidden && 'not-active:bg-interface-panel-selected-surface'
+            )
+          "
+          :aria-label="linkVisibilityAriaLabel"
+          data-testid="toggle-link-visibility-button"
+          :style="stringifiedMinimapStyles.buttonStyles"
+          @click="onLinkVisibilityToggleClick"
+        >
+          <i class="icon-[lucide--route-off] size-4" aria-hidden="true" />
+        </Button>
+      </Tooltip>
     </ButtonGroup>
   </div>
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import ButtonGroup from 'primevue/buttongroup'
 import { computed, onBeforeUnmount, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'

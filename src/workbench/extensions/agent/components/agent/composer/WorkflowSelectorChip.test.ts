@@ -73,9 +73,9 @@ describe('WorkflowSelectorChip', () => {
     expect(screen.getAllByRole('button')).toHaveLength(1)
 
     await user.hover(trigger())
-    expect(
-      await screen.findByRole('tooltip', { hidden: true })
-    ).toHaveTextContent(enMessages.agent.changeWorkflowForChat)
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      enMessages.agent.changeWorkflowForChat
+    )
     await user.unhover(trigger())
     expect(screen.queryByRole('tooltip')).toBeNull()
 
@@ -196,9 +196,9 @@ describe('WorkflowSelectorChip', () => {
       'Select a workflow for agent to work in'
     )
     await user.hover(trigger())
-    expect(
-      await screen.findByRole('tooltip', { hidden: true })
-    ).toHaveTextContent(enMessages.agent.chooseWorkflowForChat)
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      enMessages.agent.chooseWorkflowForChat
+    )
     await user.click(trigger())
     expect(await screen.findAllByRole('menuitemradio')).toHaveLength(2)
   })

@@ -1,13 +1,12 @@
+import { useToast } from '@/components/ui/toast'
 import { useDialogStore } from '@/stores/dialogStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { App } from 'vue'
 import { computed, createApp, defineComponent } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useTelemetry } from '@/platform/telemetry'
-import { useWorkflowShareService } from '@/platform/workflow/sharing/services/workflowShareService'
 
 import { i18n } from '@/i18n'
 import { useSharedWorkflowUrlLoader as createSharedWorkflowUrlLoader } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
@@ -25,13 +24,41 @@ vi.mock(
   () => preservedQueryMocks
 )
 
-vi.mock(import('vue-router'))
+let mockQueryParams: Record<string, string | string[] | undefined> = {}
+const mockRouterReplace = vi.fn()
+
+vi.mock<unknown>(import('vue-router'), () => ({
+  useRoute: vi.fn(() => ({
+    query: mockQueryParams
+  })),
+  useRouter: vi.fn(() => ({
+    replace: mockRouterReplace
+  }))
+}))
+
+const mockImportPublishedAssets = vi.fn()
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
 vi.mock(import('@/platform/telemetry'))
 
-vi.mock(import('@/platform/workflow/sharing/services/workflowShareService'))
+vi.mock<unknown>(
+  import('@/platform/workflow/sharing/services/workflowShareService'),
+  () => ({
+    SharedWorkflowLoadError: class extends Error {
+      readonly isRetryable: boolean
+      constructor(message: string, isRetryable: boolean) {
+        super(message)
+        this.name = 'SharedWorkflowLoadError'
+        this.isRetryable = isRetryable
+      }
+    },
+    useWorkflowShareService: () => ({
+      getSharedWorkflow: vi.fn(),
+      importPublishedAssets: mockImportPublishedAssets
+    })
+  })
+)
 
 const mockLoadGraphData = vi.hoisted(() => vi.fn())
 
@@ -42,15 +69,26 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 }))
 
 const mockToastAdd = vi.fn()
-vi.mock<unknown>(
-  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
-
-  () => ({
-    useToast: () => ({
-      add: mockToastAdd
-    })
-  })
-)
+beforeEach(() => {
+  vi.mocked(useToast().success).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('success', ...args)
+  )
+  vi.mocked(useToast().error).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('error', ...args)
+  )
+  vi.mocked(useToast().info).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('info', ...args)
+  )
+  vi.mocked(useToast().warning).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('warning', ...args)
+  )
+  vi.mocked(useToast().loading).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('loading', ...args)
+  )
+  vi.mocked(useToast().custom).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('custom', ...args)
+  )
+})
 
 const apps: App<Element>[] = []
 
@@ -69,12 +107,6 @@ function useSharedWorkflowUrlLoader() {
   apps.push(app)
   if (!result) throw new Error('Shared workflow URL loader was not initialized')
   return result
-}
-
-function setRouteQuery(query: Record<string, string | string[] | undefined>) {
-  const routeQuery = useRoute().query
-  for (const key of Object.keys(routeQuery)) delete routeQuery[key]
-  Object.assign(routeQuery, query)
 }
 
 afterEach(() => apps.splice(0).forEach((app) => app.unmount()))
@@ -174,7 +206,7 @@ beforeEach(() => {
 
 describe('useSharedWorkflowUrlLoader', () => {
   beforeEach(() => {
-    setRouteQuery({})
+    mockQueryParams = {}
     mockDialogStack.length = 0
     mockShowLayoutDialog.mockImplementation(createDialogInstance)
     vi.mocked(useDialogStore().updateDialog).mockImplementation(
@@ -218,7 +250,7 @@ describe('useSharedWorkflowUrlLoader', () => {
   })
 
   it('opens dialog immediately with shareId and loads graph on confirm', async () => {
-    setRouteQuery({ share: 'share-id-1' })
+    mockQueryParams = { share: 'share-id-1' }
     const payload = makePayload()
     mockShowLayoutDialog.mockImplementation(() => {
       expect(mockLoadGraphData).not.toHaveBeenCalled()
@@ -245,14 +277,14 @@ describe('useSharedWorkflowUrlLoader', () => {
       is_app_mode: false
     })
     expect(preservedQueryMocks.capturePreservedQuery).not.toHaveBeenCalled()
-    expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
+    expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
     expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
       'share'
     )
   })
 
   it('does not capture share auth attribution for authenticated users', async () => {
-    setRouteQuery({ share: 'share-id-1' })
+    mockQueryParams = { share: 'share-id-1' }
     useCurrentUser().isLoggedIn = computed(() => true)
     mockShowLayoutDialog.mockImplementation(() => {
       resolveDialogWithConfirm(makePayload())
@@ -272,7 +304,7 @@ describe('useSharedWorkflowUrlLoader', () => {
   })
 
   it('hides template selector when user confirms opening shared workflow', async () => {
-    setRouteQuery({ share: 'share-id-1' })
+    mockQueryParams = { share: 'share-id-1' }
     mockShowLayoutDialog.mockImplementation(() => {
       resolveDialogWithConfirm(makePayload())
     })
@@ -284,7 +316,7 @@ describe('useSharedWorkflowUrlLoader', () => {
   })
 
   it('keeps dialog open with opening state while shared workflow loads', async () => {
-    setRouteQuery({ share: 'share-id-1' })
+    mockQueryParams = { share: 'share-id-1' }
     const graphLoad = createDeferred()
     mockLoadGraphData.mockReturnValue(graphLoad.promise)
 
@@ -316,7 +348,7 @@ describe('useSharedWorkflowUrlLoader', () => {
   })
 
   it('does not load graph when user cancels dialog', async () => {
-    setRouteQuery({ share: 'share-id-1' })
+    mockQueryParams = { share: 'share-id-1' }
     mockShowLayoutDialog.mockImplementation(() => {
       resolveDialogWithCancel()
     })
@@ -326,7 +358,7 @@ describe('useSharedWorkflowUrlLoader', () => {
 
     expect(loaded).toBe('cancelled')
     expect(mockLoadGraphData).not.toHaveBeenCalled()
-    expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
+    expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
     expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
       'share'
     )
@@ -336,7 +368,7 @@ describe('useSharedWorkflowUrlLoader', () => {
   })
 
   it('does not hide template selector when user cancels shared workflow dialog', async () => {
-    setRouteQuery({ share: 'share-id-1' })
+    mockQueryParams = { share: 'share-id-1' }
     mockShowLayoutDialog.mockImplementation(() => {
       resolveDialogWithCancel()
     })
@@ -348,7 +380,7 @@ describe('useSharedWorkflowUrlLoader', () => {
   })
 
   it('imports non-owned assets before loading graph when user confirms', async () => {
-    setRouteQuery({ share: 'share-id-1' })
+    mockQueryParams = { share: 'share-id-1' }
     const payload = makePayload({
       assets: [
         {
@@ -370,17 +402,14 @@ describe('useSharedWorkflowUrlLoader', () => {
     const loaded = await loadSharedWorkflowFromUrl()
 
     expect(loaded).toBe('loaded')
-    expect(
-      useWorkflowShareService().importPublishedAssets
-    ).toHaveBeenCalledWith(['a1'], 'share-id-1')
-    expect(
-      vi.mocked(useWorkflowShareService().importPublishedAssets).mock
-        .invocationCallOrder[0]
-    ).toBeLessThan(mockLoadGraphData.mock.invocationCallOrder[0])
+    expect(mockImportPublishedAssets).toHaveBeenCalledWith(['a1'], 'share-id-1')
+    expect(mockImportPublishedAssets.mock.invocationCallOrder[0]).toBeLessThan(
+      mockLoadGraphData.mock.invocationCallOrder[0]
+    )
   })
 
   it('does not call import when user chooses open-only', async () => {
-    setRouteQuery({ share: 'share-id-1' })
+    mockQueryParams = { share: 'share-id-1' }
     const payload = makePayload({
       assets: [
         {
@@ -402,13 +431,11 @@ describe('useSharedWorkflowUrlLoader', () => {
     await loadSharedWorkflowFromUrl()
 
     expect(mockLoadGraphData).toHaveBeenCalled()
-    expect(
-      useWorkflowShareService().importPublishedAssets
-    ).not.toHaveBeenCalled()
+    expect(mockImportPublishedAssets).not.toHaveBeenCalled()
   })
 
   it('hides template selector when user chooses open-only', async () => {
-    setRouteQuery({ share: 'share-id-1' })
+    mockQueryParams = { share: 'share-id-1' }
     mockShowLayoutDialog.mockImplementation(() => {
       resolveDialogWithOpenOnly(makePayload())
     })
@@ -420,7 +447,7 @@ describe('useSharedWorkflowUrlLoader', () => {
   })
 
   it('shows toast on import failure and returns loaded-without-assets', async () => {
-    setRouteQuery({ share: 'share-id-1' })
+    mockQueryParams = { share: 'share-id-1' }
     const payload = makePayload({
       assets: [
         {
@@ -434,9 +461,7 @@ describe('useSharedWorkflowUrlLoader', () => {
         }
       ]
     })
-    vi.mocked(
-      useWorkflowShareService().importPublishedAssets
-    ).mockRejectedValue(new Error('Import failed'))
+    mockImportPublishedAssets.mockRejectedValue(new Error('Import failed'))
     mockShowLayoutDialog.mockImplementation(() => {
       resolveDialogWithConfirm(payload)
     })
@@ -453,15 +478,16 @@ describe('useSharedWorkflowUrlLoader', () => {
       { openSource: 'shared_url', shareId: 'share-id-1' }
     )
     expect(mockToastAdd).toHaveBeenCalledWith(
+      'error',
+      expect.any(String),
       expect.objectContaining({
-        severity: 'error',
-        detail: 'Failed to import workflow assets'
+        description: 'Failed to import workflow assets'
       })
     )
   })
 
   it('clears share intent when graph load fails after importing assets', async () => {
-    setRouteQuery({ share: 'share-id-1', tab: 'assets' })
+    mockQueryParams = { share: 'share-id-1', tab: 'assets' }
     const payload = makePayload({
       assets: [
         {
@@ -484,19 +510,15 @@ describe('useSharedWorkflowUrlLoader', () => {
     const loaded = await loadSharedWorkflowFromUrl()
 
     expect(loaded).toBe('failed')
-    expect(
-      useWorkflowShareService().importPublishedAssets
-    ).toHaveBeenCalledWith(['a1'], 'share-id-1')
-    expect(useRouter().replace).toHaveBeenCalledWith({
-      query: { tab: 'assets' }
-    })
+    expect(mockImportPublishedAssets).toHaveBeenCalledWith(['a1'], 'share-id-1')
+    expect(mockRouterReplace).toHaveBeenCalledWith({ query: { tab: 'assets' } })
     expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
       'share'
     )
   })
 
   it('filters out in_library assets before importing', async () => {
-    setRouteQuery({ share: 'share-id-1' })
+    mockQueryParams = { share: 'share-id-1' }
     const payload = makePayload({
       assets: [
         {
@@ -526,9 +548,7 @@ describe('useSharedWorkflowUrlLoader', () => {
     const { loadSharedWorkflowFromUrl } = useSharedWorkflowUrlLoader()
     await loadSharedWorkflowFromUrl()
 
-    expect(
-      useWorkflowShareService().importPublishedAssets
-    ).toHaveBeenCalledWith(['a1'], 'share-id-1')
+    expect(mockImportPublishedAssets).toHaveBeenCalledWith(['a1'], 'share-id-1')
   })
 
   it('restores preserved share query before loading', async () => {
@@ -545,7 +565,7 @@ describe('useSharedWorkflowUrlLoader', () => {
     expect(preservedQueryMocks.hydratePreservedQuery).toHaveBeenCalledWith(
       'share'
     )
-    expect(useRouter().replace).toHaveBeenCalledWith({
+    expect(mockRouterReplace).toHaveBeenCalledWith({
       query: { share: 'preserved-share-id' }
     })
     const dialogCall = mockShowLayoutDialog.mock.calls[0][0]
@@ -553,26 +573,24 @@ describe('useSharedWorkflowUrlLoader', () => {
   })
 
   it('rejects invalid share parameter values', async () => {
-    setRouteQuery({ share: '../../../etc/passwd' })
+    mockQueryParams = { share: '../../../etc/passwd' }
 
     const { loadSharedWorkflowFromUrl } = useSharedWorkflowUrlLoader()
     const loaded = await loadSharedWorkflowFromUrl()
 
     expect(loaded).toBe('failed')
     expect(mockShowLayoutDialog).not.toHaveBeenCalled()
-    expect(mockToastAdd).toHaveBeenCalledWith({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Failed to load shared workflow'
+    expect(mockToastAdd).toHaveBeenCalledWith('error', 'Error', {
+      description: 'Failed to load shared workflow'
     })
-    expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
+    expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
     expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
       'share'
     )
   })
 
   it('uses fallback name when payload name is empty', async () => {
-    setRouteQuery({ share: 'share-id-1' })
+    mockQueryParams = { share: 'share-id-1' }
     const payload = makePayload({ name: '' })
     mockShowLayoutDialog.mockImplementation(() => {
       resolveDialogWithConfirm(payload)

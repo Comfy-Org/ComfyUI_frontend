@@ -13,18 +13,19 @@
     >
       <Popover :show-arrow="false">
         <template #button>
-          <Button
-            v-tooltip.top="filterTooltipConfig"
-            variant="secondary"
-            size="icon"
-            :aria-label="t('sideToolbar.queueProgressOverlay.filterJobs')"
-          >
-            <i class="icon-[lucide--list-filter] size-4" />
-            <span
-              v-if="selectedWorkflowFilter !== 'all'"
-              class="pointer-events-none absolute -top-1 -right-1 inline-block size-2 rounded-full bg-base-foreground"
-            />
-          </Button>
+          <Tooltip :config="filterTooltipConfig" side="top">
+            <Button
+              variant="secondary"
+              size="icon"
+              :aria-label="t('sideToolbar.queueProgressOverlay.filterJobs')"
+            >
+              <i class="icon-[lucide--list-filter] size-4" />
+              <span
+                v-if="selectedWorkflowFilter !== 'all'"
+                class="pointer-events-none absolute -top-1 -right-1 inline-block size-2 rounded-full bg-base-foreground"
+              />
+            </Button>
+          </Tooltip>
         </template>
         <template #default="{ close }">
           <div class="flex min-w-48 flex-col items-stretch">
@@ -62,18 +63,19 @@
       </Popover>
       <Popover :show-arrow="false">
         <template #button>
-          <Button
-            v-tooltip.top="sortTooltipConfig"
-            variant="secondary"
-            size="icon"
-            :aria-label="t('sideToolbar.queueProgressOverlay.sortJobs')"
-          >
-            <i class="icon-[lucide--arrow-up-down] size-4" />
-            <span
-              v-if="selectedSortMode !== 'mostRecent'"
-              class="pointer-events-none absolute -top-1 -right-1 inline-block size-2 rounded-full bg-base-foreground"
-            />
-          </Button>
+          <Tooltip :config="sortTooltipConfig" side="top">
+            <Button
+              variant="secondary"
+              size="icon"
+              :aria-label="t('sideToolbar.queueProgressOverlay.sortJobs')"
+            >
+              <i class="icon-[lucide--arrow-up-down] size-4" />
+              <span
+                v-if="selectedSortMode !== 'mostRecent'"
+                class="pointer-events-none absolute -top-1 -right-1 inline-block size-2 rounded-full bg-base-foreground"
+              />
+            </Button>
+          </Tooltip>
         </template>
         <template #default="{ close }">
           <div class="flex min-w-48 flex-col items-stretch">
@@ -98,21 +100,27 @@
           </div>
         </template>
       </Popover>
-      <Button
+      <Tooltip
         v-if="showAssetsAction"
-        v-tooltip.top="showAssetsTooltipConfig"
-        variant="secondary"
-        size="icon"
-        :aria-label="t('sideToolbar.queueProgressOverlay.showAssetsPanel')"
-        @click="emit('showAssets')"
+        :config="showAssetsTooltipConfig"
+        side="top"
       >
-        <i class="icon-[comfy--image-ai-edit] size-4" />
-      </Button>
+        <Button
+          variant="secondary"
+          size="icon"
+          :aria-label="t('sideToolbar.queueProgressOverlay.showAssetsPanel')"
+          @click="emit('showAssets')"
+        >
+          <i class="icon-[comfy--image-ai-edit] size-4" />
+        </Button>
+      </Tooltip>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 

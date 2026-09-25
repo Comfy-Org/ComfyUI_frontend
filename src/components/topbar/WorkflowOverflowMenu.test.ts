@@ -60,4 +60,8 @@ it('marks the agent target separately from the active overflow workflow', async 
   expect(
     within(screen.getByRole('menuitem', { name: 'active' })).queryByRole('img')
   ).toBeNull()
+  await user.hover(
+    within(targetItem).getByRole('img', { name: 'Agent target' })
+  )
+  expect(await screen.findByRole('tooltip')).toHaveTextContent('Agent target')
 })

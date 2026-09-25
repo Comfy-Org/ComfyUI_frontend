@@ -1,27 +1,29 @@
 <template>
-  <button
-    v-tooltip.bottom="tip(t('load3d.menuBar.showGrid'))"
-    :class="actionClass(showGrid)"
-    :aria-pressed="showGrid"
-    type="button"
-    :aria-label="compact ? t('load3d.menuBar.showGrid') : undefined"
-    @click="toggleGrid"
-  >
-    <i class="icon-[lucide--grid-3x3] size-4" />
-    <span v-if="!compact">{{ t('load3d.menuBar.showGrid') }}</span>
-  </button>
+  <Tooltip :config="tip(t('load3d.menuBar.showGrid'))" side="bottom">
+    <button
+      :class="actionClass(showGrid)"
+      :aria-pressed="showGrid"
+      type="button"
+      :aria-label="compact ? t('load3d.menuBar.showGrid') : undefined"
+      @click="toggleGrid"
+    >
+      <i class="icon-[lucide--grid-3x3] size-4" />
+      <span v-if="!compact">{{ t('load3d.menuBar.showGrid') }}</span>
+    </button>
+  </Tooltip>
 
   <template v-if="!hasImage && !hdriActive">
-    <button
-      v-tooltip.bottom="tip(t('load3d.menuBar.bgColor'))"
-      :class="actionClass(false)"
-      type="button"
-      :aria-label="compact ? t('load3d.menuBar.bgColor') : undefined"
-      @click="colorRef?.click()"
-    >
-      <i class="icon-[lucide--palette] size-4" />
-      <span v-if="!compact">{{ t('load3d.menuBar.bgColor') }}</span>
-    </button>
+    <Tooltip :config="tip(t('load3d.menuBar.bgColor'))" side="bottom">
+      <button
+        :class="actionClass(false)"
+        type="button"
+        :aria-label="compact ? t('load3d.menuBar.bgColor') : undefined"
+        @click="colorRef?.click()"
+      >
+        <i class="icon-[lucide--palette] size-4" />
+        <span v-if="!compact">{{ t('load3d.menuBar.bgColor') }}</span>
+      </button>
+    </Tooltip>
     <input
       ref="colorRef"
       type="color"
@@ -30,16 +32,17 @@
       @input="setBackgroundColor"
     />
     <template v-if="canUseBackgroundImage">
-      <button
-        v-tooltip.bottom="tip(t('load3d.menuBar.bgImage'))"
-        :class="actionClass(false)"
-        type="button"
-        :aria-label="compact ? t('load3d.menuBar.bgImage') : undefined"
-        @click="bgImageRef?.click()"
-      >
-        <i class="icon-[lucide--image] size-4" />
-        <span v-if="!compact">{{ t('load3d.menuBar.bgImage') }}</span>
-      </button>
+      <Tooltip :config="tip(t('load3d.menuBar.bgImage'))" side="bottom">
+        <button
+          :class="actionClass(false)"
+          type="button"
+          :aria-label="compact ? t('load3d.menuBar.bgImage') : undefined"
+          @click="bgImageRef?.click()"
+        >
+          <i class="icon-[lucide--image] size-4" />
+          <span v-if="!compact">{{ t('load3d.menuBar.bgImage') }}</span>
+        </button>
+      </Tooltip>
       <input
         ref="bgImageRef"
         type="file"
@@ -52,79 +55,60 @@
   </template>
 
   <template v-if="hasImage">
-    <button
-      v-tooltip.bottom="tip(t('load3d.menuBar.panorama'))"
-      :class="actionClass(isPanorama)"
-      :aria-pressed="isPanorama"
-      type="button"
-      :aria-label="compact ? t('load3d.menuBar.panorama') : undefined"
-      @click="togglePanorama"
-    >
-      <i class="icon-[lucide--globe] size-4" />
-      <span v-if="!compact">{{ t('load3d.menuBar.panorama') }}</span>
-    </button>
-    <Popover v-if="isPanorama" v-model:open="fovOpen">
-      <PopoverTrigger as-child>
-        <button
-          v-tooltip.bottom="tip(t('load3d.menuBar.fov'))"
-          :class="actionClass(false)"
-          type="button"
-          :aria-label="compact ? t('load3d.menuBar.fov') : undefined"
-        >
-          <i class="icon-[lucide--focus] size-4" />
-          <span v-if="!compact">{{ t('load3d.menuBar.fov') }}</span>
-        </button>
-      </PopoverTrigger>
-      <PopoverContent
-        side="bottom"
-        align="start"
-        :side-offset="8"
-        :class="cn(panelClass, 'w-56')"
+    <Tooltip :config="tip(t('load3d.menuBar.panorama'))" side="bottom">
+      <button
+        :class="actionClass(isPanorama)"
+        :aria-pressed="isPanorama"
+        type="button"
+        :aria-label="compact ? t('load3d.menuBar.panorama') : undefined"
+        @click="togglePanorama"
       >
-        <div class="flex flex-col gap-2 p-1">
-          <span class="text-sm text-base-foreground">{{
-            t('load3d.fov')
-          }}</span>
-          <Slider
-            :model-value="[fovValue]"
-            :min="10"
-            :max="150"
-            :step="1"
-            class="w-full"
-            @update:model-value="setFov"
-          />
-        </div>
-      </PopoverContent>
-    </Popover>
-    <button
-      v-tooltip.bottom="tip(t('load3d.menuBar.removeBackground'))"
-      :class="actionClass(false)"
-      type="button"
-      :aria-label="compact ? t('load3d.menuBar.removeBackground') : undefined"
-      @click="removeBackgroundImage"
+        <i class="icon-[lucide--globe] size-4" />
+        <span v-if="!compact">{{ t('load3d.menuBar.panorama') }}</span>
+      </button>
+    </Tooltip>
+    <MenuPopover
+      v-if="isPanorama"
+      v-model:open="fovOpen"
+      :label="t('load3d.menuBar.fov')"
+      :compact
+      icon="icon-[lucide--focus]"
     >
-      <i class="icon-[lucide--x] size-4" />
-      <span v-if="!compact">{{ t('load3d.menuBar.removeBackground') }}</span>
-    </button>
+      <span class="text-sm text-base-foreground">{{ t('load3d.fov') }}</span>
+      <Slider
+        :model-value="[fovValue]"
+        :min="10"
+        :max="150"
+        :step="1"
+        class="w-full"
+        @update:model-value="setFov"
+      />
+    </MenuPopover>
+    <Tooltip :config="tip(t('load3d.menuBar.removeBackground'))" side="bottom">
+      <button
+        :class="actionClass(false)"
+        type="button"
+        :aria-label="compact ? t('load3d.menuBar.removeBackground') : undefined"
+        @click="removeBackgroundImage"
+      >
+        <i class="icon-[lucide--x] size-4" />
+        <span v-if="!compact">{{ t('load3d.menuBar.removeBackground') }}</span>
+      </button>
+    </Tooltip>
   </template>
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import {
-  actionClass,
-  panelClass,
-  tip
-} from '@/components/load3d/menubar/menuBarStyles'
+import { actionClass, tip } from '@/components/load3d/menubar/menuBarStyles'
+import MenuPopover from '@/components/load3d/menubar/MenuPopover.vue'
 import { usePopoverExclusivity } from '@/components/load3d/menubar/usePopoverExclusivity'
-import Popover from '@/components/ui/popover/Popover.vue'
-import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
 import Slider from '@/components/ui/slider/Slider.vue'
 import type { SceneConfig } from '@/extensions/core/load3d/interfaces'
-import { cn } from '@comfyorg/tailwind-utils'
-import { PopoverTrigger } from 'reka-ui'
 
 const {
   compact = false,

@@ -20,55 +20,55 @@
         class="pointer-events-auto flex h-10 items-center gap-1 bg-interface-menu-surface px-2"
         @wheel.stop
       >
-        <button
-          v-tooltip.bottom="tip(gizmosLabel)"
-          type="button"
-          :disabled="lookingThrough"
-          :class="
-            cn(
-              actionClass(!lookingThrough && gizmosOn),
-              lookingThrough && 'cursor-not-allowed opacity-40'
-            )
-          "
-          :aria-pressed="!lookingThrough && gizmosOn"
-          :aria-label="compact ? gizmosLabel : undefined"
-          @click="toggleGizmos"
-        >
-          <i
+        <Tooltip :config="tip(gizmosLabel)" side="bottom">
+          <button
+            type="button"
+            :disabled="lookingThrough"
             :class="
               cn(
-                'size-4',
-                gizmosOn ? 'icon-[lucide--eye]' : 'icon-[lucide--eye-off]'
+                actionClass(gizmosActive),
+                lookingThrough && 'cursor-not-allowed opacity-40'
               )
             "
-          />
-          <span v-if="!compact">{{ gizmosLabel }}</span>
-        </button>
+            :aria-pressed="gizmosActive"
+            :aria-label="compact ? gizmosLabel : undefined"
+            @click="toggleGizmos"
+          >
+            <i
+              :class="
+                cn(
+                  'size-4',
+                  gizmosOn ? 'icon-[lucide--eye]' : 'icon-[lucide--eye-off]'
+                )
+              "
+            />
+            <span v-if="!compact">{{ gizmosLabel }}</span>
+          </button>
+        </Tooltip>
         <div class="mx-1 h-5 w-px shrink-0 bg-interface-menu-stroke" />
-        <button
+        <Tooltip
           v-for="option in transformGizmoOptions"
           :key="option.value"
-          v-tooltip.bottom="tip($t(option.labelKey))"
-          type="button"
-          :disabled="lookingThrough || !option.enabled"
-          :aria-pressed="
-            !lookingThrough && effectiveTransformGizmoMode === option.value
-          "
-          :aria-label="compact ? $t(option.labelKey) : undefined"
-          :class="
-            cn(
-              actionClass(
-                !lookingThrough && effectiveTransformGizmoMode === option.value
-              ),
-              (lookingThrough || !option.enabled) &&
-                'cursor-not-allowed opacity-40'
-            )
-          "
-          @click="selectTransformGizmo(option.value)"
+          :config="tip($t(option.labelKey))"
+          side="bottom"
         >
-          <i :class="cn('size-4', option.icon)" />
-          <span v-if="!compact">{{ $t(option.labelKey) }}</span>
-        </button>
+          <button
+            type="button"
+            :disabled="option.disabled"
+            :aria-pressed="option.active"
+            :aria-label="compact ? $t(option.labelKey) : undefined"
+            :class="
+              cn(
+                actionClass(option.active),
+                option.disabled && 'cursor-not-allowed opacity-40'
+              )
+            "
+            @click="selectTransformGizmo(option.value)"
+          >
+            <i :class="cn('size-4', option.icon)" />
+            <span v-if="!compact">{{ $t(option.labelKey) }}</span>
+          </button>
+        </Tooltip>
       </div>
     </div>
     <div class="pointer-events-none absolute inset-x-0 bottom-0">
@@ -76,24 +76,27 @@
         class="pointer-events-auto flex h-10 items-center justify-end gap-1 bg-interface-menu-surface px-2"
         @wheel.stop
       >
-        <button
-          v-tooltip.top="tip(lookThroughLabel)"
-          type="button"
-          :class="
-            cn(iconBtnClass, lookingThrough && 'bg-button-active-surface')
-          "
-          :aria-pressed="lookingThrough"
-          :aria-label="lookThroughLabel"
-          @click="toggleLookThrough"
-        >
-          <i class="icon-[lucide--video] size-4" />
-        </button>
+        <Tooltip :config="tip(lookThroughLabel)" side="top">
+          <button
+            type="button"
+            :class="
+              cn(iconBtnClass, lookingThrough && 'bg-button-active-surface')
+            "
+            :aria-pressed="lookingThrough"
+            :aria-label="lookThroughLabel"
+            @click="toggleLookThrough"
+          >
+            <i class="icon-[lucide--video] size-4" />
+          </button>
+        </Tooltip>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import { useElementSize } from '@vueuse/core'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import type { Ref } from 'vue'
@@ -164,7 +167,9 @@ const lookThroughLabel = computed(() =>
   lookingThrough.value ? t('load3d.exitLookThrough') : t('load3d.lookThrough')
 )
 
-const transformGizmoOptions = computed(() => [
+const gizmosActive = computed(() => !lookingThrough.value && gizmosOn.value)
+
+const availableTransformGizmoOptions = computed(() => [
   {
     value: 'none' as const,
     labelKey: 'load3d.transformGizmo.none',
@@ -192,11 +197,21 @@ const transformGizmoOptions = computed(() => [
 ])
 
 const effectiveTransformGizmoMode = computed<TransformGizmoMode>(() =>
-  transformGizmoOptions.value.some(
+  availableTransformGizmoOptions.value.some(
     ({ value, enabled }) => value === transformGizmoMode.value && enabled
   )
     ? transformGizmoMode.value
     : 'none'
+)
+
+const transformGizmoOptions = computed(() =>
+  availableTransformGizmoOptions.value.map((option) => ({
+    ...option,
+    disabled: lookingThrough.value || !option.enabled,
+    active:
+      !lookingThrough.value &&
+      effectiveTransformGizmoMode.value === option.value
+  }))
 )
 
 function focusContainer() {

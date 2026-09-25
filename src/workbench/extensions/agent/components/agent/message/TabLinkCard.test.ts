@@ -256,11 +256,13 @@ describe('TabLinkCard', () => {
     })
     await userEvent.click(screen.getByRole('button'))
 
-    expect(useToast().toasts).toContainEqual({
-      severity: 'warn',
-      detail: 'This workflow target is no longer available.',
-      life: 5000
-    })
+    expect(useToast().toasts).toContainEqual(
+      expect.objectContaining({
+        kind: 'warning',
+        title: 'This workflow target is no longer available.',
+        duration: 5000
+      })
+    )
     expect(mocks.reportError).not.toHaveBeenCalled()
   })
 
