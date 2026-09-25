@@ -27,7 +27,7 @@ const LEGACY_CREDIT_LIMIT_STORAGE_KEY = 'Comfy.Agent.RunCreditLimit'
  * send that never settles is released there, so this should not fire. It
  * exists for the case the gate itself is wrong.
  */
-const SEND_WAIT_TIMEOUT_MS = 90_000
+const SEND_WAIT_TIMEOUT_MS = 180_000
 
 class AgentSendWaitTimeoutError extends Error {
   constructor(message: string) {

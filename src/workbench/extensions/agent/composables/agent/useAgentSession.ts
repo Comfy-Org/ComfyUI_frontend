@@ -160,10 +160,14 @@ const turnStartedAt = new Map<TurnId, number>()
  * reach the continuation that acks. One owner: armed while a send is in
  * flight, consumed exactly once at ack.
  *
- * Whether a send IS in flight comes from agentSendGateStore, which the
- * run-mode write also waits on — one definition of "a message is on its way",
- * rather than a second flag that can drift from it.
+ * Deliberately NOT agentSendGateStore: that gate is bounded, releasing itself
+ * after MAX_HOLD_MS so a stalled send cannot lock the run-mode control out for
+ * the page's lifetime. This decision needs the opposite property — it must
+ * stay armed for as long as the POST can still acknowledge, or a stop clicked
+ * during a slow send is dropped instead of being applied at ack. Same window
+ * in the ordinary case, different failure mode on purpose.
  */
+let sendAwaitingAck = false
 let stopPendingAck: { method: AgentStopMethod | undefined } | null = null
 
 function consumeStopPendingAck() {
@@ -711,6 +715,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     // prepareWorkflow() first, and a run mode written during THAT wait still
     // reaches the server before the message it must not re-authorize.
     const releaseSendGate = sendGateStore.begin()
+    sendAwaitingAck = true
     stopPendingAck = null
     try {
       return await performSend(
@@ -722,6 +727,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       )
     } finally {
       sending.value = false
+      sendAwaitingAck = false
       releaseSendGate()
     }
   }
@@ -775,7 +781,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       // The shared send gate, not this instance's sending: the panel that
       // posted may have been remounted, and the stop arrives through the new
       // instance.
-      if (sendGateStore.isSending) stopPendingAck = { method }
+      if (sendAwaitingAck) stopPendingAck = { method }
       return
     }
     if (isStoppingTurn(turnId)) return

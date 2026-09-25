@@ -350,7 +350,7 @@ describe('agentRunModeStore', () => {
       const store = useAgentRunModeStore()
 
       const save = store.save('ask_approval', null)
-      await vi.advanceTimersByTimeAsync(60_000)
+      await vi.advanceTimersByTimeAsync(150_000)
       await save
 
       expect(sendGate.isSending).toBe(false)
@@ -372,8 +372,11 @@ describe('agentRunModeStore', () => {
     release()
 
     expect(sendGate.isSending).toBe(false)
-    sendGate.begin()
+    // Released rather than left hanging: begin() arms a real backstop timer,
+    // and this case runs on real ones.
+    const secondRelease = sendGate.begin()
     expect(sendGate.isSending).toBe(true)
+    secondRelease()
   })
 
   it('saves straight away when no send is in flight', async () => {

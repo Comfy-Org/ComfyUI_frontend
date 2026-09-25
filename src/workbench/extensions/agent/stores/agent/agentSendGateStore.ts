@@ -2,13 +2,20 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 /**
- * Shorter than agentRunModeStore's own waiter timeout, so a send that never
- * settles frees the gate before anything waiting on it gives up: `api.ts`
- * clears its timer when response HEADERS arrive, so a stalled body is bounded
- * by nothing at all, and a gate held forever means the run-mode control can
- * never be used again without a reload.
+ * Deliberately longer than every path that can still deliver the POST, so the
+ * backstop cannot release the gate while the message is still on its way and
+ * let a run-mode write overtake it. `api.ts` bounds the request at 10s of auth
+ * initialisation plus a 60s response-HEADERS timeout, and a 401 remint arms a
+ * fresh 60s timer — ~130s before the request either reaches the server or is
+ * aborted (and an abort releases the gate through performSend's own `finally`).
+ *
+ * Past that the only unbounded case left is a stalled response BODY, and
+ * headers having arrived means the server already received the POST and
+ * already pinned the turn's run mode: the ordering this gate protects is
+ * settled, so releasing is safe. Shorter than agentRunModeStore's waiter, so
+ * that waiter fires only if this backstop itself failed.
  */
-const MAX_HOLD_MS = 60_000
+const MAX_HOLD_MS = 150_000
 
 /**
  * Counts the messages currently on their way to the server: held from the send
