@@ -216,6 +216,7 @@ import Button from '@/components/ui/button/Button.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 import { useTelemetry } from '@/platform/telemetry'
+import { describeImageLoadFailure } from '@/platform/telemetry/imageFailureDiagnostics'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { openHdrViewer } from '@/services/hdrViewerService'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -339,8 +340,14 @@ function handleImageError() {
   stopDelayedLoader()
   showLoader.value = false
   imageError.value = true
-  useTelemetry()?.trackImageLoadFailed({ source: 'node_image_preview' })
   actualDimensions.value = null
+
+  // The error UI is already up; the diagnostic probe runs behind it so a slow
+  // or hanging re-request never delays what the user sees.
+  const failedUrl = currentImageUrl.value
+  void describeImageLoadFailure(failedUrl).then((metadata) => {
+    useTelemetry()?.trackImageLoadFailed(metadata)
+  })
 }
 
 function handleEditMask() {

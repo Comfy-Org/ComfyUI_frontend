@@ -94,8 +94,35 @@ export interface UnifiedAuthRefreshMetadata {
   retry_count?: number
 }
 
+/**
+ * One failed image preview. An `<img>` error event reports no status, so
+ * everything past `source` is reconstructed by `describeImageLoadFailure()`:
+ * `status` comes from re-requesting the URL once, the rest from the URL and the
+ * page. Fields are optional because a probe that was capped, blocked or never
+ * applicable must still produce a report — a missing field is a real outcome,
+ * recorded in `probe_outcome` rather than guessed at.
+ */
 export interface ImageLoadFailureMetadata {
   source: 'node_image_preview'
+  /** HTTP status of the follow-up probe. Absent unless `probe_outcome` is `probed`. */
+  status?: number
+  probe_outcome?:
+    | 'probed'
+    | 'probe_failed'
+    | 'probe_timeout'
+    | 'probe_capped'
+    | 'probe_blocked'
+    | 'probe_redirected'
+    | 'probe_abandoned'
+    | 'invalid_src'
+  /** `/api/view?type=` — separates an expired output from a missing upload. */
+  resource_kind?: 'output' | 'input' | 'temp' | 'unspecified' | 'not_api_view'
+  /** Filename shape only; never the filename, which is user-authored. */
+  filename_kind?: 'content_hash' | 'template' | 'named' | 'none'
+  /** Time since this page loaded. Auth-expiry failures skew old; 404s do not. */
+  page_age_ms?: number
+  online?: boolean
+  same_origin?: boolean
 }
 
 /**
