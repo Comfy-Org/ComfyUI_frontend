@@ -74,6 +74,20 @@ describe('authSignInTransition', () => {
     )
   })
 
+  it('keeps a detached attempt through the sign-out its own rollback causes', () => {
+    const detached = authSignInTransition(pending, { type: 'signInDetached' })
+    const afterSignOut = authSignInTransition(detached, { type: 'signedOut' })
+
+    expect(afterSignOut).toBe(detached)
+    expect(
+      authSignInTransition(afterSignOut, {
+        type: 'userRestored',
+        email: 'a@b.co'
+      }),
+      'falling to idle here would let a restore mint straight past the provisioning the attempt still owes'
+    ).toBe(detached)
+  })
+
   it('only detaches an attempt that is still waiting on its popup', () => {
     const minting = authSignInTransition(pending, {
       type: 'credentialSucceeded',

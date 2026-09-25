@@ -14,6 +14,13 @@
  * The signal is advisory. `run`'s promise is returned untouched and stays
  * authoritative for the outcome, so a caller that releases its controls early
  * can still let a late success through and drop a late rejection.
+ *
+ * Two routes are deliberately not covered, and on both the caller simply
+ * keeps Firebase's own timing. An installed PWA on iOS opens the provider in
+ * a new tab through a synthetic anchor click rather than `window.open`, so
+ * nothing is captured — but Firebase holds no window handle there either and
+ * never raises `popup-closed-by-user`, so there is no delay to shorten. The
+ * auth emulator serves `emulator/auth/handler`, which this does not match.
  */
 
 /** Far below Firebase's own 2s poll, and cheap: one `closed` read per tick. */
@@ -58,7 +65,10 @@ export function withPopupCloseSignal<T>(
   let timer: ReturnType<typeof setTimeout> | undefined
 
   const restoreOpen = () => {
-    if (window.open === patchedOpen) window.open = nativeOpen
+    // Only the installer clears the flag: a call that never patched must not
+    // hand the next one permission to wrap a patch that is still live.
+    if (window.open !== patchedOpen) return
+    window.open = nativeOpen
     patchInstalled = false
   }
 

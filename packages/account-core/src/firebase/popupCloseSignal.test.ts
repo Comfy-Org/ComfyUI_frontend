@@ -238,31 +238,41 @@ describe('withPopupCloseSignal', () => {
     await result
   })
 
-  it('leaves window.open intact when a second sign-in overlaps the first', async () => {
-    const outer = pendingSignIn()
-    const inner = pendingSignIn()
-    const onInnerClosed = vi.fn()
-    let innerPopup: Window | undefined
+  it('goes unwatched rather than wrapping a patch another call still owns', async () => {
+    const captured = pendingSignIn()
+    const holder = pendingSignIn()
+    const afterwards = pendingSignIn()
 
-    const outerResult = withPopupCloseSignal(() => outer.signedIn, vi.fn())
-    const innerResult = withPopupCloseSignal(async () => {
-      innerPopup = await openPopupLate()
-      return inner.signedIn
-    }, onInnerClosed)
-
+    // Captures its window, so it restores `window.open` and releases the patch
+    // while its own sign-in is still in flight.
+    const capturedResult = withPopupCloseSignal(async () => {
+      await openPopupLate()
+      return captured.signedIn
+    }, vi.fn())
     await vi.advanceTimersByTimeAsync(0)
-    innerPopup?.close()
-    await vi.advanceTimersByTimeAsync(AFTER_CLOSE_MS * 2)
-    expect(
-      onInnerClosed,
-      'an overlapping call goes unwatched rather than capturing the first patch as its native open'
-    ).not.toHaveBeenCalled()
-
-    outer.settle('outer')
-    inner.settle('inner')
-    await Promise.all([outerResult, innerResult])
-
     expect(window.open).toBe(nativeOpen)
+
+    // Opens no window, so this call holds the patch from here on.
+    const holderResult = withPopupCloseSignal(() => holder.signedIn, vi.fn())
+    expect(window.open).not.toBe(nativeOpen)
+
+    // The first call settling must not release the patch this one installed.
+    captured.settle('captured')
+    await capturedResult
+
+    const afterwardsResult = withPopupCloseSignal(
+      () => afterwards.signedIn,
+      vi.fn()
+    )
+    holder.settle('holder')
+    await holderResult
+    afterwards.settle('afterwards')
+    await afterwardsResult
+
+    expect(
+      window.open,
+      'a call that wrapped a live patch restores that patch instead of the real open'
+    ).toBe(nativeOpen)
   })
 
   it('restores window.open when the sign-in throws before opening a window', async () => {

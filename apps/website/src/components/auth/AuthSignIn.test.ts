@@ -527,32 +527,24 @@ describe('AuthSignIn', () => {
     ).toContain(t('auth.signIn.error.provisioning', 'en'))
   })
 
-  it('does not leave the visitor holding a late attempt\u2019s account', async () => {
-    // Firebase holds one currentUser, last write wins: whichever sign-in
-    // resolves most recently is the account the page is left on.
-    const signInAs = (uid: string) => {
-      const credential = testCredential(
-        testFirebaseUser({ uid, email: 'user@example.com', displayName: null })
-      )
-      authUser.value = credential.user
-      return credential
-    }
+  it('holds a new attempt\u2019s authentication until the detached one has settled', async () => {
     let closePopup: (() => void) | undefined
-    let completeSignIn: ((credential: UserCredential) => void) | undefined
+    let dismissPopup: ((reason: unknown) => void) | undefined
     vi.mocked(signInWorkshopWithGoogle).mockImplementation((options) => {
       closePopup = options?.onPopupClosed
-      return new Promise<UserCredential>((resolve) => {
-        completeSignIn = resolve
+      return new Promise<UserCredential>((_resolve, reject) => {
+        dismissPopup = reject
       })
     })
-    vi.mocked(signInWorkshopWithEmail).mockImplementation(async () =>
-      signInAs('email-user')
+    vi.mocked(signInWorkshopWithEmail).mockResolvedValue(
+      testCredential(
+        testFirebaseUser({
+          uid: 'email-user',
+          email: 'user@example.com',
+          displayName: null
+        })
+      )
     )
-    // The mint fails, so the page stays put with its Retry instead of leaving.
-    vi.mocked(useWorkshopSession().ensureFresh).mockResolvedValue({
-      status: 'error',
-      code: 'TOKEN_EXCHANGE_FAILED'
-    })
     const user = userEvent.setup()
     render(AuthSignIn)
 
@@ -566,68 +558,72 @@ describe('AuthSignIn', () => {
     await user.type(screen.getByLabelText('Email'), 'user@example.com')
     await user.type(screen.getByLabelText('Password'), 'Password1!')
     await user.click(screen.getByRole('button', { name: /^sign in$/i }))
-    await screen.findByRole('button', { name: 'Retry session' })
+    await new Promise((resolve) => setTimeout(resolve, 0))
 
-    completeSignIn?.(signInAs('google-user'))
+    expect(
+      vi.mocked(signInWorkshopWithEmail),
+      'Firebase holds one currentUser, so the second credential must not be requested while the first can still arrive'
+    ).not.toHaveBeenCalled()
+
+    dismissPopup?.({ code: 'auth/popup-closed-by-user', message: 'x' })
 
     await waitFor(() =>
-      expect(
-        signOutWorkshop,
-        'the account Firebase now holds is not the one the visitor signed into, so it must not be left there for Retry to mint'
-      ).toHaveBeenCalledOnce()
+      expect(vi.mocked(signInWorkshopWithEmail)).toHaveBeenCalledOnce()
     )
-    expect(replace).not.toHaveBeenCalled()
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/'))
   })
 
-  it('lets a successor finish minting when the attempt it superseded finally fails', async () => {
+  it('waits out the detached attempt\u2019s rollback before authenticating the next', async () => {
     let closePopup: (() => void) | undefined
-    let failPopup: ((reason: unknown) => void) | undefined
+    let completeSignIn: ((credential: UserCredential) => void) | undefined
     vi.mocked(signInWorkshopWithGoogle).mockImplementation((options) => {
       closePopup = options?.onPopupClosed
-      return new Promise<UserCredential>((_resolve, reject) => {
-        failPopup = reject
+      return new Promise<UserCredential>((resolve) => {
+        completeSignIn = resolve
       })
     })
-    vi.mocked(signInWorkshopWithGitHub).mockResolvedValue(
+    vi.mocked(signInWorkshopWithEmail).mockResolvedValue(
       testCredential(
         testFirebaseUser({
-          uid: 'github-user',
+          uid: 'email-user',
           email: 'user@example.com',
           displayName: null
         })
       )
     )
-    // Held in `minting`, the state the superseded attempt must not reset.
-    let completeMint: (() => void) | undefined
-    vi.mocked(useWorkshopSession().ensureFresh).mockImplementation(
-      () =>
-        new Promise((resolve) => {
-          completeMint = () => resolve(okSession)
-        })
-    )
+    const user = userEvent.setup()
     render(AuthSignIn)
 
     await clickGoogle()
     closePopup?.()
     await waitFor(() =>
-      expect(githubButton().hasAttribute('disabled')).toBe(false)
+      expect(useEmailButton().hasAttribute('disabled')).toBe(false)
     )
-    await userEvent.setup().click(githubButton())
-    await waitFor(() => expect(completeMint).toBeDefined())
 
-    failPopup?.({ code: 'auth/popup-closed-by-user', message: 'x' })
-    await new Promise((resolve) => setTimeout(resolve, 0))
-    completeMint?.()
+    await openEmailForm(user)
+    await user.type(screen.getByLabelText('Email'), 'user@example.com')
+    await user.type(screen.getByLabelText('Password'), 'Password1!')
+    await user.click(screen.getByRole('button', { name: /^sign in$/i }))
+
+    completeSignIn?.(
+      testCredential(
+        testFirebaseUser({
+          uid: 'google-user',
+          email: 'user@example.com',
+          displayName: null
+        })
+      )
+    )
 
     await waitFor(() =>
-      expect(
-        replace,
-        'the superseded attempt must not idle the mint its successor is inside'
-      ).toHaveBeenCalledWith('/')
+      expect(vi.mocked(signInWorkshopWithEmail)).toHaveBeenCalledOnce()
     )
-    expect(captureAuthCompleted).toHaveBeenCalledWith(
-      expect.objectContaining({ method: 'github', user_id: 'github-user' })
-    )
+    expect(
+      vi.mocked(signOutWorkshop),
+      'the abandoned Google identity has to be cleared before the email one replaces it'
+    ).toHaveBeenCalledBefore(vi.mocked(signInWorkshopWithEmail))
+    expect(vi.mocked(provisionWorkshopCustomer)).toHaveBeenCalledOnce()
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/'))
   })
 
   it('rolls a late credential back when the visitor has moved on to another attempt', async () => {
