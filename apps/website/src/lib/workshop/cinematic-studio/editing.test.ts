@@ -214,13 +214,14 @@ describe('cinematic editing contracts', () => {
           )
         )
       } else {
+        expect(uploads).toEqual(files.map((file) => file.name))
         const contents = prepared.body.contents as { parts: unknown[] }[]
         expect(contents[0].parts).toHaveLength(4)
         expect(contents[0].parts.slice(1)).toEqual(
-          payloads.map((payload) => ({
-            inlineData: {
+          files.map((file) => ({
+            fileData: {
               mimeType: 'image/png',
-              data: btoa(String.fromCharCode(...payload))
+              fileUri: `https://example.com/${file.name}`
             }
           }))
         )

@@ -4,6 +4,7 @@ const POLICY_CODES = new Set([
   'content_policy_violation',
   'datainspectionfailed',
   'image_content_policy_violation',
+  'imagine:content-moderated',
   'moderation_blocked'
 ])
 

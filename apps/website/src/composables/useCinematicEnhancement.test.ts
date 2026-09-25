@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, h, nextTick, ref } from 'vue'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
@@ -28,6 +28,8 @@ vi.mock(import('../config/workshop-response'), () => ({
   releaseRouterOutputs: vi.fn()
 }))
 const model = cinematicEnhancementModel()!
+const routerId = model.routerId
+assert.exists(routerId)
 const account: WorkshopSession = {
   token: 'test-token',
   expiresAt: Date.now() + 60000,
@@ -41,7 +43,7 @@ const scene = ref('  A boat.\nKEEP COPY  ')
 const namespace = ref('user-1/workspace-1')
 const response = (): RouterRenderResult => ({
   slug: model.slug,
-  routerId: model.routerId,
+  routerId,
   expectedKind: 'text',
   requestId: 'request-test',
   deadlineCollections: 0,

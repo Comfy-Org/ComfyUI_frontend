@@ -355,6 +355,117 @@ describe('queued Router delivery', () => {
     )
   })
 
+  it('attributes a Kling HDR refusal to the source video field', async () => {
+    const contract = workshopContract('kling/kling-v3-omni')
+    assert.exists(contract)
+    stubFetch(
+      admitted(),
+      Response.json(
+        {
+          code: 0,
+          data: {
+            task_status: 'failed',
+            task_status_msg: 'VideoNormalize failed, HDR video is not supported'
+          }
+        },
+        {
+          status: 502,
+          headers: { 'X-Comfy-Error-Type': 'provider_error' }
+        }
+      )
+    )
+
+    await expect(
+      settle(runWorkshopRouter({ ...options(), contract }))
+    ).rejects.toMatchObject({
+      reason: 'validation',
+      fieldErrors: { video_url: 'videoHdrUnsupported' },
+      response: { status: 502, errorType: 'provider_error' },
+      requestSettlement: 'terminal'
+    })
+  })
+
+  it('attributes a Seedream layer-decomposition refusal to the source image', async () => {
+    const contract = workshopContract('byteplus/seedream-5-0-pro-260628')
+    assert.exists(contract)
+    stubFetch(
+      admitted(),
+      Response.json(
+        {
+          error: {
+            code: 'InvalidParameter',
+            message:
+              'The image content is too complex to decompose into layers',
+            param: 'image'
+          }
+        },
+        {
+          status: 400,
+          headers: { 'X-Comfy-Error-Type': 'invalid_input' }
+        }
+      )
+    )
+
+    await expect(
+      settle(
+        runWorkshopRouter({
+          ...options(),
+          contract,
+          body: {
+            prompt: 'Separate this image',
+            image: 'data:image/png;base64,AA==',
+            layer_decomposition: true
+          }
+        })
+      )
+    ).rejects.toMatchObject({
+      reason: 'validation',
+      fieldErrors: { images: 'imageLayerDecompositionUnsupported' },
+      response: { status: 400, errorType: 'invalid_input' },
+      requestSettlement: 'terminal'
+    })
+  })
+
+  it.for([
+    {
+      name: 'layer separation was not requested',
+      body: { image: 'data:image/png;base64,AA==' },
+      message: 'The image content is too complex to decompose into layers'
+    },
+    {
+      name: 'the provider rejected a different image constraint',
+      body: {
+        image: 'data:image/png;base64,AA==',
+        layer_decomposition: true
+      },
+      message: 'The image width is invalid'
+    }
+  ])(
+    'does not attribute Seedream validation when $name',
+    async ({ body, message }) => {
+      const contract = workshopContract('byteplus/seedream-5-0-pro-260628')
+      assert.exists(contract)
+      stubFetch(
+        admitted(),
+        Response.json(
+          { error: { code: 'InvalidParameter', message, param: 'image' } },
+          {
+            status: 400,
+            headers: { 'X-Comfy-Error-Type': 'invalid_input' }
+          }
+        )
+      )
+
+      await expect(
+        settle(runWorkshopRouter({ ...options(), contract, body }))
+      ).rejects.toMatchObject({
+        reason: 'validation',
+        fieldErrors: {},
+        response: { status: 400, errorType: 'invalid_input' }
+      })
+    }
+  )
+
   it('reports a stored provider moderation payload as a terminal policy refusal', async () => {
     stubFetch(
       admitted(),
@@ -498,6 +609,34 @@ describe('collecting an admitted Router request', () => {
     const { contract, token } = options()
     return { contract, token, signal, requestId: REQUEST_ID }
   }
+
+  it('preserves a provider refusal when reconnecting without the original request body', async () => {
+    const contract = workshopContract('byteplus/seedream-5-0-pro-260628')
+    assert.exists(contract)
+    const calls = stubFetch(
+      Response.json(
+        {
+          error: {
+            code: 'InvalidParameter',
+            param: 'image',
+            message: 'the image content is too complex to decompose into layers'
+          }
+        },
+        { status: 400, headers: { 'X-Comfy-Error-Type': 'invalid_input' } }
+      )
+    )
+    await expect(
+      settle(collectWorkshopRouter({ ...collectionOptions(), contract }))
+    ).rejects.toMatchObject({
+      reason: 'validation',
+      fieldErrors: {},
+      response: { status: 400 },
+      requestSettlement: 'terminal'
+    })
+    expect(requestedUrls(calls)).toEqual([
+      `GET ${WORKSHOP_ROUTER_BASE_URL}/v2/models/byteplus/seedream-5-0-pro-260628/requests/${REQUEST_ID}`
+    ])
+  })
 
   it('collects the same request through transient failures without submitting generation', async () => {
     const calls = stubFetch(

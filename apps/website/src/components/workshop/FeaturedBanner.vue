@@ -26,11 +26,13 @@ const CAPABILITY_LIMIT = 3
 const {
   models,
   studio = false,
-  locale = 'en'
+  locale = 'en',
+  autoplay = true
 } = defineProps<{
   models: readonly WorkshopModel[]
   studio?: boolean
   locale?: Locale
+  autoplay?: boolean
 }>()
 
 interface Slide {
@@ -111,6 +113,7 @@ useEventListener(banner, 'focusout', () => (readingByKeyboard.value = false))
 
 const rotating = computed(
   () =>
+    autoplay &&
     slides.value.length > 1 &&
     onScreen.value &&
     visibility.value === 'visible' &&
@@ -134,7 +137,9 @@ watch(rotating, (on) => (on ? resume() : pause()), { immediate: true })
 watch(activeIndex, () => (elapsed.value = 0))
 
 const fill = computed(() =>
-  prefersReducedMotion() ? 1 : Math.min(elapsed.value / AUTOPLAY_MS, 1)
+  !autoplay || prefersReducedMotion()
+    ? 1
+    : Math.min(elapsed.value / AUTOPLAY_MS, 1)
 )
 </script>
 

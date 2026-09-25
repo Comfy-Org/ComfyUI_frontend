@@ -5,6 +5,7 @@ import { WORKSHOP_ROUTER_BASE_URL } from './workshop-env'
 import { serializeRouterInput } from './workshop-request'
 import { parseRouterResponse, releaseRouterOutputs } from './workshop-response'
 import type { RunFailure, RunOutput } from './workshop-run'
+import type { FieldErrors } from './workshop-playground'
 import {
   WorkshopRouterError,
   workshopResponseDetails
@@ -106,7 +107,63 @@ function failureFor(
   return 'provider'
 }
 
+function providerFieldErrors(
+  contract: WorkshopContract,
+  requestBody: Readonly<Record<string, unknown>> | undefined,
+  body: string,
+  bodyComplete: boolean
+): FieldErrors {
+  if (!bodyComplete || !body.trim()) return {}
+  if (contract.id === 'kling/kling-v3-omni' && isKlingHdrRefusal(body))
+    return { video_url: 'videoHdrUnsupported' }
+  if (
+    contract.id === 'byteplus/seedream-5-0-pro-260628' &&
+    requestBody?.layer_decomposition === true &&
+    isSeedreamLayerRefusal(body)
+  )
+    return { images: 'imageLayerDecompositionUnsupported' }
+  return {}
+}
+
+function parseJsonObject(body: string): object | undefined {
+  try {
+    const payload: unknown = JSON.parse(body)
+    if (payload !== null && typeof payload === 'object') return payload
+  } catch {
+    return undefined
+  }
+  return undefined
+}
+
+function isKlingHdrRefusal(body: string): boolean {
+  const payload = parseJsonObject(body)
+  if (!payload) return false
+  const data = Reflect.get(payload, 'data')
+  return (
+    data !== null &&
+    typeof data === 'object' &&
+    Reflect.get(data, 'task_status') === 'failed' &&
+    Reflect.get(data, 'task_status_msg') ===
+      'VideoNormalize failed, HDR video is not supported'
+  )
+}
+
+function isSeedreamLayerRefusal(body: string): boolean {
+  const payload = parseJsonObject(body)
+  if (!payload) return false
+  const error = Reflect.get(payload, 'error')
+  return (
+    error !== null &&
+    typeof error === 'object' &&
+    Reflect.get(error, 'code') === 'InvalidParameter' &&
+    Reflect.get(error, 'param') === 'image' &&
+    String(Reflect.get(error, 'message')).trim().toLowerCase() ===
+      'the image content is too complex to decompose into layers'
+  )
+}
+
 export interface RouterConnectionOptions {
+  readonly body?: Readonly<Record<string, unknown>>
   readonly contract: WorkshopContract
   readonly token: string
   readonly freshToken?: () => Promise<string>
@@ -261,10 +318,18 @@ export async function settleRouterResponse(
   try {
     if (!response.ok) {
       const details = await failureDetails(response)
+      const fieldErrors = providerFieldErrors(
+        options.contract,
+        options.body,
+        details.response.body,
+        details.bodyComplete
+      )
       throw new WorkshopRouterError(
-        failureFor(response, details.response.body, details.bodyComplete),
+        Object.keys(fieldErrors).length
+          ? 'validation'
+          : failureFor(response, details.response.body, details.bodyComplete),
         requestId,
-        {},
+        fieldErrors,
         details.response,
         'request',
         details.cause === undefined ? undefined : { cause: details.cause }

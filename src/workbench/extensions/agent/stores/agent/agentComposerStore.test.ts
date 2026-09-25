@@ -77,6 +77,22 @@ describe('composer reference ownership', () => {
     store.setNodes([{ id: '12', title: 'Other node' }])
     expect(store.nodes).toEqual([{ id: '12', title: 'Other node' }])
   })
+
+  it('keeps an edited workflow-reference draft when a late target restore changes scope', () => {
+    const store = useAgentComposerStore()
+    store.replacePrompt({
+      text: 'Before  between  after',
+      workflowReferences: [
+        { id: 'wf-1', name: 'Unsaved Workflow', textOffset: 7 },
+        { id: 'wf-2', name: 'Unsaved Workflow (2)', textOffset: 16 }
+      ]
+    })
+    const epoch = store.promptEpoch
+    const draft = store.prompt
+    store.setNodeScope('workflows/Unsaved Workflow (3).json')
+    expect(store.promptEpoch).toBe(epoch)
+    expect(store.prompt).toEqual(draft)
+  })
 })
 
 describe('composer draft reset (PM-1331)', () => {

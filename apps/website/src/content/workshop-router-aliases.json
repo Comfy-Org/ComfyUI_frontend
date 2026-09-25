@@ -68,6 +68,7 @@
 {"id":"krea/krea-2-large","routerId":"krea/krea-2-large","sourceCommit":"9064b7d8748b2e5833be9a102f3ca36185137d86"},
 {"id":"krea/krea-2-medium","routerId":"krea/krea-2-medium","sourceCommit":"9064b7d8748b2e5833be9a102f3ca36185137d86"},
 {"id":"krea/krea-2-medium-turbo","routerId":"krea/krea-2-medium-turbo","sourceCommit":"9064b7d8748b2e5833be9a102f3ca36185137d86"},
+{"id":"ltx/ltx-2-5-fast","routerId":"ltx/ltx-2-5-fast","sourceCommit":"9064b7d8748b2e5833be9a102f3ca36185137d86"},
 {"id":"luma/photon-1-image-generation","routerId":"luma/photon-1","sourceCommit":"9064b7d8748b2e5833be9a102f3ca36185137d86","nativeDefaults":{"generation_type":"image"},"condition":"Ordinary image generation; omit modify_image_ref unless deliberately invoking modification.","displayPrimary":true},
 {"id":"luma/photon-1-image-modify","routerId":"luma/photon-1","sourceCommit":"9064b7d8748b2e5833be9a102f3ca36185137d86","nativeDefaults":{"generation_type":"image"},"condition":"Require modify_image_ref; do not present as text-only generation."},
 {"id":"luma/photon-flash-1-image-generation","routerId":"luma/photon-flash-1","sourceCommit":"9064b7d8748b2e5833be9a102f3ca36185137d86","nativeDefaults":{"generation_type":"image"},"condition":"Ordinary image generation; omit modify_image_ref unless deliberately invoking modification.","displayPrimary":true},
