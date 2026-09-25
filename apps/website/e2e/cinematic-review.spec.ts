@@ -807,3 +807,51 @@ for (const layout of ['e', 'd']) {
     ).toBeVisible()
   })
 }
+
+for (const layout of ['e', 'd']) {
+  test(`previews light positions while preserving Apply and Cancel in layout ${layout}`, async ({
+    page
+  }) => {
+    await page.goto(`/cinematic-studio?demo=success&ux=${layout}`)
+    await page
+      .getByRole('button', { name: 'Creative controls', exact: true })
+      .click()
+    const editor = page.getByRole('dialog', { name: 'Creative direction' })
+    await editor.getByRole('button', { name: 'Add light', exact: true }).click()
+    await editor
+      .getByRole('combobox', { name: 'Position 1' })
+      .selectOption('left')
+    const diagram = editor.getByRole('img', { name: 'Lighting positions' })
+    await expect(diagram).toHaveAccessibleDescription(/Light 1: Left/)
+    await editor.getByRole('button', { name: 'Add light', exact: true }).click()
+    await editor
+      .getByRole('combobox', { name: 'Position 2' })
+      .selectOption('top')
+    await expect(diagram).toHaveAccessibleDescription(/Light 2: Above/)
+    await editor.getByRole('button', { name: 'Apply', exact: true }).click()
+    await page
+      .getByRole('button', { name: 'Creative controls', exact: true })
+      .click()
+    await expect(diagram).toHaveAccessibleDescription(
+      /Light 1: Left.*Light 2: Above/
+    )
+    await editor
+      .getByRole('combobox', { name: 'Position 1' })
+      .selectOption('right')
+    await expect(diagram).toHaveAccessibleDescription(/Light 1: Right/)
+    await editor
+      .getByRole('button', { name: 'Cancel', exact: true })
+      .last()
+      .click()
+    await page
+      .getByRole('button', { name: 'Creative controls', exact: true })
+      .click()
+    await expect(diagram).toHaveAccessibleDescription(/Light 1: Left/)
+    await editor
+      .getByRole('button', { name: 'Remove', exact: true })
+      .first()
+      .click()
+    await expect(diagram).toHaveAccessibleDescription(/Light 1: Above/)
+    await expect(diagram).not.toHaveAccessibleDescription(/Light 2:/)
+  })
+}

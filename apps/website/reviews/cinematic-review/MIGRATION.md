@@ -16,6 +16,8 @@ API-key backend, copied private output library, or additional dependency.
 - Contract-supported video routes, durations, resolutions, audio and seeds;
   unsupported reference combinations are blocked before submission.
 - Genre/era/tempo, ordered movements, custom palettes and lighting presets.
+  Custom lighting includes a reactive subject/camera position diagram, separate
+  height view, numbered color markers and accessible descriptions.
 - Account/workspace-scoped local creations, favorites, rename, comparison,
   source lineage, downloads, validated recipe import/export and settings reuse.
 - Named character/location/prop assets, pixel crop and ordered reference roles.
@@ -36,10 +38,10 @@ API-key backend, copied private output library, or additional dependency.
 
 ## Validation
 
-- Latest run: 326 focused Studio tests passed across 33 component, library and
+- Latest run: 328 focused Studio tests passed across 34 component, library and
   composable files. Earlier route validation also passed two LTX Fast tests and
   731 shared contract tests; these were not rerun for the capability UI change.
-- 21 production browser tests passed across both Studio layouts, including
+- 23 production browser tests passed across both Studio layouts, including
   crop pixels, assets, edit review, prompt suggestions, plans, recipe import,
   motion comparison and transition reference restoration after reload.
 - Website build, website typecheck, knip and Astro formatting passed.

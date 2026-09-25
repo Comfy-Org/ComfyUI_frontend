@@ -25,13 +25,16 @@ Seedream and Qwen routes expose contract-bounded seeds; Gemini hides seed. Zero
 is preserved in requests and recipes. Fixed seeds are reused across variations
 and may produce similar results. Failure/cancellation stops remaining requests.
 
+Lighting diagram follow-up: the creative draft now displays numbered, colored
+light markers around the subject/camera, with a separate height view for Above
+and Below. Markers sharing a position remain separately visible. Accessible
+descriptions include position, color, brightness and diffusion. This visualizes
+prompt guidance, not a physical lighting simulation; Apply/Cancel are unchanged.
+
 ## Remaining differences
 
 These are explicit follow-ups, not claims that the migration is a complete replica.
 
-- Custom lighting: original `src/look-editor.js` includes a subject/camera/light
-  positioning diagram. Current `CinematicCreativeEditor.vue` provides the light
-  controls without that spatial illustration.
 - Presets: the original saves palettes and lighting rigs separately. Current
   creative presets capture the combined draft; loading one changes those saved
   creative settings together.

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import CinematicLightingDiagram from './CinematicLightingDiagram.vue'
 import type { Locale } from '../../../i18n/translations'
 import { tcCreative } from '../../../lib/workshop/cinematic-studio/creative-copy'
 import type {
@@ -489,6 +490,7 @@ async function sampleImage(event: Event) {
           <h3 class="font-semibold">
             {{ t('lights') }} · {{ draft.lights.length }}/3
           </h3>
+          <CinematicLightingDiagram :lights="draft.lights" :locale />
           <div
             v-for="(light, index) in draft.lights"
             :key="index"

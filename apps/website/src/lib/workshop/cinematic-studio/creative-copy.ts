@@ -1,6 +1,20 @@
 import type { Locale } from '../../../i18n/translations'
 
 const COPY = {
+  lightLayout: ['Lighting positions', '灯光位置'],
+  planView: ['Around the subject', '主体周围'],
+  elevationView: ['Height', '高度'],
+  subject: ['Subject', '主体'],
+  camera: ['Camera', '相机'],
+  light: ['Light', '灯光'],
+  emptyLights: [
+    'Add a light to see its position here.',
+    '添加灯光后可在此查看位置。'
+  ],
+  diagramNote: [
+    'Position guide only. Front is the camera side; top and bottom show height. Use the numbered controls below to change the lights. This is not a relighting preview.',
+    '仅为位置示意。正面为相机所在侧；顶部和底部表示高度。使用下方编号控件调整灯光。这不是重新打光预览。'
+  ],
   visualExamples: ['Visual examples', '视觉示例'],
   illustrative: [
     'Illustrations from the original demo. They guide your choice and are not generation references or guaranteed results.',
