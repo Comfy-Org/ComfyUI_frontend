@@ -47,6 +47,7 @@ import {
 import ModelDetail from './ModelDetail.vue'
 import WorkshopGate from './WorkshopGate.vue'
 import { listWorkshopGenerations } from '../../config/workshop-generation-assets'
+import { WORKSHOP_ASSETS_URL } from '../../config/workshop-env'
 import { workshopHealthLog } from '../../scripts/workshop-health'
 
 vi.mock(import('../../config/workshop-session-state'))
@@ -267,6 +268,50 @@ describe('ModelDetail', () => {
       expect(run.signal.reason === WORKSHOP_LEAVE_RUNNING).toBe(detaches)
     }
   )
+
+  // A kept run is news, not a warning: it says so once, points at where the
+  // result will be, and then stays out of the way for the rest of the tab.
+  it('tells a reader once that a kept run outlives the page', async () => {
+    vi.stubEnv('PUBLIC_WORKSHOP_SAVE_ASSETS', '1')
+    auth.session.value = credential
+    vi.mocked(listWorkshopGenerations).mockResolvedValue({ requests: [] })
+    vi.mocked(runWorkshopRouter).mockReturnValue(
+      Promise.withResolvers<typeof routerResult>().promise
+    )
+    const assign = vi.spyOn(location, 'assign').mockImplementation(() => {})
+    onTestFinished(() => assign.mockRestore())
+    const clickLinkTo = (path: string) => {
+      const link = document.createElement('a')
+      link.href = `${location.origin}${path}`
+      document.body.append(link)
+      onTestFinished(() => link.remove())
+      return link.dispatchEvent(
+        new MouseEvent('click', { bubbles: true, cancelable: true })
+      )
+    }
+    mountDetail({ model: runnable })
+    await user().type(screen.getByTestId('field-prompt'), 'A teapot')
+    await user().click(screen.getByTestId('run-button'))
+    await vi.waitFor(() => expect(runWorkshopRouter).toHaveBeenCalledOnce())
+
+    expect(clickLinkTo('/models/another-model/')).toBe(false)
+    await screen.findByTestId('run-leave-dialog')
+    expect(screen.getByText('Your generation keeps going')).toBeVisible()
+    expect(screen.getByTestId('run-leave-assets').getAttribute('href')).toBe(
+      WORKSHOP_ASSETS_URL
+    )
+
+    await user().click(screen.getByTestId('run-leave-confirm'))
+    expect(assign).toHaveBeenCalledWith(
+      `${location.origin}/models/another-model/`
+    )
+
+    // Second time out, it already said its piece.
+    expect(clickLinkTo('/models/a-third-model/')).toBe(true)
+    await vi.waitFor(() =>
+      expect(screen.queryByTestId('run-leave-dialog')).toBeNull()
+    )
+  })
 
   it('links a documented provider in a new tab', () => {
     mountDetail({

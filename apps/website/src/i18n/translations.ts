@@ -10242,6 +10242,20 @@ Enterprise`
     en: 'Stay in this workspace',
     'zh-CN': '留在此工作区'
   },
+  'workshop.run.savedTitle': {
+    en: 'Your generation keeps going',
+    'zh-CN': '你的生成仍在继续'
+  },
+  'workshop.run.savedBody': {
+    en: 'You can leave. The run finishes without you, and the result lands in your assets.',
+    'zh-CN': '你可以离开。这次运行会自行完成，结果会保存到你的素材中。'
+  },
+  'workshop.run.savedAssets': {
+    en: 'Open your assets',
+    'zh-CN': '打开你的素材'
+  },
+  'workshop.run.savedStay': { en: 'Stay on this page', 'zh-CN': '留在此页面' },
+  'workshop.run.savedLeave': { en: 'Leave', 'zh-CN': '离开' },
   'workshop.run.switchAnyway': {
     en: 'Switch and cancel',
     'zh-CN': '切换并取消'

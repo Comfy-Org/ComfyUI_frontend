@@ -149,20 +149,31 @@ async function routerFetch(
   })
 }
 
+// Saving is the whole point of a run that asked for it, so a router that took
+// the request without acknowledging the control would keep nothing.
+function acknowledgedSaving(handle: unknown): boolean {
+  return (
+    typeof handle === 'object' &&
+    handle !== null &&
+    'comfy_save_asset' in handle &&
+    handle.comfy_save_asset === true
+  )
+}
+
 async function submit(
   state: Submitting,
   context: QueueContext
 ): Promise<QueuedRun> {
+  const saving = context.options.comfy_save_asset === true
   const submitUrl =
-    requestsUrl(context) +
-    (context.options.comfy_save_asset ? '?comfy_save_asset=true' : '')
+    requestsUrl(context) + (saving ? '?comfy_save_asset=true' : '')
   const response = await routerFetch(context, submitUrl, {
     method: 'POST',
     body: context.body
   })
   const callId = response.headers.get('X-Comfy-Request-Id')
   if (
-    !context.options.comfy_save_asset &&
+    !saving &&
     response.status === 403 &&
     response.headers.get('X-Comfy-Error-Type') === 'not_enabled'
   ) {
@@ -190,15 +201,7 @@ async function submit(
   if (!requestId)
     throw new WorkshopRouterError('response', callId, {}, undefined, 'response')
   context.options.onRequestId?.(requestId)
-  // Saving is the whole point of the run when it is asked for, so a router
-  // that quietly dropped the request runs nothing the reader can come back to.
-  if (
-    context.options.comfy_save_asset &&
-    (typeof handle !== 'object' ||
-      handle === null ||
-      !('comfy_save_asset' in handle) ||
-      handle.comfy_save_asset !== true)
-  )
+  if (saving && !acknowledgedSaving(handle))
     throw new WorkshopRouterError(
       'unavailable',
       requestId,

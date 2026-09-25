@@ -57,6 +57,10 @@ import { retainRunHistory } from '../../config/workshop-run-history'
 import { reportWorkshopRun } from '../../config/workshop-run-state'
 import { modelDocsHref } from '../../lib/workshop/model-docs'
 import { linkLeavingPage } from '../../lib/workshop/leaving-link'
+import {
+  leavingNoticeUnseen,
+  markLeavingNoticeSeen
+} from '../../lib/workshop/leaving-notice'
 import type { WorkshopSession } from '../../config/workshop-session-state'
 import { useWorkshopSession } from '../../config/workshop-session-state'
 import { workshopIdempotencyKey } from '../../config/workshop-snippets'
@@ -83,6 +87,7 @@ import RunLeaveDialog from './RunLeaveDialog.vue'
 import ModelSupport from './ModelSupport.vue'
 import SavedAssetsStrip from './SavedAssetsStrip.vue'
 import { WORKSHOP_LEAVE_RUNNING } from '../../config/workshop-router-queue'
+import { WORKSHOP_ASSETS_URL } from '../../config/workshop-env'
 
 const {
   model,
@@ -336,8 +341,19 @@ useEventListener(
 // this one route off the page can be asked in our own words. The rest still
 // reach the guards above.
 const leavingTo = ref<string>()
+const noticeUnseen = ref(true)
+onMounted(() => (noticeUnseen.value = leavingNoticeUnseen()))
+
+// A run that is cancelled by leaving asks every time, because every time costs
+// the reader their work. A run that is kept says so once and then trusts them
+// with it.
+const asksBeforeLeaving = computed(
+  () => isRunning.value && (!savesAssets || noticeUnseen.value)
+)
+const leaveAction = computed(() => (savesAssets ? 'leaveSaved' : 'leave'))
+
 useEventListener(
-  () => (isRunning.value && !savesAssets ? globalThis.document : undefined),
+  () => (asksBeforeLeaving.value ? globalThis.document : undefined),
   'click',
   (event: MouseEvent) => {
     const href = linkLeavingPage(event, location)
@@ -351,15 +367,22 @@ function leaveForLink() {
   const href = leavingTo.value
   leavingTo.value = undefined
   if (!href) return
+  rememberLeavingNotice()
   releaseRun()
   location.assign(href)
+}
+
+function rememberLeavingNotice() {
+  if (!savesAssets) return
+  markLeavingNoticeSeen()
+  noticeUnseen.value = false
 }
 
 // A push/replace has not moved history yet, so native fallback is safe and the
 // beforeunload guard owns its confirmation. An approved traversal is the one
 // exception: it was already confirmed in the capture-phase popstate handler.
 useEventListener(
-  () => (isRunning.value && !savesAssets ? globalThis.document : undefined),
+  () => (asksBeforeLeaving.value ? globalThis.document : undefined),
   'astro:before-preparation',
   (event: Event) => {
     const navigationType = Reflect.get(event, 'navigationType')
@@ -1116,6 +1139,8 @@ function useInCode() {
 
     <RunLeaveDialog
       :open="leavingTo !== undefined"
+      :action="leaveAction"
+      :assets-href="savesAssets ? WORKSHOP_ASSETS_URL : undefined"
       :locale
       @update:open="(value: boolean) => !value && (leavingTo = undefined)"
       @leave="leaveForLink"
