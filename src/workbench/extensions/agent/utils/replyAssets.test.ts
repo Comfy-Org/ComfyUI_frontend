@@ -1,12 +1,13 @@
 import { marked } from 'marked'
 import { describe, expect, it } from 'vitest'
 
-import { isImageResult } from '@/utils/resultItem'
+import type { LightboxItem } from '@/types/lightboxItem'
 
+import type { ReplyAsset } from './replyAssets'
 import {
   classifyAssetUrl,
   htmlReplyAssets,
-  replyAssetResultItem,
+  replyAssetLightboxItem,
   tokenReplyAssets
 } from './replyAssets'
 
@@ -113,14 +114,43 @@ describe('tokenReplyAssets', () => {
   })
 })
 
-describe('replyAssetResultItem', () => {
-  it('pins the exact source url and classifies from the filename', () => {
-    const item = replyAssetResultItem({
-      url: 'https://x/y?filename=a.png',
-      filename: 'a.png',
-      kind: 'image'
-    })
-    expect(item.url).toBe('https://x/y?filename=a.png')
-    expect(isImageResult(item)).toBe(true)
+describe('replyAssetLightboxItem', () => {
+  it.for([
+    [
+      'a.png',
+      'image',
+      { kind: 'image', url: 'https://x/y?filename=a.png', alt: 'a.png' }
+    ],
+    [
+      'a.mp4',
+      'video',
+      {
+        kind: 'video',
+        url: 'https://x/y?filename=a.mp4',
+        mimeType: 'video/mp4'
+      }
+    ],
+    ['a.flac', 'audio', { kind: 'audio', url: 'https://x/y?filename=a.flac' }]
+  ] as const satisfies readonly (readonly [
+    string,
+    ReplyAsset['kind'],
+    LightboxItem
+  ])[])(
+    'maps a %s %s asset onto its rendering kind, pinning the source url',
+    ([filename, kind, expected]) => {
+      expect(
+        replyAssetLightboxItem({ url: expected.url, filename, kind })
+      ).toEqual(expected)
+    }
+  )
+
+  it('has no lightbox item for a 3D asset, which its own viewer handles', () => {
+    expect(
+      replyAssetLightboxItem({
+        url: 'https://x/y?filename=a.glb',
+        filename: 'a.glb',
+        kind: '3D'
+      })
+    ).toBeUndefined()
   })
 })

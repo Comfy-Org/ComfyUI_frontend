@@ -123,7 +123,7 @@ export function formatNumberWithSuffix(
   return `${formattedNum}${suffixes[exp]}`
 }
 
-export function formatSize(value?: number) {
+export function formatSize(value?: number | null) {
   if (value === null || value === undefined) {
     return '-'
   }
@@ -338,7 +338,7 @@ function normalizeFilePathSeparators(filepath: string): string {
  * @param filepath The filepath to parse
  * @returns Object containing filename and subfolder
  */
-export function parseFilePath(filepath: string): {
+export function parseFilePath(filepath: string | null | undefined): {
   filename: string
   subfolder: string
 } {
@@ -733,6 +733,17 @@ export function getMediaTypeFromFilename(
 
 export function isPreviewableMediaType(mediaType: MediaType): boolean {
   return mediaType !== 'other'
+}
+
+const HTML_VIDEO_TYPES: Readonly<Record<string, string>> = {
+  webm: 'video/webm',
+  mp4: 'video/mp4',
+  mov: 'video/quicktime'
+}
+
+export function htmlVideoTypeForFilename(filename: string): string | undefined {
+  const ext = filename.split('.').pop()?.toLowerCase()
+  return ext ? HTML_VIDEO_TYPES[ext] : undefined
 }
 
 export function formatTime(seconds: number): string {

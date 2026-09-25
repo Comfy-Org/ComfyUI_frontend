@@ -1,38 +1,30 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { ref } from 'vue'
 
-import MediaLightbox from '@/components/sidebar/tabs/queue/MediaLightbox.vue'
-import type { AugmentedResultItem } from '@/utils/resultItem'
+import type { LightboxItem } from '@/types/lightboxItem'
 
-const SAMPLE_IMAGES: AugmentedResultItem[] = [
+import MediaLightbox from './MediaLightbox.vue'
+
+const SAMPLE_IMAGES: LightboxItem[] = [
   {
-    filename: 'landscape.jpg',
-    subfolder: '',
-    type: 'output',
-    nodeId: 'node-1',
-    mediaType: 'images',
+    kind: 'image',
+    alt: 'landscape.jpg',
     url: 'https://i.imgur.com/OB0y6MR.jpg'
   },
   {
-    filename: 'portrait.jpg',
-    subfolder: '',
-    type: 'output',
-    nodeId: 'node-1',
-    mediaType: 'images',
+    kind: 'image',
+    alt: 'portrait.jpg',
     url: 'https://i.imgur.com/CzXTtJV.jpg'
   },
   {
-    filename: 'nature.jpg',
-    subfolder: '',
-    type: 'output',
-    nodeId: 'node-1',
-    mediaType: 'images',
+    kind: 'image',
+    alt: 'nature.jpg',
     url: 'https://farm9.staticflickr.com/8505/8441256181_4e98d8bff5_z_d.jpg'
   }
 ]
 
 const meta: Meta<typeof MediaLightbox> = {
-  title: 'Platform/Assets/MediaLightbox',
+  title: 'Components/MediaLightbox',
   component: MediaLightbox
 }
 
@@ -59,12 +51,12 @@ export const MultipleImages: Story = {
             class="rounded border px-3 py-1 text-sm"
             @click="activeIndex = i"
           >
-            Open {{ item.filename }}
+            Open {{ item.alt }}
           </button>
         </div>
         <MediaLightbox
           v-model:active-index="activeIndex"
-          :all-gallery-items="items"
+          :items="items"
         />
       </div>
     `
@@ -75,7 +67,7 @@ export const SingleImage: Story = {
   render: () => ({
     components: { MediaLightbox },
     setup() {
-      const activeIndex = ref(-1)
+      const activeIndex = ref<number | null>(null)
       const items = SAMPLE_IMAGES.slice(0, 1)
       return { activeIndex, items }
     },
@@ -92,7 +84,7 @@ export const SingleImage: Story = {
         </button>
         <MediaLightbox
           v-model:active-index="activeIndex"
-          :all-gallery-items="items"
+          :items="items"
         />
       </div>
     `
@@ -103,14 +95,14 @@ export const Closed: Story = {
   render: () => ({
     components: { MediaLightbox },
     setup() {
-      const activeIndex = ref(-1)
+      const activeIndex = ref<number | null>(null)
       const items = SAMPLE_IMAGES
       return { activeIndex, items }
     },
     template: `
       <div>
         <p class="mb-4 text-sm text-muted-foreground">
-          Lightbox is closed (activeIndex = -1). Click a button to open.
+          Lightbox is closed. Click a button to open.
         </p>
         <div class="flex gap-2">
           <button
@@ -119,12 +111,12 @@ export const Closed: Story = {
             class="rounded border px-3 py-1 text-sm"
             @click="activeIndex = i"
           >
-            {{ item.filename }}
+            {{ item.alt }}
           </button>
         </div>
         <MediaLightbox
           v-model:active-index="activeIndex"
-          :all-gallery-items="items"
+          :items="items"
         />
       </div>
     `

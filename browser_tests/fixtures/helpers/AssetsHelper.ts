@@ -17,15 +17,6 @@ const assetExportRoutePattern = '**/api/assets/export'
 const inputFilesRoutePattern = /\/internal\/files\/input(?:\?.*)?$/
 const historyRoutePattern = /\/api\/history$/
 
-/**
- * Media kinds supported by the assets sidebar filter UI. The string values
- * match what the backend stores on `preview_output.mediaType` (`images` is
- * intentionally plural to match existing API conventions; the others are
- * singular as emitted by `useMediaAssetGalleryStore`).
- *
- * The sidebar filter ultimately matches on the filename extension, so the
- * fixture also picks an extension-appropriate filename for each kind.
- */
 type MediaKindFixture = 'images' | 'video' | 'audio' | '3D'
 
 const DEFAULT_EXTENSION: Record<MediaKindFixture, string> = {

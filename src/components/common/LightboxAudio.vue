@@ -3,7 +3,7 @@
     class="m-auto w-[min(90vw,42rem)] rounded-2xl bg-base-background/80 p-8 backdrop-blur-sm"
   >
     <WaveAudioPlayer
-      :src="resultItemUrl(result)"
+      :src="url"
       variant="expanded"
       :height="120"
       :bar-count="80"
@@ -13,10 +13,7 @@
 
 <script setup lang="ts">
 import WaveAudioPlayer from '@/components/common/WaveAudioPlayer.vue'
-import type { AugmentedResultItem } from '@/utils/resultItem'
-import { resultItemUrl } from '@/utils/resultItemUrl'
+import type { LightboxAudioItem } from '@/types/lightboxItem'
 
-const { result } = defineProps<{
-  result: AugmentedResultItem
-}>()
+defineProps<Omit<LightboxAudioItem, 'kind'>>()
 </script>

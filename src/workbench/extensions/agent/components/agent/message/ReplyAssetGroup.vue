@@ -12,7 +12,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { ReplyAsset } from '../../../utils/replyAssets'
-import { replyAssetResultItem } from '../../../utils/replyAssets'
+import { replyAssetLightboxItem } from '../../../utils/replyAssets'
 import ReplyAudioCard from './ReplyAudioCard.vue'
 
 const { assets } = defineProps<{ assets: ReplyAsset[] }>()
@@ -59,9 +59,12 @@ const galleryAssets = computed(() =>
   visual.value.filter((asset) => asset.kind !== '3D')
 )
 const galleryItems = computed(() =>
-  galleryAssets.value.map(replyAssetResultItem)
+  galleryAssets.value.flatMap((asset) => {
+    const item = replyAssetLightboxItem(asset)
+    return item ? [item] : []
+  })
 )
-const galleryIndex = ref(-1)
+const galleryIndex = ref<number | null>(null)
 
 const modelThumbnails = ref<Record<string, string>>({})
 const assetNames = ref<Record<string, string>>({})
@@ -103,7 +106,7 @@ const Load3dViewerContent = defineAsyncComponent(
   () => import('@/components/load3d/Load3dViewerContent.vue')
 )
 const MediaLightbox = defineAsyncComponent(
-  () => import('@/components/sidebar/tabs/queue/MediaLightbox.vue')
+  () => import('@/components/common/MediaLightbox.vue')
 )
 
 function refreshModelThumbnail(asset: ReplyAsset, retry = true): void {
@@ -252,10 +255,9 @@ function stopPreview(event: Event): void {
     </div>
 
     <MediaLightbox
-      v-if="galleryIndex !== -1"
-      :all-gallery-items="galleryItems"
-      :active-index="galleryIndex"
-      @update:active-index="galleryIndex = $event"
+      v-if="galleryIndex !== null"
+      v-model:active-index="galleryIndex"
+      :items="galleryItems"
     />
   </div>
 </template>

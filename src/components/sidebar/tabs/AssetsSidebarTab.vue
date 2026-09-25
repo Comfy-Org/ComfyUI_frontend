@@ -157,7 +157,7 @@
   </Teleport>
   <MediaLightbox
     v-model:active-index="galleryActiveIndex"
-    :all-gallery-items="galleryItems"
+    :items="galleryItems"
   />
   <MediaAssetContextMenu
     v-if="contextMenuAsset"
@@ -205,7 +205,7 @@ import AssetsSidebarGridView from '@/components/sidebar/tabs/AssetsSidebarGridVi
 import AssetsSidebarListView from '@/components/sidebar/tabs/AssetsSidebarListView.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
-import MediaLightbox from '@/components/sidebar/tabs/queue/MediaLightbox.vue'
+import MediaLightbox from '@/components/common/MediaLightbox.vue'
 import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -244,7 +244,9 @@ import {
   getMediaTypeFromFilename,
   isPreviewableMediaType
 } from '@/utils/formatUtil'
-import type { AugmentedResultItem } from '@/utils/resultItem'
+import type { LightboxItem } from '@/types/lightboxItem'
+import { fileLightboxItem, toLightboxEntries } from '@/utils/lightboxItem'
+import { vhsAdvancedPreviewUrl } from '@/utils/resultItemUrl'
 
 const Load3dViewerContent = defineAsyncComponent(
   () => import('@/components/load3d/Load3dViewerContent.vue')
@@ -346,7 +348,7 @@ const currentAssets = computed(() =>
 const loading = computed(() => toValue(currentAssets.value.isLoading))
 const mediaAssets = computed(() => toValue(currentAssets.value.items))
 
-const galleryActiveIndex = ref(-1)
+const galleryActiveIndex = ref<number | null>(null)
 const currentGalleryAssetId = ref<string | null>(null)
 
 const DEFAULT_SKELETON_COUNT = 6
@@ -408,9 +410,17 @@ const { marqueeStyle } = useAssetGridSelection({
   isEnabled: () => !isListView.value
 })
 
-const previewableVisibleAssets = computed(() =>
-  visibleAssets.value.filter((asset) =>
-    isPreviewableMediaType(getMediaTypeFromFilename(asset.name))
+const galleryEntries = computed(() =>
+  toLightboxEntries(visibleAssets.value, (asset) =>
+    fileLightboxItem(
+      asset.preview_url || '',
+      asset.name,
+      vhsAdvancedPreviewUrl({
+        filename: asset.name,
+        subfolder: getAssetSubfolder(asset),
+        type: getAssetType(asset.tags)
+      })
+    )
   )
 )
 
@@ -445,33 +455,23 @@ watch(visibleAssets, (newAssets) => {
   // Alternative: keep hidden selections and surface them in UI; for now prune
   // so selection stays consistent with what this view can act on.
   reconcileSelection(newAssets)
-  if (currentGalleryAssetId.value && galleryActiveIndex.value !== -1) {
-    const newIndex = previewableVisibleAssets.value.findIndex(
-      (asset) => asset.id === currentGalleryAssetId.value
+  if (currentGalleryAssetId.value && galleryActiveIndex.value !== null) {
+    const newIndex = galleryEntries.value.findIndex(
+      ({ source }) => source.id === currentGalleryAssetId.value
     )
-    galleryActiveIndex.value = newIndex
+    galleryActiveIndex.value = newIndex === -1 ? null : newIndex
   }
 })
 
 watch(galleryActiveIndex, (index) => {
-  if (index === -1) {
+  if (index === null) {
     currentGalleryAssetId.value = null
   }
 })
 
-const galleryItems = computed<AugmentedResultItem[]>(() => {
-  return previewableVisibleAssets.value.map((asset) => {
-    const mediaType = getMediaTypeFromFilename(asset.name)
-    return {
-      filename: asset.name,
-      subfolder: getAssetSubfolder(asset),
-      type: 'output',
-      nodeId: '0',
-      mediaType: mediaType === 'image' ? 'images' : mediaType,
-      url: asset.preview_url || ''
-    }
-  })
-})
+const galleryItems = computed<LightboxItem[]>(() =>
+  galleryEntries.value.map(({ item }) => item)
+)
 
 const refreshAssets = async () => {
   await currentAssets.value.invalidate()
@@ -585,8 +585,8 @@ const handleZoomClick = (asset: AssetItem) => {
   }
 
   currentGalleryAssetId.value = asset.id
-  const index = previewableVisibleAssets.value.findIndex(
-    (a) => a.id === asset.id
+  const index = galleryEntries.value.findIndex(
+    ({ source }) => source.id === asset.id
   )
   if (index !== -1) {
     galleryActiveIndex.value = index
