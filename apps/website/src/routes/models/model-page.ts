@@ -75,15 +75,21 @@ export async function prepareModelPage(
   }
 }
 
+function asWords(text: string) {
+  return ` ${text.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ')} `
+}
+
 function nameCarriesProvider(name: string, provider: string) {
-  const lowerName = name.toLowerCase()
+  const nameWords = asWords(name)
   return [provider, ...(PROVIDER_BRANDS.get(provider) ?? [])].some((brand) =>
-    lowerName.includes(brand.toLowerCase())
+    nameWords.includes(asWords(brand))
   )
 }
 
 function cutAtWord(text: string, maxLength: number) {
-  const cut = text.slice(0, Math.max(0, maxLength - 1))
+  const cut = text
+    .slice(0, Math.max(0, maxLength - 1))
+    .replace(/[\uD800-\uDBFF]$/, '')
   const lastSpace = cut.lastIndexOf(' ')
   return `${(lastSpace > 0 ? cut.slice(0, lastSpace) : cut).replace(/[\s,;:.]+$/, '')}…`
 }
@@ -95,7 +101,9 @@ export function modelMetaDescription(
   },
   locale: Locale = 'en'
 ) {
-  const { name, provider, summary } = page.model
+  const { name, provider } = page.model
+  const summary =
+    page.model.summary && page.model.summary.replace(/(?<![.!?。！？])$/u, '.')
   const who =
     provider && !nameCarriesProvider(name, provider)
       ? interpolate(t('workshop.model.meta.byProvider', locale), {
@@ -136,7 +144,14 @@ export function modelMetaDescription(
     if (description.length <= META_DESCRIPTION_TARGET) return description
   }
   const bare = compose(lead(summary), priceClause)
-  if (!summary || bare.length <= META_DESCRIPTION_MAX) return bare
-  const summaryRoom = summary.length - (bare.length - META_DESCRIPTION_MAX)
-  return compose(lead(cutAtWord(summary, summaryRoom)), priceClause)
+  if (bare.length <= META_DESCRIPTION_MAX) return bare
+  const summaryRoom =
+    (summary?.length ?? 0) - (bare.length - META_DESCRIPTION_MAX)
+  const trimmed =
+    summary && summaryRoom > 0
+      ? compose(lead(cutAtWord(summary, summaryRoom)), priceClause)
+      : bare
+  return trimmed.length <= META_DESCRIPTION_MAX
+    ? trimmed
+    : cutAtWord(trimmed, META_DESCRIPTION_MAX)
 }

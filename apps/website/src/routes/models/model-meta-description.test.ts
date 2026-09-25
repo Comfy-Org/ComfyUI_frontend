@@ -54,6 +54,24 @@ describe('modelMetaDescription', () => {
       expected: 'Kling Omni. Run it in your browser or call it via API.'
     },
     {
+      name: 'ends an unpunctuated summary with a period',
+      page: { model: { name: 'Remove an object', summary: 'Erase it' } },
+      expected:
+        'Remove an object: Erase it. Run it in your browser or call it via API.'
+    },
+    {
+      name: 'only treats whole words as the brand',
+      page: {
+        model: {
+          name: 'Veolia Painter',
+          provider: 'Google',
+          summary: 'Paints.'
+        }
+      },
+      expected:
+        'Veolia Painter by Google: Paints. Run it in your browser or call it via API.'
+    },
+    {
       name: 'leaves the unit out when the price label has none',
       page: {
         model: { name: 'Recraft V4', provider: 'Recraft', summary: 'Draws.' },
@@ -89,6 +107,15 @@ describe('modelMetaDescription', () => {
     })
     expect(description).toMatch(pattern)
     expect(description.length).toBeLessThanOrEqual(MAX_LENGTH)
+  })
+
+  it('stays within the cap when the name alone is too long', () => {
+    const description = modelMetaDescription({
+      model: { name: 'Model '.repeat(40).trim(), summary: 'Short.' },
+      priceEstimate: '4.2 credits/Run'
+    })
+    expect(description.length).toBeLessThanOrEqual(MAX_LENGTH)
+    expect(description.endsWith('…')).toBe(true)
   })
 
   it('gives every model page a unique description built from its own facts', async () => {
