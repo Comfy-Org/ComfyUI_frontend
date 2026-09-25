@@ -49,16 +49,15 @@ function fakeRememberedLogin(
 function bootIdentity({
   state,
   login,
-  fetchImpl
+  fetchImpl,
+  signInUser = SESSION_USER
 }: {
   state: FakeWebSessionState
   login: RememberedLogin
   fetchImpl?: (endpointFetch: typeof fetch) => typeof fetch
+  signInUser?: typeof SESSION_USER
 }) {
-  const endpoint = createFakeWebSessionEndpoint({
-    state,
-    signInUser: SESSION_USER
-  })
+  const endpoint = createFakeWebSessionEndpoint({ state, signInUser })
   const scheduler = createFakeScheduler()
   const reports: WebSessionBootstrapEvent[] = []
   const identity = createWebSessionIdentity({
@@ -222,6 +221,56 @@ describe('network errors', () => {
     expect(login.signOutLocally).not.toHaveBeenCalled()
   })
 
+  it('treats a remembered-login lookup that throws as transient', async () => {
+    const login = fakeRememberedLogin('user-1')
+    login.currentUserId.mockRejectedValueOnce(new Error('provider offline'))
+    const { endpoint, scheduler, identity } = bootIdentity({
+      state: { kind: 'dead', code: 'no_session' },
+      login
+    })
+    expect(summarize(await nextRest(identity))).toBe('retry_wait')
+
+    scheduler.fireNext()
+
+    expect(summarize(await nextRest(identity))).toBe('signed_in:user-1')
+    expect(requestLog(endpoint)).toEqual(['GET', 'GET', 'POST', 'GET'])
+    expect(login.signOutLocally).not.toHaveBeenCalled()
+  })
+
+  it.for([
+    { name: 'a pending session read', pending: 'read' },
+    { name: 'a pending identity proof', pending: 'proof' }
+  ] as const)('dispose ignores the answer to $name', async ({ pending }) => {
+    let release: () => void = () => {}
+    const gate = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    const login = fakeRememberedLogin('user-1', async () => {
+      await gate
+      return 'remembered-proof'
+    })
+    const { reports, identity } = bootIdentity({
+      state: { kind: 'dead', code: 'no_session' },
+      login,
+      fetchImpl: (endpointFetch) => async (input, init) => {
+        if (pending === 'read') await gate
+        return endpointFetch(input, init)
+      }
+    })
+    if (pending === 'proof') {
+      await vi.waitFor(() => expect(login.getProof).toHaveBeenCalled())
+    }
+
+    identity.dispose()
+    release()
+    await gate
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(identity.getState()).toEqual({ phase: 'idle' })
+    expect(reports).toEqual([])
+    expect(login.signOutLocally).not.toHaveBeenCalled()
+  })
+
   it('dispose cancels the pending retry', async () => {
     const { scheduler, identity } = bootIdentity({
       state: { kind: 'network_error' },
@@ -291,6 +340,22 @@ describe('silent restore', () => {
 
     expect(summarize(await nextRest(identity))).toBe('signed_in:user-1')
     expect(log).toEqual(['GET', 'POST', 'GET'])
+  })
+
+  it('fails the restore when the created session belongs to another user', async () => {
+    const login = fakeRememberedLogin('user-1')
+    const { endpoint, reports, identity } = bootIdentity({
+      state: { kind: 'dead', code: 'no_session' },
+      login,
+      signInUser: fakeWebSessionUser({ id: 'someone-else' })
+    })
+
+    expect(summarize(await nextRest(identity))).toBe(
+      'signed_out:restore_failed'
+    )
+    expect(requestLog(endpoint)).toEqual(['GET', 'POST', 'GET'])
+    expect(reports).toEqual([{ outcome: 'restore_failed', origin: ORIGIN }])
+    expect(login.signOutLocally).not.toHaveBeenCalled()
   })
 
   it('settles signed out when the remembered login has no usable proof', async () => {

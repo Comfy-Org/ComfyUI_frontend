@@ -54,12 +54,12 @@ export type WebSessionIdentityEvent =
       readonly result: WebSessionResult
       readonly rememberedUserId: string | null
     }
-  | { readonly type: 'proof_missing' | 'proof_errored' }
+  | { readonly type: 'proof_missing' | 'proof_errored' | 'login_errored' }
   | { readonly type: 'retry_due' }
 
 export type WebSessionIdentityEffect =
   | { readonly type: 'read' }
-  | { readonly type: 'restore' }
+  | { readonly type: 'restore'; readonly expectedUserId: string }
   | { readonly type: 'schedule_retry'; readonly failures: number }
   | { readonly type: 'sign_out_locally' }
   | { readonly type: 'report'; readonly outcome: WebSessionBootOutcome }
@@ -125,7 +125,7 @@ function applyReadAnswered(
   if (rememberedUserId === null) return settleSignedOut('signed_out')
   return {
     state: { phase: 'restoring', failures },
-    effects: [{ type: 'restore' }]
+    effects: [{ type: 'restore', expectedUserId: rememberedUserId }]
   }
 }
 
@@ -178,6 +178,10 @@ export function transitionWebSessionIdentity(
         : unchanged
     case 'proof_errored':
       return state.phase === 'restoring'
+        ? waitToRetry(state.failures + 1)
+        : unchanged
+    case 'login_errored':
+      return state.phase === 'reading' || state.phase === 'restoring'
         ? waitToRetry(state.failures + 1)
         : unchanged
     case 'retry_due':
@@ -258,11 +262,19 @@ function createAccountIdentity(
     request: () => Promise<WebSessionResult>
   ): Promise<void> {
     const result = await request()
-    const rememberedUserId = await login.currentUserId().catch(() => null)
-    if (started === generation) dispatch({ type, result, rememberedUserId })
+    const remembered = await login.currentUserId().then(
+      (value) => ({ value }),
+      () => undefined
+    )
+    if (started !== generation) return
+    if (remembered === undefined) return dispatch({ type: 'login_errored' })
+    dispatch({ type, result, rememberedUserId: remembered.value })
   }
 
-  async function restore(started: number): Promise<void> {
+  async function restore(
+    started: number,
+    expectedUserId: string
+  ): Promise<void> {
     const proof = await login.getProof().then(
       (value) => ({ value }),
       () => undefined
@@ -272,7 +284,7 @@ function createAccountIdentity(
     const { value } = proof
     if (value === null) return dispatch({ type: 'proof_missing' })
     await answer(started, 'restore_answered', () =>
-      createWebSession(options.session, async () => value)
+      createWebSession(options.session, async () => value, { expectedUserId })
     )
   }
 
@@ -284,7 +296,7 @@ function createAccountIdentity(
         )
         return
       case 'restore':
-        void restore(generation)
+        void restore(generation, effect.expectedUserId)
         return
       case 'schedule_retry':
         cancelRetry = schedule(
