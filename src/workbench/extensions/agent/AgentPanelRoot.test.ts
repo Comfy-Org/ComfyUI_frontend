@@ -5047,83 +5047,112 @@ describe('AgentPanelRoot workflow binding', () => {
     }
   )
 
-  it('preserves Current after deleting a missing chat and remounting history', async () => {
-    makeTab('wf-current')
-    useAgentConversationStore().setThreadId('th-current')
-    localStorage.setItem(StorageKeys.agentThread('personal'), 'th-current')
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (url: string) => {
-        if (url.includes('/th-missing/messages')) return json(404, {})
-        if (url.includes('/messages'))
-          return json(200, [
-            {
-              id: 'current-user',
-              thread_id: 'th-current',
-              seq: 1,
-              role: 'user',
-              status: 'complete',
-              turn_id: 'current-turn',
-              content: { text: 'Current request' }
-            }
-          ])
-        if (url.includes('/workflows'))
-          return json(200, {
-            data: [],
-            pagination: { offset: 0, limit: 100, total: 0, has_more: false }
-          })
-        return json(
-          200,
-          agentThreadList([
-            agentThread({
-              id: 'th-current',
-              title: 'Current chat',
-              last_message_at: '2026-09-25T01:00:00Z'
-            }),
-            agentThread({
-              id: 'th-missing',
-              title: 'Missing chat',
-              last_message_at: '2026-09-25T00:00:00Z'
+  it.for([
+    { failure: 'missing messages', status: 404 },
+    { failure: 'message server error', status: 500 },
+    { failure: 'unavailable workflow', status: 200 }
+  ])(
+    'preserves Current after deleting a chat with $failure',
+    async ({ status }) => {
+      makeTab('wf-current')
+      useAgentConversationStore().setThreadId('th-current')
+      localStorage.setItem(StorageKeys.agentThread('personal'), 'th-current')
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async (url: string) => {
+          if (url.includes('/th-failed/messages'))
+            return json(status, [
+              {
+                id: 'failed-user',
+                thread_id: 'th-failed',
+                seq: 1,
+                role: 'user',
+                status: 'complete',
+                turn_id: 'failed-turn',
+                workflow_id: 'wf-unavailable',
+                content: { text: 'Failed request' }
+              }
+            ] satisfies AgentMessages)
+          if (url.includes('/messages'))
+            return json(200, [
+              {
+                id: 'current-user',
+                thread_id: 'th-current',
+                seq: 1,
+                role: 'user',
+                status: 'complete',
+                turn_id: 'current-turn',
+                content: { text: 'Current request' }
+              }
+            ])
+          if (url.includes('/workflows'))
+            return json(200, {
+              data: [],
+              pagination: { offset: 0, limit: 100, total: 0, has_more: false }
             })
-          ])
-        )
-      })
-    )
-    const first = renderWithSelectedTarget()
-    await screen.findAllByText('Current request')
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Show chat history' })
-    )
-    await userEvent.click(
-      await screen.findByRole('button', { name: 'Missing chat' })
-    )
-    await screen.findByRole('alert')
-    await userEvent.click(
-      screen.getAllByRole('button', {
-        name: i18n.global.t('agent.chatOptions')
-      })[1]
-    )
-    await userEvent.click(
-      await screen.findByRole('menuitem', { name: i18n.global.t('g.delete') })
-    )
-    first.unmount()
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
-    await nextTick()
+          return json(
+            200,
+            agentThreadList([
+              agentThread({
+                id: 'th-current',
+                title: 'Current chat',
+                last_message_at: '2026-09-25T01:00:00Z'
+              }),
+              agentThread({
+                id: 'th-failed',
+                title: 'Failed chat',
+                last_message_at: '2026-09-25T00:00:00Z'
+              })
+            ])
+          )
+        })
+      )
+      const first = renderWithSelectedTarget()
+      await screen.findAllByText('Current request')
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Show chat history' })
+      )
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Failed chat' })
+      )
+      await screen.findByRole('alert')
+      await userEvent.click(
+        screen.getAllByRole('button', {
+          name: i18n.global.t('agent.chatOptions')
+        })[1]
+      )
+      await userEvent.click(
+        await screen.findByRole('menuitem', { name: i18n.global.t('g.delete') })
+      )
+      expect(useAgentChatHistoryStore().activeId).toBe('th-current')
+      expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBe(
+        'th-current'
+      )
+      first.unmount()
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      await nextTick()
 
-    expect(screen.getByRole('heading', { name: 'Chat history' })).toBeVisible()
-    expect(useAgentChatHistoryStore().activeId).toBe('th-current')
-    expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBe(
-      'th-current'
-    )
-    expect(
-      screen.queryByRole('button', { name: 'Missing chat' })
-    ).not.toBeInTheDocument()
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Back to previous chat' })
-    )
-    await screen.findAllByText('Current request')
-    expect(useAgentChatHistoryStore().activeId).toBe('th-current')
-  })
+      expect(
+        screen.getByRole('heading', { name: 'Chat history' })
+      ).toBeVisible()
+      expect(useAgentChatHistoryStore().activeId).toBe('th-current')
+      expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBe(
+        'th-current'
+      )
+      expect(
+        screen.queryByRole('button', { name: 'Failed chat' })
+      ).not.toBeInTheDocument()
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Back to previous chat' })
+      )
+      await screen.findAllByText('Current request')
+      expect(useAgentChatHistoryStore().activeId).toBe('th-current')
+      expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBe(
+        'th-current'
+      )
+      expect(screen.queryByText('Failed request')).not.toBeInTheDocument()
+    }
+  )
 
   it('restores an agent-minted draft target after reload and keeps its Cloud identity on send', async () => {
     const draftGraphId = '3d4d7f1e-3c8b-4a0a-9a3c-1d2e3f4a5b6c'

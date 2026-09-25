@@ -1308,7 +1308,9 @@ function onRenameHistory(id: string, title: string): void {
 }
 
 function onDeleteHistory(id: string): void {
-  const isCurrent = id === history.activeId || id === threadId.value
+  const isCurrent =
+    id === history.activeId ||
+    (history.activeId === null && id === threadId.value)
   history.remove(id)
   // Deleting the open chat also ends it; a dead thread must not stay editable.
   if (isCurrent) onNewChat('history_delete')
