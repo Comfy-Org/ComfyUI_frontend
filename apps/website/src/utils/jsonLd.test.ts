@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { externalLinks } from '../config/routes'
+import { t } from '../i18n/translations'
 import { escapeJsonLd } from './escapeJsonLd'
 import type { JsonLdGraph } from './jsonLd'
 import {
@@ -199,6 +200,17 @@ describe('site identity', () => {
     expect(org).not.toHaveProperty('address')
   })
 
+  it('describes the organization in the page language', () => {
+    const zhGraph = buildPageGraph(
+      { siteUrl, locale: 'zh-CN' },
+      { url: `${siteUrl}/zh-CN/`, name: '首页' }
+    )
+    const zhOrg = zhGraph['@graph'].find(
+      (node) => node['@type'] === 'Organization'
+    )
+    expect(zhOrg?.description).toBe(t('hero.subtitle', 'zh-CN'))
+  })
+
   it('names the GitHub organization, not the ComfyUI repository', () => {
     const org = nodeOfType('Organization')
     expect(org?.sameAs).toContain('https://github.com/Comfy-Org')
@@ -220,7 +232,7 @@ describe('webPageName', () => {
     ['Pricing - Comfy Cloud', 'Pricing - Comfy Cloud'],
     [
       'Serverless animation comparison · Comfy',
-      'Serverless animation comparison · Comfy'
+      'Serverless animation comparison'
     ],
     ['Comfy', 'Comfy']
   ])('%s -> %s', ([title, name]) => {

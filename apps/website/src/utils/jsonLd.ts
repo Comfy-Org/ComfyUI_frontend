@@ -84,7 +84,7 @@ function buildGraph(...nodes: (JsonLdNode | null | undefined)[]): JsonLdGraph {
   }
 }
 
-function organizationNode(siteUrl: string): JsonLdNode {
+function organizationNode(siteUrl: string, locale: Locale): JsonLdNode {
   return {
     '@type': 'Organization',
     '@id': organizationId(siteUrl),
@@ -96,7 +96,7 @@ function organizationNode(siteUrl: string): JsonLdNode {
       width: 512,
       height: 512
     },
-    description: t('hero.subtitle', 'en'),
+    description: t('hero.subtitle', locale),
     contactPoint: {
       '@type': 'ContactPoint',
       contactType: 'customer support',
@@ -198,7 +198,7 @@ export function articleNode(input: ArticleInput): JsonLdNode {
 }
 
 export function webPageName(title: string): string {
-  return title.replace(/ - Comfy$/, '')
+  return title.replace(/ [-·] Comfy$/, '')
 }
 
 interface WebPageInput {
@@ -481,7 +481,7 @@ export function buildPageGraph(
   }
   const hasCrumbs = Boolean(page.crumbs && page.crumbs.length > 0)
   return buildGraph(
-    organizationNode(ctx.siteUrl),
+    organizationNode(ctx.siteUrl, ctx.locale),
     websiteNode(ctx.siteUrl),
     webPageNode(input, type),
     hasCrumbs ? breadcrumbNode(page.url, page.crumbs!) : undefined,

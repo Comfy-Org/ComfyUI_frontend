@@ -47,14 +47,14 @@ const isPast = pastEvents.includes(event)
 const ogImage = eventOgImage(event)
 
 const videoJsonLd: JsonLdNode | undefined =
-  isPast && event.recordingVideoId && event.media
+  isPast && event.recordingVideoId && ogImage
     ? videoObjectNode({
         siteUrl,
         id: jsonLdId(url, 'video'),
         pageUrl: url,
         name: title,
         description,
-        thumbnailUrl: event.media.src,
+        thumbnailUrl: ogImage,
         contentUrl:
           youtubeWatchHref(event.recordingVideoId)[locale] ||
           youtubeWatchHref(event.recordingVideoId).en,
