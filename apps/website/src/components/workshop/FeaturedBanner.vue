@@ -46,7 +46,7 @@ const {
 }>()
 
 const activeIndex = ref(0)
-const active = computed(
+const active = computed<FeaturedSlide | undefined>(
   () => slides[Math.min(activeIndex.value, slides.length - 1)]
 )
 
@@ -64,7 +64,7 @@ const onScreen = useElementVisibility(banner, { initialValue: true })
 const visibility = useDocumentVisibility()
 const video = useTemplateRef<HTMLVideoElement>('video')
 // The video fills the banner, so the banner's observer is its observer.
-const previewSrc = usePreviewVideo(video, () => active.value.media?.url, {
+const previewSrc = usePreviewVideo(video, () => active.value?.media?.url, {
   visible: () => onScreen.value
 })
 

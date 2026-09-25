@@ -2,7 +2,6 @@
 import { ChevronLeft } from '@lucide/vue'
 import { onMounted, ref } from 'vue'
 
-import { catalogSearch } from '../../config/models-catalogue'
 import { getRoutes } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -31,7 +30,9 @@ const category = ref<string>()
 onMounted(() => {
   const shelf = lastShelf(location.pathname)
   if (!shelf || shelf === 'all') return
-  href.value = `${catalogueHref}${catalogSearch({ useCase: shelf })}`
+  const url = new URL(catalogueHref, location.origin)
+  url.searchParams.set('useCase', shelf)
+  href.value = `${url.pathname}${url.search}${url.hash}`
   category.value = t(useCaseLabelKey[shelf], locale)
 })
 </script>
