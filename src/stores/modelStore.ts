@@ -315,7 +315,7 @@ export const useModelStore = defineStore('models', () => {
 
   let modelFoldersRequestId = 0
   const pendingReloads = new Set<Promise<boolean>>()
-  let foldersStale = false
+  let foldersMissedCapabilityChange = false
 
   /**
    * Whether anything has consumed this store's model data (sidebar loads,
@@ -361,7 +361,7 @@ export const useModelStore = defineStore('models', () => {
   function commitModelFolders({ names, folders }: PreparedModelFolders): void {
     modelFolderNames.value = names
     modelFolderByName.value = folders
-    foldersStale = false
+    foldersMissedCapabilityChange = false
   }
 
   /** Loads the model folder structure from the server; false when superseded. */
@@ -376,7 +376,7 @@ export const useModelStore = defineStore('models', () => {
     folderName: string
   ): Promise<ModelFolder | null> {
     modelDataConsumed = true
-    if (foldersStale) await loadModelFolders()
+    if (foldersMissedCapabilityChange) await loadModelFolders()
     const folder = Object.hasOwn(modelFolderByName.value, folderName)
       ? modelFolderByName.value[folderName]
       : undefined
@@ -398,7 +398,8 @@ export const useModelStore = defineStore('models', () => {
     // until a load of ours commits (even a genuinely empty result) or a
     // concurrent one has populated the list. Bounded as a safety net.
     for (let attempt = 0; attempt < 3; attempt++) {
-      if (modelFolderNames.value.length > 0 && !foldersStale) break
+      if (modelFolderNames.value.length > 0 && !foldersMissedCapabilityChange)
+        break
       if (await loadModelFolders()) break
     }
     return Promise.all(modelFolders.value.map((folder) => folder.load()))
@@ -554,7 +555,7 @@ export const useModelStore = defineStore('models', () => {
    */
   function reloadForCapabilityChange() {
     reloadModels().catch((error) => {
-      foldersStale = true
+      foldersMissedCapabilityChange = true
       reportError(error, {
         errorType: 'error_reloading_model_library_after_capability_change'
       })
