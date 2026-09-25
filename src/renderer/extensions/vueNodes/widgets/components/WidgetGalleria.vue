@@ -1,63 +1,24 @@
 <template>
   <div class="flex flex-col gap-1">
-    <Galleria
+    <WidgetGalleriaCarousel
       v-model:active-index="activeIndex"
-      :value="galleryImages"
-      v-bind="filteredProps"
+      :images="galleryImages"
       :show-thumbnails="showThumbnails"
-      :show-item-navigators="showNavButtons"
-      class="max-w-full"
-      :pt="{
-        thumbnails: {
-          class: 'overflow-hidden'
-        },
-        thumbnailContent: {
-          class: 'py-4 px-2'
-        },
-        thumbnailPrevButton: {
-          class: 'm-0'
-        },
-        thumbnailNextButton: {
-          class: 'm-0'
-        }
-      }"
-    >
-      <template #item="{ item }">
-        <img
-          :src="item?.itemImageSrc || item?.src || ''"
-          :alt="
-            item?.alt ||
-            `${t('g.galleryImage')} ${activeIndex + 1} of ${galleryImages.length}`
-          "
-          class="h-auto max-h-64 w-full object-contain"
-        />
-      </template>
-      <template #thumbnail="{ item }">
-        <div class="size-full p-1">
-          <img
-            :src="item?.thumbnailImageSrc || item?.src || ''"
-            :alt="
-              item?.alt ||
-              `${t('g.galleryThumbnail')} ${galleryImages.findIndex((img) => img === item) + 1} of ${galleryImages.length}`
-            "
-            class="size-full rounded-lg object-cover"
-          />
-        </div>
-      </template>
-    </Galleria>
+      :show-nav-buttons="showNavButtons"
+      :circular="widget.options?.circular"
+      :auto-play="widget.options?.autoPlay"
+      :transition-interval="widget.options?.transitionInterval"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import Galleria from 'primevue/galleria'
 import { computed, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
 
+import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import {
-  GALLERIA_EXCLUDED_PROPS,
-  filterWidgetProps
-} from '@/utils/widgetPropFilter'
+
+import WidgetGalleriaCarousel from './WidgetGalleriaCarousel.vue'
 
 export interface GalleryImage {
   itemImageSrc?: string
@@ -68,65 +29,47 @@ export interface GalleryImage {
 
 export type GalleryValue = string[] | GalleryImage[]
 
+interface GalleryWidgetOptions extends IWidgetOptions {
+  circular?: boolean
+  autoPlay?: boolean
+  transitionInterval?: number
+}
+
 const value = defineModel<GalleryValue>({ required: true })
 
-const props = defineProps<{
-  widget: SimplifiedWidget<GalleryValue>
+const { widget } = defineProps<{
+  widget: SimplifiedWidget<GalleryValue, GalleryWidgetOptions>
 }>()
 
 const activeIndex = ref(0)
-
-const { t } = useI18n()
-
-const filteredProps = computed(() =>
-  filterWidgetProps(props.widget.options, GALLERIA_EXCLUDED_PROPS)
-)
 
 const galleryImages = computed(() => {
   if (!value.value || !Array.isArray(value.value)) return []
 
   return value.value
-    .filter((item) => item !== null && item !== undefined) // Filter out null/undefined
-    .map((item, index) => {
+    .filter((item) => item !== null && item !== undefined)
+    .map((item) => {
       if (typeof item === 'string') {
         return {
           itemImageSrc: item,
           thumbnailImageSrc: item,
-          alt: `Image ${index}`
+          alt: undefined
         }
       }
-      return item ?? {} // Ensure we have at least an empty object
+      return item ?? {}
     })
 })
 
 const showThumbnails = computed(() => {
   return (
-    props.widget.options?.showThumbnails !== false &&
-    galleryImages.value.length > 1
+    widget.options?.showThumbnails !== false && galleryImages.value.length > 1
   )
 })
 
 const showNavButtons = computed(() => {
   return (
-    props.widget.options?.showItemNavigators !== false &&
+    widget.options?.showItemNavigators !== false &&
     galleryImages.value.length > 1
   )
 })
 </script>
-
-<style scoped>
-/* Ensure thumbnail container doesn't overflow */
-:deep(.p-galleria-thumbnails) {
-  overflow: hidden;
-}
-
-/* Constrain thumbnail items to prevent overlap */
-:deep(.p-galleria-thumbnail-item) {
-  flex-shrink: 0;
-}
-
-/* Ensure thumbnail wrapper maintains aspect ratio */
-:deep(.p-galleria-thumbnail) {
-  overflow: hidden;
-}
-</style>

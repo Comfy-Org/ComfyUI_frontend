@@ -10,7 +10,7 @@ export async function openContextMenu(
   await (await comfyPage.nodeOps.getNodeRefByTitle(nodeTitle)).centerOnNode()
   const fixture = await comfyPage.vueNodes.getFixtureByTitle(nodeTitle)
   await comfyPage.contextMenu.openForVueNode(fixture.header)
-  return comfyPage.contextMenu.primeVueMenu
+  return comfyPage.contextMenu.applicationMenu
 }
 
 export async function openMultiNodeContextMenu(
@@ -37,7 +37,7 @@ export async function openMultiNodeContextMenu(
     await comfyPage.vueNodes.getFixtureByTitle(contextTitle)
   await comfyPage.contextMenu.openFor(contextFixture.header)
 
-  return comfyPage.contextMenu.primeVueMenu
+  return comfyPage.contextMenu.applicationMenu
 }
 
 export function getNodeWrapper(

@@ -106,6 +106,14 @@ vi.mock<unknown>(import('@/components/searchbox/NodeSearchFilter.vue'), () => ({
   }
 }))
 
+vi.mock<unknown>(import('@/components/ui/popover/PopoverOverlay.vue'), () => ({
+  default: {
+    name: 'Popover',
+    template: '<div><slot /></div>',
+    methods: { toggle: vi.fn(), hide: vi.fn() }
+  }
+}))
+
 const i18n = createI18n({
   legacy: false,
   locale: 'en',

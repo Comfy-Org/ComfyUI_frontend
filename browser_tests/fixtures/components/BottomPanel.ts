@@ -56,10 +56,7 @@ export class BottomPanel {
       name: /Toggle Bottom Panel/i
     })
     this.closeButton = this.root.getByRole('button', { name: /^Close$/i })
-    // PrimeVue renders the splitter gutter outside the panel body.
-    this.resizeGutter = page.locator(
-      '.splitter-overlay-bottom > .p-splitter-gutter'
-    )
+    this.resizeGutter = page.locator('#graph-canvas-panel + [role="separator"]')
     this.shortcuts = new ShortcutsTab(page)
     this.logs = new LogsTab(page)
   }

@@ -1,5 +1,5 @@
 <template>
-  <TabPanel value="Secrets" class="h-full">
+  <div class="h-full">
     <div class="flex h-full flex-col">
       <div>
         <h2 class="text-2xl font-bold">{{ $t('secrets.title') }}</h2>
@@ -61,11 +61,10 @@
         @saved="fetchSecrets"
       />
     </div>
-  </TabPanel>
+  </div>
 </template>
 
 <script setup lang="ts">
-import TabPanel from 'primevue/tabpanel'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
