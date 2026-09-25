@@ -1333,6 +1333,84 @@ describe('useAgentCrdtFollower', () => {
       expect(onMaterialized).not.toHaveBeenCalled()
       unmount()
     })
+
+    // PM-1598: `onMaterialized` fires for nodes only, so an agent turn that
+    // just sets a widget on an existing node notified nobody — and the
+    // consumer of that signal is what marks the workflow modified.
+    describe('applied-frame notification', () => {
+      it('reports a live frame that materialized no nodes', () => {
+        const onApplied = vi.fn()
+        const onMaterialized = vi.fn()
+        materializerState.reconcileAgentAdapters.mockReturnValue([])
+        const { unmount } = mountFollower('wf-1', true, () => fakeGraph, {
+          onApplied,
+          onMaterialized
+        })
+
+        dispatchFrame('doc_update', {
+          workflowId: 'wf-1',
+          seq: 9,
+          actor: 'agent:thread:turn',
+          catchUp: false
+        })
+
+        expect(onMaterialized).not.toHaveBeenCalled()
+        expect(onApplied).toHaveBeenCalledExactlyOnceWith({
+          workflowId: 'wf-1',
+          actor: 'agent:thread:turn'
+        })
+        unmount()
+      })
+
+      it('reports a human collaborator frame as well as an agent one', () => {
+        const onApplied = vi.fn()
+        const { unmount } = mountFollower('wf-1', true, () => fakeGraph, {
+          onApplied
+        })
+
+        dispatchFrame('doc_update', {
+          workflowId: 'wf-1',
+          seq: 9,
+          actor: 'human:someone-else:tab',
+          catchUp: false
+        })
+
+        expect(onApplied).toHaveBeenCalledExactlyOnceWith({
+          workflowId: 'wf-1',
+          actor: 'human:someone-else:tab'
+        })
+        unmount()
+      })
+
+      it.for([
+        {
+          case: 'the adapter skipped the frame',
+          applied: false,
+          detail: { workflowId: 'wf-1', seq: 9, catchUp: false }
+        },
+        {
+          case: 'the frame is reconnect catch-up',
+          applied: true,
+          detail: { workflowId: 'wf-1', seq: 9, catchUp: true }
+        },
+        {
+          case: 'the frame belongs to another workflow',
+          applied: true,
+          detail: { workflowId: 'wf-2', seq: 9, catchUp: false }
+        }
+      ])('stays silent when $case', ({ applied, detail }) => {
+        const onApplied = vi.fn()
+        if (!applied) adapterState.applyFrame.mockReturnValueOnce(false)
+        const { unmount } = mountFollower('wf-1', true, () => fakeGraph, {
+          onApplied
+        })
+
+        dispatchFrame('doc_update', detail)
+
+        expect(onApplied).not.toHaveBeenCalled()
+        unmount()
+      })
+    })
   })
 
   it('suspends a background target and catches up only after it becomes active', async () => {

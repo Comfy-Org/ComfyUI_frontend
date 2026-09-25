@@ -182,6 +182,13 @@ export interface AgentCrdtFollowerEvents {
     actor: string | undefined
     nodeIds: readonly NodeId[]
   }) => void
+  /**
+   * Every live frame this follower applied, whatever it changed — the
+   * widget-only edits `onMaterialized` cannot report, because that one
+   * fires per materialized node. Catch-up frames are excluded: replaying
+   * history on (re)subscribe is not a new edit.
+   */
+  onApplied?: (event: { workflowId: string; actor: string | undefined }) => void
   onReset?: (workflowId: string) => void
 }
 
@@ -417,7 +424,16 @@ function startAgentCrdtFollower(
     const applied = projection.applyFrame(update)
     incrementOutcome(applied ? 'applied' : 'skipped')
     if (applied && !update.catchUp) incrementOutcome('appliedLive')
-    return applied ? projection.reconcileLiveGraph(update.workflowId) : []
+    if (!applied) return []
+    // After the reconcile, never before: a consumer reads the live graph.
+    const materialized = projection.reconcileLiveGraph(update.workflowId)
+    if (!update.catchUp) {
+      events.onApplied?.({
+        workflowId: update.workflowId,
+        actor: update.actor
+      })
+    }
+    return materialized
   }
 
   const onSubscribed: EventListener = (event) => {

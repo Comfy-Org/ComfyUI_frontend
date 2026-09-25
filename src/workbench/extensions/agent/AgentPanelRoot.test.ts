@@ -236,11 +236,16 @@ import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
 import { attachMintPortWiring } from './crdt/mintPortWiring'
 import type { MintPortWiring, MintPortWiringDeps } from './crdt/mintPortWiring'
+import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
+import type { AgentCrdtFollowerEvents } from './crdt/useAgentCrdtFollower'
 
 const mintPortWiringDeps = vi.hoisted(() => ({
   current: null as MintPortWiringDeps | null
 }))
 vi.mock(import('./crdt/mintPortWiring'), { spy: true })
+// Spy only: the real follower still runs, so every other test in this file
+// keeps its behaviour and only the arguments become inspectable.
+vi.mock(import('./crdt/useAgentCrdtFollower'), { spy: true })
 
 // The mock replaces the real `attachMintPortWiring` body entirely. It only
 // captures `deps` for assertions below — it must NOT reproduce any of that
@@ -2829,6 +2834,43 @@ describe('AgentPanelRoot canvas draft on send', () => {
 
     expect(messageBodies).toHaveLength(0)
     expect(useAgentComposerStore().draft).toBe('hello')
+  })
+})
+
+// PM-1598: the inbound half of the same problem the suite above covers
+// outbound. A remote edit trips none of the listeners `ChangeTracker.init()`
+// installs, so without this capture the tab is never marked modified and the
+// agent's widget write is missing from the draft the next reload restores.
+describe('AgentPanelRoot canvas draft on remote edit', () => {
+  function followerEvents(): AgentCrdtFollowerEvents {
+    const events = vi.mocked(useAgentCrdtFollower).mock.calls.at(-1)?.[5]
+    assert(events, 'the panel never started the CRDT follower')
+    return events
+  }
+
+  it('captures canvas state when the follower applies a remote frame', () => {
+    const captureCanvasState = vi.fn()
+    workflowStore.activeWorkflow = addTab('workflows/remote_edit.json', {
+      changeTracker: createMockChangeTracker({ captureCanvasState })
+    })
+
+    renderWithSelectedTarget()
+    followerEvents().onApplied?.({
+      workflowId: 'wf-1',
+      actor: 'agent:thread:turn'
+    })
+
+    expect(captureCanvasState).toHaveBeenCalledOnce()
+  })
+
+  it('does not throw when no workflow is active', () => {
+    workflowStore.activeWorkflow = null
+
+    renderWithSelectedTarget()
+
+    expect(() =>
+      followerEvents().onApplied?.({ workflowId: 'wf-1', actor: undefined })
+    ).not.toThrow()
   })
 })
 
