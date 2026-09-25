@@ -19,6 +19,12 @@ describe('WorkshopHero', () => {
     ).toBeTruthy()
   })
 
+  it('leaves the page heading to the page when it is given none', () => {
+    render(WorkshopHero, { props: { subtitle: 'Browse the latest models' } })
+
+    expect(screen.queryByRole('heading')).toBeNull()
+  })
+
   // SplitReveal gives each word its own element, so the subtitle is read one
   // word at a time rather than as a sentence.
   it('carries a subtitle only when one is asked for', () => {

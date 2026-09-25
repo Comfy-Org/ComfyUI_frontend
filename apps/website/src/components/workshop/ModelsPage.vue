@@ -117,8 +117,7 @@ function createContent() {
         h(
           'div',
           {
-            class:
-              'max-w-10xl mx-auto px-6 pt-8 pb-16 max-sm:pt-5 max-sm:pb-10 lg:px-8 lg:pt-12 lg:pb-24'
+            class: 'max-w-10xl mx-auto px-6 pb-16 max-sm:pb-10 lg:px-8 lg:pb-24'
           },
           [
             h(ModelsCatalogue, {

@@ -1,15 +1,52 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import ModelsPage from '../../components/workshop/ModelsPage.vue'
-import ModelsShowcase from '../../components/models/ModelsShowcase.astro'
+import { workshopModels } from '../../config/workshop-browse-content'
+import { t } from '../../i18n/translations'
+
+const directory = workshopModels.toSorted((a, b) =>
+  a.name.localeCompare(b.name, 'en')
+)
 ---
 
 <BaseLayout
   title="Models - Comfy"
   description="Run the world's leading AI models in ComfyUI. Browse every supported model with community workflow templates ready to run."
 >
+  <div
+    class="mx-auto max-w-10xl px-6 pt-8 pb-4 max-sm:pt-5 lg:px-8 lg:pt-12 sm:short:pb-3"
+  >
+    <p
+      class="mb-5 text-sm font-medium tracking-widest text-primary-comfy-yellow uppercase max-sm:mb-2"
+    >
+      {t('workshop.hero.eyebrow')}
+    </p>
+    <h1 class="text-3xl font-light text-primary-comfy-canvas lg:text-5xl">
+      {t('workshop.hub.heading')}
+    </h1>
+  </div>
   <ModelsPage client:load />
-  <noscript>
-    <ModelsShowcase />
-  </noscript>
+  <section
+    aria-labelledby="models-directory-heading"
+    class="mx-auto max-w-10xl px-6 pb-16 max-sm:pb-10 lg:px-8 lg:pb-24"
+    data-testid="models-directory"
+  >
+    <h2
+      id="models-directory-heading"
+      class="text-2xl font-medium text-primary-warm-white"
+    >
+      {t('workshop.hub.directory')}
+    </h2>
+    <ul class="mt-6 gap-x-8 sm:columns-2 lg:columns-3 xl:columns-4">
+      {directory.map((model) => <li class="break-inside-avoid py-1.5 text-sm">
+        <a
+          href={model.href}
+          class="text-primary-warm-white transition-colors hover:text-primary-comfy-yellow"
+        >
+          {model.name}
+        </a>
+        <span class="text-primary-warm-gray">· {model.provider}</span>
+      </li>)}
+    </ul>
+  </section>
 </BaseLayout>

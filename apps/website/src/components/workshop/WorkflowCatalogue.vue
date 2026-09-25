@@ -122,7 +122,7 @@ function leaveSection() {
         <ChevronLeft class="size-4" aria-hidden="true" />
         {{ t('workshop.sections.back', locale) }}
       </button>
-      <h1
+      <h2
         class="mt-3 mb-4 scroll-mt-24 text-3xl font-bold text-primary-warm-white sm:text-4xl lg:scroll-mt-32"
       >
         {{ t('workshop.catalogue.allWorkflows', locale) }}
@@ -130,7 +130,7 @@ function leaveSection() {
           class="text-base font-normal text-primary-warm-gray tabular-nums"
           >{{ visible.length }}</span
         >
-      </h1>
+      </h2>
     </template>
     <div
       class="sticky top-20 z-30 -mx-1 mb-8 flex flex-wrap items-center gap-3 bg-page px-1 py-4 max-sm:mb-4 max-sm:py-2 lg:top-26"
