@@ -20,7 +20,8 @@ import { useWorkshopSession } from '../../../config/workshop-session-state'
 import { prepareModelPage } from '../../../routes/models/model-page'
 import {
   useWorkshopEnabled,
-  useWorkshopEnabledSettled
+  useWorkshopEnabledSettled,
+  useWorkshopWorkflowsEnabled
 } from '../../../scripts/posthog'
 import { t } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
@@ -86,6 +87,7 @@ describe('CinematicStudio', () => {
     vi.stubEnv('PUBLIC_WORKSHOP_ROUTER_RUN', '1')
     vi.mocked(useWorkshopEnabled).mockReturnValue(computed(() => true))
     vi.mocked(useWorkshopEnabledSettled).mockReturnValue(computed(() => true))
+    vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(computed(() => true))
     const session = useWorkshopSession()
     session.session = computed(() => signedIn.value)
     vi.mocked(session.ensureFresh).mockResolvedValue({
@@ -581,6 +583,18 @@ describe('CinematicStudio', () => {
     )
     expect(frame.getAttribute('src')).toMatch(/^\/images\/cinematic-studio\//)
     expect(router_render).not.toHaveBeenCalled()
+  })
+
+  it('withholds the studio from visitors outside the staff rollout', async () => {
+    vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(
+      computed(() => false)
+    )
+    render(CinematicStudioPage, { props: { models } })
+
+    expect(
+      await screen.findByText(tc('cinematic.unavailable.title'))
+    ).toBeInTheDocument()
+    expect(screen.queryByTestId('cinematic')).toBeNull()
   })
 
   describe('layout switch', () => {

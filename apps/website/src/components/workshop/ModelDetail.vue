@@ -66,7 +66,8 @@ import { t } from '../../i18n/translations'
 import {
   captureWorkshopEvent,
   useWorkshopEnabled,
-  useWorkshopAuthFlag
+  useWorkshopAuthFlag,
+  useWorkshopWorkflowsEnabled
 } from '../../scripts/posthog'
 import type { WorkshopRunAnalytics } from '../../scripts/workshop-analytics'
 import {
@@ -218,6 +219,7 @@ const { user, session, sessionFailure, settled, ensureFresh, remint } =
 const { balance } = useWorkshopCredits()
 const workshopEnabled = useWorkshopEnabled()
 const authEnabled = useWorkshopAuthFlag()
+const studioEnabled = useWorkshopWorkflowsEnabled()
 const mounted = useMounted()
 const signInHref = useSignInHref(locale)
 const docsHref = modelDocsHref(model)
@@ -738,7 +740,7 @@ function useInCode() {
         </button>
       </div>
       <a
-        v-if="studioHref"
+        v-if="studioHref && studioEnabled"
         :href="studioHref"
         class="mb-2 ml-auto inline-flex h-8 shrink-0 items-center gap-2 rounded-full border border-transparency-white-t20 px-3 text-[13px] whitespace-nowrap text-primary-warm-white transition-colors hover:border-primary-warm-white/50 max-sm:hidden"
         data-testid="model-studio-link"
@@ -754,7 +756,7 @@ function useInCode() {
         :class="
           cn(
             'inline-flex shrink-0 items-center gap-1.5 pb-3 text-sm leading-none font-bold tracking-wider whitespace-nowrap text-primary-warm-white uppercase transition-colors hover:text-primary-comfy-yellow',
-            !studioHref && 'ml-auto'
+            !(studioHref && studioEnabled) && 'ml-auto'
           )
         "
         data-testid="model-docs-link"
