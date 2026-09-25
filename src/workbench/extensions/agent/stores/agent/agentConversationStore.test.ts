@@ -778,14 +778,14 @@ describe('useAgentConversationStore', () => {
   it('resumes a thread-switched turn once, with its attachments', () => {
     vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
     const userRow = historyRow(1, 'user', 'server-turn', 'upscale this')
-    userRow.content = { text: 'upscale this', attachments: ['beach.png'] }
+    userRow.content = { text: 'upscale this', attachments: [storedRef] }
     const assistantRow = historyRow(2, 'assistant', 'server-turn', '', 't1')
     assistantRow.status = 'streaming'
     const store = useAgentConversationStore()
     store.setThreadId('th')
     store.startTurn(T1)
     store.recordUser(T1, 'upscale this', [
-      { name: 'beach.png', ref: 'beach.png', previewUrl: 'blob:beach' }
+      { name: 'Beach photo.png', ref: storedRef, previewUrl: 'blob:beach' }
     ])
     store.ingest(delta('t1', 'working on it'))
     store.stashActiveTurn()
@@ -798,16 +798,50 @@ describe('useAgentConversationStore', () => {
 
     expect(partTexts(store)).toEqual(['working on it'])
     expect(store.isStreaming).toBe(true)
+    // The name is the half a refresh cannot recover (PM-1705): the row names
+    // the file by its ref, and only the stash still holds what the user
+    // attached. A thread switch never left the session, so it keeps it.
     expect(store.entries.filter((entry) => entry.role === 'user')).toEqual([
       expect.objectContaining({
         text: 'upscale this',
-        attachments: [expect.objectContaining({ name: 'beach.png' })]
+        attachments: [{ name: 'Beach photo.png', ref: storedRef }]
       })
     ])
     expect(store.entries.map((entry) => entry.role)).toEqual([
       'user',
       'assistant'
     ])
+  })
+
+  /**
+   * A stash is only the fuller copy while its transport was delivering. One
+   * stashed across a socket drop holds nothing, while the row behind it holds
+   * the reply the agent finished without it — so here the hydrated copy is the
+   * one that stays, and the turn is not left on an empty bubble that will
+   * never settle.
+   */
+  it('keeps the persisted reply when the resumed stash has nothing on it', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'upscale this')
+    store.stashActiveTurn()
+
+    store.setThreadId('th-other')
+    store.hydrate([])
+    store.setThreadId('th')
+    store.hydrate([
+      historyRow(1, 'user', 'server-turn', 'upscale this'),
+      historyRow(2, 'assistant', 'server-turn', 'All done.', 't1')
+    ])
+    store.resumeBackgroundTurn()
+
+    expect(partTexts(store)).toEqual(['All done.'])
+    expect(store.entries.map((entry) => entry.role)).toEqual([
+      'user',
+      'assistant'
+    ])
+    expect(store.isStreaming).toBe(false)
   })
 
   /**

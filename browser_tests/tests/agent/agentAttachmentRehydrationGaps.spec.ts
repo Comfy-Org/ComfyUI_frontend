@@ -61,7 +61,7 @@ async function dropLibraryAsset(
         dataTransfer.setData(
           mime,
           JSON.stringify({
-            filename: ref,
+            filename: displayName,
             display_name: displayName,
             subfolder: '',
             type: 'output',
@@ -319,7 +319,7 @@ test(
     const liveTurnId = '1dda6c2a-fdc5-45c3-b499-000000000001'
     let attachmentThreadId = ''
 
-    await page.route(`**/view?filename=${PLAIN_FILENAME}&type=input`, (route) =>
+    await page.route(`**/view?filename=${BARE_DIGEST}&type=input`, (route) =>
       route.fulfill({ path: assetPath('image64x64.webp') })
     )
     await page.route('**/api/agent/threads', (route) => {
@@ -381,8 +381,8 @@ test(
 
     const panel = await openAgentPanel(page, workflowSelection)
     await dropLibraryAsset(page, panel, {
-      displayName: PLAIN_FILENAME,
-      ref: PLAIN_FILENAME,
+      displayName: 'Beach photo.png',
+      ref: BARE_DIGEST,
       kind: 'image'
     })
     await sendTurn(panel, 'upscale this')
@@ -411,5 +411,11 @@ test(
     await expect(panel.getByTestId('user-message-bubble')).toContainText(
       'upscale this'
     )
+    // Unlike a refresh, a thread switch never left the session, so the name the
+    // user attached is still in hand and outlives the storage ref the row
+    // names the file by.
+    await expect(
+      panel.getByRole('img', { name: 'Beach photo.png', exact: true })
+    ).toBeVisible()
   }
 )

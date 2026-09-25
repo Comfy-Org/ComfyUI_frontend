@@ -34,6 +34,12 @@ interface BackgroundTurn {
   message: AssistantMessage
   transport: AgentEventTransport
   userText: string | undefined
+  /**
+   * The files as the user attached them, names included. A turn is posted
+   * under storage refs only (PM-1705), so the row this stash is reconciled
+   * against names every file by its ref; these names exist nowhere else.
+   */
+  userAttachments: UserAttachment[] | undefined
   settled: boolean
 }
 
@@ -323,6 +329,7 @@ export const useAgentConversationStore = defineStore(
         message: liveMessage,
         transport,
         userText: userTexts.value.get(liveMessage.id),
+        userAttachments: userAttachments.value.get(liveMessage.id),
         settled: false
       })
       clearActive()
@@ -351,7 +358,14 @@ export const useAgentConversationStore = defineStore(
         entry.transport.dispose()
         return
       }
-      if (!poppedHydratedCopy) adoptHydratedTurn(entry, kept)
+      const adoption = poppedHydratedCopy
+        ? undefined
+        : adoptHydratedTurn(entry, kept)
+      restoreStashedAttachmentNames(entry, adoption?.turnId ?? entry.message.id)
+      if (adoption?.keeps === 'hydrated') {
+        entry.transport.dispose()
+        return
+      }
       if (
         entry.userText !== undefined &&
         !userTexts.value.has(entry.message.id)
@@ -389,10 +403,44 @@ export const useAgentConversationStore = defineStore(
       record.value.set(to, value)
     }
 
+    // userTags is absent on purpose: hydrate() clears it outright, so the key
+    // being moved from can never hold any.
     function moveUserRecord(from: TurnId, to: TurnId): void {
       moveTurnRecord(userTexts, from, to)
       moveTurnRecord(userAttachments, from, to)
       moveTurnRecord(userWorkflowReferences, from, to)
+    }
+
+    /**
+     * Puts the stashed names back over the refs the row named its files by,
+     * matched on the ref the two records share. Only the name crosses: the
+     * server's `id` and `kind` are its own resolution and stay, and the
+     * stashed `previewUrl` is a blob hydrate() has already revoked, where the
+     * ref still resolves a `/view` URL.
+     */
+    function restoreStashedAttachmentNames(
+      entry: BackgroundTurn,
+      turnId: TurnId
+    ): void {
+      const restored = userAttachments.value.get(turnId)
+      if (!entry.userAttachments || !restored) return
+      const namesByRef = new Map(
+        entry.userAttachments.flatMap((attachment) =>
+          attachment.ref !== undefined
+            ? [[attachment.ref, attachment.name] as const]
+            : []
+        )
+      )
+      userAttachments.value.set(
+        turnId,
+        restored.map((attachment) => {
+          const name =
+            attachment.ref !== undefined
+              ? namesByRef.get(attachment.ref)
+              : undefined
+          return name === undefined ? attachment : { ...attachment, name }
+        })
+      )
     }
 
     /**
@@ -405,13 +453,13 @@ export const useAgentConversationStore = defineStore(
       hydrated: AssistantMessage,
       live: AssistantMessage
     ): void {
-      const answered = new Set(
+      const presentAskIds = new Set(
         live.parts.flatMap((part) =>
           part.type === 'runApproval' ? [part.askId] : []
         )
       )
       const asks = hydrated.parts.filter(
-        (part) => part.type === 'runApproval' && !answered.has(part.askId)
+        (part) => part.type === 'runApproval' && !presentAskIds.has(part.askId)
       )
       if (asks.length > 0) live.parts = [...live.parts, ...asks]
     }
@@ -429,15 +477,23 @@ export const useAgentConversationStore = defineStore(
     function adoptHydratedTurn(
       entry: BackgroundTurn,
       kept: AssistantMessage[]
-    ): void {
+    ): { keeps: 'live' | 'hydrated'; turnId: TurnId } | undefined {
       const hydratedTurnId = hydratedTurnIdsByRowId.get(entry.messageId)
       if (hydratedTurnId === undefined || hydratedTurnId === entry.message.id)
-        return
+        return undefined
       const index = kept.findIndex((message) => message.id === hydratedTurnId)
-      if (index < 0) return
-      const [hydrated] = kept.splice(index, 1)
+      if (index < 0) return undefined
+      const hydrated = kept[index]
+      // The stash is the better copy only while its transport was delivering.
+      // One stashed across a socket drop can hold nothing while the row behind
+      // it holds the whole finished reply, and losing that is worse than the
+      // duplicate this dedupe exists to remove.
+      if (entry.message.parts.length === 0 && hydrated.parts.length > 0)
+        return { keeps: 'hydrated', turnId: hydratedTurnId }
+      kept.splice(index, 1)
       adoptPendingAsks(hydrated, entry.message)
       moveUserRecord(hydratedTurnId, entry.message.id)
+      return { keeps: 'live', turnId: entry.message.id }
     }
 
     function removeHydratedCopy(
