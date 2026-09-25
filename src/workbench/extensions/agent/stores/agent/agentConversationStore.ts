@@ -8,7 +8,10 @@ import type {
   AgentEventTransport
 } from '../../services/agent/agentEventTransport'
 import { createAgentEventTransport } from '../../services/agent/agentEventTransport'
-import type { AssistantMessage } from '../../services/agent/agentMessageParts'
+import type {
+  AssistantMessage,
+  MessagePart
+} from '../../services/agent/agentMessageParts'
 import { createAssistantMessage } from '../../services/agent/agentMessageParts'
 import { normalizeAgentTranscript } from '../../services/agent/agentTranscript'
 import type { UserAttachment } from '../../services/agent/agentTranscript'
@@ -364,7 +367,15 @@ export const useAgentConversationStore = defineStore(
       poppedHydratedCopy: boolean
     ): boolean {
       if (poppedHydratedCopy) return false
-      if (entry.settled) return hydratedTurnIdsByRowId.has(entry.messageId)
+      if (entry.settled) {
+        // Settled while away: the row is authoritative, and the same live-only
+        // parts still have nowhere else to go, so they ride across here too.
+        const hydratedTurnId = hydratedTurnIdsByRowId.get(entry.messageId)
+        if (hydratedTurnId === undefined) return false
+        const hydrated = kept.find((message) => message.id === hydratedTurnId)
+        if (hydrated) adoptLiveOnlyParts(hydrated, entry.message)
+        return true
+      }
       return adoptHydratedTurn(entry, kept)?.keeps === 'hydrated'
     }
 
@@ -499,22 +510,46 @@ export const useAgentConversationStore = defineStore(
      * caught up on, ride onto it. Thinking is left behind on purpose: it is
      * broadcast-only and never persisted, so a plain reload of this thread
      * would not show it either.
+     *
+     * A carried tool call is copied, not aliased, and forced terminal. The
+     * only calls that reach here are ones the row does not have, and the row
+     * carries every call the service saw finish -- so this one never did, and
+     * there is no transport left to finish it. Left `streaming` it would spin
+     * forever on a settled message, which is the same normalization
+     * `toolCallPartState` applies to a restored in-progress call.
+     *
+     * Inserted before the row's trailing reply text rather than appended, so
+     * a tab link the agent announced while working does not render as a chip
+     * underneath the answer it preceded.
      */
     function adoptLiveOnlyParts(
-      live: AssistantMessage,
-      hydrated: AssistantMessage
+      hydrated: AssistantMessage,
+      live: AssistantMessage
     ): void {
       const recordedCallIds = new Set(
         hydrated.parts.flatMap((part) =>
           part.type === 'tool' ? [part.callId] : []
         )
       )
-      const carried = live.parts.filter(
-        (part) =>
-          part.type === 'tabLink' ||
-          (part.type === 'tool' && !recordedCallIds.has(part.callId))
-      )
-      if (carried.length > 0) hydrated.parts = [...hydrated.parts, ...carried]
+      const carried = live.parts.flatMap<MessagePart>((part) => {
+        if (part.type === 'tabLink') return [part]
+        if (part.type !== 'tool' || recordedCallIds.has(part.callId)) return []
+        return [
+          part.state === 'streaming'
+            ? { ...part, state: 'done' as const, ok: false }
+            : part
+        ]
+      })
+      if (carried.length === 0) return
+      const insertAt =
+        hydrated.parts.at(-1)?.type === 'text'
+          ? hydrated.parts.length - 1
+          : hydrated.parts.length
+      hydrated.parts = [
+        ...hydrated.parts.slice(0, insertAt),
+        ...carried,
+        ...hydrated.parts.slice(insertAt)
+      ]
     }
 
     function adoptHydratedTurn(
@@ -538,7 +573,7 @@ export const useAgentConversationStore = defineStore(
         !hydratedStreamingTurnIds.has(hydratedTurnId) &&
         supersedesLiveReply(hydrated, entry.message)
       ) {
-        adoptLiveOnlyParts(entry.message, hydrated)
+        adoptLiveOnlyParts(hydrated, entry.message)
         return { keeps: 'hydrated', turnId: hydratedTurnId }
       }
       kept.splice(index, 1)

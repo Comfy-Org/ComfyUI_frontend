@@ -959,21 +959,62 @@ describe('useAgentConversationStore', () => {
     store.recordUser(T1, 'upscale this')
     store.ingest(thinking('t1', 'considering the crop'))
     store.ingest(activeTab('workflow-7', 't1'))
+    store.ingest(toolCall('t1', 'search_nodes', 'success'))
+    store.ingest(toolCall('t1', 'add_node', 'running'))
     store.ingest(delta('t1', 'All '))
     store.stashActiveTurn()
 
+    const assistantRow = historyRow(
+      2,
+      'assistant',
+      'server-turn',
+      'All done.',
+      't1'
+    )
+    // Only the finished call is on the row: ToolCallsForThread filters on the
+    // terminal statuses (services/agent/internal/persist/threads.go).
+    assistantRow.content = {
+      text: 'All done.',
+      tool_calls: [
+        {
+          id: 'row-call-1',
+          tool_call_id: 'call-search_nodes',
+          tool_name: 'search_nodes',
+          status: 'ok'
+        }
+      ]
+    }
     store.setThreadId('th-other')
     store.hydrate([])
     store.setThreadId('th')
     store.hydrate([
       historyRow(1, 'user', 'server-turn', 'upscale this'),
-      historyRow(2, 'assistant', 'server-turn', 'All done.', 't1')
+      assistantRow
     ])
     store.resumeBackgroundTurn()
 
     expect(partTexts(store)).toEqual(['All done.'])
     expect(store.isStreaming).toBe(false)
     expect(tabLinkIds(store)).toEqual(['workflow-7'])
+    // The unfinished call rides across, deduped against the recorded one and
+    // forced terminal -- left streaming it would spin forever on a message
+    // nothing can settle. Thinking stays behind, being broadcast-only.
+    expect(store.messages[0].parts.map((part) => part.type)).toEqual([
+      'tool',
+      'tabLink',
+      'tool',
+      'text'
+    ])
+    expect(
+      store.messages[0].parts.filter((part) => part.type === 'tool')
+    ).toEqual([
+      expect.objectContaining({ name: 'search_nodes', state: 'done' }),
+      expect.objectContaining({
+        name: 'add_node',
+        state: 'done',
+        ok: false
+      })
+    ])
   })
 
   /**
