@@ -27,6 +27,7 @@ import {
   reportOnce
 } from './ecsSemanticReaders'
 import { applyFullReconcile, NO_LOCAL_INTENT } from './ecsFullReconcile'
+import { resolveLinkMapKey } from './linkTuple'
 import type {
   FullReconcileContext,
   LocalIntent,
@@ -236,7 +237,8 @@ export class EcsFollowerAdapter<TUpdate extends DocUpdate = DocUpdate> {
   }
 
   destroy(): void {
-    for (const workflowId of [...this.targets.keys()]) this.unbind(workflowId)
+    for (const workflowId of Array.from(this.targets.keys()))
+      this.unbind(workflowId)
   }
 
   private createSession(
@@ -356,9 +358,11 @@ export class EcsFollowerAdapter<TUpdate extends DocUpdate = DocUpdate> {
           : null
       ])
     )
-    const removedLinkIds = [...changedLinks].flatMap(([id, link]) =>
-      link && !isIncompatibleLinkType(link) ? [] : [Number(id)]
-    )
+    const removedLinkIds = [...changedLinks].flatMap(([id, link]) => {
+      if (link && !isIncompatibleLinkType(link)) return []
+      const linkId = resolveLinkMapKey(id)
+      return linkId === null ? [] : [linkId]
+    })
     const committed = session.mutations.batch(frameContext(update), (batch) => {
       const { ctx, isHost } = this.buildFrameApplyContext(
         session,

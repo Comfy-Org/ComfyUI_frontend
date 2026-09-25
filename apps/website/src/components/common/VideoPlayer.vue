@@ -156,7 +156,9 @@ useEventListener(videoEl, 'durationchange', syncNativeDuration)
 // rejects with NotAllowedError when the browser lacks engagement-based
 // autoplay permission, and playback retries muted. flush: 'post'
 // guarantees this runs after useMediaControls' internal muted watcher
-// on the same source.
+// on the same source. `el.muted` is set directly so play() sees it
+// synchronously; `muted.value` is set alongside it (rather than left to the
+// volumechange round-trip) so the mute button reflects reality immediately.
 watch(
   [videoEl, () => src],
   async ([el]) => {
@@ -168,6 +170,7 @@ watch(
     if (autoplayUnmuted) {
       el.pause()
       el.muted = false
+      muted.value = false
       try {
         await el.play()
         return
@@ -176,6 +179,7 @@ watch(
       }
     }
     el.muted = true
+    muted.value = true
     el.play().catch((error: unknown) => {
       if (error instanceof Error && error.name === 'AbortError') return
       console.warn('VideoPlayer autoplay failed', error)
@@ -309,7 +313,7 @@ function toggleFullscreen() {
       playsinline
       :autoplay="autoplay && !lazyAutoplay"
       :loop
-      :muted="autoplay"
+      :muted="autoplay && !lazyAutoplay"
       @loadeddata="emit('loaded', src)"
       @error="emit('failed', src)"
       @click="hideControls || muteOnly ? undefined : (playing = !playing)"

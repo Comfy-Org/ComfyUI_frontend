@@ -2,6 +2,8 @@ import * as Y from 'yjs'
 
 import { linksMap } from '@comfyorg/comfy-multi-player'
 
+import { parseLinkId } from '@/types/linkId'
+
 /** Reads a doc link's raw Yjs tuple as a plain array, or null if it isn't one. */
 export function readLinkTuple(
   doc: Y.Doc,
@@ -10,6 +12,24 @@ export function readLinkTuple(
   const raw = linksMap(doc).get(id)
   const tuple = raw instanceof Y.Array ? raw.toArray() : raw
   return Array.isArray(tuple) ? tuple : null
+}
+
+/** A link tuple's own id (element 0), narrowed to a real non-negative safe integer. */
+export function resolveLinkId(raw: unknown): number | null {
+  return typeof raw === 'number' && raw >= 0 && Number.isSafeInteger(raw)
+    ? raw
+    : null
+}
+
+/**
+ * A link's doc map key, narrowed to the same id space as {@link resolveLinkId}.
+ * `insert_workflow` mints a derived, non-numeric doc id for some inserted
+ * entities; a link whose map key doesn't parse as a real link id can never
+ * match its tuple's own id and is retired rather than materialized.
+ */
+export function resolveLinkMapKey(id: string): number | null {
+  const linkId = parseLinkId(id)
+  return linkId !== undefined && linkId >= 0 ? linkId : null
 }
 
 /**

@@ -5,7 +5,8 @@ import type {
   CheckoutEntrySource,
   CheckoutJourneyArm,
   CheckoutJourneyContext,
-  CheckoutUiMode
+  CheckoutUiMode,
+  PaymentIntentSource
 } from '@/platform/telemetry/types'
 
 /**
@@ -25,31 +26,69 @@ const CHECKOUT_JOURNEY_STORAGE_KEY = 'comfy.checkout.journey'
 const EMBEDDED_CHECKOUT_FLAG_KEY: `${ServerFeatureFlag.EMBEDDED_CHECKOUT_ENABLED}` =
   'embedded_checked_enabled'
 
-const ENTRY_FLOWS: ReadonlySet<CheckoutEntryFlow> = new Set([
-  'initial_subscription',
-  'paid_upgrade',
-  'topup',
-  'other',
-  'unknown'
-])
-const ENTRY_SOURCES: ReadonlySet<CheckoutEntrySource> = new Set([
-  'pricing',
-  'deep_link',
-  'recovery',
-  'settings_billing',
-  'other',
-  'unknown'
-])
+const ENTRY_FLOWS = {
+  initial_subscription: true,
+  paid_upgrade: true,
+  topup: true,
+  other: true,
+  unknown: true
+} satisfies Record<CheckoutEntryFlow, true>
+const ENTRY_SOURCES = {
+  pricing: true,
+  deep_link: true,
+  recovery: true,
+  settings_billing: true,
+  other: true,
+  unknown: true,
+  agent_paywall: true
+} satisfies Record<CheckoutEntrySource, true>
 
-const toEntryFlow = (value: unknown): CheckoutEntryFlow =>
-  ENTRY_FLOWS.has(value as CheckoutEntryFlow)
-    ? (value as CheckoutEntryFlow)
-    : 'unknown'
+function isAllowlisted<T extends string>(
+  allowlist: Record<T, true>,
+  value: unknown
+): value is T {
+  return typeof value === 'string' && Object.hasOwn(allowlist, value)
+}
 
-const toEntrySource = (value: unknown): CheckoutEntrySource =>
-  ENTRY_SOURCES.has(value as CheckoutEntrySource)
-    ? (value as CheckoutEntrySource)
-    : 'unknown'
+function toEntryFlow(value: unknown): CheckoutEntryFlow {
+  return isAllowlisted(ENTRY_FLOWS, value) ? value : 'unknown'
+}
+
+function toEntrySource(value: unknown): CheckoutEntrySource {
+  return isAllowlisted(ENTRY_SOURCES, value) ? value : 'unknown'
+}
+
+const PAYMENT_INTENT_ENTRY_SOURCES: Partial<
+  Record<PaymentIntentSource, CheckoutEntrySource>
+> = {
+  agent_paywall: 'agent_paywall'
+}
+
+function isMappedPaymentIntentSource(
+  value: string
+): value is keyof typeof PAYMENT_INTENT_ENTRY_SOURCES {
+  return Object.hasOwn(PAYMENT_INTENT_ENTRY_SOURCES, value)
+}
+
+/**
+ * Entry source for a journey opened with `paymentIntentSource`.
+ *
+ * Takes a `string` rather than a `PaymentIntentSource` because this function
+ * owns the runtime hardening: its callers read the value from a Vue prop and a
+ * composable argument, neither of which TypeScript enforces at runtime. Own-key
+ * narrowing is what makes that safe — a bare lookup would resolve an inherited
+ * `Object.prototype` member (`'constructor'`, `'toString'`) truthy, so
+ * `?? fallback` would not fire and a non-`CheckoutEntrySource` value would
+ * reach the record, storage and every downstream phase.
+ */
+export function resolveEntrySource(
+  paymentIntentSource: string | undefined,
+  fallback: CheckoutEntrySource
+): CheckoutEntrySource {
+  if (paymentIntentSource === undefined) return fallback
+  if (!isMappedPaymentIntentSource(paymentIntentSource)) return fallback
+  return PAYMENT_INTENT_ENTRY_SOURCES[paymentIntentSource] ?? fallback
+}
 
 export interface CheckoutJourneyRecord {
   journey_id: string
@@ -209,16 +248,7 @@ export function resolveCheckoutJourney(
     return { status: 'active', record: existing, resumed: true }
   }
 
-  // A different rail's operation is in flight and still owns the single journey
-  // slot — its poller gates the terminal clear on this record's billing_op_id.
-  // A single storage slot can't isolate two concurrent rails, so the bound
-  // journey keeps the slot and this rail goes uninstrumented until it resolves.
-  // See ADR-BILLING-CHECKOUT-0031.
-  if (
-    live &&
-    existing.billing_op_id !== undefined &&
-    existing.entry_flow !== input.entryFlow
-  ) {
+  if (live && existing.billing_op_id !== undefined) {
     return { status: 'blocked' }
   }
 
@@ -392,11 +422,11 @@ function readPersistedJourney(): CheckoutJourneyRecord | null {
   }
 }
 
-const UI_MODES: ReadonlySet<CheckoutUiMode> = new Set([
-  'embedded',
-  'hosted',
-  'unknown'
-])
+const UI_MODES = {
+  embedded: true,
+  hosted: true,
+  unknown: true
+} satisfies Record<CheckoutUiMode, true>
 
 type PersistedJourneyIdentity = Pick<
   CheckoutJourneyRecord,
@@ -453,9 +483,7 @@ function readOptionalFields(candidate: Record<string, unknown>) {
   const { intent, ui_mode, billing_op_id } = candidate
   return {
     ...(typeof intent === 'string' && { intent }),
-    ...(UI_MODES.has(ui_mode as CheckoutUiMode) && {
-      ui_mode: ui_mode as CheckoutUiMode
-    }),
+    ...(isAllowlisted(UI_MODES, ui_mode) && { ui_mode }),
     ...(typeof billing_op_id === 'string' && { billing_op_id })
   }
 }

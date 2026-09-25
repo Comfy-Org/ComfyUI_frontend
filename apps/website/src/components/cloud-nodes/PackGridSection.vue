@@ -53,7 +53,7 @@ const { filteredPacks } = useFilteredPacks({
           :placeholder="t('cloudNodes.search.placeholder', locale)"
           :class="
             cn(
-              'bg-transparency-white-t5 w-full rounded-2xl border border-primary-warm-gray/30 px-4 py-3 text-sm text-primary-comfy-canvas placeholder:text-primary-warm-gray/80 md:max-w-md'
+              'w-full rounded-2xl border border-primary-warm-gray/30 bg-transparency-white-t4 px-4 py-3 text-sm text-primary-comfy-canvas placeholder:text-primary-warm-gray/80 md:max-w-md'
             )
           "
           data-testid="cloud-nodes-search"
@@ -65,7 +65,7 @@ const { filteredPacks } = useFilteredPacks({
         <select
           id="cloud-nodes-sort"
           v-model="sortMode"
-          class="bg-transparency-white-t5 w-full appearance-none rounded-2xl border border-primary-warm-gray/30 bg-size-[0.65rem_0.65rem] bg-position-[right_1rem_center] bg-no-repeat py-3 pr-12 pl-4 text-sm text-primary-comfy-canvas md:w-64"
+          class="w-full appearance-none rounded-2xl border border-primary-warm-gray/30 bg-transparency-white-t4 bg-size-[0.65rem_0.65rem] bg-position-[right_1rem_center] bg-no-repeat py-3 pr-12 pl-4 text-sm text-primary-comfy-canvas md:w-64"
           :style="{
             backgroundImage:
               'url(\'data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 12 12%22 fill=%22%23a39b8d%22><path d=%22M6 9.2L1.4 4.6 2.8 3.2 6 6.4l3.2-3.2 1.4 1.4z%22/></svg>\')'

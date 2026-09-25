@@ -109,7 +109,7 @@ export const GridFewImages: Story = {
   render: () => ({
     components: { DisplayCarousel },
     setup() {
-      const value = ref<GalleryValue>([...SAMPLE_IMAGES.slice(0, 4)])
+      const value = ref<GalleryValue>(SAMPLE_IMAGES.slice(0, 4))
       const widget: SimplifiedWidget<GalleryValue, Record<string, unknown>> = {
         name: 'gallery',
         type: 'array',

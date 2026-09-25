@@ -171,6 +171,8 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   const lateBatches = new Map<string, LateBatch>()
   let open: { workflowId: string; ops: Op[] } | null = null
   let inFlight: InFlight | null = null
+  let lastMintedVersion = -1
+  let lastMintedWorkflowId: string | null = null
   let detached = false
   let suspended = false
   // Late-result credits: a batch retired after transmission (settled
@@ -326,12 +328,18 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
 
   function admit(operations: GraphOperation[]): void {
     if (detached || operations.length === 0) return
-    const minted = mintWireOps(operations, {
-      actor: deps.actor(),
-      baseVersion: deps.baseVersion()
-    })
-    deps.onBatchMinted?.(minted)
     const workflowId = deps.workflowId()
+    if (workflowId !== lastMintedWorkflowId) {
+      lastMintedVersion = -1
+      lastMintedWorkflowId = workflowId
+    }
+    const baseVersion = Math.max(deps.baseVersion(), lastMintedVersion + 1)
+    const actor = deps.actor()
+    const minted = operations.flatMap((operation, index) =>
+      mintWireOps([operation], { actor, baseVersion: baseVersion + index })
+    )
+    lastMintedVersion = baseVersion + minted.length - 1
+    deps.onBatchMinted?.(minted)
     if (workflowId === null) {
       deps.onBatchSettled({ state: 'undeliverable', ops: minted })
       return
@@ -415,6 +423,8 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       const queued = queue.splice(0)
       const admitted = open
       open = null
+      lastMintedVersion = -1
+      lastMintedWorkflowId = null
       if (inFlight) settleUnbound(inFlight)
       for (const batch of queued)
         deps.onBatchSettled({ state: 'undeliverable', ops: batch.ops })

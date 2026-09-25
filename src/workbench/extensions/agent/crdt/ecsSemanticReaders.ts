@@ -19,7 +19,12 @@ import {
   promotedWidgetNames
 } from './agentSubgraphHostSlots'
 import type { SubgraphDefinitionIndex } from './agentSubgraphHostSlots'
-import { linkWireType, readLinkTuple } from './linkTuple'
+import {
+  linkWireType,
+  readLinkTuple,
+  resolveLinkId,
+  resolveLinkMapKey
+} from './linkTuple'
 
 export function plain(value: unknown): unknown {
   if (value instanceof Y.Map || value instanceof Y.Array) return value.toJSON()
@@ -196,16 +201,24 @@ function hostTarget(
   }
 }
 
-/** The scalar fields a link tuple must carry, parsed and integer-validated. */
+/**
+ * The scalar fields a link tuple must carry, parsed and integer-validated.
+ * `insert_workflow` mints a derived, non-numeric doc id for some inserted
+ * entities, so a link's own tuple id and its doc map key are cross-checked
+ * against each other; either diverging or failing to parse retires the link
+ * instead of materializing something inconsistent.
+ */
 function parseLinkScalarFields(
   tuple: readonly unknown[],
   id: string
 ): { linkId: number; originSlot: number; targetSlot: number } | null {
-  const linkId = Number(tuple[0] ?? id)
+  const linkId = resolveLinkId(tuple[0])
+  const mapLinkId = resolveLinkMapKey(id)
   const originSlot = Number(tuple[2])
   const targetSlot = Number(tuple[4])
   if (
-    !Number.isInteger(linkId) ||
+    linkId === null ||
+    mapLinkId !== linkId ||
     tuple[1] == null ||
     tuple[3] == null ||
     !Number.isInteger(originSlot) ||

@@ -3,6 +3,36 @@ import { describe, expect, it } from 'vitest'
 import { apiKeysLink, externalLinks, getRoutes, localizeHref } from './routes'
 
 describe('localizeHref', () => {
+  it.for([
+    {
+      href: '/cloud#pricing',
+      locale: 'zh-CN',
+      expected: '/zh-CN/cloud#pricing'
+    },
+    {
+      href: '/cloud?ref=nav',
+      locale: 'zh-CN',
+      expected: '/zh-CN/cloud?ref=nav'
+    },
+    { href: '/#features', locale: 'ja', expected: '/ja/#features' },
+    { href: '/about#team', locale: 'ja', expected: '/about#team' },
+    {
+      href: '/p/supported-models/grok-imagine',
+      locale: 'zh-CN',
+      expected: '/p/supported-models/grok-imagine'
+    },
+    {
+      href: '/terms-of-service#scope',
+      locale: 'zh-CN',
+      expected: '/terms-of-service#scope'
+    }
+  ] as const)(
+    'maps $href in $locale to $expected',
+    ({ href, locale, expected }) => {
+      expect(localizeHref(href, locale)).toBe(expected)
+    }
+  )
+
   it('prefixes an internal path for a non-default locale', () => {
     expect(localizeHref('/mcp', 'zh-CN')).toBe('/zh-CN/mcp')
   })
@@ -25,9 +55,12 @@ describe('localizeHref', () => {
 
   it('never prefixes locale-invariant routes', () => {
     expect(localizeHref('/terms-of-service', 'zh-CN')).toBe('/terms-of-service')
-    expect(localizeHref('/enterprise', 'zh-CN')).toBe('/enterprise')
+  })
+
+  it('links to translated enterprise pages', () => {
+    expect(localizeHref('/enterprise', 'zh-CN')).toBe('/zh-CN/enterprise')
     expect(localizeHref('/enterprise/managed-builds', 'zh-CN')).toBe(
-      '/enterprise/managed-builds'
+      '/zh-CN/enterprise/managed-builds'
     )
   })
 
