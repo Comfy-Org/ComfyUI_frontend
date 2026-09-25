@@ -71,6 +71,31 @@ describe('ViewerControls', () => {
     expect(callArgs.dialogComponentProps?.maximizable).toBe(true)
   })
 
+  it('sizes the dialog against the visible workspace, not the whole viewport', async () => {
+    const user = userEvent.setup()
+    render(ViewerControls, {
+      props: { node: mockNode },
+      global: {
+        plugins: [i18n],
+        directives: { tooltip: () => {} }
+      }
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Open in 3D viewer' }))
+
+    const { showDialog } = useDialogStore()
+    const contentClass = String(
+      vi.mocked(showDialog).mock.calls[0][0].dialogComponentProps?.contentClass
+    )
+
+    // `size: 'full'` centres on the visible workspace via
+    // `left-[calc(50%-var(--workspace-inset-right,0px)/2)]`. contentClass is
+    // merged last, so any `left-*` here silently re-centres on the whole
+    // viewport and the dialog renders under the docked panel (#18918).
+    expect(contentClass).not.toMatch(/(^|\s)left-/)
+    expect(contentClass).toContain('--workspace-inset-right')
+  })
+
   it('routes the dialog onClose handler through useLoad3dService.handleViewerClose with the node', async () => {
     const user = userEvent.setup()
     render(ViewerControls, {
