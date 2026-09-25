@@ -10,13 +10,25 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger
 } from 'reka-ui'
-import { computed, inject, nextTick, ref, useTemplateRef, watch } from 'vue'
+import {
+  computed,
+  inject,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  ref,
+  useTemplateRef,
+  watch
+} from 'vue'
 import type { Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import Tag from '@/components/chip/Tag.vue'
 import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
+import { registerEscapeOverride } from '@/platform/keybindings/escapeOverride'
+import type { AgentStopMethod } from '@/platform/telemetry/types'
 
 import InlinePromptEditor from './composer/InlinePromptEditor.vue'
 import { composerPromptForSend } from '../../utils/composerPrompt'
@@ -72,7 +84,7 @@ const emit = defineEmits<{
     attachments: ComposerAttachment[],
     workflowReferences?: WorkflowReference[]
   ]
-  stop: []
+  stop: [method: AgentStopMethod]
   attach: []
   openAssets: []
   selectNodes: []
@@ -126,7 +138,7 @@ const composer = useComposer({
     } else emit('send', text, attachments)
   },
   isRunning: () => running.value,
-  onStop: () => emit('stop')
+  onStop: () => emit('stop', 'button')
 })
 
 const editorRef =
@@ -207,7 +219,7 @@ function onComposerKeydown(event: KeyboardEvent): void {
   ) {
     event.preventDefault()
     event.stopPropagation()
-    emit('stop')
+    emit('stop', 'escape')
   }
 }
 
@@ -239,9 +251,68 @@ const primaryActionShortcut = computed(() =>
 )
 
 function onPrimaryAction(): void {
-  if (running.value) emit('stop')
+  if (running.value) emit('stop', 'button')
   else composer.submit()
 }
+
+const composerContainerRef = useTemplateRef<HTMLDivElement>(
+  'composerContainerRef'
+)
+
+// The prompt editor only forwards `keydown` while it (the ProseMirror
+// contenteditable) itself has focus, so pressing Escape after submitting via
+// Enter is caught there (see the editor-scoped handler above). Clicking Send
+// with the mouse doesn't reliably leave focus in a place a container-scoped
+// listener would see: Chrome moves it onto the button, but Safari and
+// Firefox leave it on <body> without moving it at all, so a plain pointer
+// click can leave the next Escape with nothing inside the composer in its
+// bubble path.
+//
+// For that case this registers into `keybindingService`'s Escape override
+// hook instead of adding another DOM listener: `platform/` can't import from
+// `workbench/`, so it can't see this component's `running` state directly,
+// but `keybindHandler` consults whatever is registered here before it would
+// dispatch the default Escape keybinding (`Comfy.Graph.ExitSubgraph`). This
+// handler decides whether to act by checking focus directly rather than
+// relying on the event's bubble path: it fires while focus is inside this
+// composer, or nowhere in particular (the Safari/Firefox click case), but
+// stays out of the way once focus has genuinely moved elsewhere on the page
+// (see the "once focus has left the composer entirely" test).
+//
+// This is one of several places that establish Escape ownership in this
+// app: `useKeybindingService`'s own bailouts for `[role="menu"]` targets and
+// open dialogs run before this override is even consulted
+// (src/platform/keybindings/keybindingService.ts), the mention picker closes
+// itself first via stopPropagation (useAgentMentionPicker.ts's
+// onComposerKeydown), select has its own stopEscapeToDocument
+// (src/components/ui/select/select.variants.ts), and the capture-phase
+// document listeners in OnboardingCoach.vue and TourSpotlight.vue let a
+// full-screen overlay pre-empt everything else. This handler only ever runs
+// when none of those more specific handlers claimed the event first.
+function handleEscapeOverride(event: KeyboardEvent): boolean {
+  if (event.key !== 'Escape' || !running.value || event.isComposing)
+    return false
+  if (event.defaultPrevented) return false
+
+  const active = document.activeElement
+  const focusedElsewhere =
+    active !== null &&
+    active !== document.body &&
+    !composerContainerRef.value?.contains(active)
+  if (focusedElsewhere) return false
+
+  event.preventDefault()
+  if (!event.repeat) emit('stop', 'escape')
+  return true
+}
+
+let unregisterEscapeOverride: (() => void) | undefined
+onMounted(() => {
+  unregisterEscapeOverride = registerEscapeOverride(handleEscapeOverride)
+})
+onUnmounted(() => {
+  unregisterEscapeOverride?.()
+})
 
 function insert(text: string): void {
   composer.insert(text)
@@ -265,6 +336,7 @@ defineExpose({
 <template>
   <div
     id="agent-composer"
+    ref="composerContainerRef"
     class="relative flex flex-col rounded-lg border border-border-default bg-base-background"
   >
     <div
@@ -391,34 +463,28 @@ defineExpose({
         data-testid="composer-node-section"
         class="flex flex-wrap items-center gap-2 border-b border-border-default p-3"
       >
-        <span
+        <Tag
           v-for="tag in selectionTags"
           :key="selectedNodeKey(tag)"
-          class="inline-flex h-7 items-center gap-1 rounded-lg border border-border-default bg-secondary-background-hover px-2.5 text-xs/4 font-medium text-base-foreground transition-colors hover:bg-tertiary-background-hover"
+          :label="tag.title"
+          removable
+          :remove-label="
+            t('agent.removeNodeLabel', { node: `${tag.title} #${tag.id}` })
+          "
+          :remove-tooltip="t('agent.remove')"
+          class="max-w-64"
+          @remove="emit('removeTag', selectedNodeKey(tag))"
         >
-          <span class="flex items-center gap-1">
+          <template #icon>
             <span class="icon-[comfy--node] size-3.5 text-muted-foreground" />
-            <span class="max-w-40 truncate">{{ tag.title }}</span>
-            <span
-              v-if="graphDupes.has(tag.title) || tagDupes.has(tag.title)"
-              :class="duplicateIdClass"
-              >#{{ tag.id }}</span
-            >
-          </span>
-          <Button
-            v-tooltip.top="buildTooltipConfig(t('agent.remove'))"
-            type="button"
-            variant="muted-textonly"
-            size="unset"
-            :aria-label="
-              t('agent.removeNodeLabel', { node: `${tag.title} #${tag.id}` })
-            "
-            class="size-3.5"
-            @click.stop="emit('removeTag', selectedNodeKey(tag))"
+          </template>
+          <span
+            v-if="graphDupes.has(tag.title) || tagDupes.has(tag.title)"
+            :class="duplicateIdClass"
           >
-            <span class="icon-[lucide--x] size-3.5 shrink-0" />
-          </Button>
-        </span>
+            #{{ tag.id }}
+          </span>
+        </Tag>
       </div>
 
       <div

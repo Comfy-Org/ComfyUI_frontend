@@ -225,6 +225,9 @@
     "choose_file_to_upload": "choose file to upload",
     "uploadAlreadyInProgress": "Upload already in progress",
     "uploadTimedOut": "Upload timed out. Please try again.",
+    "uploadFileTooLarge": "File is too large to upload.",
+    "uploadFileTooLargeWithLimit": "File is too large to upload (limit: {limit} MB).",
+    "uploadFailed": "Upload failed: {reason}",
     "capture": "capture",
     "nodes": "Nodes",
     "nodesCount": "{count} node | {count} nodes",
@@ -1169,6 +1172,7 @@
     "removeFromBookmarks": "Remove from Bookmarks"
   },
   "templateWorkflows": {
+    "preparingMedia": "Preparing example media...",
     "title": "Get Started with a Template",
     "loadingMore": "Loading more templates...",
     "searchPlaceholder": "Search templates...",
@@ -1227,6 +1231,8 @@
       "default": "Default"
     },
     "error": {
+      "preparingMedia": "Some example media couldn't be prepared. The workflow will open; choose your own files for any missing inputs.",
+      "loading": "Couldn't open the template. Please try again.",
       "templateNotFound": "Template \"{templateName}\" not found"
     }
   },
@@ -2199,9 +2205,11 @@
     "errorNotSupported": "Clipboard API not supported in your browser"
   },
   "imageCompare": {
-    "noImages": "No images to compare",
+    "afterAlt": "After image",
     "batchLabelA": "A:",
-    "batchLabelB": "B:"
+    "batchLabelB": "B:",
+    "beforeAlt": "Before image",
+    "noImages": "No images to compare"
   },
   "batch": {
     "index": "{current} / {total}"
@@ -3655,6 +3663,10 @@
       "placeholder": "Survey questions placeholder",
       "intro": "A few quick questions so we can set up ComfyUI for you.",
       "otherPlaceholder": "Tell us more",
+      "submitFailed": "Could not submit the survey",
+      "submitFailedDetail": "Your answers were not saved. Please try again.",
+      "navigationFailed": "Survey saved, but onboarding could not continue",
+      "navigationFailedDetail": "Please try again.",
       "errors": {
         "chooseAnOption": "Please choose an option.",
         "selectAtLeastOne": "Please select at least one option.",
@@ -4041,7 +4053,6 @@
       "signInCaption": "Partner nodes require an account",
       "signInToRun": "Sign in to run"
     },
-    "share": "Share",
     "shareTooltip": "Share workflow"
   },
   "shareNoOutputs": {
@@ -4926,7 +4937,8 @@
     "addedToWorkspace": "You have been added to:",
     "inviteFailed": "Failed to Accept Invite",
     "viewWorkspace": "View workspace",
-    "switchFailed": "Failed to switch workspace. Please try again."
+    "switchFailed": "Failed to switch workspace. Please try again.",
+    "deepLinkStayed": "Couldn't open that workspace. You're still in {workspaceName}."
   },
   "workspaceAuth": {
     "initializationFailed": "Couldn't load your workspace",
@@ -5201,6 +5213,12 @@
         "explore": "Explore templates"
       }
     }
+  },
+  "onboardingReplay": {
+    "confirmTitle": "Replay onboarding?",
+    "confirmMessage": "This reloads ComfyUI and resets the onboarding steps available in this environment. Your workflows are not affected.",
+    "failedSummary": "Could not replay onboarding",
+    "failedDetail": "Your onboarding state could not be reset. Please try again."
   },
   "agent": {
     "title": "Comfy Agent",

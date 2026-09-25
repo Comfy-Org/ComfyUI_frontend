@@ -25,6 +25,11 @@ interface StringLiteral extends Node {
   readonly value: string
 }
 
+interface Literal extends Node {
+  readonly type: 'Literal'
+  readonly value: unknown
+}
+
 interface ImportDeclaration extends Node {
   readonly source: StringLiteral
 }
@@ -35,12 +40,25 @@ interface ExportDeclaration extends Node {
 
 interface MemberExpression extends Node {
   readonly type: 'MemberExpression'
+  readonly computed: boolean
+  readonly object: Node
   readonly property: Node
 }
 
 interface CallExpression extends Node {
   readonly type: 'CallExpression'
   readonly callee: Node
+}
+
+interface AssignmentExpression extends Node {
+  readonly type: 'AssignmentExpression'
+  readonly left: Node
+}
+
+interface UnaryExpression extends Node {
+  readonly type: 'UnaryExpression'
+  readonly argument: Node
+  readonly operator: string
 }
 
 interface TypeReference extends Node {
@@ -56,6 +74,37 @@ interface RuleContext {
 
 function identifierName(node: Node): string | undefined {
   return node.type === 'Identifier' ? (node as Identifier).name : undefined
+}
+
+function memberName(node: MemberExpression): string | undefined {
+  if (!node.computed) return identifierName(node.property)
+  if (node.property.type !== 'Literal') return
+  const { value } = node.property as Literal
+  return typeof value === 'string' ? value : undefined
+}
+
+const SELECTION_PROJECTIONS = new Set([
+  'selected',
+  'selectedItems',
+  'selected_nodes'
+])
+
+function selectionProjection(node: Node): string | undefined {
+  if (node.type !== 'MemberExpression') return
+  const member = node as MemberExpression
+  const name = memberName(member)
+  return SELECTION_PROJECTIONS.has(name ?? '')
+    ? name
+    : selectionProjection(member.object)
+}
+
+function reportsSelectionStoreWrite(node: MemberExpression): boolean {
+  if (memberName(node) !== 'apply' || node.object.type !== 'CallExpression')
+    return false
+  return (
+    identifierName((node.object as CallExpression).callee) ===
+    'useSelectionStore'
+  )
 }
 
 function restrictImports(
@@ -150,6 +199,60 @@ export const noDomInComputed = {
           })
         ) {
           context.report({ node, message })
+        }
+      }
+    }
+  }
+}
+
+export const noDirectSelectionWrite = {
+  create(context: RuleContext) {
+    function report(node: Node) {
+      context.report({
+        node,
+        message:
+          'Route canvas selection changes through LGraphCanvas selection APIs.'
+      })
+    }
+
+    return {
+      AssignmentExpression(node: AssignmentExpression) {
+        if (selectionProjection(node.left)) report(node)
+      },
+      UnaryExpression(node: UnaryExpression) {
+        if (node.operator === 'delete' && selectionProjection(node.argument))
+          report(node)
+      },
+      CallExpression(node: CallExpression) {
+        if (node.callee.type !== 'MemberExpression') return
+        const member = node.callee as MemberExpression
+        const method = memberName(member)
+        if (
+          (selectionProjection(member.object) === 'selectedItems' &&
+            (method === 'add' || method === 'delete' || method === 'clear')) ||
+          reportsSelectionStoreWrite(member)
+        ) {
+          report(node)
+        }
+      }
+    }
+  }
+}
+
+export const noJsPrivateClassMembers = {
+  create(context: RuleContext) {
+    return {
+      PrivateIdentifier(node: Node) {
+        const parent = context.sourceCode.getAncestors(node).at(-1)
+        if (
+          parent?.type === 'PropertyDefinition' ||
+          parent?.type === 'MethodDefinition'
+        ) {
+          context.report({
+            node,
+            message:
+              'Do not use JavaScript hard-private class members. Use TypeScript private members instead.'
+          })
         }
       }
     }

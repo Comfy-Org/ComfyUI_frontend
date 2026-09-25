@@ -3,6 +3,7 @@ import { beforeEach, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 
+import { i18n } from '@/i18n'
 import type { NavGroupData } from '@/types/navTypes'
 
 import SettingDialog from './SettingDialog.vue'
@@ -100,15 +101,14 @@ it('falls back when the active navigation item becomes unavailable', async () =>
   render(SettingDialog, {
     props: { onClose: vi.fn() },
     global: {
-      mocks: { $t: (key: string) => key },
+      plugins: [i18n],
       stubs: {
         BaseModalLayout: {
           template:
             '<div><slot name="leftPanel" /><slot name="content" /></div>'
         },
         NavItem: { template: '<button><slot /></button>' },
-        NavTitle: true,
-        SearchInput: true
+        NavTitle: true
       }
     }
   })

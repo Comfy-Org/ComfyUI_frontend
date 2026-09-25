@@ -22,7 +22,7 @@ export async function estimateWorkshopNodePrice(
   model: Pick<WorkshopModel, 'routerId'>,
   useCase: UseCase | undefined
 ): Promise<string | undefined> {
-  if (!useCase) return
+  if (!useCase || !model.routerId) return
   const rule = rules.find(
     (row) =>
       row.routerId === model.routerId &&

@@ -1,21 +1,55 @@
 <script setup lang="ts">
-import { defineAsyncComponent, h, shallowRef } from 'vue'
+import { defineAsyncComponent, h, shallowRef, watch } from 'vue'
 import type { FunctionalComponent } from 'vue'
 
-import {
-  fetchModelsCatalogue,
-  fetchModelsPage
-} from '../../config/models-page-data'
+import { fetchModelsCatalogue } from '../../config/models-catalogue-data'
+import { useWorkshopSession } from '../../config/workshop-session-state'
 import { t } from '../../i18n/translations'
+import { useWorkshopWorkflowsEnabled } from '../../scripts/posthog'
 
 import WorkshopGate from './WorkshopGate.vue'
 import WorkshopLoading from './WorkshopLoading.vue'
 
-const { slug } = defineProps<{
+const { slug, workflowId } = defineProps<{
   slug?: string
+  workflowId?: string
 }>()
 
 const loadingLabel = t('workshop.load.pending', 'en')
+const workflowsEnabled = useWorkshopWorkflowsEnabled()
+const recoveringWorkflow = shallowRef(false)
+const savedWorkflow = shallowRef(false)
+const session = workflowId ? useWorkshopSession().session : undefined
+watch(
+  [
+    () => workflowId,
+    () => session?.value?.uid,
+    () => session?.value?.workspace.id
+  ],
+  async ([id, uid, workspaceId], _, onCleanup) => {
+    savedWorkflow.value = false
+    let current = true
+    onCleanup(() => {
+      current = false
+    })
+    if (!id || !uid || !workspaceId) return
+    try {
+      const { workflowStorage } =
+        await import('../../config/workshop-workflow-storage')
+      if (current)
+        savedWorkflow.value = Boolean(
+          workflowStorage(
+            sessionStorage,
+            JSON.stringify([uid, workspaceId]),
+            id
+          ).read()
+        )
+    } catch {
+      return
+    }
+  },
+  { immediate: true }
+)
 
 const Loading: FunctionalComponent = () =>
   h(WorkshopLoading, { label: loadingLabel, 'data-testid': 'models-loading' })
@@ -52,11 +86,25 @@ function createContent() {
   return defineAsyncComponent({
     loader: async () => {
       if (slug) {
-        const [{ default: ModelPage }, page] = await Promise.all([
-          import('./ModelPage.vue'),
-          fetchModelsPage(slug)
-        ])
-        return () => h(ModelPage, { page })
+        const preload = slug.startsWith('workflows/')
+          ? import('./WorkflowPage.vue')
+          : import('./ModelPage.vue')
+        void preload.catch(() => undefined)
+        const { fetchModelsPage } =
+          await import('../../config/models-page-data')
+        const { model, ...page } = await fetchModelsPage(slug)
+        if (model.routerId === undefined) {
+          const { default: WorkflowPage } = await import('./WorkflowPage.vue')
+          return () =>
+            h(WorkflowPage, {
+              model,
+              onRecovery: (active: boolean) => {
+                recoveringWorkflow.value = active
+              }
+            })
+        }
+        const { default: ModelPage } = await import('./ModelPage.vue')
+        return () => h(ModelPage, { page: { ...page, model } })
       }
       const [{ default: ModelsCatalogue }, models] = await Promise.all([
         import('./ModelsCatalogue.vue'),
@@ -69,7 +117,14 @@ function createContent() {
             class:
               'max-w-10xl mx-auto px-6 pt-8 pb-16 max-sm:pt-5 max-sm:pb-10 lg:px-8 lg:pt-12 lg:pb-24'
           },
-          [h(ModelsCatalogue, { models })]
+          [
+            h(ModelsCatalogue, {
+              models: models.filter(
+                (model) =>
+                  model.routerId !== undefined || workflowsEnabled.value
+              )
+            })
+          ]
         )
     },
     loadingComponent: Loading,
@@ -86,7 +141,12 @@ const Content = shallowRef(createContent())
 </script>
 
 <template>
-  <WorkshopGate :keep-mounted="Boolean(slug)">
+  <WorkshopGate
+    :keep-mounted="Boolean(slug)"
+    :allowed="!slug?.startsWith('workflows/') || workflowsEnabled"
+    :retain-granted="recoveringWorkflow"
+    :allow-recovery="savedWorkflow"
+  >
     <component :is="Content" />
     <template #loading>
       <WorkshopLoading :label="loadingLabel" />

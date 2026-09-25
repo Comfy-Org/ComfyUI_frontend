@@ -32,6 +32,7 @@ import type {
   SubscribeOptions
 } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { openHostedBillingTab } from '@/platform/workspace/billing/openHostedBillingTab'
 import type { SettledSubscribeResponse } from '@/platform/workspace/billing/sdk/subscriptionOperationView'
 import { readOnRail } from '@/platform/workspace/composables/readOnRail'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
@@ -747,18 +748,23 @@ export function useSubscriptionCheckout(
       : canSubscribeSelfServe.value
   }
 
+  // Synchronous so the caller can branch before any await: a hosted-tab
+  // open right after this needs the click's transient user activation,
+  // which an await can drop in stricter browsers (Safari).
+  function needsTeamToPersonalDowngrade(): boolean {
+    return tierPlanType !== 'team' && isTeamPlan.value
+  }
+
   async function showTeamToPersonalDowngrade(
     planSlug: string,
     tierKey: CheckoutTierKey
-  ): Promise<boolean> {
-    if (tierPlanType === 'team' || !isTeamPlan.value) return false
-
+  ): Promise<void> {
     const { useDialogService } = await import('@/services/dialogService')
     const result = await useDialogService().showDowngradeToPersonalDialog({
       planName: t(`subscription.tiers.${tierKey}.name`),
       planSlug
     })
-    if (!result) return true
+    if (!result) return
 
     previewData.value = result.preview
     trackWorkspaceCheckoutStarted({
@@ -777,7 +783,6 @@ export function useSubscriptionCheckout(
       },
       false
     )
-    return true
   }
 
   const previewVariant = computed<PreviewVariant>(() => {
@@ -843,7 +848,14 @@ export function useSubscriptionCheckout(
         })
         return
       }
-      if (await showTeamToPersonalDowngrade(planSlug, tierKey)) return
+      if (needsTeamToPersonalDowngrade()) {
+        await showTeamToPersonalDowngrade(planSlug, tierKey)
+        return
+      }
+      if (openHostedBillingTab('checkout', { plan: planSlug })) {
+        emit('close', false)
+        return
+      }
       const response = embeddedCheckoutEnabled
         ? (
             await Promise.all([
@@ -925,6 +937,17 @@ export function useSubscriptionCheckout(
     previewData.value = null
     quoteIsCurrent.value = false
     enterCheckoutJourney(`team:${payload.stop.id}:${payload.billingCycle}`)
+
+    if (
+      payload.stop.id &&
+      openHostedBillingTab('checkout', {
+        plan: getTeamPlanSlug(payload.billingCycle),
+        teamCreditStopId: payload.stop.id
+      })
+    ) {
+      emit('close', false)
+      return
+    }
 
     if (!embeddedCheckoutEnabled) {
       const teamCreditStopId = payload.stop.id
@@ -1090,7 +1113,10 @@ export function useSubscriptionCheckout(
 
     isSubscribing.value = true
     try {
-      if (await showTeamToPersonalDowngrade(planSlug, tierKey)) return
+      if (needsTeamToPersonalDowngrade()) {
+        await showTeamToPersonalDowngrade(planSlug, tierKey)
+        return
+      }
       await fetchStatus()
       if (!confirmReactivation && requiresReactivationConfirmation()) {
         if (await refreshPreviewOnReactivationBlock(planSlug)) return
@@ -1734,6 +1760,11 @@ export function useSubscriptionCheckout(
 
   async function handleResubscribe() {
     if (!canReactivatePlan.value) return
+
+    if (openHostedBillingTab('subscription')) {
+      emit('close', false)
+      return
+    }
 
     const source = 'pricing_dialog' as const
 
