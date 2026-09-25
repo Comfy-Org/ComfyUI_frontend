@@ -89,6 +89,9 @@ test.describe(
         ).join('')
       )
 
+      await expect(streamedReply).toContainText(
+        'New paragraph 25: more streamed detail.'
+      )
       await expect(firstParagraph).toBeInViewport()
       await expect(
         agentPanel.root.getByRole('button', { name: enMessages.agent.latest })
