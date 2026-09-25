@@ -242,6 +242,57 @@ const copy = {
   },
   'reshoot.take.cancelled': { en: 'Cancelled', 'zh-CN': '已取消' },
   'reshoot.download': { en: 'Download', 'zh-CN': '下载' },
+  'reshoot.take.failed': {
+    en: 'This take did not finish',
+    'zh-CN': '这条镜头未能完成'
+  },
+  'reshoot.stage.uploading': {
+    en: 'Uploading the clip…',
+    'zh-CN': '正在上传片段…'
+  },
+  'reshoot.stage.starting': {
+    en: 'Starting a server…',
+    'zh-CN': '正在启动服务器…'
+  },
+  'reshoot.stage.queued': {
+    en: 'Waiting for a server…',
+    'zh-CN': '正在等待服务器…'
+  },
+  'reshoot.signIn': {
+    en: 'Sign in to read the scene.',
+    'zh-CN': '登录后即可读取场景。'
+  },
+  'reshoot.unavailable': {
+    en: 'Re-shoot is not available right now. Try again later.',
+    'zh-CN': '重拍功能暂不可用，请稍后再试。'
+  },
+  'reshoot.quote.free': {
+    en: 'Free · {left} of {runs} left {period}',
+    'zh-CN': '免费 · {period}剩余 {left}/{runs} 次'
+  },
+  'reshoot.quote.freeOnly': { en: 'Free', 'zh-CN': '免费' },
+  'reshoot.quote.paid': { en: '{price} credits', 'zh-CN': '{price} 积分' },
+  'reshoot.quote.exhausted': {
+    en: 'No free runs left; next one {when}',
+    'zh-CN': '免费次数已用完，下一次{when}可用'
+  },
+  'reshoot.quote.later': { en: 'later', 'zh-CN': '稍后' },
+  'reshoot.period.day': { en: 'today', 'zh-CN': '今天' },
+  'reshoot.period.week': { en: 'this week', 'zh-CN': '本周' },
+  'reshoot.period.days': { en: 'per {n} days', 'zh-CN': '每 {n} 天' },
+  'reshoot.period.hours': { en: 'per {n} hours', 'zh-CN': '每 {n} 小时' },
+  'reshoot.error.busy': {
+    en: 'One take at a time: wait for this one to finish.',
+    'zh-CN': '一次只能生成一条镜头，请等待当前镜头完成。'
+  },
+  'reshoot.error.rateLimited': {
+    en: 'Too many tries for now. Try again {when}.',
+    'zh-CN': '尝试次数过多，请{when}再试。'
+  },
+  'reshoot.error.failed': {
+    en: 'Something went wrong. Try again.',
+    'zh-CN': '出了点问题，请重试。'
+  },
   'reshoot.demoNote': {
     en: 'Design prototype: no jobs run. Takes show the example result.',
     'zh-CN': '设计原型：不会运行任务，镜头显示示例结果。'

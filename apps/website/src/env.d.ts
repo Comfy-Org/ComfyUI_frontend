@@ -20,6 +20,13 @@ interface ImportMetaEnv {
   readonly PUBLIC_WORKSHOP_WORKFLOWS_ENABLED?: string
   readonly PUBLIC_WORKSHOP_ROUTER_RUN?: string
   readonly PUBLIC_WORKSHOP_SAVE_ASSETS?: string
+  /**
+   * The Re-shoot app's public id in comfy-api's app proxy catalog for this
+   * Cloud family. Not a secret. Unset shows Re-shoot as unavailable.
+   */
+  readonly PUBLIC_WORKSHOP_RESHOOT_PROXY_ID?: string
+  /** `astro dev` only: the local CrossView dev proxy, e.g. http://127.0.0.1:4329. */
+  readonly PUBLIC_CROSSVIEW_PROXY?: string
   /** Optional Turnstile mode override: off, shadow, or enforce. */
   readonly PUBLIC_WORKSHOP_TURNSTILE_MODE?: string
   readonly PUBLIC_POSTHOG_KEY?: string
