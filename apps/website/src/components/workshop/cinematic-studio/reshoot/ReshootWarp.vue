@@ -91,10 +91,11 @@ watch(() => [pose, hfov, keepAim, frame], draw, { deep: true })
 </script>
 
 <template>
+  <!-- Drawn at the analysis's preview size and scaled up to fill the frame,
+       as the clip does before analysis; object-contain keeps its aspect. -->
   <canvas
     ref="canvas"
-    class="max-h-full max-w-full"
-    :style="{ aspectRatio: `${geometry.width} / ${geometry.height}` }"
+    class="absolute inset-0 size-full object-contain"
     data-testid="reshoot-warp"
   />
 </template>
