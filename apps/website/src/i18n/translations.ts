@@ -4349,32 +4349,32 @@ Enterprise`
   // Featured dropdown cards — keys are keyed by parent nav item, not card content,
   // so the copy can be swapped without renaming the key.
   'nav.featuredProductsTitle': {
-    en: 'NEW RELEASE: MINIMAX H3',
-    'zh-CN': '全新发布：MiniMax H3'
+    en: 'GEMINI OMNI 1.1 FLASH',
+    'zh-CN': 'Gemini Omni 1.1 Flash'
   },
   'nav.featuredProductsAlt': {
-    en: 'MiniMax H3 feature image',
-    'zh-CN': 'MiniMax H3 精选图片'
+    en: 'Gemini Omni 1.1 Flash video: cavemen meet the future',
+    'zh-CN': 'Gemini Omni 1.1 Flash 视频：穴居人遇见未来'
   },
   'nav.featuredProductsCta': {
     en: 'EXPLORE NOW',
     'zh-CN': '立即探索'
   },
   'nav.featuredProductsCtaAria': {
-    en: 'Explore the MiniMax H3 release',
-    'zh-CN': '探索 MiniMax H3 版本'
+    en: 'Explore the Gemini Omni 1.1 Flash release',
+    'zh-CN': '探索 Gemini Omni 1.1 Flash 版本'
   },
   'nav.featuredCommunityTitle': {
-    en: 'Sky Replacement',
-    'zh-CN': '天空替换'
+    en: 'Product Photography',
+    'zh-CN': '产品摄影'
   },
   'nav.featuredCommunityAlt': {
-    en: 'Sky Replacement workflow demo image',
-    'zh-CN': '天空替换工作流演示图片'
+    en: 'Product Photography workflow demo image',
+    'zh-CN': '产品摄影工作流演示图片'
   },
   'nav.featuredCommunityCtaAria': {
-    en: 'Watch the Sky Replacement demo',
-    'zh-CN': '观看天空替换演示'
+    en: 'Watch the Product Photography demo',
+    'zh-CN': '观看产品摄影演示'
   },
   'nav.featuredCompanyTitle': {
     en: 'Customer story: Black Math',
