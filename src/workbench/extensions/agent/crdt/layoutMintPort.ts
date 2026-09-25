@@ -281,22 +281,24 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
       }
       case 'deleteNode': {
         // Forgetting the dedupe entry is only safe when the bound doc
-        // actually lost the node: either the change is gated out (an echo
-        // or teardown no-op, where the doc already reflects the delete or
-        // is being discarded), or it was minted to the wire. A root-owned
-        // delete that targets a graph other than the activated document is
-        // neither - the doc never loses the node - so forgetting it there
-        // would let a later create double-mint. A subgraph-interior delete
-        // carries the root's graphId with a different ownerGraphId, so it
-        // must not forget an entry from the root's bucket regardless.
+        // actually lost the node: either this delete was itself minted to
+        // the wire, or it is the local echo of a doc-driven remote removal
+        // (KA-6: remote applies never re-mint, so the doc already reflects
+        // them). The gate closing for any other reason - the product flag
+        // off, no doc bound, teardown, or an actor this port does not
+        // recognize as local - is a product/binding eligibility gate, not
+        // proof the doc lost the node: the node is still there, so
+        // forgetting it would let a later create double-mint it. A
+        // subgraph-interior delete carries the root's graphId with a
+        // different ownerGraphId, so it must not forget an entry from the
+        // root's bucket regardless.
         if (operation.nodeId === undefined) return
         const gated = gate(change, inTeardown)
         const forActivatedDocument =
-          !gated || isForActivatedDocument(operation, 'delete')
-        if (
-          operation.ownerGraphId === operation.graphId &&
-          forActivatedDocument
-        ) {
+          gated && isForActivatedDocument(operation, 'delete')
+        const docLostNode =
+          forActivatedDocument || operation.source === 'agent-remote'
+        if (operation.ownerGraphId === operation.graphId && docLostNode) {
           mintedNodeIdsByRoot
             .get(operation.graphId)
             ?.delete(String(operation.nodeId))

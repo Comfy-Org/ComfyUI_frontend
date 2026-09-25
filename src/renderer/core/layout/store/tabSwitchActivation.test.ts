@@ -28,6 +28,7 @@ import { useDocumentActivationStore } from '@/stores/documentActivationStore'
 import { useGraphDocumentStore } from '@/stores/graphDocumentStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
+import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { createUuidv4 } from '@/utils/uuid'
 import { attachMintPortWiring } from '@/workbench/extensions/agent/crdt/mintPortWiring'
 
@@ -93,10 +94,13 @@ describe('tab-switch activation handoff', () => {
   }
 
   function addNode(id: string): void {
-    nodes.set(id, {
-      id: toNodeId(id),
-      serialize: () => ({ id: Number(id), type: 'TestNode' })
-    } as unknown as LGraphNode)
+    nodes.set(
+      id,
+      createMockLGraphNode({
+        id: toNodeId(id),
+        serialize: () => ({ id: Number(id), type: 'TestNode' })
+      })
+    )
   }
 
   beforeEach(() => {

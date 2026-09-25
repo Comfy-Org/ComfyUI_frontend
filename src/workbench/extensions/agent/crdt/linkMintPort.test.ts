@@ -174,11 +174,16 @@ describe('attachLinkMintPort', () => {
       .mockImplementation(() => undefined)
 
     remove(FOREIGN_SCOPE, topology(41))
-    await afterSweep()
 
     // Captured for the delete that may follow, but not mintable: it belongs
-    // to a graph this document does not own, so it is neither handed to a
-    // mint nor surfaced as this document's divergence.
+    // to a graph this document does not own, so a local delete_node must
+    // never carry it into removed_links (regression: take() used to ignore
+    // `mintable` and hand this id back regardless, so a focused probe on
+    // node '2' received [41] where [] is required).
+    expect(port.severances.take('2')).toEqual([])
+    expect(port.severances.take('1')).toEqual([])
+
+    await afterSweep()
     expect(consoleError).not.toHaveBeenCalled()
     consoleError.mockRestore()
   })
@@ -235,6 +240,25 @@ describe('attachLinkMintPort', () => {
 
     expect(port.severances.take('1')).toEqual([])
     expect(port.severances.take('2')).toEqual([])
+  })
+
+  it('coalesces a burst of same-key drops into one report, then reports again next tick', async () => {
+    // Regression: the coalescer's duplicate-key guard had no assertion
+    // pinning its actual burst/reset behavior, so replacing it with a no-op
+    // would leave every other test green.
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined)
+
+    place(FOREIGN_SCOPE, topology(41))
+    place(FOREIGN_SCOPE, topology(42))
+    expect(consoleError).toHaveBeenCalledOnce()
+
+    await Promise.resolve()
+    place(FOREIGN_SCOPE, topology(43))
+    expect(consoleError).toHaveBeenCalledTimes(2)
+
+    consoleError.mockRestore()
   })
 
   it('stops minting after detach', () => {

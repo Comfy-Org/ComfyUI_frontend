@@ -717,18 +717,25 @@ export const useWorkflowService = () => {
       documentId,
       scope
     )
-    if (outcome.status === 'rejected') {
-      reportError(
-        new Error(`Document activation rejected (${outcome.reason})`),
-        {
-          errorType: 'document_activation_rejected',
-          context: {
-            documentId,
-            reason: outcome.reason,
-            rootGraphId: scope.rootGraphId
+    switch (outcome.status) {
+      case 'activated':
+      case 'superseded':
+        return
+      case 'rejected':
+        reportError(
+          new Error(`Document activation rejected (${outcome.reason})`),
+          {
+            errorType: 'document_activation_rejected',
+            context: {
+              documentId,
+              reason: outcome.reason,
+              rootGraphId: scope.rootGraphId
+            }
           }
-        }
-      )
+        )
+        return
+      default:
+        outcome satisfies never
     }
   }
 

@@ -223,6 +223,7 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
       take(nodeId: string): WireNodeId[] {
         const taken: WireNodeId[] = []
         for (const entry of severancesByNode.get(nodeId) ?? []) {
+          if (!entry.mintable) continue
           const key = String(entry.linkId)
           if (consumedLinkIds.has(key)) continue
           consumedLinkIds.add(key)

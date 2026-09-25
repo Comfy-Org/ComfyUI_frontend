@@ -388,6 +388,57 @@ describe('attachLayoutMintPort', () => {
     expect(minted).toEqual([])
   })
 
+  it('does not double-mint add_node for a node whose delete was dropped by the product flag (regression)', () => {
+    // DrJKL's probe: create, disable the flag, delete (dropped - never
+    // reaches the wire), re-enable, recreate. The bound doc never lost the
+    // node, so forgetting the dedupe entry on the dropped delete let the
+    // recreate mint a second add_node for a node the doc already has.
+    deliver(createNodeChange('1'))
+    expect(minted).toHaveLength(1)
+
+    enabled = false
+    deliver(deleteChange('1'))
+    expect(minted).toHaveLength(1)
+
+    enabled = true
+    minted.length = 0
+    deliver(createNodeChange('1'))
+
+    expect(minted).toEqual([])
+  })
+
+  it('does not double-mint add_node for a node whose delete was dropped for an unbound doc (regression)', () => {
+    deliver(createNodeChange('1'))
+    expect(minted).toHaveLength(1)
+
+    bound = false
+    deliver(deleteChange('1'))
+    expect(minted).toHaveLength(1)
+
+    bound = true
+    minted.length = 0
+    deliver(createNodeChange('1'))
+
+    expect(minted).toEqual([])
+  })
+
+  it('forgets the dedupe entry for a delete echoed from a remote apply', () => {
+    // The remote doc already removed this node (KA-6: remote applies never
+    // re-mint), so the local echo genuinely proves the doc lost it - unlike
+    // the product-flag/doc-binding cases above, a later recreate must mint.
+    deliver(createNodeChange('1'))
+    expect(minted).toHaveLength(1)
+
+    const echoedDelete = deleteChange('1')
+    echoedDelete.operation.source = 'agent-remote'
+    deliver(echoedDelete)
+    minted.length = 0
+
+    deliver(createNodeChange('1'))
+
+    expect(minted).toHaveLength(1)
+  })
+
   it('drops a snapshot-less mint observably, never silently', () => {
     const consoleError = vi
       .spyOn(console, 'error')
