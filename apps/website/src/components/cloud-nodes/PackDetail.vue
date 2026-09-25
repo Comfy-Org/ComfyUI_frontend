@@ -38,7 +38,7 @@ const { groupedNodes } = useNodesByCategory(() => pack.nodes)
       </a>
 
       <div
-        class="bg-transparency-white-t5 overflow-hidden rounded-3xl border border-primary-warm-gray/20"
+        class="overflow-hidden rounded-3xl border border-primary-warm-gray/20 bg-transparency-white-t4"
       >
         <PackBanner
           :banner-url="pack.bannerUrl"

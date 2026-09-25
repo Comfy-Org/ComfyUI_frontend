@@ -13,6 +13,8 @@ import type {
 } from '@comfyorg/account-core/session'
 import { zBillingBalanceResponse } from '@comfyorg/ingest-types/zod'
 
+import { createTimeoutSignal } from '../utils/abortSignal'
+
 export type BalanceState =
   /** Cents, as the cloud app reads it: the `_micros` fields carry cents. */
   | { readonly status: 'unknown' }
@@ -64,7 +66,7 @@ export function createBalanceReader(
     try {
       response = await fetchImpl(balanceUrl, {
         headers: { Authorization: `Bearer ${token}` },
-        signal: AbortSignal.timeout(BALANCE_TIMEOUT_MS)
+        signal: createTimeoutSignal(BALANCE_TIMEOUT_MS)
       })
     } catch {
       return { status: 'error' }

@@ -20,9 +20,6 @@ vi.mock(import('@/platform/support/feedbackDialog'), () => ({
 }))
 
 vi.mock(import('@/platform/telemetry'))
-const telemetryProvider = useTelemetry()
-assert.exists(telemetryProvider)
-const telemetry = vi.mocked(telemetryProvider)
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
@@ -104,6 +101,8 @@ describe('openFeedbackDialog (agent)', () => {
 
     openFeedbackDialog('agent-panel')
 
+    const telemetry = useTelemetry()
+    assert.exists(telemetry)
     expect(telemetry.trackUiButtonClicked).toHaveBeenCalledWith({
       button_id: 'feedback_button_clicked',
       element_group: 'agent-panel'

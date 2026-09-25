@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-col gap-3 pb-3">
-    <h3 class="text-descrip-text mt-2.5 text-center font-sans text-[15px]">
+    <h3 class="mt-2.5 text-center font-sans text-[15px] text-muted-foreground">
       {{ t('maskEditor.brushSettings') }}
     </h3>
 
@@ -10,7 +10,7 @@
 
     <!-- Brush Shape -->
     <div class="flex flex-col gap-3 pb-3">
-      <span class="text-descrip-text text-left font-sans text-xs">
+      <span class="text-left font-sans text-xs text-muted-foreground">
         {{ t('maskEditor.brushShape') }}
       </span>
 
@@ -45,7 +45,7 @@
 
     <!-- Color -->
     <div class="flex flex-col gap-3 pb-3">
-      <span class="text-descrip-text text-left font-sans text-xs">
+      <span class="text-left font-sans text-xs text-muted-foreground">
         {{ t('maskEditor.colorSelector') }}
       </span>
       <input
@@ -59,14 +59,14 @@
     <!-- Thickness -->
     <div class="flex flex-col gap-2">
       <div class="flex items-center justify-between">
-        <span class="text-descrip-text text-left font-sans text-xs">
+        <span class="text-left font-sans text-xs text-muted-foreground">
           {{ t('maskEditor.thickness') }}
         </span>
         <input
           v-model.number="brushSize"
           data-testid="brush-thickness-input"
           type="number"
-          class="border-p-form-field-border-color text-input-text w-16 rounded-md border bg-comfy-menu-bg px-2 py-1 text-center text-sm"
+          class="w-16 rounded-md border border-border-default bg-comfy-menu-bg px-2 py-1 text-center text-sm text-base-foreground"
           :min="1"
           :max="250"
           :step="1"
@@ -85,13 +85,13 @@
     <!-- Opacity -->
     <div class="flex flex-col gap-2">
       <div class="flex items-center justify-between">
-        <span class="text-descrip-text text-left font-sans text-xs">
+        <span class="text-left font-sans text-xs text-muted-foreground">
           {{ t('maskEditor.opacity') }}
         </span>
         <input
           v-model.number="brushOpacity"
           type="number"
-          class="border-p-form-field-border-color text-input-text w-16 rounded-md border bg-comfy-menu-bg px-2 py-1 text-center text-sm"
+          class="w-16 rounded-md border border-border-default bg-comfy-menu-bg px-2 py-1 text-center text-sm text-base-foreground"
           :min="0"
           :max="1"
           :step="0.01"
@@ -110,13 +110,13 @@
     <!-- Hardness -->
     <div class="flex flex-col gap-2">
       <div class="flex items-center justify-between">
-        <span class="text-descrip-text text-left font-sans text-xs">
+        <span class="text-left font-sans text-xs text-muted-foreground">
           {{ t('maskEditor.hardness') }}
         </span>
         <input
           v-model.number="brushHardness"
           type="number"
-          class="border-p-form-field-border-color text-input-text w-16 rounded-md border bg-comfy-menu-bg px-2 py-1 text-center text-sm"
+          class="w-16 rounded-md border border-border-default bg-comfy-menu-bg px-2 py-1 text-center text-sm text-base-foreground"
           :min="0"
           :max="1"
           :step="0.01"
@@ -135,13 +135,13 @@
     <!-- Step Size -->
     <div class="flex flex-col gap-2">
       <div class="flex items-center justify-between">
-        <span class="text-descrip-text text-left font-sans text-xs">
+        <span class="text-left font-sans text-xs text-muted-foreground">
           {{ t('maskEditor.stepSize') }}
         </span>
         <input
           v-model.number="brushStepSize"
           type="number"
-          class="border-p-form-field-border-color text-input-text w-16 rounded-md border bg-comfy-menu-bg px-2 py-1 text-center text-sm"
+          class="w-16 rounded-md border border-border-default bg-comfy-menu-bg px-2 py-1 text-center text-sm text-base-foreground"
           :min="1"
           :max="100"
           :step="1"
@@ -175,7 +175,7 @@ const store = useMaskEditorStore()
 const colorInputRef = ref<HTMLInputElement>()
 
 const textButtonClass =
-  'h-7.5 w-32 rounded-[10px] border border-p-form-field-border-color text-input-text font-sans transition-colors duration-100 bg-comfy-menu-bg hover:bg-secondary-background-hover'
+  'h-7.5 w-32 rounded-[10px] border border-border-default text-base-foreground font-sans transition-colors duration-100 bg-comfy-menu-bg hover:bg-secondary-background-hover'
 
 /* Computed properties that use store setters for validation */
 const brushSize = computed({

@@ -244,6 +244,12 @@ export function curateWorkshopInputs(
       ...(rule.maxVideoDurationSeconds
         ? { maxVideoDurationSeconds: rule.maxVideoDurationSeconds }
         : {}),
+      ...(rule.videoWidthPixels
+        ? { videoWidthPixels: rule.videoWidthPixels }
+        : {}),
+      ...(rule.imageAspectRatio
+        ? { imageAspectRatio: rule.imageAspectRatio }
+        : {}),
       ...(rule.formConstraint ? { formConstraint: rule.formConstraint } : {}),
       ...(rule.urlUpload ? { urlUpload: rule.urlUpload } : {})
     })

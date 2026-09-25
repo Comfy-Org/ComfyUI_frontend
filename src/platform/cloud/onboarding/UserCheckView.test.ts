@@ -5,18 +5,8 @@ import { createI18n } from 'vue-i18n'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import UserCheckView from './UserCheckView.vue'
 
-vi.mock<unknown>(import('vue-router'), () => ({
-  useRouter: () => ({ replace: vi.fn() })
-}))
-
-vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
-  useErrorHandling: () => ({
-    wrapWithErrorHandlingAsync:
-      <T extends (...args: never[]) => unknown>(fn: T) =>
-      (...args: Parameters<T>) =>
-        fn(...args)
-  })
-}))
+vi.mock(import('vue-router'))
+vi.mock(import('@/composables/useErrorHandling'))
 
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/platform/cloud/onboarding/auth'), () => ({
