@@ -43,5 +43,5 @@
 </template>
 
 <script setup lang="ts">
-import Skeleton from 'primevue/skeleton'
+import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 </script>
