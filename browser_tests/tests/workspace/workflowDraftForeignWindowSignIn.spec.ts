@@ -29,11 +29,6 @@ test.describe('workflow drafts across windows', { tag: '@cloud' }, () => {
 
     await expect(workflowDraft.logoutButton).toBeVisible()
 
-    test.fail(
-      true,
-      'Foreign-window sign-in wipes drafts and fences persistence'
-    )
-
     expect
       .soft(
         await workflowDraft.getDraftKeys(),
