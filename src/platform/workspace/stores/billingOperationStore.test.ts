@@ -14,7 +14,10 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import type { BillingOpStatusResponse } from '@/platform/workspace/api/workspaceApi'
+import type {
+  BillingAuthenticationState,
+  BillingOpStatusResponse
+} from '@/platform/workspace/api/workspaceApi'
 import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
 
 const { mockHandleNextAction, mockLoadStripe } = vi.hoisted(() => ({
@@ -1425,6 +1428,41 @@ describe('billingOperationStore', () => {
         await vi.advanceTimersByTimeAsync(30_000)
         expect(workspaceApi.getBillingOpStatus).toHaveBeenCalledTimes(
           polledBeforeParking + 2
+        )
+      })
+
+      it('returns to the fast backoff after a challenge that arrived past the discovery window completes', async () => {
+        let authenticationState: BillingAuthenticationState = 'processing'
+        vi.mocked(workspaceApi.getBillingOpStatus).mockImplementation(
+          async () => ({
+            id: 'op-3ds',
+            status: 'pending',
+            phase: 'awaiting_invoice_payment',
+            payment_intent_client_secret: 'pi_secret_current',
+            authentication_state: authenticationState,
+            started_at: new Date().toISOString()
+          })
+        )
+        mockHandleNextAction.mockResolvedValue({
+          paymentIntent: { status: 'processing' }
+        })
+        void useBillingOperationStore().startOperation(
+          'op-3ds',
+          'subscription',
+          { autoHandleRequiresAction: true, suppressProcessingToast: true }
+        )
+        await vi.advanceTimersByTimeAsync(76_000)
+
+        authenticationState = 'requires_action'
+        await vi.advanceTimersToNextTimerAsync()
+        expect(mockHandleNextAction).toHaveBeenCalledOnce()
+        authenticationState = 'processing'
+        const polledAfterChallenge = vi.mocked(workspaceApi.getBillingOpStatus)
+          .mock.calls.length
+
+        await vi.advanceTimersByTimeAsync(2_000)
+        expect(workspaceApi.getBillingOpStatus).toHaveBeenCalledTimes(
+          polledAfterChallenge + 1
         )
       })
     })

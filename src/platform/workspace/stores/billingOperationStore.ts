@@ -635,6 +635,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       })
       autoHandledPaymentActions.add(opId)
       intervals.set(opId, INITIAL_INTERVAL_MS)
+      waitingWithoutActionSince.delete(opId)
       return true
     } catch (error) {
       setAuthenticationFailed(
