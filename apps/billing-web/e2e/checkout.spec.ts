@@ -89,6 +89,42 @@ test('submitting payment carries the idempotency key and plan, and settles as su
   expect(await fakeStripeCalls(page, 'nextActions')).toBe(0)
 })
 
+test('a scheduled plan change confirms against the saved payment method, no card form', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.scenario.preview = {
+    ...cloud.scenario.preview,
+    transition_type: 'duration_change',
+    is_immediate: false,
+    cost_today_cents: 0,
+    amount_due_cents: 0
+  }
+  await signIn(CHECKOUT)
+
+  await expect(
+    page.getByRole('button', { name: 'Pay and subscribe' })
+  ).toBeVisible()
+  await expect(page.getByText('Pro · Monthly')).toBeVisible()
+
+  await page.getByRole('button', { name: 'Pay and subscribe' }).click()
+
+  await expect(
+    page.getByRole('heading', { name: "You're all set" })
+  ).toBeVisible()
+
+  const subscribe = cloud.requests.find(
+    (request) => request.path === '/billing/subscribe'
+  )
+  expect(subscribe?.body).toMatchObject({ plan_slug: 'pro_monthly' })
+  expect(subscribe?.body).not.toHaveProperty('confirmation_token')
+
+  // The fake only installs itself once the app requests js.stripe.com, so
+  // its absence proves Stripe.js was never loaded for this path.
+  expect(await page.evaluate('window.__e2eFakeStripe')).toBeUndefined()
+})
+
 test('a declined payment shows the reason and stays on checkout', async ({
   page,
   cloud,
