@@ -142,6 +142,17 @@ function applyRestoreAnswered(
   return settleSignedOut('restore_failed')
 }
 
+/** A remembered-login lookup can fail while reading; a proof only while restoring. */
+function transientLookupError(
+  state: WebSessionIdentityState,
+  event: 'proof_errored' | 'login_errored'
+): WebSessionIdentityTransition {
+  const retries =
+    state.phase === 'restoring' ||
+    (state.phase === 'reading' && event === 'login_errored')
+  return retries ? waitToRetry(state.failures + 1) : { state, effects: [] }
+}
+
 /** Pure: an event that means nothing in the current phase changes nothing. */
 export function transitionWebSessionIdentity(
   state: WebSessionIdentityState,
@@ -177,13 +188,8 @@ export function transitionWebSessionIdentity(
         ? settleSignedOut('restore_failed')
         : unchanged
     case 'proof_errored':
-      return state.phase === 'restoring'
-        ? waitToRetry(state.failures + 1)
-        : unchanged
     case 'login_errored':
-      return state.phase === 'reading' || state.phase === 'restoring'
-        ? waitToRetry(state.failures + 1)
-        : unchanged
+      return transientLookupError(state, event.type)
     case 'retry_due':
       return state.phase === 'retry_wait'
         ? { state: { ...state, phase: 'reading' }, effects: [read] }
