@@ -8,7 +8,7 @@ type FlagsDelivery = Parameters<PostHogLike['onFeatureFlags']>[0]
 function fakePostHog(initial: boolean | undefined): {
   posthog: PostHogLike
   setFlag: (value: boolean | undefined) => void
-  setFlagWithLoadError: (value: boolean | undefined) => void
+  failReload: () => void
 } {
   let value = initial
   let listener: FlagsDelivery | undefined
@@ -26,8 +26,7 @@ function fakePostHog(initial: boolean | undefined): {
       value = next
       listener?.()
     },
-    setFlagWithLoadError: (next) => {
-      value = next
+    failReload: () => {
       listener?.([], {}, { errorsLoading: true })
     }
   }
@@ -53,13 +52,14 @@ describe('createPostHogFlagSource', () => {
     expect(source.isEnabled()).toBe(false)
   })
 
-  it('withholds a delivery that reports a load error, stranding the new value', () => {
-    const { posthog, setFlagWithLoadError } = fakePostHog(undefined)
+  it('withholds a delivery that reports a load error, leaving the value unchanged', () => {
+    const { posthog, setFlag, failReload } = fakePostHog(undefined)
     const source = createPostHogFlagSource(posthog)
+    setFlag(true)
     const onChange = vi.fn()
     source.onChange?.(onChange)
 
-    setFlagWithLoadError(true)
+    failReload()
 
     expect(onChange).not.toHaveBeenCalled()
     expect(source.isEnabled()).toBe(true)

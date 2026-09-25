@@ -1050,13 +1050,27 @@ describe('AgentPanel extension flag gate', () => {
     expect(agentStore.enabled).toBe(true)
   })
 
-  it.fails('KNOWN BUG: a resolved, whitelisted user stays locked out when the flag delivery reports a load error', async () => {
+  it('leaves the panel disabled when the account resolves after the gate is installed', async () => {
+    currentUser.value = null
     await loadEntryAndSetup()
     mocks.flagEnabled = true
 
+    currentUser.value = { id: 'account-a' }
+    await flush()
+
+    expect(agentStore.enabled).toBe(false)
+  })
+
+  it('leaves the panel disabled when the only delivery after the account resolves reports a load error', async () => {
+    currentUser.value = null
+    await loadEntryAndSetup()
+    mocks.flagEnabled = true
+    currentUser.value = { id: 'account-a' }
+    await flush()
+
     mocks.flagListener!([], {}, { errorsLoading: true })
 
-    expect(agentStore.enabled).toBe(true)
+    expect(agentStore.enabled).toBe(false)
   })
 
   it('disables the panel without closing it when the flag flips back to false', async () => {
