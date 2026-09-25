@@ -1141,10 +1141,10 @@ const MIXED_MEDIA_JOBS: RawJobListItem[] = [
   })
 ]
 
-// Filter button is guarded by isCloud; cloud CI needs authenticated setup.
-test.describe('Assets sidebar - media type filter', () => {
-  test.fixme(true, 'Requires DISTRIBUTION=cloud build with auth bypass')
-
+// The filter button is isCloud-gated, so this suite runs on the cloud project:
+// CI serves the DISTRIBUTION=cloud build there, and the comfyPage fixture
+// mocks auth for any @cloud-tagged test.
+test.describe('Assets sidebar - media type filter', { tag: '@cloud' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.assets.mockOutputHistory(MIXED_MEDIA_JOBS)
     await comfyPage.assets.mockInputFiles([])
