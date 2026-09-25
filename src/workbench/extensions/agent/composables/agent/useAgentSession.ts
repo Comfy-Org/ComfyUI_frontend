@@ -129,6 +129,21 @@ const THROTTLED_EVENT_TYPES = new Set([
   'agent_tool_call'
 ])
 
+/**
+ * Every type gets a ceiling, not just the high-volume ones: the frames are
+ * server-controlled, so a schema drift on ANY of them would otherwise drive
+ * unbounded synchronous console + Sentry + Datadog dispatches straight from
+ * the socket handler. The rarer types keep a few reports rather than one,
+ * since each dropped agent_ask is a consent card the user never saw.
+ *
+ * Module-level like `turnStartedAt` and `stopPendingAck`: the panel remounts
+ * on dock/undock, and a per-instance count would restart the ceiling each
+ * time and let a persistent regression report for as long as the user keeps
+ * toggling.
+ */
+const MAX_MALFORMED_REPORTS_PER_TYPE = 5
+const malformedEventReports = new Map<string, number>()
+
 let sessionGeneration = 0
 
 /**
@@ -187,7 +202,7 @@ function isDeliberateRefusal(error: unknown): boolean {
  * can resend (see releaseDisownedWorkflow). A chat notice alone kept the rest
  * out of both error consoles.
  */
-function isReportableSendFault(error: unknown): boolean {
+export function isReportableSendFault(error: unknown): boolean {
   return parseAdmissionError(error) === undefined && !isDeliberateRefusal(error)
 }
 
@@ -268,8 +283,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function nextLocalErrorId(): TurnId {
     return toTurnId(`local-error-${createUuidv4()}`)
   }
-
-  const reportedMalformedEventTypes = new Set<string>()
 
   let unsubscribe: (() => void) | null = null
   let unsubscribeStatus: (() => void) | null = null
@@ -697,7 +710,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     // Held from here rather than around postTurn alone: the POST waits on
     // prepareWorkflow() first, and a run mode written during THAT wait still
     // reaches the server before the message it must not re-authorize.
-    sendGateStore.begin()
+    const releaseSendGate = sendGateStore.begin()
     stopPendingAck = null
     try {
       return await performSend(
@@ -709,7 +722,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       )
     } finally {
       sending.value = false
-      sendGateStore.end()
+      releaseSendGate()
     }
   }
 
@@ -878,18 +891,17 @@ export function useAgentSession(deps: AgentSessionDeps) {
       }
     }
     // A dropped agent_ask is a run-approval card the user never sees, so the
-    // turn stalls with nothing on screen to point at. Only the per-chunk types
-    // are throttled to one report each, since a shape regression in one of
-    // those would otherwise report hundreds of times; every other type reports
-    // each occurrence, ask included.
-    const throttled = THROTTLED_EVENT_TYPES.has(type)
-    if (!throttled || !reportedMalformedEventTypes.has(type)) {
-      if (throttled) reportedMalformedEventTypes.add(type)
-      reportError(error, {
-        errorType: 'agent_malformed_event_dropped',
-        tags: { eventType: type }
-      })
-    }
+    // turn stalls with nothing on screen to point at.
+    const ceiling = THROTTLED_EVENT_TYPES.has(type)
+      ? 1
+      : MAX_MALFORMED_REPORTS_PER_TYPE
+    const seen = malformedEventReports.get(type) ?? 0
+    if (seen >= ceiling) return
+    malformedEventReports.set(type, seen + 1)
+    reportError(error, {
+      errorType: 'agent_malformed_event_dropped',
+      tags: { eventType: type }
+    })
   }
 
   function handleMessageDone(

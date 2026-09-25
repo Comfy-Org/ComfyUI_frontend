@@ -23,14 +23,20 @@ const PREFERENCE_STORAGE_KEY = 'Comfy.Agent.RunModePreference'
 const LEGACY_MODE_STORAGE_KEY = 'Comfy.Agent.RunMode'
 const LEGACY_CREDIT_LIMIT_STORAGE_KEY = 'Comfy.Agent.RunCreditLimit'
 /**
- * An arbitrary backstop, chosen precisely BECAUSE a send has no ceiling of
- * its own to sit past: auth init and a 401 remint each add their own wait,
- * and nothing aborts a stalled response body at all. Long enough that a
- * merely slow send finishes first; short enough to free the control.
+ * Defence in depth behind the gate's own MAX_HOLD_MS, which is shorter: a
+ * send that never settles is released there, so this should not fire. It
+ * exists for the case the gate itself is wrong.
  */
 const SEND_WAIT_TIMEOUT_MS = 90_000
 
-class AgentSendWaitTimeoutError extends Error {}
+class AgentSendWaitTimeoutError extends Error {
+  constructor(message: string) {
+    super(message)
+    // Without this every pipeline that groups by error name files the
+    // timeout this class exists to make legible under plain 'Error'.
+    this.name = 'AgentSendWaitTimeoutError'
+  }
+}
 
 function migrateLegacyPreference(): void {
   const storedPreference = localStorage.getItem(PREFERENCE_STORAGE_KEY)
@@ -171,9 +177,13 @@ export const useAgentRunModeStore = defineStore('agentRunMode', () => {
     // what is SAVED, with the popover's own spinner covering the write (see
     // Composer.test.ts, 'blocks a second pick while the write is in flight').
     // Waiting for a send in flight widens that window; it does not change it.
-    const held = sendInFlight()
-    if (held !== undefined) await held
     try {
+      const held = sendInFlight()
+      if (held !== undefined) await held
+      // A second pick can park on the same gate (two popover instances, or
+      // one remounted mid-write) and both wake on the same release, so their
+      // PUTs would race and the server would keep whichever landed last.
+      if (revision !== saveRevision) return
       applySaved(await api.putRunMode(next))
     } catch (error) {
       if (!(error instanceof AgentApiError && error.status === 404)) throw error

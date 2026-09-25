@@ -1,11 +1,14 @@
 import { watch } from 'vue'
 import { v4 as uuidv4 } from 'uuid'
 
+import { i18n } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { AgentInputMethod } from '@/platform/telemetry/types'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 
 import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
+import { isReportableSendFault } from './useAgentSession'
 import type { WorkflowReference } from '../../types/workflowReference'
 import type { SelectedNode, useCanvasSelection } from './useCanvasSelection'
 import { selectedNodeKey } from './useCanvasSelection'
@@ -45,6 +48,7 @@ export function useAgentDraftSubmission(
   options: UseAgentDraftSubmissionOptions
 ) {
   const composer = useAgentComposerStore()
+  const toast = useToastStore()
   const { selection } = options
 
   function recoverFailedSubmission(): void {
@@ -123,7 +127,15 @@ export function useAgentDraftSubmission(
         inputMethod
       })
     } catch (error) {
-      reportError(error, { errorType: 'agent_submit_failed' })
+      // The draft is gone by now (startSubmission cleared it) and
+      // takeFailedSubmission only restores it while the revision still
+      // matches, so without a toast the user loses their text to silence.
+      if (isReportableSendFault(error))
+        reportError(error, { errorType: 'agent_submit_failed' })
+      toast.add({
+        severity: 'error',
+        detail: i18n.global.t('agent.sendFailed')
+      })
     }
     composer.settleSubmission(submissionId, sent)
   }

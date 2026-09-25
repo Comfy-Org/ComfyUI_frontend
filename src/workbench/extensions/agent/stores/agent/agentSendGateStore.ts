@@ -2,6 +2,15 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 /**
+ * Shorter than agentRunModeStore's own waiter timeout, so a send that never
+ * settles frees the gate before anything waiting on it gives up: `api.ts`
+ * clears its timer when response HEADERS arrive, so a stalled body is bounded
+ * by nothing at all, and a gate held forever means the run-mode control can
+ * never be used again without a reload.
+ */
+const MAX_HOLD_MS = 60_000
+
+/**
  * Counts the messages currently on their way to the server: held from the send
  * click until the POST that carries the message has settled.
  *
@@ -16,22 +25,29 @@ import { computed, ref } from 'vue'
  * user, so a second tab's write is ordered against its own sends and can
  * still overtake this one's — closing that needs the ordering point to move
  * to the server, which is where the mode is pinned.
- *
- * The ordering is also one-directional: it holds a mode write behind a send,
- * never a send behind a mode write. A message sent in the microtask after a
- * deferred write is released could still reach the server first, which the
- * same server-side ordering point would be needed to close.
  */
 export const useAgentSendGateStore = defineStore('agentSendGate', () => {
   const inFlight = ref(0)
 
-  function begin(): void {
+  /**
+   * Marks one message as on its way and returns ITS release. The release is
+   * single-use, so a caller cannot decrement a hold it does not own, and it
+   * fires on its own after MAX_HOLD_MS, so a send that never settles cannot
+   * strand the gate. Both matter: `isSending` reading false during a live send
+   * silently reopens the ordering hole this store exists to close.
+   */
+  function begin(): () => void {
     inFlight.value += 1
+    let released = false
+    const release = (): void => {
+      if (released) return
+      released = true
+      clearTimeout(backstop)
+      inFlight.value = Math.max(0, inFlight.value - 1)
+    }
+    const backstop = setTimeout(release, MAX_HOLD_MS)
+    return release
   }
 
-  function end(): void {
-    inFlight.value -= 1
-  }
-
-  return { isSending: computed(() => inFlight.value > 0), begin, end }
+  return { isSending: computed(() => inFlight.value > 0), begin }
 })

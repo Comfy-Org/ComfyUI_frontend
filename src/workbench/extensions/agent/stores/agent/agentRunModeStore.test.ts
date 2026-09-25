@@ -286,7 +286,7 @@ describe('agentRunModeStore', () => {
       jsonResponse(200, { mode: 'ask_approval', credit_limit: null })
     )
     const sendGate = useAgentSendGateStore()
-    sendGate.begin()
+    const releaseSend = sendGate.begin()
     const store = useAgentRunModeStore()
 
     const save = store.save('ask_approval', null)
@@ -295,7 +295,7 @@ describe('agentRunModeStore', () => {
     expect(vi.mocked(api.fetchApi)).not.toHaveBeenCalled()
     expect(store.mode).toBe('auto')
 
-    sendGate.end()
+    releaseSend()
     await save
 
     expect(vi.mocked(api.fetchApi)).toHaveBeenCalledWith(
@@ -320,7 +320,7 @@ describe('agentRunModeStore', () => {
       target: createMockLoadedWorkflow({ path: 'workflows/target.json' })
     })
     const sendGate = useAgentSendGateStore()
-    sendGate.begin()
+    const releaseSend = sendGate.begin()
     const store = useAgentRunModeStore()
 
     composer.invalidateSubmission()
@@ -329,35 +329,51 @@ describe('agentRunModeStore', () => {
 
     expect(vi.mocked(api.fetchApi)).not.toHaveBeenCalled()
 
-    sendGate.end()
+    releaseSend()
     await save
 
     expect(vi.mocked(api.fetchApi)).toHaveBeenCalledOnce()
   })
 
-  // A send is only bounded as far as its response headers, so a stalled body
-  // would hold the write forever and leave the popover disabled until a
-  // reload. Failing lets the user retry and writes nothing behind a turn the
-  // server may not have started.
-  it('gives up rather than waiting on a send that never settles', async () => {
+  // A send is only bounded as far as its response HEADERS, so a stalled body
+  // would hold the gate for the page's lifetime. Timing out the waiter alone
+  // only turned "hang forever" into "spin, then fail" on every later save,
+  // leaving the control unusable until a reload; the hold has to end.
+  it('recovers the run-mode control from a send that never settles', async () => {
     vi.useFakeTimers()
     try {
+      vi.mocked(api.fetchApi).mockResolvedValue(
+        jsonResponse(200, { mode: 'ask_approval', credit_limit: null })
+      )
       const sendGate = useAgentSendGateStore()
       sendGate.begin()
       const store = useAgentRunModeStore()
 
-      // Caught on the spot, not asserted at the end: advancing the timers is
-      // what rejects it, and an unhandled rejection in between fails the run.
-      const save = store
-        .save('ask_approval', null)
-        .catch((error: unknown) => error)
-      await vi.advanceTimersByTimeAsync(90_000)
+      const save = store.save('ask_approval', null)
+      await vi.advanceTimersByTimeAsync(60_000)
+      await save
 
-      expect(await save).toBeInstanceOf(Error)
-      expect(vi.mocked(api.fetchApi)).not.toHaveBeenCalled()
+      expect(sendGate.isSending).toBe(false)
+      expect(vi.mocked(api.fetchApi)).toHaveBeenCalledOnce()
+      expect(store.mode).toBe('ask_approval')
     } finally {
       vi.useRealTimers()
     }
+  })
+
+  // The release belongs to one hold: a stray extra call must not drive the
+  // count negative, which would read as "no send in flight" through a live
+  // one and silently reopen the ordering hole.
+  it('ignores a release called more than once', () => {
+    const sendGate = useAgentSendGateStore()
+    const release = sendGate.begin()
+
+    release()
+    release()
+
+    expect(sendGate.isSending).toBe(false)
+    sendGate.begin()
+    expect(sendGate.isSending).toBe(true)
   })
 
   it('saves straight away when no send is in flight', async () => {
