@@ -78,18 +78,10 @@ describe('Models page entry', () => {
     async (slug) => {
       const html = await renderToString(
         createSSRApp({
-          render: () =>
-            h(
-              ModelsPage,
-              { slug },
-              {
-                fallback: () => h('h1', 'Public Models')
-              }
-            )
+          render: () => h(ModelsPage, { slug })
         })
       )
       expect(html).toContain('workshop-loading')
-      expect(html).not.toContain('Public Models')
       expect(html).not.toContain('workshop-search')
       expect(html).not.toContain('model-hero')
       expect(html).not.toContain('model-detail')
@@ -97,35 +89,42 @@ describe('Models page entry', () => {
   )
 
   it.for([
-    { slug: undefined, visible: 'workshop-search' },
-    { slug: modelSlug, visible: 'model-hero' }
-  ])('mounts $visible only after enablement', async ({ slug, visible }) => {
-    const fetchData = vi
-      .fn<typeof fetch>()
-      .mockResolvedValue(Response.json(slug ? modelPage : workshopModels))
-    vi.stubGlobal('fetch', fetchData)
-    render(ModelsPage, {
-      props: { slug },
-      slots: { fallback: '<h1>Public Models</h1>' }
-    })
-    expect(screen.queryByTestId(visible)).toBeNull()
-    expect(fetchData).not.toHaveBeenCalled()
-    enabled.value = true
-    expect(await screen.findByTestId(visible)).toBeTruthy()
-    expect(screen.queryByRole('heading', { name: 'Public Models' })).toBeNull()
-    if (slug) {
-      expect(screen.getByTestId('model-detail')).toBeTruthy()
-      expect(screen.getByTestId('related-models').textContent).toContain(
-        'Browse all'
-      )
-      expect(
-        within(screen.getByTestId('model-hero')).getByRole('link', {
-          name: 'Generate images'
-        })
-      ).toHaveAttribute('href', '/models?useCase=generate-images')
+    { slug: undefined, visible: 'workshop-search', flag: 'off' },
+    { slug: modelSlug, visible: 'model-hero', flag: 'off' },
+    { slug: undefined, visible: 'workshop-search', flag: 'unanswered' },
+    { slug: modelSlug, visible: 'model-hero', flag: 'unanswered' },
+    { slug: modelSlug, visible: 'model-hero', flag: 'on' }
+  ] as const)(
+    'shows $visible when the flag is $flag',
+    async ({ slug, visible, flag }) => {
+      const fetchData = vi
+        .fn<typeof fetch>()
+        .mockResolvedValue(Response.json(slug ? modelPage : workshopModels))
+      vi.stubGlobal('fetch', fetchData)
+      enabled.value = flag === 'on'
+      settled.value = flag !== 'unanswered'
+      render(ModelsPage, { props: { slug } })
+      expect(await screen.findByTestId(visible)).toBeTruthy()
+      if (slug) {
+        expect(
+          screen.getByRole('heading', {
+            level: 1,
+            name: 'FLUX 2 Max Text-to-Image'
+          })
+        ).toBeTruthy()
+        expect(screen.getByTestId('model-detail')).toBeTruthy()
+        expect(screen.getByTestId('related-models').textContent).toContain(
+          'Browse all'
+        )
+        expect(
+          within(screen.getByTestId('model-hero')).getByRole('link', {
+            name: 'Generate images'
+          })
+        ).toHaveAttribute('href', '/models?useCase=generate-images')
+      }
+      enabled.value = !enabled.value
+      await nextTick()
+      expect(screen.getByTestId(visible)).toBeVisible()
     }
-    enabled.value = false
-    await nextTick()
-    expect(screen.getByRole('heading', { name: 'Public Models' })).toBeTruthy()
-  })
+  )
 })

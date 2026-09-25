@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useMounted } from '@vueuse/core'
 import { defineAsyncComponent, h, shallowRef, watch } from 'vue'
 import type { FunctionalComponent } from 'vue'
 
@@ -16,6 +17,8 @@ const { slug, workflowId } = defineProps<{
 }>()
 
 const loadingLabel = t('workshop.load.pending', 'en')
+const isWorkflow = slug?.startsWith('workflows/') ?? false
+const mounted = useMounted()
 const workflowsEnabled = useWorkshopWorkflowsEnabled()
 const recoveringWorkflow = shallowRef(false)
 const savedWorkflow = shallowRef(false)
@@ -142,8 +145,9 @@ const Content = shallowRef(createContent())
 
 <template>
   <WorkshopGate
-    :keep-mounted="Boolean(slug)"
-    :allowed="!slug?.startsWith('workflows/') || workflowsEnabled"
+    v-if="isWorkflow"
+    keep-mounted
+    :allowed="workflowsEnabled"
     :retain-granted="recoveringWorkflow"
     :allow-recovery="savedWorkflow"
   >
@@ -155,4 +159,6 @@ const Content = shallowRef(createContent())
       <slot name="fallback" />
     </template>
   </WorkshopGate>
+  <component :is="Content" v-else-if="mounted" />
+  <WorkshopLoading v-else :label="loadingLabel" />
 </template>

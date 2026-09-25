@@ -10198,6 +10198,15 @@ Enterprise`
   'workshop.dialogue.voice': { en: 'Voice ID', 'zh-CN': '音色 ID' },
   'workshop.dialogue.add': { en: 'Add turn', 'zh-CN': '添加一段' },
   'workshop.dialogue.remove': { en: 'Remove turn', 'zh-CN': '移除此段' },
+  'workshop.run.rollingOut': {
+    en: 'Running in the browser is rolling out. Call this model through the API or run it in ComfyUI.',
+    'zh-CN':
+      '浏览器内运行正在逐步开放。你可以通过 API 调用此模型，或在 ComfyUI 中运行。'
+  },
+  'workshop.run.rollingOutApi': {
+    en: 'See the API',
+    'zh-CN': '查看 API'
+  },
   'workshop.run.mappingUnavailable': {
     en: 'This model cannot be run from the browser yet.',
     'zh-CN': '此模型尚未启用 Comfy Router 执行。'
