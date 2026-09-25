@@ -2813,6 +2813,7 @@
     "subscriptionSuccess": "Subscription updated successfully",
     "subscriptionFailed": "Subscription update failed",
     "subscriptionFailedDetail": "We couldn't update your subscription. Please try again.",
+    "operationAlreadyPendingDetail": "A payment you started earlier is still going through. It has to finish before you can choose a different plan.",
     "subscriptionTimeout": "Subscription verification timed out",
     "topupProcessing": "Processing payment — adding credits...",
     "topupActionRequired": "Verify your payment to add your credits",
