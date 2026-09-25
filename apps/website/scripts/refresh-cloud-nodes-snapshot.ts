@@ -1,12 +1,11 @@
-import { renameSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 import { fetchCloudNodesForBuild } from '../src/utils/cloudNodes'
+import { writeSnapshotIfChanged } from './snapshot-writer'
 
 const snapshotPath = fileURLToPath(
   new URL('../src/data/cloud-nodes.snapshot.json', import.meta.url)
 )
-const tempPath = `${snapshotPath}.tmp`
 
 const outcome = await fetchCloudNodesForBuild()
 
@@ -18,15 +17,14 @@ if (outcome.status !== 'fresh') {
   process.exit(1)
 }
 
-const serialized = JSON.stringify(outcome.snapshot, null, 2) + '\n'
-
-writeFileSync(tempPath, serialized, 'utf8')
-renameSync(tempPath, snapshotPath)
-
+const wrote = writeSnapshotIfChanged(snapshotPath, outcome.snapshot)
 const totalNodes = outcome.snapshot.packs.reduce(
   (n, pack) => n + pack.nodes.length,
   0
 )
+const counts = `${outcome.snapshot.packs.length} pack(s) and ${totalNodes} node(s)`
 process.stdout.write(
-  `Wrote snapshot with ${outcome.snapshot.packs.length} pack(s) and ${totalNodes} node(s) to ${snapshotPath}\n`
+  wrote
+    ? `Wrote snapshot with ${counts} to ${snapshotPath}\n`
+    : `No node changes; left ${snapshotPath} unchanged (${counts}).\n`
 )

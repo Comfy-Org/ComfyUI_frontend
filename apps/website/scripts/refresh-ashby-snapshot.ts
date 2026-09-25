@@ -1,12 +1,11 @@
-import { renameSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 import { fetchRolesForBuild } from '../src/utils/ashby'
+import { writeSnapshotIfChanged } from './snapshot-writer'
 
 const snapshotPath = fileURLToPath(
   new URL('../src/data/ashby-roles.snapshot.json', import.meta.url)
 )
-const tempPath = `${snapshotPath}.tmp`
 
 const outcome = await fetchRolesForBuild()
 
@@ -18,16 +17,13 @@ if (outcome.status !== 'fresh') {
   process.exit(1)
 }
 
-writeFileSync(
-  tempPath,
-  JSON.stringify(outcome.snapshot, null, 2) + '\n',
-  'utf8'
-)
-renameSync(tempPath, snapshotPath)
+const wrote = writeSnapshotIfChanged(snapshotPath, outcome.snapshot)
 const totalRoles = outcome.snapshot.departments.reduce(
   (n, d) => n + d.roles.length,
   0
 )
 process.stdout.write(
-  `Wrote snapshot with ${totalRoles} role(s) to ${snapshotPath}\n`
+  wrote
+    ? `Wrote snapshot with ${totalRoles} role(s) to ${snapshotPath}\n`
+    : `No role changes; left ${snapshotPath} unchanged (${totalRoles} role(s)).\n`
 )

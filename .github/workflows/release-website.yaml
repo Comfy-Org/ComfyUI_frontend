@@ -1,14 +1,33 @@
-# Description: Manual workflow to refresh the apps/website Ashby roles and
-# cloud nodes snapshots and open a PR. Merging the PR triggers the existing
-# Vercel website production deploy via ci-vercel-website-preview.yaml.
+# Description: Refreshes the apps/website Ashby roles and cloud nodes
+# snapshots and opens a PR. Merging the PR triggers the existing Vercel
+# website production deploy via ci-vercel-website-preview.yaml.
+#
+# The `ashby-webhook` dispatch source is the Comfy-Org/comfy-router Worker
+# serving comfy.org/api/webhooks/ashby, which calls this workflow's dispatch
+# endpoint when Ashby reports a job posting change.
 name: 'Release: Website'
 
 on:
   workflow_dispatch:
+    inputs:
+      source:
+        description: 'What triggered this run'
+        required: false
+        default: manual
+        type: choice
+        options:
+          - manual
+          - ashby-webhook
+  schedule:
+    # 05:37 and 17:37 UTC — evening and mid-morning Pacific.
+    - cron: '37 5,17 * * *'
 
 concurrency:
   group: release-website
-  cancel-in-progress: true
+  # GitHub keeps at most one running and one pending run per group, so a burst
+  # of Ashby events collapses into a single follow-up run. Cancelling instead
+  # would risk killing a run between pushing the branch and opening the PR.
+  cancel-in-progress: false
 
 jobs:
   refresh-snapshots:
@@ -19,6 +38,13 @@ jobs:
       pull-requests: write
 
     steps:
+      # One posting edit in Ashby emits several events, and the job board API
+      # it publishes to lags the event slightly. Waiting lets the burst land in
+      # this run's pending slot rather than queueing runs behind each other.
+      - name: Let an Ashby burst settle
+        if: inputs.source == 'ashby-webhook'
+        run: sleep 60
+
       - name: Checkout repository
         uses: actions/checkout@v7
         with:
@@ -51,11 +77,18 @@ jobs:
             - `apps/website/src/data/cloud-nodes.snapshot.json` — Comfy Cloud
               `/api/object_info`
 
+            **Merging this PR is what puts the change on comfy.org** — the
+            careers page is rendered from Ashby at build time, so the site does
+            not update until a production deploy runs.
+
             **Flow:**
-            1. `Release: Website` workflow ran (manual trigger).
+            1. `Release: Website` ran (`${{ github.event_name }}`${{ inputs.source && format(', source `{0}`', inputs.source) || '' }}).
             2. This PR opens with the regenerated snapshots.
             3. `CI: Vercel Website Preview` deploys a preview for review.
             4. Merging to `main` triggers the production Vercel deploy.
+
+            This PR only exists because a snapshot actually changed; runs that
+            find no role or node change write nothing and open nothing.
 
             The snapshot fallback in `apps/website/src/utils/ashby.ts` and
             `apps/website/src/utils/cloudNodes.ts` remains intact: builds
@@ -63,7 +96,7 @@ jobs:
             snapshot (with a warning annotation in CI).
 
             Triggered by workflow run `${{ github.run_id }}`.
-          branch: chore/refresh-website-snapshots-${{ github.run_id }}
+          branch: chore/refresh-website-snapshots
           base: main
           labels: |
             Release:Website

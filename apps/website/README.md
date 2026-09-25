@@ -128,6 +128,30 @@ receives an empty `VERCEL_TOKEN` for forks and fails at `vercel pull`
 before the build runs. Fork-safe PR interactions (the preview-URL
 comment) are handled by `pr-vercel-website-preview.yaml`.
 
+### Keeping the careers page current
+
+A role edited in Ashby does **not** appear on comfy.org until a production
+deploy runs, because the page is rendered at build time. The `Release: Website`
+workflow is what produces that deploy: it refreshes both snapshots and opens a
+PR, and merging the PR triggers the Vercel production build.
+
+It runs on three triggers:
+
+| Trigger             | When                                              |
+| ------------------- | ------------------------------------------------- |
+| `schedule`          | 05:37 and 17:37 UTC                               |
+| `workflow_dispatch` | A maintainer clicks **Run workflow**              |
+| `workflow_dispatch` | The Ashby webhook fires (`source: ashby-webhook`) |
+
+The webhook receiver lives in [`Comfy-Org/comfy-router`](https://github.com/Comfy-Org/comfy-router)
+(`src/ashby-webhook.js`), which serves `https://comfy.org/api/webhooks/ashby`.
+Ashby cannot call GitHub directly — it sends no custom headers — so the Worker
+verifies Ashby's signature and calls this workflow's dispatch endpoint. See that
+repo's `docs/ashby-webhook.md` for setup and key rotation.
+
+A run only opens a PR when a role or node actually changed; see
+"Refreshing the snapshot" below.
+
 ### Refreshing the snapshot
 
 When a maintainer wants to update the committed snapshot (e.g. after
@@ -141,6 +165,10 @@ git commit apps/website/src/data/ashby-roles.snapshot.json
 
 The script exits non-zero on any non-fresh outcome so stale/empty
 snapshots can't be accidentally committed.
+
+Each refresh stamps a fresh `fetchedAt`, so `scripts/snapshot-writer.ts` leaves
+the file untouched when that timestamp is the only thing that moved. Without
+that, every scheduled run would open a PR whose whole diff is a timestamp.
 
 ## Cloud nodes integration
 
