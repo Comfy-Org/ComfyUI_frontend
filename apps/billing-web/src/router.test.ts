@@ -36,6 +36,47 @@ async function arriveAt(path: string): Promise<Router> {
   return router
 }
 
+describe('entry workspace binding', () => {
+  it('binds the workspace an entry link names', async () => {
+    const onEntryWorkspace = vi.fn()
+    const router = createBillingRouter(
+      createMemoryHistory(),
+      () => 'authenticated',
+      onEntryWorkspace
+    )
+
+    await router.push(`/v1/subscription?${ENTRY_QUERY}&workspace=ws-team`)
+
+    expect(onEntryWorkspace).toHaveBeenCalledExactlyOnceWith('ws-team')
+  })
+
+  it('does not bind when the link names no workspace', async () => {
+    const onEntryWorkspace = vi.fn()
+    const router = createBillingRouter(
+      createMemoryHistory(),
+      () => 'authenticated',
+      onEntryWorkspace
+    )
+
+    await router.push(`/v1/subscription?${ENTRY_QUERY}`)
+
+    expect(onEntryWorkspace).not.toHaveBeenCalled()
+  })
+
+  it('does not bind on a link the contract rejects', async () => {
+    const onEntryWorkspace = vi.fn()
+    const router = createBillingRouter(
+      createMemoryHistory(),
+      () => 'authenticated',
+      onEntryWorkspace
+    )
+
+    await router.push(`/v1/subscription?${ENTRY_QUERY}&workspace=ws/1`)
+
+    expect(onEntryWorkspace).not.toHaveBeenCalled()
+  })
+})
+
 describe('the billing route guard', () => {
   it.for(['pending', 'signed-out', 'minting', 'error'] as const)(
     'sends a %s visitor to sign-in with the path to come back to',
@@ -168,7 +209,7 @@ describe('hosted billing entry routing', () => {
     },
     {
       code: 'INVALID_WORKSPACE_ID',
-      path: `/v1/subscription?${ENTRY_QUERY}&workspace_id=ws/1`,
+      path: `/v1/subscription?${ENTRY_QUERY}&workspace=ws/1`,
       message: "That link names a workspace we can't read."
     }
   ])('explains $code in our own words', async ({ path, message }) => {

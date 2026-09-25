@@ -2,12 +2,17 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { TelemetryRegistry } from './TelemetryRegistry'
 import type {
+  AgentConsentResolvedMetadata,
+  AgentConsentShownMetadata,
   AgentEntryButtonClickedMetadata,
   AgentMessageFeedbackMetadata,
   AgentMessageSentMetadata,
   AgentNodeTaggedMetadata,
+  AgentOnboardingStepMetadata,
   AgentPanelClosedMetadata,
   AgentPanelOpenedMetadata,
+  AgentPaywallCtaMetadata,
+  AgentPaywallShownMetadata,
   AgentWorkflowAppliedMetadata,
   BillingTelemetryEvent,
   CheckoutJourneyTelemetryEvent,
@@ -273,6 +278,7 @@ describe('TelemetryRegistry', () => {
   describe('agent telemetry dispatch', () => {
     const feedbackMetadata = {
       message_id: 'm1',
+      turn_id: 'm1',
       vote: 'up',
       workflow_id: null
     } satisfies AgentMessageFeedbackMetadata
@@ -288,8 +294,22 @@ describe('TelemetryRegistry', () => {
     } satisfies AgentEntryButtonClickedMetadata
     const messageSentMetadata = {
       attachment_count: 1,
-      node_tag_count: 2
+      node_tag_count: 2,
+      thread_id: 'th-1',
+      workflow_id: 'w1',
+      client_message_id: 'cm-1',
+      input_method: 'typed'
     } satisfies AgentMessageSentMetadata
+    const consentShownMetadata = {
+      trigger: 'button_click'
+    } satisfies AgentConsentShownMetadata
+    const consentResolvedMetadata = {
+      decision: 'accepted'
+    } satisfies AgentConsentResolvedMetadata
+    const onboardingStepMetadata = {
+      step: 2,
+      action: 'next'
+    } satisfies AgentOnboardingStepMetadata
     const nodeTaggedMetadata = {
       source: 'mention_picker'
     } satisfies AgentNodeTaggedMetadata
@@ -297,6 +317,12 @@ describe('TelemetryRegistry', () => {
       workflow_id: 'w1',
       target: 'active_tab_open'
     } satisfies AgentWorkflowAppliedMetadata
+    const paywallShownMetadata = {
+      reason: 'subscription_inactive'
+    } satisfies AgentPaywallShownMetadata
+    const paywallCtaMetadata = {
+      cta: 'add_credits'
+    } satisfies AgentPaywallCtaMetadata
 
     const cases: Array<{
       method: keyof TelemetryProvider & `trackAgent${string}`
@@ -339,20 +365,127 @@ describe('TelemetryRegistry', () => {
           registry.trackAgentMessageSent(messageSentMetadata)
       },
       {
+        method: 'trackAgentConsentShown',
+        expected: { ...consentShownMetadata },
+        invoke: (registry) =>
+          registry.trackAgentConsentShown(consentShownMetadata)
+      },
+      {
+        method: 'trackAgentConsentResolved',
+        expected: { ...consentResolvedMetadata },
+        invoke: (registry) =>
+          registry.trackAgentConsentResolved(consentResolvedMetadata)
+      },
+      {
+        method: 'trackAgentOnboardingShown',
+        expected: undefined,
+        invoke: (registry) => registry.trackAgentOnboardingShown()
+      },
+      {
+        method: 'trackAgentOnboardingStep',
+        expected: { ...onboardingStepMetadata },
+        invoke: (registry) =>
+          registry.trackAgentOnboardingStep(onboardingStepMetadata)
+      },
+      {
         method: 'trackAgentNodeTagged',
         expected: { ...nodeTaggedMetadata },
         invoke: (registry) => registry.trackAgentNodeTagged(nodeTaggedMetadata)
       },
       {
         method: 'trackAgentAttachButtonClicked',
-        expected: undefined,
-        invoke: (registry) => registry.trackAgentAttachButtonClicked()
+        expected: { method: 'menu' },
+        invoke: (registry) =>
+          registry.trackAgentAttachButtonClicked({ method: 'menu' })
       },
       {
         method: 'trackAgentWorkflowApplied',
         expected: { ...workflowAppliedMetadata },
         invoke: (registry) =>
           registry.trackAgentWorkflowApplied(workflowAppliedMetadata)
+      },
+      {
+        method: 'trackAgentStopClicked',
+        expected: { method: 'escape', turn_id: 't1', turn_elapsed_ms: 42 },
+        invoke: (registry) =>
+          registry.trackAgentStopClicked({
+            method: 'escape',
+            turn_id: 't1',
+            turn_elapsed_ms: 42
+          })
+      },
+      {
+        method: 'trackAgentWorkflowBound',
+        expected: {
+          thread_id: 'th1',
+          workflow_id: 'w1',
+          prev_workflow_id: null,
+          bind_source: 'minted'
+        },
+        invoke: (registry) =>
+          registry.trackAgentWorkflowBound({
+            thread_id: 'th1',
+            workflow_id: 'w1',
+            prev_workflow_id: null,
+            bind_source: 'minted'
+          })
+      },
+      {
+        method: 'trackAgentRunApprovalShown',
+        expected: { turn_id: 't1', workflow_id: 'w1' },
+        invoke: (registry) =>
+          registry.trackAgentRunApprovalShown({
+            turn_id: 't1',
+            workflow_id: 'w1'
+          })
+      },
+      {
+        method: 'trackAgentRunApprovalResolved',
+        expected: { decision: 'run', time_to_decide_ms: 120 },
+        invoke: (registry) =>
+          registry.trackAgentRunApprovalResolved({
+            decision: 'run',
+            time_to_decide_ms: 120
+          })
+      },
+      {
+        method: 'trackAgentRunModeChanged',
+        expected: { from: 'ask_approval', to: 'auto' },
+        invoke: (registry) =>
+          registry.trackAgentRunModeChanged({
+            from: 'ask_approval',
+            to: 'auto'
+          })
+      },
+      {
+        method: 'trackAgentThreadStarted',
+        expected: { source: 'history_select' },
+        invoke: (registry) =>
+          registry.trackAgentThreadStarted({ source: 'history_select' })
+      },
+      {
+        method: 'trackAgentConsentNotOffered',
+        expected: { reason: 'first_run_screen' },
+        invoke: (registry) =>
+          registry.trackAgentConsentNotOffered({ reason: 'first_run_screen' })
+      },
+      {
+        method: 'trackAgentOnboardingNotShown',
+        expected: { reason: 'app_mode' },
+        invoke: (registry) =>
+          registry.trackAgentOnboardingNotShown({ reason: 'app_mode' })
+      },
+      {
+        method: 'trackAgentPaywallShown',
+        expected: { ...paywallShownMetadata },
+        invoke: (registry) =>
+          registry.trackAgentPaywallShown(paywallShownMetadata)
+      },
+      {
+        method: 'trackAgentPaywallCtaClicked',
+        expected: { ...paywallCtaMetadata },
+        invoke: (registry) =>
+          registry.trackAgentPaywallCtaClicked(paywallCtaMetadata)
       }
     ]
 

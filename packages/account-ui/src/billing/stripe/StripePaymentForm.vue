@@ -12,7 +12,7 @@
     </div>
     <div
       v-if="configurationError"
-      class="border-danger-background bg-danger-background/10 text-danger rounded-lg border px-3 py-2 text-sm"
+      class="rounded-lg border border-destructive-background bg-destructive-background/10 px-3 py-2 text-sm text-destructive-background"
     >
       {{ configurationError }}
     </div>
@@ -234,6 +234,9 @@ onMounted(async () => {
     failElementInit()
     return
   }
+  const themeRoot = paymentElementTarget.value
+  const resolveThemeColor = (variable: string) =>
+    resolveColorIn(themeRoot, variable)
 
   stripeElements.value = stripe.elements({
     mode: 'subscription',
@@ -257,7 +260,7 @@ onMounted(async () => {
         // Same token as the pricing table's "Save 20%" pill, so all
         // deal/discount badges share one accent.
         colorSuccess: resolveThemeColor('--primary-background'),
-        fontFamily: getComputedStyle(document.body).fontFamily,
+        fontFamily: getComputedStyle(themeRoot).fontFamily,
         borderRadius: '10px',
         spacingUnit: '5px'
       },
@@ -363,10 +366,10 @@ async function submit() {
   }
 }
 
-function resolveThemeColor(variable: string) {
+function resolveColorIn(themeRoot: HTMLElement, variable: string) {
   const probe = document.createElement('span')
   probe.style.color = `var(${variable})`
-  document.body.append(probe)
+  themeRoot.append(probe)
   const color = getComputedStyle(probe).color
   probe.remove()
   return color

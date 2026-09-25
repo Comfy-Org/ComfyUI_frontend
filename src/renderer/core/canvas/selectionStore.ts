@@ -1,6 +1,6 @@
 import { isEqual } from 'es-toolkit'
 import { defineStore } from 'pinia'
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
 
 import type {
   SelectableKey,
@@ -16,37 +16,73 @@ export const useSelectionStore = defineStore('selection', () => {
   const roots = reactive(
     new Map<RootGraphId, Map<OwningGraphId, Set<SelectableKey>>>()
   )
+  const revision = ref(0)
 
-  function apply(scope: GraphScope, command: SelectionCommand): void {
+  function setSelection(
+    scope: GraphScope,
+    selection: Set<SelectableKey>
+  ): void {
     const owners = roots.get(scope.rootGraphId)
-    const current = owners?.get(scope.owningGraphId)
-    let next: Set<SelectableKey>
+    if (owners) owners.set(scope.owningGraphId, selection)
+    else
+      roots.set(scope.rootGraphId, new Map([[scope.owningGraphId, selection]]))
+  }
+
+  function addSelection(
+    scope: GraphScope,
+    current: Set<SelectableKey> | undefined,
+    key: SelectableKey
+  ): boolean {
+    if (current) {
+      const size = current.size
+      current.add(key)
+      return current.size !== size
+    }
+    setSelection(scope, new Set([key]))
+    return true
+  }
+
+  function clearSelection(current: Set<SelectableKey> | undefined): boolean {
+    if (!current?.size) return false
+    current.clear()
+    return true
+  }
+
+  function replaceSelection(
+    scope: GraphScope,
+    current: Set<SelectableKey> | undefined,
+    keys: readonly SelectableKey[]
+  ): boolean {
+    const next = new Set(keys)
+    if (isEqual([...(current ?? [])], [...next])) return false
+    setSelection(scope, next)
+    return true
+  }
+
+  function applyCommand(scope: GraphScope, command: SelectionCommand): boolean {
+    const current = roots.get(scope.rootGraphId)?.get(scope.owningGraphId)
     switch (command.type) {
       case 'selection.add':
-        if (current) {
-          current.add(command.key)
-          return
-        }
-        next = new Set([command.key])
-        break
+        return addSelection(scope, current, command.key)
       case 'selection.remove':
-        current?.delete(command.key)
-        return
+        return current?.delete(command.key) ?? false
       case 'selection.clear':
-        current?.clear()
-        return
+        return clearSelection(current)
       case 'selection.replace':
-        next = new Set(command.keys)
-        if (isEqual([...(current ?? [])], [...next])) return
-        break
+        return replaceSelection(scope, current, command.keys)
     }
+  }
 
-    if (owners) owners.set(scope.owningGraphId, next)
-    else roots.set(scope.rootGraphId, new Map([[scope.owningGraphId, next]]))
+  function apply(scope: GraphScope, command: SelectionCommand): void {
+    if (applyCommand(scope, command)) revision.value++
   }
 
   function clearRoot(rootGraphId: RootGraphId): void {
-    roots.delete(rootGraphId)
+    if (roots.delete(rootGraphId)) revision.value++
+  }
+
+  function getRevision(): number {
+    return revision.value
   }
 
   function selectedKeys(scope: GraphScope): readonly SelectableKey[] {
@@ -59,5 +95,5 @@ export const useSelectionStore = defineStore('selection', () => {
     )
   }
 
-  return { apply, clearRoot, selectedKeys, isSelected }
+  return { apply, clearRoot, getRevision, selectedKeys, isSelected }
 })

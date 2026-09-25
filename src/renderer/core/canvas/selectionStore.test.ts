@@ -106,6 +106,9 @@ describe('useSelectionStore', () => {
     const once = keys.value
     store.apply(rootScope, command)
     expect(keys.value).toBe(once)
+    const revision = store.getRevision()
+    store.apply(rootScope, command)
+    expect(store.getRevision()).toBe(revision)
   })
 
   it('keeps each graph scope independent', () => {

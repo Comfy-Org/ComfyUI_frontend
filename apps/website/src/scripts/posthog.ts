@@ -36,6 +36,7 @@ const ANALYTICS_EVENT = {
   cliClientTabClicked: 'website:cli_client_tab_clicked',
   mcpConnectionTabClicked: 'website:mcp_connection_tab_clicked',
   mcpClientTabClicked: 'website:mcp_client_tab_clicked',
+  routerRoadmapCardExpanded: 'website:router_roadmap_card_expanded',
   // Shared with the cloud app so one PostHog funnel covers auth outcomes
   // across every surface.
   authRefreshSucceeded: SESSION_TELEMETRY_EVENT.refreshSucceeded,
@@ -55,6 +56,8 @@ export type CliClientId =
   | 'hermes'
   | 'terminal'
   | 'ci'
+
+export type RouterRoadmapCardId = 'workflow' | 'strategy' | 'use-case' | 'byok'
 
 type AnalyticsEvent =
   | {
@@ -81,6 +84,10 @@ type AnalyticsEvent =
       properties: { client: McpClientId }
     }
   | {
+      name: typeof ANALYTICS_EVENT.routerRoadmapCardExpanded
+      properties: { card: RouterRoadmapCardId }
+    }
+  | {
       name:
         | typeof ANALYTICS_EVENT.authRefreshSucceeded
         | typeof ANALYTICS_EVENT.authRefreshFailed
@@ -104,11 +111,16 @@ let initialized = false
 
 const WORKSHOP_AUTH_FLAG = 'workshop-auth'
 const WORKSHOP_ENABLED_FLAG = 'workshop-enabled'
+const WORKSHOP_WORKFLOWS_FLAG = 'workshop-workflows-enabled'
 const WORKSHOP_TURNSTILE_FLAG = 'workshop-signup-turnstile'
 
 const VISIBILITY_OVERRIDE =
   WORKSHOP_LOCAL_DEV && import.meta.env.PUBLIC_WORKSHOP_ENABLED === '1'
 const workshopEnabled = ref(VISIBILITY_OVERRIDE)
+const WORKFLOWS_OVERRIDE =
+  WORKSHOP_LOCAL_DEV &&
+  import.meta.env.PUBLIC_WORKSHOP_WORKFLOWS_ENABLED === '1'
+const workshopWorkflowsEnabled = ref(WORKFLOWS_OVERRIDE)
 // Default to the resolved public experience. The gate only leaves it once
 // `awaitFlagAnswer()` starts a real flag fetch (and arms the timeout), so an
 // environment that never initializes PostHog — local dev, no key, SSR — shows
@@ -137,6 +149,10 @@ function awaitFlagAnswer(): void {
 
 export function useWorkshopEnabled(): Readonly<Ref<boolean>> {
   return readonly(workshopEnabled)
+}
+
+export function useWorkshopWorkflowsEnabled(): Readonly<Ref<boolean>> {
+  return readonly(workshopWorkflowsEnabled)
 }
 
 export function useWorkshopEnabledSettled(): Readonly<Ref<boolean>> {
@@ -171,6 +187,7 @@ function refreshFlagForSameIdentity(user: WorkshopIdentity | null): void {
     posthog.isFeatureEnabled(WORKSHOP_ENABLED_FLAG, { send_event: false })
   if (cachedAnswer !== undefined) return
   workshopEnabled.value = VISIBILITY_OVERRIDE
+  workshopWorkflowsEnabled.value = WORKFLOWS_OVERRIDE
   awaitFlagAnswer()
   posthog.reloadFeatureFlags()
 }
@@ -181,6 +198,7 @@ function adoptNewIdentity(
   waitForIdentityAnswer: boolean
 ): void {
   workshopEnabled.value = VISIBILITY_OVERRIDE
+  workshopWorkflowsEnabled.value = WORKFLOWS_OVERRIDE
   if (waitForIdentityAnswer) awaitFlagAnswer()
   else markFlagResolved()
   if (persistedUid) posthog.reset()
@@ -205,6 +223,7 @@ export function identifyWorkshopUser(user: WorkshopIdentity | null): void {
   } catch (error) {
     workshopUser = previous
     workshopEnabled.value = VISIBILITY_OVERRIDE
+    workshopWorkflowsEnabled.value = WORKFLOWS_OVERRIDE
     markFlagResolved()
     console.error('PostHog identity failed', error)
   }
@@ -256,6 +275,11 @@ export function initPostHog() {
       (!expectedUid && !persistedUid)
     if (persistedAnswer !== undefined && persistedIdentityMatches) {
       workshopEnabled.value = VISIBILITY_OVERRIDE || persistedAnswer
+      workshopWorkflowsEnabled.value =
+        WORKFLOWS_OVERRIDE ||
+        posthog.isFeatureEnabled(WORKSHOP_WORKFLOWS_FLAG, {
+          send_event: false
+        }) === true
       markFlagResolved()
     }
     posthog.onFeatureFlags((_flags, _variants, context) => {
@@ -266,6 +290,9 @@ export function initPostHog() {
       workshopEnabled.value =
         VISIBILITY_OVERRIDE ||
         posthog.isFeatureEnabled(WORKSHOP_ENABLED_FLAG) === true
+      workshopWorkflowsEnabled.value =
+        WORKFLOWS_OVERRIDE ||
+        posthog.isFeatureEnabled(WORKSHOP_WORKFLOWS_FLAG) === true
       markFlagResolved()
       if (!OVERRIDDEN_ON) {
         workshopAuthEnabled.value =
@@ -342,6 +369,15 @@ export function captureMcpClientTabClick(client: McpClientId): void {
   captureEvent({
     name: ANALYTICS_EVENT.mcpClientTabClicked,
     properties: { client }
+  })
+}
+
+export function captureRouterRoadmapCardExpanded(
+  card: RouterRoadmapCardId
+): void {
+  captureEvent({
+    name: ANALYTICS_EVENT.routerRoadmapCardExpanded,
+    properties: { card }
   })
 }
 
