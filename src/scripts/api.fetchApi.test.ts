@@ -1,14 +1,51 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type * as firebaseAuth from 'firebase/auth'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import * as vuefire from 'vuefire'
 
-const { addBreadcrumb, trackFetchTimeout } = vi.hoisted(() => ({
-  addBreadcrumb: vi.fn(),
-  trackFetchTimeout: vi.fn()
-}))
+import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
+import { useAuthStore } from '@/stores/authStore'
+
+const { addBreadcrumb, trackFetchTimeout, trackUnifiedAuthRetry } = vi.hoisted(
+  () => ({
+    addBreadcrumb: vi.fn(),
+    trackFetchTimeout: vi.fn(),
+    trackUnifiedAuthRetry: vi.fn()
+  })
+)
 
 vi.mock('@sentry/vue', () => ({ addBreadcrumb }))
 
 vi.mock('@/platform/telemetry', () => ({
-  useTelemetry: () => ({ trackFetchTimeout })
+  useTelemetry: () => ({ trackFetchTimeout, trackUnifiedAuthRetry })
+}))
+
+// Only the unified-remint regression suite below flips this to `true`; every
+// other test in this file runs the (unaffected) non-cloud path.
+const mockDistribution = vi.hoisted(() => ({ isCloud: false }))
+vi.mock('@/platform/distribution/types', () => mockDistribution)
+
+// authStore/workspaceAuthStore are real Pinia stores (global testing Pinia
+// from vitest.setup.ts); their actions are stubbed per-test below via
+// vi.mocked(store.action), not by mocking the store modules themselves.
+// useAuthStore's setup body reaches real Firebase via vuefire's
+// useFirebaseAuth() and firebase/auth's listeners, so both are stubbed here
+// (mirroring authStore.test.ts) purely to keep store construction inert.
+vi.mock('vuefire', () => ({ useFirebaseAuth: vi.fn() }))
+vi.mock('firebase/auth', async (importOriginal) => {
+  const actual = await importOriginal<typeof firebaseAuth>()
+  return {
+    ...actual,
+    onAuthStateChanged: vi.fn(),
+    onIdTokenChanged: vi.fn(),
+    setPersistence: vi.fn().mockResolvedValue(undefined)
+  }
+})
+
+const mockFeatureFlags = vi.hoisted(() => ({
+  flags: { unifiedCloudAuthEnabled: true }
+}))
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => mockFeatureFlags
 }))
 
 import { api } from '@/scripts/api'
@@ -327,6 +364,75 @@ describe('api.fetchApi', () => {
       await expect(api.fetchApi('/test')).rejects.toThrow('Network error')
 
       expect(vi.getTimerCount()).toBe(0)
+    })
+  })
+
+  // Regression coverage for the unified-remint retry inheriting a shrunk
+  // deadline (Sentry CLOUD-FRONTEND-STAGING-4MF): the post-401 retry used to
+  // reuse the original 60s AbortSignal, so a slow re-mint round trip could
+  // leave it only a few seconds before the retry itself finished. Before the
+  // fix, this test's retry would be aborted with a TimeoutError at t=60s;
+  // after the fix it gets a fresh 60s budget starting when the retry begins.
+  describe('post-401 retry timeout budget', () => {
+    beforeEach(() => {
+      vi.useFakeTimers()
+      mockDistribution.isCloud = true
+      // Real Pinia stores (global testing Pinia from vitest.setup.ts): vuefire
+      // and firebase/auth are stubbed (module-level, above) so constructing
+      // them never reaches real Firebase, and their actions stay real
+      // functions (auto-spied by @pinia/testing) we override below.
+      vi.mocked(vuefire.useFirebaseAuth).mockReturnValue(
+        {} as ReturnType<typeof vuefire.useFirebaseAuth>
+      )
+      useAuthStore().isInitialized = true
+      vi.mocked(useAuthStore().getAuthHeader).mockResolvedValue({
+        Authorization: 'Bearer tokenA'
+      })
+    })
+
+    afterEach(() => {
+      mockDistribution.isCloud = false
+    })
+
+    it('ends the initial timeout before re-minting and gives the retry a fresh window', async () => {
+      vi.mocked(useWorkspaceAuthStore().remintUnifiedOnce).mockImplementation(
+        () =>
+          new Promise((resolve) => setTimeout(() => resolve('tokenB'), 30_000))
+      )
+
+      let fetchCall = 0
+      vi.mocked(global.fetch).mockImplementation((_input, init) => {
+        fetchCall++
+        if (fetchCall === 1) {
+          return new Promise((resolve) =>
+            setTimeout(() => resolve({ status: 401 } as Response), 40_000)
+          )
+        }
+        const signal = init?.signal
+        return new Promise<Response>((resolve, reject) => {
+          if (signal?.aborted) {
+            reject(signal.reason)
+            return
+          }
+          const onAbort = () => reject(signal?.reason)
+          signal?.addEventListener('abort', onAbort, { once: true })
+          setTimeout(() => {
+            signal?.removeEventListener('abort', onAbort)
+            resolve({ status: 200 } as Response)
+          }, 30_000)
+        })
+      })
+
+      const request = api.fetchApi('/test')
+      const settled = Promise.allSettled([request])
+      await vi.advanceTimersByTimeAsync(100_000)
+
+      expect(await settled).toMatchObject([
+        { status: 'fulfilled', value: { status: 200 } }
+      ])
+      expect(fetchCall).toBe(2)
+      expect(trackFetchTimeout).not.toHaveBeenCalled()
+      expect(addBreadcrumb).not.toHaveBeenCalled()
     })
   })
 })

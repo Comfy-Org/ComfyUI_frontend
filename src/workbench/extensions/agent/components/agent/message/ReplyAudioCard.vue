@@ -3,6 +3,7 @@ import { toRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Slider from '@/components/ui/slider/Slider.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { useWaveAudioPlayer } from '@/composables/useWaveAudioPlayer'
 import { useAssetDownload } from '@/platform/assets/composables/useAssetDownload'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -39,7 +40,7 @@ async function download(): Promise<void> {
 
 <template>
   <div
-    class="group/audio border-agent-border flex w-full items-center gap-2.5 rounded-[10px] border px-3 py-2.5"
+    class="group/audio flex w-full items-center gap-2.5 rounded-lg border border-component-node-border px-3 py-2.5"
   >
     <audio
       :ref="(el) => (audioRef = el as HTMLAudioElement)"
@@ -48,10 +49,12 @@ async function download(): Promise<void> {
       :src="asset.url"
       preload="metadata"
     />
-    <button
+    <Button
       type="button"
+      variant="secondary"
+      size="icon-lg"
       :aria-label="isPlaying ? t('g.pause') : t('g.play')"
-      class="border-agent-border bg-agent-surface-raised text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-md border transition-colors"
+      class="shrink-0"
       @click="togglePlayPause"
     >
       <span
@@ -62,14 +65,14 @@ async function download(): Promise<void> {
           )
         "
       />
-    </button>
+    </Button>
     <div class="flex min-w-0 flex-1 flex-col">
-      <span class="text-agent-fg truncate text-sm/4 font-medium">{{
+      <span class="truncate text-sm/4 font-medium text-base-foreground">{{
         title
       }}</span>
       <div class="flex h-6 items-center gap-4">
         <span
-          class="text-agent-fg-subtle text-xs whitespace-nowrap tabular-nums"
+          class="text-xs whitespace-nowrap text-muted-foreground tabular-nums"
         >
           {{ formattedCurrentTime }} / {{ formattedDuration }}
         </span>
@@ -82,22 +85,26 @@ async function download(): Promise<void> {
           @update:model-value="onScrub"
         />
         <div class="flex shrink-0 items-center gap-2">
-          <button
+          <Button
             type="button"
+            variant="muted-textonly"
+            size="icon-sm"
             :aria-label="muted ? t('g.unmute') : t('g.mute')"
-            class="hover:bg-agent-surface-hover hover:text-agent-fg focus-visible:ring-agent-accent text-agent-fg-muted flex size-6 cursor-pointer items-center justify-center rounded-lg transition-colors focus-visible:ring-2 focus-visible:outline-none"
+            class="size-6 rounded-lg"
             @click="toggleMute"
           >
             <span :class="cn('size-4', volumeIcon)" />
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="muted-textonly"
+            size="icon-sm"
             :aria-label="t('g.download')"
-            class="hover:bg-agent-surface-hover hover:text-agent-fg focus-visible:ring-agent-accent text-agent-fg-muted flex size-6 cursor-pointer items-center justify-center rounded-lg transition-colors focus-visible:ring-2 focus-visible:outline-none"
+            class="size-6 rounded-lg"
             @click="download"
           >
             <span class="icon-[lucide--download] size-4" />
-          </button>
+          </Button>
         </div>
       </div>
     </div>

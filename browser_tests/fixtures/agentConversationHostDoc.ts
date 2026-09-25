@@ -3,10 +3,12 @@ import {
   hasAppliedOp,
   linksMap,
   mint,
-  project
+  project,
+  readGraph
 } from '@comfyorg/comfy-multi-player'
 import type {
   ApplyOutcome,
+  GraphSnapshot,
   Op,
   WidgetCatalog,
   WorkflowJSON
@@ -82,6 +84,10 @@ export class HostDoc {
     this.doc = mint(seed, catalog)
   }
 
+  graph(): GraphSnapshot {
+    return readGraph(this.doc)
+  }
+
   projection(): WorkflowJSON {
     return project(this.doc, this.catalog)
   }
@@ -101,6 +107,18 @@ export class HostDoc {
   catchUp(stateVectorB64: string): HostFrame {
     const update = Y.encodeStateAsUpdate(this.doc, fromBase64(stateVectorB64))
     return this.updateFrame(update, HOST_ACTOR, [])
+  }
+
+  subscribeRefused(reason: string): HostFrame {
+    return {
+      type: 'doc_subscribed',
+      data: {
+        v: DOC_PROTOCOL_VERSION,
+        workflow_id: this.workflowId,
+        ok: false,
+        reason
+      }
+    }
   }
 
   apply(operations: GraphOperation[]): HostFrame {

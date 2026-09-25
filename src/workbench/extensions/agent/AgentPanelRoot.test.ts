@@ -34,7 +34,11 @@ setupInlinePromptEditorDom()
 
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 
-import type { LGraphNode, Subgraph } from '@/lib/litegraph/src/litegraph'
+import type {
+  LGraph,
+  LGraphNode,
+  Subgraph
+} from '@/lib/litegraph/src/litegraph'
 import { toRootGraphId } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 
@@ -54,6 +58,8 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
+import { registerTour } from '@/platform/onboarding/onboardingTours'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import {
   createMockLoadedWorkflow,
@@ -106,7 +112,12 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
 const appMock = vi.hoisted(() => {
   const graph = {
     nodes: [] as unknown[],
+    _nodes: [] as LGraph['_nodes'],
+    _nodes_by_id: {} as LGraph['_nodes_by_id'],
     arrange: vi.fn(),
+    add: vi.fn(),
+    remove: vi.fn(),
+    setDirtyCanvas: vi.fn(),
     serialize: () => ({ version: 0.4, nodes: graph.nodes }),
     getNodeById: (id: string | number) =>
       graph.nodes.find(
@@ -117,6 +128,7 @@ const appMock = vi.hoisted(() => {
           String(node.id) === String(id)
       ) ?? null
   }
+  Object.assign(graph, { rootGraph: graph })
   return {
     loadGraphData: vi.fn(),
     graph,
@@ -224,7 +236,9 @@ const telemetry = vi.hoisted(() => ({
   trackAgentAttachButtonClicked: vi.fn(),
   trackAgentCloseButtonClicked: vi.fn(),
   trackAgentPanelOpened: vi.fn(),
-  trackAgentPanelClosed: vi.fn()
+  trackAgentPanelClosed: vi.fn(),
+  trackAgentOnboardingNotShown: vi.fn(),
+  trackOnboardingTour: vi.fn()
 }))
 vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => telemetry
@@ -243,16 +257,18 @@ vi.mock(
 )
 
 const paywallWorkspace = vi.hoisted(() => ({
-  role: 'owner' as 'owner' | 'member'
+  role: 'owner' as 'owner' | 'member' | undefined
 }))
 const paywallCapabilities = vi.hoisted(() => ({
   canTopUp: true,
   canSubscribeSelfServe: true,
-  isReady: true
+  isReady: true,
+  hasResolvedCapabilities: true
 }))
 const paywallBilling = vi.hoisted(() => ({
   tier: 'STANDARD' as SubscriptionTier | null
 }))
+const paywallHasFunds = ref(false)
 
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'), {
   spy: true
@@ -263,11 +279,12 @@ vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'), {
 })
 
 import type { AgentMessages, TurnId } from './schemas/agentApiSchema'
-import { zAgentWsEvent } from './schemas/agentApiSchema'
+import { toTurnId, zAgentWsEvent } from './schemas/agentApiSchema'
 import { MAX_ATTACHMENT_BYTES } from './composables/agent/useAttachment'
 import type { AgentChatEvent } from './services/agent/agentEventTransport'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentConversationStore } from './stores/agent/agentConversationStore'
+import { useAgentGraphActivityStore } from './stores/agent/agentGraphActivityStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
@@ -278,10 +295,20 @@ const mintPortWiringDeps = vi.hoisted(() => ({
   current: null as MintPortWiringDeps | null
 }))
 vi.mock(import('./crdt/mintPortWiring'), { spy: true })
-vi.mocked(attachMintPortWiring).mockImplementation((deps) => {
+
+// The mock replaces the real `attachMintPortWiring` body entirely. It only
+// captures `deps` for assertions below — it must NOT reproduce any of that
+// body's own behaviour (e.g. the doc-bound probe registration), or a test
+// against the reimplementation could stay green while the real one breaks.
+// The doc-bound probe's registration/disposal is covered directly against
+// the real `attachMintPortWiring` in `mintPortWiring.test.ts`.
+function stubAttachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
   mintPortWiringDeps.current = deps
-  return fromPartial<MintPortWiring>({ detach: vi.fn() })
-})
+  return fromPartial<MintPortWiring>({
+    detach: vi.fn()
+  })
+}
+vi.mocked(attachMintPortWiring).mockImplementation(stubAttachMintPortWiring)
 
 import AgentPanelRoot from './AgentPanelRoot.vue'
 
@@ -307,6 +334,9 @@ beforeEach(() => {
   )
   vi.mocked(useBillingContext).mockReturnValue(
     fromPartial({
+      subscription: computed(() =>
+        fromPartial({ hasFunds: paywallHasFunds.value })
+      ),
       tier: computed(() => paywallBilling.tier)
     })
   )
@@ -316,7 +346,10 @@ beforeEach(() => {
       canSubscribeSelfServe: computed(
         () => paywallCapabilities.canSubscribeSelfServe
       ),
-      isReady: computed(() => paywallCapabilities.isReady)
+      isReady: computed(() => paywallCapabilities.isReady),
+      hasResolvedCapabilities: computed(
+        () => paywallCapabilities.hasResolvedCapabilities
+      )
     })
   )
   workflowStore = useWorkflowStore()
@@ -338,15 +371,13 @@ beforeEach(() => {
   canvasStore.selectedItems = []
   canvasStore.currentGraph = null
   appMock.graph.nodes = []
+  appMock.isGraphReady = false
   appMock.graph.arrange.mockClear()
   Object.assign(appMock.rootGraph, { subgraphs: new Map(), id: undefined })
   appMock.isGraphReady = false
   appMock.canvas = undefined
   mintPortWiringDeps.current = null
-  vi.mocked(attachMintPortWiring).mockImplementation((deps) => {
-    mintPortWiringDeps.current = deps
-    return fromPartial<MintPortWiring>({ detach: vi.fn() })
-  })
+  vi.mocked(attachMintPortWiring).mockImplementation(stubAttachMintPortWiring)
   workflowService.saveWorkflow.mockClear()
   workflowService.saveWorkflowAs.mockClear()
   workflowService.openWorkflow.mockClear()
@@ -354,10 +385,21 @@ beforeEach(() => {
   focusNodeInstance.mockReset()
   socketSend.mockReset()
   paywallWorkspace.role = 'owner'
+  vi.spyOn(
+    useTeamWorkspaceStore(),
+    'activeWorkspace',
+    'get'
+  ).mockImplementation(() =>
+    paywallWorkspace.role === undefined
+      ? null
+      : fromPartial({ role: paywallWorkspace.role })
+  )
   paywallCapabilities.canTopUp = true
   paywallCapabilities.canSubscribeSelfServe = true
   paywallCapabilities.isReady = true
+  paywallCapabilities.hasResolvedCapabilities = true
   paywallBilling.tier = 'STANDARD'
+  paywallHasFunds.value = false
 })
 
 const zAgentWsEventForTest = (raw: unknown): AgentChatEvent =>
@@ -511,6 +553,99 @@ describe('AgentPanelRoot onboarding', () => {
     expect(localStorage.getItem(SCOPED_KEY)).not.toBe('true')
   })
 
+  it('reports a coach held back by another tour', async () => {
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-tour'
+    })
+    const firstRunHolds = ref(true)
+    registerTour(
+      'firstRun',
+      () =>
+        Promise.resolve([
+          { kind: 'spotlight', name: 'run', placement: 'center' }
+        ]),
+      firstRunHolds
+    )
+    const tourStore = useOnboardingTourStore()
+    tourStore.replayTour('firstRun')
+    await vi.waitFor(() => expect(tourStore.activeTour).toBe('firstRun'))
+    try {
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+      expect(
+        screen.queryByRole('dialog', { name: 'Meet your Comfy Agent' })
+      ).not.toBeInTheDocument()
+      expect(
+        telemetry.trackAgentOnboardingNotShown
+      ).toHaveBeenCalledExactlyOnceWith({ reason: 'tour_active' })
+    } finally {
+      firstRunHolds.value = false
+    }
+  })
+
+  it('stays quiet when App Mode pauses a coach that was already on screen', async () => {
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-interrupted'
+    })
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    expect(
+      await screen.findByRole('dialog', { name: 'Meet your Comfy Agent' })
+    ).toBeInTheDocument()
+
+    canvasStore.linearMode = true
+    await vi.waitFor(() =>
+      expect(
+        screen.queryByRole('dialog', { name: 'Meet your Comfy Agent' })
+      ).not.toBeInTheDocument()
+    )
+
+    expect(telemetry.trackAgentOnboardingNotShown).not.toHaveBeenCalled()
+  })
+
+  it('reports the deferral once the workspace resolves after mount', async () => {
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: null })
+    canvasStore.linearMode = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    expect(telemetry.trackAgentOnboardingNotShown).not.toHaveBeenCalled()
+
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-late'
+    })
+
+    await vi.waitFor(() =>
+      expect(
+        telemetry.trackAgentOnboardingNotShown
+      ).toHaveBeenCalledExactlyOnceWith({ reason: 'app_mode' })
+    )
+  })
+
+  it('reports a deferral once however often the panel remounts', async () => {
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-remount'
+    })
+    canvasStore.linearMode = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } }).unmount()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    expect(
+      telemetry.trackAgentOnboardingNotShown
+    ).toHaveBeenCalledExactlyOnceWith({ reason: 'app_mode' })
+  })
+
+  it('says nothing about App Mode to a user who already finished the tour', async () => {
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-seen'
+    })
+    localStorage.setItem(
+      'Comfy.AgentPanel.onboarded.account-a.workspace-seen',
+      'true'
+    )
+    canvasStore.linearMode = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    expect(telemetry.trackAgentOnboardingNotShown).not.toHaveBeenCalled()
+  })
+
   it('walks through the four cards and leaves the composer usable after Done', async () => {
     render(
       defineComponent({
@@ -592,7 +727,7 @@ describe('AgentPanelRoot paywall actions', () => {
   it('routes the subscribed owner actions through account preconditions', async () => {
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentConversationStore().messages.push({
-      id: 'msg-paywall' as TurnId,
+      id: toTurnId('msg-paywall'),
       role: 'assistant',
       parts: [{ type: 'paywall' }],
       streaming: false,
@@ -602,19 +737,63 @@ describe('AgentPanelRoot paywall actions', () => {
     await userEvent.click(
       await screen.findByRole('button', { name: 'Upgrade plan' })
     )
-    await userEvent.click(screen.getByRole('button', { name: 'Add credits' }))
+    expect(openAccountPrecondition).toHaveBeenCalledExactlyOnceWith(
+      'subscription'
+    )
 
+    await userEvent.click(screen.getByRole('button', { name: 'Add credits' }))
     expect(openAccountPrecondition.mock.calls).toEqual([
       ['subscription'],
       ['credits']
     ])
   })
 
-  it('hides purchase actions from a Team member without billing permissions', async () => {
-    paywallWorkspace.role = 'member'
+  it('routes Subscribe through the subscription precondition', async () => {
+    paywallCapabilities.canTopUp = false
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentConversationStore().messages.push({
-      id: 'msg-paywall' as TurnId,
+      id: toTurnId('msg-paywall'),
+      role: 'assistant',
+      parts: [{ type: 'paywall' }],
+      streaming: false,
+      thinking: false
+    })
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Subscribe' })
+    )
+
+    expect(openAccountPrecondition).toHaveBeenCalledExactlyOnceWith(
+      'subscription'
+    )
+  })
+
+  it('dismisses the paywall after billing confirms funds are available', async () => {
+    paywallCapabilities.canTopUp = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentConversationStore().recordPaywall(
+      'msg-paywall' as TurnId,
+      'continue'
+    )
+
+    expect(
+      await screen.findByRole('button', { name: 'Subscribe' })
+    ).toBeInTheDocument()
+
+    paywallHasFunds.value = true
+
+    await vi.waitFor(() =>
+      expect(screen.queryByText('Out of credits')).not.toBeInTheDocument()
+    )
+  })
+
+  it('hides purchase actions from a Team member without billing permissions', async () => {
+    paywallWorkspace.role = 'member'
+    paywallCapabilities.canTopUp = false
+    paywallCapabilities.canSubscribeSelfServe = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentConversationStore().messages.push({
+      id: toTurnId('msg-paywall'),
       role: 'assistant',
       parts: [{ type: 'paywall' }],
       streaming: false,
@@ -638,7 +817,7 @@ describe('AgentPanelRoot paywall actions', () => {
       paywallBilling.tier = tier
       render(AgentPanelRoot, { global: { plugins: [i18n] } })
       useAgentConversationStore().messages.push({
-        id: 'msg-paywall' as TurnId,
+        id: toTurnId('msg-paywall'),
         role: 'assistant',
         parts: [{ type: 'paywall' }],
         streaming: false,
@@ -658,7 +837,7 @@ describe('AgentPanelRoot paywall actions', () => {
     paywallCapabilities.canSubscribeSelfServe = false
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentConversationStore().messages.push({
-      id: 'msg-paywall' as TurnId,
+      id: toTurnId('msg-paywall'),
       role: 'assistant',
       parts: [{ type: 'paywall' }],
       streaming: false,
@@ -677,7 +856,7 @@ describe('AgentPanelRoot paywall actions', () => {
     paywallCapabilities.canTopUp = false
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentConversationStore().messages.push({
-      id: 'msg-paywall' as TurnId,
+      id: toTurnId('msg-paywall'),
       role: 'assistant',
       parts: [{ type: 'paywall' }],
       streaming: false,
@@ -697,7 +876,7 @@ describe('AgentPanelRoot paywall actions', () => {
     paywallCapabilities.canSubscribeSelfServe = false
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentConversationStore().messages.push({
-      id: 'msg-paywall' as TurnId,
+      id: toTurnId('msg-paywall'),
       role: 'assistant',
       parts: [{ type: 'paywall' }],
       streaming: false,
@@ -717,29 +896,32 @@ describe('AgentPanelRoot paywall actions', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('does not interpret the pending false pair as sales-managed', async () => {
-    paywallCapabilities.canTopUp = false
-    paywallCapabilities.canSubscribeSelfServe = false
-    paywallCapabilities.isReady = false
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
-    useAgentConversationStore().messages.push({
-      id: 'msg-paywall' as TurnId,
-      role: 'assistant',
-      parts: [{ type: 'paywall' }],
-      streaming: false,
-      thinking: false
-    })
+  it.for(['pending', 'denied', 'unresolved-role'] as const)(
+    'withholds purchase actions for %s without inventing a sales-managed plan',
+    async (state) => {
+      paywallCapabilities.canTopUp = false
+      paywallCapabilities.canSubscribeSelfServe = false
+      paywallCapabilities.isReady = state !== 'pending'
+      paywallCapabilities.hasResolvedCapabilities = state === 'unresolved-role'
+      if (state === 'unresolved-role') paywallWorkspace.role = undefined
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      useAgentConversationStore().messages.push({
+        id: toTurnId('msg-paywall'),
+        role: 'assistant',
+        parts: [{ type: 'paywall' }],
+        streaming: false,
+        thinking: false
+      })
 
-    expect(
-      await screen.findByRole('button', { name: 'Add credits' })
-    ).toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: 'Upgrade plan' })
-    ).toBeInTheDocument()
-    expect(
-      screen.queryByText(/billed through your Comfy account team/i)
-    ).not.toBeInTheDocument()
-  })
+      expect(await screen.findByText('Out of credits')).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: /add credits|upgrade|subscribe/i })
+      ).not.toBeInTheDocument()
+      expect(
+        screen.queryByText(/billed through your Comfy account team/i)
+      ).not.toBeInTheDocument()
+    }
+  )
 })
 
 describe('AgentPanelRoot session notices', () => {
@@ -1058,6 +1240,40 @@ describe('AgentPanelRoot attach flow', () => {
     expect(screen.getByRole('button', { name: 'cat.png' })).toBeInTheDocument()
   })
 
+  it('uses the submitted filename when the upload response omits a name', async () => {
+    const messageBodies: unknown[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (url.endsWith('/api/upload/image')) {
+          return json(200, { subfolder: '', type: 'input' })
+        }
+        messageBodies.push(JSON.parse(String(init?.body)))
+        return json(202, { thread_id: 'th-1', message_id: 'm-1' })
+      })
+    )
+
+    renderWithSelectedTarget()
+
+    await openAddMenu()
+    await userEvent.click(
+      await screen.findByRole('menuitem', {
+        name: i18n.global.t('agent.attachFiles')
+      })
+    )
+    await userEvent.upload(
+      screen.getByTestId<HTMLInputElement>('agent-file-input'),
+      new File(['x'], 'cat.png', { type: 'image/png' })
+    )
+
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('describe it')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    expect(messageBodies).toHaveLength(1)
+    expect(messageBodies[0]).toMatchObject({ attachments: ['cat.png'] })
+  })
+
   it('uploads a picked video above 20MB when the server permits it', async () => {
     getServerFeature.mockReturnValue(100 * 1024 * 1024)
     const uploaded = stubUploadFetch()
@@ -1155,13 +1371,13 @@ describe('AgentPanelRoot attach flow', () => {
     expect(useToastStore().messagesToAdd).toContainEqual(
       expect.objectContaining({
         severity: 'warn',
-        detail: 'movie.mp4 is larger than 24MB'
+        detail: 'movie.mp4 is larger than 24 MB'
       })
     )
     expect(screen.queryByText('movie.mp4')).not.toBeInTheDocument()
   })
 
-  it('keeps the image limit at 20MB when the server permits more', async () => {
+  it('uses a larger server limit for non-video attachments', async () => {
     getServerFeature.mockReturnValue(100 * 1024 * 1024)
     const uploaded = stubUploadFetch()
     renderWithSelectedTarget()
@@ -1169,15 +1385,13 @@ describe('AgentPanelRoot attach flow', () => {
 
     const image = fileOfSize('huge.png', MAX_ATTACHMENT_BYTES + 1, 'image/png')
     dispatchDrag(screen.getByRole('textbox'), 'drop', { files: [image] })
-    await nextTick()
 
-    expect(uploaded).toEqual([])
-    expect(useToastStore().messagesToAdd).toContainEqual(
-      expect.objectContaining({
-        severity: 'warn',
-        detail: 'huge.png is larger than 20MB'
-      })
-    )
+    expect(
+      within(await screen.findByTestId('composer-asset-section')).getByText(
+        'huge.png'
+      )
+    ).toBeInTheDocument()
+    await vi.waitFor(() => expect(uploaded).toEqual(['huge.png']))
   })
 
   it('uploads a dropped video above 20MB when the server permits it', async () => {
@@ -1269,13 +1483,142 @@ describe('AgentPanelRoot attach flow', () => {
     await vi.waitFor(() => expect(refresh).toHaveBeenCalled())
   })
 
-  it('keeps the 20MB limit for an oversize audio file', async () => {
-    getServerFeature.mockReturnValue(100 * 1024 * 1024)
+  it('refreshes the input asset library once for a dropped batch', async () => {
+    // Overlapping refreshes coalesce into the in-flight query without a
+    // trailing run, so an asset committing mid-refresh would be dropped.
+    const uploaded = stubUploadFetch()
+    renderWithSelectedTarget()
+    await nextTick()
+    const refresh = vi
+      .spyOn(useAssetsStore().inputAssets, 'loadNew')
+      .mockResolvedValue(undefined)
+
+    dispatchDrag(screen.getByRole('textbox'), 'drop', {
+      files: [
+        new File(['x'], 'a.png', { type: 'image/png' }),
+        new File(['x'], 'b.png', { type: 'image/png' }),
+        new File(['x'], 'c.png', { type: 'image/png' })
+      ]
+    })
+
+    await vi.waitFor(() => expect(uploaded).toHaveLength(3))
+    await vi.waitFor(() => expect(refresh).toHaveBeenCalled())
+    expect(refresh).toHaveBeenCalledOnce()
+  })
+
+  it('chains input asset refreshes across overlapping batches', async () => {
+    const uploaded = stubUploadFetch()
+    renderWithSelectedTarget()
+    await nextTick()
+    let releaseFirstRefresh: () => void = () => {}
+    const refresh = vi
+      .spyOn(useAssetsStore().inputAssets, 'loadNew')
+      .mockImplementationOnce(
+        () =>
+          new Promise<undefined>((resolve) => {
+            releaseFirstRefresh = () => resolve(undefined)
+          })
+      )
+      .mockResolvedValue(undefined)
+
+    const textbox = screen.getByRole('textbox')
+    dispatchDrag(textbox, 'drop', {
+      files: [new File(['x'], 'a.png', { type: 'image/png' })]
+    })
+    await vi.waitFor(() => expect(refresh).toHaveBeenCalledOnce())
+
+    dispatchDrag(textbox, 'drop', {
+      files: [new File(['x'], 'b.png', { type: 'image/png' })]
+    })
+    await vi.waitFor(() => expect(uploaded).toEqual(['a.png', 'b.png']))
+    await expect(
+      vi.waitFor(() => expect(refresh).toHaveBeenCalledTimes(2), {
+        timeout: 250,
+        interval: 10
+      })
+    ).rejects.toThrow()
+
+    releaseFirstRefresh()
+    await vi.waitFor(() => expect(refresh).toHaveBeenCalledTimes(2))
+  })
+
+  it('keeps refreshing later batches after a refresh fails', async () => {
+    const uploaded = stubUploadFetch()
+    renderWithSelectedTarget()
+    await nextTick()
+    const refresh = vi
+      .spyOn(useAssetsStore().inputAssets, 'loadNew')
+      .mockRejectedValueOnce(new Error('asset fetch failed'))
+      .mockResolvedValue(undefined)
+
+    const textbox = screen.getByRole('textbox')
+    dispatchDrag(textbox, 'drop', {
+      files: [new File(['x'], 'a.png', { type: 'image/png' })]
+    })
+    await vi.waitFor(() => expect(refresh).toHaveBeenCalledOnce())
+
+    dispatchDrag(textbox, 'drop', {
+      files: [new File(['x'], 'b.png', { type: 'image/png' })]
+    })
+    await vi.waitFor(() => expect(uploaded).toEqual(['a.png', 'b.png']))
+    await vi.waitFor(() => expect(refresh).toHaveBeenCalledTimes(2))
+  })
+
+  it('lets a removed upload finish without reattaching until Undo', async () => {
+    const signals: AbortSignal[] = []
+    let finishUpload: (response: Response) => void = () => {}
+    const upload = new Promise<Response>((resolve) => {
+      finishUpload = resolve
+    })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        if (!String(input).includes('/upload/'))
+          return json(200, agentThreadList())
+        if (init?.signal) signals.push(init.signal)
+        return upload
+      })
+    )
+    renderWithSelectedTarget()
+    await nextTick()
+    const refresh = vi
+      .spyOn(useAssetsStore().inputAssets, 'loadNew')
+      .mockResolvedValue(undefined)
+
+    dispatchDrag(screen.getByRole('textbox'), 'drop', {
+      files: [new File(['x'], 'cat.png', { type: 'image/png' })]
+    })
+    await vi.waitFor(() => expect(signals).toHaveLength(1))
+    const composer = useAgentComposerStore()
+    const prompt = composer.prompt
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: i18n.global.t('agent.remove') })
+    )
+
+    expect(signals[0].aborted).toBe(false)
+    finishUpload(
+      json(200, { name: 'uploaded-cat.png', subfolder: '', type: 'input' })
+    )
+    await vi.waitFor(() => expect(refresh).toHaveBeenCalledOnce())
+    expect(composer.attachments).toEqual([])
+    composer.applyEditorPrompt(prompt)
+    expect(composer.attachments).toEqual([
+      expect.objectContaining({
+        name: 'cat.png',
+        ref: 'uploaded-cat.png',
+        uploading: false
+      })
+    ])
+  })
+
+  it('uses the server limit for audio rejection copy', async () => {
+    getServerFeature.mockReturnValue(24 * 1024 * 1024)
     const uploaded = stubUploadFetch()
     renderWithSelectedTarget()
     await nextTick()
 
-    const song = fileOfSize('big.mp3', MAX_ATTACHMENT_BYTES + 1, 'audio/mpeg')
+    const song = fileOfSize('big.mp3', 25 * 1024 * 1024, 'audio/mpeg')
     dispatchDrag(screen.getByRole('textbox'), 'drop', { files: [song] })
     await nextTick()
 
@@ -1283,7 +1626,7 @@ describe('AgentPanelRoot attach flow', () => {
     expect(useToastStore().messagesToAdd).toContainEqual(
       expect.objectContaining({
         severity: 'warn',
-        detail: 'big.mp3 is larger than 20MB'
+        detail: 'big.mp3 is larger than 24 MB'
       })
     )
   })
@@ -1390,16 +1733,15 @@ describe('AgentPanelRoot attach flow', () => {
 
       dispatchDrag(target, 'dragenter', dragData)
       await nextTick()
-      expect(screen.getByRole('status')).toHaveTextContent(
-        'Drag and drop assets here'
-      )
+      const dropTarget = screen.getByRole('status')
+      expect(dropTarget).toHaveTextContent('Drag and drop assets here')
 
       expect(dispatchDrag(target, 'dragover', dragData)).toBe(true)
 
       const claimed = dispatchDrag(target, 'drop', dragData)
       expect(claimed).toBe(true)
       await nextTick()
-      expect(screen.queryByRole('status')).not.toBeInTheDocument()
+      expect(dropTarget).not.toBeInTheDocument()
 
       expect(
         within(await screen.findByTestId('composer-asset-section')).getByText(
@@ -1538,6 +1880,49 @@ describe('AgentPanelRoot attach flow', () => {
         screen.queryByLabelText(i18n.global.t('agent.uploading'))
       ).not.toBeInTheDocument()
     )
+  })
+
+  it('does not warn after closing the panel during a deferred asset fetch', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>((input) => {
+        const url = String(input)
+        if (url.includes('/api/view')) return new Promise(() => {})
+        if (url.includes('/assets'))
+          return Promise.resolve(
+            json(200, { assets: [], total: 0, has_more: false })
+          )
+        if (url.includes('/workflows'))
+          return Promise.resolve(
+            json(200, { data: [], total: 0, has_more: false })
+          )
+        return Promise.resolve(json(200, agentThreadList()))
+      })
+    )
+    const { unmount } = renderWithSelectedTarget()
+    await nextTick()
+    const toast = useToastStore()
+    vi.useFakeTimers()
+    try {
+      dispatchDrag(screen.getByRole('textbox'), 'drop', {
+        types: ['application/x-comfy-asset-info', 'text/uri-list'],
+        getData: (type: string) =>
+          type === 'application/x-comfy-asset-info'
+            ? JSON.stringify({ filename: 'gen.png', type: 'input' })
+            : 'http://localhost/api/view?filename=gen.png'
+      })
+      await nextTick()
+      expect(
+        screen.getByLabelText(i18n.global.t('agent.uploading'))
+      ).toBeInTheDocument()
+
+      unmount()
+      await vi.advanceTimersByTimeAsync(60_000)
+
+      expect(toast.messagesToAdd).toEqual([])
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('attaches dropped assets and leaves other files to the graph loader', async () => {
@@ -2265,6 +2650,16 @@ describe('AgentPanelRoot feedback capture', () => {
     store.startTurn(turnId)
     store.ingest(
       zAgentWsEventForTest({
+        type: 'agent_active_tab',
+        data: {
+          workflow_id: 'wf-rated',
+          message_id: 'turn-9',
+          thread_id: 'th'
+        }
+      })
+    )
+    store.ingest(
+      zAgentWsEventForTest({
         type: 'agent_message_delta',
         data: { delta: 'Here is a cat', message_id: 'turn-9', thread_id: 'th' }
       })
@@ -2285,8 +2680,80 @@ describe('AgentPanelRoot feedback capture', () => {
     )
 
     expect(telemetry.trackAgentMessageFeedback.mock.calls).toEqual([
-      [{ message_id: 'turn-9', vote: 'up', workflow_id: null }],
-      [{ message_id: 'turn-9', vote: null, workflow_id: null }]
+      [{ message_id: 'turn-9', vote: 'up', workflow_id: 'wf-rated' }],
+      [{ message_id: 'turn-9', vote: null, workflow_id: 'wf-rated' }]
+    ])
+  })
+
+  it('attributes the vote to the last tab the rated message linked', async () => {
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    const store = useAgentConversationStore()
+    const turnId = 'turn-10' as TurnId
+    store.recordUser(turnId, 'make two cats')
+    store.startTurn(turnId)
+    for (const workflowId of ['wf-first', 'wf-last']) {
+      store.ingest(
+        zAgentWsEventForTest({
+          type: 'agent_active_tab',
+          data: {
+            workflow_id: workflowId,
+            message_id: 'turn-10',
+            thread_id: 'th'
+          }
+        })
+      )
+    }
+    store.ingest(
+      zAgentWsEventForTest({
+        type: 'agent_message_delta',
+        data: { delta: 'Two cats', message_id: 'turn-10', thread_id: 'th' }
+      })
+    )
+    store.ingest(
+      zAgentWsEventForTest({
+        type: 'agent_message_done',
+        data: { message_id: 'turn-10', thread_id: 'th', usage: null }
+      })
+    )
+    await nextTick()
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Helpful' })
+    )
+
+    expect(telemetry.trackAgentMessageFeedback.mock.calls).toEqual([
+      [{ message_id: 'turn-10', vote: 'up', workflow_id: 'wf-last' }]
+    ])
+  })
+
+  it('reports a null workflow when the rated message never linked a tab', async () => {
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    const store = useAgentConversationStore()
+    const turnId = 'turn-11' as TurnId
+    store.recordUser(turnId, 'hello')
+    store.startTurn(turnId)
+    store.ingest(
+      zAgentWsEventForTest({
+        type: 'agent_message_delta',
+        data: { delta: 'Hi there', message_id: 'turn-11', thread_id: 'th' }
+      })
+    )
+    store.ingest(
+      zAgentWsEventForTest({
+        type: 'agent_message_done',
+        data: { message_id: 'turn-11', thread_id: 'th', usage: null }
+      })
+    )
+    await nextTick()
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Helpful' })
+    )
+
+    expect(telemetry.trackAgentMessageFeedback.mock.calls).toEqual([
+      [{ message_id: 'turn-11', vote: 'up', workflow_id: null }]
     ])
   })
 })
@@ -2471,6 +2938,74 @@ describe('AgentPanelRoot workflow binding', () => {
     )
     return bodies
   }
+
+  it('preserves active-turn graph activity across remount and delayed hydration', async () => {
+    makeTab('wf-42')
+    let resolveHistory!: (response: Response) => void
+    const delayedHistory = new Promise<Response>((resolve) => {
+      resolveHistory = resolve
+    })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (url.includes('/messages') && init?.method === 'POST')
+          return json(202, ack('wf-42'))
+        if (url.includes('/messages')) return delayedHistory
+        if (url.includes('/agent/threads')) return json(200, agentThreadList())
+        return new Response('{}', { status: 200 })
+      })
+    )
+
+    const first = renderWithSelectedTarget()
+    await sendFromComposer('build two nodes')
+    const activity = useAgentGraphActivityStore()
+    activity.recordMaterialized(
+      { workflowId: 'wf-42', rootGraphId: toRootGraphId('graph-1') },
+      [toNodeId(301), toNodeId(302)]
+    )
+
+    first.unmount()
+    renderWithSelectedTarget()
+    expect(activity.state).toMatchObject({
+      phase: 'settling',
+      nodeIds: ['301', '302']
+    })
+
+    resolveHistory(json(200, []))
+    await vi.waitFor(() =>
+      expect(useAgentConversationStore().activeTurnId).toBe('m-1')
+    )
+    expect(activity.state).toMatchObject({
+      phase: 'running',
+      nodeIds: ['301', '302']
+    })
+  })
+
+  it('starts a fresh activity report when the session starts its next turn', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+    renderWithSelectedTarget()
+    const activity = useAgentGraphActivityStore()
+
+    await sendFromComposer('first turn')
+    activity.recordMaterialized(
+      { workflowId: 'wf-42', rootGraphId: toRootGraphId('graph-1') },
+      [toNodeId(401)]
+    )
+    ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
+    await screen.findByRole('button', { name: 'Send' })
+
+    await sendFromComposer('second turn')
+    activity.recordMaterialized(
+      { workflowId: 'wf-42', rootGraphId: toRootGraphId('graph-1') },
+      [toNodeId(402)]
+    )
+
+    expect(activity.state).toMatchObject({
+      phase: 'running',
+      nodeIds: ['402']
+    })
+  })
 
   it('requires explicit selection on first entry even with an unsaved canvas', async () => {
     Object.assign(makeTab(), { isTemporary: true })
@@ -3550,6 +4085,39 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(activity.editingTabPath).toBe('workflows/current.json')
   })
 
+  // PM-1575 regression: the canvas-sync gate was wired to
+  // `agentPanelStore.enabled` (the panel feature flag), not to whether a CRDT
+  // doc subscription is actually connected. This suite -- like
+  // agentPanel.spec.ts and most of this file -- never sends a
+  // `doc_subscribed` frame, so the follower never connects; with the wrong
+  // gate, a mutating tool call's own successful frame was held at
+  // 'streaming' forever, since nothing was ever going to call
+  // `notifyCanvasCaughtUp()` to release it. Asserted on the store's own part
+  // state rather than the "Working..." composing status text upstream uses,
+  // since that composing affordance doesn't exist on this branch yet.
+  it('settles a mutating tool call immediately when no CRDT doc subscription is connected', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+
+    await renderAndSend('add a node')
+
+    ws.emit('agent_tool_call', {
+      tool_call_id: 'call-add-node',
+      tool_name: 'add_node',
+      status: 'success',
+      duration_ms: 90,
+      thread_id: 'th-1',
+      message_id: 'm-1'
+    })
+
+    await vi.waitFor(() => {
+      expect(useAgentConversationStore().messages[0].parts[0]).toMatchObject({
+        type: 'tool',
+        state: 'done'
+      })
+    })
+  })
+
   it('moves the spinner to the tab the agent creates mid-turn', async () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
@@ -4334,9 +4902,16 @@ describe('AgentPanelRoot workflow binding', () => {
       })
     )
 
-    await renderAndSend('first message')
+    await startVueNodeSelection()
+    await sendFromComposer('first message')
 
-    expect(bodies[0]).toMatchObject({ workflow_id: 'wf-cloud-current' })
+    expect(bodies[0]).toMatchObject({
+      workflow_id: 'wf-cloud-current',
+      selection: {
+        node_ids: ['9', '12'],
+        workflow_id: 'wf-cloud-current'
+      }
+    })
   })
 
   it('does not resolve two same-named open saved tabs to one cloud id', async () => {
@@ -4972,7 +5547,11 @@ describe('AgentPanelRoot workflow binding', () => {
       expect(bodies[0]).toMatchObject({
         content: '@[Node: KSampler #12] Keep this draft',
         workflow_id: 'wf-cloud-current',
-        selection: { node_ids: ['12'] },
+        // The chip was staged while `wf-cloud-current` was viewed, and the
+        // user then navigated to `wf-reference` before sending. Ownership must
+        // follow the workflow the node came from, not the one on screen at
+        // send time, so this asserts the owner rather than only `node_ids`.
+        selection: { node_ids: ['12'], workflow_id: 'wf-cloud-current' },
         workflow_references: []
       })
     }
@@ -6294,7 +6873,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await sendFromComposer('edit the selected workflow')
     expect(bodies[0]).toMatchObject({
       workflow_id: 'wf-42',
-      selection: { node_ids: ['12'] }
+      selection: { node_ids: ['12'], workflow_id: 'wf-42' }
     })
   })
 
@@ -6632,7 +7211,7 @@ describe('AgentPanelRoot workflow binding', () => {
   })
 
   it('resolves picker nodes from the viewed subgraph, not the root graph', async () => {
-    makeTab()
+    makeTab('wf-42')
     const bodies = mockMessagesEndpoint('wf-42')
     appMock.canvas = {
       graph: {
@@ -6655,7 +7234,9 @@ describe('AgentPanelRoot workflow binding', () => {
     await userEvent.click(await screen.findByText('KSampler'))
     await sendFromComposer('explain this')
 
-    expect(bodies[0]).toMatchObject({ selection: { node_ids: ['12'] } })
+    expect(bodies[0]).toMatchObject({
+      selection: { node_ids: ['12'], workflow_id: 'wf-42' }
+    })
   })
 
   it('never subscribes to the retired draft_patch frame', async () => {
@@ -6673,6 +7254,36 @@ describe('AgentPanelRoot workflow binding', () => {
     await nextTick()
     await nextTick()
     expect(app.loadGraphData).not.toHaveBeenCalled()
+  })
+
+  it('wires getGraph() to the live root graph, following a graph swap', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+    await renderAndSend('hello')
+
+    appMock.isGraphReady = true
+    Object.assign(appMock.rootGraph, { id: 'graph-a' })
+    expect(mintPortWiringDeps.current?.getGraph()?.id).toBe('graph-a')
+
+    // A workflow switch rebuilds the canvas against a new root graph without
+    // touching agentPanelStore.enabled or isBoundWorkflowActive, so the mint
+    // port wiring's own doc-bound predicate (covered directly against the
+    // real `attachMintPortWiring` in `mintPortWiring.test.ts`) has to read
+    // this live graph at mint time to follow the swap.
+    Object.assign(appMock.rootGraph, { id: 'graph-b' })
+
+    expect(mintPortWiringDeps.current?.getGraph()?.id).toBe('graph-b')
+  })
+
+  it('wires getGraph() to null before the graph is ready', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+    await renderAndSend('hello')
+
+    Object.assign(appMock.rootGraph, { id: 'graph-a' })
+    appMock.isGraphReady = false
+
+    expect(mintPortWiringDeps.current?.getGraph()).toBeNull()
   })
 
   it("reports the bound workflow's own stored root graph id once bound", async () => {

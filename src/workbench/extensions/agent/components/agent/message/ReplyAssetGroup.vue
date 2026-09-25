@@ -2,6 +2,7 @@
 import { computed, defineAsyncComponent, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
 import {
   findOutputAsset,
   findServerPreviewUrl,
@@ -158,7 +159,7 @@ function stopPreview(event: Event): void {
         :class="
           cn(
             'relative cursor-pointer overflow-hidden rounded-lg border-none p-0',
-            multi && 'bg-agent-surface-hover aspect-square',
+            multi && 'aspect-square bg-secondary-background-hover',
             !multi && asset.kind === '3D' && 'justify-self-end'
           )
         "
@@ -196,19 +197,23 @@ function stopPreview(event: Event): void {
           :class="
             cn(
               'flex items-center justify-center',
-              multi ? 'size-full' : 'bg-agent-surface-hover aspect-square w-40'
+              multi
+                ? 'size-full'
+                : 'aspect-square w-40 bg-secondary-background-hover'
             )
           "
         >
-          <span class="text-agent-fg-muted icon-[lucide--box] size-6" />
+          <span class="icon-[lucide--box] size-6 text-muted-foreground" />
         </span>
       </button>
     </div>
 
-    <button
+    <Button
       v-if="collapsible"
       type="button"
-      class="border-agent-border text-agent-fg hover:bg-agent-surface-hover flex cursor-pointer items-center gap-1 self-center rounded-full border px-3 py-1 text-xs"
+      variant="outline"
+      size="sm"
+      class="self-center rounded-full border-component-node-border"
       @click="expanded = !expanded"
     >
       {{ expanded ? t('agent.showLess') : t('agent.showMore') }}
@@ -217,7 +222,7 @@ function stopPreview(event: Event): void {
           cn('icon-[lucide--chevron-down] size-3', expanded && 'rotate-180')
         "
       />
-    </button>
+    </Button>
 
     <div v-if="audio.length" class="flex flex-col gap-1">
       <ReplyAudioCard
@@ -226,10 +231,12 @@ function stopPreview(event: Event): void {
         :asset
         :title="assetNames[asset.url] || asset.filename"
       />
-      <button
+      <Button
         v-if="audioCollapsible"
         type="button"
-        class="border-agent-border text-agent-fg hover:bg-agent-surface-hover flex cursor-pointer items-center gap-1 self-center rounded-full border px-3 py-1 text-xs"
+        variant="outline"
+        size="sm"
+        class="self-center rounded-full border-component-node-border"
         @click="audioExpanded = !audioExpanded"
       >
         {{ audioExpanded ? t('agent.showLess') : t('agent.showMore') }}
@@ -241,7 +248,7 @@ function stopPreview(event: Event): void {
             )
           "
         />
-      </button>
+      </Button>
     </div>
 
     <MediaLightbox

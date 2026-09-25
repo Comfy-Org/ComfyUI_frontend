@@ -577,6 +577,7 @@ export interface UiButtonClickMetadata {
 export interface AgentMessageFeedbackMetadata extends Record<string, unknown> {
   message_id: string
   vote: 'up' | 'down' | null
+  workflow_id: string | null
 }
 
 export type AgentPanelCloseSource =
@@ -586,6 +587,21 @@ export type AgentPanelCloseSource =
 export interface AgentPanelOpenedMetadata extends Record<string, unknown> {
   source: 'restored' | 'topbar_button' | 'automatic_consent'
 }
+export type AgentConsentNotOfferedReason =
+  | 'first_run_screen'
+  | 'tour_active'
+  | 'dialog_open'
+  | 'boot_undecided'
+  | 'storage_unavailable'
+export interface AgentConsentNotOfferedMetadata extends Record<
+  string,
+  unknown
+> {
+  reason: AgentConsentNotOfferedReason
+}
+export type AgentOnboardingNotShownMetadata =
+  | { reason: 'app_mode' | 'tour_active' }
+  | { reason: 'target_missing'; step: number }
 export interface AgentPanelClosedMetadata extends Record<string, unknown> {
   source: AgentPanelCloseSource
   open_duration_ms: number | null
@@ -1303,6 +1319,8 @@ export interface TelemetryProvider {
   trackAgentNodeTagged?(metadata: AgentNodeTaggedMetadata): void
   trackAgentAttachButtonClicked?(): void
   trackAgentWorkflowApplied?(metadata: AgentWorkflowAppliedMetadata): void
+  trackAgentConsentNotOffered?(metadata: AgentConsentNotOfferedMetadata): void
+  trackAgentOnboardingNotShown?(metadata: AgentOnboardingNotShownMetadata): void
 
   // Right side panel widget favorite events
   trackWidgetFavoriteToggled?(metadata: WidgetFavoriteToggledMetadata): void
@@ -1473,6 +1491,8 @@ export const TelemetryEvents = {
   AGENT_NODE_TAGGED: 'app:agent_node_tagged',
   AGENT_ATTACH_BUTTON_CLICKED: 'app:agent_attach_button_clicked',
   AGENT_WORKFLOW_APPLIED: 'app:agent_workflow_applied',
+  AGENT_CONSENT_NOT_OFFERED: 'app:agent_consent_not_offered',
+  AGENT_ONBOARDING_NOT_SHOWN: 'app:agent_onboarding_not_shown',
 
   // Right Side Panel Widget Favorites
   WIDGET_FAVORITE_TOGGLED: 'app:widget_favorite_toggled',

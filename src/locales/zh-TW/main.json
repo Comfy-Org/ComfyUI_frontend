@@ -69,6 +69,7 @@
     "dismiss": "關閉",
     "downloadAssets": "下載資產",
     "dragAndDropAssets": "將資產拖放至此處",
+    "editWhileWorking": "代理運作期間，您可以繼續編輯",
     "feedbackCaption": "分享意見回饋",
     "focusNode": "在畫布上顯示",
     "focusNodeLabel": "在畫布上顯示 {node}",
@@ -102,6 +103,7 @@
       "selectNode": "選取節點"
     },
     "nodes": "節點",
+    "nodesAdded": "代理已將 1 個節點新增至工作流程圖 | 代理已將 {count} 個節點新增至工作流程圖",
     "notHelpful": "沒有幫助",
     "openWorkflowTab": "開啟 {name}",
     "otherOpenWorkflows": "其他已開啟的工作流程",
@@ -190,7 +192,9 @@
     "unavailableWorkflowReference": "{name}（無法使用）",
     "unsavedWorkflow": "未儲存",
     "untitledChat": "未命名",
+    "updatingGraph": "代理正在更新工作流程圖",
     "uploading": "上傳中",
+    "viewAddedNodes": "檢視節點 | 檢視節點",
     "worked": "已完成",
     "workedForMinutes": "已處理 {minutes} 分 {seconds} 秒",
     "workedForSeconds": "已處理 {seconds} 秒",
@@ -3108,6 +3112,8 @@
     "linearMode_appModeToolbar_apps": "linearMode.appModeToolbar.apps"
   },
   "minimap": {
+    "highlightedNodes": "已醒目顯示的節點：{count}",
+    "label": "小地圖",
     "nodeColors": "節點顏色",
     "renderBypassState": "渲染繞過狀態",
     "renderErrorState": "渲染錯誤狀態",

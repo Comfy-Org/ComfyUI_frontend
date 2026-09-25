@@ -69,6 +69,7 @@
     "dismiss": "Закрыть",
     "downloadAssets": "Скачать ресурсы",
     "dragAndDropAssets": "Перетащите ресурсы сюда",
+    "editWhileWorking": "Вы можете продолжать редактирование, пока он работает",
     "feedbackCaption": "Оставить отзыв",
     "focusNode": "Показать на холсте",
     "focusNodeLabel": "Показать {node} на холсте",
@@ -102,6 +103,7 @@
       "selectNode": "Выбрать узел"
     },
     "nodes": "Ноды",
+    "nodesAdded": "Агент добавил 1 ноду в граф | Агент добавил {count} нод в граф",
     "notHelpful": "Не полезно",
     "openWorkflowTab": "Открыть {name}",
     "otherOpenWorkflows": "Другие открытые рабочие процессы",
@@ -190,7 +192,9 @@
     "unavailableWorkflowReference": "{name} (недоступен)",
     "unsavedWorkflow": "Не сохранено",
     "untitledChat": "Без названия",
+    "updatingGraph": "Агент обновляет граф",
     "uploading": "Загрузка",
+    "viewAddedNodes": "Просмотреть ноду | Просмотреть ноды",
     "worked": "Работал",
     "workedForMinutes": "Работал {minutes} мин {seconds} с",
     "workedForSeconds": "Работал {seconds} с",
@@ -3108,6 +3112,8 @@
     "linearMode_appModeToolbar_apps": "linearMode.appModeToolbar.apps"
   },
   "minimap": {
+    "highlightedNodes": "Выделенные ноды: {count}",
+    "label": "Мини-карта",
     "nodeColors": "Цвета узлов",
     "renderBypassState": "Отображать состояние обхода",
     "renderErrorState": "Отображать состояние ошибки",

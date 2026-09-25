@@ -8,14 +8,17 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
+import { whenStoresReady } from '@/platform/telemetry/storeReadiness'
 import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionContext'
 
 import type {
   AddCreditsClickMetadata,
+  AgentConsentNotOfferedMetadata,
   AgentEntryButtonClickedMetadata,
   AgentMessageSentMetadata,
   AgentMessageFeedbackMetadata,
   AgentNodeTaggedMetadata,
+  AgentOnboardingNotShownMetadata,
   AgentPanelClosedMetadata,
   AgentPanelOpenedMetadata,
   AgentWorkflowAppliedMetadata,
@@ -159,7 +162,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     if (apiKey) {
       try {
         void import('posthog-js')
-          .then((posthogModule) => {
+          .then(async (posthogModule) => {
             this.posthog = posthogModule.default
             const serverConfig = remoteConfig.value.posthog_config ?? {}
             this.posthog.init(apiKey, {
@@ -185,6 +188,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
             this.flushEventQueue()
             this.registerDesktopEntryProps()
 
+            await whenStoresReady()
             const currentUser = useCurrentUser()
             currentUser.onUserResolved((user) => {
               if (this.posthog && user.id) {
@@ -715,6 +719,16 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackAgentWorkflowApplied(metadata: AgentWorkflowAppliedMetadata): void {
     this.trackEvent(TelemetryEvents.AGENT_WORKFLOW_APPLIED, metadata)
+  }
+
+  trackAgentConsentNotOffered(metadata: AgentConsentNotOfferedMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_CONSENT_NOT_OFFERED, metadata)
+  }
+
+  trackAgentOnboardingNotShown(
+    metadata: AgentOnboardingNotShownMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.AGENT_ONBOARDING_NOT_SHOWN, metadata)
   }
 
   trackWidgetFavoriteToggled(metadata: WidgetFavoriteToggledMetadata): void {

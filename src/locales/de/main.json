@@ -69,6 +69,7 @@
     "dismiss": "Verwerfen",
     "downloadAssets": "Assets herunterladen",
     "dragAndDropAssets": "Assets hierher ziehen und ablegen",
+    "editWhileWorking": "Sie können weiter bearbeiten, während er arbeitet",
     "feedbackCaption": "Feedback teilen",
     "focusNode": "Auf Canvas anzeigen",
     "focusNodeLabel": "{node} auf Canvas anzeigen",
@@ -102,6 +103,7 @@
       "selectNode": "Node auswählen"
     },
     "nodes": "Nodes",
+    "nodesAdded": "Der Agent hat dem Graphen 1 Node hinzugefügt | Der Agent hat dem Graphen {count} Nodes hinzugefügt",
     "notHelpful": "Nicht hilfreich",
     "openWorkflowTab": "{name} öffnen",
     "otherOpenWorkflows": "Andere geöffnete Workflows",
@@ -190,7 +192,9 @@
     "unavailableWorkflowReference": "{name} (nicht verfügbar)",
     "unsavedWorkflow": "Ungespeichert",
     "untitledChat": "Ohne Titel",
+    "updatingGraph": "Der Agent aktualisiert den Graphen",
     "uploading": "Wird hochgeladen",
+    "viewAddedNodes": "Node anzeigen | Nodes anzeigen",
     "worked": "Abgeschlossen",
     "workedForMinutes": "Arbeitszeit: {minutes} Min. {seconds} Sek.",
     "workedForSeconds": "Arbeitszeit: {seconds} Sekunden",
@@ -3108,6 +3112,8 @@
     "linearMode_appModeToolbar_apps": "linearMode.appModeToolbar.apps"
   },
   "minimap": {
+    "highlightedNodes": "Hervorgehobene Nodes: {count}",
+    "label": "Minimap",
     "nodeColors": "Node-Farben",
     "renderBypassState": "Bypass-Status rendern",
     "renderErrorState": "Fehlerstatus rendern",
