@@ -8,12 +8,46 @@ import {
   BYTEDANCE_REFERENCE_NODE_TYPE,
   byteDanceReferenceNodeDef
 } from '@e2e/fixtures/data/byteDanceReferenceNodeDef'
+import { imageLayoutNodeDefinitions } from '@e2e/fixtures/data/agent/imageLayoutNodeDefinitions'
 import { referenceGraphOps } from '@e2e/fixtures/data/minimaxAutogrowReload'
 import { wireAndReopen } from '@e2e/fixtures/utils/minimaxAutogrowReload'
+import { overlappingNodePairs } from '@e2e/fixtures/utils/nodeLayoutGeometry'
 
 // A recording whose second turn wires two nodes; the first turn only adds.
 const WIRING_CASE = 'agent-rec-two-turn-dependent-edit'
 const WIDGET_CASE = 'agent-rec-set-widget-existing'
+
+test.describe(
+  'Agent populated LoadImage layout',
+  { tag: ['@cloud', '@vue-nodes', '@screenshot', '@node'] },
+  () => {
+    test.use({
+      conversationCase: 'agent-load-image-layout',
+      extraNodeDefs: imageLayoutNodeDefinitions,
+      previewImageAsset: 'image32x32.webp'
+    })
+
+    test('keeps Vue node previews from overlapping', async ({
+      agentConversation,
+      page
+    }) => {
+      await agentConversation.runTurns()
+
+      const loaders = agentConversation.vueNodes.nodes.filter({
+        has: page.getByTestId('node-title').filter({ hasText: 'Load Image' })
+      })
+      await expect(loaders).toHaveCount(5)
+      await expect(page.locator('.image-preview img')).toHaveCount(5)
+      await expect.poll(() => overlappingNodePairs(loaders)).toEqual([])
+
+      await page.getByRole('button', { name: 'Fit View (.)' }).click()
+      await expect(page.locator('#graph-canvas')).toHaveScreenshot(
+        'agent-load-image-layout.png',
+        { mask: [agentConversation.panel] }
+      )
+    })
+  }
+)
 
 test.describe(
   'Agent conversation replay',

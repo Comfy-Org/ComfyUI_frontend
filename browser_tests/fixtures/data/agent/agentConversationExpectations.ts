@@ -15,6 +15,17 @@ export interface ExpectedTurn {
 }
 
 export const RECORDED_EXPECTATIONS: Partial<Record<string, ExpectedTurn[]>> = {
+  'agent-load-image-layout': [
+    {
+      text: 'Done. The five populated image rows are arranged with room for their previews.',
+      groups: [
+        [
+          { label: 'Add node', count: 1, failed: false },
+          { label: 'Connect', count: 1, failed: false }
+        ]
+      ]
+    }
+  ],
   'agent-l4-zimage-string-node-prompt': [
     {
       text: "I'm on the \"Text to image\" tab, and the text node is in and wired: your prompt \"a red bicycle on a pier at dusk\" now feeds the positive prompt. I also connected two things the graph was missing (an empty negative prompt and the blank canvas the sampler starts from) — without those it couldn't have run at all. I couldn't run it, though. The image model this workflow is built on isn't installed on this server — the checkpoint slot reports no available files at all, so there's nothing valid to point it at, and I'd rather tell you than silently swap in a different model and hand you an image that isn't the one you set up. Two ways forward, your call: Install the checkpoint this workflow expects, then hit Run — the graph is otherwise complete and correct. Let me rebuild it on one of the hosted image models that are available here (Flux, Ideogram, Stable Image and others), keeping your prompt. That's a different model than your current setup, so I'd want your OK first.",
