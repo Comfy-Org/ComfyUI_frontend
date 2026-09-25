@@ -62,9 +62,10 @@ const labels = computed<Record<SortOrder, TranslationKey>>(() => ({
             :data-testid="`sort-${order}`"
             :class="
               cn(
-                'flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-sm text-primary-comfy-canvas outline-none select-none data-highlighted:bg-transparency-white-t4',
-                sort === order &&
-                  'bg-transparency-white-t8 text-primary-warm-white'
+                'flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2 text-sm outline-none select-none',
+                sort === order
+                  ? 'bg-transparency-white-t8 text-content-bright'
+                  : 'text-content-secondary hover:bg-transparency-white-t4 hover:text-content-bright focus-visible:bg-transparency-white-t4 data-highlighted:bg-transparency-white-t4 data-highlighted:text-content-bright'
               )
             "
           >
