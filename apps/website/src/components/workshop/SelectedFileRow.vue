@@ -41,8 +41,18 @@ const source = useSourceUrl(
   () => file.file,
   () => file.previewUrl
 )
-const { audio, playing, elapsed, duration, progress, toggle, seek } =
-  useAudioPlayback(source)
+const {
+  audio,
+  playing,
+  elapsed,
+  duration,
+  seekable,
+  progress,
+  toggle,
+  seekToPoint,
+  seekByKey,
+  readDuration
+} = useAudioPlayback(source)
 </script>
 
 <template>
@@ -72,7 +82,7 @@ const { audio, playing, elapsed, duration, progress, toggle, seek } =
     <button
       v-else-if="isAudio && source"
       type="button"
-      :aria-label="`${t(playing ? 'workshop.field.pause' : 'workshop.field.play', locale)} ${file.name}`"
+      :aria-label="`${t(playing ? 'player.pause' : 'player.play', locale)} ${file.name}`"
       class="flex size-12 shrink-0 cursor-pointer items-center justify-center rounded-lg bg-transparency-white-t8 text-primary-warm-white transition-colors outline-none hover:bg-transparency-white-t20 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
       data-testid="audio-source-play"
       @click="toggle"
@@ -107,14 +117,26 @@ const { audio, playing, elapsed, duration, progress, toggle, seek } =
       </button>
       <div v-if="isAudio && source" class="flex items-center gap-2">
         <div
-          class="h-1 min-w-0 flex-1 cursor-pointer rounded-full bg-transparency-white-t20"
+          role="slider"
+          tabindex="0"
+          :aria-label="`${t('player.seek', locale)} ${file.name}`"
+          :aria-valuemin="0"
+          :aria-valuemax="Math.round(seekable ? duration : 0)"
+          :aria-valuenow="Math.round(elapsed)"
+          :aria-valuetext="`${clock(elapsed)} / ${clock(duration)}`"
+          class="group/seek min-w-0 flex-1 cursor-pointer py-2 outline-none"
           data-testid="audio-source-line"
-          @click="seek"
+          @click="seekToPoint"
+          @keydown="seekByKey"
         >
           <div
-            class="h-full rounded-full bg-primary-comfy-yellow"
-            :style="{ width: `${progress}%` }"
-          />
+            class="h-1 rounded-full bg-transparency-white-t20 group-focus-visible/seek:ring-3 group-focus-visible/seek:ring-primary-comfy-yellow/50"
+          >
+            <div
+              class="h-full rounded-full bg-primary-comfy-yellow"
+              :style="{ width: `${progress}%` }"
+            />
+          </div>
         </div>
         <span class="shrink-0 text-2xs text-primary-warm-gray tabular-nums">
           {{ clock(elapsed) }} / {{ clock(duration) }}
@@ -123,13 +145,14 @@ const { audio, playing, elapsed, duration, progress, toggle, seek } =
           ref="audio"
           :key="source"
           :src="source"
-          preload="metadata"
+          preload="none"
           class="hidden"
           @play="playing = true"
           @pause="playing = false"
           @ended="playing = false"
           @timeupdate="elapsed = audio?.currentTime ?? 0"
-          @loadedmetadata="duration = audio?.duration ?? 0"
+          @loadedmetadata="readDuration"
+          @durationchange="readDuration"
         />
       </div>
     </div>

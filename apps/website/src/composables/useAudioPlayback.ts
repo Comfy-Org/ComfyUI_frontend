@@ -1,10 +1,13 @@
 import type { MaybeRefOrGetter } from 'vue'
-import { computed, ref, watch, toValue } from 'vue'
+import { computed, ref, toValue, watch } from 'vue'
+
+const SEEK_STEP_SECONDS = 5
 
 /**
  * One audio file, played in place. The element is the browser's; only the
  * controls around it are ours, so the row can wear the same buttons and rules
- * as everything beside it.
+ * as everything beside it. Nothing is downloaded until the reader asks to
+ * hear it, so a form full of example inputs costs nothing to open.
  */
 export function useAudioPlayback(source: MaybeRefOrGetter<string | undefined>) {
   const audio = ref<HTMLAudioElement>()
@@ -22,28 +25,72 @@ export function useAudioPlayback(source: MaybeRefOrGetter<string | undefined>) {
     }
   )
 
+  // A live recording has no end yet, and some containers report none at all.
+  // Until a real length arrives there is nothing to be a fraction of.
+  const seekable = computed(
+    () => Number.isFinite(duration.value) && duration.value > 0
+  )
   const progress = computed(() =>
-    duration.value > 0 ? (elapsed.value / duration.value) * 100 : 0
+    seekable.value ? (elapsed.value / duration.value) * 100 : 0
   )
 
   function toggle() {
     const element = audio.value
     if (!element) return
-    if (element.paused) void element.play()
-    else element.pause()
+    if (!element.paused) {
+      element.pause()
+      return
+    }
+    // The first play is also the first fetch, and either can be refused.
+    element.play().catch(() => (playing.value = false))
+  }
+
+  function seekTo(seconds: number) {
+    const element = audio.value
+    if (!element || !seekable.value || Number.isNaN(seconds)) return
+    element.currentTime = Math.min(Math.max(seconds, 0), duration.value)
   }
 
   /** Where in the recording a click on the line lands. */
-  function seek(event: MouseEvent) {
-    const element = audio.value
+  function seekToPoint(event: MouseEvent) {
     const line = event.currentTarget
-    if (!element || !duration.value || !(line instanceof HTMLElement)) return
+    if (!seekable.value || !(line instanceof HTMLElement)) return
     const { left, width } = line.getBoundingClientRect()
-    element.currentTime =
-      Math.min(Math.max((event.clientX - left) / width, 0), 1) * duration.value
+    if (!width) return
+    seekTo(((event.clientX - left) / width) * duration.value)
   }
 
-  return { audio, playing, elapsed, duration, progress, toggle, seek }
+  /** The same line under the arrow keys, for a reader who has no pointer. */
+  function seekByKey(event: KeyboardEvent) {
+    const target = {
+      ArrowLeft: () => elapsed.value - SEEK_STEP_SECONDS,
+      ArrowRight: () => elapsed.value + SEEK_STEP_SECONDS,
+      Home: () => 0,
+      End: () => duration.value
+    }[event.key]
+    if (!target) return
+    event.preventDefault()
+    seekTo(target())
+  }
+
+  // With nothing preloaded the length arrives late, and a stream may revise it.
+  function readDuration() {
+    duration.value = audio.value?.duration ?? 0
+  }
+
+  return {
+    audio,
+    playing,
+    elapsed,
+    duration,
+    seekable,
+    progress,
+    toggle,
+    seekTo,
+    seekToPoint,
+    seekByKey,
+    readDuration
+  }
 }
 
 /** mm:ss, the way a player has always written it. */
