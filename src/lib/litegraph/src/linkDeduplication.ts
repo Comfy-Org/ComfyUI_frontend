@@ -196,6 +196,10 @@ function isGroupWidgetChildInput(node: LGraphNode, inputName: string): boolean {
  * registry `applyAutogrow` populates, which only covers groups the selected
  * option laid out — children of an unselected option reach this filter and are
  * safe to realign, since their group's handler bails on the same missing key.
+ *
+ * @see browser_tests/tests/subgraph/subgraphConvertAutogrowInputs.spec.ts
+ * "loads with both reference images connected" — the only test that fails when
+ * autogrow links are realigned early.
  */
 function isAutogrowGroupInput(node: LGraphNode, inputName: string): boolean {
   const groupName = groupNameOf(inputName)
