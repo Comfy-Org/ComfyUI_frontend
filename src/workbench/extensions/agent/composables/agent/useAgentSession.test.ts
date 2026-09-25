@@ -1334,6 +1334,14 @@ describe('useAgentSession (v1 composition root)', () => {
    * `attachments` itself — the house rule cloud states for exactly this pair
    * (persist/threads.go) — so revisit it if that key is reshaped instead, or
    * this pin stays red past its own fix.
+   *
+   * Neither repair is reachable from this repo alone: the widening is a
+   * change to `AgentPostMessageRequest` in cloud's services/ingest/openapi.yaml
+   * followed by regenerating `packages/ingest-types`, whose openapi.yaml is
+   * not even checked in here. The sibling pins for item 3 all closed; this one
+   * stays red deliberately. What the user is left looking at is the
+   * `test.fail()` case in
+   * browser_tests/tests/agent/agentAttachmentRehydrationGaps.spec.ts.
    */
   it.fails('(h-gap) carries the attached filename, not only the storage ref', async () => {
     const { postedBody, send } = wireSend()
