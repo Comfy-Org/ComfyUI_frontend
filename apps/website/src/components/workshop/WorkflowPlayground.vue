@@ -322,19 +322,13 @@ function start() {
         :key="example.name"
         type="button"
         :aria-pressed="selectedExample === index"
-        :aria-label="example.title"
         class="cursor-pointer overflow-hidden rounded-2xl border border-transparency-white-t8 text-left hover:border-primary-comfy-yellow focus-visible:outline-primary-comfy-yellow disabled:cursor-not-allowed disabled:opacity-50"
         :disabled="formDisabled"
         @click="selectExample(index)"
       >
         <WorkflowExamplePreview :example :poster="model.thumbnailUrl" />
         <span class="block p-4 text-sm text-primary-warm-gray">
-          {{
-            t('workshop.workflow.templateExample').replace(
-              '{n}',
-              String(index + 1)
-            )
-          }}
+          {{ example.title }}
         </span>
       </button>
     </div>

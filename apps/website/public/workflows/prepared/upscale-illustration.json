@@ -32,12 +32,7 @@
         "ver": "0.11.1",
         "Node name for S&R": "ImageCompare"
       },
-      "widgets_values": [
-        {
-          "after": "/api/view?filename=b9ac888240a265b88573225525d8ebe13189bb8c9f88f19949dac7c8474b5e57.png&subfolder=&type=temp",
-          "before": "/api/view?filename=6094878de76c8680863fc3ad70a3acd74ea6db4e755dd9b81764ea1d090eb484.png&subfolder=&type=temp"
-        }
-      ]
+      "widgets_values": []
     },
     {
       "id": 2,

@@ -10740,10 +10740,6 @@ Enterprise`
     en: 'Explore the possibilities',
     'zh-CN': '探索更多可能'
   },
-  'workshop.workflow.templateExample': {
-    en: 'Template example {n}',
-    'zh-CN': '模板示例 {n}'
-  },
   'workshop.workflow.by': { en: 'by {author}', 'zh-CN': '作者 {author}' },
   'workshop.workflow.nodeGraph': { en: 'Node Graph', 'zh-CN': '节点图' },
   'workshop.workflow.comfyApp': { en: 'Comfy App', 'zh-CN': 'Comfy 应用' },

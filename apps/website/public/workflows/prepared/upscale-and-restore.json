@@ -98,12 +98,7 @@
       "properties": {
         "Node name for S&R": "ImageCompare"
       },
-      "widgets_values": [
-        {
-          "before": "/api/view?filename=b4cd42f86cfc2356bf6af77acea492469a5fefed38f73340418a9a88c3bc3264.png&subfolder=&type=temp",
-          "after": "/api/view?filename=fa4b6ce837d8f13afef0900c2e5f8fdb28fea1ec3e33d73749ffa2e8d88a84a7.png&subfolder=&type=temp"
-        }
-      ]
+      "widgets_values": []
     },
     {
       "id": 47,
