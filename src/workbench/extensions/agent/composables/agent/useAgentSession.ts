@@ -1036,7 +1036,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     conversationStore.setThreadId(null)
     boundWorkflowId.value = null
     rememberedWorkflowId = null
-    localStorage.removeItem(THREAD_STORAGE_KEY)
+    localStorage.removeItem(threadStorageKey)
   }
 
   const isSending = computed(() => sending.value)

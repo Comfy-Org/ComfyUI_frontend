@@ -1536,7 +1536,9 @@ describe('useAgentSession (v1 composition root)', () => {
 
     await session.sendMessage('go')
     emit(delta('msg-1', 'partial'))
-    expect(localStorage.getItem('Comfy.Agent.ThreadId')).toBe('th-1')
+    expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBe(
+      'th-1'
+    )
 
     status(false)
     status(true)
@@ -1544,7 +1546,7 @@ describe('useAgentSession (v1 composition root)', () => {
     await vi.waitFor(() => expect(session.isStreaming.value).toBe(false))
     expect(session.threadId.value).toBeNull()
     expect(session.boundWorkflowId.value).toBeNull()
-    expect(localStorage.getItem('Comfy.Agent.ThreadId')).toBeNull()
+    expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBeNull()
 
     await session.sendMessage('again')
     expect(vi.mocked(rest.postMessage).mock.calls.at(-1)?.[0]).toBe('new')
@@ -1586,7 +1588,9 @@ describe('useAgentSession (v1 composition root)', () => {
       ).toEqual(['th-2'])
     )
     expect(session.threadId.value).toBe('th-2')
-    expect(localStorage.getItem('Comfy.Agent.ThreadId')).toBe('th-2')
+    expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBe(
+      'th-2'
+    )
   })
 
   it.for([
@@ -1809,7 +1813,7 @@ describe('useAgentSession (v1 composition root)', () => {
     const removeItem = vi
       .spyOn(localStorage, 'removeItem')
       .mockImplementation((key: string) => {
-        if (key === 'Comfy.Agent.ThreadId') throw storageFailure
+        if (key === StorageKeys.agentThread('personal')) throw storageFailure
       })
     try {
       const rest = fakeRest({
@@ -1833,7 +1837,9 @@ describe('useAgentSession (v1 composition root)', () => {
           errorType: 'failure_recovering_agent_turn'
         })
       )
-      expect(removeItem).toHaveBeenCalledWith('Comfy.Agent.ThreadId')
+      expect(removeItem).toHaveBeenCalledWith(
+        StorageKeys.agentThread('personal')
+      )
       // The job still cleans up after itself: the turn is settled and the
       // deleted thread is forgotten in memory despite the storage failure.
       expect(useAgentConversationStore().liveTurns()).toEqual([])
