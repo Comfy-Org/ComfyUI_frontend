@@ -780,9 +780,9 @@ const {
       }
     },
     // PM-1598: remote edits trip none of the input listeners
-    // `ChangeTracker.init()` installs, so this is the only thing that
-    // dispatches `graphChanged` for them — and that event is what
-    // schedules the draft write the next reload restores from.
+    // `ChangeTracker.init()` installs, so without this their draft write
+    // waits on an unrelated interaction — the next `mouseup` — and a
+    // reload before that restores a workflow missing the agent's edit.
     onApplied() {
       workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
     },

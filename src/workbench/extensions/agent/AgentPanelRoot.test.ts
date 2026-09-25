@@ -2863,14 +2863,22 @@ describe('AgentPanelRoot canvas draft on remote edit', () => {
     expect(captureCanvasState).toHaveBeenCalledOnce()
   })
 
-  it('does not throw when no workflow is active', () => {
-    workflowStore.activeWorkflow = null
+  it('captures once per frame rather than per materialized node', () => {
+    const captureCanvasState = vi.fn()
+    workflowStore.activeWorkflow = addTab('workflows/remote_edit.json', {
+      changeTracker: createMockChangeTracker({ captureCanvasState })
+    })
 
     renderWithSelectedTarget()
+    const events = followerEvents()
+    events.onMaterialized?.({
+      workflowId: 'wf-1',
+      actor: 'agent:thread:turn',
+      nodeIds: [toNodeId(1), toNodeId(2)]
+    })
+    events.onApplied?.({ workflowId: 'wf-1', actor: 'agent:thread:turn' })
 
-    expect(() =>
-      followerEvents().onApplied?.({ workflowId: 'wf-1', actor: undefined })
-    ).not.toThrow()
+    expect(captureCanvasState).toHaveBeenCalledOnce()
   })
 })
 

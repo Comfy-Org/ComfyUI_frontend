@@ -1382,6 +1382,32 @@ describe('useAgentCrdtFollower', () => {
         unmount()
       })
 
+      it('stays silent for this tab\u2019s own ops echoed back', async () => {
+        const onApplied = vi.fn()
+        const { enqueue, unmount } = mountFollower(
+          'wf-1',
+          true,
+          () => fakeGraph,
+          { onApplied }
+        )
+
+        enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+        await Promise.resolve()
+        const [, , ops] = clientState.sendOps.mock.calls[0]
+        const ownActor = ops[0].actor
+
+        dispatchFrame('doc_update', {
+          workflowId: 'wf-1',
+          seq: 9,
+          actor: ownActor,
+          catchUp: false
+        })
+
+        expect(ownActor).toMatch(/^human:/)
+        expect(onApplied).not.toHaveBeenCalled()
+        unmount()
+      })
+
       it.for([
         {
           case: 'the adapter skipped the frame',
