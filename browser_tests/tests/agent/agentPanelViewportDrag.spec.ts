@@ -9,18 +9,10 @@ test.describe(
   () => {
     test.use({ viewport: { width: 700, height: 800 } })
 
-    test('keeps the panel and canvas controls reachable after a wide drag', async ({
-      agentPanel,
-      comfyPage
-    }) => {
-      test.fail(
-        true,
-        'Current main lets a wide panel drag push the dock beyond the viewport'
-      )
+    test.beforeEach(async ({ agentPanel, comfyPage }) => {
       const page = comfyPage.page
       await agentPanel.open()
 
-      const panel = page.getByTestId('docked-agent-panel')
       const resizeHandle = page.getByTestId('agent-panel-resize-handle')
       const handleBox = await resizeHandle.boundingBox()
       if (!handleBox)
@@ -32,39 +24,54 @@ test.describe(
       await page.mouse.down()
       await page.mouse.move(0, handleCenterY)
       await page.mouse.up()
+    })
 
-      await expect
-        .poll(async () => {
-          const viewport = page.viewportSize()
-          if (!viewport) throw new Error('This test requires a sized viewport')
-          const [panelBox, sidebarBox, toolbarBox, runBox] = await Promise.all([
-            panel.boundingBox(),
-            comfyPage.menu.sideToolbar.boundingBox(),
-            comfyPage.actionbar.root.boundingBox(),
-            comfyPage.actionbar.queueButton.root.boundingBox()
-          ])
-          const fullyVisible = (
-            box: Awaited<ReturnType<typeof panel.boundingBox>>
-          ) =>
-            box !== null &&
-            box.x >= 0 &&
-            box.y >= 0 &&
-            box.x + box.width <= viewport.width &&
-            box.y + box.height <= viewport.height
+    test('keeps the sidebar reachable after a wide panel drag', async ({
+      comfyPage
+    }) => {
+      const sidebar = comfyPage.menu.sideToolbar
+      await expect(sidebar).toHaveCount(1)
+      test.fail(
+        true,
+        'Current main lets a wide panel drag hide the sidebar outside the viewport'
+      )
+      await expect(sidebar).toBeInViewport({ ratio: 1 })
+    })
 
-          return {
-            canvasToolbar: fullyVisible(toolbarBox),
-            panel: fullyVisible(panelBox),
-            runControl: fullyVisible(runBox),
-            sidebar: fullyVisible(sidebarBox)
-          }
-        })
-        .toEqual({
-          canvasToolbar: true,
-          panel: true,
-          runControl: true,
-          sidebar: true
-        })
+    test('keeps the canvas toolbar reachable after a wide panel drag', async ({
+      comfyPage
+    }) => {
+      const toolbar = comfyPage.actionbar.root
+      await expect(toolbar).toHaveCount(1)
+      test.fail(
+        true,
+        'Current main lets a wide panel drag hide the canvas toolbar outside the viewport'
+      )
+      await expect(toolbar).toBeInViewport({ ratio: 1 })
+    })
+
+    test('keeps the Run control reachable after a wide panel drag', async ({
+      comfyPage
+    }) => {
+      const runControl = comfyPage.actionbar.queueButton.root
+      await expect(runControl).toHaveCount(1)
+      test.fail(
+        true,
+        'Current main lets a wide panel drag hide the Run control outside the viewport'
+      )
+      await expect(runControl).toBeInViewport({ ratio: 1 })
+    })
+
+    test('keeps the panel fully inside the viewport after a wide drag', async ({
+      comfyPage
+    }) => {
+      const panel = comfyPage.page.getByTestId('docked-agent-panel')
+      await expect(panel).toHaveCount(1)
+      test.fail(
+        true,
+        'Current main lets a wide panel drag push the dock beyond the viewport'
+      )
+      await expect(panel).toBeInViewport({ ratio: 1 })
     })
   }
 )
