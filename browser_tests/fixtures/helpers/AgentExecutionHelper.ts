@@ -88,16 +88,24 @@ export class AgentExecutionHelper {
   /**
    * Registers a job the client never posted — the agent's own `run` tool
    * submits server-side, so the browser first learns of that job from the
-   * queue surface.
+   * queue surface. Pass `workflowId` to attribute the job the way a real
+   * cloud row does: the queue poll registers that mapping, and it is what
+   * lets `executionStore` file the job's terminal states (notably an
+   * `execution_error`) against the workflow instead of suppressing them as
+   * unattributable.
    */
-  async enqueueServerRun(jobId: string): Promise<void> {
+  async enqueueServerRun(
+    jobId: string,
+    { workflowId }: { workflowId?: string } = {}
+  ): Promise<void> {
     await this.upsertJob({
       id: jobId,
       status: 'pending',
       preview_output: null,
       outputs_count: null,
       execution_start_time: null,
-      execution_end_time: null
+      execution_end_time: null,
+      ...(workflowId !== undefined && { workflow_id: workflowId })
     })
   }
 
