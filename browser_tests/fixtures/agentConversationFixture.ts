@@ -575,7 +575,20 @@ export class AgentConversationHarness {
   // What the canvas shows after the given turn, judged the way a user would
   // (which nodes, under which titles, with which widget values, wired on
   // both slot rows) against the workflow the production library projects.
-  async expectCanvasReplayed(throughTurn: number): Promise<void> {
+  //
+  // `skipTitleCheckForNodeIds` opts specific node ids out of the per-node
+  // title assertion below. It exists for callers that deliberately hold a
+  // node's live title away from the doc's own projected title (e.g. a known,
+  // unfixed "local rename doesn't survive reconcile" repro) — asserting the
+  // doc's stale title there would hard-code the very gap under test, and
+  // would keep hard-failing even once a real fix makes the live title
+  // outlive the reconcile, since this host's projection only reflects
+  // replayed ops and has no way to observe that local rename either way.
+  // Every other node, and every other caller, keeps the full contract check.
+  async expectCanvasReplayed(
+    throughTurn: number,
+    skipTitleCheckForNodeIds: ReadonlySet<string> = new Set()
+  ): Promise<void> {
     const projected = this.host.projection()
     const nodes = projected.nodes.map((node) => zProjectedNode.parse(node))
     const present = new Set(nodes.map((node) => String(node.id)))
@@ -597,7 +610,10 @@ export class AgentConversationHarness {
         this.displayNames.get(node.type),
         materialized
       )
-      await expect(locator.getByTestId('node-title')).toHaveText(expectedTitle)
+      if (!skipTitleCheckForNodeIds.has(id))
+        await expect(locator.getByTestId('node-title')).toHaveText(
+          expectedTitle
+        )
     }
     await expect(this.page.getByTestId('node-title')).toHaveCount(nodes.length)
 

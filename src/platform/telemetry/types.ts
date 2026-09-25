@@ -16,6 +16,7 @@ import {
   AUTH_TELEMETRY_EVENT,
   SESSION_TELEMETRY_EVENT
 } from '@comfyorg/account-core/telemetry'
+import type { AgentRunMode } from '@comfyorg/ingest-types'
 import type {
   AuthErrorMetadata,
   AuthFlowAction,
@@ -44,6 +45,7 @@ export type PaymentIntentSource =
   | 'upload_model_upgrade'
   | 'team_upgrade_resume'
   | 'free_tier_quota'
+  | 'agent_paywall'
 
 export type SubscriptionCheckoutType = 'new' | 'change'
 export type SubscriptionCheckoutTier = TierKey | 'team'
@@ -569,6 +571,7 @@ export interface UiButtonClickMetadata {
  */
 export interface AgentMessageFeedbackMetadata extends Record<string, unknown> {
   message_id: string
+  turn_id: string
   vote: 'up' | 'down' | null
   workflow_id: string | null
 }
@@ -664,9 +667,56 @@ export interface AgentMessageSentMetadata extends Record<string, unknown> {
 export interface AgentNodeTaggedMetadata extends Record<string, unknown> {
   source: 'mention_picker'
 }
+export interface AgentAttachButtonClickedMetadata extends Record<
+  string,
+  unknown
+> {
+  method: 'menu' | 'drag_drop'
+}
 export interface AgentWorkflowAppliedMetadata extends Record<string, unknown> {
   workflow_id: string
   target: 'active_tab_switch' | 'active_tab_open'
+}
+export type AgentStopMethod = 'button' | 'escape'
+export interface AgentStopClickedMetadata extends Record<string, unknown> {
+  method: AgentStopMethod
+  turn_id: string
+  turn_elapsed_ms: number | null
+}
+export type AgentWorkflowBindSource =
+  | 'active_tab'
+  | 'selector_chip'
+  | 'minted'
+  | 'restored'
+export interface AgentWorkflowBoundMetadata extends Record<string, unknown> {
+  thread_id: string
+  workflow_id: string
+  prev_workflow_id: string | null
+  bind_source: AgentWorkflowBindSource
+}
+export interface AgentRunApprovalShownMetadata extends Record<string, unknown> {
+  turn_id: string
+  workflow_id: string | null
+}
+export type AgentRunApprovalDecision = 'run' | 'cancel' | 'open_workflow'
+export interface AgentRunApprovalResolvedMetadata extends Record<
+  string,
+  unknown
+> {
+  decision: AgentRunApprovalDecision
+  time_to_decide_ms: number
+}
+export interface AgentRunModeChangedMetadata extends Record<string, unknown> {
+  from: AgentRunMode['mode']
+  to: AgentRunMode['mode']
+}
+export type AgentThreadStartSource =
+  | 'new_chat_button'
+  | 'first_open'
+  | 'history_select'
+  | 'history_delete'
+export interface AgentThreadStartedMetadata extends Record<string, unknown> {
+  source: AgentThreadStartSource
 }
 
 /**
@@ -805,6 +855,24 @@ export interface AddCreditsClickMetadata {
     | 'avatar_menu'
     | 'settings_billing_panel'
     | 'deep_link'
+    | 'agent_paywall'
+}
+
+export type AgentPaywallReason =
+  | 'no_funds'
+  | 'subscription_inactive'
+  | 'member_cannot_pay'
+  | 'sales_managed'
+  | 'unknown'
+
+export interface AgentPaywallShownMetadata {
+  reason: AgentPaywallReason
+}
+
+export type AgentPaywallCta = 'subscribe' | 'add_credits' | 'upgrade'
+
+export interface AgentPaywallCtaMetadata {
+  cta: AgentPaywallCta
 }
 
 export interface SubscriptionCancellationMetadata {
@@ -1085,6 +1153,7 @@ export type CheckoutEntrySource =
   | 'settings_billing'
   | 'other'
   | 'unknown'
+  | 'agent_paywall'
 type CheckoutElementPhase = 'init' | 'mount' | 'update'
 /** Which Stripe element in the shared group the observation came from. */
 type CheckoutElementKind = 'payment' | 'address'
@@ -1281,6 +1350,9 @@ export interface TelemetryProvider {
   /** Emit a checkout-journey lifecycle event to this provider. */
   trackCheckoutJourneyEvent?(event: CheckoutJourneyTelemetryEvent): void
 
+  trackAgentPaywallShown?(metadata: AgentPaywallShownMetadata): void
+  trackAgentPaywallCtaClicked?(metadata: AgentPaywallCtaMetadata): void
+
   // Survey flow events
   trackSurvey?(stage: 'opened' | 'submitted', responses?: SurveyResponses): void
 
@@ -1366,8 +1438,18 @@ export interface TelemetryProvider {
   trackAgentOnboardingStep?(metadata: AgentOnboardingStepMetadata): void
   trackAgentMessageSent?(metadata: AgentMessageSentMetadata): void
   trackAgentNodeTagged?(metadata: AgentNodeTaggedMetadata): void
-  trackAgentAttachButtonClicked?(): void
+  trackAgentAttachButtonClicked?(
+    metadata: AgentAttachButtonClickedMetadata
+  ): void
   trackAgentWorkflowApplied?(metadata: AgentWorkflowAppliedMetadata): void
+  trackAgentStopClicked?(metadata: AgentStopClickedMetadata): void
+  trackAgentWorkflowBound?(metadata: AgentWorkflowBoundMetadata): void
+  trackAgentRunApprovalShown?(metadata: AgentRunApprovalShownMetadata): void
+  trackAgentRunApprovalResolved?(
+    metadata: AgentRunApprovalResolvedMetadata
+  ): void
+  trackAgentRunModeChanged?(metadata: AgentRunModeChangedMetadata): void
+  trackAgentThreadStarted?(metadata: AgentThreadStartedMetadata): void
   trackAgentConsentNotOffered?(metadata: AgentConsentNotOfferedMetadata): void
   trackAgentOnboardingNotShown?(metadata: AgentOnboardingNotShownMetadata): void
 
@@ -1437,6 +1519,9 @@ export const TelemetryEvents = {
   WORKSPACE_INVITE_SENT: 'app:workspace_invite_sent',
   WORKSPACE_INVITE_FAILED: 'app:workspace_invite_failed',
   BEGIN_CHECKOUT: 'begin_checkout',
+
+  AGENT_PAYWALL_SHOWN: 'app:agent_paywall_shown',
+  AGENT_PAYWALL_CTA_CLICKED: 'app:agent_paywall_cta_clicked',
 
   // Canonical Billing Lifecycle
   BILLING_SUBSCRIPTION_CHECKOUT_STARTED:
@@ -1544,6 +1629,12 @@ export const TelemetryEvents = {
   AGENT_NODE_TAGGED: 'app:agent_node_tagged',
   AGENT_ATTACH_BUTTON_CLICKED: 'app:agent_attach_button_clicked',
   AGENT_WORKFLOW_APPLIED: 'app:agent_workflow_applied',
+  AGENT_STOP_CLICKED: 'app:agent_stop_clicked',
+  AGENT_WORKFLOW_BOUND: 'app:agent_workflow_bound',
+  AGENT_RUN_APPROVAL_SHOWN: 'app:agent_run_approval_shown',
+  AGENT_RUN_APPROVAL_RESOLVED: 'app:agent_run_approval_resolved',
+  AGENT_RUN_MODE_CHANGED: 'app:agent_run_mode_changed',
+  AGENT_THREAD_STARTED: 'app:agent_thread_started',
   AGENT_CONSENT_NOT_OFFERED: 'app:agent_consent_not_offered',
   AGENT_ONBOARDING_NOT_SHOWN: 'app:agent_onboarding_not_shown',
 
@@ -1658,4 +1749,6 @@ export type TelemetryEventProperties =
   | WorkspaceInviteFailedMetadata
   | BillingTelemetryEvent
   | CheckoutJourneyTelemetryEventPayload
+  | AgentPaywallShownMetadata
+  | AgentPaywallCtaMetadata
   | FetchTimeoutMetadata
