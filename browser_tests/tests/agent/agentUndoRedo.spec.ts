@@ -56,15 +56,9 @@ test.describe('Agent edit undo/redo', { tag: ['@cloud', '@vue-nodes'] }, () => {
     expect(await graphNodeCount(page)).toBe(afterAgentEdit)
   })
 
-  // Pinned defect: the Vue node renderer remeasures a restored agent-added
-  // node two pixels taller than the snapshot recorded, and that size lives
-  // only in the layout store. The mouseup capture after the click sees the
-  // graph differ from the restored state, pushes a spurious undo entry, and
-  // clears the redo queue.
   test('redo survives a canvas click that follows the undo', async ({
     page
   }) => {
-    test.fail()
     const afterAgentEdit = await graphNodeCount(page)
 
     await pressHistoryChord(page, ['Control', 'KeyZ'])

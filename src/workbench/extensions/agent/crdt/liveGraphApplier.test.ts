@@ -73,7 +73,7 @@ function sourceNode(id: number, extra: Record<string, unknown> = {}) {
     id,
     type: 'TestSource',
     pos: [0, 0],
-    size: [200, 100],
+    size: [210, 100],
     outputs: [{ name: 'image', type: 'IMAGE', links: [] }],
     widgets_values: [20],
     ...extra
@@ -135,6 +135,37 @@ describe('LiveGraphApplier', () => {
       target_id: toNodeId(2)
     })
     expect(graph.state.lastLinkId).toBeGreaterThanOrEqual(7)
+  })
+
+  it.for([
+    { label: 'undersized', size: [10, 10] },
+    { label: 'absent', size: undefined }
+  ])(
+    'floors a created node at its computed size when the document size is $label',
+    ({ size }) => {
+      const { graph, applyCollected } = setup({
+        nodes: [sourceNode(1, { size })],
+        links: []
+      })
+      applyCollected()
+
+      const node = graph.getNodeById(toNodeId(1))
+      expect([...(node?.size ?? [])]).toEqual([
+        ...new TestSource().computeSize()
+      ])
+    }
+  )
+
+  it('keeps a document size that already fits the node content', () => {
+    const { graph, applyCollected } = setup({
+      nodes: [sourceNode(1, { size: [600, 400] })],
+      links: []
+    })
+    applyCollected()
+
+    expect([...(graph.getNodeById(toNodeId(1))?.size ?? [])]).toEqual([
+      600, 400
+    ])
   })
 
   it('replaces live flags with the document flags but keeps a live placement ghost', () => {
@@ -350,8 +381,8 @@ describe('LiveGraphApplier', () => {
 
     expect(existing.title).toBe('renamed')
     expect(positionOf(1)).toEqual([0, 0])
-    expect(positionOf(2)).toEqual([280, 0])
-    expect(positionOf(3)).toEqual([680, 0])
+    expect(positionOf(2)).toEqual([290, 0])
+    expect(positionOf(3)).toEqual([690, 0])
   })
 
   it('scopes every write to the remote actor', () => {

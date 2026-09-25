@@ -354,6 +354,20 @@ function missingNode(docNode: DocNode): LGraphNode {
   return node
 }
 
+/**
+ * A document may carry a size smaller than the node's widgets need (or none
+ * at all). Every human path — `loadGraphData`, which the undo stack restores
+ * through, and interactive resize — floors the size at `computeSize()`, so a
+ * node born below that floor snapshots at one size and restores at another,
+ * which the change tracker then records as a fresh edit.
+ */
+function floorSizeToContent(node: LGraphNode): void {
+  const [minWidth, minHeight] = node.computeSize()
+  const [width, height] = node.size
+  if (width >= minWidth && height >= minHeight) return
+  node.setSize([Math.max(width, minWidth), Math.max(height, minHeight)])
+}
+
 export class LiveGraphApplier {
   private readonly deps: LiveGraphApplierDeps
   private readonly reported = new Set<string>()
@@ -548,12 +562,13 @@ export class LiveGraphApplier {
     if (node.has_errors) {
       node.last_serialization = info
       node.configure(info)
-      return node
+    } else {
+      node.configure({
+        ...info,
+        widgets_values: positionalWidgetValues(node, docNode.widgets)
+      })
     }
-    node.configure({
-      ...info,
-      widgets_values: positionalWidgetValues(node, docNode.widgets)
-    })
+    floorSizeToContent(node)
     return node
   }
 
