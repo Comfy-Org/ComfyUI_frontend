@@ -229,6 +229,25 @@ describe('createPromotedDomWidget', () => {
       'blob:frame3'
     )
 
+    // Root attributes follow the source in both directions, while
+    // host-owned layout classes survive class merges.
+    hostB.element.classList.add('h-full', 'w-full')
+    source.setAttribute('hidden', '')
+    await Promise.resolve()
+    expect(hostB.element.hasAttribute('hidden')).toBe(true)
+
+    source.removeAttribute('hidden')
+    source.setAttribute('class', 'kj-pov-root active')
+    await Promise.resolve()
+    expect(hostB.element.hasAttribute('hidden')).toBe(false)
+    expect(hostB.element.classList.contains('active')).toBe(true)
+    expect(hostB.element.classList.contains('h-full')).toBe(true)
+
+    source.setAttribute('class', 'kj-pov-root')
+    await Promise.resolve()
+    expect(hostB.element.classList.contains('active')).toBe(false)
+    expect(hostB.element.classList.contains('h-full')).toBe(true)
+
     // Clone-host edits must not echo back into the shared source subtree.
     const hostBImg = hostB.element.querySelector('img')!
     hostBImg.setAttribute('data-host', 'touched')

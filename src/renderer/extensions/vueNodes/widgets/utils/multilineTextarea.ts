@@ -418,9 +418,38 @@ export function createPromotedDomWidget(
       element.replaceChildren(
         ...(sourceElement.cloneNode(true) as HTMLElement).childNodes
       )
+    const attributeNames = (node: Element) =>
+      Array.from(node.attributes, (attribute) => attribute.name)
+    const classesOf = (value: string | null) =>
+      new Set((value ?? '').split(/\s+/).filter(Boolean))
+    // class is jointly owned: the source owns its classes, DomWidget.vue adds
+    // layout classes to the host element. Everything else on the root belongs
+    // to the source and must follow it in both directions.
+    const sourceOwned = new Set(attributeNames(sourceElement))
+    let mirroredClasses = classesOf(sourceElement.getAttribute('class'))
+    const syncRootAttributes = () => {
+      const hostClasses = new Set(element.classList)
+      for (const name of mirroredClasses) hostClasses.delete(name)
+      mirroredClasses = classesOf(sourceElement.getAttribute('class'))
+      element.setAttribute(
+        'class',
+        [...mirroredClasses, ...hostClasses].join(' ')
+      )
+      for (const name of attributeNames(sourceElement))
+        if (name !== 'class')
+          element.setAttribute(name, sourceElement.getAttribute(name) ?? '')
+      for (const name of sourceOwned)
+        if (name !== 'class' && !sourceElement.hasAttribute(name))
+          element.removeAttribute(name)
+      for (const name of attributeNames(sourceElement)) sourceOwned.add(name)
+    }
     const observer = new MutationObserver((records) => {
       for (const record of records) {
         if (record.type === 'attributes' || record.type === 'characterData') {
+          if (record.target === sourceElement) {
+            syncRootAttributes()
+            continue
+          }
           const path = sourcePath(record.target)
           const mirror = path === undefined ? undefined : inClone(path)
           if (!mirror) {
@@ -434,13 +463,9 @@ export function createPromotedDomWidget(
           const mirrorElement = mirror as Element
           for (const attribute of (record.target as Element).attributes)
             mirrorElement.setAttribute(attribute.name, attribute.value)
-          if (mirrorElement !== element)
-            for (const name of Array.from(
-              mirrorElement.attributes,
-              (a) => a.name
-            ))
-              if (!(record.target as Element).hasAttribute(name))
-                mirrorElement.removeAttribute(name)
+          for (const name of attributeNames(mirrorElement))
+            if (!(record.target as Element).hasAttribute(name))
+              mirrorElement.removeAttribute(name)
           continue
         }
         rebuild()
