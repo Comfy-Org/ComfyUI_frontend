@@ -20,7 +20,7 @@ test.describe('Agent edit undo/redo', { tag: ['@cloud', '@vue-nodes'] }, () => {
     const afterAgentEdit = await graphNodeCount(page)
     expect(afterAgentEdit).toBeGreaterThan(0)
 
-    await page.locator('#graph-canvas').click()
+    await page.locator('#graph-canvas').focus()
     await page.keyboard.press('ControlOrMeta+z')
     await expect.poll(() => graphNodeCount(page)).toBe(afterAgentEdit - 1)
 

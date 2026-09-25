@@ -23,6 +23,7 @@ import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { loadSeedIntoActiveTab } from '@e2e/fixtures/utils/seedActiveTab'
 
 /**
  * Regression coverage for the Jo Zhang / PM-1406-shaped report (nightly,
@@ -236,6 +237,7 @@ async function driveThroughDocReset(
       'Comfy.Graph.CanvasInfo': false
     }
   })
+  await loadSeedIntoActiveTab(page, SEED)
 
   const panel = page.locator('#agent-panel-root')
   await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()

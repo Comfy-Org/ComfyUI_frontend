@@ -4,7 +4,7 @@ import type { WorkflowJSON } from '@comfyorg/comfy-multi-player'
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { zComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { WorkspaceStore } from '@e2e/types/globals'
+import { loadIntoBootWorkflow } from '@e2e/fixtures/agentPanelFixture'
 
 function highest(values: readonly unknown[]): number {
   return values.reduce<number>(
@@ -49,18 +49,7 @@ export async function loadSeedIntoActiveTab(
   page: Page,
   seed: WorkflowJSON
 ): Promise<void> {
-  const workflow = seedAsComfyWorkflow(seed)
-  await page.waitForFunction(
-    () =>
-      (window.app!.extensionManager as WorkspaceStore).workflow
-        .activeWorkflow !== null
-  )
-  await page.evaluate(async (workflowJson) => {
-    const app = window.app!
-    const { activeWorkflow } = (app.extensionManager as WorkspaceStore).workflow
-    if (!activeWorkflow) throw new Error('no active workflow tab to seed')
-    await app.loadGraphData(workflowJson, true, true, activeWorkflow)
-  }, workflow)
+  await loadIntoBootWorkflow(page, seedAsComfyWorkflow(seed))
   await expect
     .poll(() => liveNodeIds(page))
     .toEqual(seed.nodes.map((node) => String(node.id)).sort())

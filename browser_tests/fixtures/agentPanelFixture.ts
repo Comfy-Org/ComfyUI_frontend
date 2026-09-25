@@ -19,6 +19,7 @@ import { cloudAppFixture, waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { nextFrame } from '@e2e/fixtures/utils/timing'
 import type { WorkspaceStore } from '@e2e/types/globals'
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
@@ -214,6 +215,10 @@ export async function bootAgentApp(
  * first. The follower merges a subscribe's catch-up into whatever the canvas
  * already shows; a fake host doc must therefore start from the same graph
  * the canvas holds.
+ *
+ * Reloading the active tab restores that tab's saved viewport, which is the
+ * boot graph's, not one framing `json`; the CI boot graph parks it at the
+ * origin, so the view is fitted afterwards to keep node headers clickable.
  */
 export async function loadIntoBootWorkflow(
   page: Page,
@@ -227,7 +232,10 @@ export async function loadIntoBootWorkflow(
     const activeWorkflow = (window.app!.extensionManager as WorkspaceStore)
       .workflow.activeWorkflow!
     await window.app!.loadGraphData(json, true, true, activeWorkflow)
+    if (json.nodes.length > 0)
+      await window.app!.extensionManager.command.execute('Comfy.Canvas.FitView')
   }, json)
+  await nextFrame(page)
 }
 
 export const BLANK_WORKFLOW: ComfyWorkflowJSON = {
