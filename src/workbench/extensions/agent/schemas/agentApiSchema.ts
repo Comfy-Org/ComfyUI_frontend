@@ -94,6 +94,38 @@ export const zAgentRunMode = zGeneratedAgentRunMode.superRefine(
 )
 export type AgentRunModeValue = AgentRunModePreference['mode']
 
+/**
+ * One entry of a persisted assistant row's `content.tool_calls` (see
+ * `agentTranscript.ts`'s `parseToolCallEntry`), the reload-path counterpart
+ * to the live WebSocket's `zAgentToolCallData` above. `status` is
+ * deliberately `z.string()` rather than a closed enum: an unrecognized value
+ * must still surface as a failed `ToolPart` (`toolCallOk` treats anything
+ * other than `pending`/`running`/`ok`/`success` as failure), so schema
+ * validation should reject a malformed *entry* (missing `id`/`tool_name`),
+ * not an unfamiliar *status* string or a bad `duration_ms` — `duration_ms` is
+ * `z.unknown().optional()` so a NaN/Infinity/negative value there doesn't
+ * sink the whole entry; `parseToolCallEntry` narrows it separately and just
+ * omits it. `status` is likewise `.optional()`: an entry that omits it
+ * entirely must still survive validation (`toolCallPartState`/`toolCallOk`
+ * already treat `undefined` as terminal-and-failed, matching the old
+ * parser's behavior for a status-less call).
+ */
+export const zPersistedToolCallSummary = z
+  .object({
+    id: z.string(),
+    // The provider tool-use id a LIVE `agent_tool_call` frame carries as
+    // `tool_call_id` (see `zAgentToolCallData` above). `parseToolCallEntry`
+    // prefers this over `id` when building `callId` so a restored `ToolPart`
+    // is keyed the same way a live frame for the same call will be, and can
+    // be updated in place rather than rendered as an unmatched duplicate.
+    // Optional: rows recorded before `tool_call_id` existed have none.
+    tool_call_id: z.string().optional(),
+    tool_name: z.string(),
+    status: z.string().optional(),
+    duration_ms: z.unknown().optional()
+  })
+  .passthrough()
+
 export const zAgentMessage = zGeneratedAgentMessage
   .extend({
     pending_ask: zAgentPendingAsk.optional()
@@ -127,14 +159,6 @@ export const zAgentError = z.union([zGeneratedAgentError, zAgentAdmissionError])
 export const zDisownedWorkflowError = z.object({
   error: z.literal('workflow not found or access denied')
 })
-
-export const zUploadImageResult = z.object({
-  name: z.string(),
-  subfolder: z.string(),
-  type: z.string()
-})
-export type UploadImageResult = z.infer<typeof zUploadImageResult>
-
 const zAgentThinkingData = z
   .object({
     delta: z.string(),
@@ -158,6 +182,16 @@ const zAgentToolCallData = z
 const zAgentMessageDeltaData = z
   .object({
     delta: z.string(),
+    message_id: z.string(),
+    thread_id: z.string()
+  })
+  .passthrough()
+
+// The whole answer so far while the model is still writing it: each draft
+// replaces the last, and an empty text withdraws it.
+const zAgentMessageDraftData = z
+  .object({
+    text: z.string(),
     message_id: z.string(),
     thread_id: z.string()
   })
@@ -211,6 +245,11 @@ const zAgentMessageDeltaEvent = z.object({
   data: zAgentMessageDeltaData
 })
 
+const zAgentMessageDraftEvent = z.object({
+  type: z.literal('agent_message_draft'),
+  data: zAgentMessageDraftData
+})
+
 const zAgentMessageDoneEvent = z.object({
   type: z.literal('agent_message_done'),
   data: zAgentMessageDoneData
@@ -243,6 +282,7 @@ export const zAgentWsEvent = z.discriminatedUnion('type', [
   zAgentThinkingEvent,
   zAgentToolCallEvent,
   zAgentMessageDeltaEvent,
+  zAgentMessageDraftEvent,
   zAgentMessageDoneEvent,
   zAgentActiveTabEvent,
   zAgentAskEvent,

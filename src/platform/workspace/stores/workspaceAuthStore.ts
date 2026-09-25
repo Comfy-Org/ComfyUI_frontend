@@ -17,6 +17,7 @@ import { t } from '@/i18n'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { UnifiedAuthRefreshOutcome } from '@/platform/telemetry/types'
 import { prepareWorkflowWorkspaceTransition } from '@/platform/workflow/persistence/base/storageIO'
 import {
@@ -270,8 +271,20 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     }
     if (report.outcome === 'retries_exhausted') {
       trackUnifiedRefresh('retries_exhausted')
-      console.warn(
-        'Unified token refresh failed; retries exhausted, the session ends at expiry unless a reactive re-mint lands first'
+      // The proactive refresh is the only thing that rotates the session
+      // cookie, so this is the moment the cookie rail dies — roughly two hours
+      // before the user sees anything, and while every Bearer-authenticated
+      // call keeps working. That asymmetry is FE-1595. It belongs in the error
+      // tracker, not only in a RUM action: RUM actions cannot raise a Sentry
+      // alert, which is why this failure class went unnoticed for weeks.
+      reportError(
+        new Error(
+          'Unified token refresh failed; retries exhausted, the session ends at expiry unless a reactive re-mint lands first'
+        ),
+        {
+          errorType: 'failure_refreshing_unified_auth_retries_exhausted',
+          tags: { retry_count: unifiedScheduledRetryCount }
+        }
       )
       return
     }
@@ -284,6 +297,20 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     }
     trackUnifiedRefresh('permanent_failure')
     const code = report.failure.code
+    // Terminal: the session is being torn down. The user sees a toast, but
+    // nothing reached the error tracker, so a spike in permanent auth failures
+    // was only visible to whoever happened to open the RUM explorer.
+    reportError(
+      new Error(`Unified token refresh failed permanently: ${code}`),
+      {
+        errorType: 'failure_refreshing_unified_auth_permanent',
+        tags: { failure_code: code, retry_count: unifiedScheduledRetryCount },
+        // `surfaceUnifiedPermanentFailure` below already writes the console
+        // line via `surfacePermanentAuthError`; without this the same failure
+        // prints twice.
+        logToConsole: false
+      }
+    )
     surfaceUnifiedPermanentFailure(code)
     endWorkspaceSession(
       unifiedSelectionInvalid(code)

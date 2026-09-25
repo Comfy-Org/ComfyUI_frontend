@@ -1,0 +1,144 @@
+name: 'Workshop: Model Sweep'
+
+on:
+  schedule:
+    - cron: '17 6 * * *'
+    - cron: '17 7 * * 0'
+  workflow_dispatch:
+    inputs:
+      modality:
+        description: Published pages to generate
+        type: choice
+        options: [all, image, audio, video]
+        default: all
+
+permissions:
+  contents: read
+
+env:
+  PUBLIC_WORKSHOP_CLOUD_ENV: prod
+  SWEEP_MODALITY: ${{ github.event.schedule == '17 7 * * 0' && 'video' || github.event.schedule == '17 6 * * *' && 'image-audio' || inputs.modality }}
+
+concurrency:
+  group: workshop-live-prod
+  cancel-in-progress: false
+  queue: max
+
+jobs:
+  plan:
+    name: Plan published pages and paid-job budget
+    if: github.repository == 'Comfy-Org/ComfyUI_frontend' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      shards: ${{ steps.plan.outputs.shards }}
+      total: ${{ steps.plan.outputs.total }}
+      selected-count: ${{ steps.plan.outputs.selected-count }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-frontend
+      - name: Plan without credentials or provider calls
+        id: plan
+        working-directory: apps/website
+        run: |
+          args=()
+          if [ "$SWEEP_MODALITY" = image-audio ]; then
+            args+=(--exclude-modality video)
+          elif [ "$SWEEP_MODALITY" != all ]; then
+            args+=(--modality "$SWEEP_MODALITY")
+          fi
+          plan=$(pnpm exec tsx scripts/test-router-models.ts --plan --max-cases 12 "${args[@]}")
+          echo "shards=$(jq -c '.shards' <<< "$plan")" >> "$GITHUB_OUTPUT"
+          echo "total=$(jq -r '.total' <<< "$plan")" >> "$GITHUB_OUTPUT"
+          echo "selected-count=$(jq -r '.selectedCount' <<< "$plan")" >> "$GITHUB_OUTPUT"
+          echo "Published model sweep plan: $plan" >> "$GITHUB_STEP_SUMMARY"
+  sweep:
+    name: Published defaults · shard ${{ matrix.shard }}
+    if: github.repository == 'Comfy-Org/ComfyUI_frontend' && github.ref == 'refs/heads/main'
+    needs: plan
+    runs-on: ubuntu-latest
+    environment: workshop-prod
+    timeout-minutes: 355
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        shard: ${{ fromJSON(needs.plan.outputs.shards) }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-workshop-live
+      - name: Generate and decode published model defaults
+        env:
+          COMFY_API_KEY: ${{ secrets.WORKSHOP_ROUTER_API_KEY }}
+          SHARD: ${{ matrix.shard }}
+          SHARD_TOTAL: ${{ needs.plan.outputs.total }}
+        run: |
+          args=()
+          if [ "$SWEEP_MODALITY" = image-audio ]; then
+            args+=(--exclude-modality video)
+          elif [ "$SWEEP_MODALITY" != all ]; then
+            args+=(--modality "$SWEEP_MODALITY")
+          fi
+          pnpm --filter @comfyorg/website test:router-models --execute \
+            --shard-index "$SHARD" --shard-total "$SHARD_TOTAL" --max-cases 12 \
+            --concurrency 2 --starts-per-second 1 \
+            --output "$RUNNER_TEMP/workshop-sweep" \
+            --report "$RUNNER_TEMP/workshop-report.md" "${args[@]}"
+      - name: Publish sanitized sweep evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: workshop-model-sweep-${{ matrix.shard }}-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/workshop-report.md
+            ${{ runner.temp }}/workshop-report.json
+            ${{ runner.temp }}/workshop-sweep/manifest.json
+            ${{ runner.temp }}/workshop-sweep/summary.json
+          if-no-files-found: error
+          retention-days: 30
+      - name: Publish model report
+        if: ${{ !cancelled() }}
+        run: |
+          if [ -f "$RUNNER_TEMP/workshop-report.md" ]; then
+            cat "$RUNNER_TEMP/workshop-report.md" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  report:
+    name: Catalogue coverage and missing results
+    needs: [plan, sweep]
+    if: ${{ always() && needs.plan.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: workshop-model-sweep-*-${{ github.run_id }}
+          path: evidence
+      - name: Consolidate selected pages
+        env:
+          EXPECTED: ${{ needs.plan.outputs.selected-count }}
+        run: |
+          mapfile -t reports < <(find evidence -name workshop-report.json -type f)
+          if [ "${#reports[@]}" -eq 0 ]; then
+            echo "::error::No model sweep evidence arrived"
+            exit 1
+          fi
+          jq -s '{version: 1, models: [.[].models[]] | sort_by(.slug)}' "${reports[@]}" > workshop-sweep.json
+          jq -r '"| Model | Live result |", "| --- | --- |", (.models[] | "| \(.slug) | \(.live.status // "not-run") |")' workshop-sweep.json >> "$GITHUB_STEP_SUMMARY"
+          jq -e --argjson expected "$EXPECTED" '
+            (.models | length) == $expected and
+            ([.models[].slug] | unique | length) == $expected and
+            all(.models[]; .live.status == "passed")
+          ' workshop-sweep.json
+      - name: Publish complete sweep report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: workshop-model-sweep-complete-${{ github.run_id }}
+          path: workshop-sweep.json
+          if-no-files-found: error
+          retention-days: 30

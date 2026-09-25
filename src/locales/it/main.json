@@ -2008,6 +2008,7 @@
     "removeAll": "Rimuovi tutto",
     "removeAllKeybindingsMessage": "Tutte le scorciatoie per questo comando verranno rimosse",
     "removeAllKeybindingsTitle": "Rimuovere tutte le scorciatoie?",
+    "removeFilter": "Rimuovi filtro {label}",
     "removeImage": "Rimuovi immagine",
     "removeKeybinding": "Rimuovi scorciatoia",
     "removeTag": "Rimuovi tag",
@@ -2222,8 +2223,10 @@
     "star": "Stella"
   },
   "imageCompare": {
+    "afterAlt": "Immagine dopo",
     "batchLabelA": "A:",
     "batchLabelB": "B:",
+    "beforeAlt": "Immagine prima",
     "noImages": "Nessuna immagine da confrontare"
   },
   "imageCrop": {
@@ -2758,6 +2761,9 @@
     "installationQueue": "Coda di Installazione",
     "installingDependencies": "Installazione delle dipendenze...",
     "lastUpdated": "Ultimo Aggiornamento",
+    "latestActive": "Ultima Active",
+    "latestInstallable": "Ultima installabile",
+    "latestStableVersion": "Ultima stabile",
     "latestVersion": "Ultima",
     "legacyManagerSearchTip": "Cerchi ComfyUI-Manager? Puoi abilitare l'interfaccia legacy del gestore avviando ComfyUI con il flag --enable-manager-legacy-ui.",
     "legacyManagerUI": "Usa Interfaccia Legacy",
@@ -2779,10 +2785,13 @@
       "updatesAvailable": "Aggiornamenti Disponibili"
     },
     "nightlyVersion": "Nightly",
+    "noActiveVersions": "Questo pacchetto non ha rilasci Active.",
+    "noActiveVersionsFlagged": "Questo pacchetto non ha rilasci Active. Seleziona un rilascio Contrassegnato per richiedere l'installazione, in base alle impostazioni di sicurezza del Manager.",
     "noDescription": "Nessuna descrizione disponibile",
     "noNodesFound": "Nessun nodo trovato",
     "noNodesFoundDescription": "I nodi del pacchetto non possono essere analizzati, oppure il pacchetto è solo un'estensione frontend e non contiene nodi.",
     "noResultsFound": "Nessun risultato trovato per la tua ricerca.",
+    "noUpdateVersion": "Nessun rilascio disponibile per l'opzione di aggiornamento selezionata.",
     "nodePack": "Pacchetto Nodi",
     "nodePackInfo": "Informazioni Pacchetto Nodi",
     "notAvailable": "Non Disponibile",
@@ -2790,9 +2799,11 @@
       "nodeIdRequired": "L'ID del nodo è richiesto per l'installazione"
     },
     "packsSelected": "pacchetti selezionati",
+    "queueWaitingToContinue": "Ci sono attività in sospeso. Riprova per continuare.",
     "repository": "Repository",
     "restartToApplyChanges": "Per applicare le modifiche, riavvia ComfyUI",
     "restartingBackend": "Riavvio del backend per applicare le modifiche...",
+    "retryQueueStart": "Riprova",
     "searchPlaceholder": "Cerca",
     "selectVersion": "Seleziona Versione",
     "selected": "Selezionato",
@@ -2833,9 +2844,15 @@
     },
     "update": "Aggiorna",
     "updateAll": "Aggiorna Tutto",
+    "updateFailed": "Impossibile modificare la versione del pacchetto. Riprova.",
+    "updateLatestActiveTooltip": "Passa alla versione Active più recente (predefinita).",
+    "updateLatestInstallableTooltip": "Passa alla versione installabile più recente, incluse le versioni Contrassegnate e In attesa. Le impostazioni di sicurezza del Manager sono comunque applicate.",
+    "updateOptions": "Opzioni di aggiornamento",
     "updateSelected": "Aggiorna Selezionati",
+    "updateVersionInstalled": "La versione {version} è già installata.",
     "updatingAllPacks": "Aggiornamento di tutti i pacchetti",
-    "version": "Versione"
+    "version": "Versione",
+    "versionLoadFailed": "Impossibile caricare le versioni. Chiudi questo selettore e riprova."
   },
   "maskEditor": {
     "activateLayer": "Attiva Livello",
@@ -4794,6 +4811,7 @@
     },
     "clearAllFilters": "Cancella tutti i filtri",
     "error": {
+      "loading": "Non è stato possibile aprire il modello. Riprova.",
       "templateNotFound": "Modello \"{templateName}\" non trovato"
     },
     "filtersApplied": "{count} filtro applicato | {count} filtri applicati",
@@ -5074,6 +5092,7 @@
   },
   "workspace": {
     "addedToWorkspace": "Sei stato aggiunto a:",
+    "deepLinkStayed": "Non è stato possibile aprire quell'area di lavoro. Sei ancora in {workspaceName}.",
     "inviteAccepted": "Invito accettato",
     "inviteFailed": "Impossibile accettare l'invito",
     "switchFailed": "Cambio workspace non riuscito. Riprova.",

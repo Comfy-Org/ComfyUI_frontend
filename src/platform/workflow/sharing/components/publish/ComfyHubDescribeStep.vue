@@ -46,10 +46,7 @@
         <TagsInputInput :is-empty />
       </TagsInput>
     </label>
-    <TagsInput
-      disabled
-      class="hover-within:bg-transparent bg-transparent p-0 hover:bg-transparent"
-    >
+    <TagsInput disabled class="bg-transparent p-0 hover:bg-transparent">
       <div
         v-if="displayedSuggestions.length > 0"
         class="flex basis-full flex-wrap gap-2"
@@ -69,7 +66,7 @@
         v-if="shouldShowSuggestionToggle"
         variant="muted-textonly"
         size="unset"
-        class="hover:bg-unset px-0 text-xs"
+        class="px-0 text-xs hover:bg-transparent"
         @click="showAllSuggestions = !showAllSuggestions"
       >
         {{

@@ -88,15 +88,7 @@ function makeWorkflowDataWithId(id: string): ComfyWorkflowJSON {
 
 vi.mock(import('@/services/dialogService'))
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    canvas: { ds: { offset: [0, 0], scale: 1 } },
-    rootGraph: { serialize: vi.fn(() => ({})), extra: {}, nodes: [] },
-    loadGraphData: vi.fn(),
-    nodeOutputs: {},
-    nodePreviewImages: {}
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
 vi.mock<unknown>(
   import('@/renderer/core/thumbnail/useWorkflowThumbnail'), // eslint-disable-line import-x/no-restricted-paths
@@ -2033,6 +2025,75 @@ describe('useWorkflowService', () => {
       )
 
       expect(tempWorkflow.shareId).toBe('share-1')
+    })
+
+    /**
+     * SEN-5 / CLOUD-FRONTEND-PROD-1MB: `LoadedComfyWorkflow` declares
+     * `activeState: ComfyWorkflowJSON`, but it is produced by an unchecked
+     * `this as this & LoadedComfyWorkflow` cast over a getter that still
+     * returns `this.changeTracker?.activeState ?? null`. When the tracker has
+     * no active state the cast is a lie and activation threw
+     * `TypeError: Cannot read properties of null (reading 'id')`.
+     * The tracker itself is present in these cases — a missing tracker would
+     * throw reading `reset`, not `id`.
+     *
+     * Both call sites are covered: the workflow-object branch and the
+     * same-path reuse branch, which make the identical read. A null active
+     * state does NOT route the same-path load away from reuse —
+     * `areWorkflowIdsEquivalent(undefined, ...)` falls through to
+     * `!existingId || !incomingId`, which is true whenever `existingId` is
+     * undefined, so reuse is chosen and the read is reached.
+     */
+    describe('when the change tracker has no active state (SEN-5)', () => {
+      beforeEach(() => {
+        // Runtime fixture, not a compiler-error assertion: reproduce the state
+        // the LoadedComfyWorkflow cast claims is impossible.
+        const tracker = existingWorkflow.changeTracker as unknown as {
+          activeState: ComfyWorkflowJSON | null
+        }
+        tracker.activeState = null
+      })
+
+      it('activates a same-path reload instead of throwing on a null active state', async () => {
+        // Drives the reuse branch's read, which the object-branch cases below
+        // do not reach. Both sites must be fixed for this to pass.
+        await useWorkflowService().afterLoadNewGraph(
+          'repeat',
+          makeWorkflowData()
+        )
+
+        expect(existingWorkflow.changeTracker.reset).toHaveBeenCalledWith(
+          expect.objectContaining({ id: expect.any(String) })
+        )
+      })
+
+      it('activates a workflow object reload instead of throwing on a null active state', async () => {
+        // A plain await is the assertion: before the fix this rejected with
+        // `TypeError: Cannot read properties of null (reading 'id')`.
+        await useWorkflowService().afterLoadNewGraph(
+          existingWorkflow,
+          makeWorkflowData()
+        )
+
+        expect(existingWorkflow.changeTracker.reset).toHaveBeenCalledWith(
+          expect.objectContaining({ id: expect.any(String) })
+        )
+      })
+
+      it('still prefers the incoming workflow id over the missing fallback', async () => {
+        // The object branch reaches the same read without depending on the
+        // reuse heuristics above.
+        const incomingId = '9cea40bb-b0cf-4b40-a758-8935cfe8d52f'
+
+        await useWorkflowService().afterLoadNewGraph(
+          existingWorkflow,
+          makeWorkflowDataWithId(incomingId)
+        )
+
+        expect(existingWorkflow.changeTracker.reset).toHaveBeenCalledWith(
+          expect.objectContaining({ id: incomingId })
+        )
+      })
     })
 
     it('preserves share attribution on repeated same-path loads', async () => {

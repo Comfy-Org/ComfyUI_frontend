@@ -1,9 +1,12 @@
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Mock } from 'vitest'
+import { computed } from 'vue'
 
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useTelemetry } from '@/platform/telemetry'
 
-import type { SubscriptionInfo } from '@/composables/billing/types'
+import type { BillingType, SubscriptionInfo } from '@/composables/billing/types'
 import type {
   ChurnkeySession,
   ChurnkeyShowOptions
@@ -11,30 +14,29 @@ import type {
 import type { ChurnkeySessionResults } from '@/platform/cloud/churnkey/types'
 import type { BillingRail } from '@/platform/workspace/api/workspaceApi'
 
-const mocks = vi.hoisted(() => ({
-  billingType: { value: 'workspace' },
-  tier: { value: 'PRO' },
-  subscription: {
-    value: null as Pick<SubscriptionInfo, 'duration' | 'endDate'> | null
-  },
-  activeWorkspaceId: 'workspace-1' as string | null,
-  billingRail: 'stripe' as BillingRail | null,
-  cancelSubscription: vi.fn(),
-  prepare: vi.fn()
-}))
-
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    type: mocks.billingType,
-    tier: mocks.tier,
-    subscription: mocks.subscription,
-    cancelSubscription: mocks.cancelSubscription
+const mocks = vi.hoisted(
+  (): {
+    billingType: { value: BillingType }
+    tier: { value: SubscriptionInfo['tier'] }
+    subscription: {
+      value: Pick<SubscriptionInfo, 'duration' | 'endDate'> | null
+    }
+    activeWorkspaceId: string | null
+    billingRail: BillingRail | null
+    prepare: Mock<() => Promise<ChurnkeySession | null>>
+  } => ({
+    billingType: { value: 'workspace' },
+    tier: { value: 'PRO' },
+    subscription: { value: null },
+    activeWorkspaceId: 'workspace-1',
+    billingRail: 'stripe',
+    prepare: vi.fn()
   })
-}))
+)
 
-vi.mock(import('@/i18n'), () => ({
-  t: (key: string) => key
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
+
+vi.mock(import('@/i18n'))
 
 vi.mock(import('@/platform/cloud/churnkey/churnkeyClient'), () => ({
   prepareChurnkey: mocks.prepare
@@ -51,6 +53,25 @@ function session(
 }
 
 beforeEach(() => {
+  const billing = useBillingContext()
+  vi.mocked(useBillingContext).mockReturnValue(billing)
+  billing.type = computed(() => mocks.billingType.value)
+  billing.tier = computed(() => mocks.tier.value)
+  billing.subscription = computed(() =>
+    mocks.subscription.value
+      ? {
+          isActive: true,
+          tier: mocks.tier.value,
+          planSlug: null,
+          scheduledChange: null,
+          renewalDate: null,
+          isCancelled: false,
+          hasFunds: true,
+          ...mocks.subscription.value
+        }
+      : null
+  )
+
   vi.spyOn(
     useTeamWorkspaceStore(),
     'activeWorkspaceId',
@@ -76,7 +97,6 @@ describe('launchCancellationFlow', () => {
     }
     mocks.activeWorkspaceId = 'workspace-1'
     mocks.billingRail = 'stripe'
-    mocks.cancelSubscription.mockResolvedValue(undefined)
   })
 
   it('uses the native dialog for legacy billing', async () => {
@@ -123,7 +143,7 @@ describe('launchCancellationFlow', () => {
       showFallback
     })
 
-    expect(mocks.cancelSubscription).toHaveBeenCalledOnce()
+    expect(useBillingContext().cancelSubscription).toHaveBeenCalledOnce()
     expect(
       useTelemetry()?.trackSubscriptionCancellation
     ).toHaveBeenNthCalledWith(1, 'flow_opened', {
@@ -159,7 +179,7 @@ describe('launchCancellationFlow', () => {
         end_date: '2026-08-01T00:00:00Z'
       })
     )
-    expect(mocks.cancelSubscription).not.toHaveBeenCalled()
+    expect(useBillingContext().cancelSubscription).not.toHaveBeenCalled()
   })
 
   it('falls back when preparation or the provider fails', async () => {
@@ -200,7 +220,9 @@ describe('launchCancellationFlow', () => {
   })
 
   it('falls back and records a failed cancel callback', async () => {
-    mocks.cancelSubscription.mockRejectedValue(new Error('API down'))
+    vi.mocked(useBillingContext().cancelSubscription).mockRejectedValue(
+      new Error('API down')
+    )
     mocks.prepare.mockResolvedValue(
       session(async (options) => {
         await options.handleCancel('Too expensive')
@@ -260,7 +282,7 @@ describe('launchCancellationFlow', () => {
 
     await launchCancellationFlow({ showFallback })
 
-    expect(mocks.cancelSubscription).not.toHaveBeenCalled()
+    expect(useBillingContext().cancelSubscription).not.toHaveBeenCalled()
     expect(showFallback).not.toHaveBeenCalled()
     expect(cancellationError).toMatchObject({
       message: 'subscription.cancelDialog.workspaceChanged'
