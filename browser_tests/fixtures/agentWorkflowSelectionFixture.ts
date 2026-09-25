@@ -7,7 +7,7 @@ import type { CloudWorkflowEntry } from '@/workbench/extensions/agent/schemas/ag
 import { bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
-type WorkflowSelection = {
+export type WorkflowSelection = {
   savedPaths: string[]
   postedMessages: string[]
   finishSave: (success: boolean) => void

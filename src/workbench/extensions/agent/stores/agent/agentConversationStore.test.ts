@@ -916,6 +916,62 @@ describe('useAgentConversationStore', () => {
   })
 
   /**
+   * The stash received every delta and only missed the done frame, so it holds
+   * exactly what the terminal row holds. Reinstating it there would leave the
+   * turn streaming with nothing left to finish it, so the row wins on equal.
+   */
+  it('settles on the persisted reply when the stash holds exactly the same text', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'upscale this')
+    store.ingest(delta('t1', 'All done.'))
+    store.stashActiveTurn()
+
+    store.setThreadId('th-other')
+    store.hydrate([])
+    store.setThreadId('th')
+    store.hydrate([
+      historyRow(1, 'user', 'server-turn', 'upscale this'),
+      historyRow(2, 'assistant', 'server-turn', 'All done.', 't1')
+    ])
+    store.resumeBackgroundTurn()
+
+    expect(partTexts(store)).toEqual(['All done.'])
+    expect(store.isStreaming).toBe(false)
+    expect(store.entries.map((entry) => entry.role)).toEqual([
+      'user',
+      'assistant'
+    ])
+  })
+
+  /**
+   * Two asset rows can share a content hash, so the same ref can be attached
+   * under a different name in another thread. A thread must not be handed a
+   * name the user only ever typed somewhere else.
+   */
+  it('does not lend one thread the attachment name another thread used', () => {
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    const store = useAgentConversationStore()
+    store.setThreadId('th-other')
+    store.startTurn(T2)
+    store.recordUser(T2, 'from the other thread', [
+      { name: 'Sunset.png', ref: storedRef }
+    ])
+
+    const userRow = historyRow(1, 'user', 'server-turn', 'upscale this')
+    userRow.content = { text: 'upscale this', attachments: [storedRef] }
+    store.setThreadId('th')
+    store.hydrate([userRow, historyRow(2, 'assistant', 'server-turn', 'Done')])
+
+    expect(store.entries.filter((entry) => entry.role === 'user')).toEqual([
+      expect.objectContaining({
+        attachments: [{ name: storedRef, ref: storedRef }]
+      })
+    ])
+  })
+
+  /**
    * The row is the fuller copy only once the service calls the turn finished.
    * A streaming row already carries its terminal tool calls, so keeping it
    * would leave the turn looking done with no transport left to finish it.
