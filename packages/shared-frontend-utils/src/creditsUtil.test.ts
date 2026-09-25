@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 
 import {
   CREDITS_PER_USD,
@@ -8,6 +8,7 @@ import {
   creditsToCents,
   creditsToUsd,
   formatCredits,
+  formatCreditsCompact,
   formatCreditsFromCents,
   formatCreditsFromUsd,
   formatUsd,
@@ -81,5 +82,37 @@ describe('comfyCredits helpers', () => {
     expect(clampUsd(0.5)).toBe(1)
     expect(clampUsd(2000)).toBe(1000)
     expect(clampUsd(NaN)).toBe(0)
+  })
+
+  test('formatCreditsCompact abbreviates with the unit the magnitude calls for', () => {
+    expect(formatCreditsCompact(42_200)).toBe('42.2K')
+    expect(formatCreditsCompact(506_400)).toBe('506.4K')
+    expect(formatCreditsCompact(1_012_800)).toBe('1M')
+    expect(formatCreditsCompact(6_330_000)).toBe('6.3M')
+  })
+
+  test('formatCreditsCompact truncates, so it never overstates the amount', () => {
+    expect(formatCreditsCompact(1_772_400)).toBe('1.7M')
+    expect(formatCreditsCompact(10_550)).toBe('10.5K')
+  })
+
+  test('formatCreditsCompact leaves amounts below a thousand unabbreviated', () => {
+    expect(formatCreditsCompact(0)).toBe('0')
+    expect(formatCreditsCompact(999)).toBe('999')
+  })
+
+  test('formatCreditsCompact does not depend on Intl honouring roundingMode', () => {
+    const NativeNumberFormat = Intl.NumberFormat
+    vi.spyOn(Intl, 'NumberFormat').mockImplementation(function (
+      locales?: Intl.LocalesArgument,
+      options?: Intl.NumberFormatOptions
+    ) {
+      const { roundingMode: _unsupported, ...preV3 } = options ?? {}
+      return new NativeNumberFormat(locales, preV3)
+    })
+
+    expect(formatCreditsCompact(1_772_400)).toBe('1.7M')
+    expect(formatCreditsCompact(2_899_999)).toBe('2.8M')
+    expect(formatCreditsCompact(31_650)).toBe('31.6K')
   })
 })
