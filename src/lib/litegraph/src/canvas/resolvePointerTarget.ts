@@ -140,14 +140,16 @@ export function resolveSelectableTarget(
 
   const { graph } = canvas
   if (!graph) return
-  const reroute = findRerouteAtPoint(
-    graph,
-    x,
-    y,
-    canvas._visibleReroutes,
-    canvas.renderedPaths
-  )
-  if (reroute) return reroute
+  if (canvas.links_render_mode !== LinkRenderType.HIDDEN_LINK) {
+    const reroute = findRerouteAtPoint(
+      graph,
+      x,
+      y,
+      canvas._visibleReroutes,
+      canvas.renderedPaths
+    )
+    if (reroute) return reroute
+  }
 
   return graph.getGroupTitlebarOnPos(x, y)
 }
