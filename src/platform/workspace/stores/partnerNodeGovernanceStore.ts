@@ -14,7 +14,7 @@ import type {
 } from '@/platform/workspace/api/partnerNodePolicyApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
-export type PartnerNodePolicyStatus =
+type PartnerNodePolicyStatus =
   | 'inactive'
   | 'loading'
   | 'unconfigured'
