@@ -133,11 +133,6 @@ app.directive('tooltip', Tooltip)
 app
   .use(router)
   .use(PrimeVue, {
-    pt: {
-      popover: {
-        root: { 'aria-modal': false }
-      }
-    },
     zIndex: {
       modal: 1800,
       overlay: 1800,

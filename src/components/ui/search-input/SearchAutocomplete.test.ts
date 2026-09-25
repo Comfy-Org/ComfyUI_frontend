@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
@@ -85,5 +85,40 @@ describe('SearchAutocomplete', () => {
       await user.click(screen.getByText('my-extension'))
       expect(onSelect).toHaveBeenCalledWith({ id: 1, query: 'my-extension' })
     })
+  })
+
+  it('opens empty-query suggestions on focus and reports keyboard highlight', async () => {
+    const onHighlight = vi.fn()
+    const user = userEvent.setup()
+    render(SearchAutocomplete, {
+      global: { plugins: [i18n] },
+      props: {
+        modelValue: '',
+        suggestions: ['foo', 'bar'],
+        openOnFocus: true,
+        onHighlight
+      }
+    })
+
+    const input = screen.getByRole('combobox')
+    await user.click(input)
+    expect(await screen.findByRole('option', { name: 'foo' })).toBeVisible()
+
+    await user.keyboard('{ArrowDown}')
+    await waitFor(() => expect(onHighlight).toHaveBeenCalledWith('foo'))
+  })
+
+  it('does not select an option when Enter is pressed during composition', async () => {
+    renderComponent({ suggestions: ['foo'] })
+    const input = screen.getByRole('textbox')
+    await fireEvent.compositionStart(input)
+    const enter = new KeyboardEvent('keydown', {
+      key: 'Enter',
+      bubbles: true,
+      cancelable: true
+    })
+
+    expect(input.dispatchEvent(enter)).toBe(false)
+    expect(enter.defaultPrevented).toBe(true)
   })
 })

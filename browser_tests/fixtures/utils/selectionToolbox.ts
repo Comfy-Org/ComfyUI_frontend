@@ -14,7 +14,7 @@ export async function openMoreOptions(comfyPage: ComfyPage): Promise<Locator> {
   await expect(moreOptionsBtn).toBeVisible()
   await moreOptionsBtn.click()
 
-  const menu = comfyPage.page.locator('.p-contextmenu')
+  const menu = comfyPage.page.getByRole('menu')
   await expect(menu.getByText('Copy', { exact: true })).toBeVisible()
   return menu
 }

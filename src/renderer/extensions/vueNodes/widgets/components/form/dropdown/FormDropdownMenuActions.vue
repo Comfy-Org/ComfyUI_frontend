@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import Popover from 'primevue/popover'
+import Popover from '@/components/ui/popover/PopoverOverlay.vue'
 import { ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -153,17 +153,11 @@ function handleSearchEnter(event: KeyboardEvent) {
     </Button>
     <Popover
       ref="sortPopoverRef"
-      :dismissable="true"
-      :close-on-escape="true"
-      unstyled
-      :pt="{
-        root: {
-          class: ['absolute z-50', DROPDOWN_PANEL_CLASS]
-        },
-        content: {
-          class: ['bg-transparent border-none p-0 pt-2 rounded-lg shadow-lg']
-        }
-      }"
+      align="start"
+      :content-class="[
+        DROPDOWN_PANEL_CLASS,
+        'border-none bg-transparent p-0 pt-2'
+      ]"
       @hide="isSortPopoverOpen = false"
     >
       <div
@@ -215,17 +209,11 @@ function handleSearchEnter(event: KeyboardEvent) {
     </Button>
     <Popover
       ref="ownershipPopoverRef"
-      :dismissable="true"
-      :close-on-escape="true"
-      unstyled
-      :pt="{
-        root: {
-          class: ['absolute z-50', DROPDOWN_PANEL_CLASS]
-        },
-        content: {
-          class: ['bg-transparent border-none p-0 pt-2 rounded-lg shadow-lg']
-        }
-      }"
+      align="start"
+      :content-class="[
+        DROPDOWN_PANEL_CLASS,
+        'border-none bg-transparent p-0 pt-2'
+      ]"
       @hide="isOwnershipPopoverOpen = false"
     >
       <div
@@ -277,17 +265,11 @@ function handleSearchEnter(event: KeyboardEvent) {
     </Button>
     <Popover
       ref="baseModelPopoverRef"
-      :dismissable="true"
-      :close-on-escape="true"
-      unstyled
-      :pt="{
-        root: {
-          class: ['absolute z-50', DROPDOWN_PANEL_CLASS]
-        },
-        content: {
-          class: ['bg-transparent border-none p-0 pt-2 rounded-lg shadow-lg']
-        }
-      }"
+      align="start"
+      :content-class="[
+        DROPDOWN_PANEL_CLASS,
+        'border-none bg-transparent p-0 pt-2'
+      ]"
       @hide="isBaseModelPopoverOpen = false"
     >
       <div

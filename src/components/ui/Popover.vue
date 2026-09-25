@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { MenuItem } from 'primevue/menuitem'
 import {
   PopoverArrow,
   PopoverContent,
@@ -11,6 +10,7 @@ import {
 import { ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
+import type { MenuItem } from '@/components/ui/menu/types'
 import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
 import { cn } from '@comfyorg/tailwind-utils'
 
