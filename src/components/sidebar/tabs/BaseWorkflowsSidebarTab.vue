@@ -218,7 +218,7 @@ const filteredWorkflows = computed(() => {
   )
 })
 useSearchQueryTracking('apps', searchQuery, filteredWorkflows)
-const filteredRoot = computed<TreeNode>(() => {
+const filteredRoot = computed<TreeNode<ComfyWorkflow>>(() => {
   return buildWorkflowTree(filteredWorkflows.value as ComfyWorkflow[])
 })
 const handleSearch = async (query: string) => {
@@ -281,68 +281,69 @@ const openWorkflowsTree = computed(() =>
 )
 
 const renderTreeNode = (
-  node: TreeNode,
+  node: TreeNode<ComfyWorkflow>,
   type: WorkflowTreeType
 ): TreeExplorerNode<ComfyWorkflow> => {
   const children = node.children?.map((child) => renderTreeNode(child, type))
 
-  const workflow: ComfyWorkflow = node.data
+  const workflow = node.data
 
   async function handleClick(
     this: TreeExplorerNode<ComfyWorkflow>,
     e: MouseEvent
   ) {
-    if (this.leaf) {
+    if (this.leaf && workflow) {
       await workflowService.openWorkflow(workflow)
     } else {
       toggleNodeOnEvent(e, this)
     }
   }
 
-  const actions = node.leaf
-    ? {
-        handleClick,
-        async handleRename(newName: string) {
-          const suffix = getWorkflowSuffix(workflow.suffix)
-          const newPath =
-            type === WorkflowTreeType.Browse
-              ? workflow.directory + '/' + ensureWorkflowSuffix(newName, suffix)
-              : ComfyWorkflow.basePath + ensureWorkflowSuffix(newName, suffix)
+  const actions =
+    node.leaf && workflow
+      ? {
+          handleClick,
+          async handleRename(newName: string) {
+            const suffix = getWorkflowSuffix(workflow.suffix)
+            const newPath =
+              type === WorkflowTreeType.Browse
+                ? workflow.directory +
+                  '/' +
+                  ensureWorkflowSuffix(newName, suffix)
+                : ComfyWorkflow.basePath + ensureWorkflowSuffix(newName, suffix)
 
-          await workflowService.renameWorkflow(workflow, newPath)
-        },
-        handleDelete: workflow.isTemporary
-          ? undefined
-          : async function () {
-              await workflowService.deleteWorkflow(workflow)
-            },
-        contextMenuItems() {
-          return [
-            ...(isAppMode.value
-              ? []
-              : [
-                  {
-                    label: t('g.insert'),
-                    icon: 'pi pi-file-export',
-                    command: async () => {
-                      const workflow = node.data
-                      await workflowService.insertWorkflow(workflow)
+            await workflowService.renameWorkflow(workflow, newPath)
+          },
+          handleDelete: workflow.isTemporary
+            ? undefined
+            : async function () {
+                await workflowService.deleteWorkflow(workflow)
+              },
+          contextMenuItems() {
+            return [
+              ...(isAppMode.value
+                ? []
+                : [
+                    {
+                      label: t('g.insert'),
+                      icon: 'pi pi-file-export',
+                      command: async () => {
+                        await workflowService.insertWorkflow(workflow)
+                      }
                     }
-                  }
-                ]),
-            {
-              label: t('g.duplicate'),
-              icon: 'pi pi-file-export',
-              command: async () => {
-                const workflow = node.data
-                await workflowService.duplicateWorkflow(workflow)
+                  ]),
+              {
+                label: t('g.duplicate'),
+                icon: 'pi pi-file-export',
+                command: async () => {
+                  await workflowService.duplicateWorkflow(workflow)
+                }
               }
-            }
-          ]
-        },
-        draggable: true
-      }
-    : { handleClick }
+            ]
+          },
+          draggable: true
+        }
+      : { handleClick }
 
   const label = node.leaf ? getFilenameDetails(node.label).filename : node.label
 
