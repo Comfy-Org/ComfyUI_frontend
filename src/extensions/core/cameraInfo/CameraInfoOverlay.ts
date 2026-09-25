@@ -179,9 +179,7 @@ export class CameraInfoOverlay implements SceneOverlay {
     if (!this.cameraHelper) return
     if (this.scene) this.scene.remove(this.cameraHelper)
     this.cameraHelper.geometry.dispose()
-    const material = this.cameraHelper.material as
-      | THREE.Material
-      | THREE.Material[]
+    const material = this.cameraHelper.material
     if (Array.isArray(material)) material.forEach((m) => m.dispose())
     else material.dispose()
     this.cameraHelper = null

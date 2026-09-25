@@ -1,6 +1,7 @@
 import type {
   HubWorkflowDetail,
-  ImportPublishedAssetsRequest
+  ImportPublishedAssetsRequest,
+  AssetInfo
 } from '@comfyorg/ingest-types'
 import { zGetHubWorkflowResponse } from '@comfyorg/ingest-types/zod'
 
@@ -13,7 +14,6 @@ import type {
 import { useAssetsStore } from '@/stores/assetsStore'
 import type { ThumbnailType } from '@/platform/workflow/sharing/types/comfyHubTypes'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { AssetInfo } from '@/schemas/apiSchema'
 import {
   zPublishRecordResponse,
   zSharedWorkflowResponse

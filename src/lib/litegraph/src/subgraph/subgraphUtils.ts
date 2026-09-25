@@ -227,17 +227,15 @@ export function multiClone(nodes: Iterable<LGraphNode>): ISerialisedNode[] {
   // Selectively clone - keep IDs & links
   for (const node of nodes) {
     const newNode = LiteGraph.createNode(node.type)
+    const data = structuredClone(node.serialize())
     if (!newNode) {
       console.warn('Failed to create node', node.type)
-      const serializedData = structuredClone(node.serialize())
-      clonedNodes.push(serializedData)
+      clonedNodes.push(data)
       continue
     }
 
     // Must be cloned; litegraph "serialize" is mostly shallow clone
-    const data = structuredClone(node.serialize())
     newNode.configure(data)
-
     clonedNodes.push(newNode.serialize())
   }
 
@@ -564,6 +562,19 @@ export function findReleasableSubgraphs(
   const removedSubtree: Subgraph[] = []
   collectSubgraphsPostOrder(removedNode.subgraph, new Set(), removedSubtree)
   return removedSubtree.filter((subgraph) => !liveIds.has(subgraph.id))
+}
+
+export function findOrphanedSubgraphs(
+  rootGraph: LGraph,
+  removedNodes: Iterable<LGraphNode>
+): Subgraph[] {
+  const orphaned = new Map<SubgraphId, Subgraph>()
+  for (const node of removedNodes) {
+    if (!node.isSubgraphNode()) continue
+    for (const subgraph of findReleasableSubgraphs(rootGraph, node))
+      orphaned.set(subgraph.id, subgraph)
+  }
+  return [...orphaned.values()]
 }
 
 function reorderInPlace(arr: unknown[], indices: readonly number[]): void {

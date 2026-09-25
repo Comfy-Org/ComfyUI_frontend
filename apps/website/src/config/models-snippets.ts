@@ -17,7 +17,6 @@ export interface SnippetFile {
   readonly mimeType: string
   readonly encoding?: 'base64' | 'url'
   readonly sourceUrl?: string
-  readonly sourceDataUrl?: string
   readonly rehost?: boolean
   readonly urlAlternative?: boolean
 }
@@ -88,10 +87,6 @@ const IMAGE_METADATA = new Set([
 ])
 
 function curlFileValue(file: SnippetFile, kind: FileReference['kind']) {
-  if (file.sourceDataUrl && kind !== 'url')
-    return kind === 'data-url'
-      ? file.sourceDataUrl
-      : file.sourceDataUrl.slice(file.sourceDataUrl.indexOf(',') + 1)
   return kind === 'url' && !file.rehost ? file.sourceUrl : undefined
 }
 
@@ -169,7 +164,7 @@ export function hasOmittedCurlFiles(
 ): boolean {
   return fileUses(body, files).some(
     (use, index) =>
-      (use.base64 && !files[index].sourceDataUrl) ||
+      use.base64 ||
       (use.url && (!files[index].sourceUrl || files[index].rehost))
   )
 }
@@ -198,11 +193,6 @@ function inputFiles(body: unknown, files: readonly SnippetFile[]): InputFile[] {
 
 function pythonFileUrl(file: InputFile): string[] {
   const { index: n, sourceUrl, path, rehost } = file
-  if (file.sourceDataUrl)
-    return [
-      `asset_${n} = client.assets.from_bytes(base64.b64decode(${JSON.stringify(file.sourceDataUrl.split(',')[1])}), filename=${JSON.stringify(path)}, content_type=${JSON.stringify(file.mimeType)})`,
-      `url_${n} = (await asset_${n}.get_download_url()).url`
-    ]
   if (!sourceUrl)
     return [
       `url_${n} = (await client.assets.from_file(${JSON.stringify(path)}).get_download_url()).url`
@@ -216,8 +206,6 @@ function pythonFileUrl(file: InputFile): string[] {
 
 function pythonFileBytes(file: InputFile): string[] {
   const { index: n, sourceUrl, path } = file
-  if (file.sourceDataUrl)
-    return [`input_${n} = ${JSON.stringify(file.sourceDataUrl.split(',')[1])}`]
   if (!sourceUrl)
     return [
       `input_${n} = base64.b64encode(Path(${JSON.stringify(path)}).read_bytes()).decode("ascii")`
@@ -231,8 +219,6 @@ function pythonFileBytes(file: InputFile): string[] {
 
 function pythonFileMime(file: InputFile): string[] {
   const { index: n, sourceUrl, path } = file
-  if (file.sourceDataUrl)
-    return [`mime_${n} = ${JSON.stringify(file.mimeType)}`]
   if (sourceUrl)
     return [`mime_${n} = download_${n}.headers["content-type"].split(";")[0]`]
   return [
@@ -316,9 +302,7 @@ function pythonSnippet(
   return [
     ...pythonImports({
       sdk: hasSdk,
-      base64: uses.some(
-        (use, index) => use.base64 || (use.url && files[index].sourceDataUrl)
-      ),
+      base64: uses.some((use) => use.base64),
       mime: uses.some((use) => use.mime),
       http: binary || downloads,
       binary
@@ -347,11 +331,6 @@ function pythonSnippet(
 
 function typescriptFileUrl(file: InputFile): string[] {
   const { index: n, sourceUrl, path, rehost } = file
-  if (file.sourceDataUrl)
-    return [
-      `const asset_${n} = client.assets.fromBytes(Buffer.from(${JSON.stringify(file.sourceDataUrl.split(',')[1])}, "base64"), { filename: ${JSON.stringify(path)}, contentType: ${JSON.stringify(file.mimeType)} })`,
-      `const { url: url_${n} } = await asset_${n}.getDownloadUrl()`
-    ]
   if (!sourceUrl)
     return [
       `const { url: url_${n} } = await client.assets.fromFile(${JSON.stringify(path)}).getDownloadUrl()`
@@ -365,10 +344,6 @@ function typescriptFileUrl(file: InputFile): string[] {
 
 function typescriptFileBytes(file: InputFile): string[] {
   const { index: n, sourceUrl, path } = file
-  if (file.sourceDataUrl)
-    return [
-      `const input_${n} = ${JSON.stringify(file.sourceDataUrl.split(',')[1])}`
-    ]
   if (!sourceUrl)
     return [
       `const input_${n} = (await readFile(${JSON.stringify(path)})).toString("base64")`
@@ -382,8 +357,6 @@ function typescriptFileBytes(file: InputFile): string[] {
 
 function typescriptFileMime(file: InputFile): string[] {
   const { index: n, sourceUrl, path } = file
-  if (file.sourceDataUrl)
-    return [`const mime_${n} = ${JSON.stringify(file.mimeType)}`]
   const value = sourceUrl
     ? `download_${n}.headers.get("content-type")?.split(";")[0]`
     : `lookup(${JSON.stringify(path)})`
@@ -435,10 +408,7 @@ function typescriptSnippet(
   const uploads = uses.some(
     (use, index) => use.url && (!files[index].sourceUrl || files[index].rehost)
   )
-  const mime = uses.some(
-    (use, index) =>
-      use.mime && !files[index].sourceUrl && !files[index].sourceDataUrl
-  )
+  const mime = uses.some((use, index) => use.mime && !files[index].sourceUrl)
   const sdkImports = [
     ...(uploads ? ['Comfy'] : []),
     ...(!binary ? ['comfy'] : [])
@@ -465,10 +435,7 @@ function typescriptSnippet(
         'console.log({ requestId, data })'
       ]
   const fsImports = [
-    ...(uses.some(
-      (use, index) =>
-        use.base64 && !files[index].sourceUrl && !files[index].sourceDataUrl
-    )
+    ...(uses.some((use, index) => use.base64 && !files[index].sourceUrl)
       ? ['readFile']
       : []),
     ...(binary ? ['writeFile'] : [])

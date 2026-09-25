@@ -80,4 +80,64 @@ describe('PendingInvitesList', () => {
 
     expect(emitted('revoke')).toEqual([[invite]])
   })
+
+  it('copies the invite link from the menu when the invite has a token', async () => {
+    const writeText = vi.fn<(text: string) => Promise<void>>()
+    writeText.mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText },
+      configurable: true
+    })
+    renderComponent([createInvite({ token: 'tok-9' })])
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: 'workspacePanel.members.actions.copyInviteLink'
+      })
+    )
+
+    expect(writeText).toHaveBeenCalledWith(
+      `${window.location.origin}/?invite=tok-9`
+    )
+    expect(mockMenuClose).toHaveBeenCalled()
+  })
+
+  it('hides the copy item for expired invites without a token', () => {
+    renderComponent([createInvite()])
+
+    expect(
+      screen.queryByRole('button', {
+        name: 'workspacePanel.members.actions.copyInviteLink'
+      })
+    ).not.toBeInTheDocument()
+  })
+
+  it('swallows a rejected clipboard write and keeps the copy item usable', async () => {
+    const writeText = vi.fn<(text: string) => Promise<void>>()
+    writeText.mockRejectedValue(new Error('denied'))
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText },
+      configurable: true
+    })
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    renderComponent([createInvite({ token: 'tok-9' })])
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: 'workspacePanel.members.actions.copyInviteLink'
+      })
+    )
+
+    // The failure is silent by design, so the only guarantee is that nothing
+    // escapes as an unhandled rejection and the item stays available to retry.
+    expect(writeText).toHaveBeenCalledWith(
+      `${window.location.origin}/?invite=tok-9`
+    )
+    expect(
+      screen.getByRole('button', {
+        name: 'workspacePanel.members.actions.copyInviteLink'
+      })
+    ).toBeInTheDocument()
+    consoleError.mockRestore()
+  })
 })

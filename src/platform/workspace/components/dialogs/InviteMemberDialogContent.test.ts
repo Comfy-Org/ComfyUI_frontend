@@ -1,3 +1,5 @@
+import { computed, ref } from 'vue'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { render, screen, waitFor } from '@testing-library/vue'
@@ -5,46 +7,24 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import { useTelemetry } from '@/platform/telemetry'
+
 import InviteMemberDialogContent from './InviteMemberDialogContent.vue'
+
+import { buildInviteLink } from '@/platform/workspace/utils/inviteLinks'
 
 import type { WorkspacePendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
 
-const {
-  mockToastAdd,
-  mockTrackInviteSent,
-  mockTrackInviteFailed,
-  mockFetchStatus,
-  mockMaxSeats,
-  mockOccupiedSeats
-} = vi.hoisted(() => {
-  const nullableNumber = (value: number | null) => ({ value })
-  return {
-    mockToastAdd: vi.fn(),
-    mockTrackInviteSent: vi.fn(),
-    mockTrackInviteFailed: vi.fn(),
-    mockFetchStatus: vi.fn(),
-    mockMaxSeats: nullableNumber(73),
-    mockOccupiedSeats: nullableNumber(0)
-  }
-})
+const mockToastAdd = vi.hoisted(() => vi.fn())
+const mockMaxSeats = ref<number | null>(73)
+const mockOccupiedSeats = ref<number | null>(0)
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    fetchStatus: mockFetchStatus,
-    maxSeats: mockMaxSeats,
-    occupiedSeats: mockOccupiedSeats
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackWorkspaceInviteSent: mockTrackInviteSent,
-    trackWorkspaceInviteFailed: mockTrackInviteFailed
-  })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 vi.mock<unknown>(
-  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
+  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
   () => ({
     useToast: () => ({
       add: mockToastAdd
@@ -60,13 +40,21 @@ const i18n = createI18n({
   fallbackWarn: false
 })
 
-function pendingInviteFor(email: string): WorkspacePendingInvite {
+function pendingInviteFor(
+  email: string,
+  token?: string
+): WorkspacePendingInvite {
   return {
     id: `inv-${email}`,
     email,
     inviteDate: new Date(0),
-    expiryDate: new Date(0)
+    expiryDate: new Date(0),
+    token
   }
+}
+
+function inviteLinkFor(token: string) {
+  return `${window.location.origin}/?invite=${token}`
 }
 
 function renderDialog() {
@@ -86,6 +74,13 @@ function inviteButton() {
 }
 
 beforeEach(() => {
+  const billing = useBillingContext()
+  Object.assign(billing, {
+    maxSeats: computed(() => mockMaxSeats.value),
+    occupiedSeats: computed(() => mockOccupiedSeats.value)
+  })
+  vi.mocked(useBillingContext).mockReturnValue(billing)
+
   Object.assign(useTeamWorkspaceStore(), { pendingInvites: [] })
   vi.mocked(useDialogStore().closeDialog).mockImplementation(() => {})
 })
@@ -94,7 +89,7 @@ describe('InviteMemberDialogContent', () => {
   beforeEach(() => {
     vi.useRealTimers()
     vi.mocked(useTeamWorkspaceStore().fetchPendingInvites).mockResolvedValue([])
-    mockFetchStatus.mockResolvedValue(undefined)
+    vi.mocked(useBillingContext().fetchStatus).mockResolvedValue(undefined)
     mockMaxSeats.value = 73
     mockOccupiedSeats.value = 0
     vi.mocked(useTeamWorkspaceStore().createInvite).mockImplementation(
@@ -205,7 +200,7 @@ describe('InviteMemberDialogContent', () => {
     expect(useTeamWorkspaceStore().createInvite).toHaveBeenCalledTimes(2)
     expect(useTeamWorkspaceStore().createInvite).toHaveBeenCalledWith('a@b.com')
     expect(useTeamWorkspaceStore().createInvite).toHaveBeenCalledWith('c@d.com')
-    expect(mockTrackInviteSent).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackWorkspaceInviteSent).toHaveBeenCalledWith({
       source: 'settings_members',
       count: 2
     })
@@ -240,7 +235,7 @@ describe('InviteMemberDialogContent', () => {
     expect(mockToastAdd).toHaveBeenCalledWith(
       expect.objectContaining({ severity: 'error' })
     )
-    expect(mockTrackInviteSent).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackWorkspaceInviteSent).toHaveBeenCalledWith({
       source: 'settings_members',
       count: 1
     })
@@ -260,15 +255,226 @@ describe('InviteMemberDialogContent', () => {
       expect(useTeamWorkspaceStore().createInvite).toHaveBeenCalledTimes(2)
     )
     expect(
-      screen.queryByText('workspacePanel.inviteMemberDialog.invitedMessage')
+      screen.queryByText('workspacePanel.inviteLinks.sentLead')
     ).not.toBeInTheDocument()
     expect(screen.getByText('a@b.com')).toBeInTheDocument()
     expect(screen.getByText('c@d.com')).toBeInTheDocument()
     expect(mockToastAdd).toHaveBeenCalledWith(
       expect.objectContaining({ severity: 'error' })
     )
-    expect(mockTrackInviteSent).not.toHaveBeenCalled()
+    expect(useTelemetry()?.trackWorkspaceInviteSent).not.toHaveBeenCalled()
     expect(inviteButton()).toBeEnabled()
+  })
+
+  describe('invite link rows', () => {
+    async function inviteAndConfirm(
+      user: ReturnType<typeof userEvent.setup>,
+      emails: string
+    ) {
+      await user.type(emailInput(), emails)
+      await user.click(inviteButton())
+      await screen.findByText(/inviteLinks\.sentLead|invitedMessage/)
+    }
+
+    function mockInviteListAfterSend(invites: WorkspacePendingInvite[]) {
+      vi.mocked(useTeamWorkspaceStore().fetchPendingInvites)
+        .mockResolvedValueOnce([])
+        .mockResolvedValue(invites)
+    }
+
+    function copyLinkButtons() {
+      return screen.queryAllByRole('button', {
+        name: 'workspacePanel.inviteLinks.copyLink'
+      })
+    }
+
+    function copyAllButton() {
+      return screen.queryByRole('button', {
+        name: 'workspacePanel.inviteLinks.copyAll'
+      })
+    }
+
+    it('renders a row with a Copy link action per invited email', async () => {
+      mockInviteListAfterSend([
+        pendingInviteFor('a@b.com', 'tok-a'),
+        pendingInviteFor('c@d.com', 'tok-c')
+      ])
+      const { user } = renderDialog()
+
+      await inviteAndConfirm(user, 'a@b.com,c@d.com{Enter}')
+
+      await waitFor(() => expect(copyLinkButtons()).toHaveLength(2))
+      expect(screen.getByText('a@b.com')).toBeInTheDocument()
+      expect(screen.getByText('c@d.com')).toBeInTheDocument()
+    })
+
+    it('copies the row link and swaps the button label to Copied', async () => {
+      mockInviteListAfterSend([
+        pendingInviteFor('a@b.com', 'tok-a'),
+        pendingInviteFor('c@d.com', 'tok-c')
+      ])
+      const { user } = renderDialog()
+      await inviteAndConfirm(user, 'a@b.com,c@d.com{Enter}')
+      await waitFor(() => expect(copyLinkButtons()).toHaveLength(2))
+
+      await user.click(copyLinkButtons()[0])
+
+      expect(await navigator.clipboard.readText()).toBe(inviteLinkFor('tok-a'))
+      expect(
+        await screen.findByRole('button', {
+          name: 'workspacePanel.inviteLinks.copied'
+        })
+      ).toBeInTheDocument()
+      // The other row keeps its Copy link label.
+      expect(copyLinkButtons()).toHaveLength(1)
+    })
+
+    it('Copy all links writes tab-separated email/url pairs', async () => {
+      mockInviteListAfterSend([
+        pendingInviteFor('a@b.com', 'tok-a'),
+        pendingInviteFor('c@d.com', 'tok-c')
+      ])
+      const { user } = renderDialog()
+      await inviteAndConfirm(user, 'a@b.com,c@d.com{Enter}')
+      await waitFor(() => expect(copyAllButton()).toBeInTheDocument())
+
+      await user.click(copyAllButton()!)
+
+      expect(await navigator.clipboard.readText()).toBe(
+        `a@b.com\t${inviteLinkFor('tok-a')}\nc@d.com\t${inviteLinkFor('tok-c')}`
+      )
+    })
+
+    it('hides the Copy action for invites without a token', async () => {
+      mockInviteListAfterSend([
+        pendingInviteFor('a@b.com', 'tok-a'),
+        pendingInviteFor('c@d.com')
+      ])
+      const { user } = renderDialog()
+
+      await inviteAndConfirm(user, 'a@b.com,c@d.com{Enter}')
+
+      await waitFor(() => expect(copyLinkButtons()).toHaveLength(1))
+      expect(screen.getByText('c@d.com')).toBeInTheDocument()
+      // One copyable row: the footer action stays, in its singular form.
+      expect(copyAllButton()).toBeInTheDocument()
+    })
+
+    it('keeps the copy affordance when the clipboard write fails', async () => {
+      mockInviteListAfterSend([pendingInviteFor('a@b.com', 'tok-a')])
+      const { user } = renderDialog()
+      await inviteAndConfirm(user, 'a@b.com{Enter}')
+      await waitFor(() => expect(copyLinkButtons()).toHaveLength(1))
+
+      const writeText = vi
+        .spyOn(navigator.clipboard, 'writeText')
+        .mockRejectedValueOnce(new Error('denied'))
+      await user.click(copyLinkButtons()[0])
+
+      expect(
+        screen.queryByRole('button', {
+          name: 'workspacePanel.inviteLinks.copied'
+        })
+      ).not.toBeInTheDocument()
+      expect(copyLinkButtons()).toHaveLength(1)
+      writeText.mockRestore()
+    })
+
+    it('reverts Copied back to the copy affordance after the reset window', async () => {
+      vi.useFakeTimers()
+      try {
+        mockInviteListAfterSend([pendingInviteFor('a@b.com', 'tok-a')])
+        const user = userEvent.setup({
+          advanceTimers: vi.advanceTimersByTime
+        })
+        renderDialog()
+        await inviteAndConfirm(user, 'a@b.com{Enter}')
+        await waitFor(() => expect(copyLinkButtons()).toHaveLength(1))
+
+        await user.click(copyLinkButtons()[0])
+        expect(
+          await screen.findByRole('button', {
+            name: 'workspacePanel.inviteLinks.copied'
+          })
+        ).toBeInTheDocument()
+
+        await vi.advanceTimersByTimeAsync(2100)
+        expect(
+          screen.queryByRole('button', {
+            name: 'workspacePanel.inviteLinks.copied'
+          })
+        ).not.toBeInTheDocument()
+        expect(copyLinkButtons()).toHaveLength(1)
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('copies the bare URL from the singular footer action', async () => {
+      mockInviteListAfterSend([pendingInviteFor('a@b.com', 'tok-a')])
+      const { user } = renderDialog()
+
+      await inviteAndConfirm(user, 'a@b.com{Enter}')
+
+      await waitFor(() => expect(copyAllButton()).toBeInTheDocument())
+      await user.click(copyAllButton()!)
+      await waitFor(async () => {
+        expect(await navigator.clipboard.readText()).toBe(
+          buildInviteLink('tok-a')
+        )
+      })
+    })
+
+    it('renders rows without Copy actions when the invite list fetch fails', async () => {
+      vi.mocked(useTeamWorkspaceStore().fetchPendingInvites)
+        .mockResolvedValueOnce([])
+        .mockRejectedValue(new Error('nope'))
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
+      const { user } = renderDialog()
+
+      await inviteAndConfirm(user, 'a@b.com{Enter}')
+
+      expect(screen.getByText('a@b.com')).toBeInTheDocument()
+      expect(copyLinkButtons()).toHaveLength(0)
+      consoleError.mockRestore()
+    })
+
+    // pendingInviteFor derives the id from the email, so the tests above pass
+    // under either join. These two decouple the two fields so the id-keyed
+    // lookup is what is actually pinned.
+    it('ignores a token from a different invite with the same address', async () => {
+      mockInviteListAfterSend([
+        { ...pendingInviteFor('a@b.com', 'tok-elsewhere'), id: 'inv-unrelated' }
+      ])
+      const { user } = renderDialog()
+
+      await inviteAndConfirm(user, 'a@b.com{Enter}')
+
+      expect(
+        await screen.findByText(
+          'workspacePanel.inviteMemberDialog.invitedMessage'
+        )
+      ).toBeInTheDocument()
+      expect(copyLinkButtons()).toHaveLength(0)
+    })
+
+    it('takes the token from the matching id when the stored address differs', async () => {
+      mockInviteListAfterSend([
+        { ...pendingInviteFor('a@b.com', 'tok-a'), email: 'A@B.com' }
+      ])
+      const { user } = renderDialog()
+
+      await inviteAndConfirm(user, 'a@b.com{Enter}')
+
+      await waitFor(() => expect(copyLinkButtons()).toHaveLength(1))
+      await user.click(copyLinkButtons()[0])
+
+      expect(await navigator.clipboard.readText()).toBe(
+        buildInviteLink('tok-a')
+      )
+    })
   })
 
   it('closes without inviting on Cancel', async () => {
