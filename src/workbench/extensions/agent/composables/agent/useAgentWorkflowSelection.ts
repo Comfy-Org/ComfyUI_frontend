@@ -62,6 +62,15 @@ export function useAgentWorkflowSelection({
     () => workflowSelection.value?.purpose === 'reference'
   )
   let targetSelectionGeneration = 0
+  function onVisibleWorkflowChanged(): void {
+    if (!panelStore.followsVisibleWorkflow) return
+    if (
+      workflowSelection.value?.purpose === 'target' &&
+      workflowSelection.value.workflow !== workflowStore.activeWorkflow
+    )
+      ++targetSelectionGeneration
+  }
+
   function commitWorkflowTarget(
     workflow: ComfyWorkflow,
     workflowId: string
@@ -122,6 +131,7 @@ export function useAgentWorkflowSelection({
     try {
       const workflowId = await prepareWorkflowSelection(tab, isCurrent)
       if (workflowId === undefined || !isCurrent()) return false
+      const previousWorkflowId = editableWorkflowId.value ?? null
       if (!(await workflowService.openWorkflow(tab))) {
         if (isCurrent())
           warnWorkflowSelectionFailed(t('agent.targetNavigationUnavailable'))
@@ -232,6 +242,7 @@ export function useAgentWorkflowSelection({
     isSelecting: computed(() => workflowSelection.value !== null),
     selectingTarget,
     savingReference,
+    onVisibleWorkflowChanged,
     selectTarget: onSelectWorkflowTarget,
     selectReference: onSelectWorkflowReference,
     restoreTarget: onWorkflowRestored,
