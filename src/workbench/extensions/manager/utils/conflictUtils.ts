@@ -33,6 +33,22 @@ export function createBannedConflict(
 }
 
 /**
+ * Checks for flagged package status conflicts.
+ */
+export function createFlaggedConflict(
+  isFlagged?: boolean
+): ConflictDetail | null {
+  if (isFlagged === true) {
+    return {
+      type: 'flagged',
+      current_value: 'installed',
+      required_value: 'not_flagged'
+    }
+  }
+  return null
+}
+
+/**
  * Checks for pending package status conflicts.
  */
 export function createPendingConflict(
@@ -50,26 +66,28 @@ export function createPendingConflict(
 
 /**
  * Single source of truth for mapping a Node/NodeVersion status string to
- * banned/pending booleans. NodeStatusBanned is a Node-only value; NodeVersion
- * has no pending-equivalent Node status, so isPending only checks the
- * NodeVersion enum.
+ * banned/flagged/pending booleans. NodeStatusBanned is a Node-only value;
+ * NodeVersion has no pending- or flagged-equivalent Node status, so those only
+ * check the NodeVersion enum.
  */
 export function deriveStatusFlags(status?: string): {
   isBanned: boolean
+  isFlagged: boolean
   isPending: boolean
 } {
   return {
     isBanned:
       status === 'NodeStatusBanned' || status === 'NodeVersionStatusBanned',
+    isFlagged: status === 'NodeVersionStatusFlagged',
     isPending: status === 'NodeVersionStatusPending'
   }
 }
 
 /**
  * Normalized compatibility inputs for a single package, produced by each call
- * site from its own source shape. Banned/pending are pre-derived booleans
- * (see {@link deriveStatusFlags}) since the two callers read status from
- * different source shapes (Node vs NodeVersion).
+ * site from its own source shape. Banned/flagged/pending are pre-derived
+ * booleans (see {@link deriveStatusFlags}) since the two callers read status
+ * from different source shapes (Node vs NodeVersion).
  */
 export interface CompatibilityInput {
   supported_os?: RegistryOS[]
@@ -77,6 +95,7 @@ export interface CompatibilityInput {
   supported_comfyui_version?: string
   supported_comfyui_frontend_version?: string
   isBanned: boolean
+  isFlagged: boolean
   isPending: boolean
 }
 
@@ -84,8 +103,8 @@ export interface CompatibilityInput {
  * Runs the six compatibility leaf checks and collects the conflicts that fire.
  *
  * Canonical order = comfyui_version → frontend_version → OS → accelerator →
- * banned → pending; every consumer filters conflicts by `.type`, so the order
- * is cosmetic only.
+ * banned → flagged → pending; every consumer filters conflicts by `.type`, so
+ * the order is cosmetic only.
  */
 export function evaluateCompatibility(
   input: CompatibilityInput,
@@ -118,6 +137,9 @@ export function evaluateCompatibility(
 
   const bannedConflict = createBannedConflict(input.isBanned)
   if (bannedConflict) conflicts.push(bannedConflict)
+
+  const flaggedConflict = createFlaggedConflict(input.isFlagged)
+  if (flaggedConflict) conflicts.push(flaggedConflict)
 
   const pendingConflict = createPendingConflict(input.isPending)
   if (pendingConflict) conflicts.push(pendingConflict)

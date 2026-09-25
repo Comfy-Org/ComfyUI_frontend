@@ -14,67 +14,24 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import type { MessageVariants } from '@/components/ui/message/message.variants'
 import Message from '@/components/ui/message/Message.vue'
-import type { components } from '@/types/comfyRegistryTypes'
-
-type PackVersionStatus = components['schemas']['NodeVersionStatus']
-type PackStatus = components['schemas']['NodeStatus']
-type Status = PackVersionStatus | PackStatus
-
-type StatusProps = {
-  label: string
-  severity: MessageVariants['severity']
-}
+import type { PackStatusType } from '@/workbench/extensions/manager/utils/packStatusPresentation'
+import { resolvePackStatusPresentation } from '@/workbench/extensions/manager/utils/packStatusPresentation'
 
 const { statusType, hasCompatibilityIssues, hasImportFailed } = defineProps<{
-  statusType: Status
+  statusType: PackStatusType
   hasCompatibilityIssues?: boolean
   hasImportFailed?: boolean
 }>()
 
-const statusPropsMap: Record<Status, StatusProps> = {
-  NodeStatusActive: {
-    label: 'active',
-    severity: 'success'
-  },
-  NodeStatusDeleted: {
-    label: 'deleted',
-    severity: 'warning'
-  },
-  NodeStatusBanned: {
-    label: 'banned',
-    severity: 'error'
-  },
-  NodeVersionStatusActive: {
-    label: 'active',
-    severity: 'success'
-  },
-  NodeVersionStatusPending: {
-    label: 'pending',
-    severity: 'warning'
-  },
-  NodeVersionStatusDeleted: {
-    label: 'deleted',
-    severity: 'warning'
-  },
-  NodeVersionStatusFlagged: {
-    label: 'flagged',
-    severity: 'error'
-  },
-  NodeVersionStatusBanned: {
-    label: 'banned',
-    severity: 'error'
-  }
-}
+const presentation = computed(() =>
+  resolvePackStatusPresentation({
+    statusType,
+    hasCompatibilityIssues,
+    importFailed: hasImportFailed
+  })
+)
 
-const statusLabel = computed(() => {
-  if (hasImportFailed) return 'importFailed'
-  if (hasCompatibilityIssues) return 'conflicting'
-  return statusPropsMap[statusType]?.label || 'unknown'
-})
-const statusSeverity = computed(() => {
-  if (hasCompatibilityIssues || hasImportFailed) return 'error'
-  return statusPropsMap[statusType]?.severity || 'secondary'
-})
+const statusLabel = computed(() => presentation.value.label)
+const statusSeverity = computed(() => presentation.value.severity)
 </script>

@@ -614,6 +614,7 @@
         "accelerator": "GPU/Accelerator not supported (available: {current}, required: {required})",
         "generic": "Compatibility issue (current: {current}, required: {required})",
         "banned": "This package is banned for security reasons",
+        "flagged": "Security review raised findings on this version and has not cleared it yet",
         "pending": "Security verification pending - compatibility cannot be verified",
         "import_failed": "Import Failed"
       },
