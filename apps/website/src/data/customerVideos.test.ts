@@ -27,10 +27,9 @@ describe('customerVideoStories', () => {
     }
   })
 
-  it('does not assert a fabricated duration or upload date', () => {
+  it('does not assert a fabricated duration', () => {
     for (const story of customerVideoStories) {
       expect(story.durationSeconds).toBeUndefined()
-      expect(story.uploadDate).toBeUndefined()
     }
   })
 })

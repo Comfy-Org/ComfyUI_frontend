@@ -43,8 +43,7 @@ export interface CustomerVideoStory {
   /**
    * ISO 8601 date. Only set when backed by an authoritative source or a
    * documented proxy (e.g. the asset's first git-log commit date) — never
-   * invented. Left unset for both stories: no such source was available to
-   * the implementing environment.
+   * invented.
    */
   uploadDate?: string
   /** Slug of the reciprocal written story under src/content/customers, if any. */
@@ -81,7 +80,9 @@ export const customerVideoStories: readonly CustomerVideoStory[] = [
     poster: 'https://media.comfy.org/website/customers/blackmath/poster.webp',
     posterWidth: 1280,
     posterHeight: 720,
-    captions: blackMathCaptions
+    captions: blackMathCaptions,
+    // Last-Modified of media.comfy.org/website/customers/blackmath/video.webm
+    uploadDate: '2026-04-23T00:12:36+00:00'
   },
   {
     slug: 'silverside-ai',
@@ -95,6 +96,8 @@ export const customerVideoStories: readonly CustomerVideoStory[] = [
     posterWidth: 1280,
     posterHeight: 720,
     captions: silversideCaptions,
+    // Last-Modified of media.comfy.org/website/customers/silverside/video.webm
+    uploadDate: '2026-04-19T17:14:39+00:00',
     relatedStorySlug: 'svedka-silverside'
   }
 ]
