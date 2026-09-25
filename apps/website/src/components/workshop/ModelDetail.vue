@@ -339,6 +339,22 @@ useEventListener(
 const leavingTo = ref<string>()
 // Only where the cloud would keep the result is carrying on worth offering.
 const leaveAction = computed(() => (savesAssets ? 'leaveSaved' : 'leave'))
+const assetsHref = computed(() =>
+  savesAssets ? WORKSHOP_ASSETS_URL : undefined
+)
+
+// A kept result does not expire, so the note beneath it would be untrue.
+const showsExpiry = computed(
+  () => runState.value.status === 'succeeded' && !savesAssets
+)
+
+// The strip belongs to one workspace's runs of one Router model, so it waits
+// for both and has nothing to show for a model the Router does not serve.
+const savedAssetsFor = computed(() =>
+  savesAssets && session.value && model.routerId
+    ? { modelId: model.routerId, key: session.value }
+    : undefined
+)
 
 useEventListener(
   () => (isRunning.value ? globalThis.document : undefined),
@@ -1032,7 +1048,7 @@ function useInCode() {
           class="flex flex-col gap-1"
         >
           <p
-            v-if="runState.status === 'succeeded' && !savesAssets"
+            v-if="showsExpiry"
             class="text-xs text-primary-warm-gray"
             data-testid="output-expires"
           >
@@ -1059,9 +1075,9 @@ function useInCode() {
         </div>
 
         <SavedAssetsStrip
-          v-if="savesAssets && session && model.routerId"
-          :key="JSON.stringify([session.uid, session.workspace.id])"
-          :model-id="model.routerId"
+          v-if="savedAssetsFor"
+          :key="`${savedAssetsFor.key.uid}:${savedAssetsFor.key.workspace.id}`"
+          :model-id="savedAssetsFor.modelId"
           :active-request-id="requestId"
           :token="historyToken"
           :locale
@@ -1124,7 +1140,7 @@ function useInCode() {
     <RunLeaveDialog
       :open="leavingTo !== undefined"
       :action="leaveAction"
-      :assets-href="savesAssets ? WORKSHOP_ASSETS_URL : undefined"
+      :assets-href="assetsHref"
       :locale
       @update:open="(value: boolean) => !value && (leavingTo = undefined)"
       @leave="leaveForLink"

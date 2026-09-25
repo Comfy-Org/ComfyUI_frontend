@@ -149,8 +149,6 @@ async function routerFetch(
   })
 }
 
-// Saving is the whole point of a run that asked for it, so a router that took
-// the request without acknowledging the control would keep nothing.
 function acknowledgedSaving(handle: unknown): boolean {
   return (
     typeof handle === 'object' &&
@@ -160,23 +158,59 @@ function acknowledgedSaving(handle: unknown): boolean {
   )
 }
 
+// An older router answers the queue endpoint with this and means "use the
+// synchronous path instead". A run that must be saved cannot take that path,
+// so for it the refusal is the end rather than a fallback.
+function offersSynchronousInstead(
+  response: Response,
+  context: QueueContext
+): boolean {
+  return (
+    !context.options.comfy_save_asset &&
+    response.status === 403 &&
+    response.headers.get('X-Comfy-Error-Type') === 'not_enabled'
+  )
+}
+
+function submitUrl(context: QueueContext): string {
+  const url = requestsUrl(context)
+  return context.options.comfy_save_asset ? `${url}?comfy_save_asset=true` : url
+}
+
+/**
+ * Saving is the whole point of a run that asked for it, so a router that took
+ * the request without acknowledging the control would keep nothing. The request
+ * was admitted, so the machine is already running, and this throws from
+ * `submit`, where the outer catch has no request id left to cancel: stopping it
+ * here is the only chance.
+ */
+function assertSaving(
+  handle: unknown,
+  requestId: string,
+  context: QueueContext
+): void {
+  if (!context.options.comfy_save_asset || acknowledgedSaving(handle)) return
+  requestCancellation(context, requestId)
+  throw new WorkshopRouterError(
+    'unavailable',
+    requestId,
+    {},
+    undefined,
+    'response',
+    { requestSettlement: 'pending' }
+  )
+}
+
 async function submit(
   state: Submitting,
   context: QueueContext
 ): Promise<QueuedRun> {
-  const saving = context.options.comfy_save_asset === true
-  const submitUrl =
-    requestsUrl(context) + (saving ? '?comfy_save_asset=true' : '')
-  const response = await routerFetch(context, submitUrl, {
+  const response = await routerFetch(context, submitUrl(context), {
     method: 'POST',
     body: context.body
   })
   const callId = response.headers.get('X-Comfy-Request-Id')
-  if (
-    !saving &&
-    response.status === 403 &&
-    response.headers.get('X-Comfy-Error-Type') === 'not_enabled'
-  ) {
+  if (offersSynchronousInstead(response, context)) {
     await response.body?.cancel().catch(() => {})
     return { phase: 'synchronous' }
   }
@@ -201,15 +235,7 @@ async function submit(
   if (!requestId)
     throw new WorkshopRouterError('response', callId, {}, undefined, 'response')
   context.options.onRequestId?.(requestId)
-  if (saving && !acknowledgedSaving(handle))
-    throw new WorkshopRouterError(
-      'unavailable',
-      requestId,
-      {},
-      undefined,
-      'response',
-      { requestSettlement: 'pending' }
-    )
+  assertSaving(handle, requestId, context)
   return { phase: 'collect', requestId, interruptions: 0, unreadableResults: 0 }
 }
 

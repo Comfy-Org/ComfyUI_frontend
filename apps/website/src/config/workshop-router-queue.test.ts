@@ -129,8 +129,10 @@ describe('queued Router delivery', () => {
     expect(init?.body).toBe('{"prompt":"Private prompt"}')
   })
 
-  it('keeps the request id visible when a server ignores the save control', async () => {
-    const calls = stubFetch(admitted())
+  // The request was admitted before the refusal was noticed, so the machine is
+  // already running: throwing without stopping it would bill for nothing.
+  it('cancels an admitted run whose save the router never acknowledged', async () => {
+    const calls = stubFetch(admitted(), Response.json({}, { status: 202 }))
     const onRequestId = vi.fn()
     await expect(
       settle(
@@ -138,7 +140,10 @@ describe('queued Router delivery', () => {
       )
     ).rejects.toBeInstanceOf(WorkshopRouterError)
     expect(onRequestId).toHaveBeenLastCalledWith(REQUEST_ID)
-    expect(calls).toHaveBeenCalledTimes(1)
+    expect(requestedUrls(calls)).toEqual([
+      `POST ${SUBMIT_URL}?comfy_save_asset=true`,
+      `PUT ${RESULT_URL}/cancel`
+    ])
   })
 
   it('does not fall back to an unsaved synchronous generation when saving is refused', async () => {
