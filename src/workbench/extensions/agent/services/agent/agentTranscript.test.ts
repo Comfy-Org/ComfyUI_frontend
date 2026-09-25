@@ -328,10 +328,12 @@ describe('normalizeAgentTranscript', () => {
 
     /**
      * Reachable through the API rather than through this client: the writer
-     * stores `attachments` verbatim and has never filtered it, so a blank name
-     * posted by any client persists. `contentAttachments` drops it — a blank
-     * names no file — and so must this, or the turn gains a tile with an empty
-     * caption and no resolvable preview. The row is shown without a sibling
+     * stores `attachments` verbatim and has never filtered it, so an empty
+     * name posted by any client persists. `contentAttachments` drops it — an
+     * empty string names no file — and so must this, held to the same
+     * untrimmed `!= ""` the service uses, or the turn gains a tile with an
+     * empty caption and no resolvable preview. The row is shown without a
+     * sibling
      * `attachment_refs`, the pre-`attachment_refs` legacy shape; a current
      * writer would emit one naming `real.png`, which supplies no resolution
      * here beyond the name `attachments` already carries.
