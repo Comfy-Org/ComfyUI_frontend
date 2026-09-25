@@ -174,9 +174,10 @@ describe('ModelsCatalogue', () => {
     render(ModelsCatalogue, { props: { models: launchModels } })
     await screen.findByRole('heading', { name: 'Create product photos & ads' })
     await user.click(screen.getByTestId('browse-all'))
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
-      'All workflows 2'
-    )
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'All workflows 2' })
+    ).toBeVisible()
+    expect(screen.queryByRole('heading', { level: 1 })).toBeNull()
     expect(screen.queryByTestId('workshop-hero')).toBeNull()
     expect(screen.getByTestId('workflow-search-results')).toBeVisible()
     await user.click(screen.getByTestId('section-back'))
@@ -190,9 +191,10 @@ describe('ModelsCatalogue', () => {
     const user = userEvent.setup()
     render(ModelsCatalogue, { props: { models: launchModels } })
     await user.click(screen.getByTestId('browse-all'))
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
-      'All models 1'
-    )
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'All models 1' })
+    ).toBeVisible()
+    expect(screen.queryByRole('heading', { level: 1 })).toBeNull()
     expect(screen.getByRole('link', { name: /Image model/ })).toBeVisible()
     expect(screen.queryByRole('link', { name: /Change a material/ })).toBeNull()
     expect(

@@ -2,27 +2,50 @@ import { expect } from '@playwright/test'
 
 import { test } from './fixtures/blockExternalMedia'
 import { waitForIsland } from './fixtures/islands'
+import { publishedModelSlugs } from './fixtures/modelsCatalogue'
 import { MODEL_PATH } from './fixtures/modelsAccount'
 
-for (const path of ['/models/', MODEL_PATH]) {
-  test(`static HTML at ${path} paints only the loading frame`, async ({
-    request
-  }) => {
-    const html = await (await request.get(path)).text()
-    expect(html).toContain('data-testid="workshop-loading"')
-    const liveDom = html
-      .replace(
-        /<template data-astro-template="fallback">[\s\S]*?<\/template>/g,
-        ''
-      )
-      .replace(/<noscript>[\s\S]*?<\/noscript>/g, '')
-    expect(liveDom).toContain('data-testid="workshop-loading"')
-    expect(liveDom).not.toMatch(/Grok Imagine/i)
-    expect(liveDom).not.toContain('data-testid="model-detail"')
-    expect(liveDom).not.toContain('data-testid="model-hero"')
-    expect(liveDom).not.toContain('data-testid="workshop-search"')
-  })
-}
+const liveDom = (html: string) =>
+  html
+    .replace(
+      /<template data-astro-template="fallback">[\s\S]*?<\/template>/g,
+      ''
+    )
+    .replace(/<noscript>[\s\S]*?<\/noscript>/g, '')
+
+test(`static HTML at ${MODEL_PATH} paints only the loading frame`, async ({
+  request
+}) => {
+  const html = await (await request.get(MODEL_PATH)).text()
+  expect(html).toContain('data-testid="workshop-loading"')
+  const live = liveDom(html)
+  expect(live).toContain('data-testid="workshop-loading"')
+  expect(live).not.toMatch(/Grok Imagine/i)
+  expect(live).not.toContain('data-testid="model-detail"')
+  expect(live).not.toContain('data-testid="model-hero"')
+  expect(live).not.toContain('data-testid="workshop-search"')
+})
+
+test('static HTML at /models/ names the catalogue and links every model', async ({
+  request
+}) => {
+  const live = liveDom(await (await request.get('/models/')).text())
+  expect(live.match(/<h1\b[\s\S]*?<\/h1>/g)).toEqual([
+    expect.stringContaining('ComfyUI models')
+  ])
+  expect(live).not.toMatch(/Grok Imagine in ComfyUI|Try Grok Imagine Now/)
+  expect(live).toContain('data-testid="workshop-loading"')
+  expect(live).not.toContain('data-testid="workshop-search"')
+  const directory = live.match(
+    /data-testid="models-directory"[\s\S]*?<\/section>/
+  )?.[0]
+  const linked = Array.from(
+    directory?.matchAll(/href="\/models\/([^"/]+)\/"/g) ?? [],
+    ([, slug]) => slug
+  )
+  expect(new Set(linked)).toEqual(await publishedModelSlugs(request))
+  expect(linked).toHaveLength(new Set(linked).size)
+})
 
 test.describe('enabled workshop', () => {
   test.beforeEach(async ({ context }) => {
@@ -59,6 +82,7 @@ test.describe('enabled workshop', () => {
     await page.goto('/models/')
     await waitForIsland(page, page.getByTestId('workshop-search'))
     await page
+      .getByTestId('workshop-sections')
       .getByRole('link', { name: /Grok Imagine Image/i })
       .first()
       .click()

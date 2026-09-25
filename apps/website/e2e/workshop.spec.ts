@@ -233,9 +233,9 @@ test.describe('Models catalog', () => {
     await expect(sections).toHaveCount(0)
     await expect(cards).toHaveCount(promisedCount)
     await expect(page.getByTestId('workshop-hero')).toHaveCount(0)
-    await expect(page.getByRole('heading', { level: 1 })).toContainText(
-      rowLabel
-    )
+    await expect(
+      page.getByRole('heading', { level: 2, name: rowLabel })
+    ).toBeVisible()
     await page
       .getByRole('button', { name: 'Back to all categories', exact: true })
       .click()
@@ -248,8 +248,11 @@ test.describe('Models catalog', () => {
     await page.getByTestId('browse-all').click()
 
     await expect(page.getByTestId('workshop-sections')).toHaveCount(0)
-    const heading = page.getByRole('heading', { level: 1 })
-    await expect(heading).toContainText('All models')
+    const heading = page.getByRole('heading', {
+      level: 2,
+      name: /^All models \d+$/
+    })
+    await expect(heading).toBeVisible()
     const promisedCount = Number(
       (await heading.innerText()).match(/(\d+)\s*$/)?.[1]
     )
@@ -269,9 +272,9 @@ test.describe('Models catalog', () => {
   }) => {
     await page.goto('/models/')
     await page.getByTestId('section-generate-videos-open').click()
-    await expect(page.getByRole('heading', { level: 1 })).toContainText(
-      'Generate videos'
-    )
+    await expect(
+      page.getByRole('heading', { level: 2, name: 'Generate videos' })
+    ).toBeVisible()
     await page
       .getByTestId('workshop-models-grid')
       .getByTestId('workshop-model-card')
@@ -285,9 +288,9 @@ test.describe('Models catalog', () => {
       '/models?useCase=generate-videos'
     )
     await back.click()
-    await expect(page.getByRole('heading', { level: 1 })).toContainText(
-      'Generate videos'
-    )
+    await expect(
+      page.getByRole('heading', { level: 2, name: 'Generate videos' })
+    ).toBeVisible()
     await expect(page.getByTestId('workshop-sections')).toHaveCount(0)
   })
 
@@ -324,8 +327,11 @@ test.describe('Models catalog', () => {
   }) => {
     await page.goto('/models/')
     await page.getByTestId('section-generate-videos-open').click()
-    const heading = page.getByRole('heading', { level: 1 })
-    await expect(heading).toContainText('Generate videos')
+    const heading = page.getByRole('heading', {
+      level: 2,
+      name: 'Generate videos'
+    })
+    await expect(heading).toBeVisible()
 
     // Typing scrolls the heading's row into view, which is what used to bury
     // the heading and the result count it carries under the sticky nav.
@@ -445,7 +451,7 @@ test.describe('Models catalog', () => {
       .click()
     await expect(page).toHaveURL(/\/models\/?\?useCase=animate-images$/)
     await expect(
-      page.getByRole('heading', { level: 1, name: /Image to video/ })
+      page.getByRole('heading', { level: 2, name: /Image to video/ })
     ).toBeVisible()
   })
 
@@ -570,7 +576,10 @@ test.describe('Model playground', () => {
       .getByRole('link', { name: 'Models', exact: true })
       .click()
     await page.getByTestId('workshop-search').fill('Seedream 4.5 Image Edit')
-    await page.getByRole('link', { name: /Seedream 4\.5 Image Edit/ }).click()
+    await page
+      .getByTestId('workshop-models-grid')
+      .getByRole('link', { name: /Seedream 4\.5 Image Edit/ })
+      .click()
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
       'Seedream 4.5 Image Edit'
     )
