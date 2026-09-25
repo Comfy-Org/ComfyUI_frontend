@@ -22,6 +22,15 @@ export const FEATURE_SURVEYS: Record<string, FeatureSurveyConfig> = {
     typeformId: 'iFp4p4mV',
     triggerThreshold: 3,
     presentation: 'inline-cta'
+  },
+  'example-workflows': {
+    featureId: 'example-workflows',
+    // Placeholder: the form is built but not yet published to Typeform. Flip
+    // `enabled` once the real ID lands, so a half-wired survey can never open.
+    typeformId: '',
+    triggerThreshold: 3,
+    delayMs: 5000,
+    enabled: false
   }
 }
 
