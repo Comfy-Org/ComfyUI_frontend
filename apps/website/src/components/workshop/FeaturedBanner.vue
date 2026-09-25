@@ -22,9 +22,14 @@ import Button from '@/components/ui/button/Button.vue'
 const AUTOPLAY_MS = 7000
 const CAPABILITY_LIMIT = 3
 
-const { models, locale = 'en' } = defineProps<{
+const {
+  models,
+  locale = 'en',
+  autoplay = true
+} = defineProps<{
   models: readonly WorkshopModel[]
   locale?: Locale
+  autoplay?: boolean
 }>()
 
 const slides = computed(() =>
@@ -77,6 +82,7 @@ useEventListener(banner, 'focusout', () => (readingByKeyboard.value = false))
 
 const rotating = computed(
   () =>
+    autoplay &&
     slides.value.length > 1 &&
     onScreen.value &&
     visibility.value === 'visible' &&
@@ -100,7 +106,9 @@ watch(rotating, (on) => (on ? resume() : pause()), { immediate: true })
 watch(activeIndex, () => (elapsed.value = 0))
 
 const fill = computed(() =>
-  prefersReducedMotion() ? 1 : Math.min(elapsed.value / AUTOPLAY_MS, 1)
+  !autoplay || prefersReducedMotion()
+    ? 1
+    : Math.min(elapsed.value / AUTOPLAY_MS, 1)
 )
 </script>
 

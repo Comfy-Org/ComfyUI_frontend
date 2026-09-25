@@ -37,10 +37,12 @@ import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPane
  * The widget-overwrite spec at the bottom of this file is a *different*
  * mechanism, not a third symptom of the reconcile root cause above: it never
  * goes through a follower rebind at all. It replays an agent turn's
- * `set_widget` while the target widget is focused, which is a plain
- * local-edit-vs-remote-write collision in `applyWidgetValues`/
- * `setWidgetValue` (`graphMutations.ts`) — those write straight into
- * `widgetValueStore` with no focus/in-progress-edit guard.
+ * `set_widget` while the target widget is focused — a plain
+ * local-edit-vs-remote-write collision on the incremental `setWidget` path
+ * in `graphMutations.ts`. Since PM-1191/PM-1697 that path consults the same
+ * `skipStaleReconcile` local-dirty guard a full reconcile does: a remote
+ * value that differs from an in-progress local edit is skipped until the
+ * document catches up to the local value, so the user's keystrokes survive.
  */
 
 // Five wired nodes (checkpoint -> CLIPTextEncode -> KSampler -> VAEDecode ->
@@ -291,8 +293,11 @@ test.describe(
   () => {
     test.use({ conversationCase: ADD_THEN_SET_CASE })
 
+    test.beforeEach(async ({ page }) => enableCrdtDebugPanel(page))
+
     test('preserves a user’s in-progress edit when an agent turn sets the same widget', async ({
-      agentConversation
+      agentConversation,
+      page
     }, testInfo) => {
       test.setTimeout(90_000)
       const textField = agentConversation.vueNodes
@@ -326,6 +331,8 @@ test.describe(
         contentType: 'image/png'
       })
 
+      const appliedBeforeTurn = await appliedFrameCount(page)
+
       await test.step('the agent turn lands while the widget is still focused', async () => {
         await agentConversation.replayResponse(1)
       })
@@ -342,20 +349,20 @@ test.describe(
         contentType: 'image/png'
       })
 
-      // Pins the mechanism, not just the symptom: the remote write's own
-      // value ("blurry, low quality", the fixture's turn-1 set_widget) must
-      // actually have landed, or this could just as easily be documenting an
-      // unrelated regression — the second pressSequentially never arriving,
-      // or the field losing focus and going blank — instead of the
-      // overwrite this test is named for.
-      await expect(textField).toHaveValue(/blurry, low quality/)
+      // Pins the mechanism, not just the symptom: the turn's doc frame must
+      // actually have been applied and reconciled in the browser (the
+      // outcomes counter rises only after applyFrame + reconcileLiveGraph),
+      // or a green result could just as easily be documenting an unrelated
+      // regression — the replay never arriving — instead of proving the
+      // remote write was deliberately skipped while the edit was in
+      // progress.
+      await expect
+        .poll(() => appliedFrameCount(page))
+        .toBeGreaterThan(appliedBeforeTurn)
 
-      // Known bug: graphMutations.ts's
-      // applyWidgetValues/setWidgetValue write straight into
-      // widgetValueStore with no check for a focused/in-progress local
-      // edit, so an agent-driven set_widget on the same widget silently
-      // overwrites (or corrupts) whatever the user was mid-typing.
-      test.fail()
+      // The guarded behavior (PM-1191/PM-1697): the remote value must not
+      // land under the cursor, and the user's full text survives.
+      await expect(textField).not.toHaveValue(/blurry, low quality/)
       await expect(textField).toHaveValue('hello world')
     })
   }

@@ -14,12 +14,14 @@ import { workflowDetailsBySlug } from '../config/workshop-workflow-content'
 import type { SavedWorkflow } from '../config/workshop-workflow-storage'
 import { workflowStorage } from '../config/workshop-workflow-storage'
 import { createWorkflowUploader } from '../config/workshop-workflow-upload'
+import { captureWorkshopEvent } from '../scripts/posthog'
 import { useWorkflowFormDraft } from './useWorkflowFormDraft'
 import { useWorkflowRun } from './useWorkflowRun'
 
 vi.mock(import('../config/workshop-session-state'))
 vi.mock(import('../config/workshop-credits'))
 vi.mock(import('../config/workshop-workflow-upload'))
+vi.mock(import('../scripts/posthog'))
 
 const runId = 'bafc696e-e5d4-42f1-9a3d-d01f82a0629b'
 const input = { image: 'https://storage.googleapis.com/inputs/canonical' }
@@ -112,6 +114,138 @@ function finished(): JobDetailResponse {
 }
 
 describe('workflow page caller lifecycle', () => {
+  it('reports one Cloud attempt without inputs and does not count link refresh or restored jobs as new runs', async () => {
+    const f = fixture()
+    f.fetch
+      .mockResolvedValueOnce(Response.json({ prompt_id: runId }))
+      .mockResolvedValue(Response.json(finished()))
+    await f.workflow.start(input)
+    const started = vi.mocked(captureWorkshopEvent).mock.calls.at(0)?.[0]
+    expect(started).toMatchObject({
+      name: 'run_started',
+      properties: {
+        page_type: 'workflow',
+        render_engine: 'cloud',
+        workflow_id: f.model.workflowId,
+        user_id: f.owner.uid,
+        workspace_id: f.owner.workspace.id,
+        attempt_id: expect.any(String)
+      }
+    })
+    expect(captureWorkshopEvent).toHaveBeenLastCalledWith({
+      name: 'run_finished',
+      properties: {
+        ...started?.properties,
+        request_id: runId,
+        status: 'succeeded',
+        duration_ms: expect.any(Number),
+        output_count: 1
+      }
+    })
+    expect(
+      JSON.stringify(vi.mocked(captureWorkshopEvent).mock.calls)
+    ).not.toMatch(/canonical|result\.png|token|https:/)
+    vi.mocked(captureWorkshopEvent).mockClear()
+    f.fetch.mockImplementation(async () => Response.json(finished()))
+    const output = f.workflow.observation.value?.outputs[0]
+    assert(output)
+    await f.workflow.refreshOutput(output.id)
+    f.unmount()
+    const restored = mountWorkflow(f.model, f.scope)
+    await waitFor(() =>
+      expect(restored.workflow.state.value.phase).toBe('settled')
+    )
+    expect(captureWorkshopEvent).not.toHaveBeenCalled()
+  })
+
+  it('reports form validation separately from generation attempts', async () => {
+    const f = fixture()
+    await f.workflow.start({ image: '' })
+    expect(captureWorkshopEvent).toHaveBeenCalledExactlyOnceWith({
+      name: 'run_validation_failed',
+      properties: expect.objectContaining({
+        page_type: 'workflow',
+        field_error_codes: ['required'],
+        field_error_names: ['image']
+      })
+    })
+    expect(f.workflow.state.value.phase).toBe('failed')
+    expect(f.fetch).not.toHaveBeenCalled()
+  })
+
+  it('records a credit refusal without exposing the Cloud error body', async () => {
+    const f = fixture()
+    f.fetch.mockResolvedValueOnce(
+      new Response('private provider details', { status: 402 })
+    )
+    await f.workflow.start(input)
+    expect(captureWorkshopEvent).toHaveBeenLastCalledWith({
+      name: 'run_finished',
+      properties: expect.objectContaining({
+        page_type: 'workflow',
+        status: 'failed',
+        reason: 'noCredits',
+        workflow_error_code: 'insufficient_credits',
+        http_status: 402
+      })
+    })
+    expect(
+      JSON.stringify(vi.mocked(captureWorkshopEvent).mock.calls)
+    ).not.toContain('private')
+  })
+
+  it('reports cancellation during upload without claiming a Cloud job was cancelled', async () => {
+    const f = fixture()
+    const uploaded = Promise.withResolvers<string>()
+    const requested = Promise.withResolvers<void>()
+    vi.mocked(createWorkflowUploader).mockReturnValue(async () => {
+      requested.resolve()
+      return uploaded.promise
+    })
+    const pending = f.workflow.start(input)
+    onTestFinished(async () => {
+      uploaded.resolve('input.webp')
+      await pending
+    })
+    await requested.promise
+    await f.workflow.cancel()
+    expect(captureWorkshopEvent).toHaveBeenLastCalledWith({
+      name: 'run_finished',
+      properties: expect.objectContaining({
+        status: 'cancelled',
+        page_type: 'workflow'
+      })
+    })
+    const last = vi.mocked(captureWorkshopEvent).mock.calls.at(-1)?.[0]
+    expect(last?.properties).not.toHaveProperty('request_id')
+    expect(f.fetch).not.toHaveBeenCalled()
+    uploaded.resolve('input.webp')
+    await pending
+    expect(captureWorkshopEvent).toHaveBeenCalledTimes(2)
+  })
+
+  it.for(['failed', 'cancelled'] as const)(
+    'records a confirmed Cloud job %s outcome',
+    async (status) => {
+      const f = fixture()
+      f.fetch
+        .mockResolvedValueOnce(Response.json({ prompt_id: runId }))
+        .mockResolvedValueOnce(
+          Response.json({ ...finished(), status, outputs: {} })
+        )
+      await f.workflow.start(input)
+      expect(captureWorkshopEvent).toHaveBeenLastCalledWith({
+        name: 'run_finished',
+        properties: expect.objectContaining({
+          status,
+          request_id: runId,
+          page_type: 'workflow',
+          render_engine: 'cloud'
+        })
+      })
+    }
+  )
+
   type Fixture = ReturnType<typeof fixture>
   type CredentialResult = Awaited<ReturnType<Fixture['session']['ensureFresh']>>
   type PendingCredential = ReturnType<
@@ -253,6 +387,9 @@ describe('workflow page caller lifecycle', () => {
       expect(f.workflow.state.value).toEqual(presentationBeforeSwitch)
       expect(f.workflow.observation.value).toBeUndefined()
       expect(refreshWorkshopCredits).not.toHaveBeenCalled()
+      expect(captureWorkshopEvent).not.toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'run_finished' })
+      )
       expect(
         workflowStorage(sessionStorage, f.scope, f.model.workflowId).read()
       ).toMatchObject({ stage: 'run', runId })
@@ -330,16 +467,75 @@ describe('workflow page caller lifecycle', () => {
       .mockRejectedValueOnce(new TypeError('Offline'))
     await f.workflow.start(input)
     expect(f.workflow.state.value.phase).toBe('interrupted')
+    expect(captureWorkshopEvent).not.toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'run_finished' })
+    )
     f.fetch.mockResolvedValueOnce(Response.json(finished()))
     window.dispatchEvent(new Event('online'))
     await waitFor(() => expect(refreshWorkshopCredits).toHaveBeenCalledOnce())
     expect(f.workflow.state.value.phase).toBe('settled')
+    expect(
+      vi.mocked(captureWorkshopEvent).mock.calls.map(([event]) => event.name)
+    ).toEqual(['run_started', 'run_finished'])
     expect(f.fetch.mock.calls.map(([, init]) => init?.method)).toEqual([
       'POST',
       'GET',
       'GET'
     ])
   })
+
+  it('finishes a dismissed unknown submission as a client failure once', async () => {
+    const f = fixture()
+    f.fetch.mockRejectedValueOnce(new TypeError('Lost response'))
+    await f.workflow.start(input)
+    f.workflow.dismiss()
+    f.workflow.dismiss()
+    expect(f.workflow.state.value.phase).toBe('idle')
+    const finished = vi
+      .mocked(captureWorkshopEvent)
+      .mock.calls.flatMap(([event]) =>
+        event.name === 'run_finished' ? [event.properties] : []
+      )
+    expect(finished).toEqual([
+      expect.objectContaining({
+        status: 'failed',
+        reason: 'network',
+        workflow_error_code: 'submission_unknown',
+        duration_ms: expect.any(Number)
+      })
+    ])
+    expect(finished[0]).not.toHaveProperty('request_id')
+    expect(f.fetch).toHaveBeenCalledOnce()
+  })
+
+  it.for(['known job', 'storage failure', 'restored intent'])(
+    'does not finish a dismissed %s without an abandoned local attempt',
+    async (scenario) => {
+      const f = fixture()
+      if (scenario === 'known job')
+        f.fetch.mockResolvedValueOnce(
+          Response.json({ prompt_id: runId, node_errors: {} })
+        )
+      f.fetch.mockRejectedValueOnce(new TypeError('Lost response'))
+      await f.workflow.start(input)
+      let workflow = f.workflow
+      if (scenario === 'storage failure')
+        vi.spyOn(sessionStorage, 'removeItem').mockImplementationOnce(() => {
+          throw new Error('Storage unavailable')
+        })
+      if (scenario === 'restored intent') {
+        f.unmount()
+        workflow = mountWorkflow(f.model, f.scope).workflow
+        await waitFor(() =>
+          expect(workflow.state.value.phase).toBe('interrupted')
+        )
+      }
+      workflow.dismiss()
+      expect(captureWorkshopEvent).not.toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'run_finished' })
+      )
+    }
+  )
 
   it.for([
     {
