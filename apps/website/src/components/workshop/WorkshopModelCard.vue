@@ -56,7 +56,7 @@ const pillClass =
     :data-kind="workflow ? 'workflow' : 'model'"
   >
     <div
-      class="relative aspect-4/3 overflow-hidden rounded-[1.75rem] bg-hub-surface"
+      class="relative aspect-4/3 overflow-hidden rounded-3.5xl bg-hub-surface"
     >
       <!-- Only the hub mixes graphs, apps and models in one grid, so only
         there does a card have to say which it is. -->
