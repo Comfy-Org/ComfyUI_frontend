@@ -18,7 +18,7 @@ import {
 import { SubgraphIONodeBase } from '@/lib/litegraph/src/subgraph/SubgraphIONodeBase'
 import type { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInputNode'
 import type { SubgraphOutputNode } from '@/lib/litegraph/src/subgraph/SubgraphOutputNode'
-import { useSelectionStore } from '@/renderer/core/canvas/selectionStore'
+import { useSelectionStore } from '@/core/selection/selectionStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'
@@ -66,7 +66,6 @@ export function setCanvasItemSelected(
 ): void {
   const key = selectableKeyOf(item)
   if (!key) return
-  item.selected = selected
   applyCanvasSelection(canvas, {
     type: selected ? 'selection.add' : 'selection.remove',
     key
@@ -81,7 +80,6 @@ export function applyCanvasSelection(
 }
 
 export function releaseCanvasSelection(canvas: LGraphCanvas): void {
-  for (const item of canvas.selectedItems) item.selected = undefined
   canvas.selected_group = null
 }
 
