@@ -24,6 +24,11 @@ export type SavedAssetTile =
       readonly key: string
       readonly generation: SavedGeneration
     }
+  | {
+      readonly state: 'unsaved'
+      readonly key: string
+      readonly generation: SavedGeneration
+    }
 
 const EXTENSIONS: Record<SavedAssetKind, string> = {
   image: 'png',
@@ -52,9 +57,20 @@ export function savedAssetTiles(
       })
       continue
     }
-    for (const output of generation.asset_outputs) {
-      if (output.status !== 'saved' || unavailable.has(output.asset_id))
-        continue
+    const saved = generation.asset_outputs.filter(
+      (output) => output.status === 'saved' && !unavailable.has(output.asset_id)
+    )
+    // A run that finished but was not kept still happened, and the reader paid
+    // for it. Dropping it leaves the strip empty with nothing said.
+    if (!saved.length && generation.asset_save_status === 'failed') {
+      tiles.push({
+        state: 'unsaved',
+        key: generation.request_id,
+        generation
+      })
+      continue
+    }
+    for (const output of saved) {
       tiles.push({
         state: 'saved',
         key: output.asset_id,

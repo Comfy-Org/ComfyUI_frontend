@@ -347,9 +347,13 @@ const assetsHref = computed(() =>
   leaveAction.value === 'leaveSaved' ? WORKSHOP_ASSETS_URL : undefined
 )
 
-// A kept result does not expire, so the note beneath it would be untrue.
+// A kept result does not expire, so the note beneath it would be untrue. A run
+// the cloud failed to keep expires like any other, and the reader has to hear
+// that while the result is still there to download.
+const saveFailed = ref(false)
 const showsExpiry = computed(
-  () => runState.value.status === 'succeeded' && !savesAssets
+  () =>
+    runState.value.status === 'succeeded' && (!savesAssets || saveFailed.value)
 )
 
 // The strip belongs to one workspace's runs of one Router model, so it waits
@@ -1098,6 +1102,7 @@ function useInCode() {
           :active-request-id="requestId"
           :token="historyToken"
           :locale
+          @save-failed="saveFailed = $event"
         />
 
         <!-- Once the result is in view, taking the workflow home is the other

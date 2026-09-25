@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { File as FileIcon, Loader2 } from '@lucide/vue'
+import { File as FileIcon, Loader2, TriangleAlert } from '@lucide/vue'
 import { computed } from 'vue'
 
 import type { SavedAssetTile } from '../../lib/workshop/saved-assets'
@@ -32,6 +32,11 @@ const media = computed(() =>
   <Loader2
     v-else-if="tile.state === 'pending'"
     class="size-5 text-primary-comfy-yellow motion-safe:animate-spin"
+    aria-hidden="true"
+  />
+  <TriangleAlert
+    v-else-if="tile.state === 'unsaved'"
+    class="size-5 text-primary-comfy-red"
     aria-hidden="true"
   />
   <FileIcon v-else class="size-5" aria-hidden="true" />

@@ -52,6 +52,14 @@ const savedPair: SavedGeneration[] = [
   }
 ]
 
+const unkept: SavedGeneration = {
+  ...saved,
+  asset_save_status: 'failed',
+  asset_outputs: [
+    { index: 0, kind: 'image', status: 'failed', asset_id: assetId }
+  ]
+}
+
 const props = {
   modelId: 'bfl/flux-2-pro',
   activeRequestId: null,
@@ -88,6 +96,17 @@ describe('SavedAssetsStrip', () => {
       'https://assets.example/saved.png',
       'saved.png'
     )
+  })
+
+  it('says a generation was not kept instead of emptying the strip', async () => {
+    vi.mocked(listWorkshopGenerations).mockResolvedValue({ requests: [unkept] })
+    const { emitted } = render(SavedAssetsStrip, {
+      props: { ...props, activeRequestId: unkept.request_id }
+    })
+
+    await openFirstTile()
+    expect(screen.getByTestId('saved-asset-not-saved')).toBeVisible()
+    await waitFor(() => expect(emitted().saveFailed).toContainEqual([true]))
   })
 
   it('follows a generation the reader is watching into the asset it becomes', async () => {

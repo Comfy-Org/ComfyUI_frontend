@@ -373,6 +373,43 @@ describe('ModelDetail', () => {
     expect(new URL(location.href).searchParams.get('request_id')).toBeNull()
   })
 
+  // Ben's finding: a run the cloud failed to keep expires like any other, and
+  // the note under the output is the only place that says so.
+  it('warns that a result the cloud could not keep still expires', async () => {
+    vi.stubEnv('PUBLIC_WORKSHOP_SAVE_ASSETS', '1')
+    auth.session.value = credential
+    const requestId = '18655193-3f73-4abf-b49c-1c6a058355bc'
+    vi.mocked(listWorkshopGenerations).mockResolvedValue({
+      requests: [
+        {
+          request_id: requestId,
+          provider: 'bfl',
+          model: 'flux-2-pro',
+          created_at: '2026-09-20T12:00:00Z',
+          status: 'COMPLETED',
+          asset_save_status: 'failed',
+          asset_outputs: []
+        }
+      ]
+    })
+    vi.mocked(runWorkshopRouter).mockResolvedValue({
+      ...routerResult,
+      requestId
+    })
+    mountDetail({ model: runnable })
+    await user().type(screen.getByTestId('field-prompt'), 'A teapot')
+    await user().click(screen.getByTestId('run-button'))
+    await vi.waitFor(() =>
+      expect(
+        screen.getByTestId('playground-output').getAttribute('data-state')
+      ).toBe('succeeded')
+    )
+
+    await vi.waitFor(() =>
+      expect(screen.getByTestId('output-expires')).toBeVisible()
+    )
+  })
+
   it('links a documented provider in a new tab', () => {
     mountDetail({
       model: {

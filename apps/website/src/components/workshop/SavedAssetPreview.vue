@@ -48,6 +48,7 @@ const media = computed(() =>
     : undefined
 )
 const generating = computed(() => tile?.state === 'pending')
+const unsaved = computed(() => tile?.state === 'unsaved')
 const downloadName = computed(() =>
   downloadFailed.value ? undefined : media.value?.fileName
 )
@@ -177,6 +178,15 @@ function touchEnd(event: TouchEvent) {
             {{ t('workshop.run.cancel', locale) }}
           </Button>
         </template>
+
+        <p
+          v-else-if="unsaved"
+          role="alert"
+          class="max-w-sm text-center text-sm text-primary-warm-white"
+          data-testid="saved-asset-not-saved"
+        >
+          {{ t('workshop.assets.notSaved', locale) }}
+        </p>
 
         <p v-else role="status" class="text-sm text-primary-warm-gray">
           {{ t('workshop.assets.loadingMedia', locale) }}

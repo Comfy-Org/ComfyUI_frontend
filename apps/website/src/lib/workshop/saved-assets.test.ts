@@ -41,6 +41,24 @@ describe('savedAssetTiles', () => {
     ])
   })
 
+  it('keeps a generation the cloud failed to save, rather than dropping the run', () => {
+    const unkept = generation({
+      asset_save_status: 'failed',
+      asset_outputs: [
+        {
+          index: 0,
+          kind: 'image',
+          status: 'failed',
+          asset_id: '932cad6b-c94f-4e83-bffa-84be407b0440'
+        }
+      ]
+    })
+
+    expect(savedAssetTiles([unkept])).toEqual([
+      { state: 'unsaved', key: unkept.request_id, generation: unkept }
+    ])
+  })
+
   it('drops an output the account can no longer reach rather than showing a broken tile', () => {
     const assetId = generation().asset_outputs[0].asset_id
 

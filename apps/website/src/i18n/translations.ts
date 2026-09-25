@@ -10850,6 +10850,10 @@ Enterprise`
   'workshop.assets.previous': { en: 'Previous asset', 'zh-CN': '上一个素材' },
   'workshop.assets.next': { en: 'Next asset', 'zh-CN': '下一个素材' },
   'workshop.assets.go': { en: 'Show asset {n}', 'zh-CN': '显示第 {n} 个素材' },
+  'workshop.assets.notSaved': {
+    en: 'This generation could not be saved to your assets. The result is still on the page until it expires.',
+    'zh-CN': '这次生成未能保存到你的素材。结果在过期前仍然留在页面上。'
+  },
   'workshop.assets.cancelError': {
     en: 'Could not request cancellation. Your generation may still be running.',
     'zh-CN': '无法请求取消。生成可能仍在进行。'

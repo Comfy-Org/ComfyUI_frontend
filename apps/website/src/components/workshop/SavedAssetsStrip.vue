@@ -39,6 +39,8 @@ const {
   locale?: Locale
 }>()
 
+const emit = defineEmits<{ saveFailed: [failed: boolean] }>()
+
 const PENDING_POLL_MS = 3_000
 const FAILED_POLL_MS = 15_000
 const ACCESS_HEADROOM_MS = 30_000
@@ -64,6 +66,19 @@ const tiles = computed(() =>
 )
 const savedTiles = computed(() =>
   tiles.value.filter((tile): tile is SavedAsset => tile.state === 'saved')
+)
+
+// Whether this run was kept decides what the page says about its expiry, and
+// only the history knows.
+watch(
+  () =>
+    generations.value.some(
+      (generation) =>
+        generation.request_id === activeRequestId &&
+        generation.asset_save_status === 'failed'
+    ),
+  (failedSave) => emit('saveFailed', failedSave),
+  { immediate: true }
 )
 
 // A generation the reader opened while it was still running is the same piece
@@ -96,13 +111,14 @@ function urlFor(tile: SavedAssetTileData): string | undefined {
     : undefined
 }
 
+const TILE_LABELS = {
+  pending: 'workshop.assets.generating',
+  unsaved: 'workshop.assets.notSaved',
+  saved: 'workshop.assets.open'
+} as const
+
 function tileLabel(tile: SavedAssetTileData): string {
-  return t(
-    tile.state === 'pending'
-      ? 'workshop.assets.generating'
-      : 'workshop.assets.open',
-    locale
-  )
+  return t(TILE_LABELS[tile.state], locale)
 }
 
 function current(attempt: number): boolean {
