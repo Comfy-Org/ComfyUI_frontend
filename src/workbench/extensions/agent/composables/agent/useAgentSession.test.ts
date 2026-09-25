@@ -658,6 +658,25 @@ describe('useAgentSession (v1 composition root)', () => {
       }
     )
 
+    // A socket drop is not the only way to reach the detached state: a turn
+    // COMPLETING gets there too, by agent_message_done -> settleActiveTurn ->
+    // clearActive(), which nulls activeTurnId just the same. One gate, two
+    // triggers — evidence for the second one came from #18834, which pins the
+    // identical symptom with no socket involved.
+    it('sends the answer after the turn that raised the card completed', async () => {
+      const { session, answerAsk, emit } = await parkedOnApproval()
+      emit(done('msg-1'))
+      expect(useAgentConversationStore().activeTurnId).toBeNull()
+      expect(cardOnScreen()).toBe(true)
+
+      await session.answerAsk('turn-1:call-1', 'run')
+
+      expect(answerAsk).toHaveBeenCalledWith('th-1', 'turn-1:call-1', ['run'])
+      // No transport survives a settled turn, so no resolution frame can land
+      // — the card has to retire on the response instead of waiting for one.
+      expect(cardOnScreen()).toBe(false)
+    })
+
     it('dismisses itself once answered, since no resolution frame can reach it', async () => {
       const { session, status } = await parkedOnApproval()
       status(false)
