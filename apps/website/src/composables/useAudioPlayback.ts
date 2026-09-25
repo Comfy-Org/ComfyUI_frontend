@@ -48,7 +48,11 @@ export function useAudioPlayback(source: MaybeRefOrGetter<string | undefined>) {
   function seekTo(seconds: number) {
     const element = audio.value
     if (!element || !seekable.value || Number.isNaN(seconds)) return
-    element.currentTime = Math.min(Math.max(seconds, 0), duration.value)
+    const landing = Math.min(Math.max(seconds, 0), duration.value)
+    element.currentTime = landing
+    // `timeupdate` is the element's own pace, so a second key press before it
+    // fires would otherwise start over from where the first one started.
+    elapsed.value = landing
   }
 
   /** Where in the recording a click on the line lands. */
@@ -68,7 +72,9 @@ export function useAudioPlayback(source: MaybeRefOrGetter<string | undefined>) {
       Home: () => 0,
       End: () => duration.value
     }[event.key]
-    if (!target) return
+    // A recording with no length to move within leaves these keys to the page,
+    // which is where they were going before this control existed.
+    if (!target || !seekable.value) return
     event.preventDefault()
     seekTo(target())
   }

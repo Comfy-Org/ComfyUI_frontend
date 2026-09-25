@@ -14,6 +14,15 @@ function element(overrides: Partial<HTMLAudioElement> = {}) {
   } as unknown as HTMLAudioElement
 }
 
+// A click on a 100px-wide line starting at x = 0, unless said otherwise.
+function clickAt(x: number, width = 100) {
+  const line = document.createElement('div')
+  line.getBoundingClientRect = () => ({ left: 0, width }) as unknown as DOMRect
+  const event = new MouseEvent('click', { clientX: x })
+  Object.defineProperty(event, 'currentTarget', { value: line })
+  return event
+}
+
 function mounted(overrides?: Partial<HTMLAudioElement>) {
   const source = ref<string | undefined>('blob:one')
   const player = useAudioPlayback(source)
@@ -72,6 +81,61 @@ describe('useAudioPlayback', () => {
 
     player.seekTo(30)
     expect(player.audio.value?.currentTime).toBe(30)
+  })
+
+  // The line is the whole width of the recording, so where the pointer lands
+  // along it is where the recording is taken up.
+  it.for([
+    { at: 0, lands: 0 },
+    { at: 50, lands: 30 },
+    { at: 100, lands: 60 },
+    { at: -20, lands: 0 },
+    { at: 140, lands: 60 }
+  ])('a click $at px along a 100px line lands at $lands', ({ at, lands }) => {
+    const { player } = mounted()
+
+    player.seekToPoint(clickAt(at))
+
+    expect(player.audio.value?.currentTime).toBe(lands)
+  })
+
+  // A line the browser has not laid out yet has no length to be a fraction of.
+  it('does not seek on a line with no width', () => {
+    const { player } = mounted()
+
+    player.seekToPoint(clickAt(40, 0))
+
+    expect(player.audio.value?.currentTime).toBe(0)
+  })
+
+  it('leaves a click that did not land on an element alone', () => {
+    const { player } = mounted()
+
+    player.seekToPoint(new MouseEvent('click'))
+
+    expect(player.audio.value?.currentTime).toBe(0)
+  })
+
+  // Each press moves on from the last, even before the element reports back.
+  it('compounds repeated presses', () => {
+    const { player } = mounted()
+
+    for (const _ of [1, 2, 3])
+      player.seekByKey(new KeyboardEvent('keydown', { key: 'ArrowRight' }))
+
+    expect(player.audio.value?.currentTime).toBe(15)
+  })
+
+  it('leaves the keys to the page when there is nothing to seek within', () => {
+    const { player } = mounted({ duration: Number.POSITIVE_INFINITY })
+    const event = new KeyboardEvent('keydown', {
+      key: 'ArrowRight',
+      cancelable: true
+    })
+
+    player.seekByKey(event)
+
+    expect(event.defaultPrevented).toBe(false)
   })
 
   it.for([

@@ -118,7 +118,8 @@ const {
       <div v-if="isAudio && source" class="flex items-center gap-2">
         <div
           role="slider"
-          tabindex="0"
+          :tabindex="seekable ? 0 : -1"
+          :aria-disabled="!seekable"
           :aria-label="`${t('player.seek', locale)} ${file.name}`"
           :aria-valuemin="0"
           :aria-valuemax="Math.round(seekable ? duration : 0)"
