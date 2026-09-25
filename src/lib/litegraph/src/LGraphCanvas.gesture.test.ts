@@ -526,17 +526,23 @@ describe('LGraphCanvas pointer gestures', () => {
       expect(selectedTitles(canvas)).toEqual(['G'])
     })
 
-    it('ignores stale reroute hits when links are hidden', () => {
-      const link = connect(a, b)
-      const reroute = graph.createReroute(G_TITLE, link)
-      assert(reroute)
-      canvas._visibleReroutes.add(reroute)
-      canvas.links_render_mode = LinkRenderType.HIDDEN_LINK
+    it.for([
+      { click: 'normally', modifiers: {} },
+      { click: 'with ctrl', modifiers: { ctrlKey: true } }
+    ])(
+      'ignores stale reroute hits when links are hidden $click',
+      ({ modifiers }) => {
+        const link = connect(a, b)
+        const reroute = graph.createReroute(G_TITLE, link)
+        assert(reroute)
+        canvas._visibleReroutes.add(reroute)
+        canvas.links_render_mode = LinkRenderType.HIDDEN_LINK
 
-      gesture.click(G_TITLE)
+        gesture.click(G_TITLE, modifiers)
 
-      expect(selectedTitles(canvas)).toEqual(['G'])
-    })
+        expect(selectedTitles(canvas)).toEqual(['G'])
+      }
+    )
 
     it('press sets selected_group; a node press leaves it untouched', () => {
       gesture.click(G_TITLE)
