@@ -19,7 +19,8 @@ import { WarpRenderer } from '../../../../lib/workshop/cinematic-studio/reshoot-
 
 // The clip seen from the camera being aimed: the CrossView node's own warp,
 // redrawn on the GPU from the depth the analysis returned, so a drag answers
-// in the same frame. Magenta is what the source camera never saw.
+// in the same frame. Magenta is what the source camera never saw. It is drawn
+// at the output size, as the node draws the guide the model is given.
 const { geometry, pose, hfov, keepAim, frame } = defineProps<{
   geometry: Geometry
   pose: Pose
@@ -37,6 +38,10 @@ const bitmaps = shallowRef<ImageBitmap[]>([])
 let loaded = -1
 
 const index = () => Math.min(Math.max(frame, 0), geometry.frames - 1)
+const output = () => ({
+  w: geometry.sourceWidth || geometry.width,
+  h: geometry.sourceHeight || geometry.height
+})
 
 function draw() {
   const r = renderer.value
@@ -47,7 +52,7 @@ function draw() {
     r.setFrame(bitmap, geometry.depthHalf[i], geometry.depth[i])
     loaded = i
   }
-  const { width, height } = geometry
+  const { w, h } = output()
   const pivot = [pose.px, pose.py, pose.pz] as const
   const target = orbitPose(
     pose.az,
@@ -58,19 +63,23 @@ function draw() {
   )
   r.render({
     inverseTarget: invertPose(target),
-    fx: focalPx(width, hfov),
-    cx: width / 2,
-    cy: height / 2 + pose.vs * height
+    fx: focalPx(w, hfov),
+    sourceFx: focalPx(geometry.width, hfov),
+    cx: w / 2,
+    cy: h / 2 + pose.vs * h
   })
 }
 
 onMounted(async () => {
   if (!canvas.value) return
   try {
+    const { w, h } = output()
     renderer.value = new WarpRenderer(
       canvas.value,
       geometry.width,
-      geometry.height
+      geometry.height,
+      w,
+      h
     )
   } catch {
     emit('unsupported')

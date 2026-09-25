@@ -48,7 +48,6 @@ const {
 
 const emit = defineEmits<{
   aim: [patch: Partial<ReshootCamera>]
-  key: []
   removeKey: [frame: number]
   clearKeys: []
   analyze: []
@@ -135,10 +134,8 @@ function choose(event: Event) {
         <ReshootMoveControls
           v-model:frame="frame"
           v-model:motion="motion"
-          :frames
           :keys
           :locale
-          @key="emit('key')"
           @remove="emit('removeKey', $event)"
           @clear="emit('clearKeys')"
         />

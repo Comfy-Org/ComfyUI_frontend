@@ -20,7 +20,6 @@ export function clipFits(seconds: number): boolean {
 }
 
 const RESHOOT_FPS = 24
-export const RESHOOT_FRAMES = 17 * 11 + 5
 
 export interface ReshootCamera {
   azimuth: number

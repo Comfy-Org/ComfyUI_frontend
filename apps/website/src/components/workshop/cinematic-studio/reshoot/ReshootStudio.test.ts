@@ -1,4 +1,9 @@
-import { render, screen, waitFor as waitUntil } from '@testing-library/vue'
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor as waitUntil
+} from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -199,5 +204,86 @@ describe('Re-shoot, run for real', () => {
     expect(
       screen.getByRole('button', { name: 'Aim', current: true })
     ).toBeInTheDocument()
+  })
+
+  describe('the camera move', () => {
+    const rotation = () => screen.getByRole('slider', { name: 'Rotation' })
+    const scrub = (frame: number) =>
+      fireEvent.update(
+        screen.getByRole('slider', { name: 'Frame' }),
+        String(frame)
+      )
+    async function nudge(user: ReturnType<typeof setup>, times = 1) {
+      screen.getByTestId('reshoot-globe').focus()
+      await user.keyboard('{ArrowRight}'.repeat(times))
+    }
+
+    async function twoKeys(user: ReturnType<typeof setup>) {
+      await analyzeExample(user)
+      await user.click(screen.getByTestId('reshoot-key'))
+      await scrub(50)
+      await nudge(user, 2)
+      await user.click(screen.getByTestId('reshoot-key'))
+    }
+
+    it('keys the camera on the timeline and flies the path between keys', async () => {
+      const user = setup()
+      await twoKeys(user)
+
+      expect(screen.getByTestId('reshoot-key')).toHaveTextContent('Remove key')
+      await scrub(25)
+      expect(screen.getByTestId('reshoot-key')).toHaveTextContent('Key')
+      expect(Number((rotation() as HTMLInputElement).value)).toBeGreaterThan(
+        -30
+      )
+      expect(Number((rotation() as HTMLInputElement).value)).toBeLessThan(-20)
+
+      await user.click(screen.getByTestId('reshoot-action'))
+      await waitUntil(() => expect(net.submitted).toHaveLength(2))
+      const sent = inputs(net.submitted[1])
+      expect(sent.use_keyframes).toBe(true)
+      expect(
+        JSON.parse(String(sent.keyframes)).map(
+          (k: { f: number; az: number }) => [k.f, k.az]
+        )
+      ).toEqual([
+        [1, -30],
+        [51, -20]
+      ])
+    })
+
+    it('edits a key when aimed on it, and only tries a pose between keys', async () => {
+      const user = setup()
+      await twoKeys(user)
+
+      await scrub(0)
+      await nudge(user)
+      await scrub(50)
+      await scrub(0)
+      expect(rotation()).toHaveValue('-25')
+
+      await scrub(30)
+      await nudge(user, 3)
+      await scrub(31)
+      await scrub(30)
+      expect(screen.getByTestId('reshoot-key')).toHaveTextContent('Key')
+      expect(
+        screen.getAllByRole('button', { name: /Go to the key at/ })
+      ).toHaveLength(4)
+    })
+
+    it('takes a key away with the same button, and holds a single key', async () => {
+      const user = setup()
+      await twoKeys(user)
+      await user.click(screen.getByTestId('reshoot-key'))
+
+      await scrub(0)
+      await user.click(screen.getByTestId('reshoot-action'))
+      await waitUntil(() => expect(net.submitted).toHaveLength(2))
+      expect(inputs(net.submitted[1])).toMatchObject({
+        azimuth: -30,
+        use_keyframes: false
+      })
+    })
   })
 })

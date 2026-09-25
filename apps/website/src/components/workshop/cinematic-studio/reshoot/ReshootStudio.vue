@@ -26,7 +26,8 @@ const {
   size,
   depth,
   step,
-  camera,
+  view,
+  onKey,
   keepAim,
   frame,
   keys,
@@ -68,7 +69,7 @@ const {
         :clip
         :clip-name="clipName"
         :is-example="isExample"
-        :camera
+        :camera="view"
         :keys
         :depth
         :frames
@@ -77,7 +78,6 @@ const {
         :rendering
         :locale
         @aim="demo.aim"
-        @key="demo.addKey"
         @remove-key="demo.removeKey"
         @clear-keys="keys = []"
         @analyze="demo.analyze"
@@ -101,8 +101,9 @@ const {
       </div>
       <ReshootStage
         v-else
+        v-model:frame="frame"
         :clip
-        :camera
+        :camera="view"
         :depth
         :step
         :takes
@@ -112,7 +113,8 @@ const {
         :geometry
         :pose
         :keep-aim="keepAim"
-        :frame
+        :keys
+        :keyed="onKey"
         :status
         :locale
         class="lg:pt-2"
@@ -120,6 +122,7 @@ const {
         @select="selected = $event"
         @cancel="demo.cancel"
         @reuse="demo.reuse(selected)"
+        @key="demo.toggleKey"
       />
     </div>
     <ReshootExamples

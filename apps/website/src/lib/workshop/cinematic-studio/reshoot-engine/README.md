@@ -4,7 +4,8 @@ What makes the Cinematic Studio's Re-shoot app (`?app=reshoot`) run for real:
 re-shoot a video from a new camera angle with MiniMax H3, the CrossView-Warp
 LoRA ([Cseti](https://huggingface.co/Cseti/MiniMax-H3_Ref2VA-LoRA-CrossView-Warp_v1))
 and the [CrossViewWarp node](https://github.com/cseti007/ComfyUI-CrossViewWarp).
-The files here came over unchanged from the `/hub/` CrossView demo (#18691).
+The files here came over from the `/hub/` CrossView demo (#18691); the only
+change is that `warp-renderer.ts` can draw at the output size (below).
 
 | File                          | What                                                                    |
 | ----------------------------- | ----------------------------------------------------------------------- |
@@ -15,8 +16,10 @@ The files here came over unchanged from the `/hub/` CrossView demo (#18691).
 | `camera.ts`, `camera.test.ts` | the node's camera maths, checked against fixtures the node wrote        |
 | `warp-renderer.ts`            | the node's warp redone in WebGL2, so the preview answers a drag at once |
 
-The page side is `composables/useReshootRun.ts` (state and jobs) and
-`ReshootWarp.vue` (the live warp in the viewport); the rest is the design's
+The page side is `composables/useReshootRun.ts` (state and jobs),
+`../reshoot-path.ts` (the camera move: keys to keyframes, the camera at any
+frame), `ReshootWarp.vue` (the live warp in the viewport) and
+`ReshootTimeline.vue` (play, scrub and key under it); the rest is the design's
 own components.
 
 ## How it runs
@@ -27,7 +30,12 @@ own components.
    MoGe estimates metric depth and `CrossViewGeometryExport` returns the
    `.cvgeo`.
 2. **Aim**, in the browser, over that depth. Magenta is what the source camera
-   never saw.
+   never saw. The preview's points come from the preview-sized depth but are
+   drawn at the output size with the node's 5x5 splats, so it is as coarse as
+   the guide the model gets, no coarser. Moving far in can open pinholes the
+   node would not have: it has a point per output pixel, the preview fewer.
+   Keys work as in the node's own editor: aiming on a key edits it, between
+   keys it tries a pose that Key writes, and the timeline flies the path.
 3. **Generate** sends the aimed camera (pivot and keyframes included) and gets
    back the result with H3's sound, the same frames with the clip's original
    sound, and the warp guide: the take view's Sound and Show toggles.

@@ -237,12 +237,19 @@ const copy = {
   'reshoot.move.static': { en: 'Static', 'zh-CN': '固定机位' },
   'reshoot.move.keys': { en: '{count} keys', 'zh-CN': '{count} 个关键帧' },
   'reshoot.move.help': {
-    en: 'Scrub to a frame, aim, press Key. Two or more keys make a move; the camera holds before the first and after the last.',
+    en: 'Scrub the timeline under the preview, aim, press Key. Two or more keys make a move; the camera holds before the first and after the last. Aiming on a key edits it.',
     'zh-CN':
-      '拖到某一帧，调整机位，按“关键帧”。两个以上的关键帧构成运镜；第一个之前和最后一个之后机位保持不动。'
+      '拖动预览下方的时间轴，调整机位，按“关键帧”。两个以上的关键帧构成运镜；第一个之前和最后一个之后机位保持不动。在关键帧上调整机位会直接修改它。'
   },
   'reshoot.move.frame': { en: 'Frame', 'zh-CN': '帧' },
   'reshoot.move.key': { en: 'Key', 'zh-CN': '关键帧' },
+  'reshoot.move.unkey': { en: 'Remove key', 'zh-CN': '删除关键帧' },
+  'reshoot.move.goTo': {
+    en: 'Go to the key at {time}',
+    'zh-CN': '跳到 {time} 处的关键帧'
+  },
+  'reshoot.play': { en: 'Play', 'zh-CN': '播放' },
+  'reshoot.pause': { en: 'Pause', 'zh-CN': '暂停' },
   'reshoot.move.remove': {
     en: 'Remove key at {time}',
     'zh-CN': '删除 {time} 处的关键帧'
