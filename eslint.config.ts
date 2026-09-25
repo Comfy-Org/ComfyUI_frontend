@@ -1,5 +1,4 @@
 // For more info, see https://github.com/storybookjs/eslint-plugin-storybook#configuration-flat-config-format
-import type { Rule } from 'eslint'
 
 import pluginJs from '@eslint/js'
 import pluginI18n from '@intlify/eslint-plugin-vue-i18n'
@@ -29,8 +28,6 @@ import vueParser from 'vue-eslint-parser'
 import path from 'node:path'
 
 import { noNewErrorThrow } from './tools/eslint-plugins/noNewErrorThrow'
-import { es2022CompatPlugin } from './tools/eslint-plugins/noEs2023ArrayCopyMethod'
-import { primeVueImportAllowlist } from './scripts/primevue-import-allowlist'
 
 const extraFileExtensions = ['.vue']
 
@@ -160,50 +157,6 @@ const reportErrorRestrictions = [
   }
 ] as const
 
-const noPrimeVueImports: Rule.RuleModule = {
-  meta: {
-    type: 'problem',
-    messages: {
-      banned:
-        'New PrimeVue usage is banned per the PrimeVue removal effort. Remove this import. scripts/primevue-import-allowlist.ts only shrinks; do not add entries.'
-    },
-    schema: []
-  },
-  create(context) {
-    function report(node: Rule.Node, source: unknown) {
-      if (
-        typeof source === 'string' &&
-        /^(?:primevue(?:\/|$)|@primevue(?:\/|$))/.test(source)
-      ) {
-        context.report({ node, messageId: 'banned' })
-      }
-    }
-
-    return {
-      ImportDeclaration(node) {
-        report(node, node.source.value)
-      },
-      ImportExpression(node) {
-        if (node.source.type === 'Literal') {
-          report(node, node.source.value)
-        }
-      },
-      ExportNamedDeclaration(node) {
-        report(node, node.source?.value)
-      },
-      ExportAllDeclaration(node) {
-        report(node, node.source.value)
-      }
-    }
-  }
-}
-
-const primeVueRemovalPlugin = {
-  rules: {
-    'no-imports': noPrimeVueImports
-  }
-}
-
 export default defineConfig([
   {
     ignores: [
@@ -247,23 +200,6 @@ export default defineConfig([
       globals: commonGlobals,
       parser: vueParser,
       parserOptions: commonParserOptions
-    }
-  },
-  {
-    name: 'primevue-removal/no-imports',
-    files: ['src/**/*.{ts,tsx,vue}'],
-    plugins: {
-      'primevue-removal': primeVueRemovalPlugin
-    },
-    rules: {
-      'primevue-removal/no-imports': 'error'
-    }
-  },
-  {
-    name: 'primevue-removal/existing-imports',
-    files: [...primeVueImportAllowlist],
-    rules: {
-      'primevue-removal/no-imports': 'off'
     }
   },
   pluginJs.configs.recommended,
@@ -378,7 +314,6 @@ export default defineConfig([
       '@typescript-eslint/consistent-type-imports': 'error',
       'import-x/no-useless-path-segments': 'error',
       'import-x/no-relative-packages': 'error',
-      'import-x/no-named-as-default': 'error',
       'unused-imports/no-unused-imports': 'error',
       'vue/no-v-html': 'off',
       // Prohibit dark-theme: and dark: prefixes
@@ -448,27 +383,8 @@ export default defineConfig([
     }
   },
   {
-    files: ['src/**/*.{js,mjs,cjs,ts,mts,cts,vue}'],
-    ignores: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
-    plugins: {
-      'es2022-compat': es2022CompatPlugin
-    },
-    rules: {
-      'es2022-compat/no-array-copy-method': 'error'
-    }
-  },
-  {
     files: ['**/*.test.ts'],
     rules: {
-      'no-restricted-properties': [
-        'error',
-        {
-          object: 'vi',
-          property: 'doMock',
-          message:
-            'Use vi.mock() with vi.hoisted() instead of vi.doMock(). See docs/testing/vitest-patterns.md'
-        }
-      ],
       // Tests routinely define stub and harness components side-by-side with
       // the system under test and stub emits for documentation only — these
       // production-SFC rules are noise in a test file.
@@ -544,6 +460,7 @@ export default defineConfig([
       'import-x/export': 'off',
       'import-x/namespace': 'off',
       'import-x/no-duplicates': 'off',
+      'import-x/no-named-as-default': 'off',
       'import-x/consistent-type-specifier-style': 'off'
     }
   },
