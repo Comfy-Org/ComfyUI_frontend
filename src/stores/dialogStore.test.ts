@@ -224,8 +224,6 @@ describe('dialogStore', () => {
       })
 
       expect(onRemoved).toHaveBeenCalledTimes(1)
-      // Eviction is not a user close — onClose must not fire (it carries
-      // user-intent side effects like telemetry and "don't show again").
       expect(onClose).not.toHaveBeenCalled()
       expect(store.isDialogOpen('evicted-dialog')).toBe(false)
       expect(store.dialogStack).toHaveLength(10)
@@ -297,10 +295,7 @@ describe('dialogStore', () => {
       expect(originalRemoved).toHaveBeenCalledTimes(1)
       expect(replacementRemoved).not.toHaveBeenCalled()
       expect(store.isDialogOpen('target')).toBe(true)
-      expect(
-        store.activeKey,
-        'Escape must reach the reopened dialog, not the filler behind it'
-      ).toBe('target')
+      expect(store.activeKey).toBe('target')
     })
 
     it('evicts the most recently shown dialog when priorities are equal', () => {
