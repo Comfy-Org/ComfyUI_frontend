@@ -22,9 +22,7 @@ export const getSettingInfo = (setting: SettingParams) => {
   }
 }
 
-export interface SettingTreeNode extends TreeNode {
-  data?: SettingParams
-}
+export type SettingTreeNode = TreeNode<SettingParams>
 
 interface AppliedSetting<TValue> {
   previousValue: TValue
