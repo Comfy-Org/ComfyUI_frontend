@@ -169,7 +169,7 @@ export function defaultScenario(): CloudScenario {
     ],
     preview: {
       allowed: true,
-      transition_type: 'upgrade',
+      transition_type: 'new_subscription',
       is_immediate: true,
       effective_at: new Date().toISOString(),
       renewal_at: inAnHour(),
