@@ -4,7 +4,11 @@
  * onto the SDK sees the same request rate and the same give-up points.
  */
 import { isBlockedOnCustomerPhase } from './operationState.js'
-import type { PendingBillingOperation } from './operationState.js'
+import type {
+  BillingAuthenticationState,
+  EmbeddedChallenge,
+  PendingBillingOperation
+} from './operationState.js'
 
 export const OPERATION_POLL_TIMING = {
   initialMs: 1_000,
@@ -25,15 +29,56 @@ export const OPERATION_POLL_BUDGET = {
 } as const
 
 /**
- * Whether this tab holds something the customer can do right now: an embedded
- * challenge to open or retry, a hosted page to visit, or a declined attempt
- * to retry.
+ * What one tab holds for the customer on a pending operation. Each rail
+ * builds it from its own state, because each renders a different surface:
+ * the legacy cloud store offers the hosted link beside the embedded
+ * challenge, while the SDK renders exactly one presentation.
  */
+export interface CustomerActionHold {
+  readonly authenticationState?: BillingAuthenticationState | null
+  /** A hosted page this tab would open for the customer. */
+  readonly offersHostedPage: boolean
+  /** The embedded challenge this tab holds, whatever became of it. */
+  readonly challenge?: EmbeddedChallenge['status']
+}
+
+/**
+ * The one "customer can act here" rule both billing rails park on: a
+ * retryable failure to retry, a hosted page to visit, or an embedded
+ * challenge the server still says is required. A non-retryable decline never
+ * reaches it; the operation is terminal by then.
+ */
+export function customerCanActHere(hold: CustomerActionHold): boolean {
+  if (hold.authenticationState === 'failed_retryable') return true
+  if (hold.offersHostedPage) return true
+  return (
+    hold.authenticationState === 'requires_action' &&
+    (hold.challenge === 'required' || hold.challenge === 'in_progress')
+  )
+}
+
+/**
+ * The SDK renders one presentation: a hosted operation offers only its page,
+ * an embedded one only its challenge. The cloud app's
+ * `legacyOperationActionHold` names the rows where the two surfaces differ.
+ */
+export function pendingOperationActionHold(
+  state: PendingBillingOperation
+): CustomerActionHold {
+  return state.presentation === 'hosted'
+    ? {
+        authenticationState: state.authenticationState,
+        offersHostedPage: state.actionUrl !== undefined
+      }
+    : {
+        authenticationState: state.authenticationState,
+        offersHostedPage: false,
+        challenge: state.challenge?.status
+      }
+}
+
 function customerCanAct(state: PendingBillingOperation): boolean {
-  if (state.declineReason !== undefined) return true
-  if (state.presentation === 'hosted') return state.actionUrl !== undefined
-  const challenge = state.challenge?.status
-  return challenge === 'required' || challenge === 'failed'
+  return customerCanActHere(pendingOperationActionHold(state))
 }
 
 /**

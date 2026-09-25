@@ -1,6 +1,7 @@
 import type { ToastMessageOptions } from 'primevue/toast'
 import type { PaymentIntent } from '@stripe/stripe-js'
 import { loadStripe } from '@stripe/stripe-js/pure'
+import { customerCanActHere } from '@comfyorg/account-core/billing'
 import { useEventListener } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
@@ -30,6 +31,7 @@ import type {
 } from '@/platform/workspace/api/workspaceApi'
 import {
   isBlockedOnCustomerPhase,
+  legacyOperationActionHold,
   needsCustomerAttention
 } from '@/platform/workspace/billing/customerAttention'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
@@ -446,11 +448,11 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   }
 
   function customerCanAct(operation: BillingOperation): boolean {
-    if (operation.actionUrl !== null) return true
-    if (operation.authenticationState === 'failed_retryable') return true
-    return (
-      operation.authenticationState === 'requires_action' &&
-      paymentIntentClientSecrets.has(operation.opId)
+    return customerCanActHere(
+      legacyOperationActionHold(
+        operation,
+        paymentIntentClientSecrets.has(operation.opId)
+      )
     )
   }
 
