@@ -1159,6 +1159,34 @@ describe('graphMutations', () => {
     error.mockRestore()
   })
 
+  describe('getNodeType', () => {
+    it('returns undefined for a node owned by a sibling graph (F3)', () => {
+      const siblingScope = {
+        rootGraphId: scope.rootGraphId,
+        owningGraphId: toOwningGraphId('sibling')
+      }
+      const sibling = createGraphMutations({
+        getScope: () => siblingScope,
+        layout: { createNode: createLayout, deleteNodes: deleteLayouts },
+        placement
+      })
+      sibling.addNode(node(9), context)
+
+      expect(mutations().getNodeType(toNodeId(9))).toBeUndefined()
+    })
+
+    it('returns the type for a node owned by this graph', () => {
+      const graph = mutations()
+      graph.addNode(node(1), context)
+
+      expect(graph.getNodeType(toNodeId(1))).toBe('Type1')
+    })
+
+    it('returns undefined for a node that does not exist', () => {
+      expect(mutations().getNodeType(toNodeId(404))).toBeUndefined()
+    })
+  })
+
   it('rejects unkeyable widgets before committing any writes', () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
 

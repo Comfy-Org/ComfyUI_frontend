@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { NodeId, Op, OpBase } from '@comfyorg/comfy-multi-player'
 
@@ -69,10 +69,6 @@ function registry(
 }
 
 describe('applyPendingOpRevert', () => {
-  beforeEach(() => {
-    vi.mocked(reportError).mockClear()
-  })
-
   it('removes only the reverted add_node targets', () => {
     const removeNode = vi.fn<(id: unknown) => PendingRevertRemoval>(
       () => 'removed'
@@ -282,5 +278,28 @@ describe('createRevertNotifier', () => {
     await Promise.resolve()
 
     expect(notify).not.toHaveBeenCalled()
+  })
+
+  it('claims undone for a mixed add_node + delete_node revert that actually removed the add', async () => {
+    const notify = vi.fn()
+    const onReverted = createRevertNotifier(notify)
+
+    onReverted(reverted([addNode('op-1', 1), deleteNode('op-2', 2)]), [1])
+    await Promise.resolve()
+
+    expect(notify).toHaveBeenCalledExactlyOnceWith(true)
+  })
+
+  it('never claims an undo for a non-add_node revert, even if a node id was somehow removed', async () => {
+    const notify = vi.fn()
+    const onReverted = createRevertNotifier(notify)
+
+    // "Could have undone an add" is derived from event.ops (false for a
+    // delete_node-only batch); a nonzero removedNodeIds must not override
+    // that (F7).
+    onReverted(reverted([deleteNode('op-1', 1)]), [1])
+    await Promise.resolve()
+
+    expect(notify).toHaveBeenCalledExactlyOnceWith(false)
   })
 })

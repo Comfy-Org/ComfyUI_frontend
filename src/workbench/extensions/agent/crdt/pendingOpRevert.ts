@@ -73,6 +73,16 @@ export function createPendingRevertNodeRegistry(
 }
 
 /**
+ * Event types whose only registry action is a release — the ledger entry is
+ * gone with no canvas effect to undo. `unresolved` (ADR-CRDT-RECONCILE-0035
+ * (a), round 8) deliberately is NOT here: the entry is still held, still
+ * reconcilable, so its registered node must survive for a later revert to
+ * still find it.
+ */
+const REGISTRY_RELEASE_ONLY_EVENTS: ReadonlySet<PendingOpTrackerEvent['type']> =
+  new Set(['cleared', 'skipped_cleared', 'reset', 'abandoned'])
+
+/**
  * @returns the node ids whose optimistic add was actually undone, so the
  * caller can tell the user "undone" only when it is true.
  */
@@ -82,11 +92,7 @@ export function applyPendingOpRevert(
 ): NodeId[] {
   const removedNodeIds: NodeId[] = []
   if (event.type !== 'reverted') {
-    if (
-      event.type === 'cleared' ||
-      event.type === 'skipped_cleared' ||
-      event.type === 'reset'
-    )
+    if (REGISTRY_RELEASE_ONLY_EVENTS.has(event.type))
       registry.release(event.opIds)
     return removedNodeIds
   }
@@ -141,6 +147,7 @@ export function createRevertNotifier(
         notify(flush.undone)
       })
     }
-    if (removedNodeIds.length > 0) pending.undone = true
+    const couldHaveUndoneAnAdd = event.ops.some((op) => op.op === 'add_node')
+    if (couldHaveUndoneAnAdd && removedNodeIds.length > 0) pending.undone = true
   }
 }

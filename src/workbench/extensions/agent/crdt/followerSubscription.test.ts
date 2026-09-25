@@ -131,7 +131,8 @@ describe('follower commit boundary', () => {
       setWidget: vi.fn(() => false),
       connect: vi.fn(() => false),
       deleteNode: vi.fn(() => false),
-      clearSemanticGraph: vi.fn(() => false)
+      clearSemanticGraph: vi.fn(() => false),
+      getNodeType: vi.fn(() => undefined)
     } satisfies GraphMutations
     const adapter = new EcsFollowerAdapter(mutations)
     onTestFinished(() => adapter.destroy())
@@ -446,6 +447,53 @@ describe('doc_reset — a lineage break drops the doc and resubscribes from zero
           frame.type !== 'doc_subscribe' && frame.type !== 'doc_unsubscribe'
       )
     expect(writes).toEqual([])
+  })
+
+  it('a duplicate delivery of the SAME reset (identical seq) is a no-op', () => {
+    const { transport, bridge, projected } = wire()
+    const resets: unknown[] = []
+    const replaced: unknown[] = []
+    bridge.addEventListener('doc_reset', (event) => {
+      if (event instanceof CustomEvent) resets.push(event.detail)
+    })
+    bridge.addEventListener('follower_replaced', (event) => {
+      if (event instanceof CustomEvent) replaced.push(event.detail)
+    })
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    transport.deliver('doc_update', docUpdateFrame(hostDocUpdate()))
+
+    transport.deliver('doc_reset', { v: 1, workflow_id: WORKFLOW_ID, seq: 43 })
+    const docAfterFirstReset = bridge.follower
+    const subscribesAfterFirstReset = transport.framesOfType('doc_subscribe')
+    expect(resets).toHaveLength(1)
+    expect(replaced).toHaveLength(1)
+    expect(subscribesAfterFirstReset).toHaveLength(2)
+
+    // The transport gives no exactly-once guarantee: the SAME frame (same
+    // workflow, same seq) can be delivered again. Re-dropping the doc or
+    // re-sending the subscribe would discard whatever catch-up the first
+    // delivery's resubscribe already set in motion.
+    transport.deliver('doc_reset', { v: 1, workflow_id: WORKFLOW_ID, seq: 43 })
+
+    expect(resets).toHaveLength(1)
+    expect(replaced).toHaveLength(1)
+    expect(bridge.follower).toBe(docAfterFirstReset)
+    expect(transport.framesOfType('doc_subscribe')).toHaveLength(2)
+
+    // Follower state is identical to right after the first delivery: the
+    // next catch-up still lands on the fresh lineage exactly once.
+    transport.deliver('doc_update', docUpdateFrame(hostDocUpdate()))
+    expect(bridge.follower.updatesApplied).toBe(1)
+    expect(projected).toHaveLength(2)
+
+    // A LATER, genuinely new reset for this same lineage (a different seq)
+    // must still process normally — the dedup never suppresses it.
+    transport.deliver('doc_reset', { v: 1, workflow_id: WORKFLOW_ID, seq: 44 })
+    expect(resets).toHaveLength(2)
+    expect(replaced).toHaveLength(2)
+    expect(bridge.follower).not.toBe(docAfterFirstReset)
+    expect(transport.framesOfType('doc_subscribe')).toHaveLength(3)
   })
 
   it('ignores a reset for a workflow it does not follow', () => {
@@ -1346,6 +1394,45 @@ describe('doc_subscribe_sent — the ack-timeout arming signal', () => {
     ])
     expect(bridge.lastSequence).toBe(2)
     expect(bridge.subscribedWorkflowId).toBe(WORKFLOW_ID)
+  })
+
+  it('recovers cleanly once a genuinely new ack lands after a duplicate of the previous one', () => {
+    // The safe direction of the conservative rule above: even in the worst
+    // case where it swallows a legitimate repeat, the bridge is left in a
+    // state the ack-timeout resubscribe can still recover from — reality
+    // ends up subscribed and live from the real next ack, not permanently
+    // stuck relabeling every later ack as stale.
+    const { transport, bridge, projected } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    bridge.resubscribe()
+
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 1
+    })
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 1
+    })
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 2
+    })
+
+    expect(bridge.lastSequence).toBe(2)
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 3)
+    )
+    expect(projected).toHaveLength(1)
+    expect(bridge.lastSequence).toBe(3)
   })
 
   it('a slow first subscribe answered after the retry merges idempotently with no stale or gap signal', () => {

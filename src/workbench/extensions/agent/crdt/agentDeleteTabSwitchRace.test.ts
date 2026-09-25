@@ -119,7 +119,7 @@ function setupRaceUntilReturn() {
     baseVersion: () => frameSeq,
     onBatchSettled: (outcome) => settled.push(outcome)
   })
-  const adapter = new EcsFollowerAdapter(mutations, {
+  const adapter = new EcsFollowerAdapter(mutations, undefined, {
     pendingDeletes: (workflowId) =>
       new Set(
         sender
@@ -128,7 +128,9 @@ function setupRaceUntilReturn() {
           .flatMap((batch) => batch.ops)
           .filter((op) => op.op === 'delete_node')
           .map((op) => String(op.node_id))
-      )
+      ),
+    pendingAdds: () => new Set(),
+    pendingConnects: () => new Set()
   })
   adapter.bind(WORKFLOW, follower)
 

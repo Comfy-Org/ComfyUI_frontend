@@ -11,6 +11,7 @@ import * as Y from 'yjs'
 import { createGraphMutations } from './graphMutations'
 import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
 import type { GraphMutations } from './graphMutations'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -23,6 +24,11 @@ import { widgetId } from '@/types/widgetId'
 import type { DocUpdate } from './docFrameClient'
 import { EcsFollowerAdapter } from './ecsFollowerAdapter'
 import { FollowerDoc } from './followerDoc'
+import type { GraphOperation } from './graphOperations'
+
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 
 const catalog: WidgetCatalog = {
   types: {
@@ -39,7 +45,7 @@ interface TestLayout {
   size: { width: number; height: number }
 }
 
-function op(id: string, baseVersion: number, payload: object) {
+function op(id: string, baseVersion: number, payload: GraphOperation): Op {
   return {
     op_id: id,
     actor: 'agent:test',
@@ -827,7 +833,10 @@ describe('EcsFollowerAdapter integration', () => {
 
     let seq = 0
     let first = true
-    const deliver = (operation: object, expectedOutcome = 'applied') => {
+    const deliver = (
+      operation: GraphOperation,
+      expectedOutcome = 'applied'
+    ) => {
       const before = Y.encodeStateVector(host)
       const operationId = `disconnect-${++seq}`
       const result = applyOps(
@@ -930,7 +939,7 @@ describe('EcsFollowerAdapter integration', () => {
 
     let seq = 0
     let first = true
-    const deliver = (operation: object) => {
+    const deliver = (operation: GraphOperation) => {
       const before = Y.encodeStateVector(host)
       const operationId = `op-${++seq}`
       const result = applyOps(
@@ -1480,7 +1489,8 @@ describe('EcsFollowerAdapter integration', () => {
         setWidget: () => true,
         connect: () => true,
         deleteNode: () => true,
-        clearSemanticGraph: () => true
+        clearSemanticGraph: () => true,
+        getNodeType: () => undefined
       }
     }
     const adapter = new EcsFollowerAdapter(createTargetMutations)
@@ -1502,7 +1512,7 @@ describe('EcsFollowerAdapter integration', () => {
   })
 
   it('populates node slot arrays identically whether add+connect ops arrive in one combined frame or separate singleton frames (R-96)', () => {
-    const buildOps = (prefix: string) => [
+    const buildOps = (prefix: string): Op[] => [
       op(`${prefix}-1`, 1, {
         op: 'add_node',
         node_id: 1,
@@ -1538,7 +1548,7 @@ describe('EcsFollowerAdapter integration', () => {
       })
     ]
 
-    const runScenario = (deliverAsSingleFrame: boolean) => {
+    const setupScenario = (prefix: string) => {
       useNodeDataStore().clearGraph(scope.rootGraphId)
       useLinkStore().clearGraph(scope.rootGraphId)
       const host = mint({ nodes: [], links: [] }, catalog)
@@ -1550,54 +1560,16 @@ describe('EcsFollowerAdapter integration', () => {
       })
       const adapter = new EcsFollowerAdapter(mutations)
       adapter.bind('wf', follower)
+      const ops = buildOps(prefix)
+      onTestFinished(() => {
+        adapter.destroy()
+        follower.destroy()
+        host.destroy()
+      })
+      return { host, follower, adapter, ops }
+    }
 
-      const ops = buildOps(
-        deliverAsSingleFrame ? 'combined' : 'singleton'
-      ) as Parameters<typeof applyOps>[1]
-
-      if (deliverAsSingleFrame) {
-        const result = applyOps(host, ops, catalog)
-        expect(result.outcomes.map(({ outcome }) => outcome)).toEqual([
-          'applied',
-          'applied',
-          'applied'
-        ])
-        const update = Y.encodeStateAsUpdate(host)
-        follower.applyRemoteUpdate(update)
-        expect(
-          adapter.applyFrame({
-            workflowId: 'wf',
-            seq: 1,
-            update,
-            actor: 'agent:test',
-            opIds: ops.map(({ op_id }) => op_id)
-          })
-        ).toBe(true)
-      } else {
-        let before = Y.encodeStateVector(host)
-        let first = true
-        let seq = 0
-        for (const singleOp of ops) {
-          const result = applyOps(host, [singleOp], catalog)
-          expect(result.outcomes[0]?.outcome).toBe('applied')
-          const update = first
-            ? Y.encodeStateAsUpdate(host)
-            : Y.encodeStateAsUpdate(host, before)
-          first = false
-          before = Y.encodeStateVector(host)
-          follower.applyRemoteUpdate(update)
-          expect(
-            adapter.applyFrame({
-              workflowId: 'wf',
-              seq: ++seq,
-              update,
-              actor: 'agent:test',
-              opIds: [singleOp.op_id]
-            })
-          ).toBe(true)
-        }
-      }
-
+    const readScenarioResult = () => {
       const nodes = useNodeDataStore().getGraphNodesFor('root', 'root')
       const origin = nodes.find(({ id }) => id === toNodeId(1))
       const target = nodes.find(({ id }) => id === toNodeId(2))
@@ -1606,10 +1578,6 @@ describe('EcsFollowerAdapter integration', () => {
         toLinkId(9)
       )
 
-      adapter.destroy()
-      follower.destroy()
-      host.destroy()
-
       return {
         originLinks: origin?.outputs[0]?.links ?? null,
         targetLink: target?.inputs[0]?.link ?? null,
@@ -1617,8 +1585,61 @@ describe('EcsFollowerAdapter integration', () => {
       }
     }
 
-    const singleton = runScenario(false)
-    const combined = runScenario(true)
+    const deliverAsCombinedFrame = () => {
+      const { host, follower, adapter, ops } = setupScenario('combined')
+
+      const result = applyOps(host, ops, catalog)
+      expect(result.outcomes.map(({ outcome }) => outcome)).toEqual([
+        'applied',
+        'applied',
+        'applied'
+      ])
+      const update = Y.encodeStateAsUpdate(host)
+      follower.applyRemoteUpdate(update)
+      expect(
+        adapter.applyFrame({
+          workflowId: 'wf',
+          seq: 1,
+          update,
+          actor: 'agent:test',
+          opIds: ops.map(({ op_id }) => op_id)
+        })
+      ).toBe(true)
+
+      return readScenarioResult()
+    }
+
+    const deliverAsSingletonFrames = () => {
+      const { host, follower, adapter, ops } = setupScenario('singleton')
+
+      let before = Y.encodeStateVector(host)
+      let first = true
+      let seq = 0
+      for (const singleOp of ops) {
+        const result = applyOps(host, [singleOp], catalog)
+        expect(result.outcomes[0]?.outcome).toBe('applied')
+        const update = first
+          ? Y.encodeStateAsUpdate(host)
+          : Y.encodeStateAsUpdate(host, before)
+        first = false
+        before = Y.encodeStateVector(host)
+        follower.applyRemoteUpdate(update)
+        expect(
+          adapter.applyFrame({
+            workflowId: 'wf',
+            seq: ++seq,
+            update,
+            actor: 'agent:test',
+            opIds: [singleOp.op_id]
+          })
+        ).toBe(true)
+      }
+
+      return readScenarioResult()
+    }
+
+    const singleton = deliverAsSingletonFrames()
+    const combined = deliverAsCombinedFrame()
 
     // The link store converges identically either way...
     expect(combined.topologyDefined).toBe(true)
@@ -1630,6 +1651,164 @@ describe('EcsFollowerAdapter integration', () => {
     expect(combined.targetLink).toEqual(singleton.targetLink)
     expect(combined.originLinks).toEqual([toLinkId(9)])
     expect(combined.targetLink).toEqual(toLinkId(9))
+  })
+
+  describe('ADR-CRDT-RECONCILE-0035 (c): an already-registered add is never a fresh add', () => {
+    function makeAdapter(
+      pendingAddType?: (nodeId: string) => string | undefined
+    ) {
+      const host = mint({ nodes: [], links: [] }, catalog)
+      const follower = new FollowerDoc()
+      const mutations = createGraphMutations({
+        getScope: () => scope,
+        layout: { createNode: vi.fn(), deleteNodes: vi.fn() },
+        placement: inertPlacementPort
+      })
+      const adapter = new EcsFollowerAdapter(mutations, pendingAddType)
+      adapter.bind('wf', follower)
+      let seq = 0
+      let first = true
+      const deliver = (operation: GraphOperation): boolean => {
+        const before = Y.encodeStateVector(host)
+        const operationId = `op-${++seq}`
+        const wireOp: Op = {
+          op_id: operationId,
+          actor: 'agent:test',
+          base_version: seq,
+          stamp: [seq, 'agent:test'],
+          ...operation
+        }
+        applyOps(host, [wireOp], catalog)
+        const update = first
+          ? Y.encodeStateAsUpdate(host)
+          : Y.encodeStateAsUpdate(host, before)
+        first = false
+        follower.applyRemoteUpdate(update)
+        return adapter.applyFrame({ workflowId: 'wf', seq, update })
+      }
+      return { host, follower, mutations, adapter, deliver }
+    }
+
+    const seedNode99: GraphOperation = {
+      op: 'add_node',
+      node_id: 99,
+      class_type: 'Sink',
+      pos: [0, 0],
+      node: { id: 99, type: 'Sink', inputs: [], outputs: [] }
+    }
+    const echoNode1: GraphOperation = {
+      op: 'add_node',
+      node_id: 1,
+      class_type: 'Source',
+      pos: [5, 5],
+      node: { id: 1, type: 'Source', pos: [5, 5], inputs: [], outputs: [] }
+    }
+
+    it("reconciles the echo of the page's own accepted add, without arming a full reconcile", () => {
+      const { mutations, deliver, adapter, follower, host } = makeAdapter(
+        () => 'Source'
+      )
+      // An unrelated first frame flips `reconcileNextFrame` false so the
+      // second frame below takes the incremental path this delta changes.
+      expect(deliver(seedNode99)).toBe(true)
+
+      // The page's own optimistic add is already live locally under id 1.
+      mutations.addNode(
+        { id: 1, type: 'Source', pos: [5, 5], inputs: [], outputs: [] },
+        { source: 'agent-remote', actor: 'local-hydration', opId: 'local-seed' }
+      )
+
+      // Before this delta, `addNode` on an already-registered id failed the
+      // whole batch (`committed: false`), arming a full reconcile.
+      expect(deliver(echoNode1)).toBe(true)
+      expect(reportError).not.toHaveBeenCalled()
+      expect(
+        useNodeDataStore()
+          .getGraphNodesFor('root', 'root')
+          .map(({ id }) => id)
+          .sort()
+      ).toEqual([toNodeId(1), toNodeId(99)].sort())
+
+      adapter.destroy()
+      follower.destroy()
+      host.destroy()
+    })
+
+    it('reports and lets the document win on a genuine node id collision', () => {
+      const { mutations, deliver, adapter, follower, host } = makeAdapter(
+        () => undefined
+      )
+      expect(deliver(seedNode99)).toBe(true)
+
+      // A retained local-only node under id 1 that the document never saw;
+      // the document now hands the same graph-local integer to a fresh node.
+      mutations.addNode(
+        { id: 1, type: 'LocalOnlyType', pos: [0, 0], inputs: [], outputs: [] },
+        { source: 'agent-remote', actor: 'local-hydration', opId: 'local-seed' }
+      )
+
+      expect(deliver(echoNode1)).toBe(true)
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        errorType: 'agent_crdt_node_id_collision',
+        context: { nodeId: '1', localType: 'LocalOnlyType', docType: 'Source' }
+      })
+      expect(
+        useNodeDataStore()
+          .getGraphNodesFor('root', 'root')
+          .find(({ id }) => id === toNodeId(1))?.type
+      ).toBe('Source')
+
+      adapter.destroy()
+      follower.destroy()
+      host.destroy()
+    })
+
+    it('defaults to treating every already-registered add as a collision when no pendingAddType is supplied', () => {
+      const { mutations, deliver, adapter, follower, host } = makeAdapter()
+      expect(deliver(seedNode99)).toBe(true)
+
+      mutations.addNode(
+        { id: 1, type: 'LocalOnlyType', pos: [0, 0], inputs: [], outputs: [] },
+        { source: 'agent-remote', actor: 'local-hydration', opId: 'local-seed' }
+      )
+
+      expect(deliver(echoNode1)).toBe(true)
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        errorType: 'agent_crdt_node_id_collision',
+        context: { nodeId: '1', localType: 'LocalOnlyType', docType: 'Source' }
+      })
+
+      adapter.destroy()
+      follower.destroy()
+      host.destroy()
+    })
+
+    it('reports a collision, not an echo, when a pending add_node for this id has a different class_type', () => {
+      const { mutations, deliver, adapter, follower, host } = makeAdapter(
+        () => 'Sink'
+      )
+      expect(deliver(seedNode99)).toBe(true)
+
+      mutations.addNode(
+        { id: 1, type: 'Sink', pos: [0, 0], inputs: [], outputs: [] },
+        { source: 'agent-remote', actor: 'local-hydration', opId: 'local-seed' }
+      )
+
+      expect(deliver(echoNode1)).toBe(true)
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        errorType: 'agent_crdt_node_id_collision',
+        context: { nodeId: '1', localType: 'Sink', docType: 'Source' }
+      })
+      expect(
+        useNodeDataStore()
+          .getGraphNodesFor('root', 'root')
+          .find(({ id }) => id === toNodeId(1))?.type
+      ).toBe('Source')
+
+      adapter.destroy()
+      follower.destroy()
+      host.destroy()
+    })
   })
 
   describe('local intent during a full reconcile', () => {
@@ -1663,8 +1842,10 @@ describe('EcsFollowerAdapter integration', () => {
         catalog
       )
       const follower = new FollowerDoc()
-      const adapter = new EcsFollowerAdapter(mutations, {
-        pendingDeletes: () => pendingDeletes
+      const adapter = new EcsFollowerAdapter(mutations, undefined, {
+        pendingDeletes: () => pendingDeletes,
+        pendingAdds: () => new Set(),
+        pendingConnects: () => new Set()
       })
       adapter.bind('wf', follower)
       const update = Y.encodeStateAsUpdate(host)
@@ -1697,6 +1878,120 @@ describe('EcsFollowerAdapter integration', () => {
         nodeIds: [toNodeId(1), toNodeId(2)],
         linked: true
       })
+    })
+  })
+
+  describe('ADR-CRDT-RECONCILE-0035 (a): reconcileFromDoc repairs a delivery-unknown op outside the frame pipeline', () => {
+    it('restores a node whose delete never reached the doc', () => {
+      const host = mint(
+        { nodes: [{ id: 1, type: 'Source', outputs: [] }], links: [] },
+        catalog
+      )
+      const follower = new FollowerDoc()
+      const mutations = createGraphMutations({
+        placement: inertPlacementPort,
+        getScope: () => scope,
+        layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+      })
+      const adapter = new EcsFollowerAdapter(mutations)
+      onTestFinished(() => {
+        adapter.destroy()
+        follower.destroy()
+        host.destroy()
+      })
+      adapter.bind('wf', follower)
+      const bootstrap = Y.encodeStateAsUpdate(host)
+      follower.applyRemoteUpdate(bootstrap)
+      expect(
+        adapter.applyFrame({ workflowId: 'wf', seq: 1, update: bootstrap })
+      ).toBe(true)
+      expect(
+        useNodeDataStore()
+          .getGraphNodesFor('root', 'root')
+          .map(({ id }) => id)
+      ).toEqual([toNodeId(1)])
+
+      // The human's optimistic delete already removed the node locally, but
+      // its effect never reached the doc (the host rejected/dropped it):
+      // the doc, still holding node 1, is the only authoritative state left.
+      mutations.deleteNode(toNodeId(1), [], {
+        source: 'agent-remote',
+        actor: 'human:test:tab-1',
+        opId: 'op-1'
+      })
+      expect(useNodeDataStore().getGraphNodesFor('root', 'root')).toEqual([])
+
+      expect(adapter.reconcileFromDoc('wf', 1)).toBe(true)
+      expect(
+        useNodeDataStore()
+          .getGraphNodesFor('root', 'root')
+          .map(({ id }) => id)
+      ).toEqual([toNodeId(1)])
+    })
+
+    it('retires a link whose connect never reached the doc', () => {
+      const host = mint(
+        {
+          nodes: [
+            {
+              id: 1,
+              type: 'Source',
+              outputs: [{ name: 'out', type: 'IMAGE', links: [] }]
+            },
+            {
+              id: 2,
+              type: 'Sink',
+              inputs: [{ name: 'in', type: 'IMAGE', link: null }]
+            }
+          ],
+          links: []
+        },
+        catalog
+      )
+      const follower = new FollowerDoc()
+      const mutations = createGraphMutations({
+        placement: inertPlacementPort,
+        getScope: () => scope,
+        layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+      })
+      const adapter = new EcsFollowerAdapter(mutations)
+      onTestFinished(() => {
+        adapter.destroy()
+        follower.destroy()
+        host.destroy()
+      })
+      adapter.bind('wf', follower)
+      const bootstrap = Y.encodeStateAsUpdate(host)
+      follower.applyRemoteUpdate(bootstrap)
+      expect(
+        adapter.applyFrame({ workflowId: 'wf', seq: 1, update: bootstrap })
+      ).toBe(true)
+
+      // The human's optimistic connect already linked the pair locally, but
+      // its effect never reached the doc (no such link exists there).
+      mutations.connect(
+        {
+          id: 9,
+          originNodeId: toNodeId(1),
+          originSlot: 0,
+          targetNodeId: toNodeId(2),
+          targetSlot: 0,
+          type: 'IMAGE'
+        },
+        {
+          source: 'agent-remote',
+          actor: 'human:test:tab-1',
+          opId: 'op-1'
+        }
+      )
+      expect(
+        useLinkStore().getTopology(scope.rootGraphId, toLinkId(9))
+      ).toBeDefined()
+
+      expect(adapter.reconcileFromDoc('wf', 1)).toBe(true)
+      expect(
+        useLinkStore().getTopology(scope.rootGraphId, toLinkId(9))
+      ).toBeUndefined()
     })
   })
 })

@@ -124,6 +124,19 @@ export class LayoutFollowerBridge extends EventTarget {
    * harmless). It never moves {@link lastSeq} backwards.
    */
   private catchUpPending = false
+  /**
+   * The `seq` of the last `doc_reset` this bridge actually applied for the
+   * CURRENT lineage; `null` until one lands, and cleared whenever the doc is
+   * replaced for a different lineage ({@link dropDocForNewLineage}). Guards
+   * {@link onDocReset} against a duplicate delivery of the SAME reset (the
+   * transport gives no exactly-once guarantee): a second frame naming this
+   * exact seq is a repeat, not a new lineage break, so it must not re-drop
+   * the just-reminted doc or re-send a subscribe the first delivery already
+   * sent. Compared by exact seq equality, never "within a window" — a later,
+   * genuinely new reset for this lineage always carries a different seq and
+   * must still process normally.
+   */
+  private lastAppliedResetSeq: number | null = null
 
   constructor(private readonly client: DocFrameClient) {
     super()
@@ -384,8 +397,14 @@ export class LayoutFollowerBridge extends EventTarget {
     if (!(event instanceof CustomEvent)) return
     const reset = event.detail as DocReset
     if (reset.workflowId !== this.sentWorkflowId) return
+    // A repeat delivery of the SAME reset (identical seq, same lineage) must
+    // be a no-op: the first delivery already reminted the doc and resent the
+    // subscribe, so doing either again would drop a doc that just caught up
+    // and send a redundant `doc_subscribe`.
+    if (reset.seq === this.lastAppliedResetSeq) return
     this.dispatchEvent(new CustomEvent('doc_reset', { detail: reset }))
     this.dropDocForNewLineage()
+    this.lastAppliedResetSeq = reset.seq
     this.resubscribe()
     this.dispatchEvent(new CustomEvent('follower_replaced', { detail: reset }))
   }
@@ -398,6 +417,7 @@ export class LayoutFollowerBridge extends EventTarget {
     this.followerDoc.destroy()
     this.followerDoc = new FollowerDoc()
     this.schemaError = null
+    this.lastAppliedResetSeq = null
   }
 
   /**
@@ -424,6 +444,11 @@ export class LayoutFollowerBridge extends EventTarget {
       this.ackSeq = subscribed.seq ?? null
       this.catchUpPending = this.ackSeq !== null
     } else this.sentWorkflowId = null
+    // ADR-CRDT-RECONCILE-0035 (a), round 7: no generation is resolved or
+    // forwarded here any more. The wire carries no echoed subscribe
+    // identity, so a duplicate ack can never be proven distinct from a fresh
+    // one — and nothing downstream needs that proof any more, since an ack
+    // never settles a parked ledger entry by itself either way.
     this.dispatchEvent(new CustomEvent(event.type, { detail: event.detail }))
   }
 

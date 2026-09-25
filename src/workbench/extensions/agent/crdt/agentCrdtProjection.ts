@@ -14,20 +14,33 @@ import {
 } from './agentSubgraphDefinitions'
 import { recordDevEvent } from './devPanelLog'
 import type { DocUpdate } from './docFrameClient'
-import type { LocalIntent, MutationsForTarget } from './ecsFollowerAdapter'
+import type { MutationsForTarget } from './ecsFollowerAdapter'
+import type { LocalIntent } from './ecsFullReconcile'
 import { EcsFollowerAdapter } from './ecsFollowerAdapter'
 import type { FollowerDoc } from './followerDoc'
 
-export class AgentCrdtProjection {
-  private readonly adapter: EcsFollowerAdapter
+export class AgentCrdtProjection<TUpdate extends DocUpdate = DocUpdate> {
+  private readonly adapter: EcsFollowerAdapter<TUpdate>
 
   constructor(
     mutations: MutationsForTarget,
     private readonly getGraph: () => MaterializableGraph | null,
     private readonly getFollowerDoc: () => Y.Doc,
+    /**
+     * ADR-CRDT-RECONCILE-0035 (c): the `class_type` of the pending-op
+     * ledger's `add_node` for this node id, in any echo-visible state, or
+     * `undefined` when none. Distinguishes the echo of the page's own
+     * accepted add (reconcile, no report) from a genuine id collision
+     * (reconcile, but reported) — including a same-id, different-type add.
+     */
+    pendingAddType: (nodeId: string) => string | undefined = () => undefined,
     intent?: LocalIntent
   ) {
-    this.adapter = new EcsFollowerAdapter(mutations, intent)
+    this.adapter = new EcsFollowerAdapter<TUpdate>(
+      mutations,
+      pendingAddType,
+      intent
+    )
   }
 
   bind(workflowId: string, follower: FollowerDoc): void {
@@ -45,7 +58,7 @@ export class AgentCrdtProjection {
    * would let a third-party hook leave a frame counted in `received` and in
    * neither `applied` nor `skipped`.
    */
-  applyFrame(update: DocUpdate): boolean {
+  applyFrame(update: TUpdate): boolean {
     return this.adapter.applyFrame(update)
   }
 
@@ -65,7 +78,24 @@ export class AgentCrdtProjection {
     this.adapter.discardPending(workflowId)
   }
 
-  retryPending(workflowId: string): DocUpdate | null {
+  /**
+   * Forces a same-lineage full reconcile of `workflowId`'s ECS state against
+   * the follower doc outside the frame pipeline — the same reconcile a
+   * session's first real frame after (re)bind takes. Used when a resubscribe
+   * ack proves the doc is already current: no catch-up `doc_update` will
+   * ever arrive to drive that reconcile through {@link applyFrame}. Also
+   * runs {@link reconcileLiveGraph} on a committed reconcile, exactly as the
+   * frame and retry paths do — otherwise the repaired store state is never
+   * materialized onto the live graph, since no later frame is coming to do
+   * it either.
+   */
+  reconcileFromDoc(workflowId: string, seq: number): boolean {
+    const committed = this.adapter.reconcileFromDoc(workflowId, seq)
+    if (committed) this.reconcileLiveGraph(workflowId)
+    return committed
+  }
+
+  retryPending(workflowId: string): TUpdate | null {
     return this.adapter.retryPending(workflowId)
   }
 

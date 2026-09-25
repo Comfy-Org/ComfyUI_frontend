@@ -17,6 +17,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import type { GraphMutations } from './graphMutations'
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 import type { reportError as reportErrorFn } from '@/platform/telemetry/reportError'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
@@ -60,18 +61,38 @@ const clientState = vi.hoisted(() => ({
   transport: null as DocFrameTransport | null
 }))
 
-const adapterState = vi.hoisted(() => ({
-  intent: null as {
-    pendingDeletes(workflowId: string): ReadonlySet<string>
-  } | null,
-  bind: vi.fn(),
-  unbind: vi.fn(),
-  applyFrame: vi.fn(() => true),
-  retryPending: vi.fn((_workflowId: string): DocUpdate | null => null),
-  clearForReset: vi.fn(),
-  discardPending: vi.fn(),
-  destroy: vi.fn()
-}))
+interface AdapterState {
+  intent: { pendingDeletes(workflowId: string): ReadonlySet<string> } | null
+  bind: ReturnType<typeof vi.fn>
+  unbind: ReturnType<typeof vi.fn>
+  applyFrame: ReturnType<typeof vi.fn>
+  retryPending: ReturnType<typeof vi.fn>
+  reconcileFromDoc: ReturnType<typeof vi.fn>
+  clearForReset: ReturnType<typeof vi.fn>
+  discardPending: ReturnType<typeof vi.fn>
+  destroy: ReturnType<typeof vi.fn>
+  /**
+   * Captured from the constructor so a test can exercise the composable's
+   * real `pendingAddType` closure directly (the mocked adapter itself never
+   * calls it).
+   */
+  pendingAddType: ((nodeId: string) => string | undefined) | undefined
+}
+
+const adapterState = vi.hoisted(
+  (): AdapterState => ({
+    intent: null,
+    bind: vi.fn(),
+    unbind: vi.fn(),
+    applyFrame: vi.fn(() => true),
+    retryPending: vi.fn((_workflowId: string): DocUpdate | null => null),
+    reconcileFromDoc: vi.fn(() => true),
+    clearForReset: vi.fn(),
+    discardPending: vi.fn(),
+    destroy: vi.fn(),
+    pendingAddType: undefined
+  })
+)
 
 const materializerState = vi.hoisted(() => ({
   reconcileAgentAdapters: vi.fn(() => [] as NodeId[]),
@@ -137,17 +158,20 @@ vi.mock<unknown>(import('./ecsFollowerAdapter'), () => ({
   EcsFollowerAdapter: class {
     constructor(
       _mutations: unknown,
-      intent: {
+      pendingAddType?: (nodeId: string) => string | undefined,
+      intent?: {
         pendingDeletes(workflowId: string): ReadonlySet<string>
       }
     ) {
-      adapterState.intent = intent
+      adapterState.pendingAddType = pendingAddType
+      adapterState.intent = intent ?? null
     }
 
     bind = adapterState.bind
     unbind = adapterState.unbind
     applyFrame = adapterState.applyFrame
     retryPending = adapterState.retryPending
+    reconcileFromDoc = adapterState.reconcileFromDoc
     clearForReset = adapterState.clearForReset
     discardPending = adapterState.discardPending
     destroy = adapterState.destroy
@@ -180,6 +204,8 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 
 import { SUBSCRIBE_ACK_TIMEOUT_MS } from './agentCrdtDocLifecycle'
 import {
+  ALREADY_CURRENT_RETRY_INTERVAL_MS,
+  LEDGER_SETTLE_TIMEOUT_MS,
   STALE_AFTER_MS,
   SUBSCRIBE_CATCHUP_GRACE_MS,
   useAgentCrdtFollower
@@ -266,13 +292,25 @@ function dispatchFrame(type: string, detail: unknown): void {
   bridge().dispatchEvent(new CustomEvent(type, { detail }))
 }
 
+/** True if any `pending_ops` dev-event call in `calls` carries a `reset`. */
+function isPendingOpsReset(calls: readonly (readonly unknown[])[]): boolean {
+  return calls.some(([event, detail]) => {
+    if (event !== 'pending_ops') return false
+    return (
+      typeof detail === 'object' &&
+      detail !== null &&
+      'type' in detail &&
+      detail.type === 'reset'
+    )
+  })
+}
+
 describe('useAgentCrdtFollower', () => {
   beforeEach(() => {
     useAgentPanelStore().enabled = true
     sessionStorage.clear()
     bridgeState.current = null
-    adapterState.applyFrame.mockReset().mockReturnValue(true)
-    adapterState.retryPending.mockReset().mockReturnValue(null)
+    adapterState.pendingAddType = undefined
     clientState.transport = null
     materializerState.reconcileAgentAdapters.mockReset().mockReturnValue([])
     materializerState.subgraphDefinitionReadState.mockImplementation(
@@ -748,6 +786,57 @@ describe('useAgentCrdtFollower', () => {
       'wf-1',
       bridge().follower
     )
+    unmount()
+  })
+
+  it('F4: IF a doc_reset for the bound workflow reaches this composable while inactive, the pending correlation resets immediately (unit-level: the bridge is mocked, so this does not prove the frame reaches here — see useAgentCrdtFollowerLineageBoundary.test.ts for that boundary)', async () => {
+    const workflowId = ref<string | null>('wf-1')
+    const isTargetActive = ref(true)
+    let enqueue!: ReturnType<
+      typeof useAgentCrdtFollower
+    >['enqueueHumanOperations']
+    const host = defineComponent({
+      setup() {
+        enqueue = useAgentCrdtFollower(
+          workflowId,
+          graphMutations,
+          () => null,
+          isTargetActive
+        ).enqueueHumanOperations
+        return () => null
+      }
+    })
+    const { unmount } = render(host)
+
+    enqueue([
+      {
+        op: 'add_node',
+        node_id: 5,
+        class_type: 'Test',
+        pos: [0, 0],
+        node: { id: 5, type: 'Test', inputs: [], outputs: [] }
+      }
+    ])
+
+    isTargetActive.value = false
+    await nextTick()
+    vi.mocked(recordDevEvent).mockClear()
+    // This dispatches straight onto the MOCKED bridge's EventTarget, which
+    // has none of the real `LayoutFollowerBridge.onDocReset` filtering
+    // (`workflowId !== sentWorkflowId`) that makes this frame unreachable in
+    // production while inactive. This only proves the composable's own
+    // `pendingCorrelation.resetIfTracked` wiring reacts correctly to a
+    // `doc_reset` event IF one arrives, independent of whether the real
+    // bridge would ever deliver it here.
+    dispatchFrame('doc_reset', { workflowId: 'wf-1', seq: 3 })
+
+    expect(recordDevEvent).toHaveBeenCalledWith(
+      'pending_ops',
+      expect.objectContaining({ type: 'reset' })
+    )
+
+    isTargetActive.value = true
+    await nextTick()
     unmount()
   })
 
@@ -1526,7 +1615,115 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('a refused subscription settles the transmitted in-flight batch unconfirmed at the resend instead of reaching the client', async () => {
+  it('ADR-CRDT-RECONCILE-0035 (a): pending ops survive tab deactivation and reactivation of the same workflow', async () => {
+    const { enqueue, isTargetActive, unmount } = mountWithHumanOps()
+    dispatchFrame('doc_subscribed', { ok: true })
+
+    enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    await Promise.resolve()
+    const opId = clientState.sendOps.mock.lastCall?.[2][0]?.op_id
+    expect(opId).toBeDefined()
+    if (!opId) throw new Error('Expected a sent operation')
+
+    // Tab switch away, then back to the SAME workflow: not a lineage break.
+    isTargetActive.value = false
+    await nextTick()
+    isTargetActive.value = true
+    await nextTick()
+
+    expect(isPendingOpsReset(vi.mocked(recordDevEvent).mock.calls)).toBe(false)
+
+    // Still tracked: the authoritative effect for this exact op id clears it
+    // normally, which could not happen had deactivation dropped it.
+    dispatchFrame('doc_update', {
+      workflowId: 'wf-1',
+      seq: 2,
+      update: new Uint8Array(),
+      opIds: [opId]
+    })
+    expect(recordDevEvent).toHaveBeenCalledWith('pending_ops', {
+      type: 'cleared',
+      opIds: [opId]
+    })
+    unmount()
+  })
+
+  it("ADR-CRDT-RECONCILE-0035 (c): an add_node's echo classification survives tab deactivation and reactivation of the same workflow", async () => {
+    const { enqueue, isTargetActive, pendingAddType, unmount } =
+      mountWithHumanOps()
+    dispatchFrame('doc_subscribed', { ok: true })
+
+    enqueue([
+      {
+        op: 'add_node',
+        node_id: '7',
+        class_type: 'Test',
+        pos: [0, 0],
+        node: { id: 7, type: 'Test', inputs: [], outputs: [] }
+      }
+    ])
+    await Promise.resolve()
+
+    const predicate = pendingAddType()
+    expect(predicate).toBeDefined()
+    if (!predicate) throw new Error('expected a captured predicate')
+    expect(predicate('7')).toBe('Test')
+
+    // Tab switch away, then back to the SAME workflow: not a lineage break.
+    isTargetActive.value = false
+    await nextTick()
+    isTargetActive.value = true
+    await nextTick()
+
+    expect(isPendingOpsReset(vi.mocked(recordDevEvent).mock.calls)).toBe(false)
+
+    // Still tracked after the round trip: the real ledger-backed predicate
+    // captured at the mocked-adapter constructor seam (the adapter itself
+    // is mocked in this file and never calls it) still reports this node's
+    // pending add_node, proving deactivation did not drop it.
+    expect(predicate('7')).toBe('Test')
+    unmount()
+  })
+
+  it("ADR-CRDT-RECONCILE-0035 (c): pendingAddType reports the class_type only while the ledger holds that node's add_node", async () => {
+    const workflowId = ref<string | null>('wf-1')
+    let enqueue!: ReturnType<
+      typeof useAgentCrdtFollower
+    >['enqueueHumanOperations']
+    const host = defineComponent({
+      setup() {
+        enqueue = useAgentCrdtFollower(
+          workflowId,
+          graphMutations
+        ).enqueueHumanOperations
+        return () => null
+      }
+    })
+    const { unmount } = render(host)
+    const pendingAddType = adapterState.pendingAddType
+    expect(pendingAddType).toBeDefined()
+    if (!pendingAddType) throw new Error('expected a captured predicate')
+
+    // Before any add_node is minted, nothing matches.
+    expect(pendingAddType('7')).toBeUndefined()
+
+    enqueue([
+      {
+        op: 'add_node',
+        node_id: '7',
+        class_type: 'Test',
+        pos: [0, 0],
+        node: { id: 7, type: 'Test', inputs: [], outputs: [] }
+      }
+    ])
+    await Promise.resolve()
+
+    expect(pendingAddType('7')).toBe('Test')
+    expect(pendingAddType('some-other-id')).toBeUndefined()
+    unmount()
+  })
+
+  it('ADR-CRDT-RECONCILE-0035 (a): a delivery-unknown batch resolves per op against the next same-lineage catch-up', async () => {
     vi.useFakeTimers()
     const workflowId = ref<string | null>('wf-1')
     let enqueue!: ReturnType<
@@ -1534,15 +1731,464 @@ describe('useAgentCrdtFollower', () => {
     >['enqueueHumanOperations']
     const host = defineComponent({
       setup() {
-        const { enqueueHumanOperations } = useAgentCrdtFollower(
+        enqueue = useAgentCrdtFollower(
           workflowId,
           graphMutations
-        )
-        enqueue = enqueueHumanOperations
+        ).enqueueHumanOperations
         return () => null
       }
     })
     const { unmount } = render(host)
+
+    enqueue([
+      {
+        op: 'add_node',
+        node_id: 5,
+        class_type: 'Test',
+        pos: [0, 0],
+        node: { id: 5, type: 'Test', inputs: [], outputs: [] }
+      },
+      {
+        op: 'connect',
+        link_id: 9,
+        from_node: 1,
+        from_slot: 0,
+        to_node: 5,
+        to_slot: 0,
+        link_type: 'IMAGE'
+      },
+      { op: 'delete_node', node_id: '6', removed_links: [] }
+    ])
+    await Promise.resolve()
+    const sentOps = clientState.sendOps.mock.lastCall?.[2] ?? []
+    expect(sentOps).toHaveLength(3)
+    const opIds = sentOps.map((sentOp) => sentOp.op_id)
+
+    // One silent send, one silent resend: the batch settles delivery-unknown.
+    vi.advanceTimersByTime(10_000)
+    vi.advanceTimersByTime(10_000)
+    expect(recordDevEvent).toHaveBeenCalledWith('pending_ops', {
+      type: 'delivery_unknown',
+      opIds
+    })
+
+    // A same-lineage catch-up: the added node and the new link both landed,
+    // and the deleted node stayed gone -- every parked op's effect is
+    // present, so `docEffectPresent` resolves all three kinds it can check.
+    const doc = new Y.Doc()
+    doc.getMap('nodes').set('5', new Y.Map([['type', 'Test']]))
+    doc.getMap('links').set('9', Y.Array.from([9, 1, 0, 5, 0, 'IMAGE']))
+    bridge().follower.doc = doc
+
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 2, catchUp: true })
+
+    expect(recordDevEvent).toHaveBeenCalledWith('pending_ops', {
+      type: 'cleared',
+      opIds: expect.arrayContaining(opIds)
+    })
+    unmount()
+  })
+
+  it('F2: a live same-lineage frame resolves a parked entry whose effect is present', async () => {
+    const { unmount, enqueue } = mountFollower('wf-1')
+
+    enqueue([
+      {
+        op: 'add_node',
+        node_id: 5,
+        class_type: 'Test',
+        pos: [0, 0],
+        node: { id: 5, type: 'Test', inputs: [], outputs: [] }
+      }
+    ])
+    await Promise.resolve()
+    const opId = clientState.sendOps.mock.lastCall?.[2][0]?.op_id
+
+    vi.advanceTimersByTime(10_000)
+    vi.advanceTimersByTime(10_000)
+    expect(recordDevEvent).toHaveBeenCalledWith('pending_ops', {
+      type: 'delivery_unknown',
+      opIds: [opId]
+    })
+
+    const doc = new Y.Doc()
+    doc.getMap('nodes').set('5', new Y.Map([['type', 'Test']]))
+    bridge().follower.doc = doc
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 3, catchUp: false })
+
+    expect(recordDevEvent).toHaveBeenCalledWith('pending_ops', {
+      type: 'cleared',
+      opIds: [opId]
+    })
+    unmount()
+  })
+
+  it('a parked set_node_field entry has no effect-presence check, so a same-lineage catch-up leaves it parked', async () => {
+    const { unmount, enqueue } = mountFollower('wf-1')
+
+    enqueue([
+      { op: 'set_node_field', node_id: 5, field: 'title', value: 'Renamed' }
+    ])
+    await Promise.resolve()
+    const opId = clientState.sendOps.mock.lastCall?.[2][0]?.op_id
+
+    // One silent send, one silent resend: the batch settles delivery-unknown.
+    vi.advanceTimersByTime(10_000)
+    vi.advanceTimersByTime(10_000)
+    expect(recordDevEvent).toHaveBeenCalledWith('pending_ops', {
+      type: 'delivery_unknown',
+      opIds: [opId]
+    })
+
+    // `docEffectPresent` has no check implemented for `set_node_field` (it
+    // returns null), so even a same-lineage catch-up cannot resolve it --
+    // it stays parked rather than being guessed at as cleared.
+    const doc = new Y.Doc()
+    doc.getMap('nodes').set('5', new Y.Map([['title', 'Renamed']]))
+    bridge().follower.doc = doc
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 2, catchUp: true })
+
+    expect(recordDevEvent).not.toHaveBeenCalledWith(
+      'pending_ops',
+      expect.objectContaining({ type: 'cleared' })
+    )
+    unmount()
+  })
+
+  it('ADR-CRDT-RECONCILE-0035 (a), round 7: a parked set_widget settles only when the target widget already holds the op value', async () => {
+    const { unmount, enqueue } = mountFollower('wf-1')
+
+    enqueue([
+      {
+        op: 'set_widget',
+        node_id: 5,
+        widget: 'config',
+        value: { seed: 42, steps: [1, 2] }
+      }
+    ])
+    await Promise.resolve()
+    const opId = clientState.sendOps.mock.lastCall?.[2][0]?.op_id
+
+    vi.advanceTimersByTime(10_000)
+    vi.advanceTimersByTime(10_000)
+    expect(recordDevEvent).toHaveBeenCalledWith('pending_ops', {
+      type: 'delivery_unknown',
+      opIds: [opId]
+    })
+
+    // The widget's current value differs from the op's: never an
+    // unconditional clear.
+    const mismatched = new Y.Doc()
+    mismatched.getMap('nodes').set(
+      '5',
+      new Y.Map<unknown>([
+        ['type', 'Test'],
+        ['widgets', new Y.Map([['config', { seed: 42, steps: [1, 3] }]])]
+      ])
+    )
+    bridge().follower.doc = mismatched
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 2, catchUp: true })
+    expect(recordDevEvent).not.toHaveBeenCalledWith(
+      'pending_ops',
+      expect.objectContaining({ type: 'cleared' })
+    )
+
+    // The widget's current value now equals the op's: settles applied.
+    const matched = new Y.Doc()
+    matched.getMap('nodes').set(
+      '5',
+      new Y.Map<unknown>([
+        ['type', 'Test'],
+        ['widgets', new Y.Map([['config', { seed: 42, steps: [1, 2] }]])]
+      ])
+    )
+    bridge().follower.doc = matched
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 3, catchUp: true })
+    expect(recordDevEvent).toHaveBeenCalledWith('pending_ops', {
+      type: 'cleared',
+      opIds: [opId]
+    })
+    unmount()
+  })
+
+  it('F2: an already-current ack keeps a parked entry until the forced reconcile commits, then repairs the live graph before settling it, retried by its own timer on a quiet channel', async () => {
+    const fakeGraph = fromPartial<MaterializableGraph>({
+      rootGraph: { subgraphs: new Map() },
+      _nodes_by_id: {},
+      setDirtyCanvas: vi.fn()
+    })
+    const { unmount, enqueue } = mountFollower('wf-1', true, () => fakeGraph)
+
+    const doc = new Y.Doc()
+    doc.getMap('nodes').set('5', new Y.Map([['type', 'Test']]))
+    bridge().follower.doc = doc
+    // Establishes the projected watermark at seq 2 before anything is
+    // pending, so it is not itself the resolving catch-up.
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 2 })
+    materializerState.reconcileAgentAdapters.mockClear()
+
+    enqueue([
+      {
+        op: 'add_node',
+        node_id: 5,
+        class_type: 'Test',
+        pos: [0, 0],
+        node: { id: 5, type: 'Test', inputs: [], outputs: [] }
+      }
+    ])
+    await Promise.resolve()
+    const opId = clientState.sendOps.mock.lastCall?.[2][0]?.op_id
+
+    vi.advanceTimersByTime(10_000)
+    vi.advanceTimersByTime(10_000)
+    expect(recordDevEvent).toHaveBeenCalledWith('pending_ops', {
+      type: 'delivery_unknown',
+      opIds: [opId]
+    })
+
+    // Stateful fixture (s3-opt-6 review, "F2"): the adapter's session is
+    // busy/missing on the FIRST forced-reconcile attempt, so this ack alone
+    // must neither repair the live graph nor settle the parked entry.
+    let committed = false
+    adapterState.reconcileFromDoc.mockImplementation(() => committed)
+
+    // The host sends no catch-up doc_update at all when this follower's
+    // state vector is already current -- the ack seq equalling the
+    // watermark is the only signal that a resubscribe completed.
+    dispatchFrame('doc_subscribed', { ok: true, workflowId: 'wf-1', seq: 2 })
+
+    expect(adapterState.reconcileFromDoc).toHaveBeenCalledWith('wf-1', 2)
+    expect(materializerState.reconcileAgentAdapters).not.toHaveBeenCalled()
+    expect(recordDevEvent).not.toHaveBeenCalledWith(
+      'pending_ops',
+      expect.objectContaining({ type: 'cleared' })
+    )
+
+    // The reconcile now commits; the bounded retry timer's own next attempt
+    // — with no further doc_update, catch-up or otherwise, ever dispatched —
+    // must repair the live graph BEFORE the ledger settles the parked entry.
+    committed = true
+    const order: string[] = []
+    materializerState.reconcileAgentAdapters.mockImplementationOnce(() => {
+      order.push('materialized')
+      return []
+    })
+    vi.mocked(recordDevEvent).mockImplementation((event, detail) => {
+      if (
+        event === 'pending_ops' &&
+        (detail as { type?: string } | null)?.type === 'cleared'
+      )
+        order.push('cleared')
+    })
+    await vi.advanceTimersByTimeAsync(ALREADY_CURRENT_RETRY_INTERVAL_MS)
+
+    expect(order).toEqual(['materialized', 'cleared'])
+    unmount()
+  })
+
+  it('P2: a lineage reset cancels the already-current retry timer instead of leaving it to fire later', async () => {
+    // `PendingCorrelation` owns this timer end to end: `reset()` (called on
+    // every lineage break, and at scope teardown) must cancel it, not just
+    // make its callback a no-op — a callback that survives could still call
+    // back into a reconcile for a lineage this correlation no longer tracks.
+    const fakeGraph = fromPartial<MaterializableGraph>({
+      rootGraph: { subgraphs: new Map() },
+      _nodes_by_id: {},
+      setDirtyCanvas: vi.fn()
+    })
+    const { unmount, enqueue } = mountFollower('wf-1', true, () => fakeGraph)
+
+    const doc = new Y.Doc()
+    doc.getMap('nodes').set('5', new Y.Map([['type', 'Test']]))
+    bridge().follower.doc = doc
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 2 })
+
+    enqueue([
+      {
+        op: 'add_node',
+        node_id: 5,
+        class_type: 'Test',
+        pos: [0, 0],
+        node: { id: 5, type: 'Test', inputs: [], outputs: [] }
+      }
+    ])
+    await Promise.resolve()
+    vi.advanceTimersByTime(10_000)
+    vi.advanceTimersByTime(10_000)
+
+    // The forced reconcile defers, arming the retry timer. Spy on the raw
+    // timer functions (still the fake-timer globals under `vi.useFakeTimers`)
+    // to capture the EXACT handle this arms, so cancellation can be proven
+    // precisely instead of via a global timer count shared with unrelated
+    // subsystems (e.g. the lifecycle's own stale probe).
+    const setTimeoutSpy = vi.spyOn(globalThis, 'setTimeout')
+    const clearTimeoutSpy = vi.spyOn(globalThis, 'clearTimeout')
+    adapterState.reconcileFromDoc.mockReturnValue(false)
+    dispatchFrame('doc_subscribed', { ok: true, workflowId: 'wf-1', seq: 2 })
+    expect(adapterState.reconcileFromDoc).toHaveBeenCalledTimes(1)
+    const retryTimerHandle = setTimeoutSpy.mock.results.at(-1)?.value
+    expect(retryTimerHandle).toBeDefined()
+
+    // A lineage break resets the correlation. A callback merely turned into
+    // a no-op (pendingRetry cleared, timer left running) would still pass a
+    // "reconcileFromDoc not called again" check, since the no-op'd attempt
+    // reports itself resolved and the chain stops after one wasted tick —
+    // so this asserts the specific timer handle is cancelled, not just that
+    // its eventual callback becomes harmless.
+    dispatchFrame('doc_reset', { workflowId: 'wf-1', seq: 9, actor: 'agent:x' })
+
+    expect(clearTimeoutSpy).toHaveBeenCalledWith(retryTimerHandle)
+    unmount()
+  })
+
+  it('F8: an add_node whose parked id resolves to a different doc type is reported as a collision, never reverted, notified unresolved by the terminal path', async () => {
+    const { unmount, enqueue } = mountFollower('wf-1')
+
+    enqueue([
+      {
+        op: 'add_node',
+        node_id: 5,
+        class_type: 'Test',
+        pos: [0, 0],
+        node: { id: 5, type: 'Test', inputs: [], outputs: [] }
+      }
+    ])
+    await Promise.resolve()
+    const opId = clientState.sendOps.mock.lastCall?.[2][0]?.op_id
+
+    vi.advanceTimersByTime(10_000)
+    vi.advanceTimersByTime(10_000)
+    expect(recordDevEvent).toHaveBeenCalledWith('pending_ops', {
+      type: 'delivery_unknown',
+      opIds: [opId]
+    })
+
+    // The doc id resolved to an unrelated node of a different type.
+    const doc = new Y.Doc()
+    doc.getMap('nodes').set('5', new Y.Map([['type', 'SomethingElse']]))
+    bridge().follower.doc = doc
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 2, catchUp: true })
+
+    // The collision is reported the instant it's read, regardless of when
+    // (or whether) the entry itself is ever resolved.
+    expect(telemetryState.reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'agent_crdt_node_id_collision',
+      context: { nodeId: '5', opType: 'Test', docType: 'SomethingElse' }
+    })
+    // ADR-CRDT-RECONCILE-0035 (a), round 8: absence never reverts, for any
+    // kind — the entry stays parked until an explicit host rejection, a
+    // lineage break, or destruction. The bounded ledger terminal path's
+    // deadline is absolute from park time and unaffected by this frame.
+    expect(recordDevEvent).not.toHaveBeenCalledWith(
+      'pending_ops',
+      expect.objectContaining({ type: 'reverted' })
+    )
+
+    vi.advanceTimersByTime(LEDGER_SETTLE_TIMEOUT_MS)
+    expect(recordDevEvent).toHaveBeenCalledWith('pending_ops', {
+      type: 'unresolved',
+      opIds: [opId]
+    })
+    expect(useToastStore().add).toHaveBeenCalledWith({
+      severity: 'warn',
+      summary: "Your edit couldn't be confirmed as synced.",
+      life: 5000
+    })
+    expect(recordDevEvent).not.toHaveBeenCalledWith(
+      'pending_ops',
+      expect.objectContaining({ type: 'reverted' })
+    )
+    unmount()
+  })
+
+  it('F8: a connect whose link id resolves to different endpoints stays parked, notified unresolved by the terminal path', async () => {
+    const { unmount, enqueue } = mountFollower('wf-1')
+
+    enqueue([
+      {
+        op: 'connect',
+        link_id: 9,
+        from_node: 1,
+        from_slot: 0,
+        to_node: 5,
+        to_slot: 0,
+        link_type: 'IMAGE'
+      }
+    ])
+    await Promise.resolve()
+    const opId = clientState.sendOps.mock.lastCall?.[2][0]?.op_id
+
+    vi.advanceTimersByTime(10_000)
+    vi.advanceTimersByTime(10_000)
+    expect(recordDevEvent).toHaveBeenCalledWith('pending_ops', {
+      type: 'delivery_unknown',
+      opIds: [opId]
+    })
+
+    // Link id 9 exists, but between an unrelated pair of nodes/slots.
+    const doc = new Y.Doc()
+    doc.getMap('links').set('9', Y.Array.from([9, 2, 1, 6, 1, 'IMAGE']))
+    bridge().follower.doc = doc
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 2, catchUp: true })
+
+    expect(recordDevEvent).not.toHaveBeenCalledWith(
+      'pending_ops',
+      expect.objectContaining({ type: 'reverted' })
+    )
+
+    vi.advanceTimersByTime(LEDGER_SETTLE_TIMEOUT_MS)
+    expect(recordDevEvent).toHaveBeenCalledWith('pending_ops', {
+      type: 'unresolved',
+      opIds: [opId]
+    })
+    unmount()
+  })
+
+  it('F9: a connect whose link id resolves to the same endpoints but a different semantic type stays parked, notified unresolved by the terminal path', async () => {
+    const { unmount, enqueue } = mountFollower('wf-1')
+
+    enqueue([
+      {
+        op: 'connect',
+        link_id: 9,
+        from_node: 1,
+        from_slot: 0,
+        to_node: 5,
+        to_slot: 0,
+        link_type: 'IMAGE'
+      }
+    ])
+    await Promise.resolve()
+    const opId = clientState.sendOps.mock.lastCall?.[2][0]?.op_id
+
+    vi.advanceTimersByTime(10_000)
+    vi.advanceTimersByTime(10_000)
+    expect(recordDevEvent).toHaveBeenCalledWith('pending_ops', {
+      type: 'delivery_unknown',
+      opIds: [opId]
+    })
+
+    // Same link id and endpoints, but a different semantic wire type.
+    const doc = new Y.Doc()
+    doc.getMap('links').set('9', Y.Array.from([9, 1, 0, 5, 0, 'MASK']))
+    bridge().follower.doc = doc
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 2, catchUp: true })
+
+    expect(recordDevEvent).not.toHaveBeenCalledWith(
+      'pending_ops',
+      expect.objectContaining({ type: 'reverted' })
+    )
+
+    vi.advanceTimersByTime(LEDGER_SETTLE_TIMEOUT_MS)
+    expect(recordDevEvent).toHaveBeenCalledWith('pending_ops', {
+      type: 'unresolved',
+      opIds: [opId]
+    })
+    unmount()
+  })
+
+  it('a refused subscription settles the transmitted in-flight batch unconfirmed at the resend instead of reaching the client', async () => {
+    const { unmount, enqueue } = mountFollower('wf-1')
 
     enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
     await Promise.resolve()
@@ -1564,22 +2210,7 @@ describe('useAgentCrdtFollower', () => {
   })
 
   it('a refused subscription settles the transmitted in-flight batch unconfirmed immediately, without waiting the resend (residual of #16637)', async () => {
-    vi.useFakeTimers()
-    const workflowId = ref<string | null>('wf-1')
-    let enqueue!: ReturnType<
-      typeof useAgentCrdtFollower
-    >['enqueueHumanOperations']
-    const host = defineComponent({
-      setup() {
-        const { enqueueHumanOperations } = useAgentCrdtFollower(
-          workflowId,
-          graphMutations
-        )
-        enqueue = enqueueHumanOperations
-        return () => null
-      }
-    })
-    const { unmount } = render(host)
+    const { unmount, enqueue } = mountFollower('wf-1')
 
     enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
     await Promise.resolve()
@@ -1602,22 +2233,7 @@ describe('useAgentCrdtFollower', () => {
   })
 
   it('a doc switch settles the transmitted in-flight batch for the old doc unconfirmed immediately, without waiting the resend', async () => {
-    vi.useFakeTimers()
-    const workflowId = ref<string | null>('wf-1')
-    let enqueue!: ReturnType<
-      typeof useAgentCrdtFollower
-    >['enqueueHumanOperations']
-    const host = defineComponent({
-      setup() {
-        const { enqueueHumanOperations } = useAgentCrdtFollower(
-          workflowId,
-          graphMutations
-        )
-        enqueue = enqueueHumanOperations
-        return () => null
-      }
-    })
-    const { unmount } = render(host)
+    const { unmount, enqueue, workflowId } = mountFollower('wf-1')
     // Mirror the real bridge's reconcile(): a changed desired doc clears send
     // reality synchronously inside subscribe()/unsubscribe().
     bridge().subscribe.mockImplementation((next: string) => {
@@ -1660,9 +2276,11 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  function mountWithHumanOps(): {
+  function mountWithHumanOps(isTargetActive: Ref<boolean> = ref(true)): {
     enqueue: ReturnType<typeof useAgentCrdtFollower>['enqueueHumanOperations']
     workflowId: Ref<string | null>
+    isTargetActive: Ref<boolean>
+    pendingAddType: () => ((nodeId: string) => string | undefined) | undefined
     unmount: () => void
   } {
     const workflowId = ref<string | null>('wf-1')
@@ -1673,14 +2291,22 @@ describe('useAgentCrdtFollower', () => {
       setup() {
         const { enqueueHumanOperations } = useAgentCrdtFollower(
           workflowId,
-          graphMutations
+          graphMutations,
+          () => null,
+          isTargetActive
         )
         enqueue = enqueueHumanOperations
         return () => null
       }
     })
     const { unmount } = render(host)
-    return { enqueue, workflowId, unmount }
+    return {
+      enqueue,
+      workflowId,
+      isTargetActive,
+      pendingAddType: () => adapterState.pendingAddType,
+      unmount
+    }
   }
 
   async function settledHumanOpStates(): Promise<string[]> {
@@ -1768,14 +2394,18 @@ describe('useAgentCrdtFollower', () => {
       typeof useAgentCrdtFollower
     >['enqueueHumanOperations']
 
-    function mountWriter(initial: string): {
+    function mountWriter(
+      initial: string,
+      isTargetActive: Ref<boolean> = ref(true),
+      getGraph: () => MaterializableGraph | null = () => null
+    ): {
       unmount: () => void
       workflowId: Ref<string | null>
       isTargetActive: Ref<boolean>
       enqueue: Enqueue
+      pendingAddType: () => ((nodeId: string) => string | undefined) | undefined
     } {
       const workflowId = ref<string | null>(initial)
-      const isTargetActive = ref(true)
       let enqueue!: Enqueue
       const host = defineComponent({
         setup() {
@@ -1783,7 +2413,8 @@ describe('useAgentCrdtFollower', () => {
             workflowId,
             graphMutations,
             () => null,
-            isTargetActive
+            isTargetActive,
+            getGraph
           )
           enqueue = enqueueHumanOperations
           return () => null
@@ -1798,7 +2429,13 @@ describe('useAgentCrdtFollower', () => {
       bridge().unsubscribe.mockImplementation(() => {
         bridge().subscribedWorkflowId = null
       })
-      return { unmount, workflowId, isTargetActive, enqueue }
+      return {
+        unmount,
+        workflowId,
+        isTargetActive,
+        enqueue,
+        pendingAddType: () => adapterState.pendingAddType
+      }
     }
 
     function deleteNode(nodeId: string) {
@@ -1822,12 +2459,6 @@ describe('useAgentCrdtFollower', () => {
       })
     }
 
-    beforeEach(async () => {
-      vi.useFakeTimers()
-      clientState.sendOps.mockClear()
-      vi.mocked(recordDevEvent).mockClear()
-    })
-
     it('holds the queued batch when the bound workflow tab goes inactive instead of settling it undeliverable', async () => {
       const { unmount, isTargetActive, enqueue } = mountWriter('wf-1')
       enqueue([deleteNode('1')])
@@ -1845,7 +2476,7 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
-    it('sends the held batch to the same workflow when its tab becomes active again', async () => {
+    it('sends the held batch to the same workflow once its resubscribe is acknowledged', async () => {
       const { unmount, isTargetActive, enqueue } = mountWriter('wf-1')
       enqueue([deleteNode('1')])
       await Promise.resolve()
@@ -1856,6 +2487,10 @@ describe('useAgentCrdtFollower', () => {
 
       isTargetActive.value = true
       await nextTick()
+      // The resubscribe left the transport, but the held batch must wait
+      // for its ack to confirm continuity before it can resend.
+      expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+      dispatchFrame('doc_subscribed', { ok: true, workflowId: 'wf-1' })
 
       expect(clientState.sendOps).toHaveBeenCalledTimes(2)
       expect(clientState.sendOps).toHaveBeenLastCalledWith(
@@ -1945,6 +2580,336 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
+    it('round 6: a held batch resumes once the tab reactivates, even when the resubscribe finds the doc has moved on', async () => {
+      const { unmount, isTargetActive, enqueue } = mountWriter('wf-1')
+      enqueue([deleteNode('1')])
+      await Promise.resolve()
+      enqueue([deleteNode('2')])
+      isTargetActive.value = false
+      await nextTick()
+      ackSent(0)
+      expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+
+      bridge().subscribe.mockImplementation(() => {})
+      isTargetActive.value = true
+      await nextTick()
+      expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+
+      bridge().subscribedWorkflowId = 'wf-1'
+      // This correlation never projected anything (the watermark is still
+      // null), so any numbered seq the resubscribe reports differs from it.
+      // ADR-CRDT-RECONCILE-0035 (a), round 6: that is ordinary same-lineage
+      // progress, not proof of a lineage break, so it no longer blocks the
+      // held batch.
+      dispatchFrame('doc_subscribed', { ok: true, workflowId: 'wf-1', seq: 5 })
+
+      expect(clientState.sendOps).toHaveBeenCalledTimes(2)
+      expect(clientState.sendOps).toHaveBeenLastCalledWith(
+        'wf-1',
+        expect.any(String),
+        [expect.objectContaining({ op: 'delete_node', node_id: '2' })]
+      )
+      expect(await settledStates()).toEqual(['acknowledged'])
+      unmount()
+    })
+
+    it('a replacement-lineage doc_update racing the reactivation resubscribe does not borrow its watermark', async () => {
+      // DrJKL's repro (review 5284988677): project seq 1, reactivate, receive
+      // a REPLACEMENT-lineage doc_update(seq=9) before the resubscribe
+      // completes, then the resubscribe reports seq 9 too — the live
+      // watermark now reads 9, but that is the stray update's doing, not
+      // proof this resubscribe's lineage matches what was projected before
+      // the tab went away.
+      const { unmount, isTargetActive, enqueue } = mountWriter('wf-1')
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 1 })
+
+      enqueue([deleteNode('1')])
+      await Promise.resolve()
+      enqueue([deleteNode('2')])
+      isTargetActive.value = false
+      await nextTick()
+      ackSent(0)
+
+      isTargetActive.value = true
+      await nextTick()
+      expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+
+      // A live frame can outrun its own ack (the bridge's own documented
+      // race): the replacement lineage's catch-up lands first.
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })
+      adapterState.reconcileFromDoc.mockClear()
+      dispatchFrame('doc_subscribed', { ok: true, workflowId: 'wf-1', seq: 9 })
+
+      // Must not accept the stray update's watermark as this resubscribe's
+      // own continuity proof: the forced reconcile a genuinely already-
+      // current resubscribe would run must not fire here.
+      expect(adapterState.reconcileFromDoc).not.toHaveBeenCalled()
+      // Round 6: continuity being unproven no longer blocks the held batch
+      // — it resumes normally, since a changed seq is ordinary progress, not
+      // proof of a lineage break.
+      expect(clientState.sendOps).toHaveBeenCalledTimes(2)
+      expect(await settledStates()).toEqual(['acknowledged'])
+      unmount()
+    })
+
+    it('round 6: a transmitted add still awaiting its result survives a reactivation whose resubscribe finds an advanced seq', async () => {
+      // Before round 6 this scenario forced the sender to abort the
+      // still-in-flight add (settling it delivery_unknown) and then
+      // immediately reverted every delivery_unknown entry unconditionally.
+      // ADR-CRDT-RECONCILE-0035 (a) now says a changed seq at reactivation is
+      // ordinary same-lineage progress: this test proves the add is left
+      // exactly where it was, not settled or reverted just because the
+      // resubscribe's continuity is unproven.
+      const nodeId = toNodeId(5)
+      const nodesById: Partial<Record<NodeId, object>> = { [nodeId]: {} }
+      const remove = vi.fn((node: object) => {
+        if (nodesById[nodeId] === node) delete nodesById[nodeId]
+      })
+      const graph = fromPartial<MaterializableGraph>({
+        rootGraph: { subgraphs: new Map() },
+        setDirtyCanvas: vi.fn(),
+        _nodes_by_id: nodesById,
+        remove
+      })
+      const { unmount, isTargetActive, enqueue, pendingAddType } = mountWriter(
+        'wf-1',
+        undefined,
+        () => graph
+      )
+      enqueue([
+        {
+          op: 'add_node',
+          node_id: 5,
+          class_type: 'Test',
+          pos: [0, 0],
+          node: { id: 5, type: 'Test', inputs: [], outputs: [] }
+        }
+      ])
+      await Promise.resolve()
+      const opId = clientState.sendOps.mock.lastCall?.[2][0]?.op_id as string
+      expect(opId).toBeDefined()
+      expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+
+      isTargetActive.value = false
+      await nextTick()
+
+      bridge().subscribe.mockImplementation(() => {})
+      isTargetActive.value = true
+      await nextTick()
+      bridge().subscribedWorkflowId = 'wf-1'
+      // This correlation never projected anything, so any numbered seq the
+      // resubscribe reports differs from the initial null watermark.
+      dispatchFrame('doc_subscribed', { ok: true, workflowId: 'wf-1', seq: 5 })
+
+      expect(pendingAddType()?.('5')).toBe('Test')
+      expect(recordDevEvent).not.toHaveBeenCalledWith(
+        'pending_ops',
+        expect.objectContaining({ type: 'reverted' })
+      )
+      expect(remove).not.toHaveBeenCalled()
+      expect(nodesById[nodeId]).toBeDefined()
+      unmount()
+    })
+
+    describe('round 6: a parked add survives a reactivation whose resubscribe reports an advanced seq', () => {
+      function addNode(nodeId: number) {
+        return {
+          op: 'add_node' as const,
+          node_id: nodeId,
+          class_type: 'Test',
+          pos: [0, 0] as [number, number],
+          node: { id: nodeId, type: 'Test', inputs: [], outputs: [] }
+        }
+      }
+
+      /**
+       * Parks `add_node(5)` as `delivery_unknown` (one silent send, one
+       * silent resend), then reactivates and reports an advanced seq the
+       * resubscribe cannot establish continuity with, returning the parked
+       * op's id.
+       */
+      async function parkThenReactivate(
+        isTargetActive: Ref<boolean>,
+        enqueue: Enqueue
+      ): Promise<string> {
+        enqueue([addNode(5)])
+        await Promise.resolve()
+        const opId = clientState.sendOps.mock.lastCall?.[2][0]?.op_id as string
+        vi.advanceTimersByTime(10_000)
+        vi.advanceTimersByTime(10_000)
+        expect(recordDevEvent).toHaveBeenCalledWith('pending_ops', {
+          type: 'delivery_unknown',
+          opIds: [opId]
+        })
+
+        isTargetActive.value = false
+        await nextTick()
+        bridge().subscribe.mockImplementation(() => {})
+        isTargetActive.value = true
+        await nextTick()
+        bridge().subscribedWorkflowId = 'wf-1'
+        dispatchFrame('doc_subscribed', {
+          ok: true,
+          workflowId: 'wf-1',
+          seq: 5
+        })
+        return opId
+      }
+
+      it('resolves applied when node 5 is present in the reactivation snapshot', async () => {
+        vi.useFakeTimers()
+        const { unmount, isTargetActive, enqueue } = mountWriter('wf-1')
+        const opId = await parkThenReactivate(isTargetActive, enqueue)
+
+        const doc = new Y.Doc()
+        doc.getMap('nodes').set('5', new Y.Map([['type', 'Test']]))
+        bridge().follower.doc = doc
+        dispatchFrame('doc_update', {
+          workflowId: 'wf-1',
+          seq: 5,
+          catchUp: true
+        })
+
+        expect(recordDevEvent).toHaveBeenCalledWith('pending_ops', {
+          type: 'cleared',
+          opIds: [opId]
+        })
+        expect(recordDevEvent).not.toHaveBeenCalledWith(
+          'pending_ops',
+          expect.objectContaining({ type: 'reverted' })
+        )
+        unmount()
+      })
+
+      it('stays parked, not reverted, when node 5 is absent from the reactivation snapshot', async () => {
+        vi.useFakeTimers()
+        const { unmount, isTargetActive, enqueue, pendingAddType } =
+          mountWriter('wf-1')
+        vi.mocked(recordDevEvent).mockClear()
+        const opId = await parkThenReactivate(isTargetActive, enqueue)
+        vi.mocked(recordDevEvent).mockClear()
+
+        // The reactivation snapshot's doc does not hold node 5.
+        bridge().follower.doc = new Y.Doc()
+        dispatchFrame('doc_update', {
+          workflowId: 'wf-1',
+          seq: 5,
+          catchUp: true
+        })
+
+        expect(recordDevEvent).not.toHaveBeenCalledWith(
+          'pending_ops',
+          expect.objectContaining({ type: 'reverted' })
+        )
+        expect(recordDevEvent).not.toHaveBeenCalledWith('pending_ops', {
+          type: 'cleared',
+          opIds: [opId]
+        })
+        expect(pendingAddType()?.('5')).toBe('Test')
+        unmount()
+      })
+
+      it('resolves applied once a later same-lineage doc_update carries the op id', async () => {
+        vi.useFakeTimers()
+        const { unmount, isTargetActive, enqueue } = mountWriter('wf-1')
+        const opId = await parkThenReactivate(isTargetActive, enqueue)
+
+        // The reactivation snapshot itself doesn't have node 5 yet.
+        bridge().follower.doc = new Y.Doc()
+        dispatchFrame('doc_update', {
+          workflowId: 'wf-1',
+          seq: 5,
+          catchUp: true
+        })
+        expect(recordDevEvent).not.toHaveBeenCalledWith('pending_ops', {
+          type: 'cleared',
+          opIds: [opId]
+        })
+
+        // A later doc_update carries this exact op id in its effect list.
+        dispatchFrame('doc_update', {
+          workflowId: 'wf-1',
+          seq: 6,
+          update: new Uint8Array(),
+          opIds: [opId]
+        })
+        expect(recordDevEvent).toHaveBeenCalledWith('pending_ops', {
+          type: 'cleared',
+          opIds: [opId]
+        })
+        unmount()
+      })
+
+      it('reverts on an explicit host rejection, not on the reactivation snapshot finding it absent', async () => {
+        vi.useFakeTimers()
+        const { unmount, isTargetActive, enqueue } = mountWriter('wf-1')
+        const opId = await parkThenReactivate(isTargetActive, enqueue)
+
+        bridge().follower.doc = new Y.Doc()
+        dispatchFrame('doc_update', {
+          workflowId: 'wf-1',
+          seq: 5,
+          catchUp: true
+        })
+        expect(recordDevEvent).not.toHaveBeenCalledWith(
+          'pending_ops',
+          expect.objectContaining({ type: 'reverted' })
+        )
+
+        // A late, explicit host rejection for the exact op id.
+        dispatchFrame('doc_ops_result', {
+          workflowId: 'wf-1',
+          ok: true,
+          applied: [],
+          skipped: [],
+          failed: { op_id: opId, code: 'rejected' }
+        })
+
+        expect(recordDevEvent).toHaveBeenCalledWith(
+          'pending_ops',
+          expect.objectContaining({ type: 'reverted', opIds: [opId] })
+        )
+        unmount()
+      })
+
+      it('stays parked, never reverted by any ordinary catch-up (e.g. after the connection recovers) that still finds it absent', async () => {
+        // ADR-CRDT-RECONCILE-0035 (a), round 7: absence never settles an
+        // entry by itself, reactivation or not. It is only ever reverted by
+        // the bounded ledger terminal path or an explicit host rejection —
+        // see `pendingOpTracker.test.ts`'s terminal-path suite for those.
+        vi.useFakeTimers()
+        const { unmount, isTargetActive, enqueue, pendingAddType } =
+          mountWriter('wf-1')
+        const opId = await parkThenReactivate(isTargetActive, enqueue)
+
+        bridge().follower.doc = new Y.Doc()
+        dispatchFrame('doc_update', {
+          workflowId: 'wf-1',
+          seq: 5,
+          catchUp: true
+        })
+        expect(recordDevEvent).not.toHaveBeenCalledWith(
+          'pending_ops',
+          expect.objectContaining({ type: 'reverted' })
+        )
+
+        // A later, ordinary catch-up (not itself a reactivation ack) whose
+        // doc still does not hold node 5.
+        dispatchFrame('doc_update', {
+          workflowId: 'wf-1',
+          seq: 6,
+          catchUp: true
+        })
+
+        expect(recordDevEvent).not.toHaveBeenCalledWith(
+          'pending_ops',
+          expect.objectContaining({ type: 'reverted', opIds: [opId] })
+        )
+        expect(pendingAddType()?.('5')).toBe('Test')
+        unmount()
+      })
+    })
+
     it('keeps a human delete pending for the reconcile until the doc no longer holds the node', async () => {
       const { unmount, enqueue } = mountWriter('wf-1')
       const intent = adapterState.intent!
@@ -1982,6 +2947,21 @@ describe('useAgentCrdtFollower', () => {
       expect(clientState.sendOps).toHaveBeenCalledTimes(1)
       expect(await settledStates()).toEqual(['acknowledged', 'undeliverable'])
       unmount()
+    })
+
+    it('C4: scope disposal settles every held batch instead of dropping it, the transmitted one parked unconfirmed', async () => {
+      const { unmount, enqueue } = mountWriter('wf-1')
+      // Transmitted, no result yet: settles `unconfirmed` (parked) on
+      // abortAll(), not silently dropped by a plain `sender.detach()`.
+      enqueue([deleteNode('1')])
+      await Promise.resolve()
+      // Admitted after the first, so it queues behind it (one in-flight
+      // batch at a time): settles `undeliverable` on abortAll().
+      enqueue([deleteNode('2')])
+
+      unmount()
+
+      expect(await settledStates()).toEqual(['unconfirmed', 'undeliverable'])
     })
   })
 

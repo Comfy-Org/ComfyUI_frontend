@@ -1,21 +1,35 @@
-import { mint, nodesMap } from '@comfyorg/comfy-multi-player'
-import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
+import { applyOps, mint, nodesMap } from '@comfyorg/comfy-multi-player'
+import type {
+  Op,
+  WidgetCatalog,
+  WorkflowJSON
+} from '@comfyorg/comfy-multi-player'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { assert } from '@/base/assert'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedGraph } from '@/lib/litegraph/src/types/serialisation'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { GraphScope } from '@/types/graphScopeId'
-import { graphScopeOf } from '@/types/graphScopeId'
+import {
+  graphScopeOf,
+  toOwningGraphId,
+  toRootGraphId
+} from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 
 import { AgentCrdtProjection } from './agentCrdtProjection'
 import { FollowerDoc } from './followerDoc'
+import type { GraphOperation } from './graphOperations'
 import { createGraphMutations } from './graphMutations'
 import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
+
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 
 class TestSource extends LGraphNode {
   static override title = 'Test Source'
@@ -279,5 +293,106 @@ describe('AgentCrdtProjection catch-up over a live graph', () => {
       [local.id],
       expect.anything()
     )
+  })
+})
+
+describe('ADR-CRDT-RECONCILE-0035 (c): AgentCrdtProjection forwards the id-collision predicate', () => {
+  const scope: GraphScope = {
+    rootGraphId: toRootGraphId('root'),
+    owningGraphId: toOwningGraphId('root')
+  }
+  const catalog: WidgetCatalog = {
+    types: { Source: { widget_order: [] }, Sink: { widget_order: [] } }
+  }
+
+  function op(id: string, baseVersion: number, payload: GraphOperation): Op {
+    return {
+      op_id: id,
+      actor: 'agent:test',
+      base_version: baseVersion,
+      stamp: [baseVersion, 'agent:test'],
+      ...payload
+    }
+  }
+
+  it('reports a genuine node id collision when constructed without an explicit pendingAddType', () => {
+    // Mutates the follower's own doc directly via the library's applier,
+    // rather than a separate host doc diffed and replayed through
+    // `applyRemoteUpdate`: this test is only about which `pendingAddType`
+    // reaches the adapter, not about wire delivery (already covered by
+    // ecsFollowerAdapter.integration.test.ts's harness).
+    const follower = new FollowerDoc()
+    onTestFinished(() => follower.destroy())
+    const mutations = createGraphMutations({
+      getScope: () => scope,
+      layout: { createNode: vi.fn(), deleteNodes: vi.fn() },
+      placement: inertPlacementPort
+    })
+    // No fourth argument: AgentCrdtProjection's own default (`() => undefined`)
+    // must reach the adapter for this collision to be reported at all.
+    const projection = new AgentCrdtProjection(
+      mutations,
+      () => null,
+      () => follower.doc
+    )
+    onTestFinished(() => projection.destroy())
+    projection.bind('wf', follower)
+
+    // An unrelated first frame flips the session's initial full-graph
+    // reconcile into the incremental per-change path the collision check
+    // below depends on.
+    applyOps(
+      follower.doc,
+      [
+        op('op-0', 1, {
+          op: 'add_node',
+          node_id: 99,
+          class_type: 'Sink',
+          pos: [0, 0],
+          node: { id: 99, type: 'Sink', inputs: [], outputs: [] }
+        })
+      ],
+      catalog
+    )
+    expect(
+      projection.applyFrame({
+        workflowId: 'wf',
+        seq: 1,
+        update: new Uint8Array()
+      })
+    ).toBe(true)
+
+    // A retained local-only node under id 1 that the document never saw.
+    mutations.addNode(
+      { id: 1, type: 'LocalOnlyType', pos: [0, 0], inputs: [], outputs: [] },
+      { source: 'agent-remote', actor: 'local-hydration', opId: 'local-seed' }
+    )
+
+    applyOps(
+      follower.doc,
+      [
+        op('op-1', 2, {
+          op: 'add_node',
+          node_id: 1,
+          class_type: 'Source',
+          pos: [5, 5],
+          node: { id: 1, type: 'Source', pos: [5, 5], inputs: [], outputs: [] }
+        })
+      ],
+      catalog
+    )
+
+    expect(
+      projection.applyFrame({
+        workflowId: 'wf',
+        seq: 2,
+        update: new Uint8Array()
+      })
+    ).toBe(true)
+
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'agent_crdt_node_id_collision',
+      context: { nodeId: '1', localType: 'LocalOnlyType', docType: 'Source' }
+    })
   })
 })

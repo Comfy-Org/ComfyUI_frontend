@@ -99,4 +99,36 @@ describe('ghost placement flag across a follower reconcile', () => {
       nodeStore.getNode(scope.rootGraphId, toNodeId(GHOST_NODE_ID))?.flags.ghost
     ).toBeUndefined()
   })
+
+  it('keeps flags.ghost on a node still being placed when its own accepted add echoes back', () => {
+    const graph = mutations()
+    const nodeStore = useNodeDataStore()
+
+    expect(graph.addNode(ghostPlacedNode(), context)).toBe(true)
+
+    // `LGraph.add` sets `flags.ghost` on the live node directly, outside
+    // this module, before `attachNodeToStores` mirrors it into the same
+    // reactive `NodeState` `addNode` above just registered. Reproduce that
+    // here rather than through `addNode`'s own payload, since `addNode`
+    // shares `prepareNode`'s `cloneNodeFlags` strip with every other path.
+    const live = nodeStore.getNode(scope.rootGraphId, toNodeId(GHOST_NODE_ID))
+    assert(live)
+    live.flags.ghost = true
+
+    // The mint strips `ghost` before the op reaches the document (see
+    // `layoutMintPort.ts`'s `withoutGhostFlag`), so the host's accepted-add
+    // echo reconciles from a snapshot that never carried the flag. The user
+    // has not clicked to place the node yet — `flags.ghost` on the live node
+    // is still the only record that placement is in progress, and a
+    // same-id, same-type reconcile must not read it as settled early.
+    expect(
+      graph.batch(context, (batch) => {
+        batch.reconcileNode({ ...ghostPlacedNode(), flags: {} })
+      })
+    ).toBe(true)
+
+    expect(
+      nodeStore.getNode(scope.rootGraphId, toNodeId(GHOST_NODE_ID))?.flags.ghost
+    ).toBe(true)
+  })
 })

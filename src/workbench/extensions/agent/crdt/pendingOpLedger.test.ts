@@ -111,6 +111,65 @@ describe('markInFlight', () => {
   })
 })
 
+describe('markDeliveryUnknown (ADR-CRDT-RECONCILE-0035)', () => {
+  it('parks an inflight entry, distinct from inflight itself', () => {
+    const ledger = createPendingOpLedger<string>()
+    flownBatch(ledger, ['op-1'])
+    expect(ledger.markDeliveryUnknown(['op-1'])).toEqual([])
+    expect(ledger.get('op-1')?.state).toBe('delivery_unknown')
+  })
+
+  it('is valid from inflight only, reporting every other id back', () => {
+    const ledger = createPendingOpLedger<string>()
+    ledger.enqueue('op-queued', 's')
+    flownBatch(ledger, ['op-1'])
+    ledger.reconcileOpsResult({
+      batch: ['op-1'],
+      applied: ['op-1'],
+      skipped: []
+    })
+    expect(
+      ledger.markDeliveryUnknown(['op-queued', 'op-1', 'op-ghost'])
+    ).toEqual(['op-queued', 'op-1', 'op-ghost'])
+    expect(ledger.get('op-queued')?.state).toBe('queued')
+    expect(ledger.get('op-1')?.state).toBe('applied')
+  })
+
+  it('entries(state) filters to exactly the parked ids', () => {
+    const ledger = createPendingOpLedger<string>()
+    flownBatch(ledger, ['op-1', 'op-2'])
+    ledger.markDeliveryUnknown(['op-1'])
+    expect(statesOf(ledger.entries('delivery_unknown'))).toEqual([
+      'delivery_unknown'
+    ])
+    expect(ledger.entries('delivery_unknown').map((e) => e.opId)).toEqual([
+      'op-1'
+    ])
+  })
+
+  it('retains unresolved entries for late effect and result reconciliation', () => {
+    const ledger = createPendingOpLedger<string>()
+    flownBatch(ledger, ['effect', 'result'])
+    ledger.markDeliveryUnknown(['effect', 'result'])
+
+    expect(ledger.markUnresolved(['effect', 'result'])).toEqual([])
+    expect(ledger.entries('unresolved').map((entry) => entry.opId)).toEqual([
+      'effect',
+      'result'
+    ])
+    expect(ledger.clearOnEffect(['effect']).map((entry) => entry.opId)).toEqual(
+      ['effect']
+    )
+    expect(
+      ledger.reconcileOpsResult({
+        batch: ['result'],
+        applied: ['result'],
+        skipped: []
+      }).applied
+    ).toEqual(['result'])
+  })
+})
+
 describe('reconcileOpsResult', () => {
   it('classifies applied prefix, failed op, and unprocessed suffix separately', () => {
     const ledger = createPendingOpLedger<string>()
@@ -169,6 +228,21 @@ describe('reconcileOpsResult', () => {
     expect(summary.applied).toEqual(['op-1'])
     expect(summary.unknown).toEqual(['op-foreign'])
     expect(ledger.size()).toBe(1)
+  })
+
+  it('reconciles a late result for a delivery_unknown (parked) entry normally', () => {
+    const ledger = createPendingOpLedger<string>()
+    flownBatch(ledger, ['op-1'])
+    ledger.markDeliveryUnknown(['op-1'])
+    expect(ledger.get('op-1')?.state).toBe('delivery_unknown')
+
+    const summary = ledger.reconcileOpsResult({
+      batch: ['op-1'],
+      applied: ['op-1'],
+      skipped: []
+    })
+    expect(summary.applied).toEqual(['op-1'])
+    expect(ledger.get('op-1')?.state).toBe('applied')
   })
 
   it('retains a diagnostic when rejection has no failure payload', () => {

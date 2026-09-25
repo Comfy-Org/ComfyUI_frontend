@@ -195,6 +195,12 @@ export interface GraphMutations {
     context: RemoteMutationContext
   ): boolean
   clearSemanticGraph(context: RemoteMutationContext): boolean
+  /**
+   * The type of a node id already registered in this scope's root graph, or
+   * undefined when no such node is registered. A query, not a mutation — it
+   * never queues anything and needs no `batch`.
+   */
+  getNodeType(nodeId: NodeId): string | undefined
 }
 
 export interface GraphMutationsDeps {
@@ -372,7 +378,7 @@ function prepareInputSlot(
   return slot
 }
 
-function prepareInputSlots(
+export function prepareInputSlots(
   value: unknown,
   existing?: readonly (NodeState['inputs'][number] | undefined)[]
 ): NodeState['inputs'] {
@@ -384,7 +390,7 @@ function prepareInputSlots(
   })
 }
 
-function prepareOutputSlots(value: unknown): NodeState['outputs'] {
+export function prepareOutputSlots(value: unknown): NodeState['outputs'] {
   if (!Array.isArray(value)) return []
   return value.flatMap((raw) => {
     if (
@@ -764,6 +770,10 @@ function prepareNode(
   const [width, height] = readPair(payload.size, [270, 100])
   const mode = Number(payload.mode)
   const flags = cloneNodeFlags(payload.flags)
+  // The doc never carries `ghost` (see `cloneNodeFlags`), so an echo of the
+  // page's own accepted add for a node still in ghost placement must not
+  // clear it early: the placement click is the only thing that may.
+  if (incumbent?.flags.ghost) flags.ghost = true
   const state: NodeState = {
     id,
     graphId: scope.owningGraphId,
@@ -2369,6 +2379,13 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
       return graphMutations.batch(context, (batch) =>
         batch.clearSemanticGraph()
       )
+    },
+    getNodeType(nodeId) {
+      const scope = deps.getScope()
+      if (!scope) return undefined
+      const node = nodeStore.getNode(scope.rootGraphId, nodeId)
+      if (!node || node.graphId !== scope.owningGraphId) return undefined
+      return node.type
     }
   }
 
