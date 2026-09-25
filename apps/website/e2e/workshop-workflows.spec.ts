@@ -361,3 +361,62 @@ test('keeps Run on screen beside a workflow form taller than the window', async 
 
   await expect(run).toBeInViewport({ ratio: 1 })
 })
+
+const stickyFooterViewports = [
+  { width: 1280, height: 500 },
+  { width: 768, height: 500 },
+  { width: 390, height: 500 },
+  { width: 390, height: 844 }
+]
+
+for (const viewport of stickyFooterViewports) {
+  test(`keeps each keyboard-focused field clear of the Run footer at ${viewport.width}×${viewport.height}`, async ({
+    page,
+    context
+  }) => {
+    await mockWorkflowVisibility(context, true)
+    await page.setViewportSize(viewport)
+    await page.goto('/models/workflows/extend-image-borders/')
+    const footer = page.getByTestId('workflow-run-footer')
+    await expect(footer).toBeVisible()
+    await page
+      .getByRole('textbox', { name: 'Describe the surrounding scene' })
+      .focus()
+
+    const focusedFieldsClearOfFooter = () =>
+      page.evaluate(() => {
+        const focused = document.activeElement
+        const bar = document.querySelector(
+          '[data-testid="workflow-run-footer"]'
+        )
+        if (!(focused instanceof HTMLElement) || !bar || bar.contains(focused))
+          return true
+        return (
+          focused.getBoundingClientRect().bottom <=
+          bar.getBoundingClientRect().top + 1
+        )
+      })
+
+    for (const key of ['Tab', 'Tab', 'Tab', 'Tab', 'Shift+Tab', 'Shift+Tab']) {
+      await page.keyboard.press(key)
+      await expect.poll(focusedFieldsClearOfFooter).toBe(true)
+    }
+  })
+}
+
+test('keeps the workflow form inside a phone screen @mobile', async ({
+  page,
+  context
+}) => {
+  await mockWorkflowVisibility(context, true)
+  await page.goto('/models/workflows/extend-image-borders/')
+  const footer = page.getByTestId('workflow-run-footer')
+  await expect(footer).toBeVisible()
+
+  const viewportWidth = page.viewportSize()?.width ?? 0
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth)
+  ).toBeLessThanOrEqual(viewportWidth)
+  const box = await footer.boundingBox()
+  expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(viewportWidth)
+})
