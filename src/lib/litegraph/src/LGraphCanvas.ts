@@ -14,18 +14,13 @@ import {
   getSlotLayoutAtPoint,
   getSlotPosition
 } from '@/renderer/core/canvas/litegraph/slotCalculations'
-import {
-  clearRevealedLinks,
-  clearRootLinkReveals,
-  isLinkRevealed,
-  setRevealedLinks
-} from './canvas/linkRevealState'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import {
   applyCanvasSelection,
   clearGraphSelection,
+  isCanvasItemSelected,
   ownsSelectable,
   releaseCanvasSelection,
   resolveSelectable,
@@ -41,6 +36,13 @@ import { toRerouteId } from '@/types/rerouteId'
 import { forEachNode } from '@/utils/graphTraversalUtil'
 
 import { CanvasPointer } from './CanvasPointer'
+import {
+  clearRevealedLinks,
+  clearRootLinkReveals,
+  isLinkRevealed,
+  setRevealedLinks
+} from './canvas/linkRevealState'
+import { SelectedItemsView } from './canvas/SelectedItemsView'
 import type { ContextMenu } from './ContextMenu'
 import { createCursorCache } from './cursorCache'
 import { DragAndScale } from './DragAndScale'
@@ -289,6 +291,7 @@ interface ClipboardPasteResult {
 
 /** Legacy selection views derived from the selection store. */
 interface SelectionView {
+  items: SelectedItemsView
   selectedNodes: Dictionary<LGraphNode>
   highlightedLinks: Dictionary<boolean>
 }
@@ -739,8 +742,19 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.selectItems(Object.values(nodes))
   }
 
-  /** All selected nodes, groups, and reroutes */
-  selectedItems: Set<Positionable> = new Set()
+  /**
+   * All selected nodes, groups, and reroutes. A snapshot derived from the
+   * selection store; `add`, `delete` and `clear` dispatch selection commands.
+   */
+  get selectedItems(): Set<Positionable> {
+    return this.selectionView.items
+  }
+
+  /** @deprecated Replaces the selection with the given items. Use {@link selectItems}. */
+  set selectedItems(items: Iterable<Positionable>) {
+    this.selectItems([...items].filter((item) => ownsSelectable(this, item)))
+  }
+
   /** The group currently being resized. */
   resizingGroup: LGraphGroup | null = null
   /** @deprecated See {@link LGraphCanvas.selectedItems} */
@@ -769,7 +783,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
   private get selectionView(): SelectionView {
     const { graph } = this
-    if (!graph) return { selectedNodes: {}, highlightedLinks: {} }
+    if (!graph) {
+      return {
+        items: new SelectedItemsView([], null),
+        selectedNodes: {},
+        highlightedLinks: {}
+      }
+    }
 
     const selectionStore = useSelectionStore()
     const selectionRevision = selectionStore.getRevision()
@@ -784,12 +804,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     const keys = selectionStore.selectedKeys(graphScopeOf(graph))
-    const nodes = keys.flatMap((key) => {
-      const item = resolveSelectable(graph, key)
-      return item instanceof LGraphNode ? [item] : []
-    })
+    const items = keys.flatMap((key) => resolveSelectable(graph, key) ?? [])
+    const nodes = items.filter((item) => item instanceof LGraphNode)
     const linkIds = nodes.flatMap((node) => nodeLinkIds(graph, node))
     const view: SelectionView = {
+      items: new SelectedItemsView(items, graph),
       selectedNodes: Object.fromEntries(nodes.map((node) => [node.id, node])),
       highlightedLinks: Object.fromEntries(linkIds.map((id) => [id, true]))
     }
@@ -1961,11 +1980,22 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     releaseCanvasSelection(this)
     newGraph.attachCanvas(this)
+    this.selectionViewCache = {
+      graph: newGraph,
+      graphVersion: newGraph._version,
+      selectionRevision: useSelectionStore().getRevision(),
+      view: {
+        items: new SelectedItemsView([], newGraph),
+        selectedNodes: {},
+        highlightedLinks: {}
+      }
+    }
 
     // Re-initialize link renderer with new graph
     this.linkRenderer = new LitegraphLinkAdapter(false)
 
     this.dispatch('litegraph:set-graph', { newGraph, oldGraph: graph })
+    this.selectionViewCache = undefined
     clearGraphSelection(graph)
     this.resetTransientState()
   }
@@ -4566,7 +4596,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       }
     }
     for (const item of desired) {
-      if (!this.selectedItems.has(item)) {
+      if (!isCanvasItemSelected(this, item)) {
         this.select(item)
         changed = true
       }
@@ -4644,10 +4674,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     if (!item) {
       if (!eitherModifier || this.multi_select) this.deselectAll()
-    } else if (!item.selected || !this.selectedItems.has(item)) {
+    } else if (!item.selected || !isCanvasItemSelected(this, item)) {
       if (!modifySelection) this.deselectAll(item)
       this.select(item)
     } else if (modifySelection && !sticky) {
+      if (!ownsSelectable(this, item)) return
       // Modifier-click toggles only the clicked item, not its children.
       // Cascade on select is a convenience; cascade on deselect would
       // remove the user's ability to keep children selected (e.g. for
@@ -4678,7 +4709,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   ): void {
     if (!ownsSelectable(this, item)) return
     if (this.selectOnly && !(item instanceof LGraphNode)) return
-    if (item.selected && this.selectedItems.has(item)) return
+    if (item.selected && isCanvasItemSelected(this, item)) return
 
     setCanvasItemSelected(this, item, true)
 
@@ -4688,7 +4719,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         this.traverseGroupChildren(
           item,
           (child) => {
-            if (!child.selected || !this.selectedItems.has(child)) {
+            if (!child.selected || !isCanvasItemSelected(this, child)) {
               setCanvasItemSelected(this, child, true)
             }
           },
@@ -4716,7 +4747,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       !(item instanceof LGraphNode && this.graph?.nodes.includes(item))
     )
       return
-    if (!item.selected && !this.selectedItems.has(item)) return
+    if (!item.selected && !isCanvasItemSelected(this, item)) return
 
     setCanvasItemSelected(this, item, false)
 
@@ -4724,7 +4755,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       this.traverseGroupChildren(
         item,
         (child) => {
-          if (child.selected || this.selectedItems.has(child)) {
+          if (child.selected || isCanvasItemSelected(this, child)) {
             setCanvasItemSelected(this, child, false)
           }
         },
@@ -4832,7 +4863,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const selected = this.selectedItems
     if (!selected.size) return
 
-    const initialSelectionSize = selected.size
     const kept =
       keepSelected &&
       ownsSelectable(this, keepSelected) &&
@@ -4850,16 +4880,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         : { type: 'selection.clear' }
     )
     for (const item of deselected) item.selected = false
-    selected.clear()
-    if (kept) selected.add(kept)
 
     this.setDirty(true)
     this.current_node = null
 
-    // Only set selectionChanged if selection actually changed
-    const finalSelectionSize = selected.size
+    const resultingSelectionSize = this.selectedItems.size
     for (const item of deselected) item.onDeselected?.()
-    if (initialSelectionSize !== finalSelectionSize) {
+    if (selected.size !== resultingSelectionSize) {
       this.state.selectionChanged = true
       this.onSelectionChange?.(this.selected_nodes)
     }
@@ -4897,7 +4924,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       }
     }
 
-    this.selectedItems.clear()
     applyCanvasSelection(this, { type: 'selection.clear' })
     this.current_node = null
 
@@ -5223,7 +5249,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       this.ds.toCanvasContext(ctx)
 
       // draw nodes
-      const { visible_nodes } = this
+      const { visible_nodes, selectedItems } = this
       const drawSnapGuides =
         this._snapToGrid &&
         (this.isDragging || layoutStore.isDraggingVueNodes.value)
@@ -5232,7 +5258,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         ctx.save()
 
         // Draw snap shadow
-        if (drawSnapGuides && this.selectedItems.has(node))
+        if (drawSnapGuides && selectedItems.has(node))
           this.drawSnapGuide(ctx, node)
 
         // Localise co-ordinates to node position
@@ -6265,14 +6291,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     // Render reroutes, ordered by number of non-floating links
     visibleReroutes.sort((a, b) => a.linkIds.size - b.linkIds.size)
+    const drawSnapGuides = this._snapToGrid && this.isDragging
+    const { selectedItems } = this
     for (const reroute of visibleReroutes) {
       rerouteSet.add(reroute)
 
-      if (
-        this._snapToGrid &&
-        this.isDragging &&
-        this.selectedItems.has(reroute)
-      ) {
+      if (drawSnapGuides && selectedItems.has(reroute)) {
         this.drawSnapGuide(ctx, reroute, RenderShape.CIRCLE, {
           offsetToSlot: true
         })
@@ -6699,6 +6723,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const drawSnapGuides =
       this._snapToGrid &&
       (this.isDragging || layoutStore.isDraggingVueNodes.value)
+    const { selectedItems } = this
 
     for (const group of groups) {
       // out of the visible area
@@ -6707,7 +6732,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       }
 
       // Draw snap shadow
-      if (drawSnapGuides && this.selectedItems.has(group))
+      if (drawSnapGuides && selectedItems.has(group))
         this.drawSnapGuide(ctx, group)
 
       group.draw(this, ctx)

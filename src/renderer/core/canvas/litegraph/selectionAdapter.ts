@@ -67,8 +67,6 @@ export function setCanvasItemSelected(
   const key = selectableKeyOf(item)
   if (!key) return
   item.selected = selected
-  if (selected) canvas.selectedItems.add(item)
-  else canvas.selectedItems.delete(item)
   canvas.state.selectionChanged = true
   applyCanvasSelection(canvas, {
     type: selected ? 'selection.add' : 'selection.remove',
@@ -86,11 +84,30 @@ export function applyCanvasSelection(
 export function releaseCanvasSelection(canvas: LGraphCanvas): void {
   for (const item of canvas.selectedItems) item.selected = undefined
   canvas.selected_group = null
-  canvas.selectedItems.clear()
 }
 
 export function clearGraphSelection(graph: LGraphCanvas['graph']): void {
   applyGraphSelection(graph, { type: 'selection.clear' })
+}
+
+export function updateGraphSelection(
+  graph: LGraph,
+  item: Positionable,
+  selected: boolean
+): boolean {
+  const key = selectableKeyOf(item)
+  if (!key || resolveSelectable(graph, key) !== item) return false
+
+  const store = useSelectionStore()
+  const scope = graphScopeOf(graph)
+  const wasSelected = store.isSelected(scope, key)
+  if (wasSelected !== selected) {
+    store.apply(scope, {
+      type: selected ? 'selection.add' : 'selection.remove',
+      key
+    })
+  }
+  return wasSelected
 }
 
 function applyGraphSelection(
@@ -99,6 +116,17 @@ function applyGraphSelection(
 ): void {
   if (!graph) return
   useSelectionStore().apply(graphScopeOf(graph), command)
+}
+
+export function isCanvasItemSelected(
+  canvas: LGraphCanvas,
+  item: Positionable
+): boolean {
+  const { graph } = canvas
+  const key = selectableKeyOf(item)
+  return (
+    !!graph && !!key && useSelectionStore().isSelected(graphScopeOf(graph), key)
+  )
 }
 
 export function ownsSelectable(
