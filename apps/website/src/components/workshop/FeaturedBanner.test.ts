@@ -287,4 +287,26 @@ describe('FeaturedBanner', () => {
     await advanceAutoplay()
     expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('Kling')
   })
+
+  // The compact banner gives up height where outcome rows follow it. What it
+  // must not give up is anything the reader came for.
+  it.for([false, true])(
+    'carries the same slide whether or not it is compact (%s)',
+    (compact) => {
+      render(FeaturedBanner, {
+        props: { slides: modelSlides([base, kling], 'en'), compact }
+      })
+      expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('Flux')
+      expect(screen.getByText('Text to Image')).toBeTruthy()
+      expect(
+        screen.getByText(
+          'Photorealistic images with professional text rendering.'
+        )
+      ).toBeTruthy()
+      expect(
+        screen.getByTestId('featured-slide-link').getAttribute('href')
+      ).toBe('/models/flux/')
+      expect(screen.getByRole('link', { name: /Try/i })).toBeTruthy()
+    }
+  )
 })
