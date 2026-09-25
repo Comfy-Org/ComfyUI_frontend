@@ -12,12 +12,12 @@ import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import {
   agentTest as test,
   bootAgentApp,
+  loadIntoBootWorkflow,
   mockAgentTurnApi,
   mockWorkflowPersistence
 } from '@e2e/fixtures/agentPanelFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
-import type { WorkspaceStore } from '@e2e/types/globals'
 
 /**
  * The backend mints a workflow's CRDT doc lazily on the first agent turn that
@@ -165,21 +165,7 @@ test.describe(
         }
       })
 
-      // Load into the boot tab (4th arg) rather than minting a second
-      // "Unsaved Workflow (2)" tab, which selectWorkflow() below would not
-      // pick. Boot's own default-workflow load is not awaited by bootAgentApp,
-      // so wait for the active workflow before reading it.
-      await page.waitForFunction(() => {
-        const workspace = window.app?.extensionManager as
-          | WorkspaceStore
-          | undefined
-        return workspace?.workflow.activeWorkflow != null
-      })
-      await page.evaluate(async (json) => {
-        const activeWorkflow = (window.app!.extensionManager as WorkspaceStore)
-          .workflow.activeWorkflow!
-        await window.app!.loadGraphData(json, true, true, activeWorkflow)
-      }, TEMPLATE_GRAPH)
+      await loadIntoBootWorkflow(page, TEMPLATE_GRAPH)
       await expect(
         vueNodes.getNodeLocator(String(TEMPLATE_NODE_A_ID))
       ).toBeVisible()

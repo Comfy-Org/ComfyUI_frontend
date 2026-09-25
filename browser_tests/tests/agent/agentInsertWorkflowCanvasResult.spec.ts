@@ -5,8 +5,10 @@ import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
 import subgraphAsset from '@e2e/assets/subgraphs/agent-subgraph-with-two-promoted-widgets.json' with { type: 'json' }
 import {
+  BLANK_WORKFLOW,
   agentTest,
   bootAgentApp,
+  loadIntoBootWorkflow,
   mockAgentTurnApi,
   mockWorkflowPersistence
 } from '@e2e/fixtures/agentPanelFixture'
@@ -202,6 +204,7 @@ test.describe(
           await mockWorkflowPersistence(page, WORKFLOW_ID)
         }
       })
+      await loadIntoBootWorkflow(page, BLANK_WORKFLOW)
       const socket = await getWebSocket()
       const outboundFrames: string[] = []
       socket.onMessage((message) => outboundFrames.push(String(message)))

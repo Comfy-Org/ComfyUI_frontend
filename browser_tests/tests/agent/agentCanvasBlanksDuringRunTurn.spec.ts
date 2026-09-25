@@ -25,59 +25,35 @@ import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 /**
- * Repro for the Jo Zhang / PM-1406-shaped report (nightly, 2026-09-20): asking
- * the in-app agent to run the workflow on the canvas makes the canvas go
- * fully blank the moment the agent starts working, for the whole run, with
- * every node reappearing at once once the run finishes.
+ * Regression coverage for the Jo Zhang / PM-1406-shaped report (nightly,
+ * 2026-09-20): asking the in-app agent to run the workflow on the canvas made
+ * the canvas go fully blank the moment the agent started working, for the
+ * whole run, with every node reappearing at once once the run finished.
  *
- * Two mechanisms combine to produce exactly that timeline, both real and
- * independently confirmed by reading `useAgentCrdtFollower.ts` and
- * `agentCrdtDocLifecycle.ts` on current `main`:
+ * Two mechanisms combined to produce exactly that timeline:
  *
- * 1. A `doc_reset` (or `follower_replaced`) frame makes
- *    `LayoutFollowerBridge`/`AgentCrdtProjection.clearForReset` sweep every
- *    live materialized node off the canvas SYNCHRONOUSLY, before any
- *    replacement content exists (`agentCrdtProjection.ts`). This is the only
- *    path that actively removes already-rendered nodes -- this repro injects
- *    it explicitly because the exact backend condition that would emit one
- *    for a plain, edit-free "run the workflow" turn was NOT found: the `run`
- *    / `wait_for_job` / `get_output` tool implementations
- *    (`cloud/services/agent/internal/loop/tools.go`) make no calls into the
- *    CRDT doc store at all, and the turn-start reconciliation that CAN emit a
- *    reset (`ensureDoc`/`prepareWorkflow` in
- *    `cloud/services/agent/internal/loop/crdt.go`) is heavily unit-tested
- *    against firing on an unmodified canvas. Which backend path actually
- *    emitted the reset in production remains unconfirmed; this repro pins
- *    what the user sees once one is emitted, for whatever reason.
+ * 1. A `doc_reset` (or `follower_replaced`) frame used to sweep every live
+ *    node off the canvas synchronously, before any replacement content
+ *    existed. Which backend path emits a reset for a plain, edit-free "run
+ *    the workflow" turn was never confirmed; this suite injects one
+ *    explicitly. A reset now only arms the next frame to replace the graph
+ *    (`AgentCrdtProjection.replaceOnNextFrame`), so the nodes the user is
+ *    looking at stay put until the new lineage's first frame lands.
  * 2. The resubscribe that follows a reset can be acknowledged
  *    (`doc_subscribed: {ok: true}`) WITHOUT its catch-up `doc_update` frame.
- *    The bug report's own attached debug log shows this exact anomaly for
- *    real, on a different (later, smaller) workflow in the same session: a
- *    `doc_subscribed:ok` with no accompanying `doc_update`, followed 30
- *    seconds later -- exactly `STALE_AFTER_MS`
- *    (`agentCrdtDocLifecycle.ts`) -- by the passive stale-probe's forced
- *    resubscribe, which is the one that actually delivers content and
- *    materializes the nodes. There is no faster, active recovery: a
- *    server-confirmed subscribe with no update arms only the 30-second
- *    heartbeat (see `useAgentCrdtFollower.test.ts`'s "a confirmed subscribe
- *    clears the retry timer", which pins exactly this passive window as
- *    intended behavior).
+ *    The bug report's own debug log shows this anomaly for real. Recovery
+ *    used to wait for the passive 30-second stale probe (`STALE_AFTER_MS`);
+ *    a confirmed subscribe without content now also arms the active
+ *    `SUBSCRIBE_CATCHUP_GRACE_MS` probe.
  *
- * Together: whatever triggers the reset, the canvas can sit fully blank for
- * up to 30 real seconds afterward with zero active recovery -- comfortably
- * spanning one generation run (the bug report's own run + wait_for_job took
- * 15386ms) -- which is sufficient on its own to produce the reported
- * timeline: blank the instant the agent starts working, blank for the whole
- * run, all nodes back at once, unrelated to whether the run itself finished.
- *
- * Three tests share the drive-to-doc-reset arrange step below: the first
- * pins the known defect (`test.fail()`, still blank the instant the run
- * reports done under a PERMANENTLY dropped catch-up), the second pins that
- * the passive stale-probe genuinely recovers once given the chance -- the
- * "all nodes came back" half of the report is real, intended behavior, not
- * part of the bug -- and the third proves the PM-1406 fix itself: a
- * TRANSIENT (one-off) dropped catch-up now recovers via the active probe
- * well inside the run's own duration, not just eventually.
+ * Three tests share the drive-to-doc-reset arrange step below. The host
+ * doc gains a third node right after the reset, so a canvas that shows it
+ * proves the new lineage's catch-up was applied rather than the old nodes
+ * merely surviving. The first test holds a PERMANENTLY dropped catch-up
+ * through a whole run and checks the two nodes never leave the canvas; the
+ * second lets the passive stale probe deliver the new lineage; the third
+ * proves the PM-1406 fix: a TRANSIENT (one-off) dropped catch-up recovers via
+ * the active probe well inside the run's own duration.
  */
 
 const WORKFLOW_ID = 'b7e2f1a4-9c3d-4e5f-8a6b-1d2c3e4f5a6b'
@@ -88,6 +64,7 @@ const SOCKET_SID = '9f8e7d6c-5b4a-4c3d-8e1f-2a3b4c5d6e7f'
 const CATALOG: WidgetCatalog = {
   types: { MarkdownNote: { widget_order: ['text'] } }
 }
+const RESET_LINEAGE_NODE_ID = 3
 const SEED: WorkflowJSON = {
   nodes: [
     {
@@ -166,19 +143,21 @@ function parseDocSubscribeFields(
 
 /**
  * Drives a plain "run the workflow" turn up through a mid-turn `doc_reset`
- * whose first post-reset resubscribe has its catch-up withheld, per
- * `dropCatchUpAfterReset`, and asserts the canvas goes blank the moment the
- * reset lands. Shared by both the permanent-drop repro
- * (`driveRunTurnUntilCanvasIsBlank`) and the transient one-off-drop recovery
- * proof (`driveRunTurnThroughTransientCatchUpDrop`) below -- they differ only
- * in how many of the resubscribes that follow the reset get their catch-up
+ * whose post-reset resubscribes have their catch-up withheld per
+ * `dropCatchUpAfterReset`, and asserts the canvas keeps its two nodes the
+ * moment the reset lands. The host doc gains `RESET_LINEAGE_NODE_ID` right
+ * after the reset, so only a delivered catch-up can put a third node on the
+ * canvas. Shared by the permanent-drop run (`driveRunTurnThroughRun`) and
+ * the transient one-off-drop recovery proof
+ * (`driveRunTurnThroughTransientCatchUpDrop`) below -- they differ only in
+ * how many of the resubscribes that follow the reset get their catch-up
  * withheld.
  *
  * `dropCatchUpAfterReset` is asked, for each `doc_subscribe` the mock
  * receives AFTER the reset, whether that resubscribe (1-indexed, in receipt
- * order) should have its catch-up withheld. The resubscribe(s) sent before
- * the reset (the initial workflow-picker subscribe) always get their
- * catch-up -- matching the baseline "two nodes visible" assertion below.
+ * order) should have its catch-up withheld. The subscribe sent before the
+ * reset (the initial workflow-picker subscribe) always gets its catch-up --
+ * matching the baseline "two nodes visible" assertion below.
  */
 async function driveThroughDocReset(
   page: Page,
@@ -365,12 +344,10 @@ async function driveThroughDocReset(
   })
 
   // "The moment the agent started working": a lineage break for the active
-  // document right as the run-only turn gets going. This is the one frame
-  // able to actively sweep already-rendered nodes off the canvas
-  // (`AgentCrdtProjection.clearForReset` / `useAgentCrdtFollower`'s
-  // `onDocReset`); which backend path emits it for an edit-free run turn is
-  // the open half of this RCA (see the file-level comment). From here on the
-  // resubscribe's catch-up is governed by `dropCatchUpAfterReset`.
+  // document right as the run-only turn gets going. This used to be the one
+  // frame able to sweep already-rendered nodes off the canvas; now it only
+  // arms the next frame to replace the graph. From here on the resubscribe's
+  // catch-up is governed by `dropCatchUpAfterReset`.
   resetSent = true
   send({
     type: 'doc_reset',
@@ -381,9 +358,30 @@ async function driveThroughDocReset(
       actor: 'system:mint'
     }
   })
+  host.apply([
+    {
+      op: 'add_node',
+      pos: [600, 0],
+      node: {
+        id: RESET_LINEAGE_NODE_ID,
+        pos: [600, 0],
+        mode: 0,
+        size: [200, 100],
+        type: 'MarkdownNote',
+        flags: {},
+        order: 2,
+        inputs: [],
+        outputs: [],
+        properties: {},
+        widgets_values: ['added after the reset']
+      },
+      node_id: RESET_LINEAGE_NODE_ID,
+      class_type: 'MarkdownNote'
+    }
+  ])
 
-  await expect(vueNodes.getNodeLocator('1')).toHaveCount(0)
-  await expect(vueNodes.getNodeLocator('2')).toHaveCount(0)
+  await expect(vueNodes.getNodeLocator('1')).toBeVisible()
+  await expect(vueNodes.getNodeLocator('2')).toBeVisible()
 
   return { vueNodes, send }
 }
@@ -392,13 +390,12 @@ async function driveThroughDocReset(
  * Drives a plain "run the workflow" turn through a mid-turn `doc_reset` whose
  * resubscribe's catch-up is silently dropped (the bug report's own debug-log
  * anomaly) FOR EVERY resubscribe that follows, up through the agent
- * reporting the turn done -- the point where the canvas has nothing to show
- * and only the passive 30s stale-probe can force a real resubscribe.
- * Installs and advances `page.clock` by the run's own duration (15386ms,
- * from the bug report's tool-call trace) so both callers can pick up the
- * clock exactly where the run left it.
+ * reporting the turn done -- the point where only the passive 30s stale-probe
+ * can force a real resubscribe. Installs and advances `page.clock` by the
+ * run's own duration (15386ms, from the bug report's tool-call trace) so both
+ * callers can pick up the clock exactly where the run left it.
  */
-async function driveRunTurnUntilCanvasIsBlank(page: Page): Promise<{
+async function driveRunTurnThroughRun(page: Page): Promise<{
   vueNodes: VueNodeHelpers
   setDropCatchUp: (value: boolean) => void
 }> {
@@ -422,9 +419,8 @@ async function driveRunTurnUntilCanvasIsBlank(page: Page): Promise<{
   })
 
   // The run itself is healthy throughout -- wait_for_job takes the 15386ms
-  // the bug report's own tool-call trace recorded -- but the canvas has
-  // nothing to show: the resubscribe's ack carried no content, and only the
-  // passive 30s heartbeat can force a real one.
+  // the bug report's own tool-call trace recorded -- while the resubscribe's
+  // ack carried no content.
   await page.clock.install()
   await page.clock.fastForward(15_386)
   send({
@@ -458,10 +454,6 @@ async function driveRunTurnUntilCanvasIsBlank(page: Page): Promise<{
     data: { thread_id: THREAD_ID, message_id: MESSAGE_ID, usage: null }
   })
 
-  // The known defect, held right at run completion: the agent reports the
-  // run finished, but the canvas the user is looking at still has zero
-  // nodes, because nothing beyond the run's own duration has forced a
-  // working resubscribe yet.
   const panel = page.locator('#agent-panel-root')
   await expect(panel.getByRole('button', { name: /^Worked/ })).toBeVisible()
 
@@ -496,36 +488,36 @@ async function driveRunTurnThroughTransientCatchUpDrop(page: Page): Promise<{
 }
 
 test.describe(
-  'Agent canvas blanks for the length of a run after a mid-turn doc reset',
+  'Agent canvas survives a mid-turn doc reset for the length of a run',
   { tag: ['@cloud', '@agent'] },
   () => {
     test.describe.configure({ timeout: 60_000 })
 
-    test('the two-node canvas is still blank the instant the run reports done', async ({
+    test('keeps the two-node canvas through a run whose post-reset catch-up never arrives', async ({
       page
     }) => {
-      const { vueNodes } = await driveRunTurnUntilCanvasIsBlank(page)
+      const { vueNodes } = await driveRunTurnThroughRun(page)
 
-      // The known defect: the agent says the run finished, but the
-      // resubscribe's ack carried no content, so the canvas the user is
-      // looking at still has zero nodes.
-      test.fail()
       await expect(vueNodes.getNodeLocator('1')).toBeVisible()
       await expect(vueNodes.getNodeLocator('2')).toBeVisible()
+      await expect(
+        vueNodes.getNodeLocator(String(RESET_LINEAGE_NODE_ID))
+      ).toHaveCount(0)
     })
 
     test('recovers once the passive stale-probe forces a real resubscribe', async ({
       page
     }) => {
-      const { vueNodes, setDropCatchUp } =
-        await driveRunTurnUntilCanvasIsBlank(page)
+      const { vueNodes, setDropCatchUp } = await driveRunTurnThroughRun(page)
 
       // Fast-forwarding the remaining budget up to STALE_AFTER_MS lets the
       // passive stale-probe fire its own resubscribe, this time with
-      // catch-up content restored, and the nodes return -- the "all nodes
-      // came back to the canvas" half of the report.
+      // catch-up content restored: the new lineage replaces the graph.
       setDropCatchUp(false)
       await page.clock.fastForward(STALE_AFTER_MS - 15_386 + 1_000)
+      await expect(
+        vueNodes.getNodeLocator(String(RESET_LINEAGE_NODE_ID))
+      ).toBeVisible()
       await expect(vueNodes.getNodeLocator('1')).toBeVisible()
       await expect(vueNodes.getNodeLocator('2')).toBeVisible()
     })
@@ -542,10 +534,13 @@ test.describe(
       // (30s) budget, and this transient anomaly's very next resubscribe is
       // the one the mock actually delivers content for. Pre-fix,
       // `onSubscribeConfirmed` armed only the full 30s heartbeat, so this
-      // same one-off drop would still be blank at this point and would stay
-      // blank for another ~28s -- well past the run's own 15,386ms duration.
+      // same one-off drop would still show the old lineage at this point for
+      // another ~28s -- well past the run's own 15,386ms duration.
       await page.clock.fastForward(SUBSCRIBE_CATCHUP_GRACE_MS + 1_000)
 
+      await expect(
+        vueNodes.getNodeLocator(String(RESET_LINEAGE_NODE_ID))
+      ).toBeVisible()
       await expect(vueNodes.getNodeLocator('1')).toBeVisible()
       await expect(vueNodes.getNodeLocator('2')).toBeVisible()
     })

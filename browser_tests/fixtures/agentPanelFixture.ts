@@ -11,6 +11,7 @@ import type {
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { AgentTurnAccepted } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
@@ -18,6 +19,7 @@ import { cloudAppFixture, waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import type { WorkspaceStore } from '@e2e/types/globals'
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 
@@ -203,4 +205,35 @@ export async function bootAgentApp(
   await bootCloud(page)
   await page.goto(APP_URL)
   await waitForCloudApp(page)
+}
+
+/**
+ * Replaces the boot tab's graph in place, so `AgentPanel.selectWorkflow()`
+ * still finds it as "Unsaved Workflow". Boot's own default-workflow load is
+ * not awaited by {@link bootAgentApp}, so the active workflow is awaited
+ * first. The follower merges a subscribe's catch-up into whatever the canvas
+ * already shows; a fake host doc must therefore start from the same graph
+ * the canvas holds.
+ */
+export async function loadIntoBootWorkflow(
+  page: Page,
+  json: ComfyWorkflowJSON
+): Promise<void> {
+  await page.waitForFunction(() => {
+    const workspace = window.app?.extensionManager as WorkspaceStore | undefined
+    return workspace?.workflow.activeWorkflow != null
+  })
+  await page.evaluate(async (json) => {
+    const activeWorkflow = (window.app!.extensionManager as WorkspaceStore)
+      .workflow.activeWorkflow!
+    await window.app!.loadGraphData(json, true, true, activeWorkflow)
+  }, json)
+}
+
+export const BLANK_WORKFLOW: ComfyWorkflowJSON = {
+  last_node_id: 0,
+  last_link_id: 0,
+  nodes: [],
+  links: [],
+  version: 0.4
 }
