@@ -7,6 +7,7 @@ import {
   test,
   vi
 } from 'vitest'
+import type { z } from 'zod'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import {
   addAutogrow,
@@ -16,7 +17,12 @@ import { liveAutogrowGroupOf } from '@/core/graph/widgets/dynamicWidgets'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { realignGroupWidgetChildLinks } from '@/lib/litegraph/src/linkDeduplication'
 import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
-import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
+import type {
+  ComfyInputsSpec,
+  ComfyNodeDef as ComfyNodeDefV1,
+  zAutogrowOptions,
+  zDynamicComboInputSpec
+} from '@/schemas/nodeDefSchema'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useLinkStore } from '@/stores/linkStore'
 import { toLinkId } from '@/types/linkId'
@@ -668,41 +674,134 @@ class SourceNode extends LGraphNode {
   }
 }
 
+type ChildInputs = NonNullable<ComfyInputsSpec['required']>
+
+type DynamicComboInputSpec = z.infer<typeof zDynamicComboInputSpec>
+
+type AutogrowInputSpec = [
+  type: 'COMFY_AUTOGROW_V3',
+  options: z.infer<typeof zAutogrowOptions>
+]
+
+type ComboOption = [key: string, childInputs: ChildInputs]
+
+function dynamicCombo(
+  defaultOption: ComboOption,
+  ...remainingOptions: ComboOption[]
+): DynamicComboInputSpec {
+  const options = [defaultOption, ...remainingOptions]
+  const declaredKeys = options.map(([key]) => key)
+  const realizedKeys = Object.keys(
+    Object.fromEntries(declaredKeys.map((key) => [key, null]))
+  )
+  if (realizedKeys.length !== declaredKeys.length)
+    throw new Error(
+      `Duplicate option keys: ${declaredKeys.filter((key, index) => declaredKeys.indexOf(key) !== index).join(', ')}`
+    )
+  if (realizedKeys.some((key, index) => key !== declaredKeys[index]))
+    throw new Error(
+      `Applying the combo would order options as [${realizedKeys.join(', ')}] instead of [${declaredKeys.join(', ')}].`
+    )
+
+  return [
+    'COMFY_DYNAMICCOMBO_V3',
+    {
+      options: options.map(([key, inputs]) => ({
+        key,
+        inputs: { required: inputs }
+      }))
+    }
+  ]
+}
+
+describe('dynamicCombo fixture builder', () => {
+  function option(key: string): ComboOption {
+    return [key, {}]
+  }
+
+  const rejectedCases: {
+    name: string
+    options: [ComboOption, ...ComboOption[]]
+    message: RegExp
+  }[] = [
+    {
+      name: 'a numeric key after a named one',
+      options: [option('Seedance'), option('0')],
+      message: /\[0, Seedance\] instead of \[Seedance, 0\]/
+    },
+    {
+      name: 'numeric keys out of ascending order',
+      options: [option('0'), option('2'), option('1')],
+      message: /\[0, 1, 2\] instead of \[0, 2, 1\]/
+    },
+    {
+      name: 'a key declared twice',
+      options: [option('a'), option('b'), option('a')],
+      message: /Duplicate option keys: a/
+    }
+  ]
+
+  test.for(rejectedCases)('rejects $name', ({ options, message }) => {
+    expect(() => dynamicCombo(...options)).toThrow(message)
+  })
+
+  test('accepts a numeric key too large to be an array index', () => {
+    expect(() =>
+      dynamicCombo(option('0'), option('Seedance'), option('4294967295'))
+    ).not.toThrow()
+  })
+})
+
+function autogrow(template: {
+  names: string[]
+  min: number
+  input: ChildInputs
+}): AutogrowInputSpec {
+  const { names, min, input } = template
+  return [
+    'COMFY_AUTOGROW_V3',
+    { template: { input: { required: input }, names, min } }
+  ]
+}
+
+function testNodeDef(
+  name: string,
+  displayName: string,
+  required: ChildInputs,
+  output: string[],
+  outputName: string[] = [...output]
+): ComfyNodeDefV1 {
+  return {
+    name,
+    display_name: displayName,
+    category: 'testing',
+    python_module: 'nodes',
+    description: '',
+    input: { required },
+    output,
+    output_name: outputName,
+    output_node: false
+  }
+}
+
 /**
  * A reduced `ResizeImageMaskNode` (FE-258): a dynamic combo whose default
  * option lays out a `width` child, and whose other option lays out a
  * `multiplier` child instead.
  */
-const resizeNodeDef: ComfyNodeDefV1 = {
-  name: RESIZE_NODE_TYPE,
-  display_name: 'Resize Image Mask',
-  category: 'testing',
-  python_module: 'nodes',
-  description: '',
-  input: {
-    required: {
-      image: ['IMAGE', {}],
-      resize_type: [
-        'COMFY_DYNAMICCOMBO_V3',
-        {
-          options: [
-            {
-              key: 'scale dimensions',
-              inputs: { required: { width: ['INT', {}] } }
-            },
-            {
-              key: 'scale by multiplier',
-              inputs: { required: { multiplier: ['FLOAT', {}] } }
-            }
-          ]
-        }
-      ]
-    }
+const resizeNodeDef = testNodeDef(
+  RESIZE_NODE_TYPE,
+  'Resize Image Mask',
+  {
+    image: ['IMAGE', {}],
+    resize_type: dynamicCombo(
+      ['scale dimensions', { width: ['INT', {}] }],
+      ['scale by multiplier', { multiplier: ['FLOAT', {}] }]
+    )
   },
-  output: ['IMAGE'],
-  output_name: ['resized'],
-  output_node: false
-}
+  ['IMAGE'],
+  ['resized']
+)
 
 /**
  * The node saved on `scale by multiplier`, so its serialized inputs carry
@@ -764,6 +863,18 @@ describe('Dynamic combo child links on workflow load (FE-258)', () => {
     await useLitegraphService().registerNodeDef(RESIZE_NODE_TYPE, resizeNodeDef)
   })
 
+  test('lays out the default option, which the saved workflow does not select', () => {
+    const graph = new LGraph()
+    const node = LiteGraph.createNode(RESIZE_NODE_TYPE)
+    assert.ok(node, 'resize node')
+    graph.add(node)
+
+    const children = node.inputs
+      .map((input) => input.name)
+      .filter((name) => name.startsWith('resize_type.'))
+    expect(children).toEqual(['resize_type.width'])
+  })
+
   test('keeps the link on the child the selected option lays out', () => {
     const graph = new LGraph()
     graph.configure(savedDynamicComboChildWorkflow())
@@ -791,47 +902,24 @@ const REFERENCE_NODE_TYPE = 'test/AutogrowInsideCombo'
  * are named `model.reference_images.<ordinal>` and its registry key is
  * `model.reference_images`.
  */
-const referenceNodeDef: ComfyNodeDefV1 = {
-  name: REFERENCE_NODE_TYPE,
-  display_name: 'Autogrow Inside Combo',
-  category: 'testing',
-  python_module: 'nodes',
-  description: '',
-  input: {
-    required: {
-      model: [
-        'COMFY_DYNAMICCOMBO_V3',
-        {
-          options: [
-            {
-              key: 'Seedance',
-              inputs: {
-                required: {
-                  generate_audio: ['BOOLEAN', { default: true }],
-                  reference_images: [
-                    'COMFY_AUTOGROW_V3',
-                    {
-                      template: {
-                        input: {
-                          required: { reference_image: ['IMAGE', {}] }
-                        },
-                        names: ['image_1', 'image_2', 'image_3'],
-                        min: 2
-                      }
-                    }
-                  ]
-                }
-              }
-            }
-          ]
-        }
-      ]
-    }
+const referenceNodeDef = testNodeDef(
+  REFERENCE_NODE_TYPE,
+  'Autogrow Inside Combo',
+  {
+    model: dynamicCombo([
+      'Seedance',
+      {
+        generate_audio: ['BOOLEAN', { default: true }],
+        reference_images: autogrow({
+          names: ['image_1', 'image_2', 'image_3'],
+          min: 2,
+          input: { reference_image: ['IMAGE', {}] }
+        })
+      }
+    ])
   },
-  output: ['VIDEO'],
-  output_name: ['VIDEO'],
-  output_node: false
-}
+  ['VIDEO']
+)
 
 describe('Autogrow nested inside a group widget (FE-258)', () => {
   beforeEach(async () => {
@@ -871,46 +959,25 @@ const GROWN_NODE_TYPE = 'test/AutogrowBeforeOrdinaryChild'
  * group is followed by an ordinary child input. Reloading such a node replays
  * both links, and the group grows a slot while doing so.
  */
-const grownNodeDef: ComfyNodeDefV1 = {
-  name: GROWN_NODE_TYPE,
-  display_name: 'Autogrow Before Ordinary Child',
-  category: 'testing',
-  python_module: 'nodes',
-  description: '',
-  input: {
-    required: {
-      model: [
-        'COMFY_DYNAMICCOMBO_V3',
-        {
-          options: [
-            {
-              key: 'gpt-image-1',
-              inputs: {
-                required: {
-                  seed: ['INT', { default: 0 }],
-                  images: [
-                    'COMFY_AUTOGROW_V3',
-                    {
-                      template: {
-                        input: { required: { image: ['IMAGE', {}] } },
-                        names: ['image_1', 'image_2', 'image_3', 'image_4'],
-                        min: 0
-                      }
-                    }
-                  ],
-                  mask: ['MASK', { forceInput: true }]
-                }
-              }
-            }
-          ]
-        }
-      ]
-    }
+const grownNodeDef = testNodeDef(
+  GROWN_NODE_TYPE,
+  'Autogrow Before Ordinary Child',
+  {
+    model: dynamicCombo([
+      'gpt-image-1',
+      {
+        seed: ['INT', { default: 0 }],
+        images: autogrow({
+          names: ['image_1', 'image_2', 'image_3', 'image_4'],
+          min: 0,
+          input: { image: ['IMAGE', {}] }
+        }),
+        mask: ['MASK', { forceInput: true }]
+      }
+    ])
   },
-  output: ['IMAGE'],
-  output_name: ['IMAGE'],
-  output_node: false
-}
+  ['IMAGE']
+)
 
 class ImageMaskSourceNode extends LGraphNode {
   constructor(title?: string) {

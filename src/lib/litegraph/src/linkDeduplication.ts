@@ -182,11 +182,6 @@ function groupNameOf(inputName: string): string | undefined {
   return separator < 1 ? undefined : inputName.slice(0, separator)
 }
 
-/**
- * Whether a group widget on `node` owns `inputName`'s slot. Group widgets
- * (dynamic combos) name their child inputs `<group widget name>.<key>` and
- * replace the whole set whenever their own value changes.
- */
 function isGroupWidgetChildInput(node: LGraphNode, inputName: string): boolean {
   const groupName = groupNameOf(inputName)
   if (groupName === undefined) return false
@@ -195,25 +190,17 @@ function isGroupWidgetChildInput(node: LGraphNode, inputName: string): boolean {
 }
 
 /**
- * Whether a registered autogrow group owns `inputName`'s slot.
+ * Autogrow groups renumber their own slots as the graph configures, so their
+ * links belong to {@link LGraph.configure}'s final pass rather than to an
+ * early realignment, which destroys them. A group is not a widget, and the
+ * dotted name alone will not serve — `INodeInputSlot.name` is arbitrary, so an
+ * ordinary input may be dotted without belonging to any group — so ownership
+ * comes from the registry `applyAutogrow` populates.
  *
- * Autogrow groups grow and renumber their own slots while the graph
- * configures, and realigning their links by name that early destroys them
- * (see `browser_tests/tests/subgraph/subgraphConvertAutogrowInputs.spec.ts`,
- * "loads with both reference images connected").
- *
- * Ownership comes from the registry `applyAutogrow` populates, under the same
- * key autogrow's own connection handler resolves a slot's group by. A group
- * is not a widget, so there is no widget name to match a prefix against as
- * {@link isGroupWidgetChildInput} does, and the dotted name alone will not
- * serve: `INodeInputSlot.name` is an arbitrary string, so an ordinary input
- * may be dotted without belonging to any group.
- *
- * The registry only covers groups the selected option laid out. Children of
- * an option that is not selected still reach this filter, because
- * `ComfyNode.configure` appends every serialized input the definition lacks.
- * Realigning those is harmless: their group's handler bails on the same
- * missing key, so nothing renumbers behind the move.
+ * That registry only covers groups the selected option laid out. Children of
+ * an unselected option still reach this filter, because `ComfyNode.configure`
+ * appends every serialized input the definition lacks. Realigning those is
+ * safe: their group's handler bails on the same missing key.
  */
 function isAutogrowGroupInput(node: LGraphNode, inputName: string): boolean {
   const groupName = groupNameOf(inputName)
@@ -226,21 +213,13 @@ function isAutogrowGroupInput(node: LGraphNode, inputName: string): boolean {
 }
 
 /**
- * Realigns a node's input links by name before its group widget values are
- * applied, for nodes that have a group widget child input.
- *
- * Applying a group widget's value rebuilds every child input of the group and
- * hands each surviving link to the new input of the same name. A link sitting
- * on the wrong slot — the node definition lays out the default option's
- * children, while `target_slot` counts the serialized layout — is handed to an
- * input that the selected option does not define, and is dropped. Through a
- * subgraph boundary that demotes the promoted widget to a disconnected input
- * slot.
- *
- * The node's ordinary inputs join the batch so that a link still occupying a
- * child's destination slot is moved in the same atomic update instead of
- * blocking it. Links owned by an autogrow group are left to
- * {@link LGraph.configure}'s final pass.
+ * Re-points a node's group widget child links at the slot their name will map
+ * to, before the node's group widget values are applied. A saved link arrives
+ * on the wrong slot because the definition lays out the default option's
+ * children while `target_slot` counts the serialized layout, so applying the
+ * widget's value would rebuild those inputs and drop it. Ordinary inputs join
+ * the batch so an occupied destination slot is vacated in the same atomic
+ * update instead of blocking the move.
  */
 export function realignGroupWidgetChildLinks(
   node: LGraphNode,
