@@ -10620,6 +10620,14 @@ Enterprise`
     'zh-CN':
       '以下请求使用与体验区相同的预设图和设置。每次提交都可能开始一次付费运行；如果提交结果未知，请勿自动重试。'
   },
+  'workshop.workflow.apiNote': {
+    en: 'Needs a paid Cloud plan and available credits.',
+    'zh-CN': '需要付费的 Cloud 方案和可用额度。'
+  },
+  'workshop.workflow.apiDocs': {
+    en: 'API documentation',
+    'zh-CN': 'API 文档'
+  },
   'workshop.workflow.apiUploads': {
     en: 'Upload media first',
     'zh-CN': '先上传媒体'
