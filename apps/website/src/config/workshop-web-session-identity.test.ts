@@ -37,9 +37,10 @@ function stubCloud(...sessionAnswers: Answer[]) {
     'fetch',
     vi.fn<typeof fetch>(async (input, init = {}) => {
       if (String(input) !== SESSION) {
-        const flags = init.credentials
-          ? { unified_web_session: true }
-          : { web_session_probe: true }
+        const flags =
+          init.credentials === 'include'
+            ? { unified_web_session: true }
+            : { web_session_probe: true }
         return new Response(JSON.stringify(flags))
       }
       sessionRequests.push(init)
@@ -63,11 +64,13 @@ async function loadModules(firebaseUid: string | undefined) {
     return () => {}
   })
   const { workshopIdentity } = await import('./workshop-account')
+  await import('@comfyorg/account-core/requestAuth')
   return {
     signOutWorkshop: vi.mocked(firebase.signOutWorkshop),
     firebaseSubscribe,
     loadFirebase: () => workshopIdentity.activate(),
-    ...(await import('./workshop-web-session-identity'))
+    ...(await import('./workshop-web-session-identity')),
+    ...(await import('./workshop-account-source'))
   }
 }
 

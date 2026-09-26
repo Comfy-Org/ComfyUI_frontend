@@ -14,7 +14,7 @@ import type { Locale } from '../../../i18n/translations.ts'
 import { t } from '../../../i18n/translations.ts'
 import { externalLinks, getRoutes } from '../../../config/routes.ts'
 import { subscribeToWorkshopBuyCredits } from '../../../config/workshop-buy-credits.ts'
-import { resolveWorkshopAccountSource } from '../../../config/workshop-web-session-identity.ts'
+import { resolveWorkshopAccountSource } from '../../../config/workshop-account-source.ts'
 import {
   useWorkshopAuthFlag,
   useWorkshopEnabled

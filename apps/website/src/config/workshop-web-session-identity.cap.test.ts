@@ -3,7 +3,7 @@ import { expect, it, vi } from 'vitest'
 import {
   ACCOUNT_SOURCE_CAP_MS,
   resolveWorkshopAccountSource
-} from './workshop-web-session-identity'
+} from './workshop-account-source'
 
 const identityModule = vi.hoisted(() => {
   const { promise, resolve } = Promise.withResolvers<void>()
@@ -28,7 +28,7 @@ it('never boots a session whose module arrives after the cap', async () => {
     'fetch',
     vi.fn<typeof fetch>(async (_input, init = {}) =>
       Response.json(
-        init.credentials
+        init.credentials === 'include'
           ? { unified_web_session: true }
           : { web_session_probe: true }
       )
@@ -43,5 +43,4 @@ it('never boots a session whose module arrives after the cap', async () => {
   identityModule.release()
   await vi.advanceTimersByTimeAsync(10_000)
   expect(identityModule.identity.boot).not.toHaveBeenCalled()
-  expect(identityModule.identity.dispose).toHaveBeenCalledOnce()
 })

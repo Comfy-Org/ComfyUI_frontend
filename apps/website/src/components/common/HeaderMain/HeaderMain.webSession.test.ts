@@ -8,7 +8,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { readonly, ref } from 'vue'
 
 import { WORKSHOP_CLOUD_BASE_URL } from '../../../config/workshop-env'
-import { ACCOUNT_SOURCE_CAP_MS } from '../../../config/workshop-web-session-identity'
+import { ACCOUNT_SOURCE_CAP_MS } from '../../../config/workshop-account-source'
 
 vi.mock(import('../../../scripts/posthog'))
 vi.mock(import('../../../config/workshop-session-state'))
@@ -26,7 +26,11 @@ interface SentRequest {
   readonly credentials?: RequestCredentials
 }
 
-const ANONYMOUS_PROBE: SentRequest = { method: 'GET', url: FEATURES }
+const ANONYMOUS_PROBE: SentRequest = {
+  method: 'GET',
+  url: FEATURES,
+  credentials: 'omit'
+}
 const CREDENTIALED_FLAGS: SentRequest = {
   method: 'GET',
   url: FEATURES,
@@ -86,7 +90,10 @@ function stubCloud({
       const answer =
         url === SESSION
           ? (session ?? refusal('no_session'))
-          : { status: 200, body: credentials ? perUser : anonymous }
+          : {
+              status: 200,
+              body: credentials === 'include' ? perUser : anonymous
+            }
       return new Response(JSON.stringify(answer.body), {
         status: answer.status
       })
