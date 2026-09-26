@@ -19,39 +19,39 @@ const {
   headingSize?: 'compact' | 'subsection'
 }>()
 
-// Rates from the Limited Beta PRFAQ (USD and Comfy Credits).
+// GA rate card (USD and Comfy Credits).
 const gpuRates = [
   {
     gpu: 'RTX PRO 6000',
     vram: '96 GB',
-    price: '$3.49/hr',
-    credits: '736.39/hr'
+    price: '$4.54/hr',
+    credits: '957.94/hr'
   },
-  { gpu: 'H100', vram: '80 GB', price: '$4.79/hr', credits: '1010.69/hr' },
-  { gpu: 'H200', vram: '141 GB', price: '$5.93/hr', credits: '1251.23/hr' },
-  { gpu: 'B200', vram: '180 GB', price: '$8.64/hr', credits: '1823.04/hr' }
+  { gpu: 'H100', vram: '80 GB', price: '$6.23/hr', credits: '1314.53/hr' },
+  { gpu: 'H200', vram: '141 GB', price: '$7.71/hr', credits: '1626.81/hr' },
+  { gpu: 'B200', vram: '180 GB', price: '$11.23/hr', credits: '2369.53/hr' }
 ]
 
 const storageRates = [
   {
     key: 'standardUnder1tb',
-    price: '$0.091/GB/mo',
-    credits: '19.20/GB/mo'
+    price: '$0.20/GB/mo',
+    credits: '42.20/GB/mo'
   },
   {
     key: 'standardOver1tb',
-    price: '$0.065/GB/mo',
-    credits: '13.72/GB/mo'
+    price: '$0.20/GB/mo',
+    credits: '42.20/GB/mo'
   },
   {
     key: 'highPerformance',
-    price: '$0.182/GB/mo',
-    credits: '38.40/GB/mo'
+    price: '$0.20/GB/mo',
+    credits: '42.20/GB/mo'
   },
   {
     key: 'containerDisk',
-    price: '$0.13/GB/mo',
-    credits: '27.43/GB/mo'
+    price: '$0.15/GB/mo',
+    credits: '31.65/GB/mo'
   }
 ] as const
 
