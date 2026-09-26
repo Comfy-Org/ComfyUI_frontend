@@ -63,7 +63,9 @@ test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
         )
         await comfyExpect(innerNode).toBeVisible()
 
-        const innerTextboxes = innerNode.getByRole('textbox')
+        const innerTextboxes = innerNode.getByRole('textbox', {
+          includeHidden: true
+        })
         await comfyExpect(innerTextboxes).toHaveCount(2)
         const innerValues = await innerTextboxes.evaluateAll<
           string[],
@@ -71,6 +73,22 @@ test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
         >((boxes) => boxes.map((b) => b.value))
         comfyExpect(innerValues).toContain('11111111111')
         comfyExpect(innerValues).toContain('22222222222')
+        await comfyExpect(
+          innerNode.getByRole('textbox', { name: 'text', exact: true })
+        ).toHaveValue('11111111111')
+        const linkedTextbox = innerNode.getByRole('textbox', {
+          name: 'text_1',
+          exact: true,
+          includeHidden: true
+        })
+        await comfyExpect(linkedTextbox).toHaveValue('22222222222')
+        await comfyExpect(linkedTextbox).toBeHidden()
+        await comfyExpect(
+          innerNode.getByRole('textbox', { name: 'text_1', exact: true })
+        ).toHaveCount(0)
+        await comfyExpect(
+          innerNode.getByRole('img', { name: 'text_1: Linked input' })
+        ).toBeVisible()
       })
     }
   )

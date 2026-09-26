@@ -3548,6 +3548,7 @@
     "Set Group Nodes to Always": "Set Group Nodes to Always"
   },
   "widgets": {
+    "linkedInputFor": "{name}: Linked input",
     "vueOnly": {
       "Chart": "Chart",
       "Fileupload": "File upload",

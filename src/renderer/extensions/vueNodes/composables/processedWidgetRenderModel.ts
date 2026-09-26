@@ -2,6 +2,7 @@ import type { TooltipOptions } from 'primevue'
 
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
+import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type {
@@ -16,7 +17,10 @@ import type {
 } from '@/renderer/extensions/vueNodes/types/widgetGrid'
 import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue'
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
-import { getComponent } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
+import {
+  getComponent,
+  getLinkedWidgetDisplay
+} from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import { app } from '@/scripts/app'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
@@ -380,8 +384,28 @@ function processWidget(
     resolveLiveWidgetContext(ctx.rootGraph, ctx.hostNode, liveWidget)
 
   const slotInfo = ctx.slotMetadata.get(widgetState.name)
+  const vueComponent =
+    !renderState?.isDOMWidget && typeof liveWidget?.draw === 'function'
+      ? WidgetLegacy
+      : getComponent(type) ||
+        (renderState?.isDOMWidget ? WidgetDOM : WidgetLegacy)
+  const isBoundaryLinked = slotInfo?.originNodeId === SUBGRAPH_INPUT_ID
+  const linkedDisplay =
+    isBoundaryLinked && vueComponent !== WidgetLegacy
+      ? getLinkedWidgetDisplay(type)
+      : undefined
+  const renderVisibility =
+    linkedDisplay && visibility
+      ? {
+          ...visibility,
+          suppression: {
+            ...visibility.suppression,
+            byConnection: false
+          }
+        }
+      : visibility
   const visible = isWidgetVisible(
-    visibility,
+    renderVisibility,
     ctx.showAdvanced,
     slotInfo?.linked || slotInfo?.promoted
   )
@@ -419,6 +443,7 @@ function processWidget(
     controlWidget,
     label: widgetState.label,
     linkedUpstream,
+    linkedDisplay,
     nodeLocatorId: widgetNodeLocatorId(ctx, bareWidgetId, sourceExecutionId),
     options: widgetOptions,
     spec: live
@@ -427,7 +452,7 @@ function processWidget(
   }
 
   const valueTooltip =
-    isTooltipValueType(type) && String(value).length > 10
+    !linkedDisplay && isTooltipValueType(type) && String(value).length > 10
       ? String(value)
       : undefined
   const tooltipConfig = ctx.ui.getTooltipConfig(
@@ -457,11 +482,7 @@ function processWidget(
     ),
     widgetId: id,
     renderKey: `${id}:${type}`,
-    vueComponent:
-      !renderState?.isDOMWidget && typeof liveWidget?.draw === 'function'
-        ? WidgetLegacy
-        : getComponent(type) ||
-          (renderState?.isDOMWidget ? WidgetDOM : WidgetLegacy),
+    vueComponent,
     simplified,
     visible,
     suppressedByConnection: visibility?.suppression.byConnection ?? false,

@@ -4,6 +4,8 @@
 import { defineAsyncComponent } from 'vue'
 import type { Component } from 'vue'
 
+import type { LinkedWidgetDisplay } from '@/types/simplifiedWidget'
+
 const WidgetButton = defineAsyncComponent(
   () => import('../components/WidgetButton.vue')
 )
@@ -315,6 +317,23 @@ const getCanonicalType = (type: string): string => aliasMap.get(type) || type
 export const getComponent = (type: string): Component | null => {
   const canonicalType = getCanonicalType(type)
   return widgets.get(canonicalType)?.component || null
+}
+
+export function getLinkedWidgetDisplay(
+  type: string
+): LinkedWidgetDisplay | undefined {
+  if (type === 'gradientslider') return
+
+  const component = getComponent(type)
+  if (
+    component === WidgetInputText ||
+    component === WidgetInputNumber ||
+    component === WidgetSelect ||
+    component === WidgetToggleSwitch
+  ) {
+    return 'control'
+  }
+  if (component === WidgetTextarea) return 'multiline'
 }
 
 export const isEssential = (type: string): boolean => {
