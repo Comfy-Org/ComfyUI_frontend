@@ -310,6 +310,12 @@ export function createAgentEventTransport(
    */
   function handleAskEvent(data: AgentAskEvent['data']): boolean {
     if (data.kind !== 'run_approval') return false
+    if (
+      message.parts.some(
+        (part) => part.type === 'runApproval' && part.askId === data.ask_id
+      )
+    )
+      return false
     dropDraft()
     closeOpenText()
     closeOpenThinking()

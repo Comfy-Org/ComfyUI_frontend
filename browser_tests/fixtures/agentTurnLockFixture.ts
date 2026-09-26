@@ -29,7 +29,7 @@ const WORKFLOW_ID = 'a81718a4-02ae-41e6-ae85-000000000001'
 type PendingAsk = NonNullable<AgentMessages[number]['pending_ask']>
 
 /** `{message_id}:{tool_use_id}`, the id shape the agent service issues. */
-const ASK_ID = `${TURN_ID}:toolu_01RunImageToVideo`
+export const ASK_ID = `${TURN_ID}:toolu_01RunImageToVideo`
 export const APPROVAL_WORKFLOW_NAME = 'img2img to img2video'
 
 const RUN_APPROVAL_ASK: PendingAsk = {
@@ -124,6 +124,7 @@ class TurnLockServer {
   private posts = 0
   private awaitingApproval = false
   private answered: string[] = []
+  private transcripts = 0
 
   get turnIsStreaming(): boolean {
     return this.streaming
@@ -131,6 +132,11 @@ class TurnLockServer {
 
   get answeredAsks(): readonly string[] {
     return this.answered
+  }
+
+  /** Every transcript GET served, so a spec can wait out a recovery poll. */
+  get transcriptFetches(): number {
+    return this.transcripts
   }
 
   get rejectedPosts(): number {
@@ -161,13 +167,16 @@ class TurnLockServer {
     this.awaitingApproval = true
   }
 
-  answerApproval(askId: string): AgentAnswerAccepted {
+  /** Mirrors the service: answering an ask that is no longer open is a 409. */
+  answerApproval(askId: string): AgentAnswerAccepted | null {
+    if (!this.awaitingApproval) return null
     this.answered.push(askId)
     this.awaitingApproval = false
     return { status: 'answered' }
   }
 
   transcript(): AgentMessages {
+    this.transcripts++
     return [
       {
         id: 'user-1',
@@ -233,7 +242,13 @@ async function routeTurnLock(
     const askId = decodeURIComponent(
       new URL(route.request().url()).pathname.split('/asks/')[1].split('/')[0]
     )
-    return route.fulfill(jsonRoute(server.answerApproval(askId)))
+    const accepted = server.answerApproval(askId)
+    if (!accepted)
+      return route.fulfill({
+        ...jsonRoute({ error: 'ask is already resolved' } satisfies AgentError),
+        status: 409
+      })
+    return route.fulfill(jsonRoute(accepted))
   })
 }
 
@@ -302,6 +317,10 @@ export class AgentTurnLockHarness {
 
   answeredAsks(): readonly string[] {
     return this.server.answeredAsks
+  }
+
+  transcriptFetches(): number {
+    return this.server.transcriptFetches
   }
 
   parkOnApproval(): void {

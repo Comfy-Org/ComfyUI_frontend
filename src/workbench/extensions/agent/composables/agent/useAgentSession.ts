@@ -213,7 +213,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
   let ownedGeneration = 0
   let connection: SocketConnection = 'initial'
   const recoveringTurns = new Map<string, AbortController>()
-  const reportedMissingAsks = new Set<string>()
+  /**
+   * Asks recovery must not re-deliver: one it already restored, and any the
+   * user has answered or the server has resolved. Without the latter, a poll
+   * whose snapshot predates the answer would resurrect a card the user is
+   * done with, splitting the reply that has since resumed streaming.
+   */
+  const deliveredAsks = new Set<string>()
 
   function pushError(text: string): void {
     notices.value.push({ level: 'error', text })
@@ -667,6 +673,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     )
       return
     setAskAnswering(askId, true)
+    deliveredAsks.add(askId)
     try {
       await rest.answerAsk(currentThreadId, askId, [selection])
       // Keep the actions disabled until the canonical resolution frame arrives.
@@ -743,8 +750,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
       return
     }
     const event = parsed.data
-    if (event.type === 'agent_ask_resolved')
+    if (event.type === 'agent_ask_resolved') {
       setAskAnswering(event.data.ask_id, false)
+      deliveredAsks.add(event.data.ask_id)
+    }
     switch (event.type) {
       case 'agent_active_tab':
         // Every thread records the link in its own transcript; only the thread
@@ -850,22 +859,27 @@ export function useAgentSession(deps: AgentSessionDeps) {
     pendingAsk: PendingAsk | undefined
   ): void {
     if (pendingAsk?.kind !== 'run_approval') return
+    if (deliveredAsks.has(pendingAsk.ask_id)) return
     if (conversationStore.isApprovalShown(turn, pendingAsk.ask_id)) return
+    deliveredAsks.add(pendingAsk.ask_id)
     conversationStore.ingest({
       type: 'agent_ask',
       data: { ...pendingAsk, thread_id: turn.threadId }
     })
-    if (reportedMissingAsks.has(pendingAsk.ask_id)) return
-    reportedMissingAsks.add(pendingAsk.ask_id)
-    reportError(new Error('Agent approval ask never reached the panel'), {
-      errorType: 'failure_delivering_agent_approval_ask',
-      tags: { feature_area: 'agent', operation: 'recovery' },
-      context: {
-        threadId: turn.threadId,
-        messageId: turn.messageId,
-        askId: pendingAsk.ask_id
+    reportError(
+      new Error(
+        'Agent approval ask was missing from the panel after a reconnect'
+      ),
+      {
+        errorType: 'failure_delivering_agent_approval_ask',
+        tags: { feature_area: 'agent', operation: 'recovery' },
+        context: {
+          threadId: turn.threadId,
+          messageId: turn.messageId,
+          askId: pendingAsk.ask_id
+        }
       }
-    })
+    )
   }
 
   function isTurnLive(turn: LiveTurn, generation: number): boolean {

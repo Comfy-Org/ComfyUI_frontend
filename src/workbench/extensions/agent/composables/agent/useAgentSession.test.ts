@@ -2018,6 +2018,57 @@ describe('useAgentSession (v1 composition root)', () => {
     }
   })
 
+  it('(g29) a poll whose snapshot predates the answer does not resurrect the card', async () => {
+    vi.useFakeTimers()
+    try {
+      const rest = parkedOnApprovalRest()
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+
+      await session.sendMessage('go')
+      emit(runApproval('msg-1'))
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(0)
+      expect(approvalParts(session)).toHaveLength(1)
+
+      emit(askResolved('msg-1'))
+      expect(approvalParts(session)).toHaveLength(0)
+
+      await vi.advanceTimersByTimeAsync(31_000)
+
+      expect(approvalParts(session)).toHaveLength(0)
+      expect(reportError).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('(g30) a restored ask and the frame that follows it render one card', async () => {
+    vi.useFakeTimers()
+    try {
+      const rest = parkedOnApprovalRest()
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+
+      await session.sendMessage('go')
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(0)
+      expect(approvalParts(session)).toHaveLength(1)
+
+      emit(runApproval('msg-1'))
+
+      expect(approvalParts(session)).toHaveLength(1)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('(h) attachments pass through to the postMessage wire body', async () => {
     const rest = fakeRest()
     const { source } = fakeEvents()

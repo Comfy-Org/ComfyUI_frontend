@@ -902,16 +902,18 @@ describe('useAgentConversationStore', () => {
     {
       name: 'the displayed turn',
       turn: { threadId: 'th-front', messageId: T1 },
-      askId: 'front-ask'
+      askId: 'front-ask',
+      otherAskId: 'back-ask'
     },
     {
       name: 'a stashed background turn',
       turn: { threadId: 'th-back', messageId: T2 },
-      askId: 'back-ask'
+      askId: 'back-ask',
+      otherAskId: 'front-ask'
     }
   ])(
     'reads back the approval showing on $name, and only that one',
-    ({ turn, askId }) => {
+    ({ turn, askId, otherAskId }) => {
       const store = useAgentConversationStore()
       store.setThreadId('th-back')
       store.startTurn(T2)
@@ -925,6 +927,7 @@ describe('useAgentConversationStore', () => {
       store.ingest(runApproval('t1', 'front-ask'))
 
       expect(store.isApprovalShown(turn, askId)).toBe(true)
+      expect(store.isApprovalShown(turn, otherAskId)).toBe(false)
       expect(store.isApprovalShown(turn, 'never-delivered')).toBe(false)
     }
   )

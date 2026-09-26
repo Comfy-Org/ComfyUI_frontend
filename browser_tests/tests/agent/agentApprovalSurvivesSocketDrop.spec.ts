@@ -2,6 +2,7 @@ import { expect } from '@playwright/test'
 
 import {
   APPROVAL_WORKFLOW_NAME,
+  ASK_ID,
   RUN_APPROVAL_EVENT,
   TURN_IN_PROGRESS_MESSAGE,
   agentTurnLockTest as test
@@ -63,7 +64,7 @@ test.describe(
         await turnLock.approveButton.click()
 
         await expect.poll(() => turnLock.answeredAsks().length).toBe(1)
-        expect(turnLock.answeredAsks()[0]).toContain('toolu_')
+        expect(turnLock.answeredAsks()[0]).toBe(ASK_ID)
 
         turnLock.resolveApproval(reconnected)
         await expect(turnLock.approvalCard).toHaveCount(0)
@@ -96,14 +97,18 @@ test.describe(
       turnLock.parkOnApproval()
       turnLock.push(await getWebSocket(), RUN_APPROVAL_EVENT)
       await expect(turnLock.approvalCard).toBeVisible()
+      const pollsBefore = turnLock.transcriptFetches()
 
       await turnLock.dropSocket()
 
-      await expect(turnLock.approvalCard).toBeVisible()
+      // toHaveCount returns as soon as it passes, so the count alone would
+      // assert nothing before recovery has even polled. Wait for two polls to
+      // have actually served the parked row, then hold the panel to one card.
+      await expect
+        .poll(() => turnLock.transcriptFetches(), { timeout: 30_000 })
+        .toBeGreaterThanOrEqual(pollsBefore + 2)
+      await expect(turnLock.approvalCard).toHaveCount(1)
       await expect(turnLock.approveButton).toHaveCount(1)
-      // Outlasts the first two recovery polls (0s, then 1s), so a duplicate
-      // card drawn by a later poll cannot slip past a one-shot assertion.
-      await expect(turnLock.approvalCard).toHaveCount(1, { timeout: 5_000 })
     })
   }
 )
