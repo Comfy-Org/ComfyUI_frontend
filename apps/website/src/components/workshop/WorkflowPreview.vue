@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { Box } from '@lucide/vue'
+import { computed } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import type { WorkflowWorkshopModelDetail } from '../../config/models-catalogue'
+import type { TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
 const { model, cloudHref } = defineProps<{
@@ -11,6 +13,49 @@ const { model, cloudHref } = defineProps<{
 }>()
 
 const template = model.workflow.template
+
+const OUTPUT_LABEL: Record<string, TranslationKey> = {
+  image: 'workshop.task.image',
+  video: 'workshop.task.video',
+  audio: 'workshop.task.audio'
+}
+
+// What a run gives back. Naming the medium only where every output is the same
+// one, because a mixed set has no single name and a count on its own is still
+// true.
+const produces = computed(() => {
+  const outputs = model.workflow.outputs ?? []
+  if (!outputs.length) return undefined
+  const perRun = t('workshop.workflow.perRun').replace(
+    '{count}',
+    String(outputs.length)
+  )
+  const kinds = new Set(outputs.map((output) => output.kind))
+  const only = kinds.size === 1 ? [...kinds][0] : undefined
+  const label = only ? OUTPUT_LABEL[only] : undefined
+  return label ? `${t(label)}, ${perRun}` : perRun
+})
+
+const facts = computed(() => {
+  const rows: { label: TranslationKey; value: string }[] = [
+    {
+      label: 'workshop.workflow.factWhere',
+      value: t(
+        model.type === 'CLOUD'
+          ? 'workshop.workflow.runsCloud'
+          : 'workshop.workflow.runsOwn'
+      )
+    }
+  ]
+  if (produces.value)
+    rows.push({
+      label: 'workshop.workflow.factOutput',
+      value: produces.value
+    })
+  if (model.author)
+    rows.push({ label: 'workshop.workflow.factAuthor', value: model.author })
+  return rows
+})
 
 const sectionTitle =
   'text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase'
@@ -77,11 +122,14 @@ const bandHeading =
           </div>
 
           <div
-            v-if="template?.models.length"
             class="overflow-hidden rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4"
             data-testid="workflow-facts"
           >
-            <section :class="band" data-testid="workflow-runs-on">
+            <section
+              v-if="template?.models.length"
+              :class="band"
+              data-testid="workflow-runs-on"
+            >
               <h3 :class="bandHeading">
                 {{ t('workshop.workflow.runsOn') }}
               </h3>
@@ -102,6 +150,23 @@ const bandHeading =
                   </span>
                 </li>
               </ul>
+            </section>
+
+            <section :class="band" data-testid="workflow-details">
+              <dl class="flex flex-col gap-1 text-sm">
+                <div
+                  v-for="fact in facts"
+                  :key="fact.label"
+                  class="grid grid-cols-[6rem_1fr] gap-4"
+                >
+                  <dt class="text-primary-warm-gray">{{ t(fact.label) }}</dt>
+                  <dd
+                    class="min-w-0 truncate text-primary-comfy-canvas tabular-nums"
+                  >
+                    {{ fact.value }}
+                  </dd>
+                </div>
+              </dl>
             </section>
           </div>
         </div>
