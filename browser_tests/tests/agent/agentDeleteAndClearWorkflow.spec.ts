@@ -30,8 +30,13 @@ test.describe(
         agentConversation
       }) => {
         test.setTimeout(90_000)
+        const added =
+          agentConversation.vueNodes.getNodeLocator('3802035302970761')
 
-        await agentConversation.runTurns()
+        await agentConversation.runTurns(async (ops) => {
+          if (ops.some((op) => op.op === 'clear'))
+            await expect(added).toHaveCount(1)
+        })
 
         await expect(agentConversation.vueNodes.nodes).toHaveCount(0)
       })

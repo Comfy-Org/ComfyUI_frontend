@@ -174,6 +174,9 @@ async function withTimeout(
   }
 }
 
+// Awaited before each graph_ops entry is sent, with the ops about to land.
+type BeforeGraphOps = (ops: RecordedGraphOperation[]) => Promise<void>
+
 // Runs one recorded prompt/response through the real panel over a routed /ws socket.
 export class AgentConversationHarness {
   readonly panel: Locator
@@ -350,20 +353,17 @@ export class AgentConversationHarness {
 
   async replayResponse(
     turn = 0,
-    beforeFirstGraphOps?: () => Promise<void>
+    beforeGraphOps?: BeforeGraphOps
   ): Promise<void> {
     const startedAt = Date.now()
     const response = this.conversation.turns[turn].response
-    const firstGraphOps = response.findIndex(
-      (entry) => entry.kind === 'graph_ops'
-    )
     for (const [index, entry] of response.entries()) {
       await this.waitForRecordedOffset(startedAt, entry.at_ms)
       if (entry.kind === 'event')
         this.hostSocket.send(this.stampTurn(entry.event, turn))
       else {
         await this.hostSocket.waitForSubscribe()
-        if (index === firstGraphOps) await beforeFirstGraphOps?.()
+        await beforeGraphOps?.(entry.ops)
         this.hostSocket.send(this.host.apply(entry.ops))
         for (const id of Object.keys(this.host.graph().nodes))
           this.seenIds.add(id)
@@ -375,11 +375,11 @@ export class AgentConversationHarness {
   }
 
   // Every turn in order, each judged on the panel and the canvas as it lands.
-  async runTurns(beforeFirstGraphOps?: () => Promise<void>): Promise<void> {
+  async runTurns(beforeGraphOps?: BeforeGraphOps): Promise<void> {
     for (const turn of this.conversation.turns.keys()) {
       const before = await this.panelCounts()
       await this.sendPrompt(turn)
-      await this.replayResponse(turn, beforeFirstGraphOps)
+      await this.replayResponse(turn, beforeGraphOps)
       await this.waitForTurnComplete()
       await this.expectTurnRendered(turn, before)
       await this.expectCanvasReplayed(turn)
