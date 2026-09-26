@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { fireEvent, render, screen } from '@testing-library/vue'
 import { getActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -41,6 +41,11 @@ const mockData = vi.hoisted(() => ({
   mockLgraphNode: null as Record<string, unknown> | null,
   resizeCallback: null as ResizeCallback | null
 }))
+const mockNodeEventHandlers = vi.hoisted(() => ({
+  handleNodeCollapse: vi.fn(),
+  handleNodeRightClick: vi.fn(),
+  handleNodeTitleUpdate: vi.fn()
+}))
 
 vi.mock(import('@/utils/graphTraversalUtil'))
 vi.mocked(getNodeByLocatorId).mockImplementation(() =>
@@ -53,10 +58,7 @@ vi.mock(import('@/renderer/core/layout/transform/useTransformState'))
 
 vi.mock<unknown>(
   import('@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'),
-  () => {
-    const handleNodeSelect = vi.fn()
-    return { useNodeEventHandlers: () => ({ handleNodeSelect }) }
-  }
+  () => ({ useNodeEventHandlers: () => mockNodeEventHandlers })
 )
 
 vi.mock(
@@ -239,6 +241,17 @@ describe('LGraphNode', () => {
 
     expect(getNodeRoot(container).getAttribute('data-node-id')).toBe(
       'test-node-123'
+    )
+  })
+
+  it('binds the node context menu handler to the root element', async () => {
+    const { container } = renderLGraphNode({ nodeData: mockNodeData })
+
+    await fireEvent.contextMenu(getNodeRoot(container))
+
+    expect(mockNodeEventHandlers.handleNodeRightClick).toHaveBeenCalledWith(
+      expect.any(MouseEvent),
+      mockNodeData.id
     )
   })
 
@@ -536,8 +549,8 @@ describe('LGraphNode', () => {
     renderLGraphNode({ nodeData: mockNodeData })
 
     const overlay = screen.getByTestId('node-state-outline-overlay')
-    expect(overlay).toHaveClass('rounded-[19px]')
-    expect(overlay).not.toHaveClass('rounded-[15px]')
+    expect(overlay).toHaveClass('rounded-node-selection-md')
+    expect(overlay).not.toHaveClass('rounded-node-selection-sm')
   })
 
   it('should apply the bypass overlay when the node is bypassed', () => {

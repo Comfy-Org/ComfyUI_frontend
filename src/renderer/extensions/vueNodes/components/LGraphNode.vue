@@ -36,8 +36,7 @@
       opacity: nodeOpacity
     }"
     :inert="isGhostPlacing"
-    v-bind="remainingPointerHandlers"
-    @pointerdown="nodeOnPointerdown"
+    v-bind="pointerHandlers"
     @wheel="handleWheel"
     @contextmenu="handleContextMenu"
     @dragover.prevent="handleDragOver"
@@ -252,7 +251,7 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, nextTick, onErrorCaptured, ref } from 'vue'
+import { computed, onErrorCaptured, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { NodeState } from '@/types/nodeState'
@@ -262,11 +261,7 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { hasUnpromotedWidgets } from '@/core/graph/subgraph/promotionUtils'
 import { st } from '@/i18n'
 import type { CompassCorners } from '@/lib/litegraph/src/interfaces'
-import {
-  LGraphCanvas,
-  LGraphEventMode,
-  LiteGraph
-} from '@/lib/litegraph/src/litegraph'
+import { LGraphEventMode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -283,12 +278,10 @@ import AppOutput from '@/renderer/extensions/linearMode/AppOutput.vue'
 import SlotConnectionDot from '@/renderer/extensions/vueNodes/components/SlotConnectionDot.vue'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
-import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { usePartitionedBadges } from '@/renderer/extensions/vueNodes/composables/usePartitionedBadges'
 import { useProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import { useNodeExecutionState } from '@/renderer/extensions/vueNodes/execution/useNodeExecutionState'
-import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
 import { useNodePreviewState } from '@/renderer/extensions/vueNodes/preview/useNodePreviewState'
 import {
@@ -317,7 +310,6 @@ import {
   subgraphIdFromState
 } from '@/utils/graphTraversalUtil'
 import { cn } from '@comfyorg/tailwind-utils'
-import { toNodeId } from '@/types/nodeId'
 import { isTransparent } from '@/utils/colorUtil'
 
 import { resizeNodeLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
@@ -351,7 +343,6 @@ const isLightTheme = computed(
 
 const { handleNodeCollapse, handleNodeTitleUpdate, handleNodeRightClick } =
   useNodeEventHandlers()
-const { bringNodeToFront } = useNodeZIndex()
 
 const nodeId = computed(() => nodeData.id)
 
@@ -432,27 +423,7 @@ const nodeSizeStyle = computed(() =>
 )
 
 const { pointerHandlers } = useNodePointerInteractions(() => nodeData)
-const { onPointerdown, ...remainingPointerHandlers } = pointerHandlers
-const { startDrag } = useNodeDrag()
 const badges = usePartitionedBadges(nodeData)
-
-async function nodeOnPointerdown(event: PointerEvent) {
-  const node = resolveLGraphNode()
-  if (event.altKey && node) {
-    const result = LGraphCanvas.cloneNodes([node])
-    if (result?.created.length) {
-      const [newNode] = result.created
-      const newNodeId =
-        typeof newNode.id === 'number' ? toNodeId(newNode.id) : newNode.id
-      startDrag(event, newNodeId)
-      layoutStore.isDraggingVueNodes.value = true
-      await nextTick()
-      bringNodeToFront(newNodeId)
-      return
-    }
-  }
-  onPointerdown(event)
-}
 
 // Handle right-click context menu
 const handleContextMenu = (event: MouseEvent) => {
@@ -552,9 +523,11 @@ const selectionShapeClass = computed(() => {
   return shapeVariantClass(nodeData.shape, {
     box: '',
     card: isExpanded
-      ? 'rounded-tl-[23px] rounded-br-[23px]'
-      : 'rounded-tl-[19px] rounded-br-[19px]',
-    default: isExpanded ? 'rounded-[19px]' : 'rounded-[15px]'
+      ? 'rounded-tl-node-selection-lg rounded-br-node-selection-lg'
+      : 'rounded-tl-node-selection-md rounded-br-node-selection-md',
+    default: isExpanded
+      ? 'rounded-node-selection-md'
+      : 'rounded-node-selection-sm'
   })
 })
 
