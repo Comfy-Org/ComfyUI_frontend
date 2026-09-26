@@ -56,6 +56,17 @@ afterEach(() => {
 })
 
 describe('check-adr-evil-merge', () => {
+  // A guard that exits 0 while printing to stderr reads as a pass with a
+  // warning, and nobody reads CI warnings. Exit status alone cannot tell the
+  // two apart, so every clean case asserts silence as well.
+  function expectSilentPass(result: ReturnType<typeof runScript>): void {
+    expect({ status: result.status, stderr: result.stderr }).toEqual({
+      status: 0,
+      stderr: ''
+    })
+    expect(result.stdout).toBe('')
+  }
+
   it('passes when the range has no merge commits', () => {
     const { dir, git } = tempGitRepo()
     write(dir, 'docs/adr/TOPIC-0001.md', '# adr\n')
@@ -63,8 +74,7 @@ describe('check-adr-evil-merge', () => {
     write(dir, 'src/index.ts', 'export {}\n')
     commitAll(git, 'ordinary commit adds an unrelated file')
 
-    const result = runScript(dir, base)
-    expect(result.status).toBe(0)
+    expectSilentPass(runScript(dir, base))
   })
 
   it('passes when the ADR arrived on a branch commit and the merge only integrates it', () => {
@@ -77,8 +87,7 @@ describe('check-adr-evil-merge', () => {
     git('checkout', 'main')
     git('merge', '--no-ff', '--no-edit', 'feature')
 
-    const result = runScript(dir, base)
-    expect(result.status).toBe(0)
+    expectSilentPass(runScript(dir, base))
   })
 
   it('fails when a merge commit introduces a docs/adr file present in neither parent', () => {
@@ -117,8 +126,7 @@ describe('check-adr-evil-merge', () => {
     git('add', '.')
     git('commit', '--no-edit')
 
-    const result = runScript(dir, mainEdit)
-    expect(result.status).toBe(0)
+    expectSilentPass(runScript(dir, mainEdit))
   })
 
   it('is a no-op when the base is the all-zero new-branch sentinel', () => {
@@ -126,7 +134,41 @@ describe('check-adr-evil-merge', () => {
     write(dir, 'docs/adr/TOPIC-0005.md', '# adr\n')
     commitAll(git, 'base')
 
-    const result = runScript(dir, '0'.repeat(40))
-    expect(result.status).toBe(0)
+    expectSilentPass(runScript(dir, '0'.repeat(40)))
+  })
+
+  it('ignores a non-Markdown file smuggled into a merge', () => {
+    const { dir, git } = tempGitRepo()
+    write(dir, 'src/index.ts', 'export {}\n')
+    commitAll(git, 'base')
+    git('checkout', '-b', 'feature')
+    write(dir, 'src/feature.ts', 'export {}\n')
+    commitAll(git, 'branch commit')
+    git('checkout', 'main')
+    write(dir, 'src/main-drift.ts', 'export {}\n')
+    const mainDrift = commitAll(git, 'main drifts independently')
+    git('merge', '--no-ff', '--no-commit', 'feature')
+    // The documented contract is `docs/adr/*.md`. A diagram is not governance
+    // content taking zero review, and reporting it as an evil-merged ADR
+    // teaches people to ignore the guard.
+    write(dir, 'docs/adr/diagram.svg', '<svg />\n')
+    git('add', '.')
+    git('commit', '-m', 'merge main and add an asset')
+
+    expectSilentPass(runScript(dir, mainDrift))
+  })
+
+  it('refuses to report a pass when the range cannot be resolved', () => {
+    const { dir, git } = tempGitRepo()
+    write(dir, 'docs/adr/TOPIC-0006.md', '# adr\n')
+    commitAll(git, 'base')
+
+    // What a force-push leaves in `github.event.before`: a real-looking sha
+    // that no longer exists. Silently treating it as an empty range is the
+    // one outcome the guard must never produce.
+    const result = runScript(dir, 'f'.repeat(40))
+    expect(result.status).not.toBe(0)
+    expect(result.status).not.toBe(1)
+    expect(result.stderr).toContain('cannot resolve the revision range')
   })
 })
