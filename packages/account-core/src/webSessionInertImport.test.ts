@@ -9,6 +9,7 @@ it.for([
   '@comfyorg/account-core/webSessionFlag',
   '@comfyorg/account-core/requestAuth',
   '@comfyorg/account-core/webSessionIdentity',
+  '@comfyorg/account-core/requestAuth',
   '@comfyorg/account-core/testing'
 ])(
   'importing %s starts no timer, listener, channel, or request',
