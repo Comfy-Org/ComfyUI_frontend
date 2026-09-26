@@ -3,30 +3,23 @@
  * Removes all DOM manipulation and positioning concerns
  */
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type {
-  IBaseWidget,
-  IWidgetOptions
-} from '@/lib/litegraph/src/types/widgets'
-import { IS_CONTROL_WIDGET } from '@/scripts/controlWidgetMarker'
+import { COMBO_CONTROL_MODES } from '@/core/graph/widgets/control/valueControl'
+import type { ValueControlMode } from '@/core/graph/widgets/control/valueControl'
+import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 import type { NodeId } from '@/types/nodeId'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 
 /** Valid types for widget values */
 export type WidgetValue = string | number | boolean | object | undefined | null
 
-export const CONTROL_OPTIONS = [
-  'fixed',
-  'increment',
-  'decrement',
-  'randomize'
-] as const
-export type ControlOptions = (typeof CONTROL_OPTIONS)[number]
+export const CONTROL_OPTIONS = COMBO_CONTROL_MODES
+export type ControlOptions = ValueControlMode
 
 function isControlOption(val: WidgetValue): val is ControlOptions {
   return CONTROL_OPTIONS.includes(val as ControlOptions)
 }
 
-function normalizeControlOption(val: WidgetValue): ControlOptions {
+export function normalizeControlOption(val: WidgetValue): ControlOptions {
   if (isControlOption(val)) return val
   return 'randomize'
 }
@@ -34,17 +27,6 @@ function normalizeControlOption(val: WidgetValue): ControlOptions {
 export type SafeControlWidget = {
   value: ControlOptions
   update: (value: WidgetValue) => void
-}
-
-export function getControlWidget(
-  widget: IBaseWidget
-): SafeControlWidget | undefined {
-  const controlWidget = widget.linkedWidgets?.find((w) => w[IS_CONTROL_WIDGET])
-  if (!controlWidget) return
-  return {
-    value: normalizeControlOption(controlWidget.value),
-    update: (value) => (controlWidget.value = normalizeControlOption(value))
-  }
 }
 
 export interface LinkedUpstreamInfo {

@@ -19,7 +19,6 @@ import {
 import { t } from '@/i18n'
 import { useComboWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useComboWidget'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import { addValueControlWidgets } from '@/scripts/widgets'
 
 function createMockAssetItem(overrides: Partial<AssetItem> = {}): AssetItem {
   return {
@@ -37,10 +36,6 @@ function createMockAssetItem(overrides: Partial<AssetItem> = {}): AssetItem {
 }
 
 const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
-
-vi.mock(import('@/scripts/widgets'), () => ({
-  addValueControlWidgets: vi.fn()
-}))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
@@ -695,7 +690,7 @@ describe('useComboWidget', () => {
     it('should add control widgets for cloud input mappings when requested', () => {
       const scenario = cloudInputScenarios[0]
 
-      const { mockNode, widget } = setupCloudInputMappingWidget(
+      const { widget } = setupCloudInputMappingWidget(
         scenario,
         { control_after_generate: true },
         [
@@ -706,20 +701,10 @@ describe('useComboWidget', () => {
         ]
       )
 
-      expect(addValueControlWidgets).toHaveBeenCalledWith(
-        mockNode,
-        widget,
-        'randomize',
-        undefined,
-        [
-          'COMBO',
-          {
-            control_after_generate: true,
-            name: scenario.inputName,
-            type: 'COMBO'
-          }
-        ]
-      )
+      expect(widget.controlConfig).toEqual({
+        mode: 'randomize',
+        hasFilter: true
+      })
     })
 
     it('should create normal combo widget for non-input nodes in cloud', () => {
