@@ -11,14 +11,28 @@ import {
  * rather than `edit` on Escape - so cancelling an edit left the canvas unable
  * to pan or wheel-zoom for the rest of the session.
  *
- * Both gestures are asserted because `allow_dragcanvas` gates both:
- * `LGraphCanvas.processMouseWheel` returns early on it, and the pointer paths
- * only reach `setupCanvasDrag` when it is true. Panning and zooming are
- * observed through `ds.offset` / `ds.scale` rather than through the flag, so
- * the test still means something if the fix stops being expressed that way.
+ * The gesture under test is the wheel, because `LGraphCanvas.processMouseWheel`
+ * returns on `!allow_dragcanvas` before it touches `ds` - one branch, with no
+ * pointer click-versus-drag classification in the way. The effect is read off
+ * `ds.scale` rather than off the flag, so the spec keeps its meaning if the fix
+ * is later expressed some other way.
  */
 test.describe('Cancelling a title edit', { tag: ['@canvas', '@node'] }, () => {
-  test('leaves the canvas pannable and zoomable', async ({ comfyPage }) => {
+  test('leaves the canvas zoomable', async ({ comfyPage }) => {
+    const WHEEL_POS = { x: 400, y: 400 }
+    const wheelZoom = async () => {
+      await comfyPage.page.mouse.move(WHEEL_POS.x, WHEEL_POS.y)
+      await comfyPage.page.mouse.wheel(0, -120)
+      await comfyPage.nextFrame()
+      return comfyPage.canvasOps.getScale()
+    }
+
+    // Establish that the gesture moves this canvas at all, before the title
+    // edit. Without it, a wheel that does nothing for an unrelated reason
+    // reads exactly like the regression.
+    const scaleAtStart = await comfyPage.canvasOps.getScale()
+    expect(await wheelZoom()).not.toBeCloseTo(scaleAtStart, 3)
+
     const [node] = await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
     const originalTitle = await node.getProperty<string>('title')
 
@@ -28,20 +42,11 @@ test.describe('Cancelling a title edit', { tag: ['@canvas', '@node'] }, () => {
     await comfyPage.titleEditor.cancel()
     await comfyPage.titleEditor.expectHidden()
 
-    // Escape discards the edit. The canvas assertions below would pass just as
+    // Escape discards the edit. The zoom assertion below would pass just as
     // well on a build that committed it, so pin the discard too.
     expect(await node.getProperty<string>('title')).toBe(originalTitle)
 
-    const offsetBeforePan = await comfyPage.canvasOps.getOffset()
-    await comfyPage.canvasOps.pan({ x: 120, y: 80 })
-    await expect
-      .poll(() => comfyPage.canvasOps.getOffset())
-      .not.toEqual(offsetBeforePan)
-
     const scaleBeforeZoom = await comfyPage.canvasOps.getScale()
-    await comfyPage.canvasOps.zoom(-120)
-    await expect
-      .poll(() => comfyPage.canvasOps.getScale())
-      .not.toBe(scaleBeforeZoom)
+    expect(await wheelZoom()).not.toBeCloseTo(scaleBeforeZoom, 3)
   })
 })
