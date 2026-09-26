@@ -1,20 +1,14 @@
 # Description: Linting and code formatting validation for pull requests.
-# Paired with ci-lint-format-queue.yaml - workflow name and the gate job name
-# `lint-and-format` must match so branch protection resolves a single
-# required check in both the pull_request and merge_group contexts.
-#
 # Work is split across parallel jobs so wall time is the slowest job rather
 # than the sum. The `lint` job runs the fixers; every fixer exits non-zero
 # when unfixable problems remain, so no second verify-only lint pass runs.
 name: 'CI: Lint Format'
 
 on:
-  pull_request:
-    branches-ignore: [wip/*, draft/*, temp/*]
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  workflow_call:
+    secrets:
+      PR_GH_TOKEN:
+        required: false
 
 permissions:
   contents: write
@@ -179,17 +173,3 @@ jobs:
 
       - name: Verify knip, locale integrity and ADR index
         uses: ./.github/actions/repo-checks
-
-  # Single stable branch-protection context over the parallel jobs above.
-  lint-and-format:
-    needs: [lint, typecheck, typecheck-aux, repo-checks]
-    if: ${{ always() }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Verify every lint and format job passed
-        env:
-          RESULTS: ${{ toJSON(needs.*.result) }}
-        run: |
-          echo "$RESULTS"
-          echo "$RESULTS" | jq -e 'all(. == "success")' > /dev/null ||
-            { echo "::error::At least one lint/format job did not succeed."; exit 1; }
