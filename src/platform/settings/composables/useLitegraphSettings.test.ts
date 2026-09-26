@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { ViewportMotionTracker } from '@/lib/litegraph/src/canvas/ViewportMotionTracker'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore' // eslint-disable-line import-x/no-restricted-paths
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
@@ -12,7 +13,11 @@ import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useLitegraphSettings } from './useLitegraphSettings'
 
 function createCanvas(draw: () => void): LGraphCanvas {
-  return fromPartial<LGraphCanvas>({ draw, setDirty: vi.fn() })
+  return fromPartial<LGraphCanvas>({
+    draw,
+    setDirty: vi.fn(),
+    viewportMotion: new ViewportMotionTracker(vi.fn())
+  })
 }
 
 describe('useLitegraphSettings', () => {
@@ -39,6 +44,20 @@ describe('useLitegraphSettings', () => {
     await nextTick()
 
     expect(draw).toHaveBeenCalledOnce()
+  })
+
+  it('applies HideLinksWhileMoving to the canvas', async () => {
+    const canvas = createCanvas(vi.fn())
+    useCanvasStore().canvas = canvas
+    const settingStore = useSettingStore()
+    settingStore.settingValues['LiteGraph.Canvas.HideLinksWhileMoving'] = true
+
+    scope.run(useLitegraphSettings)
+    expect(canvas.viewportMotion.enabled).toBe(true)
+
+    settingStore.settingValues['LiteGraph.Canvas.HideLinksWhileMoving'] = false
+    await nextTick()
+    expect(canvas.viewportMotion.enabled).toBe(false)
   })
 
   it('redraws when CanvasInfo or the canvas changes', async () => {

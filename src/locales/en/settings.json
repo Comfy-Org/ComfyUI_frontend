@@ -486,6 +486,10 @@
       "Topbar": "Topbar"
     }
   },
+  "LiteGraph_Canvas_HideLinksWhileMoving": {
+    "name": "Hide links while panning or zooming",
+    "tooltip": "Skips drawing links while the canvas is panned or zoomed and draws them again once it stops. Makes moving around large workflows smoother when the browser renders the canvas without GPU acceleration."
+  },
   "LiteGraph_Canvas_MaximumFps": {
     "name": "Maximum FPS",
     "tooltip": "The maximum frames per second that the canvas is allowed to render. Caps GPU usage at the cost of smoothness. If 0, the screen refresh rate is used. Default: 0"

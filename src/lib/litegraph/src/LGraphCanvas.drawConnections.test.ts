@@ -12,6 +12,7 @@ import {
   BADGE_GAP,
   queryLinkBadgeAtPoint
 } from '@/lib/litegraph/src/canvas/linkBadges'
+import { LINKS_RESTORE_DELAY_MS } from '@/lib/litegraph/src/canvas/ViewportMotionTracker'
 import type { Point } from '@/lib/litegraph/src/interfaces'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -611,6 +612,154 @@ describe('drawConnections', () => {
     expect(input.pos).toBeDefined()
     const offset = LiteGraph.NODE_SLOT_HEIGHT * 0.5
     expect(input.pos![1]).toBe(widget.y + offset)
+  })
+
+  describe('while the viewport moves', () => {
+    let now: number
+    let link: LLink
+
+    beforeEach(() => {
+      vi.useFakeTimers()
+      now = 1000
+      vi.spyOn(LiteGraph, 'getTime').mockImplementation(() => now)
+
+      const sourceNode = new LGraphNode('Source')
+      sourceNode.pos = [100, 100]
+      sourceNode.addOutput('out', 'STRING')
+      graph.add(sourceNode)
+      const targetNode = new LGraphNode('Target')
+      targetNode.pos = [300, 100]
+      targetNode.addInput('in', 'STRING')
+      graph.add(targetNode)
+      link = createTestLink(graph, sourceNode, 0, targetNode, 0)
+
+      canvas.visible_area[2] = 800
+      canvas.visible_area[3] = 600
+      vi.spyOn(canvas, 'renderLink').mockImplementation(() => {})
+      canvas.viewportMotion.enabled = true
+      canvas.draw(true, true)
+    })
+
+    function advance(ms: number) {
+      now += ms
+      vi.advanceTimersByTime(ms)
+    }
+
+    it('draws links on the first frame', () => {
+      expect([...canvas.renderedPaths]).toEqual([link])
+    })
+
+    it.for([
+      {
+        name: 'keeps links while the viewport is still',
+        move: () => {},
+        drawn: true
+      },
+      {
+        name: 'hides links on a frame that pans',
+        move: () => (canvas.ds.offset[0] += 10),
+        drawn: false
+      },
+      {
+        name: 'hides links on a frame that zooms',
+        move: () => (canvas.ds.scale = 0.8),
+        drawn: false
+      },
+      {
+        name: 'keeps links while panning when the option is off',
+        move: () => {
+          canvas.viewportMotion.enabled = false
+          canvas.ds.offset[0] += 10
+        },
+        drawn: true
+      },
+      {
+        name: 'keeps links while panning during a link drag',
+        move: () => {
+          vi.spyOn(canvas.linkConnector, 'isConnecting', 'get').mockReturnValue(
+            true
+          )
+          canvas.ds.offset[0] += 10
+        },
+        drawn: true
+      }
+    ])('$name', ({ move, drawn }) => {
+      advance(16)
+      move()
+      canvas.draw(true, true)
+
+      expect(canvas.renderedPaths.has(link)).toBe(drawn)
+    })
+
+    it('draws links again once the viewport has been still', () => {
+      advance(16)
+      canvas.ds.offset[0] += 10
+      canvas.draw(true, true)
+      expect(canvas.renderedPaths.size).toBe(0)
+      canvas.dirty_bgcanvas = false
+
+      advance(LINKS_RESTORE_DELAY_MS - 1)
+      expect(canvas.dirty_bgcanvas).toBe(false)
+
+      advance(1)
+      expect(canvas.dirty_bgcanvas).toBe(true)
+      canvas.draw()
+      expect([...canvas.renderedPaths]).toEqual([link])
+    })
+
+    it('keeps reroutes out of hit testing while links are hidden', () => {
+      const reroute = graph.createReroute([200, 110], link)
+      if (!reroute) throw new Error('Failed to create test reroute')
+      advance(16)
+      canvas.draw(true, true)
+      expect(canvas._visibleReroutes.has(reroute)).toBe(true)
+
+      advance(16)
+      canvas.ds.offset[0] += 10
+      canvas.draw(true, true)
+      expect(canvas._visibleReroutes.size).toBe(0)
+
+      advance(LINKS_RESTORE_DELAY_MS)
+      canvas.draw()
+      expect(canvas._visibleReroutes.has(reroute)).toBe(true)
+    })
+
+    it('clears the hovered link tooltip when motion hides links', () => {
+      canvas.over_link_center = link
+      advance(16)
+      canvas.ds.offset[0] += 10
+      canvas.draw(true, true)
+
+      expect(canvas.over_link_center).toBeUndefined()
+    })
+
+    it('restarts the delay while the viewport keeps moving', () => {
+      for (let frame = 0; frame < 20; frame++) {
+        advance(16)
+        canvas.ds.offset[0] += 10
+        canvas.draw(true, true)
+        expect(canvas.renderedPaths.size).toBe(0)
+      }
+    })
+
+    it.for([
+      { name: 'while links are hidden', moved: true, invalidated: true },
+      { name: 'while the viewport is still', moved: false, invalidated: false }
+    ])(
+      'unbinding events $name invalidates the background: $invalidated',
+      ({ moved, invalidated }) => {
+        advance(16)
+        if (moved) canvas.ds.offset[0] += 10
+        canvas.draw(true, true)
+        canvas.dirty_bgcanvas = false
+
+        canvas.unbindEvents()
+
+        expect(canvas.dirty_bgcanvas).toBe(invalidated)
+        canvas.draw(true, true)
+        expect([...canvas.renderedPaths]).toEqual([link])
+      }
+    )
   })
 })
 
