@@ -1719,7 +1719,9 @@ describe('AgentPanelRoot attach flow', () => {
       thread_id: null,
       workflow_id: 'wf-42',
       client_message_id: 'client-message-1',
-      input_method: 'typed'
+      input_method: 'typed',
+      starter_prompt_id: null,
+      starter_prompt_click_id: null
     })
 
     expect(screen.getByAltText('cat.png')).toBeInTheDocument()
@@ -3740,7 +3742,9 @@ describe('AgentPanelRoot workflow binding', () => {
             thread_id,
             workflow_id: 'wf-42',
             client_message_id: 'client-message-1',
-            input_method: 'typed'
+            input_method: 'typed',
+            starter_prompt_id: null,
+            starter_prompt_click_id: null
           }
         ]
       ])
@@ -3751,6 +3755,7 @@ describe('AgentPanelRoot workflow binding', () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
     vi.mocked(useTelemetry())!.trackAgentMessageSent.mockClear()
+    vi.mocked(useTelemetry())!.trackAgentStarterPromptClicked.mockClear()
     renderWithSelectedTarget()
 
     await userEvent.click(
@@ -3759,6 +3764,23 @@ describe('AgentPanelRoot workflow binding', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     await screen.findByRole('button', { name: 'Stop' })
 
+    // The click is reported when it happens, so it holds the first minted id and
+    // the send that follows holds the second.
+    expect(
+      vi.mocked(useTelemetry())!.trackAgentStarterPromptClicked.mock.calls
+    ).toEqual([
+      [
+        {
+          prompt_id: 'list_workflows',
+          prompt_index: 1,
+          prompt_count: 5,
+          prompt_text_hash: expect.stringMatching(/^[0-9a-f]{8}$/),
+          locale: 'en',
+          click_id: 'client-message-1',
+          draft_was_empty: true
+        }
+      ]
+    ])
     expect(vi.mocked(useTelemetry())!.trackAgentMessageSent.mock.calls).toEqual(
       [
         [
@@ -3767,8 +3789,10 @@ describe('AgentPanelRoot workflow binding', () => {
             node_tag_count: 0,
             thread_id: null,
             workflow_id: 'wf-42',
-            client_message_id: 'client-message-1',
-            input_method: 'suggestion'
+            client_message_id: 'client-message-2',
+            input_method: 'suggestion',
+            starter_prompt_id: 'list_workflows',
+            starter_prompt_click_id: 'client-message-1'
           }
         ]
       ]
@@ -3812,7 +3836,9 @@ describe('AgentPanelRoot workflow binding', () => {
             thread_id: null,
             workflow_id: 'wf-42',
             client_message_id: 'client-message-1',
-            input_method: 'typed'
+            input_method: 'typed',
+            starter_prompt_id: null,
+            starter_prompt_click_id: null
           }
         ]
       ]
@@ -3845,7 +3871,9 @@ describe('AgentPanelRoot workflow binding', () => {
             thread_id: null,
             workflow_id: 'wf-77',
             client_message_id: 'client-message-1',
-            input_method: 'typed'
+            input_method: 'typed',
+            starter_prompt_id: null,
+            starter_prompt_click_id: null
           }
         ]
       ]
@@ -8085,7 +8113,9 @@ describe('AgentPanelRoot workflow binding', () => {
       thread_id: null,
       workflow_id: null,
       client_message_id: 'client-message-1',
-      input_method: 'typed'
+      input_method: 'typed',
+      starter_prompt_id: null,
+      starter_prompt_click_id: null
     })
     expect(screen.getByText('VAEDecode #7')).toBeInTheDocument()
     expect(screen.queryByText(/KSampler/)).not.toBeInTheDocument()
