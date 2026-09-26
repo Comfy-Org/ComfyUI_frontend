@@ -1,6 +1,11 @@
 import { whenever } from '@vueuse/core'
 import { computed, watch } from 'vue'
 
+import { isCloud } from '@/platform/distribution/types'
+import {
+  clearAllWorkspaceStorage,
+  prepareWorkflowLogoutTransition
+} from '@/platform/workflow/persistence/base/storageIO'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useAuthStore } from '@/stores/authStore'
@@ -107,6 +112,16 @@ export const useCurrentUser = () => {
   const handleSignOut = async () => {
     if (isApiKeyLogin.value) {
       await apiKeyStore.clearStoredApiKey()
+      // The key-only rail never reaches `Comfy.User.SignOut`, so it never
+      // reaches `useAuthActions.logout` - the only other caller of these two.
+      // Workflow persistence deliberately does not fence off an observed
+      // `resolvedUserInfo` drop (another window's Firebase write produces one
+      // without a sign-out), so a sign-out that skips the command has to say so
+      // here or the departed user's drafts stay readable by the next one.
+      if (isCloud) {
+        prepareWorkflowLogoutTransition()
+        clearAllWorkspaceStorage()
+      }
     } else {
       await commandStore.execute('Comfy.User.SignOut')
     }

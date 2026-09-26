@@ -33,6 +33,7 @@ import { PERSIST_DEBOUNCE_MS } from '../base/draftTypes'
 import type { StartupOutcome } from '../base/draftTypes'
 import {
   completeWorkflowLogoutTransition,
+  registerWorkflowPersistenceCancel,
   registerWorkflowPersistenceFlush
 } from '../base/storageIO'
 import { migrateV1toV2 } from '../migration/migrateV1toV2'
@@ -153,9 +154,20 @@ export function useWorkflowPersistenceV2() {
   // without anyone having signed out. Clearing and fencing on that signal
   // destroyed every draft in the browser and left writes fenced with nothing
   // left to release them (the release below waits on a workspace init that
-  // only a full boot re-runs). The sign-out command owns both steps already
-  // and runs them synchronously, before navigation, with the user's intent in
-  // hand - see useAuthActions.logout.
+  // only a full boot re-runs).
+  //
+  // The sign-out sites own both steps instead, synchronously, before
+  // navigation, with the user's intent in hand. There are two of them and
+  // `Comfy.User.SignOut` is only one: a key-only session never reaches that
+  // command, so `useCurrentUser.handleSignOut` runs the same pair on the
+  // API-key rail. Anything this composable needs abandoned on the way out is
+  // registered below rather than exported, because each call of this
+  // composable owns its own debounce.
+  const unregisterPersistenceCancel = registerWorkflowPersistenceCancel(() => {
+    stopPendingWorkspaceReadinessWatcher()
+    debouncedPersist.cancel()
+  })
+
   onUserResolved(() => {
     if (!isCloud) return
     stopPendingWorkspaceReadinessWatcher()
@@ -318,6 +330,7 @@ export function useWorkflowPersistenceV2() {
     api.removeEventListener('graphChanged', debouncedPersist)
     window.removeEventListener('pagehide', flushPendingPersistence)
     unregisterPersistenceFlush()
+    unregisterPersistenceCancel()
     debouncedPersist.cancel()
     stopPendingWorkspaceReadinessWatcher()
   })
