@@ -280,6 +280,10 @@ test.describe('Models catalog', () => {
 
     const back = page.getByTestId('model-back')
     await expect(back).toHaveText('Back to Generate videos')
+    await expect(back).toHaveAttribute(
+      'href',
+      '/models?useCase=generate-videos'
+    )
     await back.click()
     await expect(page.getByRole('heading', { level: 1 })).toContainText(
       'Generate videos'

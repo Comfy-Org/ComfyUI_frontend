@@ -7,6 +7,7 @@
   "entry": [
     "src/main.ts",
     "src/**/__mocks__/**/*.ts",
+    "apps/website/src/**/__mocks__/**/*.ts",
     "index.html",
     "scripts/**/*.{js,ts}",
     "apps/website/src/scripts/**/*.ts",

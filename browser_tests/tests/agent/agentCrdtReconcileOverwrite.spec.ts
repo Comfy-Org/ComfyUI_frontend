@@ -184,14 +184,14 @@ test.describe(
 )
 
 test.describe(
-  'Agent CRDT reconcile stomps a locally renamed node title',
+  'A full workflow-tab reload and a locally renamed node title',
   { tag: ['@cloud', '@agent', '@vue-nodes'] },
   () => {
     test.use({ conversationCase: UNTOUCHED_CASE })
 
     test.beforeEach(async ({ page }) => enableCrdtDebugPanel(page))
 
-    test('keeps a manual canvas rename after an unrelated agent reconcile', async ({
+    test('keeps a manual canvas rename after leaving and reloading the workflow tab', async ({
       agentConversation,
       page
     }, testInfo) => {
@@ -221,7 +221,7 @@ test.describe(
         contentType: 'image/png'
       })
 
-      await test.step('an unrelated agent-driven reconcile runs (returning to the tab)', async () => {
+      await test.step('leaving and returning fully reloads the workflow tab', async () => {
         // The doc never learns about the manual rename, so its projected
         // title for this node is stale; the final assertion is the check.
         await reconcileByReturningToTab(
@@ -319,6 +319,42 @@ test.describe(
 
       await expect(textField).not.toHaveValue(/blurry, low quality/)
       await expect(textField).toHaveValue('hello world')
+    })
+  }
+)
+
+test.describe(
+  'Completed widget edits survive unrelated agent turns',
+  { tag: ['@cloud', '@agent', '@vue-nodes', '@widget'] },
+  () => {
+    test.use({ conversationCase: UNTOUCHED_CASE })
+
+    test('keeps a completed widget edit after an unrelated agent turn', async ({
+      agentConversation
+    }) => {
+      test.setTimeout(90_000)
+      const textField = agentConversation.vueNodes
+        .getNodeLocator(UNTOUCHED_NODE_ID)
+        .getByLabel('text', { exact: true })
+      const agentEditedField = agentConversation.vueNodes
+        .getNodeLocator('3')
+        .getByLabel('steps', { exact: true })
+      const localValue = 'keep this completed local edit'
+
+      await agentConversation.sendPrompt(0)
+
+      await agentConversation.replayResponse(0, async () => {
+        await test.step('the user completes and leaves a widget edit', async () => {
+          await textField.fill(localValue)
+          await textField.press('Tab')
+          await expect(textField).not.toBeFocused()
+          await expect(textField).toHaveValue(localValue)
+        })
+      })
+      await agentConversation.waitForTurnComplete()
+
+      await expect(agentEditedField.getByRole('spinbutton')).toHaveValue('30')
+      await expect(textField).toHaveValue(localValue)
     })
   }
 )
