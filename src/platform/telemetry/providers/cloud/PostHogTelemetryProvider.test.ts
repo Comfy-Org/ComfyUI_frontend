@@ -794,6 +794,20 @@ describe('PostHogTelemetryProvider', () => {
         properties: { reason: 'tour_active' }
       },
       {
+        event: TelemetryEvents.AGENT_CONSENT_OFFER_EXITED,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackAgentConsentOfferExited({
+            exit: 'consent_unresolved',
+            stage: 'load',
+            retry_armed: false
+          }),
+        properties: {
+          exit: 'consent_unresolved',
+          stage: 'load',
+          retry_armed: false
+        }
+      },
+      {
         event: TelemetryEvents.AGENT_ONBOARDING_NOT_SHOWN,
         track: (provider: PostHogTelemetryProvider) =>
           provider.trackAgentOnboardingNotShown({

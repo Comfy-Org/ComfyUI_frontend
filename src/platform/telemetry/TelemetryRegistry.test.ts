@@ -470,6 +470,20 @@ describe('TelemetryRegistry', () => {
           registry.trackAgentConsentNotOffered({ reason: 'first_run_screen' })
       },
       {
+        method: 'trackAgentConsentOfferExited',
+        expected: {
+          exit: 'already_offered',
+          stage: 'offer',
+          retry_armed: false
+        },
+        invoke: (registry) =>
+          registry.trackAgentConsentOfferExited({
+            exit: 'already_offered',
+            stage: 'offer',
+            retry_armed: false
+          })
+      },
+      {
         method: 'trackAgentOnboardingNotShown',
         expected: { reason: 'app_mode' },
         invoke: (registry) =>
