@@ -7,8 +7,15 @@ import enMessages from '@/locales/en/main.json'
 
 // The resume label is shared with the plan panel's ending banner, whose value
 // changes with the resume-subscription rename arriving via main — read it
-// rather than pinning either era's string.
-const resumeLabel = enMessages.workspacePanel.billingStatus.ending.reactivate
+// rather than pinning either era's string. Guarded: an undefined name would
+// silently drop the accessible-name filter and match any button.
+const resumeLabel: string =
+  enMessages.workspacePanel.billingStatus.ending.reactivate
+if (!resumeLabel) {
+  throw new Error(
+    'workspacePanel.billingStatus.ending.reactivate is gone from the bundle'
+  )
+}
 
 import MemberUpsellBanner from './MemberUpsellBanner.vue'
 

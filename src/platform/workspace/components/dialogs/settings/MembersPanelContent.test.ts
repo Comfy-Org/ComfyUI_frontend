@@ -516,7 +516,23 @@ describe('MembersPanelContent', () => {
       ).toBeTruthy()
     })
 
-    it('routes an ended Enterprise plan to sales', () => {
+    it('lets an owner resume an ended Team plan', async () => {
+      mockHasTeamPlan.value = true
+      mockIsPlanEnded.value = true
+      renderComponent()
+
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: /workspacePanel\.billingStatus\.ending\.reactivate/
+        })
+      )
+      expect(mockShowTeamPlans).toHaveBeenCalled()
+    })
+
+    it('routes an ended Enterprise plan to sales', async () => {
+      const openSpy = vi
+        .spyOn(window, 'open')
+        .mockReturnValue(null)
       mockIsPlanEnded.value = true
       mockIsSalesManagedPlan.value = true
       renderComponent()
@@ -526,9 +542,27 @@ describe('MembersPanelContent', () => {
       expect(
         screen.getByText('workspacePanel.members.upsellBannerEnterpriseEnded')
       ).toBeTruthy()
+
+      // The action lands on the enterprise page, never the team-plan
+      // request form the footer's Contact us uses.
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: /workspacePanel\.members\.contactSales/
+        })
+      )
+      expect(openSpy).toHaveBeenCalledWith(
+        'https://comfy.org/cloud/enterprise/',
+        '_blank',
+        'noopener,noreferrer'
+      )
+      openSpy.mockRestore()
     })
 
     it('shows no banner while a cancellation is merely scheduled', () => {
+      // Cancel-scheduled maps to isPlanEnded false; the mapping itself is
+      // pinned in useMembersPanel.test.ts ('keeps a cancel-scheduled plan
+      // with live access un-ended') — this asserts the render consequence.
+      mockIsPlanEnded.value = false
       renderComponent()
       expect(
         screen.queryByText('workspacePanel.members.endedTeamTitle')
@@ -573,19 +607,6 @@ describe('MembersPanelContent', () => {
         name: /workspacePanel\.members\.upgradeToTeam/
       })
       await userEvent.click(upgradeBtn)
-      expect(mockShowTeamPlans).toHaveBeenCalled()
-    })
-
-    it('lets an owner resume an ended Team plan', async () => {
-      mockHasTeamPlan.value = true
-      mockIsPlanEnded.value = true
-      renderComponent()
-
-      await userEvent.click(
-        screen.getByRole('button', {
-          name: /workspacePanel\.billingStatus\.ending\.reactivate/
-        })
-      )
       expect(mockShowTeamPlans).toHaveBeenCalled()
     })
 

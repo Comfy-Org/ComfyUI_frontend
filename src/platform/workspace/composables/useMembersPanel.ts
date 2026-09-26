@@ -127,23 +127,42 @@ export function useMembersPanel() {
   const { hasTeamPlan, isOnTeamPlan, hasMemberSeats, isPlanLoading } =
     useTeamPlan()
   const subscriptionDialog = useSubscriptionDialog()
-  const { maxSeats, occupiedSeats, subscription, subscriptionStatus } =
-    useBillingContext()
+  const {
+    maxSeats,
+    occupiedSeats,
+    subscription,
+    subscriptionStatus,
+    canAccessSubscriptionFeatures
+  } = useBillingContext()
   const { canChangeSeats, canInviteMembers } = useBillingCapabilities()
 
   // Ended (billing_status inactive) is the only member-management freeze.
   // A cancel-scheduled subscription stays active until cancel_at and the
   // backend permits seat adds the whole time — capability, invite endpoint,
   // and Stripe write path all allow it (DES-1200; verified on cloud/main
-  // 2026-09-23) — so cancelled workspaces keep invites live.
-  const isPlanEnded = computed(() => subscriptionStatus.value === 'ended')
+  // 2026-09-23) — so cancelled workspaces keep invites live. Two payload
+  // shapes report a terminal plan: subscription_status 'ended', and a
+  // cancelled row whose access has already closed (the backend reconciles
+  // that shape into 'ended' on read, but a stale payload can still carry
+  // it). Scoped to team plans: a lapsed personal subscription belongs to
+  // the upgrade banner, not the team-ended treatment.
+  const isPlanTerminal = computed(
+    () =>
+      subscriptionStatus.value === 'ended' ||
+      (subscriptionStatus.value === 'canceled' &&
+        !canAccessSubscriptionFeatures.value)
+  )
+  const isPlanEnded = computed(() => hasTeamPlan.value && isPlanTerminal.value)
   // Sales-managed, not strictly ENTERPRISE: isSalesManagedTier() treats an
   // unrecognized tier as sales-managed too, so an ended unknown/future plan
   // routes to Contact sales rather than borrowing the self-serve Reactivate
-  // claim (the same fail-closed contract the pricing surfaces follow).
-  const isSalesManagedPlan = computed(() =>
-    isSalesManagedTier(subscription.value?.tier)
-  )
+  // claim (the same fail-closed contract the pricing surfaces follow). A
+  // missing tier is equally unidentifiable, so it fails closed to the sales
+  // route too — never a self-serve Resume the capability would refuse.
+  const isSalesManagedPlan = computed(() => {
+    const tier = subscription.value?.tier
+    return tier == null ? true : isSalesManagedTier(tier)
+  })
 
   const permissions = computed(() => {
     const canManageMembers =
@@ -225,7 +244,9 @@ export function useMembersPanel() {
   const showInviteButton = computed(() =>
     isCloud
       ? canInviteMembers.value ||
-        (isPlanEnded.value && permissions.value.canManageSubscription)
+        (isPlanEnded.value &&
+          hasMemberSeats.value &&
+          permissions.value.canManageSubscription)
       : workspaceRole.value === 'owner'
   )
 

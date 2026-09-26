@@ -15,7 +15,9 @@
           : 'upgrade'
       "
       @action="
-        isPlanEnded && isSalesManagedPlan ? handleContactUs() : showTeamPlans()
+        isPlanEnded && isSalesManagedPlan
+          ? handleContactSales()
+          : showTeamPlans()
       "
     />
     <div
@@ -239,6 +241,7 @@ import MemberListItem from '@/platform/workspace/components/dialogs/settings/Mem
 import MemberUpsellBanner from '@/platform/workspace/components/dialogs/settings/MemberUpsellBanner.vue'
 import PendingInvitesList from '@/platform/workspace/components/dialogs/settings/PendingInvitesList.vue'
 import WorkspaceMenuButton from '@/platform/workspace/components/dialogs/settings/WorkspaceMenuButton.vue'
+import { ENTERPRISE_URL } from '@/platform/cloud/subscription/constants/tierPricing'
 import { useMembersPanel } from '@/platform/workspace/composables/useMembersPanel'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -279,5 +282,11 @@ const {
 
 function handleContactUs() {
   window.open(TEAM_PLAN_REQUEST_URL, '_blank', 'noopener,noreferrer')
+}
+
+// The ended-banner action: a sales-managed plan's route back is the
+// enterprise page, not the team-plan request form the footer link uses.
+function handleContactSales() {
+  window.open(ENTERPRISE_URL, '_blank', 'noopener,noreferrer')
 }
 </script>

@@ -1118,6 +1118,49 @@ describe('useMembersPanel', () => {
       expect(panel.isSalesManagedPlan.value).toBe(false)
     })
 
+    // The ended treatment is team-scoped: a lapsed personal subscription is
+    // the upgrade banner's state, not "Your team plan has ended".
+    it('keeps a lapsed personal plan out of the team-ended treatment', async () => {
+      mockIsTeamPlan.value = false
+      mockSubscriptionStatus.value = 'ended'
+      const panel = await setup()
+      expect(panel.isPlanEnded.value).toBe(false)
+    })
+
+    // A stale payload can still carry the pre-reconcile shape: cancelled with
+    // access already closed. It reads as ended, never as an unexplained
+    // dead end.
+    it('treats a cancelled plan whose access has closed as ended', async () => {
+      mockSubscriptionStatus.value = 'canceled'
+      mockCanAccessSubscriptionFeatures.value = false
+      const panel = await setup()
+      expect(panel.isPlanEnded.value).toBe(true)
+    })
+
+    it('keeps a cancel-scheduled plan with live access un-ended', async () => {
+      mockSubscriptionStatus.value = 'canceled'
+      mockCanAccessSubscriptionFeatures.value = true
+      const panel = await setup()
+      expect(panel.isPlanEnded.value).toBe(false)
+    })
+
+    it('fails a missing tier closed to the sales route', async () => {
+      mockSubscriptionStatus.value = 'ended'
+      mockSubscription.value = null
+      const panel = await setup()
+      expect(panel.isSalesManagedPlan.value).toBe(true)
+    })
+
+    // A seatless workspace has no member table; an Invite button that can
+    // never enable must not appear there.
+    it('hides the invite button for a seatless ended workspace', async () => {
+      mockSubscriptionStatus.value = 'ended'
+      mockMaxSeats.value = 1
+      useBillingCapabilities().canInviteMembers = computed(() => false)
+      const panel = await setup()
+      expect(panel.showInviteButton.value).toBe(false)
+    })
+
     it('enables invite for a Team-plan owner over personal defaults', async () => {
       mockPermissions.value = {
         ...mockPermissions.value,

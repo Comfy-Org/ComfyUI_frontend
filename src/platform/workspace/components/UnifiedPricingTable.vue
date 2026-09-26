@@ -436,6 +436,7 @@ import Button from '@/components/ui/button/Button.vue'
 import CreditSlider from '@/components/ui/credit-slider/CreditSlider.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import {
+  ENTERPRISE_URL,
   TIER_PRICING,
   amountForBillingCycle,
   hasActivePaidPlan,
@@ -534,7 +535,6 @@ const VIDEO_TEMPLATE_URL =
 
 /** External footnote destinations — rendered as real links (open in a new tab). */
 const QUESTIONS_URL = 'https://portal.usepylon.com/comfy-org/forms/question'
-const ENTERPRISE_URL = 'https://comfy.org/cloud/enterprise/'
 const PRICING_URL = 'https://comfy.org/cloud/pricing/'
 
 /** Videos-per-credit ratio is constant across tiers; reuse it for the team
