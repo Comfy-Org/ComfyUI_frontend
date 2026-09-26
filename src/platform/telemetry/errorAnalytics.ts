@@ -23,6 +23,10 @@ import { ERROR_FAILURE_KINDS } from '@/platform/telemetry/types'
  * **Readability.** Each slug added here is a new denominator someone has to
  * know how to read. Prefer the smallest set that answers a question.
  *
+ * See `docs/adr/TELEMETRY-ERRORS-0038-sanitised-error-counter-for-funnel-denominators.md`
+ * for why this exists beside ADR-TELEMETRY-ROUTING-0013, which routes errors to
+ * Datadog. This is not an alerting path — it is a funnel denominator.
+ *
  * The four entries below are the agent consent surface. They exist because
  * every event that describes how a consent offer ended is absent from the build
  * production serves, while these failures fire on `cloud.comfy.org` today — so
