@@ -21,10 +21,6 @@ const mintedIds: { thread_id: true; message_id: true } = {
   message_id: true
 }
 // Every member gets the same transform, so the slot order only names them.
-// `main` has a `messageDraft` slot between `messageDelta` and `messageDone`;
-// this branch does not, because `zAgentMessageDraftEvent` arrived with the
-// streaming-reply feature (#18551) and that feature is not on `cloud/1.54`.
-// Re-add the slot in both lists if #18551 is ever carried here.
 const [
   thinking,
   toolCall,

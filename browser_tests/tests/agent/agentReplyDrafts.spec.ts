@@ -6,7 +6,9 @@ import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import type { WorkflowListResponse } from '@comfyorg/ingest-types'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
+// `main` reads this from `@/platform/remote/comfyui/types`, which does not
+// exist on this branch; `@/schemas/apiSchema` is where it lives here.
+import type { UserDataFullInfo } from '@/schemas/apiSchema'
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import {
