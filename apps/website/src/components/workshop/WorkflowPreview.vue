@@ -6,6 +6,7 @@ import Button from '@/components/ui/button/Button.vue'
 import type { WorkflowWorkshopModelDetail } from '../../config/models-catalogue'
 import type { TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import WorkflowGraph from './WorkflowGraph.vue'
 
 const { model, cloudHref } = defineProps<{
   model: WorkflowWorkshopModelDetail
@@ -13,6 +14,11 @@ const { model, cloudHref } = defineProps<{
 }>()
 
 const template = model.workflow.template
+
+// What the workflow makes, hung in the node that hands it back. The samples
+// beneath it are results too, so there is no before to hang at the way in, and
+// a node cannot play a video.
+const samples = model.thumbnail?.kind === 'image' ? [model.thumbnail.url] : []
 
 const OUTPUT_LABEL: Record<string, TranslationKey> = {
   image: 'workshop.task.image',
@@ -81,8 +87,14 @@ const bandHeading =
 
     <div class="grid gap-10 lg:grid-cols-12">
       <div class="lg:col-span-8" data-testid="workflow-graph-section">
+        <WorkflowGraph
+          v-if="template?.downloadUrl"
+          :source="template.downloadUrl"
+          :samples
+          :fallback="template.previewUrl"
+        />
         <a
-          v-if="template?.previewUrl"
+          v-else-if="template?.previewUrl"
           :href="template.previewUrl"
           target="_blank"
           rel="noopener"
@@ -96,6 +108,18 @@ const bandHeading =
             class="max-h-160 w-full object-contain"
           />
         </a>
+        <!-- Panning a graph on a phone is not reading it. The flat export is
+          still published, and opening it is still the way to see the whole
+          thing at a size worth looking at. -->
+        <a
+          v-if="template?.previewUrl"
+          :href="template.previewUrl"
+          target="_blank"
+          rel="noopener"
+          class="mt-3 inline-flex min-h-11 items-center text-sm text-primary-warm-gray transition-colors hover:text-primary-comfy-yellow focus-visible:text-primary-comfy-yellow focus-visible:outline-primary-comfy-yellow"
+          data-testid="workflow-graph-full"
+          >{{ t('workshop.workflow.fullPreview') }}</a
+        >
       </div>
 
       <div class="lg:col-span-4">

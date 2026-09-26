@@ -174,7 +174,7 @@ test('Cloud upload, refresh, partial delivery and downloads retain one run @mobi
   await page.setViewportSize({ width: 320, height: 851 })
   await page.getByRole('tab', { name: 'Details', exact: true }).click()
   await expect(
-    page.getByRole('img', { name: 'Workflow', exact: true })
+    page.getByRole('img', { name: /nodes of this workflow/i })
   ).toBeVisible()
   const panelRight = await page
     .getByRole('tabpanel', { name: 'Details', exact: true })

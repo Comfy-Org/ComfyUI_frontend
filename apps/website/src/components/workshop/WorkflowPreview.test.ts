@@ -1,5 +1,7 @@
-import { render, screen } from '@testing-library/vue'
-import { assert, describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { render, screen, waitFor } from '@testing-library/vue'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { workflowDetailsBySlug } from '../../config/workshop-workflow-content'
 import WorkflowPreview from './WorkflowPreview.vue'
@@ -9,13 +11,36 @@ assert(model, 'the catalogue no longer carries the fixture workflow')
 
 const cloudHref = 'https://cloud.example.com/?template=animate-reference-sheet'
 
+const graphJson = () =>
+  JSON.parse(
+    readFileSync(
+      join(
+        process.cwd(),
+        'public/workflow-graphs/animate-reference-sheet.json'
+      ),
+      'utf8'
+    )
+  ) as unknown
+
+function servingGraph(answer: () => Promise<Response>) {
+  vi.stubGlobal('fetch', vi.fn(answer))
+}
+
+// Nothing here reaches the network: a test that says nothing about the graph
+// still mounts the component that fetches it.
+beforeEach(() => {
+  servingGraph(async () => Response.error())
+})
+
 describe('WorkflowPreview', () => {
   it('puts the graph beside the ways out and what it runs on', () => {
     render(WorkflowPreview, { props: { model, cloudHref } })
 
-    const graph = screen.getByRole('img')
-    expect(graph.getAttribute('src')).toBe(
-      model.workflow.template?.previewUrl ?? ''
+    expect(screen.getByTestId('workflow-graph')).toBeTruthy()
+    // Panning a graph on a phone is not reading it, so the flat export the
+    // page has always published is still one tap away.
+    expect(screen.getByTestId('workflow-graph-full').getAttribute('href')).toBe(
+      model.workflow.template?.previewUrl
     )
 
     const actions = screen.getByTestId('workflow-actions')
@@ -77,5 +102,32 @@ describe('WorkflowPreview', () => {
       'Runs on Comfy Cloud'
     )
     expect(screen.queryByText('Author')).toBeNull()
+  })
+
+  // The graph is read from the same JSON the page offers for download, so what
+  // it draws is what a reader would get if they took it away.
+  it('draws the nodes of the template it downloads', async () => {
+    servingGraph(async () => Response.json(graphJson()))
+
+    render(WorkflowPreview, { props: { model, cloudHref } })
+
+    expect(
+      await screen.findByRole('img', { name: /nodes of this workflow/i })
+    ).toBeTruthy()
+    expect(fetch).toHaveBeenCalledWith(model.workflow.template?.downloadUrl)
+  })
+
+  // The flat export is what this page showed before, so it is what a graph
+  // that cannot be read falls back to.
+  it('falls back to the flat export when the template cannot be read', async () => {
+    servingGraph(async () => Response.error())
+
+    render(WorkflowPreview, { props: { model, cloudHref } })
+
+    await waitFor(() =>
+      expect(
+        screen.getByTestId('workflow-graph-flat').getAttribute('src')
+      ).toBe(model.workflow.template?.previewUrl)
+    )
   })
 })
