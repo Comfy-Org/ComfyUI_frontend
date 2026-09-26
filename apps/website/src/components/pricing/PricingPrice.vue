@@ -20,10 +20,7 @@ const {
 
 const billingNote = computed(() => {
   if (billingPeriod === 'yearly' && yearlyTotal) {
-    return t('pricing.period.billedYearly', locale).replace(
-      '{total}',
-      yearlyTotal
-    )
+    return t('pricing.period.billedYearly', locale, { total: yearlyTotal })
   }
   if (billingPeriod === 'monthly') {
     return t('pricing.period.billedMonthly', locale)

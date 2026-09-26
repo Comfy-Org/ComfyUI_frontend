@@ -2,13 +2,13 @@
 import type { Locale } from '../../../i18n/translations'
 
 import { externalLinks } from '../../../config/routes'
-import { t } from '../../../i18n/translations'
+import { t, tAround } from '../../../i18n/translations'
 import CardArrow from '../../common/CardArrow.vue'
 import GlassCard from '../../common/GlassCard.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
-const headingParts = t('cloud.audience.heading', locale).split('{creators}')
+const headingParts = tAround('cloud.audience.heading', locale, 'creators')
 
 const cards = [
   {

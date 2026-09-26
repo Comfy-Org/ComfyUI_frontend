@@ -40,9 +40,7 @@ const elapsed = computed(() => Math.max(0, now.value - take.startedAt))
       class="size-4 text-primary-comfy-yellow motion-safe:animate-spin"
       aria-hidden="true"
     />
-    {{
-      tc('cinematic.stage.renderingTake', locale).replace('{take}', take.letter)
-    }}
+    {{ tc('cinematic.stage.renderingTake', locale, { take: take.letter }) }}
     <span class="font-mono text-primary-comfy-canvas tabular-nums">
       {{ formatElapsed(elapsed) }}
     </span>

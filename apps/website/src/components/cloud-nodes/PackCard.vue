@@ -21,7 +21,7 @@ function nodeCountLabel(nodeCount: number): string {
     new Intl.PluralRules(locale).select(nodeCount) === 'one'
       ? 'cloudNodes.card.nodeCountOne'
       : 'cloudNodes.card.nodeCountOther'
-  return t(key, locale).replace('{count}', String(nodeCount))
+  return t(key, locale, { count: nodeCount })
 }
 </script>
 

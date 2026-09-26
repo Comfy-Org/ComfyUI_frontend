@@ -92,10 +92,7 @@ const motionValue = computed({
           :disabled
           class="grid size-5 place-items-center rounded-md text-primary-warm-gray hover:text-primary-warm-white"
           :aria-label="
-            rc('reshoot.move.remove', locale).replace(
-              '{time}',
-              frameTime(key.frame)
-            )
+            rc('reshoot.move.remove', locale, { time: frameTime(key.frame) })
           "
           @click="emit('remove', key.frame)"
         >

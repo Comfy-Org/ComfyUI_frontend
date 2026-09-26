@@ -20,18 +20,18 @@ const {
 
 function perTake(shot: ShotEstimate): string | undefined {
   if (shot.takes === 1) return undefined
-  return tc('cinematic.credits.perTake', locale)
-    .replace('{takes}', String(shot.takes))
-    .replace('{credits}', formatCreditRange(shot.perTake, locale))
+  return tc('cinematic.credits.perTake', locale, {
+    takes: shot.takes,
+    credits: formatCreditRange(shot.perTake, locale)
+  })
 }
 
 const cost = computed(() =>
   estimate
     ? {
-        label: tc('cinematic.credits.estimate', locale).replace(
-          '{credits}',
-          formatCreditRange(estimate.total, locale)
-        ),
+        label: tc('cinematic.credits.estimate', locale, {
+          credits: formatCreditRange(estimate.total, locale)
+        }),
         detail: perTake(estimate)
       }
     : {

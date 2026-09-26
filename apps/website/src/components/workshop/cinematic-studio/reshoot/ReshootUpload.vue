@@ -91,12 +91,7 @@ function drop(event: DragEvent) {
       role="alert"
       class="text-sm text-destructive-light"
     >
-      {{
-        rc('reshoot.clip.length', locale).replace(
-          '{seconds}',
-          tooLong.toFixed(1)
-        )
-      }}
+      {{ rc('reshoot.clip.length', locale, { seconds: tooLong.toFixed(1) }) }}
     </p>
   </aside>
 </template>

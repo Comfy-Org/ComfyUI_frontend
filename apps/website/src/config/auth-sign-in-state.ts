@@ -85,9 +85,10 @@ export function signInErrorMessage(
   hostname: string
 ): string {
   return classification.kind === 'unauthorized-domain'
-    ? t('toastMessages.unauthorizedDomain', locale)
-        .replace('{domain}', hostname)
-        .replace('{email}', SUPPORT_EMAIL)
+    ? t('toastMessages.unauthorizedDomain', locale, {
+        domain: hostname,
+        email: SUPPORT_EMAIL
+      })
     : authErrorMessage(classification, localizedAuthErrorCopy(locale))
 }
 
