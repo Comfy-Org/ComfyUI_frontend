@@ -65,6 +65,11 @@ export class AgentCrdtProjection {
     this.adapter.discardPending(workflowId)
   }
 
+  /** Whether this workflow's bound session currently has any doc nodes. */
+  hasNodes(workflowId: string): boolean {
+    return this.adapter.hasNodes(workflowId)
+  }
+
   /** @returns ids that received a new live node on this pass. */
   reconcileLiveGraph(workflowId: string): NodeId[] {
     const graph = this.getGraph()

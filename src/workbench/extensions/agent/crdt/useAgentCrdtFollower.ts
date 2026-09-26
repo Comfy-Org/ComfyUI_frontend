@@ -34,6 +34,7 @@ import type { MutationsForTarget } from './ecsFollowerAdapter'
 import type { GraphOperation } from './graphOperations'
 import type { ClassifiedDocUpdate } from './layoutFollowerBridge'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
+import { SYSTEM_MINT_ACTOR } from './mintActor'
 import { createOpCoalescer } from './opCoalescer'
 import type { OpsResultView } from './opSender'
 import { createOpSender } from './opSender'
@@ -485,23 +486,59 @@ function startAgentCrdtFollower(
     lastFrameType.value = event.type
     recordDevEvent('doc_ops_result', event.detail ?? null)
   }
+  const parseDocResetDetail = (
+    event: Event
+  ): { workflowId?: string; actor?: string; seq?: number } | undefined =>
+    event instanceof CustomEvent
+      ? (event.detail as { workflowId?: string; actor?: string; seq?: number })
+      : undefined
+  const buildDocResetContext = (
+    actor: string | undefined,
+    seq: number | undefined
+  ): RemoteMutationContext => ({
+    source: 'agent-remote',
+    actor: actor ?? 'agent-reset',
+    opId: `doc-reset:${seq ?? 'unknown'}`
+  })
+  // A doc_reset is always followed synchronously by `follower_replaced` for
+  // the same lineage break (LayoutFollowerBridge.onDocReset dispatches
+  // `doc_reset`, THEN drops the old FollowerDoc, THEN dispatches
+  // `follower_replaced`). The one sweep decision below is made here, while
+  // `bridge.follower` still holds the pre-drop doc that `hasNodes` reads —
+  // by the time `follower_replaced` fires that doc is already gone, replaced
+  // by an empty one, so re-deriving a decision there would always see zero
+  // nodes. `onFollowerReplaced` reuses this decision instead of making its
+  // own from the bare actor string, which is also the one field
+  // `LayoutFollowerBridge.subscribe`'s OWN `follower_replaced` dispatch (a
+  // deliberate workflow switch, not a reset) never carries.
+  let pendingResetSweepDecision: { workflowId: string; skip: boolean } | null =
+    null
+  // Skip-check lives here so a benign first-mint reset (no prior projection
+  // state to lose) doesn't clear the canvas out from under the user. A mint
+  // actor alone is not enough: the backend also mints mid-turn on a lineage
+  // break for a workflow the follower already has content for, and that
+  // reset must still sweep — so the skip additionally requires the
+  // projection to currently hold zero nodes for this workflow. `hasNodes` is
+  // read here, before the pre-drop doc is replaced, so it is a non-stale
+  // snapshot of the CRDT-tracked node count at the moment of this reset —
+  // that alone is sufficient to tell a benign empty mint from a mid-turn
+  // re-mint with real content to lose, so no seq corroboration is needed.
+  const sweepProjectionUnlessMintActor = (
+    workflowId: string,
+    actor: string | undefined,
+    seq: number | undefined
+  ): void => {
+    const skip = actor === SYSTEM_MINT_ACTOR && !projection.hasNodes(workflowId)
+    pendingResetSweepDecision = { workflowId, skip }
+    if (skip) return
+    projection.clearForReset(workflowId, buildDocResetContext(actor, seq))
+  }
   const onDocReset: EventListener = (event) => {
-    const detail =
-      event instanceof CustomEvent
-        ? (event.detail as {
-            workflowId?: string
-            actor?: string
-            seq?: number
-          })
-        : undefined
+    pendingResetSweepDecision = null
+    const detail = parseDocResetDetail(event)
     incrementOutcome('reset')
     if (!isCurrentWorkflow(detail?.workflowId)) return
-    const context: RemoteMutationContext = {
-      source: 'agent-remote',
-      actor: detail.actor ?? 'agent-reset',
-      opId: `doc-reset:${detail.seq ?? 'unknown'}`
-    }
-    projection.clearForReset(detail.workflowId, context)
+    sweepProjectionUnlessMintActor(detail.workflowId, detail.actor, detail.seq)
     sender.abortAll()
     events.onReset?.(detail.workflowId)
     connected.value = false
@@ -511,10 +548,7 @@ function startAgentCrdtFollower(
     knownDocNodeIds = new Set()
     pendingLiveNodeIds.clear()
     confirmedDeletes.clear()
-    recordDevEvent(
-      'doc_reset',
-      event instanceof CustomEvent ? (event.detail ?? null) : null
-    )
+    recordDevEvent('doc_reset', detail)
   }
   const onFollowerReplaced: EventListener = (event) => {
     // Gate on this composable's own INTENT, not the bridge's send REALITY
@@ -532,11 +566,16 @@ function startAgentCrdtFollower(
     ) {
       updatesApplied.value = 0
       confirmedDeletes.clear()
-      projection.clearForReset(workflowId, {
-        source: 'agent-remote',
-        actor: 'agent-lineage',
-        opId: `follower-replaced:${workflowId}`
-      })
+      const handledByDocReset =
+        pendingResetSweepDecision?.workflowId === workflowId
+      if (handledByDocReset) pendingResetSweepDecision = null
+      else {
+        projection.clearForReset(workflowId, {
+          source: 'agent-remote',
+          actor: 'agent-lineage',
+          opId: `follower-replaced:${workflowId}`
+        })
+      }
       projection.bind(workflowId, bridge.follower)
     }
   }

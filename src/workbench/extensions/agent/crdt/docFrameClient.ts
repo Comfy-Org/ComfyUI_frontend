@@ -2,6 +2,8 @@ import type { Op } from '@comfyorg/comfy-multi-player'
 
 import { reportError } from '@/platform/telemetry/reportError'
 
+import { SYSTEM_MINT_ACTOR } from './mintActor'
+
 export const DOC_PROTOCOL_VERSION = 1
 /** Keep this encoded-field cap aligned with cloud's `MaxDocFrameB64Len`. */
 const MAX_DOC_UPDATE_B64_LENGTH = 8 << 20
@@ -182,7 +184,7 @@ function isValidActor(value: string): boolean {
     /[\0\n\r\t ]/.test(value)
   )
     return false
-  if (value === 'system:mint') return true
+  if (value === SYSTEM_MINT_ACTOR) return true
   const match = /^(?:agent|human):([^:]+):([^:]+)$/.exec(value)
   return match !== null
 }
