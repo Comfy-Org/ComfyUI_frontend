@@ -12,10 +12,10 @@ const REFUSALS: readonly [
   WorkflowErrorCode | 'network' | 'response' | 'persistence',
   RunFailure | undefined
 ][] = [
-  ['invalid_request', 'validation'],
-  ['invalid_input', 'validation'],
-  ['payload_too_large', 'validation'],
-  ['unsupported_media_type', 'validation'],
+  ['invalid_request', undefined],
+  ['invalid_input', undefined],
+  ['payload_too_large', undefined],
+  ['unsupported_media_type', undefined],
   ['access_denied', 'policy'],
   ['insufficient_credits', 'noCredits'],
   ['rate_limited', 'rateLimit'],

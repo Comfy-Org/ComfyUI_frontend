@@ -9,6 +9,7 @@ import { useWorkshopDelivery } from '../../composables/useWorkshopDelivery'
 import type { WorkflowState } from '../../config/workshop-workflow-state'
 import { workflowOutputs } from '../../config/workshop-workflow-response'
 import { outputLabels } from '../../lib/workshop/output-labels'
+import { requestWorkshopBuyCredits } from '../../config/workshop-buy-credits'
 import { workflowRunFailure } from '../../lib/workshop/workflow-refusal'
 import { t } from '../../i18n/translations'
 import { captureWorkshopEvent } from '../../scripts/posthog'
@@ -193,6 +194,7 @@ function captureDownload(kind: RunOutput['kind']) {
     :retry-disabled="!canStart"
     refreshable
     @retry="emit('retry')"
+    @buy-credits="requestWorkshopBuyCredits"
     @refresh="refreshUrl"
     @delivery="onDelivery"
     @playback-started="delivery.beginPlayback"

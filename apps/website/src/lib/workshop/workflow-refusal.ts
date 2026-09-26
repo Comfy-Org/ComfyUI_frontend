@@ -17,10 +17,6 @@ export function workflowRunFailure(
 }
 
 const REFUSALS: Record<string, RunFailure | undefined> = {
-  invalid_request: 'validation',
-  invalid_input: 'validation',
-  payload_too_large: 'validation',
-  unsupported_media_type: 'validation',
   access_denied: 'policy',
   insufficient_credits: 'noCredits',
   rate_limited: 'rateLimit',
@@ -32,9 +28,16 @@ const REFUSALS: Record<string, RunFailure | undefined> = {
   response: 'response',
   persistence: 'client',
   run_not_found: 'client',
-  // Said in the page's own words instead, because the panel has none for them.
+  // Said in the page's own words instead. A session that expired and a form
+  // gone out of date the panel has no word for at all; what is wrong with an
+  // input belongs beside the input, and the panel's own words for a rejection
+  // it cannot pin to a field are about a model rather than a workflow.
   not_authenticated: undefined,
   workflow_not_found: undefined,
   definition_changed: undefined,
-  definition_incompatible: undefined
+  definition_incompatible: undefined,
+  invalid_request: undefined,
+  invalid_input: undefined,
+  payload_too_large: undefined,
+  unsupported_media_type: undefined
 }
