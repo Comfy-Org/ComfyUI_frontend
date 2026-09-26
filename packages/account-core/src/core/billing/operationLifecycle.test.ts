@@ -287,7 +287,7 @@ describe('createBillingOperationLifecycle', () => {
       ])
     })
 
-    it("adopts the backend's pending operation of the same kind instead of issuing a second", async () => {
+    it("refuses over the backend's pending operation of the same kind instead of issuing a second", async () => {
       const { lifecycle, telemetry } = harness({
         status: statusSnapshot({
           pending_billing_op_id: 'op-9',
@@ -301,19 +301,12 @@ describe('createBillingOperationLifecycle', () => {
       const began = await lifecycle.begin('topup', issue)
 
       expect(issue).not.toHaveBeenCalled()
-      expect(began).toMatchObject({
-        status: 'ok',
-        value: {
-          id: 'op-9',
-          actionUrl: 'https://billing.example/continue',
-          customerActionSeen: true
-        }
+      expect(began).toEqual({
+        status: 'error',
+        code: 'OPERATION_ALREADY_PENDING'
       })
-      expect(telemetry[0]).toMatchObject({
-        name: 'billing.operation.started',
-        billing_op_id: 'op-9',
-        resumed: true
-      })
+      // Nothing was taken over, so no attempt started under this caller.
+      expect(telemetry).toEqual([])
     })
 
     it('shares one in-flight command per kind', async () => {
@@ -471,6 +464,41 @@ describe('createBillingOperationLifecycle', () => {
       expect(calls).toHaveLength(3)
       await vi.advanceTimersByTimeAsync(1)
       expect(calls).toHaveLength(4)
+    })
+
+    it('keeps the backoff while a blocked phase leaves the customer nothing to act on, so a lagging authentication state reaches the challenge', async () => {
+      const awaitingInvoice = {
+        phase: 'awaiting_invoice_payment',
+        payment_intent_client_secret: 'pi_secret'
+      } as const
+      const { lifecycle, calls } = harness({
+        embedded: true,
+        answers: [
+          httpOk(opStatus({ phase: 'in_progress' })),
+          httpOk(
+            opStatus({ ...awaitingInvoice, authentication_state: 'processing' })
+          ),
+          httpOk(
+            opStatus({
+              ...awaitingInvoice,
+              authentication_state: 'requires_action'
+            })
+          )
+        ]
+      })
+      await lifecycle.begin('subscription', issued())
+      await flush()
+      await vi.advanceTimersByTimeAsync(OPERATION_POLL_TIMING.initialMs * 1.5)
+      expect(calls).toHaveLength(2)
+      expect(lifecycle.get('op-1')).toMatchObject({ challenge: undefined })
+
+      await vi.advanceTimersByTimeAsync(OPERATION_POLL_TIMING.maxMs)
+
+      expect(calls).toHaveLength(3)
+      expect(lifecycle.get('op-1')).toMatchObject({
+        presentation: 'embedded',
+        challenge: { clientSecret: 'pi_secret', status: 'required' }
+      })
     })
 
     it('joins a wake to the poll in flight rather than issuing a second request', async () => {
@@ -653,7 +681,7 @@ describe('createBillingOperationLifecycle', () => {
           pending_billing_op_type: 'topup'
         })
       )
-      const readopted = await lifecycle.begin('topup', issued())
+      const readopted = await lifecycle.recover()
       await flush()
 
       expect(readopted).toMatchObject({

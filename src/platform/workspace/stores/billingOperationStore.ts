@@ -405,13 +405,27 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   // tab's own challenge completes, the state reads processing and nothing
   // waits on the customer anymore — holding the slow cadence there left a
   // settled payment spinning for half a minute.
+  //
+  // Only parked while the customer can act here. The server can report a
+  // blocked phase and a client secret before its cached authentication_state
+  // catches up, and the slow cadence would then hold a screen with no action.
   function isParkedAwaitingCustomer(operation: BillingOperation): boolean {
     return (
-      isBlockedOnCustomerPhase(operation.phase) ||
-      operation.authenticationState === 'requires_action' ||
-      operation.actionUrl !== null ||
-      (operation.authenticationState === 'failed_retryable' &&
-        operation.authenticationRequiredSeen)
+      customerCanAct(operation) &&
+      (isBlockedOnCustomerPhase(operation.phase) ||
+        operation.authenticationState === 'requires_action' ||
+        operation.actionUrl !== null ||
+        (operation.authenticationState === 'failed_retryable' &&
+          operation.authenticationRequiredSeen))
+    )
+  }
+
+  function customerCanAct(operation: BillingOperation): boolean {
+    if (operation.actionUrl !== null) return true
+    if (operation.authenticationState === 'failed_retryable') return true
+    return (
+      operation.authenticationState === 'requires_action' &&
+      paymentIntentClientSecrets.has(operation.opId)
     )
   }
 

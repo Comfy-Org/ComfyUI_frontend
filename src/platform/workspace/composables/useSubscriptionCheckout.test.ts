@@ -406,7 +406,7 @@ vi.mock(import('@/config/comfyApi'), () => ({
 }))
 
 vi.mock<unknown>(
-  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
+  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
   () => ({
     useToast: () => ({ add: mockToastAdd })
   })
@@ -571,11 +571,64 @@ describe('useSubscriptionCheckout', () => {
   })
 
   describe('checkout journey instrumentation', () => {
-    function journeyPhases() {
+    function journeyEvents() {
       return (
         vi.mocked(useTelemetry()?.trackCheckoutJourneyEvent)?.mock.calls ?? []
-      ).map(([event]) => event.phase)
+      ).map(([event]) => event)
     }
+
+    function journeyPhases() {
+      return journeyEvents().map((event) => event.phase)
+    }
+
+    it.for([
+      { paymentIntentSource: 'agent_paywall', entrySource: 'agent_paywall' },
+      { paymentIntentSource: undefined, entrySource: 'pricing' }
+    ] as const)(
+      'derives the $entrySource entry source from $paymentIntentSource',
+      async ({ paymentIntentSource, entrySource }) => {
+        const checkout = await setup(paymentIntentSource)
+
+        await checkout.handleSubscribeClick({
+          tierKey: 'standard',
+          billingCycle: 'yearly'
+        })
+
+        expect(journeyEvents().map((event) => event.entry_source)).toEqual([
+          entrySource,
+          entrySource
+        ])
+      }
+    )
+
+    // Resume matches on actor, workspace, flow and intent — not source. An
+    // abandoned pricing preview for the same plan would otherwise be resumed
+    // by an agent-paywall entry and keep reporting `pricing`, so the agent's
+    // purchase would be credited to the surface the user walked away from.
+    it('does not inherit an abandoned journey entered from another source', async () => {
+      // Seeded with the bare tier:cycle intent the rail used before it keyed
+      // by source, so this is the record an abandoned pricing preview actually
+      // leaves behind.
+      resolveCheckoutJourney({
+        actorUid: 'user-1',
+        workspaceId: 'workspace-1',
+        entryFlow: 'initial_subscription',
+        entrySource: 'pricing',
+        intent: 'standard:yearly',
+        assignment: { status: 'unavailable' }
+      })
+
+      const checkout = await setup('agent_paywall')
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+
+      expect(journeyEvents().map((event) => event.entry_source)).toEqual([
+        'agent_paywall',
+        'agent_paywall'
+      ])
+    })
 
     it('emits entered, submitted, and operation_linked across a subscribe', async () => {
       const checkout = await setup()

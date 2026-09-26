@@ -158,7 +158,7 @@ onMounted(() => {
         ? { 'aria-activedescendant': activeDescendant }
         : {}),
       class:
-        'text-base-foreground min-h-7 w-full cursor-text font-inter text-[14px]/7 font-normal wrap-anywhere whitespace-pre-wrap outline-none'
+        'text-base-foreground min-h-7 w-full cursor-text font-inter text-[14px]/5 font-normal wrap-anywhere whitespace-pre-wrap outline-none'
     }),
     decorations(state) {
       if (state.selection.empty) return null

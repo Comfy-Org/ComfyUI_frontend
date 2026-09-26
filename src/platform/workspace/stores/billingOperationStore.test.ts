@@ -1331,6 +1331,47 @@ describe('billingOperationStore', () => {
       expect(mockHandleNextAction).not.toHaveBeenCalled()
     })
 
+    it('keeps the backoff while a blocked phase leaves the customer nothing to act on, so a lagging authentication state reaches the challenge', async () => {
+      const awaitingInvoice = {
+        id: 'op-3ds',
+        status: 'pending',
+        phase: 'awaiting_invoice_payment',
+        payment_intent_client_secret: 'pi_secret_current',
+        started_at: new Date().toISOString()
+      } as const
+      vi.mocked(workspaceApi.getBillingOpStatus)
+        .mockResolvedValueOnce({
+          id: 'op-3ds',
+          status: 'pending',
+          phase: 'in_progress',
+          started_at: new Date().toISOString()
+        })
+        .mockResolvedValueOnce({
+          ...awaitingInvoice,
+          authentication_state: 'processing'
+        })
+        .mockResolvedValue({
+          ...awaitingInvoice,
+          authentication_state: 'requires_action'
+        })
+      mockHandleNextAction.mockReturnValue(new Promise(() => {}))
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-3ds', 'subscription', {
+        autoHandleRequiresAction: true,
+        suppressProcessingToast: true
+      })
+      await vi.advanceTimersByTimeAsync(1_500)
+      expect(workspaceApi.getBillingOpStatus).toHaveBeenCalledTimes(2)
+      expect(mockHandleNextAction).not.toHaveBeenCalled()
+
+      await vi.advanceTimersByTimeAsync(8_000)
+
+      expect(mockHandleNextAction).toHaveBeenCalledWith({
+        clientSecret: 'pi_secret_current'
+      })
+    })
+
     it('recovers when Stripe.js fails to load', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-3ds',
@@ -2086,7 +2127,7 @@ describe('billingOperationStore', () => {
       })
     })
 
-    it('keeps checkout recovery pending at a parked cadence until the long timeout', async () => {
+    it('keeps checkout recovery pending on the normal cadence until the long timeout', async () => {
       const startedAt = Date.now()
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-checkout',
@@ -2099,9 +2140,7 @@ describe('billingOperationStore', () => {
       const terminal = store.startOperation('op-checkout', 'subscription')
       await vi.advanceTimersByTimeAsync(0)
 
-      await vi.advanceTimersByTimeAsync(29_999)
-      expect(workspaceApi.getBillingOpStatus).toHaveBeenCalledTimes(1)
-      await vi.advanceTimersByTimeAsync(1)
+      await vi.advanceTimersByTimeAsync(1_500)
       expect(workspaceApi.getBillingOpStatus).toHaveBeenCalledTimes(2)
 
       await vi.advanceTimersByTimeAsync(5 * 60_000)

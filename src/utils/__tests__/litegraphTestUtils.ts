@@ -150,9 +150,7 @@ export function createMockCanvas(
 ): LGraphCanvas {
   return {
     setDirty: vi.fn(),
-    state: {
-      selectionChanged: false
-    },
+    state: {},
     ...(overrides as Partial<LGraphCanvas>)
   } as LGraphCanvas
 }

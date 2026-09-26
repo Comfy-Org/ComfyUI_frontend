@@ -133,7 +133,11 @@ test.describe(
           await typing
           await resync
 
-          test.fail()
+          // PM-1191/PM-1697: the resync's whole-value set_widget is stale by
+          // however many keystrokes were in flight when the host built it.
+          // The local-dirty guard on the incremental setWidget path
+          // (graphMutations.ts) now skips it, so the typed text survives
+          // regardless of where the resync interleaves with the keystrokes.
           await expect(field).toHaveValue(`a photo of a pier${appended}`)
         })
       })

@@ -53,6 +53,14 @@ export const WORKSHOP_CREDITS_URL = new URL(
   WORKSHOP_CLOUD_BASE_URL
 ).href
 
+/** Where "see all" sends a reader whose assets outgrew the strip. Cloud owns
+ * the full library; the website only ever shows the most recent few. The
+ * param opens Cloud's Assets panel — see `useAssetsUrlLoader` in the app. */
+export const WORKSHOP_ASSETS_URL = new URL(
+  '/?assets=1',
+  WORKSHOP_CLOUD_BASE_URL
+).href
+
 // Public web-app configs, same values the platform app ships in
 // src/config/firebase.ts. Staging and test both validate tokens from the dev
 // project; prod validates the prod project.
