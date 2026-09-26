@@ -564,7 +564,7 @@ test.describe('Billing recovery on the SDK rails', { tag: '@cloud' }, () => {
         teamContent.getByText('This workspace is not on a subscription')
       ).toBeVisible()
       await expect(
-        teamContent.getByRole('button', { name: 'Subscribe Now' })
+        teamContent.getByRole('button', { name: 'Subscribe', exact: true })
       ).toBeVisible()
       await expect(teamContent.getByText(/Renews on/)).toHaveCount(0)
     })
