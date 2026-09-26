@@ -2,6 +2,11 @@ import { expect, mergeTests } from '@playwright/test'
 import type { Page, Response } from '@playwright/test'
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import {
+  PM_1150_JOB_ID,
+  pm1150Job,
+  pm1150JobDetail
+} from '@e2e/fixtures/data/pm1150AgentJob'
 import { expectNoErrorUiAfterVerification } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import {
   createRouteMockJob,
@@ -647,3 +652,67 @@ test.describe('FE-910 marquee selection and select all', () => {
     })
   })
 })
+
+// PM-1150: verifies PR #13957's stored-API-graph fallback against a synthetic
+// job shape representative of comfy-cli agent-submitted jobs (workflow.prompt
+// present, no embedded editor workflow). See fixtures/data/pm1150AgentJob.ts
+// for why this is a representative fixture rather than a captured payload.
+test.describe(
+  'Assets sidebar - agent-submitted job workflow open',
+  { tag: '@screenshot' },
+  () => {
+    test.beforeEach(async ({ jobsRoutes, page }) => {
+      await jobsRoutes.mockJobsHistory([pm1150Job])
+      await jobsRoutes.mockJobDetail(PM_1150_JOB_ID, pm1150JobDetail)
+      await mockInputFiles(page, [])
+      await mockViewFiles(page, { 'agent_job_output.png': {} })
+    })
+
+    test('PM-1150 — opens an agent-submitted job as a workflow via the stored API graph fallback', async ({
+      comfyPage
+    }) => {
+      const tab = comfyPage.menu.assetsTab
+
+      await test.step('open the agent job as a workflow', async () => {
+        await comfyPage.setup()
+        await tab.open()
+        await tab.rightClickAsset('agent_job_output.png')
+        await tab.contextMenuItem('Open as workflow in new tab').click()
+      })
+
+      await test.step('verify the rebuilt workflow loads and renders', async () => {
+        // Before PR #13957 this failed with "No workflow data available"
+        // since agent-submitted jobs never embed an editor workflow.
+        await expect(comfyPage.toast.toastSuccesses).toBeVisible()
+        await expect(comfyPage.toast.toastWarnings).toBeHidden({
+          timeout: 1500
+        })
+
+        await expect
+          .poll(() => comfyPage.menu.topbar.getActiveTabName())
+          .toBe('agent_job_output')
+        await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(7)
+        await expect
+          .poll(() =>
+            comfyPage.page.evaluate(() =>
+              window.app!.graph.nodes.map((node) => node.type)
+            )
+          )
+          .toEqual(
+            expect.arrayContaining([
+              'CheckpointLoaderSimple',
+              'KSampler',
+              'SaveImage'
+            ])
+          )
+
+        // This describe block doesn't run with `@vue-nodes`, so nodes paint
+        // on the legacy canvas rather than as DOM cards.
+        await comfyPage.nextFrame()
+        await expect(comfyPage.canvas).toHaveScreenshot(
+          'pm-1150-agent-job-opened-as-workflow.png'
+        )
+      })
+    })
+  }
+)

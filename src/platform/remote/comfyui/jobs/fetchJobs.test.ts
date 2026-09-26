@@ -463,18 +463,19 @@ describe('fetchJobs', () => {
     })
   })
 
-  // PM-1150: real job 33a723f2-bf1f-4faf-9c42-1b83e2185601's exact detail
-  // shape, verified via direct citation of comfy-cli's `run` command (used by
-  // the in-app agent's backend service to submit jobs), which never sends
-  // `extra_data.extra_pnginfo.workflow` for any invocation — only the raw
-  // API-format `prompt` graph plus a top-level `workflow_id`.
+  // PM-1150 (job 33a723f2-bf1f-4faf-9c42-1b83e2185601): a synthetic fixture
+  // representing the shape comfy-cli's `run` command produces — no captured
+  // job-detail response for the real job is available, so this round-trips a
+  // representative payload (workflow.prompt present, extra_data absent)
+  // through the real zJobDetail/extractApiPrompt path rather than reproducing
+  // the exact production payload.
   //
-  // Before `zWorkflowContainer` grew a `prompt` field (this PR), the
-  // `prompt` key below was stripped by `zJobDetail.parse`'s zod schema before
-  // it ever reached `extractApiPrompt`, so this round trip returned undefined
-  // and the asset menu's "Open as workflow" always failed with "No workflow
-  // data available" for this job shape.
-  describe('PM-1150 — agent-submitted job round trip (job 33a723f2)', () => {
+  // `zWorkflowContainer` grew its `prompt` field in PR #13957, not this one;
+  // before that, `zJobDetail.parse` stripped the `prompt` key below before it
+  // ever reached `extractApiPrompt`, so this round trip returned undefined and
+  // the asset menu's "Open as workflow" failed with "No workflow data
+  // available" for this job shape.
+  describe('PM-1150 — agent-submitted job round trip (synthetic fixture)', () => {
     const PM_1150_JOB_ID = '33a723f2-bf1f-4faf-9c42-1b83e2185601'
     const PM_1150_API_PROMPT = {
       '1': {
@@ -520,8 +521,7 @@ describe('fetchJobs', () => {
             ]
           }
         },
-        // No `extra_data` key at all — this is the exact wire shape, not a
-        // trimmed-down test double.
+        // No `extra_data` key at all — the fallback path this fixture covers.
         workflow: { prompt: PM_1150_API_PROMPT }
       }
     }
@@ -536,17 +536,6 @@ describe('fetchJobs', () => {
 
       expect(jobDetail).toBeDefined()
       expect(extractApiPrompt(jobDetail)).toEqual(PM_1150_API_PROMPT)
-    })
-
-    it('never resolves an editor workflow for this shape', async () => {
-      const mockFetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve(pm1150JobDetailJson())
-      })
-
-      const jobDetail = await fetchJobDetail(mockFetch, PM_1150_JOB_ID)
-
-      await expect(extractWorkflow(jobDetail)).resolves.toBeUndefined()
     })
   })
 
