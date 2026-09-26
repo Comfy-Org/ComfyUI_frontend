@@ -522,7 +522,8 @@ describe('TelemetryRegistry', () => {
 
       registry.trackFirstRunScreenDismissed({
         method: 'start_blank',
-        visible_duration_ms: 1200
+        visible_duration_ms: 1200,
+        tour_outcome: 'not_attempted'
       })
 
       for (const provider of [a, b]) {
@@ -530,7 +531,8 @@ describe('TelemetryRegistry', () => {
           provider.trackFirstRunScreenDismissed
         ).toHaveBeenCalledExactlyOnceWith({
           method: 'start_blank',
-          visible_duration_ms: 1200
+          visible_duration_ms: 1200,
+          tour_outcome: 'not_attempted'
         })
       }
     })

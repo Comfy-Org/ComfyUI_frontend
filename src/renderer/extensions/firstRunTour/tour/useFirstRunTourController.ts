@@ -11,6 +11,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { registerTour } from '@/platform/onboarding/onboardingTours'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import type { FirstRunTourOutcome } from '@/platform/telemetry/types'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -26,6 +27,17 @@ import type { RunState } from './firstRunTourDefinition'
 
 const RUN_BUTTON_SELECTOR =
   '[data-testid="queue-button"], [data-testid="subscribe-to-run-button"]'
+
+/**
+ * What `beginTour` can answer. The two values it cannot: `not_attempted`
+ * describes a close that never asked for a tour, and `error` a handoff that
+ * threw — neither is something this function returns, so neither is reachable
+ * here.
+ */
+export type BeginTourOutcome = Exclude<
+  FirstRunTourOutcome,
+  'not_attempted' | 'error'
+>
 
 /** An undimmed look at the workflow the user chose, before the tour dims it. */
 const INTRO_PREVIEW_MS = 500
@@ -233,17 +245,28 @@ function useFirstRunTourControllerInternal() {
     nudgeArmed.value = false
   }
 
-  /** False when there is no tour to give; any renderer switch is undone. */
+  /**
+   * `started`, or which refusal declined the tour; any renderer switch is
+   * undone on every refusal.
+   *
+   * A reason rather than the `false` this used to return, because four of the
+   * five refusals are reported nowhere else in the product:
+   * `app:onboarding_tour_not_started` is emitted from inside `startTour` and so
+   * only ever describes the `tour_declined` branch. Callers that need the old
+   * boolean ask `=== 'started'` — and because every value here is a non-empty
+   * string, a caller left testing truthiness would silently read every refusal
+   * as a success, so there are deliberately only two call sites.
+   */
   async function beginTour(
     templateId?: string,
     shouldCancel: () => boolean = () => false
-  ): Promise<boolean> {
-    if (engine.activeTour) return false
+  ): Promise<BeginTourOutcome> {
+    if (engine.activeTour) return 'tour_already_active'
     // Holds only ever end a tour that is already running, and only when they
     // change — a context lost before the tour opens (`?template=X&mode=linear`
     // boots straight into linear mode) never produces that change. Refused
     // here, ahead of the renderer switch below, so nothing is left to undo.
-    if (!canvasContextHolds.value) return false
+    if (!canvasContextHolds.value) return 'no_canvas_context'
 
     const enabledForTour = !settingStore.get('Comfy.VueNodes.Enabled')
     if (enabledForTour) await settingStore.set('Comfy.VueNodes.Enabled', true)
@@ -260,17 +283,19 @@ function useFirstRunTourControllerInternal() {
     // The preview is long enough for the canvas to go away underneath it, and
     // the holds watcher cannot catch that: there is no active tour to end yet.
     const contextStillHolds = (): boolean => canvasContextHolds.value
-    const started =
-      contextStillHolds() &&
-      !shouldCancel() &&
-      (await engine.startTour('firstRun'))
-    if (!started) {
+    async function openTour(): Promise<BeginTourOutcome> {
+      if (!contextStillHolds()) return 'canvas_context_lost'
+      if (shouldCancel()) return 'cancelled'
+      return (await engine.startTour('firstRun')) ? 'started' : 'tour_declined'
+    }
+    const outcome = await openTour()
+    if (outcome !== 'started') {
       releaseFirstRunTargets()
       tourWorkflow.value = null
       if (enabledForTour)
         await settingStore.set('Comfy.VueNodes.Enabled', false)
     }
-    return started
+    return outcome
   }
 
   return {

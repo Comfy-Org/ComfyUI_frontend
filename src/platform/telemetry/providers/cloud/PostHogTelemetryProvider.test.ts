@@ -798,11 +798,13 @@ describe('PostHogTelemetryProvider', () => {
         track: (provider: PostHogTelemetryProvider) =>
           provider.trackFirstRunScreenDismissed({
             method: 'template_selected',
-            visible_duration_ms: 8400
+            visible_duration_ms: 8400,
+            tour_outcome: 'canvas_context_lost'
           }),
         properties: {
           method: 'template_selected',
-          visible_duration_ms: 8400
+          visible_duration_ms: 8400,
+          tour_outcome: 'canvas_context_lost'
         }
       },
       {

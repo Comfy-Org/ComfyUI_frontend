@@ -230,8 +230,8 @@ describe('useFirstRunTourController', () => {
 
       const starting = controller.beginTour('image_z_image_turbo')
       await vi.advanceTimersByTimeAsync(INTRO_PREVIEW_MS)
-      await starting
 
+      await expect(starting).resolves.toBe('started')
       expect(
         useSettingStore().settingValues['Comfy.VueNodes.Enabled'],
         'a new user has no installed version, so Nodes 2.0 reads off and every step is blind'
@@ -246,8 +246,11 @@ describe('useFirstRunTourController', () => {
 
       const starting = controller.beginTour('image_z_image_turbo')
       await vi.advanceTimersByTimeAsync(INTRO_PREVIEW_MS)
-      await starting
 
+      await expect(
+        starting,
+        'the engine refusing is the one refusal `app:onboarding_tour_not_started` can also speak for, and only for two of its own paths'
+      ).resolves.toBe('tour_declined')
       expect(
         useSettingStore().settingValues['Comfy.VueNodes.Enabled'],
         'a user who got no tour must not be left migrated by the one that never ran'
@@ -281,7 +284,7 @@ describe('useFirstRunTourController', () => {
       expect(
         await starting,
         'the engine would refuse it anyway, so the side effects must not fire either'
-      ).toBe(false)
+      ).toBe('tour_already_active')
       expect(
         vi.mocked(useOnboardingTourStore().startTour)
       ).not.toHaveBeenCalled()
@@ -306,7 +309,7 @@ describe('useFirstRunTourController', () => {
       expect(
         await starting,
         '?template=X&mode=linear display:none-s the canvas, so every card would point at a node nobody can see'
-      ).toBe(false)
+      ).toBe('no_canvas_context')
       expect(
         vi.mocked(useOnboardingTourStore().startTour),
         'the cards would sit over a hidden canvas until their targets timed out'
@@ -329,7 +332,7 @@ describe('useFirstRunTourController', () => {
       expect(
         await starting,
         'the spotlights are placed against a desktop layout, so below md they point nowhere'
-      ).toBe(false)
+      ).toBe('no_canvas_context')
       expect(
         vi.mocked(useOnboardingTourStore().startTour)
       ).not.toHaveBeenCalled()
@@ -355,7 +358,7 @@ describe('useFirstRunTourController', () => {
       expect(
         await starting,
         'the holds watcher cannot catch this — there is no active tour to end yet'
-      ).toBe(false)
+      ).toBe('canvas_context_lost')
       expect(
         vi.mocked(useOnboardingTourStore().startTour)
       ).not.toHaveBeenCalled()
@@ -378,7 +381,7 @@ describe('useFirstRunTourController', () => {
       cancelled = true
       await vi.advanceTimersByTimeAsync(INTRO_PREVIEW_MS)
 
-      await expect(starting).resolves.toBe(false)
+      await expect(starting).resolves.toBe('cancelled')
       expect(
         vi.mocked(useOnboardingTourStore().startTour)
       ).not.toHaveBeenCalled()
