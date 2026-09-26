@@ -30,7 +30,7 @@ const sequencedFrame = (
   data: {
     v: 1,
     workflow_id: 'wf-1',
-    ...(seq !== undefined && { seq }),
+    seq,
     ...(type === 'doc_subscribed' && { ok: true })
   }
 })
