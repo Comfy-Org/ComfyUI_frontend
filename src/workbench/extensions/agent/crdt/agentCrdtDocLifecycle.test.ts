@@ -511,4 +511,80 @@ describe('AgentCrdtDocLifecycle schema_version_mismatch refusal', () => {
 
     expect(resubscribe).not.toHaveBeenCalled()
   })
+
+  it.for(['schema_version_mismatch', 'catalog_mismatch'] as const)(
+    '%s gives up immediately with no retry and reports it once',
+    (code) => {
+      const { lifecycle, resubscribe, onGaveUp } = wire()
+      lifecycle.onSubscribeSent(WORKFLOW_ID)
+
+      lifecycle.onSubscribeRefused(code)
+      vi.advanceTimersByTime(10 * SUBSCRIBE_ACK_TIMEOUT_MS)
+
+      expect(resubscribe).not.toHaveBeenCalled()
+      expect(onGaveUp).toHaveBeenCalledTimes(1)
+      expect(lifecycle.shouldDeferSubscribe()).toBe(true)
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(
+        expect.any(Error),
+        GAVE_UP_REPORT
+      )
+      expect(devEvents()).toEqual([
+        {
+          kind: 'subscribe_refused_permanent',
+          detail: { code, terminal: true }
+        }
+      ])
+    }
+  )
+
+  it('unsupported gives up immediately with no retry but never notifies', () => {
+    const { lifecycle, resubscribe, onGaveUp } = wire()
+    lifecycle.onSubscribeSent(WORKFLOW_ID)
+
+    lifecycle.onSubscribeRefused('unsupported')
+    vi.advanceTimersByTime(10 * SUBSCRIBE_ACK_TIMEOUT_MS)
+
+    expect(resubscribe).not.toHaveBeenCalled()
+    expect(lifecycle.shouldDeferSubscribe()).toBe(true)
+    expect(onGaveUp).not.toHaveBeenCalled()
+    expect(reportError).not.toHaveBeenCalled()
+    expect(devEvents()).toEqual([])
+  })
+
+  it('a reconnect does not re-notify a permanent refusal for the same workflow', () => {
+    const { lifecycle, onGaveUp } = wire()
+    lifecycle.onSubscribeSent(WORKFLOW_ID)
+    lifecycle.onSubscribeRefused('schema_version_mismatch')
+    expect(onGaveUp).toHaveBeenCalledTimes(1)
+    expect(reportError).toHaveBeenCalledTimes(1)
+
+    lifecycle.onReconnected()
+    lifecycle.onSubscribeSent(WORKFLOW_ID)
+    lifecycle.onSubscribeRefused('schema_version_mismatch')
+
+    expect(onGaveUp).toHaveBeenCalledTimes(1)
+    expect(reportError).toHaveBeenCalledTimes(1)
+
+    lifecycle.onReconnected()
+    lifecycle.onSubscribeSent(WORKFLOW_ID)
+    lifecycle.onSubscribeRefused('schema_version_mismatch')
+
+    expect(onGaveUp).toHaveBeenCalledTimes(1)
+    expect(reportError).toHaveBeenCalledTimes(1)
+  })
+
+  it('clearForRetarget re-arms notification for the same workflow id', () => {
+    const { lifecycle, onGaveUp } = wire()
+    lifecycle.onSubscribeSent(WORKFLOW_ID)
+    lifecycle.onSubscribeRefused('schema_version_mismatch')
+    expect(onGaveUp).toHaveBeenCalledTimes(1)
+    expect(reportError).toHaveBeenCalledTimes(1)
+
+    lifecycle.clearForRetarget()
+    lifecycle.onSubscribeSent(WORKFLOW_ID)
+    lifecycle.onSubscribeRefused('schema_version_mismatch')
+
+    expect(onGaveUp).toHaveBeenCalledTimes(2)
+    expect(reportError).toHaveBeenCalledTimes(2)
+  })
 })

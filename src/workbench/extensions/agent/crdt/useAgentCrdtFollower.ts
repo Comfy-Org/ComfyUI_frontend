@@ -21,7 +21,6 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 import type { MaterializableGraph } from './agentNodeMaterializer'
 import {
   AgentCrdtDocLifecycle,
-  SCHEMA_VERSION_MISMATCH_CODE,
   STALE_AFTER_MS,
   SUBSCRIBE_CATCHUP_GRACE_MS
 } from './agentCrdtDocLifecycle'
@@ -134,19 +133,20 @@ interface SubscribeRefusalOutcome {
 }
 
 // PM-1604 / BE-11437: a subscribe refusal carries a `code` that is either
-// retryable (the lifecycle keeps retrying on its own) or a permanent
-// `SCHEMA_VERSION_MISMATCH_CODE`, the one case the lifecycle won't recover
-// from by itself — surface it to the person via `onSyncError`. The caller
-// notifies only after its own held-ops cleanup, matching `onDocReset`'s
-// cleanup-before-notify order, so a throw from consumer code reaching into
-// the toast store can't strand an in-flight op batch.
+// retryable (the lifecycle keeps retrying on its own) or one of
+// `PERMANENT_SUBSCRIBE_REFUSAL_CODES`, which the lifecycle won't recover
+// from by itself — surface those to the person via `onSyncError`, except
+// `unsupported`, which the lifecycle already declines to notify (a
+// deployment with the doc surface off shouldn't toast every user). The
+// caller notifies only after its own held-ops cleanup, matching
+// `onDocReset`'s cleanup-before-notify order, so a throw from consumer code
+// reaching into the toast store can't strand an in-flight op batch.
 function handleSubscribeRefusal(
   detail: { code?: unknown; message?: unknown } | null,
   lifecycle: AgentCrdtDocLifecycle
 ): SubscribeRefusalOutcome {
   const code = typeof detail?.code === 'string' ? detail.code : undefined
-  lifecycle.onSubscribeRefused(code)
-  if (code !== SCHEMA_VERSION_MISMATCH_CODE) return { shouldNotify: false }
+  if (!lifecycle.onSubscribeRefused(code)) return { shouldNotify: false }
   return {
     shouldNotify: true,
     message: typeof detail?.message === 'string' ? detail.message : undefined
@@ -211,10 +211,13 @@ export interface AgentCrdtFollowerEvents {
   onReset?: (workflowId: string) => void
   /**
    * PM-1604 / BE-11437: the doc-host classified a resync refusal as
-   * permanent (`schema_version_mismatch`) — the lifecycle has already
-   * stopped retrying it, so this is the one chance to tell the person their
-   * canvas is out of sync instead of leaving them to notice a channel that
-   * silently stopped updating.
+   * permanent (one of `PERMANENT_SUBSCRIBE_REFUSAL_CODES`) — the lifecycle
+   * has already stopped retrying it, so this is the one chance to tell the
+   * person their canvas is out of sync instead of leaving them to notice a
+   * channel that silently stopped updating. Not fired for `unsupported`
+   * (the doc surface is off for this deployment; every user hits it, so it
+   * latches silently) or for a refusal that repeats on reconnect for a
+   * workflow already notified.
    */
   onSyncError?: (message?: string) => void
 }
@@ -548,6 +551,7 @@ function startAgentCrdtFollower(
     updatesApplied.value = 0
     lastFrameType.value = event.type
     lifecycle.clearStaleProbe()
+    lifecycle.resetNotifiedGiveUp()
     knownDocNodeIds = new Set()
     pendingLiveNodeIds.clear()
     confirmedDeletes.clear()

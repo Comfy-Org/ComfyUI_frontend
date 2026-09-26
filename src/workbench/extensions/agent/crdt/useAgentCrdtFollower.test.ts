@@ -756,7 +756,7 @@ describe('useAgentCrdtFollower', () => {
   it('PM-1604 / BE-11437: retries a retryable refusal code with backoff', () => {
     vi.useFakeTimers()
     const { unmount } = mountFollower('wf-1')
-    dispatchFrame('doc_subscribed', { ok: false, code: 'doc_not_found' })
+    dispatchFrame('doc_subscribed', { ok: false, code: 'not_found' })
 
     vi.advanceTimersByTime(500)
     expect(bridge().resubscribe).toHaveBeenCalledTimes(1)
@@ -784,6 +784,50 @@ describe('useAgentCrdtFollower', () => {
     expect(onSyncError).toHaveBeenCalledExactlyOnceWith(
       'Expected schema 2, found 1'
     )
+    unmount()
+  })
+
+  it('PM-1604 / BE-11437: does not retry catalog_mismatch and surfaces it', () => {
+    vi.useFakeTimers()
+    const onSyncError = vi.fn()
+    const { unmount } = mountFollower('wf-1', true, () => null, {
+      onSyncError
+    })
+
+    dispatchFrame('doc_subscribed', {
+      ok: false,
+      code: 'catalog_mismatch',
+      message: 'catalog v3 required'
+    })
+
+    vi.advanceTimersByTime(60_000)
+    apiState.target.dispatchEvent(new Event('status'))
+
+    expect(bridge().resubscribe).not.toHaveBeenCalled()
+    expect(bridge().reconcile).not.toHaveBeenCalled()
+    expect(onSyncError).toHaveBeenCalledExactlyOnceWith('catalog v3 required')
+    unmount()
+  })
+
+  it('PM-1604 / BE-11437: does not retry unsupported and never surfaces it', () => {
+    vi.useFakeTimers()
+    const onSyncError = vi.fn()
+    const { unmount } = mountFollower('wf-1', true, () => null, {
+      onSyncError
+    })
+
+    dispatchFrame('doc_subscribed', {
+      ok: false,
+      code: 'unsupported',
+      message: 'doc surface disabled'
+    })
+
+    vi.advanceTimersByTime(60_000)
+    apiState.target.dispatchEvent(new Event('status'))
+
+    expect(bridge().resubscribe).not.toHaveBeenCalled()
+    expect(bridge().reconcile).not.toHaveBeenCalled()
+    expect(onSyncError).not.toHaveBeenCalled()
     unmount()
   })
 
