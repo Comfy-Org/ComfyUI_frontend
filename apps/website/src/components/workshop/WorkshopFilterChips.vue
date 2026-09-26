@@ -31,7 +31,7 @@ const emit = defineEmits<{ remove: [string]; clear: [] }>()
       {{ chip.label }}
       <button
         type="button"
-        class="cursor-pointer text-content-muted transition-colors outline-none hover:text-content-bright focus-visible:text-content-bright"
+        class="-me-1 flex size-6 shrink-0 cursor-pointer items-center justify-center text-content-muted transition-colors outline-none hover:text-content-bright focus-visible:text-content-bright"
         :aria-label="
           t('workshop.filter.remove', locale).replace('{filter}', chip.label)
         "
@@ -42,7 +42,7 @@ const emit = defineEmits<{ remove: [string]; clear: [] }>()
     </span>
     <button
       type="button"
-      class="cursor-pointer text-xs text-content-muted underline underline-offset-4 transition-colors outline-none hover:text-content-bright focus-visible:text-content-bright"
+      class="cursor-pointer px-1 py-1.5 text-xs text-content-muted underline underline-offset-4 transition-colors outline-none hover:text-content-bright focus-visible:text-content-bright"
       data-testid="workshop-filter-chips-clear"
       @click="emit('clear')"
     >

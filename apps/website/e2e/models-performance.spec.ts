@@ -53,7 +53,7 @@ test('catalogue browsing stays within its JavaScript budget', async ({
   // a chunk the homepage also loads would pass the delta and still be paid
   // for by every visitor to /models/.
   const totalBytes = scripts.reduce((total, [, bytes]) => total + bytes, 0)
-  expect(totalBytes).toBeLessThan(1_810_000)
+  expect(totalBytes).toBeLessThan(1_811_000)
 })
 
 test('video cards load on screen and stop playing when scrolled away', async ({

@@ -146,6 +146,20 @@ describe('WorkshopModelsGrid', () => {
     expect(cardNames()).toHaveLength(3)
   })
 
+  it('names the section it was browsing, and leaves it from that name', async () => {
+    const user = userEvent.setup()
+    render(WorkshopModelsGrid, { props: { models } })
+
+    await user.click(screen.getByRole('button', { name: 'Edit images' }))
+    expect(screen.getByTestId('workshop-filter-chips')).toHaveTextContent(
+      'Edit images'
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Remove Edit images' }))
+    expect(screen.queryByTestId('workshop-filter-chips')).toBeNull()
+    expect(cardNames()).toHaveLength(3)
+  })
+
   it('names the use case it was narrowed by, and lets go of it from that name', async () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })

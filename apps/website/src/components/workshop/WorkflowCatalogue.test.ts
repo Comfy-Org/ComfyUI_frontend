@@ -102,6 +102,25 @@ describe('workflow catalogue ordering and shared links', () => {
     ])
   })
 
+  it('names the category it was narrowed by, and lets go of it from that name', async () => {
+    const user = userEvent.setup()
+    render(WorkflowCatalogue, { props: { models } })
+    await user.click(screen.getByTestId('workshop-filter'))
+    await user.click(await screen.findByTestId('workshop-facet-useCase'))
+    await user.click(await screen.findByTestId('filter-useCase-video'))
+    expect(screen.getByTestId('workshop-filter-chips')).toHaveTextContent(
+      'video'
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Remove video' }))
+    expect(screen.queryByTestId('workshop-filter-chips')).toBeNull()
+    expect(visibleOutcomes()).toEqual([
+      '/models/workflows/animate/',
+      '/models/workflows/connect/',
+      '/models/workflows/restore/'
+    ])
+  })
+
   it('names the model it was narrowed by, and lets go of it from that name', async () => {
     const user = userEvent.setup()
     render(WorkflowCatalogue, { props: { models } })
