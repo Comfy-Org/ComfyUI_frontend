@@ -17,7 +17,9 @@ const { workflow } = defineProps<{ workflow: DiscoveryWorkflow }>()
       class="absolute inset-0 bg-linear-to-t from-black/80 to-transparent"
       aria-hidden="true"
     />
-    <span class="relative mt-auto w-full text-base/tight font-medium">
+    <!-- The card has a side inset and no vertical one, so the name has to
+      carry its own or it sits on the bottom edge. -->
+    <span class="relative mt-auto w-full pb-5 text-base/tight font-medium">
       {{ workflow.name }}
     </span>
   </a>
