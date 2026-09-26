@@ -94,6 +94,29 @@ describe('WorkshopModelCard', () => {
     expect(screen.queryByLabelText('Flux')).toBeNull()
   })
 
+  // Artwork that repeats the name gives a screen reader the model twice. The
+  // card's name lives on the link; the picture is decorative, whichever kind it
+  // is, so it carries no accessible name of its own.
+  it.for(['image', 'video'] as const)(
+    'keeps %s artwork out of the accessible name',
+    (kind) => {
+      render(WorkshopModelCard, {
+        props: {
+          model: {
+            ...base,
+            thumbnail: { kind, url: 'https://assets.example/a' }
+          }
+        }
+      })
+
+      expect(screen.queryByRole('img', { name: /Flux/ })).toBeNull()
+      expect(screen.queryByLabelText('Flux')).toBeNull()
+      expect(
+        screen.getByRole('link', { name: /Flux/ }).getAttribute('href')
+      ).toBe(base.href)
+    }
+  )
+
   it('attaches the video source once the card is on screen', async () => {
     stubIntersectionObserver()
     render(WorkshopModelCard, {
