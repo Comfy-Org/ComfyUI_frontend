@@ -1,13 +1,53 @@
 import type { Op } from '@comfyorg/comfy-multi-player'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Mock } from 'vitest'
+
+import { reportError } from '@/platform/telemetry/reportError'
 
 import type { GraphOperation } from './graphOperations'
 import { createOpSender } from './opSender'
 import type { BatchOutcome, OpsResultView } from './opSender'
 
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
+
 const WORKFLOW = 'wf-1'
 const TAB = 'tab-1'
 const ACTOR = 'human:test-user:tab-1'
+
+type SettlementListener = (outcome: BatchOutcome) => void
+
+const detachListenerFailureCases = [
+  [
+    'in-flight',
+    (
+      listener: Mock<SettlementListener>,
+      _record: SettlementListener,
+      fail: SettlementListener
+    ) => listener.mockImplementationOnce(fail)
+  ],
+  [
+    'queued',
+    (
+      listener: Mock<SettlementListener>,
+      record: SettlementListener,
+      fail: SettlementListener
+    ) => listener.mockImplementationOnce(record).mockImplementationOnce(fail)
+  ],
+  [
+    'open',
+    (
+      listener: Mock<SettlementListener>,
+      record: SettlementListener,
+      fail: SettlementListener
+    ) =>
+      listener
+        .mockImplementationOnce(record)
+        .mockImplementationOnce(record)
+        .mockImplementationOnce(fail)
+  ]
+] as const
 
 function addNode(id: number): GraphOperation {
   return {
@@ -42,6 +82,9 @@ describe('createOpSender', () => {
   let transportUp: boolean
   let boundWorkflow: string | null
   let sender: ReturnType<typeof createOpSender>
+  const unsubscribe = vi.fn(() => {
+    resultListener = null
+  })
 
   function ackInFlight(): void {
     const last = sent[sent.length - 1]
@@ -67,9 +110,7 @@ describe('createOpSender', () => {
       },
       onOpsResult: (listener) => {
         resultListener = listener
-        return () => {
-          resultListener = null
-        }
+        return unsubscribe
       },
       workflowId: () => boundWorkflow,
       tab: TAB,
@@ -466,6 +507,121 @@ describe('createOpSender', () => {
     expect(sent).toHaveLength(1)
   })
 
+  it('detach clears the armed result-timeout timer so no late resend or settlement follows', () => {
+    sender.enqueue([addNode(1)])
+    expect(sent).toHaveLength(1)
+    expect(vi.getTimerCount()).toBeGreaterThan(0)
+
+    sender.detach()
+
+    expect(vi.getTimerCount()).toBe(0)
+    const settledAfterDetach = settled.length
+    vi.advanceTimersByTime(10_000)
+
+    expect(sent).toHaveLength(1)
+    expect(settled).toHaveLength(settledAfterDetach)
+  })
+
+  it('detach clears an armed transport-retry timer so no late retry send follows', () => {
+    transportUp = false
+    sender.enqueue([addNode(1)])
+    expect(sent).toHaveLength(0)
+    expect(vi.getTimerCount()).toBeGreaterThan(0)
+
+    sender.detach()
+
+    expect(vi.getTimerCount()).toBe(0)
+    const settledAfterDetach = settled.length
+    vi.advanceTimersByTime(500 * 6)
+
+    expect(sent).toHaveLength(0)
+    expect(settled).toHaveLength(settledAfterDetach)
+  })
+
+  it('detach settles every outstanding batch instead of dropping it silently', () => {
+    sender.enqueue([addNode(1)])
+    sender.enqueue([addNode(2)])
+    sender.admit([addNode(3)])
+    expect(sent).toHaveLength(1)
+
+    sender.detach()
+
+    expect(settled.map((outcome) => outcome.state)).toEqual([
+      'unconfirmed',
+      'undeliverable',
+      'undeliverable'
+    ])
+    expect(
+      settled.map((outcome) =>
+        outcome.ops.map((op) => ('node_id' in op ? op.node_id : undefined))
+      )
+    ).toEqual([[1], [2], [3]])
+  })
+
+  it('a second detach() call is a no-op: no double-settle and no timer left armed', () => {
+    sender.enqueue([addNode(1)])
+    expect(vi.getTimerCount()).toBeGreaterThan(0)
+
+    sender.detach()
+    const settledAfterFirstDetach = [...settled]
+    expect(vi.getTimerCount()).toBe(0)
+
+    sender.detach()
+
+    expect(settled).toEqual(settledAfterFirstDetach)
+    expect(vi.getTimerCount()).toBe(0)
+    expect(unsubscribe).toHaveBeenCalledTimes(1)
+  })
+
+  it.for(detachListenerFailureCases)(
+    'detach settles every other batch and still unsubscribes when the %s listener throws',
+    ([, configureListener]) => {
+      const localSettled: BatchOutcome[] = []
+      let unsubscribed = false
+      const recordSettlement: SettlementListener = (outcome) => {
+        localSettled.push(outcome)
+      }
+      const onBatchSettled = vi.fn(recordSettlement)
+      configureListener(onBatchSettled, recordSettlement, () => {
+        throw new Error('listener boom')
+      })
+      const localSender = createOpSender({
+        sendOps: (workflowId, tab, ops) => {
+          sent.push({ workflowId, tab, ops })
+          return true
+        },
+        onOpsResult: (listener) => {
+          resultListener = listener
+          return () => {
+            unsubscribed = true
+          }
+        },
+        workflowId: () => boundWorkflow,
+        tab: TAB,
+        actor: () => ACTOR,
+        baseVersion: () => 41,
+        onBatchSettled
+      })
+
+      localSender.enqueue([addNode(1)])
+      localSender.enqueue([addNode(2)])
+      localSender.admit([addNode(3)])
+      expect(sent).toHaveLength(1)
+
+      localSender.detach()
+
+      expect(localSettled).toHaveLength(2)
+      expect(reportError).toHaveBeenCalledTimes(1)
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'failure_settling_agent_op_sender_detach'
+        })
+      )
+      expect(unsubscribed).toBe(true)
+    }
+  )
+
   it('abortAll settles the transmitted batch and every queued batch in mint order', () => {
     sender.enqueue([addNode(1)])
     sender.enqueue([addNode(2)])
@@ -632,7 +788,7 @@ describe('createOpSender', () => {
       expect(sent[1].ops[0].op_id).toBe(sent[0].ops[0].op_id)
     })
 
-    it('detach drops a parked batch', () => {
+    it('detach settles a parked batch undeliverable instead of dropping it', () => {
       parkSecondBatch()
 
       sender.detach()
@@ -641,6 +797,10 @@ describe('createOpSender', () => {
 
       expect(sent).toHaveLength(1)
       expect(sender.pending()).toBe(0)
+      expect(settled.map((outcome) => outcome.state)).toEqual([
+        'acknowledged',
+        'undeliverable'
+      ])
     })
 
     it('suspend and resume are idempotent and leave an unsuspended sender sending', () => {
