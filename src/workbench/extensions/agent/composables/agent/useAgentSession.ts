@@ -124,17 +124,29 @@ export interface AgentSessionDeps {
 
 const PREPARE_TIMEOUT_MS = 3000
 /**
- * After a reconnect the server may still be finishing the turn, and its
- * terminal event may or may not reach the new socket. Poll the persisted row
- * with backoff; once the schedule is exhausted the socket alone is trusted.
+ * After a reconnect or a refresh the server may still be finishing the turn,
+ * and its terminal event may never reach this socket (dropped during
+ * hydration, or the row was orphaned and only a server sweep will end it).
+ * Poll the persisted row instead, on the schedule below. Each request uses
+ * the REST client's response-header timeout rather than a whole-body deadline,
+ * and stays abortable while the session is stopping.
+ * Switching threads stashes the turn rather than ending it, so its recovery
+ * keeps running in the background.
  */
-const TURN_RECOVERY_DELAYS_MS = [0, 1000, 2000, 4000, 8000, 16000]
-/** Upper bound on one recovery job, including any history fetch still in flight. */
-const TURN_RECOVERY_DEADLINE_MS = 60_000
+type RecoverySchedule = readonly [number, ...number[]]
+const TURN_RECOVERY_DELAYS_AFTER_FETCH_MS: RecoverySchedule = [
+  1000, 2000, 4000, 8000, 16000
+]
+const TURN_RECOVERY_DELAYS_MS: RecoverySchedule = [
+  0,
+  ...TURN_RECOVERY_DELAYS_AFTER_FETCH_MS
+]
+const TURN_RECOVERY_MAX_CONSECUTIVE_FAILURES = TURN_RECOVERY_DELAYS_MS.length
 
 type TurnOutcome =
   | { kind: 'terminal'; text: string }
   | { kind: 'thread-missing' }
+  | { kind: 'message-missing' }
   | { kind: 'streaming' }
   | { kind: 'error'; message: string }
 
@@ -338,6 +350,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       const history = await rest.getMessages(threadId)
       if (conversationStore.threadId !== threadId || !isCurrent()) return false
       conversationStore.hydrate(history)
+      reconcileLiveTurns(TURN_RECOVERY_DELAYS_AFTER_FETCH_MS)
       await workflow?.restored?.(conversationStore.latestWorkflowId, isCurrent)
       if (conversationStore.threadId !== threadId || !isCurrent()) return false
       return true
@@ -925,22 +938,25 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const reconnected = connection === 'dropped'
     connection = 'live'
     if (!reconnected) return
-    const turns = conversationStore
-      .liveTurns()
-      .filter((turn) => !recoveringTurns.has(recoveryKey(turn)))
-    for (const turn of turns) void reconcileTurn(turn)
+    reconcileLiveTurns(TURN_RECOVERY_DELAYS_MS)
   }
 
-  async function reconcileTurn(turn: LiveTurn): Promise<void> {
+  function reconcileLiveTurns(delaysMs: RecoverySchedule): void {
+    for (const turn of conversationStore.liveTurns()) {
+      void reconcileTurn(turn, delaysMs)
+    }
+  }
+
+  async function reconcileTurn(
+    turn: LiveTurn,
+    delaysMs: RecoverySchedule
+  ): Promise<void> {
     const key = recoveryKey(turn)
+    if (recoveringTurns.has(key)) return
     const recovery = new AbortController()
     recoveringTurns.set(key, recovery)
-    const deadline = setTimeout(
-      () => recovery.abort(),
-      TURN_RECOVERY_DEADLINE_MS
-    )
     try {
-      await recoverTurn(turn, ownedGeneration, recovery.signal)
+      await recoverTurn(turn, delaysMs, ownedGeneration, recovery.signal)
     } catch (error) {
       // `onStatus` floats this job (`void reconcileTurn(turn)`), so a rethrow
       // would land as an `unhandledrejection` the session never sees. Abort is
@@ -949,28 +965,45 @@ export function useAgentSession(deps: AgentSessionDeps) {
       if (!recovery.signal.aborted)
         reportError(error, { errorType: 'failure_recovering_agent_turn' })
     } finally {
-      clearTimeout(deadline)
-      recoveringTurns.delete(key)
+      if (recoveringTurns.get(key) === recovery) recoveringTurns.delete(key)
     }
   }
 
   async function recoverTurn(
     turn: LiveTurn,
+    delaysMs: RecoverySchedule,
     generation: number,
     signal: AbortSignal
   ): Promise<void> {
     let noticed = false
-    for (const ms of TURN_RECOVERY_DELAYS_MS) {
-      await delay(ms, { signal })
+    let consecutiveFailures = 0
+    for (let attempt = 0; ; attempt++) {
+      await delay(delaysMs[Math.min(attempt, delaysMs.length - 1)], { signal })
       if (!isTurnLive(turn, generation)) return
       const outcome = await fetchTurnOutcome(turn, signal)
       if (!isTurnLive(turn, generation)) return
       if (settleFinishedTurn(turn, outcome)) return
-      if (outcome.kind === 'error' && !noticed) {
-        noticed = true
-        pushError(outcome.message)
-      }
+      noticed = noticeFirstError(outcome, noticed)
+      consecutiveFailures =
+        outcome.kind === 'streaming' ? 0 : consecutiveFailures + 1
+      if (consecutiveFailures < TURN_RECOVERY_MAX_CONSECUTIVE_FAILURES) continue
+      // Out of budget. No row for the turn means the server has nothing left to
+      // deliver, so settle with the text we already have; a run of failed checks
+      // says nothing about the turn, so leave it live for the socket.
+      if (outcome.kind === 'message-missing')
+        conversationStore.settleTurn(turn, undefined)
+      return
     }
+  }
+
+  /**
+   * One notice per recovery job: a job that keeps failing would otherwise stack
+   * the same message once per attempt.
+   */
+  function noticeFirstError(outcome: TurnOutcome, noticed: boolean): boolean {
+    if (noticed || outcome.kind !== 'error') return noticed
+    pushError(outcome.message)
+    return true
   }
 
   function isTurnLive(turn: LiveTurn, generation: number): boolean {
@@ -994,6 +1027,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       case 'thread-missing':
         forgetDeletedThread(turn)
         return true
+      case 'message-missing':
       case 'streaming':
       case 'error':
         return false
@@ -1024,7 +1058,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     try {
       const history = await rest.getMessages(turn.threadId, { signal })
       const row = history.find((entry) => entry.id === turn.messageId)
-      if (!row || row.status === 'streaming') return { kind: 'streaming' }
+      if (!row) return { kind: 'message-missing' }
+      if (row.status === 'streaming') return { kind: 'streaming' }
       const text = typeof row.content?.text === 'string' ? row.content.text : ''
       return { kind: 'terminal', text }
     } catch (error) {
