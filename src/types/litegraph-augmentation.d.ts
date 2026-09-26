@@ -104,6 +104,13 @@ declare module '@/lib/litegraph/src/litegraph' {
     constructor: LGraphNodeConstructor
 
     /**
+     * Some legacy custom nodes stamp the node-definition marker directly on
+     * the instance instead of leaving it on `constructor.nodeData`. Only ever
+     * read this as a fallback after checking the constructor.
+     */
+    nodeData?: LGraphNodeConstructor['nodeData']
+
+    /**
      * Callback fired on each node after the graph is configured
      */
     onAfterGraphConfigured?(): void
