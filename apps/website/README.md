@@ -83,7 +83,7 @@ jobs:
       - name: Build website
         env:
           WEBSITE_ASHBY_API_KEY: ${{ secrets.WEBSITE_ASHBY_API_KEY }}
-          WEBSITE_ASHBY_JOB_BOARD_NAME: ${{ vars.WEBSITE_ASHBY_JOB_BOARD_NAME || 'comfy-org' }}
+          WEBSITE_ASHBY_JOB_BOARD_NAME: ${{ secrets.WEBSITE_ASHBY_JOB_BOARD_NAME }}
         run: pnpm --filter @comfyorg/website build
 
       - name: Verify API key is not leaked into build output
@@ -116,7 +116,7 @@ env:
   VERCEL_TOKEN: ${{ secrets.VERCEL_WEBSITE_TOKEN }}
   VERCEL_SCOPE: comfyui
   WEBSITE_ASHBY_API_KEY: ${{ secrets.WEBSITE_ASHBY_API_KEY }}
-  WEBSITE_ASHBY_JOB_BOARD_NAME: ${{ vars.WEBSITE_ASHBY_JOB_BOARD_NAME || 'comfy-org' }}
+  WEBSITE_ASHBY_JOB_BOARD_NAME: ${{ secrets.WEBSITE_ASHBY_JOB_BOARD_NAME }}
 ```
 
 The secret must also be added to the Vercel project environment

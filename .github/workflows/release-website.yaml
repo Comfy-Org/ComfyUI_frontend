@@ -55,16 +55,45 @@ jobs:
           ref: main
           persist-credentials: false
 
+      # Compare against whatever the open refresh PR already proposes, not
+      # against main. Otherwise, while that PR waits to be merged, each run
+      # re-derives the same content with a new fetchedAt, force-pushes it, and
+      # spends another preview deploy saying nothing new.
+      - name: Adopt the open refresh branch as the comparison baseline
+        env:
+          BRANCH: chore/refresh-website-snapshots
+        run: |
+          if ! git fetch --depth=1 origin "$BRANCH"; then
+            echo "No open refresh branch; comparing against main."
+            exit 0
+          fi
+          for f in apps/website/src/data/ashby-roles.snapshot.json \
+                   apps/website/src/data/cloud-nodes.snapshot.json; do
+            git checkout FETCH_HEAD -- "$f" \
+              || echo "::debug::$f not present on $BRANCH"
+          done
+
       - name: Refresh Ashby snapshot
         uses: ./.github/actions/ashby-pull
         with:
           api_key: ${{ secrets.WEBSITE_ASHBY_API_KEY }}
           job_board_name: ${{ secrets.WEBSITE_ASHBY_JOB_BOARD_NAME }}
 
+      # Non-blocking: the cloud nodes refresh calls a different API for a
+      # different page. Letting it fail the job would throw away an already
+      # regenerated Ashby snapshot, so a Comfy Cloud outage would silently
+      # cost every careers update for as long as it lasted.
       - name: Refresh cloud nodes snapshot
+        id: cloud-nodes
+        continue-on-error: true
         uses: ./.github/actions/cloud-nodes-pull
         with:
           api_key: ${{ secrets.WEBSITE_CLOUD_API_KEY }}
+
+      - name: Report a skipped cloud nodes refresh
+        if: steps.cloud-nodes.outcome == 'failure'
+        run: |
+          echo "::warning title=Cloud nodes snapshot not refreshed::The Comfy Cloud pull failed, so this run carries Ashby changes only. apps/website/src/data/cloud-nodes.snapshot.json is unchanged. Check WEBSITE_CLOUD_API_KEY and the Cloud API, then re-run."
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
