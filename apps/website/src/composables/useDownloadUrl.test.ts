@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { detectDevice } from './useDownloadUrl'
+import { detectDevice, isArmCpu } from './useDownloadUrl'
 
 const UA = {
   iphone:
@@ -59,5 +59,36 @@ describe('detectDevice', () => {
       platform: null,
       isMobileUa: false
     })
+  })
+})
+
+function userAgentDataReporting(architecture: string): NavigatorUAData {
+  return { getHighEntropyValues: async () => ({ architecture }) }
+}
+
+describe('isArmCpu', () => {
+  it.for([
+    { label: 'an ARM CPU', uaData: userAgentDataReporting('arm'), isArm: true },
+    {
+      label: 'an x86 CPU',
+      uaData: userAgentDataReporting('x86'),
+      isArm: false
+    },
+    {
+      label: 'a hidden architecture',
+      uaData: userAgentDataReporting(''),
+      isArm: false
+    },
+    { label: 'no client hints', uaData: undefined, isArm: false },
+    {
+      label: 'rejected client hints',
+      uaData: {
+        getHighEntropyValues: () =>
+          Promise.reject(new DOMException('blocked', 'NotAllowedError'))
+      },
+      isArm: false
+    }
+  ])('reports $isArm for $label', async ({ uaData, isArm }) => {
+    await expect(isArmCpu(uaData)).resolves.toBe(isArm)
   })
 })

@@ -4,6 +4,7 @@ import { externalLinks } from '@/config/routes'
 
 export const downloadUrls = {
   windows: 'https://comfy.org/download/windows/nsis/x64',
+  windowsArm: 'https://comfy.org/download/windows/nsis/arm64',
   macArm: 'https://download.comfy.org/mac/dmg/arm64'
 } as const
 
@@ -31,15 +32,34 @@ export function detectDevice(
   return { platform: null, isMobileUa }
 }
 
-// TODO: Only Windows x64 and macOS arm64 are available today.
+// Windows on ARM browsers still send an x64 UA string, so the CPU is only
+// visible through User-Agent Client Hints (Chromium-based browsers).
+export async function isArmCpu(
+  userAgentData: NavigatorUAData | undefined
+): Promise<boolean> {
+  if (!userAgentData) return false
+  try {
+    const { architecture } = await userAgentData.getHighEntropyValues([
+      'architecture'
+    ])
+    return architecture === 'arm'
+  } catch {
+    return false
+  }
+}
+
+// TODO: Only Windows x64/arm64 and macOS arm64 are available today.
 // When Linux and/or macIntel builds are added, extend detection and URLs here.
 export function useDownloadUrl() {
   const platform = ref<Platform | null>(null)
   const detected = ref(false)
   const isMobileUa = ref(false)
+  const isWindowsArm = ref(false)
 
   const downloadUrl = computed(() => {
-    if (platform.value === 'windows') return downloadUrls.windows
+    if (platform.value === 'windows') {
+      return isWindowsArm.value ? downloadUrls.windowsArm : downloadUrls.windows
+    }
     if (platform.value === 'mac') return downloadUrls.macArm
     return externalLinks.github
   })
@@ -48,11 +68,14 @@ export function useDownloadUrl() {
     () => detected.value && !platform.value && !isMobileUa.value
   )
 
-  onMounted(() => {
+  onMounted(async () => {
     const device = detectDevice(navigator.userAgent, navigator.maxTouchPoints)
     isMobileUa.value = device.isMobileUa
     platform.value = device.platform
     detected.value = true
+    if (device.platform === 'windows') {
+      isWindowsArm.value = await isArmCpu(navigator.userAgentData)
+    }
   })
 
   return { downloadUrl, platform, showFallback, isMobileUa }
