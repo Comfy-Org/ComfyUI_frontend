@@ -1,5 +1,5 @@
 import type { FieldErrors } from './workshop-playground'
-import type { Modality, ModelStatus } from './models-catalogue'
+import type { Modality } from './models-catalogue'
 
 export const OUTPUT_TTL_MS = 24 * 60 * 60 * 1000
 
@@ -110,44 +110,6 @@ export function transition(state: RunState, event: RunEvent): RunState {
     case 'reset':
       return IDLE
   }
-}
-
-export type RunGate =
-  | 'signedOut'
-  | 'noCredits'
-  | 'memberNoCredits'
-  | 'policy'
-  | 'unavailable'
-  | 'ready'
-
-export interface GateInput {
-  readonly signedIn: boolean
-  readonly credits: number
-  readonly creditsPerRun: number | undefined
-  readonly modelStatus?: ModelStatus
-  readonly policyDisabled: boolean
-  readonly unavailable: boolean
-  readonly role?: 'owner' | 'member'
-}
-
-// Order matters: sign-in is asked before anything the account could fix,
-// and a workspace policy block wins over credits because buying would not
-// unblock the run.
-export function runGate(input: GateInput): RunGate {
-  // No price means the cost of a run is unknown, not free.
-  if (
-    input.unavailable ||
-    input.modelStatus === 'deprecated' ||
-    input.creditsPerRun === undefined
-  ) {
-    return 'unavailable'
-  }
-  if (!input.signedIn) return 'signedOut'
-  if (input.policyDisabled) return 'policy'
-  if (input.credits < input.creditsPerRun) {
-    return input.role === 'member' ? 'memberNoCredits' : 'noCredits'
-  }
-  return 'ready'
 }
 
 export function isExpired(state: RunState, now: number): boolean {

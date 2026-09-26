@@ -39,6 +39,7 @@ export interface RouterRenderOptions {
   readonly rasterizeSvg?: WorkshopSvgRasterizer
   readonly onRequestId?: (requestId: string | null) => void
   readonly onPrepared?: (prepared: PreparedRouterRender) => void | Promise<void>
+  readonly prepared?: PreparedRouterRender
 }
 
 export type BoundRouterRenderOptions = RouterRenderOptions & {
@@ -147,10 +148,13 @@ export async function router_render(
   signal.throwIfAborted()
   const { model } = options
   if (model.slug !== slug) throw new WorkshopRouterError('unavailable')
-  const prepared = await prepareModelRouterRender(model, parameters, {
-    ...options,
-    signal
-  })
+  const prepared =
+    options.prepared?.slug === slug
+      ? options.prepared
+      : await prepareModelRouterRender(model, parameters, {
+          ...options,
+          signal
+        })
   const token = await credential(options)
   signal.throwIfAborted()
   if (options.onPrepared) await options.onPrepared(prepared)
