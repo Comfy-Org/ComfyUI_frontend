@@ -41,6 +41,55 @@ async function dropOnPanel(
 }
 
 /**
+ * What the panel did with a file it was handed. `ignored` is the interesting
+ * one: the file neither arrived nor was refused, so the user has no way to
+ * tell the click from a misfire.
+ */
+type HandOverOutcome = 'attached' | 'refused' | 'ignored'
+
+// How long to wait for either answer before calling the hand-over ignored.
+const HAND_OVER_TIMEOUT = 5_000
+
+/**
+ * Hands `fileName` over by `route` and reports which of the three answers the
+ * panel gave. Both routes are measured the same way, which is what lets the
+ * parity test compare them instead of asserting one and assuming the other.
+ */
+async function handOver(
+  agentPanel: AgentPanel,
+  route: () => Promise<void>
+): Promise<HandOverOutcome> {
+  await route()
+  const page = agentPanel.root.page()
+  // `ignored` is the ABSENCE of both answers, so it is the case where both
+  // waits time out — which is why this races two `waitFor`s rather than
+  // polling through `expect`, whose timeout would throw on exactly the
+  // outcome this needs to report. Whichever answer settles first wins, so a
+  // slow arrival is never misread as silence.
+  return await Promise.any([
+    agentPanel.attachmentChips
+      .first()
+      .waitFor({ state: 'visible', timeout: HAND_OVER_TIMEOUT })
+      .then(() => 'attached' as const),
+    page
+      .locator('.p-toast-message:visible')
+      .first()
+      .waitFor({ state: 'visible', timeout: HAND_OVER_TIMEOUT })
+      .then(() => 'refused' as const)
+  ]).catch(() => 'ignored' as const)
+}
+
+/** Removes every staged attachment, so the next hand-over starts clean. */
+async function clearComposer(agentPanel: AgentPanel): Promise<void> {
+  const remove = agentPanel.composerAssetSection.getByRole('button', {
+    name: enMessages.agent.remove,
+    exact: true
+  })
+  while ((await remove.count()) > 0) await remove.first().click()
+  await expect(agentPanel.attachmentChips).toHaveCount(0)
+}
+
+/**
  * Matrix rank 86 / slack-44 + notion-15 — "File types I need cannot be
  * attached, and the limits are inconsistent". The `.json` leg is on `main`
  * (`agentAttachJsonFile.spec.ts`, #16985). `qspec-3` returned video / audio /
@@ -161,45 +210,53 @@ test.describe(
 
     // LIVE-DEFECT PIN — expected to fail on `main`.
     //
-    // The two routes disagree about which types they take, and only one of them
-    // says so. `onFilesPicked` (`AgentPanelRoot.vue`) hands every picked file
-    // straight to `attachment.addFiles`, so a .csv chosen through the browser
-    // attaches — the `accept` attribute is an OS-picker hint, and a user who
-    // switches the picker to "All Files" is past it. `onPanelDrop` filters the
-    // same drop through `isAgentAttachable`, which has no `csv` entry, so the
-    // file is left unclaimed, the graph loader cannot read it either, and the
-    // user gets no feedback at all.
+    // The same file is an attachment by one route and a failed workflow-open by
+    // the other.
+    //
+    // `onFilesPicked` (`AgentPanelRoot.vue`) hands every picked file straight to
+    // `attachment.addFiles`, so a .csv chosen through the browser attaches — the
+    // `accept` attribute is an OS-picker hint, and a user who switches the
+    // picker to "All Files" is past it. `onPanelDrop` filters the same file
+    // through `isAgentAttachable`, which has no `csv` entry, so the drop is left
+    // unclaimed and falls through to the graph loader, which answers
+    // "Unable to find workflow in <name>". The user is not ignored; they are
+    // told about the wrong thing entirely, having never asked to open a
+    // workflow.
     //
     // The pin is on the two routes AGREEING, not on csv specifically: it is
-    // satisfied either by teaching `isAgentAttachable` about csv or by refusing
-    // it visibly in both places. Which of those is right is a product call
-    // (`AGENT_ATTACH_EXTENSIONS` is an approved list, Jo / FE-1323); the user's
-    // complaint that the two routes behave differently is not.
+    // satisfied by teaching `isAgentAttachable` about csv, or by refusing it in
+    // the composer's own words on both routes. Which is right is a product call
+    // (`AGENT_ATTACH_EXTENSIONS` is an approved list, Jo / FE-1323); that the
+    // two routes answer differently is not.
+    //
+    // Both outcomes are measured rather than one asserted and the other assumed,
+    // so a fix that brings the routes into agreement the OTHER way — the picker
+    // refusing too — also turns this green instead of leaving a stale pin.
     test.fail(
       'gives the same answer for a .csv whether it is picked or dropped',
       async ({ agentPanel, comfyPage }) => {
         await agentPanel.open()
 
-        await agentPanel.fileInput.setInputFiles(assetPath(CSV))
-        const pickedChip = await agentPanel
-          .attachmentChip(CSV)
-          .count()
-          .then((count) => count > 0)
+        const picked = await handOver(agentPanel, () =>
+          agentPanel.fileInput.setInputFiles(assetPath(CSV))
+        )
+        await clearComposer(agentPanel)
+        const dropped = await handOver(agentPanel, () =>
+          dropOnPanel(comfyPage, agentPanel, CSV)
+        )
+
+        // The claim is parity, so BOTH outcomes are read and compared. Asserting
+        // only the drop would let a future fix that made the picker refuse
+        // visibly satisfy the contract while this test still recorded a
+        // failure — the two routes would agree and the pin would not notice.
         expect(
-          pickedChip,
-          'the file browser attaches a .csv, so the drop must not silently discard one'
-        ).toBe(true)
+          dropped,
+          `the file browser answered "${picked}"; a drop of the same file must answer the same`
+        ).toBe(picked)
 
-        await agentPanel.composerAssetSection
-          .getByRole('button', { name: enMessages.agent.remove, exact: true })
-          .first()
-          .click()
-        await expect(agentPanel.attachmentChips).toHaveCount(0)
-
-        await dropOnPanel(comfyPage, agentPanel, CSV)
-
-        // Either the drop attaches it too, or the panel says why it will not.
-        await expect(agentPanel.attachmentChip(CSV)).toBeVisible()
+        // Silence is never one of the acceptable answers, whichever way the
+        // two routes are brought into agreement.
+        expect(dropped).not.toBe('ignored')
       }
     )
   }
