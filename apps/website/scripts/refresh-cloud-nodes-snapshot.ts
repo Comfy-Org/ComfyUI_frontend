@@ -59,8 +59,11 @@ if (
     `Registry metadata regressed: ${lost.length} pack(s) still present lost their registry data ` +
       `(${lost.slice(0, 5).join(', ')}${lost.length > 5 ? ', …' : ''}). ` +
       'This is what a degraded registry API looks like — it reports success with empty results.\n' +
-      `Refusing to overwrite ${snapshotPath}. Re-run once the registry is healthy, or, if these ` +
-      'packs were genuinely delisted, re-run with WEBSITE_ALLOW_REGISTRY_LOSS=1 to accept the loss.'
+      `Refusing to overwrite ${snapshotPath}. Re-run this workflow once the registry is healthy.\n` +
+      'If those packs were genuinely delisted, the override is only reachable locally — see ' +
+      '"Refreshing the snapshot" in apps/website/README.md:\n' +
+      '  WEBSITE_ALLOW_REGISTRY_LOSS=1 WEBSITE_CLOUD_API_KEY=… pnpm --filter @comfyorg/website cloud-nodes:refresh-snapshot\n' +
+      'then commit the snapshot, which resets the baseline this guard compares against.'
   )
   process.exit(1)
 }

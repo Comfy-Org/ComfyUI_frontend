@@ -210,9 +210,10 @@ describe('readSnapshot', () => {
     expect(readSnapshot(snapshotPath)).toEqual(snapshot)
   })
 
-  // The refresh scripts treat null as "nothing to compare against" and write,
-  // so an unreadable file must never look like an empty one — that would turn
-  // a corrupt snapshot into a silent green wipe.
+  // null means "no baseline", and both refresh scripts then write without
+  // running their loss guards. That is the right call for a first run, but it
+  // means a snapshot corrupted on disk disarms the guards rather than
+  // tripping them — the site build's static JSON import would fail first.
   it.for([
     ['a missing file', null],
     ['malformed JSON', '{ not json'],

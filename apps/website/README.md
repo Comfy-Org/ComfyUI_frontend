@@ -179,11 +179,27 @@ git commit apps/website/src/data/ashby-roles.snapshot.json
 ```
 
 The script exits non-zero on any non-fresh outcome, so a failed fetch cannot
-be committed as data. It also refuses to write when Ashby returns no usable
-roles while the committed snapshot has some — every posting failing schema
-validation is reported as a successful fetch of zero roles, which would
-otherwise empty the careers page. `refresh-cloud-nodes-snapshot.ts` has the
-equivalent guard for packs that lose their registry metadata.
+be committed as data. It also refuses to write when **all three** hold: Ashby
+returned zero usable roles, at least one posting was dropped in validation,
+and the committed snapshot is non-empty. That combination is a schema
+mismatch — every posting failing validation is otherwise reported as a
+successful fetch of zero roles, which would empty the careers page. A
+genuinely empty board drops nothing and is allowed through.
+
+The guard is all-or-nothing: 9 of 10 postings failing still leaves one role
+and writes. Partial drops are surfaced as CI warnings by
+`src/utils/ashby.ci.ts` rather than blocked.
+
+`refresh-cloud-nodes-snapshot.ts` has the equivalent guard for packs that lose
+their registry metadata, tolerating up to two — a delisted pack is a real
+thing, a registry outage strips dozens at once. If a larger loss is genuine,
+re-run it locally with the override and commit the result, which resets the
+baseline the guard compares against:
+
+```sh
+WEBSITE_ALLOW_REGISTRY_LOSS=1 WEBSITE_CLOUD_API_KEY=… \
+  pnpm --filter @comfyorg/website cloud-nodes:refresh-snapshot
+```
 
 Each refresh stamps a fresh `fetchedAt`, so `scripts/snapshot-writer.ts` leaves
 the file untouched when that timestamp is the only thing that moved. Without

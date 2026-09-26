@@ -67,6 +67,7 @@ jobs:
       - name: Adopt the open refresh branch as the comparison baseline
         env:
           BRANCH: chore/refresh-website-snapshots
+          GH_TOKEN: ${{ github.token }}
         run: |
           # `ls-remote --exit-code` answers 2 for "no such branch" and
           # something else for "could not ask". Treating those alike would let
@@ -77,12 +78,20 @@ jobs:
           probe=$?
           set -e
           if [ "$probe" -eq 2 ]; then
-            echo "No open refresh branch; comparing against main."
+            echo "No refresh branch; comparing against main."
             exit 0
           fi
           if [ "$probe" -ne 0 ]; then
-            echo "::error title=Could not check for an open refresh branch::git ls-remote exited $probe. Refusing to continue, because falling back to main would force-push a timestamp-only update over the open PR."
+            echo "::error title=Could not check for a refresh branch::git ls-remote exited $probe. Refusing to continue, because falling back to main would force-push a timestamp-only update over the open PR."
             exit 1
+          fi
+          # Closing a PR does not delete its branch. Adopting an abandoned one
+          # would make the refreshed data match the baseline, skip the PR step,
+          # and leave main stale on a green run — the exact silent staleness
+          # this workflow exists to end.
+          if [ -z "$(gh pr list --head "$BRANCH" --state open --json number --jq '.[].number')" ]; then
+            echo "::warning title=Ignoring an abandoned refresh branch::$BRANCH exists with no open PR, so it was closed without deleting the branch. Comparing against main instead; this run will open a fresh PR if the data has moved. Delete the branch to silence this."
+            exit 0
           fi
           git fetch --depth=1 origin "$BRANCH"
           for f in apps/website/src/data/ashby-roles.snapshot.json \
