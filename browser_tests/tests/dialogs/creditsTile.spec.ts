@@ -9,6 +9,7 @@ import type {
 } from '@/platform/workspace/api/workspaceApi'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { SettingDialog } from '@e2e/fixtures/components/SettingDialog'
 import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
 import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
@@ -207,7 +208,7 @@ async function mockBalance(
   )
 }
 
-async function openSettings(page: Page) {
+async function bootCloudApp(page: Page) {
   const auth = new CloudAuthHelper(page)
   await auth.mockAuth()
 
@@ -220,27 +221,13 @@ async function openSettings(page: Page) {
   await page.waitForFunction(() => !!window.app?.extensionManager, null, {
     timeout: 45_000
   })
-
-  // Open Settings ▸ Workspace.
-  await page
-    .getByRole('button', { name: /^Settings/ })
-    .first()
-    .click()
-  const dialog = page.getByTestId('settings-dialog')
-  await expect(dialog).toBeVisible()
-
-  return dialog
 }
 
-/** Boots the mocked cloud app and opens Settings ▸ Workspace ▸ Plan & Credits. */
-async function openPlanAndCredits(page: Page) {
-  const dialog = await openSettings(page)
-  await dialog
-    .locator('nav')
-    .getByRole('button', { name: 'Plan & Credits' })
-    .click()
-
-  return dialog.getByRole('main')
+async function openSettings(page: Page) {
+  await bootCloudApp(page)
+  const settings = new SettingDialog(page)
+  await settings.openFromToolbar()
+  return settings
 }
 
 test.describe('Credits tile (Plan & Credits)', { tag: '@cloud' }, () => {
@@ -255,7 +242,8 @@ test.describe('Credits tile (Plan & Credits)', { tag: '@cloud' }, () => {
 
     await mockCloudBoot(page)
 
-    const content = await openPlanAndCredits(page)
+    const settings = await openSettings(page)
+    const content = await settings.openPlanAndCredits()
     await expect(
       content.getByRole('button', { name: 'Invoice history' })
     ).toHaveCount(0)
@@ -273,7 +261,8 @@ test.describe('Credits tile (Plan & Credits)', { tag: '@cloud' }, () => {
 
     await mockCloudBoot(page, true, freeBillingStatus)
 
-    const content = await openPlanAndCredits(page)
+    const settings = await openSettings(page)
+    const content = await settings.openPlanAndCredits()
     await expect(content.getByRole('heading', { name: 'Free' })).toBeVisible()
     await content.getByRole('button', { name: 'Billing & invoices' }).click()
 
@@ -289,7 +278,8 @@ test.describe('Credits tile (Plan & Credits)', { tag: '@cloud' }, () => {
 
     await mockCloudBoot(page, true, endedPersonalBillingStatus)
 
-    const content = await openPlanAndCredits(page)
+    const settings = await openSettings(page)
+    const content = await settings.openPlanAndCredits()
     const billingPortal = content.getByRole('button', {
       name: 'Billing & invoices'
     })
@@ -309,7 +299,8 @@ test.describe('Credits tile (Plan & Credits)', { tag: '@cloud' }, () => {
 
     await mockCloudBoot(page, true, pastDueBillingStatus)
 
-    const content = await openPlanAndCredits(page)
+    const settings = await openSettings(page)
+    const content = await settings.openPlanAndCredits()
     await expect(
       content.getByRole('button', { name: 'Billing & invoices' })
     ).toBeVisible()
@@ -327,23 +318,13 @@ test.describe('Credits tile (Plan & Credits)', { tag: '@cloud' }, () => {
     test.setTimeout(60_000)
 
     await mockCloudBoot(page, false)
-    const dialog = await openSettings(page)
-    const nav = dialog.locator('nav')
+    const settings = await openSettings(page)
 
-    await expect(
-      nav.getByRole('button', { name: 'Workspace', exact: true })
-    ).toHaveCount(0)
-    await expect(
-      nav.getByRole('button', { name: 'Plan & Credits', exact: true })
-    ).toBeVisible()
-    await expect(
-      nav.getByRole('button', { name: 'Members', exact: true })
-    ).toBeVisible()
+    await expect(settings.category('Workspace')).toHaveCount(0)
+    await expect(settings.category('Plan & Credits')).toBeVisible()
+    await expect(settings.category('Members')).toBeVisible()
 
-    await nav
-      .getByRole('button', { name: 'Plan & Credits', exact: true })
-      .click()
-    const content = dialog.getByRole('main')
+    const content = await settings.goToCategory('Plan & Credits')
     await expect(
       content.getByRole('button', { name: 'Activity', exact: true })
     ).toBeVisible()
@@ -356,13 +337,9 @@ test.describe('Credits tile (Plan & Credits)', { tag: '@cloud' }, () => {
 
     await mockCloudBoot(page)
 
-    const content = await openPlanAndCredits(page)
-    await expect(
-      page
-        .getByRole('dialog')
-        .locator('nav')
-        .getByRole('button', { name: 'Members', exact: true })
-    ).toBeVisible()
+    const settings = await openSettings(page)
+    const content = await settings.openPlanAndCredits()
+    await expect(settings.category('Members')).toBeVisible()
 
     // Total + remaining suffix (Pro monthly allowance = 21,100; remaining
     // 10,550 -> used 10,550).
@@ -402,7 +379,8 @@ test.describe('Credits tile (Plan & Credits)', { tag: '@cloud' }, () => {
     // Monthly allowance fully spent; additional credits keep generation going.
     await mockBalance(page, { amount: 1000, monthly: 0, prepaid: 1000 })
 
-    const content = await openPlanAndCredits(page)
+    const settings = await openSettings(page)
+    const content = await settings.openPlanAndCredits()
 
     // 0-monthly state: depletion notice + IN USE badge on additional credits.
     await expect(
@@ -492,7 +470,8 @@ test.describe('Top-up 3DS verification', { tag: '@cloud' }, () => {
       }
     )
 
-    const content = await openPlanAndCredits(page)
+    const settings = await openSettings(page)
+    const content = await settings.openPlanAndCredits()
     topupDialog = new TopUpCreditsDialog(page)
     await content.getByRole('button', { name: 'Add credits' }).click()
     await topupDialog.waitForVisible()

@@ -10,6 +10,7 @@ import type {
 } from '@/platform/workspace/api/workspaceApi'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { SettingDialog } from '@e2e/fixtures/components/SettingDialog'
 import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
@@ -204,22 +205,6 @@ async function bootApp(page: Page, options: { blockPopups?: boolean } = {}) {
   })
 }
 
-/** Settings ▸ Workspace ▸ Plan & Credits, where Billing & invoices lives. */
-async function openPlanAndCredits(page: Page) {
-  await page
-    .getByRole('button', { name: /^Settings/ })
-    .first()
-    .click()
-  const dialog = page.getByTestId('settings-dialog')
-  await expect(dialog).toBeVisible()
-  await dialog
-    .locator('nav')
-    .getByRole('button', { name: 'Plan & Credits' })
-    .click()
-
-  return dialog.getByRole('main')
-}
-
 function openedUrl(page: Page) {
   return page.locator('html').getAttribute('data-opened-url')
 }
@@ -275,7 +260,9 @@ test.describe('Hosted billing destination (FE-2218)', { tag: '@cloud' }, () => {
     const { portalRequests } = await mockCloudBoot(page)
     await bootApp(page)
 
-    const content = await openPlanAndCredits(page)
+    const settings = new SettingDialog(page)
+    await settings.openFromToolbar()
+    const content = await settings.openPlanAndCredits()
     await content.getByRole('button', { name: 'Billing & invoices' }).click()
 
     await expect.poll(() => openedUrl(page)).toBe(PROVIDER_PORTAL_URL)
@@ -292,7 +279,9 @@ test.describe('Hosted billing destination (FE-2218)', { tag: '@cloud' }, () => {
       hosted_billing_destination: 'billing_web'
     })
 
-    const content = await openPlanAndCredits(page)
+    const settings = new SettingDialog(page)
+    await settings.openFromToolbar()
+    const content = await settings.openPlanAndCredits()
     await content.getByRole('button', { name: 'Billing & invoices' }).click()
 
     await expect
