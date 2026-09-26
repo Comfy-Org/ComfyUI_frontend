@@ -29,12 +29,27 @@ and `cloud/1.41`, branched from the commit _before_ the bump. Nightly patch
 bumps on `main` are convenience snapshots — no branches created.
 
 The minor bump is scheduled automatically: `release-version-bump.yaml` runs a
-**minor** bump on `main` every Monday and Wednesday 20:00 UTC and enables
-auto-merge on the resulting `version-bump-*` PR (marked with the
-`weekly-release-cut` label, which exempts it from the nightly stale-PR closer),
-so once its checks pass the merge
+**minor** bump on `main` every Monday and Wednesday at noon in
+`America/Los_Angeles` (including daylight saving time) and enables auto-merge on the
+resulting `version-bump-*` PR (marked with the `weekly-release-cut` label, which
+exempts it from the nightly stale-PR closer). It requests `@frontend-team` review
+in `#frontend-code-reviews`; once its approval and required checks pass, the merge
 triggers `release-branch-create.yaml` and the `core/` + `cloud/` cut is
 hands-off. The separate nightly `0 0 * * *` cron stays a **patch** bump.
+
+Each scheduled cut records its Pacific date in the PR body. Reruns reuse that
+record, and an outstanding cut PR holds the next cut. GitHub schedules can be
+delayed; noon is the trigger time, not a guaranteed merge or deployment time.
+The Slack bot must be able to post to `#frontend-code-reviews`.
+
+`cloud-release-version-bump.yaml` maintains both the newest cloud release line
+and the cloud line selected by `testcloudBranch` in the cloud repo's
+`frontend-version.json` (falling back to `releaseBranch` when absent). The
+existing `PR_GH_TOKEN` therefore needs read access to that cloud file. Invalid
+or unreadable configuration fails the run rather than dropping the QA branch.
+Explicit `branch` dispatches still target only that branch. Each active line
+keeps its own pending-PR and no-new-commits checks; fixes are not copied between
+branches. Testcloud rotation remains a sheriff-reviewed operation.
 
 **Patch on `core/X.Y`**: publishes a hotfix draft release. Must not be marked
 "latest" so `main` stays current.
