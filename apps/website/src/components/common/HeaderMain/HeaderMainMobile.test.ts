@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
@@ -22,5 +21,13 @@ describe('HeaderMainMobile', () => {
     await openMenu(true)
 
     expect(screen.getByRole('link', { name: /^Models\b/i })).toBeTruthy()
+  })
+
+  it('labels a new top-level section with a NEW badge', async () => {
+    await openMenu(false)
+
+    expect(
+      screen.getByRole('button', { name: /^Products\s*NEW$/i })
+    ).toBeTruthy()
   })
 })

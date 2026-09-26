@@ -5,6 +5,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 
 import {
   getLoad3dOutputCache,
+  getLoad3dSceneRevision,
   isLoad3dSceneDirty,
   markLoad3dSceneDirty,
   nodeToLoad3dMap,
@@ -52,18 +53,9 @@ vi.mock<unknown>(import('@/extensions/core/load3d/Load3dUtils'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    apiURL: vi.fn(),
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    getServerFeature: vi.fn(() => false)
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
-vi.mock(import('@/i18n'), () => ({
-  t: vi.fn((key) => key)
-}))
+vi.mock(import('@/i18n'))
 
 vi.mock(import('@/platform/assets/utils/assetPreviewUtil'), () => ({
   isAssetPreviewSupported: vi.fn(() => false),
@@ -81,6 +73,7 @@ describe('useLoad3d', () => {
   let mockToastStore: ReturnType<typeof useToastStore>
 
   beforeEach(() => {
+    vi.mocked(api.getServerFeature).mockReturnValue(false)
     scope = effectScope()
     nodeToLoad3dMap.clear()
     useSettingStore().settingValues['Comfy.Load3D.BackgroundColor'] = '282828'
@@ -142,7 +135,7 @@ describe('useLoad3d', () => {
       setFOV: vi.fn(),
       setLightIntensity: vi.fn(),
       setCameraState: vi.fn(),
-      loadModel: vi.fn().mockResolvedValue(undefined),
+      loadModel: vi.fn<Load3d['loadModel']>().mockResolvedValue(true),
       refreshViewport: vi.fn(),
       updateStatusMouseOnNode: vi.fn(),
       updateStatusMouseOnScene: vi.fn(),
@@ -1877,6 +1870,26 @@ describe('useLoad3d', () => {
       markLoad3dSceneDirty(a)
       expect(isLoad3dSceneDirty(a)).toBe(true)
       expect(isLoad3dSceneDirty(b)).toBe(true)
+    })
+
+    it('setLoad3dOutputCache rejects a stale scene revision and keeps the node dirty', () => {
+      const fresh = createMockLGraphNode({ properties: {} })
+      const capturedRevision = getLoad3dSceneRevision(fresh)
+
+      markLoad3dSceneDirty(fresh)
+      expect(getLoad3dSceneRevision(fresh)).toBe(capturedRevision + 1)
+
+      expect(setLoad3dOutputCache(fresh, fakeCache, capturedRevision)).toBe(
+        false
+      )
+      expect(getLoad3dOutputCache(fresh)).toBeUndefined()
+      expect(isLoad3dSceneDirty(fresh)).toBe(true)
+
+      expect(
+        setLoad3dOutputCache(fresh, fakeCache, getLoad3dSceneRevision(fresh))
+      ).toBe(true)
+      expect(getLoad3dOutputCache(fresh)).toBe(fakeCache)
+      expect(isLoad3dSceneDirty(fresh)).toBe(false)
     })
 
     it('markLoad3dSceneDirty on null is a no-op', () => {

@@ -1,5 +1,59 @@
 @import '@comfyorg/design-system/css/style.css';
-@import '../../workbench/extensions/agent/agentTheme.css';
+
+@theme {
+  --comfy-canvas-gutter: calc(var(--spacing) * 2);
+}
+
+/* The agent entry button sits in the topbar, outside the agent panel, so its
+   effect cannot live in agentPanel.css, which only AgentPanelRoot imports. */
+/* Sweeps out, snaps back faster, then rests off-screen before going again. */
+@keyframes agent-shimmer-sweep {
+  0% {
+    background-position: 150% center;
+    animation-timing-function: ease-in-out;
+  }
+  30% {
+    background-position: -50% center;
+    animation-timing-function: ease-in;
+  }
+  45%,
+  100% {
+    background-position: 150% center;
+  }
+}
+
+/* A travelling highlight over the button's own border: the gradient is masked
+   down to a 1px ring so only the outline lights up. */
+.agent-shimmer-outline::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  border-radius: inherit;
+  background: linear-gradient(
+    115deg,
+    transparent 42%,
+    var(--color-base-foreground) 50%,
+    transparent 58%
+  );
+  background-size: 200% auto;
+  animation: agent-shimmer-sweep 3s infinite;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.disable-animations .agent-shimmer-outline::after {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agent-shimmer-outline::after {
+    display: none;
+  }
+}
 
 /* Toasts teleport to <body>. Reka's modal mode sets pointer-events: none on
    the body, which left toast close buttons painted above dialogs but

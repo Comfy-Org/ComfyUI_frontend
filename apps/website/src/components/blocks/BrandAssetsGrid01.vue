@@ -22,7 +22,7 @@ defineProps<{
 </script>
 
 <template>
-  <section class="max-w-9xl mx-auto px-6 py-16 lg:py-24">
+  <section class="mx-auto max-w-9xl px-6 py-16 lg:py-24">
     <div class="mx-auto max-w-6xl text-center">
       <h2
         class="text-4xl font-light tracking-tight text-primary-comfy-canvas lg:text-6xl"
@@ -42,7 +42,7 @@ defineProps<{
       <li
         v-for="asset in assets"
         :key="asset.id"
-        class="bg-transparency-white-t4 flex flex-col overflow-hidden rounded-4xl border border-primary-comfy-canvas/10"
+        class="flex flex-col overflow-hidden rounded-4xl border border-primary-comfy-canvas/10 bg-transparency-white-t4"
       >
         <div
           class="flex aspect-video items-center justify-center overflow-hidden bg-primary-comfy-ink/40 p-6"

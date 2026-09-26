@@ -1,5 +1,6 @@
 import { t } from '@/i18n'
-import { type LGraphNode, isComboWidget } from '@/lib/litegraph/src/litegraph'
+import { isComboWidget } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type {
   IBaseWidget,
   IComboWidget,
@@ -107,10 +108,9 @@ export function addValueControlWidget(
   widgetName?: string,
   inputData?: InputSpec
 ): IComboWidget {
-  let name = inputData?.[1]?.control_after_generate
-  if (typeof name !== 'string') {
-    name = widgetName
-  }
+  const controlAfterGenerate = inputData?.[1]?.control_after_generate
+  const name =
+    typeof controlAfterGenerate === 'string' ? controlAfterGenerate : widgetName
   const widgets = addValueControlWidgets(
     node,
     targetWidget,
@@ -124,26 +124,34 @@ export function addValueControlWidget(
   return widgets[0]
 }
 
+interface ValueControlWidgetOptions {
+  addFilterList?: boolean
+  controlAfterGenerateName?: string
+  controlFilterListName?: string
+}
+
 export function addValueControlWidgets(
   node: LGraphNode,
   targetWidget: IBaseWidget,
   defaultValue?: string,
-  options?: Record<string, any>,
+  options: ValueControlWidgetOptions = {},
   inputData?: InputSpec
 ): [IComboWidget, ...IStringWidget[]] {
   if (!defaultValue) defaultValue = 'randomize'
-  if (!options) options = {}
 
-  const getName = (defaultName: string, optionName: string) => {
-    let name = defaultName
-    if (options[optionName]) {
-      name = options[optionName]
-    } else if (typeof inputData?.[1]?.[defaultName] === 'string') {
-      name = inputData?.[1]?.[defaultName]
-    } else if (inputData?.[1]?.control_prefix) {
-      name = inputData?.[1]?.control_prefix + ' ' + name
+  const getName = (
+    defaultName: string,
+    optionName: 'controlAfterGenerateName' | 'controlFilterListName'
+  ) => {
+    const nameOverride = options[optionName]
+    if (nameOverride) return nameOverride
+    const inputOptions = inputData?.[1]
+    const defaultNameOverride = inputOptions?.[defaultName]
+    if (typeof defaultNameOverride === 'string') return defaultNameOverride
+    if (inputOptions?.control_prefix) {
+      return inputOptions.control_prefix + ' ' + defaultName
     }
-    return name
+    return defaultName
   }
 
   const valueControl = node.addWidget(
@@ -169,7 +177,7 @@ export function addValueControlWidgets(
 
   const isCombo = isComboWidget(targetWidget)
   let comboFilter: IStringWidget
-  if (isCombo && valueControl.options.values) {
+  if (isCombo) {
     // @ts-expect-error Combo widget values may be a dictionary or legacy function type
     valueControl.options.values.push('increment-wrap')
   }
@@ -195,7 +203,7 @@ export function addValueControlWidgets(
 
   function applyWidgetControl() {
     if (
-      node.inputs?.some(
+      node.inputs.some(
         (input, index) =>
           input.widget?.name === targetWidget.name &&
           node.isInputConnected(index)
@@ -263,5 +271,5 @@ export const ComfyWidgets = {
 export function isValidWidgetType(
   key: unknown
 ): key is keyof typeof ComfyWidgets {
-  return ComfyWidgets[key as keyof typeof ComfyWidgets] !== undefined
+  return typeof key === 'string' && Object.hasOwn(ComfyWidgets, key)
 }

@@ -19,60 +19,65 @@ function parseMessage(value: unknown): TopUpReturnMessage | undefined {
     : undefined
 }
 
-export function topUpReturnUrl(currentHref: string, attemptId: string): string {
+export function topUpReturnUrl(returnHref: string, attemptId: string): string {
   if (!ATTEMPT_ID.test(attemptId)) throw new Error('Invalid checkout attempt')
-  const url = new URL(currentHref)
+  const url = new URL(returnHref)
   url.searchParams.set(RETURN_PARAM, attemptId)
   return url.toString()
 }
 
-/**
- * A completed and a cancelled Stripe session return to the same URL. The
- * return therefore announces only "the buyer came back"; the opener must
- * observe a real balance increase before it can claim that payment landed.
- */
-export function announceTopUpReturnFromLocation(): void {
+function consumeAttemptId(): string | undefined {
   const url = new URL(window.location.href)
   const attemptId = url.searchParams.get(RETURN_PARAM)
-  if (attemptId === null) return
+  if (attemptId === null) return undefined
   url.searchParams.delete(RETURN_PARAM)
   window.history.replaceState(
     window.history.state,
     '',
     url.pathname + url.search + url.hash
   )
-  if (!ATTEMPT_ID.test(attemptId)) return
+  return ATTEMPT_ID.test(attemptId) ? attemptId : undefined
+}
 
-  const message: TopUpReturnMessage = { type: MESSAGE_TYPE, attemptId }
-  let sent = false
+function sendToOpener(message: TopUpReturnMessage): boolean {
   try {
     if (window.opener && !window.opener.closed) {
       window.opener.postMessage(message, window.location.origin)
-      sent = true
-      window.opener.focus()
+      return true
     }
   } catch {
-    sent = false
+    return false
   }
-  if (!sent && typeof BroadcastChannel !== 'undefined') {
-    try {
-      const channel = new BroadcastChannel(CHANNEL_NAME)
-      channel.postMessage(message)
-      channel.close()
-      sent = true
-    } catch {
-      sent = false
-    }
+  return false
+}
+
+function sendToChannel(message: TopUpReturnMessage): boolean {
+  if (typeof BroadcastChannel === 'undefined') return false
+  try {
+    const channel = new BroadcastChannel(CHANNEL_NAME)
+    channel.postMessage(message)
+    channel.close()
+    return true
+  } catch {
+    return false
   }
-  if (!sent) {
-    try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(message))
-      window.localStorage.removeItem(STORAGE_KEY)
-    } catch {
-      // The original tab still refreshes its balance when it regains focus.
-    }
+}
+
+function sendToStorage(message: TopUpReturnMessage): void {
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(message))
+    window.localStorage.removeItem(STORAGE_KEY)
+  } catch {
+    return
   }
-  window.close()
+}
+
+export function announceTopUpReturnFromLocation(): void {
+  const attemptId = consumeAttemptId()
+  if (!attemptId) return
+  const message: TopUpReturnMessage = { type: MESSAGE_TYPE, attemptId }
+  if (sendToOpener(message) || sendToChannel(message)) return
+  sendToStorage(message)
 }
 
 export function subscribeToTopUpReturns(

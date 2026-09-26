@@ -40,7 +40,7 @@ if (Object.keys(values.value).length === 0) {
       <button
         type="submit"
         disabled
-        class="bg-primary-comfy-yellow mt-2 rounded-full px-5 py-3 font-medium text-primary-comfy-ink opacity-50"
+        class="mt-2 rounded-full bg-primary-comfy-yellow px-5 py-3 font-medium text-primary-comfy-ink opacity-50"
       >
         {{ t('workshop.model.runNext', locale) }}
       </button>

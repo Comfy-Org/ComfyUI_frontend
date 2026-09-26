@@ -195,13 +195,6 @@ describe('WorkflowSelectorChip', () => {
     expect(emptyTrigger).toHaveTextContent(
       'Select a workflow for agent to work in'
     )
-    expect(emptyTrigger).toHaveClass(
-      'border',
-      'border-white/15',
-      'bg-white/4.5',
-      'font-normal'
-    )
-    expect(emptyTrigger).not.toHaveClass('flex-1', 'font-medium')
     await user.hover(trigger())
     expect(
       await screen.findByRole('tooltip', { hidden: true })

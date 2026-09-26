@@ -52,4 +52,14 @@ describe('getDevOverride', () => {
       'True'
     )
   })
+
+  it('returns undefined when storage access throws', () => {
+    vi.stubGlobal('localStorage', {
+      getItem: () => {
+        throw new DOMException('blocked', 'SecurityError')
+      }
+    })
+
+    expect(getDevOverride('some_flag')).toBeUndefined()
+  })
 })

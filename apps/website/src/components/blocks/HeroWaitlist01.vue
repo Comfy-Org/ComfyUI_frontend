@@ -44,7 +44,7 @@ const {
     <!-- Plum wash -->
     <div
       aria-hidden="true"
-      class="animate-backdrop-sway absolute inset-[-20%] -z-4 bg-[radial-gradient(ellipse_50%_40%_at_30%_35%,color-mix(in_srgb,var(--color-primary-comfy-plum)_55%,transparent),transparent_70%),radial-gradient(ellipse_45%_45%_at_72%_62%,color-mix(in_srgb,var(--color-primary-comfy-plum)_38%,transparent),transparent_70%)] blur-2xl will-change-transform"
+      class="absolute inset-[-20%] -z-4 animate-backdrop-sway bg-[radial-gradient(ellipse_50%_40%_at_30%_35%,color-mix(in_srgb,var(--color-primary-comfy-plum)_55%,transparent),transparent_70%),radial-gradient(ellipse_45%_45%_at_72%_62%,color-mix(in_srgb,var(--color-primary-comfy-plum)_38%,transparent),transparent_70%)] blur-2xl will-change-transform"
     />
 
     <!-- Even dot grid, then a brighter drifting cloud of dots masked over it -->
@@ -54,7 +54,7 @@ const {
     />
     <div
       aria-hidden="true"
-      class="animate-backdrop-drift absolute inset-0 -z-2 bg-[radial-gradient(circle,color-mix(in_srgb,var(--color-primary-warm-white)_42%,transparent)_1.15px,transparent_1.25px)] mask-[radial-gradient(circle,black_0%,transparent_62%),radial-gradient(circle,black_0%,transparent_58%),radial-gradient(circle,black_0%,transparent_66%)] bg-size-[5px_5px] mask-[1100px_900px,800px_700px,1300px_1000px] mask-no-repeat will-change-[mask-position]"
+      class="absolute inset-0 -z-2 animate-backdrop-drift bg-[radial-gradient(circle,color-mix(in_srgb,var(--color-primary-warm-white)_42%,transparent)_1.15px,transparent_1.25px)] mask-[radial-gradient(circle,black_0%,transparent_62%),radial-gradient(circle,black_0%,transparent_58%),radial-gradient(circle,black_0%,transparent_66%)] bg-size-[5px_5px] mask-[1100px_900px,800px_700px,1300px_1000px] mask-no-repeat will-change-[mask-position]"
     />
 
     <!-- Darkens the edges and blends the hero into the page background -->

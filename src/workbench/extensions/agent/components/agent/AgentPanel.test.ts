@@ -1,5 +1,3 @@
-// @vitest-environment jsdom
-
 import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 import { getActivePinia } from 'pinia'
 import { render, screen, within } from '@testing-library/vue'
@@ -191,7 +189,7 @@ describe('AgentPanel', () => {
       expect(textarea).toHaveFocus()
 
       await user.pointer({ target: textarea, offset: 0, keys: '[MouseLeft]' })
-      await user.keyboard('Updated. ')
+      await user.paste('Updated. ')
       expect(screen.getByTestId('user-message-bubble')).toHaveTextContent(
         hasReferences
           ? 'Compare Flow B with Flow A please.'

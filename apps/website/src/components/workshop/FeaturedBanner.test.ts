@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { nextTick } from 'vue'
@@ -156,6 +155,21 @@ describe('FeaturedBanner', () => {
     await advanceAutoplay()
 
     expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('Kling')
+  })
+
+  it('keeps a manually selected highlight until the reader changes it', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: false })
+    const user = setupAutoplayUser()
+    render(FeaturedBanner, {
+      props: { models: [base, kling], autoplay: false }
+    })
+    await user.click(screen.getByRole('button', { name: 'Kling' }))
+    await advanceAutoplay(AUTOPLAY_MS * 2)
+    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Kling')
+    expect(screen.getByRole('button', { name: 'Kling' })).toHaveAttribute(
+      'aria-current',
+      'true'
+    )
   })
 
   it('pauses while hovered and resumes after the pointer leaves', async () => {

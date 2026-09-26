@@ -3,7 +3,8 @@ import { useIntersectionObserver } from '@vueuse/core'
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { buildAgentTooltipConfig } from '@/composables/useTooltipConfig'
+import Button from '@/components/ui/button/Button.vue'
+import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -34,7 +35,8 @@ const emit = defineEmits<{
   feedback: [turnId: string, vote: 'up' | 'down' | null]
   editPrompt: [prompt: PromptSnapshot]
   answerAsk: [askId: string, selection: 'run' | 'cancel']
-  openWorkflow: [workflowId: string, workflowName?: string]
+  openWorkflow: [askId: string, workflowId: string, workflowName?: string]
+  approvalShown: [askId: string, turnId: string, workflowId: string | null]
   openReferenceWorkflow: [workflowId: string, workflowName: string]
   paywallAction: [action: AgentPaywallAction]
 }>()
@@ -61,9 +63,13 @@ function scrollToLatest(): void {
 
 const latestContentSignal = computed(() => {
   const last = entries.at(-1)
-  if (!last) return '0'
-  const size = 'parts' in last ? JSON.stringify(last.parts).length : 0
-  return `${entries.length}:${size}`
+  if (!last || !('parts' in last)) return `${entries.length}`
+  const tail = last.parts.at(-1)
+  const tailText = tail && 'text' in tail ? tail.text.length : 0
+  const settled = last.parts.filter(
+    (part) => 'state' in part && part.state === 'done'
+  ).length
+  return `${entries.length}:${last.streaming}:${last.parts.length}:${settled}:${tailText}`
 })
 
 watch(
@@ -108,16 +114,20 @@ watch(
             <AgentMessage
               v-else
               :message="entry"
-              :answering-ask-ids="answeringAskIds"
-              :paywall-presentation="paywallPresentation"
+              :answering-ask-ids
+              :paywall-presentation
               @feedback="emit('feedback', entry.id, $event)"
               @answer-ask="
                 (askId: string, selection: 'run' | 'cancel') =>
                   emit('answerAsk', askId, selection)
               "
+              @approval-shown="
+                (askId, turnId, workflowId) =>
+                  emit('approvalShown', askId, turnId, workflowId)
+              "
               @open-workflow="
-                (workflowId: string, workflowName?: string) =>
-                  emit('openWorkflow', workflowId, workflowName)
+                (askId: string, workflowId: string, workflowName?: string) =>
+                  emit('openWorkflow', askId, workflowId, workflowName)
               "
               @paywall-action="emit('paywallAction', $event)"
             />
@@ -127,15 +137,17 @@ watch(
       </div>
     </div>
 
-    <button
+    <Button
       v-if="!atBottom"
-      v-tooltip.top="buildAgentTooltipConfig(t('agent.latest'))"
+      v-tooltip.top="buildTooltipConfig(t('agent.latest'))"
       type="button"
+      variant="secondary"
+      size="icon"
       :aria-label="t('agent.latest')"
-      class="text-secondary-foreground absolute bottom-2 left-1/2 flex size-8 -translate-x-1/2 cursor-pointer items-center justify-center rounded-full border-none bg-secondary-background shadow-md ring-1 ring-muted-foreground transition-colors hover:bg-secondary-background-hover"
+      class="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full shadow-md ring-1 ring-muted-foreground"
       @click="scrollToLatest"
     >
       <span class="icon-[lucide--chevron-down] size-4" />
-    </button>
+    </Button>
   </div>
 </template>

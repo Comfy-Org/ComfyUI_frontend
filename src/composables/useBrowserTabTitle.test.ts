@@ -7,14 +7,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick } from 'vue'
 
 import { useBrowserTabTitle } from '@/composables/useBrowserTabTitle'
+import { t } from '@/i18n'
 
 vi.mock(import('firebase/auth'))
 
-// Mock i18n module
-vi.mock<unknown>(import('@/i18n'), () => ({
-  t: (key: string, fallback: string) =>
-    key === 'g.nodesRunning' ? 'nodes running' : fallback
-}))
+vi.mock(import('@/i18n'))
 
 let executionStore: ReturnType<typeof useExecutionStore>
 
@@ -26,6 +23,9 @@ let workspaceStore: ReturnType<typeof useWorkspaceStore>
 
 describe('useBrowserTabTitle', () => {
   beforeEach(() => {
+    vi.mocked(t).mockImplementation((key: unknown, fallback: unknown) =>
+      String(key) === 'g.nodesRunning' ? 'nodes running' : String(fallback)
+    )
     executionStore = useExecutionStore()
     settingStore = useSettingStore()
     workflowStore = useWorkflowStore()

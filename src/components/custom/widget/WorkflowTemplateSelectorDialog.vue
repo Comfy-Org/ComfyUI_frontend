@@ -8,7 +8,7 @@
   >
     <template #leftPanelHeaderTitle>
       <i class="icon-[comfy--template]" />
-      <h2 class="text-neutral text-base font-semibold">
+      <h2 class="text-base font-semibold text-base-foreground">
         {{ $t('sideToolbar.templates', 'Templates') }}
       </h2>
     </template>
@@ -43,7 +43,7 @@
         class="flex min-w-0 flex-1 items-center gap-2"
       >
         <h2
-          class="text-neutral m-0 hidden shrink-0 truncate text-base font-medium min-[880px]:block"
+          class="m-0 hidden shrink-0 truncate text-base font-medium text-base-foreground min-[880px]:block"
         >
           {{ pageTitle }}
         </h2>
@@ -245,8 +245,8 @@
                     :hover-zoom="0"
                   >
                     <template #overlay>
-                      <ProgressSpinner
-                        v-if="loadingTemplate === template.name"
+                      <Spinner
+                        v-if="loadingTemplateId === template.name"
                         class="absolute inset-0 z-10 m-auto size-12"
                       />
                     </template>
@@ -431,7 +431,6 @@
 
 <script setup lang="ts">
 import { useAsyncState } from '@vueuse/core'
-import ProgressSpinner from 'primevue/progressspinner'
 import {
   computed,
   markRaw,
@@ -457,6 +456,7 @@ import Button from '@/components/ui/button/Button.vue'
 import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 import { selectCountBadgeClass } from '@/components/ui/select/select.variants'
 import type { SelectOption } from '@/components/ui/select/types'
+import Spinner from '@/components/ui/spinner/Spinner.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import { useIntersectionObserver } from '@/composables/useIntersectionObserver'
@@ -541,11 +541,13 @@ provide(OnCloseKey, onClose)
 const workflowTemplatesStore = useWorkflowTemplatesStore()
 const {
   loadTemplates,
+  loadingTemplateId,
   getTemplateThumbnailUrl,
   getTemplateTitle,
   getTemplateDescription,
   openPreparedWorkflowTemplate,
-  prepareWorkflowTemplateForOpen
+  prepareWorkflowTemplate,
+  discardPreparedWorkflowTemplate
 } = useTemplateWorkflows()
 
 const getEffectiveSourceModule = (template: TemplateInfo) =>
@@ -754,7 +756,6 @@ const hasActiveFilters = computed(
 
 // UI state
 const mobileFiltersOpen = ref(false)
-const loadingTemplate = ref<string | null>(null)
 const hoveredTemplate = ref<string | null>(null)
 const cardRefs = ref<HTMLElement[]>([])
 type TemplateModelRowDownloads = ReturnType<typeof useTemplateModelRowDownloads>
@@ -960,8 +961,6 @@ watch(
     invalidateDetailWork()
     activeDetail.value = null
     resetPagination()
-    // Clear loading state and force re-render of template list
-    loadingTemplate.value = null
     templateListKey.value++
   }
 )
@@ -1156,16 +1155,17 @@ async function openPreparedTemplate(
   prepared: PreparedWorkflowTemplate,
   generation: number
 ): Promise<void> {
-  if (openPending.value) return
+  if (openPending.value || generation !== detailGeneration) return
 
   openPending.value = true
   try {
-    const didOpen = await openPreparedWorkflowTemplate(prepared, {
-      closeDialog: false
-    })
-    if (didOpen && generation === detailGeneration) onClose()
+    const result = await openPreparedWorkflowTemplate(prepared)
+    if (result === 'not-started') return
+
+    templateWasSelected.value = result === 'loaded'
+    onClose()
   } finally {
-    if (generation === detailGeneration) openPending.value = false
+    openPending.value = false
   }
 }
 
@@ -1176,7 +1176,9 @@ async function showModelSetupIfNeeded(
 ): Promise<boolean> {
   if (!isDesktop) return false
 
-  const requirements = extractTemplateModelRequirementDetails(prepared.workflow)
+  const requirements = extractTemplateModelRequirementDetails(
+    prepared.data.json
+  )
   if (requirements.length === 0) return false
 
   const availability = await resolveModelAvailability(
@@ -1202,11 +1204,12 @@ async function showModelSetupIfNeeded(
       rowDownloads
     }
   }
-  await nextTick()
-  detailView.value?.focus()
-
   const controller = new AbortController()
   modelMetadataController = controller
+  await nextTick()
+  if (generation !== detailGeneration) return true
+  detailView.value?.focus()
+
   void updateTemplateModelMetadata(
     generation,
     controller,
@@ -1224,24 +1227,22 @@ const onLoadWorkflow = async (template: TemplateInfo, event: MouseEvent) => {
   detailOrigin =
     event.currentTarget instanceof HTMLElement ? event.currentTarget : null
   listScrollTop = modalLayout.value?.getContentScrollTop() ?? 0
-  templateWasSelected.value = true
-  loadingTemplate.value = template.name
-  try {
-    const prepared = await prepareWorkflowTemplateForOpen(
-      template.name,
-      getEffectiveSourceModule(template)
-    )
-    if (!prepared || generation !== detailGeneration) return
-
-    const didShowModelSetup = await showModelSetupIfNeeded(
-      template,
-      prepared,
-      generation
-    )
-    if (!didShowModelSetup) await openPreparedTemplate(prepared, generation)
-  } finally {
-    if (generation === detailGeneration) loadingTemplate.value = null
+  const prepared = await prepareWorkflowTemplate(
+    template.name,
+    getEffectiveSourceModule(template)
+  )
+  if (!prepared) return
+  if (generation !== detailGeneration) {
+    discardPreparedWorkflowTemplate(prepared)
+    return
   }
+
+  const didShowModelSetup = await showModelSetupIfNeeded(
+    template,
+    prepared,
+    generation
+  )
+  if (!didShowModelSetup) await openPreparedTemplate(prepared, generation)
 }
 
 async function onBackToTemplates() {
@@ -1249,8 +1250,8 @@ async function onBackToTemplates() {
 
   activeDetail.value?.modelSetup.rowDownloads.dispose()
   invalidateDetailWork()
+  discardPreparedWorkflowTemplate(activeDetail.value?.prepared ?? null)
   activeDetail.value = null
-  loadingTemplate.value = null
   await nextTick()
   modalLayout.value?.setContentScrollTop(listScrollTop)
   detailOrigin?.focus()
@@ -1286,8 +1287,8 @@ function onSelectNavItem(value: string | null) {
 
   activeDetail.value?.modelSetup.rowDownloads.dispose()
   invalidateDetailWork()
+  discardPreparedWorkflowTemplate(activeDetail.value?.prepared ?? null)
   activeDetail.value = null
-  loadingTemplate.value = null
   selectedNavItem.value = value
 }
 

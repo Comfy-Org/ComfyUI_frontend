@@ -6,6 +6,10 @@ import { geminiOmniPage } from '../../data/geminiOmni'
 import { ltxPage } from '../../data/ltx'
 import { minimaxPage } from '../../data/minimax'
 import { minimaxLicensePage } from '../../data/minimaxLicense'
+import {
+  qwenImage21AnnouncementPage,
+  qwenImage21Page
+} from '../../data/qwenImage21'
 import { minimaxMusic3Page } from '../../data/minimaxMusic3'
 import { seedancePage } from '../../data/seedance'
 import { wanAnimate2Page } from '../../data/wanAnimate2'
@@ -22,6 +26,8 @@ const pages: { name: string; page: ModelLaunchPage }[] = [
   { name: 'minimaxLicense', page: minimaxLicensePage },
   { name: 'flux3', page: flux3Page },
   { name: 'chatgptImage25', page: chatgptImage25Page },
+  { name: 'qwenImage21', page: qwenImage21Page },
+  { name: 'qwenImage21Announcement', page: qwenImage21AnnouncementPage },
   { name: 'seedance', page: seedancePage },
   { name: 'ltx', page: ltxPage },
   { name: 'geminiOmni', page: geminiOmniPage },
