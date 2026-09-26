@@ -494,6 +494,26 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
+    it('captures a sanitised error counter with metadata', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackClientErrorReported({
+        error_type: 'agent_consent_setting_load_failure',
+        failure_kind: 'network_unreachable',
+        level: 'error'
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.CLIENT_ERROR_REPORTED,
+        {
+          error_type: 'agent_consent_setting_load_failure',
+          failure_kind: 'network_unreachable',
+          level: 'error'
+        }
+      )
+    })
+
     it('captures auth failure events with metadata', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()

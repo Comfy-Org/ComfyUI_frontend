@@ -1309,6 +1309,73 @@ export interface FetchTimeoutMetadata {
 }
 
 /**
+ * How a reported failure failed, as a closed set. Derived from structured
+ * fields only — an explicit `failureKind` the thrower attached, the error's
+ * constructor name, a numeric HTTP status, or one of the fixed strings the
+ * browser uses for a fetch that produced no response. The error's own message,
+ * stack, cause and context never reach this value and never leave the client.
+ *
+ * `unclassified` is the honest fallback and is expected to be non-zero. A rise
+ * in it means the table below has fallen behind the code, not that a new kind
+ * of failure exists.
+ */
+export const ERROR_FAILURE_KINDS = [
+  /** The client had no credential to send. */
+  'auth_missing',
+  /** The server rejected the credential that was sent (401/403). */
+  'auth_rejected',
+  /** The request produced no response at all. */
+  'network_unreachable',
+  /** The request was abandoned on a deadline (408/504, `TimeoutError`). */
+  'timeout',
+  /** The server answered 5xx. */
+  'server_error',
+  /** The server answered 4xx for a reason other than credentials. */
+  'request_rejected',
+  /** A response arrived and could not be parsed or validated. */
+  'malformed_response',
+  'unclassified'
+] as const
+
+export type ErrorFailureKind = (typeof ERROR_FAILURE_KINDS)[number]
+
+/** The severity `reportError()` was called with. */
+export type ReportedErrorLevel = 'warning' | 'error'
+
+/**
+ * `app:client_error_reported` — a **sanitised counter** for a failure that
+ * `reportError()` has already sent to Sentry and Datadog.
+ *
+ * Product analytics never receives the error. It receives the caller's
+ * `errorType` slug (a string literal in the source, never composed from user
+ * data), a `failure_kind` from the closed set above, the report's level, and
+ * an HTTP status when the error carried one. Messages, stacks, causes, tags
+ * and the free-form `context` bag stay in Sentry. See `errorAnalytics.ts` for
+ * the allowlist that decides which slugs are counted at all.
+ *
+ * **Reading rules.**
+ * - `error_type` is the *same* value as Sentry's `error_type` tag, so the two
+ *   instruments are directly comparable with no translation. That is the point
+ *   of the event: a disagreement between them is an instrument defect.
+ * - One slug can be raised from more than one call site — the counter is their
+ *   union, exactly as the Sentry tag is. It does not identify a code path.
+ * - Do not add this count to an event that describes how an *offer* ended
+ *   (`app:agent_consent_offer_exited`, `app:agent_consent_not_offered`). They
+ *   measure one path from two sides; summing them double-counts it.
+ * - The count is a floor: a report raised while another report is still being
+ *   delivered reaches the console only, and a page load emits at most
+ *   `MAX_COUNTED_PER_ERROR_TYPE` of any one slug.
+ */
+export interface ClientErrorReportedMetadata extends Record<string, unknown> {
+  /** The `reportError()` slug. Identical to Sentry's `error_type` tag. */
+  error_type: string
+  failure_kind: ErrorFailureKind
+  level: ReportedErrorLevel
+  /** Present only when the error carried an integer status in 100–599. */
+  http_status?: number
+}
+
+/**
  * Telemetry provider interface for individual providers.
  * All methods are optional - providers only implement what they need.
  */
@@ -1474,6 +1541,9 @@ export interface TelemetryProvider {
 
   // Network error events
   trackFetchTimeout?(metadata: FetchTimeoutMetadata): void
+
+  // Sanitised counter for an allowlisted reportError() slug
+  trackClientErrorReported?(metadata: ClientErrorReportedMetadata): void
 }
 
 /**
@@ -1654,7 +1724,10 @@ export const TelemetryEvents = {
   PAGE_VIEW: 'app:page_view',
 
   // Network
-  FETCH_TIMEOUT: 'app:fetch_timeout'
+  FETCH_TIMEOUT: 'app:fetch_timeout',
+
+  // Sanitised error-channel counter (see ClientErrorReportedMetadata)
+  CLIENT_ERROR_REPORTED: 'app:client_error_reported'
 } as const
 
 export type TelemetryEventName =
@@ -1754,3 +1827,4 @@ export type TelemetryEventProperties =
   | AgentPaywallShownMetadata
   | AgentPaywallCtaMetadata
   | FetchTimeoutMetadata
+  | ClientErrorReportedMetadata

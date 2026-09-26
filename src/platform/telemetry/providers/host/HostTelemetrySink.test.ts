@@ -429,6 +429,20 @@ describe('HostTelemetrySink', () => {
           step: 2
         }),
       properties: { reason: 'target_missing', step: 2 }
+    },
+    {
+      name: TelemetryEvents.CLIENT_ERROR_REPORTED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackClientErrorReported({
+          error_type: 'agent_consent_setting_load_failure',
+          failure_kind: 'auth_missing',
+          level: 'error'
+        }),
+      properties: {
+        error_type: 'agent_consent_setting_load_failure',
+        failure_kind: 'auth_missing',
+        level: 'error'
+      }
     }
   ])('forwards $name to the host bridge', ({ name, track, properties }) => {
     track(new HostTelemetrySink())

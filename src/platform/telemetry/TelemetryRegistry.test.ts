@@ -16,6 +16,7 @@ import type {
   AgentWorkflowAppliedMetadata,
   BillingTelemetryEvent,
   CheckoutJourneyTelemetryEvent,
+  ClientErrorReportedMetadata,
   TelemetryProvider
 } from './types'
 
@@ -273,6 +274,29 @@ describe('TelemetryRegistry', () => {
     expect(b.trackWidgetFavoriteToggled).toHaveBeenCalledExactlyOnceWith(
       payload
     )
+  })
+
+  it('dispatches trackClientErrorReported to every registered provider', () => {
+    const metadata = {
+      error_type: 'agent_consent_setting_load_failure',
+      failure_kind: 'malformed_response',
+      level: 'error',
+      http_status: 404
+    } satisfies ClientErrorReportedMetadata
+    const a: TelemetryProvider = { trackClientErrorReported: vi.fn() }
+    const b: TelemetryProvider = { trackClientErrorReported: vi.fn() }
+    const registry = new TelemetryRegistry()
+    registry.registerProvider(a)
+    registry.registerProvider(b)
+    registry.registerProvider({})
+
+    registry.trackClientErrorReported(metadata)
+
+    for (const provider of [a, b]) {
+      expect(provider.trackClientErrorReported).toHaveBeenCalledExactlyOnceWith(
+        metadata
+      )
+    }
   })
 
   describe('agent telemetry dispatch', () => {
