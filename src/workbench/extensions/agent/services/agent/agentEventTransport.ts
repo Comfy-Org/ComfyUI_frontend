@@ -1,3 +1,4 @@
+import { reportError } from '@/platform/telemetry/reportError'
 import type { AgentWsEvent } from '../../schemas/agentApiSchema'
 
 import { STALE_AFTER_MS } from '../../crdt/agentCrdtDocLifecycle'
@@ -307,9 +308,24 @@ export function createAgentEventTransport(
    * Applies one `agent_ask` frame. Only the `run_approval` kind renders a
    * part; returns `false` for any other kind, mirroring `ingest`'s early
    * `return` for that case.
+   *
+   * That `false` reaches a live turn and still shows the user nothing, while
+   * the server parks waiting for an answer — the same dead-panel outcome as an
+   * ask dropped in routing, so it is reported the same way. If cloud ever adds
+   * a second ask kind, this is what says so before a user has to.
    */
   function handleAskEvent(data: AgentAskEvent['data']): boolean {
-    if (data.kind !== 'run_approval') return false
+    if (data.kind !== 'run_approval') {
+      reportError(
+        new Error(`agent approval ask could not be delivered (unknown-kind)`),
+        {
+          errorType: 'failure_delivering_agent_approval_ask',
+          level: 'warning',
+          tags: { reason: 'unknown-kind', ask_kind: data.kind }
+        }
+      )
+      return false
+    }
     dropDraft()
     closeOpenText()
     closeOpenThinking()

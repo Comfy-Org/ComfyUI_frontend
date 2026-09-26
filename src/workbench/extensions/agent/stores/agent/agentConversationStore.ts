@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
+import { reportError } from '@/platform/telemetry/reportError'
 import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
 import type {
   AgentChatEvent,
@@ -223,8 +224,47 @@ export const useAgentConversationStore = defineStore(
         ingestActiveTabEvent(event, eventThreadId)
         return
       }
+      // Unreachable for `agent_ask`: the schema makes `thread_id` required on
+      // every event except `agent_active_tab`, handled above.
       if (eventThreadId === undefined) return
       ingestBackgroundTurnEvent(event, eventThreadId)
+    }
+
+    /**
+     * A dropped `agent_ask` is the one lost frame with no user-visible symptom:
+     * the server parks the turn waiting for an answer, the panel keeps showing
+     * whatever it last had, and nothing errors. The only report we have of this
+     * class reached us through a feedback form that happened to include a
+     * session id, so every `return` that can swallow an ask says so here.
+     *
+     * Deliberately not a `pushError`: the user cannot act on it, and a notice
+     * would replace a silent stall with a stall plus a scary message. This is
+     * for the dashboard.
+     */
+    function reportUndeliverableAsk(
+      event: AgentChatEvent,
+      reason: 'no-live-turn'
+    ): void {
+      if (event.type !== 'agent_ask') return
+      reportError(
+        new Error(`agent approval ask could not be delivered (${reason})`),
+        {
+          errorType: 'failure_delivering_agent_approval_ask',
+          level: 'warning',
+          tags: {
+            reason,
+            ask_kind: event.data.kind,
+            has_active_turn: activeTurnId.value !== null,
+            background_turn_count: backgroundTurns.size
+          },
+          context: {
+            threadId: event.data.thread_id,
+            messageId: event.data.message_id,
+            activeThreadId: threadId.value,
+            activeTurnId: activeTurnId.value
+          }
+        }
+      )
     }
 
     function ingestActiveTurnEvent(
@@ -265,7 +305,13 @@ export const useAgentConversationStore = defineStore(
       eventThreadId: string
     ): void {
       const entry = backgroundTurns.get(eventThreadId)
-      if (!entry || entry.messageId !== event.data.message_id) return
+      if (!entry || entry.messageId !== event.data.message_id) {
+        // The socket-drop teardown clears `transport` and empties
+        // `backgroundTurns`, so an ask for the turn it just abandoned lands
+        // here with nothing to route it to.
+        reportUndeliverableAsk(event, 'no-live-turn')
+        return
+      }
       if (event.type === 'agent_message_done') {
         entry.transport.settle()
         entry.settled = true
