@@ -47,6 +47,15 @@ function videos(count: number): WorkshopModel[] {
   )
 }
 
+// The combined shelf gathers the formats too sparse for one of their own.
+function audios(count: number): WorkshopModel[] {
+  return Array.from({ length: count }, (_, index) =>
+    model(`a${String(index).padStart(2, '0')}`, 'text-to-audio', 'audio')
+  )
+}
+
+const SHELVES = { 'generate-videos': videos, 'other-formats': audios }
+
 const models: WorkshopModel[] = [
   model('a', 'text-to-video', 'video'),
   model('b', 'text-to-video', 'video'),
@@ -114,17 +123,23 @@ describe('WorkshopSections', () => {
   })
 
   // The link promised a screen with more on it. On a row already holding every
-  // match there was no more, and it led back to the same cards.
+  // match there was no more, and it led back to the same cards. Both shelves
+  // decide this for themselves, so both are held to the boundary: eight is the
+  // row's own load, and only a ninth match puts anything behind the link.
   it.for([
-    { total: 8, seeAll: undefined },
-    { total: 9, seeAll: 'See all (9)' }
-  ])(
-    'offers See all on a shelf of $total only as $seeAll',
-    ({ total, seeAll }) => {
-      render(WorkshopSections, { props: { models: videos(total), labelKey } })
-      const shelf = within(screen.getByTestId('section-generate-videos'))
+    { shelf: 'generate-videos', total: 8, seeAll: undefined },
+    { shelf: 'generate-videos', total: 9, seeAll: 'See all (9)' },
+    { shelf: 'other-formats', total: 8, seeAll: undefined },
+    { shelf: 'other-formats', total: 9, seeAll: 'See all (9)' }
+  ] as const)(
+    'offers See all on a $shelf shelf of $total only as $seeAll',
+    ({ shelf, total, seeAll }) => {
+      render(WorkshopSections, {
+        props: { models: SHELVES[shelf](total), labelKey }
+      })
+      const row = within(screen.getByTestId(`section-${shelf}`))
 
-      const link = shelf.queryByTestId('section-generate-videos-see-all')
+      const link = row.queryByTestId(`section-${shelf}-see-all`)
       expect(link?.textContent.trim()).toBe(seeAll)
     }
   )
