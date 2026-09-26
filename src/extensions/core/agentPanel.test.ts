@@ -686,6 +686,29 @@ describe('AgentPanel extension flag gate', () => {
       }
     )
 
+    it('reports the first-run screen over a dialog sitting on top of it', async () => {
+      mocks.flagEnabled = true
+      // The two overlap in production: `GettingStartedScreen.vue` traps focus
+      // only while `!dialogOpen`, drops `aria-modal` when one is up and skips
+      // taking focus on mount for the same reason, so the screen is built for a
+      // dialog over it - and the automatic offer can run in exactly that state.
+      // Which reason is reported decides whose denominator this user lands in,
+      // so the precedence is behaviour and not an implementation detail: the
+      // first run wins for as long as it holds the screen.
+      screenShown()
+      openDialog()
+      Object.assign(consentStore, { accepted: false, isChecking: false })
+
+      await loadEntryAndSetup()
+      mocks.flagListener?.()
+      await flush()
+
+      expect(await notOffered()).toHaveBeenCalledExactlyOnceWith({
+        reason: 'first_run_screen'
+      })
+      expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+    })
+
     it('reports an in-flight tour against the workspace the offer was made for', async () => {
       mocks.flagEnabled = true
       Object.assign(consentStore, { accepted: false, isChecking: false })
@@ -879,7 +902,20 @@ describe('AgentPanel extension flag gate', () => {
     expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
   })
 
-  it('withholds a card whose Getting Started screen took over while the offer was in flight, then re-offers', async () => {
+  // Kept deliberately as a guard rather than as an expectation: no production
+  // ordering reaches it. `gettingStartedVisible` is only ever set true by
+  // `showFirstRunScreen`, which runs once per page load from
+  // `handleStartupOutcome` (GraphCanvas's `onMounted`) and always *before* that
+  // function sets `startupDecided`; `tourHandoffs` only rises from a template
+  // click on the rendered screen. Every automatic offer waits on
+  // `whenStartupDecided()`, so by the time one is in flight the first-run hold
+  // can only fall, never rise. It stays because it is the only cover on
+  // `canShow` reading `screenHolder()` rather than `screenBusyReason()` - swap
+  // those and this is the single test that fails - and because the invariant it
+  // leans on is one line from changing: the day the screen gains a second
+  // trigger, or `handleStartupOutcome` runs twice, this ordering goes live and
+  // this test is what notices.
+  it('withholds a card the first run comes to own mid-offer, then re-offers', async () => {
     mocks.flagEnabled = true
     Object.assign(consentStore, { accepted: false, isChecking: false })
     vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
