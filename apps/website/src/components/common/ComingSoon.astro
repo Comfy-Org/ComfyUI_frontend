@@ -1,8 +1,21 @@
+---
+import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/translations'
+
+interface Props {
+  locale?: Locale
+}
+
+const { locale = 'en' } = Astro.props
+---
+
 <section class="flex min-h-[60vh] items-center justify-center px-6">
   <div class="text-center">
-    <h1 class="text-4xl font-light text-primary-comfy-canvas">Coming Soon</h1>
+    <h1 class="text-4xl font-light text-primary-comfy-canvas">
+      {t('demos.comingSoon.title', locale)}
+    </h1>
     <p class="mt-4 text-sm text-primary-warm-gray">
-      This page is being redesigned. Check back soon.
+      {t('demos.comingSoon.body', locale)}
     </p>
   </div>
 </section>
