@@ -27,10 +27,9 @@ describe('video-sitemap.xml', () => {
     }
   })
 
-  it('omits video:duration and video:publication_date rather than fabricating them', async () => {
+  it('omits video:duration rather than fabricating it', async () => {
     const xml = await render(new URL('https://comfy.org/')).text()
     expect(xml).not.toContain('<video:duration>')
-    expect(xml).not.toContain('<video:publication_date>')
   })
 
   it('escapes an apostrophe in the description', async () => {

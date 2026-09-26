@@ -13,7 +13,6 @@ import {
   tutorialMetaTitle,
   youtubeEmbedUrl
 } from '../../data/learningTutorials'
-import type { JsonLdNode } from '../../utils/jsonLd'
 import {
   absoluteUrl,
   jsonLdId,
@@ -37,7 +36,7 @@ const title = tutorial.title[locale] || tutorial.title.en
 const description = tutorialDescription(tutorial, locale)
 const videoId = jsonLdId(url, 'video')
 
-const video: JsonLdNode = videoObjectNode({
+const video = videoObjectNode({
   siteUrl,
   id: videoId,
   pageUrl: url,
@@ -65,7 +64,7 @@ const breadcrumbs = [
   title={tutorialMetaTitle(tutorial, locale)}
   description={description}
   ogImage={tutorial.poster}
-  mainEntityId={videoId}
+  mainEntityId={video ? videoId : undefined}
   breadcrumbs={breadcrumbs}
   extraJsonLd={[video]}
 >

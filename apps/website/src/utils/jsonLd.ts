@@ -345,6 +345,8 @@ export interface ProductInput {
   id: string
   name: string
   url: string
+  image: string
+  description: string
   offers: OfferInput[]
 }
 
@@ -354,12 +356,15 @@ export function productNode(input: ProductInput): JsonLdNode {
     '@id': input.id,
     name: input.name,
     url: input.url,
-    brand: { '@id': organizationId(input.siteUrl) },
+    image: input.image,
+    description: input.description,
+    brand: { '@type': 'Brand', name: 'Comfy' },
     offers: input.offers.map((offer) => ({
       '@type': 'Offer',
       name: offer.name,
       price: offer.price,
       priceCurrency: 'USD',
+      availability: 'https://schema.org/InStock',
       url: offer.url,
       seller: { '@id': organizationId(input.siteUrl) },
       priceSpecification: {
@@ -417,9 +422,7 @@ export interface VideoObjectInput {
   thumbnailUrl: string
   /** Self-hosted media URL; omit for embed-only videos (set embedUrl instead). */
   contentUrl?: string
-  /** ISO 8601 date; required by VideoObjectInput but callers without a
-   * verified upload date should still omit `uploadDate` from the node —
-   * see videoObjectNode's `uploadDate` handling below. */
+  /** ISO 8601 date or datetime; without one no VideoObject is emitted. */
   uploadDate?: string
   locale: Locale
   embedUrl?: string
@@ -428,7 +431,16 @@ export interface VideoObjectInput {
   duration?: string
 }
 
-export function videoObjectNode(input: VideoObjectInput): JsonLdNode {
+const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/
+
+function isoDateTime(value: string): string {
+  return DATE_ONLY.test(value) ? `${value}T00:00:00+00:00` : value
+}
+
+export function videoObjectNode(
+  input: VideoObjectInput
+): JsonLdNode | undefined {
+  if (!input.uploadDate) return undefined
   return {
     '@type': 'VideoObject',
     '@id': input.id,
@@ -437,7 +449,7 @@ export function videoObjectNode(input: VideoObjectInput): JsonLdNode {
     thumbnailUrl: input.thumbnailUrl,
     contentUrl: input.contentUrl,
     embedUrl: input.embedUrl,
-    uploadDate: input.uploadDate,
+    uploadDate: isoDateTime(input.uploadDate),
     duration: input.duration,
     inLanguage: input.locale,
     publisher: { '@id': organizationId(input.siteUrl) },
