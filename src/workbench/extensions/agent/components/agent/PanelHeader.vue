@@ -41,7 +41,7 @@ const sizeToggleLabel = computed(() =>
     <span
       class="shrink-0 rounded-full border border-border-default px-2 py-0.5 text-xs text-muted-foreground"
     >
-      {{ t('agent.alpha') }}
+      {{ t('agent.beta') }}
     </span>
 
     <div class="ml-auto flex items-center gap-2">
