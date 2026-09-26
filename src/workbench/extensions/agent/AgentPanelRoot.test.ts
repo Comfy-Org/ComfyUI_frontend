@@ -2968,6 +2968,38 @@ describe('AgentPanelRoot canvas draft on remote edit', () => {
 
     expect(closeCoalescedRun).not.toHaveBeenCalled()
   })
+
+  // A turn starting inside the close window takes the run over. Settling it
+  // there would compare against a graph the new turn is still building and
+  // dispatch the auto-queue `autoQueue: false` exists to suppress; the turn's
+  // own idle transition closes the run instead.
+  it('drops a pending close when a new turn starts inside the window', async () => {
+    const closeCoalescedRun = vi.fn()
+    workflowStore.activeWorkflow = addTab('workflows/remote_edit.json', {
+      changeTracker: createMockChangeTracker({ closeCoalescedRun })
+    })
+
+    renderWithSelectedTarget()
+    vi.useFakeTimers()
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+    followerEvents().onApplied?.({
+      workflowId: 'wf-1',
+      actor: 'agent:thread:turn'
+    })
+
+    useAgentConversationStore().startTurn(toTurnId('turn-next'))
+    await nextTick()
+    // The turn transition may settle the previous run itself, and that is fine:
+    // it happens before the turn has changed anything, so the comparison is
+    // still run-start against run-end. What must not happen is the pending
+    // timer firing later, once the turn is part-way through building the graph.
+    const settledAtTurnStart = closeCoalescedRun.mock.calls.length
+    await vi.advanceTimersByTimeAsync(200)
+
+    expect(closeCoalescedRun).toHaveBeenCalledTimes(settledAtTurnStart)
+  })
 })
 
 describe('AgentPanelRoot history', () => {

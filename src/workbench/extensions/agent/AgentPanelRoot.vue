@@ -764,16 +764,18 @@ const isBoundWorkflowActive = computed(() => {
 // later. The next ordinary capture closes that run anyway.
 const CLOSE_IDLE_FRAME_RUN_MS = 100
 let idleFrameRunTimer: ReturnType<typeof setTimeout> | undefined
-function closeIdleFrameRun(tracker: ChangeTracker) {
+function cancelIdleFrameRunClose() {
   clearTimeout(idleFrameRunTimer)
+  idleFrameRunTimer = undefined
+}
+function closeIdleFrameRun(tracker: ChangeTracker) {
+  cancelIdleFrameRunClose()
   idleFrameRunTimer = setTimeout(() => {
     idleFrameRunTimer = undefined
     tracker.closeCoalescedRun()
   }, CLOSE_IDLE_FRAME_RUN_MS)
 }
-onBeforeUnmount(() => {
-  clearTimeout(idleFrameRunTimer)
-})
+onBeforeUnmount(cancelIdleFrameRunClose)
 
 // The CRDT follower is the inbound content channel: subscribes to the
 // session's bound workflow while its tab is active. Suspending the background
@@ -933,7 +935,14 @@ watch(
         graphActivity.finishTurn()
         workflowStore.activeWorkflow?.changeTracker.closeCoalescedRun()
       }
-    } else graphActivity.startTurn(turnId)
+    } else {
+      // A turn starting inside the idle-frame close window takes the run over.
+      // Letting the close fire would settle the run against a graph this turn
+      // is still building, dispatching the auto-queue that `autoQueue: false`
+      // exists to suppress. This turn's own idle transition closes it instead.
+      cancelIdleFrameRunClose()
+      graphActivity.startTurn(turnId)
+    }
     observedActivityStatus = true
     if (value === 'idle') {
       const completedPath = tabActivity.editingTabPath
