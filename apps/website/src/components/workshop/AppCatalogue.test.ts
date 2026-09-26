@@ -10,7 +10,6 @@ function appsOf(count: number): CatalogueApp[] {
     key: `app-${index}`,
     name: `App ${index}`,
     summary: `Summary ${index}`,
-    badge: 'Beta',
     href: `/apps/${index}`
   }))
 }

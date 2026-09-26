@@ -34,12 +34,6 @@ const { app } = defineProps<{ app: CatalogueApp }>()
           {{ app.name[0] }}
         </span>
       </div>
-      <span
-        class="absolute top-3 left-3 z-10 rounded-full bg-primary-comfy-yellow px-2.5 py-1 text-2xs font-semibold tracking-wider text-primary-comfy-ink uppercase"
-        data-testid="app-card-badge"
-      >
-        {{ app.badge }}
-      </span>
       <div
         class="pointer-events-none absolute inset-x-0 bottom-0 h-2/3 bg-linear-to-t from-black/70 via-black/30 to-transparent"
         aria-hidden="true"

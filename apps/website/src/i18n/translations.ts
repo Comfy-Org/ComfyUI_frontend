@@ -30,14 +30,6 @@ const translations = {
     en: 'Models and the workflows built on them, by what you want to make.',
     'zh-CN': '按你想创作的内容浏览模型及其工作流。'
   },
-  'workshop.catalogue.appsSoon': {
-    en: 'Apps are coming soon',
-    'zh-CN': '应用即将上线'
-  },
-  'workshop.catalogue.appsHint': {
-    en: 'For now, explore ready-to-run workflows or try a model with your own ideas.',
-    'zh-CN': '现在可以先探索现成的工作流，或用自己的创意试用模型。'
-  },
   'workshop.catalogue.noWorkflows': {
     en: 'No workflows match your search and filters.',
     'zh-CN': '没有符合搜索和筛选条件的工作流。'

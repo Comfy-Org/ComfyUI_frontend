@@ -9,8 +9,6 @@ const copy = {
   apps: { en: 'Apps', 'zh-CN': '应用' },
   allApps: { en: 'All apps', 'zh-CN': '全部应用' },
   browseAllApps: { en: 'Browse all apps', 'zh-CN': '浏览全部应用' },
-  beta: { en: 'Beta', 'zh-CN': '测试版' },
-  prototype: { en: 'Prototype', 'zh-CN': '原型' },
   studioName: { en: 'Cinematic Studio', 'zh-CN': '电影工作室' },
   studioSummary: {
     en: 'Direct a shot with a real camera, light and grade, then run it on any image model.',
@@ -32,7 +30,6 @@ export interface CatalogueApp {
   readonly key: string
   readonly name: string
   readonly summary: string
-  readonly badge: string
   readonly href: string
   readonly image?: string
 }
@@ -44,7 +41,6 @@ export function catalogueApps(locale: Locale = 'en'): CatalogueApp[] {
       key: 'cinematic-studio',
       name: ac('studioName', locale),
       summary: ac('studioSummary', locale),
-      badge: ac('beta', locale),
       href: studio,
       image: '/images/cinematic-studio/neon-street.jpg'
     },
@@ -52,7 +48,6 @@ export function catalogueApps(locale: Locale = 'en'): CatalogueApp[] {
       key: 'reshoot',
       name: ac('reshootName', locale),
       summary: ac('reshootSummary', locale),
-      badge: ac('prototype', locale),
       href: `${studio}?app=reshoot`
     }
   ]

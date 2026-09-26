@@ -4,11 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { readonly, ref, nextTick } from 'vue'
 import type { Ref } from 'vue'
 
-import {
-  useWorkshopAppsEnabled,
-  useWorkshopEnabled,
-  captureWorkshopEvent
-} from '../../scripts/posthog'
+import { useWorkshopEnabled, captureWorkshopEvent } from '../../scripts/posthog'
 import ModelsCatalogue from './ModelsCatalogue.vue'
 import type { WorkshopModel } from '../../config/models-catalogue'
 
@@ -161,19 +157,7 @@ describe('ModelsCatalogue', () => {
     }
   )
 
-  it('keeps prototype app destinations out of the Apps tab', async () => {
-    const user = userEvent.setup()
-    render(ModelsCatalogue, { props: { models: launchModels } })
-    await user.click(screen.getByRole('button', { name: 'Apps' }))
-    expect(
-      screen.getByRole('heading', { name: 'Apps are coming soon' })
-    ).toBeVisible()
-    expect(screen.queryByTestId('workshop-model-card')).toBeNull()
-    expect(screen.queryByRole('link')).toBeNull()
-  })
-
-  it('lists the apps that open today once the apps flag is on', async () => {
-    vi.mocked(useWorkshopAppsEnabled).mockReturnValue(readonly(ref(true)))
+  it('lists the apps that open today, with no flag of its own', async () => {
     const user = userEvent.setup()
     render(ModelsCatalogue, { props: { models: launchModels } })
     await user.click(screen.getByRole('button', { name: 'Apps' }))
@@ -184,7 +168,6 @@ describe('ModelsCatalogue', () => {
         .getAllByRole('link')
         .map((link) => link.getAttribute('href'))
     ).toEqual(['/cinematic-studio', '/cinematic-studio?app=reshoot'])
-    expect(screen.queryByText('Apps are coming soon')).toBeNull()
     expect(
       within(screen.getByTestId('workshop-toolbar')).getByTestId(
         'catalogue-tabs'

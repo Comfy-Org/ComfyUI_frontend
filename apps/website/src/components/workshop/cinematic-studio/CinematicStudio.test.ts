@@ -24,7 +24,8 @@ import { prepareModelPage } from '../../../routes/models/model-page'
 import {
   useWorkshopEnabled,
   useWorkshopEnabledSettled,
-  useWorkshopAppsEnabled
+  useWorkshopAppsEnabled,
+  useWorkshopWorkflowsEnabled
 } from '../../../scripts/posthog'
 import { t } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
@@ -635,15 +636,27 @@ describe('CinematicStudio', () => {
     expect(router_render).not.toHaveBeenCalled()
   })
 
-  it('withholds the studio from visitors outside the staff rollout', async () => {
-    vi.mocked(useWorkshopAppsEnabled).mockReturnValue(computed(() => false))
-    render(CinematicStudioPage, { props: { models } })
+  it.for([
+    { apps: false, workflows: false, open: false },
+    { apps: true, workflows: false, open: true },
+    { apps: false, workflows: true, open: true }
+  ])(
+    'opens the studio to the apps or workflows rollout (apps $apps, workflows $workflows)',
+    async ({ apps, workflows, open }) => {
+      vi.mocked(useWorkshopAppsEnabled).mockReturnValue(computed(() => apps))
+      vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(
+        computed(() => workflows)
+      )
+      render(CinematicStudioPage, { props: { models } })
 
-    expect(
-      await screen.findByText(tc('cinematic.unavailable.title'))
-    ).toBeInTheDocument()
-    expect(screen.queryByTestId('cinematic')).toBeNull()
-  })
+      await vi.waitFor(() => {
+        expect(screen.queryAllByTestId('cinematic')).toHaveLength(open ? 1 : 0)
+        expect(
+          screen.queryAllByText(tc('cinematic.unavailable.title'))
+        ).toHaveLength(open ? 0 : 1)
+      })
+    }
+  )
 
   describe('credits', () => {
     const priced: readonly CinematicModel[] = models.map((model) =>
