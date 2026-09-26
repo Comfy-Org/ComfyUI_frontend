@@ -41,6 +41,12 @@ function model(
   }
 }
 
+function videos(count: number): WorkshopModel[] {
+  return Array.from({ length: count }, (_, index) =>
+    model(`v${String(index).padStart(2, '0')}`, 'text-to-video', 'video')
+  )
+}
+
 const models: WorkshopModel[] = [
   model('a', 'text-to-video', 'video'),
   model('b', 'text-to-video', 'video'),
@@ -77,7 +83,7 @@ describe('WorkshopSections', () => {
     }
   )
 
-  it('deduplicates and limits the combined formats shelf while showing its full count', () => {
+  it('deduplicates and limits the combined formats shelf while showing its full count', async () => {
     const entries = Array.from({ length: 10 }, (_, index) => ({
       ...model(
         `audio-${String(index).padStart(2, '0')}`,
@@ -86,29 +92,42 @@ describe('WorkshopSections', () => {
       ),
       useCases: ['audio', 'text'] as const
     }))
-    render(WorkshopSections, {
+    const { emitted } = render(WorkshopSections, {
       props: { models: entries, labelKey, sort: 'name' }
     })
     const shelf = within(screen.getByTestId('section-other-formats'))
     expect(shelf.getByRole('button', { name: 'Other formats' })).toBeTruthy()
-    expect(shelf.getByRole('button', { name: 'See all (10)' })).toBeTruthy()
+    await userEvent.click(shelf.getByRole('button', { name: 'See all (10)' }))
+    expect(emitted().open).toEqual([['other']])
     expect(
       shelf
         .getAllByRole('heading', { level: 3 })
         .map((heading) => heading.textContent)
     ).toEqual(entries.slice(0, 8).map((entry) => entry.name))
   })
-  it('groups models into a row per use case and counts every match', () => {
+  it('gives a row per use case and none to a use case with no models', () => {
     render(WorkshopSections, { props: { models, labelKey } })
 
-    expect(screen.getByTestId('section-generate-videos').textContent).toContain(
-      '2'
-    )
-    expect(screen.getByTestId('section-generate-images').textContent).toContain(
-      '1'
-    )
+    expect(screen.getByTestId('section-generate-videos')).toBeTruthy()
+    expect(screen.getByTestId('section-generate-images')).toBeTruthy()
     expect(screen.queryByTestId('section-audio')).toBeNull()
   })
+
+  // The link promised a screen with more on it. On a row already holding every
+  // match there was no more, and it led back to the same cards.
+  it.for([
+    { total: 8, seeAll: undefined },
+    { total: 9, seeAll: 'See all (9)' }
+  ])(
+    'offers See all on a shelf of $total only as $seeAll',
+    ({ total, seeAll }) => {
+      render(WorkshopSections, { props: { models: videos(total), labelKey } })
+      const shelf = within(screen.getByTestId('section-generate-videos'))
+
+      const link = shelf.queryByTestId('section-generate-videos-see-all')
+      expect(link?.textContent.trim()).toBe(seeAll)
+    }
+  )
 
   it('shows a multi-purpose model in each tagged row', () => {
     render(WorkshopSections, {
@@ -142,7 +161,7 @@ describe('WorkshopSections', () => {
     'asks the catalog to open the section from its %s control',
     async (control) => {
       const { emitted } = render(WorkshopSections, {
-        props: { models, labelKey }
+        props: { models: videos(9), labelKey }
       })
 
       await userEvent.click(
@@ -163,7 +182,7 @@ describe('WorkshopSections', () => {
       props: { models: sparse, labelKey }
     })
 
-    await userEvent.click(screen.getByTestId('section-other-formats-see-all'))
+    await userEvent.click(screen.getByTestId('section-other-formats-open'))
 
     expect(emitted().open).toEqual([['other']])
   })
