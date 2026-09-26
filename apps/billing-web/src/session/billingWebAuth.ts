@@ -8,7 +8,6 @@
  * false settles it at once; the session path gets `DECISION_CAP_MS`, after
  * which this page load stays on the session client.
  */
-import type { ComputedRef } from 'vue'
 import { computed, shallowRef } from 'vue'
 
 import type { SignInPort } from '@/auth/useSignInController'
@@ -86,14 +85,27 @@ export function onBillingWebEntryWorkspace(workspaceId: string): void {
   void billingWebSessionClient().ensureFresh(undefined, { workspaceId })
 }
 
-let sessionClientScope: ComputedRef<BilledScope | undefined> | undefined
+let sessionClient: ReturnType<typeof useBillingWebSession> | undefined
+
+function sessionClientState(): ReturnType<typeof useBillingWebSession> {
+  sessionClient ??= useBillingWebSession()
+  return sessionClient
+}
 
 /** Undefined until the mode is decided; `App` keys the billing shell by it. */
-export const billedScope = computed<BilledScope | undefined>(() => {
-  if (mode.value !== 'session-client') return undefined
-  sessionClientScope ??= useBillingWebSession().session
-  return sessionClientScope.value
-})
+export const billedScope = computed<BilledScope | undefined>(() =>
+  mode.value === 'session-client'
+    ? sessionClientState().session.value
+    : undefined
+)
+
+/** The decided side's phase, for refusals that land after the page rendered. */
+export const billingWebLivePhase = computed<BillingWebSessionPhase | undefined>(
+  () =>
+    mode.value === 'session-client'
+      ? sessionClientState().phase.value
+      : undefined
+)
 
 let clientPort: SignInPort | undefined
 
