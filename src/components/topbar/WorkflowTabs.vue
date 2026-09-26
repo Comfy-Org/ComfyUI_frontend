@@ -1,6 +1,5 @@
 <template>
   <div
-    ref="containerRef"
     :class="
       cn(
         'workflow-tabs-container flex h-full flex-auto flex-row gap-1 overflow-hidden bg-comfy-menu-bg px-1',
@@ -8,65 +7,44 @@
       )
     "
   >
-    <Button
-      v-if="showOverflowArrows"
-      variant="muted-textonly"
-      size="icon"
-      class="shrink-0 self-center rounded-lg p-2 disabled:opacity-25"
-      :aria-label="$t('g.scrollLeft')"
-      :disabled="!leftArrowEnabled"
-      @mousedown="whileMouseDown($event, () => scroll(-1))"
+    <div
+      ref="tabStripRef"
+      data-testid="workflow-tab-strip"
+      class="no-drag scrollbar-thin scrollbar-thumb-alpha-smoke-500-50 scrollbar-track-transparent overflow-x-auto overflow-y-hidden"
+      @wheel="handleWheel"
+      @transitionend="handleTabResize"
     >
-      <i class="icon-[lucide--chevron-left] size-full" />
-    </Button>
-    <div class="no-drag overflow-hidden">
-      <div
-        ref="scrollContent"
-        class="workflow-tabs-scroll flex size-full scrollbar-thin scrollbar-thumb-alpha-smoke-500-50 scrollbar-track-transparent overflow-x-auto overflow-y-hidden p-0"
-        @wheel="handleWheel"
+      <Tabs
+        class="h-full"
+        :model-value="workflowStore.activeWorkflow?.path ?? ''"
+        activation-mode="manual"
+        @update:model-value="openWorkflowByPath"
       >
-        <Tabs
-          class="h-full"
-          :model-value="workflowStore.activeWorkflow?.path ?? ''"
-          activation-mode="manual"
-          @update:model-value="openWorkflowByPath"
+        <TabsList
+          :class="cn('workflow-tabs h-full flex-nowrap gap-1', props.class)"
         >
-          <TabsList
-            :class="cn('workflow-tabs h-full flex-nowrap gap-1', props.class)"
-          >
-            <WorkflowTab
-              v-for="(option, index) in options"
-              :key="option.value"
-              :workflow-option="option"
-              :is-first="index === 0"
-              :is-last="index === options.length - 1"
-              @click.middle="onCloseWorkflow(option)"
-              @close-to-left="closeWorkflows(options.slice(0, index))"
-              @close-to-right="closeWorkflows(options.slice(index + 1))"
-              @close-others="
-                closeWorkflows([
-                  ...options.slice(index + 1),
-                  ...options.slice(0, index)
-                ])
-              "
-            />
-          </TabsList>
-        </Tabs>
-      </div>
+          <WorkflowTab
+            v-for="(option, index) in options"
+            :key="option.value"
+            :workflow-option="option"
+            :is-first="index === 0"
+            :is-last="index === options.length - 1"
+            :compact="isOverflowing"
+            @click.middle="onCloseWorkflow(option)"
+            @close-to-left="closeWorkflows(options.slice(0, index))"
+            @close-to-right="closeWorkflows(options.slice(index + 1))"
+            @close-others="
+              closeWorkflows([
+                ...options.slice(index + 1),
+                ...options.slice(0, index)
+              ])
+            "
+          />
+        </TabsList>
+      </Tabs>
     </div>
-    <Button
-      v-if="showOverflowArrows"
-      variant="muted-textonly"
-      size="icon"
-      class="shrink-0 self-center rounded-lg p-2 disabled:opacity-25"
-      :aria-label="$t('g.scrollRight')"
-      :disabled="!rightArrowEnabled"
-      @mousedown="whileMouseDown($event, () => scroll(1))"
-    >
-      <i class="icon-[lucide--chevron-right] size-full" />
-    </Button>
     <WorkflowOverflowMenu
-      v-if="showOverflowArrows"
+      v-if="isOverflowing"
       :workflows="workflowStore.openWorkflows"
       :active-workflow="workflowStore.activeWorkflow"
     />
@@ -134,8 +112,7 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { useScroll, whenever } from '@vueuse/core'
-import { computed, nextTick, onUpdated, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 
 import AgentEntryButton from '@/components/topbar/AgentEntryButton.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
@@ -159,10 +136,8 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workfl
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useTopbarBadgeStore } from '@/stores/topbarBadgeStore'
-import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { useAgentConsent } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
-import { whileMouseDown } from '@/utils/mouseDownUtil'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import WorkflowOverflowMenu from './WorkflowOverflowMenu.vue'
@@ -184,7 +159,6 @@ const commandStore = useCommandStore()
 const agentPanelStore = useAgentPanelStore()
 const topbarBadgeStore = useTopbarBadgeStore()
 const { withConsent, isChecking } = useAgentConsent()
-const tabActivity = useWorkflowTabActivityStore()
 const isOpeningAgent = ref(false)
 const { isLoggedIn } = useCurrentUser()
 
@@ -230,7 +204,7 @@ function openFeedback() {
   openFeedbackDialog('topbar')
 }
 
-const containerRef = ref<HTMLElement | null>(null)
+const tabStripRef = ref<HTMLElement | null>(null)
 
 const options = computed<WorkflowOption[]>(() =>
   workflowStore.openWorkflows.map((workflow) => ({
@@ -262,75 +236,43 @@ const onCloseWorkflow = async (option: WorkflowOption) => {
   await closeWorkflows([option])
 }
 
-// Horizontal scroll on wheel
-const handleWheel = (event: WheelEvent) => {
-  const scrollElement = event.currentTarget as HTMLElement
-  const scrollAmount = event.deltaX || event.deltaY
-  scrollElement.scroll({
-    left: scrollElement.scrollLeft + scrollAmount
-  })
+const WHEEL_LINE_HEIGHT_PX = 16
+
+function handleWheel(event: WheelEvent) {
+  if (event.ctrlKey || event.metaKey) return
+  if (Math.abs(event.deltaX) >= Math.abs(event.deltaY)) return
+  event.preventDefault()
+  const unit =
+    event.deltaMode === WheelEvent.DOM_DELTA_LINE
+      ? WHEEL_LINE_HEIGHT_PX
+      : event.deltaMode === WheelEvent.DOM_DELTA_PAGE
+        ? (tabStripRef.value?.clientWidth ?? 0)
+        : 1
+  tabStripRef.value?.scrollBy({ left: event.deltaY * unit })
 }
 
-const scrollContent = ref<HTMLElement | null>(null)
-
-const scroll = (direction: number) => {
-  const el = scrollContent.value
-  if (!el) return
-  el.scrollBy({ left: direction * 20 })
+async function revealActiveTab() {
+  await nextTick()
+  tabStripRef.value
+    ?.querySelector('[role="tab"][aria-selected="true"]')
+    ?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
 }
 
-const ensureActiveTabVisible = async (
-  options: { waitForDom?: boolean } = {}
-) => {
-  if (!workflowStore.activeWorkflow) return
+const { isOverflowing, checkOverflow } = useOverflowObserver(tabStripRef, {
+  onCheck: () => void revealActiveTab()
+})
 
-  if (options.waitForDom !== false) {
-    await nextTick()
-  }
-
-  const containerElement = containerRef.value
-  if (!containerElement) return
-
-  const activeTabElement = containerElement.querySelector(
-    '[role="tab"][aria-selected="true"]'
-  )
-  if (!activeTabElement) return
-
-  activeTabElement.scrollIntoView({ block: 'nearest', inline: 'nearest' })
-}
-
-// Scroll to active offscreen tab when opened
 watch(
   () => workflowStore.activeWorkflow,
-  () => {
-    void ensureActiveTabVisible()
+  async () => {
+    await revealActiveTab()
+    checkOverflow()
   },
   { immediate: true }
 )
 
-watch(
-  () => tabActivity.creatingTab,
-  async (creating) => {
-    if (!creating) return
-    await nextTick()
-    containerRef.value
-      ?.querySelector('[data-testid="creating-tab-skeleton"]')
-      ?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
-  }
-)
-
-const scrollState = useScroll(scrollContent)
-const leftArrowEnabled = computed(() => !scrollState.arrivedState.left)
-const rightArrowEnabled = computed(() => !scrollState.arrivedState.right)
-const { isOverflowing: showOverflowArrows, checkOverflow } =
-  useOverflowObserver(scrollContent)
-
-whenever(showOverflowArrows, () => {
-  void nextTick(() => {
-    scrollState.measure()
-    void ensureActiveTabVisible({ waitForDom: false })
-  })
-})
-
-onUpdated(checkOverflow)
+function handleTabResize(event: TransitionEvent) {
+  if (event.propertyName !== 'flex-shrink') return
+  checkOverflow()
+}
 </script>

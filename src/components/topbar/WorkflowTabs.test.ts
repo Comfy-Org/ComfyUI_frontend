@@ -63,10 +63,14 @@ vi.mock<unknown>(
   async () => {
     const { ref } = await import('vue')
     return {
-      useOverflowObserver: () => {
+      useOverflowObserver: (
+        _element: unknown,
+        options?: { onCheck?: (isOverflowing: boolean) => void }
+      ) => {
+        const isOverflowing = ref(false)
         const observer = {
-          isOverflowing: ref(false),
-          checkOverflow: vi.fn()
+          isOverflowing,
+          checkOverflow: vi.fn(() => options?.onCheck?.(isOverflowing.value))
         }
         overflowObservers.push(observer)
         return observer
@@ -99,10 +103,6 @@ vi.mock(
     })
   })
 )
-
-vi.mock(import('@/utils/mouseDownUtil'), () => ({
-  whileMouseDown: vi.fn()
-}))
 
 vi.mock(import('./WorkflowOverflowMenu.vue'), () => ({
   default: defineComponent({
@@ -573,38 +573,157 @@ describe('WorkflowTabs selection and overflow', () => {
     ).toHaveAttribute('aria-selected', 'false')
   })
 
-  it('keeps overflow controls available when the tab strip overflows', async () => {
+  it('renders the overflow menu only while the strip overflows', async () => {
     renderComponent()
     await waitFor(() => expect(overflowObservers).toHaveLength(1))
+    expect(
+      screen.queryByTestId('workflow-overflow-menu')
+    ).not.toBeInTheDocument()
 
     overflowObservers[0].isOverflowing.value = true
     await nextTick()
 
-    expect(
-      screen.getByRole('button', { name: 'Scroll Left' })
-    ).toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: 'Scroll Right' })
-    ).toBeInTheDocument()
     expect(screen.getByTestId('workflow-overflow-menu')).toBeInTheDocument()
   })
 
   it('scrolls a newly active workflow into view', async () => {
     const scrollIntoView = vi.spyOn(HTMLElement.prototype, 'scrollIntoView')
     renderComponent()
+    await waitFor(() => expect(overflowObservers).toHaveLength(1))
+    await waitFor(() =>
+      expect(overflowObservers[0].checkOverflow).toHaveBeenCalled()
+    )
+    await nextTick()
+    overflowObservers[0].checkOverflow.mockClear()
+    scrollIntoView.mockClear()
 
     useWorkflowStore().activeWorkflow = secondWorkflow
 
-    await waitFor(() =>
+    await waitFor(() => {
+      expect(overflowObservers[0].checkOverflow).toHaveBeenCalledOnce()
       expect(scrollIntoView).toHaveBeenCalledWith({
         block: 'nearest',
         inline: 'nearest'
       })
-    )
+    })
   })
+
+  it.for([
+    { propertyName: 'flex-shrink', resizesTabs: true },
+    { propertyName: 'background-color', resizesTabs: false }
+  ])(
+    'treats the end of a $propertyName transition as a tab resize: $resizesTabs',
+    async ({ propertyName, resizesTabs }) => {
+      const scrollIntoView = vi.spyOn(HTMLElement.prototype, 'scrollIntoView')
+      renderComponent()
+      await waitFor(() => expect(overflowObservers).toHaveLength(1))
+      await waitFor(() =>
+        expect(overflowObservers[0].checkOverflow).toHaveBeenCalled()
+      )
+      await nextTick()
+      scrollIntoView.mockClear()
+      overflowObservers[0].checkOverflow.mockClear()
+
+      screen.getByRole('tab', { name: 'Second workflow' }).dispatchEvent(
+        Object.assign(new Event('transitionend', { bubbles: true }), {
+          propertyName
+        })
+      )
+      await nextTick()
+
+      expect(overflowObservers[0].checkOverflow).toHaveBeenCalledTimes(
+        resizesTabs ? 1 : 0
+      )
+      expect(scrollIntoView).toHaveBeenCalledTimes(resizesTabs ? 1 : 0)
+    }
+  )
 })
 
 describe('WorkflowTabs scrolling', () => {
+  it.for([
+    {
+      name: 'pixel',
+      deltaX: 0,
+      deltaY: 7,
+      deltaMode: WheelEvent.DOM_DELTA_PIXEL,
+      expectedLeft: 7,
+      prevented: true
+    },
+    {
+      name: 'line',
+      deltaX: 0,
+      deltaY: 2,
+      deltaMode: WheelEvent.DOM_DELTA_LINE,
+      expectedLeft: 32,
+      prevented: true
+    },
+    {
+      name: 'page',
+      deltaX: 0,
+      deltaY: 1,
+      deltaMode: WheelEvent.DOM_DELTA_PAGE,
+      expectedLeft: 320,
+      prevented: true
+    },
+    {
+      name: 'horizontal',
+      deltaX: 7,
+      deltaY: 0,
+      deltaMode: WheelEvent.DOM_DELTA_PIXEL,
+      expectedLeft: null,
+      prevented: false
+    },
+    {
+      name: 'vertical-dominant diagonal',
+      deltaX: 2,
+      deltaY: 7,
+      deltaMode: WheelEvent.DOM_DELTA_PIXEL,
+      expectedLeft: 7,
+      prevented: true
+    }
+  ])(
+    'handles $name wheel input once',
+    ({ deltaX, deltaY, deltaMode, expectedLeft, prevented }) => {
+      renderComponent()
+      const tabStrip = screen.getByTestId('workflow-tab-strip')
+      const scrollBy = vi.fn()
+      tabStrip.scrollBy = scrollBy
+      Object.defineProperty(tabStrip, 'clientWidth', { value: 320 })
+      const event = new WheelEvent('wheel', {
+        deltaX,
+        deltaY,
+        deltaMode,
+        cancelable: true
+      })
+
+      tabStrip.dispatchEvent(event)
+
+      if (expectedLeft === null) expect(scrollBy).not.toHaveBeenCalled()
+      else expect(scrollBy).toHaveBeenCalledWith({ left: expectedLeft })
+      expect(event.defaultPrevented).toBe(prevented)
+    }
+  )
+
+  it.for(['ctrlKey', 'metaKey'] as const)(
+    'preserves %s-modified wheel input',
+    (modifier) => {
+      renderComponent()
+      const tabStrip = screen.getByTestId('workflow-tab-strip')
+      const scrollBy = vi.fn()
+      tabStrip.scrollBy = scrollBy
+      const event = new WheelEvent('wheel', {
+        deltaY: 7,
+        cancelable: true
+      })
+      Object.defineProperty(event, modifier, { value: true })
+
+      tabStrip.dispatchEvent(event)
+
+      expect(scrollBy).not.toHaveBeenCalled()
+      expect(event.defaultPrevented).toBe(false)
+    }
+  )
+
   it('reveals the active tab when the tab list overflows', async () => {
     const workflowStore = useWorkflowStore()
     const workflow = await workflowStore.createTemporary('active.json').load()
