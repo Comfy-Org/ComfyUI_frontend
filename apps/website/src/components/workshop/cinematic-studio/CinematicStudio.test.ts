@@ -814,10 +814,9 @@ describe('CinematicStudio', () => {
       },
       {
         role: 'member' as const,
-        body: t('workshop.error.memberNoCredits').replace(
-          '{workspace}',
-          'Studio Team'
-        ),
+        body: t('workshop.error.memberNoCredits', 'en', {
+          workspace: 'Studio Team'
+        }),
         action: t('workshop.run.switchPersonal'),
         other: t('workshop.run.buyCredits')
       }

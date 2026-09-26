@@ -379,6 +379,14 @@ export class MultiAutogrowRealignHarness {
     await expect(this.heightInput).toHaveValue(String(SENTINEL_HEIGHT))
   }
 
+  applyRemoteWidget(widget: 'width' | 'height', value: number): void {
+    this.hostSocket.send(
+      this.host.apply([
+        { op: 'set_widget', node_id: TARGET_NODE_ID, widget, value }
+      ])
+    )
+  }
+
   async expectSentinelWidgetValues(
     expectedPrompt = SENTINEL_PROMPT
   ): Promise<void> {

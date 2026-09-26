@@ -31,6 +31,22 @@ describe('t()', () => {
     ).toBe('ComfyUI 中的 Flux')
   })
 
+  it('fills every occurrence of a repeated placeholder', () => {
+    expect(
+      t('models.faq.whatIs.localAnswer', 'en', {
+        name: 'Flux',
+        description: 'a model',
+        count: 3
+      })
+    ).not.toContain('{name}')
+  })
+
+  it('inserts values literally', () => {
+    expect(t('validation.minLength', 'en', { length: '$&' })).toBe(
+      'Must be at least $& characters'
+    )
+  })
+
   it('keeps missing named values visible', () => {
     expect(t('validation.minLength', 'en')).toBe(
       'Must be at least {length} characters'
