@@ -169,7 +169,7 @@ class TurnLockServer {
 
   /** Mirrors the service: answering an ask that is no longer open is a 409. */
   answerApproval(askId: string): AgentAnswerAccepted | null {
-    if (!this.awaitingApproval) return null
+    if (!this.awaitingApproval || askId !== ASK_ID) return null
     this.answered.push(askId)
     this.awaitingApproval = false
     return { status: 'answered' }

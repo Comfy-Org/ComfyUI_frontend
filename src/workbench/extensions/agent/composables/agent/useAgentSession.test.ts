@@ -2061,7 +2061,7 @@ describe('useAgentSession (v1 composition root)', () => {
     }
   })
 
-  it('(g30) a restored ask and the frame that follows it render one card', async () => {
+  it('(g30) a broadcast that merely lagged the poll renders one card and is not reported', async () => {
     vi.useFakeTimers()
     try {
       const rest = parkedOnApprovalRest()
@@ -2077,8 +2077,76 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(approvalParts(session)).toHaveLength(1)
 
       emit(runApproval('msg-1'))
+      await vi.advanceTimersByTimeAsync(31_000)
 
       expect(approvalParts(session)).toHaveLength(1)
+      expect(reportError).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('(g32) an ask answered elsewhere is not resurrected by a stale poll', async () => {
+    vi.useFakeTimers()
+    try {
+      const rest = parkedOnApprovalRest()
+      vi.mocked(rest.answerAsk).mockRejectedValue(
+        new AgentApiError('already answered', 409, undefined)
+      )
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+
+      await session.sendMessage('go')
+      emit(runApproval('msg-1'))
+      await session.answerAsk('turn-1:call-1', 'run')
+      expect(approvalParts(session)).toHaveLength(0)
+
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(31_000)
+
+      expect(approvalParts(session)).toHaveLength(0)
+      expect(reportError).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  // The 409 branch resolves the ask straight on the store, so the ledger only
+  // learns of a hydrated card's ask from `answerAsk` itself. Without that the
+  // next poll, whose row still carries the ask the server has not cleared yet,
+  // would draw the card back over a reply the user had already released.
+  it('(g33) answering a hydrated ask keeps a stale poll from drawing it again', async () => {
+    vi.useFakeTimers()
+    try {
+      const rest = fakeRest({
+        getMessages: vi.fn(
+          async (): Promise<AgentMessages> => [
+            historyRow(1, 'user', 'msg-1', 'go'),
+            parkedRow()
+          ]
+        )
+      })
+      vi.mocked(rest.answerAsk).mockRejectedValue(
+        new AgentApiError('already answered', 409, undefined)
+      )
+      const { source, status } = fakeEvents()
+      localStorage.setItem('Comfy.Agent.ThreadId', 'th-1')
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+      await vi.advanceTimersByTimeAsync(0)
+      expect(approvalParts(session)).toHaveLength(1)
+
+      await session.answerAsk('turn-1:call-1', 'run')
+      expect(approvalParts(session)).toHaveLength(0)
+
+      await vi.advanceTimersByTimeAsync(31_000)
+
+      expect(approvalParts(session)).toHaveLength(0)
+      expect(reportError).not.toHaveBeenCalled()
     } finally {
       vi.useRealTimers()
     }

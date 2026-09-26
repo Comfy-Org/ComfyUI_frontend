@@ -91,8 +91,9 @@ test.describe(
       })
     })
 
-    // The recovery path re-delivers from the persisted row on every poll, so
-    // without a guard an ask the socket did deliver would be drawn twice.
+    // Recovery re-reads the persisted row on every poll, so an ask the socket
+    // did deliver has to be recognised as already on screen rather than
+    // restored again.
     test('does not redraw an approval the socket already delivered', async ({
       turnLock,
       getWebSocket

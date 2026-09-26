@@ -443,9 +443,11 @@ export const useAgentConversationStore = defineStore(
     }
 
     /**
-     * Guards re-delivery: a delayed ask must not draw a second card. Reads
-     * the mutable message, so it is a point-in-time answer for imperative
-     * callers and establishes no reactive dependency.
+     * Whether this turn is already showing `askId`. Turn recovery asks before
+     * re-delivering an ask off a persisted row: the card a hydrate drew is on
+     * screen without the session's ask ledger ever having seen a frame for
+     * it, and only this catches that one. Reads the mutable message, so it
+     * answers for the current moment and takes no reactive dependency.
      */
     function isApprovalShown(turn: LiveTurn, askId: string): boolean {
       const message = liveTurnMessage(turn)

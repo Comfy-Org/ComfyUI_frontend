@@ -123,6 +123,8 @@ const TURN_RECOVERY_DELAYS_MS: RecoverySchedule = [
   ...TURN_RECOVERY_DELAYS_AFTER_FETCH_MS
 ]
 const TURN_RECOVERY_MAX_CONSECUTIVE_FAILURES = TURN_RECOVERY_DELAYS_MS.length
+/** How long a restored ask waits for its own broadcast before it counts as lost. */
+const LATE_ASK_FRAME_GRACE_MS = 2000
 
 /**
  * Why a recovery job is running, which is what separates an ask the socket
@@ -235,12 +237,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
   let connection: SocketConnection = 'initial'
   const recoveringTurns = new Map<string, AbortController>()
   /**
-   * Asks recovery must not re-deliver: one it already restored, and any the
-   * user has answered or the server has resolved. Without the latter, a poll
-   * whose snapshot predates the answer would resurrect a card the user is
-   * done with, splitting the reply that has since resumed streaming.
+   * Asks recovery must not re-deliver: one it already restored, one a frame
+   * has delivered, and any the user has answered or the server has resolved.
+   * Without the latter, a poll whose snapshot predates the answer would
+   * resurrect a card the user is done with, splitting the reply that has
+   * since resumed streaming. Deliberately outlives `newChat`/`loadThread`:
+   * an `ask_id` carries its `message_id`, so it is never reused.
    */
   const deliveredAsks = new Set<string>()
+  const lateAskReports = new Map<string, ReturnType<typeof setTimeout>>()
 
   function pushError(text: string): void {
     notices.value.push({ level: 'error', text })
@@ -318,6 +323,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     unsubscribe = null
     unsubscribeStatus = null
     for (const recovery of recoveringTurns.values()) recovery.abort()
+    for (const scheduled of lateAskReports.values()) clearTimeout(scheduled)
+    lateAskReports.clear()
     const stoppedGeneration = ownedGeneration
     queueMicrotask(() => {
       if (stoppedGeneration !== sessionGeneration) return
@@ -775,6 +782,17 @@ export function useAgentSession(deps: AgentSessionDeps) {
       setAskAnswering(event.data.ask_id, false)
       deliveredAsks.add(event.data.ask_id)
     }
+    // An ask already in the ledger is one recovery has supplied, or one the
+    // user has finished with. Dropping it here rather than relying on the
+    // rendered parts is what stops a frame delayed past its own resolution
+    // from drawing a card over a reply that has since resumed.
+    if (event.type === 'agent_ask') {
+      if (deliveredAsks.has(event.data.ask_id)) {
+        withdrawLateAskReport(event.data.ask_id)
+        return
+      }
+      deliveredAsks.add(event.data.ask_id)
+    }
     switch (event.type) {
       case 'agent_active_tab':
         // Every thread records the link in its own transcript; only the thread
@@ -840,10 +858,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     generation: number,
     signal: AbortSignal
   ): Promise<void> {
+    const { delaysMs } = plan
     let noticed = false
     let consecutiveFailures = 0
     for (let attempt = 0; ; attempt++) {
-      const { delaysMs } = plan
       await delay(delaysMs[Math.min(attempt, delaysMs.length - 1)], { signal })
       if (!isTurnLive(turn, generation)) return
       const outcome = await fetchTurnOutcome(turn, signal)
@@ -898,21 +916,59 @@ export function useAgentSession(deps: AgentSessionDeps) {
       }
     })
     markStoppedTurnReady(turn)
+    reportRestoredApproval(turn, pendingAsk.ask_id, cause)
+  }
+
+  /**
+   * The server writes the ask row before it publishes the frame, so a poll
+   * can restore an ask whose broadcast is merely in flight. Only a reconnect
+   * claims a frame was lost, and only once its own broadcast has had a grace
+   * window to turn up -- `withdrawLateAskReport` cancels this when it does.
+   * A hydrate races the same way but never had a dropped socket to blame, so
+   * it files as a warning immediately.
+   */
+  function reportRestoredApproval(
+    turn: LiveTurn,
+    askId: string,
+    cause: RecoveryCause
+  ): void {
+    if (cause !== 'reconnect') {
+      sendRestoredApprovalReport(turn, askId, cause, 'warning')
+      return
+    }
+    lateAskReports.set(
+      askId,
+      setTimeout(() => {
+        lateAskReports.delete(askId)
+        sendRestoredApprovalReport(turn, askId, cause, 'error')
+      }, LATE_ASK_FRAME_GRACE_MS)
+    )
+  }
+
+  function withdrawLateAskReport(askId: string): void {
+    const scheduled = lateAskReports.get(askId)
+    if (scheduled === undefined) return
+    clearTimeout(scheduled)
+    lateAskReports.delete(askId)
+  }
+
+  function sendRestoredApprovalReport(
+    turn: LiveTurn,
+    askId: string,
+    cause: RecoveryCause,
+    level: 'error' | 'warning'
+  ): void {
     reportError(
       new Error('Agent approval ask was missing from the panel when polled'),
       {
         errorType: 'failure_delivering_agent_approval_ask',
-        level: cause === 'reconnect' ? 'error' : 'warning',
+        level,
         tags: {
           feature_area: 'agent',
           operation: 'recovery',
           recovery_cause: cause
         },
-        context: {
-          threadId: turn.threadId,
-          messageId: turn.messageId,
-          askId: pendingAsk.ask_id
-        }
+        context: { threadId: turn.threadId, messageId: turn.messageId, askId }
       }
     )
   }
