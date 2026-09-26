@@ -88,7 +88,7 @@ sequenceDiagram
     rect rgb(225,245,225)
     Note over Grid: AFTER FIX
     Grid->>Grid: start = clamp(fromCol, 0, total)
-    Grid->>Grid: end = clamp(toCol, start, total)  %% bounded by the clamped start, not raw fromCol
+    Grid->>Grid: end = clamp(toCol, start, total)
     Grid->>DOM: renderedItems = items.slice(start, end) → correct window (start == end == total in the shrink case)
     DOM->>DOM: spacer height is 0, container shrinks, browser clamps scrollTop
     Note over DOM: grid recovers on its own
