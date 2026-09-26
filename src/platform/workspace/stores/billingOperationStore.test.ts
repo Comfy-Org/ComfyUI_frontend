@@ -8,7 +8,7 @@ import {
 } from '@/platform/workspace/utils/checkoutJourney'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useTelemetry } from '@/platform/telemetry'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
@@ -878,9 +878,10 @@ describe('billingOperationStore', () => {
         status: 'succeeded',
         started_at: new Date().toISOString()
       })
+      const error = new Error('reconcile failed')
       vi.mocked(billing.reconcileSubscriptionSuccess).mockImplementationOnce(
         () => {
-          throw new Error('reconcile failed')
+          throw error
         }
       )
 
@@ -890,6 +891,43 @@ describe('billingOperationStore', () => {
       await vi.advanceTimersByTimeAsync(0)
 
       await expect(terminal).resolves.toMatchObject({ status: 'succeeded' })
+      expect(mockReportError).toHaveBeenCalledWith(error, {
+        errorType: 'failure_handling_billing_operation_success',
+        context: { billing_op_id: 'op-1' }
+      })
+    })
+
+    it('keeps success effects running if telemetry dispatch throws', async () => {
+      const billing = mockBillingContext()
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'succeeded',
+        started_at: new Date().toISOString()
+      })
+      const error = new Error('telemetry failed')
+      const telemetry = useTelemetry()
+      assert.exists(telemetry)
+
+      const store = useBillingOperationStore()
+      const terminal = store.startOperation('op-1', 'subscription')
+      vi.mocked(telemetry.trackBillingEvent).mockImplementationOnce(() => {
+        throw error
+      })
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      await expect(terminal).resolves.toMatchObject({ status: 'succeeded' })
+      expect(billing.reconcileSubscriptionSuccess).toHaveBeenCalledOnce()
+      expect(vi.mocked(useBillingCapabilities().refresh)).toHaveBeenCalledOnce()
+      expect(useToastStore().add).toHaveBeenCalledWith({
+        severity: 'success',
+        summary: 'billingOperation.subscriptionSuccess',
+        life: 5000
+      })
+      expect(mockReportError).toHaveBeenCalledWith(error, {
+        errorType: 'failure_tracking_billing_operation_success_telemetry',
+        context: { billing_op_id: 'op-1' }
+      })
     })
   })
 
