@@ -30,6 +30,21 @@ import { prepareTemplateInputs } from '../services/templateInputService'
 
 type TemplateLoadResult = 'loaded' | 'graph-failed' | 'not-started'
 
+export type PreparedWorkflowTemplate = {
+  id: string
+  sourceModule: string
+  workflowName: string
+  controller: AbortController
+  data: {
+    json: ComfyWorkflowJSON | LegacyLoadableWorkflow
+    template:
+      | ReturnType<
+          typeof useWorkflowTemplatesStore
+        >['enhancedTemplates'][number]
+      | undefined
+  }
+}
+
 function updateTemplateEducation(
   isPartnerNode: boolean | undefined,
   loadedWorkflow: Awaited<ReturnType<typeof app.loadGraphData>>
@@ -144,6 +159,11 @@ export function useTemplateWorkflows() {
     return template?.sourceModule
   }
 
+  function releasePreparedLoad(controller: AbortController) {
+    workflowTemplatesStore.finishTemplateLoad(controller)
+    if (ownedLoadController === controller) ownedLoadController = undefined
+  }
+
   function showTemplateError(detail: string) {
     useToastStore().add({ severity: 'error', summary: t('g.error'), detail })
   }
@@ -238,16 +258,16 @@ export function useTemplateWorkflows() {
     }
   }
 
-  async function loadWorkflowTemplate(
+  async function prepareWorkflowTemplate(
     id: string,
     sourceModule: string
-  ): Promise<TemplateLoadResult> {
+  ): Promise<PreparedWorkflowTemplate | null> {
     if (!isTemplatesLoaded.value) {
       showTemplateError(t('templateWorkflows.error.loading'))
-      return 'not-started'
+      return null
     }
     const controller = workflowTemplatesStore.startTemplateLoad(id)
-    if (!controller) return 'not-started'
+    if (!controller) return null
     ownedLoadController = controller
     try {
       const source = resolveTemplateSource(id, sourceModule)
@@ -255,18 +275,37 @@ export function useTemplateWorkflows() {
         showTemplateError(
           t('templateWorkflows.error.templateNotFound', { templateName: id })
         )
-        return 'not-started'
+        releasePreparedLoad(controller)
+        return null
       }
       const data = await loadTemplateData(id, source, controller.signal)
       controller.signal.throwIfAborted()
+      return {
+        id,
+        sourceModule: source,
+        workflowName:
+          source === 'default' ? t(`templateWorkflows.template.${id}`, id) : id,
+        controller,
+        data
+      }
+    } catch (error) {
+      if (!controller.signal.aborted) reportTemplateError(error)
+      releasePreparedLoad(controller)
+      return null
+    }
+  }
+
+  async function openPreparedWorkflowTemplate(
+    prepared: PreparedWorkflowTemplate
+  ): Promise<TemplateLoadResult> {
+    const { id, sourceModule, workflowName, controller, data } = prepared
+    try {
       if (!workflowTemplatesStore.startTemplateGraphLoad(controller))
         return 'not-started'
 
-      const workflowName =
-        source === 'default' ? t(`templateWorkflows.template.${id}`, id) : id
       useTelemetry()?.trackTemplate({
         workflow_name: id,
-        template_source: source
+        template_source: sourceModule
       })
 
       dialogStore.closeDialog()
@@ -275,9 +314,26 @@ export function useTemplateWorkflows() {
       if (!controller.signal.aborted) reportTemplateError(error)
       return 'not-started'
     } finally {
-      workflowTemplatesStore.finishTemplateLoad(controller)
-      if (ownedLoadController === controller) ownedLoadController = undefined
+      releasePreparedLoad(controller)
     }
+  }
+
+  function discardPreparedWorkflowTemplate(
+    prepared: PreparedWorkflowTemplate | null
+  ) {
+    if (!prepared) return
+    workflowTemplatesStore.cancelTemplateLoad(prepared.controller)
+    if (ownedLoadController === prepared.controller)
+      ownedLoadController = undefined
+  }
+
+  async function loadWorkflowTemplate(
+    id: string,
+    sourceModule: string
+  ): Promise<TemplateLoadResult> {
+    const prepared = await prepareWorkflowTemplate(id, sourceModule)
+    if (!prepared) return 'not-started'
+    return openPreparedWorkflowTemplate(prepared)
   }
 
   /**
@@ -337,6 +393,9 @@ export function useTemplateWorkflows() {
     getTemplateThumbnailUrl,
     getTemplateTitle,
     getTemplateDescription,
+    prepareWorkflowTemplate,
+    openPreparedWorkflowTemplate,
+    discardPreparedWorkflowTemplate,
     loadWorkflowTemplate
   }
 }
