@@ -1,6 +1,6 @@
 import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 
 import { i18n } from '@/i18n'
@@ -133,6 +133,12 @@ describe('DockedAgentPanel', () => {
 
   it('resizes via pointer drag on the handle, clamped to the width bounds', async () => {
     // Wide enough that the upper bound is the panel max, not the viewport.
+    // Restored below: leaving it set makes every later test in this file
+    // depend on execution order.
+    const realInnerWidth = window.innerWidth
+    onTestFinished(() => {
+      window.innerWidth = realInnerWidth
+    })
     window.innerWidth = 1920
     const store = openPanel()
     const user = userEvent.setup()

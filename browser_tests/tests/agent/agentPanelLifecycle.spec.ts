@@ -156,6 +156,15 @@ test.describe(
       expect(box).not.toBeNull()
       expect(box!.x).toBeGreaterThanOrEqual(-1)
       expect(box!.x + box!.width).toBeLessThanOrEqual(901)
+
+      // "Inside the window" is not enough on its own: a panel that ignored the
+      // sidebar and took all 900px would satisfy every bound above. Pin it
+      // against the workspace it is supposed to be reserving room for.
+      const sideToolbar = page.getByTestId('side-toolbar')
+      const railBox = await sideToolbar.boundingBox()
+      expect(railBox).not.toBeNull()
+      expect(box!.x).toBeGreaterThanOrEqual(railBox!.x + railBox!.width - 1)
+
       // Still maximized, so the header offers to minimize rather than maximize.
       await expect(
         panel.getByRole('button', { name: enMessages.agent.minimize })
@@ -185,11 +194,30 @@ test.describe(
 
       const toolbarBox = await toolbar.boundingBox()
       const sideToolbarBox = await sideToolbar.boundingBox()
+      const panelBox = await panel.boundingBox()
       expect(toolbarBox).not.toBeNull()
       expect(sideToolbarBox).not.toBeNull()
+      expect(panelBox).not.toBeNull()
+
+      // Both edges matter. Checking only the left edge passes a toolbar that
+      // overhangs the other way, out from under the canvas and beneath the
+      // expanded panel, which is the case this fix is actually about.
       expect(toolbarBox!.x).toBeGreaterThanOrEqual(
         sideToolbarBox!.x + sideToolbarBox!.width - 1
       )
+      expect(toolbarBox!.x + toolbarBox!.width).toBeLessThanOrEqual(
+        panelBox!.x + 1
+      )
+
+      // Position alone is satisfied by a toolbar squeezed to nothing, so prove
+      // the controls at both ends survived and are still operable.
+      expect(toolbarBox!.width).toBeGreaterThan(64)
+      await expect(
+        toolbar.getByRole('button', { name: enMessages.zoomControls.label })
+      ).toBeVisible()
+      await toolbar
+        .getByRole('button', { name: enMessages.graphCanvasMenu.fitView })
+        .click()
     })
 
     test('restores an open panel after a browser reload', async ({ page }) => {
