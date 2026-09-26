@@ -809,12 +809,20 @@ describe('AgentPanel extension flag gate', () => {
     expect(agentStore.open).not.toHaveBeenCalled()
   })
 
+  // The holder is a coachmark tour rather than the first-run screen because
+  // this test only needs *some* holder, and the first run cannot become one
+  // here: the screen is shown once per page load, before the startup decision
+  // every automatic offer waits on, so by the time an offer is in flight the
+  // first-run hold can only fall. A tour opening over an in-flight offer is a
+  // real ordering (see "withholds a card whose tour started while the offer was
+  // in flight"). What this test pins is the consent-read outcome, not the
+  // reason.
   it('records an unsettled consent read when identity changes before a held card mounts', async () => {
     mocks.flagEnabled = true
     Object.assign(consentStore, { accepted: false, isChecking: false })
     vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
       async (_trigger, _onAccept, hooks) => {
-        firstRunTookScreen.value = true
+        activeTour.value = 'appMode'
         currentUser.value = { id: 'account-b' }
         Object.assign(workspaceStore, { activeWorkspaceId: 'workspace-b' })
         Object.assign(consentStore, {
@@ -831,7 +839,7 @@ describe('AgentPanel extension flag gate', () => {
     )
 
     expect(await notOffered()).toHaveBeenCalledExactlyOnceWith({
-      reason: 'first_run_screen',
+      reason: 'tour_active',
       consent_read_outcome: 'not_yet_determined'
     })
   })
