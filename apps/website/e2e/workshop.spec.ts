@@ -243,6 +243,32 @@ test.describe('Models catalog', () => {
     await expect(page.getByTestId('workshop-hero')).toBeVisible()
   })
 
+  // A row loads eight whatever its total says, so a row holding fewer than
+  // eight cards is showing its whole shelf and has nothing left to open.
+  test('a shelf showing everything stops promising more', async ({ page }) => {
+    await page.goto('/models/')
+    const sections = page.getByTestId('workshop-sections')
+    await expect(sections).toBeVisible()
+    await expect(
+      sections.getByTestId('workshop-model-card').first()
+    ).toBeVisible()
+    const shelves = sections
+      .locator('[data-testid^="section-"]')
+      .filter({ has: page.getByTestId('workshop-model-card') })
+    const count = await shelves.count()
+    expect(count).toBeGreaterThan(1)
+
+    let complete = 0
+    for (let index = 0; index < count; index++) {
+      const shelf = shelves.nth(index)
+      if ((await shelf.getByTestId('workshop-model-card').count()) >= 8)
+        continue
+      complete++
+      await expect(shelf.locator('[data-testid$="-see-all"]')).toHaveCount(0)
+    }
+    expect(complete).toBeGreaterThan(0)
+  })
+
   test('the rows listing opens the whole catalogue', async ({ page }) => {
     await page.goto('/models/')
     await page.getByTestId('browse-all').click()
