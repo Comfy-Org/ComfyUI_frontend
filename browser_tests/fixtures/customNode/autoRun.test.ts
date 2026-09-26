@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
+  AUTO_RUN_WIDGET_INPUTS,
   batchAutoRunnable,
   classifyAutoRunnable,
+  evaluateWidgetInputs,
   planAutoRuns
 } from '@e2e/fixtures/customNode/autoRun'
 
@@ -305,5 +307,21 @@ describe('autoRun classifier', () => {
     ])
     const batches = batchAutoRunnable(verdicts, 1)
     expect(batches.map((batch) => batch[0].key)).toEqual(['A', 'C'])
+  })
+})
+
+describe('evaluateWidgetInputs', () => {
+  it('defaults a missing pack-ledger row so Playwright evaluate can serialize it', () => {
+    const widgetInputs = evaluateWidgetInputs('ComfyUI-KJNodes', 'ColorAdjust')
+    expect(widgetInputs).toEqual({})
+    expect(JSON.parse(JSON.stringify({ widgetInputs })).widgetInputs).toEqual(
+      {}
+    )
+  })
+
+  it('preserves a ledgered row', () => {
+    expect(
+      evaluateWidgetInputs('ComfyUI-VideoHelperSuite', 'VHS_LoadAudio')
+    ).toEqual(AUTO_RUN_WIDGET_INPUTS['ComfyUI-VideoHelperSuite'].VHS_LoadAudio)
   })
 })
