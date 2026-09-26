@@ -5,6 +5,7 @@ import type {
   GestureState
 } from './canvas/reduceGesture'
 import { idleGesture, reduceGesture } from './canvas/reduceGesture'
+import { watchGestureInterrupts } from './canvas/watchGestureInterrupts'
 import type { CompassCorners } from './interfaces'
 import type { CanvasPointerEvent } from './types/events'
 
@@ -66,6 +67,7 @@ export class CanvasPointer {
   }
 
   private state: GestureState = idleGesture
+  private stopWatchingInterrupts?: () => void
 
   /** Used downstream for touch event support. */
   isDouble: boolean = false
@@ -131,6 +133,9 @@ export class CanvasPointer {
    */
   onDragEnd?(upEvent: CanvasPointerEvent): unknown
 
+  /** Called when an active drag is interrupted without normal completion. */
+  onDragCancel?(): unknown
+
   /**
    * Callback that will be run once, the next time a pointerup event appears to be a normal click.
    * @param upEvent The pointerup or pointermove event that triggered this callback
@@ -176,6 +181,11 @@ export class CanvasPointer {
     this.eDown = e
     this.pointerId = e.pointerId
     this.element.setPointerCapture(e.pointerId)
+    this.stopWatchingInterrupts = watchGestureInterrupts(
+      this.element,
+      e.pointerId,
+      () => this.reset()
+    )
     this.dispatch(
       { type: 'down', position: positionOf(e), timeStamp: e.timeStamp },
       e
@@ -439,34 +449,46 @@ export class CanvasPointer {
   /**
    * Resets the state of this {@link CanvasPointer} instance.
    *
-   * The {@link finally} callback is first executed, then all callbacks and intra-click
-   * state is cleared.
+   * Stops interruption watching, cancels any active drag, runs final cleanup,
+   * then clears callbacks and intra-click state.
    */
   reset(): void {
+    this.stopWatchingInterrupts?.()
+    this.stopWatchingInterrupts = undefined
+    const wasDragging = this.dragStarted
     if (this.eDown) this.dispatch({ type: 'cancel' }, this.eDown)
+    try {
+      if (wasDragging) this.onDragCancel?.()
+    } finally {
+      try {
+        this.finally = undefined
+      } finally {
+        delete this.onClick
+        delete this.onDoubleClick
+        delete this.onDragStart
+        delete this.onDrag
+        delete this.onDragEnd
+        delete this.onDragCancel
 
-    // The setter executes the callback before clearing it
-    this.finally = undefined
-    delete this.onClick
-    delete this.onDoubleClick
-    delete this.onDragStart
-    delete this.onDrag
-    delete this.onDragEnd
+        this.isDown = false
+        this.isDouble = false
+        this.resizeDirection = undefined
 
-    this.isDown = false
-    this.isDouble = false
-    this.resizeDirection = undefined
+        if (this.clearEventsOnReset) {
+          this.eDown = undefined
+          this.eMove = undefined
+          this.eUp = undefined
+        }
 
-    if (this.clearEventsOnReset) {
-      this.eDown = undefined
-      this.eMove = undefined
-      this.eUp = undefined
-    }
-
-    const { element, pointerId } = this
-    this.pointerId = undefined
-    if (typeof pointerId === 'number' && element.hasPointerCapture(pointerId)) {
-      element.releasePointerCapture(pointerId)
+        const { element, pointerId } = this
+        this.pointerId = undefined
+        if (
+          typeof pointerId === 'number' &&
+          element.hasPointerCapture(pointerId)
+        ) {
+          element.releasePointerCapture(pointerId)
+        }
+      }
     }
   }
 }

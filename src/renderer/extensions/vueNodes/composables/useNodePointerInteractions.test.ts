@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, ref } from 'vue'
+import { effectScope, nextTick, ref } from 'vue'
 
 import {
   addNode,
@@ -90,6 +90,23 @@ function move(
 function onTarget(event: PointerEvent, target: Element): PointerEvent {
   Object.defineProperty(event, 'currentTarget', { value: target })
   return event
+}
+
+function captureTarget() {
+  const target = document.createElement('div')
+  let captured = false
+  const setPointerCapture = vi
+    .spyOn(target, 'setPointerCapture')
+    .mockImplementation(() => {
+      captured = true
+    })
+  vi.spyOn(target, 'hasPointerCapture').mockImplementation(() => captured)
+  const releasePointerCapture = vi
+    .spyOn(target, 'releasePointerCapture')
+    .mockImplementation(() => {
+      captured = false
+    })
+  return { target, setPointerCapture, releasePointerCapture }
 }
 
 describe('useNodePointerInteractions', () => {
@@ -225,19 +242,7 @@ describe('useNodePointerInteractions', () => {
   })
 
   it('captures the accepted pointer until release', () => {
-    const target = document.createElement('div')
-    let captured = false
-    const setPointerCapture = vi
-      .spyOn(target, 'setPointerCapture')
-      .mockImplementation(() => {
-        captured = true
-      })
-    vi.spyOn(target, 'hasPointerCapture').mockImplementation(() => captured)
-    const releasePointerCapture = vi
-      .spyOn(target, 'releasePointerCapture')
-      .mockImplementation(() => {
-        captured = false
-      })
+    const { target, setPointerCapture, releasePointerCapture } = captureTarget()
     const down = onTarget(pointerEvent('pointerdown', 10, 10), target)
 
     handlers.onPointerdown(down)
@@ -245,7 +250,39 @@ describe('useNodePointerInteractions', () => {
 
     expect(setPointerCapture).toHaveBeenCalledWith(1)
     expect(releasePointerCapture).toHaveBeenCalledWith(1)
-    expect(captured).toBe(false)
+  })
+
+  it('lost pointer capture cancels the drag and suppresses release', () => {
+    const { target, releasePointerCapture } = captureTarget()
+    const { endDrag } = useNodeDrag()
+    handlers.onPointerdown(
+      onTarget(pointerEvent('pointerdown', 10, 10), target)
+    )
+    move(handlers, 40, 10)
+
+    target.dispatchEvent(
+      new PointerEvent('lostpointercapture', { pointerId: 1 })
+    )
+    release(handlers, 40, 10)
+
+    expect(layoutStore.isDraggingVueNodes.value).toBe(false)
+    expect(releasePointerCapture).toHaveBeenCalledWith(1)
+    expect(endDrag).not.toHaveBeenCalled()
+  })
+
+  it('ignores lost pointer capture from another pointer', () => {
+    const { target } = captureTarget()
+    const { startDrag } = useNodeDrag()
+    handlers.onPointerdown(
+      onTarget(pointerEvent('pointerdown', 10, 10), target)
+    )
+
+    target.dispatchEvent(
+      new PointerEvent('lostpointercapture', { pointerId: 2 })
+    )
+    move(handlers, 40, 10)
+
+    expect(startDrag).toHaveBeenCalledOnce()
   })
 
   it('captures a button press on the button', () => {
@@ -388,5 +425,53 @@ describe('useNodePointerInteractions', () => {
 
     expect(startDrag).not.toHaveBeenCalled()
     expect(layoutStore.isDraggingVueNodes.value).toBe(false)
+  })
+
+  it('window blur while dragging ends the drag without snapping', () => {
+    const { endDrag } = useNodeDrag()
+    const { target, releasePointerCapture } = captureTarget()
+    handlers.onPointerdown(
+      onTarget(pointerEvent('pointerdown', 10, 10), target)
+    )
+    move(handlers, 40, 10)
+
+    window.dispatchEvent(new Event('blur'))
+
+    expect(endDrag).not.toHaveBeenCalled()
+    expect(layoutStore.isDraggingVueNodes.value).toBe(false)
+    expect(releasePointerCapture).toHaveBeenCalledWith(1)
+  })
+
+  it('hidden document while pressed discards the click', () => {
+    const { target, releasePointerCapture } = captureTarget()
+    handlers.onPointerdown(
+      onTarget(pointerEvent('pointerdown', 10, 10), target)
+    )
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden')
+    document.dispatchEvent(new Event('visibilitychange'))
+    release(handlers, 10, 10)
+
+    expect(selectedTitles(canvas)).toEqual([])
+    expect(releasePointerCapture).toHaveBeenCalledWith(1)
+  })
+
+  it('disposing the scope while dragging ends the drag', () => {
+    const scope = effectScope()
+    const scoped = scope.run(() =>
+      useNodePointerInteractions(createNodeState({ id: second.id }))
+    )
+    expect(scoped).toBeDefined()
+    if (!scoped) throw new Error('Expected interactions in active scope')
+    const { target, releasePointerCapture } = captureTarget()
+    scoped.pointerHandlers.onPointerdown(
+      onTarget(pointerEvent('pointerdown', 310, 10), target)
+    )
+    move(scoped.pointerHandlers, 340, 10)
+    expect(layoutStore.isDraggingVueNodes.value).toBe(true)
+
+    scope.stop()
+
+    expect(layoutStore.isDraggingVueNodes.value).toBe(false)
+    expect(releasePointerCapture).toHaveBeenCalledWith(1)
   })
 })
