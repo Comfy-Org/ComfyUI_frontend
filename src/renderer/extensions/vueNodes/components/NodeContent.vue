@@ -21,7 +21,7 @@
       />
       <ImagePreview
         v-else-if="hasMedia && media?.type === 'image'"
-        :image-urls="media.urls"
+        :images="media.images"
         :node-id="nodeId"
         class="flex-auto"
         :style="{ marginTop: `${IMAGE_PREVIEW_MARGIN_TOP}px` }"
@@ -33,6 +33,7 @@
 <script setup lang="ts">
 import { computed, onErrorCaptured, ref } from 'vue'
 
+import type { NodeMedia } from '@/types/nodeMedia'
 import type { NodeState } from '@/types/nodeState'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
@@ -44,15 +45,16 @@ import { IMAGE_PREVIEW_MARGIN_TOP } from './imagePreviewLayout'
 
 interface NodeContentProps {
   nodeData?: NodeState
-  media?: {
-    type: 'image' | 'video' | 'audio'
-    urls: string[]
-  }
+  media?: NodeMedia
 }
 
 const props = defineProps<NodeContentProps>()
 
-const hasMedia = computed(() => props.media && props.media.urls.length > 0)
+const hasMedia = computed(() =>
+  props.media?.type === 'image'
+    ? props.media.images.length > 0
+    : !!props.media?.urls.length
+)
 
 const nodeId = computed(() => props.nodeData?.id)
 

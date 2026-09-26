@@ -21,6 +21,7 @@ import { clone } from '@/scripts/utils'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import type { NodeId } from '@/types/nodeId'
+import type { NodeImage } from '@/types/nodeMedia'
 import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { parseFilePath } from '@/utils/formatUtil'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
@@ -123,23 +124,22 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     return true
   }
 
-  function getPreviewParam(
-    node: LGraphNode,
-    outputs: ExecutedWsMessage['output']
-  ): string {
+  function getPreviewParam(node: LGraphNode, outputs: RuntimeOutput): string {
     return isImageOutputs(node, outputs) ? app.getPreviewFormatParam() : ''
   }
 
-  function buildImageUrls(
+  function buildNodeImages(
     node: LGraphNode,
-    outputs: ExecutedWsMessage['output'] | undefined
-  ): string[] | undefined {
+    outputs: RuntimeOutput | undefined
+  ): NodeImage[] | undefined {
     if (!outputs?.images?.length) return
 
     const rand = app.getRandParam()
     const previewParam = getPreviewParam(node, outputs)
 
     return outputs.images.map((image) => {
+      if (!image) return { url: api.apiURL(`/view?${previewParam}${rand}`) }
+
       const filename = image.filename ?? ''
       const { filepath, rootFolder } = parseAnnotatedPath(filename, image.type)
       const params = new URLSearchParams({
@@ -147,15 +147,22 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
         filename: node.comfyClass === 'LoadImageOutput' ? filename : filepath,
         type: rootFolder
       })
-      return api.apiURL(`/view?${params}${previewParam}${rand}`)
+      return {
+        url: api.apiURL(`/view?${params}${previewParam}${rand}`),
+        result: image
+      }
     })
   }
 
   function getNodeImageUrls(node: LGraphNode): string[] | undefined {
-    const previews = getNodePreviews(node)
-    if (previews?.length) return previews
+    return getNodeImages(node)?.map(({ url }) => url)
+  }
 
-    return buildImageUrls(node, getNodeOutputs(node))
+  function getNodeImages(node: LGraphNode): NodeImage[] | undefined {
+    const previews = getNodePreviews(node)
+    if (previews?.length) return previews.map((url) => ({ url }))
+
+    return buildNodeImages(node, getNodeOutputs(node))
   }
 
   function getNodeOutputByExecutionId(
@@ -174,14 +181,14 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     return nodePreviewImages.value[locatorId]
   }
 
-  function getNodeImageUrlsByExecutionId(
+  function getNodeImagesByExecutionId(
     executionId: NodeExecutionId,
     node: LGraphNode
-  ): string[] | undefined {
+  ): NodeImage[] | undefined {
     const previews = getNodePreviewImagesByExecutionId(executionId)
-    if (previews?.length) return previews
+    if (previews?.length) return previews.map((url) => ({ url }))
 
-    return buildImageUrls(node, getNodeOutputByExecutionId(executionId))
+    return buildNodeImages(node, getNodeOutputByExecutionId(executionId))
   }
 
   function setOutputsByLocatorId(
@@ -528,8 +535,9 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
 
   return {
     getNodeOutputs,
+    getNodeImages,
+    getNodeImagesByExecutionId,
     getNodeImageUrls,
-    getNodeImageUrlsByExecutionId,
     getNodeOutputByExecutionId,
     getNodePreviewImagesByExecutionId,
     getNodePreviews,

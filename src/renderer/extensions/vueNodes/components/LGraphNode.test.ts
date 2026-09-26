@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import { getActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { fromAny } from '@total-typescript/shoehorn'
 
@@ -9,7 +9,7 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
-import { computed, nextTick, ref } from 'vue'
+import { computed, defineComponent, h, nextTick, ref } from 'vue'
 import type { PropType } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
@@ -138,7 +138,8 @@ const i18n = createI18n({
   messages: {
     en: {
       g: {
-        error: 'Error'
+        error: 'Error',
+        resizeFromBottomRight: 'Resize from bottom right'
       },
       rightSidePanel: {
         showAdvancedShort: 'Show Advanced',
@@ -152,6 +153,15 @@ const i18n = createI18n({
 function getNodeRoot(container: Element): HTMLElement {
   return container.firstElementChild as HTMLElement
 }
+
+let capturedNodeContentMedia: unknown
+const NodeContentStub = defineComponent({
+  props: { media: { type: Object, required: true } },
+  setup(props) {
+    capturedNodeContentMedia = props.media
+    return () => h('div', { 'data-testid': 'node-content' })
+  }
+})
 
 function renderLGraphNode(props: ComponentProps<typeof LGraphNode>) {
   return render(LGraphNode, {
@@ -176,9 +186,7 @@ function renderLGraphNode(props: ComponentProps<typeof LGraphNode>) {
           template:
             '<div data-testid="node-widgets">{{ processedWidgetModel.processedWidgets.map((widget) => widget.widgetId).join(",") }}</div>'
         },
-        NodeContent: {
-          template: '<div data-testid="node-content" />'
-        },
+        NodeContent: NodeContentStub,
         SlotConnectionDot: true
       }
     }
@@ -213,6 +221,7 @@ describe('LGraphNode', () => {
     )
     mockData.mockExecuting = false
     mockData.mockLgraphNode = null
+    capturedNodeContentMedia = undefined
     mockData.resizeCallback = null
 
     const canvasStore = useCanvasStore()
@@ -326,8 +335,8 @@ describe('LGraphNode', () => {
       useNodeOutputStore().nodeOutputs['test-node-123'] = {
         images: [{ filename: 'output.png', type: 'output' }]
       }
-      vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([
-        '/output.png'
+      vi.mocked(useNodeOutputStore().getNodeImages).mockReturnValue([
+        { url: '/output.png' }
       ])
 
       const { container } = renderLGraphNode({
@@ -357,7 +366,7 @@ describe('LGraphNode', () => {
     outputs.nodeOutputs['test-node-123'] = {
       images: [{ filename: 'output.png', type: 'output' }]
     }
-    vi.mocked(outputs.getNodeImageUrls).mockReturnValue(['/output.png'])
+    vi.mocked(outputs.getNodeImages).mockReturnValue([{ url: '/output.png' }])
     const { container } = renderLGraphNode({
       nodeData: { ...mockNodeData, graphId: 'graph-test' }
     })
@@ -465,7 +474,12 @@ describe('LGraphNode', () => {
     nodeOutputStore.nodeOutputs['test-node-123'] = {
       images: [{ filename: 'output.png', type: 'output' }]
     }
-    vi.mocked(nodeOutputStore.getNodeImageUrls).mockReturnValue(['/output.png'])
+    vi.mocked(nodeOutputStore.getNodeImages).mockReturnValue([
+      {
+        url: '/output.png',
+        result: { filename: 'output.png', type: 'output' }
+      }
+    ])
 
     renderLGraphNode({
       nodeData: {
@@ -475,6 +489,32 @@ describe('LGraphNode', () => {
     })
 
     expect(screen.getByTestId('node-content')).toBeInTheDocument()
+  })
+
+  it('passes the output records along with the preview urls', () => {
+    mockData.mockLgraphNode = { isSubgraphNode: () => false }
+    const nodeOutputStore = useNodeOutputStore()
+    nodeOutputStore.nodeOutputs['test-node-123'] = {
+      images: [{ filename: 'output.png', subfolder: 'sub', type: 'output' }]
+    }
+    vi.mocked(nodeOutputStore.getNodeImages).mockReturnValue([
+      {
+        url: '/output.png',
+        result: { filename: 'output.png', subfolder: 'sub', type: 'output' }
+      }
+    ])
+
+    renderLGraphNode({ nodeData: mockNodeData })
+
+    expect(capturedNodeContentMedia).toMatchObject({
+      type: 'image',
+      images: [
+        {
+          url: '/output.png',
+          result: { filename: 'output.png', subfolder: 'sub', type: 'output' }
+        }
+      ]
+    })
   })
 
   it('restores only the core LoadAudio input player on disconnect', async () => {
@@ -694,19 +734,19 @@ describe('LGraphNode', () => {
     })
 
     it('should not render resize handle for reroute nodes', () => {
-      const { container } = renderLGraphNode({
-        nodeData: mockRerouteNodeData
-      })
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-      expect(container.querySelector('[role="button"][aria-label]')).toBeNull()
+      renderLGraphNode({ nodeData: mockRerouteNodeData })
+
+      expect(
+        screen.queryByRole('button', { name: 'Resize from bottom right' })
+      ).not.toBeInTheDocument()
     })
 
     it('should render resize handle for regular nodes', () => {
-      const { container } = renderLGraphNode({ nodeData: mockNodeData })
+      renderLGraphNode({ nodeData: mockNodeData })
+
       expect(
-        // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-        container.querySelector('[role="button"][aria-label]')
-      ).not.toBeNull()
+        screen.getByRole('button', { name: 'Resize from bottom right' })
+      ).toBeInTheDocument()
     })
   })
 
@@ -719,12 +759,10 @@ describe('LGraphNode', () => {
 
       const { container } = renderLGraphNode({ nodeData: mockNodeData })
       const nodeEl = getNodeRoot(container)
-      // eslint-disable-next-line testing-library/no-node-access
-      const parent = nodeEl.parentElement!
 
       const parentListener = vi.fn()
-      expect(parent).not.toBeNull()
-      parent.addEventListener('drop', parentListener)
+      document.addEventListener('drop', parentListener)
+      onTestFinished(() => document.removeEventListener('drop', parentListener))
 
       nodeEl.dispatchEvent(
         new Event('drop', { bubbles: true, cancelable: true })

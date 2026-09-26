@@ -38,7 +38,7 @@ function renderDropZone(dropIndicator: DropIndicator) {
     global: {
       plugins: [i18n],
       components: { Button },
-      stubs: { ImageLightbox: true, TieredMenu: true, Slider: true }
+      stubs: { MediaLightbox: true, TieredMenu: true, Slider: true }
     }
   })
 }

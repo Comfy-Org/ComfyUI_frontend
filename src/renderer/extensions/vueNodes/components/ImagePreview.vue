@@ -1,9 +1,13 @@
 <template>
   <div
     v-if="imageUrls.length > 0"
+    data-testid="image-preview"
     class="image-preview group relative flex size-full min-w-16 flex-col justify-center px-2"
     :style="{ minHeight: `${IMAGE_PREVIEW_CONTENT_MIN_HEIGHT}px` }"
     @keydown="handleKeyDown"
+    @pointerdown="onPreviewPointerDown"
+    @click.capture="handleRepeatedClick"
+    @dblclick.stop="handleGalleryDoubleClick"
   >
     <!-- Grid View -->
     <div
@@ -81,6 +85,7 @@
         type="button"
         data-testid="hdr-open-button"
         class="absolute inset-0 flex cursor-pointer flex-col items-center justify-center gap-3 border-0 bg-transparent text-base-foreground"
+        data-preview-control
         @click="openHdrViewer(currentImageUrl)"
       >
         <i class="icon-[lucide--sun] size-12" />
@@ -106,6 +111,7 @@
       <!-- Floating Action Buttons (appear on hover and focus) -->
       <div
         class="actions invisible absolute top-2 right-2 flex gap-1 group-focus-within/panel:visible group-hover/panel:visible"
+        data-preview-control
       >
         <!-- Mask/Edit Button -->
         <button
@@ -127,6 +133,21 @@
           @click="handleOpenLayerEditor"
         >
           <i class="icon-[lucide--layers] size-4" />
+        </button>
+
+        <button
+          v-if="
+            !imageError &&
+            !currentImageIsHdr &&
+            !isTransientUrl(currentImageUrl)
+          "
+          type="button"
+          :class="actionButtonClass"
+          :title="$t('g.openInLightbox')"
+          :aria-label="$t('g.openInLightbox')"
+          @click="openCurrentInLightbox"
+        >
+          <i class="icon-[lucide--expand] size-4" />
         </button>
 
         <!-- Download Button -->
@@ -177,6 +198,7 @@
     <div
       v-if="viewMode === 'gallery' && hasMultipleImages"
       class="flex flex-wrap items-center justify-center gap-1 pt-4"
+      data-preview-control
     >
       <!-- Back to Grid button -->
       <button
@@ -203,6 +225,11 @@
         @click="setCurrentIndex(index)"
       />
     </div>
+
+    <MediaLightbox
+      v-model:active-index="lightboxIndex"
+      :items="lightboxItems"
+    />
   </div>
 </template>
 
@@ -211,7 +238,9 @@ import { useElementSize, useTimeoutFn } from '@vueuse/core'
 import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { isMiddlePointerInput } from '@/base/pointerUtils'
 import { downloadFile } from '@/base/common/downloadUtil'
+import MediaLightbox from '@/components/common/MediaLightbox.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
@@ -219,22 +248,27 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { openHdrViewer } from '@/services/hdrViewerService'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import type { NodeImage } from '@/types/nodeMedia'
 import type { NodeId } from '@/types/nodeId'
-import { isHdrImageUrl } from '@/utils/hdrFormatUtil'
+import {
+  getImageFilenameFromUrl,
+  isHdrImageUrl,
+  toFullResolutionUrl
+} from '@/utils/hdrFormatUtil'
 import { getGridThumbnailUrl } from '@/utils/imageUtil'
 import { resolveNode } from '@/utils/litegraphUtil'
+import type { LightboxImageItem } from '@/types/lightboxItem'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import { IMAGE_PREVIEW_CONTENT_MIN_HEIGHT } from './imagePreviewLayout'
 
 interface ImagePreviewProps {
-  /** Array of image URLs to display */
-  readonly imageUrls: readonly string[]
+  readonly images: readonly NodeImage[]
   /** Optional node ID for context-aware actions */
   readonly nodeId?: NodeId
 }
 
-const { imageUrls, nodeId } = defineProps<ImagePreviewProps>()
+const { images, nodeId } = defineProps<ImagePreviewProps>()
 
 const { t } = useI18n()
 const maskEditor = useMaskEditor()
@@ -255,12 +289,16 @@ const { width: gridWidth, height: gridHeight } = useElementSize(
 )
 
 const currentIndex = ref(0)
-const viewMode = ref<ViewMode>(defaultViewMode(imageUrls))
+const imageUrls = computed(() => images.map(({ url }) => url))
+const viewMode = ref<ViewMode>(defaultViewMode(imageUrls.value))
 const galleryPanelEl = ref<HTMLDivElement>()
 const actualDimensions = ref<string | null>(null)
 const imageError = ref(false)
 const showLoader = ref(false)
 const imageAspectRatio = ref(1)
+const gestureStartedOnControl = ref(false)
+const lightboxIndex = ref<number | null>(null)
+const lightboxItems = ref<LightboxImageItem[]>([])
 
 const { start: startDelayedLoader, stop: stopDelayedLoader } = useTimeoutFn(
   () => {
@@ -271,23 +309,25 @@ const { start: startDelayedLoader, stop: stopDelayedLoader } = useTimeoutFn(
   { immediate: false }
 )
 
-const currentImageUrl = computed(() => imageUrls[currentIndex.value] ?? '')
+const currentImageUrl = computed(
+  () => imageUrls.value[currentIndex.value] ?? ''
+)
 const currentImageIsHdr = computed(() => isHdrImageUrl(currentImageUrl.value))
-const gridImageUrls = computed(() => imageUrls.map(getGridThumbnailUrl))
-const hasMultipleImages = computed(() => imageUrls.length > 1)
+const gridImageUrls = computed(() => imageUrls.value.map(getGridThumbnailUrl))
+const hasMultipleImages = computed(() => imageUrls.value.length > 1)
 const imageAltText = computed(() =>
   t('g.viewImageOfTotal', {
     index: currentIndex.value + 1,
-    total: imageUrls.length
+    total: imageUrls.value.length
   })
 )
 const gridCols = computed(() => {
   const bias = gridWidth.value / gridHeight.value / imageAspectRatio.value
-  return Math.max(Math.round(Math.sqrt(imageUrls.length * bias)), 1)
+  return Math.max(Math.round(Math.sqrt(imageUrls.value.length * bias)), 1)
 })
 
 watch(
-  () => imageUrls,
+  imageUrls,
   (newUrls, oldUrls) => {
     // Only reset state if URLs actually changed (not just array reference)
     const urlsChanged =
@@ -304,6 +344,7 @@ watch(
 
     // Reset loading and error states when URLs change
     actualDimensions.value = null
+    lightboxIndex.value = null
 
     viewMode.value = defaultViewMode(newUrls)
     imageError.value = false
@@ -373,8 +414,8 @@ function handleDownload() {
 
 function setCurrentIndex(index: number) {
   if (currentIndex.value === index) return
-  if (index >= 0 && index < imageUrls.length) {
-    const urlChanged = imageUrls[index] !== currentImageUrl.value
+  if (index >= 0 && index < imageUrls.value.length) {
+    const urlChanged = imageUrls.value[index] !== currentImageUrl.value
     currentIndex.value = index
     imageError.value = false
     if (urlChanged) startDelayedLoader()
@@ -389,12 +430,68 @@ async function openImageInGallery(index: number) {
 }
 
 function handleGridClick(index: number) {
-  const url = imageUrls[index]
+  const url = imageUrls.value[index]
   if (isHdrImageUrl(url)) {
     openHdrViewer(url)
     return
   }
   void openImageInGallery(index)
+}
+
+function isTransientUrl(url: string): boolean {
+  return url.startsWith('blob:') || url.startsWith('data:')
+}
+
+function toLightboxItem({ url, result }: NodeImage): LightboxImageItem {
+  return {
+    kind: 'image',
+    url: toFullResolutionUrl(url),
+    alt: result?.filename ?? getImageFilenameFromUrl(url) ?? ''
+  }
+}
+
+function openInLightbox(index: number) {
+  const selectedImage = images[index]
+  if (!selectedImage) return
+  const { url } = selectedImage
+  if (isHdrImageUrl(url)) {
+    openHdrViewer(url)
+    return
+  }
+  if (isTransientUrl(url)) return
+
+  const renderable = images.filter(
+    ({ url }) => !isHdrImageUrl(url) && !isTransientUrl(url)
+  )
+  const selectedIndex = renderable.indexOf(selectedImage)
+  if (selectedIndex === -1) return
+  lightboxItems.value = renderable.map(toLightboxItem)
+  lightboxIndex.value = selectedIndex
+}
+
+function onPreviewPointerDown(event: PointerEvent) {
+  if (isMiddlePointerInput(event)) return
+  event.stopPropagation()
+}
+
+function handleRepeatedClick(event: MouseEvent) {
+  if (event.detail >= 2) {
+    event.stopPropagation()
+    return
+  }
+  gestureStartedOnControl.value =
+    event.target instanceof Element &&
+    Boolean(event.target.closest('[data-preview-control]'))
+}
+
+function handleGalleryDoubleClick() {
+  if (gestureStartedOnControl.value) return
+  openCurrentInLightbox()
+}
+
+function openCurrentInLightbox() {
+  if (viewMode.value !== 'gallery' || imageError.value) return
+  openInLightbox(currentIndex.value)
 }
 
 function getNavigationDotClass(index: number) {
@@ -417,19 +514,23 @@ function handleKeyDown(event: KeyboardEvent) {
     return
   }
 
-  if (imageUrls.length <= 1 || viewMode.value === 'grid') return
+  if (imageUrls.value.length <= 1 || viewMode.value === 'grid') return
 
   switch (event.key) {
     case 'ArrowLeft':
       event.preventDefault()
       setCurrentIndex(
-        currentIndex.value > 0 ? currentIndex.value - 1 : imageUrls.length - 1
+        currentIndex.value > 0
+          ? currentIndex.value - 1
+          : imageUrls.value.length - 1
       )
       break
     case 'ArrowRight':
       event.preventDefault()
       setCurrentIndex(
-        currentIndex.value < imageUrls.length - 1 ? currentIndex.value + 1 : 0
+        currentIndex.value < imageUrls.value.length - 1
+          ? currentIndex.value + 1
+          : 0
       )
       break
     case 'Home':
@@ -438,7 +539,7 @@ function handleKeyDown(event: KeyboardEvent) {
       break
     case 'End':
       event.preventDefault()
-      setCurrentIndex(imageUrls.length - 1)
+      setCurrentIndex(imageUrls.value.length - 1)
       break
   }
 }
