@@ -161,7 +161,7 @@ function leaveSection() {
     >
       <slot name="tabs" />
       <div
-        class="flex min-w-0 flex-1 items-center gap-3 max-sm:basis-full sm:min-w-fit"
+        class="flex min-w-0 flex-1 items-center gap-3 max-sm:basis-full sm:min-w-fit sm:justify-end"
       >
         <WorkshopSearchField
           v-model="query"
@@ -169,7 +169,7 @@ function leaveSection() {
           :locale
           kind="workflows"
           compact
-          class="min-w-0 flex-1 sm:ml-auto sm:max-w-xl"
+          class="min-w-0 flex-1 sm:max-w-120"
         />
         <WorkshopFilterMenu
           v-model:use-cases="selected"
