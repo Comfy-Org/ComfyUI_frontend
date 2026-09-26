@@ -1321,7 +1321,7 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
     expect(scopeSpy).toHaveBeenCalledTimes(survivingNodes.length)
   })
 
-  it('removes host-keyed missing media when its sole promoted consumer is deleted', () => {
+  it('removes host-keyed missing media when its sole promoted consumer is deleted', async () => {
     const {
       rootGraph,
       subgraph,
@@ -1336,6 +1336,10 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
 
     expect(host.widgets).toHaveLength(1)
     subgraph.remove(sourceNodes[0])
+
+    // Widget demotion is deferred by a microtask so a same-tick reconnect
+    // (a rewire) can cancel it; this genuine removal completes once it runs.
+    await Promise.resolve()
 
     expect(host.widgets).toHaveLength(0)
     expect(mediaStore.missingMediaCandidates).toBeNull()
@@ -1372,7 +1376,7 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
     expect(errorStore.lastNodeErrors).toBeNull()
   })
 
-  it('keeps promoted missing media until the last fanout consumer is deleted', () => {
+  it('keeps promoted missing media until the last fanout consumer is deleted', async () => {
     const {
       rootGraph,
       subgraph,
@@ -1387,14 +1391,19 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
     mediaStore.setMissingMedia([candidate])
 
     subgraph.remove(sourceNodes[0])
+    await Promise.resolve()
     expect(host.widgets).toHaveLength(1)
     expect(mediaStore.missingMediaCandidates).toEqual([candidate])
 
     subgraph.remove(sourceNodes[2])
+    await Promise.resolve()
     expect(host.widgets).toHaveLength(1)
     expect(mediaStore.missingMediaCandidates).toEqual([candidate])
 
     subgraph.remove(sourceNodes[1])
+    // Widget demotion is deferred by a microtask so a same-tick reconnect
+    // (a rewire) can cancel it; this genuine removal completes once it runs.
+    await Promise.resolve()
     expect(host.widgets).toHaveLength(0)
     expect(mediaStore.missingMediaCandidates).toBeNull()
   })

@@ -2,16 +2,21 @@ import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
+  ExportedSubgraphInstance,
+  INodeInputSlot,
   ISlotType,
   LGraphCanvas,
   Subgraph,
   TWidgetType
 } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { createPromotedMultilineWidget } from '@/renderer/extensions/vueNodes/widgets/utils/multilineTextarea'
+import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import {
   BaseWidget,
   LGraphNode,
-  LiteGraph
+  LiteGraph,
+  SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 import { NumberWidget } from '@/lib/litegraph/src/widgets/NumberWidget'
 import {
@@ -421,7 +426,7 @@ describe('SubgraphWidgetPromotion', () => {
       )
     })
 
-    it('should handle disconnection of promoted widget', () => {
+    it('should handle disconnection of promoted widget', async () => {
       const subgraph = createTestSubgraph({
         inputs: [{ name: 'input', type: 'number' }]
       })
@@ -435,13 +440,19 @@ describe('SubgraphWidgetPromotion', () => {
 
       subgraph.inputNode.slots[0].disconnect()
 
+      // Demotion is deferred by a microtask so a same-tick reconnect (a
+      // rewire) can cancel it instead of dropping the widget for one tick;
+      // a genuine disconnect like this one still fully demotes once that
+      // microtask runs.
+      await Promise.resolve()
+
       expect(subgraphNode.widgets).toHaveLength(
         promotedInputs(subgraphNode).length
       )
       expect(promotedInputs(subgraphNode)).toHaveLength(0)
     })
 
-    it('keeps the host widget promoted while another interior widget is still connected', () => {
+    it('keeps the host widget promoted while another interior widget is still connected', async () => {
       const subgraph = createTestSubgraph({
         inputs: [{ name: 'value', type: 'number' }]
       })
@@ -484,6 +495,12 @@ describe('SubgraphWidgetPromotion', () => {
       expect(promotedWidgetStateByName(subgraphNode, 'value').value).toBe(13)
 
       second.disconnectInput(0, true)
+
+      // Demotion is deferred by a microtask (see the rewire-desync
+      // describe block below); this is a genuine disconnect with nothing
+      // left to re-resolve to, so it still fully demotes once that
+      // microtask runs.
+      await Promise.resolve()
 
       expect(promotedInputs(subgraphNode)).toHaveLength(0)
       expect(subgraphNode.widgets).toHaveLength(0)
@@ -1658,5 +1675,199 @@ describe('SubgraphWidgetPromotion', () => {
         expect(promotedWidgetStateByName(reloaded, 'value').value).toBeNull()
       })
     })
+  })
+})
+
+// PM-1328 / PM-1253 / PM-1254: wiring a new source into the interior link
+// behind one promoted widget (e.g. "prompt") was dropping/visually duplicating
+// the *other*, unrelated promoted widgets (e.g. width/height/seed) on the
+// same host node. Confirmed mechanism: SubgraphInputNode's
+// 'input-disconnected' handler (SubgraphNode.ts) used to demote the widget
+// synchronously while deferring the matching `widgetValueStore` cleanup to a
+// `queueMicrotask`, leaving `hostNode.widgets.length` and the store's tracked
+// id count for that node disagreeing for one tick -- exactly the window the
+// Vue widget grid (useProcessedWidgets) reads from two different sources to
+// render. The fix defers the demotion itself by a microtask, cancelled by a
+// same-tick reconnect, so a rewire never drops the widget at all.
+describe('Promoted widget rewire desync (PM-1328 / PM-1253 / PM-1254)', () => {
+  function makeInteriorNode(title: string, value: unknown = 1) {
+    const node = new LGraphNode(title)
+    const input = node.addInput('value', 'number')
+    node.addOutput('out', 'number')
+    // @ts-expect-error Abstract class instantiation
+    const widget = new BaseWidget({
+      name: 'widget',
+      type: 'number',
+      value,
+      y: 0,
+      options: {},
+      node
+    })
+    node.widgets = [widget]
+    input.widget = { name: widget.name }
+    return node
+  }
+
+  it('keeps every promoted widget present while rewiring the interior link behind one of them', async () => {
+    const subgraph = createTestSubgraph({
+      inputs: [
+        { name: 'text', type: 'number' },
+        { name: 'seed', type: 'number' },
+        { name: 'width', type: 'number' },
+        { name: 'height', type: 'number' }
+      ]
+    })
+
+    const textNode = makeInteriorNode('TextNode')
+    const seedNode = makeInteriorNode('SeedNode')
+    const widthNode = makeInteriorNode('WidthNode')
+    const heightNode = makeInteriorNode('HeightNode')
+    const replacementTextNode = makeInteriorNode('ReplacementTextNode', 2)
+    subgraph.add(textNode)
+    subgraph.add(seedNode)
+    subgraph.add(widthNode)
+    subgraph.add(heightNode)
+    subgraph.add(replacementTextNode)
+
+    subgraph.inputNode.slots[0].connect(textNode.inputs[0], textNode)
+    subgraph.inputNode.slots[1].connect(seedNode.inputs[0], seedNode)
+    subgraph.inputNode.slots[2].connect(widthNode.inputs[0], widthNode)
+    subgraph.inputNode.slots[3].connect(heightNode.inputs[0], heightNode)
+
+    const hostNode = createTestSubgraphNode(subgraph)
+    expect(hostNode.widgets).toHaveLength(4)
+
+    // Rewire the interior link feeding the 'text' promoted widget onto a new
+    // source node, exactly as a user (or agent) dragging a new node onto
+    // that widget's socket does: the old link is removed before the new one
+    // lands.
+    textNode.disconnectInput(0, true)
+
+    // The other, unrelated promoted widgets (seed/width/height) -- and the
+    // rewired one itself -- must never disappear mid-rewire.
+    expect(hostNode.widgets).toHaveLength(4)
+
+    subgraph.inputNode.slots[0].connect(
+      replacementTextNode.inputs[0],
+      replacementTextNode
+    )
+    await Promise.resolve()
+
+    expect(hostNode.widgets).toHaveLength(4)
+    expect(promotedInputs(hostNode)).toHaveLength(4)
+  })
+})
+
+// Speculative lead for PM-1328's duplication (not the confirmed disappear
+// mechanism above): a promoted textarea's host widget is a DOMWidgetImpl
+// living in useDomWidgetStore, materialized by createPromotedHostWidget
+// (see multilineTextarea.ts, wired up the same way the app's real
+// SubgraphNode subclass does in litegraphService.ts). Every other promoted
+// widget is a plain store projection. The theory: if anything ever resolves
+// a store-projected row for an input that already has a DOM host attached,
+// the widget grid would render two rows for one input. `_projectPromotedWidget`
+// guards this with `if (input._widget) return input._widget`, so this test
+// exercises the guard across the real rebuild/rewire/configure sequence
+// rather than asserting the guard exists in isolation.
+describe('Promoted textarea dual-registration (PM-1328 duplication lead)', () => {
+  class DomHostSubgraphNode extends SubgraphNode {
+    protected override createPromotedHostWidget(
+      input: INodeInputSlot,
+      id: WidgetId,
+      sourceWidget: Readonly<IBaseWidget>
+    ): IBaseWidget | undefined {
+      return createPromotedMultilineWidget({
+        subgraphNode: this,
+        input,
+        widgetId: id,
+        sourceWidget
+      })
+    }
+  }
+
+  function createSettledDomHostSubgraphNode(subgraph: Subgraph): SubgraphNode {
+    const rootGraph = subgraph.rootGraph
+    const instanceData: ExportedSubgraphInstance = {
+      id: rootGraph.state.lastNodeId + 1,
+      type: subgraph.id,
+      pos: [100, 100],
+      size: [200, 100],
+      inputs: [],
+      outputs: [],
+      properties: {},
+      flags: {},
+      mode: 0,
+      order: 0
+    }
+    const node = new DomHostSubgraphNode(rootGraph, subgraph, instanceData)
+    rootGraph.add(node)
+    return node
+  }
+
+  function makeTextareaInteriorNode(title: string, value = 'hello') {
+    const node = new LGraphNode(title)
+    const input = node.addInput('value', 'STRING')
+    const widget = fromAny<IBaseWidget, unknown>({
+      name: 'widget',
+      type: 'customtext',
+      value,
+      options: {},
+      element: document.createElement('textarea')
+    })
+    node.widgets = [widget]
+    input.widget = { name: widget.name }
+    return node
+  }
+
+  function textRowCount(hostNode: SubgraphNode): number {
+    return hostNode.widgets.filter((widget) => widget.name === 'text').length
+  }
+
+  function domStoreEntryCount(hostNode: SubgraphNode): number {
+    return [...useDomWidgetStore().widgetStates.values()].filter(
+      (state) => state.widget.node === hostNode
+    ).length
+  }
+
+  it('keeps exactly one widget row and one DOM registration per input across a rewire', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'text', type: 'STRING' }]
+    })
+    const textNode = makeTextareaInteriorNode('TextNode')
+    subgraph.add(textNode)
+
+    // Settle the host node in its graph *before* the interior link resolves
+    // the promoted widget, matching how the real app always adds a
+    // SubgraphNode before its subgraph's own construction-time links fire.
+    const hostNode = createSettledDomHostSubgraphNode(subgraph)
+    subgraph.inputNode.slots[0].connect(textNode.inputs[0], textNode)
+
+    expect(textRowCount(hostNode)).toBe(1)
+    expect(domStoreEntryCount(hostNode)).toBe(1)
+
+    textNode.disconnectInput(0, true)
+    expect(textRowCount(hostNode)).toBeLessThanOrEqual(1)
+    expect(domStoreEntryCount(hostNode)).toBeLessThanOrEqual(1)
+
+    subgraph.inputNode.slots[0].connect(textNode.inputs[0], textNode)
+    expect(textRowCount(hostNode)).toBe(1)
+    expect(domStoreEntryCount(hostNode)).toBe(1)
+  })
+
+  it('keeps exactly one widget row and one DOM registration per input across a reconfigure', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'text', type: 'STRING' }]
+    })
+    const textNode = makeTextareaInteriorNode('TextNode')
+    subgraph.add(textNode)
+
+    const hostNode = createSettledDomHostSubgraphNode(subgraph)
+    subgraph.inputNode.slots[0].connect(textNode.inputs[0], textNode)
+    expect(textRowCount(hostNode)).toBe(1)
+
+    hostNode.configure(hostNode.serialize())
+
+    expect(textRowCount(hostNode)).toBe(1)
+    expect(domStoreEntryCount(hostNode)).toBe(1)
   })
 })
