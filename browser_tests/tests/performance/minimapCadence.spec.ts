@@ -89,7 +89,7 @@ test.describe('Minimap change cadence performance', { tag: ['@perf'] }, () => {
       )
     }
     const measurement = await comfyPage.perf.stopMeasuring(
-      'minimap-progress-geometry-cadence'
+      'minimap-geometry-cadence'
     )
     expectFramesToSpanMeasurementWindow(measurement)
 
@@ -141,7 +141,7 @@ test.describe('Minimap change cadence performance', { tag: ['@perf'] }, () => {
       )
     }
     const measurement = await comfyPage.perf.stopMeasuring(
-      'minimap-progress-topology-cadence'
+      'minimap-topology-cadence'
     )
     expectFramesToSpanMeasurementWindow(measurement)
 
