@@ -250,8 +250,54 @@ function reportInactiveTrackerCall(method: string, workflowPath: string) {
   assert(false, `ChangeTracker.${method}() called on inactive tracker`)
 }
 
+const reportedCanvasMismatchCalls = new Set<string>()
+
+function reportCanvasMismatchCall(method: string, workflowPath: string) {
+  const key = `${method}:${workflowPath}`
+  if (reportedCanvasMismatchCalls.has(key)) return
+  reportedCanvasMismatchCalls.add(key)
+  assert(
+    false,
+    `ChangeTracker.${method}() called while another workflow's graph is on the canvas`
+  )
+}
+
 export class ChangeTracker {
   static MAX_HISTORY = 50
+  /**
+   * The tracker whose workflow graph is currently loaded on the canvas.
+   * `null` permits capture before the first workflow binding; `false` blocks
+   * capture while the canvas is being replaced or after a failed load.
+   */
+  private static canvasTracker: ChangeTracker | null | false = null
+
+  static bindCanvasTracker(tracker: ChangeTracker) {
+    ChangeTracker.canvasTracker = tracker
+  }
+
+  static invalidateCanvasTracker() {
+    ChangeTracker.canvasTracker = false
+  }
+
+  static isCanvasOwner(tracker: ChangeTracker): boolean {
+    return ChangeTracker.canvasTracker === tracker
+  }
+
+  static canCaptureCanvas(tracker: ChangeTracker): boolean {
+    return (
+      ChangeTracker.canvasTracker === null ||
+      ChangeTracker.canvasTracker === tracker
+    )
+  }
+
+  private static isCanvasCaptureBlocked(): boolean {
+    return ChangeTracker.canvasTracker === false
+  }
+
+  static resetCanvasTrackerForTest() {
+    ChangeTracker.canvasTracker = null
+    reportedCanvasMismatchCalls.clear()
+  }
   /**
    * Guard flag to prevent captureCanvasState from running during loadGraphData.
    * Between rootGraph.configure() and afterLoadNewGraph(), the rootGraph
@@ -421,6 +467,11 @@ export class ChangeTracker {
       reportInactiveTrackerCall('captureCanvasState', this.workflow.path)
       return
     }
+    if (ChangeTracker.isCanvasCaptureBlocked()) return
+    if (!ChangeTracker.canCaptureCanvas(this)) {
+      reportCanvasMismatchCall('captureCanvasState', this.workflow.path)
+      return
+    }
 
     const currentState = clone(app.rootGraph.serialize()) as ComfyWorkflowJSON
     if (!ChangeTracker.graphEqual(this.activeState, currentState)) {
@@ -439,7 +490,8 @@ export class ChangeTracker {
   squashState = useDebounceFn(() => {
     if (
       this !== useWorkflowStore().activeWorkflow?.changeTracker ||
-      ChangeTracker.isLoadingGraph
+      ChangeTracker.isLoadingGraph ||
+      !ChangeTracker.canCaptureCanvas(this)
     )
       return
 

@@ -178,6 +178,7 @@ describe('ChangeTracker', () => {
     nodeIdCounter = 0
     ChangeTracker.isLoadingGraph = false
     ChangeTracker.resetCheckStateWarningForTest()
+    ChangeTracker.resetCanvasTrackerForTest()
     useWorkflowStore().activeWorkflow = null
     vi.mocked(useWorkflowStore().getWorkflowByPath).mockReturnValue(null)
     mockCanvasState(createState())
@@ -341,6 +342,81 @@ describe('ChangeTracker', () => {
           'ChangeTracker.captureCanvasState() called on inactive tracker'
         )
       })
+
+      describe('canvas ownership', () => {
+        it('does not copy the canvas graph into a workflow activated without a graph load', () => {
+          // Workflow A owns the canvas (afterLoadNewGraph bound it).
+          const trackerA = createTracker(createState(2))
+          ChangeTracker.bindCanvasTracker(trackerA)
+          mockCanvasState(createState(2))
+
+          // An extension calls useWorkflowStore().openWorkflow(B) directly:
+          // B becomes activeWorkflow but A's graph is still on the canvas.
+          const originalB = createState(0)
+          const trackerB = createTracker(originalB)
+
+          trackerB.captureCanvasState()
+
+          expect(trackerB.activeState).toBe(originalB)
+          expect(trackerB.activeState.nodes).toHaveLength(0)
+          expect(mockAssert).toHaveBeenCalledWith(
+            false,
+            "ChangeTracker.captureCanvasState() called while another workflow's graph is on the canvas"
+          )
+        })
+
+        it('does not persist the canvas graph via deactivate() into an unbound workflow', () => {
+          const trackerA = createTracker(createState(2))
+          ChangeTracker.bindCanvasTracker(trackerA)
+          mockCanvasState(createState(2))
+
+          const originalB = createState(0)
+          const trackerB = createTracker(originalB)
+
+          trackerB.deactivate()
+
+          expect(trackerB.activeState).toBe(originalB)
+          expect(app.rootGraph.serialize).not.toHaveBeenCalled()
+        })
+
+        it('captures the canvas once the tracker is bound to the canvas', () => {
+          const trackerA = createTracker(createState(2))
+          ChangeTracker.bindCanvasTracker(trackerA)
+
+          const trackerB = createTracker(createState(0))
+          ChangeTracker.bindCanvasTracker(trackerB)
+          const canvasState = createState(3)
+          mockCanvasState(canvasState)
+
+          trackerB.captureCanvasState()
+
+          expect(trackerB.activeState).toEqual(canvasState)
+          expect(mockAssert).not.toHaveBeenCalled()
+        })
+
+        it('is permissive when no tracker has been bound to the canvas yet', () => {
+          const tracker = createTracker(createState(0))
+          const canvasState = createState(1)
+          mockCanvasState(canvasState)
+
+          tracker.captureCanvasState()
+
+          expect(tracker.activeState).toEqual(canvasState)
+        })
+
+        it('silently skips capture while the canvas is being replaced', () => {
+          const original = createState(0)
+          const tracker = createTracker(original)
+          ChangeTracker.invalidateCanvasTracker()
+          mockCanvasState(createState(1))
+
+          tracker.captureCanvasState()
+
+          expect(tracker.activeState).toBe(original)
+          expect(app.rootGraph.serialize).not.toHaveBeenCalled()
+          expect(mockAssert).not.toHaveBeenCalled()
+        })
+      })
     })
 
     describe('state capture', () => {
@@ -486,6 +562,26 @@ describe('ChangeTracker', () => {
           'graphChanged',
           'autoQueueGraphChanged'
         ])
+      })
+
+      it('does not squash after canvas ownership changes', async () => {
+        const initial = createState(1)
+        const changed = structuredClone(initial)
+        changed.nodes[0].widgets_values = [2]
+        const lateState = structuredClone(changed)
+        lateState.nodes[0].widgets_values = [3]
+        const tracker = createTracker(initial)
+        mockCanvasState(changed)
+
+        tracker.captureCanvasState()
+        mockCanvasState(lateState)
+        ChangeTracker.bindCanvasTracker(createTracker())
+        useWorkflowStore().activeWorkflow = fromPartial({
+          changeTracker: tracker
+        })
+        await vi.advanceTimersByTimeAsync(50)
+
+        expect(tracker.activeState).toEqual(changed)
       })
 
       it('does not emit an execution change for a late layout-only update', async () => {
