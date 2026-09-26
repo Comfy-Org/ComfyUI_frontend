@@ -2,9 +2,8 @@ import { expect, mergeTests } from '@playwright/test'
 
 import type { Asset } from '@comfyorg/ingest-types'
 import { assetApiFixture } from '@e2e/fixtures/assetApiFixture'
-import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import { assetsFixture } from '@e2e/fixtures/assetsFixture'
 import {
-  AssetsHelper,
   createMockJob,
   createMockJobs
 } from '@e2e/fixtures/helpers/AssetsHelper'
@@ -17,7 +16,7 @@ import type {
   RawJobListItem
 } from '@/platform/remote/comfyui/jobs/jobTypes'
 
-const test = mergeTests(comfyPageFixture, assetApiFixture)
+const test = mergeTests(assetsFixture, assetApiFixture)
 
 // Legacy coverage backed by AssetsHelper's shadow backend. New assets-sidebar
 // browser coverage should use typed route mocks in assetsSidebarTab.spec.ts.
@@ -153,15 +152,7 @@ const JOB_GAMMA_DETAIL: JobDetail = {
 // ==========================================================================
 
 test.describe('Assets sidebar - empty states', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.assets.mockEmptyState()
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-    await comfyPage.setup()
-  })
-
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.assets.clearMocks()
-  })
+  test.use({ initialAssetHistory: [], initialAssetInputFiles: [] })
 
   test('Shows empty-state copy for generated tab', async ({ comfyPage }) => {
     const tab = comfyPage.menu.assetsTab
@@ -193,15 +184,9 @@ test.describe('Assets sidebar - empty states', () => {
 // ==========================================================================
 
 test.describe('Assets sidebar - tab navigation', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.assets.mockOutputHistory(SAMPLE_JOBS)
-    await comfyPage.assets.mockInputFiles(SAMPLE_IMPORTED_FILES)
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-    await comfyPage.setup()
-  })
-
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.assets.clearMocks()
+  test.use({
+    initialAssetHistory: SAMPLE_JOBS,
+    initialAssetInputFiles: SAMPLE_IMPORTED_FILES
   })
 
   test('Generated tab is active by default', async ({ comfyPage }) => {
@@ -243,15 +228,9 @@ test.describe('Assets sidebar - tab navigation', () => {
 // ==========================================================================
 
 test.describe('Assets sidebar - grid view display', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.assets.mockOutputHistory(SAMPLE_JOBS)
-    await comfyPage.assets.mockInputFiles(SAMPLE_IMPORTED_FILES)
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-    await comfyPage.setup()
-  })
-
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.assets.clearMocks()
+  test.use({
+    initialAssetHistory: SAMPLE_JOBS,
+    initialAssetInputFiles: SAMPLE_IMPORTED_FILES
   })
 
   test('Displays generated assets as cards in grid view', async ({
@@ -275,8 +254,8 @@ test.describe('Assets sidebar - grid view display', () => {
     await expect.poll(() => tab.assetCards.count()).toBeGreaterThanOrEqual(1)
   })
 
-  test('Displays svg outputs', async ({ comfyPage }) => {
-    await comfyPage.assets.mockOutputHistory([
+  test('Displays svg outputs', async ({ comfyPage, assetMocks }) => {
+    await assetMocks.mockOutputHistory([
       createMockJob({
         id: 'job-alpha',
         create_time: 1000,
@@ -305,15 +284,9 @@ test.describe('Assets sidebar - grid view display', () => {
 // ==========================================================================
 
 test.describe('Assets sidebar - view mode', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.assets.mockOutputHistory(SAMPLE_JOBS)
-    await comfyPage.assets.mockInputFiles(SAMPLE_IMPORTED_FILES)
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-    await comfyPage.setup()
-  })
-
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.assets.clearMocks()
+  test.use({
+    initialAssetHistory: SAMPLE_JOBS,
+    initialAssetInputFiles: SAMPLE_IMPORTED_FILES
   })
 
   test('Can switch to list view via settings menu', async ({ comfyPage }) => {
@@ -341,9 +314,10 @@ test.describe('Assets sidebar - view mode', () => {
   })
 
   test('Small grid remains active across asset views', async ({
-    comfyPage
+    comfyPage,
+    assetMocks
   }) => {
-    await comfyPage.assets.mockJobDetail('job-gamma', JOB_GAMMA_DETAIL)
+    await assetMocks.mockJobDetail('job-gamma', JOB_GAMMA_DETAIL)
 
     const tab = comfyPage.menu.assetsTab
     await tab.open()
@@ -415,16 +389,7 @@ test.describe('Assets sidebar - view mode', () => {
 // ==========================================================================
 
 test.describe('Assets sidebar - search', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.assets.mockOutputHistory(SAMPLE_JOBS)
-    await comfyPage.assets.mockInputFiles([])
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-    await comfyPage.setup()
-  })
-
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.assets.clearMocks()
-  })
+  test.use({ initialAssetHistory: SAMPLE_JOBS, initialAssetInputFiles: [] })
 
   test('Search input is visible', async ({ comfyPage }) => {
     const tab = comfyPage.menu.assetsTab
@@ -473,16 +438,7 @@ test.describe('Assets sidebar - search', () => {
 // ==========================================================================
 
 test.describe('Assets sidebar - selection', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.assets.mockOutputHistory(SAMPLE_JOBS)
-    await comfyPage.assets.mockInputFiles([])
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-    await comfyPage.setup()
-  })
-
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.assets.clearMocks()
-  })
+  test.use({ initialAssetHistory: SAMPLE_JOBS, initialAssetInputFiles: [] })
 
   test('Clicking an asset card selects it', async ({ comfyPage }) => {
     const tab = comfyPage.menu.assetsTab
@@ -550,16 +506,7 @@ test.describe('Assets sidebar - selection', () => {
 // ==========================================================================
 
 test.describe('Assets sidebar - context menu', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.assets.mockOutputHistory(SAMPLE_JOBS)
-    await comfyPage.assets.mockInputFiles([])
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-    await comfyPage.setup()
-  })
-
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.assets.clearMocks()
-  })
+  test.use({ initialAssetHistory: SAMPLE_JOBS, initialAssetInputFiles: [] })
 
   test('Right-clicking an asset shows context menu', async ({ comfyPage }) => {
     const tab = comfyPage.menu.assetsTab
@@ -645,9 +592,10 @@ test.describe('Assets sidebar - context menu', () => {
   })
 
   test('Cancelling export-workflow filename prompt does not show an error toast', async ({
-    comfyPage
+    comfyPage,
+    assetMocks
   }) => {
-    await comfyPage.assets.mockJobDetail('job-gamma', JOB_GAMMA_DETAIL)
+    await assetMocks.mockJobDetail('job-gamma', JOB_GAMMA_DETAIL)
 
     const tab = comfyPage.menu.assetsTab
     await tab.open()
@@ -667,9 +615,10 @@ test.describe('Assets sidebar - context menu', () => {
   })
 
   test('Confirming export-workflow prompt downloads the file and shows a success toast', async ({
-    comfyPage
+    comfyPage,
+    assetMocks
   }) => {
-    await comfyPage.assets.mockJobDetail('job-gamma', JOB_GAMMA_DETAIL)
+    await assetMocks.mockJobDetail('job-gamma', JOB_GAMMA_DETAIL)
 
     const tab = comfyPage.menu.assetsTab
     await tab.open()
@@ -692,10 +641,11 @@ test.describe('Assets sidebar - context menu', () => {
   })
 
   test('Export-workflow shows a warning toast when the asset has no workflow', async ({
-    comfyPage
+    comfyPage,
+    assetMocks
   }) => {
     const { workflow: _, ...detailWithoutWorkflow } = JOB_GAMMA_DETAIL
-    await comfyPage.assets.mockJobDetail('job-gamma', detailWithoutWorkflow)
+    await assetMocks.mockJobDetail('job-gamma', detailWithoutWorkflow)
 
     const tab = comfyPage.menu.assetsTab
     await tab.open()
@@ -745,16 +695,7 @@ test.describe('Assets sidebar - context menu', () => {
 // ==========================================================================
 
 test.describe('Assets sidebar - bulk actions', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.assets.mockOutputHistory(SAMPLE_JOBS)
-    await comfyPage.assets.mockInputFiles([])
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-    await comfyPage.setup()
-  })
-
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.assets.clearMocks()
-  })
+  test.use({ initialAssetHistory: SAMPLE_JOBS, initialAssetInputFiles: [] })
 
   test('Footer shows download button when assets selected', async ({
     comfyPage
@@ -847,8 +788,8 @@ test.describe('Assets sidebar - bulk actions', () => {
 })
 
 test.describe('Assets sidebar - cloud exports', { tag: '@cloud' }, () => {
-  test.beforeEach(async ({ page }) => {
-    await new AssetsHelper(page).mockCloudAssets({
+  test.beforeEach(async ({ assetMocks }) => {
+    await assetMocks.mockCloudAssets({
       assets: CLOUD_ASSETS,
       total: CLOUD_ASSETS.length,
       has_more: false
@@ -856,9 +797,10 @@ test.describe('Assets sidebar - cloud exports', { tag: '@cloud' }, () => {
   })
 
   test('Single job selection uses preserve naming strategy', async ({
-    comfyPage
+    comfyPage,
+    assetMocks
   }) => {
-    const exportRequests = await comfyPage.assets.captureAssetExportRequests()
+    const exportRequests = await assetMocks.captureAssetExportRequests()
 
     const tab = comfyPage.menu.assetsTab
     await tab.open()
@@ -877,10 +819,11 @@ test.describe('Assets sidebar - cloud exports', { tag: '@cloud' }, () => {
   })
 
   test('Multiple selected assets from one job use preserve naming strategy', async ({
-    comfyPage
+    comfyPage,
+    assetMocks
   }) => {
-    const exportRequests = await comfyPage.assets.captureAssetExportRequests()
-    await comfyPage.assets.mockJobDetail(JOB_IDS.gamma, JOB_GAMMA_DETAIL)
+    const exportRequests = await assetMocks.captureAssetExportRequests()
+    await assetMocks.mockJobDetail(JOB_IDS.gamma, JOB_GAMMA_DETAIL)
 
     const tab = comfyPage.menu.assetsTab
     await tab.open()
@@ -913,9 +856,10 @@ test.describe('Assets sidebar - cloud exports', { tag: '@cloud' }, () => {
   })
 
   test('Multiple selected jobs use job-time naming strategy', async ({
-    comfyPage
+    comfyPage,
+    assetMocks
   }) => {
-    const exportRequests = await comfyPage.assets.captureAssetExportRequests()
+    const exportRequests = await assetMocks.captureAssetExportRequests()
 
     const tab = comfyPage.menu.assetsTab
     await tab.open()
@@ -945,14 +889,11 @@ test.describe('Assets sidebar - cloud exports', { tag: '@cloud' }, () => {
 // ==========================================================================
 
 test.describe('Assets sidebar - pagination', () => {
+  test.use({ initialAssetHistory: createMockJobs(250) })
+
   test('initial load fetches first batch with offset 0', async ({
     comfyPage
   }) => {
-    const manyJobs = createMockJobs(250)
-    await comfyPage.assets.mockOutputHistory(manyJobs)
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-    await comfyPage.setup()
-
     // Queue polling also calls /jobs, so wait for completed history only.
     const firstRequest = comfyPage.page.waitForRequest((req) => {
       if (!/\/api\/jobs\?/.test(req.url())) return false
@@ -972,6 +913,7 @@ test.describe('Assets sidebar - pagination', () => {
 
   test.describe('Assets enabled', () => {
     test.use({
+      initialAssetHistory: undefined,
       modelLibraryOptions: {
         operators: [withOutputAssets(30), withPagination({ limit: 1 })]
       },
@@ -1001,16 +943,7 @@ test.describe('Assets sidebar - pagination', () => {
 // ==========================================================================
 
 test.describe('Assets sidebar - settings menu', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.assets.mockOutputHistory(SAMPLE_JOBS)
-    await comfyPage.assets.mockInputFiles([])
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-    await comfyPage.setup()
-  })
-
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.assets.clearMocks()
-  })
+  test.use({ initialAssetHistory: SAMPLE_JOBS, initialAssetInputFiles: [] })
 
   test('Settings menu shows view mode options', async ({ comfyPage }) => {
     const tab = comfyPage.menu.assetsTab
@@ -1029,10 +962,10 @@ test.describe('Assets sidebar - settings menu', () => {
 // ==========================================================================
 
 test.describe('Assets sidebar - delete confirmation', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.assets.mockOutputHistory(SAMPLE_JOBS)
-    await comfyPage.assets.mockDeleteHistory()
-    await comfyPage.assets.mockInputFiles([])
+  test.beforeEach(async ({ assetMocks }) => {
+    await assetMocks.mockOutputHistory(SAMPLE_JOBS)
+    await assetMocks.mockDeleteHistory()
+    await assetMocks.mockInputFiles([])
   })
 
   test('Right-click delete shows confirmation dialog', async ({
@@ -1145,15 +1078,9 @@ const MIXED_MEDIA_JOBS: RawJobListItem[] = [
 test.describe('Assets sidebar - media type filter', () => {
   test.fixme(true, 'Requires DISTRIBUTION=cloud build with auth bypass')
 
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.assets.mockOutputHistory(MIXED_MEDIA_JOBS)
-    await comfyPage.assets.mockInputFiles([])
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-    await comfyPage.setup()
-  })
-
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.assets.clearMocks()
+  test.use({
+    initialAssetHistory: MIXED_MEDIA_JOBS,
+    initialAssetInputFiles: []
   })
 
   test('Filter menu shows media type options', async ({ comfyPage }) => {
@@ -1201,8 +1128,11 @@ test.describe('Assets sidebar - media type filter', () => {
 })
 
 test.describe('Assets sidebar - drag and drop', () => {
-  test('Dragging outputs from assets skips upload', async ({ comfyPage }) => {
-    await comfyPage.assets.mockOutputHistory([
+  test('Dragging outputs from assets skips upload', async ({
+    comfyPage,
+    assetMocks
+  }) => {
+    await assetMocks.mockOutputHistory([
       createMockJob({
         id: 'job',
         preview_output: {
@@ -1238,8 +1168,11 @@ test.describe('Assets sidebar - drag and drop', () => {
     await expect.poll(() => fileComboWidget.getValue()).toBe('test.png [temp]')
   })
 
-  test('Loading as workflow reuses asset name', async ({ comfyPage }) => {
-    await comfyPage.assets.mockOutputHistory([
+  test('Loading as workflow reuses asset name', async ({
+    comfyPage,
+    assetMocks
+  }) => {
+    await assetMocks.mockOutputHistory([
       createMockJob({
         id: 'job',
         preview_output: {
@@ -1266,55 +1199,61 @@ test.describe('Assets sidebar - drag and drop', () => {
   })
 })
 
-test('Insert as node', { tag: '@vue-nodes' }, async ({ comfyPage }) => {
-  await comfyPage.assets.mockOutputHistory([
-    createMockJob({
-      id: 'job1',
-      preview_output: {
-        filename: `1.png`,
-        type: 'temp',
-        nodeId: '1',
-        mediaType: 'images'
-      }
-    }),
-    createMockJob({
-      id: 'job2',
-      preview_output: {
-        filename: `2.png`,
-        type: 'output',
-        nodeId: '1',
-        mediaType: 'images'
-      }
-    }),
-    createMockJob({
-      id: 'job2',
-      preview_output: {
-        filename: `3.png`,
-        type: 'input',
-        nodeId: '1',
-        mediaType: 'images'
-      }
-    })
-  ])
-  const { assetsTab } = comfyPage.menu
-  await assetsTab.open()
-  await assetsTab.waitForAssets()
-  await expect(assetsTab.assetCards).toHaveCount(3)
-  for (const [index, expectedName] of [
-    [0, '1.png [temp]'],
-    [1, '2.png [output]'],
-    [2, '3.png']
-  ] as const) {
-    await comfyPage.nodeOps.clearGraph()
-    await assetsTab.assetCards.nth(index).scrollIntoViewIfNeeded()
-    await assetsTab.assetCards.nth(index).click({ button: 'right' })
+test(
+  'Insert as node',
+  { tag: '@vue-nodes' },
+  async ({ comfyPage, assetMocks }) => {
+    await assetMocks.mockOutputHistory([
+      createMockJob({
+        id: 'job1',
+        preview_output: {
+          filename: `1.png`,
+          type: 'temp',
+          nodeId: '1',
+          mediaType: 'images'
+        }
+      }),
+      createMockJob({
+        id: 'job2',
+        preview_output: {
+          filename: `2.png`,
+          type: 'output',
+          nodeId: '1',
+          mediaType: 'images'
+        }
+      }),
+      createMockJob({
+        id: 'job2',
+        preview_output: {
+          filename: `3.png`,
+          type: 'input',
+          nodeId: '1',
+          mediaType: 'images'
+        }
+      })
+    ])
+    const { assetsTab } = comfyPage.menu
+    await assetsTab.open()
+    await assetsTab.waitForAssets()
+    await expect(assetsTab.assetCards).toHaveCount(3)
+    for (const [index, expectedName] of [
+      [0, '1.png [temp]'],
+      [1, '2.png [output]'],
+      [2, '3.png']
+    ] as const) {
+      await comfyPage.nodeOps.clearGraph()
+      await assetsTab.assetCards.nth(index).scrollIntoViewIfNeeded()
+      await assetsTab.assetCards.nth(index).click({ button: 'right' })
 
-    await expect(comfyPage.contextMenu.primeVueMenu).toBeVisible()
-    await comfyPage.contextMenu.primeVueMenu.getByText('Insert as node').click()
+      await expect(comfyPage.contextMenu.primeVueMenu).toBeVisible()
+      await comfyPage.contextMenu.primeVueMenu
+        .getByText('Insert as node')
+        .click()
 
-    await expect.poll(() => comfyPage.vueNodes.getNodeCount()).toBe(1)
-    const nodes = await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
-    const fileWidget = await nodes[0].getWidget(0)
-    await expect.poll(() => fileWidget.getValue()).toBe(expectedName)
+      await expect.poll(() => comfyPage.vueNodes.getNodeCount()).toBe(1)
+      const nodes = await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
+      const fileWidget = await nodes[0].getWidget(0)
+      await expect.poll(() => fileWidget.getValue()).toBe(expectedName)
+    }
   }
-})
+)
