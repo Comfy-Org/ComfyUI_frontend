@@ -34,6 +34,7 @@ const sizeToggleLabel = computed(() =>
   >
     <h1
       id="agent-panel-title"
+      data-testid="agent-panel-title"
       class="my-0 text-sm font-normal whitespace-nowrap text-base-foreground"
     >
       {{ t('agent.title') }}
