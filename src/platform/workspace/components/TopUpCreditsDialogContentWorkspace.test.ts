@@ -881,27 +881,41 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(mockClearPendingTopup).not.toHaveBeenCalled()
   })
 
-  // E3. `billing.topup.succeeded` is what R4 reads.
-  it('carries the opening surface onto a completed top-up succeeded event', async () => {
-    vi.mocked(mockBillingContext().topup).mockResolvedValue(
-      topupResponse('completed')
-    )
+  // Asserting the whole projected collection rather than one stage: a source
+  // dropped from any single emit site leaves the others green, and a funnel
+  // whose terminal events are attributed while its `started` is not reads as
+  // a conversion cliff rather than a gap.
+  it.for([
+    { outcome: 'completed', stages: ['started', 'succeeded'] },
+    { outcome: 'failed', stages: ['started', 'failed'] },
+    { outcome: 'no response', stages: ['started', 'failed'] },
+    { outcome: 'rejected', stages: ['started', 'failed'] }
+  ] as const)(
+    'carries the opening surface onto every top-up event when the purchase is $outcome',
+    async ({ outcome, stages }) => {
+      const topup = vi.mocked(mockBillingContext().topup)
+      if (outcome === 'rejected') topup.mockRejectedValue(new Error('declined'))
+      else if (outcome === 'no response') topup.mockResolvedValue(undefined)
+      else topup.mockResolvedValue(topupResponse(outcome))
 
-    renderDialog({ source: 'agent_paywall' })
-    await clickAddCredits()
-    await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
+      renderDialog({ source: 'agent_paywall' })
+      await clickAddCredits()
+      await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
 
-    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
-      operation: 'topup',
-      stage: 'succeeded',
-      outcome: 'success',
-      billing_op_id: 'op-1',
-      payment_intent_source: 'agent_paywall',
-      duration_ms: expect.any(Number)
-    })
-  })
+      await waitFor(() =>
+        expect(
+          vi
+            .mocked(useTelemetry()!.trackBillingEvent)
+            .mock.calls.map(([event]) => event)
+            .filter((event) => event.operation === 'topup')
+            .map((event) => [event.stage, event.payment_intent_source])
+        ).toEqual(stages.map((stage) => [stage, 'agent_paywall']))
+      )
+    }
+  )
 
-  // A real payment usually settles on the poller, not synchronously.
+  // A real payment usually settles on the poller, not synchronously, so this
+  // hand-off is what carries the source onto the poller's own terminal events.
   it('hands the opening surface to the poller for a pending top-up', async () => {
     vi.mocked(mockBillingContext().topup).mockResolvedValue(
       topupResponse('pending')

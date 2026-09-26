@@ -690,8 +690,6 @@ describe('billingOperationStore', () => {
       })
     })
 
-    // E3. R4 reads `billing.topup.succeeded`, and the poller is the common
-    // path for a real payment.
     it('carries the payment intent source onto canonical topup success telemetry', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-1',
@@ -962,20 +960,22 @@ describe('billingOperationStore', () => {
       })
     })
 
-    // `timeout` reads the same field but is not asserted: driving one costs
-    // the full top-up poll budget in fake time.
+    // The terminal denominator, so it needs the same attribution the
+    // numerator above carries. A poll left pending drains to the timeout
+    // branch, which is the third of the three handlers that emit here.
     it.for([
-      { status: 'failed', failureCategory: 'provider_decline' },
+      { polled: 'failed', failureCategory: 'provider_decline' },
       {
-        status: 'reconciliation_needed',
+        polled: 'reconciliation_needed',
         failureCategory: 'reconciliation_needed'
-      }
+      },
+      { polled: 'pending', failureCategory: 'poll_timeout' }
     ] as const)(
-      'carries the payment intent source onto a $status topup terminal event',
-      async ({ status, failureCategory }) => {
+      'carries the payment intent source onto the topup terminal event for a $polled poll',
+      async ({ polled, failureCategory }) => {
         vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
           id: 'op-1',
-          status,
+          status: polled,
           started_at: new Date().toISOString()
         })
 
@@ -986,6 +986,7 @@ describe('billingOperationStore', () => {
         })
 
         await vi.advanceTimersByTimeAsync(0)
+        await vi.runAllTimersAsync()
 
         expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
           operation: 'topup',

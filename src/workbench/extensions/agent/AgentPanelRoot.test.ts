@@ -1362,14 +1362,13 @@ describe('AgentPanelRoot paywall telemetry', () => {
     ).not.toHaveBeenCalled()
   })
 
-  // Both CTAs route to subscription checkout.
   it.for([
-    { button: 'Subscribe', topUp: false },
-    { button: 'Upgrade plan', topUp: true }
+    { button: 'Subscribe', canSubscriberTopUp: false },
+    { button: 'Upgrade plan', canSubscriberTopUp: true }
   ])(
     'carries agent_paywall to the subscribe event from the $button CTA',
-    async ({ button, topUp }) => {
-      canTopUp.value = topUp
+    async ({ button, canSubscriberTopUp }) => {
+      canTopUp.value = canSubscriberTopUp
       render(AgentPanelRoot, { global: { plugins: [i18n] } })
       showPaywall()
 

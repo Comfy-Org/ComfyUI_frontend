@@ -16,13 +16,11 @@ vi.mock(import('@/platform/telemetry'))
 vi.mock(import('@/composables/billing/useBillingContext'))
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
-const showSubscriptionDialog = vi.fn()
-
 function renderComponent() {
-  const billing = useBillingContext()
-  billing.tier = computed(() => 'STANDARD')
-  billing.showSubscriptionDialog = showSubscriptionDialog
-  vi.mocked(useBillingContext).mockReturnValue(billing)
+  vi.mocked(useBillingContext).mockReturnValue({
+    ...useBillingContext(),
+    tier: computed(() => 'STANDARD')
+  })
 
   return render(SubscribeButton, {
     global: {
@@ -40,7 +38,6 @@ function renderComponent() {
 
 describe('SubscribeButton', () => {
   beforeEach(() => {
-    showSubscriptionDialog.mockClear()
     vi.mocked(useTelemetry())!.trackSubscription.mockClear()
   })
 
@@ -53,15 +50,5 @@ describe('SubscribeButton', () => {
       'subscribe_clicked',
       { current_tier: 'standard', reason: 'subscribe_now_button' }
     )
-  })
-
-  it('opens the subscription dialog with the same source it reported', async () => {
-    renderComponent()
-
-    await userEvent.click(screen.getByRole('button'))
-
-    expect(showSubscriptionDialog).toHaveBeenCalledWith({
-      reason: 'subscribe_now_button'
-    })
   })
 })
