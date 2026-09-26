@@ -34,6 +34,11 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import {
+  AGENT_PANEL_FLAG,
+  FLAG_SETTLE_TIMEOUT_MS
+} from '@/workbench/extensions/agent/utils/postHogFlagSource'
+import type { PostHogLike } from '@/workbench/extensions/agent/utils/postHogFlagSource'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import { toNodeId } from '@/types/nodeId'
@@ -78,10 +83,12 @@ vi.mock(
   }
 )
 
+type FlagsDelivery = Parameters<PostHogLike['onFeatureFlags']>[0]
+
 const mocks = vi.hoisted(() => ({
   capturedExtensions: [] as ComfyExtension[],
   flagEnabled: undefined as boolean | undefined,
-  flagListener: null as (() => void) | null
+  flagListener: null as FlagsDelivery | null
 }))
 
 vi.mock(
@@ -122,7 +129,7 @@ vi.mock(
 vi.mock(import('posthog-js'), () => ({
   default: fromPartial<PostHog>({
     isFeatureEnabled: () => mocks.flagEnabled,
-    onFeatureFlags: (listener: () => void) => {
+    onFeatureFlags: (listener: FlagsDelivery) => {
       mocks.flagListener = listener
       return () => {}
     }
@@ -131,6 +138,13 @@ vi.mock(import('posthog-js'), () => ({
 
 const flush = (): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, 0))
+
+const deliverFlags = (context?: { errorsLoading?: boolean }): void =>
+  mocks.flagListener!(
+    mocks.flagEnabled === true ? [AGENT_PANEL_FLAG] : [],
+    {},
+    context
+  )
 
 const notOffered = async () =>
   vi.mocked(
@@ -1043,16 +1057,71 @@ describe('AgentPanel extension flag gate', () => {
   it('enables the panel when the flag turns true', async () => {
     await loadEntryAndSetup()
     mocks.flagEnabled = true
-    mocks.flagListener!()
+    deliverFlags()
     expect(agentStore.enabled).toBe(true)
+  })
+
+  it('settles the gate on a delivery that loaded successfully', async () => {
+    await loadEntryAndSetup()
+
+    deliverFlags({ errorsLoading: false })
+
+    expect(agentStore.gateSettled).toBe(true)
+  })
+
+  it('leaves the gate unsettled on a delivery that reports a load error', async () => {
+    await loadEntryAndSetup()
+
+    deliverFlags({ errorsLoading: true })
+
+    expect(agentStore.gateSettled).toBe(false)
+  })
+
+  it('enables an uncached whitelisted session on the first delivery to succeed after an errored one', async () => {
+    await loadEntryAndSetup()
+    deliverFlags({ errorsLoading: true })
+
+    mocks.flagEnabled = true
+    deliverFlags({ errorsLoading: false })
+
+    expect(agentStore.enabled).toBe(true)
+    expect(agentStore.gateSettled).toBe(true)
+  })
+
+  it('settles the gate on the fallback when no delivery ever arrives', async () => {
+    await loadEntryAndSetup()
+
+    await vi.advanceTimersByTimeAsync(FLAG_SETTLE_TIMEOUT_MS)
+
+    expect(agentStore.gateSettled).toBe(true)
+  })
+
+  it('keeps a cached whitelisted session enabled through a failed refresh and the settle fallback', async () => {
+    mocks.flagEnabled = true
+    await loadEntryAndSetup()
+
+    deliverFlags({ errorsLoading: true })
+    await vi.advanceTimersByTimeAsync(FLAG_SETTLE_TIMEOUT_MS)
+
+    expect(agentStore.enabled).toBe(true)
+  })
+
+  it('leaves an uncached session disabled through a failed delivery and the settle fallback', async () => {
+    await loadEntryAndSetup()
+
+    deliverFlags({ errorsLoading: true })
+    await vi.advanceTimersByTimeAsync(FLAG_SETTLE_TIMEOUT_MS)
+
+    expect(agentStore.enabled).toBe(false)
+    expect(agentStore.gateSettled).toBe(true)
   })
 
   it('disables the panel without closing it when the flag flips back to false', async () => {
     await loadEntryAndSetup()
     mocks.flagEnabled = true
-    mocks.flagListener!()
+    deliverFlags()
     mocks.flagEnabled = false
-    mocks.flagListener!()
+    deliverFlags()
 
     expect(agentStore.enabled).toBe(false)
     expect(agentStore.close).not.toHaveBeenCalled()
@@ -1062,11 +1131,11 @@ describe('AgentPanel extension flag gate', () => {
   it('finishes a pending selection restore when the flag is disabled', async () => {
     await loadEntryAndSetup()
     mocks.flagEnabled = true
-    mocks.flagListener!()
+    deliverFlags()
     nodeSelectionStore.isLoadingWorkflow = true
 
     mocks.flagEnabled = false
-    mocks.flagListener!()
+    deliverFlags()
 
     expect(nodeSelectionStore.finishWorkflowLoad).toHaveBeenCalledOnce()
   })

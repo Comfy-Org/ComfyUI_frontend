@@ -3,12 +3,18 @@ import { describe, expect, it, vi } from 'vitest'
 import { AGENT_PANEL_FLAG, createPostHogFlagSource } from './postHogFlagSource'
 import type { PostHogLike } from './postHogFlagSource'
 
+type FlagsDelivery = Parameters<PostHogLike['onFeatureFlags']>[0]
+
 function fakePostHog(initial: boolean | undefined): {
   posthog: PostHogLike
   setFlag: (value: boolean | undefined) => void
+  replayOnRegistration: () => void
+  failReload: () => void
 } {
   let value = initial
-  let listener: (() => void) | undefined
+  let listener: FlagsDelivery | undefined
+  const deliver = (context?: { errorsLoading?: boolean }) =>
+    listener?.(value === true ? [AGENT_PANEL_FLAG] : [], {}, context)
   return {
     posthog: {
       isFeatureEnabled: () => value,
@@ -21,8 +27,10 @@ function fakePostHog(initial: boolean | undefined): {
     },
     setFlag: (next) => {
       value = next
-      listener?.()
-    }
+      deliver({ errorsLoading: false })
+    },
+    replayOnRegistration: () => deliver(),
+    failReload: () => deliver({ errorsLoading: true })
   }
 }
 
@@ -44,6 +52,28 @@ describe('createPostHogFlagSource', () => {
 
     setFlag(false)
     expect(source.isEnabled()).toBe(false)
+  })
+
+  it('does not notify listeners for a delivery that reports a load error', () => {
+    const { posthog, failReload } = fakePostHog(true)
+    const source = createPostHogFlagSource(posthog)
+    const onChange = vi.fn()
+    source.onChange?.(onChange)
+
+    failReload()
+
+    expect(onChange).not.toHaveBeenCalled()
+  })
+
+  it('notifies listeners for the context-free replay at registration', () => {
+    const { posthog, replayOnRegistration } = fakePostHog(true)
+    const source = createPostHogFlagSource(posthog)
+    const onChange = vi.fn()
+    source.onChange?.(onChange)
+
+    replayOnRegistration()
+
+    expect(onChange).toHaveBeenCalledTimes(1)
   })
 
   it('unsubscribing stops further notifications', () => {
