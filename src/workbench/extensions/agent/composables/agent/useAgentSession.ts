@@ -178,10 +178,12 @@ const TURN_RECOVERY_DELAYS_MS = [0, 1000, 2000, 4000, 8000, 16000]
 /** Upper bound on one recovery job, including any history fetch still in flight. */
 const TURN_RECOVERY_DEADLINE_MS = 60_000
 
+type PendingAsk = NonNullable<AgentMessages[number]['pending_ask']>
+
 type TurnOutcome =
   | { kind: 'terminal'; parts: AssistantMessage['parts'] | undefined }
   | { kind: 'thread-missing' }
-  | { kind: 'streaming' }
+  | { kind: 'streaming'; pendingAsk: PendingAsk | undefined }
   | { kind: 'error'; message: string }
 
 function isTerminalTurnStatus(
@@ -498,6 +500,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   let ownedGeneration = 0
   let connection: SocketConnection = 'initial'
   const recoveringTurns = new Map<string, AbortController>()
+  const reportedMissingAsks = new Set<string>()
 
   function pushError(text: string): void {
     notices.value.push({ level: 'error', text })
@@ -1837,7 +1840,41 @@ export function useAgentSession(deps: AgentSessionDeps) {
       if (outcome.kind === 'thread-missing' && consecutiveThreadMissing < 2)
         continue
       if (settleFinishedTurn(turn, outcome)) return
+      if (outcome.kind === 'streaming')
+        restoreMissingApproval(turn, outcome.pendingAsk)
     }
+  }
+
+  /**
+   * PM-1738: a turn parked on a tool-call approval stays `streaming` until the
+   * user answers, so a socket drop that swallowed the `agent_ask` frame leaves
+   * the server waiting on a card the panel never drew -- the turn reads as
+   * hung and every follow-up post comes back 409. The polled row still carries
+   * the unanswered ask, so re-deliver it down the transport path the lost
+   * frame would have taken. An ask that did arrive is already on the message,
+   * so reaching the report means a frame was genuinely lost.
+   */
+  function restoreMissingApproval(
+    turn: LiveTurn,
+    pendingAsk: PendingAsk | undefined
+  ): void {
+    if (pendingAsk?.kind !== 'run_approval') return
+    if (conversationStore.isApprovalShown(turn, pendingAsk.ask_id)) return
+    conversationStore.ingest({
+      type: 'agent_ask',
+      data: { ...pendingAsk, thread_id: turn.threadId }
+    })
+    if (reportedMissingAsks.has(pendingAsk.ask_id)) return
+    reportedMissingAsks.add(pendingAsk.ask_id)
+    reportError(new Error('Agent approval ask never reached the panel'), {
+      errorType: 'failure_delivering_agent_approval_ask',
+      tags: { feature_area: 'agent', operation: 'recovery' },
+      context: {
+        threadId: turn.threadId,
+        messageId: turn.messageId,
+        askId: pendingAsk.ask_id
+      }
+    })
   }
 
   function isTurnLive(turn: LiveTurn, generation: number): boolean {
@@ -1903,7 +1940,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       const anchor = history.find(
         (entry) => entry.role === 'assistant' && entry.id === turn.messageId
       )
-      if (!anchor) return { kind: 'streaming' }
+      if (!anchor) return { kind: 'streaming', pendingAsk: undefined }
       const rows = history
         .filter(
           (entry) =>
@@ -1911,7 +1948,16 @@ export function useAgentSession(deps: AgentSessionDeps) {
         )
         .sort((a, b) => a.seq - b.seq)
       if (rows.some((row) => !isTerminalTurnStatus(row.status)))
-        return { kind: 'streaming' }
+        // PM-1738: a turn parked on an approval persists the unanswered ask on
+        // whichever of its rows is still open, which is the last one to carry
+        // one -- not necessarily the anchor the turn is keyed by.
+        return {
+          kind: 'streaming',
+          pendingAsk: rows.reduce<PendingAsk | undefined>(
+            (found, row) => row.pending_ask ?? found,
+            undefined
+          )
+        }
       return {
         kind: 'terminal',
         parts: terminalRecoveryParts(rows)
