@@ -645,6 +645,52 @@ export interface AgentOnboardingStepMetadata extends Record<string, unknown> {
  * then reworded stays `suggestion`, because the chip is still what it came from.
  */
 export type AgentInputMethod = 'typed' | 'suggestion' | 'edited'
+/**
+ * A starter prompt by the slot it occupies in the empty state, not by the text
+ * it shows: the copy is owned elsewhere and changes without the funnel
+ * changing. `unregistered` means the rendered set is larger than this union —
+ * a prompt was added to the locale array and not to `starterPrompts.ts` — so a
+ * new chip reads as an unmapped slot instead of being silently filed under a
+ * neighbour's id.
+ */
+export type AgentStarterPromptId =
+  | 'generate_image'
+  | 'list_workflows'
+  | 'find_workflow'
+  | 'explain_selected_node'
+  | 'build_video_workflow'
+  | 'unregistered'
+export interface AgentStarterPromptClickedMetadata extends Record<
+  string,
+  unknown
+> {
+  prompt_id: AgentStarterPromptId
+  /** Slot position, so a reorder is visible rather than silently re-labelling. */
+  prompt_index: number
+  /** Size of the rendered set, so a set that grew or shrank is visible too. */
+  prompt_count: number
+  /**
+   * FNV-1a of the *displayed* text, 8 hex chars. Here so a copy change under a
+   * stable `prompt_id` is detectable — without it, a before/after read cannot
+   * tell a better slot from a rewritten one. Not the text itself (job `Don't`
+   * #3), and not reversible.
+   */
+  prompt_text_hash: string
+  /** The i18n locale that produced `prompt_text_hash`; two locales are two hashes of one prompt. */
+  locale: string
+  /**
+   * Minted per click. Carried onto the `app:agent_message_sent` this click
+   * leads to, if any, as `starter_prompt_click_id` — that is the click → send →
+   * turn chain. A click with no matching send is a click that never converted.
+   */
+  click_id: string
+  /**
+   * Whether the composer was empty when the chip was clicked. Inserting
+   * appends, so `false` means the submitted text is a mix of this prompt and
+   * something else — do not read those as a clean per-prompt outcome.
+   */
+  draft_was_empty: boolean
+}
 export interface AgentMessageSentMetadata extends Record<string, unknown> {
   attachment_count: number
   node_tag_count: number
@@ -665,6 +711,15 @@ export interface AgentMessageSentMetadata extends Record<string, unknown> {
    */
   client_message_id: string
   input_method: AgentInputMethod
+  /**
+   * Which starter prompt supplied this draft, `null` when none did. The last
+   * chip clicked before the send wins, because inserting appends and the send
+   * is one message. Invariant worth checking in the data rather than trusting:
+   * this is non-null exactly when `input_method` is `suggestion`.
+   */
+  starter_prompt_id: AgentStarterPromptId | null
+  /** `click_id` of the `app:agent_starter_prompt_clicked` this send came from, `null` when typed. */
+  starter_prompt_click_id: string | null
 }
 export interface AgentNodeTaggedMetadata extends Record<string, unknown> {
   source: 'mention_picker'
@@ -1439,6 +1494,9 @@ export interface TelemetryProvider {
   trackAgentOnboardingShown?(): void
   trackAgentOnboardingStep?(metadata: AgentOnboardingStepMetadata): void
   trackAgentMessageSent?(metadata: AgentMessageSentMetadata): void
+  trackAgentStarterPromptClicked?(
+    metadata: AgentStarterPromptClickedMetadata
+  ): void
   trackAgentNodeTagged?(metadata: AgentNodeTaggedMetadata): void
   trackAgentAttachButtonClicked?(
     metadata: AgentAttachButtonClickedMetadata
@@ -1628,6 +1686,7 @@ export const TelemetryEvents = {
   AGENT_ONBOARDING_SHOWN: 'app:agent_onboarding_shown',
   AGENT_ONBOARDING_STEP: 'app:agent_onboarding_step',
   AGENT_MESSAGE_SENT: 'app:agent_message_sent',
+  AGENT_STARTER_PROMPT_CLICKED: 'app:agent_starter_prompt_clicked',
   AGENT_NODE_TAGGED: 'app:agent_node_tagged',
   AGENT_ATTACH_BUTTON_CLICKED: 'app:agent_attach_button_clicked',
   AGENT_WORKFLOW_APPLIED: 'app:agent_workflow_applied',

@@ -1,7 +1,11 @@
 import { storeToRefs } from 'pinia'
 import { computed, getCurrentScope, onScopeDispose } from 'vue'
+import { v4 as uuidv4 } from 'uuid'
+
+import { useTelemetry } from '@/platform/telemetry'
 
 import { composerPromptForSend } from '../../utils/composerPrompt'
+import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
 import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 
 export interface ComposerAttachment {
@@ -42,9 +46,35 @@ export function useComposer(options: UseComposerOptions) {
     )
   }
 
-  function insert(text: string): void {
+  /**
+   * Puts an affordance's text in the composer. `starterPrompt` identifies the
+   * empty-state chip it came from; supplying it is what emits
+   * `app:agent_starter_prompt_clicked` and what lets the resulting send be
+   * attributed to that chip. A caller that does not identify a prompt still
+   * inserts and is still recorded as `suggestion`, but reports no click — so a
+   * future affordance cannot silently inflate the starter-prompt counts.
+   */
+  function insert(
+    text: string,
+    starterPrompt?: AgentStarterPromptAttribution
+  ): void {
+    const draftWasEmpty = !draft.value
     store.setText(draft.value ? `${draft.value} ${text}` : text)
-    store.markSuggestedPrompt()
+    if (!starterPrompt) {
+      store.markSuggestedPrompt()
+      return
+    }
+    const clickId = uuidv4()
+    store.markSuggestedPrompt({ id: starterPrompt.promptId, clickId })
+    useTelemetry()?.trackAgentStarterPromptClicked({
+      prompt_id: starterPrompt.promptId,
+      prompt_index: starterPrompt.promptIndex,
+      prompt_count: starterPrompt.promptCount,
+      prompt_text_hash: starterPrompt.promptTextHash,
+      locale: starterPrompt.locale,
+      click_id: clickId,
+      draft_was_empty: draftWasEmpty
+    })
   }
 
   return {

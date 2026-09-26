@@ -139,7 +139,11 @@ describe('Agent draft submission', () => {
       original.attachments,
       original.nodes,
       original.references,
-      { clientMessageId: expect.any(String), inputMethod: 'typed' }
+      {
+        clientMessageId: expect.any(String),
+        inputMethod: 'typed',
+        starterPrompt: null
+      }
     )
     composer.setText('Next prompt')
     pending.resolve(true)
@@ -331,7 +335,11 @@ describe('Agent draft submission', () => {
       original.attachments,
       [],
       original.references,
-      { clientMessageId: expect.any(String), inputMethod: 'typed' }
+      {
+        clientMessageId: expect.any(String),
+        inputMethod: 'typed',
+        starterPrompt: null
+      }
     )
     expect(composer.draft).toBe(original.draft)
     expect(selection.staged.value).toEqual([])
@@ -369,7 +377,55 @@ describe('Agent draft submission', () => {
 
     expect(send.mock.calls[0][4]).toEqual({
       clientMessageId: expect.any(String),
-      inputMethod: origin
+      inputMethod: origin,
+      starterPrompt: null
     })
+  })
+
+  it('carries the starter prompt a suggestion came from into the send', async () => {
+    const { composer, submit, send } = setup()
+    send.mockResolvedValue(true)
+    composer.markSuggestedPrompt({ id: 'list_workflows', clickId: 'click-1' })
+
+    await submit()
+
+    expect(send.mock.calls[0][4]).toEqual({
+      clientMessageId: expect.any(String),
+      inputMethod: 'suggestion',
+      starterPrompt: { id: 'list_workflows', clickId: 'click-1' }
+    })
+  })
+
+  it('does not carry it into the next send', async () => {
+    const { composer, submit, send } = setup()
+    send.mockResolvedValue(true)
+    composer.markSuggestedPrompt({ id: 'list_workflows', clickId: 'click-1' })
+
+    await submit()
+    composer.setText('and again')
+    await submit()
+
+    expect(send.mock.calls[1][4]).toEqual({
+      clientMessageId: expect.any(String),
+      inputMethod: 'typed',
+      starterPrompt: null
+    })
+  })
+
+  it('puts it back for the retry when the send failed', async () => {
+    const { composer, submit, send } = setup()
+    send.mockResolvedValue(false)
+    composer.markSuggestedPrompt({ id: 'find_workflow', clickId: 'click-2' })
+
+    await submit()
+    await submit()
+
+    expect(send.mock.calls[1][4]).toMatchObject({
+      inputMethod: 'suggestion',
+      starterPrompt: { id: 'find_workflow', clickId: 'click-2' }
+    })
+    expect(send.mock.calls[1][4].clientMessageId).not.toBe(
+      send.mock.calls[0][4].clientMessageId
+    )
   })
 })

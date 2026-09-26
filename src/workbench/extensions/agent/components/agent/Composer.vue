@@ -32,6 +32,7 @@ import type { AgentStopMethod } from '@/platform/telemetry/types'
 
 import InlinePromptEditor from './composer/InlinePromptEditor.vue'
 import { composerPromptForSend } from '../../utils/composerPrompt'
+import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
 import { useAgentMentionPicker } from '../../composables/agent/useAgentMentionPicker'
 import { useWorkflowReferencePicker } from '../../composables/agent/useWorkflowReferencePicker'
 import type { ComposerAttachment } from '../../composables/agent/useComposer'
@@ -314,8 +315,11 @@ onUnmounted(() => {
   unregisterEscapeOverride?.()
 })
 
-function insert(text: string): void {
-  composer.insert(text)
+function insert(
+  text: string,
+  starterPrompt?: AgentStarterPromptAttribution
+): void {
+  composer.insert(text, starterPrompt)
   editorRef.value?.focus()
 }
 

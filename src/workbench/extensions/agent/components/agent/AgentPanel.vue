@@ -355,7 +355,11 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
         <EmptyState
           v-if="!entries.length"
           :user-name
-          @insert="composerRef?.insert($event)"
+          @insert="
+            (text, prompt) => {
+              composerRef?.insert(text, prompt)
+            }
+          "
         />
         <ConversationView
           v-else
