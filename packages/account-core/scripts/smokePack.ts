@@ -269,8 +269,6 @@ export const values = {
   createSessionTokenMint,
   createWebSessionIdentity,
   createSessionBillingTransport,
-  createFirebaseIdentity,
-  resolveFirebaseIdentity,
   resolveStripePublishableKey,
   createWebCrossTabRefreshPort,
   createTestIdentity,
