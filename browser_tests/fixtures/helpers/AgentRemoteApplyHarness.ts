@@ -1,12 +1,8 @@
 import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
-import type { AgentThreadListResponse } from '@comfyorg/ingest-types'
-
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { ModelFolderInfo } from '@/platform/assets/schemas/assetSchema'
 import type {
-  AgentRunModePreference,
   AgentTurnAccepted,
   AgentWsEvent
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
@@ -16,6 +12,7 @@ import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import {
   bootAgentApp,
+  mockAgentTurnApi,
   mockWorkflowPersistence
 } from '@e2e/fixtures/agentPanelFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
@@ -42,9 +39,8 @@ const SOCKET_SID = '3a2b1c0d-9e8f-4a7b-8c6d-5e4f3a2b1c0d'
  * authoritatively without broadcasting it, and `broadcast` releases it, so a
  * spec can pin what the user sees when only one of the two halves arrives.
  *
- * Every assertion built on this harness reads the canvas and the panel, never
- * the projection or the store, so it survives the graph-API remote-apply
- * pivot (FE #18700).
+ * Canvas outcomes read the rendered nodes and panel, not the projection or
+ * store, so they survive the graph-API remote-apply pivot (FE #18700).
  */
 export class AgentRemoteApplyHarness {
   private readonly host = new HostDoc(WORKFLOW_ID, emptySeed, catalog)
@@ -71,10 +67,6 @@ export class AgentRemoteApplyHarness {
       name: enMessages.agent.stop,
       exact: true
     })
-    // `WorkSummary.vue` renders three labels off the elapsed total, all of
-    // them starting with the shared `worked` stem, so anchoring there keeps a
-    // negative assertion from going vacuous when the wording or the elapsed
-    // bucket changes.
     this.workSummary = this.panel.getByRole('button', {
       name: new RegExp(
         `^${enMessages.agent.worked.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`
@@ -130,54 +122,19 @@ export class AgentRemoteApplyHarness {
     await page.route('**/api/object_info', (route) =>
       route.fulfill(jsonRoute(agentReplayNodeDefs))
     )
-    // Neither route is part of the boot mocks: the model-folder list is read
-    // while the panel chrome renders, and `queueStore` polls jobs for the
-    // lifetime of every test here.
-    const folders: ModelFolderInfo[] = []
-    await page.route('**/api/experiment/models', (route) =>
-      route.fulfill(jsonRoute(folders))
-    )
 
     await this.hostSocket.install()
 
-    const threads: AgentThreadListResponse = {
-      threads: [],
-      pagination: { has_more: false, limit: 100, offset: 0, total: 0 }
-    }
-    await page.route('**/api/agent/threads', (route) =>
-      route.fulfill(jsonRoute(threads))
-    )
-    const runMode: AgentRunModePreference = {
-      mode: 'ask_approval',
-      credit_limit: null
-    }
-    await page.route('**/api/agent/run-mode', (route) =>
-      route.fulfill(jsonRoute(runMode))
-    )
-    // The follower binds a workflow from the turn ack's `workflow_id`
-    // (`useAgentSession.bindWorkflow`), not from the target picker, so the
-    // ack has to name the document this harness's host serves.
     const accepted: AgentTurnAccepted = {
       thread_id: THREAD_ID,
       message_id: MESSAGE_ID,
       workflow_id: WORKFLOW_ID
     }
-    await page.route('**/api/agent/threads/*/messages', (route) => {
-      if (route.request().method() !== 'POST')
-        return route.fulfill(jsonRoute([]))
-      return route.fulfill({
-        status: 202,
-        contentType: 'application/json',
-        body: JSON.stringify(accepted)
-      })
-    })
+    await mockAgentTurnApi(page, accepted)
 
     await bootAgentApp(page, true, {
       objectInfo: 'server',
-      // Only the Vue node renderer projects follower edits onto the canvas as
-      // DOM these specs can query.
       settings: {
-        'Comfy.VueNodes.Enabled': true,
         'Comfy.Graph.CanvasInfo': false
       }
     })

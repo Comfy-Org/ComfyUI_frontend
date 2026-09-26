@@ -2,16 +2,6 @@ import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 
 import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
 
-/**
- * Shared identities and graph-op builders for the specs that assert an agent
- * edit reaching (or failing to reach) the live canvas.
- *
- * The node class is `LoadImage` rather than one of the frontend-registered
- * classes the older follower specs reach for, because the story these fixtures
- * serve is the user's own words -- "add 5 load image nodes" -- and a class the
- * server catalog owns is the one an agent actually picks. `agentReplayNodeDefs`
- * already carries its definition.
- */
 const LOAD_IMAGE_TYPE = 'LoadImage'
 
 /**
