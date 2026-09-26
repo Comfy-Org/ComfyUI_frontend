@@ -23,7 +23,7 @@ export class ComfyTemplates {
       .toBeGreaterThanOrEqual(count)
   }
 
-  async loadTemplate(id: string) {
+  async selectTemplate(id: string) {
     const templateCard = this.content.getByTestId(
       TestIds.templates.workflowCard(id)
     )
