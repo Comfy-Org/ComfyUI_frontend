@@ -237,6 +237,10 @@ describe('SignInView', () => {
   it.for([
     { code: 'NOT_AUTHENTICATED', path: REFUSED_ENTRY },
     { code: undefined, path: REFUSED_ENTRY },
+    {
+      code: 'WORKSPACE_NOT_FOUND',
+      path: '/v1/subscription?product=platform&return_to=platform_account&workspace=ws_refused'
+    },
     { code: 'WORKSPACE_NOT_FOUND', path: '/sign-in' }
   ] as const)(
     'keeps the retry for $code arriving at $path',
