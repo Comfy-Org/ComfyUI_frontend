@@ -25,6 +25,8 @@
     "./lazyIdentity": "./src/core/lazyIdentity.ts",
     "./session": "./src/core/session.ts",
     "./webSession": "./src/core/webSession.ts",
+    "./requestAuth": "./src/core/requestAuth.ts",
+    "./sessionTokenMint": "./src/core/sessionTokenMint.ts",
     "./webSessionIdentity": "./src/core/webSessionIdentity.ts",
     "./requestAuth": "./src/core/requestAuth.ts",
     "./billing": "./src/core/billing/index.ts",
@@ -56,6 +58,14 @@
       "./webSession": {
         "types": "./dist/core/webSession.d.ts",
         "import": "./dist/core/webSession.js"
+      },
+      "./requestAuth": {
+        "types": "./dist/core/requestAuth.d.ts",
+        "import": "./dist/core/requestAuth.js"
+      },
+      "./sessionTokenMint": {
+        "types": "./dist/core/sessionTokenMint.d.ts",
+        "import": "./dist/core/sessionTokenMint.js"
       },
       "./webSessionIdentity": {
         "types": "./dist/core/webSessionIdentity.d.ts",
