@@ -3,7 +3,10 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
 import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, h, shallowRef } from 'vue'
 
-import { createWorkflowApi } from '../../config/workshop-workflow-api'
+import {
+  createWorkflowApi,
+  WorkshopWorkflowError
+} from '../../config/workshop-workflow-api'
 import { workflowDetailsBySlug } from '../../config/workshop-workflow-content'
 import { createWorkflowController } from '../../config/workshop-workflow-controller'
 import type { WorkflowState } from '../../config/workshop-workflow-state'
@@ -194,5 +197,56 @@ describe('WorkflowResults', () => {
       .click(screen.getByRole('button', { name: 'Refresh download link' }))
     await waitFor(() => expect(f.fetch).toHaveBeenCalledTimes(4))
     expect(f.state.value.phase).toBe('settled')
+  })
+})
+
+// A request Cloud turns down used to leave the panel showing the example: a
+// picture of a successful run, beside a form that had just been refused.
+describe('a refused request', () => {
+  function mountRefused(code: string) {
+    const model = workflowDetailsBySlug.get('workflows/remove-background')
+    assert(model)
+    render(WorkflowResults, {
+      props: {
+        model,
+        state: {
+          phase: 'failed',
+          error: new WorkshopWorkflowError(
+            code as ConstructorParameters<typeof WorkshopWorkflowError>[0]
+          )
+        } satisfies WorkflowState,
+        exampleIndex: 0,
+        busy: false,
+        statusLabel: '',
+        canStart: true,
+        refreshOutput: async () => undefined
+      }
+    })
+  }
+
+  it('stands the refusal up in the output panel instead of the example', () => {
+    mountRefused('insufficient_credits')
+
+    // Shown and also announced, so the sentence is on the page more than once.
+    expect(
+      screen.getAllByText('Not enough credits. Add credits to continue.').length
+    ).toBeGreaterThan(0)
+    expect(screen.queryByText('An example from this template.')).toBeNull()
+  })
+
+  // The panel already knows how to send a reader to buy credits; it was never
+  // being told that was the refusal.
+  it('offers the way out the refusal has', () => {
+    mountRefused('insufficient_credits')
+
+    expect(screen.getByRole('button', { name: /credits/i })).toBeTruthy()
+  })
+
+  // A session that expired and a form gone out of date are said in the page's
+  // own words elsewhere, so the panel is left alone for those.
+  it('leaves the panel alone for a refusal it has no words for', () => {
+    mountRefused('not_authenticated')
+
+    expect(screen.getByText('An example from this template.')).toBeTruthy()
   })
 })

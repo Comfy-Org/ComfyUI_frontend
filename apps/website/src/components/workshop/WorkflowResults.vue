@@ -9,6 +9,7 @@ import { useWorkshopDelivery } from '../../composables/useWorkshopDelivery'
 import type { WorkflowState } from '../../config/workshop-workflow-state'
 import { workflowOutputs } from '../../config/workshop-workflow-response'
 import { outputLabels } from '../../lib/workshop/output-labels'
+import { workflowRunFailure } from '../../lib/workshop/workflow-refusal'
 import { t } from '../../i18n/translations'
 import { captureWorkshopEvent } from '../../scripts/posthog'
 import type { WorkshopRunAnalytics } from '../../scripts/workshop-analytics'
@@ -66,6 +67,13 @@ const outputState = computed<RunState>(() => {
   if (result?.run.state === 'cancelled') return { status: 'idle' }
   if (result?.run.state === 'failed')
     return { status: 'failed', reason: 'provider', fieldErrors: {} }
+  // A request Cloud turned down used to fall through to the example, so the
+  // panel showed what the workflow makes while the run had just been refused.
+  if (state.phase === 'failed') {
+    const reason = workflowRunFailure(state.error)
+    if (reason)
+      return { status: 'failed', reason, fieldErrors: state.error.fieldErrors }
+  }
   if (busy) return runningState.value
   if (state.phase === 'settled') return { status: 'idle' }
   return exampleState.value
