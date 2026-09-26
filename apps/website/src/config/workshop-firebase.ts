@@ -9,6 +9,7 @@ import type { User, UserCredential } from 'firebase/auth'
 import { getAdditionalUserInfo } from 'firebase/auth'
 
 import { createFirebaseIdentity } from '@comfyorg/account-core/firebase'
+import type { PopupSignInOptions } from '@comfyorg/account-core/firebase'
 import {
   CUSTOMER_PROVISIONING_PATH,
   customerProvisioningRequest,
@@ -78,12 +79,16 @@ export async function provisionCustomer(
   }
 }
 
-export function signInWorkshopWithGoogle(): Promise<UserCredential> {
-  return identity.signInWithGoogle()
+export function signInWorkshopWithGoogle(
+  options?: PopupSignInOptions
+): Promise<UserCredential> {
+  return identity.signInWithGoogle(options)
 }
 
-export function signInWorkshopWithGitHub(): Promise<UserCredential> {
-  return identity.signInWithGitHub()
+export function signInWorkshopWithGitHub(
+  options?: PopupSignInOptions
+): Promise<UserCredential> {
+  return identity.signInWithGitHub(options)
 }
 
 // Split from sign-in so the consumer can gate it: disabling the rollout during

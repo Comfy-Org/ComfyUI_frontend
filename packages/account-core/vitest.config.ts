@@ -49,7 +49,8 @@ export default defineConfig({
               settings: {
                 disableIframePageLoading: true,
                 disableCSSFileLoading: true,
-                disableJavaScriptFileLoading: true
+                disableJavaScriptFileLoading: true,
+                navigation: { disableChildPageNavigation: true }
               }
             }
           },

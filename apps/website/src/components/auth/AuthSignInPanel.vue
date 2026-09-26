@@ -36,6 +36,7 @@ const {
   formVisible,
   authTimedOut,
   busy,
+  modeLocked,
   progressKey,
   regionStatus,
   isSecureContext,
@@ -82,10 +83,10 @@ const {
           :class="
             cn(
               'text-brand-yellow no-underline transition-all duration-300 hover:underline',
-              busy && 'pointer-events-none opacity-50'
+              modeLocked && 'pointer-events-none opacity-50'
             )
           "
-          :aria-disabled="busy || undefined"
+          :aria-disabled="modeLocked || undefined"
           @click="switchMode('signIn', $event)"
         >
           {{ t('auth.signUp.signInLink', locale) }}
@@ -98,10 +99,10 @@ const {
           :class="
             cn(
               'text-brand-yellow no-underline transition-all duration-300 hover:underline',
-              busy && 'pointer-events-none opacity-50'
+              modeLocked && 'pointer-events-none opacity-50'
             )
           "
-          :aria-disabled="busy || undefined"
+          :aria-disabled="modeLocked || undefined"
           @click="switchMode('signUp', $event)"
         >
           {{ t('auth.signIn.signUpLink', locale) }}

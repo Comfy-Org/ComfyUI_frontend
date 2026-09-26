@@ -260,6 +260,54 @@ describe('createFirebaseIdentity over package-initialized Firebase', () => {
   })
 })
 
+describe('popup sign-in close signal', () => {
+  const AUTH_HANDLER_URL = 'https://example.firebaseapp.com/__/auth/handler?x=1'
+
+  it.for([{ provider: 'google' as const }, { provider: 'github' as const }])(
+    'reports a dismissed $provider window without waiting for Firebase',
+    async ({ provider }) => {
+      let popup: Window | null = null
+      sdk.signInWithPopup.mockImplementationOnce(async () => {
+        popup = window.open(AUTH_HANDLER_URL, 'provider', 'width=1')
+        return new Promise(() => {})
+      })
+      const onPopupClosed = vi.fn()
+      const identity = await makeHostBoundIdentity()
+
+      const signIn =
+        provider === 'google'
+          ? identity.signInWithGoogle({ onPopupClosed })
+          : identity.signInWithGitHub({ onPopupClosed })
+      void signIn.catch(() => {})
+
+      await vi.advanceTimersByTimeAsync(0)
+      popup!.close()
+      await vi.advanceTimersByTimeAsync(1_750)
+
+      expect(onPopupClosed).toHaveBeenCalledOnce()
+    }
+  )
+
+  it('never touches window.open when no option is passed', async () => {
+    const nativeOpen = window.open
+    let openDuringSignIn: typeof window.open | undefined
+    sdk.signInWithPopup.mockImplementationOnce(async () => {
+      openDuringSignIn = window.open
+      window.open(AUTH_HANDLER_URL, 'unwatched', 'width=1')?.close()
+      return testCredential
+    })
+    const identity = await makeHostBoundIdentity()
+
+    await expect(identity.signInWithGoogle()).resolves.toBe(testCredential)
+
+    expect(
+      openDuringSignIn,
+      'a caller that wants no signal must not have the global patched underneath it'
+    ).toBe(nativeOpen)
+    expect(window.open).toBe(nativeOpen)
+  })
+})
+
 describe('createFirebaseIdentity over a host-owned Auth', () => {
   it('binds every action and the listener to the given instance without initializing an app', async () => {
     sdk.signInWithPopup.mockResolvedValueOnce(testCredential)

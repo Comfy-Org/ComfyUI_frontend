@@ -5,6 +5,7 @@
  * state and calls the returned commands; it holds no flow logic of its own.
  */
 import {
+  classifyAuthError,
   isFirebaseAuthErrorLike,
   severityForAuthError
 } from '@comfyorg/account-core/firebaseAuthError'
@@ -53,6 +54,7 @@ const AUTH_INIT_TIMEOUT_MS = 16_000
  *  unbounded and cancellable, never timed out. */
 const OPERATION_TIMEOUT_MS = 16_000
 const OPERATION_TIMED_OUT = Symbol('operation-timed-out')
+const POPUP_CLOSED = Symbol('popup-closed')
 
 /** Race a non-interactive step against its deadline; a late resolve of the
  *  loser is discarded, so the continuation is suppressed. */
@@ -145,6 +147,67 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
   // identity after the controls recover; the next attempt waits on this before
   // authenticating so the stale sign-out cannot clear the newer identity.
   let pendingRollback: Promise<unknown> | undefined
+  // A detached attempt keeps running after it has handed the controls back,
+  // and Firebase can neither cancel it nor hold more than one `currentUser`.
+  // Authentications are therefore serialized on this: the controls come back
+  // immediately, but the next attempt still waits for its predecessor to
+  // settle (and to roll back) before it authenticates, so two credentials can
+  // never race for the one identity the whole page reads.
+  let pendingAuthentication: Promise<unknown> | undefined
+  // Counts attempts started, so a detached one can tell a successor taking
+  // over from the rollout flag merely invalidating it. Folding both into
+  // `live()` would leave a flag-invalidated detach with no way back to idle.
+  let startedAttempts = 0
+  let lastAuthenticatedAttempt = 0
+  let attemptsInFlight = 0
+  // A cancelled attempt's identity can land well after the attempt itself has
+  // gone, so the watch below outlives it. Bounded: an unclaimed record left
+  // armed would eventually sign out an identity from somewhere else entirely.
+  const strayWatch = ref<
+    | {
+        readonly before?: string
+        readonly attempt: number
+        readonly holdsModeLinks: boolean
+      }
+    | undefined
+  >()
+  let strayTimer: ReturnType<typeof setTimeout> | undefined
+
+  /**
+   * Starts clearing an identity that a cancelled attempt's in-flight exchange
+   * published after the attempt had already given up on it, and reports
+   * whether it did. Deliberately inert while any attempt is still running: a
+   * live one owns the identity question, and its own credential reaches
+   * `currentUser` before it can claim it here.
+   *
+   * The restore path calls this before it acts, rather than a watcher of its
+   * own racing it: the sign-out is a round trip, and a restore that ran first
+   * would mint a session for the account this is in the middle of discarding.
+   */
+  function clearStrayIdentity(): boolean {
+    const watching = strayWatch.value
+    if (!watching || !firebaseForRollback) return false
+    if (lastAuthenticatedAttempt >= watching.attempt) {
+      strayWatch.value = undefined
+      return false
+    }
+    if (attemptsInFlight > 0) return false
+    const current = user.value
+    if (!current || current.uid === watching.before) return false
+    strayWatch.value = undefined
+    const rollback = firebaseForRollback.signOutWorkshop().catch(() => {})
+    pendingRollback = rollback
+    void rollback.finally(() => {
+      if (pendingRollback === rollback) pendingRollback = undefined
+    })
+    return true
+  }
+
+  let firebaseForRollback: WorkshopFirebase | undefined
+  onBeforeUnmount(() => {
+    clearTimeout(strayTimer)
+    strayWatch.value = undefined
+  })
 
   function dispatch(event: AuthSignInEvent) {
     const before = state.value
@@ -192,14 +255,30 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0)
       return
     event.preventDefault()
-    // A remount mid-attempt would leave the abandoned attempt free to finish
-    // the sign-in and redirect, so the links hold still like the buttons do.
-    if (busy.value) return
+    // The links hold still while the buttons do, and through a detached
+    // attempt too: `signIn.abandon()` only bumps a generation, so a remount
+    // leaves the old attempt running against a fresh controller that is back
+    // at `idle` and would mint its credential through the restore listener,
+    // skipping the provisioning `detached` exists to protect.
+    if (modeLocked.value) return
     onSwitchMode(next)
   }
 
   const busy = computed(
     () => state.value.step === 'pending' || state.value.step === 'minting'
+  )
+
+  // The sign-in controls come back on a detached attempt, but the mode links
+  // cannot: switching remounts the panel, and the replacement controller would
+  // mint the old attempt's credential without provisioning it. That holds until
+  // the identity can no longer arrive, not just while the attempt is detached —
+  // a successor failing leaves the page in `error` with the watch still armed,
+  // and the remount would discard the only thing waiting to clear it.
+  const modeLocked = computed(
+    () =>
+      busy.value ||
+      state.value.step === 'detached' ||
+      strayWatch.value?.holdsModeLinks === true
   )
 
   const progressKey = computed(() => {
@@ -241,13 +320,30 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
 
   async function completeSignIn(
     provider: AuthSignInProvider,
-    authenticate: (firebase: WorkshopFirebase) => Promise<UserCredential>
+    authenticate: (
+      firebase: WorkshopFirebase,
+      onPopupClosed: () => void
+    ) => Promise<UserCredential>
   ) {
     if (state.value.step === 'pending' || state.value.step === 'minting') return
+    // A detached predecessor still owns the identity until it settles, so
+    // starting here supersedes it for the page while the gate below keeps the
+    // two from authenticating at once.
+    signIn.abandon()
     dispatch({ type: 'signInStarted', provider })
     const live = liveWhile(signIn.capture())
     let firebase: WorkshopFirebase | undefined
     let authenticated = false
+    let authenticatedUid: string | undefined
+    let detached = false
+    let finishAttempt: (() => void) | undefined
+    let identityBefore: string | undefined
+    let cancelledBySuccessor = false
+    const attemptNumber = ++startedAttempts
+    attemptsInFlight += 1
+    // Detaching hands the controls to the visitor; from then on this attempt
+    // idles the page only while no successor has taken the controls over.
+    const ownsControls = () => !detached || startedAttempts === attemptNumber
     // Roll a persisted identity back before the reducer leaves `pending`, so no
     // retry can start while the sign-out is still in flight: `signOutWorkshop`
     // is global, and an unawaited one from an abandoned attempt would clear the
@@ -255,7 +351,13 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
     // frees the controls, and best-effort so a rejection stays handled.
     const abandon = async () => {
       reportAuthCompleted = undefined
-      if (authenticated) {
+      // `signOutWorkshop` is global. A different identity on `currentUser` got
+      // there after this attempt lost the controls and is not this attempt's
+      // to drop; an unpublished one still rolls back, since a credential that
+      // never reached the listener is this attempt's own to clear.
+      const identityIsAnothersNow =
+        !!user.value && user.value.uid !== authenticatedUid
+      if (authenticated && !identityIsAnothersNow) {
         const rollback = firebase!.signOutWorkshop().catch(() => {})
         pendingRollback = rollback
         void rollback.finally(() => {
@@ -263,7 +365,7 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
         })
         await withinOperationDeadline(rollback)
       }
-      abandonAttempt()
+      if (ownsControls()) abandonAttempt()
     }
     // A non-interactive step that outran its deadline resets to idle like a
     // silent abandonment, but the user clicked, so surface the generic failure
@@ -299,12 +401,83 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
         return
       }
       firebase = loaded
-      // The user-driven popup is left unbounded and cancellable; email is a
-      // non-interactive round-trip, so it is bounded like the other steps.
+      // A detached predecessor may still publish an identity, so an email
+      // attempt waits it out rather than adding a second credential to the one
+      // `currentUser` both would write.
+      //
+      // A popup attempt does not wait, because waiting would spend the click
+      // activation it needs and leave the retry pop-up blocked. Firebase's new
+      // `PopupOperation` does cancel `currentPopupAction`, but only by
+      // rejecting its promise: a token exchange already in flight still runs
+      // to completion and still writes `currentUser`. The identity that leaves
+      // behind is cleared in this function's `finally`, which is what lets the
+      // popup path skip the wait rather than merely accept the race.
+      if (provider === 'email' && pendingAuthentication) {
+        const settledFirst = await withinOperationDeadline(
+          pendingAuthentication
+        )
+        if (!live()) {
+          await abandon()
+          return
+        }
+        if (settledFirst === OPERATION_TIMED_OUT) {
+          await recoverFromTimeout()
+          return
+        }
+      }
+      if (provider === 'email' && pendingRollback) {
+        const rolledBack = await withinOperationDeadline(pendingRollback)
+        if (!live()) {
+          await abandon()
+          return
+        }
+        if (rolledBack === OPERATION_TIMED_OUT) {
+          await recoverFromTimeout()
+          return
+        }
+      }
+      // The user-driven popup is still never timed out or cut short: closing
+      // the window only detaches it from the controls, and the same promise
+      // still decides the outcome. Email is a non-interactive round-trip, so
+      // it stays bounded like the other steps.
+      let notifyPopupClosed = () => {}
+      identityBefore = user.value?.uid
+      const attempt = authenticate(firebase, () => notifyPopupClosed())
+      if (provider !== 'email') {
+        const popupClosed = new Promise<typeof POPUP_CLOSED>((resolve) => {
+          notifyPopupClosed = () => resolve(POPUP_CLOSED)
+        })
+        const settled = await Promise.race([attempt, popupClosed])
+        // An identity published since this attempt began means the window
+        // closed on a sign-in that is completing, not on an abandonment, so
+        // there is nothing to hand back. A flag flip has hidden the form
+        // already, and detaching would strand it there.
+        if (
+          settled === POPUP_CLOSED &&
+          live() &&
+          user.value?.uid === identityBefore
+        ) {
+          detached = true
+          // Published for the next attempt to wait on, and settled in this
+          // one's `finally` rather than with the popup promise: the rollback
+          // runs after that promise resolves, and the waiter has to clear it
+          // too before it may authenticate.
+          const settling = new Promise<void>((resolve) => {
+            finishAttempt = resolve
+          })
+          pendingAuthentication = settling
+          void settling.finally(() => {
+            if (pendingAuthentication === settling) {
+              pendingAuthentication = undefined
+            }
+          })
+          dispatch({ type: 'signInDetached' })
+        }
+      }
       const authResult =
         provider === 'email'
-          ? await withinOperationDeadline(authenticate(firebase))
-          : await authenticate(firebase)
+          ? await withinOperationDeadline(attempt)
+          : await attempt
       // No identity is persisted when the email round-trip outran its deadline.
       if (authResult === OPERATION_TIMED_OUT) {
         if (!live()) await abandon()
@@ -315,6 +488,8 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
       // The identity is persisted the moment the credential resolves, so an
       // abandon from here on must roll it back even if the flag has since flipped.
       authenticated = true
+      authenticatedUid = credential.user.uid
+      lastAuthenticatedAttempt = attemptNumber
       if (!live()) {
         await abandon()
         return
@@ -354,6 +529,11 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
       })
       await runMint(credential.user, live, abandon)
     } catch (error) {
+      // Recorded before the liveness check below returns: a superseded attempt
+      // is exactly the one whose exchange can still publish an identity.
+      cancelledBySuccessor =
+        isFirebaseAuthErrorLike(error) &&
+        error.code === 'auth/cancelled-popup-request'
       // Single-use token: any attempt consumes it, so refresh before the next.
       if (provider === 'email' && mode === 'signUp') {
         resetTurnstile()
@@ -367,6 +547,13 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
         error_code: isFirebaseAuthErrorLike(error) ? error.code : 'unknown',
         auth_action: `${provider}_${mode === 'signUp' ? 'sign_up' : 'sign_in'}`
       })
+      // Only the dismissal the visitor performed goes untoasted, and only once
+      // they have already seen the page recover from it. Every other failure
+      // still has something to say, whenever it arrives.
+      if (detached && classifyAuthError(error).kind === 'popup-dismissed') {
+        abandonAttempt()
+        return
+      }
       if (firebase?.isWorkshopProvisioningError(error)) {
         dispatch({
           type: 'provisioningFailed',
@@ -378,14 +565,44 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
           toastSignInFailure(state.value.classification)
         }
       }
+    } finally {
+      attemptsInFlight -= 1
+      // Firebase cancels a superseded pop-up by rejecting its promise, but an
+      // exchange already in flight still finishes and still writes
+      // `currentUser` — usually after this point, since the rejection is
+      // synchronous and the exchange is a network call. Arm the watch rather
+      // than reading `user` once, and evaluate now too for the rare identity
+      // that has already landed.
+      //
+      // Armed for a dismissal too, not just a cancellation: Firebase's grace is
+      // 8s against blocking functions documented at up to 7s, and this project
+      // runs one, so `popup-closed-by-user` can be thrown with the exchange
+      // still running (firebase-js-sdk#6956). Only a cancellation holds the
+      // mode links, though — a remount is what makes that case unrecoverable,
+      // and holding them on every ordinary dismissal would tax the very case
+      // this change exists to speed up.
+      if (detached && !authenticated && firebase) {
+        firebaseForRollback = firebase
+        strayWatch.value = {
+          before: identityBefore,
+          attempt: attemptNumber,
+          holdsModeLinks: cancelledBySuccessor
+        }
+        clearTimeout(strayTimer)
+        strayTimer = setTimeout(() => {
+          strayWatch.value = undefined
+        }, OPERATION_TIMEOUT_MS)
+      }
+      clearStrayIdentity()
+      finishAttempt?.()
     }
   }
 
   function signInWith(provider: 'google' | 'github') {
-    return completeSignIn(provider, (firebase) =>
+    return completeSignIn(provider, (firebase, onPopupClosed) =>
       provider === 'google'
-        ? firebase.signInWorkshopWithGoogle()
-        : firebase.signInWorkshopWithGitHub()
+        ? firebase.signInWorkshopWithGoogle({ onPopupClosed })
+        : firebase.signInWorkshopWithGitHub({ onPopupClosed })
     )
   }
 
@@ -420,6 +637,7 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
         dispatch({ type: 'signedOut' })
         return
       }
+      if (clearStrayIdentity()) return
       if (isSwitchingAccount(window.location.search)) return
       const before = state.value.step
       dispatch({
@@ -472,6 +690,7 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
     formVisible,
     authTimedOut,
     busy,
+    modeLocked,
     progressKey,
     regionStatus,
     isSecureContext,
