@@ -1096,130 +1096,82 @@ test.describe('Assets sidebar - delete confirmation', () => {
 // 12. Media type filter (cloud-only)
 // ==========================================================================
 
-const MIXED_MEDIA_JOBS: RawJobListItem[] = [
-  createMockJob({
-    id: 'job-image',
-    create_time: 1000,
-    execution_start_time: 1000,
-    execution_end_time: 1010,
-    preview_output: {
-      filename: 'photo.png',
-      subfolder: '',
-      type: 'output',
-      nodeId: '1',
-      mediaType: 'images'
-    },
-    outputs_count: 1
-  }),
-  createMockJob({
-    id: 'job-video',
-    create_time: 2000,
-    execution_start_time: 2000,
-    execution_end_time: 2010,
-    preview_output: {
-      filename: 'clip.mp4',
-      subfolder: '',
-      type: 'output',
-      nodeId: '2',
-      mediaType: 'video'
-    },
-    outputs_count: 1
-  }),
-  createMockJob({
-    id: 'job-audio',
-    create_time: 3000,
-    execution_start_time: 3000,
-    execution_end_time: 3010,
-    preview_output: {
-      filename: 'track.mp3',
-      subfolder: '',
-      type: 'output',
-      nodeId: '3',
-      mediaType: 'audio'
-    },
-    outputs_count: 1
-  })
-]
-
 /**
- * Overriding `page` puts the job and input-file routes in place before
- * `comfyPage` boots the app, so the suite never has to re-boot it. Same shape
- * as `createCloudAssetsFixture`. Doing this in a `beforeEach` instead means a
- * second boot, which under the cloud build does not reliably finish (evfail-23,
- * `comfy/no-comfy-page-setup-call`).
+ * The sidebar picks its source from `flags.assetsEnabled`, which is
+ * `isCloud || resolveFlag('assets')` — unconditionally true on the cloud
+ * build. So this suite has to seed the Asset API; `mockOutputHistory` feeds
+ * the legacy job-history path the cloud build never reads. Media type is
+ * derived from the filename by `getMediaTypeFromFilename`, not the mime type.
  */
-const mediaFilterTest = test.extend({
-  page: async ({ page }, use) => {
-    const assets = new AssetsHelper(page)
-    await assets.mockOutputHistory(MIXED_MEDIA_JOBS)
-    await assets.mockInputFiles([])
-    await use(page)
-    await assets.clearMocks()
+const MIXED_MEDIA_ASSETS: Asset[] = [
+  { ...makeCloudAsset('asset-image', 'photo.png', JOB_IDS.alpha, 1000) },
+  {
+    ...makeCloudAsset('asset-video', 'clip.mp4', JOB_IDS.beta, 2000),
+    mime_type: 'video/mp4'
+  },
+  {
+    ...makeCloudAsset('asset-audio', 'track.mp3', JOB_IDS.gamma, 3000),
+    mime_type: 'audio/mpeg'
   }
-})
+]
 
 // The filter button is isCloud-gated, so this suite runs on the cloud project:
 // CI serves the DISTRIBUTION=cloud build there, and the comfyPage fixture
 // mocks auth for any @cloud-tagged test.
-mediaFilterTest.describe(
-  'Assets sidebar - media type filter',
-  { tag: '@cloud' },
-  () => {
-    mediaFilterTest(
-      'Filter menu shows media type options',
-      async ({ comfyPage }) => {
-        const tab = comfyPage.menu.assetsTab
-        await tab.open()
+test.describe('Assets sidebar - media type filter', { tag: '@cloud' }, () => {
+  test.beforeEach(async ({ page }) => {
+    await new AssetsHelper(page).mockCloudAssets({
+      assets: MIXED_MEDIA_ASSETS,
+      total: MIXED_MEDIA_ASSETS.length,
+      has_more: false
+    })
+  })
 
-        await tab.openFilterMenu()
+  test('Filter menu shows media type options', async ({ comfyPage }) => {
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
 
-        await expect(tab.filterCheckbox('Image')).toBeVisible()
-        await expect(tab.filterCheckbox('Video')).toBeVisible()
-        await expect(tab.filterCheckbox('Audio')).toBeVisible()
-        await expect(tab.filterCheckbox('3D')).toBeVisible()
-      }
-    )
+    await tab.openFilterMenu()
 
-    mediaFilterTest(
-      'Unchecking image filter hides image assets',
-      async ({ comfyPage }) => {
-        const tab = comfyPage.menu.assetsTab
-        await tab.open()
+    await expect(tab.filterCheckbox('Image')).toBeVisible()
+    await expect(tab.filterCheckbox('Video')).toBeVisible()
+    await expect(tab.filterCheckbox('Audio')).toBeVisible()
+    await expect(tab.filterCheckbox('3D')).toBeVisible()
+  })
 
-        const initialCount = tab.assetCards
-        await expect(
-          initialCount,
-          'All three mixed-media jobs should render'
-        ).toHaveCount(3)
+  test('Unchecking image filter hides image assets', async ({ comfyPage }) => {
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
 
-        await tab.openFilterMenu()
-        await tab.filterCheckbox('Image').click()
+    await expect(
+      tab.assetCards,
+      'All three mixed-media assets should render'
+    ).toHaveCount(3)
 
-        await expect(tab.assetCards).toHaveCount(1, { timeout: 5000 })
-        await expect(tab.getAssetCardByName('photo.png')).toBeVisible()
-      }
-    )
+    await tab.openFilterMenu()
+    await tab.filterCheckbox('Image').click()
 
-    mediaFilterTest(
-      'Re-enabling filter restores hidden assets',
-      async ({ comfyPage }) => {
-        const tab = comfyPage.menu.assetsTab
-        await tab.open()
+    // photo.png is the only image in the fixture, so it is the one that goes.
+    await expect(tab.assetCards).toHaveCount(2, { timeout: 5000 })
+    await expect(tab.getAssetCardByName('photo.png')).toBeHidden()
+    await expect(tab.getAssetCardByName('clip.mp4')).toBeVisible()
+    await expect(tab.getAssetCardByName('track.mp3')).toBeVisible()
+  })
 
-        const initialCount = await tab.assetCards.count()
+  test('Re-enabling filter restores hidden assets', async ({ comfyPage }) => {
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
 
-        await tab.openFilterMenu()
-        await tab.filterCheckbox('Image').click()
-        await expect(tab.assetCards).toHaveCount(1, { timeout: 5000 })
+    const initialCount = await tab.assetCards.count()
 
-        await tab.filterCheckbox('Image').click()
-        await expect(tab.assetCards).toHaveCount(initialCount, {
-          timeout: 5000
-        })
-      }
-    )
-  }
-)
+    await tab.openFilterMenu()
+    await tab.filterCheckbox('Image').click()
+    await expect(tab.assetCards).toHaveCount(2, { timeout: 5000 })
+
+    await tab.filterCheckbox('Image').click()
+    await expect(tab.assetCards).toHaveCount(initialCount, { timeout: 5000 })
+  })
+})
 
 test.describe('Assets sidebar - drag and drop', () => {
   test('Dragging outputs from assets skips upload', async ({ comfyPage }) => {
