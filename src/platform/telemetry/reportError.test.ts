@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { TelemetryDispatcher } from '@/platform/telemetry/types'
+
 const captureException = vi.fn()
 const isEnabled = vi.fn()
 const addError = vi.fn()
@@ -7,6 +9,15 @@ const getInitConfiguration = vi.fn()
 const mockIsCloud = { value: false }
 const captureDesktopException = vi.fn()
 const hostTelemetryEnabled = vi.fn(() => true)
+const trackClientErrorReported = vi.fn()
+const telemetryRegistry = {
+  value: null as TelemetryDispatcher | null
+}
+
+vi.mock(import('@/platform/telemetry'), () => ({
+  useTelemetry: () => telemetryRegistry.value,
+  setTelemetryRegistry: vi.fn()
+}))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
@@ -50,6 +61,10 @@ describe('reportError', () => {
     mockIsCloud.value = false
     delete window.__comfyDesktop2
     hostTelemetryEnabled.mockReturnValue(true)
+    trackClientErrorReported.mockReset()
+    telemetryRegistry.value = {
+      trackClientErrorReported
+    } as unknown as TelemetryDispatcher
     sentryLive(true)
     datadogLive(true)
   })
@@ -552,6 +567,99 @@ describe('reportError', () => {
 
     expect(captureException).toHaveBeenCalledTimes(2)
     expect(addError).toHaveBeenCalledTimes(2)
+  })
+
+  it('counts an allowlisted failure in product analytics as well as Sentry', async () => {
+    const { reportError } = await loadReportError()
+    const error = Object.assign(
+      new Error('Global setting request failed: 500'),
+      { status: 500 }
+    )
+
+    reportError(error, { errorType: 'agent_consent_setting_load_failure' })
+
+    expect(captureException).toHaveBeenCalledOnce()
+    expect(trackClientErrorReported).toHaveBeenCalledExactlyOnceWith({
+      error_type: 'agent_consent_setting_load_failure',
+      failure_kind: 'server_error',
+      level: 'error',
+      http_status: 500
+    })
+  })
+
+  // The counter is a second sink, not a replacement: Sentry still gets the
+  // error for every slug, allowlisted or not.
+  it('leaves an unlisted failure out of product analytics without changing its report', async () => {
+    const { reportError } = await loadReportError()
+
+    reportError(new Error('boom'), {
+      errorType: 'graph_serialization_state_mismatch'
+    })
+
+    expect(captureException).toHaveBeenCalledOnce()
+    expect(addError).toHaveBeenCalledOnce()
+    expect(trackClientErrorReported).not.toHaveBeenCalled()
+  })
+
+  it('counts a buffered report once, when it is raised, not again when it drains', async () => {
+    sentryLive(false)
+    datadogLive(false)
+    const { reportError, flushErrorReports } = await loadReportError()
+
+    reportError(new Error('early'), {
+      errorType: 'agent_consent_setting_load_failure'
+    })
+    expect(trackClientErrorReported).toHaveBeenCalledOnce()
+
+    datadogLive(true)
+    flushErrorReports()
+    flushErrorReports()
+
+    expect(addError).toHaveBeenCalledOnce()
+    expect(trackClientErrorReported).toHaveBeenCalledOnce()
+  })
+
+  it('still reports the error when the analytics counter throws', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    trackClientErrorReported.mockImplementation(() => {
+      throw new Error('posthog exploded')
+    })
+    const { reportError } = await loadReportError()
+
+    expect(() =>
+      reportError(new Error('boom'), {
+        errorType: 'agent_consent_setting_load_failure'
+      })
+    ).not.toThrow()
+    expect(captureException).toHaveBeenCalledOnce()
+    expect(addError).toHaveBeenCalledOnce()
+    consoleError.mockRestore()
+  })
+
+  it('reports normally when no telemetry registry is up yet', async () => {
+    telemetryRegistry.value = null
+    const { reportError } = await loadReportError()
+
+    reportError(new Error('early'), {
+      errorType: 'agent_consent_setting_load_failure'
+    })
+
+    expect(captureException).toHaveBeenCalledOnce()
+  })
+
+  it('does not count a report suppressed for re-entrancy', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { reportError } = await loadReportError()
+    captureException.mockImplementationOnce(() => {
+      reportError(new Error('nested'), {
+        errorType: 'agent_consent_setting_load_failure'
+      })
+    })
+
+    reportError(new Error('outer'), { errorType: 'subgraph_load_failure' })
+
+    expect(trackClientErrorReported).not.toHaveBeenCalled()
+    consoleError.mockRestore()
   })
 
   it('skips the console line for a suppressed re-entrant report that opted out', async () => {

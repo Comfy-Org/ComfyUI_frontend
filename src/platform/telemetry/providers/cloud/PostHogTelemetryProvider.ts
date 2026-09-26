@@ -35,6 +35,7 @@ import type {
   AgentThreadStartedMetadata,
   AgentWorkflowBoundMetadata,
   AgentWorkflowAppliedMetadata,
+  ClientErrorReportedMetadata,
   AuthErrorMetadata,
   AuthMetadata,
   ImageLoadFailureMetadata,
@@ -861,5 +862,9 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
       page_name: pageName,
       ...properties
     })
+  }
+
+  trackClientErrorReported(metadata: ClientErrorReportedMetadata): void {
+    this.trackEvent(TelemetryEvents.CLIENT_ERROR_REPORTED, metadata)
   }
 }

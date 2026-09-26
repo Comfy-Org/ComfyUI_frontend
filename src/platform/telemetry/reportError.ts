@@ -6,7 +6,9 @@ import { captureException, isEnabled as isSentryEnabled } from '@sentry/vue'
 import type { ComfyDesktop2TelemetryProperties } from '@comfyorg/comfyui-desktop-bridge-types'
 
 import { isCloud } from '@/platform/distribution/types'
+import { trackReportedError } from '@/platform/telemetry/errorAnalytics'
 import { isHostTelemetryEnabled } from '@/platform/telemetry/hostTelemetryEnabled'
+import type { ReportedErrorLevel } from '@/platform/telemetry/types'
 import { toError } from '@/utils/errorUtil'
 
 /**
@@ -25,7 +27,7 @@ export interface ReportErrorOptions {
   errorType: string
   tags?: Record<string, string | number | boolean | undefined>
   context?: Record<string, unknown>
-  level?: 'warning' | 'error'
+  level?: ReportedErrorLevel
   /**
    * Opt out of the console line for callers that already wrote one — only
    * `assert()`, which logs before any reporter is registered.
@@ -296,6 +298,11 @@ function logReport(
  *
  * A report raised while a sink is still delivering only reaches the console.
  *
+ * For an allowlisted `errorType` this also emits a **sanitised counter** to
+ * product analytics — see `errorAnalytics.ts`. The error itself never goes
+ * there; a funnel that cannot see this channel reads a thrown exception as
+ * user behaviour, which is what the counter exists to prevent.
+ *
  * Never throws — a failing error reporter must not become a second failure.
  */
 export function reportError(cause: unknown, options: ReportErrorOptions): void {
@@ -312,6 +319,11 @@ export function reportError(cause: unknown, options: ReportErrorOptions): void {
     if (isPending(delivered)) {
       enqueuePendingReport({ error, options, delivered })
     }
+    // Last, and only on the path that reports: the counter must never delay a
+    // sink, and it counts raises the error consoles also saw, so the two stay
+    // comparable. A buffered report is counted here, when it is raised, not
+    // again when it drains.
+    trackReportedError(cause, options.errorType, options.level ?? 'error')
   } catch (reporterFailure) {
     console.error('[reportError] failed to report', reporterFailure, cause)
   }

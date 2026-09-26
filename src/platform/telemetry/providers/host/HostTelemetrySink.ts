@@ -25,6 +25,7 @@ import type {
   AgentThreadStartedMetadata,
   AgentWorkflowBoundMetadata,
   AgentWorkflowAppliedMetadata,
+  ClientErrorReportedMetadata,
   AuthMetadata,
   BeginCheckoutMetadata,
   BillingTelemetryEvent,
@@ -435,5 +436,9 @@ export class HostTelemetrySink implements TelemetryProvider {
       page_name: pageName,
       ...properties
     })
+  }
+
+  trackClientErrorReported(metadata: ClientErrorReportedMetadata): void {
+    this.capture(TelemetryEvents.CLIENT_ERROR_REPORTED, metadata)
   }
 }
