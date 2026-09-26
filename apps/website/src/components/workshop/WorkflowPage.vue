@@ -23,12 +23,15 @@ const routes = getRoutes()
 
 // The one thing the eyebrow can lead somewhere: the shelf this workflow sits
 // on. It was a word before, and a word is not a way back.
-const useCase = computed(() => useCaseFor(model))
-const useCaseHref = computed(() =>
-  useCase.value
-    ? `${routes.workshop}${catalogSearch({ useCase: useCase.value })}`
+const shelf = computed(() => {
+  const useCase = useCaseFor(model)
+  return useCase
+    ? {
+        label: useCaseLabelKey[useCase],
+        href: `${routes.workshop}${catalogSearch({ useCase })}`
+      }
     : undefined
-)
+})
 const pillClass =
   'inline-flex h-7 items-center rounded-full border border-transparency-white-t20 px-3 text-xs leading-none text-primary-comfy-canvas transition-colors hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow'
 
@@ -53,11 +56,11 @@ const cloudHref = template
           {{ model.categoryLabel?.en ?? model.category }}
         </p>
         <a
-          v-if="useCaseHref && useCase"
-          :href="useCaseHref"
+          v-if="shelf"
+          :href="shelf.href"
           :class="pillClass"
           data-testid="workflow-use-case"
-          >{{ t(useCaseLabelKey[useCase]) }}</a
+          >{{ t(shelf.label) }}</a
         >
       </div>
       <h1

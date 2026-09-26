@@ -32,4 +32,23 @@ describe('WorkflowPage header', () => {
 
     expect(screen.queryByTestId('workflow-use-case')).toBeNull()
   })
+
+  // The eyebrow's two halves are independent: the category reads its English
+  // label where there is one and the raw category where there is not, and the
+  // shelf link stands whether or not a category sits beside it.
+  it.for([
+    {
+      category: 'Utilities',
+      categoryLabel: { en: 'Clean-up', 'zh-CN': '清理' },
+      reads: 'Clean-up'
+    },
+    { category: 'Utilities', categoryLabel: undefined, reads: 'Utilities' },
+    { category: undefined, categoryLabel: undefined, reads: undefined }
+  ] as const)('reads the category as $reads', ({ reads, ...category }) => {
+    render(WorkflowPage, { props: { model: { ...model, ...category } } })
+
+    if (reads) expect(screen.getByText(reads)).toBeTruthy()
+    else expect(screen.queryByText('Utilities')).toBeNull()
+    expect(screen.getByTestId('workflow-use-case')).toBeTruthy()
+  })
 })
