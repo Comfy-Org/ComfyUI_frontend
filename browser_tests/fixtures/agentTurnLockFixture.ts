@@ -83,11 +83,20 @@ export const TURN_DONE_EVENT: AgentWsEvent = {
 const RUN_APPROVAL_ASK_ID = `${TURN_ID}:call-run-workflow`
 
 /**
+ * The workflow this ask names. Exported so a spec can assert the card is the
+ * one the ask described without restating the literal.
+ */
+export const APPROVAL_WORKFLOW_NAME = 'Unsaved Workflow'
+
+/**
  * The option ids this ask offers. Declared separately because `AgentWsEvent`
  * types `data` loosely, so reading them back off the event would be an
  * `unknown` the route would have to cast.
  */
 const RUN_APPROVAL_OPTION_IDS = ['run', 'cancel'] as const
+
+/** The option id the panel's Run button answers with. */
+export const APPROVAL_RUN_OPTION_ID = RUN_APPROVAL_OPTION_IDS[0]
 
 /**
  * The frame the server sends when a turn parks waiting for the user to approve
@@ -102,8 +111,11 @@ export const RUN_APPROVAL_EVENT: AgentWsEvent = {
     thread_id: THREAD_ID,
     ask_id: RUN_APPROVAL_ASK_ID,
     kind: 'run_approval',
-    prompt: 'Run workflow “Unsaved Workflow”?',
-    context: { workflow_id: WORKFLOW_ID, workflow_name: 'Unsaved Workflow' },
+    prompt: `Run workflow “${APPROVAL_WORKFLOW_NAME}”?`,
+    context: {
+      workflow_id: WORKFLOW_ID,
+      workflow_name: APPROVAL_WORKFLOW_NAME
+    },
     options: [
       {
         id: RUN_APPROVAL_OPTION_IDS[0],
@@ -460,6 +472,7 @@ export class AgentTurnLockHarness {
   public readonly sendButton: Locator
   public readonly stopButton: Locator
   public readonly runApprovalButton: Locator
+  public readonly approvalCard: Locator
   public readonly workSummary: Locator
   public readonly workingRow: Locator
   public readonly liveProgressRow: Locator
@@ -491,6 +504,14 @@ export class AgentTurnLockHarness {
       name: enMessages.agent.runApproval.run,
       exact: true
     })
+    // RunApprovalCard.vue has no landmark of its own, and its lead line varies
+    // with whether the workflow name is shown. The question line is the one
+    // element every variant renders exactly once per card, so counting it
+    // counts cards -- which is what the no-duplicate-card assertion needs.
+    this.approvalCard = this.panel.getByText(
+      enMessages.agent.runApproval.question,
+      { exact: true }
+    )
     // WorkSummary.vue renders three labels off the elapsed total: `worked`
     // alone, `workedForSeconds`, or `workedForMinutes`. Anchoring on the
     // shared `worked` stem matches all three, so the negative assertions on
@@ -587,6 +608,21 @@ export class AgentTurnLockHarness {
   /** Makes an ask available through transcript hydration, independently of WS delivery. */
   primePendingAsk(event: AgentWsEvent): void {
     this.server.recordAsk(event)
+  }
+
+  /**
+   * Parks the live turn on a run-approval ask the way the service does while
+   * it waits for the user: the assistant row stays `streaming` (so posts keep
+   * returning 409) and starts carrying `pending_ask`. No frame is pushed --
+   * that models the `agent_ask` a dropped socket never delivered.
+   */
+  parkOnApproval(): void {
+    this.primePendingAsk(RUN_APPROVAL_EVENT)
+  }
+
+  /** The frame the server pushes once it accepts an answer to the approval. */
+  resolveApproval(ws: WebSocketRoute): void {
+    this.push(ws, RUN_APPROVAL_RESOLVED_EVENT)
   }
 
   /** True only when a test explicitly primed transcript-based recovery. */
