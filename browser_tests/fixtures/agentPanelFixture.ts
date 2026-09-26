@@ -41,6 +41,8 @@ interface BootAgentAppOptions {
   objectInfo?: 'server' | Record<string, ComfyNodeDef>
   /** Preserve existing tests by default; onboarding specs opt into the tour. */
   onboardingCompleted?: boolean
+  /** Seed all cloud first-login surfaces instead of only the Agent coach. */
+  firstLogin?: boolean
   /**
    * Assets the Media Assets panel serves. Defaults to empty, which is what
    * every panel spec that does not care about assets expects; specs covering
@@ -55,16 +57,22 @@ async function mockAgentBoot(
   page: Page,
   {
     agentFlag,
+    firstLogin,
     settings,
     vueNodes,
     objectInfo,
     assets
   }: { agentFlag: boolean } & BootAgentAppOptions
 ): Promise<void> {
+  const features = agentFeatures(agentFlag)
+  if (firstLogin) {
+    features.onboarding_tour_enabled = true
+    features.subscription_required = true
+  }
   await mockCloudBoot(page, {
-    features: agentFeatures(agentFlag),
+    features,
     settings: {
-      'Comfy.TutorialCompleted': true,
+      'Comfy.TutorialCompleted': !firstLogin,
       'Comfy.RightSidePanel.ShowErrorsTab': false,
       ...settings,
       ...((vueNodes || cloudAppFixture.info().tags.includes('@vue-nodes')) && {
@@ -192,7 +200,7 @@ export async function bootAgentApp(
   agentFlag: boolean,
   options: BootAgentAppOptions = {}
 ): Promise<void> {
-  const { onboardingCompleted = true } = options
+  const { firstLogin = false, onboardingCompleted = !firstLogin } = options
   await page.addInitScript((completed) => {
     if (localStorage.getItem('Comfy.AgentPanel.onboarded') === null) {
       localStorage.setItem('Comfy.AgentPanel.onboarded', String(completed))

@@ -23,6 +23,7 @@ const SUBSCRIBE_TIMEOUT = 15_000
  * `hold` records it and never answers, so the batch stays in flight.
  */
 export type HumanOpsHost = 'apply' | 'hold'
+export type HostUpdateSink = (frame: HostFrame) => void
 
 /** One `doc_*` frame the page sent, as the test attaches it. */
 export interface ClientDocFrame {
@@ -95,7 +96,8 @@ export class AgentFollowerHostSocket {
     private readonly workflowId: string,
     private readonly host: HostDoc,
     private readonly socketSid: string,
-    private readonly humanOpsHost: HumanOpsHost = 'hold'
+    private readonly humanOpsHost: HumanOpsHost = 'hold',
+    private readonly hostUpdateSink?: HostUpdateSink
   ) {}
 
   async install(): Promise<void> {
@@ -231,7 +233,7 @@ export class AgentFollowerHostSocket {
     const { result, update, outcomes } = this.host.applyWire(opsResult.ops)
     this.humanOutcomes.push(...outcomes)
     this.send(result)
-    if (update) this.send(update)
+    if (update) (this.hostUpdateSink ?? ((frame) => this.send(frame)))(update)
   }
 
   // A doc_ops batch for a workflow this host does not serve gets a failed
