@@ -37,7 +37,8 @@ test('every PP Formula face centres its caps inside the line box', async ({
         source: rule.style.getPropertyValue('src'),
         overrides: [
           rule.style.getPropertyValue('ascent-override'),
-          rule.style.getPropertyValue('descent-override')
+          rule.style.getPropertyValue('descent-override'),
+          rule.style.getPropertyValue('line-gap-override')
         ].filter(Boolean)
       }))
       .filter((declaration) => declaration.family.startsWith('PP Formula'))
