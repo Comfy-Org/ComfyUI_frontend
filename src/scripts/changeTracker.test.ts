@@ -3,7 +3,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
-import { markRaw, ref } from 'vue'
+import { markRaw, nextTick, ref } from 'vue'
 
 vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => ref('') }))
 
@@ -1295,7 +1295,11 @@ describe('ChangeTracker', () => {
       // Mimic that here: the canvas settles into `hydrated`, not `initial`.
       const hydrated = structuredClone(initial)
       hydrated.nodes[0].properties = { hydrated: true }
-      mockCanvasState(hydrated)
+      vi.mocked(app.loadGraphData).mockImplementationOnce(async () => {
+        mockCanvasState(initial)
+        void nextTick(() => mockCanvasState(hydrated))
+        return true
+      })
 
       await tracker.undo()
 
