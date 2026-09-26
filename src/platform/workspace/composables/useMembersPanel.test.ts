@@ -1122,6 +1122,7 @@ describe('useMembersPanel', () => {
     // the upgrade banner's state, not "Your team plan has ended".
     it('keeps a lapsed personal plan out of the team-ended treatment', async () => {
       mockIsTeamPlan.value = false
+      mockMaxSeats.value = 1
       mockSubscriptionStatus.value = 'ended'
       const panel = await setup()
       expect(panel.isPlanEnded.value).toBe(false)
@@ -1168,11 +1169,21 @@ describe('useMembersPanel', () => {
       expect(panel.isPlanEnded.value).toBe(false)
     })
 
-    it('fails a missing tier closed to the sales route', async () => {
+    it('routes a missing tier with member seats to sales', async () => {
       mockSubscriptionStatus.value = 'ended'
       mockSubscription.value = null
       const panel = await setup()
       expect(panel.isSalesManagedPlan.value).toBe(true)
+      expect(panel.isPlanEnded.value).toBe(true)
+    })
+
+    it('keeps a missing-tier seatless plan out of the ended treatment', async () => {
+      mockIsTeamPlan.value = false
+      mockMaxSeats.value = 1
+      mockSubscriptionStatus.value = 'ended'
+      mockSubscription.value = null
+      const panel = await setup()
+      expect(panel.isPlanEnded.value).toBe(false)
     })
 
     // A seatless workspace has no member table; an Invite button that can
