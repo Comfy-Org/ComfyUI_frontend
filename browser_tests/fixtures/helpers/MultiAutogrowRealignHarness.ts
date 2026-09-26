@@ -85,6 +85,7 @@ export class MultiAutogrowRealignHarness {
   readonly agentPanel: AgentPanel
 
   readonly panel: Locator
+  readonly sourceNode: Locator
   readonly targetNode: Locator
   readonly promptField: Locator
   readonly widthInput: Locator
@@ -120,6 +121,7 @@ export class MultiAutogrowRealignHarness {
     this.agentPanel = new AgentPanel(page)
 
     this.panel = this.agentPanel.root
+    this.sourceNode = this.vueNodes.getNodeLocator(String(SOURCE_NODE_ID))
     this.targetNode = this.vueNodes.getNodeLocator(TARGET_ID)
     this.promptField = this.targetNode.getByRole('textbox', { name: 'prompt' })
     this.widthInput = this.vueNodes.getInputNumberControls(
