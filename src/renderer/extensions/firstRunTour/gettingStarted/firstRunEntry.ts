@@ -4,7 +4,7 @@ import {
   until,
   useBreakpoints
 } from '@vueuse/core'
-import { readonly, ref, watch } from 'vue'
+import { computed, readonly, ref, watch } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
@@ -34,6 +34,11 @@ export const useFirstRunEntry = createSharedComposable(() => {
   const gettingStartedVisible = ref(false)
   const startupDecided = ref(false)
   const firstRunTookScreen = ref(false)
+  /**
+   * Handoffs out of the screen that are still in flight. Counted rather than a
+   * flag so an overlapping handoff cannot clear a hold it does not own.
+   */
+  const tourHandoffs = ref(0)
   const isDesktopWidth =
     useBreakpoints(breakpointsTailwind).greaterOrEqual('md')
   let gettingStartedShownAt: number | null = null
@@ -54,6 +59,22 @@ export const useFirstRunEntry = createSharedComposable(() => {
       visible_duration_ms: shownAt === null ? null : Date.now() - shownAt
     })
   }
+
+  /**
+   * Whether the first run still owns the screen. A different question from
+   * "is the Getting Started screen rendered", and the one anything deciding
+   * whether the screen is free has to ask: the template path hands the screen
+   * straight to the coachmark tour, and that tour does not exist yet at the
+   * moment the screen goes. `beginTour` leaves the chosen workflow undimmed for
+   * `INTRO_PREVIEW_MS` before it starts the tour — pinned by
+   * `useFirstRunTourController.test.ts`, "leaves the workflow undimmed before
+   * taking the screen over" — so `gettingStartedVisible` is already `false`
+   * while no tour is active yet. Anything reading that as a free screen puts
+   * itself into the intro preview, in front of the tour about to open over it.
+   */
+  const firstRunHoldsScreen = computed(
+    () => gettingStartedVisible.value || tourHandoffs.value > 0
+  )
 
   watch(
     () => authStore.userId,
@@ -191,12 +212,32 @@ export const useFirstRunEntry = createSharedComposable(() => {
     await markTutorialCompleted()
   }
 
+  /**
+   * The template path out of Getting Started: drop the screen, then tour the
+   * workflow it just loaded. Both halves live behind one call so the gap
+   * between them cannot be read as a free screen — see
+   * {@link firstRunHoldsScreen} for what is in that gap and why it matters.
+   * Rejects with whatever the tour threw; the screen is already gone and the
+   * graph is already loaded, so the caller decides what a failed tour means.
+   */
+  async function dismissIntoFirstRunTour(templateId: string): Promise<void> {
+    tourHandoffs.value++
+    try {
+      await dismissGettingStarted('template_selected')
+      await useFirstRunTourController().beginTour(templateId)
+    } finally {
+      tourHandoffs.value--
+    }
+  }
+
   return {
     gettingStartedVisible: readonly(gettingStartedVisible),
+    firstRunHoldsScreen,
     firstRunTookScreen: readonly(firstRunTookScreen),
     whenStartupDecided,
     handleStartupOutcome,
     handleUrlWorkflow,
-    dismissGettingStarted
+    dismissGettingStarted,
+    dismissIntoFirstRunTour
   }
 })

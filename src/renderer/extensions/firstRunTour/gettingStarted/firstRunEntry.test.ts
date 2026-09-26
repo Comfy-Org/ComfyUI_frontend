@@ -901,4 +901,106 @@ describe('useFirstRunEntry', () => {
       ).not.toHaveBeenCalled()
     })
   })
+
+  describe('handing the screen over to the first-run tour', () => {
+    /**
+     * Stands in for the intro preview `beginTour` waits out before it starts the
+     * tour. That the real one exists, and that no tour is active until it is
+     * over, is pinned by `useFirstRunTourController.test.ts` ("leaves the
+     * workflow undimmed before taking the screen over"); what is pinned here is
+     * that the first run keeps hold of the screen for however long it lasts.
+     */
+    const INTRO_PREVIEW_MS = 500
+
+    function tourOpeningAfterIntroPreview(): Promise<boolean> {
+      return new Promise<boolean>((resolve) =>
+        setTimeout(() => resolve(true), INTRO_PREVIEW_MS)
+      )
+    }
+
+    it('dismisses the screen before it asks for the tour', async () => {
+      const entry = useFirstRunEntry()
+      const order: string[] = []
+      vi.mocked(useSettingStore().set).mockImplementation(async (key) => {
+        order.push(`set:${key}`)
+      })
+      mocks.beginTour.mockImplementation(async () => {
+        order.push('beginTour')
+        return true
+      })
+      await entry.handleStartupOutcome('fresh')
+
+      await entry.dismissIntoFirstRunTour('image_z_image_turbo')
+
+      expect(
+        order,
+        'the preview only works on a screen that has already gone'
+      ).toEqual(['set:Comfy.TutorialCompleted', 'beginTour'])
+    })
+
+    it('holds the screen across the handoff, from the dismissal until the tour opens', async () => {
+      vi.useFakeTimers()
+      try {
+        const entry = useFirstRunEntry()
+        mocks.beginTour.mockImplementation(tourOpeningAfterIntroPreview)
+        await entry.handleStartupOutcome('fresh')
+        expect(entry.firstRunHoldsScreen.value).toBe(true)
+
+        const handoff = entry.dismissIntoFirstRunTour('image_z_image_turbo')
+        await vi.advanceTimersByTimeAsync(0)
+
+        expect(
+          entry.gettingStartedVisible.value,
+          'the screen really is gone - this is not a delayed dismissal'
+        ).toBe(false)
+        expect(
+          entry.firstRunHoldsScreen.value,
+          'the canvas belongs to the tour about to open over it, not to whatever asks next'
+        ).toBe(true)
+
+        await vi.advanceTimersByTimeAsync(INTRO_PREVIEW_MS - 1)
+        expect(
+          entry.firstRunHoldsScreen.value,
+          'still inside the preview, so still no tour to yield to'
+        ).toBe(true)
+
+        await vi.advanceTimersByTimeAsync(1)
+        await handoff
+        expect(
+          entry.firstRunHoldsScreen.value,
+          'the tour is up and holds the screen in its own right from here'
+        ).toBe(false)
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('releases the screen when the handoff produces no tour', async () => {
+      const entry = useFirstRunEntry()
+      mocks.beginTour.mockResolvedValue(false)
+      await entry.handleStartupOutcome('fresh')
+
+      await entry.dismissIntoFirstRunTour('image_z_image_turbo')
+
+      expect(
+        entry.firstRunHoldsScreen.value,
+        'a template with no tour leaves a clear canvas, so nothing may stay held on it'
+      ).toBe(false)
+    })
+
+    it('releases the screen when the tour throws', async () => {
+      const entry = useFirstRunEntry()
+      mocks.beginTour.mockRejectedValue(new Error('tour unavailable'))
+      await entry.handleStartupOutcome('fresh')
+
+      await expect(
+        entry.dismissIntoFirstRunTour('image_z_image_turbo')
+      ).rejects.toThrow('tour unavailable')
+
+      expect(
+        entry.firstRunHoldsScreen.value,
+        'a hold that outlives its handoff is the latch this replaced'
+      ).toBe(false)
+    })
+  })
 })

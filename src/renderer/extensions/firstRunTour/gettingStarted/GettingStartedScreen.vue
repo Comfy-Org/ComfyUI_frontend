@@ -137,7 +137,6 @@ import { useDialogStore } from '@/stores/dialogStore'
 
 import GettingStartedCard from './GettingStartedCard.vue'
 import GettingStartedTemplateCard from './GettingStartedTemplateCard.vue'
-import { useFirstRunTourController } from '../tour/useFirstRunTourController'
 import { useFirstRunEntry } from './firstRunEntry'
 import type { TutorialCard } from './tutorialCards'
 import {
@@ -164,8 +163,7 @@ const tabs = [
 
 const { t } = useI18n()
 
-const { dismissGettingStarted } = useFirstRunEntry()
-const { beginTour } = useFirstRunTourController()
+const { dismissGettingStarted, dismissIntoFirstRunTour } = useFirstRunEntry()
 const templatesStore = useWorkflowTemplatesStore()
 const dialogStore = useDialogStore()
 
@@ -236,9 +234,12 @@ async function onSelectTemplate(id: string) {
 
   const result = await loadWorkflowTemplate(id, 'default')
   if (result === 'loaded') {
-    await dismissGettingStarted('template_selected')
+    // One call, not dismiss-then-tour: the handoff has to stay indivisible so
+    // nothing reads the screen as free between the two. It also reports the
+    // close itself, because how this dismissal ends is only known once the tour
+    // it hands off to has answered.
     try {
-      await beginTour(id)
+      await dismissIntoFirstRunTour(id)
     } catch (error) {
       console.error('first-run tour failed to start', error)
     }
