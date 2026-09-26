@@ -40,6 +40,7 @@ import type {
 import { loadAgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
 import { agentHumanAddBlueprint } from '@e2e/fixtures/data/agent/agentHumanAddBlueprints'
 import { agentReplayNodeDefs } from '@e2e/fixtures/data/agentReplayNodeDefs'
+import { assetPath } from '@e2e/fixtures/utils/paths'
 import type { ExpectedTurn } from '@e2e/fixtures/data/agent/agentConversationExpectations'
 import { RECORDED_EXPECTATIONS } from '@e2e/fixtures/data/agent/agentConversationExpectations'
 import type { TabSwitchLens, WorkspaceStore } from '@e2e/types/globals'
@@ -1034,6 +1035,8 @@ interface ConversationFixtures {
   replayTiming: ReplayTiming
   // Node definitions this case needs beyond the recorded core subset.
   extraNodeDefs: Record<string, ComfyNodeDef>
+  // Optional deterministic image returned by `/api/view` for preview-bearing nodes.
+  previewImageAsset: string | undefined
   humanOpsHost: HumanOpsHost
   agentConversation: AgentConversationHarness
 }
@@ -1045,6 +1048,7 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
   conversationCase: ['', { option: true }],
   replayTiming: [defaultReplayTiming(), { option: true }],
   extraNodeDefs: [{}, { option: true }],
+  previewImageAsset: [undefined, { option: true }],
   humanOpsHost: ['hold', { option: true }],
   viewport: VIEWPORT,
   video: {
@@ -1061,6 +1065,7 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
       conversationCase,
       replayTiming,
       extraNodeDefs,
+      previewImageAsset,
       humanOpsHost
     },
     use,
@@ -1073,6 +1078,11 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
       throw new Error(
         `a conversation replay is judged on Vue nodes; tag the test ${VUE_NODES_TAG}`
       )
+    if (previewImageAsset !== undefined) {
+      await page.route('**/api/view?**', (route) =>
+        route.fulfill({ path: assetPath(previewImageAsset) })
+      )
+    }
     const harness = new AgentConversationHarness(
       page,
       loadAgentConversation(conversationCase),

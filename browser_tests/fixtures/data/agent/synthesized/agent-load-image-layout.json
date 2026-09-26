@@ -1,0 +1,380 @@
+{
+  "schema_version": "agent-conversation.v2",
+  "source": {
+    "repo": "Comfy-Org/comfy-cli",
+    "suite": "tests/comfy_cli/test_persisted_node_size.py",
+    "case_id": "test_populated_image_loaders_reserve_the_frontend_preview_height",
+    "response_side": "synthesized",
+    "note": "Response synthesized from the workflow produced by comfy-cli merge 2908d4967a3be0554fcde3257af9fe305efcfdae for its five populated LoadImage to SaveImage row regression. Node sizes and positions preserve that output; stable fixture ids replace comfy-cli's generated ids."
+  },
+  "workflow": {
+    "id": "4a239128-fbe7-4c49-9178-8ea1702e65be",
+    "name": "Five image rows",
+    "catalog": {
+      "types": {
+        "LoadImage": { "widget_order": ["image", "upload"] },
+        "SaveImage": { "widget_order": ["filename_prefix"] }
+      }
+    },
+    "seed": {
+      "last_node_id": 0,
+      "last_link_id": 0,
+      "nodes": [],
+      "links": [],
+      "groups": [],
+      "config": {},
+      "extra": {},
+      "version": 0.4
+    }
+  },
+  "turns": [
+    {
+      "request": {
+        "content": "Build five Load Image to Save Image rows for these reference images."
+      },
+      "response": [
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_thinking",
+            "data": {
+              "delta": "I'll arrange five image loader and saver rows without overlap."
+            }
+          }
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_active_tab",
+            "data": {
+              "workflow_id": "4a239128-fbe7-4c49-9178-8ea1702e65be",
+              "name": "Five image rows"
+            }
+          }
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "tool_call_id": "call-add-image-rows",
+              "tool_name": "add_node",
+              "status": "running"
+            }
+          }
+        },
+        {
+          "kind": "graph_ops",
+          "ops": [
+            {
+              "op": "add_node",
+              "node_id": 1,
+              "class_type": "LoadImage",
+              "pos": [40, 60],
+              "node": {
+                "id": 1,
+                "type": "LoadImage",
+                "pos": [40, 60],
+                "size": [270, 328],
+                "flags": {},
+                "order": 0,
+                "mode": 0,
+                "inputs": [],
+                "outputs": [
+                  { "name": "IMAGE", "type": "IMAGE", "links": [] },
+                  { "name": "MASK", "type": "MASK", "links": [] }
+                ],
+                "properties": {},
+                "widgets_values": ["fixture.png"]
+              }
+            },
+            {
+              "op": "add_node",
+              "node_id": 2,
+              "class_type": "SaveImage",
+              "pos": [390, 177],
+              "node": {
+                "id": 2,
+                "type": "SaveImage",
+                "pos": [390, 177],
+                "size": [270, 94],
+                "flags": {},
+                "order": 0,
+                "mode": 0,
+                "inputs": [{ "name": "images", "type": "IMAGE", "link": null }],
+                "outputs": [],
+                "properties": {},
+                "widgets_values": ["ComfyUI"]
+              }
+            },
+            {
+              "op": "add_node",
+              "node_id": 3,
+              "class_type": "LoadImage",
+              "pos": [40, 458],
+              "node": {
+                "id": 3,
+                "type": "LoadImage",
+                "pos": [40, 458],
+                "size": [270, 328],
+                "flags": {},
+                "order": 0,
+                "mode": 0,
+                "inputs": [],
+                "outputs": [
+                  { "name": "IMAGE", "type": "IMAGE", "links": [] },
+                  { "name": "MASK", "type": "MASK", "links": [] }
+                ],
+                "properties": {},
+                "widgets_values": ["fixture.png"]
+              }
+            },
+            {
+              "op": "add_node",
+              "node_id": 4,
+              "class_type": "SaveImage",
+              "pos": [390, 575],
+              "node": {
+                "id": 4,
+                "type": "SaveImage",
+                "pos": [390, 575],
+                "size": [270, 94],
+                "flags": {},
+                "order": 0,
+                "mode": 0,
+                "inputs": [{ "name": "images", "type": "IMAGE", "link": null }],
+                "outputs": [],
+                "properties": {},
+                "widgets_values": ["ComfyUI"]
+              }
+            },
+            {
+              "op": "add_node",
+              "node_id": 5,
+              "class_type": "LoadImage",
+              "pos": [40, 856],
+              "node": {
+                "id": 5,
+                "type": "LoadImage",
+                "pos": [40, 856],
+                "size": [270, 328],
+                "flags": {},
+                "order": 0,
+                "mode": 0,
+                "inputs": [],
+                "outputs": [
+                  { "name": "IMAGE", "type": "IMAGE", "links": [] },
+                  { "name": "MASK", "type": "MASK", "links": [] }
+                ],
+                "properties": {},
+                "widgets_values": ["fixture.png"]
+              }
+            },
+            {
+              "op": "add_node",
+              "node_id": 6,
+              "class_type": "SaveImage",
+              "pos": [390, 973],
+              "node": {
+                "id": 6,
+                "type": "SaveImage",
+                "pos": [390, 973],
+                "size": [270, 94],
+                "flags": {},
+                "order": 0,
+                "mode": 0,
+                "inputs": [{ "name": "images", "type": "IMAGE", "link": null }],
+                "outputs": [],
+                "properties": {},
+                "widgets_values": ["ComfyUI"]
+              }
+            },
+            {
+              "op": "add_node",
+              "node_id": 7,
+              "class_type": "LoadImage",
+              "pos": [40, 1254],
+              "node": {
+                "id": 7,
+                "type": "LoadImage",
+                "pos": [40, 1254],
+                "size": [270, 328],
+                "flags": {},
+                "order": 0,
+                "mode": 0,
+                "inputs": [],
+                "outputs": [
+                  { "name": "IMAGE", "type": "IMAGE", "links": [] },
+                  { "name": "MASK", "type": "MASK", "links": [] }
+                ],
+                "properties": {},
+                "widgets_values": ["fixture.png"]
+              }
+            },
+            {
+              "op": "add_node",
+              "node_id": 8,
+              "class_type": "SaveImage",
+              "pos": [390, 1371],
+              "node": {
+                "id": 8,
+                "type": "SaveImage",
+                "pos": [390, 1371],
+                "size": [270, 94],
+                "flags": {},
+                "order": 0,
+                "mode": 0,
+                "inputs": [{ "name": "images", "type": "IMAGE", "link": null }],
+                "outputs": [],
+                "properties": {},
+                "widgets_values": ["ComfyUI"]
+              }
+            },
+            {
+              "op": "add_node",
+              "node_id": 9,
+              "class_type": "LoadImage",
+              "pos": [40, 1652],
+              "node": {
+                "id": 9,
+                "type": "LoadImage",
+                "pos": [40, 1652],
+                "size": [270, 328],
+                "flags": {},
+                "order": 0,
+                "mode": 0,
+                "inputs": [],
+                "outputs": [
+                  { "name": "IMAGE", "type": "IMAGE", "links": [] },
+                  { "name": "MASK", "type": "MASK", "links": [] }
+                ],
+                "properties": {},
+                "widgets_values": ["fixture.png"]
+              }
+            },
+            {
+              "op": "add_node",
+              "node_id": 10,
+              "class_type": "SaveImage",
+              "pos": [390, 1769],
+              "node": {
+                "id": 10,
+                "type": "SaveImage",
+                "pos": [390, 1769],
+                "size": [270, 94],
+                "flags": {},
+                "order": 0,
+                "mode": 0,
+                "inputs": [{ "name": "images", "type": "IMAGE", "link": null }],
+                "outputs": [],
+                "properties": {},
+                "widgets_values": ["ComfyUI"]
+              }
+            }
+          ]
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "tool_call_id": "call-add-image-rows",
+              "tool_name": "add_node",
+              "status": "success",
+              "duration_ms": 700
+            }
+          }
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "tool_call_id": "call-connect-image-rows",
+              "tool_name": "connect",
+              "status": "running"
+            }
+          }
+        },
+        {
+          "kind": "graph_ops",
+          "ops": [
+            {
+              "op": "connect",
+              "link_id": 1,
+              "from_node": 1,
+              "from_slot": 0,
+              "to_node": 2,
+              "to_slot": 0,
+              "link_type": "IMAGE"
+            },
+            {
+              "op": "connect",
+              "link_id": 2,
+              "from_node": 3,
+              "from_slot": 0,
+              "to_node": 4,
+              "to_slot": 0,
+              "link_type": "IMAGE"
+            },
+            {
+              "op": "connect",
+              "link_id": 3,
+              "from_node": 5,
+              "from_slot": 0,
+              "to_node": 6,
+              "to_slot": 0,
+              "link_type": "IMAGE"
+            },
+            {
+              "op": "connect",
+              "link_id": 4,
+              "from_node": 7,
+              "from_slot": 0,
+              "to_node": 8,
+              "to_slot": 0,
+              "link_type": "IMAGE"
+            },
+            {
+              "op": "connect",
+              "link_id": 5,
+              "from_node": 9,
+              "from_slot": 0,
+              "to_node": 10,
+              "to_slot": 0,
+              "link_type": "IMAGE"
+            }
+          ]
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "tool_call_id": "call-connect-image-rows",
+              "tool_name": "connect",
+              "status": "success",
+              "duration_ms": 400
+            }
+          }
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_message_delta",
+            "data": {
+              "delta": "Done. The five populated image rows are arranged with room for their previews."
+            }
+          }
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_message_done",
+            "data": {}
+          }
+        }
+      ]
+    }
+  ]
+}
