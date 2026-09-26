@@ -701,6 +701,35 @@ export class AgentConversationHarness {
     return Object.keys(this.host.graph().nodes)
   }
 
+  /** What the host document holds for one widget; undefined when it has none. */
+  hostWidgetValue(nodeId: string, widget: string): unknown {
+    const widgets = z
+      .record(z.string(), z.unknown())
+      .optional()
+      .parse(this.host.graph().nodes[nodeId]?.widgets)
+    return widgets?.[widget]
+  }
+
+  /** How many minted human ops a `hold` host has not judged yet. */
+  heldHumanOpCount(): number {
+    return this.hostSocket.heldClientOps().length
+  }
+
+  /**
+   * Releases the oldest batch a `hold` host is sitting on, which is what a
+   * page's own edit coming back to it IS: same op ids, and the broadcast
+   * carries the client's actor rather than the host's. Holding first and
+   * releasing later is therefore a real echo arriving late, not a host write
+   * standing in for one - the distinction decides which branch
+   * `useAgentCrdtFollower` takes for the frame.
+   *
+   * Returns the number of ops released, so a caller can tell an echo that
+   * landed from one the sender had not flushed yet.
+   */
+  releaseHeldHumanOps(): number {
+    return this.hostSocket.releaseHeldClientOps().length
+  }
+
   // A host-side edit outside the recording, pushed as one `doc_update`. The
   // follower applies frames in order, so a rendered effect of this edit
   // proves every earlier frame (a catch-up included) has been applied too.
@@ -946,11 +975,7 @@ export class AgentConversationHarness {
   // race this deterministically against a live keystroke instead of
   // waiting on the timing a real run happens to produce.
   async resyncWidget(nodeId: string, widget: string): Promise<void> {
-    const widgets = z
-      .record(z.string(), z.unknown())
-      .optional()
-      .parse(this.host.graph().nodes[nodeId]?.widgets)
-    const value = widgets?.[widget]
+    const value = this.hostWidgetValue(nodeId, widget)
     if (value === undefined)
       throw new Error(`Host widget ${nodeId}.${widget} does not exist`)
     const operation = {
