@@ -281,6 +281,32 @@ describe('postMessage wire body', () => {
     expect(Object.keys(parsed)).toEqual(['content'])
   })
 
+  // The id this send already reports on app:agent_message_sent has to reach the
+  // server, which echoes it onto agent_turn_started. Without it on the wire the
+  // message -> turn step of the activation funnel is countable but not
+  // attributable, and nothing else fails loudly - so assert the wire key.
+  it('sends client_message_id so the turn can be joined back to this message', async () => {
+    respond(jsonResponse(202, turnAccepted))
+    await makeClient().postMessage('t1', {
+      content: 'build it',
+      clientMessageId: '3f2504e0-4f89-41d3-9a0c-0305e82c3301'
+    })
+
+    expect(JSON.parse(String(lastCall().init.body))).toEqual({
+      content: 'build it',
+      client_message_id: '3f2504e0-4f89-41d3-9a0c-0305e82c3301'
+    })
+  })
+
+  it('omits client_message_id when the caller has none', async () => {
+    respond(jsonResponse(202, turnAccepted))
+    await makeClient().postMessage('t1', { content: 'build it' })
+
+    expect(
+      Object.keys(JSON.parse(String(lastCall().init.body)) as object)
+    ).not.toContain('client_message_id')
+  })
+
   it('sends draft.content when a draft is provided', async () => {
     respond(jsonResponse(202, turnAccepted))
     await makeClient().postMessage('t1', {
