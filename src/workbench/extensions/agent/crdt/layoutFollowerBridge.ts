@@ -124,6 +124,12 @@ export class LayoutFollowerBridge extends EventTarget {
    * harmless). It never moves {@link lastSeq} backwards.
    */
   private catchUpPending = false
+  /**
+   * Seq of the last accepted `doc_reset`. The host allocates seq monotonically,
+   * so a reset at or below this (or below an already applied/acked seq) is a
+   * replay and must not drop the doc a second time.
+   */
+  private lastResetSeq: number | null = null
 
   constructor(private readonly client: DocFrameClient) {
     super()
@@ -182,6 +188,7 @@ export class LayoutFollowerBridge extends EventTarget {
     this.lineageWorkflowId = workflowId
     this.desiredWorkflowId = workflowId
     if (lineage !== null && lineage !== workflowId) {
+      this.lastResetSeq = null
       this.dropDocForNewLineage()
       this.dispatchEvent(
         new CustomEvent('follower_replaced', { detail: { workflowId } })
@@ -370,10 +377,17 @@ export class LayoutFollowerBridge extends EventTarget {
     if (!(event instanceof CustomEvent)) return
     const reset = event.detail as DocReset
     if (reset.workflowId !== this.sentWorkflowId) return
+    if (this.isReplayedReset(reset.seq)) return
+    this.lastResetSeq = reset.seq
     this.dispatchEvent(new CustomEvent('doc_reset', { detail: reset }))
     this.dropDocForNewLineage()
     this.resubscribe()
     this.dispatchEvent(new CustomEvent('follower_replaced', { detail: reset }))
+  }
+
+  private isReplayedReset(seq: number): boolean {
+    const applied = this.lastSeq ?? this.ackSeq ?? -1
+    return seq <= (this.lastResetSeq ?? -1) || seq <= applied
   }
 
   /**
