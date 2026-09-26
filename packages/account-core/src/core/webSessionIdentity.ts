@@ -453,6 +453,11 @@ const zSharedResult = z.discriminatedUnion('status', [
   })
 ])
 
+/**
+ * Every tab of a site reads the same host-only cookie, so a sibling's answer
+ * is this tab's own session observed elsewhere; that is what makes adopting
+ * it safe. A per-tab session scope would break this assumption.
+ */
 const zSharedMessage = z.object({
   from: z.enum(['heartbeat', 'sign_in', 'sign_out']),
   result: zSharedResult
@@ -512,6 +517,7 @@ function createAccountIdentity(
   const listeners = new Set<(state: WebSessionIdentityState) => void>()
   let state: WebSessionIdentityState = { phase: 'idle' }
   let epoch = 0
+  let signOuts = 0
   let cancelRetry: (() => void) | undefined
   let cancelBeat: (() => void) | undefined
   let releaseLeadership: (() => void) | undefined
@@ -545,8 +551,16 @@ function createAccountIdentity(
       () => undefined
     )
     if (started !== epoch) return
-    if (remembered === undefined) return dispatch({ type: 'login_errored' })
-    dispatch({ ...answered, result, rememberedUserId: remembered.value })
+    // A failed lookup matters only without a live session to adopt: with one,
+    // it can skip nothing but the different-user sign-out.
+    if (remembered === undefined && result.status !== 'ok') {
+      return dispatch({ type: 'login_errored' })
+    }
+    dispatch({
+      ...answered,
+      result,
+      rememberedUserId: remembered?.value ?? null
+    })
   }
 
   function beat(): void {
@@ -702,13 +716,19 @@ function createAccountIdentity(
       dispatch({ type: 'boot' })
     },
     signedIn: async (getProof) => {
+      const signOutsAtStart = signOuts
       const result = await createWebSession(options.session, getProof)
       if (result.status !== 'ok') return result
+      if (signOuts !== signOutsAtStart) {
+        void deleteWebSession(options.session)
+        return revoked
+      }
       dispatch({ type: 'session_created', session: result.session })
       publish('sign_in', result)
       return result
     },
     signOut: async () => {
+      signOuts += 1
       dispatch({ type: 'sign_out_requested' })
       const result = await deleteWebSession(options.session)
       if (result.status === 'ok') publish('sign_out', revoked)

@@ -279,6 +279,43 @@ describe('tabs of one site', () => {
     expect(sibling.remoteSignOuts).toEqual([])
   })
 
+  it('a sign-out during an interactive sign-in wins, in this tab and its siblings', async () => {
+    const endpoint = liveEndpoint({ kind: 'dead', code: 'no_session' })
+    const site = createFakeSiteBus()
+    let releasePost = () => {}
+    const postHeld = new Promise<void>((resolve) => {
+      releasePost = resolve
+    })
+    const acting = openTab({
+      endpoint,
+      site,
+      remembered: null,
+      fetchImpl: async (input, init) => {
+        if (init?.method === 'POST') await postHeld
+        return endpoint.fetch(input, init)
+      }
+    })
+    const sibling = openTab({ endpoint, site, remembered: null })
+    await settle()
+
+    const signingIn = acting.identity.signedIn(async () => 'fresh-proof')
+    await settle()
+    await acting.identity.signOut()
+    releasePost()
+    const answer = await signingIn
+    await settle()
+
+    expect(answer).toMatchObject({ status: 'error', code: 'SESSION_REVOKED' })
+    expect(summarize(acting.identity.getState())).toBe('signed_out:signed_out')
+    expect(summarize(sibling.identity.getState())).toBe('signed_out:signed_out')
+    expect(methods(endpoint).slice(-4)).toEqual([
+      'DELETE',
+      'POST',
+      'GET',
+      'DELETE'
+    ])
+  })
+
   it('a tab that signed out is not signed back in by a sibling heartbeat', async () => {
     const endpoint = liveEndpoint()
     const site = createFakeSiteBus()
