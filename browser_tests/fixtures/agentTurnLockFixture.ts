@@ -74,6 +74,13 @@ export const TURN_DONE_EVENT: AgentWsEvent = {
 const RUN_APPROVAL_ASK_ID = `${TURN_ID}:call-run-workflow`
 
 /**
+ * The option ids this ask offers. Declared separately because `AgentWsEvent`
+ * types `data` loosely, so reading them back off the event would be an
+ * `unknown` the route would have to cast.
+ */
+const RUN_APPROVAL_OPTION_IDS = ['run', 'cancel'] as const
+
+/**
  * The frame the server sends when a turn parks waiting for the user to approve
  * a run. Shaped after `pendingRunApproval`'s reader and cloud's `asks` writer:
  * the turn does not proceed until an answer posts back, so a client that drops
@@ -89,8 +96,14 @@ export const RUN_APPROVAL_EVENT: AgentWsEvent = {
     prompt: 'Run workflow “Unsaved Workflow”?',
     context: { workflow_id: WORKFLOW_ID, workflow_name: 'Unsaved Workflow' },
     options: [
-      { id: 'run', label: enMessages.agent.runApproval.run },
-      { id: 'cancel', label: enMessages.agent.runApproval.cancel }
+      {
+        id: RUN_APPROVAL_OPTION_IDS[0],
+        label: enMessages.agent.runApproval.run
+      },
+      {
+        id: RUN_APPROVAL_OPTION_IDS[1],
+        label: enMessages.agent.runApproval.cancel
+      }
     ],
     min_selections: 1,
     max_selections: 1,
@@ -201,9 +214,35 @@ async function routeTurnLock(
     })
   })
 
+  /**
+   * The glob accepts any thread and any ask id, so without these checks an
+   * answer posted against the wrong ask -- or an option this ask never offered
+   * -- would still be recorded and `answeredAsks()` would report success. The
+   * assertion this fixture exists to support is "the answer left the client for
+   * *this* ask", so the route has to be the thing that enforces it.
+   */
   await page.route('**/api/agent/threads/*/asks/*/answer', (route) => {
+    const url = new URL(route.request().url())
+    const segments = url.pathname.split('/').map(decodeURIComponent)
+    const threadId = segments[segments.indexOf('threads') + 1]
+    const askId = segments[segments.indexOf('asks') + 1]
+    if (threadId !== THREAD_ID || askId !== RUN_APPROVAL_ASK_ID)
+      return route.fulfill({
+        status: 404,
+        contentType: 'application/json',
+        body: JSON.stringify({ error: 'unknown thread or ask' })
+      })
+
     const body: unknown = route.request().postDataJSON()
     const selected = zAnswerRequest.parse(body).selected
+    const offered: readonly string[] = RUN_APPROVAL_OPTION_IDS
+    if (selected.length !== 1 || !offered.includes(selected[0]))
+      return route.fulfill({
+        status: 422,
+        contentType: 'application/json',
+        body: JSON.stringify({ error: 'selection not offered by this ask' })
+      })
+
     server.recordAnswer(selected)
     const accepted: AgentAnswerAccepted = { status: 'answered' }
     return route.fulfill(jsonRoute(accepted))
