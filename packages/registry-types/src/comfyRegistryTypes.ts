@@ -6956,7 +6956,7 @@ export interface components {
              *     • Image URL: Make sure that the image URL is accessible.
              *     • Base64 encoding: The format must be data:image/<image format>;base64,<Base64 encoding>. Note: <image format> must be in lowercase, e.g., data:image/png;base64,<base64_image>.
              *
-             *     Comfy Router limits the entire JSON request to 20 MiB, including base64 expansion and all reference images. Use URLs for inputs that would exceed this transport limit.
+             *     Comfy Router limits the entire JSON request to 100 MiB, including base64 expansion and all reference images. Use URLs for inputs that would exceed this transport limit.
              *
              *     An input image must meet the following requirements:
              *     • Image format: jpeg, png (seedream-5.0-pro, 5.0-lite, 4.5 and 4.0 also support webp, bmp, tiff and gif; seedream-5.0-pro also supports heic and heif)
@@ -6964,20 +6964,20 @@ export interface components {
              *     • Width and height (px): > 14
              *     • Size: No more than 10 MB (30 MB for seedream-5.0-pro)
              *     • Total pixels: No more than 6000x6000 (36,000,000 px) for seedream-5.0-pro
-             *     • Maximum of 14 reference images (10 for seedream-5.0-pro)
+             *     • Maximum of 14 reference images (10 for seedream-5.0-pro and 5.0-flash)
              *
              *     In the layer-separation scenario (layer_decomposition enabled), image is required and only a single input image is supported (passing multiple images returns an error). Input images must be png, jpeg, webp, bmp, tiff or gif (heic and heif are not supported), up to 30 MB, with total pixels in the range [512x512, 6000x6000] and aspect ratio in [1/16, 16].
              */
             image?: string | string[];
             /**
-             * @description Controls whether layer separation is enabled. Only seedream-5.0-pro supports this parameter.
+             * @description Controls whether layer separation is enabled. Only seedream-5.0-pro and 5.0-flash support this parameter.
              *     true: Layer-separation mode. The model decomposes the single input image into one base image plus multiple layers (up to 16), and returns the position and content information of each produced layer, including the stacking order (z_index), bounding box (bounding_box), name (name) and description (description).
              *     false: Standard image-generation mode; no layer separation is performed.
              *     Notes on layer-separation mode: only a single input image is supported (passing multiple images returns an error); if any single layer fails to generate, the whole request fails — partial success is not supported; at most 17 images are returned (1 base image + 16 layers). sequential_image_generation, sequential_image_generation_options, tools and stream return an error if passed.
              * @default false
              */
             layer_decomposition: boolean;
-            /** @description Model identifier. Supported models: seedream-4-0-250828, seedream-4-5-251128, seedream-5-0-260128 and seedream-5-0-pro-260628. A direct v1 call to POST /proxy/byteplus/api/v3/images/generations MUST supply it — the proxy refuses any other value, and an omitted one, with a 400. It is NOT in this schema's `required` list because Comfy Router fills it from the `{model}` path segment of /v2/models/byteplus/{model}, so a Router caller omits it. */
+            /** @description Model identifier. Supported models: seedream-4-0-250828, seedream-4-5-251128, seedream-5-0-260128, seedream-5-0-pro-260628 and seedream-5-0-flash-260915. A direct v1 call to POST /proxy/byteplus/api/v3/images/generations MUST supply it — the proxy refuses any other value, and an omitted one, with a 400. It is NOT in this schema's `required` list because Comfy Router fills it from the `{model}` path segment of /v2/models/byteplus/{model}, so a Router caller omits it. */
             model?: string | null;
             /** @description Configuration for prompt optimization feature. Only seedream-5.0-pro/5.0-lite/4.5 (only support standard mode) and seedream-4.0 support this parameter. */
             optimize_prompt_options?: {
@@ -6989,14 +6989,14 @@ export interface components {
                 mode: "standard" | "fast";
             };
             /**
-             * @description Specifies the format of the output image. Only seedream-5.0-pro and 5.0-lite support this parameter. In the layer-separation scenario, output_format only controls the format of the base image; every layer is always output as png.
+             * @description Specifies the format of the output image. Only seedream-5.0-pro, 5.0-flash and 5.0-lite support this parameter. In the layer-separation scenario, output_format only controls the format of the base image; every layer is always output as png.
              * @default jpeg
              * @enum {string}
              */
             output_format: "png" | "jpeg";
             /**
              * @description Text description for image generation or transformation.
-             *     Optional in the layer-separation scenario (seedream-5.0-pro with layer_decomposition enabled): if a prompt is provided, the model recognizes and separates the elements you specify according to the prompt intent; if no prompt is provided, the model automatically detects all major elements in the image and separates them into independent layers.
+             *     Optional in the layer-separation scenario (seedream-5.0-pro or 5.0-flash with layer_decomposition enabled): if a prompt is provided, the model recognizes and separates the elements you specify according to the prompt intent; if no prompt is provided, the model automatically detects all major elements in the image and separates them into independent layers.
              */
             prompt?: string;
             /**
@@ -7011,14 +7011,14 @@ export interface components {
              */
             seed: number;
             /**
-             * @description Controls whether to disable the batch generation feature. This parameter is only supported on seedream-5.0-lite, 4.5 and 4.0 (not supported by seedream-5.0-pro). Valid values:
+             * @description Controls whether to disable the batch generation feature. This parameter is only supported on seedream-5.0-lite, 4.5 and 4.0 (not supported by seedream-5.0-pro or 5.0-flash). Valid values:
              *     auto: In automatic mode, the model automatically determines whether to return multiple images and how many images it will contain based on the user's prompt.
              *     disabled: Disables batch generation feature. The model will only generate one image.
              * @enum {string}
              */
             sequential_image_generation?: "auto" | "disabled";
             /**
-             * @description Only seedream-5.0-lite, 4.5 and 4.0 support this parameter (not supported by seedream-5.0-pro).
+             * @description Only seedream-5.0-lite, 4.5 and 4.0 support this parameter (not supported by seedream-5.0-pro or 5.0-flash).
              *     Configuration for the batch image generation feature. This parameter is only effective when sequential_image_generation is set to auto.
              */
             sequential_image_generation_options?: {
@@ -7041,13 +7041,16 @@ export interface components {
              *     "seedream-5-0-pro-260628": Two methods available (cannot be used together).
              *       Method 1 | Specify the resolution and describe the aspect ratio, shape or purpose of the image in the prompt; the model decides the final size. Optional values: 1K, 2K
              *       Method 2 | Specify width and height in pixels. Default: 1024x1024, total pixels: [1024x1024 (1048576), 2048x2048 (4194304)], aspect ratio: [1/16, 16]
-             *     "seedream-5-0-pro-260628" with layer_decomposition enabled: Only the resolution-level method is supported. Optional values: 1K, 1.5K, 2K, auto. Default: auto.
+             *     "seedream-5-0-flash-260915": Two methods available (cannot be used together).
+             *       Method 1 | Specify the resolution and describe the aspect ratio, shape or purpose of the image in the prompt; the model decides the final size. Optional values: 1K, 1.5K, 2K. Default: 2K
+             *       Method 2 | Specify width and height in pixels. Total pixels: [1280x720 (921600), 2048x2048x1.1025 (4624220)], aspect ratio: [1/16, 16]
+             *     "seedream-5-0-pro-260628" and "seedream-5-0-flash-260915" with layer_decomposition enabled: Only the resolution-level method is supported. Optional values: 1K, 1.5K, 2K, auto. Default: auto.
              *       The base image is output at the specified resolution with the aspect ratio of the original input image; each layer is output close to the specified resolution, keeping the aspect ratio it had in the original image.
              *       auto: Output is based on the size and aspect ratio of the input image. Inputs within [1280x720, ~2048x2048] are output at the original input size; inputs smaller than 1K are output at 1K; inputs larger than 2K are output at 2K.
              */
             size?: string;
             /**
-             * @description Comfy Router settles an explicitly supplied stream flag to false because it captures a complete JSON result. On the v1 proxy, this field controls whether to enable streaming output mode. Only seedream-5.0-lite, 4.5 and 4.0 support this parameter (not supported by seedream-5.0-pro). false = All output images are returned at once. true = Each output image is returned immediately after generated.
+             * @description Comfy Router settles an explicitly supplied stream flag to false because it captures a complete JSON result. On the v1 proxy, this field controls whether to enable streaming output mode. Only seedream-5.0-lite, 4.5 and 4.0 support this parameter (not supported by seedream-5.0-pro or 5.0-flash). false = All output images are returned at once. true = Each output image is returned immediately after generated.
              * @default false
              */
             stream: boolean;
@@ -7059,7 +7062,7 @@ export interface components {
         } | unknown | unknown;
         /**
          * @description Request body for the v1 `POST /proxy/byteplus/api/v3/images/generations` proxy.
-         *     It composes `BytePlusImageGenerationInputs` rather than restating its fields, and adds back the two things only the v1 surface can demand. `model` is both of them: this route carries no path segment supplying it, so a direct caller must send it and must send one of the four allowlisted spellings, whereas the Comfy Router route `POST /v2/models/byteplus/{model}` supplies it from the path and its input schema must therefore neither require nor enum it (RouterBodyForTarget writes it in after routervalidate.Guard has validated the caller's bytes, so either constraint would refuse every Router call that exercises the documented contract — BE-11167).
+         *     It composes `BytePlusImageGenerationInputs` rather than restating its fields, and adds back the two things only the v1 surface can demand. `model` is both of them: this route carries no path segment supplying it, so a direct caller must send it and must send one of the five allowlisted spellings, whereas the Comfy Router route `POST /v2/models/byteplus/{model}` supplies it from the path and its input schema must therefore neither require nor enum it (RouterBodyForTarget writes it in after routervalidate.Guard has validated the caller's bytes, so either constraint would refuse every Router call that exercises the documented contract — BE-11167).
          *     The component has required `model` since the provider was added on 2025-08-21 (#634) and has carried the enum since the same commit, so this wrapper RESTORES a published requirement rather than inventing one. (`prompt` was required alongside it until #6331 on 2026-08-06 dropped it for the seedream-5.0-pro layer-separation path; that relaxation is not this change's and is not re-imposed here.) Read the note above `BytePlusImageGenerationInputs` for the full rule and the guard that enforces it.
          */
         BytePlusImageGenerationRequest: components["schemas"]["BytePlusImageGenerationInputs"] & {
@@ -7067,7 +7070,7 @@ export interface components {
              * @description The ID of the model to call. Required on this route, which has no path segment supplying it.
              * @enum {string}
              */
-            model: "seedream-4-0-250828" | "seedream-4-5-251128" | "seedream-5-0-260128" | "seedream-5-0-pro-260628";
+            model: "seedream-4-0-250828" | "seedream-4-5-251128" | "seedream-5-0-260128" | "seedream-5-0-pro-260628" | "seedream-5-0-flash-260915";
         };
         BytePlusImageGenerationResponse: {
             /** @description Unix timestamp (in seconds) indicating the time when the request was created */
@@ -7761,7 +7764,7 @@ export interface components {
             audio_config?: components["schemas"]["BytePlusTTSAudioConfig"];
             /** @description Model identifier. Supported models: seed-audio-1.0 and seed-audio-1.0-multilingual. A direct v1 call to POST /proxy/byteplus/api/v3/tts/create MUST supply it — the proxy refuses any other value, and an omitted one, with a 400. It is NOT in this schema's `required` list because Comfy Router fills it from the `{model}` path segment of /v2/models/byteplus/{model}, so a Router caller omits it. */
             model?: string | null;
-            /** @description Reference resources. Omit for text-only generation. Up to 3 audio references (each up to 30 seconds and 10 MB decoded; wav, mp3, pcm or ogg_opus) or exactly 1 image reference (up to 10 MB decoded; jpeg, png or webp). Image references cannot be mixed with audio references. Those ceilings are BytePlus's and are stated in DECODED bytes: base64 inflates an asset by about 4/3, and a Comfy Router call is capped at 20 MiB for the whole JSON document, so an inline `audio_data`/`image_data` reference sent to /v2/models/byteplus/{model} has to stay under roughly 15 MB decoded. Use `audio_url`/`image_url` for anything larger — three audio references at BytePlus's own 10 MB maximum are refused 413 before validation runs if they are inlined. */
+            /** @description Reference resources. Omit for text-only generation. Up to 3 audio references (each up to 30 seconds and 10 MB decoded; wav, mp3, pcm or ogg_opus) or exactly 1 image reference (up to 10 MB decoded; jpeg, png or webp). Image references cannot be mixed with audio references. Those ceilings are BytePlus's and are stated in DECODED bytes: base64 inflates an asset by about 4/3, and a Comfy Router call is capped at 100 MiB for the whole JSON document, so an inline `audio_data`/`image_data` reference sent to /v2/models/byteplus/{model} may carry roughly 75 MB decoded before the transport limit refuses it. BytePlus's own 10 MB per-reference ceiling is therefore what binds first for any single inlined reference, and three audio references at that ceiling now fit in one body; use `audio_url`/`image_url` to keep large assets out of the request entirely. */
             references?: components["schemas"]["BytePlusTTSReference"][];
             /** @description Prompt or text to synthesize (1 to 3,000 characters; an empty string is refused). When audio references are provided, reference them by order using @Audio1, @Audio2 and @Audio3. */
             text_prompt: string;
@@ -7857,6 +7860,14 @@ export interface components {
                  */
                 url: string;
             };
+            /**
+             * @description Seedance 2.5 only. The Draft task to render as the final video. It must be the only content item.
+             *     The final video reuses the Draft task's prompt, input assets, duration, ratio, seed, generate_audio and omni_reference_task_type; do not send them again. resolution defaults to and only supports 1080p.
+             */
+            draft_task?: {
+                /** @description The task ID returned when the Draft video was created with `draft` set to true. */
+                id: string;
+            };
             image_url?: {
                 /**
                  * @description Image content for image-to-video generation (when type is "image_url")
@@ -7905,7 +7916,7 @@ export interface components {
              * @description The type of the input content
              * @enum {string}
              */
-            type: "text" | "image_url" | "video_url" | "audio_url";
+            type: "text" | "image_url" | "video_url" | "audio_url" | "draft_task";
             /** @description Input video object. Only Seedance 2.5, 2.0 & 2.0 fast support video input. */
             video_url?: {
                 /**
@@ -7927,6 +7938,9 @@ export interface components {
         } | {
             /** @enum {unknown} */
             type?: "audio_url";
+        } | {
+            /** @enum {unknown} */
+            type?: "draft_task";
         });
         /**
          * @description Request body for a BytePlus Seedance / Dreamina video generation task. The `example` below is the COMFY ROUTER form and deliberately omits `model`, which Router fills from the `{model}` path segment; a direct v1 call to POST /proxy/byteplus/api/v3/contents/generations/tasks must add `model` to it. This text-to-video example omits the `content` item with `type: image_url` and an `image_url.url` that an image-to-video call supplies; text-only models must omit that image item.
@@ -7951,6 +7965,12 @@ export interface components {
             callback_url?: string;
             /** @description The input content for the model to generate a video */
             content: components["schemas"]["BytePlusVideoGenerationContent"][];
+            /**
+             * @description Seedance 2.5 only. Generates a 480p Draft video; resolution must be 480p.
+             *     Pass the returned task ID in a `draft_task` content item to render the final 1080p video. The Draft task ID stays valid for 7 days.
+             * @default false
+             */
+            draft: boolean;
             /** @description Video duration in seconds. Seedance 2.5: [4,30] or -1 (auto; video editing tasks support only -1). Seedance 2.0 & 2.0 fast: [4,15] or -1 (auto). Seedance 1.5 pro: [4,12] or -1. Seedance 1.0: [2,12]. */
             duration?: number | -1 | unknown;
             /** @description Task timeout threshold in seconds. Default 172800 (48h). Range: [3600, 259200]. */
@@ -7974,6 +7994,7 @@ export interface components {
             output_format: "mp4" | "mov";
             /**
              * @description Aspect ratio of the generated video. Seedance 2.0 & 2.0 fast, 1.5 pro default: adaptive.
+             *     Seedance 2.5 first-frame / first-last-frame generation: the output follows the first frame's aspect ratio, so only `adaptive` (or omitting the field) is accepted; a concrete ratio is refused with a 400 before dispatch. Seedance 2.0 accepts a concrete ratio in those modes.
              * @enum {string}
              */
             ratio?: "16:9" | "4:3" | "1:1" | "3:4" | "9:16" | "21:9" | "9:21" | "adaptive";
@@ -12127,6 +12148,8 @@ export interface components {
          *     }
          */
         KlingV2Text2VideoRequest: {
+            aspect_ratio?: components["schemas"]["KlingVideoGenAspectRatio"];
+            duration?: components["schemas"]["KlingVideoGenDuration"];
             options?: components["schemas"]["KlingV2Options"];
             /** @description Prompt that may include both positive and negative descriptions. Recommended length under 2500 characters. Multi-shot videos use the format "shot n, m, words; shot n, m, words;". */
             prompt: string;
@@ -14394,11 +14417,11 @@ export interface components {
          */
         OpenAIImageGenerationRequest: {
             /**
-             * @description Background transparency
+             * @description Background transparency. `auto` lets the model choose.
              * @example opaque
              * @enum {string}
              */
-            background?: "transparent" | "opaque";
+            background?: "transparent" | "opaque" | "auto";
             /**
              * @description The model to use for image generation (e.g., gpt-image-1, gpt-image-1.5, gpt-image-2, gpt-image-2.5-flare, gpt-image-2.5-sunburst)
              * @example gpt-image-2.5-flare
@@ -14427,16 +14450,21 @@ export interface components {
              */
             output_format?: "png" | "webp" | "jpeg";
             /**
+             * @description gpt-image only. How many partial images to emit while streaming (0-3). Only meaningful alongside `stream: true`.
+             * @example 2
+             */
+            partial_images?: number;
+            /**
              * @description A text description of the desired image
              * @example Draw a rocket in front of a blackhole in deep space
              */
             prompt: string;
             /**
-             * @description The quality of the generated image
+             * @description The quality of the generated image. `xhigh` and `max` are the two tiers gpt-image-2.5-flare and gpt-image-2.5-sunburst were added for; `standard` and `hd` are dall-e-era spellings no admitted model reads.
              * @example high
              * @enum {string}
              */
-            quality?: "low" | "medium" | "high" | "standard" | "hd";
+            quality?: "auto" | "low" | "medium" | "high" | "xhigh" | "max" | "standard" | "hd";
             /**
              * @description Response format of image data
              * @example b64_json
@@ -14448,6 +14476,11 @@ export interface components {
              * @example 1024x1536
              */
             size?: string;
+            /**
+             * @description gpt-image only. Stream partial images back as they are generated. OpenAI rejects `stream: true` combined with `n` greater than 1.
+             * @example false
+             */
+            stream?: boolean;
             /**
              * @deprecated
              * @description Style of the image. Unused by the gpt-image models this operation admits; it was a dall-e-3-only parameter and those ids were retired when OpenAI shut them down on 2026-05-12.
@@ -14485,7 +14518,7 @@ export interface components {
             };
         };
         /** @enum {string} */
-        OpenAIModels: "gpt-4" | "gpt-4-0314" | "gpt-4-0613" | "gpt-4-32k" | "gpt-4-32k-0314" | "gpt-4-32k-0613" | "gpt-4-0125-preview" | "gpt-4-turbo" | "gpt-4-turbo-2024-04-09" | "gpt-4-turbo-preview" | "gpt-4-1106-preview" | "gpt-4-vision-preview" | "gpt-3.5-turbo" | "gpt-3.5-turbo-16k" | "gpt-3.5-turbo-0301" | "gpt-3.5-turbo-0613" | "gpt-3.5-turbo-1106" | "gpt-3.5-turbo-0125" | "gpt-3.5-turbo-16k-0613" | "gpt-4.1" | "gpt-4.1-mini" | "gpt-4.1-nano" | "gpt-4.1-2025-04-14" | "gpt-4.1-mini-2025-04-14" | "gpt-4.1-nano-2025-04-14" | "o1" | "o1-mini" | "o1-preview" | "o1-pro" | "o1-2024-12-17" | "o1-preview-2024-09-12" | "o1-mini-2024-09-12" | "o1-pro-2025-03-19" | "o3" | "o3-mini" | "o3-2025-04-16" | "o3-mini-2025-01-31" | "o4-mini" | "o4-mini-2025-04-16" | "gpt-4o" | "gpt-4o-mini" | "gpt-4o-2024-11-20" | "gpt-4o-2024-08-06" | "gpt-4o-2024-05-13" | "gpt-4o-mini-2024-07-18" | "gpt-4o-audio-preview" | "gpt-4o-audio-preview-2024-10-01" | "gpt-4o-audio-preview-2024-12-17" | "gpt-4o-mini-audio-preview" | "gpt-4o-mini-audio-preview-2024-12-17" | "gpt-4o-search-preview" | "gpt-4o-mini-search-preview" | "gpt-4o-search-preview-2025-03-11" | "gpt-4o-mini-search-preview-2025-03-11" | "computer-use-preview" | "computer-use-preview-2025-03-11" | "gpt-5" | "gpt-5-mini" | "gpt-5-nano" | "gpt-5.5" | "gpt-5.5-pro" | "gpt-5.6" | "gpt-5.6-sol" | "gpt-5.6-terra" | "gpt-5.6-luna" | "gpt-6-astra" | "chatgpt-4o-latest";
+        OpenAIModels: "gpt-4" | "gpt-4-0314" | "gpt-4-0613" | "gpt-4-32k" | "gpt-4-32k-0314" | "gpt-4-32k-0613" | "gpt-4-0125-preview" | "gpt-4-turbo" | "gpt-4-turbo-2024-04-09" | "gpt-4-turbo-preview" | "gpt-4-1106-preview" | "gpt-4-vision-preview" | "gpt-3.5-turbo" | "gpt-3.5-turbo-16k" | "gpt-3.5-turbo-0301" | "gpt-3.5-turbo-0613" | "gpt-3.5-turbo-1106" | "gpt-3.5-turbo-0125" | "gpt-3.5-turbo-16k-0613" | "gpt-4.1" | "gpt-4.1-mini" | "gpt-4.1-nano" | "gpt-4.1-2025-04-14" | "gpt-4.1-mini-2025-04-14" | "gpt-4.1-nano-2025-04-14" | "o1" | "o1-mini" | "o1-preview" | "o1-pro" | "o1-2024-12-17" | "o1-preview-2024-09-12" | "o1-mini-2024-09-12" | "o1-pro-2025-03-19" | "o3" | "o3-mini" | "o3-2025-04-16" | "o3-mini-2025-01-31" | "o4-mini" | "o4-mini-2025-04-16" | "gpt-4o" | "gpt-4o-mini" | "gpt-4o-2024-11-20" | "gpt-4o-2024-08-06" | "gpt-4o-2024-05-13" | "gpt-4o-mini-2024-07-18" | "gpt-4o-audio-preview" | "gpt-4o-audio-preview-2024-10-01" | "gpt-4o-audio-preview-2024-12-17" | "gpt-4o-mini-audio-preview" | "gpt-4o-mini-audio-preview-2024-12-17" | "gpt-4o-search-preview" | "gpt-4o-mini-search-preview" | "gpt-4o-search-preview-2025-03-11" | "gpt-4o-mini-search-preview-2025-03-11" | "computer-use-preview" | "computer-use-preview-2025-03-11" | "gpt-5" | "gpt-5-mini" | "gpt-5-nano" | "gpt-5.5" | "gpt-5.5-pro" | "gpt-5.6" | "gpt-5.6-sol" | "gpt-5.6-terra" | "gpt-5.6-luna" | "gpt-6-astra" | "gpt-6-sol" | "gpt-6-luna" | "chatgpt-4o-latest";
         /** @description A response from the model */
         OpenAIResponse: components["schemas"]["ModelResponseProperties"] & components["schemas"]["ResponseProperties"] & {
             /** @description Whether the model response runs in the background. */
@@ -16506,7 +16539,7 @@ export interface components {
             max_output_tokens?: number;
             /**
              * @description Model identifier for SVG vectorization
-             * @example arrow-1.1
+             * @example arrow-2
              */
             model: string;
             /**
@@ -16536,7 +16569,7 @@ export interface components {
         QuiverSVGResponse: {
             /** @description Unix timestamp of creation */
             created: number;
-            /** @description Credit cost for this request. Use this for billing instead of usage tokens. */
+            /** @description Credit cost for fixed-credit models such as arrow-1.1. Omitted for token-priced models such as arrow-2, which report measured token totals in usage. */
             credits?: number;
             data: {
                 /**
@@ -16549,25 +16582,13 @@ export interface components {
             }[];
             /** @description Unique identifier for the generation */
             id: string;
-            /**
-             * @deprecated
-             * @description Deprecated. Use credits for billing values.
-             */
+            /** @description Token totals for token-priced models such as arrow-2. Fixed-credit models may report zeros here. */
             usage?: {
-                /**
-                 * @deprecated
-                 * @description Deprecated. Token counts are retained for compatibility and may be zeroed.
-                 */
+                /** @description Input token count for token-priced models. */
                 input_tokens?: number;
-                /**
-                 * @deprecated
-                 * @description Deprecated. Token counts are retained for compatibility and may be zeroed.
-                 */
+                /** @description Output token count for token-priced models. */
                 output_tokens?: number;
-                /**
-                 * @deprecated
-                 * @description Deprecated. Token counts are retained for compatibility and may be zeroed.
-                 */
+                /** @description Total token count for token-priced models. */
                 total_tokens?: number;
             };
         };
@@ -16579,7 +16600,7 @@ export interface components {
             max_output_tokens?: number;
             /**
              * @description Model identifier for SVG generation
-             * @example arrow-1.1
+             * @example arrow-2
              */
             model: string;
             /**
@@ -17401,7 +17422,7 @@ export interface components {
             publicFigureThreshold?: "auto" | "low";
         };
         /** @enum {integer} */
-        RunwayDurationEnum: 5 | 10;
+        RunwayDurationEnum: 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
         /**
          * @example {
          *       "duration": 5,
@@ -17804,13 +17825,31 @@ export interface components {
             /** @description Target language code for dubbing */
             targetLang: string;
         };
-        /** @description Request body for creating a Sync Labs lipsync generation */
-        SyncLabsGenerateRequest: {
+        /**
+         * @description The Sync Labs lipsync generation fields, shared by the v1 `POST /proxy/synclabs/v2/generate` request body and the Comfy Router input schema for `synclabs/sync-3`. See the note above this component for why the two surfaces share properties but not `required`.
+         *     `required` here is the ROUTER-SAFE floor: `model` is absent from it because Router writes the path's model into the body after routervalidate.Guard has already validated the caller's bytes. The v1 wrapper `SyncLabsGenerateRequest` re-adds it.
+         * @example {
+         *       "input": [
+         *         {
+         *           "type": "video",
+         *           "url": "https://example.invalid/synclabs/sync-3/speaker.mp4"
+         *         },
+         *         {
+         *           "type": "audio",
+         *           "url": "https://example.invalid/synclabs/sync-3/voiceover.wav"
+         *         }
+         *       ],
+         *       "options": {
+         *         "sync_mode": "bounce"
+         *       }
+         *     }
+         */
+        SyncLabsGenerateInputs: {
             dubParams?: components["schemas"]["SyncLabsDubParams"];
             /** @description Input items; exactly one visual input (video or image) and one audio or text input */
             input: components["schemas"]["SyncLabsGenerationInput"][];
-            /** @description Name of the model to use for generation; only sync-3 is supported */
-            model: string;
+            /** @description Name of the model to use for generation; only sync-3 is supported. On the Comfy Router route `POST /v2/models/synclabs/{model}` this field is supplied from the path and may be omitted. */
+            model?: string | null;
             options?: components["schemas"]["SyncLabsGenerationOptions"];
             /** @description Base filename for the generated output without extension */
             outputFileName?: string;
@@ -17820,6 +17859,31 @@ export interface components {
             segments?: components["schemas"]["SyncLabsGenerationSegment"][];
             /** @description Webhook URL for generation status updates */
             webhookUrl?: string;
+        };
+        /**
+         * @description Request body for the v1 `POST /proxy/synclabs/v2/generate` operation.
+         *     It composes `SyncLabsGenerateInputs` rather than restating its fields, and adds back the one field only the v1 surface can demand. `model` is load-bearing: this route carries no path segment supplying it, so a caller must send it and the Rewrite refuses a body whose model is not `sync-3`, whereas the Comfy Router route `POST /v2/models/synclabs/{model}` supplies it from the path and its input schema must neither require nor enum-constrain it.
+         *     Read the note above `SyncLabsGenerateInputs` for the full rule and the guards that enforce it.
+         * @example {
+         *       "input": [
+         *         {
+         *           "type": "video",
+         *           "url": "https://example.invalid/synclabs/sync-3/speaker.mp4"
+         *         },
+         *         {
+         *           "type": "audio",
+         *           "url": "https://example.invalid/synclabs/sync-3/voiceover.wav"
+         *         }
+         *       ],
+         *       "model": "sync-3",
+         *       "options": {
+         *         "sync_mode": "bounce"
+         *       }
+         *     }
+         */
+        SyncLabsGenerateRequest: components["schemas"]["SyncLabsGenerateInputs"] & {
+            /** @description Name of the model to use for generation; only sync-3 is supported */
+            model: string;
         };
         /** @description A Sync Labs lipsync generation */
         SyncLabsGeneration: {
@@ -20070,12 +20134,14 @@ export interface components {
                  *     The per-asset "max 20MB" figures above are the PARTNER's ceiling on the image it
                  *     ends up with, and they apply as written when the asset is a public URL, because
                  *     those bytes never travel through Comfy. An INLINE data: URL does travel through
-                 *     Comfy and meets a lower transport ceiling first: a Comfy Router POST body is
-                 *     capped at 20 MiB in total and answered 413 past it, and base64 inflates a payload
-                 *     by about 4/3, so a single inline asset above roughly 15 MB is refused before
-                 *     any of the partner rules here are reached — sooner still when the body carries
-                 *     several of them, since the 20 MiB Router cap bounds the WHOLE request
-                 *     rather than each element. Send anything near these ceilings as a public URL.
+                 *     Comfy and meets a transport ceiling as well: a Comfy Router POST body is
+                 *     capped at 100 MiB in total and answered 413 past it, and base64 inflates a payload
+                 *     by about 4/3, so a single inline asset above roughly 75 MB is refused before
+                 *     any of the partner rules here are reached. At that size a single asset at the
+                 *     partner's own 20MB ceiling fits inline comfortably, so the partner rule is what
+                 *     binds for one asset — the transport ceiling binds across several of them, since
+                 *     the 100 MiB Router cap bounds the WHOLE request rather than each element. Send
+                 *     anything near these ceilings as a public URL.
                  */
                 media?: {
                     /**
@@ -20083,7 +20149,7 @@ export interface components {
                      * @enum {string}
                      */
                     type: "first_frame" | "last_frame" | "driving_audio" | "first_clip" | "reference_image" | "reference_video" | "reference_audio" | "video" | "file" | "link";
-                    /** @description URL of the media file: a public HTTP/HTTPS URL, an OSS temporary URL, or — where the model's entry in the `media` description above says so, as the happyhorse-1.x i2v and r2v spellings do — an inline `data:{MIME_type};base64,...` URL. See that description for the per-model size and pixel floors, and for the 20 MiB Router request-body cap that bounds an inline payload before any partner rule applies. */
+                    /** @description URL of the media file: a public HTTP/HTTPS URL, an OSS temporary URL, or — where the model's entry in the `media` description above says so, as the happyhorse-1.x i2v and r2v spellings do — an inline `data:{MIME_type};base64,...` URL. See that description for the per-model size and pixel floors, and for the 100 MiB Router request-body cap that bounds an inline payload in aggregate. */
                     url: string;
                 }[];
                 /** @description Reverse prompt words are used to describe content that you do not want to see in the video screen */
