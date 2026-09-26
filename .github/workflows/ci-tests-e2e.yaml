@@ -509,14 +509,19 @@ jobs:
           FALLBACK_SPEC_FILES: ${{ steps.detect.outputs.fallback-files }}
           CHROMIUM_HAS_TESTS: ${{ steps.recordable.outputs.chromium-has-tests }}
           CLOUD_HAS_TESTS: ${{ steps.recordable.outputs.cloud-has-tests }}
+          PR_BRANCH: ${{ github.head_ref }}
         run: |
           PROJECTS=()
           [ "$CHROMIUM_HAS_TESTS" = true ] && PROJECTS+=(chromium)
           [ "$CLOUD_HAS_TESTS" = true ] && PROJECTS+=(cloud)
+          REPORT_BRANCH=$(printf '%s' "$PR_BRANCH" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g; s/--*/-/g; s/^-\|-$//g')-new-tests
+          REPORT_URL="https://${REPORT_BRANCH}.comfyui-playwright-chromium.pages.dev"
           {
             echo '## Playwright videos for new tests'
             echo
-            echo "[Download the recorded videos and HTML report](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+            echo "[View the hosted videos and HTML report]($REPORT_URL)"
+            echo
+            echo "[Download the report artifact](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
             echo
             echo "Recorded projects: ${PROJECTS[*]}"
             echo
