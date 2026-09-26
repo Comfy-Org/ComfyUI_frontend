@@ -53,6 +53,7 @@ export interface SessionTokenMint {
 }
 
 export const DEFAULT_REFRESH_BUFFER_MS = 60_000
+const MAX_RETRY_AFTER_MS = 10 * 60 * 1000
 
 interface StatusRule {
   readonly byServerCode: Partial<Record<string, WebSessionErrorCode>>
@@ -100,12 +101,20 @@ async function readJson(response: Response): Promise<unknown> {
   }
 }
 
-function rateLimited(response: Response): SessionTokenFailure {
-  const seconds = Number(response.headers.get('Retry-After') ?? Number.NaN)
+/** Retry-After is delay-seconds or an HTTP-date; either is capped. */
+function retryAfterMs(value: string | null, nowMs: number): number | undefined {
+  if (value === null) return undefined
+  const seconds = Number(value)
+  const delayMs = Number.isFinite(seconds)
+    ? seconds * 1000
+    : Date.parse(value) - nowMs
+  return delayMs > 0 ? Math.min(delayMs, MAX_RETRY_AFTER_MS) : undefined
+}
+
+function rateLimited(response: Response, nowMs: number): SessionTokenFailure {
   const limited = failure('SESSION_UNAVAILABLE', response.status)
-  return Number.isFinite(seconds) && seconds > 0
-    ? { ...limited, retryAfterMs: seconds * 1000 }
-    : limited
+  const waitMs = retryAfterMs(response.headers.get('Retry-After'), nowMs)
+  return waitMs === undefined ? limited : { ...limited, retryAfterMs: waitMs }
 }
 
 function codeFor(status: number, serverCode: string | undefined) {
@@ -115,10 +124,11 @@ function codeFor(status: number, serverCode: string | undefined) {
 }
 
 async function classifyFailure(
-  response: Response
+  response: Response,
+  nowMs: number
 ): Promise<SessionTokenFailure> {
   const { status } = response
-  if (status === 429) return rateLimited(response)
+  if (status === 429) return rateLimited(response, nowMs)
   if (status >= 500) return failure('SESSION_UNAVAILABLE', status)
   const parsed = zServerCode.safeParse(await readJson(response))
   const serverCode = parsed.success ? parsed.data.code : undefined
@@ -137,11 +147,14 @@ export function createSessionTokenMint({
   const cache = new Map<string | undefined, AccountCredential>()
   const inFlight = new Map<string | undefined, Promise<SessionTokenResult>>()
   let cacheOwner: string | undefined
+  /** Bumped on every owner change, so an older owner's answer never lands. */
+  let ownerGeneration = 0
   let rateLimit: { until: number; failure: SessionTokenFailure } | undefined
 
   function adoptOwner(userId: string | undefined): void {
     if (cacheOwner === userId) return
     cacheOwner = userId
+    ownerGeneration += 1
     cache.clear()
     inFlight.clear()
     rateLimit = undefined
@@ -171,7 +184,7 @@ export function createSessionTokenMint({
     } catch {
       return failure('SESSION_UNAVAILABLE')
     }
-    if (!response.ok) return classifyFailure(response)
+    if (!response.ok) return classifyFailure(response, now())
 
     const parsed = zExchangeTokenResponse.safeParse(await readJson(response))
     const expiresAt = parsed.success
@@ -195,10 +208,10 @@ export function createSessionTokenMint({
 
   function commit(
     workspaceId: string | undefined,
-    userId: string,
+    generation: number,
     result: SessionTokenResult
   ): void {
-    if (cacheOwner !== userId) return
+    if (generation !== ownerGeneration) return
     if (result.status === 'ok') {
       cache.set(workspaceId, result.credential)
       return
@@ -225,9 +238,11 @@ export function createSessionTokenMint({
 
     const joined = inFlight.get(workspaceId)
     if (joined) return joined
+    const generation = ownerGeneration
     const running = request(session, workspaceId).then((result) => {
       if (inFlight.get(workspaceId) === running) inFlight.delete(workspaceId)
-      commit(workspaceId, userId, result)
+      if (getSession()?.user.id !== userId) return failure('IDENTITY_CHANGED')
+      commit(workspaceId, generation, result)
       return result
     })
     inFlight.set(workspaceId, running)

@@ -204,15 +204,40 @@ describe('createSessionTokenMint', () => {
       }
     })
 
-    const forFirstUser = mint.getWorkspaceToken()
+    const forFirstUser = mint.mint()
     state.session = sessionFor('user-2')
     const forSecondUser = await mint.getWorkspaceToken()
     releaseFirst()
-    await forFirstUser
+    const firstAnswer = await forFirstUser
     const afterward = await mint.getWorkspaceToken()
 
+    expect(firstAnswer).toMatchObject({ code: 'IDENTITY_CHANGED' })
     expect([forSecondUser, afterward]).toEqual(['jwt-2', 'jwt-2'])
     expect(sent).toHaveLength(2)
+  })
+
+  it('lets a request from before an A→B→A switch neither answer nor cache', async () => {
+    let releaseFirst = () => {}
+    const firstHeld = new Promise<void>((resolve) => {
+      releaseFirst = resolve
+    })
+    const { mint, state } = setup({
+      respond: async (_, index) => {
+        if (index === 1) await firstHeld
+        return json(200, tokenBody(`jwt-${index}`, clock.now + 15 * MINUTE))
+      }
+    })
+
+    const stale = mint.mint()
+    state.session = sessionFor('user-2')
+    await mint.mint()
+    state.session = sessionFor('user-1')
+    const fresh = await mint.getWorkspaceToken()
+    releaseFirst()
+    await stale
+    const afterward = await mint.getWorkspaceToken()
+
+    expect([fresh, afterward]).toEqual(['jwt-3', 'jwt-3'])
   })
 
   it('answers NO_SESSION without a request when signed out', async () => {
@@ -381,6 +406,39 @@ describe('createSessionTokenMint', () => {
     expect(stillLimited).toBe(limited)
     expect(recovered.status).toBe('ok')
     expect(sent).toHaveLength(2)
+  })
+
+  it.for([
+    {
+      name: 'an HTTP-date',
+      header: new Date(T0 + 45_000).toUTCString(),
+      waitMs: 45_000
+    },
+    { name: 'a delay past the cap', header: '86400', waitMs: 10 * MINUTE },
+    {
+      name: 'a date already past',
+      header: new Date(T0 - 1000).toUTCString(),
+      waitMs: undefined
+    }
+  ])('reads Retry-After given as $name', async ({ header, waitMs }) => {
+    const { mint } = setup({
+      respond: () =>
+        json(
+          429,
+          { code: 'rate_limited', message: 'x' },
+          { 'Retry-After': header }
+        )
+    })
+
+    const limited = await mint.mint()
+
+    expect(limited).toMatchObject({
+      code: 'SESSION_UNAVAILABLE',
+      httpStatus: 429
+    })
+    expect(limited.status === 'error' && limited.retryAfterMs).toBe(
+      waitMs ?? undefined
+    )
   })
 
   it('rejects getWorkspaceToken with the coded failure', async () => {
