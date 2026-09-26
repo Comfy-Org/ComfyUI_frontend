@@ -3280,6 +3280,8 @@
       "ending": {
         "title": "Your team plan ends on {date}",
         "body": "Members keep full access until then. Resume your subscription to keep your shared credits and seats.",
+        "enterpriseTitle": "Your Enterprise plan ends on {date}",
+        "enterpriseBody": "Members keep full access until then. Reach out to our sales team to extend.",
         "reactivate": "Resume subscription"
       },
       "planChange": {
@@ -3344,6 +3346,13 @@
       },
       "upsellBanner": "To add teammates, upgrade your plan.",
       "upsellBannerReactivate": "To add more teammates, reactivate your plan.",
+      "resubscribe": "Resubscribe",
+        "upsellBannerEnterpriseEnded": "Contact sales to reactivate your Enterprise plan.",
+        "endedTeamTitle": "Your team plan has ended",
+        "endedEnterpriseTitle": "Your Enterprise plan has ended",
+        "endedPlanTitle": "Your plan has ended",
+        "upsellBannerPlanEnded": "Contact sales to reactivate your plan.",
+        "contactSales": "Contact sales",
       "upgradeToTeam": "Upgrade to Team",
       "reactivateTeam": "Reactivate Team",
       "needMoreMembers": "Need more members?",

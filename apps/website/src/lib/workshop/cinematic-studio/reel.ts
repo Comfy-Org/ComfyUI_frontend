@@ -160,3 +160,24 @@ export function takesOfShot(reel: Reel, shot: number): readonly Take[] {
 export function isRendering(reel: Reel): boolean {
   return reel.takes.some((take) => take.status === 'rendering')
 }
+
+export type TakeKind =
+  | 'done'
+  | 'rendering'
+  | 'cancelled'
+  | 'unpaid'
+  | 'blocked'
+  | 'failed'
+
+/** How a take reads at a glance: its status, with failures sorted by cause. */
+export function takeKind(take: Take): TakeKind {
+  if (take.status !== 'failed') return take.status
+  if (take.reason === 'noCredits') return 'unpaid'
+  if (take.reason === 'policy' || take.reason === 'validation') return 'blocked'
+  return 'failed'
+}
+
+/** A take the Router refused because the balance could not pay for it. */
+export function isUnpaid(take: Take): boolean {
+  return takeKind(take) === 'unpaid'
+}

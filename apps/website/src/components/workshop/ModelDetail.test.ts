@@ -43,7 +43,7 @@ import {
   useWorkshopAuthFlag,
   useWorkshopEnabled,
   useWorkshopEnabledSettled,
-  useWorkshopWorkflowsEnabled
+  useWorkshopAppsEnabled
 } from '../../scripts/posthog'
 import ModelDetail from './ModelDetail.vue'
 import WorkshopGate from './WorkshopGate.vue'
@@ -464,9 +464,7 @@ describe('ModelDetail', () => {
   ])(
     'offers Cinematic Studio on a studio model only inside the staff rollout: $studio',
     ({ studio, offered }) => {
-      vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(
-        computed(() => studio)
-      )
+      vi.mocked(useWorkshopAppsEnabled).mockReturnValue(computed(() => studio))
       mountDetail({
         model: { ...model, slug: 'bfl--flux-2-pro--generate-images' }
       })

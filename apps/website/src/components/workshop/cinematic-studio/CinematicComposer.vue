@@ -12,6 +12,7 @@ import type {
   Resolution
 } from '../../../lib/workshop/cinematic-studio/catalog'
 import { directionOption } from '../../../lib/workshop/cinematic-studio/catalog'
+import type { ShotEstimate } from '../../../lib/workshop/cinematic-studio/estimate'
 import type { StudioGate } from '../../../lib/workshop/cinematic-studio/gate'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
 import type { Locale } from '../../../i18n/translations'
@@ -28,11 +29,12 @@ const {
   direction,
   aspect,
   resolution,
-  takes,
   references,
   gate,
   workspaceName,
   rendering,
+  estimate,
+  credits,
   openPopover,
   locale = 'en'
 } = defineProps<{
@@ -40,11 +42,12 @@ const {
   direction: Direction
   aspect: AspectRatio
   resolution: Resolution
-  takes: number
   references: readonly File[]
   gate: StudioGate
   workspaceName?: string
   rendering: boolean
+  estimate?: ShotEstimate
+  credits?: number
   openPopover?: PopoverKey
   locale?: Locale
 }>()
@@ -57,6 +60,7 @@ const emit = defineEmits<{
 
 const scene = defineModel<string>('scene', { required: true })
 const modelSlug = defineModel<string>('model', { required: true })
+const takes = defineModel<number>('takes', { required: true })
 
 const modelOptions = computed(() =>
   models.map((model) => ({
@@ -227,10 +231,13 @@ const chipClass = (key: PopoverKey) =>
         :rendering
         :can-generate="canGenerate"
         :blocked-note="blockedNote"
+        :estimate
+        :credits
         :locale
         class="ml-auto"
         @generate="emit('generate')"
         @cancel="emit('cancel')"
+        @reduce-takes="takes = $event"
       />
     </div>
   </div>
