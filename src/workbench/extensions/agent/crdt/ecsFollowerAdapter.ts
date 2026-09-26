@@ -6,6 +6,7 @@ import {
 import * as Y from 'yjs'
 
 import type {
+  GraphMutationBatch,
   GraphMutationBatchResult,
   GraphMutations,
   SemanticLinkPayload,
@@ -415,6 +416,21 @@ type LiveSweepRecoveryState =
   | { kind: 'running' }
   | { kind: 'scheduled'; timer: ReturnType<typeof setTimeout> }
 
+type BatchChanges = {
+  batch: GraphMutationBatch
+  session: TargetSession
+  doc: Y.Doc
+  definitions: () => SubgraphDefinitionIndex
+  reconcile: boolean
+  removedLinkIds: number[]
+  nodeActions: Map<string, NodeRootAction>
+  replacedWidgetMaps: Set<string>
+  replacedOpaqueWidgets: Set<string>
+  changedNodeFields: Set<string>
+  changedWidgets: Map<string, Set<string>>
+  changedLinks: Map<string, SemanticLinkPayload | null>
+}
+
 /**
  * Projects each subscribed semantic document into its own ECS mutation stream.
  * Target sessions own their Yjs observers, pending effects, and apply queue;
@@ -593,153 +609,21 @@ export class EcsFollowerAdapter {
     })
     const result = session.mutations.batchResult(
       frameContext(update),
-      (batch) => {
-        // A SubgraphNode host that is already live must never be rebuilt from
-        // its doc entry: `reconcileNode` (and delete + `addNode`) replaces the
-        // host's input list in place, which drops the `widgetId` /
-        // `_subgraphSlot` bindings its promoted widgets hang off, leaving the
-        // host with no widgets at all. Resync the host's scalar fields (title,
-        // mode, flags, properties, colors) and promoted values only;
-        // `readSemanticNode` has already keyed the values from the definition.
-        const isHost = (payload: SemanticNodePayload) =>
-          definitions().has(payload.type)
-        const upsertNode = (
-          payload: SemanticNodePayload,
-          mode: 'add' | 'reconcile'
-        ) => {
-          if (mode === 'add') batch.addNode(payload)
-          else if (isHost(payload)) batch.reconcileNodeFields(payload)
-          else batch.reconcileNode(payload)
-        }
-
-        if (reconcile) {
-          const pendingDeletes = this.intent.pendingDeletes(session.workflowId)
-          const nodes = [...session.nodes.keys()]
-            .filter((id) => !pendingDeletes.has(id))
-            .flatMap((id) => {
-              const payload = readSemanticNode(
-                doc,
-                id,
-                definitions,
-                session.reportedErrors
-              )
-              return payload ? [payload] : []
-            })
-          const links = excludeIncompatibleLinks(
-            [...session.links.keys()].flatMap((id) => {
-              const link = readSemanticLink(
-                doc,
-                id,
-                definitions(),
-                session.reportedErrors
-              )
-              return link &&
-                !pendingDeletes.has(String(link.originNodeId)) &&
-                !pendingDeletes.has(String(link.targetNodeId))
-                ? [link]
-                : []
-            }),
-            session.reportedErrors
-          )
-          batch.removeMissing(
-            nodes.map(({ id }) => toNodeId(id)),
-            links.map(({ id }) => id)
-          )
-          for (const payload of nodes) upsertNode(payload, 'reconcile')
-          for (const link of links) batch.connect(link)
-          return
-        }
-
-        batch.removeLinks(removedLinkIds)
-        const payloads = new Map(
-          [...nodeActions]
-            .filter(([, action]) => action !== 'delete')
-            .map(
-              ([id]) =>
-                [
-                  id,
-                  readSemanticNode(doc, id, definitions, session.reportedErrors)
-                ] as const
-            )
-        )
-        for (const [id, action] of nodeActions) {
-          if (action === 'delete') {
-            batch.deleteNode(toNodeId(id))
-            continue
-          }
-          const payload = payloads.get(id)
-          if (action === 'update' && !(payload && isHost(payload)))
-            batch.deleteNode(toNodeId(id))
-        }
-        for (const [id, payload] of payloads) {
-          if (!payload) continue
-          upsertNode(
-            payload,
-            nodeActions.get(id) === 'add' ? 'add' : 'reconcile'
-          )
-        }
-        // A node whose widget storage was replaced wholesale, either the named
-        // `widgets` map or the positional `__widgets_opaque` array (cmp writes
-        // both in one transaction when a host's storage flips to opaque, and
-        // deletes the opaque array when it flips back), is re-read in full.
-        for (const id of new Set([
-          ...replacedWidgetMaps,
-          ...replacedOpaqueWidgets
-        ])) {
-          if (nodeActions.has(id)) continue
-          const payload = readSemanticNode(
-            doc,
-            id,
-            definitions,
-            session.reportedErrors
-          )
-          if (payload) upsertNode(payload, 'reconcile')
-        }
-        // A node whose scalar fields were edited by key (title, mode, flags,
-        // properties, colors) is re-read so a live host resyncs those fields
-        // without rebuilding its promoted widgets or slots.
-        for (const id of changedNodeFields) {
-          if (
-            nodeActions.has(id) ||
-            replacedWidgetMaps.has(id) ||
-            replacedOpaqueWidgets.has(id)
-          )
-            continue
-          const payload = readSemanticNode(
-            doc,
-            id,
-            definitions,
-            session.reportedErrors
-          )
-          if (payload) upsertNode(payload, 'reconcile')
-        }
-        for (const [id, names] of changedWidgets) {
-          if (nodeActions.has(id) || replacedWidgetMaps.has(id)) continue
-          const node = session.nodes.get(id)
-          const widgets = node?.get('widgets')
-          if (!(widgets instanceof Y.Map)) continue
-          if ([...names].some((name) => !widgets.has(name))) {
-            const payload = readSemanticNode(
-              doc,
-              id,
-              definitions,
-              session.reportedErrors
-            )
-            if (payload) upsertNode(payload, 'reconcile')
-            continue
-          }
-          for (const name of names) {
-            batch.setWidget(toNodeId(id), name, plain(widgets.get(name)))
-          }
-        }
-        const incomingLinks = excludeIncompatibleLinks(
-          [...changedLinks.values()].filter(
-            (link): link is SemanticLinkPayload => link !== null
-          ),
-          session.reportedErrors
-        )
-        for (const link of incomingLinks) batch.connect(link)
-      }
+      (batch) =>
+        this.applyBatchChanges({
+          batch,
+          session,
+          doc,
+          definitions,
+          reconcile,
+          removedLinkIds,
+          nodeActions,
+          replacedWidgetMaps,
+          replacedOpaqueWidgets,
+          changedNodeFields,
+          changedWidgets,
+          changedLinks
+        })
     )
 
     // The pending sets were snapshotted and cleared before `batch` ran, so a
@@ -751,6 +635,194 @@ export class EcsFollowerAdapter {
     session.reconcileNextFrame = !committed
     this.handleReconcileOutcome(session, update, result)
     return committed
+  }
+
+  private applyBatchChanges(args: BatchChanges): void {
+    if (args.reconcile) this.applyFullReconcile(args)
+    else this.applyIncrementalChanges(args)
+  }
+
+  private applyFullReconcile({
+    batch,
+    session,
+    doc,
+    definitions
+  }: Pick<BatchChanges, 'batch' | 'session' | 'doc' | 'definitions'>): void {
+    const pendingDeletes = this.intent.pendingDeletes(session.workflowId)
+    const nodes = [...session.nodes.keys()]
+      .filter((id) => !pendingDeletes.has(id))
+      .flatMap((id) => {
+        const payload = readSemanticNode(
+          doc,
+          id,
+          definitions,
+          session.reportedErrors
+        )
+        return payload ? [payload] : []
+      })
+    const links = excludeIncompatibleLinks(
+      [...session.links.keys()].flatMap((id) => {
+        const link = readSemanticLink(
+          doc,
+          id,
+          definitions(),
+          session.reportedErrors
+        )
+        return link &&
+          !pendingDeletes.has(String(link.originNodeId)) &&
+          !pendingDeletes.has(String(link.targetNodeId))
+          ? [link]
+          : []
+      }),
+      session.reportedErrors
+    )
+    batch.removeMissing(
+      nodes.map(({ id }) => toNodeId(id)),
+      links.map(({ id }) => id)
+    )
+    for (const payload of nodes)
+      this.upsertNode(batch, payload, definitions, 'reconcile')
+    for (const link of links) batch.connect(link)
+  }
+
+  private applyIncrementalChanges(args: BatchChanges): void {
+    const { batch, session, doc, definitions, nodeActions } = args
+    batch.removeLinks(args.removedLinkIds)
+    const payloads = new Map(
+      [...nodeActions]
+        .filter(([, action]) => action !== 'delete')
+        .map(
+          ([id]) =>
+            [
+              id,
+              readSemanticNode(doc, id, definitions, session.reportedErrors)
+            ] as const
+        )
+    )
+    this.applyNodeActions(batch, definitions, nodeActions, payloads)
+    this.upsertChangedNodes(batch, definitions, nodeActions, payloads)
+    this.applyChangedNodeValues(args)
+    const incomingLinks = excludeIncompatibleLinks(
+      [...args.changedLinks.values()].filter(
+        (link): link is SemanticLinkPayload => link !== null
+      ),
+      session.reportedErrors
+    )
+    for (const link of incomingLinks) batch.connect(link)
+  }
+
+  private applyNodeActions(
+    batch: GraphMutationBatch,
+    definitions: () => SubgraphDefinitionIndex,
+    nodeActions: Map<string, NodeRootAction>,
+    payloads: Map<string, SemanticNodePayload | null>
+  ): void {
+    for (const [id, action] of nodeActions) {
+      if (action === 'delete') {
+        batch.deleteNode(toNodeId(id))
+        continue
+      }
+      const payload = payloads.get(id)
+      if (action === 'update' && !(payload && definitions().has(payload.type)))
+        batch.deleteNode(toNodeId(id))
+    }
+  }
+
+  private upsertChangedNodes(
+    batch: GraphMutationBatch,
+    definitions: () => SubgraphDefinitionIndex,
+    nodeActions: Map<string, NodeRootAction>,
+    payloads: Map<string, SemanticNodePayload | null>
+  ): void {
+    for (const [id, payload] of payloads) {
+      if (payload)
+        this.upsertNode(
+          batch,
+          payload,
+          definitions,
+          nodeActions.get(id) === 'add' ? 'add' : 'reconcile'
+        )
+    }
+  }
+
+  private applyChangedNodeValues(args: BatchChanges): void {
+    const {
+      batch,
+      session,
+      doc,
+      definitions,
+      nodeActions,
+      replacedWidgetMaps,
+      replacedOpaqueWidgets
+    } = args
+    for (const id of new Set([
+      ...replacedWidgetMaps,
+      ...replacedOpaqueWidgets
+    ])) {
+      if (nodeActions.has(id)) continue
+      const payload = readSemanticNode(
+        doc,
+        id,
+        definitions,
+        session.reportedErrors
+      )
+      if (payload) this.upsertNode(batch, payload, definitions, 'reconcile')
+    }
+    for (const id of args.changedNodeFields) {
+      if (
+        nodeActions.has(id) ||
+        replacedWidgetMaps.has(id) ||
+        replacedOpaqueWidgets.has(id)
+      )
+        continue
+      const payload = readSemanticNode(
+        doc,
+        id,
+        definitions,
+        session.reportedErrors
+      )
+      if (payload) this.upsertNode(batch, payload, definitions, 'reconcile')
+    }
+    this.applyChangedWidgets(args)
+  }
+
+  private applyChangedWidgets(args: BatchChanges): void {
+    const {
+      batch,
+      session,
+      doc,
+      definitions,
+      nodeActions,
+      replacedWidgetMaps
+    } = args
+    for (const [id, names] of args.changedWidgets) {
+      if (nodeActions.has(id) || replacedWidgetMaps.has(id)) continue
+      const widgets = session.nodes.get(id)?.get('widgets')
+      if (!(widgets instanceof Y.Map)) continue
+      if ([...names].some((name) => !widgets.has(name))) {
+        const payload = readSemanticNode(
+          doc,
+          id,
+          definitions,
+          session.reportedErrors
+        )
+        if (payload) this.upsertNode(batch, payload, definitions, 'reconcile')
+        continue
+      }
+      for (const name of names)
+        batch.setWidget(toNodeId(id), name, plain(widgets.get(name)))
+    }
+  }
+
+  private upsertNode(
+    batch: GraphMutationBatch,
+    payload: SemanticNodePayload,
+    definitions: () => SubgraphDefinitionIndex,
+    mode: 'add' | 'reconcile'
+  ): void {
+    if (mode === 'add') batch.addNode(payload)
+    else if (definitions().has(payload.type)) batch.reconcileNodeFields(payload)
+    else batch.reconcileNode(payload)
   }
 
   private handleReconcileOutcome(

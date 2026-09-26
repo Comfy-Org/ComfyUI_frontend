@@ -1008,7 +1008,16 @@ export class AgentConversationHarness {
   private async runWorkflowScopeAction(
     action: WorkflowScopeAction
   ): Promise<DroppedWorkflowScope | undefined> {
-    return await this.page.evaluate((action) => {
+    if (action.kind === 'drop')
+      return await this.dropWorkflowScopeInPage(action)
+    await this.restoreWorkflowScopeInPage(action)
+    return undefined
+  }
+
+  private async dropWorkflowScopeInPage(
+    action: Extract<WorkflowScopeAction, { kind: 'drop' }>
+  ): Promise<DroppedWorkflowScope> {
+    return await this.page.evaluate((workflowId) => {
       const isBinding = (value: unknown): value is WorkflowBindingActions =>
         typeof value === 'object' &&
         value !== null &&
@@ -1030,24 +1039,37 @@ export class AgentConversationHarness {
         throw new Error('agentWorkflowTabBinding store is not mounted')
       if (!workflows) throw new Error('workflow store is not mounted')
 
-      if (action.kind === 'drop') {
-        const tabPath = binding.tabPathFor(action.workflowId)
-        if (!tabPath)
-          throw new Error(`no bound tab path for workflow ${action.workflowId}`)
-        const tab = workflows.getWorkflowByPath(tabPath)
-        if (!tab) throw new Error(`no open tab at ${tabPath}`)
-        const graphId = tab.activeState?.id
-        if (!graphId) throw new Error(`workflow at ${tabPath} has no graph id`)
-        delete tab.activeState?.id
-        return { tabPath, graphId }
-      }
+      const tabPath = binding.tabPathFor(workflowId)
+      if (!tabPath)
+        throw new Error(`no bound tab path for workflow ${workflowId}`)
+      const tab = workflows.getWorkflowByPath(tabPath)
+      if (!tab) throw new Error(`no open tab at ${tabPath}`)
+      const graphId = tab.activeState?.id
+      if (!graphId) throw new Error(`workflow at ${tabPath} has no graph id`)
+      delete tab.activeState?.id
+      return { tabPath, graphId }
+    }, action.workflowId)
+  }
 
+  private async restoreWorkflowScopeInPage(
+    action: Extract<WorkflowScopeAction, { kind: 'restore' }>
+  ): Promise<void> {
+    await this.page.evaluate((action) => {
+      const isWorkflowLookup = (value: unknown): value is WorkflowLookup =>
+        typeof value === 'object' &&
+        value !== null &&
+        'getWorkflowByPath' in value &&
+        typeof value.getWorkflowByPath === 'function'
+      const mount = document.getElementById('vue-app')
+      const pinia = mount?.__vue_app__?.config.globalProperties.$pinia
+      if (!pinia) throw new Error('Pinia is not mounted')
+      const workflows = [...pinia._s.values()].find(isWorkflowLookup)
+      if (!workflows) throw new Error('workflow store is not mounted')
       const tab = workflows.getWorkflowByPath(action.tabPath)
       if (!tab) throw new Error(`no open tab at ${action.tabPath}`)
       if (!tab.activeState)
         throw new Error(`workflow at ${action.tabPath} has no active state`)
       tab.activeState.id = action.graphId
-      return undefined
     }, action)
   }
 
