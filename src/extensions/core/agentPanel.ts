@@ -6,7 +6,10 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
-import type { AgentConsentNotOfferedReason } from '@/platform/telemetry/types'
+import type {
+  AgentConsentNotOfferedReason,
+  AgentConsentReadOutcome
+} from '@/platform/telemetry/types'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useFirstRunEntry } from '@/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry'
 import {
@@ -192,6 +195,12 @@ export function registerAgentPanelExtension(): void {
         firstRunTookScreen.value ? 'first_run_screen' : screenBusyReason()
 
       const reportedWithheld = new Set<string>()
+      const consentReadOutcome = (): AgentConsentReadOutcome =>
+        consentStore.isChecking
+          ? 'not_yet_determined'
+          : consentStore.accepted
+            ? 'known_present'
+            : 'known_absent'
       const withholdOffer = (
         reason: AgentConsentNotOfferedReason,
         userId = resolvedUserInfo.value?.id,
@@ -205,7 +214,10 @@ export function registerAgentPanelExtension(): void {
         const key = `${userId}.${workspaceId}:${reason}`
         if (reportedWithheld.has(key)) return
         reportedWithheld.add(key)
-        useTelemetry()?.trackAgentConsentNotOffered({ reason })
+        useTelemetry()?.trackAgentConsentNotOffered({
+          reason,
+          consent_read_outcome: consentReadOutcome()
+        })
       }
 
       const offerHeld = ref(false)
