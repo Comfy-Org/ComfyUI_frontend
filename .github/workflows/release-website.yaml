@@ -1,29 +1,125 @@
-# Description: Manual workflow to refresh the apps/website Ashby roles and
-# cloud nodes snapshots and open a PR. Merging the PR triggers the existing
-# Vercel website production deploy via ci-vercel-website-preview.yaml.
+# Description: Refreshes the apps/website Ashby roles and cloud nodes
+# snapshots and opens a PR. Merging the PR triggers the existing Vercel
+# website production deploy via ci-vercel-website-preview.yaml.
+#
+# The `ashby-webhook` dispatch source is the Comfy-Org/comfy-router Worker
+# serving comfy.org/api/webhooks/ashby, which calls this workflow's dispatch
+# endpoint when Ashby reports a job posting change.
 name: 'Release: Website'
 
 on:
   workflow_dispatch:
+    inputs:
+      source:
+        description: 'What triggered this run'
+        required: false
+        default: manual
+        type: choice
+        # Comfy-Org/comfy-router sends `ashby-webhook` verbatim. Renaming or
+        # removing that option makes GitHub reject its dispatch with a 422,
+        # and nothing in this repo would report it.
+        options:
+          - manual
+          - ashby-webhook
+  schedule:
+    # 05:37 and 17:37 UTC — evening and mid-morning Pacific.
+    - cron: '37 5,17 * * *'
 
 concurrency:
   group: release-website
-  cancel-in-progress: true
+  # GitHub keeps at most one running and one pending run per group, so a burst
+  # of Ashby events collapses into a single follow-up run. Cancelling instead
+  # would risk killing a run between pushing the branch and opening the PR.
+  cancel-in-progress: false
 
 jobs:
   refresh-snapshots:
     if: github.repository == 'Comfy-Org/ComfyUI_frontend'
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: write
       pull-requests: write
 
     steps:
+      # The webhook fires on the event; the job board API this workflow reads
+      # is a separate surface that trails it. Ashby documents no bound on that
+      # lag, so this is a guess — if it proves too short the symptom is a run
+      # that fetches pre-change data, writes nothing, and waits for the next
+      # schedule.
+      - name: Let the Ashby job board catch up
+        if: inputs.source == 'ashby-webhook'
+        run: sleep 60
+
       - name: Checkout repository
         uses: actions/checkout@v7
         with:
           ref: main
           persist-credentials: false
+
+      # Compare against whatever the open refresh PR already proposes, not
+      # against main, so a run that changes nothing leaves that PR alone. This
+      # only establishes the baseline; the "Decide" step below is what stops
+      # the run reaching create-pull-request, which rebuilds the branch from
+      # current main and force-pushes whenever the two trees differ — and on
+      # this repo main moves dozens of commits between runs, so it always
+      # differs, snapshots or no snapshots.
+      - name: Adopt the open refresh branch as the comparison baseline
+        env:
+          BRANCH: chore/refresh-website-snapshots
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # `ls-remote --exit-code` answers 2 for "no such branch" and
+          # something else for "could not ask". Treating those alike would let
+          # a network blip silently reinstate main as the baseline and
+          # force-push the churn this step exists to avoid.
+          set +e
+          git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null
+          probe=$?
+          set -e
+          if [ "$probe" -eq 2 ]; then
+            echo "No refresh branch; comparing against main."
+            exit 0
+          fi
+          if [ "$probe" -ne 0 ]; then
+            echo "::error title=Could not check for a refresh branch::git ls-remote exited $probe. Refusing to continue, because falling back to main would force-push a timestamp-only update over the open PR."
+            exit 1
+          fi
+          # Closing a PR does not delete its branch, and neither does merging
+          # unless the repo auto-deletes. Adopting a branch with no open PR
+          # would make the refreshed data match the baseline, skip the PR step,
+          # and leave main stale on a green run — the exact silent staleness
+          # this workflow exists to end.
+          #
+          # Captured the same way as the ls-remote probe above, and for the
+          # same reason: an empty result from a failed `gh` is not the same
+          # answer as an empty result from a successful one.
+          set +e
+          open_pr=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[].number')
+          queried=$?
+          set -e
+          if [ "$queried" -ne 0 ]; then
+            echo "::error title=Could not check for an open refresh PR::gh pr list exited $queried. Refusing to continue rather than guess, because treating this as 'no PR' would force-push over an open one."
+            exit 1
+          fi
+          if [ -z "$open_pr" ]; then
+            echo "::warning title=Ignoring a stale refresh branch::$BRANCH exists with no open PR, so its PR was closed or merged without the branch being deleted. Comparing against main instead; this run will open a fresh PR if the data has moved. Delete the branch to silence this."
+            exit 0
+          fi
+          git fetch --depth=1 origin "$BRANCH"
+          for f in apps/website/src/data/ashby-roles.snapshot.json \
+                   apps/website/src/data/cloud-nodes.snapshot.json; do
+            git checkout FETCH_HEAD -- "$f" \
+              || echo "::notice::$f is not on $BRANCH; using the copy from main."
+          done
+
+      - name: Record the baseline snapshot digest
+        id: baseline
+        run: |
+          echo "digest=$(sha256sum \
+            apps/website/src/data/ashby-roles.snapshot.json \
+            apps/website/src/data/cloud-nodes.snapshot.json \
+            | sha256sum | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
 
       - name: Refresh Ashby snapshot
         uses: ./.github/actions/ashby-pull
@@ -31,12 +127,35 @@ jobs:
           api_key: ${{ secrets.WEBSITE_ASHBY_API_KEY }}
           job_board_name: ${{ secrets.WEBSITE_ASHBY_JOB_BOARD_NAME }}
 
+      # Non-blocking: the cloud nodes refresh calls a different API for a
+      # different page. Letting it fail the job would throw away an already
+      # regenerated Ashby snapshot, so a Comfy Cloud outage would silently
+      # cost every careers update for as long as it lasted.
       - name: Refresh cloud nodes snapshot
+        id: cloud-nodes
+        continue-on-error: true
         uses: ./.github/actions/cloud-nodes-pull
         with:
           api_key: ${{ secrets.WEBSITE_CLOUD_API_KEY }}
 
+      - name: Decide whether a snapshot actually changed
+        id: changed
+        run: |
+          digest=$(sha256sum \
+            apps/website/src/data/ashby-roles.snapshot.json \
+            apps/website/src/data/cloud-nodes.snapshot.json \
+            | sha256sum | cut -d' ' -f1)
+          if [ "$digest" = "$BASELINE" ]; then
+            echo "any=false" >> "$GITHUB_OUTPUT"
+            echo "Snapshots match the baseline; not touching the refresh branch."
+          else
+            echo "any=true" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          BASELINE: ${{ steps.baseline.outputs.digest }}
+
       - name: Create Pull Request
+        if: steps.changed.outputs.any == 'true'
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
           token: ${{ secrets.PR_GH_TOKEN }}
@@ -51,11 +170,29 @@ jobs:
             - `apps/website/src/data/cloud-nodes.snapshot.json` — Comfy Cloud
               `/api/object_info`
 
+            **Merging this PR is what puts the change on comfy.org** — the
+            careers page is rendered from Ashby at build time, so the site does
+            not update until a production deploy runs.
+
             **Flow:**
-            1. `Release: Website` workflow ran (manual trigger).
+            1. `Release: Website` ran (`${{ github.event_name }}`${{ inputs.source && format(', source `{0}`', inputs.source) || '' }}).
             2. This PR opens with the regenerated snapshots.
             3. `CI: Vercel Website Preview` deploys a preview for review.
             4. Merging to `main` triggers the production Vercel deploy.
+
+            This PR only exists because a snapshot actually changed; runs that
+            find no role or node change write nothing and open nothing.
+
+            > [!WARNING]
+            > **Do not commit to `chore/refresh-website-snapshots`.** Any run
+            > that finds new snapshot data rebuilds this branch from `main`
+            > and force-pushes it, overwriting anything pushed here. And if
+            > the data later matches `main` — because someone refreshed it
+            > another way — this PR is closed and the branch deleted. Runs
+            > that find nothing new leave the branch alone entirely. To fix
+            > something, push to your own branch and open a separate PR. (The
+            > repository's lint autofixer is exempt: it re-applies itself
+            > after each update.)
 
             The snapshot fallback in `apps/website/src/utils/ashby.ts` and
             `apps/website/src/utils/cloudNodes.ts` remains intact: builds
@@ -63,8 +200,17 @@ jobs:
             snapshot (with a warning annotation in CI).
 
             Triggered by workflow run `${{ github.run_id }}`.
-          branch: chore/refresh-website-snapshots-${{ github.run_id }}
+          branch: chore/refresh-website-snapshots
           base: main
           labels: |
             Release:Website
           delete-branch: true
+
+      # Runs last so the Ashby half is already safely in a PR: the Cloud
+      # failure must not cost a role change, but it still has to turn the run
+      # red, or a revoked WEBSITE_CLOUD_API_KEY is a green cron forever.
+      - name: Fail if the cloud nodes refresh was skipped
+        if: steps.cloud-nodes.outcome == 'failure'
+        run: |
+          echo "::error title=Cloud nodes snapshot not refreshed::The Comfy Cloud pull failed, so any PR from this run carries Ashby changes only and apps/website/src/data/cloud-nodes.snapshot.json keeps its previous contents. Check WEBSITE_CLOUD_API_KEY and the Cloud API, then re-run."
+          exit 1
