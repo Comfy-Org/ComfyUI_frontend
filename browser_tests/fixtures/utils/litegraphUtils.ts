@@ -406,6 +406,25 @@ export class NodeReference {
 
     return new NodeWidgetReference(index, this)
   }
+  /** Index of an input slot by name, e.g. a DynamicCombo's revealed socket. */
+  async getInputIndexByName(name: string): Promise<number> {
+    return await this.comfyPage.page.evaluate(
+      ([id, inputName]) => {
+        const node = window.app!.canvas.graph!.getNodeById(id)
+        if (!node) throw new Error(`Node ${id} not found`)
+
+        const inputIndex = node.inputs.findIndex(
+          (input) => input.name === inputName
+        )
+        if (inputIndex < 0) {
+          throw new Error(`Input "${inputName}" not found on node ${id}`)
+        }
+
+        return inputIndex
+      },
+      [this.id, name] as const
+    )
+  }
   async click(
     position: 'title' | 'collapse',
     options?: {

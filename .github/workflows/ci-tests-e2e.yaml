@@ -412,7 +412,7 @@ jobs:
             local project="$1"
             local exit_code=0
             local output
-            output=$(pnpm exec playwright test --project="$project" --list --pass-with-no-tests "${FILES[@]}" 2>&1) || exit_code=$?
+            output=$(pnpm exec playwright test --project="$project" --grep-invert '@no-video' --list --pass-with-no-tests "${FILES[@]}" 2>&1) || exit_code=$?
             echo "$output"
             if [ "$exit_code" -ne 0 ]; then
               return 2
@@ -447,7 +447,7 @@ jobs:
             echo '### Skipped safely: no chromium- or cloud-eligible tests'
             echo
             echo 'The workflow detected newly added or changed Playwright tests, but none of them are eligible for the chromium or cloud projects used to record walkthroughs.'
-            echo 'This commonly happens when every test uses a project-routing tag excluded by both: @perf, @mobile, @custom-nodes, or @agent-harness.'
+            echo 'This commonly happens when every test uses a project-routing tag excluded by both (@perf, @mobile, @custom-nodes, or @agent-harness), or opts out of recording with @no-video.'
             echo 'The regular project-specific E2E jobs still run these tests. This video job succeeds without creating an empty report or video artifact.'
             echo
             echo 'Detected files:'
@@ -478,14 +478,14 @@ jobs:
         run: |
           mapfile -t FILES < <(printf '%s\n' "$FALLBACK_SPEC_FILES" | sed '/^$/d' | sort -u)
           if [ "$CHROMIUM_HAS_TESTS" = true ]; then
-            PLAYWRIGHT_HTML_OUTPUT_DIR=playwright-report-chromium pnpm exec playwright test --project=chromium --output=test-results-chromium --timeout=180000 --retries=0 "${FILES[@]}"
+            PLAYWRIGHT_HTML_OUTPUT_DIR=playwright-report-chromium pnpm exec playwright test --project=chromium --grep-invert '@no-video' --output=test-results-chromium --timeout=180000 --retries=0 "${FILES[@]}"
           fi
           if [ "$CLOUD_HAS_TESTS" = true ]; then
             # The ComfyUI server serves web_root per request, so swapping the
             # built frontend in place switches it to the cloud build.
             # The CI container has no rsync, so replace the directory outright.
             rm -rf dist && cp -a dist-cloud dist
-            PLAYWRIGHT_HTML_OUTPUT_DIR=playwright-report-cloud pnpm exec playwright test --project=cloud --output=test-results-cloud --timeout=180000 --retries=0 "${FILES[@]}"
+            PLAYWRIGHT_HTML_OUTPUT_DIR=playwright-report-cloud pnpm exec playwright test --project=cloud --grep-invert '@no-video' --output=test-results-cloud --timeout=180000 --retries=0 "${FILES[@]}"
           fi
 
       - name: Upload new-test report (with embedded video)
