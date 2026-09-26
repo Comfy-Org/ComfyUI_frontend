@@ -863,6 +863,7 @@ function getPriceFromApi(tier: PricingTierConfig): number | null {
 }
 
 const creditsForTier = (tier: PricingTierConfig): number =>
+  getApiPlanForTier(tier.key, currentBillingCycle.value)?.credits ??
   amountForCurrentCycle(tier.pricing.credits)
 
 const videoEstimateForTier = (tier: PricingTierConfig): number =>
