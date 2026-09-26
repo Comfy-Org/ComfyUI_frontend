@@ -1,4 +1,12 @@
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { effectScope, nextTick, computed } from 'vue'
 import type { Ref } from 'vue'
 import { storeToRefs } from 'pinia'
@@ -6,6 +14,9 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useAuthStore } from '@/stores/authStore'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
+import { prepareChurnkey } from '@/platform/cloud/churnkey/churnkeyClient'
+import { launchCancellationFlow } from '@/platform/cloud/subscription/launchCancellationFlow'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
@@ -22,6 +33,9 @@ import {
 import { useBillingContext as useSharedBillingContext } from './useBillingContext'
 
 vi.mock(import('firebase/auth'))
+vi.mock(import('@/platform/cloud/churnkey/churnkeyClient'))
+vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 function useBillingContext() {
   const scope = effectScope()
@@ -63,14 +77,8 @@ vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
 vi.mock(import('@/platform/cloud/subscription/composables/useSubscription'))
 
-vi.mock<unknown>(
-  import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
-  () => ({
-    useSubscriptionDialog: () => ({
-      show: vi.fn(),
-      hide: vi.fn()
-    })
-  })
+vi.mock(
+  import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
 )
 
 vi.mock(import('@/composables/auth/useAuthActions'))
@@ -231,6 +239,34 @@ describe('useBillingContext', () => {
     await expect(fetchStatus()).resolves.toBeUndefined()
   })
 
+  it('reports a failed post-discount refresh through the workspace billing adapter', async () => {
+    mockBillingRail.value = 'stripe'
+    vi.spyOn(
+      useTeamWorkspaceStore(),
+      'activeWorkspaceId',
+      'get'
+    ).mockReturnValue('personal-123')
+    const scope = effectScope()
+    onTestFinished(() => scope.stop())
+    const billing = scope.run(useSharedBillingContext)
+    assert.exists(billing)
+    await vi.waitFor(() => expect(billing.isInitialized.value).toBe(true))
+    const error = new Error('Billing status unavailable')
+    vi.mocked(workspaceApi.getBillingStatus).mockRejectedValue(error)
+    vi.mocked(prepareChurnkey).mockResolvedValue({
+      show: async () => ({ type: 'discount-applied' })
+    })
+    const showFallback = vi.fn()
+
+    await scope.run(() => launchCancellationFlow({ showFallback }))
+
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
+      errorType: 'error_refreshing_billing_after_churnkey_discount'
+    })
+    expect(useSubscription().fetchStatus).not.toHaveBeenCalled()
+    expect(showFallback).not.toHaveBeenCalled()
+  })
+
   it('exposes fetchBalance action', async () => {
     const { fetchBalance } = useBillingContext()
     await expect(fetchBalance()).resolves.toBeUndefined()
@@ -331,20 +367,20 @@ describe('useBillingContext', () => {
     const context = useBillingContext()
     await vi.waitFor(() => {
       expect(useSubscription().fetchStatus).toHaveBeenCalled()
-      expect(vi.mocked(useAuthStore().fetchBalance)).toHaveBeenCalled()
+      expect(useAuthStore().fetchBalance).toHaveBeenCalled()
     })
     vi.clearAllMocks()
 
     await context.reconcileSubscriptionSuccess()
 
     expect(
-      vi.mocked(useTeamWorkspaceStore().setWorkspaceBillingRail)
+      useTeamWorkspaceStore().setWorkspaceBillingRail
     ).toHaveBeenCalledWith('personal-123', 'stripe')
     expect(context.type.value).toBe('workspace')
     expect(workspaceApi.getBillingStatus).toHaveBeenCalled()
     expect(workspaceApi.getBillingBalance).toHaveBeenCalled()
     expect(useSubscription().fetchStatus).not.toHaveBeenCalled()
-    expect(vi.mocked(useAuthStore().fetchBalance)).not.toHaveBeenCalled()
+    expect(useAuthStore().fetchBalance).not.toHaveBeenCalled()
   })
 
   it('does not refresh a balance through a stale rail after discovery fails', async () => {
@@ -353,7 +389,7 @@ describe('useBillingContext', () => {
     const context = useBillingContext()
     await vi.waitFor(() => {
       expect(useSubscription().fetchStatus).toHaveBeenCalled()
-      expect(vi.mocked(useAuthStore().fetchBalance)).toHaveBeenCalled()
+      expect(useAuthStore().fetchBalance).toHaveBeenCalled()
     })
     vi.clearAllMocks()
     vi.mocked(workspaceApi.getBillingStatus).mockRejectedValueOnce(
@@ -365,7 +401,7 @@ describe('useBillingContext', () => {
     )
 
     expect(workspaceApi.getBillingBalance).not.toHaveBeenCalled()
-    expect(vi.mocked(useAuthStore().fetchBalance)).not.toHaveBeenCalled()
+    expect(useAuthStore().fetchBalance).not.toHaveBeenCalled()
   })
 
   it('rejects topup amounts that are not positive whole-dollar cents', async () => {
@@ -401,7 +437,7 @@ describe('useBillingContext', () => {
       await nextTick()
 
       expect(
-        vi.mocked(useTeamWorkspaceStore().updateActiveWorkspace)
+        useTeamWorkspaceStore().updateActiveWorkspace
       ).toHaveBeenCalledWith({
         isSubscribed: true,
         subscriptionPlan: null
@@ -416,7 +452,7 @@ describe('useBillingContext', () => {
       await nextTick()
 
       expect(
-        vi.mocked(useTeamWorkspaceStore().updateActiveWorkspace)
+        useTeamWorkspaceStore().updateActiveWorkspace
       ).not.toHaveBeenCalledWith({
         isSubscribed: false,
         subscriptionPlan: null

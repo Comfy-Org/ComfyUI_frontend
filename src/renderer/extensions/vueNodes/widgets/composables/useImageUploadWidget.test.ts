@@ -40,18 +40,9 @@ vi.mock<unknown>(import('@/composables/node/useNodeImageUpload'), () => ({
   }
 }))
 
-vi.mock(import('@/i18n'), () => ({
-  t: (key: string) => key
-}))
+vi.mock(import('@/i18n'))
 
-vi.mock(import('@/utils/litegraphUtil'), () => ({
-  addToComboValues: (widget: IComboWidget, value: string) => {
-    const values = widget.options.values
-    if (Array.isArray(values) && !values.includes(value)) {
-      values.push(value)
-    }
-  }
-}))
+vi.mock(import('@/utils/litegraphUtil'))
 
 function createUploadNode(initialValue: string = 'missing.png') {
   const onWidgetChanged = vi.fn()

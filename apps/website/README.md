@@ -256,6 +256,52 @@ PUBLIC_WORKSHOP_ENABLED=1 PUBLIC_WORKSHOP_AUTH_FLAG=1 PUBLIC_WORKSHOP_ROUTER_RUN
 previews and production always use PostHog. This is a frontend visibility
 control; the APIs continue to enforce authentication and billing.
 
+### Cloud workflow pages
+
+`workshop-display.json` owns the page and INPUT widgets. The matching record in
+`workshop-workflows.jsonl` supplies the prepared execution graph, input mappings,
+defaults and selected outputs. Add both records when introducing a workflow;
+unmatched entries stay hidden. Prepare metadata offline when content changes.
+The website does not extract editor APP selections or execute widget serializers.
+
+Workflow pages reuse the Models form, validation and output components. The
+`workshop-workflows-enabled` PostHog flag gates new visits and runs. A caller's
+saved run remains recoverable after that flag is disabled; sign-out or workspace
+switching detaches its controller and hides its results. Backend authorization and
+admission controls remain authoritative. Local development also accepts
+`PUBLIC_WORKSHOP_WORKFLOWS_ENABLED=1`.
+
+`src/config/workflow-render.ts` implements the shared workflow request and polling
+helper. Node scripts import `workflow_render` and `workflow_for_model` from
+`scripts/workflow-render.ts`; `COMFY_API_KEY` supplies the credential unless a
+token option is given. File inputs use the form's `{ file, name, size, type }`
+shape and are uploaded through Cloud's existing `/api/inputs/upload-url` grant
+and raw PUT. HTTPS inputs are downloaded within the file limit, then uploaded
+the same way; browser URL inputs require source CORS permission. The returned
+asset name is mapped into the prepared graph for `POST /api/prompt`.
+
+Persist `onAdmitted`'s job ID and resume with `{ runId }`. Do not automatically
+retry an uncertain submission: the existing prompt endpoint does not promise
+idempotency. Aborting the helper stops observation. Explicit cancel calls the
+job-scoped endpoint and is presented as requested, without claiming confirmed
+execution shutdown. Polling `/api/jobs/{id}?short_link=ephemeral_tool_chain`
+returns temporary output links; rereading that job refreshes delivery without
+submitting inference. The API tab shows the native request and upload steps.
+
+Prepare graph previews separately with
+`pnpm --filter @comfyorg/website exec tsx scripts/prepare-workflow-previews.ts`.
+This reads `source.uiWorkflowPath` at the pinned commit from the local checkout
+and writes static SVG plus original workflow JSON into
+`public/workflow-graphs/`. `source.path` identifies the executable API graph;
+the UI workflow path is declared separately in the same JSONL record. New source
+repositories require offline preparation; neither the website build nor run
+admission invokes this tool.
+
+The shared helper completed a real production background-removal run through
+upload, generation and PNG download on 2026-09-23. Staging browser execution,
+the other prepared workflows and caller billing still need acceptance checks.
+Additional backend infrastructure is deferred and requires Cloud team agreement.
+
 ### Models analytics
 
 Product analytics use the website's existing PostHog project, following the

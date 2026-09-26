@@ -6,15 +6,34 @@ export interface ChurnkeyHandlerResult {
   message?: string
 }
 
-export interface ChurnkeySessionResults {
+interface ChurnkeyCloseResults {
   aborted?: boolean
 }
+
+export type ChurnkeySessionOutcome =
+  | { type: 'discount-applied' }
+  | { type: 'abandoned' }
+  | { type: 'closed' }
 
 type ChurnkeyUnsupportedHandler = (
   ...args: unknown[]
 ) => Promise<ChurnkeyHandlerResult>
 
-export interface ChurnkeyInitConfig {
+export type ChurnkeyOfferConfig =
+  | {
+      subscriptionId: string
+      onDiscount: (customer: unknown, coupon: unknown) => void
+      handleDiscount?: never
+      customerAttributes: { nativeOfferEligible: true }
+    }
+  | {
+      subscriptionId?: never
+      onDiscount?: never
+      handleDiscount: ChurnkeyUnsupportedHandler
+      customerAttributes: { nativeOfferEligible: false }
+    }
+
+export type ChurnkeyInitConfig = ChurnkeyOfferConfig & {
   appId: string
   authHash: string
   customerId: string
@@ -26,12 +45,11 @@ export interface ChurnkeyInitConfig {
     freeformFeedback?: string | null
   ) => Promise<ChurnkeyHandlerResult>
   handlePause: ChurnkeyUnsupportedHandler
-  handleDiscount: ChurnkeyUnsupportedHandler
   handleTrialExtension: ChurnkeyUnsupportedHandler
   handlePlanChange: ChurnkeyUnsupportedHandler
   handleRebate: ChurnkeyUnsupportedHandler
   handleRedirect: ChurnkeyUnsupportedHandler
-  onClose: (results: ChurnkeySessionResults) => void
+  onClose: (results: ChurnkeyCloseResults) => void
   onError: (error: unknown, type?: string) => void
 }
 

@@ -2,6 +2,7 @@ import { storeToRefs } from 'pinia'
 import { computed, onScopeDispose, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import type { AgentWorkflowBindSource } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
@@ -21,13 +22,19 @@ interface WorkflowSelectionOptions {
   canSelectTarget: () => boolean
   warnWorkflowUnavailable: () => void
   recoverWorkflow: (workflowId: string) => Promise<ComfyWorkflow | null>
+  onTargetBound?: (
+    workflowId: string,
+    previousWorkflowId: string | null,
+    source: Extract<AgentWorkflowBindSource, 'selector_chip' | 'restored'>
+  ) => void
 }
 
 export function useAgentWorkflowSelection({
   resolver,
   canSelectTarget,
   warnWorkflowUnavailable,
-  recoverWorkflow
+  recoverWorkflow,
+  onTargetBound
 }: WorkflowSelectionOptions) {
   const workflowStore = useWorkflowStore()
   const workflowService = useWorkflowService()
@@ -65,13 +72,26 @@ export function useAgentWorkflowSelection({
     () => workflowSelection.value?.purpose === 'reference'
   )
   let targetSelectionGeneration = 0
+  function onVisibleWorkflowChanged(): void {
+    if (!panelStore.followsVisibleWorkflow) return
+    if (
+      workflowSelection.value?.purpose === 'target' &&
+      workflowSelection.value.workflow !== workflowStore.activeWorkflow
+    )
+      ++targetSelectionGeneration
+  }
+
   function commitWorkflowTarget(
     workflow: ComfyWorkflow,
-    workflowId: string
+    workflowId: string,
+    source: Extract<AgentWorkflowBindSource, 'selector_chip' | 'restored'>,
+    previousWorkflowId: string | null = editableWorkflowId.value ?? null
   ): void {
     bindingStore.bind(workflowId, workflow.path)
     panelStore.setWorkflowTarget(workflow)
     composerStore.removeWorkflowReference(workflowId)
+    if (workflowId !== previousWorkflowId)
+      onTargetBound?.(workflowId, previousWorkflowId, source)
   }
 
   async function prepareWorkflowSelection(
@@ -125,13 +145,14 @@ export function useAgentWorkflowSelection({
     try {
       const workflowId = await prepareWorkflowSelection(tab, isCurrent)
       if (workflowId === undefined || !isCurrent()) return false
+      const previousWorkflowId = editableWorkflowId.value ?? null
       if (!(await workflowService.openWorkflow(tab))) {
         if (isCurrent())
           warnWorkflowSelectionFailed(t('agent.targetNavigationUnavailable'))
         return false
       }
       if (!isCurrent()) return false
-      commitWorkflowTarget(tab, workflowId)
+      commitWorkflowTarget(tab, workflowId, 'selector_chip', previousWorkflowId)
       return true
     } catch (error) {
       if (isCurrent())
@@ -256,7 +277,7 @@ export function useAgentWorkflowSelection({
         warnWorkflowUnavailable()
         return
       }
-      commitWorkflowTarget(target, workflowId)
+      commitWorkflowTarget(target, workflowId, 'restored')
     } catch {
       await closeRecoveredWorkflow(target, recovered)
       if (!isCurrent()) return
@@ -274,6 +295,7 @@ export function useAgentWorkflowSelection({
     isSelecting: computed(() => workflowSelection.value !== null),
     selectingTarget,
     savingReference,
+    onVisibleWorkflowChanged,
     selectTarget: onSelectWorkflowTarget,
     selectReference: onSelectWorkflowReference,
     restoreTarget: onWorkflowRestored,
