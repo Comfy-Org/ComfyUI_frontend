@@ -1656,9 +1656,7 @@
   },
   "gallery": {
     "label": "GALLERY",
-    "heroTitle": {
-      "before": "Built, Tweaked, and Dreamed in"
-    },
+    "heroTitle": "Built, Tweaked, and Dreamed in {brand}",
     "heroSubtitle": "A small glimpse of what’s being created with ComfyUI by the community.",
     "card": {
       "by": "By",

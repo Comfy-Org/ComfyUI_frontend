@@ -2,7 +2,10 @@ import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { defineComponent, h } from 'vue'
 
-import { DEFAULT_CAMERA } from '../../../../lib/workshop/cinematic-studio/reshoot'
+import {
+  DEFAULT_CAMERA,
+  frameTime
+} from '../../../../lib/workshop/cinematic-studio/reshoot'
 import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
 import ReshootMoveControls from './ReshootMoveControls.vue'
 
@@ -27,9 +30,13 @@ describe('ReshootMoveControls', () => {
         })
       )
       const edits = [
-        ...screen.getAllByRole('button', {
-          name: new RegExp(rc('reshoot.move.remove').split('{time}')[0])
-        }),
+        ...keys.map((key) =>
+          screen.getByRole('button', {
+            name: rc('reshoot.move.remove', 'en', {
+              time: frameTime(key.frame)
+            })
+          })
+        ),
         screen.getByRole('button', { name: rc('reshoot.move.clear') })
       ]
 

@@ -84,10 +84,9 @@ const focalLabel = computed(() => {
 const referencePreview = useObjectUrl(() => references[0])
 const blockedNote = computed(() =>
   references.length > 0 && !model.value?.referenceSlug
-    ? tc('cinematic.references.unsupported', locale).replace(
-        '{model}',
-        model.value?.name ?? ''
-      )
+    ? tc('cinematic.references.unsupported', locale, {
+        model: model.value?.name ?? ''
+      })
     : undefined
 )
 const canGenerate = computed(

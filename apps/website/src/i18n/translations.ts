@@ -5,6 +5,7 @@ import type { Locale } from '../config/locales'
 import en from '../locales/en/main.json' with { type: 'json' }
 import ja from '../locales/ja/main.json' with { type: 'json' }
 import zhCN from '../locales/zh-CN/main.json' with { type: 'json' }
+import type { NamedValues } from './interpolate'
 
 type MessageTree = { [key: string]: string | MessageTree }
 
@@ -13,8 +14,6 @@ type LeafPaths<T> = {
 }[keyof T & string]
 
 export type TranslationKey = LeafPaths<typeof en>
-
-export type NamedValues = Record<string, string | number>
 
 export type LocalizedText = { en: string; 'zh-CN': string } & Partial<
   Record<Locale, string>
@@ -87,15 +86,16 @@ export function tAround(
     [slot]: marker
   })
   const markerIndex = message.indexOf(marker)
+  if (markerIndex === -1) {
+    throw new Error(`Translation ${key} is missing slot ${marker}`)
+  }
   if (message.indexOf(marker, markerIndex + marker.length) !== -1) {
     throw new Error(`Translation ${key} repeats slot ${marker}`)
   }
-  return markerIndex === -1
-    ? [message, '']
-    : [
-        message.slice(0, markerIndex),
-        message.slice(markerIndex + marker.length)
-      ]
+  return [
+    message.slice(0, markerIndex),
+    message.slice(markerIndex + marker.length)
+  ]
 }
 
 export function tPlural(

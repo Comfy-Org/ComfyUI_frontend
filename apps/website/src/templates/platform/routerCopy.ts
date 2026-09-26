@@ -1,4 +1,6 @@
 import type { FaqItem } from '../../components/common/FAQSection.vue'
+import type { NamedValues } from '../../i18n/interpolate'
+import { interpolate } from '../../i18n/interpolate'
 import type { Locale } from '../../i18n/translations'
 
 type LocalizedText = { readonly en: string } & Partial<Record<Locale, string>>
@@ -312,9 +314,13 @@ const copy = {
 
 export type RouterCopyKey = keyof typeof copy
 
-export function routerT(key: RouterCopyKey, locale: Locale = 'en'): string {
+export function routerT(
+  key: RouterCopyKey,
+  locale: Locale = 'en',
+  named: NamedValues = {}
+): string {
   const entry: LocalizedText = copy[key]
-  return entry[locale] ?? entry.en
+  return interpolate(entry[locale] ?? entry.en, named)
 }
 
 function isRouterCopyKey(key: string): key is RouterCopyKey {

@@ -2132,9 +2132,7 @@
       "visitHub": "访问社区中心"
     },
     "heroSubtitle": "社区使用 ComfyUI 创作成果的一小部分展示。",
-    "heroTitle": {
-      "before": "在 ComfyUI 中构建、调整与创想"
-    },
+    "heroTitle": "在 {brand} 中构建、调整与创想",
     "label": "画廊"
   },
   "geminiOmni": {

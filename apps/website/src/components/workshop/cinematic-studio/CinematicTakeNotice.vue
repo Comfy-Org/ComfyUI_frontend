@@ -112,12 +112,7 @@ const requestId = computed(() =>
           class="rounded-full border-transparency-white-t20 text-primary-warm-white"
           @click="emit('switchModel', otherModel.slug)"
         >
-          {{
-            tc('cinematic.state.tryOn', locale).replace(
-              '{model}',
-              otherModel.name
-            )
-          }}
+          {{ tc('cinematic.state.tryOn', locale, { model: otherModel.name }) }}
         </Button>
       </template>
     </div>
