@@ -1241,9 +1241,6 @@ describe('ChangeTracker', () => {
       const tracker = createTracker(changed)
       tracker.undoQueue.push(initial)
 
-      // updateState() re-serializes the canvas after loadGraphData() settles
-      // (rather than trusting the loaded JSON as-is), so the mock must
-      // reflect what the canvas holds once each load resolves.
       mockCanvasState(initial)
       await tracker.undo()
 
