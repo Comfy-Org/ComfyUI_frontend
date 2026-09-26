@@ -33,12 +33,11 @@ import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
 import { isResultItemType } from '@/utils/typeGuardUtil'
 
-import { useAssetExportStore } from '@/stores/assetExportStore'
-
 import type { AssetId, AssetItem } from '../schemas/assetSchema'
 import { MediaAssetKey } from '../schemas/mediaAssetSchema'
 import { assetService } from '../services/assetService'
 import { useAssetDownload } from './useAssetDownload'
+import { useAssetZipExport } from './useAssetZipExport'
 import type { AssetDownload } from './useAssetDownload'
 
 const EXCLUDED_TAGS = new Set(['models', 'input', 'output'])
@@ -97,12 +96,14 @@ export function useMediaAssetActions() {
   const litegraphService = useLitegraphService()
   const nodeDefStore = useNodeDefStore()
   const { downloadFiles } = useAssetDownload()
+  const { startZipExport } = useAssetZipExport()
 
   /**
    * Download one or more assets.
-   * In cloud mode, creates a ZIP export via the backend when called with
-   * 2+ assets or with any asset whose job has `outputCount > 1`.
-   * In OSS mode, downloads each file directly, expanding grouped assets
+   * When the assets system is enabled, creates a ZIP export via the
+   * backend when called with 2+ assets or with any asset whose job has
+   * `outputCount > 1`.
+   * Otherwise downloads each file directly, expanding grouped assets
    * (`outputCount > 1`) into their individual outputs.
    * With no argument, uses the asset from `MediaAssetKey` context.
    */
@@ -116,7 +117,10 @@ export function useMediaAssetActions() {
       return typeof count === 'number' && count > 1
     })
 
-    if (isCloud && (targetAssets.length > 1 || hasMultiOutputJobs)) {
+    if (
+      flags.assetsEnabled &&
+      (targetAssets.length > 1 || hasMultiOutputJobs)
+    ) {
       void downloadAssetsAsZip(targetAssets)
       return
     }
@@ -181,51 +185,49 @@ export function useMediaAssetActions() {
   }
 
   async function downloadAssetsAsZip(assets: AssetItem[]) {
-    const assetExportStore = useAssetExportStore()
+    const jobIds: string[] = []
+    const assetIds: string[] = []
+    const namesByJobId = new Map<string, Set<string>>()
+    const wholeJobIds = new Set<string>()
 
-    try {
-      const jobIds: string[] = []
-      const assetIds: string[] = []
-      const namesByJobId = new Map<string, Set<string>>()
-      const wholeJobIds = new Set<string>()
-      const fileCount = getTotalAssetOutputCount(assets)
-
-      for (const asset of assets) {
-        const assetType = getAssetType(asset)
-        const metadata = getOutputAssetMetadata(asset.user_metadata)
-        if (assetType === 'output' || (assetType === 'temp' && metadata)) {
-          const jobId = metadata?.jobId || asset.id
-          if (!jobIds.includes(jobId)) {
-            jobIds.push(jobId)
-          }
-          // When outputCount is set, the asset is a job-level selection
-          // from the gallery and the user wants all outputs for that job.
-          if (metadata?.outputCount != null) {
-            wholeJobIds.add(jobId)
-          } else if (metadata?.jobId && asset.name) {
-            const names = namesByJobId.get(metadata.jobId) ?? new Set<string>()
-            names.add(asset.name)
-            namesByJobId.set(metadata.jobId, names)
-          }
-        } else {
-          assetIds.push(asset.id)
+    for (const asset of assets) {
+      const assetType = getAssetType(asset)
+      const metadata = getOutputAssetMetadata(asset.user_metadata)
+      const jobId = metadata?.jobId || asset.job_id
+      if (
+        jobId &&
+        (assetType === 'output' || (assetType === 'temp' && metadata))
+      ) {
+        if (!jobIds.includes(jobId)) {
+          jobIds.push(jobId)
         }
+        // When outputCount is set, the asset is a job-level selection
+        // from the gallery and the user wants all outputs for that job.
+        if (metadata?.outputCount != null) {
+          wholeJobIds.add(jobId)
+        } else if (metadata?.jobId && asset.name) {
+          const names = namesByJobId.get(metadata.jobId) ?? new Set<string>()
+          names.add(asset.name)
+          namesByJobId.set(metadata.jobId, names)
+        }
+      } else {
+        assetIds.push(asset.id)
       }
+    }
 
-      // A job-level selection outranks any name filter a sibling child of the
-      // same job contributed, whichever order they were selected in.
-      const jobAssetNameFilters = Object.fromEntries(
-        [...namesByJobId]
-          .filter(([jobId]) => !wholeJobIds.has(jobId))
-          .map(([jobId, names]): [string, string[]] => [jobId, [...names]])
-      )
+    // A job-level selection outranks any name filter a sibling child of the
+    // same job contributed, whichever order they were selected in.
+    const jobAssetNameFilters = Object.fromEntries(
+      [...namesByJobId]
+        .filter(([jobId]) => !wholeJobIds.has(jobId))
+        .map(([jobId, names]): [string, string[]] => [jobId, [...names]])
+    )
 
-      const spansMultipleJobs = jobIds.length > 1
-      const namingStrategy = spansMultipleJobs
-        ? 'group_by_job_time'
-        : 'preserve'
+    const spansMultipleJobs = jobIds.length > 1
+    const namingStrategy = spansMultipleJobs ? 'group_by_job_time' : 'preserve'
 
-      const result = await assetService.createAssetExport({
+    await startZipExport(
+      {
         ...(jobIds.length > 0 ? { job_ids: jobIds } : {}),
         ...(assetIds.length > 0 ? { asset_ids: assetIds } : {}),
         ...(Object.keys(jobAssetNameFilters).length > 0
@@ -233,28 +235,9 @@ export function useMediaAssetActions() {
           : {}),
         naming_strategy: namingStrategy,
         include_previews: true
-      })
-
-      assetExportStore.trackExport(result.task_id)
-
-      toast.add({
-        severity: 'info',
-        summary: t('exportToast.exportStarted'),
-        detail: t(
-          'mediaAsset.selection.exportStarted',
-          { count: fileCount },
-          fileCount
-        ),
-        life: 3000
-      })
-    } catch (error) {
-      console.error('Failed to create asset export:', error)
-      toast.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('exportToast.exportFailedSingle')
-      })
-    }
+      },
+      getTotalAssetOutputCount(assets)
+    )
   }
 
   const copyJobId = async (asset?: AssetItem) => {

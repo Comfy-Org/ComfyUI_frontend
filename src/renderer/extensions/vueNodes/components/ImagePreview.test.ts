@@ -10,7 +10,11 @@ import { createI18n } from 'vue-i18n'
 import { useTelemetry } from '@/platform/telemetry'
 
 import { downloadFile } from '@/base/common/downloadUtil'
+import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
 import ImagePreview from '@/renderer/extensions/vueNodes/components/ImagePreview.vue'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+import { resolveNode } from '@/utils/litegraphUtil'
 
 // Mock downloadFile to avoid DOM errors
 vi.mock(import('@/base/common/downloadUtil'), () => ({
@@ -23,6 +27,8 @@ vi.mock(import('@/services/hdrViewerService'), () => ({
 
 vi.mock(import('@/platform/telemetry'))
 
+vi.mock(import('@/utils/litegraphUtil'), { spy: true })
+
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -31,6 +37,7 @@ const i18n = createI18n({
       g: {
         editOrMaskImage: 'Edit or mask image',
         downloadImage: 'Download image',
+        exportImages: 'Export images',
         removeImage: 'Remove image',
         viewImageOfTotal: 'View image {index} of {total}',
         imagePreview:
@@ -87,6 +94,52 @@ describe('ImagePreview', () => {
 
     expect(container.querySelector('.image-preview')).not.toBeInTheDocument()
   })
+
+  it.for([
+    {
+      name: 'a node with several saved outputs',
+      props: { nodeId: '1' },
+      images: [{ filename: 'test1.png' }, { filename: 'test2.png' }],
+      expected: 1
+    },
+    {
+      name: 'a node with a single saved output',
+      props: { nodeId: '1' },
+      images: [{ filename: 'test1.png' }],
+      expected: 0
+    },
+    {
+      name: 'previews that are not saved outputs',
+      props: { nodeId: '1' },
+      images: [],
+      expected: 0
+    },
+    {
+      name: 'images without a node',
+      props: {},
+      images: [{ filename: 'test1.png' }, { filename: 'test2.png' }],
+      expected: 0
+    }
+  ] satisfies {
+    name: string
+    props: { nodeId?: string }
+    images: ResultItem[]
+    expected: number
+  }[])(
+    'offers exporting images in the grid for $name',
+    ({ props, images, expected }) => {
+      vi.mocked(resolveNode).mockReturnValue(createMockLGraphNode({ id: 1 }))
+      vi.spyOn(useNodeOutputStore(), 'getNodeOutputs').mockReturnValue({
+        images
+      })
+
+      renderImagePreview(props)
+
+      expect(
+        screen.queryAllByRole('button', { name: 'Export images' })
+      ).toHaveLength(expected)
+    }
+  )
 
   it('offers the HDR viewer instead of an <img> for exr outputs', () => {
     renderImagePreview({

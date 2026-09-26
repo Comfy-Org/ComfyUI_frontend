@@ -2,6 +2,7 @@ import { computed, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useNodeOutputsExport } from '@/platform/assets/composables/useNodeOutputsExport'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {
   shouldHideLinkedCoreMediaInputActions,
@@ -133,6 +134,7 @@ export function useMoreOptionsMenu() {
     hasImageNode,
     hasOutputNodesSelected,
     hasMultipleSelection,
+    isSingleNode,
     computeSelectionFlags
   } = useSelectionState()
 
@@ -140,6 +142,7 @@ export function useMoreOptionsMenu() {
   const nodeOutputStore = useNodeOutputStore()
 
   const { getImageMenuOptions } = useImageMenuOptions()
+  const { hasMultipleOutputs } = useNodeOutputsExport()
   const {
     getNodeInfoOption,
     getNodeVisualOptions,
@@ -290,8 +293,11 @@ export function useMoreOptionsMenu() {
     }
     options.push({ type: 'divider' })
 
-    // Section 5: Image operations (if image node)
-    if (hasImageNode.value && selectedNodes.value.length > 0) {
+    // Section 5: Image operations (image nodes, or a node with several outputs)
+    if (
+      (hasImageNode.value && selectedNodes.value.length > 0) ||
+      (isSingleNode.value && hasMultipleOutputs(selectedNodes.value[0]))
+    ) {
       options.push(
         ...getImageMenuOptions(selectedNodes.value[0], {
           input: !hideLinkedInputActions,
