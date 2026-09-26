@@ -116,7 +116,8 @@ describe('mint ports against the real layout store delivery', () => {
         null,
       get _nodes() {
         return [...graphNodes.values()] as LGraphNode[]
-      }
+      },
+      events: new EventTarget() as unknown as MintableGraph['events']
     }
     wiring = attachMintPortWiring({
       isEnabled: () => true,
@@ -353,7 +354,8 @@ describe('attachMintPortWiring: root graph scope across a tab switch', () => {
       getNodeById: (id) => graphNodes.get(String(id)) ?? null,
       get _nodes() {
         return [...graphNodes.values()]
-      }
+      },
+      events: new EventTarget() as unknown as MintableGraph['events']
     }
 
     wiring = attachMintPortWiring({

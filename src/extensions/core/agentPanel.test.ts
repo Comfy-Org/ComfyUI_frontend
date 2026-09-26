@@ -8,7 +8,8 @@ let setupScope: EffectScope
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import {
   notifyMintPortsAfterGraphConfigure,
-  notifyMintPortsBeforeGraphLoad
+  notifyMintPortsBeforeGraphLoad,
+  notifyMintPortsGraphLoadFailed
 } from '@/workbench/extensions/agent/crdt/mintPortWiring'
 import { registerWorkflowTabActivityTracker } from '@/workbench/extensions/agent/services/agent/workflowTabActivityTracker'
 
@@ -106,7 +107,8 @@ vi.mock(import('@/services/extensionService'), () => ({
 
 vi.mock(import('@/workbench/extensions/agent/crdt/mintPortWiring'), () => ({
   notifyMintPortsAfterGraphConfigure: vi.fn(),
-  notifyMintPortsBeforeGraphLoad: vi.fn()
+  notifyMintPortsBeforeGraphLoad: vi.fn(),
+  notifyMintPortsGraphLoadFailed: vi.fn()
 }))
 
 vi.mock(import('@/utils/litegraphUtil'), { spy: true })
@@ -1324,6 +1326,21 @@ describe('AgentPanel extension flag gate', () => {
     )
 
     expect(nodeSelectionStore.finishWorkflowLoad).toHaveBeenCalledOnce()
+  })
+
+  it('retries late mint-port graph-event attachment when graph configuration fails', async () => {
+    const { registerAgentPanelExtension } = await import('./agentPanel')
+    registerAgentPanelExtension()
+    const extension = mocks.capturedExtensions.find(
+      (item) => item.name === 'Comfy.AgentPanel'
+    )
+
+    await extension!.onGraphLoadError!(
+      new Error('bad workflow json'),
+      {} as never
+    )
+
+    expect(notifyMintPortsGraphLoadFailed).toHaveBeenCalledOnce()
   })
 
   it('leaves mint suppression open when graph loading fails', async () => {
