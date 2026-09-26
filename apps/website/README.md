@@ -63,9 +63,13 @@ inline that into the client bundle).
 | `WEBSITE_ASHBY_API_KEY`        | Ashby API key (Basic auth)  | Build uses the committed snapshot |
 | `WEBSITE_ASHBY_JOB_BOARD_NAME` | Ashby public job board slug | Build uses the committed snapshot |
 
-The production deploy is the exception: `ci-vercel-website-preview.yaml` fails
-before `vercel build --prod` if either is empty, rather than shipping a
-careers page frozen at whatever the snapshot last held.
+Note that an absent key is not an error anywhere, including production — the
+build falls back to the committed snapshot and `src/utils/ashby.ci.ts` emits a
+CI warning, so a careers page frozen at whatever the snapshot last held looks
+like a green deploy. The cloud-nodes equivalent does hard-fail production
+(`ci-vercel-website-preview.yaml`, `Verify WEBSITE_CLOUD_API_KEY`); adding the
+same gate here is worthwhile once someone has confirmed both values are set as
+Actions **secrets** rather than repo variables.
 
 ### CI wiring (manual step — required)
 

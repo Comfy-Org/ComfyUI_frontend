@@ -85,12 +85,25 @@ jobs:
             echo "::error title=Could not check for a refresh branch::git ls-remote exited $probe. Refusing to continue, because falling back to main would force-push a timestamp-only update over the open PR."
             exit 1
           fi
-          # Closing a PR does not delete its branch. Adopting an abandoned one
+          # Closing a PR does not delete its branch, and neither does merging
+          # unless the repo auto-deletes. Adopting a branch with no open PR
           # would make the refreshed data match the baseline, skip the PR step,
           # and leave main stale on a green run — the exact silent staleness
           # this workflow exists to end.
-          if [ -z "$(gh pr list --head "$BRANCH" --state open --json number --jq '.[].number')" ]; then
-            echo "::warning title=Ignoring an abandoned refresh branch::$BRANCH exists with no open PR, so it was closed without deleting the branch. Comparing against main instead; this run will open a fresh PR if the data has moved. Delete the branch to silence this."
+          #
+          # Captured the same way as the ls-remote probe above, and for the
+          # same reason: an empty result from a failed `gh` is not the same
+          # answer as an empty result from a successful one.
+          set +e
+          open_pr=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[].number')
+          queried=$?
+          set -e
+          if [ "$queried" -ne 0 ]; then
+            echo "::error title=Could not check for an open refresh PR::gh pr list exited $queried. Refusing to continue rather than guess, because treating this as 'no PR' would force-push over an open one."
+            exit 1
+          fi
+          if [ -z "$open_pr" ]; then
+            echo "::warning title=Ignoring a stale refresh branch::$BRANCH exists with no open PR, so its PR was closed or merged without the branch being deleted. Comparing against main instead; this run will open a fresh PR if the data has moved. Delete the branch to silence this."
             exit 0
           fi
           git fetch --depth=1 origin "$BRANCH"
