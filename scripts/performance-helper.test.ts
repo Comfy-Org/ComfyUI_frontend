@@ -233,6 +233,49 @@ describe('PerformanceHelper', () => {
     }
   })
 
+  it('rejects an armed collector that misses its stop boundary', async () => {
+    vi.useFakeTimers()
+    try {
+      installPageGlobals()
+      const raf = installControlledRaf()
+      const page = createPage(async (method) =>
+        method === 'Performance.getMetrics'
+          ? {
+              metrics: REQUIRED_METRICS.map((name) => ({ name, value: 0 }))
+            }
+          : {}
+      )
+      const helper = new PerformanceHelper(page)
+      await helper.init()
+
+      const start = helper.startMeasuring()
+      await raf.waitUntilRequested()
+      await raf.runNext(0)
+      await start
+
+      // Never deliver the closing frame, so only the 1s stop timeout can
+      // finish the collection. One callback arrived, so the collector is armed
+      // but produced no interval.
+      const stop = helper.stopMeasuring('missed-stop-boundary')
+      await vi.advanceTimersByTimeAsync(1_000)
+
+      await expect(stop).resolves.toMatchObject({
+        kind: 'rejected',
+        reason: expect.stringContaining('rAF stop boundary timed out'),
+        measurement: {
+          rafIntervalsMs: [],
+          rafIntervalCount: 0,
+          rafIntervalP50Ms: 0,
+          rafIntervalP95Ms: 0,
+          rafIntervalP99Ms: 0,
+          rafIntervalMaxMs: 0
+        }
+      })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('returns a rejected result when closing collection fails', async () => {
     installPageGlobals()
     const raf = installControlledRaf()
