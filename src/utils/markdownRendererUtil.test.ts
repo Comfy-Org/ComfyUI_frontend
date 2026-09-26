@@ -2,6 +2,16 @@ import { describe, expect, it } from 'vitest'
 
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
+const OVERLAY_PAYLOAD = 'position:fixed;inset:0;z-index:99999;background:red'
+
+function parseOne(html: string, selector: string): Element {
+  const container = document.createElement('div')
+  container.innerHTML = html
+  const element = container.querySelector(selector)
+  if (!element) throw new Error(`no ${selector} in ${html}`)
+  return element
+}
+
 describe('markdownRendererUtil', () => {
   describe('renderMarkdownToHtml', () => {
     it('resolves a relative link href against the base URL', () => {
@@ -59,6 +69,63 @@ describe('markdownRendererUtil', () => {
       expect(html).toContain(
         'src="http://localhost:5228/api/view?filename=gen.png&amp;type=output"'
       )
+    })
+
+    it('rewrites protocol-relative Comfy API URLs through the parse fallback', () => {
+      const html = renderMarkdownToHtml(
+        '[asset](//cloud.comfy.org/api/view?filename=gen.png)',
+        'http://localhost:5228/api'
+      )
+
+      expect(html).toContain(
+        'href="http://localhost:5228/api/view?filename=gen.png"'
+      )
+    })
+
+    it.for([
+      {
+        label: 'image href',
+        markdown: `![x](<y" style="${OVERLAY_PAYLOAD}">)`,
+        selector: 'img'
+      },
+      {
+        label: 'link href',
+        markdown: `[c](<y" style="${OVERLAY_PAYLOAD}">)`,
+        selector: 'a'
+      },
+      {
+        label: 'image alt text',
+        markdown: `![a" style="${OVERLAY_PAYLOAD}](https://e.com/i.png)`,
+        selector: 'img'
+      }
+    ])(
+      'traps a quote-breakout payload from $label inside its attribute',
+      ({ markdown, selector }) => {
+        expect(markdown).toContain(`style="${OVERLAY_PAYLOAD}`)
+
+        const element = parseOne(renderMarkdownToHtml(markdown, ''), selector)
+
+        expect(element.getAttribute('style')).toBeNull()
+        expect(element.outerHTML).toContain(OVERLAY_PAYLOAD)
+      }
+    )
+
+    it('keeps a quoted title inside its attribute', () => {
+      const html = renderMarkdownToHtml(
+        '[asset](https://example.com/a "quo\\"te onmouseover=alert(1)")'
+      )
+
+      expect(html).toContain('title="quo&quot;te onmouseover=alert(1)"')
+      expect(html).toContain('href="https://example.com/a"')
+    })
+
+    it('leaves absolute raw-HTML media srcs verbatim', () => {
+      const html = renderMarkdownToHtml(
+        '<video src="https://cloud.comfy.org/api/view?f=a.mp4" controls></video>',
+        'http://localhost:5228/api'
+      )
+
+      expect(html).toContain('src="https://cloud.comfy.org/api/view?f=a.mp4"')
     })
 
     it('does not rebase API URLs on unrelated hosts', () => {
@@ -186,6 +253,95 @@ Visit our [homepage](https://example.com) to learn more.
 
       // Check heading
       expect(html).toContain('Release Notes')
+    })
+  })
+
+  describe('URL entity handling', () => {
+    function attrOf(html: string, sel: string, attr: string) {
+      const host = document.createElement('div')
+      host.innerHTML = html
+      return host.querySelector(sel)?.getAttribute(attr) ?? null
+    }
+
+    it('does not double-encode an entity a link URL already carries', () => {
+      const html = renderMarkdownToHtml('[x](https://e.com/?a=1&amp;b=2)')
+
+      expect(attrOf(html, 'a', 'href')).toBe('https://e.com/?a=1&b=2')
+    })
+
+    it('does not double-encode an entity an image URL already carries', () => {
+      const html = renderMarkdownToHtml('![x](https://e.com/i.png?a=1&amp;b=2)')
+
+      expect(attrOf(html, 'img', 'src')).toBe('https://e.com/i.png?a=1&b=2')
+    })
+
+    it.for([
+      {
+        label: 'decimal entity in a link',
+        markdown: '[x](https://e.com/?a=1&#38;b=2)',
+        selector: 'a',
+        attribute: 'href',
+        expected: 'https://e.com/?a=1&b=2'
+      },
+      {
+        label: 'hex entity in a link',
+        markdown: '[x](https://e.com/?a=1&#x26;b=2)',
+        selector: 'a',
+        attribute: 'href',
+        expected: 'https://e.com/?a=1&b=2'
+      },
+      {
+        label: 'decimal entity in an image',
+        markdown: '![x](https://e.com/i.png?a=1&#38;b=2)',
+        selector: 'img',
+        attribute: 'src',
+        expected: 'https://e.com/i.png?a=1&b=2'
+      },
+      {
+        label: 'hex entity in an image',
+        markdown: '![x](https://e.com/i.png?a=1&#x26;b=2)',
+        selector: 'img',
+        attribute: 'src',
+        expected: 'https://e.com/i.png?a=1&b=2'
+      }
+    ])('decodes one numeric ampersand layer from $label', (testCase) => {
+      const html = renderMarkdownToHtml(testCase.markdown)
+
+      expect(attrOf(html, testCase.selector, testCase.attribute)).toBe(
+        testCase.expected
+      )
+    })
+
+    it('leaves a bare ampersand in a URL intact', () => {
+      const html = renderMarkdownToHtml('[x](https://e.com/?a=1&b=2)')
+
+      expect(attrOf(html, 'a', 'href')).toBe('https://e.com/?a=1&b=2')
+    })
+
+    it('decodes one entity layer only, keeping deeper ones literal', () => {
+      const html = renderMarkdownToHtml('[x](https://e.com/?a=1&amp;amp;b=2)')
+
+      expect(attrOf(html, 'a', 'href')).toBe('https://e.com/?a=1&amp;b=2')
+    })
+
+    it('removes a scheme made executable by entity decoding', () => {
+      const html = renderMarkdownToHtml('[x](javascript&colon;alert(1))')
+
+      expect(attrOf(html, 'a', 'href')).toBeNull()
+    })
+
+    it('still traps a quote that would break out of the attribute', () => {
+      const html = renderMarkdownToHtml(
+        '[x](https://e.com/?a="onload=alert(1))'
+      )
+      const anchor = parseOne(html, 'a')
+
+      expect(anchor.getAttribute('href')).toContain('"onload=alert(1)')
+      expect(
+        Array.from(anchor.attributes)
+          .map((a) => a.name)
+          .sort()
+      ).toEqual(['href', 'rel', 'target'])
     })
   })
 })

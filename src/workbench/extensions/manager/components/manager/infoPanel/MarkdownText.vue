@@ -5,7 +5,7 @@
       <template v-for="(segment, index) in parsedSegments" :key="index">
         <a
           v-if="segment.type === 'link' && 'url' in segment"
-          :href="segment.url"
+          :href="toSafeExternalHref(segment.url)"
           target="_blank"
           rel="noopener noreferrer"
           class="hover:underline"
@@ -27,6 +27,8 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+
+import { toSafeExternalHref } from '@/utils/urlSafety'
 
 const { text } = defineProps<{
   text: string

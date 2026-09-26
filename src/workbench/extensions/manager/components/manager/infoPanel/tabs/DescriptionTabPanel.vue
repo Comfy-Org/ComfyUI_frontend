@@ -12,7 +12,7 @@
     </ModelInfoField>
     <ModelInfoField v-if="nodePack.repository" :label="t('manager.repository')">
       <a
-        :href="nodePack.repository"
+        :href="toSafeExternalHref(nodePack.repository)"
         target="_blank"
         rel="noopener noreferrer"
         class="inline-flex items-center gap-1.5 text-muted-foreground no-underline transition-colors hover:text-base-foreground"
@@ -27,8 +27,8 @@
     </ModelInfoField>
     <ModelInfoField v-if="licenseInfo" :label="t('manager.license')">
       <a
-        v-if="licenseInfo.isUrl"
-        :href="licenseInfo.text"
+        v-if="licenseInfo.href"
+        :href="licenseInfo.href"
         target="_blank"
         rel="noopener noreferrer"
         class="inline-flex items-center gap-1.5 text-muted-foreground no-underline transition-colors hover:text-base-foreground"
@@ -61,7 +61,7 @@ import { useI18n } from 'vue-i18n'
 
 import ModelInfoField from '@/platform/assets/components/modelInfo/ModelInfoField.vue'
 import type { components } from '@/types/comfyRegistryTypes'
-import { isValidUrl } from '@/utils/formatUtil'
+import { toSafeExternalHref } from '@/utils/urlSafety'
 import MarkdownText from '@/workbench/extensions/manager/components/manager/infoPanel/MarkdownText.vue'
 
 const { t } = useI18n()
@@ -97,9 +97,17 @@ interface LicenseObject {
   text?: string
 }
 
-const parseLicenseObject = (
-  licenseObj: LicenseObject
-): { text: string; isUrl: boolean } => {
+interface LicenseDisplay {
+  text: string
+  href?: string
+}
+
+function asLicenseLink(filename: string, repoUrl: string): LicenseDisplay {
+  const url = createLicenseUrl(filename, repoUrl)
+  return { text: url, href: toSafeExternalHref(url) }
+}
+
+function parseLicenseObject(licenseObj: LicenseObject): LicenseDisplay {
   const licenseFile = licenseObj.file || licenseObj.text
 
   if (
@@ -107,32 +115,17 @@ const parseLicenseObject = (
     isLicenseFile(licenseFile) &&
     nodePack.repository
   ) {
-    const url = createLicenseUrl(licenseFile, nodePack.repository)
-    return {
-      text: url,
-      isUrl: !!url && isValidUrl(url)
-    }
+    return asLicenseLink(licenseFile, nodePack.repository)
   } else if (licenseObj.text) {
-    return {
-      text: licenseObj.text,
-      isUrl: false
-    }
+    return { text: licenseObj.text }
   } else if (typeof licenseFile === 'string') {
     // Return the license file name if repository is missing
-    return {
-      text: licenseFile,
-      isUrl: false
-    }
+    return { text: licenseFile }
   }
-  return {
-    text: JSON.stringify(licenseObj),
-    isUrl: false
-  }
+  return { text: JSON.stringify(licenseObj) }
 }
 
-const formatLicense = (
-  license: string
-): { text: string; isUrl: boolean } | null => {
+function formatLicense(license: string): LicenseDisplay | null {
   // Treat "{}" JSON string as undefined
   if (license === '{}') return null
 
@@ -145,16 +138,9 @@ const formatLicense = (
     return parseLicenseObject(licenseObj)
   } catch (e) {
     if (isLicenseFile(license) && nodePack.repository) {
-      const url = createLicenseUrl(license, nodePack.repository)
-      return {
-        text: url,
-        isUrl: !!url && isValidUrl(url)
-      }
+      return asLicenseLink(license, nodePack.repository)
     }
-    return {
-      text: license,
-      isUrl: false
-    }
+    return { text: license }
   }
 }
 

@@ -85,6 +85,7 @@ watchDebounced(
       v-if="highlighted"
       class="overflow-x-auto p-4 font-mono text-sm [&_pre]:bg-transparent"
       :html="highlighted"
+      allow-inline-style
     />
     <pre
       v-else
