@@ -6,6 +6,7 @@ import { isCloud } from '@/platform/distribution/types'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+import { reportError } from '@/platform/telemetry/reportError'
 import {
   clearWorkflowRestoreState,
   prepareWorkflowWorkspaceTransition
@@ -959,9 +960,17 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     const generation = identityGeneration
     const response = await workspaceApi.acceptInvite(token)
 
-    // Refresh workspace list to include newly joined workspace
+    // Refresh workspace list to include newly joined workspace. The invite is
+    // already consumed at this point, so a refresh failure must not surface
+    // as an accept failure — the next workspace fetch reconciles the list.
     if (!isStaleIdentity(generation)) {
-      await refreshWorkspaces()
+      try {
+        await refreshWorkspaces()
+      } catch (error) {
+        reportError(error, {
+          errorType: 'error_refreshing_workspaces_after_invite_accept'
+        })
+      }
     }
 
     return {
