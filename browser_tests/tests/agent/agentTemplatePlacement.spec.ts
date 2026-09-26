@@ -17,6 +17,7 @@ import {
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { emptyAgentThreadPage } from '@e2e/fixtures/utils/agentThreadPage'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
 
 // Agent template placement (ADR-CRDT-PLACEMENT-0035): when the in-app Comfy
@@ -262,7 +263,7 @@ class TemplatePlacementHarness {
   private async mockAgentApi(): Promise<void> {
     const { page } = this
     await page.route('**/api/agent/threads', (route) =>
-      route.fulfill(jsonRoute({ threads: [] }))
+      route.fulfill(jsonRoute(emptyAgentThreadPage()))
     )
     await page.route('**/api/agent/threads/*/messages', (route) => {
       if (route.request().method() === 'POST') {

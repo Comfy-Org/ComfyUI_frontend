@@ -45,6 +45,7 @@ import { RECORDED_EXPECTATIONS } from '@e2e/fixtures/data/agent/agentConversatio
 import type { TabSwitchLens, WorkspaceStore } from '@e2e/types/globals'
 
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { emptyAgentThreadPage } from '@e2e/fixtures/utils/agentThreadPage'
 import { assertAgentReplayNodeContract } from '@e2e/fixtures/utils/agentReplayNodeContract'
 import { mockSavedWorkflowPersistence } from '@e2e/fixtures/utils/savedWorkflowPersistence'
 
@@ -70,6 +71,18 @@ const COMPOSER_LABEL = createI18n({
 }).global.t('agent.placeholder')
 // Matches "Worked", "Worked for 3 seconds" and "Worked for 1m 2s" (agent.worked*).
 const SUMMARY_LABEL = new RegExp(`^${enMessages.agent.worked}( for .+)?$`)
+// A replay drives a fake agent server that never fails, so this copy appearing
+// over the canvas always means something the recording did not ask for went
+// wrong -- a request the mocks do not answer, or a response they answer with a
+// body the panel's contract rejects.
+//
+// Read `agentThreadPage.test.ts` alongside this: on `main` the error overlay
+// also consults `Comfy.RightSidePanel.ShowErrorsTab`, which `agentPanelFixture`
+// turns off, so the panel can record an agent failure here and render nothing.
+// That is why the contract itself is asserted in vitest as well, and why this
+// check alone is not proof the panel is healthy.
+const AGENT_ERROR_COPY =
+  enMessages.errorCatalog.promptErrors.agent_api_failed.title
 const FAILED_GLYPH = /lucide--circle-x/
 const THINKING_GLYPH = '[class*="lucide--brain"]'
 
@@ -291,6 +304,7 @@ export class AgentConversationHarness {
       .click()
     await expect(this.panel).toBeVisible({ timeout: PANEL_MOUNT_TIMEOUT })
     await this.selectWorkflowTarget()
+    await this.expectNoAgentError()
   }
 
   private async selectWorkflowTarget(): Promise<void> {
@@ -365,6 +379,29 @@ export class AgentConversationHarness {
     }
   }
 
+  /**
+   * Fails when the panel is telling the user the agent hit a server error.
+   *
+   * Named, not pixel-matched: a `@screenshot` case is the only reason anyone
+   * noticed this copy, and only because it happened to be inside the golden's
+   * crop. Asserted after boot and after every turn, because the toast can be
+   * raised either at panel mount (history load) or mid-turn (an active-tab
+   * open, a notice from the turn loop).
+   *
+   * Two ways a green run still means nothing, both measured rather than
+   * guessed: a *second* unrelated error group collapses the overlay to
+   * "N errors found" and this copy is not rendered, and on `main` the overlay
+   * is gated on the Issues-tab setting this fixture disables. The vitest
+   * contract guard covers what this cannot.
+   */
+  async expectNoAgentError(): Promise<void> {
+    await expect(
+      this.page.getByTestId('error-overlay').filter({
+        hasText: AGENT_ERROR_COPY
+      })
+    ).toHaveCount(0)
+  }
+
   // Every turn in order, each judged on the panel and the canvas as it lands.
   async runTurns(beforeFirstGraphOps?: () => Promise<void>): Promise<void> {
     for (const turn of this.conversation.turns.keys()) {
@@ -374,6 +411,7 @@ export class AgentConversationHarness {
       await this.waitForTurnComplete()
       await this.expectTurnRendered(turn, before)
       await this.expectCanvasReplayed(turn)
+      await this.expectNoAgentError()
     }
   }
 
@@ -630,7 +668,7 @@ export class AgentConversationHarness {
   private async mockAgentApi(): Promise<void> {
     const { page } = this
     await page.route('**/api/agent/threads', (route) =>
-      route.fulfill(jsonRoute({ threads: [] }))
+      route.fulfill(jsonRoute(emptyAgentThreadPage()))
     )
     await page.route('**/api/agent/threads/*/messages', (route) => {
       const request = route.request()
@@ -937,6 +975,7 @@ export class AgentConversationHarness {
     })
     await expect(this.panel).toBeVisible({ timeout: PANEL_MOUNT_TIMEOUT })
     await this.selectWorkflowTarget()
+    await this.expectNoAgentError()
   }
 
   // Sends one more doc_update that resyncs `widget` on `nodeId` to its

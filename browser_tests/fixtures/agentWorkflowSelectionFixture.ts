@@ -6,6 +6,7 @@ import type { CloudWorkflowEntry } from '@/workbench/extensions/agent/schemas/ag
 
 import { bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { emptyAgentThreadPage } from '@e2e/fixtures/utils/agentThreadPage'
 
 type WorkflowSelection = {
   savedPaths: string[]
@@ -56,12 +57,7 @@ export const workflowSelectionTest = base.extend<{
     await page.route('**/api/agent/threads**', (route) => {
       if (route.request().method() === 'POST')
         postedMessages.push(route.request().postData() ?? '')
-      return route.fulfill(
-        jsonRoute({
-          threads: [],
-          pagination: { offset: 0, limit: 100, total: 0, has_more: false }
-        })
-      )
+      return route.fulfill(jsonRoute(emptyAgentThreadPage()))
     })
     await page.route('**/api/userdata?*', (route) => {
       const dir = new URL(route.request().url()).searchParams.get('dir')
