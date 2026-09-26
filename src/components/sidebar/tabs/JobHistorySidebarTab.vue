@@ -66,7 +66,7 @@
         />
         <MediaLightbox
           v-model:active-index="galleryActiveIndex"
-          :all-gallery-items="galleryItems"
+          :items="galleryItems"
         />
       </div>
     </template>
@@ -90,7 +90,7 @@ import { useQueueClearHistoryDialog } from '@/composables/queue/useQueueClearHis
 import { useResultGallery } from '@/composables/queue/useResultGallery'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
-import MediaLightbox from '@/components/sidebar/tabs/queue/MediaLightbox.vue'
+import MediaLightbox from '@/components/common/MediaLightbox.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTracking'
 import { useCommandStore } from '@/stores/commandStore'

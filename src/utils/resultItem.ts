@@ -1,6 +1,9 @@
 import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
 import type { SerializedNodeId } from '@/types/nodeId'
-import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import {
+  getMediaTypeFromFilename,
+  htmlVideoTypeForFilename
+} from '@/utils/formatUtil'
 
 export interface AugmentedResultItem extends ResultItem {
   filename: string
@@ -68,9 +71,8 @@ export function isTextResult(item: AugmentedResultItem): boolean {
 export function resultItemHtmlVideoType(
   item: AugmentedResultItem
 ): string | undefined {
-  if (item.filename.endsWith('.webm')) return 'video/webm'
-  if (item.filename.endsWith('.mp4')) return 'video/mp4'
-  if (item.filename.endsWith('.mov')) return 'video/quicktime'
+  const byFilename = htmlVideoTypeForFilename(item.filename)
+  if (byFilename) return byFilename
   if (isVhsFormat(item)) {
     if (item.format?.endsWith('webm')) return 'video/webm'
     if (item.format?.endsWith('mp4')) return 'video/mp4'

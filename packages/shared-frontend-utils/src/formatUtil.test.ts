@@ -13,6 +13,7 @@ import {
   getMediaTypeFromFilename,
   getPathDetails,
   highlightQuery,
+  htmlVideoTypeForFilename,
   isCivitaiModelUrl,
   isCivitaiUrl,
   isPreviewableMediaType,
@@ -76,6 +77,26 @@ describe('formatUtil', () => {
       const truncated = truncateFilename(filename, 15)
       expect(truncated.endsWith('.txt')).toBe(true)
       expect(truncated).toContain('...')
+    })
+  })
+
+  describe('htmlVideoTypeForFilename', () => {
+    it('maps known video extensions to their MIME type', () => {
+      expect(htmlVideoTypeForFilename('clip.mp4')).toBe('video/mp4')
+      expect(htmlVideoTypeForFilename('CLIP.MP4')).toBe('video/mp4')
+    })
+
+    it('returns undefined for a name with no usable extension', () => {
+      expect(htmlVideoTypeForFilename('clip.txt')).toBeUndefined()
+      expect(htmlVideoTypeForFilename('clip')).toBeUndefined()
+    })
+
+    it('does not resolve inherited object members as MIME types', () => {
+      // A plain-object index reaches Object.prototype, so these would
+      // otherwise return a function or an object from a string|undefined API.
+      expect(htmlVideoTypeForFilename('clip.constructor')).toBeUndefined()
+      expect(htmlVideoTypeForFilename('clip.toString')).toBeUndefined()
+      expect(htmlVideoTypeForFilename('clip.__proto__')).toBeUndefined()
     })
   })
 

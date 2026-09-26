@@ -18,7 +18,6 @@ import type { TaskOutput } from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
 import type { TaskItemImpl } from '@/stores/queueStore'
 import type { AugmentedResultItem } from '@/utils/resultItem'
-import { findResultIndexByUrl } from '@/utils/resultItemUrl'
 import { filterPreviewableResults } from '@/utils/resultItem'
 import { parseTaskOutput } from '@/stores/resultItemParsing'
 
@@ -41,13 +40,6 @@ const inFlightJobAssets = new Map<string, Promise<JobOutputAsset[]>>()
 let latestTaskRequestId: string | null = null
 
 // ===== Task Output Caching =====
-
-export function findActiveIndex(
-  items: readonly AugmentedResultItem[],
-  url?: string
-): number {
-  return findResultIndexByUrl(items, url)
-}
 
 /**
  * Gets previewable outputs for a task, with lazy loading, caching, and request deduping.

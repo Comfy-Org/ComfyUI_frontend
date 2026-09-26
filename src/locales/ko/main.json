@@ -1859,7 +1859,6 @@
     "imageDoesNotExist": "이미지가 존재하지 않습니다",
     "imageFailedToLoad": "이미지를 로드하지 못했습니다.",
     "imageGallery": "이미지 갤러리",
-    "imageLightbox": "이미지 미리보기",
     "imagePreview": "이미지 미리보기 - 화살표 키를 사용하여 이미지 간 이동",
     "imageUrl": "이미지 URL",
     "import": "가져오기",
