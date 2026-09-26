@@ -5,6 +5,8 @@ import { useI18n } from 'vue-i18n'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
+import { openDeployToComfyApiDialog } from '@/platform/workflow/deploy/composables/lazyDeployToComfyApiDialog'
+import { useDeployToComfyApiGate } from '@/platform/workflow/deploy/composables/useDeployToComfyApiGate'
 import { openShareDialog } from '@/platform/workflow/sharing/composables/lazyShareDialog'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
@@ -39,6 +41,7 @@ interface AddItemOptions {
   disabled?: boolean
   prependSeparator?: boolean
   isNew?: boolean
+  badge?: string
 }
 
 export function useWorkflowActionsMenu(
@@ -54,8 +57,10 @@ export function useWorkflowActionsMenu(
   const subgraphStore = useSubgraphStore()
   const menuItemStore = useMenuItemStore()
   const { flags } = useFeatureFlags()
+  const deployGate = useDeployToComfyApiGate()
   const appModeStore = useAppModeStore()
   const { enterBuilder, pruneLinearData } = appModeStore
+  const { toastErrorHandler } = useErrorHandling()
 
   const targetWorkflow = computed(
     () => workflow?.value ?? workflowStore.activeWorkflow
@@ -83,15 +88,14 @@ export function useWorkflowActionsMenu(
       visible = true,
       disabled = false,
       prependSeparator = false,
-      isNew = false
+      isNew = false,
+      badge = isNew ? t('g.experimental') : undefined
     }: AddItemOptions) => {
       if (prependSeparator && visible) items.push({ separator: true })
       const item: WorkflowMenuAction = { id, label, icon, command, disabled }
       if (!visible) item.visible = false
-      if (isNew) {
-        item.badge = t('g.experimental')
-        item.isNew = true
-      }
+      if (isNew) item.isNew = true
+      if (badge) item.badge = badge
       items.push(item)
     }
 
@@ -196,9 +200,21 @@ export function useWorkflowActionsMenu(
       id: 'share',
       label: t('breadcrumbsMenu.share'),
       icon: 'icon-[comfy--send]',
-      command: () =>
-        openShareDialog().catch(useErrorHandling().toastErrorHandler),
+      command: () => openShareDialog().catch(toastErrorHandler),
       visible: isCloud && flags.workflowSharingEnabled
+    })
+
+    addItem({
+      id: 'deploy-as-api',
+      label: t('deployToComfyApi.buttonLabel'),
+      icon: 'icon-[lucide--rocket]',
+      command: async () => {
+        await ensureWorkflowActive(targetWorkflow.value)
+        await openDeployToComfyApiDialog().catch(toastErrorHandler)
+      },
+      visible: isRoot && deployGate.enabled.value,
+      isNew: true,
+      badge: t('g.new')
     })
 
     addItem({
