@@ -314,6 +314,21 @@ describe('performance report', () => {
     expect(output).not.toContain('2500ms')
   })
 
+  it('preserves a fractional median count instead of rounding it up', () => {
+    // Two samples, one interval over the 16.67ms threshold and one under, so
+    // the median count is 0.5. Rounding it to 1 would overstate the observed
+    // count and disagree with the delta calculated from 0.5.
+    const output = renderPerfReport(
+      report([accepted(10), accepted(20)]),
+      null,
+      []
+    )
+
+    expect(output).toContain('0.5 intervals >16.67ms')
+    expect(output).toContain('| sample: rAF intervals >16.67ms | 0.5 |')
+    expect(output).not.toContain('1 intervals >16.67ms')
+  })
+
   it('does not claim a clean result without compatible history', () => {
     const output = renderPerfReport(
       report([accepted(20)]),

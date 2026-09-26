@@ -207,10 +207,20 @@ function computeCV(stats: MetricStats): number {
   return stats.mean > 0 ? (stats.stddev / stats.mean) * 100 : 0
 }
 
+/**
+ * Counts are reported as a median across samples, so an even sample count can
+ * legitimately land on a half — two runs with zero and one slow interval have a
+ * median of 0.5. Rounding that to an integer overstates the observed count and
+ * makes the displayed value disagree with the delta calculated from it.
+ */
+function formatCount(value: number): string {
+  return Number.isInteger(value) ? String(value) : value.toFixed(1)
+}
+
 function formatValue(value: number, unit: string): string {
   if (unit === 'ms') return `${value.toFixed(0)}ms`
   if (unit === 'bytes') return formatBytes(value)
-  return value.toFixed(0)
+  return formatCount(value)
 }
 
 function formatDelta(pct: number | null): string {
@@ -318,7 +328,7 @@ function renderHeadlineSummary(
     const parts: string[] = [`**${escapeMarkdown(testName)}**:`]
     if (p95Interval !== null) parts.push(`${p95Interval.toFixed(1)}ms rAF p95`)
     if (maxInterval !== null) parts.push(`${maxInterval.toFixed(1)}ms rAF max`)
-    if (over16 !== null) parts.push(`${over16.toFixed(0)} intervals >16.67ms`)
+    if (over16 !== null) parts.push(`${formatCount(over16)} intervals >16.67ms`)
     if (tbt !== null) parts.push(`${tbt.toFixed(0)}ms TBT`)
     if (heap !== null) parts.push(`${formatBytes(heap)} heap`)
 
