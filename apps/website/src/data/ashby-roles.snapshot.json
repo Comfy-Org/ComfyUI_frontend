@@ -1,16 +1,16 @@
 {
-  "fetchedAt": "2026-08-22T04:58:20.183Z",
+  "fetchedAt": "2026-09-25T21:51:28.245Z",
   "departments": [
     {
       "name": "DESIGN",
       "key": "design",
       "roles": [
         {
-          "id": "18743530eb448c99",
-          "title": "Senior Product Designer",
+          "id": "6c7f7d96f99eac38",
+          "title": "Sr./Staff Product Designer, Developer Platform",
           "department": "Design",
           "location": "San Francisco",
-          "jobUrl": "https://jobs.ashbyhq.com/comfy-org/b2e864c6-4754-4e04-8f46-1022baa103c3"
+          "jobUrl": "https://jobs.ashbyhq.com/comfy-org/2bb20277-7e2a-43df-82f2-48bf77881c50"
         }
       ]
     },
@@ -47,18 +47,18 @@
           "jobUrl": "https://jobs.ashbyhq.com/comfy-org/3e0ec22c-758d-4a47-aebe-ac4583ae3d8a"
         },
         {
-          "id": "f5145a857c5fcba1",
-          "title": "Member of Technical Staff, Quality Systems",
-          "department": "Engineering",
-          "location": "San Francisco",
-          "jobUrl": "https://jobs.ashbyhq.com/comfy-org/902a3d00-ee3a-48ef-bd37-bd6099b55339"
-        },
-        {
           "id": "8abfa6f8285b40dc",
           "title": "Member of Technical Staff, Release Engineering",
           "department": "Engineering",
           "location": "San Francisco",
           "jobUrl": "https://jobs.ashbyhq.com/comfy-org/bbcd32a3-27fb-40f7-94ff-8ec1166b5694"
+        },
+        {
+          "id": "db1bd76387c0ad17",
+          "title": "Member of Technical Staff, Billing",
+          "department": "Engineering",
+          "location": "San Francisco",
+          "jobUrl": "https://jobs.ashbyhq.com/comfy-org/5fe87378-ee26-4e28-b1a0-154e39875a38"
         }
       ]
     },
@@ -67,31 +67,11 @@
       "key": "marketing",
       "roles": [
         {
-          "id": "5e009d0decba8e55",
-          "title": "Freelance Graphic Designer",
+          "id": "5cb067623b28da25",
+          "title": "Sr. Growth Engineer",
           "department": "Marketing",
-          "location": "San Francisco",
-          "jobUrl": "https://jobs.ashbyhq.com/comfy-org/a1c5c0e6-960b-4b63-88f4-83bfe08535bf"
-        }
-      ]
-    },
-    {
-      "name": "OPERATIONS",
-      "key": "operations",
-      "roles": [
-        {
-          "id": "6d2dac733df9c6f5",
-          "title": "Head of Finance",
-          "department": "Operations",
-          "location": "San Francisco",
-          "jobUrl": "https://jobs.ashbyhq.com/comfy-org/4c077431-89e0-488c-8af5-d0f3e738c742"
-        },
-        {
-          "id": "bbfdbffb63ea93ac",
-          "title": "Lead, Strategic Finance",
-          "department": "Operations",
-          "location": "San Francisco",
-          "jobUrl": "https://jobs.ashbyhq.com/comfy-org/29c7f055-02d1-408a-98d9-e83d0772719a"
+          "location": "San Francisco Office",
+          "jobUrl": "https://jobs.ashbyhq.com/comfy-org/6de76600-f6b3-4052-b847-771381966e6e"
         }
       ]
     },
@@ -99,20 +79,6 @@
       "name": "SALES",
       "key": "sales",
       "roles": [
-        {
-          "id": "ac930fdae3b69872",
-          "title": "Enterprise Account Executive",
-          "department": "Sales",
-          "location": "San Francisco",
-          "jobUrl": "https://jobs.ashbyhq.com/comfy-org/f0eb916e-73f7-4e89-9342-6f0789c3aaff"
-        },
-        {
-          "id": "26ff408d46a914fa",
-          "title": "Senior Data Scientist, Product & Growth",
-          "department": "Sales",
-          "location": "San Francisco",
-          "jobUrl": "https://jobs.ashbyhq.com/comfy-org/57ff81f6-7df4-4f9d-be21-ce55f348bdad"
-        },
         {
           "id": "ecbfd8b4411ce699",
           "title": "Forward Deployed Creative",

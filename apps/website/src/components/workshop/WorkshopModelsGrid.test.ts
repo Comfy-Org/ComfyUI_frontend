@@ -2,11 +2,14 @@ import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { nextTick } from 'vue'
+import { computed, nextTick } from 'vue'
 
 import type { WorkshopModel } from '../../config/models-catalogue'
 import { lastShelf } from '../../lib/workshop/shelf-memory'
+import { useWorkshopWorkflowsEnabled } from '../../scripts/posthog'
 import WorkshopModelsGrid from './WorkshopModelsGrid.vue'
+
+vi.mock(import('../../scripts/posthog'))
 
 const models: WorkshopModel[] = [
   {
@@ -189,41 +192,50 @@ describe('WorkshopModelsGrid', () => {
     expect(cardNames()[0]).toContain('Flux')
   })
 
-  it('keeps Flux 3 out of the featured models', () => {
-    const featured = [
-      {
-        slug: 'byteplus--seedance-2-fast-text-to-video--generate-videos',
-        name: 'Seedance 2 Fast',
-        rank: 32
-      },
-      {
-        slug: 'bfl--flux-3-text-to-video--generate-videos',
-        name: 'FLUX.3 Video',
-        rank: 63
-      },
-      {
-        slug: 'byteplus--seedream-5-pro--generate-images',
-        name: 'Seedream 5 Pro',
-        rank: 0
-      }
-    ].map(({ slug, name, rank }) => ({
-      ...models[0],
-      slug,
-      name,
-      href: `/models/${slug}/`,
-      recommendedRank: rank,
-      thumbnailUrl: `https://example.com/${rank}.webp`
-    }))
+  it.for([
+    { studio: true, lead: ['Cinematic Studio'] },
+    { studio: false, lead: [] }
+  ])(
+    'keeps Flux 3 out of the featured models (studio flag $studio)',
+    ({ studio, lead }) => {
+      vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(
+        computed(() => studio)
+      )
+      const featured = [
+        {
+          slug: 'byteplus--seedance-2-fast-text-to-video--generate-videos',
+          name: 'Seedance 2 Fast',
+          rank: 32
+        },
+        {
+          slug: 'bfl--flux-3-text-to-video--generate-videos',
+          name: 'FLUX.3 Video',
+          rank: 63
+        },
+        {
+          slug: 'byteplus--seedream-5-pro--generate-images',
+          name: 'Seedream 5 Pro',
+          rank: 0
+        }
+      ].map(({ slug, name, rank }) => ({
+        ...models[0],
+        slug,
+        name,
+        href: `/models/${slug}/`,
+        recommendedRank: rank,
+        thumbnailUrl: `https://example.com/${rank}.webp`
+      }))
 
-    render(WorkshopModelsGrid, { props: { models: featured } })
+      render(WorkshopModelsGrid, { props: { models: featured } })
 
-    const pagination = screen.getByTestId('featured-pagination')
-    expect(
-      within(pagination)
-        .getAllByRole('button')
-        .map((button) => button.getAttribute('aria-label'))
-    ).toEqual(['Seedream 5 Pro', 'Seedance 2 Fast'])
-  })
+      const pagination = screen.getByTestId('featured-pagination')
+      expect(
+        within(pagination)
+          .getAllByRole('button')
+          .map((button) => button.getAttribute('aria-label'))
+      ).toEqual([...lead, 'Seedream 5 Pro', 'Seedance 2 Fast'])
+    }
+  )
 
   it('does not manufacture a return shelf before a model is opened', () => {
     sessionStorage.setItem('comfy-models-shelf', 'generate-videos')

@@ -17,14 +17,10 @@ import Button from '@/components/ui/button/Button.vue'
 import VideoPlayer from '../common/VideoPlayer.vue'
 import OutputTransport from './OutputTransport.vue'
 import type { Modality } from '../../config/models-catalogue'
-import type {
-  RunFailure,
-  RunOutput,
-  RunRecord,
-  RunState
-} from '../../config/workshop-run'
+import type { RunOutput, RunRecord, RunState } from '../../config/workshop-run'
 import { formatElapsed, isExpired } from '../../config/workshop-run'
 import { downloadOutput } from '../../config/workshop-output-download'
+import { failureLabelKey } from '../../lib/workshop/failure-label'
 import { outputLabels } from '../../lib/workshop/output-labels'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -76,22 +72,6 @@ const expandTrigger = useTemplateRef<HTMLButtonElement>('expandTrigger')
 const mediaControlClass =
   'focus-visible:ring-primary-comfy-yellow/50 grid size-8 cursor-pointer place-items-center rounded-lg bg-primary-comfy-ink/70 text-primary-warm-white backdrop-blur-sm transition-colors outline-none hover:text-primary-comfy-yellow focus-visible:ring-2'
 
-const failureKey: Record<RunFailure, TranslationKey> = {
-  validation: 'workshop.error.validation',
-  provider: 'workshop.error.provider',
-  upload: 'workshop.error.upload',
-  network: 'workshop.error.network',
-  response: 'workshop.error.response',
-  client: 'workshop.error.client',
-  concurrency: 'workshop.error.concurrency',
-  conflict: 'workshop.error.conflict',
-  rateLimit: 'workshop.error.rateLimit',
-  policy: 'workshop.error.policy',
-  noCredits: 'workshop.error.noCredits',
-  unavailable: 'workshop.error.unavailable',
-  timeout: 'workshop.error.timeout'
-}
-
 const hasUnreadableFile = computed(
   () =>
     state.status === 'failed' &&
@@ -129,7 +109,7 @@ function failureTranslationKey(
     !Object.keys(failure.fieldErrors).length
   )
     return 'workshop.error.inputRejected'
-  return failureKey[failure.reason]
+  return failureLabelKey[failure.reason]
 }
 
 const selected = ref(0)
