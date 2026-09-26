@@ -721,6 +721,23 @@ export interface AgentThreadStartedMetadata extends Record<string, unknown> {
   source: AgentThreadStartSource
 }
 
+export type AgentErrorClass =
+  | 'request_failed'
+  | 'malformed_stream_event'
+  | 'cancel_failed'
+  | 'history_load_failed'
+  | 'ask_answer_failed'
+  | 'thread_list_load_failed'
+  | 'workflow_open_failed'
+export interface AgentErrorMetadata extends Record<string, unknown> {
+  error_class: AgentErrorClass
+  failure_stage: 'pre_acceptance' | 'post_acceptance'
+  retryable: boolean
+  turn_accepted: boolean
+  /** `none` is a failure the user was never shown. */
+  ui_treatment: 'inline_notice' | 'error_overlay' | 'toast' | 'none'
+}
+
 /**
  * Widget (input/parameter) favorite toggle tracking metadata.
  * Used to measure discoverability of the right side panel favoriting feature.
@@ -1444,6 +1461,7 @@ export interface TelemetryProvider {
     metadata: AgentAttachButtonClickedMetadata
   ): void
   trackAgentWorkflowApplied?(metadata: AgentWorkflowAppliedMetadata): void
+  trackAgentError?(metadata: AgentErrorMetadata): void
   trackAgentStopClicked?(metadata: AgentStopClickedMetadata): void
   trackAgentWorkflowBound?(metadata: AgentWorkflowBoundMetadata): void
   trackAgentRunApprovalShown?(metadata: AgentRunApprovalShownMetadata): void
@@ -1631,6 +1649,7 @@ export const TelemetryEvents = {
   AGENT_NODE_TAGGED: 'app:agent_node_tagged',
   AGENT_ATTACH_BUTTON_CLICKED: 'app:agent_attach_button_clicked',
   AGENT_WORKFLOW_APPLIED: 'app:agent_workflow_applied',
+  AGENT_ERROR: 'app:agent_error',
   AGENT_STOP_CLICKED: 'app:agent_stop_clicked',
   AGENT_WORKFLOW_BOUND: 'app:agent_workflow_bound',
   AGENT_RUN_APPROVAL_SHOWN: 'app:agent_run_approval_shown',

@@ -1,9 +1,12 @@
 import { computed, ref } from 'vue'
+import { ZodError } from 'zod'
 
 import { i18n } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import type {
+  AgentErrorClass,
+  AgentErrorMetadata,
   AgentStopClickedMetadata,
   AgentStopMethod,
   AgentThreadStartSource,
@@ -28,7 +31,10 @@ import {
   zAgentAdmissionError,
   zDisownedWorkflowError
 } from '../../schemas/agentApiSchema'
-import { AgentApiError } from '../../services/agent/agentRestClient'
+import {
+  AgentApiError,
+  AgentResponseUnreadableError
+} from '../../services/agent/agentRestClient'
 import type {
   AgentRestClient,
   DraftSnapshot,
@@ -121,6 +127,41 @@ export interface AgentSessionDeps {
 }
 
 const PREPARE_TIMEOUT_MS = 3000
+
+const NON_RETRYABLE_REQUEST_STATUSES = new Set([
+  400, 401, 403, 404, 405, 409, 410, 422
+])
+
+export function isRetryableRequestFailure(
+  error: unknown,
+  accepted: boolean
+): boolean {
+  if (accepted) return false
+  if (error instanceof AgentApiError)
+    return !NON_RETRYABLE_REQUEST_STATUSES.has(error.status)
+  return true
+}
+
+function isUnreadableAckFailure(error: unknown): boolean {
+  return (
+    error instanceof ZodError || error instanceof AgentResponseUnreadableError
+  )
+}
+
+export function trackAgentError(
+  errorClass: AgentErrorClass,
+  stage: AgentErrorMetadata['failure_stage'],
+  uiTreatment: AgentErrorMetadata['ui_treatment'],
+  overrides: { retryable?: boolean; turnAccepted?: boolean } = {}
+): void {
+  useTelemetry()?.trackAgentError({
+    error_class: errorClass,
+    failure_stage: stage,
+    retryable: overrides.retryable ?? stage === 'pre_acceptance',
+    turn_accepted: overrides.turnAccepted ?? stage === 'post_acceptance',
+    ui_treatment: uiTreatment
+  })
+}
 
 let sessionGeneration = 0
 
@@ -256,6 +297,31 @@ export function useAgentSession(deps: AgentSessionDeps) {
     notices.value.push({ level: 'error', text })
   }
 
+  const malformedStreamReports = new Map<TurnId | null, boolean>()
+
+  function trackMalformedStreamEvent(
+    cause: ZodError,
+    eventType: string,
+    turnId: TurnId | null,
+    uiTreatment: AgentErrorMetadata['ui_treatment']
+  ): void {
+    const visible = uiTreatment !== 'none'
+    const priorVisible = malformedStreamReports.get(turnId)
+    if (priorVisible === true || (priorVisible === false && !visible)) return
+    malformedStreamReports.set(turnId, visible)
+    reportError(new Error('Malformed agent stream event'), {
+      errorType: 'agent_malformed_stream_event',
+      tags: { ui_treatment: uiTreatment, event_type: eventType },
+      context: { issues: cause.issues }
+    })
+    trackAgentError(
+      'malformed_stream_event',
+      turnId === null ? 'pre_acceptance' : 'post_acceptance',
+      uiTreatment,
+      { retryable: false }
+    )
+  }
+
   function start(): void {
     ownedGeneration = ++sessionGeneration
     everLive = false
@@ -280,8 +346,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
       const generation = ++loadGeneration
       const isCurrent = () =>
         generation === loadGeneration && ownedGeneration === sessionGeneration
+      const stashedTurn = conversationStore.activeTurnId !== null
       conversationStore.stashActiveTurn()
-      void hydrateFromServer(surviving, isCurrent).then(() => {
+      void hydrateFromServer(surviving, isCurrent, stashedTurn).then(() => {
         if (isCurrent() && conversationStore.threadId === surviving)
           conversationStore.resumeBackgroundTurn()
       })
@@ -300,7 +367,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   async function hydrateFromServer(
     threadId: string,
-    isCurrent: () => boolean = () => true
+    isCurrent: () => boolean = () => true,
+    stashedTurn = false
   ): Promise<boolean> {
     try {
       const history = await rest.getMessages(threadId)
@@ -310,16 +378,30 @@ export function useAgentSession(deps: AgentSessionDeps) {
       if (conversationStore.threadId !== threadId || !isCurrent()) return false
       return true
     } catch (error) {
-      if (!isCurrent()) return false
-      if (error instanceof AgentApiError && error.status === 404) {
-        if (conversationStore.threadId === threadId)
-          conversationStore.setThreadId(null)
-        localStorage.removeItem(threadStorageKey)
-        return false
-      }
-      pushError(error instanceof Error ? error.message : String(error))
+      return handleHistoryLoadError(error, threadId, isCurrent, stashedTurn)
+    }
+  }
+
+  function handleHistoryLoadError(
+    error: unknown,
+    threadId: string,
+    isCurrent: () => boolean,
+    stashedTurn: boolean
+  ): false {
+    if (!isCurrent()) return false
+    if (error instanceof AgentApiError && error.status === 404) {
+      if (conversationStore.threadId === threadId)
+        conversationStore.setThreadId(null)
+      localStorage.removeItem(threadStorageKey)
       return false
     }
+    reportError(error, { errorType: 'agent_history_load_failed' })
+    pushError(error instanceof Error ? error.message : String(error))
+    trackAgentError('history_load_failed', 'pre_acceptance', 'error_overlay', {
+      retryable: isRetryableRequestFailure(error, false),
+      turnAccepted: stashedTurn
+    })
+    return false
   }
 
   function stop(): void {
@@ -533,7 +615,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (pendingStop !== null) void stopTurn(pendingStop.method)
   }
 
-  function recordSendError(error: unknown, text: string): void {
+  function recordSendError(
+    error: unknown,
+    text: string,
+    accepted: boolean
+  ): void {
     const admission = parseAdmissionError(error)
     if (admission?.reason === 'no_funds') {
       conversationStore.recordPaywall(
@@ -564,6 +650,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
       nextLocalErrorId(),
       text,
       `${i18n.global.t('agent.sendFailed')}: ${message}`
+    )
+    const turnAccepted = accepted || isUnreadableAckFailure(error)
+    reportError(error, { errorType: 'agent_send_message_failed' })
+    trackAgentError(
+      'request_failed',
+      turnAccepted ? 'post_acceptance' : 'pre_acceptance',
+      'inline_notice',
+      { retryable: isRetryableRequestFailure(error, turnAccepted) }
     )
   }
 
@@ -602,6 +696,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const origin: TurnOrigin =
       originContext === undefined ? null : { tabPath: originContext.tabPath }
     let sentContext: WorkflowTurnContext | undefined
+    let accepted = false
     try {
       await prepareWorkflow()
       if (generation !== loadGeneration) return false
@@ -621,6 +716,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         workflowReferences,
         selectionWorkflowId
       )
+      accepted = true
       if (generation !== loadGeneration) return false
       acceptTurn(ack, text, wfContext, attachments, tags, workflowReferences)
       return true
@@ -630,7 +726,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       // moved on still has to release, or the dead id survives the reload.
       releaseDisownedWorkflow(sentContext, error)
       if (generation !== loadGeneration) return false
-      recordSendError(error, text)
+      recordSendError(error, text, accepted)
       return false
     }
   }
@@ -710,11 +806,19 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (error instanceof AgentApiError) {
       if (error.status === 409) return
       promptEditState.value = { phase: 'idle' }
+      reportError(error, { errorType: 'agent_cancel_turn_failed' })
       pushError(error.message)
+      trackAgentError('cancel_failed', 'post_acceptance', 'error_overlay', {
+        retryable: isRetryableRequestFailure(error, false)
+      })
       return
     }
     promptEditState.value = { phase: 'idle' }
+    reportError(error, { errorType: 'agent_cancel_turn_failed' })
     pushError(error instanceof Error ? error.message : String(error))
+    trackAgentError('cancel_failed', 'post_acceptance', 'error_overlay', {
+      retryable: true
+    })
   }
 
   async function stopTurn(method?: AgentStopMethod): Promise<void> {
@@ -775,6 +879,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
       }
       reportError(error, { errorType: 'agent_ask_answer_failed' })
       pushError(error instanceof Error ? error.message : String(error))
+      trackAgentError('ask_answer_failed', 'post_acceptance', 'error_overlay', {
+        retryable: isRetryableRequestFailure(error, false)
+      })
       return false
     }
   }
@@ -804,13 +911,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
     promptEditState.value = { phase: 'idle' }
     const isCurrent = () =>
       generation === loadGeneration && ownedGeneration === sessionGeneration
+    const stashedTurn = conversationStore.activeTurnId !== null
     conversationStore.stashActiveTurn()
     boundWorkflowId.value = null
     rememberedWorkflowId = null
     pendingWorkflowBind = null
     conversationStore.setThreadId(threadId)
     localStorage.setItem(threadStorageKey, threadId)
-    const hydrated = await hydrateFromServer(threadId, isCurrent)
+    const hydrated = await hydrateFromServer(threadId, isCurrent, stashedTurn)
     if (hydrated && isCurrent()) conversationStore.resumeBackgroundTurn()
     return hydrated && isCurrent()
   }
@@ -826,19 +934,24 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function handleMalformedEvent(
     type: string,
     raw: object,
-    error: unknown
+    error: ZodError
   ): void {
     const turnId = malformedEventTurnId(raw)
+    let reportedTurnId = turnId ?? conversationStore.activeTurnId
+    let uiTreatment: AgentErrorMetadata['ui_treatment'] = 'none'
     if (type === 'agent_message_done') {
       if (turnId !== undefined) turnStartedAt.delete(turnId)
       if (turnId === undefined || turnId === conversationStore.activeTurnId) {
         forgetActiveTurnStartedAt()
         conversationStore.abortActiveTurn()
         pushError(i18n.global.t('agent.malformedEvent'))
+        uiTreatment = 'error_overlay'
       } else {
-        conversationStore.settleBackgroundTurn(turnId)
+        reportedTurnId =
+          conversationStore.settleBackgroundTurn(turnId) ?? reportedTurnId
       }
     }
+    trackMalformedStreamEvent(error, type, reportedTurnId, uiTreatment)
     console.warn('[agent] dropping malformed agent event', error)
   }
 
