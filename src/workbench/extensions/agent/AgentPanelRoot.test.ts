@@ -1416,6 +1416,15 @@ function dispatchDrag(
   return event.defaultPrevented
 }
 
+function dispatchPaste(target: Element, files: File[]): boolean {
+  const event = new Event('paste', { bubbles: true, cancelable: true })
+  Object.defineProperty(event, 'clipboardData', {
+    value: { files, getData: () => '' }
+  })
+  target.dispatchEvent(event)
+  return event.defaultPrevented
+}
+
 function fileOfSize(name: string, size: number, type: string): File {
   const file = new File(['x'], name, { type })
   Object.defineProperty(file, 'size', { value: size })
@@ -1880,6 +1889,34 @@ describe('AgentPanelRoot attach flow', () => {
       )
     ).toBeInTheDocument()
     await vi.waitFor(() => expect(uploaded).toEqual(['huge.png']))
+  })
+
+  it('attaches an image pasted into the focused composer', async () => {
+    const uploaded = stubUploadFetch()
+    renderWithSelectedTarget()
+    await nextTick()
+
+    const image = new File(['image'], 'clipboard.png', { type: 'image/png' })
+    const textbox = screen.getByRole('textbox')
+    textbox.focus()
+
+    expect(dispatchPaste(textbox, [image])).toBe(true)
+    expect(
+      within(await screen.findByTestId('composer-asset-section')).getByText(
+        'clipboard.png'
+      )
+    ).toBeInTheDocument()
+    await vi.waitFor(() => expect(uploaded).toEqual(['clipboard.png']))
+  })
+
+  it('leaves clipboard files outside the composer to the canvas', async () => {
+    stubUploadFetch()
+    renderWithSelectedTarget()
+    await nextTick()
+
+    const image = new File(['image'], 'canvas.png', { type: 'image/png' })
+    expect(dispatchPaste(document.body, [image])).toBe(false)
+    expect(screen.queryByText('canvas.png')).not.toBeInTheDocument()
   })
 
   it('uploads a dropped video above 20MB when the server permits it', async () => {
