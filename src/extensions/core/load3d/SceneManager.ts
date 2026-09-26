@@ -5,6 +5,7 @@ import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import type { RendererView } from '@/renderer/three/RendererView'
 
 import Load3dUtils from './Load3dUtils'
+import { QuadWireframeOverlay } from './quadWireframe/QuadWireframeManager'
 import type {
   BackgroundRenderModeType,
   EventManagerInterface,
@@ -398,6 +399,7 @@ export class SceneManager implements SceneManagerInterface {
       THREE.Material | THREE.Material[]
     >()
     const tempMaterials: THREE.MeshNormalMaterial[] = []
+    const hiddenOverlays: THREE.Object3D[] = []
     const gridVisible = this.gridHelper.visible
 
     try {
@@ -457,6 +459,9 @@ export class SceneManager implements SceneManagerInterface {
           })
           tempMaterials.push(tempMaterial)
           child.material = tempMaterial
+        } else if (child instanceof QuadWireframeOverlay && child.visible) {
+          hiddenOverlays.push(child)
+          child.visible = false
         }
       })
 
@@ -483,6 +488,7 @@ export class SceneManager implements SceneManagerInterface {
       for (const mat of tempMaterials) {
         mat.dispose()
       }
+      for (const overlay of hiddenOverlays) overlay.visible = true
       this.gridHelper.visible = gridVisible
       if (savedCameraParams.type === 'perspective') {
         const persp = activeCamera as THREE.PerspectiveCamera

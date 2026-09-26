@@ -104,6 +104,7 @@
     "@comfyorg/design-system": "workspace:*",
     "@comfyorg/fbx-exporter-three": "^1.0.1",
     "@comfyorg/object-info-parser": "workspace:*",
+    "@comfyorg/quad-wireframe-three": "^0.1.0",
     "@comfyorg/registry-types": "workspace:*",
     "@comfyorg/shared-frontend-utils": "workspace:*",
     "@comfyorg/tailwind-utils": "workspace:*",
