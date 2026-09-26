@@ -478,6 +478,18 @@ async function sendFromComposer(text: string): Promise<void> {
   await screen.findByRole('button', { name: 'Stop' })
 }
 
+/**
+ * A send that will not open a turn, so there is no Stop button to wait for;
+ * the caller waits on whatever the failure is expected to produce.
+ */
+async function sendFromComposerExpectingFailure(text: string): Promise<void> {
+  const textbox = screen.getByRole('textbox')
+  await userEvent.click(textbox)
+  await userEvent.keyboard('{ArrowRight}')
+  await userEvent.paste(text)
+  await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+}
+
 async function renderAndSend(text: string): Promise<void> {
   renderWithSelectedTarget()
   await sendFromComposer(text)
@@ -9042,5 +9054,95 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(mintPortWiringDeps.current?.boundRootGraphId()).toBe(
       toRootGraphId('wf-42-rotated')
     )
+  })
+
+  it.for([
+    {
+      name: 'a credit refusal',
+      response: () =>
+        json(402, {
+          error: {
+            message: 'Out of credits',
+            reason: 'no_funds',
+            type: 'PAYMENT_REQUIRED'
+          }
+        }),
+      expected: {
+        stage: 'refused',
+        reason: 'admission_denied',
+        http_status: 402,
+        admission_reason: 'no_funds'
+      }
+    },
+    {
+      // gc-7: ingest hides the agent behind a 404 when its own flag read says
+      // no, so this send is refused by a surface with no other telemetry.
+      name: 'a server-side flag miss',
+      response: () => json(404, { error: 'not found' }),
+      expected: {
+        stage: 'refused',
+        reason: 'http_error',
+        http_status: 404,
+        admission_reason: null
+      }
+    },
+    {
+      name: 'a request the browser could not complete',
+      response: () => {
+        throw new TypeError('Failed to fetch')
+      },
+      expected: {
+        stage: 'no_response',
+        reason: 'network_error',
+        http_status: null,
+        admission_reason: null
+      }
+    }
+  ])(
+    'reports $name against the attempt the funnel counted',
+    async ({ response, expected }) => {
+      makeTab('wf-42')
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async (url: string, init?: RequestInit) => {
+          if (url.includes('/messages') && init?.method === 'POST')
+            return response()
+          if (url.includes('/messages')) return json(200, [])
+          if (url.includes('/agent/threads'))
+            return json(200, agentThreadList([]))
+          return new Response('{}', { status: 200 })
+        })
+      )
+      telemetry.trackAgentMessageSent.mockClear()
+      telemetry.trackAgentSendFailed.mockClear()
+      renderWithSelectedTarget()
+      await screen.findByRole('textbox')
+
+      await sendFromComposerExpectingFailure('build me a workflow')
+
+      await waitFor(() =>
+        expect(telemetry.trackAgentSendFailed).toHaveBeenCalledWith({
+          ...expected,
+          thread_id: null,
+          client_message_id: 'client-message-1'
+        })
+      )
+      // The attempt event is consumed by the workflow refresh long before the
+      // POST resolves; both still name the same attempt.
+      expect(
+        telemetry.trackAgentMessageSent.mock.calls[0][0].client_message_id
+      ).toBe('client-message-1')
+      expect(telemetry.trackAgentSendFailed).toHaveBeenCalledOnce()
+    }
+  )
+
+  it('reports no send failure when the turn is accepted', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+    telemetry.trackAgentSendFailed.mockClear()
+
+    await renderAndSend('build me a workflow')
+
+    expect(telemetry.trackAgentSendFailed).not.toHaveBeenCalled()
   })
 })

@@ -2966,3 +2966,212 @@ describe('thread resume (B17)', () => {
     expect(threads[0]).toMatchObject({ id: 'th-9', title: 'build a duck' })
   })
 })
+
+describe('failed send reporting', () => {
+  it.for([
+    {
+      name: 'a credit refusal, with the gate reason attached',
+      error: () => admissionError('no_funds', 'Out of credits'),
+      expected: {
+        stage: 'refused',
+        reason: 'admission_denied',
+        http_status: 402,
+        admission_reason: 'no_funds'
+      }
+    },
+    {
+      name: 'a server error, which no gate reason explains',
+      error: () => new AgentApiError('server exploded', 500, undefined),
+      expected: {
+        stage: 'refused',
+        reason: 'http_error',
+        http_status: 500,
+        admission_reason: null
+      }
+    },
+    {
+      name: 'a request that never reached the service',
+      error: () => new TypeError('Failed to fetch'),
+      expected: {
+        stage: 'no_response',
+        reason: 'network_error',
+        http_status: null,
+        admission_reason: null
+      }
+    }
+  ])('reports $name', async ({ error, expected }) => {
+    const onSendFailed = vi.fn()
+    const session = useAgentSession({
+      rest: fakeRest({
+        postMessage: vi
+          .fn<AgentRestClient['postMessage']>()
+          .mockRejectedValue(error())
+      }),
+      events: fakeEvents().source,
+      onSendFailed
+    })
+    session.start()
+
+    expect(await session.sendMessage('make a cat')).toBe(false)
+
+    expect(onSendFailed.mock.calls).toEqual([[expected]])
+  })
+
+  it('reports nothing when the turn is accepted', async () => {
+    const onSendFailed = vi.fn()
+    const session = useAgentSession({
+      rest: fakeRest(),
+      events: fakeEvents().source,
+      onSendFailed
+    })
+    session.start()
+
+    expect(await session.sendMessage('make a cat')).toBe(true)
+
+    expect(onSendFailed).not.toHaveBeenCalled()
+  })
+
+  it('reports a send refused while an earlier one is still in flight', async () => {
+    const onSendFailed = vi.fn()
+    const session = useAgentSession({
+      rest: fakeRest(),
+      events: fakeEvents().source,
+      onSendFailed
+    })
+    session.start()
+
+    const first = session.sendMessage('first')
+    expect(await session.sendMessage('second')).toBe(false)
+    expect(await first).toBe(true)
+
+    expect(onSendFailed.mock.calls).toEqual([
+      [
+        {
+          stage: 'not_dispatched',
+          reason: 'send_in_flight',
+          http_status: null,
+          admission_reason: null
+        }
+      ]
+    ])
+  })
+
+  it('reports a send abandoned because its target stopped being reachable', async () => {
+    const onSendFailed = vi.fn()
+    let reachable = true
+    const postMessage = vi.fn<AgentRestClient['postMessage']>()
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source,
+      onSendFailed,
+      workflow: {
+        current: (origin) =>
+          origin !== undefined && !reachable
+            ? undefined
+            : { id: 'wf-a', tabPath: 'tab-a' },
+        adopted: vi.fn(),
+        prepare: async () => {
+          reachable = false
+        }
+      }
+    })
+    session.start()
+
+    expect(await session.sendMessage('make a cat')).toBe(false)
+
+    expect(postMessage).not.toHaveBeenCalled()
+    expect(onSendFailed.mock.calls).toEqual([
+      [
+        {
+          stage: 'not_dispatched',
+          reason: 'target_changed',
+          http_status: null,
+          admission_reason: null
+        }
+      ]
+    ])
+  })
+
+  it('reports a send the user replaced with a new chat before it was posted', async () => {
+    const onSendFailed = vi.fn()
+    const postMessage = vi.fn<AgentRestClient['postMessage']>()
+    let reset: () => void = () => {}
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source,
+      onSendFailed,
+      workflow: {
+        current: () => undefined,
+        adopted: vi.fn(),
+        prepare: async () => reset()
+      }
+    })
+    session.start()
+    reset = () => session.newChat()
+
+    expect(await session.sendMessage('make a cat')).toBe(false)
+
+    expect(postMessage).not.toHaveBeenCalled()
+    expect(onSendFailed.mock.calls).toEqual([
+      [
+        {
+          stage: 'not_dispatched',
+          reason: 'session_reset',
+          http_status: null,
+          admission_reason: null
+        }
+      ]
+    ])
+  })
+
+  it('reports a refusal that lands after the session moved on, because the attempt was still counted', async () => {
+    const onSendFailed = vi.fn()
+    let abandon: () => void = () => {}
+    const session = useAgentSession({
+      rest: fakeRest({
+        postMessage: vi.fn<AgentRestClient['postMessage']>(async () => {
+          abandon()
+          throw new AgentApiError('server exploded', 500, undefined)
+        })
+      }),
+      events: fakeEvents().source,
+      onSendFailed
+    })
+    session.start()
+    abandon = () => session.newChat()
+
+    expect(await session.sendMessage('make a cat')).toBe(false)
+
+    expect(onSendFailed.mock.calls).toEqual([
+      [
+        {
+          stage: 'refused',
+          reason: 'http_error',
+          http_status: 500,
+          admission_reason: null
+        }
+      ]
+    ])
+  })
+
+  it('reports nothing for an acknowledgement dropped after the session moved on, because the turn exists', async () => {
+    const onSendFailed = vi.fn()
+    let abandon: () => void = () => {}
+    const session = useAgentSession({
+      rest: fakeRest({
+        postMessage: vi.fn<AgentRestClient['postMessage']>(async () => {
+          abandon()
+          return { thread_id: 'th-1', message_id: 'msg-1' }
+        })
+      }),
+      events: fakeEvents().source,
+      onSendFailed
+    })
+    session.start()
+    abandon = () => session.newChat()
+
+    expect(await session.sendMessage('make a cat')).toBe(false)
+
+    expect(onSendFailed).not.toHaveBeenCalled()
+  })
+})

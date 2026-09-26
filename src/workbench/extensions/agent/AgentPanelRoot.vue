@@ -21,6 +21,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import type {
   AgentMessageSentMetadata,
   AgentRunApprovalDecision,
+  AgentSendFailure,
   AgentStopMethod
 } from '@/platform/telemetry/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -696,6 +697,18 @@ function reportPendingSend(): void {
   })
 }
 
+/**
+ * Reports the failure of the send currently in flight against the attempt
+ * `app:agent_message_sent` counted. Held as a closure rather than as the
+ * attempt's identity, because the workflow refresh consumes `pendingSend`
+ * before the POST is even issued: by the time a send fails there is no pending
+ * report left to read the id from, and an attempt-less failure event would be
+ * unjoinable. Scoped to one `sendMessage` call like `pendingSend`, and single
+ * flight for the same reason: the composer refuses a submit while one is
+ * pending.
+ */
+let reportSendFailure: ((failure: AgentSendFailure) => void) | null = null
+
 const {
   sendMessage,
   stopTurn,
@@ -721,6 +734,7 @@ const {
   events,
   onThreadStarted: (source) =>
     useTelemetry()?.trackAgentThreadStarted({ source }),
+  onSendFailed: (failure) => reportSendFailure?.(failure),
   onAskResolved: forgetApproval,
   workflow: {
     initialize: agentPanelStore.initializeTargetTracking,
@@ -1260,6 +1274,13 @@ const { submit: onSend } = useAgentDraftSubmission({
         originContext === undefined ? null : { tabPath: originContext.tabPath }
     }
     const selectionWorkflow = selectedTarget.value
+    const attemptThreadId = threadId.value
+    reportSendFailure = (failure) =>
+      useTelemetry()?.trackAgentSendFailed({
+        ...failure,
+        thread_id: attemptThreadId,
+        client_message_id: meta.clientMessageId
+      })
     try {
       return await sendMessage(text, attachments, nodes, references, () =>
         selectionWorkflow ? cloudIdFor(selectionWorkflow) : undefined
@@ -1268,6 +1289,7 @@ const { submit: onSend } = useAgentDraftSubmission({
       // Normally already consumed by the refresh. A send rejected before it
       // gets that far still reports here, so the funnel counts the attempt.
       reportPendingSend()
+      reportSendFailure = null
     }
   }
 })
