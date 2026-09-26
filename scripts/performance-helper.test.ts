@@ -92,14 +92,14 @@ function installPageGlobals() {
     takeRecords = observer.takeRecords
   }
   vi.stubGlobal('PerformanceObserver', PerformanceObserverStub)
-  Object.defineProperty(window, 'app', {
-    configurable: true,
-    value: fromAny({
+  vi.stubGlobal(
+    'app',
+    fromAny({
       canvas: { graph: null, visible_nodes: [] },
       graph: { links: new Map(), nodes: [node] },
       extensionManager: { setting: { get: () => undefined } }
     })
-  })
+  )
   window.__COMFYUI_FRONTEND_VERSION__ = 'test'
   window.__COMFYUI_FRONTEND_COMMIT__ = 'test'
   window.__COMFYUI_BUILD_MODE__ = 'test'
