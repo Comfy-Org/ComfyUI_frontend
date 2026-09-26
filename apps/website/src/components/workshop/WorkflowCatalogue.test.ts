@@ -102,6 +102,27 @@ describe('workflow catalogue ordering and shared links', () => {
     ])
   })
 
+  it('names the model it was narrowed by, and lets go of it from that name', async () => {
+    const user = userEvent.setup()
+    render(WorkflowCatalogue, { props: { models } })
+    await user.click(screen.getByTestId('workshop-filter'))
+    await user.click(await screen.findByTestId('workshop-facet-model'))
+    await user.click(await screen.findByTestId('filter-model-SeedVR2'))
+    expect(screen.getByTestId('workshop-filter-chips')).toHaveTextContent(
+      'Runs on SeedVR2'
+    )
+
+    await user.click(
+      screen.getByRole('button', { name: 'Remove Runs on SeedVR2' })
+    )
+    expect(screen.queryByTestId('workshop-filter-chips')).toBeNull()
+    expect(visibleOutcomes()).toEqual([
+      '/models/workflows/animate/',
+      '/models/workflows/connect/',
+      '/models/workflows/restore/'
+    ])
+  })
+
   it('restores a known model from a shared URL and drops one it does not list', async () => {
     history.replaceState(
       null,

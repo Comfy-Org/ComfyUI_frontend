@@ -16,6 +16,8 @@ import { t } from '../../i18n/translations'
 import CardRow from './CardRow.vue'
 import FeaturedBanner from './FeaturedBanner.vue'
 import { modelSlides } from '../../lib/workshop/featured-slides'
+import type { FilterChip } from './WorkshopFilterChips.vue'
+import WorkshopFilterChips from './WorkshopFilterChips.vue'
 import WorkshopFilterMenu from './WorkshopFilterMenu.vue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
 import WorkshopSearchField from './WorkshopSearchField.vue'
@@ -122,6 +124,27 @@ const featured = computed(() =>
 )
 const featuredSlides = computed(() => modelSlides(featured.value, locale))
 
+// What narrowed the list stays legible next to it, so a reader can take one
+// choice off without reopening the menu that made it.
+const chips = computed<FilterChip[]>(() => [
+  ...selected.value.map((id) => ({
+    key: `use:${id}`,
+    label: options.value.find((option) => option.value === id)?.label ?? id
+  })),
+  ...runsOn.value.map((name) => ({
+    key: `model:${name}`,
+    label: t('workshop.filter.runsOn', locale).replace('{model}', name)
+  }))
+])
+
+function removeChip(key: string) {
+  const [kind, ...rest] = key.split(':')
+  const value = rest.join(':')
+  if (kind === 'use')
+    selected.value = selected.value.filter((id) => id !== value)
+  else runsOn.value = runsOn.value.filter((name) => name !== value)
+}
+
 function clear() {
   query.value = ''
   selected.value = []
@@ -197,6 +220,8 @@ function leaveSection() {
       class="mb-10 short:mb-6"
     />
 
+    <WorkshopFilterChips :chips :locale @remove="removeChip" @clear="clear" />
+
     <div v-if="browsing" class="flex flex-col gap-12">
       <section
         v-for="category in rows"
@@ -238,7 +263,7 @@ function leaveSection() {
 
     <ul
       v-else-if="visible.length"
-      class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5"
+      class="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
       :aria-label="t('workshop.hub.workflows', locale)"
       data-testid="workflow-search-results"
     >

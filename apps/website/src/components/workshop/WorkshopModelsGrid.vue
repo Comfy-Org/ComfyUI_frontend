@@ -22,6 +22,8 @@ import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { rememberShelfOnClick } from '../../lib/workshop/shelf-memory'
 import { useCaseLabelKey } from '../../lib/workshop/use-case-label'
+import type { FilterChip } from './WorkshopFilterChips.vue'
+import WorkshopFilterChips from './WorkshopFilterChips.vue'
 import type { FacetMenuOption } from './WorkshopFilterMenu.vue'
 import WorkshopFilterMenu from './WorkshopFilterMenu.vue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
@@ -153,6 +155,31 @@ const featuredSlides = computed(() => [
   ...modelSlides(featured.value, locale)
 ])
 
+// What narrowed the list stays legible next to it, so a reader can take one
+// choice off without reopening the menu that made it.
+const chips = computed<FilterChip[]>(() => [
+  ...(useCase.value === 'all'
+    ? []
+    : [
+        {
+          key: 'shelf',
+          label: t(sectionTitleKey.value, locale)
+        }
+      ]),
+  ...selectedUseCases.value.map((value) => ({
+    key: `use:${value}`,
+    label: t(useCaseLabelKey[value], locale)
+  }))
+])
+
+function removeChip(key: string) {
+  if (key === 'shelf') useCase.value = 'all'
+  else
+    selectedUseCases.value = selectedUseCases.value.filter(
+      (value) => `use:${value}` !== key
+    )
+}
+
 function openSection(value: UseCase | 'other') {
   useCase.value = value
 }
@@ -255,6 +282,13 @@ watch(browseAll, (on) => on && resetFilters())
         class="mb-10 short:mb-6"
       />
 
+      <WorkshopFilterChips
+        :chips
+        :locale
+        @remove="removeChip"
+        @clear="clearFilters"
+      />
+
       <template v-if="browsing">
         <WorkshopSections
           :models
@@ -284,7 +318,7 @@ watch(browseAll, (on) => on && resetFilters())
             {{ t('workshop.models.heading', locale) }}
           </h2>
           <ul
-            class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5"
+            class="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
             aria-labelledby="workshop-models-heading"
             data-testid="workshop-models-grid"
           >
