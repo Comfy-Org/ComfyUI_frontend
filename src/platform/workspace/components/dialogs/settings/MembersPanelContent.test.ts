@@ -530,9 +530,7 @@ describe('MembersPanelContent', () => {
     })
 
     it('routes an ended Enterprise plan to sales', async () => {
-      const openSpy = vi
-        .spyOn(window, 'open')
-        .mockReturnValue(null)
+      const openSpy = vi.spyOn(window, 'open').mockReturnValue(null)
       mockIsPlanEnded.value = true
       mockIsSalesManagedPlan.value = true
       renderComponent()
