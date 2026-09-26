@@ -489,6 +489,46 @@ describe('SubgraphWidgetPromotion', () => {
       expect(subgraphNode.widgets).toHaveLength(0)
     })
 
+    // Root cause of a family of promoted-widget-rewire regressions:
+    // `_addSubgraphInputListeners`'s `input-disconnected` handler
+    // (SubgraphNode.ts ~325-354) demotes the
+    // promoted widget synchronously (clearing `input.widgetId`, so the
+    // widget list reports it gone immediately) but only queues the widget
+    // value store's cleanup via `queueMicrotask`. For the one tick between
+    // those two things, the widget list and the store disagree about
+    // whether the widget still exists — a window a reconciling reader could
+    // observe the demoted widget as still "live" in the store, or (if a
+    // rewire's reconnect lands inside that window) leave the eventual
+    // microtask cleanup racing a fresh registration under the same id.
+    it('desyncs the widget list from the widget value store for one microtask after the last interior link disconnects', async () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'value', type: 'number' }]
+      })
+
+      const { node } = createNodeWithWidget('Sole Source', 'number', 7)
+      const subgraphNode = setupPromotedWidget(subgraph, node)
+      const store = useWidgetValueStore()
+
+      const [promotedInput] = promotedInputs(subgraphNode)
+      const promotedId = promotedInput.widgetId
+      expect(store.getWidget(promotedId)).toBeDefined()
+
+      node.disconnectInput(0, true)
+
+      // Synchronously: the widget list already reports the promotion gone...
+      expect(subgraphNode.inputs[0].widgetId).toBeUndefined()
+      expect(promotedInputs(subgraphNode)).toHaveLength(0)
+      // ...but the store's cleanup was only queued as a microtask, so for
+      // this one tick the store still thinks the widget is live. The two
+      // sources of truth disagree.
+      expect(store.getWidget(promotedId)).toBeDefined()
+
+      // Draining the microtask queue is what finally reconciles them.
+      await new Promise((resolve) => setTimeout(resolve, 0))
+
+      expect(store.getWidget(promotedId)).toBeUndefined()
+    })
+
     it('writes canvas edits back to the host widget store', () => {
       const subgraph = createTestSubgraph({
         inputs: [{ name: 'value', type: 'number' }]
