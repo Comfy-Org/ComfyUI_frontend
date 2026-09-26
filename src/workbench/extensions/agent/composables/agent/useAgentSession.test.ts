@@ -2152,6 +2152,84 @@ describe('useAgentSession (v1 composition root)', () => {
     }
   })
 
+  // A frame published while the first history fetch is still in flight has no
+  // turn in memory to reach: `ingest` drops it. Recovery is the only thing
+  // left that can draw the card, so the drop must not be recorded as a
+  // delivery.
+  it('(g34) a frame the store could not route yet is still restored by recovery', async () => {
+    vi.useFakeTimers()
+    try {
+      let releaseHistory = (): void => {}
+      const history = new Promise<void>((resolve) => {
+        releaseHistory = resolve
+      })
+      let served = 0
+      const rest = fakeRest({
+        getMessages: vi.fn(async (): Promise<AgentMessages> => {
+          // The first response is the one that predates the ask row, so
+          // hydration has nothing to draw the card from.
+          if (served++ === 0) {
+            await history
+            return [historyRow(1, 'user', 'msg-1', 'go'), unparkedRow()]
+          }
+          return [historyRow(1, 'user', 'msg-1', 'go'), parkedRow()]
+        })
+      })
+      const { source, emit, status } = fakeEvents()
+      localStorage.setItem('Comfy.Agent.ThreadId', 'th-1')
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+
+      emit(runApproval('msg-1'))
+      expect(session.entries.value).toHaveLength(0)
+
+      releaseHistory()
+      await vi.advanceTimersByTimeAsync(31_000)
+
+      expect(approvalParts(session)).toHaveLength(1)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('(g35) a drop while a hydrate job is polling files the ask as a lost frame', async () => {
+    vi.useFakeTimers()
+    try {
+      let served = 0
+      const rest = fakeRest({
+        getMessages: vi.fn(
+          async (): Promise<AgentMessages> => [
+            historyRow(1, 'user', 'msg-1', 'go'),
+            served++ === 0 ? unparkedRow() : parkedRow()
+          ]
+        )
+      })
+      const { source, status } = fakeEvents()
+      localStorage.setItem('Comfy.Agent.ThreadId', 'th-1')
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+      await vi.advanceTimersByTimeAsync(0)
+      expect(approvalParts(session)).toHaveLength(0)
+
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(31_000)
+
+      expect(approvalParts(session)).toHaveLength(1)
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(
+        expect.any(Error),
+        expect.objectContaining({
+          level: 'error',
+          tags: expect.objectContaining({ recovery_cause: 'reconnect' })
+        })
+      )
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('(g31) an ask the server parks during a hydrate fetch is restored as a warning', async () => {
     vi.useFakeTimers()
     try {

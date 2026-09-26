@@ -8,6 +8,7 @@ import type {
   AgentActiveTabData,
   AgentMessages,
   AgentTurnAccepted,
+  AgentWsEvent,
   TurnId
 } from '../../schemas/agentApiSchema'
 import {
@@ -235,7 +236,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
   let unsubscribeStatus: (() => void) | null = null
   let ownedGeneration = 0
   let connection: SocketConnection = 'initial'
-  const recoveringTurns = new Map<string, AbortController>()
+  interface RunningRecovery {
+    controller: AbortController
+    cause: RecoveryCause
+  }
+  const recoveringTurns = new Map<string, RunningRecovery>()
   /**
    * Asks recovery must not re-deliver: one it already restored, one a frame
    * has delivered, and any the user has answered or the server has resolved.
@@ -322,7 +327,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     unsubscribeStatus?.()
     unsubscribe = null
     unsubscribeStatus = null
-    for (const recovery of recoveringTurns.values()) recovery.abort()
+    for (const running of recoveringTurns.values()) running.controller.abort()
     for (const scheduled of lateAskReports.values()) clearTimeout(scheduled)
     lateAskReports.clear()
     const stoppedGeneration = ownedGeneration
@@ -701,13 +706,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
     )
       return
     setAskAnswering(askId, true)
-    deliveredAsks.add(askId)
     try {
       await rest.answerAsk(currentThreadId, askId, [selection])
+      deliveredAsks.add(askId)
       // Keep the actions disabled until the canonical resolution frame arrives.
     } catch (error) {
       setAskAnswering(askId, false)
       if (error instanceof AgentApiError && error.status === 409) {
+        deliveredAsks.add(askId)
         conversationStore.ingest({
           type: 'agent_ask_resolved',
           data: {
@@ -782,18 +788,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
       setAskAnswering(event.data.ask_id, false)
       deliveredAsks.add(event.data.ask_id)
     }
-    // An ask already in the ledger is one recovery has supplied, or one the
-    // user has finished with. Dropping it here rather than relying on the
-    // rendered parts is what stops a frame delayed past its own resolution
-    // from drawing a card over a reply that has since resumed.
-    if (event.type === 'agent_ask') {
-      if (deliveredAsks.has(event.data.ask_id)) {
-        withdrawLateAskReport(event.data.ask_id)
-        return
-      }
-      deliveredAsks.add(event.data.ask_id)
-    }
     switch (event.type) {
+      case 'agent_ask':
+        deliverAsk(event)
+        return
       case 'agent_active_tab':
         // Every thread records the link in its own transcript; only the thread
         // on screen is allowed to move the user's tabs.
@@ -835,9 +833,16 @@ export function useAgentSession(deps: AgentSessionDeps) {
     plan: RecoveryPlan
   ): Promise<void> {
     const key = recoveryKey(turn)
-    if (recoveringTurns.has(key)) return
+    const running = recoveringTurns.get(key)
+    // A hydrate job polls from 1s with no leading zero and files its reports
+    // as the benign race. Once the socket has actually dropped that reading is
+    // wrong on both counts, so a reconnect takes the job over.
+    if (running) {
+      if (plan.cause !== 'reconnect' || running.cause === 'reconnect') return
+      running.controller.abort()
+    }
     const recovery = new AbortController()
-    recoveringTurns.set(key, recovery)
+    recoveringTurns.set(key, { controller: recovery, cause: plan.cause })
     try {
       await recoverTurn(turn, plan, ownedGeneration, recovery.signal)
     } catch (error) {
@@ -848,7 +853,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
       if (!recovery.signal.aborted)
         reportError(error, { errorType: 'failure_recovering_agent_turn' })
     } finally {
-      if (recoveringTurns.get(key) === recovery) recoveringTurns.delete(key)
+      if (recoveringTurns.get(key)?.controller === recovery)
+        recoveringTurns.delete(key)
     }
   }
 
@@ -943,6 +949,35 @@ export function useAgentSession(deps: AgentSessionDeps) {
         sendRestoredApprovalReport(turn, askId, cause, 'error')
       }, LATE_ASK_FRAME_GRACE_MS)
     )
+  }
+
+  /**
+   * Routes an inbound `agent_ask`. One already in the ledger is an ask
+   * recovery has supplied, or one the user has finished with; dropping it on
+   * the id rather than on the rendered parts is what stops a frame delayed
+   * past its own resolution from drawing a card over a resumed reply.
+   *
+   * A frame is only ledgered once its card is actually on screen. `ingest`
+   * has nowhere to route one that arrives before its turn is in memory -- the
+   * window between subscribing and the first history fetch landing -- and
+   * ledgering a frame the store dropped would convince recovery the ask had
+   * been delivered, leaving the panel with no card at all.
+   */
+  function deliverAsk(
+    event: Extract<AgentWsEvent, { type: 'agent_ask' }>
+  ): void {
+    const askId = event.data.ask_id
+    if (deliveredAsks.has(askId)) {
+      withdrawLateAskReport(askId)
+      return
+    }
+    const turn = {
+      threadId: event.data.thread_id,
+      messageId: toTurnId(event.data.message_id)
+    }
+    conversationStore.ingest(event)
+    if (conversationStore.isApprovalShown(turn, askId)) deliveredAsks.add(askId)
+    markStoppedTurnReady(turn)
   }
 
   function withdrawLateAskReport(askId: string): void {
