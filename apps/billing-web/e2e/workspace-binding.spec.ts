@@ -67,6 +67,12 @@ for (const { name, status, message } of REFUSAL_CASES) {
     await page.getByRole('button', { name: 'Sign in', exact: true }).click()
 
     await expect(page.getByRole('alert')).toContainText(message)
+    await expect(
+      page.getByRole('link', { name: 'Return to ComfyUI' })
+    ).toHaveAttribute('href', 'https://testcloud.comfy.org/')
+    await expect(
+      page.getByRole('button', { name: 'Retry session' })
+    ).toHaveCount(0)
     const mint = cloud.requests.find(
       (request) => request.path === '/auth/token'
     )
