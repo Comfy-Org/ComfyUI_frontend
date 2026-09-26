@@ -243,10 +243,11 @@ test('the credit chip shows a charge Cloud books after the run finishes', async 
   modelsAccount
 }) => {
   const cloud = await setup(context)
-  let cents = 583_200
   let reads = 0
+  let chargedAfterRead = Number.POSITIVE_INFINITY
   await context.route('**/api/billing/balance', (route) => {
     reads++
+    const cents = reads > chargedAfterRead ? 483_200 : 583_200
     return route.fulfill({
       json: {
         amount_micros: cents,
@@ -260,6 +261,8 @@ test('the credit chip shows a charge Cloud books after the run finishes', async 
     new RegExp(`, ${centsToCredits(balance).toLocaleString('en-US')} credits$`)
   await signInAndRun(page, modelsAccount)
   await expect(chip).toHaveAccessibleName(showing(583_200))
+  const readsBeforeCompletion = reads
+  chargedAfterRead = readsBeforeCompletion + 1
 
   cloud.succeed(false)
   await page.clock.fastForward(2100)
@@ -267,12 +270,9 @@ test('the credit chip shows a charge Cloud books after the run finishes', async 
     'data-state',
     'succeeded'
   )
-  const readsAtCompletion = reads
   await page.clock.fastForward(1)
-  await expect.poll(() => reads).toBeGreaterThan(readsAtCompletion)
+  await expect.poll(() => reads).toBeGreaterThan(readsBeforeCompletion)
   await expect(chip).toHaveAccessibleName(showing(583_200))
-
-  cents = 483_200
   await page.clock.fastForward(2_000)
 
   await expect(chip).toHaveAccessibleName(showing(483_200))
