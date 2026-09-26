@@ -9,6 +9,7 @@ import Tag from '@/components/chip/Tag.vue'
 import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { api } from '@/scripts/api'
+import type { MediaType } from '@/utils/formatUtil'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
 import type { UserAttachment } from '../../../stores/agent/agentConversationStore'
@@ -116,30 +117,45 @@ function attachmentIconClass(name: string): string {
  * audio-card behavior as agent replies. A ref resolves to the uploaded input
  * file; an image without one still has its local preview. Text and other
  * kinds have no grid treatment and keep the compact tiles.
+ *
+ * A rehydrated attachment carries the kind the server resolved from the
+ * asset's MIME type, which outranks the one guessed from the name: a library
+ * asset is attached under its content hash, and a hash has no extension to
+ * read a kind off. That column holds whatever the uploading client declared,
+ * so a mis-declared type now outranks a correct extension -- the same
+ * mime-before-name order the service itself applies.
  */
+const GRID_KINDS: ReadonlySet<MediaType> = new Set<ReplyAsset['kind']>([
+  'image',
+  'video',
+  'audio',
+  '3D'
+])
+
+function isGridKind(kind: MediaType): kind is ReplyAsset['kind'] {
+  return GRID_KINDS.has(kind)
+}
+
+function attachmentUrl(item: UserAttachment): string | undefined {
+  if (item.previewUrl !== undefined) return item.previewUrl
+  if (!item.ref) return undefined
+  return api.apiURL(`/view?filename=${encodeURIComponent(item.ref)}&type=input`)
+}
+
+function gridAsset(item: UserAttachment): ReplyAsset | undefined {
+  const kind = item.kind ?? getMediaTypeFromFilename(item.name)
+  const url = attachmentUrl(item)
+  if (!url || !isGridKind(kind)) return undefined
+  return { url, filename: item.name, kind }
+}
+
 const splitAttachments = computed(() => {
   const grid: ReplyAsset[] = []
   const plain: UserAttachment[] = []
   for (const item of attachments) {
-    const kind = getMediaTypeFromFilename(item.name)
-    const url =
-      item.previewUrl ??
-      (item.ref
-        ? api.apiURL(
-            `/view?filename=${encodeURIComponent(item.ref)}&type=input`
-          )
-        : undefined)
-    if (
-      url &&
-      (kind === 'image' ||
-        kind === 'video' ||
-        kind === 'audio' ||
-        kind === '3D')
-    ) {
-      grid.push({ url, filename: item.name, kind })
-    } else {
-      plain.push(item)
-    }
+    const asset = gridAsset(item)
+    if (asset) grid.push(asset)
+    else plain.push(item)
   }
   return { grid, plain }
 })

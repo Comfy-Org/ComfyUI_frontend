@@ -71,8 +71,13 @@ describe('normalizeAgentTranscript', () => {
     expect(transcript.messages[0].parts).toEqual([
       { type: 'text', text: 'First reply', state: 'done' }
     ])
-    expect(transcript.rowIds).toEqual(
-      new Set(['row-1', 'row-2', 'row-3', 'row-4'])
+    expect(transcript.turnIdsByRowId).toEqual(
+      new Map([
+        ['row-1', 'turn-a'],
+        ['row-2', 'turn-a'],
+        ['row-3', 'turn-b'],
+        ['row-4', 'turn-b']
+      ])
     )
   })
 
@@ -109,7 +114,12 @@ describe('normalizeAgentTranscript', () => {
     ])
     expect(transcript.userTexts.get(toTurnId('turn-a'))).toBe('Prompt')
     expect(transcript.assistantTurnIds).toEqual(new Set())
-    expect(transcript.rowIds).toEqual(new Set(['row-1', 'row-2']))
+    expect(transcript.turnIdsByRowId).toEqual(
+      new Map([
+        ['row-1', 'turn-a'],
+        ['row-2', 'turn-a']
+      ])
+    )
   })
 
   it('concatenates assistant rows in sequence order within a turn', () => {
@@ -138,7 +148,12 @@ describe('normalizeAgentTranscript', () => {
     const transcript = normalizeAgentTranscript([message])
 
     expect(transcript.userAttachments.get(toTurnId('turn-a'))).toEqual([
-      { name: 'ComfyUI_00002_.png', ref: 'ComfyUI_00002_.png' }
+      {
+        name: 'ComfyUI_00002_.png',
+        ref: 'ComfyUI_00002_.png',
+        id: 'asset-1',
+        kind: 'image'
+      }
     ])
   })
 
@@ -152,7 +167,7 @@ describe('normalizeAgentTranscript', () => {
     const transcript = normalizeAgentTranscript([message])
 
     expect(transcript.userAttachments.get(toTurnId('turn-a'))).toEqual([
-      { name: 'ComfyUI_00002_.png', ref: 'ComfyUI_00002_.png' }
+      { name: 'ComfyUI_00002_.png', ref: 'ComfyUI_00002_.png', kind: 'image' }
     ])
   })
 
@@ -202,6 +217,138 @@ describe('normalizeAgentTranscript', () => {
       )
     }
   )
+
+  it.for([
+    {
+      label: 'several files in their recorded order',
+      attachments: ['poster.png', 'clip.mp4', 'score.mp3'],
+      expected: [
+        { name: 'poster.png', ref: 'poster.png' },
+        { name: 'clip.mp4', ref: 'clip.mp4' },
+        { name: 'score.mp3', ref: 'score.mp3' }
+      ]
+    },
+    {
+      label: 'the same filename twice, uncollapsed',
+      attachments: ['crop.png', 'crop.png'],
+      expected: [
+        { name: 'crop.png', ref: 'crop.png' },
+        { name: 'crop.png', ref: 'crop.png' }
+      ]
+    }
+  ])('restores $label', ({ attachments, expected }) => {
+    const message = row(1, 'user', 'turn-a', 'use these', 'row-1')
+    message.content = { text: 'use these', attachments }
+
+    const transcript = normalizeAgentTranscript([message])
+
+    expect(transcript.userAttachments.get(toTurnId('turn-a'))).toEqual(expected)
+  })
+
+  it('restores an attachment-only turn that carries no prompt text', () => {
+    const message = row(1, 'user', 'turn-a', '', 'row-1')
+    message.content = { attachments: ['silent.png'] }
+
+    const transcript = normalizeAgentTranscript([message])
+
+    expect(transcript.userTexts.get(toTurnId('turn-a'))).toBe('')
+    expect(transcript.userAttachments.get(toTurnId('turn-a'))).toEqual([
+      { name: 'silent.png', ref: 'silent.png' }
+    ])
+  })
+
+  it("keeps a turn's attachments off a sibling turn that has none", () => {
+    const withFile = row(1, 'user', 'turn-a', 'first', 'row-1')
+    withFile.content = { text: 'first', attachments: ['only-here.png'] }
+
+    const transcript = normalizeAgentTranscript([
+      withFile,
+      row(2, 'assistant', 'turn-a', 'Got it', 'row-2'),
+      row(3, 'user', 'turn-b', 'second', 'row-3'),
+      row(4, 'assistant', 'turn-b', 'Sure', 'row-4')
+    ])
+
+    expect(transcript.userAttachments).toEqual(
+      new Map([['turn-a', [{ name: 'only-here.png', ref: 'only-here.png' }]]])
+    )
+  })
+
+  /**
+   * PM-1643 / PM-717 item 3. What a rehydrated turn can say about its files
+   * beyond their stored names, held to what the service's own reader of these
+   * rows already does — `contentAttachments` in cloud's
+   * services/agent/internal/persist/threads.go.
+   */
+  describe('persisted attachment resolution', () => {
+    /**
+     * `attachmentRefsForRow` (services/agent/server/agent_handler.go) resolves
+     * each name to a library asset id and to the coarse kind behind its MIME
+     * type, and `contentAttachments` reads both back. Carrying them through
+     * here is what lets a file be classified when its own name cannot classify
+     * it; what the renderer does with either is the sibling case in
+     * UserMessage.test.ts.
+     */
+    it('keeps the resolved asset id and media kind the server persisted on a ref', () => {
+      const bareDigest = 'a'.repeat(64)
+      const message = row(1, 'user', 'turn-a', 'check this clip', 'row-1')
+      message.content = {
+        text: 'check this clip',
+        attachments: [bareDigest],
+        attachment_refs: [{ name: bareDigest, id: 'asset-42', kind: 'video' }]
+      }
+
+      const transcript = normalizeAgentTranscript([message])
+
+      expect(transcript.userAttachments.get(toTurnId('turn-a'))).toEqual([
+        expect.objectContaining({ id: 'asset-42', kind: 'video' })
+      ])
+    })
+
+    /**
+     * The two keys disagree about whitespace: `attachmentRefsForRow` trims the
+     * name it stores on a ref while the handler stores `attachments` verbatim,
+     * so a padded name reaches this parser under two spellings. It still has
+     * to find its own resolution — and keep asking `/view?filename=` for the
+     * name the row was actually stored under.
+     */
+    it('resolves a padded name against the trimmed ref the server stored', () => {
+      const message = row(1, 'user', 'turn-a', 'check this clip', 'row-1')
+      message.content = {
+        text: 'check this clip',
+        attachments: [' clip.dat '],
+        attachment_refs: [{ name: 'clip.dat', id: 'asset-7', kind: 'video' }]
+      }
+
+      const transcript = normalizeAgentTranscript([message])
+
+      expect(transcript.userAttachments.get(toTurnId('turn-a'))).toEqual([
+        { name: ' clip.dat ', ref: ' clip.dat ', id: 'asset-7', kind: 'video' }
+      ])
+    })
+
+    /**
+     * Reachable through the API rather than through this client: the writer
+     * stores `attachments` verbatim and has never filtered it, so an empty
+     * name posted by any client persists. `contentAttachments` drops it — an
+     * empty string names no file — and so must this, held to the same
+     * untrimmed `!= ""` the service uses, or the turn gains a tile with an
+     * empty caption and no resolvable preview. The row is shown without a
+     * sibling
+     * `attachment_refs`, the pre-`attachment_refs` legacy shape; a current
+     * writer would emit one naming `real.png`, which supplies no resolution
+     * here beyond the name `attachments` already carries.
+     */
+    it('drops a blank name persisted under attachments', () => {
+      const message = row(1, 'user', 'turn-a', '', 'row-1')
+      message.content = { attachments: ['', 'real.png'] }
+
+      const transcript = normalizeAgentTranscript([message])
+
+      expect(transcript.userAttachments.get(toTurnId('turn-a'))).toEqual([
+        { name: 'real.png', ref: 'real.png' }
+      ])
+    })
+  })
 
   it('restores persisted tool calls as ToolPart entries ahead of the reply text', () => {
     const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')

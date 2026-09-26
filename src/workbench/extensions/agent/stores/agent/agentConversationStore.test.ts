@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref, watch } from 'vue'
 
 import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
@@ -84,6 +84,9 @@ const partTexts = (store: ReturnType<typeof useAgentConversationStore>) =>
   store.messages.flatMap((m) =>
     m.parts.flatMap((p) => (p.type === 'text' ? [p.text] : []))
   )
+
+/** cloud's storage-key hash shape: `<64 hex><ext>` (common/assets/manager_impl.go). */
+const storedRef = `${'9f2c'.repeat(16)}.png`
 
 describe('useAgentConversationStore', () => {
   it('publishes a turn identity before its live status', () => {
@@ -719,6 +722,543 @@ describe('useAgentConversationStore', () => {
       role: 'user',
       attachments: [{ name: 'ComfyUI_00002_.png', ref: 'ComfyUI_00002_.png' }]
     })
+  })
+
+  it("surfaces a live turn's attachments on its user entry", () => {
+    const store = useAgentConversationStore()
+    store.startTurn(T1)
+
+    store.recordUser(T1, 'upscale this', [
+      { name: 'Beach photo.png', ref: storedRef, previewUrl: 'blob:b' }
+    ])
+
+    expect(store.entries[0]).toMatchObject({
+      role: 'user',
+      attachments: [
+        { name: 'Beach photo.png', ref: storedRef, previewUrl: 'blob:b' }
+      ]
+    })
+  })
+
+  it('revokes the live blob preview yet still restores the same turn from history', () => {
+    const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    const user = historyRow(1, 'user', 'server-turn', 'upscale this')
+    user.content = { text: 'upscale this', attachments: ['beach.png'] }
+    const store = useAgentConversationStore()
+    store.startTurn(T1)
+    store.recordUser(T1, 'upscale this', [
+      { name: 'beach.png', ref: 'beach.png', previewUrl: 'blob:beach' }
+    ])
+
+    store.hydrate([user, historyRow(2, 'assistant', 'server-turn', 'Done')])
+
+    expect(revoke).toHaveBeenCalledWith('blob:beach')
+    const [restored] = store.entries
+    assert(restored.role === 'user')
+    expect(restored.attachments).toEqual([
+      { name: 'beach.png', ref: 'beach.png' }
+    ])
+  })
+
+  /**
+   * PM-1643 / PM-1149 / PM-717. Switching threads mid-turn stashes the turn;
+   * returning hydrates the rows the service already holds, which mid-turn is
+   * both of them — `StartTurn` writes the user row and the streaming row in
+   * one transaction, under a `turn_id` that is a fresh server uuid, while the
+   * ack hands the client the assistant ROW's id as its live turn id
+   * (services/agent/server/agent_handler.go, internal/persist/turnstart.go).
+   * Being distinct, the hydrated turn survives resume's own id filter, and the
+   * two dedupe paths behind it both decline: `removeHydratedCopy` because
+   * `hydratedAssistantTurnIds` holds the hydrated assistant row, and the
+   * drop-the-stash branch because `entry.settled` is false on a stash. What
+   * reconciles them is the row id the ack handed over, which resolves to the
+   * hydrated turn. The `'server-turn'` idiom is the one the settled-turn case
+   * below already uses.
+   */
+  it('resumes a thread-switched turn once, with its attachments', () => {
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    const userRow = historyRow(1, 'user', 'server-turn', 'upscale this')
+    userRow.content = { text: 'upscale this', attachments: [storedRef] }
+    const assistantRow = historyRow(2, 'assistant', 'server-turn', '', 't1')
+    assistantRow.status = 'streaming'
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'upscale this', [
+      { name: 'Beach photo.png', ref: storedRef, previewUrl: 'blob:beach' }
+    ])
+    store.ingest(delta('t1', 'working on it'))
+    store.stashActiveTurn()
+
+    store.setThreadId('th-other')
+    store.hydrate([])
+    store.setThreadId('th')
+    store.hydrate([userRow, assistantRow])
+    store.resumeBackgroundTurn()
+
+    expect(partTexts(store)).toEqual(['working on it'])
+    expect(store.isStreaming).toBe(true)
+    // The name is the half a refresh cannot recover (PM-1705): the row names
+    // the file by its ref, and the session is the only place the name the user
+    // attached still exists. A thread switch never left it.
+    expect(store.entries.filter((entry) => entry.role === 'user')).toEqual([
+      expect.objectContaining({
+        text: 'upscale this',
+        attachments: [{ name: 'Beach photo.png', ref: storedRef }]
+      })
+    ])
+    expect(store.entries.map((entry) => entry.role)).toEqual([
+      'user',
+      'assistant'
+    ])
+  })
+
+  /**
+   * The same name, on the paths resume never reaches: a turn the agent
+   * finished while the user was away takes the hydrated copy and discards the
+   * stash, a thread with nothing in flight never stashes at all, and a New
+   * chat resets the store outright. All three still go through hydrate, which
+   * is where the session's names are applied.
+   */
+  it.for([
+    { label: 'a turn that settled while away', settleWhileAway: true },
+    { label: 'a thread with nothing in flight', settleWhileAway: false },
+    { label: 'a New chat in between', settleWhileAway: false, newChat: true }
+  ])(
+    'keeps the attached filename across $label',
+    ({ settleWhileAway, newChat }) => {
+      vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+      const userRow = historyRow(1, 'user', 'server-turn', 'upscale this')
+      userRow.content = { text: 'upscale this', attachments: [storedRef] }
+      const assistantRow = historyRow(
+        2,
+        'assistant',
+        'server-turn',
+        'Done',
+        't1'
+      )
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.recordUser(T1, 'upscale this', [
+        { name: 'Beach photo.png', ref: storedRef, previewUrl: 'blob:beach' }
+      ])
+      if (settleWhileAway) store.stashActiveTurn()
+      store.ingest(done('t1'))
+
+      if (newChat) store.reset()
+      else {
+        store.setThreadId('th-other')
+        store.hydrate([])
+      }
+      store.setThreadId('th')
+      store.hydrate([userRow, assistantRow])
+      store.resumeBackgroundTurn()
+
+      expect(store.entries.filter((entry) => entry.role === 'user')).toEqual([
+        expect.objectContaining({
+          attachments: [{ name: 'Beach photo.png', ref: storedRef }]
+        })
+      ])
+    }
+  )
+
+  /**
+   * A stash is only the fuller copy while its transport was delivering. One
+   * stashed across a socket drop holds nothing, while the row behind it holds
+   * the reply the agent finished without it — so here the hydrated copy is the
+   * one that stays, and the turn is not left on an empty bubble that will
+   * never settle.
+   */
+  it('keeps the persisted reply when the resumed stash has nothing on it', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'upscale this')
+    store.stashActiveTurn()
+
+    store.setThreadId('th-other')
+    store.hydrate([])
+    store.setThreadId('th')
+    store.hydrate([
+      historyRow(1, 'user', 'server-turn', 'upscale this'),
+      historyRow(2, 'assistant', 'server-turn', 'All done.', 't1')
+    ])
+    store.resumeBackgroundTurn()
+
+    expect(partTexts(store)).toEqual(['All done.'])
+    expect(store.entries.map((entry) => entry.role)).toEqual([
+      'user',
+      'assistant'
+    ])
+    expect(store.isStreaming).toBe(false)
+  })
+
+  it('keeps the persisted reply when the resumed stash holds only half of it', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'upscale this')
+    store.ingest(delta('t1', 'All '))
+    store.stashActiveTurn()
+
+    store.setThreadId('th-other')
+    store.hydrate([])
+    store.setThreadId('th')
+    store.hydrate([
+      historyRow(1, 'user', 'server-turn', 'upscale this'),
+      historyRow(2, 'assistant', 'server-turn', 'All done.', 't1')
+    ])
+    store.resumeBackgroundTurn()
+
+    expect(partTexts(store)).toEqual(['All done.'])
+    expect(store.isStreaming).toBe(false)
+  })
+
+  /**
+   * The stash received every delta and only missed the done frame, so it holds
+   * exactly what the terminal row holds. Reinstating it there would leave the
+   * turn streaming with nothing left to finish it, so the row wins on equal.
+   */
+  it('settles on the persisted reply when the stash holds exactly the same text', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'upscale this')
+    store.ingest(delta('t1', 'All done.'))
+    store.stashActiveTurn()
+
+    store.setThreadId('th-other')
+    store.hydrate([])
+    store.setThreadId('th')
+    store.hydrate([
+      historyRow(1, 'user', 'server-turn', 'upscale this'),
+      historyRow(2, 'assistant', 'server-turn', 'All done.', 't1')
+    ])
+    store.resumeBackgroundTurn()
+
+    expect(partTexts(store)).toEqual(['All done.'])
+    expect(store.isStreaming).toBe(false)
+    expect(store.entries.map((entry) => entry.role)).toEqual([
+      'user',
+      'assistant'
+    ])
+  })
+
+  /**
+   * The blind spot in the case above: a live transport also emits thinking and
+   * tab links, which a persisted row never carries, so a narrated stash holds
+   * MORE parts than the finished row while holding LESS of the reply. Comparing
+   * anything but reply text here strands exactly the turns this rescues. The
+   * tab link rides onto the row, since the service never wrote it there.
+   */
+  it('settles on the persisted reply when the stash narrated before it', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'upscale this')
+    store.ingest(thinking('t1', 'considering the crop'))
+    store.ingest(activeTab('workflow-7', 't1'))
+    store.ingest(toolCall('t1', 'search_nodes', 'success'))
+    store.ingest(toolCall('t1', 'add_node', 'running'))
+    store.ingest(delta('t1', 'All '))
+    store.stashActiveTurn()
+
+    const assistantRow = historyRow(
+      2,
+      'assistant',
+      'server-turn',
+      'All done.',
+      't1'
+    )
+    // Only the finished call is on the row: ToolCallsForThread filters on the
+    // terminal statuses (services/agent/internal/persist/threads.go).
+    assistantRow.content = {
+      text: 'All done.',
+      tool_calls: [
+        {
+          id: 'row-call-1',
+          tool_call_id: 'call-search_nodes',
+          tool_name: 'search_nodes',
+          status: 'ok'
+        }
+      ]
+    }
+    store.setThreadId('th-other')
+    store.hydrate([])
+    store.setThreadId('th')
+    store.hydrate([
+      historyRow(1, 'user', 'server-turn', 'upscale this'),
+      assistantRow
+    ])
+    store.resumeBackgroundTurn()
+
+    expect(partTexts(store)).toEqual(['All done.'])
+    expect(store.isStreaming).toBe(false)
+    expect(tabLinkIds(store)).toEqual(['workflow-7'])
+    // The unfinished call rides across, deduped against the recorded one and
+    // forced terminal -- left streaming it would spin forever on a message
+    // nothing can settle. Thinking stays behind, being broadcast-only.
+    expect(store.messages[0].parts.map((part) => part.type)).toEqual([
+      'tool',
+      'tabLink',
+      'tool',
+      'text'
+    ])
+    expect(
+      store.messages[0].parts.filter((part) => part.type === 'tool')
+    ).toEqual([
+      expect.objectContaining({ name: 'search_nodes', state: 'done' }),
+      expect.objectContaining({
+        name: 'add_node',
+        state: 'done',
+        ok: false
+      })
+    ])
+  })
+
+  /**
+   * PM-1575's canvas gate holds a SUCCEEDED canvas-mutating call at streaming
+   * with `ok` already true, waiting for the follower. Forcing every carried
+   * streaming call to failed would put a red cross on a call that worked, so
+   * only a call that truly never resolved reads as failed.
+   */
+  it.for([
+    {
+      label: 'a call the canvas gate is still holding',
+      status: 'success',
+      ok: true
+    },
+    { label: 'a call that never resolved', status: 'running', ok: false }
+  ])('carries $label onto the row with its own outcome', ({ status, ok }) => {
+    const store = useAgentConversationStore()
+    store.setCanvasSyncGate(
+      () => true,
+      () => 0
+    )
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'add a node')
+    store.ingest(toolCall('t1', 'add_node', status))
+    store.ingest(delta('t1', 'Wo'))
+    store.stashActiveTurn()
+
+    store.setThreadId('th-other')
+    store.hydrate([])
+    store.setThreadId('th')
+    store.hydrate([
+      historyRow(1, 'user', 'server-turn', 'add a node'),
+      historyRow(2, 'assistant', 'server-turn', 'Worked on it.', 't1')
+    ])
+    store.resumeBackgroundTurn()
+
+    expect(
+      store.messages[0].parts.filter((part) => part.type === 'tool')
+    ).toEqual([
+      expect.objectContaining({ name: 'add_node', state: 'done', ok })
+    ])
+  })
+
+  /**
+   * The settled-while-away path: the done frame reached the stash's transport
+   * before the user came back. The row is authoritative there too, and the
+   * live-only parts have exactly as little anywhere else to go.
+   */
+  it('carries the live-only parts when the turn settled while away', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'upscale this')
+    store.ingest(activeTab('workflow-9', 't1'))
+    store.ingest(delta('t1', 'All done.'))
+    store.stashActiveTurn()
+    store.ingest(done('t1'))
+
+    store.setThreadId('th-other')
+    store.hydrate([])
+    store.setThreadId('th')
+    store.hydrate([
+      historyRow(1, 'user', 'server-turn', 'upscale this'),
+      historyRow(2, 'assistant', 'server-turn', 'All done.', 't1')
+    ])
+    store.resumeBackgroundTurn()
+
+    expect(partTexts(store)).toEqual(['All done.'])
+    expect(tabLinkIds(store)).toEqual(['workflow-9'])
+    expect(store.messages[0].parts.map((part) => part.type)).toEqual([
+      'tabLink',
+      'text'
+    ])
+  })
+
+  /**
+   * The insertion point, on the one row shape that can tell the two rules
+   * apart: a mid-ask row ends [text, runApproval], so stepping back over the
+   * trailing text alone would still land the carried chip under the approval
+   * card it was announced before.
+   */
+  it('carries a live-only part above a trailing approval card', () => {
+    const [askingRow] = zAgentMessages.parse([
+      {
+        id: 't1',
+        thread_id: 'th',
+        seq: 2,
+        role: 'assistant',
+        status: 'streaming',
+        turn_id: 'server-turn',
+        content: { text: 'All done.' },
+        pending_ask: {
+          message_id: 't1',
+          ask_id: 'server-turn:call-1',
+          kind: 'run_approval',
+          context: { workflow_id: 'workflow-1', workflow_name: 'Portrait' },
+          prompt: 'Run workflow “Portrait”?',
+          options: [{ id: 'run', label: 'Run' }],
+          min_selections: 1,
+          max_selections: 1,
+          allow_other: false
+        }
+      }
+    ])
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'upscale this')
+    store.ingest(activeTab('workflow-9', 't1'))
+    store.stashActiveTurn()
+    store.ingest(done('t1'))
+
+    store.setThreadId('th-other')
+    store.hydrate([])
+    store.setThreadId('th')
+    store.hydrate([
+      historyRow(1, 'user', 'server-turn', 'upscale this'),
+      askingRow
+    ])
+    store.resumeBackgroundTurn()
+
+    expect(store.messages[0].parts.map((part) => part.type)).toEqual([
+      'tabLink',
+      'text',
+      'runApproval'
+    ])
+  })
+
+  /**
+   * Two asset rows can share a content hash, so the same ref can be attached
+   * under a different name in another thread. A thread must not be handed a
+   * name the user only ever typed somewhere else.
+   */
+  it('does not lend one thread the attachment name another thread used', () => {
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    const store = useAgentConversationStore()
+    store.setThreadId('th-other')
+    store.startTurn(T2)
+    store.recordUser(T2, 'from the other thread', [
+      { name: 'Sunset.png', ref: storedRef }
+    ])
+
+    const userRow = historyRow(1, 'user', 'server-turn', 'upscale this')
+    userRow.content = { text: 'upscale this', attachments: [storedRef] }
+    store.setThreadId('th')
+    store.hydrate([userRow, historyRow(2, 'assistant', 'server-turn', 'Done')])
+
+    expect(store.entries.filter((entry) => entry.role === 'user')).toEqual([
+      expect.objectContaining({
+        attachments: [{ name: storedRef, ref: storedRef }]
+      })
+    ])
+  })
+
+  /**
+   * The row is the fuller copy only once the service calls the turn finished.
+   * A streaming row already carries its terminal tool calls, so keeping it
+   * would leave the turn looking done with no transport left to finish it.
+   */
+  it('resumes the live turn when the fuller hydrated copy is still streaming', () => {
+    const streamingRow = historyRow(2, 'assistant', 'server-turn', '', 't1')
+    streamingRow.status = 'streaming'
+    streamingRow.content = {
+      tool_calls: [{ id: 'call-1', tool_name: 'search_nodes', status: 'ok' }]
+    }
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'upscale this')
+    store.stashActiveTurn()
+
+    store.setThreadId('th-other')
+    store.hydrate([])
+    store.setThreadId('th')
+    store.hydrate([
+      historyRow(1, 'user', 'server-turn', 'upscale this'),
+      streamingRow
+    ])
+    store.resumeBackgroundTurn()
+
+    store.ingest(delta('t1', 'still going'))
+
+    expect(partTexts(store)).toEqual(['still going'])
+    expect(store.isStreaming).toBe(true)
+  })
+
+  /**
+   * PM-1643 / PM-1149 / PM-717. The ask the turn is waiting on was persisted
+   * on the row, never broadcast, so it exists only on the copy resume drops.
+   * Losing it with the copy leaves the turn unanswerable — worse than the
+   * duplicate, which at least kept the card reachable.
+   */
+  it('keeps a run approval the dropped hydrated copy was carrying', () => {
+    const userRow = historyRow(1, 'user', 'server-turn', 'run it')
+    userRow.content = { text: 'run it', attachments: ['beach.png'] }
+    const [askingRow] = zAgentMessages.parse([
+      {
+        id: 't1',
+        thread_id: 'th',
+        seq: 2,
+        role: 'assistant',
+        status: 'streaming',
+        turn_id: 'server-turn',
+        pending_ask: {
+          message_id: 't1',
+          ask_id: 'server-turn:call-1',
+          kind: 'run_approval',
+          context: {
+            workflow_id: 'workflow-1',
+            workflow_name: 'Portrait workflow'
+          },
+          prompt: 'Run workflow “Portrait workflow”?',
+          options: [
+            { id: 'run', label: 'Run' },
+            { id: 'cancel', label: 'Cancel' }
+          ],
+          min_selections: 1,
+          max_selections: 1,
+          allow_other: false
+        }
+      }
+    ])
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'run it')
+    store.ingest(delta('t1', 'working on it'))
+    store.stashActiveTurn()
+
+    store.setThreadId('th-other')
+    store.hydrate([])
+    store.setThreadId('th')
+    store.hydrate([userRow, askingRow])
+    store.resumeBackgroundTurn()
+
+    expect(store.messages).toHaveLength(1)
+    expect(store.messages[0].parts).toContainEqual({
+      type: 'runApproval',
+      askId: 'server-turn:call-1',
+      workflowId: 'workflow-1',
+      workflowName: 'Portrait workflow'
+    })
+    expect(partTexts(store)).toEqual(['working on it'])
   })
 
   it('hydrates persisted tool calls into the same parts array the live work-summary UI reads', () => {
