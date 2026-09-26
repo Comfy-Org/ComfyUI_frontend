@@ -119,28 +119,32 @@ describe('PlaygroundOutput', () => {
 
   // A spinner and a climbing clock both promise the run is being watched.
   it.for([
-    { stalled: false, reads: '1:00' },
-    { stalled: true, reads: undefined }
-  ])('counts while stalled is $stalled: $reads', ({ stalled, reads }) => {
-    render(PlaygroundOutput, {
-      props: {
-        modelName: 'Workflow',
-        now: 62_000,
-        state: {
-          status: 'running',
-          startedAt: 2000,
-          label: 'Connection interrupted',
-          stalled
+    { stalled: false, spinners: 1, reads: '1:00' },
+    { stalled: true, spinners: 0, reads: undefined }
+  ])(
+    'stalled $stalled keeps $spinners spinner and reads $reads',
+    ({ stalled, spinners, reads }) => {
+      render(PlaygroundOutput, {
+        props: {
+          modelName: 'Workflow',
+          now: 62_000,
+          state: {
+            status: 'running',
+            startedAt: 2000,
+            label: 'Connection interrupted',
+            stalled
+          }
         }
-      }
-    })
+      })
 
-    expect(screen.getByRole('status')).toHaveTextContent(
-      'Connection interrupted'
-    )
-    const clock = screen.queryByTestId('run-elapsed')
-    expect(clock?.textContent.trim()).toBe(reads)
-  })
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'Connection interrupted'
+      )
+      expect(screen.queryAllByTestId('run-spinner')).toHaveLength(spinners)
+      const clock = screen.queryByTestId('run-elapsed')
+      expect(clock?.textContent.trim()).toBe(reads)
+    }
+  )
   it.for([
     { event: 'playing', status: 'succeeded' },
     { event: 'pause', status: 'cancelled' }

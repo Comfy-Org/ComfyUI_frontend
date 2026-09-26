@@ -345,6 +345,7 @@ const earlierClass = (active: boolean) =>
         v-if="!state.stalled"
         class="size-8 text-primary-comfy-yellow motion-safe:animate-spin"
         aria-hidden="true"
+        data-testid="run-spinner"
       />
       <p class="flex items-baseline gap-2 text-sm text-primary-warm-white">
         {{ state.label ?? t('workshop.run.running', locale) }}
