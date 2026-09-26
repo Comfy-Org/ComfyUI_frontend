@@ -1,6 +1,7 @@
 import { truncate, writeFile } from 'node:fs/promises'
 
 import { expect } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 
 import type { UploadImageResponse } from '@comfyorg/ingest-types'
 
@@ -44,45 +45,92 @@ async function dropOnPanel(
 }
 
 /**
- * What the panel did with a file it was handed. `ignored` is the interesting
- * one: the file neither arrived nor was refused, so the user has no way to
- * tell the click from a misfire.
+ * What the panel did with a file it was handed.
+ *
+ * `ignored` is the interesting one: the file neither arrived nor was refused,
+ * so the user has no way to tell the click from a misfire. `workflowError` is
+ * kept apart from `refused` deliberately — both are toasts, but one is the
+ * composer declining the file and the other is the graph loader answering a
+ * question the user never asked. Collapsing them would erase exactly the
+ * distinction the parity pin below exists to record.
  */
-type HandOverOutcome = 'attached' | 'refused' | 'ignored'
+type HandOverOutcome = 'attached' | 'refused' | 'workflowError' | 'ignored'
 
-// How long to wait for either answer before calling the hand-over ignored.
+// How long to wait for any answer before calling the hand-over ignored.
 const HAND_OVER_TIMEOUT = 5_000
 
+const escapeForRegExp = (value: string): string =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
 /**
- * Hands `fileName` over by `route` and reports which of the three answers the
- * panel gave. Both routes are measured the same way, which is what lets the
- * parity test compare them instead of asserting one and assuming the other.
+ * A visible toast reading one of `messages`.
+ *
+ * Every message passed here names the file being handed over, which is what
+ * keeps a hand-over from being answered by a toast about some other file —
+ * including one left on screen by the previous route, whose `life` is the same
+ * 5 s as `HAND_OVER_TIMEOUT`.
+ */
+function toastReading(page: Page, messages: string[]): Locator {
+  return page
+    .locator('.p-toast-message:visible')
+    .filter({ hasText: new RegExp(messages.map(escapeForRegExp).join('|')) })
+}
+
+/** The two refusals the attachment flow itself can raise about `fileName`. */
+function attachmentRefusals(fileName: string): string[] {
+  return [
+    // Truncated before `{limit}`: the limit is the server's and varies by
+    // deployment, but the name-bearing half is enough to identify the toast.
+    enMessages.agent.attachmentTooLarge
+      .replace('{name}', fileName)
+      .split('{limit}')[0]
+      .trimEnd(),
+    enMessages.agent.attachmentUploadFailed.replace('{name}', fileName)
+  ]
+}
+
+/**
+ * Hands `fileName` over by `route` and reports which answer the panel gave.
+ * Both routes are measured the same way, which is what lets the parity test
+ * compare them instead of asserting one and assuming the other.
  */
 async function handOver(
   agentPanel: AgentPanel,
+  fileName: string,
   route: () => Promise<void>
 ): Promise<HandOverOutcome> {
   await route()
   const page = agentPanel.root.page()
-  // `ignored` is the ABSENCE of both answers, so it is the case where both
-  // waits time out — which is why this races two `waitFor`s rather than
-  // polling through `expect`, whose timeout would throw on exactly the
-  // outcome this needs to report. Whichever answer settles first wins, so a
-  // slow arrival is never misread as silence.
+  // `ignored` is the ABSENCE of every answer, so it is the case where all the
+  // waits time out — which is why this races `waitFor`s rather than polling
+  // through `expect`, whose timeout would throw on exactly the outcome this
+  // needs to report. Whichever answer settles first wins, so a slow arrival is
+  // never misread as silence.
   return await Promise.any([
-    agentPanel.attachmentChips
-      .first()
+    agentPanel
+      .attachmentChip(fileName)
       .waitFor({ state: 'visible', timeout: HAND_OVER_TIMEOUT })
       .then(() => 'attached' as const),
-    page
-      .locator('.p-toast-message:visible')
+    toastReading(page, attachmentRefusals(fileName))
       .first()
       .waitFor({ state: 'visible', timeout: HAND_OVER_TIMEOUT })
-      .then(() => 'refused' as const)
+      .then(() => 'refused' as const),
+    toastReading(page, [
+      enMessages.toastMessages.fileLoadError.replace('{fileName}', fileName)
+    ])
+      .first()
+      .waitFor({ state: 'visible', timeout: HAND_OVER_TIMEOUT })
+      .then(() => 'workflowError' as const)
   ]).catch(() => 'ignored' as const)
 }
 
-/** Removes every staged attachment, so the next hand-over starts clean. */
+/**
+ * Removes every staged attachment and waits out any toast, so the next
+ * hand-over starts clean. The toast wait is load-bearing: a toast outlives the
+ * chip it was raised about, so without it a refusal from the previous route
+ * would still be on screen and would answer for the next one — making the two
+ * routes look like they agreed when the second was never actually exercised.
+ */
 async function clearComposer(agentPanel: AgentPanel): Promise<void> {
   const remove = agentPanel.composerAssetSection.getByRole('button', {
     name: enMessages.agent.remove,
@@ -90,6 +138,9 @@ async function clearComposer(agentPanel: AgentPanel): Promise<void> {
   })
   while ((await remove.count()) > 0) await remove.first().click()
   await expect(agentPanel.attachmentChips).toHaveCount(0)
+  await expect(
+    agentPanel.root.page().locator('.p-toast-message:visible')
+  ).toHaveCount(0, { timeout: 10_000 })
 }
 
 /**
@@ -251,11 +302,11 @@ test.describe(
       async ({ agentPanel, comfyPage }) => {
         await agentPanel.open()
 
-        const picked = await handOver(agentPanel, () =>
+        const picked = await handOver(agentPanel, CSV, () =>
           agentPanel.fileInput.setInputFiles(assetPath(CSV))
         )
         await clearComposer(agentPanel)
-        const dropped = await handOver(agentPanel, () =>
+        const dropped = await handOver(agentPanel, CSV, () =>
           dropOnPanel(comfyPage, agentPanel, CSV)
         )
 
