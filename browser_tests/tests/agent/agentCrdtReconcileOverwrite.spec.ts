@@ -398,7 +398,7 @@ test.describe(
       })
       await agentConversation.waitForTurnComplete()
 
-      await expect(agentEditedField.locator('input')).toHaveValue('30')
+      await expect(agentEditedField.getByRole('spinbutton')).toHaveValue('30')
       await expect(textField).toHaveValue(localValue)
     })
   }
