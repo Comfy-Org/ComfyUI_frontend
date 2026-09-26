@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest'
 
 import { WorkshopWorkflowError } from '../../config/workshop-workflow-api'
 import type { RunFailure } from '../../config/workshop-run'
-import type { WorkflowErrorCode } from '../../config/workshop-workflow-response'
+import type {
+  WorkflowErrorCode,
+  WorkflowRunSummary
+} from '../../config/workshop-workflow-response'
+import type { WorkflowState } from '../../config/workshop-workflow-state'
 import { failureLabelKey } from './failure-label'
 import { panelSaysRefusal, workflowRunFailure } from './workflow-refusal'
 
@@ -86,4 +90,46 @@ describe('panelSaysRefusal', () => {
       expect(panelSaysRefusal(state)).toBe(false)
     }
   )
+
+  // A run Cloud accepted and then reported failed is the panel's to say, and it
+  // says it as a provider failure. The page used to add a second sentence of its
+  // own here — in different words, telling the reader to change the inputs the
+  // panel had just told them to leave alone.
+  it.for([
+    { reported: 'failed', panel: true },
+    { reported: 'succeeded', panel: false },
+    { reported: 'cancelled', panel: false }
+  ] as const)(
+    'leaves a run reported $reported to the panel: $panel',
+    ({ reported, panel }) => {
+      expect(panelSaysRefusal(observed(reported))).toBe(panel)
+    }
+  )
 })
+
+function observed(state: WorkflowRunSummary['state']): WorkflowState {
+  const stamp = new Date(0).toISOString()
+  return {
+    phase: 'settled',
+    record: {
+      version: 2,
+      cancelRequested: false,
+      stage: 'run',
+      runId: 'run',
+      workflowId: 'workflow',
+      definitionVersion: '1'
+    },
+    observation: {
+      run: {
+        id: 'run',
+        workflowId: 'workflow',
+        definitionVersion: '1',
+        state,
+        outputState: 'ready',
+        createdAt: stamp,
+        updatedAt: stamp
+      },
+      outputs: []
+    }
+  }
+}
