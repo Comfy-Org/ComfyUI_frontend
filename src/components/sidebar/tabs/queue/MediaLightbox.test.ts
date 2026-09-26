@@ -2,6 +2,7 @@ import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
+import type { PropType } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { AugmentedResultItem } from '@/utils/resultItem'
@@ -30,30 +31,40 @@ type MockResultItem = AugmentedResultItem & {
 }
 
 describe('MediaLightbox', () => {
+  // Every viewer stub takes the same `result` contract as the component it
+  // stands in for, declared once so a stub cannot quietly drift from it.
+  const resultProp = {
+    result: { type: Object as PropType<AugmentedResultItem>, required: true }
+  } as const
+
   const mockComfyImage = {
     name: 'ComfyImage',
     template: '<div class="mock-comfy-image" data-testid="comfy-image"></div>',
-    props: ['src', 'contain', 'alt']
+    props: {
+      src: { type: String, required: true },
+      contain: { type: Boolean, default: false },
+      alt: { type: String, default: '' }
+    }
   }
 
   const mockResultVideo = {
     name: 'ResultVideo',
     template:
       '<div class="mock-result-video" data-testid="result-video"></div>',
-    props: ['result']
+    props: resultProp
   }
 
   const mockResultAudio = {
     name: 'ResultAudio',
     template:
       '<div class="mock-result-audio" data-testid="result-audio"></div>',
-    props: ['result']
+    props: resultProp
   }
 
   const mockResultText = {
     name: 'ResultText',
     template: '<div class="mock-result-text" data-testid="result-text"></div>',
-    props: ['result']
+    props: resultProp
   }
 
   const mockGalleryItems: MockResultItem[] = [
