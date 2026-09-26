@@ -1141,7 +1141,9 @@ test.describe('Assets sidebar - media type filter', { tag: '@cloud' }, () => {
     await expect(tab.filterCheckbox('3D')).toBeVisible()
   })
 
-  test('Unchecking image filter hides image assets', async ({ comfyPage }) => {
+  test('Checking the Image filter shows only image assets', async ({
+    comfyPage
+  }) => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
 
@@ -1152,21 +1154,25 @@ test.describe('Assets sidebar - media type filter', { tag: '@cloud' }, () => {
 
     await tab.toggleMediaTypeFilter('Image')
 
-    // photo.png is the only image in the fixture, so it is the one that goes.
-    await expect(tab.assetCards).toHaveCount(2, { timeout: 5000 })
-    await expect(tab.getAssetCardByName('photo.png')).toHaveCount(0)
-    await expect(tab.getAssetCardByName('clip.mp4')).toBeVisible()
-    await expect(tab.getAssetCardByName('track.mp3')).toBeVisible()
+    // mediaTypeFilters is an allowlist that starts empty, and empty means show
+    // everything. So every box starts unchecked and checking Image narrows to
+    // images rather than hiding them.
+    await expect(tab.assetCards).toHaveCount(1, { timeout: 5000 })
+    await expect(tab.getAssetCardByName('photo.png')).toBeVisible()
+    await expect(tab.getAssetCardByName('clip.mp4')).toHaveCount(0)
+    await expect(tab.getAssetCardByName('track.mp3')).toHaveCount(0)
   })
 
-  test('Re-enabling filter restores hidden assets', async ({ comfyPage }) => {
+  test('Clearing the Image filter restores the other assets', async ({
+    comfyPage
+  }) => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
 
     const initialCount = await tab.assetCards.count()
 
     await tab.toggleMediaTypeFilter('Image')
-    await expect(tab.assetCards).toHaveCount(2, { timeout: 5000 })
+    await expect(tab.assetCards).toHaveCount(1, { timeout: 5000 })
 
     await tab.toggleMediaTypeFilter('Image')
     await expect(tab.assetCards).toHaveCount(initialCount, { timeout: 5000 })
