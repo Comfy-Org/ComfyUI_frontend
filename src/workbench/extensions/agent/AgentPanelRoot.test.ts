@@ -3185,6 +3185,75 @@ describe('AgentPanelRoot history', () => {
     })
   })
 
+  it('switches to the chat bound to the active workflow tab', async () => {
+    const first = addTab('workflows/first.json')
+    const second = addTab('workflows/second.json')
+    workflowStore.activeWorkflow = first
+
+    const loadedThreads: string[] = []
+    let resolveWorkflows!: (response: Response) => void
+    const workflowsResponse = new Promise<Response>((resolve) => {
+      resolveWorkflows = resolve
+    })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url.endsWith('/api/agent/threads'))
+          return json(
+            200,
+            agentThreadList([
+              agentThread({
+                id: 'th-first',
+                title: 'First chat',
+                last_message_at: '2026-09-22T10:00:00Z',
+                workflow_id: 'wf-first'
+              }),
+              agentThread({
+                id: 'th-second',
+                title: 'Second chat',
+                last_message_at: '2026-09-22T09:00:00Z',
+                workflow_id: 'wf-second'
+              })
+            ])
+          )
+        if (url.includes('/api/workflows')) return workflowsResponse
+        const match = url.match(/\/api\/agent\/threads\/([^/]+)\/messages$/)
+        if (match) {
+          loadedThreads.push(match[1])
+          return json(200, [])
+        }
+        return json(200, { data: [], pagination: { has_more: false } })
+      })
+    )
+
+    renderWithSelectedTarget()
+    await vi.waitFor(() =>
+      expect(useAgentChatHistoryStore().sessions).toHaveLength(2)
+    )
+    expect(useAgentConversationStore().threadId).toBeNull()
+
+    resolveWorkflows(
+      json(200, {
+        data: [
+          { id: 'wf-first', name: 'first' },
+          { id: 'wf-second', name: 'second' }
+        ],
+        pagination: { offset: 0, limit: 100, total: 2, has_more: false }
+      })
+    )
+
+    await vi.waitFor(() =>
+      expect(useAgentConversationStore().threadId).toBe('th-first')
+    )
+
+    workflowStore.activeWorkflow = second
+
+    await vi.waitFor(() =>
+      expect(useAgentConversationStore().threadId).toBe('th-second')
+    )
+    expect(loadedThreads).toEqual(['th-first', 'th-second'])
+  })
+
   it('surfaces a thread-list failure via the host error modal', async () => {
     executionErrors.showErrorOverlay.mockClear()
     vi.stubGlobal(

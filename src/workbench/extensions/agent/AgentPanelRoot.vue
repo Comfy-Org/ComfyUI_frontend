@@ -1158,9 +1158,12 @@ function toChatSession(thread: AgentThreadSummary): ChatSession {
   }
 }
 
+const threadSummaries = ref<AgentThreadSummary[]>([])
+
 async function refreshHistory(): Promise<void> {
   try {
-    history.replaceAll((await listThreads()).map(toChatSession))
+    threadSummaries.value = await listThreads()
+    history.replaceAll(threadSummaries.value.map(toChatSession))
   } catch (error) {
     surfaceAgentError(
       'agent_api_failed',
@@ -1182,6 +1185,25 @@ async function onSelectHistory(id: string): Promise<void> {
     useTelemetry()?.trackAgentThreadStarted({ source: 'history_select' })
   void refreshHistory()
 }
+
+const activeWorkflowId = computed(() => {
+  const workflow = workflowStore.activeWorkflow
+  return workflow ? cloudIdFor(workflow) : undefined
+})
+
+watch(
+  [() => workflowStore.activeWorkflow, activeWorkflowId, threadSummaries],
+  ([workflow, workflowId, threads]) => {
+    if (workflow === null) return
+    if (workflowId === undefined) return
+    const matchingThread = threads.find(
+      (thread) => thread.workflow_id === workflowId
+    )
+    if (matchingThread === undefined || matchingThread.id === threadId.value)
+      return
+    void onSelectHistory(matchingThread.id)
+  }
+)
 
 function buildTranscriptMarkdown(entries: ConversationEntry[]): string {
   return entries
