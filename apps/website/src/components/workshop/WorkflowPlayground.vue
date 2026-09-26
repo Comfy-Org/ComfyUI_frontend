@@ -17,7 +17,7 @@ import {
   workflowErrorKey,
   workflowStatusKey
 } from '../../config/workshop-workflow-presentation'
-import { workflowRunFailure } from '../../lib/workshop/workflow-refusal'
+import { panelSaysRefusal } from '../../lib/workshop/workflow-refusal'
 import { useTablist } from '../../composables/useTablist'
 import { useWorkflowFormDraft } from '../../composables/useWorkflowFormDraft'
 import { useWorkflowRun } from '../../composables/useWorkflowRun'
@@ -126,16 +126,12 @@ const error = computed(() =>
       : undefined
 )
 const fieldErrors = computed(() => error.value?.fieldErrors ?? {})
-// The output panel stands up the refusals it has words for, so saying those
-// again beside the form hands the reader the same thing twice — and twice in
-// different words wherever the two vocabularies disagree. What is left here is
-// what only this page can say.
-const refusalSaidHere = computed(() => {
-  if (!error.value) return undefined
-  const inThePanel =
-    state.value.phase === 'failed' && workflowRunFailure(error.value)
-  return inThePanel ? undefined : t(workflowErrorKey(error.value))
-})
+// What is left for this page to say is what the panel does not carry.
+const refusalSaidHere = computed(() =>
+  error.value && !panelSaysRefusal(state.value)
+    ? t(workflowErrorKey(error.value))
+    : undefined
+)
 const statusLabel = computed(() => {
   if (cancelRequested.value && busy.value)
     return t('workshop.workflow.cancelling')
