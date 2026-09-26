@@ -42,7 +42,9 @@ describe('the agentPanel store id', () => {
     expect(typeof store.width).toBe('number')
     expect(Number.isFinite(store.width)).toBe(true)
     expect(typeof store.toggleMaximize).toBe('function')
-    expect(Object.keys(pinia.state.value.agentPanel)).toContain('width')
+    expect(Object.keys(pinia.state.value.agentPanel)).toContain(
+      'targetTracking'
+    )
   })
 
   it('maximizes the panel through the store the dock mount already registered', () => {

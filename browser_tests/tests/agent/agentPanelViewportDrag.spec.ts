@@ -37,10 +37,6 @@ test.describe(
     }) => {
       const sidebar = comfyPage.menu.sideToolbar
       await expect(sidebar).toBeVisible()
-      test.fail(
-        true,
-        'Current main lets a wide panel drag hide the sidebar outside the viewport'
-      )
       await expect(sidebar).toBeInViewport({ ratio: 1 })
     })
 
@@ -73,10 +69,6 @@ test.describe(
     }) => {
       const panel = comfyPage.page.getByTestId('docked-agent-panel')
       await expect(panel).toBeVisible()
-      test.fail(
-        true,
-        'Current main lets a wide panel drag push the dock beyond the viewport'
-      )
       await expect(panel).toBeInViewport({ ratio: 1 })
     })
   }
