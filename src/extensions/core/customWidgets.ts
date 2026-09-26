@@ -1,4 +1,4 @@
-import { shallowReactive } from 'vue'
+import { computed, shallowReactive, watch } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -152,6 +152,51 @@ function onCustomComboCreated(this: LGraphNode) {
   addOption(this)
 }
 
+function onBranchSelectorCreated(this: LGraphNode) {
+  this.applyToGraph = applyToGraph
+
+  this.widgets?.pop()
+  const labels = computed(() =>
+    this.inputs
+      .filter((i) => i.name.startsWith('autogrow.') && i.link)
+      .map((inp) => inp.label || inp.localized_name)
+  )
+
+  const comboWidget = this.addWidget('combo', 'branch', 'branch0', () => {}, {
+    values: () => labels.value
+  })
+
+  const namesIndex = this.inputs.findIndex((inp) => inp.name === 'branch_names')
+  if (namesIndex !== -1) this.removeInput(namesIndex)
+  const names_widget = this.addCustomWidget({
+    computeSize: () => [0, -4],
+    draw: () => undefined,
+    name: 'branch_names',
+    options: { hidden: true },
+    serialize: false,
+    type: 'hidden',
+    value: [],
+    y: 0
+  })
+
+  function onLabelUpdate() {
+    if (app.configuringGraph) return
+
+    names_widget.value = labels.value
+    if (labels.value.includes(`${comboWidget.value}`)) return
+
+    comboWidget.value = labels.value[0] ?? ''
+    comboWidget.callback?.(comboWidget.value)
+  }
+
+  let stopWatch: (() => void) | undefined
+  this.onAdded = useChainCallback(this.onAdded, () => {
+    stopWatch?.()
+    stopWatch = watch(labels, onLabelUpdate, { immediate: true })
+  })
+  this.onRemoved = useChainCallback(this.onRemoved, () => stopWatch?.())
+}
+
 function onCustomIntCreated(this: LGraphNode) {
   const valueWidget = this.widgets?.[0]
   if (!valueWidget) return
@@ -254,6 +299,11 @@ app.registerExtension({
       nodeType.prototype.onNodeCreated = useChainCallback(
         nodeType.prototype.onNodeCreated,
         onCustomComboCreated
+      )
+    else if (nodeData.name === 'BranchNode')
+      nodeType.prototype.onNodeCreated = useChainCallback(
+        nodeType.prototype.onNodeCreated,
+        onBranchSelectorCreated
       )
     else if (nodeData.name === 'PrimitiveInt')
       nodeType.prototype.onNodeCreated = useChainCallback(
