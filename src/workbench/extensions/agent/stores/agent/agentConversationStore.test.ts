@@ -1,11 +1,17 @@
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick, ref, watch } from 'vue'
 
+import { reportError } from '@/platform/telemetry/reportError'
+
 import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
 import { zAgentMessages, zAgentWsEvent } from '../../schemas/agentApiSchema'
 import type { AgentChatEvent } from '../../services/agent/agentEventTransport'
 
 import { useAgentConversationStore } from './agentConversationStore'
+
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 
 const chat = (raw: unknown): AgentChatEvent => zAgentWsEvent.parse(raw)
 const thinking = (id: string, delta: string): AgentChatEvent =>
@@ -33,6 +39,29 @@ const done = (id: string): AgentChatEvent =>
   chat({
     type: 'agent_message_done',
     data: { message_id: id, thread_id: 'th', usage: null }
+  })
+const runApproval = (
+  id: string,
+  askId: string,
+  overrides: Record<string, unknown> = {}
+): AgentChatEvent =>
+  chat({
+    type: 'agent_ask',
+    data: {
+      message_id: id,
+      thread_id: 'th',
+      ask_id: askId,
+      kind: 'run_approval',
+      prompt: 'Run workflow?',
+      options: [
+        { id: 'run', label: 'Run' },
+        { id: 'cancel', label: 'Cancel' }
+      ],
+      min_selections: 1,
+      max_selections: 1,
+      allow_other: false,
+      ...overrides
+    }
   })
 const askResolved = (id: string, askId: string): AgentChatEvent =>
   chat({
@@ -476,9 +505,7 @@ describe('useAgentConversationStore', () => {
     store.ingest(delta('assistant-message-1', 'Running now.'))
 
     expect(
-      store.messages[0].parts.some(
-        (part) => (part as { type: string }).type === 'runApproval'
-      )
+      store.messages[0].parts.some((part) => part.type === 'runApproval')
     ).toBe(false)
     expect(partTexts(store)).toContain('Running now.')
     expect(store.isStreaming).toBe(true)
@@ -844,5 +871,93 @@ describe('useAgentConversationStore', () => {
       'user',
       'assistant'
     ])
+  })
+  describe('a dropped approval ask is reported', () => {
+    it('reports when the socket-drop teardown left nothing to route the ask to', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.ingest(delta('t1', 'building your workflow'))
+
+      // What onStatus(false) does today: settle the active turn locally and
+      // empty the background map, while the server keeps running the turn.
+      store.abortActiveTurn()
+      store.dropBackgroundTurns()
+
+      // The server, still running, now asks the user to approve the run.
+      store.ingest(runApproval('t1', 'turn-1:call-1'))
+
+      expect(
+        store.messages.some((message) =>
+          message.parts.some((part) => part.type === 'runApproval')
+        )
+      ).toBe(false)
+      expect(reportError).toHaveBeenCalledTimes(1)
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'failure_delivering_agent_approval_ask',
+          level: 'warning',
+          tags: expect.objectContaining({
+            reason: 'no-live-turn',
+            ask_kind: 'run_approval'
+          })
+        })
+      )
+    })
+
+    it('stays quiet when the ask reaches its turn', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.ingest(delta('t1', 'building your workflow'))
+
+      store.ingest(runApproval('t1', 'turn-1:call-1'))
+
+      expect(store.messages[0].parts).toContainEqual(
+        expect.objectContaining({
+          type: 'runApproval',
+          askId: 'turn-1:call-1'
+        })
+      )
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('stays quiet for every non-ask frame the same routing drops', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.abortActiveTurn()
+      store.dropBackgroundTurns()
+
+      store.ingest(delta('t1', 'more text'))
+      store.ingest(thinking('t1', 'still thinking'))
+      store.ingest(done('t1'))
+
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('reports an ask kind the panel has no card for', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.ingest(delta('t1', 'building your workflow'))
+
+      store.ingest(runApproval('t1', 'turn-1:call-1', { kind: 'pick_a_model' }))
+
+      expect(
+        store.messages[0].parts.some((part) => part.type === 'runApproval')
+      ).toBe(false)
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'failure_delivering_agent_approval_ask',
+          tags: expect.objectContaining({
+            reason: 'unknown-kind',
+            ask_kind: 'pick_a_model'
+          })
+        })
+      )
+    })
   })
 })
