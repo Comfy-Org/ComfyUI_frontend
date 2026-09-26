@@ -116,6 +116,31 @@ describe('PlaygroundOutput', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Queued')
     expect(screen.queryByText('Generating…')).toBeNull()
   })
+
+  // A spinner and a climbing clock both promise the run is being watched.
+  it.for([
+    { stalled: false, reads: '1:00' },
+    { stalled: true, reads: undefined }
+  ])('counts while stalled is $stalled: $reads', ({ stalled, reads }) => {
+    render(PlaygroundOutput, {
+      props: {
+        modelName: 'Workflow',
+        now: 62_000,
+        state: {
+          status: 'running',
+          startedAt: 2000,
+          label: 'Connection interrupted',
+          stalled
+        }
+      }
+    })
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Connection interrupted'
+    )
+    const clock = screen.queryByTestId('run-elapsed')
+    expect(clock?.textContent.trim()).toBe(reads)
+  })
   it.for([
     { event: 'playing', status: 'succeeded' },
     { event: 'pause', status: 'cancelled' }
