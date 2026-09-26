@@ -187,6 +187,25 @@ describe('ModelDiscoverySection', async () => {
     expect(pace()).toEqual(['9s', '9s'])
   })
 
+  it('starts the arriving row at its beginning, not mid-stride', async () => {
+    const user = userEvent.setup()
+    render(ModelDiscoverySection, { props: { providers, workflows } })
+    await nextTick()
+
+    const [copy] = screen.getAllByTestId('discovery-marquee')
+    const animation = copy.animate([{ transform: 'none' }], {
+      duration: 6000,
+      iterations: Infinity
+    })
+    animation.pause()
+    animation.currentTime = 2000
+    expect(animation.currentTime).toBe(2000)
+
+    await user.click(screen.getByTestId('catalogue-tab-workflows'))
+
+    expect(animation.currentTime).toBe(0)
+  })
+
   it('localizes copy while keeping the English-only Workshop route', async () => {
     render(ModelDiscoverySection, {
       props: { locale: 'zh-CN', providers }

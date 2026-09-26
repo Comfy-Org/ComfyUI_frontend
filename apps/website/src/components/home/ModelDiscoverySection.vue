@@ -70,10 +70,10 @@ const marqueeStyle = computed(() => ({
   animationDuration: `${(onWorkflows.value ? workflows.length : providers.length) * SECONDS_PER_CARD}s`
 }))
 
-const row = ref<HTMLElement | null>(null)
+const copies = ref<HTMLElement[]>([])
 watch(onWorkflows, () => {
-  for (const animation of row.value?.getAnimations({ subtree: true }) ?? [])
-    animation.currentTime = 0
+  for (const copy of copies.value)
+    for (const animation of copy.getAnimations()) animation.currentTime = 0
 })
 
 const cardHref = (name: string) =>
@@ -123,9 +123,10 @@ const cardClass =
         <div
           class="overflow-hidden mask-[linear-gradient(to_right,transparent,black_2rem,black_calc(100%-2rem),transparent)]"
         >
-          <div ref="row" class="group flex w-max gap-3">
+          <div class="group flex w-max gap-3">
             <div
               v-for="copy in 2"
+              ref="copies"
               :key="copy"
               class="flex shrink-0 animate-marquee gap-3 group-focus-within:paused group-hover:paused"
               :style="marqueeStyle"
