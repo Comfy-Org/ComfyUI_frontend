@@ -499,6 +499,23 @@ describe('promoteValueWidgetViaSubgraphInput — source slot fallback', () => {
     expect(interiorNode.inputs).toHaveLength(0)
   })
 
+  it('prunes the synthetic source input when its promotion wire is unlinked', async () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    const interiorNode = new LGraphNode('Custom')
+    subgraph.add(interiorNode)
+    const seedWidget = interiorNode.addWidget('number', 'seed', 1, () => {})
+    promoteValueWidgetViaSubgraphInput(host, interiorNode, seedWidget)
+    const slotIndex = interiorNode.inputs.findIndex(
+      (input) => input.widget?.name === 'seed'
+    )
+
+    interiorNode.disconnectInput(slotIndex)
+    await Promise.resolve()
+
+    expect(interiorNode.inputs).toHaveLength(0)
+  })
+
   it('keeps the synthetic source input removable after save and reload', () => {
     const subgraph = createTestSubgraph()
     const host = createTestSubgraphNode(subgraph)

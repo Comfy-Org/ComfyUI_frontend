@@ -185,6 +185,22 @@ function legacyValue<T>(value: T): T | undefined {
   return value
 }
 
+function schedulePromotedInputPrune(
+  node: LGraphNode,
+  graph: LGraph,
+  input: INodeInputSlot,
+  slotIndex: number
+): void {
+  if ((input as PromotionAwareInputSlot)._createdByPromotion !== true) return
+  // Deferred so a replacement link reconnecting within this tick
+  // keeps the synthetic slot; only a final unlink prunes it.
+  queueMicrotask(() => {
+    if (node.graph !== graph || node.inputs[slotIndex] !== input) return
+    if (inputHasLink(graph, node.id, slotIndex)) return
+    node.removeInput(slotIndex)
+  })
+}
+
 function serialiseWidgetValues(widgets: IBaseWidget[]) {
   const positional: TWidgetValue[] = []
   const named: Record<string, TWidgetValue> = {}
@@ -3433,6 +3449,7 @@ export class LGraphNode
           link_info,
           input
         )
+        schedulePromotedInputPrune(target, graph, input, link_info.target_slot)
       }
       this.onConnectionsChange?.(
         NodeSlotType.OUTPUT,
@@ -3507,6 +3524,7 @@ export class LGraphNode
         // Let SubgraphInput do the disconnect.
         if (link_info.origin_id === SUBGRAPH_INPUT_ID && 'inputNode' in graph) {
           graph.inputNode._disconnectNodeInput(this, input, link_info)
+          schedulePromotedInputPrune(this, graph, input, slot)
           return true
         }
 
@@ -3546,16 +3564,7 @@ export class LGraphNode
           output
         )
 
-        if ((input as PromotionAwareInputSlot)._createdByPromotion === true) {
-          const slotIndex = slot
-          // Deferred so a replacement link reconnecting within this tick
-          // keeps the synthetic slot; only a final unlink prunes it.
-          queueMicrotask(() => {
-            if (this.graph !== graph || this.inputs[slotIndex] !== input) return
-            if (inputHasLink(graph, this.id, slotIndex)) return
-            this.removeInput(slotIndex)
-          })
-        }
+        schedulePromotedInputPrune(this, graph, input, slot)
       }
     }
 
