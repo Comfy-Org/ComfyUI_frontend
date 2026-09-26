@@ -6,6 +6,7 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { createUuidv4 } from '@/utils/uuid'
 import type {
   AgentActiveTabData,
+  AgentMessages,
   AgentTurnAccepted,
   TurnId
 } from '../../schemas/agentApiSchema'
@@ -123,11 +124,13 @@ const TURN_RECOVERY_DELAYS_MS: RecoverySchedule = [
 ]
 const TURN_RECOVERY_MAX_CONSECUTIVE_FAILURES = TURN_RECOVERY_DELAYS_MS.length
 
+type PendingAsk = NonNullable<AgentMessages[number]['pending_ask']>
+
 type TurnOutcome =
   | { kind: 'terminal'; text: string }
   | { kind: 'thread-missing' }
   | { kind: 'message-missing' }
-  | { kind: 'streaming' }
+  | { kind: 'streaming'; pendingAsk: PendingAsk | undefined }
   | { kind: 'error'; message: string }
 
 /**
@@ -210,6 +213,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   let ownedGeneration = 0
   let connection: SocketConnection = 'initial'
   const recoveringTurns = new Map<string, AbortController>()
+  const reportedMissingAsks = new Set<string>()
 
   function pushError(text: string): void {
     notices.value.push({ level: 'error', text })
@@ -814,6 +818,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
       const outcome = await fetchTurnOutcome(turn, signal)
       if (!isTurnLive(turn, generation)) return
       if (settleFinishedTurn(turn, outcome)) return
+      if (outcome.kind === 'streaming')
+        restoreMissingApproval(turn, outcome.pendingAsk)
       if (outcome.kind === 'error' && !noticed) {
         noticed = true
         pushError(outcome.message)
@@ -828,6 +834,38 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function abandonTurnRecovery(turn: LiveTurn, outcome: TurnOutcome): void {
     if (outcome.kind === 'message-missing')
       conversationStore.settleTurn(turn, undefined)
+  }
+
+  /**
+   * PM-1738: a turn parked on a tool-call approval stays `streaming` until the
+   * user answers, so a socket drop that swallowed the `agent_ask` frame leaves
+   * the server waiting on a card the panel never drew -- the turn reads as
+   * hung and every follow-up post comes back 409. The polled row still carries
+   * the unanswered ask, so re-deliver it down the transport path the lost
+   * frame would have taken. An ask that did arrive is already on the message,
+   * so reaching the report means a frame was genuinely lost.
+   */
+  function restoreMissingApproval(
+    turn: LiveTurn,
+    pendingAsk: PendingAsk | undefined
+  ): void {
+    if (pendingAsk?.kind !== 'run_approval') return
+    if (conversationStore.isApprovalShown(turn, pendingAsk.ask_id)) return
+    conversationStore.ingest({
+      type: 'agent_ask',
+      data: { ...pendingAsk, thread_id: turn.threadId }
+    })
+    if (reportedMissingAsks.has(pendingAsk.ask_id)) return
+    reportedMissingAsks.add(pendingAsk.ask_id)
+    reportError(new Error('Agent approval ask never reached the panel'), {
+      errorType: 'failure_delivering_agent_approval_ask',
+      tags: { feature_area: 'agent', operation: 'recovery' },
+      context: {
+        threadId: turn.threadId,
+        messageId: turn.messageId,
+        askId: pendingAsk.ask_id
+      }
+    })
   }
 
   function isTurnLive(turn: LiveTurn, generation: number): boolean {
@@ -883,7 +921,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
       const history = await rest.getMessages(turn.threadId, { signal })
       const row = history.find((entry) => entry.id === turn.messageId)
       if (!row) return { kind: 'message-missing' }
-      if (row.status === 'streaming') return { kind: 'streaming' }
+      if (row.status === 'streaming')
+        return { kind: 'streaming', pendingAsk: row.pending_ask }
       const text = typeof row.content?.text === 'string' ? row.content.text : ''
       return { kind: 'terminal', text }
     } catch (error) {

@@ -426,6 +426,32 @@ export const useAgentConversationStore = defineStore(
       entry.settled = true
     }
 
+    /**
+     * The mutable message a live turn is written into, not the snapshot copy
+     * in `messages`: transports emit snapshots, so only this object carries
+     * parts applied since the last emit.
+     */
+    function liveTurnMessage(turn: LiveTurn): AssistantMessage | null {
+      const isActive =
+        turn.threadId === threadId.value &&
+        turn.messageId === activeTurnId.value
+      if (isActive && transport && liveMessage) return liveMessage
+      const entry = backgroundTurns.get(turn.threadId)
+      if (!entry || entry.messageId !== turn.messageId || entry.settled)
+        return null
+      return entry.message
+    }
+
+    /** Guards re-delivery: a delayed ask must not draw a second card. */
+    function isApprovalShown(turn: LiveTurn, askId: string): boolean {
+      const message = liveTurnMessage(turn)
+      return (
+        message?.parts.some(
+          (part) => part.type === 'runApproval' && part.askId === askId
+        ) ?? false
+      )
+    }
+
     function clearActive(): void {
       transport = null
       liveMessage = null
@@ -559,6 +585,7 @@ export const useAgentConversationStore = defineStore(
       dropBackgroundTurns,
       liveTurns,
       settleTurn,
+      isApprovalShown,
       reset,
       hydrate
     }

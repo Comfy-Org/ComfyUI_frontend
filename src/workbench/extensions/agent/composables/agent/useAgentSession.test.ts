@@ -1909,6 +1909,115 @@ describe('useAgentSession (v1 composition root)', () => {
     }
   })
 
+  // PM-1738. A turn parked on a run approval stays `streaming` for as long as
+  // the user takes to answer, so the drop that swallowed its `agent_ask` frame
+  // leaves the server waiting on a card the panel never drew. Recovery already
+  // polls the row, and the row carries the unanswered ask.
+  const parkedOnApprovalRest = () =>
+    fakeRest({
+      getMessages: vi.fn(
+        async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'msg-1', 'go'),
+          {
+            ...historyRow(2, 'assistant', 'msg-1', '', 'msg-1'),
+            content: {},
+            status: 'streaming',
+            pending_ask: {
+              message_id: 'msg-1',
+              ask_id: 'turn-1:call-1',
+              kind: 'run_approval',
+              context: {
+                workflow_id: 'workflow-1',
+                workflow_name: 'Portrait workflow'
+              },
+              prompt: 'Run it?',
+              options: [
+                { id: 'run', label: 'Run' },
+                { id: 'cancel', label: 'Cancel' }
+              ],
+              min_selections: 1,
+              max_selections: 1,
+              allow_other: false
+            }
+          }
+        ]
+      )
+    })
+
+  const approvalParts = (session: ReturnType<typeof useAgentSession>) => {
+    const assistant = session.entries.value.at(-1)
+    assert(assistant !== undefined && 'parts' in assistant)
+    return assistant.parts.filter((part) => part.type === 'runApproval')
+  }
+
+  it('(g27) an approval the drop swallowed is restored from the row and reported once', async () => {
+    vi.useFakeTimers()
+    try {
+      const rest = parkedOnApprovalRest()
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+
+      await session.sendMessage('go')
+      emit(delta('msg-1', 'partial'))
+      expect(approvalParts(session)).toHaveLength(0)
+
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(approvalParts(session)).toEqual([
+        {
+          type: 'runApproval',
+          askId: 'turn-1:call-1',
+          workflowId: 'workflow-1',
+          workflowName: 'Portrait workflow'
+        }
+      ])
+      expect(session.isStreaming.value).toBe(true)
+
+      await vi.advanceTimersByTimeAsync(31_000)
+
+      expect(approvalParts(session)).toHaveLength(1)
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+        errorType: 'failure_delivering_agent_approval_ask',
+        tags: { feature_area: 'agent', operation: 'recovery' },
+        context: {
+          threadId: 'th-1',
+          messageId: 'msg-1',
+          askId: 'turn-1:call-1'
+        }
+      })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('(g28) an approval the socket did deliver is neither redrawn nor reported', async () => {
+    vi.useFakeTimers()
+    try {
+      const rest = parkedOnApprovalRest()
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+
+      await session.sendMessage('go')
+      emit(runApproval('msg-1'))
+      expect(approvalParts(session)).toHaveLength(1)
+
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(31_000)
+
+      expect(approvalParts(session)).toHaveLength(1)
+      expect(reportError).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('(h) attachments pass through to the postMessage wire body', async () => {
     const rest = fakeRest()
     const { source } = fakeEvents()
