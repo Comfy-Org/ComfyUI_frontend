@@ -66,7 +66,7 @@ test('workflow launch groups lead to the existing shared form', async ({
     'href',
     '/models/workflows/change-material/'
   )
-  await page.getByTestId('browse-all').click()
+  await page.getByTestId('browse-all-end').click()
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(
     'All workflows 30'
   )

@@ -173,7 +173,7 @@ describe('ModelsCatalogue', () => {
     const user = userEvent.setup()
     render(ModelsCatalogue, { props: { models: launchModels } })
     await screen.findByRole('heading', { name: 'Create product photos & ads' })
-    await user.click(screen.getByTestId('browse-all'))
+    await user.click(screen.getByTestId('browse-all-end'))
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
       'All workflows 2'
     )
@@ -189,7 +189,7 @@ describe('ModelsCatalogue', () => {
   it('keeps all models limited to models when workflows are available', async () => {
     const user = userEvent.setup()
     render(ModelsCatalogue, { props: { models: launchModels } })
-    await user.click(screen.getByTestId('browse-all'))
+    await user.click(screen.getByTestId('browse-all-end'))
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
       'All models 1'
     )
@@ -254,7 +254,7 @@ describe('ModelsCatalogue', () => {
 
     // Inside a section the page is about that section, and the heading over it
     // belongs to the whole catalogue.
-    await user.click(screen.getByTestId('browse-all'))
+    await user.click(screen.getByTestId('browse-all-end'))
 
     expect(screen.queryByTestId('workshop-hero')).toBeNull()
   })

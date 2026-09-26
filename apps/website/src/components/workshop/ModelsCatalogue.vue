@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ChevronRight } from '@lucide/vue'
 import { computed, defineAsyncComponent, ref, watch } from 'vue'
 import { useMounted } from '@vueuse/core'
 
@@ -89,30 +88,7 @@ watch(
         locale
       )
     "
-  >
-    <template #aside>
-      <button
-        v-if="activeTab !== 'apps'"
-        type="button"
-        class="group -mx-1 inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-1 text-xl font-medium text-primary-warm-white transition-colors outline-none hover:text-primary-comfy-yellow focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
-        data-testid="browse-all"
-        @click="browseAll = true"
-      >
-        {{
-          t(
-            activeTab === 'models'
-              ? 'workshop.sections.browseAll'
-              : 'workshop.catalogue.browseAllWorkflows',
-            locale
-          )
-        }}
-        <ChevronRight
-          class="size-5 transition-transform group-hover:translate-x-0.5"
-          aria-hidden="true"
-        />
-      </button>
-    </template>
-  </WorkshopHero>
+  />
   <WorkshopModelsGrid
     v-if="activeTab === 'models'"
     v-model:browse-all="browseAll"

@@ -245,7 +245,7 @@ test.describe('Models catalog', () => {
 
   test('the rows listing opens the whole catalogue', async ({ page }) => {
     await page.goto('/models/')
-    await page.getByTestId('browse-all').click()
+    await page.getByTestId('browse-all-end').click()
 
     await expect(page.getByTestId('workshop-sections')).toHaveCount(0)
     const heading = page.getByRole('heading', { level: 1 })
