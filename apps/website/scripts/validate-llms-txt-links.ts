@@ -48,7 +48,7 @@ function main(): void {
     'utf8'
   )
   const links = parseLlmsTxtLinks(llmsTxt)
-  const drift = findCanonicalDrift(links, canonicalFor)
+  const { drift, checked } = findCanonicalDrift(links, canonicalFor)
 
   if (drift.length > 0) {
     console.error(
@@ -62,8 +62,15 @@ function main(): void {
     process.exit(1)
   }
 
+  if (checked === 0) {
+    console.error(
+      `llms.txt link validation failed: 0 of ${links.length} link(s) were checked against a built canonical.`
+    )
+    process.exit(1)
+  }
+
   process.stdout.write(
-    `llms.txt link validation passed for ${links.length} link(s).\n`
+    `llms.txt link validation passed for ${checked}/${links.length} link(s).\n`
   )
 }
 
