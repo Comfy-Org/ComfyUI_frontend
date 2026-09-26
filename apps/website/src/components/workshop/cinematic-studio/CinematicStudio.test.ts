@@ -24,7 +24,7 @@ import { prepareModelPage } from '../../../routes/models/model-page'
 import {
   useWorkshopEnabled,
   useWorkshopEnabledSettled,
-  useWorkshopWorkflowsEnabled
+  useWorkshopAppsEnabled
 } from '../../../scripts/posthog'
 import { t } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
@@ -91,7 +91,7 @@ describe('CinematicStudio', () => {
     vi.stubEnv('PUBLIC_WORKSHOP_ROUTER_RUN', '1')
     vi.mocked(useWorkshopEnabled).mockReturnValue(computed(() => true))
     vi.mocked(useWorkshopEnabledSettled).mockReturnValue(computed(() => true))
-    vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(computed(() => true))
+    vi.mocked(useWorkshopAppsEnabled).mockReturnValue(computed(() => true))
     const session = useWorkshopSession()
     session.session = computed(() => signedIn.value)
     vi.mocked(session.ensureFresh).mockResolvedValue({
@@ -636,9 +636,7 @@ describe('CinematicStudio', () => {
   })
 
   it('withholds the studio from visitors outside the staff rollout', async () => {
-    vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(
-      computed(() => false)
-    )
+    vi.mocked(useWorkshopAppsEnabled).mockReturnValue(computed(() => false))
     render(CinematicStudioPage, { props: { models } })
 
     expect(
