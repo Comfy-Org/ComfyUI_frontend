@@ -3,7 +3,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { fromAny } from '@total-typescript/shoehorn'
 import * as VueUse from '@vueuse/core'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest'
 import { computed } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -16,6 +16,8 @@ import {
 import { reportError } from '@/platform/telemetry/reportError'
 import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
 import type { SharedWorkflowUrlLoadStatus } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
+
+import type { BeginTourOutcome } from '../tour/useFirstRunTourController'
 
 const mocks = vi.hoisted<{
   isCloud: boolean
@@ -112,7 +114,7 @@ describe('useFirstRunEntry', () => {
       Object.assign(useSettingStore().settingValues, { [key]: value })
     })
     sharedComposable.reset()
-    mocks.beginTour.mockResolvedValue(true)
+    mocks.beginTour.mockResolvedValue('started')
   })
 
   const permanentDisqualifiers = [
@@ -166,7 +168,7 @@ describe('useFirstRunEntry', () => {
       {
         label: 'a url-intent boot whose tour did not start',
         boot: async (entry: FirstRunEntry) => {
-          mocks.beginTour.mockResolvedValue(false)
+          mocks.beginTour.mockResolvedValue('no_canvas_context')
           await entry.handleStartupOutcome('url-intent')
           await entry.handleUrlWorkflow('url-intent', 'image_z_image_turbo')
         }
@@ -239,9 +241,9 @@ describe('useFirstRunEntry', () => {
 
     it('stays undecided while a url-intent tour is still starting', async () => {
       const entry = useFirstRunEntry()
-      let start = (_: boolean) => {}
+      let start = (_: BeginTourOutcome) => {}
       mocks.beginTour.mockReturnValue(
-        new Promise<boolean>((resolve) => {
+        new Promise<BeginTourOutcome>((resolve) => {
           start = resolve
         })
       )
@@ -259,7 +261,7 @@ describe('useFirstRunEntry', () => {
       expect(decided).toBeUndefined()
       expect(entry.firstRunTookScreen.value).toBe(false)
 
-      start(true)
+      start('started')
       await urlStage
       await vi.waitFor(() => expect(decided).toBe(true))
       expect(entry.firstRunTookScreen.value).toBe(true)
@@ -816,22 +818,30 @@ describe('useFirstRunEntry', () => {
       ).not.toHaveBeenCalled()
     })
 
-    it.for([
-      { method: 'start_blank' },
-      { method: 'escape' },
-      { method: 'template_selected' }
-    ] as const)('reports a $method close exactly once', async ({ method }) => {
+    it.for([{ method: 'start_blank' }, { method: 'escape' }] as const)(
+      'reports a $method close exactly once, with no tour to account for',
+      async ({ method }) => {
+        const entry = useFirstRunEntry()
+        await entry.handleStartupOutcome('fresh')
+
+        await entry.dismissGettingStarted(method)
+
+        expect(
+          mocks.trackFirstRunScreenDismissed
+        ).toHaveBeenCalledExactlyOnceWith({
+          method,
+          visible_duration_ms: expect.any(Number),
+          tour_outcome: 'not_attempted'
+        })
+      }
+    )
+
+    it('cannot report a template close from the exits, where no tour outcome exists', () => {
       const entry = useFirstRunEntry()
-      await entry.handleStartupOutcome('fresh')
 
-      await entry.dismissGettingStarted(method)
-
-      expect(
-        mocks.trackFirstRunScreenDismissed
-      ).toHaveBeenCalledExactlyOnceWith({
-        method,
-        visible_duration_ms: expect.any(Number)
-      })
+      expectTypeOf(entry.dismissGettingStarted)
+        .parameter(0)
+        .toEqualTypeOf<'start_blank' | 'escape'>()
     })
 
     it('reports one close however many times the screen is dismissed', async () => {
@@ -847,7 +857,8 @@ describe('useFirstRunEntry', () => {
         'this event is the denominator for the consent card held behind the screen, so a second report of the same close would inflate it'
       ).toHaveBeenCalledExactlyOnceWith({
         method: 'start_blank',
-        visible_duration_ms: expect.any(Number)
+        visible_duration_ms: expect.any(Number),
+        tour_outcome: 'not_attempted'
       })
     })
 
@@ -866,7 +877,8 @@ describe('useFirstRunEntry', () => {
         'an account switch closing the screen is not a dismissal and must not be counted as one'
       ).toHaveBeenCalledExactlyOnceWith({
         method: 'user_changed',
-        visible_duration_ms: expect.any(Number)
+        visible_duration_ms: expect.any(Number),
+        tour_outcome: 'not_attempted'
       })
     })
 
@@ -883,7 +895,8 @@ describe('useFirstRunEntry', () => {
           mocks.trackFirstRunScreenDismissed
         ).toHaveBeenCalledExactlyOnceWith({
           method: 'start_blank',
-          visible_duration_ms: 4200
+          visible_duration_ms: 4200,
+          tour_outcome: 'not_attempted'
         })
       } finally {
         vi.useRealTimers()
@@ -912,9 +925,9 @@ describe('useFirstRunEntry', () => {
      */
     const INTRO_PREVIEW_MS = 500
 
-    function tourOpeningAfterIntroPreview(): Promise<boolean> {
-      return new Promise<boolean>((resolve) =>
-        setTimeout(() => resolve(true), INTRO_PREVIEW_MS)
+    function tourOpeningAfterIntroPreview(): Promise<BeginTourOutcome> {
+      return new Promise<BeginTourOutcome>((resolve) =>
+        setTimeout(() => resolve('started'), INTRO_PREVIEW_MS)
       )
     }
 
@@ -926,7 +939,7 @@ describe('useFirstRunEntry', () => {
       })
       mocks.beginTour.mockImplementation(async () => {
         order.push('beginTour')
-        return true
+        return 'started'
       })
       await entry.handleStartupOutcome('fresh')
 
@@ -977,7 +990,7 @@ describe('useFirstRunEntry', () => {
 
     it('releases the screen when the handoff produces no tour', async () => {
       const entry = useFirstRunEntry()
-      mocks.beginTour.mockResolvedValue(false)
+      mocks.beginTour.mockResolvedValue('tour_declined')
       await entry.handleStartupOutcome('fresh')
 
       await entry.dismissIntoFirstRunTour('image_z_image_turbo')
@@ -1001,6 +1014,118 @@ describe('useFirstRunEntry', () => {
         entry.firstRunHoldsScreen.value,
         'a hold that outlives its handoff is the latch this replaced'
       ).toBe(false)
+    })
+
+    describe('what the close reports about the tour it handed off to', () => {
+      it('reports the close only once the tour has answered', async () => {
+        vi.useFakeTimers()
+        try {
+          const entry = useFirstRunEntry()
+          mocks.beginTour.mockImplementation(tourOpeningAfterIntroPreview)
+          await entry.handleStartupOutcome('fresh')
+
+          const handoff = entry.dismissIntoFirstRunTour('image_z_image_turbo')
+          await vi.advanceTimersByTimeAsync(INTRO_PREVIEW_MS - 1)
+
+          expect(
+            mocks.trackFirstRunScreenDismissed,
+            'reported at the hide, the outcome would have to be guessed - which is the whole reason this method was excluded from the recovery rate'
+          ).not.toHaveBeenCalled()
+
+          await vi.advanceTimersByTimeAsync(1)
+          await handoff
+          expect(
+            mocks.trackFirstRunScreenDismissed
+          ).toHaveBeenCalledExactlyOnceWith({
+            method: 'template_selected',
+            visible_duration_ms: expect.any(Number),
+            tour_outcome: 'started'
+          })
+        } finally {
+          vi.useRealTimers()
+        }
+      })
+
+      it('measures the screen to the hide, not to the end of the handoff', async () => {
+        vi.useFakeTimers()
+        try {
+          const entry = useFirstRunEntry()
+          mocks.beginTour.mockImplementation(tourOpeningAfterIntroPreview)
+          await entry.handleStartupOutcome('fresh')
+          vi.advanceTimersByTime(4200)
+
+          const handoff = entry.dismissIntoFirstRunTour('image_z_image_turbo')
+          await vi.advanceTimersByTimeAsync(INTRO_PREVIEW_MS)
+          await handoff
+
+          expect(
+            mocks.trackFirstRunScreenDismissed,
+            'a duration that absorbed the preview would make every template close look half a second longer than it was'
+          ).toHaveBeenCalledExactlyOnceWith({
+            method: 'template_selected',
+            visible_duration_ms: 4200,
+            tour_outcome: 'started'
+          })
+        } finally {
+          vi.useRealTimers()
+        }
+      })
+
+      it.for([
+        { outcome: 'tour_already_active' },
+        { outcome: 'no_canvas_context' },
+        { outcome: 'canvas_context_lost' },
+        { outcome: 'cancelled' },
+        { outcome: 'tour_declined' }
+      ] as const)(
+        'names $outcome as the refusal that left the screen free',
+        async ({ outcome }) => {
+          const entry = useFirstRunEntry()
+          mocks.beginTour.mockResolvedValue(outcome)
+          await entry.handleStartupOutcome('fresh')
+
+          await entry.dismissIntoFirstRunTour('image_z_image_turbo')
+
+          expect(
+            mocks.trackFirstRunScreenDismissed,
+            'four of these five are reported nowhere else in the product, so a close that does not name them cannot be told from one the tour took'
+          ).toHaveBeenCalledExactlyOnceWith({
+            method: 'template_selected',
+            visible_duration_ms: expect.any(Number),
+            tour_outcome: outcome
+          })
+        }
+      )
+
+      it('reports the close even when the handoff throws', async () => {
+        const entry = useFirstRunEntry()
+        mocks.beginTour.mockRejectedValue(new Error('tour unavailable'))
+        await entry.handleStartupOutcome('fresh')
+
+        await expect(
+          entry.dismissIntoFirstRunTour('image_z_image_turbo')
+        ).rejects.toThrow('tour unavailable')
+
+        expect(
+          mocks.trackFirstRunScreenDismissed,
+          'the screen still closed, so dropping the event would lose a denominator row to an error the user did nothing to cause'
+        ).toHaveBeenCalledExactlyOnceWith({
+          method: 'template_selected',
+          visible_duration_ms: expect.any(Number),
+          tour_outcome: 'error'
+        })
+      })
+
+      it('reports nothing when there was no screen to hand over', async () => {
+        const entry = useFirstRunEntry()
+
+        await entry.dismissIntoFirstRunTour('image_z_image_turbo')
+
+        expect(
+          mocks.trackFirstRunScreenDismissed,
+          'the tour still runs for a url-loaded template, but no screen closed, so there is no close to report'
+        ).not.toHaveBeenCalled()
+      })
     })
   })
 })

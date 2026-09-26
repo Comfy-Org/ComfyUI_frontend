@@ -426,9 +426,14 @@ describe('HostTelemetrySink', () => {
       track: (sink: HostTelemetrySink) =>
         sink.trackFirstRunScreenDismissed({
           method: 'escape',
-          visible_duration_ms: null
+          visible_duration_ms: null,
+          tour_outcome: 'not_attempted'
         }),
-      properties: { method: 'escape', visible_duration_ms: null }
+      properties: {
+        method: 'escape',
+        visible_duration_ms: null,
+        tour_outcome: 'not_attempted'
+      }
     },
     {
       name: TelemetryEvents.AGENT_ONBOARDING_NOT_SHOWN,

@@ -618,6 +618,41 @@ export type FirstRunScreenDismissMethod =
   | 'template_selected'
   | 'user_changed'
 /**
+ * What became of the first-run coachmark tour the close handed the screen to.
+ *
+ * `method` alone cannot answer this. A `template_selected` close covers two
+ * opposite outcomes — the tour took the screen and anything held behind it was
+ * right to keep waiting, or the tour declined and the screen was free from that
+ * moment — and they are indistinguishable without this.
+ *
+ * `not_attempted` is the value for every other `method`: those closes never ask
+ * for a tour, so the field is exhaustive rather than nullable, and an absent
+ * value means the event predates this property rather than "no tour".
+ *
+ * The four refusals between `started` and `tour_declined` are the ones nothing
+ * else in the product reports. `app:onboarding_tour_not_started` only covers
+ * what happens *inside* `startTour` (`no_steps`, `already_seen`), which is the
+ * `tour_declined` bucket here; the rest are refused before `startTour` is ever
+ * reached and emit nothing at all.
+ */
+export type FirstRunTourOutcome =
+  /** No tour was asked for — every `method` except `template_selected`. */
+  | 'not_attempted'
+  /** The tour opened and owns the screen. */
+  | 'started'
+  /** Some other tour was already running, so this one was never offered. */
+  | 'tour_already_active'
+  /** No canvas to point at when the tour was asked for (linear mode, or below the desktop breakpoint). */
+  | 'no_canvas_context'
+  /** The canvas went away during the intro preview, between the ask and the open. */
+  | 'canvas_context_lost'
+  /** The caller withdrew during the intro preview — today, the account changing under it. */
+  | 'cancelled'
+  /** The tour engine itself refused. `app:onboarding_tour_not_started` carries the reason for two of its paths. */
+  | 'tour_declined'
+  /** The handoff threw. The screen is gone and no tour opened. */
+  | 'error'
+/**
  * Fires once per close of the Getting Started screen — on the visible → hidden
  * transition, not per render, so a count of these is a count of closes rather
  * than a function of session length.
@@ -640,6 +675,16 @@ export interface FirstRunScreenDismissedMetadata extends Record<
    * happen for a real close and is reported rather than guessed.
    */
   visible_duration_ms: number | null
+  /**
+   * What the tour this close handed the screen to did about it. Always
+   * `not_attempted` unless `method` is `template_selected`.
+   *
+   * On the `template_selected` path this event is therefore reported when the
+   * handoff settles rather than at the instant the screen hides — the outcome
+   * is only knowable then. `visible_duration_ms` is still measured to the
+   * hide, so it does not absorb the wait.
+   */
+  tour_outcome: FirstRunTourOutcome
 }
 export interface AgentPanelClosedMetadata extends Record<string, unknown> {
   source: AgentPanelCloseSource
