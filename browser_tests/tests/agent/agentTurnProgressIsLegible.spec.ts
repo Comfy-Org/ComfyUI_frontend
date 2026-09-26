@@ -90,7 +90,22 @@ test.describe(
 
       pushEvent(ws, runningToolCall())
       await expect(runningRow).toHaveCount(1)
-      await expect(runningRow.locator('.animate-spin')).toBeVisible()
+      const spinner = runningRow.locator('.animate-spin')
+      await expect(spinner).toBeVisible()
+      // The class being present is not the same as the glyph moving: a dropped
+      // keyframes rule, or a utility renamed out from under it, leaves the class
+      // on screen and the motion gone. Read what the browser resolved.
+      const motion = await spinner.evaluate((element) => {
+        const style = getComputedStyle(element)
+        return {
+          name: style.animationName,
+          durationMs: Number.parseFloat(style.animationDuration) * 1000,
+          iterations: style.animationIterationCount
+        }
+      })
+      expect(motion.name).not.toBe('none')
+      expect(motion.durationMs).toBeGreaterThan(0)
+      expect(motion.iterations).toBe('infinite')
       await expect(
         panel.getByText(enMessages.agent.toolOpenedNewTab, { exact: true })
       ).toHaveCount(0)
@@ -150,6 +165,14 @@ test.describe(
       expect(overflow.textOverflow).toBe('clip')
       expect(overflow.webkitLineClamp).toBe('none')
       expect(overflow.lineHeightPx).toBeGreaterThan(overflow.fontSizePx)
+
+      // The metrics above only see clipping by the row's OWN box. The
+      // conversation is an `overflow-y-auto` scrollport inside a panel that is
+      // `overflow-hidden`, so a row cut off by either ancestor would satisfy
+      // every assertion so far. `toBeInViewport` measures the intersection
+      // after ancestor clipping, and `ratio: 1` is the whole row being on
+      // screen — the only form of "not cut off" the user cares about.
+      await expect(thinkingRow).toBeInViewport({ ratio: 1 })
     })
 
     // LIVE-DEFECT PIN — expected to fail on `main`.
