@@ -12,6 +12,7 @@ const MAX_DOC_OPS_PER_FRAME = 256
 const MAX_OP_ID_LENGTH = 128
 const MAX_ERROR_CODE_LENGTH = 128
 const MAX_ERROR_MESSAGE_LENGTH = 8 << 10
+const RESERVED_SYSTEM_ACTOR = 'system:mint'
 const BASE64_SINGLE_PADDING_END = /[AEIMQUYcgkosw048]=$/
 const BASE64_DOUBLE_PADDING_END = /[AQgw]==$/
 const utf8 = new TextEncoder()
@@ -182,9 +183,18 @@ function isValidActor(value: string): boolean {
     /[\0\n\r\t ]/.test(value)
   )
     return false
-  if (value === 'system:mint') return true
+  if (value === RESERVED_SYSTEM_ACTOR) return true
   const match = /^(?:agent|human):([^:]+):([^:]+)$/.exec(value)
   return match !== null
+}
+
+/**
+ * Inbound `doc_reset` frames legitimately carry the reserved identity, so
+ * `isValidActor` accepts it. The awareness actor key drives presence, so
+ * accepting it outbound would let any caller publish as the system.
+ */
+function isSendableActor(value: string): boolean {
+  return value !== RESERVED_SYSTEM_ACTOR && isValidActor(value)
 }
 
 /**
@@ -264,6 +274,71 @@ function encodedJsonSize(value: Record<string, unknown>): number | null {
     const encoded = JSON.stringify(value)
     if (encoded.length > MAX_AWARENESS_STATE_BYTES) return encoded.length
     return utf8.encode(encoded).length
+  } catch {
+    return null
+  }
+}
+
+/**
+ * A state object the sender is willing to materialize: own enumerable string
+ * keys on a plain object. A class instance or `Date` serializes to something
+ * the receiver cannot round-trip into the same shape, so it is refused here
+ * rather than silently flattened.
+ */
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  if (typeof value !== 'object' || value === null || Array.isArray(value))
+    return false
+  const prototype = Object.getPrototypeOf(value)
+  return prototype === Object.prototype || prototype === null
+}
+
+/**
+ * Go's `encoding/json` escapes `<`, `>` and `&` to six-byte `\u003c`-style
+ * sequences, and does the same for U+2028 and U+2029. Their cost differs by
+ * measure: `<` is one UTF-16 unit and one UTF-8 byte, while U+2028 is one
+ * UTF-16 unit but three UTF-8 bytes, so the same escape adds 5 to a length
+ * count and only 3 to a byte count.
+ */
+function goEscapeOverhead(encoded: string): {
+  chars: number
+  bytes: number
+} {
+  const ascii = encoded.match(/[<>&]/g)?.length ?? 0
+  const lineSeparators = encoded.match(/[\u2028\u2029]/g)?.length ?? 0
+  return {
+    chars: ascii * 5 + lineSeparators * 5,
+    bytes: ascii * 5 + lineSeparators * 3
+  }
+}
+
+/**
+ * Outbound counterpart of `encodedJsonSize`. Receiving can afford the loose
+ * count above because the server is then the stricter of the two; sending
+ * inverts that margin, so bill every character Go escapes at the six bytes it
+ * escapes to rather than the one to three bytes it occupies here.
+ *
+ * Every property read happens inside this function's exception boundary. A
+ * throwing getter or a revoked Proxy is a refusal, never an exception escaping
+ * `sendAwareness`, whose contract is to return `false` and report.
+ *
+ * Returns the parsed round-trip of the very bytes that were measured. A getter,
+ * a key-sensitive `toJSON`, or a Proxy can otherwise serialize differently on
+ * the second pass, so sending the source object would put an unmeasured value
+ * on the wire.
+ */
+function encodeAwarenessState(value: unknown): Record<string, unknown> | null {
+  try {
+    if (!isPlainObject(value)) return null
+    const encoded = JSON.stringify(value)
+    if (typeof encoded !== 'string') return null
+    const overhead = goEscapeOverhead(encoded)
+    if (encoded.length + overhead.chars > MAX_AWARENESS_STATE_BYTES) return null
+    if (
+      utf8.encode(encoded).length + overhead.bytes >
+      MAX_AWARENESS_STATE_BYTES
+    )
+      return null
+    return parseRecord(JSON.parse(encoded))
   } catch {
     return null
   }
@@ -385,6 +460,7 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
 
 export class DocFrameClient extends EventTarget {
   private readonly listeners = new Map<string, EventListener>()
+  private readonly reportedAwarenessRejections = new Set<string>()
 
   constructor(private readonly transport: DocFrameTransport) {
     super()
@@ -441,6 +517,62 @@ export class DocFrameClient extends EventTarget {
       tab,
       ops
     })
+  }
+
+  /**
+   * @returns whether the ephemeral awareness frame left the transport.
+   *
+   * `false` from the transport is transient and reconcilable. A `workflow_id`
+   * or `actor` rejection is not: those strings are immutable here, so an
+   * unchanged argument will always be refused and a caller that retries will
+   * spin. A `state` rejection is call-specific rather than permanent - the
+   * same object can be mutated below the cap, uncoupled, or produce different
+   * getter/`toJSON` output on a later call. Those rejections are reported
+   * rather than returned distinctly, mirroring the inbound malformed-frame
+   * discard.
+   */
+  sendAwareness(
+    workflowId: string,
+    actor: string,
+    // Deliberately `unknown`: this method's contract is to validate whatever
+    // it is handed and refuse rather than throw. Declaring a record here would
+    // force every caller with untyped state - and every test of a rejected
+    // shape - into an assertion that tells the compiler something untrue.
+    state?: unknown
+  ): boolean {
+    if (!isValidWorkflowId(workflowId))
+      return this.rejectAwareness('workflow_id')
+    if (!isSendableActor(actor)) return this.rejectAwareness('actor')
+
+    let encodedState: Record<string, unknown> | undefined
+    if (!isAbsent(state)) {
+      // Shape and size are decided inside `encodeAwarenessState`'s single
+      // exception boundary: reading a property can itself throw, so nothing
+      // may touch `state` before it.
+      if (!isPlainObject(state)) return this.rejectAwareness('state_shape')
+      const measured = encodeAwarenessState(state)
+      if (measured === null) return this.rejectAwareness('state_size')
+      encodedState = measured
+    }
+
+    return this.send('awareness', {
+      v: DOC_PROTOCOL_VERSION,
+      workflow_id: workflowId,
+      actor,
+      ...(encodedState !== undefined && { state: encodedState })
+    })
+  }
+
+  private rejectAwareness(reason: string): false {
+    if (!this.reportedAwarenessRejections.has(reason)) {
+      this.reportedAwarenessRejections.add(reason)
+      reportError(new Error('Discarded invalid outgoing awareness frame'), {
+        errorType: 'agent_crdt_invalid_outgoing_frame',
+        tags: { reason },
+        level: 'warning'
+      })
+    }
+    return false
   }
 
   destroy(): void {
