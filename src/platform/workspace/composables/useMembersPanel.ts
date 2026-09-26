@@ -152,7 +152,14 @@ export function useMembersPanel() {
       (subscriptionStatus.value === 'canceled' &&
         !canAccessSubscriptionFeatures.value)
   )
-  const isPlanEnded = computed(() => hasTeamPlan.value && isPlanTerminal.value)
+  // Scope: exclude lapsed personal subscriptions without demanding the
+  // self-serve Team classifier. Enterprise deliberately fails isTeamPlan
+  // (enterprise_* slug, no team credit stop), so it enters through the
+  // sales-managed side — as does an unrecognized tier.
+  const isPlanEnded = computed(
+    () =>
+      (hasTeamPlan.value || isSalesManagedPlan.value) && isPlanTerminal.value
+  )
   // Sales-managed, not strictly ENTERPRISE: isSalesManagedTier() treats an
   // unrecognized tier as sales-managed too, so an ended unknown/future plan
   // routes to Contact sales rather than borrowing the self-serve Reactivate

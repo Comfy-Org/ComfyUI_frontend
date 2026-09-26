@@ -1127,6 +1127,30 @@ describe('useMembersPanel', () => {
       expect(panel.isPlanEnded.value).toBe(false)
     })
 
+    // Enterprise deliberately fails the self-serve Team classifier
+    // (enterprise_* slug, no team credit stop) — the ended treatment must
+    // not depend on it, or production loses the banner and the
+    // visible-disabled Invite for exactly the tier this exists for.
+    it('keeps the ended treatment for Enterprise outside the Team classifier', async () => {
+      mockIsTeamPlan.value = false
+      mockSubscriptionStatus.value = 'ended'
+      mockSubscription.value = { tier: 'ENTERPRISE', isCancelled: false }
+      const panel = await setup()
+      expect(panel.isPlanEnded.value).toBe(true)
+      expect(panel.isSalesManagedPlan.value).toBe(true)
+    })
+
+    it('keeps the ended treatment for an unrecognized tier outside it too', async () => {
+      mockIsTeamPlan.value = false
+      mockSubscriptionStatus.value = 'ended'
+      mockSubscription.value = {
+        tier: 'FUTURE_TIER' as never,
+        isCancelled: false
+      }
+      const panel = await setup()
+      expect(panel.isPlanEnded.value).toBe(true)
+    })
+
     // A stale payload can still carry the pre-reconcile shape: cancelled with
     // access already closed. It reads as ended, never as an unexplained
     // dead end.
