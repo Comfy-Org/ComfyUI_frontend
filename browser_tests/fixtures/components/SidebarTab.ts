@@ -532,6 +532,48 @@ export class AssetsSidebarTab extends SidebarTab {
     await expect(this.filterButton).toHaveAttribute('aria-expanded', 'false')
   }
 
+  /** `data-asset-id` of every card the virtual grid currently renders. */
+  async renderedAssetIds(): Promise<(string | null)[]> {
+    return this.assetCards.evaluateAll((cards) =>
+      cards.map((card) => card.getAttribute('data-asset-id'))
+    )
+  }
+
+  /**
+   * The grid recycles its cards, so scrolling must drive the container rather
+   * than a rendered card: Playwright requires an element to be stable before
+   * acting on it, and virtualisation detaches cards first. `VirtualGrid`'s
+   * scroller carries no test id, so it is located as the nearest ancestor of a
+   * card that actually overflows, re-found on each call so no stale handle is
+   * held. Assigning `scrollTop` fires a real scroll event, so infinite-scroll
+   * paging still triggers as it does for a user.
+   */
+  private async assetGridScroller(
+    action: 'read' | 'pageDown'
+  ): Promise<number> {
+    return this.page.evaluate((mode) => {
+      const card = document.querySelector(
+        '.sidebar-content-container [data-asset-id]'
+      )
+      let node = card?.parentElement ?? null
+      while (node && node.scrollHeight <= node.clientHeight) {
+        node = node.parentElement
+      }
+      if (!node) throw new Error('assets grid scroller not found')
+      if (mode === 'pageDown') node.scrollTop += node.clientHeight
+      return node.scrollTop
+    }, action)
+  }
+
+  async assetGridScrollTop(): Promise<number> {
+    return this.assetGridScroller('read')
+  }
+
+  /** Scrolls the asset grid down by one viewport. */
+  async scrollAssetGridDown(): Promise<number> {
+    return this.assetGridScroller('pageDown')
+  }
+
   async openMediaTypeFilterMenu() {
     if (await this.filterCheckbox('Image').isVisible()) {
       return
