@@ -604,7 +604,8 @@ export const comfyPageFixture = base.extend<{
   comfyFiles: ComfyFiles
 }>({
   // Allows configuring feature flags for tests with before initial setup:
-  // `test.use({ initialFeatureFlags: { my_flag: true } })`.
+  // `test.use({ initialFeatureFlags: { my_flag: true } })`. See
+  // `FeatureFlagHelper.seedFlags()` for which flags this reaches.
   initialFeatureFlags: [{}, { option: true }],
 
   initialLocalStorage: [{}, { option: true }],
