@@ -203,12 +203,12 @@ import type { AccountUser, SessionSnapshot } from '@comfyorg/account-core/sessio
 import { createSessionClient } from '@comfyorg/account-core/session'
 import type { WebSessionResult } from '@comfyorg/account-core/webSession'
 import { readWebSession } from '@comfyorg/account-core/webSession'
+import type { WebSessionIdentityState } from '@comfyorg/account-core/webSessionIdentity'
+import { createWebSessionIdentity } from '@comfyorg/account-core/webSessionIdentity'
 import type { FeaturesReadOptions } from '@comfyorg/account-core/webSessionFlag'
 import { readWebSessionProbe } from '@comfyorg/account-core/webSessionFlag'
 import type { RequestAuthorization } from '@comfyorg/account-core/requestAuth'
 import { createRequestAuthorizer } from '@comfyorg/account-core/requestAuth'
-import type { WebSessionIdentityState } from '@comfyorg/account-core/webSessionIdentity'
-import { createWebSessionIdentity } from '@comfyorg/account-core/webSessionIdentity'
 import type { BillingErrorCode } from '@comfyorg/account-core/billing'
 import { createSessionBillingTransport } from '@comfyorg/account-core/billing'
 import type {
@@ -265,12 +265,10 @@ export const values = {
   createBoundedOperation,
   createSessionClient,
   readWebSession,
+  createWebSessionIdentity,
   readWebSessionProbe,
   createRequestAuthorizer,
-  createWebSessionIdentity,
   createSessionBillingTransport,
-  createFirebaseIdentity,
-  resolveFirebaseIdentity,
   resolveStripePublishableKey,
   createWebCrossTabRefreshPort,
   createTestIdentity,
@@ -303,9 +301,9 @@ export interface Types {
   boundedOperation: OperationHandle
   session: SessionSnapshot
   webSession: WebSessionResult
+  webSessionIdentity: WebSessionIdentityState
   featuresRead: FeaturesReadOptions
   requestAuth: RequestAuthorization
-  webSessionIdentity: WebSessionIdentityState
   billing: BillingErrorCode
   firebase: FirebaseIdentityAppConfig
   firebaseResolve: ResolveFirebaseIdentityOptions
