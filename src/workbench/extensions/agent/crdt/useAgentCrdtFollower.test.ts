@@ -753,6 +753,84 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('PM-1604 / BE-11437: retries a retryable refusal code with backoff', () => {
+    vi.useFakeTimers()
+    const { unmount } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: false, code: 'not_found' })
+
+    vi.advanceTimersByTime(500)
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(1)
+    unmount()
+  })
+
+  it('PM-1604 / BE-11437: does not retry schema_version_mismatch and surfaces it', () => {
+    vi.useFakeTimers()
+    const onSyncError = vi.fn()
+    const { unmount } = mountFollower('wf-1', true, () => null, {
+      onSyncError
+    })
+
+    dispatchFrame('doc_subscribed', {
+      ok: false,
+      code: 'schema_version_mismatch',
+      message: 'Expected schema 2, found 1'
+    })
+
+    vi.advanceTimersByTime(60_000)
+    apiState.target.dispatchEvent(new Event('status'))
+
+    expect(bridge().resubscribe).not.toHaveBeenCalled()
+    expect(bridge().reconcile).not.toHaveBeenCalled()
+    expect(onSyncError).toHaveBeenCalledExactlyOnceWith(
+      'Expected schema 2, found 1'
+    )
+    unmount()
+  })
+
+  it('PM-1604 / BE-11437: does not retry catalog_mismatch and surfaces it', () => {
+    vi.useFakeTimers()
+    const onSyncError = vi.fn()
+    const { unmount } = mountFollower('wf-1', true, () => null, {
+      onSyncError
+    })
+
+    dispatchFrame('doc_subscribed', {
+      ok: false,
+      code: 'catalog_mismatch',
+      message: 'catalog v3 required'
+    })
+
+    vi.advanceTimersByTime(60_000)
+    apiState.target.dispatchEvent(new Event('status'))
+
+    expect(bridge().resubscribe).not.toHaveBeenCalled()
+    expect(bridge().reconcile).not.toHaveBeenCalled()
+    expect(onSyncError).toHaveBeenCalledExactlyOnceWith('catalog v3 required')
+    unmount()
+  })
+
+  it('PM-1604 / BE-11437: does not retry unsupported and never surfaces it', () => {
+    vi.useFakeTimers()
+    const onSyncError = vi.fn()
+    const { unmount } = mountFollower('wf-1', true, () => null, {
+      onSyncError
+    })
+
+    dispatchFrame('doc_subscribed', {
+      ok: false,
+      code: 'unsupported',
+      message: 'doc surface disabled'
+    })
+
+    vi.advanceTimersByTime(60_000)
+    apiState.target.dispatchEvent(new Event('status'))
+
+    expect(bridge().resubscribe).not.toHaveBeenCalled()
+    expect(bridge().reconcile).not.toHaveBeenCalled()
+    expect(onSyncError).not.toHaveBeenCalled()
+    unmount()
+  })
+
   it('drops to disconnected on a schema error without touching the binding', () => {
     const { unmount, status } = mountFollower('wf-1')
     dispatchFrame('doc_subscribed', { ok: true })
@@ -1460,6 +1538,54 @@ describe('useAgentCrdtFollower', () => {
       .mock.calls.filter(([event]) => event === 'human_ops_settled')
       .map(([, detail]) => (detail as BatchOutcome).state)
     expect(settledStates).toEqual(['unconfirmed'])
+    unmount()
+  })
+
+  it('settles a stranded in-flight batch before notifying onSyncError of a permanent refusal', async () => {
+    vi.useFakeTimers()
+    const { recordDevEvent } = await import('./devPanelLog')
+    const workflowId = ref<string | null>('wf-1')
+    const onSyncError = vi.fn()
+    let enqueue!: ReturnType<
+      typeof useAgentCrdtFollower
+    >['enqueueHumanOperations']
+    const host = defineComponent({
+      setup() {
+        const { enqueueHumanOperations } = useAgentCrdtFollower(
+          workflowId,
+          graphMutations,
+          () => null,
+          ref(true),
+          () => null,
+          { onSyncError }
+        )
+        enqueue = enqueueHumanOperations
+        return () => null
+      }
+    })
+    const { unmount } = render(host)
+
+    enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    await Promise.resolve()
+    expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+
+    bridge().subscribedWorkflowId = null
+    dispatchFrame('doc_subscribed', {
+      ok: false,
+      workflowId: 'wf-1',
+      code: 'schema_version_mismatch'
+    })
+
+    expect(onSyncError).toHaveBeenCalledTimes(1)
+    const settleCallIndex = vi
+      .mocked(recordDevEvent)
+      .mock.calls.findIndex(([event]) => event === 'human_ops_settled')
+    expect(settleCallIndex).toBeGreaterThanOrEqual(0)
+    const settleOrder =
+      vi.mocked(recordDevEvent).mock.invocationCallOrder[settleCallIndex]
+    // onDocReset's precedent: cleanup that could strand held/in-flight ops
+    // runs before notifying consumer code (the toast store) that could throw.
+    expect(settleOrder).toBeLessThan(onSyncError.mock.invocationCallOrder[0])
     unmount()
   })
 

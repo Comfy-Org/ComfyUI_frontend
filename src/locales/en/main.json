@@ -5395,6 +5395,8 @@
     "workflowReferenceUnavailableReason": "This referenced workflow is no longer available or you do not have access to it.",
     "removeWorkflowReference": "Remove {name} reference",
     "targetNavigationUnavailable": "This workflow target is no longer available.",
+    "workflowSyncFailedTitle": "This workflow can't sync",
+    "workflowSyncFailedDetail": "This workflow was created with an incompatible document version. Your canvas has been left unchanged.",
     "runModeTriggerAutoLimit": "Auto (limited)",
     "runModeTriggerAutoLimitTooltip": "Ask when credit limit is reached",
     "showMore": "Show more",
