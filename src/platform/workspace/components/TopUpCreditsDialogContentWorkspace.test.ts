@@ -881,6 +881,47 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(mockClearPendingTopup).not.toHaveBeenCalled()
   })
 
+  // E3. `billing.topup.succeeded` is what R4 reads.
+  it('carries the opening surface onto a completed top-up succeeded event', async () => {
+    vi.mocked(mockBillingContext().topup).mockResolvedValue(
+      topupResponse('completed')
+    )
+
+    renderDialog({ source: 'agent_paywall' })
+    await clickAddCredits()
+    await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
+
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
+      operation: 'topup',
+      stage: 'succeeded',
+      outcome: 'success',
+      billing_op_id: 'op-1',
+      payment_intent_source: 'agent_paywall',
+      duration_ms: expect.any(Number)
+    })
+  })
+
+  // A real payment usually settles on the poller, not synchronously.
+  it('hands the opening surface to the poller for a pending top-up', async () => {
+    vi.mocked(mockBillingContext().topup).mockResolvedValue(
+      topupResponse('pending')
+    )
+
+    renderDialog({ source: 'agent_paywall' })
+    await clickAddCredits()
+    await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
+
+    expect(useBillingOperationStore().startOperation).toHaveBeenCalledWith(
+      'op-1',
+      'topup',
+      {
+        attemptStartedAt: expect.any(Number),
+        paymentIntentSource: 'agent_paywall',
+        autoHandleRequiresAction: true
+      }
+    )
+  })
+
   // Completing out of band is the expected outcome here — the copy sends the
   // customer to their bank — and the marker is what refreshes the balance when
   // they come back, so neither exit may discard it.

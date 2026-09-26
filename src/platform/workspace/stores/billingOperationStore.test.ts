@@ -690,6 +690,33 @@ describe('billingOperationStore', () => {
       })
     })
 
+    // E3. R4 reads `billing.topup.succeeded`, and the poller is the common
+    // path for a real payment.
+    it('carries the payment intent source onto canonical topup success telemetry', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'succeeded',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'topup', {
+        attemptStartedAt: Date.now(),
+        paymentIntentSource: 'agent_paywall'
+      })
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
+        operation: 'topup',
+        stage: 'succeeded',
+        outcome: 'success',
+        billing_op_id: 'op-1',
+        payment_intent_source: 'agent_paywall',
+        duration_ms: expect.any(Number)
+      })
+    })
+
     // Parity with .failed/.timeout, which fire for all three types: a
     // succeeded/(succeeded+failed) ratio reads a permanent 0% for any type
     // missing from the numerator.
@@ -934,6 +961,43 @@ describe('billingOperationStore', () => {
         duration_ms: expect.any(Number)
       })
     })
+
+    // `timeout` reads the same field but is not asserted: driving one costs
+    // the full top-up poll budget in fake time.
+    it.for([
+      { status: 'failed', failureCategory: 'provider_decline' },
+      {
+        status: 'reconciliation_needed',
+        failureCategory: 'reconciliation_needed'
+      }
+    ] as const)(
+      'carries the payment intent source onto a $status topup terminal event',
+      async ({ status, failureCategory }) => {
+        vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+          id: 'op-1',
+          status,
+          started_at: new Date().toISOString()
+        })
+
+        const store = useBillingOperationStore()
+        void store.startOperation('op-1', 'topup', {
+          attemptStartedAt: Date.now(),
+          paymentIntentSource: 'agent_paywall'
+        })
+
+        await vi.advanceTimersByTimeAsync(0)
+
+        expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
+          operation: 'topup',
+          stage: 'failed',
+          outcome: 'failure',
+          billing_op_id: 'op-1',
+          payment_intent_source: 'agent_paywall',
+          failure_category: failureCategory,
+          duration_ms: expect.any(Number)
+        })
+      }
+    )
 
     it('categorizes a topup poll failure as a provider decline too', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
