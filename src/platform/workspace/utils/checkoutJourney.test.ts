@@ -420,6 +420,18 @@ describe('entry source attribution across rehydration', () => {
         billing_op_id: 'op-rehydrated',
         ui_mode: 'hosted'
       })
+
+      // `saveCheckoutJourney` updates the in-memory mirror before its
+      // try/caught write, and `loadCheckoutJourney` prefers that mirror, so
+      // the reads above still pass when persistence silently failed. Only the
+      // stored bytes prove the binding survives the reload this test is about.
+      expect(
+        JSON.parse(sessionStorage.getItem(STORAGE_KEY) ?? '{}')
+      ).toMatchObject({
+        entry_source: entrySource,
+        billing_op_id: 'op-rehydrated',
+        ui_mode: 'hosted'
+      })
     }
   )
 
