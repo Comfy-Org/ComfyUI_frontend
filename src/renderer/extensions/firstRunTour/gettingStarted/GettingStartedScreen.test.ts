@@ -117,7 +117,10 @@ describe('GettingStartedScreen', () => {
       )
     )
     expect(mocks.beginTour).toHaveBeenCalledWith(CURATED_TEMPLATE_IDS[0])
-    expect(mocks.dismiss).toHaveBeenCalled()
+    expect(
+      mocks.dismiss,
+      'a pick closes the screen straight into the tour, which is not the same exit as a dismissal that leaves the canvas clear'
+    ).toHaveBeenCalledExactlyOnceWith('template_selected')
   })
 
   it('ignores a second pick while one is still loading', async () => {
@@ -222,7 +225,7 @@ describe('GettingStartedScreen', () => {
       expect(
         mocks.dismiss,
         'A first-run user must always have a visible way out of the takeover'
-      ).toHaveBeenCalled()
+      ).toHaveBeenCalledExactlyOnceWith('start_blank')
     })
 
     it('exits on Escape', async () => {
@@ -233,7 +236,7 @@ describe('GettingStartedScreen', () => {
       expect(
         mocks.dismiss,
         'Escape must follow the same safe dismissal path as the blank-canvas action'
-      ).toHaveBeenCalled()
+      ).toHaveBeenCalledExactlyOnceWith('escape')
     })
   })
 

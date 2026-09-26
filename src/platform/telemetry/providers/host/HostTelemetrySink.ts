@@ -32,6 +32,7 @@ import type {
   EnterLinearMetadata,
   ExecutionErrorMetadata,
   ExecutionSuccessMetadata,
+  FirstRunScreenDismissedMetadata,
   HelpCenterClosedMetadata,
   HelpCenterOpenedMetadata,
   HelpResourceClickedMetadata,
@@ -412,6 +413,12 @@ export class HostTelemetrySink implements TelemetryProvider {
     metadata: AgentOnboardingNotShownMetadata
   ): void {
     this.capture(TelemetryEvents.AGENT_ONBOARDING_NOT_SHOWN, metadata)
+  }
+
+  trackFirstRunScreenDismissed(
+    metadata: FirstRunScreenDismissedMetadata
+  ): void {
+    this.capture(TelemetryEvents.FIRST_RUN_SCREEN_DISMISSED, metadata)
   }
 
   trackLinkDedupDrop(metadata: LinkDedupDropMetadata): void {

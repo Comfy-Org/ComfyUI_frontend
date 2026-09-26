@@ -23,13 +23,15 @@ const mocks = vi.hoisted<{
   subscriptionEnabled: boolean
   isNewUser: boolean | null
   beginTour: ReturnType<typeof vi.fn>
+  trackFirstRunScreenDismissed: ReturnType<typeof vi.fn>
 }>(() => ({
   isCloud: true,
   isDesktopWidth: true,
   subscriptionEnabled: true,
   isNewUser: true,
 
-  beginTour: vi.fn()
+  beginTour: vi.fn(),
+  trackFirstRunScreenDismissed: vi.fn()
 }))
 
 const sharedComposable = vi.hoisted(() => {
@@ -69,6 +71,11 @@ vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/platform/auth/firebaseIdentity'), { spy: true })
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
+}))
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
+  useTelemetry: () => ({
+    trackFirstRunScreenDismissed: mocks.trackFirstRunScreenDismissed
+  })
 }))
 vi.mock<unknown>(import('../tour/useFirstRunTourController'), () => ({
   useFirstRunTourController: () => ({ beginTour: mocks.beginTour })
@@ -775,7 +782,7 @@ describe('useFirstRunEntry', () => {
       'Showing the screen must not persist completion; the user has not chosen anything yet'
     ).not.toHaveBeenCalled()
 
-    await entry.dismissGettingStarted()
+    await entry.dismissGettingStarted('start_blank')
 
     expect(entry.gettingStartedVisible.value).toBe(false)
     expect(useSettingStore().set).toHaveBeenCalledWith(
@@ -790,11 +797,108 @@ describe('useFirstRunEntry', () => {
       new TypeError('Failed to fetch')
     )
 
-    await entry.dismissGettingStarted()
+    await entry.dismissGettingStarted('start_blank')
 
     expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
       errorType: 'failure_writing_tutorial_completed_setting',
       level: 'warning'
+    })
+  })
+  describe('what it reports when the screen closes', () => {
+    it('reports nothing for a screen that is merely up', async () => {
+      const entry = useFirstRunEntry()
+
+      await entry.handleStartupOutcome('fresh')
+
+      expect(
+        mocks.trackFirstRunScreenDismissed,
+        'a standing screen reported per render would make the count a function of session length rather than of closes'
+      ).not.toHaveBeenCalled()
+    })
+
+    it.for([
+      { method: 'start_blank' },
+      { method: 'escape' },
+      { method: 'template_selected' }
+    ] as const)('reports a $method close exactly once', async ({ method }) => {
+      const entry = useFirstRunEntry()
+      await entry.handleStartupOutcome('fresh')
+
+      await entry.dismissGettingStarted(method)
+
+      expect(
+        mocks.trackFirstRunScreenDismissed
+      ).toHaveBeenCalledExactlyOnceWith({
+        method,
+        visible_duration_ms: expect.any(Number)
+      })
+    })
+
+    it('reports one close however many times the screen is dismissed', async () => {
+      const entry = useFirstRunEntry()
+      await entry.handleStartupOutcome('fresh')
+
+      await entry.dismissGettingStarted('start_blank')
+      await entry.dismissGettingStarted('start_blank')
+      await entry.dismissGettingStarted('escape')
+
+      expect(
+        mocks.trackFirstRunScreenDismissed,
+        'this event is the denominator for the consent card held behind the screen, so a second report of the same close would inflate it'
+      ).toHaveBeenCalledExactlyOnceWith({
+        method: 'start_blank',
+        visible_duration_ms: expect.any(Number)
+      })
+    })
+
+    it('reports a close the user did not ask for as an account switch', async () => {
+      const entry = useFirstRunEntry()
+      await entry.handleStartupOutcome('fresh')
+
+      Object.assign(useAuthStore(), { userId: 'account-b' })
+
+      expect(
+        entry.gettingStartedVisible.value,
+        'the screen belongs to the account that was signed in when it opened'
+      ).toBe(false)
+      expect(
+        mocks.trackFirstRunScreenDismissed,
+        'an account switch closing the screen is not a dismissal and must not be counted as one'
+      ).toHaveBeenCalledExactlyOnceWith({
+        method: 'user_changed',
+        visible_duration_ms: expect.any(Number)
+      })
+    })
+
+    it('measures how long the screen was up', async () => {
+      vi.useFakeTimers()
+      try {
+        const entry = useFirstRunEntry()
+        await entry.handleStartupOutcome('fresh')
+        vi.advanceTimersByTime(4200)
+
+        await entry.dismissGettingStarted('start_blank')
+
+        expect(
+          mocks.trackFirstRunScreenDismissed
+        ).toHaveBeenCalledExactlyOnceWith({
+          method: 'start_blank',
+          visible_duration_ms: 4200
+        })
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('reports nothing when there was no screen to close', async () => {
+      const entry = useFirstRunEntry()
+
+      await entry.dismissGettingStarted('start_blank')
+
+      expect(
+        mocks.trackFirstRunScreenDismissed,
+        'nothing was on screen to close, so there is no close to report'
+      ).not.toHaveBeenCalled()
     })
   })
 })
