@@ -190,10 +190,11 @@ export function registerAgentPanelExtension(): void {
       /**
        * Reads whether the first run has the screen *now*, not whether it had it
        * at some point this boot. The distinction is the whole reason the offer
-       * used to be lost: `useFirstRunEntry` also exposes `firstRunTookScreen`,
-       * a latch that is only ever cleared by a change of user, so a guard built
-       * on it keeps reporting `first_run_screen` for the rest of the page's
-       * life and the hold below can never release.
+       * used to be lost: this guard used to read a `firstRunTookScreen` latch
+       * that was only ever cleared by a change of user, so it kept reporting
+       * `first_run_screen` for the rest of the page's life and the hold below
+       * could never release. `firstRunHoldsScreen` answers the present-tense
+       * question, and the dead latch is gone so it cannot be reached for again.
        *
        * `firstRunHoldsScreen` rather than `gettingStartedVisible`, which only
        * says whether the screen is rendered. On the template path the screen is
