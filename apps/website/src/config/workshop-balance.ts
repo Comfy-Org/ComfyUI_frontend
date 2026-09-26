@@ -101,9 +101,9 @@ export function createBalanceReader(
     // mint names the read's own workspace: a target-less mint resolves the
     // personal workspace and would silently switch a team session.
     if (result.status === 'error' && result.unauthorized) {
-      const reminted = await session.remint(owner, {
-        workspaceId: snapshot.session.workspace.id
-      })
+      const reminted = await session
+        .remint(owner, { workspaceId: snapshot.session.workspace.id })
+        .catch(() => undefined)
       if (reminted?.status === 'ok') {
         token = reminted.session.token
         result = await fetchBalance(token)
