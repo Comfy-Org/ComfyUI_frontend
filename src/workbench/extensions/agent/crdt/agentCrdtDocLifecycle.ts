@@ -2,6 +2,7 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { createUuidv4 } from '@/utils/uuid'
 
 import { recordDevEvent } from './devPanelLog'
+import type { DocSubscribed } from './docFrameClient'
 
 // FE-1902: the doc id is otherwise held only in memory (set on turn ack), so a
 // panel remount loses the binding until the NEXT turn ack. Persist it per-tab
@@ -143,6 +144,7 @@ function clearPersistedDocId(): void {
 export class AgentCrdtDocLifecycle {
   private subscribeRetryTimer: ReturnType<typeof setTimeout> | null = null
   private subscribeRetryAttempt = 0
+  private subscribeFailureReported = false
   // The recency heartbeat: armed only while a subscribe is CONFIRMED (bound +
   // healthy by definition), slid forward by every doc-scoped frame, cancelled
   // by the same lifecycle exits as the subscribe retry. The probe is
@@ -175,7 +177,11 @@ export class AgentCrdtDocLifecycle {
   constructor(
     private readonly workflowId: () => string | null,
     private readonly resubscribe: () => void,
-    private readonly onGaveUp: () => void
+    private readonly onGaveUp: () => void,
+    private readonly onSubscribeExhausted: (
+      code: DocSubscribed['code'],
+      attempts: number
+    ) => void = () => {}
   ) {}
 
   readPersistedDocId(): string | null {
@@ -200,10 +206,10 @@ export class AgentCrdtDocLifecycle {
     if (workflowId !== null) this.persistConfirmedDocId(workflowId)
   }
 
-  onSubscribeRefused(): void {
+  onSubscribeRefused(code?: DocSubscribed['code']): void {
     this.clearAckTimer()
     this.clearStaleProbe()
-    this.scheduleSubscribeRetry()
+    this.scheduleSubscribeRetry(code)
   }
 
   onSubscribeSent(workflowId: string): void {
@@ -331,11 +337,18 @@ export class AgentCrdtDocLifecycle {
     }
     this.subscribeRetryAttempt = 0
     this.ackTimeouts = 0
+    this.subscribeFailureReported = false
   }
 
-  private scheduleSubscribeRetry(): void {
+  private scheduleSubscribeRetry(code: DocSubscribed['code']): void {
     if (this.shouldDeferSubscribe()) return
-    if (this.subscribeRetryAttempt >= SUBSCRIBE_RETRY_MAX_ATTEMPTS) return
+    if (this.subscribeRetryAttempt >= SUBSCRIBE_RETRY_MAX_ATTEMPTS) {
+      if (!this.subscribeFailureReported) {
+        this.subscribeFailureReported = true
+        this.onSubscribeExhausted(code, this.subscribeRetryAttempt)
+      }
+      return
+    }
     const target = this.workflowId()
     if (target === null) return
     const delay = SUBSCRIBE_RETRY_BASE_MS * 2 ** this.subscribeRetryAttempt

@@ -939,6 +939,10 @@ export class AgentConversationHarness {
     await this.selectWorkflowTarget()
   }
 
+  async disconnectFollowerAbnormally(): Promise<void> {
+    await this.hostSocket.disconnectAbnormally()
+  }
+
   // Sends one more doc_update that resyncs `widget` on `nodeId` to its
   // current doc value — the same effect on a live widget as a stale echo,
   // a reconnect resync, or an unrelated full-graph reconcile has whenever

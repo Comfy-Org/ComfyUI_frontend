@@ -21,6 +21,7 @@ import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
+import type { SocketClosedEventPayload } from '@/scripts/api'
 import type {
   MaterializableGraph,
   subgraphDefinitionReadState as subgraphDefinitionReadStateFn
@@ -262,6 +263,10 @@ function dispatchFrame(type: string, detail: unknown): void {
   bridge().dispatchEvent(new CustomEvent(type, { detail }))
 }
 
+function dispatchSocketClosed(detail: SocketClosedEventPayload): void {
+  apiState.target.dispatchEvent(new CustomEvent('socketClosed', { detail }))
+}
+
 describe('useAgentCrdtFollower', () => {
   beforeEach(() => {
     useAgentPanelStore().enabled = true
@@ -345,7 +350,9 @@ describe('useAgentCrdtFollower', () => {
 
     const applies = adapterState.applyFrame.mock.calls.length
     first.dispatchEvent(
-      new CustomEvent('doc_update', { detail: { workflowId: 'wf-1', seq: 42 } })
+      new CustomEvent('doc_update', {
+        detail: { workflowId: 'wf-1', seq: 42 }
+      })
     )
     apiState.target.dispatchEvent(new Event('reconnected'))
     vi.advanceTimersByTime(STALE_AFTER_MS * 2)
@@ -431,6 +438,259 @@ describe('useAgentCrdtFollower', () => {
     dispatchFrame('doc_subscribed', { ok: false })
     vi.advanceTimersByTime(60_000)
     expect(bridge().resubscribe).toHaveBeenCalledTimes(6)
+    unmount()
+  })
+
+  it('reports the final refusal once per retry incident', () => {
+    vi.useFakeTimers()
+    const { unmount } = mountFollower('wf-1')
+    const initialRefusal = {
+      ok: false,
+      code: 'not_found',
+      message: 'secret server detail'
+    }
+
+    dispatchFrame('doc_subscribed', initialRefusal)
+    vi.advanceTimersByTime(500)
+    dispatchFrame('doc_subscribed', initialRefusal)
+    vi.advanceTimersByTime(1_000)
+    dispatchFrame('doc_subscribed', initialRefusal)
+    vi.advanceTimersByTime(2_000)
+    dispatchFrame('doc_subscribed', initialRefusal)
+    vi.advanceTimersByTime(4_000)
+    dispatchFrame('doc_subscribed', initialRefusal)
+    vi.advanceTimersByTime(8_000)
+    dispatchFrame('doc_subscribed', initialRefusal)
+    vi.advanceTimersByTime(16_000)
+    dispatchFrame('doc_subscribed', {
+      ok: false,
+      code: 'Permission denied for private document',
+      message: 'different final detail'
+    })
+    dispatchFrame('doc_subscribed', initialRefusal)
+
+    expect(telemetryState.reportError).toHaveBeenCalledTimes(1)
+    expect(telemetryState.reportError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: 'CRDT document subscription was refused'
+      }),
+      {
+        errorType: 'failure_authenticating_crdt_subscription',
+        tags: { code: 'auth_reject', attempts: 6 },
+        context: { workflow_id: 'wf-1' }
+      }
+    )
+    expect(JSON.stringify(telemetryState.reportError.mock.calls)).not.toContain(
+      'secret server detail'
+    )
+    expect(JSON.stringify(telemetryState.reportError.mock.calls)).not.toContain(
+      'different final detail'
+    )
+
+    dispatchFrame('doc_subscribed', { ok: true })
+    const rateLimited = { ok: false, code: 'rate_limited' }
+    dispatchFrame('doc_subscribed', rateLimited)
+    vi.advanceTimersByTime(500)
+    dispatchFrame('doc_subscribed', rateLimited)
+    vi.advanceTimersByTime(1_000)
+    dispatchFrame('doc_subscribed', rateLimited)
+    vi.advanceTimersByTime(2_000)
+    dispatchFrame('doc_subscribed', rateLimited)
+    vi.advanceTimersByTime(4_000)
+    dispatchFrame('doc_subscribed', rateLimited)
+    vi.advanceTimersByTime(8_000)
+    dispatchFrame('doc_subscribed', rateLimited)
+    vi.advanceTimersByTime(16_000)
+    dispatchFrame('doc_subscribed', {
+      ok: false,
+      code: 'schema_mismatch'
+    })
+
+    expect(telemetryState.reportError).toHaveBeenCalledTimes(2)
+    expect(telemetryState.reportError).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        message: 'CRDT document subscription was refused'
+      }),
+      {
+        errorType: 'failure_subscribing_crdt_document',
+        tags: { code: 'schema_mismatch', attempts: 6 },
+        context: { workflow_id: 'wf-1' }
+      }
+    )
+    unmount()
+  })
+
+  it('bounds repeated document divergence reports and re-arms after recovery', () => {
+    adapterState.applyFrame.mockReturnValue(false)
+    const { unmount } = mountFollower('wf-1')
+
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 1 })
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 2 })
+    expect(telemetryState.reportError).toHaveBeenCalledTimes(1)
+
+    adapterState.applyFrame.mockReturnValueOnce(true)
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 3 })
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 4 })
+
+    expect(telemetryState.reportError).toHaveBeenCalledTimes(2)
+    expect(telemetryState.reportError).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        message: 'CRDT update has no bound projection target'
+      }),
+      {
+        errorType: 'missing_crdt_projection_target',
+        tags: { reason: 'missing_projection_target' },
+        context: { workflow_id: 'wf-1', seq: 4 }
+      }
+    )
+    unmount()
+  })
+
+  it('keeps the unbound-projection slug distinct from the document-read slug', () => {
+    adapterState.applyFrame.mockReturnValue(false)
+    const { unmount } = mountFollower('wf-1')
+
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 1 })
+    dispatchFrame('schema_error', { workflowId: 'wf-1', code: 'unreadable' })
+
+    // `errorType` is the queryable telemetry contract: an alert on
+    // `error_reading_crdt_document` must not also fire for an update that was
+    // read fine and only had no projection target bound.
+    expect(
+      telemetryState.reportError.mock.calls.map(
+        ([, options]) => options.errorType
+      )
+    ).toEqual(['missing_crdt_projection_target', 'error_reading_crdt_document'])
+    unmount()
+  })
+
+  it('bounds apply errors until recovery while preserving the original exception', () => {
+    const original = new Error('sensitive adapter detail')
+    adapterState.applyFrame.mockImplementation(() => {
+      throw original
+    })
+    const { unmount } = mountFollower('wf-1')
+
+    expect(() =>
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })
+    ).toThrow(original)
+    expect(() =>
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 10 })
+    ).toThrow(original)
+    expect(telemetryState.reportError).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ message: 'CRDT update could not be applied' }),
+      {
+        errorType: 'error_applying_crdt_update',
+        context: { workflow_id: 'wf-1', seq: 9 }
+      }
+    )
+
+    adapterState.applyFrame.mockReturnValueOnce(true)
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 11 })
+    adapterState.applyFrame.mockImplementationOnce(() => {
+      throw original
+    })
+    expect(() =>
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 12 })
+    ).toThrow(original)
+    expect(telemetryState.reportError).toHaveBeenCalledTimes(2)
+    expect(JSON.stringify(telemetryState.reportError.mock.calls)).not.toContain(
+      'sensitive adapter detail'
+    )
+    unmount()
+  })
+
+  it('bounds repeated schema reports and re-arms after a confirmed subscribe', () => {
+    const { unmount } = mountFollower('wf-1')
+
+    dispatchFrame('schema_error', { workflowId: 'wf-1', code: 'unreadable' })
+    dispatchFrame('schema_error', { workflowId: 'wf-1', code: 'unreadable' })
+    expect(telemetryState.reportError).toHaveBeenCalledTimes(1)
+
+    dispatchFrame('doc_subscribed', { ok: true })
+    dispatchFrame('schema_error', { workflowId: 'wf-1', code: 'unreadable' })
+
+    expect(telemetryState.reportError).toHaveBeenCalledTimes(2)
+    expect(telemetryState.reportError).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        message: 'CRDT document schema is unreadable'
+      }),
+      {
+        errorType: 'error_reading_crdt_document',
+        tags: { reason: 'schema_mismatch' },
+        context: { workflow_id: 'wf-1' }
+      }
+    )
+    unmount()
+  })
+
+  it('bounds abnormal-close and reconnect-storm telemetry to active targets', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(1_000)
+    const { unmount, isTargetActive } = mountFollower('wf-1')
+
+    dispatchSocketClosed({
+      code: 1006,
+      reason: 'sensitive server close detail',
+      wasClean: false
+    })
+    dispatchSocketClosed({
+      code: 1006,
+      reason: 'sensitive server close detail',
+      wasClean: false
+    })
+    apiState.target.dispatchEvent(new Event('reconnecting'))
+    apiState.target.dispatchEvent(new Event('reconnecting'))
+    apiState.target.dispatchEvent(new Event('reconnecting'))
+
+    expect(
+      telemetryState.reportError.mock.calls.map(
+        ([, options]) => options.errorType
+      )
+    ).toEqual([
+      'failure_closing_crdt_websocket_abnormal',
+      'failure_reconnecting_crdt_websocket_repeatedly'
+    ])
+    expect(JSON.stringify(telemetryState.reportError.mock.calls)).not.toContain(
+      'sensitive server close detail'
+    )
+
+    isTargetActive.value = false
+    dispatchSocketClosed({ code: 1006, reason: 'abnormal', wasClean: false })
+    apiState.target.dispatchEvent(new Event('reconnecting'))
+    expect(telemetryState.reportError).toHaveBeenCalledTimes(2)
+    unmount()
+  })
+
+  it('re-arms divergence and reconnect telemetry when the target changes', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(1_000)
+    adapterState.applyFrame.mockReturnValue(false)
+    const { unmount, workflowId } = mountFollower('wf-1')
+
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 1 })
+    apiState.target.dispatchEvent(new Event('reconnecting'))
+    apiState.target.dispatchEvent(new Event('reconnecting'))
+    apiState.target.dispatchEvent(new Event('reconnecting'))
+
+    workflowId.value = 'wf-2'
+    await nextTick()
+    dispatchFrame('doc_update', { workflowId: 'wf-2', seq: 1 })
+    apiState.target.dispatchEvent(new Event('reconnecting'))
+    apiState.target.dispatchEvent(new Event('reconnecting'))
+    apiState.target.dispatchEvent(new Event('reconnecting'))
+
+    expect(
+      telemetryState.reportError.mock.calls.map(([, options]) => [
+        options.errorType,
+        options.context?.workflow_id
+      ])
+    ).toEqual([
+      ['missing_crdt_projection_target', 'wf-1'],
+      ['failure_reconnecting_crdt_websocket_repeatedly', 'wf-1'],
+      ['missing_crdt_projection_target', 'wf-2'],
+      ['failure_reconnecting_crdt_websocket_repeatedly', 'wf-2']
+    ])
     unmount()
   })
 
@@ -846,7 +1106,11 @@ describe('useAgentCrdtFollower', () => {
     it('counts gap on the bridge doc_gap signal, which never becomes a doc_update', () => {
       const { unmount, status } = mountFollower('wf-1')
 
-      dispatchFrame('doc_gap', { workflowId: 'wf-1', expected: 3, received: 5 })
+      dispatchFrame('doc_gap', {
+        workflowId: 'wf-1',
+        expected: 3,
+        received: 5
+      })
 
       expect(status().outcomes.gap).toBe(1)
       expect(status().outcomes.received).toBe(0)
@@ -927,7 +1191,11 @@ describe('useAgentCrdtFollower', () => {
 
       dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 1 })
       dispatchFrame('doc_update', { workflowId: 'wf-other', seq: 2 })
-      dispatchFrame('doc_gap', { workflowId: 'wf-1', expected: 2, received: 4 })
+      dispatchFrame('doc_gap', {
+        workflowId: 'wf-1',
+        expected: 2,
+        received: 4
+      })
       dispatchFrame('doc_stale', { workflowId: 'wf-1', seq: 1 })
       dispatchFrame('schema_error', { workflowId: 'wf-1', code: 'unreadable' })
       dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 4 })
@@ -2036,6 +2304,15 @@ describe('useAgentCrdtFollower', () => {
       'status',
       expect.any(Function)
     )
+
+    telemetryState.reportError.mockClear()
+    bridge().resubscribe.mockClear()
+    dispatchSocketClosed({ code: 1006, reason: 'late', wasClean: false })
+    apiState.target.dispatchEvent(new Event('reconnecting'))
+    apiState.target.dispatchEvent(new Event('reconnecting'))
+    apiState.target.dispatchEvent(new Event('reconnecting'))
+    expect(telemetryState.reportError).not.toHaveBeenCalled()
+    expect(bridge().resubscribe).not.toHaveBeenCalled()
   })
 
   it('reports cleanup failures that throw a nullish value', () => {
