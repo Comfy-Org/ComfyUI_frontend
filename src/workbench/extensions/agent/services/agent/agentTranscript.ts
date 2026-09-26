@@ -1,5 +1,8 @@
 import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
-import { zPersistedToolCallSummary } from '../../schemas/agentApiSchema'
+import {
+  toTurnId,
+  zPersistedToolCallSummary
+} from '../../schemas/agentApiSchema'
 import type { WorkflowReference } from '../../types/workflowReference'
 import { parseWorkflowReferences } from '../../utils/workflowReferenceText'
 import type { AssistantMessage, ToolPart } from './agentMessageParts'
@@ -111,8 +114,8 @@ function parseUserWorkflowReferences(
  *
  * A restored (non-live) row has no transport left to ever settle its tool
  * parts, so a `pending`/`running` status there would otherwise spin forever;
- * only `isLive` (the row is the one actively backed by a live transport —
- * the run_approval mid-ask case) keeps it in `streaming` state.
+ * only `isLive` (the row is backed by a live transport) keeps it in
+ * `streaming` state. A later socket reconnect may start recovery polling.
  */
 function toolCallPartState(
   status: unknown,
@@ -202,9 +205,9 @@ function parseToolCalls(
 
 /**
  * Appends a persisted assistant row's tool-call and text parts onto its
- * running message. `isLive` is true only when this row is the one that will
- * be handed a live `AgentEventTransport` (the run_approval mid-ask case), so
- * its still-in-flight tool parts may legitimately stay `streaming`.
+ * running message. `isLive` is true when this row will be handed a live
+ * `AgentEventTransport`, so its still-in-flight tool parts may legitimately
+ * stay `streaming`. A later socket reconnect may start recovery polling.
  *
  * `message.parts` is shared across every assistant row of one turn (via
  * `assistants.get(turnId)` in `recordAssistantRow`), but `parseToolCalls`
@@ -256,8 +259,8 @@ function pendingRunApproval(
 /**
  * Applies one persisted assistant row onto its running message: appends any
  * parsed tool-call parts and text part, then, when the row is mid-ask,
- * attaches a `runApproval` part and marks the message still-streaming.
- * Returns the `pending` entry to record when the row is mid-ask, or
+ * attaches a `runApproval` part. Streaming rows remain pending recovery.
+ * Returns the `pending` entry to record when the row is streaming, or
  * `undefined` otherwise.
  */
 function applyAssistantRow(
@@ -265,16 +268,15 @@ function applyAssistantRow(
   message: AssistantMessage,
   text: string
 ): NormalizedAgentTranscript['pending'] {
-  message.streaming = false
+  message.streaming = row.status === 'streaming'
   const runApproval =
     row.status === 'streaming' ? pendingRunApproval(row) : undefined
-  appendAssistantContent(message, row, text, runApproval !== undefined)
+  appendAssistantContent(message, row, text, message.streaming)
 
-  if (!runApproval) return undefined
+  if (!message.streaming) return undefined
 
-  message.parts.push({ type: 'runApproval', ...runApproval })
-  message.streaming = true
-  return { messageId: row.id as TurnId, message }
+  if (runApproval) message.parts.push({ type: 'runApproval', ...runApproval })
+  return { messageId: toTurnId(row.id), message }
 }
 
 /**
@@ -336,7 +338,7 @@ function recordUserRow(
 
 /**
  * Applies an assistant row onto its turn's running message and records it
- * onto `assistants`. Returns the row's `pending` entry, if it is mid-ask.
+ * onto `assistants`. Returns the row's `pending` entry, if it is streaming.
  */
 function recordAssistantRow(
   row: AgentMessages[number],

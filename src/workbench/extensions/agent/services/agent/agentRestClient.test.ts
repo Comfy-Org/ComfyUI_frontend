@@ -111,6 +111,14 @@ describe('agentRestClient route + method', () => {
     expect(init.method).toBe('GET')
   })
 
+  it('getMessages forwards the caller abort signal to the request', async () => {
+    respond(jsonResponse(200, []))
+    const { signal } = new AbortController()
+    await makeClient().getMessages('t7', { signal })
+
+    expect(lastCall().init.signal).toBe(signal)
+  })
+
   it('gets and puts the run-mode preference using the API contract', async () => {
     const preference = { mode: 'auto_limited' as const, credit_limit: 25 }
     const client: AgentRestClient = createAgentRestClient()
