@@ -112,6 +112,24 @@ describe('PendingInvitesList', () => {
     ).not.toBeInTheDocument()
   })
 
+  it('marks token-less invites as expired and leaves live ones with a plain date', () => {
+    renderComponent([
+      createInvite({ id: 'inv-expired', email: 'stale@example.com' }),
+      createInvite({
+        id: 'inv-live',
+        email: 'fresh@example.com',
+        token: 'tok-live'
+      })
+    ])
+
+    expect(
+      screen.getByText('workspacePanel.members.expiredOn')
+    ).toBeInTheDocument()
+    expect(
+      screen.getAllByText('workspacePanel.members.expiredOn')
+    ).toHaveLength(1)
+  })
+
   it('swallows a rejected clipboard write and keeps the copy item usable', async () => {
     const writeText = vi.fn<(text: string) => Promise<void>>()
     writeText.mockRejectedValue(new Error('denied'))

@@ -49,7 +49,7 @@
               {{
                 $t(
                   'workspacePanel.members.pendingInvitesCount',
-                  pendingInvites.length
+                  livePendingCount
                 )
               }}
             </template>
@@ -117,10 +117,7 @@
               @click="activeView = 'pending'"
             >
               {{
-                $t(
-                  'workspacePanel.members.tabs.pendingCount',
-                  pendingInvites.length
-                )
+                $t('workspacePanel.members.tabs.pendingCount', livePendingCount)
               }}
             </Button>
           </div>
@@ -236,6 +233,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Button from '@/components/ui/button/Button.vue'
 import MemberListItem from '@/platform/workspace/components/dialogs/settings/MemberListItem.vue'
@@ -281,6 +279,10 @@ const {
   handleResendInvite,
   handleRevokeInvite
 } = useMembersPanel()
+
+const livePendingCount = computed(
+  () => pendingInvites.value.filter((invite) => invite.token).length
+)
 
 function handleContactUs() {
   window.open(TEAM_PLAN_REQUEST_URL, '_blank', 'noopener,noreferrer')
