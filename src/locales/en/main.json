@@ -1277,6 +1277,7 @@
     "resyncError": "Unable to resync logs after the backend reconnected. Reopen the console to retry."
   },
   "workflowService": {
+    "renameFailed": "Failed to rename workflow. Please try again.",
     "exportWorkflow": "Export Workflow",
     "enterFilename": "Enter the filename",
     "enterFilenamePrompt": "Enter the filename:",

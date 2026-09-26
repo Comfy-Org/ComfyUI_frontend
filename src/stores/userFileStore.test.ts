@@ -101,7 +101,7 @@ describe('useUserFileStore', () => {
         expect(file.isLoaded).toBe(true)
       })
 
-      it.fails('returns undefined and clears loading state on failed load', async () => {
+      it('returns undefined and clears loading state on failed load', async () => {
         const file = new UserFile('file1.txt', 123, 100)
         vi.mocked(api.getUserData).mockResolvedValue(
           new Response(null, { status: 404, statusText: 'Not Found' })
@@ -163,7 +163,7 @@ describe('useUserFileStore', () => {
         expect(api.deleteUserData).toHaveBeenCalledWith('file1.txt')
       })
 
-      it.fails('returns false when deleting fails', async () => {
+      it('returns false when deleting fails', async () => {
         const file = new UserFile('file1.txt', 123, 100)
         vi.mocked(api.deleteUserData).mockResolvedValue(
           new Response(null, {
@@ -201,7 +201,7 @@ describe('useUserFileStore', () => {
         expect(file.size).toBe(200)
       })
 
-      it.fails('does not change the path when renaming fails', async () => {
+      it('does not change the path when renaming fails', async () => {
         const file = new UserFile('file1.txt', 123, 100)
         vi.mocked(api.moveUserData).mockResolvedValue(
           new Response(null, { status: 409, statusText: 'Conflict' })

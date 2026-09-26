@@ -41,7 +41,6 @@ test.describe('Stale background task polling', { tag: ['@ui'] }, () => {
           `/api/tasks/${runningDownload.task_id}`,
           `/api/tasks/${runningDownload.task_id}`
         ])
-        test.fail(true, 'Missing downloads are not marked as failed')
         await expect(
           downloadToast.getByText('Failed', { exact: true })
         ).toBeVisible({ timeout: 1000 })
@@ -102,7 +101,6 @@ test.describe('Stale background task polling', { tag: ['@ui'] }, () => {
           `/api/tasks/${runningExport.task_id}`,
           `/api/tasks/${runningExport.task_id}`
         ])
-        test.fail(true, 'Missing exports are not marked as failed')
         await expect(
           exportToast.getByText('Export failed', { exact: true })
         ).toBeVisible({ timeout: 1000 })
