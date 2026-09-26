@@ -1,4 +1,6 @@
 import { fromPartial } from '@total-typescript/shoehorn'
+
+import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import { describe, expect, it, vi } from 'vitest'
 
 import { promotedInputWidget } from '@/core/graph/subgraph/promotedInputWidget'
@@ -9,8 +11,10 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useLinkStore } from '@/stores/linkStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { graphScopeOf } from '@/types/graphScopeId'
@@ -392,6 +396,162 @@ describe('promoteRecommendedWidgets', () => {
       sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
     })
     expect(useLitegraphService().updatePreviews).not.toHaveBeenCalled()
+  })
+})
+
+describe('promoteValueWidgetViaSubgraphInput — source slot fallback', () => {
+  it('fails with missingSourceSlot when a non-widget input already has the widget name', () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    const interiorNode = new LGraphNode('Source')
+    subgraph.add(interiorNode)
+    interiorNode.addInput('text', 'STRING')
+    const textWidget = interiorNode.addWidget('text', 'text', '', () => {})
+
+    const result = promoteValueWidgetViaSubgraphInput(
+      host,
+      interiorNode,
+      textWidget
+    )
+
+    expect(result).toEqual({ ok: false, reason: 'missingSourceSlot' })
+    expect(
+      interiorNode.inputs.filter((input) => input.name === 'text')
+    ).toHaveLength(1)
+    expect(host.subgraph.inputs).toHaveLength(0)
+  })
+
+  it('removes the fallback-created source slot when the connection is rejected', () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    const interiorNode = new LGraphNode('Source')
+    subgraph.add(interiorNode)
+    interiorNode.onConnectInput = () => false
+    const textWidget = interiorNode.addWidget('text', 'text', '', () => {})
+
+    const result = promoteValueWidgetViaSubgraphInput(
+      host,
+      interiorNode,
+      textWidget
+    )
+
+    expect(result).toEqual({ ok: false, reason: 'connectFailed' })
+    expect(interiorNode.inputs).toHaveLength(0)
+    expect(host.subgraph.inputs).toHaveLength(0)
+  })
+
+  it('types the fallback source slot from the input spec, not the widget type', () => {
+    useNodeDefStore().updateNodeDefs([
+      {
+        name: 'Sampler',
+        display_name: 'Sampler',
+        category: 'test',
+        python_module: 'm',
+        description: 'test sampler',
+        input: { required: { seed: ['INT', { default: 1 }] } },
+        output: [],
+        output_is_list: [],
+        output_name: [],
+        output_node: false,
+        deprecated: false,
+        experimental: false
+      } satisfies ComfyNodeDef
+    ])
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    const interiorNode = new LGraphNode('Sampler', 'Sampler')
+    subgraph.add(interiorNode)
+    const seedWidget = interiorNode.addWidget('number', 'seed', 1, () => {})
+
+    expect(
+      promoteValueWidgetViaSubgraphInput(host, interiorNode, seedWidget).ok
+    ).toBe(true)
+    expect(interiorNode.inputs[0]?.type).toBe('INT')
+    expect(host.subgraph.inputs[0]?.type).toBe('INT')
+  })
+
+  it('falls back to "*" when no input spec declares the widget', () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    const interiorNode = new LGraphNode('Custom')
+    subgraph.add(interiorNode)
+    const seedWidget = interiorNode.addWidget('number', 'seed', 1, () => {})
+
+    expect(
+      promoteValueWidgetViaSubgraphInput(host, interiorNode, seedWidget).ok
+    ).toBe(true)
+    expect(interiorNode.inputs[0]?.type).toBe('*')
+  })
+
+  it('removes the fallback-created source input on final demotion', () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    const interiorNode = new LGraphNode('Custom')
+    subgraph.add(interiorNode)
+    const seedWidget = interiorNode.addWidget('number', 'seed', 1, () => {})
+    expect(
+      promoteValueWidgetViaSubgraphInput(host, interiorNode, seedWidget).ok
+    ).toBe(true)
+    expect(interiorNode.inputs).toHaveLength(1)
+
+    demoteWidget(interiorNode, seedWidget, [host])
+
+    expect(interiorNode.inputs).toHaveLength(0)
+  })
+
+  it('keeps the synthetic source input removable after save and reload', () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    const interiorNode = new LGraphNode('Custom')
+    subgraph.add(interiorNode)
+    const seedWidget = interiorNode.addWidget('number', 'seed', 1, () => {})
+    promoteValueWidgetViaSubgraphInput(host, interiorNode, seedWidget)
+
+    const serialized = JSON.parse(
+      JSON.stringify(interiorNode.serialize())
+    ) as ISerialisedNode
+    expect(serialized.inputs?.[0]?._createdByPromotion).toBe(true)
+
+    const restored = new LGraphNode('Custom')
+    restored.configure(serialized)
+
+    demoteWidget(restored, seedWidget, [host])
+
+    expect(restored.inputs).toHaveLength(0)
+  })
+
+  it('omits the promotion marker from declared inputs when serialising', () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    const interiorNode = new LGraphNode('Custom')
+    subgraph.add(interiorNode)
+    const input = interiorNode.addInput('seed', 'INT')
+    const seedWidget = interiorNode.addWidget('number', 'seed', 1, () => {})
+    input.widget = { name: seedWidget.name }
+    promoteValueWidgetViaSubgraphInput(host, interiorNode, seedWidget)
+
+    const serialized = JSON.parse(
+      JSON.stringify(interiorNode.serialize())
+    ) as ISerialisedNode
+
+    expect(serialized.inputs?.[0]).not.toHaveProperty('_createdByPromotion')
+  })
+
+  it('keeps a pre-existing source input when demoting', () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    const interiorNode = new LGraphNode('Custom')
+    subgraph.add(interiorNode)
+    const input = interiorNode.addInput('seed', 'INT')
+    const seedWidget = interiorNode.addWidget('number', 'seed', 1, () => {})
+    input.widget = { name: seedWidget.name }
+    expect(
+      promoteValueWidgetViaSubgraphInput(host, interiorNode, seedWidget).ok
+    ).toBe(true)
+
+    demoteWidget(interiorNode, seedWidget, [host])
+
+    expect(interiorNode.inputs).toHaveLength(1)
   })
 })
 

@@ -37,6 +37,7 @@ import { deriveWidgetRenderState } from '@/lib/litegraph/src/utils/widget'
 import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 import type { WidgetTypeMap } from '@/lib/litegraph/src/widgets/widgetMap'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
+import { resolveSubgraphInputLink } from '@/core/graph/subgraph/resolveSubgraphInputLink'
 import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
 import { parsePreviewExposures } from '@/core/schemas/previewExposureSchema'
 import { parseProxyWidgetErrorQuarantine } from '@/core/schemas/proxyWidgetQuarantineSchema'
@@ -63,6 +64,27 @@ workflowSvg.src =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16'%3E%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 16 16'%3E%3Cpath stroke='white' stroke-linecap='round' stroke-width='1.3' d='M9.18613 3.09999H6.81377M9.18613 12.9H7.55288c-3.08678 0-5.35171-2.99581-4.60305-6.08843l.3054-1.26158M14.7486 2.1721l-.5931 2.45c-.132.54533-.6065.92789-1.1508.92789h-2.2993c-.77173 0-1.33797-.74895-1.1508-1.5221l.5931-2.45c.132-.54533.6065-.9279 1.1508-.9279h2.2993c.7717 0 1.3379.74896 1.1508 1.52211Zm-8.3033 0-.59309 2.45c-.13201.54533-.60646.92789-1.15076.92789H2.4021c-.7717 0-1.33793-.74895-1.15077-1.5221l.59309-2.45c.13201-.54533.60647-.9279 1.15077-.9279h2.29935c.77169 0 1.33792.74896 1.15076 1.52211Zm8.3033 9.8-.5931 2.45c-.132.5453-.6065.9279-1.1508.9279h-2.2993c-.77173 0-1.33797-.749-1.1508-1.5221l.5931-2.45c.132-.5453.6065-.9279 1.1508-.9279h2.2993c.7717 0 1.3379.7489 1.1508 1.5221Z'/%3E%3C/svg%3E %3C/svg%3E"
 
 const workflowBitmapCache = createBitmapCache(workflowSvg, 32)
+
+/**
+ * Host input slot extension state for promoted widgets. The litegraph core
+ * keeps these as plain optional fields (set via cast) rather than typed
+ * properties on {@link INodeInputSlot} to avoid leaking promotion concerns
+ * into the slot interface used by every node.
+ */
+export type PromotedHostInput = INodeInputSlot & {
+  /** Composed callback (store bridge + interior action + sibling sync). */
+  _hostCallback?: IBaseWidget['callback']
+  /**
+   * Strong reference to the promoted host widget. `input._widget` is a
+   * WeakRef; buttons keep one stable store-bound instance so the press-flash
+   * `clicked` flag survives to the frame that draws it.
+   */
+  _promotedWidget?: IBaseWidget
+  /** True when a user renamed the slot; interior label sync must not overwrite. */
+  _labelCustomized?: boolean
+  /** True when the host assigned disabled; interior disabled sync must not overwrite. */
+  _disabledOverride?: boolean
+}
 
 export class SubgraphNode extends LGraphNode implements BaseLGraph {
   override get inputs(): (INodeInputSlot & Partial<ISubgraphInput>)[] {
@@ -228,6 +250,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         // collisions when two promoted inputs share the same label.
         if (input.widgetId) {
           useWidgetValueStore().setLabel(input.widgetId, newName)
+          ;(input as PromotedHostInput)._labelCustomized = true
         }
         this.invalidatePromotedViews()
         this.graph?.trigger('node:slot-label:changed', {
@@ -287,7 +310,31 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     const id = input.widgetId
     if (!id) return
 
-    input._widget = createPromotedWidgetStoreProjection(input, id)
+    const widget = createPromotedWidgetStoreProjection(input, id)
+    const rec = input as PromotedHostInput
+    let hostWidget: IBaseWidget = widget
+    if (widget.type === 'button') {
+      const instance = toConcreteWidget(widget, this, false)
+      if (instance) {
+        // setNodeId re-enters through node.widgets; cache first so
+        // _projectPromotedWidget returns this instance instead of recursing.
+        input._widget = instance
+        // The concrete widget's class accessor would write the store entry
+        // without claiming the host override; route through the projection.
+        Object.defineProperty(instance, 'disabled', {
+          configurable: true,
+          get: () => widget.disabled,
+          set: (value) => {
+            widget.disabled = value
+          }
+        })
+        instance.setNodeId(this.id)
+        hostWidget = instance
+      }
+    }
+    rec._promotedWidget = hostWidget
+    input._widget = hostWidget
+    if (rec._hostCallback) hostWidget.callback = rec._hostCallback
     return input._widget
   }
 
@@ -348,6 +395,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         input.widget = undefined
         input.widgetId = undefined
         input._widget = undefined
+        const rec = input as PromotedHostInput
+        rec._hostCallback = undefined
+        rec._promotedWidget = undefined
         this.invalidatePromotedViews()
       },
       { signal }
@@ -636,6 +686,29 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     return resolved.status === 'resolved' ? resolved.resolved : undefined
   }
 
+  // Same resolution rule as _resolveInputWidget, so callback snapshots and
+  // state sync track the widget the input is actually bound to.
+  private _resolveInteriorWidget(inputName: string): IBaseWidget | undefined {
+    return resolveSubgraphInputLink(
+      this,
+      inputName,
+      ({ inputNode, targetInput, getTargetWidget }) =>
+        getTargetWidget() ??
+        this._resolveNestedPromotedSource(inputNode, targetInput)?.widget
+    )
+  }
+
+  private _resolveInteriorNode(inputName: string): LGraphNode | undefined {
+    return resolveSubgraphInputLink(
+      this,
+      inputName,
+      ({ inputNode, targetInput, getTargetWidget }) =>
+        getTargetWidget()
+          ? inputNode
+          : this._resolveNestedPromotedSource(inputNode, targetInput)?.node
+    )
+  }
+
   private _setWidget(
     subgraphInput: Readonly<SubgraphInput>,
     input: INodeInputSlot,
@@ -649,6 +722,19 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     input.widget ??= { name: subgraphInput.name }
     input.widget.name = subgraphInput.name
     if (inputWidget) Object.setPrototypeOf(input.widget, inputWidget)
+
+    // A label differing from both the subgraph definition and the interior
+    // widget is serialized instance data: workflows saved before
+    // _labelCustomized existed carry a custom label without the flag. A
+    // synced label matches the interior label and stays synchronized.
+    const boundInput = input as PromotedHostInput
+    if (
+      !boundInput._labelCustomized &&
+      input.label != null &&
+      input.label !== subgraphInput.label &&
+      input.label !== interiorWidget.label
+    )
+      boundInput._labelCustomized = true
 
     if (this.id === UNASSIGNED_NODE_ID) {
       // Registering now would key the store under a construction-time id
@@ -691,6 +777,42 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     input._widget =
       this.createPromotedHostWidget(input, id, interiorWidget) ??
       this._projectPromotedWidget(input)
+    if (input._widget && interiorWidget.callback) {
+      const sourceCallback = interiorWidget.callback
+      const previousCallback = input._widget.callback
+      input._widget.callback = (value, canvas, node, pos, e) => {
+        previousCallback?.(value, canvas, node, pos, e)
+        const store = useWidgetValueStore()
+        const before: [INodeInputSlot, IBaseWidget, unknown][] = []
+        for (const hostInput of this.inputs) {
+          if (!hostInput._subgraphSlot) continue
+          const interior = this._resolveInteriorWidget(hostInput.name)
+          if (interior) before.push([hostInput, interior, interior.value])
+        }
+        // Interior callbacks are plain functions using widget `this` (the INT
+        // rounding callback reads `this.options`), and the node argument must
+        // be the widget's owner, not the host showing it.
+        sourceCallback.call(
+          interiorWidget,
+          value,
+          canvas,
+          this._resolveInteriorNode(input.name) ?? node,
+          pos,
+          e
+        )
+        for (const [hostInput, interior, previousValue] of before) {
+          // The interior action may mutate sibling widgets (a button driving a
+          // seed); their host store entries are the values of record.
+          if (interior.value !== previousValue && hostInput.widgetId) {
+            store.setValue(hostInput.widgetId, interior.value)
+          }
+        }
+        // The action may also rewrite display state (a button resetting its
+        // own label/disabled); the interior is authoritative for that.
+        this.syncPromotedWidgetState()
+      }
+      ;(input as PromotedHostInput)._hostCallback = input._widget.callback
+    }
     this._setConcreteSlots()
 
     this.subgraph.events.dispatch('widget-promoted', {
@@ -718,7 +840,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
    */
   private _clearPromotedWidget(input: INodeInputSlot): void {
     input._widget?.onRemove?.()
+    const rec = input as PromotedHostInput
     input._widget = undefined
+    rec._hostCallback = undefined
+    rec._promotedWidget = undefined
   }
 
   override onAdded(_graph: LGraph): void {
@@ -790,6 +915,53 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   override getWidgetFromSlot(slot: INodeInputSlot): IBaseWidget | undefined {
     if (slot._widget) return slot._widget
     return super.getWidgetFromSlot(slot)
+  }
+
+  /**
+   * Copies interior display state into the host store entries. The host entry
+   * is seeded once at promotion, while extensions mutate the interior widget
+   * (queue adapters rewrite button labels, toggle disabled, execution writes
+   * preview values), so without this the promoted host widget shows a stale
+   * label/disabled/value state.
+   */
+  syncPromotedWidgetState(): void {
+    const store = useWidgetValueStore()
+    for (const input of this.inputs) {
+      if (!input.widgetId) continue
+      const state = store.getWidget(input.widgetId)
+      if (!state) continue
+
+      const interior = this._resolveInteriorWidget(input.name)
+      if (!interior) continue
+
+      const disabledOverride = (input as PromotedHostInput)._disabledOverride
+      if (
+        !disabledOverride &&
+        interior.disabled !== undefined &&
+        state.disabled !== interior.disabled
+      ) {
+        state.disabled = interior.disabled
+      }
+      const labelCustomized = (input as PromotedHostInput)._labelCustomized
+      if (
+        !labelCustomized &&
+        interior.label != null &&
+        state.label !== interior.label
+      ) {
+        state.label = interior.label
+        input.label = interior.label
+      }
+      // Display-only widgets never reach the prompt, so the interior is
+      // authoritative for their value (e.g. PreviewAny writes it on execute).
+      if (state.serialize === false && state.value !== interior.value) {
+        state.value = interior.value
+      }
+    }
+  }
+
+  override arrange(): void {
+    this.syncPromotedWidgetState()
+    super.arrange()
   }
 
   override getInputLink(slot: number): LLink | null {
@@ -979,6 +1151,14 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
   override serializeFromStoreState(state: NodeState): ISerialisedNode {
     const serialized = super.serializeFromStoreState(state)
+    if (serialized.inputs) {
+      serialized.inputs = serialized.inputs.map((existing, i) => {
+        const rec = this.inputs[i] as PromotedHostInput | undefined
+        return rec?._labelCustomized
+          ? { ...existing, _labelCustomized: true }
+          : existing
+      })
+    }
     const serializedProperties = { ...serialized.properties }
     const rootGraphId = this.rootGraph.id
     const hostLocator = tryGetPreviewExposureHostLocator(this)

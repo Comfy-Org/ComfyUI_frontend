@@ -52,7 +52,7 @@ export function promotedInputWidget(input: INodeInputSlot): IBaseWidget | null {
   const id = input.widgetId
   if (!id) return null
   const store = useWidgetValueStore()
-  return {
+  const widget: IBaseWidget = {
     get name() {
       return store.getWidget(id)?.name ?? input.name
     },
@@ -70,7 +70,6 @@ export function promotedInputWidget(input: INodeInputSlot): IBaseWidget | null {
       const state = store.getWidget(id)
       if (state) state.y = next
     },
-    widgetId: id,
     get type() {
       return store.getWidget(id)?.type ?? 'text'
     },
@@ -94,6 +93,15 @@ export function promotedInputWidget(input: INodeInputSlot): IBaseWidget | null {
       store.setValue(id, next)
     }
   }
+  // Non-enumerable so toConcreteWidget's BaseWidget constructor (which
+  // Object.assigns the descriptor's own properties) cannot copy it over the
+  // getter-only widgetId accessor.
+  Object.defineProperty(widget, 'widgetId', {
+    value: id,
+    enumerable: false,
+    configurable: true
+  })
+  return widget
 }
 
 export function promotedInputWidgets(node: LGraphNode): IBaseWidget[] {

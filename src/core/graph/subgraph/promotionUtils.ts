@@ -4,6 +4,7 @@ import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetT
 import { t } from '@/i18n'
 import type { IContextMenuValue } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { PromotionAwareInputSlot } from '@/lib/litegraph/src/node/slotUtils'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { LinkId } from '@/types/linkId'
 import { reorderSubgraphInputs } from '@/lib/litegraph/src/subgraph/subgraphUtils'
@@ -20,6 +21,7 @@ import {
   getPreviewExposureHostLocator,
   usePreviewExposureStore
 } from '@/stores/previewExposureStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
@@ -28,6 +30,7 @@ import { widgetId } from '@/types/widgetId'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 type PartialNode = Pick<LGraphNode, 'title' | 'id' | 'type'>
+
 type RuntimeWidget = Omit<IBaseWidget, 'options'> &
   Partial<Pick<IBaseWidget, 'options'>>
 
@@ -285,8 +288,24 @@ export function promoteValueWidgetViaSubgraphInput(
     return { ok: true }
   }
 
-  const sourceSlot = sourceNode.getSlotFromWidget(sourceWidget)
-  if (!sourceSlot) return { ok: false, reason: 'missingSourceSlot' }
+  let createdSourceSlot = false
+  let sourceSlot = sourceNode.getSlotFromWidget(sourceWidget)
+  if (!sourceSlot) {
+    if (sourceNode.inputs.some((input) => input.name === sourceWidgetName))
+      return { ok: false, reason: 'missingSourceSlot' }
+    // The UI widget type (e.g. number) is not the connection type the backend
+    // declares (e.g. INT); take the slot type from the input spec so upstream
+    // links validate.
+    const fallbackSlot = sourceNode.addInput(
+      sourceWidgetName,
+      useNodeDefStore().getInputSpecForWidget(sourceNode, sourceWidgetName)
+        ?.type ?? '*',
+      { widget: { name: sourceWidgetName } }
+    )
+    ;(fallbackSlot as PromotionAwareInputSlot)._createdByPromotion = true
+    sourceSlot = fallbackSlot
+    createdSourceSlot = true
+  }
 
   const existingNames = subgraphNode.subgraph.inputs.map((input) => input.name)
   const inputName = nextUniqueName(sourceWidgetName, existingNames)
@@ -299,6 +318,10 @@ export function promoteValueWidgetViaSubgraphInput(
   const link = subgraphInput.connect(sourceSlot, sourceNode)
   if (!link) {
     subgraphNode.subgraph.removeInput(subgraphInput)
+    if (createdSourceSlot) {
+      const sourceSlotIndex = sourceNode.inputs.indexOf(sourceSlot)
+      if (sourceSlotIndex !== -1) sourceNode.removeInput(sourceSlotIndex)
+    }
     return { ok: false, reason: 'connectFailed' }
   }
 
@@ -480,6 +503,19 @@ export function demoteWidget(
         )
         continue
       }
+    }
+  }
+  if (node instanceof LGraphNode) {
+    const sourceSlot = node.getSlotFromWidget(widget)
+    if (
+      sourceSlot &&
+      (sourceSlot as PromotionAwareInputSlot)._createdByPromotion
+    ) {
+      const slotIndex = node.inputs.indexOf(sourceSlot)
+      // The backend node does not declare this input; keep it only while
+      // another promotion still links it.
+      if (slotIndex !== -1 && !node.isInputConnected(slotIndex))
+        node.removeInput(slotIndex)
     }
   }
   refreshPromotedWidgetRendering(parents)

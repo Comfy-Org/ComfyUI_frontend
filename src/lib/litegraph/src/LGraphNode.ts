@@ -127,6 +127,7 @@ import {
   isWidgetInputSlot,
   outputAsSerialisable
 } from './node/slotUtils'
+import type { PromotionAwareInputSlot } from './node/slotUtils'
 import type { SubgraphInputNode } from './subgraph/SubgraphInputNode'
 import type { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
 import type { NodeLike } from './types/NodeLike'
@@ -3544,6 +3545,17 @@ export class LGraphNode
           link_info,
           output
         )
+
+        if ((input as PromotionAwareInputSlot)._createdByPromotion === true) {
+          const slotIndex = slot
+          // Deferred so a replacement link reconnecting within this tick
+          // keeps the synthetic slot; only a final unlink prunes it.
+          queueMicrotask(() => {
+            if (this.graph !== graph || this.inputs[slotIndex] !== input) return
+            if (inputHasLink(graph, this.id, slotIndex)) return
+            this.removeInput(slotIndex)
+          })
+        }
       }
     }
 

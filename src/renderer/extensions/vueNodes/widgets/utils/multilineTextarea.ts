@@ -1,14 +1,14 @@
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import type { INodeInputSlot, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { forwardMiddleButtonToCanvas } from '@/renderer/extensions/vueNodes/widgets/utils/forwardMiddleButtonToCanvas'
 import { app } from '@/scripts/app'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { DOMWidgetImpl, isDOMWidget } from '@/scripts/domWidget'
 import type { BaseDOMWidget } from '@/scripts/domWidget'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { WidgetId } from '@/types/widgetId'
+
+import type { PromotedHostWidgetContext } from './promotedHostPrimitives'
 
 const TRACKPAD_DETECTION_THRESHOLD = 50
 
@@ -108,20 +108,13 @@ export function bindMultilineTextareaWidget(
   })
 }
 
-interface PromotedMultilineWidgetContext {
-  subgraphNode: LGraphNode
-  input: INodeInputSlot
-  widgetId: WidgetId
-  sourceWidget: Readonly<IBaseWidget>
-}
-
 /**
  * Builds the promoted textarea as a host-owned DOM widget, registered directly
  * with the DOM widget store since `SubgraphNode.widgets` is a projected getter.
  * Returns undefined to fall back to the store-backed projection.
  */
 export function createPromotedMultilineWidget(
-  context: PromotedMultilineWidgetContext
+  context: PromotedHostWidgetContext
 ): IBaseWidget | undefined {
   const { subgraphNode, input, widgetId, sourceWidget } = context
 

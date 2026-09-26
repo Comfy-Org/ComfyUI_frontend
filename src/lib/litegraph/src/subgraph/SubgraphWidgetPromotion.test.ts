@@ -538,6 +538,99 @@ describe('SubgraphWidgetPromotion', () => {
     })
   })
 
+  describe('Display widget value sync', () => {
+    it('syncs the interior value into the host store for display-only widgets', () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'value', type: 'text' }]
+      })
+      const { node, widget } = createNodeWithWidget(
+        'Preview',
+        'text',
+        'initial',
+        'text'
+      )
+      widget.serialize = false
+      const host = setupPromotedWidget(subgraph, node)
+
+      expect(promotedWidgetStateByName(host, 'value').value).toBe('initial')
+
+      widget.value = 'executed prompt text'
+      host.arrange()
+
+      expect(promotedWidgetStateByName(host, 'value').value).toBe(
+        'executed prompt text'
+      )
+    })
+
+    it('keeps the host store authoritative for serialized widgets', () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'value', type: 'text' }]
+      })
+      const { node, widget } = createNodeWithWidget(
+        'Input',
+        'text',
+        'interior',
+        'text'
+      )
+      const host = setupPromotedWidget(subgraph, node)
+
+      writePromotedWidgetValue(host, 0, 'host edited')
+      widget.value = 'interior changed'
+      host.arrange()
+
+      expect(promotedWidgetStateByName(host, 'value').value).toBe('host edited')
+    })
+
+    it('syncs an interior label rewrite into the host store and slot', () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'value', type: 'text' }]
+      })
+      subgraph.inputs[0].label = 'Seeded Label'
+      const { node, widget } = createNodeWithWidget(
+        'Preview',
+        'text',
+        'initial',
+        'text'
+      )
+      widget.label = 'Seeded Label'
+      const host = setupPromotedWidget(subgraph, node)
+      const input = host.inputs[0]
+
+      widget.label = 'Rewritten Label'
+      host.arrange()
+
+      expect(input.label).toBe('Rewritten Label')
+      expect(promotedWidgetStateByName(host, 'value').label).toBe(
+        'Rewritten Label'
+      )
+      expect(host.widgets[0]?.label).toBe('Rewritten Label')
+    })
+
+    it('keeps a renamed slot label over interior label rewrites', () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'value', type: 'text' }]
+      })
+      subgraph.inputs[0].label = 'Seeded Label'
+      const { node, widget } = createNodeWithWidget(
+        'Preview',
+        'text',
+        'initial',
+        'text'
+      )
+      widget.label = 'Seeded Label'
+      const host = setupPromotedWidget(subgraph, node)
+      const input = host.inputs[0]
+
+      subgraph.renameInput(subgraph.inputs[0], 'User Rename')
+      widget.label = 'Rewritten Label'
+      host.arrange()
+
+      expect(input.label).toBe('User Rename')
+      expect(promotedWidgetStateByName(host, 'value').label).toBe('User Rename')
+      expect(host.widgets[0]?.label).toBe('User Rename')
+    })
+  })
+
   describe('Nested Subgraph Widget Promotion', () => {
     it('should hydrate legacy -1 proxyWidgets to a concrete promoted widget with preserved options', () => {
       const subgraph = createTestSubgraph({
@@ -688,6 +781,277 @@ describe('SubgraphWidgetPromotion', () => {
 
       expect(cloneNode.widgets).toHaveLength(promotedInputs(cloneNode).length)
       expect(promotedWidgetStateByName(cloneNode, 'text').value).toBe('')
+    })
+
+    it('keeps the host store tracking the bound deepest widget for nested promotions', () => {
+      const rootGraph = createTestRootGraph()
+
+      const innerSubgraph = createTestSubgraph({
+        rootGraph,
+        inputs: [{ name: 'seed', type: 'number' }]
+      })
+      const { node: leaf, widget: leafWidget } = createNodeWithWidget(
+        'Sampler',
+        'number',
+        7,
+        'number'
+      )
+      leafWidget.callback = function (this: BaseWidget, value: number) {
+        this.value = value + 100
+      }
+      innerSubgraph.add(leaf)
+      innerSubgraph.inputNode.slots[0].connect(leaf.inputs[0], leaf)
+
+      const outerSubgraph = createTestSubgraph({
+        rootGraph,
+        inputs: [{ name: 'seed', type: 'number' }]
+      })
+      const innerHost = createTestSubgraphNode(innerSubgraph, {
+        parentGraph: outerSubgraph,
+        id: 11
+      })
+      outerSubgraph.add(innerHost)
+      innerHost._internalConfigureAfterSlots()
+
+      // Interior slot mid-demotion: un-promoted while the nested source
+      // stays connected, so the outer input resolves to the deepest widget.
+      const innerSlot = innerHost.inputs[0]
+      innerSlot.widget = undefined
+      innerSlot.widgetId = undefined
+      innerSlot._widget = undefined
+
+      outerSubgraph.inputNode.slots[0].connect(innerHost.inputs[0], innerHost)
+
+      const outerHost = createTestSubgraphNode(outerSubgraph, {
+        parentGraph: rootGraph,
+        id: 22
+      })
+      rootGraph.add(outerHost)
+
+      const outerSlot = outerHost.inputs[0]
+      expect(outerSlot.widgetId).toBeDefined()
+
+      outerSlot._widget?.callback?.(50)
+      expect(leafWidget.value).toBe(150)
+      expect(promotedWidgetStateByName(outerHost, 'seed').value).toBe(150)
+
+      leafWidget.label = 'interior label'
+      leafWidget.disabled = true
+      outerHost.syncPromotedWidgetState()
+
+      const outerState = promotedWidgetStateByName(outerHost, 'seed')
+      expect(outerState.label).toBe('interior label')
+      expect(outerState.disabled).toBe(true)
+    })
+
+    it('seeds the outer state with the deepest serialize and disabled flags through the inner projection', () => {
+      const rootGraph = createTestRootGraph()
+
+      const innerSubgraph = createTestSubgraph({
+        rootGraph,
+        inputs: [{ name: 'seed', type: 'number' }]
+      })
+      const { node: leaf, widget: leafWidget } = createNodeWithWidget(
+        'Sampler',
+        'number',
+        7,
+        'number'
+      )
+      leafWidget.serialize = false
+      leafWidget.disabled = true
+      innerSubgraph.add(leaf)
+      innerSubgraph.inputNode.slots[0].connect(leaf.inputs[0], leaf)
+
+      const outerSubgraph = createTestSubgraph({
+        rootGraph,
+        inputs: [{ name: 'seed', type: 'number' }]
+      })
+      const innerHost = createTestSubgraphNode(innerSubgraph, {
+        parentGraph: outerSubgraph,
+        id: 11
+      })
+      outerSubgraph.add(innerHost)
+      innerHost._internalConfigureAfterSlots()
+
+      outerSubgraph.inputNode.slots[0].connect(innerHost.inputs[0], innerHost)
+
+      const outerHost = createTestSubgraphNode(outerSubgraph, {
+        parentGraph: rootGraph,
+        id: 22
+      })
+      rootGraph.add(outerHost)
+
+      const outerState = promotedWidgetStateByName(outerHost, 'seed')
+      expect(outerState.serialize).toBe(false)
+      expect(outerState.disabled).toBe(true)
+
+      leafWidget.value = 42
+      innerHost.syncPromotedWidgetState()
+      outerHost.syncPromotedWidgetState()
+      expect(promotedWidgetStateByName(outerHost, 'seed').value).toBe(42)
+    })
+
+    it('keeps serialize and disabled assignments through the projection across arrangement', () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'value', type: 'number' }]
+      })
+      const { node, widget } = createNodeWithWidget(
+        'Test Node',
+        'number',
+        42,
+        'number'
+      )
+      widget.disabled = false
+      const host = setupPromotedWidget(subgraph, node)
+
+      const projected = host.widgets[0]
+      expect(projected).toBeDefined()
+      projected.disabled = true
+      projected.serialize = false
+      host.arrange()
+
+      const state = promotedWidgetStates(host)[0]
+      expect(state.disabled).toBe(true)
+      expect(state.serialize).toBe(false)
+      expect(widget.disabled).toBe(false)
+    })
+
+    it('keeps disabled overrides isolated between hosts of one subgraph', () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'value', type: 'number' }]
+      })
+      const { node, widget } = createNodeWithWidget(
+        'Test Node',
+        'number',
+        42,
+        'number'
+      )
+      widget.disabled = false
+      subgraph.add(node)
+      subgraph.inputNode.slots[0].connect(node.inputs[0], node)
+
+      const hostA = createTestSubgraphNode(subgraph, { id: 101 })
+      const hostB = createTestSubgraphNode(subgraph, { id: 102 })
+
+      hostA.widgets[0].disabled = true
+      hostA.arrange()
+      hostB.arrange()
+
+      expect(promotedWidgetStateByName(hostA, 'value').disabled).toBe(true)
+      expect(promotedWidgetStateByName(hostB, 'value').disabled).toBe(false)
+      expect(widget.disabled).toBe(false)
+    })
+
+    it('keeps a disabled override set on a promoted button widget', () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'action', type: 'button' }]
+      })
+      const { node, widget } = createNodeWithWidget(
+        'Test Node',
+        'button',
+        'Run'
+      )
+      widget.disabled = false
+      const host = setupPromotedWidget(subgraph, node)
+
+      host.widgets[0].disabled = true
+      host.arrange()
+
+      expect(promotedWidgetStateByName(host, 'action').disabled).toBe(true)
+      expect(widget.disabled).toBe(false)
+    })
+
+    it('calls the interior callback with its owning node', () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'value', type: 'number' }]
+      })
+      const { node, widget } = createNodeWithWidget(
+        'Test Node',
+        'number',
+        42,
+        'number'
+      )
+      let callbackNode: LGraphNode | undefined
+      widget.callback = (
+        _value: unknown,
+        _canvas: unknown,
+        nodeArg?: LGraphNode
+      ) => {
+        callbackNode = nodeArg
+      }
+      const host = setupPromotedWidget(subgraph, node)
+
+      host.widgets[0].callback?.(7, undefined, host)
+
+      expect(callbackNode).toBe(node)
+    })
+
+    it('passes the owning interior node through nested host callbacks', () => {
+      const rootGraph = createTestRootGraph()
+
+      const innerSubgraph = createTestSubgraph({
+        rootGraph,
+        inputs: [{ name: 'value', type: 'number' }]
+      })
+      const { node: leaf } = createNodeWithWidget('Leaf', 'number', 7, 'number')
+      innerSubgraph.add(leaf)
+      innerSubgraph.inputNode.slots[0].connect(leaf.inputs[0], leaf)
+
+      const outerSubgraph = createTestSubgraph({
+        rootGraph,
+        inputs: [{ name: 'value', type: 'number' }]
+      })
+      const innerHost = createTestSubgraphNode(innerSubgraph, {
+        parentGraph: outerSubgraph,
+        id: 11
+      })
+      outerSubgraph.add(innerHost)
+      innerHost._internalConfigureAfterSlots()
+
+      outerSubgraph.inputNode.slots[0].connect(innerHost.inputs[0], innerHost)
+
+      const innerProjection = innerHost.inputs[0]._widget
+      if (!innerProjection) throw new Error('Missing promoted projection')
+      const innerCallback = innerProjection.callback
+      let callbackNode: LGraphNode | undefined
+      innerProjection.callback = (value, canvas, nodeArg, pos, e) => {
+        callbackNode = nodeArg
+        innerCallback?.call(innerProjection, value, canvas, nodeArg, pos, e)
+      }
+
+      const outerHost = createTestSubgraphNode(outerSubgraph, {
+        parentGraph: rootGraph,
+        id: 22
+      })
+      rootGraph.add(outerHost)
+
+      outerHost.widgets[0].callback?.(5, undefined, outerHost)
+
+      expect(callbackNode).toBe(innerHost)
+    })
+
+    it('keeps a synchronized interior label propagating across rebinds', () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'seed', type: 'INT' }]
+      })
+      const interiorNode = new LGraphNode('Interior')
+      const input = interiorNode.addInput('value', 'INT')
+      input.widget = { name: 'value' }
+      interiorNode.addOutput('out', 'INT')
+      const widget = interiorNode.addWidget('number', 'value', 0, () => {})
+      widget.label = 'Interior Label'
+      subgraph.add(interiorNode)
+      subgraph.inputNode.slots[0].connect(interiorNode.inputs[0], interiorNode)
+      const host = createTestSubgraphNode(subgraph)
+
+      host.arrange()
+      expect(host.inputs[0].label).toBe('Interior Label')
+
+      host.rebuildInputWidgetBindings()
+
+      widget.label = 'Interior Label v2'
+      host.arrange()
+      expect(host.inputs[0].label).toBe('Interior Label v2')
     })
   })
 

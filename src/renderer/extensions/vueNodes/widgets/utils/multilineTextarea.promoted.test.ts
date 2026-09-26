@@ -6,6 +6,7 @@ vi.mock(import('@/scripts/app'))
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { DOMWidget } from '@/scripts/domWidget'
+import { isDOMWidget } from '@/scripts/domWidget'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
@@ -46,6 +47,16 @@ function promote(
   })
 }
 
+function promoteMultilineDom(
+  source: IBaseWidget = textareaSource()
+): DOMWidget<HTMLTextAreaElement, string> {
+  const widget = promote(source)
+  if (!widget || !isDOMWidget<HTMLTextAreaElement, string>(widget)) {
+    throw new Error('Expected a promoted multiline DOM widget')
+  }
+  return widget
+}
+
 describe('createPromotedMultilineWidget', () => {
   beforeEach(() => {
     useWidgetValueStore().registerWidget(WIDGET_ID, {
@@ -56,13 +67,8 @@ describe('createPromotedMultilineWidget', () => {
   })
 
   it('materializes a promoted textarea as a registered DOM widget', () => {
-    const widget = promote()
+    const domWidget = promoteMultilineDom()
 
-    expect(widget).toBeDefined()
-    const domWidget = widget as unknown as DOMWidget<
-      HTMLTextAreaElement,
-      string
-    >
     expect(domWidget.element).toBeInstanceOf(HTMLTextAreaElement)
     expect(useDomWidgetStore().widgetStates.has(domWidget.id)).toBe(true)
   })
@@ -73,10 +79,7 @@ describe('createPromotedMultilineWidget', () => {
   })
 
   it('writes textarea edits back to the host widget store entry', () => {
-    const widget = promote()
-    const element = (
-      widget as unknown as DOMWidget<HTMLTextAreaElement, string>
-    ).element
+    const element = promoteMultilineDom().element
 
     element.value = 'edited'
     element.dispatchEvent(new Event('input'))
