@@ -336,6 +336,20 @@ export function registerAgentPanelExtension(): void {
             : consentStore.accepted
               ? 'consent_already_accepted'
               : null
+      /**
+       * Why the offer has no consent scope to work with. A switch in progress is
+       * reported ahead of the ids it is moving, because it explains an absent
+       * workspace id and labelling that case `workspace_unresolved` would hide
+       * the more specific cause.
+       */
+      const missingScopeExit = (
+        userId: string | undefined
+      ): AgentConsentOfferExit =>
+        workspaceStore.isSwitching
+          ? 'workspace_switching'
+          : !userId
+            ? 'account_unresolved'
+            : 'workspace_unresolved'
 
       let autoShowInFlight = false
       const offerConsentUnprompted = (): void => {
@@ -368,28 +382,17 @@ export function registerAgentPanelExtension(): void {
         const userId = resolvedUserInfo.value?.id
         const workspaceId = workspaceStore.activeWorkspaceId
         if (!userId || !workspaceId || workspaceStore.isSwitching) {
-          // A switch in progress is reported ahead of the ids it is moving: it
-          // explains an absent workspace id, so labelling that case
-          // `workspace_unresolved` would hide the more specific cause. The
-          // condition above is unchanged either way - only the label differs.
-          reportOfferExit(
-            workspaceStore.isSwitching
-              ? 'workspace_switching'
-              : !userId
-                ? 'account_unresolved'
-                : 'workspace_unresolved',
-            'offer'
-          )
+          reportOfferExit(missingScopeExit(userId), 'offer')
           return
         }
         const key = `${CONSENT_AUTO_SHOWN_PREFIX}.${userId}.${workspaceId}`
         const autoShow = prepareAutoShow(key)
-        // `storage_unavailable` already has a reason on
-        // `agent_consent_not_offered`, so it is not reported twice.
-        if (autoShow === 'storage_unavailable') withholdOffer(autoShow)
         if (autoShow !== 'ready') {
-          if (autoShow === 'already_offered')
-            reportOfferExit('already_offered', 'offer')
+          // `storage_unavailable` already has a reason on
+          // `agent_consent_not_offered`, so only the burned one-shot key needs
+          // naming here.
+          if (autoShow === 'storage_unavailable') withholdOffer(autoShow)
+          else reportOfferExit('already_offered', 'offer')
           dropHold()
           return
         }
