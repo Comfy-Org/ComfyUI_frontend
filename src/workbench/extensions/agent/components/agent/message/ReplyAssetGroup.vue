@@ -149,7 +149,7 @@ function stopPreview(event: Event): void {
 </script>
 
 <template>
-  <div class="my-4 flex flex-col gap-2">
+  <div data-testid="reply-asset-group" class="my-4 flex flex-col gap-2">
     <div v-if="visibleVisual.length" :class="cn('grid gap-1', gridColsClass)">
       <button
         v-for="asset in visibleVisual"
