@@ -1,4 +1,5 @@
-import type { CrossTabRefreshPort } from '../core/session.js'
+import type { AccountCredential, CrossTabRefreshPort } from '../core/session.js'
+import type { VisibilityPort } from '../core/webSessionIdentity.js'
 
 /**
  * Web Locks + BroadcastChannel implementation of the cross-tab refresh port.
@@ -16,8 +17,8 @@ import type { CrossTabRefreshPort } from '../core/session.js'
  * can do to siblings (hand them a token), not what it can reach. Hosts that
  * load third-party script into the realm accept that when they opt in.
  */
-export function createWebCrossTabRefreshPort():
-  | CrossTabRefreshPort
+export function createWebCrossTabRefreshPort<Message = AccountCredential>():
+  | CrossTabRefreshPort<Message>
   | undefined {
   // Feature-detect defensively: test DOMs ship these piecemeal (happy-dom
   // has a BroadcastChannel but a null navigator.locks), and either gap must
@@ -115,6 +116,19 @@ export function createWebCrossTabRefreshPort():
           if (channels.get(key) === subscribed) channels.delete(key)
         }
       }
+    }
+  }
+}
+
+export function createWebVisibilityPort(): VisibilityPort | undefined {
+  if (typeof document === 'undefined') return undefined
+  const isVisible = () => document.visibilityState === 'visible'
+  return {
+    isVisible,
+    onChange: (listener) => {
+      const handler = () => listener(isVisible())
+      document.addEventListener('visibilitychange', handler)
+      return () => document.removeEventListener('visibilitychange', handler)
     }
   }
 }

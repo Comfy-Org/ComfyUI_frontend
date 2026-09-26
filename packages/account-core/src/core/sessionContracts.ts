@@ -96,14 +96,14 @@ export interface MintHandle {
  * (`createWebCrossTabRefreshPort` from `@comfyorg/account-core/web`); tests pass
  * fakes.
  */
-export interface CrossTabRefreshPort {
+export interface CrossTabRefreshPort<Message = AccountCredential> {
   /**
    * Queue for the key's lease. `onAcquired` fires if and when this tab
    * becomes leader; the returned function abandons the request or releases
    * held leadership.
    */
   requestLeadership: (key: string, onAcquired: () => void) => () => void
-  publishCredential: (key: string, credential: AccountCredential) => void
+  publishCredential: (key: string, credential: Message) => void
   /** Messages cross a serialization boundary; the client validates them. */
   onCredential: (
     key: string,
