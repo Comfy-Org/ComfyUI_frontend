@@ -37,7 +37,7 @@ const resolvedRel = computed(() =>
       )
     "
   >
-    <span class="inline-block">
+    <span class="flex items-center">
       <slot />
     </span>
   </component>
