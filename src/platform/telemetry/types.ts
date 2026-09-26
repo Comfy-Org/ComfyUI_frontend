@@ -598,6 +598,75 @@ export interface AgentConsentNotOfferedMetadata extends Record<
 > {
   reason: AgentConsentNotOfferedReason
 }
+/**
+ * Why an automatic consent offer ended without either making the offer or
+ * naming a surface that is holding it.
+ *
+ * `AgentConsentNotOfferedReason` covers the deferrals: a surface is in the way,
+ * it is named, and the offer is retried when that surface clears. Everything
+ * here is the other kind of ending - the attempt stopped for a reason of its
+ * own. Some of those endings are correct (the offer was not needed) and some
+ * are losses (it was owed and did not happen), so **a query over this event
+ * must split by `exit`; a total is not a quantity.**
+ *
+ * Correctly not needed: `consent_already_accepted`, `card_already_seen`,
+ * `already_offered`.
+ * Owed and not made: everything else.
+ *
+ * There is deliberately no value for "the agent flag is off". Every exit here
+ * is downstream of that check, so reporting it would emit once per page load
+ * for everyone outside the rollout - a count of exposure rather than of the
+ * mechanism - and the flag is already on every event as
+ * `$feature/agent-in-app-experience`.
+ */
+export type AgentConsentOfferExit =
+  /** No Comfy account is signed in. */
+  | 'signed_out'
+  /** Signed in, but the account has not resolved to a user id yet. */
+  | 'account_unresolved'
+  /** No active workspace id yet, and no switch is in progress. */
+  | 'workspace_unresolved'
+  /** A workspace switch is in progress, so the consent scope is moving. */
+  | 'workspace_switching'
+  /** The stored consent read has not settled, so consent is unknown. */
+  | 'consent_unresolved'
+  /** The stored consent read rejected. */
+  | 'consent_read_failed'
+  /** Consent is already stored for this scope, so no card is needed. */
+  | 'consent_already_accepted'
+  /** Another offer attempt for this page load has not finished. */
+  | 'offer_in_flight'
+  /** The card has already been on screen for this scope this page load. */
+  | 'card_already_seen'
+  /** The one-shot auto-show key for this scope is already burned. */
+  | 'already_offered'
+  /** The first-run startup probe rejected. */
+  | 'startup_probe_failed'
+/**
+ * Which link in the offer chain exited. The same condition is checked at more
+ * than one of these - the pair (`exit`, `stage`) is what identifies a single
+ * exit in the code, so neither property is readable on its own.
+ */
+export type AgentConsentOfferStage =
+  /** `loadConsentIfEligible` - before the consent read, or on its result. */
+  | 'load'
+  /** Waiting on the first-run startup decision. */
+  | 'startup'
+  /** `offerConsentUnprompted` - the offer attempt itself. */
+  | 'offer'
+export interface AgentConsentOfferExitedMetadata extends Record<
+  string,
+  unknown
+> {
+  exit: AgentConsentOfferExit
+  stage: AgentConsentOfferStage
+  /**
+   * Whether a hold was armed at the moment of the exit, i.e. whether this page
+   * load still has a queued retry. False on an owed-and-not-made exit means the
+   * offer is gone for this page load with nothing scheduled to bring it back.
+   */
+  retry_armed: boolean
+}
 export type AgentOnboardingNotShownMetadata =
   | { reason: 'app_mode' | 'tour_active' }
   | { reason: 'target_missing'; step: number }
@@ -1453,6 +1522,7 @@ export interface TelemetryProvider {
   trackAgentRunModeChanged?(metadata: AgentRunModeChangedMetadata): void
   trackAgentThreadStarted?(metadata: AgentThreadStartedMetadata): void
   trackAgentConsentNotOffered?(metadata: AgentConsentNotOfferedMetadata): void
+  trackAgentConsentOfferExited?(metadata: AgentConsentOfferExitedMetadata): void
   trackAgentOnboardingNotShown?(metadata: AgentOnboardingNotShownMetadata): void
 
   // Right side panel widget favorite events
@@ -1638,6 +1708,7 @@ export const TelemetryEvents = {
   AGENT_RUN_MODE_CHANGED: 'app:agent_run_mode_changed',
   AGENT_THREAD_STARTED: 'app:agent_thread_started',
   AGENT_CONSENT_NOT_OFFERED: 'app:agent_consent_not_offered',
+  AGENT_CONSENT_OFFER_EXITED: 'app:agent_consent_offer_exited',
   AGENT_ONBOARDING_NOT_SHOWN: 'app:agent_onboarding_not_shown',
 
   // Right Side Panel Widget Favorites
