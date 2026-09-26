@@ -3,15 +3,15 @@ import { expect } from '@playwright/test'
 import { createI18n } from 'vue-i18n'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
-import type { AgentRunMode, WorkflowListResponse } from '@comfyorg/ingest-types'
+import type { AgentRunMode } from '@comfyorg/ingest-types'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import {
   agentTest as test,
-  bootAgentApp
+  bootAgentApp,
+  mockWorkflowPersistence
 } from '@e2e/fixtures/agentPanelFixture'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
@@ -102,20 +102,15 @@ interface AnswerCall {
 interface Turn {
   panel: Locator
   send: (frame: AgentWsEvent | HostFrame) => void
-  /** Every POST the app made to the ask-answer endpoint, in order. */
   answers: () => AnswerCall[]
 }
 
-/** The one path a legitimate answer to this suite's ask may target. */
 const ANSWER_PATH = `/api/agent/threads/${THREAD_ID}/asks/${ASK_ID}/answer`
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
 }
 
-// Boots the panel against fully mocked endpoints and sends one user message.
-// `storedMode` is what GET /api/agent/run-mode reports as the saved
-// preference; the answer endpoint records every call it receives.
 async function startTurn(
   page: Page,
   prompt: string,
@@ -191,46 +186,7 @@ async function startTurn(
     .click()
   await expect(panel).toBeVisible({ timeout: 30_000 })
 
-  let savedName: string | undefined
-  await page.route('**/api/userdata/*', (route) => {
-    const request = route.request()
-    const path = decodeURIComponent(
-      new URL(request.url()).pathname.split('/userdata/')[1]
-    )
-    if (request.method() !== 'POST' || !path.startsWith('workflows/'))
-      return route.fallback()
-    savedName = path.slice('workflows/'.length, -'.json'.length)
-    const saved: UserDataFullInfo = {
-      path,
-      modified: Date.now(),
-      size: request.postDataBuffer()?.length ?? 0
-    }
-    return route.fulfill(jsonRoute(saved))
-  })
-  await page.route('**/api/workflows?*', (route) => {
-    const workflows: WorkflowListResponse = {
-      data:
-        savedName === undefined
-          ? []
-          : [
-              {
-                id: WORKFLOW_ID,
-                name: savedName,
-                created_at: '2026-09-01T00:00:00Z',
-                updated_at: '2026-09-01T00:00:00Z',
-                created_by: 'test-user-e2e',
-                latest_version: 1
-              }
-            ],
-      pagination: {
-        has_more: false,
-        limit: 100,
-        offset: 0,
-        total: savedName === undefined ? 0 : 1
-      }
-    }
-    return route.fulfill(jsonRoute(workflows))
-  })
+  await mockWorkflowPersistence(page, WORKFLOW_ID)
 
   const picker = panel.getByRole('button', {
     name: enMessages.agent.switchWorkflow
@@ -267,8 +223,13 @@ test.describe(
         name: RUN_LABEL,
         exact: true
       })
+      const cancelButton = panel.getByRole('button', {
+        name: CANCEL_LABEL,
+        exact: true
+      })
       await expect(panel.getByText(CARD_LEAD)).toBeVisible()
       await expect(runButton).toBeEnabled()
+      await expect(cancelButton).toBeEnabled()
 
       // The card alone answered nothing: the ask is still open, so the
       // server-held run has not been authorized.
@@ -285,9 +246,9 @@ test.describe(
 
       // Until the canonical resolution arrives, the card cannot answer again.
       await expect(runButton).toBeDisabled()
+      await expect(cancelButton).toBeDisabled()
       expect(answers()).toHaveLength(1)
 
-      // Only now does the run happen, in full view of the user.
       send(askResolved(['run']))
       await expect(panel.getByText(CARD_LEAD)).toHaveCount(0)
 
@@ -308,9 +269,7 @@ test.describe(
       expect(answers()).toHaveLength(1)
     })
 
-    test('declining the card answers cancel, and no run follows', async ({
-      page
-    }) => {
+    test('declining the card answers cancel exactly once', async ({ page }) => {
       test.setTimeout(60_000)
       const { panel, send, answers } = await startTurn(
         page,
