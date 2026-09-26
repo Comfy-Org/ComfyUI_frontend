@@ -9,6 +9,27 @@ import {
 } from '@e2e/fixtures/agentPanelFixture'
 
 test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
+  test('cloud first login reaches template selection before the Agent coach', async ({
+    page,
+    agentFlagEnabled
+  }) => {
+    await bootAgentApp(page, agentFlagEnabled, { firstLogin: true })
+
+    await expect(
+      page.getByRole('dialog', { name: enMessages.gettingStarted.title })
+    ).toBeVisible()
+    await expect(
+      page.locator('[data-testid^="getting-started-card-"]').first()
+    ).toBeVisible()
+    await page.getByTestId('getting-started-blank').click()
+    await page
+      .getByRole('button', { name: enMessages.agent.entryButton, exact: true })
+      .click()
+    await expect(
+      page.getByRole('dialog', { name: enMessages.agent.coachTitle })
+    ).toBeVisible()
+  })
+
   test('walks all four accessible cards and persists completion', async ({
     page,
     agentFlagEnabled
