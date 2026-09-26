@@ -94,6 +94,34 @@ describe('Workshop visibility', () => {
     expect(useWorkshopWorkflowsEnabled().value).toBe(false)
   })
 
+  it.for([
+    { enabledFlags: ['workshop-apps-enabled'], apps: true, workflows: false },
+    {
+      enabledFlags: ['workshop-workflows-enabled'],
+      apps: false,
+      workflows: true
+    }
+  ])(
+    'resolves the apps flag on its own: $enabledFlags',
+    async ({ enabledFlags, apps, workflows }) => {
+      const {
+        initPostHog,
+        identifyWorkshopUser,
+        useWorkshopAppsEnabled,
+        useWorkshopWorkflowsEnabled
+      } = await import('./posthog')
+      initPostHog()
+      hoisted.mockIsFeatureEnabled.mockImplementation((key) =>
+        enabledFlags.includes(key)
+      )
+      emitFeatureFlags()
+      expect(useWorkshopAppsEnabled().value).toBe(apps)
+      expect(useWorkshopWorkflowsEnabled().value).toBe(workflows)
+      identifyWorkshopUser({ uid: 'another-apps-caller' })
+      expect(useWorkshopAppsEnabled().value).toBe(false)
+    }
+  )
+
   it('requires an explicit enable and keeps the last answer through load failures', async () => {
     const { initPostHog, useWorkshopEnabled } = await import('./posthog')
     const enabled = useWorkshopEnabled()

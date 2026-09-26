@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import { estimateWorkshopNodePrice } from './workshop-node-pricing'
+import {
+  estimateWorkshopNodePrice,
+  estimateWorkshopRunCredits
+} from './workshop-node-pricing'
 import { workshopNodePricingSchema } from './workshop-node-pricing.schema'
 import pricing from '../data/workshop-node-pricing.json'
 
@@ -90,6 +93,61 @@ describe('node-based Models price estimates', () => {
     expect(await estimateWorkshopNodePrice(model, undefined)).toBeUndefined()
   })
 
+  it('prices the size a run asks for instead of the node default', async () => {
+    expect(
+      await estimateWorkshopNodePrice(
+        { routerId: 'bfl/flux-2-pro' },
+        'generate-images',
+        { width: 2048, height: 2048 }
+      )
+    ).toBe('15.8 credits/Run')
+  })
+})
+
+describe('node-based Models run credits', () => {
+  const FLUX = { routerId: 'bfl/flux-2-pro' }
+
+  it.for([
+    ['a 1 MP Flux 2 Pro frame', FLUX, { width: 1024, height: 1024 }, 6.33],
+    ['a 4 MP Flux 2 Pro frame', FLUX, { width: 2048, height: 2048 }, 15.825],
+    [
+      'a Seedream 4.5 image at any size',
+      { routerId: 'byteplus/seedream-4-5-251128' },
+      { width: 3136, height: 1344 },
+      8.44
+    ],
+    ['a published flat rate', { routerId: 'bfl/flux-kontext-pro' }, {}, 8.44]
+  ] as const)('prices %s', async ([, model, settings, credits]) => {
+    const estimate = await estimateWorkshopRunCredits(
+      model,
+      'generate-images',
+      settings
+    )
+    expect(estimate?.min).toBeCloseTo(credits)
+    expect(estimate?.max).toBeCloseTo(credits)
+  })
+
+  it('widens to the declared range once reference images are sent', async () => {
+    const estimate = await estimateWorkshopRunCredits(FLUX, 'generate-images', {
+      width: 1024,
+      height: 1024,
+      images: 2
+    })
+    expect(estimate?.min).toBeCloseTo(9.495)
+    expect(estimate?.max).toBeCloseTo(31.65)
+  })
+
+  it('has no estimate for a model without a verified price', async () => {
+    expect(
+      await estimateWorkshopRunCredits(
+        { routerId: 'vertexai/gemini-3-pro-image' },
+        'generate-images'
+      )
+    ).toBeUndefined()
+  })
+})
+
+describe('node pricing snapshot', () => {
   it('rejects a snapshot missing a declared pricing dependency', () => {
     const row = pricing.find((entry) => entry.routerId === 'bfl/flux-2-max')
     if (!row) throw new Error('Missing Flux pricing fixture')
