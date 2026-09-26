@@ -329,11 +329,13 @@ describe('HostTelemetrySink', () => {
       track: (sink: HostTelemetrySink) =>
         sink.trackAgentMessageFeedback({
           message_id: 'message-1',
+          turn_id: 'message-1',
           vote: 'up',
           workflow_id: 'workflow-1'
         }),
       properties: {
         message_id: 'message-1',
+        turn_id: 'message-1',
         vote: 'up',
         workflow_id: 'workflow-1'
       }
