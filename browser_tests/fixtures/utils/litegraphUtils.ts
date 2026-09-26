@@ -384,6 +384,32 @@ export class NodeReference {
   async getInput(index: number) {
     return new NodeSlotReference('input', index, this)
   }
+  /**
+   * Resolve an input slot by its name rather than its position. Prefer this in
+   * a test whose subject is *which* slot was hit: a positional lookup that is
+   * also the thing under test cannot tell "landed on the right slot" from
+   * "landed on whatever is at that index".
+   */
+  async getInputByName(name: string) {
+    const index = await this.comfyPage.page.evaluate(
+      ([id, inputName]) => {
+        const node = window.app!.canvas.graph!.getNodeById(id)
+        if (!node) throw new Error(`Node ${id} not found`)
+
+        const inputIndex = node.inputs.findIndex(
+          (input) => input.name === inputName
+        )
+        if (inputIndex < 0) {
+          throw new Error(`Input "${inputName}" not found on node ${id}`)
+        }
+
+        return inputIndex
+      },
+      [this.id, name] as const
+    )
+
+    return new NodeSlotReference('input', index, this)
+  }
   async getWidget(index: number) {
     return new NodeWidgetReference(index, this)
   }

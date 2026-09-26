@@ -14,13 +14,17 @@ test.describe(
     }) => {
       const source = await comfyPage.nodeOps.getNodeRefById(1)
       const target = await comfyPage.nodeOps.getNodeRefById(2)
-      const destinationInput = await target.getInput(0)
+      // Resolved by name, not by index. `destination` and `source` are both
+      // IMAGE inputs and landing on the wrong one is the defect this test
+      // exists to catch, so a positional lookup would be using the thing under
+      // test to decide what the test is looking at.
+      const destinationInput = await target.getInputByName('destination')
       expect(
         await destinationInput.getLink(),
         'destination should start unconnected'
       ).toBeNull()
 
-      await source.connectOutput(0, target, 0)
+      await source.connectOutput(0, target, destinationInput.index)
 
       await expect
         .poll(() => destinationInput.getLink())
