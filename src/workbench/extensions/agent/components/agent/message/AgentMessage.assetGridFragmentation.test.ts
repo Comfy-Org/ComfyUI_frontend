@@ -50,10 +50,10 @@ describe('AgentMessage asset grid fragmentation', () => {
     const groups = screen.getAllByTestId('reply-asset-group')
     expect(groups).toHaveLength(2)
     expect(
-      within(groups[0]!).getByRole('img', { name: 'i1.png' })
+      within(groups[0]).getByRole('img', { name: 'i1.png' })
     ).toBeInTheDocument()
     expect(
-      within(groups[1]!).getByRole('img', { name: 'i2.png' })
+      within(groups[1]).getByRole('img', { name: 'i2.png' })
     ).toBeInTheDocument()
 
     // Each caption sits directly beside its own asset group, in the
@@ -61,15 +61,15 @@ describe('AgentMessage asset grid fragmentation', () => {
     const versionA = screen.getByText('Version A:')
     const versionB = screen.getByText('Version B:')
     expect(
-      versionA.compareDocumentPosition(groups[0]!) &
+      versionA.compareDocumentPosition(groups[0]) &
         Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy()
     expect(
-      groups[0]!.compareDocumentPosition(versionB) &
+      groups[0].compareDocumentPosition(versionB) &
         Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy()
     expect(
-      versionB.compareDocumentPosition(groups[1]!) &
+      versionB.compareDocumentPosition(groups[1]) &
         Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy()
   })
