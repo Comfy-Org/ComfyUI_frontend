@@ -1,0 +1,7 @@
+website-e2e	pass	1m2s	https://example/run/1
+lint-and-format	pass	40s	https://example/run/2
+test	pass	3m	https://example/run/3
+cla-assistant	pass	5s	https://example/run/4
+e2e-status	pass	2s	https://example/run/5
+deploy-preview	pass	2m	https://example/run/6
+CodeRabbit	pass	1m	https://example/run/7

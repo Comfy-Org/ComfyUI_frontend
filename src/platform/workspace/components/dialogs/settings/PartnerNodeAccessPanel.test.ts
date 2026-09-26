@@ -5,17 +5,18 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { computed, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
 import type { PartnerNodePolicy } from '@/platform/workspace/api/partnerNodePolicyApi'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
 import PartnerNodeAccessPanel from './PartnerNodeAccessPanel.vue'
 
 const { mockShowConfirmDialog, mockWorkspaceRole } = vi.hoisted(() => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/consistent-type-imports
+  // oxlint-disable-next-line typescript/no-require-imports, typescript/consistent-type-imports
   const { ref } = require('vue') as typeof import('vue')
   return {
     mockShowConfirmDialog: vi.fn(),
@@ -32,12 +33,7 @@ vi.mock(import('@/platform/workspace/api/partnerNodePolicyApi'), () => ({
   getPartnerProviders: vi.fn(() => new Promise<never>(() => {}))
 }))
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useWorkspaceUI'),
-  () => ({
-    useWorkspaceUI: () => ({ workspaceRole: mockWorkspaceRole })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
 const i18n = createI18n({
   legacy: false,
@@ -84,6 +80,8 @@ async function openBulkMenu(user: ReturnType<typeof userEvent.setup>) {
 }
 
 beforeEach(() => {
+  const workspaceUI = vi.mocked(useWorkspaceUI())
+  workspaceUI.workspaceRole = computed(() => mockWorkspaceRole.value)
   vi.mocked(useDialogStore().closeDialog).mockImplementation(() => {})
 })
 
@@ -555,6 +553,28 @@ describe('PartnerNodeAccessPanel', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       "Partner model access couldn't be updated. Try again."
     )
+  })
+
+  it.fails('KNOWN BUG: leaves a provider on the server state when its save fails', async () => {
+    const user = userEvent.setup()
+    restrictPolicy()
+    vi.mocked(
+      usePartnerNodeGovernanceStore().isProviderEnabled
+    ).mockReturnValue(true)
+    vi.mocked(
+      usePartnerNodeGovernanceStore().setProviderEnabled
+    ).mockRejectedValueOnce(new Error('Save failed'))
+    renderComponent()
+    const providerSwitch = screen.getByRole('switch', {
+      name: 'Set access for OpenAI (inc. Sora)'
+    })
+
+    expect(providerSwitch.getAttribute('aria-checked')).toBe('true')
+
+    await user.click(providerSwitch)
+    await screen.findByRole('alert')
+
+    expect(providerSwitch.getAttribute('aria-checked')).toBe('true')
   })
 
   it('locks provider controls while saving', () => {

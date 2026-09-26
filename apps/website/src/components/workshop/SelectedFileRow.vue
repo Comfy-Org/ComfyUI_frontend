@@ -2,6 +2,7 @@
 import { X } from '@lucide/vue'
 import { computed } from 'vue'
 
+import { cn } from '@comfyorg/tailwind-utils'
 import { formatSize } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 import type { FileValue } from '../../config/workshop-playground'
@@ -12,10 +13,13 @@ import VideoSourcePreview from './VideoSourcePreview.vue'
 
 const {
   file,
+  attention = false,
   disabled = false,
   locale = 'en'
 } = defineProps<{
   file: FileValue
+  /** This upload is the one a warning is about. Not an error: nothing blocks. */
+  attention?: boolean
   disabled?: boolean
   locale?: Locale
 }>()
@@ -30,7 +34,13 @@ const fileType = computed(
 
 <template>
   <li
-    class="bg-transparency-white-t4 flex min-w-0 items-center gap-3 rounded-xl p-2"
+    :class="
+      cn(
+        'flex min-w-0 items-center gap-3 rounded-xl bg-transparency-white-t4 p-2',
+        attention && 'ring-1 ring-primary-comfy-orange'
+      )
+    "
+    :data-attention="attention ? '' : undefined"
   >
     <ImageSourcePreview
       v-if="file.type.startsWith('image/')"
@@ -61,7 +71,7 @@ const fileType = computed(
           () => file.name
         )
       "
-      class="focus-visible:outline-primary-comfy-yellow min-w-0 flex-1 cursor-pointer truncate text-left text-sm text-primary-warm-white underline-offset-4 hover:underline"
+      class="min-w-0 flex-1 cursor-pointer truncate text-left text-sm text-primary-warm-white underline-offset-4 hover:underline focus-visible:outline-primary-comfy-yellow"
       @click="$emit('replace')"
     >
       {{ file.name }}
@@ -78,7 +88,7 @@ const fileType = computed(
           () => file.name
         )
       "
-      class="focus-visible:outline-primary-comfy-yellow flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg text-primary-warm-gray hover:bg-transparency-white-t8 hover:text-primary-warm-white"
+      class="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg text-primary-warm-gray hover:bg-transparency-white-t8 hover:text-primary-warm-white focus-visible:outline-primary-comfy-yellow"
       @click="$emit('remove')"
     >
       <X class="size-4" aria-hidden="true" />

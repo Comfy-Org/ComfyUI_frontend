@@ -9,7 +9,7 @@ const DEFAULT_ICON = 'pi-bookmark-fill'
 const DEFAULT_COLOR = '#a1a1aa'
 
 vi.mock<unknown>(
-  import('primevue/selectbutton'), // eslint-disable-line primevue-removal/no-imports
+  import('primevue/selectbutton'), // oxlint-disable-line comfy/no-primevue-imports
 
   () => ({
     default: {
@@ -32,12 +32,7 @@ vi.mock<unknown>(import('@/components/ui/dialog/DialogOverlay.vue'), () => ({
 vi.mock<unknown>(import('@/components/ui/dialog/DialogContent.vue'), () => ({
   default: { name: 'DialogContent', template: '<div><slot /></div>' }
 }))
-vi.mock<unknown>(import('@/components/ui/dialog/DialogHeader.vue'), () => ({
-  default: { name: 'DialogHeader', template: '<div><slot /></div>' }
-}))
-vi.mock<unknown>(import('@/components/ui/dialog/DialogFooter.vue'), () => ({
-  default: { name: 'DialogFooter', template: '<div><slot /></div>' }
-}))
+
 vi.mock<unknown>(import('@/components/ui/dialog/DialogTitle.vue'), () => ({
   default: { name: 'DialogTitle', template: '<div><slot /></div>' }
 }))
@@ -55,14 +50,6 @@ vi.mock<unknown>(
     }
   })
 )
-
-vi.mock<unknown>(import('@/components/ui/button/Button.vue'), () => ({
-  default: {
-    name: 'Button',
-    template: `<button @click="$emit('click')"><slot /></button>`,
-    emits: ['click']
-  }
-}))
 
 const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
 

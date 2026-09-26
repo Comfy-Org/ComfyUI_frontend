@@ -27,7 +27,7 @@ function nodeCountLabel(nodeCount: number): string {
 
 <template>
   <article
-    class="bg-transparency-white-t5 flex h-full flex-col overflow-hidden rounded-3xl border border-primary-warm-gray/20"
+    class="flex h-full flex-col overflow-hidden rounded-3xl border border-primary-warm-gray/20 bg-transparency-white-t4"
     data-testid="cloud-node-pack-card"
   >
     <PackBanner
@@ -61,7 +61,7 @@ function nodeCountLabel(nodeCount: number): string {
           :href="pack.repoUrl"
           target="_blank"
           rel="noopener noreferrer"
-          class="text-primary-comfy-yellow hover:text-primary-comfy-yellow/85 font-semibold underline"
+          class="font-semibold text-primary-comfy-yellow underline hover:text-primary-comfy-yellow/85"
         >
           {{ t('cloudNodes.card.viewRepo', locale) }}
         </a>

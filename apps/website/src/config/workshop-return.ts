@@ -1,4 +1,4 @@
-import { safeInternalPath } from '@comfyorg/account/redirect'
+import { safeInternalPath } from '@comfyorg/account-core/redirect'
 
 import type {
   WorkshopField,

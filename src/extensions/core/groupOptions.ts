@@ -2,12 +2,8 @@ import type {
   IContextMenuValue,
   Positionable
 } from '@/lib/litegraph/src/interfaces'
-import {
-  LGraphCanvas,
-  LGraphEventMode,
-  LGraphGroup,
-  type LGraphNode
-} from '@/lib/litegraph/src/litegraph'
+import { LGraphEventMode, LGraphGroup } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ComfyExtension } from '@/types/comfy'
 
@@ -67,7 +63,7 @@ const ext: ComfyExtension = {
 
     items.push({
       content: 'Add Selected Nodes To Group',
-      disabled: !canvas.selectedItems?.size,
+      disabled: !canvas.selectedItems.size,
       callback: () => {
         addNodesToGroup(group, canvas.selectedItems)
         // @ts-expect-error fixme ts strict error

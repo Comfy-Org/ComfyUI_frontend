@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-import Badge from '@/components/common/Badge.vue'
 import WorkflowTemplateModelStatus from '@/components/custom/widget/WorkflowTemplateModelStatus.vue'
+import Badge from '@/components/ui/badge/Badge.vue'
 import type { TemplateDetailGroup } from '@/platform/workflow/templates/types/templateDetail'
 
 const { group, titleId } = defineProps<{
@@ -19,12 +19,9 @@ const emit = defineEmits<{ 'download-model': [rowId: string] }>()
   >
     <div class="flex h-10 items-center gap-2 px-2">
       <h3 :id="titleId" class="m-0 text-sm font-medium">{{ group.label }}</h3>
-      <Badge
-        :label="group.rows.length"
-        severity="secondary"
-        variant="circle"
-        class="size-4"
-      />
+      <Badge severity="secondary" variant="badge">
+        {{ group.rows.length }}
+      </Badge>
       <span v-if="group.total" class="ml-auto text-sm text-muted-foreground">
         {{ group.total }}
       </span>

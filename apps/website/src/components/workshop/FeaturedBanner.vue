@@ -22,9 +22,14 @@ import Button from '@/components/ui/button/Button.vue'
 const AUTOPLAY_MS = 7000
 const CAPABILITY_LIMIT = 3
 
-const { models, locale = 'en' } = defineProps<{
+const {
+  models,
+  locale = 'en',
+  autoplay = true
+} = defineProps<{
   models: readonly WorkshopModel[]
   locale?: Locale
+  autoplay?: boolean
 }>()
 
 const slides = computed(() =>
@@ -77,6 +82,7 @@ useEventListener(banner, 'focusout', () => (readingByKeyboard.value = false))
 
 const rotating = computed(
   () =>
+    autoplay &&
     slides.value.length > 1 &&
     onScreen.value &&
     visibility.value === 'visible' &&
@@ -100,7 +106,9 @@ watch(rotating, (on) => (on ? resume() : pause()), { immediate: true })
 watch(activeIndex, () => (elapsed.value = 0))
 
 const fill = computed(() =>
-  prefersReducedMotion() ? 1 : Math.min(elapsed.value / AUTOPLAY_MS, 1)
+  !autoplay || prefersReducedMotion()
+    ? 1
+    : Math.min(elapsed.value / AUTOPLAY_MS, 1)
 )
 </script>
 
@@ -109,11 +117,11 @@ const fill = computed(() =>
     v-if="active"
     ref="banner"
     :aria-label="t('workshop.sections.featured', locale)"
-    class="rounded-4.5xl relative isolate overflow-hidden border border-transparency-white-t8"
+    class="relative isolate overflow-hidden rounded-4.5xl border border-transparency-white-t8"
     data-testid="section-featured"
   >
     <div
-      class="group short:h-57 sm:short:h-60 relative block h-84"
+      class="group relative block h-84 short:h-57 sm:short:h-60"
       data-testid="featured-slide"
     >
       <a
@@ -145,12 +153,12 @@ const fill = computed(() =>
         decoding="async"
       />
       <div
-        class="from-page via-page/85 to-page/20 sm:via-page/80 pointer-events-none absolute inset-0 bg-linear-to-t sm:bg-linear-to-r sm:to-transparent"
+        class="pointer-events-none absolute inset-0 bg-linear-to-t from-page/90 via-page/80 to-page/20 sm:bg-linear-to-r sm:via-page/75 sm:to-transparent"
         aria-hidden="true"
       />
 
       <div
-        class="short:gap-3 short:pt-5 short:pb-14 pointer-events-none relative flex h-full flex-col justify-end gap-4 p-8 pt-6 pb-16 max-sm:gap-3 max-sm:p-6 max-sm:pb-14 sm:max-w-2xl sm:justify-center lg:p-12 lg:pt-8 lg:pb-18"
+        class="pointer-events-none relative flex h-full flex-col justify-end gap-4 p-8 pt-6 pb-16 max-sm:gap-3 max-sm:p-6 max-sm:pb-14 sm:max-w-2xl sm:justify-center lg:p-12 lg:pt-8 lg:pb-18 short:gap-3 short:pt-5 short:pb-14"
       >
         <div class="flex flex-wrap items-center gap-2">
           <Badge
@@ -172,14 +180,14 @@ const fill = computed(() =>
         </div>
 
         <h2
-          class="mt-2 text-2xl font-bold text-balance text-primary-warm-white lg:text-3xl"
+          class="text-2xl font-bold text-balance text-primary-warm-white lg:text-3xl"
         >
           {{ active.name }}
         </h2>
 
         <p
           v-if="active.model.summary"
-          class="text-content-secondary short:hidden line-clamp-2 max-w-prose shrink-0 max-sm:line-clamp-1"
+          class="line-clamp-2 max-w-prose shrink-0 text-content-secondary max-sm:line-clamp-1 short:hidden"
         >
           {{ active.model.summary }}
         </p>
@@ -206,7 +214,7 @@ const fill = computed(() =>
 
     <div
       v-if="slides.length > 1"
-      class="absolute bottom-5 left-8 flex gap-2 lg:left-12"
+      class="pointer-events-none absolute inset-x-8 bottom-5 flex gap-2 lg:inset-x-12"
       data-testid="featured-pagination"
     >
       <button
@@ -215,7 +223,7 @@ const fill = computed(() =>
         type="button"
         :aria-label="slide.model.name"
         :aria-current="index === activeIndex ? 'true' : undefined"
-        class="focus-visible:ring-primary-comfy-yellow/50 group w-12 cursor-pointer rounded-full py-3 outline-none focus-visible:ring-3"
+        class="group pointer-events-auto max-w-12 min-w-0 flex-1 cursor-pointer rounded-full py-3 outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
         @click="goTo(index)"
       >
         <span

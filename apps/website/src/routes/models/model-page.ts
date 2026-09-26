@@ -1,13 +1,14 @@
-import { catalogSearch } from '../../config/models-catalogue'
+import { catalogSearch, useCaseFor } from '../../config/models-catalogue'
+import { getWorkshopModel } from '../../config/workshop-browse-content'
 import {
-  getWorkshopModel,
-  workshopModels
-} from '../../config/workshop-browse-content'
-import { getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
+  getWorkshopPageDetail,
+  workshopPages
+} from '../../config/workshop-page-content'
 import { relatedModels } from '../../config/workshop-related'
 import { estimateWorkshopNodePrice } from '../../config/workshop-node-pricing'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import { useCaseLabelKey } from '../../lib/workshop/use-case-label'
 
 const TAGS_SHOWN = 3
 
@@ -21,11 +22,17 @@ export async function prepareModelPage(
   slug: string | undefined,
   locale: Locale = 'en'
 ) {
-  const model = slug ? getRouterWorkshopModelDetail(slug) : undefined
+  const model = slug ? getWorkshopPageDetail(slug) : undefined
   if (!model) throw new Error(`Unknown Models route: ${slug ?? '(missing)'}`)
   if (slug !== model.slug)
     return { kind: 'redirect', href: model.href } as const
-  const related = relatedModels(model, workshopModels)
+  const related = relatedModels(
+    model,
+    workshopPages.filter(
+      (other) => (other.type ?? 'MODEL') === (model.type ?? 'MODEL')
+    )
+  )
+  const useCase = useCaseFor(model)
   const relatedProvider =
     related.length > 0 &&
     related.every((other) => other.provider === model.provider)
@@ -33,7 +40,7 @@ export async function prepareModelPage(
       : undefined
   const tags = model.capabilities.map((capability) => ({
     label: capability,
-    search: catalogSearch({ capabilities: [capability] })
+    search: catalogSearch({ query: capability })
   }))
   return {
     kind: 'page' as const,
@@ -53,13 +60,7 @@ export async function prepareModelPage(
       model,
       model.useCases?.length === 1 ? model.useCases[0] : undefined
     ),
-    modalityLabel: {
-      image: t('workshop.filter.image', locale),
-      video: t('workshop.filter.video', locale),
-      audio: t('workshop.filter.audio', locale),
-      '3d': t('workshop.filter.3d', locale),
-      text: t('workshop.filter.text', locale)
-    },
+    useCaseLabel: useCase ? t(useCaseLabelKey[useCase], locale) : undefined,
     tags,
     ...splitShownTags(tags)
   }
