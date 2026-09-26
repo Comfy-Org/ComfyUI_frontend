@@ -440,6 +440,43 @@ describe('useWorkflowService', () => {
   })
 
   describe('openWorkflow ordering', () => {
+    it('keeps the current workflow when a remote load is superseded', async () => {
+      const workflows = useWorkflowStore()
+      const current = createModeTestWorkflow({ path: 'workflows/current.json' })
+      const loading = createModeTestWorkflow({
+        path: 'workflows/closed.json',
+        loaded: false
+      })
+      workflows.activeWorkflow = current
+      let finishLoad = () => {}
+      const loaded = new Promise<void>((resolve) => {
+        finishLoad = resolve
+      })
+      const load = vi.spyOn(loading, 'load').mockImplementation(async () => {
+        await loaded
+        loading.originalContent = '{}'
+        loading.content = '{}'
+        loading.changeTracker = createMockChangeTracker()
+        return loading
+      })
+      vi.mocked(app.loadGraphData).mockImplementation(async () => {
+        workflows.activeWorkflow = loading
+        return true
+      })
+      let currentRequest = true
+      const opening = useWorkflowService().openWorkflow(loading, {
+        isCurrent: () => currentRequest
+      })
+      await vi.waitFor(() => expect(load).toHaveBeenCalled())
+
+      currentRequest = false
+      finishLoad()
+
+      expect(await opening).toBe(false)
+      expect(workflows.activeWorkflow.path).toBe(current.path)
+      expect(loading.isLoaded).toBe(false)
+    })
+
     it('re-selecting the active workflow with no loads pending is a no-op', async () => {
       const workflowStore = useWorkflowStore()
       const active = createWorkflow(null, {

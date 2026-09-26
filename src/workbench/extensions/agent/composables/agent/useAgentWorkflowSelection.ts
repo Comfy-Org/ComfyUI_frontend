@@ -49,7 +49,9 @@ export function useAgentWorkflowSelection({
     cloudIdFor,
     cloudWorkflowName,
     nextSaveFilename,
-    boundOrOpenWorkflowFor
+    boundOrOpenWorkflowFor,
+    cachedOpenWorkflowFor,
+    storedWorkflowFor
   } = resolver
   const editableWorkflowId = computed(() =>
     selectedTarget.value ? cloudIdFor(selectedTarget.value) : undefined
@@ -212,34 +214,53 @@ export function useAgentWorkflowSelection({
   async function onWorkflowRestored(
     workflowId: string | undefined,
     isSessionCurrent: () => boolean
-  ): Promise<void> {
-    if (!canRestoreWorkflow.value || !isSessionCurrent()) return
+  ): Promise<boolean> {
+    if (!canRestoreWorkflow.value || !isSessionCurrent()) return false
     const generation = ++targetSelectionGeneration
     const isCurrent = () =>
       generation === targetSelectionGeneration &&
       isSessionCurrent() &&
       canRestoreWorkflow.value
-    if (workflowId === undefined) return
-    await refreshCloudWorkflowIds()
-    if (!isCurrent()) return
-    const target = boundOrOpenWorkflowFor(workflowId)
+    if (workflowId === undefined) return true
+    let target = cachedOpenWorkflowFor(workflowId)
     if (target === null) {
-      panelStore.setWorkflowTarget(null)
-      warnWorkflowUnavailable()
-      return
+      await refreshCloudWorkflowIds()
+      if (!isCurrent()) return false
+      target =
+        boundOrOpenWorkflowFor(workflowId) ?? storedWorkflowFor(workflowId)
     }
+    return openRestoredWorkflow(target, workflowId, isCurrent)
+  }
+
+  async function openRestoredWorkflow(
+    target: ComfyWorkflow | null,
+    workflowId: string,
+    isCurrent: () => boolean
+  ): Promise<boolean> {
     try {
-      const opened = await workflowService.openWorkflow(target)
-      if (!isCurrent()) return
+      if (target === null) {
+        await workflowStore.syncWorkflows()
+        if (!isCurrent()) return false
+        target = storedWorkflowFor(workflowId)
+      }
+      if (target === null) {
+        panelStore.setWorkflowTarget(null)
+        warnWorkflowUnavailable()
+        return false
+      }
+      const opened = await workflowService.openWorkflow(target, { isCurrent })
+      if (!isCurrent()) return false
       if (!opened) {
         panelStore.setWorkflowTarget(null)
         warnWorkflowUnavailable()
-        return
+        return false
       }
       commitWorkflowTarget(target, workflowId, 'restored')
+      return true
     } catch {
-      if (!isCurrent()) return
+      if (!isCurrent()) return false
       warnWorkflowUnavailable()
+      return false
     }
   }
 

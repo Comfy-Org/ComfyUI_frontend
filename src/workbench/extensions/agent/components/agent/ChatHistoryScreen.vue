@@ -15,12 +15,22 @@ import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 
+import ChatHistorySelectButton from './ChatHistorySelectButton.vue'
+
 import type {
   ChatSession,
   HistoryGroups
 } from '../../stores/agent/agentChatHistoryStore'
 
-const { groups } = defineProps<{ groups: HistoryGroups }>()
+const {
+  groups,
+  loadingId = null,
+  failedId = null
+} = defineProps<{
+  groups: HistoryGroups
+  loadingId?: string | null
+  failedId?: string | null
+}>()
 const emit = defineEmits<{
   back: []
   select: [id: string]
@@ -179,18 +189,12 @@ function onRenameKeydown(session: ChatSession, event: KeyboardEvent): void {
             />
           </div>
           <template v-else>
-            <Button
-              type="button"
-              variant="muted-textonly"
-              size="unset"
-              class="min-w-0 flex-1 justify-start text-left text-xs font-normal"
-              @click="pick(session)"
-            >
-              <span class="icon-[lucide--circle-check] size-4 shrink-0" />
-              <span class="truncate">{{
-                session.title.trim() || t('agent.untitledChat')
-              }}</span>
-            </Button>
+            <ChatHistorySelectButton
+              :title="session.title"
+              :loading="loadingId === session.id"
+              :failed="failedId === session.id"
+              @select="pick(session)"
+            />
             <AccessibleTooltip
               :label="t('agent.copyMarkdown')"
               :skip-delay-duration="0"
@@ -204,6 +208,7 @@ function onRenameKeydown(session: ChatSession, event: KeyboardEvent): void {
                   size="icon-sm"
                   class="shrink-0"
                   :aria-label="t('agent.copyMarkdown')"
+                  :disabled="loadingId === session.id"
                   @click="emit('copyMarkdown', session.id)"
                 >
                   <span class="icon-[lucide--copy] size-3.5" />
@@ -217,6 +222,7 @@ function onRenameKeydown(session: ChatSession, event: KeyboardEvent): void {
                   size="icon-sm"
                   class="size-6 shrink-0"
                   :aria-label="t('agent.chatOptions')"
+                  :disabled="loadingId === session.id"
                 >
                   <span class="icon-[lucide--chevron-down] size-3" />
                 </Button>
