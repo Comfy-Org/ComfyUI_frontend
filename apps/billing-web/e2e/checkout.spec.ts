@@ -205,6 +205,44 @@ test('a 3DS challenge is driven by the fake and settles as success', async ({
   expect(polls).toBeGreaterThanOrEqual(2)
 })
 
+test('a completed 3DS challenge does not ask to verify again while the server settles', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  withEmbeddedPaymentMethod(cloud)
+  let polls = 0
+  let settled = false
+  cloud.reply('GET', '/billing/ops/op_subscribe', () => {
+    polls += 1
+    return {
+      body: settled
+        ? succeededOperation('op_subscribe')
+        : challengeRequiredOperation('op_subscribe', 'seti_e2e_secret')
+    }
+  })
+  await signIn(CHECKOUT)
+
+  await page.getByRole('button', { name: 'Pay and subscribe' }).click()
+
+  await expect.poll(() => fakeStripeCalls(page, 'nextActions')).toBe(1)
+  const pollsAtChallengeEnd = polls
+  await expect.poll(() => polls).toBeGreaterThan(pollsAtChallengeEnd)
+
+  await expect(
+    page.getByRole('heading', { name: 'Review payment' })
+  ).toBeVisible()
+  await expect(
+    page.getByRole('button', { name: 'Continue verification' })
+  ).toHaveCount(0)
+
+  settled = true
+  await expect(
+    page.getByRole('heading', { name: "You're all set" })
+  ).toBeVisible()
+  expect(await fakeStripeCalls(page, 'nextActions')).toBe(1)
+})
+
 test('a challenge whose authentication state lags the client secret is still driven in-session', async ({
   page,
   cloud,

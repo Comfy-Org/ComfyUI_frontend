@@ -89,10 +89,10 @@ async function failureDetails(response: Response) {
 
 function failureFor(
   response: Response,
+  bucket: string | null,
   body: string,
   bodyComplete: boolean
 ): RunFailure {
-  const bucket = response.headers.get('X-Comfy-Error-Type')
   if (bucket === 'insufficient_credits') return 'noCredits'
   if (bucket === 'content_policy_violation') return 'policy'
   if (bucket === 'not_enabled' || bucket === 'forbidden') return 'unavailable'
@@ -163,6 +163,7 @@ function isSeedreamLayerRefusal(body: string): boolean {
 }
 
 export interface RouterRunOptions {
+  readonly comfy_save_asset?: boolean
   readonly contract: WorkshopContract
   readonly body: Readonly<Record<string, unknown>>
   readonly token: string
@@ -317,7 +318,12 @@ export async function settleRouterResponse(
       throw new WorkshopRouterError(
         Object.keys(fieldErrors).length
           ? 'validation'
-          : failureFor(response, details.response.body, details.bodyComplete),
+          : failureFor(
+              response,
+              details.response.errorType,
+              details.response.body,
+              details.bodyComplete
+            ),
         requestId,
         fieldErrors,
         details.response,

@@ -201,6 +201,12 @@ import type { OperationHandle } from '@comfyorg/account-core/boundedOperation'
 import { createBoundedOperation } from '@comfyorg/account-core/boundedOperation'
 import type { AccountUser, SessionSnapshot } from '@comfyorg/account-core/session'
 import { createSessionClient } from '@comfyorg/account-core/session'
+import type { WebSessionResult } from '@comfyorg/account-core/webSession'
+import { readWebSession } from '@comfyorg/account-core/webSession'
+import type { RequestAuthorization } from '@comfyorg/account-core/requestAuth'
+import { createRequestAuthorizer } from '@comfyorg/account-core/requestAuth'
+import type { WebSessionIdentityState } from '@comfyorg/account-core/webSessionIdentity'
+import { createWebSessionIdentity } from '@comfyorg/account-core/webSessionIdentity'
 import type { BillingErrorCode } from '@comfyorg/account-core/billing'
 import { createSessionBillingTransport } from '@comfyorg/account-core/billing'
 import type {
@@ -256,6 +262,9 @@ import { useGenerationGuard } from '@comfyorg/account-ui/auth/useGenerationGuard
 export const values = {
   createBoundedOperation,
   createSessionClient,
+  readWebSession,
+  createRequestAuthorizer,
+  createWebSessionIdentity,
   createSessionBillingTransport,
   createFirebaseIdentity,
   resolveFirebaseIdentity,
@@ -290,6 +299,9 @@ export const values = {
 export interface Types {
   boundedOperation: OperationHandle
   session: SessionSnapshot
+  webSession: WebSessionResult
+  requestAuth: RequestAuthorization
+  webSessionIdentity: WebSessionIdentityState
   billing: BillingErrorCode
   firebase: FirebaseIdentityAppConfig
   firebaseResolve: ResolveFirebaseIdentityOptions
