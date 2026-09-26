@@ -12,22 +12,29 @@ test.describe('Agent edit undo/redo', { tag: ['@cloud', '@vue-nodes'] }, () => {
     agentConversation
   }) => {
     test.setTimeout(90_000)
-    await agentConversation.runTurns()
 
-    await expect
-      .poll(async () => (await agentConversation.readNodeLens()).live.length)
-      .toBe(agentConversation.hostNodeIds().length)
+    await test.step('Replay the agent edits', async () => {
+      await agentConversation.runTurns()
+      await expect
+        .poll(async () => (await agentConversation.readNodeLens()).live.length)
+        .toBe(agentConversation.hostNodeIds().length)
+    })
+
     const afterAgentEdit = (await agentConversation.readNodeLens()).live.length
     expect(afterAgentEdit).toBeGreaterThan(0)
 
-    await agentConversation.keyboard.undo()
-    await expect
-      .poll(async () => (await agentConversation.readNodeLens()).live.length)
-      .not.toBe(afterAgentEdit)
+    await test.step('Undo the final agent edit', async () => {
+      await agentConversation.keyboard.undo()
+      await expect
+        .poll(async () => (await agentConversation.readNodeLens()).live.length)
+        .not.toBe(afterAgentEdit)
+    })
 
-    await agentConversation.keyboard.redo()
-    await expect
-      .poll(async () => (await agentConversation.readNodeLens()).live.length)
-      .toBe(afterAgentEdit)
+    await test.step('Redo the final agent edit', async () => {
+      await agentConversation.keyboard.redo()
+      await expect
+        .poll(async () => (await agentConversation.readNodeLens()).live.length)
+        .toBe(afterAgentEdit)
+    })
   })
 })
