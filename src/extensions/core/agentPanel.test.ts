@@ -748,6 +748,42 @@ describe('AgentPanel extension flag gate', () => {
     expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBe('true')
   })
 
+  it('keeps the held offer when the retry cannot be made, and offers on the next clear screen', async () => {
+    mocks.flagEnabled = true
+    openDialog()
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+
+    await loadEntryAndSetup()
+    mocks.flagListener?.()
+    await flush()
+    expect(await notOffered()).toHaveBeenCalledExactlyOnceWith({
+      reason: 'dialog_open'
+    })
+
+    // The screen clears, but the retry's consent read fails - a cloud session
+    // whose auth is still settling is the ordinary way that happens. The
+    // release used to consume the hold before finding that out, which lost the
+    // offer for the rest of the page load and emitted nothing to say so: the
+    // reason is deduplicated per page load, so there is no second
+    // `agent_consent_not_offered` either.
+    vi.mocked(consentStore.load).mockRejectedValueOnce(new Error('offline'))
+    closeDialog()
+    await flush()
+    await flush()
+    expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+    expect(await notOffered()).toHaveBeenCalledOnce()
+
+    // A later dialog comes and goes and the read works this time. The offer is
+    // still owed, so it lands.
+    openDialog()
+    await flush()
+    closeDialog()
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    )
+    expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBe('true')
+  })
+
   it('keeps waiting when a tour ends while a dialog is still open', async () => {
     mocks.flagEnabled = true
     activeTour.value = 'appMode'

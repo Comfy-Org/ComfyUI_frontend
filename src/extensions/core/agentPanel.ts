@@ -243,6 +243,15 @@ export function registerAgentPanelExtension(): void {
         withholdOffer(reason, userId, workspaceId)
         offerHeld.value = true
       }
+      /**
+       * Drops the hold. This is a claim that the offer no longer needs to be
+       * retried on this page load - it has just been made, or it has become
+       * moot - and it is deliberately *not* what the release watcher does. See
+       * the watcher for why those two have to be different things.
+       */
+      const dropHold = (): void => {
+        offerHeld.value = false
+      }
 
       const consentScope = (): string | null => {
         const userId = resolvedUserInfo.value?.id
@@ -266,10 +275,19 @@ export function registerAgentPanelExtension(): void {
 
       let autoShowInFlight = false
       const offerConsentUnprompted = (): void => {
+        // An exit that leaves the hold armed does so on purpose: the condition
+        // is transient, so the offer is still owed and the next clear screen
+        // has to retry it. `dropHold` marks the exits that are not transient.
         if (autoShowInFlight) return
-        if (!offerEligible()) return
+        if (!offerEligible()) {
+          if (consentStore.accepted) dropHold()
+          return
+        }
         const scope = consentScope()
-        if (scope && consentCardSeenIn.has(scope)) return
+        if (scope && consentCardSeenIn.has(scope)) {
+          dropHold()
+          return
+        }
         // Must precede prepareAutoShow, which burns the one-shot key.
         const held = screenHolder()
         if (held) {
@@ -283,10 +301,17 @@ export function registerAgentPanelExtension(): void {
         const key = `${CONSENT_AUTO_SHOWN_PREFIX}.${userId}.${workspaceId}`
         const autoShow = prepareAutoShow(key)
         if (autoShow === 'storage_unavailable') withholdOffer(autoShow)
-        if (autoShow !== 'ready') return
+        if (autoShow !== 'ready') {
+          dropHold()
+          return
+        }
 
         const offeredIdentity = consentStore.identity
         autoShowInFlight = true
+        // The offer is being made now, so it is no longer owed. `canShow` can
+        // still re-arm the hold from under this if a surface takes the screen
+        // before the card mounts.
+        dropHold()
         agentPanelStore.suppressRestoredOpen()
         void withConsent(
           'first_load',
@@ -307,6 +332,13 @@ export function registerAgentPanelExtension(): void {
         ).finally(() => {
           autoShowInFlight = false
           if (consentStore.identity !== offeredIdentity) loadConsentIfEligible()
+          // A hold armed while this attempt was in flight was refused by the
+          // `autoShowInFlight` guard above, and the release watcher cannot
+          // help: the screen may have gone clear again before the guard
+          // dropped, and `whenever` only fires on a transition. Settling is
+          // the wake-up for that case.
+          else if (offerHeld.value && screenIsClear.value)
+            loadConsentIfEligible()
         })
       }
 
@@ -330,7 +362,8 @@ export function registerAgentPanelExtension(): void {
         void consentStore
           .load()
           .then((isAccepted) => {
-            if (!isAccepted) offerWhenStartupDecided()
+            if (isAccepted) dropHold()
+            else offerWhenStartupDecided()
           })
           .catch((error: unknown) => {
             reportError(error, {
@@ -343,10 +376,21 @@ export function registerAgentPanelExtension(): void {
         loadConsentIfEligible,
         { immediate: true }
       )
+      /**
+       * Releasing a hold must not consume it. What the release triggers is
+       * asynchronous and exits early in several transient ways - a consent read
+       * that rejects, an offer already in flight, a workspace mid-switch, an
+       * account not resolved yet - and none of those exits re-arm. Dropping the
+       * hold here first turned any one of them into an offer lost for the rest
+       * of the page load, and lost *silently*: no card, and no second
+       * `agent_consent_not_offered`, because the reason is deduplicated per
+       * page load. The hold is dropped only by `dropHold`, at the points where
+       * the offer has actually been made or has become moot, so a retry that
+       * cannot be made is retried on the next clear screen instead.
+       */
       whenever(
         () => offerHeld.value && screenIsClear.value,
         () => {
-          offerHeld.value = false
           loadConsentIfEligible()
         }
       )
