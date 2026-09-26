@@ -1,0 +1,25 @@
+{
+  "files": {
+    "main.json": "d6df98f823f26de916214185764f7199b0ab5085"
+  },
+  "knownViolations": {
+    "main.json": [
+      "zh-CN: cloud.faq.12.a: added <a href=\"/zh-CN/cloud/pricing#faq\" class=\"text-primary-comfy-yellow underline\">",
+      "zh-CN: cloud.faq.12.a: changed HTML tag sequence",
+      "zh-CN: cloud.faq.12.a: missing <a href=\"/cloud/pricing#faq\" class=\"text-primary-comfy-yellow underline\">",
+      "zh-CN: cloud.faq.footer: added <a href=\"/zh-CN/cloud/pricing#faq\" class=\"text-primary-comfy-yellow underline\">",
+      "zh-CN: cloud.faq.footer: changed HTML tag sequence",
+      "zh-CN: cloud.faq.footer: missing <a href=\"/cloud/pricing#faq\" class=\"text-primary-comfy-yellow underline\">",
+      "zh-CN: cloud.reason.1.title: changed HTML tag sequence",
+      "zh-CN: cloud.reason.1.title: missing </span>, </span>, <span class=\"whitespace-nowrap\">, <span class=\"whitespace-nowrap\">",
+      "zh-CN: cloud.reason.4.title: changed HTML tag sequence",
+      "zh-CN: cloud.reason.4.title: missing </span>, <span class=\"whitespace-nowrap\">",
+      "zh-CN: cloudNodesLaunch.models.nodeCount: missing {count}",
+      "zh-CN: pricing.included.feature8.description: changed HTML tag sequence",
+      "zh-CN: privacy.intro.block.3: added <a href=\"/zh-CN/privacy/desktop\" class=\"text-white underline\">",
+      "zh-CN: privacy.intro.block.3: changed HTML tag sequence",
+      "zh-CN: privacy.intro.block.3: missing <a href=\"/privacy/desktop\" class=\"text-white underline\">"
+    ]
+  },
+  "version": 1
+}

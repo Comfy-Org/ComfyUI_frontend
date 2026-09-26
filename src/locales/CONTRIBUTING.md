@@ -126,11 +126,27 @@ failures.
 `pnpm locale:check` runs offline in CI: it reports pending work and fails on
 protected-token violations that are not already queued for retranslation
 because the English source changed. The manifest's `knownViolations` field
-baselines violations that predate the pipeline; a successful locale run heals
-and drops them, and any corruption introduced beyond the baseline fails the
+baselines exact, locale-prefixed errors that predate the pipeline; a successful
+locale run heals and drops them, and any error beyond the baseline fails the
 check immediately. oxfmt ignores `src/locales/**/*.json` — the pipeline is the
 sole writer of those bytes, which keeps the manifest's recorded blob hashes
 valid.
+
+### The website shares this pipeline
+
+`apps/website` keeps its catalogs in the same nested per-locale JSON layout
+and vue-i18n message syntax under `apps/website/src/locales/`, and the same
+script translates them:
+`pnpm locale:website` / `pnpm locale:website:check` at the repository root
+(or `pnpm locale` / `pnpm locale:check` inside `apps/website`). The website's
+locales, glossary and output directory are the `website` entry of
+`translationTargets` in `scripts/i18n/config.ts`; the `i18n: Update Website`
+workflow will run it on demand. The website opts into reviewed-copy retention
+and legal exclusions; see `apps/website/README.md`. It also validates strictly:
+HTML tags and repeated tokens must survive in count and order, and baseline
+entries that reviewed copy still carries (such as a link localized to
+`/zh-CN/…`) persist across runs instead of healing. The app target keeps its
+existing source-change and regeneration policy.
 
 ### Manual Translation Updates
 

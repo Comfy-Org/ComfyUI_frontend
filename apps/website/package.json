@@ -9,6 +9,8 @@
     "build": "astro build",
     "format": "prettier --write \"src/**/*.astro\"",
     "format:check": "prettier --check \"src/**/*.astro\"",
+    "locale": "pnpm -w locale:website",
+    "locale:check": "pnpm -w locale:website:check",
     "preview": "astro preview",
     "typecheck": "astro check && vue-tsc --noEmit -p tsconfig.json",
     "test:unit": "vitest run",

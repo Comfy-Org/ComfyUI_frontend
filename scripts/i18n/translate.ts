@@ -161,11 +161,11 @@ export function chunkItems(
 
 export function buildSystemPrompt(
   locale: OutputLocale,
+  translationContext: string,
   glossary: string
 ): string {
-  return `Translate each source from English into ${locale.name} for ComfyUI,
-a node-based generative AI application. Return each translation
-under its item's id.
+  return `Translate each source from English into ${locale.name} for
+${translationContext}. Return each translation under its item's id.
 
 Use context to resolve meaning. Preserve the source's meaning,
 tone, and level of detail. Keep code identifiers unchanged.
@@ -270,6 +270,7 @@ interface OpenAiTranslatorOptions {
   apiKey: string
   model: string
   reasoningEffort: TranslationPipelineConfig['reasoningEffort']
+  translationContext: string
   glossary: string
   maxTruncationSplitDepth: number
   fetchFn?: typeof fetch
@@ -297,7 +298,11 @@ export function createOpenAiTranslator(
       reasoning: { effort: options.reasoningEffort },
       store: false,
       text: { format: zodTextFormat(schema, 'translations') },
-      instructions: buildSystemPrompt(locale, options.glossary),
+      instructions: buildSystemPrompt(
+        locale,
+        options.translationContext,
+        options.glossary
+      ),
       input: JSON.stringify({ items })
     })
     let body: unknown
@@ -376,6 +381,7 @@ export async function translateLocaleItems(
     | 'maxSourceCharsPerRequest'
     | 'requestConcurrency'
     | 'maxTranslationRounds'
+    | 'strictProtectedTokens'
   >
 ): Promise<Map<string, string>> {
   const results = new Map<string, string>()
@@ -410,7 +416,12 @@ export async function translateLocaleItems(
           ? ['no translation returned']
           : value.trim().length === 0
             ? ['empty translation']
-            : tokenErrors(item.source, value, true)
+            : tokenErrors(
+                item.source,
+                value,
+                true,
+                config.strictProtectedTokens
+              )
       if (value !== undefined && errors.length === 0) {
         results.set(item.id, value)
       } else {
