@@ -212,8 +212,11 @@ test.describe(
         })
         await expect(summary).toHaveCount(1)
 
-        // "Worked" alone does not answer "how long was it working?".
-        await expect(summary).toHaveText(/Worked for .+/)
+        // "Worked" alone does not answer "how long was it working?" — and
+        // neither does `Worked for .+`, which "Worked for you" satisfies. The
+        // two alternatives are the only shapes the label actually takes
+        // (`workedForSeconds`, `workedForMinutes`), so a number is required.
+        await expect(summary).toHaveText(/Worked for (\d+ seconds|\d+m \d+s)/)
       }
     )
   }
