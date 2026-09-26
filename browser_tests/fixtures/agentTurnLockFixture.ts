@@ -2,12 +2,16 @@ import { expect, mergeTests } from '@playwright/test'
 import type { Locator, Page, WebSocketRoute } from '@playwright/test'
 
 import type {
+  AgentAnswerAccepted,
   AgentCancelAccepted,
   AgentError,
   AgentMessage,
   AgentTurnAccepted
 } from '@comfyorg/ingest-types'
-import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
+import {
+  zAgentAnswerRequest,
+  zAgentPostMessageRequest
+} from '@comfyorg/ingest-types/zod'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
@@ -67,6 +71,27 @@ export const TURN_DONE_EVENT: AgentWsEvent = {
   data: { message_id: TURN_ID, thread_id: THREAD_ID }
 }
 
+const ASK_ID = `${TURN_ID}:call-run`
+
+const RUN_APPROVAL_EVENT: AgentWsEvent = {
+  type: 'agent_ask',
+  data: {
+    thread_id: THREAD_ID,
+    message_id: TURN_ID,
+    ask_id: ASK_ID,
+    kind: 'run_approval',
+    context: { workflow_id: WORKFLOW_ID, workflow_name: 'Unsaved Workflow' },
+    prompt: 'Run workflow “Unsaved Workflow”?',
+    options: [
+      { id: 'run', label: 'Run' },
+      { id: 'cancel', label: 'Cancel' }
+    ],
+    min_selections: 1,
+    max_selections: 1,
+    allow_other: false
+  }
+}
+
 /**
  * The server's half of a turn, modelled on the real single-active-turn guard:
  * an assistant row goes `streaming` when a turn starts and only leaves that
@@ -83,6 +108,31 @@ class TurnLockServer {
   private prompt = ''
   private rejected = 0
   private posts = 0
+  private readonly answerRequests: string[][] = []
+  private committed: string[] | null = null
+
+  /** Every selection the client sent, in order, accepted or not. */
+  get answerAttempts(): string[][] {
+    return this.answerRequests
+  }
+
+  /** The selection the server actually stored — first writer wins. */
+  get committedAnswer(): string[] | null {
+    return this.committed
+  }
+
+  /**
+   * Mirrors the accepted half of `server/asks.go`: the first answer CASes onto
+   * the row, and every later one is answered by REPLAYING the stored selection
+   * rather than committing the new one. A fake that accepted the second answer
+   * would let a client that re-offers an already-answered card look correct
+   * here. The refusal statuses (403/404/409) and the retryable 5xx are NOT
+   * modelled — those branches are covered by unit tests.
+   */
+  answerAsk(selected: string[]): void {
+    this.answerRequests.push(selected)
+    this.committed ??= selected
+  }
 
   get turnIsStreaming(): boolean {
     return this.streaming
@@ -160,6 +210,15 @@ async function routeTurnLock(
     })
   })
 
+  await page.route('**/api/agent/threads/*/asks/*/answer', (route) => {
+    const { selected } = zAgentAnswerRequest.parse(
+      route.request().postDataJSON()
+    )
+    server.answerAsk(selected)
+    const accepted: AgentAnswerAccepted = { status: 'answered' }
+    return route.fulfill({ ...jsonRoute(accepted), status: 202 })
+  })
+
   await page.route('**/api/agent/threads/*/messages/*/cancel', (route) => {
     server.completeTurn()
     const accepted: AgentCancelAccepted = { status: 'cancelling' }
@@ -175,6 +234,9 @@ export class AgentTurnLockHarness {
   public readonly workSummary: Locator
   public readonly workingRow: Locator
   public readonly userBubbles: Locator
+  public readonly approvalCard: Locator
+  public readonly approveButton: Locator
+  public readonly cancelApprovalButton: Locator
   private readonly agentPanel: AgentPanel
 
   constructor(
@@ -210,10 +272,37 @@ export class AgentTurnLockHarness {
       exact: true
     })
     this.userBubbles = this.panel.getByTestId('user-message-bubble')
+    this.approvalCard = this.panel.getByText(
+      enMessages.agent.runApproval.lead,
+      { exact: true }
+    )
+    // Panel-scoped: the topbar's own Run button carries the same label.
+    this.approveButton = this.panel.getByRole('button', {
+      name: enMessages.agent.runApproval.run,
+      exact: true
+    })
+    this.cancelApprovalButton = this.panel.getByRole('button', {
+      name: enMessages.agent.runApproval.cancel,
+      exact: true
+    })
   }
 
   rejectedPosts(): number {
     return this.server.rejectedPosts
+  }
+
+  answerAttempts(): string[][] {
+    return this.server.answerAttempts
+  }
+
+  committedAnswer(): string[] | null {
+    return this.server.committedAnswer
+  }
+
+  /** Streams the turn to the point where it is parked on a consent card. */
+  async parkOnRunApproval(ws: WebSocketRoute): Promise<void> {
+    this.push(ws, RUN_APPROVAL_EVENT)
+    await expect(this.approvalCard).toBeVisible()
   }
 
   postAttempts(): number {

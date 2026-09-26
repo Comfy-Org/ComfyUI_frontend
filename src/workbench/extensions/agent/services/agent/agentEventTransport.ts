@@ -80,6 +80,13 @@ export interface AgentEventTransport {
   /** Whether any tool-call part is currently held pending canvas catch-up. */
   hasPendingCanvasSync: () => boolean
   /**
+   * PM-1658: drops a run-approval part the way an `agent_ask_resolved` frame
+   * would, for an ask resolved out of band. The transport owns the message
+   * every later emit republishes, so editing the store's copy alone lets a
+   * dismissed card reappear the next time this one snapshots.
+   */
+  dropAskPart: (askId: string) => void
+  /**
    * Tears the transport down for a reason other than natural completion
    * (abort, drop, reset, hydrate). Flushes any tool-call parts held pending
    * canvas catch-up to `done` and cancels their `STALE_AFTER_MS` timers, so
@@ -470,5 +477,21 @@ export function createAgentEventTransport(
     emit(snapshotMessage(message))
   }
 
-  return { ingest, settle, notifyCanvasCaughtUp, hasPendingCanvasSync, dispose }
+  function dropAskPart(askId: string): void {
+    const parts = message.parts.filter(
+      (part) => part.type !== 'runApproval' || part.askId !== askId
+    )
+    if (parts.length === message.parts.length) return
+    message.parts = parts
+    emit(snapshotMessage(message))
+  }
+
+  return {
+    ingest,
+    settle,
+    notifyCanvasCaughtUp,
+    hasPendingCanvasSync,
+    dispose,
+    dropAskPart
+  }
 }

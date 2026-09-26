@@ -487,6 +487,112 @@ describe('useAgentConversationStore', () => {
     expect(store.isStreaming).toBe(false)
   })
 
+  // PM-1658. The server reports an ask as pending until its answer is
+  // committed AND broadcast, so a transcript fetched around an answer -- which
+  // every panel mount does -- still names it. Rebuilding that card would put it
+  // back ENABLED, and the server answers the second, contradictory click by
+  // replaying the FIRST selection.
+  it('does not rebuild a retired card from a transcript that still lists it', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    const parkedTranscript = [
+      historyRow(1, 'user', 'turn-1', 'Run it', 'user-message-1'),
+      zAgentMessages.parse([
+        {
+          id: 'assistant-message-1',
+          thread_id: 'th',
+          seq: 2,
+          role: 'assistant',
+          status: 'streaming',
+          turn_id: 'turn-1',
+          pending_ask: {
+            message_id: 'assistant-message-1',
+            ask_id: 'turn-1:call-1',
+            kind: 'run_approval',
+            context: { workflow_id: 'workflow-1' },
+            prompt: 'Run workflow?',
+            options: [
+              { id: 'run', label: 'Run' },
+              { id: 'cancel', label: 'Cancel' }
+            ],
+            min_selections: 1,
+            max_selections: 1,
+            allow_other: false
+          }
+        }
+      ])[0]
+    ]
+    store.hydrate(parkedTranscript)
+    store.retireAsk('turn-1:call-1')
+
+    store.hydrate(parkedTranscript)
+
+    expect(
+      store.messages.some((message) =>
+        message.parts.some(
+          (part) => (part as { type: string }).type === 'runApproval'
+        )
+      )
+    ).toBe(false)
+    // The TURN is still adopted, though: answering the card is what lets it
+    // resume, so it is live and must keep routing. Dropping it here would
+    // strand the row mid-flight with every later frame discarded.
+    expect(store.activeTurnId).toBe('assistant-message-1')
+    store.ingest(delta('assistant-message-1', 'Running it now.'))
+    expect(partTexts(store)).toContain('Running it now.')
+  })
+
+  it('retireAsk drops a card that ingest can no longer route a resolution to', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.hydrate([
+      historyRow(1, 'user', 'turn-1', 'Run it', 'user-message-1'),
+      zAgentMessages.parse([
+        {
+          id: 'assistant-message-1',
+          thread_id: 'th',
+          seq: 2,
+          role: 'assistant',
+          status: 'streaming',
+          turn_id: 'turn-1',
+          pending_ask: {
+            message_id: 'assistant-message-1',
+            ask_id: 'turn-1:call-1',
+            kind: 'run_approval',
+            context: { workflow_id: 'workflow-1' },
+            prompt: 'Run workflow?',
+            options: [
+              { id: 'run', label: 'Run' },
+              { id: 'cancel', label: 'Cancel' }
+            ],
+            min_selections: 1,
+            max_selections: 1,
+            allow_other: false
+          }
+        }
+      ])[0]
+    ])
+    const hasCard = () =>
+      store.messages.some((message) =>
+        message.parts.some(
+          (part) => (part as { type: string }).type === 'runApproval'
+        )
+      )
+
+    store.abortActiveTurn()
+    expect(store.activeTurnId).toBeNull()
+    store.ingest(askResolved('assistant-message-1', 'turn-1:call-1'))
+    expect(hasCard()).toBe(true)
+
+    store.retireAsk('turn-1:call-1')
+
+    expect(hasCard()).toBe(false)
+    expect(store.entries.map((entry) => entry.role)).toEqual([
+      'user',
+      'assistant'
+    ])
+  })
+
   it('recordFailedSend renders [user, assistant(notice)] and leaves the turn idle', () => {
     const store = useAgentConversationStore()
     store.recordFailedSend('local-error-1' as TurnId, 'boom', 'send failed')
