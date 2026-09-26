@@ -65,7 +65,7 @@ jobs:
         uses: ./.github/actions/setup-frontend
 
       - name: Download shard reports
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v8
         with:
           pattern: unit-shard-*
           path: .vitest-reports
