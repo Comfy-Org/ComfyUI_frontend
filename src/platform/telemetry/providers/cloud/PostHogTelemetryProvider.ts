@@ -1,4 +1,4 @@
-import type { PostHog } from 'posthog-js'
+import type { CaptureResult, PostHog } from 'posthog-js'
 import { watch } from 'vue'
 import type { WatchStopHandle } from 'vue'
 
@@ -131,12 +131,28 @@ interface DesktopEntryProps {
   desktop_device_id?: string
 }
 
-function readDesktopEntryProps(): DesktopEntryProps | null {
+// Stamped via before_send rather than posthog.register() so the axes
+// survive the posthog.reset(true) on logout, which wipes super properties.
+function stampPlatformAxes(event: CaptureResult | null): CaptureResult | null {
+  if (!event) return null
+  event.properties.client = window.__comfyDesktop2 ? 'desktop' : 'web'
+  event.properties.deployment = 'cloud'
+  return event
+}
+
+function readDesktopEntryProps(posthog: PostHog): DesktopEntryProps | null {
   const params = new URLSearchParams(window.location.search)
-  if (params.get('utm_source') !== 'comfy.desktop') return null
+  const isDesktopEntry = params.get('utm_source') === 'comfy.desktop'
+  if (!isDesktopEntry && posthog.get_property('source_app') !== 'desktop') {
+    return null
+  }
   const props: DesktopEntryProps = { source_app: 'desktop' }
-  const deviceId = params.get('desktop_device_id')
-  if (deviceId) props.desktop_device_id = deviceId
+  const deviceId: unknown = isDesktopEntry
+    ? params.get('desktop_device_id')
+    : posthog.get_property('desktop_device_id')
+  if (typeof deviceId === 'string' && deviceId) {
+    props.desktop_device_id = deviceId
+  }
   return props
 }
 
@@ -193,13 +209,11 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
               // automatically when persistence includes 'cookie' (the default).
               // Explicit override interacts badly with posthog-js#3578 where reset() fails
               // to clear localStorage on other subdomains, causing identity bleed on logout.
-              before_send: createPostHogBeforeSend()
+              before_send: [stampPlatformAxes, createPostHogBeforeSend()]
             })
             this.isInitialized = true
-            // Before flushEventQueue so pre-init events also carry the
-            // platform super properties.
-            this.registerPlatformProps()
             this.flushEventQueue()
+            this.desktopEntryProps = readDesktopEntryProps(this.posthog)
             this.registerDesktopEntryProps()
 
             await whenStoresReady()
@@ -222,6 +236,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
             // pre-init logout handling would defeat the simplification.
             currentUser.onUserLogout(() => {
               this.posthog?.reset(true)
+              this.registerDesktopEntryProps()
             })
           })
           .catch((error) => {
@@ -346,25 +361,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     )
   }
 
-  private registerPlatformProps(): void {
-    if (!this.posthog) return
-    try {
-      this.posthog.register({
-        client: window.__comfyDesktop2 ? 'desktop' : 'web',
-        deployment: 'cloud'
-      })
-    } catch (error) {
-      console.error('Failed to register platform props:', error)
-    }
-  }
-
   private registerDesktopEntryProps(): void {
-    if (!this.posthog) return
-    const props = readDesktopEntryProps()
-    if (!props) return
-    this.desktopEntryProps = props
+    if (!this.posthog || !this.desktopEntryProps) return
     try {
-      this.posthog.register(props)
+      this.posthog.register(this.desktopEntryProps)
     } catch (error) {
       console.error('Failed to register desktop entry props:', error)
     }
