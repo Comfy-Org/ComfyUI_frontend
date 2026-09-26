@@ -8,15 +8,22 @@
  * false settles it at once; the session path gets `DECISION_CAP_MS`, after
  * which this page load stays on the session client.
  */
+import type { ComputedRef } from 'vue'
 import { computed, shallowRef } from 'vue'
+
+import type { BillingClient } from '@comfyorg/account-ui/billing'
 
 import type { SignInPort } from '@/auth/useSignInController'
 import { sessionClientPort } from '@/auth/useSignInController'
 import { CLOUD_BASE_URL } from '@/config/env'
 import { resolveBillingWebIdentity } from '@/config/firebase'
 import { readBillingWebUnifiedWebSession } from '@/config/unifiedWebSession'
-import { bindEntryWorkspace } from '@/entry/workspaceBinding'
+import { bindEntryWorkspace, boundWorkspaceId } from '@/entry/workspaceBinding'
 import type { BillingWebSessionPhase } from '@/router'
+import {
+  createBillingWebClient,
+  createWebSessionBillingClient
+} from '@/session/billingWebClient'
 import {
   billingWebSessionClient,
   billingWebSessionPhase,
@@ -40,7 +47,8 @@ function unifiedSession(): UnifiedBillingSession {
   unified ??= createUnifiedBillingSession({
     apiBaseUrl: `${CLOUD_BASE_URL}/api`,
     fetchImpl: (...args) => globalThis.fetch(...args),
-    loadFirebase: resolveBillingWebIdentity
+    loadFirebase: resolveBillingWebIdentity,
+    workspaceId: boundWorkspaceId
   })
   return unified
 }
@@ -73,13 +81,15 @@ export function billingWebPhase():
 
 /**
  * Rebinds the tab to a newly-arrived entry's workspace and, only when that
- * actually changes the binding on the session client, mints for it right
- * away — so a credential for the workspace this tab is leaving is never left
- * to answer a request meant for the new one. Before the mode is decided
- * nothing is minted yet, and whichever side starts reads the binding live.
+ * changes the binding, re-establishes the workspace right away, so nothing
+ * meant for the new workspace is answered for the one this tab is leaving.
+ * Before the mode is decided nothing is established yet, and whichever side
+ * starts reads the binding live.
  */
 export function onBillingWebEntryWorkspace(workspaceId: string): void {
-  if (!bindEntryWorkspace(workspaceId) || mode.value !== 'session-client') {
+  if (!bindEntryWorkspace(workspaceId) || mode.value === undefined) return
+  if (mode.value === 'web-session') {
+    void unifiedSession().resolveWorkspace()
     return
   }
   void billingWebSessionClient().ensureFresh(undefined, { workspaceId })
@@ -93,19 +103,27 @@ function sessionClientState(): ReturnType<typeof useBillingWebSession> {
 }
 
 /** Undefined until the mode is decided; `App` keys the billing shell by it. */
-export const billedScope = computed<BilledScope | undefined>(() =>
-  mode.value === 'session-client'
-    ? sessionClientState().session.value
-    : undefined
-)
+export const billedScope = computed<BilledScope | undefined>(() => {
+  if (mode.value === 'web-session') return unifiedSession().billedScope.value
+  if (mode.value === undefined) return undefined
+  return sessionClientState().session.value
+})
 
 /** The decided side's phase, for refusals that land after the page rendered. */
 export const billingWebLivePhase = computed<BillingWebSessionPhase | undefined>(
-  () =>
-    mode.value === 'session-client'
-      ? sessionClientState().phase.value
-      : undefined
+  () => {
+    if (mode.value === 'web-session') return unifiedSession().livePhase.value
+    if (mode.value === undefined) return undefined
+    return sessionClientState().phase.value
+  }
 )
+
+/** For views inside the billing shell, which only mounts once decided. */
+export function useBilledScope(): ComputedRef<BilledScope | undefined> {
+  return mode.value === 'web-session'
+    ? unifiedSession().billedScope
+    : useBillingWebSession().session
+}
 
 let clientPort: SignInPort | undefined
 
@@ -130,4 +148,10 @@ export function billingWebSignInPort(): SignInPort {
     loadIdentity: async () => decidedPort(await decideMode()).loadIdentity(),
     establish: async (user) => decidedPort(await decideMode()).establish(user)
   }
+}
+
+export function createModeBillingClient(): BillingClient {
+  return mode.value === 'web-session'
+    ? createWebSessionBillingClient(unifiedSession())
+    : createBillingWebClient(billingWebSessionClient())
 }

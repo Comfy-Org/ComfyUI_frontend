@@ -1,5 +1,8 @@
 import type { FakeWebSessionState } from '@comfyorg/account-core/testing'
-import { createFakeWebSessionEndpoint } from '@comfyorg/account-core/testing'
+import {
+  createFakeWebSessionEndpoint,
+  fakeWebSessionUser
+} from '@comfyorg/account-core/testing'
 import { createMemoryHistory } from 'vue-router'
 
 const h = vi.hoisted(() => ({ initializeApp: vi.fn() }))
@@ -48,10 +51,13 @@ const FIREBASE_CONFIG = {
 
 function stubCloud(state: FakeWebSessionState) {
   const endpoint = createFakeWebSessionEndpoint({ state })
+  const sent: { path: string; workspace: string | null }[] = []
   vi.stubGlobal(
     'fetch',
     vi.fn<typeof fetch>(async (input, init = {}) => {
       const { pathname } = new URL(String(input))
+      const workspace = new Headers(init.headers).get('X-Comfy-Workspace-ID')
+      sent.push({ path: pathname, workspace })
       if (pathname === '/api/features') {
         return new Response(
           JSON.stringify(
@@ -61,9 +67,20 @@ function stubCloud(state: FakeWebSessionState) {
           )
         )
       }
+      if (pathname === '/api/workspaces/current') {
+        return new Response(
+          JSON.stringify({
+            auth_method: 'session',
+            id: 'ws-team',
+            name: 'Team',
+            type: 'team'
+          })
+        )
+      }
       return endpoint.fetch(input, init)
     })
   )
+  return sent
 }
 
 /** The router plus the sign-in page's controller, as `SignInView` wires them. */
@@ -92,6 +109,23 @@ beforeEach(() => {
 })
 
 describe('billing-web with unified_web_session on', () => {
+  it('leaves for checkout on a Cloud session with no sign-in and no Firebase (SS1)', async () => {
+    const sent = stubCloud({ kind: 'live', user: fakeWebSessionUser() })
+
+    const { router, signInPage } = await arriveAt(CHECKOUT)
+
+    await vi.waitFor(() =>
+      expect(router.currentRoute.value.fullPath).toBe(CHECKOUT)
+    )
+    expect(signInPage.leaving.value).toBe(true)
+    expect(h.initializeApp).not.toHaveBeenCalled()
+    expect(sent.map(({ path }) => path)).not.toContain('/api/auth/token')
+    expect(sent).toContainEqual({
+      path: '/api/workspaces/current',
+      workspace: 'ws-team'
+    })
+  })
+
   it('keeps every entry parameter through a genuine sign-in (SO1)', async () => {
     stubCloud({ kind: 'dead', code: 'no_session' })
 
