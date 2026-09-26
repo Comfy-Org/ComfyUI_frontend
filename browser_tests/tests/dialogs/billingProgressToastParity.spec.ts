@@ -174,7 +174,7 @@ async function setupToastParity(
     },
     topupResponse = {
       billing_op_id: OPERATION_ID,
-      topup_id: 'topup-e2e',
+      topup_id: OPERATION_ID,
       status: 'pending',
       amount_cents: 5_000
     }
@@ -236,7 +236,7 @@ async function setupToastParity(
     if (route.request().method() !== 'POST') return route.fallback()
     return route.fulfill(jsonRoute(topupResponse))
   })
-  await page.route('**/api/billing/ops/**', (route) =>
+  await page.route(`**/api/billing/ops/${OPERATION_ID}`, (route) =>
     route.fulfill(jsonRoute(server.operation))
   )
 
@@ -313,6 +313,10 @@ test.describe('Billing progress toast parity', { tag: '@cloud' }, () => {
 
         await page.goto(APP_URL)
         await waitForCloudApp(page)
+        await expect(page.getByText(SUBSCRIPTION_ACTION_REQUIRED)).toBeVisible()
+
+        await page.reload()
+        await waitForCloudApp(page)
 
         await expect(page.getByText(SUBSCRIPTION_ACTION_REQUIRED)).toBeVisible()
       })
@@ -350,6 +354,9 @@ test.describe('Billing progress toast parity', { tag: '@cloud' }, () => {
         await expect(cancel.root).toBeHidden()
 
         await expect(page.getByText(/Processing payment/)).toHaveCount(0)
+        await expect(page.getByText(SUBSCRIPTION_ACTION_REQUIRED)).toHaveCount(
+          0
+        )
       })
     })
   }
