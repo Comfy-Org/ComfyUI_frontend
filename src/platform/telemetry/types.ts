@@ -666,6 +666,105 @@ export interface AgentMessageSentMetadata extends Record<string, unknown> {
   client_message_id: string
   input_method: AgentInputMethod
 }
+/**
+ * How far a send got before it failed. `agent_message_sent` counts attempts, so
+ * it fires for every send in this list too; the pair is what separates an
+ * attempt the server never saw from one it refused.
+ *
+ * - `not_dispatched` — the client stopped the send itself; no request was issued.
+ * - `no_response` — the request was issued and no HTTP status came back. It does
+ *   **not** prove the server ignored it: a lost response and a refused request
+ *   look the same from here, so a turn may exist.
+ * - `refused` — an HTTP error status came back, carried in `http_status`.
+ * - `unreadable_response` — a success status came back whose body the client
+ *   could not parse, so the turn probably did start.
+ */
+type AgentSendFailureStage =
+  | 'not_dispatched'
+  | 'no_response'
+  | 'refused'
+  | 'unreadable_response'
+/**
+ * `send_in_flight`: an earlier send of this session had not settled.
+ * `target_changed`: the workflow the send was composed against stopped being
+ * the target while the client resolved it. `session_reset`: a new chat or a
+ * thread load replaced the session mid-send.
+ */
+export type AgentSendNotDispatchedReason =
+  | 'send_in_flight'
+  | 'target_changed'
+  | 'session_reset'
+/**
+ * `timeout` is the api layer's own response-header deadline, `aborted` any other
+ * cancellation, `network_error` a request the browser could not complete, and
+ * `unknown` anything else thrown on the send path — kept separate so a client
+ * bug cannot be read as a network failure.
+ */
+export type AgentSendNoResponseReason =
+  | 'timeout'
+  | 'aborted'
+  | 'network_error'
+  | 'unknown'
+/** `admission_denied` is the pre-turn spend gate; `http_error` every other status. */
+type AgentSendRefusedReason = 'admission_denied' | 'http_error'
+type AgentSendFailureReason =
+  | AgentSendNotDispatchedReason
+  | AgentSendNoResponseReason
+  | AgentSendRefusedReason
+  | 'malformed_body'
+/**
+ * The pre-turn admission gate's own reason for declining, mirroring
+ * `AgentAdmissionError['error']['reason']`. Narrowed on purpose: a new value on
+ * that generated enum should fail to compile here rather than reach a dashboard
+ * unnoticed.
+ */
+type AgentAdmissionReason = 'no_funds' | 'manual_block' | 'funds_unavailable'
+/**
+ * A failed send, classified by where it stopped. The fields that cannot apply to
+ * a stage are `null` rather than absent, so a query never has to distinguish a
+ * missing property from a real one.
+ */
+export type AgentSendFailure =
+  | {
+      stage: 'not_dispatched'
+      reason: AgentSendNotDispatchedReason
+      http_status: null
+      admission_reason: null
+    }
+  | {
+      stage: 'no_response'
+      reason: AgentSendNoResponseReason
+      http_status: null
+      admission_reason: null
+    }
+  | {
+      stage: 'refused'
+      reason: AgentSendRefusedReason
+      http_status: number
+      admission_reason: AgentAdmissionReason | null
+    }
+  | {
+      stage: 'unreadable_response'
+      reason: 'malformed_body'
+      http_status: null
+      admission_reason: null
+    }
+/**
+ * Carries no server message and no request body: the reason enum is what a
+ * funnel can group by, and free text on a refusal is the one field that could
+ * carry user content (ADR-AGENT-OBSERVABILITY-0034 forbids raw errors in
+ * correlated fields).
+ */
+export interface AgentSendFailedMetadata extends Record<string, unknown> {
+  stage: AgentSendFailureStage
+  reason: AgentSendFailureReason
+  http_status: number | null
+  admission_reason: AgentAdmissionReason | null
+  /** The thread the attempt was posted into, `null` when it opened a new one. */
+  thread_id: string | null
+  /** The `agent_message_sent` attempt this failure belongs to. */
+  client_message_id: string
+}
 export interface AgentNodeTaggedMetadata extends Record<string, unknown> {
   source: 'mention_picker'
 }
@@ -1439,6 +1538,7 @@ export interface TelemetryProvider {
   trackAgentOnboardingShown?(): void
   trackAgentOnboardingStep?(metadata: AgentOnboardingStepMetadata): void
   trackAgentMessageSent?(metadata: AgentMessageSentMetadata): void
+  trackAgentSendFailed?(metadata: AgentSendFailedMetadata): void
   trackAgentNodeTagged?(metadata: AgentNodeTaggedMetadata): void
   trackAgentAttachButtonClicked?(
     metadata: AgentAttachButtonClickedMetadata
@@ -1628,6 +1728,7 @@ export const TelemetryEvents = {
   AGENT_ONBOARDING_SHOWN: 'app:agent_onboarding_shown',
   AGENT_ONBOARDING_STEP: 'app:agent_onboarding_step',
   AGENT_MESSAGE_SENT: 'app:agent_message_sent',
+  AGENT_SEND_FAILED: 'app:agent_send_failed',
   AGENT_NODE_TAGGED: 'app:agent_node_tagged',
   AGENT_ATTACH_BUTTON_CLICKED: 'app:agent_attach_button_clicked',
   AGENT_WORKFLOW_APPLIED: 'app:agent_workflow_applied',

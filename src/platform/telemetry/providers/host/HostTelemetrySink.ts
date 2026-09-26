@@ -21,6 +21,7 @@ import type {
   AgentRunApprovalResolvedMetadata,
   AgentRunApprovalShownMetadata,
   AgentRunModeChangedMetadata,
+  AgentSendFailedMetadata,
   AgentStopClickedMetadata,
   AgentThreadStartedMetadata,
   AgentWorkflowBoundMetadata,
@@ -362,6 +363,10 @@ export class HostTelemetrySink implements TelemetryProvider {
 
   trackAgentMessageSent(metadata: AgentMessageSentMetadata): void {
     this.capture(TelemetryEvents.AGENT_MESSAGE_SENT, metadata)
+  }
+
+  trackAgentSendFailed(metadata: AgentSendFailedMetadata): void {
+    this.capture(TelemetryEvents.AGENT_SEND_FAILED, metadata)
   }
 
   trackAgentNodeTagged(metadata: AgentNodeTaggedMetadata): void {

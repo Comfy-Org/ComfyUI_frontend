@@ -96,6 +96,29 @@ describe('DatadogRumTelemetryProvider', () => {
     )
   })
 
+  it('records failed agent sends as RUM actions so they can be monitored', () => {
+    new DatadogRumTelemetryProvider().trackAgentSendFailed({
+      stage: 'refused',
+      reason: 'http_error',
+      http_status: 404,
+      admission_reason: null,
+      thread_id: 'thread-1',
+      client_message_id: 'client-message-1'
+    })
+
+    expect(addAction).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.AGENT_SEND_FAILED,
+      {
+        stage: 'refused',
+        reason: 'http_error',
+        http_status: 404,
+        admission_reason: null,
+        thread_id: 'thread-1',
+        client_message_id: 'client-message-1'
+      }
+    )
+  })
+
   it('records terminal unified auth retry outcomes without request data', () => {
     new DatadogRumTelemetryProvider().trackUnifiedAuthRetry({
       transport: 'axios',
