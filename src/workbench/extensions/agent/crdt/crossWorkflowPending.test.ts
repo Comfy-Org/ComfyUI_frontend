@@ -504,7 +504,16 @@ describe('a human edit made while the document connection is down', () => {
    * once delivery lands, each property fails -- and gets fixed -- on its own
    * name instead of one masking the other.
    */
-  it.fails('KNOWN GAP: reaches the host after reconnect', async () => {
+  /**
+   * The holding half of the same story, and it belongs in a PASSING test for
+   * the reason the block comment above gives. Both assertions here describe
+   * behaviour that works today, so inside the `it.fails` below they would be
+   * indistinguishable from the gap it pins: a regression that transmitted
+   * before the ack would fail, `it.fails` would report that as the expected
+   * failure, and the delivery assertion would never run. Held separately, a
+   * regression in either half is unmissable.
+   */
+  it('holds the queue until the host acks the resubscribe', async () => {
     const { enqueue } = mountFollower('wf-a')
     clientState.transportUp = false
 
@@ -517,10 +526,21 @@ describe('a human edit made while the document connection is down', () => {
     clientState.transportUp = true
     apiState.target.dispatchEvent(new Event('reconnected'))
     expect(clientState.sent).toHaveLength(0)
+  })
 
+  it.fails('KNOWN GAP: reaches the host after reconnect', async () => {
+    const { enqueue } = mountFollower('wf-a')
+    clientState.transportUp = false
+
+    await enqueue([deleteNode('edited-during-outage')])
+    vi.advanceTimersByTime(RETRY_BUDGET_MS)
+
+    clientState.transportUp = true
+    apiState.target.dispatchEvent(new Event('reconnected'))
     ackResubscribe('wf-a')
 
-    // Delivered, toward the workflow it was minted against.
+    // Delivered, toward the workflow it was minted against. The ONLY
+    // assertion in this body, so this is the property that fails.
     expect(clientState.sent).toHaveLength(1)
     expect(clientState.sent[0]).toMatchObject({ workflowId: 'wf-a' })
   })

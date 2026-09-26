@@ -41,7 +41,14 @@ const SEMANTIC_STORES = [
 
 const YJS_IMPORT = /from\s+['"]yjs['"]/
 const LAYOUT_STORE_IMPORT = /layout\/store\/layoutStore/
-const POSITIONAL_ROOT = /layout|viewport|position|pan|zoom/i
+/**
+ * Root names that describe where or how big something is. `pos` and `size`
+ * are matched as whole names as well as through the longer words that contain
+ * them: those two are the exact keys a node payload carries, so they are the
+ * most likely shape for geometry to reach a peer under, and the substring
+ * alternatives below do not match either on its own.
+ */
+const POSITIONAL_ROOT = /layout|viewport|position|pan|zoom|^(?:pos|size)$/i
 
 function readSource(file: string): string {
   return readFileSync(file, 'utf8')

@@ -828,6 +828,11 @@ describe('useWidgetValueStore', () => {
 
       store.setValue(seedA, 42, remote)
 
+      // Confirm the write landed before concluding anything from the other
+      // graph being untouched: a `setValue` that silently did nothing would
+      // satisfy the isolation assertions below without isolating anything.
+      expect(store.getWidget(seedA)?.value).toBe(42)
+
       expect(store.getWidget(seedB)?.value).toBe(5)
       expect(store.isLocallyDirty(seedB)).toBe(true)
     })
