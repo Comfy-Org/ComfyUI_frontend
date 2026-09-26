@@ -8834,6 +8834,101 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(useAgentNodeSelectionStore().isActive).toBe(true)
   })
 
+  it('restores node selection after the panel closes and the workflow is renamed', async () => {
+    makeTab()
+    mockMessagesEndpoint('wf-42')
+    const selection = await startVueNodeSelection()
+
+    const selectionStore = useAgentNodeSelectionStore()
+    const active = workflowStore.activeWorkflow
+    if (!active) throw new Error('expected an active workflow')
+    useAgentPanelStore().isOpen = false
+    selection.unmount()
+    active.path = 'workflows/renamed.json'
+    active.filename = 'renamed'
+    await nextTick()
+    renderWithSelectedTarget()
+    useAgentPanelStore().isOpen = true
+    await nextTick()
+
+    expect(selectionStore.nodeIds('workflows/current.json')).toEqual([])
+    expect(selectionStore.nodeIds('workflows/renamed.json')).toEqual([
+      '9',
+      '12'
+    ])
+    expect(await screen.findByText('VAE Decode')).toBeInTheDocument()
+    expect(screen.getByText('KSampler')).toBeInTheDocument()
+  })
+
+  it('moves saved node selections when an inactive workflow is renamed', async () => {
+    makeTab()
+    const inactive = addTab('workflows/inactive.json')
+    const selectionStore = useAgentNodeSelectionStore()
+    selectionStore.saveNodeIds(inactive.path, ['9', '12'])
+
+    await workflowStore.renameWorkflow(
+      inactive,
+      'workflows/inactive-renamed.json'
+    )
+    await nextTick()
+
+    expect(selectionStore.nodeIds('workflows/inactive.json')).toEqual([])
+    expect(selectionStore.nodeIds('workflows/inactive-renamed.json')).toEqual([
+      '9',
+      '12'
+    ])
+  })
+
+  it('moves saved node selections after the active workflow changes during rename', async () => {
+    const renamed = makeTab()
+    const selectionStore = useAgentNodeSelectionStore()
+    selectionStore.saveNodeIds(renamed.path, ['9', '12'])
+    let continueRename: (() => void) | undefined
+    const renamePaused = new Promise<void>((resolve) => {
+      continueRename = resolve
+    })
+    renamed.rename = vi.fn(async (newPath: string) => {
+      await renamePaused
+      renamed.path = newPath
+      return renamed
+    })
+
+    const rename = workflowStore.renameWorkflow(
+      renamed,
+      'workflows/renamed.json'
+    )
+    workflowStore.activeWorkflow = addTab('workflows/other.json')
+    assert.exists(continueRename)
+    continueRename()
+    await rename
+    await nextTick()
+
+    expect(selectionStore.nodeIds('workflows/current.json')).toEqual([])
+    expect(selectionStore.nodeIds('workflows/renamed.json')).toEqual([
+      '9',
+      '12'
+    ])
+  })
+
+  it('does not carry a saved node selection onto a different workflow', async () => {
+    makeTab()
+    mockMessagesEndpoint('wf-42')
+    await startVueNodeSelection()
+
+    const selectionStore = useAgentNodeSelectionStore()
+    selectionStore.saveNodeIds('workflows/current.json', ['9', '12'])
+
+    // Keep the selected target unchanged so its watcher does not clear both entries.
+    workflowStore.activeWorkflow = addTab('workflows/other.json')
+    await nextTick()
+
+    expect(selectionStore.nodeIds('workflows/current.json')).toEqual([
+      '9',
+      '12'
+    ])
+    expect(selectionStore.nodeIds('workflows/other.json')).toEqual([])
+  })
+
   it('ends node selection when the target workflow changes', async () => {
     makeTab()
     mockMessagesEndpoint('wf-42')

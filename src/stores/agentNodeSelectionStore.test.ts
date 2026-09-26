@@ -1,4 +1,5 @@
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { api } from '@/scripts/api'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -239,5 +240,64 @@ describe('agentNodeSelectionStore', () => {
 
     expect(store.isLoadingWorkflow).toBe(false)
     expect(store.restoredNodeIds).toBeNull()
+  })
+
+  it('moves saved node selections when a workflow path changes', async () => {
+    const workflowStore = useWorkflowStore()
+    const workflow = workflowStore.createTemporary('original.json')
+    vi.spyOn(workflow, 'rename').mockImplementation(async (newPath) => {
+      workflow.path = newPath
+      return workflow
+    })
+    const store = useAgentNodeSelectionStore()
+    store.saveNodeIds(workflow.path, ['9', '12'])
+
+    await workflowStore.renameWorkflow(workflow, 'workflows/renamed.json')
+    await nextTick()
+
+    expect(store.nodeIds('workflows/original.json')).toEqual([])
+    expect(store.nodeIds('workflows/renamed.json')).toEqual(['9', '12'])
+  })
+
+  it('preserves the destination when a renamed workflow has no selection', async () => {
+    const workflowStore = useWorkflowStore()
+    const workflow = workflowStore.createTemporary('never-saved.json')
+    vi.spyOn(workflow, 'rename').mockImplementation(async (newPath) => {
+      workflow.path = newPath
+      return workflow
+    })
+    const store = useAgentNodeSelectionStore()
+    store.saveNodeIds('workflows/untouched.json', ['3'])
+    store.saveNodeIds('workflows/renamed.json', ['20'])
+
+    await workflowStore.renameWorkflow(workflow, 'workflows/renamed.json')
+    await nextTick()
+
+    expect(store.nodeIds('workflows/renamed.json')).toEqual(['20'])
+    expect(store.nodeIds('workflows/untouched.json')).toEqual(['3'])
+  })
+
+  it.for(['constructor', 'toString'])(
+    'does not read inherited %s workflow entries',
+    (path) => {
+      expect(useAgentNodeSelectionStore().nodeIds(path)).toEqual([])
+    }
+  )
+
+  it('does not move an inherited workflow entry', async () => {
+    const workflowStore = useWorkflowStore()
+    const workflow = workflowStore.createTemporary('original.json')
+    workflow.path = 'constructor'
+    vi.spyOn(workflow, 'rename').mockImplementation(async (newPath) => {
+      workflow.path = newPath
+      return workflow
+    })
+    const store = useAgentNodeSelectionStore()
+    store.saveNodeIds('workflows/renamed.json', ['20'])
+
+    await workflowStore.renameWorkflow(workflow, 'workflows/renamed.json')
+    await nextTick()
+
+    expect(store.nodeIds('workflows/renamed.json')).toEqual(['20'])
   })
 })

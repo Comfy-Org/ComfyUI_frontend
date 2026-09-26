@@ -4,6 +4,7 @@ import { ref, watch } from 'vue'
 
 import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
@@ -31,16 +32,33 @@ export const useAgentNodeSelectionStore = defineStore(
     const sidebarTabStore = useSidebarTabStore()
     const canvasStore = useCanvasStore()
     const settingStore = useSettingStore()
+    const workflowStore = useWorkflowStore()
     const isActive = ref(false)
     const isActionBarsHidden = ref(false)
     const isBannerVisible = ref(false)
     const isLoadingWorkflow = ref(false)
     const restoredNodeIds = ref<string[] | null>(null)
-    const nodeIdsByWorkflow = ref<Record<string, string[]>>({})
+    const nodeIdsByWorkflow = ref<Partial<Record<string, string[]>>>({})
     let transitionTimeoutId: ReturnType<typeof setTimeout> | undefined
     let sidebarTimeoutId: ReturnType<typeof setTimeout> | undefined
     let restoreSidebarTabId: string | null = null
     let restoreMinimap = false
+
+    watch(
+      () =>
+        workflowStore.workflows.map((workflow) => ({
+          workflow,
+          path: workflow.path
+        })),
+      (workflows, previousWorkflows) => {
+        const previousPaths = new Map(
+          previousWorkflows.map(({ workflow, path }) => [workflow, path])
+        )
+        for (const { workflow, path } of workflows) {
+          moveNodeIds(previousPaths.get(workflow), path)
+        }
+      }
+    )
 
     watch(isActive, (active) => {
       clearTimeout(transitionTimeoutId)
@@ -145,7 +163,27 @@ export const useAgentNodeSelectionStore = defineStore(
     }
 
     function nodeIds(workflowPath: string | undefined): string[] {
-      return workflowPath ? (nodeIdsByWorkflow.value[workflowPath] ?? []) : []
+      if (
+        !workflowPath ||
+        !Object.hasOwn(nodeIdsByWorkflow.value, workflowPath)
+      )
+        return []
+      return nodeIdsByWorkflow.value[workflowPath] ?? []
+    }
+
+    function moveNodeIds(
+      oldWorkflowPath: string | undefined,
+      newWorkflowPath: string | undefined
+    ): void {
+      if (
+        !oldWorkflowPath ||
+        !newWorkflowPath ||
+        oldWorkflowPath === newWorkflowPath
+      )
+        return
+      if (!Object.hasOwn(nodeIdsByWorkflow.value, oldWorkflowPath)) return
+      const { [oldWorkflowPath]: ids, ...remaining } = nodeIdsByWorkflow.value
+      nodeIdsByWorkflow.value = { ...remaining, [newWorkflowPath]: ids }
     }
 
     function beginWorkflowLoad(): void {
