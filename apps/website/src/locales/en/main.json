@@ -604,6 +604,12 @@
       "go": "Show asset {n}",
       "notSaved": "This generation could not be saved to your assets. The result is still on the page until it expires.",
       "cancelError": "Could not request cancellation. Your generation may still be running."
+    },
+    "cinematic": {
+      "badge": "New · Beta",
+      "summary": "Direct a shot with a real camera, light and grade, then run it on any image model.",
+      "cta": "Open studio",
+      "openInStudio": "Open in Cinematic Studio"
     }
   },
   "auth": {
@@ -2351,7 +2357,8 @@
     "planPro": "Pro",
     "upgrade": "Upgrade",
     "addCredits": "Add credits",
-    "upgradeToAddCredits": "Upgrade to add credits"
+    "upgradeToAddCredits": "Upgrade to add credits",
+    "cinematicStudio": "Cinematic Studio"
   },
   "breadcrumb": {
     "agent": "Comfy Agent",

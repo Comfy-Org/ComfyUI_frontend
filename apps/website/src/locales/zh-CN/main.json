@@ -2985,7 +2985,8 @@
     "workspacesError": "无法加载工作区。",
     "workspacesLoading": "正在加载工作区…",
     "x": "X",
-    "youtube": "YouTube"
+    "youtube": "YouTube",
+    "cinematicStudio": "电影工作室"
   },
   "payment": {
     "failed": {
@@ -4819,6 +4820,12 @@
       "go": "显示第 {n} 个素材",
       "notSaved": "这次生成未能保存到你的素材。结果在过期前仍然留在页面上。",
       "cancelError": "无法请求取消。生成可能仍在进行。"
+    },
+    "cinematic": {
+      "badge": "新 · 测试版",
+      "summary": "用真实的摄影机、光线与调色导演一个镜头，然后在任意图像模型上运行。",
+      "cta": "打开工作室",
+      "openInStudio": "在 Cinematic Studio 中打开"
     }
   }
 }
