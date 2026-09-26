@@ -1,27 +1,80 @@
 <script setup lang="ts">
 import WorkshopGate from '../workshop/WorkshopGate.vue'
-import { ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { catalogSearch } from '../../config/models-catalogue'
 import { getRoutes } from '../../config/routes'
-import type { DiscoveryProvider } from '../../data/modelDiscovery'
+import type {
+  DiscoveryProvider,
+  DiscoveryWorkflow
+} from '../../data/modelDiscovery'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import { useWorkshopWorkflowsEnabled } from '../../scripts/posthog'
 import Button from '../ui/button/Button.vue'
-import StaticFrame from '../workshop/StaticFrame.vue'
+import type { CatalogueTab } from '../workshop/CatalogueTabs.vue'
+import CatalogueTabs from '../workshop/CatalogueTabs.vue'
+import DiscoveryProviderCard from './DiscoveryProviderCard.vue'
+import DiscoveryWorkflowCard from './DiscoveryWorkflowCard.vue'
 
-const { locale = 'en', providers } = defineProps<{
+const {
+  locale = 'en',
+  providers,
+  workflows = []
+} = defineProps<{
   locale?: Locale
   providers: readonly DiscoveryProvider[]
+  workflows?: readonly DiscoveryWorkflow[]
 }>()
 const routes = getRoutes(locale)
 
-// Thumbnails are fetched the first time a card is hovered or focused, so the
-// looping row does not pull every preview on page load.
-const revealed = ref<Set<string>>(new Set())
-function reveal(name: string) {
-  revealed.value = new Set(revealed.value).add(name)
-}
+// The catalogue's own workflows half is behind a flag, so the home page offers
+// the tab only where the tab has somewhere to go.
+const workflowsEnabled = useWorkshopWorkflowsEnabled()
+const tabbed = computed(() => workflowsEnabled.value && workflows.length > 0)
+const TABS = ['models', 'workflows'] as const satisfies readonly CatalogueTab[]
+const tab = ref<CatalogueTab>('models')
+const onWorkflows = computed(() => tabbed.value && tab.value === 'workflows')
+
+// The tab decides what the row, its name and the way out of it are, and it
+// decides once here rather than at every place the template names one.
+const providerRow = computed(() => (onWorkflows.value ? [] : providers))
+const workflowRow = computed(() => (onWorkflows.value ? workflows : []))
+const rowLabel = computed(() =>
+  t(
+    onWorkflows.value
+      ? 'modelDiscovery.workflowRowLabel'
+      : 'modelDiscovery.rowLabel',
+    locale
+  )
+)
+const browseLabel = computed(() =>
+  t(
+    onWorkflows.value
+      ? 'modelDiscovery.browseWorkflows'
+      : 'modelDiscovery.browse',
+    locale
+  )
+)
+const browseHref = computed(() =>
+  onWorkflows.value ? `${routes.workshop}?type=workflows` : routes.workshop
+)
+
+// The marquee travels one row's width per period, so a fixed period runs a
+// longer row faster and a switch mid-stride lands it at the old row's fraction
+// of a different width. A pace per card holds one speed; rewinding the running
+// animation lets the row that arrives start where a row starts.
+const SECONDS_PER_CARD = 3
+const marqueeStyle = computed(() => ({
+  '--marquee-gap': '0.75rem',
+  animationDuration: `${(onWorkflows.value ? workflows.length : providers.length) * SECONDS_PER_CARD}s`
+}))
+
+const copies = ref<HTMLElement[]>([])
+watch(onWorkflows, () => {
+  for (const copy of copies.value)
+    for (const animation of copy.getAnimations()) animation.currentTime = 0
+})
 
 const cardHref = (name: string) =>
   `${routes.workshop}${catalogSearch({ query: name })}`
@@ -45,74 +98,67 @@ const cardClass =
           {{ t('modelDiscovery.label', locale) }}
         </p>
         <h2
-          class="mt-6 text-3.5xl/tight font-light whitespace-pre-line text-primary-comfy-canvas lg:text-5xl"
+          class="mt-4 text-3.5xl/tight font-light whitespace-pre-line text-primary-comfy-canvas lg:text-5xl"
         >
           {{ t('modelDiscovery.heading', locale) }}
         </h2>
         <p
-          class="mt-6 max-w-xl text-sm font-light text-primary-comfy-canvas/80 lg:text-base/snug"
+          class="mt-4 max-w-xl text-sm font-light text-primary-comfy-canvas/80 lg:text-base/snug"
         >
           {{ t('modelDiscovery.subtitle', locale) }}
         </p>
+
+        <!-- The catalogue's own control, taught here: whoever presses it on
+          the way down already knows it when the page opens. -->
+        <CatalogueTabs
+          v-if="tabbed"
+          v-model="tab"
+          :tabs="TABS"
+          :locale
+          class="mt-8"
+        />
       </div>
 
-      <div
-        class="mt-12 lg:mt-16"
-        :aria-label="t('modelDiscovery.rowLabel', locale)"
-        role="region"
-      >
+      <div class="mt-10 lg:mt-12" :aria-label="rowLabel" role="region">
         <div
           class="overflow-hidden mask-[linear-gradient(to_right,transparent,black_2rem,black_calc(100%-2rem),transparent)]"
         >
           <div class="group flex w-max gap-3">
             <div
               v-for="copy in 2"
+              ref="copies"
               :key="copy"
               class="flex shrink-0 animate-marquee gap-3 group-focus-within:paused group-hover:paused"
-              style="--marquee-gap: 0.75rem"
+              :style="marqueeStyle"
+              data-testid="discovery-marquee"
               :aria-hidden="copy === 2 ? 'true' : undefined"
             >
-              <a
-                v-for="provider in providers"
+              <DiscoveryWorkflowCard
+                v-for="workflow in workflowRow"
+                :key="workflow.name"
+                :workflow
+                :href="workflow.href"
+                :class="cardClass"
+                :tabindex="copy === 2 ? -1 : undefined"
+                data-testid="discovery-workflow"
+              />
+              <DiscoveryProviderCard
+                v-for="provider in providerRow"
                 :key="provider.name"
+                :provider
                 :href="cardHref(provider.name)"
                 :class="cardClass"
                 :tabindex="copy === 2 ? -1 : undefined"
                 data-testid="discovery-provider"
-                @pointerenter="reveal(provider.name)"
-                @focus="reveal(provider.name)"
-              >
-                <template
-                  v-if="revealed.has(provider.name) && provider.thumbnailUrl"
-                >
-                  <StaticFrame
-                    :src="provider.thumbnailUrl"
-                    class="absolute inset-0 size-full object-cover opacity-0 transition-opacity duration-300 group-hover/card:opacity-50 group-focus-visible/card:opacity-50"
-                  />
-                  <span
-                    class="absolute inset-0 bg-black/60 opacity-0 transition-opacity duration-300 group-hover/card:opacity-100 group-focus-visible/card:opacity-100"
-                    aria-hidden="true"
-                  />
-                </template>
-                <span
-                  class="relative size-9 bg-current mask-contain mask-center mask-no-repeat"
-                  :style="{ maskImage: `url(${provider.logo})` }"
-                  aria-hidden="true"
-                />
-                <span class="relative flex flex-col gap-0.5">
-                  <span class="text-base/tight font-medium">
-                    {{ provider.name }}
-                  </span>
-                </span>
-              </a>
+              />
             </div>
           </div>
         </div>
       </div>
 
-      <div class="mt-12 flex justify-center px-6 lg:mt-16">
-        <Button as="a" :href="routes.workshop" variant="outline">
-          {{ t('modelDiscovery.browse', locale) }}
+      <div class="mt-10 flex justify-center px-6 lg:mt-12">
+        <Button as="a" :href="browseHref" variant="outline">
+          {{ browseLabel }}
         </Button>
       </div>
     </section>

@@ -1,8 +1,17 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { DiscoveryProvider } from '../../data/modelDiscovery'
-import { discoveryProviders } from '../../data/modelDiscovery'
-import { resolveDiscoveryProviders } from './modelDiscoveryProviders'
+import type {
+  DiscoveryProvider,
+  DiscoveryWorkflow
+} from '../../data/modelDiscovery'
+import {
+  discoveryProviders,
+  discoveryWorkflows
+} from '../../data/modelDiscovery'
+import {
+  resolveDiscoveryProviders,
+  resolveDiscoveryWorkflows
+} from './modelDiscoveryProviders'
 
 const provider: DiscoveryProvider = {
   name: 'Example Labs',
@@ -34,5 +43,36 @@ describe('resolveDiscoveryProviders', () => {
 
     expect(providers.length).toBeGreaterThan(0)
     expect(providers).toBe(discoveryProviders)
+  })
+})
+
+const workflow: DiscoveryWorkflow = {
+  name: 'Turn a sketch into a render',
+  href: '/models/workflows/sketch/',
+  thumbnailUrl: 'https://example.com/workflow.webp'
+}
+
+describe('resolveDiscoveryWorkflows', () => {
+  it('neither loads nor exposes the catalogue when Models is disabled', async () => {
+    const load = vi.fn<() => Promise<readonly DiscoveryWorkflow[]>>()
+
+    await expect(resolveDiscoveryWorkflows(false, load)).resolves.toEqual([])
+    expect(load).not.toHaveBeenCalled()
+  })
+
+  it('returns exactly what the loader provides when Models is enabled', async () => {
+    const load = vi.fn(async () => [workflow])
+
+    await expect(resolveDiscoveryWorkflows(true, load)).resolves.toEqual([
+      workflow
+    ])
+    expect(load).toHaveBeenCalledOnce()
+  })
+
+  it('reads the real catalogue by default when enabled', async () => {
+    const workflows = await resolveDiscoveryWorkflows(true)
+
+    expect(workflows.length).toBeGreaterThan(0)
+    expect(workflows).toBe(discoveryWorkflows)
   })
 })
