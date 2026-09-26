@@ -163,6 +163,11 @@ export function useMembersPanel() {
     const tier = subscription.value?.tier
     return tier == null ? true : isSalesManagedTier(tier)
   })
+  // Strict: drives the contactSales copy only — an unrecognized tier keeps
+  // the sales route but gets plan-neutral wording.
+  const isEnterprisePlan = computed(
+    () => subscription.value?.tier === 'ENTERPRISE'
+  )
 
   const permissions = computed(() => {
     const canManageMembers =
@@ -452,6 +457,7 @@ export function useMembersPanel() {
     isOnTeamPlan,
     isPlanEnded,
     isSalesManagedPlan,
+    isEnterprisePlan,
     hasMemberSeats,
     isPlanLoading,
     hasMultipleMembers,

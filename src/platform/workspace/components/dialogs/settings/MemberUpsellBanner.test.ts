@@ -5,16 +5,13 @@ import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
 
-// The resume label is shared with the plan panel's ending banner, whose value
-// changes with the resume-subscription rename arriving via main — read it
-// rather than pinning either era's string. Guarded: an undefined name would
-// silently drop the accessible-name filter and match any button.
-const resumeLabel: string =
-  enMessages.workspacePanel.billingStatus.ending.reactivate
+// The ended banner's own CTA label — deliberately NOT the ending banner's
+// "Resume subscription": an ended plan is past resuming, the CTA starts a
+// new subscription. Guarded: an undefined name would silently drop the
+// accessible-name filter and match any button.
+const resumeLabel: string = enMessages.workspacePanel.members.resubscribe
 if (!resumeLabel) {
-  throw new Error(
-    'workspacePanel.billingStatus.ending.reactivate is gone from the bundle'
-  )
+  throw new Error('workspacePanel.members.resubscribe is gone from the bundle')
 }
 
 import MemberUpsellBanner from './MemberUpsellBanner.vue'
@@ -26,7 +23,10 @@ const i18n = createI18n({
 })
 
 function renderBanner(
-  props: { variant: 'upgrade' | 'reactivate' | 'contactSales' } = {
+  props: {
+    variant: 'upgrade' | 'reactivate' | 'contactSales'
+    enterprise?: boolean
+  } = {
     variant: 'upgrade'
   }
 ) {
@@ -60,8 +60,18 @@ describe('MemberUpsellBanner', () => {
     ).toBeInTheDocument()
   })
 
-  it('routes an ended Enterprise plan to sales, not reactivation', () => {
+  it('keeps an unrecognized tier on the sales route with plan-neutral copy', () => {
     renderBanner({ variant: 'contactSales' })
+
+    expect(screen.getByText('Your plan has ended')).toBeInTheDocument()
+    expect(
+      screen.getByText('Contact sales to reactivate your plan.')
+    ).toBeInTheDocument()
+    expect(screen.queryByText(/Enterprise/)).not.toBeInTheDocument()
+  })
+
+  it('routes an ended Enterprise plan to sales, not reactivation', () => {
+    renderBanner({ variant: 'contactSales', enterprise: true })
 
     expect(
       screen.getByText('Your Enterprise plan has ended')

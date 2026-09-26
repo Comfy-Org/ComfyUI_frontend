@@ -14,6 +14,7 @@
             : 'reactivate'
           : 'upgrade'
       "
+      :enterprise="isEnterprisePlan"
       @action="
         isPlanEnded && isSalesManagedPlan
           ? handleContactSales()
@@ -255,6 +256,7 @@ const {
   isInPersonalWorkspace,
   isPlanEnded,
   isSalesManagedPlan,
+  isEnterprisePlan,
   hasMemberSeats,
   isPlanLoading,
   hasMultipleMembers,

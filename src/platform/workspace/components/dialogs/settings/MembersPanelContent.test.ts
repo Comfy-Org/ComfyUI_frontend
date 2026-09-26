@@ -41,6 +41,7 @@ const {
   mockPermissions,
   mockIsPlanEnded,
   mockIsSalesManagedPlan,
+  mockIsEnterprisePlanStrict,
   mockUiConfig
 } = vi.hoisted(() => {
   // oxlint-disable-next-line typescript/no-require-imports, typescript/consistent-type-imports
@@ -57,6 +58,7 @@ const {
     mockIsInviteDisabled: ref(false),
     mockIsPlanEnded: ref(false),
     mockIsSalesManagedPlan: ref(false),
+    mockIsEnterprisePlanStrict: ref(false),
     mockFilteredMembers: ref<WorkspaceMember[]>([]),
     mockFilteredPendingInvites: ref<WorkspacePendingInvite[]>([]),
     mockMaxSeats: ref<number | null>(20),
@@ -114,6 +116,7 @@ vi.mock<unknown>(
       isInviteDisabled: mockIsInviteDisabled,
       isPlanEnded: mockIsPlanEnded,
       isSalesManagedPlan: mockIsSalesManagedPlan,
+      isEnterprisePlan: mockIsEnterprisePlanStrict,
       inviteTooltip: computed(() => null),
       handleInviteMember: mockHandleInviteMember,
       personalWorkspaceMember: computed(() => ({
@@ -236,6 +239,7 @@ describe('MembersPanelContent', () => {
     mockIsInviteDisabled.value = false
     mockIsPlanEnded.value = false
     mockIsSalesManagedPlan.value = false
+    mockIsEnterprisePlanStrict.value = false
     mockActiveView.value = 'active'
     mockSearchQuery.value = ''
     mockPermissions.value = {
@@ -523,7 +527,7 @@ describe('MembersPanelContent', () => {
 
       await userEvent.click(
         screen.getByRole('button', {
-          name: /workspacePanel\.billingStatus\.ending\.reactivate/
+          name: /workspacePanel\.members\.resubscribe/
         })
       )
       expect(mockShowTeamPlans).toHaveBeenCalled()
@@ -533,6 +537,7 @@ describe('MembersPanelContent', () => {
       const openSpy = vi.spyOn(window, 'open').mockReturnValue(null)
       mockIsPlanEnded.value = true
       mockIsSalesManagedPlan.value = true
+      mockIsEnterprisePlanStrict.value = true
       renderComponent()
       expect(
         screen.getByText('workspacePanel.members.endedEnterpriseTitle')

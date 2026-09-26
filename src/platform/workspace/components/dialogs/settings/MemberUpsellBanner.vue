@@ -37,8 +37,11 @@ import Button from '@/components/ui/button/Button.vue'
 // not a state change). 'reactivate' / 'contactSales': the plan has ended
 // (billing_status inactive) and the route back differs by tier — self-serve
 // resumes in-product, Enterprise goes through sales (DES-1200).
-const { variant } = defineProps<{
+// `enterprise` discriminates the contactSales copy only: unrecognized tiers
+// route to sales too, but must not be named Enterprise (no borrowed claims).
+const { variant, enterprise = false } = defineProps<{
   variant: 'upgrade' | 'reactivate' | 'contactSales'
+  enterprise?: boolean
 }>()
 
 defineEmits<{
@@ -51,7 +54,9 @@ const title = computed(() => {
   if (variant === 'reactivate')
     return t('workspacePanel.members.endedTeamTitle')
   if (variant === 'contactSales')
-    return t('workspacePanel.members.endedEnterpriseTitle')
+    return enterprise
+      ? t('workspacePanel.members.endedEnterpriseTitle')
+      : t('workspacePanel.members.endedPlanTitle')
   return null
 })
 
@@ -59,13 +64,16 @@ const body = computed(() => {
   if (variant === 'reactivate')
     return t('workspacePanel.members.upsellBannerReactivate')
   if (variant === 'contactSales')
-    return t('workspacePanel.members.upsellBannerEnterpriseEnded')
+    return enterprise
+      ? t('workspacePanel.members.upsellBannerEnterpriseEnded')
+      : t('workspacePanel.members.upsellBannerPlanEnded')
   return t('workspacePanel.members.upsellBanner')
 })
 
 const cta = computed(() => {
-  if (variant === 'reactivate')
-    return t('workspacePanel.billingStatus.ending.reactivate')
+  // Not the ending banner's "Resume subscription": an ended plan is past
+  // resuming — this CTA starts a new subscription through the pricing table.
+  if (variant === 'reactivate') return t('workspacePanel.members.resubscribe')
   if (variant === 'contactSales')
     return t('workspacePanel.members.contactSales')
   return t('workspacePanel.members.upgradeToTeam')

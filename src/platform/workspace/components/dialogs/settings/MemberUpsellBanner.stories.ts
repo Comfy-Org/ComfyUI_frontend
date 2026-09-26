@@ -41,6 +41,12 @@ export const Reactivate: Story = {
 
 // Ended Enterprise: the route back is sales, not a resume button.
 export const ContactSales: Story = {
+  args: { variant: 'contactSales', enterprise: true }
+}
+
+// Ended unrecognized tier: same sales route, plan-neutral copy — an
+// unidentifiable plan is never named Enterprise.
+export const ContactSalesUnknownTier: Story = {
   args: { variant: 'contactSales' }
 }
 
@@ -51,6 +57,7 @@ export const AllStates: Story = {
       <div class="flex flex-col gap-4">
         <MemberUpsellBanner variant="upgrade" />
         <MemberUpsellBanner variant="reactivate" />
+        <MemberUpsellBanner variant="contactSales" enterprise />
         <MemberUpsellBanner variant="contactSales" />
       </div>
     `
