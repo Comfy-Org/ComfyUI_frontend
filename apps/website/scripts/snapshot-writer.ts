@@ -35,11 +35,25 @@ function substantiveFields(
   return JSON.stringify(withoutKeys(parsed, ignored))
 }
 
+function isNotFound(error: unknown): boolean {
+  return error instanceof Error && 'code' in error && error.code === 'ENOENT'
+}
+
+/**
+ * Only a genuinely absent file answers `null`. Any other read failure —
+ * permissions, a directory in the way, bad I/O — must not be reported as "no
+ * snapshot yet", because both callers treat that as licence to write.
+ */
 function readIfPresent(path: string): string | null {
   try {
     return readFileSync(path, 'utf8')
-  } catch {
-    return null
+  } catch (error) {
+    if (isNotFound(error)) return null
+    throw new Error(
+      `${path} exists but could not be read, so the refresh cannot tell whether ` +
+        'new data would lose anything. Fix the file, then re-run.',
+      { cause: error }
+    )
   }
 }
 

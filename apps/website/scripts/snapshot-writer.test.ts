@@ -1,4 +1,10 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -226,5 +232,26 @@ describe('readSnapshot', () => {
     writeFileSync(snapshotPath, contents, 'utf8')
 
     expect(() => readSnapshot(snapshotPath)).toThrow(snapshotPath)
+  })
+
+  // Only ENOENT means "no snapshot yet". Any other read failure reported as
+  // null would be read as an empty baseline by the guards and as licence to
+  // write by writeSnapshotIfChanged. A directory in the file's place raises
+  // EISDIR, which stands in for the permission and I/O cases.
+  it('throws when the snapshot cannot be read at all', () => {
+    mkdirSync(snapshotPath)
+
+    expect(() => readSnapshot(snapshotPath)).toThrow(snapshotPath)
+  })
+
+  it('does not let writeSnapshotIfChanged overwrite an unreadable snapshot', () => {
+    mkdirSync(snapshotPath)
+
+    expect(() =>
+      writeSnapshotIfChanged(
+        snapshotPath,
+        rolesSnapshot('2026-09-25T12:00:00.000Z')
+      )
+    ).toThrow(snapshotPath)
   })
 })
