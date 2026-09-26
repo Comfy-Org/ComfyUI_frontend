@@ -19,6 +19,14 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 
 import UsageLogsTable from './UsageLogsTable.vue'
 
+const ADDITIONAL_INFO_PARAM_KEYS = [
+  'credits_used',
+  'endpoint',
+  'subscription_id',
+  'gpu_seconds',
+  'duration'
+]
+
 const mockCustomerEventsService = vi.hoisted(() => ({
   getMyEvents: vi.fn(),
   formatEventType: vi.fn(),
@@ -124,7 +132,7 @@ describe('UsageLogsTable', () => {
       event_type: 'credit_added',
       params: {
         amount: 1000,
-        transaction_id: 'txn-123'
+        credits_used: 42
       },
       createdAt: '2024-01-01T10:00:00Z'
     },
@@ -189,14 +197,13 @@ describe('UsageLogsTable', () => {
       (dateString: string) => new Date(dateString).toLocaleDateString()
     )
     mockCustomerEventsService.hasAdditionalInfo.mockImplementation(
-      (event: AuditLog) => {
-        const { amount, api_name, model, ...otherParams } =
-          event.params as Record<string, unknown>
-        return Object.keys(otherParams).length > 0
-      }
+      (event: AuditLog) =>
+        ADDITIONAL_INFO_PARAM_KEYS.some(
+          (key) => (event.params as Record<string, unknown>)[key] !== undefined
+        )
     )
     mockCustomerEventsService.getTooltipContent.mockImplementation(
-      () => '<strong>Transaction Id:</strong> txn-123'
+      () => '<strong>Credits Used:</strong> 42'
     )
     mockCustomerEventsService.error.value = null
     mockCustomerEventsService.isLoading.value = false
