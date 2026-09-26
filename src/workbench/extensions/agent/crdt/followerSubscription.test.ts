@@ -909,6 +909,29 @@ describe('FE-GAP-1 — a seq jump means a dropped frame and forces a resync', ()
     expect(transport.framesOfType('doc_subscribe')).toHaveLength(2)
   })
 
+  it('recovers an overlapping subscribe after a stale schema refusal', () => {
+    const { transport, bridge, projected } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    bridge.resubscribe()
+
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: false,
+      code: 'schema_version_mismatch'
+    })
+    expect(bridge.subscribedWorkflowId).toBeNull()
+
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 1)
+    )
+
+    expect(projected).toHaveLength(1)
+    expect(bridge.subscribedWorkflowId).toBe(WORKFLOW_ID)
+  })
+
   it('ignores a late acknowledgement for the previous workflow', () => {
     const { transport, bridge } = wire()
     transport.open = true

@@ -39,6 +39,7 @@ const bridgeState = vi.hoisted(() => {
     sendHumanOps = vi.fn()
     subscribedWorkflowId: string | null = 'wf-1'
     lastSequence = 41
+    lastSchemaError: Error | null = null
     follower = {
       updatesApplied: 0,
       doc: {
@@ -215,7 +216,8 @@ function mountFollower(
   initial: string | null = null,
   initiallyActive = true,
   getGraph: () => MaterializableGraph | null = () => null,
-  events: Parameters<typeof useAgentCrdtFollower>[5] = {}
+  events: Parameters<typeof useAgentCrdtFollower>[5] = {},
+  schemaErrorFallback = ref('Document schema version mismatch')
 ): {
   unmount: () => void
   workflowId: Ref<string | null>
@@ -235,7 +237,8 @@ function mountFollower(
         () => null,
         isTargetActive,
         getGraph,
-        events
+        events,
+        schemaErrorFallback
       )
       exposedStatus = () => status.value as AgentCrdtStatus
       enqueue = enqueueHumanOperations
@@ -446,6 +449,30 @@ describe('useAgentCrdtFollower', () => {
 
     expect(bridge().resubscribe).not.toHaveBeenCalled()
     expect(status().connected).toBe(true)
+    unmount()
+  })
+
+  it('does not retry a permanent schema-version refusal', () => {
+    vi.useFakeTimers()
+    const { unmount, status } = mountFollower('wf-1')
+
+    dispatchFrame('doc_subscribed', {
+      ok: false,
+      workflowId: 'wf-1',
+      code: 'schema_version_mismatch',
+      message: 'Expected schema 2, found 1'
+    })
+    vi.advanceTimersByTime(60_000)
+    apiState.target.dispatchEvent(new Event('status'))
+    apiState.target.dispatchEvent(new Event('reconnected'))
+
+    expect(status()).toMatchObject({
+      connected: false,
+      workflowId: 'wf-1',
+      schemaError: 'Expected schema 2, found 1'
+    })
+    expect(bridge().resubscribe).not.toHaveBeenCalled()
+    expect(bridge().reconcile).not.toHaveBeenCalled()
     unmount()
   })
 
@@ -761,7 +788,20 @@ describe('useAgentCrdtFollower', () => {
 
     expect(status().connected).toBe(false)
     expect(status().workflowId).toBe('wf-1')
+    expect(status().schemaError).toBe('Document schema version mismatch')
     expect(adapterState.discardPending).toHaveBeenCalledWith('wf-1')
+    unmount()
+  })
+
+  it('clears a local schema error after a readable update', () => {
+    const { unmount, status } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true })
+    dispatchFrame('schema_error', { workflowId: 'wf-1' })
+
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 7 })
+
+    expect(status().connected).toBe(true)
+    expect(status().schemaError).toBeNull()
     unmount()
   })
 

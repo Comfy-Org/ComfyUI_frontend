@@ -173,6 +173,7 @@ export interface AgentCrdtStatus {
    */
   updatesApplied: number
   lastFrameType: string | null
+  schemaError: string | null
   outcomes: AgentCrdtOutcomeCounters
 }
 
@@ -183,6 +184,18 @@ export interface AgentCrdtFollowerEvents {
     nodeIds: readonly NodeId[]
   }) => void
   onReset?: (workflowId: string) => void
+}
+
+function readSchemaErrorMessage(detail: unknown): string | null {
+  if (
+    detail !== null &&
+    typeof detail === 'object' &&
+    'message' in detail &&
+    typeof detail.message === 'string' &&
+    detail.message.trim() !== ''
+  )
+    return detail.message
+  return null
 }
 
 // Nothing is re-thrown: an error escaping onBeforeUnmount reaches Vue's
@@ -212,7 +225,8 @@ export function useAgentCrdtFollower(
    * reconcile without waiting for the next remote frame.
    */
   getGraph: () => MaterializableGraph | null = () => null,
-  events: AgentCrdtFollowerEvents = {}
+  events: AgentCrdtFollowerEvents = {},
+  schemaErrorFallback: Readonly<Ref<string>> = ref('')
 ) {
   const productGate = useAgentPanelStore()
   const follower = shallowRef<ReturnType<typeof startAgentCrdtFollower>>()
@@ -222,6 +236,7 @@ export function useAgentCrdtFollower(
     workflowId: null,
     updatesApplied: 0,
     lastFrameType: null,
+    schemaError: null,
     outcomes: {
       received: 0,
       applied: 0,
@@ -251,7 +266,8 @@ export function useAgentCrdtFollower(
           userId,
           isTargetActive,
           getGraph,
-          events
+          events,
+          schemaErrorFallback
         )
       )
     },
@@ -279,12 +295,15 @@ function startAgentCrdtFollower(
   userId: () => string | null,
   isTargetActive: Ref<boolean>,
   getGraph: () => MaterializableGraph | null,
-  events: AgentCrdtFollowerEvents
+  events: AgentCrdtFollowerEvents,
+  schemaErrorFallback: Readonly<Ref<string>>
 ) {
   const connected = ref(false)
   const updatesApplied = ref(0)
   const lastFrameType = ref<string | null>(null)
+  const schemaError = ref<string | null>(null)
   const subscribedWorkflowId = ref<string | null>(null)
+  let permanentSchemaMismatchWorkflowId: string | null = null
   const outcomes = ref<AgentCrdtOutcomeCounters>({
     received: 0,
     applied: 0,
@@ -331,7 +350,8 @@ function startAgentCrdtFollower(
     },
     // Send REALITY, not this composable's intent: the sender re-reads it before
     // every send and resend, so ops never reach a doc we are not subscribed to.
-    workflowId: () => bridge.subscribedWorkflowId,
+    workflowId: () =>
+      schemaError.value === null ? bridge.subscribedWorkflowId : null,
     tab: tabId,
     actor: () => `human:${userId() ?? 'anonymous'}:${tabId}`,
     baseVersion: () => bridge.lastSequence,
@@ -400,6 +420,9 @@ function startAgentCrdtFollower(
   }
   const isCurrentWorkflow = (workflowId: unknown): workflowId is string =>
     isTargetActive.value && workflowId === subscribedWorkflowId.value
+  const isPermanentlyMismatched = (): boolean =>
+    subscribedWorkflowId.value !== null &&
+    subscribedWorkflowId.value === permanentSchemaMismatchWorkflowId
   const trackNodeChanges = (): string[] => {
     const ids = currentDocNodeIds()
     const added = [...ids].filter((id) => !knownDocNodeIds.has(id))
@@ -419,6 +442,30 @@ function startAgentCrdtFollower(
     if (applied && !update.catchUp) incrementOutcome('appliedLive')
     return applied ? projection.reconcileLiveGraph(update.workflowId) : []
   }
+  const handleSubscribeRefused = (detail: {
+    workflowId?: unknown
+    code?: unknown
+    message?: unknown
+  }): void => {
+    const refusedWorkflowId =
+      typeof detail.workflowId === 'string' ? detail.workflowId : null
+    if (
+      detail.code === 'schema_version_mismatch' &&
+      refusedWorkflowId === subscribedWorkflowId.value
+    ) {
+      lifecycle.clearForRetarget()
+      permanentSchemaMismatchWorkflowId = refusedWorkflowId
+      schemaError.value =
+        readSchemaErrorMessage(detail) || schemaErrorFallback.value
+    } else {
+      lifecycle.onSubscribeRefused()
+    }
+    // FE #16637 residual: a refusal is the earliest signal the sender can
+    // get that its in-flight batch's doc is gone — don't make it wait out
+    // the 10 s result-silence window to notice on its own.
+    releaseHeldOps()
+    sender.abortIfUnbound()
+  }
 
   const onSubscribed: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
@@ -428,15 +475,15 @@ function startAgentCrdtFollower(
     lastFrameType.value = event.type
     recordDevEvent('doc_subscribed', event.detail ?? null)
     if (ok) {
+      if (bridge.lastSchemaError !== null || isPermanentlyMismatched()) {
+        connected.value = false
+        lifecycle.clearStaleProbe()
+        return
+      }
       lifecycle.onSubscribeConfirmed()
       resumeHeldOpsIfSubscribed()
     } else {
-      lifecycle.onSubscribeRefused()
-      // FE #16637 residual: a refusal is the earliest signal the sender can
-      // get that its in-flight batch's doc is gone — don't make it wait out
-      // the 10 s result-silence window to notice on its own.
-      releaseHeldOps()
-      sender.abortIfUnbound()
+      handleSubscribeRefused(event.detail ?? {})
     }
   }
   const onUpdate: EventListener = (event) => {
@@ -451,6 +498,11 @@ function startAgentCrdtFollower(
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
     const materialized = applyAndReconcile(update)
+    if (bridge.lastSchemaError === null && schemaError.value !== null) {
+      permanentSchemaMismatchWorkflowId = null
+      schemaError.value = null
+      connected.value = true
+    }
     recordDevEvent('doc_update', {
       workflowId: update.workflowId,
       seq: update.seq,
@@ -531,6 +583,8 @@ function startAgentCrdtFollower(
       workflowId === subscribedWorkflowId.value
     ) {
       updatesApplied.value = 0
+      permanentSchemaMismatchWorkflowId = null
+      schemaError.value = null
       confirmedDeletes.clear()
       projection.clearForReset(workflowId, {
         source: 'agent-remote',
@@ -541,23 +595,23 @@ function startAgentCrdtFollower(
     }
   }
   const onSchemaError: EventListener = (event) => {
-    // KA-11 fail-closed: the bridge refused to propagate an unreadable doc, so
-    // nothing was projected. Surface it as its own status rather than as a
-    // generic "disconnected", which is indistinguishable from "never connected".
-    connected.value = false
-    lastFrameType.value = event.type
-    lifecycle.clearStaleProbe()
     const detail =
       event instanceof CustomEvent
-        ? (event.detail as { workflowId?: string } | null)
+        ? (event.detail as { workflowId?: unknown } | null)
         : null
-    if (detail?.workflowId !== undefined)
-      projection.discardPending(detail.workflowId)
     outcomes.value = { ...outcomes.value, errored: outcomes.value.errored + 1 }
     recordDevEvent(
       'schema_error',
       event instanceof CustomEvent ? (event.detail ?? null) : null
     )
+    if (!isCurrentWorkflow(detail?.workflowId)) return
+    connected.value = false
+    lastFrameType.value = event.type
+    lifecycle.clearStaleProbe()
+    schemaError.value =
+      readSchemaErrorMessage(detail) || schemaErrorFallback.value
+    projection.discardPending(detail.workflowId)
+    sender.abortIfUnbound()
   }
   const onGap: EventListener = (event) => {
     outcomes.value = { ...outcomes.value, gap: outcomes.value.gap + 1 }
@@ -581,8 +635,9 @@ function startAgentCrdtFollower(
   }
   const onReconnected: EventListener = () => {
     connected.value = false
-    lifecycle.onReconnected()
     recordDevEvent('reconnected', null)
+    if (isPermanentlyMismatched()) return
+    lifecycle.onReconnected()
     bridge.resubscribe()
   }
   /**
@@ -600,7 +655,7 @@ function startAgentCrdtFollower(
    * the retry timer owns the next attempt and its backoff.
    */
   const onSocketActivity: EventListener = () => {
-    if (lifecycle.shouldDeferSubscribe()) return
+    if (lifecycle.shouldDeferSubscribe() || isPermanentlyMismatched()) return
     bridge.reconcile()
     resumeHeldOpsIfSubscribed()
   }
@@ -737,6 +792,8 @@ function startAgentCrdtFollower(
       const justActivated = active && previous?.[1] === false
       lifecycle.clearForRetarget()
       connected.value = false
+      schemaError.value = null
+      permanentSchemaMismatchWorkflowId = null
       knownDocNodeIds = new Set()
       pendingLiveNodeIds.clear()
       if (!active) {
@@ -782,6 +839,7 @@ function startAgentCrdtFollower(
     workflowId: subscribedWorkflowId.value,
     updatesApplied: updatesApplied.value,
     lastFrameType: lastFrameType.value,
+    schemaError: schemaError.value,
     outcomes: outcomes.value
   }))
 

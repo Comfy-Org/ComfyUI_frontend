@@ -785,6 +785,19 @@ const {
       }
     },
     onReset: graphActivity.resetWorkflow
+  },
+  computed(() => t('agent.schemaMismatchDetail'))
+)
+watch(
+  () => crdtStatus.value.schemaError,
+  (detail) => {
+    if (detail === null) return
+    toast.add({
+      severity: 'warn',
+      summary: t('agent.schemaMismatchTitle'),
+      detail,
+      life: 5000
+    })
   }
 )
 // The bound document's serialized root graph id, independent of what is

@@ -38,6 +38,7 @@ const STATUS: AgentCrdtStatus = {
   workflowId: 'doc-1',
   updatesApplied: 4,
   lastFrameType: 'doc_update',
+  schemaError: null,
   outcomes: {
     received: 5,
     applied: 4,

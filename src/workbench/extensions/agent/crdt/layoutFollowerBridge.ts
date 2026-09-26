@@ -88,6 +88,7 @@ export class LayoutFollowerBridge extends EventTarget {
    * never on the first successful open.
    */
   private sentWorkflowId: string | null = null
+  private recoverableRefusalWorkflowId: string | null = null
   /**
    * The most recent KA-11 read-gate failure, while the merged doc is still
    * unreadable. Cleared by a lineage break ({@link dropDocForNewLineage}) or
@@ -182,6 +183,7 @@ export class LayoutFollowerBridge extends EventTarget {
     this.lineageWorkflowId = workflowId
     this.desiredWorkflowId = workflowId
     if (lineage !== null && lineage !== workflowId) {
+      this.recoverableRefusalWorkflowId = null
       this.dropDocForNewLineage()
       this.dispatchEvent(
         new CustomEvent('follower_replaced', { detail: { workflowId } })
@@ -231,6 +233,7 @@ export class LayoutFollowerBridge extends EventTarget {
 
   unsubscribe(): void {
     this.desiredWorkflowId = null
+    this.recoverableRefusalWorkflowId = null
     this.reconcile()
   }
 
@@ -256,6 +259,7 @@ export class LayoutFollowerBridge extends EventTarget {
       this.client.removeEventListener('doc_ops_result', this.forwardFrame)
       this.desiredWorkflowId = null
       this.sentWorkflowId = null
+      this.recoverableRefusalWorkflowId = null
       this.followerDoc.destroy()
     }
   }
@@ -263,7 +267,11 @@ export class LayoutFollowerBridge extends EventTarget {
   private readonly onDocUpdate: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
     const update = event.detail as DocUpdate
-    if (update.workflowId !== this.sentWorkflowId) return
+    const recoversRefusedAttempt =
+      this.sentWorkflowId === null &&
+      update.workflowId === this.recoverableRefusalWorkflowId
+    if (update.workflowId !== this.sentWorkflowId && !recoversRefusedAttempt)
+      return
 
     // A stale/duplicate frame cannot advance the replica. Ignoring it also
     // prevents a replayed Yjs frame from spuriously re-running ECS effects.
@@ -305,6 +313,11 @@ export class LayoutFollowerBridge extends EventTarget {
     // frame that restores a readable version un-latch the gate and resume
     // projecting.
     if (!this.isReadableUpdate(update)) return
+
+    if (recoversRefusedAttempt) {
+      this.sentWorkflowId = update.workflowId
+      this.recoverableRefusalWorkflowId = null
+    }
 
     const classifiedUpdate: ClassifiedDocUpdate = {
       ...update,
@@ -409,7 +422,13 @@ export class LayoutFollowerBridge extends EventTarget {
     if (subscribed.ok) {
       this.ackSeq = subscribed.seq ?? null
       this.catchUpPending = this.ackSeq !== null
-    } else this.sentWorkflowId = null
+    } else {
+      this.recoverableRefusalWorkflowId =
+        subscribed.code === 'schema_version_mismatch'
+          ? subscribed.workflowId
+          : null
+      this.sentWorkflowId = null
+    }
     this.dispatchEvent(new CustomEvent(event.type, { detail: event.detail }))
   }
 
