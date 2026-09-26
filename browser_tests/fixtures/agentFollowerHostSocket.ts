@@ -105,6 +105,8 @@ function parseClientDocFrame(
 /** Routed `/ws` host shared by black-box Agent follower fixtures. */
 export class AgentFollowerHostSocket {
   private refuseReason: string | null = null
+  private refusalsLeft = 0
+  private refusedSubscribes = 0
 
   private socket: WebSocketRoute | null = null
   private subscribes = 0
@@ -226,16 +228,26 @@ export class AgentFollowerHostSocket {
   }
 
   /**
-   * Make the host REFUSE every subscribe, as it does when `docService` is nil,
+   * Make the host REFUSE subscribes, as it does when `docService` is nil,
    * when it is overloaded, or at the per-session document cap. No catch-up
    * follows a refusal, so the follower gets no canvas frame at all.
+   *
+   * `times` bounds the refusal: a finite count models a transient overload
+   * that the follower's own subscribe-retry ladder is meant to ride out, and
+   * the default (unbounded) models a host that never recovers.
    */
-  refuseSubscribes(reason = 'overloaded'): void {
+  refuseSubscribes(
+    reason = 'overloaded',
+    times = Number.POSITIVE_INFINITY
+  ): void {
     this.refuseReason = reason
+    this.refusalsLeft = times
   }
 
   private answerSubscribe(stateVector: string): void {
-    if (this.refuseReason) {
+    if (this.refuseReason !== null && this.refusalsLeft > 0) {
+      this.refusalsLeft -= 1
+      this.refusedSubscribes += 1
       this.send(this.host.subscribeRefused(this.refuseReason))
       this.subscribes += 1
       this.resolveSubscribed?.()
@@ -245,6 +257,11 @@ export class AgentFollowerHostSocket {
     this.send(this.host.catchUp(stateVector))
     this.subscribes += 1
     this.resolveSubscribed?.()
+  }
+
+  /** Subscribes this host turned away, so a retry ladder can be asserted. */
+  refusedSubscribeCount(): number {
+    return this.refusedSubscribes
   }
 
   // The applier is the only judge of a structurally valid human batch; the
