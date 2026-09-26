@@ -304,7 +304,8 @@ describe('TelemetryRegistry', () => {
       trigger: 'button_click'
     } satisfies AgentConsentShownMetadata
     const consentResolvedMetadata = {
-      decision: 'accepted'
+      decision: 'dismissed',
+      save_error_shown: true
     } satisfies AgentConsentResolvedMetadata
     const onboardingStepMetadata = {
       step: 2,
@@ -481,6 +482,22 @@ describe('TelemetryRegistry', () => {
             exit: 'already_offered',
             stage: 'offer',
             retry_armed: false
+          })
+      },
+      {
+        method: 'trackAgentConsentOfferExited',
+        expected: {
+          exit: 'scope_changed_after_read',
+          stage: 'request',
+          retry_armed: false,
+          trigger: 'button_click'
+        },
+        invoke: (registry) =>
+          registry.trackAgentConsentOfferExited({
+            exit: 'scope_changed_after_read',
+            stage: 'request',
+            retry_armed: false,
+            trigger: 'button_click'
           })
       },
       {
