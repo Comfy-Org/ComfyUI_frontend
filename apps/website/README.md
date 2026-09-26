@@ -271,6 +271,11 @@ switching detaches its controller and hides its results. Backend authorization a
 admission controls remain authoritative. Local development also accepts
 `PUBLIC_WORKSHOP_WORKFLOWS_ENABLED=1`.
 
+Workshop apps (Cinematic Studio and its Re-shoot app) are gated separately by
+the `workshop-apps-enabled` PostHog flag: the `/cinematic-studio` page, the
+featured slide on `/models` and a model page's Open in Studio link. Local
+development also accepts `PUBLIC_WORKSHOP_APPS_ENABLED=1`.
+
 `src/config/workflow-render.ts` implements the shared workflow request and polling
 helper. Node scripts import `workflow_render` and `workflow_for_model` from
 `scripts/workflow-render.ts`; `COMFY_API_KEY` supplies the credential unless a
@@ -292,7 +297,7 @@ Prepare graph previews separately with
 `pnpm --filter @comfyorg/website exec tsx scripts/prepare-workflow-previews.ts`.
 This reads `source.uiWorkflowPath` at the pinned commit from the local checkout
 and writes static SVG plus original workflow JSON into
-`public/workflows/prepared/`. `source.path` identifies the executable API graph;
+`public/workflow-graphs/`. `source.path` identifies the executable API graph;
 the UI workflow path is declared separately in the same JSONL record. New source
 repositories require offline preparation; neither the website build nor run
 admission invokes this tool.

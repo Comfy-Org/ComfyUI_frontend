@@ -564,7 +564,7 @@ test.describe('Billing recovery on the SDK rails', { tag: '@cloud' }, () => {
         teamContent.getByText('This workspace is not on a subscription')
       ).toBeVisible()
       await expect(
-        teamContent.getByRole('button', { name: 'Subscribe Now' })
+        teamContent.getByRole('button', { name: 'Subscribe', exact: true })
       ).toBeVisible()
       await expect(teamContent.getByText(/Renews on/)).toHaveCount(0)
     })
@@ -628,8 +628,11 @@ test.describe('Billing recovery on the SDK rails', { tag: '@cloud' }, () => {
       for (let visit = 0; visit < 3; visit++) {
         const polls = routes.pollRequests.length
         await returnToTab(page)
+        // The backoff reaches OPERATION_POLL_TIMING.maxMs of 8s by the last
+        // visit, so the default 5s predicate budget is shorter than the gap
+        // it is waiting on whenever the focus does not force a fresh poll.
         await expect
-          .poll(() => routes.pollRequests.length)
+          .poll(() => routes.pollRequests.length, { timeout: 45_000 })
           .toBeGreaterThan(polls)
       }
 
@@ -703,6 +706,40 @@ test.describe('Billing recovery on the SDK rails', { tag: '@cloud' }, () => {
       expect(operationIdsPolled(routes.pollRequests)).toEqual(
         new Set([OPERATION_ID])
       )
+    })
+  })
+
+  test.describe('a plan change over an operation parked by an earlier attempt', () => {
+    test('says the earlier payment has to finish, and issues no second subscribe', async ({
+      page
+    }) => {
+      test.setTimeout(90_000)
+      const routes = await setupSubscription(page)
+      // Processing, so no hosted action is offered and nothing disables the
+      // confirm button. This is the state the preview guard cannot see.
+      routes.setOperation(VERIFIED_PROCESSING)
+      // Parked before this tab sends any subscribe of its own.
+      await page.route('**/api/billing/status', (route) =>
+        route.fulfill(
+          jsonRoute({
+            ...ACTIVE_STANDARD,
+            pending_billing_op_id: OPERATION_ID,
+            pending_billing_op_type: 'subscription'
+          } satisfies BillingStatusResponse)
+        )
+      )
+
+      await confirmUpgrade(page)
+
+      await expect(
+        page.getByText(
+          'A payment you started earlier is still going through. It has to finish before you can choose a different plan.'
+        )
+      ).toBeVisible()
+      expect(routes.subscribeRequests).toEqual([])
+      await expect(
+        page.getByRole('heading', { name: "You're all set" })
+      ).toBeHidden()
     })
   })
 })

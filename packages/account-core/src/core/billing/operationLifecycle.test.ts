@@ -287,7 +287,7 @@ describe('createBillingOperationLifecycle', () => {
       ])
     })
 
-    it("adopts the backend's pending operation of the same kind instead of issuing a second", async () => {
+    it("refuses over the backend's pending operation of the same kind instead of issuing a second", async () => {
       const { lifecycle, telemetry } = harness({
         status: statusSnapshot({
           pending_billing_op_id: 'op-9',
@@ -301,19 +301,12 @@ describe('createBillingOperationLifecycle', () => {
       const began = await lifecycle.begin('topup', issue)
 
       expect(issue).not.toHaveBeenCalled()
-      expect(began).toMatchObject({
-        status: 'ok',
-        value: {
-          id: 'op-9',
-          actionUrl: 'https://billing.example/continue',
-          customerActionSeen: true
-        }
+      expect(began).toEqual({
+        status: 'error',
+        code: 'OPERATION_ALREADY_PENDING'
       })
-      expect(telemetry[0]).toMatchObject({
-        name: 'billing.operation.started',
-        billing_op_id: 'op-9',
-        resumed: true
-      })
+      // Nothing was taken over, so no attempt started under this caller.
+      expect(telemetry).toEqual([])
     })
 
     it('shares one in-flight command per kind', async () => {
@@ -688,7 +681,7 @@ describe('createBillingOperationLifecycle', () => {
           pending_billing_op_type: 'topup'
         })
       )
-      const readopted = await lifecycle.begin('topup', issued())
+      const readopted = await lifecycle.recover()
       await flush()
 
       expect(readopted).toMatchObject({
