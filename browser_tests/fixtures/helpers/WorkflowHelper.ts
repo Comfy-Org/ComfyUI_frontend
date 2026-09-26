@@ -97,6 +97,26 @@ export class WorkflowHelper {
   }
 
   /**
+   * Drops every persisted workflow draft and its index entry.
+   *
+   * `reloadAndWaitForApp()` deliberately preserves localStorage, so a value
+   * that survives it may have come from the pending local draft rather than
+   * from a durable save. A test that means to prove the save path must clear
+   * the drafts first (and close the owning tab, so the unload flush cannot
+   * rewrite the key it is about to read back).
+   */
+  async clearPersistedDrafts() {
+    await this.comfyPage.page.evaluate(() => {
+      const draftKeys = Object.keys(localStorage).filter(
+        (key) =>
+          key.startsWith('Comfy.Workflow.Draft.v2:') ||
+          key.startsWith('Comfy.Workflow.DraftIndex.v2:')
+      )
+      for (const key of draftKeys) localStorage.removeItem(key)
+    })
+  }
+
+  /**
    * Reloads the current page and waits for the app to initialize.
    * Unlike ComfyPage.setup(), this preserves localStorage (drafts) and
    * the URL hash (subgraph navigation state), so the app restores
