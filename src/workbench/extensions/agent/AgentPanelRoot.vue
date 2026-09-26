@@ -775,7 +775,17 @@ function closeIdleFrameRun(tracker: ChangeTracker) {
     tracker.closeCoalescedRun()
   }, CLOSE_IDLE_FRAME_RUN_MS)
 }
-onBeforeUnmount(cancelIdleFrameRunClose)
+onBeforeUnmount(() => {
+  cancelIdleFrameRunClose()
+  // The run outlives this panel, so end it here or the first frame after the
+  // panel reopens continues it and folds two turns into one Ctrl+Z. End it
+  // without settling: `closeCoalescedRun()` dispatches `autoQueueGraphChanged`,
+  // which reaches `app.queuePrompt` against the live canvas, so settling here
+  // would queue a prompt because a panel closed. Nothing is lost — the user's
+  // next graph-changing edit settles the run through the ordinary capture path,
+  // which is where that dispatch happened before a run was captured at all.
+  workflowStore.activeWorkflow?.changeTracker.abandonCoalescedRun()
+})
 
 // The CRDT follower is the inbound content channel: subscribes to the
 // session's bound workflow while its tab is active. Suspending the background

@@ -1222,6 +1222,25 @@ describe('ChangeTracker', () => {
         ).toHaveLength(1)
         expect(tracker.undoQueue).toEqual([initial, afterRun])
       })
+
+      // For the callers where the dispatch would be attributed to the wrong
+      // thing — a workflow the user has left, a UI surface closing. The next
+      // ordinary capture still settles what the run left, because it compares
+      // against the entry the run opened.
+      it('ends a run without settling it when abandoned', () => {
+        const initial = createState(4)
+        const tracker = createTracker(initial)
+
+        const afterRun = captureNodeRemoval(tracker, initial, {
+          coalesceUndo: true
+        })
+        tracker.abandonCoalescedRun()
+        expectAutoQueueGraphChangedNotDispatched()
+
+        captureNodeRemoval(tracker, afterRun, { coalesceUndo: true })
+
+        expect(tracker.undoQueue).toEqual([initial, afterRun])
+      })
     })
 
     describe('execution-graph change detection in subgraphs', () => {

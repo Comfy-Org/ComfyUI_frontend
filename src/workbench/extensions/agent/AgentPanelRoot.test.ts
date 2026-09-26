@@ -2945,13 +2945,21 @@ describe('AgentPanelRoot canvas draft on remote edit', () => {
     expect(closeCoalescedRun).toHaveBeenCalledOnce()
   })
 
-  // A closed panel must not reach into a tracker 100 ms later. Left pending, the
+  // A closed panel must not reach into a tracker 100 ms later: left pending, the
   // close outlived the panel and fired against whatever tracker came next, which
-  // in the suite meant a real `ChangeTracker` and an uncaught TypeError.
-  it('drops a pending close when the panel unmounts', async () => {
+  // in the suite meant a real `ChangeTracker` and an uncaught TypeError. But the
+  // run still has to end, or the first frame after the panel reopens continues
+  // it and folds two turns into one Ctrl+Z — and it has to end without settling,
+  // because settling dispatches into `app.queuePrompt` and would queue a prompt
+  // because a panel closed.
+  it('ends the run without settling it when the panel unmounts', async () => {
     const closeCoalescedRun = vi.fn()
+    const abandonCoalescedRun = vi.fn()
     workflowStore.activeWorkflow = addTab('workflows/remote_edit.json', {
-      changeTracker: createMockChangeTracker({ closeCoalescedRun })
+      changeTracker: createMockChangeTracker({
+        closeCoalescedRun,
+        abandonCoalescedRun
+      })
     })
 
     const { unmount } = renderWithSelectedTarget()
@@ -2966,6 +2974,7 @@ describe('AgentPanelRoot canvas draft on remote edit', () => {
     unmount()
     await vi.advanceTimersByTimeAsync(200)
 
+    expect(abandonCoalescedRun).toHaveBeenCalledOnce()
     expect(closeCoalescedRun).not.toHaveBeenCalled()
   })
 

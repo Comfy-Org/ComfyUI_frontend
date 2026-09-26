@@ -341,7 +341,7 @@ export class ChangeTracker {
     // capture below settles a run it ends. Doing it unconditionally is what
     // keeps a switched-away tracker from staying mid-run forever: the capture
     // leaves the flag alone when the graph has not changed.
-    this._coalescingUndo = false
+    this.abandonCoalescedRun()
     if (!this._restoringState) this.captureCanvasState()
     this.store()
   }
@@ -517,7 +517,7 @@ export class ChangeTracker {
   closeCoalescedRun() {
     if (!this._coalescingUndo) return
     const runStart = this.undoQueue.at(-1)
-    this._coalescingUndo = false
+    this.abandonCoalescedRun()
     if (
       runStart &&
       isAutoQueueOnChange() &&
@@ -528,6 +528,21 @@ export class ChangeTracker {
     ) {
       api.dispatchCustomEvent('autoQueueGraphChanged')
     }
+  }
+
+  /**
+   * End a run without settling it, so the next capture opens its own undo entry
+   * but the run's deferred auto-queue does not fire.
+   *
+   * For the callers where a dispatch would be attributed to the wrong thing: a
+   * workflow the user has already left, or a UI surface closing. Auto-queue is
+   * not lost by this, only deferred to where it belongs — the user's next
+   * graph-changing edit reaches {@link captureCanvasState}, which compares
+   * against the entry the run opened and dispatches once, which is what
+   * happened before a run was captured at all.
+   */
+  abandonCoalescedRun() {
+    this._coalescingUndo = false
   }
 
   /** @deprecated Use {@link captureCanvasState} instead. */
@@ -552,7 +567,7 @@ export class ChangeTracker {
     if (prevState) {
       const previousState = this.activeState
       target.push(previousState)
-      this._coalescingUndo = false
+      this.abandonCoalescedRun()
       this._restoringState = true
       try {
         await app.loadGraphData(prevState, false, false, this.workflow, {
