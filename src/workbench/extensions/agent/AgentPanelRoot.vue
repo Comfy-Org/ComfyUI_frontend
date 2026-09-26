@@ -49,6 +49,10 @@ import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import {
+  zComfyWorkflow,
+  zComfyWorkflow1
+} from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { blankGraph } from '@/scripts/defaultGraph'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
@@ -602,9 +606,41 @@ function targetWorkflowDraft(origin?: TurnOrigin): DraftSnapshot | undefined {
   if (!target) return undefined
   if (target.path === workflowStore.activeWorkflow?.path)
     target.changeTracker?.prepareForSave()
-  const content = target.activeState
+  const content = target.activeState ?? temporaryWorkflowContent(target)
   if (!content) return undefined
   return { content }
+}
+
+/**
+ * A newly-created temporary tab is visible before its async load installs a
+ * change tracker. During that window activeState is null, but createTemporary
+ * has already stored the canonical empty graph in content. Sending without
+ * that graph makes current_tab_unbound indistinguishable from no selected
+ * workflow to the server (PM-1596).
+ */
+function temporaryWorkflowContent(
+  workflow: ComfyWorkflow
+): ComfyWorkflowJSON | undefined {
+  if (!workflow.isTemporary || workflow.content === null) return undefined
+  try {
+    const parsed: unknown = JSON.parse(workflow.content)
+    const schema = hasWorkflowV1Version(parsed)
+      ? zComfyWorkflow1
+      : zComfyWorkflow
+    const result = schema.safeParse(parsed)
+    return result.success ? result.data : undefined
+  } catch {
+    return undefined
+  }
+}
+
+function hasWorkflowV1Version(value: unknown): value is { version: 1 } {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'version' in value &&
+    value.version === 1
+  )
 }
 
 const selectedTargetTab = computed<ActiveTab | null>(() => {

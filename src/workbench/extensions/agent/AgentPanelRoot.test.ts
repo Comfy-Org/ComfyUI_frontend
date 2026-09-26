@@ -38,6 +38,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { app } from '@/scripts/app'
+import { defaultGraph } from '@/scripts/defaultGraph'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
@@ -6616,6 +6617,50 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(bodies[0]).not.toHaveProperty('workflow_id')
     expect(bodies[0]).toMatchObject({ current_tab_unbound: true })
   })
+
+  it('sends the serialized empty graph when a new tab has not finished loading', async () => {
+    const initialContent: ComfyWorkflowJSON = {
+      ...structuredClone(defaultGraph),
+      id: '123e4567-e89b-42d3-a456-426614174000',
+      nodes: [],
+      links: []
+    }
+    const tab = makeTab()
+    Object.assign(tab, {
+      isTemporary: true,
+      changeTracker: null,
+      activeState: null,
+      content: JSON.stringify(initialContent)
+    })
+    const bodies = mockMessagesEndpoint('wf-fresh')
+
+    await renderAndSend('add one text input node')
+
+    expect(bodies[0]).not.toHaveProperty('workflow_id')
+    expect(bodies[0]).toMatchObject({
+      current_tab_unbound: true,
+      draft: { content: initialContent }
+    })
+  })
+
+  it.for(['{}', '[]'])(
+    'omits an invalid serialized graph while a new tab loads: %s',
+    async (content) => {
+      const tab = makeTab()
+      Object.assign(tab, {
+        isTemporary: true,
+        changeTracker: null,
+        activeState: null,
+        content
+      })
+      const bodies = mockMessagesEndpoint('wf-fresh')
+
+      await renderAndSend('add one text input node')
+
+      expect(bodies[0]).toMatchObject({ current_tab_unbound: true })
+      expect(bodies[0]).not.toHaveProperty('draft')
+    }
+  )
 
   // A restored/existing thread (no turn of THIS session has bound anything
   // yet - `New Chat` is what puts the session into that state here) whose
