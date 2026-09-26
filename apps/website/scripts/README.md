@@ -96,38 +96,6 @@ foo-1920.webm  foo-1920.mp4
 foo-poster.jpg
 ```
 
-The naming convention is enforced by `buildVideoSources()` in
-`src/utils/video.ts`, which the `<SiteVideo>` Vue component uses to
-emit `<source>` URLs.
-
-### Pairing with `<SiteVideo>`
-
-Once the assets are uploaded, render them with:
-
-```vue
-<SiteVideo
-  name="foo"
-  base-url="https://media.comfy.org/website/marketing"
-  :width="1280"
-  :formats="['webm', 'mp4']"
-  poster="https://media.comfy.org/website/marketing/foo-poster.jpg"
-  autoplay
-  loop
-/>
-```
-
-### `<SiteVideo>` vs `<VideoPlayer>`
-
-- **`SiteVideo`** — lightweight multi-source `<video>` for decorative or
-  autoplay marketing clips. No custom controls, no captions UI.
-- **`VideoPlayer`** — full-featured player with custom scrubber, mute,
-  fullscreen, and caption toggles. Use this for content with subtitles or
-  user-driven playback.
-
-If you need both responsive sources and the rich `VideoPlayer` chrome, the
-two are not yet combined; either pick one or extend `VideoPlayer` to accept
-a source list.
-
 ### Encoder choices
 
 - **VP9/WebM** at CRF 32 — preferred by Chrome and Firefox; smaller files.
