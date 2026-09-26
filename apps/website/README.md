@@ -191,7 +191,7 @@ that, every scheduled run would open a PR whose whole diff is a timestamp.
 
 The cloud-nodes snapshot needs the same treatment for `downloads` and
 `githubStars`, which the registry moves continuously — across two real
-snapshot commits 10 days apart, 106 of 177 changed lines were those two
+snapshot commits 10 days apart, 106 of 179 changed lines were those two
 counters alone. `refresh-cloud-nodes-snapshot.ts` passes them as volatile so
 they never by themselves open a PR; they are still written, with current
 values, whenever something substantive changes.

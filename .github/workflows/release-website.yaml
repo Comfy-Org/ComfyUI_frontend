@@ -162,13 +162,15 @@ jobs:
             find no role or node change write nothing and open nothing.
 
             > [!WARNING]
-            > **Do not commit to `chore/refresh-website-snapshots`.** Every
-            > `Release: Website` run rebuilds this branch from `main` and
-            > force-pushes it, so anything pushed here is overwritten without
-            > warning — and if a later run finds nothing to change, the branch
-            > is deleted and this PR closed. To fix something, push to your own
-            > branch and open a separate PR. (The repository's lint autofixer
-            > is exempt: it re-applies itself after each update.)
+            > **Do not commit to `chore/refresh-website-snapshots`.** Any run
+            > that finds new snapshot data rebuilds this branch from `main`
+            > and force-pushes it, overwriting anything pushed here. And if
+            > the data later matches `main` — because someone refreshed it
+            > another way — this PR is closed and the branch deleted. Runs
+            > that find nothing new leave the branch alone entirely. To fix
+            > something, push to your own branch and open a separate PR. (The
+            > repository's lint autofixer is exempt: it re-applies itself
+            > after each update.)
 
             The snapshot fallback in `apps/website/src/utils/ashby.ts` and
             `apps/website/src/utils/cloudNodes.ts` remains intact: builds

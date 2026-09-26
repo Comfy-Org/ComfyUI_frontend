@@ -33,12 +33,21 @@ function countRoles(snapshot: Record<string, unknown> | null): number {
 
 // Every posting failing schema validation is reported as a successful fetch
 // of zero roles, so an Ashby field rename would otherwise empty the careers
-// page via a green PR.
-if (totalRoles === 0 && countRoles(readSnapshot(snapshotPath)) > 0) {
+// page via a green PR. A genuinely empty board reports zero roles too — what
+// separates them is whether anything was dropped on the way.
+if (
+  totalRoles === 0 &&
+  outcome.droppedCount > 0 &&
+  countRoles(readSnapshot(snapshotPath)) > 0
+) {
+  const dropped = outcome.droppedRoles
+    .map((role) => `  - ${role.title || '(untitled)'}: ${role.reason}`)
+    .join('\n')
   console.error(
-    'Ashby returned no usable roles while the committed snapshot has some. ' +
-      'That is a schema mismatch or an empty job board, not a refresh. ' +
-      `Refusing to overwrite ${snapshotPath}; check apps/website/src/utils/ashby.schema.ts against the API.`
+    `Ashby returned no usable roles and dropped ${outcome.droppedCount}, while the committed snapshot has some.\n` +
+      `${dropped}\n` +
+      `That is a schema mismatch, not an empty board. Refusing to overwrite ${snapshotPath}; ` +
+      'check apps/website/src/utils/ashby.schema.ts against the API.'
   )
   process.exit(1)
 }
