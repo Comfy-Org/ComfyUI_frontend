@@ -40,8 +40,18 @@ const { steps, storageKey } = defineProps<{
 const { active, index, step, isLast, next, previous, finish, restart } =
   useOnboarding(() => steps, storageKey)
 
+// Reported off `visible` below, latched so one tour reports once.
+let reportedShown = false
+
 // The replay control lives in the panel header, outside this component.
-defineExpose({ restart })
+// `reportedShown` is latched per tour, so a replay has to clear it or the
+// second showing never reaches trackAgentOnboardingShown().
+defineExpose({
+  restart: () => {
+    reportedShown = false
+    restart()
+  }
+})
 
 const titleId = useId()
 const bodyId = useId()
@@ -86,7 +96,6 @@ function resolveTargets(): void {
 // Reported off `visible`, the same condition the card renders and the overlay
 // source registers on, so the tour is never counted as seen while it is still
 // waiting for a target to mount.
-let reportedShown = false
 watch(visible, (isVisible) => {
   if (!isVisible || reportedShown) return
   reportedShown = true

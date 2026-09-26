@@ -68,6 +68,19 @@ export function hasSeenCoach(scopedKey: string): boolean {
   }
 }
 
+/**
+ * Clear the persisted flag with no live tour to notify. Only for the deferred
+ * case, where no `useOnboarding` instance is mounted to take `restart()`; a
+ * mounted tour must go through the transition so it reacts without a remount.
+ */
+export function resetCoach(scopedKey: string): void {
+  try {
+    localStorage.removeItem(scopedKey)
+  } catch {
+    // Storage is unavailable, so the coach marks already run every time.
+  }
+}
+
 const shownScopes = new Set<string>()
 const reportedDeferrals = new Set<string>()
 /** A coach paused mid-way by App Mode or a tour was already shown, so it stays quiet. */

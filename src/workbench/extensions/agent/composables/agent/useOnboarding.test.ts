@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import type { CoachStep } from './useOnboarding'
 import {
   adoptSharedOnboardingFlag,
+  resetCoach,
   scopedOnboardingKey,
   useOnboarding
 } from './useOnboarding'
@@ -18,6 +19,19 @@ const STEPS: CoachStep[] = Array.from({ length: 4 }, (_, index) => ({
 
 describe('useOnboarding', () => {
   beforeEach(() => window.localStorage.clear())
+
+  it('honours a replay requested while no tour is mounted', async () => {
+    // The take-the-tour button stays clickable while the coach is deferred by
+    // App Mode, so there is no instance to take restart(). Clearing the flag
+    // has to survive until the coach next mounts, or the click is dropped.
+    const finished = useOnboarding(STEPS, KEY)
+    finished.finish()
+    await nextTick()
+
+    resetCoach(KEY)
+
+    expect(useOnboarding(STEPS, KEY).active.value).toBe(true)
+  })
 
   it('replays from the first card on the same instance after finishing', async () => {
     const tour = useOnboarding(STEPS, KEY)

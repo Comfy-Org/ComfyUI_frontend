@@ -53,6 +53,49 @@ test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
       .toBe('false')
   })
 
+  test('replays the tour from the header after it has been completed', async ({
+    page,
+    agentFlagEnabled
+  }) => {
+    // DES-1208's replay path. The header control is the only way back into the
+    // tour once it is done, and nothing else covers it end to end.
+    await bootAgentApp(page, agentFlagEnabled, {
+      onboardingCompleted: true
+    })
+    await page
+      .getByRole('button', { name: enMessages.agent.entryButton, exact: true })
+      .click()
+
+    const firstCard = page.getByRole('dialog', {
+      name: enMessages.agent.coachTitle
+    })
+    await expect(firstCard).toBeHidden()
+
+    await page
+      .getByRole('button', { name: enMessages.agent.takeTour, exact: true })
+      .click()
+
+    // Replay starts at card one, not wherever the finished tour left off.
+    await expect(firstCard).toBeVisible()
+    await expect(
+      firstCard.getByRole('button', {
+        name: enMessages.onboardingCoachmarks.back
+      })
+    ).toHaveCount(0)
+
+    // The persisted flag has to clear too, or a reload re-hides a tour the
+    // user just asked to see.
+    await expect
+      .poll(() =>
+        page.evaluate(() =>
+          localStorage.getItem(
+            'Comfy.AgentPanel.onboarded.test-user-e2e.ws-personal'
+          )
+        )
+      )
+      .not.toBe('true')
+  })
+
   test('walks all four accessible cards and persists completion', async ({
     page,
     agentFlagEnabled

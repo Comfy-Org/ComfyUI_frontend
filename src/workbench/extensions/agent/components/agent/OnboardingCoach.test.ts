@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { nextTick, ref } from 'vue'
 
 import { i18n } from '@/i18n'
 import { useOnboardingOverlayStore } from '@/platform/onboarding/onboardingOverlayStore'
@@ -59,9 +59,12 @@ function mount(steps = STEPS) {
   return render(
     {
       components: { OnboardingCoach },
-      setup: () => ({ steps, storageKey: KEY }),
+      setup: () => {
+        const coach = ref<{ restart: () => void } | null>(null)
+        return { steps, storageKey: KEY, coach, replay: () => coach.value?.restart() }
+      },
       template:
-        '<button>Outside tour</button><div id="panel" /><div id="composer" /><div id="graph"><div id="toolbar" /></div><div id="history" data-testid="history" /><OnboardingCoach :steps="steps" :storage-key="storageKey" />'
+        '<button>Outside tour</button><div id="panel" /><div id="composer" /><div id="graph"><div id="toolbar" /></div><div id="history" data-testid="history" /><button data-testid="coach-restart" @click="replay" /><OnboardingCoach ref="coach" :steps="steps" :storage-key="storageKey" />'
     },
     { global: { plugins: [i18n] } }
   )
@@ -332,6 +335,24 @@ describe('OnboardingCoach', () => {
 
     await screen.findByRole('dialog', { name: lateSteps[0].title })
     expect(telemetry().trackAgentOnboardingShown).toHaveBeenCalledTimes(1)
+  })
+
+  it('reports the card as shown again when the tour is replayed', async () => {
+    const user = userEvent.setup()
+    const { getByTestId } = mount()
+    await screen.findByRole('dialog', { name: STEPS[0].title })
+    for (const index of STEPS.keys())
+      await user.click(
+        screen.getByRole('button', { name: index === 3 ? 'Done' : 'Next' })
+      )
+    expect(telemetry().trackAgentOnboardingShown).toHaveBeenCalledTimes(1)
+
+    // `reportedShown` latches per tour. A replay reuses the mounted component,
+    // so without clearing it the second showing goes unreported.
+    getByTestId('coach-restart').click()
+    await screen.findByRole('dialog', { name: STEPS[0].title })
+
+    expect(telemetry().trackAgentOnboardingShown).toHaveBeenCalledTimes(2)
   })
 
   it('reports the card as shown once across the whole tour', async () => {
