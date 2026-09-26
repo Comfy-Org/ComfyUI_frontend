@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { nextTick, ref, watch } from 'vue'
 
 import { reportError } from '@/platform/telemetry/reportError'
@@ -505,9 +505,7 @@ describe('useAgentConversationStore', () => {
     store.ingest(delta('assistant-message-1', 'Running now.'))
 
     expect(
-      store.messages[0].parts.some(
-        (part) => (part as { type: string }).type === 'runApproval'
-      )
+      store.messages[0].parts.some((part) => part.type === 'runApproval')
     ).toBe(false)
     expect(partTexts(store)).toContain('Running now.')
     expect(store.isStreaming).toBe(true)
@@ -875,10 +873,6 @@ describe('useAgentConversationStore', () => {
     ])
   })
   describe('a dropped approval ask is reported', () => {
-    beforeEach(() => {
-      vi.mocked(reportError).mockClear()
-    })
-
     it('reports when the socket-drop teardown left nothing to route the ask to', () => {
       const store = useAgentConversationStore()
       store.setThreadId('th')
@@ -895,9 +889,7 @@ describe('useAgentConversationStore', () => {
 
       expect(
         store.messages.some((message) =>
-          message.parts.some(
-            (part) => (part as { type: string }).type === 'runApproval'
-          )
+          message.parts.some((part) => part.type === 'runApproval')
         )
       ).toBe(false)
       expect(reportError).toHaveBeenCalledTimes(1)
@@ -954,9 +946,7 @@ describe('useAgentConversationStore', () => {
       store.ingest(runApproval('t1', 'turn-1:call-1', { kind: 'pick_a_model' }))
 
       expect(
-        store.messages[0].parts.some(
-          (part) => (part as { type: string }).type === 'runApproval'
-        )
+        store.messages[0].parts.some((part) => part.type === 'runApproval')
       ).toBe(false)
       expect(reportError).toHaveBeenCalledWith(
         expect.any(Error),
