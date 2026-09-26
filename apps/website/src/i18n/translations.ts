@@ -38,30 +38,6 @@ const translations = {
     en: 'For now, explore ready-to-run workflows or try a model with your own ideas.',
     'zh-CN': '现在可以先探索现成的工作流，或用自己的创意试用模型。'
   },
-  'workshop.catalogue.allApps': { en: 'All apps', 'zh-CN': '全部应用' },
-  'workshop.catalogue.browseAllApps': {
-    en: 'Browse all apps',
-    'zh-CN': '浏览全部应用'
-  },
-  'workshop.apps.beta': { en: 'Beta', 'zh-CN': '测试版' },
-  'workshop.apps.prototype': { en: 'Prototype', 'zh-CN': '原型' },
-  'workshop.apps.studio.name': {
-    en: 'Cinematic Studio',
-    'zh-CN': '电影工作室'
-  },
-  'workshop.apps.studio.summary': {
-    en: 'Direct a shot with a real camera, light and grade, then run it on any image model.',
-    'zh-CN':
-      '用真实的摄影机、光线与调色导演一个镜头，然后在任意图像模型上运行。'
-  },
-  'workshop.apps.reshoot.name': {
-    en: 'Re-shoot a video',
-    'zh-CN': '重拍视频'
-  },
-  'workshop.apps.reshoot.summary': {
-    en: 'Aim a new camera at your clip and generate the scene from that angle.',
-    'zh-CN': '为你的片段重新架设机位，从新的角度生成这一场景。'
-  },
   'workshop.catalogue.noWorkflows': {
     en: 'No workflows match your search and filters.',
     'zh-CN': '没有符合搜索和筛选条件的工作流。'

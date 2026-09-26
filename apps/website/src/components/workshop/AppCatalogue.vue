@@ -5,13 +5,14 @@ import { computed, nextTick, watch } from 'vue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import type { CatalogueApp } from '../../lib/workshop/catalogue-apps'
+import { ac, catalogueApps } from '../../lib/workshop/catalogue-apps'
 import CardRow from './CardRow.vue'
 import WorkshopAppCard from './WorkshopAppCard.vue'
 
 const ROW_LIMIT = 8
 
-const { apps, locale = 'en' } = defineProps<{
-  apps: readonly CatalogueApp[]
+const { apps: given, locale = 'en' } = defineProps<{
+  apps?: readonly CatalogueApp[]
   locale?: Locale
 }>()
 
@@ -20,8 +21,9 @@ const emit = defineEmits<{ section: [boolean] }>()
 watch(browseAll, (value) => emit('section', value), { immediate: true })
 watch(browseAll, () => void nextTick(() => window.scrollTo({ top: 0 })))
 
-const shelf = computed(() => apps.slice(0, ROW_LIMIT))
-const hasMore = computed(() => apps.length > ROW_LIMIT)
+const apps = computed(() => given ?? catalogueApps(locale))
+const shelf = computed(() => apps.value.slice(0, ROW_LIMIT))
+const hasMore = computed(() => apps.value.length > ROW_LIMIT)
 </script>
 
 <template>
@@ -39,7 +41,7 @@ const hasMore = computed(() => apps.length > ROW_LIMIT)
       <h1
         class="mt-3 mb-4 scroll-mt-24 text-3xl font-bold text-primary-warm-white sm:text-4xl lg:scroll-mt-32"
       >
-        {{ t('workshop.catalogue.allApps', locale) }}
+        {{ ac('allApps', locale) }}
         <span
           class="text-base font-normal text-primary-warm-gray tabular-nums"
           >{{ apps.length }}</span
@@ -56,7 +58,7 @@ const hasMore = computed(() => apps.length > ROW_LIMIT)
     <ul
       v-if="browseAll"
       class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5"
-      :aria-label="t('workshop.catalogue.apps', locale)"
+      :aria-label="ac('apps', locale)"
       data-testid="app-search-results"
     >
       <li v-for="app in apps" :key="app.key">
@@ -72,7 +74,7 @@ const hasMore = computed(() => apps.length > ROW_LIMIT)
               id="app-shelf"
               class="text-xl font-medium text-primary-warm-white"
             >
-              {{ t('workshop.catalogue.apps', locale) }}
+              {{ ac('apps', locale) }}
             </h2>
           </template>
           <li
@@ -91,7 +93,7 @@ const hasMore = computed(() => apps.length > ROW_LIMIT)
         data-testid="browse-all-end"
         @click="browseAll = true"
       >
-        {{ t('workshop.catalogue.browseAllApps', locale) }}
+        {{ ac('browseAllApps', locale) }}
         <ChevronRight
           class="size-4 transition-transform group-hover:translate-x-0.5"
           aria-hidden="true"

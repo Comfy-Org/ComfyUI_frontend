@@ -15,7 +15,6 @@ import {
   useWorkshopAppsEnabled,
   useWorkshopEnabled
 } from '../../scripts/posthog'
-import { catalogueApps } from '../../lib/workshop/catalogue-apps'
 
 const WorkflowCatalogue = defineAsyncComponent(
   () => import('./WorkflowCatalogue.vue')
@@ -32,7 +31,6 @@ const browseAll = ref(false)
 const mounted = useMounted()
 const enabled = useWorkshopEnabled()
 const appsEnabled = useWorkshopAppsEnabled()
-const apps = catalogueApps(locale)
 const selectedTab = ref<CatalogueTab>('models')
 if (typeof location !== 'undefined') {
   const requested = new URLSearchParams(location.search).get('type')
@@ -159,7 +157,6 @@ watch(
   <AppCatalogue
     v-else-if="appsEnabled"
     v-model:browse-all="browseAll"
-    :apps
     :locale
     @section="inSection = $event"
   >
