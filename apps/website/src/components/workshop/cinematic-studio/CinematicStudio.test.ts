@@ -200,7 +200,7 @@ describe('CinematicStudio', () => {
     expect(notice).toHaveTextContent('request-9')
     await user.click(
       within(notice).getByRole('button', {
-        name: tc('cinematic.state.tryOn').replace('{model}', second.name)
+        name: tc('cinematic.state.tryOn', 'en', { model: second.name })
       })
     )
 
@@ -375,10 +375,9 @@ describe('CinematicStudio', () => {
     expect(generateButton()).toBeDisabled()
     expect(
       screen.getByText(
-        tc('cinematic.references.unsupported').replace(
-          '{model}',
-          dropsReferences.name
-        )
+        tc('cinematic.references.unsupported', 'en', {
+          model: dropsReferences.name
+        })
       )
     ).toBeInTheDocument()
     expect(router_render).not.toHaveBeenCalled()
@@ -659,7 +658,7 @@ describe('CinematicStudio', () => {
     )
     const estimate = () => screen.findByTestId('cinematic-estimate')
     const credits = (amount: number) =>
-      tc('cinematic.credits.estimate').replace('{credits}', String(amount))
+      tc('cinematic.credits.estimate', 'en', { credits: amount })
 
     async function shootTakes(
       user: ReturnType<typeof userEvent.setup>,
@@ -856,9 +855,7 @@ describe('CinematicStudio', () => {
 
       const summary = await screen.findByTestId('cinematic-credit-summary')
       expect(summary).toHaveTextContent(
-        tc('cinematic.credits.skipped')
-          .replace('{failed}', '1')
-          .replace('{total}', '4')
+        tc('cinematic.credits.skipped', 'en', { failed: 1, total: 4 })
       )
       expect(
         within(summary).getByRole('button', {

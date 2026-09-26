@@ -1,5 +1,8 @@
 import type { Locale } from '../config/locales'
 
+import type { NamedValues } from './interpolate'
+import { interpolate } from './interpolate'
+
 const translations = {
   'home.workshop.heading': {
     en: 'Run any model, from one place',
@@ -11257,14 +11260,6 @@ function resolve(key: TranslationKey, locale: Locale): [string, Locale] {
   return message === undefined ? [entry.en, 'en'] : [message, locale]
 }
 
-export type NamedValues = Record<string, string | number>
-
-function interpolate(message: string, named: NamedValues): string {
-  return message.replace(/\{(\w+)\}/g, (placeholder, name: string) =>
-    Object.hasOwn(named, name) ? String(named[name]) : placeholder
-  )
-}
-
 export function t(
   key: TranslationKey,
   locale: Locale = 'en',
@@ -11289,15 +11284,16 @@ export function tAround(
     [slot]: marker
   })
   const markerIndex = message.indexOf(marker)
+  if (markerIndex === -1) {
+    throw new Error(`Translation ${key} is missing slot ${marker}`)
+  }
   if (message.indexOf(marker, markerIndex + marker.length) !== -1) {
     throw new Error(`Translation ${key} repeats slot ${marker}`)
   }
-  return markerIndex === -1
-    ? [message, '']
-    : [
-        message.slice(0, markerIndex),
-        message.slice(markerIndex + marker.length)
-      ]
+  return [
+    message.slice(0, markerIndex),
+    message.slice(markerIndex + marker.length)
+  ]
 }
 
 export function tPlural(

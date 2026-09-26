@@ -33,13 +33,14 @@ describe('t() named values', () => {
   })
 
   it('fills every occurrence of a repeated placeholder', () => {
-    expect(
-      t('models.faq.whatIs.localAnswer', 'en', {
-        name: 'Flux',
-        description: 'a model',
-        count: 3
-      })
-    ).not.toContain('{name}')
+    const message = t('models.faq.whatIs.localAnswer', 'en', {
+      name: 'Flux',
+      description: 'a model',
+      count: 3
+    })
+
+    expect(message.match(/Flux/g)).toHaveLength(3)
+    expect(message).not.toMatch(/\{\w+\}/)
   })
 
   it('keeps missing named values visible', () => {
@@ -79,12 +80,23 @@ describe('tAround', () => {
     }
   )
 
-  it('rejects messages that repeat the markup slot', () => {
-    expect(() =>
-      tAround('models.faq.whatIs.localAnswer', 'en', 'name', {
-        description: 'a model',
-        count: 3
-      })
-    ).toThrow('repeats slot {name}')
-  })
+  it.for([
+    {
+      key: 'models.faq.whatIs.localAnswer',
+      slot: 'name',
+      error: 'repeats slot {name}'
+    },
+    {
+      key: 'models.list.heroTitle',
+      slot: 'creators',
+      error: 'missing slot {creators}'
+    }
+  ] as const)(
+    'throws "$error" for a slot that is not in the message exactly once',
+    ({ key, slot, error }) => {
+      expect(() =>
+        tAround(key, 'en', slot, { description: 'a model', count: 3 })
+      ).toThrow(error)
+    }
+  )
 })

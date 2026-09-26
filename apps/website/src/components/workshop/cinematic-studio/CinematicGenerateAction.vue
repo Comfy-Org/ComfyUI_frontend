@@ -51,10 +51,11 @@ const creditGate = computed(
 function shortfallNote(shot: ShotEstimate, balance: number): string {
   const key =
     shot.takes === 1 ? 'cinematic.credits.shortOne' : 'cinematic.credits.short'
-  return tc(key, locale)
-    .replace('{takes}', String(shot.takes))
-    .replace('{credits}', formatCreditRange(shot.total, locale))
-    .replace('{balance}', balance.toLocaleString(locale))
+  return tc(key, locale, {
+    takes: shot.takes,
+    credits: formatCreditRange(shot.total, locale),
+    balance: balance.toLocaleString(locale)
+  })
 }
 
 const shortfall = computed(() => {
@@ -120,14 +121,13 @@ const reduceTo = computed(() => {
   const fits = shortfall.value?.fits ?? 0
   return fits >= 1 ? fits : undefined
 })
-const reduceLabel = computed(() =>
-  reduceTo.value === 1
+const reduceLabel = computed(() => {
+  const takes = reduceTo.value
+  if (takes === undefined) return undefined
+  return takes === 1
     ? tc('cinematic.credits.reduceOne', locale)
-    : tc('cinematic.credits.reduce', locale).replace(
-        '{takes}',
-        String(reduceTo.value)
-      )
-)
+    : tc('cinematic.credits.reduce', locale, { takes })
+})
 const showCost = computed(
   () => !rendering && gate !== 'unavailable' && gate !== 'pending'
 )

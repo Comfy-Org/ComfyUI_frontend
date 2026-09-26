@@ -1,3 +1,5 @@
+import type { NamedValues } from '../../../i18n/interpolate'
+import { interpolate } from '../../../i18n/interpolate'
 import type { Locale, LocalizedText } from '../../../i18n/translations'
 
 /**
@@ -667,7 +669,11 @@ const copy = {
 
 export type CinematicCopyKey = keyof typeof copy
 
-export function tc(key: CinematicCopyKey, locale: Locale = 'en'): string {
+export function tc(
+  key: CinematicCopyKey,
+  locale: Locale = 'en',
+  named: NamedValues = {}
+): string {
   const entry: LocalizedText = copy[key]
-  return entry[locale] ?? entry.en
+  return interpolate(entry[locale] ?? entry.en, named)
 }

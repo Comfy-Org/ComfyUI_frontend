@@ -20,7 +20,8 @@ describe('ModelsHeroSection', () => {
       })
 
       expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
-        new RegExp(`^${title}$`)
+        new RegExp(`^${title}$`),
+        { normalizeWhitespace: false }
       )
     }
   )

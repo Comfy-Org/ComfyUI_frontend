@@ -31,9 +31,8 @@ const [titleBefore, titleAfter] = tAround(
     <h1
       class="max-w-4xl text-4xl font-light tracking-tight text-primary-comfy-canvas lg:text-6xl"
     >
-      {{ titleBefore }}
-      <span class="text-primary-comfy-yellow">ComfyUI</span>
-      {{ titleAfter }}
+      {{ titleBefore }}<span class="text-primary-comfy-yellow">ComfyUI</span
+      >{{ titleAfter }}
     </h1>
     <p
       class="mt-6 max-w-2xl text-sm text-pretty text-primary-comfy-canvas lg:text-base"
