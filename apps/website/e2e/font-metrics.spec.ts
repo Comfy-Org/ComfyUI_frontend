@@ -14,9 +14,6 @@ test('every PP Formula face centres its caps inside the line box', async ({
   page
 }) => {
   await page.goto('/')
-  await expect(page.locator('html')).not.toHaveClass(
-    /(?:^|\s)ppformula-metric-fallback(?:\s|$)/
-  )
 
   const faces = await page.evaluate(async (size) => {
     const rulesOf = (sheet: CSSStyleSheet) => {
@@ -87,23 +84,69 @@ test('every PP Formula face centres its caps inside the line box', async ({
   }
 })
 
-test('keeps the component fallback when metric overrides are unsupported', async ({
+// Safari through 26.6 ignores the overrides, so on those versions the centring
+// above is only as good as the file the foundry drew. Nothing on the page shows
+// that, which is why it is asserted here: a weight that regresses to the old
+// vertical metrics would misalign every icon row in Safari and pass every other
+// check in this repository.
+test('every PP Formula face centres its caps without the metric overrides', async ({
   page
 }) => {
-  await page.addInitScript(() => {
-    Object.defineProperty(FontFace.prototype, 'ascentOverride', {
-      configurable: true,
-      get: () => ''
-    })
-  })
   await page.goto('/')
 
-  await expect(page.locator('html')).toHaveClass(
-    /(?:^|\s)ppformula-metric-fallback(?:\s|$)/
-  )
-  const marker = page.locator('.ppformula-text-center').first()
-  await expect(marker).toBeVisible()
-  expect(
-    await marker.evaluate((element) => getComputedStyle(element).top)
-  ).not.toBe('auto')
+  const faces = await page.evaluate(async (size) => {
+    const rulesOf = (sheet: CSSStyleSheet) => {
+      try {
+        return [...sheet.cssRules]
+      } catch {
+        return []
+      }
+    }
+
+    const sources = [...document.styleSheets]
+      .flatMap(rulesOf)
+      .filter(
+        (rule): rule is CSSFontFaceRule => rule instanceof CSSFontFaceRule
+      )
+      .map((rule) => ({
+        family: rule.style
+          .getPropertyValue('font-family')
+          .replaceAll(/['"]/g, ''),
+        weight: rule.style.getPropertyValue('font-weight'),
+        source: rule.style.getPropertyValue('src')
+      }))
+      .filter((declaration) => declaration.family.startsWith('PP Formula'))
+
+    return Promise.all(
+      sources.map(async (declaration, index) => {
+        const url = /url\(["']?([^"')]+)/.exec(declaration.source)?.[1]
+        if (!url) {
+          throw new Error(`no source for ${declaration.family}`)
+        }
+
+        const probe = `bare-probe-${index}`
+        document.fonts.add(await new FontFace(probe, `url("${url}")`).load())
+
+        const context = document.createElement('canvas').getContext('2d')
+        if (!context) throw new Error('no canvas context')
+        context.font = `${size}px "${probe}"`
+        const caps = context.measureText('H')
+        return {
+          name: `${declaration.family} ${declaration.weight}`,
+          ascent: caps.fontBoundingBoxAscent,
+          descent: caps.fontBoundingBoxDescent,
+          capHeight: caps.actualBoundingBoxAscent
+        }
+      })
+    )
+  }, SIZE)
+
+  expect(faces.length).toBeGreaterThan(0)
+  for (const face of faces) {
+    const aboveTheCaps = face.ascent - face.capHeight
+    expect(
+      Math.abs(aboveTheCaps - face.descent),
+      face.name
+    ).toBeLessThanOrEqual(SIZE / 100)
+  }
 })
