@@ -37,8 +37,29 @@ interface NodeTemplate {
   data: string
 }
 
+type TemplateLoadState =
+  | { status: 'loading' }
+  | { status: 'loaded' }
+  | { status: 'error' }
+
+function isNodeTemplate(value: unknown): value is NodeTemplate {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'name' in value &&
+    typeof value.name === 'string' &&
+    'data' in value &&
+    typeof value.data === 'string'
+  )
+}
+
+function isNodeTemplates(value: unknown): value is NodeTemplate[] {
+  return Array.isArray(value) && value.every(isNodeTemplate)
+}
+
 class ManageTemplates extends ComfyDialog {
   templates: NodeTemplate[] = []
+  loadState: TemplateLoadState = { status: 'loading' }
   draggedEl: HTMLElement | null
   saveVisualCue: ReturnType<typeof setTimeout> | null
   emptyImg: HTMLImageElement
@@ -46,9 +67,7 @@ class ManageTemplates extends ComfyDialog {
 
   constructor() {
     super()
-    void this.load().then((v) => {
-      this.templates = v
-    })
+    void this.load()
 
     this.element.classList.add('comfy-manage-templates')
     this.element.dataset.testid = 'manage-node-templates-dialog'
@@ -87,6 +106,7 @@ class ManageTemplates extends ComfyDialog {
       $el('button', {
         type: 'button',
         textContent: 'Import',
+        className: 'comfy-btn',
         onclick: () => {
           this.importInput.click()
         }
@@ -95,53 +115,91 @@ class ManageTemplates extends ComfyDialog {
     return btns
   }
 
-  async load() {
-    let templates = []
-    const res = await api.getUserData(file)
-    if (res.status === 200) {
-      try {
-        templates = await res.json()
-      } catch (error) {
-        reportError(error, {
-          errorType: 'failure_loading_node_templates',
-          tags: {
-            failure_kind: 'caught_unexpected',
-            feature_area: 'extensions',
-            operation: 'load',
-            outcome: 'recovered'
-          },
-          level: 'error'
-        })
+  async load(): Promise<void> {
+    try {
+      const res = await api.getUserData(file)
+      if (res.status === 404) {
+        this.loadState = { status: 'loaded' }
+      } else if (res.status !== 200) {
+        this.failLoad(
+          new Error(
+            `Failed to load node templates: ${res.status} ${res.statusText}`
+          )
+        )
+      } else {
+        const templates: unknown = await res.json()
+        if (isNodeTemplates(templates)) {
+          this.templates = templates
+          this.loadState = { status: 'loaded' }
+        } else {
+          this.failLoad(
+            new Error('Failed to load node templates: invalid template data')
+          )
+        }
       }
-    } else if (res.status !== 404) {
-      console.error(res.status + ' ' + res.statusText)
+    } catch (error) {
+      this.failLoad(error)
     }
-    return templates ?? []
+    this.updateActionButtons()
+    if (this.element.style.display === 'flex') this.show()
   }
 
-  async store() {
+  failLoad(cause: unknown) {
+    this.loadState = { status: 'error' }
+    reportError(cause, {
+      errorType: 'failure_loading_node_templates',
+      tags: {
+        failure_kind: 'caught_unexpected',
+        feature_area: 'extensions',
+        operation: 'load',
+        outcome: 'recovered'
+      },
+      level: 'error'
+    })
+    useToastStore().addAlert(t('nodeTemplates.loadFailed'))
+  }
+
+  canModifyTemplates(): boolean {
+    return this.loadState.status === 'loaded'
+  }
+
+  async retryLoad(): Promise<void> {
+    if (this.loadState.status === 'loading') return
+
+    this.loadState = { status: 'loading' }
+    this.updateActionButtons()
+    this.show()
+    await this.load()
+  }
+
+  updateActionButtons(): void {
+    const importButton =
+      this.element.querySelector<HTMLButtonElement>('.comfy-btn')
+    if (importButton) importButton.disabled = !this.canModifyTemplates()
+  }
+
+  async store(): Promise<void> {
+    if (this.loadState.status !== 'loaded') return
+
     const templates = JSON.stringify(this.templates, undefined, 4)
     try {
       await api.storeUserData(file, templates, { stringify: false })
     } catch (error) {
-      console.error(error)
-      // @ts-expect-error fixme ts strict error
-      useToastStore().addAlert(error.message)
+      reportError(error, { errorType: 'error_storing_node_templates' })
+      useToastStore().addAlert(t('toastMessages.nodeTemplatesSaveFailed'))
     }
   }
 
-  async importAll() {
+  async importAll(): Promise<void> {
     // @ts-expect-error fixme ts strict error
     for (const file of this.importInput.files) {
       if (file.type === 'application/json' || file.name.endsWith('.json')) {
         const reader = new FileReader()
         reader.onload = async () => {
           const importFile = JSON.parse(reader.result as string)
-          if (importFile?.templates) {
+          if (importFile?.templates && this.canModifyTemplates()) {
             for (const template of importFile.templates) {
-              if (template?.name && template?.data) {
-                this.templates.push(template)
-              }
+              if (isNodeTemplate(template)) this.templates.push(template)
             }
             await this.store()
           }
@@ -168,6 +226,25 @@ class ManageTemplates extends ComfyDialog {
   }
 
   override show() {
+    if (this.loadState.status === 'error') {
+      super.show([
+        $el('p', { textContent: t('nodeTemplates.loadFailed') }),
+        $el('button', {
+          type: 'button',
+          textContent: t('nodeTemplates.retry'),
+          onclick: () => void this.retryLoad()
+        })
+      ])
+      this.updateActionButtons()
+      return
+    }
+
+    if (this.loadState.status === 'loading') {
+      super.show($el('p', { textContent: t('nodeTemplates.loading') }))
+      this.updateActionButtons()
+      return
+    }
+
     // Show list of template names + delete button
     super.show(
       $el(
@@ -199,6 +276,7 @@ class ManageTemplates extends ComfyDialog {
                 },
                 // @ts-expect-error fixme ts strict error
                 ondragend: (e) => {
+                  if (!this.canModifyTemplates()) return
                   e.target.style.opacity = '1'
                   e.currentTarget.style.border = '1px dashed transparent'
                   e.currentTarget.removeAttribute('draggable')
@@ -266,6 +344,7 @@ class ManageTemplates extends ComfyDialog {
                       },
                       // @ts-expect-error fixme ts strict error
                       onchange: (e) => {
+                        if (!this.canModifyTemplates()) return
                         // @ts-expect-error fixme ts strict error
                         clearTimeout(this.saveVisualCue)
                         const el = e.target
@@ -318,6 +397,7 @@ class ManageTemplates extends ComfyDialog {
                     },
                     // @ts-expect-error fixme ts strict error
                     onclick: (e) => {
+                      if (!this.canModifyTemplates()) return
                       const item = e.target.parentNode.parentNode
                       item.parentNode.removeChild(item)
                       this.templates.splice(item.dataset.id * 1, 1)
@@ -340,6 +420,7 @@ class ManageTemplates extends ComfyDialog {
         })
       )
     )
+    this.updateActionButtons()
   }
 }
 
@@ -365,7 +446,9 @@ const ext: ComfyExtension = {
     items.push(null)
     items.push({
       content: `Save Selected as Template`,
-      disabled: !Object.keys(app.canvas.selected_nodes).length,
+      disabled:
+        !Object.keys(app.canvas.selected_nodes).length ||
+        !manage.canModifyTemplates(),
       callback: async () => {
         const name = await useDialogService().prompt({
           title: t('nodeTemplates.saveAsTemplate'),
@@ -373,6 +456,7 @@ const ext: ComfyExtension = {
           defaultValue: ''
         })
         if (!name?.trim()) return
+        if (!manage.canModifyTemplates()) return
 
         await clipboardAction(async () => {
           app.canvas.copyToClipboard()
