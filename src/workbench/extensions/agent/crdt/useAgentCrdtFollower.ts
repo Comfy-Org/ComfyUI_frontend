@@ -182,6 +182,24 @@ export interface AgentCrdtFollowerEvents {
     actor: string | undefined
     nodeIds: readonly NodeId[]
   }) => void
+  /**
+   * A frame this follower applied that came from somewhere else, whatever it
+   * changed — the widget-only edits `onMaterialized` cannot report, because
+   * that one fires per materialized node.
+   *
+   * The catch-up frame of every accepted subscribe counts — first bind,
+   * tab-switch resubscribe and reconnect alike. It carries everything this
+   * follower's state vector lacked, so it is the only frame the edits
+   * missed while away ever arrive on. It settles to a no-op whenever the
+   * doc already matches the canvas, because the capture compares first.
+   *
+   * This tab's own ops come back as effect frames that apply like any other,
+   * and those are excluded — whatever local interaction minted them already
+   * covers them, and notifying would fire once per keystroke. The comparison
+   * is advisory (attribution can be absent, and the user id can resolve
+   * between mint and frame), so it fails open into an extra notification.
+   */
+  onApplied?: (event: { workflowId: string; actor: string | undefined }) => void
   onReset?: (workflowId: string) => void
 }
 
@@ -306,6 +324,7 @@ function startAgentCrdtFollower(
     }
   )
   const tabId = createUuidv4()
+  const localActor = (): string => `human:${userId() ?? 'anonymous'}:${tabId}`
   // Doc node ids whose human delete the host has applied but whose effect
   // frame has not yet removed them from the doc. Kept pending for the
   // reconcile so the result-to-effect window cannot resurrect them.
@@ -333,7 +352,7 @@ function startAgentCrdtFollower(
     // every send and resend, so ops never reach a doc we are not subscribed to.
     workflowId: () => bridge.subscribedWorkflowId,
     tab: tabId,
-    actor: () => `human:${userId() ?? 'anonymous'}:${tabId}`,
+    actor: localActor,
     baseVersion: () => bridge.lastSequence,
     onBatchSettled: (outcome) => {
       if (outcome.state === 'acknowledged') {
@@ -413,11 +432,25 @@ function startAgentCrdtFollower(
     knownDocNodeIds = ids
     return added
   }
-  const applyAndReconcile = (update: ClassifiedDocUpdate): NodeId[] => {
+  const applyAndReconcile = (
+    update: ClassifiedDocUpdate
+  ): { applied: boolean; materialized: NodeId[] } => {
     const applied = projection.applyFrame(update)
     incrementOutcome(applied ? 'applied' : 'skipped')
     if (applied && !update.catchUp) incrementOutcome('appliedLive')
-    return applied ? projection.reconcileLiveGraph(update.workflowId) : []
+    return {
+      applied,
+      materialized: applied
+        ? projection.reconcileLiveGraph(update.workflowId)
+        : []
+    }
+  }
+  const notifyAppliedFrame = (
+    update: ClassifiedDocUpdate,
+    applied: boolean
+  ): void => {
+    if (!applied || update.actor === localActor()) return
+    events.onApplied?.({ workflowId: update.workflowId, actor: update.actor })
   }
 
   const onSubscribed: EventListener = (event) => {
@@ -450,7 +483,7 @@ function startAgentCrdtFollower(
     lifecycle.onDocumentUpdate()
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
-    const materialized = applyAndReconcile(update)
+    const { applied, materialized } = applyAndReconcile(update)
     recordDevEvent('doc_update', {
       workflowId: update.workflowId,
       seq: update.seq,
@@ -472,6 +505,9 @@ function startAgentCrdtFollower(
       pendingLiveNodeIds,
       events
     )
+    // Last, and after the reconcile: the consumer reads the live graph, and
+    // a host callback that throws must not strand the bookkeeping above.
+    notifyAppliedFrame(update, applied)
   }
   const onOpsResult: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return

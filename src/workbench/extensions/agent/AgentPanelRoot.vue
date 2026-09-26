@@ -49,6 +49,7 @@ import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import type { ChangeTracker } from '@/scripts/changeTracker'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { blankGraph } from '@/scripts/defaultGraph'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
@@ -757,6 +758,40 @@ const isBoundWorkflowActive = computed(() => {
   )
 })
 
+// Frames arriving with the turn already idle have to close their own run, and
+// a batch of them must still collapse into one undo entry — closing per frame
+// would end the run after its first, giving every later frame its own entry.
+// Debounced past the tracker's own 50 ms squash so the run closes against the
+// state that squash settled on.
+//
+// Hand-rolled rather than `useDebounceFn` because the pending call has to be
+// cancellable: a panel that closes mid-run must not reach into a tracker 100 ms
+// later. The next ordinary capture closes that run anyway.
+const CLOSE_IDLE_FRAME_RUN_MS = 100
+let idleFrameRunTimer: ReturnType<typeof setTimeout> | undefined
+function cancelIdleFrameRunClose() {
+  clearTimeout(idleFrameRunTimer)
+  idleFrameRunTimer = undefined
+}
+function closeIdleFrameRun(tracker: ChangeTracker) {
+  cancelIdleFrameRunClose()
+  idleFrameRunTimer = setTimeout(() => {
+    idleFrameRunTimer = undefined
+    tracker.closeCoalescedRun()
+  }, CLOSE_IDLE_FRAME_RUN_MS)
+}
+onBeforeUnmount(() => {
+  cancelIdleFrameRunClose()
+  // The run outlives this panel, so end it here or the first frame after the
+  // panel reopens continues it and folds two turns into one Ctrl+Z. End it
+  // without settling: `closeCoalescedRun()` dispatches `autoQueueGraphChanged`,
+  // which reaches `app.queuePrompt` against the live canvas, so settling here
+  // would queue a prompt because a panel closed. Nothing is lost — the user's
+  // next graph-changing edit settles the run through the ordinary capture path,
+  // which is where that dispatch happened before a run was captured at all.
+  workflowStore.activeWorkflow?.changeTracker.abandonCoalescedRun()
+})
+
 // The CRDT follower is the inbound content channel: subscribes to the
 // session's bound workflow while its tab is active. Suspending the background
 // subscription makes reopening pull state-vector catch-up only after the
@@ -783,6 +818,28 @@ const {
         )
         if (status.value === 'idle') graphActivity.finishTurn()
       }
+    },
+    // PM-1598: remote edits trip none of the input listeners
+    // `ChangeTracker.init()` installs, so without this their draft write
+    // waits on an unrelated interaction — the next `mouseup` — and a
+    // reload before that restores a workflow missing the agent's edit.
+    // That interaction used to collapse a whole run of frames into one
+    // capture, which is what both options here preserve.
+    onApplied() {
+      const tracker = workflowStore.activeWorkflow?.changeTracker
+      if (tracker === undefined) return
+      tracker.captureCanvasState({
+        autoQueue: false,
+        coalesceUndo: true
+      })
+      // Nothing else will close the run this opened: every accepted subscribe
+      // arms a catch-up frame, not just a reconnect, so one can land while the
+      // turn is already `idle` and no idle transition follows. Left open, the
+      // next turn reuses this undo entry and the run's deferred auto-queue is
+      // never settled. Pass the tracker rather than re-resolving the active
+      // workflow when the timer fires, for the same reason the idle watcher
+      // cannot: the user may have switched tabs in between.
+      if (status.value === 'idle') closeIdleFrameRun(tracker)
     },
     onReset: graphActivity.resetWorkflow
   }
@@ -889,8 +946,18 @@ watch(
     if (value === 'idle') {
       // The immediate idle value on remount is a hydration snapshot, not a
       // completed turn. A real idle transition is observed after this pass.
-      if (observedActivityStatus) graphActivity.finishTurn()
-    } else graphActivity.startTurn(turnId)
+      if (observedActivityStatus) {
+        graphActivity.finishTurn()
+        workflowStore.activeWorkflow?.changeTracker.closeCoalescedRun()
+      }
+    } else {
+      // A turn starting inside the idle-frame close window takes the run over.
+      // Letting the close fire would settle the run against a graph this turn
+      // is still building, dispatching the auto-queue that `autoQueue: false`
+      // exists to suppress. This turn's own idle transition closes it instead.
+      cancelIdleFrameRunClose()
+      graphActivity.startTurn(turnId)
+    }
     observedActivityStatus = true
     if (value === 'idle') {
       const completedPath = tabActivity.editingTabPath

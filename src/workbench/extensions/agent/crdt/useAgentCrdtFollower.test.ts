@@ -1333,6 +1333,129 @@ describe('useAgentCrdtFollower', () => {
       expect(onMaterialized).not.toHaveBeenCalled()
       unmount()
     })
+
+    // PM-1598: `onMaterialized` fires for nodes only, so an agent turn that
+    // just sets a widget on an existing node notified nobody — and the
+    // consumer of that signal is what marks the workflow modified.
+    describe('applied-frame notification', () => {
+      it('reports a live frame that materialized no nodes', () => {
+        const onApplied = vi.fn()
+        const onMaterialized = vi.fn()
+        materializerState.reconcileAgentAdapters.mockReturnValue([])
+        const { unmount } = mountFollower('wf-1', true, () => fakeGraph, {
+          onApplied,
+          onMaterialized
+        })
+
+        dispatchFrame('doc_update', {
+          workflowId: 'wf-1',
+          seq: 9,
+          actor: 'agent:thread:turn',
+          catchUp: false
+        })
+
+        expect(onMaterialized).not.toHaveBeenCalled()
+        expect(onApplied).toHaveBeenCalledExactlyOnceWith({
+          workflowId: 'wf-1',
+          actor: 'agent:thread:turn'
+        })
+        unmount()
+      })
+
+      it('reports a human collaborator frame as well as an agent one', () => {
+        const onApplied = vi.fn()
+        const { unmount } = mountFollower('wf-1', true, () => fakeGraph, {
+          onApplied
+        })
+
+        dispatchFrame('doc_update', {
+          workflowId: 'wf-1',
+          seq: 9,
+          actor: 'human:someone-else:tab',
+          catchUp: false
+        })
+
+        expect(onApplied).toHaveBeenCalledExactlyOnceWith({
+          workflowId: 'wf-1',
+          actor: 'human:someone-else:tab'
+        })
+        unmount()
+      })
+
+      it('stays silent for this tab\u2019s own ops echoed back', async () => {
+        const onApplied = vi.fn()
+        const { enqueue, unmount } = mountFollower(
+          'wf-1',
+          true,
+          () => fakeGraph,
+          { onApplied }
+        )
+
+        enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+        await Promise.resolve()
+        const [, , ops] = clientState.sendOps.mock.calls[0]
+        const ownActor = ops[0].actor
+
+        dispatchFrame('doc_update', {
+          workflowId: 'wf-1',
+          seq: 9,
+          actor: ownActor,
+          catchUp: false
+        })
+
+        expect(ownActor).toMatch(/^human:/)
+        expect(onApplied).not.toHaveBeenCalled()
+        unmount()
+      })
+
+      // The catch-up frame of any accepted subscribe is the whole delta this
+      // follower's state vector lacked (see `catchUpPending` in
+      // layoutFollowerBridge.ts), so it is the only frame edits missed while
+      // away ever arrive on.
+      it('reports a subscribe catch-up frame', () => {
+        const onApplied = vi.fn()
+        const { unmount } = mountFollower('wf-1', true, () => fakeGraph, {
+          onApplied
+        })
+
+        dispatchFrame('doc_update', {
+          workflowId: 'wf-1',
+          seq: 9,
+          actor: 'agent:thread:turn',
+          catchUp: true
+        })
+
+        expect(onApplied).toHaveBeenCalledExactlyOnceWith({
+          workflowId: 'wf-1',
+          actor: 'agent:thread:turn'
+        })
+        unmount()
+      })
+
+      it.for([
+        {
+          case: 'the adapter skipped the frame',
+          applied: false,
+          detail: { workflowId: 'wf-1', seq: 9, catchUp: false }
+        },
+        {
+          case: 'the frame belongs to another workflow',
+          applied: true,
+          detail: { workflowId: 'wf-2', seq: 9, catchUp: false }
+        }
+      ])('stays silent when $case', ({ applied, detail }) => {
+        const onApplied = vi.fn()
+        if (!applied) adapterState.applyFrame.mockReturnValueOnce(false)
+        const { unmount } = mountFollower('wf-1', true, () => fakeGraph, {
+          onApplied
+        })
+
+        dispatchFrame('doc_update', detail)
+
+        expect(onApplied).not.toHaveBeenCalled()
+        unmount()
+      })
+    })
   })
 
   it('suspends a background target and catches up only after it becomes active', async () => {

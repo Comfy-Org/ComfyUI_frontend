@@ -987,6 +987,233 @@ describe('ChangeTracker', () => {
         }
       )
 
+      // PM-1598: an agent turn lands as a run of frames, each captured on
+      // its own. Carrying auto-queue would queue a prompt per frame against
+      // a half-built graph, where a user's single interaction queued one.
+      it('still records the change when the caller opts out of auto-queue', () => {
+        const initial = createState(2)
+        const tracker = createTracker(initial)
+        const changed = structuredClone(initial)
+        changed.nodes.pop()
+        mockCanvasState(changed)
+
+        tracker.captureCanvasState({ autoQueue: false })
+
+        expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+          'graphChanged',
+          changed
+        )
+        expect(tracker.activeState).toEqual(changed)
+        expectAutoQueueGraphChangedNotDispatched()
+      })
+
+      // PM-1598: the squash's usual outcome is the `graphEqual` early return —
+      // nothing has changed since the capture that scheduled it — so a flag
+      // read after that return carries one interval's auto-queue decision into
+      // the next. Remote frames accumulate the flag and cannot lower it, so an
+      // ordinary capture's opt-in would leak into the middle of a run.
+      it('does not carry an ordinary capture auto-queue into a later run', async () => {
+        vi.useFakeTimers()
+        onTestFinished(() => {
+          vi.useRealTimers()
+        })
+        const initial = createState(4)
+        const tracker = createTracker(initial)
+
+        const afterOrdinary = structuredClone(initial)
+        afterOrdinary.nodes.pop()
+        mockCanvasState(afterOrdinary)
+        tracker.captureCanvasState()
+        // The squash this scheduled finds nothing new and returns early.
+        await vi.advanceTimersByTimeAsync(100)
+
+        const afterFrame = structuredClone(afterOrdinary)
+        afterFrame.nodes.pop()
+        mockCanvasState(afterFrame)
+        tracker.captureCanvasState({ autoQueue: false, coalesceUndo: true })
+
+        const squashed = structuredClone(afterFrame)
+        squashed.nodes.pop()
+        mockCanvasState(squashed)
+        await vi.advanceTimersByTimeAsync(100)
+
+        expect(tracker.activeState).toEqual(squashed)
+        const events: string[] = dispatchedEventNames()
+        expect(
+          events.filter((name) => name === 'autoQueueGraphChanged')
+        ).toHaveLength(1)
+      })
+
+      it('keeps the opt-out through the debounced squash', async () => {
+        vi.useFakeTimers()
+        const initial = createState(3)
+        const tracker = createTracker(initial)
+        const changed = structuredClone(initial)
+        changed.nodes.pop()
+        mockCanvasState(changed)
+        tracker.captureCanvasState({ autoQueue: false })
+
+        const squashed = structuredClone(changed)
+        squashed.nodes.pop()
+        mockCanvasState(squashed)
+        await vi.advanceTimersByTimeAsync(100)
+
+        expect(tracker.activeState).toEqual(squashed)
+        expectAutoQueueGraphChangedNotDispatched()
+        vi.useRealTimers()
+      })
+    })
+
+    // PM-1598: a run of remote frames used to reach the undo queue as the one
+    // entry the user's next interaction captured. An entry per frame makes
+    // Ctrl+Z rewind to a half-built graph the shared document cannot hold.
+    describe('coalesced undo for a run of remote captures', () => {
+      function captureNodeRemoval(
+        tracker: ChangeTracker,
+        state: ComfyWorkflowJSON,
+        options?: { coalesceUndo?: boolean }
+      ): ComfyWorkflowJSON {
+        const next = structuredClone(state)
+        next.nodes.pop()
+        mockCanvasState(next)
+        tracker.captureCanvasState({ autoQueue: false, ...options })
+        return next
+      }
+
+      it('folds a run into one entry that undoes the whole run', () => {
+        const initial = createState(4)
+        const tracker = createTracker(initial)
+
+        let state = captureNodeRemoval(tracker, initial, {
+          coalesceUndo: true
+        })
+        state = captureNodeRemoval(tracker, state, { coalesceUndo: true })
+        captureNodeRemoval(tracker, state, { coalesceUndo: true })
+
+        expect(tracker.undoQueue).toEqual([initial])
+      })
+
+      it('opens a new entry for an ordinary capture after a run', () => {
+        const initial = createState(4)
+        const tracker = createTracker(initial)
+
+        const afterRun = captureNodeRemoval(tracker, initial, {
+          coalesceUndo: true
+        })
+        captureNodeRemoval(tracker, afterRun)
+
+        expect(tracker.undoQueue).toEqual([initial, afterRun])
+      })
+
+      it('settles auto-queue once for the whole run when it closes', () => {
+        const initial = createState(4)
+        const tracker = createTracker(initial)
+
+        const state = captureNodeRemoval(tracker, initial, {
+          coalesceUndo: true
+        })
+        captureNodeRemoval(tracker, state, { coalesceUndo: true })
+        expectAutoQueueGraphChangedNotDispatched()
+
+        tracker.closeCoalescedRun()
+
+        const events: string[] = dispatchedEventNames()
+        expect(
+          events.filter((event) => event === 'autoQueueGraphChanged')
+        ).toHaveLength(1)
+      })
+
+      it('stays quiet on close when the run left the execution graph alone', () => {
+        const initial = createState(4)
+        const tracker = createTracker(initial)
+        const moved = structuredClone(initial)
+        moved.nodes[0].pos = [123, 456]
+        mockCanvasState(moved)
+        tracker.captureCanvasState({ autoQueue: false, coalesceUndo: true })
+
+        tracker.closeCoalescedRun()
+
+        expectAutoQueueGraphChangedNotDispatched()
+      })
+
+      it('starts a new entry for the run after a close', () => {
+        const initial = createState(4)
+        const tracker = createTracker(initial)
+
+        const afterFirstRun = captureNodeRemoval(tracker, initial, {
+          coalesceUndo: true
+        })
+        tracker.closeCoalescedRun()
+        captureNodeRemoval(tracker, afterFirstRun, { coalesceUndo: true })
+
+        expect(tracker.undoQueue).toEqual([initial, afterFirstRun])
+      })
+
+      it('opens a new entry for a run that follows an ordinary capture', () => {
+        const initial = createState(4)
+        const tracker = createTracker(initial)
+
+        const afterLocal = captureNodeRemoval(tracker, initial)
+        const afterFirstFrame = captureNodeRemoval(tracker, afterLocal, {
+          coalesceUndo: true
+        })
+        captureNodeRemoval(tracker, afterFirstFrame, { coalesceUndo: true })
+
+        expect(tracker.undoQueue).toEqual([initial, afterLocal])
+      })
+
+      // PM-1598: an ordinary capture is the boundary that ends a run, so it is
+      // the boundary that has to settle it. Its own comparison is against the
+      // run's last frame rather than the state the run began on, so a
+      // `pos`-only interaction mid-run sees no execution change of its own and
+      // the run's widget and link edits would never reach auto-queue at all —
+      // where before the run was captured at all, that same `mouseup` took the
+      // whole delta and dispatched once.
+      it('settles the run when an ordinary capture ends it', () => {
+        const initial = createState(4)
+        const tracker = createTracker(initial)
+
+        const afterFirstFrame = captureNodeRemoval(tracker, initial, {
+          coalesceUndo: true
+        })
+        const afterRun = captureNodeRemoval(tracker, afterFirstFrame, {
+          coalesceUndo: true
+        })
+        expectAutoQueueGraphChangedNotDispatched()
+
+        const moved = structuredClone(afterRun)
+        moved.nodes[0].pos = [123, 456]
+        mockCanvasState(moved)
+        tracker.captureCanvasState()
+
+        const events: string[] = dispatchedEventNames()
+        expect(
+          events.filter((name) => name === 'autoQueueGraphChanged')
+        ).toHaveLength(1)
+        expect(tracker.undoQueue).toEqual([initial, afterRun])
+      })
+
+      // For the callers where the dispatch would be attributed to the wrong
+      // thing — a workflow the user has left, a UI surface closing. The next
+      // ordinary capture still settles what the run left, because it compares
+      // against the entry the run opened.
+      it('ends a run without settling it when abandoned', () => {
+        const initial = createState(4)
+        const tracker = createTracker(initial)
+
+        const afterRun = captureNodeRemoval(tracker, initial, {
+          coalesceUndo: true
+        })
+        tracker.abandonCoalescedRun()
+        expectAutoQueueGraphChangedNotDispatched()
+
+        captureNodeRemoval(tracker, afterRun, { coalesceUndo: true })
+
+        expect(tracker.undoQueue).toEqual([initial, afterRun])
+      })
+    })
+
+    describe('execution-graph change detection in subgraphs', () => {
       it('ignores layout changes inside a subgraph', async () => {
         const initial = await createSubgraphState()
         const tracker = createTracker(initial)
@@ -1287,6 +1514,48 @@ describe('ChangeTracker', () => {
         false,
         'ChangeTracker.deactivate() called on inactive tracker'
       )
+    })
+
+    // PM-1598: a workflow switch mid-run leaves this tracker's run open —
+    // whatever closes a run on turn idle resolves the *active* tracker, which
+    // by then is the workflow being switched to, and the capture below leaves
+    // the flag alone when the graph has not changed.
+    it('ends an open coalesced run so the next one opens its own entry', () => {
+      const initial = createState(4)
+      const tracker = createTracker(initial)
+      const afterFrame = structuredClone(initial)
+      afterFrame.nodes.pop()
+      mockCanvasState(afterFrame)
+      tracker.captureCanvasState({ autoQueue: false, coalesceUndo: true })
+
+      tracker.deactivate()
+
+      const afterReturn = structuredClone(afterFrame)
+      afterReturn.nodes.pop()
+      mockCanvasState(afterReturn)
+      tracker.captureCanvasState({ autoQueue: false, coalesceUndo: true })
+
+      expect(tracker.undoQueue).toEqual([initial, afterFrame])
+    })
+
+    // The run's deferred auto-queue belongs to the workflow being left, so
+    // ending the run here must not settle it: the dispatch would queue against
+    // whichever workflow the switch lands on.
+    it('does not settle the run it ends against the outgoing workflow', () => {
+      const initial = createState(4)
+      const tracker = createTracker(initial)
+      const afterFrame = structuredClone(initial)
+      afterFrame.nodes.pop()
+      mockCanvasState(afterFrame)
+      tracker.captureCanvasState({ autoQueue: false, coalesceUndo: true })
+      // An uncaptured local edit, so the capture inside deactivate() runs.
+      const moved = structuredClone(afterFrame)
+      moved.nodes[0].pos = [123, 456]
+      mockCanvasState(moved)
+
+      tracker.deactivate()
+
+      expectAutoQueueGraphChangedNotDispatched()
     })
   })
 

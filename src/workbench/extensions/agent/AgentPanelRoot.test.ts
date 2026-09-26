@@ -7,9 +7,17 @@ import type {
 } from '@comfyorg/ingest-types'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import type { Mocked } from 'vitest'
-import { computed, defineComponent, h, nextTick, ref } from 'vue'
+import { computed, defineComponent, h, markRaw, nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 import { useClipboard } from '@vueuse/core'
 
@@ -38,6 +46,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { app } from '@/scripts/app'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
@@ -107,7 +116,8 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
     addEventListener: ws.add,
     removeEventListener: ws.remove,
     addCustomEventListener: ws.add,
-    removeCustomEventListener: ws.remove
+    removeCustomEventListener: ws.remove,
+    dispatchCustomEvent: vi.fn()
   }
 }))
 
@@ -236,11 +246,16 @@ import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
 import { attachMintPortWiring } from './crdt/mintPortWiring'
 import type { MintPortWiring, MintPortWiringDeps } from './crdt/mintPortWiring'
+import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
+import type { AgentCrdtFollowerEvents } from './crdt/useAgentCrdtFollower'
 
 const mintPortWiringDeps = vi.hoisted(() => ({
   current: null as MintPortWiringDeps | null
 }))
 vi.mock(import('./crdt/mintPortWiring'), { spy: true })
+// Spy only: the real follower still runs, so every other test in this file
+// keeps its behaviour and only the arguments become inspectable.
+vi.mock(import('./crdt/useAgentCrdtFollower'), { spy: true })
 
 // The mock replaces the real `attachMintPortWiring` body entirely. It only
 // captures `deps` for assertions below — it must NOT reproduce any of that
@@ -2923,6 +2938,170 @@ describe('AgentPanelRoot canvas draft on send', () => {
 
     expect(messageBodies).toHaveLength(0)
     expect(useAgentComposerStore().draft).toBe('hello')
+  })
+})
+
+// PM-1598: the inbound half of the same problem the suite above covers
+// outbound. A remote edit trips none of the listeners `ChangeTracker.init()`
+// installs, so without this capture the tab is never marked modified and the
+// agent's widget write is missing from the draft the next reload restores.
+describe('AgentPanelRoot canvas draft on remote edit', () => {
+  function followerEvents(): AgentCrdtFollowerEvents {
+    const events = vi.mocked(useAgentCrdtFollower).mock.calls.at(-1)?.[5]
+    assert(events, 'the panel never started the CRDT follower')
+    return events
+  }
+
+  it('captures canvas state when the follower applies a remote frame', () => {
+    const captureCanvasState = vi.fn()
+    workflowStore.activeWorkflow = addTab('workflows/remote_edit.json', {
+      changeTracker: createMockChangeTracker({ captureCanvasState })
+    })
+
+    renderWithSelectedTarget()
+    followerEvents().onApplied?.({
+      workflowId: 'wf-1',
+      actor: 'agent:thread:turn'
+    })
+
+    expect(captureCanvasState).toHaveBeenCalledExactlyOnceWith({
+      autoQueue: false,
+      coalesceUndo: true
+    })
+  })
+
+  it('reaches a real change tracker, marking the tab modified', () => {
+    const initialState = fromPartial<ComfyWorkflowJSON>({
+      version: 0.4,
+      nodes: []
+    })
+    const tab = addTab('workflows/remote_edit.json')
+    const tracker = markRaw(
+      new ChangeTracker(fromPartial<ComfyWorkflow>(tab), initialState)
+    )
+    tab.changeTracker = tracker
+    workflowStore.activeWorkflow = tab
+    appMock.isGraphReady = true
+    appMock.graph.nodes.push({ id: 1, type: 'LoadImage', widgets_values: [] })
+
+    renderWithSelectedTarget()
+    followerEvents().onApplied?.({
+      workflowId: 'wf-1',
+      actor: 'agent:thread:turn'
+    })
+
+    expect(tracker.activeState.nodes).toHaveLength(1)
+    expect(tab.isModified).toBe(true)
+  })
+
+  it('drives the capture from onApplied, not from onMaterialized', () => {
+    const captureCanvasState = vi.fn()
+    workflowStore.activeWorkflow = addTab('workflows/remote_edit.json', {
+      changeTracker: createMockChangeTracker({ captureCanvasState })
+    })
+
+    renderWithSelectedTarget()
+    const events = followerEvents()
+    events.onMaterialized?.({
+      workflowId: 'wf-1',
+      actor: 'agent:thread:turn',
+      nodeIds: [toNodeId(1), toNodeId(2)]
+    })
+    events.onApplied?.({ workflowId: 'wf-1', actor: 'agent:thread:turn' })
+
+    expect(captureCanvasState).toHaveBeenCalledOnce()
+  })
+
+  // Every accepted subscribe arms a catch-up frame, not just a reconnect, so
+  // one can land while the turn is already idle — and then no idle transition
+  // follows to close the run it opened. The next turn would reuse that undo
+  // entry and the run's deferred auto-queue would never settle.
+  it('closes the coalesced run for frames that land while idle', async () => {
+    const closeCoalescedRun = vi.fn()
+    workflowStore.activeWorkflow = addTab('workflows/remote_edit.json', {
+      changeTracker: createMockChangeTracker({ closeCoalescedRun })
+    })
+
+    renderWithSelectedTarget()
+    vi.useFakeTimers()
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+    const events = followerEvents()
+    events.onApplied?.({ workflowId: 'wf-1', actor: 'agent:thread:turn' })
+    events.onApplied?.({ workflowId: 'wf-1', actor: 'agent:thread:turn' })
+
+    // One batch is one run: the close waits out the frames, it does not fire
+    // per frame and cut the run short after the first.
+    expect(closeCoalescedRun).not.toHaveBeenCalled()
+    await vi.advanceTimersByTimeAsync(200)
+
+    expect(closeCoalescedRun).toHaveBeenCalledOnce()
+  })
+
+  // A closed panel must not reach into a tracker 100 ms later: left pending, the
+  // close outlived the panel and fired against whatever tracker came next, which
+  // in the suite meant a real `ChangeTracker` and an uncaught TypeError. But the
+  // run still has to end, or the first frame after the panel reopens continues
+  // it and folds two turns into one Ctrl+Z — and it has to end without settling,
+  // because settling dispatches into `app.queuePrompt` and would queue a prompt
+  // because a panel closed.
+  it('ends the run without settling it when the panel unmounts', async () => {
+    const closeCoalescedRun = vi.fn()
+    const abandonCoalescedRun = vi.fn()
+    workflowStore.activeWorkflow = addTab('workflows/remote_edit.json', {
+      changeTracker: createMockChangeTracker({
+        closeCoalescedRun,
+        abandonCoalescedRun
+      })
+    })
+
+    const { unmount } = renderWithSelectedTarget()
+    vi.useFakeTimers()
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+    followerEvents().onApplied?.({
+      workflowId: 'wf-1',
+      actor: 'agent:thread:turn'
+    })
+    unmount()
+    await vi.advanceTimersByTimeAsync(200)
+
+    expect(abandonCoalescedRun).toHaveBeenCalledOnce()
+    expect(closeCoalescedRun).not.toHaveBeenCalled()
+  })
+
+  // A turn starting inside the close window takes the run over. Settling it
+  // there would compare against a graph the new turn is still building and
+  // dispatch the auto-queue `autoQueue: false` exists to suppress; the turn's
+  // own idle transition closes the run instead.
+  it('drops a pending close when a new turn starts inside the window', async () => {
+    const closeCoalescedRun = vi.fn()
+    workflowStore.activeWorkflow = addTab('workflows/remote_edit.json', {
+      changeTracker: createMockChangeTracker({ closeCoalescedRun })
+    })
+
+    renderWithSelectedTarget()
+    vi.useFakeTimers()
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+    followerEvents().onApplied?.({
+      workflowId: 'wf-1',
+      actor: 'agent:thread:turn'
+    })
+
+    useAgentConversationStore().startTurn(toTurnId('turn-next'))
+    await nextTick()
+    // The turn transition may settle the previous run itself, and that is fine:
+    // it happens before the turn has changed anything, so the comparison is
+    // still run-start against run-end. What must not happen is the pending
+    // timer firing later, once the turn is part-way through building the graph.
+    const settledAtTurnStart = closeCoalescedRun.mock.calls.length
+    await vi.advanceTimersByTimeAsync(200)
+
+    expect(closeCoalescedRun).toHaveBeenCalledTimes(settledAtTurnStart)
   })
 })
 
