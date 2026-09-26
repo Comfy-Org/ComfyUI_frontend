@@ -1228,6 +1228,12 @@
       "openInCloud": "Open in Cloud",
       "requirements": "Template requirements",
       "models": "Models",
+      "inputAssets": "Input Assets",
+      "inputMediaTypes": {
+        "image": "Image",
+        "video": "Video",
+        "audio": "Audio"
+      },
       "installed": "Installed",
       "unavailable": "Unavailable",
       "unknown": "Unknown",
@@ -4278,6 +4284,10 @@
     "hasCreditCost": "Requires additional credits",
     "viewGraph": "View node graph",
     "mobileNoWorkflow": "This workflow hasn't been built for app mode. Try a different one.",
+    "inputDownloads": {
+      "downloading": "Downloading {count} starter input | Downloading {count} starter inputs",
+      "finalizing": "Preparing downloaded starter inputs"
+    },
     "welcome": {
       "title": "App Mode",
       "message": "A simplified view that hides the node graph so you can focus on creating.",
