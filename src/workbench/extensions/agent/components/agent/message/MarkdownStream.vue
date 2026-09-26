@@ -57,7 +57,15 @@ const segments = computed<Segment[]>(() => {
   const out: Segment[] = []
   let prose = ''
   const flushProse = () => {
-    if (!prose) return
+    // A run of only blank-line ("space") tokens between two asset blocks
+    // (e.g. two bare images joined by AgentMessageGroup.vue's `\n\n`) has no
+    // visible content: dropping it here, instead of emitting an empty prose
+    // segment, keeps the surrounding assets adjacent so pushAssets can still
+    // merge them into one grid.
+    if (!prose.trim()) {
+      prose = ''
+      return
+    }
     out.push({
       type: 'prose',
       html: renderMarkdownToHtml(prose, apiBaseUrl)

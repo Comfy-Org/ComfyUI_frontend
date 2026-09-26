@@ -7,12 +7,10 @@ import type { AssistantMessage } from '../../../services/agent/agentMessageParts
 
 import AgentMessage from './AgentMessage.vue'
 
-// PM-1135 / PM-1313: a tool call between two generated assets closes the open
-// TextPart (agentEventTransport.ts's closeOpenText), so this captioned batch
-// reply lands as two one-asset TextParts. AgentMessage.vue's `groups`
-// computed folds them back into one text group; this pins the render-path
-// fix at that lowest level, independent of agentEventTransport and the full
-// agent-replay harness.
+// PM-1135 / PM-1313 regressions across a tool-call split, at the AgentMessage
+// render level (see agentMessageGroup.ts for the grouping logic itself):
+// bare assets should coalesce into one grid, captioned assets should keep
+// their order and pairing.
 function fragmentedCaptionedAssetsMessage(): AssistantMessage {
   return {
     id: toTurnId('msg-assets'),
@@ -72,6 +70,47 @@ describe('AgentMessage asset grid fragmentation', () => {
       versionB.compareDocumentPosition(groups[1]) &
         Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy()
+  })
+
+  it('PM-1135: coalesces two bare, uncaptioned assets split by a tool call into one grid', () => {
+    const message: AssistantMessage = {
+      id: toTurnId('msg-bare-assets'),
+      role: 'assistant',
+      streaming: false,
+      thinking: false,
+      parts: [
+        {
+          type: 'text',
+          text: '![i1.png](https://x/i1.png)',
+          state: 'done'
+        },
+        {
+          type: 'tool',
+          callId: 'tool_0',
+          name: 'preview_image',
+          state: 'done'
+        },
+        {
+          type: 'text',
+          text: '![i2.png](https://x/i2.png)',
+          state: 'done'
+        }
+      ]
+    }
+
+    render(AgentMessage, {
+      props: { message },
+      global: { plugins: [i18n] }
+    })
+
+    const groups = screen.getAllByTestId('reply-asset-group')
+    expect(groups).toHaveLength(1)
+    expect(
+      within(groups[0]).getByRole('img', { name: 'i1.png' })
+    ).toBeInTheDocument()
+    expect(
+      within(groups[0]).getByRole('img', { name: 'i2.png' })
+    ).toBeInTheDocument()
   })
 
   it('PM-1135: puts a bare asset before later, unrelated prose', () => {

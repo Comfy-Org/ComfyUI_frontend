@@ -45,19 +45,9 @@ test.describe(
       })
     })
 
-    // PM-1135 / PM-1313: agentEventTransport.ts closes the open TextPart
-    // (closeOpenText) on every agent_thinking / agent_tool_call /
-    // agent_active_tab / agent_ask event, so a batch of assets separated by
-    // any of those lands as N separate one-asset TextParts. AgentMessage.vue's
-    // `groups` computed folds those TextParts back together (only a
-    // user-facing interruption — a tab link, a run approval, a paywall, a
-    // notice — starts a new text group) so they render through one
-    // MarkdownStream. Each caption still prevents its own asset from
-    // coalescing with the next one, exactly as it would within a single
-    // TextPart, so the reply keeps its original order and each caption stays
-    // paired with its own asset. This replays a turn shaped exactly like that
-    // (two generate_image tool calls, one per asset, each with its own
-    // caption) through the real chat panel.
+    // PM-1135 / PM-1313: replays a captioned batch reply split across two
+    // tool calls through the real chat panel (see agentMessageGroup.ts for
+    // the grouping logic under test).
     test.describe(`recorded ${ASSET_GRID_CASE}`, () => {
       test.use({ conversationCase: ASSET_GRID_CASE })
 
