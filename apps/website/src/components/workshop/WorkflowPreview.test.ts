@@ -37,6 +37,11 @@ describe('WorkflowPreview', () => {
     render(WorkflowPreview, { props: { model, cloudHref } })
 
     expect(screen.getByTestId('workflow-graph')).toBeTruthy()
+    // Panning a graph on a phone is not reading it, so the flat export the
+    // page has always published is still one tap away.
+    expect(screen.getByTestId('workflow-graph-full').getAttribute('href')).toBe(
+      model.workflow.template?.previewUrl
+    )
 
     const actions = screen.getByTestId('workflow-actions')
     expect(actions).toContainElement(

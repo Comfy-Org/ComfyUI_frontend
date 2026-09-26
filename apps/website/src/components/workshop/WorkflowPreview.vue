@@ -108,6 +108,18 @@ const bandHeading =
             class="max-h-160 w-full object-contain"
           />
         </a>
+        <!-- Panning a graph on a phone is not reading it. The flat export is
+          still published, and opening it is still the way to see the whole
+          thing at a size worth looking at. -->
+        <a
+          v-if="template?.previewUrl"
+          :href="template.previewUrl"
+          target="_blank"
+          rel="noopener"
+          class="mt-3 inline-flex min-h-11 items-center text-sm text-primary-warm-gray transition-colors hover:text-primary-comfy-yellow focus-visible:text-primary-comfy-yellow focus-visible:outline-primary-comfy-yellow"
+          data-testid="workflow-graph-full"
+          >{{ t('workshop.workflow.fullPreview') }}</a
+        >
       </div>
 
       <div class="lg:col-span-4">
