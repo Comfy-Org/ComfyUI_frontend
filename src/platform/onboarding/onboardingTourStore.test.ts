@@ -225,6 +225,114 @@ describe('onboardingTourStore', () => {
     expect(skipped?.[1]).toMatchObject({ skip_reason: 'user' })
   })
 
+  /**
+   * A tour is decided on before it is asked for: whoever opens one registers
+   * its steps and then leaves the canvas undimmed for a moment so the user can
+   * see what they chose. Without a phase for that window the only record of the
+   * decision is a local variable inside the opener, and everything else is told
+   * no tour is active over a screen the tour already has.
+   */
+  describe('a tour committed but not yet started', () => {
+    it('is named by activeTour before any of it is on screen', () => {
+      const store = mountStore()
+
+      expect(store.commitTour('appMode')).toBe(true)
+
+      expect(
+        store.activeTour,
+        'a reserved tour that reads as no tour is the gap this phase exists to close'
+      ).toBe('appMode')
+      expect(
+        store.tourStarted,
+        'nothing of it has run, so anything tearing a tour down has nothing to do'
+      ).toBe(false)
+      expect(store.step).toBeNull()
+      expect(startedCount()).toBe(0)
+    })
+
+    it('starts the run it reserved rather than refusing its own reservation', async () => {
+      const store = mountStore()
+      store.commitTour('appMode')
+
+      expect(await store.startTour('appMode')).toBe(true)
+
+      expect(store.tourStarted).toBe(true)
+      expect(startedCount()).toBe(1)
+      expect(store.step?.name).toBe('landing')
+    })
+
+    it('gives a reservation back to idle', () => {
+      const store = mountStore()
+      store.commitTour('appMode')
+
+      expect(store.releaseTour('appMode')).toBe(true)
+
+      expect(store.activeTour).toBeNull()
+      expect(store.tourStarted).toBe(false)
+    })
+
+    it('refuses to give back a reservation taken for another tour', () => {
+      const store = mountStore()
+      store.commitTour('appMode')
+
+      expect(store.releaseTour('firstRun')).toBe(false)
+
+      expect(store.activeTour).toBe('appMode')
+    })
+
+    it('refuses a second reservation while one is held', () => {
+      const store = mountStore()
+      store.commitTour('appMode')
+
+      expect(store.commitTour('firstRun')).toBe(false)
+
+      expect(store.activeTour).toBe('appMode')
+    })
+
+    it('refuses a reservation over a tour already running', async () => {
+      const store = mountStore()
+      store.replayTour('appMode')
+      await nextTick()
+
+      expect(store.commitTour('firstRun')).toBe(false)
+
+      expect(store.activeTour).toBe('appMode')
+    })
+
+    it('reports no ending for a tour that never started', () => {
+      const store = mountStore()
+      store.commitTour('appMode')
+
+      store.skip()
+
+      expect(
+        store.activeTour,
+        'a reservation is not a tour the user can have skipped'
+      ).toBe('appMode')
+      expect(trackOnboardingTour).not.toHaveBeenCalled()
+      expect(store.lastEnding).toBeNull()
+      expect(
+        seenTours(),
+        'marking it seen would spend the tour the user never had'
+      ).not.toContain('appMode')
+    })
+
+    it('keeps a reservation its tour refused, for the holder to release', async () => {
+      useSettingStore().settingValues[TOUR_SEEN_SETTING] = ['appMode']
+      const store = mountStore()
+      store.commitTour('appMode')
+
+      expect(await store.startTour('appMode')).toBe(false)
+
+      expect(
+        store.activeTour,
+        'the engine cannot know whether the holder has more to undo, so it waits to be told'
+      ).toBe('appMode')
+      expect(store.releaseTour('appMode')).toBe(true)
+      expect(store.activeTour).toBeNull()
+    })
+  })
+
   describe('the ending it hands on', () => {
     it('has none to report before a tour has ended', async () => {
       const store = mountStore()

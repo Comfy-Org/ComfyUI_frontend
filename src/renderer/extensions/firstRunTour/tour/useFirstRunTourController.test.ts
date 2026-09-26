@@ -78,13 +78,30 @@ async function freshController() {
   return controllerScope.run(() => useFirstRunTourController())!
 }
 
+/**
+ * The engine entering a run: `activeTour` may already name this tour from its
+ * reservation, and `tourStarted` is what changes when it actually begins.
+ */
+function tourStarts(tour: 'firstRun' | 'appMode') {
+  const engine = useOnboardingTourStore()
+  engine.activeTour = tour
+  engine.tourStarted = true
+}
+
+/** The engine back at idle, which is where both a finished and a released run land. */
+function tourIsOver() {
+  const engine = useOnboardingTourStore()
+  engine.activeTour = null
+  engine.tourStarted = false
+}
+
 /** A started tour sitting on its Run step, the state every run outcome acts on. */
 async function tourOnRunStep() {
   mocks.steps = [runStep()]
   useWorkflowStore().activeWorkflow = TOUR_WORKFLOW
   vi.mocked(useOnboardingTourStore().startTour).mockImplementation(async () => {
     await resolveRegisteredTour()
-    useOnboardingTourStore().activeTour = 'firstRun'
+    tourStarts('firstRun')
     Object.assign(useOnboardingTourStore(), { step: runStep() })
     return true
   })
@@ -99,7 +116,7 @@ async function tourOnRunStep() {
 /** The engine ending the tour and recording how, the way `finish()` leaves it. */
 function endTour(ending: TourEnding) {
   useOnboardingTourStore().lastEnding = ending
-  useOnboardingTourStore().activeTour = null
+  tourIsOver()
   Object.assign(useOnboardingTourStore(), { step: null })
   return nextTick()
 }
@@ -180,7 +197,25 @@ beforeEach(() => {
   Object.assign(useOnboardingTourStore(), {
     activeTour:
       ref<ReturnType<typeof useOnboardingTourStore>['activeTour']>(null),
+    tourStarted: ref(false),
     lastEnding: ref<TourEnding | null>(null)
+  })
+  // Two refs, not one derived from the other: `activeTour` names a tour from
+  // the moment it is reserved and `tourStarted` only once it is under way, and
+  // the window where they disagree is the intro preview this file is about.
+  // The engine's own derivation is pinned in `onboardingTourStore.test.ts`;
+  // what these mocks keep is the contract the controller relies on.
+  vi.mocked(useOnboardingTourStore().commitTour).mockImplementation((tour) => {
+    const engine = useOnboardingTourStore()
+    if (engine.activeTour !== null) return false
+    engine.activeTour = tour
+    return true
+  })
+  vi.mocked(useOnboardingTourStore().releaseTour).mockImplementation((tour) => {
+    const engine = useOnboardingTourStore()
+    if (engine.activeTour !== tour || engine.tourStarted) return false
+    engine.activeTour = null
+    return true
   })
   vi.mocked(useOnboardingTourStore().startTour).mockResolvedValue(true)
   mocks.workflowStatus = ref(new Map())
@@ -209,7 +244,7 @@ describe('useFirstRunTourController', () => {
       return Promise.resolve()
     })
     mocks.steps = []
-    useOnboardingTourStore().activeTour = null
+    tourIsOver()
     useOnboardingTourStore().lastEnding = null
     Object.assign(useOnboardingTourStore(), { step: null })
     Object.assign(useOnboardingTourStore(), { isLast: false })
@@ -271,7 +306,7 @@ describe('useFirstRunTourController', () => {
     })
 
     it('starts nothing over a tour that is already running', async () => {
-      useOnboardingTourStore().activeTour = 'appMode'
+      tourStarts('appMode')
       mocks.steps = [runStep()]
       const controller = await freshController()
 
@@ -402,6 +437,82 @@ describe('useFirstRunTourController', () => {
       expect(
         vi.mocked(useOnboardingTourStore().startTour)
       ).toHaveBeenCalledWith('firstRun')
+    })
+
+    it('owns the screen for the whole preview, not only once the tour opens', async () => {
+      mocks.steps = [runStep()]
+      const controller = await freshController()
+      const engine = useOnboardingTourStore()
+
+      const starting = controller.beginTour('image_z_image_turbo')
+      await vi.advanceTimersByTimeAsync(0)
+      expect(
+        engine.activeTour,
+        'the preview is the tour’s: a canvas reading as free here is one the card lands on'
+      ).toBe('firstRun')
+      expect(
+        engine.tourStarted,
+        'nothing of the tour has run yet, so nothing may act on it as a live tour'
+      ).toBe(false)
+
+      await vi.advanceTimersByTimeAsync(INTRO_PREVIEW_MS - 1)
+      expect(engine.activeTour).toBe('firstRun')
+
+      await vi.advanceTimersByTimeAsync(1)
+      await starting
+      expect(
+        vi.mocked(engine.startTour),
+        'the reservation must not change when the tour actually starts'
+      ).toHaveBeenCalledWith('firstRun')
+    })
+
+    it('gives the reservation back when the engine turns the start down', async () => {
+      mocks.steps = [runStep()]
+      vi.mocked(useOnboardingTourStore().startTour).mockResolvedValue(false)
+      const controller = await freshController()
+
+      const starting = controller.beginTour('image_z_image_turbo')
+      await vi.advanceTimersByTimeAsync(INTRO_PREVIEW_MS)
+      await starting
+
+      expect(
+        useOnboardingTourStore().activeTour,
+        'a reservation nobody gives back is a latch: the screen never reads free again'
+      ).toBeNull()
+    })
+
+    it('gives the reservation back when the context goes during the preview', async () => {
+      mocks.steps = [runStep()]
+      const controller = await freshController()
+
+      const starting = controller.beginTour('image_z_image_turbo')
+      useCanvasStore().linearMode = true
+      await vi.advanceTimersByTimeAsync(INTRO_PREVIEW_MS)
+
+      expect(await starting).toBe(false)
+      expect(useOnboardingTourStore().activeTour).toBeNull()
+    })
+
+    it('gives the reservation back when starting the tour throws', async () => {
+      mocks.steps = [runStep()]
+      vi.mocked(useOnboardingTourStore().startTour).mockRejectedValue(
+        new Error('engine unavailable')
+      )
+      const controller = await freshController()
+
+      // Handled before the clock moves: the rejection lands inside the tick
+      // the timers are advanced through, and a handler attached after it is an
+      // unhandled rejection rather than a result.
+      const settled = controller
+        .beginTour('image_z_image_turbo')
+        .catch((error: unknown) => error)
+      await vi.advanceTimersByTimeAsync(INTRO_PREVIEW_MS)
+
+      expect(await settled).toMatchObject({ message: 'engine unavailable' })
+      expect(
+        useOnboardingTourStore().activeTour,
+        'a throw is the one path that leaks a reservation, and it leaks it forever'
+      ).toBeNull()
     })
 
     it('hands back the canvas targets when the engine turns the start down', async () => {
@@ -798,7 +909,7 @@ describe('useFirstRunTourController', () => {
       await finishRun(TOUR_WORKFLOW, 'completed')
       expect(mocks.runState.value).toBe('succeeded')
 
-      useOnboardingTourStore().activeTour = null
+      tourIsOver()
       await nextTick()
 
       expect(
@@ -880,7 +991,7 @@ describe('useFirstRunTourController', () => {
         'a nudge fighting a live tour for the screen helps nobody'
       ).toBe(false)
 
-      useOnboardingTourStore().activeTour = null
+      tourIsOver()
       await nextTick()
 
       expect(controller.nudgeArmed.value).toBe(true)
@@ -891,7 +1002,7 @@ describe('useFirstRunTourController', () => {
       mountRunButton('queue-button', () => {}).click()
       await finishRun(TOUR_WORKFLOW, 'failed')
 
-      useOnboardingTourStore().activeTour = null
+      tourIsOver()
       await nextTick()
 
       expect(
@@ -902,7 +1013,7 @@ describe('useFirstRunTourController', () => {
 
     it('takes an armed nudge off the screen when a second tour starts', async () => {
       const { controller } = await tourOnRunStep()
-      useOnboardingTourStore().activeTour = null
+      tourIsOver()
       await nextTick()
       expect(controller.nudgeArmed.value).toBe(true)
 
@@ -958,11 +1069,13 @@ describe('useFirstRunTourController', () => {
       vi.mocked(useOnboardingTourStore().startTour).mockImplementation(
         async () => {
           await resolveRegisteredTour()
-          // The store requests the run, resolves no steps and returns to idle, so
-          // nothing ever calls `finish()` and no ending is recorded.
-          useOnboardingTourStore().activeTour = 'firstRun'
+          // The store requests the run, resolves no steps and returns to idle,
+          // so nothing ever calls `finish()` and no ending is recorded. The run
+          // did start, which is why this ending arms the nudge and a
+          // reservation given back does not.
+          tourStarts('firstRun')
           await nextTick()
-          useOnboardingTourStore().activeTour = null
+          tourIsOver()
           return false
         }
       )
@@ -983,9 +1096,25 @@ describe('useFirstRunTourController', () => {
       ).toBe(true)
     })
 
+    it('offers nothing after a reservation that was given back', async () => {
+      mocks.steps = [runStep()]
+      vi.mocked(useOnboardingTourStore().startTour).mockResolvedValue(false)
+      const controller = await freshController()
+
+      const starting = controller.beginTour('image_z_image_turbo')
+      await vi.advanceTimersByTimeAsync(INTRO_PREVIEW_MS)
+      await starting
+      await nextTick()
+
+      expect(
+        controller.nudgeArmed.value,
+        'a reservation given back before the run began is not a tour the user has been through'
+      ).toBe(false)
+    })
+
     it('stops offering the nudge once it is waved away', async () => {
       const { controller } = await tourOnRunStep()
-      useOnboardingTourStore().activeTour = null
+      tourIsOver()
       await nextTick()
 
       controller.dismissNudge()
