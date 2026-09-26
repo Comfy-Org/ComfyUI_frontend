@@ -1658,6 +1658,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
     </AgentPanel>
     <OnboardingCoach
       v-if="consentAccepted && onboardingKey && coachDeferredBy === null"
+      :key="onboardingKey"
       ref="coachRef"
       :steps="coachSteps"
       :storage-key="onboardingKey"

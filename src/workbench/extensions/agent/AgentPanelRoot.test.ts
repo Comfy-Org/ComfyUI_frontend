@@ -545,6 +545,43 @@ describe('AgentPanelRoot onboarding', () => {
     localStorage.removeItem(SCOPED_KEY)
   })
 
+  it('replays a finished tour from the header and reports it shown again', async () => {
+    localStorage.setItem(SCOPED_KEY, 'true')
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    expect(
+      screen.queryByRole('dialog', { name: 'Meet your Comfy Agent' })
+    ).not.toBeInTheDocument()
+    vi.mocked(useTelemetry()!.trackAgentOnboardingShown).mockClear()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Take the tour' }))
+
+    // Routing matters, not just the effect: the mounted coach has to take the
+    // transition. Clearing storage instead would still show the card here while
+    // silently skipping the shown event.
+    expect(
+      await screen.findByRole('dialog', { name: 'Meet your Comfy Agent' })
+    ).toBeInTheDocument()
+    expect(useTelemetry()!.trackAgentOnboardingShown).toHaveBeenCalledTimes(1)
+  })
+
+  it('holds a replay requested while App Mode has the coach deferred', async () => {
+    localStorage.setItem(SCOPED_KEY, 'true')
+    canvasStore.linearMode = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    expect(
+      screen.queryByRole('dialog', { name: 'Meet your Comfy Agent' })
+    ).not.toBeInTheDocument()
+
+    // No coach is mounted to take the transition, so the request has to persist.
+    await userEvent.click(screen.getByRole('button', { name: 'Take the tour' }))
+    expect(localStorage.getItem(SCOPED_KEY)).not.toBe('true')
+
+    canvasStore.linearMode = false
+    expect(
+      await screen.findByRole('dialog', { name: 'Meet your Comfy Agent' })
+    ).toBeInTheDocument()
+  })
+
   it('defers the tour in App Mode without completing it or blocking the composer', async () => {
     canvasStore.linearMode = true
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
