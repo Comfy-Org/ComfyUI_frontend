@@ -298,6 +298,23 @@ describe('nyc-creative-ai-september-forum event entry', () => {
   })
 })
 
+describe('Tech Week panel event thumbnails', () => {
+  it.for([
+    {
+      id: 'sf-tech-week-tool-panel',
+      src: 'https://github.com/user-attachments/assets/07c6b3bf-9aa3-49b7-b8ad-1b4300802473'
+    },
+    {
+      id: 'la-tech-week-tool-panel',
+      src: 'https://github.com/user-attachments/assets/916211b0-5da9-4c91-b817-bc898a36cfca'
+    }
+  ])('$id uses its supplied thumbnail', ({ id, src }) => {
+    const event = directoryEvents.find((candidate) => candidate.id === id)
+
+    expect(event?.media?.src).toBe(src)
+  })
+})
+
 describe('site event data', () => {
   it('has unique event ids', () => {
     const ids = [...upcomingEvents, ...pastEvents].map((event) => event.id)
