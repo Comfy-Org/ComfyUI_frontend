@@ -133,21 +133,66 @@ describe('TextPreviewWidget', () => {
       expect(container.querySelector('iframe')).toBeNull()
     })
 
-    it('strips inline javascript: hrefs on anchors', () => {
+    it('escapes raw <a> tags instead of turning them into live anchors', () => {
+      // Raw modelValue text is never treated as author-supplied HTML, so a
+      // literal `<a href="javascript:...">` is displayed as visible text
+      // rather than parsed into a clickable (and previously exploitable)
+      // anchor element.
       const { container } = renderPreview(
         '<a href="javascript:alert(1)">click</a>'
       )
       // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-      const anchor = container.querySelector('a')
-      expect(anchor).not.toBeNull()
-      const href = anchor?.getAttribute('href')
-      expect(href == null || !href.startsWith('javascript:')).toBe(true)
+      expect(container.querySelector('a')).toBeNull()
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      expect(container.querySelector('span')?.textContent).toContain(
+        '<a href="javascript:alert(1)">click</a>'
+      )
     })
 
     it('preserves the <br> tag produced by nl2br', () => {
       const { container } = renderPreview('line1\nline2')
       // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
       expect(container.querySelector('br')).toBeInTheDocument()
+    })
+  })
+
+  describe('Bracket-delimited raw text (e.g. LoRA/embedding syntax)', () => {
+    it('preserves <lora:name:weight>-style text instead of parsing it as a tag', () => {
+      const { container } = renderPreview(
+        'Loaded lora: <lora:my_style_v2:0.8> applied successfully'
+      )
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      const span = container.querySelector('span')
+      expect(span?.textContent).toContain(
+        'Loaded lora: <lora:my_style_v2:0.8> applied successfully'
+      )
+    })
+
+    it('still linkifies URLs and turns newlines into <br> alongside bracket text', () => {
+      const { container } = renderPreview(
+        '<lora:foo:1.0>\nvisit https://example.com for details'
+      )
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      const span = container.querySelector('span')
+      expect(span?.textContent).toContain('<lora:foo:1.0>')
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      expect(container.querySelector('br')).toBeInTheDocument()
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      const anchor = container.querySelector('a')
+      expect(anchor?.getAttribute('href')).toBe('https://example.com')
+    })
+
+    it('keeps the [[label|url]] custom link syntax working next to bracket text', () => {
+      const { container } = renderPreview(
+        '<lora:foo:1.0> see [[Docs|https://docs.example.com]]'
+      )
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      const span = container.querySelector('span')
+      expect(span?.textContent).toContain('<lora:foo:1.0>')
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      const anchor = container.querySelector('a')
+      expect(anchor?.getAttribute('href')).toBe('https://docs.example.com')
+      expect(anchor?.textContent).toBe('Docs')
     })
   })
 
