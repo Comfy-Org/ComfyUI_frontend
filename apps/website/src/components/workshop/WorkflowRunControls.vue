@@ -20,6 +20,7 @@ const signInHref = useSignInHref()
 const busy = computed(() =>
   ['preparing', 'active', 'interrupted'].includes(state.phase)
 )
+const spinning = computed(() => busy.value && state.phase !== 'interrupted')
 const unknownSubmission = computed(
   () => state.phase === 'interrupted' && state.record.stage === 'intent'
 )
@@ -53,7 +54,7 @@ const canCancel = computed(() => {
     :disabled="!canStart"
     data-testid="workflow-run"
   >
-    <template v-if="busy && state.phase !== 'interrupted'" #prepend>
+    <template v-if="spinning" #prepend>
       <Loader2
         class="size-4 motion-safe:animate-spin"
         aria-hidden="true"
