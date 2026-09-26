@@ -205,10 +205,10 @@ import type { WebSessionResult } from '@comfyorg/account-core/webSession'
 import { readWebSession } from '@comfyorg/account-core/webSession'
 import type { WebSessionIdentityState } from '@comfyorg/account-core/webSessionIdentity'
 import { createWebSessionIdentity } from '@comfyorg/account-core/webSessionIdentity'
-import type { FeaturesReadOptions } from '@comfyorg/account-core/webSessionFlag'
-import { readWebSessionProbe } from '@comfyorg/account-core/webSessionFlag'
 import type { RequestAuthorization } from '@comfyorg/account-core/requestAuth'
 import { createRequestAuthorizer } from '@comfyorg/account-core/requestAuth'
+import type { FeaturesReadOptions } from '@comfyorg/account-core/webSessionFlag'
+import { readWebSessionProbe } from '@comfyorg/account-core/webSessionFlag'
 import type { BillingErrorCode } from '@comfyorg/account-core/billing'
 import { createSessionBillingTransport } from '@comfyorg/account-core/billing'
 import type {
@@ -266,8 +266,8 @@ export const values = {
   createSessionClient,
   readWebSession,
   createWebSessionIdentity,
-  readWebSessionProbe,
   createRequestAuthorizer,
+  readWebSessionProbe,
   createSessionBillingTransport,
   resolveStripePublishableKey,
   createWebCrossTabRefreshPort,
@@ -302,8 +302,8 @@ export interface Types {
   session: SessionSnapshot
   webSession: WebSessionResult
   webSessionIdentity: WebSessionIdentityState
-  featuresRead: FeaturesReadOptions
   requestAuth: RequestAuthorization
+  featuresRead: FeaturesReadOptions
   billing: BillingErrorCode
   firebase: FirebaseIdentityAppConfig
   firebaseResolve: ResolveFirebaseIdentityOptions
