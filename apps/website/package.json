@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "astro dev",
     "dev:no-toolbar": "cross-env NO_TOOLBAR=1 astro dev",
+    "dev:crossview-proxy": "tsx scripts/crossview-dev-proxy.ts",
     "build": "astro build",
     "format": "prettier --write \"src/**/*.astro\"",
     "format:check": "prettier --check \"src/**/*.astro\"",

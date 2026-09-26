@@ -6,8 +6,9 @@ import { computed, ref, useTemplateRef } from 'vue'
 import type {
   DepthState,
   ReshootTake
-} from '../../../../composables/useReshootDemo'
+} from '../../../../composables/useReshoot'
 import type { ReshootCamera } from '../../../../lib/workshop/cinematic-studio/reshoot'
+import type { ReshootRunPhase } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/run'
 import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
 import type { Locale } from '../../../../i18n/translations'
 import type { ReshootSound, ReshootView } from './output'
@@ -21,6 +22,8 @@ const {
   clip,
   camera,
   depth,
+  stage,
+  notice,
   step,
   takes,
   selected,
@@ -31,6 +34,8 @@ const {
   clip: string
   camera: Readonly<ReshootCamera>
   depth: DepthState
+  stage?: ReshootRunPhase
+  notice?: string
   step: 1 | 2
   takes: readonly ReshootTake[]
   selected: string
@@ -54,6 +59,11 @@ const sound = ref<ReshootSound>('generated')
 const finished = computed(() =>
   current?.status === 'done' && current.url ? current : undefined
 )
+const href = computed(() =>
+  sound.value === 'original'
+    ? (finished.value?.originalUrl ?? finished.value?.url)
+    : finished.value?.url
+)
 const fileName = computed(
   () =>
     `crossview-take-${current?.n ?? 0}${sound.value === 'original' ? '-original-audio' : ''}.mp4`
@@ -67,10 +77,10 @@ const fileName = computed(
   >
     <div class="flex w-[min(100%,calc(52svh*16/9))] flex-col gap-3">
       <ReshootOutputBar
-        v-if="finished?.url"
+        v-if="href"
         v-model:view="view"
         v-model:sound="sound"
-        :href="finished.url"
+        :href
         :file-name="fileName"
         :locale
         @reuse="emit('reuse')"
@@ -94,6 +104,8 @@ const fileName = computed(
           :clip
           :camera
           :depth
+          :stage
+          :notice
           :aimable="step === 2"
           :locale
           @aim="emit('aim', $event)"

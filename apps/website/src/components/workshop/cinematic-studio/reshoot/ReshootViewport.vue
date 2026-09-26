@@ -4,7 +4,7 @@ import { computed, ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { DepthState } from '../../../../composables/useReshootDemo'
+import type { DepthState } from '../../../../composables/useReshoot'
 import type { ReshootCamera } from '../../../../lib/workshop/cinematic-studio/reshoot'
 import {
   cameraZone,
@@ -12,6 +12,7 @@ import {
   viewTransform
 } from '../../../../lib/workshop/cinematic-studio/reshoot'
 import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
+import type { ReshootRunPhase } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/run'
 import type { Locale } from '../../../../i18n/translations'
 import ReshootZone from './ReshootZone.vue'
 
@@ -19,12 +20,16 @@ const {
   clip,
   camera,
   depth,
+  stage,
+  notice,
   aimable,
   locale = 'en'
 } = defineProps<{
   clip: string
   camera: Readonly<ReshootCamera>
   depth: DepthState
+  stage?: ReshootRunPhase
+  notice?: string
   aimable: boolean
   locale?: Locale
 }>()
@@ -35,8 +40,15 @@ const ready = computed(() => aimable && depth === 'ready')
 const transform = computed(() =>
   ready.value ? viewTransform(camera) : undefined
 )
-const notice = computed(() =>
-  depth === 'stale' ? rc('reshoot.stale', locale) : undefined
+const analyzing = computed(() =>
+  rc(
+    stage === 'starting'
+      ? 'reshoot.stage.starting'
+      : stage === 'queued'
+        ? 'reshoot.stage.queued'
+        : 'reshoot.analyzing',
+    locale
+  )
 )
 
 const dragFrom = ref<{ x: number; y: number; tilts: boolean }>()
@@ -112,7 +124,7 @@ function zoom(event: WheelEvent) {
           class="size-4 text-primary-comfy-yellow motion-safe:animate-spin"
           aria-hidden="true"
         />
-        {{ rc('reshoot.analyzing', locale) }}
+        {{ analyzing }}
       </span>
     </div>
     <p
