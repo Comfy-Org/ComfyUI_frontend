@@ -1131,7 +1131,9 @@ test.describe('Assets sidebar - media type filter', { tag: '@cloud' }, () => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
 
-    await tab.openFilterMenu()
+    // The checkboxes live in the Media type submenu, not the top-level filter
+    // menu that openFilterMenu() stops at.
+    await tab.openMediaTypeFilterMenu()
 
     await expect(tab.filterCheckbox('Image')).toBeVisible()
     await expect(tab.filterCheckbox('Video')).toBeVisible()
@@ -1148,12 +1150,11 @@ test.describe('Assets sidebar - media type filter', { tag: '@cloud' }, () => {
       'All three mixed-media assets should render'
     ).toHaveCount(3)
 
-    await tab.openFilterMenu()
-    await tab.filterCheckbox('Image').click()
+    await tab.toggleMediaTypeFilter('Image')
 
     // photo.png is the only image in the fixture, so it is the one that goes.
     await expect(tab.assetCards).toHaveCount(2, { timeout: 5000 })
-    await expect(tab.getAssetCardByName('photo.png')).toBeHidden()
+    await expect(tab.getAssetCardByName('photo.png')).toHaveCount(0)
     await expect(tab.getAssetCardByName('clip.mp4')).toBeVisible()
     await expect(tab.getAssetCardByName('track.mp3')).toBeVisible()
   })
@@ -1164,11 +1165,10 @@ test.describe('Assets sidebar - media type filter', { tag: '@cloud' }, () => {
 
     const initialCount = await tab.assetCards.count()
 
-    await tab.openFilterMenu()
-    await tab.filterCheckbox('Image').click()
+    await tab.toggleMediaTypeFilter('Image')
     await expect(tab.assetCards).toHaveCount(2, { timeout: 5000 })
 
-    await tab.filterCheckbox('Image').click()
+    await tab.toggleMediaTypeFilter('Image')
     await expect(tab.assetCards).toHaveCount(initialCount, { timeout: 5000 })
   })
 })
