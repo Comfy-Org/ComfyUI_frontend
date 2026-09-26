@@ -1534,7 +1534,16 @@ export class ComfyApi extends EventTarget {
     const resp = await this.fetchApi('/settings')
 
     if (resp.status == 401) {
-      throw new UnauthorizedError(resp.statusText)
+      // `statusText` is ALWAYS empty over HTTP/2 — the protocol carries no
+      // reason phrase — and cloud.comfy.org is HTTP/2. Passing it straight
+      // through produced `new UnauthorizedError('')`, which the global
+      // onerror handler reported to Sentry as the untitled group
+      // "Error: No error message": 165,890 events in 14 days across 25,417
+      // users, all of them unactionable because nothing in the event said
+      // which request had failed.
+      throw new UnauthorizedError(
+        `Failed to load settings: 401 ${resp.statusText || 'Unauthorized'}`
+      )
     }
     return await resp.json()
   }
