@@ -2,14 +2,12 @@
 @import '@comfyorg/design-system/css/base.css';
 @import 'tw-animate-css';
 
-/* PP Formula ships an ascent of 90.6% and a descent of 30.6% against a cap
-   height of 82.9%, which leaves its caps sitting 5.9% of the em above the
-   middle of the line box. Every row that centres an icon beside a word
-   inherits that, so the fix belongs to the face rather than to each of them:
-   each override pair splits the face's own content box either side of its cap
-   box, so the caps land in the middle of it at any line-height and
-   `line-height: normal` stays where it was. The narrow cut is drawn to its own
-   metrics and so takes its own pair. */
+/* The foundry now draws PP Formula with its caps centred in its own content
+   box, so nothing here is correcting the face any more. Each override pair is
+   kept only to hold the content box at the height it has always had — the
+   redrawn files are 5.8% taller, and the narrow cut 9.9% — so `line-height:
+   normal` lands where it does today and no page reflows. The narrow cut is
+   drawn to its own metrics and so takes its own pair. */
 @font-face {
   font-family: 'PP Formula';
   ascent-override: 102.05%;
@@ -535,18 +533,6 @@
   mask-position: center;
 }
 
-/* Released Safari versions before 27 ignore the metric overrides above. These
-   marker classes keep the same optical centring there without changing layout
-   or overriding display utilities such as `hidden`. */
-html.ppformula-metric-fallback
-  :where(.ppformula-text-center, .ppformula-text-center-sm) {
-  position: relative;
-  top: 0.1145em;
-}
-
-html.ppformula-metric-fallback .ppformula-narrow-text-center {
-  transform: translateY(0.1065em);
-}
 /* Hide native play-button overlay iOS Safari shows when autoplay is blocked
    (e.g. Low Power Mode). These are decorative background videos. */
 video::-webkit-media-controls-start-playback-button,

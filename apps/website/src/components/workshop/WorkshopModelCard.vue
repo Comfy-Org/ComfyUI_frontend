@@ -153,7 +153,7 @@ const pillClass =
         </span>
         <span
           v-if="providerBadge || workflow"
-          class="ppformula-text-center-sm truncate text-sm"
+          class="truncate text-sm"
           data-testid="model-card-provider"
           :title="providerName"
         >
