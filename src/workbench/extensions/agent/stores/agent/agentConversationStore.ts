@@ -442,7 +442,11 @@ export const useAgentConversationStore = defineStore(
       return entry.message
     }
 
-    /** Guards re-delivery: a delayed ask must not draw a second card. */
+    /**
+     * Guards re-delivery: a delayed ask must not draw a second card. Reads
+     * the mutable message, so it is a point-in-time answer for imperative
+     * callers and establishes no reactive dependency.
+     */
     function isApprovalShown(turn: LiveTurn, askId: string): boolean {
       const message = liveTurnMessage(turn)
       return (

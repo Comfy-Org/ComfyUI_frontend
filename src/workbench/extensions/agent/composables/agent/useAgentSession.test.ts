@@ -1913,33 +1913,43 @@ describe('useAgentSession (v1 composition root)', () => {
   // the user takes to answer, so the drop that swallowed its `agent_ask` frame
   // leaves the server waiting on a card the panel never drew. Recovery already
   // polls the row, and the row carries the unanswered ask.
+  const PARKED_ASK = {
+    message_id: 'msg-1',
+    ask_id: 'turn-1:call-1',
+    kind: 'run_approval',
+    context: {
+      workflow_id: 'workflow-1',
+      workflow_name: 'Portrait workflow'
+    },
+    prompt: 'Run it?',
+    options: [
+      { id: 'run', label: 'Run' },
+      { id: 'cancel', label: 'Cancel' }
+    ],
+    min_selections: 1,
+    max_selections: 1,
+    allow_other: false
+  }
+
+  const parkedRow = (): AgentMessages[number] => ({
+    ...historyRow(2, 'assistant', 'msg-1', '', 'msg-1'),
+    content: {},
+    status: 'streaming',
+    pending_ask: PARKED_ASK
+  })
+
+  const unparkedRow = (): AgentMessages[number] => ({
+    ...historyRow(2, 'assistant', 'msg-1', '', 'msg-1'),
+    content: {},
+    status: 'streaming'
+  })
+
   const parkedOnApprovalRest = () =>
     fakeRest({
       getMessages: vi.fn(
         async (): Promise<AgentMessages> => [
           historyRow(1, 'user', 'msg-1', 'go'),
-          {
-            ...historyRow(2, 'assistant', 'msg-1', '', 'msg-1'),
-            content: {},
-            status: 'streaming',
-            pending_ask: {
-              message_id: 'msg-1',
-              ask_id: 'turn-1:call-1',
-              kind: 'run_approval',
-              context: {
-                workflow_id: 'workflow-1',
-                workflow_name: 'Portrait workflow'
-              },
-              prompt: 'Run it?',
-              options: [
-                { id: 'run', label: 'Run' },
-                { id: 'cancel', label: 'Cancel' }
-              ],
-              min_selections: 1,
-              max_selections: 1,
-              allow_other: false
-            }
-          }
+          parkedRow()
         ]
       )
     })
@@ -1982,7 +1992,12 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(approvalParts(session)).toHaveLength(1)
       expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
         errorType: 'failure_delivering_agent_approval_ask',
-        tags: { feature_area: 'agent', operation: 'recovery' },
+        level: 'error',
+        tags: {
+          feature_area: 'agent',
+          operation: 'recovery',
+          recovery_cause: 'reconnect'
+        },
         context: {
           threadId: 'th-1',
           messageId: 'msg-1',
@@ -2064,6 +2079,42 @@ describe('useAgentSession (v1 composition root)', () => {
       emit(runApproval('msg-1'))
 
       expect(approvalParts(session)).toHaveLength(1)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('(g31) an ask the server parks during a hydrate fetch is restored as a warning', async () => {
+    vi.useFakeTimers()
+    try {
+      const getMessages = vi
+        .fn<() => Promise<AgentMessages>>()
+        .mockResolvedValueOnce([
+          historyRow(1, 'user', 'msg-1', 'go'),
+          unparkedRow()
+        ])
+        .mockResolvedValue([historyRow(1, 'user', 'msg-1', 'go'), parkedRow()])
+      const rest = fakeRest({ getMessages })
+      const { source, status } = fakeEvents()
+      localStorage.setItem('Comfy.Agent.ThreadId', 'th-1')
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+
+      await vi.advanceTimersByTimeAsync(0)
+      expect(approvalParts(session)).toHaveLength(0)
+
+      await vi.advanceTimersByTimeAsync(1000)
+
+      expect(approvalParts(session)).toHaveLength(1)
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'failure_delivering_agent_approval_ask',
+          level: 'warning',
+          tags: expect.objectContaining({ recovery_cause: 'hydrate' })
+        })
+      )
     } finally {
       vi.useRealTimers()
     }

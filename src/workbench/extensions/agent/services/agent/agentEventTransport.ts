@@ -306,7 +306,10 @@ export function createAgentEventTransport(
   /**
    * Applies one `agent_ask` frame. Only the `run_approval` kind renders a
    * part; returns `false` for any other kind, mirroring `ingest`'s early
-   * `return` for that case.
+   * `return` for that case. An ask already on the message also returns
+   * `false`: turn recovery restores an unanswered ask off the persisted row,
+   * and the server writes that row before it publishes the frame, so the two
+   * can arrive in either order for the same `ask_id`.
    */
   function handleAskEvent(data: AgentAskEvent['data']): boolean {
     if (data.kind !== 'run_approval') return false

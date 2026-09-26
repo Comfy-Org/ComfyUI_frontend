@@ -77,6 +77,9 @@ test.describe(
         await turnLock.composer.fill(nextPrompt)
         await turnLock.sendButton.click()
 
+        await expect
+          .poll(() => turnLock.postAttempts())
+          .toBeGreaterThanOrEqual(2)
         await expect(turnLock.userBubbles).toHaveCount(2)
         await expect(turnLock.userBubbles.last()).toHaveText(nextPrompt)
         await expect(

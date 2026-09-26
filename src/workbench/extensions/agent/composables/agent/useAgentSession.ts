@@ -124,6 +124,27 @@ const TURN_RECOVERY_DELAYS_MS: RecoverySchedule = [
 ]
 const TURN_RECOVERY_MAX_CONSECUTIVE_FAILURES = TURN_RECOVERY_DELAYS_MS.length
 
+/**
+ * Why a recovery job is running, which is what separates an ask the socket
+ * genuinely dropped from one that merely had not been published when a
+ * hydrate's history fetch went out. Only the former is a defect.
+ */
+type RecoveryCause = 'reconnect' | 'hydrate'
+
+interface RecoveryPlan {
+  delaysMs: RecoverySchedule
+  cause: RecoveryCause
+}
+
+const RECONNECT_RECOVERY: RecoveryPlan = {
+  delaysMs: TURN_RECOVERY_DELAYS_MS,
+  cause: 'reconnect'
+}
+const HYDRATE_RECOVERY: RecoveryPlan = {
+  delaysMs: TURN_RECOVERY_DELAYS_AFTER_FETCH_MS,
+  cause: 'hydrate'
+}
+
 type PendingAsk = NonNullable<AgentMessages[number]['pending_ask']>
 
 type TurnOutcome =
@@ -274,7 +295,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       const history = await rest.getMessages(threadId)
       if (conversationStore.threadId !== threadId || !isCurrent()) return false
       conversationStore.hydrate(history)
-      reconcileLiveTurns(TURN_RECOVERY_DELAYS_AFTER_FETCH_MS)
+      reconcileLiveTurns(HYDRATE_RECOVERY)
       await workflow?.restored?.(conversationStore.latestWorkflowId, isCurrent)
       if (conversationStore.threadId !== threadId || !isCurrent()) return false
       return true
@@ -782,25 +803,25 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const reconnected = connection === 'dropped'
     connection = 'live'
     if (!reconnected) return
-    reconcileLiveTurns(TURN_RECOVERY_DELAYS_MS)
+    reconcileLiveTurns(RECONNECT_RECOVERY)
   }
 
-  function reconcileLiveTurns(delaysMs: RecoverySchedule): void {
+  function reconcileLiveTurns(plan: RecoveryPlan): void {
     for (const turn of conversationStore.liveTurns()) {
-      void reconcileTurn(turn, delaysMs)
+      void reconcileTurn(turn, plan)
     }
   }
 
   async function reconcileTurn(
     turn: LiveTurn,
-    delaysMs: RecoverySchedule
+    plan: RecoveryPlan
   ): Promise<void> {
     const key = recoveryKey(turn)
     if (recoveringTurns.has(key)) return
     const recovery = new AbortController()
     recoveringTurns.set(key, recovery)
     try {
-      await recoverTurn(turn, delaysMs, ownedGeneration, recovery.signal)
+      await recoverTurn(turn, plan, ownedGeneration, recovery.signal)
     } catch (error) {
       // `onStatus` floats this job (`void reconcileTurn(turn)`), so a rethrow
       // would land as an `unhandledrejection` the session never sees. Abort is
@@ -815,20 +836,21 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   async function recoverTurn(
     turn: LiveTurn,
-    delaysMs: RecoverySchedule,
+    plan: RecoveryPlan,
     generation: number,
     signal: AbortSignal
   ): Promise<void> {
     let noticed = false
     let consecutiveFailures = 0
     for (let attempt = 0; ; attempt++) {
+      const { delaysMs } = plan
       await delay(delaysMs[Math.min(attempt, delaysMs.length - 1)], { signal })
       if (!isTurnLive(turn, generation)) return
       const outcome = await fetchTurnOutcome(turn, signal)
       if (!isTurnLive(turn, generation)) return
       if (settleFinishedTurn(turn, outcome)) return
       if (outcome.kind === 'streaming')
-        restoreMissingApproval(turn, outcome.pendingAsk)
+        restoreMissingApproval(turn, outcome.pendingAsk, plan.cause)
       if (outcome.kind === 'error' && !noticed) {
         noticed = true
         pushError(outcome.message)
@@ -850,13 +872,18 @@ export function useAgentSession(deps: AgentSessionDeps) {
    * user answers, so a socket drop that swallowed the `agent_ask` frame leaves
    * the server waiting on a card the panel never drew -- the turn reads as
    * hung and every follow-up post comes back 409. The polled row still carries
-   * the unanswered ask, so re-deliver it down the transport path the lost
-   * frame would have taken. An ask that did arrive is already on the message,
-   * so reaching the report means a frame was genuinely lost.
+   * the unanswered ask, so re-deliver it through the store, which routes it to
+   * the same transport the lost frame would have reached, and mirror the one
+   * other thing the socket branch does with an ask.
+   *
+   * Reported at `error` only after a reconnect, where the frame really is
+   * gone. A hydrate's poll can instead be racing a broadcast the server had
+   * not published when its history fetch went out, so that reads as a warning.
    */
   function restoreMissingApproval(
     turn: LiveTurn,
-    pendingAsk: PendingAsk | undefined
+    pendingAsk: PendingAsk | undefined,
+    cause: RecoveryCause
   ): void {
     if (pendingAsk?.kind !== 'run_approval') return
     if (deliveredAsks.has(pendingAsk.ask_id)) return
@@ -864,15 +891,23 @@ export function useAgentSession(deps: AgentSessionDeps) {
     deliveredAsks.add(pendingAsk.ask_id)
     conversationStore.ingest({
       type: 'agent_ask',
-      data: { ...pendingAsk, thread_id: turn.threadId }
+      data: {
+        ...pendingAsk,
+        thread_id: turn.threadId,
+        message_id: turn.messageId
+      }
     })
+    markStoppedTurnReady(turn)
     reportError(
-      new Error(
-        'Agent approval ask was missing from the panel after a reconnect'
-      ),
+      new Error('Agent approval ask was missing from the panel when polled'),
       {
         errorType: 'failure_delivering_agent_approval_ask',
-        tags: { feature_area: 'agent', operation: 'recovery' },
+        level: cause === 'reconnect' ? 'error' : 'warning',
+        tags: {
+          feature_area: 'agent',
+          operation: 'recovery',
+          recovery_cause: cause
+        },
         context: {
           threadId: turn.threadId,
           messageId: turn.messageId,
