@@ -54,7 +54,10 @@ async function readFeatures(
 export async function readWebSessionProbe(
   options: FeaturesReadOptions
 ): Promise<boolean> {
-  return readsLiteralTrue(await readFeatures(options, {}), 'web_session_probe')
+  return readsLiteralTrue(
+    await readFeatures(options, { credentials: 'omit' }),
+    'web_session_probe'
+  )
 }
 
 async function probeIsOn(probe: () => Promise<boolean>): Promise<boolean> {
