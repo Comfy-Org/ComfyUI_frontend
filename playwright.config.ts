@@ -72,6 +72,38 @@ export default defineConfig({
           {
             name: 'cloud-live',
             testMatch: '**/tests/liveCloud/**/*.spec.ts',
+            testIgnore: ['**/liveCloud/disposable/**', '**/liveCloud/paid/**'],
+            fullyParallel: false,
+            retries: 0,
+            timeout: 120_000,
+            expect: { timeout: 30_000 },
+            use: {
+              ...devices['Desktop Chrome'],
+              locale: 'en-US',
+              trace: 'off',
+              video: 'off',
+              screenshot: 'off'
+            }
+          } satisfies NonNullable<PlaywrightTestConfig['projects']>[number],
+          {
+            name: 'cloud-live-disposable',
+            testMatch: '**/tests/liveCloud/disposable/**/*.spec.ts',
+            testIgnore: [],
+            fullyParallel: false,
+            retries: 0,
+            timeout: 120_000,
+            expect: { timeout: 30_000 },
+            use: {
+              ...devices['Desktop Chrome'],
+              locale: 'en-US',
+              trace: 'off',
+              video: 'off',
+              screenshot: 'off'
+            }
+          } satisfies NonNullable<PlaywrightTestConfig['projects']>[number],
+          {
+            name: 'cloud-live-paid',
+            testMatch: '**/tests/liveCloud/paid/**/*.spec.ts',
             testIgnore: [],
             fullyParallel: false,
             retries: 0,
