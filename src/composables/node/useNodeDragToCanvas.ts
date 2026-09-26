@@ -3,6 +3,7 @@ import { ref, shallowRef } from 'vue'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { NodeAddSource } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -26,6 +27,11 @@ const lastNativeDragPosition = shallowRef<Position>()
 const pendingWidgetValues = shallowRef<WidgetValues>()
 const pendingSource = ref<NodeAddSource>('sidebar_drag')
 let listenersSetup = false
+const MAX_DIAGNOSTIC_FIELD_LENGTH = 128
+
+function boundDiagnosticField(value: string) {
+  return value.slice(0, MAX_DIAGNOSTIC_FIELD_LENGTH)
+}
 
 // Firefox dragend can report stale clientX/Y and `drag` can fire with
 // (0, 0). dragover on the target reliably reports real client coords.
@@ -40,7 +46,28 @@ function applyWidgetValues(node: LGraphNode, values: WidgetValues) {
   for (const [name, value] of Object.entries(values)) {
     const widget = node.widgets?.find((w) => w.name === name)
     if (!widget) {
-      console.error(`Widget ${name} not found on node ${node.type}`)
+      const nodeType = boundDiagnosticField(node.type)
+      const widgetName = boundDiagnosticField(name)
+      reportError(
+        new Error(
+          `Widget "${widgetName}" is missing from added node ${nodeType}`
+        ),
+        {
+          errorType: 'failure_setting_dragged_node_widget',
+          tags: {
+            failure_kind: 'bad_state',
+            feature_area: 'nodes',
+            operation: 'configure',
+            outcome: 'failed'
+          },
+          context: {
+            drag_mode: dragMode.value,
+            node_type: nodeType,
+            widget_name: widgetName
+          },
+          level: 'error'
+        }
+      )
       useToastStore().add({
         severity: 'warn',
         summary: t('g.warning'),
@@ -79,7 +106,25 @@ function addNodeAtPosition(clientX: number, clientY: number): boolean {
     useLitegraphService().addNodeOnGraph(nodeDef, { pos })
   )
   if (!node) {
-    console.error(`Failed to add node to graph: ${nodeDef.name}`)
+    const nodeType = boundDiagnosticField(nodeDef.name)
+    reportError(
+      new Error(`Failed to add dragged node ${nodeType} to the graph`),
+      {
+        errorType: 'failure_adding_dragged_node',
+        tags: {
+          failure_kind: 'bad_state',
+          feature_area: 'nodes',
+          operation: 'add',
+          outcome: 'failed'
+        },
+        context: {
+          drag_mode: dragMode.value,
+          node_type: nodeType,
+          has_widget_values: pendingWidgetValues.value !== undefined
+        },
+        level: 'error'
+      }
+    )
     useToastStore().add({
       severity: 'error',
       summary: t('g.error'),
