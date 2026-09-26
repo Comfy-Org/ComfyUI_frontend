@@ -8,7 +8,7 @@
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { JobId } from '@/schemas/apiSchema'
+import type { JobId } from '@/platform/remote/comfyui/execution/types'
 
 import type {
   JobAssetsResult,

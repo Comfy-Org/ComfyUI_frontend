@@ -9,8 +9,9 @@ const mocks = vi.hoisted(() => ({
   successor: vi.fn(),
   price: vi.fn()
 }))
-vi.mock(import('../../config/workshop-router-content'), () => ({
-  getRouterWorkshopModelDetail: mocks.lookup
+vi.mock(import('../../config/workshop-page-content'), () => ({
+  getWorkshopPageDetail: mocks.lookup,
+  workshopPages: []
 }))
 vi.mock(import('../../config/workshop-related'), () => ({
   relatedModels: mocks.related
@@ -54,7 +55,7 @@ describe('Models route preparation', () => {
     expect(mocks.related).not.toHaveBeenCalled()
   })
 
-  it('does not invent a price or successor, and encodes capability links', async () => {
+  it('does not invent a price or successor, and encodes capability searches', async () => {
     const page = await prepareModelPage(model.slug)
     expect(page).toMatchObject({
       kind: 'page',
@@ -63,9 +64,9 @@ describe('Models route preparation', () => {
       relatedHeading: 'More models'
     })
     if (page.kind !== 'page') throw new Error('Expected canonical page')
-    expect(
-      new URLSearchParams(page.tags[0].search).getAll('capability')
-    ).toEqual(['Image & text'])
+    expect(new URLSearchParams(page.tags[0].search).get('q')).toBe(
+      'Image & text'
+    )
   })
 
   it.for([
@@ -121,7 +122,7 @@ describe('Models route preparation', () => {
       kind: 'page',
       successor,
       priceEstimate: '4–8 credits',
-      modalityLabel: { image: '图像' }
+      useCaseLabel: '生成图像'
     })
     expect(mocks.successor).toHaveBeenCalledWith('new-model')
   })

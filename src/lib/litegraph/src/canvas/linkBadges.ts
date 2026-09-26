@@ -18,7 +18,7 @@ interface BadgeHitArea extends HasBoundingRect {
   readonly linkId: LinkId
 }
 
-interface BadgeLayout {
+export interface LinkBadgeLayout {
   linkId: LinkId
   badge: LGraphBadge
   color: string
@@ -29,6 +29,8 @@ interface BadgeLayout {
   inputSocket: Point
   inputBadgeX: number
   inputBadgeY: number
+  outputTip: Point
+  inputTip: Point
 }
 
 const hitAreasByHost = new WeakMap<object, BadgeHitArea[]>()
@@ -117,15 +119,16 @@ function createHitArea(
   }
 }
 
-function layoutHiddenLinkBadges(
-  hitAreas: readonly BadgeHitArea[],
+export function layoutHiddenLinkBadges(
+  host: object,
   ctx: CanvasRenderingContext2D,
   link: LLink,
   presentation: Readonly<LinkPresentation>,
   startPos: Point,
   endPos: Point,
   color: string
-): BadgeLayout {
+): LinkBadgeLayout {
+  const hitAreas = hitAreasByHost.get(host) ?? []
   const text = linkBadgeText(link.type, presentation)
 
   const badge = makeBadge(text, color)
@@ -154,7 +157,7 @@ function layoutHiddenLinkBadges(
     width
   )
 
-  return {
+  const layout: LinkBadgeLayout = {
     linkId: link.id,
     badge,
     color,
@@ -164,11 +167,18 @@ function layoutHiddenLinkBadges(
     outputBadgeY,
     inputSocket: endPos,
     inputBadgeX,
-    inputBadgeY
+    inputBadgeY,
+    outputTip: [outputBadgeX + width, outputBadgeY],
+    inputTip: [inputBadgeX, inputBadgeY]
   }
+  hitAreas.push(...getBadgeHitAreas(layout))
+  hitAreasByHost.set(host, hitAreas)
+  return layout
 }
 
-function getBadgeHitAreas(layout: BadgeLayout): [BadgeHitArea, BadgeHitArea] {
+function getBadgeHitAreas(
+  layout: LinkBadgeLayout
+): [BadgeHitArea, BadgeHitArea] {
   return [
     createHitArea(
       layout.linkId,
@@ -213,7 +223,7 @@ function drawConnector(
 
 function drawBadgeLayout(
   ctx: CanvasRenderingContext2D,
-  layout: BadgeLayout
+  layout: LinkBadgeLayout
 ): void {
   drawConnector(
     ctx,
@@ -243,28 +253,11 @@ function drawBadgeLayout(
 }
 
 export function drawHiddenLinkBadges(
-  host: object,
   ctx: CanvasRenderingContext2D,
-  link: LLink,
-  presentation: Readonly<LinkPresentation>,
-  startPos: Point,
-  endPos: Point,
-  color: string,
+  layout: LinkBadgeLayout,
   visibleArea: ReadOnlyRect
 ): void {
-  const hitAreas = hitAreasByHost.get(host) ?? []
-  const layout = layoutHiddenLinkBadges(
-    hitAreas,
-    ctx,
-    link,
-    presentation,
-    startPos,
-    endPos,
-    color
-  )
   const endpointHitAreas = getBadgeHitAreas(layout)
-  hitAreas.push(...endpointHitAreas)
-  hitAreasByHost.set(host, hitAreas)
   if (
     overlapBounding(
       getConnectorBounds(layout.outputSocket, endpointHitAreas[0]),

@@ -280,7 +280,52 @@ describe('eventJsonLdNode', () => {
   })
 })
 
+describe('nyc-creative-ai-september-forum event entry', () => {
+  const event = directoryEvents.find(
+    (candidate) => candidate.id === 'nyc-creative-ai-september-forum'
+  )
+
+  it('exists with the expected core fields', () => {
+    expect(event).toMatchObject({
+      category: 'meetup',
+      organizer: 'community',
+      title: { en: 'ZeroSpace: NYC Creative AI September Forum' },
+      location: { en: 'New York, NY' },
+      startDateTime: '2026-09-22T18:00:00-04:00',
+      endDateTime: '2026-09-22T21:00:00-04:00',
+      link: { href: { en: 'https://luma.com/of64wqdr' } }
+    })
+  })
+})
+
+describe('Tech Week panel event thumbnails', () => {
+  it.for([
+    {
+      id: 'sf-tech-week-tool-panel',
+      src: 'https://github.com/user-attachments/assets/07c6b3bf-9aa3-49b7-b8ad-1b4300802473'
+    },
+    {
+      id: 'la-tech-week-tool-panel',
+      src: 'https://github.com/user-attachments/assets/916211b0-5da9-4c91-b817-bc898a36cfca'
+    }
+  ])('$id uses its supplied thumbnail', ({ id, src }) => {
+    const event = directoryEvents.find((candidate) => candidate.id === id)
+
+    expect(event?.media?.src).toBe(src)
+  })
+})
+
 describe('site event data', () => {
+  it('contains one canonical October 1 Developer Platform event', () => {
+    const matches = directoryEvents.filter(
+      (event) =>
+        event.title.en ===
+        'Comfy Developer Platform: Building with Comfy API & Comfy Router'
+    )
+
+    expect(matches.map((event) => event.id)).toEqual(['dev-platform-oct-1'])
+  })
+
   it('has unique event ids', () => {
     const ids = [...upcomingEvents, ...pastEvents].map((event) => event.id)
 
@@ -291,7 +336,10 @@ describe('site event data', () => {
   // organizer, so an unlabelled event is unreachable from that select.
   it('labels every event with an organizer', () => {
     for (const event of directoryEvents) {
-      expect(event.organizer, event.id).toBeDefined()
+      expect({ id: event.id, missing: event.organizer === undefined }).toEqual({
+        id: event.id,
+        missing: false
+      })
     }
   })
 
@@ -309,7 +357,12 @@ describe('site event data', () => {
           event.dateLabel?.[locale]
         ]
         for (const value of strings) {
-          if (value) expect(value, `${event.id}.${locale}`).not.toMatch(dash)
+          if (value) {
+            expect({
+              event: `${event.id}.${locale}`,
+              hasDash: dash.test(value)
+            }).toEqual({ event: `${event.id}.${locale}`, hasDash: false })
+          }
         }
       }
     }
@@ -320,11 +373,21 @@ describe('site event data', () => {
   it('gives coords only to in-person events, within valid ranges', () => {
     for (const event of directoryEvents) {
       if (event.location?.en === 'Online') {
-        expect(event.coords, event.id).toBeUndefined()
+        expect({ id: event.id, coords: event.coords }).toEqual({
+          id: event.id,
+          coords: undefined
+        })
       }
       if (event.coords) {
-        expect(Math.abs(event.coords.lat), event.id).toBeLessThanOrEqual(90)
-        expect(Math.abs(event.coords.lng), event.id).toBeLessThanOrEqual(180)
+        expect({
+          id: event.id,
+          validLatitude: Math.abs(event.coords.lat) <= 90,
+          validLongitude: Math.abs(event.coords.lng) <= 180
+        }).toEqual({
+          id: event.id,
+          validLatitude: true,
+          validLongitude: true
+        })
       }
     }
   })

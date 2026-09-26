@@ -1,48 +1,52 @@
-<script setup lang="ts">
+<script setup lang="ts" generic="T extends string = UseCase">
 import { ChevronDown, ListFilter } from '@lucide/vue'
-import { computed, ref, useTemplateRef, watchEffect } from 'vue'
+import {
+  computed,
+  defineAsyncComponent,
+  ref,
+  useTemplateRef,
+  watchEffect
+} from 'vue'
 
 import { onClickOutside, useMediaQuery, useWindowSize } from '@vueuse/core'
-import { FocusScope } from 'reka-ui'
+import type { ComponentExposed } from 'vue-component-type-helpers'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
 import { useVisualViewport } from '../../composables/useVisualViewport'
+import type { UseCase } from '../../config/models-catalogue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import type { FacetSheetGroup } from './FacetSheet.vue'
-import FacetSheet from './FacetSheet.vue'
 
-export interface FacetMenuOption {
-  readonly value: string
+export interface FacetMenuOption<T extends string = UseCase> {
+  readonly value: T
   readonly label: string
   readonly count: number
 }
 
-type Facet = 'provider' | 'capability' | 'modality' | 'useCase'
+const WorkshopFilterPanel = defineAsyncComponent(
+  () => import('./WorkshopFilterPanel.vue')
+)
 
 const {
-  capabilityOptions,
-  providerOptions,
-  modalityOptions,
   useCaseOptions,
+  modelOptions,
   resultCount,
+  kind = 'models',
   locale = 'en'
 } = defineProps<{
-  capabilityOptions: readonly FacetMenuOption[]
-  providerOptions: readonly FacetMenuOption[]
-  modalityOptions: readonly FacetMenuOption[]
-  /** Only where the use-case row has no room of its own, on a phone. */
-  useCaseOptions?: readonly FacetMenuOption[]
+  useCaseOptions: readonly FacetMenuOption<T>[]
+  /** The models the listing runs on, where it stands on more than its own. */
+  modelOptions?: readonly FacetMenuOption<string>[]
   /** What the catalogue holds under the current choices, for the way out. */
   resultCount: number
+  kind?: 'models' | 'workflows'
   locale?: Locale
 }>()
 
-const capabilities = defineModel<string[]>('capabilities', { required: true })
-const providers = defineModel<string[]>('providers', { required: true })
-const modalities = defineModel<string[]>('modalities', { required: true })
-const useCases = defineModel<string[]>('useCases', { default: () => [] })
+const useCases = defineModel<T[]>('useCases', { required: true })
+const models = defineModel<string[]>('models', { default: () => [] })
 
 const open = ref(false)
 // A dropdown anchored to a crowded toolbar leaves a phone no room, so there
@@ -57,11 +61,18 @@ const phoneBottom = computed(() => {
     windowHeight.value - (visualOffsetTop.value + visualHeight.value)
   )
 })
-const panel = useTemplateRef<HTMLElement>('panel')
+const menu = useTemplateRef<HTMLElement>('menu')
+const panel =
+  useTemplateRef<ComponentExposed<typeof WorkshopFilterPanel>>('panel')
 const trigger = useTemplateRef<HTMLButtonElement>('trigger')
-onClickOutside(panel, () => (open.value = false), {
-  ignore: ['[data-testid="workshop-filter"]']
-})
+onClickOutside(
+  () => {
+    const element: unknown = panel.value?.$el
+    return element instanceof HTMLElement ? element : menu.value
+  },
+  () => (open.value = false),
+  { ignore: ['[data-testid="workshop-filter"]'] }
+)
 
 watchEffect((onCleanup) => {
   if (!open.value || !isPhone.value) return
@@ -70,44 +81,28 @@ watchEffect((onCleanup) => {
   onCleanup(() => (document.body.style.overflow = previous))
 })
 
-const selectedFor = (facet: Facet) =>
-  facet === 'capability'
-    ? capabilities
-    : facet === 'modality'
-      ? modalities
-      : facet === 'useCase'
-        ? useCases
-        : providers
-
 const groups = computed<FacetSheetGroup[]>(() => [
-  ...(useCaseOptions
+  {
+    key: 'useCase',
+    label: t(
+      kind === 'workflows'
+        ? 'workshop.catalogue.categories'
+        : 'workshop.launch.label',
+      locale
+    ),
+    options: useCaseOptions,
+    selected: useCases.value
+  },
+  ...(modelOptions?.length
     ? [
         {
-          key: 'useCase',
-          label: t('workshop.launch.label', locale),
-          options: useCaseOptions,
-          selected: useCases.value
+          key: 'model',
+          label: t('workshop.hub.models', locale),
+          options: modelOptions,
+          selected: models.value
         }
       ]
-    : []),
-  {
-    key: 'provider',
-    label: t('workshop.filter.providerGroup', locale),
-    options: providerOptions,
-    selected: providers.value
-  },
-  {
-    key: 'capability',
-    label: t('workshop.filter.capabilityGroup', locale),
-    options: capabilityOptions,
-    selected: capabilities.value
-  },
-  {
-    key: 'modality',
-    label: t('workshop.filter.outputGroup', locale),
-    options: modalityOptions,
-    selected: modalities.value
-  }
+    : [])
 ])
 
 const selectedCount = computed(() =>
@@ -115,17 +110,22 @@ const selectedCount = computed(() =>
 )
 
 function toggle(facet: string, value: string) {
-  const selected = selectedFor(facet as Facet)
-  selected.value = selected.value.includes(value)
-    ? selected.value.filter((item) => item !== value)
-    : [...selected.value, value]
+  if (facet === 'model') {
+    models.value = models.value.includes(value)
+      ? models.value.filter((item) => item !== value)
+      : [...models.value, value]
+    return
+  }
+  const useCase = useCaseOptions.find((option) => option.value === value)?.value
+  if (!useCase) return
+  useCases.value = useCases.value.includes(useCase)
+    ? useCases.value.filter((item) => item !== useCase)
+    : [...useCases.value, useCase]
 }
 
 function clearAll() {
-  capabilities.value = []
-  providers.value = []
-  modalities.value = []
   useCases.value = []
+  models.value = []
 }
 
 const sheetLabels = computed(() => ({
@@ -134,14 +134,19 @@ const sheetLabels = computed(() => ({
   noMatches: t('workshop.filter.noMatches', locale),
   applied: t('workshop.filter.applied', locale),
   clearAll: t('workshop.filter.clearAll', locale),
-  show: t('workshop.search.show', locale),
+  show: t(
+    kind === 'models'
+      ? 'workshop.search.show'
+      : 'workshop.catalogue.showWorkflows',
+    locale
+  ),
   close: t('workshop.search.close', locale),
   resize: t('workshop.filter.resize', locale)
 }))
 </script>
 
 <template>
-  <div class="relative" @keydown.escape="open = false">
+  <div ref="menu" class="relative" @keydown.escape="open = false">
     <button
       ref="trigger"
       type="button"
@@ -150,7 +155,7 @@ const sheetLabels = computed(() => ({
       :aria-label="t('workshop.filter.label', locale)"
       :class="
         cn(
-          'bg-transparency-white-t4 focus-visible:ring-primary-comfy-yellow/50 relative inline-flex h-11 cursor-pointer items-center gap-2 rounded-2xl px-4 text-sm font-medium transition-colors outline-none hover:bg-transparency-white-t8 focus-visible:ring-3 max-sm:size-10 max-sm:justify-center max-sm:rounded-xl max-sm:bg-white/8 max-sm:px-0',
+          'relative inline-flex h-11 cursor-pointer items-center gap-2 rounded-2xl bg-transparency-white-t4 px-4 text-sm font-medium transition-colors outline-none hover:bg-transparency-white-t8 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 max-sm:size-10 max-sm:justify-center max-sm:rounded-xl max-sm:bg-white/8 max-sm:px-0',
           selectedCount
             ? 'text-primary-warm-white'
             : 'text-primary-comfy-canvas'
@@ -164,7 +169,7 @@ const sheetLabels = computed(() => ({
       </span>
       <span
         v-if="selectedCount"
-        class="bg-primary-comfy-yellow inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] leading-none font-bold text-primary-comfy-ink tabular-nums max-sm:absolute max-sm:-top-1 max-sm:-right-1"
+        class="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary-comfy-yellow px-1 text-3xs leading-none font-bold text-primary-comfy-ink tabular-nums max-sm:absolute max-sm:-top-1 max-sm:-right-1"
         data-testid="workshop-filter-count"
       >
         {{ selectedCount }}
@@ -187,35 +192,19 @@ const sheetLabels = computed(() => ({
         data-testid="workshop-filter-backdrop"
         @click="open = false"
       />
-      <FocusScope
+      <WorkshopFilterPanel
         v-if="open"
-        as-child
-        :trapped="isPhone"
-        loop
-        @unmount-auto-focus.prevent="trigger?.focus()"
-      >
-        <div
-          ref="panel"
-          role="dialog"
-          :aria-label="t('workshop.filter.label', locale)"
-          :aria-modal="isPhone || undefined"
-          data-testid="workshop-filter-menu"
-          :style="{
-            bottom: phoneBottom !== undefined ? `${phoneBottom}px` : undefined
-          }"
-          class="bg-site-dropdown z-50 flex flex-col overflow-y-auto border border-white/10 shadow-2xl shadow-black/50 outline-none max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:rounded-t-3xl sm:absolute sm:top-full sm:right-0 sm:mt-2 sm:max-h-[75vh] sm:w-96 sm:max-w-[calc(100vw-2rem)] sm:rounded-2xl"
-          @keydown.escape.stop.prevent="open = false"
-        >
-          <FacetSheet
-            :groups
-            :labels="sheetLabels"
-            :result-count
-            @toggle="toggle"
-            @clear-all="clearAll"
-            @close="open = false"
-          />
-        </div>
-      </FocusScope>
+        ref="panel"
+        :groups
+        :labels="sheetLabels"
+        :result-count
+        :is-phone
+        :bottom="phoneBottom"
+        @toggle="toggle"
+        @clear-all="clearAll"
+        @close="open = false"
+        @restore-focus="trigger?.focus()"
+      />
     </Teleport>
   </div>
 </template>

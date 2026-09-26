@@ -158,8 +158,7 @@ export const useExtensionService = () => {
     ? (...args: Rest) => R
     : T
 
-  type KnownExtensionMethods = Exclude<keyof ComfyExtension, number | symbol> &
-    string
+  type KnownExtensionMethods = Exclude<keyof ComfyExtension, number | symbol>
 
   type ComfyExtensionMethod<T extends KnownExtensionMethods> =
     ComfyExtension[T] extends (...args: unknown[]) => unknown

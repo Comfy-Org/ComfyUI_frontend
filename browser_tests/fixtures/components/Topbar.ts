@@ -2,6 +2,7 @@ import type { Locator, Page } from '@playwright/test'
 
 import type { WorkspaceStore } from '@e2e/types/globals'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { comfyExpect as expect } from '@e2e/fixtures/utils/customMatchers'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 
 export class Topbar {
@@ -9,28 +10,28 @@ export class Topbar {
   private readonly menuTrigger: Locator
   readonly newWorkflowButton: Locator
   readonly workflowTabs: Locator
+  readonly tabs: Locator
   readonly integratedTabBarActions: Locator
+  readonly menuRootList: Locator
 
   constructor(public readonly page: Page) {
     this.menuLocator = page.locator('.comfy-command-menu')
     this.menuTrigger = page.locator('.comfy-menu-button-wrapper')
+    this.menuRootList = this.menuLocator.getByRole('menubar')
     this.newWorkflowButton = page.locator('.new-blank-workflow-button')
     this.workflowTabs = page.getByTestId(TestIds.topbar.workflowTabs)
+    this.tabs = this.workflowTabs.getByTestId(TestIds.topbar.workflowTab)
     this.integratedTabBarActions = this.workflowTabs.getByTestId(
       TestIds.topbar.integratedTabBarActions
     )
   }
 
   async getTabNames(): Promise<string[]> {
-    return await this.page
-      .locator('.workflow-tabs .workflow-label')
-      .allInnerTexts()
+    return await this.tabs.locator('.workflow-label').allInnerTexts()
   }
 
   async getActiveTabName(): Promise<string> {
-    return this.page
-      .locator('.workflow-tabs .p-togglebutton-checked')
-      .innerText()
+    return this.getActiveTab().innerText()
   }
 
   /**
@@ -60,26 +61,46 @@ export class Topbar {
     return classes ? !classes.includes('invisible') : false
   }
 
+  getWorkflowTabLabel(tabName: string): Locator {
+    return this.getWorkflowTab(tabName).locator('.workflow-label')
+  }
+
   getWorkflowTab(tabName: string): Locator {
-    return this.page
-      .locator(`.workflow-tabs .workflow-label:has-text("${tabName}")`)
-      .locator('..')
+    return this.tabs.filter({
+      has: this.page.getByText(tabName, { exact: true })
+    })
   }
 
   getTab(index: number): Locator {
-    return this.page.locator('.workflow-tabs .p-togglebutton').nth(index)
+    return this.tabs.nth(index)
+  }
+
+  /**
+   * Opens a second, blank workflow tab and returns to the first one — the
+   * lever agent tab-switch specs use to force the agent CRDT follower to
+   * unbind and rebind against the original workflow.
+   */
+  async openBlankTabAndReturn(): Promise<void> {
+    await expect(this.tabs).toHaveCount(1)
+    await this.newWorkflowButton.click()
+    await expect(this.tabs).toHaveCount(2)
+    await expect(this.getTab(1).and(this.getActiveTab())).toBeVisible()
+    await expect(this.page.getByTestId('node-title')).toHaveCount(0)
+    await this.getTab(0).click()
+    await expect(this.getTab(0).and(this.getActiveTab())).toBeVisible()
+    await expect(this.getTab(1).and(this.getActiveTab())).toHaveCount(0)
   }
 
   getActiveTab(): Locator {
-    return this.page.locator(
-      '.workflow-tabs .p-togglebutton.p-togglebutton-checked'
-    )
+    return this.tabs.filter({
+      has: this.page.getByRole('tab', { selected: true })
+    })
   }
 
   async closeWorkflowTab(tabName: string) {
     const tab = this.getWorkflowTab(tabName)
     await tab.hover()
-    await tab.locator('.close-button').click()
+    await tab.getByTestId(TestIds.topbar.closeWorkflowButton).click()
   }
 
   getSaveDialog(): Locator {
@@ -125,7 +146,15 @@ export class Topbar {
     }
   }
 
+  async dismissWorkflowPopover() {
+    await this.page.mouse.move(0, 0)
+    await expect(
+      this.page.locator('.workflow-popover-fade').filter({ visible: true })
+    ).toHaveCount(0)
+  }
+
   async openTopbarMenu() {
+    await this.dismissWorkflowPopover()
     // If menu is already open, close it first to reset state
     const isAlreadyOpen = await this.menuLocator.isVisible()
     if (isAlreadyOpen) {
@@ -148,10 +177,12 @@ export class Topbar {
    */
   async setVueNodesEnabled(enabled: boolean) {
     await this.openTopbarMenu()
-    const nodes2Switch = this.page.getByRole('switch', { name: 'Nodes 2.0' })
-    await nodes2Switch.waitFor({ state: 'visible' })
-    if ((await nodes2Switch.isChecked()) !== enabled) {
-      await nodes2Switch.click()
+    const nodes2Toggle = this.page.getByRole('menuitemcheckbox', {
+      name: 'Nodes 2.0'
+    })
+    await nodes2Toggle.waitFor({ state: 'visible' })
+    if ((await nodes2Toggle.isChecked()) !== enabled) {
+      await nodes2Toggle.click()
       await this.page.waitForFunction(
         (wantEnabled) =>
           window.app!.ui.settings.getSettingValue('Comfy.VueNodes.Enabled') ===
@@ -162,6 +193,33 @@ export class Topbar {
     }
     await this.closeTopbarMenu()
     await new VueNodeHelpers(this.page).waitForNodes()
+  }
+
+  async focusMenuItem(itemLabel: string): Promise<void> {
+    await this.menuRootList.focus()
+    const itemCount = await this.menuRootList.getByRole('menuitem').count()
+
+    for (let step = 0; step < itemCount; step++) {
+      await this.page.keyboard.press('ArrowDown')
+      if ((await this.getFocusedMenuItemLabel()) === itemLabel) return
+    }
+
+    throw new Error(
+      `Could not reach the "${itemLabel}" menu item with the keyboard`
+    )
+  }
+
+  private async getFocusedMenuItemLabel(): Promise<string | null> {
+    const focusedItemId = await this.menuRootList.getAttribute(
+      'aria-activedescendant'
+    )
+    if (!focusedItemId) return null
+
+    const label = this.menuLocator
+      .locator(`#${focusedItemId}`)
+      .locator('.p-menubar-item-label')
+    if ((await label.count()) === 0) return null
+    return (await label.innerText()).trim()
   }
 
   /**

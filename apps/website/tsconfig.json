@@ -13,11 +13,14 @@
     "allowUnusedLabels": false
   },
   "include": [
+    ".astro/types.d.ts",
     "src/**/*",
     "e2e/**/*",
+    "acceptance/**/*",
     "scripts/**/*",
     "astro.config.ts",
     "playwright.config.ts",
+    "playwright.acceptance.config.ts",
     "vitest.config.ts"
   ],
   "exclude": ["src/**/*.stories.ts"],

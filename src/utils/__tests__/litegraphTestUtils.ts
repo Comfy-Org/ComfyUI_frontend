@@ -50,6 +50,33 @@ export function createNodeState(overrides: Partial<NodeState> = {}): NodeState {
   }
 }
 
+interface StubPathMethods {
+  moveTo: Path2D['moveTo']
+  lineTo: Path2D['lineTo']
+  bezierCurveTo: Path2D['bezierCurveTo']
+  quadraticCurveTo: Path2D['quadraticCurveTo']
+}
+
+export class StubPath2D implements StubPathMethods {
+  calls: Array<{ method: string; args: unknown[] }> = []
+
+  moveTo(...args: unknown[]): void {
+    this.calls.push({ method: 'moveTo', args })
+  }
+
+  lineTo(...args: unknown[]): void {
+    this.calls.push({ method: 'lineTo', args })
+  }
+
+  bezierCurveTo(...args: unknown[]): void {
+    this.calls.push({ method: 'bezierCurveTo', args })
+  }
+
+  quadraticCurveTo(...args: unknown[]): void {
+    this.calls.push({ method: 'quadraticCurveTo', args })
+  }
+}
+
 /**
  * Creates a mock LGraphNode with minimal required properties
  */
@@ -123,9 +150,7 @@ export function createMockCanvas(
 ): LGraphCanvas {
   return {
     setDirty: vi.fn(),
-    state: {
-      selectionChanged: false
-    },
+    state: {},
     ...(overrides as Partial<LGraphCanvas>)
   } as LGraphCanvas
 }
@@ -194,6 +219,7 @@ export function createMockCanvasRenderingContext2D(
     getTransform: vi.fn(
       () => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }) as DOMMatrix
     ),
+    createPattern: vi.fn(() => null),
     font: '',
     fillStyle: '',
     strokeStyle: '',
@@ -380,6 +406,7 @@ export function createMockCanvas2DContext(
     stroke: vi.fn(),
     arc: vi.fn(),
     fill: vi.fn(),
+    createPattern: vi.fn(() => null),
     fillStyle: '',
     strokeStyle: '',
     lineWidth: 1,

@@ -148,7 +148,7 @@ watch(
       aria-hidden="true"
     >
       <span
-        class="bg-primary-comfy-yellow absolute inset-y-0 left-0"
+        class="absolute inset-y-0 left-0 bg-primary-comfy-yellow"
         :style="{ width: `${connectionProgress * 100}%` }"
       />
     </div>
@@ -168,7 +168,7 @@ watch(
     </div>
 
     <div
-      class="text-primary-comfy-yellow/80 absolute right-[5%] bottom-[6%] left-3/10 grid grid-cols-3 text-[7px] tracking-widest uppercase sm:text-[9px] lg:text-[10px]"
+      class="absolute right-[5%] bottom-[6%] left-3/10 grid grid-cols-3 text-[7px] tracking-widest text-primary-comfy-yellow/80 uppercase sm:text-[9px] lg:text-[10px]"
     >
       <span>{{ t('platform.serverlessVisual.worker', locale) }}</span>
       <span class="text-center">
