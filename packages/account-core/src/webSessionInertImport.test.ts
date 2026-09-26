@@ -7,7 +7,9 @@ beforeEach(() => {
 it.for([
   '@comfyorg/account-core/webSession',
   '@comfyorg/account-core/requestAuth',
+  '@comfyorg/account-core/sessionTokenMint',
   '@comfyorg/account-core/webSessionIdentity',
+  '@comfyorg/account-core/web',
   '@comfyorg/account-core/testing'
 ])(
   'importing %s starts no timer, listener, channel, or request',
