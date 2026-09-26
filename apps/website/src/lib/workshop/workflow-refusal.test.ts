@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
+import { WorkshopWorkflowError } from '../../config/workshop-workflow-api'
 import type { RunFailure } from '../../config/workshop-run'
 import type { WorkflowErrorCode } from '../../config/workshop-workflow-response'
 import { failureLabelKey } from './failure-label'
-import { workflowRunFailure } from './workflow-refusal'
+import { panelSaysRefusal, workflowRunFailure } from './workflow-refusal'
 
 // Every code the API can report and the refusal the panel stands up for it. The
 // table is the specification: a code whose event the panel has no sentence for
@@ -60,4 +61,25 @@ describe('workflowRunFailure', () => {
     for (const [, refusal] of REFUSALS)
       if (refusal) expect(failureLabelKey[refusal]).toBeTruthy()
   })
+})
+
+// Whether the page keeps quiet beside the form follows from the same table: it
+// speaks exactly where the panel does not, so the reader is never handed the
+// same refusal twice, nor two different accounts of it.
+describe('panelSaysRefusal', () => {
+  it.for(REFUSALS)('leaves %s to the panel only as %s', ([code, refusal]) => {
+    expect(
+      panelSaysRefusal({
+        phase: 'failed',
+        error: new WorkshopWorkflowError(code)
+      })
+    ).toBe(refusal !== undefined)
+  })
+
+  it.for([{ phase: 'idle' }, { phase: 'preparing' }] as const)(
+    'says nothing about a $phase page',
+    (state) => {
+      expect(panelSaysRefusal(state)).toBe(false)
+    }
+  )
 })

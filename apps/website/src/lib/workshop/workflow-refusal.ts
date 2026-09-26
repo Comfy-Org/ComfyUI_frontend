@@ -1,5 +1,6 @@
 import type { WorkshopWorkflowError } from '../../config/workshop-workflow-api'
 import type { RunFailure } from '../../config/workshop-run'
+import type { WorkflowState } from '../../config/workshop-workflow-state'
 
 /**
  * Which refusal the output panel should stand up, where the panel's own words
@@ -33,4 +34,15 @@ const REFUSALS: Record<string, RunFailure | undefined> = {
   // One event, and the panel says more of it: the credits that may have gone
   // without a result, and the request ID to quote.
   execution_failed: 'provider'
+}
+
+/**
+ * Whether the output panel is the one saying this refusal. The page then keeps
+ * quiet beside the form rather than handing the reader the same thing twice —
+ * and twice in different words wherever the two vocabularies disagree.
+ */
+export function panelSaysRefusal(state: WorkflowState): boolean {
+  return (
+    state.phase === 'failed' && workflowRunFailure(state.error) !== undefined
+  )
 }

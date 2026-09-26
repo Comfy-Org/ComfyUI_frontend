@@ -7,6 +7,7 @@ import {
   createWorkflowApi,
   WorkshopWorkflowError
 } from '../../config/workshop-workflow-api'
+import { subscribeToWorkshopBuyCredits } from '../../config/workshop-buy-credits'
 import { workflowDetailsBySlug } from '../../config/workshop-workflow-content'
 import { createWorkflowController } from '../../config/workshop-workflow-controller'
 import type { WorkflowState } from '../../config/workshop-workflow-state'
@@ -203,7 +204,7 @@ describe('WorkflowResults', () => {
 // A request Cloud turns down used to leave the panel showing the example: a
 // picture of a successful run, beside a form that had just been refused.
 describe('a refused request', () => {
-  function mountRefused(code: string) {
+  function mountRefused(code: WorkshopWorkflowError['code']) {
     const model = workflowDetailsBySlug.get('workflows/remove-background')
     assert(model)
     render(WorkflowResults, {
@@ -211,9 +212,7 @@ describe('a refused request', () => {
         model,
         state: {
           phase: 'failed',
-          error: new WorkshopWorkflowError(
-            code as ConstructorParameters<typeof WorkshopWorkflowError>[0]
-          )
+          error: new WorkshopWorkflowError(code)
         } satisfies WorkflowState,
         exampleIndex: 0,
         busy: false,
@@ -235,11 +234,17 @@ describe('a refused request', () => {
   })
 
   // The panel already knows how to send a reader to buy credits; it was never
-  // being told that was the refusal.
-  it('offers the way out the refusal has', () => {
+  // being told that was the refusal. A button that reaches nothing is not a way
+  // out, so press it and watch for the request the page answers.
+  it('offers the way out the refusal has', async () => {
+    const asked = vi.fn()
+    onTestFinished(subscribeToWorkshopBuyCredits(asked))
     mountRefused('insufficient_credits')
 
-    expect(screen.getByRole('button', { name: /credits/i })).toBeTruthy()
+    await userEvent
+      .setup()
+      .click(screen.getByRole('button', { name: /credits/i }))
+    expect(asked).toHaveBeenCalledOnce()
   })
 
   // A refusal the panel has no sentence for is said beside the form instead.

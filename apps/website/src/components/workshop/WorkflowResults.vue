@@ -55,30 +55,43 @@ const runningState = computed<RunState>(() => ({
 const outputs = computed(() =>
   observation.value ? workflowOutputs(observation.value) : []
 )
-const outputState = computed<RunState>(() => {
+// What Cloud last said about a run it accepted. Undefined while it has said
+// nothing the panel can draw yet, including a finished run whose outputs have
+// not arrived.
+const observedState = computed<RunState | undefined>(() => {
   const result = observation.value
-  if (result?.run.state === 'succeeded' && outputs.value[0]) {
-    return {
-      status: 'succeeded',
-      output: outputs.value[0],
-      nsfw: false,
-      completedAt: Date.parse(result.run.completedAt ?? result.run.updatedAt)
-    }
-  }
-  if (result?.run.state === 'cancelled') return { status: 'idle' }
-  if (result?.run.state === 'failed')
+  if (!result) return undefined
+  const output = outputs.value[0]
+  if (result.run.state === 'succeeded')
+    return output
+      ? {
+          status: 'succeeded',
+          output,
+          nsfw: false,
+          completedAt: Date.parse(
+            result.run.completedAt ?? result.run.updatedAt
+          )
+        }
+      : undefined
+  if (result.run.state === 'cancelled') return { status: 'idle' }
+  if (result.run.state === 'failed')
     return { status: 'failed', reason: 'provider', fieldErrors: {} }
-  // A request Cloud turned down used to fall through to the example, so the
-  // panel showed what the workflow makes while the run had just been refused.
-  // Where the panel has the words for it, it says so; where it does not, the
-  // page says it beside the form and the panel shows nothing, because nothing
-  // was made.
-  if (state.phase === 'failed') {
-    const reason = workflowRunFailure(state.error)
-    return reason
-      ? { status: 'failed', reason, fieldErrors: state.error.fieldErrors }
-      : { status: 'idle' }
-  }
+  return undefined
+})
+// A request Cloud turned down used to fall through to the example, so the panel
+// showed what the workflow makes while the run had just been refused. Where the
+// panel has the words for it, it says so; where it does not, the page says it
+// beside the form and the panel shows nothing, because nothing was made.
+const refusedState = computed<RunState | undefined>(() => {
+  if (state.phase !== 'failed') return undefined
+  const reason = workflowRunFailure(state.error)
+  return reason
+    ? { status: 'failed', reason, fieldErrors: state.error.fieldErrors }
+    : { status: 'idle' }
+})
+const outputState = computed<RunState>(() => {
+  if (observedState.value) return observedState.value
+  if (refusedState.value) return refusedState.value
   if (busy) return runningState.value
   if (state.phase === 'settled') return { status: 'idle' }
   return exampleState.value
