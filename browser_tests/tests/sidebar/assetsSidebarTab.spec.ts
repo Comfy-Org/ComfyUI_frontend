@@ -676,7 +676,7 @@ test.describe(
       await test.step('open the agent job as a workflow', async () => {
         await comfyPage.setup()
         await tab.open()
-        await tab.rightClickAsset('agent_job_output.png')
+        await tab.rightClickAsset('agent_job_output')
         await tab.contextMenuItem('Open as workflow in new tab').click()
       })
 
