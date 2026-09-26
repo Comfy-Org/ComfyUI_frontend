@@ -355,6 +355,7 @@ describe('applyRoleDepartmentOverrides', () => {
         jobUrl: 'https://jobs.ashbyhq.com/comfy-org/role-1'
       }
     ])
+    expect(departments[0].roles[0].department).toBe('Engineering')
   })
 
   it('merges into an existing target department rather than duplicating it', () => {
@@ -393,7 +394,7 @@ describe('applyRoleDepartmentOverrides', () => {
       department('SALES', [
         {
           id: 'role-4',
-          title: 'Enterprise Account Executive',
+          title: `${overriddenTitle} (Remote)`,
           department: 'Sales',
           location: 'San Francisco',
           jobUrl: 'https://jobs.ashbyhq.com/comfy-org/role-4'
