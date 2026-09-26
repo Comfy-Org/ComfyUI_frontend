@@ -1,20 +1,30 @@
+import { useDialogService } from '@/services/dialogService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useTelemetry } from '@/platform/telemetry'
+
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useExternalLink } from '@/composables/useExternalLink'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useModelStore } from '@/stores/modelStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { resetOnboardingState } from '@/platform/onboarding/onboardingReset'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import type { Mock } from 'vitest'
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+import { useLitegraphService } from '@/services/litegraphService'
+import { useCommandStore } from '@/stores/commandStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { fromPartial } from '@total-typescript/shoehorn'
+
+vi.mock(import('@/core/graph/subgraph/promotionUtils'), { spy: true })
 
 const mockRunMintPortsIntentionalClear = vi.hoisted(() =>
   vi.fn(<T>(clear: () => T): T => clear())
@@ -47,8 +57,14 @@ vi.mock<unknown>(import('@/scripts/app'), () => {
     copyToClipboard: vi.fn(),
     pasteFromClipboard: vi.fn(),
     selectItems: vi.fn(),
+    select: vi.fn(),
     deleteSelected: vi.fn(),
     selectOnly: false,
+    state: { selectionChanged: false },
+    graph: {
+      add: vi.fn(),
+      convertToSubgraph: vi.fn(() => ({ node: {} }))
+    },
     canvas: {
       dispatchEvent: vi.fn(),
       addEventListener: vi.fn(),
@@ -87,76 +103,28 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
   }
 }))
 
-let mockModelStoreRefresh: Mock<ReturnType<typeof useModelStore>['refresh']>
-
 const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
-vi.mock<unknown>(import('@/platform/distribution/types'), () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockDistributionState.isCloud
   }
 }))
 
-let mockMissingModelStoreRefresh: Mock<
-  ReturnType<typeof useMissingModelStore>['refreshMissingModels']
->
-
 vi.mock(import('firebase/auth'))
 
-vi.mock<unknown>(
-  import('@/platform/workflow/core/services/workflowService'),
-  () => ({
-    useWorkflowService: vi.fn(() => ({}))
-  })
-)
+vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
-const mockDialogService = vi.hoisted(() => ({
-  prompt: vi.fn()
-}))
-vi.mock<unknown>(import('@/services/dialogService'), () => ({
-  useDialogService: vi.fn(() => mockDialogService)
-}))
+vi.mock(import('@/services/dialogService'))
 
-const mockResetView = vi.hoisted(() => vi.fn())
-vi.mock<unknown>(import('@/services/litegraphService'), () => ({
-  useLitegraphService: vi.fn(() => ({
-    resetView: mockResetView
-  }))
-}))
+vi.mock(import('@/platform/onboarding/onboardingReset'))
 
-const mockTrackHelpResourceClicked = vi.hoisted(() => vi.fn())
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: vi.fn(() => ({
-    trackHelpResourceClicked: mockTrackHelpResourceClicked,
-    trackRunButton: vi.fn(),
-    trackWorkflowExecution: vi.fn()
-  }))
-}))
+vi.mock(import('@/services/litegraphService'))
 
-const mockShowAbout = vi.hoisted(() => vi.fn())
-const mockShowSettings = vi.hoisted(() => vi.fn())
-vi.mock<unknown>(
-  import('@/platform/settings/composables/useSettingsDialog'),
-  () => ({
-    useSettingsDialog: vi.fn(() => ({
-      show: mockShowSettings,
-      showAbout: mockShowAbout
-    }))
-  })
-)
+vi.mock(import('@/platform/telemetry'))
 
-let mockToastAdd: ReturnType<typeof useToastStore>['add']
+vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
 
-const mockFeatureFlagState = vi.hoisted(() => ({ assetsEnabled: false }))
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
-    flags: {
-      get assetsEnabled() {
-        return mockFeatureFlagState.assetsEnabled
-      }
-    }
-  })
-}))
-
+vi.mock(import('@/composables/useFeatureFlags'))
 const mockAssetBrowse = vi.hoisted(() =>
   vi.fn<(options: { onAssetSelected?: (asset: AssetItem) => void }) => void>()
 )
@@ -173,24 +141,21 @@ vi.mock(import('@/composables/node/startModelNodeDragFromAsset'), () => ({
 }))
 
 const mockChangeTracker = vi.hoisted(() => ({
-  captureCanvasState: vi.fn()
+  captureCanvasState: vi.fn(),
+  undo: vi.fn(),
+  redo: vi.fn()
+}))
+
+const mockUnpackSubgraph = vi.hoisted(() => vi.fn())
+vi.mock<unknown>(import('@/composables/graph/useSubgraphOperations'), () => ({
+  useSubgraphOperations: () => ({ unpackSubgraph: mockUnpackSubgraph })
 }))
 
 let mockWorkflowStore: ReturnType<typeof useWorkflowStore>
 
-vi.mock<unknown>(import('@/composables/auth/useAuthActions'), () => ({
-  useAuthActions: vi.fn(() => ({}))
-}))
+vi.mock(import('@/composables/auth/useAuthActions'))
 
-vi.mock<unknown>(
-  import('@/platform/cloud/subscription/composables/useSubscription'),
-  () => ({
-    useSubscription: vi.fn(() => ({
-      canAccessSubscriptionFeatures: vi.fn().mockReturnValue(true),
-      showSubscriptionDialog: vi.fn()
-    }))
-  })
-)
+vi.mock(import('@/platform/cloud/subscription/composables/useSubscription'))
 
 const mockBillingState = vi.hoisted(() => ({
   canAccessSubscriptionFeatures: true,
@@ -272,18 +237,14 @@ describe('useCoreCommands', () => {
       NonNullable<typeof mockWorkflowStore.activeWorkflow>
     >({ changeTracker: mockChangeTracker })
     useCanvasStore().canvas = app.canvas
-    mockModelStoreRefresh = vi.mocked(useModelStore().refresh)
-    mockMissingModelStoreRefresh = vi.mocked(
-      useMissingModelStore().refreshMissingModels
-    )
-    mockToastAdd = useToastStore().add
     mockDistributionState.isCloud = false
-    mockFeatureFlagState.assetsEnabled = false
     mockBillingState.canAccessSubscriptionFeatures = true
     mockBillingState.subscriptionTier = null
     vi.mocked(app.refreshComboInNodes).mockResolvedValue(undefined)
-    mockModelStoreRefresh.mockResolvedValue(true)
-    mockMissingModelStoreRefresh.mockResolvedValue(undefined)
+    vi.mocked(useModelStore().refresh).mockResolvedValue(true)
+    vi.mocked(useMissingModelStore().refreshMissingModels).mockResolvedValue(
+      undefined
+    )
 
     app.canvas.subgraph = undefined
 
@@ -350,6 +311,107 @@ describe('useCoreCommands', () => {
     })
   })
 
+  describe('Replay Onboarding command', () => {
+    function findCommand() {
+      const command = useCoreCommands().find(
+        (cmd) => cmd.id === 'Comfy.Onboarding.Replay'
+      )
+      if (!command) throw new Error('Missing Comfy.Onboarding.Replay command')
+      return command
+    }
+
+    beforeEach(() => {
+      vi.stubGlobal('location', { assign: vi.fn(), reload: vi.fn() })
+      vi.mocked(useDialogService().confirm).mockResolvedValue(true)
+      vi.mocked(resetOnboardingState).mockResolvedValue({ status: 'ready' })
+      useSettingStore().settingValues['Comfy.DevMode'] = true
+    })
+
+    it('does nothing outside developer mode', async () => {
+      useSettingStore().settingValues['Comfy.DevMode'] = false
+
+      await findCommand().function()
+
+      expect(useDialogService().confirm).not.toHaveBeenCalled()
+      expect(resetOnboardingState).not.toHaveBeenCalled()
+    })
+
+    it('does nothing when confirmation is declined', async () => {
+      vi.mocked(useDialogService().confirm).mockResolvedValue(false)
+
+      await findCommand().function()
+
+      expect(resetOnboardingState).not.toHaveBeenCalled()
+      expect(location.reload).not.toHaveBeenCalled()
+    })
+
+    it('reports reset failures without navigating', async () => {
+      vi.mocked(resetOnboardingState).mockResolvedValue({
+        status: 'failed',
+        cause: 'failed'
+      })
+
+      await findCommand().function()
+
+      expect(useToastStore().add).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error' })
+      )
+      expect(location.assign).not.toHaveBeenCalled()
+      expect(location.reload).not.toHaveBeenCalled()
+    })
+
+    it('navigates to the cloud root after resetting', async () => {
+      mockDistributionState.isCloud = true
+
+      await findCommand().function()
+
+      expect(location.assign).toHaveBeenCalledWith('/')
+      expect(location.reload).not.toHaveBeenCalled()
+    })
+
+    it('reloads the current page off cloud', async () => {
+      await findCommand().function()
+
+      expect(location.reload).toHaveBeenCalledOnce()
+      expect(location.assign).not.toHaveBeenCalled()
+    })
+
+    it('deduplicates concurrent executions', async () => {
+      let finishReset: (() => void) | undefined
+      vi.mocked(resetOnboardingState).mockReturnValue(
+        new Promise((resolve) => {
+          finishReset = () => resolve({ status: 'ready' })
+        })
+      )
+      const command = findCommand()
+
+      const first = command.function()
+      const second = command.function()
+      await vi.waitFor(() =>
+        expect(resetOnboardingState).toHaveBeenCalledOnce()
+      )
+      finishReset?.()
+      await Promise.all([first, second])
+
+      expect(useDialogService().confirm).toHaveBeenCalledOnce()
+      expect(location.reload).toHaveBeenCalledOnce()
+    })
+
+    it('allows another execution after an earlier one is declined', async () => {
+      vi.mocked(useDialogService().confirm)
+        .mockResolvedValueOnce(false)
+        .mockResolvedValueOnce(true)
+      const command = findCommand()
+
+      await command.function()
+      await command.function()
+
+      expect(useDialogService().confirm).toHaveBeenCalledTimes(2)
+      expect(resetOnboardingState).toHaveBeenCalledOnce()
+      expect(location.reload).toHaveBeenCalledOnce()
+    })
+  })
+
   describe('Canvas clipboard commands', () => {
     function findCommand(id: string) {
       return useCoreCommands().find((cmd) => cmd.id === id)!
@@ -404,9 +466,10 @@ describe('useCoreCommands', () => {
       app.canvas.selectedItems = new Set([
         selectedItem
       ]) as typeof app.canvas.selectedItems
-      app.canvas.selectOnly = true
+      useCommandStore().setInteractionMode({ isSelectOnly: () => true })
+      useCommandStore().registerCommands(useCoreCommands())
 
-      await findCommand('Comfy.Canvas.DeleteSelectedItems').function()
+      await useCommandStore().execute('Comfy.Canvas.DeleteSelectedItems')
 
       expect(app.canvas.deleteSelected).not.toHaveBeenCalled()
       expect(app.canvas.setDirty).not.toHaveBeenCalled()
@@ -430,12 +493,14 @@ describe('useCoreCommands', () => {
 
         await setDescCommand.function()
 
-        expect(mockDialogService.prompt).not.toHaveBeenCalled()
+        expect(useDialogService().prompt).not.toHaveBeenCalled()
       })
 
       it('should set description on subgraph.extra', async () => {
         app.canvas.subgraph = mockSubgraph
-        mockDialogService.prompt.mockResolvedValue('Test description')
+        vi.mocked(useDialogService().prompt).mockResolvedValue(
+          'Test description'
+        )
 
         const commands = useCoreCommands()
         const setDescCommand = commands.find(
@@ -444,14 +509,14 @@ describe('useCoreCommands', () => {
 
         await setDescCommand.function()
 
-        expect(mockDialogService.prompt).toHaveBeenCalled()
+        expect(useDialogService().prompt).toHaveBeenCalled()
         expect(mockSubgraph.extra.BlueprintDescription).toBe('Test description')
         expect(mockChangeTracker.captureCanvasState).toHaveBeenCalled()
       })
 
       it('should not set description when user cancels', async () => {
         app.canvas.subgraph = mockSubgraph
-        mockDialogService.prompt.mockResolvedValue(null)
+        vi.mocked(useDialogService().prompt).mockResolvedValue(null)
 
         const commands = useCoreCommands()
         const setDescCommand = commands.find(
@@ -476,12 +541,14 @@ describe('useCoreCommands', () => {
 
         await setAliasesCommand.function()
 
-        expect(mockDialogService.prompt).not.toHaveBeenCalled()
+        expect(useDialogService().prompt).not.toHaveBeenCalled()
       })
 
       it('should set search aliases on subgraph.extra', async () => {
         app.canvas.subgraph = mockSubgraph
-        mockDialogService.prompt.mockResolvedValue('alias1, alias2, alias3')
+        vi.mocked(useDialogService().prompt).mockResolvedValue(
+          'alias1, alias2, alias3'
+        )
 
         const commands = useCoreCommands()
         const setAliasesCommand = commands.find(
@@ -490,7 +557,7 @@ describe('useCoreCommands', () => {
 
         await setAliasesCommand.function()
 
-        expect(mockDialogService.prompt).toHaveBeenCalled()
+        expect(useDialogService().prompt).toHaveBeenCalled()
         expect(mockSubgraph.extra.BlueprintSearchAliases).toEqual([
           'alias1',
           'alias2',
@@ -501,7 +568,9 @@ describe('useCoreCommands', () => {
 
       it('should trim whitespace and filter empty strings', async () => {
         app.canvas.subgraph = mockSubgraph
-        mockDialogService.prompt.mockResolvedValue('  alias1  ,  , alias2 ,  ')
+        vi.mocked(useDialogService().prompt).mockResolvedValue(
+          '  alias1  ,  , alias2 ,  '
+        )
 
         const commands = useCoreCommands()
         const setAliasesCommand = commands.find(
@@ -518,7 +587,7 @@ describe('useCoreCommands', () => {
 
       it('should set undefined when empty input', async () => {
         app.canvas.subgraph = mockSubgraph
-        mockDialogService.prompt.mockResolvedValue('')
+        vi.mocked(useDialogService().prompt).mockResolvedValue('')
 
         const commands = useCoreCommands()
         const setAliasesCommand = commands.find(
@@ -532,7 +601,7 @@ describe('useCoreCommands', () => {
 
       it('should not set aliases when user cancels', async () => {
         app.canvas.subgraph = mockSubgraph
-        mockDialogService.prompt.mockResolvedValue(null)
+        vi.mocked(useDialogService().prompt).mockResolvedValue(null)
 
         const commands = useCoreCommands()
         const setAliasesCommand = commands.find(
@@ -554,7 +623,7 @@ describe('useCoreCommands', () => {
     it('Comfy.Canvas.ResetView delegates to litegraphService.resetView', async () => {
       await findCmd('Comfy.Canvas.ResetView').function()
 
-      expect(mockResetView).toHaveBeenCalled()
+      expect(useLitegraphService().resetView).toHaveBeenCalled()
     })
 
     it('Comfy.Canvas.ZoomIn scales the canvas up by 1.1× and marks it dirty', async () => {
@@ -616,23 +685,25 @@ describe('useCoreCommands', () => {
         })
         order.push('combo:end')
       })
-      mockModelStoreRefresh.mockImplementation(async () => {
+      vi.mocked(useModelStore().refresh).mockImplementation(async () => {
         order.push('models')
         return true
       })
-      mockMissingModelStoreRefresh.mockImplementation(async () => {
-        order.push('missing')
-      })
+      vi.mocked(useMissingModelStore().refreshMissingModels).mockImplementation(
+        async () => {
+          order.push('missing')
+        }
+      )
 
       const commandPromise = findCmd('Comfy.RefreshNodeDefinitions').function()
 
-      expect(mockMissingModelStoreRefresh).not.toHaveBeenCalled()
+      expect(useMissingModelStore().refreshMissingModels).not.toHaveBeenCalled()
       resolveComboRefresh()
       await commandPromise
 
       expect(app.refreshComboInNodes).toHaveBeenCalled()
-      expect(mockModelStoreRefresh).toHaveBeenCalled()
-      expect(mockMissingModelStoreRefresh).toHaveBeenCalledWith({
+      expect(useModelStore().refresh).toHaveBeenCalled()
+      expect(useMissingModelStore().refreshMissingModels).toHaveBeenCalledWith({
         reloadDefs: false
       })
       expect(order.indexOf('missing')).toBeGreaterThan(
@@ -646,7 +717,7 @@ describe('useCoreCommands', () => {
       await expect(
         findCmd('Comfy.RefreshNodeDefinitions').function()
       ).rejects.toThrow('boom')
-      expect(mockMissingModelStoreRefresh).not.toHaveBeenCalled()
+      expect(useMissingModelStore().refreshMissingModels).not.toHaveBeenCalled()
     })
 
     it('Comfy.RefreshNodeDefinitions skips missing model refresh on cloud', async () => {
@@ -655,8 +726,8 @@ describe('useCoreCommands', () => {
       await findCmd('Comfy.RefreshNodeDefinitions').function()
 
       expect(app.refreshComboInNodes).toHaveBeenCalled()
-      expect(mockModelStoreRefresh).toHaveBeenCalled()
-      expect(mockMissingModelStoreRefresh).not.toHaveBeenCalled()
+      expect(useModelStore().refresh).toHaveBeenCalled()
+      expect(useMissingModelStore().refreshMissingModels).not.toHaveBeenCalled()
     })
   })
 
@@ -685,7 +756,7 @@ describe('useCoreCommands', () => {
       await findCmd('Comfy.QueueSelectedOutputNodes').function()
 
       expect(mockBillingState.showSubscriptionDialog).not.toHaveBeenCalled()
-      expect(mockToastAdd).toHaveBeenCalledWith(
+      expect(useToastStore().add).toHaveBeenCalledWith(
         expect.objectContaining({ severity: 'error' })
       )
     })
@@ -720,7 +791,7 @@ describe('useCoreCommands', () => {
 
         expect(app.queuePrompt).not.toHaveBeenCalled()
         expect(mockBillingState.showSubscriptionDialog).not.toHaveBeenCalled()
-        expect(mockToastAdd).toHaveBeenCalledWith(
+        expect(useToastStore().add).toHaveBeenCalledWith(
           expect.objectContaining({ severity: 'warn' })
         )
       }
@@ -748,7 +819,7 @@ describe('useCoreCommands', () => {
     it('Comfy.Help.OpenComfyUIIssues opens the GitHub issues URL and tracks telemetry', async () => {
       await findCmd('Comfy.Help.OpenComfyUIIssues').function()
 
-      expect(mockTrackHelpResourceClicked).toHaveBeenCalledWith(
+      expect(useTelemetry()?.trackHelpResourceClicked).toHaveBeenCalledWith(
         expect.objectContaining({
           resource_type: 'github',
           is_external: true,
@@ -761,7 +832,7 @@ describe('useCoreCommands', () => {
     it('Comfy.Help.OpenComfyOrgDiscord opens the Discord URL and tracks telemetry', async () => {
       await findCmd('Comfy.Help.OpenComfyOrgDiscord').function()
 
-      expect(mockTrackHelpResourceClicked).toHaveBeenCalledWith(
+      expect(useTelemetry()?.trackHelpResourceClicked).toHaveBeenCalledWith(
         expect.objectContaining({
           resource_type: 'discord'
         })
@@ -772,7 +843,7 @@ describe('useCoreCommands', () => {
     it('Comfy.Help.AboutComfyUI opens the About dialog', async () => {
       await findCmd('Comfy.Help.AboutComfyUI').function()
 
-      expect(mockShowAbout).toHaveBeenCalled()
+      expect(useSettingsDialog().showAbout).toHaveBeenCalled()
     })
   })
 
@@ -783,7 +854,7 @@ describe('useCoreCommands', () => {
       useCoreCommands().find((cmd) => cmd.id === 'Comfy.BrowseModelAssets')!
 
     async function selectAssetFromBrowser() {
-      mockFeatureFlagState.assetsEnabled = true
+      vi.mocked(useFeatureFlags().flags).assetsEnabled = true
 
       await browseModelAssets().function()
 
@@ -792,8 +863,6 @@ describe('useCoreCommands', () => {
     }
 
     it('does not open the browser when the assets capability is missing', async () => {
-      mockFeatureFlagState.assetsEnabled = false
-
       await expect(browseModelAssets().function()).resolves.toBeUndefined()
 
       expect(mockAssetBrowse).not.toHaveBeenCalled()
@@ -808,7 +877,7 @@ describe('useCoreCommands', () => {
         asset,
         'asset_browser'
       )
-      expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(useToastStore().add).not.toHaveBeenCalled()
     })
 
     it('shows an error toast when the asset cannot start a drag', async () => {
@@ -821,7 +890,7 @@ describe('useCoreCommands', () => {
 
       await selectAssetFromBrowser()
 
-      expect(mockToastAdd).toHaveBeenCalledWith(
+      expect(useToastStore().add).toHaveBeenCalledWith(
         expect.objectContaining({ severity: 'error' })
       )
     })

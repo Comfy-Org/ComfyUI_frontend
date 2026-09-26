@@ -15,7 +15,6 @@ const SRC_ROOT = join(__dirname, '..', '..', '..', '..')
 const GUARDED_DIRS = [
   join(SRC_ROOT, 'workbench', 'extensions', 'agent', 'crdt')
 ]
-const GUARDED_FILES = [join(SRC_ROOT, 'core', 'graph', 'graphMutations.ts')]
 const RENDERER_IMPORT = /from\s+['"]@\/renderer\//
 
 function listSourceFiles(dir: string): string[] {
@@ -30,7 +29,7 @@ function listSourceFiles(dir: string): string[] {
 }
 
 describe('agent follower renderer boundary', () => {
-  const files = [...GUARDED_DIRS.flatMap(listSourceFiles), ...GUARDED_FILES]
+  const files = GUARDED_DIRS.flatMap(listSourceFiles)
 
   it('scans the follower core', () => {
     expect(files.length).toBeGreaterThan(5)

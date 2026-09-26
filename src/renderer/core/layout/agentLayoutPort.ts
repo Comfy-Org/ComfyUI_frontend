@@ -1,16 +1,15 @@
-import type { GraphMutationsDeps } from '@/core/graph/graphMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import type { GraphMutationsDeps } from '@/workbench/extensions/agent/crdt/graphMutations'
 
 /**
  * Renderer-owned layout port for the in-app agent CRDT materializer.
  *
- * The follower core (`src/core/graph/graphMutations.ts` and
- * `src/workbench/extensions/agent/crdt/**`) never imports the renderer; the
- * composition root (`AgentPanelRoot.vue`) injects this port, mirroring the
- * mint-port seam in `crdt/mintPortWiring.ts`. The port shape is owned by
- * `GraphMutationsDeps['layout']`, so the renderer adapts to the semantic
- * contract rather than the other way round.
+ * The follower core (`src/workbench/extensions/agent/crdt/**`) never imports
+ * the renderer; the composition root (`AgentPanelRoot.vue`) injects this port,
+ * mirroring the mint-port seam in `crdt/mintPortWiring.ts`. The port shape is
+ * owned by `GraphMutationsDeps['layout']`, so the renderer adapts to the
+ * semantic contract rather than the other way round.
  *
  * See docs/adr/CRDT-FOLLOWER-0031-renderer-provided-layout-port-for-agent-materializer.md
  */

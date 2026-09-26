@@ -12,7 +12,7 @@ const pains = painNumbers.map((n) => t(`platform.builderProblem.${n}`, locale))
 </script>
 
 <template>
-  <section class="max-w-9xl mx-auto px-6 py-10 lg:py-14">
+  <section class="mx-auto max-w-9xl px-6 py-10 lg:py-14">
     <SectionHeader max-width="xl" heading-size="compact">
       {{ t('platform.builderProblem.heading', locale) }}
     </SectionHeader>
@@ -24,7 +24,7 @@ const pains = painNumbers.map((n) => t(`platform.builderProblem.${n}`, locale))
         class="flex items-start gap-2.5 text-sm/relaxed font-light text-primary-comfy-canvas"
       >
         <CheckIcon
-          class="text-primary-comfy-yellow mt-1 size-4 shrink-0"
+          class="mt-1 size-4 shrink-0 text-primary-comfy-yellow"
           aria-hidden="true"
         />
         {{ pain }}

@@ -65,10 +65,7 @@ const i18n = createI18n({
 const globalOptions = {
   plugins: [i18n],
   stubs: {
-    'i18n-t': { template: '<span />' },
-    Button: {
-      template: '<button @click="$emit(\'click\')"><slot /></button>'
-    }
+    'i18n-t': { template: '<span />' }
   }
 }
 
@@ -445,6 +442,25 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
     expect(emitted().addCreditCard).toBeTruthy()
   })
 
+  it('locks subscribing while an earlier payment awaits verification', () => {
+    render(SubscriptionAddPaymentPreviewWorkspace, {
+      props: {
+        tierKey: 'creator',
+        actionUrl: 'https://verify.example/sensitive-token'
+      },
+      global: globalOptions
+    })
+
+    expect(
+      screen.getByText('subscription.preview.pendingVerificationDetail')
+    ).toBeTruthy()
+    expect(
+      screen.getByRole('button', {
+        name: 'subscription.preview.subscribeToPlan'
+      })
+    ).toBeDisabled()
+  })
+
   it('reports failed verification without offering to resume it', () => {
     render(SubscriptionAddPaymentPreviewWorkspace, {
       props: {
@@ -487,17 +503,7 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
   it('owns a back action whether or not the payment element is embedded', async () => {
     const { emitted } = render(SubscriptionAddPaymentPreviewWorkspace, {
       props: { tierKey: 'creator' },
-      global: {
-        ...globalOptions,
-        stubs: {
-          ...globalOptions.stubs,
-          Button: {
-            props: ['ariaLabel'],
-            template:
-              '<button :aria-label="ariaLabel" @click="$emit(\'click\')"><slot /></button>'
-          }
-        }
-      }
+      global: globalOptions
     })
 
     await userEvent.click(screen.getByRole('button', { name: 'g.back' }))

@@ -2,6 +2,8 @@ import { toString } from 'es-toolkit/compat'
 import { shallowRef, toRaw } from 'vue'
 
 import { assert } from '@/base/assert'
+import { adoptPromotedWidgetValue } from '@/core/graph/subgraph/adoptPromotedWidgetValue'
+import { toSelectableKey } from '@/core/selection/selectionState'
 import {
   getAgreedLinkPresentation,
   transferLinkPresentation
@@ -28,6 +30,7 @@ import {
   materializeRerouteLayout,
   releaseNodeLayoutAttachment
 } from '@/renderer/core/layout/operations/graphLayoutAttachment'
+import { useSelectionStore } from '@/core/selection/selectionStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { nodesInRenderOrder } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
@@ -53,13 +56,9 @@ import {
   observeNodeId,
   observeRerouteId
 } from './idAllocation'
-import type { LGraphState } from './idAllocation'
-import {
-  inputHasLink,
-  inputLink,
-  outputHasLinks,
-  outputLinks
-} from './node/slotLinks'
+import type { LGraphState, NodeIdMintMode } from './idAllocation'
+import { isRootGraphDocBound } from './docBoundGraphs'
+import { inputHasLink, outputHasLinks, outputLinks } from './node/slotLinks'
 import { normalizeWidgetsView } from './node/widgetsView'
 import { clearNodeOwnedStoreState } from '@/stores/clearNodeOwnedStoreState'
 import { useEntityIdStore } from '@/stores/entityIdStore'
@@ -142,6 +141,15 @@ import { SubgraphInputNode } from './subgraph/SubgraphInputNode'
 import { SubgraphOutput } from './subgraph/SubgraphOutput'
 import { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
 import {
+  captureUnpackedTargetInput,
+  findUnavailableSubgraphNodeType,
+  materializeSubgraphNodes,
+  resolveUnpackedTargetInput
+} from './subgraph/unpackSubgraph'
+import type { UnpackedTargetInput } from './subgraph/unpackSubgraph'
+import {
+  findUnresolvableSubgraphLink,
+  findOrphanedSubgraphs,
   findReleasableSubgraphs,
   findUsedSubgraphIds,
   getBoundaryLinks,
@@ -236,6 +244,8 @@ export interface GraphRemoveOptions {
    * Same-id replacement state is left intact.
    */
   preserveCanonicalState?: boolean
+  /** Keep the subgraph definitions the node references; the caller re-creates the node elsewhere in the same root graph. */
+  preserveSubgraphDefinitions?: boolean
 }
 
 export interface LGraphExtra extends Dictionary<unknown> {
@@ -439,12 +449,30 @@ function serialiseStoredNodes(owner: LGraph, sortNodes: boolean) {
     return nodes.map((node) => node.serialize())
   }
   return serialisers.map(({ adapter, state }) =>
-    adapter.serializeFromStoreState(state)
+    adapter.serialize === LGraphNode.prototype.serialize
+      ? adapter.serializeFromStoreState(state)
+      : adapter.serialize()
   )
 }
 
 function serialiseStoredGroups(owner: LGraph) {
   return owner._groups.map((group) => group.serialize())
+}
+
+/**
+ * `idAllocation.ts` stays pure and context-free, so the mode is decided here:
+ * `'crdt-disjoint'` only for a mint landing directly on a root graph that
+ * shares its id space with the agent's collaborative doc — subgraph-owned
+ * nodes are outside the doc's scope (see `agentNodeMaterializer.ts`) and keep
+ * plain sequential ids.
+ */
+function nodeIdMintModeFor(graph: {
+  isRootGraph: boolean
+  id: string
+}): NodeIdMintMode {
+  return graph.isRootGraph && isRootGraphDocBound(graph.id)
+    ? 'crdt-disjoint'
+    : 'sequential'
 }
 
 export class LGraph
@@ -794,9 +822,13 @@ export class LGraph
       useLinkPresentationStore().clearGraph(toRootGraphId(graphId))
       useRerouteStore().clearGraph(toRootGraphId(graphId))
       useNodeDataStore().clearGraph(graphId)
+      useSelectionStore().clearRoot(toRootGraphId(graphId))
       layoutStore.clearGraph(graphId)
     } else if (getRuntimeRootGraph(this)) {
       useExecutionOrderStore().clearGraph(graphScopeOf(this))
+      useSelectionStore().apply(graphScopeOf(this), {
+        type: 'selection.clear'
+      })
     }
     this.reroutes.clear()
 
@@ -1253,7 +1285,7 @@ export class LGraph
         node[eventname]()
       } else if (params.constructor === Array) {
         // @ts-expect-error deprecated
-        // eslint-disable-next-line prefer-spread
+        // oxlint-disable-next-line prefer-spread
         node[eventname].apply(node, params)
       } else {
         // @ts-expect-error deprecated
@@ -1334,6 +1366,7 @@ export class LGraph
     // LEGACY: This was changed from constructor === LGraphGroup
     // groups
     if (node instanceof LGraphGroup) {
+      const selected = node.selected
       const groupId = runtimeOptional(node.id)
       if (
         groupId === undefined ||
@@ -1348,6 +1381,7 @@ export class LGraph
       this.setDirtyCanvas(true)
       this.change()
       node.graph = this
+      if (selected) node.selected = true
       attachGroupLayout(this, node)
       this.incrementVersion()
       return
@@ -1370,7 +1404,8 @@ export class LGraph
 
     // give him an id
     if (node.id === UNASSIGNED_NODE_ID) {
-      node.id = mintNodeId(state)
+      const mintMode = nodeIdMintModeFor(this)
+      node.id = mintNodeId(state, mintMode)
     } else {
       observeNodeId(state, node.id)
     }
@@ -1380,13 +1415,17 @@ export class LGraph
       node.flags.ghost = true
     }
 
+    const selected = node.selected
     normalizeWidgetsView(node)
     node.graph = this
 
-    attachNodeToStores(this, node, () => mintNodeId(state))
+    attachNodeToStores(this, node, () =>
+      mintNodeId(state, nodeIdMintModeFor(this))
+    )
 
     this._nodes.push(node)
     this._nodes_by_id[node.id] = node
+    if (selected) node.selected = true
 
     node.onAdded?.(this)
 
@@ -1430,12 +1469,17 @@ export class LGraph
   ): void {
     // LEGACY: This was changed from constructor === LiteGraph.LGraphGroup
     if (node instanceof LGraphGroup) {
-      this.canvasAction((c) => c.deselect(node))
+      if (!this._groups.includes(node)) return
 
-      const index = this._groups.indexOf(node)
-      if (index != -1) {
-        this._groups.splice(index, 1)
-      }
+      this.canvasAction((c) => c.deselect(node))
+      useSelectionStore().apply(graphScopeOf(this), {
+        type: 'selection.remove',
+        key: toSelectableKey('group', node.id)
+      })
+
+      const remainingGroups = this._groups.filter((group) => group !== node)
+      if (remainingGroups.length === this._groups.length) return
+      this._groups = remainingGroups
       detachGroupLayout(node)
       node.graph = undefined
       this.incrementVersion()
@@ -1504,7 +1548,7 @@ export class LGraph
       }
     }
 
-    if (node.isSubgraphNode()) {
+    if (node.isSubgraphNode() && !options.preserveSubgraphDefinitions) {
       this.releaseSubgraphs(findReleasableSubgraphs(this.rootGraph, node))
     }
 
@@ -1528,15 +1572,18 @@ export class LGraph
     node.order = order
     this.incrementVersion()
 
-    // remove from canvas render
-    const { list_of_graphcanvas } = this
-    if (list_of_graphcanvas) {
-      for (const canvas of list_of_graphcanvas) {
-        if (node.id in canvas.selected_nodes)
+    if (!successor) {
+      const { list_of_graphcanvas } = this
+      if (list_of_graphcanvas) {
+        for (const canvas of list_of_graphcanvas) {
           delete canvas.selected_nodes[node.id]
-
-        canvas.deselect(node)
+          canvas.deselect(node)
+        }
       }
+      useSelectionStore().apply(graphScopeOf(this), {
+        type: 'selection.remove',
+        key: toSelectableKey('node', node.id)
+      })
     }
 
     // remove from containers
@@ -1593,7 +1640,9 @@ export class LGraph
    * Returns a node by its id.
    */
   getNodeById(id: NodeId | null | undefined): LGraphNode | null {
-    return id != null && id !== UNASSIGNED_NODE_ID
+    return id != null &&
+      id !== UNASSIGNED_NODE_ID &&
+      Object.hasOwn(this._nodes_by_id, id)
       ? (this._nodes_by_id[id] ?? null)
       : null
   }
@@ -1603,7 +1652,7 @@ export class LGraph
    * @param classObject the class itself (not an string)
    * @returns a list with all the nodes of this type
    */
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
+  // oxlint-disable-next-line typescript/no-unsafe-function-type
   findNodesByClass(classObject: Function, result?: LGraphNode[]): LGraphNode[] {
     result = result || []
     result.length = 0
@@ -1999,6 +2048,10 @@ export class LGraph
     if (!reroute) return
 
     this.canvasAction((c) => c.deselect(reroute))
+    useSelectionStore().apply(graphScopeOf(this), {
+      type: 'selection.remove',
+      key: toSelectableKey('reroute', reroute.id)
+    })
 
     // Extract reroute from the reroute chain
     const { parentId, linkIds, floatingLinkIds } = reroute
@@ -2249,11 +2302,18 @@ export class LGraph
         resolved.inputNode
       )
 
-    for (const node of nodes) this.remove(node)
+    for (const node of nodes)
+      this.remove(node, { preserveSubgraphDefinitions: true })
     for (const reroute of reroutes) this.removeReroute(reroute.id)
     for (const group of groups) this.remove(group)
 
-    const subgraph = this.createSubgraph(data)
+    let subgraph: Subgraph
+    try {
+      subgraph = this.createSubgraph(data)
+    } catch (error) {
+      this.releaseSubgraphs(findOrphanedSubgraphs(this.rootGraph, nodes))
+      throw error
+    }
     for (const node of subgraph.nodes) node.onGraphConfigured?.()
     for (const node of subgraph.nodes) node.onAfterGraphConfigured?.()
 
@@ -2434,27 +2494,62 @@ export class LGraph
   unpackSubgraph(
     subgraphNode: SubgraphNode,
     options?: { skipMissingNodes?: boolean }
-  ) {
+  ): boolean {
     if (!(subgraphNode instanceof SubgraphNode))
       throw new Error('Can only unpack Subgraph Nodes')
+
+    const skipMissingNodes = options?.skipMissingNodes ?? false
+    const unavailableNodeType = skipMissingNodes
+      ? undefined
+      : findUnavailableSubgraphNodeType(subgraphNode.subgraph.nodes)
+    if (unavailableNodeType) {
+      reportError(
+        new Error(
+          `Cannot unpack: node type "${unavailableNodeType}" is not registered`
+        ),
+        {
+          errorType: 'error_unpacking_subgraph_node_type',
+          context: {
+            subgraphNodeId: subgraphNode.id,
+            nodeType: unavailableNodeType
+          }
+        }
+      )
+      return false
+    }
+
+    const malformedLink = findUnresolvableSubgraphLink(subgraphNode)
+    if (malformedLink) {
+      reportError(
+        new Error('Cannot unpack subgraph: unresolvable inner link'),
+        {
+          errorType: 'error_unpacking_subgraph_link',
+          context: {
+            subgraphNodeId: subgraphNode.id,
+            linkId: malformedLink.id,
+            originId: malformedLink.origin_id,
+            originSlot: malformedLink.origin_slot,
+            targetId: malformedLink.target_id,
+            targetSlot: malformedLink.target_slot
+          }
+        }
+      )
+      return false
+    }
 
     // Record state before unpacking for proper undo support
     this.beforeChange()
 
     try {
-      this._unpackSubgraphImpl(subgraphNode, options)
+      this._unpackSubgraphImpl(subgraphNode)
     } finally {
       // Mark state change complete for proper undo support
       this.afterChange()
     }
+    return true
   }
 
-  private _unpackSubgraphImpl(
-    subgraphNode: SubgraphNode,
-    options?: { skipMissingNodes?: boolean }
-  ) {
-    const skipMissingNodes = options?.skipMissingNodes ?? false
-
+  private _unpackSubgraphImpl(subgraphNode: SubgraphNode) {
     //NOTE: Create bounds can not be called on positionables directly as the subgraph is not being displayed and boundingRect is not initialized.
     //NOTE: NODE_TITLE_HEIGHT is explicitly excluded here
     const positionables = [
@@ -2472,49 +2567,16 @@ export class LGraph
     const toSelect: Positionable[] = []
     const offsetX = subgraphNode.pos[0] - center[0] + subgraphNode.size[0] / 2
     const offsetY = subgraphNode.pos[1] - center[1] + subgraphNode.size[1] / 2
-    const movedNodes = multiClone(subgraphNode.subgraph.nodes)
-    const nodeIdMap = new Map<NodeId, NodeId>()
-    for (const n_info of movedNodes) {
-      let node = LiteGraph.createNode(n_info.type, n_info.title)
-      if (!node) {
-        if (skipMissingNodes) {
-          console.warn(
-            `Cannot unpack node of type "${n_info.type}" - node type not found. Creating placeholder node.`
-          )
-          node = new LGraphNode(
-            n_info.title || n_info.type || 'Missing Node',
-            n_info.type
-          )
-          node.last_serialization = n_info
-          node.has_errors = true
-        } else {
-          throw new Error(
-            `Cannot unpack: node type "${n_info.type}" is not registered`
-          )
-        }
-      }
-
-      const newNodeId = mintNodeId(this.state)
-      nodeIdMap.set(toNodeId(n_info.id), newNodeId)
-      node.id = newNodeId
-      n_info.id = newNodeId
-
-      // Strip links from serialized data before configure to prevent
-      // onConnectionsChange from resolving subgraph-internal link IDs
-      // against the parent graph's link map (which may contain unrelated
-      // links with the same numeric IDs).
-      for (const input of n_info.inputs ?? []) {
-        input.link = null
-      }
-      for (const output of n_info.outputs ?? []) {
-        output.links = []
-      }
-
-      this.add(node, true)
-      node.configure(n_info)
-      node.setPos(node.pos[0] + offsetX, node.pos[1] + offsetY)
-      toSelect.push(node)
-    }
+    const {
+      nodeIdMap,
+      inputSlots: configuredInputSlots,
+      materializedNodes
+    } = materializeSubgraphNodes({
+      graph: this,
+      nodes: subgraphNode.subgraph.nodes,
+      offset: [offsetX, offsetY]
+    })
+    toSelect.push(...materializedNodes)
     const groups = structuredClone(
       [...subgraphNode.subgraph.groups].map((g) => g.serialize())
     )
@@ -2530,16 +2592,40 @@ export class LGraph
       iparent?: RerouteId
       eparent?: RerouteId
       externalFirst: boolean
+      targetSlot?: UnpackedTargetInput
     })[] = []
     for (const [, link] of subgraphNode.subgraph.links) {
       const presentation = presentationStore.getPresentation(
         subgraphScope,
         link.id
       )
+      const subgraphInput =
+        link.origin_id === SUBGRAPH_INPUT_ID
+          ? link.resolve(subgraphNode.subgraph).subgraphInput
+          : undefined
+      const hostInput = subgraphInput
+        ? subgraphNode.inputs.find(
+            (input) => input._subgraphSlot?.id === subgraphInput.id
+          )
+        : undefined
+      if (link.origin_id === SUBGRAPH_INPUT_ID && !hostInput) {
+        reportError(new Error('Missing host input when unpacking subgraph'), {
+          errorType: 'subgraph_unpack_missing_host_input',
+          context: { linkId: link.id, subgraphNodeId: subgraphNode.id }
+        })
+        continue
+      }
       const outerLink =
         link.origin_id === SUBGRAPH_INPUT_ID
-          ? inputLink(this, subgraphNode.id, link.origin_slot)
+          ? this.getLink(hostInput?.link)
           : undefined
+      if (link.origin_id === SUBGRAPH_INPUT_ID && !outerLink) {
+        const interiorNode = this.getNodeById(nodeIdMap.get(link.target_id))
+        if (hostInput && interiorNode) {
+          adoptPromotedWidgetValue(hostInput, interiorNode, link.target_slot)
+        }
+        continue
+      }
       const originId =
         link.origin_id === SUBGRAPH_INPUT_ID
           ? outerLink?.origin_id
@@ -2571,6 +2657,10 @@ export class LGraph
             iparent: link.parentId,
             eparent: sublink.parentId,
             externalFirst: true,
+            targetSlot: captureUnpackedTargetInput(
+              this.getNodeById(sublink.target_id),
+              sublink.target_slot
+            ),
             ...getAgreedLinkPresentation([presentation, outerPresentation])
           })
           sublink.parentId = undefined
@@ -2600,6 +2690,11 @@ export class LGraph
         iparent: link.parentId,
         eparent: externalParentId,
         externalFirst: false,
+        targetSlot: captureUnpackedTargetInput(
+          subgraphNode.subgraph.getNodeById(link.target_id),
+          link.target_slot,
+          configuredInputSlots.get(targetId)?.get(link.target_slot) ?? null
+        ),
         ...restoredPresentation
       })
     }
@@ -2638,10 +2733,18 @@ export class LGraph
         if (newLink.tid === UNASSIGNED_NODE_ID) continue
         const tnode = this.getNodeById(newLink.tid)
         if (!tnode) continue
-        created = this.inputNode.slots[newLink.oslot].connect(
-          tnode.inputs[newLink.tslot],
-          tnode
+        const targetSlot = resolveUnpackedTargetInput(
+          tnode,
+          newLink.targetSlot,
+          newLink.tslot
         )
+        created =
+          targetSlot === -1
+            ? null
+            : this.inputNode.slots[newLink.oslot].connect(
+                tnode.inputs[targetSlot],
+                tnode
+              )
       } else if (newLink.tid == SUBGRAPH_OUTPUT_ID) {
         if (!(this instanceof Subgraph)) {
           console.error('Ignoring link to subgraph outside subgraph')
@@ -2663,7 +2766,15 @@ export class LGraph
         const originNode = this.getNodeById(newLink.oid)
         const targetNode = this.getNodeById(newLink.tid)
         if (!originNode || !targetNode) continue
-        created = originNode.connect(newLink.oslot, targetNode, newLink.tslot)
+        const targetSlot = resolveUnpackedTargetInput(
+          targetNode,
+          newLink.targetSlot,
+          newLink.tslot
+        )
+        created =
+          targetSlot === -1
+            ? null
+            : originNode.connect(newLink.oslot, targetNode, targetSlot)
       }
       if (!created) {
         console.error('Failed to create link')

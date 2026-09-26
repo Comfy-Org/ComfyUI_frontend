@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { reportError } from '@/platform/telemetry/reportError'
+
 import type { GraphOperation } from './graphOperations'
 import { attachLinkMintPort } from './linkMintPort'
 import type {
@@ -9,6 +11,10 @@ import type {
 } from './linkMintPort'
 import { createMintSession } from './mintSession'
 import type { MintSession } from './mintSession'
+
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 
 const ROOT_SCOPE: LinkScopeView = {
   rootGraphId: 'root-uuid',
@@ -41,6 +47,9 @@ describe('attachLinkMintPort', () => {
   let port: LinkMintPort
   let enabled: boolean
   let bound: boolean
+  let intentionalClear: boolean
+  let target: string
+  let routed: Array<{ target: string; operations: GraphOperation[] }>
   let session: MintSession
   let placedListeners: Set<
     (scope: LinkScopeView, topology: LinkTopologyView) => void
@@ -61,6 +70,9 @@ describe('attachLinkMintPort', () => {
     minted = []
     enabled = true
     bound = true
+    intentionalClear = false
+    target = 'workflow-a'
+    routed = []
     session = createMintSession()
     placedListeners = new Set()
     deletedListeners = new Set()
@@ -78,7 +90,11 @@ describe('attachLinkMintPort', () => {
       session,
       isEnabled: () => enabled,
       isDocBound: () => bound,
-      enqueue: (operations) => minted.push(...operations)
+      isIntentionalClear: () => intentionalClear,
+      enqueue: (operations) => {
+        minted.push(...operations)
+        routed.push({ target, operations })
+      }
     })
   })
 
@@ -121,58 +137,127 @@ describe('attachLinkMintPort', () => {
   })
 
   it('surfaces a subgraph-interior placement observably instead of minting', () => {
-    const consoleError = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => undefined)
     place(SUBGRAPH_SCOPE, topology(41))
 
     expect(minted).toEqual([])
-    expect(consoleError).toHaveBeenCalledOnce()
-    consoleError.mockRestore()
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'agent_crdt_reporting_unrepresentable_link_operation',
+      context: { id: 41 }
+    })
   })
 
   it('captures a severed link under both endpoints, consumed exactly once', () => {
     remove(ROOT_SCOPE, topology(41))
 
-    expect(port.severances.take('2')).toEqual([41])
-    expect(port.severances.take('1')).toEqual([])
+    expect(port.severances.take(ROOT_SCOPE.owningGraphId, '2')).toEqual([41])
+    expect(port.severances.take(ROOT_SCOPE.owningGraphId, '1')).toEqual([])
   })
 
-  it('surfaces an unconsumed local disconnect as divergence after the sweep', async () => {
+  it('mints a standalone disconnect synchronously for a local link deletion', () => {
     const consoleError = vi
       .spyOn(console, 'error')
       .mockImplementation(() => undefined)
     remove(ROOT_SCOPE, topology(41))
-    await afterSweep()
 
-    expect(consoleError).toHaveBeenCalledOnce()
-    expect(consoleError.mock.calls[0][1]).toBe(41)
-    consoleError.mockRestore()
-  })
-
-  it('stays silent for a consumed severance (the delete carried it)', async () => {
-    const consoleError = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => undefined)
-    remove(ROOT_SCOPE, topology(41))
-    port.severances.take('1')
-    await afterSweep()
-
+    expect(minted).toEqual([
+      { op: 'disconnect', link_id: 41, to_node: 2, to_slot: 3 }
+    ])
     expect(consoleError).not.toHaveBeenCalled()
     consoleError.mockRestore()
   })
 
-  it('stays silent for teardown severances', async () => {
+  it('mints a disconnect for a consumed severance (the delete also carries it as removed_links)', async () => {
     const consoleError = vi
       .spyOn(console, 'error')
       .mockImplementation(() => undefined)
+    remove(ROOT_SCOPE, topology(41))
+    port.severances.take(ROOT_SCOPE.owningGraphId, '1')
+    await afterSweep()
+
+    expect(minted).toEqual([
+      { op: 'disconnect', link_id: 41, to_node: 2, to_slot: 3 }
+    ])
+    expect(consoleError).not.toHaveBeenCalled()
+    consoleError.mockRestore()
+  })
+
+  it('preserves delete then place order before the severance sweep', async () => {
+    remove(ROOT_SCOPE, topology(41))
+    place(ROOT_SCOPE, topology(41))
+
+    expect(minted.map((operation) => operation.op)).toEqual([
+      'disconnect',
+      'connect'
+    ])
+    await afterSweep()
+    expect(minted.map((operation) => operation.op)).toEqual([
+      'disconnect',
+      'connect'
+    ])
+  })
+
+  it('routes a disconnect before the active workflow can change', async () => {
+    remove(ROOT_SCOPE, topology(41))
+    target = 'workflow-b'
+    await afterSweep()
+
+    expect(routed).toEqual([
+      {
+        target: 'workflow-a',
+        operations: [{ op: 'disconnect', link_id: 41, to_node: 2, to_slot: 3 }]
+      }
+    ])
+  })
+
+  it('surfaces an unconsumed subgraph-interior deletion observably instead of minting', async () => {
+    remove(SUBGRAPH_SCOPE, topology(41))
+    await afterSweep()
+
+    expect(minted).toEqual([])
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'agent_crdt_reporting_unrepresentable_link_operation',
+      context: { id: '41' }
+    })
+  })
+
+  it('does not consume a subgraph-interior deletion into delete_node', async () => {
+    remove(SUBGRAPH_SCOPE, topology(41))
+    expect(port.severances.take(SUBGRAPH_SCOPE.owningGraphId, '1')).toEqual([])
+    await afterSweep()
+
+    expect(minted).toEqual([])
+    expect(reportError).toHaveBeenCalledOnce()
+  })
+
+  it('keeps same-id severances isolated by their owning graph', async () => {
+    remove(ROOT_SCOPE, topology(41))
+    remove(SUBGRAPH_SCOPE, topology(41))
+
+    expect(port.severances.take(ROOT_SCOPE.owningGraphId, '1')).toEqual([41])
+    await afterSweep()
+
+    expect(minted).toEqual([
+      { op: 'disconnect', link_id: 41, to_node: 2, to_slot: 3 }
+    ])
+    expect(reportError).toHaveBeenCalledOnce()
+  })
+
+  it('stays silent for teardown severances', async () => {
     session.beginGraphTeardown()
     remove(ROOT_SCOPE, topology(41))
     session.endGraphTeardown()
     await afterSweep()
 
-    expect(consoleError).not.toHaveBeenCalled()
-    consoleError.mockRestore()
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('suppresses standalone disconnects during an intentional clear', async () => {
+    intentionalClear = true
+    remove(ROOT_SCOPE, topology(41))
+    intentionalClear = false
+    await afterSweep()
+
+    expect(minted).toEqual([])
   })
 
   it('sweeps the capture window: a later take finds nothing', async () => {
@@ -181,8 +266,8 @@ describe('attachLinkMintPort', () => {
     session.endGraphTeardown()
     await afterSweep()
 
-    expect(port.severances.take('1')).toEqual([])
-    expect(port.severances.take('2')).toEqual([])
+    expect(port.severances.take(ROOT_SCOPE.owningGraphId, '1')).toEqual([])
+    expect(port.severances.take(ROOT_SCOPE.owningGraphId, '2')).toEqual([])
   })
 
   it('stops minting after detach', () => {
@@ -190,5 +275,17 @@ describe('attachLinkMintPort', () => {
     place(ROOT_SCOPE, topology(41))
 
     expect(minted).toEqual([])
+  })
+
+  it('does not retract an admitted disconnect when detached before cleanup', async () => {
+    remove(ROOT_SCOPE, topology(41))
+    port.detach()
+
+    await afterSweep()
+
+    expect(minted).toEqual([
+      { op: 'disconnect', link_id: 41, to_node: 2, to_slot: 3 }
+    ])
+    expect(port.severances.take(ROOT_SCOPE.owningGraphId, '1')).toEqual([])
   })
 })

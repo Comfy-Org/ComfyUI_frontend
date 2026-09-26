@@ -2,38 +2,25 @@ import { fromPartial } from '@total-typescript/shoehorn'
 
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { defineComponent } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, defineComponent } from 'vue'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import { useAppMode } from '@/composables/useAppMode'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
 import LinearPreview from './LinearPreview.vue'
 import type { OutputSelection } from './linearModeTypes'
-
-const appModeState = vi.hoisted(() => ({
-  isBuilderMode: false,
-  isArrangeMode: false
-}))
 
 const outputHistoryState = vi.hoisted(() => ({
   isWorkflowActive: false
 }))
 
 const spies = vi.hoisted(() => ({
-  cancelActiveWorkflowJobs: vi.fn(),
-  deleteAssets: vi.fn()
+  cancelActiveWorkflowJobs: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/composables/useAppMode'), async () => {
-  const { computed } = await import('vue')
-  return {
-    useAppMode: () => ({
-      isBuilderMode: computed(() => appModeState.isBuilderMode),
-      isArrangeMode: computed(() => appModeState.isArrangeMode)
-    })
-  }
-})
+vi.mock(import('@/composables/useAppMode'))
 
 vi.mock<unknown>(
   import('@/renderer/extensions/linearMode/useOutputHistory'),
@@ -49,23 +36,16 @@ vi.mock<unknown>(
   }
 )
 
-vi.mock<unknown>(
-  import('@/platform/assets/composables/useMediaAssetActions'),
-  () => ({
-    useMediaAssetActions: () => ({ deleteAssets: spies.deleteAssets })
-  })
-)
+vi.mock(import('@/platform/assets/composables/useMediaAssetActions'))
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: { rootGraph: { id: 'root' }, loadGraphData: vi.fn() }
-}))
+vi.mock(import('@/scripts/app'))
 
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
   messages: {
     en: {
-      g: { download: 'Download' },
+      g: { download: 'Download', moreOptions: 'More Options' },
       linearMode: {
         rerun: 'Rerun',
         reuseParameters: 'Reuse Parameters',
@@ -81,6 +61,20 @@ function renderPreview(
   props: { mobile?: boolean } = {},
   emitSelection?: OutputSelection
 ) {
+  // happy-dom focuses Reka's non-focusable wrapper: https://github.com/unovue/reka-ui/issues/2803
+  const preventAutofocus = (event: Event) => event.preventDefault()
+  document.addEventListener(
+    'focusScope.autoFocusOnMount',
+    preventAutofocus,
+    true
+  )
+  onTestFinished(() =>
+    document.removeEventListener(
+      'focusScope.autoFocusOnMount',
+      preventAutofocus,
+      true
+    )
+  )
   const user = userEvent.setup()
   const outputHistoryStub = emitSelection
     ? defineComponent({
@@ -104,7 +98,6 @@ function renderPreview(
         LinearWelcome: { template: '<div data-testid="linear-welcome" />' },
         LinearArrange: { template: '<div data-testid="linear-arrange" />' },
         MediaOutputPreview: true,
-        Popover: { template: '<div data-testid="output-popover" />' },
         OutputHistory: outputHistoryStub
       }
     }
@@ -114,8 +107,8 @@ function renderPreview(
 
 describe('LinearPreview', () => {
   beforeEach(() => {
-    appModeState.isBuilderMode = false
-    appModeState.isArrangeMode = false
+    useAppMode().isBuilderMode = computed(() => false)
+    useAppMode().isArrangeMode = computed(() => false)
     outputHistoryState.isWorkflowActive = false
   })
 
@@ -127,7 +120,7 @@ describe('LinearPreview', () => {
   })
 
   it('hides the output history in builder mode', () => {
-    appModeState.isBuilderMode = true
+    useAppMode().isBuilderMode = computed(() => true)
 
     renderPreview()
 
@@ -135,7 +128,7 @@ describe('LinearPreview', () => {
   })
 
   it('shows the arrange view in arrange mode', () => {
-    appModeState.isArrangeMode = true
+    useAppMode().isArrangeMode = computed(() => true)
 
     renderPreview()
 
@@ -171,7 +164,10 @@ describe('LinearPreview', () => {
 
     expect(await screen.findByTestId('linear-output-info')).toBeInTheDocument()
     expect(screen.getByTestId('image-preview')).toBeInTheDocument()
-    expect(screen.getByTestId('output-popover')).toBeInTheDocument()
+    await userEvent
+      .setup()
+      .click(screen.getByRole('button', { name: 'More Options' }))
+    expect(await screen.findByRole('dialog')).toHaveTextContent('Delete all')
     expect(screen.getByText('Rerun')).toBeInTheDocument()
     expect(screen.getByText('Reuse Parameters')).toBeInTheDocument()
   })

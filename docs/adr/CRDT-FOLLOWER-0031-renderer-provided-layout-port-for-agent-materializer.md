@@ -12,9 +12,10 @@ Proposed
 
 The in-app agent follower ([CRDT-FOLLOWER-0025](CRDT-FOLLOWER-0025-in-app-agent-crdt-follower-and-distribution-resolved-boundaries.md))
 integrates agent-authored Y.Doc updates into frontend state. Its semantic layer,
-`src/core/graph/graphMutations.ts`, materializes nodes and links into the graph
-document and never writes position or size into the shared follower Y.Doc. Layout is
-renderer state owned by `layoutStore` ([CRDT-LAYOUT-0003](CRDT-LAYOUT-0003-crdt-layout-intent-and-local-measurement.md)).
+`src/workbench/extensions/agent/crdt/graphMutations.ts`, materializes nodes and
+links into the graph document and never writes position or size into the shared
+follower Y.Doc. Layout is renderer state owned by `layoutStore`
+([CRDT-LAYOUT-0003](CRDT-LAYOUT-0003-crdt-layout-intent-and-local-measurement.md)).
 
 Node materialization still needs a layout write: a node the agent creates must get a
 `createNode` layout operation with `LayoutSource.AgentRemote`, and a deleted node must
@@ -50,14 +51,15 @@ the renderer.
   `createAgentLayoutPort(): GraphMutationsDeps['layout']`. It is the only code that
   translates a semantic `createNode` / `deleteNodes` call into `layoutStore`
   operations tagged `LayoutSource.AgentRemote`, carrying the remote actor and opId.
-- The port shape stays owned by `src/core/graph/graphMutations.ts`
+- The port shape stays owned by
+  `src/workbench/extensions/agent/crdt/graphMutations.ts`
   (`GraphMutationsDeps['layout']`). The renderer adapts to the semantic contract, not
   the reverse.
 - The composition root (`src/workbench/extensions/agent/AgentPanelRoot.vue`) wires
   `layout: createAgentLayoutPort()` into `createGraphMutations`, mirroring the
   mint-port seam in `crdt/mintPortWiring.ts`.
-- `src/core/graph/graphMutations.ts` and `src/workbench/extensions/agent/crdt/**`
-  (non-test files) must not import `@/renderer/`. The unit test
+- `src/workbench/extensions/agent/crdt/**` (non-test files) must not import
+  `@/renderer/`. The unit test
   `src/workbench/extensions/agent/crdt/rendererBoundary.test.ts` scans those paths
   and fails on any such import.
 
@@ -65,8 +67,8 @@ the renderer.
 ┌──────────────────────────────┐   Y.Doc update    ┌──────────────────────────────┐
 │ agent doc-host (server)      │──────────────────▶│ follower core                │
 └──────────────────────────────┘                   │ workbench/extensions/agent/  │
-                                                   │   crdt/**                    │
-                                                   │ core/graph/graphMutations.ts │
+                                                   │   crdt/graphMutations.ts     │
+                                                   │   and crdt/**                │
                                                    │   (no @/renderer imports)    │
                                                    └──────────────┬───────────────┘
                                                                   │ GraphMutationsDeps['layout']
@@ -98,8 +100,8 @@ the renderer.
 - `AgentPanelRoot.vue` still imports the renderer (`layoutStore`, `ACTOR_CONFIG`,
   `createAgentLayoutPort`) under `eslint-disable` for `import-x/no-restricted-paths`.
   That is accepted for the composition root; the guard test covers the layers below it.
-- `src/core/**` outside `graphMutations.ts` is not renderer-clean today; the guard is
-  deliberately scoped to the follower and does not claim a wider invariant.
+- Code outside `src/workbench/extensions/agent/crdt/**` is not covered by this
+  guard, which deliberately does not claim a wider invariant.
 
 ## Notes
 

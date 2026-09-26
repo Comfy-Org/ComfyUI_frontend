@@ -15,7 +15,11 @@
         :key="email"
         :value="email"
         :class="
-          cn('rounded-full', !isValidEmail(email) && 'bg-danger/20 text-danger')
+          cn(
+            'rounded-full',
+            !isValidEmail(email) &&
+              'bg-destructive-background/20 text-destructive-background'
+          )
         "
       >
         <TagsInputItemText />
@@ -34,7 +38,7 @@
       v-if="invalidEmails.length > 0"
       :id="invalidEmailsHintId"
       role="alert"
-      class="text-danger m-0 text-xs"
+      class="m-0 text-xs text-destructive-background"
     >
       {{
         $t(
@@ -64,7 +68,7 @@
       v-if="seatOverage > 0"
       :id="seatLimitHintId"
       role="alert"
-      class="text-danger m-0 text-xs"
+      class="m-0 text-xs text-destructive-background"
     >
       {{
         $t('workspacePanel.inviteMemberDialog.seatLimitExceeded', {
@@ -158,7 +162,7 @@ const {
 }>()
 
 const emit = defineEmits<{
-  submitted: [emails: string[]]
+  submitted: [emails: string[], invites: WorkspacePendingInvite[]]
   cancel: []
 }>()
 
@@ -170,6 +174,7 @@ const { fetchStatus } = useBillingContext()
 
 const emails = ref<string[]>([])
 const invitedEmails = ref<string[]>([])
+const invitedInvites = ref<WorkspacePendingInvite[]>([])
 const loading = ref(false)
 
 const { state: pendingInvites, execute: refreshPendingInvites } = useAsyncState<
@@ -258,8 +263,12 @@ async function onSubmit() {
       (_, index) => results[index].status === 'fulfilled'
     )
 
+    const createdInvites = results.flatMap((result) =>
+      result.status === 'fulfilled' ? [result.value] : []
+    )
     if (successfulEmails.length > 0) {
       invitedEmails.value.push(...successfulEmails)
+      invitedInvites.value.push(...createdInvites)
       telemetry?.trackWorkspaceInviteSent({
         source,
         count: successfulEmails.length
@@ -268,7 +277,7 @@ async function onSubmit() {
     }
 
     if (failedEmails.length === 0) {
-      emit('submitted', [...invitedEmails.value])
+      emit('submitted', [...invitedEmails.value], [...invitedInvites.value])
       return
     }
 
