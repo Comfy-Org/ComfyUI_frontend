@@ -138,7 +138,7 @@ describe('LGraphNode', () => {
     expect(Array.from(node.size)).toEqual([70, 80])
   })
 
-  test.fails('does not add a reroute when a floating chain has no link', () => {
+  test('does not add a reroute when a floating chain has no link', () => {
     const graph = new LGraph()
     node.addOutput('output', '*')
     graph.add(node)
