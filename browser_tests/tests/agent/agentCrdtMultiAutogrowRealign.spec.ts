@@ -74,9 +74,7 @@ test.describe(
     test('queues every connected node that is visible on the canvas', async ({
       realign
     }) => {
-      await expect(
-        realign.vueNodes.getNodeLocator(String(SOURCE_NODE_ID))
-      ).toBeVisible()
+      await expect(realign.sourceNode).toBeVisible()
       await expect(realign.targetNode).toBeVisible()
 
       const submittedPrompt = await realign.submitAndReadPrompt()
