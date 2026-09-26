@@ -409,6 +409,17 @@ describe('entry source attribution across rehydration', () => {
         entry_source: entrySource,
         ui_mode: 'hosted'
       })
+
+      // The hop R4 joins on: binding rewrites the persisted record and every
+      // later phase re-reads it.
+      const bound = bindOperationToCheckoutJourney('op-rehydrated')
+
+      expect(bound?.entry_source).toBe(entrySource)
+      expect(toCheckoutJourneyContext(bound!)).toMatchObject({
+        entry_source: entrySource,
+        billing_op_id: 'op-rehydrated',
+        ui_mode: 'hosted'
+      })
     }
   )
 
