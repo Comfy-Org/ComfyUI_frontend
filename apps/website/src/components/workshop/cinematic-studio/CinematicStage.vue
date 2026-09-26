@@ -11,6 +11,7 @@ import type { StarterShot } from '../../../lib/workshop/cinematic-studio/starter
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import { framedStyle } from './aspect-style'
+import CinematicCreditSummary from './CinematicCreditSummary.vue'
 import CinematicFirstRun from './CinematicFirstRun.vue'
 import CinematicSequence from './CinematicSequence.vue'
 import CinematicTakeActions from './CinematicTakeActions.vue'
@@ -21,11 +22,13 @@ const {
   reel,
   models,
   starter,
+  memberWorkspace,
   locale = 'en'
 } = defineProps<{
   reel: Reel
   models: readonly CinematicModel[]
   starter?: string
+  memberWorkspace?: string
   locale?: Locale
 }>()
 
@@ -33,7 +36,7 @@ const emit = defineEmits<{
   select: [id: string]
   start: [shot: StarterShot]
   again: []
-  retry: [id: string]
+  retry: [...ids: string[]]
   reference: [url: string, name: string]
   switchModel: [slug: string]
   editScene: []
@@ -73,6 +76,7 @@ const otherModel = computed(() =>
         <CinematicTakeFrame
           :current
           :other-model="otherModel"
+          :member-workspace="memberWorkspace"
           :height="FRAME_HEIGHT"
           :locale
           @retry="emit('retry', current.id)"
@@ -98,6 +102,12 @@ const otherModel = computed(() =>
             />
           </div>
         </CinematicTakeFrame>
+        <CinematicCreditSummary
+          :takes="siblings"
+          :member-workspace="memberWorkspace"
+          :locale
+          @retry="emit('retry', ...$event)"
+        />
         <CinematicSequence
           :takes="reel.takes"
           :current-id="current.id"

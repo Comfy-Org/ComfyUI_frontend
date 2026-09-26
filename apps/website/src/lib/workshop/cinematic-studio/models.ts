@@ -1,4 +1,5 @@
 import type { WorkshopModelDetail } from '../../../config/models-catalogue'
+import type { CinematicPrices } from './estimate'
 import { canRunModel } from './gate'
 
 type ModelLookup = (
@@ -18,6 +19,8 @@ export interface CinematicModel {
   readonly degraded?: boolean
   /** The operation that keeps reference images, when the model has one. */
   readonly referenceSlug?: string
+  /** Credits per take; absent when the model has no verified price. */
+  readonly prices?: CinematicPrices
 }
 
 const CINEMATIC_MODEL_LOGOS: Readonly<Record<string, string>> = {
