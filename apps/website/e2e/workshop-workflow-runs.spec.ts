@@ -143,7 +143,7 @@ async function signInAndRun(
     page.getByRole('button', { name: 'Replace photo.webp' })
   ).toBeVisible()
   await page.getByTestId('workflow-run').click()
-  await expect(page.getByTestId('workflow-run')).toHaveText('Queued')
+  await expect(page.getByTestId('workflow-run')).toHaveText('Waiting its turn')
 }
 
 test('Cloud upload, refresh, partial delivery and downloads retain one run @mobile', async ({
@@ -164,7 +164,7 @@ test('Cloud upload, refresh, partial delivery and downloads retain one run @mobi
   })
 
   await page.reload()
-  await expect(page.getByTestId('workflow-run')).toHaveText('Queued')
+  await expect(page.getByTestId('workflow-run')).toHaveText('Waiting its turn')
   expect(cloud.uploads).toHaveLength(1)
   expect(submissions()).toHaveLength(1)
   await page.getByRole('tab', { name: 'API', exact: true }).click()
@@ -302,13 +302,10 @@ test('workflow cancellation survives disabled admission and hides on sign-out', 
   await page.clock.fastForward(2100)
   await expect(page.getByTestId('playground-output')).toHaveAttribute(
     'data-state',
-    'idle'
+    'cancelled'
   )
   await expect(
-    page.getByText(
-      'Cancellation requested. Check Cloud for the final job status.',
-      { exact: true }
-    )
+    page.getByText('This run was cancelled before it finished.').first()
   ).toBeVisible()
   await expect(page.getByTestId('workflow-run')).toBeDisabled()
   await page.locator('[data-testid="header-account"]:visible').click()

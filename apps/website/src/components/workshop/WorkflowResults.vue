@@ -73,7 +73,9 @@ const observedState = computed<RunState | undefined>(() => {
           )
         }
       : undefined
-  if (result.run.state === 'cancelled') return { status: 'idle' }
+  // A run the reader stopped used to leave an empty panel, so the one state
+  // they caused was the one the page said nothing about.
+  if (result.run.state === 'cancelled') return { status: 'cancelled' }
   if (result.run.state === 'failed')
     return { status: 'failed', reason: 'provider', fieldErrors: {} }
   return undefined
@@ -209,6 +211,7 @@ function captureDownload(kind: RunOutput['kind']) {
     :model-name="model.name"
     :modality="model.modality"
     :retry-disabled="!canStart"
+    :cancelled-message="t('workshop.workflow.cancelled')"
     refreshable
     @retry="emit('retry')"
     @buy-credits="requestWorkshopBuyCredits"
@@ -219,13 +222,6 @@ function captureDownload(kind: RunOutput['kind']) {
   >
     <template #example-hint>{{ t('workshop.workflow.exampleHint') }}</template>
   </PlaygroundOutput>
-  <p
-    v-if="observation?.run.state === 'cancelled'"
-    role="status"
-    class="text-sm text-primary-warm-gray"
-  >
-    {{ t('workshop.workflow.cancelRequested') }}
-  </p>
   <div
     v-if="retryableDelivery || failedMedia.size"
     class="space-y-3 rounded-xl border border-transparency-white-t20 p-4"

@@ -257,3 +257,76 @@ describe('a refused request', () => {
     expect(screen.getByText('Your output will appear here.')).toBeTruthy()
   })
 })
+
+// A run the reader stopped is the one state they caused, and the panel used to
+// go blank for it.
+describe('a cancelled run', () => {
+  const runId = '9a5f2f5c-6a26-4d1e-90f4-1f7f0a0d5b21'
+
+  function mountCancelled() {
+    const model = workflowDetailsBySlug.get('workflows/remove-background')
+    assert(model)
+    const at = new Date(0).toISOString()
+    render(WorkflowResults, {
+      props: {
+        model,
+        state: {
+          phase: 'settled',
+          record: {
+            version: 2,
+            stage: 'run',
+            runId,
+            workflowId: model.workflowId,
+            definitionVersion: model.workflow.definitionVersion,
+            cancelRequested: true
+          },
+          observation: {
+            run: {
+              id: runId,
+              workflowId: model.workflowId,
+              definitionVersion: model.workflow.definitionVersion,
+              state: 'cancelled',
+              outputState: 'pending',
+              createdAt: at,
+              updatedAt: at
+            },
+            outputs: []
+          }
+        } satisfies WorkflowState,
+        exampleIndex: 0,
+        busy: false,
+        statusLabel: '',
+        canStart: true,
+        refreshOutput: async () => undefined
+      }
+    })
+  }
+
+  it('says the run was cancelled instead of emptying the panel', () => {
+    mountCancelled()
+
+    expect(
+      screen.getAllByText('This run was cancelled before it finished.').length
+    ).toBeGreaterThan(0)
+    expect(screen.getByTestId('playground-output')).toHaveAttribute(
+      'data-state',
+      'cancelled'
+    )
+  })
+
+  it('offers the run again', () => {
+    mountCancelled()
+
+    expect(screen.getByRole('button', { name: 'Run again' })).toBeTruthy()
+  })
+
+  // The panel says it now, and the sentence beside it went on advising a check
+  // of Cloud for a status Cloud had already given.
+  it('does not also say it under the panel', () => {
+    mountCancelled()
+
+    expect(
+      screen.queryByText(/Check Cloud for the final job status/)
+    ).toBeNull()
+  })
+})

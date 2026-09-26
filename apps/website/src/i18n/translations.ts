@@ -10663,8 +10663,15 @@ Enterprise`
     en: 'Preparing inputs…',
     'zh-CN': '正在准备输入…'
   },
-  'workshop.workflow.submitting': { en: 'Submitting…', 'zh-CN': '正在提交…' },
-  'workshop.workflow.queued': { en: 'Queued', 'zh-CN': '排队中' },
+  'workshop.workflow.submitting': {
+    en: 'Handing the workflow over',
+    'zh-CN': '正在提交工作流'
+  },
+  'workshop.workflow.queued': { en: 'Waiting its turn', 'zh-CN': '排队中' },
+  'workshop.workflow.cancelled': {
+    en: 'This run was cancelled before it finished.',
+    'zh-CN': '这次运行在完成前已取消。'
+  },
   'workshop.workflow.cancelling': {
     en: 'Waiting for cancellation…',
     'zh-CN': '正在等待取消确认…'
