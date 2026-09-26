@@ -86,6 +86,31 @@ function expectUnresolvableLinkReported(
 }
 
 describe('SubgraphConversion', () => {
+  it('rejects an empty selection without mutating the graph', () => {
+    const rootGraph = createTestRootGraph()
+    const before = JSON.stringify(rootGraph.serialize())
+    const beforeChange = vi.spyOn(rootGraph, 'beforeChange')
+    const afterChange = vi.spyOn(rootGraph, 'afterChange')
+
+    expect(() => rootGraph.convertToSubgraph(new Set())).toThrow(
+      'Cannot convert to subgraph: nothing to convert'
+    )
+    expect(beforeChange).not.toHaveBeenCalled()
+    expect(afterChange).not.toHaveBeenCalled()
+    expect(JSON.stringify(rootGraph.serialize())).toBe(before)
+  })
+
+  it('returns the converted subgraph and node on success', () => {
+    const rootGraph = createTestRootGraph()
+    onTestFinished(enableSubgraphNodeCreation(rootGraph))
+    const source = createTestNode(rootGraph)
+
+    const result = rootGraph.convertToSubgraph(new Set([source]))
+
+    expect(result.subgraph).toBe(rootGraph.subgraphs.values().next().value)
+    expect(result.node.subgraph).toBe(result.subgraph)
+  })
+
   describe('Convert to Subgraph store integrity', () => {
     it('keeps interior and boundary-derived input links registered in the link store', () => {
       const rootGraph = createTestRootGraph()
@@ -199,6 +224,31 @@ describe('SubgraphConversion', () => {
   })
 
   describe('Subgraph Unpacking Functionality', () => {
+    it('does not mutate when an interior node type is unavailable', () => {
+      const nodeType = 'test/unavailable-during-unpack'
+      class UnavailableNode extends LGraphNode {}
+      LiteGraph.registerNodeType(nodeType, UnavailableNode)
+
+      const subgraph = createTestSubgraph()
+      const subgraphNode = createTestSubgraphNode(subgraph)
+      const graph = subgraphNode.graph!
+      graph.add(subgraphNode)
+      const interior = LiteGraph.createNode(nodeType)
+      expect(interior).toBeDefined()
+      if (!interior) return
+      subgraph.add(interior)
+      LiteGraph.unregisterNodeType(nodeType)
+
+      expectUnpackRejected(graph, subgraphNode)
+      expect(mockReportError).toHaveBeenCalledExactlyOnceWith(
+        new Error(`Cannot unpack: node type "${nodeType}" is not registered`),
+        {
+          errorType: 'error_unpacking_subgraph_node_type',
+          context: { subgraphNodeId: subgraphNode.id, nodeType }
+        }
+      )
+    })
+
     it('keeps a shared definition link registered while copying it to the parent', () => {
       const subgraph = createTestSubgraph()
       const subgraphNode = createTestSubgraphNode(subgraph)
