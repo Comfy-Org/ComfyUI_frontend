@@ -635,7 +635,10 @@ describe('AgentMessage run approval', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Run' }))
 
     expect(emitted().openWorkflow).toEqual([
-      ['workflow-1', 'Portrait workflow']
+      ['turn-1:call-1', 'workflow-1', 'Portrait workflow']
+    ])
+    expect(emitted().approvalShown).toEqual([
+      ['turn-1:call-1', 'msg-approval', 'workflow-1']
     ])
     expect(emitted().answerAsk).toEqual([
       ['turn-1:call-1', 'cancel'],

@@ -13,6 +13,7 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
+import type { AgentStopMethod } from '@/platform/telemetry/types'
 
 import type { ActiveTab } from '../../types/activeTab'
 import type {
@@ -105,7 +106,7 @@ const emit = defineEmits<{
     attachments: ComposerAttachment[],
     workflowReferences?: WorkflowReference[]
   ]
-  stop: []
+  stop: [method: AgentStopMethod]
   attach: []
   openAssets: []
   selectNodes: []
@@ -125,7 +126,8 @@ const emit = defineEmits<{
   renameHistory: [id: string, title: string]
   renameChat: [title: string]
   answerAsk: [askId: string, selection: 'run' | 'cancel']
-  openWorkflow: [workflowId: string, workflowName?: string]
+  openWorkflow: [askId: string, workflowId: string, workflowName?: string]
+  approvalShown: [askId: string, turnId: string, workflowId: string | null]
   openReferenceWorkflow: [workflowId: string, workflowName: string]
   showTarget: []
 }>()
@@ -213,8 +215,8 @@ function onDeleteChat(): void {
   if (sessionId !== null) emit('deleteHistory', sessionId)
 }
 
-function addAttachment(attachment: ComposerAttachment): void {
-  composerRef.value?.addAttachment(attachment)
+function addAttachment(attachment: ComposerAttachment): boolean {
+  return composerRef.value?.addAttachment(attachment) ?? false
 }
 
 function updateAttachment(
@@ -366,9 +368,13 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           @answer-ask="
             (askId, selection) => emit('answerAsk', askId, selection)
           "
+          @approval-shown="
+            (askId, turnId, workflowId) =>
+              emit('approvalShown', askId, turnId, workflowId)
+          "
           @open-workflow="
-            (workflowId, workflowName) =>
-              emit('openWorkflow', workflowId, workflowName)
+            (askId, workflowId, workflowName) =>
+              emit('openWorkflow', askId, workflowId, workflowName)
           "
           @open-reference-workflow="
             (workflowId, workflowName) =>
@@ -404,7 +410,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             :workflow-selecting="selectingTabPath !== null || savingReference"
             :get-mention-nodes
             @send="onComposerSend"
-            @stop="emit('stop')"
+            @stop="emit('stop', $event)"
             @attach="emit('attach')"
             @open-assets="emit('openAssets')"
             @select-nodes="emit('selectNodes')"
