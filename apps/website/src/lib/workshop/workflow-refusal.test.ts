@@ -1,0 +1,154 @@
+import { describe, expect, it } from 'vitest'
+
+import { WorkshopWorkflowError } from '../../config/workshop-workflow-api'
+import type { RunFailure } from '../../config/workshop-run'
+import type {
+  WorkflowErrorCode,
+  WorkflowRun,
+  WorkflowRunSummary
+} from '../../config/workshop-workflow-response'
+import type { WorkflowState } from '../../config/workshop-workflow-state'
+import type { SavedWorkflow } from '../../config/workshop-workflow-storage'
+import { failureLabelKey } from './failure-label'
+import { panelSaysRefusal, workflowRunFailure } from './workflow-refusal'
+
+// Every code the API can report and the refusal the panel stands up for it. The
+// table is the specification: a code whose event the panel has no sentence for
+// reads as undefined here, rather than as a sentence about something else.
+const REFUSALS: readonly [
+  WorkflowErrorCode | 'network' | 'response' | 'persistence',
+  RunFailure | undefined
+][] = [
+  ['insufficient_credits', 'noCredits'],
+  ['rate_limited', 'rateLimit'],
+  ['network', 'network'],
+  ['response', 'response'],
+  ['execution_failed', 'provider'],
+  // What is wrong with an input belongs beside the input, and the panel's own
+  // words for a rejection it cannot pin to a field are about a model.
+  ['invalid_request', undefined],
+  ['invalid_input', undefined],
+  ['payload_too_large', undefined],
+  ['unsupported_media_type', undefined],
+  // A session that expired and a form gone out of date the panel has no word
+  // for at all.
+  ['not_authenticated', undefined],
+  ['workflow_not_found', undefined],
+  ['definition_changed', undefined],
+  ['definition_incompatible', undefined],
+  // Codes the panel has a word for, about a different event: a workspace Cloud
+  // denied is not a provider's content policy; an input upload that never
+  // arrived is not a model being down; outputs that could not be fetched after
+  // a run finished is not a connection that dropped mid-run; browser storage
+  // the page could not write names its own fix, which the panel's sentence
+  // does not.
+  ['access_denied', undefined],
+  ['media_unavailable', undefined],
+  ['delivery_failed', undefined],
+  ['submission_unknown', undefined],
+  ['persistence', undefined],
+  ['run_not_found', undefined]
+]
+
+describe('workflowRunFailure', () => {
+  it.for(REFUSALS)('stands %s up as %s', ([code, refusal]) => {
+    expect(workflowRunFailure({ code })).toBe(refusal)
+  })
+
+  // A code this page has not met yet is not given a sentence about something
+  // else; the page keeps saying what it says today. 'toString' is here because
+  // a plain object would have answered it with a method of its prototype.
+  it.for(['teapot', 'toString', 'constructor'] as const)(
+    'claims nothing about %s, a code it does not know',
+    (code) => {
+      expect(
+        workflowRunFailure({ code: code as WorkflowErrorCode })
+      ).toBeUndefined()
+    }
+  )
+
+  it('only ever names a refusal the panel has words for', () => {
+    for (const [, refusal] of REFUSALS)
+      if (refusal) expect(failureLabelKey[refusal]).toBeTruthy()
+  })
+})
+
+// Whether the page keeps quiet beside the form follows from the same table: it
+// speaks exactly where the panel does not, so the reader is never handed the
+// same refusal twice, nor two different accounts of it.
+describe('panelSaysRefusal', () => {
+  it.for(REFUSALS)('leaves %s to the panel only as %s', ([code, refusal]) => {
+    expect(
+      panelSaysRefusal({
+        phase: 'failed',
+        error: new WorkshopWorkflowError(code)
+      })
+    ).toBe(refusal !== undefined)
+  })
+
+  it.for([{ phase: 'idle' }, { phase: 'preparing' }] as const)(
+    'says nothing about a $phase page',
+    (state) => {
+      expect(panelSaysRefusal(state)).toBe(false)
+    }
+  )
+
+  // A run Cloud accepted and then reported failed is the panel's to say, and it
+  // says it as a provider failure. The page used to add a second sentence of its
+  // own here — in different words, telling the reader to change the inputs the
+  // panel had just told them to leave alone.
+  it.for([
+    { reported: 'failed', panel: true },
+    { reported: 'succeeded', panel: false },
+    { reported: 'cancelled', panel: false }
+  ] as const)(
+    'leaves a run reported $reported to the panel: $panel',
+    ({ reported, panel }) => {
+      expect(panelSaysRefusal(observed(reported))).toBe(panel)
+    }
+  )
+
+  // A dropped connection is the one state that carries both: what Cloud last
+  // said about the run, and the error that dropped it. The run wins. Reading the
+  // error first would hand this back to the page, which has a second sentence
+  // ready for a code the panel cannot name.
+  it('leaves a failed run to the panel when the connection dropped on a code it has no words for', () => {
+    expect(
+      panelSaysRefusal({
+        phase: 'interrupted',
+        record: RECORD,
+        observation: run('failed'),
+        error: new WorkshopWorkflowError('media_unavailable')
+      })
+    ).toBe(true)
+  })
+})
+
+const RECORD: SavedWorkflow = {
+  version: 2,
+  cancelRequested: false,
+  stage: 'run',
+  runId: 'run',
+  workflowId: 'workflow',
+  definitionVersion: '1'
+}
+
+function run(state: WorkflowRunSummary['state']): WorkflowRun {
+  const stamp = new Date(0).toISOString()
+  return {
+    run: {
+      id: 'run',
+      workflowId: 'workflow',
+      definitionVersion: '1',
+      state,
+      outputState: 'ready',
+      createdAt: stamp,
+      updatedAt: stamp
+    },
+    outputs: []
+  }
+}
+
+function observed(state: WorkflowRunSummary['state']): WorkflowState {
+  return { phase: 'settled', record: RECORD, observation: run(state) }
+}

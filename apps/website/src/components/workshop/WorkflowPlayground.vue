@@ -17,6 +17,7 @@ import {
   workflowErrorKey,
   workflowStatusKey
 } from '../../config/workshop-workflow-presentation'
+import { panelSaysRefusal } from '../../lib/workshop/workflow-refusal'
 import { useTablist } from '../../composables/useTablist'
 import { useWorkflowFormDraft } from '../../composables/useWorkflowFormDraft'
 import { useWorkflowRun } from '../../composables/useWorkflowRun'
@@ -125,6 +126,12 @@ const error = computed(() =>
       : undefined
 )
 const fieldErrors = computed(() => error.value?.fieldErrors ?? {})
+// What is left for this page to say is what the panel does not carry.
+const refusalSaidHere = computed(() =>
+  error.value && !panelSaysRefusal(state.value)
+    ? t(workflowErrorKey(error.value))
+    : undefined
+)
 const statusLabel = computed(() => {
   if (cancelRequested.value && busy.value)
     return t('workshop.workflow.cancelling')
@@ -251,8 +258,12 @@ function start() {
           >
             {{ t('workshop.workflow.paused') }}
           </p>
-          <p v-if="error" role="alert" class="text-sm text-primary-comfy-red">
-            {{ t(workflowErrorKey(error)) }}
+          <p
+            v-if="refusalSaidHere"
+            role="alert"
+            class="text-sm text-primary-comfy-red"
+          >
+            {{ refusalSaidHere }}
           </p>
           <WorkflowRunControls
             :state="state"
