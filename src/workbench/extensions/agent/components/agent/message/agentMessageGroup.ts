@@ -21,17 +21,18 @@ type InterruptingPart = Exclude<MessagePart, TextPart | ActivityPart>
 
 /**
  * Consecutive text parts separated only by tool calls or thinking steps
- * collapse into one text group so their assets render in a single grid.
- * Every activity part folds into one trace group placed where the first one
- * occurs; anything user-facing (tab link, run approval, paywall, notice)
- * closes the open text group.
+ * collapse into one text group, so MarkdownStream renders their joined text
+ * as a single flowing reply: standalone assets that end up adjacent in that
+ * joined text (no prose between them) still coalesce into one grid, exactly
+ * as they would within a single text part. Every activity part folds into
+ * one trace group placed where the first one occurs; anything user-facing
+ * (tab link, run approval, paywall, notice) closes the open text group.
  */
 export function groupMessageParts(
-  parts: readonly MessagePart[],
-  hasActivity: boolean
+  parts: readonly MessagePart[]
 ): AgentMessageGroup[] {
   const out: AgentMessageGroup[] = []
-  let tracePlaced = !hasActivity
+  let tracePlaced = false
   let openTextGroup: TextGroup | null = null
   for (const part of parts) {
     if (part.type === 'tool' || part.type === 'thinking') {

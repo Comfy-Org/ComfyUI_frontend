@@ -48,9 +48,7 @@ const activityParts = computed<readonly ActivityPart[]>(() =>
   )
 )
 
-const groups = computed<Group[]>(() =>
-  groupMessageParts(message.parts, activityParts.value.length > 0)
-)
+const groups = computed<Group[]>(() => groupMessageParts(message.parts))
 
 const markdown = computed(() =>
   message.parts

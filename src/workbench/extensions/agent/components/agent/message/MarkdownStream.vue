@@ -22,10 +22,8 @@ import {
 import CodeBlock from './CodeBlock.vue'
 import ReplyAssetGroup from './ReplyAssetGroup.vue'
 
-const { text, aggregateAssets = false } = defineProps<{
+const { text } = defineProps<{
   text: string
-  /** Collect every asset into one trailing group instead of placing each where it appears. */
-  aggregateAssets?: boolean
 }>()
 const apiBaseUrl = new URL(api.apiURL(''), window.location.origin).href
 const normalizedBase = apiBaseUrl.replace(/\/+$/, '')
@@ -58,7 +56,6 @@ function pushAssets(out: Segment[], assets: ReplyAsset[]): void {
 const segments = computed<Segment[]>(() => {
   const out: Segment[] = []
   let prose = ''
-  const aggregated: ReplyAsset[] = []
   const flushProse = () => {
     if (!prose) return
     out.push({
@@ -86,15 +83,10 @@ const segments = computed<Segment[]>(() => {
       ...asset,
       url: resolveMarkdownUrl(asset.url, normalizedBase)
     }))
-    if (aggregateAssets) {
-      aggregated.push(...resolved)
-      continue
-    }
     flushProse()
     pushAssets(out, resolved)
   }
   flushProse()
-  if (aggregated.length) out.push({ type: 'assets', assets: aggregated })
   return out
 })
 

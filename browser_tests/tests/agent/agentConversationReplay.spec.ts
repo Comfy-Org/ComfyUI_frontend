@@ -47,22 +47,22 @@ test.describe(
 
     // PM-1135 / PM-1313: agentEventTransport.ts closes the open TextPart
     // (closeOpenText) on every agent_thinking / agent_tool_call /
-    // agent_active_tab / agent_ask event, so a batch of assets separated by any
-    // of those lands as N separate one-asset TextParts. AgentMessage.vue's
-    // `groups` computed now folds those TextParts back together (only a
+    // agent_active_tab / agent_ask event, so a batch of assets separated by
+    // any of those lands as N separate one-asset TextParts. AgentMessage.vue's
+    // `groups` computed folds those TextParts back together (only a
     // user-facing interruption — a tab link, a run approval, a paywall, a
-    // notice — starts a new text group), and MarkdownStream aggregates every
-    // asset in a merged group into one trailing grid regardless of the prose
-    // between them, so the two assets render through one ReplyAssetGroup
-    // instead of one each. This replays a turn shaped exactly like that (two
-    // generate_image tool calls, one per asset, each with its own caption)
-    // through the real chat panel and checks the two assets land in a single
-    // grid, not two stacked single-item ones.
+    // notice — starts a new text group) so they render through one
+    // MarkdownStream. Each caption still prevents its own asset from
+    // coalescing with the next one, exactly as it would within a single
+    // TextPart, so the reply keeps its original order and each caption stays
+    // paired with its own asset. This replays a turn shaped exactly like that
+    // (two generate_image tool calls, one per asset, each with its own
+    // caption) through the real chat panel.
     test.describe(`recorded ${ASSET_GRID_CASE}`, () => {
       test.use({ conversationCase: ASSET_GRID_CASE })
 
       test(
-        'PM-1135: a batch reply renders every generated asset in one grid, even when a tool call splits it across two message deltas, see linear.app/comfyorg/issue/PM-1135',
+        'PM-1135: a captioned batch reply keeps each caption paired with its own asset, even when a tool call splits it across two message deltas, see linear.app/comfyorg/issue/PM-1135',
         { tag: ['@screenshot'] },
         async ({ agentConversation, page }) => {
           test.setTimeout(90_000)
@@ -84,24 +84,15 @@ test.describe(
           })
           await expect(images).toHaveCount(2)
 
-          // Visual proof of the fix: the two assets now land in a single grid
-          // instead of separate fullwidth blocks stacked in one column.
+          // Visual proof of the fix: "Version A:" stays directly above its
+          // own render, and "Version B:" stays directly above its own render,
+          // instead of both captions floating above a merged gallery.
           // The "Worked for N seconds" summary is wall-clock and drifts under
           // SLOW_MO, so it is masked out.
           await expect(agentConversation.panel).toHaveScreenshot(
             'asset-grid-fragmentation.png',
             { mask: [agentConversation.summaries] }
           )
-
-          // Both assets should land inside the SAME grid container.
-          const gridCount = await agentConversation.panel.evaluate((panel) => {
-            const imgs = [...panel.querySelectorAll('img[alt^="render_"]')]
-            const grids = new Set(
-              imgs.map((img) => img.closest('[class*="grid-cols-"]'))
-            )
-            return grids.size
-          })
-          expect(gridCount).toBe(1)
         }
       )
     })

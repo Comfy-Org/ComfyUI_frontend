@@ -33,7 +33,6 @@ const emit = defineEmits<{
   <MarkdownStream
     v-if="group.kind === 'text'"
     :text="group.parts.map((part) => part.text).join('\n\n')"
-    :aggregate-assets="group.parts.length > 1"
   />
   <template v-else-if="group.kind === 'trace'">
     <ActivityTrace v-if="streaming" :parts="activityParts" live />
