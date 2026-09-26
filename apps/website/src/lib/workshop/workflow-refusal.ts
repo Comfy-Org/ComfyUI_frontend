@@ -40,11 +40,18 @@ const REFUSALS = new Map<string, RunFailure>([
 ])
 
 /**
- * Whether the output panel is the one saying this refusal. The page then keeps
+ * Whether the output panel is the one saying this failure. The page then keeps
  * quiet beside the form rather than handing the reader the same thing twice —
  * and twice in different words wherever the two vocabularies disagree.
+ *
+ * A run Cloud reports as failed is always the panel's: it stands that up as a
+ * provider failure regardless of what the page made of the request. Only a
+ * request Cloud turned down depends on whether the panel has words for the
+ * code.
  */
 export function panelSaysRefusal(state: WorkflowState): boolean {
+  if ('observation' in state && state.observation?.run.state === 'failed')
+    return true
   return (
     state.phase === 'failed' && workflowRunFailure(state.error) !== undefined
   )
