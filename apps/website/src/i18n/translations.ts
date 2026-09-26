@@ -9834,9 +9834,30 @@ Enterprise`
   'workshop.empty.clear': { en: 'Clear filters', 'zh-CN': '清除筛选' },
 
   // Workshop – model detail
-  'workshop.model.meta.description': {
-    en: 'Run {name} in your browser, then call it from your code.',
-    'zh-CN': '在浏览器中运行 {name}，然后从代码中调用它。'
+  'workshop.model.meta.byProvider': {
+    en: '{name} by {provider}',
+    'zh-CN': '{name}（{provider}）'
+  },
+  'workshop.model.meta.lead': {
+    en: '{who}: {summary}',
+    'zh-CN': '{who}：{summary}'
+  },
+  'workshop.model.meta.leadNoSummary': { en: '{who}.', 'zh-CN': '{who}。' },
+  'workshop.model.meta.cta': {
+    en: 'Run it in your browser or call it via API.',
+    'zh-CN': '在浏览器中运行，或通过 API 调用。'
+  },
+  'workshop.model.meta.ctaShort': {
+    en: 'Run it in your browser or via API.',
+    'zh-CN': '可在浏览器或 API 中运行。'
+  },
+  'workshop.model.meta.price': {
+    en: 'Typical cost: {amount} per {unit}.',
+    'zh-CN': '默认设置下约 {amount}/{unit}。'
+  },
+  'workshop.model.meta.priceNoUnit': {
+    en: 'Typical cost: {amount}.',
+    'zh-CN': '默认设置下约 {amount}。'
   },
   'workshop.model.tabs.playground': { en: 'Playground', 'zh-CN': 'Playground' },
   'workshop.model.tabs.api': { en: 'API', 'zh-CN': 'API' },
