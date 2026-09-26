@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ArrowLeftRight, Check } from '@lucide/vue'
-import { useEventListener } from '@vueuse/core'
-import { ref, useTemplateRef, watch } from 'vue'
+import { useResizeObserver } from '@vueuse/core'
+import { ref, shallowRef, useTemplateRef, watch } from 'vue'
 import {
   DropdownMenuItem,
   DropdownMenuPortal,
@@ -51,17 +51,21 @@ const GAP = 12
 const trigger = useTemplateRef<{ $el: HTMLElement }>('trigger')
 const sideOffset = ref(GAP)
 
+const panel = shallowRef<HTMLElement>()
+
 // The switcher is a button inside the menu, so a submenu placed beside it lands
-// on top of the menu. It is offset to the menu's own left edge instead, and
-// measured each time the list opens, since the menu has a maximum width the
-// viewport constrains and its left edge moves when the window does.
+// on top of the menu. It is offset to the menu's own left edge instead. The
+// menu has a maximum width the viewport constrains, so that edge moves on its
+// own: watching the panel rather than the window measures it after the new
+// width is in the layout, which a resize listener would race.
 function measure() {
   const el = trigger.value?.$el
   if (!el) return
-  const panel = el.closest('[data-testid="header-account-menu"]')
+  panel.value =
+    el.closest<HTMLElement>('[data-testid="header-account-menu"]') ?? undefined
   sideOffset.value = submenuOffset(
     el.getBoundingClientRect(),
-    panel?.getBoundingClientRect(),
+    panel.value?.getBoundingClientRect(),
     GAP
   )
 }
@@ -69,11 +73,7 @@ function measure() {
 watch(open, (isOpen) => {
   if (isOpen) measure()
 })
-useEventListener(
-  () => (open.value ? globalThis.window : undefined),
-  'resize',
-  measure
-)
+useResizeObserver(() => (open.value ? panel.value : undefined), measure)
 
 const itemClass =
   'flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-3 text-sm text-primary-comfy-canvas outline-none hover:bg-transparency-white-t4 focus-visible:bg-transparency-white-t4'
