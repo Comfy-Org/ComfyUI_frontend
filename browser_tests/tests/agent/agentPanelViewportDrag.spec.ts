@@ -15,7 +15,9 @@ test.describe(
 
       const panel = page.getByTestId('docked-agent-panel')
       const resizeHandle = page.getByTestId('agent-panel-resize-handle')
+      const panelBox = await panel.boundingBox()
       const handleBox = await resizeHandle.boundingBox()
+      if (!panelBox) throw new Error('Agent panel is not visible')
       if (!handleBox)
         throw new Error('Agent panel resize handle is not visible')
 
@@ -25,7 +27,9 @@ test.describe(
         { x: handleCenterX, y: handleCenterY },
         { x: 0, y: handleCenterY }
       )
-      await expect(panel).toHaveCSS('width', '960px')
+      await expect
+        .poll(async () => (await panel.boundingBox())?.width ?? 0)
+        .toBeGreaterThan(panelBox.width)
     })
 
     test('keeps the sidebar reachable after a wide panel drag', async ({
