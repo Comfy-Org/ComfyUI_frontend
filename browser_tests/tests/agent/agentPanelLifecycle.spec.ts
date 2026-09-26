@@ -105,6 +105,7 @@ test.describe(
     test('keeps the dock within the viewport and its documented width cap', async ({
       page
     }) => {
+      await page.setViewportSize({ width: 700, height: 800 })
       await bootAgentApp(page, true)
 
       await page
@@ -125,6 +126,24 @@ test.describe(
       expect(box!.width).toBeLessThanOrEqual(420)
       expect(box!.x).toBeGreaterThanOrEqual(-1)
       expect(box!.x + box!.width).toBeLessThanOrEqual(viewport!.width + 1)
+
+      await panel
+        .getByRole('button', { name: enMessages.agent.maximize })
+        .click()
+      await expect(
+        panel.getByRole('button', { name: enMessages.agent.minimize })
+      ).toBeVisible()
+      await expect
+        .poll(async () => {
+          const maximizedBox = await panel.boundingBox()
+          return (
+            maximizedBox !== null &&
+            maximizedBox.width > 420 &&
+            maximizedBox.x >= -1 &&
+            maximizedBox.x + maximizedBox.width <= 701
+          )
+        })
+        .toBe(true)
       await expect(page.getByTestId('integrated-tab-bar-actions')).toBeVisible()
     })
 
