@@ -1,4 +1,5 @@
 import { toString } from 'es-toolkit/compat'
+import { getActivePinia } from 'pinia'
 import { shallowRef, toRaw } from 'vue'
 
 import { assert } from '@/base/assert'
@@ -38,6 +39,7 @@ import type { LinkPresentation } from '@/types/linkPresentation'
 import { useLinkStore } from '@/stores/linkStore'
 import type { EndpointUpdate } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
+import { useNodeImageStore } from '@/stores/nodeImageStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -1422,6 +1424,13 @@ export class LGraph
     attachNodeToStores(this, node, () =>
       mintNodeId(state, nodeIdMintModeFor(this))
     )
+
+    // Install property projection so node.imgs, node.imageIndex, etc.
+    // delegate to the centralized NodeImageStore.
+    // Guarded because Pinia may not be initialized in unit tests.
+    if (getActivePinia()) {
+      useNodeImageStore().installPropertyProjection(node)
+    }
 
     this._nodes.push(node)
     this._nodes_by_id[node.id] = node
