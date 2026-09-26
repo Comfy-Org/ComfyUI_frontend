@@ -7301,13 +7301,25 @@ export type ExchangeTokenData = {
 
 export type ExchangeTokenErrors = {
   /**
-   * Invalid or expired Firebase JWT
+   * A session request, or with `web_session_enabled` on any request, whose `X-Comfy-Workspace-ID` or `workspace_id` query value is malformed, or names another workspace than the body (the personal workspace when the body names none). `code` is `workspace_id_invalid`.
+   */
+  400: ErrorResponse
+  /**
+   * Invalid or expired Firebase JWT, or no live web session. Refused credentials get a body with only `message`, no `code`. A session that ends within seconds gets `code` `session_expired`: a token minted from it would expire on arrival.
    */
   401: ErrorResponse
+  /**
+   * A refused web session request. `code` is `origin_not_allowed`, `cross_site_request` or `csrf_invalid` (see the `WebSessionAuth` scheme). While `web_session_enabled` is off for the user, and for a credential this route does not take, the body is instead `{"error": {"message", "type": "auth_type_not_allowed"}, "accepted": [...]}`.
+   */
+  403: ErrorResponse
   /**
    * Workspace not found or user not a member
    */
   404: ErrorResponse
+  /**
+   * The user minted 240 tokens from the session this hour. `code` is `rate_limited`, in lower case like the session codes.
+   */
+  429: ErrorResponse
   /**
    * Internal server error
    */
