@@ -56,6 +56,17 @@ describe('CDP performance task accounting', () => {
     expect(result.missingCdpMetrics).toEqual(['TaskOtherDuration'])
   })
 
+  it('does not invent a category the opening snapshot omitted', () => {
+    const opening = new Map(before)
+    opening.delete('V8CompileDuration')
+
+    const result = computeCdpTaskAccounting(opening, before)
+    expect(result.v8CompileDurationMs).toBeNull()
+    expect(result.accountedTaskDurationMs).toBeNull()
+    expect(result.taskAccountingResidualMs).toBeNull()
+    expect(result.missingCdpMetrics).toEqual(['V8CompileDuration'])
+  })
+
   it('rejects reset counters instead of reporting negative durations', () => {
     const after = new Map(before)
     after.set('TaskOtherDuration', 0)
