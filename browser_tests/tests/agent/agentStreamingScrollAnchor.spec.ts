@@ -22,8 +22,6 @@ function pushDelta(socket: WebSocketRoute, delta: string): void {
   socket.send(JSON.stringify(event))
 }
 
-// Matrix rank 81 / notion-11. Green regression guard: streaming follows a
-// reply only while the reader remains at the bottom of the conversation.
 test.describe(
   'Agent streaming scroll anchor',
   { tag: ['@cloud', '@ui'] },
