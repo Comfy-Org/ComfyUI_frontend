@@ -225,6 +225,7 @@ export function createUnifiedBillingSession(deps: UnifiedBillingSessionDeps) {
   return {
     fetchImpl: deps.fetchImpl,
     settledPhase,
+    livePhase: computed(settledOf),
     resolveWorkspace,
     scopeSource,
     webSession,

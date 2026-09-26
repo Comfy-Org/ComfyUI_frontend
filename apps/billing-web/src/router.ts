@@ -27,7 +27,7 @@ import SubscriptionView from '@/views/SubscriptionView.vue'
 /** The app's own front door, outside the entry contract: it names no product. */
 const APP_ENTRY_PATH = '/'
 
-const SIGN_IN_PATH = '/sign-in'
+export const SIGN_IN_PATH = '/sign-in'
 
 const INTENT_VIEWS: Record<BillingIntent, Component> = {
   pricing: SubscriptionView,

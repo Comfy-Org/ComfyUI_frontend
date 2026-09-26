@@ -1,4 +1,6 @@
 import { computed, ref } from 'vue'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { useDialogStore } from '@/stores/dialogStore'
 /**
  * showTopUpCreditsDialog routes the paired server capabilities to purchase,
@@ -8,13 +10,7 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 
-const state = vi.hoisted(() => ({
-  type: 'workspace' as 'workspace' | 'legacy'
-}))
-
-vi.mock(import('@/i18n'), () => ({
-  t: (key: string) => key
-}))
+vi.mock(import('@/i18n'))
 
 vi.mock(import('@/platform/telemetry'))
 
@@ -25,28 +21,21 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    type: { value: state.type }
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
-const showSubscriptionDialog = vi.hoisted(() => vi.fn())
-
-vi.mock<unknown>(
-  import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
-  () => ({
-    useSubscriptionDialog: () => ({ show: showSubscriptionDialog })
-  })
+vi.mock(
+  import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
 )
 
 import { useDialogService } from '@/services/dialogService'
 
 describe('showTopUpCreditsDialog', () => {
   beforeEach(() => {
-    state.type = 'workspace'
+    const billing = useBillingContext()
+    billing.type = computed(() => 'workspace')
+    vi.mocked(useBillingContext).mockReturnValue(billing)
 
     mockIsCloud.value = true
   })
@@ -58,9 +47,7 @@ describe('showTopUpCreditsDialog', () => {
 
     const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
     expect(args.key).toBe('top-up-credits')
-    expect(
-      vi.mocked(useBillingCapabilities().initialize)
-    ).not.toHaveBeenCalled()
+    expect(useBillingCapabilities().initialize).not.toHaveBeenCalled()
   })
 
   it('shows the contact-admin notice to team members instead of the purchase dialog', async () => {
@@ -80,13 +67,13 @@ describe('showTopUpCreditsDialog', () => {
     const props = args.props
     assert(props && 'onClose' in props && typeof props.onClose === 'function')
     props.onClose()
-    expect(vi.mocked(useDialogStore().closeDialog)).toHaveBeenCalledWith({
+    expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
       key: 'insufficient-credits-member'
     })
   })
 
   it('uses the server capability on legacy billing', async () => {
-    state.type = 'legacy'
+    useBillingContext().type = computed(() => 'legacy')
 
     await useDialogService().showTopUpCreditsDialog()
 
@@ -95,13 +82,13 @@ describe('showTopUpCreditsDialog', () => {
   })
 
   it('does not show workspace-admin copy for denied legacy billing', async () => {
-    state.type = 'legacy'
+    useBillingContext().type = computed(() => 'legacy')
     useBillingCapabilities().canTopUp = computed(() => false)
 
     await useDialogService().showTopUpCreditsDialog()
 
-    expect(vi.mocked(useDialogStore().showDialog)).not.toHaveBeenCalled()
-    expect(showSubscriptionDialog).not.toHaveBeenCalled()
+    expect(useDialogStore().showDialog).not.toHaveBeenCalled()
+    expect(useSubscriptionDialog().show).not.toHaveBeenCalled()
   })
 
   it('awaits an in-flight capability read instead of dropping the request', async () => {
@@ -120,9 +107,7 @@ describe('showTopUpCreditsDialog', () => {
       isInsufficientCredits: true
     })
 
-    expect(
-      vi.mocked(useBillingCapabilities().initialize)
-    ).toHaveBeenCalledOnce()
+    expect(useBillingCapabilities().initialize).toHaveBeenCalledOnce()
     const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
     expect(args.key).toBe('top-up-credits')
   })
@@ -133,11 +118,9 @@ describe('showTopUpCreditsDialog', () => {
 
     await useDialogService().showTopUpCreditsDialog()
 
-    expect(
-      vi.mocked(useBillingCapabilities().initialize)
-    ).toHaveBeenCalledOnce()
-    expect(vi.mocked(useDialogStore().showDialog)).not.toHaveBeenCalled()
-    expect(showSubscriptionDialog).not.toHaveBeenCalled()
+    expect(useBillingCapabilities().initialize).toHaveBeenCalledOnce()
+    expect(useDialogStore().showDialog).not.toHaveBeenCalled()
+    expect(useSubscriptionDialog().show).not.toHaveBeenCalled()
   })
 
   it('routes self-serve subscribers to the subscription-required flow', async () => {
@@ -146,10 +129,10 @@ describe('showTopUpCreditsDialog', () => {
 
     await useDialogService().showTopUpCreditsDialog()
 
-    expect(showSubscriptionDialog).toHaveBeenCalledWith({
+    expect(useSubscriptionDialog().show).toHaveBeenCalledWith({
       reason: 'top_up_blocked'
     })
-    expect(vi.mocked(useDialogStore().showDialog)).not.toHaveBeenCalled()
+    expect(useDialogStore().showDialog).not.toHaveBeenCalled()
   })
 
   it('keeps the insufficient-credits copy and still attributes the surface', async () => {
@@ -161,7 +144,7 @@ describe('showTopUpCreditsDialog', () => {
       source: 'agent_paywall'
     })
 
-    expect(showSubscriptionDialog).toHaveBeenCalledWith({
+    expect(useSubscriptionDialog().show).toHaveBeenCalledWith({
       reason: 'out_of_credits',
       paymentIntentSource: 'agent_paywall'
     })
@@ -175,7 +158,7 @@ describe('showTopUpCreditsDialog', () => {
       source: 'agent_paywall'
     })
 
-    expect(showSubscriptionDialog).toHaveBeenCalledWith({
+    expect(useSubscriptionDialog().show).toHaveBeenCalledWith({
       reason: 'agent_paywall',
       paymentIntentSource: 'agent_paywall'
     })
@@ -195,7 +178,7 @@ describe('showTopUpCreditsDialog', () => {
   })
 
   it('withholds the surface from the legacy rail content', async () => {
-    state.type = 'legacy'
+    useBillingContext().type = computed(() => 'legacy')
 
     await useDialogService().showTopUpCreditsDialog({
       isInsufficientCredits: true,
@@ -209,13 +192,13 @@ describe('showTopUpCreditsDialog', () => {
   describe('non-cloud distribution', () => {
     beforeEach(() => {
       mockIsCloud.value = false
-      state.type = 'legacy'
+      useBillingContext().type = computed(() => 'legacy')
     })
 
     it('opens the purchase dialog when the capability endpoint defaults open', async () => {
       await useDialogService().showTopUpCreditsDialog()
 
-      expect(showSubscriptionDialog).not.toHaveBeenCalled()
+      expect(useSubscriptionDialog().show).not.toHaveBeenCalled()
       const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
       expect(args.key).toBe('top-up-credits')
     })

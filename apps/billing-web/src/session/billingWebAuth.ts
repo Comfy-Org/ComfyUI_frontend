@@ -95,15 +95,28 @@ export function onBillingWebEntryWorkspace(workspaceId: string): void {
   void billingWebSessionClient().ensureFresh(undefined, { workspaceId })
 }
 
-let sessionClientScope: ComputedRef<BilledScope | undefined> | undefined
+let sessionClient: ReturnType<typeof useBillingWebSession> | undefined
+
+function sessionClientState(): ReturnType<typeof useBillingWebSession> {
+  sessionClient ??= useBillingWebSession()
+  return sessionClient
+}
 
 /** Undefined until the mode is decided; `App` keys the billing shell by it. */
 export const billedScope = computed<BilledScope | undefined>(() => {
   if (mode.value === 'web-session') return unifiedSession().billedScope.value
   if (mode.value === undefined) return undefined
-  sessionClientScope ??= useBillingWebSession().session
-  return sessionClientScope.value
+  return sessionClientState().session.value
 })
+
+/** The decided side's phase, for refusals that land after the page rendered. */
+export const billingWebLivePhase = computed<BillingWebSessionPhase | undefined>(
+  () => {
+    if (mode.value === 'web-session') return unifiedSession().livePhase.value
+    if (mode.value === undefined) return undefined
+    return sessionClientState().phase.value
+  }
+)
 
 /** For views inside the billing shell, which only mounts once decided. */
 export function useBilledScope(): ComputedRef<BilledScope | undefined> {
