@@ -3,6 +3,7 @@ import { useEventListener } from '@vueuse/core'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
+import { useDialogStore } from '@/stores/dialogStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import {
   createNode,
@@ -11,6 +12,7 @@ import {
   isSelectOnly,
   isVideoNode
 } from '@/utils/litegraphUtil'
+import { isModalOpen } from '@/utils/modalUtil'
 import { shouldIgnoreCopyPaste } from '@/workbench/eventHelpers'
 
 export function cloneDataTransfer(original: DataTransfer): DataTransfer {
@@ -197,12 +199,14 @@ export async function pasteVideoNodes(
 export const usePaste = () => {
   const workspaceStore = useWorkspaceStore()
   const canvasStore = useCanvasStore()
+  const dialogStore = useDialogStore()
 
   useEventListener(document, 'paste', async (e) => {
     if (shouldIgnoreCopyPaste(e.target)) {
       // Default system copy
       return
     }
+    if (isModalOpen(dialogStore.dialogStack.length)) return
     // ctrl+shift+v is used to paste nodes with connections
     // this is handled by litegraph
     if (workspaceStore.shiftDown) return

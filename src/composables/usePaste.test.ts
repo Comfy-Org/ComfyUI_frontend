@@ -1,4 +1,6 @@
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useDialogStore } from '@/stores/dialogStore'
+import type { DialogInstance } from '@/stores/dialogStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import {
   afterEach,
@@ -9,7 +11,7 @@ import {
   onTestFinished,
   vi
 } from 'vitest'
-import { effectScope } from 'vue'
+import { effectScope, markRaw } from 'vue'
 import type { EffectScope } from 'vue'
 import type {
   LGraphCanvas,
@@ -381,6 +383,21 @@ describe('pasteVideoNodes', () => {
   })
 })
 
+function createTestDialogInstance(
+  key: string,
+  overrides: Partial<DialogInstance> = {}
+): DialogInstance {
+  return {
+    key,
+    visible: true,
+    component: markRaw({ template: '<div />' }),
+    contentProps: {},
+    dialogComponentProps: {},
+    priority: 0,
+    ...overrides
+  }
+}
+
 describe('usePaste', () => {
   beforeEach(() => {
     mockCanvas.current_node = null
@@ -662,6 +679,72 @@ describe('usePaste', () => {
       expect(mockCanvas.pasteFromClipboard).toHaveBeenCalled()
     })
   })
+
+  it.for([
+    {
+      clipboard: 'node metadata HTML',
+      collaborator: '_deserializeItems',
+      createClipboard: () => {
+        const dataTransfer = new DataTransfer()
+        dataTransfer.setData(
+          'text/html',
+          `<div data-metadata="${btoa(JSON.stringify({ nodes: [] }))}"></div>`
+        )
+        return dataTransfer
+      }
+    },
+    {
+      clipboard: 'unrecognised node JSON',
+      collaborator: 'pasteFromClipboard',
+      createClipboard: () => {
+        const dataTransfer = new DataTransfer()
+        dataTransfer.setData('text/plain', '{}')
+        return dataTransfer
+      }
+    },
+    {
+      clipboard: 'a workflow',
+      collaborator: 'loadGraphData',
+      createClipboard: () => {
+        const dataTransfer = new DataTransfer()
+        dataTransfer.setData(
+          'text/plain',
+          JSON.stringify({ version: '1.0', nodes: [], extra: {} })
+        )
+        return dataTransfer
+      }
+    },
+    {
+      clipboard: 'an image',
+      collaborator: 'createNode',
+      createClipboard: () => createDataTransfer([createImageFile()])
+    }
+  ] as const)(
+    'ignores $clipboard paste while a modal dialog is open',
+    ({ collaborator, createClipboard }) => {
+      const dialogStore = useDialogStore()
+      dialogStore.dialogStack.push(
+        createTestDialogInstance('global-mask-editor')
+      )
+      onTestFinished(() => {
+        dialogStore.dialogStack.length = 0
+      })
+
+      const collaborators = {
+        _deserializeItems: mockCanvas._deserializeItems,
+        pasteFromClipboard: mockCanvas.pasteFromClipboard,
+        loadGraphData: app.loadGraphData,
+        createNode
+      }
+      usePaste()
+
+      document.dispatchEvent(
+        new ClipboardEvent('paste', { clipboardData: createClipboard() })
+      )
+
+      expect(collaborators[collaborator]).not.toHaveBeenCalled()
+    }
+  )
 })
 
 describe('cloneDataTransfer', () => {
