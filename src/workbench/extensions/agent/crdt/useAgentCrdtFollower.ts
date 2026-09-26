@@ -485,6 +485,26 @@ function startAgentCrdtFollower(
     lastFrameType.value = event.type
     recordDevEvent('doc_ops_result', event.detail ?? null)
   }
+  // A third-party onRemoved() hook must not cost the rest of the reset.
+  const clearForResetOrReport = (
+    workflowId: string,
+    context: RemoteMutationContext
+  ): void => {
+    try {
+      projection.clearForReset(workflowId, context)
+    } catch (error) {
+      reportError(error, {
+        errorType: 'agent_doc_reset_reconcile_failed',
+        tags: {
+          failure_kind: 'caught_unexpected',
+          feature_area: 'agent',
+          operation: 'sync',
+          outcome: 'recovered'
+        },
+        level: 'error'
+      })
+    }
+  }
   const onDocReset: EventListener = (event) => {
     const detail =
       event instanceof CustomEvent
@@ -501,7 +521,7 @@ function startAgentCrdtFollower(
       actor: detail.actor ?? 'agent-reset',
       opId: `doc-reset:${detail.seq ?? 'unknown'}`
     }
-    projection.clearForReset(detail.workflowId, context)
+    clearForResetOrReport(detail.workflowId, context)
     sender.abortAll()
     events.onReset?.(detail.workflowId)
     connected.value = false

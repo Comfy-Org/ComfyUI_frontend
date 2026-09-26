@@ -1523,7 +1523,9 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  function mountWithHumanOps(): {
+  function mountWithHumanOps(
+    getGraph: () => MaterializableGraph | null = () => null
+  ): {
     enqueue: ReturnType<typeof useAgentCrdtFollower>['enqueueHumanOperations']
     workflowId: Ref<string | null>
     unmount: () => void
@@ -1536,7 +1538,10 @@ describe('useAgentCrdtFollower', () => {
       setup() {
         const { enqueueHumanOperations } = useAgentCrdtFollower(
           workflowId,
-          graphMutations
+          graphMutations,
+          () => null,
+          ref(true),
+          getGraph
         )
         enqueue = enqueueHumanOperations
         return () => null
@@ -1598,6 +1603,44 @@ describe('useAgentCrdtFollower', () => {
 
     expect(clientState.sendOps).not.toHaveBeenCalled()
     expect(await settledHumanOpStates()).toEqual(['undeliverable'])
+    unmount()
+  })
+
+  it('a doc_reset whose orphan sweep throws still settles the sent human batch and finishes the reset', async () => {
+    const { recordDevEvent } = await import('./devPanelLog')
+    const graph = {
+      rootGraph: { subgraphs: new Map() },
+      setDirtyCanvas: vi.fn()
+    } as unknown as MaterializableGraph
+    const { enqueue, unmount } = mountWithHumanOps(() => graph)
+    enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    await Promise.resolve()
+    expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+    // A rejecting onRemoved() hook re-runs on every sweep: not one-shot.
+    materializerState.reconcileAgentAdapters.mockImplementation(() => {
+      throw new Error('onRemoved threw')
+    })
+
+    dispatchFrame('doc_reset', { workflowId: 'wf-1', seq: 9, actor: 'agent:x' })
+
+    expect(await settledHumanOpStates()).toEqual(['unconfirmed'])
+    // The handler's last statement: reaching it proves the reset ran to the end.
+    expect(
+      vi.mocked(recordDevEvent).mock.calls.map(([kind]) => kind)
+    ).toContain('doc_reset')
+    expect(telemetryState.reportError).toHaveBeenCalledExactlyOnceWith(
+      expect.any(Error),
+      {
+        errorType: 'agent_doc_reset_reconcile_failed',
+        level: 'error',
+        tags: {
+          failure_kind: 'caught_unexpected',
+          feature_area: 'agent',
+          operation: 'sync',
+          outcome: 'recovered'
+        }
+      }
+    )
     unmount()
   })
 
