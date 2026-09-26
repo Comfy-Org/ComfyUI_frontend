@@ -1,12 +1,14 @@
 import { useCommandStore } from '@/stores/commandStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { whenever } from '@vueuse/core'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createApp, defineComponent, nextTick } from 'vue'
+import { computed, createApp, defineComponent, nextTick, ref, watch } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
+import type { AuthUserInfo } from '@/types/authTypes'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { StorageKeys } from '../base/storageKeys'
 import * as storageIO from '../base/storageIO'
@@ -200,6 +202,44 @@ describe('useWorkflowPersistenceV2', () => {
       container.remove()
     }
   })
+
+  /**
+   * What `useAuthActions.logout` runs synchronously on a cloud sign-out,
+   * before it navigates. The persistence composable deliberately does not
+   * mirror this off the observed auth state — another window's Firebase
+   * persistence write makes this window observe a user drop it never caused —
+   * so the fence-and-clear tests drive the command site directly.
+   */
+  function signOutCleanup(): void {
+    storageIO.prepareWorkflowLogoutTransition()
+    storageIO.clearAllWorkspaceStorage()
+  }
+
+  /**
+   * Replaces the bare auth mocks with the observed user as a value the test can
+   * move, and reproduces `useCurrentUser`'s real watch semantics over it.
+   *
+   * Reaching for `onUserLogout.mock.calls` instead cannot express the
+   * foreign-window case at all: the composable no longer registers that
+   * callback, so the calls array is empty and a loop over it is a silent no-op.
+   * Driving the value means the assertions below run the wiring that actually
+   * exists — and would run a logout observer too, if one were ever wired back.
+   */
+  function installObservedAuthState(initialUser: AuthUserInfo | null) {
+    const observedUser = ref<AuthUserInfo | null>(initialUser)
+    Object.assign(vi.mocked(useCurrentUser)(), {
+      resolvedUserInfo: computed(() => observedUser.value),
+      onUserResolved: vi.fn((callback: (user: AuthUserInfo) => void) =>
+        whenever(observedUser, callback, { immediate: true })
+      ),
+      onUserLogout: vi.fn((callback: () => void) => {
+        watch(observedUser, (user, previousUser) => {
+          if (previousUser && !user) callback()
+        })
+      })
+    })
+    return observedUser
+  }
 
   function mountWorkflowPersistence(): WorkflowPersistence {
     let persistence: WorkflowPersistence | undefined
@@ -788,16 +828,99 @@ describe('useWorkflowPersistenceV2', () => {
     cancelTransition()
   })
 
+  it('keeps drafts and persistence alive when another window changes the shared auth record', async () => {
+    distributionMocks.isCloud = true
+    sessionStorage.setItem(
+      WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE,
+      JSON.stringify({ id: 'personal', type: 'personal' })
+    )
+    const observedUser = installObservedAuthState({ id: 'user-a' })
+    const workflowStore = useWorkflowStore()
+    const workflow = await workflowStore
+      .createTemporary('ForeignWindow.json')
+      .load()
+    workflowStore.activeWorkflow = workflow
+    mountWorkflowPersistence()
+
+    mocks.state.currentGraph = { marker: 'before-foreign-auth-change' }
+    mocks.state.graphChangedHandler?.()
+    await vi.runAllTimersAsync()
+
+    const payloadKey = StorageKeys.draftPayload(workflow.path, 'personal')
+    expect(localStorage.getItem(payloadKey)).not.toBeNull()
+
+    // Firebase's browserLocalPersistence syncs auth state between windows over
+    // `storage` events, so a second window booting drops this window's observed
+    // user to null without any sign-out here. That must not be read as a logout.
+    observedUser.value = null
+    await nextTick()
+
+    // The workspace pointer is gone (authStore clears it on any auth change),
+    // which is exactly the state the old wiring turned into a wipe and a
+    // permanent write fence.
+    sessionStorage.removeItem(WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE)
+
+    expect(localStorage.getItem(payloadKey)).not.toBeNull()
+    expect(storageIO.isStorageAvailable()).toBe(true)
+
+    mocks.state.currentGraph = { marker: 'after-foreign-auth-change' }
+    mocks.state.graphChangedHandler?.()
+    await vi.runAllTimersAsync()
+
+    const payload = JSON.parse(localStorage.getItem(payloadKey)!)
+    expect(JSON.parse(payload.data)).toEqual({
+      marker: 'after-foreign-auth-change'
+    })
+    expect(mockToastAdd).not.toHaveBeenCalled()
+  })
+
+  it('abandons the queued write and the stale readiness watcher when this window signs out', async () => {
+    distributionMocks.isCloud = true
+    sessionStorage.setItem(
+      WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE,
+      JSON.stringify({ id: 'personal', type: 'personal' })
+    )
+    installObservedAuthState({ id: 'user-a' })
+    const workflowStore = useWorkflowStore()
+    const workflow = await workflowStore.createTemporary('SignOut.json').load()
+    workflowStore.activeWorkflow = workflow
+    mountWorkflowPersistence()
+
+    // A write sitting on the debounce, and — because workspace init has not
+    // concluded — a readiness watcher whose whole job is to release the fence.
+    mocks.state.currentGraph = { marker: 'queued-before-sign-out' }
+    mocks.state.graphChangedHandler?.()
+
+    const payloadKey = StorageKeys.draftPayload(workflow.path, 'personal')
+    expect(localStorage.getItem(payloadKey)).toBeNull()
+
+    signOutCleanup()
+
+    // Init concluding after the sign-out must not release the fence: the
+    // watcher that would release it belongs to the session that just left.
+    Object.assign(useTeamWorkspaceStore(), {
+      initState: 'ready',
+      activeWorkspaceId: 'personal'
+    })
+    await nextTick()
+    expect(storageIO.isStorageAvailable()).toBe(false)
+
+    // `useAuthActions.logout` navigates to /cloud/login, which fires `pagehide`.
+    window.dispatchEvent(new Event('pagehide'))
+    await vi.runAllTimersAsync()
+
+    expect(localStorage.getItem(payloadKey)).toBeNull()
+  })
+
   it('resumes workflow writes once workspace readiness is confirmed after authentication recovers', async () => {
     distributionMocks.isCloud = true
     localStorage.setItem('Comfy.Workflow.DraftIndex.v2:workspace-a', '{}')
     sessionStorage.setItem('Comfy.Workflow.ActivePath:test-client', '{}')
     mountWorkflowPersistence()
 
-    const onLogout = vi.mocked(useCurrentUser().onUserLogout).mock.calls[0][0]
     const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
       .calls[0][0]
-    onLogout()
+    signOutCleanup()
 
     expect(localStorage).toHaveLength(0)
     expect(sessionStorage).toHaveLength(0)
@@ -837,12 +960,11 @@ describe('useWorkflowPersistenceV2', () => {
     )
     mountWorkflowPersistence()
 
-    const onLogout = vi.mocked(useCurrentUser().onUserLogout).mock.calls[0][0]
     const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
       .calls[0][0]
-    onLogout()
+    signOutCleanup()
     onUserResolved({ id: 'user-b' })
-    onLogout()
+    signOutCleanup()
     onUserResolved({ id: 'user-c' })
 
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-c' })
@@ -860,10 +982,9 @@ describe('useWorkflowPersistenceV2', () => {
     )
     mountWorkflowPersistence()
 
-    const onLogout = vi.mocked(useCurrentUser().onUserLogout).mock.calls[0][0]
     const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
       .calls[0][0]
-    onLogout()
+    signOutCleanup()
     onUserResolved({ id: 'user-a' })
 
     expect(completeTransitionSpy).not.toHaveBeenCalled()
@@ -891,10 +1012,9 @@ describe('useWorkflowPersistenceV2', () => {
     mocks.state.currentGraph = { marker: 'stale-source-edit' }
     mocks.state.graphChangedHandler?.()
 
-    const onLogout = vi.mocked(useCurrentUser().onUserLogout).mock.calls[0][0]
     const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
       .calls[0][0]
-    onLogout()
+    signOutCleanup()
     onUserResolved({ id: 'user-b' })
     await vi.runAllTimersAsync()
 
