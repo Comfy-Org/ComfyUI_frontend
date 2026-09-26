@@ -2,7 +2,7 @@
 import './agentPanel.css'
 
 import type { GetFeaturesResponse } from '@comfyorg/ingest-types'
-import { useClipboard, useDebounceFn } from '@vueuse/core'
+import { useClipboard } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import {
   computed,
@@ -758,11 +758,22 @@ const isBoundWorkflowActive = computed(() => {
 // would end the run after its first, giving every later frame its own entry.
 // Debounced past the tracker's own 50 ms squash so the run closes against the
 // state that squash settled on.
+//
+// Hand-rolled rather than `useDebounceFn` because the pending call has to be
+// cancellable: a panel that closes mid-run must not reach into a tracker 100 ms
+// later. The next ordinary capture closes that run anyway.
 const CLOSE_IDLE_FRAME_RUN_MS = 100
-const closeIdleFrameRun = useDebounceFn(
-  (tracker: ChangeTracker) => tracker.closeCoalescedRun(),
-  CLOSE_IDLE_FRAME_RUN_MS
-)
+let idleFrameRunTimer: ReturnType<typeof setTimeout> | undefined
+function closeIdleFrameRun(tracker: ChangeTracker) {
+  clearTimeout(idleFrameRunTimer)
+  idleFrameRunTimer = setTimeout(() => {
+    idleFrameRunTimer = undefined
+    tracker.closeCoalescedRun()
+  }, CLOSE_IDLE_FRAME_RUN_MS)
+}
+onBeforeUnmount(() => {
+  clearTimeout(idleFrameRunTimer)
+})
 
 // The CRDT follower is the inbound content channel: subscribes to the
 // session's bound workflow while its tab is active. Suspending the background
@@ -811,7 +822,7 @@ const {
       // never settled. Pass the tracker rather than re-resolving the active
       // workflow when the timer fires, for the same reason the idle watcher
       // cannot: the user may have switched tabs in between.
-      if (status.value === 'idle') void closeIdleFrameRun(tracker)
+      if (status.value === 'idle') closeIdleFrameRun(tracker)
     },
     onReset: graphActivity.resetWorkflow
   }

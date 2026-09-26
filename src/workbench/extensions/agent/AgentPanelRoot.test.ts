@@ -2944,6 +2944,30 @@ describe('AgentPanelRoot canvas draft on remote edit', () => {
 
     expect(closeCoalescedRun).toHaveBeenCalledOnce()
   })
+
+  // A closed panel must not reach into a tracker 100 ms later. Left pending, the
+  // close outlived the panel and fired against whatever tracker came next, which
+  // in the suite meant a real `ChangeTracker` and an uncaught TypeError.
+  it('drops a pending close when the panel unmounts', async () => {
+    const closeCoalescedRun = vi.fn()
+    workflowStore.activeWorkflow = addTab('workflows/remote_edit.json', {
+      changeTracker: createMockChangeTracker({ closeCoalescedRun })
+    })
+
+    const { unmount } = renderWithSelectedTarget()
+    vi.useFakeTimers()
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+    followerEvents().onApplied?.({
+      workflowId: 'wf-1',
+      actor: 'agent:thread:turn'
+    })
+    unmount()
+    await vi.advanceTimersByTimeAsync(200)
+
+    expect(closeCoalescedRun).not.toHaveBeenCalled()
+  })
 })
 
 describe('AgentPanelRoot history', () => {
