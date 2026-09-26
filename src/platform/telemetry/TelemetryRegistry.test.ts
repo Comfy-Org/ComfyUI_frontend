@@ -511,4 +511,28 @@ describe('TelemetryRegistry', () => {
       }
     )
   })
+
+  describe('first-run screen dispatch', () => {
+    it('dispatches a first-run screen dismissal to every registered provider', () => {
+      const a: TelemetryProvider = { trackFirstRunScreenDismissed: vi.fn() }
+      const b: TelemetryProvider = { trackFirstRunScreenDismissed: vi.fn() }
+      const registry = new TelemetryRegistry()
+      registry.registerProvider(a)
+      registry.registerProvider(b)
+
+      registry.trackFirstRunScreenDismissed({
+        method: 'start_blank',
+        visible_duration_ms: 1200
+      })
+
+      for (const provider of [a, b]) {
+        expect(
+          provider.trackFirstRunScreenDismissed
+        ).toHaveBeenCalledExactlyOnceWith({
+          method: 'start_blank',
+          visible_duration_ms: 1200
+        })
+      }
+    })
+  })
 })

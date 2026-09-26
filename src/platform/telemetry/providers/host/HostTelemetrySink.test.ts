@@ -422,6 +422,15 @@ describe('HostTelemetrySink', () => {
       properties: { reason: 'tour_active' }
     },
     {
+      name: TelemetryEvents.FIRST_RUN_SCREEN_DISMISSED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackFirstRunScreenDismissed({
+          method: 'escape',
+          visible_duration_ms: null
+        }),
+      properties: { method: 'escape', visible_duration_ms: null }
+    },
+    {
       name: TelemetryEvents.AGENT_ONBOARDING_NOT_SHOWN,
       track: (sink: HostTelemetrySink) =>
         sink.trackAgentOnboardingNotShown({

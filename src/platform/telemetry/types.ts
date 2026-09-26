@@ -601,6 +601,46 @@ export interface AgentConsentNotOfferedMetadata extends Record<
 export type AgentOnboardingNotShownMetadata =
   | { reason: 'app_mode' | 'tour_active' }
   | { reason: 'target_missing'; step: number }
+/**
+ * Every way the Getting Started screen can stop being visible, by the thing
+ * that closed it. `start_blank` and `escape` are the two explicit dismissals
+ * and leave the canvas clear; `template_selected` loads a template and hands
+ * the screen straight to the first-run coachmark tour, so it closes the screen
+ * without clearing it; `user_changed` is an account switch clearing the screen
+ * out from under whoever was looking at it, which is not a user action at all.
+ *
+ * The distinction is load-bearing for anything held behind this screen: only
+ * the first two leave nothing else occupying it.
+ */
+export type FirstRunScreenDismissMethod =
+  | 'start_blank'
+  | 'escape'
+  | 'template_selected'
+  | 'user_changed'
+/**
+ * Fires once per close of the Getting Started screen — on the visible → hidden
+ * transition, not per render, so a count of these is a count of closes rather
+ * than a function of session length.
+ *
+ * This is the denominator for the agent consent card's first-run hold: a user
+ * with `agent_consent_not_offered{reason:'first_run_screen'}` and no event of
+ * this name in the same session never dismissed the screen at all, so they
+ * could not have been re-offered the card in that session. There is
+ * deliberately no matching `..._shown` event: the hold event already marks that
+ * the screen was up when the offer was withheld.
+ */
+export interface FirstRunScreenDismissedMetadata extends Record<
+  string,
+  unknown
+> {
+  method: FirstRunScreenDismissMethod
+  /**
+   * How long the screen was visible, from the moment it was shown to this
+   * close. `null` when the shown timestamp is unavailable, which should not
+   * happen for a real close and is reported rather than guessed.
+   */
+  visible_duration_ms: number | null
+}
 export interface AgentPanelClosedMetadata extends Record<string, unknown> {
   source: AgentPanelCloseSource
   open_duration_ms: number | null
@@ -1455,6 +1495,9 @@ export interface TelemetryProvider {
   trackAgentConsentNotOffered?(metadata: AgentConsentNotOfferedMetadata): void
   trackAgentOnboardingNotShown?(metadata: AgentOnboardingNotShownMetadata): void
 
+  // First-run Getting Started screen lifecycle
+  trackFirstRunScreenDismissed?(metadata: FirstRunScreenDismissedMetadata): void
+
   // Right side panel widget favorite events
   trackWidgetFavoriteToggled?(metadata: WidgetFavoriteToggledMetadata): void
 
@@ -1560,6 +1603,9 @@ export const TelemetryEvents = {
   ONBOARDING_TOUR_NUDGE_SHOWN: 'app:onboarding_tour_nudge_shown',
   ONBOARDING_TOUR_EXPLORE_TEMPLATES_CLICKED:
     'app:onboarding_tour_explore_templates_clicked',
+
+  // First-run Getting Started screen
+  FIRST_RUN_SCREEN_DISMISSED: 'app:first_run_screen_dismissed',
 
   // Email Verification
   USER_EMAIL_VERIFY_OPENED: 'app:user_email_verify_opened',

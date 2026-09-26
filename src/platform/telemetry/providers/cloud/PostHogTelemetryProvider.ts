@@ -49,6 +49,7 @@ import type {
   ExecutionErrorMetadata,
   ExecutionSuccessMetadata,
   ExecutionTriggerSource,
+  FirstRunScreenDismissedMetadata,
   ShareFlowMetadata,
   ShareLinkOpenedMetadata,
   HelpCenterClosedMetadata,
@@ -834,6 +835,12 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     metadata: AgentOnboardingNotShownMetadata
   ): void {
     this.trackEvent(TelemetryEvents.AGENT_ONBOARDING_NOT_SHOWN, metadata)
+  }
+
+  trackFirstRunScreenDismissed(
+    metadata: FirstRunScreenDismissedMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.FIRST_RUN_SCREEN_DISMISSED, metadata)
   }
 
   trackWidgetFavoriteToggled(metadata: WidgetFavoriteToggledMetadata): void {
