@@ -655,12 +655,6 @@ describe('main', () => {
   })
 })
 
-// Vitest runs these modules through Vite, so it defines __DISTRIBUTION__ for
-// them and cannot see this class of breakage. Both capture paths are documented
-// as tsx commands, and tsx is not Vite: the assembler's reach into src/ pulls
-// reportError, which reads the define at module scope. Spawn them the way the
-// README tells a human to, and require that they reach their own argument
-// check instead of dying while loading.
 describe('the documented tsx capture commands', () => {
   it.for([
     ['scripts/agentConversationFromLangfuse.ts'],
@@ -676,12 +670,10 @@ describe('the documented tsx capture commands', () => {
       })
       const output = `${result.stdout}${result.stderr}`
 
-      // A subprocess killed by the timeout, or one that never spawned, would
-      // leave the output assertions to pass on an empty string.
       expect(result.error).toBeUndefined()
       expect(result.status).toBe(1)
       expect(output).not.toMatch(/is not defined/)
-      expect(output).toContain('usage:')
+      expect(output).toContain(`usage: pnpm exec tsx ${script}`)
     }
   )
 })
