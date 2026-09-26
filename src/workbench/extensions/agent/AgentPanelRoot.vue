@@ -1445,6 +1445,11 @@ function onAttach(): void {
   fileInput.value?.click()
 }
 
+async function onAttachFiles(files: File[]): Promise<void> {
+  exitNodeSelectionMode()
+  await attachment.addFiles(files)
+}
+
 function onOpenAssets(): void {
   exitNodeSelectionMode()
   sidebarTabStore.activeSidebarTabId = 'assets'
@@ -1618,6 +1623,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       @send="onSend"
       @stop="onStop"
       @attach="onAttach"
+      @attach-files="onAttachFiles"
       @open-assets="onOpenAssets"
       @select-nodes="onSelectNodes"
       @remove-tag="onRemoveSelectionTag"

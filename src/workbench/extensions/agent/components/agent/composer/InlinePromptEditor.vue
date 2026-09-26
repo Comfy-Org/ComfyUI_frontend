@@ -22,6 +22,7 @@ import {
   composerReferenceKey,
   composerReferenceName
 } from '../../../types/composerPrompt'
+import { attachableClipboardFiles } from '../../../utils/attachableFiles'
 import { sameComposerReferenceOrder } from '../../../utils/composerPrompt'
 import {
   assetReferenceText,
@@ -64,6 +65,7 @@ const emit = defineEmits<{
   keyup: [event: KeyboardEvent]
   click: []
   blur: []
+  attachFiles: [files: File[]]
   openReferenceWorkflow: [id: string, name: string]
   removeWorkflowReference: [id: string]
   removeNodeReference: [id: string]
@@ -125,6 +127,51 @@ function referenceClipboardText(node: Node): string {
   return reference.kind === 'node'
     ? nodeReferenceText(name)
     : assetReferenceText(name)
+}
+
+function insertPastedContent(
+  editor: EditorView,
+  clipboard: DataTransfer,
+  slice: Slice,
+  text: string
+): void {
+  const { state } = editor
+  const hasWorkflows = slice.content.content.some(
+    (node) => node.type === inlinePromptSchema.nodes.workflow
+  )
+  if (!hasWorkflows) {
+    editor.dispatch(state.tr.insertText(text).scrollIntoView())
+    return
+  }
+  const usedIds = new Set([editableWorkflowId])
+  state.doc.forEach((node, position) => {
+    if (
+      node.type === inlinePromptSchema.nodes.workflow &&
+      (position < state.selection.from || position >= state.selection.to)
+    )
+      usedIds.add(node.attrs.id)
+  })
+  // The default clipboard parser collapses whitespace in inline slices.
+  const pasted = DOMParser.fromSchema(inlinePromptSchema).parseSlice(
+    DOMPurify.sanitize(clipboard.getData('text/html'), {
+      RETURN_DOM_FRAGMENT: true
+    }),
+    { preserveWhitespace: 'full' }
+  )
+  const content = pasted.content.content.map((node) => {
+    if (node.type !== inlinePromptSchema.nodes.workflow) return node
+    if (usedIds.has(node.attrs.id))
+      return inlinePromptSchema.text(referenceClipboardText(node))
+    usedIds.add(node.attrs.id)
+    return node
+  })
+  editor.dispatch(
+    state.tr
+      .replaceSelection(new Slice(Fragment.from(content), 0, 0))
+      .setMeta('paste', true)
+      .setMeta('uiEvent', 'paste')
+      .scrollIntoView()
+  )
 }
 
 function passiveReferenceView(node: Node, iconClass: string) {
@@ -267,44 +314,13 @@ onMounted(() => {
     handlePaste(editor, event, slice) {
       const clipboard = event.clipboardData
       if (!clipboard) return false
+      const files = attachableClipboardFiles(clipboard)
       const text = clipboard.getData('text/plain')
-      const { state } = editor
-      const hasWorkflows = slice.content.content.some(
-        (node) => node.type === inlinePromptSchema.nodes.workflow
-      )
-      if (!hasWorkflows) {
-        editor.dispatch(state.tr.insertText(text).scrollIntoView())
-        return true
-      }
-      const usedIds = new Set([editableWorkflowId])
-      state.doc.forEach((node, position) => {
-        if (
-          node.type === inlinePromptSchema.nodes.workflow &&
-          (position < state.selection.from || position >= state.selection.to)
-        )
-          usedIds.add(node.attrs.id)
-      })
-      // The default clipboard parser collapses whitespace in inline slices.
-      const pasted = DOMParser.fromSchema(inlinePromptSchema).parseSlice(
-        DOMPurify.sanitize(clipboard.getData('text/html'), {
-          RETURN_DOM_FRAGMENT: true
-        }),
-        { preserveWhitespace: 'full' }
-      )
-      const content = pasted.content.content.map((node) => {
-        if (node.type !== inlinePromptSchema.nodes.workflow) return node
-        if (usedIds.has(node.attrs.id))
-          return inlinePromptSchema.text(referenceClipboardText(node))
-        usedIds.add(node.attrs.id)
-        return node
-      })
-      editor.dispatch(
-        state.tr
-          .replaceSelection(new Slice(Fragment.from(content), 0, 0))
-          .setMeta('paste', true)
-          .setMeta('uiEvent', 'paste')
-          .scrollIntoView()
-      )
+      const attachmentsOnly = files.length > 0 && text === ''
+      // Attaching rewrites the prompt through the store, so the document edit
+      // has to land first or the editor overwrites the staged attachment.
+      if (!attachmentsOnly) insertPastedContent(editor, clipboard, slice, text)
+      if (files.length > 0) emit('attachFiles', files)
       return true
     },
     clipboardTextSerializer: (slice) =>

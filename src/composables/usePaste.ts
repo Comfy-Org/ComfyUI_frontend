@@ -199,6 +199,9 @@ export const usePaste = () => {
   const canvasStore = useCanvasStore()
 
   useEventListener(document, 'paste', async (e) => {
+    // A rich-text surface such as the agent composer is not an input element,
+    // so it claims the paste by preventing the default rather than by target.
+    if (e.defaultPrevented) return
     if (shouldIgnoreCopyPaste(e.target)) {
       // Default system copy
       return

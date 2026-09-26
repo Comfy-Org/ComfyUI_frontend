@@ -485,6 +485,22 @@ describe('usePaste', () => {
     })
   })
 
+  it('should leave the graph alone when another handler already claimed the paste', () => {
+    vi.mocked(createNode).mockResolvedValue(createMockNode())
+
+    usePaste()
+
+    const dataTransfer = createDataTransfer([createImageFile()])
+    const event = new ClipboardEvent('paste', {
+      clipboardData: dataTransfer,
+      cancelable: true
+    })
+    event.preventDefault()
+    document.dispatchEvent(event)
+
+    expect(createNode).not.toHaveBeenCalled()
+  })
+
   it('should handle workflow JSON paste', async () => {
     const workflow = { version: '1.0', nodes: [], extra: {} }
 
