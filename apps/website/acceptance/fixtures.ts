@@ -19,8 +19,17 @@ export const test = base.extend<
   { signedInState: SessionState }
 >({
   signedInState: [
-    async ({ browser }, use) => {
-      const context = await browser.newContext({ baseURL: liveSettings().site })
+    async ({ browser }, use, workerInfo) => {
+      const { userAgent, viewport, deviceScaleFactor, isMobile, hasTouch } =
+        workerInfo.project.use
+      const context = await browser.newContext({
+        baseURL: liveSettings().site,
+        userAgent,
+        viewport,
+        deviceScaleFactor,
+        isMobile,
+        hasTouch
+      })
       try {
         await prepareSession(context)
         await use(await context.storageState({ indexedDB: true }))
