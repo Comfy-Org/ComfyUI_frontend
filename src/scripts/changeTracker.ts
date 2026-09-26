@@ -8,7 +8,8 @@ import type { CanvasPointerEvent } from '@/lib/litegraph/src/litegraph'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema';
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema';
 import type { ExecutedWsMessage } from '@/platform/remote/comfyui/execution/types'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -486,7 +487,11 @@ export class ChangeTracker {
         // call sees a false diff against the raw JSON and clears the queue
         // it just populated.
         await nextTick()
-        this.activeState = clone(app.rootGraph.serialize()) as ComfyWorkflowJSON
+        const settledState = await validateComfyWorkflow(
+          clone(app.rootGraph.serialize())
+        )
+        assert(settledState, 'Undo/redo produced an invalid workflow snapshot')
+        this.activeState = settledState
         this.updateModified(previousState)
       } finally {
         this._restoringState = false
