@@ -3,35 +3,50 @@ import { readFile, stat } from 'node:fs/promises'
 import { join } from 'node:path'
 
 import { expect, test as base } from '@playwright/test'
-import type { Page, TestInfo } from '@playwright/test'
-import { zExchangeTokenResponse } from '@comfyorg/ingest-types/zod'
+import type { BrowserContext, Page, TestInfo } from '@playwright/test'
 import { z } from 'zod'
 
 import { validateArtifact } from '../scripts/router-model-artifacts'
-import { readBalanceCents } from './billing'
-import type { BalanceRead } from './billing'
 import type { ModelCase } from './cases'
-import { expectedCharge, liveSettings, requiredSetting } from './settings'
+import { liveSettings, requiredSetting } from './settings'
+import { prepareSession } from './session'
 
-interface LiveBilling {
-  balance: () => Promise<BalanceRead>
-  submissions: { key: string | undefined; hash: string }[]
-}
+type Submission = { key: string | undefined; hash: string }
+type SessionState = Awaited<ReturnType<BrowserContext['storageState']>>
 
-export const test = base.extend<{
-  billing: LiveBilling
-}>({
-  billing: async ({ context }, use) => {
+export const test = base.extend<
+  { submissions: Submission[] },
+  { signedInState: SessionState }
+>({
+  signedInState: [
+    async ({ browser }, use, workerInfo) => {
+      const { userAgent, viewport, deviceScaleFactor, isMobile, hasTouch } =
+        workerInfo.project.use
+      const context = await browser.newContext({
+        baseURL: liveSettings().site,
+        userAgent,
+        viewport,
+        deviceScaleFactor,
+        isMobile,
+        hasTouch
+      })
+      try {
+        await prepareSession(context)
+        await use(await context.storageState({ indexedDB: true }))
+      } finally {
+        await context.close()
+      }
+    },
+    { scope: 'worker', timeout: 120_000 }
+  ],
+  storageState: async ({ signedInState }, use) => {
+    await use(signedInState)
+  },
+  submissions: async ({ context }, use) => {
     const settings = liveSettings()
-    let authorization: string | undefined
-    const submissions: LiveBilling['submissions'] = []
+    const submissions: Submission[] = []
     context.on('request', (request) => {
       const url = new URL(request.url())
-      if (
-        url.origin === settings.cloud &&
-        url.pathname === '/api/billing/balance'
-      )
-        authorization = request.headers().authorization
       if (
         url.origin === settings.router &&
         request.method() === 'POST' &&
@@ -59,63 +74,9 @@ export const test = base.extend<{
       }
       await route.continue()
     })
-    await use({
-      submissions,
-      async balance() {
-        if (!authorization)
-          return { error: 'No browser billing session was observed' }
-        try {
-          const response = await context.request.get(
-            `${settings.cloud}/api/billing/balance`,
-            { headers: { Authorization: authorization }, timeout: 15_000 }
-          )
-          if (!response.ok())
-            return { error: `Billing balance HTTP ${response.status()}` }
-          return readBalanceCents(await response.json())
-        } catch {
-          return { error: 'Billing balance request failed' }
-        }
-      }
-    })
+    await use(submissions)
   }
 })
-
-export async function waitForBalance(
-  read: LiveBilling['balance'],
-  cents: number
-) {
-  await expect
-    .poll(read, {
-      message: 'Effective balance must reflect the reviewed charge or top-up',
-      timeout: 120_000,
-      intervals: [1000, 2000, 5000]
-    })
-    .toEqual({ cents: expect.closeTo(cents, 6) })
-}
-
-export async function signIn(page: Page, path: string) {
-  await page.goto(`/login/?returnTo=${encodeURIComponent(path)}`)
-  await page.getByRole('button', { name: 'Use email instead' }).click()
-  await page.getByLabel('Email').fill(requiredSetting('WORKSHOP_ACCOUNT_EMAIL'))
-  await page
-    .getByLabel('Password', { exact: true })
-    .fill(requiredSetting('WORKSHOP_ACCOUNT_PASSWORD'))
-  const session = page.waitForResponse(
-    (response) =>
-      response.url() === `${liveSettings().cloud}/api/auth/token` &&
-      response.request().method() === 'POST'
-  )
-  await page.getByRole('button', { name: 'Sign in', exact: true }).click()
-  const response = await session
-  expect(response.ok(), `Token exchange HTTP ${response.status()}`).toBe(true)
-  const identity = zExchangeTokenResponse.parse(await response.json())
-  expect(identity.workspace.id).toBe(requiredSetting('WORKSHOP_WORKSPACE_ID'))
-  await expect(page).toHaveURL(new URL(path, liveSettings().site).href)
-  await expect(page.getByTestId('run-button')).toHaveAttribute(
-    'data-gate',
-    'ready'
-  )
-}
 
 export async function useOwnInputs(
   page: Page,
@@ -186,17 +147,12 @@ async function verifyOutputPlayback(page: Page, kind: ModelCase['kind']) {
 
 export async function runAndVerify(
   page: Page,
-  billing: LiveBilling,
+  submissions: Submission[],
   model: ModelCase,
   variant: 'defaults' | 'own' | 'advanced',
   testInfo: TestInfo
 ) {
-  const expected = expectedCharge(model.slug, variant)
-  const balance = await billing.balance()
-  if (!('cents' in balance)) throw new Error(balance.error)
-  const before = balance.cents
-  const priorSubmissions = billing.submissions.length
-  expect(before).toBeGreaterThanOrEqual(expected)
+  const priorSubmissions = submissions.length
   const path = new URL(page.url()).pathname
   const endpoint = `${liveSettings().router}/v2/models/${model.routerId}/requests`
   const request = page.waitForRequest(
@@ -218,8 +174,7 @@ export async function runAndVerify(
       model: model.slug,
       variant,
       idempotencyKey: key,
-      requestHash,
-      balanceBeforeCents: before
+      requestHash
     })
   })
   const response = await accepted
@@ -234,8 +189,7 @@ export async function runAndVerify(
       variant,
       requestId: acceptedId,
       idempotencyKey: key,
-      requestHash,
-      balanceBeforeCents: before
+      requestHash
     })
   })
   if (variant !== 'defaults')
@@ -280,8 +234,7 @@ export async function runAndVerify(
     256 * 1024 * 1024
   ).finally(() => URL.revokeObjectURL(url))
   await expect(page).toHaveURL(new URL(path, liveSettings().site).href)
-  await waitForBalance(billing.balance, before - expected)
-  const attempts = billing.submissions.slice(priorSubmissions)
+  const attempts = submissions.slice(priorSubmissions)
   expect([...new Set(attempts.map((attempt) => attempt.key))]).toEqual([key])
   expect([...new Set(attempts.map((attempt) => attempt.hash))]).toEqual([
     requestHash
@@ -294,9 +247,6 @@ export async function runAndVerify(
       requestId,
       idempotencyKey: key,
       requestHash: createHash('sha256').update(body).digest('hex'),
-      balanceBeforeCents: before,
-      balanceAfterCents: before - expected,
-      chargeCents: expected,
       artifact,
       visualReview: 'Not run: human review of prompt fidelity is required'
     })

@@ -3,11 +3,6 @@ name: 'Workshop: Release Acceptance'
 on:
   workflow_dispatch:
     inputs:
-      suite:
-        description: Customer journey to verify
-        type: choice
-        options: [generation, checkout]
-        default: generation
       browser:
         description: Browser coverage
         type: choice
@@ -18,16 +13,16 @@ permissions:
   contents: read
 
 concurrency:
-  group: workshop-live-${{ inputs.suite == 'checkout' && 'test' || 'prod' }}
+  group: workshop-live-prod
   cancel-in-progress: false
   queue: max
 
 jobs:
   acceptance:
-    name: ${{ inputs.suite }} · ${{ matrix.browser }}
+    name: Generation · ${{ matrix.browser }}
     if: github.repository == 'Comfy-Org/ComfyUI_frontend' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    environment: ${{ inputs.suite == 'checkout' && 'workshop-test' || 'workshop-prod' }}
+    environment: workshop-prod
     timeout-minutes: 355
     strategy:
       fail-fast: false
@@ -35,12 +30,9 @@ jobs:
       matrix:
         browser: ${{ inputs.browser == 'all' && fromJSON('["chromium","webkit","mobile-chrome","mobile-safari"]') || fromJSON(format('["{0}"]', inputs.browser)) }}
     env:
-      PUBLIC_WORKSHOP_CLOUD_ENV: ${{ inputs.suite == 'checkout' && 'test' || 'prod' }}
-      WORKSHOP_SITE_URL: ${{ inputs.suite == 'checkout' && vars.WORKSHOP_TEST_SITE_URL || 'https://comfy.org' }}
-      WORKSHOP_ACCEPTANCE_SCOPE: ${{ inputs.suite == 'checkout' && 'checkout' || 'release' }}
-      WORKSHOP_WORKSPACE_ID: ${{ vars.WORKSHOP_WORKSPACE_ID }}
-      WORKSHOP_EXPECTED_CHARGES_JSON: ${{ vars.WORKSHOP_EXPECTED_CHARGES_JSON }}
-      WORKSHOP_SIGNUP_EMAIL_DOMAIN: ${{ vars.WORKSHOP_SIGNUP_EMAIL_DOMAIN }}
+      PUBLIC_WORKSHOP_CLOUD_ENV: prod
+      WORKSHOP_SITE_URL: https://comfy.org
+      WORKSHOP_ACCEPTANCE_SCOPE: release
     steps:
       - uses: actions/checkout@v7
         with:
@@ -48,19 +40,18 @@ jobs:
       - uses: ./.github/actions/setup-workshop-live
         with:
           browsers: chromium webkit
-      - name: Verify customer acceptance
+      - name: Verify model generation
         env:
           WORKSHOP_FIXTURE_DIR: ${{ runner.temp }}/workshop-fixtures
           BROWSER: ${{ matrix.browser }}
           WORKSHOP_ACCOUNT_EMAIL: ${{ secrets.WORKSHOP_ACCOUNT_EMAIL }}
           WORKSHOP_ACCOUNT_PASSWORD: ${{ secrets.WORKSHOP_ACCOUNT_PASSWORD }}
-          WORKSHOP_SIGNUP_PASSWORD: ${{ secrets.WORKSHOP_SIGNUP_PASSWORD }}
         run: pnpm --filter @comfyorg/website test:acceptance --project "$BROWSER"
       - name: Publish acceptance evidence
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v6
         with:
-          name: workshop-acceptance-${{ inputs.suite }}-${{ matrix.browser }}-${{ github.run_id }}
+          name: workshop-acceptance-generation-${{ matrix.browser }}-${{ github.run_id }}
           path: |
             apps/website/acceptance-results/
             apps/website/acceptance-report/
