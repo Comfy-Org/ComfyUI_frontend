@@ -9,9 +9,17 @@ test.describe(
   () => {
     test.use({ viewport: { width: 700, height: 800 } })
 
-    test.beforeEach(async ({ agentPanel, comfyPage }) => {
+    test.beforeEach(async ({ agentPanel, comfyMouse, comfyPage }) => {
       const page = comfyPage.page
       await agentPanel.open()
+
+      const panel = page.getByTestId('docked-agent-panel')
+      await expect(panel).toBeInViewport({ ratio: 1 })
+      await expect(comfyPage.menu.sideToolbar).toBeInViewport({ ratio: 1 })
+      await expect(comfyPage.actionbar.root).toBeInViewport({ ratio: 1 })
+      await expect(comfyPage.actionbar.queueButton.root).toBeInViewport({
+        ratio: 1
+      })
 
       const resizeHandle = page.getByTestId('agent-panel-resize-handle')
       const handleBox = await resizeHandle.boundingBox()
@@ -20,10 +28,11 @@ test.describe(
 
       const handleCenterX = handleBox.x + handleBox.width / 2
       const handleCenterY = handleBox.y + handleBox.height / 2
-      await page.mouse.move(handleCenterX, handleCenterY)
-      await page.mouse.down()
-      await page.mouse.move(0, handleCenterY)
-      await page.mouse.up()
+      await comfyMouse.dragAndDrop(
+        { x: handleCenterX, y: handleCenterY },
+        { x: 0, y: handleCenterY }
+      )
+      await expect(panel).toHaveCSS('width', '960px')
     })
 
     test('keeps the sidebar reachable after a wide panel drag', async ({
