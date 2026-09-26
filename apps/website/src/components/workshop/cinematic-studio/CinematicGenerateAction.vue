@@ -79,9 +79,7 @@ const note = computed(() => {
   if (shortfall.value) return shortfall.value.note
   if (gate === 'unavailable') return tc('cinematic.output.unavailable', locale)
   const key = GATE_NOTES[gate]
-  return key
-    ? t(key, locale).replace('{workspace}', () => workspaceName ?? '')
-    : undefined
+  return key ? t(key, locale, { workspace: workspaceName ?? '' }) : undefined
 })
 
 interface Note {

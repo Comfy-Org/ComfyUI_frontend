@@ -134,8 +134,9 @@ const outputOptions: readonly WorkshopOutputFilter[] = [
     {{
       t(
         visibleModels.length === 1 ? 'workshop.result' : 'workshop.results',
-        locale
-      ).replace('{count}', String(visibleModels.length))
+        locale,
+        { count: visibleModels.length }
+      )
     }}
   </p>
 

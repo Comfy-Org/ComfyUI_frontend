@@ -42,10 +42,9 @@ const {
           class="ml-2 font-bold text-primary-comfy-yellow hover:underline"
         >
           {{
-            t('workshop.model.deprecatedSuccessor', locale).replace(
-              '{successor}',
-              successor.name
-            )
+            t('workshop.model.deprecatedSuccessor', locale, {
+              successor: successor.name
+            })
           }}
           →
         </a>

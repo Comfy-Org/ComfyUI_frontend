@@ -59,10 +59,9 @@ const title = computed(() => {
 const body = computed(() => {
   if (take.status === 'cancelled') return t('workshop.output.cancelled', locale)
   if (kind.value === 'noCredits' && memberWorkspace !== undefined)
-    return t('workshop.error.memberNoCredits', locale).replace(
-      '{workspace}',
-      () => memberWorkspace
-    )
+    return t('workshop.error.memberNoCredits', locale, {
+      workspace: memberWorkspace
+    })
   return t(failureLabelKey[take.reason], locale)
 })
 const requestId = computed(() =>

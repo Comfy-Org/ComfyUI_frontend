@@ -58,10 +58,9 @@ const cloudHref = template
         >
         <span class="px-2 py-1.5">
           {{
-            t('workshop.workflow.templateBy').replace(
-              '{author}',
-              template.author
-            )
+            t('workshop.workflow.templateBy', 'en', {
+              author: template.author
+            })
           }}
         </span>
       </div>

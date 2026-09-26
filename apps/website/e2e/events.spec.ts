@@ -45,7 +45,7 @@ function heroSection(page: Page, locale: Locale) {
 function countLabel(count: number, locale: Locale) {
   const key =
     count === 1 ? 'events.directory.countOne' : 'events.directory.count'
-  return t(key, locale).replace('{count}', String(count))
+  return t(key, locale, { count })
 }
 
 // Expected filter results restated from the raw event data, so the spec never

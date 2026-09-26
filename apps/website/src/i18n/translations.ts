@@ -1141,12 +1141,12 @@ Desktop`
   },
   'products.local.cta': {
     en: 'SEE DESKTOP FEATURES',
-    'zh-CN': '查看桌面版属性',
+    'zh-CN': '查看桌面版功能',
     ja: 'デスクトップ機能を見る'
   },
   'products.ctaShort': {
     en: 'SEE FEATURES',
-    'zh-CN': '查看属性'
+    'zh-CN': '查看功能'
   },
   'products.cloud.title': {
     en: 'Comfy\nCloud',
@@ -1161,7 +1161,7 @@ Cloud`
   },
   'products.cloud.cta': {
     en: 'SEE CLOUD FEATURES',
-    'zh-CN': '查看云端属性',
+    'zh-CN': '查看云端功能',
     ja: 'クラウド機能を見る'
   },
   'products.platform.title': {
@@ -1189,7 +1189,7 @@ Enterprise`
   },
   'products.enterprise.cta': {
     en: 'SEE ENTERPRISE FEATURES',
-    'zh-CN': '查看企业版属性',
+    'zh-CN': '查看企业版功能',
     ja: 'エンタープライズ機能を見る'
   },
 
@@ -6605,13 +6605,9 @@ Enterprise`
     en: 'Explore Workflows',
     'zh-CN': '探索工作流'
   },
-  'models.list.heroTitle.before': {
-    en: '{name} in',
-    'zh-CN': ''
-  },
-  'models.list.heroTitle.after': {
-    en: '',
-    'zh-CN': ' 中的 {name}'
+  'models.list.heroTitle': {
+    en: '{name} in {brand}',
+    'zh-CN': '{brand} 中的 {name}'
   },
   'models.list.heroSubtitle': {
     en: 'From open-source diffusion checkpoints to partner APIs — every major model, with community workflow templates ready to run.',
@@ -10894,7 +10890,7 @@ Enterprise`
   'workshop.hub.loadMore': { en: 'Load more', 'zh-CN': '加载更多' },
   'workshop.hub.empty': {
     en: 'No workflows match your filters',
-    'zh-CN': '没有符合筛选条件的模板'
+    'zh-CN': '没有符合筛选条件的工作流'
   },
   'workshop.hub.emptyHint': {
     en: 'Try removing some filters',
@@ -10902,7 +10898,7 @@ Enterprise`
   },
   'workshop.hub.showing': {
     en: 'Showing {shown} of {total} workflows',
-    'zh-CN': '显示 {shown} / {total} 个模板'
+    'zh-CN': '显示 {shown} / {total} 个工作流'
   },
   'workshop.proto.featured': {
     en: 'Show the featured row',
@@ -11261,8 +11257,47 @@ function resolve(key: TranslationKey, locale: Locale): [string, Locale] {
   return message === undefined ? [entry.en, 'en'] : [message, locale]
 }
 
-export function t(key: TranslationKey, locale: Locale = 'en'): string {
-  return resolve(key, locale)[0]
+export type NamedValues = Record<string, string | number>
+
+function interpolate(message: string, named: NamedValues): string {
+  return message.replace(/\{(\w+)\}/g, (placeholder, name: string) =>
+    Object.hasOwn(named, name) ? String(named[name]) : placeholder
+  )
+}
+
+export function t(
+  key: TranslationKey,
+  locale: Locale = 'en',
+  named: NamedValues = {}
+): string {
+  return interpolate(resolve(key, locale)[0], named)
+}
+
+/**
+ * Resolves a message and splits it around one named slot, so a component can
+ * wrap that slot in markup while the locale decides the word order.
+ */
+export function tAround(
+  key: TranslationKey,
+  locale: Locale,
+  slot: string,
+  named: NamedValues = {}
+): [string, string] {
+  const marker = `{${slot}}`
+  const message = t(key, locale, {
+    ...named,
+    [slot]: marker
+  })
+  const markerIndex = message.indexOf(marker)
+  if (message.indexOf(marker, markerIndex + marker.length) !== -1) {
+    throw new Error(`Translation ${key} repeats slot ${marker}`)
+  }
+  return markerIndex === -1
+    ? [message, '']
+    : [
+        message.slice(0, markerIndex),
+        message.slice(markerIndex + marker.length)
+      ]
 }
 
 export function tPlural(
@@ -11276,7 +11311,7 @@ export function tPlural(
     new Intl.PluralRules(messageLocale).select(count) === 'one'
       ? forms[0]
       : forms[forms.length - 1]
-  return form.trim().replace('{count}', String(count))
+  return interpolate(form.trim(), { count })
 }
 
 export const translationKeys = Object.keys(translations) as TranslationKey[]

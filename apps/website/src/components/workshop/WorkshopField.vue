@@ -88,10 +88,9 @@ function onMedia(event: Event) {
   const input = event.target as HTMLInputElement
   const files = [...(input.files ?? [])]
   if (field.maxItems !== undefined && files.length > field.maxItems) {
-    error.value = t('workshop.model.maxFiles', locale).replace(
-      '{count}',
-      String(field.maxItems)
-    )
+    error.value = t('workshop.model.maxFiles', locale, {
+      count: field.maxItems
+    })
     input.setCustomValidity(error.value)
     // Clear the picker too. Leaving it listing files the form has discarded
     // is what made this look like nothing happened, and keeping a previously

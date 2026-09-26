@@ -68,9 +68,10 @@ const teamSaving = computed<string | undefined>(() => {
   const discounted = selectedTeamPrice.value
   if (base === discounted) return undefined
   const pct = Math.round(((base - discounted) / base) * 1000) / 10
-  return t('pricing.savePercent', locale)
-    .replace('{pct}', String(pct))
-    .replace('{amount}', fmtPrice(base - discounted))
+  return t('pricing.savePercent', locale, {
+    pct,
+    amount: fmtPrice(base - discounted)
+  })
 })
 
 const featureGroups = computed<PlanFeatureGroup[]>(() => [

@@ -35,10 +35,9 @@ const successRegion = ref<HTMLParagraphElement | null>(null)
 
 const successMessage = computed(() =>
   status.value === 'success'
-    ? t('download.emailForm.success', locale).replace(
-        '{email}',
-        () => submittedEmail.value
-      )
+    ? t('download.emailForm.success', locale, {
+        email: submittedEmail.value
+      })
     : ''
 )
 

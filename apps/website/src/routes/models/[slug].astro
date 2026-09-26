@@ -20,10 +20,9 @@ const { model } = page
 
 <BaseLayout
   title={`${model.name} · ${t('workshop.title')} - Comfy`}
-  description={t('workshop.model.meta.description').replace(
-    '{name}',
-    model.name
-  )}
+  description={t('workshop.model.meta.description', 'en', {
+    name: model.name
+  })}
   ogImage={model.thumbnailUrl}
   noindex
 >
