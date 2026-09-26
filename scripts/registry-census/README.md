@@ -274,8 +274,16 @@ The required gate is red. In order:
 `Custom Nodes Ecosystem Matrix test` for every pull request and merge-queue
 candidate. Branch protection should require that aggregate, not the internal
 legacy and Vue `matrix-verdict` jobs. On a relevant change, a red, skipped, or
-cancelled dependency makes the aggregate red. On an irrelevant pull request,
-the aggregate passes only after all expensive dependencies report skipped.
+cancelled `pin-status`, `corpus`, `matrix-verdict`, or `matrix-detection-proof`
+makes the aggregate red. The shard jobs are the one exception: their raw result
+is reported as a notice rather than gated, because verdict completeness already
+supersedes it. `MATRIX_EXPECT_SHARDS` fails each verdict closed unless all four
+shard manifests are present, every manifest entry has a row, and no row lacks a
+manifest entry — so a shard that dies before its artifact is complete still reds
+the aggregate through its own verdict, while one that dies after uploading a
+complete artifact has cost the run no measurement. On an irrelevant pull
+request, the aggregate passes only after all expensive dependencies report
+skipped.
 
 ## Detection proof (counter-evidence)
 
