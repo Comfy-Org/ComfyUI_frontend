@@ -1,6 +1,6 @@
 import { toGroupId } from '@/types/groupId'
 import { graphScopeOf } from '@/types/graphScopeId'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { NodeLifecycleEvent } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
@@ -712,6 +712,60 @@ describe('Floating Links / Reroutes', () => {
     expect(graph.reroutes.size).toBe(1)
     expect(graph.reroutes.values().next().value!.floating).not.toBeUndefined()
   })
+
+  for (const { firstEndpointName, removeOriginFirst } of [
+    { firstEndpointName: 'target', removeOriginFirst: false },
+    { firstEndpointName: 'origin', removeOriginFirst: true }
+  ]) {
+    test(`removes a rerouted floating chain after the ${firstEndpointName} endpoint is removed first`, ({
+      expect,
+      linkedNodesGraph
+    }) => {
+      const graph = new LGraph(linkedNodesGraph)
+      const connectedLink = graph.links.values().next().value
+      assert(connectedLink)
+      const reroute = graph.createReroute([0, 0], connectedLink)
+      assert(reroute)
+      const originId = connectedLink.origin_id
+      const targetId = connectedLink.target_id
+      const firstEndpoint = graph.getNodeById(
+        removeOriginFirst ? originId : targetId
+      )
+      assert(firstEndpoint)
+
+      graph.remove(firstEndpoint)
+
+      const [floatingLink] = graph.floatingLinks.values()
+      expect(floatingLink).toMatchObject({
+        origin_id: removeOriginFirst ? UNASSIGNED_NODE_ID : originId,
+        target_id: removeOriginFirst ? targetId : UNASSIGNED_NODE_ID,
+        parentId: reroute.id
+      })
+      expect(graph.reroutes.get(reroute.id)?.floatingLinkIds).toEqual(
+        new Set([floatingLink.id])
+      )
+
+      const serialised = graph.asSerialisable()
+      const restored = new LGraph(serialised)
+      const remainingEndpoint = restored.getNodeById(
+        removeOriginFirst ? targetId : originId
+      )
+      assert(remainingEndpoint)
+      expect(restored.floatingLinks.get(floatingLink.id)).toMatchObject({
+        origin_id: removeOriginFirst ? UNASSIGNED_NODE_ID : originId,
+        target_id: removeOriginFirst ? targetId : UNASSIGNED_NODE_ID,
+        parentId: reroute.id
+      })
+
+      restored.remove(remainingEndpoint)
+
+      expect(restored.floatingLinks.has(floatingLink.id)).toBe(false)
+      expect(restored.reroutes.has(reroute.id)).toBe(false)
+      const pruned = restored.asSerialisable()
+      expect(pruned.floatingLinks).toBeUndefined()
+      expect(pruned.reroutes).toBeUndefined()
+    })
+  }
 
   test('Create floating reroute when one side of link is removed', ({
     expect,
