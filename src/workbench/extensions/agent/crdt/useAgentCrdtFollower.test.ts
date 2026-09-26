@@ -39,10 +39,16 @@ const bridgeState = vi.hoisted(() => {
     sendHumanOps = vi.fn()
     subscribedWorkflowId: string | null = 'wf-1'
     lastSequence = 41
+    nodes = new Map<string, unknown>()
+    nodeMapError: Error | null = null
     follower = {
       updatesApplied: 0,
       doc: {
-        getMap: () => ({ toJSON: () => ({}) })
+        share: new Map<string, unknown>([['nodes', this.nodes]]),
+        getMap: () => {
+          if (this.nodeMapError) throw this.nodeMapError
+          return this.nodes
+        }
       }
     }
   }
@@ -644,6 +650,68 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('records document node additions and removals', async () => {
+    const { recordDevEvent } = await import('./devPanelLog')
+    const { unmount } = mountFollower('wf-1')
+    bridge().nodes.set('1', {})
+
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 1 })
+    bridge().nodes.delete('1')
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 2 })
+
+    const changes = vi
+      .mocked(recordDevEvent)
+      .mock.calls.filter(([event]) => event === 'doc_nodes_changed')
+    expect(changes).toEqual([
+      ['doc_nodes_changed', { added: ['1'], removed: [] }],
+      ['doc_nodes_changed', { added: [], removed: ['1'] }]
+    ])
+    unmount()
+  })
+
+  it('keeps processing an update when the nodes root has another type', () => {
+    const { unmount } = mountFollower('wf-1')
+    bridge().nodeMapError = new Error(
+      'Type with the name nodes has already been defined with a different constructor'
+    )
+
+    expect(() =>
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 1 })
+    ).not.toThrow()
+
+    unmount()
+  })
+
+  it('keeps the known-node baseline when the nodes root cannot be read', async () => {
+    const { recordDevEvent } = await import('./devPanelLog')
+    const { unmount } = mountFollower('wf-1')
+    bridge().nodes.set('1', {})
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 1 })
+
+    const unreadable = new Error(
+      'Type with the name nodes has already been defined with a different constructor'
+    )
+    bridge().nodeMapError = unreadable
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 2 })
+
+    bridge().nodeMapError = null
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 3 })
+    bridge().nodes.delete('1')
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 4 })
+
+    const changes = vi
+      .mocked(recordDevEvent)
+      .mock.calls.filter(([event]) => event === 'doc_nodes_changed')
+    expect(changes).toEqual([
+      ['doc_nodes_changed', { added: ['1'], removed: [] }],
+      ['doc_nodes_changed', { added: [], removed: ['1'] }]
+    ])
+    expect(telemetryState.reportError).toHaveBeenCalledWith(unreadable, {
+      errorType: 'agent_crdt_follower_doc_nodes_read_failed'
+    })
+    unmount()
+  })
+
   it('FEC-5: only active-workflow op results slide the persisted expiry', () => {
     vi.useFakeTimers()
     const { isTargetActive, unmount } = mountFollower('wf-1')
@@ -1084,7 +1152,8 @@ describe('useAgentCrdtFollower', () => {
         onMaterialized
       })
       bridge().follower.doc = {
-        getMap: () => ({ toJSON: () => ({ '3': {} }) })
+        share: new Map<string, unknown>([['nodes', true]]),
+        getMap: () => new Map([['3', {}]])
       }
 
       dispatchFrame('doc_update', {
@@ -1165,7 +1234,10 @@ describe('useAgentCrdtFollower', () => {
 
     it('reconciles a follower_replaced clear against the replacement document', () => {
       const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
-      const replacementDoc = { getMap: () => ({ toJSON: () => ({}) }) }
+      const replacementDoc = {
+        share: new Map<string, unknown>([['nodes', true]]),
+        getMap: () => new Map()
+      }
       bridge().follower = { updatesApplied: 0, doc: replacementDoc }
 
       dispatchFrame('follower_replaced', { workflowId: 'wf-1' })
@@ -1255,7 +1327,8 @@ describe('useAgentCrdtFollower', () => {
       })
       let nodes: Record<string, unknown> = {}
       bridge().follower.doc = {
-        getMap: () => ({ toJSON: () => nodes })
+        share: new Map<string, unknown>([['nodes', true]]),
+        getMap: () => new Map(Object.entries(nodes))
       }
       const source = new Y.Doc()
       source.getMap('nodes').set('3', { type: 'KSampler' })
@@ -1299,7 +1372,8 @@ describe('useAgentCrdtFollower', () => {
         onMaterialized
       })
       bridge().follower.doc = {
-        getMap: () => ({ toJSON: () => nodes })
+        share: new Map<string, unknown>([['nodes', true]]),
+        getMap: () => new Map(Object.entries(nodes))
       }
 
       const source = new Y.Doc()
@@ -1815,7 +1889,7 @@ describe('useAgentCrdtFollower', () => {
       const { unmount, enqueue } = mountWriter('wf-1')
       const intent = adapterState.intent!
       let docNodes: Record<string, unknown> = { '1': {} }
-      bridge().follower.doc.getMap = () => ({ toJSON: () => docNodes })
+      bridge().follower.doc.getMap = () => new Map(Object.entries(docNodes))
 
       enqueue([deleteNode('1')])
       expect([...intent.pendingDeletes('wf-1')]).toEqual(['1'])

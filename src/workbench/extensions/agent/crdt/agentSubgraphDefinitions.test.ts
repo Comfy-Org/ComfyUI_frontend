@@ -9,11 +9,16 @@ import type {
   ISerialisedNode,
   SerialisableLLink
 } from '@/lib/litegraph/src/types/serialisation'
+import { reportError } from '@/platform/telemetry/reportError'
 
 import {
   readSubgraphDefinitionIds,
   readSubgraphDefinitions
 } from './agentSubgraphDefinitions'
+
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 
 const CATALOG: WidgetCatalog = {
   types: {
@@ -362,6 +367,78 @@ describe('readSubgraphDefinitions', () => {
     const [projected] = readSubgraphDefinitions(seed(outer))
 
     expect(projected.definitions).toEqual({ subgraphs: [inner] })
+  })
+
+  it('normalizes string slot indices at every nesting level', () => {
+    const inner = createTestSubgraphData({ nodes: [interiorNode(1)] })
+    const outer = createTestSubgraphData({ nodes: [interiorNode(2, inner.id)] })
+    const doc = seed(outer)
+    const stored = storedDefinition(doc, outer.id)
+    stored.set('links', [{ ...interiorLink(9, 2, 2), origin_slot: '3' }])
+    stored.set('definitions', {
+      subgraphs: [
+        { ...inner, links: [{ ...interiorLink(4, 1, 1), target_slot: '5' }] }
+      ]
+    })
+
+    const [projected] = readSubgraphDefinitions(doc)
+
+    expect(projected.links?.[0]).toMatchObject({ origin_slot: 3 })
+    expect(projected.definitions?.subgraphs?.[0]?.links?.[0]).toMatchObject({
+      target_slot: 5
+    })
+  })
+
+  it('rejects a definition with malformed nested definitions', () => {
+    const definition = createTestSubgraphData()
+    const doc = seed(definition)
+    storedDefinition(doc, definition.id).set('definitions', {
+      subgraphs: [null]
+    })
+
+    expect(readSubgraphDefinitions(doc)).toEqual([])
+  })
+
+  it('reports a dropped definition once, and again after it recovers', () => {
+    const definition = createTestSubgraphData()
+    const doc = seed(definition)
+    const stored = storedDefinition(doc, definition.id)
+    const state = stored.get('state')
+    stored.delete('state')
+
+    readSubgraphDefinitions(doc)
+    readSubgraphDefinitions(doc)
+
+    expect(reportError).toHaveBeenCalledOnce()
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'agent_crdt_unreadable_subgraph_definition'
+    })
+
+    stored.set('state', state)
+    expect(readSubgraphDefinitions(doc)).toHaveLength(1)
+    stored.delete('state')
+    readSubgraphDefinitions(doc)
+
+    expect(reportError).toHaveBeenCalledTimes(2)
+  })
+
+  it('rejects a definition whose id counters are not finite integers', () => {
+    const definition = createTestSubgraphData()
+    const doc = seed(definition)
+    storedDefinition(doc, definition.id).set('state', {
+      ...definition.state,
+      lastNodeId: Infinity
+    })
+
+    expect(readSubgraphDefinitions(doc)).toEqual([])
+  })
+
+  it('rejects a definition with malformed interior nodes', () => {
+    const definition = createTestSubgraphData()
+    const doc = seed(definition)
+    storedDefinition(doc, definition.id).set('nodes', [null])
+
+    expect(readSubgraphDefinitions(doc)).toEqual([])
   })
 
   it('preserves nested order and sanitizes digests after snapshot decode without writing', () => {

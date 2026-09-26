@@ -348,8 +348,10 @@ function startAgentCrdtFollower(
   })
   const pendingHumanDeletes = (workflowId: string): ReadonlySet<string> => {
     const docNodeIds = currentDocNodeIds()
-    for (const id of confirmedDeletes) {
-      if (!docNodeIds.has(id)) confirmedDeletes.delete(id)
+    if (docNodeIds !== null) {
+      for (const id of confirmedDeletes) {
+        if (!docNodeIds.has(id)) confirmedDeletes.delete(id)
+      }
     }
     const pending = new Set(confirmedDeletes)
     for (const batch of sender.pendingOps()) {
@@ -373,14 +375,22 @@ function startAgentCrdtFollower(
   // doc_reset (remint) because the lineage broke.
   let knownDocNodeIds: Set<string> = new Set()
   const pendingLiveNodeIds = new Set<NodeId>()
-  const currentDocNodeIds = (): Set<string> => {
+  let reportedUnreadableNodesRoot = false
+  const currentDocNodeIds = (): Set<string> | null => {
+    const doc = bridge.follower.doc
+    if (!doc.share.has('nodes')) return new Set()
     try {
-      const doc = bridge.follower.doc as unknown as {
-        getMap: (k: string) => { toJSON: () => Record<string, unknown> }
+      const ids = new Set(doc.getMap('nodes').keys())
+      reportedUnreadableNodesRoot = false
+      return ids
+    } catch (error) {
+      if (!reportedUnreadableNodesRoot) {
+        reportedUnreadableNodesRoot = true
+        reportError(error, {
+          errorType: 'agent_crdt_follower_doc_nodes_read_failed'
+        })
       }
-      return new Set(Object.keys(doc.getMap('nodes').toJSON()))
-    } catch {
-      return new Set()
+      return null
     }
   }
   const reconcileAndReportPending = (workflowId: string): void => {
@@ -400,8 +410,9 @@ function startAgentCrdtFollower(
   }
   const isCurrentWorkflow = (workflowId: unknown): workflowId is string =>
     isTargetActive.value && workflowId === subscribedWorkflowId.value
-  const trackNodeChanges = (): string[] => {
+  const trackNodeChanges = (): string[] | null => {
     const ids = currentDocNodeIds()
+    if (ids === null) return null
     const added = [...ids].filter((id) => !knownDocNodeIds.has(id))
     const removed = [...knownDocNodeIds].filter((id) => !ids.has(id))
     if (added.length > 0 || removed.length > 0)
@@ -460,13 +471,15 @@ function startAgentCrdtFollower(
     const added = trackNodeChanges()
     if (!update.actor?.startsWith('agent:')) {
       const liveDocIds = currentDocNodeIds()
-      for (const nodeId of pendingLiveNodeIds) {
-        if (!liveDocIds.has(nodeId)) pendingLiveNodeIds.delete(nodeId)
+      if (liveDocIds !== null) {
+        for (const nodeId of pendingLiveNodeIds) {
+          if (!liveDocIds.has(nodeId)) pendingLiveNodeIds.delete(nodeId)
+        }
       }
     }
     notifyAgentMaterialization(
       update,
-      added,
+      added ?? [],
       materialized,
       getGraph(),
       pendingLiveNodeIds,

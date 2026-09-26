@@ -1257,6 +1257,30 @@ describe('reconcileAgentAdapters', () => {
       expect(reportError).not.toHaveBeenCalled()
     })
 
+    it('replaces a missing-node placeholder when its definition completes', () => {
+      const definition = createTestSubgraphData({
+        nodes: [nodePayload(7)] as never
+      })
+      const { follower } = seedDocument(graph, {
+        nodes: [nodePayload(1, definition.id)],
+        links: [],
+        definitions: { subgraphs: [definition] }
+      })
+      const stored = follower.doc
+        .getMap<Y.Map<unknown>>('definitions')
+        .get(definition.id)
+      assert.exists(stored)
+      stored.delete('state')
+
+      reconcileAgentAdapters(graph, readSubgraphDefinitions(follower.doc))
+      expect(graph.getNodeById(toNodeId(1))?.has_errors).toBe(true)
+
+      expect(reconcileAgentAdapters(graph, [definition])).toEqual([toNodeId(1)])
+
+      expect(graph.getNodeById(toNodeId(1))).toBeInstanceOf(SubgraphNode)
+      expect(graph.getNodeById(toNodeId(1))?.has_errors).toBeFalsy()
+    })
+
     it('does not treat a definition payload as an edit to an existing subgraph', () => {
       const definition = createTestSubgraphData({
         nodes: [nodePayload(7)] as never
@@ -1433,6 +1457,56 @@ describe('reconcileAgentAdapters', () => {
       expect(widgetValue(inner.id, 30)).toBe(1)
       expect(widgetValue(outer.id, 20)).toBe(2)
       expect(widgetValue(sibling.id, 10)).toBe(3)
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('registers one subgraph when the same definition is root-level and nested', () => {
+      const shared = createTestSubgraphData({
+        nodes: [nodePayload(30)] as never
+      })
+      const outer = createTestSubgraphData({
+        nodes: [nodePayload(20, shared.id)] as never,
+        definitions: { subgraphs: [shared] }
+      })
+      const { follower } = seedDocument(graph, {
+        nodes: [nodePayload(1, shared.id), nodePayload(2, outer.id)],
+        links: [],
+        definitions: { subgraphs: [shared, outer] }
+      })
+
+      reconcileAgentAdapters(graph, readSubgraphDefinitions(follower.doc))
+
+      const registered = graph.subgraphs.get(shared.id)
+      expect(registered?.id).toBe(shared.id)
+      const createdIds = created.mock.calls.map(
+        ([event]) => (event as CustomEvent).detail.subgraph.id
+      )
+      expect(createdIds.filter((id) => id === shared.id)).toHaveLength(1)
+      expect((LiteGraph.createNode(shared.id) as SubgraphNode).subgraph).toBe(
+        registered
+      )
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('prefers the top-level copy of a definition over a nested one', () => {
+      const shared = createTestSubgraphData({
+        nodes: [nodePayload(30), nodePayload(31)] as never
+      })
+      const outer = createTestSubgraphData({
+        nodes: [nodePayload(20, shared.id)] as never,
+        definitions: {
+          subgraphs: [{ ...shared, nodes: [nodePayload(30)] as never }]
+        }
+      })
+      const { follower } = seedDocument(graph, {
+        nodes: [nodePayload(1, shared.id)],
+        links: [],
+        definitions: { subgraphs: [outer, shared] }
+      })
+
+      reconcileAgentAdapters(graph, readSubgraphDefinitions(follower.doc))
+
+      expect(graph.subgraphs.get(shared.id)?.nodes).toHaveLength(2)
       expect(reportError).not.toHaveBeenCalled()
     })
 
