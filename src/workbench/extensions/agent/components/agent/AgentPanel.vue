@@ -355,6 +355,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
         <EmptyState
           v-if="!entries.length"
           :user-name
+          :has-selection="selectionTags.length > 0"
           @insert="composerRef?.insert($event)"
         />
         <ConversationView

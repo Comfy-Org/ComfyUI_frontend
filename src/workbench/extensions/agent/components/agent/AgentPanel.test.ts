@@ -138,6 +138,33 @@ describe('AgentPanel', () => {
     expect(textarea).not.toHaveFocus()
   })
 
+  it('PM-1103 only offers the selected-node suggestion with a selection', async () => {
+    const pinia = getActivePinia()
+    if (pinia === undefined) throw new Error('Expected an active testing Pinia')
+    const { rerender } = render(AgentPanel, {
+      props: { entries: [], historyGroups, selectionTags: [] },
+      global: {
+        plugins: [pinia, i18n],
+        directives: { tooltip: {} },
+        stubs: { WorkflowSelectorChip: true }
+      }
+    })
+
+    expect(
+      screen.queryByRole('button', { name: 'Explain the selected node' })
+    ).not.toBeInTheDocument()
+
+    await rerender({
+      entries: [],
+      historyGroups,
+      selectionTags: [{ id: '7', title: 'KSampler' }]
+    })
+
+    expect(
+      screen.getByRole('button', { name: 'Explain the selected node' })
+    ).toBeInTheDocument()
+  })
+
   it.for([true, false])(
     'restores the edited prompt and its references (references: %s)',
     async (hasReferences) => {
