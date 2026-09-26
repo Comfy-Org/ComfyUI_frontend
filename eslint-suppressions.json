@@ -399,11 +399,6 @@
       "count": 8
     }
   },
-  "src/scripts/app.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 3
-    }
-  },
   "src/scripts/metadata/avif.ts": {
     "comfy/no-new-error-throw": {
       "count": 3

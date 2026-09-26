@@ -71,6 +71,11 @@ const config: KnipConfig = {
     // Auto generated API types
     'src/workbench/extensions/manager/types/generatedManagerTypes.ts',
     'packages/ingest-types/src/zod.gen.ts',
+    // Pending integration in stacked PR
+    // Served to custom nodes at runtime as /comfy/api/v2.js. Nothing in
+    // the build imports it — that is the point: it is the entry point
+    // packs import from, so knip cannot see a consumer.
+    'public/comfy/api/v2.js',
     // Marketing media tooling — adopted by pages in a follow-up PR
     'apps/website/src/components/common/SiteVideo.vue',
     // Animated pill button — retained for reuse after the learning directory

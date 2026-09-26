@@ -9,9 +9,8 @@ const noGraph = () => undefined as unknown as LGraph | null | undefined
 
 describe('WorkflowHandle.documentId', () => {
   it('reads through to the host-supplied reader', () => {
-    // The handle does not mint or track anything itself — the loaded-workflow
-    // lifecycle is `appReady`'s (one call site, `loadGraphData`'s tail),
-    // and this is a read of it, not a second source of truth.
+    // The handle does not mint or track anything itself. The loaded-workflow
+    // lifecycle belongs to `appReady`, and this is only a read of it.
     const reader = vi.fn(() => 'doc-1')
     const api = createWorkflowApi(noGraph, undefined, reader)
 
