@@ -558,7 +558,8 @@ export default defineConfig([
       }
     }
   },
-  // The website app is a marketing site with no vue-i18n setup
+  // The website resolves vue-i18n messages with an explicit locale per call;
+  // its templates still carry raw marketing copy, so no-raw-text stays off
   {
     files: ['apps/website/**/*.vue'],
     rules: {

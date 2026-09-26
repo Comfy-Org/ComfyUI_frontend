@@ -69,6 +69,7 @@
     "shiki": "catalog:",
     "three": "catalog:",
     "vue": "catalog:",
+    "vue-i18n": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

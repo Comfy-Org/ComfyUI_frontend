@@ -1141,6 +1141,9 @@ importers:
       vue:
         specifier: 'catalog:'
         version: 3.5.42(typescript@6.0.3)
+      vue-i18n:
+        specifier: 'catalog:'
+        version: 11.4.10(vue@3.5.42(typescript@6.0.3))
       zod:
         specifier: 'catalog:'
         version: 3.25.76
