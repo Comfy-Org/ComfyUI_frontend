@@ -372,6 +372,15 @@ describe('success response parsing', () => {
 })
 
 describe('error mapping', () => {
+  it.for(['', '   '])(
+    'gives a status-bearing message when the supplied message is %j',
+    (message) => {
+      expect(new AgentApiError(message, 500, undefined).message).toBe(
+        'Agent request failed (HTTP 500)'
+      )
+    }
+  )
+
   it('maps a plain-string error body to its message with the status and parsed body', async () => {
     respond(jsonResponse(409, { error: 'turn is not running' }))
 
@@ -435,6 +444,19 @@ describe('error mapping', () => {
     expect(error.message).toBe('Bad Gateway')
     expect(error.status).toBe(502)
     expect(error.body).toBeUndefined()
+  })
+
+  it('falls back to the HTTP status when the response has no error text', async () => {
+    respond(new Response('', { status: 503 }))
+
+    const error = await makeClient()
+      .getMessages('t1')
+      .catch((caught: unknown) => caught)
+
+    expect(error).toBeInstanceOf(AgentApiError)
+    expect((error as AgentApiError).message).toBe(
+      'Agent request failed (HTTP 503)'
+    )
   })
 
   it('throws zod when a success body violates the response schema (anti-drift)', async () => {

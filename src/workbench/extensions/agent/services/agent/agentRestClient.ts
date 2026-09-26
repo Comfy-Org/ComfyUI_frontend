@@ -40,7 +40,11 @@ export class AgentApiError extends Error {
     body: unknown,
     retryAfterSeconds?: number
   ) {
-    super(message)
+    super(
+      message.trim().length > 0
+        ? message
+        : `Agent request failed (HTTP ${status})`
+    )
     this.name = 'AgentApiError'
     this.status = status
     this.body = body
