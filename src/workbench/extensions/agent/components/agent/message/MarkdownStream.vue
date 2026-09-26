@@ -45,6 +45,10 @@ const segments = computed<Segment[]>(() => {
   let prose = ''
   const flushProse = () => {
     if (!prose) return
+    if (out.at(-1)?.type === 'assets' && !prose.trim()) {
+      prose = ''
+      return
+    }
     out.push({
       type: 'prose',
       html: renderMarkdownToHtml(prose, apiBaseUrl)

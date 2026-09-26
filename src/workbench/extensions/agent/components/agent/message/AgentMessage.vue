@@ -48,6 +48,18 @@ const activityParts = computed<readonly ActivityPart[]>(() =>
   )
 )
 
+function appendTextGroup(out: Group[], part: TextPart): void {
+  const prev = out.at(-1)
+  if (prev?.kind !== 'text') {
+    out.push({ kind: 'text', part })
+    return
+  }
+  prev.part = {
+    ...part,
+    text: `${prev.part.text}\n\n${part.text}`
+  }
+}
+
 const groups = computed<Group[]>(() => {
   const out: Group[] = []
   let tracePlaced = activityParts.value.length === 0
@@ -57,7 +69,7 @@ const groups = computed<Group[]>(() => {
       tracePlaced = true
       out.push({ kind: 'trace' })
     } else if (part.type === 'text') {
-      out.push({ kind: 'text', part })
+      appendTextGroup(out, part)
     } else if (part.type === 'tabLink') {
       const prev = out.at(-1)
       if (prev?.kind === 'tabLinks') prev.parts.push(part)

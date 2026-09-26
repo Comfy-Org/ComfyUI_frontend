@@ -393,6 +393,32 @@ describe('AgentMessage thinking narration', () => {
     ).toEqual(['Set widget', 'Add node'])
   })
 
+  it('grids generated images split across text parts in one turn', () => {
+    const first =
+      'https://cloud.comfy.org/api/view?filename=first.png&type=output'
+    const second =
+      'https://cloud.comfy.org/api/view?filename=second.png&type=output'
+    const message = thinkingMessage()
+    message.thinking = false
+    message.streaming = false
+    message.parts = [
+      { type: 'tool', callId: 'tool_0', name: 'run', state: 'done' },
+      { type: 'text', text: `![first](${first})`, state: 'done' },
+      { type: 'tool', callId: 'tool_1', name: 'get_output', state: 'done' },
+      { type: 'text', text: `![second](${second})`, state: 'done' }
+    ]
+
+    render(AgentMessage, {
+      props: { message },
+      global: { plugins: [i18n] }
+    })
+
+    const images = screen.getAllByTestId('reply-image-preview')
+    expect(images).toHaveLength(2)
+    expect(images[0]).toHaveClass('size-full', 'object-cover')
+    expect(images[1]).toHaveClass('size-full', 'object-cover')
+  })
+
   it('folds the whole turn into one timing-free accordion', async () => {
     const message = thinkingMessage()
     message.thinking = false
