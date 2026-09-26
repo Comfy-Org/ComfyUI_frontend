@@ -805,21 +805,27 @@ export function useAgentSession(deps: AgentSessionDeps) {
       const outcome = await fetchTurnOutcome(turn, signal)
       if (!isTurnLive(turn, generation)) return
       if (settleFinishedTurn(turn, outcome)) return
-      if (outcome.kind === 'error' && !noticed) {
-        noticed = true
-        pushError(outcome.message)
-      }
+      noticed = noticeFirstError(outcome, noticed)
       consecutiveFailures =
         outcome.kind === 'streaming' ? 0 : consecutiveFailures + 1
-      if (consecutiveFailures >= TURN_RECOVERY_MAX_CONSECUTIVE_FAILURES) {
-        // No row for the turn means the server has nothing left to deliver, so
-        // settle with the text we already have. A run of failed checks says
-        // nothing about the turn, so leave it live for the socket.
-        if (outcome.kind === 'message-missing')
-          conversationStore.settleTurn(turn, undefined)
-        return
-      }
+      if (consecutiveFailures < TURN_RECOVERY_MAX_CONSECUTIVE_FAILURES) continue
+      // Out of budget. No row for the turn means the server has nothing left to
+      // deliver, so settle with the text we already have; a run of failed checks
+      // says nothing about the turn, so leave it live for the socket.
+      if (outcome.kind === 'message-missing')
+        conversationStore.settleTurn(turn, undefined)
+      return
     }
+  }
+
+  /**
+   * One notice per recovery job: a job that keeps failing would otherwise stack
+   * the same message once per attempt.
+   */
+  function noticeFirstError(outcome: TurnOutcome, noticed: boolean): boolean {
+    if (noticed || outcome.kind !== 'error') return noticed
+    pushError(outcome.message)
+    return true
   }
 
   function isTurnLive(turn: LiveTurn, generation: number): boolean {
