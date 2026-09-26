@@ -152,13 +152,7 @@ export class AgentFollowerHostSocket {
     this.socket.send(JSON.stringify(frame))
   }
 
-  /**
-   * Emits one ComfyUI execution frame on the same `/ws` the doc and agent
-   * frames ride — in production a cloud execution's lifecycle arrives on this
-   * socket too, and `send()` deliberately rejects anything that is not a doc
-   * or agent frame, which left agent fixtures with no way to produce a
-   * running, completed or failed execution at all.
-   */
+  /** Emits a ComfyUI execution frame on the shared `/ws`. */
   sendExecution(frame: ExecutionHostFrame): void {
     if (!this.socket) throw new Error('the app has not opened /ws yet')
     this.socket.send(JSON.stringify(frame))

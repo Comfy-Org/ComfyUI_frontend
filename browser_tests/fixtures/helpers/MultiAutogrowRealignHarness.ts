@@ -101,6 +101,12 @@ export class MultiAutogrowRealignHarness {
     return prompt
   }
 
+  outputImage(nodeId: number | string): Locator {
+    return this.vueNodes
+      .getNodeLocator(String(nodeId))
+      .locator('img[src*="/api/view"]')
+  }
+
   constructor(private readonly page: Page) {
     this.hostSocket = new AgentFollowerHostSocket(
       page,

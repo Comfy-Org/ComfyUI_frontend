@@ -12,16 +12,6 @@ const PROMPT_ROUTE_PATTERN = /\/api\/prompt$/
 /**
  * Queue and execution surface for the black-box agent harness.
  *
- * The agent fixtures mock `/api/agent/*` and the doc socket but carried no
- * execution at all: `/api/jobs` answered an empty list forever and a submitted
- * `/api/prompt` was swallowed after capture, so nothing that depends on a
- * workflow actually running — a completed execution with visible outputs, a
- * failed job, a stalled job — could be asserted. This helper is that missing
- * surface. It keeps one stateful job list served through the same status- and
- * pagination-aware `/api/jobs` mock the queue specs use, drives the execution
- * lifecycle over the harness's own `/ws` route (production delivers execution
- * frames on that same socket), and serves output bytes from `/api/view`.
- *
  * Install it after the rest of the harness so its routes win: Playwright runs
  * the most-recently-registered matching handler first.
  */
@@ -41,11 +31,6 @@ export class AgentExecutionHelper {
     this.assets = new AssetsHelper(page)
   }
 
-  /**
-   * Routes `/api/prompt` (capture plus a fresh job id — the submission lands
-   * in the job list as `pending`, the way a real queue answers), the stateful
-   * `/api/jobs` list, and `/api/view` for output bytes.
-   */
   async install(): Promise<void> {
     await mockViewFiles(this.page, this.viewFiles)
     await this.assets.mockOutputHistory([])
@@ -74,12 +59,10 @@ export class AgentExecutionHelper {
     })
   }
 
-  /** Prompt bodies captured from `/api/prompt`, in submission order. */
   submittedPrompts(): readonly unknown[] {
     return this.submitted
   }
 
-  /** The job id `/api/prompt` answered for the most recent submission. */
   lastSubmittedJobId(): string {
     if (this.jobCounter === 0) throw new Error('no prompt was submitted')
     return `agent-exec-job-${this.jobCounter}`
@@ -101,7 +84,6 @@ export class AgentExecutionHelper {
     })
   }
 
-  /** Moves a job to `in_progress` and announces the start on the socket. */
   async startJob(jobId: string): Promise<void> {
     await this.upsertJob({
       id: jobId,
@@ -158,7 +140,6 @@ export class AgentExecutionHelper {
     this.status(0)
   }
 
-  /** Fails a job with a deterministic error, on the socket and in the list. */
   async failJob(
     jobId: string,
     {
