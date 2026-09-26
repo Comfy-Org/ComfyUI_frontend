@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import { getSelectedModelsMetadata } from '@/workbench/utils/modelMetadataUtil'
+import { getSelectedModelsMetadata } from './modelRequirements'
 
-describe('modelMetadataUtil', () => {
+describe('modelRequirements', () => {
   describe('filterModelsByCurrentSelection', () => {
     it('should filter models to only include those selected in widget values', () => {
       const node = {

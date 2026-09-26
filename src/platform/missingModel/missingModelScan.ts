@@ -2,11 +2,14 @@ import type { ModelFile } from '@/platform/workflow/validation/schemas/workflowS
 import { getComboWidgetInventory } from '@/core/graph/widgets/comboWidgetInventory'
 import type { FlattenableWorkflowGraph } from '@/platform/workflow/core/utils/workflowFlattening'
 import { flattenWorkflowNodes } from '@/platform/workflow/core/utils/workflowFlattening'
+import {
+  getSelectedModelsMetadata,
+  isInactiveWorkflowNodeMode,
+  isNodeAndAncestorsActive
+} from '@/platform/workflow/core/utils/modelRequirements'
 import type { MissingModelCandidate, MissingModelViewModel } from './types'
 import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-// eslint-disable-next-line import-x/no-restricted-paths
-import { getSelectedModelsMetadata } from '@/workbench/utils/modelMetadataUtil'
 import {
   inputForWidget,
   promotedInputWidgets
@@ -30,9 +33,7 @@ import {
   getExecutionIdByNode,
   isExecutionPathActive
 } from '@/utils/graphTraversalUtil'
-import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { resolveComboValues } from '@/utils/litegraphUtil'
-import { getParentExecutionIds } from '@/types/nodeIdentification'
 
 export type MissingModelWorkflowData = FlattenableWorkflowGraph & {
   models?: ModelFile[]
@@ -103,10 +104,6 @@ function isAssetWidget(widget: IBaseWidget): widget is IAssetWidget {
   return widget.type === 'asset'
 }
 
-function isInactiveMode(mode: number | undefined): boolean {
-  return mode === LGraphEventMode.NEVER || mode === LGraphEventMode.BYPASS
-}
-
 interface ModelWidgetScanTarget {
   executionId: NodeExecutionId
   nodeType: string
@@ -160,7 +157,7 @@ export function scanAllModelCandidates(
   const candidates: MissingModelCandidate[] = []
 
   for (const node of allNodes) {
-    if (isInactiveMode(node.mode)) continue
+    if (isInactiveWorkflowNodeMode(node.mode)) continue
 
     candidates.push(
       ...scanNodeModelCandidates(
@@ -451,23 +448,6 @@ function collectEmbeddedModels(
   if (graphData.models?.length) result.push(...graphData.models)
 
   return result
-}
-
-function isNodeAndAncestorsActive(
-  node: ReturnType<typeof flattenWorkflowNodes>[number],
-  nodesById: ReadonlyMap<
-    string,
-    ReturnType<typeof flattenWorkflowNodes>[number]
-  >
-): boolean {
-  if (isInactiveMode(node.mode)) return false
-
-  for (const ancestorId of getParentExecutionIds(String(node.id))) {
-    const ancestor = nodesById.get(ancestorId)
-    if (isInactiveMode(ancestor?.mode)) return false
-  }
-
-  return true
 }
 
 interface AssetVerifier {

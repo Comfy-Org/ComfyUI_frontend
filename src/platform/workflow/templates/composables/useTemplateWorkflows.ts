@@ -13,7 +13,14 @@ import type {
   TemplateInfo,
   WorkflowTemplates
 } from '@/platform/workflow/templates/types/template'
-import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type {
+  ComfyWorkflowJSON,
+  LegacyLoadableWorkflow
+} from '@/platform/workflow/validation/schemas/workflowSchema'
+import {
+  validateComfyWorkflow,
+  zLegacyLoadableWorkflow
+} from '@/platform/workflow/validation/schemas/workflowSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useAssetsStore } from '@/stores/assetsStore'
@@ -215,7 +222,7 @@ export function useTemplateWorkflows() {
   ): Promise<TemplateLoadResult> {
     try {
       const loadedWorkflow = await app.loadGraphData(
-        json,
+        json as ComfyWorkflowJSON,
         true,
         true,
         workflowName,
@@ -280,18 +287,38 @@ export function useTemplateWorkflows() {
     id: string,
     sourceModule: string,
     signal: AbortSignal
-  ) {
-    if (sourceModule === 'default') {
-      // Default templates provided by frontend are served on this separate endpoint
-      return fetch(api.fileURL(`/templates/${id}.json`), { signal }).then((r) =>
-        r.json()
+  ): Promise<ComfyWorkflowJSON | LegacyLoadableWorkflow> {
+    // Default templates provided by frontend are served on this separate endpoint
+    const url =
+      sourceModule === 'default'
+        ? api.fileURL(`/templates/${id}.json`)
+        : api.apiURL(`/workflow_templates/${sourceModule}/${id}.json`)
+
+    const response = await fetch(url, { signal })
+    if (!response.ok) {
+      throw new Error(
+        `Failed to fetch workflow template ${id} (${response.status})`
       )
-    } else {
-      return fetch(
-        api.apiURL(`/workflow_templates/${sourceModule}/${id}.json`),
-        { signal }
-      ).then((r) => r.json())
     }
+
+    const json: unknown = await response.json()
+    let schemaMismatch: string | undefined
+    const validated = await validateComfyWorkflow(json, (detail) => {
+      schemaMismatch = detail
+    })
+    if (validated) return validated
+
+    const legacy = zLegacyLoadableWorkflow.safeParse(json)
+    if (!legacy.success) {
+      throw new Error(`Workflow template ${id} is not a loadable workflow`)
+    }
+    if (schemaMismatch) {
+      reportError(new Error(schemaMismatch), {
+        errorType: 'workflow_template_schema_mismatch',
+        level: 'warning'
+      })
+    }
+    return legacy.data
   }
 
   return {

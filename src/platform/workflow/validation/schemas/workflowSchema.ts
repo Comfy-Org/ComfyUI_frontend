@@ -520,6 +520,17 @@ export type ComfyWorkflowJSON = z.infer<
   typeof zComfyWorkflow | typeof zComfyWorkflow1
 >
 
+export const zLegacyLoadableWorkflow = z
+  .object({
+    version: z.number(),
+    nodes: z.array(z.record(z.unknown())),
+    links: z.array(z.unknown()).optional(),
+    last_node_id: zNodeId.optional(),
+    last_link_id: z.number().optional()
+  })
+  .passthrough()
+export type LegacyLoadableWorkflow = z.infer<typeof zLegacyLoadableWorkflow>
+
 const zWorkflowVersion = z.object({
   version: z.number()
 })

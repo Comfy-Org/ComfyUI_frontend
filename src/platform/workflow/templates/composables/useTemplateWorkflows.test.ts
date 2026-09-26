@@ -97,6 +97,14 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
+const loadableWorkflow = {
+  version: 0.4,
+  last_node_id: 0,
+  last_link_id: 0,
+  nodes: [],
+  links: []
+}
+
 type MockWorkflowTemplatesStore = ReturnType<typeof useWorkflowTemplatesStore>
 
 beforeEach(() => {
@@ -109,7 +117,7 @@ describe('useTemplateWorkflows', () => {
   beforeEach(() => {
     vi.stubGlobal(
       'fetch',
-      vi.fn(async () => Response.json({ workflow: 'data' }))
+      vi.fn(async () => Response.json(loadableWorkflow))
     )
     mockIsCloud.value = true
     mockDistributionIsCloud.value = false
@@ -513,6 +521,68 @@ describe('useTemplateWorkflows', () => {
       errorType: 'error_loading_template'
     })
     expect(loader.loadingTemplateId.value).toBeNull()
+  })
+
+  it('does not open a template when the endpoint reports an HTTP failure', async () => {
+    const { loader } = mountTemplateWorkflows()
+    mockWorkflowTemplatesStore.isLoaded = true
+    // A loadable body behind a failing status: only the status check can reject it
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify(loadableWorkflow), { status: 404 })
+    )
+
+    expect(await loader.loadWorkflowTemplate('template1', 'default')).toBe(
+      'not-started'
+    )
+
+    expect(app.loadGraphData).not.toHaveBeenCalled()
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+      errorType: 'error_loading_template'
+    })
+    expect(useToastStore().messagesToAdd).toContainEqual({
+      severity: 'error',
+      summary: i18n.global.t('g.error'),
+      detail: i18n.global.t('templateWorkflows.error.loading')
+    })
+  })
+
+  it('opens a workflow that only satisfies the legacy load contract', async () => {
+    const { loader } = mountTemplateWorkflows()
+    mockWorkflowTemplatesStore.isLoaded = true
+    const legacyWorkflow = {
+      version: 0.4,
+      nodes: [{ id: 1, type: 'PreviewImage' }]
+    }
+    vi.mocked(fetch).mockResolvedValueOnce(Response.json(legacyWorkflow))
+
+    expect(await loader.loadWorkflowTemplate('template1', 'default')).toBe(
+      'loaded'
+    )
+
+    expect(app.loadGraphData).toHaveBeenCalledWith(
+      expect.objectContaining({ version: 0.4 }),
+      true,
+      true,
+      'template1',
+      { openSource: 'template' }
+    )
+  })
+
+  it('does not open a payload that is not a workflow', async () => {
+    const { loader } = mountTemplateWorkflows()
+    mockWorkflowTemplatesStore.isLoaded = true
+    vi.mocked(fetch).mockResolvedValueOnce(
+      Response.json({ detail: 'template not found' })
+    )
+
+    expect(await loader.loadWorkflowTemplate('template1', 'default')).toBe(
+      'not-started'
+    )
+
+    expect(app.loadGraphData).not.toHaveBeenCalled()
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+      errorType: 'error_loading_template'
+    })
   })
 
   function addVideoTemplate(
@@ -927,11 +997,11 @@ describe('useTemplateWorkflows', () => {
     const second = nextLoader.loadWorkflowTemplate('template2', 'default')
 
     unmount()
-    firstJson.resolve(Response.json({ workflow: 'first' }))
+    firstJson.resolve(Response.json({ ...loadableWorkflow, id: 'first' }))
     expect(await first).toBe('not-started')
     expect(nextLoader.loadingTemplateId.value).toBe('template2')
 
-    secondJson.resolve(Response.json({ workflow: 'second' }))
+    secondJson.resolve(Response.json({ ...loadableWorkflow, id: 'second' }))
     expect(await second).toBe('loaded')
     expect(app.loadGraphData).toHaveBeenCalledOnce()
     expect(nextLoader.loadingTemplateId.value).toBeNull()
@@ -946,7 +1016,7 @@ describe('useTemplateWorkflows', () => {
     const result = loader.loadWorkflowTemplate('template1', 'default')
     await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce())
     unmount()
-    templateJson.resolve(Response.json({ workflow: 'data' }))
+    templateJson.resolve(Response.json(loadableWorkflow))
     expect(await result).toBe('not-started')
     expect(app.loadGraphData).not.toHaveBeenCalled()
     expect(loader.loadingTemplateId.value).toBeNull()
@@ -1031,7 +1101,7 @@ describe('useTemplateWorkflows', () => {
       vi.mocked(fetch).mockImplementation((url) =>
         String(url).includes('template1')
           ? templateJson.promise
-          : Promise.resolve(Response.json({ workflow: 'data' }))
+          : Promise.resolve(Response.json(loadableWorkflow))
       )
       const { loader } = mountTemplateWorkflows()
       const first = loader.loadWorkflowTemplate('template1', 'default')
@@ -1040,7 +1110,7 @@ describe('useTemplateWorkflows', () => {
       expect(
         await nextLoader.loadWorkflowTemplate('template2', 'default')
       ).toBe('loaded')
-      templateJson.resolve(Response.json({ workflow: 'data' }))
+      templateJson.resolve(Response.json(loadableWorkflow))
       expect(await first).toBe('not-started')
 
       expect(app.loadGraphData).toHaveBeenCalledTimes(1)
