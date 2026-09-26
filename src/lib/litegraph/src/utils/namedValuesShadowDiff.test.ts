@@ -44,6 +44,38 @@ describe('computeLegacyWidgetShadow', () => {
     expect(shadow).toEqual([{ widgetIndex: 0, name: 'steps', value: 30 }])
   })
 
+  it.for([
+    { label: 'a sparse array', values: [, 12345] },
+    {
+      label: 'an array-like without index 0',
+      values: { 1: 12345, length: 2 }
+    }
+  ])(
+    'reads $label positionally with undefined holes, like configure()',
+    ({ values }) => {
+      const widgets = [makeWidget('steps'), makeWidget('seed')]
+      const shadow = computeLegacyWidgetShadow(widgets, values)
+      expect(shadow).toEqual([
+        { widgetIndex: 0, name: 'steps', value: undefined },
+        { widgetIndex: 1, name: 'seed', value: 12345 }
+      ])
+    }
+  )
+
+  it('truncates a fractional array-like length, like configure()', () => {
+    const widgets = [makeWidget('steps'), makeWidget('seed')]
+    const shadow = computeLegacyWidgetShadow(widgets, {
+      0: 30,
+      1: 12345,
+      2: 'ignored',
+      length: 2.5
+    })
+    expect(shadow).toEqual([
+      { widgetIndex: 0, name: 'steps', value: 30 },
+      { widgetIndex: 1, name: 'seed', value: 12345 }
+    ])
+  })
+
   it('keeps a separate entry per widget instance when names collide', () => {
     const widgets = [makeWidget('scale'), makeWidget('scale')]
     const shadow = computeLegacyWidgetShadow(widgets, [5, 7])

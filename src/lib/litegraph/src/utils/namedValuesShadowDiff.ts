@@ -13,18 +13,25 @@ export interface LegacyWidgetShadowEntry {
   value: unknown
 }
 
+/**
+ * Pairs each serialised widget with the value the positional legacy walk in
+ * `LGraphNode.configure()` would give it. Mirrors `configure()`: the input is
+ * normalised with `Array.from()`, so sparse slots and array-likes without an
+ * index are read positionally as `undefined` rather than ending the walk.
+ */
 export function computeLegacyWidgetShadow(
   widgets: readonly IBaseWidget[],
-  widgetsValues: unknown[] | undefined
+  widgetsValues: ArrayLike<unknown> | undefined
 ): LegacyWidgetShadowEntry[] {
   const shadow: LegacyWidgetShadowEntry[] = []
   if (!widgetsValues) return shadow
 
+  const positional = Array.from(widgetsValues)
   let i = 0
   for (const [widgetIndex, widget] of widgets.entries()) {
     if (widget.serialize === false) continue
-    if (i >= widgetsValues.length) break
-    shadow.push({ widgetIndex, name: widget.name, value: widgetsValues[i++] })
+    if (i >= positional.length) break
+    shadow.push({ widgetIndex, name: widget.name, value: positional[i++] })
   }
   return shadow
 }

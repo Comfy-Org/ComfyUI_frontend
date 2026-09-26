@@ -513,6 +513,45 @@ describe('reconcileAgentAdapters', () => {
       ).toBe(7)
     })
 
+    it('hands configure() name-keyed values to restore and extension slots', () => {
+      const graph = new LGraph()
+      const scope = graphScopeOf(graph)
+      remoteMutations(scope).addNode(
+        { ...nodePayload(1, 'widget-node'), widgets_values: { value: 7 } },
+        REMOTE
+      )
+      const configureSpy = vi.spyOn(WidgetNode.prototype, 'configure')
+
+      reconcileAgentAdapters(graph)
+
+      expect(configureSpy).toHaveBeenCalledTimes(1)
+      const info = configureSpy.mock.calls[0][0]
+      expect(info.widgets_values_named).toEqual({ value: 7 })
+      expect(info.widgets_values).toEqual({ value: 7 })
+      expect(graph.getNodeById(toNodeId(1))?.widgets?.[0].value).toBe(7)
+    })
+
+    it('configures from an existing widgets_values_named slot without synthesising widgets_values', () => {
+      const graph = new LGraph()
+      const scope = graphScopeOf(graph)
+      remoteMutations(scope).addNode(
+        {
+          ...nodePayload(1, 'widget-node'),
+          widgets_values_named: { value: 7 }
+        },
+        REMOTE
+      )
+      const configureSpy = vi.spyOn(WidgetNode.prototype, 'configure')
+
+      reconcileAgentAdapters(graph)
+
+      expect(configureSpy).toHaveBeenCalledTimes(1)
+      const info = configureSpy.mock.calls[0][0]
+      expect(info.widgets_values_named).toEqual({ value: 7 })
+      // Hooks see the wire payload; no positional record is synthesised.
+      expect(info).not.toHaveProperty('widgets_values')
+    })
+
     it('applies a widget update received before the node materializes', () => {
       const graph = new LGraph()
       const scope = graphScopeOf(graph)
@@ -532,6 +571,25 @@ describe('reconcileAgentAdapters', () => {
           widgetId(scope.rootGraphId, toNodeId(1), 'value')
         )?.value
       ).toBe(9)
+    })
+
+    it('overlays a raced store write onto the named slot but leaves the wire payload alone', () => {
+      const graph = new LGraph()
+      const scope = graphScopeOf(graph)
+      const mutations = remoteMutations(scope)
+      mutations.addNode(
+        { ...nodePayload(1, 'widget-node'), widgets_values: { value: 7 } },
+        REMOTE
+      )
+      mutations.setWidget(toNodeId(1), 'value', 9, REMOTE)
+      const configureSpy = vi.spyOn(WidgetNode.prototype, 'configure')
+
+      reconcileAgentAdapters(graph)
+
+      const info = configureSpy.mock.calls[0][0]
+      expect(info.widgets_values_named).toEqual({ value: 9 })
+      expect(info.widgets_values).toEqual({ value: 7 })
+      expect(graph.getNodeById(toNodeId(1))?.widgets?.[0].value).toBe(9)
     })
 
     it.fails('keeps canonical layout geometry when configuring a materialized node', () => {

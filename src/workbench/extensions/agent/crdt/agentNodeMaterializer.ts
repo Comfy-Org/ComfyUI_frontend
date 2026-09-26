@@ -17,7 +17,6 @@ import type {
   ExportedSubgraph,
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
-import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { reportError } from '@/platform/telemetry/reportError'
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 import { useLinkStore } from '@/stores/linkStore'
@@ -33,6 +32,7 @@ import type { WidgetStateInit } from '@/types/widgetState'
 
 import { allSubgraphDefinitions } from './agentSubgraphDefinitions'
 import { runMintPortsSuppressed } from './mintPortWiring'
+import { parseWidgetValues, serialisedWidgetSlots } from './nodePayload'
 
 const AGENT_ECS_TAGS = {
   failure_kind: 'caught_unexpected',
@@ -50,6 +50,7 @@ export type MaterializableGraph = Pick<
   | 'rootGraph'
   | '_nodes'
   | '_nodes_by_id'
+  | 'getNodeById'
   | 'add'
   | 'remove'
   | 'setDirtyCanvas'
@@ -559,31 +560,38 @@ function replayUpdatedWidgetCallbacks(
 ): void {
   const values = namedWidgetValues(serialised)
   if (!values) return
-  const canonicalByName = new Map(
-    widgets.flatMap((state) => (state.name ? [[state.name, state]] : []))
-  )
-  for (const [name, state] of canonicalByName) {
-    const previousValue = values[name]
-    if (Object.hasOwn(values, name) && Object.is(previousValue, state.value)) {
-      continue
-    }
+  for (const [name, value] of canonicalWidgetValues(widgets)) {
+    const previousValue = values.get(name)
+    if (values.has(name) && Object.is(previousValue, value)) continue
     const widget = node.widgets?.find((candidate) => candidate.name === name)
     if (!widget) continue
-    widget.value = state.value
-    widget.callback?.(state.value)
-    node.onWidgetChanged?.(name, state.value, previousValue, widget)
+    widget.value = value
+    widget.callback?.(value)
+    node.onWidgetChanged?.(name, value, previousValue, widget)
   }
 }
 
+/**
+ * The name-keyed widget values a payload carries, read through the codec:
+ * `widgets_values_named` when present, else a record-shaped
+ * `widgets_values`. Positional and omitted payloads have none.
+ */
 function namedWidgetValues(
   serialised: ISerialisedNode
-): Record<string, WidgetValue> | undefined {
-  const values = serialised.widgets_values_named ?? serialised.widgets_values
-  if (!values || Array.isArray(values) || typeof values !== 'object') return
-  const entries = Object.entries(values)
-  return entries.every(([, value]) => isWidgetValue(value))
-    ? Object.fromEntries(entries)
-    : undefined
+): ReadonlyMap<string, WidgetValue> | undefined {
+  const widgets = parseWidgetValues(
+    serialised.widgets_values_named ?? serialised.widgets_values
+  )
+  return widgets.kind === 'named' ? widgets.values : undefined
+}
+
+/** Canonical widget-store values keyed by name; unnamed records are skipped. */
+function canonicalWidgetValues(
+  widgets: readonly WidgetStateInit[]
+): ReadonlyMap<string, WidgetValue> {
+  return new Map(
+    widgets.flatMap((state) => (state.name ? [[state.name, state.value]] : []))
+  )
 }
 
 /** Same placeholder `LGraph.configure()` builds for an unregistered type. */
@@ -597,22 +605,45 @@ function missingNode(state: NodeState): LGraphNode {
 }
 
 /**
- * Op-layer serialisations carry widget values keyed by name; `configure()`
- * only reads name-keyed values from `widgets_values_named`.
+ * Op-layer serialisations carry widget values keyed by name in
+ * `widgets_values`; route them through the one shape boundary so restoration
+ * reads `widgets_values_named` while extension hooks retain the wire shape.
+ *
+ * Canonical widget-store values written before the node materialized (a
+ * `set_widget` that raced the add) overlay the payload's named values, so the
+ * live widget is configured with the latest value rather than the one the
+ * add carried. Positional and omitted payloads are handed over as detached
+ * copies without an overlay: their slots are not addressable by name.
+ *
+ * A payload that already carries `widgets_values_named` keeps that slot as
+ * the base of the overlay and gets no synthesised `widgets_values`, so hooks
+ * keep seeing the wire payload.
+ *
+ * The two branches deliberately differ. The named branch preserves the wire
+ * record because it is the slot restoration reads. The other branch
+ * normalises through {@link parseWidgetValues}: a positional array is
+ * replaced by a detached copy (a hook that mutates `info.widgets_values`
+ * scribbles on the copy, not the op-layer payload) and a `widgets_values`
+ * that is `null` or a primitive is dropped rather than forwarded, which is
+ * exactly what `configure()` restores from it (`Array.from(x ?? [])`).
  */
 function withNamedWidgetValues(
   serialised: ISerialisedNode,
   widgets: readonly WidgetStateInit[]
 ): ISerialisedNode {
-  const namedValues = namedWidgetValues(serialised)
-  if (!namedValues) return serialised
+  const named = namedWidgetValues(serialised)
+  if (!named) {
+    const { widgets_values, ...rest } = serialised
+    return {
+      ...rest,
+      ...serialisedWidgetSlots(parseWidgetValues(widgets_values))
+    }
+  }
   return {
     ...serialised,
-    widgets_values_named: {
-      ...namedValues,
-      ...Object.fromEntries(
-        widgets.map((widget) => [widget.name ?? '', widget.value])
-      )
-    }
+    widgets_values_named: Object.fromEntries([
+      ...named,
+      ...canonicalWidgetValues(widgets)
+    ])
   }
 }

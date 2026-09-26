@@ -17,6 +17,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import type { GraphMutations } from './graphMutations'
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 import type { reportError as reportErrorFn } from '@/platform/telemetry/reportError'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
@@ -1248,7 +1249,8 @@ describe('useAgentCrdtFollower', () => {
       const onMaterialized = vi.fn()
       const graph = fromPartial<MaterializableGraph>({
         ...fakeGraph,
-        _nodes_by_id: { [toNodeId(3)]: {} }
+        getNodeById: (id: NodeId) =>
+          id === toNodeId(3) ? fromPartial<LGraphNode>({}) : null
       })
       const { unmount } = mountFollower('wf-1', true, () => graph, {
         onMaterialized
@@ -1292,7 +1294,8 @@ describe('useAgentCrdtFollower', () => {
       const graph = shallowRef<MaterializableGraph | null>(null)
       const readyGraph = fromPartial<MaterializableGraph>({
         ...fakeGraph,
-        _nodes_by_id: { [toNodeId(3)]: {} }
+        getNodeById: (id: NodeId) =>
+          id === toNodeId(3) ? fromPartial<LGraphNode>({}) : null
       })
       let nodes: Record<string, unknown> = {}
       const { unmount } = mountFollower('wf-1', true, () => graph.value, {
