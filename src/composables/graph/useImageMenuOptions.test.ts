@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { useImageMenuOptions } from './useImageMenuOptions'
 
@@ -17,7 +18,8 @@ const i18n = createI18n({
         'Open in Mask Editor': 'Open in Mask Editor',
         'Copy Image': 'Copy Image',
         'Paste Image': 'Paste Image',
-        'Save Image': 'Save Image'
+        'Save Image': 'Save Image',
+        'Export Images': 'Export Images'
       }
     }
   }
@@ -87,6 +89,27 @@ describe('useImageMenuOptions', () => {
       const { getImageMenuOptions } = mountComposable()
 
       expect(getImageMenuOptions(node)).toEqual([])
+    })
+
+    it.for([
+      {
+        name: 'several outputs that never loaded as <img> (e.g. EXR)',
+        images: [{ filename: 'f1.exr' }, { filename: 'f2.exr' }],
+        expected: ['Export Images']
+      },
+      {
+        name: 'a single output',
+        images: [{ filename: 'f1.exr' }],
+        expected: []
+      }
+    ])('offers exporting outputs for $name', ({ images, expected }) => {
+      const node = createMockLGraphNode({ imgs: [] })
+      vi.spyOn(useNodeOutputStore(), 'getNodeOutputs').mockReturnValue({
+        images
+      })
+      const { getImageMenuOptions } = mountComposable()
+
+      expect(getImageMenuOptions(node).map((o) => o.label)).toEqual(expected)
     })
 
     it('returns only Paste Image when node has no images but supports paste', () => {
