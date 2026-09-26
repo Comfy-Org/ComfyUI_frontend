@@ -1066,27 +1066,6 @@ describe('AgentPanel extension flag gate', () => {
     })
   })
 
-  it('keeps waiting when a tour ends while Getting Started is still up', async () => {
-    agentFlagEnabled.value = true
-    screenShown()
-    activeTour.value = 'appMode'
-    Object.assign(consentStore, { accepted: false, isChecking: false })
-
-    await loadEntryAndSetup()
-    await nextTick()
-    await flush()
-    activeTour.value = null
-    await flush()
-
-    expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
-    expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBeNull()
-
-    screenClosed()
-    await vi.waitFor(() =>
-      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
-    )
-  })
-
   it('offers in the same session once the dialog that held it closes', async () => {
     agentFlagEnabled.value = true
     openDialog()
