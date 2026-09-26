@@ -74,6 +74,8 @@
         variant="secondary"
         size="sm"
         class="h-8 min-w-0 flex-1 rounded-md text-xs"
+        :disabled="isDownloadingAll"
+        :aria-busy="isDownloadingAll"
         :aria-describedby="showGatedModelsHint ? gatedHintId : undefined"
         @click="downloadAllModels"
       >
@@ -92,7 +94,11 @@ import { isCloud } from '@/platform/distribution/types'
 import MissingModelRow from '@/platform/missingModel/components/MissingModelRow.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useMissingModelDownload } from '@/platform/missingModel/composables/useMissingModelDownload'
-import { isTrustedHuggingFaceUrl } from '@/platform/missingModel/missingModelDownload'
+import {
+  downloadModel,
+  isTrustedHuggingFaceUrl
+} from '@/platform/missingModel/missingModelDownload'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { getDownloadableModels } from '@/platform/missingModel/missingModelViewUtils'
 import { formatSize } from '@/utils/formatUtil'
 
@@ -123,8 +129,9 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const gatedHintId = useId()
-const { downloadMissingModel, fileSizeFor, gatedRepoUrlFor } =
-  useMissingModelDownload()
+const { fileSizeFor, gatedRepoUrlFor } = useMissingModelDownload()
+const missingModelStore = useMissingModelStore()
+const isDownloadingAll = ref(false)
 
 const sortedModelRows = computed(() =>
   missingModelGroups
@@ -179,6 +186,9 @@ watch(showGatedModelsHint, (isVisible, wasVisible) => {
 })
 
 const downloadAllLabel = computed(() => {
+  if (isDownloadingAll.value) {
+    return t('rightSidePanel.missingModels.importing')
+  }
   const base = t('rightSidePanel.missingModels.downloadAll')
   const total = downloadableModels.value.reduce(
     (sum, model) => sum + (fileSizeFor(model.url) ?? 0),
@@ -187,9 +197,16 @@ const downloadAllLabel = computed(() => {
   return total > 0 ? `${base} (${formatSize(total)})` : base
 })
 
-function downloadAllModels() {
-  for (const model of downloadableModels.value) {
-    downloadMissingModel(model)
+async function downloadAllModels() {
+  if (isDownloadingAll.value) return
+  isDownloadingAll.value = true
+  try {
+    for (const model of downloadableModels.value) {
+      const stateKey = `unsupported::${model.directory}::${model.name}`
+      await downloadModel(model, missingModelStore.folderPaths, stateKey)
+    }
+  } finally {
+    isDownloadingAll.value = false
   }
 }
 
