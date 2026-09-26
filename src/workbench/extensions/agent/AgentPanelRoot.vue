@@ -71,6 +71,7 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import {
   adoptSharedOnboardingFlag,
   hasSeenCoach,
+  resetCoach,
   scopedOnboardingKey,
   trackCoachDeferral
 } from './composables/agent/useOnboarding'
@@ -358,6 +359,14 @@ watch(
   },
   { immediate: true }
 )
+const coachRef = ref<InstanceType<typeof OnboardingCoach>>()
+function restartCoach(): void {
+  // Take-the-tour stays clickable while the coach is deferred by App Mode, and
+  // there is no instance to hand the transition to. Clearing the persisted flag
+  // makes the replay wait for the mount instead of being dropped.
+  if (coachRef.value) coachRef.value.restart()
+  else if (onboardingKey.value) resetCoach(onboardingKey.value)
+}
 const graphMutationsByWorkflow = new Map<
   string,
   ReturnType<typeof createGraphMutations>
@@ -1224,6 +1233,7 @@ const coachSteps = computed<CoachStep[]>(() => [
   {
     target: '#agent-chat-history',
     placement: 'left-start',
+    tooltip: t('agent.showChatHistory'),
     title: t('agent.coachHistoryTitle'),
     body: t('agent.coachHistoryBody')
   }
@@ -1638,6 +1648,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       @show-target="onShowTarget"
       @paywall-action="onPaywallAction"
       @new-chat="onNewChat('new_chat_button')"
+      @start-tour="restartCoach"
       @toggle-size="agentPanelStore.toggleMaximize()"
       @close="onClosePanel"
       @open-history="refreshHistory()"
@@ -1653,6 +1664,8 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
     </AgentPanel>
     <OnboardingCoach
       v-if="consentAccepted && onboardingKey && coachDeferredBy === null"
+      :key="onboardingKey"
+      ref="coachRef"
       :steps="coachSteps"
       :storage-key="onboardingKey"
     />
