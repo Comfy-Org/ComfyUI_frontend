@@ -71,11 +71,11 @@ For all other ADRs, iterate through each file in `docs/adr/` and extract the cor
 
 These ADRs can be skipped for most reviews (they cover completed or narrow-scope decisions):
 
-- **ADR-PRIMEVUE** (Rejected — Fork PrimeVue) — only relevant if someone proposes forking PrimeVue again
+- **DEPS-DESIGN-SYSTEM-0004** (Rejected — Fork PrimeVue) — only relevant if someone proposes forking PrimeVue again
 
 ## How to Check
 
-1. Identify changed files in the entity/litegraph layer: `src/lib/litegraph/`, `src/ecs/`, `src/platform/`, entity-related stores
+1. Identify changed files in the entity/litegraph layer: `src/lib/litegraph/`, `src/renderer/core/layout/`, `src/platform/`, entity-related stores (`src/stores/`)
 2. For Priority 1 patterns, use targeted searches:
 
    ```
