@@ -176,6 +176,17 @@ export interface AgentCrdtStatus {
   outcomes: AgentCrdtOutcomeCounters
 }
 
+type OpsResultDropReason = 'inactive_target' | 'workflow_mismatch'
+
+function opsResultDropReason(
+  active: boolean,
+  workflowId: unknown,
+  subscribedWorkflowId: string | null
+): OpsResultDropReason | null {
+  if (!active) return 'inactive_target'
+  return workflowId === subscribedWorkflowId ? null : 'workflow_mismatch'
+}
+
 export interface AgentCrdtFollowerEvents {
   onMaterialized?: (event: {
     workflowId: string
@@ -476,11 +487,19 @@ function startAgentCrdtFollower(
   const onOpsResult: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
     const detail = event.detail as { workflowId?: unknown } | null
-    if (
-      !isTargetActive.value ||
-      detail?.workflowId !== subscribedWorkflowId.value
+    const dropReason = opsResultDropReason(
+      isTargetActive.value,
+      detail?.workflowId,
+      subscribedWorkflowId.value
     )
+    if (dropReason !== null) {
+      recordDevEvent('doc_ops_result_dropped', {
+        reason: dropReason,
+        subscribedWorkflowId: subscribedWorkflowId.value,
+        frame: event.detail ?? null
+      })
       return
+    }
     lifecycle.onDocumentResult()
     lastFrameType.value = event.type
     recordDevEvent('doc_ops_result', event.detail ?? null)
