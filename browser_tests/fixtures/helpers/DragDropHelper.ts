@@ -15,6 +15,14 @@ export class DragDropHelper {
     options: {
       fileName?: string
       filePath?: string
+      /**
+       * A file whose bytes are generated inside the page instead of read from
+       * disk. A file-size-limit case needs one larger than anything worth
+       * committing as a fixture, and the disk path below ships its bytes
+       * through `page.evaluate` as a plain number array — fine for a 6 KB clip,
+       * ruinous for a 20 MB one.
+       */
+      generatedFile?: { name: string; type: string; byteLength: number }
       url?: string
       dropPosition?: Position
       waitForUpload?: boolean
@@ -25,22 +33,30 @@ export class DragDropHelper {
       dropPosition = { x: 100, y: 100 },
       fileName,
       filePath,
+      generatedFile,
       url,
       waitForUpload = false,
       preserveNativePropagation = false
     } = options
 
-    if (!fileName && !filePath && !url)
-      throw new Error('Must provide fileName, filePath, or url')
+    if (!fileName && !filePath && !url && !generatedFile)
+      throw new Error('Must provide fileName, filePath, generatedFile, or url')
 
     const evaluateParams: {
       dropPosition: Position
       fileName?: string
       fileType?: string
       buffer?: Uint8Array | number[]
+      byteLength?: number
       url?: string
       preserveNativePropagation: boolean
     } = { dropPosition, preserveNativePropagation }
+
+    if (generatedFile) {
+      evaluateParams.fileName = generatedFile.name
+      evaluateParams.fileType = generatedFile.type
+      evaluateParams.byteLength = generatedFile.byteLength
+    }
 
     if (fileName || filePath) {
       const resolvedPath = filePath ?? assetPath(fileName!)
@@ -73,14 +89,14 @@ export class DragDropHelper {
     await this.page.evaluate(async (params) => {
       const dataTransfer = new DataTransfer()
 
-      if (params.buffer && params.fileName && params.fileType) {
-        const file = new File(
-          [new Uint8Array(params.buffer)],
-          params.fileName,
-          {
-            type: params.fileType
-          }
-        )
+      const bytes =
+        params.byteLength === undefined
+          ? params.buffer && new Uint8Array(params.buffer)
+          : new Uint8Array(params.byteLength)
+      if (bytes && params.fileName && params.fileType) {
+        const file = new File([bytes], params.fileName, {
+          type: params.fileType
+        })
         dataTransfer.items.add(file)
       }
 
@@ -170,6 +186,16 @@ export class DragDropHelper {
     options: { dropPosition?: Position; waitForUpload?: boolean } = {}
   ): Promise<void> {
     return this.dragAndDropExternalResource({ filePath, ...options })
+  }
+
+  async dragAndDropGeneratedFile(
+    generatedFile: { name: string; type: string; byteLength: number },
+    options: {
+      dropPosition?: Position
+      preserveNativePropagation?: boolean
+    } = {}
+  ): Promise<void> {
+    return this.dragAndDropExternalResource({ generatedFile, ...options })
   }
 
   async dragAndDropURL(
