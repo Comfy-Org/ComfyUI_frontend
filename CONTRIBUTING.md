@@ -216,6 +216,12 @@ We've also included a list of recommended extensions in `.vscode/extensions.json
 
 Playwright tests verify the whole app. See [browser_tests/README.md](browser_tests/README.md) for details. The snapshots are generated in the GH actions runner, not locally.
 
+### Temporarily Disabled Tests
+
+Do not commit disabled tests or suites. Delete retired tests, and fix temporarily
+failing tests before merging. The lint rules reject Vitest `skip`, `skipIf`,
+`runIf`, and `todo` declarations and Playwright `skip` declarations.
+
 ### Running All Tests
 
 Before submitting a PR, ensure all tests pass:
