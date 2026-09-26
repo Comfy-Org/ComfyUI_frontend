@@ -14,7 +14,8 @@ const previewSrc = usePreviewVideo(video, () => model.thumbnail?.url)
     v-if="model.thumbnail?.kind === 'video'"
     ref="video"
     :src="previewSrc"
-    :aria-label="model.name"
+    aria-hidden="true"
+    data-testid="model-card-video"
     class="size-full object-cover transition-transform duration-300 group-hover:scale-105"
     muted
     loop
@@ -24,7 +25,7 @@ const previewSrc = usePreviewVideo(video, () => model.thumbnail?.url)
   <img
     v-else-if="model.thumbnail"
     :src="model.thumbnail.url"
-    :alt="model.name"
+    alt=""
     class="size-full object-cover transition-transform duration-300 select-none group-hover:scale-105"
     loading="lazy"
     decoding="async"
