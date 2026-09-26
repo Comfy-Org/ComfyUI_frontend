@@ -6,10 +6,6 @@ test.describe(
   'Canvas additions beside an empty Agent composer',
   { tag: ['@cloud', '@agent', '@canvas', '@node'] },
   () => {
-    // Regression source: PM-1583 / PM-1584 and
-    // https://github.com/Comfy-Org/ComfyUI_frontend/pull/18400
-    // Adding a node on the canvas must not be mistaken for the explicit
-    // "Add to prompt" gesture.
     test.use({ objectInfo: 'server' })
 
     test('does not auto-mention a node added on the canvas', async ({
