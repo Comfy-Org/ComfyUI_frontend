@@ -1522,7 +1522,12 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(session.notices.value).toEqual([])
   })
 
-  it('(g15) a deleted current thread is forgotten so the next send starts a new one', async () => {
+  it('(g15) a deleted team-workspace thread is forgotten without touching another workspace', async () => {
+    sessionStorage.setItem(
+      'Comfy.Workspace.Current',
+      JSON.stringify({ type: 'team', id: 'workspace-b' })
+    )
+    localStorage.setItem(StorageKeys.agentThread('workspace-a'), 'th-a')
     const rest = fakeRest({
       getMessages: vi.fn(async (): Promise<AgentMessages> => {
         throw new AgentApiError('gone', 404, undefined)
@@ -1536,7 +1541,7 @@ describe('useAgentSession (v1 composition root)', () => {
 
     await session.sendMessage('go')
     emit(delta('msg-1', 'partial'))
-    expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBe(
+    expect(localStorage.getItem(StorageKeys.agentThread('workspace-b'))).toBe(
       'th-1'
     )
 
@@ -1546,7 +1551,12 @@ describe('useAgentSession (v1 composition root)', () => {
     await vi.waitFor(() => expect(session.isStreaming.value).toBe(false))
     expect(session.threadId.value).toBeNull()
     expect(session.boundWorkflowId.value).toBeNull()
-    expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBeNull()
+    expect(
+      localStorage.getItem(StorageKeys.agentThread('workspace-b'))
+    ).toBeNull()
+    expect(localStorage.getItem(StorageKeys.agentThread('workspace-a'))).toBe(
+      'th-a'
+    )
 
     await session.sendMessage('again')
     expect(vi.mocked(rest.postMessage).mock.calls.at(-1)?.[0]).toBe('new')
