@@ -20,8 +20,8 @@ import { billingIntentPath } from '@comfyorg/billing-contract'
 
 import HostedSurface from '@/components/HostedSurface.vue'
 import { useHostedCopy } from '@/composables/useHostedCopy'
-import { STRIPE_PUBLISHABLE_KEY } from '@/config/env'
-import { createStripeChallengePort } from '@/session/stripeChallengePort'
+import { awaitBillingWebStripeKey } from '@/config/stripeKey'
+import { createDeferredStripeChallengePort } from '@/session/stripeChallengePort'
 
 const { t } = useI18n()
 const { coded } = useHostedCopy()
@@ -32,10 +32,8 @@ const { lifecycle } = useBillingClient<'lifecycle'>(undefined)
 const checkout = useCheckout({
   openUrl: (url) => window.location.assign(url),
   navigationMode: 'redirect',
-  challengePort:
-    STRIPE_PUBLISHABLE_KEY === undefined
-      ? undefined
-      : createStripeChallengePort(STRIPE_PUBLISHABLE_KEY)
+  // Deferred: reads the key at challenge time, not this setup's snapshot.
+  challengePort: createDeferredStripeChallengePort(awaitBillingWebStripeKey)
 })
 
 const recovering = ref(true)
@@ -104,7 +102,7 @@ const returnResult = computed(() => ({
       reason-class="m-0 text-sm text-destructive-background"
       safety-class="m-0 text-sm text-muted-foreground"
       actions-class="mt-2 flex gap-2"
-      action-class="h-11 cursor-pointer rounded-lg bg-base-foreground px-5 font-semibold text-base-background"
+      action-class="inline-flex h-11 cursor-pointer items-center justify-center rounded-lg bg-base-foreground px-5 font-semibold text-base-background"
       @retry="retryPayment"
       @cancel="checkout.cancel()"
       @continue-verification="checkout.continueVerification()"

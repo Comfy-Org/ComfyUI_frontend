@@ -24,9 +24,11 @@ import type { Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import Tag from '@/components/chip/Tag.vue'
 import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { registerEscapeOverride } from '@/platform/keybindings/escapeOverride'
+import type { AgentStopMethod } from '@/platform/telemetry/types'
 
 import InlinePromptEditor from './composer/InlinePromptEditor.vue'
 import { composerPromptForSend } from '../../utils/composerPrompt'
@@ -82,7 +84,7 @@ const emit = defineEmits<{
     attachments: ComposerAttachment[],
     workflowReferences?: WorkflowReference[]
   ]
-  stop: []
+  stop: [method: AgentStopMethod]
   attach: []
   openAssets: []
   selectNodes: []
@@ -101,7 +103,7 @@ const assetDragActive = inject<Readonly<Ref<boolean>>>(
 )
 
 const duplicateIdClass =
-  'shrink-0 rounded-full bg-interface-menu-keybind-surface-default px-1 py-0.5 font-mono text-xs/4 font-medium text-base-foreground'
+  'shrink-0 rounded-full bg-interface-menu-keybind-surface-default px-1 py-0.5 font-mono text-xs/4 text-base-foreground'
 
 const running = computed(() => streaming || submitting)
 
@@ -136,7 +138,7 @@ const composer = useComposer({
     } else emit('send', text, attachments)
   },
   isRunning: () => running.value,
-  onStop: () => emit('stop')
+  onStop: () => emit('stop', 'button')
 })
 
 const editorRef =
@@ -217,7 +219,7 @@ function onComposerKeydown(event: KeyboardEvent): void {
   ) {
     event.preventDefault()
     event.stopPropagation()
-    emit('stop')
+    emit('stop', 'escape')
   }
 }
 
@@ -249,7 +251,7 @@ const primaryActionShortcut = computed(() =>
 )
 
 function onPrimaryAction(): void {
-  if (running.value) emit('stop')
+  if (running.value) emit('stop', 'button')
   else composer.submit()
 }
 
@@ -300,7 +302,7 @@ function handleEscapeOverride(event: KeyboardEvent): boolean {
   if (focusedElsewhere) return false
 
   event.preventDefault()
-  if (!event.repeat) emit('stop')
+  if (!event.repeat) emit('stop', 'escape')
   return true
 }
 
@@ -461,34 +463,28 @@ defineExpose({
         data-testid="composer-node-section"
         class="flex flex-wrap items-center gap-2 border-b border-border-default p-3"
       >
-        <span
+        <Tag
           v-for="tag in selectionTags"
           :key="selectedNodeKey(tag)"
-          class="inline-flex h-7 items-center gap-1 rounded-lg border border-border-default bg-secondary-background-hover px-2.5 text-xs/4 font-medium text-base-foreground transition-colors hover:bg-tertiary-background-hover"
+          :label="tag.title"
+          removable
+          :remove-label="
+            t('agent.removeNodeLabel', { node: `${tag.title} #${tag.id}` })
+          "
+          :remove-tooltip="t('agent.remove')"
+          class="max-w-64"
+          @remove="emit('removeTag', selectedNodeKey(tag))"
         >
-          <span class="flex items-center gap-1">
+          <template #icon>
             <span class="icon-[comfy--node] size-3.5 text-muted-foreground" />
-            <span class="max-w-40 truncate">{{ tag.title }}</span>
-            <span
-              v-if="graphDupes.has(tag.title) || tagDupes.has(tag.title)"
-              :class="duplicateIdClass"
-              >#{{ tag.id }}</span
-            >
-          </span>
-          <Button
-            v-tooltip.top="buildTooltipConfig(t('agent.remove'))"
-            type="button"
-            variant="muted-textonly"
-            size="unset"
-            :aria-label="
-              t('agent.removeNodeLabel', { node: `${tag.title} #${tag.id}` })
-            "
-            class="size-3.5"
-            @click.stop="emit('removeTag', selectedNodeKey(tag))"
+          </template>
+          <span
+            v-if="graphDupes.has(tag.title) || tagDupes.has(tag.title)"
+            :class="duplicateIdClass"
           >
-            <span class="icon-[lucide--x] size-3.5 shrink-0" />
-          </Button>
-        </span>
+            #{{ tag.id }}
+          </span>
+        </Tag>
       </div>
 
       <div

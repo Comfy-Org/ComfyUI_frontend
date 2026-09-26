@@ -85,19 +85,9 @@ const UNAVAILABLE = { status: 'unavailable' } as const
 const SETTLED: SubscriptionRailOutcome = { status: 'ok', value: undefined }
 
 /**
- * What the host renders under its own localized summary, so the two lines do
- * not repeat each other. The SDK's failures carry no server text, so this is
- * the code the command settled on plus the status the server answered with —
- * `serverCode` stays out of it, being unbounded in shape and a value to match
- * rather than to show.
- */
-function describeFailure(code: string, httpStatus: number | undefined): string {
-  return httpStatus === undefined ? code : `${code} (${httpStatus})`
-}
-
-/**
  * The failure as the adapter's own error. `serverCode` lands where the
- * adapter already keeps `WorkspaceApiError.code`.
+ * adapter already keeps `WorkspaceApiError.code`, and the server's own
+ * sentence is the message, as on the legacy rail.
  */
 function projectFailure(
   failure: SubscriptionCommandFailure
@@ -105,11 +95,27 @@ function projectFailure(
   const httpStatus = 'httpStatus' in failure ? failure.httpStatus : undefined
   if (httpStatus === 404) return UNAVAILABLE
 
+  // Nothing failed and nothing was charged, so the generic subscription
+  // failure would misread. The earlier payment is what the customer has to
+  // finish, and this sentence is the only thing that says so.
+  if (failure.code === 'OPERATION_ALREADY_PENDING') {
+    return {
+      status: 'error',
+      error: new WorkspaceApiError(
+        t('billingOperation.operationAlreadyPendingDetail'),
+        undefined,
+        failure.code
+      )
+    }
+  }
+
   const serverCode = 'serverCode' in failure ? failure.serverCode : undefined
+  const serverMessage =
+    'serverMessage' in failure ? failure.serverMessage : undefined
   return {
     status: 'error',
     error: new WorkspaceApiError(
-      describeFailure(failure.code, httpStatus),
+      serverMessage ?? t('billingOperation.subscriptionFailedDetail'),
       httpStatus,
       serverCode ?? failure.code
     )

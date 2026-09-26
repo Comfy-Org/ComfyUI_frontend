@@ -1,9 +1,5 @@
 <template>
-  <div
-    :class="
-      cn('rounded-lg bg-component-node-widget-background p-6', props.class)
-    "
-  >
+  <div :class="cn('rounded-lg bg-secondary-background p-6', props.class)">
     <canvas ref="canvasRef" :aria-label="ariaLabel" role="img" />
   </div>
 </template>

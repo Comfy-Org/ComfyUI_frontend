@@ -40,16 +40,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    fetchApi: vi.fn(),
-    addEventListener: vi.fn(),
-    apiURL: vi.fn((path: string) => path),
-    getServerFeature: vi.fn(
-      (_name: string, defaultValue?: unknown) => defaultValue
-    )
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 vi.mock<unknown>(import('@/i18n'), () => ({
   st: (_key: string, fallback: string) => fallback,
@@ -61,6 +52,12 @@ vi.mock<unknown>(import('@/i18n'), () => ({
 describe('useUploadModelWizard', () => {
   const modelTypes = ref([{ name: 'Checkpoint', value: 'checkpoints' }])
   const mountedApps: App<Element>[] = []
+
+  beforeEach(() => {
+    vi.mocked(api.getServerFeature).mockImplementation(
+      (_name, defaultValue) => defaultValue
+    )
+  })
 
   function setupWithI18n<T>(factory: () => T): T {
     let result: T | undefined

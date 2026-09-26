@@ -2,15 +2,18 @@
 @import '@comfyorg/design-system/css/base.css';
 @import 'tw-animate-css';
 
-/* PP Formula's native vertical metrics place the baseline too high, so caps
-   sit in the upper half of the line box. Overriding ascent/descent re-anchors
-   the baseline so caps render optically centered when line-height is tight. 
-    BUT, IT IS NOT WELL SUPPORTED:
-    ascent-override: 92%;
-    descent-override: 8%;
-    line-gap-override: 0%; */
+/* PP Formula ships an ascent of 90.6% and a descent of 30.6% against a cap
+   height of 82.9%, which leaves its caps sitting 5.9% of the em above the
+   middle of the line box. Every row that centres an icon beside a word
+   inherits that, so the fix belongs to the face rather than to each of them:
+   each override pair splits the face's own content box either side of its cap
+   box, so the caps land in the middle of it at any line-height and
+   `line-height: normal` stays where it was. The narrow cut is drawn to its own
+   metrics and so takes its own pair. */
 @font-face {
   font-family: 'PP Formula';
+  ascent-override: 102.05%;
+  descent-override: 19.15%;
   src: url('/fonts/PPFormula-Light.woff2') format('woff2');
   font-weight: 300;
   font-style: normal;
@@ -19,6 +22,8 @@
 
 @font-face {
   font-family: 'PP Formula';
+  ascent-override: 102.05%;
+  descent-override: 19.15%;
   src: url('/fonts/PPFormula-Regular.woff2') format('woff2');
   font-weight: 400;
   font-style: normal;
@@ -27,6 +32,8 @@
 
 @font-face {
   font-family: 'PP Formula';
+  ascent-override: 102.05%;
+  descent-override: 19.15%;
   src: url('/fonts/PPFormula-Medium.woff2') format('woff2');
   font-weight: 500;
   font-style: normal;
@@ -35,6 +42,8 @@
 
 @font-face {
   font-family: 'PP Formula';
+  ascent-override: 102.05%;
+  descent-override: 19.15%;
   src: url('/fonts/PPFormula-Semibold.woff2') format('woff2');
   font-weight: 600;
   font-style: normal;
@@ -43,6 +52,8 @@
 
 @font-face {
   font-family: 'PP Formula';
+  ascent-override: 102.05%;
+  descent-override: 19.15%;
   src: url('/fonts/PPFormula-Bold.woff2') format('woff2');
   font-weight: 700;
   font-style: normal;
@@ -51,6 +62,8 @@
 
 @font-face {
   font-family: 'PP Formula';
+  ascent-override: 102.05%;
+  descent-override: 19.15%;
   src: url('/fonts/PPFormula-Bold.woff2') format('woff2');
   font-weight: 800;
   font-style: normal;
@@ -59,6 +72,8 @@
 
 @font-face {
   font-family: 'PP Formula Narrow';
+  ascent-override: 99.45%;
+  descent-override: 18.15%;
   src: url('/fonts/PPFormula-NarrowSemibold.woff2') format('woff2');
   font-weight: 600;
   font-style: normal;
@@ -97,9 +112,11 @@
   --color-transparency-ink-t80: rgb(33 25 39 / 0.8);
   --font-formula: 'PP Formula', sans-serif;
   --font-formula-narrow: 'PP Formula Narrow', sans-serif;
+  --text-3xs: 0.625rem;
   --text-2xs: 0.6875rem;
   --text-3\.5xl: 2rem;
   --text-6\.5xl: 4.125rem;
+  --radius-3\.5xl: 1.75rem;
   --radius-4xl: 2rem;
   --radius-4\.5xl: 2.25rem;
   --radius-5xl: 2.5rem;
@@ -119,11 +136,6 @@
   /* The workspace monogram reads as a lighter step of the panel it sits on
      rather than a colour of its own, so it tints with whatever is behind it. */
   --color-workspace-mark: var(--color-transparency-white-t20);
-}
-
-@utility ppformula-text-center-sm {
-  position: relative;
-  top: 0.12em;
 }
 
 @utility content-auto {
@@ -523,15 +535,18 @@
   mask-position: center;
 }
 
-/* PP Formula has asymmetric vertical metrics
-   Shifting visually with `top` corrects the appearance without changing the
-   inline-block's bounding box, so button/badge sizes are unaffected. */
-@utility ppformula-text-center {
-  display: inline-block;
+/* Released Safari versions before 27 ignore the metric overrides above. These
+   marker classes keep the same optical centring there without changing layout
+   or overriding display utilities such as `hidden`. */
+html.ppformula-metric-fallback
+  :where(.ppformula-text-center, .ppformula-text-center-sm) {
   position: relative;
-  top: 0.1em;
+  top: 0.1145em;
 }
 
+html.ppformula-metric-fallback .ppformula-narrow-text-center {
+  transform: translateY(0.1065em);
+}
 /* Hide native play-button overlay iOS Safari shows when autoplay is blocked
    (e.g. Low Power Mode). These are decorative background videos. */
 video::-webkit-media-controls-start-playback-button,

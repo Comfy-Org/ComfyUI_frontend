@@ -1,5 +1,4 @@
 import type { NodeReplacementResponse } from './types'
-import type { ComfyApp } from '@/scripts/app'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -13,11 +12,7 @@ vi.mock(import('./nodeReplacementService'), () => ({
   fetchNodeReplacements: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    getServerFeature: vi.fn()
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 function createStore(settingEnabled = true, serverFeatureEnabled = true) {
   useSettingStore().settingValues['Comfy.NodeReplacement.Enabled'] =
@@ -256,7 +251,4 @@ describe('useNodeReplacementStore', () => {
   })
 })
 
-vi.mock(import('@/scripts/app'), async () => {
-  const { fromPartial } = await import('@total-typescript/shoehorn')
-  return { app: fromPartial<ComfyApp>({}) }
-})
+vi.mock(import('@/scripts/app'))

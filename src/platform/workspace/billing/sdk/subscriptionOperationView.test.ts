@@ -84,7 +84,11 @@ describe('projectSubscriptionResult', () => {
   it.for([
     [
       { status: 'error', code: 'REQUEST_FAILED', httpStatus: 503 },
-      { status: 503, code: 'REQUEST_FAILED', message: 'REQUEST_FAILED (503)' }
+      {
+        status: 503,
+        code: 'REQUEST_FAILED',
+        message: "We couldn't update your subscription. Please try again."
+      }
     ],
     [
       {
@@ -93,11 +97,42 @@ describe('projectSubscriptionResult', () => {
         httpStatus: 409,
         serverCode: serverCode('SUBSCRIPTION_LOCKED')
       },
-      { status: 409, code: 'SUBSCRIPTION_LOCKED', message: 'CONFLICT (409)' }
+      {
+        status: 409,
+        code: 'SUBSCRIPTION_LOCKED',
+        message: "We couldn't update your subscription. Please try again."
+      }
+    ],
+    [
+      {
+        status: 'error',
+        code: 'REQUEST_FAILED',
+        httpStatus: 400,
+        serverCode: serverCode('SUBSCRIPTION_CHANGE_IN_PROGRESS'),
+        serverMessage: 'a subscription change is already in progress'
+      },
+      {
+        status: 400,
+        code: 'SUBSCRIPTION_CHANGE_IN_PROGRESS',
+        message: 'a subscription change is already in progress'
+      }
     ],
     [
       { status: 'error', code: 'SUPERSEDED' },
-      { status: undefined, code: 'SUPERSEDED', message: 'SUPERSEDED' }
+      {
+        status: undefined,
+        code: 'SUPERSEDED',
+        message: "We couldn't update your subscription. Please try again."
+      }
+    ],
+    [
+      { status: 'error', code: 'OPERATION_ALREADY_PENDING' },
+      {
+        status: undefined,
+        code: 'OPERATION_ALREADY_PENDING',
+        message:
+          'A payment you started earlier is still going through. It has to finish before you can choose a different plan.'
+      }
     ]
   ] as const)('surfaces %o as a workspace error', ([failure, expected]) => {
     const outcome = projectSubscriptionResult(failure)
@@ -199,7 +234,7 @@ describe('projectPaymentPortalResult', () => {
     ).toMatchObject({
       status: 403,
       code: 'ACCESS_DENIED',
-      message: 'ACCESS_DENIED (403)'
+      message: "We couldn't update your subscription. Please try again."
     })
   })
 })
