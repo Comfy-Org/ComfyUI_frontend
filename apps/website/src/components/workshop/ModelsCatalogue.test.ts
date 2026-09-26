@@ -60,6 +60,54 @@ const launchModels: WorkshopModel[] = [
 ]
 
 describe('ModelsCatalogue', () => {
+  it.for([
+    {
+      locale: 'en',
+      tab: 'models',
+      subtitle:
+        'Try the latest AI models with your own ideas, right in your browser.'
+    },
+    {
+      locale: 'en',
+      tab: 'workflows',
+      subtitle:
+        'Turn your ideas into finished results with multi-step workflows powered by AI models.'
+    },
+    {
+      locale: 'en',
+      tab: 'apps',
+      subtitle:
+        'Take on bigger ideas with apps that bring multiple workflows together.'
+    },
+    {
+      locale: 'zh-CN',
+      tab: 'models',
+      subtitle: '用你自己的创意试用最新的 AI 模型，就在浏览器中。'
+    },
+    {
+      locale: 'zh-CN',
+      tab: 'workflows',
+      subtitle: '借助由 AI 模型驱动的多步骤工作流，把你的创意变成完整的成果。'
+    },
+    {
+      locale: 'zh-CN',
+      tab: 'apps',
+      subtitle: '用整合多个工作流的应用，挑战更大的创意。'
+    }
+  ] as const)(
+    'introduces the $tab tab in its own words ($locale)',
+    async ({ locale, tab, subtitle }) => {
+      const user = userEvent.setup()
+      render(ModelsCatalogue, { props: { models: launchModels, locale } })
+      if (tab !== 'models')
+        await user.click(screen.getByTestId(`catalogue-tab-${tab}`))
+
+      expect(await screen.findByTestId('workshop-hero')).toHaveTextContent(
+        subtitle
+      )
+    }
+  )
+
   it('separates workflow outcomes from Models and searches their supporting model names', async () => {
     const user = userEvent.setup()
     render(ModelsCatalogue, { props: { models: launchModels } })

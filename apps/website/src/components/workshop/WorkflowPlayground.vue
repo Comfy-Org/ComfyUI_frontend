@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ArrowUpRight } from '@lucide/vue'
 import { useMounted } from '@vueuse/core'
-import { computed, onScopeDispose, ref, watch } from 'vue'
+import { computed, onScopeDispose, ref, useTemplateRef, watch } from 'vue'
 
 import type { WorkflowWorkshopModelDetail } from '../../config/models-catalogue'
 import {
@@ -17,6 +17,7 @@ import {
   workflowErrorKey,
   workflowStatusKey
 } from '../../config/workshop-workflow-presentation'
+import { useStickyFooterScrollPadding } from '../../composables/useStickyFooterScrollPadding'
 import { useTablist } from '../../composables/useTablist'
 import { useWorkflowFormDraft } from '../../composables/useWorkflowFormDraft'
 import { useWorkflowRun } from '../../composables/useWorkflowRun'
@@ -45,6 +46,8 @@ const emit = defineEmits<{ recovery: [active: boolean] }>()
 const sections = ['playground', 'workflow', 'api'] as const
 const section = ref<(typeof sections)[number]>('playground')
 const { onKeydown } = useTablist(() => sections, section)
+const footer = useTemplateRef<HTMLElement>('footer')
+useStickyFooterScrollPadding(footer, () => section.value === 'playground')
 const sectionLabels = {
   playground: 'workshop.model.tabs.playground',
   workflow: 'workshop.workflow.graph',
@@ -210,7 +213,7 @@ function start() {
     class="grid items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]"
   >
     <section
-      class="overflow-hidden rounded-2xl border border-transparency-white-t20"
+      class="min-w-0 rounded-2xl border border-transparency-white-t20"
       aria-labelledby="workflow-inputs-heading"
     >
       <form @submit.prevent="start">
@@ -240,7 +243,11 @@ function start() {
             {{ t('workshop.form.draftRestoreFailed') }}
           </p>
         </div>
-        <div class="space-y-3 border-t border-transparency-white-t8 p-5 lg:p-6">
+        <div
+          ref="footer"
+          class="sticky bottom-0 z-10 space-y-3 rounded-b-2xl border-t border-transparency-white-t8 bg-page/85 p-5 backdrop-blur-sm lg:p-6"
+          data-testid="workflow-run-footer"
+        >
           <p class="text-xs/relaxed text-primary-warm-gray">
             {{ t('workshop.workflow.cloudBilling') }}
           </p>

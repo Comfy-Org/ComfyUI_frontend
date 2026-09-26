@@ -26,9 +26,13 @@ const translations = {
   'workshop.catalogue.apps': { en: 'Apps', 'zh-CN': '应用' },
   'workshop.catalogue.categories': { en: 'Categories', 'zh-CN': '分类' },
   'workshop.catalogue.show': { en: 'Browse', 'zh-CN': '浏览' },
-  'workshop.catalogue.subtitle': {
-    en: 'Models and the workflows built on them, by what you want to make.',
-    'zh-CN': '按你想创作的内容浏览模型及其工作流。'
+  'workshop.catalogue.workflowsSubtitle': {
+    en: 'Turn your ideas into finished results with multi-step workflows powered by AI models.',
+    'zh-CN': '借助由 AI 模型驱动的多步骤工作流，把你的创意变成完整的成果。'
+  },
+  'workshop.catalogue.appsSubtitle': {
+    en: 'Take on bigger ideas with apps that bring multiple workflows together.',
+    'zh-CN': '用整合多个工作流的应用，挑战更大的创意。'
   },
   'workshop.catalogue.appsSoon': {
     en: 'Apps are coming soon',
