@@ -12,6 +12,17 @@ const command = z
   .string()
   .parse(workflow.getIn(['jobs', 'test', 'steps', 0, 'run']))
 
+it('runs the required check even when a dependency fails or is skipped', () => {
+  expect(workflow.toJS()).toMatchObject({
+    jobs: {
+      test: {
+        if: '${{ always() }}',
+        needs: ['changes', 'test-shards', 'test-report']
+      }
+    }
+  })
+})
+
 it.for`
   changes        | shouldRun  | shards         | report         | status
   ${'success'}   | ${'true'}  | ${'success'}   | ${'success'}   | ${0}
