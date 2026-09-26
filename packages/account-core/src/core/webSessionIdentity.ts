@@ -518,6 +518,7 @@ function createAccountIdentity(
   let state: WebSessionIdentityState = { phase: 'idle' }
   let epoch = 0
   let signOuts = 0
+  let signIns = 0
   let cancelRetry: (() => void) | undefined
   let cancelBeat: (() => void) | undefined
   let releaseLeadership: (() => void) | undefined
@@ -717,11 +718,14 @@ function createAccountIdentity(
     },
     signedIn: async (getProof) => {
       const signOutsAtStart = signOuts
+      const signIn = ++signIns
       const result = await createWebSession(options.session, getProof)
       if (result.status !== 'ok') return result
       if (signOuts !== signOutsAtStart) {
-        void deleteWebSession(options.session)
-        return revoked
+        // A later sign-in owns the cookie now; deleting would end its session.
+        if (signIn !== signIns) return revoked
+        const cleanup = await deleteWebSession(options.session)
+        return cleanup.status === 'ok' ? revoked : cleanup
       }
       dispatch({ type: 'session_created', session: result.session })
       publish('sign_in', result)

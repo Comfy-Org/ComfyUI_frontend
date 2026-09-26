@@ -316,6 +316,68 @@ describe('tabs of one site', () => {
     ])
   })
 
+  it('a stale sign-in never deletes the session a later sign-in created', async () => {
+    const endpoint = liveEndpoint({ kind: 'dead', code: 'no_session' })
+    let releaseFirstPost = () => {}
+    const firstPostHeld = new Promise<void>((resolve) => {
+      releaseFirstPost = resolve
+    })
+    let posts = 0
+    const tab = openTab({
+      endpoint,
+      remembered: null,
+      fetchImpl: async (input, init) => {
+        if (init?.method === 'POST' && ++posts === 1) await firstPostHeld
+        return endpoint.fetch(input, init)
+      }
+    })
+    await settle()
+
+    const stale = tab.identity.signedIn(async () => 'first-proof')
+    await settle()
+    await tab.identity.signOut()
+    await tab.identity.signedIn(async () => 'second-proof')
+    const afterSecond = methods(endpoint).length
+    releaseFirstPost()
+    await stale
+    await settle()
+
+    expect(summarize(tab.identity.getState())).toBe('signed_in:user-2')
+    expect(methods(endpoint).slice(afterSecond)).not.toContain('DELETE')
+  })
+
+  it('reports a failed cleanup instead of a clean revocation', async () => {
+    const endpoint = liveEndpoint({ kind: 'dead', code: 'no_session' })
+    let releasePost = () => {}
+    const postHeld = new Promise<void>((resolve) => {
+      releasePost = resolve
+    })
+    let deletes = 0
+    const tab = openTab({
+      endpoint,
+      remembered: null,
+      fetchImpl: async (input, init) => {
+        if (init?.method === 'POST') await postHeld
+        if (init?.method === 'DELETE' && ++deletes === 2) {
+          return new Response('{}', { status: 503 })
+        }
+        return endpoint.fetch(input, init)
+      }
+    })
+    await settle()
+
+    const signingIn = tab.identity.signedIn(async () => 'fresh-proof')
+    await settle()
+    await tab.identity.signOut()
+    releasePost()
+
+    expect(await signingIn).toMatchObject({
+      status: 'error',
+      code: 'SESSION_UNAVAILABLE'
+    })
+    expect(summarize(tab.identity.getState())).toBe('signed_out:signed_out')
+  })
+
   it('a tab that signed out is not signed back in by a sibling heartbeat', async () => {
     const endpoint = liveEndpoint()
     const site = createFakeSiteBus()
