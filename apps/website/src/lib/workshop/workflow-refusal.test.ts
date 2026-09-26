@@ -50,12 +50,16 @@ describe('workflowRunFailure', () => {
   })
 
   // A code this page has not met yet is not given a sentence about something
-  // else; the page keeps saying what it says today.
-  it('claims nothing about a code it does not know', () => {
-    expect(
-      workflowRunFailure({ code: 'teapot' as WorkflowErrorCode })
-    ).toBeUndefined()
-  })
+  // else; the page keeps saying what it says today. 'toString' is here because
+  // a plain object would have answered it with a method of its prototype.
+  it.for(['teapot', 'toString', 'constructor'] as const)(
+    'claims nothing about %s, a code it does not know',
+    (code) => {
+      expect(
+        workflowRunFailure({ code: code as WorkflowErrorCode })
+      ).toBeUndefined()
+    }
+  )
 
   it('only ever names a refusal the panel has words for', () => {
     for (const [, refusal] of REFUSALS)
