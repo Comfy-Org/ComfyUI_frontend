@@ -339,7 +339,7 @@ describe('OnboardingCoach', () => {
 
   it('reports the card as shown again when the tour is replayed', async () => {
     const user = userEvent.setup()
-    const { getByTestId } = mount()
+    mount()
     await screen.findByRole('dialog', { name: STEPS[0].title })
     for (const index of STEPS.keys())
       await user.click(
@@ -349,7 +349,7 @@ describe('OnboardingCoach', () => {
 
     // `reportedShown` latches per tour. A replay reuses the mounted component,
     // so without clearing it the second showing goes unreported.
-    await user.click(getByTestId('coach-restart'))
+    await user.click(screen.getByTestId('coach-restart'))
     await screen.findByRole('dialog', { name: STEPS[0].title })
 
     expect(telemetry().trackAgentOnboardingShown).toHaveBeenCalledTimes(2)
