@@ -77,6 +77,7 @@ function setup() {
     const send = vi.fn<Send>(() => pending.promise)
     const options = {
       canSubmit: () => canSubmit.value,
+      onSubmit: vi.fn(),
       target: () => target.value,
       editableWorkflowId: () => editableWorkflowId.value,
       selection: {

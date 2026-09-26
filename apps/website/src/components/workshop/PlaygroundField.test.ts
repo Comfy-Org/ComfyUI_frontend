@@ -44,6 +44,23 @@ function mountField(
 }
 
 describe('PlaygroundField', () => {
+  it('shows a multiline default in its editor without repeating it as help text', () => {
+    const field: FieldSchema = {
+      kind: 'text',
+      name: 'prompt',
+      label: 'Prompt',
+      required: true,
+      multiline: true,
+      defaultValue:
+        'A continuous shot following the character through a forest.'
+    }
+    mountField(field, defaultValues([field]))
+    expect(screen.getByRole('textbox', { name: 'Prompt' })).toHaveValue(
+      field.defaultValue
+    )
+    expect(screen.queryByText(`Default: ${field.defaultValue}`)).toBeNull()
+  })
+
   it('preserves a provider rejection when the input passes its form constraint', () => {
     mountField(
       {

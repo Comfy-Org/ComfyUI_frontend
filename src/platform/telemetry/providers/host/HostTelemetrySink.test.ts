@@ -37,7 +37,8 @@ describe('HostTelemetrySink', () => {
       trigger_source: 'button',
       view_mode: 'graph',
       is_app_mode: false,
-      dock_state: 'docked'
+      dock_state: 'docked',
+      agent_panel_open: true
     })
 
     expect(state.capture).toHaveBeenCalledExactlyOnceWith(
@@ -56,7 +57,8 @@ describe('HostTelemetrySink', () => {
         trigger_source: 'button',
         view_mode: 'graph',
         is_app_mode: false,
-        dock_state: 'docked'
+        dock_state: 'docked',
+        agent_panel_open: true
       }
     )
   })
@@ -152,6 +154,26 @@ describe('HostTelemetrySink', () => {
     expect(state.capture).toHaveBeenCalledExactlyOnceWith(
       TelemetryEvents.ADD_API_CREDIT_BUTTON_CLICKED,
       { source: 'avatar_menu' }
+    )
+  })
+
+  it('forwards agent paywall impressions with their reason', () => {
+    new HostTelemetrySink().trackAgentPaywallShown({
+      reason: 'subscription_inactive'
+    })
+
+    expect(state.capture).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.AGENT_PAYWALL_SHOWN,
+      { reason: 'subscription_inactive' }
+    )
+  })
+
+  it('forwards agent paywall CTA clicks with their cta', () => {
+    new HostTelemetrySink().trackAgentPaywallCtaClicked({ cta: 'add_credits' })
+
+    expect(state.capture).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.AGENT_PAYWALL_CTA_CLICKED,
+      { cta: 'add_credits' }
     )
   })
 

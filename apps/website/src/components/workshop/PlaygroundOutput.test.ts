@@ -536,12 +536,12 @@ describe('PlaygroundOutput', () => {
     {
       locale: 'en' as const,
       label: 'Open output',
-      hint: 'Automatic download failed. Open the output to save it.'
+      hint: 'If your download did not start, open the output to save a copy.'
     },
     {
       locale: 'zh-CN' as const,
       label: '打开输出',
-      hint: '自动下载失败。请打开输出文件后保存。'
+      hint: '如果下载未开始，请打开输出文件并保存副本。'
     }
   ])(
     'offers a native fallback link after download failure in $locale',
