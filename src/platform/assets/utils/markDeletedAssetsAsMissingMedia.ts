@@ -4,7 +4,6 @@ import { isCloud } from '@/platform/distribution/types'
 import { scanNodeMediaCandidates } from '@/platform/missingMedia/missingMediaScan'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
-import { collectAllNodes } from '@/utils/graphTraversalUtil'
 
 import { findNodesReferencingValues } from './clearNodePreviewCacheForValues'
 
@@ -29,19 +28,9 @@ export function markDeletedAssetsAsMissingMedia(
 ): void {
   if (deletedValues.size === 0) return
 
-  const matchedNodes = [
-    ...findNodesReferencingValues(rootGraph, deletedValues),
-    ...collectAllNodes(rootGraph).filter(
-      (node) =>
-        typeof node.isSubgraphNode === 'function' &&
-        node.isSubgraphNode() &&
-        Array.isArray(node.widgets) &&
-        node.widgets.some(
-          (widget) =>
-            typeof widget.value === 'string' && deletedValues.has(widget.value)
-        )
-    )
-  ]
+  const matchedNodes = findNodesReferencingValues(rootGraph, deletedValues, {
+    includeSubgraphNodes: true
+  })
   if (!matchedNodes.length) return
 
   const candidates: MissingMediaCandidate[] = []
@@ -51,7 +40,9 @@ export function markDeletedAssetsAsMissingMedia(
       node.mode === LGraphEventMode.BYPASS
     )
       continue
-    for (const candidate of scanNodeMediaCandidates(rootGraph, node, isCloud)) {
+    for (const candidate of scanNodeMediaCandidates(rootGraph, node, isCloud, {
+      includeTemp: true
+    })) {
       if (!deletedValues.has(candidate.name)) continue
       candidates.push({ ...candidate, isMissing: true })
     }

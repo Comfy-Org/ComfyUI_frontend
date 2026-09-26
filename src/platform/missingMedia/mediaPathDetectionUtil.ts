@@ -1,8 +1,10 @@
+import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
+
 // Missing-media-scoped helpers for deriving comparison keys from media widget paths.
 const CORE_ANNOTATED_MEDIA_PATTERN = /\s+\[(input|output)\]$/
 const CLOUD_ANNOTATED_MEDIA_PATTERN = /\s*\[(input|output)\]$/
 
-type AnnotatedMediaPathType = 'input' | 'output'
+type AnnotatedMediaPathType = 'input' | 'output' | 'temp'
 
 interface AnnotatedMediaPathOptions {
   allowCompactSuffix?: boolean
@@ -22,6 +24,11 @@ export function getAnnotatedMediaPathTypeForDetection(
   value: string,
   options: AnnotatedMediaPathOptions = {}
 ): AnnotatedMediaPathType | undefined {
+  const isTemp = options.allowCompactSuffix
+    ? parseAnnotatedPath(value).rootFolder === 'temp'
+    : /\s+\[temp\]$/.test(value)
+  if (isTemp) return 'temp'
+
   return getAnnotatedMediaPathMatch(value, options)?.[1] as
     | AnnotatedMediaPathType
     | undefined

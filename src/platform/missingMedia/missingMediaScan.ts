@@ -106,11 +106,12 @@ function resolveMediaMissingState(
   )
 }
 
-/** Scan a single node for missing media candidates (OSS immediate resolution). */
+/** Scan media; includeTemp is only for known deletions, not verification. */
 export function scanNodeMediaCandidates(
   rootGraph: LGraph,
   node: LGraphNode,
-  isCloud: boolean
+  isCloud: boolean,
+  { includeTemp = false }: { includeTemp?: boolean } = {}
 ): MissingMediaCandidate[] {
   if (!node.widgets?.length) return []
 
@@ -132,6 +133,13 @@ export function scanNodeMediaCandidates(
 
     const value = widget.value
     if (typeof value !== 'string' || !value.trim()) continue
+    if (
+      !includeTemp &&
+      getAnnotatedMediaPathTypeForDetection(value, {
+        allowCompactSuffix: isCloud
+      }) === 'temp'
+    )
+      continue
 
     const isMissing = resolveMediaMissingState(widget, value, isCloud)
 

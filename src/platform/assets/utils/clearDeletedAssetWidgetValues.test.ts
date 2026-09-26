@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { createPromotedMediaRuntime } from '@/platform/missingMedia/__fixtures__/promotedMedia'
 
 import { clearDeletedAssetWidgetValues } from './clearDeletedAssetWidgetValues'
 
@@ -156,6 +157,22 @@ describe('FE-230 clearDeletedAssetWidgetValues', () => {
     expect(cbA).toHaveBeenCalledWith('')
     expect(cbB).toHaveBeenCalledWith('')
   })
+
+  it.for(['deleted.png [input]', 'deleted.png [output]', 'deleted.png [temp]'])(
+    'removes a deleted promoted value from the saved workflow: %s',
+    (deletedValue) => {
+      const { rootGraph, hosts, sourceNodes } = createPromotedMediaRuntime({
+        hostValue: deletedValue,
+        sourceValue: 'kept-interior.png'
+      })
+
+      clearDeletedAssetWidgetValues(rootGraph, new Set([deletedValue]))
+
+      expect(hosts[0].widgets[0].value).toBe('')
+      expect(hosts[0].serialize().widgets_values).toEqual([''])
+      expect(sourceNodes[0].widgets?.[0].value).toBe('kept-interior.png')
+    }
+  )
 
   it('does not affect nodes without widgets', () => {
     const node: MockNode = {
