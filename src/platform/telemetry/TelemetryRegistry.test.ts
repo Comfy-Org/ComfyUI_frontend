@@ -306,6 +306,14 @@ describe('TelemetryRegistry', () => {
       workflow_id: 'w1',
       target: 'active_tab_open'
     } satisfies AgentWorkflowAppliedMetadata
+    const paywallShownMetadata = {
+      reason: 'subscription_inactive',
+      surface: 'credits_exhausted'
+    } satisfies AgentPaywallShownMetadata
+    const paywallCtaMetadata = {
+      cta: 'add_credits',
+      surface: 'refused_send'
+    } satisfies AgentPaywallCtaMetadata
 
     const cases: Array<{
       method: keyof TelemetryProvider & `trackAgent${string}`
