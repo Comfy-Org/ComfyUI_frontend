@@ -1,6 +1,6 @@
 import type { User } from 'firebase/auth'
 import { defineStore } from 'pinia'
-import { onScopeDispose } from 'vue'
+import { onScopeDispose, shallowRef, watch } from 'vue'
 
 import type {
   WebSessionAccountChange,
@@ -67,6 +67,11 @@ function resetForAccountChange(change: WebSessionAccountChange): void {
   })
 }
 
+function teamWorkspaceId(): string | undefined {
+  const workspace = useWorkspaceAuthStore().currentWorkspace
+  return workspace?.type === 'team' ? workspace.id : undefined
+}
+
 function sessionOptions(): WebSessionOptions {
   return {
     apiBaseUrl: api.apiURL(''),
@@ -107,6 +112,16 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
   let pendingSignIn: InteractiveSignIn | null = null
   let reread: WebSession | null = null
   let releaseRequests = () => {}
+  const signedInUserId = shallowRef<string>()
+
+  watch(
+    () =>
+      signedInUserId.value &&
+      JSON.stringify([signedInUserId.value, teamWorkspaceId()]),
+    (socketScope) => {
+      if (socketScope) void api.reconnectSocket()
+    }
+  )
 
   onScopeDispose(() => {
     releaseRequests()
@@ -142,10 +157,16 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
     if (!useFeatureFlags().flags.unifiedWebSessionEnabled) return false
     const session = createCloudIdentity()
     identity = session
-    session.subscribe(() => {
+    session.subscribe((state) => {
       reread = null
+      signedInUserId.value =
+        state.phase === 'signed_in' ? state.session.user.id : undefined
     })
-    releaseRequests = provideWebSessionRequests({ scope: requestScope, send })
+    releaseRequests = provideWebSessionRequests({
+      scope: requestScope,
+      workspaceId: () => (currentSession() ? teamWorkspaceId() : undefined),
+      send
+    })
     ready = whenSettled(session)
     void bootAfter(session, pendingSignIn)
     pendingSignIn = null
@@ -180,11 +201,11 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
     await ready
     const session = currentSession()
     if (!identity || !session) return undefined
-    const workspace = useWorkspaceAuthStore().currentWorkspace
+    const workspaceId = teamWorkspaceId()
     return {
       session,
       epoch: identity.getEpoch(),
-      ...(workspace?.type === 'team' && { workspaceId: workspace.id })
+      ...(workspaceId && { workspaceId })
     }
   }
 
