@@ -53,6 +53,16 @@
   ],
   "redirects": [
     {
+      "source": "/models",
+      "destination": "/models/",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/models",
+      "destination": "/zh-CN/models/",
+      "permanent": true
+    },
+    {
       "source": "/career",
       "destination": "/careers",
       "permanent": true
