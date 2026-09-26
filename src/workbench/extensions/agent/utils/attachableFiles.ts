@@ -21,7 +21,8 @@ const AGENT_ATTACH_EXTENSIONS = [
   'wav',
   'glb',
   'md',
-  'txt'
+  'txt',
+  'csv'
 ] as const
 const ATTACHABLE_EXTENSIONS = new Set<string>(AGENT_ATTACH_EXTENSIONS)
 
