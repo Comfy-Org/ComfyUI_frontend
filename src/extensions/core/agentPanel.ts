@@ -168,7 +168,7 @@ export function registerAgentPanelExtension(): void {
       const workspaceStore = useTeamWorkspaceStore()
       const { resolvedUserInfo, isLoggedIn } = useCurrentUser()
       const { withConsent } = useAgentConsent()
-      const { firstRunTookScreen, whenStartupDecided } = useFirstRunEntry()
+      const { gettingStartedVisible, whenStartupDecided } = useFirstRunEntry()
       const onboardingTourStore = useOnboardingTourStore()
       const dialogStore = useDialogStore()
       registerWorkflowTabActivityTracker(enabled)
@@ -187,9 +187,30 @@ export function registerAgentPanelExtension(): void {
           : dialogStore.dialogStack.length > 0
             ? 'dialog_open'
             : null
-      const screenIsClear = computed(() => screenBusyReason() === null)
+      /**
+       * Reads whether the first-run screen is up *now*, not whether it was up
+       * at some point this boot. The distinction is the whole reason the offer
+       * used to be lost: `useFirstRunEntry` also exposes `firstRunTookScreen`,
+       * a latch that is only ever cleared by a change of user, so a guard built
+       * on it keeps reporting `first_run_screen` for the rest of the page's
+       * life and the hold below can never release. `gettingStartedVisible` is
+       * the ref that actually renders the screen, and it clears on dismissal.
+       *
+       * The template/share-link path, which is the other thing that used to set
+       * `firstRunTookScreen`, only does so once `beginTour` has actually
+       * started the first-run tour - so it is already covered, more precisely,
+       * by the `tour_active` branch of `screenBusyReason`.
+       */
       const screenHolder = (): AgentConsentNotOfferedReason | null =>
-        firstRunTookScreen.value ? 'first_run_screen' : screenBusyReason()
+        gettingStartedVisible.value ? 'first_run_screen' : screenBusyReason()
+      /**
+       * Must be the negation of `screenHolder`, not of `screenBusyReason`:
+       * release has to agree with hold about what counts as "the screen". When
+       * it only knew about tours and dialogs it read as clear while Getting
+       * Started was still up, so releasing a first-run hold would have gone
+       * straight back into `screenHolder` and re-held on the same tick.
+       */
+      const screenIsClear = computed(() => screenHolder() === null)
 
       const reportedWithheld = new Set<string>()
       const withholdOffer = (
@@ -208,6 +229,11 @@ export function registerAgentPanelExtension(): void {
         useTelemetry()?.trackAgentConsentNotOffered({ reason })
       }
 
+      /**
+       * Every hold is a deferral. `first_run_screen` used to be excluded here,
+       * which made it the one reason that dropped the offer outright rather
+       * than queueing it behind the surface that was in the way.
+       */
       const offerHeld = ref(false)
       const holdOffer = (
         reason: AgentConsentNotOfferedReason,
@@ -215,7 +241,7 @@ export function registerAgentPanelExtension(): void {
         workspaceId?: string
       ): void => {
         withholdOffer(reason, userId, workspaceId)
-        if (reason !== 'first_run_screen') offerHeld.value = true
+        offerHeld.value = true
       }
 
       const consentScope = (): string | null => {

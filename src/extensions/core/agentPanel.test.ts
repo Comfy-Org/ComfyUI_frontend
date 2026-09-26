@@ -46,7 +46,7 @@ let consentStore: ReturnType<typeof useAgentConsentStore>
 let workspaceStore: ReturnType<typeof useTeamWorkspaceStore>
 
 const currentUser = ref<{ id: string } | null>({ id: 'account-a' })
-const firstRunTookScreen = ref(false)
+const gettingStartedVisible = ref(false)
 const activeTour = ref<EntryPath | null>(null)
 let startupDecision: Promise<boolean> = Promise.resolve(true)
 
@@ -89,7 +89,7 @@ vi.mock(
   () => ({
     useFirstRunEntry: () =>
       fromPartial<ReturnType<typeof useFirstRunEntry>>({
-        firstRunTookScreen,
+        gettingStartedVisible,
         whenStartupDecided: () => startupDecision
       })
   })
@@ -198,7 +198,7 @@ describe('AgentPanel extension flag gate', () => {
     agentStore.isOpen = true
     mocks.flagEnabled = undefined
     mocks.flagListener = null
-    firstRunTookScreen.value = false
+    gettingStartedVisible.value = false
     activeTour.value = null
     startupDecision = Promise.resolve(true)
     vi.spyOn(useOnboardingTourStore(), 'activeTour', 'get').mockImplementation(
@@ -324,17 +324,17 @@ describe('AgentPanel extension flag gate', () => {
 
   it.for([
     {
-      surface: 'Getting Started took the screen this boot',
-      arrange: () => void (firstRunTookScreen.value = true)
+      surface: 'the Getting Started screen is up',
+      arrange: () => void (gettingStartedVisible.value = true)
     },
     {
       surface: 'a coachmark tour is active',
       arrange: () => void (activeTour.value = 'appMode')
     },
     {
-      surface: 'Getting Started took the screen and a tour is active',
+      surface: 'the Getting Started screen is up and a tour is active',
       arrange: () => {
-        firstRunTookScreen.value = true
+        gettingStartedVisible.value = true
         activeTour.value = 'appMode'
       }
     },
@@ -359,6 +359,50 @@ describe('AgentPanel extension flag gate', () => {
       expect(consentStore.load).toHaveBeenCalledTimes(2)
     }
   )
+
+  it('offers in the same session once the Getting Started screen closes', async () => {
+    mocks.flagEnabled = true
+    gettingStartedVisible.value = true
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+
+    await loadEntryAndSetup()
+    mocks.flagListener?.()
+    await flush()
+    expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+    expect(await notOffered()).toHaveBeenCalledExactlyOnceWith({
+      reason: 'first_run_screen'
+    })
+    expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBeNull()
+
+    gettingStartedVisible.value = false
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    )
+    expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBe('true')
+  })
+
+  it('keeps waiting when Getting Started closes straight into the first-run tour', async () => {
+    mocks.flagEnabled = true
+    gettingStartedVisible.value = true
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+
+    await loadEntryAndSetup()
+    mocks.flagListener?.()
+    await flush()
+
+    // The coachmark tour takes over as the screen is dismissed. Releasing on
+    // dismissal alone would land the card on top of it, which is the failure
+    // the first-run hold exists to prevent.
+    activeTour.value = 'firstRun'
+    gettingStartedVisible.value = false
+    await flush()
+    expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+
+    activeTour.value = null
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    )
+  })
 
   it('offers when neither Getting Started took the screen nor a tour is active', async () => {
     mocks.flagEnabled = true
@@ -518,7 +562,7 @@ describe('AgentPanel extension flag gate', () => {
       {
         reason: 'first_run_screen',
         arrange: () => {
-          firstRunTookScreen.value = true
+          gettingStartedVisible.value = true
         }
       },
       {
@@ -666,9 +710,9 @@ describe('AgentPanel extension flag gate', () => {
     })
   })
 
-  it('keeps withholding after a tour ends when Getting Started took the screen', async () => {
+  it('keeps waiting when a tour ends while Getting Started is still up', async () => {
     mocks.flagEnabled = true
-    firstRunTookScreen.value = true
+    gettingStartedVisible.value = true
     activeTour.value = 'appMode'
     Object.assign(consentStore, { accepted: false, isChecking: false })
 
@@ -680,6 +724,11 @@ describe('AgentPanel extension flag gate', () => {
 
     expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
     expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBeNull()
+
+    gettingStartedVisible.value = false
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    )
   })
 
   it('offers in the same session once the dialog that held it closes', async () => {
@@ -783,12 +832,12 @@ describe('AgentPanel extension flag gate', () => {
     expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
   })
 
-  it('withholds a card whose Getting Started screen took over while the offer was in flight', async () => {
+  it('withholds a card whose Getting Started screen took over while the offer was in flight, then re-offers', async () => {
     mocks.flagEnabled = true
     Object.assign(consentStore, { accepted: false, isChecking: false })
     vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
       async (_trigger, _onAccept, hooks) => {
-        firstRunTookScreen.value = true
+        gettingStartedVisible.value = true
         if (hooks?.canShow?.() === false) return
         hooks?.onShown?.()
       }
@@ -802,6 +851,12 @@ describe('AgentPanel extension flag gate', () => {
 
     expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBe('false')
     expect(agentStore.open).not.toHaveBeenCalled()
+
+    gettingStartedVisible.value = false
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledTimes(2)
+    )
+    expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBe('true')
   })
 
   it('remembers a seen card per workspace across a switch away and back', async () => {
