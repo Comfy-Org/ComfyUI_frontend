@@ -294,6 +294,62 @@ describe('attachMintPortWiring', () => {
     ])
   })
 
+  it('mints nothing for a serialize:false widget written on every progress tick', () => {
+    // A progress-text preview is rewritten on each progress message while a
+    // node runs. It is not a workflow value (the doc's catalog has no such
+    // widget), so every write minted a set_widget the host refused, once per
+    // tick, for as long as the node ran.
+    const widgetStore = useWidgetValueStore()
+    const id = widgetId(ROOT_ID, toNodeId(7), '$$node-text-preview')
+    widgetStore.registerWidget(id, {
+      type: 'progressText',
+      value: '',
+      serialize: false
+    } as Parameters<typeof widgetStore.registerWidget>[1])
+
+    for (let tick = 1; tick <= 3; tick++)
+      widgetStore.setValue(id, `Status: running (${tick}s)`)
+
+    expect(minted).toEqual([])
+  })
+
+  it('mints nothing for a serialize:false widget written through a real widget', () => {
+    const liveGraph = new LGraph()
+    liveGraph.id = ROOT_ID
+    const node = new LGraphNode('Test')
+    node.id = toNodeId(7)
+    liveGraph.add(node)
+    const widget = node.addWidget('text', 'preview', '', () => undefined, {
+      serialize: false
+    })
+    widget.serialize = false
+    graphNodes.set('7', node)
+    node.addWidget('number', 'seed', 3, () => undefined)
+    // Precondition: the store state the mint seam reads is display-only.
+    expect(
+      useWidgetValueStore().getWidget(widgetId(ROOT_ID, toNodeId(7), 'preview'))
+        ?.serialize
+    ).toBe(false)
+
+    widget.value = 'tick 1'
+    widget.value = 'tick 2'
+
+    expect(minted).toEqual([])
+  })
+
+  it('mints nothing for a button widget', () => {
+    const widgetStore = useWidgetValueStore()
+    const id = widgetId(ROOT_ID, toNodeId(7), 'refresh')
+    widgetStore.registerWidget(id, {
+      type: 'button',
+      value: false
+    } as Parameters<typeof widgetStore.registerWidget>[1])
+
+    widgetStore.setValue(id, true)
+
+    expect(minted).toEqual([])
+  })
+
   it('mints nothing for a setValue that did not apply', () => {
     useWidgetValueStore().setValue(widgetId(ROOT_ID, toNodeId(9), 'missing'), 1)
 
