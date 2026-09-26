@@ -53,8 +53,12 @@ const canCancel = computed(() => {
     :disabled="!canStart"
     data-testid="workflow-run"
   >
-    <template v-if="busy" #prepend>
-      <Loader2 class="size-4 motion-safe:animate-spin" aria-hidden="true" />
+    <template v-if="busy && state.phase !== 'interrupted'" #prepend>
+      <Loader2
+        class="size-4 motion-safe:animate-spin"
+        aria-hidden="true"
+        data-testid="run-button-spinner"
+      />
     </template>
     {{ busy ? statusLabel : t('workshop.run.run') }}
   </Button>

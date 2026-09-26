@@ -334,9 +334,11 @@ test('a run the page stops hearing about holds the panel still', async ({
   const cloud = await setup(context)
   await signInAndRun(page, modelsAccount)
   const panel = page.getByTestId('playground-output')
+  const run = page.getByTestId('workflow-run')
   await expect(panel).toHaveAttribute('data-state', 'running')
   await expect(panel.getByTestId('run-spinner')).toBeVisible()
   await expect(panel.getByTestId('run-elapsed')).toBeVisible()
+  await expect(run.getByTestId('run-button-spinner')).toBeVisible()
 
   cloud.drop()
   await page.clock.fastForward(2100)
@@ -345,6 +347,8 @@ test('a run the page stops hearing about holds the panel still', async ({
   await expect(panel).toHaveAttribute('data-state', 'running')
   await expect(panel.getByTestId('run-spinner')).toHaveCount(0)
   await expect(panel.getByTestId('run-elapsed')).toHaveCount(0)
+  await expect(run).toHaveText('Connection interrupted')
+  await expect(run.getByTestId('run-button-spinner')).toHaveCount(0)
   await expect(
     page.getByRole('button', { name: 'Reconnect to this run' })
   ).toBeVisible()
