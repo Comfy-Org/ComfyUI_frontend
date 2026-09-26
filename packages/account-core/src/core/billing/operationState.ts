@@ -260,6 +260,22 @@ function nextActionUrl(
     : validateActionUrl(status.action_url)
 }
 
+/**
+ * A retryable failure served without a reason reads as `generic`, as a
+ * terminal failure does, so the customer is offered the retry the state
+ * promises. A challenge this tab saw fail supplies its own reason.
+ */
+function nextDeclineReason(
+  state: PendingBillingOperation,
+  status: BillingOpStatus,
+  authenticationState: BillingAuthenticationState | undefined
+): BillingDeclineReason | undefined {
+  if (authenticationState !== 'failed_retryable') return undefined
+  const known = status.decline_reason ?? state.declineReason
+  if (known !== undefined || state.challenge?.status === 'failed') return known
+  return 'generic'
+}
+
 function reducePending(
   state: PendingBillingOperation,
   status: BillingOpStatus
@@ -272,10 +288,7 @@ function reducePending(
     ? state.authenticationState
     : status.authentication_state
   const actionUrl = nextActionUrl(state, status, authenticationState)
-  const declineReason =
-    authenticationState === 'failed_retryable'
-      ? (status.decline_reason ?? state.declineReason)
-      : undefined
+  const declineReason = nextDeclineReason(state, status, authenticationState)
 
   return {
     ...state,
