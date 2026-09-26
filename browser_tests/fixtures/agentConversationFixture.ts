@@ -71,18 +71,14 @@ const COMPOSER_LABEL = createI18n({
 }).global.t('agent.placeholder')
 // Matches "Worked", "Worked for 3 seconds" and "Worked for 1m 2s" (agent.worked*).
 const SUMMARY_LABEL = new RegExp(`^${enMessages.agent.worked}( for .+)?$`)
-// A replay drives a fake agent server that never fails, so this copy appearing
-// over the canvas always means something the recording did not ask for went
+// A replay drives a fake agent server that never fails, so an `agent_api_failed`
+// recorded during one always means something the recording did not ask for went
 // wrong -- a request the mocks do not answer, or a response they answer with a
-// body the panel's contract rejects.
-//
-// Read `agentThreadPage.test.ts` alongside this: on `main` the error overlay
-// also consults `Comfy.RightSidePanel.ShowErrorsTab`, which `agentPanelFixture`
-// turns off, so the panel can record an agent failure here and render nothing.
-// That is why the contract itself is asserted in vitest as well, and why this
-// check alone is not proof the panel is healthy.
-const AGENT_ERROR_COPY =
-  enMessages.errorCatalog.promptErrors.agent_api_failed.title
+// body the panel's contract rejects. `expectNoAgentError()` reads the two probes
+// below rather than the error overlay; the docstring there says why.
+const THREAD_LIST_SETTLED = '__agentThreadListSettled'
+const RECORDED_AGENT_ERRORS = '__agentRecordedErrors'
+const AGENT_ERROR_TIMEOUT = 15_000
 const FAILED_GLYPH = /lucide--circle-x/
 const THINKING_GLYPH = '[class*="lucide--brain"]'
 
@@ -272,6 +268,10 @@ export class AgentConversationHarness {
 
   async boot(agentFlag: boolean, vueNodes: boolean): Promise<void> {
     await this.mockAgentApi()
+    // Both are init scripts, so they are in place before the page's own code
+    // runs and before the panel's unawaited history load.
+    await this.countThreadListLoads()
+    await this.watchRecordedAgentErrors()
     await this.hostSocket.install()
     const objectInfo = this.page.waitForResponse((response) =>
       new URL(response.url()).pathname.endsWith('/api/object_info')
@@ -380,26 +380,182 @@ export class AgentConversationHarness {
   }
 
   /**
-   * Fails when the panel is telling the user the agent hit a server error.
+   * Fails when the panel has recorded an agent server error.
    *
-   * Named, not pixel-matched: a `@screenshot` case is the only reason anyone
-   * noticed this copy, and only because it happened to be inside the golden's
-   * crop. Asserted after boot and after every turn, because the toast can be
-   * raised either at panel mount (history load) or mid-turn (an active-tab
+   * Asserted after boot and after every turn, because the failure can be
+   * raised either at panel mount (the history load) or mid-turn (an active-tab
    * open, a notice from the turn loop).
    *
-   * Two ways a green run still means nothing, both measured rather than
-   * guessed: a *second* unrelated error group collapses the overlay to
-   * "N errors found" and this copy is not rendered, and on `main` the overlay
-   * is gated on the Issues-tab setting this fixture disables. The vitest
-   * contract guard covers what this cannot.
+   * **Read on the store, not on the overlay.** The first version of this check
+   * looked for `data-testid="error-overlay"` carrying the agent copy, and was
+   * vacuous in two measured ways. `ErrorOverlay` renders only when
+   * `isIssuesTabEnabled()` is true and `bootAgentApp` seeds
+   * `Comfy.RightSidePanel.ShowErrorsTab: false`, so on `main` the panel records
+   * the failure and paints nothing; and even with the tab on, a *second*
+   * unrelated error group collapses the overlay to "N errors found" and the
+   * agent copy is never rendered. Both make an absence assertion pass for a
+   * reason that has nothing to do with the agent. `recordPromptError` is the
+   * state the claim is actually about, and it is the same on `main` and on
+   * `cloud/1.54`, where this assertion is due to be carried.
+   *
+   * **`historyLoaded` is load-bearing, not decoration.** `refreshHistory()` is
+   * fired unawaited at panel mount, so without it this is an absence check that
+   * can resolve on its first poll, before the failure it looks for could exist.
+   * See {@link countThreadListLoads}.
    */
   async expectNoAgentError(): Promise<void> {
-    await expect(
-      this.page.getByTestId('error-overlay').filter({
-        hasText: AGENT_ERROR_COPY
-      })
-    ).toHaveCount(0)
+    await expect
+      .poll(() => this.agentErrorProbe(), { timeout: AGENT_ERROR_TIMEOUT })
+      .toEqual({ historyLoaded: true, agentErrors: [] })
+  }
+
+  /**
+   * Reads both probes in one round trip.
+   *
+   * `agentErrors` is `null` until {@link watchRecordedAgentErrors} has attached
+   * — a probe that never installed must fail the assertion, not satisfy it.
+   * The live `lastPromptError` is folded in as a second source because the
+   * subscription can only attach once the store exists, and the store is
+   * created by the first consumer, which may be the agent panel itself.
+   */
+  private async agentErrorProbe(): Promise<{
+    historyLoaded: boolean
+    agentErrors: string[] | null
+  }> {
+    return this.page.evaluate(
+      ([settledKey, errorsKey]) => {
+        interface RecordedError {
+          type?: string
+          message?: string
+          details?: string
+        }
+        const describe = (error: RecordedError): string =>
+          `${error.type}: ${error.details ?? error.message ?? ''}`
+        const probe = window as unknown as Record<string, unknown>
+        const recorded = probe[errorsKey] as string[] | undefined
+        const agentErrors = recorded === undefined ? null : [...recorded]
+        const root = document.getElementById('vue-app') as unknown as {
+          __vue_app__?: {
+            config: {
+              globalProperties: { $pinia: { _s: Map<string, unknown> } }
+            }
+          }
+        } | null
+        const store = root?.__vue_app__?.config.globalProperties.$pinia._s.get(
+          'executionError'
+        ) as { lastPromptError?: RecordedError | null } | undefined
+        const live = store?.lastPromptError ?? null
+        if (agentErrors !== null && live?.type === 'agent_api_failed') {
+          const entry = describe(live)
+          if (!agentErrors.includes(entry)) agentErrors.push(entry)
+        }
+        return {
+          historyLoaded: ((probe[settledKey] as number | undefined) ?? 0) > 0,
+          agentErrors
+        }
+      },
+      [THREAD_LIST_SETTLED, RECORDED_AGENT_ERRORS] as const
+    )
+  }
+
+  /**
+   * Counts `GET /api/agent/threads` loads the panel has finished *handling*.
+   *
+   * "The response arrived" is not the same fact: `listThreads()` parses the
+   * body, and the throw, the catch and `surfaceAgentError()` all run in
+   * microtasks chained off `response.json()`. The counter is bumped from a
+   * `setTimeout(0)` scheduled the moment that body resolves, and a macrotask
+   * cannot run until the microtask queue is empty — so a non-zero counter
+   * means the panel has already either replaced the history or recorded the
+   * failure.
+   */
+  private async countThreadListLoads(): Promise<void> {
+    await this.page.addInitScript((key: string) => {
+      const counters = window as unknown as Record<string, number>
+      counters[key] = 0
+      const nativeFetch = window.fetch.bind(window)
+      window.fetch = async (input, init) => {
+        const response = await nativeFetch(input, init)
+        const url =
+          typeof input === 'string'
+            ? input
+            : input instanceof URL
+              ? input.href
+              : input.url
+        const method = (
+          init?.method ?? (input instanceof Request ? input.method : 'GET')
+        ).toUpperCase()
+        if (method !== 'GET' || !/\/api\/agent\/threads(?:\?|$)/.test(url))
+          return response
+        const readJson = response.json.bind(response)
+        response.json = async () => {
+          const body: unknown = await readJson()
+          setTimeout(() => {
+            counters[key] += 1
+          }, 0)
+          return body
+        }
+        return response
+      }
+    }, THREAD_LIST_SETTLED)
+  }
+
+  /**
+   * Records every `agent_api_failed` the panel reports, for the life of the
+   * page.
+   *
+   * Subscribed to the store action rather than read only off
+   * `lastPromptError`, which is scoped to the active workflow key: a turn that
+   * switches tab moves that key and the error recorded under the previous one
+   * stops being readable. An assertion a tab switch can empty is the same
+   * class of defect as the overlay gate it replaces.
+   */
+  private async watchRecordedAgentErrors(): Promise<void> {
+    await this.page.addInitScript((key: string) => {
+      interface RecordedError {
+        type?: string
+        message?: string
+        details?: string
+      }
+      interface ErrorStore {
+        $onAction: (
+          callback: (context: { name: string; args: unknown[] }) => void
+        ) => void
+      }
+      const probe = window as unknown as Record<string, string[]>
+      const readStore = (): ErrorStore | undefined => {
+        const root = document.getElementById('vue-app') as unknown as {
+          __vue_app__?: {
+            config: {
+              globalProperties: { $pinia: { _s: Map<string, unknown> } }
+            }
+          }
+        } | null
+        return root?.__vue_app__?.config.globalProperties.$pinia._s.get(
+          'executionError'
+        ) as ErrorStore | undefined
+      }
+      const subscribe = (attempt: number): void => {
+        const store = readStore()
+        if (store === undefined) {
+          // ~30s. Giving up leaves the probe key unset, which reads as `null`
+          // and fails the assertion rather than satisfying it.
+          if (attempt < 600) setTimeout(() => subscribe(attempt + 1), 50)
+          return
+        }
+        const recorded: string[] = []
+        probe[key] = recorded
+        store.$onAction(({ name, args }) => {
+          if (name !== 'recordPromptError') return
+          const error = args[0] as RecordedError | undefined
+          if (error?.type !== 'agent_api_failed') return
+          recorded.push(
+            `${error.type}: ${error.details ?? error.message ?? ''}`
+          )
+        })
+      }
+      subscribe(0)
+    }, RECORDED_AGENT_ERRORS)
   }
 
   // Every turn in order, each judged on the panel and the canvas as it lands.

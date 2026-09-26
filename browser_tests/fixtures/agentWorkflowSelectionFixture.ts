@@ -54,9 +54,35 @@ export const workflowSelectionTest = base.extend<{
         })
       )
     })
+    // `**/api/agent/threads**` is three endpoints, not one, and each parses
+    // with its own schema. `GET .../messages` gets the array `zAgentMessages`
+    // wants; the list endpoint gets a contract-complete page.
+    //
+    // `POST .../messages` deliberately still gets the list body, and that is a
+    // known defect, not an oversight. `zAgentTurnAccepted` rejects it, so
+    // every send in this suite is refused and the panel renders
+    // "Message failed to send: [ …zod… ]" — measured, not inferred. Five
+    // assertions across `agentWorkflowSelection.spec.ts` and
+    // `agentNewChatTargetWorkflow.spec.ts` are written against that refusal:
+    // they assert the composer still holds the draft after Enter, which only
+    // happens on the rejected branch (`recoverFailedSubmission`). Two more
+    // depend on the panel staying idle, and an accepted turn disables the
+    // workflow picker until the turn ends — which needs a `/ws` this fixture
+    // cannot own, because `agentTurnLockFixture` and
+    // `agentTurnSurvivesSocketDrop` route `/ws` themselves.
+    //
+    // So fixing the shape here means giving this fixture turn completion and
+    // reworking seven assertions across three specs. Evidence and the exact
+    // follow-up: in-app-agent-program `reports/jobs/assert-1.md` §5.
     await page.route('**/api/agent/threads**', (route) => {
-      if (route.request().method() === 'POST')
-        postedMessages.push(route.request().postData() ?? '')
+      const request = route.request()
+      const { pathname } = new URL(request.url())
+      const isMessages = /\/api\/agent\/threads\/[^/]+\/messages$/.test(
+        pathname
+      )
+      if (request.method() === 'POST')
+        postedMessages.push(request.postData() ?? '')
+      else if (isMessages) return route.fulfill(jsonRoute([]))
       return route.fulfill(jsonRoute(emptyAgentThreadPage()))
     })
     await page.route('**/api/userdata?*', (route) => {
