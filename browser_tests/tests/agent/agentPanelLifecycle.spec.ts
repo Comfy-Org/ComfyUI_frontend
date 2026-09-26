@@ -174,7 +174,12 @@ test.describe(
     test('keeps the canvas toolbar clear of the sidebar as the panel squeezes it', async ({
       page
     }) => {
-      await page.setViewportSize({ width: 900, height: 900 })
+      // 1300 puts the canvas at roughly 284px: narrower than the toolbar, so
+      // the overhang this fix prevents is actually in play, but not the
+      // degenerate case. At 900 a maximized panel leaves the canvas at zero
+      // and the toolbar collapses to 8px, which tests the unreserved-canvas
+      // gap rather than this fix. `agentPanelViewportDrag.spec.ts` owns that.
+      await page.setViewportSize({ width: 1300, height: 900 })
       await bootAgentApp(page, true)
 
       await page
@@ -203,15 +208,6 @@ test.describe(
       expect(toolbarBox!.x).toBeGreaterThanOrEqual(
         sideToolbarBox!.x + sideToolbarBox!.width - 1
       )
-      // Deliberately not asserting that the toolbar ends left of the panel.
-      // That needs the canvas to have room, and reserving canvas width is not
-      // what this change does: `maxWidth` reserves the rail and the sidebar
-      // minimum only, so at this viewport a maximized panel still leaves the
-      // canvas near zero. `agentPanelViewportDrag.spec.ts` owns that gap, and
-      // its canvas-toolbar and Run-control cases are still `test.fail` for
-      // exactly this reason. Asserting it here would fail the PR for a defect
-      // it never claimed to fix.
-
       // Position alone is satisfied by a toolbar squeezed to nothing, so prove
       // the controls at both ends survived and are still operable.
       expect(toolbarBox!.width).toBeGreaterThan(64)
