@@ -424,17 +424,17 @@ test.describe('Models catalog', () => {
     await page.goto(MODEL_PATH)
     const tag = page
       .getByTestId('model-tags')
-      .getByRole('link', { name: 'flux', exact: true })
-    await expect(tag).toHaveAttribute('href', '/models?q=flux')
+      .getByRole('link', { name: 'premium', exact: true })
+    await expect(tag).toHaveAttribute('href', '/models?q=premium')
     await tag.click()
-    await expect(page).toHaveURL(/\/models\/?\?q=flux$/)
-    await expect(page.getByTestId('workshop-search')).toHaveValue('flux')
+    await expect(page).toHaveURL(/\/models\/?\?q=premium$/)
+    await expect(page.getByTestId('workshop-search')).toHaveValue('premium')
     const cards = page
       .getByTestId('workshop-models-grid')
       .getByTestId('workshop-model-card')
     await expect(cards.first()).toBeVisible()
     for (const card of await cards.all())
-      await expect(card).toContainText(/flux/i)
+      await expect(card).toHaveAccessibleName(/premium/i)
   })
 
   test('the hero medium deep-links into the catalog', async ({ page }) => {
