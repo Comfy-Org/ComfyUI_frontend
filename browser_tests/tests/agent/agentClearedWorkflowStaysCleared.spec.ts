@@ -5,23 +5,6 @@ import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFi
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
 
-// Re-authored guard for the bug PR #18702 was closed without merging: ask the
-// agent to clear the canvas and the turn reports the tab is empty while the
-// nodes stay on screen (PM-1500, PM-1504; QA's staging report against the
-// template-replace shape of the same turn).
-//
-// #18702 stated the property against `AgentCrdtProjection` and
-// `EcsFollowerAdapter`, on a base branch that is not landing, so it stated it
-// twice over in code the remote-apply rewrite deletes. This states the same
-// property where the user reads it -- the rendered canvas -- and asserts no
-// symbol that rewrite removes.
-//
-// Lands green on `main`: a pin, not a live repro. The dropped-batch mechanism
-// #18702 drove the bug through (a mutation batch rejected because the app
-// briefly cannot resolve which workflow tab the edit is bound to) has no
-// surviving surface to inject it from -- the rewrite deletes the scope gate
-// rather than fixing it -- so what is worth holding is the user-visible
-// outcome on both sides of that change.
 const CASE = 'agent-rec-clear-workflow'
 
 // A host add pushed after the tab-return catch-up. Frames reach the follower
@@ -97,8 +80,6 @@ async function recordMountedNodes(page: Page): Promise<void> {
   })
 }
 
-// The recorder walks every added subtree, so it stops once its reading has
-// been taken rather than running for the rest of the test.
 async function stopRecordingMountedNodes(page: Page): Promise<void> {
   await page.evaluate(() => {
     window.__mountedNodeObserver?.disconnect()
@@ -167,9 +148,6 @@ test.describe(
       const topbar = new Topbar(page)
       const tabs = topbar.tabs
 
-      // Same positive control as the first case: without it, a replay that
-      // dropped the add would leave this test asserting that an empty canvas
-      // is empty.
       await recordMountedNodes(page)
       await agentConversation.runTurns()
       await expect
@@ -211,7 +189,6 @@ test.describe(
         await expect(agentConversation.vueNodes.getNodeLocator(id)).toHaveCount(
           0
         )
-      // The barrier itself is the only node the catch-up left on the canvas.
       await expect(agentConversation.vueNodes.nodes).toHaveCount(1)
     })
   }
