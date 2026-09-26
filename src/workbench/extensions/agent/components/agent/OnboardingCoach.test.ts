@@ -61,7 +61,12 @@ function mount(steps = STEPS) {
       components: { OnboardingCoach },
       setup: () => {
         const coach = ref<{ restart: () => void } | null>(null)
-        return { steps, storageKey: KEY, coach, replay: () => coach.value?.restart() }
+        return {
+          steps,
+          storageKey: KEY,
+          coach,
+          replay: () => coach.value?.restart()
+        }
       },
       template:
         '<button>Outside tour</button><div id="panel" /><div id="composer" /><div id="graph"><div id="toolbar" /></div><div id="history" data-testid="history" /><button data-testid="coach-restart" @click="replay" /><OnboardingCoach ref="coach" :steps="steps" :storage-key="storageKey" />'
