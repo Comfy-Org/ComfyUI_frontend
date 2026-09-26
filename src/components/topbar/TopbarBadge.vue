@@ -52,7 +52,7 @@
       @click="togglePopover"
     >
       <i v-if="iconClass" data-testid="badge-icon" :class="badgeIconClass" />
-      <div v-if="badge.label" :class="labelClasses">
+      <div v-if="showLabel" :class="labelClasses">
         {{ badge.label }}
       </div>
     </div>
