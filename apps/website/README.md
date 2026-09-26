@@ -197,13 +197,16 @@ and writes. Partial drops are surfaced as CI warnings by
 `refresh-cloud-nodes-snapshot.ts` has the equivalent guard for packs that lose
 their registry metadata, tolerating up to two — a delisted pack is a real
 thing, a registry outage strips dozens at once. If a larger loss is genuine,
-re-run it locally with the override and commit the result, which resets the
-baseline the guard compares against:
+re-run it locally with the override and commit the result to `main`:
 
 ```sh
 WEBSITE_ALLOW_REGISTRY_LOSS=1 WEBSITE_CLOUD_API_KEY=… \
   pnpm --filter @comfyorg/website cloud-nodes:refresh-snapshot
 ```
+
+Close any open refresh PR first. While one is open the workflow takes its
+baseline from that branch, not from `main`, so a fix committed only to `main`
+would not clear the guard.
 
 Each refresh stamps a fresh `fetchedAt`, so `scripts/snapshot-writer.ts` leaves
 the file untouched when that timestamp is the only thing that moved. Without
@@ -257,8 +260,9 @@ git commit apps/website/src/data/cloud-nodes.snapshot.json
 
 The script exits non-zero on any non-fresh outcome so stale/empty snapshots
 can't be accidentally committed. Otherwise the `Release: Website` GitHub
-Actions workflow runs the same step on every manual dispatch and opens a PR
-with the refreshed snapshot.
+Actions workflow runs the same step on a schedule, on the Ashby webhook, and
+on manual dispatch, opening a PR only when the refreshed data differs from
+what is already proposed. See "Keeping the careers page current" above.
 
 ## Models rollout
 
