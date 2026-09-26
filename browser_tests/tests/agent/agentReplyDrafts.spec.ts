@@ -17,6 +17,7 @@ import {
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { emptyAgentThreadPage } from '@e2e/fixtures/utils/agentThreadPage'
 
 const WORKFLOW_ID = 'b4d7e1f2-8a3c-4d5e-9f60-7a1b2c3d4e5f'
 const THREAD_ID = 'd8c7b6a5-9e1f-4a2b-8c3d-4e5f6a7b8c9d'
@@ -71,7 +72,7 @@ async function startTurn(page: Page, prompt: string): Promise<Turn> {
   }
 
   await page.route('**/api/agent/threads', (route) =>
-    route.fulfill(jsonRoute({ threads: [] }))
+    route.fulfill(jsonRoute(emptyAgentThreadPage()))
   )
   await page.route('**/api/agent/threads/*/messages', (route) => {
     if (route.request().method() === 'POST') {

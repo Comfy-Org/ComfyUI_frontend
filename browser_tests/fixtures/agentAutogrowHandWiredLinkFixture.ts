@@ -15,6 +15,7 @@ import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { emptyAgentThreadPage } from '@e2e/fixtures/utils/agentThreadPage'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 /**
@@ -230,7 +231,7 @@ async function setUpFixture(page: Page) {
   )
   await hostSocket.install()
   await page.route('**/api/agent/threads', (route) =>
-    route.fulfill(jsonRoute({ threads: [] }))
+    route.fulfill(jsonRoute(emptyAgentThreadPage()))
   )
   await page.route('**/api/agent/run-mode', (route) =>
     route.fulfill(jsonRoute({ mode: 'ask_approval', credit_limit: null }))

@@ -16,6 +16,7 @@ import {
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { emptyAgentThreadPage } from '@e2e/fixtures/utils/agentThreadPage'
 
 // The consent contract this suite pins (fire-2, PM-1494 / PM-1450, slack-18):
 // a run_approval ask blocks the run on the user's explicit answer. The server
@@ -137,7 +138,7 @@ async function startTurn(
     return route.fulfill(jsonRoute({ status: 'answered' }))
   })
   await page.route('**/api/agent/threads', (route) =>
-    route.fulfill(jsonRoute({ threads: [] }))
+    route.fulfill(jsonRoute(emptyAgentThreadPage()))
   )
   await page.route('**/api/agent/threads/*/messages', (route) => {
     if (route.request().method() === 'POST') {
