@@ -592,11 +592,16 @@ export type AgentConsentNotOfferedReason =
   | 'dialog_open'
   | 'boot_undecided'
   | 'storage_unavailable'
+export type AgentConsentReadOutcome =
+  | 'known_absent'
+  | 'known_present'
+  | 'not_yet_determined'
 export interface AgentConsentNotOfferedMetadata extends Record<
   string,
   unknown
 > {
   reason: AgentConsentNotOfferedReason
+  consent_read_outcome: AgentConsentReadOutcome
 }
 export type AgentOnboardingNotShownMetadata =
   | { reason: 'app_mode' | 'tour_active' }

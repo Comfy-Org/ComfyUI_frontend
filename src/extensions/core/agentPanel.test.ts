@@ -550,7 +550,10 @@ describe('AgentPanel extension flag gate', () => {
         mocks.flagListener?.()
         await flush()
 
-        expect(await notOffered()).toHaveBeenCalledExactlyOnceWith({ reason })
+        expect(await notOffered()).toHaveBeenCalledExactlyOnceWith({
+          reason,
+          consent_read_outcome: 'known_absent'
+        })
         expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
       }
     )
@@ -618,7 +621,8 @@ describe('AgentPanel extension flag gate', () => {
       await flush()
 
       expect(await notOffered()).toHaveBeenCalledExactlyOnceWith({
-        reason: 'tour_active'
+        reason: 'tour_active',
+        consent_read_outcome: 'known_absent'
       })
     })
 
@@ -635,7 +639,8 @@ describe('AgentPanel extension flag gate', () => {
 
       expect(await notOffered()).toHaveBeenCalledTimes(2)
       expect(await notOffered()).toHaveBeenLastCalledWith({
-        reason: 'tour_active'
+        reason: 'tour_active',
+        consent_read_outcome: 'known_absent'
       })
     })
 
@@ -804,6 +809,33 @@ describe('AgentPanel extension flag gate', () => {
     expect(agentStore.open).not.toHaveBeenCalled()
   })
 
+  it('records an unsettled consent read when identity changes before a held card mounts', async () => {
+    mocks.flagEnabled = true
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
+      async (_trigger, _onAccept, hooks) => {
+        firstRunTookScreen.value = true
+        currentUser.value = { id: 'account-b' }
+        Object.assign(workspaceStore, { activeWorkspaceId: 'workspace-b' })
+        Object.assign(consentStore, {
+          identity: 'account-b/workspace-b',
+          isChecking: true
+        })
+        hooks?.canShow?.()
+      }
+    )
+
+    await loadEntryAndSetup()
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    )
+
+    expect(await notOffered()).toHaveBeenCalledExactlyOnceWith({
+      reason: 'first_run_screen',
+      consent_read_outcome: 'not_yet_determined'
+    })
+  })
+
   it('remembers a seen card per workspace across a switch away and back', async () => {
     mocks.flagEnabled = true
     Object.assign(consentStore, { accepted: false, isChecking: false })
@@ -960,7 +992,8 @@ describe('AgentPanel extension flag gate', () => {
 
       expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
       expect(await notOffered()).toHaveBeenCalledExactlyOnceWith({
-        reason: 'storage_unavailable'
+        reason: 'storage_unavailable',
+        consent_read_outcome: 'known_absent'
       })
     }
   )

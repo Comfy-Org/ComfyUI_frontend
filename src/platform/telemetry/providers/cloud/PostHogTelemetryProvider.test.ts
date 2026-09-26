@@ -790,8 +790,14 @@ describe('PostHogTelemetryProvider', () => {
       {
         event: TelemetryEvents.AGENT_CONSENT_NOT_OFFERED,
         track: (provider: PostHogTelemetryProvider) =>
-          provider.trackAgentConsentNotOffered({ reason: 'tour_active' }),
-        properties: { reason: 'tour_active' }
+          provider.trackAgentConsentNotOffered({
+            reason: 'tour_active',
+            consent_read_outcome: 'known_absent'
+          }),
+        properties: {
+          reason: 'tour_active',
+          consent_read_outcome: 'known_absent'
+        }
       },
       {
         event: TelemetryEvents.AGENT_ONBOARDING_NOT_SHOWN,
