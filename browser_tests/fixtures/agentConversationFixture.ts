@@ -109,6 +109,21 @@ export interface NodeLens {
   observer: TabSwitchLens | null
 }
 
+export interface SemanticGraphLens {
+  nodes: Array<{
+    id: string
+    type: string
+    widgetsValues: unknown[] | undefined
+  }>
+  links: Array<{
+    fromNode: string
+    fromSlot: number
+    toNode: string
+    toSlot: number
+    type: string
+  }>
+}
+
 async function attachJson(
   testInfo: TestInfo,
   name: string,
@@ -849,6 +864,34 @@ export class AgentConversationHarness {
             (node) => String(node.id)
           ) ?? [],
         observer: window.__tabSwitchLens ?? null
+      }
+    })
+  }
+
+  readSemanticGraph(): Promise<SemanticGraphLens> {
+    return this.page.evaluate(() => {
+      const app = window.app!
+      return {
+        nodes: app.graph.nodes
+          .map((node) => ({
+            id: String(node.id),
+            type: node.type,
+            widgetsValues: node.serialize().widgets_values
+          }))
+          .sort((a, b) => a.id.localeCompare(b.id)),
+        links: [...app.graph.links.values()]
+          .map((link) => ({
+            fromNode: String(link.origin_id),
+            fromSlot: link.origin_slot,
+            toNode: String(link.target_id),
+            toSlot: link.target_slot,
+            type: String(link.type)
+          }))
+          .sort((a, b) =>
+            `${a.fromNode}:${a.fromSlot}:${a.toNode}:${a.toSlot}`.localeCompare(
+              `${b.fromNode}:${b.fromSlot}:${b.toNode}:${b.toSlot}`
+            )
+          )
       }
     })
   }
