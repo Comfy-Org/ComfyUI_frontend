@@ -55,7 +55,6 @@ test.describe('Minimap change cadence performance', { tag: ['@perf'] }, () => {
     const measurement = await comfyPage.perf.stopMeasuring(
       'minimap-progress-execution-cadence'
     )
-    recordMeasurement(measurement)
     expectFramesToSpanMeasurementWindow(measurement)
 
     const finalProgress = await comfyPage.page.evaluate(() => {
@@ -64,6 +63,8 @@ test.describe('Minimap change cadence performance', { tag: ['@perf'] }, () => {
       return node.progress
     })
     expect(finalProgress).toBeCloseTo(19 / 20)
+
+    recordMeasurement(measurement)
   })
 
   test('node geometry cadence', async ({ comfyPage }) => {
@@ -90,7 +91,6 @@ test.describe('Minimap change cadence performance', { tag: ['@perf'] }, () => {
     const measurement = await comfyPage.perf.stopMeasuring(
       'minimap-progress-geometry-cadence'
     )
-    recordMeasurement(measurement)
     expectFramesToSpanMeasurementWindow(measurement)
 
     const finalX = await comfyPage.page.evaluate(() => {
@@ -99,6 +99,8 @@ test.describe('Minimap change cadence performance', { tag: ['@perf'] }, () => {
       return node.pos[0]
     })
     expect(finalX).toBe(initialX + 20)
+
+    recordMeasurement(measurement)
   })
 
   test('node topology cadence', async ({ comfyPage }) => {
@@ -141,7 +143,6 @@ test.describe('Minimap change cadence performance', { tag: ['@perf'] }, () => {
     const measurement = await comfyPage.perf.stopMeasuring(
       'minimap-progress-topology-cadence'
     )
-    recordMeasurement(measurement)
     expectFramesToSpanMeasurementWindow(measurement)
 
     const finalCount = await comfyPage.page.evaluate(() => {
@@ -150,5 +151,7 @@ test.describe('Minimap change cadence performance', { tag: ['@perf'] }, () => {
       return graph.nodes.length
     })
     expect(finalCount).toBe(initialCount)
+
+    recordMeasurement(measurement)
   })
 })
