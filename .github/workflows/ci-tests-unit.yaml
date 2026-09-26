@@ -25,10 +25,14 @@ jobs:
       - id: changes
         uses: ./.github/actions/changes-filter
 
-  test:
+  test-shards:
     needs: changes
     if: ${{ needs.changes.outputs.should-run == 'true' }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
 
     steps:
       - uses: actions/checkout@v7
@@ -37,7 +41,38 @@ jobs:
         uses: ./.github/actions/setup-frontend
 
       - name: Run Vitest tests with coverage
-        run: pnpm test:coverage
+        env:
+          VITEST_SHARD: ${{ matrix.shard }}/${{ strategy.job-total }}
+        run: pnpm test:coverage --shard="$VITEST_SHARD" --reporter=default --reporter=blob
+
+      - name: Upload shard report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: unit-shard-${{ matrix.shard }}
+          path: .vitest-reports/*.json
+          include-hidden-files: true
+          retention-days: 1
+          if-no-files-found: error
+
+  test-report:
+    needs: test-shards
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Download shard reports
+        uses: actions/download-artifact@v6
+        with:
+          pattern: unit-shard-*
+          path: .vitest-reports
+          merge-multiple: true
+
+      - name: Merge reports and check coverage thresholds
+        run: pnpm test:coverage --merge-reports=.vitest-reports
 
       - name: Run package unit tests with coverage
         run: |
@@ -64,3 +99,23 @@ jobs:
           flags: unit
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
+
+  test:
+    if: ${{ always() }}
+    needs: [changes, test-shards, test-report]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check unit test results
+        env:
+          CHANGES: ${{ needs.changes.result }}
+          SHOULD_RUN: ${{ needs.changes.outputs.should-run }}
+          SHARDS: ${{ needs.test-shards.result }}
+          REPORT: ${{ needs.test-report.result }}
+        run: |
+          echo "changes=$CHANGES should_run=$SHOULD_RUN shards=$SHARDS report=$REPORT"
+          [[ "$CHANGES" == "success" ]] || exit 1
+          if [[ "$SHOULD_RUN" == "false" ]]; then
+            [[ "$SHARDS" == "skipped" && "$REPORT" == "skipped" ]]
+          else
+            [[ "$SHOULD_RUN" == "true" && "$SHARDS" == "success" && "$REPORT" == "success" ]]
+          fi
