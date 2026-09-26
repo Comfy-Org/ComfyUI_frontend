@@ -14,7 +14,7 @@ import type {
  */
 export const PM_1150_JOB_ID = '33a723f2-bf1f-4faf-9c42-1b83e2185601'
 
-export const PM_1150_API_PROMPT = {
+const PM_1150_API_PROMPT = {
   '1': {
     class_type: 'CheckpointLoaderSimple',
     inputs: { ckpt_name: 'v1-5-pruned-emaonly.ckpt' },
