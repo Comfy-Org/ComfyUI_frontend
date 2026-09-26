@@ -6,7 +6,6 @@ import type {
   BillingPlansResponse,
   BillingStatusResponse,
   ErrorResponse,
-  Plan,
   PreviewSubscribeResponse,
   SubscribeResponse,
   TeamCreditStops
@@ -24,6 +23,7 @@ import {
   waitForCloudApp
 } from '@e2e/fixtures/cloudAppFixture'
 import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
+import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -49,35 +49,34 @@ const BOOT_SETTINGS = {
   'Comfy.TutorialCompleted': true
 }
 
-const CREATOR_ANNUAL_PLAN = {
+const CREATOR_ANNUAL_PLAN = createPlan({
   slug: 'creator-annual',
   tier: 'CREATOR',
   duration: 'ANNUAL',
-  price_cents: 33_600,
-  credits_cents: 7_400,
-  max_seats: 5,
-  availability: { available: true },
-  seat_summary: {
-    seat_count: 1,
-    total_cost_cents: 33_600,
-    total_credits_cents: 7_400
-  }
-} satisfies Plan
+  priceCents: 33_600,
+  monthlyCredits: 7_400,
+  maxSeats: 5
+})
 
-const STANDARD_ANNUAL_PLAN = {
+const STANDARD_ANNUAL_PLAN = createPlan({
   slug: 'standard-annual',
   tier: 'STANDARD',
   duration: 'ANNUAL',
-  price_cents: 19_200,
-  credits_cents: 4_200,
-  max_seats: 1,
-  availability: { available: true },
-  seat_summary: {
-    seat_count: 1,
-    total_cost_cents: 19_200,
-    total_credits_cents: 4_200
-  }
-} satisfies Plan
+  priceCents: 19_200,
+  monthlyCredits: 4_200
+})
+
+const PRO_ANNUAL_PLAN = createPlan({
+  slug: 'pro-annual',
+  tier: 'PRO',
+  duration: 'ANNUAL',
+  priceCents: 96_000,
+  monthlyCredits: 21_100
+})
+
+const PERSONAL_ANNUAL_PLANS = {
+  plans: [STANDARD_ANNUAL_PLAN, CREATOR_ANNUAL_PLAN, PRO_ANNUAL_PLAN]
+} satisfies BillingPlansResponse
 
 const ACTIVE_TEAM_STATUS = {
   is_active: true,
@@ -191,35 +190,23 @@ const TEAM_SUBSCRIBED_RESPONSE = {
   effective_at: '2026-07-21T00:00:00Z'
 } satisfies SubscribeResponse
 
-const TEAM_ANNUAL_PLAN = {
+const TEAM_ANNUAL_PLAN = createPlan({
   slug: 'team_per_credit_annual',
   tier: 'TEAM',
   duration: 'ANNUAL',
-  price_cents: 756_000,
-  credits_cents: 1_772_400,
-  max_seats: 100,
-  availability: { available: true },
-  seat_summary: {
-    seat_count: 1,
-    total_cost_cents: 756_000,
-    total_credits_cents: 1_772_400
-  }
-} satisfies Plan
+  priceCents: 756_000,
+  monthlyCredits: 147_700,
+  maxSeats: 100
+})
 
-const TEAM_MONTHLY_PLAN = {
+const TEAM_MONTHLY_PLAN = createPlan({
   slug: 'team_per_credit_monthly',
   tier: 'TEAM',
   duration: 'MONTHLY',
-  price_cents: 39_000,
-  credits_cents: 84_400,
-  max_seats: 100,
-  availability: { available: true },
-  seat_summary: {
-    seat_count: 1,
-    total_cost_cents: 39_000,
-    total_credits_cents: 84_400
-  }
-} satisfies Plan
+  priceCents: 39_000,
+  monthlyCredits: 84_400,
+  maxSeats: 100
+})
 
 const NEW_TEAM_ANNUAL_SUBSCRIPTION = {
   allowed: true,
@@ -228,8 +215,8 @@ const NEW_TEAM_ANNUAL_SUBSCRIPTION = {
   is_immediate: true,
   cost_today_cents: 756_000,
   cost_next_period_cents: 756_000,
-  credits_today_cents: 1_772_400,
-  credits_next_period_cents: 1_772_400,
+  credits_today_cents: TEAM_ANNUAL_PLAN.credits_cents,
+  credits_next_period_cents: TEAM_ANNUAL_PLAN.credits_cents,
   new_plan: TEAM_ANNUAL_PLAN
 } satisfies PreviewSubscribeResponse
 
@@ -240,8 +227,8 @@ const NEW_TEAM_MONTHLY_SUBSCRIPTION = {
   is_immediate: true,
   cost_today_cents: 39_000,
   cost_next_period_cents: 39_000,
-  credits_today_cents: 84_400,
-  credits_next_period_cents: 84_400,
+  credits_today_cents: TEAM_MONTHLY_PLAN.credits_cents,
+  credits_next_period_cents: TEAM_MONTHLY_PLAN.credits_cents,
   new_plan: TEAM_MONTHLY_PLAN
 } satisfies PreviewSubscribeResponse
 
@@ -252,8 +239,8 @@ const NEW_CREATOR_SUBSCRIPTION = {
   is_immediate: true,
   cost_today_cents: 33_600,
   cost_next_period_cents: 33_600,
-  credits_today_cents: 7_400,
-  credits_next_period_cents: 7_400,
+  credits_today_cents: CREATOR_ANNUAL_PLAN.credits_cents,
+  credits_next_period_cents: CREATOR_ANNUAL_PLAN.credits_cents,
   new_plan: CREATOR_ANNUAL_PLAN
 } satisfies PreviewSubscribeResponse
 
@@ -265,7 +252,7 @@ const SCHEDULED_CREATOR_DOWNGRADE = {
   cost_today_cents: 0,
   cost_next_period_cents: 33_600,
   credits_today_cents: 0,
-  credits_next_period_cents: 7_400,
+  credits_next_period_cents: CREATOR_ANNUAL_PLAN.credits_cents,
   new_plan: {
     ...CREATOR_ANNUAL_PLAN,
     seat_summary: CREATOR_ANNUAL_PLAN.seat_summary
@@ -285,8 +272,9 @@ const IMMEDIATE_CREATOR_UPGRADE = {
   is_immediate: true,
   cost_today_cents: 14_400,
   cost_next_period_cents: 33_600,
-  credits_today_cents: 3_200,
-  credits_next_period_cents: 7_400,
+  credits_today_cents:
+    CREATOR_ANNUAL_PLAN.credits_cents - STANDARD_ANNUAL_PLAN.credits_cents,
+  credits_next_period_cents: CREATOR_ANNUAL_PLAN.credits_cents,
   current_plan: {
     slug: STANDARD_ANNUAL_PLAN.slug,
     tier: STANDARD_ANNUAL_PLAN.tier,
@@ -581,6 +569,25 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
 
     await cloudAppExpect(pricingHeading(page)).toBeVisible()
     await expect(page).not.toHaveURL(/[?&]pricing=/)
+  })
+
+  test('shows the yearly credit allotment on the personal plan cards, not the catalog cents', async ({
+    page
+  }) => {
+    await setupCloudApp(page, workspace('personal', 'owner'), [])
+    await page.route('**/api/billing/plans', (route) =>
+      route.fulfill(jsonRoute(PERSONAL_ANNUAL_PLANS))
+    )
+
+    await page.goto(`${APP_URL}/?pricing=1`)
+
+    await cloudAppExpect(pricingHeading(page)).toBeVisible()
+    for (const credits of ['50,400', '88,800', '253,200']) {
+      await expect(page.getByText(credits, { exact: true })).toBeVisible()
+    }
+    for (const catalogFigure of ['23,887', '42,086', '50,402', '88,801']) {
+      await expect(page.getByText(catalogFigure, { exact: true })).toBeHidden()
+    }
   })
 
   test('opens on the Team tab for ?pricing=team', async ({ page }) => {
