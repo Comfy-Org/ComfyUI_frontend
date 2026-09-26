@@ -15,19 +15,21 @@ import { CURATED_TEMPLATE_IDS, FALLBACK_TEMPLATE_IDS } from './tutorialCards'
 
 const mocks = vi.hoisted(() => ({
   dismiss: vi.fn(),
-  beginTour: vi.fn(),
+  dismissIntoTour: vi.fn(),
   loadTemplate:
     vi.fn<ReturnType<typeof useTemplateWorkflows>['loadWorkflowTemplate']>(),
 
   loadingTemplateId: { value: null as string | null }
 }))
 
+// The screen hands the template path to `dismissIntoFirstRunTour` as one call,
+// so this file cannot see - and must not restate - how the dismissal and the
+// tour are ordered inside it. That is pinned in `firstRunEntry.test.ts`.
 vi.mock<unknown>(import('./firstRunEntry'), () => ({
-  useFirstRunEntry: () => ({ dismissGettingStarted: mocks.dismiss })
-}))
-
-vi.mock<unknown>(import('../tour/useFirstRunTourController'), () => ({
-  useFirstRunTourController: () => ({ beginTour: mocks.beginTour })
+  useFirstRunEntry: () => ({
+    dismissGettingStarted: mocks.dismiss,
+    dismissIntoFirstRunTour: mocks.dismissIntoTour
+  })
 }))
 
 vi.mock<unknown>(
@@ -95,7 +97,7 @@ describe('GettingStartedScreen', () => {
     vi.mocked(
       useWorkflowTemplatesStore().loadWorkflowTemplates
     ).mockResolvedValue(undefined)
-    mocks.beginTour.mockResolvedValue(true)
+    mocks.dismissIntoTour.mockResolvedValue(undefined)
     mocks.loadingTemplateId.value = null
   })
 
@@ -116,8 +118,14 @@ describe('GettingStartedScreen', () => {
         'default'
       )
     )
-    expect(mocks.beginTour).toHaveBeenCalledWith(CURATED_TEMPLATE_IDS[0])
-    expect(mocks.dismiss).toHaveBeenCalled()
+    expect(
+      mocks.dismissIntoTour,
+      'dismissing and touring separately would expose the gap between them'
+    ).toHaveBeenCalledWith(CURATED_TEMPLATE_IDS[0])
+    expect(
+      mocks.dismiss,
+      'the bare dismissal belongs to the exits, not to the template path'
+    ).not.toHaveBeenCalled()
   })
 
   it('ignores a second pick while one is still loading', async () => {
@@ -135,20 +143,19 @@ describe('GettingStartedScreen', () => {
   })
 
   it('leaves the user on the loaded graph when the template has no tour', async () => {
-    mocks.beginTour.mockResolvedValue(false)
     await renderScreen()
 
     await pickFirstTemplate()
 
-    await waitFor(() => expect(mocks.beginTour).toHaveBeenCalled())
+    await waitFor(() => expect(mocks.dismissIntoTour).toHaveBeenCalled())
     expect(
-      mocks.dismiss,
-      'the graph is loaded and usable, so the takeover must not strand the user on it'
-    ).toHaveBeenCalled()
+      screen.queryByText(enMessages.gettingStarted.templateFailed),
+      'the template loaded; a tour that declined to open is not a failed load'
+    ).toBeNull()
   })
 
   it('keeps the click handler from rejecting when the tour cannot start', async () => {
-    mocks.beginTour.mockRejectedValue(new Error('tour unavailable'))
+    mocks.dismissIntoTour.mockRejectedValue(new Error('tour unavailable'))
     const rejections: unknown[] = []
     const onRejection = (reason: unknown) => rejections.push(reason)
     process.on('unhandledRejection', onRejection)
@@ -157,7 +164,7 @@ describe('GettingStartedScreen', () => {
 
     await pickFirstTemplate()
 
-    await waitFor(() => expect(mocks.beginTour).toHaveBeenCalled())
+    await waitFor(() => expect(mocks.dismissIntoTour).toHaveBeenCalled())
     await new Promise((resolve) => setImmediate(resolve))
     process.off('unhandledRejection', onRejection)
 
@@ -298,7 +305,7 @@ describe('GettingStartedScreen', () => {
           await screen.findByText(enMessages.gettingStarted.templateFailed)
         ).toBeVisible()
         expect(
-          mocks.dismiss,
+          mocks.dismissIntoTour,
           'A failed load must not dismiss the screen; the user would be left on a bare canvas'
         ).not.toHaveBeenCalled()
         expect(screen.getByText(enMessages.gettingStarted.retry)).toBeTruthy()

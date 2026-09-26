@@ -168,7 +168,7 @@ export function registerAgentPanelExtension(): void {
       const workspaceStore = useTeamWorkspaceStore()
       const { resolvedUserInfo, isLoggedIn } = useCurrentUser()
       const { withConsent } = useAgentConsent()
-      const { gettingStartedVisible, whenStartupDecided } = useFirstRunEntry()
+      const { firstRunHoldsScreen, whenStartupDecided } = useFirstRunEntry()
       const onboardingTourStore = useOnboardingTourStore()
       const dialogStore = useDialogStore()
       registerWorkflowTabActivityTracker(enabled)
@@ -188,21 +188,25 @@ export function registerAgentPanelExtension(): void {
             ? 'dialog_open'
             : null
       /**
-       * Reads whether the first-run screen is up *now*, not whether it was up
+       * Reads whether the first run has the screen *now*, not whether it had it
        * at some point this boot. The distinction is the whole reason the offer
        * used to be lost: `useFirstRunEntry` also exposes `firstRunTookScreen`,
        * a latch that is only ever cleared by a change of user, so a guard built
        * on it keeps reporting `first_run_screen` for the rest of the page's
-       * life and the hold below can never release. `gettingStartedVisible` is
-       * the ref that actually renders the screen, and it clears on dismissal.
+       * life and the hold below can never release.
        *
-       * The template/share-link path, which is the other thing that used to set
-       * `firstRunTookScreen`, only does so once `beginTour` has actually
-       * started the first-run tour - so it is already covered, more precisely,
-       * by the `tour_active` branch of `screenBusyReason`.
+       * `firstRunHoldsScreen` rather than `gettingStartedVisible`, which only
+       * says whether the screen is rendered. On the template path the screen is
+       * dismissed and the coachmark tour opens ~500 ms later, so there is a
+       * window where the screen is gone, no tour is active yet, and the canvas
+       * belongs to the tour's intro preview. Releasing into that window lands
+       * the card on the tour about to open over it — the exact failure the
+       * first-run hold was built for. `firstRunHoldsScreen` stays true across
+       * that handoff; once the tour is up, `screenBusyReason`'s `tour_active`
+       * branch takes over.
        */
       const screenHolder = (): AgentConsentNotOfferedReason | null =>
-        gettingStartedVisible.value ? 'first_run_screen' : screenBusyReason()
+        firstRunHoldsScreen.value ? 'first_run_screen' : screenBusyReason()
       /**
        * Must be the negation of `screenHolder`, not of `screenBusyReason`:
        * release has to agree with hold about what counts as "the screen". When
