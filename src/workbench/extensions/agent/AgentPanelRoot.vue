@@ -71,7 +71,6 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import {
   adoptSharedOnboardingFlag,
   hasSeenCoach,
-  resetCoach,
   scopedOnboardingKey,
   trackCoachDeferral
 } from './composables/agent/useOnboarding'
@@ -359,12 +358,9 @@ watch(
   },
   { immediate: true }
 )
-const coachRun = ref(0)
+const coachRef = ref<InstanceType<typeof OnboardingCoach>>()
 function restartCoach(): void {
-  const key = onboardingKey.value
-  if (!key) return
-  resetCoach(key)
-  coachRun.value += 1
+  coachRef.value?.restart()
 }
 const graphMutationsByWorkflow = new Map<
   string,
@@ -1657,7 +1653,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
     </AgentPanel>
     <OnboardingCoach
       v-if="consentAccepted && onboardingKey && coachDeferredBy === null"
-      :key="coachRun"
+      ref="coachRef"
       :steps="coachSteps"
       :storage-key="onboardingKey"
     />

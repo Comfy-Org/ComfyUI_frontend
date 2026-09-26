@@ -37,10 +37,11 @@ const { steps, storageKey } = defineProps<{
   storageKey?: string
 }>()
 
-const { active, index, step, isLast, next, previous, finish } = useOnboarding(
-  () => steps,
-  storageKey
-)
+const { active, index, step, isLast, next, previous, finish, restart } =
+  useOnboarding(() => steps, storageKey)
+
+// The replay control lives in the panel header, outside this component.
+defineExpose({ restart })
 
 const titleId = useId()
 const bodyId = useId()

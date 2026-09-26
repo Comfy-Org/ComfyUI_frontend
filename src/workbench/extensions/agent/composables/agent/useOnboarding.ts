@@ -68,14 +68,6 @@ export function hasSeenCoach(scopedKey: string): boolean {
   }
 }
 
-export function resetCoach(scopedKey: string): void {
-  try {
-    localStorage.removeItem(scopedKey)
-  } catch {
-    // Storage is unavailable, so the coach marks already run every time.
-  }
-}
-
 const shownScopes = new Set<string>()
 const reportedDeferrals = new Set<string>()
 /** A coach paused mid-way by App Mode or a tour was already shown, so it stays quiet. */
@@ -121,5 +113,15 @@ export function useOnboarding(
     index.value -= 1
   }
 
-  return { active, index, step, isLast, next, previous, finish }
+  /**
+   * Replay from the first card. `seen` is the same reactive storage ref the
+   * tour reads, so clearing it here reaches every consumer; the caller does not
+   * have to poke localStorage and remount to be noticed.
+   */
+  function restart(): void {
+    index.value = 0
+    seen.value = false
+  }
+
+  return { active, index, step, isLast, next, previous, finish, restart }
 }
