@@ -410,6 +410,40 @@ describe('InviteMemberDialogContent', () => {
       }
     })
 
+    it('swaps the footer label to Copied and reverts after the reset window', async () => {
+      vi.useFakeTimers()
+      try {
+        mockInviteListAfterSend([
+          pendingInviteFor('a@b.com', 'tok-a'),
+          pendingInviteFor('c@d.com', 'tok-c')
+        ])
+        const user = userEvent.setup({
+          advanceTimers: vi.advanceTimersByTime
+        })
+        renderDialog()
+        await inviteAndConfirm(user, 'a@b.com c@d.com{Enter}')
+        await waitFor(() => expect(copyAllButton()).toBeInTheDocument())
+
+        await user.click(copyAllButton()!)
+        expect(
+          await screen.findByRole('button', {
+            name: 'workspacePanel.inviteLinks.copied'
+          })
+        ).toBeInTheDocument()
+        expect(copyAllButton()).not.toBeInTheDocument()
+
+        await vi.advanceTimersByTimeAsync(2100)
+        expect(copyAllButton()).toBeInTheDocument()
+        expect(
+          screen.queryByRole('button', {
+            name: 'workspacePanel.inviteLinks.copied'
+          })
+        ).not.toBeInTheDocument()
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
     it('copies the bare URL from the singular footer action', async () => {
       mockInviteListAfterSend([pendingInviteFor('a@b.com', 'tok-a')])
       const { user } = renderDialog()

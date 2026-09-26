@@ -3478,7 +3478,9 @@
       "sentLead": "Each invite has a personal link you can share directly:",
       "copyLink": "Copy invite link",
       "copied": "Copied!",
-      "copyAll": "Copy invite link | Copy all links ({count})"
+      "copyAll": "Copy invite link | Copy all links ({count})",
+      "copiedToast": "Invite link copied",
+      "copyFailedToast": "Couldn't copy the invite link"
     },
     "createWorkspaceDialog": {
       "title": "Create a new workspace",
