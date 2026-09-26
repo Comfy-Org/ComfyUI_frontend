@@ -289,9 +289,7 @@ function openCard() {
           >
             {{ authorName.charAt(0).toUpperCase() }}
           </span>
-          <span class="ppformula-text-center-sm truncate text-sm">{{
-            authorName
-          }}</span>
+          <span class="truncate text-sm">{{ authorName }}</span>
         </a>
         <a
           :href="href"
@@ -305,10 +303,9 @@ function openCard() {
             class="grid grid-cols-[0fr] transition-[grid-template-columns] duration-500 group-hover/pill-trigger:grid-cols-[1fr]"
           >
             <span class="overflow-hidden">
-              <span
-                class="ppformula-text-center relative inline-block leading-none"
-                >{{ tryNowLabel }}</span
-              >
+              <span class="relative inline-block leading-none">{{
+                tryNowLabel
+              }}</span>
             </span>
           </span>
           <span

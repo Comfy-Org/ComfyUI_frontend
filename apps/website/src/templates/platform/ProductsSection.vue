@@ -51,7 +51,7 @@ const modelsTabs = modelsApiCodeTabs
         </p>
         <div class="mt-8">
           <span :class="brandButtonVariants({ variant: 'solid', size: 'sm' })">
-            <span class="ppformula-text-center inline-block uppercase">
+            <span class="inline-block uppercase">
               {{ t('platform.hero.getStarted', locale) }}
             </span>
           </span>
@@ -100,7 +100,7 @@ const modelsTabs = modelsApiCodeTabs
         </div>
         <div class="pointer-events-none relative z-10 mt-auto self-start pt-6">
           <span :class="brandButtonVariants({ variant: 'solid', size: 'sm' })">
-            <span class="ppformula-text-center inline-block uppercase">
+            <span class="inline-block uppercase">
               {{ t('platform.products.models.learnMore', locale) }}
             </span>
           </span>
@@ -133,7 +133,7 @@ const modelsTabs = modelsApiCodeTabs
         </div>
         <div class="pointer-events-none relative z-10 mt-auto self-start pt-6">
           <span :class="brandButtonVariants({ variant: 'solid', size: 'sm' })">
-            <span class="ppformula-text-center inline-block uppercase">
+            <span class="inline-block uppercase">
               {{ t('platform.hero.getStarted', locale) }}
             </span>
           </span>
