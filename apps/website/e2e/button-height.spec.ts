@@ -28,14 +28,19 @@ test('a button label occupies no more height than its own line', async ({
       measured.push({
         text: button.textContent.trim().replace(/\s+/g, ' '),
         height: label.getBoundingClientRect().height,
-        lineHeight
+        lineHeight,
+        wrapsAnElement: label.firstElementChild !== null
       })
     }
 
     return measured
   })
 
-  expect(labels.length).toBeGreaterThan(0)
+  // Only a label wrapped in an element ever reserved the extra space, so a run
+  // that happened to collect none of those would pass without proving anything.
+  expect(labels.filter((label) => label.wrapsAnElement).length).toBeGreaterThan(
+    0
+  )
 
   for (const label of labels) {
     expect(label.height, label.text).toBeCloseTo(label.lineHeight, 0)
