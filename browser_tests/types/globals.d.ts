@@ -4,6 +4,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LiteGraphGlobal } from '@/lib/litegraph/src/LiteGraphGlobal'
 import type { ComfyApp } from '@/scripts/app'
 import type { useWorkspaceStore } from '@/stores/workspaceStore'
+import type { RafCollectorState } from '@e2e/fixtures/helpers/rafMetrics'
 
 /**
  * Helper type for accessing nodes by ID in browser tests.
@@ -29,6 +30,11 @@ interface CapturedMessages {
   serverFeatureFlags: unknown
 }
 
+interface PerfLongtaskState {
+  observer: PerformanceObserver
+  tbtMs: number
+}
+
 declare global {
   interface Window {
     app?: ComfyApp
@@ -46,6 +52,9 @@ declare global {
     // Feature flags test globals
     __capturedMessages?: CapturedMessages
     __appReadiness?: AppReadiness
+
+    __perfLongtaskState?: PerfLongtaskState
+    __perfRafCollectorState?: RafCollectorState
 
     /**
      * WebSocket store used by test fixtures for mocking WebSocket connections.
