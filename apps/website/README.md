@@ -136,8 +136,10 @@ because the page is rendered at build time. Any push to `main` touching
 rebuild re-fetches Ashby live — so during normal development the live page
 tracks Ashby on its own.
 
-What does not keep up is the committed snapshot, which is what preview builds,
-fork PRs, local dev, and any Ashby outage render from. Refreshing that is the
+What does not keep up is the committed snapshot, which is what fork CI builds,
+local dev, and any build where Ashby is unreachable or the key is missing
+render from. Same-repo Vercel previews are not in that list — they get the key
+and fetch live, same as production. Refreshing the snapshot is the
 `Release: Website` workflow's job: it regenerates both snapshots and opens a
 PR, and merging the PR also triggers a production deploy — which is what makes
 it useful during a quiet week with no other website commits.

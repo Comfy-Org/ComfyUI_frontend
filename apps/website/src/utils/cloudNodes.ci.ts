@@ -91,7 +91,10 @@ function buildStepSummary(outcome: FetchOutcome): string {
       String(outcome.snapshot.packs.reduce((n, p) => n + p.nodes.length, 0))
     ])
     rows.push(['Reason', outcome.reason])
-    rows.push(['Snapshot age', describeSnapshotAge(outcome.snapshot.fetchedAt)])
+    rows.push([
+      'Content last changed',
+      describeSnapshotAge(outcome.snapshot.fetchedAt)
+    ])
   } else {
     rows.push(['Status', '❌ Failed (no snapshot available)'])
     rows.push(['Reason', outcome.reason])
@@ -105,6 +108,10 @@ function buildStepSummary(outcome: FetchOutcome): string {
   return `${header}${table}\n`
 }
 
+// `fetchedAt` only advances when the payload itself changed — see
+// scripts/snapshot-writer.ts — so this is the age of the content, not of the
+// last successful sync. A quiet quarter and a sync that died three months ago
+// look identical here.
 function describeSnapshotAge(fetchedAt: string): string {
   const fetched = new Date(fetchedAt).getTime()
   if (Number.isNaN(fetched)) return 'unknown'
