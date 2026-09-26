@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, it, vi } from 'vitest'
 
 import type { PullRequestSummary } from './release-sheriff'
@@ -241,20 +242,19 @@ describe('fetchOnCallEmails', () => {
     expect(fetchSpy).not.toHaveBeenCalled()
   })
 
-  it('warns on a non-ok response', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({
-        ok: false,
-        status: 503,
-        statusText: 'Service Unavailable'
-      })
-    )
+  it('does not retry an authentication failure', async () => {
+    const fetchSpy = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(
+        new Response(null, { status: 403, statusText: 'Forbidden' })
+      )
+    vi.stubGlobal('fetch', fetchSpy)
 
     const result = await fetchOnCallEmails(datadog, creds)
 
     expect(result.emails).toEqual([])
-    expect(result.warning).toMatch(/503 Service Unavailable/)
+    expect(result.warning).toMatch(/403 Forbidden/)
+    expect(fetchSpy).toHaveBeenCalledTimes(1)
   })
 
   it('warns when the request is rejected', async () => {
@@ -264,6 +264,96 @@ describe('fetchOnCallEmails', () => {
 
     expect(result.emails).toEqual([])
     expect(result.warning).toMatch(/lookup failed \(Error: boom\)/)
+  })
+
+  describe('transient failures', () => {
+    it('retries when the response body loses its connection', async () => {
+      const body = new ReadableStream<Uint8Array>({
+        pull(controller) {
+          controller.enqueue(new TextEncoder().encode('{"included":'))
+          controller.error(
+            new TypeError('terminated', { cause: { code: 'UND_ERR_SOCKET' } })
+          )
+        }
+      })
+      const fetchSpy = vi
+        .fn<typeof fetch>()
+        .mockResolvedValueOnce(new Response(body))
+        .mockResolvedValue(Response.json({ included: [] }))
+      vi.stubGlobal('fetch', fetchSpy)
+
+      const result = fetchOnCallEmails(datadog, creds)
+      await vi.advanceTimersByTimeAsync(1000)
+
+      expect(await result).toEqual({ emails: [], warning: null })
+      expect(fetchSpy).toHaveBeenCalledTimes(2)
+    })
+
+    it('does not retry malformed JSON', async () => {
+      const fetchSpy = vi
+        .fn<typeof fetch>()
+        .mockResolvedValue(new Response('{"included":'))
+      vi.stubGlobal('fetch', fetchSpy)
+
+      const result = await fetchOnCallEmails(datadog, creds)
+
+      expect(result.warning).toMatch(/lookup failed/)
+      expect(fetchSpy).toHaveBeenCalledTimes(1)
+    })
+
+    it.for([
+      { name: 'network error', failure: new TypeError('fetch failed') },
+      {
+        name: 'timeout',
+        failure: new DOMException('timed out', 'TimeoutError')
+      },
+      { name: 'rate limit', failure: new Response(null, { status: 429 }) },
+      { name: 'server error', failure: new Response(null, { status: 503 }) }
+    ])('recovers from a $name', async ({ failure }) => {
+      const fetchSpy = vi
+        .fn<typeof fetch>()
+        .mockImplementationOnce(async () => {
+          if (failure instanceof Error) throw failure
+          return failure
+        })
+        .mockResolvedValue(
+          Response.json({
+            included: [
+              { type: 'users', attributes: { email: 'sheriff@comfy.org' } }
+            ]
+          })
+        )
+      vi.stubGlobal('fetch', fetchSpy)
+
+      const result = fetchOnCallEmails(datadog, creds)
+      await vi.advanceTimersByTimeAsync(1000)
+
+      expect(await result).toEqual({
+        emails: ['sheriff@comfy.org'],
+        warning: null
+      })
+    })
+
+    it('stops after three attempts with backoff', async () => {
+      const fetchSpy = vi
+        .fn<typeof fetch>()
+        .mockRejectedValue(new TypeError('fetch failed'))
+      vi.stubGlobal('fetch', fetchSpy)
+
+      const result = fetchOnCallEmails(datadog, creds)
+      await vi.advanceTimersByTimeAsync(999)
+      expect(fetchSpy).toHaveBeenCalledTimes(1)
+      await vi.advanceTimersByTimeAsync(2000)
+      expect(fetchSpy).toHaveBeenCalledTimes(2)
+      await vi.advanceTimersByTimeAsync(1)
+
+      expect(await result).toEqual({
+        emails: [],
+        warning:
+          'Datadog On-Call lookup failed (TypeError: fetch failed) — using the fallback.'
+      })
+      expect(fetchSpy).toHaveBeenCalledTimes(3)
+    })
   })
 
   it('returns the parsed on-call emails and no warning on success', async () => {
