@@ -1,4 +1,6 @@
 import { fromPartial } from '@total-typescript/shoehorn'
+
+import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import { describe, expect, it, vi } from 'vitest'
 
 import { promotedInputWidget } from '@/core/graph/subgraph/promotedInputWidget'
@@ -495,6 +497,44 @@ describe('promoteValueWidgetViaSubgraphInput — source slot fallback', () => {
     demoteWidget(interiorNode, seedWidget, [host])
 
     expect(interiorNode.inputs).toHaveLength(0)
+  })
+
+  it('keeps the synthetic source input removable after save and reload', () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    const interiorNode = new LGraphNode('Custom')
+    subgraph.add(interiorNode)
+    const seedWidget = interiorNode.addWidget('number', 'seed', 1, () => {})
+    promoteValueWidgetViaSubgraphInput(host, interiorNode, seedWidget)
+
+    const serialized = JSON.parse(
+      JSON.stringify(interiorNode.serialize())
+    ) as ISerialisedNode
+    expect(serialized.inputs?.[0]?._createdByPromotion).toBe(true)
+
+    const restored = new LGraphNode('Custom')
+    restored.configure(serialized)
+
+    demoteWidget(restored, seedWidget, [host])
+
+    expect(restored.inputs).toHaveLength(0)
+  })
+
+  it('omits the promotion marker from declared inputs when serialising', () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    const interiorNode = new LGraphNode('Custom')
+    subgraph.add(interiorNode)
+    const input = interiorNode.addInput('seed', 'INT')
+    const seedWidget = interiorNode.addWidget('number', 'seed', 1, () => {})
+    input.widget = { name: seedWidget.name }
+    promoteValueWidgetViaSubgraphInput(host, interiorNode, seedWidget)
+
+    const serialized = JSON.parse(
+      JSON.stringify(interiorNode.serialize())
+    ) as ISerialisedNode
+
+    expect(serialized.inputs?.[0]).not.toHaveProperty('_createdByPromotion')
   })
 
   it('keeps a pre-existing source input when demoting', () => {
