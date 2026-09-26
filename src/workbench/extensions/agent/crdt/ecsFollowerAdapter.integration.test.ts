@@ -11,9 +11,11 @@ import * as Y from 'yjs'
 import { createGraphMutations } from './graphMutations'
 import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
 import type { GraphMutations } from './graphMutations'
+import type { reportError as reportErrorFn } from '@/platform/telemetry/reportError'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import type { NodeId } from '@/types/nodeId'
@@ -23,6 +25,14 @@ import { widgetId } from '@/types/widgetId'
 import type { DocUpdate } from './docFrameClient'
 import { EcsFollowerAdapter } from './ecsFollowerAdapter'
 import { FollowerDoc } from './followerDoc'
+
+const telemetryState = vi.hoisted(() => ({
+  reportError: vi.fn<typeof reportErrorFn>()
+}))
+
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: telemetryState.reportError
+}))
 
 const catalog: WidgetCatalog = {
   types: {
@@ -473,18 +483,821 @@ describe('EcsFollowerAdapter integration', () => {
     host.destroy()
   })
 
+  it('proactively reconciles once scope becomes available again, without waiting for a new frame', () => {
+    vi.useFakeTimers()
+    try {
+      const deleteLayouts = vi.fn()
+      let scopeAvailable = false
+      const mutations = createGraphMutations({
+        placement: inertPlacementPort,
+        getScope: () => (scopeAvailable ? scope : null),
+        layout: { createNode: vi.fn(), deleteNodes: deleteLayouts }
+      })
+      const context = {
+        source: 'agent-remote',
+        actor: 'local-hydration',
+        opId: 'local-seed'
+      } satisfies RemoteMutationContext
+      scopeAvailable = true
+      mutations.addNode(
+        {
+          id: 99,
+          type: 'Sink',
+          widgets_values: { stale: 9 },
+          inputs: [],
+          outputs: []
+        },
+        context
+      )
+
+      const host = mint({ nodes: [], links: [] }, catalog)
+      const follower = new FollowerDoc()
+      // Store-only: the adapter has no notion of the live graph, so its
+      // owner (`AgentCrdtProjection`) is the one that would route a
+      // successful retry into `reconcileLiveGraph`. Assert the adapter
+      // actually invokes that seam once the retry commits, not just that
+      // the ECS store converges - a retry that only updates stores but
+      // never asks anything to sweep the canvas leaves a stale node
+      // rendered (and savable) even though this test's own store-level
+      // assertions below would still pass.
+      const onReconcileRetryCommitted = vi.fn()
+      const adapter = new EcsFollowerAdapter(
+        mutations,
+        undefined,
+        onReconcileRetryCommitted
+      )
+      adapter.bind('wf', follower)
+      const update = Y.encodeStateAsUpdate(host)
+      follower.applyRemoteUpdate(update)
+
+      // First frame: the batch is rejected (no scope available yet), so the
+      // reconciliation is dropped and local-only node 99 survives. A
+      // distinctive actor/opIds prove the eventual replay is attributed to
+      // this frame, not the generic 'replay' fallback a synthetic frame
+      // would also satisfy.
+      scopeAvailable = false
+      deleteLayouts.mockClear()
+      expect(
+        adapter.applyFrame({
+          workflowId: 'wf',
+          seq: 7,
+          update,
+          actor: 'agent:distinctive-actor',
+          opIds: ['distinctive-op-id']
+        })
+      ).toBe(false)
+      expect(
+        useNodeDataStore()
+          .getGraphNodesFor('root', 'root')
+          .map(({ id }) => id)
+      ).toEqual([toNodeId(99)])
+      expect(onReconcileRetryCommitted).not.toHaveBeenCalled()
+
+      // Stay unavailable past the old 20-attempt/4-second retry budget. No
+      // new frame arrives, so recovery must remain armed at its slower rate.
+      vi.advanceTimersByTime(5_000)
+      expect(
+        useNodeDataStore()
+          .getGraphNodesFor('root', 'root')
+          .map(({ id }) => id)
+      ).toEqual([toNodeId(99)])
+
+      scopeAvailable = true
+      vi.advanceTimersByTime(2_000)
+
+      expect(useNodeDataStore().getGraphNodesFor('root', 'root')).toEqual([])
+      expect(deleteLayouts).toHaveBeenCalledWith(
+        scope,
+        [toNodeId(99)],
+        expect.objectContaining({
+          actor: 'agent:distinctive-actor',
+          opId: 'distinctive-op-id',
+          opIds: ['distinctive-op-id']
+        })
+      )
+      expect(onReconcileRetryCommitted).toHaveBeenCalledExactlyOnceWith('wf')
+
+      adapter.destroy()
+      follower.destroy()
+      host.destroy()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('retries at a fixed 200ms cadence for exactly 20 attempts, then 2s, and a fresh episode restarts at 200ms', () => {
+    vi.useFakeTimers()
+    try {
+      let scopeAvailable = false
+      const mutations = createGraphMutations({
+        placement: inertPlacementPort,
+        getScope: () => (scopeAvailable ? scope : null),
+        layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+      })
+      const context = {
+        source: 'agent-remote',
+        actor: 'local-hydration',
+        opId: 'local-seed'
+      } satisfies RemoteMutationContext
+      scopeAvailable = true
+      mutations.addNode(
+        { id: 99, type: 'Sink', inputs: [], outputs: [] },
+        context
+      )
+
+      const batchCalls: unknown[] = []
+      const trackedMutations: GraphMutations = {
+        ...mutations,
+        batchResult: (batchContext, define) => {
+          batchCalls.push(batchContext)
+          return mutations.batchResult(batchContext, define)
+        }
+      }
+
+      const host = mint({ nodes: [], links: [] }, catalog)
+      const follower = new FollowerDoc()
+      const adapter = new EcsFollowerAdapter(trackedMutations)
+      adapter.bind('wf', follower)
+      const update = Y.encodeStateAsUpdate(host)
+      follower.applyRemoteUpdate(update)
+
+      // Episode 1: rejected for lack of scope, which never returns during
+      // the fast tier.
+      scopeAvailable = false
+      expect(adapter.applyFrame({ workflowId: 'wf', seq: 1, update })).toBe(
+        false
+      )
+      expect(batchCalls).toHaveLength(1)
+
+      // Exactly 20 fast attempts at a fixed 200ms cadence.
+      vi.advanceTimersByTime(20 * 200)
+      expect(batchCalls).toHaveLength(21)
+
+      // The slow tier is a fixed 2s, not another 200ms: a hot-loop-forever
+      // implementation would already have fired several more batches by the
+      // 1999ms mark.
+      vi.advanceTimersByTime(1_999)
+      expect(batchCalls).toHaveLength(21)
+      vi.advanceTimersByTime(1)
+      expect(batchCalls).toHaveLength(22)
+
+      // Let episode 1 finally commit so none of its budget leaks into
+      // episode 2.
+      scopeAvailable = true
+      vi.advanceTimersByTime(2_000)
+      expect(batchCalls).toHaveLength(23)
+      expect(useNodeDataStore().getGraphNodesFor('root', 'root')).toEqual([])
+
+      // Episode 2: a fresh rejection gets the full fast budget back, so its
+      // first retry fires at 200ms again instead of inheriting episode 1's
+      // slow cadence or its spent attempt count.
+      scopeAvailable = false
+      expect(adapter.applyFrame({ workflowId: 'wf', seq: 2, update })).toBe(
+        false
+      )
+      expect(batchCalls).toHaveLength(24)
+      vi.advanceTimersByTime(199)
+      expect(batchCalls).toHaveLength(24)
+      vi.advanceTimersByTime(1)
+      expect(batchCalls).toHaveLength(25)
+
+      adapter.destroy()
+      follower.destroy()
+      host.destroy()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('reports and keeps retrying when a timer-driven retry batch itself throws', () => {
+    vi.useFakeTimers()
+    try {
+      telemetryState.reportError.mockClear()
+      let scopeAvailable = false
+      const realMutations = createGraphMutations({
+        placement: inertPlacementPort,
+        getScope: () => (scopeAvailable ? scope : null),
+        layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+      })
+      const context = {
+        source: 'agent-remote',
+        actor: 'seed',
+        opId: 'seed'
+      } satisfies RemoteMutationContext
+      scopeAvailable = true
+      realMutations.addNode(
+        { id: 99, type: 'Sink', inputs: [], outputs: [] },
+        context
+      )
+      scopeAvailable = false
+
+      const failure = new Error('retry batch threw')
+      let batchCallCount = 0
+      // Call 1 is the initial (caller-driven) rejection; call 2 is the
+      // timer's own first retry attempt - the one DrJKL's finding says the
+      // existing suite never reaches. Call 3 is the next retry, which must
+      // still fire on the existing budget afterward.
+      const throwingMutations: GraphMutations = {
+        ...realMutations,
+        batchResult: (batchContext, define) => {
+          batchCallCount += 1
+          if (batchCallCount === 2) throw failure
+          return realMutations.batchResult(batchContext, define)
+        }
+      }
+
+      const host = mint({ nodes: [], links: [] }, catalog)
+      const follower = new FollowerDoc()
+      const adapter = new EcsFollowerAdapter(throwingMutations)
+      adapter.bind('wf', follower)
+      const update = Y.encodeStateAsUpdate(host)
+      follower.applyRemoteUpdate(update)
+
+      expect(adapter.applyFrame({ workflowId: 'wf', seq: 1, update })).toBe(
+        false
+      )
+      expect(batchCallCount).toBe(1)
+
+      // The timer's own retry throws. It must not escape as an unhandled
+      // error, and must report the exact failure and reschedule.
+      expect(() => vi.advanceTimersByTime(200)).not.toThrow()
+      expect(batchCallCount).toBe(2)
+      expect(telemetryState.reportError).toHaveBeenCalledExactlyOnceWith(
+        failure,
+        {
+          errorType: 'error_agent_reconcile_retry_threw',
+          context: { workflowId: 'wf' }
+        }
+      )
+
+      // The chain survives the throw: the next timer-driven attempt commits
+      // and converges, without any new frame ever arriving.
+      scopeAvailable = true
+      vi.advanceTimersByTime(200)
+      expect(batchCallCount).toBe(3)
+      expect(useNodeDataStore().getGraphNodesFor('root', 'root')).toEqual([])
+
+      adapter.destroy()
+      follower.destroy()
+      host.destroy()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('keeps recovery armed and never replays the committed batch when the live-graph sweep callback throws', () => {
+    vi.useFakeTimers()
+    try {
+      telemetryState.reportError.mockClear()
+      let scopeAvailable = false
+      const mutations = createGraphMutations({
+        placement: inertPlacementPort,
+        getScope: () => (scopeAvailable ? scope : null),
+        layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+      })
+      const context = {
+        source: 'agent-remote',
+        actor: 'local-hydration',
+        opId: 'local-seed'
+      } satisfies RemoteMutationContext
+      scopeAvailable = true
+      mutations.addNode(
+        { id: 99, type: 'Sink', inputs: [], outputs: [] },
+        context
+      )
+      scopeAvailable = false
+
+      const batchCalls: unknown[] = []
+      const trackedMutations: GraphMutations = {
+        ...mutations,
+        batchResult: (batchContext, define) => {
+          batchCalls.push(batchContext)
+          return mutations.batchResult(batchContext, define)
+        }
+      }
+      const sweepFailure = new Error('live sweep failed')
+      let sweepCalls = 0
+      const onReconcileRetryCommitted = vi.fn(() => {
+        sweepCalls += 1
+        if (sweepCalls === 1) throw sweepFailure
+      })
+
+      const host = mint({ nodes: [], links: [] }, catalog)
+      const follower = new FollowerDoc()
+      const adapter = new EcsFollowerAdapter(
+        trackedMutations,
+        undefined,
+        onReconcileRetryCommitted
+      )
+      adapter.bind('wf', follower)
+      const update = Y.encodeStateAsUpdate(host)
+      follower.applyRemoteUpdate(update)
+
+      expect(adapter.applyFrame({ workflowId: 'wf', seq: 1, update })).toBe(
+        false
+      )
+      expect(batchCalls).toHaveLength(1)
+
+      // The retry batch commits, but the live-graph sweep callback throws on
+      // its first call. The throw must not replay the already-committed
+      // mutation - only the sweep is retried.
+      scopeAvailable = true
+      vi.advanceTimersByTime(200)
+      expect(batchCalls).toHaveLength(2)
+      expect(useNodeDataStore().getGraphNodesFor('root', 'root')).toEqual([])
+      expect(onReconcileRetryCommitted).toHaveBeenCalledTimes(1)
+      expect(telemetryState.reportError).toHaveBeenCalledExactlyOnceWith(
+        sweepFailure,
+        {
+          errorType: 'error_agent_reconcile_live_sweep_threw',
+          context: { workflowId: 'wf' }
+        }
+      )
+
+      // A later timer removes the live node's store record by retrying only
+      // the sweep, never the mutation batch.
+      vi.advanceTimersByTime(2_000)
+      expect(onReconcileRetryCommitted).toHaveBeenCalledTimes(2)
+      expect(batchCalls).toHaveLength(2)
+
+      adapter.destroy()
+      follower.destroy()
+      host.destroy()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('attributes recovery to every frame folded into its authoritative snapshot', () => {
+    vi.useFakeTimers()
+    try {
+      let scopeAvailable = true
+      const deleteLayouts = vi.fn()
+      const mutations = createGraphMutations({
+        placement: inertPlacementPort,
+        getScope: () => (scopeAvailable ? scope : null),
+        layout: { createNode: vi.fn(), deleteNodes: deleteLayouts }
+      })
+      mutations.addNode(
+        { id: 99, type: 'Sink', inputs: [], outputs: [] },
+        { source: 'agent-remote', actor: 'seed', opId: 'seed' }
+      )
+      const host = mint({ nodes: [], links: [] }, catalog)
+      const follower = new FollowerDoc()
+      const adapter = new EcsFollowerAdapter(mutations)
+      adapter.bind('wf', follower)
+      const update = Y.encodeStateAsUpdate(host)
+      follower.applyRemoteUpdate(update)
+
+      scopeAvailable = false
+      expect(
+        adapter.applyFrame({
+          workflowId: 'wf',
+          seq: 7,
+          update,
+          actor: 'agent:first-frame',
+          opIds: ['first-op']
+        })
+      ).toBe(false)
+      expect(
+        adapter.applyFrame({
+          workflowId: 'wf',
+          seq: 8,
+          update,
+          actor: 'agent:later-frame',
+          opIds: ['later-op']
+        })
+      ).toBe(false)
+
+      scopeAvailable = true
+      vi.advanceTimersByTime(200)
+
+      expect(deleteLayouts).toHaveBeenCalledWith(
+        scope,
+        [toNodeId(99)],
+        expect.objectContaining({
+          actor: 'agent-reconcile',
+          opId: 'later-op',
+          opIds: ['first-op', 'later-op']
+        })
+      )
+
+      adapter.destroy()
+      follower.destroy()
+      host.destroy()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it.for(['clearForReset', 'discardPending', 'unbind'] as const)(
+    'a no-scope retry armed before %s cannot mutate or callback after it',
+    (lifecycleAction) => {
+      vi.useFakeTimers()
+      try {
+        let scopeAvailable = false
+        const mutations = createGraphMutations({
+          placement: inertPlacementPort,
+          getScope: () => (scopeAvailable ? scope : null),
+          layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+        })
+        const batchCalls: unknown[] = []
+        const trackedMutations: GraphMutations = {
+          ...mutations,
+          batchResult: (batchContext, define) => {
+            batchCalls.push(batchContext)
+            return mutations.batchResult(batchContext, define)
+          }
+        }
+        const onReconcileRetryCommitted = vi.fn()
+
+        const host = mint(
+          {
+            nodes: [{ id: 1, type: 'Source', pos: [0, 0], outputs: [] }],
+            links: []
+          },
+          catalog
+        )
+        const follower = new FollowerDoc()
+        const adapter = new EcsFollowerAdapter(
+          trackedMutations,
+          undefined,
+          onReconcileRetryCommitted
+        )
+        adapter.bind('wf', follower)
+        const update = Y.encodeStateAsUpdate(host)
+        follower.applyRemoteUpdate(update)
+
+        // Reject for lack of scope, arming a fast retry.
+        expect(adapter.applyFrame({ workflowId: 'wf', seq: 1, update })).toBe(
+          false
+        )
+        expect(batchCalls).toHaveLength(1)
+
+        if (lifecycleAction === 'clearForReset') {
+          adapter.clearForReset('wf', {
+            source: 'agent-remote',
+            actor: 'reset',
+            opId: 'reset'
+          })
+        } else if (lifecycleAction === 'discardPending') {
+          adapter.discardPending('wf')
+        } else {
+          adapter.unbind('wf')
+        }
+        batchCalls.length = 0
+
+        // Scope returning afterward must never resurrect the cleared,
+        // discarded, or unbound state: deleting the new cancellation calls
+        // would otherwise let this fire a batch (or the callback) later.
+        scopeAvailable = true
+        vi.advanceTimersByTime(5_000)
+
+        expect(batchCalls).toHaveLength(0)
+        expect(onReconcileRetryCommitted).not.toHaveBeenCalled()
+
+        if (lifecycleAction !== 'unbind') adapter.unbind('wf')
+        follower.destroy()
+        host.destroy()
+      } finally {
+        vi.useRealTimers()
+      }
+    }
+  )
+
+  it.for(['clearForReset', 'discardPending', 'unbind'] as const)(
+    'a failed live sweep armed before %s cannot callback after it',
+    (lifecycleAction) => {
+      vi.useFakeTimers()
+      try {
+        let scopeAvailable = false
+        const mutations = createGraphMutations({
+          placement: inertPlacementPort,
+          getScope: () => (scopeAvailable ? scope : null),
+          layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+        })
+        const onReconcileRetryCommitted = vi.fn(() => {
+          throw new Error('live sweep failed')
+        })
+        const host = mint({ nodes: [], links: [] }, catalog)
+        const follower = new FollowerDoc()
+        const adapter = new EcsFollowerAdapter(
+          mutations,
+          undefined,
+          onReconcileRetryCommitted
+        )
+        adapter.bind('wf', follower)
+        const update = Y.encodeStateAsUpdate(host)
+        follower.applyRemoteUpdate(update)
+
+        expect(adapter.applyFrame({ workflowId: 'wf', seq: 1, update })).toBe(
+          false
+        )
+        scopeAvailable = true
+        vi.advanceTimersByTime(200)
+        expect(onReconcileRetryCommitted).toHaveBeenCalledTimes(1)
+
+        if (lifecycleAction === 'clearForReset') {
+          adapter.clearForReset('wf', {
+            source: 'agent-remote',
+            actor: 'reset',
+            opId: 'reset'
+          })
+        } else if (lifecycleAction === 'discardPending') {
+          adapter.discardPending('wf')
+        } else {
+          adapter.unbind('wf')
+        }
+
+        vi.advanceTimersByTime(5_000)
+        expect(onReconcileRetryCommitted).toHaveBeenCalledTimes(1)
+
+        if (lifecycleAction !== 'unbind') adapter.unbind('wf')
+        follower.destroy()
+        host.destroy()
+      } finally {
+        vi.useRealTimers()
+      }
+    }
+  )
+
+  it.for(['clearForReset', 'discardPending'] as const)(
+    '%s called by a throwing live sweep cannot be followed by another sweep',
+    (lifecycleAction) => {
+      vi.useFakeTimers()
+      try {
+        let scopeAvailable = false
+        const mutations = createGraphMutations({
+          placement: inertPlacementPort,
+          getScope: () => (scopeAvailable ? scope : null),
+          layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+        })
+        const host = mint({ nodes: [], links: [] }, catalog)
+        const follower = new FollowerDoc()
+        const onReconcileRetryCommitted = vi.fn(() => {
+          if (lifecycleAction === 'clearForReset') {
+            adapter.clearForReset('wf', {
+              source: 'agent-remote',
+              actor: 'reset',
+              opId: 'reset'
+            })
+          } else {
+            adapter.discardPending('wf')
+          }
+          throw new Error('live sweep failed after cancellation')
+        })
+        const adapter = new EcsFollowerAdapter(
+          mutations,
+          undefined,
+          onReconcileRetryCommitted
+        )
+        adapter.bind('wf', follower)
+        const update = Y.encodeStateAsUpdate(host)
+        follower.applyRemoteUpdate(update)
+
+        expect(adapter.applyFrame({ workflowId: 'wf', seq: 1, update })).toBe(
+          false
+        )
+        scopeAvailable = true
+        vi.advanceTimersByTime(5_000)
+
+        expect(onReconcileRetryCommitted).toHaveBeenCalledTimes(1)
+
+        adapter.unbind('wf')
+        follower.destroy()
+        host.destroy()
+      } finally {
+        vi.useRealTimers()
+      }
+    }
+  )
+
+  it.for(['clearForReset', 'discardPending', 'unbind'] as const)(
+    'a second, later live-sweep failure cannot orphan an earlier sweep-retry timer past %s',
+    (lifecycleAction) => {
+      vi.useFakeTimers()
+      try {
+        let scopeAvailable = false
+        const mutations = createGraphMutations({
+          placement: inertPlacementPort,
+          getScope: () => (scopeAvailable ? scope : null),
+          layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+        })
+        const onReconcileRetryCommitted = vi.fn(() => {
+          throw new Error('live sweep failed')
+        })
+        const host = mint({ nodes: [], links: [] }, catalog)
+        const follower = new FollowerDoc()
+        const adapter = new EcsFollowerAdapter(
+          mutations,
+          undefined,
+          onReconcileRetryCommitted
+        )
+        adapter.bind('wf', follower)
+        const update = Y.encodeStateAsUpdate(host)
+        follower.applyRemoteUpdate(update)
+
+        // First rejection episode: its batch retry commits at 200ms, and its
+        // live-graph sweep throws, arming a sweep-retry timer 2s out.
+        expect(adapter.applyFrame({ workflowId: 'wf', seq: 1, update })).toBe(
+          false
+        )
+        scopeAvailable = true
+        vi.advanceTimersByTime(200)
+        expect(onReconcileRetryCommitted).toHaveBeenCalledTimes(1)
+
+        scopeAvailable = false
+        expect(adapter.applyFrame({ workflowId: 'wf', seq: 2, update })).toBe(
+          false
+        )
+        scopeAvailable = true
+        vi.advanceTimersByTime(200)
+        expect(onReconcileRetryCommitted).toHaveBeenCalledTimes(2)
+
+        if (lifecycleAction === 'clearForReset') {
+          adapter.clearForReset('wf', {
+            source: 'agent-remote',
+            actor: 'reset',
+            opId: 'reset'
+          })
+        } else if (lifecycleAction === 'discardPending') {
+          adapter.discardPending('wf')
+        } else {
+          adapter.unbind('wf')
+        }
+
+        // If the first sweep-retry timer were orphaned, it would still fire
+        // ~2s after the first sweep failure and invoke the callback again
+        // even though recovery was just cancelled.
+        vi.advanceTimersByTime(5_000)
+        expect(onReconcileRetryCommitted).toHaveBeenCalledTimes(2)
+
+        if (lifecycleAction !== 'unbind') adapter.unbind('wf')
+        follower.destroy()
+        host.destroy()
+      } finally {
+        vi.useRealTimers()
+      }
+    }
+  )
+
+  it('retries from the batch rejection reason when scope appears immediately afterward', () => {
+    vi.useFakeTimers()
+    try {
+      const seedMutations = createGraphMutations({
+        placement: inertPlacementPort,
+        getScope: () => scope,
+        layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+      })
+      seedMutations.addNode(
+        { id: 99, type: 'Sink', inputs: [], outputs: [] },
+        { source: 'agent-remote', actor: 'seed', opId: 'seed' }
+      )
+
+      let scopeReads = 0
+      const deleteLayouts = vi.fn()
+      const mutations = createGraphMutations({
+        placement: inertPlacementPort,
+        getScope: () => (++scopeReads === 1 ? null : scope),
+        layout: { createNode: vi.fn(), deleteNodes: deleteLayouts }
+      })
+      const host = mint({ nodes: [], links: [] }, catalog)
+      const follower = new FollowerDoc()
+      const adapter = new EcsFollowerAdapter(mutations)
+      adapter.bind('wf', follower)
+      const update = Y.encodeStateAsUpdate(host)
+      follower.applyRemoteUpdate(update)
+
+      expect(adapter.applyFrame({ workflowId: 'wf', seq: 1, update })).toBe(
+        false
+      )
+      vi.advanceTimersByTime(200)
+
+      expect(useNodeDataStore().getGraphNodesFor('root', 'root')).toEqual([])
+      expect(deleteLayouts).toHaveBeenCalledWith(
+        scope,
+        [toNodeId(99)],
+        expect.objectContaining({ opId: 'replay' })
+      )
+
+      adapter.destroy()
+      follower.destroy()
+      host.destroy()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('does not arm a self-driven retry for a deterministic rejection scope can never fix', () => {
+    vi.useFakeTimers()
+    try {
+      const host = mint(
+        {
+          nodes: [
+            {
+              id: 1,
+              type: 'Source',
+              pos: [0, 0],
+              outputs: [{ name: 'out', type: 'IMAGE', links: [9] }],
+              inputs: []
+            },
+            {
+              id: 2,
+              type: 'Sink',
+              pos: [300, 0],
+              inputs: [{ name: 'in', type: 'IMAGE', link: 9 }],
+              outputs: []
+            }
+          ],
+          links: [[9, 1, 0, 2, 0, 'IMAGE']]
+        },
+        catalog
+      )
+      const follower = new FollowerDoc()
+      const realMutations = createGraphMutations({
+        placement: inertPlacementPort,
+        getScope: () => scope,
+        layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+      })
+      const batchCalls: unknown[] = []
+      const mutations: GraphMutations = {
+        ...realMutations,
+        batchResult: (context, define) => {
+          batchCalls.push(context)
+          return realMutations.batchResult(context, define)
+        }
+      }
+      const adapter = new EcsFollowerAdapter(mutations)
+      adapter.bind('wf', follower)
+      const bootstrap = Y.encodeStateAsUpdate(host)
+      follower.applyRemoteUpdate(bootstrap)
+      expect(
+        adapter.applyFrame({ workflowId: 'wf', seq: 1, update: bootstrap })
+      ).toBe(true)
+      batchCalls.length = 0
+
+      // Retype node 1 to a type with no output, while the doc still carries
+      // link 9 originating from its old output slot 0: `prepare()`'s stale
+      // link revalidation rejects this deterministically (see the "FEC-4"
+      // test below). Scope stays available throughout.
+      const before = Y.encodeStateVector(host)
+      const retypeOp = {
+        op_id: 'retype',
+        actor: 'agent:test',
+        base_version: 2,
+        stamp: [2, 'agent:test'],
+        op: 'add_node',
+        node_id: 1,
+        class_type: 'Sink',
+        pos: [0, 0],
+        node: {
+          id: 1,
+          type: 'Sink',
+          pos: [0, 0],
+          inputs: [{ name: 'in', type: 'IMAGE', link: null }],
+          outputs: []
+        }
+      } satisfies Op
+      applyOps(host, [retypeOp], catalog)
+      const update = Y.encodeStateAsUpdate(host, before)
+      follower.applyRemoteUpdate(update)
+      const rejected = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => undefined)
+
+      expect(adapter.applyFrame({ workflowId: 'wf', seq: 2, update })).toBe(
+        false
+      )
+      expect(batchCalls).toHaveLength(1)
+      rejected.mockRestore()
+
+      // If the adapter blindly armed a retry for every rejection, this
+      // advance would fire it and call `batch()` again with the identical,
+      // still-invalid doc state - 20 wasted whole-document reconciles at a
+      // fixed interval that retrying can never turn into a commit.
+      vi.advanceTimersByTime(5_000)
+      expect(batchCalls).toHaveLength(1)
+
+      adapter.destroy()
+      follower.destroy()
+      host.destroy()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('replays authoritative state through real mutations after a batch throws', () => {
     const mutations = createGraphMutations({
       placement: inertPlacementPort,
       getScope: () => scope,
       layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
     })
-    const realBatch = mutations.batch.bind(mutations)
+    const realBatch = mutations.batchResult.bind(mutations)
     const failure = new Error('projection failed')
     let throwNextBatch = true
     const throwingMutations: GraphMutations = {
       ...mutations,
-      batch: (context, define) => {
+      batchResult: (context, define) => {
         if (throwNextBatch) {
           throwNextBatch = false
           throw failure
@@ -1406,12 +2219,13 @@ describe('EcsFollowerAdapter integration', () => {
         clearSemanticGraph: () => undefined
       }
       return {
-        batch: (_context, define) => {
+        batch: () => true,
+        batchResult: (_context, define) => {
           events.push(`${workflowId}:start`)
           define(noopBatch)
           if (workflowId === 'wf-a') adapter.applyFrame(frameB)
           events.push(`${workflowId}:end`)
-          return true
+          return { kind: 'committed' }
         },
         addNode: () => true,
         setWidget: () => true,

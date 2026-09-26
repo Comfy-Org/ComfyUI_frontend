@@ -27,7 +27,9 @@ export class AgentCrdtProjection {
     private readonly getFollowerDoc: () => Y.Doc,
     intent?: LocalIntent
   ) {
-    this.adapter = new EcsFollowerAdapter(mutations, intent)
+    this.adapter = new EcsFollowerAdapter(mutations, intent, (workflowId) =>
+      this.reconcileLiveGraph(workflowId)
+    )
   }
 
   bind(workflowId: string, follower: FollowerDoc): void {

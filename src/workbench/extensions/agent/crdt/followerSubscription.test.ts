@@ -29,7 +29,7 @@ import type { DocFrameTransport, DocOp, DocUpdate } from './docFrameClient'
 import { DocFrameClient, encodeBase64 } from './docFrameClient'
 import { EcsFollowerAdapter } from './ecsFollowerAdapter'
 import { FollowerDoc } from './followerDoc'
-import type { GraphMutations } from './graphMutations'
+import type { GraphMutationBatchResult, GraphMutations } from './graphMutations'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import { FollowerSchemaError, assertReadableSchema } from './schemaGuard'
 
@@ -127,6 +127,12 @@ describe('follower commit boundary', () => {
     })
     const mutations = {
       batch: vi.fn(() => false),
+      batchResult: vi.fn(
+        (): GraphMutationBatchResult => ({
+          kind: 'rejected',
+          reason: 'validation'
+        })
+      ),
       addNode: vi.fn(() => false),
       setWidget: vi.fn(() => false),
       connect: vi.fn(() => false),
