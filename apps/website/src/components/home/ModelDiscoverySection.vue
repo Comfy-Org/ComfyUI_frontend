@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import WorkshopGate from '../workshop/WorkshopGate.vue'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { catalogSearch } from '../../config/models-catalogue'
 import { getRoutes } from '../../config/routes'
@@ -60,6 +60,22 @@ const browseHref = computed(() =>
   onWorkflows.value ? `${routes.workshop}?type=workflows` : routes.workshop
 )
 
+// The marquee travels one row's width per period, so a fixed period runs a
+// longer row faster and a switch mid-stride lands it at the old row's fraction
+// of a different width. A pace per card holds one speed; rewinding the running
+// animation lets the row that arrives start where a row starts.
+const SECONDS_PER_CARD = 3
+const marqueeStyle = computed(() => ({
+  '--marquee-gap': '0.75rem',
+  animationDuration: `${(onWorkflows.value ? workflows.length : providers.length) * SECONDS_PER_CARD}s`
+}))
+
+const row = ref<HTMLElement | null>(null)
+watch(onWorkflows, () => {
+  for (const animation of row.value?.getAnimations({ subtree: true }) ?? [])
+    animation.currentTime = 0
+})
+
 const cardHref = (name: string) =>
   `${routes.workshop}${catalogSearch({ query: name })}`
 
@@ -107,12 +123,13 @@ const cardClass =
         <div
           class="overflow-hidden mask-[linear-gradient(to_right,transparent,black_2rem,black_calc(100%-2rem),transparent)]"
         >
-          <div class="group flex w-max gap-3">
+          <div ref="row" class="group flex w-max gap-3">
             <div
               v-for="copy in 2"
               :key="copy"
               class="flex shrink-0 animate-marquee gap-3 group-focus-within:paused group-hover:paused"
-              style="--marquee-gap: 0.75rem"
+              :style="marqueeStyle"
+              data-testid="discovery-marquee"
               :aria-hidden="copy === 2 ? 'true' : undefined"
             >
               <DiscoveryWorkflowCard

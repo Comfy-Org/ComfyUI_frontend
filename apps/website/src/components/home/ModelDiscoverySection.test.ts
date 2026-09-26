@@ -161,6 +161,32 @@ describe('ModelDiscoverySection', async () => {
     ).toHaveAttribute('href', '/models?type=workflows')
   })
 
+  // Both rows cross the screen at one pace, so switching tabs does not speed
+  // the marquee up or slow it down under the reader.
+  it('paces both rows by the card, not by the row', async () => {
+    const user = userEvent.setup()
+    const pace = () =>
+      screen
+        .getAllByTestId('discovery-marquee')
+        .map((copy) => copy.style.animationDuration)
+
+    render(ModelDiscoverySection, {
+      props: {
+        providers: [providers[0], { ...providers[0], name: 'Second Studio' }],
+        workflows: [
+          workflows[0],
+          { ...workflows[0], name: 'Second flow' },
+          { ...workflows[0], name: 'Third flow' }
+        ]
+      }
+    })
+    await nextTick()
+    expect(pace()).toEqual(['6s', '6s'])
+
+    await user.click(screen.getByTestId('catalogue-tab-workflows'))
+    expect(pace()).toEqual(['9s', '9s'])
+  })
+
   it('localizes copy while keeping the English-only Workshop route', async () => {
     render(ModelDiscoverySection, {
       props: { locale: 'zh-CN', providers }
