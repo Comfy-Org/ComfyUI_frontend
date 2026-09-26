@@ -35,10 +35,12 @@ const sequencedFrame = (
   }
 })
 
-const unsequencedSubscribedFrame = () => ({
-  type: 'doc_subscribed',
-  data: { v: 1, workflow_id: 'wf-1', ok: true }
-})
+function unsequencedSubscribedFrame() {
+  return {
+    type: 'doc_subscribed',
+    data: { v: 1, workflow_id: 'wf-1', ok: true }
+  }
+}
 
 const docOpsResultFrame = (seq?: unknown) => ({
   type: 'doc_ops_result',
