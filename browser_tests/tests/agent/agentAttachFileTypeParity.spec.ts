@@ -13,11 +13,14 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
-// `MAX_ATTACHMENT_BYTES` from `useAttachment.ts`, restated rather than
-// imported: that module pulls in `@/i18n`, whose `import.meta.glob` the
-// Playwright loader cannot evaluate. The assertion below names the formatted
-// limit the user is shown, so a change to either one fails here loudly.
-const ATTACHMENT_LIMIT_BYTES = 20 * 1024 * 1024
+// The attachment limit is the server's, not the client's: `useAttachment`
+// reads `max_upload_size` off the `feature_flags` handshake and only falls
+// back to its own `MAX_ATTACHMENT_BYTES` when the server advertises nothing.
+// The oversized-file test below pins the flag rather than restating that
+// fallback, so it asserts the limit the app actually enforces in whichever
+// deployment it runs against. Small enough that the generated drop payload
+// stays cheap to build in the page.
+const PINNED_UPLOAD_LIMIT_BYTES = 1024 * 1024
 
 const VIDEO = 'plain_video.mp4'
 const AUDIO = 'agent-attach-sample.wav'
@@ -170,15 +173,26 @@ test.describe(
       comfyPage
     }, testInfo) => {
       await agentPanel.open()
+
+      // Pin the limit so both routes are measured against a known one. The
+      // cloud backend advertises a `max_upload_size` well above the client's
+      // 20 MB fallback, so a file sized off that fallback is simply not
+      // oversized there and nothing refuses it — which is what this test hit.
+      // `Persistent` because the server re-sends `feature_flags` on every
+      // socket open and a plain merge is dropped by the next handshake.
+      await comfyPage.featureFlags.setServerFlagsPersistent({
+        max_upload_size: PINNED_UPLOAD_LIMIT_BYTES
+      })
+
       const oversized = {
         name: 'oversized.mp4',
-        byteLength: ATTACHMENT_LIMIT_BYTES + 1
+        byteLength: PINNED_UPLOAD_LIMIT_BYTES + 1
       }
       // The whole sentence the user reads, limit included.
       const warning = comfyPage.page.getByText(
         enMessages.agent.attachmentTooLarge
           .replace('{name}', oversized.name)
-          .replace('{limit}', formatSize(ATTACHMENT_LIMIT_BYTES)),
+          .replace('{limit}', formatSize(PINNED_UPLOAD_LIMIT_BYTES)),
         { exact: true }
       )
 
