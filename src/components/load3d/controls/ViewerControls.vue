@@ -43,7 +43,12 @@ const openIn3DViewer = () => {
     dialogComponentProps: {
       renderer: 'reka',
       size: 'full',
-      contentClass: 'left-1/2 w-[80vw] sm:max-w-[80vw] h-[80vh] max-h-[80vh]',
+      // No `left-*` here: the dialog variant already centres on the visible
+      // workspace via `left-[calc(50%-var(--workspace-inset-right,0px)/2)]`,
+      // and `left-1/2` would re-centre on the whole viewport. Same reason the
+      // width clamps against the inset instead of a bare `80vw`.
+      contentClass:
+        'w-[80vw] sm:max-w-[min(80vw,calc(100vw-var(--workspace-inset-right,0px)-1rem))] h-[80vh] max-h-[80vh]',
       maximizable: true,
       onClose: async () => {
         await useLoad3dService().handleViewerClose(props.node)
