@@ -785,7 +785,8 @@ const {
       }
     },
     onReset: graphActivity.resetWorkflow
-  }
+  },
+  () => workflowStore.activeWorkflow?.changeTracker ?? null
 )
 // The bound document's serialized root graph id, independent of what is
 // currently on the canvas: `beforeLoadNewGraph` persists the outgoing
@@ -805,6 +806,8 @@ const mintPortWiring = attachMintPortWiring({
   layoutChanges: (listener) => layoutStore.onChange(listener),
   localActorPrefix: ACTOR_CONFIG.USER_PREFIX,
   getGraph: () => (app.isGraphReady ? app.rootGraph : null),
+  isRestoringState: () =>
+    workflowStore.activeWorkflow?.changeTracker?._restoringState === true,
   boundRootGraphId
 })
 const isCrdtDevPanelEnabled = resolveDebugPanelEnabled(

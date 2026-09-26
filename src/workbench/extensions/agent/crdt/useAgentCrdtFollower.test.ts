@@ -7,7 +7,7 @@
  * the frame-handler status surface, and total teardown.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, nextTick, ref, shallowRef } from 'vue'
+import { defineComponent, markRaw, nextTick, ref, shallowRef } from 'vue'
 import type { Ref } from 'vue'
 import * as Y from 'yjs'
 
@@ -17,6 +17,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import type { GraphMutations } from './graphMutations'
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 import type { reportError as reportErrorFn } from '@/platform/telemetry/reportError'
+import type { WorkflowJSON04 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
@@ -99,6 +100,7 @@ const apiState = vi.hoisted(() => {
     target,
     api: {
       socket: { readyState: 1, send: vi.fn() },
+      dispatchCustomEvent: vi.fn(),
       addCustomEventListener: vi.fn(),
       removeCustomEventListener: vi.fn(),
       addEventListener: (type: string, listener: EventListener) =>
@@ -108,6 +110,20 @@ const apiState = vi.hoisted(() => {
       )
     }
   }
+})
+
+const historyState = vi.hoisted(() => {
+  const current: WorkflowJSON04 = {
+    nodes: [],
+    links: [],
+    groups: [],
+    extra: {},
+    config: {},
+    version: 0.4,
+    last_node_id: 0,
+    last_link_id: 0
+  }
+  return { current }
 })
 
 vi.mock<unknown>(import('./layoutFollowerBridge'), () => ({
@@ -171,20 +187,112 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({ api: apiState.api }))
 vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: { graph: null, canvas: null }
+  app: {
+    graph: {},
+    isGraphReady: true,
+    rootGraph: {
+      serialize: () => structuredClone(historyState.current)
+    },
+    loadGraphData: vi.fn(async (state: WorkflowJSON04) => {
+      historyState.current = structuredClone(state)
+      return true
+    }),
+    canvas: null,
+    ui: { autoQueueEnabled: false, autoQueueMode: 'instant' }
+  }
 }))
 
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import { SUBSCRIBE_ACK_TIMEOUT_MS } from './agentCrdtDocLifecycle'
 import {
   STALE_AFTER_MS,
   SUBSCRIBE_CATCHUP_GRACE_MS,
   useAgentCrdtFollower
 } from './useAgentCrdtFollower'
-import type { AgentCrdtStatus } from './useAgentCrdtFollower'
+import type { AgentCrdtStatus, UndoBracket } from './useAgentCrdtFollower'
 
 const graphMutations = {} as GraphMutations
 const DOC_ID_KEY = 'Comfy.Agent.CrdtDocId'
 const TEARDOWN_ERROR_TYPE = 'failure_tearing_down_agent_crdt_follower'
+
+type WorkflowLink = WorkflowJSON04['links'][number]
+
+const AGENT_LINKS: WorkflowLink[] = [
+  [1, 1, 0, 6, 0, 'IMAGE'],
+  [2, 1, 0, 7, 0, 'IMAGE'],
+  [3, 1, 0, 8, 0, 'IMAGE'],
+  [4, 1, 0, 9, 0, 'IMAGE'],
+  [5, 1, 0, 10, 0, 'IMAGE'],
+  [6, 2, 0, 6, 1, 'IMAGE'],
+  [7, 2, 0, 7, 1, 'IMAGE'],
+  [8, 2, 0, 8, 1, 'IMAGE'],
+  [9, 2, 0, 9, 1, 'IMAGE'],
+  [10, 2, 0, 10, 1, 'IMAGE'],
+  [11, 3, 0, 6, 2, 'IMAGE'],
+  [12, 3, 0, 7, 2, 'IMAGE'],
+  [13, 3, 0, 8, 2, 'IMAGE'],
+  [14, 3, 0, 9, 2, 'IMAGE'],
+  [15, 3, 0, 10, 2, 'IMAGE'],
+  [16, 4, 0, 6, 3, 'IMAGE'],
+  [17, 4, 0, 7, 3, 'IMAGE'],
+  [18, 4, 0, 8, 3, 'IMAGE'],
+  [19, 4, 0, 9, 3, 'IMAGE'],
+  [20, 4, 0, 10, 3, 'IMAGE'],
+  [21, 5, 0, 6, 4, 'IMAGE'],
+  [22, 5, 0, 7, 4, 'IMAGE'],
+  [23, 5, 0, 8, 4, 'IMAGE'],
+  [24, 5, 0, 9, 4, 'IMAGE'],
+  [25, 5, 0, 10, 4, 'IMAGE'],
+  [26, 11, 0, 16, 0, 'STRING'],
+  [27, 12, 0, 17, 0, 'STRING'],
+  [28, 13, 0, 18, 0, 'STRING'],
+  [29, 14, 0, 19, 0, 'STRING'],
+  [30, 15, 0, 20, 0, 'STRING'],
+  [31, 6, 0, 21, 0, 'VIDEO'],
+  [32, 7, 0, 22, 0, 'VIDEO'],
+  [33, 8, 0, 23, 0, 'VIDEO'],
+  [34, 9, 0, 24, 0, 'VIDEO'],
+  [35, 10, 0, 25, 0, 'VIDEO']
+]
+
+const PRE_AGENT_LINKS = AGENT_LINKS.filter(([id]) => id <= 5 || id >= 26)
+
+function agentWorkflow(links: WorkflowLink[]): WorkflowJSON04 {
+  return {
+    nodes: Array.from({ length: 25 }, (_, index) => ({
+      id: index + 1,
+      type: 'TestNode',
+      pos: [(index + 1) * 10, (index + 1) * 3],
+      size: [100, 50],
+      flags: {},
+      order: index,
+      mode: 0,
+      inputs: [],
+      outputs: [],
+      properties: {}
+    })),
+    links: structuredClone(links),
+    groups: [],
+    extra: {},
+    config: {},
+    version: 0.4,
+    last_node_id: 25,
+    last_link_id: 35
+  }
+}
+
+function moveNodes(
+  state: WorkflowJSON04,
+  ids: readonly number[],
+  offset: readonly [number, number]
+): void {
+  for (const id of ids) {
+    const node = state.nodes.find((candidate) => candidate.id === id)
+    if (!node) throw new Error(`missing node ${id}`)
+    node.pos = [node.pos[0] + offset[0], node.pos[1] + offset[1]]
+  }
+}
 
 function persistedRecord(): {
   docId: string
@@ -215,7 +323,8 @@ function mountFollower(
   initial: string | null = null,
   initiallyActive = true,
   getGraph: () => MaterializableGraph | null = () => null,
-  events: Parameters<typeof useAgentCrdtFollower>[5] = {}
+  events: Parameters<typeof useAgentCrdtFollower>[5] = {},
+  getChangeTracker: () => UndoBracket | null = () => null
 ): {
   unmount: () => void
   workflowId: Ref<string | null>
@@ -235,7 +344,8 @@ function mountFollower(
         () => null,
         isTargetActive,
         getGraph,
-        events
+        events,
+        getChangeTracker
       )
       exposedStatus = () => status.value as AgentCrdtStatus
       enqueue = enqueueHumanOperations
@@ -265,6 +375,7 @@ function dispatchFrame(type: string, detail: unknown): void {
 describe('useAgentCrdtFollower', () => {
   beforeEach(() => {
     useAgentPanelStore().enabled = true
+    historyState.current = agentWorkflow(PRE_AGENT_LINKS)
     sessionStorage.clear()
     bridgeState.current = null
     clientState.transport = null
@@ -778,6 +889,180 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('QAF-52: brackets every applied doc_update in the change tracker so redo replays the agent change', () => {
+    const tracker: UndoBracket = {
+      beforeChange: vi.fn(),
+      afterChange: vi.fn()
+    }
+    const { unmount } = mountFollower(
+      'wf-1',
+      true,
+      () => null,
+      {},
+      () => tracker
+    )
+
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 7 })
+
+    expect(adapterState.applyFrame).toHaveBeenCalledTimes(1)
+    expect(tracker.beforeChange).toHaveBeenCalledTimes(1)
+    expect(tracker.afterChange).toHaveBeenCalledTimes(1)
+    const before = vi.mocked(tracker.beforeChange).mock.invocationCallOrder[0]
+    const apply = vi.mocked(adapterState.applyFrame).mock.invocationCallOrder[0]
+    const after = vi.mocked(tracker.afterChange).mock.invocationCallOrder[0]
+    expect(before).toBeLessThan(apply)
+    expect(apply).toBeLessThan(after)
+    unmount()
+  })
+
+  it('preserves all 35 agent-created link endpoints when undoing three local node moves', async () => {
+    const beforeAgent = agentWorkflow(PRE_AGENT_LINKS)
+    historyState.current = structuredClone(beforeAgent)
+    const tracker = markRaw(
+      new ChangeTracker(
+        fromPartial({ path: '/test/agent-undo-links.json' }),
+        beforeAgent
+      )
+    )
+    useWorkflowStore().activeWorkflow = fromPartial({ changeTracker: tracker })
+    adapterState.applyFrame.mockImplementationOnce(() => {
+      historyState.current = agentWorkflow(AGENT_LINKS)
+      return true
+    })
+    const { unmount } = mountFollower(
+      'wf-1',
+      true,
+      () => null,
+      {},
+      () => tracker
+    )
+
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 7 })
+    expect(historyState.current.links).toHaveLength(35)
+
+    tracker.beforeChange()
+    moveNodes(historyState.current, [3, 8, 12], [700, -200])
+    tracker.afterChange()
+    await tracker.undo()
+
+    expect(historyState.current.links).toEqual(AGENT_LINKS)
+    expect(
+      historyState.current.nodes
+        .filter((node) => [3, 8, 12].includes(Number(node.id)))
+        .map((node) => [node.id, node.pos])
+    ).toEqual([
+      [3, [30, 9]],
+      [8, [80, 24]],
+      [12, [120, 36]]
+    ])
+    unmount()
+  })
+
+  describe('undo capture that throws after the reset already cleared', () => {
+    /**
+     * `ChangeTracker.afterChange()` serializes the graph, so one custom node is
+     * enough to make it throw. By then `clearForReset()` has already emptied
+     * the stores, so the bookkeeping that mirrors the clear must still run;
+     * otherwise the follower keeps reporting connected against a document that
+     * is gone.
+     */
+    function throwingCapture(): UndoBracket {
+      return {
+        beforeChange: vi.fn(),
+        afterChange: vi.fn(() => {
+          throw new Error('undo capture failed')
+        })
+      }
+    }
+
+    it('still runs doc_reset bookkeeping when afterChange throws', () => {
+      const onReset = vi.fn()
+      const tracker = throwingCapture()
+      const { unmount, status } = mountFollower(
+        'wf-1',
+        true,
+        () => null,
+        { onReset },
+        () => tracker
+      )
+      dispatchFrame('doc_subscribed', { ok: true })
+      expect(status().connected).toBe(true)
+
+      // The capture error is preserved, not swallowed by the bookkeeping.
+      expect(() =>
+        dispatchFrame('doc_reset', {
+          workflowId: 'wf-1',
+          actor: 'agent:turn',
+          seq: 43
+        })
+      ).toThrow('undo capture failed')
+
+      expect(adapterState.clearForReset).toHaveBeenCalledTimes(1)
+      expect(tracker.afterChange).toHaveBeenCalledTimes(1)
+      expect(onReset).toHaveBeenCalledWith('wf-1')
+      expect(status().connected).toBe(false)
+      expect(status().lastFrameType).toBe('doc_reset')
+      unmount()
+    })
+
+    it('still rebinds the adapter on follower_replaced when afterChange throws', () => {
+      const tracker = throwingCapture()
+      const { unmount } = mountFollower(
+        'wf-1',
+        true,
+        () => null,
+        {},
+        () => tracker
+      )
+      expect(adapterState.bind).toHaveBeenCalledTimes(1)
+      const replacementDoc = { getMap: () => ({ toJSON: () => ({}) }) }
+      bridge().follower = { updatesApplied: 0, doc: replacementDoc }
+
+      expect(() =>
+        dispatchFrame('follower_replaced', { workflowId: 'wf-1' })
+      ).toThrow('undo capture failed')
+
+      expect(adapterState.clearForReset).toHaveBeenCalledTimes(1)
+      expect(adapterState.bind).toHaveBeenCalledTimes(2)
+      expect(adapterState.bind).toHaveBeenLastCalledWith(
+        'wf-1',
+        bridge().follower
+      )
+      unmount()
+    })
+
+    it('skips the bookkeeping when the clear itself never completed', () => {
+      const onReset = vi.fn()
+      const tracker: UndoBracket = {
+        beforeChange: vi.fn(),
+        afterChange: vi.fn()
+      }
+      vi.mocked(adapterState.clearForReset).mockImplementationOnce(() => {
+        throw new Error('clear failed')
+      })
+      const { unmount, status } = mountFollower(
+        'wf-1',
+        true,
+        () => null,
+        { onReset },
+        () => tracker
+      )
+      dispatchFrame('doc_subscribed', { ok: true })
+
+      expect(() =>
+        dispatchFrame('doc_reset', {
+          workflowId: 'wf-1',
+          actor: 'agent:turn',
+          seq: 43
+        })
+      ).toThrow('clear failed')
+
+      expect(onReset).not.toHaveBeenCalled()
+      expect(status().connected).toBe(true)
+      unmount()
+    })
+  })
+
   describe('s5-metrics-1: per-outcome counters', () => {
     it('counts received and applied for a frame that passes the filter', () => {
       const { unmount, status } = mountFollower('wf-1')
@@ -877,7 +1162,7 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
-    it('counts reset while the target is inactive, since the bridge replaced its doc regardless', () => {
+    it('does not count an ignored reset while the target is inactive', () => {
       const { unmount, status } = mountFollower('wf-a', false)
 
       dispatchFrame('doc_reset', {
@@ -886,7 +1171,7 @@ describe('useAgentCrdtFollower', () => {
         seq: 43
       })
 
-      expect(status().outcomes.reset).toBe(1)
+      expect(status().outcomes.reset).toBe(0)
       expect(adapterState.clearForReset).not.toHaveBeenCalled()
       unmount()
     })
@@ -1155,7 +1440,8 @@ describe('useAgentCrdtFollower', () => {
         seq: 43
       })
 
-      expect(adapterState.clearForReset).toHaveBeenCalled()
+      expect(adapterState.clearForReset).toHaveBeenCalledTimes(1)
+      expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledTimes(1)
       expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
         fakeGraph,
         fakeDefinitions
@@ -1170,7 +1456,7 @@ describe('useAgentCrdtFollower', () => {
 
       dispatchFrame('follower_replaced', { workflowId: 'wf-1' })
 
-      expect(adapterState.clearForReset).toHaveBeenCalled()
+      expect(adapterState.clearForReset).toHaveBeenCalledTimes(1)
       expect(
         definitionsState.readSubgraphDefinitionIds
       ).toHaveBeenLastCalledWith(replacementDoc)
@@ -1178,6 +1464,7 @@ describe('useAgentCrdtFollower', () => {
         replacementDoc,
         new Set()
       )
+      expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledTimes(1)
       expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
         fakeGraph,
         fakeDefinitions

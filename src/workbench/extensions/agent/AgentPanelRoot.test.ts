@@ -104,6 +104,7 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
       fetch(route.startsWith('/api') ? route : `/api${route}`, options),
     getServerFeature,
     socket: { readyState: 1, send: socketSend },
+    dispatchCustomEvent: vi.fn(),
     addEventListener: ws.add,
     removeEventListener: ws.remove,
     addCustomEventListener: ws.add,
@@ -133,6 +134,7 @@ const appMock = vi.hoisted(() => {
   Object.assign(graph, { rootGraph: graph })
   return {
     loadGraphData: vi.fn(),
+    ui: { autoQueueEnabled: false },
     graph,
     rootGraph: graph,
     isGraphReady: false,
