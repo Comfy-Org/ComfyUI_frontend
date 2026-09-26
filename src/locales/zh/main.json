@@ -9,7 +9,6 @@
       "signInCaption": "合作伙伴节点需要账户",
       "signInToRun": "登录以运行"
     },
-    "share": "分享",
     "shareTooltip": "分享工作流"
   },
   "agent": {
@@ -158,6 +157,8 @@
     "showChatHistory": "显示聊天记录",
     "showLess": "显示更少",
     "showMore": "显示更多",
+    "showTarget": "显示目标",
+    "showTargetWorkflow": "显示目标工作流：{workflowName}",
     "skip": "跳过",
     "stop": "停止",
     "stopShortcut": "Esc",
@@ -170,6 +171,7 @@
     ],
     "switchWorkflow": "切换工作流",
     "switchWorkflowForNodes": "切换到 {workflowName} 以添加节点。",
+    "targetFollowsVisibleWorkflow": "在你选择目标、引用节点或发送消息之前，目标工作流会跟随当前可见的标签页。",
     "targetForThisChat": "本次聊天的智能体目标",
     "targetNavigationUnavailable": "此工作流目标已不可用。",
     "thinking": "思考中...",
@@ -188,6 +190,7 @@
     "updatingGraph": "智能体正在更新工作流",
     "uploading": "正在上传",
     "viewAddedNodes": "查看节点 | 查看节点",
+    "viewingDifferentWorkflow": "你正在查看与目标不同的工作流。",
     "worked": "已完成",
     "workedForMinutes": "已用时 {minutes} 分 {seconds} 秒",
     "workedForSeconds": "已用时 {seconds} 秒",
@@ -540,6 +543,7 @@
     "expiredCardDetail": "此卡已过期。请使用其他支付方式。",
     "incorrectCvcDetail": "银行卡安全码不正确。请检查后重试。",
     "insufficientFundsDetail": "此支付方式余额不足。请尝试其他支付方式或联系您的银行。",
+    "operationAlreadyPendingDetail": "你之前发起的一笔付款仍在处理中。必须等它完成后，才能选择其他套餐。",
     "paymentDeclinedDetail": "您的银行拒绝了此付款。请尝试其他支付方式或联系您的银行。",
     "processingErrorDetail": "无法处理您的付款。请重试或使用其他支付方式。",
     "reconciliationDetail": "已收到您的付款，但无法完成工作区更新。请联系支持团队，并提供此操作 ID：",
@@ -717,6 +721,8 @@
         "selectAtLeastOne": "请至少选择一个选项。"
       },
       "intro": "帮助我们为您定制 ComfyUI 体验。",
+      "navigationFailed": "问卷已保存，但无法继续引导流程",
+      "navigationFailedDetail": "请重试。",
       "options": {
         "experience": {
           "new": "ComfyUI 新手",
@@ -757,6 +763,8 @@
       },
       "otherPlaceholder": "请告诉我们更多",
       "placeholder": "调查问题占位符",
+      "submitFailed": "无法提交问卷",
+      "submitFailedDetail": "你的回答未保存。请重试。",
       "title": "云调研"
     }
   },
@@ -2100,6 +2108,9 @@
     "updating": "正在更新 {id}",
     "upload": "上传",
     "uploadAlreadyInProgress": "上传已在进行中",
+    "uploadFailed": "上传失败：{reason}",
+    "uploadFileTooLarge": "文件过大，无法上传。",
+    "uploadFileTooLargeWithLimit": "文件过大，无法上传（限制：{limit} MB）。",
     "uploadTimedOut": "上传超时。请重试。",
     "usageHint": "使用提示",
     "use": "使用",
@@ -3090,6 +3101,7 @@
     "Refresh Node Definitions": "刷新节点定义",
     "Reinstall": "重装",
     "Rename": "重命名",
+    "Replay Onboarding": "重新播放引导流程",
     "Reset View": "重置视图",
     "Resize Selected Nodes": "调整选定节点的大小",
     "Restart": "重启",
@@ -3282,6 +3294,7 @@
     "mask": "遮罩",
     "merging": "合并",
     "mesh": "网格",
+    "ming image": "ming image",
     "minimax": "minimax",
     "minimax music": "minimax 音乐",
     "mochi": "mochi",
@@ -3542,6 +3555,12 @@
     "next": "下一步",
     "skip": "跳过",
     "stepLabel": "第 {current} 步，共 {total} 步"
+  },
+  "onboardingReplay": {
+    "confirmMessage": "这将重新加载 ComfyUI，并重置此环境中可用的引导步骤。不会影响你的工作流。",
+    "confirmTitle": "重新播放引导流程？",
+    "failedDetail": "无法重置你的引导流程状态。请重试。",
+    "failedSummary": "无法重新播放引导流程"
   },
   "openSharedWorkflow": {
     "author": "作者：",
@@ -4387,9 +4406,12 @@
       "message": "团队计费功能即将上线。您将可以为您的工作区按成员数订阅套餐。敬请关注后续更新。",
       "title": "即将推出"
     },
+    "billingTabBlocked": "无法打开账单页面。请允许此网站的弹出窗口，然后重试。",
     "cancelDialog": {
       "confirmCancel": "取消订阅",
       "description": "您的访问权限将持续到 {date}。您将不再被扣费，您的工作区和积分将被保留。您可以随时重新订阅。",
+      "discountApplied": "你的折扣已应用，因此此订阅未被取消。关闭此窗口以查看更新后的套餐。",
+      "discountRefreshFailed": "你的折扣已应用。刷新页面以查看更新后的套餐。",
       "endOfBillingPeriod": "账单周期结束",
       "failed": "取消订阅失败",
       "keepSubscription": "保留订阅",
@@ -4579,6 +4601,7 @@
       "payAndSubscribe": "付款并订阅",
       "paymentMethod": "支付方式",
       "paymentPopupBlocked": "无法打开支付页面 — 请允许弹窗后重试。",
+      "pendingVerificationDetail": "你之前发起的一笔付款仍需要你处理。完成该付款将激活你当时选择的套餐。付款完成后，你可以选择其他套餐。",
       "perMember": "/ 每成员",
       "privacyPolicy": "隐私政策",
       "promoCodePlaceholder": "优惠码",
@@ -4812,6 +4835,7 @@
     "clearAllFilters": "清除所有筛选器",
     "error": {
       "loading": "无法打开该模板。请重试。",
+      "preparingMedia": "部分示例媒体无法准备。工作流将会打开；请为所有缺失的输入选择你自己的文件。",
       "templateNotFound": "未找到模板 \"{templateName}\""
     },
     "filtersApplied": "已应用 {count} 个筛选器",
@@ -4828,6 +4852,7 @@
       "credits": "使用积分运行",
       "title": "高级模板"
     },
+    "preparingMedia": "正在准备示例媒体...",
     "resultsCount": "显示 {count} / 共 {total} 个模板",
     "runsOnFilter": "运行于",
     "runsOnSelected": "{count} 次运行",

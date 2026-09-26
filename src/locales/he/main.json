@@ -9,7 +9,6 @@
       "signInCaption": "צומתי שותפים מחייבים חשבון",
       "signInToRun": "התחברות להפעלה"
     },
-    "share": "שיתוף",
     "shareTooltip": "שיתוף תהליך העבודה"
   },
   "agent": {
@@ -158,6 +157,8 @@
     "showChatHistory": "הצג היסטוריית צ'אטים",
     "showLess": "הצג פחות",
     "showMore": "הצג עוד",
+    "showTarget": "הצג יעד",
+    "showTargetWorkflow": "הצג את תהליך העבודה היעד: {workflowName}",
     "skip": "דלג",
     "stop": "עצור",
     "stopShortcut": "Esc",
@@ -170,6 +171,7 @@
     ],
     "switchWorkflow": "החלף תהליך עבודה",
     "switchWorkflowForNodes": "עברו אל {workflowName} כדי להוסיף צמתים.",
+    "targetFollowsVisibleWorkflow": "תהליך העבודה היעד עוקב אחר הלשונית הגלויה עד שתבחרו יעד, צמתי ייחוס או תשלחו הודעה.",
     "targetForThisChat": "יעד הסוכן עבור שיחה זו",
     "targetNavigationUnavailable": "יעד זה של תהליך העבודה אינו זמין עוד.",
     "thinking": "חושב...",
@@ -188,6 +190,7 @@
     "updatingGraph": "הסוכן מעדכן את הגרף",
     "uploading": "מעלה",
     "viewAddedNodes": "הצג צומת | הצג צמתים",
+    "viewingDifferentWorkflow": "אתם מציגים תהליך עבודה שונה מהיעד.",
     "worked": "בוצע",
     "workedForMinutes": "עבד במשך {minutes}m {seconds}s",
     "workedForSeconds": "עבד במשך {seconds} שניות",
@@ -540,6 +543,7 @@
     "expiredCardDetail": "תוקף הכרטיס הזה פג. השתמש באמצעי תשלום אחר.",
     "incorrectCvcDetail": "קוד האבטחה של הכרטיס שגוי. בדוק אותו ונסה שוב.",
     "insufficientFundsDetail": "באמצעי תשלום זה אין יתרה מספקת. נסה אמצעי תשלום אחר או פנה לבנק שלך.",
+    "operationAlreadyPendingDetail": "תשלום שהתחלתם קודם עדיין נמצא בעיבוד. עליו להסתיים לפני שתוכלו לבחור תוכנית אחרת.",
     "paymentDeclinedDetail": "הבנק שלך דחה את התשלום הזה. נסה אמצעי תשלום אחר או פנה לבנק שלך.",
     "processingErrorDetail": "לא ניתן היה לעבד את התשלום שלך. נסה שוב או השתמש באמצעי תשלום אחר.",
     "reconciliationDetail": "התשלום שלך התקבל, אך לא הצלחנו לסיים את עדכון מרחב העבודה שלך. פנה לתמיכה וכלול את מזהה הפעולה הזה:",
@@ -717,6 +721,8 @@
         "selectAtLeastOne": "אנא בחר לפחות אפשרות אחת."
       },
       "intro": "עזרו לנו להתאים את חוויית ה-ComfyUI שלך.",
+      "navigationFailed": "הסקר נשמר, אך לא ניתן היה להמשיך בתהליך ההיכרות",
+      "navigationFailedDetail": "נסו שוב.",
       "options": {
         "experience": {
           "new": "חדש/ה ב-ComfyUI",
@@ -757,6 +763,8 @@
       },
       "otherPlaceholder": "ספרו לנו עוד",
       "placeholder": "מציין מיקום לשאלות הסקר",
+      "submitFailed": "לא ניתן היה לשלוח את הסקר",
+      "submitFailedDetail": "התשובות שלכם לא נשמרו. נסו שוב.",
       "title": "סקר ענן"
     }
   },
@@ -2100,6 +2108,9 @@
     "updating": "מעדכן את {id}",
     "upload": "העלאה",
     "uploadAlreadyInProgress": "העלאה כבר מתבצעת",
+    "uploadFailed": "ההעלאה נכשלה: {reason}",
+    "uploadFileTooLarge": "הקובץ גדול מדי להעלאה.",
+    "uploadFileTooLargeWithLimit": "הקובץ גדול מדי להעלאה (מגבלה: {limit} MB).",
     "uploadTimedOut": "תם הזמן הקצוב להעלאה. נסה שוב.",
     "usageHint": "רמז שימוש",
     "use": "שימוש",
@@ -3090,6 +3101,7 @@
     "Refresh Node Definitions": "רענון הגדרות הצמתים",
     "Reinstall": "התקנה מחדש",
     "Rename": "שינוי שם",
+    "Replay Onboarding": "הפעל מחדש את תהליך ההיכרות",
     "Reset View": "איפוס התצוגה",
     "Resize Selected Nodes": "שינוי גודל הצמתים הנבחרים",
     "Restart": "הפעלה מחדש",
@@ -3282,6 +3294,7 @@
     "mask": "mask",
     "merging": "merging",
     "mesh": "רשת",
+    "ming image": "תמונת Ming",
     "minimax": "minimax",
     "minimax music": "מוזיקת minimax",
     "mochi": "mochi",
@@ -3542,6 +3555,12 @@
     "next": "הבא",
     "skip": "דלג",
     "stepLabel": "שלב {current} מתוך {total}"
+  },
+  "onboardingReplay": {
+    "confirmMessage": "פעולה זו טוענת מחדש את ComfyUI ומאפסת את שלבי תהליך ההיכרות הזמינים בסביבה זו. תהליכי העבודה שלכם אינם מושפעים.",
+    "confirmTitle": "להפעיל מחדש את תהליך ההיכרות?",
+    "failedDetail": "לא ניתן היה לאפס את מצב תהליך ההיכרות שלכם. נסו שוב.",
+    "failedSummary": "לא ניתן היה להפעיל מחדש את תהליך ההיכרות"
   },
   "openSharedWorkflow": {
     "author": "יוצר:",
@@ -4387,9 +4406,12 @@
       "message": "חיוב צוותי יגיע בקרוב. תוכל להירשם למסלול עבור סביבת העבודה שלך עם תמחור לפי מושב. הישאר מעודכן.",
       "title": "בקרוב"
     },
+    "billingTabBlocked": "לא ניתן היה לפתוח את דף החיוב. אפשרו חלונות קופצים עבור אתר זה ונסו שוב.",
     "cancelDialog": {
       "confirmCancel": "ביטול המנוי",
       "description": "הגישה שלך נמשכת עד {date}. לא תחויב שוב, וסביבת העבודה והקרדיטים שלך יישמרו. ניתן להירשם מחדש בכל עת.",
+      "discountApplied": "ההנחה שלכם הוחלה, ולכן המינוי הזה לא בוטל. סגרו חלון זה כדי לראות את התוכנית המעודכנת שלכם.",
+      "discountRefreshFailed": "ההנחה שלכם הוחלה. רעננו את הדף כדי לראות את התוכנית המעודכנת שלכם.",
       "endOfBillingPeriod": "סוף תקופת החיוב",
       "failed": "ביטול המנוי נכשל",
       "keepSubscription": "השאר את המנוי",
@@ -4579,6 +4601,7 @@
       "payAndSubscribe": "שלם והירשם",
       "paymentMethod": "אמצעי תשלום",
       "paymentPopupBlocked": "לא ניתן היה לפתוח את דף התשלום — אפשר חלונות קופצים ונסה שוב.",
+      "pendingVerificationDetail": "תשלום שהתחלתם קודם עדיין דורש את תשומת לבכם. השלמתו תפעיל את התוכנית שבחרתם אז. תוכלו לבחור תוכנית אחרת לאחר שיסתיים.",
       "perMember": "/ חבר",
       "privacyPolicy": "מדיניות הפרטיות",
       "promoCodePlaceholder": "קוד קידום",
@@ -4812,6 +4835,7 @@
     "clearAllFilters": "נקה את כל המסננים",
     "error": {
       "loading": "לא ניתן היה לפתוח את התבנית. נסו שוב.",
+      "preparingMedia": "לא ניתן היה להכין חלק מקובצי המדיה לדוגמה. תהליך העבודה ייפתח; בחרו קבצים משלכם עבור כל קלט חסר.",
       "templateNotFound": "התבנית \"{templateName}\" לא נמצאה"
     },
     "filtersApplied": "{count} מסנן הופעל | {count} מסננים הופעלו",
@@ -4828,6 +4852,7 @@
       "credits": "הרצה באמצעות קרדיטים",
       "title": "תבנית פרימיום"
     },
+    "preparingMedia": "מכין מדיה לדוגמה...",
     "resultsCount": "מציג {count} מתוך {total} תבניות",
     "runsOnFilter": "פועל על",
     "runsOnSelected": "{count} פועל על",

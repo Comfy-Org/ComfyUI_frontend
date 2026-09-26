@@ -9,7 +9,6 @@
       "signInCaption": "파트너 노드에는 계정이 필요합니다",
       "signInToRun": "실행하려면 로그인"
     },
-    "share": "공유",
     "shareTooltip": "워크플로우 공유"
   },
   "agent": {
@@ -158,6 +157,8 @@
     "showChatHistory": "채팅 기록 표시",
     "showLess": "간단히 보기",
     "showMore": "더 보기",
+    "showTarget": "대상 표시",
+    "showTargetWorkflow": "대상 워크플로 표시: {workflowName}",
     "skip": "건너뛰기",
     "stop": "중지",
     "stopShortcut": "Esc",
@@ -170,6 +171,7 @@
     ],
     "switchWorkflow": "워크플로 전환",
     "switchWorkflowForNodes": "노드를 추가하려면 {workflowName}(으)로 전환하세요.",
+    "targetFollowsVisibleWorkflow": "대상 워크플로는 대상을 선택하거나, 노드를 참조하거나, 메시지를 보낼 때까지 표시된 탭을 따릅니다.",
     "targetForThisChat": "이 채팅의 에이전트 대상",
     "targetNavigationUnavailable": "이 워크플로 대상은 더 이상 사용할 수 없습니다.",
     "thinking": "생각 중...",
@@ -188,6 +190,7 @@
     "updatingGraph": "에이전트가 그래프를 업데이트하고 있습니다",
     "uploading": "업로드 중",
     "viewAddedNodes": "노드 보기 | 노드 보기",
+    "viewingDifferentWorkflow": "대상과 다른 워크플로를 보고 있습니다.",
     "worked": "작업 완료",
     "workedForMinutes": "{minutes}분 {seconds}초 동안 작업함",
     "workedForSeconds": "{seconds}초 동안 작업함",
@@ -540,6 +543,7 @@
     "expiredCardDetail": "이 카드는 만료되었습니다. 다른 결제 수단을 사용하세요.",
     "incorrectCvcDetail": "카드 보안 코드가 올바르지 않습니다. 확인 후 다시 시도하세요.",
     "insufficientFundsDetail": "이 결제 수단의 잔액이 부족합니다. 다른 결제 수단을 사용하거나 은행에 문의하세요.",
+    "operationAlreadyPendingDetail": "이전에 시작한 결제가 아직 진행 중입니다. 다른 요금제를 선택하려면 먼저 완료되어야 합니다.",
     "paymentDeclinedDetail": "은행에서 이 결제를 거부했습니다. 다른 결제 수단을 사용하거나 은행에 문의하세요.",
     "processingErrorDetail": "결제를 처리할 수 없습니다. 다시 시도하거나 다른 결제 수단을 사용하세요.",
     "reconciliationDetail": "결제가 수신되었지만 워크스페이스 업데이트를 완료할 수 없습니다. 지원팀에 문의하고 이 작업 ID를 포함하세요:",
@@ -717,6 +721,8 @@
         "selectAtLeastOne": "최소 한 가지 옵션을 선택해 주세요."
       },
       "intro": "ComfyUI 경험을 맞춤화할 수 있도록 도와주세요.",
+      "navigationFailed": "설문조사는 저장되었지만 온보딩을 계속할 수 없습니다",
+      "navigationFailedDetail": "다시 시도하세요.",
       "options": {
         "experience": {
           "new": "ComfyUI가 처음이에요",
@@ -757,6 +763,8 @@
       },
       "otherPlaceholder": "자세히 알려주세요",
       "placeholder": "설문 질문 자리표시자",
+      "submitFailed": "설문조사를 제출할 수 없습니다",
+      "submitFailedDetail": "답변이 저장되지 않았습니다. 다시 시도하세요.",
       "title": "클라우드 설문"
     }
   },
@@ -2100,6 +2108,9 @@
     "updating": "{id} 업데이트 중",
     "upload": "업로드",
     "uploadAlreadyInProgress": "업로드가 이미 진행 중입니다",
+    "uploadFailed": "업로드에 실패했습니다: {reason}",
+    "uploadFileTooLarge": "파일이 너무 커서 업로드할 수 없습니다.",
+    "uploadFileTooLargeWithLimit": "파일이 너무 커서 업로드할 수 없습니다(제한: {limit}MB).",
     "uploadTimedOut": "업로드 시간이 초과되었습니다. 다시 시도해 주세요.",
     "usageHint": "사용 힌트",
     "use": "사용",
@@ -3090,6 +3101,7 @@
     "Refresh Node Definitions": "노드 정의 새로 고침",
     "Reinstall": "재설치",
     "Rename": "이름 바꾸기",
+    "Replay Onboarding": "온보딩 다시 실행",
     "Reset View": "보기 초기화",
     "Resize Selected Nodes": "선택된 노드 크기 조정",
     "Restart": "재시작",
@@ -3282,6 +3294,7 @@
     "mask": "마스크",
     "merging": "병합",
     "mesh": "메시",
+    "ming image": "ming image",
     "minimax": "minimax",
     "minimax music": "minimax music",
     "mochi": "mochi",
@@ -3542,6 +3555,12 @@
     "next": "다음",
     "skip": "건너뛰기",
     "stepLabel": "단계 {current} / {total}"
+  },
+  "onboardingReplay": {
+    "confirmMessage": "ComfyUI를 다시 로드하고 이 환경에서 사용할 수 있는 온보딩 단계를 초기화합니다. 워크플로에는 영향이 없습니다.",
+    "confirmTitle": "온보딩을 다시 실행할까요?",
+    "failedDetail": "온보딩 상태를 초기화할 수 없습니다. 다시 시도하세요.",
+    "failedSummary": "온보딩을 다시 실행할 수 없습니다"
   },
   "openSharedWorkflow": {
     "author": "작성자:",
@@ -4387,9 +4406,12 @@
       "message": "팀 결제 기능이 곧 제공됩니다. 워크스페이스별 좌석당 요금제로 구독할 수 있습니다. 업데이트를 기대해 주세요.",
       "title": "곧 출시 예정"
     },
+    "billingTabBlocked": "결제 페이지를 열 수 없습니다. 이 사이트의 팝업을 허용한 후 다시 시도하세요.",
     "cancelDialog": {
       "confirmCancel": "구독 취소",
       "description": "{date}까지 계속 이용할 수 있습니다. 더 이상 결제되지 않으며, 워크스페이스와 크레딧은 보존됩니다. 언제든지 다시 구독할 수 있습니다.",
+      "discountApplied": "할인이 적용되어 이 구독은 취소되지 않았습니다. 업데이트된 요금제를 보려면 이 창을 닫으세요.",
+      "discountRefreshFailed": "할인이 적용되었습니다. 업데이트된 요금제를 보려면 페이지를 새로고침하세요.",
       "endOfBillingPeriod": "청구 기간 종료",
       "failed": "구독 취소에 실패했습니다",
       "keepSubscription": "구독 유지",
@@ -4579,6 +4601,7 @@
       "payAndSubscribe": "결제 및 구독",
       "paymentMethod": "결제 수단",
       "paymentPopupBlocked": "결제 페이지를 열 수 없습니다 — 팝업을 허용하고 다시 시도하세요.",
+      "pendingVerificationDetail": "이전에 시작한 결제에 아직 조치가 필요합니다. 완료하면 그때 선택한 요금제가 활성화됩니다. 완료된 후 다른 요금제를 선택할 수 있습니다.",
       "perMember": "/ 멤버",
       "privacyPolicy": "개인정보 처리방침",
       "promoCodePlaceholder": "프로모션 코드",
@@ -4812,6 +4835,7 @@
     "clearAllFilters": "모든 필터 지우기",
     "error": {
       "loading": "템플릿을 열 수 없습니다. 다시 시도해 주세요.",
+      "preparingMedia": "일부 예제 미디어를 준비하지 못했습니다. 워크플로는 열리며, 누락된 입력에는 직접 파일을 선택하세요.",
       "templateNotFound": "템플릿 \"{templateName}\"을(를) 찾을 수 없음"
     },
     "filtersApplied": "{count}개 필터 적용됨",
@@ -4828,6 +4852,7 @@
       "credits": "크레딧으로 실행",
       "title": "프리미엄 템플릿"
     },
+    "preparingMedia": "예제 미디어를 준비하는 중...",
     "resultsCount": "{total}개 중 {count}개 템플릿 표시",
     "runsOnFilter": "실행 환경",
     "runsOnSelected": "{count}회 실행됨",

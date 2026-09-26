@@ -9,7 +9,6 @@
       "signInCaption": "Nós parceiros exigem uma conta",
       "signInToRun": "Entre para executar"
     },
-    "share": "Compartilhar",
     "shareTooltip": "Compartilhar fluxo de trabalho"
   },
   "agent": {
@@ -158,6 +157,8 @@
     "showChatHistory": "Mostrar histórico de conversas",
     "showLess": "Mostrar menos",
     "showMore": "Mostrar mais",
+    "showTarget": "Mostrar destino",
+    "showTargetWorkflow": "Mostrar fluxo de trabalho de destino: {workflowName}",
     "skip": "Pular",
     "stop": "Parar",
     "stopShortcut": "Esc",
@@ -170,6 +171,7 @@
     ],
     "switchWorkflow": "Alternar fluxo de trabalho",
     "switchWorkflowForNodes": "Alterne para {workflowName} para adicionar nós.",
+    "targetFollowsVisibleWorkflow": "O fluxo de trabalho de destino segue a aba visível até que você escolha um destino, nós de referência ou envie uma mensagem.",
     "targetForThisChat": "Alvo do agente para este chat",
     "targetNavigationUnavailable": "Este destino do fluxo de trabalho não está mais disponível.",
     "thinking": "Pensando...",
@@ -188,6 +190,7 @@
     "updatingGraph": "O agente está atualizando o grafo",
     "uploading": "Enviando",
     "viewAddedNodes": "Ver nó | Ver nós",
+    "viewingDifferentWorkflow": "Você está visualizando um fluxo de trabalho diferente do destino.",
     "worked": "Concluído",
     "workedForMinutes": "Concluído em {minutes}m {seconds}s",
     "workedForSeconds": "Concluído em {seconds} segundos",
@@ -540,6 +543,7 @@
     "expiredCardDetail": "Este cartão expirou. Use um método de pagamento diferente.",
     "incorrectCvcDetail": "O código de segurança do cartão está incorreto. Verifique-o e tente novamente.",
     "insufficientFundsDetail": "Este método de pagamento não tem fundos suficientes. Tente outro método de pagamento ou entre em contato com seu banco.",
+    "operationAlreadyPendingDetail": "Um pagamento iniciado anteriormente ainda está sendo processado. Ele precisa ser concluído antes que você possa escolher um plano diferente.",
     "paymentDeclinedDetail": "Seu banco recusou este pagamento. Tente outro método de pagamento ou entre em contato com seu banco.",
     "processingErrorDetail": "Não foi possível processar seu pagamento. Tente novamente ou use outro método de pagamento.",
     "reconciliationDetail": "Seu pagamento foi recebido, mas não foi possível concluir a atualização do seu espaço de trabalho. Entre em contato com o suporte e inclua este ID da operação:",
@@ -717,6 +721,8 @@
         "selectAtLeastOne": "Por favor, selecione pelo menos uma opção."
       },
       "intro": "Ajude-nos a personalizar sua experiência no ComfyUI.",
+      "navigationFailed": "A pesquisa foi salva, mas não foi possível continuar a integração",
+      "navigationFailedDetail": "Tente novamente.",
       "options": {
         "experience": {
           "new": "Novo no ComfyUI",
@@ -757,6 +763,8 @@
       },
       "otherPlaceholder": "Conte-nos mais",
       "placeholder": "Espaço reservado para perguntas da pesquisa",
+      "submitFailed": "Não foi possível enviar a pesquisa",
+      "submitFailedDetail": "Suas respostas não foram salvas. Tente novamente.",
       "title": "Pesquisa da Nuvem"
     }
   },
@@ -2100,6 +2108,9 @@
     "updating": "Atualizando {id}",
     "upload": "Enviar",
     "uploadAlreadyInProgress": "O upload já está em andamento",
+    "uploadFailed": "Falha no envio: {reason}",
+    "uploadFileTooLarge": "O arquivo é grande demais para enviar.",
+    "uploadFileTooLargeWithLimit": "O arquivo é grande demais para enviar (limite: {limit} MB).",
     "uploadTimedOut": "O envio excedeu o tempo limite. Por favor, tente novamente.",
     "usageHint": "Dica de uso",
     "use": "Usar",
@@ -3090,6 +3101,7 @@
     "Refresh Node Definitions": "Atualizar definições de nós",
     "Reinstall": "Reinstalar",
     "Rename": "Renomear",
+    "Replay Onboarding": "Repetir integração",
     "Reset View": "Redefinir visualização",
     "Resize Selected Nodes": "Redimensionar nós selecionados",
     "Restart": "Reiniciar",
@@ -3282,6 +3294,7 @@
     "mask": "máscara",
     "merging": "mesclagem",
     "mesh": "malha",
+    "ming image": "ming image",
     "minimax": "minimax",
     "minimax music": "minimax music",
     "mochi": "mochi",
@@ -3542,6 +3555,12 @@
     "next": "Próximo",
     "skip": "Pular",
     "stepLabel": "Etapa {current} de {total}"
+  },
+  "onboardingReplay": {
+    "confirmMessage": "Isso recarrega o ComfyUI e redefine as etapas de integração disponíveis neste ambiente. Seus fluxos de trabalho não são afetados.",
+    "confirmTitle": "Repetir a integração?",
+    "failedDetail": "Não foi possível redefinir o estado da sua integração. Tente novamente.",
+    "failedSummary": "Não foi possível repetir a integração"
   },
   "openSharedWorkflow": {
     "author": "Autor:",
@@ -4387,9 +4406,12 @@
       "message": "A cobrança para equipes estará disponível em breve. Você poderá assinar um plano para seu workspace com preço por usuário. Fique atento para novidades.",
       "title": "Em breve"
     },
+    "billingTabBlocked": "Não foi possível abrir a página de cobrança. Permita pop-ups para este site e tente novamente.",
     "cancelDialog": {
       "confirmCancel": "Cancelar assinatura",
       "description": "Seu acesso continua até {date}. Você não será mais cobrado, e seu workspace e créditos serão preservados. Você pode reassinar a qualquer momento.",
+      "discountApplied": "Seu desconto foi aplicado, portanto esta assinatura não foi cancelada. Feche esta janela para ver seu plano atualizado.",
+      "discountRefreshFailed": "Seu desconto foi aplicado. Atualize a página para ver seu plano atualizado.",
       "endOfBillingPeriod": "fim do período de cobrança",
       "failed": "Falha ao cancelar a assinatura",
       "keepSubscription": "Manter assinatura",
@@ -4579,6 +4601,7 @@
       "payAndSubscribe": "Pagar e assinar",
       "paymentMethod": "Método de pagamento",
       "paymentPopupBlocked": "Não foi possível abrir a página de pagamento — permita pop-ups e tente novamente.",
+      "pendingVerificationDetail": "Um pagamento iniciado anteriormente ainda precisa da sua atenção. Concluí-lo ativará o plano que você escolheu naquele momento. Você poderá escolher um plano diferente quando ele for concluído.",
       "perMember": "/ membro",
       "privacyPolicy": "Política de Privacidade",
       "promoCodePlaceholder": "Código promocional",
@@ -4812,6 +4835,7 @@
     "clearAllFilters": "Limpar todos os filtros",
     "error": {
       "loading": "Não foi possível abrir o modelo. Tente novamente.",
+      "preparingMedia": "Não foi possível preparar algumas mídias de exemplo. O fluxo de trabalho será aberto; escolha seus próprios arquivos para quaisquer entradas ausentes.",
       "templateNotFound": "Modelo \"{templateName}\" não encontrado"
     },
     "filtersApplied": "{count} filtro aplicado | {count} filtros aplicados",
@@ -4828,6 +4852,7 @@
       "credits": "Executa com créditos",
       "title": "Template premium"
     },
+    "preparingMedia": "Preparando mídia de exemplo...",
     "resultsCount": "Mostrando {count} de {total} modelos",
     "runsOnFilter": "Executa em",
     "runsOnSelected": "{count} Execuções em",

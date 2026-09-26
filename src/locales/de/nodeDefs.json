@@ -1486,6 +1486,25 @@
       }
     }
   },
+  "ByteDance2DraftToFinalVideoNode": {
+    "description": "Rendert das finale 1080p-Video eines Seedance-2.5-Entwurfs. Das finale Video behält Szene und Bewegung des Entwurfs bei und verwendet dessen Prompt, Referenzen, Dauer, Seitenverhältnis und Audioeinstellung erneut.",
+    "display_name": "ByteDance Seedance 2.5 Entwurf zu finalem Video",
+    "inputs": {
+      "draft_task_id": {
+        "name": "draft_task_id",
+        "tooltip": "Die Ausgabe draft_task_id eines Seedance-2.5-Nodes, der mit dem Modell Seedance 2.5 Draft ausgeführt wurde, oder eine eingefügte Entwurfs-Task-ID. Setzen Sie die Seed-Steuerung dieses Nodes auf fest, andernfalls erzeugt der nächste Durchlauf einen neuen Entwurf, statt den von Ihnen überprüften wiederzuverwenden. Ein Entwurf kann bis 7 Tage nach seiner Erstellung gerendert werden."
+      },
+      "watermark": {
+        "name": "Wasserzeichen",
+        "tooltip": "Legt fest, ob dem Video ein Wasserzeichen hinzugefügt wird."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "Generiert mit Seedance 2.5 oder 2.0 ein Video aus einem Bild des ersten Frames und einem optionalen Bild des letzten Frames.",
     "display_name": "ByteDance Seedance 2.5: Video aus erstem und letztem Frame",
@@ -1511,7 +1530,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Seedance 2.5 für das neueste Modell, Videos bis zu 30 Sekunden und mp4/mov-Ausgabe; Seedance 2.0 für maximale Qualität und 4k; Fast für Geschwindigkeitsoptimierung; Mini für die schnellste und kostengünstigste Generierung."
+        "tooltip": "Seedance 2.5 für das neueste Modell, Videos bis zu 30 Sekunden und mp4/mov-Ausgabe; Seedance 2.5 Draft für eine schnelle 480p-Vorschau, deren draft_task_id das finale 1080p-Video im Node „Seedance 2.5 Entwurf zu finalem Video“ rendert; Seedance 2.0 für maximale Qualität und 4k; Fast zur Geschwindigkeitsoptimierung; Mini für die schnellste und kostengünstigste Generierung."
       },
       "model_duration": {
         "name": "Dauer"
@@ -1540,6 +1559,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "Task-ID eines Seedance-2.5-Draft-Durchlaufs. Verbinden Sie sie mit dem Node „Seedance 2.5 Entwurf zu finalem Video“, um das finale 1080p-Video zu rendern."
       }
     }
   },
@@ -1552,7 +1575,7 @@
       },
       "model": {
         "name": "Modell",
-        "tooltip": "Seedance 2.5 für das neueste Modell, Videos bis zu 30 Sekunden und mp4/mov-Ausgabe; Seedance 2.0 für maximale Qualität und 4k; Fast für Geschwindigkeitsoptimierung; Mini für die schnellste und kostengünstigste Generierung."
+        "tooltip": "Seedance 2.5 für das neueste Modell, Videos bis zu 30 Sekunden und mp4/mov-Ausgabe; Seedance 2.5 Draft für eine schnelle 480p-Vorschau, deren draft_task_id das finale 1080p-Video im Node „Seedance 2.5 Entwurf zu finalem Video“ rendert; Seedance 2.0 für maximale Qualität und 4k; Fast zur Geschwindigkeitsoptimierung; Mini für die schnellste und kostengünstigste Generierung."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -1605,7 +1628,7 @@
       },
       "model": {
         "name": "Modell",
-        "tooltip": "Seedance 2.5 für das neueste Modell, Videos bis zu 30 Sekunden und mp4/mov-Ausgabe; Seedance 2.0 für maximale Qualität und 4k; Fast für Geschwindigkeitsoptimierung; Mini für die schnellste und kostengünstigste Generierung."
+        "tooltip": "Seedance 2.5 für das neueste Modell, Videos bis zu 30 Sekunden und mp4/mov-Ausgabe; Seedance 2.5 Draft für eine schnelle 480p-Vorschau, deren draft_task_id das finale 1080p-Video im Node „Seedance 2.5 Entwurf zu finalem Video“ rendert; Seedance 2.0 für maximale Qualität und 4k; Fast zur Geschwindigkeitsoptimierung; Mini für die schnellste und kostengünstigste Generierung."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -1646,6 +1669,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "Task-ID eines Seedance-2.5-Draft-Durchlaufs. Verbinden Sie sie mit dem Node „Seedance 2.5 Entwurf zu finalem Video“, um das finale 1080p-Video zu rendern."
       }
     }
   },
@@ -1658,7 +1685,7 @@
       },
       "model": {
         "name": "Modell",
-        "tooltip": "Seedance 2.5 für das neueste Modell, Videos mit bis zu 30 Sekunden und mp4/mov-Ausgabe; Seedance 2.0 für maximale Qualität und 4k; Fast für Geschwindigkeitsoptimierung; Mini für die schnellste und kostengünstigste Generierung."
+        "tooltip": "Seedance 2.5 für das neueste Modell, Videos bis zu 30 Sekunden und mp4/mov-Ausgabe; Seedance 2.5 Draft für eine schnelle 480p-Vorschau, deren draft_task_id das finale 1080p-Video im Node „Seedance 2.5 Entwurf zu finalem Video“ rendert; Seedance 2.0 für maximale Qualität und 4k; Fast zur Geschwindigkeitsoptimierung; Mini für die schnellste und kostengünstigste Generierung."
       },
       "model_duration": {
         "name": "Dauer"
@@ -1690,6 +1717,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "Task-ID eines Seedance-2.5-Draft-Durchlaufs. Verbinden Sie sie mit dem Node „Seedance 2.5 Entwurf zu finalem Video“, um das finale 1080p-Video zu rendern."
       }
     }
   },
@@ -1932,7 +1963,7 @@
   },
   "ByteDanceSeedreamLayerSeparationNode": {
     "description": "Zerlegt ein Bild in eine Hintergrundebene und bis zu 16 neu positionierbare transparente Ebenen, jeweils mit Stapelreihenfolge, Begrenzungsrahmen, Name und Beschreibung.",
-    "display_name": "ByteDance Seedream 5.0 Pro-Ebenentrennung",
+    "display_name": "ByteDance Seedream 5.0 Pro-Ebenentrennung (Legacy)",
     "inputs": {
       "control_after_generate": {
         "name": "Steuerung nach Generierung"
@@ -1990,6 +2021,62 @@
       "5": {
         "name": "layer_stack",
         "tooltip": "Bearbeitungsfertiges Ebenendokument für Create Layered Image: die Basisplatte sowie jedes Element als eigene benannte, eng zugeschnittene Ebene an seiner tatsächlichen Position und in seiner Stapelreihenfolge. Direkt verbinden oder mit Add Layer erweitern."
+      }
+    }
+  },
+  "ByteDanceSeedreamLayerSeparationNodeV2": {
+    "description": "Zerlegt ein Bild in eine Hintergrundplatte und bis zu 16 verschiebbare transparente Ebenen, jeweils mit Stapelreihenfolge, Begrenzungsrahmen, Name und Beschreibung.",
+    "display_name": "ByteDance Seedream 5.0 Ebenentrennung",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "model": {
+        "name": "Modell"
+      },
+      "model_crop_layers": {
+        "name": "Ebenen zuschneiden"
+      },
+      "model_prompt": {
+        "name": "Prompt"
+      },
+      "model_prompt_optimization": {
+        "name": "Prompt-Optimierung"
+      },
+      "model_seed": {
+        "name": "Seed"
+      },
+      "model_size": {
+        "name": "Größe"
+      },
+      "model_watermark": {
+        "name": "Wasserzeichen"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Basisbild",
+        "tooltip": "Das Basisbild (Hintergrundplatte), auf dem die Ebenen gestapelt werden."
+      },
+      "1": {
+        "name": "Basismaske",
+        "tooltip": "Transparenz des Basisbilds (1 = transparent, LoadImage-Konvention); derzeit immer vollständig deckend."
+      },
+      "2": {
+        "name": "Ebenen",
+        "tooltip": "Transparente Ebenen, von unten nach oben angeordnet. Vollständiger Canvas-Modus: an ihrer Begrenzungsrahmenposition auf einem schwarzen Canvas in Basisbildgröße platziert. Modus für minimale Größe: auf ihren Begrenzungsrahmen zugeschnitten, oben links verankert und auf die Größe der größten Ebene aufgefüllt."
+      },
+      "3": {
+        "name": "Masken",
+        "tooltip": "Transparenz pro Ebene, indexausgerichtet mit dem Ebenen-Batch (1 = transparent, LoadImage-Konvention). Fügen Sie für Compositing im Stil von ImageCompositeMasked zuerst InvertMask hinzu."
+      },
+      "4": {
+        "name": "Begrenzungsrahmen",
+        "tooltip": "Ein Platzierungsrahmen pro Ebene, indexausgerichtet mit dem Ebenen-Batch (führen Sie beide zusammen mit masks in Layers From Bounding Boxes ein, um die Platzierung pro Ebene wiederherzustellen): {x, y, width, height, metadata: {name, desc, z_index, native_size, content_rect, flags}}. content_rect = [left, top, width, height] ist der Inhaltsbereich der Ebene innerhalb ihres eigenen Rahmens; er wird auf dem Canvas an der Rahmenposition plus diesem Versatz platziert."
+      },
+      "5": {
+        "name": "Ebenenstapel",
+        "tooltip": "Bearbeitungsfertiges Ebenendokument für Create Layered Image: die Basisplatte und jedes Element als eigene benannte, eng zugeschnittene Ebene an seiner tatsächlichen Position und in seiner Stapelreihenfolge. Direkt verbinden oder mit Add Layer erweitern."
       }
     }
   },
@@ -8491,12 +8578,12 @@
     }
   },
   "ImageColorSpace": {
-    "description": "Konvertiert sRGB, lineares Rec.709, HDR (Rec.2020 HLG) und HDR PQ (Rec.2020 PQ). Linear 1.0 verwendet dasselbe Referenzweiß von 203 Nit wie sRGB; HLG verwendet ein Referenzdisplay von 1000 Nit. Lineare Ausgabe und Konvertierungen von linear zu HDR erhalten erweiterte Werte ohne Tone Mapping. SDR-Ausgabe und die Konvertierung von PQ zu HLG führen Tone Mapping für überschüssige Luminanz über den Batch hinweg durch und komprimieren Farben außerhalb des Farbraums. Konvertierungen werden in float32 berechnet und geben das Zwischen-Device und den dtype zurück. Nicht vormultipliziertes Alpha wird nicht farbtransformiert.",
+    "description": "Konvertiert sRGB, lineares Rec.709, HDR (Rec.2020 HLG), HDR PQ (Rec.2020 PQ), HDR LogC3 und HDR ACEScct. LogC3 verwendet die EI-800-Kurve mit Rec.709-Primärfarben und auf [0, 1] begrenzten Codes. ACEScct verwendet AP1-Primärfarben und D60-Weiß mit Bradford-Anpassung an D65. Konvertieren Sie LogC3 oder ACEScct zur linearen Darstellung, um EXR zu speichern. Linear 1.0 verwendet dasselbe Referenzweiß von 203 Nit wie sRGB; HLG verwendet ein Referenzdisplay mit 1000 Nit. Lineare und ACEScct-Ausgaben bewahren erweiterte Werte. Linear-zu-HDR-Konvertierungen bewahren Glanzlichter ohne Tone Mapping; HLG- und PQ-Ausgaben beschneiden negative Kanäle. SDR-Ausgabe und PQ-zu-HLG-Konvertierung führen Tone Mapping für überschüssige Luminanz über den Batch hinweg durch und komprimieren Farben außerhalb des Farbumfangs. Konvertierungen werden in float32 berechnet und geben das Zwischenformat des Geräts und den dtype zurück. Straight Alpha wird nicht farbtransformiert.",
     "display_name": "Bildfarbraum konvertieren",
     "inputs": {
       "destination": {
         "name": "destination",
-        "tooltip": "Farbraum der Ausgabepixel. Stellen Sie den Speicher-Node auf denselben Farbraum ein."
+        "tooltip": "Farbraum der Ausgabepixel. Stellen Sie den Save-Node auf denselben Farbraum ein. Konvertieren Sie LogC3 oder ACEScct vor dem Speichern als EXR in linear bzw. vor dem Speichern von Video in sRGB/HDR/HDR PQ."
       },
       "image": {
         "name": "image"
@@ -16893,7 +16980,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "Wie intensiv das Modell vor der Antwort nachdenkt. „default“ überlässt die Wahl dem Modell. Unterstützte Stufen unterscheiden sich je nach Modell: GPT-6 Astra low-max, GPT-5.6 none-max (ohne minimal), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, o-series low-high; GPT-4.1 unterstützt kein Reasoning. Nicht unterstützte Stufen werden abgelehnt, bevor die Anfrage gesendet wird."
+        "tooltip": "Wie stark das Modell vor dem Antworten nachdenkt. 'default' überlässt die Wahl dem Modell. Die unterstützten Stufen unterscheiden sich je nach Modell: GPT-6 Astra low-max, GPT-6 Sol/Luna und GPT-5.6 none-max (ohne minimal), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, o-series low-high; GPT-4.1 verfügt über kein Reasoning. Nicht unterstützte Stufen werden abgelehnt, bevor die Anfrage gesendet wird."
       },
       "truncation": {
         "name": "truncation",
@@ -23884,6 +23971,30 @@
       },
       "2": {
         "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeMingImageEdit": {
+    "display_name": "Text-Encode Ming-Bildbearbeitung",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "Bilder",
+        "tooltip": "Optionale Referenzbilder, die vom Text-Encoder verarbeitet und als saubere Frames an die latent-Sequenz angehängt werden. Spätere Bilder werden auf die Größe des ersten skaliert, und das gesampelte latent sollte dessen Größe entsprechen."
+      },
+      "prompt": {
+        "name": "Prompt"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Ohne VAE konditionieren die Bilder den Text-Encoder nur über den Vision-Tower."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

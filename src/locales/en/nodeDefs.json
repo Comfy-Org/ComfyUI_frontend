@@ -1486,13 +1486,32 @@
       }
     }
   },
+  "ByteDance2DraftToFinalVideoNode": {
+    "display_name": "ByteDance Seedance 2.5 Draft to Final Video",
+    "description": "Render the 1080p final video of a Seedance 2.5 Draft. The final keeps the draft's scene and motion, and reuses its prompt, references, duration, aspect ratio, and audio setting.",
+    "inputs": {
+      "draft_task_id": {
+        "name": "draft_task_id",
+        "tooltip": "The draft_task_id output of a Seedance 2.5 node run with the Seedance 2.5 Draft model, or a pasted draft task ID. Set that node's seed control to fixed, otherwise the next run generates a new draft instead of reusing the one you reviewed. A draft can be rendered for 7 days after it was created."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Whether to add a watermark to the video."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "display_name": "ByteDance Seedance 2.5 First-Last-Frame to Video",
     "description": "Generate video using Seedance 2.5 or 2.0 from a first frame image and optional last frame image.",
     "inputs": {
       "model": {
         "name": "model",
-        "tooltip": "Seedance 2.5 for the newest model, videos up to 30 seconds and mp4/mov output; Seedance 2.0 for maximum quality and 4k; Fast for speed optimization; Mini for the fastest, lowest-cost generation."
+        "tooltip": "Seedance 2.5 for the newest model, videos up to 30 seconds and mp4/mov output; Seedance 2.5 Draft for a quick 480p preview whose draft_task_id renders the 1080p final in the Seedance 2.5 Draft to Final Video node; Seedance 2.0 for maximum quality and 4k; Fast for speed optimization; Mini for the fastest, lowest-cost generation."
       },
       "seed": {
         "name": "seed",
@@ -1540,6 +1559,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "Task ID of a Seedance 2.5 Draft run. Connect it to the Seedance 2.5 Draft to Final Video node to render the 1080p final."
       }
     }
   },
@@ -1549,7 +1572,7 @@
     "inputs": {
       "model": {
         "name": "model",
-        "tooltip": "Seedance 2.5 for the newest model, videos up to 30 seconds and mp4/mov output; Seedance 2.0 for maximum quality and 4k; Fast for speed optimization; Mini for the fastest, lowest-cost generation."
+        "tooltip": "Seedance 2.5 for the newest model, videos up to 30 seconds and mp4/mov output; Seedance 2.5 Draft for a quick 480p preview whose draft_task_id renders the 1080p final in the Seedance 2.5 Draft to Final Video node; Seedance 2.0 for maximum quality and 4k; Fast for speed optimization; Mini for the fastest, lowest-cost generation."
       },
       "seed": {
         "name": "seed",
@@ -1602,7 +1625,7 @@
     "inputs": {
       "model": {
         "name": "model",
-        "tooltip": "Seedance 2.5 for the newest model, videos up to 30 seconds and mp4/mov output; Seedance 2.0 for maximum quality and 4k; Fast for speed optimization; Mini for the fastest, lowest-cost generation."
+        "tooltip": "Seedance 2.5 for the newest model, videos up to 30 seconds and mp4/mov output; Seedance 2.5 Draft for a quick 480p preview whose draft_task_id renders the 1080p final in the Seedance 2.5 Draft to Final Video node; Seedance 2.0 for maximum quality and 4k; Fast for speed optimization; Mini for the fastest, lowest-cost generation."
       },
       "seed": {
         "name": "seed",
@@ -1646,6 +1669,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "Task ID of a Seedance 2.5 Draft run. Connect it to the Seedance 2.5 Draft to Final Video node to render the 1080p final."
       }
     }
   },
@@ -1655,7 +1682,7 @@
     "inputs": {
       "model": {
         "name": "model",
-        "tooltip": "Seedance 2.5 for the newest model, videos up to 30 seconds and mp4/mov output; Seedance 2.0 for maximum quality and 4k; Fast for speed optimization; Mini for the fastest, lowest-cost generation."
+        "tooltip": "Seedance 2.5 for the newest model, videos up to 30 seconds and mp4/mov output; Seedance 2.5 Draft for a quick 480p preview whose draft_task_id renders the 1080p final in the Seedance 2.5 Draft to Final Video node; Seedance 2.0 for maximum quality and 4k; Fast for speed optimization; Mini for the fastest, lowest-cost generation."
       },
       "seed": {
         "name": "seed",
@@ -1690,6 +1717,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "Task ID of a Seedance 2.5 Draft run. Connect it to the Seedance 2.5 Draft to Final Video node to render the 1080p final."
       }
     }
   },
@@ -1931,7 +1962,7 @@
     }
   },
   "ByteDanceSeedreamLayerSeparationNode": {
-    "display_name": "ByteDance Seedream 5.0 Pro Layer Separation",
+    "display_name": "ByteDance Seedream 5.0 Pro Layer Separation (Legacy)",
     "description": "Decompose an image into a background plate plus up to 16 repositionable transparent layers, each with stacking order, bounding box, name and description.",
     "inputs": {
       "image": {
@@ -1964,6 +1995,62 @@
       },
       "control_after_generate": {
         "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "base_image",
+        "tooltip": "The base image (background plate) the layers stack onto."
+      },
+      "1": {
+        "name": "base_mask",
+        "tooltip": "Transparency of the base image (1 = transparent, LoadImage convention); currently always fully opaque."
+      },
+      "2": {
+        "name": "layers",
+        "tooltip": "Transparent layers ordered bottom to top. Full canvas mode: placed on a black base-sized canvas at their bounding-box position. Minimal size mode: cropped to their bounding box, anchored top-left, padded to the largest layer."
+      },
+      "3": {
+        "name": "masks",
+        "tooltip": "Per-layer transparency, index-aligned with the layers batch (1 = transparent, LoadImage convention). For ImageCompositeMasked-style compositing, add InvertMask first."
+      },
+      "4": {
+        "name": "bboxes",
+        "tooltip": "One placement box per layer, index-aligned with the layers batch (feed both, plus masks, into Layers From Bounding Boxes to rebuild per-layer placement): {x, y, width, height, metadata: {name, desc, z_index, native_size, content_rect, flags}}. content_rect = [left, top, width, height] is the layer's content region within its own frame; it lands on the canvas at the box position plus that offset."
+      },
+      "5": {
+        "name": "layer_stack",
+        "tooltip": "Ready-to-edit layer document for Create Layered Image: the base plate plus each element as its own named, tight-cropped layer at its true position and stacking order. Connect directly, or extend with Add Layer."
+      }
+    }
+  },
+  "ByteDanceSeedreamLayerSeparationNodeV2": {
+    "display_name": "ByteDance Seedream 5.0 Layer Separation",
+    "description": "Decompose an image into a background plate plus up to 16 repositionable transparent layers, each with stacking order, bounding box, name and description.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_crop_layers": {
+        "name": "crop_layers"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_prompt_optimization": {
+        "name": "prompt_optimization"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_size": {
+        "name": "size"
+      },
+      "model_watermark": {
+        "name": "watermark"
       }
     },
     "outputs": {
@@ -8492,7 +8579,7 @@
   },
   "ImageColorSpace": {
     "display_name": "Convert Image Color Space",
-    "description": "Convert sRGB, linear Rec.709, HDR (Rec.2020 HLG), and HDR PQ (Rec.2020 PQ). Linear 1.0 uses the same 203-nit reference white as sRGB; HLG uses a 1000-nit reference display. Linear output and linear-to-HDR conversions preserve extended values without tone mapping. SDR output and PQ-to-HLG conversion tone-map excess luminance across the batch and compress out-of-gamut colors. Conversions compute in float32 and return the intermediate device and dtype. Straight alpha is not color-transformed.",
+    "description": "Convert sRGB, linear Rec.709, HDR (Rec.2020 HLG), HDR PQ (Rec.2020 PQ), HDR LogC3, and HDR ACEScct. LogC3 uses the EI 800 curve with Rec.709 primaries and codes clamped to [0, 1]. ACEScct uses AP1 primaries and D60 white, with Bradford adaptation to D65. Convert LogC3 or ACEScct to linear for EXR saving. Linear 1.0 uses the same 203-nit reference white as sRGB; HLG uses a 1000-nit reference display. Linear and ACEScct outputs preserve extended values. Linear-to-HDR conversions preserve highlights without tone mapping; HLG and PQ outputs clip negative channels. SDR output and PQ-to-HLG conversion tone-map excess luminance across the batch and compress out-of-gamut colors. Conversions compute in float32 and return the intermediate device and dtype. Straight alpha is not color-transformed.",
     "inputs": {
       "image": {
         "name": "image"
@@ -8503,7 +8590,7 @@
       },
       "destination": {
         "name": "destination",
-        "tooltip": "Color space of the output pixels. Set the save node to this same color space."
+        "tooltip": "Color space of the output pixels. Set the save node to this same color space. Convert LogC3 or ACEScct to linear before saving EXR, or to sRGB/HDR/HDR PQ before saving video."
       }
     },
     "outputs": {
@@ -16897,7 +16984,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "How much the model reasons before answering. 'default' leaves the choice to the model. Supported levels differ per model: GPT-6 Astra low-max, GPT-5.6 none-max (no minimal), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, o-series low-high; GPT-4.1 has no reasoning. Unsupported levels are rejected before the request is sent."
+        "tooltip": "How much the model reasons before answering. 'default' leaves the choice to the model. Supported levels differ per model: GPT-6 Astra low-max, GPT-6 Sol/Luna and GPT-5.6 none-max (no minimal), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, o-series low-high; GPT-4.1 has no reasoning. Unsupported levels are rejected before the request is sent."
       }
     },
     "outputs": {
@@ -23884,6 +23971,30 @@
       },
       "2": {
         "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeMingImageEdit": {
+    "display_name": "Text Encode Ming Image Edit",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Optional reference images, seen by the text encoder and appended to the latent sequence as clean frames. Later images are resized to the first one, and the sampled latent should match its size."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Without a VAE the images only condition the text encoder through the vision tower."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

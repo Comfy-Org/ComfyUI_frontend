@@ -1486,6 +1486,25 @@
       }
     }
   },
+  "ByteDance2DraftToFinalVideoNode": {
+    "description": "渲染 Seedance 2.5 草稿的 1080p 最终视频。最终视频会保留草稿的场景和运动效果，并复用其提示词、参考图、时长、宽高比和音频设置。",
+    "display_name": "ByteDance Seedance 2.5 草稿转最终视频",
+    "inputs": {
+      "draft_task_id": {
+        "name": "draft_task_id",
+        "tooltip": "使用 Seedance 2.5 草稿模型运行的 Seedance 2.5 节点所输出的 draft_task_id，或粘贴的草稿任务 ID。请将该节点的种子控制设为固定，否则下一次运行会生成新的草稿，而不会复用你审阅过的草稿。草稿创建后可在 7 天内渲染。"
+      },
+      "watermark": {
+        "name": "水印",
+        "tooltip": "是否为视频添加水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "使用 Seedance 2.0 从首帧图像和可选的末帧图像生成视频。",
     "display_name": "ByteDance Seedance 2.0 首帧-末帧生成视频",
@@ -1511,7 +1530,7 @@
       },
       "model": {
         "name": "模型",
-        "tooltip": "Seedance 2.5 用于最新模型、最长 30 秒的视频以及 mp4/mov 输出；Seedance 2.0 用于最高质量和 4k；Fast 用于速度优化；Mini 用于最快、成本最低的生成。"
+        "tooltip": "Seedance 2.5：最新模型，支持最长 30 秒的视频及 mp4/mov 输出；Seedance 2.5 草稿：快速 480p 预览，其 draft_task_id 可在 Seedance 2.5 草稿转最终视频节点中渲染为 1080p 最终视频；Seedance 2.0：最高质量和 4k；快速：针对速度优化；迷你：生成速度最快且成本最低。"
       },
       "model_duration": {
         "name": "时长"
@@ -1540,6 +1559,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "Seedance 2.5 草稿运行的任务 ID。将其连接到 Seedance 2.5 草稿转最终视频节点以渲染 1080p 最终视频。"
       }
     }
   },
@@ -1552,7 +1575,7 @@
       },
       "model": {
         "name": "模型",
-        "tooltip": "Seedance 2.5 用于最新模型、最长 30 秒的视频以及 mp4/mov 输出；Seedance 2.0 用于最高质量和 4k；Fast 用于速度优化；Mini 用于最快、成本最低的生成。"
+        "tooltip": "Seedance 2.5：最新模型，支持最长 30 秒的视频及 mp4/mov 输出；Seedance 2.5 草稿：快速 480p 预览，其 draft_task_id 可在 Seedance 2.5 草稿转最终视频节点中渲染为 1080p 最终视频；Seedance 2.0：最高质量和 4k；快速：针对速度优化；迷你：生成速度最快且成本最低。"
       },
       "model_auto_downscale": {
         "name": "自动降采样"
@@ -1605,7 +1628,7 @@
       },
       "model": {
         "name": "模型",
-        "tooltip": "Seedance 2.5 用于最新模型、最长 30 秒的视频以及 mp4/mov 输出；Seedance 2.0 用于最高质量和 4k；Fast 用于速度优化；Mini 用于最快、成本最低的生成。"
+        "tooltip": "Seedance 2.5：最新模型，支持最长 30 秒的视频及 mp4/mov 输出；Seedance 2.5 草稿：快速 480p 预览，其 draft_task_id 可在 Seedance 2.5 草稿转最终视频节点中渲染为 1080p 最终视频；Seedance 2.0：最高质量和 4k；快速：针对速度优化；迷你：生成速度最快且成本最低。"
       },
       "model_auto_downscale": {
         "name": "自动降采样"
@@ -1646,6 +1669,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "Seedance 2.5 草稿运行的任务 ID。将其连接到 Seedance 2.5 草稿转最终视频节点以渲染 1080p 最终视频。"
       }
     }
   },
@@ -1658,7 +1685,7 @@
       },
       "model": {
         "name": "模型",
-        "tooltip": "Seedance 2.5 为最新模型，支持最长 30 秒视频及 mp4/mov 输出；Seedance 2.0 提供最高质量和 4k；Fast 针对速度优化；Mini 提供最快、成本最低的生成。"
+        "tooltip": "Seedance 2.5：最新模型，支持最长 30 秒的视频及 mp4/mov 输出；Seedance 2.5 草稿：快速 480p 预览，其 draft_task_id 可在 Seedance 2.5 草稿转最终视频节点中渲染为 1080p 最终视频；Seedance 2.0：最高质量和 4k；快速：针对速度优化；迷你：生成速度最快且成本最低。"
       },
       "model_duration": {
         "name": "时长"
@@ -1690,6 +1717,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "Seedance 2.5 草稿运行的任务 ID。将其连接到 Seedance 2.5 草稿转最终视频节点以渲染 1080p 最终视频。"
       }
     }
   },
@@ -1932,7 +1963,7 @@
   },
   "ByteDanceSeedreamLayerSeparationNode": {
     "description": "将一张图像分解为一个背景底板和最多16个可重新定位的透明图层，每个图层具有堆叠顺序、边界框、名称和描述。",
-    "display_name": "ByteDance Seedream 5.0 Pro 图层分离",
+    "display_name": "ByteDance Seedream 5.0 Pro 图层分离（旧版）",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -1990,6 +2021,62 @@
       "5": {
         "name": "layer_stack",
         "tooltip": "用于Create Layered Image的可编辑图层文档：基础底板加每个元素作为独立命名、紧凑裁剪的图层，保持真实位置和堆叠顺序。可直接连接，或用Add Layer扩展。"
+      }
+    }
+  },
+  "ByteDanceSeedreamLayerSeparationNodeV2": {
+    "description": "将图像分解为一张背景底板和最多 16 个可重新定位的透明图层，每个图层均包含堆叠顺序、边界框、名称和描述。",
+    "display_name": "ByteDance Seedream 5.0 图层分离",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_crop_layers": {
+        "name": "crop_layers"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_prompt_optimization": {
+        "name": "prompt_optimization"
+      },
+      "model_seed": {
+        "name": "种子"
+      },
+      "model_size": {
+        "name": "大小"
+      },
+      "model_watermark": {
+        "name": "水印"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "base_image",
+        "tooltip": "图层堆叠到其上的底图（背景底板）。"
+      },
+      "1": {
+        "name": "base_mask",
+        "tooltip": "底图的透明度（1 = 透明，遵循 LoadImage 约定）；当前始终完全不透明。"
+      },
+      "2": {
+        "name": "图层",
+        "tooltip": "从下到上排序的透明图层。完整画布模式：按其边界框位置放置在与底图同尺寸的黑色画布上。最小尺寸模式：裁剪至其边界框，以左上角为锚点，并填充至最大图层的尺寸。"
+      },
+      "3": {
+        "name": "蒙版",
+        "tooltip": "每个图层的透明度，与图层批次索引对齐（1 = 透明，遵循 LoadImage 约定）。若要进行 ImageCompositeMasked 风格的合成，请先添加 InvertMask。"
+      },
+      "4": {
+        "name": "bboxes",
+        "tooltip": "每个图层对应一个放置框，与图层批次索引对齐（将两者连同蒙版一起输入“从边界框创建图层”，以重建每个图层的位置）：{x, y, width, height, metadata: {name, desc, z_index, native_size, content_rect, flags}}。content_rect = [left, top, width, height] 表示图层自身画框内的内容区域；它会以放置框位置加上该偏移量的位置落在画布上。"
+      },
+      "5": {
+        "name": "layer_stack",
+        "tooltip": "可直接编辑的“创建分层图像”图层文档：包含底板，以及每个作为独立命名、紧密裁剪图层的元素，并保留其实际位置和堆叠顺序。可直接连接，或使用“添加图层”扩展。"
       }
     }
   },
@@ -8491,12 +8578,12 @@
     }
   },
   "ImageColorSpace": {
-    "description": "转换 sRGB、线性 Rec.709、HDR（Rec.2020 HLG）和 HDR PQ（Rec.2020 PQ）。线性 1.0 使用与 sRGB 相同的 203 尼特参考白；HLG 使用 1000 尼特参考显示器。线性输出和线性到 HDR 的转换会保留扩展值，不进行色调映射。SDR 输出和 PQ 到 HLG 的转换会在批次内对超额亮度进行色调映射，并压缩超出色域的颜色。转换以 float32 进行计算，并返回中间设备和数据类型。直通 Alpha 不进行颜色转换。",
+    "description": "转换 sRGB、线性 Rec.709、HDR（Rec.2020 HLG）、HDR PQ（Rec.2020 PQ）、HDR LogC3 和 HDR ACEScct。LogC3 使用 EI 800 曲线、Rec.709 原色，并将编码值限制在 [0, 1]。ACEScct 使用 AP1 原色和 D60 白点，并通过 Bradford 适配至 D65。保存 EXR 时，请将 LogC3 或 ACEScct 转换为线性。线性 1.0 使用与 sRGB 相同的 203 尼特参考白色；HLG 使用 1000 尼特参考显示器。线性和 ACEScct 输出会保留扩展值。线性到 HDR 的转换会在不进行色调映射的情况下保留高光；HLG 和 PQ 输出会裁剪负值通道。SDR 输出及 PQ 到 HLG 的转换会对批次中的过量亮度进行色调映射，并压缩超出色域的颜色。转换以 float32 计算，并返回中间 device 和 dtype。不会对非预乘 alpha 进行色彩转换。",
     "display_name": "转换图像色彩空间",
     "inputs": {
       "destination": {
         "name": "destination",
-        "tooltip": "输出像素的色彩空间。请将保存节点设为相同的色彩空间。"
+        "tooltip": "输出像素的色彩空间。将保存节点设为相同的色彩空间。保存 EXR 前，将 LogC3 或 ACEScct 转换为线性；保存视频前，将其转换为 sRGB/HDR/HDR PQ。"
       },
       "image": {
         "name": "image"
@@ -16893,7 +16980,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "模型在回答前进行推理的程度。“default”表示由模型自行选择。支持的级别因模型而异：GPT-6 Astra 为 low-max，GPT-5.6 为 none-max（不含 minimal），GPT-5.5 为 none-xhigh，GPT-5.5 Pro 为 medium-xhigh，GPT-5 为 minimal-high，o 系列为 low-high；GPT-4.1 不支持推理。不支持的级别会在发送请求前被拒绝。"
+        "tooltip": "模型在回答前进行多少推理。'default' 将选择权交给模型。支持的级别因模型而异：GPT-6 Astra 为 low-max，GPT-6 Sol/Luna 和 GPT-5.6 为 none-max（不支持 minimal），GPT-5.5 为 none-xhigh，GPT-5.5 Pro 为 medium-xhigh，GPT-5 为 minimal-high，o-series 为 low-high；GPT-4.1 不支持推理。不受支持的级别会在发送请求前被拒绝。"
       },
       "truncation": {
         "name": "截断",
@@ -23884,6 +23971,30 @@
       },
       "2": {
         "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeMingImageEdit": {
+    "display_name": "Ming 图像编辑文本编码",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "图像",
+        "tooltip": "可选的参考图像，文本编码器可以看到这些图像，并将其作为干净帧附加到潜空间序列中。后续图像会被调整为与第一张图像相同的尺寸，采样得到的潜空间也应与该尺寸匹配。"
+      },
+      "prompt": {
+        "name": "提示词"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "没有 VAE 时，图像只能通过视觉塔对文本编码器产生条件影响。"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

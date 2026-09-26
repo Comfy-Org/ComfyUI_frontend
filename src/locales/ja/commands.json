@@ -230,6 +230,9 @@
   "Comfy_NewBlankWorkflow": {
     "label": "新しい空のワークフロー"
   },
+  "Comfy_Onboarding_Replay": {
+    "label": "オンボーディングを再表示"
+  },
   "Comfy_OpenClipspace": {
     "label": "クリップスペース"
   },
