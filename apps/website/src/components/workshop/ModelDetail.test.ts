@@ -42,7 +42,8 @@ import {
   captureWorkshopEvent,
   useWorkshopAuthFlag,
   useWorkshopEnabled,
-  useWorkshopEnabledSettled
+  useWorkshopEnabledSettled,
+  useWorkshopAppsEnabled
 } from '../../scripts/posthog'
 import ModelDetail from './ModelDetail.vue'
 import WorkshopGate from './WorkshopGate.vue'
@@ -456,6 +457,27 @@ describe('ModelDetail', () => {
     expect(link.getAttribute('target')).toBe('_blank')
     expect(link.getAttribute('rel')).toBe('noopener noreferrer')
   })
+
+  it.for([
+    { studio: true, offered: true },
+    { studio: false, offered: false }
+  ])(
+    'offers Cinematic Studio on a studio model only inside the staff rollout: $studio',
+    ({ studio, offered }) => {
+      vi.mocked(useWorkshopAppsEnabled).mockReturnValue(computed(() => studio))
+      mountDetail({
+        model: { ...model, slug: 'bfl--flux-2-pro--generate-images' }
+      })
+
+      const link = screen.queryByTestId('model-studio-link')
+      expect(link !== null).toBe(offered)
+      if (offered)
+        expect(link).toHaveAttribute(
+          'href',
+          '/cinematic-studio?model=bfl--flux-2-pro--generate-images'
+        )
+    }
+  )
 
   it('does not offer a generic docs link for an undocumented provider', () => {
     mountDetail()

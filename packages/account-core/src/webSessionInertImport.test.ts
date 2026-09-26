@@ -6,6 +6,7 @@ beforeEach(() => {
 
 it.for([
   '@comfyorg/account-core/webSession',
+  '@comfyorg/account-core/requestAuth',
   '@comfyorg/account-core/webSessionIdentity',
   '@comfyorg/account-core/testing'
 ])(
