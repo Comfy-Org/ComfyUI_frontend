@@ -5,8 +5,6 @@ import {
   FUNDS_UNAVAILABLE_MESSAGE
 } from '@e2e/tests/agent/agentPanelMocks'
 
-// Matrix rank 75 / notion-5. Green regression guard: once admission rejects a
-// turn, repeated Enter presses must not duplicate the visible prompt or POST.
 test.describe(
   'Agent rate-limit retry submission',
   { tag: ['@cloud', '@ui'] },
