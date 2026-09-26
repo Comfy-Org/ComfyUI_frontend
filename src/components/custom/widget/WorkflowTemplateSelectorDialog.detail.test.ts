@@ -81,13 +81,26 @@ const fixtures = vi.hoisted(() => {
       }
     }
   }
+  const customPrepared = {
+    ...prepared,
+    sourceModule: 'custom.extension'
+  }
+  const inputAsset = {
+    assetId: 'subject-asset',
+    filename: 'subject.png',
+    mediaType: 'image' as const,
+    previewUrl: 'https://example.com/subject.png',
+    availability: 'missing' as const
+  }
 
   return {
     activeDownloadModel,
     activeModel,
     bypassedModel,
+    customPrepared,
     doneModel,
     failedModel,
+    inputAsset,
     prepared,
     template
   }
@@ -101,9 +114,19 @@ const mocks = vi.hoisted(() => ({
   ),
   getTemplateThumbnailUrl: vi.fn(() => '/thumbnail.webp'),
   getTemplateTitle: vi.fn((template: { title: string }) => template.title),
+  getTemplateInputAssets: vi.fn(async () => [fixtures.inputAsset]),
   isModelDownloadable: vi.fn(() => true),
   loadTemplates: vi.fn(async () => true),
   loadWorkflowTemplate: vi.fn(async () => true),
+  downloadTemplateInputAsset: vi.fn(async () => ({
+    status: 'accepted' as const,
+    download: {
+      downloadId: 'input-download-1',
+      filename: fixtures.inputAsset.filename,
+      progress: 0,
+      status: 'pending' as const
+    }
+  })),
   onClose: vi.fn(),
   discardPreparedWorkflowTemplate: vi.fn(),
   openPreparedWorkflowTemplate: vi.fn(async () => 'loaded' as const),
@@ -325,6 +348,18 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
     mocks.resolveAvailability.mockResolvedValue([
       { model: fixtures.activeModel, status: 'missing' }
     ])
+    mocks.rowDownloadStateFor.mockImplementation(() => ({
+      status: 'idle',
+      attempt: 0
+    }))
+    Object.defineProperty(window, '__comfyDesktop2', {
+      configurable: true,
+      value: {
+        isRemote: () => false,
+        getTemplateInputAssets: mocks.getTemplateInputAssets,
+        downloadTemplateInputAsset: mocks.downloadTemplateInputAsset
+      }
+    })
   })
 
   it('shows only active requirements when a Desktop model is missing', async () => {
@@ -366,6 +401,41 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
       screen.getByRole('article', { name: fixtures.template.title })
     ).toBeInTheDocument()
     expect(mocks.openPreparedWorkflowTemplate).not.toHaveBeenCalled()
+  })
+
+  it('shows official input assets as a read-only Detail inventory', async () => {
+    const { user } = await clickTemplateCardAfterRender()
+    const requirements = await screen.findByRole('region', {
+      name: 'Template requirements'
+    })
+    const assets = within(requirements).getByRole('region', {
+      name: 'Input Assets'
+    })
+
+    expect(within(assets).getByText(fixtures.inputAsset.filename)).toBeVisible()
+    expect(within(assets).queryByRole('button')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Open now' }))
+    await waitFor(() => {
+      expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledOnce()
+    })
+  })
+
+  it('does not grant custom templates access to trusted input assets', async () => {
+    mocks.prepareWorkflowTemplate.mockResolvedValueOnce(fixtures.customPrepared)
+    const { user } = await clickTemplateCardAfterRender()
+    await screen.findByRole('article', { name: fixtures.template.title })
+
+    expect(mocks.getTemplateInputAssets).not.toHaveBeenCalled()
+    expect(
+      screen.queryByRole('region', { name: 'Input Assets' })
+    ).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Open now' }))
+    await waitFor(() => {
+      expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledOnce()
+    })
+    expect(mocks.downloadTemplateInputAsset).not.toHaveBeenCalled()
   })
 
   it('keeps Open now passive for idle models', async () => {
@@ -445,6 +515,7 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
     })
     expect(screen.queryByRole('article')).not.toBeInTheDocument()
     expect(mocks.resolveAvailability).not.toHaveBeenCalled()
+    expect(mocks.getTemplateInputAssets).not.toHaveBeenCalled()
   })
 
   it('opens a model-ready Desktop template directly', async () => {

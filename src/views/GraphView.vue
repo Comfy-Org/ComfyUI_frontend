@@ -65,6 +65,10 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh'
 import { useReconnectingNotification } from '@/composables/useReconnectingNotification'
 import { useProgressFavicon } from '@/composables/useProgressFavicon'
+import { runMissingMediaPipeline } from '@/platform/missingMedia/missingMediaPipeline'
+import { scanAllMediaCandidates } from '@/platform/missingMedia/missingMediaScan'
+import { startTemplateInputDownloadGraphSync } from '@/platform/workflow/templates/composables/useTemplateInputDownloadGraphSync'
+import { refreshDownloadedTemplateInputBindings } from '@/platform/workflow/templates/utils/refreshDownloadedTemplateInputBindings'
 import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
 import type { ServerConfig, ServerConfigValue } from '@/constants/serverConfig'
 import { setActiveLocale } from '@/i18n'
@@ -74,6 +78,7 @@ import DesktopCloudNotificationController from '@/platform/cloud/notification/co
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import { getShellLayoutSnapshot } from '@/platform/telemetry/utils/getShellLayoutSnapshot'
 import { getPageVisibilityMetadata } from '@/workbench/extensions/agent/utils/getPageVisibilityMetadata'
 import { useFrontendVersionMismatchWarning } from '@/platform/updates/common/useFrontendVersionMismatchWarning'
@@ -97,6 +102,7 @@ import {
   useQueueStore
 } from '@/stores/queueStore'
 import { useServerConfigStore } from '@/stores/serverConfigStore'
+import { useTemplateInputDownloadStore } from '@/stores/templateInputDownloadStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
@@ -122,6 +128,41 @@ const graphCanvasContainerRef = ref<HTMLDivElement | null>(null)
 const graphReady = ref(false)
 const { isBuilderMode, mode, isAppMode } = useAppMode()
 const { linearMode } = storeToRefs(useCanvasStore())
+const templateInputDownloadStore = useTemplateInputDownloadStore()
+const templateInputGraphSync = startTemplateInputDownloadGraphSync({
+  getReferencedInputNames: () =>
+    new Set(
+      scanAllMediaCandidates(app.rootGraph, isCloud).map(({ name }) => name)
+    ),
+  refreshGraphBindings: async (completedInputNames) => {
+    await app.reloadNodeDefs()
+    refreshDownloadedTemplateInputBindings(
+      app.rootGraph,
+      scanAllMediaCandidates(app.rootGraph, isCloud),
+      new Set(completedInputNames)
+    )
+    await runMissingMediaPipeline({ rootGraph: app.rootGraph, silent: true })
+    templateInputDownloadStore.completeGraphSync(completedInputNames)
+  },
+  reportError: (error) => {
+    reportError(error, {
+      errorType: 'workflow_template_input_refresh_failed'
+    })
+  }
+})
+const stopTemplateInputDownloadTracking =
+  (isDesktop &&
+    window.__comfyDesktop2?.onTemplateInputDownloadProgress?.((progress) => {
+      templateInputDownloadStore.updateProgress(progress)
+      templateInputGraphSync.handleProgress(progress)
+    })) ||
+  (() => undefined)
+
+onBeforeUnmount(() => {
+  stopTemplateInputDownloadTracking()
+  templateInputGraphSync.dispose()
+  templateInputDownloadStore.clear()
+})
 
 watch(linearMode, (isLinear) => {
   if (isLinear) {

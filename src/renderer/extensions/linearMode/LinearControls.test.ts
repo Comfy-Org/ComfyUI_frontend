@@ -16,6 +16,7 @@ import LinearControls from '@/renderer/extensions/linearMode/LinearControls.vue'
 import { LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID } from '@/renderer/extensions/linearMode/linearRunErrorWarningIds'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useTemplateInputDownloadStore } from '@/stores/templateInputDownloadStore'
 import { toNodeId } from '@/types/nodeId'
 
 const overlayMock = vi.hoisted(() => ({
@@ -46,6 +47,11 @@ const i18n = createI18n({
           goto: 'Show errors in graph'
         },
         mobileNoWorkflow: 'No workflow',
+        inputDownloads: {
+          downloading:
+            'Downloading {count} starter input | Downloading {count} starter inputs',
+          finalizing: 'Preparing downloaded starter inputs'
+        },
         runCount: 'Run count',
         viewJob: 'View job'
       },
@@ -170,8 +176,29 @@ describe('LinearControls', () => {
     vi.spyOn(distributionModule, 'isCloud', 'get').mockImplementation(
       () => distributionMock.isCloud
     )
+    useTemplateInputDownloadStore().clear()
     overlayMock.overlayMessage = 'KSampler is missing a required input: model'
     overlayMock.overlayTitle = 'Required input missing'
+  })
+
+  it('shows required template input progress and blocks Run until graph hydration', () => {
+    useTemplateInputDownloadStore().updateProgress({
+      downloadId: 'download-1',
+      filename: missingMediaCandidate.name,
+      progress: 0.42,
+      status: 'downloading',
+      templateInputs: [{ templateId: 'template-a', assetId: 'asset-a' }]
+    })
+
+    renderControls({ missingResource: 'media' })
+
+    const status = screen.getByTestId('linear-input-download-status')
+    expect(status).toHaveTextContent('Downloading 1 starter input')
+    expect(within(status).getByRole('progressbar')).toHaveAttribute(
+      'aria-valuenow',
+      '42'
+    )
+    expect(screen.getByRole('button', { name: 'Run' })).toBeDisabled()
   })
 
   it.for([

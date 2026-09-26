@@ -7,6 +7,7 @@ import { app } from '@/scripts/app'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import { isMissingWarningVisible } from '@/platform/settings/missingWarningVisibility'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useTemplateInputDownloadStore } from '@/stores/templateInputDownloadStore'
 import { getAncestorExecutionIds } from '@/types/nodeIdentification'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import { getActiveGraphNodeIds } from '@/utils/graphTraversalUtil'
@@ -19,6 +20,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
  */
 export const useMissingMediaStore = defineStore('missingMedia', () => {
   const canvasStore = useCanvasStore()
+  const templateInputDownloadStore = useTemplateInputDownloadStore()
 
   const missingMediaCandidates = ref<MissingMediaCandidate[] | null>(null)
 
@@ -27,25 +29,32 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
     isMissingWarningVisible('media') ? missingMediaCandidates.value : null
   )
 
+  /** Visible candidates the user can still act on, excluding in-flight template input downloads. */
+  const actionableMissingMediaCandidates = computed(() =>
+    (visibleMissingMediaCandidates.value ?? []).filter(
+      ({ name }) => !templateInputDownloadStore.blockingFilenames.has(name)
+    )
+  )
+
   const hasMissingMedia = computed(
-    () => !!visibleMissingMediaCandidates.value?.length
+    () => actionableMissingMediaCandidates.value.length > 0
   )
 
   const missingMediaCount = computed(
-    () => visibleMissingMediaCandidates.value?.length ?? 0
+    () => actionableMissingMediaCandidates.value.length
   )
 
   const missingMediaNodeIds = computed(
     () =>
       new Set(
-        visibleMissingMediaCandidates.value?.map((m) => String(m.nodeId)) ?? []
+        actionableMissingMediaCandidates.value.map((m) => String(m.nodeId))
       )
   )
 
   /** `nodeId::widgetName` keys, so per-widget render lookups stay O(1). */
   const missingMediaWidgetKeys = computed<Set<string>>(() => {
     const keys = new Set<string>()
-    for (const candidate of visibleMissingMediaCandidates.value ?? []) {
+    for (const candidate of actionableMissingMediaCandidates.value) {
       keys.add(`${String(candidate.nodeId)}::${candidate.widgetName}`)
     }
     return keys
