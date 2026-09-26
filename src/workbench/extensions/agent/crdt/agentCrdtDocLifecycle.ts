@@ -47,7 +47,7 @@ const SUBSCRIBE_RETRY_MAX_ATTEMPTS = 6
 // `catalog_mismatch` are cloud's `socketDocCode()` sibling arms sharing the
 // same "retrying will not help" contract; `unsupported` (`docSurfaceOffReason`)
 // is permanent for the life of the connection.
-export const PERMANENT_SUBSCRIBE_REFUSAL_CODES: ReadonlySet<string> = new Set([
+const PERMANENT_SUBSCRIBE_REFUSAL_CODES: ReadonlySet<string> = new Set([
   'schema_version_mismatch',
   'catalog_mismatch',
   'unsupported'
