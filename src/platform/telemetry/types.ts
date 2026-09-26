@@ -618,6 +618,11 @@ export interface AgentConsentNotOfferedMetadata extends Record<
  * for everyone outside the rollout - a count of exposure rather than of the
  * mechanism - and the flag is already on every event as
  * `$feature/agent-in-app-experience`.
+ *
+ * The `request` stage is the one place these endings are *countable*: see
+ * `AgentConsentOfferStage`. Every other stage reports the presence of an
+ * ending once per page load, so counts are comparable within one
+ * (`stage`, `exit`) pair and never across stages.
  */
 export type AgentConsentOfferExit =
   /** No Comfy account is signed in. */
@@ -642,6 +647,29 @@ export type AgentConsentOfferExit =
   | 'already_offered'
   /** The first-run startup probe rejected. */
   | 'startup_probe_failed'
+  /**
+   * The consent scope moved while it was being resolved - a different account,
+   * a workspace transition, or a switch that started - so the read that would
+   * have decided whether to ask was never made. `request` stage only.
+   */
+  | 'scope_changed_before_read'
+  /**
+   * Resolving the consent scope raised. The account or the workspace went away
+   * between the offer decision and the request. `request` stage only.
+   */
+  | 'scope_probe_failed'
+  /**
+   * The consent scope moved while the stored-consent read was in flight, so the
+   * answer that came back belonged to a scope that is no longer current.
+   * `request` stage only.
+   */
+  | 'scope_changed_after_read'
+  /**
+   * The card was asked for and the dialog closed before it rendered, so there
+   * is no `agent_consent_shown` and no outcome to record against one. `request`
+   * stage only.
+   */
+  | 'card_closed_before_mount'
 /**
  * Which link in the offer chain exited. The same condition is checked at more
  * than one of these - the pair (`exit`, `stage`) is what identifies a single
@@ -654,6 +682,17 @@ export type AgentConsentOfferStage =
   | 'startup'
   /** `offerConsentUnprompted` - the offer attempt itself. */
   | 'offer'
+  /**
+   * The consent request itself - `requestConsentForCurrentUser` and the card
+   * lifecycle in `showConsentDialog` - after the chain has decided to ask.
+   *
+   * The only stage that is **not** deduplicated, because it cannot inflate:
+   * the automatic path reaches it at most once per consent scope per page load
+   * (the one-shot auto-show key is burned first) and the button path reaches it
+   * once per click, so a repeat here is a repeated attempt rather than a
+   * measure of how long the tab was open.
+   */
+  | 'request'
 export interface AgentConsentOfferExitedMetadata extends Record<
   string,
   unknown
@@ -664,8 +703,26 @@ export interface AgentConsentOfferExitedMetadata extends Record<
    * Whether a hold was armed at the moment of the exit, i.e. whether this page
    * load still has a queued retry. False on an owed-and-not-made exit means the
    * offer is gone for this page load with nothing scheduled to bring it back.
+   *
+   * Two qualifications, both from the `request` stage. It is **structurally
+   * false** there: the offer drops the hold immediately before requesting, and
+   * the only thing that re-arms it is the `canShow` hook, which runs after
+   * every `request` exit. And the hold is not the only wake-up - `withConsent`
+   * settling re-drives the chain when the identity changed - so on the two
+   * `scope_changed_*` exits a retry does happen, by a mechanism this property
+   * does not describe.
    */
   retry_armed: boolean
+  /**
+   * Which surface asked. Set **only** at the `request` stage, which is the one
+   * stage reachable from the topbar button as well as the automatic offer;
+   * every other stage is inside `offerConsentUnprompted` and automatic by
+   * construction. A query about automatic offers must therefore either restrict
+   * to `stage != 'request'` or filter `trigger = 'first_load'` - counting the
+   * `request` stage unsplit mixes a user-initiated click into the automatic
+   * denominator.
+   */
+  trigger?: AgentConsentTrigger
 }
 export type AgentOnboardingNotShownMetadata =
   | { reason: 'app_mode' | 'tour_active' }
@@ -685,16 +742,61 @@ export interface AgentConsentShownMetadata extends Record<string, unknown> {
   trigger: AgentConsentTrigger
 }
 /**
- * Only consent the user actually gave or refused resolves the card, so this
- * never reports a decision that did not stick. An `agent_consent_shown` with
- * no matching resolution is an *unresolved* offer, not a dismissal: it covers
- * dismissing the card (Escape, overlay click), an acceptance whose save
- * failed, and — signed out — accepting the card but abandoning the sign-in
- * that has to follow. Splitting those three apart needs a signal this event
- * does not carry.
+ * How a consent card that was on screen ended, plus the moment consent becomes
+ * stored. It used to carry only the two deciding values, which left a card that
+ * was shown and then went quiet covering three different endings at once - a
+ * dismissal, an acceptance whose save did not stick, and a signed-out
+ * acceptance whose sign-in was abandoned. Those are now named, and
+ * `save_error_shown` separates giving up after a failed save from walking away.
+ *
+ * **Only `accepted` means consent is stored.** That was this event's whole
+ * meaning before the other values existed, so any query that counted it as "a
+ * decision that stuck" must now filter `decision = 'accepted'`, and one that
+ * wants "the user answered" wants `decision in ('accepted', 'rejected')`.
+ *
+ * **The pairing with `agent_consent_shown`, exactly.** For a signed-in user -
+ * the whole cloud population - every impression ends in exactly one of these,
+ * so an impression with no outcome is a defect rather than a dismissal. In the
+ * signed-out (local) flow the card is only the first half: it ends at
+ * `accepted_pending_sign_in`, and `accepted` follows separately if the sign-in
+ * and the real save land. So `accepted` is the one value that is not always the
+ * card's own ending, which is how it keeps meaning "consent is stored".
  */
+export type AgentConsentDecision =
+  /** Accepted, and the acceptance is durably stored. */
+  | 'accepted'
+  /** Declined on the card. Nothing is stored; the card can be offered again. */
+  | 'rejected'
+  /**
+   * Closed without deciding - Escape, the overlay mask, or a programmatic close
+   * such as navigation. Distinguishing this from `accept_not_persisted` is the
+   * difference between the user walking away and the product failing them.
+   */
+  | 'dismissed'
+  /**
+   * Accepted, and the write did not stick without raising: the scope moved
+   * mid-save or the workspace auth header was gone. The user believes they
+   * consented and no consent exists.
+   */
+  | 'accept_not_persisted'
+  /**
+   * Accepted the card in the signed-out flow, where the card is only the first
+   * half: a sign-in and a real save still have to land before consent exists,
+   * and they report `accepted` themselves when they do. So this value with no
+   * later `accepted` is an abandoned sign-in, which is the third case this
+   * event could not previously name.
+   */
+  | 'accepted_pending_sign_in'
 export interface AgentConsentResolvedMetadata extends Record<string, unknown> {
-  decision: 'accepted' | 'rejected'
+  decision: AgentConsentDecision
+  /**
+   * Whether the card had already shown a save error when it reached this
+   * outcome. A raised save leaves the card open and retryable, so its ending is
+   * one of the values above rather than an outcome of its own - this is what
+   * tells "dismissed after the save failed" from "dismissed without trying",
+   * and marks an `accepted` that only landed on a retry.
+   */
+  save_error_shown: boolean
 }
 export type AgentOnboardingAction = 'next' | 'finish' | 'skip'
 /**
