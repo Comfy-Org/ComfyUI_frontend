@@ -13,20 +13,24 @@ test(
     await turnLock.openOnBlankWorkflow()
     await turnLock.startTurn(prompt)
 
-    await page.reload()
+    await test.step('refresh keeps the in-flight turn running', async () => {
+      await page.reload()
 
-    await expect(turnLock.userBubbles).toHaveText([prompt], {
-      timeout: 30_000
+      await expect(turnLock.userBubbles).toHaveText([prompt], {
+        timeout: 30_000
+      })
+      await expect(turnLock.stopButton).toBeVisible()
+      await expect(turnLock.sendButton).toHaveCount(0)
     })
-    await expect(turnLock.stopButton).toBeVisible()
-    await expect(turnLock.sendButton).toHaveCount(0)
 
-    turnLock.finishTurn()
+    await test.step('completion seen only in history unlocks the composer', async () => {
+      turnLock.finishTurn()
 
-    await expect(turnLock.sendButton).toBeVisible({ timeout: 20_000 })
-    await expect(turnLock.stopButton).toHaveCount(0)
-    await expect(turnLock.userBubbles).toHaveText([prompt])
-    expect(turnLock.postAttempts()).toBe(1)
-    expect(turnLock.rejectedPosts()).toBe(0)
+      await expect(turnLock.sendButton).toBeVisible({ timeout: 20_000 })
+      await expect(turnLock.stopButton).toHaveCount(0)
+      await expect(turnLock.userBubbles).toHaveText([prompt])
+      expect(turnLock.postAttempts()).toBe(1)
+      expect(turnLock.rejectedPosts()).toBe(0)
+    })
   }
 )

@@ -98,18 +98,9 @@ const PREPARE_TIMEOUT_MS = 3000
  * After a reconnect or a refresh the server may still be finishing the turn,
  * and its terminal event may never reach this socket (dropped during
  * hydration, or the row was orphaned and only a server sweep will end it).
- * Poll the persisted row with backoff, then keep checking at the last delay
- * for as long as the turn is still live here. Each request uses the REST
- * client's response-header timeout and remains abortable when the session
- * stops. The job ends when the row reports a terminal state or a missing
- * thread, when the turn leaves the conversation store's live set, or when the
- * session that started it stops or is superseded. It is open-ended only while
- * the server keeps answering with a streaming row: after
- * TURN_RECOVERY_MAX_CONSECUTIVE_FAILURES checks in a row that fail or find no
- * row for the turn it gives up. If the last check finds no row, it settles the
- * turn with the text it already has, since the server has nothing more to
- * deliver; if the last check fails, it leaves the turn live for the socket and
- * the next reconnect.
+ * Poll the persisted row instead, on the schedule below. Each request uses
+ * the REST client's response-header timeout rather than a whole-body deadline,
+ * and stays abortable while the session is stopping.
  * Switching threads stashes the turn rather than ending it, so its recovery
  * keeps running in the background.
  */
@@ -820,14 +811,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
       }
       consecutiveFailures =
         outcome.kind === 'streaming' ? 0 : consecutiveFailures + 1
-      if (consecutiveFailures >= TURN_RECOVERY_MAX_CONSECUTIVE_FAILURES)
-        return abandonTurnRecovery(turn, outcome)
+      if (consecutiveFailures >= TURN_RECOVERY_MAX_CONSECUTIVE_FAILURES) {
+        // No row for the turn means the server has nothing left to deliver, so
+        // settle with the text we already have. A run of failed checks says
+        // nothing about the turn, so leave it live for the socket.
+        if (outcome.kind === 'message-missing')
+          conversationStore.settleTurn(turn, undefined)
+        return
+      }
     }
-  }
-
-  function abandonTurnRecovery(turn: LiveTurn, outcome: TurnOutcome): void {
-    if (outcome.kind === 'message-missing')
-      conversationStore.settleTurn(turn, undefined)
   }
 
   function isTurnLive(turn: LiveTurn, generation: number): boolean {
