@@ -172,12 +172,12 @@ test('Cloud upload, refresh, partial delivery and downloads retain one run @mobi
   expect(snippet).toContain('/api/prompt')
   expect(snippet).toContain('X-API-Key:')
   await page.setViewportSize({ width: 320, height: 851 })
-  await page.getByRole('tab', { name: 'Workflow', exact: true }).click()
+  await page.getByRole('tab', { name: 'Details', exact: true }).click()
   await expect(
     page.getByRole('img', { name: 'Workflow', exact: true })
   ).toBeVisible()
   const panelRight = await page
-    .getByRole('tabpanel', { name: 'Workflow', exact: true })
+    .getByRole('tabpanel', { name: 'Details', exact: true })
     .evaluate(
       (panel) =>
         panel.getBoundingClientRect().right -

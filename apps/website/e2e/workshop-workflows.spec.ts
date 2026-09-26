@@ -110,7 +110,7 @@ test('workflow launch groups lead to the existing shared form', async ({
     'href',
     'https://testcloud.comfy.org/?template=image_qwen_image_edit_2511'
   )
-  await page.getByRole('tab', { name: 'Workflow', exact: true }).click()
+  await page.getByRole('tab', { name: 'Details', exact: true }).click()
   const graphFiles = [
     {
       link: page.getByRole('link', { name: 'Open full-size workflow preview' }),
