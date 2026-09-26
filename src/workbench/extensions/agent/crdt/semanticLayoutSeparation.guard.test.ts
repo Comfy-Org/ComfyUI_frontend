@@ -25,6 +25,17 @@ import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import * as Y from 'yjs'
 
+// The layer rule forbids workbench/ -> renderer/, and the two lines below are
+// the same exception `AgentPanelRoot.vue` already takes for the same two
+// modules: the agent's layout path legitimately drives the renderer's layout
+// store. A test of that boundary has to reach the store the boundary is about.
+// eslint-disable-next-line import-x/no-restricted-paths
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+// eslint-disable-next-line import-x/no-restricted-paths
+import { LayoutSource } from '@/renderer/core/layout/types'
+import { toNodeId } from '@/types/nodeId'
+import { createUuidv4 } from '@/utils/uuid'
+
 const SRC_DIR = path.resolve(__dirname, '../../../../')
 const STORES_DIR = path.join(SRC_DIR, 'stores')
 const LAYOUT_STORE = path.join(
@@ -64,6 +75,56 @@ function deliveredRoots(host: Y.Doc): string[] {
 }
 
 describe('layout stays out of the semantic document', () => {
+  /**
+   * The behavioural half of "layoutStore owns its own document". Asserting that
+   * `layoutStore.ts` imports yjs only shows it has *a* document; it cannot show
+   * the document is a different one, which is the property KEEP-ALIVE #8 is
+   * about. So drive a real layout mutation through the store and require the
+   * bytes a semantic peer would receive to be unchanged by it.
+   *
+   * The geometry below is deliberately unlike anything in the minted payload:
+   * if the numbers collided, an implementation that did leak layout into the
+   * semantic document could still produce an identical update.
+   */
+  it('a layout mutation changes nothing a semantic peer receives', () => {
+    const host = mint(
+      {
+        nodes: [
+          { id: 1, type: 'Source', pos: [0, 0], inputs: [], outputs: [] }
+        ],
+        links: []
+      },
+      { types: {} }
+    )
+    const before = Y.encodeStateAsUpdate(host)
+
+    const nodeId = toNodeId('layout-only-node')
+    const position = { x: 7331, y: 1337 }
+    const size = { width: 313, height: 131 }
+    layoutStore.applyOperation({
+      type: 'createNode',
+      graphId: createUuidv4(),
+      nodeId,
+      layout: {
+        id: nodeId,
+        position,
+        size,
+        bounds: { x: position.x, y: position.y, ...size },
+        zIndex: 0,
+        visible: true
+      },
+      source: LayoutSource.Canvas,
+      timestamp: 0
+    })
+
+    const after = Y.encodeStateAsUpdate(host)
+    host.destroy()
+
+    // Byte equality rather than a root-name check: a leak that wrote into an
+    // existing semantic root would add no new root name at all.
+    expect(after).toEqual(before)
+  })
+
   it('layoutStore owns its own Yjs document', () => {
     expect(readSource(LAYOUT_STORE)).toMatch(YJS_IMPORT)
   })

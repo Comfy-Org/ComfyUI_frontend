@@ -447,8 +447,10 @@ function ackResubscribe(workflowId: string): void {
  */
 describe('a human edit made while the document connection is down', () => {
   // The sender gives an in-flight batch five retries 500 ms apart before it
-  // retires the batch `undeliverable`.
-  const RETRY_BUDGET_MS = 5 * 500
+  // retires the batch `undeliverable`. Named separately because one test has to
+  // stop part-way through the budget, while the batch is still retained.
+  const RETRY_INTERVAL_MS = 500
+  const RETRY_BUDGET_MS = 5 * RETRY_INTERVAL_MS
 
   beforeEach(() => {
     useAgentPanelStore().enabled = true
@@ -512,19 +514,42 @@ describe('a human edit made while the document connection is down', () => {
    * before the ack would fail, `it.fails` would report that as the expected
    * failure, and the delivery assertion would never run. Held separately, a
    * regression in either half is unmissable.
+   *
+   * This test must reconnect while the batch is still PENDING, and that is the
+   * whole reason the timer only advances part of the budget. Past the budget
+   * the sender has already settled the batch `undeliverable` and dropped it --
+   * which is exactly what the test above asserts -- so `sent` would then be
+   * empty because there is nothing left to send, not because the queue waited
+   * for the ack. An implementation that flushed the moment `reconnected` fired
+   * would have passed. With the batch still alive that explanation is gone.
+   *
+   * One limit, stated rather than papered over: because nothing is delivered
+   * after the ack either -- the `it.fails` below is exactly that gap -- an empty
+   * `sent` is not yet proof that the ack is what releases the queue. What this
+   * test does establish is the half that is checkable today, that a live batch
+   * is not flushed by `reconnected` alone. When the delivery gap closes, assert
+   * the batch goes out after `ackResubscribe` here and the pair is complete.
    */
   it('holds the queue until the host acks the resubscribe', async () => {
     const { enqueue } = mountFollower('wf-a')
     clientState.transportUp = false
 
     await enqueue([deleteNode('edited-during-outage')])
-    vi.advanceTimersByTime(RETRY_BUDGET_MS)
+    // First send plus two refused retries: three of the six attempts the
+    // budget allows, so the batch is still in flight and still retained.
+    vi.advanceTimersByTime(2 * RETRY_INTERVAL_MS)
+    expect(clientState.attempts).toHaveLength(3)
+    expect(devLogState.recordDevEvent).not.toHaveBeenCalledWith(
+      'human_ops_settled',
+      expect.objectContaining({ state: 'undeliverable' })
+    )
     expect(clientState.sent).toHaveLength(0)
 
     // `reconnected` alone only re-drives the subscribe; nothing may go out
     // until the host acks that the document is bound again.
     clientState.transportUp = true
     apiState.target.dispatchEvent(new Event('reconnected'))
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(1)
     expect(clientState.sent).toHaveLength(0)
   })
 
