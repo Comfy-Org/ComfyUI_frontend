@@ -30,10 +30,9 @@ describe('readGraphPicture', () => {
     }
     // Every link joins two nodes the picture holds, or it is a line to
     // nowhere.
-    for (const link of picture.links) {
-      expect(Number.isFinite(link.x1)).toBe(true)
-      expect(Number.isFinite(link.y2)).toBe(true)
-    }
+    for (const link of picture.links)
+      for (const end of [link.x1, link.y1, link.x2, link.y2])
+        expect(Number.isFinite(end)).toBe(true)
   })
 
   // Anything but a graph is a graph with nothing in it, not a throw: the page
