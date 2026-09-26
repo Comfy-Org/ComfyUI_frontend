@@ -862,10 +862,7 @@ function getPriceFromApi(tier: PricingTierConfig): number | null {
   return currentBillingCycle.value === 'yearly' ? price / 12 : price
 }
 
-// The catalog grant for the selected duration is authoritative; the static
-// per-month figure is only the pre-resolve (loading / OSS) fallback.
 const creditsForTier = (tier: PricingTierConfig): number =>
-  getApiPlanForTier(tier.key, currentBillingCycle.value)?.credits_cents ??
   amountForCurrentCycle(tier.pricing.credits)
 
 const videoEstimateForTier = (tier: PricingTierConfig): number =>
@@ -949,7 +946,7 @@ const isButtonDisabled = (tier: PricingTierConfig): boolean =>
 const getButtonTextClass = (tier: PricingTierConfig): string =>
   tier.key === 'creator'
     ? 'font-inter text-sm font-bold leading-normal text-base-background'
-    : 'font-inter text-sm font-bold leading-normal text-primary-foreground'
+    : 'font-inter text-sm font-bold leading-normal text-base-foreground'
 
 const getPrice = (tier: PricingTierConfig): number =>
   getPriceFromApi(tier) ?? tier.pricing[currentBillingCycle.value]

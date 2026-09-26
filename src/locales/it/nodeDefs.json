@@ -7955,6 +7955,87 @@
       }
     }
   },
+  "HunyuanImageEditApi": {
+    "description": "Modifica o combina fino a 5 immagini di riferimento, guidato da un prompt testuale, usando il modello Hunyuan Image di Tencent.",
+    "display_name": "Tencent HY Image: Modifica",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "model": {
+        "name": "modello",
+        "tooltip": "Modello da usare."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_height": {
+        "name": "altezza"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reference_detail": {
+        "name": "reference_detail"
+      },
+      "model_resolution": {
+        "name": "risoluzione"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_watermark": {
+        "name": "filigrana"
+      },
+      "model_width": {
+        "name": "larghezza"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HunyuanImageTextToImageApi": {
+    "description": "Genera immagini da un prompt testuale usando il modello Hunyuan Image di Tencent.",
+    "display_name": "Tencent HY Image: Da testo a immagine",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "model": {
+        "name": "modello",
+        "tooltip": "Modello da usare."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_height": {
+        "name": "altezza"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "risoluzione"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_watermark": {
+        "name": "filigrana"
+      },
+      "model_width": {
+        "name": "larghezza"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HunyuanImageToVideo": {
     "display_name": "HunyuanImageToVideo",
     "inputs": {
@@ -18366,6 +18447,10 @@
       "model_top_p": {
         "name": "top_p"
       },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "La quantità di ragionamento che il modello esegue prima di disegnare. Livelli più alti migliorano il dettaglio e consumano più token. Usato solo dai modelli Arrow 2."
+      },
       "seed": {
         "name": "seed",
         "tooltip": "Seed per determinare se il nodo deve essere rieseguito; i risultati effettivi sono comunque non deterministici."
@@ -18404,6 +18489,10 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "Descrizione testuale dell'SVG desiderato."
+      },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "La quantità di ragionamento che il modello esegue prima di disegnare. Livelli più alti migliorano il dettaglio e consumano più token. Usato solo dai modelli Arrow 2."
       },
       "reference_images": {
         "name": "immagini_di_riferimento",
@@ -19075,7 +19164,7 @@
       },
       "model": {
         "name": "modello",
-        "tooltip": "Il modello da usare per la generazione. I modelli recraftv4_styles sono progettati per una generazione con stile coerente e richiedono sempre uno style_id o style_references."
+        "tooltip": "Il modello da usare per la generazione. I modelli recraftv4_styles sono progettati per una generazione coerente nello stile e richiedono sempre un style_id o style_references; recraftv4_1_flash è il modello più veloce ed economico e non supporta alcuno stile."
       },
       "model_size": {
         "name": "dimensione"
@@ -23968,6 +24057,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Sostituisce il prompt di sistema nel modello di chat del modello. Ignorato quando non viene usato il modello predefinito."
+      },
       "thinking": {
         "name": "modalità_riflessione",
         "tooltip": "Opera in modalità riflessione se il modello lo supporta."
@@ -23984,6 +24077,10 @@
     "outputs": {
       "0": {
         "name": "testo_generato",
+        "tooltip": null
+      },
+      "1": {
+        "name": "ragionamento",
         "tooltip": null
       }
     }
@@ -24034,6 +24131,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Sostituisce il prompt di sistema nel modello di chat del modello. Ignorato quando non viene usato il modello predefinito."
+      },
       "thinking": {
         "name": "modalità_riflessione",
         "tooltip": "Opera in modalità riflessione se il modello lo supporta."
@@ -24050,6 +24151,10 @@
     "outputs": {
       "0": {
         "name": "testo_generato",
+        "tooltip": null
+      },
+      "1": {
+        "name": "ragionamento",
         "tooltip": null
       }
     }

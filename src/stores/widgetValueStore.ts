@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { reactive, ref } from 'vue'
 
+import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 import type { UUID } from '@/utils/uuid'
 import { parseNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
@@ -72,8 +73,32 @@ function clearNodeScoped<T>(
   if (nodeMap.size === 0) graphMap.delete(graphId)
 }
 
+/**
+ * Strips one or more leading `<subgraphUuid>:` scope prefixes (nested
+ * subgraphs chain them), leaving the innermost local id.
+ *
+ * Only a genuine UUID segment counts as a scope prefix. A bare `NodeId` can
+ * itself legally contain colons for reasons that have nothing to do with
+ * subgraph scoping — e.g. `insert_workflow`'s remapped ids
+ * (`insert:<opId>:root:node:<originalId>`, comfy-multi-player's `remap.ts`).
+ * The old unconditional "strip to the last colon" collapsed such an id down
+ * to its trailing segment, which is not how it was registered, so every
+ * widget lookup keyed on it came back empty (PM-1580: agent-inserted nodes
+ * materialize with correct positions/types/links but render with no
+ * widgets). Stopping as soon as the next segment fails the UUID check keeps
+ * the rest of a non-scoped id intact.
+ */
 export function stripGraphPrefix(scopedId: SerializedNodeId): NodeId | null {
-  return parseNodeId(String(scopedId).replace(/^(.*:)+/, ''))
+  let rest = String(scopedId)
+  let separatorIndex = rest.indexOf(':')
+  while (
+    separatorIndex !== -1 &&
+    isUuidShapedSubgraphId(rest.slice(0, separatorIndex))
+  ) {
+    rest = rest.slice(separatorIndex + 1)
+    separatorIndex = rest.indexOf(':')
+  }
+  return parseNodeId(rest)
 }
 
 export const useWidgetValueStore = defineStore('widgetValue', () => {

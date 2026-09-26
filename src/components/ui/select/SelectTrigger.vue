@@ -36,7 +36,7 @@ const {
         'border-[2.5px] border-solid',
         invalid
           ? 'border-destructive-background'
-          : 'border-transparent focus:border-node-component-border',
+          : 'border-transparent focus:border-border-default',
         'focus:outline-none',
         'data-placeholder:text-muted-foreground',
         'disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-secondary-background',

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type {
   BillingOperationState,
+  BillingRecoveryAction,
   PendingBillingOperation
 } from './operationState.js'
 import type { HostPaymentStep, PaymentProjection } from './paymentProjection.js'
@@ -29,18 +30,19 @@ function pending(
   }
 }
 
+type FailedOperation = Extract<BillingOperationState, { phase: 'failed' }>
+
 function failed(
-  declineReason: Extract<
-    BillingOperationState,
-    { phase: 'failed' }
-  >['declineReason']
+  declineReason: FailedOperation['declineReason'],
+  overrides: Partial<Pick<FailedOperation, 'recoveryAction' | 'retryable'>> = {}
 ): BillingOperationState {
   return {
     ...IDENTITY,
     phase: 'failed',
     declineReason,
     recoveryAction: 'replace_payment_method',
-    retryable: true
+    retryable: true,
+    ...overrides
   }
 }
 
@@ -49,6 +51,9 @@ function terminal(
 ): BillingOperationState {
   return { ...IDENTITY, phase }
 }
+
+const serverAddedAction: string = 'offer_bank_transfer'
+const UNKNOWN_RECOVERY_ACTION = serverAddedAction as BillingRecoveryAction
 
 interface Row {
   readonly name: string
@@ -94,10 +99,18 @@ const ROWS: readonly Row[] = [
     expected: { step: 'verifying' }
   },
   {
-    name: 'pending after this tab completed the challenge stays verifying while processing',
+    name: 'pending after this tab completed the challenge is not verifying again while the server settles',
     operation: pending({
       challenge: { clientSecret: 'pi_secret', status: 'completed' },
-      authenticationState: 'processing'
+      authenticationState: 'processing',
+      serverPhase: 'awaiting_invoice_payment'
+    }),
+    expected: { step: 'preview' }
+  },
+  {
+    name: 'pending on a challenge the customer has open is verifying',
+    operation: pending({
+      challenge: { clientSecret: 'pi_secret', status: 'in_progress' }
     }),
     expected: { step: 'verifying' }
   },
@@ -166,6 +179,34 @@ const ROWS: readonly Row[] = [
     expected: { step: 'processing_error', reasonKey: 'generic' }
   },
   {
+    name: 'a non-retryable failure carries the server-sent contact_support',
+    operation: failed('generic', {
+      recoveryAction: 'contact_support',
+      retryable: false
+    }),
+    expected: {
+      step: 'processing_error',
+      reasonKey: 'generic',
+      recoveryAction: 'contact_support'
+    }
+  },
+  {
+    name: 'a non-retryable failure without a named recovery reads as contact_support',
+    operation: failed('generic', {
+      recoveryAction: undefined,
+      retryable: false
+    }),
+    expected: { recoveryAction: 'contact_support' }
+  },
+  {
+    name: 'a non-retryable failure with a recovery action this build does not know reads as contact_support',
+    operation: failed('card_declined', {
+      recoveryAction: UNKNOWN_RECOVERY_ACTION,
+      retryable: false
+    }),
+    expected: { step: 'declined', recoveryAction: 'contact_support' }
+  },
+  {
     name: 'a processing failure is a processing error',
     operation: failed('processing_error'),
     expected: { step: 'processing_error', reasonKey: 'processing_error' }
@@ -223,6 +264,24 @@ describe('projectPaymentStep', () => {
     expect(projection).toMatchObject(expected)
     expect(projection.operationId).toBe(operation?.id)
     expect(projection.noChargeConfirmed).toBe(false)
+  })
+
+  it('names no recovery for a retryable failure the server gave none', () => {
+    expect(
+      projectPaymentStep(
+        failed('generic', { recoveryAction: undefined }),
+        'preview'
+      ).recoveryAction
+    ).toBeUndefined()
+  })
+
+  it('names no recovery for a retryable failure with a recovery action this build does not know', () => {
+    expect(
+      projectPaymentStep(
+        failed('card_declined', { recoveryAction: UNKNOWN_RECOVERY_ACTION }),
+        'preview'
+      ).recoveryAction
+    ).toBeUndefined()
   })
 
   it('never confirms that nothing was charged, whatever the operation reports', () => {

@@ -48,7 +48,7 @@ function updateModelValue(value: boolean) {
     @update:model-value="updateModelValue"
   >
     <span
-      class="pointer-events-none inline-flex h-5 w-9 items-center rounded-full border border-transparent bg-interface-stroke px-0.5 transition-colors group-data-[state=checked]:bg-primary-background"
+      class="pointer-events-none inline-flex h-5 w-9 items-center rounded-full border border-transparent bg-border-default px-0.5 transition-colors group-data-[state=checked]:bg-primary-background"
     >
       <SwitchThumb
         class="pointer-events-none block size-4 rounded-full bg-base-background shadow-sm transition-transform data-[state=checked]:translate-x-3.5 data-[state=unchecked]:translate-x-0"
