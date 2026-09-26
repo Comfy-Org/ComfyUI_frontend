@@ -226,52 +226,64 @@ test.describe(
       page,
       getWebSocket
     }) => {
-      await page.setViewportSize({ width: 1920, height: 1280 })
-      await page.addInitScript(() => {
-        localStorage.setItem('Comfy.Agent.CrdtFollower', 'true')
-      })
-      await bootAgentApp(page, true, {
-        onboardingCompleted: true,
-        settings: { 'Comfy.VueNodes.Enabled': true },
-        objectInfo: agentSubgraphNodeDefs,
-        beforeNavigate: async (page) => {
-          await mockAgentTurnApi(page, {
-            message_id: 'fc35d783-3592-447b-ae39-849074a353cf',
-            thread_id: '3aa821e0-933e-45eb-a3b5-63e45b875daa',
-            workflow_id: AGENT_SUBGRAPH_WORKFLOW_ID
+      const nodes = new VueNodeHelpers(page)
+      const outerHost = nodes.getNodeLocator(String(AGENT_SUBGRAPH_HOST_ID))
+
+      const socket =
+        await test.step('open the agent-enabled workflow', async () => {
+          await page.setViewportSize({ width: 1920, height: 1280 })
+          await page.addInitScript(() => {
+            localStorage.setItem('Comfy.Agent.CrdtFollower', 'true')
           })
-          await mockWorkflowPersistence(page, AGENT_SUBGRAPH_WORKFLOW_ID)
-        }
-      })
-      const socket = await getWebSocket()
+          await bootAgentApp(page, true, {
+            onboardingCompleted: true,
+            settings: { 'Comfy.VueNodes.Enabled': true },
+            objectInfo: agentSubgraphNodeDefs,
+            beforeNavigate: async (page) => {
+              await mockAgentTurnApi(page, {
+                message_id: 'fc35d783-3592-447b-ae39-849074a353cf',
+                thread_id: '3aa821e0-933e-45eb-a3b5-63e45b875daa',
+                workflow_id: AGENT_SUBGRAPH_WORKFLOW_ID
+              })
+              await mockWorkflowPersistence(page, AGENT_SUBGRAPH_WORKFLOW_ID)
+            }
+          })
+          return await getWebSocket()
+        })
+
       const outboundFrames: string[] = []
       socket.onMessage((message) => outboundFrames.push(String(message)))
 
-      const agentPanel = new AgentPanel(page)
-      await agentPanel.open()
-      await agentPanel.selectWorkflow()
-      await agentPanel.sendMessage('Build the nested subgraph')
+      await test.step('select the workflow and send an agent turn', async () => {
+        const agentPanel = new AgentPanel(page)
+        await agentPanel.open()
+        await agentPanel.selectWorkflow()
+        await agentPanel.sendMessage('Build the nested subgraph')
 
-      await expect
-        .poll(() => outboundFrames, { timeout: 15_000 })
-        .toContainEqual(expect.stringContaining(AGENT_SUBGRAPH_WORKFLOW_ID))
-      for (const frame of agentOutOfOrderSubgraphFrames()) {
-        socket.send(JSON.stringify(frame))
-      }
+        await expect
+          .poll(() => outboundFrames, { timeout: 15_000 })
+          .toContainEqual(expect.stringContaining(AGENT_SUBGRAPH_WORKFLOW_ID))
+      })
 
-      const nodes = new VueNodeHelpers(page)
-      const outerHost = nodes.getNodeLocator(String(AGENT_SUBGRAPH_HOST_ID))
-      await expect(outerHost).toBeVisible()
-      await expect(outerHost).toContainText('Outer Agent Subgraph')
+      await test.step('deliver the definitions in reverse dependency order', async () => {
+        for (const frame of agentOutOfOrderSubgraphFrames()) {
+          socket.send(JSON.stringify(frame))
+        }
 
-      await nodes.enterSubgraph(String(AGENT_SUBGRAPH_HOST_ID))
-      await nextFrame(page)
+        await expect(outerHost).toBeVisible()
+        await expect(outerHost).toContainText('Outer Agent Subgraph')
+      })
 
-      const innerHost = nodes.getNodeLocator(String(AGENT_INNER_HOST_ID))
-      await expect(innerHost).toBeVisible()
-      await expect(innerHost).toContainText('New Subgraph')
-      await expect(page.getByText('Outer Agent Subgraph')).toBeVisible()
-      await expect(page.getByText('New Subgraph')).toBeVisible()
+      await test.step('navigate into the nested definition', async () => {
+        await nodes.enterSubgraph(String(AGENT_SUBGRAPH_HOST_ID))
+        await nextFrame(page)
+
+        const innerHost = nodes.getNodeLocator(String(AGENT_INNER_HOST_ID))
+        await expect(innerHost).toBeVisible()
+        await expect(innerHost).toContainText('New Subgraph')
+        await expect(page.getByText('Outer Agent Subgraph')).toBeVisible()
+        await expect(page.getByText('New Subgraph')).toBeVisible()
+      })
     })
   }
 )
