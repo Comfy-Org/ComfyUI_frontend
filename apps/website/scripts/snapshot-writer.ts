@@ -43,17 +43,37 @@ function readIfPresent(path: string): string | null {
   }
 }
 
+/**
+ * `null` means the file is absent, which callers read as "no baseline to
+ * compare against". A file that exists but cannot be parsed must not collapse
+ * to that same answer: the refresh scripts would take it as "nothing to
+ * protect" and let a degraded fetch overwrite it, which is the inverse of what
+ * their guards are for. The pull actions run these scripts on a bare checkout
+ * with no build, so nothing else would catch it first.
+ */
 export function readSnapshot(
   snapshotPath: string
 ): Record<string, unknown> | null {
   const contents = readIfPresent(snapshotPath)
   if (contents === null) return null
+
+  let parsed: unknown
   try {
-    const parsed: unknown = JSON.parse(contents)
-    return isRecord(parsed) ? parsed : null
-  } catch {
-    return null
+    parsed = JSON.parse(contents)
+  } catch (error) {
+    throw new Error(
+      `${snapshotPath} exists but is not valid JSON, so the refresh cannot tell ` +
+        'whether new data would lose anything. Restore or delete it, then re-run.',
+      { cause: error }
+    )
   }
+  if (!isRecord(parsed)) {
+    throw new Error(
+      `${snapshotPath} exists but is not a JSON object, so the refresh cannot ` +
+        'tell whether new data would lose anything. Restore or delete it, then re-run.'
+    )
+  }
+  return parsed
 }
 
 /**

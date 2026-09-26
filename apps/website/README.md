@@ -194,6 +194,12 @@ The guard is all-or-nothing: 9 of 10 postings failing still leaves one role
 and writes. Partial drops are surfaced as CI warnings by
 `src/utils/ashby.ci.ts` rather than blocked.
 
+Both guards read the committed snapshot to decide what a refresh would cost,
+so a snapshot that exists but is unreadable aborts the refresh instead of
+being silently replaced — otherwise the guards would see "no baseline" and
+wave through exactly the data they exist to catch. A missing file is still
+fine; that is a first run.
+
 `refresh-cloud-nodes-snapshot.ts` has the equivalent guard for packs that lose
 their registry metadata, tolerating up to two — a delisted pack is a real
 thing, a registry outage strips dozens at once. If a larger loss is genuine,

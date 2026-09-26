@@ -211,18 +211,20 @@ describe('readSnapshot', () => {
     expect(readSnapshot(snapshotPath)).toEqual(snapshot)
   })
 
-  // null means "no baseline", and both refresh scripts then write without
-  // running their loss guards. That is the right call for a first run, but it
-  // means a snapshot corrupted on disk disarms the guards rather than
-  // tripping them — the site build's static JSON import would fail first.
+  it('returns null for a missing file, so a first run can write', () => {
+    expect(readSnapshot(snapshotPath)).toBeNull()
+  })
+
+  // Both refresh scripts read null as "no baseline" and skip their loss
+  // guards. Answering null for a file that exists but is unreadable would
+  // therefore disarm the guards exactly when the data is least trustworthy.
   it.for([
-    ['a missing file', null],
     ['malformed JSON', '{ not json'],
     ['a JSON array', '[]'],
     ['a JSON scalar', '"snapshot"']
-  ] as const)('returns null for %s', ([, contents]) => {
-    if (contents !== null) writeFileSync(snapshotPath, contents, 'utf8')
+  ] as const)('throws rather than returning null for %s', ([, contents]) => {
+    writeFileSync(snapshotPath, contents, 'utf8')
 
-    expect(readSnapshot(snapshotPath)).toBeNull()
+    expect(() => readSnapshot(snapshotPath)).toThrow(snapshotPath)
   })
 })
