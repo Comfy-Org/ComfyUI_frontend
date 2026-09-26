@@ -100,7 +100,16 @@ describe('performance reporter', () => {
         measurement: sample(16.7)
       }
 
-      expect(recordMeasurement(result)).toBe(result)
+      recordMeasurement(result)
+      writePerfReport()
+
+      const report = perfReportSchema.parse(
+        JSON.parse(
+          readFileSync(join('test-results', 'perf-metrics.json'), 'utf-8')
+        )
+      )
+      expect(report.schemaVersion).toBe(3)
+      expect(report.measurements).toEqual([result])
     })
   })
 
