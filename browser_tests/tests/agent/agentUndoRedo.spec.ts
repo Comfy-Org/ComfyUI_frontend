@@ -13,6 +13,8 @@ test.describe('Agent edit undo/redo', { tag: ['@cloud', '@vue-nodes'] }, () => {
   }) => {
     test.setTimeout(90_000)
 
+    const beforeAgentEdit = await agentConversation.readSemanticGraph()
+
     await test.step('Replay the agent edits', async () => {
       await agentConversation.runTurns()
       await expect
@@ -21,21 +23,12 @@ test.describe('Agent edit undo/redo', { tag: ['@cloud', '@vue-nodes'] }, () => {
     })
 
     const afterAgentEdit = await agentConversation.readSemanticGraph()
-    const lastAddedNodeId = agentConversation.addedNodeIds().at(-1)
-    expect(lastAddedNodeId).toBeDefined()
-    const afterUndo = {
-      nodes: afterAgentEdit.nodes.filter((node) => node.id !== lastAddedNodeId),
-      links: afterAgentEdit.links.filter(
-        (link) =>
-          link.fromNode !== lastAddedNodeId && link.toNode !== lastAddedNodeId
-      )
-    }
 
-    await test.step('Undo the final agent edit', async () => {
+    await test.step('Undo the agent turn', async () => {
       await agentConversation.keyboard.undo()
       await expect
         .poll(() => agentConversation.readSemanticGraph())
-        .toEqual(afterUndo)
+        .toEqual(beforeAgentEdit)
     })
 
     await test.step('Redo the final agent edit', async () => {
