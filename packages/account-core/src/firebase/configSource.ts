@@ -28,6 +28,8 @@ export interface CloudFeatures {
   readonly firebaseConfig?: RuntimeFirebaseOptions
   /** Absent when the backend has no key configured, not an empty string. */
   readonly stripePublishableKey?: string
+  /** Present only for a literal `true` `web_session_probe`; see `../core/webSessionFlag.ts`. */
+  readonly webSessionProbe?: true
 }
 
 export interface FetchFirebaseConfigOptions {
@@ -119,7 +121,10 @@ export async function fetchCloudFeatures(
   if (!body) return {}
   return {
     firebaseConfig: parseFirebaseConfig(body.firebase_config),
-    stripePublishableKey: parseStripePublishableKey(body.stripe_publishable_key)
+    stripePublishableKey: parseStripePublishableKey(
+      body.stripe_publishable_key
+    ),
+    ...(body.web_session_probe === true ? { webSessionProbe: true } : {})
   }
 }
 

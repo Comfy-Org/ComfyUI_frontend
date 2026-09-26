@@ -207,6 +207,23 @@ describe('fetchCloudFeatures', () => {
     })
   })
 
+  it.for([
+    { webSessionProbe: undefined, body: {} },
+    { webSessionProbe: undefined, body: { web_session_probe: false } },
+    { webSessionProbe: undefined, body: { web_session_probe: 'true' } },
+    { webSessionProbe: true, body: { web_session_probe: true } }
+  ])(
+    'carries web_session_probe only as a literal true: $body',
+    async ({ body, webSessionProbe }) => {
+      const features = await fetchCloudFeatures('https://cloud.comfy.org', {
+        fetchImpl: jsonFetch(body)
+      })
+
+      expect(features.webSessionProbe).toBe(webSessionProbe)
+      expect('webSessionProbe' in features).toBe(webSessionProbe === true)
+    }
+  )
+
   it('offers neither field on a network failure', async () => {
     const fetchImpl = vi.fn(async () => {
       throw new TypeError('Failed to fetch')
