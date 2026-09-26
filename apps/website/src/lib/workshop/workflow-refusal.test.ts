@@ -4,9 +4,11 @@ import { WorkshopWorkflowError } from '../../config/workshop-workflow-api'
 import type { RunFailure } from '../../config/workshop-run'
 import type {
   WorkflowErrorCode,
+  WorkflowRun,
   WorkflowRunSummary
 } from '../../config/workshop-workflow-response'
 import type { WorkflowState } from '../../config/workshop-workflow-state'
+import type { SavedWorkflow } from '../../config/workshop-workflow-storage'
 import { failureLabelKey } from './failure-label'
 import { panelSaysRefusal, workflowRunFailure } from './workflow-refusal'
 
@@ -105,31 +107,48 @@ describe('panelSaysRefusal', () => {
       expect(panelSaysRefusal(observed(reported))).toBe(panel)
     }
   )
+
+  // A dropped connection is the one state that carries both: what Cloud last
+  // said about the run, and the error that dropped it. The run wins. Reading the
+  // error first would hand this back to the page, which has a second sentence
+  // ready for a code the panel cannot name.
+  it('leaves a failed run to the panel when the connection dropped on a code it has no words for', () => {
+    expect(
+      panelSaysRefusal({
+        phase: 'interrupted',
+        record: RECORD,
+        observation: run('failed'),
+        error: new WorkshopWorkflowError('media_unavailable')
+      })
+    ).toBe(true)
+  })
 })
 
-function observed(state: WorkflowRunSummary['state']): WorkflowState {
+const RECORD: SavedWorkflow = {
+  version: 2,
+  cancelRequested: false,
+  stage: 'run',
+  runId: 'run',
+  workflowId: 'workflow',
+  definitionVersion: '1'
+}
+
+function run(state: WorkflowRunSummary['state']): WorkflowRun {
   const stamp = new Date(0).toISOString()
   return {
-    phase: 'settled',
-    record: {
-      version: 2,
-      cancelRequested: false,
-      stage: 'run',
-      runId: 'run',
+    run: {
+      id: 'run',
       workflowId: 'workflow',
-      definitionVersion: '1'
+      definitionVersion: '1',
+      state,
+      outputState: 'ready',
+      createdAt: stamp,
+      updatedAt: stamp
     },
-    observation: {
-      run: {
-        id: 'run',
-        workflowId: 'workflow',
-        definitionVersion: '1',
-        state,
-        outputState: 'ready',
-        createdAt: stamp,
-        updatedAt: stamp
-      },
-      outputs: []
-    }
+    outputs: []
   }
+}
+
+function observed(state: WorkflowRunSummary['state']): WorkflowState {
+  return { phase: 'settled', record: RECORD, observation: run(state) }
 }
