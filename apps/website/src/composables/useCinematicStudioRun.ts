@@ -103,8 +103,12 @@ function mayStillSettle(error: unknown): boolean {
  * Runs a shot as one Router request per take, through the same render path,
  * credentials and credit gate as a model page. Models load lazily from their
  * page data, so the studio never ships the catalogue to the client.
+ * `shotCost` is the least the shot being directed is estimated to cost.
  */
-export function useCinematicStudioRun(modelCount: number) {
+export function useCinematicStudioRun(
+  modelCount: number,
+  shotCost: () => number | undefined = () => undefined
+) {
   const { user, session, sessionFailure, settled, ensureFresh } =
     useWorkshopSession()
   const { balance } = useWorkshopCredits()
@@ -119,7 +123,10 @@ export function useCinematicStudioRun(modelCount: number) {
   }
   const rendering = computed(() => isRendering(reel.value))
 
-  const gate = computed(() =>
+  const credits = computed(() =>
+    balance.value.status === 'ok' ? balance.value.credits : undefined
+  )
+  const gateFor = (cost: number | undefined) =>
     studioGate({
       runEnabled:
         workshopEnabled.value &&
@@ -129,12 +136,10 @@ export function useCinematicStudioRun(modelCount: number) {
       authAvailable: authEnabled.value && !sessionFailure.value,
       sessionSettled: settled.value && !(user.value && !session.value),
       role: session.value?.role,
-      outOfCredits:
-        !rendering.value &&
-        balance.value.status === 'ok' &&
-        balance.value.credits <= 0
+      credits: rendering.value ? undefined : credits.value,
+      cost
     })
-  )
+  const gate = computed(() => gateFor(shotCost()))
 
   const models = new Map<string, Promise<WorkshopModelDetail>>()
   function loadModel(slug: string): Promise<WorkshopModelDetail> {
@@ -277,20 +282,23 @@ export function useCinematicStudioRun(modelCount: number) {
     await runTakes(takes, startedFor)
   }
 
-  async function retry(id: string) {
+  /** Retries settled takes; the shot being directed does not price them. */
+  async function retry(...ids: string[]) {
     const startedFor = session.value
-    const plan = plans.get(id)
-    const take = reel.value.takes.find((candidate) => candidate.id === id)
-    if (
-      rendering.value ||
-      gate.value !== 'ready' ||
-      !startedFor ||
-      !plan ||
-      (take?.status !== 'failed' && take?.status !== 'cancelled')
+    if (rendering.value || gateFor(undefined) !== 'ready' || !startedFor) return
+    const retried = ids.flatMap((id) => {
+      const plan = plans.get(id)
+      const take = reel.value.takes.find((candidate) => candidate.id === id)
+      return plan && (take?.status === 'failed' || take?.status === 'cancelled')
+        ? [plan]
+        : []
+    })
+    if (!retried.length) return
+    const startedAt = Date.now()
+    retried.forEach(({ id }) =>
+      dispatch({ type: 'takeRetried', id, startedAt })
     )
-      return
-    dispatch({ type: 'takeRetried', id, startedAt: Date.now() })
-    await runTakes([plan], startedFor)
+    await runTakes(retried, startedFor)
   }
 
   function cancel() {
@@ -318,6 +326,7 @@ export function useCinematicStudioRun(modelCount: number) {
   return {
     reel: readonly(reel),
     gate,
+    credits,
     session,
     rendering,
     generate,

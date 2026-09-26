@@ -112,14 +112,16 @@ export function useCinematicDemoRun() {
     })
   }
 
-  function retry(id: string) {
+  function retry(...ids: string[]) {
     if (rendering.value) return
-    dispatch({ type: 'takeRetried', id, startedAt: Date.now() })
-    const timer = setTimeout(() => {
-      timers.delete(timer)
-      settle(id, 0, null)
-    }, DEMO_RENDER_MS)
-    timers.add(timer)
+    ids.forEach((id) => {
+      dispatch({ type: 'takeRetried', id, startedAt: Date.now() })
+      const timer = setTimeout(() => {
+        timers.delete(timer)
+        settle(id, 0, null)
+      }, DEMO_RENDER_MS)
+      timers.add(timer)
+    })
   }
 
   function cancel() {
@@ -133,6 +135,7 @@ export function useCinematicDemoRun() {
   return {
     reel: readonly(reel),
     gate,
+    credits: computed<number | undefined>(() => undefined),
     session: shallowRef<WorkshopSession>(),
     rendering,
     generate,

@@ -6,22 +6,25 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
 import CopyTextButton from '@/components/ui/copy-text-button/CopyTextButton.vue'
-import { requestWorkshopBuyCredits } from '../../../config/workshop-buy-credits'
 import type { Take } from '../../../lib/workshop/cinematic-studio/reel'
 import { failureLabelKey } from '../../../lib/workshop/failure-label'
 import type { Locale } from '../../../i18n/translations'
 import { t } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import CinematicCreditAction from './CinematicCreditAction.vue'
 
 type Settled = Extract<Take, { status: 'failed' | 'cancelled' }>
 
 const {
   take,
   otherModel,
+  memberWorkspace,
   locale = 'en'
 } = defineProps<{
   take: Settled
   otherModel?: { slug: string; name: string }
+  /** The team workspace paying for runs, when the viewer is a member. */
+  memberWorkspace?: string
   locale?: Locale
 }>()
 
@@ -53,11 +56,14 @@ const title = computed(() => {
   if (kind.value === 'blocked') return tc('cinematic.state.blocked', locale)
   return tc('cinematic.state.failed', locale)
 })
-const body = computed(() =>
-  take.status === 'cancelled'
-    ? t('workshop.output.cancelled', locale)
-    : t(failureLabelKey[take.reason], locale)
-)
+const body = computed(() => {
+  if (take.status === 'cancelled') return t('workshop.output.cancelled', locale)
+  if (kind.value === 'noCredits' && memberWorkspace !== undefined)
+    return t('workshop.error.memberNoCredits', locale, {
+      workspace: memberWorkspace
+    })
+  return t(failureLabelKey[take.reason], locale)
+})
 const requestId = computed(() =>
   take.status === 'failed' ? take.requestId : undefined
 )
@@ -80,14 +86,13 @@ const requestId = computed(() =>
       {{ body }}
     </span>
     <div class="mt-1 flex flex-wrap items-center justify-center gap-2.5">
-      <Button
+      <CinematicCreditAction
         v-if="kind === 'noCredits'"
-        size="sm"
-        class="rounded-full"
-        @click="requestWorkshopBuyCredits"
-      >
-        {{ t('workshop.run.buyCredits', locale) }}
-      </Button>
+        :member="memberWorkspace !== undefined"
+        :retry-label="t('workshop.error.retry', locale)"
+        :locale
+        @retry="emit('retry')"
+      />
       <Button
         v-else-if="kind === 'blocked' || kind === 'rejected'"
         size="sm"

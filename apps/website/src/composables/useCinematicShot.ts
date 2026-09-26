@@ -11,6 +11,7 @@ import {
   RESOLUTIONS,
   directionOption
 } from '../lib/workshop/cinematic-studio/catalog'
+import { shotEstimate } from '../lib/workshop/cinematic-studio/estimate'
 import type { CinematicModel } from '../lib/workshop/cinematic-studio/models'
 import {
   cinematicPrompt,
@@ -22,10 +23,6 @@ import { useCinematicStudioRun } from './useCinematicStudioRun'
 
 /** The shot being directed, shared by every Cinematic Studio layout. */
 export function useCinematicShot(models: readonly CinematicModel[]) {
-  const studio = isCinematicDemo()
-    ? useCinematicDemoRun()
-    : useCinematicStudioRun(models.length)
-
   const modelSlug = ref(models[0]?.slug ?? '')
   const scene = ref('')
   const enhance = ref(true)
@@ -55,6 +52,24 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
   )
   const model = computed(() =>
     models.find((option) => option.slug === modelSlug.value)
+  )
+  const estimate = computed(() =>
+    shotEstimate(model.value?.prices, {
+      aspect: aspect.value,
+      resolution: resolution.value,
+      references: references.value.length,
+      takes: takes.value
+    })
+  )
+
+  const studio = isCinematicDemo()
+    ? useCinematicDemoRun()
+    : useCinematicStudioRun(models.length, () => estimate.value?.total.min)
+
+  const memberWorkspace = computed(() =>
+    studio.session.value?.role === 'member'
+      ? studio.session.value.workspace.name
+      : undefined
   )
 
   function choose(part: DirectionPart, id: string) {
@@ -103,6 +118,8 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
     palette,
     promptSegments,
     references,
+    estimate,
+    memberWorkspace,
     choose,
     start,
     generate
