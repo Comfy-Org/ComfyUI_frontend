@@ -120,3 +120,7 @@ matrix-proof/
 browser_tests/fixtures/data/agent/conversations/recordings/
 apps/website/acceptance-results/
 apps/website/acceptance-report/
+
+# Python bytecode (tools/devtools is shipped verbatim into custom_nodes)
+__pycache__/
+*.pyc

@@ -495,6 +495,56 @@ class NodeWithDynamicCombo(IO.ComfyNode):
         return IO.NodeOutput()
 
 
+def _dynamic_combo_autogrow_model_inputs():
+    return [
+        IO.Combo.Input("size", default="auto", options=["auto", "1024x1024", "1536x1024"]),
+        IO.Combo.Input("quality", default="low", options=["low", "medium", "high"]),
+        IO.Autogrow.Input(
+            "images",
+            template=IO.Autogrow.TemplateNames(
+                IO.Image.Input("image"),
+                names=[f"image_{i}" for i in range(1, 17)],
+                min=0,
+            ),
+        ),
+        IO.Mask.Input("mask", optional=True),
+    ]
+
+
+class AutogrowImagesInDynamicCombo(IO.ComfyNode):
+    """Minimal node carrying `OpenAIGPTImageNodeV2`'s autogrow-in-dynamic-combo shape.
+
+    An autogrow image group nested inside a dynamic combo option is the shape
+    that loses its links on workflow load, so a test for that needs a node
+    built this way. It reproduces that shape only and does not track the real
+    node's schema, so the test needs no partner-node availability or pricing.
+    """
+
+    @classmethod
+    def define_schema(cls):
+        return IO.Schema(
+            node_id="DevToolsAutogrowImagesInDynamicCombo",
+            display_name="Autogrow Images In Dynamic Combo",
+            description="A node whose dynamic combo options each carry an autogrow image group",
+            inputs=[
+                IO.String.Input("prompt", default="", multiline=True),
+                IO.DynamicCombo.Input(
+                    "model",
+                    options=[
+                        IO.DynamicCombo.Option("model-flare", _dynamic_combo_autogrow_model_inputs()),
+                        IO.DynamicCombo.Option("model-sunburst", _dynamic_combo_autogrow_model_inputs()),
+                    ],
+                ),
+                IO.Int.Input("n", default=1, min=1, max=8),
+            ],
+            outputs=[IO.Image.Output()],
+        )
+
+    @classmethod
+    async def execute(cls, **kwargs):
+        return IO.NodeOutput()
+
+
 NODE_CLASS_MAPPINGS = {
     "DevToolsLongComboDropdown": LongComboDropdown,
     "DevToolsNodeWithOptionalInput": NodeWithOptionalInput,
@@ -521,6 +571,7 @@ NODE_CLASS_MAPPINGS = {
     "DevToolsNodeWithPriceBadge": NodeWithPriceBadge,
     "DevToolsNodeWithNumericCombo": NodeWithNumericCombo,
     "DevToolsNodeWithDynamicCombo": NodeWithDynamicCombo,
+    "DevToolsAutogrowImagesInDynamicCombo": AutogrowImagesInDynamicCombo,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -549,6 +600,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "DevToolsNodeWithPriceBadge": "Node With Price Badge",
     "DevToolsNodeWithNumericCombo": "Node With Numeric Combo",
     "DevToolsNodeWithDynamicCombo": "Node With Dynamic Combo",
+    "DevToolsAutogrowImagesInDynamicCombo": "Autogrow Images In Dynamic Combo",
 }
 
 __all__ = [
