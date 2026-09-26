@@ -16,6 +16,7 @@ export class AgentPanel {
   public readonly fileInput: Locator
   public readonly composerAssetSection: Locator
   public readonly attachmentChips: Locator
+  public readonly nodeSelectionBanner: Locator
 
   constructor(private readonly page: Page) {
     this.root = page.locator('#agent-panel-root')
@@ -41,6 +42,28 @@ export class AgentPanel {
     this.fileInput = this.root.getByTestId('agent-file-input')
     this.composerAssetSection = this.root.getByTestId('composer-asset-section')
     this.attachmentChips = this.root.getByTestId('agent-attachment-chip')
+    this.nodeSelectionBanner = this.page.getByTestId(
+      'node-selection-mode-banner'
+    )
+  }
+
+  async enterNodeSelectionMode(): Promise<void> {
+    await this.open()
+    await this.selectWorkflow()
+    await this.root
+      .getByRole('button', { name: enMessages.agent.addToPrompt })
+      .click()
+    await this.page
+      .getByRole('menuitem', { name: enMessages.agent.nodes })
+      .click()
+    await expect(this.nodeSelectionBanner).toBeVisible()
+  }
+
+  async exitNodeSelectionMode(): Promise<void> {
+    await this.nodeSelectionBanner
+      .getByRole('button', { name: enMessages.agent.nodeSelection.exit })
+      .click()
+    await expect(this.nodeSelectionBanner).toHaveCount(0)
   }
 
   /**
