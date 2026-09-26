@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { usePanAndZoom } from '@/composables/maskeditor/usePanAndZoom'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
@@ -176,6 +176,69 @@ describe('usePanAndZoom', () => {
   })
 
   describe('zoom', () => {
+    it.for([
+      {
+        deltaMode: WheelEvent.DOM_DELTA_PIXEL,
+        deltaY: -1,
+        factor: 1.000953556
+      },
+      { deltaMode: WheelEvent.DOM_DELTA_PIXEL, deltaY: 1, factor: 0.99894695 },
+      { deltaMode: WheelEvent.DOM_DELTA_LINE, deltaY: -3, factor: 1.1 },
+      { deltaMode: WheelEvent.DOM_DELTA_PAGE, deltaY: 1, factor: 0.9 }
+    ])(
+      'renders wheel zoom for $deltaY in mode $deltaMode',
+      async ({ deltaMode, deltaY, factor }) => {
+        const { pz } = await initComposable()
+        const container = mockStore.canvasContainer
+        assert.exists(container)
+        const initialWidth = Number.parseFloat(container.style.width)
+
+        await pz.zoom(
+          Object.assign(new WheelEvent('wheel', { deltaMode, deltaY }), {
+            clientX: 400,
+            clientY: 300
+          })
+        )
+
+        expect(
+          Number.parseFloat(container.style.width) / initialWidth
+        ).toBeCloseTo(factor, 6)
+      }
+    )
+
+    it.for([
+      { deltaY: -1, expectedZoom: 1.14609182162 },
+      { deltaY: -100000, expectedZoom: 10 },
+      { deltaY: 100000, expectedZoom: 0.2 },
+      { deltaY: 0, expectedZoom: 1.145 }
+    ])(
+      'keeps the image point under the cursor at deltaY $deltaY',
+      async ({ deltaY, expectedZoom }) => {
+        const { pz, canvas } = await initComposable()
+        const container = mockStore.canvasContainer
+        assert.exists(container)
+        vi.spyOn(canvas, 'getBoundingClientRect').mockReturnValue(
+          new DOMRect(64, 56.5, 916, 687)
+        )
+
+        await pz.zoom(
+          Object.assign(new WheelEvent('wheel', { deltaY }), {
+            clientX: 293,
+            clientY: 400
+          })
+        )
+
+        const zoom = Number.parseFloat(container.style.width) / 800
+        expect(zoom).toBeCloseTo(expectedZoom, 8)
+        expect(
+          (293 - Number.parseFloat(container.style.left)) / zoom
+        ).toBeCloseTo(200, 8)
+        expect(
+          (400 - Number.parseFloat(container.style.top)) / zoom
+        ).toBeCloseTo(300, 8)
+      }
+    )
+
     it('zooms in with negative deltaY and updates store', async () => {
       const { pz } = await initComposable()
       const initialZoom = mockStore.zoomRatio
