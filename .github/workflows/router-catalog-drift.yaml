@@ -1,0 +1,61 @@
+# Description: Refresh the pinned Comfy Router catalog when Comfy-Org/docs
+# changes and open a pull request with the new snapshot. Not a
+# branch-protection check.
+name: 'Router catalog drift'
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: router-catalog-drift
+  cancel-in-progress: true
+
+jobs:
+  refresh:
+    if: github.repository == 'Comfy-Org/ComfyUI_frontend'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          persist-credentials: false
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Refresh router catalog snapshot
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pnpm --filter @comfyorg/website router-catalog:refresh-snapshot
+
+      - name: Create or update pull request
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        with:
+          token: ${{ secrets.PR_GH_TOKEN }}
+          commit-message: 'chore(website): refresh router catalog snapshot'
+          title: 'chore(website): refresh router catalog snapshot'
+          body: |
+            Regenerates `apps/website/src/data/router-catalog.snapshot.json`
+            from the generated Comfy Router pages in Comfy-Org/docs.
+
+            `ROUTER_CATALOG_MODEL_COUNT` is the snapshot's model count. If
+            website unit tests fail, the hand-maintained provider rows in
+            `apps/website/src/config/router-providers.ts` no longer match the
+            pin.
+
+            Triggered by workflow run `${{ github.run_id }}`.
+          branch: chore/refresh-router-catalog
+          base: main
+          add-paths: apps/website/src/data/router-catalog.snapshot.json
+          delete-branch: true

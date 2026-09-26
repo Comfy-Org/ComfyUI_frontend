@@ -2,13 +2,20 @@
  * Which Comfy Router models a provider other than Comfy can serve.
  *
  * Every Router model runs through Comfy's default route. The rows below are the
- * only ones that also accept `model_provider`. They mirror the API spec: each
- * model's `x-comfy-router-alt-providers`, published per model under
- * `router-schemas/` in the public Comfy-Org/docs repository. Reading the live
- * spec needs an API key, so the rows are copied by hand;
- * `router-providers.test.ts` compares them with the published spec and fails
- * the day they drift. Update `ROUTER_PROVIDER_COVERAGE_VERIFIED_AT` with them.
+ * only ones that also accept `model_provider`. They mirror the provider coverage
+ * table in Comfy-Org/docs, pinned in `src/data/router-catalog.snapshot.json`.
+ * `ROUTER_CATALOG_MODEL_COUNT` is that pin's model count. Refresh the pin with
+ * `router-catalog:refresh-snapshot`; the tests here fail when these rows no
+ * longer match it.
  */
+
+import routerCatalogSnapshotJson from '../data/router-catalog.snapshot.json' with { type: 'json' }
+
+import { readRouterCatalogSnapshot } from './router-catalog-snapshot'
+
+const routerCatalogSnapshot = readRouterCatalogSnapshot(
+  routerCatalogSnapshotJson
+)
 
 export const ROUTER_SERVING_PROVIDERS = [
   { id: 'fal', name: 'fal' },
@@ -35,11 +42,14 @@ export interface RouterProviderCoverageRow {
 
 const DOCS_MODELS_URL = 'https://docs.comfy.org/development/comfy-router/models'
 
-/** The day the rows and the catalog size were last checked against the docs. */
-export const ROUTER_PROVIDER_COVERAGE_VERIFIED_AT = '2026-09-25'
+/** Docs commit the pinned Router catalog was read from. */
+export const ROUTER_CATALOG_PROVENANCE = {
+  sourceRepo: routerCatalogSnapshot.sourceRepo,
+  sourceCommit: routerCatalogSnapshot.sourceCommit
+} as const
 
-/** How many models the Router catalog lists, all served by Comfy. */
-export const ROUTER_CATALOG_MODEL_COUNT = 212
+/** How many models the pinned Router catalog lists, all served by Comfy. */
+export const ROUTER_CATALOG_MODEL_COUNT = routerCatalogSnapshot.models.length
 
 /** In the order the page shows them: alphabetical by `name`. */
 export const ROUTER_PROVIDER_COVERAGE: readonly RouterProviderCoverageRow[] = [
