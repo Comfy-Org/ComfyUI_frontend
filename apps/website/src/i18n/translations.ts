@@ -10604,6 +10604,21 @@ Enterprise`
     'zh-CN': '工作流栏目'
   },
   'workshop.workflow.tabDetails': { en: 'Details', 'zh-CN': '详情' },
+  'workshop.workflow.factWhere': { en: 'Where', 'zh-CN': '运行位置' },
+  'workshop.workflow.factOutput': { en: 'Output', 'zh-CN': '输出' },
+  'workshop.workflow.factAuthor': { en: 'Author', 'zh-CN': '作者' },
+  'workshop.workflow.runsCloud': {
+    en: 'Runs on Comfy Cloud',
+    'zh-CN': '在 Comfy Cloud 上运行'
+  },
+  'workshop.workflow.runsOwn': {
+    en: 'Runs on a deployment of your own',
+    'zh-CN': '在你自己的部署上运行'
+  },
+  'workshop.workflow.perRun': {
+    en: '{count} per run',
+    'zh-CN': '每次运行 {count} 个'
+  },
   'workshop.workflow.runsOn': { en: 'Runs on', 'zh-CN': '运行于' },
   'workshop.workflow.inside': {
     en: 'Inside the workflow',
