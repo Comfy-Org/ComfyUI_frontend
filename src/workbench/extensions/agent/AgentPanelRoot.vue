@@ -20,6 +20,7 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useTelemetry } from '@/platform/telemetry'
 import type {
   AgentMessageSentMetadata,
+  AgentPaywallSurface,
   AgentRunApprovalDecision,
   AgentStopMethod
 } from '@/platform/telemetry/types'
@@ -185,9 +186,13 @@ const events =
     ? createStandaloneAgentEventSource()
     : createAgentEventSource(api)
 
-function onPaywallAction(action: AgentPaywallAction): void {
+function onPaywallAction(
+  action: AgentPaywallAction,
+  surface: AgentPaywallSurface
+): void {
   useTelemetry()?.trackAgentPaywallCtaClicked({
-    cta: toAgentPaywallCta(action)
+    cta: toAgentPaywallCta(action),
+    surface
   })
   if (action === 'addCredits') {
     if (canTopUp.value) {
@@ -227,9 +232,91 @@ watch(
         // rather than from capabilities. Report the impression as `unknown`.
         reason: snapshotAuthoritative.value
           ? toAgentPaywallReason(paywallPresentation.value)
-          : 'unknown'
+          : 'unknown',
+        surface: 'refused_send'
       })
     }
+  },
+  { immediate: true }
+)
+
+/**
+ * The standing credit-exhaustion surface.
+ *
+ * The inline card above is reachable from exactly one moment: a turn POST that
+ * came back 402/`no_funds` (`recordSendError` -> `recordPaywall`). Every other
+ * way a user meets the ceiling — a turn that dies at the agent runtime's own
+ * LLM hop, which the browser never calls and so never sees a 402 for, or simply
+ * not typing again after a turn failed — left no upgrade path at all. Measured
+ * on 2026-09-24..25: 65 cloud personal workspaces hit `no_funds` at the agent
+ * admission gate; `app:agent_paywall_shown` had fired for 3 people in total,
+ * ever. The one existing `hasFunds === false` surface in the product
+ * (`useBillingBanner`'s `outOfCredits`) is gated to team plans and rendered
+ * only inside the settings dialog, so none of those 65 could have seen it.
+ *
+ * So this reads the funds signal the client already holds rather than waiting
+ * for a refusal to carry it. It is deliberately the symmetric half of the
+ * `hasFunds` watch above, which already clears paywalls when funds return.
+ *
+ * Cloud only: the measured population is entirely cloud personal workspaces,
+ * and local's `hasFunds` comes from a legacy balance read whose meaning for
+ * the agent is not established here.
+ *
+ * Non-blocking by construction — it renders beside the composer and disables
+ * nothing. An aggressive gate on a surface at 15%-and-climbing exposure would
+ * put the activation numbers the rest of this program is moving at risk.
+ */
+const creditsExhausted = computed(() => {
+  if (!isCloud) return false
+  // Same gate as the impression report above: an unsettled read cannot say
+  // which presentation is right, and a card naming the wrong remediation is
+  // worse than no card.
+  if (!capabilityReadSettled.value) return false
+  if (subscription.value?.hasFunds !== false) return false
+  // `unavailable` renders a body with no action at all, so showing it standing
+  // would be noise the user cannot act on. The inline card still uses it,
+  // because there a refusal already happened and needs explaining.
+  return paywallPresentation.value.kind !== 'unavailable'
+})
+
+/**
+ * Suppressed while an unresolved inline card is on screen: the two render the
+ * same component with the same copy, and `conversationMessages` already omits
+ * resolved paywalls, so this is exactly "a card the user can see right now".
+ */
+const showStandingPaywall = computed(
+  () =>
+    creditsExhausted.value &&
+    !conversationMessages.value.some((message) =>
+      message.parts.some((part) => part.type === 'paywall')
+    )
+)
+
+/**
+ * One impression per exhaustion episode, not per render: the surface is
+ * standing, so it is visible for as long as the workspace is out of credits and
+ * a per-render report would make impressions a function of session length.
+ * Reset when funds return, so a later exhaustion reports again — mirroring how
+ * `useBillingBanner` scopes its dismissal to one episode.
+ */
+let reportedExhaustionImpression = false
+watch(
+  [showStandingPaywall, creditsExhausted],
+  ([visible, exhausted]) => {
+    if (!exhausted) {
+      reportedExhaustionImpression = false
+      return
+    }
+    if (!visible || reportedExhaustionImpression) return
+    const telemetry = useTelemetry()
+    if (!telemetry) return
+    reportedExhaustionImpression = true
+    telemetry.trackAgentPaywallShown({
+      reason: snapshotAuthoritative.value
+        ? toAgentPaywallReason(paywallPresentation.value)
+        : 'unknown',
+      surface: 'credits_exhausted'
+    })
   },
   { immediate: true }
 )
@@ -1615,6 +1702,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       :workflow-detached="workflowDetached"
       :get-mention-nodes="mentionableNodes"
       :paywall-presentation="paywallPresentation"
+      :credits-exhausted="showStandingPaywall"
       @send="onSend"
       @stop="onStop"
       @attach="onAttach"

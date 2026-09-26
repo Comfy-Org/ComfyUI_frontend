@@ -13,7 +13,10 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
-import type { AgentStopMethod } from '@/platform/telemetry/types'
+import type {
+  AgentPaywallSurface,
+  AgentStopMethod
+} from '@/platform/telemetry/types'
 
 import type { ActiveTab } from '../../types/activeTab'
 import type {
@@ -29,6 +32,7 @@ import type {
   AgentPaywallAction,
   AgentPaywallPresentation
 } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
+import AgentPaywallCard from './message/AgentPaywallCard.vue'
 import type { ConversationEntry } from '../../stores/agent/agentConversationStore'
 import type { HistoryGroups } from '../../stores/agent/agentChatHistoryStore'
 
@@ -64,6 +68,7 @@ const {
   workflowDetached = false,
   getMentionNodes = () => [],
   paywallPresentation = DEFAULT_AGENT_PAYWALL_PRESENTATION,
+  creditsExhausted = false,
   sessionId = null,
   customTitle,
   historyGroups,
@@ -94,6 +99,12 @@ const {
   workflowDetached?: boolean
   getMentionNodes?: () => SelectedNode[]
   paywallPresentation?: AgentPaywallPresentation
+  /**
+   * The workspace is out of credits right now, and no inline paywall card is
+   * already on screen saying so. Renders the standing surface beside the
+   * composer; see AgentPanelRoot's `creditsExhausted` for why it exists.
+   */
+  creditsExhausted?: boolean
   sessionId?: string | null
   customTitle?: string
   historyGroups: HistoryGroups
@@ -115,7 +126,7 @@ const emit = defineEmits<{
   requestWorkflowReferences: []
   removeWorkflowReference: [id: string]
   feedback: [turnId: string, vote: 'up' | 'down' | null]
-  paywallAction: [action: AgentPaywallAction]
+  paywallAction: [action: AgentPaywallAction, surface: AgentPaywallSurface]
   newChat: []
   toggleSize: []
   close: []
@@ -380,7 +391,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             (workflowId, workflowName) =>
               emit('openReferenceWorkflow', workflowId, workflowName)
           "
-          @paywall-action="emit('paywallAction', $event)"
+          @paywall-action="emit('paywallAction', $event, 'refused_send')"
         />
       </div>
     </template>
@@ -389,6 +400,12 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
       <slot name="instrument" />
       <footer class="shrink-0 py-3">
         <div class="mx-auto flex w-full max-w-[640px] flex-col gap-4 px-4">
+          <AgentPaywallCard
+            v-if="creditsExhausted"
+            data-testid="agent-credits-exhausted-paywall"
+            :presentation="paywallPresentation"
+            @paywall-action="emit('paywallAction', $event, 'credits_exhausted')"
+          />
           <RunNoticeBanner
             :expanded="isMaximized"
             :workflow-name="workflowDetached ? undefined : activeTab?.name"

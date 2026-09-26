@@ -727,6 +727,35 @@ describe('AgentPanelRoot onboarding', () => {
   })
 })
 
+/**
+ * The transcript, for assertions that mean the INLINE paywall card - the one
+ * rendered against the turn a 402 refused. The panel now also has a standing
+ * credits-exhausted card beside the composer, and both render the same
+ * component with the same copy, so an unscoped
+ * `getByRole('button', { name: 'Subscribe' })` no longer says which it found.
+ */
+function inlinePaywall() {
+  return within(screen.getByTestId('agent-conversation'))
+}
+
+function findInlinePaywallButton(name: string): Promise<HTMLElement> {
+  return vi.waitFor(() => inlinePaywall().getByRole('button', { name }))
+}
+
+function queryInlinePaywallButton(name: string): HTMLElement | null {
+  const view = screen.queryByTestId('agent-conversation')
+  return view ? within(view).queryByRole('button', { name }) : null
+}
+
+function findInlinePaywallText(text: string): Promise<HTMLElement> {
+  return vi.waitFor(() => inlinePaywall().getByText(text))
+}
+
+function queryInlinePaywallText(text: string): HTMLElement | null {
+  const view = screen.queryByTestId('agent-conversation')
+  return view ? within(view).queryByText(text) : null
+}
+
 describe('AgentPanelRoot paywall actions', () => {
   beforeEach(() => {
     ws.clear()
@@ -743,15 +772,15 @@ describe('AgentPanelRoot paywall actions', () => {
       thinking: false
     })
 
-    await userEvent.click(
-      await screen.findByRole('button', { name: 'Upgrade plan' })
-    )
+    await userEvent.click(await findInlinePaywallButton('Upgrade plan'))
     expect(openAccountPrecondition).toHaveBeenCalledExactlyOnceWith(
       'subscription',
       { source: 'agent_paywall' }
     )
 
-    await userEvent.click(screen.getByRole('button', { name: 'Add credits' }))
+    await userEvent.click(
+      inlinePaywall().getByRole('button', { name: 'Add credits' })
+    )
     expect(openAccountPrecondition.mock.calls).toEqual([
       ['subscription', { source: 'agent_paywall' }],
       ['credits', { source: 'agent_paywall' }]
@@ -769,9 +798,7 @@ describe('AgentPanelRoot paywall actions', () => {
       thinking: false
     })
 
-    await userEvent.click(
-      await screen.findByRole('button', { name: 'Subscribe' })
-    )
+    await userEvent.click(await findInlinePaywallButton('Subscribe'))
 
     expect(openAccountPrecondition).toHaveBeenCalledExactlyOnceWith(
       'subscription',
@@ -787,14 +814,12 @@ describe('AgentPanelRoot paywall actions', () => {
       'continue'
     )
 
-    expect(
-      await screen.findByRole('button', { name: 'Subscribe' })
-    ).toBeInTheDocument()
+    expect(await findInlinePaywallButton('Subscribe')).toBeInTheDocument()
 
     paywallHasFunds.value = true
 
     await vi.waitFor(() =>
-      expect(screen.queryByText('Out of credits')).not.toBeInTheDocument()
+      expect(queryInlinePaywallText('Out of credits')).not.toBeInTheDocument()
     )
   })
 
@@ -805,16 +830,14 @@ describe('AgentPanelRoot paywall actions', () => {
       toTurnId('msg-paywall'),
       'continue'
     )
-    expect(
-      await screen.findByRole('button', { name: 'Subscribe' })
-    ).toBeInTheDocument()
+    expect(await findInlinePaywallButton('Subscribe')).toBeInTheDocument()
 
     panel.unmount()
     paywallHasFunds.value = true
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
     await vi.waitFor(() =>
-      expect(screen.queryByText('Out of credits')).not.toBeInTheDocument()
+      expect(queryInlinePaywallText('Out of credits')).not.toBeInTheDocument()
     )
   })
 
@@ -829,9 +852,7 @@ describe('AgentPanelRoot paywall actions', () => {
       'render one more frame'
     )
 
-    expect(
-      await screen.findByRole('button', { name: 'Subscribe' })
-    ).toBeInTheDocument()
+    expect(await findInlinePaywallButton('Subscribe')).toBeInTheDocument()
   })
 
   it('keeps a resolved paywall hidden while billing state is unknown', async () => {
@@ -841,20 +862,16 @@ describe('AgentPanelRoot paywall actions', () => {
       toTurnId('msg-paywall'),
       'continue'
     )
-    expect(
-      await screen.findByRole('button', { name: 'Subscribe' })
-    ).toBeInTheDocument()
+    expect(await findInlinePaywallButton('Subscribe')).toBeInTheDocument()
 
     paywallHasFunds.value = true
     await vi.waitFor(() =>
-      expect(
-        screen.queryByRole('button', { name: 'Subscribe' })
-      ).not.toBeInTheDocument()
+      expect(queryInlinePaywallButton('Subscribe')).not.toBeInTheDocument()
     )
 
     paywallHasFunds.value = null
     await nextTick()
-    expect(screen.queryByText('Out of credits')).not.toBeInTheDocument()
+    expect(queryInlinePaywallText('Out of credits')).not.toBeInTheDocument()
   })
 
   it('shows only a new denial after funds run out again', async () => {
@@ -864,20 +881,16 @@ describe('AgentPanelRoot paywall actions', () => {
       toTurnId('msg-paywall'),
       'continue'
     )
-    expect(
-      await screen.findByRole('button', { name: 'Subscribe' })
-    ).toBeInTheDocument()
+    expect(await findInlinePaywallButton('Subscribe')).toBeInTheDocument()
 
     paywallHasFunds.value = true
     await vi.waitFor(() =>
-      expect(
-        screen.queryByRole('button', { name: 'Subscribe' })
-      ).not.toBeInTheDocument()
+      expect(queryInlinePaywallButton('Subscribe')).not.toBeInTheDocument()
     )
 
     paywallHasFunds.value = false
     await nextTick()
-    expect(screen.queryByText('Out of credits')).not.toBeInTheDocument()
+    expect(queryInlinePaywallText('Out of credits')).not.toBeInTheDocument()
 
     useAgentConversationStore().recordPaywall(
       toTurnId('msg-paywall-2'),
@@ -885,7 +898,7 @@ describe('AgentPanelRoot paywall actions', () => {
     )
     await vi.waitFor(() =>
       expect(
-        screen.getByRole('button', { name: 'Subscribe' })
+        inlinePaywall().getByRole('button', { name: 'Subscribe' })
       ).toBeInTheDocument()
     )
   })
@@ -906,9 +919,7 @@ describe('AgentPanelRoot paywall actions', () => {
     await screen.findByText(
       'This workspace has used all its credits. Ask your workspace owner to add more.'
     )
-    expect(
-      screen.queryByRole('button', { name: 'Add credits' })
-    ).not.toBeInTheDocument()
+    expect(queryInlinePaywallButton('Add credits')).not.toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: /upgrade|subscribe/i })
     ).not.toBeInTheDocument()
@@ -927,9 +938,7 @@ describe('AgentPanelRoot paywall actions', () => {
         thinking: false
       })
 
-      expect(
-        await screen.findByRole('button', { name: 'Add credits' })
-      ).toBeInTheDocument()
+      expect(await findInlinePaywallButton('Add credits')).toBeInTheDocument()
       expect(
         screen.queryByRole('button', { name: /upgrade|subscribe/i })
       ).not.toBeInTheDocument()
@@ -947,9 +956,7 @@ describe('AgentPanelRoot paywall actions', () => {
       thinking: false
     })
 
-    expect(
-      await screen.findByRole('button', { name: 'Add credits' })
-    ).toBeInTheDocument()
+    expect(await findInlinePaywallButton('Add credits')).toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: /upgrade|subscribe/i })
     ).not.toBeInTheDocument()
@@ -966,12 +973,8 @@ describe('AgentPanelRoot paywall actions', () => {
       thinking: false
     })
 
-    expect(
-      await screen.findByRole('button', { name: 'Subscribe' })
-    ).toBeInTheDocument()
-    expect(
-      screen.queryByRole('button', { name: 'Add credits' })
-    ).not.toBeInTheDocument()
+    expect(await findInlinePaywallButton('Subscribe')).toBeInTheDocument()
+    expect(queryInlinePaywallButton('Add credits')).not.toBeInTheDocument()
   })
 
   it('shows sales-managed remediation for a ready owner with no self-serve capability', async () => {
@@ -987,13 +990,11 @@ describe('AgentPanelRoot paywall actions', () => {
     })
 
     expect(
-      await screen.findByText(
+      await findInlinePaywallText(
         'This workspace is billed through your Comfy account team. Contact them to add credits.'
       )
     ).toBeInTheDocument()
-    expect(
-      screen.queryByRole('button', { name: 'Add credits' })
-    ).not.toBeInTheDocument()
+    expect(queryInlinePaywallButton('Add credits')).not.toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: /upgrade|subscribe/i })
     ).not.toBeInTheDocument()
@@ -1064,7 +1065,10 @@ describe('AgentPanelRoot paywall telemetry', () => {
     snapshotAuthoritative = ref(true)
     workspaceRole = ref<'owner' | 'member' | undefined>('owner')
     tier = ref<SubscriptionTier | null>('STANDARD')
-    hasFunds = ref(false)
+    // Funded, so the standing credits-exhausted card stays off and every
+    // assertion below is unambiguously about the refusal-driven inline card.
+    // The standing surface has its own describe.
+    hasFunds = ref(true)
 
     vi.mocked(useBillingCapabilities).mockReturnValue(
       fromPartial({
@@ -1135,7 +1139,8 @@ describe('AgentPanelRoot paywall telemetry', () => {
 
       await waitFor(() =>
         expect(useTelemetry()!.trackAgentPaywallShown).toHaveBeenCalledWith({
-          reason
+          reason,
+          surface: 'refused_send'
         })
       )
     }
@@ -1232,7 +1237,8 @@ describe('AgentPanelRoot paywall telemetry', () => {
       expect(
         useTelemetry()!.trackAgentPaywallShown
       ).toHaveBeenCalledExactlyOnceWith({
-        reason: 'subscription_inactive'
+        reason: 'subscription_inactive',
+        surface: 'refused_send'
       })
     )
   })
@@ -1260,7 +1266,8 @@ describe('AgentPanelRoot paywall telemetry', () => {
       expect(
         useTelemetry()!.trackAgentPaywallShown
       ).toHaveBeenCalledExactlyOnceWith({
-        reason: 'subscription_inactive'
+        reason: 'subscription_inactive',
+        surface: 'refused_send'
       })
     )
   })
@@ -1283,7 +1290,8 @@ describe('AgentPanelRoot paywall telemetry', () => {
       expect(
         useTelemetry()!.trackAgentPaywallShown
       ).toHaveBeenCalledExactlyOnceWith({
-        reason: 'unknown'
+        reason: 'unknown',
+        surface: 'refused_send'
       })
     )
   })
@@ -1301,7 +1309,8 @@ describe('AgentPanelRoot paywall telemetry', () => {
       expect(
         useTelemetry()!.trackAgentPaywallShown
       ).toHaveBeenCalledExactlyOnceWith({
-        reason: 'unknown'
+        reason: 'unknown',
+        surface: 'refused_send'
       })
     )
   })
@@ -1317,7 +1326,7 @@ describe('AgentPanelRoot paywall telemetry', () => {
 
     expect(
       useTelemetry()!.trackAgentPaywallCtaClicked
-    ).toHaveBeenCalledExactlyOnceWith({ cta })
+    ).toHaveBeenCalledExactlyOnceWith({ cta, surface: 'refused_send' })
   })
 
   it('reports the Subscribe CTA as subscribe', async () => {
@@ -1331,7 +1340,10 @@ describe('AgentPanelRoot paywall telemetry', () => {
 
     expect(
       useTelemetry()!.trackAgentPaywallCtaClicked
-    ).toHaveBeenCalledExactlyOnceWith({ cta: 'subscribe' })
+    ).toHaveBeenCalledExactlyOnceWith({
+      cta: 'subscribe',
+      surface: 'refused_send'
+    })
   })
 
   it('attributes the add-credits click to the agent paywall', async () => {
@@ -1359,6 +1371,177 @@ describe('AgentPanelRoot paywall telemetry', () => {
     expect(
       useTelemetry()!.trackAddApiCreditButtonClicked
     ).not.toHaveBeenCalled()
+  })
+})
+
+/**
+ * The standing credits-exhausted surface.
+ *
+ * Distinct from the describes above, which cover the inline card raised by a
+ * turn POST that came back 402/`no_funds`. That card was the ONLY route to
+ * `app:agent_paywall_shown`, so a user who met the ceiling any other way - a
+ * turn that died at the agent runtime's own LLM hop, or one who simply did not
+ * type again - got no upgrade path. These cases pin the surface that reads the
+ * funds signal directly instead of waiting for a refusal to carry it.
+ */
+describe('AgentPanelRoot standing credits-exhausted paywall', () => {
+  const STANDING = 'agent-credits-exhausted-paywall'
+
+  beforeEach(() => {
+    ws.clear()
+    openAccountPrecondition.mockClear()
+    vi.mocked(useTelemetry())!.trackAgentPaywallShown.mockClear()
+    vi.mocked(useTelemetry())!.trackAgentPaywallCtaClicked.mockClear()
+    vi.mocked(useTelemetry())!.trackAddApiCreditButtonClicked.mockClear()
+  })
+
+  it('shows an upgrade path when the workspace is out of credits, with no refusal first', async () => {
+    paywallHasFunds.value = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    const card = await screen.findByTestId(STANDING)
+
+    expect(
+      within(card).getByRole('button', { name: 'Add credits' })
+    ).toBeInTheDocument()
+  })
+
+  it('reports the impression against the credits_exhausted surface', async () => {
+    paywallHasFunds.value = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await waitFor(() =>
+      expect(
+        useTelemetry()!.trackAgentPaywallShown
+      ).toHaveBeenCalledExactlyOnceWith({
+        reason: 'no_funds',
+        surface: 'credits_exhausted'
+      })
+    )
+  })
+
+  it('attributes its CTA to the credits_exhausted surface and opens the credits flow', async () => {
+    paywallHasFunds.value = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const card = await screen.findByTestId(STANDING)
+
+    await userEvent.click(
+      within(card).getByRole('button', { name: 'Add credits' })
+    )
+
+    expect(
+      useTelemetry()!.trackAgentPaywallCtaClicked
+    ).toHaveBeenCalledExactlyOnceWith({
+      cta: 'add_credits',
+      surface: 'credits_exhausted'
+    })
+    expect(openAccountPrecondition).toHaveBeenCalledExactlyOnceWith('credits', {
+      source: 'agent_paywall'
+    })
+  })
+
+  it('stays hidden while the workspace has funds', async () => {
+    paywallHasFunds.value = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
+    expect(useTelemetry()!.trackAgentPaywallShown).not.toHaveBeenCalled()
+  })
+
+  // `null` is "not loaded yet", not "no funds". Treating it as exhaustion would
+  // flash an out-of-credits card at every funded user on every cold start.
+  it('stays hidden while the billing read has not answered', async () => {
+    paywallHasFunds.value = null
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
+    expect(useTelemetry()!.trackAgentPaywallShown).not.toHaveBeenCalled()
+  })
+
+  // An unsettled capability read cannot say which remediation is right, and a
+  // card naming the wrong one is worse than no card. Same gate the inline
+  // card's impression already used.
+  it('waits for the capability read to settle before showing anything', async () => {
+    paywallHasFunds.value = false
+    paywallCapabilities.isReady = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+    await nextTick()
+
+    expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
+    expect(useTelemetry()!.trackAgentPaywallShown).not.toHaveBeenCalled()
+  })
+
+  // `unavailable` renders a body with no action at all, so standing it up would
+  // be noise the user cannot act on.
+  it('stays hidden when the presentation offers no remediation', async () => {
+    paywallHasFunds.value = false
+    paywallCapabilities.canTopUp = false
+    paywallCapabilities.hasResolvedCapabilities = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+    await nextTick()
+
+    expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
+  })
+
+  // Two cards with identical copy is a bug, not redundancy. The inline one is
+  // anchored to the turn that was refused, so it wins.
+  it('yields to an inline paywall card rather than duplicating it', async () => {
+    paywallHasFunds.value = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByTestId(STANDING)
+
+    useAgentConversationStore().recordPaywall(
+      toTurnId('msg-paywall'),
+      'continue'
+    )
+
+    await waitFor(() =>
+      expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
+    )
+    expect(await findInlinePaywallButton('Add credits')).toBeInTheDocument()
+  })
+
+  it('disappears once funds arrive', async () => {
+    paywallHasFunds.value = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByTestId(STANDING)
+
+    paywallHasFunds.value = true
+
+    await waitFor(() =>
+      expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
+    )
+  })
+
+  // One impression per exhaustion episode: the surface is standing, so a
+  // per-render report would make impressions a function of session length.
+  it('reports one impression per exhaustion episode, not per re-evaluation', async () => {
+    paywallHasFunds.value = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByTestId(STANDING)
+    await waitFor(() =>
+      expect(useTelemetry()!.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
+    )
+
+    paywallCapabilities.canSubscribeSelfServe = false
+    await nextTick()
+    await nextTick()
+
+    expect(useTelemetry()!.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
+
+    paywallHasFunds.value = true
+    await waitFor(() =>
+      expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
+    )
+    paywallHasFunds.value = false
+
+    await waitFor(() =>
+      expect(useTelemetry()!.trackAgentPaywallShown).toHaveBeenCalledTimes(2)
+    )
   })
 })
 
