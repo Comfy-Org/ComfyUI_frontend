@@ -29,6 +29,7 @@ import type {
   HumanOpsHost
 } from '@e2e/fixtures/agentFollowerHostSocket'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
+import { KeyboardHelper } from '@e2e/fixtures/helpers/KeyboardHelper'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { TestIds } from '@e2e/fixtures/selectors'
 import type {
@@ -108,6 +109,21 @@ export interface NodeLens {
   observer: TabSwitchLens | null
 }
 
+export interface SemanticGraphLens {
+  nodes: Array<{
+    id: string
+    type: string
+    widgetsValues: unknown[] | undefined
+  }>
+  links: Array<{
+    fromNode: string
+    fromSlot: number
+    toNode: string
+    toSlot: number
+    type: string
+  }>
+}
+
 async function attachJson(
   testInfo: TestInfo,
   name: string,
@@ -176,6 +192,7 @@ export class AgentConversationHarness {
   readonly vueNodes: VueNodeHelpers
   readonly topbar: Topbar
   readonly composer: Locator
+  readonly keyboard: KeyboardHelper
 
   private readonly host: HostDoc
   private readonly hostSocket: AgentFollowerHostSocket
@@ -218,6 +235,7 @@ export class AgentConversationHarness {
     this.panel = page.locator('#agent-panel-root')
     this.streams = this.panel.getByTestId('markdown-stream')
     this.composer = this.panel.getByRole('textbox', { name: COMPOSER_LABEL })
+    this.keyboard = new KeyboardHelper(page, page.locator('#graph-canvas'))
     this.summaries = this.panel.getByRole('button', { name: SUMMARY_LABEL })
     this.vueNodes = new VueNodeHelpers(page)
     this.topbar = new Topbar(page)
@@ -846,6 +864,34 @@ export class AgentConversationHarness {
             (node) => String(node.id)
           ) ?? [],
         observer: window.__tabSwitchLens ?? null
+      }
+    })
+  }
+
+  readSemanticGraph(): Promise<SemanticGraphLens> {
+    return this.page.evaluate(() => {
+      const app = window.app!
+      return {
+        nodes: app.graph.nodes
+          .map((node) => ({
+            id: String(node.id),
+            type: node.type,
+            widgetsValues: node.serialize().widgets_values
+          }))
+          .sort((a, b) => a.id.localeCompare(b.id)),
+        links: [...app.graph.links.values()]
+          .map((link) => ({
+            fromNode: String(link.origin_id),
+            fromSlot: link.origin_slot,
+            toNode: String(link.target_id),
+            toSlot: link.target_slot,
+            type: String(link.type)
+          }))
+          .sort((a, b) =>
+            `${a.fromNode}:${a.fromSlot}:${a.toNode}:${a.toSlot}`.localeCompare(
+              `${b.fromNode}:${b.fromSlot}:${b.toNode}:${b.toSlot}`
+            )
+          )
       }
     })
   }

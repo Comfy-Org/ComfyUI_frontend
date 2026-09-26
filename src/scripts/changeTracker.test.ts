@@ -3,7 +3,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
-import { markRaw, ref } from 'vue'
+import { markRaw, nextTick, ref } from 'vue'
 
 vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => ref('') }))
 
@@ -1211,6 +1211,7 @@ describe('ChangeTracker', () => {
       const tracker = createTracker(changed)
       tracker.undoQueue.push(initial)
 
+      mockCanvasState(initial)
       await tracker.undo()
 
       expect(app.loadGraphData).toHaveBeenCalled()
@@ -1221,6 +1222,7 @@ describe('ChangeTracker', () => {
       )
 
       vi.mocked(api.dispatchCustomEvent).mockClear()
+      mockCanvasState(changed)
       await tracker.redo()
 
       expect(tracker.activeState).toEqual(changed)
@@ -1237,16 +1239,81 @@ describe('ChangeTracker', () => {
       const tracker = createTracker(changed)
       tracker.undoQueue.push(initial)
 
+      mockCanvasState(initial)
       await tracker.undo()
 
       expect(tracker.activeState).toEqual(initial)
       expectAutoQueueGraphChangedNotDispatched()
 
       vi.mocked(api.dispatchCustomEvent).mockClear()
+      mockCanvasState(changed)
       await tracker.redo()
 
       expect(tracker.activeState).toEqual(changed)
       expectAutoQueueGraphChangedNotDispatched()
+    })
+
+    it('does not let a capture right after undo/redo see the loaded JSON as changed, even if the canvas still needs a tick to hydrate it', async () => {
+      const initial = createState(1)
+      const changed = structuredClone(initial)
+      changed.nodes[0].widgets_values = [2]
+      const tracker = createTracker(changed)
+      tracker.undoQueue.push(initial)
+
+      // Real widget hydration can add fields to the canvas's own copy of a
+      // node that were absent from the raw JSON handed to loadGraphData.
+      // Mimic that here: the canvas settles into `hydrated`, not `initial`.
+      const hydrated = structuredClone(initial)
+      hydrated.nodes[0].properties = { hydrated: true }
+      vi.mocked(app.loadGraphData).mockImplementationOnce(async () => {
+        mockCanvasState(initial)
+        void nextTick(() => mockCanvasState(hydrated))
+        return true
+      })
+
+      await tracker.undo()
+
+      // activeState must reflect what the canvas actually settled to, or a
+      // subsequent captureCanvasState() (e.g. from the mouseup/keyup of the
+      // user's own undo keypress) would see `hydrated` as a fresh edit and
+      // clear the redoQueue undo() just populated.
+      expect(tracker.activeState).toEqual(hydrated)
+
+      tracker.captureCanvasState()
+
+      expect(tracker.redoQueue).toEqual([changed])
+      expect(tracker.undoQueue).toEqual([])
+    })
+
+    it('does not capture another workflow when the active tab changes during undo', async () => {
+      const workflowAUndoState = createState(1)
+      const workflowACurrentState = createState(2)
+      const trackerA = createTracker(workflowACurrentState)
+      trackerA.undoQueue.push(workflowAUndoState)
+      const workflowA = useWorkflowStore().activeWorkflow
+
+      const workflowBState = createState(3)
+      createTracker(workflowBState)
+      const workflowB = useWorkflowStore().activeWorkflow
+      useWorkflowStore().activeWorkflow = workflowA
+
+      let finishLoad: ((value: true) => void) | undefined
+      vi.mocked(app.loadGraphData).mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            finishLoad = resolve
+          })
+      )
+
+      const undo = trackerA.undo()
+      await vi.waitFor(() => expect(finishLoad).toBeDefined())
+      useWorkflowStore().activeWorkflow = workflowB
+      mockCanvasState(workflowBState)
+      finishLoad!(true)
+      await undo
+
+      expect(trackerA.activeState).toEqual(workflowAUndoState)
+      expect(trackerA.activeState).not.toEqual(workflowBState)
     })
   })
 
