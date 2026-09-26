@@ -40,8 +40,8 @@ flag on; it does not bypass consent.
 - After consent, complete the four-card Agent tour for the panel, composer,
   graph and chat history. **Next** advances; **Done**, **Skip** or Escape marks
   the device-local tour complete for the current user and workspace. The tour
-  waits while App Mode or another onboarding tour is active, then appears when
-  the graph view and onboarding overlay are available.
+  waits while App Mode or another onboarding tour is active, then appears once
+  you are back in graph mode with no other onboarding tour running.
 - Open the CRDT debug instrument (`?crdtDebug=1`, rendered above the composer via
   `CrdtDevPanel`); its status row shows connected + the subscribed workflow id.
 - Send a message in the agent chat; as the agent edits, `updatesApplied` increments and

@@ -27,11 +27,12 @@ the remaining distribution entry points).
 
 After consent succeeds, the first Agent open starts a four-card tour of the
 panel, composer, graph and chat history. **Next** advances through the cards;
-**Done** on the last card, **Skip** on any card and Escape all dismiss the tour
-and mark it complete.
+**Done** on the last card, **Skip** on any card and Escape once a card is on
+screen all dismiss the tour and mark it complete.
 
 Completion is device-local in `localStorage`, scoped to the authenticated user
-and active workspace. It does not sync through Global Settings. A different
+and active workspace; with either unresolved there is no scope to record, so no
+tour is shown at all. It does not sync through Global Settings. A different
 user or workspace on the same device gets its own tour. The legacy unscoped
 completion flag is adopted once by the current scope, then removed.
 
