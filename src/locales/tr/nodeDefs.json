@@ -1932,7 +1932,7 @@
   },
   "ByteDanceSeedreamLayerSeparationNode": {
     "description": "Bir görüntüyü, arka plan plakası ve her biri yığılma sırası, sınırlayıcı kutusu, adı ve açıklaması olan, yeniden konumlandırılabilir en fazla 16 şeffaf katmana ayırır.",
-    "display_name": "ByteDance Seedream 5.0 Pro Katman Ayrıştırma",
+    "display_name": "ByteDance Seedream 5.0 Pro Katman Ayırma (Eski)",
     "inputs": {
       "control_after_generate": {
         "name": "oluşturduktan sonra kontrol"
@@ -1990,6 +1990,62 @@
       "5": {
         "name": "katman_yığını",
         "tooltip": "Katmanlı Görüntü Oluştur için düzenlemeye hazır katman belgesi: taban plaka ve her bir öğe, kendi adıyla, sıkı kırpılmış katman olarak gerçek konumunda ve yığılma sırasıyla. Doğrudan bağlayın veya Katman Ekle ile genişletin."
+      }
+    }
+  },
+  "ByteDanceSeedreamLayerSeparationNodeV2": {
+    "description": "Bir görüntüyü, bir arka plan plakası ve her biri yığın sırası, sınırlayıcı kutu, ad ve açıklamaya sahip, yeniden konumlandırılabilir en fazla 16 saydam katmana ayırır.",
+    "display_name": "ByteDance Seedream 5.0 Katman Ayırma",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturmadan sonra kontrol"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_crop_layers": {
+        "name": "crop_layers"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_prompt_optimization": {
+        "name": "prompt_optimization"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_size": {
+        "name": "boyut"
+      },
+      "model_watermark": {
+        "name": "filigran"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "base_image",
+        "tooltip": "Katmanların üzerine yığıldığı temel görüntü (arka plan plakası)."
+      },
+      "1": {
+        "name": "base_mask",
+        "tooltip": "Temel görüntünün saydamlığı (1 = saydam, LoadImage kuralı); şu anda her zaman tamamen opaktır."
+      },
+      "2": {
+        "name": "layers",
+        "tooltip": "Alttan üste sıralanmış saydam katmanlar. Tam tuval modu: sınırlayıcı kutu konumlarında, temel görüntü boyutunda siyah bir tuval üzerine yerleştirilir. En küçük boyut modu: sınırlayıcı kutularına kırpılır, sol üste sabitlenir ve en büyük katmanın boyutuna kadar doldurulur."
+      },
+      "3": {
+        "name": "masks",
+        "tooltip": "Katman grubuyla dizin hizalı, katman başına saydamlık (1 = saydam, LoadImage kuralı). ImageCompositeMasked tarzı birleştirme için önce InvertMask ekleyin."
+      },
+      "4": {
+        "name": "bboxes",
+        "tooltip": "Katman başına bir yerleştirme kutusu; katman grubuyla dizin hizalıdır (katman başına yerleşimi yeniden oluşturmak için her ikisini de maskelerle birlikte Layers From Bounding Boxes'a besleyin): {x, y, width, height, metadata: {name, desc, z_index, native_size, content_rect, flags}}. content_rect = [left, top, width, height], katmanın kendi çerçevesi içindeki içerik bölgesidir; kutu konumuna bu ofset eklenerek tuval üzerine yerleştirilir."
+      },
+      "5": {
+        "name": "layer_stack",
+        "tooltip": "Create Layered Image için düzenlemeye hazır katman belgesi: temel plaka ve her öğe, gerçek konumu ve yığın sırasıyla kendi adlandırılmış, sıkı kırpılmış katmanı olarak bulunur. Doğrudan bağlayın veya Add Layer ile genişletin."
       }
     }
   },
@@ -7951,6 +8007,87 @@
       },
       "1": {
         "name": "negative",
+        "tooltip": null
+      }
+    }
+  },
+  "HunyuanImageEditApi": {
+    "description": "Tencent'in Hunyuan Image modelini kullanarak bir metin istemi yönlendirmesiyle en fazla 5 referans görüntüsünü düzenler veya birleştirir.",
+    "display_name": "Tencent HY Image: Düzenleme",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturmadan sonra kontrol"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Kullanılacak model."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_height": {
+        "name": "height"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reference_detail": {
+        "name": "reference_detail"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_watermark": {
+        "name": "watermark"
+      },
+      "model_width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HunyuanImageTextToImageApi": {
+    "description": "Tencent'in Hunyuan Image modelini kullanarak bir metin isteminden görüntüler oluşturur.",
+    "display_name": "Tencent HY Image: Metinden Görüntü",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturmadan sonra kontrol"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Kullanılacak model."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_height": {
+        "name": "height"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_watermark": {
+        "name": "watermark"
+      },
+      "model_width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -16812,7 +16949,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "Modelin yanıtlamadan önce ne ölçüde muhakeme yürüttüğü. 'default' seçimi modele bırakır. Desteklenen düzeyler modele göre farklılık gösterir: GPT-6 Astra low-max, GPT-5.6 none-max (no minimal), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, o-series low-high; GPT-4.1'de muhakeme yoktur. Desteklenmeyen düzeyler, istek gönderilmeden önce reddedilir."
+        "tooltip": "Modelin yanıtlamadan önce ne kadar akıl yürüttüğü. 'default' seçimi modele bırakır. Desteklenen seviyeler modele göre farklılık gösterir: GPT-6 Astra low-max, GPT-6 Sol/Luna ve GPT-5.6 none-max (minimal yok), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, o-series low-high; GPT-4.1'de akıl yürütme yoktur. Desteklenmeyen seviyeler, istek gönderilmeden önce reddedilir."
       },
       "truncation": {
         "name": "kırpma",
@@ -18366,6 +18503,10 @@
       "model_top_p": {
         "name": "top_p"
       },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "Modelin çizimden önce ne kadar akıl yürütme harcadığı. Daha yüksek seviyeler ayrıntıyı artırır ve daha fazla token maliyetine neden olur. Yalnızca Arrow 2 modelleri tarafından kullanılır."
+      },
       "seed": {
         "name": "seed",
         "tooltip": "Düğümün tekrar çalıştırılıp çalıştırılmayacağını belirleyen tohum; gerçek sonuçlar tohumdan bağımsız olarak deterministik değildir."
@@ -18404,6 +18545,10 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "İstenen SVG çıktısının metin açıklaması."
+      },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "Modelin çizimden önce ne kadar akıl yürütme harcadığı. Daha yüksek seviyeler ayrıntıyı artırır ve daha fazla token maliyetine neden olur. Yalnızca Arrow 2 modelleri tarafından kullanılır."
       },
       "reference_images": {
         "name": "reference_images",
@@ -19075,7 +19220,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Üretim için kullanılacak model. recraftv4_styles modelleri, stil tutarlı üretim için tasarlanmıştır ve her zaman bir style_id veya style_references gerektirir."
+        "tooltip": "Oluşturma için kullanılacak model. recraftv4_styles modelleri, stille tutarlı oluşturma için tasarlanmıştır ve her zaman bir style_id veya style_references gerektirir; recraftv4_1_flash en hızlı ve en ucuz modeldir ve hiçbir stili desteklemez."
       },
       "model_size": {
         "name": "boyut"
@@ -23799,6 +23944,30 @@
       }
     }
   },
+  "TextEncodeMingImageEdit": {
+    "display_name": "Metni Kodla Ming Image Düzenleme",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "görüntüler",
+        "tooltip": "İsteğe bağlı referans görüntüleri; metin kodlayıcı tarafından görülür ve temiz kareler olarak latent dizisine eklenir. Sonraki görüntüler ilk görüntünün boyutuna yeniden boyutlandırılır ve örneklenen latent onun boyutuyla eşleşmelidir."
+      },
+      "prompt": {
+        "name": "istem"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "VAE olmadan görüntüler, metin kodlayıcıyı yalnızca vision tower aracılığıyla koşullandırır."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TextEncodeQwenImage21": {
     "display_name": "Qwen Image 2.1 Metin Kodlama",
     "inputs": {
@@ -23968,6 +24137,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Modelin sohbet şablonundaki sistem istemini değiştirir. Varsayılan şablon kullanılmadığında yok sayılır."
+      },
       "thinking": {
         "name": "düşünme",
         "tooltip": "Model destekliyorsa düşünme modunda çalış."
@@ -23984,6 +24157,10 @@
     "outputs": {
       "0": {
         "name": "oluşturulan_metin",
+        "tooltip": null
+      },
+      "1": {
+        "name": "düşünme",
         "tooltip": null
       }
     }
@@ -24034,6 +24211,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Modelin sohbet şablonundaki sistem istemini değiştirir. Varsayılan şablon kullanılmadığında yok sayılır."
+      },
       "thinking": {
         "name": "düşünme",
         "tooltip": "Model destekliyorsa düşünme modunda çalış."
@@ -24050,6 +24231,10 @@
     "outputs": {
       "0": {
         "name": "üretilen_metin",
+        "tooltip": null
+      },
+      "1": {
+        "name": "düşünme",
         "tooltip": null
       }
     }

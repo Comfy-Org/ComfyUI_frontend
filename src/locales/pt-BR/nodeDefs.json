@@ -1932,7 +1932,7 @@
   },
   "ByteDanceSeedreamLayerSeparationNode": {
     "description": "Decompõe uma imagem em uma placa de fundo mais até 16 camadas transparentes reposicionáveis, cada uma com ordem de empilhamento, caixa delimitadora, nome e descrição.",
-    "display_name": "ByteDance Seedream 5.0 Pro Separação de Camadas",
+    "display_name": "Separação de Camadas ByteDance Seedream 5.0 Pro (Legado)",
     "inputs": {
       "control_after_generate": {
         "name": "controle após gerar"
@@ -1990,6 +1990,62 @@
       "5": {
         "name": "pilha de camadas",
         "tooltip": "Documento de camadas pronto para edição para Criar Imagem em Camadas: a placa base mais cada elemento como sua própria camada nomeada, recortada e posicionada corretamente com ordem de empilhamento. Conecte diretamente ou estenda com Adicionar Camada."
+      }
+    }
+  },
+  "ByteDanceSeedreamLayerSeparationNodeV2": {
+    "description": "Decompõe uma imagem em uma placa de fundo e até 16 camadas transparentes reposicionáveis, cada uma com ordem de empilhamento, caixa delimitadora, nome e descrição.",
+    "display_name": "Separação de Camadas ByteDance Seedream 5.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_crop_layers": {
+        "name": "crop_layers"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_prompt_optimization": {
+        "name": "prompt_optimization"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_size": {
+        "name": "size"
+      },
+      "model_watermark": {
+        "name": "watermark"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "base_image",
+        "tooltip": "A imagem base (placa de fundo) sobre a qual as camadas são empilhadas."
+      },
+      "1": {
+        "name": "base_mask",
+        "tooltip": "Transparência da imagem base (1 = transparente, convenção de LoadImage); no momento, sempre totalmente opaca."
+      },
+      "2": {
+        "name": "layers",
+        "tooltip": "Camadas transparentes ordenadas de baixo para cima. Modo de tela cheia: posicionadas em uma tela preta do tamanho da base, na posição de sua caixa delimitadora. Modo de tamanho mínimo: recortadas à sua caixa delimitadora, ancoradas no canto superior esquerdo e preenchidas até o tamanho da maior camada."
+      },
+      "3": {
+        "name": "masks",
+        "tooltip": "Transparência por camada, alinhada por índice ao lote de layers (1 = transparente, convenção de LoadImage). Para composição no estilo ImageCompositeMasked, adicione InvertMask primeiro."
+      },
+      "4": {
+        "name": "bboxes",
+        "tooltip": "Uma caixa de posicionamento por camada, alinhada por índice ao lote de layers (insira ambos, além de masks, em Camadas a Partir de Caixas Delimitadoras para reconstruir o posicionamento por camada): {x, y, width, height, metadata: {name, desc, z_index, native_size, content_rect, flags}}. content_rect = [left, top, width, height] é a região de conteúdo da camada dentro de seu próprio quadro; ela é posicionada na tela na posição da caixa mais esse deslocamento."
+      },
+      "5": {
+        "name": "layer_stack",
+        "tooltip": "Documento de camadas pronto para edição para Criar Imagem em Camadas: a placa base e cada elemento como sua própria camada nomeada e recortada de forma justa, em sua posição e ordem de empilhamento reais. Conecte diretamente ou amplie com Adicionar Camada."
       }
     }
   },
@@ -7951,6 +8007,87 @@
       },
       "1": {
         "name": "negativo",
+        "tooltip": null
+      }
+    }
+  },
+  "HunyuanImageEditApi": {
+    "description": "Edita ou combina até 5 imagens de referência, guiado por um prompt de texto, usando o modelo Hunyuan Image da Tencent.",
+    "display_name": "Tencent HY Image: Editar",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a usar."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_height": {
+        "name": "altura"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reference_detail": {
+        "name": "reference_detail"
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "model_seed": {
+        "name": "semente"
+      },
+      "model_watermark": {
+        "name": "marca-d'água"
+      },
+      "model_width": {
+        "name": "largura"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HunyuanImageTextToImageApi": {
+    "description": "Gera imagens a partir de um prompt de texto usando o modelo Hunyuan Image da Tencent.",
+    "display_name": "Tencent HY Image: Texto para Imagem",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a usar."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_height": {
+        "name": "altura"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "model_seed": {
+        "name": "semente"
+      },
+      "model_watermark": {
+        "name": "marca-d'água"
+      },
+      "model_width": {
+        "name": "largura"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -16812,7 +16949,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "Quanto o modelo raciocina antes de responder. 'default' deixa a escolha para o modelo. Os níveis compatíveis variam conforme o modelo: GPT-6 Astra low-max, GPT-5.6 none-max (sem minimal), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, o-series low-high; GPT-4.1 não tem raciocínio. Níveis não compatíveis são rejeitados antes do envio da solicitação."
+        "tooltip": "Quanto o modelo raciocina antes de responder. 'default' deixa a escolha para o modelo. Os níveis compatíveis variam conforme o modelo: GPT-6 Astra low-max, GPT-6 Sol/Luna e GPT-5.6 none-max (sem minimal), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, série o low-high; GPT-4.1 não tem raciocínio. Níveis não compatíveis são rejeitados antes do envio da solicitação."
       },
       "truncation": {
         "name": "truncation",
@@ -18366,6 +18503,10 @@
       "model_top_p": {
         "name": "top_p"
       },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "Quanto raciocínio o modelo emprega antes de desenhar. Níveis mais altos melhoram os detalhes e consomem mais tokens. Usado somente pelos modelos Arrow 2."
+      },
       "seed": {
         "name": "semente",
         "tooltip": "Semente para determinar se o nó deve ser executado novamente; os resultados reais são não determinísticos independentemente da semente."
@@ -18404,6 +18545,10 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "Descrição em texto do SVG desejado."
+      },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "Quanto raciocínio o modelo emprega antes de desenhar. Níveis mais altos melhoram os detalhes e consomem mais tokens. Usado somente pelos modelos Arrow 2."
       },
       "reference_images": {
         "name": "imagens_de_referência",
@@ -19075,7 +19220,7 @@
       },
       "model": {
         "name": "modelo",
-        "tooltip": "O modelo a ser usado para geração. Os modelos recraftv4_styles são desenvolvidos para geração com estilo consistente e sempre exigem um style_id ou style_references."
+        "tooltip": "O modelo a usar para geração. Os modelos recraftv4_styles são desenvolvidos para geração com consistência de estilo e sempre exigem um style_id ou style_references; recraftv4_1_flash é o modelo mais rápido e mais barato e não oferece suporte a estilos."
       },
       "model_size": {
         "name": "tamanho"
@@ -23799,6 +23944,30 @@
       }
     }
   },
+  "TextEncodeMingImageEdit": {
+    "display_name": "Codificar Texto para Edição de Imagem Ming",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "imagens",
+        "tooltip": "Imagens de referência opcionais, vistas pelo codificador de texto e adicionadas à sequência latent como quadros limpos. As imagens posteriores são redimensionadas para corresponder à primeira, e o latent amostrado deve ter o mesmo tamanho."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Sem um VAE, as imagens condicionam o codificador de texto apenas por meio da torre de visão."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TextEncodeQwenImage21": {
     "display_name": "Codificação de Texto Qwen Image 2.1",
     "inputs": {
@@ -23968,6 +24137,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Substitui o prompt de sistema no modelo de chat do modelo. Ignorado quando o modelo padrão não é usado."
+      },
       "thinking": {
         "name": "pensando",
         "tooltip": "Operar no modo de pensamento se o modelo suportar."
@@ -23984,6 +24157,10 @@
     "outputs": {
       "0": {
         "name": "texto_gerado",
+        "tooltip": null
+      },
+      "1": {
+        "name": "raciocínio",
         "tooltip": null
       }
     }
@@ -24034,6 +24211,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "prompt_do_sistema",
+        "tooltip": "Substitui o prompt do sistema no template de chat do modelo. Ignorado quando o template padrão não é usado."
+      },
       "thinking": {
         "name": "pensando",
         "tooltip": "Operar no modo de pensamento se o modelo suportar."
@@ -24050,6 +24231,10 @@
     "outputs": {
       "0": {
         "name": "texto_gerado",
+        "tooltip": null
+      },
+      "1": {
+        "name": "raciocínio",
         "tooltip": null
       }
     }

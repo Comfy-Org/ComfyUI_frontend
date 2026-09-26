@@ -1932,7 +1932,7 @@
   },
   "ByteDanceSeedreamLayerSeparationNode": {
     "description": "將一張圖片分解為背景底圖以及最多 16 個可重新定位的透明圖層，每個圖層具有堆疊順序、邊界框、名稱與描述。",
-    "display_name": "ByteDance Seedream 5.0 Pro 圖層分離",
+    "display_name": "ByteDance Seedream 5.0 Pro 圖層分離（舊版）",
     "inputs": {
       "control_after_generate": {
         "name": "生成後控制"
@@ -1990,6 +1990,62 @@
       "5": {
         "name": "圖層堆疊",
         "tooltip": "可編輯的圖層文件（供 Create Layered Image 使用）：基底底圖加上每個元素作為獨立命名、緊密裁切的圖層，保留其實際位置與堆疊順序。可直接連接，或用 Add Layer 擴充。"
+      }
+    }
+  },
+  "ByteDanceSeedreamLayerSeparationNodeV2": {
+    "description": "將影像分解為背景底圖，以及最多 16 個可重新定位的透明圖層；每個圖層皆包含堆疊順序、邊界框、名稱與描述。",
+    "display_name": "ByteDance Seedream 5.0 圖層分離",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_crop_layers": {
+        "name": "crop_layers"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_prompt_optimization": {
+        "name": "prompt_optimization"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_size": {
+        "name": "size"
+      },
+      "model_watermark": {
+        "name": "watermark"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "base_image",
+        "tooltip": "圖層堆疊所在的基底影像（背景底圖）。"
+      },
+      "1": {
+        "name": "base_mask",
+        "tooltip": "基底影像的透明度（1 = 透明，遵循 LoadImage 慣例）；目前一律為完全不透明。"
+      },
+      "2": {
+        "name": "layers",
+        "tooltip": "由下至上排序的透明圖層。完整畫布模式：依其邊界框位置放置於與基底同尺寸的黑色畫布上。最小尺寸模式：裁切至其邊界框，以左上角為錨點，並補齊至最大圖層的尺寸。"
+      },
+      "3": {
+        "name": "masks",
+        "tooltip": "各圖層的透明度，索引與 layers 批次對齊（1 = 透明，遵循 LoadImage 慣例）。若使用 ImageCompositeMasked 樣式的合成，請先加入 InvertMask。"
+      },
+      "4": {
+        "name": "bboxes",
+        "tooltip": "每個圖層各有一個放置框，索引與 layers 批次對齊（將兩者連同 masks 一起輸入「從邊界框建立圖層」，以重建各圖層的位置）：{x, y, width, height, metadata: {name, desc, z_index, native_size, content_rect, flags}}。content_rect = [left, top, width, height] 是圖層在自身框架內的內容區域；其在畫布上的位置為放置框位置加上此偏移量。"
+      },
+      "5": {
+        "name": "layer_stack",
+        "tooltip": "可直接編輯、供「建立分層影像」使用的圖層文件：包含基底底圖，以及每個元素各自具名稱、緊密裁切並位於其實際位置與堆疊順序的圖層。可直接連接，或使用「新增圖層」擴充。"
       }
     }
   },
@@ -7951,6 +8007,87 @@
       },
       "1": {
         "name": "負向",
+        "tooltip": null
+      }
+    }
+  },
+  "HunyuanImageEditApi": {
+    "description": "使用騰訊的 Hunyuan Image 模型，依據文字提示編輯或合併最多 5 張參考圖片。",
+    "display_name": "Tencent HY Image：編輯",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "要使用的模型。"
+      },
+      "model_aspect_ratio": {
+        "name": "長寬比"
+      },
+      "model_height": {
+        "name": "高度"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_reference_detail": {
+        "name": "參考細節"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "model_seed": {
+        "name": "種子"
+      },
+      "model_watermark": {
+        "name": "浮水印"
+      },
+      "model_width": {
+        "name": "寬度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HunyuanImageTextToImageApi": {
+    "description": "使用騰訊的 Hunyuan Image 模型，根據文字提示生成圖片。",
+    "display_name": "Tencent HY Image：文字轉圖片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "要使用的模型。"
+      },
+      "model_aspect_ratio": {
+        "name": "長寬比"
+      },
+      "model_height": {
+        "name": "高度"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "model_seed": {
+        "name": "種子"
+      },
+      "model_watermark": {
+        "name": "浮水印"
+      },
+      "model_width": {
+        "name": "寬度"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -16812,7 +16949,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "模型在回答前進行多少推理。'default' 會將選擇權交由模型。支援的等級因模型而異：GPT-6 Astra low-max、GPT-5.6 none-max（不含 minimal）、GPT-5.5 none-xhigh、GPT-5.5 Pro medium-xhigh、GPT-5 minimal-high、o-series low-high；GPT-4.1 不具推理能力。不支援的等級會在傳送請求前遭到拒絕。"
+        "tooltip": "模型在回答前進行推理的程度。'default' 會將選擇權交給模型。各模型支援的等級不同：GPT-6 Astra low-max、GPT-6 Sol/Luna 與 GPT-5.6 none-max（不含 minimal）、GPT-5.5 none-xhigh、GPT-5.5 Pro medium-xhigh、GPT-5 minimal-high、o-series low-high；GPT-4.1 不具推理功能。不支援的等級會在傳送請求前遭拒絕。"
       },
       "truncation": {
         "name": "truncation",
@@ -18366,6 +18503,10 @@
       "model_top_p": {
         "name": "top_p"
       },
+      "reasoning_effort": {
+        "name": "推理強度",
+        "tooltip": "模型在繪製前進行推理的程度。較高等級可改善細節，但會耗用更多 token。僅由 Arrow 2 模型使用。"
+      },
       "seed": {
         "name": "seed",
         "tooltip": "決定節點是否重新執行的種子值；實際結果無論種子如何都不具決定性。"
@@ -18404,6 +18545,10 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "對期望 SVG 輸出的文字描述。"
+      },
+      "reasoning_effort": {
+        "name": "推理強度",
+        "tooltip": "模型在繪製前進行推理的程度。較高等級可改善細節，但會耗用更多 token。僅由 Arrow 2 模型使用。"
       },
       "reference_images": {
         "name": "reference_images",
@@ -19075,7 +19220,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "用於生成的模型。recraftv4_styles 模型專為風格一致的生成而設計，且一律需要 style_id 或 style_references。"
+        "tooltip": "用於生成的模型。recraftv4_styles 模型專為風格一致的生成而設計，且一律需要 style_id 或 style_references；recraftv4_1_flash 是最快且最便宜的模型，完全不支援任何風格。"
       },
       "model_size": {
         "name": "size"
@@ -23799,6 +23944,30 @@
       }
     }
   },
+  "TextEncodeMingImageEdit": {
+    "display_name": "Ming 圖片編輯文字編碼",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "圖片",
+        "tooltip": "選用的參考圖片，文字編碼器可看見這些圖片，並會將其作為乾淨影格附加至 latent 序列。後續圖片會調整為與第一張相同的大小，而取樣的 latent 應符合該尺寸。"
+      },
+      "prompt": {
+        "name": "提示詞"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "若沒有 VAE，圖片將僅透過視覺塔來對文字編碼器提供條件。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TextEncodeQwenImage21": {
     "display_name": "文字編碼 Qwen Image 2.1",
     "inputs": {
@@ -23968,6 +24137,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "系統提示詞",
+        "tooltip": "取代模型聊天範本中的系統提示詞。未使用預設範本時會忽略此項。"
+      },
       "thinking": {
         "name": "思考模式",
         "tooltip": "若模型支援，則以思考模式運作。"
@@ -23984,6 +24157,10 @@
     "outputs": {
       "0": {
         "name": "生成文字",
+        "tooltip": null
+      },
+      "1": {
+        "name": "思考",
         "tooltip": null
       }
     }
@@ -24034,6 +24211,10 @@
       "sampling_mode_top_p": {
         "name": "Top-P"
       },
+      "system_prompt": {
+        "name": "系統提示詞",
+        "tooltip": "取代模型聊天範本中的系統提示詞。未使用預設範本時會被忽略。"
+      },
       "thinking": {
         "name": "思考模式",
         "tooltip": "若模型支援，則以思考模式運作。"
@@ -24050,6 +24231,10 @@
     "outputs": {
       "0": {
         "name": "生成文字",
+        "tooltip": null
+      },
+      "1": {
+        "name": "思考",
         "tooltip": null
       }
     }

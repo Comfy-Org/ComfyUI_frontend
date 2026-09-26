@@ -1932,7 +1932,7 @@
   },
   "ByteDanceSeedreamLayerSeparationNode": {
     "description": "Разделяет изображение на фоновую пластину и до 16 прозрачных слоёв с возможностью перемещения, каждый со своим порядком наложения, ограничивающей рамкой, именем и описанием.",
-    "display_name": "ByteDance Seedream 5.0 Pro Разделение Слоёв",
+    "display_name": "Разделение на слои ByteDance Seedream 5.0 Pro (устаревшее)",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -1990,6 +1990,62 @@
       "5": {
         "name": "layer_stack",
         "tooltip": "Готовый к редактированию документ слоёв для Create Layered Image: базовая пластина плюс каждый элемент как отдельный именованный слой, обрезанный по содержимому, в своей позиции и порядке наложения. Подключайте напрямую или расширяйте с помощью Add Layer."
+      }
+    }
+  },
+  "ByteDanceSeedreamLayerSeparationNodeV2": {
+    "description": "Разделяет изображение на фоновую пластину и до 16 перемещаемых прозрачных слоёв, каждый с порядком наложения, ограничивающей рамкой, именем и описанием.",
+    "display_name": "Разделение на слои ByteDance Seedream 5.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_crop_layers": {
+        "name": "crop_layers"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_prompt_optimization": {
+        "name": "prompt_optimization"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_size": {
+        "name": "size"
+      },
+      "model_watermark": {
+        "name": "watermark"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "base_image",
+        "tooltip": "Базовое изображение (фоновая пластина), на которую накладываются слои."
+      },
+      "1": {
+        "name": "base_mask",
+        "tooltip": "Прозрачность базового изображения (1 = прозрачно, соглашение LoadImage); сейчас всегда полностью непрозрачно."
+      },
+      "2": {
+        "name": "layers",
+        "tooltip": "Прозрачные слои, упорядоченные снизу вверх. Режим полного холста: размещаются на чёрном холсте размером с базовое изображение в позиции их ограничивающей рамки. Режим минимального размера: обрезаются по ограничивающей рамке, привязываются к левому верхнему углу и дополняются до размера самого большого слоя."
+      },
+      "3": {
+        "name": "masks",
+        "tooltip": "Прозрачность каждого слоя, выровненная по индексу с пакетом layers (1 = прозрачно, соглашение LoadImage). Для композиции в стиле ImageCompositeMasked сначала добавьте InvertMask."
+      },
+      "4": {
+        "name": "bboxes",
+        "tooltip": "По одной рамке размещения на слой, выровненной по индексу с пакетом layers (подайте оба, а также masks, в «Слои из ограничивающих рамок», чтобы восстановить размещение каждого слоя): {x, y, width, height, metadata: {name, desc, z_index, native_size, content_rect, flags}}. content_rect = [left, top, width, height] — область содержимого слоя в пределах его собственной рамки; она размещается на холсте в позиции рамки с добавлением этого смещения."
+      },
+      "5": {
+        "name": "layer_stack",
+        "tooltip": "Готовый к редактированию документ слоёв для «Создания многослойного изображения»: базовая пластина и каждый элемент в виде отдельного именованного плотно обрезанного слоя в его фактической позиции и порядке наложения. Подключите напрямую или расширьте с помощью «Добавления слоя»."
       }
     }
   },
@@ -7951,6 +8007,87 @@
       },
       "1": {
         "name": "negative",
+        "tooltip": null
+      }
+    }
+  },
+  "HunyuanImageEditApi": {
+    "description": "Редактирует или объединяет до 5 эталонных изображений по текстовому запросу с помощью модели Hunyuan Image от Tencent.",
+    "display_name": "Tencent HY Image: Редактирование",
+    "inputs": {
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Модель для использования."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_height": {
+        "name": "высота"
+      },
+      "model_prompt": {
+        "name": "запрос"
+      },
+      "model_reference_detail": {
+        "name": "reference_detail"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "model_seed": {
+        "name": "сид"
+      },
+      "model_watermark": {
+        "name": "водяной знак"
+      },
+      "model_width": {
+        "name": "ширина"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HunyuanImageTextToImageApi": {
+    "description": "Создаёт изображения по текстовому запросу с помощью модели Hunyuan Image от Tencent.",
+    "display_name": "Tencent HY Image: Текст в изображение",
+    "inputs": {
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Модель для использования."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_height": {
+        "name": "высота"
+      },
+      "model_prompt": {
+        "name": "запрос"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "model_seed": {
+        "name": "сид"
+      },
+      "model_watermark": {
+        "name": "водяной знак"
+      },
+      "model_width": {
+        "name": "ширина"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -16812,7 +16949,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "Насколько глубоко модель рассуждает перед ответом. 'default' оставляет выбор за моделью. Поддерживаемые уровни различаются в зависимости от модели: GPT-6 Astra low-max, GPT-5.6 none-max (без minimal), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, o-series low-high; GPT-4.1 не поддерживает рассуждения. Неподдерживаемые уровни отклоняются до отправки запроса."
+        "tooltip": "Насколько глубоко модель рассуждает перед ответом. 'default' оставляет выбор за моделью. Поддерживаемые уровни различаются для разных моделей: GPT-6 Astra — low-max, GPT-6 Sol/Luna и GPT-5.6 — none-max (без minimal), GPT-5.5 — none-xhigh, GPT-5.5 Pro — medium-xhigh, GPT-5 — minimal-high, o-series — low-high; GPT-4.1 не поддерживает рассуждения. Неподдерживаемые уровни отклоняются до отправки запроса."
       },
       "truncation": {
         "name": "усечение",
@@ -18366,6 +18503,10 @@
       "model_top_p": {
         "name": "top_p"
       },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "Сколько рассуждений модель выполняет перед рисованием. Более высокие уровни улучшают детализацию и расходуют больше токенов. Используется только моделями Arrow 2."
+      },
       "seed": {
         "name": "seed",
         "tooltip": "Сид для определения необходимости повторного запуска узла; фактические результаты недетерминированы независимо от сида."
@@ -18404,6 +18545,10 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "Текстовое описание желаемого SVG-результата."
+      },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "Сколько рассуждений модель выполняет перед рисованием. Более высокие уровни улучшают детализацию и расходуют больше токенов. Используется только моделями Arrow 2."
       },
       "reference_images": {
         "name": "reference_images",
@@ -19075,7 +19220,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Модель для генерации. Модели recraftv4_styles предназначены для генерации с сохранением стиля и всегда требуют style_id или style_references."
+        "tooltip": "Модель для генерации. Модели recraftv4_styles предназначены для генерации с согласованным стилем и всегда требуют style_id или style_references; recraftv4_1_flash — самая быстрая и дешёвая модель, не поддерживающая стили."
       },
       "model_size": {
         "name": "size"
@@ -23799,6 +23944,30 @@
       }
     }
   },
+  "TextEncodeMingImageEdit": {
+    "display_name": "Кодирование текста Ming Image Edit",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "изображения",
+        "tooltip": "Необязательные эталонные изображения, обрабатываемые текстовым энкодером и добавляемые к латентной последовательности как чистые кадры. Последующие изображения изменяют размер до размера первого, а сгенерированный латент должен соответствовать его размеру."
+      },
+      "prompt": {
+        "name": "запрос"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Без VAE изображения обусловливают текстовый энкодер только через визуальный энкодер."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TextEncodeQwenImage21": {
     "display_name": "Кодирование текста Qwen Image 2.1",
     "inputs": {
@@ -23968,6 +24137,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Заменяет системный запрос в шаблоне чата модели. Игнорируется, если не используется шаблон по умолчанию."
+      },
       "thinking": {
         "name": "мышление",
         "tooltip": "Работать в режиме мышления, если модель это поддерживает."
@@ -23984,6 +24157,10 @@
     "outputs": {
       "0": {
         "name": "сгенерированный текст",
+        "tooltip": null
+      },
+      "1": {
+        "name": "размышления",
         "tooltip": null
       }
     }
@@ -24034,6 +24211,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Заменяет системный промпт в шаблоне чата модели. Игнорируется, если шаблон по умолчанию не используется."
+      },
       "thinking": {
         "name": "мышление",
         "tooltip": "Работать в режиме мышления, если модель это поддерживает."
@@ -24050,6 +24231,10 @@
     "outputs": {
       "0": {
         "name": "сгенерированный текст",
+        "tooltip": null
+      },
+      "1": {
+        "name": "размышления",
         "tooltip": null
       }
     }

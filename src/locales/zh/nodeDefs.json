@@ -1932,7 +1932,7 @@
   },
   "ByteDanceSeedreamLayerSeparationNode": {
     "description": "将一张图像分解为一个背景底板和最多16个可重新定位的透明图层，每个图层具有堆叠顺序、边界框、名称和描述。",
-    "display_name": "ByteDance Seedream 5.0 Pro 图层分离",
+    "display_name": "ByteDance Seedream 5.0 Pro 图层分离（旧版）",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -1990,6 +1990,62 @@
       "5": {
         "name": "layer_stack",
         "tooltip": "用于Create Layered Image的可编辑图层文档：基础底板加每个元素作为独立命名、紧凑裁剪的图层，保持真实位置和堆叠顺序。可直接连接，或用Add Layer扩展。"
+      }
+    }
+  },
+  "ByteDanceSeedreamLayerSeparationNodeV2": {
+    "description": "将图像分解为一张背景底图和最多 16 个可重新定位的透明图层，每个图层均具有堆叠顺序、边界框、名称和描述。",
+    "display_name": "ByteDance Seedream 5.0 图层分离",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_crop_layers": {
+        "name": "crop_layers"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_prompt_optimization": {
+        "name": "prompt_optimization"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_size": {
+        "name": "size"
+      },
+      "model_watermark": {
+        "name": "watermark"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "base_image",
+        "tooltip": "图层所堆叠到的基础图像（背景底图）。"
+      },
+      "1": {
+        "name": "base_mask",
+        "tooltip": "基础图像的透明度（1 = 透明，遵循 LoadImage 约定）；当前始终完全不透明。"
+      },
+      "2": {
+        "name": "layers",
+        "tooltip": "按从下到上顺序排列的透明图层。完整画布模式：按其边界框位置放置在与底图大小相同的黑色画布上。最小尺寸模式：裁剪至其边界框，以左上角为锚点，并填充至最大图层尺寸。"
+      },
+      "3": {
+        "name": "masks",
+        "tooltip": "每个图层的透明度，与 layers 批次按索引对齐（1 = 透明，遵循 LoadImage 约定）。若要进行 ImageCompositeMasked 风格的合成，请先添加 InvertMask。"
+      },
+      "4": {
+        "name": "bboxes",
+        "tooltip": "每个图层对应一个放置框，与 layers 批次按索引对齐（将两者连同 masks 一起输入“从边界框创建图层”，以重建各图层的位置）：{x, y, width, height, metadata: {name, desc, z_index, native_size, content_rect, flags}}。content_rect = [left, top, width, height] 表示图层自身框架内的内容区域；它会以放置框位置加上该偏移量的位置落在画布上。"
+      },
+      "5": {
+        "name": "layer_stack",
+        "tooltip": "可直接编辑的“创建分层图像”图层文档：包含背景底图，以及每个元素各自作为具名、紧密裁剪的图层，并位于其实际位置和堆叠顺序。可直接连接，或使用“添加图层”扩展。"
       }
     }
   },
@@ -7951,6 +8007,87 @@
       },
       "1": {
         "name": "反向",
+        "tooltip": null
+      }
+    }
+  },
+  "HunyuanImageEditApi": {
+    "description": "使用腾讯 Hunyuan Image 模型，根据文本提示编辑或组合最多 5 张参考图像。",
+    "display_name": "腾讯 HY Image：编辑",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "要使用的模型。"
+      },
+      "model_aspect_ratio": {
+        "name": "宽高比"
+      },
+      "model_height": {
+        "name": "高度"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_reference_detail": {
+        "name": "参考细节"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "model_seed": {
+        "name": "种子"
+      },
+      "model_watermark": {
+        "name": "水印"
+      },
+      "model_width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HunyuanImageTextToImageApi": {
+    "description": "使用腾讯 Hunyuan Image 模型根据文本提示生成图像。",
+    "display_name": "腾讯 HY Image：文生图",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "要使用的模型。"
+      },
+      "model_aspect_ratio": {
+        "name": "宽高比"
+      },
+      "model_height": {
+        "name": "高度"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "model_seed": {
+        "name": "种子"
+      },
+      "model_watermark": {
+        "name": "水印"
+      },
+      "model_width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -16812,7 +16949,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "模型在回答前进行推理的程度。“default”表示由模型自行选择。支持的级别因模型而异：GPT-6 Astra 为 low-max，GPT-5.6 为 none-max（不含 minimal），GPT-5.5 为 none-xhigh，GPT-5.5 Pro 为 medium-xhigh，GPT-5 为 minimal-high，o 系列为 low-high；GPT-4.1 不支持推理。不支持的级别会在发送请求前被拒绝。"
+        "tooltip": "模型在回答前进行多少推理。'default' 会将选择权交给模型。不同模型支持的级别不同：GPT-6 Astra low-max、GPT-6 Sol/Luna 和 GPT-5.6 none-max（不含 minimal）、GPT-5.5 none-xhigh、GPT-5.5 Pro medium-xhigh、GPT-5 minimal-high、o-series low-high；GPT-4.1 不支持推理。不支持的级别会在发送请求前被拒绝。"
       },
       "truncation": {
         "name": "截断",
@@ -18366,6 +18503,10 @@
       "model_top_p": {
         "name": "top_p"
       },
+      "reasoning_effort": {
+        "name": "推理强度",
+        "tooltip": "模型在绘制前进行推理的程度。更高的级别可提升细节，但会消耗更多 token。仅 Arrow 2 模型使用。"
+      },
       "seed": {
         "name": "seed",
         "tooltip": "用于决定节点是否重新运行的种子；无论种子如何，实际结果都是非确定性的。"
@@ -18404,6 +18545,10 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "对期望SVG输出的文本描述。"
+      },
+      "reasoning_effort": {
+        "name": "推理强度",
+        "tooltip": "模型在绘制前进行推理的程度。更高的级别可提升细节，但会消耗更多 token。仅 Arrow 2 模型使用。"
       },
       "reference_images": {
         "name": "reference_images",
@@ -19075,7 +19220,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "用于生成的模型。recraftv4_styles 模型专为保持样式一致的生成而设计，且始终需要 style_id 或 style_references。"
+        "tooltip": "用于生成的模型。recraftv4_styles 模型专为风格一致的生成而设计，并且始终需要 style_id 或 style_references；recraftv4_1_flash 是最快且最便宜的模型，完全不支持风格。"
       },
       "model_size": {
         "name": "size"
@@ -23799,6 +23944,30 @@
       }
     }
   },
+  "TextEncodeMingImageEdit": {
+    "display_name": "文本编码 Ming Image 编辑",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "图像",
+        "tooltip": "可选的参考图像，文本编码器可以看到这些图像，并将其作为干净帧追加到 latent 序列中。后续图像会被调整为与第一张图像相同的尺寸，采样的 latent 应与其尺寸一致。"
+      },
+      "prompt": {
+        "name": "提示词"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "没有 VAE 时，图像仅通过视觉塔对文本编码器进行条件约束。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TextEncodeQwenImage21": {
     "display_name": "文本编码 Qwen Image 2.1",
     "inputs": {
@@ -23968,6 +24137,10 @@
       "sampling_mode_top_p": {
         "name": "Top P"
       },
+      "system_prompt": {
+        "name": "系统提示词",
+        "tooltip": "替换模型聊天模板中的系统提示词。未使用默认模板时将被忽略。"
+      },
       "thinking": {
         "name": "思考模式",
         "tooltip": "如果模型支持，则以思考模式运行。"
@@ -23984,6 +24157,10 @@
     "outputs": {
       "0": {
         "name": "生成文本",
+        "tooltip": null
+      },
+      "1": {
+        "name": "思考",
         "tooltip": null
       }
     }
@@ -24034,6 +24211,10 @@
       "sampling_mode_top_p": {
         "name": "Top P"
       },
+      "system_prompt": {
+        "name": "系统提示词",
+        "tooltip": "替换模型聊天模板中的系统提示词。未使用默认模板时将被忽略。"
+      },
       "thinking": {
         "name": "思考模式",
         "tooltip": "如果模型支持，则以思考模式运行。"
@@ -24050,6 +24231,10 @@
     "outputs": {
       "0": {
         "name": "生成文本",
+        "tooltip": null
+      },
+      "1": {
+        "name": "思考",
         "tooltip": null
       }
     }

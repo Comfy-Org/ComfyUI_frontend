@@ -1932,7 +1932,7 @@
   },
   "ByteDanceSeedreamLayerSeparationNode": {
     "description": "تجزیه یک تصویر به یک پس‌زمینه به‌علاوه حداکثر ۱۶ لایه شفاف قابل جابجایی، هرکدام با ترتیب چیدمان، جعبه مرزی (bounding box)، نام و توضیح.",
-    "display_name": "ByteDance Seedream ۵.۰ Pro جداسازی لایه",
+    "display_name": "جداسازی لایه‌های ByteDance Seedream 5.0 Pro (قدیمی)",
     "inputs": {
       "control_after_generate": {
         "name": "کنترل پس از تولید"
@@ -1990,6 +1990,62 @@
       "5": {
         "name": "پشته لایه",
         "tooltip": "سند لایه‌بندی آماده ویرایش برای Create Layered Image: صفحه پایه به‌علاوه هر عنصر به عنوان یک لایه نام‌گذاری شده و فشرده در موقعیت و ترتیب واقعی خود. مستقیماً متصل کنید یا با Add Layer گسترش دهید."
+      }
+    }
+  },
+  "ByteDanceSeedreamLayerSeparationNodeV2": {
+    "description": "یک تصویر را به یک صفحهٔ پس‌زمینه به‌علاوهٔ حداکثر ۱۶ لایهٔ شفافِ قابل‌جابه‌جایی تجزیه می‌کند که هرکدام دارای ترتیب چیدمان، کادر مرزی، نام و توضیحات هستند.",
+    "display_name": "جداسازی لایه‌های ByteDance Seedream 5.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_crop_layers": {
+        "name": "crop_layers"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_prompt_optimization": {
+        "name": "prompt_optimization"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_size": {
+        "name": "size"
+      },
+      "model_watermark": {
+        "name": "watermark"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "base_image",
+        "tooltip": "تصویر پایه (صفحهٔ پس‌زمینه) که لایه‌ها روی آن چیده می‌شوند."
+      },
+      "1": {
+        "name": "base_mask",
+        "tooltip": "شفافیت تصویر پایه (1 = شفاف، طبق قرارداد LoadImage)؛ در حال حاضر همیشه کاملاً کدر است."
+      },
+      "2": {
+        "name": "layers",
+        "tooltip": "لایه‌های شفاف، مرتب‌شده از پایین به بالا. حالت بوم کامل: در موقعیت کادر مرزی خود روی یک بوم سیاه هم‌اندازهٔ پایه قرار می‌گیرند. حالت اندازهٔ حداقلی: به کادر مرزی خود برش می‌خورند، در بالا-چپ لنگر می‌شوند و تا اندازهٔ بزرگ‌ترین لایه پدگذاری می‌شوند."
+      },
+      "3": {
+        "name": "masks",
+        "tooltip": "شفافیت هر لایه، هم‌راستا از نظر اندیس با دستهٔ layers (1 = شفاف، طبق قرارداد LoadImage). برای ترکیب‌بندی به‌سبک ImageCompositeMasked، ابتدا InvertMask را اضافه کنید."
+      },
+      "4": {
+        "name": "bboxes",
+        "tooltip": "یک کادر جای‌گذاری برای هر لایه، هم‌راستا از نظر اندیس با دستهٔ layers (هر دو را، به‌همراه masks، به Layers From Bounding Boxes بدهید تا جای‌گذاری هر لایه بازسازی شود): {x, y, width, height, metadata: {name, desc, z_index, native_size, content_rect, flags}}. content_rect = [left, top, width, height] ناحیهٔ محتوای لایه درون قاب خودش است؛ این ناحیه روی بوم، در موقعیت کادر به‌علاوهٔ آن افست قرار می‌گیرد."
+      },
+      "5": {
+        "name": "layer_stack",
+        "tooltip": "سند لایه‌ای آمادهٔ ویرایش برای Create Layered Image: صفحهٔ پایه به‌علاوهٔ هر عنصر به‌صورت لایه‌ای مستقل، نام‌دار و با برش فشرده در موقعیت و ترتیب چیدمان واقعی آن. مستقیماً متصل کنید یا با Add Layer گسترش دهید."
       }
     }
   },
@@ -7951,6 +8007,87 @@
       },
       "1": {
         "name": "منفی",
+        "tooltip": null
+      }
+    }
+  },
+  "HunyuanImageEditApi": {
+    "description": "با استفاده از مدل Hunyuan Image شرکت Tencent، حداکثر ۵ تصویر مرجع را با راهنمایی یک prompt متنی ویرایش یا ترکیب می‌کند.",
+    "display_name": "Tencent HY Image: ویرایش",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که باید استفاده شود."
+      },
+      "model_aspect_ratio": {
+        "name": "نسبت تصویر"
+      },
+      "model_height": {
+        "name": "ارتفاع"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reference_detail": {
+        "name": "جزئیات مرجع"
+      },
+      "model_resolution": {
+        "name": "وضوح"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_watermark": {
+        "name": "واترمارک"
+      },
+      "model_width": {
+        "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HunyuanImageTextToImageApi": {
+    "description": "با استفاده از مدل Hunyuan Image شرکت Tencent، از یک prompt متنی تصویر تولید می‌کند.",
+    "display_name": "Tencent HY Image: متن به تصویر",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که باید استفاده شود."
+      },
+      "model_aspect_ratio": {
+        "name": "نسبت تصویر"
+      },
+      "model_height": {
+        "name": "ارتفاع"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "وضوح"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_watermark": {
+        "name": "واترمارک"
+      },
+      "model_width": {
+        "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -16812,7 +16949,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "میزان استدلال مدل پیش از پاسخ‌گویی. «default» انتخاب را به مدل واگذار می‌کند. سطوح پشتیبانی‌شده برای هر مدل متفاوت‌اند: GPT-6 Astra از low تا max، GPT-5.6 از none تا max (بدون minimal)، GPT-5.5 از none تا xhigh، GPT-5.5 Pro از medium تا xhigh، GPT-5 از minimal تا high، و سری o از low تا high؛ GPT-4.1 استدلال ندارد. سطوح پشتیبانی‌نشده پیش از ارسال درخواست رد می‌شوند."
+        "tooltip": "میزان استدلال مدل پیش از پاسخ‌گویی. 'default' انتخاب را به مدل واگذار می‌کند. سطوح پشتیبانی‌شده بسته به مدل متفاوت‌اند: GPT-6 Astra با low-max، GPT-6 Sol/Luna و GPT-5.6 با none-max (بدون minimal)، GPT-5.5 با none-xhigh، GPT-5.5 Pro با medium-xhigh، GPT-5 با minimal-high، سری o با low-high؛ GPT-4.1 استدلال ندارد. سطوح پشتیبانی‌نشده پیش از ارسال درخواست رد می‌شوند."
       },
       "truncation": {
         "name": "truncation",
@@ -18366,6 +18503,10 @@
       "model_top_p": {
         "name": "top_p"
       },
+      "reasoning_effort": {
+        "name": "تلاش استدلال",
+        "tooltip": "میزان استدلالی که مدل پیش از ترسیم صرف می‌کند. سطوح بالاتر جزئیات را بهبود می‌دهند و token بیشتری هزینه دارند. فقط توسط مدل‌های Arrow 2 استفاده می‌شود."
+      },
       "seed": {
         "name": "seed",
         "tooltip": "Seed برای تعیین اجرای مجدد node؛ نتایج واقعی صرف‌نظر از seed غیرقطعی هستند."
@@ -18404,6 +18545,10 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "توضیح متنی برای خروجی SVG مورد نظر."
+      },
+      "reasoning_effort": {
+        "name": "تلاش استدلال",
+        "tooltip": "میزان استدلالی که مدل پیش از ترسیم صرف می‌کند. سطوح بالاتر جزئیات را بهبود می‌دهند و token بیشتری هزینه دارند. فقط توسط مدل‌های Arrow 2 استفاده می‌شود."
       },
       "reference_images": {
         "name": "reference_images",
@@ -19075,7 +19220,7 @@
       },
       "model": {
         "name": "مدل",
-        "tooltip": "مدلی که برای تولید استفاده می‌شود. مدل‌های recraftv4_styles برای تولید با سبک یکپارچه ساخته شده‌اند و همیشه به style_id یا style_references نیاز دارند."
+        "tooltip": "مدلی که برای تولید استفاده می‌شود. مدل‌های recraftv4_styles برای تولید با سبک یکپارچه ساخته شده‌اند و همیشه به style_id یا style_references نیاز دارند؛ recraftv4_1_flash سریع‌ترین و ارزان‌ترین مدل است و اصلاً از سبک‌ها پشتیبانی نمی‌کند."
       },
       "model_size": {
         "name": "اندازه"
@@ -23799,6 +23944,30 @@
       }
     }
   },
+  "TextEncodeMingImageEdit": {
+    "display_name": "کدگذاری متن برای ویرایش تصویر Ming",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "تصاویر",
+        "tooltip": "تصاویر مرجع اختیاری که توسط رمزگذار متن دیده می‌شوند و به‌صورت فریم‌های پاک به توالی latent افزوده می‌شوند. تصاویر بعدی به اندازهٔ تصویر اول تغییر اندازه داده می‌شوند و latent نمونه‌برداری‌شده باید با اندازهٔ آن مطابقت داشته باشد."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "بدون VAE، تصاویر فقط از طریق برج بینایی رمزگذار متن را شرطی می‌کنند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TextEncodeQwenImage21": {
     "display_name": "کدگذاری متن Qwen Image 2.1",
     "inputs": {
@@ -23968,6 +24137,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "prompt_سیستم",
+        "tooltip": "prompt سیستم را در قالب گفت‌وگوی مدل جایگزین می‌کند. هنگامی که از قالب پیش‌فرض استفاده نشود، نادیده گرفته می‌شود."
+      },
       "thinking": {
         "name": "تفکر",
         "tooltip": "در حالت تفکر عمل کنید اگر مدل از آن پشتیبانی می‌کند."
@@ -23984,6 +24157,10 @@
     "outputs": {
       "0": {
         "name": "متن تولید شده",
+        "tooltip": null
+      },
+      "1": {
+        "name": "تفکر",
         "tooltip": null
       }
     }
@@ -24034,6 +24211,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "اعلان سیستمی را در قالب چت مدل جایگزین می‌کند. وقتی از قالب پیش‌فرض استفاده نشود، نادیده گرفته می‌شود."
+      },
       "thinking": {
         "name": "تفکر",
         "tooltip": "در حالت تفکر عمل کنید اگر مدل از آن پشتیبانی می‌کند."
@@ -24050,6 +24231,10 @@
     "outputs": {
       "0": {
         "name": "متن تولید شده",
+        "tooltip": null
+      },
+      "1": {
+        "name": "تفکر",
         "tooltip": null
       }
     }
