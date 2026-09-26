@@ -367,3 +367,39 @@ test.describe(
     })
   }
 )
+
+test.describe(
+  'Completed widget edits survive unrelated agent turns',
+  { tag: ['@cloud', '@agent', '@vue-nodes', '@widget'] },
+  () => {
+    test.use({ conversationCase: UNTOUCHED_CASE })
+
+    test('keeps a completed widget edit after an unrelated agent turn', async ({
+      agentConversation
+    }) => {
+      test.setTimeout(90_000)
+      const textField = agentConversation.vueNodes
+        .getNodeLocator(UNTOUCHED_NODE_ID)
+        .getByLabel('text', { exact: true })
+      const agentEditedField = agentConversation.vueNodes
+        .getNodeLocator('3')
+        .getByLabel('steps', { exact: true })
+      const localValue = 'keep this completed local edit'
+
+      await agentConversation.sendPrompt(0)
+
+      await agentConversation.replayResponse(0, async () => {
+        await test.step('the user completes and leaves a widget edit', async () => {
+          await textField.fill(localValue)
+          await textField.press('Tab')
+          await expect(textField).not.toBeFocused()
+          await expect(textField).toHaveValue(localValue)
+        })
+      })
+      await agentConversation.waitForTurnComplete()
+
+      await expect(agentEditedField.getByRole('spinbutton')).toHaveValue('30')
+      await expect(textField).toHaveValue(localValue)
+    })
+  }
+)

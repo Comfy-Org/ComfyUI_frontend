@@ -5,6 +5,17 @@ import {
   DOC_PROTOCOL_VERSION,
   parseServerDocFrame
 } from '@/workbench/extensions/agent/crdt/docFrameClient'
+import type {
+  ExecutedWsMessage,
+  ExecutingWsMessage,
+  ExecutionErrorWsMessage,
+  ExecutionInterruptedWsMessage,
+  ExecutionStartWsMessage,
+  ExecutionSuccessWsMessage,
+  ProgressStateWsMessage,
+  ProgressWsMessage,
+  StatusWsMessage
+} from '@/platform/remote/comfyui/execution/types'
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
@@ -16,6 +27,22 @@ import type {
 } from '@e2e/fixtures/agentWireFrame'
 
 const SUBSCRIBE_TIMEOUT = 15_000
+
+/**
+ * ComfyUI execution frames the fake host can emit alongside doc and agent
+ * frames, typed against the app's own ws message shapes so a fixture cannot
+ * drift from what `executionStore` actually parses.
+ */
+export type ExecutionHostFrame =
+  | { type: 'status'; data: StatusWsMessage }
+  | { type: 'execution_start'; data: ExecutionStartWsMessage }
+  | { type: 'executing'; data: ExecutingWsMessage }
+  | { type: 'executed'; data: ExecutedWsMessage }
+  | { type: 'execution_success'; data: ExecutionSuccessWsMessage }
+  | { type: 'execution_error'; data: ExecutionErrorWsMessage }
+  | { type: 'execution_interrupted'; data: ExecutionInterruptedWsMessage }
+  | { type: 'progress'; data: ProgressWsMessage }
+  | { type: 'progress_state'; data: ProgressStateWsMessage }
 
 /**
  * How the fake host treats a `doc_ops` batch the page mints for a human edit:
@@ -121,6 +148,12 @@ export class AgentFollowerHostSocket {
     } else if (!parseAgentWsEvent(frame).success) {
       throw new Error(`agent event ${frame.type} is not a valid agent event`)
     }
+    if (!this.socket) throw new Error('the app has not opened /ws yet')
+    this.socket.send(JSON.stringify(frame))
+  }
+
+  /** Emits a ComfyUI execution frame on the shared `/ws`. */
+  sendExecution(frame: ExecutionHostFrame): void {
     if (!this.socket) throw new Error('the app has not opened /ws yet')
     this.socket.send(JSON.stringify(frame))
   }
