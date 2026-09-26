@@ -49,7 +49,7 @@ defineProps<{
         >
           <img
             :src="asset.preview"
-            :alt="asset.title"
+            alt=""
             class="max-h-full max-w-full object-contain"
             loading="lazy"
             decoding="async"

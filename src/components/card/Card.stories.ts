@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { ref } from 'vue'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
 import Button from '@/components/ui/button/Button.vue'
 import Tag from '@/components/chip/Tag.vue'
 import CardBottom from './CardBottom.vue'
@@ -13,16 +15,13 @@ interface CardStoryArgs {
   // CardContainer props
   containerSize: 'mini' | 'compact' | 'regular' | 'portrait' | 'tall' | 'auto'
   variant: 'default' | 'ghost' | 'outline'
-  rounded: 'none' | 'sm' | 'lg' | 'xl'
+  rounded: 'none' | 'md' | 'lg' | 'xl'
   customAspectRatio?: string
   hasBorder: boolean
   hasBackground: boolean
   hasShadow: boolean
   hasCursor: boolean
   customClass: string
-  maxWidth: number
-  minWidth: number
-
   // CardTop props
   topRatio: 'square' | 'landscape'
 
@@ -64,7 +63,7 @@ const meta: Meta<CardStoryArgs> = {
     },
     rounded: {
       control: 'select',
-      options: ['none', 'sm', 'lg', 'xl'],
+      options: ['none', 'md', 'lg', 'xl'],
       description: 'Border radius size'
     },
     customAspectRatio: {
@@ -184,6 +183,7 @@ const createCardTemplate = (args: CardStoryArgs) => ({
 
     return {
       args,
+      cn,
       favorited,
       toggleFavorite
     }
@@ -199,7 +199,7 @@ const createCardTemplate = (args: CardStoryArgs) => ({
         :has-background="args.hasBackground"
         :has-shadow="args.hasShadow"
         :has-cursor="args.hasCursor"
-        :class="args.customClass || 'max-w-[320px] mx-auto'"
+        :class="cn(args.customClass || 'mx-auto max-w-80')"
       >
         <template #top>
           <CardTop :ratio="args.topRatio">
@@ -223,17 +223,21 @@ const createCardTemplate = (args: CardStoryArgs) => ({
             
             <template v-if="args.showTopRight" #top-right>
               <Button
-                class="!bg-white/90 !text-neutral-900"
+                variant="overlay-white"
+                size="icon"
                 @click="() => console.log('Info clicked')"
               >
                 <i class="icon-[lucide--info] size-4" />
               </Button>
               <Button
-                class="!bg-white/90"
-                :class="favorited ? '!text-red-500' : '!text-neutral-900'"
+                variant="overlay-white"
+                size="icon"
+                :class="cn(favorited && 'text-destructive-background')"
                 @click="toggleFavorite"
               >
-                <i class="icon-[lucide--heart] size-4" :class="favorited ? 'fill-current' : ''" />
+                <i
+                  :class="cn('icon-[lucide--heart] size-4', favorited && 'fill-current')"
+                />
               </Button>
             </template>
             

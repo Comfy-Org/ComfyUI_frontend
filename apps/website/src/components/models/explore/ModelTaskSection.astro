@@ -1,0 +1,47 @@
+---
+import SectionLabel from '../../common/SectionLabel.vue'
+import BrandButton from '../../common/BrandButton.vue'
+import TaskTile from '../../ui/task-tile/TaskTile.vue'
+
+import type { ExploreTaskFixture } from './modelExploreFixtures'
+
+interface Props {
+  label: string
+  description: string
+  tasks: ExploreTaskFixture[]
+  actionLabel: string
+  actionHref: string
+}
+
+const { label, description, tasks, actionLabel, actionHref } = Astro.props
+---
+
+<section
+  aria-labelledby="model-task-heading"
+  class="mx-auto max-w-10xl px-6 py-14 md:px-10 xl:px-30"
+>
+  <div class="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+    <div class="flex flex-col gap-2">
+      <h2 id="model-task-heading"><SectionLabel>{label}</SectionLabel></h2>
+      <p class="text-base font-light text-primary-warm-gray">{description}</p>
+    </div>
+    <div class="shrink-0">
+      <BrandButton href={actionHref} variant="outline" size="xs">
+        {actionLabel}
+      </BrandButton>
+    </div>
+  </div>
+  <div class="mt-7 grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
+    {
+      tasks.map((task) => (
+        <TaskTile
+          href={task.href}
+          title={task.title}
+          description={task.description}
+          meta={task.meta}
+          mediaSrc={task.mediaSrc}
+        />
+      ))
+    }
+  </div>
+</section>

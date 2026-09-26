@@ -1,9 +1,11 @@
-import vue from '@vitejs/plugin-vue'
 import { fileURLToPath } from 'node:url'
+
+import vue from '@vitejs/plugin-vue'
+import { storybookTest } from '@storybook/addon-vitest/vitest-plugin'
+import { playwright } from '@vitest/browser-playwright'
 import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
-  plugins: [vue()],
   resolve: {
     alias: {
       'astro:env/client': fileURLToPath(
@@ -28,7 +30,6 @@ export default defineConfig({
         }
       }
     },
-    include: ['src/**/*.{test,spec}.ts', 'scripts/**/*.{test,spec}.ts'],
     globals: false,
     setupFiles: ['../../vitest.timer.setup.ts', './src/test/setup.ts'],
     coverage: {
@@ -53,6 +54,38 @@ export default defineConfig({
         // meaningful patch-coverage targets here.
         'src/config/workshop-firebase.ts'
       ]
-    }
+    },
+    projects: [
+      {
+        extends: true,
+        plugins: [vue()],
+        test: {
+          name: 'unit',
+          include: ['src/**/*.{test,spec}.ts', 'scripts/**/*.{test,spec}.ts']
+        }
+      },
+      {
+        extends: true,
+        plugins: [
+          storybookTest({
+            configDir: fileURLToPath(new URL('.storybook', import.meta.url))
+          })
+        ],
+        test: {
+          name: 'storybook',
+          fileParallelism: false,
+          browser: {
+            enabled: true,
+            headless: true,
+            provider: playwright({}),
+            instances: [
+              {
+                browser: 'chromium'
+              }
+            ]
+          }
+        }
+      }
+    ]
   }
 })

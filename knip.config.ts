@@ -54,6 +54,9 @@ const config: KnipConfig = {
       // Executed by models-snippets.test.ts inside the generated Node examples.
       ignoreDependencies: ['mime-types']
     },
+    'apps/website-storybook-mcp': {
+      entry: ['api/**/*.ts', 'middleware.ts', 'scripts/**/*.ts']
+    },
     'tools/test-recorder': {
       project: ['src/**/*.ts']
     }
@@ -71,8 +74,6 @@ const config: KnipConfig = {
     // Auto generated API types
     'src/workbench/extensions/manager/types/generatedManagerTypes.ts',
     'packages/ingest-types/src/zod.gen.ts',
-    // Marketing media tooling — adopted by pages in a follow-up PR
-    'apps/website/src/components/common/SiteVideo.vue',
     // Animated pill button — retained for reuse after the learning directory
     // switched to ButtonPill; no current consumer
     'apps/website/src/components/ui/button-mask/**',

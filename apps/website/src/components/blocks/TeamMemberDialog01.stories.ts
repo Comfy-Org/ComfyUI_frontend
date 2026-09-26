@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
+import { expect, userEvent, within } from 'storybook/test'
 
 import TeamMemberDialog01 from './TeamMemberDialog01.vue'
 
@@ -78,7 +79,20 @@ const meta: Meta<typeof TeamMemberDialog01> = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-export const Default: Story = {}
+export const Default: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const body = within(document.body)
+
+    const dialog = body.getByRole('dialog')
+    await expect(dialog).toHaveAttribute('data-state', 'open')
+    await userEvent.click(body.getByRole('button', { name: 'Close' }))
+    await expect(dialog).toHaveAttribute('data-state', 'closed')
+    await expect(
+      canvas.getByRole('button', { name: 'View bio', hidden: true })
+    ).toHaveAttribute('aria-expanded', 'false')
+  }
+}
 
 export const WithoutTags: Story = {
   args: { tags: [] }

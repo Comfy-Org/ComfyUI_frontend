@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Website Mockup Fidelity'
+  short_description: 'Build faithful pages without design inventions'
+  default_prompt: 'Use $website-mockup-fidelity to translate this website mockup into a system-governed design preview.'

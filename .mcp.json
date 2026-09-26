@@ -1,5 +1,9 @@
 {
   "mcpServers": {
+    "comfy-marketing-storybook": {
+      "type": "http",
+      "url": "https://comfy-website-storybook-mcp.vercel.app/mcp"
+    },
     "playwright-test": {
       "command": "pnpm",
       "args": ["dlx", "@playwright/mcp@0.0.68"]

@@ -1,0 +1,42 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "pnpm build",
+  "outputDirectory": "public",
+  "framework": null,
+  "github": {
+    "enabled": false
+  },
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/.well-known/oauth-protected-resource",
+      "destination": "/api/oauth-protected-resource"
+    },
+    {
+      "source": "/.well-known/oauth-protected-resource/mcp",
+      "destination": "/api/oauth-protected-resource"
+    },
+    {
+      "source": "/login",
+      "destination": "/login.html"
+    },
+    {
+      "source": "/api/auth/:path*",
+      "destination": "/api/auth?path=:path*"
+    },
+    {
+      "source": "/mcp",
+      "destination": "/api/mcp"
+    }
+  ]
+}
