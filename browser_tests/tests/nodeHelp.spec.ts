@@ -454,7 +454,6 @@ This is English documentation.
         )
         const helpPage = await openSelectionToolboxHelp(comfyPage)
         await localeRequest
-        test.fail()
         await expect(helpPage).toContainText('Custom fallback help')
         await expect(helpPage).toContainText('Nonlocalized custom node docs.')
         await expect(helpPage).not.toContainText(

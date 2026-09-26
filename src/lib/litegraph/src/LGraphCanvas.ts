@@ -8590,7 +8590,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       options = [
         {
           content: 'Convert to Subgraph',
-          callback: () => this._graph.convertToSubgraph(this.selectedItems)
+          callback: () => {
+            this._graph.convertToSubgraph(this.selectedItems)
+          }
         },
         {
           content: 'Properties',

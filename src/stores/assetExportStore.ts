@@ -28,6 +28,7 @@ export interface AssetExport {
 
 const STALE_THRESHOLD_MS = 10_000
 const POLL_INTERVAL_MS = 10_000
+const MISSING_TASK_RETRY_LIMIT = 3
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
@@ -43,6 +44,7 @@ function numberValue(value: unknown, fallback: number): number {
 
 export const useAssetExportStore = defineStore('assetExport', () => {
   const exports = ref<Map<TaskId, AssetExport>>(new Map())
+  const missingTaskPolls = new Map<TaskId, number>()
 
   const exportList = computed(() => Array.from(exports.value.values()))
   const activeExports = computed(() =>
@@ -111,11 +113,12 @@ export const useAssetExportStore = defineStore('assetExport', () => {
     const existing = exports.value.get(data.task_id)
 
     if (
-      (existing?.status === 'completed' || existing?.status === 'failed') &&
-      existing.downloadTriggered
+      existing?.status === 'failed' ||
+      (existing?.status === 'completed' && existing.downloadTriggered)
     ) {
       return
     }
+    missingTaskPolls.delete(data.task_id)
 
     const exp: AssetExport = {
       taskId: data.task_id,
@@ -151,6 +154,28 @@ export const useAssetExportStore = defineStore('assetExport', () => {
       try {
         const task = await taskService.getTask(exp.taskId)
 
+        if (!task) {
+          const missingPolls = (missingTaskPolls.get(exp.taskId) ?? 0) + 1
+          if (missingPolls < MISSING_TASK_RETRY_LIMIT) {
+            missingTaskPolls.set(exp.taskId, missingPolls)
+            return
+          }
+          missingTaskPolls.delete(exp.taskId)
+          handleAssetExport({
+            task_id: exp.taskId,
+            export_name: exp.exportName,
+            assets_total: exp.assetsTotal,
+            assets_attempted: exp.assetsAttempted,
+            assets_failed: exp.assetsFailed,
+            bytes_total: exp.bytesTotal,
+            bytes_processed: exp.bytesProcessed,
+            progress: exp.progress,
+            status: 'failed'
+          })
+          return
+        }
+        missingTaskPolls.delete(exp.taskId)
+
         if (task.status === 'completed' || task.status === 'failed') {
           const result: Record<string, unknown> = isRecord(task.result)
             ? task.result
@@ -172,7 +197,7 @@ export const useAssetExportStore = defineStore('assetExport', () => {
           })
         }
       } catch {
-        // Task not ready or not found
+        return
       }
     }
 

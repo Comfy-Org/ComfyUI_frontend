@@ -2176,7 +2176,7 @@ export class LGraph
     node: SubgraphNode
   } {
     if (items.size === 0)
-      throw new Error('Cannot convert to subgraph: nothing to convert')
+      throw new RangeError('Cannot convert to subgraph: nothing to convert')
 
     // Record state before conversion for proper undo support
     this.beforeChange()
