@@ -2,16 +2,8 @@
 @import '@comfyorg/design-system/css/base.css';
 @import 'tw-animate-css';
 
-/* The foundry now draws PP Formula with its caps centred in its own content
-   box, so nothing here is correcting the face any more. Each override pair is
-   kept only to hold the content box at the height it has always had — the
-   redrawn files are 5.8% taller, and the narrow cut 9.9% — so `line-height:
-   normal` lands where it does today and no page reflows. The narrow cut is
-   drawn to its own metrics and so takes its own pair. */
 @font-face {
   font-family: 'PP Formula';
-  ascent-override: 102.05%;
-  descent-override: 19.15%;
   src: url('/fonts/PPFormula-Light.woff2') format('woff2');
   font-weight: 300;
   font-style: normal;
@@ -20,8 +12,6 @@
 
 @font-face {
   font-family: 'PP Formula';
-  ascent-override: 102.05%;
-  descent-override: 19.15%;
   src: url('/fonts/PPFormula-Regular.woff2') format('woff2');
   font-weight: 400;
   font-style: normal;
@@ -30,8 +20,6 @@
 
 @font-face {
   font-family: 'PP Formula';
-  ascent-override: 102.05%;
-  descent-override: 19.15%;
   src: url('/fonts/PPFormula-Medium.woff2') format('woff2');
   font-weight: 500;
   font-style: normal;
@@ -40,8 +28,6 @@
 
 @font-face {
   font-family: 'PP Formula';
-  ascent-override: 102.05%;
-  descent-override: 19.15%;
   src: url('/fonts/PPFormula-Semibold.woff2') format('woff2');
   font-weight: 600;
   font-style: normal;
@@ -50,8 +36,6 @@
 
 @font-face {
   font-family: 'PP Formula';
-  ascent-override: 102.05%;
-  descent-override: 19.15%;
   src: url('/fonts/PPFormula-Bold.woff2') format('woff2');
   font-weight: 700;
   font-style: normal;
@@ -60,8 +44,6 @@
 
 @font-face {
   font-family: 'PP Formula';
-  ascent-override: 102.05%;
-  descent-override: 19.15%;
   src: url('/fonts/PPFormula-Bold.woff2') format('woff2');
   font-weight: 800;
   font-style: normal;
@@ -70,8 +52,6 @@
 
 @font-face {
   font-family: 'PP Formula Narrow';
-  ascent-override: 99.45%;
-  descent-override: 18.15%;
   src: url('/fonts/PPFormula-NarrowSemibold.woff2') format('woff2');
   font-weight: 600;
   font-style: normal;
