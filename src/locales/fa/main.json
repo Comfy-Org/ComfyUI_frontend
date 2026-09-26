@@ -9,7 +9,6 @@
       "signInCaption": "گره‌های شریک به حساب کاربری نیاز دارند",
       "signInToRun": "برای اجرا وارد شوید"
     },
-    "share": "اشتراک‌گذاری",
     "shareTooltip": "اشتراک‌گذاری گردش‌کار"
   },
   "agent": {
@@ -158,6 +157,8 @@
     "showChatHistory": "نمایش تاریخچهٔ گفتگو",
     "showLess": "نمایش کمتر",
     "showMore": "نمایش بیشتر",
+    "showTarget": "نمایش هدف",
+    "showTargetWorkflow": "نمایش workflow هدف: {workflowName}",
     "skip": "رد کردن",
     "stop": "توقف",
     "stopShortcut": "Esc",
@@ -170,6 +171,7 @@
     ],
     "switchWorkflow": "تغییر workflow",
     "switchWorkflowForNodes": "برای افزودن نودها، به {workflowName} بروید.",
+    "targetFollowsVisibleWorkflow": "workflow هدف تا زمانی که هدفی انتخاب نکنید، به nodeها ارجاع ندهید یا پیامی ارسال نکنید، از تبِ قابل‌مشاهده پیروی می‌کند.",
     "targetForThisChat": "هدف ایجنت برای این گفت‌وگو",
     "targetNavigationUnavailable": "این مقصد workflow دیگر در دسترس نیست.",
     "thinking": "در حال فکر کردن...",
@@ -188,6 +190,7 @@
     "updatingGraph": "عامل در حال به‌روزرسانی گراف است",
     "uploading": "در حال بارگذاری",
     "viewAddedNodes": "مشاهدهٔ node | مشاهدهٔ nodeها",
+    "viewingDifferentWorkflow": "شما workflowی متفاوت از هدف را مشاهده می‌کنید.",
     "worked": "انجام شد",
     "workedForMinutes": "به‌مدت {minutes}m {seconds}s انجام شد",
     "workedForSeconds": "به‌مدت {seconds} ثانیه انجام شد",
@@ -540,6 +543,7 @@
     "expiredCardDetail": "این کارت منقضی شده است. از روش پرداخت دیگری استفاده کنید.",
     "incorrectCvcDetail": "کد امنیتی کارت نادرست است. آن را بررسی کرده و دوباره تلاش کنید.",
     "insufficientFundsDetail": "این روش پرداخت موجودی کافی ندارد. روش پرداخت دیگری را امتحان کنید یا با بانک خود تماس بگیرید.",
+    "operationAlreadyPendingDetail": "پرداختی که پیش‌تر آغاز کرده‌اید هنوز در حال پردازش است. پیش از اینکه بتوانید طرح دیگری انتخاب کنید، باید تکمیل شود.",
     "paymentDeclinedDetail": "بانک شما این پرداخت را رد کرد. روش پرداخت دیگری را امتحان کنید یا با بانک خود تماس بگیرید.",
     "processingErrorDetail": "پرداخت شما پردازش نشد. دوباره تلاش کنید یا از روش پرداخت دیگری استفاده کنید.",
     "reconciliationDetail": "پرداخت شما دریافت شد، اما نتوانستیم به‌روزرسانی workspace شما را کامل کنیم. با پشتیبانی تماس بگیرید و این شناسهٔ عملیات را ارائه کنید:",
@@ -717,6 +721,8 @@
         "selectAtLeastOne": "لطفاً حداقل یک گزینه را انتخاب کنید."
       },
       "intro": "به ما کمک کنید تا تجربه شما از ComfyUI را متناسب‌سازی کنیم.",
+      "navigationFailed": "نظرسنجی ذخیره شد، اما راه‌اندازی اولیه ادامه پیدا نکرد",
+      "navigationFailedDetail": "لطفاً دوباره تلاش کنید.",
       "options": {
         "experience": {
           "new": "جدید در ComfyUI",
@@ -757,6 +763,8 @@
       },
       "otherPlaceholder": "بیشتر توضیح دهید",
       "placeholder": "جای‌نگهدار سوالات نظرسنجی",
+      "submitFailed": "نظرسنجی ارسال نشد",
+      "submitFailedDetail": "پاسخ‌های شما ذخیره نشدند. لطفاً دوباره تلاش کنید.",
       "title": "نظرسنجی ابری"
     }
   },
@@ -2100,6 +2108,9 @@
     "updating": "در حال به‌روزرسانی {id}",
     "upload": "بارگذاری",
     "uploadAlreadyInProgress": "بارگذاری در حال انجام است",
+    "uploadFailed": "بارگذاری ناموفق بود: {reason}",
+    "uploadFileTooLarge": "فایل برای بارگذاری بیش از حد بزرگ است.",
+    "uploadFileTooLargeWithLimit": "فایل برای بارگذاری بیش از حد بزرگ است (حد: {limit} مگابایت).",
     "uploadTimedOut": "زمان بارگذاری به پایان رسید. لطفاً دوباره تلاش کنید.",
     "usageHint": "راهنمای استفاده",
     "use": "استفاده",
@@ -3090,6 +3101,7 @@
     "Refresh Node Definitions": "به‌روزرسانی تعاریف Node",
     "Reinstall": "نصب مجدد",
     "Rename": "تغییر نام",
+    "Replay Onboarding": "اجرای مجدد راه‌اندازی اولیه",
     "Reset View": "بازنشانی نما",
     "Resize Selected Nodes": "تغییر اندازه Nodeهای انتخاب‌شده",
     "Restart": "راه‌اندازی مجدد",
@@ -3282,6 +3294,7 @@
     "mask": "ماسک",
     "merging": "ادغام",
     "mesh": "mesh",
+    "ming image": "تصویر ming",
     "minimax": "minimax",
     "minimax music": "minimax music",
     "mochi": "mochi",
@@ -3542,6 +3555,12 @@
     "next": "بعدی",
     "skip": "رد کردن",
     "stepLabel": "گام {current} از {total}"
+  },
+  "onboardingReplay": {
+    "confirmMessage": "این کار ComfyUI را دوباره بارگیری می‌کند و مراحل راه‌اندازی اولیه موجود در این محیط را بازنشانی می‌کند. workflowهای شما تحت‌تأثیر قرار نمی‌گیرند.",
+    "confirmTitle": "راه‌اندازی اولیه دوباره اجرا شود؟",
+    "failedDetail": "وضعیت راه‌اندازی اولیه شما بازنشانی نشد. لطفاً دوباره تلاش کنید.",
+    "failedSummary": "اجرای مجدد راه‌اندازی اولیه انجام نشد"
   },
   "openSharedWorkflow": {
     "author": "نویسنده:",
@@ -4387,9 +4406,12 @@
       "message": "صورت‌حساب تیمی به‌زودی ارائه می‌شود. به‌زودی می‌توانید برای فضای کاری خود با قیمت هر نفر اشتراک تهیه کنید. برای به‌روزرسانی‌ها همراه ما باشید.",
       "title": "به‌زودی"
     },
+    "billingTabBlocked": "صفحه صورت‌حساب باز نشد. پنجره‌های بازشو را برای این سایت مجاز کنید و دوباره تلاش کنید.",
     "cancelDialog": {
       "confirmCancel": "لغو اشتراک",
       "description": "دسترسی شما تا تاریخ {date} ادامه دارد. دیگر هزینه‌ای دریافت نمی‌شود و فضای کاری و اعتبار شما حفظ خواهد شد. هر زمان می‌توانید دوباره اشتراک تهیه کنید.",
+      "discountApplied": "تخفیف شما اعمال شده است؛ بنابراین این اشتراک لغو نشد. برای دیدن طرح به‌روزشده، این پنجره را ببندید.",
+      "discountRefreshFailed": "تخفیف شما اعمال شد. برای دیدن طرح به‌روزشده، صفحه را تازه‌سازی کنید.",
       "endOfBillingPeriod": "پایان دوره صورتحساب",
       "failed": "لغو اشتراک ناموفق بود",
       "keepSubscription": "حفظ اشتراک",
@@ -4579,6 +4601,7 @@
       "payAndSubscribe": "پرداخت و اشتراک",
       "paymentMethod": "روش پرداخت",
       "paymentPopupBlocked": "امکان باز کردن صفحه پرداخت وجود ندارد — لطفاً پاپ‌آپ‌ها را فعال کنید و دوباره تلاش کنید.",
+      "pendingVerificationDetail": "پرداختی که پیش‌تر آغاز کرده‌اید هنوز به توجه شما نیاز دارد. تکمیل آن، طرحی را که آن زمان انتخاب کردید فعال می‌کند. پس از تکمیل آن می‌توانید طرح دیگری انتخاب کنید.",
       "perMember": "/ هر عضو",
       "privacyPolicy": "سیاست حفظ حریم خصوصی",
       "promoCodePlaceholder": "کد تخفیف",
@@ -4812,6 +4835,7 @@
     "clearAllFilters": "حذف همه فیلترها",
     "error": {
       "loading": "باز کردن الگو ممکن نشد. لطفاً دوباره تلاش کنید.",
+      "preparingMedia": "برخی از رسانه‌های نمونه آماده نشدند. workflow باز می‌شود؛ برای هر ورودیِ ناقص، فایل‌های خود را انتخاب کنید.",
       "templateNotFound": "قالب \"{templateName}\" یافت نشد"
     },
     "filtersApplied": "{count} فیلتر اعمال شد | {count} فیلتر اعمال شدند",
@@ -4828,6 +4852,7 @@
       "credits": "با اعتبار اجرا می‌شود",
       "title": "قالب ویژه"
     },
+    "preparingMedia": "در حال آماده‌سازی رسانه‌های نمونه...",
     "resultsCount": "نمایش {count} از {total} قالب",
     "runsOnFilter": "اجرا روی",
     "runsOnSelected": "{count} اجرا روی",

@@ -1486,6 +1486,25 @@
       }
     }
   },
+  "ByteDance2DraftToFinalVideoNode": {
+    "description": "Seedance 2.5 초안의 1080p 최종 비디오를 렌더링합니다. 최종본은 초안의 장면과 움직임을 유지하고 프롬프트, 참조, 길이, 화면비 및 오디오 설정을 재사용합니다.",
+    "display_name": "ByteDance Seedance 2.5 초안에서 최종 비디오로",
+    "inputs": {
+      "draft_task_id": {
+        "name": "draft_task_id",
+        "tooltip": "Seedance 2.5 Draft 모델로 실행한 Seedance 2.5 노드의 draft_task_id 출력 또는 붙여 넣은 초안 작업 ID입니다. 검토한 초안을 재사용하는 대신 다음 실행에서 새 초안이 생성되지 않도록 해당 노드의 시드 제어를 고정으로 설정하세요. 초안은 생성된 후 7일 동안 렌더링할 수 있습니다."
+      },
+      "watermark": {
+        "name": "워터마크",
+        "tooltip": "비디오에 워터마크를 추가할지 여부입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "Seedance 2.0을 사용하여 첫 프레임 이미지와 선택적인 마지막 프레임 이미지로 비디오를 생성합니다.",
     "display_name": "ByteDance Seedance 2.0 첫-마지막 프레임에서 비디오 생성",
@@ -1511,7 +1530,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "최신 모델, 최대 30초 동영상 및 mp4/mov 출력에는 Seedance 2.5를 사용합니다. 최고 품질 및 4k에는 Seedance 2.0, 속도 최적화에는 Fast, 가장 빠르고 저렴한 생성에는 Mini를 사용합니다."
+        "tooltip": "최신 모델, 최대 30초 동영상 및 mp4/mov 출력에는 Seedance 2.5를 사용합니다. Seedance 2.5 Draft는 빠른 480p 미리보기용이며, 해당 draft_task_id로 Seedance 2.5 Draft to Final Video 노드에서 1080p 최종본을 렌더링합니다. 최대 품질 및 4k에는 Seedance 2.0, 속도 최적화에는 Fast, 가장 빠르고 비용이 가장 낮은 생성에는 Mini를 사용합니다."
       },
       "model_duration": {
         "name": "duration"
@@ -1540,6 +1559,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "Seedance 2.5 Draft 실행의 작업 ID입니다. 1080p 최종본을 렌더링하려면 Seedance 2.5 Draft to Final Video 노드에 연결하세요."
       }
     }
   },
@@ -1552,7 +1575,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "최신 모델, 최대 30초 동영상 및 mp4/mov 출력에는 Seedance 2.5를 사용합니다. 최고 품질 및 4k에는 Seedance 2.0, 속도 최적화에는 Fast, 가장 빠르고 저렴한 생성에는 Mini를 사용합니다."
+        "tooltip": "최신 모델, 최대 30초 동영상 및 mp4/mov 출력에는 Seedance 2.5를 사용합니다. Seedance 2.5 Draft는 빠른 480p 미리보기용이며, 해당 draft_task_id로 Seedance 2.5 Draft to Final Video 노드에서 1080p 최종본을 렌더링합니다. 최대 품질 및 4k에는 Seedance 2.0, 속도 최적화에는 Fast, 가장 빠르고 비용이 가장 낮은 생성에는 Mini를 사용합니다."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -1605,7 +1628,7 @@
       },
       "model": {
         "name": "모델",
-        "tooltip": "최신 모델, 최대 30초 동영상 및 mp4/mov 출력에는 Seedance 2.5를 사용합니다. 최고 품질 및 4k에는 Seedance 2.0, 속도 최적화에는 Fast, 가장 빠르고 저렴한 생성에는 Mini를 사용합니다."
+        "tooltip": "최신 모델, 최대 30초 동영상 및 mp4/mov 출력에는 Seedance 2.5를 사용합니다. Seedance 2.5 Draft는 빠른 480p 미리보기용이며, 해당 draft_task_id로 Seedance 2.5 Draft to Final Video 노드에서 1080p 최종본을 렌더링합니다. 최대 품질 및 4k에는 Seedance 2.0, 속도 최적화에는 Fast, 가장 빠르고 비용이 가장 낮은 생성에는 Mini를 사용합니다."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -1646,6 +1669,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "Seedance 2.5 Draft 실행의 작업 ID입니다. 1080p 최종본을 렌더링하려면 Seedance 2.5 Draft to Final Video 노드에 연결하세요."
       }
     }
   },
@@ -1658,7 +1685,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Seedance 2.5는 최신 모델, 최대 30초 동영상 및 mp4/mov 출력을 지원합니다. Seedance 2.0은 최고 품질 및 4K용입니다. Fast는 속도 최적화용이며, Mini는 가장 빠르고 비용이 가장 낮은 생성용입니다."
+        "tooltip": "최신 모델, 최대 30초 동영상 및 mp4/mov 출력에는 Seedance 2.5를 사용합니다. Seedance 2.5 Draft는 빠른 480p 미리보기용이며, 해당 draft_task_id로 Seedance 2.5 Draft to Final Video 노드에서 1080p 최종본을 렌더링합니다. 최대 품질 및 4k에는 Seedance 2.0, 속도 최적화에는 Fast, 가장 빠르고 비용이 가장 낮은 생성에는 Mini를 사용합니다."
       },
       "model_duration": {
         "name": "duration"
@@ -1690,6 +1717,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "Seedance 2.5 Draft 실행의 작업 ID입니다. 1080p 최종본을 렌더링하려면 Seedance 2.5 Draft to Final Video 노드에 연결하세요."
       }
     }
   },
@@ -1932,7 +1963,7 @@
   },
   "ByteDanceSeedreamLayerSeparationNode": {
     "description": "이미지를 배경 플레이트와 최대 16개의 재배치 가능한 투명 레이어로 분해합니다. 각 레이어는 쌓이는 순서, 바운딩 박스, 이름, 설명을 가집니다.",
-    "display_name": "ByteDance Seedream 5.0 Pro 레이어 분리",
+    "display_name": "ByteDance Seedream 5.0 Pro 레이어 분리(레거시)",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -1990,6 +2021,62 @@
       "5": {
         "name": "layer_stack",
         "tooltip": "Create Layered Image에서 편집 가능한 레이어 문서: 기본 플레이트와 각 요소가 이름이 지정된 타이트 크롭 레이어로, 실제 위치와 쌓이는 순서로 포함됩니다. 바로 연결하거나 Add Layer로 확장할 수 있습니다."
+      }
+    }
+  },
+  "ByteDanceSeedreamLayerSeparationNodeV2": {
+    "description": "이미지를 배경 플레이트와 위치를 변경할 수 있는 최대 16개의 투명 레이어로 분해합니다. 각 레이어에는 쌓임 순서, 경계 상자, 이름 및 설명이 포함됩니다.",
+    "display_name": "ByteDance Seedream 5.0 레이어 분리",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "model_crop_layers": {
+        "name": "레이어 자르기"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_prompt_optimization": {
+        "name": "프롬프트 최적화"
+      },
+      "model_seed": {
+        "name": "시드"
+      },
+      "model_size": {
+        "name": "크기"
+      },
+      "model_watermark": {
+        "name": "워터마크"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "base_image",
+        "tooltip": "레이어가 쌓이는 기본 이미지(배경 플레이트)입니다."
+      },
+      "1": {
+        "name": "base_mask",
+        "tooltip": "기본 이미지의 투명도입니다(1 = 투명, LoadImage 규칙). 현재는 항상 완전히 불투명합니다."
+      },
+      "2": {
+        "name": "레이어",
+        "tooltip": "아래에서 위 순으로 정렬된 투명 레이어입니다. 전체 캔버스 모드: 경계 상자 위치에 맞춰 검은색 기본 이미지 크기 캔버스에 배치됩니다. 최소 크기 모드: 경계 상자에 맞춰 자르고, 왼쪽 상단에 고정하며, 가장 큰 레이어 크기에 맞춰 패딩을 추가합니다."
+      },
+      "3": {
+        "name": "마스크",
+        "tooltip": "레이어 배치와 인덱스가 정렬된 레이어별 투명도입니다(1 = 투명, LoadImage 규칙). ImageCompositeMasked 스타일의 합성을 하려면 먼저 InvertMask를 추가하세요."
+      },
+      "4": {
+        "name": "bboxes",
+        "tooltip": "레이어 배치와 인덱스가 정렬된 레이어당 하나의 배치 상자입니다(레이어별 배치를 재구성하려면 둘 다와 마스크를 Layers From Bounding Boxes에 입력): {x, y, width, height, metadata: {name, desc, z_index, native_size, content_rect, flags}}. content_rect = [left, top, width, height]는 자체 프레임 내 레이어 콘텐츠 영역이며, 상자 위치에 해당 오프셋을 더한 캔버스 위치에 배치됩니다."
+      },
+      "5": {
+        "name": "layer_stack",
+        "tooltip": "Create Layered Image용으로 바로 편집 가능한 레이어 문서입니다. 기본 플레이트와 각 요소가 실제 위치 및 쌓임 순서에 맞는 이름 지정된 정밀 크롭 레이어로 포함됩니다. 직접 연결하거나 Add Layer로 확장하세요."
       }
     }
   },
@@ -8491,12 +8578,12 @@
     }
   },
   "ImageColorSpace": {
-    "description": "sRGB, 선형 Rec.709, HDR(Rec.2020 HLG), HDR PQ(Rec.2020 PQ) 간에 변환합니다. 선형 1.0은 sRGB와 동일한 203니트 기준 백색을 사용하며, HLG는 1000니트 기준 디스플레이를 사용합니다. 선형 출력 및 선형-HDR 변환은 톤 매핑 없이 확장 값을 유지합니다. SDR 출력 및 PQ-HLG 변환은 배치 전체에서 초과 휘도를 톤 매핑하고 색역 밖의 색상을 압축합니다. 변환은 float32로 계산되며 중간 device 및 dtype을 반환합니다. 스트레이트 알파에는 색상 변환이 적용되지 않습니다.",
+    "description": "sRGB, 선형 Rec.709, HDR(Rec.2020 HLG), HDR PQ(Rec.2020 PQ), HDR LogC3 및 HDR ACEScct를 변환합니다. LogC3는 Rec.709 원색과 [0, 1]로 제한된 코드를 사용하는 EI 800 곡선을 사용합니다. ACEScct는 AP1 원색과 D60 화이트를 사용하며 Bradford 적응으로 D65에 맞춥니다. EXR 저장을 위해 LogC3 또는 ACEScct를 선형으로 변환하세요. 선형 1.0은 sRGB와 동일한 203니트 기준 화이트를 사용하며, HLG는 1000니트 기준 디스플레이를 사용합니다. 선형 및 ACEScct 출력은 확장 값을 보존합니다. 선형에서 HDR로의 변환은 톤 매핑 없이 하이라이트를 보존하며, HLG 및 PQ 출력은 음수 채널을 클리핑합니다. SDR 출력과 PQ에서 HLG로의 변환은 배치 전체에서 초과 휘도를 톤 매핑하고 색역 밖 색상을 압축합니다. 변환은 float32로 계산되며 중간 디바이스 및 dtype을 반환합니다. 스트레이트 알파는 색상 변환되지 않습니다.",
     "display_name": "이미지 색 공간 변환",
     "inputs": {
       "destination": {
         "name": "destination",
-        "tooltip": "출력 픽셀의 색 공간입니다. 저장 노드도 동일한 색 공간으로 설정하세요."
+        "tooltip": "출력 픽셀의 색 공간입니다. 저장 노드도 동일한 색 공간으로 설정하세요. EXR로 저장하기 전에는 LogC3 또는 ACEScct를 선형으로 변환하고, 비디오로 저장하기 전에는 sRGB/HDR/HDR PQ로 변환하세요."
       },
       "image": {
         "name": "image"
@@ -16893,7 +16980,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "모델이 답변하기 전에 수행하는 추론의 정도입니다. 'default'는 모델이 선택하도록 둡니다. 지원되는 수준은 모델별로 다릅니다: GPT-6 Astra는 low-max, GPT-5.6은 none-max (minimal 없음), GPT-5.5는 none-xhigh, GPT-5.5 Pro는 medium-xhigh, GPT-5는 minimal-high, o-series는 low-high; GPT-4.1은 추론을 지원하지 않습니다. 지원되지 않는 수준은 요청이 전송되기 전에 거부됩니다."
+        "tooltip": "모델이 응답하기 전에 수행하는 추론의 양입니다. 'default'는 선택을 모델에 맡깁니다. 지원되는 수준은 모델마다 다릅니다: GPT-6 Astra는 low-max, GPT-6 Sol/Luna 및 GPT-5.6은 none-max(최소 수준 없음), GPT-5.5는 none-xhigh, GPT-5.5 Pro는 medium-xhigh, GPT-5는 minimal-high, o-series는 low-high를 지원하며, GPT-4.1에는 추론 기능이 없습니다. 지원되지 않는 수준은 요청이 전송되기 전에 거부됩니다."
       },
       "truncation": {
         "name": "트렁케이션",
@@ -23884,6 +23971,30 @@
       },
       "2": {
         "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeMingImageEdit": {
+    "display_name": "Ming 이미지 편집 텍스트 인코드",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "이미지",
+        "tooltip": "선택적 참조 이미지입니다. 텍스트 인코더에서 참조하며, 깨끗한 프레임으로 latent 시퀀스에 추가됩니다. 이후 이미지는 첫 번째 이미지 크기에 맞게 조정되며, 샘플링된 latent도 그 크기와 일치해야 합니다."
+      },
+      "prompt": {
+        "name": "프롬프트"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "VAE가 없으면 이미지는 비전 타워를 통해서만 텍스트 인코더를 조건화합니다."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

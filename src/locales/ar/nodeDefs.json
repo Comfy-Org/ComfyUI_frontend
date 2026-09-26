@@ -1486,6 +1486,25 @@
       }
     }
   },
+  "ByteDance2DraftToFinalVideoNode": {
+    "description": "اعرض الفيديو النهائي بدقة 1080p لمسودة Seedance 2.5. يحتفظ الإصدار النهائي بمشهد المسودة وحركتها، ويعيد استخدام موجّهها ومراجعها ومدتها ونسبة أبعادها وإعداد الصوت فيها.",
+    "display_name": "ByteDance Seedance 2.5 تحويل المسودة إلى الفيديو النهائي",
+    "inputs": {
+      "draft_task_id": {
+        "name": "draft_task_id",
+        "tooltip": "مخرج draft_task_id من تشغيل عقدة Seedance 2.5 باستخدام نموذج Seedance 2.5 Draft، أو معرّف مهمة مسودة تم لصقه. اضبط التحكم في seed لتلك العقدة على fixed، وإلا فسيُنشئ التشغيل التالي مسودة جديدة بدلاً من إعادة استخدام المسودة التي راجعتها. يمكن عرض المسودة لمدة 7 أيام بعد إنشائها."
+      },
+      "watermark": {
+        "name": "العلامة المائية",
+        "tooltip": "ما إذا كانت ستُضاف علامة مائية إلى الفيديو."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "إنشاء فيديو باستخدام Seedance 2.0 من صورة الإطار الأول وصورة الإطار الأخير (اختياري).",
     "display_name": "ByteDance Seedance 2.0 من الإطار الأول/الأخير إلى فيديو",
@@ -1511,7 +1530,7 @@
       },
       "model": {
         "name": "النموذج",
-        "tooltip": "Seedance 2.5 للنموذج الأحدث، ومقاطع فيديو تصل إلى 30 ثانية وإخراج mp4/mov؛ Seedance 2.0 لأقصى جودة و4k؛ Fast لتحسين السرعة؛ Mini لأسرع توليد وأقل تكلفة."
+        "tooltip": "Seedance 2.5 لأحدث نموذج، وفيديوهات حتى 30 ثانية ومخرجات mp4/mov؛ وSeedance 2.5 Draft لمعاينة سريعة بدقة 480p يعرض draft_task_id الخاص بها الإصدار النهائي بدقة 1080p في عقدة Seedance 2.5 Draft to Final Video؛ وSeedance 2.0 لأقصى جودة و4k؛ وFast لتحسين السرعة؛ وMini للتوليد الأسرع والأقل تكلفة."
       },
       "model_duration": {
         "name": "المدة"
@@ -1540,6 +1559,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "معرّف مهمة لتشغيل Seedance 2.5 Draft. وصّله بعقدة Seedance 2.5 Draft to Final Video لعرض الإصدار النهائي بدقة 1080p."
       }
     }
   },
@@ -1552,7 +1575,7 @@
       },
       "model": {
         "name": "النموذج",
-        "tooltip": "Seedance 2.5 للنموذج الأحدث، ومقاطع فيديو تصل إلى 30 ثانية وإخراج mp4/mov؛ Seedance 2.0 لأقصى جودة و4k؛ Fast لتحسين السرعة؛ Mini لأسرع توليد وأقل تكلفة."
+        "tooltip": "Seedance 2.5 لأحدث نموذج، وفيديوهات حتى 30 ثانية ومخرجات mp4/mov؛ وSeedance 2.5 Draft لمعاينة سريعة بدقة 480p يعرض draft_task_id الخاص بها الإصدار النهائي بدقة 1080p في عقدة Seedance 2.5 Draft to Final Video؛ وSeedance 2.0 لأقصى جودة و4k؛ وFast لتحسين السرعة؛ وMini للتوليد الأسرع والأقل تكلفة."
       },
       "model_auto_downscale": {
         "name": "التقليل التلقائي للحجم"
@@ -1605,7 +1628,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Seedance 2.5 للنموذج الأحدث، ومقاطع فيديو تصل إلى 30 ثانية وإخراج mp4/mov؛ Seedance 2.0 لأقصى جودة و4k؛ Fast لتحسين السرعة؛ Mini لأسرع توليد وأقل تكلفة."
+        "tooltip": "Seedance 2.5 لأحدث نموذج، وفيديوهات حتى 30 ثانية ومخرجات mp4/mov؛ وSeedance 2.5 Draft لمعاينة سريعة بدقة 480p يعرض draft_task_id الخاص بها الإصدار النهائي بدقة 1080p في عقدة Seedance 2.5 Draft to Final Video؛ وSeedance 2.0 لأقصى جودة و4k؛ وFast لتحسين السرعة؛ وMini للتوليد الأسرع والأقل تكلفة."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -1646,6 +1669,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "معرّف مهمة لتشغيل Seedance 2.5 Draft. وصّله بعقدة Seedance 2.5 Draft to Final Video لعرض الإصدار النهائي بدقة 1080p."
       }
     }
   },
@@ -1658,7 +1685,7 @@
       },
       "model": {
         "name": "النموذج",
-        "tooltip": "Seedance 2.5 لأحدث طراز، وفيديوهات تصل إلى 30 ثانية وإخراج mp4/mov؛ وSeedance 2.0 لأقصى جودة و4K؛ وFast لتحسين السرعة؛ وMini للتوليد الأسرع والأقل تكلفة."
+        "tooltip": "Seedance 2.5 لأحدث نموذج، وفيديوهات حتى 30 ثانية ومخرجات mp4/mov؛ وSeedance 2.5 Draft لمعاينة سريعة بدقة 480p يعرض draft_task_id الخاص بها الإصدار النهائي بدقة 1080p في عقدة Seedance 2.5 Draft to Final Video؛ وSeedance 2.0 لأقصى جودة و4k؛ وFast لتحسين السرعة؛ وMini للتوليد الأسرع والأقل تكلفة."
       },
       "model_duration": {
         "name": "المدة"
@@ -1690,6 +1717,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "معرّف مهمة لتشغيل Seedance 2.5 Draft. وصّله بعقدة Seedance 2.5 Draft to Final Video لعرض الإصدار النهائي بدقة 1080p."
       }
     }
   },
@@ -1932,7 +1963,7 @@
   },
   "ByteDanceSeedreamLayerSeparationNode": {
     "description": "تفكيك صورة إلى لوحة خلفية بالإضافة إلى ما يصل إلى ١٦ طبقة شفافة قابلة لإعادة الترتيب، كل منها مع ترتيب تراكب، صندوق حدودي، اسم ووصف.",
-    "display_name": "ByteDance Seedream 5.0 Pro فصل الطبقات",
+    "display_name": "ByteDance Seedream 5.0 Pro فصل الطبقات (قديم)",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -1990,6 +2021,62 @@
       "5": {
         "name": "layer_stack",
         "tooltip": "مستند طبقات جاهز للتحرير لـ Create Layered Image: اللوحة الأساسية بالإضافة إلى كل عنصر كطبقة منفصلة، مقصوصة بإحكام في موضعها الحقيقي وترتيب تكديسها. صِل مباشرة، أو أضف طبقات مع Add Layer."
+      }
+    }
+  },
+  "ByteDanceSeedreamLayerSeparationNodeV2": {
+    "description": "فكّك صورة إلى لوحة خلفية وما يصل إلى 16 طبقة شفافة قابلة لإعادة التموضع، لكل منها ترتيب تراكب ومربع إحاطة واسم ووصف.",
+    "display_name": "ByteDance Seedream 5.0 فصل الطبقات",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "model_crop_layers": {
+        "name": "crop_layers"
+      },
+      "model_prompt": {
+        "name": "الموجّه"
+      },
+      "model_prompt_optimization": {
+        "name": "prompt_optimization"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      },
+      "model_size": {
+        "name": "الحجم"
+      },
+      "model_watermark": {
+        "name": "العلامة المائية"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "base_image",
+        "tooltip": "الصورة الأساسية (لوحة الخلفية) التي تتراكم الطبقات فوقها."
+      },
+      "1": {
+        "name": "base_mask",
+        "tooltip": "شفافية الصورة الأساسية (1 = شفاف، وفق اصطلاح LoadImage)؛ وهي حالياً معتمة بالكامل دائماً."
+      },
+      "2": {
+        "name": "layers",
+        "tooltip": "طبقات شفافة مرتبة من الأسفل إلى الأعلى. وضع اللوحة الكاملة: توضع على لوحة سوداء بحجم الأساس عند موضع مربع الإحاطة الخاص بها. وضع الحجم الأدنى: تُقتص إلى مربع الإحاطة الخاص بها، وتُثبّت عند أعلى اليسار، وتُملأ حتى حجم أكبر طبقة."
+      },
+      "3": {
+        "name": "masks",
+        "tooltip": "شفافية لكل طبقة، بمحاذاة الفهرس مع دفعة layers (1 = شفاف، وفق اصطلاح LoadImage). للتركيب بأسلوب ImageCompositeMasked، أضف InvertMask أولاً."
+      },
+      "4": {
+        "name": "bboxes",
+        "tooltip": "مربع تموضع واحد لكل طبقة، بمحاذاة الفهرس مع دفعة layers (مرّر كليهما، بالإضافة إلى masks، إلى Layers From Bounding Boxes لإعادة بناء تموضع كل طبقة): {x, y, width, height, metadata: {name, desc, z_index, native_size, content_rect, flags}}. يشير content_rect = [left, top, width, height] إلى منطقة محتوى الطبقة ضمن إطارها الخاص؛ وتوضع على اللوحة عند موضع المربع مضافاً إليه ذلك الإزاحة."
+      },
+      "5": {
+        "name": "layer_stack",
+        "tooltip": "مستند طبقات جاهز للتحرير لـ Create Layered Image: لوحة الأساس بالإضافة إلى كل عنصر كطبقة مستقلة مسماة ومقتصة بإحكام، في موضعه الحقيقي وترتيب تراكبه. وصّله مباشرةً، أو وسّعه باستخدام Add Layer."
       }
     }
   },
@@ -8491,12 +8578,12 @@
     }
   },
   "ImageColorSpace": {
-    "description": "تحويل sRGB وRec.709 الخطي وHDR ‏(Rec.2020 HLG) وHDR PQ ‏(Rec.2020 PQ). يستخدم الخطي 1.0 نفس الأبيض المرجعي بسطوع 203 نيت مثل sRGB؛ ويستخدم HLG شاشة مرجعية بسطوع 1000 نيت. يحافظ الإخراج الخطي وتحويلات الخطي إلى HDR على القيم الممتدة دون تعيين درجات الألوان. يطبّق إخراج SDR وتحويل PQ إلى HLG تعيين درجات الألوان على الإضاءة الزائدة عبر الدفعة ويضغط الألوان خارج النطاق اللوني. تُحسب التحويلات بـ float32 وتُرجع الجهاز الوسيط وdtype. لا يُحوَّل ألفا المستقيم لونيًا.",
+    "description": "حوّل بين sRGB وlinear Rec.709 وHDR (Rec.2020 HLG) وHDR PQ (Rec.2020 PQ) وHDR LogC3 وHDR ACEScct. يستخدم LogC3 منحنى EI 800 مع الألوان الأولية Rec.709 والقيم محصورة ضمن [0, 1]. يستخدم ACEScct الألوان الأولية AP1 ونقطة الأبيض D60، مع تكييف Bradford إلى D65. حوّل LogC3 أو ACEScct إلى linear لحفظ EXR. يستخدم Linear 1.0 المرجع الأبيض نفسه البالغ 203 nit كما في sRGB؛ ويستخدم HLG شاشة مرجعية بقيمة 1000 nit. تحافظ مخرجات Linear وACEScct على القيم الممتدة. تحافظ التحويلات من Linear إلى HDR على الإضاءات العالية من دون تعيين الدرجات؛ وتقص مخرجات HLG وPQ القنوات السالبة. يستخدم إخراج SDR والتحويل من PQ إلى HLG تعيين الدرجات للسطوع الزائد عبر الدفعة ويضغطان الألوان خارج النطاق اللوني. تُحسب التحويلات باستخدام float32 وتُرجع الجهاز الوسيط وdtype. لا تُحوّل alpha المستقيمة لونياً.",
     "display_name": "تحويل مساحة ألوان الصورة",
     "inputs": {
       "destination": {
         "name": "destination",
-        "tooltip": "مساحة ألوان بكسلات الإخراج. اضبط عقدة الحفظ على مساحة الألوان نفسها."
+        "tooltip": "مساحة ألوان بكسلات الإخراج. اضبط عقدة الحفظ على مساحة الألوان نفسها. حوّل LogC3 أو ACEScct إلى خطية قبل حفظ EXR، أو إلى sRGB/HDR/HDR PQ قبل حفظ الفيديو."
       },
       "image": {
         "name": "image"
@@ -16893,7 +16980,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "مقدار استدلال النموذج قبل الإجابة. يترك 'default' الاختيار للنموذج. تختلف المستويات المدعومة حسب النموذج: GPT-6 Astra من low إلى max، وGPT-5.6 من none إلى max (دون minimal)، وGPT-5.5 من none إلى xhigh، وGPT-5.5 Pro من medium إلى xhigh، وGPT-5 من minimal إلى high، وسلسلة o من low إلى high؛ لا يدعم GPT-4.1 الاستدلال. تُرفض المستويات غير المدعومة قبل إرسال الطلب."
+        "tooltip": "مقدار استدلال النموذج قبل الإجابة. يترك 'default' الاختيار للنموذج. تختلف المستويات المدعومة حسب النموذج: GPT-6 Astra من low إلى max، وGPT-6 Sol/Luna وGPT-5.6 من none إلى max (دون minimal)، وGPT-5.5 من none إلى xhigh، وGPT-5.5 Pro من medium إلى xhigh، وGPT-5 من minimal إلى high، وسلسلة o من low إلى high؛ لا يدعم GPT-4.1 الاستدلال. تُرفض المستويات غير المدعومة قبل إرسال الطلب."
       },
       "truncation": {
         "name": "الاقتصاص",
@@ -23884,6 +23971,30 @@
       },
       "2": {
         "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeMingImageEdit": {
+    "display_name": "ترميز النص لتحرير صور Ming",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "الصور",
+        "tooltip": "صور مرجعية اختيارية، يراها مُرمّز النص وتُلحَق بتسلسل الكمونات كإطارات نظيفة. تُغيَّر أحجام الصور اللاحقة لتطابق الصورة الأولى، ويجب أن يطابق الـlatent المُعيَّن حجمها."
+      },
+      "prompt": {
+        "name": "الموجّه"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "من دون VAE، لا تؤثر الصور في مُرمّز النص إلا عبر برج الرؤية."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

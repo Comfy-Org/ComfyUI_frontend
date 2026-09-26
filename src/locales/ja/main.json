@@ -9,7 +9,6 @@
       "signInCaption": "パートナーノードにはアカウントが必要です",
       "signInToRun": "実行するにはサインイン"
     },
-    "share": "共有",
     "shareTooltip": "ワークフローを共有"
   },
   "agent": {
@@ -158,6 +157,8 @@
     "showChatHistory": "チャット履歴を表示",
     "showLess": "表示を減らす",
     "showMore": "さらに表示",
+    "showTarget": "ターゲットを表示",
+    "showTargetWorkflow": "対象ワークフローを表示：{workflowName}",
     "skip": "スキップ",
     "stop": "停止",
     "stopShortcut": "Esc",
@@ -170,6 +171,7 @@
     ],
     "switchWorkflow": "ワークフローを切り替え",
     "switchWorkflowForNodes": "ノードを追加するには{workflowName}に切り替えてください。",
+    "targetFollowsVisibleWorkflow": "ターゲット、参照ノードを選択するか、メッセージを送信するまで、対象ワークフローは表示中のタブに追従します。",
     "targetForThisChat": "このチャットのエージェント対象",
     "targetNavigationUnavailable": "このワークフローのターゲットは利用できなくなりました。",
     "thinking": "考え中...",
@@ -188,6 +190,7 @@
     "updatingGraph": "エージェントがグラフを更新しています",
     "uploading": "アップロード中",
     "viewAddedNodes": "ノードを表示 | ノードを表示",
+    "viewingDifferentWorkflow": "ターゲットとは別のワークフローを表示しています。",
     "worked": "完了",
     "workedForMinutes": "{minutes}分{seconds}秒間処理しました",
     "workedForSeconds": "{seconds}秒間処理しました",
@@ -540,6 +543,7 @@
     "expiredCardDetail": "このカードの有効期限が切れています。別のお支払い方法をご利用ください。",
     "incorrectCvcDetail": "カードのセキュリティコードが正しくありません。確認してもう一度お試しください。",
     "insufficientFundsDetail": "このお支払い方法には残高が不足しています。別のお支払い方法を試すか、ご利用の銀行にお問い合わせください。",
+    "operationAlreadyPendingDetail": "以前開始した支払いがまだ処理中です。別のプランを選択する前に、完了する必要があります。",
     "paymentDeclinedDetail": "ご利用の銀行によりこの支払いが拒否されました。別のお支払い方法を試すか、ご利用の銀行にお問い合わせください。",
     "processingErrorDetail": "お支払いを処理できませんでした。もう一度試すか、別のお支払い方法をご利用ください。",
     "reconciliationDetail": "お支払いを受け取りましたが、ワークスペースの更新を完了できませんでした。サポートにお問い合わせの際は、この操作IDを含めてください:",
@@ -717,6 +721,8 @@
         "selectAtLeastOne": "少なくとも1つ選択してください。"
       },
       "intro": "ComfyUIの体験をより最適化するためにご協力ください。",
+      "navigationFailed": "アンケートは保存されましたが、オンボーディングを続行できませんでした",
+      "navigationFailedDetail": "もう一度お試しください。",
       "options": {
         "experience": {
           "new": "ComfyUIは初めて",
@@ -757,6 +763,8 @@
       },
       "otherPlaceholder": "詳細をお聞かせください",
       "placeholder": "アンケート質問のプレースホルダー",
+      "submitFailed": "アンケートを送信できませんでした",
+      "submitFailedDetail": "回答は保存されませんでした。もう一度お試しください。",
       "title": "クラウドアンケート"
     }
   },
@@ -2100,6 +2108,9 @@
     "updating": "{id}を更新中",
     "upload": "アップロード",
     "uploadAlreadyInProgress": "アップロードはすでに進行中です",
+    "uploadFailed": "アップロードに失敗しました：{reason}",
+    "uploadFileTooLarge": "ファイルが大きすぎてアップロードできません。",
+    "uploadFileTooLargeWithLimit": "ファイルが大きすぎてアップロードできません（上限：{limit} MB）。",
     "uploadTimedOut": "アップロードがタイムアウトしました。もう一度お試しください。",
     "usageHint": "使用ヒント",
     "use": "使用",
@@ -3090,6 +3101,7 @@
     "Refresh Node Definitions": "ノード定義を更新",
     "Reinstall": "再インストール",
     "Rename": "名前を変更",
+    "Replay Onboarding": "オンボーディングを再実行",
     "Reset View": "ビューをリセット",
     "Resize Selected Nodes": "選択したノードのサイズ変更",
     "Restart": "再起動",
@@ -3282,6 +3294,7 @@
     "mask": "マスク",
     "merging": "マージ",
     "mesh": "メッシュ",
+    "ming image": "ming image",
     "minimax": "minimax",
     "minimax music": "minimax music",
     "mochi": "mochi",
@@ -3542,6 +3555,12 @@
     "next": "次へ",
     "skip": "スキップ",
     "stepLabel": "ステップ {current} / {total}"
+  },
+  "onboardingReplay": {
+    "confirmMessage": "これによりComfyUIが再読み込みされ、この環境で利用可能なオンボーディング手順がリセットされます。ワークフローには影響しません。",
+    "confirmTitle": "オンボーディングを再実行しますか？",
+    "failedDetail": "オンボーディングの状態をリセットできませんでした。もう一度お試しください。",
+    "failedSummary": "オンボーディングを再実行できませんでした"
   },
   "openSharedWorkflow": {
     "author": "作成者：",
@@ -4387,9 +4406,12 @@
       "message": "チーム向けの請求機能が近日中に追加されます。ワークスペースごとに席数単位でプランに加入できるようになります。今後のアップデートをお待ちください。",
       "title": "近日公開"
     },
+    "billingTabBlocked": "請求ページを開けませんでした。このサイトのポップアップを許可して、もう一度お試しください。",
     "cancelDialog": {
       "confirmCancel": "サブスクリプションをキャンセル",
       "description": "アクセスは{date}まで継続されます。今後請求されることはなく、ワークスペースとクレジットは保持されます。いつでも再購読できます。",
+      "discountApplied": "割引が適用されたため、このサブスクリプションはキャンセルされませんでした。このウィンドウを閉じると、更新されたプランを確認できます。",
+      "discountRefreshFailed": "割引が適用されました。ページを更新して、更新されたプランを確認してください。",
       "endOfBillingPeriod": "請求期間の終了",
       "failed": "サブスクリプションのキャンセルに失敗しました",
       "keepSubscription": "サブスクリプションを維持する",
@@ -4579,6 +4601,7 @@
       "payAndSubscribe": "支払って購読する",
       "paymentMethod": "お支払い方法",
       "paymentPopupBlocked": "支払いページを開けませんでした。ポップアップを許可して再試行してください。",
+      "pendingVerificationDetail": "以前開始した支払いにまだ対応が必要です。完了すると、そのとき選択したプランが有効になります。完了後に別のプランを選択できます。",
       "perMember": "/ メンバー",
       "privacyPolicy": "プライバシーポリシー",
       "promoCodePlaceholder": "プロモーションコード",
@@ -4812,6 +4835,7 @@
     "clearAllFilters": "すべてのフィルターをクリア",
     "error": {
       "loading": "テンプレートを開けませんでした。もう一度お試しください。",
+      "preparingMedia": "一部のサンプルメディアを準備できませんでした。ワークフローは開きます。不足している入力には、ご自身のファイルを選択してください。",
       "templateNotFound": "テンプレート「{templateName}」が見つかりません"
     },
     "filtersApplied": "{count} 件のフィルターが適用されました",
@@ -4828,6 +4852,7 @@
       "credits": "クレジットで実行",
       "title": "プレミアムテンプレート"
     },
+    "preparingMedia": "サンプルメディアを準備しています...",
     "resultsCount": "{total}件中{count}件のテンプレートを表示中",
     "runsOnFilter": "実行環境",
     "runsOnSelected": "{count} 回実行",

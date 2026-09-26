@@ -9,7 +9,6 @@
       "signInCaption": "Los nodos asociados requieren una cuenta",
       "signInToRun": "Inicia sesión para ejecutar"
     },
-    "share": "Compartir",
     "shareTooltip": "Compartir flujo de trabajo"
   },
   "agent": {
@@ -158,6 +157,8 @@
     "showChatHistory": "Mostrar historial de chat",
     "showLess": "Mostrar menos",
     "showMore": "Mostrar más",
+    "showTarget": "Mostrar destino",
+    "showTargetWorkflow": "Mostrar flujo de trabajo de destino: {workflowName}",
     "skip": "Omitir",
     "stop": "Detener",
     "stopShortcut": "Esc",
@@ -170,6 +171,7 @@
     ],
     "switchWorkflow": "Cambiar de flujo de trabajo",
     "switchWorkflowForNodes": "Cambia a {workflowName} para añadir nodos.",
+    "targetFollowsVisibleWorkflow": "El flujo de trabajo de destino sigue la pestaña visible hasta que elijas un destino, nodos de referencia o envíes un mensaje.",
     "targetForThisChat": "Destino del agente para este chat",
     "targetNavigationUnavailable": "Este destino del flujo de trabajo ya no está disponible.",
     "thinking": "Pensando...",
@@ -188,6 +190,7 @@
     "updatingGraph": "El agente está actualizando el grafo",
     "uploading": "Subiendo",
     "viewAddedNodes": "Ver nodo | Ver nodos",
+    "viewingDifferentWorkflow": "Estás viendo un flujo de trabajo diferente al de destino.",
     "worked": "Completado",
     "workedForMinutes": "Completado en {minutes}m {seconds}s",
     "workedForSeconds": "Completado en {seconds} segundos",
@@ -540,6 +543,7 @@
     "expiredCardDetail": "Esta tarjeta ha caducado. Usa otro método de pago.",
     "incorrectCvcDetail": "El código de seguridad de la tarjeta es incorrecto. Compruébalo e inténtalo de nuevo.",
     "insufficientFundsDetail": "Este método de pago no tiene fondos suficientes. Prueba con otro método de pago o contacta con tu banco.",
+    "operationAlreadyPendingDetail": "Un pago que iniciaste antes aún se está procesando. Debe finalizar antes de que puedas elegir un plan diferente.",
     "paymentDeclinedDetail": "Tu banco rechazó este pago. Prueba con otro método de pago o contacta con tu banco.",
     "processingErrorDetail": "No se pudo procesar tu pago. Inténtalo de nuevo o usa otro método de pago.",
     "reconciliationDetail": "Se recibió tu pago, pero no pudimos terminar de actualizar tu espacio de trabajo. Contacta con soporte e incluye este ID de operación:",
@@ -717,6 +721,8 @@
         "selectAtLeastOne": "Por favor, selecciona al menos una opción."
       },
       "intro": "Ayúdanos a personalizar tu experiencia con ComfyUI.",
+      "navigationFailed": "La encuesta se guardó, pero no se pudo continuar con la incorporación",
+      "navigationFailedDetail": "Inténtalo de nuevo.",
       "options": {
         "experience": {
           "new": "Nuevo en ComfyUI",
@@ -757,6 +763,8 @@
       },
       "otherPlaceholder": "Cuéntanos más",
       "placeholder": "Marcador de posición para preguntas de la encuesta",
+      "submitFailed": "No se pudo enviar la encuesta",
+      "submitFailedDetail": "Tus respuestas no se guardaron. Inténtalo de nuevo.",
       "title": "Encuesta en la Nube"
     }
   },
@@ -2100,6 +2108,9 @@
     "updating": "Actualizando {id}",
     "upload": "Subir",
     "uploadAlreadyInProgress": "La carga ya está en curso",
+    "uploadFailed": "Error al subir: {reason}",
+    "uploadFileTooLarge": "El archivo es demasiado grande para subirlo.",
+    "uploadFileTooLargeWithLimit": "El archivo es demasiado grande para subirlo (límite: {limit} MB).",
     "uploadTimedOut": "La carga ha excedido el tiempo de espera. Por favor, inténtalo de nuevo.",
     "usageHint": "Sugerencia de uso",
     "use": "Usar",
@@ -3090,6 +3101,7 @@
     "Refresh Node Definitions": "Actualizar definiciones de nodo",
     "Reinstall": "Reinstalar",
     "Rename": "Renombrar",
+    "Replay Onboarding": "Repetir la incorporación",
     "Reset View": "Restablecer vista",
     "Resize Selected Nodes": "Redimensionar Nodos Seleccionados",
     "Restart": "Reiniciar",
@@ -3282,6 +3294,7 @@
     "mask": "mask",
     "merging": "fusión",
     "mesh": "malla",
+    "ming image": "ming image",
     "minimax": "minimax",
     "minimax music": "minimax music",
     "mochi": "mochi",
@@ -3542,6 +3555,12 @@
     "next": "Siguiente",
     "skip": "Omitir",
     "stepLabel": "Paso {current} de {total}"
+  },
+  "onboardingReplay": {
+    "confirmMessage": "Esto recarga ComfyUI y restablece los pasos de incorporación disponibles en este entorno. Tus flujos de trabajo no se verán afectados.",
+    "confirmTitle": "¿Repetir la incorporación?",
+    "failedDetail": "No se pudo restablecer el estado de incorporación. Inténtalo de nuevo.",
+    "failedSummary": "No se pudo repetir la incorporación"
   },
   "openSharedWorkflow": {
     "author": "Autor:",
@@ -4387,9 +4406,12 @@
       "message": "La facturación para equipos estará disponible pronto. Podrás suscribirte a un plan para tu espacio de trabajo con precios por usuario. Mantente atento para más actualizaciones.",
       "title": "Próximamente"
     },
+    "billingTabBlocked": "No se pudo abrir la página de facturación. Permite las ventanas emergentes para este sitio y vuelve a intentarlo.",
     "cancelDialog": {
       "confirmCancel": "Cancelar suscripción",
       "description": "Tu acceso continúa hasta {date}. No se te cobrará de nuevo, y tu espacio de trabajo y créditos se conservarán. Puedes volver a suscribirte en cualquier momento.",
+      "discountApplied": "Se aplicó tu descuento, por lo que esta suscripción no se canceló. Cierra esta ventana para ver tu plan actualizado.",
+      "discountRefreshFailed": "Se aplicó tu descuento. Actualiza la página para ver tu plan actualizado.",
       "endOfBillingPeriod": "fin del periodo de facturación",
       "failed": "Error al cancelar la suscripción",
       "keepSubscription": "Mantener suscripción",
@@ -4579,6 +4601,7 @@
       "payAndSubscribe": "Pagar y suscribirse",
       "paymentMethod": "Método de pago",
       "paymentPopupBlocked": "No se pudo abrir la página de pago — permite las ventanas emergentes e inténtalo de nuevo.",
+      "pendingVerificationDetail": "Un pago que iniciaste antes aún requiere tu atención. Al completarlo, se activará el plan que elegiste entonces. Podrás elegir un plan diferente cuando finalice.",
       "perMember": "/ miembro",
       "privacyPolicy": "Política de privacidad",
       "promoCodePlaceholder": "Código promocional",
@@ -4812,6 +4835,7 @@
     "clearAllFilters": "Borrar todos los filtros",
     "error": {
       "loading": "No se pudo abrir la plantilla. Inténtalo de nuevo.",
+      "preparingMedia": "No se pudieron preparar algunos medios de ejemplo. El flujo de trabajo se abrirá; elige tus propios archivos para las entradas que falten.",
       "templateNotFound": "Plantilla \"{templateName}\" no encontrada"
     },
     "filtersApplied": "{count} filtro aplicado | {count} filtros aplicados",
@@ -4828,6 +4852,7 @@
       "credits": "Se ejecuta con créditos",
       "title": "Plantilla premium"
     },
+    "preparingMedia": "Preparando medios de ejemplo...",
     "resultsCount": "Mostrando {count} de {total} plantillas",
     "runsOnFilter": "Ejecuta en",
     "runsOnSelected": "{count} ejecuciones en",

@@ -9,7 +9,6 @@
       "signInCaption": "تتطلب عُقد الشركاء حسابًا",
       "signInToRun": "سجّل الدخول للتشغيل"
     },
-    "share": "مشاركة",
     "shareTooltip": "مشاركة سير العمل"
   },
   "agent": {
@@ -158,6 +157,8 @@
     "showChatHistory": "إظهار سجل المحادثات",
     "showLess": "إظهار أقل",
     "showMore": "إظهار المزيد",
+    "showTarget": "إظهار الهدف",
+    "showTargetWorkflow": "إظهار سير العمل المستهدف: {workflowName}",
     "skip": "تخطي",
     "stop": "إيقاف",
     "stopShortcut": "Esc",
@@ -170,6 +171,7 @@
     ],
     "switchWorkflow": "تبديل سير العمل",
     "switchWorkflowForNodes": "انتقل إلى {workflowName} لإضافة عُقد.",
+    "targetFollowsVisibleWorkflow": "يتبع سير العمل المستهدف علامة التبويب الظاهرة إلى أن تختار هدفًا أو عُقدًا مرجعية أو ترسل رسالة.",
     "targetForThisChat": "هدف الوكيل لهذه الدردشة",
     "targetNavigationUnavailable": "لم يعد هدف سير العمل هذا متاحًا.",
     "thinking": "جارٍ التفكير...",
@@ -188,6 +190,7 @@
     "updatingGraph": "يقوم الوكيل بتحديث الرسم البياني",
     "uploading": "جارٍ الرفع",
     "viewAddedNodes": "عرض العقدة | عرض العُقد",
+    "viewingDifferentWorkflow": "أنت تعرض سير عمل مختلفًا عن الهدف.",
     "worked": "اكتمل",
     "workedForMinutes": "عمل لمدة {minutes} د {seconds} ث",
     "workedForSeconds": "عمل لمدة {seconds} ثوانٍ",
@@ -540,6 +543,7 @@
     "expiredCardDetail": "انتهت صلاحية هذه البطاقة. استخدم طريقة دفع مختلفة.",
     "incorrectCvcDetail": "رمز أمان البطاقة غير صحيح. تحقّق منه وحاول مرة أخرى.",
     "insufficientFundsDetail": "لا تتوفر أموال كافية في طريقة الدفع هذه. جرّب طريقة دفع أخرى أو تواصل مع مصرفك.",
+    "operationAlreadyPendingDetail": "لا تزال عملية دفع بدأتَها سابقًا قيد المعالجة. يجب أن تكتمل قبل أن تتمكن من اختيار خطة مختلفة.",
     "paymentDeclinedDetail": "رفض مصرفك هذه الدفعة. جرّب طريقة دفع أخرى أو تواصل مع مصرفك.",
     "processingErrorDetail": "تعذرت معالجة دفعتك. حاول مرة أخرى أو استخدم طريقة دفع أخرى.",
     "reconciliationDetail": "تم استلام دفعتك، لكن تعذر علينا إكمال تحديث مساحة عملك. تواصل مع الدعم وأدرج معرّف العملية هذا:",
@@ -717,6 +721,8 @@
         "selectAtLeastOne": "يرجى اختيار خيار واحد على الأقل."
       },
       "intro": "ساعدنا في تخصيص تجربتك مع ComfyUI.",
+      "navigationFailed": "تم حفظ الاستبيان، لكن تعذر متابعة الإعداد الأولي",
+      "navigationFailedDetail": "يرجى المحاولة مرة أخرى.",
       "options": {
         "experience": {
           "new": "جديد على ComfyUI",
@@ -757,6 +763,8 @@
       },
       "otherPlaceholder": "أخبرنا المزيد",
       "placeholder": "نص بديل لأسئلة الاستبيان",
+      "submitFailed": "تعذر إرسال الاستبيان",
+      "submitFailedDetail": "لم يتم حفظ إجاباتك. يرجى المحاولة مرة أخرى.",
       "title": "استبيان السحابة"
     }
   },
@@ -2100,6 +2108,9 @@
     "updating": "جارٍ تحديث {id}",
     "upload": "رفع",
     "uploadAlreadyInProgress": "الرفع جارٍ بالفعل",
+    "uploadFailed": "فشل الرفع: {reason}",
+    "uploadFileTooLarge": "الملف كبير جدًا بحيث لا يمكن رفعه.",
+    "uploadFileTooLargeWithLimit": "الملف كبير جدًا بحيث لا يمكن رفعه (الحد: {limit} ميغابايت).",
     "uploadTimedOut": "انتهت مهلة التحميل. يرجى المحاولة مرة أخرى.",
     "usageHint": "تلميح الاستخدام",
     "use": "استخدم",
@@ -3090,6 +3101,7 @@
     "Refresh Node Definitions": "تحديث تعريفات العقد",
     "Reinstall": "إعادة التثبيت",
     "Rename": "إعادة التسمية",
+    "Replay Onboarding": "إعادة تشغيل الإعداد الأولي",
     "Reset View": "إعادة تعيين العرض",
     "Resize Selected Nodes": "تغيير حجم العقد المحددة",
     "Restart": "إعادة التشغيل",
@@ -3282,6 +3294,7 @@
     "mask": "قناع",
     "merging": "دمج",
     "mesh": "شبكة",
+    "ming image": "صورة ming",
     "minimax": "minimax",
     "minimax music": "موسيقى minimax",
     "mochi": "mochi",
@@ -3542,6 +3555,12 @@
     "next": "التالي",
     "skip": "تخطي",
     "stepLabel": "الخطوة {current} من {total}"
+  },
+  "onboardingReplay": {
+    "confirmMessage": "سيؤدي هذا إلى إعادة تحميل ComfyUI وإعادة تعيين خطوات الإعداد الأولي المتاحة في هذه البيئة. لن تتأثر سير العمل الخاصة بك.",
+    "confirmTitle": "إعادة تشغيل الإعداد الأولي؟",
+    "failedDetail": "تعذر إعادة تعيين حالة الإعداد الأولي. يرجى المحاولة مرة أخرى.",
+    "failedSummary": "تعذرت إعادة تشغيل الإعداد الأولي"
   },
   "openSharedWorkflow": {
     "author": "المؤلف:",
@@ -4387,9 +4406,12 @@
       "message": "سيتم إطلاق الفوترة الجماعية قريباً. ستتمكن من الاشتراك في خطة لمساحة العمل الخاصة بك مع تسعير لكل مستخدم. ترقبوا التحديثات.",
       "title": "قريباً"
     },
+    "billingTabBlocked": "تعذر فتح صفحة الفوترة. اسمح بالنوافذ المنبثقة لهذا الموقع وحاول مرة أخرى.",
     "cancelDialog": {
       "confirmCancel": "تأكيد إلغاء الاشتراك",
       "description": "سيستمر وصولك حتى {date}. لن يتم خصم أي رسوم أخرى منك، وسيتم الاحتفاظ بمساحة العمل والرصيد الخاص بك. يمكنك إعادة الاشتراك في أي وقت.",
+      "discountApplied": "تم تطبيق خصمك، لذا لم يتم إلغاء هذا الاشتراك. أغلق هذه النافذة لرؤية خطتك المحدّثة.",
+      "discountRefreshFailed": "تم تطبيق خصمك. حدّث الصفحة لرؤية خطتك المحدّثة.",
       "endOfBillingPeriod": "نهاية فترة الفوترة",
       "failed": "فشل إلغاء الاشتراك",
       "keepSubscription": "الاحتفاظ بالاشتراك",
@@ -4579,6 +4601,7 @@
       "payAndSubscribe": "ادفع واشترك",
       "paymentMethod": "طريقة الدفع",
       "paymentPopupBlocked": "تعذر فتح صفحة الدفع — يرجى السماح بالنوافذ المنبثقة والمحاولة مرة أخرى.",
+      "pendingVerificationDetail": "لا تزال عملية دفع بدأتَها سابقًا تتطلب انتباهك. يؤدي إكمالها إلى تفعيل الخطة التي اخترتها حينها. يمكنك اختيار خطة مختلفة بمجرد اكتمالها.",
       "perMember": "/ عضو",
       "privacyPolicy": "سياسة الخصوصية",
       "promoCodePlaceholder": "رمز ترويجي",
@@ -4812,6 +4835,7 @@
     "clearAllFilters": "مسح جميع الفلاتر",
     "error": {
       "loading": "تعذّر فتح القالب. يُرجى المحاولة مرة أخرى.",
+      "preparingMedia": "تعذر تحضير بعض الوسائط النموذجية. ستُفتح سير العمل؛ اختر ملفاتك الخاصة لأي مدخلات مفقودة.",
       "templateNotFound": "النموذج \"{templateName}\" غير موجود"
     },
     "filtersApplied": "{count} فلتر مُطبَّق | {count} فلاتر مُطبَّقة",
@@ -4828,6 +4852,7 @@
       "credits": "يعمل باستخدام الاعتمادات",
       "title": "قالب مميز"
     },
+    "preparingMedia": "جارٍ تحضير الوسائط النموذجية...",
     "resultsCount": "عرض {count} من {total} قالب",
     "runsOnFilter": "يعمل على",
     "runsOnSelected": "{count} يعمل على",

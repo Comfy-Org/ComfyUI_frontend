@@ -9,7 +9,6 @@
       "signInCaption": "合作夥伴節點需要帳戶",
       "signInToRun": "登入以執行"
     },
-    "share": "分享",
     "shareTooltip": "分享工作流程"
   },
   "agent": {
@@ -158,6 +157,8 @@
     "showChatHistory": "顯示聊天記錄",
     "showLess": "顯示更少",
     "showMore": "顯示更多",
+    "showTarget": "顯示目標",
+    "showTargetWorkflow": "顯示目標工作流程：{workflowName}",
     "skip": "略過",
     "stop": "停止",
     "stopShortcut": "Esc",
@@ -170,6 +171,7 @@
     ],
     "switchWorkflow": "切換工作流程",
     "switchWorkflowForNodes": "切換至 {workflowName} 以新增節點。",
+    "targetFollowsVisibleWorkflow": "在您選擇目標、參考節點或傳送訊息之前，目標工作流程會隨目前顯示的分頁變更。",
     "targetForThisChat": "此聊天的代理目標",
     "targetNavigationUnavailable": "此工作流程目標已無法使用。",
     "thinking": "思考中...",
@@ -188,6 +190,7 @@
     "updatingGraph": "代理正在更新圖表",
     "uploading": "上傳中",
     "viewAddedNodes": "檢視節點 | 檢視節點",
+    "viewingDifferentWorkflow": "您正在檢視與目標不同的工作流程。",
     "worked": "已完成",
     "workedForMinutes": "已處理 {minutes} 分 {seconds} 秒",
     "workedForSeconds": "已處理 {seconds} 秒",
@@ -540,6 +543,7 @@
     "expiredCardDetail": "此卡片已過期。請使用其他付款方式。",
     "incorrectCvcDetail": "卡片安全碼不正確。請確認後再試一次。",
     "insufficientFundsDetail": "此付款方式餘額不足。請嘗試其他付款方式或聯絡您的銀行。",
+    "operationAlreadyPendingDetail": "您先前開始的付款仍在處理中。必須先完成該付款，才能選擇其他方案。",
     "paymentDeclinedDetail": "您的銀行拒絕此筆付款。請嘗試其他付款方式或聯絡您的銀行。",
     "processingErrorDetail": "無法處理您的付款。請再試一次或使用其他付款方式。",
     "reconciliationDetail": "已收到您的付款，但無法完成工作區更新。請聯絡支援人員並提供此操作 ID：",
@@ -717,6 +721,8 @@
         "selectAtLeastOne": "請至少選擇一個選項。"
       },
       "intro": "協助我們為您量身打造 ComfyUI 體驗。",
+      "navigationFailed": "問卷已儲存，但無法繼續新手導覽",
+      "navigationFailedDetail": "請再試一次。",
       "options": {
         "experience": {
           "new": "ComfyUI 新手",
@@ -757,6 +763,8 @@
       },
       "otherPlaceholder": "請告訴我們更多",
       "placeholder": "問卷問題佔位符",
+      "submitFailed": "無法提交問卷",
+      "submitFailedDetail": "您的回答未儲存。請再試一次。",
       "title": "雲端問卷"
     }
   },
@@ -2100,6 +2108,9 @@
     "updating": "正在更新 {id}",
     "upload": "上傳",
     "uploadAlreadyInProgress": "上傳已在進行中",
+    "uploadFailed": "上傳失敗：{reason}",
+    "uploadFileTooLarge": "檔案過大，無法上傳。",
+    "uploadFileTooLargeWithLimit": "檔案過大，無法上傳（上限：{limit} MB）。",
     "uploadTimedOut": "上傳逾時。請再試一次。",
     "usageHint": "使用提示",
     "use": "使用",
@@ -3090,6 +3101,7 @@
     "Refresh Node Definitions": "重新整理節點定義",
     "Reinstall": "重新安裝",
     "Rename": "重新命名",
+    "Replay Onboarding": "重新進行新手導覽",
     "Reset View": "重設視圖",
     "Resize Selected Nodes": "調整選取節點大小",
     "Restart": "重新啟動",
@@ -3282,6 +3294,7 @@
     "mask": "遮罩",
     "merging": "合併",
     "mesh": "網格",
+    "ming image": "ming image",
     "minimax": "minimax",
     "minimax music": "minimax 音樂",
     "mochi": "mochi",
@@ -3542,6 +3555,12 @@
     "next": "下一步",
     "skip": "跳過",
     "stepLabel": "步驟 {current} / {total}"
+  },
+  "onboardingReplay": {
+    "confirmMessage": "這會重新載入 ComfyUI，並重設此環境中可用的新手導覽步驟。您的工作流程不會受到影響。",
+    "confirmTitle": "要重新進行新手導覽嗎？",
+    "failedDetail": "無法重設您的新手導覽狀態。請再試一次。",
+    "failedSummary": "無法重新進行新手導覽"
   },
   "openSharedWorkflow": {
     "author": "作者：",
@@ -4387,9 +4406,12 @@
       "message": "團隊計費功能即將推出。屆時你可以為你的工作區訂閱方案，並依照每位成員計價。請持續關注最新消息。",
       "title": "即將推出"
     },
+    "billingTabBlocked": "無法開啟帳單頁面。請允許此網站顯示彈出式視窗，然後再試一次。",
     "cancelDialog": {
       "confirmCancel": "取消訂閱",
       "description": "您的存取權限將持續至 {date}。您將不會再次被收費，您的工作區與點數將被保留。您可隨時重新訂閱。",
+      "discountApplied": "您的折扣已套用，因此此訂閱未取消。關閉此視窗以查看更新後的方案。",
+      "discountRefreshFailed": "您的折扣已套用。請重新整理頁面以查看更新後的方案。",
       "endOfBillingPeriod": "帳單週期結束",
       "failed": "取消訂閱失敗",
       "keepSubscription": "保留訂閱",
@@ -4579,6 +4601,7 @@
       "payAndSubscribe": "付款並訂閱",
       "paymentMethod": "付款方式",
       "paymentPopupBlocked": "無法開啟付款頁面 — 請允許彈出視窗後再試一次。",
+      "pendingVerificationDetail": "您先前開始的付款仍需要您處理。完成後將啟用您當時選擇的方案。完成後，您即可選擇其他方案。",
       "perMember": "／成員",
       "privacyPolicy": "隱私政策",
       "promoCodePlaceholder": "優惠碼",
@@ -4812,6 +4835,7 @@
     "clearAllFilters": "清除所有篩選器",
     "error": {
       "loading": "無法開啟範本。請再試一次。",
+      "preparingMedia": "部分範例媒體無法準備完成。工作流程將會開啟；請為任何缺少的輸入選擇您自己的檔案。",
       "templateNotFound": "找不到範本 \"{templateName}\""
     },
     "filtersApplied": "已套用 {count} 個篩選器",
@@ -4828,6 +4852,7 @@
       "credits": "需使用點數執行",
       "title": "高級範本"
     },
+    "preparingMedia": "正在準備範例媒體...",
     "resultsCount": "顯示 {count} 個範本（共 {total} 個）",
     "runsOnFilter": "運行於",
     "runsOnSelected": "{count} 次運行於",

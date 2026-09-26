@@ -1486,6 +1486,25 @@
       }
     }
   },
+  "ByteDance2DraftToFinalVideoNode": {
+    "description": "עבדו את הווידאו הסופי ב-1080p של טיוטת Seedance 2.5. הווידאו הסופי שומר על הסצנה והתנועה של הטיוטה, ומשתמש מחדש בפרומפט, בהפניות, במשך, ביחס הממדים ובהגדרת השמע שלה.",
+    "display_name": "ByteDance Seedance 2.5 מטיוטה לווידאו סופי",
+    "inputs": {
+      "draft_task_id": {
+        "name": "draft_task_id",
+        "tooltip": "פלט ה-draft_task_id של צומת Seedance 2.5 שהורץ עם המודל Seedance 2.5 Draft, או מזהה משימת טיוטה שהודבק. הגדירו את בקרת ה-seed של צומת זה לקבועה, אחרת ההרצה הבאה תיצור טיוטה חדשה במקום להשתמש מחדש בזו שבדקתם. ניתן לעבד טיוטה במשך 7 ימים לאחר יצירתה."
+      },
+      "watermark": {
+        "name": "סימן מים",
+        "tooltip": "האם להוסיף סימן מים לווידאו."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "יצירת וידאו באמצעות Seedance 2.0 מתמונה של הפריים הראשון ואופציונלית גם מהפריים האחרון.",
     "display_name": "ByteDance Seedance 2.0 מהפריים הראשון-לאחרון לווידאו",
@@ -1511,7 +1530,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט mp4/mov; Seedance 2.0 לאיכות מרבית ול-4k; Fast למיטוב מהירות; Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
+        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט mp4/mov; Seedance 2.5 Draft עבור תצוגה מקדימה מהירה ב-480p, שה-draft_task_id שלה מעבד את הווידאו הסופי ב-1080p בצומת Seedance 2.5 Draft to Final Video; Seedance 2.0 עבור איכות מרבית ו-4k; Fast למיטוב מהירות; Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
       },
       "model_duration": {
         "name": "duration"
@@ -1540,6 +1559,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "מזהה המשימה של הרצת Seedance 2.5 Draft. חברו אותו לצומת Seedance 2.5 Draft to Final Video כדי לעבד את התוצאה הסופית ב-1080p."
       }
     }
   },
@@ -1552,7 +1575,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט mp4/mov; Seedance 2.0 לאיכות מרבית ול-4k; Fast למיטוב מהירות; Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
+        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט mp4/mov; Seedance 2.5 Draft עבור תצוגה מקדימה מהירה ב-480p, שה-draft_task_id שלה מעבד את הווידאו הסופי ב-1080p בצומת Seedance 2.5 Draft to Final Video; Seedance 2.0 עבור איכות מרבית ו-4k; Fast למיטוב מהירות; Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -1605,7 +1628,7 @@
       },
       "model": {
         "name": "מודל",
-        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט mp4/mov; Seedance 2.0 לאיכות מרבית ול-4k; Fast למיטוב מהירות; Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
+        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט mp4/mov; Seedance 2.5 Draft עבור תצוגה מקדימה מהירה ב-480p, שה-draft_task_id שלה מעבד את הווידאו הסופי ב-1080p בצומת Seedance 2.5 Draft to Final Video; Seedance 2.0 עבור איכות מרבית ו-4k; Fast למיטוב מהירות; Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
       },
       "model_auto_downscale": {
         "name": "הקטנה אוטומטית"
@@ -1646,6 +1669,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "מזהה המשימה של הרצת Seedance 2.5 Draft. חברו אותו לצומת Seedance 2.5 Draft to Final Video כדי לעבד את התוצאה הסופית ב-1080p."
       }
     }
   },
@@ -1658,7 +1685,7 @@
       },
       "model": {
         "name": "מודל",
-        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט mp4/mov; Seedance 2.0 לאיכות מרבית ול-4K; Fast למיטוב מהירות; Mini ליצירה המהירה והזולה ביותר."
+        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט mp4/mov; Seedance 2.5 Draft עבור תצוגה מקדימה מהירה ב-480p, שה-draft_task_id שלה מעבד את הווידאו הסופי ב-1080p בצומת Seedance 2.5 Draft to Final Video; Seedance 2.0 עבור איכות מרבית ו-4k; Fast למיטוב מהירות; Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
       },
       "model_duration": {
         "name": "משך"
@@ -1690,6 +1717,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "מזהה המשימה של הרצת Seedance 2.5 Draft. חברו אותו לצומת Seedance 2.5 Draft to Final Video כדי לעבד את התוצאה הסופית ב-1080p."
       }
     }
   },
@@ -1932,7 +1963,7 @@
   },
   "ByteDanceSeedreamLayerSeparationNode": {
     "description": "פירוק תמונה לפלטת רקע ועד 16 שכבות שקופות הניתנות להזזה, כל אחת עם סדר ערימה, תיבת גבול, שם ותיאור.",
-    "display_name": "ByteDance Seedream 5.0 Pro הפרדת שכבות",
+    "display_name": "ByteDance Seedream 5.0 Pro הפרדת שכבות (מדור קודם)",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -1990,6 +2021,62 @@
       "5": {
         "name": "layer_stack",
         "tooltip": "מסמך שכבות מוכן לעריכה עבור Create Layered Image: פלטת הבסיס וכל אלמנט כשכבה משלו, חתוכה הדוק, במיקום האמיתי ובסדר הערימה. חבר ישירות, או הרחב עם Add Layer."
+      }
+    }
+  },
+  "ByteDanceSeedreamLayerSeparationNodeV2": {
+    "description": "פרקו תמונה לפלטת רקע ועד 16 שכבות שקופות שניתן למקם מחדש, שלכל אחת מהן סדר הערמה, תיבה תוחמת, שם ותיאור.",
+    "display_name": "ByteDance Seedream 5.0 הפרדת שכבות",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל"
+      },
+      "model_crop_layers": {
+        "name": "crop_layers"
+      },
+      "model_prompt": {
+        "name": "פרומפט"
+      },
+      "model_prompt_optimization": {
+        "name": "prompt_optimization"
+      },
+      "model_seed": {
+        "name": "זרע"
+      },
+      "model_size": {
+        "name": "גודל"
+      },
+      "model_watermark": {
+        "name": "סימן מים"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "base_image",
+        "tooltip": "תמונת הבסיס (פלטת הרקע) שעליה נערמות השכבות."
+      },
+      "1": {
+        "name": "base_mask",
+        "tooltip": "השקיפות של תמונת הבסיס (1 = שקוף, לפי המוסכמה של LoadImage); לעת עתה תמיד אטומה לחלוטין."
+      },
+      "2": {
+        "name": "שכבות",
+        "tooltip": "שכבות שקופות המסודרות מלמטה למעלה. מצב קנבס מלא: ממוקמות על קנבס שחור בגודל הבסיס, במיקום התיבה התוחמת שלהן. מצב גודל מינימלי: נחתכות לתיבה התוחמת שלהן, מעוגנות בפינה הימנית העליונה ומרופדות לגודל השכבה הגדולה ביותר."
+      },
+      "3": {
+        "name": "מסכות",
+        "tooltip": "שקיפות לכל שכבה, מיושרת לפי אינדקס עם אצוות השכבות (1 = שקוף, לפי המוסכמה של LoadImage). להרכבה בסגנון ImageCompositeMasked, הוסיפו תחילה InvertMask."
+      },
+      "4": {
+        "name": "bboxes",
+        "tooltip": "תיבת מיקום אחת לכל שכבה, מיושרת לפי אינדקס עם אצוות השכבות (הזינו את שתיהן, וכן masks, אל Layers From Bounding Boxes כדי לשחזר את המיקום לכל שכבה): {x, y, width, height, metadata: {name, desc, z_index, native_size, content_rect, flags}}. content_rect = [left, top, width, height] הוא אזור התוכן של השכבה בתוך המסגרת שלה; הוא ממוקם על הקנבס במיקום התיבה בתוספת היסט זה."
+      },
+      "5": {
+        "name": "layer_stack",
+        "tooltip": "מסמך שכבות מוכן לעריכה עבור Create Layered Image: פלטת הבסיס וכל רכיב כשכבה נפרדת בעלת שם, חתוכה במדויק, במיקומה ובסדר ההערמה האמיתיים שלה. חברו ישירות, או הרחיבו באמצעות Add Layer."
       }
     }
   },
@@ -8491,12 +8578,12 @@
     }
   },
   "ImageColorSpace": {
-    "description": "ממיר בין sRGB, ‏Rec.709 ליניארי, HDR ‏(Rec.2020 HLG) ו-HDR PQ ‏(Rec.2020 PQ). Linear 1.0 משתמש באותה נקודת לבן ייחוס של 203 ניט כמו sRGB; ‏HLG משתמש בתצוגת ייחוס של 1000 ניט. פלט ליניארי והמרות מליניארי ל-HDR משמרים ערכים מורחבים ללא מיפוי גוונים. פלט SDR והמרה מ-PQ ל-HLG ממפים גוונים של בהירות עודפת לאורך האצווה ומכווצים צבעים שמחוץ לטווח הצבעים. ההמרות מחושבות ב-float32 ומחזירות את ההתקן ואת dtype של שלב הביניים. אלפא ישרה אינה עוברת המרת צבע.",
+    "description": "המרה בין sRGB, ‏Rec.709 לינארי, HDR (Rec.2020 HLG), ‏HDR PQ (Rec.2020 PQ), ‏HDR LogC3 ו-HDR ACEScct. ‏LogC3 משתמש בעקומת EI 800, עם צבעי יסוד Rec.709 וקודים המוגבלים לטווח [0, 1]. ‏ACEScct משתמש בצבעי יסוד AP1 ובנקודת לבן D60, עם התאמת Bradford ל-D65. המירו LogC3 או ACEScct ללינארי לשמירה כ-EXR. ‏Linear 1.0 משתמש באותה נקודת לבן לייחוס של 203 ניט כמו sRGB; ‏HLG משתמש בתצוגת ייחוס של 1000 ניט. פלטים לינאריים ו-ACEScct משמרים ערכים מורחבים. המרות מלינארי ל-HDR משמרות אזורים בהירים ללא מיפוי גוונים; פלטי HLG ו-PQ חותכים ערוצים שליליים. פלט SDR והמרה מ-PQ ל-HLG מבצעים מיפוי גוונים לעודף בהירות על פני האצווה ומכווצים צבעים שמחוץ לטווח הצבעים. ההמרות מחושבות ב-float32 ומחזירות את ההתקן ואת dtype של תוצאת הביניים. אלפא ישיר אינו עובר טרנספורמציית צבע.",
     "display_name": "המרת מרחב הצבע של תמונה",
     "inputs": {
       "destination": {
         "name": "destination",
-        "tooltip": "מרחב הצבע של פיקסלי הפלט. הגדר את צומת השמירה לאותו מרחב צבע."
+        "tooltip": "מרחב הצבע של פיקסלי הפלט. יש להגדיר את צומת השמירה לאותו מרחב צבע. יש להמיר LogC3 או ACEScct לליניארי לפני שמירת EXR, או ל-sRGB/HDR/HDR PQ לפני שמירת וידאו."
       },
       "image": {
         "name": "image"
@@ -16893,7 +16980,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "מידת ההסקה שהמודל מבצע לפני המענה. 'default' משאיר את הבחירה למודל. הרמות הנתמכות משתנות לפי מודל: GPT-6 Astra low-max, GPT-5.6 none-max (ללא minimal), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, o-series low-high; ל-GPT-4.1 אין יכולת הסקה. רמות שאינן נתמכות נדחות לפני שליחת הבקשה."
+        "tooltip": "מידת החשיבה של המודל לפני המענה. 'default' משאיר את הבחירה למודל. הרמות הנתמכות משתנות לפי מודל: GPT-6 Astra תומך ב-low-max,‏ GPT-6 Sol/Luna ו-GPT-5.6 תומכים ב-none-max (ללא minimal),‏ GPT-5.5 תומך ב-none-xhigh,‏ GPT-5.5 Pro תומך ב-medium-xhigh,‏ GPT-5 תומך ב-minimal-high, וסדרת o תומכת ב-low-high; ל-GPT-4.1 אין יכולת חשיבה. רמות שאינן נתמכות נדחות לפני שליחת הבקשה."
       },
       "truncation": {
         "name": "truncation",
@@ -23884,6 +23971,30 @@
       },
       "2": {
         "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeMingImageEdit": {
+    "display_name": "קידוד טקסט Ming לעריכת תמונה",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "תמונות",
+        "tooltip": "תמונות עזר אופציונליות, הנראות למקודד הטקסט ומצורפות לרצף ה-latent כפריימים נקיים. תמונות מאוחרות יותר משנות את גודלן בהתאם לתמונה הראשונה, וה-latent שנדגם צריך להתאים לגודלה."
+      },
+      "prompt": {
+        "name": "פרומפט"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "ללא VAE, התמונות מתנות את מקודד הטקסט בלבד באמצעות מגדל הראייה."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

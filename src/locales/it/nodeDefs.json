@@ -1486,6 +1486,25 @@
       }
     }
   },
+  "ByteDance2DraftToFinalVideoNode": {
+    "description": "Renderizza il video finale a 1080p di una bozza Seedance 2.5. Il video finale mantiene la scena e il movimento della bozza e riutilizza prompt, riferimenti, durata, rapporto d'aspetto e impostazione audio.",
+    "display_name": "ByteDance Seedance 2.5 Da bozza a video finale",
+    "inputs": {
+      "draft_task_id": {
+        "name": "draft_task_id",
+        "tooltip": "L'output draft_task_id di un nodo Seedance 2.5 eseguito con il modello Seedance 2.5 Draft, oppure un ID attività della bozza incollato. Imposta il controllo del seed di quel nodo su fisso, altrimenti l'esecuzione successiva genera una nuova bozza invece di riutilizzare quella esaminata. Una bozza può essere renderizzata per 7 giorni dalla sua creazione."
+      },
+      "watermark": {
+        "name": "filigrana",
+        "tooltip": "Se aggiungere una filigrana al video."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "Genera un video utilizzando Seedance 2.0 da un'immagine del primo frame e, opzionalmente, dell'ultimo frame.",
     "display_name": "ByteDance Seedance 2.0 Da Primo-Ultimo Frame a Video",
@@ -1511,7 +1530,7 @@
       },
       "model": {
         "name": "modello",
-        "tooltip": "Seedance 2.5 per il modello più recente, video fino a 30 secondi e output mp4/mov; Seedance 2.0 per la massima qualità e 4k; Fast per l'ottimizzazione della velocità; Mini per la generazione più veloce ed economica."
+        "tooltip": "Seedance 2.5 per il modello più recente, video fino a 30 secondi e output mp4/mov; Seedance 2.5 Draft per una rapida anteprima a 480p il cui draft_task_id renderizza il finale a 1080p nel nodo Seedance 2.5 Da bozza a video finale; Seedance 2.0 per la massima qualità e il 4k; Fast per l'ottimizzazione della velocità; Mini per la generazione più rapida e meno costosa."
       },
       "model_duration": {
         "name": "durata"
@@ -1540,6 +1559,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "ID attività di un'esecuzione di Seedance 2.5 Draft. Collegalo al nodo Seedance 2.5 Da bozza a video finale per renderizzare il finale a 1080p."
       }
     }
   },
@@ -1552,7 +1575,7 @@
       },
       "model": {
         "name": "modello",
-        "tooltip": "Seedance 2.5 per il modello più recente, video fino a 30 secondi e output mp4/mov; Seedance 2.0 per la massima qualità e 4k; Fast per l'ottimizzazione della velocità; Mini per la generazione più veloce ed economica."
+        "tooltip": "Seedance 2.5 per il modello più recente, video fino a 30 secondi e output mp4/mov; Seedance 2.5 Draft per una rapida anteprima a 480p il cui draft_task_id renderizza il finale a 1080p nel nodo Seedance 2.5 Da bozza a video finale; Seedance 2.0 per la massima qualità e il 4k; Fast per l'ottimizzazione della velocità; Mini per la generazione più rapida e meno costosa."
       },
       "model_auto_downscale": {
         "name": "ridimensionamento automatico in basso"
@@ -1605,7 +1628,7 @@
       },
       "model": {
         "name": "modello",
-        "tooltip": "Seedance 2.5 per il modello più recente, video fino a 30 secondi e output mp4/mov; Seedance 2.0 per la massima qualità e 4k; Fast per l'ottimizzazione della velocità; Mini per la generazione più veloce ed economica."
+        "tooltip": "Seedance 2.5 per il modello più recente, video fino a 30 secondi e output mp4/mov; Seedance 2.5 Draft per una rapida anteprima a 480p il cui draft_task_id renderizza il finale a 1080p nel nodo Seedance 2.5 Da bozza a video finale; Seedance 2.0 per la massima qualità e il 4k; Fast per l'ottimizzazione della velocità; Mini per la generazione più rapida e meno costosa."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -1646,6 +1669,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "ID attività di un'esecuzione di Seedance 2.5 Draft. Collegalo al nodo Seedance 2.5 Da bozza a video finale per renderizzare il finale a 1080p."
       }
     }
   },
@@ -1658,7 +1685,7 @@
       },
       "model": {
         "name": "modello",
-        "tooltip": "Seedance 2.5 per il modello più recente, video fino a 30 secondi e output mp4/mov; Seedance 2.0 per la massima qualità e il 4K; Fast per l'ottimizzazione della velocità; Mini per la generazione più rapida ed economica."
+        "tooltip": "Seedance 2.5 per il modello più recente, video fino a 30 secondi e output mp4/mov; Seedance 2.5 Draft per una rapida anteprima a 480p il cui draft_task_id renderizza il finale a 1080p nel nodo Seedance 2.5 Da bozza a video finale; Seedance 2.0 per la massima qualità e il 4k; Fast per l'ottimizzazione della velocità; Mini per la generazione più rapida e meno costosa."
       },
       "model_duration": {
         "name": "durata"
@@ -1690,6 +1717,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "ID attività di un'esecuzione di Seedance 2.5 Draft. Collegalo al nodo Seedance 2.5 Da bozza a video finale per renderizzare il finale a 1080p."
       }
     }
   },
@@ -1932,7 +1963,7 @@
   },
   "ByteDanceSeedreamLayerSeparationNode": {
     "description": "Scomponi un'immagine in una base di sfondo più fino a 16 livelli trasparenti riposizionabili, ciascuno con ordine di sovrapposizione, riquadro di delimitazione, nome e descrizione.",
-    "display_name": "ByteDance Seedream 5.0 Pro Separazione Livelli",
+    "display_name": "ByteDance Seedream 5.0 Pro Separazione livelli (Legacy)",
     "inputs": {
       "control_after_generate": {
         "name": "controllo dopo generazione"
@@ -1990,6 +2021,62 @@
       "5": {
         "name": "layer_stack",
         "tooltip": "Documento livelli pronto per la modifica per Create Layered Image: la base più ogni elemento come proprio livello nominato, ritagliato stretto, alla sua vera posizione e ordine di sovrapposizione. Collega direttamente, oppure estendi con Add Layer."
+      }
+    }
+  },
+  "ByteDanceSeedreamLayerSeparationNodeV2": {
+    "description": "Scompone un'immagine in un piano di sfondo più fino a 16 livelli trasparenti riposizionabili, ciascuno con ordine di sovrapposizione, riquadro di delimitazione, nome e descrizione.",
+    "display_name": "ByteDance Seedream 5.0 Separazione livelli",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "model": {
+        "name": "modello"
+      },
+      "model_crop_layers": {
+        "name": "crop_layers"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_prompt_optimization": {
+        "name": "prompt_optimization"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_size": {
+        "name": "dimensione"
+      },
+      "model_watermark": {
+        "name": "filigrana"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "base_image",
+        "tooltip": "L'immagine di base (piano di sfondo) su cui si sovrappongono i livelli."
+      },
+      "1": {
+        "name": "base_mask",
+        "tooltip": "Trasparenza dell'immagine di base (1 = trasparente, convenzione LoadImage); attualmente sempre completamente opaca."
+      },
+      "2": {
+        "name": "livelli",
+        "tooltip": "Livelli trasparenti ordinati dal basso verso l'alto. Modalità canvas completo: posizionati su un canvas nero delle dimensioni della base, nella posizione del relativo riquadro di delimitazione. Modalità dimensione minima: ritagliati al rispettivo riquadro di delimitazione, ancorati in alto a sinistra e riempiti fino alla dimensione del livello più grande."
+      },
+      "3": {
+        "name": "maschere",
+        "tooltip": "Trasparenza per livello, allineata per indice con il batch di livelli (1 = trasparente, convenzione LoadImage). Per la composizione nello stile di ImageCompositeMasked, aggiungi prima InvertMask."
+      },
+      "4": {
+        "name": "bboxes",
+        "tooltip": "Un riquadro di posizionamento per livello, allineato per indice con il batch di livelli (inserisci entrambi, più le maschere, in Livelli da riquadri di delimitazione per ricostruire il posizionamento per livello): {x, y, width, height, metadata: {name, desc, z_index, native_size, content_rect, flags}}. content_rect = [left, top, width, height] è la regione di contenuto del livello all'interno della propria cornice; viene posizionata sul canvas alla posizione del riquadro più tale offset."
+      },
+      "5": {
+        "name": "layer_stack",
+        "tooltip": "Documento a livelli pronto da modificare per Crea immagine a livelli: il piano di base più ogni elemento come livello distinto con nome, ritagliato strettamente, nella posizione e nell'ordine di sovrapposizione effettivi. Collega direttamente oppure estendi con Aggiungi livello."
       }
     }
   },
@@ -8491,12 +8578,12 @@
     }
   },
   "ImageColorSpace": {
-    "description": "Converte sRGB, Rec.709 lineare, HDR (Rec.2020 HLG) e HDR PQ (Rec.2020 PQ). Il lineare 1.0 usa lo stesso bianco di riferimento di 203 nit di sRGB; HLG usa un display di riferimento di 1000 nit. L'output lineare e le conversioni da lineare a HDR preservano i valori estesi senza tone mapping. L'output SDR e la conversione da PQ a HLG applicano il tone mapping alla luminanza in eccesso sull'intero batch e comprimono i colori fuori gamma. Le conversioni vengono calcolate in float32 e restituiscono il dispositivo intermedio e dtype. L'alpha non premoltiplicato non viene trasformato nel colore.",
+    "description": "Converti sRGB, Rec.709 lineare, HDR (Rec.2020 HLG), HDR PQ (Rec.2020 PQ), HDR LogC3 e HDR ACEScct. LogC3 usa la curva EI 800 con primarie Rec.709 e codici limitati a [0, 1]. ACEScct usa primarie AP1 e bianco D60, con adattamento Bradford a D65. Converti LogC3 o ACEScct in lineare per il salvataggio EXR. Il lineare 1.0 usa lo stesso bianco di riferimento da 203 nit di sRGB; HLG usa un display di riferimento da 1000 nit. Le uscite lineari e ACEScct preservano i valori estesi. Le conversioni da lineare a HDR preservano le alte luci senza mappatura tonale; le uscite HLG e PQ ritagliano i canali negativi. L'output SDR e la conversione da PQ a HLG applicano la mappatura tonale alla luminanza in eccesso nell'intero batch e comprimono i colori fuori gamut. Le conversioni vengono calcolate in float32 e restituiscono il device e il dtype intermedi. L'alfa non premoltiplicato non subisce trasformazioni di colore.",
     "display_name": "Converti spazio colore dell'immagine",
     "inputs": {
       "destination": {
         "name": "destination",
-        "tooltip": "Spazio colore dei pixel di output. Imposta il nodo di salvataggio sullo stesso spazio colore."
+        "tooltip": "Spazio colore dei pixel di output. Imposta il nodo di salvataggio sullo stesso spazio colore. Converti LogC3 o ACEScct in lineare prima di salvare in EXR, oppure in sRGB/HDR/HDR PQ prima di salvare il video."
       },
       "image": {
         "name": "image"
@@ -16893,7 +16980,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "Quanto il modello ragiona prima di rispondere. 'default' lascia la scelta al modello. I livelli supportati variano in base al modello: GPT-6 Astra low-max, GPT-5.6 none-max (senza minimal), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, o-series low-high; GPT-4.1 non dispone di ragionamento. I livelli non supportati vengono rifiutati prima dell'invio della richiesta."
+        "tooltip": "Quanto il modello ragiona prima di rispondere. 'default' lascia la scelta al modello. I livelli supportati variano in base al modello: GPT-6 Astra low-max, GPT-6 Sol/Luna e GPT-5.6 none-max (senza minimal), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, serie o low-high; GPT-4.1 non ha ragionamento. I livelli non supportati vengono rifiutati prima dell'invio della richiesta."
       },
       "truncation": {
         "name": "troncamento",
@@ -23884,6 +23971,30 @@
       },
       "2": {
         "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeMingImageEdit": {
+    "display_name": "Codifica testo Ming Image Edit",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "immagini",
+        "tooltip": "Immagini di riferimento facoltative, visualizzate dal codificatore di testo e aggiunte alla sequenza latent come fotogrammi puliti. Le immagini successive vengono ridimensionate in base alla prima e il latent campionato deve corrisponderne alle dimensioni."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Senza un VAE, le immagini condizionano il codificatore di testo solo tramite la torre visiva."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

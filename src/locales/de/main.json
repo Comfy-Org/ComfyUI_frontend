@@ -9,7 +9,6 @@
       "signInCaption": "Partner-Nodes erfordern ein Konto",
       "signInToRun": "Zum Ausführen anmelden"
     },
-    "share": "Teilen",
     "shareTooltip": "Workflow teilen"
   },
   "agent": {
@@ -158,6 +157,8 @@
     "showChatHistory": "Chatverlauf anzeigen",
     "showLess": "Weniger anzeigen",
     "showMore": "Mehr anzeigen",
+    "showTarget": "Ziel anzeigen",
+    "showTargetWorkflow": "Ziel-Workflow anzeigen: {workflowName}",
     "skip": "Überspringen",
     "stop": "Stopp",
     "stopShortcut": "Esc",
@@ -170,6 +171,7 @@
     ],
     "switchWorkflow": "Workflow wechseln",
     "switchWorkflowForNodes": "Wechseln Sie zu {workflowName}, um Nodes hinzuzufügen.",
+    "targetFollowsVisibleWorkflow": "Der Ziel-Workflow folgt dem sichtbaren Tab, bis Sie ein Ziel auswählen, Nodes referenzieren oder eine Nachricht senden.",
     "targetForThisChat": "Agent-Ziel für diesen Chat",
     "targetNavigationUnavailable": "Dieses Workflow-Ziel ist nicht mehr verfügbar.",
     "thinking": "Denkt nach...",
@@ -188,6 +190,7 @@
     "updatingGraph": "Der Agent aktualisiert den Graphen",
     "uploading": "Wird hochgeladen",
     "viewAddedNodes": "Node anzeigen | Nodes anzeigen",
+    "viewingDifferentWorkflow": "Sie sehen einen anderen Workflow als den Ziel-Workflow.",
     "worked": "Abgeschlossen",
     "workedForMinutes": "Bearbeitungszeit: {minutes}m {seconds}s",
     "workedForSeconds": "Bearbeitungszeit: {seconds} Sekunden",
@@ -540,6 +543,7 @@
     "expiredCardDetail": "Diese Karte ist abgelaufen. Verwenden Sie eine andere Zahlungsmethode.",
     "incorrectCvcDetail": "Der Sicherheitscode der Karte ist falsch. Überprüfen Sie ihn und versuchen Sie es erneut.",
     "insufficientFundsDetail": "Diese Zahlungsmethode verfügt über nicht ausreichendes Guthaben. Versuchen Sie es mit einer anderen Zahlungsmethode oder wenden Sie sich an Ihre Bank.",
+    "operationAlreadyPendingDetail": "Eine früher gestartete Zahlung wird noch verarbeitet. Sie muss abgeschlossen sein, bevor Sie einen anderen Plan auswählen können.",
     "paymentDeclinedDetail": "Ihre Bank hat diese Zahlung abgelehnt. Versuchen Sie es mit einer anderen Zahlungsmethode oder wenden Sie sich an Ihre Bank.",
     "processingErrorDetail": "Ihre Zahlung konnte nicht verarbeitet werden. Versuchen Sie es erneut oder verwenden Sie eine andere Zahlungsmethode.",
     "reconciliationDetail": "Ihre Zahlung wurde erhalten, aber die Aktualisierung Ihres Workspace konnte nicht abgeschlossen werden. Wenden Sie sich an den Support und geben Sie diese Vorgangs-ID an:",
@@ -717,6 +721,8 @@
         "selectAtLeastOne": "Bitte wählen Sie mindestens eine Option aus."
       },
       "intro": "Ein paar kurze Fragen, damit wir ComfyUI für Sie einrichten können.",
+      "navigationFailed": "Die Umfrage wurde gespeichert, aber das Onboarding konnte nicht fortgesetzt werden",
+      "navigationFailedDetail": "Bitte versuchen Sie es erneut.",
       "options": {
         "experience": {
           "new": "Neu bei ComfyUI",
@@ -757,6 +763,8 @@
       },
       "otherPlaceholder": "Erzählen Sie uns mehr",
       "placeholder": "Platzhalter für Umfragefragen",
+      "submitFailed": "Die Umfrage konnte nicht übermittelt werden",
+      "submitFailedDetail": "Ihre Antworten wurden nicht gespeichert. Bitte versuchen Sie es erneut.",
       "title": "Lernen wir Sie kennen"
     }
   },
@@ -2100,6 +2108,9 @@
     "updating": "Aktualisierung von {id}",
     "upload": "Hochladen",
     "uploadAlreadyInProgress": "Upload läuft bereits",
+    "uploadFailed": "Upload fehlgeschlagen: {reason}",
+    "uploadFileTooLarge": "Die Datei ist zu groß zum Hochladen.",
+    "uploadFileTooLargeWithLimit": "Die Datei ist zu groß zum Hochladen (Limit: {limit} MB).",
     "uploadTimedOut": "Zeitüberschreitung beim Upload. Bitte versuchen Sie es erneut.",
     "usageHint": "Nutzungshinweis",
     "use": "Verwenden",
@@ -3090,6 +3101,7 @@
     "Refresh Node Definitions": "Node-Definitionen aktualisieren",
     "Reinstall": "Neu installieren",
     "Rename": "Umbenennen",
+    "Replay Onboarding": "Onboarding erneut abspielen",
     "Reset View": "Ansicht zurücksetzen",
     "Resize Selected Nodes": "Größe ausgewählter Nodes ändern",
     "Restart": "Neu starten",
@@ -3282,6 +3294,7 @@
     "mask": "Maskierung",
     "merging": "Zusammenführen",
     "mesh": "Mesh",
+    "ming image": "ming image",
     "minimax": "minimax",
     "minimax music": "minimax music",
     "mochi": "mochi",
@@ -3542,6 +3555,12 @@
     "next": "Weiter",
     "skip": "Überspringen",
     "stepLabel": "Schritt {current} von {total}"
+  },
+  "onboardingReplay": {
+    "confirmMessage": "Dadurch wird ComfyUI neu geladen und die in dieser Umgebung verfügbaren Onboarding-Schritte werden zurückgesetzt. Ihre Workflows bleiben davon unberührt.",
+    "confirmTitle": "Onboarding erneut abspielen?",
+    "failedDetail": "Ihr Onboarding-Status konnte nicht zurückgesetzt werden. Bitte versuchen Sie es erneut.",
+    "failedSummary": "Onboarding konnte nicht erneut abgespielt werden"
   },
   "openSharedWorkflow": {
     "author": "Autor:",
@@ -4387,9 +4406,12 @@
       "message": "Die Team-Abrechnung ist demnächst verfügbar. Sie können einen Plan für Ihren Workspace mit Preisgestaltung pro Sitzplatz abonnieren. Bleiben Sie über Neuigkeiten auf dem Laufenden.",
       "title": "Demnächst verfügbar"
     },
+    "billingTabBlocked": "Die Abrechnungsseite konnte nicht geöffnet werden. Erlauben Sie Pop-ups für diese Website und versuchen Sie es erneut.",
     "cancelDialog": {
       "confirmCancel": "Abonnement kündigen",
       "description": "Ihr Zugriff bleibt bis {date} bestehen. Ihnen werden keine weiteren Kosten berechnet und Ihr Workspace sowie Ihre Credits bleiben erhalten. Sie können Ihr Abonnement jederzeit erneut abschließen.",
+      "discountApplied": "Ihr Rabatt wurde angewendet, daher wurde dieses Abonnement nicht gekündigt. Schließen Sie dieses Fenster, um Ihren aktualisierten Plan anzuzeigen.",
+      "discountRefreshFailed": "Ihr Rabatt wurde angewendet. Aktualisieren Sie die Seite, um Ihren aktualisierten Plan anzuzeigen.",
       "endOfBillingPeriod": "Ende des Abrechnungszeitraums",
       "failed": "Abonnement konnte nicht gekündigt werden",
       "keepSubscription": "Abonnement behalten",
@@ -4579,6 +4601,7 @@
       "payAndSubscribe": "Zahlen und abonnieren",
       "paymentMethod": "Zahlungsmethode",
       "paymentPopupBlocked": "Die Zahlungsseite konnte nicht geöffnet werden – bitte erlauben Sie Pop-ups und versuchen Sie es erneut.",
+      "pendingVerificationDetail": "Eine früher gestartete Zahlung erfordert noch Ihre Aufmerksamkeit. Wenn Sie sie abschließen, wird der damals gewählte Plan aktiviert. Sie können einen anderen Plan auswählen, sobald sie abgeschlossen ist.",
       "perMember": "/ Mitglied",
       "privacyPolicy": "Datenschutzerklärung",
       "promoCodePlaceholder": "Promo-Code",
@@ -4812,6 +4835,7 @@
     "clearAllFilters": "Alle Filter zurücksetzen",
     "error": {
       "loading": "Die Vorlage konnte nicht geöffnet werden. Bitte versuchen Sie es erneut.",
+      "preparingMedia": "Einige Beispielmedien konnten nicht vorbereitet werden. Der Workflow wird geöffnet; wählen Sie für fehlende Eingaben eigene Dateien aus.",
       "templateNotFound": "Vorlage \"{templateName}\" nicht gefunden"
     },
     "filtersApplied": "{count} Filter angewendet | {count} Filter angewendet",
@@ -4828,6 +4852,7 @@
       "credits": "Wird mit Credits ausgeführt",
       "title": "Premium-Vorlage"
     },
+    "preparingMedia": "Beispielmedien werden vorbereitet...",
     "resultsCount": "{count} von {total} Vorlagen werden angezeigt",
     "runsOnFilter": "Läuft auf",
     "runsOnSelected": "{count} Plattformen",
