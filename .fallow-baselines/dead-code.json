@@ -2,7 +2,6 @@
   "unused_files": [],
   "unused_exports": [
     "apps/website/src/components/ui/button-mask/index.ts:ButtonMask",
-    "src/composables/billing/useNextInvoice.ts:useNextInvoice",
     "src/extensions/core/groupNode.ts:GroupNodeHandler"
   ],
   "unused_types": [
