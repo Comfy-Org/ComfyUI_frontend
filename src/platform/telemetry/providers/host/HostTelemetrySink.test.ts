@@ -157,23 +157,27 @@ describe('HostTelemetrySink', () => {
     )
   })
 
-  it('forwards agent paywall impressions with their reason', () => {
+  it('forwards agent paywall impressions with their reason and surface', () => {
     new HostTelemetrySink().trackAgentPaywallShown({
-      reason: 'subscription_inactive'
+      reason: 'subscription_inactive',
+      surface: 'credits_exhausted'
     })
 
     expect(state.capture).toHaveBeenCalledExactlyOnceWith(
       TelemetryEvents.AGENT_PAYWALL_SHOWN,
-      { reason: 'subscription_inactive' }
+      { reason: 'subscription_inactive', surface: 'credits_exhausted' }
     )
   })
 
-  it('forwards agent paywall CTA clicks with their cta', () => {
-    new HostTelemetrySink().trackAgentPaywallCtaClicked({ cta: 'add_credits' })
+  it('forwards agent paywall CTA clicks with their cta and surface', () => {
+    new HostTelemetrySink().trackAgentPaywallCtaClicked({
+      cta: 'add_credits',
+      surface: 'refused_send'
+    })
 
     expect(state.capture).toHaveBeenCalledExactlyOnceWith(
       TelemetryEvents.AGENT_PAYWALL_CTA_CLICKED,
-      { cta: 'add_credits' }
+      { cta: 'add_credits', surface: 'refused_send' }
     )
   })
 

@@ -867,14 +867,33 @@ export type AgentPaywallReason =
   | 'sales_managed'
   | 'unknown'
 
+/**
+ * Which moment put the paywall in front of the user. The two are not
+ * interchangeable and collapsing them made the funnel unreadable:
+ *
+ * - `refused_send` is reactive — a turn POST came back 402/`no_funds`, so the
+ *   user had to compose and send a message to discover they could not.
+ * - `credits_exhausted` is standing — the client already knows the workspace
+ *   has no funds and says so beside the composer, without a refusal first.
+ *
+ * Reported because `app:agent_paywall_shown` alone cannot tell a rise in
+ * impressions caused by the standing surface from one caused by more users
+ * being refused. Without the split, "the paywall is showing more" is
+ * ambiguous between the fix working and the product getting worse.
+ */
+export type AgentPaywallSurface = 'refused_send' | 'credits_exhausted'
+
 export interface AgentPaywallShownMetadata {
   reason: AgentPaywallReason
+  surface: AgentPaywallSurface
 }
 
 export type AgentPaywallCta = 'subscribe' | 'add_credits' | 'upgrade'
 
 export interface AgentPaywallCtaMetadata {
   cta: AgentPaywallCta
+  /** The surface whose impression this click follows. */
+  surface: AgentPaywallSurface
 }
 
 export interface SubscriptionCancellationMetadata {
