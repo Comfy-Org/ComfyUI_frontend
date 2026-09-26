@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -6,6 +6,7 @@ import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh
 import { useReconnectingNotification } from '@/composables/useReconnectingNotification'
 import type * as DistributionTypes from '@/platform/distribution/types'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
+import { useAssetsStore } from '@/stores/assetsStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
@@ -35,7 +36,9 @@ beforeEach(() => {
 const apiMock = vi.hoisted(() =>
   Object.assign(new EventTarget(), {
     getServerFeature: vi.fn((_name: string, fallback?: unknown) => fallback),
-    getSystemStats: vi.fn(async () => ({ system: {}, devices: [] }))
+    getSystemStats: vi.fn(async () => ({ system: {}, devices: [] })),
+    getQueue: vi.fn(async () => ({ Running: [], Pending: [] })),
+    getHistory: vi.fn(async () => [])
   })
 )
 const distribution = vi.hoisted(
@@ -51,15 +54,7 @@ const distribution = vi.hoisted(
 vi.mock<unknown>(import('@/scripts/api'), () => ({ api: apiMock }))
 vi.mock(import('firebase/auth'))
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    rootGraph: { getNodeById: vi.fn(), nodes: [] },
-    ui: {
-      menuContainer: { style: { setProperty: vi.fn() } },
-      restoreMenuPosition: vi.fn()
-    }
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
 vi.mock(import('@/composables/useReconnectQueueRefresh'), () => {
   const refreshOnReconnect = vi.fn(async () => {})
@@ -84,12 +79,7 @@ vi.mock(import('@/composables/useCoreCommands'), () => ({
 vi.mock(import('@/platform/remote/comfyui/useQueuePolling'), () => ({
   useQueuePolling: vi.fn()
 }))
-vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
-  useErrorHandling: () => ({
-    wrapWithErrorHandling: (f: unknown) => f,
-    wrapWithErrorHandlingAsync: (f: unknown) => f
-  })
-}))
+vi.mock(import('@/composables/useErrorHandling'))
 vi.mock(import('@/composables/useProgressFavicon'), () => ({
   useProgressFavicon: vi.fn()
 }))
@@ -197,10 +187,21 @@ describe('GraphView - reconnect wiring', () => {
     // `handleReconnected` calls both before its first `await`, so dispatching
     // the event is enough — there is nothing to wait for, and waiting for it
     // only hid how long the import above was taking.
-    const { onReconnected } = useReconnectingNotification()
-    const refreshOnReconnect = useReconnectQueueRefresh()
-    expect(onReconnected).toHaveBeenCalledTimes(1)
-    expect(refreshOnReconnect).toHaveBeenCalledTimes(1)
+    expect(useReconnectingNotification().onReconnected).toHaveBeenCalledTimes(1)
+    expect(useReconnectQueueRefresh()).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('GraphView - output assets refresh', () => {
+  it('reloads output assets on execution_success while the assets sidebar is inactive', async () => {
+    render(GraphView, { global: { plugins: [i18n] } })
+
+    useSidebarTabStore().activeSidebarTabId = null
+    const loadNew = vi.spyOn(useAssetsStore().outputAssets, 'loadNew')
+
+    apiMock.dispatchEvent(new Event('execution_success'))
+
+    await waitFor(() => expect(loadNew).toHaveBeenCalledTimes(1))
   })
 })
 

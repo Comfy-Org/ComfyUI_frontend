@@ -13,7 +13,7 @@ import { isWorkshopInBuild } from '../config/workshop-release'
 import {
   hreflangAlternates,
   ogLocale,
-  ogLocaleAlternate
+  ogLocaleAlternates
 } from '../lib/hreflang'
 import { markdownTwinPath } from '../lib/markdown-twin-path'
 import { isHrefActive } from '../composables/useCurrentPath'
@@ -68,7 +68,7 @@ const alternates = shouldNoindex
   ? []
   : hreflangAlternates(canonicalURL.pathname, canonicalURL.origin)
 const openGraphLocale = ogLocale(locale)
-const openGraphLocaleAlternate = ogLocaleAlternate(locale, alternates)
+const openGraphLocaleAlternates = ogLocaleAlternates(locale, alternates)
 const ogImageURL = new URL(ogImage, Astro.site ?? 'https://comfy.org')
 const rawStars = await fetchGitHubStars('Comfy-Org', 'ComfyUI')
 const githubStars = rawStars ? formatStarCount(rawStars) : ''
@@ -190,9 +190,9 @@ const structuredData = shouldNoindex
     <meta property="og:image:height" content="630" />
     <meta property="og:url" content={canonicalURL.href} />
     <meta property="og:locale" content={openGraphLocale} />
-    {openGraphLocaleAlternate && (
-      <meta property="og:locale:alternate" content={openGraphLocaleAlternate} />
-    )}
+    {openGraphLocaleAlternates.map((alternate) => (
+      <meta property="og:locale:alternate" content={alternate} />
+    ))}
     <meta property="og:site_name" content="Comfy" />
 
     <!-- Twitter -->

@@ -3,6 +3,7 @@ import { shallowRef, toRaw } from 'vue'
 
 import { assert } from '@/base/assert'
 import { adoptPromotedWidgetValue } from '@/core/graph/subgraph/adoptPromotedWidgetValue'
+import { toSelectableKey } from '@/core/selection/selectionState'
 import {
   getAgreedLinkPresentation,
   transferLinkPresentation
@@ -29,7 +30,7 @@ import {
   materializeRerouteLayout,
   releaseNodeLayoutAttachment
 } from '@/renderer/core/layout/operations/graphLayoutAttachment'
-import { useSelectionStore } from '@/renderer/core/canvas/selectionStore'
+import { useSelectionStore } from '@/core/selection/selectionStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { nodesInRenderOrder } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
@@ -1284,7 +1285,7 @@ export class LGraph
         node[eventname]()
       } else if (params.constructor === Array) {
         // @ts-expect-error deprecated
-        // eslint-disable-next-line prefer-spread
+        // oxlint-disable-next-line prefer-spread
         node[eventname].apply(node, params)
       } else {
         // @ts-expect-error deprecated
@@ -1365,6 +1366,7 @@ export class LGraph
     // LEGACY: This was changed from constructor === LGraphGroup
     // groups
     if (node instanceof LGraphGroup) {
+      const selected = node.selected
       const groupId = runtimeOptional(node.id)
       if (
         groupId === undefined ||
@@ -1379,6 +1381,7 @@ export class LGraph
       this.setDirtyCanvas(true)
       this.change()
       node.graph = this
+      if (selected) node.selected = true
       attachGroupLayout(this, node)
       this.incrementVersion()
       return
@@ -1412,6 +1415,7 @@ export class LGraph
       node.flags.ghost = true
     }
 
+    const selected = node.selected
     normalizeWidgetsView(node)
     node.graph = this
 
@@ -1421,6 +1425,7 @@ export class LGraph
 
     this._nodes.push(node)
     this._nodes_by_id[node.id] = node
+    if (selected) node.selected = true
 
     node.onAdded?.(this)
 
@@ -1464,12 +1469,17 @@ export class LGraph
   ): void {
     // LEGACY: This was changed from constructor === LiteGraph.LGraphGroup
     if (node instanceof LGraphGroup) {
-      this.canvasAction((c) => c.deselect(node))
+      if (!this._groups.includes(node)) return
 
-      const index = this._groups.indexOf(node)
-      if (index != -1) {
-        this._groups.splice(index, 1)
-      }
+      this.canvasAction((c) => c.deselect(node))
+      useSelectionStore().apply(graphScopeOf(this), {
+        type: 'selection.remove',
+        key: toSelectableKey('group', node.id)
+      })
+
+      const remainingGroups = this._groups.filter((group) => group !== node)
+      if (remainingGroups.length === this._groups.length) return
+      this._groups = remainingGroups
       detachGroupLayout(node)
       node.graph = undefined
       this.incrementVersion()
@@ -1562,15 +1572,18 @@ export class LGraph
     node.order = order
     this.incrementVersion()
 
-    // remove from canvas render
-    const { list_of_graphcanvas } = this
-    if (list_of_graphcanvas) {
-      for (const canvas of list_of_graphcanvas) {
-        if (node.id in canvas.selected_nodes)
+    if (!successor) {
+      const { list_of_graphcanvas } = this
+      if (list_of_graphcanvas) {
+        for (const canvas of list_of_graphcanvas) {
           delete canvas.selected_nodes[node.id]
-
-        canvas.deselect(node)
+          canvas.deselect(node)
+        }
       }
+      useSelectionStore().apply(graphScopeOf(this), {
+        type: 'selection.remove',
+        key: toSelectableKey('node', node.id)
+      })
     }
 
     // remove from containers
@@ -1639,7 +1652,7 @@ export class LGraph
    * @param classObject the class itself (not an string)
    * @returns a list with all the nodes of this type
    */
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
+  // oxlint-disable-next-line typescript/no-unsafe-function-type
   findNodesByClass(classObject: Function, result?: LGraphNode[]): LGraphNode[] {
     result = result || []
     result.length = 0
@@ -2035,6 +2048,10 @@ export class LGraph
     if (!reroute) return
 
     this.canvasAction((c) => c.deselect(reroute))
+    useSelectionStore().apply(graphScopeOf(this), {
+      type: 'selection.remove',
+      key: toSelectableKey('reroute', reroute.id)
+    })
 
     // Extract reroute from the reroute chain
     const { parentId, linkIds, floatingLinkIds } = reroute
