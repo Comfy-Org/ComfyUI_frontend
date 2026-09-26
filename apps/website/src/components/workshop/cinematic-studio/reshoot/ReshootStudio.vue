@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { Clapperboard } from '@lucide/vue'
 
+import { useCinematicLeaveGuard } from '../../../../composables/useCinematicLeaveGuard'
 import { useReshoot } from '../../../../composables/useReshoot'
+import { reportStudioBusy } from '../../../../composables/useStudioSwitchGuard'
 import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
 import type { Locale } from '../../../../i18n/translations'
+import RunLeaveDialog from '../../RunLeaveDialog.vue'
 import AppsBackLink from '../AppsBackLink.vue'
 import ReshootHeader from './ReshootHeader.vue'
 import ReshootExamples from './ReshootExamples.vue'
@@ -42,6 +45,12 @@ const {
   priceNote,
   session
 } = reshoot
+
+reportStudioBusy(() => reshoot.rendering.value)
+const { leavingTo, leave, stay } = useCinematicLeaveGuard(
+  () => reshoot.rendering.value,
+  () => reshoot.cancel()
+)
 </script>
 
 <template>
@@ -122,6 +131,12 @@ const {
       :locale
       class="mt-6"
       @pick="reshoot.pick()"
+    />
+    <RunLeaveDialog
+      :open="leavingTo !== undefined"
+      :locale
+      @update:open="(value: boolean) => !value && stay()"
+      @leave="leave"
     />
   </div>
 </template>

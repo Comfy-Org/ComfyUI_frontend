@@ -45,6 +45,44 @@ describe('runJob', () => {
     expect(new Set(keys).size).toBe(3)
   })
 
+  it.for([
+    'concurrent_run_limit',
+    'queue_full',
+    'rate_limited',
+    'deployment_unavailable'
+  ])('backs off as the server asks on %s', async (code) => {
+    const transport = fakeTransport()
+    vi.mocked(transport.submit).mockRejectedValueOnce(
+      new ReshootError(code, 15)
+    )
+    const run = runJob(transport, {}, () => {}, new AbortController().signal)
+
+    await vi.advanceTimersByTimeAsync(14_999)
+    expect(transport.submit).toHaveBeenCalledTimes(1)
+    await vi.advanceTimersByTimeAsync(1)
+    expect(transport.submit).toHaveBeenCalledTimes(2)
+    await vi.advanceTimersByTimeAsync(2_000)
+    await expect(run).resolves.toMatchObject({ status: 'succeeded' })
+  })
+
+  it('stops retrying a server that never comes up', async () => {
+    const transport = fakeTransport()
+    vi.mocked(transport.submit).mockRejectedValue(
+      new ReshootError('deployment_not_ready')
+    )
+    const outcome = runJob(
+      transport,
+      {},
+      () => {},
+      new AbortController().signal
+    ).catch((error: unknown) => error)
+
+    await vi.advanceTimersByTimeAsync(60 * 10_000)
+
+    expect(await outcome).toMatchObject({ code: 'deployment_not_ready' })
+    expect(transport.submit).toHaveBeenCalledTimes(60)
+  })
+
   it('gives up on any other refusal at once', async () => {
     const transport = fakeTransport()
     vi.mocked(transport.submit).mockRejectedValue(

@@ -103,6 +103,23 @@ describe('useReshoot', () => {
     expect(refreshWorkshopCredits).toHaveBeenCalledWith({ force: true })
   })
 
+  it('does not upload an error response in place of the example clip', async () => {
+    const fetchMock = vi.fn(
+      async () => new Response('missing', { status: 404 })
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    const reshoot = start()
+
+    reshoot.pick()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(reshoot.depth.value).toBe('failed')
+    expect(transport.upload).not.toHaveBeenCalled()
+
+    reshoot.pick()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
   it('downloads outputs only once their job has succeeded', async () => {
     const reshoot = start()
     await readScene(reshoot)
@@ -193,10 +210,10 @@ describe('useReshoot', () => {
       note: 'No free runs left; next one in 2 hours · 40 credits'
     },
     {
-      name: 'the app switched off',
+      name: 'the app unavailable for this attempt',
       error: new ReshootError('app_unavailable'),
       note: 'Re-shoot is not available right now. Try again later.',
-      gate: 'unavailable'
+      gate: 'ready'
     }
   ])('explains a refused take: $name', async ({ error, role, note, gate }) => {
     if (role) signIn({ ...RESHOOT_CREDENTIAL, role })
@@ -215,5 +232,21 @@ describe('useReshoot', () => {
 
     expect(reshoot.current.value).toMatchObject({ status: 'failed', note })
     if (gate) expect(reshoot.gate.value).toBe(gate)
+  })
+
+  it('runs again after a take the app could not serve', async () => {
+    const reshoot = start()
+    await readScene(reshoot)
+    vi.mocked(transport.submit).mockRejectedValueOnce(
+      new ReshootError('app_unavailable')
+    )
+    await reshoot.generate()
+    await vi.advanceTimersByTimeAsync(0)
+    const submits = vi.mocked(transport.submit).mock.calls.length
+
+    void reshoot.generate()
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(transport.submit).toHaveBeenCalledTimes(submits + 1)
   })
 })

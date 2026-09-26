@@ -5,6 +5,7 @@ interface ReshootOutput {
   readonly asset_id?: string
   readonly filename?: string
   readonly name?: string
+  readonly url?: string
 }
 
 export interface ReshootJob {
@@ -97,10 +98,21 @@ function detailsRetryAfter(body: string): number {
   }
 }
 
+function headerRetryAfter(value: string | null): number {
+  if (value === null) return NaN
+  const seconds = Number(value)
+  if (Number.isFinite(seconds)) return seconds
+  const at = Date.parse(value)
+  return Number.isFinite(at) ? Math.max(0, (at - Date.now()) / 1000) : NaN
+}
+
 async function reshootError(response: Response): Promise<ReshootError> {
   const body = await response.text().catch(() => '')
   const header = response.headers.get('Retry-After')
-  const retryAfter = header === null ? detailsRetryAfter(body) : Number(header)
+  const headerDelay = headerRetryAfter(header)
+  const retryAfter = Number.isFinite(headerDelay)
+    ? headerDelay
+    : detailsRetryAfter(body)
   const code =
     response.headers.get('X-Comfy-Error-Type') ||
     bodyField(body, 'error_type') ||
@@ -125,6 +137,25 @@ interface Routes {
 
 type Init = Omit<RequestInit, 'headers'> & {
   headers?: Record<string, string>
+}
+
+/**
+ * A succeeded output's signed storage URL, fetched from the page itself. Going
+ * through the proxy's 302 instead would taint the request's origin to `null`,
+ * which a storage bucket allowing comfy.org does not accept.
+ */
+async function fetchSigned(
+  url: string | undefined,
+  signal?: AbortSignal
+): Promise<Blob | undefined> {
+  if (!url?.startsWith('https://')) return undefined
+  try {
+    const response = await fetch(url, { credentials: 'omit', signal })
+    return response.ok ? await response.blob() : undefined
+  } catch (error) {
+    if (signal?.aborted) throw error
+    return undefined
+  }
 }
 
 function createTransport(routes: Routes, quoted: boolean): ReshootTransport {
@@ -171,8 +202,13 @@ function createTransport(routes: Routes, quoted: boolean): ReshootTransport {
       }),
     job: (id, signal) =>
       json<ReshootJob>(`/jobs/${encodeURIComponent(id)}`, { signal }),
-    output: async (job, output, signal) =>
-      (await send(routes.outputPath(job, output), { signal })).blob(),
+    async output(job, output, signal) {
+      const signed = await fetchSigned(output.url, signal)
+      return (
+        signed ??
+        (await send(routes.outputPath(job, output), { signal })).blob()
+      )
+    },
     async cancel(id) {
       await send(`/jobs/${encodeURIComponent(id)}/cancel`, {
         method: 'POST'

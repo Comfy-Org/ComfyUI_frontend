@@ -131,6 +131,23 @@ describe('Re-shoot on one screen', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Cancelled')
   })
 
+  it('asks before the page is left while a take renders', async () => {
+    const user = setup()
+    await pickExample(user)
+    const leave = () => {
+      const event = new Event('beforeunload', { cancelable: true })
+      window.dispatchEvent(event)
+      return event.defaultPrevented
+    }
+    expect(leave()).toBe(false)
+
+    await user.click(screen.getByTestId('reshoot-action'))
+
+    expect(leave()).toBe(true)
+    await user.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(leave()).toBe(false)
+  })
+
   it("aims again from a finished take's angle", async () => {
     const user = setup()
     await pickExample(user)

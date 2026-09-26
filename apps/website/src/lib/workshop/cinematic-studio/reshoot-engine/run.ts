@@ -2,7 +2,15 @@ import { waitFor } from '../../../../config/workshop-router'
 import type { ReshootJob, ReshootTransport } from './transport'
 import { ReshootError } from './transport'
 
-const NOT_READY_RETRY_MS = 10_000
+const DEFAULT_RETRY_MS = 10_000
+const MAX_SUBMIT_ATTEMPTS = 60
+const STARTING = new Set(['deployment_not_ready', 'deployment_unavailable'])
+const BACK_OFF = new Set([
+  ...STARTING,
+  'queue_full',
+  'rate_limited',
+  'concurrent_run_limit'
+])
 const POLL_MS = 2_000
 const QUEUED = new Set(['queued', 'pending', 'submitted'])
 const FAILED = new Set([
@@ -17,8 +25,15 @@ const FAILED = new Set([
 
 export type ReshootRunPhase = 'starting' | 'queued' | 'running'
 
-const isNotReady = (error: unknown) =>
-  error instanceof ReshootError && error.code === 'deployment_not_ready'
+const backOffFrom = (error: unknown) =>
+  error instanceof ReshootError && BACK_OFF.has(error.code) ? error : undefined
+
+function retryDelayMs(error: ReshootError): number {
+  const seconds = error.retryAfterSeconds
+  return seconds !== undefined && seconds > 0
+    ? seconds * 1000
+    : DEFAULT_RETRY_MS
+}
 
 /** Where a polled job stands: done, failed, or still waiting in a phase. */
 export function jobPhase(
@@ -29,21 +44,25 @@ export function jobPhase(
   return QUEUED.has(status) ? 'queued' : 'running'
 }
 
-/** `deployment_not_ready` is a wait, not a failure: retry until it takes. */
+/**
+ * A cold deployment, a full queue or the previous job still finishing is a
+ * wait, not a failure: back off as the server asks and try again.
+ */
 async function submitWhenReady(
   transport: ReshootTransport,
   workflow: object,
   onPhase: (phase: ReshootRunPhase) => void,
   signal: AbortSignal
 ): Promise<ReshootJob> {
-  for (;;) {
+  for (let attempt = 1; ; attempt++) {
     try {
       // A fresh key per attempt: a refused submission created no job.
       return await transport.submit(workflow, crypto.randomUUID(), signal)
     } catch (error) {
-      if (!isNotReady(error)) throw error
-      onPhase('starting')
-      await waitFor(NOT_READY_RETRY_MS, signal)
+      const refusal = backOffFrom(error)
+      if (!refusal || attempt >= MAX_SUBMIT_ATTEMPTS) throw error
+      onPhase(STARTING.has(refusal.code) ? 'starting' : 'queued')
+      await waitFor(retryDelayMs(refusal), signal)
     }
   }
 }

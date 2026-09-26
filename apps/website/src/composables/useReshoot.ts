@@ -176,11 +176,14 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
       quote.value = undefined
       return
     }
-    quote.value = await transport.quote().catch((error: unknown) => {
+    try {
+      quote.value = await transport.quote()
+      unavailable.value = false
+    } catch (error) {
+      quote.value = undefined
       if (error instanceof ReshootError && error.code === 'app_unavailable')
         unavailable.value = true
-      return undefined
-    })
+    }
   }
 
   function noCreditsNote() {
@@ -195,10 +198,8 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
   }
 
   function noteFor(error: unknown): string {
-    if (error instanceof ReshootError) {
-      if (error.code === 'app_unavailable') unavailable.value = true
-      if (error.code === 'insufficient_credits') return noCreditsNote()
-    }
+    if (error instanceof ReshootError && error.code === 'insufficient_credits')
+      return noCreditsNote()
     return failureNote(error, locale, quote.value?.price_credits)
   }
 
@@ -206,7 +207,11 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
   let example: Promise<File> | undefined
   function exampleFile(): Promise<File> {
     example ??= fetch(RESHOOT_EXAMPLE.clip)
-      .then((response) => response.blob())
+      .then((response) => {
+        if (!response.ok)
+          throw new Error(`example clip: HTTP ${response.status}`)
+        return response.blob()
+      })
       .then(
         (blob) =>
           new File([blob], RESHOOT_EXAMPLE.name, {

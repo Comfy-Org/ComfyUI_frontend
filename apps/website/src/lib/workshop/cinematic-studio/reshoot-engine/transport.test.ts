@@ -110,6 +110,36 @@ describe('Re-shoot transports', () => {
     expect(request.init.credentials).toBe('omit')
   })
 
+  it('reads a succeeded output from its signed URL, unsigned by the visitor', async () => {
+    serve(() => new Response('bytes'))
+    const signed = {
+      ...output,
+      url: 'https://storage.example/result.mp4?sig=1'
+    }
+
+    const blob = await app().output(job, signed)
+
+    expect(await blob.text()).toBe('bytes')
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(lastRequest().url).toBe(signed.url)
+    expect(lastRequest().init.headers).toBeUndefined()
+  })
+
+  it('falls back to the proxy route when the signed URL cannot be read', async () => {
+    vi.stubGlobal('fetch', fetchMock)
+    fetchMock
+      .mockRejectedValueOnce(new TypeError('Failed to fetch'))
+      .mockResolvedValueOnce(new Response('bytes'))
+    const signed = {
+      ...output,
+      url: 'https://storage.example/result.mp4?sig=1'
+    }
+
+    await app().output(job, signed)
+
+    expect(lastRequest().url).toBe(`${APP}/jobs/job%201/outputs/out-1/content`)
+  })
+
   it('signs app proxy calls as the visitor and dev proxy calls not at all', async () => {
     serve()
     await app().job('job 1')
@@ -179,6 +209,13 @@ describe('Re-shoot transports', () => {
     },
     {
       status: 429,
+      headers: { 'Retry-After': 'later' },
+      body: '{"error_type":"concurrent_run_limit","details":{"retry_after_seconds":15}}',
+      code: 'concurrent_run_limit',
+      retry: 15
+    },
+    {
+      status: 429,
       body: '{"error_type":"unmetered_rate_limited","detail":""}',
       code: 'unmetered_rate_limited'
     },
@@ -215,6 +252,23 @@ describe('Re-shoot transports', () => {
       expect(failure).toMatchObject({ code, retryAfterSeconds: retry })
     }
   )
+
+  it('reads an HTTP-date Retry-After value', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime('2026-09-25T12:00:00Z')
+    serve(
+      () =>
+        new Response('{"error_type":"concurrent_run_limit"}', {
+          status: 429,
+          headers: { 'Retry-After': 'Fri, 25 Sep 2026 12:01:30 GMT' }
+        })
+    )
+
+    const failure = await app()
+      .submit({}, 'key')
+      .catch((error: unknown) => error)
+    expect(failure).toMatchObject({ retryAfterSeconds: 90 })
+  })
 
   it.for<{ local: boolean; dev?: string; id?: string; base?: string }>([
     { local: true, dev: 'http://127.0.0.1:4329', id: 'app-1', base: DEV },
