@@ -24,6 +24,8 @@ export interface UseCanvasSelectionOptions {
   scope?: MaybeRefOrGetter<string | null>
   dismissedSignature?: Ref<string | null>
   retainStagedNode?: (node: SelectedNode) => boolean
+  /** User additions from canvas tracking or a mention, never draft restoration. */
+  onNodesAdded?: () => void
 }
 
 function signature(scope: string | null, nodes: SelectedNode[]): string {
@@ -50,6 +52,13 @@ export function useCanvasSelection(options: UseCanvasSelectionOptions) {
       ),
       ...nodes
     ]
+  }
+
+  function stageUserSelection(nodes: SelectedNode[]): void {
+    const previousKeys = new Set(staged.value.map(selectedNodeKey))
+    if (nodes.some((node) => !previousKeys.has(selectedNodeKey(node))))
+      options.onNodesAdded?.()
+    staged.value = nodes
   }
 
   watch(
@@ -101,7 +110,7 @@ export function useCanvasSelection(options: UseCanvasSelectionOptions) {
           if (sig === consumedSig.value || sig === stagedSig.value) return
           consumedSig.value = null
           stagedSig.value = sig
-          staged.value = projectedNodes
+          stageUserSelection(projectedNodes)
         },
         { immediate: true, deep: true, flush: 'sync' }
       )
@@ -138,7 +147,7 @@ export function useCanvasSelection(options: UseCanvasSelectionOptions) {
       staged.value.some((tag) => selectedNodeKey(tag) === selectedNodeKey(node))
     )
       return
-    staged.value = [...staged.value, node]
+    stageUserSelection([...staged.value, node])
   }
 
   function replace(nodes: SelectedNode[]): void {

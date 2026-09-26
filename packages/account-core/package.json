@@ -24,6 +24,8 @@
     "./boundedOperation": "./src/core/boundedOperation.ts",
     "./lazyIdentity": "./src/core/lazyIdentity.ts",
     "./session": "./src/core/session.ts",
+    "./webSession": "./src/core/webSession.ts",
+    "./webSessionIdentity": "./src/core/webSessionIdentity.ts",
     "./billing": "./src/core/billing/index.ts",
     "./firebase": "./src/firebase/index.ts",
     "./web": "./src/web/crossTabRefresh.ts",
@@ -49,6 +51,14 @@
       "./session": {
         "types": "./dist/core/session.d.ts",
         "import": "./dist/core/session.js"
+      },
+      "./webSession": {
+        "types": "./dist/core/webSession.d.ts",
+        "import": "./dist/core/webSession.js"
+      },
+      "./webSessionIdentity": {
+        "types": "./dist/core/webSessionIdentity.d.ts",
+        "import": "./dist/core/webSessionIdentity.js"
       },
       "./billing": {
         "types": "./dist/core/billing/index.d.ts",
