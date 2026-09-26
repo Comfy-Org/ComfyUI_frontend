@@ -121,6 +121,27 @@ describe('workflow catalogue ordering and shared links', () => {
     ])
   })
 
+  // A cross that cleared everything would pass a test that only ever set one
+  // filter, so this one sets two and keeps the other.
+  it('takes off the chip that was pressed and leaves the rest alone', async () => {
+    const user = userEvent.setup()
+    render(WorkflowCatalogue, { props: { models } })
+    await user.click(screen.getByTestId('workshop-filter'))
+    await user.click(await screen.findByTestId('workshop-facet-useCase'))
+    await user.click(await screen.findByTestId('filter-useCase-video'))
+    await user.click(await screen.findByTestId('workshop-facet-model'))
+    await user.click(await screen.findByTestId('filter-model-SeedVR2'))
+
+    await user.click(screen.getByRole('button', { name: 'Remove video' }))
+    expect(screen.getByTestId('workshop-filter-chips')).toHaveTextContent(
+      'Runs on SeedVR2'
+    )
+    expect(visibleOutcomes()).toEqual([
+      '/models/workflows/connect/',
+      '/models/workflows/restore/'
+    ])
+  })
+
   it('names the model it was narrowed by, and lets go of it from that name', async () => {
     const user = userEvent.setup()
     render(WorkflowCatalogue, { props: { models } })
