@@ -3,8 +3,11 @@ import { ChevronLeft } from '@lucide/vue'
 import { computed } from 'vue'
 
 import type { WorkflowWorkshopModelDetail } from '../../config/models-catalogue'
+import { catalogSearch, useCaseFor } from '../../config/models-catalogue'
+import { getRoutes } from '../../config/routes'
 import { WORKSHOP_CLOUD_BASE_URL } from '../../config/workshop-env'
 import { useWorkshopSession } from '../../config/workshop-session-state'
+import { useCaseLabelKey } from '../../lib/workshop/use-case-label'
 import { t } from '../../i18n/translations'
 import WorkflowPlayground from './WorkflowPlayground.vue'
 
@@ -16,6 +19,19 @@ const scope = computed(() =>
     ? JSON.stringify([session.value.uid, session.value.workspace.id])
     : 'anonymous'
 )
+const routes = getRoutes()
+
+// The one thing the eyebrow can lead somewhere: the shelf this workflow sits
+// on. It was a word before, and a word is not a way back.
+const useCase = computed(() => useCaseFor(model))
+const useCaseHref = computed(() =>
+  useCase.value
+    ? `${routes.workshop}${catalogSearch({ useCase: useCase.value })}`
+    : undefined
+)
+const pillClass =
+  'inline-flex h-7 items-center rounded-full border border-transparency-white-t20 px-3 text-xs leading-none text-primary-comfy-canvas transition-colors hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow'
+
 const template = model.workflow.template
 const cloudHref = template
   ? `${WORKSHOP_CLOUD_BASE_URL}/?template=${encodeURIComponent(template.id)}`
@@ -32,9 +48,18 @@ const cloudHref = template
       {{ t('workshop.catalogue.backToWorkflows') }}
     </a>
     <header class="mb-9" data-testid="workflow-hero">
-      <p v-if="model.category" class="mb-3 text-sm text-primary-comfy-yellow">
-        {{ model.categoryLabel?.en ?? model.category }}
-      </p>
+      <div class="mb-3 flex flex-wrap items-center gap-3">
+        <p v-if="model.category" class="text-sm text-primary-comfy-yellow">
+          {{ model.categoryLabel?.en ?? model.category }}
+        </p>
+        <a
+          v-if="useCaseHref && useCase"
+          :href="useCaseHref"
+          :class="pillClass"
+          data-testid="workflow-use-case"
+          >{{ t(useCaseLabelKey[useCase]) }}</a
+        >
+      </div>
       <h1
         class="max-w-4xl text-3xl font-light text-primary-comfy-canvas lg:text-5xl"
       >
@@ -46,25 +71,6 @@ const cloudHref = template
       >
         {{ model.summary }}
       </p>
-      <div
-        v-if="template"
-        class="mt-5 flex flex-wrap gap-2 text-xs text-primary-warm-gray"
-      >
-        <span
-          v-for="name in template.models"
-          :key="name"
-          class="rounded-full border border-transparency-white-t20 px-3 py-1.5"
-          >{{ name }}</span
-        >
-        <span class="px-2 py-1.5">
-          {{
-            t('workshop.workflow.templateBy').replace(
-              '{author}',
-              template.author
-            )
-          }}
-        </span>
-      </div>
     </header>
 
     <WorkflowPlayground

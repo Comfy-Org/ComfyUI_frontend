@@ -10594,10 +10594,6 @@ Enterprise`
   'workshop.hub.io.video': { en: 'Video', 'zh-CN': '视频' },
   'workshop.hub.io.audio': { en: 'Audio', 'zh-CN': '音频' },
   'workshop.hub.io.3d': { en: '3D', 'zh-CN': '3D' },
-  'workshop.workflow.templateBy': {
-    en: 'Template by {author}',
-    'zh-CN': '模板作者：{author}'
-  },
   'workshop.workflow.makeYours': { en: 'Make it yours', 'zh-CN': '开始创作' },
   'workshop.workflow.sections': {
     en: 'Workflow sections',
