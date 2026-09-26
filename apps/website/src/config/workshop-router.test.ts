@@ -469,6 +469,36 @@ describe('native Router requests', () => {
   )
 
   it.for([
+    { status: 400, errorType: 'insufficient_credits', reason: 'noCredits' },
+    { status: 500, errorType: 'insufficient_credits', reason: 'noCredits' },
+    { status: 400, errorType: 'invalid_input', reason: 'validation' }
+  ])(
+    'classifies a $status whose body alone names $errorType',
+    async ({ status, errorType, reason }) => {
+      vi.stubGlobal(
+        'fetch',
+        vi
+          .fn<typeof fetch>()
+          .mockResolvedValue(
+            Response.json(
+              { detail: 'refused', error_type: errorType },
+              { status }
+            )
+          )
+      )
+      await expect(
+        runSynchronousWorkshopRouter({
+          contract: contractFor('bfl/flux-2-pro'),
+          body: { prompt: 'Test' },
+          token: 'test-token',
+          idempotencyKey: 'one-key',
+          signal: new AbortController().signal
+        })
+      ).rejects.toMatchObject({ reason, response: { status, errorType } })
+    }
+  )
+
+  it.for([
     {
       provider: 'WAN',
       status: 502,
