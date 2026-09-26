@@ -244,17 +244,14 @@ test.describe(
         }
       })
       const socket = await getWebSocket()
+      const outboundFrames: string[] = []
+      socket.onMessage((message) => outboundFrames.push(String(message)))
 
       const agentPanel = new AgentPanel(page)
       await agentPanel.open()
       await agentPanel.selectWorkflow()
-      await agentPanel.root
-        .getByRole('textbox', { name: /^Describe ideas/ })
-        .fill('Build the nested subgraph')
-      await agentPanel.root.getByRole('button', { name: 'Send' }).click()
+      await agentPanel.sendMessage('Build the nested subgraph')
 
-      const outboundFrames: string[] = []
-      socket.onMessage((message) => outboundFrames.push(String(message)))
       await expect
         .poll(() => outboundFrames, { timeout: 15_000 })
         .toContainEqual(expect.stringContaining(AGENT_SUBGRAPH_WORKFLOW_ID))
@@ -267,13 +264,7 @@ test.describe(
       await expect(outerHost).toBeVisible()
       await expect(outerHost).toContainText('Outer Agent Subgraph')
 
-      await page.evaluate((hostId) => {
-        const node = window.app!.rootGraph.nodes.find(
-          ({ id }) => String(id) === hostId
-        )
-        if (!node?.isSubgraphNode()) throw new Error('outer host is not usable')
-        window.app!.canvas.openSubgraph(node.subgraph, node)
-      }, String(AGENT_SUBGRAPH_HOST_ID))
+      await nodes.enterSubgraph(String(AGENT_SUBGRAPH_HOST_ID))
       await nextFrame(page)
 
       const innerHost = nodes.getNodeLocator(String(AGENT_INNER_HOST_ID))
