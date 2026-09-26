@@ -54,9 +54,10 @@ const motion = defineModel<ReshootMotion>('motion', { required: true })
 const prompt = defineModel<string>('prompt', { required: true })
 
 const ready = computed(() => depth === 'ready')
-const frames = rc('reshoot.frames', locale)
-  .replace('{frames}', String(RESHOOT_FRAMES))
-  .replace('{seconds}', (RESHOOT_FRAMES / 24).toFixed(1))
+const frames = rc('reshoot.frames', locale, {
+  frames: RESHOOT_FRAMES,
+  seconds: (RESHOOT_FRAMES / 24).toFixed(1)
+})
 
 function choose(event: Event) {
   const input = event.target
