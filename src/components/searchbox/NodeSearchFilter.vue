@@ -1,13 +1,23 @@
 <template>
   <div class="flex flex-col gap-2">
-    <SelectButton
-      v-model="selectedFilter"
-      class="filter-type-select"
-      :options="filters"
-      :allow-empty="false"
-      option-label="name"
-      @change="updateSelectedFilterValue"
-    />
+    <div class="flex flex-wrap gap-2">
+      <Button
+        v-for="filterOption in filters"
+        :key="filterOption.id"
+        type="button"
+        size="sm"
+        :variant="
+          selectedFilter?.id === filterOption.id
+            ? 'secondary'
+            : 'muted-textonly'
+        "
+        class="flex-1 justify-center px-3 py-2 text-sm"
+        :aria-pressed="selectedFilter?.id === filterOption.id"
+        @click="selectFilterOption(filterOption)"
+      >
+        {{ filterOption.name }}
+      </Button>
+    </div>
     <Select
       v-model="selectedFilterValue"
       class="filter-value-select"
@@ -23,7 +33,6 @@
 
 <script setup lang="ts">
 import Select from 'primevue/select'
-import SelectButton from 'primevue/selectbutton'
 import { computed, onMounted, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -55,6 +64,16 @@ const updateSelectedFilterValue = () => {
     return
   }
   selectedFilterValue.value = filterValues.value[0]
+}
+
+const selectFilterOption = (
+  filterOption: FuseFilter<ComfyNodeDefImpl, string>
+) => {
+  if (selectedFilter.value?.id === filterOption.id) {
+    return
+  }
+  selectedFilter.value = filterOption
+  updateSelectedFilterValue()
 }
 
 const submit = () => {
