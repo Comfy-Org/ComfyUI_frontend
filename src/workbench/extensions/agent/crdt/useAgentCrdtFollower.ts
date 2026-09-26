@@ -503,25 +503,23 @@ function startAgentCrdtFollower(
   // actor alone is not enough: the backend also mints mid-turn on a lineage
   // break for a workflow the follower already has content for, and that
   // reset must still sweep — so the skip additionally requires the
-  // projection to currently hold zero nodes for this workflow, corroborated
-  // by the server's own seq (the lazy-mint broadcast is pinned at seq 1 by
-  // the backend's `TestLazyMintBroadcastsDocResetToEarlyFollowers`) so a
-  // mid-turn re-mint that happens to arrive while the doc is momentarily
-  // empty still doesn't qualify.
+  // projection to currently hold zero nodes for this workflow. `hasNodes` is
+  // read here, before the pre-drop doc is replaced, so it is a non-stale
+  // snapshot of the CRDT-tracked node count at the moment of this reset —
+  // that alone is sufficient to tell a benign empty mint from a mid-turn
+  // re-mint with real content to lose, so no seq corroboration is needed.
   const sweepProjectionUnlessMintActor = (
     workflowId: string,
     actor: string | undefined,
     seq: number | undefined
   ): void => {
-    const skip =
-      actor === SYSTEM_MINT_ACTOR &&
-      !projection.hasNodes(workflowId) &&
-      seq === 1
+    const skip = actor === SYSTEM_MINT_ACTOR && !projection.hasNodes(workflowId)
     pendingResetSweepDecision = { workflowId, skip }
     if (skip) return
     projection.clearForReset(workflowId, buildDocResetContext(actor, seq))
   }
   const onDocReset: EventListener = (event) => {
+    pendingResetSweepDecision = null
     const detail = parseDocResetDetail(event)
     incrementOutcome('reset')
     if (!isCurrentWorkflow(detail?.workflowId)) return

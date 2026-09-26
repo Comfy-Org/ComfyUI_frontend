@@ -775,7 +775,7 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('a system:mint doc_reset at a non-1 seq still clears even when the doc has zero nodes, since seq alone no longer proves a true first mint', () => {
+  it('a system:mint doc_reset at a non-1 seq still skips the sweep when the doc has zero nodes', () => {
     adapterState.hasNodes.mockReturnValueOnce(false)
     const { unmount } = mountFollower('wf-1')
 
@@ -785,11 +785,8 @@ describe('useAgentCrdtFollower', () => {
       seq: 7
     })
 
-    expect(adapterState.clearForReset).toHaveBeenCalledWith('wf-1', {
-      source: 'agent-remote',
-      actor: 'system:mint',
-      opId: 'doc-reset:7'
-    })
+    expect(adapterState.hasNodes).toHaveBeenCalledWith('wf-1')
+    expect(adapterState.clearForReset).not.toHaveBeenCalled()
     unmount()
   })
 
