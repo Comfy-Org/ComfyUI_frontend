@@ -109,8 +109,17 @@ describe('WorkshopModelCard', () => {
         }
       })
 
-      expect(screen.queryByRole('img', { name: /Flux/ })).toBeNull()
+      expect(
+        screen
+          .getAllByRole('img', { name: /./ })
+          .map((image) => image.getAttribute('aria-label'))
+      ).toEqual(['Black Forest Labs'])
       expect(screen.queryByLabelText('Flux')).toBeNull()
+      if (kind === 'video')
+        expect(screen.getByTestId('model-card-video')).toHaveAttribute(
+          'aria-hidden',
+          'true'
+        )
       expect(
         screen.getByRole('link', { name: /Flux/ }).getAttribute('href')
       ).toBe(base.href)
