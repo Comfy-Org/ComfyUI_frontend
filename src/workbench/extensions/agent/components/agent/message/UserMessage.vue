@@ -186,14 +186,14 @@ const splitAttachments = computed(() => {
       v-if="text || workflowReferences.length"
       ref="bubble"
       data-testid="user-message-bubble"
-      class="w-fit max-w-full rounded-lg border border-component-node-border bg-secondary-background px-2.5 py-1.5 text-sm/7 font-normal wrap-break-word whitespace-pre-wrap text-muted-foreground"
+      class="w-fit max-w-full rounded-lg bg-secondary-background px-2.5 py-1.5 text-sm/5 font-normal wrap-break-word whitespace-pre-wrap text-muted-foreground"
     >
       <template v-for="(part, index) in promptParts" :key="index">
         <Tag
           v-if="part.type === 'workflow'"
           interactive
           :label="part.reference.name"
-          class="max-w-64 align-middle"
+          class="-my-0.5 max-w-64 align-middle"
           :aria-label="
             part.reference.unavailable
               ? t('agent.unavailableWorkflowReference', {
