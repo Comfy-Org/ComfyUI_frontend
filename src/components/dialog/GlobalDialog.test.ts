@@ -596,7 +596,8 @@ describe('shouldPreventRekaDismiss', () => {
     'p-popover',
     'p-autocomplete-overlay',
     'p-overlay-mask',
-    'p-dialog'
+    'p-dialog',
+    'p-toast-message'
   ])('prevents dismiss when target is inside %s', (className) => {
     const overlay = document.createElement('div')
     overlay.className = className
@@ -615,6 +616,18 @@ describe('shouldPreventRekaDismiss', () => {
     const event = makeEvent(document.body)
     onRekaPointerDownOutside({ dismissableMask: undefined }, event)
     expect(event.defaultPrevented).toBe(false)
+  })
+
+  it('allows dismiss from the empty space beside a toast message', () => {
+    const container = document.createElement('div')
+    container.className = 'p-toast'
+    document.body.appendChild(container)
+
+    const event = makeEvent(container)
+    onRekaPointerDownOutside({ dismissableMask: undefined }, event)
+
+    expect(event.defaultPrevented).toBe(false)
+    container.remove()
   })
 
   it('prevents dismiss when the dialog is not the top-most (stacked)', () => {
@@ -639,7 +652,7 @@ describe('shouldPreventRekaDismiss', () => {
     expect(event.defaultPrevented).toBe(true)
   })
 
-  it.for(['p-dialog', 'p-select-overlay', 'p-toast'])(
+  it.for(['p-dialog', 'p-select-overlay', 'p-toast-message'])(
     'focus-outside on a sibling %s portal does not dismiss the parent',
     (className) => {
       const overlay = document.createElement('div')
