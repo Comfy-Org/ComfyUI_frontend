@@ -288,7 +288,7 @@ export class Topbar {
       await this.menuLocator.waitFor({ state: 'visible' })
       // Re-hover on top-level menu to trigger submenu
       await topLevelMenu.hover()
-      await submenu.waitFor({ state: 'visible', timeout: 1000 })
+      await submenu.waitFor({ state: 'visible' })
     }
 
     let currentMenu = topLevelMenu

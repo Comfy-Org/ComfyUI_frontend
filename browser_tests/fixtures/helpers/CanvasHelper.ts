@@ -139,8 +139,10 @@ export class CanvasHelper {
     await nextFrame(this.page)
   }
 
-  async clickEmptySpace(): Promise<void> {
-    await this.canvas.click({ position: DefaultGraphPositions.emptySpaceClick })
+  async clickEmptySpace(
+    position: Position = DefaultGraphPositions.emptySpaceClick
+  ): Promise<void> {
+    await this.canvas.click({ position })
     await nextFrame(this.page)
   }
 
