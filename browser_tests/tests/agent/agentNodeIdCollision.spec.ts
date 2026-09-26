@@ -43,7 +43,7 @@ import {
  *
  * `agentCrdtIdCollisionFixture` drives the real duplicate-via-context-menu
  * path so the id is genuinely minted by `idAllocation.ts` and the outbound
- * `doc_ops` frame is genuinely produced by `opSender`/`layoutMintPort`, then
+ * `doc_ops` frame is genuinely produced by `opSender`/`docOpMinter`, then
  * aims the agent's competing write at that same id (a collision now has to
  * be forced — see the fixture's module doc). Both writes resolve through the
  * unmodified production applier (`@comfyorg/comfy-multi-player`'s

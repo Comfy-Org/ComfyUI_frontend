@@ -756,11 +756,7 @@ describe('Load3DConfiguration "none" model handling', () => {
     loadModelSpy.mockClear()
     onSceneInvalidated.mockClear()
 
-    const applied = useWidgetValueStore().setValue(widgetId, 'agent.glb', {
-      source: 'agent-remote',
-      actor: 'agent:e2e',
-      opId: 'op-1'
-    })
+    const applied = useWidgetValueStore().setValue(widgetId, 'agent.glb')
 
     expect(applied).toBe(true)
     expect(onSceneInvalidated).toHaveBeenCalledTimes(1)

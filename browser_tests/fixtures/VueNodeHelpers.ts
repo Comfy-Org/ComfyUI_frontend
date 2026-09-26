@@ -182,6 +182,23 @@ export class VueNodeHelpers {
   }
 
   /**
+   * Rename a node via its canvas title editor: double-click the title to
+   * start editing, fill in the new text, then press Enter to commit it
+   * (blurring the input, which is what `EditableText` treats as confirm).
+   *
+   * The `delay` matches the canvas double-clicks elsewhere in this suite: a
+   * zero-delay synthetic dblclick on a canvas surface is a documented flake
+   * source, since the two downs can land inside one frame.
+   */
+  async renameNode(nodeId: string, newTitle: string): Promise<void> {
+    const title = this.getNodeLocator(nodeId).getByTestId('node-title')
+    await title.dblclick({ delay: 5 })
+    const input = title.getByTestId('node-title-input')
+    await input.fill(newTitle)
+    await input.press('Enter')
+  }
+
+  /**
    * Delete selected Vue nodes using Backspace key
    */
   async deleteSelectedWithBackspace(): Promise<void> {

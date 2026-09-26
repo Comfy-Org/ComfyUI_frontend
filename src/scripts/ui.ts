@@ -2,7 +2,6 @@ import { useRunButtonTelemetry } from '@/composables/useRunButtonTelemetry'
 import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { runMintPortsIntentionalClear } from '@/workbench/extensions/agent/crdt/mintPortWiring'
 import { useTelemetry } from '@/platform/telemetry'
 import { WORKFLOW_ACCEPT_STRING } from '@/platform/workflow/core/types/formats'
 import type { StatusWsMessageStatus } from '@/platform/remote/comfyui/execution/types'
@@ -685,7 +684,7 @@ export class ComfyUI {
               !useSettingStore().get('Comfy.ConfirmClear') ||
               confirm('Clear workflow?')
             ) {
-              runMintPortsIntentionalClear(() => app.clean())
+              app.clean()
               useLitegraphService().resetView()
               api.dispatchCustomEvent('graphCleared')
             }

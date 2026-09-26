@@ -19,8 +19,8 @@
  * node rendered with zero widget rows.
  *
  * This test drives the real pipeline (comfy-multi-player's `insert_workflow`
- * applier → `EcsFollowerAdapter`/`AgentCrdtProjection` → `graphMutations` →
- * `agentNodeMaterializer`) and then reads widget ids back the same way the
+ * applier → `AgentCrdtProjection` → `LiveGraphApplier` → the LiteGraph
+ * graph API) and then reads widget ids back the same way the
  * Vue node component does, through `stripGraphPrefix` +
  * `widgetValueStore.getNodeWidgetIds`.
  */
@@ -37,12 +37,9 @@ import {
   stripGraphPrefix,
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
-import { graphScopeOf } from '@/types/graphScopeId'
 
 import { AgentCrdtProjection } from './agentCrdtProjection'
-import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
 import { FollowerDoc } from './followerDoc'
-import { createGraphMutations } from './graphMutations'
 
 class TestSaveImage extends LGraphNode {
   static override title = 'Test Save Image'
@@ -74,15 +71,7 @@ function insertOp(
 
 function bindProjection(workflowId: string, graph: LGraph) {
   const follower = new FollowerDoc()
-  const projection = new AgentCrdtProjection(
-    createGraphMutations({
-      getScope: () => graphScopeOf(graph),
-      layout: { createNode: () => {}, deleteNodes: () => {} },
-      placement: inertPlacementPort
-    }),
-    () => graph,
-    () => follower.doc
-  )
+  const projection = new AgentCrdtProjection(() => graph)
   projection.bind(workflowId, follower)
   onTestFinished(() => {
     projection.destroy()
@@ -98,8 +87,7 @@ function bindProjection(workflowId: string, graph: LGraph) {
       update,
       actor: 'agent:test',
       opIds
-    })
-    projection.reconcileLiveGraph(workflowId)
+    }).applied
     return committed
   }
   return deliver

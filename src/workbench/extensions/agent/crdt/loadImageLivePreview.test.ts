@@ -4,33 +4,23 @@
 // that load creates a real circular import where `scripts/widgets.ts` calls
 // `useImageUploadWidget()` before this module has finished exporting it.
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { applyOps, mint } from '@comfyorg/comfy-multi-player'
+import type { Op, WidgetCatalog } from '@comfyorg/comfy-multi-player'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import * as Y from 'yjs'
 
-import { createGraphMutations } from './graphMutations'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-// eslint-disable-next-line import-x/no-restricted-paths
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-// eslint-disable-next-line import-x/no-restricted-paths
-import { LayoutSource } from '@/renderer/core/layout/types'
 // Test-only: builds a node with the real renderer-owned widget constructor
 // so the fixture's `image` widget carries the same preview-rendering
 // callback a production LoadImage node does.
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useImageUploadWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useImageUploadWidget'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
-import type { GraphScope } from '@/types/graphScopeId'
-import {
-  graphScopeOf,
-  toOwningGraphId,
-  toRootGraphId
-} from '@/types/graphScopeId'
-import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { toNodeId } from '@/types/nodeId'
 
-import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
-import { reconcileAgentAdapters } from './agentNodeMaterializer'
-import { applyLiveWidgetValue } from './liveWidgetProjection'
+import { AgentCrdtProjection } from './agentCrdtProjection'
+import { FollowerDoc } from './followerDoc'
 
 const mocks = vi.hoisted(() => ({ showPreview: vi.fn() }))
 
@@ -76,89 +66,65 @@ class TestLoadImageNode extends LGraphNode {
   }
 }
 
-/**
- * A Load-Image-shaped combo widget whose callback renders the preview from
- * its own argument, the way `useImageUploadWidget`'s callback renders it from
- * the live widget value. This isolates what the agent write path promises a
- * widget's callback (the value the CRDT record just settled on, per
- * `replayUpdatedWidgetCallbacks`) from that production widget's own,
- * unrelated quirk of re-reading `widget.value` instead of its argument.
- */
-class MinimalLoadImageNode extends LGraphNode {
-  constructor() {
-    super('test-load-image-minimal', 'test-load-image-minimal')
-    this.addWidget(
-      'combo',
-      'image',
-      'previously-uploaded.png',
-      (value: unknown) => {
-        useNodeOutputStore().setNodeOutputs(this, String(value), {
-          isAnimated: false
-        })
-        mocks.showPreview({ block: false })
-      },
-      { values: ['previously-uploaded.png'] }
-    )
-  }
+const WORKFLOW_ID = 'wf-load-image'
+const CATALOG: WidgetCatalog = {
+  types: { 'test-load-image': { widget_order: ['image', 'upload'] } }
 }
 
-const rootScope: GraphScope = {
-  rootGraphId: toRootGraphId('root'),
-  owningGraphId: toOwningGraphId('root')
-}
-const remoteContext: RemoteMutationContext = {
-  source: 'agent-remote',
-  actor: 'agent:test',
-  opId: 'op-1'
-}
-
-function nodePayload(id: number, type: string) {
+function setWidgetOp(value: string): Op {
   return {
-    id,
-    type,
-    pos: [0, 0],
-    size: [200, 100],
-    inputs: [],
-    outputs: [],
-    widgets_values: {}
+    op: 'set_widget',
+    op_id: 'set-image'.padEnd(32, '0'),
+    actor: 'agent:test',
+    base_version: 1,
+    stamp: [1, 'agent:test'],
+    node_id: 1,
+    widget: 'image',
+    value
   }
 }
 
-/** Same remote layout port `AgentPanelRoot.vue` wires in production. */
-function remoteMutations(scope: GraphScope) {
-  return createGraphMutations({
-    getScope: () => scope,
-    layout: {
-      createNode(scope, nodeId, { position, size }, context) {
-        layoutStore.applyOperation({
-          type: 'createNode',
-          graphId: scope.rootGraphId,
-          ownerGraphId: scope.owningGraphId,
-          nodeId,
-          layout: {
-            id: nodeId,
-            position,
-            size,
-            bounds: { x: position.x, y: position.y, ...size },
-            zIndex: layoutStore.allocateZIndex(),
-            visible: true
-          },
-          source: LayoutSource.AgentRemote,
-          actor: context.actor,
-          opId: context.opId,
-          timestamp: Date.now()
-        })
-      },
-      deleteNodes: vi.fn()
-    },
-    placement: inertPlacementPort
+function bindProjection(graph: LGraph, host: Y.Doc) {
+  const follower = new FollowerDoc()
+  const projection = new AgentCrdtProjection(() => graph)
+  projection.bind(WORKFLOW_ID, follower)
+  onTestFinished(() => {
+    projection.destroy()
+    follower.destroy()
+    host.destroy()
   })
+  let seq = 0
+  const deliver = (update: Uint8Array, opIds: string[]) => {
+    follower.applyRemoteUpdate(update)
+    expect(
+      projection.applyFrame({
+        workflowId: WORKFLOW_ID,
+        seq: ++seq,
+        update,
+        actor: 'agent:test',
+        opIds
+      })
+    ).toMatchObject({ applied: true })
+  }
+  const hostApplies = (op: Op) => {
+    const before = Y.encodeStateVector(host)
+    expect(applyOps(host, [op], CATALOG).outcomes).toEqual([
+      { op_id: op.op_id, outcome: 'applied' }
+    ])
+    deliver(Y.encodeStateAsUpdate(host, before), [op.op_id])
+  }
+  return { deliver, hostApplies }
 }
+
+const rafCallbacks = vi.hoisted(() => [] as FrameRequestCallback[])
 
 beforeEach(() => {
   LiteGraph.registerNodeType('test-load-image', TestLoadImageNode)
-  LiteGraph.registerNodeType('test-load-image-minimal', MinimalLoadImageNode)
-  vi.stubGlobal('requestAnimationFrame', vi.fn())
+  rafCallbacks.length = 0
+  vi.stubGlobal(
+    'requestAnimationFrame',
+    vi.fn((callback: FrameRequestCallback) => rafCallbacks.push(callback))
+  )
   vi.mocked(useNodeOutputStore().setNodeOutputs).mockImplementation(
     () => undefined
   )
@@ -171,24 +137,30 @@ describe('agent-driven Load Image preview stays live', () => {
 
   it('refreshes the rendered preview when the agent updates an existing node (real-world: Zhixiong Lin)', () => {
     const graph = new LGraph()
-    graph.id = 'root'
     const node = new TestLoadImageNode()
     node.id = toNodeId(1)
     graph.add(node)
-
-    const result = applyLiveWidgetValue(
-      graph,
-      rootScope,
-      toNodeId(1),
-      'image',
-      'new-input-image.png',
-      remoteContext
+    const host = mint(
+      {
+        nodes: [
+          {
+            id: 1,
+            type: 'test-load-image',
+            widgets_values: ['previously-uploaded.png', 'image']
+          }
+        ],
+        links: []
+      },
+      CATALOG
     )
+    const { deliver, hostApplies } = bindProjection(graph, host)
+    deliver(Y.encodeStateAsUpdate(host), [])
+    vi.mocked(useNodeOutputStore().setNodeOutputs).mockClear()
+    mocks.showPreview.mockClear()
 
-    expect(result).toEqual({
-      status: 'applied',
-      resolvedValue: 'new-input-image.png'
-    })
+    hostApplies(setWidgetOp('new-input-image.png'))
+
+    expect(node.widgets?.[0]?.value).toBe('new-input-image.png')
     expect(useNodeOutputStore().setNodeOutputs).toHaveBeenCalledWith(
       node,
       'new-input-image.png',
@@ -197,44 +169,28 @@ describe('agent-driven Load Image preview stays live', () => {
     expect(mocks.showPreview).toHaveBeenCalledWith({ block: false })
   })
 
-  it('replays the preview callback once a brand-new node materializes with a value set before it existed (real-world: Memie Osuga)', () => {
+  it('renders the preview from the doc value when a brand-new node is created with that value (real-world: Memie Osuga)', () => {
     const graph = new LGraph()
-    const scope = graphScopeOf(graph)
-    const mutations = remoteMutations(scope)
-    mutations.addNode(nodePayload(1, 'test-load-image-minimal'), remoteContext)
-    mutations.setWidget(
-      toNodeId(1),
-      'image',
-      'freshly-created-image.png',
-      remoteContext
+    const host = mint(
+      {
+        nodes: [
+          {
+            id: 1,
+            type: 'test-load-image',
+            widgets_values: ['freshly-created-image.png', 'image']
+          }
+        ],
+        links: []
+      },
+      CATALOG
     )
+    const { deliver } = bindProjection(graph, host)
 
-    reconcileAgentAdapters(graph)
+    deliver(Y.encodeStateAsUpdate(host), [])
+    for (const callback of rafCallbacks) callback(0)
 
     const node = graph.getNodeById(toNodeId(1))
-    expect(useNodeOutputStore().setNodeOutputs).toHaveBeenCalledWith(
-      node,
-      'freshly-created-image.png',
-      { isAnimated: false }
-    )
-    expect(mocks.showPreview).toHaveBeenCalledWith({ block: false })
-  })
-
-  it('refreshes the real Load Image preview when a brand-new node materializes with a value set before it existed', () => {
-    const graph = new LGraph()
-    const scope = graphScopeOf(graph)
-    const mutations = remoteMutations(scope)
-    mutations.addNode(nodePayload(1, 'test-load-image'), remoteContext)
-    mutations.setWidget(
-      toNodeId(1),
-      'image',
-      'freshly-created-image.png',
-      remoteContext
-    )
-
-    reconcileAgentAdapters(graph)
-
-    const node = graph.getNodeById(toNodeId(1))
+    expect(node?.widgets?.[0]?.value).toBe('freshly-created-image.png')
     expect(useNodeOutputStore().setNodeOutputs).toHaveBeenCalledWith(
       node,
       'freshly-created-image.png',

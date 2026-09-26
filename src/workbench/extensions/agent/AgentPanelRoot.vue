@@ -24,8 +24,6 @@ import type {
   AgentStopMethod
 } from '@/platform/telemetry/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { LiveAutogrowGroupAnswer } from '@/workbench/extensions/agent/crdt/graphMutations'
-import { createGraphMutations } from '@/workbench/extensions/agent/crdt/graphMutations'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -43,10 +41,7 @@ import { registerMinimapDecorationLayer } from '@/platform/canvas/minimapDecorat
 // stays independent of renderer and LiteGraph runtime values.
 // eslint-disable-next-line import-x/no-restricted-paths
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-// eslint-disable-next-line import-x/no-restricted-paths
-import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
-// eslint-disable-next-line import-x/no-restricted-paths
-import { LayoutSource } from '@/renderer/core/layout/types'
+
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -126,12 +121,7 @@ import {
   isCrdtDebugEnabled,
   resolveDebugPanelEnabled
 } from './crdt/crdtDebugGate'
-import { attachMintPortWiring } from './crdt/mintPortWiring'
-import {
-  createLiveWidgetProjection,
-  owningGraph
-} from './crdt/liveWidgetProjection'
-import { liveAutogrowGroupOf } from '@/core/graph/widgets/dynamicWidgets'
+import { attachDocOpMinter } from './crdt/docOpMinter'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
 
 const CrdtDevPanel = defineAsyncComponent(
@@ -358,113 +348,6 @@ watch(
   },
   { immediate: true }
 )
-const graphMutationsByWorkflow = new Map<
-  string,
-  ReturnType<typeof createGraphMutations>
->()
-const liveWidgets = createLiveWidgetProjection({
-  getRootGraph: () => app.rootGraphOrUndefined,
-  getCanvas: () => app.canvas,
-  markDirty: () => app.canvas?.setDirty(true)
-})
-const graphMutations = (workflowId: string) => {
-  const existing = graphMutationsByWorkflow.get(workflowId)
-  if (existing) return existing
-  const mutations = createGraphMutations({
-    getScope() {
-      const rootGraphId = boundOrOpenWorkflowFor(workflowId)?.activeState?.id
-      return rootGraphId
-        ? {
-            rootGraphId: toRootGraphId(rootGraphId),
-            owningGraphId: toOwningGraphId(rootGraphId)
-          }
-        : null
-    },
-    layout: {
-      createNode(scope, nodeId, layout, context) {
-        const { position, size } = layout
-        layoutStore.applyOperation({
-          type: 'createNode',
-          graphId: scope.rootGraphId,
-          ownerGraphId: scope.owningGraphId,
-          nodeId,
-          layout: {
-            id: nodeId,
-            position,
-            size,
-            bounds: { x: position.x, y: position.y, ...size },
-            zIndex: layoutStore.allocateZIndex(),
-            visible: true
-          },
-          source: LayoutSource.AgentRemote,
-          actor: context.actor,
-          opId: context.opId,
-          timestamp: Date.now()
-        })
-      },
-      deleteNodes(scope, nodeIds, context) {
-        const timestamp = Date.now()
-        layoutStore.applyOperations(
-          nodeIds.map((nodeId) => ({
-            type: 'deleteNode',
-            graphId: scope.rootGraphId,
-            ownerGraphId: scope.owningGraphId,
-            nodeId,
-            source: LayoutSource.AgentRemote,
-            actor: context.actor,
-            opId: context.opId,
-            timestamp
-          }))
-        )
-      }
-    },
-    placement: {
-      nodeBounds(scope, nodeId) {
-        const layout = layoutStore.getNodeLayout(scope.rootGraphId, nodeId)
-        return layout
-          ? {
-              x: layout.position.x,
-              y: layout.position.y,
-              width: layout.size.width,
-              height: layout.size.height
-            }
-          : null
-      },
-      viewportBounds(scope) {
-        const canvas = canvasStore.canvas
-        if (
-          !canvas ||
-          String(canvas.graph?.id) !== String(scope.owningGraphId)
-        ) {
-          return null
-        }
-        const [x, y, width, height] = canvas.ds.visible_area
-        return { x, y, width, height }
-      }
-    },
-    liveWidgets,
-    liveNodes: {
-      autogrowGroupOf(scope, nodeId, name): LiveAutogrowGroupAnswer {
-        const rootGraph = app.rootGraphOrUndefined
-        const node = rootGraph
-          ? owningGraph(rootGraph, scope)?.getNodeById(nodeId)
-          : undefined
-        // Unmounted / background workflow: the node itself can't be asked,
-        // so this carries no opinion -- `resolveAutogrowGroup` falls back to
-        // remembered provenance, then the node type's own static definition,
-        // and only then the name-shape heuristic, instead of treating this
-        // as "not a member".
-        if (!node) return { kind: 'unavailable' }
-        const group = liveAutogrowGroupOf(node, name)
-        return group === undefined
-          ? { kind: 'notMember' }
-          : { kind: 'member', group }
-      }
-    }
-  })
-  graphMutationsByWorkflow.set(workflowId, mutations)
-  return mutations
-}
 
 function toSelectedNode(node: LGraphNode): SelectedNode {
   return {
@@ -764,10 +647,10 @@ const isBoundWorkflowActive = computed(() => {
 const {
   status: crdtStatus,
   debugSnapshot: crdtDebugSnapshot,
-  enqueueHumanOperations
+  enqueueHumanOperations,
+  docInputNames
 } = useAgentCrdtFollower(
   boundWorkflowId,
-  graphMutations,
   () => resolvedUserInfo.value?.id ?? null,
   isBoundWorkflowActive,
   // `app.isGraphReady` is a plain getter; reading `canvasStore.canvas` (set
@@ -785,6 +668,16 @@ const {
       }
     },
     onReset: graphActivity.resetWorkflow
+  },
+  {
+    getCanvas: () => app.canvas,
+    withRemoteActor: (actor, fn) => layoutStore.withActor(actor, fn),
+    viewportBounds() {
+      const canvas = canvasStore.canvas
+      if (!canvas || canvas.graph?.isRootGraph === false) return null
+      const [x, y, width, height] = canvas.ds.visible_area
+      return { x, y, width, height }
+    }
   }
 )
 // The bound document's serialized root graph id, independent of what is
@@ -798,14 +691,13 @@ function boundRootGraphId(): RootGraphId | null {
   const id = boundOrOpenWorkflowFor(bound)?.activeState?.id
   return id === undefined ? null : toRootGraphId(id)
 }
-const mintPortWiring = attachMintPortWiring({
+const docOpMinter = attachDocOpMinter({
   isEnabled: () => agentPanelStore.enabled,
   isDocBound: () => isBoundWorkflowActive.value,
   enqueue: enqueueHumanOperations,
-  layoutChanges: (listener) => layoutStore.onChange(listener),
-  localActorPrefix: ACTOR_CONFIG.USER_PREFIX,
   getGraph: () => (app.isGraphReady ? app.rootGraph : null),
-  boundRootGraphId
+  boundRootGraphId,
+  docInputNames
 })
 const isCrdtDevPanelEnabled = resolveDebugPanelEnabled(
   agentPanelStore.enabled,
@@ -1108,7 +1000,7 @@ async function onAnswerAsk(
 void refreshCloudWorkflowIds()
 onBeforeUnmount(() => {
   ++activeTabGeneration
-  mintPortWiring.detach()
+  docOpMinter.detach()
   exitNodeSelectionMode()
   stop()
   tabActivity.setEditing(null)

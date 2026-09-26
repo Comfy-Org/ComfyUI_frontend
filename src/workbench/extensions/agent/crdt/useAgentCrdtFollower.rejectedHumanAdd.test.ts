@@ -9,7 +9,6 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 
 import { parseWireOps } from '@e2e/fixtures/agentWireFrame'
 
-import type { GraphMutations } from './graphMutations'
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'
 
 // The frame the sender actually put on the wire, narrowed the same way a
@@ -41,7 +40,7 @@ const WORKFLOW_ID = 'wf-1'
 // node from a custom-node pack) or a blueprint host with a promoted widget:
 // the class is absent from the pinned catalog, so its named widget values
 // cannot be projected and the add is rejected.
-it.fails('surfaces a human add_node the doc host rejected instead of swallowing the result', () => {
+it('surfaces a human add_node the doc host rejected instead of swallowing the result', async () => {
   const previousSocket = api.socket
   const send = vi.fn<(frame: string) => void>()
   api.socket = fromPartial<WebSocket>({ readyState: WebSocket.OPEN, send })
@@ -57,10 +56,7 @@ it.fails('surfaces a human add_node the doc host rejected instead of swallowing 
   const { unmount } = render(
     defineComponent({
       setup() {
-        follower = useAgentCrdtFollower(
-          ref<string | null>(WORKFLOW_ID),
-          fromPartial<GraphMutations>({})
-        )
+        follower = useAgentCrdtFollower(ref<string | null>(WORKFLOW_ID))
         return () => null
       }
     })
@@ -87,6 +83,7 @@ it.fails('surfaces a human add_node the doc host rejected instead of swallowing 
       }
     }
   ])
+  await Promise.resolve()
   const { type, op_id } = sentOp(send.mock.calls[1][0])
   expect(type).toBe('doc_ops')
 

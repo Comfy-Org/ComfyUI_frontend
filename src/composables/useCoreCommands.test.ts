@@ -26,16 +26,6 @@ import { fromPartial } from '@total-typescript/shoehorn'
 
 vi.mock(import('@/core/graph/subgraph/promotionUtils'), { spy: true })
 
-const mockRunMintPortsIntentionalClear = vi.hoisted(() =>
-  vi.fn(<T>(clear: () => T): T => clear())
-)
-vi.mock<unknown>(
-  import('@/workbench/extensions/agent/crdt/mintPortWiring'),
-  () => ({
-    runMintPortsIntentionalClear: mockRunMintPortsIntentionalClear
-  })
-)
-
 vi.mock<unknown>(
   import('@/components/sidebar/tabs/ModelLibrarySidebarTab.vue'),
   () => ({ default: {} })
@@ -251,7 +241,6 @@ describe('useCoreCommands', () => {
     useSettingStore().settingValues['Comfy.ConfirmClear'] = false
 
     global.confirm = vi.fn().mockReturnValue(true)
-    mockRunMintPortsIntentionalClear.mockClear()
   })
 
   describe('ClearWorkflow command', () => {
@@ -265,7 +254,6 @@ describe('useCoreCommands', () => {
 
       expect(app.clean).toHaveBeenCalled()
       expect(app.rootGraph.clear).toHaveBeenCalled()
-      expect(mockRunMintPortsIntentionalClear).toHaveBeenCalledOnce()
       expect(api.dispatchCustomEvent).toHaveBeenCalledWith('graphCleared')
     })
 
@@ -281,7 +269,6 @@ describe('useCoreCommands', () => {
 
       expect(app.clean).not.toHaveBeenCalled()
       expect(app.rootGraph.clear).not.toHaveBeenCalled()
-      expect(mockRunMintPortsIntentionalClear).not.toHaveBeenCalled()
 
       const subgraph = app.canvas.subgraph
       expect(subgraph.remove).toHaveBeenCalledTimes(2)

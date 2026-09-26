@@ -5,8 +5,10 @@ import type { Op, WidgetCatalog } from '@comfyorg/comfy-multi-player'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
 import {
+  BLANK_WORKFLOW,
   agentTest,
   bootAgentApp,
+  loadIntoBootWorkflow,
   mockAgentTurnApi,
   mockWorkflowPersistence
 } from '@e2e/fixtures/agentPanelFixture'
@@ -33,10 +35,11 @@ const test = mergeTests(agentTest, webSocketFixture)
  * and then the FRONTEND-observable half of the actual complaint: a widget
  * write the doc host rejects with an `opaque_widgets`-shaped failure
  * (`<node> is absent from the pinned catalog, so its widgets_values is
- * stored opaquely (schema §1.2) and is not name-addressable`) never reaches
- * the human as any visible indication -- the edited widget just keeps
- * showing the human's typed value while the shared document silently keeps
- * the old one.
+ * stored opaquely (schema §1.2) and is not name-addressable`). The follower
+ * now puts the refused register back from the document
+ * (`AgentCrdtProjection.revertRejected`), so the widget no longer keeps
+ * showing a value the shared document never took; what is still missing is
+ * any visible indication to the human that the write was refused.
  *
  * `opaque_widgets` itself is a cloud doc-host error code with no frontend
  * equivalent (`docFrameClient.ts`'s `DocOpFailure.code` is opaque wire text,
@@ -255,6 +258,7 @@ async function driveThroughDuplicateInsert(
       await mockWorkflowPersistence(page, WORKFLOW_ID)
     }
   })
+  await loadIntoBootWorkflow(page, BLANK_WORKFLOW)
   const socket = await getWebSocket()
   const outboundFrames: string[] = []
   socket.onMessage((message) => outboundFrames.push(String(message)))
@@ -454,22 +458,20 @@ test.describe(
       expect(boxB).toEqual(boxA)
     })
 
-    test('a widget edit the host rejects as opaque leaves the human-typed value on screen and the shared document silently unrevised', async ({
+    test('a widget edit the host rejects as opaque is rolled back to the value the shared document kept', async ({
       page,
       getWebSocket
     }) => {
       const { host, seedInput, copyBNodeId } =
         await driveThroughRejectedWidgetEdit(page, getWebSocket)
 
-      // What the human sees: the widget still shows what they typed. Nothing
-      // rolled it back, and nothing marked it as failed.
-      await expect(seedInput).toHaveValue(String(EDITED_SEED_VALUE))
+      // The refused register is put back from the document, so the widget
+      // the human is looking at and the document a subsequent run would read
+      // from agree again. Nothing yet marks the write as failed.
+      await expect(seedInput).toHaveValue(String(SEED_VALUE))
       await expect(new ToastHelper(page).toastErrors).toHaveCount(0)
       await expect(page.getByRole('alert')).toHaveCount(0)
 
-      // What the shared document actually has: still the ORIGINAL seed, since
-      // the write never applied. The widget the human is looking at and the
-      // document a subsequent run would read from have now silently diverged.
       const projected = host.projection()
       const sampler = projected.nodes.find(
         (node) => String(node.id) === copyBNodeId

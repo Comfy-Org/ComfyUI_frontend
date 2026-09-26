@@ -41,7 +41,8 @@ export const DEV_EVENT_KINDS = [
   'doc_gap',
   'doc_stale',
   'frame_send_failed',
-  'agent_node_adapters_materialized'
+  'agent_node_adapters_materialized',
+  'local_widget_write_held'
 ] as const
 
 export type DevEventKind = (typeof DEV_EVENT_KINDS)[number]

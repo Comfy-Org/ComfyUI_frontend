@@ -9,22 +9,19 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref, shallowRef } from 'vue'
 import type { Ref } from 'vue'
-import * as Y from 'yjs'
+import type { Op } from '@comfyorg/comfy-multi-player'
 
 import { render } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 
-import type { GraphMutations } from './graphMutations'
-import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
+
 import type { reportError as reportErrorFn } from '@/platform/telemetry/reportError'
 import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
-import type {
-  MaterializableGraph,
-  subgraphDefinitionReadState as subgraphDefinitionReadStateFn
-} from './agentNodeMaterializer'
+import type { DocNodeDelta, FrameOutcome } from './agentCrdtProjection'
 import type { DocFrameTransport } from './docFrameClient'
 import type { GraphOperation } from './graphOperations'
 import type { BatchOutcome, OpSenderDeps } from './opSender'
@@ -58,36 +55,34 @@ const clientState = vi.hoisted(() => ({
   transport: null as DocFrameTransport | null
 }))
 
-const adapterState = vi.hoisted(() => ({
-  intent: null as {
-    pendingDeletes(workflowId: string): ReadonlySet<string>
-  } | null,
-  bind: vi.fn(),
-  unbind: vi.fn(),
-  applyFrame: vi.fn(() => true),
-  clearForReset: vi.fn(),
-  discardPending: vi.fn(),
-  destroy: vi.fn()
-}))
-
-const materializerState = vi.hoisted(() => ({
-  reconcileAgentAdapters: vi.fn(() => [] as NodeId[]),
-  subgraphDefinitionReadState: vi.fn<typeof subgraphDefinitionReadStateFn>(
-    (rootGraph, id) => (rootGraph.subgraphs.has(id) ? 'registered' : 'missing')
-  )
-}))
-
-// The reader is module-mocked too: these tests only check that the composable
-// hands whatever it read from the bridge's doc through to the materializer.
-const definitionsState = vi.hoisted(() => ({
-  fakeDefinitions: [
-    { id: '11111111-1111-4111-8111-111111111111' } as ExportedSubgraph
-  ],
-  readSubgraphDefinitionIds: vi.fn(() => [
-    '11111111-1111-4111-8111-111111111111'
-  ]),
-  readSubgraphDefinitions: vi.fn(() => definitionsState.fakeDefinitions)
-}))
+const projectionState = vi.hoisted(() => {
+  const NO_NODES: DocNodeDelta = { added: [], removed: [] }
+  const notApplied = (nodes: DocNodeDelta = NO_NODES): FrameOutcome => ({
+    applied: false,
+    nodes
+  })
+  const applied = (
+    createdNodeIds: NodeId[] = [],
+    nodes: DocNodeDelta = NO_NODES
+  ): FrameOutcome => ({ applied: true, nodes, createdNodeIds })
+  return {
+    NO_NODES,
+    notApplied,
+    applied,
+    bind: vi.fn(),
+    unbind: vi.fn(),
+    applyFrame: vi.fn((_update: unknown): FrameOutcome => applied()),
+    applyCollected: vi.fn((_workflowId: string): NodeId[] => []),
+    revertRejected: vi.fn(
+      (_workflowId: string, _ops: readonly Op[]): NodeId[] => []
+    ),
+    replaceOnNextFrame: vi.fn(),
+    discardPending: vi.fn((_workflowId: string): DocNodeDelta => NO_NODES),
+    noteLocalWrites: vi.fn(),
+    settleLocalWrites: vi.fn(),
+    destroy: vi.fn()
+  }
+})
 
 const telemetryState = vi.hoisted(() => ({
   reportError: vi.fn<typeof reportErrorFn>()
@@ -130,34 +125,19 @@ vi.mock<unknown>(import('./docFrameClient'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('./ecsFollowerAdapter'), () => ({
-  EcsFollowerAdapter: class {
-    constructor(
-      _mutations: unknown,
-      intent: {
-        pendingDeletes(workflowId: string): ReadonlySet<string>
-      }
-    ) {
-      adapterState.intent = intent
-    }
-
-    bind = adapterState.bind
-    unbind = adapterState.unbind
-    applyFrame = adapterState.applyFrame
-    clearForReset = adapterState.clearForReset
-    discardPending = adapterState.discardPending
-    destroy = adapterState.destroy
+vi.mock<unknown>(import('./agentCrdtProjection'), () => ({
+  AgentCrdtProjection: class {
+    bind = projectionState.bind
+    unbind = projectionState.unbind
+    applyFrame = projectionState.applyFrame
+    applyCollected = projectionState.applyCollected
+    revertRejected = projectionState.revertRejected
+    replaceOnNextFrame = projectionState.replaceOnNextFrame
+    discardPending = projectionState.discardPending
+    noteLocalWrites = projectionState.noteLocalWrites
+    settleLocalWrites = projectionState.settleLocalWrites
+    destroy = projectionState.destroy
   }
-}))
-
-vi.mock(import('./agentNodeMaterializer'), () => ({
-  reconcileAgentAdapters: materializerState.reconcileAgentAdapters,
-  subgraphDefinitionReadState: materializerState.subgraphDefinitionReadState
-}))
-
-vi.mock(import('./agentSubgraphDefinitions'), () => ({
-  readSubgraphDefinitionIds: definitionsState.readSubgraphDefinitionIds,
-  readSubgraphDefinitions: definitionsState.readSubgraphDefinitions
 }))
 
 vi.mock(import('./devPanelLog'), () => ({
@@ -182,7 +162,6 @@ import {
 } from './useAgentCrdtFollower'
 import type { AgentCrdtStatus } from './useAgentCrdtFollower'
 
-const graphMutations = {} as GraphMutations
 const DOC_ID_KEY = 'Comfy.Agent.CrdtDocId'
 const TEARDOWN_ERROR_TYPE = 'failure_tearing_down_agent_crdt_follower'
 
@@ -214,8 +193,8 @@ function writeRawRecord(overrides: {
 function mountFollower(
   initial: string | null = null,
   initiallyActive = true,
-  getGraph: () => MaterializableGraph | null = () => null,
-  events: Parameters<typeof useAgentCrdtFollower>[5] = {}
+  getGraph: () => LGraph | null = () => null,
+  events: Parameters<typeof useAgentCrdtFollower>[4] = {}
 ): {
   unmount: () => void
   workflowId: Ref<string | null>
@@ -231,7 +210,6 @@ function mountFollower(
     setup() {
       const { status, enqueueHumanOperations } = useAgentCrdtFollower(
         workflowId,
-        graphMutations,
         () => null,
         isTargetActive,
         getGraph,
@@ -268,13 +246,13 @@ describe('useAgentCrdtFollower', () => {
     sessionStorage.clear()
     bridgeState.current = null
     clientState.transport = null
-    materializerState.reconcileAgentAdapters.mockReset().mockReturnValue([])
-    materializerState.subgraphDefinitionReadState.mockImplementation(
-      (rootGraph, id) =>
-        rootGraph.subgraphs.has(id) ? 'registered' : 'missing'
-    )
-    definitionsState.readSubgraphDefinitionIds.mockClear()
-    definitionsState.readSubgraphDefinitions.mockClear()
+    projectionState.applyFrame
+      .mockReset()
+      .mockReturnValue(projectionState.applied())
+    projectionState.applyCollected.mockReset().mockReturnValue([])
+    projectionState.revertRejected.mockReset().mockReturnValue([])
+    projectionState.noteLocalWrites.mockReset()
+    projectionState.settleLocalWrites.mockReset()
   })
 
   it('records only the length of an outbound frame that is not a JSON object', async () => {
@@ -315,7 +293,7 @@ describe('useAgentCrdtFollower', () => {
       updatesApplied: 0
     })
     expect(bridgeState.current).toBeNull()
-    expect(adapterState.bind).not.toHaveBeenCalled()
+    expect(projectionState.bind).not.toHaveBeenCalled()
     unmount()
   })
 
@@ -336,14 +314,14 @@ describe('useAgentCrdtFollower', () => {
     store.enabled = false
     expect(first.destroy).toHaveBeenCalledOnce()
     expect(clientState.destroy).toHaveBeenCalledOnce()
-    expect(adapterState.destroy).toHaveBeenCalledOnce()
+    expect(projectionState.destroy).toHaveBeenCalledOnce()
     expect(status()).toMatchObject({
       enabled: false,
       connected: false,
       workflowId: null
     })
 
-    const applies = adapterState.applyFrame.mock.calls.length
+    const applies = projectionState.applyFrame.mock.calls.length
     first.dispatchEvent(
       new CustomEvent('doc_update', { detail: { workflowId: 'wf-1', seq: 42 } })
     )
@@ -353,7 +331,7 @@ describe('useAgentCrdtFollower', () => {
     await nextTick()
     expect(first.subscribe).toHaveBeenCalledTimes(1)
     expect(first.resubscribe).not.toHaveBeenCalled()
-    expect(adapterState.applyFrame).toHaveBeenCalledTimes(applies)
+    expect(projectionState.applyFrame).toHaveBeenCalledTimes(applies)
 
     store.enabled = true
     expect(bridge()).not.toBe(first)
@@ -689,24 +667,20 @@ describe('useAgentCrdtFollower', () => {
 
     expect(status().connected).toBe(false)
     expect(bridge().resubscribe).toHaveBeenCalled()
-    expect(adapterState.clearForReset).not.toHaveBeenCalled()
+    expect(projectionState.replaceOnNextFrame).not.toHaveBeenCalled()
     unmount()
   })
 
-  it('clears only for an explicit reset and rebinds after replacement', () => {
+  it('arms a lineage replacement only for an explicit reset and rebinds after replacement', () => {
     const { unmount, status } = mountFollower('wf-1')
-    expect(adapterState.bind).toHaveBeenCalledTimes(1)
+    expect(projectionState.bind).toHaveBeenCalledTimes(1)
 
     dispatchFrame('doc_reset', {
       workflowId: 'wf-1',
       actor: 'agent:turn',
       seq: 43
     })
-    expect(adapterState.clearForReset).toHaveBeenCalledWith('wf-1', {
-      source: 'agent-remote',
-      actor: 'agent:turn',
-      opId: 'doc-reset:43'
-    })
+    expect(projectionState.replaceOnNextFrame).toHaveBeenCalledWith('wf-1')
 
     bridge().follower.updatesApplied = 3
     dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 44 })
@@ -714,17 +688,14 @@ describe('useAgentCrdtFollower', () => {
 
     dispatchFrame('follower_replaced', { workflowId: 'wf-2' })
     expect(status().updatesApplied).toBe(3)
-    expect(adapterState.bind).toHaveBeenCalledTimes(1)
+    expect(projectionState.bind).toHaveBeenCalledTimes(1)
 
     dispatchFrame('follower_replaced', { workflowId: 'wf-1' })
     expect(status().updatesApplied).toBe(0)
-    expect(adapterState.clearForReset).toHaveBeenLastCalledWith('wf-1', {
-      source: 'agent-remote',
-      actor: 'agent-lineage',
-      opId: 'follower-replaced:wf-1'
-    })
-    expect(adapterState.bind).toHaveBeenCalledTimes(2)
-    expect(adapterState.bind).toHaveBeenLastCalledWith(
+    expect(projectionState.replaceOnNextFrame).toHaveBeenCalledTimes(1)
+    expect(projectionState.discardPending).toHaveBeenLastCalledWith('wf-1')
+    expect(projectionState.bind).toHaveBeenCalledTimes(2)
+    expect(projectionState.bind).toHaveBeenLastCalledWith(
       'wf-1',
       bridge().follower
     )
@@ -761,7 +732,7 @@ describe('useAgentCrdtFollower', () => {
 
     expect(status().connected).toBe(false)
     expect(status().workflowId).toBe('wf-1')
-    expect(adapterState.discardPending).toHaveBeenCalledWith('wf-1')
+    expect(projectionState.discardPending).toHaveBeenCalledWith('wf-1')
     unmount()
   })
 
@@ -774,7 +745,7 @@ describe('useAgentCrdtFollower', () => {
 
     expect(status().updatesApplied).toBe(3)
     expect(status().lastFrameType).toBe('doc_update')
-    expect(adapterState.applyFrame).toHaveBeenCalledWith(update)
+    expect(projectionState.applyFrame).toHaveBeenCalledWith(update)
     unmount()
   })
 
@@ -805,7 +776,7 @@ describe('useAgentCrdtFollower', () => {
       expect(status().outcomes.received).toBe(1)
       expect(status().outcomes.skipped).toBe(1)
       expect(status().outcomes.applied).toBe(0)
-      expect(adapterState.applyFrame).not.toHaveBeenCalled()
+      expect(projectionState.applyFrame).not.toHaveBeenCalled()
       unmount()
     })
 
@@ -821,12 +792,14 @@ describe('useAgentCrdtFollower', () => {
     })
 
     it('counts skipped, not applied, when the adapter has no bound session for the frame', () => {
-      adapterState.applyFrame.mockReturnValueOnce(false)
+      projectionState.applyFrame.mockReturnValueOnce(
+        projectionState.notApplied()
+      )
       const { unmount, status } = mountFollower('wf-1')
 
       dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 7 })
 
-      expect(adapterState.applyFrame).toHaveBeenCalledTimes(1)
+      expect(projectionState.applyFrame).toHaveBeenCalledTimes(1)
       expect(status().outcomes.received).toBe(1)
       expect(status().outcomes.skipped).toBe(1)
       expect(status().outcomes.applied).toBe(0)
@@ -887,7 +860,7 @@ describe('useAgentCrdtFollower', () => {
       })
 
       expect(status().outcomes.reset).toBe(1)
-      expect(adapterState.clearForReset).not.toHaveBeenCalled()
+      expect(projectionState.replaceOnNextFrame).not.toHaveBeenCalled()
       unmount()
     })
 
@@ -946,146 +919,61 @@ describe('useAgentCrdtFollower', () => {
     })
   })
 
-  describe('live-graph reconcile', () => {
-    // The materializer is module-mocked, so the graph only needs to be a
+  describe('live-graph sync', () => {
+    // The projection is module-mocked, so the graph only needs to be a
     // distinct reference the composable hands through.
-    const { fakeDefinitions } = definitionsState
-    const fakeGraph = {
-      rootGraph: { subgraphs: new Map() },
-      setDirtyCanvas: vi.fn()
-    } as unknown as MaterializableGraph
+    const fakeGraph = fromPartial<LGraph>({ getNodeById: () => null })
 
-    it('counts the frame even when a removal hook throws out of the reconcile', () => {
-      // The orphan sweep inside `reconcileAgentAdapters` calls `graph.remove()`,
-      // which runs extension `onRemoved()` uncaught. `received === applied +
-      // skipped` has to survive that, so the outcome must be decided before the
-      // sweep runs.
-      materializerState.reconcileAgentAdapters.mockImplementationOnce(() => {
-        throw new Error('onRemoved threw')
-      })
+    it('applies every frame for the followed workflow through the projection', () => {
       const { unmount, status } = mountFollower('wf-1', true, () => fakeGraph)
 
-      expect(() =>
-        dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })
-      ).toThrow('onRemoved threw')
+      const update = { workflowId: 'wf-1', seq: 9 }
+      dispatchFrame('doc_update', update)
 
-      const { received, applied, skipped } = status().outcomes
-      expect(received).toBe(1)
-      expect(applied + skipped).toBe(received)
+      expect(projectionState.applyFrame).toHaveBeenCalledExactlyOnceWith(update)
+      expect(projectionState.applyCollected).not.toHaveBeenCalled()
+      expect(status().outcomes.applied).toBe(1)
       unmount()
     })
 
-    it('reconciles the live graph after every applied frame', () => {
-      const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
-
-      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })
-
-      expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledTimes(1)
-      expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
-        fakeGraph,
-        fakeDefinitions
+    it('counts a frame the projection had no binding for as skipped', () => {
+      projectionState.applyFrame.mockReturnValueOnce(
+        projectionState.notApplied()
       )
-      // A frame that only connects nodes changes no layout, so the repaint
-      // has to come from here or the new wire stays invisible until a pan.
-      expect(fakeGraph.setDirtyCanvas).toHaveBeenCalledWith(true, true)
-      // Definitions come from the doc the bridge currently follows, so a
-      // doc_reset remint (which swaps the FollowerDoc) is read fresh.
-      expect(definitionsState.readSubgraphDefinitions).toHaveBeenCalledWith(
-        bridge().follower.doc,
-        new Set()
-      )
-      unmount()
-    })
-
-    it('does not deep-copy definitions for a frame when all are registered', () => {
-      const registeredGraph = {
-        rootGraph: {
-          subgraphs: new Map([[fakeDefinitions[0].id, {}]])
-        },
-        setDirtyCanvas: vi.fn()
-      } as unknown as MaterializableGraph
-      const { unmount } = mountFollower('wf-1', true, () => registeredGraph)
-
-      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })
-
-      expect(definitionsState.readSubgraphDefinitionIds).toHaveBeenCalledWith(
-        bridge().follower.doc
-      )
-      expect(definitionsState.readSubgraphDefinitions).not.toHaveBeenCalled()
-      expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
-        registeredGraph,
-        []
-      )
-      unmount()
-    })
-
-    it('does not deep-copy a definition body after registration already failed', () => {
-      materializerState.subgraphDefinitionReadState.mockReturnValue('failed')
-      const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
-
-      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })
-
-      expect(
-        materializerState.subgraphDefinitionReadState
-      ).toHaveBeenCalledWith(fakeGraph.rootGraph, fakeDefinitions[0].id)
-      expect(definitionsState.readSubgraphDefinitions).not.toHaveBeenCalled()
-      expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
-        fakeGraph,
-        [],
-        new Set([fakeDefinitions[0].id])
-      )
-      unmount()
-    })
-
-    it('does not reconcile after a frame the adapter skipped', () => {
-      adapterState.applyFrame.mockReturnValueOnce(false)
       const { unmount, status } = mountFollower('wf-1', true, () => fakeGraph)
 
       dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })
 
       expect(status().outcomes.skipped).toBe(1)
-      expect(materializerState.reconcileAgentAdapters).not.toHaveBeenCalled()
+      expect(status().outcomes.applied).toBe(0)
       unmount()
     })
 
-    it('skips the reconcile while no graph exists', () => {
-      // Default getGraph (no override) always returns null — mirrors the
-      // panel mounting before the root graph exists.
-      const { unmount } = mountFollower('wf-1')
-
-      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })
-
-      expect(materializerState.reconcileAgentAdapters).not.toHaveBeenCalled()
-      unmount()
-    })
-
-    it('reconciles once the graph appears, without waiting for another frame', async () => {
-      const graph = shallowRef<MaterializableGraph | null>(null)
+    it('applies the collected changes once the graph appears, without waiting for another frame', async () => {
+      const graph = shallowRef<LGraph | null>(null)
       const { unmount } = mountFollower('wf-1', true, () => graph.value)
 
       dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })
-      expect(materializerState.reconcileAgentAdapters).not.toHaveBeenCalled()
+      expect(projectionState.applyCollected).not.toHaveBeenCalled()
 
       graph.value = fakeGraph
       await nextTick()
 
-      expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledTimes(1)
-      expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
-        fakeGraph,
-        fakeDefinitions
+      expect(projectionState.applyCollected).toHaveBeenCalledExactlyOnceWith(
+        'wf-1'
       )
       unmount()
     })
 
     it('reports a pending live arrival when graph readiness materializes it', async () => {
-      const graph = shallowRef<MaterializableGraph | null>(null)
+      const graph = shallowRef<LGraph | null>(null)
       const onMaterialized = vi.fn()
       const { unmount } = mountFollower('wf-1', true, () => graph.value, {
         onMaterialized
       })
-      bridge().follower.doc = {
-        getMap: () => ({ toJSON: () => ({ '3': {} }) })
-      }
+      projectionState.applyFrame.mockReturnValueOnce(
+        projectionState.notApplied({ added: ['3'], removed: [] })
+      )
 
       dispatchFrame('doc_update', {
         workflowId: 'wf-1',
@@ -1095,7 +983,7 @@ describe('useAgentCrdtFollower', () => {
       })
       expect(onMaterialized).not.toHaveBeenCalled()
 
-      materializerState.reconcileAgentAdapters.mockReturnValue([toNodeId(3)])
+      projectionState.applyCollected.mockReturnValue([toNodeId(3)])
       graph.value = fakeGraph
       await nextTick()
 
@@ -1107,23 +995,23 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
-    it('does not reconcile for a graph that appears while the target is inactive', async () => {
-      const graph = shallowRef<MaterializableGraph | null>(null)
+    it('does not apply for a graph that appears while the target is inactive', async () => {
+      const graph = shallowRef<LGraph | null>(null)
       const { unmount } = mountFollower('wf-1', false, () => graph.value)
 
       graph.value = fakeGraph
       await nextTick()
 
-      expect(materializerState.reconcileAgentAdapters).not.toHaveBeenCalled()
+      expect(projectionState.applyCollected).not.toHaveBeenCalled()
       unmount()
     })
 
-    it('reconciles when the target is activated after the graph became ready', async () => {
+    it('applies the collected changes when the target is activated after the graph became ready', async () => {
       // The other readiness ordering: the graph arrives while inactive, so the
       // `getGraph` watcher correctly skips it. Activation does not change the
-      // graph identity, so nothing re-triggers that watcher -- the reconcile
-      // has to happen where the active binding is established.
-      const graph = shallowRef<MaterializableGraph | null>(null)
+      // graph identity, so nothing re-triggers that watcher -- the apply has to
+      // happen where the active binding is established.
+      const graph = shallowRef<LGraph | null>(null)
       const { unmount, isTargetActive } = mountFollower(
         'wf-1',
         false,
@@ -1132,84 +1020,42 @@ describe('useAgentCrdtFollower', () => {
 
       graph.value = fakeGraph
       await nextTick()
-      expect(materializerState.reconcileAgentAdapters).not.toHaveBeenCalled()
+      expect(projectionState.applyCollected).not.toHaveBeenCalled()
 
       isTargetActive.value = true
       await nextTick()
 
-      expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
-        fakeGraph,
-        fakeDefinitions
-      )
+      expect(projectionState.applyCollected).toHaveBeenCalledWith('wf-1')
       unmount()
     })
 
-    it('reconciles after a doc_reset clear, without waiting for another frame', () => {
-      // `clearForReset` empties the stores only. Every live adapter survives it
-      // and would be serialised back into a save until some later frame landed.
+    it('arms a lineage replacement on a doc_reset and rebinds the replacement document', () => {
       const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
+      const replacementDoc = { getMap: () => ({ toJSON: () => ({}) }) }
 
       dispatchFrame('doc_reset', {
         workflowId: 'wf-1',
         actor: 'agent:turn',
         seq: 43
       })
-
-      expect(adapterState.clearForReset).toHaveBeenCalled()
-      expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
-        fakeGraph,
-        fakeDefinitions
-      )
-      unmount()
-    })
-
-    it('reconciles a follower_replaced clear against the replacement document', () => {
-      const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
-      const replacementDoc = { getMap: () => ({ toJSON: () => ({}) }) }
       bridge().follower = { updatesApplied: 0, doc: replacementDoc }
-
       dispatchFrame('follower_replaced', { workflowId: 'wf-1' })
 
-      expect(adapterState.clearForReset).toHaveBeenCalled()
       expect(
-        definitionsState.readSubgraphDefinitionIds
-      ).toHaveBeenLastCalledWith(replacementDoc)
-      expect(definitionsState.readSubgraphDefinitions).toHaveBeenLastCalledWith(
-        replacementDoc,
-        new Set()
+        projectionState.replaceOnNextFrame
+      ).toHaveBeenCalledExactlyOnceWith('wf-1')
+      expect(projectionState.bind).toHaveBeenLastCalledWith(
+        'wf-1',
+        bridge().follower
       )
-      expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
-        fakeGraph,
-        fakeDefinitions
-      )
-      unmount()
-    })
-
-    it('records a dev event only when nodes were materialized', async () => {
-      const { recordDevEvent } = await import('./devPanelLog')
-      const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
-
-      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })
-      materializerState.reconcileAgentAdapters.mockReturnValue([toNodeId(1)])
-      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 10 })
-
-      const materializedEvents = vi
-        .mocked(recordDevEvent)
-        .mock.calls.filter(
-          ([event]) => event === 'agent_node_adapters_materialized'
-        )
-      expect(materializedEvents).toEqual([
-        [
-          'agent_node_adapters_materialized',
-          { workflowId: 'wf-1', nodeIds: [toNodeId(1)] }
-        ]
-      ])
       unmount()
     })
 
     it('reports only live agent materializations, not reconnect catch-up', () => {
       const onMaterialized = vi.fn()
-      materializerState.reconcileAgentAdapters.mockReturnValue([toNodeId(1)])
+      projectionState.applyFrame.mockReturnValue(
+        projectionState.applied([toNodeId(1)])
+      )
       const { unmount } = mountFollower('wf-1', true, () => fakeGraph, {
         onMaterialized
       })
@@ -1246,37 +1092,34 @@ describe('useAgentCrdtFollower', () => {
 
     it('retains a live add until a dependency makes the node visible', () => {
       const onMaterialized = vi.fn()
-      const graph = fromPartial<MaterializableGraph>({
-        ...fakeGraph,
-        _nodes_by_id: { [toNodeId(3)]: {} }
+      const liveNodeIds = new Set<NodeId>()
+      const graph = fromPartial<LGraph>({
+        getNodeById: (id: NodeId) => (liveNodeIds.has(id) ? {} : null)
       })
       const { unmount } = mountFollower('wf-1', true, () => graph, {
         onMaterialized
       })
-      let nodes: Record<string, unknown> = {}
-      bridge().follower.doc = {
-        getMap: () => ({ toJSON: () => nodes })
-      }
-      const source = new Y.Doc()
-      source.getMap('nodes').set('3', { type: 'KSampler' })
 
+      projectionState.applyFrame.mockReturnValueOnce(
+        projectionState.applied([], { added: ['3'], removed: [] })
+      )
       dispatchFrame('doc_update', {
         workflowId: 'wf-1',
         seq: 5,
         actor: 'agent:thread:turn',
-        catchUp: false,
-        update: Y.encodeStateAsUpdate(source)
+        catchUp: false
       })
       expect(onMaterialized).not.toHaveBeenCalled()
 
-      nodes = { '3': {} }
-      materializerState.reconcileAgentAdapters.mockReturnValue([toNodeId(3)])
+      liveNodeIds.add(toNodeId(3))
+      projectionState.applyFrame.mockReturnValueOnce(
+        projectionState.applied([toNodeId(3)])
+      )
       dispatchFrame('doc_update', {
         workflowId: 'wf-1',
         seq: 4,
         actor: 'host:catch-up',
-        catchUp: true,
-        update: new Uint8Array()
+        catchUp: true
       })
 
       expect(onMaterialized).toHaveBeenCalledExactlyOnceWith({
@@ -1289,30 +1132,26 @@ describe('useAgentCrdtFollower', () => {
 
     it('does not attribute a human recreation after a pending node was deleted', () => {
       const onMaterialized = vi.fn()
-      const graph = shallowRef<MaterializableGraph | null>(null)
-      const readyGraph = fromPartial<MaterializableGraph>({
-        ...fakeGraph,
-        _nodes_by_id: { [toNodeId(3)]: {} }
+      const graph = shallowRef<LGraph | null>(null)
+      const readyGraph = fromPartial<LGraph>({
+        getNodeById: (id: NodeId) => (id === toNodeId(3) ? {} : null)
       })
-      let nodes: Record<string, unknown> = {}
       const { unmount } = mountFollower('wf-1', true, () => graph.value, {
         onMaterialized
       })
-      bridge().follower.doc = {
-        getMap: () => ({ toJSON: () => nodes })
-      }
 
-      const source = new Y.Doc()
-      source.getMap('nodes').set('3', { type: 'KSampler' })
+      projectionState.applyFrame.mockReturnValueOnce(
+        projectionState.notApplied({ added: ['3'], removed: [] })
+      )
       dispatchFrame('doc_update', {
         workflowId: 'wf-1',
         seq: 9,
         actor: 'agent:thread:turn',
-        catchUp: false,
-        update: Y.encodeStateAsUpdate(source)
+        catchUp: false
       })
-      // The add never enters the observable document set because projection is
-      // still waiting on a dependency; a later delete must still retire it.
+      projectionState.applyFrame.mockReturnValueOnce(
+        projectionState.notApplied({ added: [], removed: ['3'] })
+      )
       dispatchFrame('doc_update', {
         workflowId: 'wf-1',
         seq: 10,
@@ -1321,8 +1160,9 @@ describe('useAgentCrdtFollower', () => {
       })
 
       graph.value = readyGraph
-      nodes = { '3': {} }
-      materializerState.reconcileAgentAdapters.mockReturnValue([toNodeId(3)])
+      projectionState.applyFrame.mockReturnValueOnce(
+        projectionState.applied([toNodeId(3)], { added: ['3'], removed: [] })
+      )
       dispatchFrame('doc_update', {
         workflowId: 'wf-1',
         seq: 11,
@@ -1340,7 +1180,7 @@ describe('useAgentCrdtFollower', () => {
 
     expect(bridge().subscribe).not.toHaveBeenCalled()
     dispatchFrame('doc_update', { workflowId: 'wf-a', seq: 7 })
-    expect(adapterState.applyFrame).not.toHaveBeenCalled()
+    expect(projectionState.applyFrame).not.toHaveBeenCalled()
 
     isTargetActive.value = true
     await nextTick()
@@ -1348,7 +1188,7 @@ describe('useAgentCrdtFollower', () => {
 
     const catchUp = { workflowId: 'wf-a', seq: 8 }
     dispatchFrame('doc_update', catchUp)
-    expect(adapterState.applyFrame).toHaveBeenCalledWith(catchUp)
+    expect(projectionState.applyFrame).toHaveBeenCalledWith(catchUp)
     unmount()
   })
 
@@ -1359,10 +1199,7 @@ describe('useAgentCrdtFollower', () => {
     >['enqueueHumanOperations']
     const host = defineComponent({
       setup() {
-        const { enqueueHumanOperations } = useAgentCrdtFollower(
-          workflowId,
-          graphMutations
-        )
+        const { enqueueHumanOperations } = useAgentCrdtFollower(workflowId)
         enqueue = enqueueHumanOperations
         return () => null
       }
@@ -1386,6 +1223,98 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('reverts only the ops the host rejected from a human batch', async () => {
+    const { unmount, enqueue } = mountFollower('wf-1')
+    enqueue([
+      { op: 'set_widget', node_id: '2', widget: 'steps', value: 3 },
+      { op: 'delete_node', node_id: '1', removed_links: [] }
+    ])
+    await Promise.resolve()
+    const [, , ops] = clientState.sendOps.mock.calls[0]
+
+    dispatchFrame('doc_ops_result', {
+      workflowId: 'wf-1',
+      ok: false,
+      applied: [ops[0].op_id],
+      skipped: [],
+      failed: { index: 1, op_id: ops[1].op_id, code: 'unknown_node' }
+    })
+
+    expect(projectionState.revertRejected).toHaveBeenCalledExactlyOnceWith(
+      'wf-1',
+      [ops[1]]
+    )
+    expect(projectionState.applyCollected).not.toHaveBeenCalled()
+    expect(telemetryState.reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'agent_crdt_human_ops_rejected',
+        context: expect.objectContaining({
+          opId: ops[1].op_id,
+          code: 'unknown_node'
+        })
+      })
+    )
+    unmount()
+  })
+
+  describe('own-actor echo', () => {
+    async function mountAndSendOneOp(): Promise<{
+      unmount: () => void
+      status: () => AgentCrdtStatus
+      ownActor: string
+    }> {
+      const { unmount, status, enqueue } = mountFollower('wf-1')
+      enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+      await Promise.resolve()
+      const [, , ops] = clientState.sendOps.mock.calls[0]
+      return { unmount, status, ownActor: ops[0].actor }
+    }
+
+    it('merges the echo of this tab’s own ops without applying it to the graph', async () => {
+      const { unmount, status, ownActor } = await mountAndSendOneOp()
+      expect(ownActor).toMatch(/^human:anonymous:/)
+
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 42,
+        actor: ownActor,
+        catchUp: false
+      })
+
+      expect(projectionState.applyFrame).not.toHaveBeenCalled()
+      expect(projectionState.discardPending).toHaveBeenCalledExactlyOnceWith(
+        'wf-1'
+      )
+      expect(status().outcomes).toMatchObject({
+        received: 1,
+        applied: 0,
+        skipped: 1
+      })
+      unmount()
+    })
+
+    it.for([
+      {
+        name: 'another tab of the same user',
+        frame: () => ({ actor: 'human:anonymous:other-tab', catchUp: false })
+      },
+      {
+        name: 'a catch-up frame last written by this tab',
+        frame: (ownActor: string) => ({ actor: ownActor, catchUp: true })
+      }
+    ])('still applies $name', async ({ frame }) => {
+      const { unmount, ownActor } = await mountAndSendOneOp()
+      const update = { workflowId: 'wf-1', seq: 42, ...frame(ownActor) }
+
+      dispatchFrame('doc_update', update)
+
+      expect(projectionState.applyFrame).toHaveBeenCalledExactlyOnceWith(update)
+      expect(projectionState.discardPending).not.toHaveBeenCalled()
+      unmount()
+    })
+  })
+
   it('a refused subscription settles the transmitted in-flight batch unconfirmed at the resend instead of reaching the client', async () => {
     vi.useFakeTimers()
     const { recordDevEvent } = await import('./devPanelLog')
@@ -1395,10 +1324,7 @@ describe('useAgentCrdtFollower', () => {
     >['enqueueHumanOperations']
     const host = defineComponent({
       setup() {
-        const { enqueueHumanOperations } = useAgentCrdtFollower(
-          workflowId,
-          graphMutations
-        )
+        const { enqueueHumanOperations } = useAgentCrdtFollower(workflowId)
         enqueue = enqueueHumanOperations
         return () => null
       }
@@ -1433,10 +1359,7 @@ describe('useAgentCrdtFollower', () => {
     >['enqueueHumanOperations']
     const host = defineComponent({
       setup() {
-        const { enqueueHumanOperations } = useAgentCrdtFollower(
-          workflowId,
-          graphMutations
-        )
+        const { enqueueHumanOperations } = useAgentCrdtFollower(workflowId)
         enqueue = enqueueHumanOperations
         return () => null
       }
@@ -1472,10 +1395,7 @@ describe('useAgentCrdtFollower', () => {
     >['enqueueHumanOperations']
     const host = defineComponent({
       setup() {
-        const { enqueueHumanOperations } = useAgentCrdtFollower(
-          workflowId,
-          graphMutations
-        )
+        const { enqueueHumanOperations } = useAgentCrdtFollower(workflowId)
         enqueue = enqueueHumanOperations
         return () => null
       }
@@ -1534,10 +1454,7 @@ describe('useAgentCrdtFollower', () => {
     >['enqueueHumanOperations']
     const host = defineComponent({
       setup() {
-        const { enqueueHumanOperations } = useAgentCrdtFollower(
-          workflowId,
-          graphMutations
-        )
+        const { enqueueHumanOperations } = useAgentCrdtFollower(workflowId)
         enqueue = enqueueHumanOperations
         return () => null
       }
@@ -1645,7 +1562,6 @@ describe('useAgentCrdtFollower', () => {
         setup() {
           const { enqueueHumanOperations } = useAgentCrdtFollower(
             workflowId,
-            graphMutations,
             () => null,
             isTargetActive
           )
@@ -1692,6 +1608,27 @@ describe('useAgentCrdtFollower', () => {
       clientState.sendOps.mockClear()
       const { recordDevEvent } = await import('./devPanelLog')
       vi.mocked(recordDevEvent).mockClear()
+    })
+
+    it('notes a local widget write with the projection on enqueue and settles it when the host answers', async () => {
+      const { unmount, enqueue } = mountWriter('wf-1')
+      const setWidget = {
+        op: 'set_widget' as const,
+        node_id: '1',
+        widget: 'text',
+        value: 'hello'
+      }
+      enqueue([setWidget])
+      expect(projectionState.noteLocalWrites).toHaveBeenCalledWith([setWidget])
+      expect(projectionState.settleLocalWrites).not.toHaveBeenCalled()
+
+      await Promise.resolve()
+      ackSent(0)
+
+      expect(projectionState.settleLocalWrites).toHaveBeenCalledWith([
+        expect.objectContaining(setWidget)
+      ])
+      unmount()
     })
 
     it('holds the queued batch when the bound workflow tab goes inactive instead of settling it undeliverable', async () => {
@@ -1808,26 +1745,6 @@ describe('useAgentCrdtFollower', () => {
         expect.any(String),
         [expect.objectContaining({ op: 'delete_node', node_id: '2' })]
       )
-      unmount()
-    })
-
-    it('keeps a human delete pending for the reconcile until the doc no longer holds the node', async () => {
-      const { unmount, enqueue } = mountWriter('wf-1')
-      const intent = adapterState.intent!
-      let docNodes: Record<string, unknown> = { '1': {} }
-      bridge().follower.doc.getMap = () => ({ toJSON: () => docNodes })
-
-      enqueue([deleteNode('1')])
-      expect([...intent.pendingDeletes('wf-1')]).toEqual(['1'])
-      expect([...intent.pendingDeletes('wf-2')]).toEqual([])
-
-      await Promise.resolve()
-      ackSent(0)
-      expect(await settledStates()).toEqual(['acknowledged'])
-      expect([...intent.pendingDeletes('wf-1')]).toEqual(['1'])
-
-      docNodes = {}
-      expect([...intent.pendingDeletes('wf-1')]).toEqual([])
       unmount()
     })
 
@@ -1999,7 +1916,7 @@ describe('useAgentCrdtFollower', () => {
     const workflowId = ref<string | null>('wf-1')
     const host = defineComponent({
       setup() {
-        useAgentCrdtFollower(workflowId, graphMutations)
+        useAgentCrdtFollower(workflowId)
         return () => null
       }
     })
@@ -2029,7 +1946,7 @@ describe('useAgentCrdtFollower', () => {
       listenerFailure,
       clientFailure
     ])
-    expect(adapterState.destroy).toHaveBeenCalled()
+    expect(projectionState.destroy).toHaveBeenCalled()
     expect(bridge().destroy).toHaveBeenCalled()
     expect(clientState.destroy).toHaveBeenCalled()
     expect(apiState.api.removeEventListener).toHaveBeenCalledWith(

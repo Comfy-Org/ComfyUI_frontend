@@ -4,7 +4,6 @@ import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { LayoutChange } from '@/renderer/core/layout/types'
 import { toNodeId } from '@/types/nodeId'
-import type { UUID } from '@/utils/uuid'
 
 import {
   attachNodeLayout,
@@ -55,13 +54,9 @@ describe('node layout attachment ownership', () => {
     ).toEqual({ x: 60, y: 70 })
   })
 
-  it('carries the direct owner graph on interior node create and delete', async () => {
+  it('scopes interior node create and delete to the root graph', async () => {
     const root = new LGraph()
-    const interiorId: UUID = '00000000-0000-4000-8000-000000000001'
-    const interior = {
-      id: interiorId,
-      rootGraph: root
-    }
+    const interior = { rootGraph: root }
     const node = nodeFor(root, 'interior-node')
     const changes: LayoutChange[] = []
     const detach = layoutStore.onChange((change) => changes.push(change))
@@ -75,25 +70,19 @@ describe('node layout attachment ownership', () => {
       {
         type: 'createNode',
         graphId: root.id,
-        ownerGraphId: interior.id,
         nodeId: node.id
       },
       {
         type: 'deleteNode',
         graphId: root.id,
-        ownerGraphId: interior.id,
         nodeId: node.id
       }
     ])
   })
 
-  it('carries the direct owner graph when a released subgraph is bulk-detached', async () => {
+  it('scopes a bulk-detached interior node delete to the root graph', async () => {
     const root = new LGraph()
-    const interiorId: UUID = '00000000-0000-4000-8000-000000000001'
-    const interior = {
-      id: interiorId,
-      rootGraph: root
-    }
+    const interior = { rootGraph: root }
     const node = nodeFor(root, 'interior-node')
     attachNodeLayout(interior, node)
 
@@ -114,7 +103,6 @@ describe('node layout attachment ownership', () => {
       {
         type: 'deleteNode',
         graphId: root.id,
-        ownerGraphId: interior.id,
         nodeId: node.id
       }
     ])

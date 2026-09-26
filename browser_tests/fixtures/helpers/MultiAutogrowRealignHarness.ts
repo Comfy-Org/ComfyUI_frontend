@@ -31,6 +31,7 @@ import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { mockSavedWorkflowPersistence } from '@e2e/fixtures/utils/savedWorkflowPersistence'
+import { loadSeedIntoActiveTab } from '@e2e/fixtures/utils/seedActiveTab'
 import {
   CONNECTED_SOCKET_SLOTS,
   EXPECTED_TARGETS,
@@ -262,6 +263,7 @@ export class MultiAutogrowRealignHarness {
   }
 
   async targetActiveWorkflow(): Promise<void> {
+    await loadSeedIntoActiveTab(this.page, seed)
     await this.agentPanel.open()
     await this.agentPanel.selectWorkflow()
   }
