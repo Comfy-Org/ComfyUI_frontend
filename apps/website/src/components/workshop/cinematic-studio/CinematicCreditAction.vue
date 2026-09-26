@@ -1,8 +1,13 @@
 <script setup lang="ts">
+import { computed, ref, watch } from 'vue'
+
 import Button from '@/components/ui/button/Button.vue'
 import { usePersonalWorkspaceSwitch } from '../../../composables/usePersonalWorkspaceSwitch'
 import { requestWorkshopBuyCredits } from '../../../config/workshop-buy-credits'
-import { useTopUpWatch } from '../../../config/workshop-credits'
+import {
+  useTopUpWatch,
+  useWorkshopCredits
+} from '../../../config/workshop-credits'
 import type { Locale } from '../../../i18n/translations'
 import { t } from '../../../i18n/translations'
 
@@ -20,12 +25,28 @@ const emit = defineEmits<{ retry: [] }>()
 
 const topUp = useTopUpWatch()
 const personal = usePersonalWorkspaceSwitch()
+const { balance } = useWorkshopCredits()
+
+const credits = computed(() =>
+  balance.value.status === 'ok' ? balance.value.credits : undefined
+)
+const creditsWhenSkipped = ref(credits.value)
+watch(credits, (value) => {
+  creditsWhenSkipped.value ??= value
+})
+const canRetry = computed(
+  () =>
+    topUp.value.status === 'landed' ||
+    (credits.value !== undefined &&
+      creditsWhenSkipped.value !== undefined &&
+      credits.value > creditsWhenSkipped.value)
+)
 </script>
 
 <template>
   <span class="inline-flex flex-col items-center gap-1.5">
     <Button
-      v-if="topUp.status === 'landed'"
+      v-if="canRetry"
       size="sm"
       class="rounded-full"
       @click="emit('retry')"

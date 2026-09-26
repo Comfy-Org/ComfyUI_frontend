@@ -904,6 +904,30 @@ describe('CinematicStudio', () => {
       await vi.waitFor(() => expect(router_render).toHaveBeenCalledTimes(5))
       expect(screen.queryByTestId('cinematic-credit-summary')).toBeNull()
     })
+
+    it('offers the skipped takes again once the balance rises another way', async () => {
+      const amount = ref(5)
+      useWorkshopCredits().balance = computed(() => ({
+        status: 'ok' as const,
+        credits: amount.value
+      }))
+      vi.mocked(router_render)
+        .mockRejectedValueOnce(new WorkshopRouterError('noCredits'))
+        .mockImplementation(async (slug) => rendered(slug))
+      const user = renderStudio()
+      await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+      await shootTakes(user, 2)
+      await user.click(generateButton())
+
+      const summary = await screen.findByTestId('cinematic-credit-summary')
+      const retry = { name: tc('cinematic.credits.retrySkipped') }
+      expect(within(summary).queryByRole('button', retry)).toBeNull()
+
+      amount.value = 500
+      await user.click(await within(summary).findByRole('button', retry))
+
+      await vi.waitFor(() => expect(router_render).toHaveBeenCalledTimes(3))
+    })
   })
 
   describe('layout switch', () => {
