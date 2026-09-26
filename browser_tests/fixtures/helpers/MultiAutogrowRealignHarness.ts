@@ -85,6 +85,7 @@ export class MultiAutogrowRealignHarness {
   readonly agentPanel: AgentPanel
 
   readonly panel: Locator
+  readonly sourceNode: Locator
   readonly targetNode: Locator
   readonly promptField: Locator
   readonly widthInput: Locator
@@ -114,6 +115,7 @@ export class MultiAutogrowRealignHarness {
     this.agentPanel = new AgentPanel(page)
 
     this.panel = this.agentPanel.root
+    this.sourceNode = this.vueNodes.getNodeLocator(String(SOURCE_NODE_ID))
     this.targetNode = this.vueNodes.getNodeLocator(TARGET_ID)
     this.promptField = this.targetNode.getByRole('textbox', { name: 'prompt' })
     this.widthInput = this.vueNodes.getInputNumberControls(
@@ -341,17 +343,20 @@ export class MultiAutogrowRealignHarness {
   async submitAndReadTargetInputs(): Promise<
     ComfyApiWorkflow[string]['inputs']
   > {
+    const submittedPrompt = await this.submitAndReadPrompt()
+    if (!(TARGET_ID in submittedPrompt)) {
+      throw new Error(`Submitted prompt has no node ${TARGET_ID}`)
+    }
+    return submittedPrompt[TARGET_ID].inputs
+  }
+
+  async submitAndReadPrompt(): Promise<ComfyApiWorkflow> {
     this.submittedPrompt = undefined
     await this.page
       .getByRole('button', { name: enMessages.menu.run, exact: true })
       .click()
     await expect.poll(() => this.submittedPrompt !== undefined).toBe(true)
-    const submittedPrompt = this.requireSubmittedPrompt()
-    if (!(TARGET_ID in submittedPrompt)) {
-      throw new Error(`Submitted prompt has no node ${TARGET_ID}`)
-    }
-    const target = submittedPrompt[TARGET_ID]
-    return target.inputs
+    return this.requireSubmittedPrompt()
   }
 
   async expectSubmittedValuesNamedCorrectly(

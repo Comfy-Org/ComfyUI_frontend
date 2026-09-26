@@ -7,6 +7,10 @@ import {
   SENTINEL_WIDTH,
   multiAutogrowRealignTest as test
 } from '@e2e/fixtures/multiAutogrowRealignFixture'
+import {
+  SOURCE_NODE_ID,
+  TARGET_ID
+} from '@e2e/fixtures/data/agent/agentCrdtMultiAutogrowRealignFixture'
 
 test.describe(
   'Agent CRDT multi-autogrow link realignment',
@@ -65,6 +69,19 @@ test.describe(
         await realign.expectSentinelWidgetValues(CORRUPTED_PROMPT)
         await realign.expectSubmittedValuesNamedCorrectly(CORRUPTED_PROMPT)
       })
+    })
+
+    test('queues every connected node that is visible on the canvas', async ({
+      realign
+    }) => {
+      await expect(realign.sourceNode).toBeVisible()
+      await expect(realign.targetNode).toBeVisible()
+
+      const submittedPrompt = await realign.submitAndReadPrompt()
+      expect(Object.keys(submittedPrompt).sort()).toEqual([
+        String(SOURCE_NODE_ID),
+        TARGET_ID
+      ])
     })
   }
 )
