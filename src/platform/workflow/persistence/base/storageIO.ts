@@ -32,6 +32,7 @@ let workflowStorageState: WorkflowStorageState = {
   availability: 'available'
 }
 const pendingPersistenceFlushes = new Set<() => void>()
+const pendingPersistenceCancels = new Set<() => void>()
 
 export function registerWorkflowPersistenceFlush(
   flush: () => void
@@ -40,12 +41,39 @@ export function registerWorkflowPersistenceFlush(
   return () => pendingPersistenceFlushes.delete(flush)
 }
 
+/**
+ * Registers the counterpart to a flush: everything a live persistence owner has
+ * queued that must be abandoned rather than committed. A workspace transition
+ * flushes, because those writes belong to the workspace being left; a logout
+ * cancels, because they belong to a user who is no longer here.
+ *
+ * Owners register instead of exporting a cancel because
+ * `useWorkflowPersistenceV2()` returns a fresh closure per call, so a cancel
+ * reached through a second call would cancel a debounce nobody is waiting on.
+ */
+export function registerWorkflowPersistenceCancel(
+  cancel: () => void
+): () => void {
+  pendingPersistenceCancels.add(cancel)
+  return () => pendingPersistenceCancels.delete(cancel)
+}
+
 function flushPendingWorkflowPersistence(): void {
   for (const flush of pendingPersistenceFlushes) {
     try {
       flush()
     } catch (error) {
       console.warn('Failed to flush pending workflow persistence', error)
+    }
+  }
+}
+
+function cancelPendingWorkflowPersistence(): void {
+  for (const cancel of pendingPersistenceCancels) {
+    try {
+      cancel()
+    } catch (error) {
+      console.warn('Failed to cancel pending workflow persistence', error)
     }
   }
 }
@@ -541,6 +569,12 @@ export function prepareWorkflowWorkspaceTransition(): () => void {
 }
 
 export function prepareWorkflowLogoutTransition(): void {
+  // Cancel before fencing, not after. The fence alone is not enough: it is
+  // released when workspace initialization concludes, and a readiness watcher
+  // installed before the sign-out is still live and can conclude afterwards.
+  // Once it releases, the `pagehide` that logout's own navigation fires would
+  // flush the departed user's workflow into fresh storage.
+  cancelPendingWorkflowPersistence()
   workflowStorageState = {
     status: 'transitioning',
     reason: 'logout',
