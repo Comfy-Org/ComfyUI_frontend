@@ -2,11 +2,9 @@ import cloneDeep from 'es-toolkit/compat/cloneDeep'
 import { addBreadcrumb } from '@sentry/vue'
 import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { t } from '@/i18n'
-import type {
-  IContextMenuValue,
-  INodeInputSlot
-} from '@/lib/litegraph/src/litegraph'
+import type { IContextMenuValue } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { PromotionAwareInputSlot } from '@/lib/litegraph/src/node/slotUtils'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { LinkId } from '@/types/linkId'
 import { reorderSubgraphInputs } from '@/lib/litegraph/src/subgraph/subgraphUtils'
@@ -32,7 +30,7 @@ import { widgetId } from '@/types/widgetId'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 type PartialNode = Pick<LGraphNode, 'title' | 'id' | 'type'>
-type FallbackSourceSlot = INodeInputSlot & { _createdByPromotion?: boolean }
+
 type RuntimeWidget = Omit<IBaseWidget, 'options'> &
   Partial<Pick<IBaseWidget, 'options'>>
 
@@ -304,7 +302,7 @@ export function promoteValueWidgetViaSubgraphInput(
         ?.type ?? '*',
       { widget: { name: sourceWidgetName } }
     )
-    ;(fallbackSlot as FallbackSourceSlot)._createdByPromotion = true
+    ;(fallbackSlot as PromotionAwareInputSlot)._createdByPromotion = true
     sourceSlot = fallbackSlot
     createdSourceSlot = true
   }
@@ -509,7 +507,10 @@ export function demoteWidget(
   }
   if (node instanceof LGraphNode) {
     const sourceSlot = node.getSlotFromWidget(widget)
-    if (sourceSlot && (sourceSlot as FallbackSourceSlot)._createdByPromotion) {
+    if (
+      sourceSlot &&
+      (sourceSlot as PromotionAwareInputSlot)._createdByPromotion
+    ) {
       const slotIndex = node.inputs.indexOf(sourceSlot)
       // The backend node does not declare this input; keep it only while
       // another promotion still links it.

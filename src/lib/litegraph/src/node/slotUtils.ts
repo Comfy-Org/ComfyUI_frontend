@@ -58,7 +58,7 @@ function shallowCloneCommonProps(slot: CommonIoSlotProps): CommonIoSlotProps {
   }
 }
 
-type PromotionAwareInputSlot = INodeInputSlot & {
+export type PromotionAwareInputSlot = INodeInputSlot & {
   _createdByPromotion?: boolean
 }
 
