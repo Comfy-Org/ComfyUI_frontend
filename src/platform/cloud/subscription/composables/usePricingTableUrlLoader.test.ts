@@ -135,6 +135,60 @@ describe('usePricingTableUrlLoader', () => {
     expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
   })
 
+  it('rechecks permission after capabilities initialize', async () => {
+    mockRouteQuery.value = { pricing: 'team' }
+    vi.mocked(useBillingCapabilities().initialize).mockImplementation(
+      async () => {
+        mockPermissions.value = { canManageSubscription: false }
+      }
+    )
+
+    const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
+    await loadPricingTableFromUrl()
+
+    expect(
+      vi.mocked(useBillingCapabilities().initialize)
+    ).toHaveBeenCalledOnce()
+    expect(vi.mocked(useBillingContext().fetchPlans)).not.toHaveBeenCalled()
+    expect(mockShowPricingTable).not.toHaveBeenCalled()
+  })
+
+  it('rechecks the capability after plans load, catching a workspace switch', async () => {
+    mockRouteQuery.value = {
+      pricing: 'team',
+      stop: 'team_700',
+      cycle: 'monthly'
+    }
+    mockTeamCreditStops.value = null
+    vi.mocked(useBillingContext().fetchPlans).mockImplementation(async () => {
+      mockCanOpenPricingSurface.value = false
+    })
+
+    const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
+    await loadPricingTableFromUrl()
+
+    expect(vi.mocked(useBillingContext().fetchPlans)).toHaveBeenCalledOnce()
+    expect(mockShowPricingTable).not.toHaveBeenCalled()
+  })
+
+  it('rechecks the capability when it flips while plans load', async () => {
+    mockRouteQuery.value = {
+      pricing: 'team',
+      stop: 'team_700',
+      cycle: 'monthly'
+    }
+    mockTeamCreditStops.value = null
+    vi.mocked(useBillingContext().fetchPlans).mockImplementation(async () => {
+      mockCanOpenPricingSurface.value = false
+      mockTeamCreditStops.value = TEAM_CREDIT_STOPS
+    })
+
+    const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
+    await loadPricingTableFromUrl()
+
+    expect(mockShowPricingTable).not.toHaveBeenCalled()
+  })
+
   it('opens on the team tab for ?pricing=team', async () => {
     setRouteQuery({ pricing: 'team' })
 

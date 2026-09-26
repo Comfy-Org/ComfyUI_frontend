@@ -109,7 +109,11 @@
 
       <!-- Credits Refill (immediate changes) -->
       <div v-if="isImmediate" class="flex flex-col gap-2 pt-10">
-        <div class="flex items-center justify-between">
+        <div
+          role="group"
+          :aria-label="refillLabel"
+          class="flex items-center justify-between"
+        >
           <span class="text-base-foreground">{{ refillLabel }}</span>
           <div class="flex items-center gap-1">
             <i class="icon-[lucide--coins] size-4 shrink-0 bg-credit" />
