@@ -30,11 +30,13 @@ function decideAccountSource(): Promise<WorkshopAccountSource> {
           decide('firebase')
           return undefined
         }
-        return import('./workshop-web-session-identity')
+        return import('./workshop-web-session-identity').then(
+          ({ bootWorkshopWebSession }) => bootWorkshopWebSession
+        )
       })
-      .then((session) => {
-        if (!session || capped) return
-        stop = session.bootWorkshopWebSession(decide)
+      .then((boot) => {
+        if (!boot || capped) return
+        stop = boot(decide)
       })
   })
 }
