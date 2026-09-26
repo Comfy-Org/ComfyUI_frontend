@@ -2258,6 +2258,10 @@ Enterprise`
     en: 'Run up to 5 concurrent workflows via Cloud API',
     'zh-CN': '通过 Cloud API 最多并发运行 5 个工作流'
   },
+  'pricing.feature.apiConcurrency25': {
+    en: 'Run up to 25 concurrent workflows via Cloud API',
+    'zh-CN': '通过 Cloud API 最多并发运行 25 个工作流'
+  },
   'pricing.feature.addCredits': {
     en: 'Add more credits anytime',
     'zh-CN': '可随时增加积分'
