@@ -1726,6 +1726,40 @@ describe('AgentPanelRoot attach flow', () => {
     expect(screen.getByRole('button', { name: 'cat.png' })).toBeInTheDocument()
   })
 
+  // The whole point of client_message_id is that the analytics event and the turn
+  // POST carry the SAME value: the server echoes the posted one onto
+  // agent_turn_started, and the funnel joins that to the value on
+  // app:agent_message_sent. If the two ever diverge the join returns zero rows and
+  // nothing else breaks, so neither side's own test would catch it - only this one.
+  it('posts the same client_message_id it reports, so message and turn can be joined', async () => {
+    const messageBodies: Record<string, unknown>[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_url: string, init?: RequestInit) => {
+        messageBodies.push(
+          JSON.parse(String(init?.body)) as Record<string, unknown>
+        )
+        return json(202, { thread_id: 'th-1', message_id: 'm-1' })
+      })
+    )
+
+    renderWithSelectedTarget()
+    await screen.findByRole('textbox')
+    telemetry.trackAgentMessageSent.mockClear()
+
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('make me a workflow')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    expect(messageBodies).toHaveLength(1)
+    const posted = messageBodies[0].client_message_id
+    expect(posted).toBeTypeOf('string')
+    expect(posted).not.toBe('')
+    expect(telemetry.trackAgentMessageSent).toHaveBeenCalledWith(
+      expect.objectContaining({ client_message_id: posted })
+    )
+  })
+
   it('uses the submitted filename when the upload response omits a name', async () => {
     const messageBodies: unknown[] = []
     vi.stubGlobal(
