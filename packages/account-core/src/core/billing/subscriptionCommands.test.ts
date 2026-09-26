@@ -1273,29 +1273,34 @@ describe('createBillingCommands', () => {
   })
 
   describe('through the lifecycle', () => {
-    it("resumes the backend's pending subscription instead of issuing a second checkout", async () => {
-      const h = harness({
-        status: {
-          ...FREE,
-          pending_billing_op_id: 'op-1',
-          pending_billing_op_type: 'subscription',
-          action_url: 'https://checkout.example/pay'
-        },
-        script: { [GET_OP]: settledOk }
-      })
+    // The pending operation carries no plan, so joining it would settle a plan
+    // the caller never asked for and report it as this subscribe's success.
+    it.for([
+      ['offering a hosted action', 'https://checkout.example/pay'],
+      ['offering none yet', undefined]
+    ] as const)(
+      'refuses a subscribe over a pending operation it did not issue, %s',
+      async ([, actionUrl]) => {
+        const h = harness({
+          status: {
+            ...FREE,
+            pending_billing_op_id: 'op-1',
+            pending_billing_op_type: 'subscription',
+            ...(actionUrl === undefined ? {} : { action_url: actionUrl })
+          },
+          script: { [GET_OP]: settledOk }
+        })
 
-      const result = await h.commands.subscribe(PLAN)
+        const result = await h.commands.subscribe(PLAN)
 
-      assert(result.status === 'ok')
-      expect(result.value).toMatchObject({
-        phase: 'succeeded',
-        operation: { id: 'op-1' }
-      })
-      // No subscribe response was read, so there is no status to carry out.
-      expect(result.value.issuedStatus).toBeUndefined()
-      expect(h.posts()).toEqual([])
-      expect(h.invalidate).toHaveBeenCalledOnce()
-    })
+        expect(result).toEqual({
+          status: 'error',
+          code: 'OPERATION_ALREADY_PENDING'
+        })
+        expect(h.posts()).toEqual([])
+        expect(h.invalidate).not.toHaveBeenCalled()
+      }
+    )
 
     it('settles as timed_out when the poll budget runs out', async () => {
       const h = harness({

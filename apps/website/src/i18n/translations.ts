@@ -9563,6 +9563,7 @@ Enterprise`
   // Workshop – header account + nav
   'nav.workshop': { en: 'Models', 'zh-CN': '模型' },
   'nav.comfyWorkshop': { en: 'Browse Models', 'zh-CN': '浏览模型' },
+  'nav.cinematicStudio': { en: 'Cinematic Studio', 'zh-CN': '电影工作室' },
   'nav.signIn': { en: 'Sign in', 'zh-CN': '登录' },
   'nav.signOut': { en: 'Log out', 'zh-CN': '退出登录' },
   'nav.accountMenu': { en: 'Account menu', 'zh-CN': '账户菜单' },
@@ -10242,6 +10243,25 @@ Enterprise`
     en: 'Stay in this workspace',
     'zh-CN': '留在此工作区'
   },
+  'workshop.run.savedTitle': {
+    en: 'Leave and stop the generation?',
+    'zh-CN': '离开并停止这次生成？'
+  },
+  'workshop.run.savedBody': {
+    en: 'You will not see the result on this page. Left running, it keeps spending credits until it finishes, and lands in your assets.',
+    'zh-CN':
+      '你不会在这个页面看到结果。若让它继续，它会一直消耗积分直到完成，结果会保存到你的素材中。'
+  },
+  'workshop.run.savedAssets': {
+    en: 'Open your assets',
+    'zh-CN': '打开你的素材'
+  },
+  'workshop.run.savedStay': { en: 'Stay on this page', 'zh-CN': '留在此页面' },
+  'workshop.run.savedLeave': { en: 'Leave and stop', 'zh-CN': '离开并停止' },
+  'workshop.run.savedKeep': {
+    en: 'Leave it running',
+    'zh-CN': '让它继续运行'
+  },
   'workshop.run.switchAnyway': {
     en: 'Switch and cancel',
     'zh-CN': '切换并取消'
@@ -10809,6 +10829,36 @@ Enterprise`
   'workshop.hub.models': { en: 'Model', 'zh-CN': '模型' },
   'workshop.hub.categories': { en: 'CATEGORIES', 'zh-CN': '分类' },
   'workshop.hub.docs': { en: 'Read docs', 'zh-CN': '阅读文档' },
+
+  'workshop.assets.title': { en: 'Your assets', 'zh-CN': '你的素材' },
+  'workshop.assets.seeAll': {
+    en: 'See all in Cloud',
+    'zh-CN': '在云端查看全部'
+  },
+  'workshop.assets.open': {
+    en: 'Open saved asset',
+    'zh-CN': '打开已保存的素材'
+  },
+  'workshop.assets.generating': { en: 'Generating…', 'zh-CN': '正在生成…' },
+  'workshop.assets.loadingMedia': {
+    en: 'Loading asset…',
+    'zh-CN': '正在加载素材…'
+  },
+  'workshop.assets.loadError': {
+    en: 'Could not load your assets.',
+    'zh-CN': '无法加载你的素材。'
+  },
+  'workshop.assets.previous': { en: 'Previous asset', 'zh-CN': '上一个素材' },
+  'workshop.assets.next': { en: 'Next asset', 'zh-CN': '下一个素材' },
+  'workshop.assets.go': { en: 'Show asset {n}', 'zh-CN': '显示第 {n} 个素材' },
+  'workshop.assets.notSaved': {
+    en: 'This generation could not be saved to your assets. The result is still on the page until it expires.',
+    'zh-CN': '这次生成未能保存到你的素材。结果在过期前仍然留在页面上。'
+  },
+  'workshop.assets.cancelError': {
+    en: 'Could not request cancellation. Your generation may still be running.',
+    'zh-CN': '无法请求取消。生成可能仍在进行。'
+  },
   'workshop.error.creditsTitle': {
     en: 'Not enough credits',
     'zh-CN': '积分不足'
@@ -10826,6 +10876,17 @@ Enterprise`
     'zh-CN': '在 platform.comfy.org 上为 {workspace} 添加积分'
   },
   'workshop.hub.tryNow': { en: 'Try now', 'zh-CN': '立即试用' },
+  'workshop.cinematic.badge': { en: 'New · Beta', 'zh-CN': '新 · 测试版' },
+  'workshop.cinematic.summary': {
+    en: 'Direct a shot with a real camera, light and grade, then run it on any image model.',
+    'zh-CN':
+      '用真实的摄影机、光线与调色导演一个镜头，然后在任意图像模型上运行。'
+  },
+  'workshop.cinematic.cta': { en: 'Open studio', 'zh-CN': '打开工作室' },
+  'workshop.cinematic.openInStudio': {
+    en: 'Open in Cinematic Studio',
+    'zh-CN': '在 Cinematic Studio 中打开'
+  },
   'workshop.hub.tag.partnerNodes': {
     en: 'Partner Nodes',
     'zh-CN': '合作伙伴节点'

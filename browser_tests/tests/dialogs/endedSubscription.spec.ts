@@ -37,7 +37,7 @@ test.describe('Ended workspace subscription', { tag: '@cloud' }, () => {
       })
     ).toBeVisible()
     await expect(
-      content.getByRole('button', { name: 'Subscribe Now' })
+      content.getByRole('button', { name: 'Subscribe', exact: true })
     ).toBeVisible()
     await expect(
       content.getByRole('heading', { name: 'Standard' })

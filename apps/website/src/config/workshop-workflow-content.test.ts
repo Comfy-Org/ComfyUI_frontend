@@ -1,3 +1,6 @@
+import { existsSync } from 'node:fs'
+import { join } from 'node:path'
+
 import { assert, describe, expect, it } from 'vitest'
 
 import displayJson from '../content/workshop-display.json'
@@ -24,6 +27,7 @@ const source = pages.find((page) => page.slug === 'workflows/change-material')
 if (!source) throw new Error('Missing curated workflow page')
 const page = source
 const workflows = workshopPages.filter((model) => model.routerId === undefined)
+const publicDirectory = join(import.meta.dirname, '../../public')
 
 const partialExamples: Record<string, Record<string, string>> = {
   'workflows/remove-object': { mask: 'required' },
@@ -40,6 +44,21 @@ describe('curated workflow pages', () => {
       expect(validateForm(state.schema, state.values)).toEqual(
         partialExamples[model.slug] ?? {}
       )
+    }
+  )
+
+  it.for(workflows)(
+    'serves the $slug graph files from a website-owned path',
+    (model) => {
+      const detail = getWorkshopPageDetail(model.slug)
+      assert.exists(detail)
+      assert(detail.workflow)
+      const { previewUrl, downloadUrl } = detail.workflow.template ?? {}
+      for (const url of [previewUrl, downloadUrl]) {
+        assert(url)
+        expect(url).toMatch(/^\/workflow-graphs\//)
+        expect(existsSync(join(publicDirectory, url))).toBe(true)
+      }
     }
   )
 
