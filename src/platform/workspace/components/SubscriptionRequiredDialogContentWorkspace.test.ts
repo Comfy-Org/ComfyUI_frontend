@@ -85,6 +85,7 @@ function renderComponent(
   props: {
     onClose?: () => void
     reason?: PaymentIntentSource
+    paymentIntentSource?: PaymentIntentSource
     isPersonal?: boolean
     initialCheckout?: SubscriptionCheckoutSelection
   } = {}
@@ -92,6 +93,7 @@ function renderComponent(
   return render(SubscriptionRequiredDialogContentWorkspace, {
     props: {
       onClose: props.onClose ?? vi.fn(),
+      paymentIntentSource: props.paymentIntentSource,
       ...(props.reason ? { reason: props.reason } : {}),
       ...(props.isPersonal !== undefined
         ? { isPersonal: props.isPersonal }
@@ -150,14 +152,18 @@ describe('SubscriptionRequiredDialogContentWorkspace', () => {
     expect(screen.queryByTestId('transition-preview')).not.toBeInTheDocument()
   })
 
-  it('passes the reason into subscription checkout', () => {
-    renderComponent({ reason: 'out_of_credits' })
+  it('passes the surface, not the copy reason, into subscription checkout', () => {
+    renderComponent({
+      reason: 'out_of_credits',
+      paymentIntentSource: 'agent_paywall'
+    })
 
     expect(mockUseSubscriptionCheckout).toHaveBeenCalledWith(
       expect.any(Function),
-      'out_of_credits',
+      'agent_paywall',
       { tierPlanType: 'team' }
     )
+    expect(screen.getByText('Insufficient Credits')).toBeInTheDocument()
   })
 
   it('marks the legacy Personal table as a personal-plan target', () => {

@@ -41,6 +41,7 @@ import {
   getActiveCheckoutJourney,
   resolveCheckoutAssignment,
   resolveCheckoutJourney,
+  resolveEntrySource,
   toCheckoutJourneyContext
 } from '@/platform/workspace/utils/checkoutJourney'
 import type { CheckoutJourneyRecord } from '@/platform/workspace/utils/checkoutJourney'
@@ -1250,12 +1251,20 @@ export function useSubscriptionCheckout(
     const ownerUid = useAuthStore().userId
     if (!workspaceId || !ownerUid) return null
 
+    const entrySource = resolveEntrySource(paymentIntentSource, 'pricing')
     const resolved = resolveCheckoutJourney({
       actorUid: ownerUid,
       workspaceId,
       entryFlow: currentSubscriptionEntryFlow(),
-      entrySource: 'pricing',
-      intent,
+      entrySource,
+      // Keyed by source as well as tier/cycle, the way the top-up rail keys by
+      // source alone. Resume matches on actor, workspace, flow and intent but
+      // not source, so without this an abandoned `pricing` preview for a plan
+      // would be resumed by an agent-paywall entry for that same plan and keep
+      // reporting `pricing` for the rest of the journey. A journey already
+      // bound to an operation still wins the slot: a non-match falls through
+      // to the bound-journey check below rather than evicting it.
+      intent: `${entrySource}:${intent}`,
       uiMode: embeddedCheckoutEnabled ? 'embedded' : 'hosted',
       assignment: resolveCheckoutAssignment(api.getServerFeatures())
     })

@@ -18,6 +18,8 @@ import type {
   AgentConsentResolvedMetadata,
   AgentConsentShownMetadata,
   AgentEntryButtonClickedMetadata,
+  AgentPaywallCtaMetadata,
+  AgentPaywallShownMetadata,
   AgentMessageSentMetadata,
   AgentMessageFeedbackMetadata,
   AgentNodeTaggedMetadata,
@@ -509,6 +511,14 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
       getCheckoutJourneyTelemetryEventName(event),
       getCheckoutJourneyTelemetryEventPayload(event)
     )
+  }
+
+  trackAgentPaywallShown(metadata: AgentPaywallShownMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_PAYWALL_SHOWN, metadata)
+  }
+
+  trackAgentPaywallCtaClicked(metadata: AgentPaywallCtaMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_PAYWALL_CTA_CLICKED, metadata)
   }
 
   trackRunButton(properties: RunButtonProperties): void {

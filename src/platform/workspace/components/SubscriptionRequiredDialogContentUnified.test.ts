@@ -18,40 +18,45 @@ const mockSelectedTeamStop = ref<Record<string, unknown> | null>(null)
 const mockSelectedSavedPaymentMethodId = ref<string | null>('pm_default')
 const mockSavedPaymentMethods = ref<Record<string, unknown>[]>([])
 
+const mockUseSubscriptionCheckout = vi.hoisted(() => vi.fn())
+
 vi.mock('@/platform/workspace/composables/useSubscriptionCheckout', () => ({
-  useSubscriptionCheckout: () => ({
-    checkoutStep: mockCheckoutStep,
-    isLoadingPreview: ref(false),
-    loadingTier: ref(null),
-    isSubscribing: ref(false),
-    isResubscribing: ref(false),
-    previewData: mockPreviewData,
-    quoteIsCurrent: ref(false),
-    savedPaymentMethods: mockSavedPaymentMethods,
-    selectedSavedPaymentMethodId: mockSelectedSavedPaymentMethodId,
-    selectedTierKey: ref(null),
-    selectedTeamStop: mockSelectedTeamStop,
-    selectedBillingCycle: ref('yearly'),
-    activeCheckoutActionUrl: ref(null),
-    authenticationState: ref(null),
-    authenticationError: ref(null),
-    reconciliationOperationId: ref(null),
-    isPolling: ref(false),
-    isTeamCheckout: computed(() => false),
-    previewVariant: computed(() => mockPreviewVariant.value),
-    handleSubscribeClick: mockHandleSubscribeClick,
-    handleSubscribeTeamClick: mockHandleSubscribeTeamClick,
-    handleBackToPricing: mockHandleBackToPricing,
-    handleSuccessClose: vi.fn(),
-    handleAddCreditCard: vi.fn(),
-    handleConfirmTransition: vi.fn(),
-    handleTeamSubscribe: vi.fn(),
-    handleSubscriptionPayment: vi.fn(),
-    handleTeamSubscriptionPayment: vi.fn(),
-    applyPromotionCode: vi.fn(),
-    invalidateQuote: mockInvalidateQuote,
-    handleResubscribe: vi.fn()
-  })
+  useSubscriptionCheckout: (...args: unknown[]) => {
+    mockUseSubscriptionCheckout(...args)
+    return {
+      checkoutStep: mockCheckoutStep,
+      isLoadingPreview: ref(false),
+      loadingTier: ref(null),
+      isSubscribing: ref(false),
+      isResubscribing: ref(false),
+      previewData: mockPreviewData,
+      quoteIsCurrent: ref(false),
+      savedPaymentMethods: mockSavedPaymentMethods,
+      selectedSavedPaymentMethodId: mockSelectedSavedPaymentMethodId,
+      selectedTierKey: ref(null),
+      selectedTeamStop: mockSelectedTeamStop,
+      selectedBillingCycle: ref('yearly'),
+      activeCheckoutActionUrl: ref(null),
+      authenticationState: ref(null),
+      authenticationError: ref(null),
+      reconciliationOperationId: ref(null),
+      isPolling: ref(false),
+      isTeamCheckout: computed(() => false),
+      previewVariant: computed(() => mockPreviewVariant.value),
+      handleSubscribeClick: mockHandleSubscribeClick,
+      handleSubscribeTeamClick: mockHandleSubscribeTeamClick,
+      handleBackToPricing: mockHandleBackToPricing,
+      handleSuccessClose: vi.fn(),
+      handleAddCreditCard: vi.fn(),
+      handleConfirmTransition: vi.fn(),
+      handleTeamSubscribe: vi.fn(),
+      handleSubscriptionPayment: vi.fn(),
+      handleTeamSubscriptionPayment: vi.fn(),
+      applyPromotionCode: vi.fn(),
+      invalidateQuote: mockInvalidateQuote,
+      handleResubscribe: vi.fn()
+    }
+  }
 }))
 
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
@@ -91,7 +96,12 @@ const UnifiedPricingTableStub = {
 
 function renderComponent(props: Record<string, unknown> = {}) {
   return render(SubscriptionRequiredDialogContentUnified, {
-    props: { onClose: vi.fn(), embeddedCheckoutEnabled: true, ...props },
+    props: {
+      onClose: vi.fn(),
+      embeddedCheckoutEnabled: true,
+      paymentIntentSource: undefined,
+      ...props
+    },
     global: {
       plugins: [i18n],
       stubs: {
@@ -286,4 +296,13 @@ describe('SubscriptionRequiredDialogContentUnified team-plan subscribe', () => {
       expect(mockHandleBackToPricing).toHaveBeenCalled()
     }
   )
+
+  it('gives checkout the surface, not the copy reason', () => {
+    renderComponent({
+      reason: 'out_of_credits',
+      paymentIntentSource: 'agent_paywall'
+    })
+
+    expect(mockUseSubscriptionCheckout.mock.calls[0][1]).toBe('agent_paywall')
+  })
 })

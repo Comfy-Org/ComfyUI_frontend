@@ -33,6 +33,7 @@ export type PaymentIntentSource =
   | 'upload_model_upgrade'
   | 'team_upgrade_resume'
   | 'free_tier_quota'
+  | 'agent_paywall'
 
 export type SubscriptionCheckoutType = 'new' | 'change'
 export type SubscriptionCheckoutTier = TierKey | 'team'
@@ -815,6 +816,24 @@ export interface AddCreditsClickMetadata {
     | 'avatar_menu'
     | 'settings_billing_panel'
     | 'deep_link'
+    | 'agent_paywall'
+}
+
+export type AgentPaywallReason =
+  | 'no_funds'
+  | 'subscription_inactive'
+  | 'member_cannot_pay'
+  | 'sales_managed'
+  | 'unknown'
+
+export interface AgentPaywallShownMetadata {
+  reason: AgentPaywallReason
+}
+
+export type AgentPaywallCta = 'subscribe' | 'add_credits' | 'upgrade'
+
+export interface AgentPaywallCtaMetadata {
+  cta: AgentPaywallCta
 }
 
 export interface SubscriptionCancellationMetadata {
@@ -1101,6 +1120,7 @@ export type CheckoutEntrySource =
   | 'settings_billing'
   | 'other'
   | 'unknown'
+  | 'agent_paywall'
 type CheckoutElementPhase = 'init' | 'mount' | 'update'
 /** Which Stripe element in the shared group the observation came from. */
 type CheckoutElementKind = 'payment' | 'address'
@@ -1291,6 +1311,9 @@ export interface TelemetryProvider {
   /** Emit a checkout-journey lifecycle event to this provider. */
   trackCheckoutJourneyEvent?(event: CheckoutJourneyTelemetryEvent): void
 
+  trackAgentPaywallShown?(metadata: AgentPaywallShownMetadata): void
+  trackAgentPaywallCtaClicked?(metadata: AgentPaywallCtaMetadata): void
+
   // Survey flow events
   trackSurvey?(stage: 'opened' | 'submitted', responses?: SurveyResponses): void
 
@@ -1447,6 +1470,9 @@ export const TelemetryEvents = {
   WORKSPACE_INVITE_SENT: 'app:workspace_invite_sent',
   WORKSPACE_INVITE_FAILED: 'app:workspace_invite_failed',
   BEGIN_CHECKOUT: 'begin_checkout',
+
+  AGENT_PAYWALL_SHOWN: 'app:agent_paywall_shown',
+  AGENT_PAYWALL_CTA_CLICKED: 'app:agent_paywall_cta_clicked',
 
   // Canonical Billing Lifecycle
   BILLING_SUBSCRIPTION_CHECKOUT_STARTED:
@@ -1668,4 +1694,6 @@ export type TelemetryEventProperties =
   | WorkspaceInviteFailedMetadata
   | BillingTelemetryEvent
   | CheckoutJourneyTelemetryEventPayload
+  | AgentPaywallShownMetadata
+  | AgentPaywallCtaMetadata
   | FetchTimeoutMetadata

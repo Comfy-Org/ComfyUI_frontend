@@ -11,6 +11,8 @@ import type {
   AgentOnboardingStepMetadata,
   AgentPanelClosedMetadata,
   AgentPanelOpenedMetadata,
+  AgentPaywallCtaMetadata,
+  AgentPaywallShownMetadata,
   AgentWorkflowAppliedMetadata,
   BillingTelemetryEvent,
   CheckoutJourneyTelemetryEvent,
@@ -314,6 +316,12 @@ describe('TelemetryRegistry', () => {
       workflow_id: 'w1',
       target: 'active_tab_open'
     } satisfies AgentWorkflowAppliedMetadata
+    const paywallShownMetadata = {
+      reason: 'subscription_inactive'
+    } satisfies AgentPaywallShownMetadata
+    const paywallCtaMetadata = {
+      cta: 'add_credits'
+    } satisfies AgentPaywallCtaMetadata
 
     const cases: Array<{
       method: keyof TelemetryProvider & `trackAgent${string}`
@@ -405,6 +413,18 @@ describe('TelemetryRegistry', () => {
         expected: { reason: 'app_mode' },
         invoke: (registry) =>
           registry.trackAgentOnboardingNotShown({ reason: 'app_mode' })
+      },
+      {
+        method: 'trackAgentPaywallShown',
+        expected: { ...paywallShownMetadata },
+        invoke: (registry) =>
+          registry.trackAgentPaywallShown(paywallShownMetadata)
+      },
+      {
+        method: 'trackAgentPaywallCtaClicked',
+        expected: { ...paywallCtaMetadata },
+        invoke: (registry) =>
+          registry.trackAgentPaywallCtaClicked(paywallCtaMetadata)
       }
     ]
 

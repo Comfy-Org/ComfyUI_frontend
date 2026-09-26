@@ -28,6 +28,7 @@ const RESUME_PRICING_KEY = 'comfy:resume-team-pricing'
 
 export interface SubscriptionDialogOptions {
   reason?: PaymentIntentSource
+  paymentIntentSource?: PaymentIntentSource
   /**
    * Forces the unified pricing dialog to open on a specific plan tab,
    * overriding the workspace-derived default (e.g. an "Upgrade to Team" CTA
@@ -101,6 +102,8 @@ export const useSubscriptionDialog = () => {
 
     trackModalOpened(options?.reason)
 
+    const paymentIntentSource = options?.paymentIntentSource ?? options?.reason
+
     const legacyPricingDialogProps = {
       renderer: 'reka',
       size: 'full',
@@ -135,6 +138,7 @@ export const useSubscriptionDialog = () => {
           props: {
             onClose: hide,
             reason: options?.reason,
+            paymentIntentSource,
             ...(personalInitialCheckout
               ? {
                   initialCheckout: personalInitialCheckout,
@@ -162,6 +166,7 @@ export const useSubscriptionDialog = () => {
         props: {
           onClose: hide,
           reason: options?.reason,
+          paymentIntentSource,
           embeddedCheckoutEnabled: flags.embeddedCheckoutEnabled,
           initialCheckout: options?.initialCheckout,
           initialPlanMode: getInitialPlanMode(
@@ -198,6 +203,7 @@ export const useSubscriptionDialog = () => {
       props: {
         onClose: hide,
         reason: options?.reason,
+        paymentIntentSource,
         onChooseTeam: () => startTeamWorkspaceUpgradeFlow()
       },
       dialogComponentProps: legacyPricingDialogProps
