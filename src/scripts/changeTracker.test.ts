@@ -1314,6 +1314,37 @@ describe('ChangeTracker', () => {
       expect(tracker.redoQueue).toEqual([changed])
       expect(tracker.undoQueue).toEqual([])
     })
+
+    it('does not capture another workflow when the active tab changes during undo', async () => {
+      const workflowAUndoState = createState(1)
+      const workflowACurrentState = createState(2)
+      const trackerA = createTracker(workflowACurrentState)
+      trackerA.undoQueue.push(workflowAUndoState)
+      const workflowA = useWorkflowStore().activeWorkflow
+
+      const workflowBState = createState(3)
+      createTracker(workflowBState)
+      const workflowB = useWorkflowStore().activeWorkflow
+      useWorkflowStore().activeWorkflow = workflowA
+
+      let finishLoad: ((value: true) => void) | undefined
+      vi.mocked(app.loadGraphData).mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            finishLoad = resolve
+          })
+      )
+
+      const undo = trackerA.undo()
+      await vi.waitFor(() => expect(finishLoad).toBeDefined())
+      useWorkflowStore().activeWorkflow = workflowB
+      mockCanvasState(workflowBState)
+      finishLoad!(true)
+      await undo
+
+      expect(trackerA.activeState).toEqual(workflowAUndoState)
+      expect(trackerA.activeState).not.toEqual(workflowBState)
+    })
   })
 
   describe('deactivate', () => {
