@@ -25,7 +25,10 @@ const MAIN_BEARER_READ: SentRequest = {
   headers: { Authorization: 'Bearer uid-1-jwt' }
 }
 
-const PLAIN_ANONYMOUS_READ: SentRequest = { url: FEATURES_URL }
+const PLAIN_ANONYMOUS_READ: SentRequest = {
+  url: FEATURES_URL,
+  credentials: 'omit'
+}
 
 const CREDENTIALED_READ: SentRequest = {
   url: FEATURES_URL,

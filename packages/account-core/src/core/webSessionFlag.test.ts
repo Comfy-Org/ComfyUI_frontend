@@ -51,7 +51,7 @@ const FAILURES: ReadonlyArray<{
 ]
 
 describe('readWebSessionProbe', () => {
-  it('sends a plain anonymous GET: no credentials, headers, or cache mode', async () => {
+  it('sends a plain anonymous GET: credentials omitted, no headers or cache mode', async () => {
     const fetchImpl = jsonFetch({})
 
     await readWebSessionProbe({ cloudBaseUrl: CLOUD, fetchImpl })
@@ -59,7 +59,7 @@ describe('readWebSessionProbe', () => {
     expect(fetchImpl).toHaveBeenCalledOnce()
     expect(sentInit(fetchImpl)).toEqual({
       url: FEATURES_URL,
-      init: {},
+      init: { credentials: 'omit' },
       hasSignal: true
     })
   })
