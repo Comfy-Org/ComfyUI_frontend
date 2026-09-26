@@ -2351,7 +2351,7 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
     expect(() => {
       const graph = new LGraph()
       graph.configure(structuredClone(nodeIdSpaceExhausted))
-    }).toThrow('Node ID space exhausted')
+    }).toThrow('Cannot allocate a safe node ID')
   })
 
   it('is a no-op when subgraph node IDs are already unique', () => {
