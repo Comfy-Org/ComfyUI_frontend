@@ -545,7 +545,7 @@ defineExpose({
             v-if="
               !composer.draft.value && !composer.prompt.value.references.length
             "
-            class="pointer-events-none relative z-10 -mt-7 font-inter text-[14px]/5 font-normal text-ash-500"
+            class="pointer-events-none relative z-10 -mt-7 font-inter text-[14px]/5 font-normal text-muted-foreground"
           >
             <span>{{ placeholderHint.text }} </span>
             <AccessibleTooltip
@@ -562,7 +562,7 @@ defineExpose({
                   size="unset"
                   :aria-disabled="!!nodeReferenceDisabledReason || undefined"
                   :aria-description="nodeReferenceDisabledReason"
-                  class="pointer-events-auto h-5 shrink-0 gap-1 px-1 align-top text-sm/5 text-ash-500 aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
+                  class="pointer-events-auto h-5 shrink-0 gap-1 px-1 align-top text-sm/5 aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
                   @click="onSelectNodes"
                 >
                   <span
