@@ -2,7 +2,7 @@
 import './agentPanel.css'
 
 import type { GetFeaturesResponse } from '@comfyorg/ingest-types'
-import { useClipboard } from '@vueuse/core'
+import { useClipboard, useDebounceFn } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import {
   computed,
@@ -49,6 +49,7 @@ import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import type { ChangeTracker } from '@/scripts/changeTracker'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { blankGraph } from '@/scripts/defaultGraph'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
@@ -752,6 +753,17 @@ const isBoundWorkflowActive = computed(() => {
   )
 })
 
+// Frames arriving with the turn already idle have to close their own run, and
+// a batch of them must still collapse into one undo entry — closing per frame
+// would end the run after its first, giving every later frame its own entry.
+// Debounced past the tracker's own 50 ms squash so the run closes against the
+// state that squash settled on.
+const CLOSE_IDLE_FRAME_RUN_MS = 100
+const closeIdleFrameRun = useDebounceFn(
+  (tracker: ChangeTracker) => tracker.closeCoalescedRun(),
+  CLOSE_IDLE_FRAME_RUN_MS
+)
+
 // The CRDT follower is the inbound content channel: subscribes to the
 // session's bound workflow while its tab is active. Suspending the background
 // subscription makes reopening pull state-vector catch-up only after the
@@ -786,10 +798,20 @@ const {
     // That interaction used to collapse a whole run of frames into one
     // capture, which is what both options here preserve.
     onApplied() {
-      workflowStore.activeWorkflow?.changeTracker.captureCanvasState({
+      const tracker = workflowStore.activeWorkflow?.changeTracker
+      if (tracker === undefined) return
+      tracker.captureCanvasState({
         autoQueue: false,
         coalesceUndo: true
       })
+      // Nothing else will close the run this opened: every accepted subscribe
+      // arms a catch-up frame, not just a reconnect, so one can land while the
+      // turn is already `idle` and no idle transition follows. Left open, the
+      // next turn reuses this undo entry and the run's deferred auto-queue is
+      // never settled. Pass the tracker rather than re-resolving the active
+      // workflow when the timer fires, for the same reason the idle watcher
+      // cannot: the user may have switched tabs in between.
+      if (status.value === 'idle') void closeIdleFrameRun(tracker)
     },
     onReset: graphActivity.resetWorkflow
   }

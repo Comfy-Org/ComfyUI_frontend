@@ -7,7 +7,15 @@ import type {
 } from '@comfyorg/ingest-types'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import type { Mocked } from 'vitest'
 import { computed, defineComponent, h, markRaw, nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
@@ -2908,6 +2916,33 @@ describe('AgentPanelRoot canvas draft on remote edit', () => {
     events.onApplied?.({ workflowId: 'wf-1', actor: 'agent:thread:turn' })
 
     expect(captureCanvasState).toHaveBeenCalledOnce()
+  })
+
+  // Every accepted subscribe arms a catch-up frame, not just a reconnect, so
+  // one can land while the turn is already idle — and then no idle transition
+  // follows to close the run it opened. The next turn would reuse that undo
+  // entry and the run's deferred auto-queue would never settle.
+  it('closes the coalesced run for frames that land while idle', async () => {
+    const closeCoalescedRun = vi.fn()
+    workflowStore.activeWorkflow = addTab('workflows/remote_edit.json', {
+      changeTracker: createMockChangeTracker({ closeCoalescedRun })
+    })
+
+    renderWithSelectedTarget()
+    vi.useFakeTimers()
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+    const events = followerEvents()
+    events.onApplied?.({ workflowId: 'wf-1', actor: 'agent:thread:turn' })
+    events.onApplied?.({ workflowId: 'wf-1', actor: 'agent:thread:turn' })
+
+    // One batch is one run: the close waits out the frames, it does not fire
+    // per frame and cut the run short after the first.
+    expect(closeCoalescedRun).not.toHaveBeenCalled()
+    await vi.advanceTimersByTimeAsync(200)
+
+    expect(closeCoalescedRun).toHaveBeenCalledOnce()
   })
 })
 

@@ -334,6 +334,14 @@ export class ChangeTracker {
       reportInactiveTrackerCall('deactivate', this.workflow.path)
       return
     }
+    // End any open run of coalesced captures, and end it without settling:
+    // its deferred auto-queue belongs to the workflow being left, and a
+    // dispatch here would queue against whichever workflow the switch lands
+    // on. Clearing before the capture is what keeps that dispatch away — the
+    // capture below settles a run it ends. Doing it unconditionally is what
+    // keeps a switched-away tracker from staying mid-run forever: the capture
+    // leaves the flag alone when the graph has not changed.
+    this._coalescingUndo = false
     if (!this._restoringState) this.captureCanvasState()
     this.store()
   }
@@ -450,6 +458,14 @@ export class ChangeTracker {
     const currentState = clone(app.rootGraph.serialize()) as ComfyWorkflowJSON
     if (!ChangeTracker.graphEqual(this.activeState, currentState)) {
       const previousState = this.activeState
+      // An ordinary capture is the boundary that ends a run, so it has to
+      // settle it first. Clearing `_coalescingUndo` below makes every later
+      // closeCoalescedRun() a no-op, and this capture's own comparison is
+      // against the run's last frame rather than the state it began on — so a
+      // `pos`-only interaction mid-run would drop the run's widget and link
+      // edits from auto-queue entirely, where the same interaction used to
+      // capture the whole delta and dispatch once.
+      if (!coalesceUndo) this.closeCoalescedRun()
       const continuesRun = coalesceUndo && this._coalescingUndo
       this._coalescingUndo = coalesceUndo
       if (!continuesRun) {
@@ -467,6 +483,13 @@ export class ChangeTracker {
     }
   }
   squashState = useDebounceFn(() => {
+    // Read and clear at the top of the interval, before either early return
+    // below. The `graphEqual` return is the common path — the squash usually
+    // finds nothing new since the capture that scheduled it — so a read after
+    // it would carry one interval's auto-queue decision into the next, and
+    // captures only ever raise this flag (`||=`), never lower it.
+    const autoQueue = this._squashAutoQueue
+    this._squashAutoQueue = false
     if (
       this !== useWorkflowStore().activeWorkflow?.changeTracker ||
       ChangeTracker.isLoadingGraph
@@ -477,8 +500,6 @@ export class ChangeTracker {
     if (ChangeTracker.graphEqual(this.activeState, currentState)) return
 
     const previousState = this.activeState
-    const autoQueue = this._squashAutoQueue
-    this._squashAutoQueue = false
     this.activeState = currentState
     this.updateModified(previousState, { autoQueue })
   }, 50)
@@ -493,7 +514,6 @@ export class ChangeTracker {
    * behalf. Comparing the entry the run opened against the state it ended
    * on reproduces that single dispatch.
    */
-  // fallow-ignore-next-line unused-class-member
   closeCoalescedRun() {
     if (!this._coalescingUndo) return
     const runStart = this.undoQueue.at(-1)
