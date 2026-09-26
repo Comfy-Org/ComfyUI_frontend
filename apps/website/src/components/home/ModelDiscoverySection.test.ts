@@ -5,10 +5,14 @@ import { readonly, ref, nextTick } from 'vue'
 import type { Ref } from 'vue'
 
 import { discoveryProviders } from '../../data/modelDiscovery'
-import type { DiscoveryProvider } from '../../data/modelDiscovery'
+import type {
+  DiscoveryProvider,
+  DiscoveryWorkflow
+} from '../../data/modelDiscovery'
 import {
   useWorkshopEnabled,
-  useWorkshopEnabledSettled
+  useWorkshopEnabledSettled,
+  useWorkshopWorkflowsEnabled
 } from '../../scripts/posthog'
 import ModelDiscoverySection from './ModelDiscoverySection.vue'
 
@@ -16,12 +20,17 @@ vi.mock(import('../../scripts/posthog'))
 
 let enabled: Ref<boolean>
 let settled: Ref<boolean>
+let workflowsEnabled: Ref<boolean>
 
 beforeEach(() => {
   enabled = ref(true)
   vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(enabled))
   settled = ref(true)
   vi.mocked(useWorkshopEnabledSettled).mockReturnValue(readonly(settled))
+  workflowsEnabled = ref(true)
+  vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(
+    readonly(workflowsEnabled)
+  )
 })
 
 const providers: readonly DiscoveryProvider[] = [
@@ -30,6 +39,14 @@ const providers: readonly DiscoveryProvider[] = [
     logo: '/icons/fixture.svg',
     modelCount: 2,
     thumbnailUrl: '/fixture-preview.png'
+  }
+]
+
+const workflows: readonly DiscoveryWorkflow[] = [
+  {
+    name: 'Turn a sketch into a render',
+    href: '/models/workflows/sketch/',
+    thumbnailUrl: '/fixture-workflow.png'
   }
 ]
 
@@ -105,6 +122,43 @@ describe('ModelDiscoverySection', async () => {
     expect(screen.queryByTestId('static-frame')).toBeNull()
     await user.hover(screen.getByRole('link', { name: /Fixture Studio & Co/ }))
     expect(screen.getAllByTestId('static-frame').length).toBeGreaterThan(0)
+  })
+
+  // The tab is a promise that the other half exists. Where the catalogue does
+  // not offer it, neither does the home page.
+  it.for([
+    { when: 'the flag is off', flag: false, rows: workflows },
+    { when: 'there are no workflows', flag: true, rows: [] }
+  ])('offers no second tab when $when', async ({ flag, rows }) => {
+    workflowsEnabled.value = flag
+    render(ModelDiscoverySection, {
+      props: { providers, workflows: rows }
+    })
+    await nextTick()
+
+    expect(screen.queryByTestId('catalogue-tabs')).toBeNull()
+    expect(screen.getByRole('link', { name: 'Browse all models' })).toBeTruthy()
+  })
+
+  it('swaps the row and the way out when the workflows tab is pressed', async () => {
+    const user = userEvent.setup()
+    render(ModelDiscoverySection, { props: { providers, workflows } })
+    await nextTick()
+
+    expect(
+      screen.getByRole('link', { name: /Fixture Studio & Co/ })
+    ).toBeTruthy()
+
+    await user.click(screen.getByTestId('catalogue-tab-workflows'))
+    expect(
+      screen.queryByRole('link', { name: /Fixture Studio & Co/ })
+    ).toBeNull()
+    expect(
+      screen.getByRole('link', { name: /Turn a sketch into a render/ })
+    ).toHaveAttribute('href', '/models/workflows/sketch/')
+    expect(
+      screen.getByRole('link', { name: 'Browse all workflows' })
+    ).toHaveAttribute('href', '/models?type=workflows')
   })
 
   it('localizes copy while keeping the English-only Workshop route', async () => {

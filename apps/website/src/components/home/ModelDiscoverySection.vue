@@ -1,20 +1,39 @@
 <script setup lang="ts">
 import WorkshopGate from '../workshop/WorkshopGate.vue'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import { catalogSearch } from '../../config/models-catalogue'
 import { getRoutes } from '../../config/routes'
-import type { DiscoveryProvider } from '../../data/modelDiscovery'
+import type {
+  DiscoveryProvider,
+  DiscoveryWorkflow
+} from '../../data/modelDiscovery'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import { useWorkshopWorkflowsEnabled } from '../../scripts/posthog'
 import Button from '../ui/button/Button.vue'
+import type { CatalogueTab } from '../workshop/CatalogueTabs.vue'
+import CatalogueTabs from '../workshop/CatalogueTabs.vue'
 import StaticFrame from '../workshop/StaticFrame.vue'
 
-const { locale = 'en', providers } = defineProps<{
+const {
+  locale = 'en',
+  providers,
+  workflows = []
+} = defineProps<{
   locale?: Locale
   providers: readonly DiscoveryProvider[]
+  workflows?: readonly DiscoveryWorkflow[]
 }>()
 const routes = getRoutes(locale)
+
+// The catalogue's own workflows half is behind a flag, so the home page offers
+// the tab only where the tab has somewhere to go.
+const workflowsEnabled = useWorkshopWorkflowsEnabled()
+const tabbed = computed(() => workflowsEnabled.value && workflows.length > 0)
+const TABS = ['models', 'workflows'] as const satisfies readonly CatalogueTab[]
+const tab = ref<CatalogueTab>('models')
+const onWorkflows = computed(() => tabbed.value && tab.value === 'workflows')
 
 // Thumbnails are fetched the first time a card is hovered or focused, so the
 // looping row does not pull every preview on page load.
@@ -45,20 +64,37 @@ const cardClass =
           {{ t('modelDiscovery.label', locale) }}
         </p>
         <h2
-          class="mt-6 text-3.5xl/tight font-light whitespace-pre-line text-primary-comfy-canvas lg:text-5xl"
+          class="mt-4 text-3.5xl/tight font-light whitespace-pre-line text-primary-comfy-canvas lg:text-5xl"
         >
           {{ t('modelDiscovery.heading', locale) }}
         </h2>
         <p
-          class="mt-6 max-w-xl text-sm font-light text-primary-comfy-canvas/80 lg:text-base/snug"
+          class="mt-4 max-w-xl text-sm font-light text-primary-comfy-canvas/80 lg:text-base/snug"
         >
           {{ t('modelDiscovery.subtitle', locale) }}
         </p>
+
+        <!-- The catalogue's own control, taught here: whoever presses it on
+          the way down already knows it when the page opens. -->
+        <CatalogueTabs
+          v-if="tabbed"
+          v-model="tab"
+          :tabs="TABS"
+          :locale
+          class="mt-8"
+        />
       </div>
 
       <div
-        class="mt-12 lg:mt-16"
-        :aria-label="t('modelDiscovery.rowLabel', locale)"
+        class="mt-10 lg:mt-12"
+        :aria-label="
+          t(
+            onWorkflows
+              ? 'modelDiscovery.workflowRowLabel'
+              : 'modelDiscovery.rowLabel',
+            locale
+          )
+        "
         role="region"
       >
         <div
@@ -72,47 +108,86 @@ const cardClass =
               style="--marquee-gap: 0.75rem"
               :aria-hidden="copy === 2 ? 'true' : undefined"
             >
-              <a
-                v-for="provider in providers"
-                :key="provider.name"
-                :href="cardHref(provider.name)"
-                :class="cardClass"
-                :tabindex="copy === 2 ? -1 : undefined"
-                data-testid="discovery-provider"
-                @pointerenter="reveal(provider.name)"
-                @focus="reveal(provider.name)"
-              >
-                <template
-                  v-if="revealed.has(provider.name) && provider.thumbnailUrl"
+              <template v-if="onWorkflows">
+                <a
+                  v-for="workflow in workflows"
+                  :key="workflow.name"
+                  :href="workflow.href"
+                  :class="cardClass"
+                  :tabindex="copy === 2 ? -1 : undefined"
+                  data-testid="discovery-workflow"
                 >
                   <StaticFrame
-                    :src="provider.thumbnailUrl"
-                    class="absolute inset-0 size-full object-cover opacity-0 transition-opacity duration-300 group-hover/card:opacity-50 group-focus-visible/card:opacity-50"
+                    :src="workflow.thumbnailUrl"
+                    class="absolute inset-0 size-full object-cover transition-transform duration-300 group-hover/card:scale-105"
                   />
                   <span
-                    class="absolute inset-0 bg-black/60 opacity-0 transition-opacity duration-300 group-hover/card:opacity-100 group-focus-visible/card:opacity-100"
+                    class="absolute inset-0 bg-linear-to-t from-black/80 to-transparent"
                     aria-hidden="true"
                   />
-                </template>
-                <span
-                  class="relative size-9 bg-current mask-contain mask-center mask-no-repeat"
-                  :style="{ maskImage: `url(${provider.logo})` }"
-                  aria-hidden="true"
-                />
-                <span class="relative flex flex-col gap-0.5">
-                  <span class="text-base/tight font-medium">
-                    {{ provider.name }}
+                  <span
+                    class="relative mt-auto w-full text-base/tight font-medium"
+                  >
+                    {{ workflow.name }}
                   </span>
-                </span>
-              </a>
+                </a>
+              </template>
+              <template v-else>
+                <a
+                  v-for="provider in providers"
+                  :key="provider.name"
+                  :href="cardHref(provider.name)"
+                  :class="cardClass"
+                  :tabindex="copy === 2 ? -1 : undefined"
+                  data-testid="discovery-provider"
+                  @pointerenter="reveal(provider.name)"
+                  @focus="reveal(provider.name)"
+                >
+                  <template
+                    v-if="revealed.has(provider.name) && provider.thumbnailUrl"
+                  >
+                    <StaticFrame
+                      :src="provider.thumbnailUrl"
+                      class="absolute inset-0 size-full object-cover opacity-0 transition-opacity duration-300 group-hover/card:opacity-50 group-focus-visible/card:opacity-50"
+                    />
+                    <span
+                      class="absolute inset-0 bg-black/60 opacity-0 transition-opacity duration-300 group-hover/card:opacity-100 group-focus-visible/card:opacity-100"
+                      aria-hidden="true"
+                    />
+                  </template>
+                  <span
+                    class="relative size-9 bg-current mask-contain mask-center mask-no-repeat"
+                    :style="{ maskImage: `url(${provider.logo})` }"
+                    aria-hidden="true"
+                  />
+                  <span class="relative flex flex-col gap-0.5">
+                    <span class="text-base/tight font-medium">
+                      {{ provider.name }}
+                    </span>
+                  </span>
+                </a>
+              </template>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="mt-12 flex justify-center px-6 lg:mt-16">
-        <Button as="a" :href="routes.workshop" variant="outline">
-          {{ t('modelDiscovery.browse', locale) }}
+      <div class="mt-10 flex justify-center px-6 lg:mt-12">
+        <Button
+          as="a"
+          :href="
+            onWorkflows ? `${routes.workshop}?type=workflows` : routes.workshop
+          "
+          variant="outline"
+        >
+          {{
+            t(
+              onWorkflows
+                ? 'modelDiscovery.browseWorkflows'
+                : 'modelDiscovery.browse',
+              locale
+            )
+          }}
         </Button>
       </div>
     </section>
