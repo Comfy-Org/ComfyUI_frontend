@@ -49,6 +49,9 @@ export class PerformanceHelper {
 
   async dispose(): Promise<void> {
     this.snapshot = null
+    // A workload that throws skips stopMeasuring(), so cleanup is the only
+    // place left to stop the sampler before the page goes away.
+    if (!this.page.isClosed()) await this.stopFrameSampling()
     if (this.cdp) {
       try {
         await this.cdp.send('Performance.disable')
