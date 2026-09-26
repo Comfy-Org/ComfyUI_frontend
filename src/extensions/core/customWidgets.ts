@@ -1,13 +1,14 @@
-import { shallowReactive } from 'vue'
+import { computed, shallowReactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LLink } from '@/lib/litegraph/src/litegraph'
-import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { WidgetValue } from '@/types/simplifiedWidget'
 
 import { applyFirstWidgetValueToGraph } from './widgetValuePropagation'
 import { widgetId } from '@/types/widgetId'
@@ -153,40 +154,47 @@ function onCustomComboCreated(this: LGraphNode) {
   addOption(this)
 }
 
+class StubWidget<T extends WidgetValue> extends BaseWidget {
+  override serialize = true
+  constructor(
+    node: LGraphNode,
+    name: string,
+    protected valueGetter: () => T
+  ) {
+    super({
+      name,
+      node,
+      options: {},
+      type: 'hidden',
+      y: 0
+    })
+  }
+  override computeSize(): [number, number] {
+    return [0, -4]
+  }
+  drawWidget() {}
+  onClick() {}
+  override get value(): T {
+    return this.valueGetter()
+  }
+  override set value(_) {}
+}
+
 function onBranchSelectorCreated(this: LGraphNode) {
   this.applyToGraph = applyToGraph
   this.widgets?.pop()
 
-  const getLinkedInputs = () =>
-    this.inputs.filter((i) => i.name.startsWith('autogrow.') && i.link)
-  const nameToLabel = (name: unknown) => {
-    const inp = getLinkedInputs().find((i) => i.name === name)
-    return inp ? inputToLabel(inp) : ''
-  }
-  const inputToLabel = (input: INodeInputSlot) =>
-    input.label ?? input.localized_name ?? input.name
-
-  const comboWidget = this.addWidget('combo', 'branch', 'branch0', () => {}, {
-    values: () => getLinkedInputs().map((i) => i.name),
-    getOptionLabel: nameToLabel
-  })
-  comboWidget.serializeValue = function () {
-    return nameToLabel(this.value)
-  }
+  const valuesComputed = computed(() =>
+    this.inputs
+      .filter((input) => input.name.startsWith('autogrow.') && input.link)
+      .map((input) => input.label ?? input.localized_name ?? input.name)
+  )
+  const values = () => valuesComputed.value
+  this.addWidget('combo', 'branch', 'branch0', () => {}, { values })
 
   const namesIndex = this.inputs.findIndex((inp) => inp.name === 'branch_names')
   if (namesIndex !== -1) this.removeInput(namesIndex)
-
-  this.addCustomWidget({
-    computeSize: () => [0, -4],
-    draw: () => undefined,
-    name: 'branch_names',
-    options: { hidden: true },
-    serialize: false,
-    serializeValue: () => getLinkedInputs().map(inputToLabel),
-    type: 'hidden',
-    y: 0
-  })
+  this.addCustomWidget(new StubWidget<string[]>(this, 'branch_names', values))
 }
 
 function onCustomIntCreated(this: LGraphNode) {
