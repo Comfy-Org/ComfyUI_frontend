@@ -5,7 +5,7 @@ import ModelsPage from '../../components/workshop/ModelsPage.vue'
 import ModelsShowcase from '../../components/models/ModelsShowcase.astro'
 import { workshopPagePaths } from '../../config/workshop-page-content'
 import { t } from '../../i18n/translations'
-import { prepareModelPage } from './model-page'
+import { modelOgImage, prepareModelPage } from './model-page'
 
 export const getStaticPaths: GetStaticPaths = () =>
   workshopPagePaths.map((slug) => ({ params: { slug } }))
@@ -16,6 +16,7 @@ const page = await prepareModelPage(Astro.params.slug)
 // separate deployment decision, not a reason to switch this site to SSR.
 if (page.kind === 'redirect') return Astro.redirect(page.href, 301)
 const { model } = page
+const ogImage = modelOgImage(model)
 ---
 
 <BaseLayout
@@ -24,7 +25,8 @@ const { model } = page
     '{name}',
     model.name
   )}
-  ogImage={model.thumbnailUrl}
+  ogImage={ogImage}
+  ogImageAlt={ogImage && `${model.name} example output`}
   noindex
 >
   <ModelsPage slug={model.slug} workflowId={model.workflowId} client:load>

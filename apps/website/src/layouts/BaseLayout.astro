@@ -24,15 +24,17 @@ import {
   evaluateBannerVisibility
 } from '../utils/banner'
 import { fetchGitHubStars, formatStarCount } from '../utils/github'
-import { buildPageGraph, pageContext } from '../utils/jsonLd'
+import { buildPageGraph, pageContext, webPageName } from '../utils/jsonLd'
 import type { Crumb, JsonLdNode, WebPageType } from '../utils/jsonLd'
 import JsonLdGraph from '../components/common/JsonLdGraph.astro'
 
 interface Props {
   title: string
+  pageName?: string
   description?: string
   keywords?: string[]
   ogImage?: string
+  ogImageAlt?: string
   noindex?: boolean
   pageType?: WebPageType
   breadcrumbs?: Crumb[]
@@ -41,11 +43,15 @@ interface Props {
   minimal?: boolean
 }
 
+const DEFAULT_OG_IMAGE = 'https://media.comfy.org/website/comfy.webp'
+
 const {
   title,
+  pageName = webPageName(title),
   description = 'Comfy is the AI creation engine for visual professionals who demand control.',
   keywords,
-  ogImage = 'https://media.comfy.org/website/comfy.webp',
+  ogImage = DEFAULT_OG_IMAGE,
+  ogImageAlt = ogImage === DEFAULT_OG_IMAGE ? 'Comfy' : title,
   noindex = false,
   pageType,
   breadcrumbs,
@@ -91,7 +97,7 @@ const structuredData = shouldNoindex
       { siteUrl, locale },
       {
         url,
-        name: title,
+        name: pageName,
         description,
         imageUrl: ogImageURL.href,
         type: pageType,
@@ -186,8 +192,13 @@ const structuredData = shouldNoindex
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:image" content={ogImageURL.href} />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
+    {ogImage === DEFAULT_OG_IMAGE && (
+      <>
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+      </>
+    )}
+    <meta property="og:image:alt" content={ogImageAlt} />
     <meta property="og:url" content={canonicalURL.href} />
     <meta property="og:locale" content={openGraphLocale} />
     {openGraphLocaleAlternates.map((alternate) => (
@@ -197,10 +208,11 @@ const structuredData = shouldNoindex
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@comaboratory" />
+    <meta name="twitter:site" content="@ComfyUI" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogImageURL.href} />
+    <meta name="twitter:image:alt" content={ogImageAlt} />
 
     <!-- Structured Data -->
     {structuredData && <JsonLdGraph graph={structuredData} />}

@@ -8,6 +8,7 @@ import {
   deriveUpcomingEvents,
   directoryEvents,
   eventJsonLdNode,
+  eventOgImage,
   eventStatus,
   pastEvents,
   toCalendarEvent,
@@ -390,5 +391,35 @@ describe('site event data', () => {
         })
       }
     }
+  })
+})
+
+describe('eventOgImage', () => {
+  const alt = { en: 'Card', 'zh-CN': '卡片' }
+
+  it.for([
+    [
+      'an image',
+      { type: 'image', src: 'https://cdn/card.png', alt },
+      'https://cdn/card.png'
+    ],
+    [
+      'a video poster',
+      {
+        type: 'video',
+        src: 'https://cdn/clip.mp4',
+        alt,
+        poster: 'https://cdn/still.png'
+      },
+      'https://cdn/still.png'
+    ],
+    [
+      'nothing for a video without a poster',
+      { type: 'video', src: 'https://cdn/clip.mp4', alt },
+      undefined
+    ],
+    ['nothing without media', undefined, undefined]
+  ] as const)('returns %s', ([, media, expected]) => {
+    expect(eventOgImage({ ...baseEvent, media })).toBe(expected)
   })
 })

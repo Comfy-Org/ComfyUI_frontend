@@ -12,6 +12,7 @@ import { localizeHref } from '../../config/routes'
 import type { ComfyEvent } from '../../data/events'
 import {
   eventJsonLdNode,
+  eventOgImage,
   eventVideoId,
   pastEvents,
   toCalendarEvent,
@@ -43,16 +44,17 @@ const description = event.description[locale] || event.description.en
 // Same build-time clock as the derived lists, so the page body always agrees
 // with the section rendered behind the dialog.
 const isPast = pastEvents.includes(event)
+const ogImage = eventOgImage(event)
 
 const videoJsonLd: JsonLdNode | undefined =
-  isPast && event.recordingVideoId && event.media
+  isPast && event.recordingVideoId && ogImage
     ? videoObjectNode({
         siteUrl,
         id: jsonLdId(url, 'video'),
         pageUrl: url,
         name: title,
         description,
-        thumbnailUrl: event.media.src,
+        thumbnailUrl: ogImage,
         contentUrl:
           youtubeWatchHref(event.recordingVideoId)[locale] ||
           youtubeWatchHref(event.recordingVideoId).en,
@@ -84,7 +86,8 @@ const breadcrumbs = [
 <BaseLayout
   title={`${title} - Comfy`}
   description={description}
-  ogImage={event.media?.src}
+  ogImage={ogImage}
+  ogImageAlt={ogImage && (event.media?.alt[locale] || event.media?.alt.en)}
   mainEntityId={typeof mainEntityId === 'string' ? mainEntityId : undefined}
   breadcrumbs={breadcrumbs}
   extraJsonLd={[videoJsonLd, eventJsonLd]}
