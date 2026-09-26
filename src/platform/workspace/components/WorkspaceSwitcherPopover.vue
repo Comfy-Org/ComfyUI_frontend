@@ -21,7 +21,10 @@
 
       <!-- Workspace list -->
       <template v-else>
-        <template v-for="workspace in availableWorkspaces" :key="workspace.id">
+        <template
+          v-for="{ workspace, tierLabel } in workspaceRows"
+          :key="workspace.id"
+        >
           <div class="border-b border-border-default p-2">
             <div
               :class="
@@ -50,12 +53,11 @@
                     >
                       {{ workspace.name }}
                     </span>
-                    <span
-                      v-if="resolveTierLabel(workspace)"
-                      class="shrink-0 rounded-full bg-base-foreground px-1 py-0.5 text-2xs font-bold text-base-background uppercase"
-                    >
-                      {{ resolveTierLabel(workspace) }}
-                    </span>
+                    <RoleBadge
+                      v-if="tierLabel"
+                      class="shrink-0"
+                      :label="tierLabel"
+                    />
                   </div>
                   <span class="text-xs text-muted-foreground">
                     {{ getRoleLabel(workspace.role) }}
@@ -127,6 +129,7 @@ import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import RoleBadge from '@/platform/workspace/components/RoleBadge.vue'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { isCloud } from '@/platform/distribution/types'
@@ -185,6 +188,13 @@ const availableWorkspaces = computed<AvailableWorkspace[]>(() =>
     isSubscribed: w.isSubscribed,
     subscriptionPlan: w.subscriptionPlan,
     subscriptionTier: w.subscriptionTier
+  }))
+)
+
+const workspaceRows = computed(() =>
+  availableWorkspaces.value.map((workspace) => ({
+    workspace,
+    tierLabel: resolveTierLabel(workspace)
   }))
 )
 
