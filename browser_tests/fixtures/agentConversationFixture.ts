@@ -6,6 +6,8 @@ import { z } from 'zod'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ComfyNodeDef, ObjectInfoResponse } from '@/schemas/nodeDefSchema'
 import { toNodeId } from '@/types/nodeId'
 import type {
@@ -189,6 +191,10 @@ export class AgentConversationHarness {
   private readonly displayNames = new Map<string, string>()
   // Resolved when the panel cancels the turn the recording stopped.
   private readonly cancelWaiters = new Map<string, () => void>()
+  // Handle on the persistence mock installed by `persistSavedWorkflow`.
+  private savedWorkflow: Awaited<
+    ReturnType<typeof mockSavedWorkflowPersistence>
+  > | null = null
 
   constructor(
     private readonly page: Page,
@@ -312,7 +318,47 @@ export class AgentConversationHarness {
    * implementations of the same save/reopen round trip.
    */
   async persistSavedWorkflow(): Promise<void> {
-    await mockSavedWorkflowPersistence(this.page, this.conversation.workflow.id)
+    this.savedWorkflow = await mockSavedWorkflowPersistence(
+      this.page,
+      this.conversation.workflow.id
+    )
+  }
+
+  /** Userdata path of the workflow the app last saved, or null before any save. */
+  savedWorkflowPath(): string | null {
+    const name = this.savedWorkflow?.savedName()
+    return name === undefined ? null : `workflows/${name}.json`
+  }
+
+  /**
+   * The workflow JSON the app last saved, parsed and schema-validated.
+   * Throws before any save, and throws with the schema errors when the saved
+   * file is not a valid workflow, so a spec cannot pass on a file the app
+   * itself would refuse to reload.
+   */
+  async savedWorkflowContent(): Promise<ComfyWorkflowJSON> {
+    const content = this.savedWorkflow?.savedContent()
+    if (content === undefined)
+      throw new Error('the app has not saved a workflow yet')
+    const errors: string[] = []
+    const workflow = await validateComfyWorkflow(
+      JSON.parse(content) as unknown,
+      (error) => errors.push(error)
+    )
+    if (!workflow)
+      throw new Error(
+        `the saved workflow is not schema-valid: ${errors.join('; ')}`
+      )
+    return workflow
+  }
+
+  /**
+   * Make the host refuse every subscribe from now on. A follower that
+   * re-subscribes after this gets no catch-up, so whatever the canvas shows
+   * came from somewhere other than the host document.
+   */
+  refuseHostSubscribes(reason = 'overloaded'): void {
+    this.hostSocket.refuseSubscribes(reason)
   }
 
   async sendPrompt(turn = 0): Promise<void> {
