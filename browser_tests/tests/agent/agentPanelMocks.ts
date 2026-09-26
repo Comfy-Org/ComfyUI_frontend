@@ -140,7 +140,7 @@ export const MESSAGE_DONE_EVENT: AgentWsEvent = {
   }
 }
 
-function agentFeatures(agentFlag: boolean): RemoteConfig {
+export function agentFeatures(agentFlag: boolean): RemoteConfig {
   return {
     posthog_project_token: 'phc_e2e_agent_panel',
     posthog_config: {
