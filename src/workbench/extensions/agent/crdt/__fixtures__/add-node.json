@@ -1,0 +1,37 @@
+{
+  "scenario": "add-node",
+  "frames": [
+    {
+      "type": "draft_patch",
+      "data": {
+        "base_version": 10,
+        "version": 11,
+        "workflow_id": "fixture-workflow-native-folders",
+        "message_id": "fixture-message-add-node",
+        "thread_id": "fixture-thread",
+        "content": {
+          "last_node_id": 1,
+          "links": [],
+          "nodes": [
+            {
+              "id": 1,
+              "type": "LoadImage",
+              "pos": [100, 100],
+              "size": [315, 314],
+              "flags": {},
+              "order": 0,
+              "mode": 0,
+              "inputs": [],
+              "outputs": [
+                { "name": "IMAGE", "type": "IMAGE", "links": [] },
+                { "name": "MASK", "type": "MASK", "links": [] }
+              ],
+              "properties": {},
+              "widgets_values": ["reference.png", "image"]
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
