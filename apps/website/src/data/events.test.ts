@@ -316,6 +316,16 @@ describe('Tech Week panel event thumbnails', () => {
 })
 
 describe('site event data', () => {
+  it('contains one canonical October 1 Developer Platform event', () => {
+    const matches = directoryEvents.filter(
+      (event) =>
+        event.title.en ===
+        'Comfy Developer Platform: Building with Comfy API & Comfy Router'
+    )
+
+    expect(matches.map((event) => event.id)).toEqual(['dev-platform-oct-1'])
+  })
+
   it('has unique event ids', () => {
     const ids = [...upcomingEvents, ...pastEvents].map((event) => event.id)
 
