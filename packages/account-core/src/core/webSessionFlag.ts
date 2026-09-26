@@ -5,7 +5,6 @@
  * `unified_web_session` (cloud#10689). `web_session_probe` is a backend
  * follow-up to cloud#10689 and not served yet. Every failure is `false`.
  */
-import { COMFY_CLIENT } from './requestAuth.js'
 
 const DEFAULT_TIMEOUT_MS = 5000
 
@@ -73,6 +72,7 @@ export async function resolveUnifiedWebSession({
   ...options
 }: UnifiedWebSessionOptions): Promise<boolean> {
   if (!(await probeIsOn(probe))) return false
+  const { COMFY_CLIENT } = await import('./requestAuth.js')
   const body = await readFeatures(options, {
     credentials: 'include',
     cache: 'no-store',
