@@ -106,6 +106,7 @@ AGENT_IDENTITY_PATTERNS=(
     'devin-ai-integration\[bot\]'
     'devin@cognition\.ai'
     'devin@cognition-labs\.com'
+    'amazon-q-developer'
     'cline-bot'
     'cline@cline\.ai'
     'continue-agent'
