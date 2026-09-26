@@ -5,10 +5,7 @@
  * `unified_web_session` (cloud#10689). `web_session_probe` is a backend
  * follow-up to cloud#10689 and not served yet. Every failure is `false`.
  */
-import packageManifest from '../../package.json' with { type: 'json' }
-
-/** Same value as `COMFY_CLIENT` in #18716's requestAuth; converge on that one once it lands. */
-const COMFY_CLIENT = `${packageManifest.name}/${packageManifest.version}`
+import { COMFY_CLIENT } from './requestAuth.js'
 
 const DEFAULT_TIMEOUT_MS = 5000
 
