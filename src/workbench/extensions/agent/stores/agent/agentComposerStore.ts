@@ -18,6 +18,7 @@ import type {
   WorkflowReference
 } from '../../types/workflowReference'
 import { insertComposerReference } from '../../utils/composerPrompt'
+import type { AgentStarterPromptSource } from '../../utils/starterPrompts'
 
 interface ComposerDraft extends PromptSnapshot {
   attachments: ComposerAttachment[]
@@ -69,6 +70,10 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
   // Set by the affordance that supplied the text; read once at submission and
   // reset there, so it describes the message being sent rather than the panel.
   const promptOrigin = ref<AgentInputMethod>('typed')
+  // Which starter prompt supplied the text, when one did. Lives and dies with
+  // `promptOrigin` — same submission lifecycle, same retry restore — so the two
+  // can never disagree about whether this draft came from a chip.
+  const starterPrompt = ref<AgentStarterPromptSource | null>(null)
   const insertionPoint = shallowRef<ComposerInsertionPoint>({
     textOffset: 0,
     referenceIndex: 0
@@ -81,6 +86,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     phase: 'pending' | 'failed'
     revision: number
     origin: AgentInputMethod
+    starterPrompt: AgentStarterPromptSource | null
     snapshot: SubmittedDraft
   } | null>(null)
   let revision = 0
@@ -130,12 +136,16 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     updateDraft({ text: next.text, references })
   }
 
-  function markSuggestedPrompt(): void {
+  function markSuggestedPrompt(source?: AgentStarterPromptSource): void {
     promptOrigin.value = 'suggestion'
+    // Cleared, not left stale, when the affordance did not identify itself: an
+    // unattributed insert is not the previous chip's click.
+    starterPrompt.value = source ?? null
   }
 
   function replacePrompt(next: PromptSnapshot): void {
     promptOrigin.value = 'edited'
+    starterPrompt.value = null
     resetPromptHistory()
     updateDraft({
       text: next.text,
@@ -348,7 +358,9 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     // back in the composer, and the retry came from the same chip or edited
     // prompt the first attempt did.
     const origin = promptOrigin.value
+    const chip = starterPrompt.value
     promptOrigin.value = 'typed'
+    starterPrompt.value = null
     updateDraft({ text: '', references: [] })
     insertionPoint.value = { textOffset: 0, referenceIndex: 0 }
     const id = ++nextSubmissionId
@@ -357,6 +369,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
       phase: 'pending',
       revision,
       origin,
+      starterPrompt: chip,
       snapshot
     }
     return id
@@ -378,6 +391,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     submission.value = null
     if (failed.revision !== revision) return
     promptOrigin.value = failed.origin
+    starterPrompt.value = failed.starterPrompt
     return failed.snapshot
   }
 
@@ -395,6 +409,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     nodeScope,
     promptEpoch,
     promptOrigin,
+    starterPrompt,
     insertionPoint,
     submission,
     setText,
