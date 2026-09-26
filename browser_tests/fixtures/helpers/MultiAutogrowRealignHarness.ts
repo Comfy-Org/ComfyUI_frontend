@@ -101,6 +101,12 @@ export class MultiAutogrowRealignHarness {
     return prompt
   }
 
+  outputImage(nodeId: number | string): Locator {
+    return this.vueNodes
+      .getNodeLocator(String(nodeId))
+      .locator('img[src*="/api/view"]')
+  }
+
   constructor(private readonly page: Page) {
     this.hostSocket = new AgentFollowerHostSocket(
       page,
@@ -124,7 +130,9 @@ export class MultiAutogrowRealignHarness {
     ).input
   }
 
-  async setUp(): Promise<void> {
+  async setUp(
+    options: { settings?: Record<string, unknown> } = {}
+  ): Promise<void> {
     const { page } = this
     // Registered before `bootAgentApp` (with `objectInfo: 'server'` below) so
     // it wins over the empty handler `mockCloudBootRoutes` would otherwise
@@ -212,7 +220,8 @@ export class MultiAutogrowRealignHarness {
       // DOM this test can query.
       settings: {
         'Comfy.VueNodes.Enabled': true,
-        'Comfy.Graph.CanvasInfo': false
+        'Comfy.Graph.CanvasInfo': false,
+        ...options.settings
       }
     })
 
@@ -379,6 +388,14 @@ export class MultiAutogrowRealignHarness {
     await expect(this.heightInput).toHaveValue(String(SENTINEL_HEIGHT))
   }
 
+  applyRemoteWidget(widget: 'width' | 'height', value: number): void {
+    this.hostSocket.send(
+      this.host.apply([
+        { op: 'set_widget', node_id: TARGET_NODE_ID, widget, value }
+      ])
+    )
+  }
+
   async expectSentinelWidgetValues(
     expectedPrompt = SENTINEL_PROMPT
   ): Promise<void> {
@@ -399,16 +416,17 @@ export class MultiAutogrowRealignHarness {
   }
 
   async switchTabsAwayAndBack(): Promise<void> {
-    await expect(
-      this.topbar.workflowTabs.locator('.p-togglebutton')
-    ).toHaveCount(1)
+    await expect(this.topbar.tabs).toHaveCount(1)
     await this.topbar.newWorkflowButton.click()
+    await expect(this.topbar.tabs).toHaveCount(2)
     await expect(
-      this.topbar.workflowTabs.locator('.p-togglebutton')
-    ).toHaveCount(2)
-    await expect(this.topbar.getTab(1)).toHaveAttribute('aria-pressed', 'true')
+      this.topbar.getTab(1).and(this.topbar.getActiveTab())
+    ).toBeVisible()
     await this.topbar.getTab(0).click()
-    await expect(this.topbar.getTab(0)).toHaveClass(/p-togglebutton-checked/)
+    await expect(
+      this.topbar.getTab(0).and(this.topbar.getActiveTab())
+    ).toBeVisible()
+    await this.topbar.dismissWorkflowPopover()
     await expect.poll(() => this.hostSocket.subscribeCount()).toBe(2)
   }
 

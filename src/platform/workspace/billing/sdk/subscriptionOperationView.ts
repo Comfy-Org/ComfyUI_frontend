@@ -95,6 +95,20 @@ function projectFailure(
   const httpStatus = 'httpStatus' in failure ? failure.httpStatus : undefined
   if (httpStatus === 404) return UNAVAILABLE
 
+  // Nothing failed and nothing was charged, so the generic subscription
+  // failure would misread. The earlier payment is what the customer has to
+  // finish, and this sentence is the only thing that says so.
+  if (failure.code === 'OPERATION_ALREADY_PENDING') {
+    return {
+      status: 'error',
+      error: new WorkspaceApiError(
+        t('billingOperation.operationAlreadyPendingDetail'),
+        undefined,
+        failure.code
+      )
+    }
+  }
+
   const serverCode = 'serverCode' in failure ? failure.serverCode : undefined
   const serverMessage =
     'serverMessage' in failure ? failure.serverMessage : undefined

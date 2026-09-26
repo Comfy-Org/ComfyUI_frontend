@@ -6,9 +6,13 @@ import { pathToFileURL } from 'node:url'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AshbyJobPosting } from './ashby.schema'
-import type { RolesSnapshot } from '../data/roles'
+import type { Department, RolesSnapshot } from '../data/roles'
 
-import { fetchRolesForBuild, resetAshbyFetcherForTests } from './ashby'
+import {
+  applyRoleDepartmentOverrides,
+  fetchRolesForBuild,
+  resetAshbyFetcherForTests
+} from './ashby'
 
 const BASE_URL = 'https://ashby.test'
 const BOARD = 'comfy-org'
@@ -304,5 +308,100 @@ describe('fetchRolesForBuild', () => {
     })
     expect(fetchImpl).toHaveBeenCalledTimes(1)
     rmSync(new URL('.', snapshotUrl), { recursive: true, force: true })
+  })
+})
+
+function department(name: string, roles: Department['roles']): Department {
+  return { name, key: name.toLowerCase(), roles }
+}
+
+describe('applyRoleDepartmentOverrides', () => {
+  const overriddenTitle = 'Sr./Staff Product Designer, Developer Platform'
+
+  it('moves an overridden role out of its Ashby department into the target one', () => {
+    const departments = [
+      department('ENGINEERING', [
+        {
+          id: 'role-1',
+          title: overriddenTitle,
+          department: 'Engineering',
+          location: 'San Francisco',
+          jobUrl: 'https://jobs.ashbyhq.com/comfy-org/role-1'
+        },
+        {
+          id: 'role-2',
+          title: 'Member of Technical Staff, Frontend',
+          department: 'Engineering',
+          location: 'San Francisco',
+          jobUrl: 'https://jobs.ashbyhq.com/comfy-org/role-2'
+        }
+      ])
+    ]
+
+    const result = applyRoleDepartmentOverrides(departments)
+
+    const engineering = result.find((d) => d.key === 'engineering')
+    const design = result.find((d) => d.key === 'design')
+    expect(engineering?.roles.map((r) => r.title)).toEqual([
+      'Member of Technical Staff, Frontend'
+    ])
+    expect(design?.name).toBe('DESIGN')
+    expect(design?.roles).toEqual([
+      {
+        id: 'role-1',
+        title: overriddenTitle,
+        department: 'Design',
+        location: 'San Francisco',
+        jobUrl: 'https://jobs.ashbyhq.com/comfy-org/role-1'
+      }
+    ])
+    expect(departments[0].roles[0].department).toBe('Engineering')
+  })
+
+  it('merges into an existing target department rather than duplicating it', () => {
+    const departments = [
+      department('ENGINEERING', [
+        {
+          id: 'role-1',
+          title: overriddenTitle,
+          department: 'Engineering',
+          location: 'San Francisco',
+          jobUrl: 'https://jobs.ashbyhq.com/comfy-org/role-1'
+        }
+      ]),
+      department('DESIGN', [
+        {
+          id: 'role-3',
+          title: 'Senior Product Designer',
+          department: 'Design',
+          location: 'San Francisco',
+          jobUrl: 'https://jobs.ashbyhq.com/comfy-org/role-3'
+        }
+      ])
+    ]
+
+    const result = applyRoleDepartmentOverrides(departments)
+
+    expect(result.filter((d) => d.key === 'design')).toHaveLength(1)
+    const design = result.find((d) => d.key === 'design')
+    expect(design?.roles.map((r) => r.title).sort()).toEqual(
+      ['Senior Product Designer', overriddenTitle].sort()
+    )
+  })
+
+  it('is a no-op for roles with no override', () => {
+    const departments = [
+      department('SALES', [
+        {
+          id: 'role-4',
+          title: `${overriddenTitle} (Remote)`,
+          department: 'Sales',
+          location: 'San Francisco',
+          jobUrl: 'https://jobs.ashbyhq.com/comfy-org/role-4'
+        }
+      ])
+    ]
+
+    expect(applyRoleDepartmentOverrides(departments)).toEqual(departments)
   })
 })

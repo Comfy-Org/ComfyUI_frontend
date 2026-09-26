@@ -66,5 +66,21 @@ test.describe(
         await realign.expectSubmittedValuesNamedCorrectly(CORRUPTED_PROMPT)
       })
     })
+
+    test('applies each remote widget value only to its named field', async ({
+      realign
+    }) => {
+      realign.applyRemoteWidget('width', SENTINEL_WIDTH)
+
+      await expect(realign.widthInput).toHaveValue(String(SENTINEL_WIDTH))
+      await expect(realign.heightInput).toHaveValue('480')
+      await expect(realign.promptField).toHaveValue('')
+
+      realign.applyRemoteWidget('height', SENTINEL_HEIGHT)
+
+      await expect(realign.heightInput).toHaveValue(String(SENTINEL_HEIGHT))
+      await expect(realign.widthInput).toHaveValue(String(SENTINEL_WIDTH))
+      await expect(realign.promptField).toHaveValue('')
+    })
   }
 )

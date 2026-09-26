@@ -1,3 +1,4 @@
+import type { GetFeaturesResponses } from '@comfyorg/ingest-types'
 import type { PostHogConfig } from 'posthog-js'
 
 import type { TelemetryEventName } from '@/platform/telemetry/types'
@@ -78,7 +79,7 @@ export type OnboardingSurvey = {
  * Remote configuration type
  * Configuration fetched from the server at runtime
  */
-export type RemoteConfig = {
+export type RemoteConfig = GetFeaturesResponses[200] & {
   gtm_container_id?: string
   ga_measurement_id?: string
   mixpanel_token?: string
@@ -93,7 +94,6 @@ export type RemoteConfig = {
   }
   subscription_required?: boolean
   server_health_alert?: ServerHealthAlert
-  max_upload_size?: number
   comfy_api_base_url?: string
   comfy_cloud_base_url?: string
   comfy_platform_base_url?: string
@@ -117,11 +117,6 @@ export type RemoteConfig = {
   node_library_essentials_enabled?: boolean
   supports_model_type_tags?: boolean
   free_tier_credits?: number
-  free_tier_balance?: {
-    allowance: number
-    used: number
-    remaining: number
-  }
   free_tier_job_allowance_enabled?: boolean
   new_free_tier_subscriptions?: boolean
   workflow_sharing_enabled?: boolean
@@ -131,6 +126,7 @@ export type RemoteConfig = {
   // funnel it through normalizeHostedBillingDestination before trusting it.
   hosted_billing_destination?: string
   unified_cloud_auth?: boolean
+  unified_web_session?: boolean
   // Wire key carries the server's own spelling; see ServerFeatureFlag.
   embedded_checked_enabled?: boolean
   billing_sdk_topup_enabled?: boolean
@@ -141,6 +137,10 @@ export type RemoteConfig = {
   churnkey_app_id?: string
   sentry_dsn?: string
   turnstile_sitekey?: string
+  /** Absent when the backend has no key configured, not an empty string; always sanitize with the reader before trusting it. */
+  stripe_publishable_key?: string
+  /** Absent when this environment has no billing-web deployment yet; always validate with getBillingWebUrl before trusting it. */
+  billing_web_url?: string
   // Raw, unvalidated wire value (a server typo like 'enfroce' is possible).
   // Always funnel it through normalizeTurnstileMode before trusting it as a
   // TurnstileMode — that resolver is the single narrowing boundary.

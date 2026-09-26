@@ -94,12 +94,12 @@
     },
     {
       "source": "/zh-CN/cloud/enterprise",
-      "destination": "/enterprise/",
+      "destination": "/zh-CN/enterprise/",
       "permanent": true
     },
     {
       "source": "/zh-CN/cloud/enterprise/",
-      "destination": "/enterprise/",
+      "destination": "/zh-CN/enterprise/",
       "permanent": true
     },
     {
@@ -186,6 +186,26 @@
       "source": "/zh-CN/platform/models/",
       "destination": "/zh-CN/platform/router",
       "permanent": true
+    },
+    {
+      "source": "/share-news",
+      "destination": "https://vibe-code-support-page.vercel.app/",
+      "permanent": false
+    },
+    {
+      "source": "/share-news/",
+      "destination": "https://vibe-code-support-page.vercel.app/",
+      "permanent": false
+    },
+    {
+      "source": "/share-news-pleaseeee",
+      "destination": "https://vibe-code-support-page.vercel.app/",
+      "permanent": false
+    },
+    {
+      "source": "/share-news-pleaseeee/",
+      "destination": "https://vibe-code-support-page.vercel.app/",
+      "permanent": false
     }
   ]
 }

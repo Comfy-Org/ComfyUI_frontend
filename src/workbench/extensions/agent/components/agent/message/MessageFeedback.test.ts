@@ -17,7 +17,6 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
 }))
 
 vi.mock(import('@/scripts/api'))
-const fetchApi = vi.mocked(api.fetchApi)
 
 vi.mock(import('@/platform/assets/utils/assetPreviewUtil'), () => ({
   isAssetPreviewSupported: () => false,
@@ -56,7 +55,7 @@ describe('MessageFeedback', () => {
       }
     )
     clipboard.copy.mockClear()
-    fetchApi.mockReset()
+    vi.mocked(api.fetchApi).mockReset()
   })
 
   it('emits the vote, then null when the same vote is clicked again', async () => {
@@ -137,7 +136,9 @@ describe('MessageFeedback', () => {
   })
 
   it('downloads every reply asset from the download action', async () => {
-    fetchApi.mockImplementation(async () => new Response(new Blob(['x'])))
+    vi.mocked(api.fetchApi).mockImplementation(
+      async () => new Response(new Blob(['x']))
+    )
     const createObjectURL = vi.fn(() => 'blob:mock')
     const revokeObjectURL = vi.fn()
     URL.createObjectURL = createObjectURL
@@ -149,14 +150,14 @@ describe('MessageFeedback', () => {
 
     await user.click(screen.getByRole('button', { name: 'Download assets' }))
 
-    await waitFor(() => expect(fetchApi).toHaveBeenCalledTimes(2))
-    expect(fetchApi).toHaveBeenCalledWith('https://x/a.png')
-    expect(fetchApi).toHaveBeenCalledWith('https://x/mesh.glb')
+    await waitFor(() => expect(api.fetchApi).toHaveBeenCalledTimes(2))
+    expect(api.fetchApi).toHaveBeenCalledWith('https://x/a.png')
+    expect(api.fetchApi).toHaveBeenCalledWith('https://x/mesh.glb')
     await waitFor(() => expect(revokeObjectURL).toHaveBeenCalledTimes(2))
   })
 
   it('reports failed files without blocking successful downloads or retry', async () => {
-    fetchApi
+    vi.mocked(api.fetchApi)
       .mockResolvedValueOnce(new Response(new Blob(['x'])))
       .mockResolvedValueOnce(new Response(null, { status: 500 }))
       .mockImplementation(async () => new Response(new Blob(['retry'])))
@@ -186,7 +187,7 @@ describe('MessageFeedback', () => {
 
     await user.click(download)
 
-    await waitFor(() => expect(fetchApi).toHaveBeenCalledTimes(4))
+    await waitFor(() => expect(api.fetchApi).toHaveBeenCalledTimes(4))
     await waitFor(() => expect(createObjectURL).toHaveBeenCalledTimes(3))
     expect(revokeObjectURL).toHaveBeenCalledTimes(3)
   })
