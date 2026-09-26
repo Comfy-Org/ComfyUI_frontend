@@ -1232,11 +1232,12 @@ describe('useMediaAssetActions', () => {
         }
       },
       {
-        name: 'an output that only carries its job on the record',
+        name: 'an output without job metadata, by asset id',
         assets: [groupedJob, flatJobOutput],
         expected: {
-          job_ids: ['job1', 'job2'],
-          naming_strategy: 'group_by_job_time',
+          job_ids: ['job1'],
+          asset_ids: ['flat-asset'],
+          naming_strategy: 'preserve',
           include_previews: true
         }
       },
