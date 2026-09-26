@@ -7,7 +7,10 @@ import type {
   PerfMeasurementResult,
   PerfReportV3
 } from '@e2e/fixtures/utils/perfReportSchema'
-import { perfMeasurementResultSchema } from '@e2e/fixtures/utils/perfReportSchema'
+import {
+  perfMeasurementResultSchema,
+  requireAcceptedMeasurement
+} from '@e2e/fixtures/utils/perfReportSchema'
 
 const TEMP_DIR = join('test-results', 'perf-temp')
 
@@ -54,6 +57,19 @@ export function recordMeasurement(
   const filename = `${result.measurement.name}-${Date.now()}-${randomUUID()}.json`
   writeFileSync(join(TEMP_DIR, filename), JSON.stringify(result))
   return result
+}
+
+/**
+ * Persist a measurement and return its metrics, throwing if it was rejected.
+ *
+ * The order matters and is the reason this lives here rather than in each
+ * spec: the record is written *before* the rejection throws, so a rejected run
+ * survives as evidence in the report instead of vanishing with the failure.
+ */
+export function recordAcceptedMeasurement(
+  result: PerfMeasurementResult
+): PerfMeasurement {
+  return requireAcceptedMeasurement(recordMeasurement(result))
 }
 
 export function writePerfReport(
