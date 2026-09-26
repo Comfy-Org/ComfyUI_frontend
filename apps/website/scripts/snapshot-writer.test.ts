@@ -175,9 +175,10 @@ describe('writeSnapshotIfChanged', () => {
     )
 
     expect(wrote).toBe(true)
-    const written = JSON.parse(readFileSync(snapshotPath, 'utf8'))
-    expect(written.packs[0].displayName).toBe('Renamed pack')
-    expect(written.packs[0].downloads).toBe(2_871_433)
+    const written: unknown = JSON.parse(readFileSync(snapshotPath, 'utf8'))
+    expect(written).toMatchObject({
+      packs: [{ displayName: 'Renamed pack', downloads: 2_871_433 }]
+    })
   })
 
   it('treats a counter as substantive when it is not declared volatile', () => {
