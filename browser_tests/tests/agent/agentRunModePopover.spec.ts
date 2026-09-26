@@ -17,6 +17,73 @@ const test = mergeTests(agentTest, webSocketFixture)
 test.describe('Agent run permissions popover', { tag: '@cloud' }, () => {
   test.use({ connectWebSocketToServer: false })
 
+  // Source: qspec-4 story 94, https://app.notion.com/p/QA-Test-Plan-cloud-1-54-patch-prod-e7901922-to-c378cf82-Agent-backports-3e56d73d3650816f92afe110226eda06
+  test('Tab reaches each composer action in its visual order', async ({
+    agentPanel,
+    comfyPage
+  }) => {
+    await agentPanel.open()
+    await agentPanel.selectWorkflow()
+    const panel = agentPanel.root
+    const composer = panel.getByRole('textbox', {
+      name: new RegExp(enMessages.agent.placeholder.split(',')[0])
+    })
+    const addToPrompt = panel.getByRole('button', {
+      name: enMessages.agent.addToPrompt
+    })
+    const runMode = panel.getByRole('button', {
+      name: enMessages.agent.runModeTriggerAsk,
+      exact: true
+    })
+    const send = panel.getByRole('button', {
+      name: enMessages.agent.send,
+      exact: true
+    })
+
+    await composer.fill('Make the image warmer')
+    await composer.focus()
+    await comfyPage.page.keyboard.press('Tab')
+    await expect(addToPrompt).toBeFocused()
+    await comfyPage.page.keyboard.press('Tab')
+    await expect(runMode).toBeFocused()
+    await comfyPage.page.keyboard.press('Tab')
+    await expect(send).toBeFocused()
+  })
+
+  // Source: qspec-4 story 95, reports/qa/2026-09-02-a11y.md (A11Y-V1-01), https://github.com/Comfy-Org/ComfyUI_frontend/pull/16596
+  test('discloses the expanded state of composer menus', async ({
+    agentPanel,
+    comfyPage
+  }) => {
+    await agentPanel.open()
+    await agentPanel.selectWorkflow()
+    const panel = agentPanel.root
+    const addToPrompt = panel.getByRole('button', {
+      name: enMessages.agent.addToPrompt
+    })
+    const runMode = panel.getByRole('button', {
+      name: enMessages.agent.runModeTriggerAsk,
+      exact: true
+    })
+
+    await expect(addToPrompt).toHaveAttribute('aria-expanded', 'false')
+    await addToPrompt.click()
+    await expect(addToPrompt).toHaveAttribute('aria-expanded', 'true')
+    await expect(
+      comfyPage.page.getByRole('menuitem', {
+        name: enMessages.agent.attachFiles
+      })
+    ).toBeVisible()
+
+    await comfyPage.page.keyboard.press('Escape')
+    await expect(addToPrompt).toHaveAttribute('aria-expanded', 'false')
+    await expect(runMode).toHaveAttribute('aria-expanded', 'false')
+    await runMode.click()
+    await expect(runMode).toHaveAttribute('aria-expanded', 'true')
+    await comfyPage.page.keyboard.press('Escape')
+    await expect(runMode).toHaveAttribute('aria-expanded', 'false')
+  })
+
   test('Escape dismisses the run permissions popover', async ({
     agentPanel,
     comfyPage
