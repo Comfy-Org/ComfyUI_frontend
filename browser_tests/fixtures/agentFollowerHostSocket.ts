@@ -33,6 +33,18 @@ export interface ClientDocFrame {
   /** `op:node_id` per op for a `doc_ops` frame; empty otherwise. */
   ops: string[]
   opIds: string[]
+  /**
+   * The op objects as they arrived on the wire, so a pin whose subject is an
+   * op's *payload* can assert it. {@link ops} collapses each op to
+   * `op:node_id`, which cannot distinguish a `set_node_field` carrying
+   * `field: 'title'` from one carrying `field: 'mode'`.
+   *
+   * Typed as a plain record rather than a wire-op type on purpose: the same
+   * reason {@link WireOpEnvelope} claims nothing beyond `op` and `op_id` — the
+   * applier's `validateEnvelope` is the judge of payload shape, not this
+   * fixture.
+   */
+  opPayloads: Record<string, unknown>[]
 }
 
 interface ParsedClientDocFrame {
@@ -163,7 +175,8 @@ export class AgentFollowerHostSocket {
       type: frame.type,
       workflowId: frame.workflowId,
       ops: ops.map((op) => opLabel(op)),
-      opIds: ops.map((op) => op.op_id)
+      opIds: ops.map((op) => op.op_id),
+      opPayloads: ops.map((op) => ({ ...op }))
     })
   }
 

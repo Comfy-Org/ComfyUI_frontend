@@ -3,12 +3,25 @@ import { expect } from '@playwright/test'
 import type { AgentConversationHarness } from '@e2e/fixtures/agentConversationFixture'
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 
-/** Every op this client has minted so far, in frame order, as `op:node_id`. */
-function mintedOps(agentConversation: AgentConversationHarness): string[] {
+/**
+ * Every op this client has minted so far, in frame order, reduced to the four
+ * fields this pin is about. Deliberately not the `op:node_id` label the fixture
+ * also exposes: that collapses the payload away, so a `set_node_field` on the
+ * right node carrying `field: 'mode'`, or the wrong title, would satisfy it —
+ * and the mint under test is described as covering title *and mode* changes,
+ * which is exactly where that confusion would land.
+ */
+function mintedFieldOps(agentConversation: AgentConversationHarness) {
   return agentConversation
     .clientDocFrames()
     .filter((frame) => frame.type === 'doc_ops')
-    .flatMap((frame) => frame.ops)
+    .flatMap((frame) => frame.opPayloads)
+    .map(({ op, node_id, field, value }) => ({
+      op,
+      node_id: String(node_id),
+      field,
+      value
+    }))
 }
 
 const CASE = 'agent-rec-text-only-answer'
@@ -46,7 +59,7 @@ test.describe(
       // the whole collected list would make the assertion order-dependent on
       // anything the turn itself mints, and — worse for a `test.fail()` pin —
       // could keep classifying a working rename as an expected failure.
-      const opsBeforeRename = mintedOps(agentConversation).length
+      const opsBeforeRename = mintedFieldOps(agentConversation).length
 
       await agentConversation.vueNodes.renameNode(RENAMED_NODE_ID, NEW_TITLE)
 
@@ -59,9 +72,19 @@ test.describe(
 
       test.fail()
 
+      // One assertion, not two: inside a `test.fail()` body the first failing
+      // expect aborts the rest, so a follow-up payload check would be dead
+      // code in exactly the state this pin describes.
       await expect
-        .poll(() => mintedOps(agentConversation).slice(opsBeforeRename))
-        .toEqual([`set_node_field:${RENAMED_NODE_ID}`])
+        .poll(() => mintedFieldOps(agentConversation).slice(opsBeforeRename))
+        .toEqual([
+          {
+            op: 'set_node_field',
+            node_id: RENAMED_NODE_ID,
+            field: 'title',
+            value: NEW_TITLE
+          }
+        ])
     })
   }
 )
