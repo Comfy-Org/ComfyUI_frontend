@@ -256,7 +256,7 @@ test.describe(
       await expect(warning).toBeVisible()
       await expect(agentPanel.attachmentChip(oversized.name)).toHaveCount(0)
 
-      await warning.waitFor({ state: 'hidden', timeout: 15_000 })
+      await expect(warning).toBeHidden({ timeout: 15_000 })
 
       // Route 2: a drop of the same file. The bytes are generated in the page;
       // shipping 20 MB through `page.evaluate` as a number array is not viable.
