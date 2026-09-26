@@ -537,4 +537,11 @@ export function computeProcessedWidgets({
   return Array.from(new Set(ids))
     .map((id) => processWidget(id, ctx))
     .filter((widget): widget is ProcessedWidget => widget !== null)
+    .map((widget) => ({
+      ...widget,
+      simplified: {
+        ...widget.simplified,
+        sourceWidget: liveWidgets.get(widget.widgetId)
+      }
+    }))
 }
