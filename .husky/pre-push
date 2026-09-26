@@ -10,5 +10,9 @@ if [ -n "${CI-}" ]; then
   exit 0
 fi
 
+# Full ESLint config, including the Tailwind rules pre-commit skips,
+# over the files the pushed commits touch.
+pnpm exec tsx scripts/lint-pushed.ts 1>&2
+
 pnpm knip 1>&2
 pnpm fallow:audit 1>&2
