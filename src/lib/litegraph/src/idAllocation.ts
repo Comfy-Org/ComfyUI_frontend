@@ -15,6 +15,13 @@ export interface LGraphState {
   lastRerouteId: RerouteId
 }
 
+class IdSpaceExhaustedError extends Error {
+  constructor() {
+    super('ID space exhausted')
+    this.name = 'IdSpaceExhaustedError'
+  }
+}
+
 export function createLGraphState(): LGraphState {
   return {
     lastGroupId: 0,
@@ -22,6 +29,42 @@ export function createLGraphState(): LGraphState {
     lastLinkId: toLinkId(0),
     lastRerouteId: toRerouteId(0)
   }
+}
+
+export function cloneLGraphState(state: LGraphState): LGraphState {
+  return { ...state }
+}
+
+export function commitLGraphState(
+  target: LGraphState,
+  source: LGraphState
+): void {
+  Object.assign(target, source)
+}
+
+function advanceCounter(counter: number): number {
+  if (
+    !Number.isSafeInteger(counter) ||
+    counter < 0 ||
+    counter === Number.MAX_SAFE_INTEGER
+  ) {
+    throw new IdSpaceExhaustedError()
+  }
+  return counter + 1
+}
+
+export function findNextAvailableId(
+  usedIds: Set<number>,
+  advance: () => number
+): number {
+  for (let attempts = 0; attempts <= usedIds.size; attempts++) {
+    const nextId = advance()
+    if (!Number.isSafeInteger(nextId) || nextId < 0) {
+      throw new IdSpaceExhaustedError()
+    }
+    if (!usedIds.has(nextId)) return nextId
+  }
+  throw new IdSpaceExhaustedError()
 }
 
 /**
@@ -136,38 +179,48 @@ export function mintNodeId(
 ): NodeId {
   return mode === 'crdt-disjoint'
     ? mintCrdtDisjointNodeId()
-    : toNodeId(++state.lastNodeId)
+    : toNodeId((state.lastNodeId = advanceCounter(state.lastNodeId)))
 }
 
 export function mintGroupId(state: LGraphState): GroupId {
-  return toGroupId(++state.lastGroupId)
+  return toGroupId((state.lastGroupId = advanceCounter(state.lastGroupId)))
 }
 
 export function mintLinkId(state: LGraphState): LinkId {
-  state.lastLinkId = toLinkId(Number(state.lastLinkId) + 1)
+  state.lastLinkId = toLinkId(advanceCounter(Number(state.lastLinkId)))
   return state.lastLinkId
 }
 
 export function mintRerouteId(state: LGraphState): RerouteId {
-  state.lastRerouteId = toRerouteId(Number(state.lastRerouteId) + 1)
+  state.lastRerouteId = toRerouteId(advanceCounter(Number(state.lastRerouteId)))
   return state.lastRerouteId
 }
 
 export function observeNodeId(state: LGraphState, id: NodeId): void {
   const numericId = Number(id)
-  if (Number.isInteger(numericId) && numericId > state.lastNodeId) {
+  if (
+    Number.isSafeInteger(numericId) &&
+    numericId >= 0 &&
+    numericId > state.lastNodeId
+  ) {
     state.lastNodeId = numericId
   }
 }
 
 export function observeGroupId(state: LGraphState, id: GroupId): void {
-  if (id > state.lastGroupId) state.lastGroupId = id
+  if (Number.isSafeInteger(id) && id >= 0 && id > state.lastGroupId) {
+    state.lastGroupId = id
+  }
 }
 
 export function observeLinkId(state: LGraphState, id: LinkId): void {
-  if (id > state.lastLinkId) state.lastLinkId = id
+  if (Number.isSafeInteger(id) && id >= 0 && id > state.lastLinkId) {
+    state.lastLinkId = id
+  }
 }
 
 export function observeRerouteId(state: LGraphState, id: RerouteId): void {
-  if (id > state.lastRerouteId) state.lastRerouteId = id
+  if (Number.isSafeInteger(id) && id >= 0 && id > state.lastRerouteId) {
+    state.lastRerouteId = id
+  }
 }

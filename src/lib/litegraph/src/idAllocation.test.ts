@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest'
 
 import {
   AGENT_RESERVED_BIT,
+  cloneLGraphState,
+  commitLGraphState,
   createLGraphState,
+  findNextAvailableId,
   isReservedBitRangeNodeId,
   matchesReservedBitConvention,
   mintGroupId,
@@ -68,6 +71,99 @@ describe('idAllocation', () => {
     observeNodeId(state, toNodeId('named'))
 
     expect(state.lastNodeId).toBe(12)
+  })
+
+  it.for([
+    {
+      name: 'node',
+      observe: (state: ReturnType<typeof createLGraphState>, value: number) =>
+        observeNodeId(state, toNodeId(value)),
+      mint: mintNodeId
+    },
+    {
+      name: 'group',
+      observe: (state: ReturnType<typeof createLGraphState>, value: number) =>
+        observeGroupId(state, toGroupId(value)),
+      mint: mintGroupId
+    },
+    {
+      name: 'link',
+      observe: (state: ReturnType<typeof createLGraphState>, value: number) =>
+        observeLinkId(state, toLinkId(value)),
+      mint: mintLinkId
+    },
+    {
+      name: 'reroute',
+      observe: (state: ReturnType<typeof createLGraphState>, value: number) =>
+        observeRerouteId(state, toRerouteId(value)),
+      mint: mintRerouteId
+    }
+  ])(
+    'continues $name allocation above the former limit',
+    ({ observe, mint }) => {
+      const state = createLGraphState()
+      observe(state, 100_000_001)
+
+      expect(Number(mint(state))).toBe(100_000_002)
+    }
+  )
+
+  it.for([
+    {
+      name: 'node',
+      setCounter: (state: ReturnType<typeof createLGraphState>) => {
+        state.lastNodeId = Number.MAX_SAFE_INTEGER
+      },
+      mint: mintNodeId
+    },
+    {
+      name: 'group',
+      setCounter: (state: ReturnType<typeof createLGraphState>) => {
+        state.lastGroupId = Number.MAX_SAFE_INTEGER
+      },
+      mint: mintGroupId
+    },
+    {
+      name: 'link',
+      setCounter: (state: ReturnType<typeof createLGraphState>) => {
+        state.lastLinkId = toLinkId(Number.MAX_SAFE_INTEGER)
+      },
+      mint: mintLinkId
+    },
+    {
+      name: 'reroute',
+      setCounter: (state: ReturnType<typeof createLGraphState>) => {
+        state.lastRerouteId = toRerouteId(Number.MAX_SAFE_INTEGER)
+      },
+      mint: mintRerouteId
+    }
+  ])('rejects unsafe $name allocation', ({ setCounter, mint }) => {
+    const state = createLGraphState()
+    setCounter(state)
+
+    expect(() => mint(state)).toThrow('ID space exhausted')
+  })
+
+  it('bounds collision searches by the number of reservations', () => {
+    let calls = 0
+
+    expect(() =>
+      findNextAvailableId(new Set([1, 2]), () => {
+        calls++
+        return 1
+      })
+    ).toThrow('ID space exhausted')
+    expect(calls).toBe(3)
+  })
+
+  it('commits speculative counter updates only when requested', () => {
+    const state = createLGraphState()
+    const workingState = cloneLGraphState(state)
+    mintNodeId(workingState)
+
+    expect(state.lastNodeId).toBe(0)
+    commitLGraphState(state, workingState)
+    expect(state.lastNodeId).toBe(1)
   })
 
   describe('isReservedBitRangeNodeId', () => {

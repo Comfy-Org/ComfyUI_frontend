@@ -184,11 +184,6 @@
       "count": 1
     }
   },
-  "src/lib/litegraph/src/subgraph/subgraphDeduplication.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
   "src/platform/assets/services/assetService.ts": {
     "comfy/no-new-error-throw": {
       "count": 21

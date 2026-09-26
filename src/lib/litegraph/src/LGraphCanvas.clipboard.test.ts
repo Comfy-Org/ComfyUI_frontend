@@ -63,6 +63,32 @@ function createSerialisedNode(
   }
 }
 
+function createSubgraphClipboardItems(interiorNodeId: number): ClipboardItems {
+  return {
+    nodes: [],
+    groups: [],
+    reroutes: [],
+    links: [],
+    subgraphs: [
+      {
+        id: createUuidv4(),
+        version: 1,
+        revision: 0,
+        state: {
+          lastNodeId: 0,
+          lastLinkId: 0,
+          lastGroupId: 0,
+          lastRerouteId: 0
+        },
+        name: 'Pasted Subgraph',
+        inputNode: { id: SUBGRAPH_INPUT_ID, bounding: [0, 0, 10, 10] },
+        outputNode: { id: SUBGRAPH_OUTPUT_ID, bounding: [0, 0, 10, 10] },
+        nodes: [createSerialisedNode(interiorNodeId, 'test/node')]
+      }
+    ]
+  }
+}
+
 describe('remapClipboardSubgraphNodeIds', () => {
   it('remaps pasted subgraph interior IDs and proxyWidgets references', () => {
     const rootGraph = new LGraph()
@@ -195,6 +221,39 @@ describe('remapClipboardSubgraphNodeIds', () => {
         sourcePreviewName: '$$canvas-image-preview'
       }
     ])
+  })
+
+  it('remaps collisions above the former fixed limit', () => {
+    const rootGraph = new LGraph()
+    const existingNode = new LGraphNode('existing')
+    existingNode.id = toNodeId(1)
+    rootGraph.add(existingNode)
+    rootGraph.state.lastNodeId = 100_000_000
+    const parsed = createSubgraphClipboardItems(1)
+
+    remapClipboardSubgraphNodeIds(parsed, rootGraph)
+
+    expect(parsed.subgraphs?.[0].nodes?.[0].id).toBe(100_000_001)
+    expect(rootGraph.state.lastNodeId).toBe(100_000_001)
+  })
+
+  it('closes change tracking and preserves counters when remapping fails', () => {
+    const rootGraph = new LGraph()
+    const existingNode = new LGraphNode('existing')
+    existingNode.id = toNodeId(1)
+    rootGraph.add(existingNode)
+    rootGraph.state.lastNodeId = Number.MAX_SAFE_INTEGER
+    const canvas = createCanvas(rootGraph)
+    const afterGraphChange = vi.spyOn(rootGraph, 'afterChange')
+    const afterCanvasChange = vi.spyOn(canvas, 'emitAfterChange')
+    const parsed = createSubgraphClipboardItems(1)
+
+    expect(() => canvas._deserializeItems(parsed, {})).toThrow(
+      'ID space exhausted'
+    )
+    expect(rootGraph.state.lastNodeId).toBe(Number.MAX_SAFE_INTEGER)
+    expect(afterGraphChange).toHaveBeenCalledOnce()
+    expect(afterCanvasChange).toHaveBeenCalledOnce()
   })
 })
 

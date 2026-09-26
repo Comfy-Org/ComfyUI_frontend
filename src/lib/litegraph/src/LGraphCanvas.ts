@@ -48,7 +48,13 @@ import type { ContextMenu } from './ContextMenu'
 import { createCursorCache } from './cursorCache'
 import { DragAndScale } from './DragAndScale'
 import type { AnimationOptions } from './DragAndScale'
-import { mintNodeId, observeNodeId } from './idAllocation'
+import {
+  cloneLGraphState,
+  commitLGraphState,
+  findNextAvailableId,
+  mintNodeId,
+  observeNodeId
+} from './idAllocation'
 import type { LGraph, SubgraphId } from './LGraph'
 import { LGraphGroup } from './LGraphGroup'
 import type { SlotTypeDefaultNodeOpts } from './LiteGraphGlobal'
@@ -4274,6 +4280,20 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     graph.beforeChange()
     this.emitBeforeChange()
 
+    try {
+      return this._deserializeItemsBody(parsed, graph, connectInputs, position)
+    } finally {
+      graph.afterChange()
+      this.emitAfterChange()
+    }
+  }
+
+  private _deserializeItemsBody(
+    parsed: ClipboardItems,
+    graph: LGraph,
+    connectInputs: boolean,
+    position: Point
+  ): ClipboardPasteResult | undefined {
     // Parse & initialise
     parsed.nodes ??= []
     parsed.groups ??= []
@@ -4483,9 +4503,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.selectItems(created)
     forEachNode(graph, (n) => n.onGraphConfigured?.())
     forEachNode(graph, (n) => n.onAfterGraphConfigured?.())
-
-    graph.afterChange()
-    this.emitAfterChange()
 
     return results
   }
@@ -9060,21 +9077,22 @@ export function remapClipboardSubgraphNodeIds(
   parsed: ClipboardItems,
   rootGraph: LGraph
 ): void {
+  // Mint/observe against a disposable copy of the graph's ID state so a
+  // throw (e.g. ID space exhaustion) leaves the real allocator untouched.
+  const workingState = cloneLGraphState(rootGraph.state)
+
   const usedNodeIds = new Set<number>()
   forEachNode(rootGraph, (node) => {
     const numericId = Number(node.id)
     if (!Number.isInteger(numericId)) return
     usedNodeIds.add(numericId)
-    observeNodeId(rootGraph.state, toNodeId(numericId))
+    observeNodeId(workingState, toNodeId(numericId))
   })
 
-  function nextUniqueNodeId() {
-    let nextId = Number(mintNodeId(rootGraph.state))
-    while (usedNodeIds.has(nextId)) {
-      nextId = Number(mintNodeId(rootGraph.state))
-    }
-    usedNodeIds.add(nextId)
-    return nextId
+  function nextUniqueNodeId(): number {
+    return findNextAvailableId(usedNodeIds, () =>
+      Number(mintNodeId(workingState))
+    )
   }
 
   const subgraphNodeIdMap = new Map<
@@ -9091,13 +9109,14 @@ export function remapClipboardSubgraphNodeIds(
       if (usedNodeIds.has(nodeInfo.id)) {
         const oldId = nodeInfo.id
         const newId = nextUniqueNodeId()
+        usedNodeIds.add(newId)
         remappedIds.set(oldId, newId)
         nodeInfo.id = newId
         continue
       }
 
       usedNodeIds.add(nodeInfo.id)
-      observeNodeId(rootGraph.state, toNodeId(nodeInfo.id))
+      observeNodeId(workingState, toNodeId(nodeInfo.id))
     }
 
     if (remappedIds.size > 0) {
@@ -9117,4 +9136,6 @@ export function remapClipboardSubgraphNodeIds(
     remapProxyWidgets(nodeInfo, remappedIds)
     remapPreviewExposures(nodeInfo, remappedIds)
   }
+
+  commitLGraphState(rootGraph.state, workingState)
 }

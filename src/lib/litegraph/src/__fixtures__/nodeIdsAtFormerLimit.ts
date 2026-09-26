@@ -4,15 +4,7 @@ import {
 } from '@/lib/litegraph/src/constants'
 import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
 
-/**
- * Workflow where lastNodeId is near the MAX_NODE_ID ceiling (100_000_000)
- * and root node 100_000_000 reserves the only remaining candidate ID.
- *
- * Both subgraph definitions share node IDs [3, 8, 37]. When SubgraphB's
- * duplicates need remapping, candidate 100_000_000 is already reserved,
- * so the next candidate (100_000_001) exceeds MAX_NODE_ID and must throw.
- */
-export const nodeIdSpaceExhausted = {
+export const nodeIdsAtFormerLimit = {
   id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
   version: 1,
   revision: 0,

@@ -65,6 +65,7 @@ import { useEntityIdStore } from '@/stores/entityIdStore'
 import { useExecutionOrderStore } from '@/stores/executionOrderStore'
 import { useGraphMetadataStore } from '@/stores/graphMetadataStore'
 import { rekeyGraphId } from '@/stores/rekeyGraphId'
+import { toGroupId } from '@/types/groupId'
 import {
   UNASSIGNED_NODE_ID,
   compareNodeIds,
@@ -3134,17 +3135,13 @@ export class LGraph
           const runtimeLastNodeId = runtimeOptional(lastNodeId)
           const runtimeLastRerouteId = runtimeOptional(lastRerouteId)
           if (runtimeLastGroupId != null)
-            state.lastGroupId = Math.max(state.lastGroupId, runtimeLastGroupId)
+            observeGroupId(state, toGroupId(runtimeLastGroupId))
           if (runtimeLastLinkId != null)
-            state.lastLinkId = toLinkId(
-              Math.max(state.lastLinkId, runtimeLastLinkId)
-            )
+            observeLinkId(state, toLinkId(runtimeLastLinkId))
           if (runtimeLastNodeId != null)
-            state.lastNodeId = Math.max(state.lastNodeId, runtimeLastNodeId)
+            observeNodeId(state, toNodeId(runtimeLastNodeId))
           if (runtimeLastRerouteId != null)
-            state.lastRerouteId = toRerouteId(
-              Math.max(state.lastRerouteId, runtimeLastRerouteId)
-            )
+            observeRerouteId(state, toRerouteId(runtimeLastRerouteId))
         }
 
         // Links
