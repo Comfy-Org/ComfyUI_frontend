@@ -43,7 +43,7 @@ describe('the agentPanel store id', () => {
     expect(Number.isFinite(store.width)).toBe(true)
     expect(typeof store.toggleMaximize).toBe('function')
     expect(Object.keys(pinia.state.value.agentPanel)).toContain(
-      'workflowTargetSelection'
+      'targetTracking'
     )
   })
 

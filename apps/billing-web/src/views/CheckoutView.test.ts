@@ -1,9 +1,10 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
-import { nextTick } from 'vue'
+import { nextTick, ref } from 'vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import type { BillingOperationState } from '@comfyorg/account-core/billing'
+import type { AccountCredential } from '@comfyorg/account-core/session'
 import { BILLING_CLIENT_KEY } from '@comfyorg/account-ui/billing'
 import { parseBillingEntry } from '@comfyorg/billing-contract'
 
@@ -25,11 +26,51 @@ const ENTRY_QUERY = 'product=comfyui&return_to=comfyui_workspace'
 const ENTRY_QUERY_PATH = `/v1/checkout?${ENTRY_QUERY}`
 const CHECKOUT_PATH = `${ENTRY_QUERY_PATH}&plan=creator_monthly`
 
-/** The two values the view and its surface read; a test-family key stands in for a deployment's. */
+/** The values this view and its surface read; a test-family key stands in for a deployment's. */
 vi.mock<unknown>(import('@/config/env'), () => ({
   BILLING_WEB_ENV: 'test',
-  STRIPE_PUBLISHABLE_KEY: 'pk_test_example'
+  CLOUD_BASE_URL: 'https://testcloud.comfy.org'
 }))
+
+vi.mock(import('@/config/stripeKey'), () => ({
+  awaitBillingWebStripeKey: () => Promise.resolve('pk_test_example'),
+  useBillingWebStripeKey: () => ref('pk_test_example')
+}))
+
+const workspace = vi.hoisted(() => ({
+  session: undefined as AccountCredential | undefined,
+  bound: undefined as string | undefined
+}))
+
+vi.mock(import('@/session/billingWebSession'), async () => {
+  const { computed } = await import('vue')
+  return {
+    useBillingWebSession: () => ({
+      phase: computed(() =>
+        workspace.session ? 'authenticated' : 'signed-out'
+      ),
+      user: computed(() => null),
+      session: computed(() => workspace.session),
+      failure: computed(() => undefined)
+    })
+  }
+})
+
+vi.mock(import('@/entry/workspaceBinding'), () => ({
+  boundWorkspaceId: () => workspace.bound,
+  bindEntryWorkspace: () => false
+}))
+
+function teamSession(): AccountCredential {
+  return {
+    token: 'jwt-1',
+    permissions: [],
+    expiresAt: Date.now() + 3_600_000,
+    uid: 'uid-1',
+    workspace: { id: 'ws-team', name: 'Acme Team', type: 'team' },
+    role: 'owner'
+  }
+}
 
 const challengeMocks = vi.hoisted(() => ({
   createPort: vi.fn(),
@@ -37,8 +78,10 @@ const challengeMocks = vi.hoisted(() => ({
 }))
 
 vi.mock(import('@/session/stripeChallengePort'), () => ({
-  createStripeChallengePort: (key: string) => {
-    challengeMocks.createPort(key)
+  createDeferredStripeChallengePort: (
+    getKey: () => string | undefined | Promise<string | undefined>
+  ) => {
+    void Promise.resolve(getKey()).then((key) => challengeMocks.createPort(key))
     return { handleNextAction: challengeMocks.handleNextAction }
   }
 }))
@@ -47,7 +90,10 @@ vi.mock(import('@/session/stripeChallengePort'), () => ({
  * The provider form is covered in the package against the real Stripe mocks.
  * Here it records what it was handed and lets a test hand back a token.
  */
-const formProps = vi.hoisted(() => ({ value: {} as Record<string, unknown> }))
+const formProps = vi.hoisted(() => ({
+  value: {} as Record<string, unknown>,
+  mounted: false
+}))
 let reportConfirm: (confirmationToken: string) => void = () => {}
 
 vi.mock<unknown>(import('@comfyorg/account-ui/billing/stripe'), () => ({
@@ -74,6 +120,7 @@ vi.mock<unknown>(import('@comfyorg/account-ui/billing/stripe'), () => ({
       }
     ) {
       formProps.value = props
+      formProps.mounted = true
       reportConfirm = (token) => emit('confirm', token)
       return () =>
         slots.submit?.({ disabled: !props.canSubmit, loading: props.isLoading })
@@ -121,6 +168,12 @@ function stubNavigation() {
 }
 
 describe('CheckoutView', () => {
+  beforeEach(() => {
+    workspace.session = undefined
+    workspace.bound = undefined
+    formProps.mounted = false
+  })
+
   it('quotes the plan the link names and prices the summary from it', async () => {
     const fake = await renderCheckout()
 
@@ -132,6 +185,29 @@ describe('CheckoutView', () => {
     expect(screen.getAllByText('$28.00')).toHaveLength(2)
     expect(screen.getByText('USD per month')).toBeInTheDocument()
     expect(screen.getByText('$69.00')).toBeInTheDocument()
+  })
+
+  it('quotes and subscribes with the team credit stop the link names', async () => {
+    const path = `${ENTRY_QUERY_PATH}&plan=team_per_credit_annual&team_credit_stop_id=stop_700`
+    const fake = await renderCheckout(path)
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+
+    expect(fake.previewSubscribe).toHaveBeenCalledWith(
+      { planSlug: 'team_per_credit_annual', teamCreditStopId: 'stop_700' },
+      expect.anything()
+    )
+
+    reportConfirm('ctoken_1')
+
+    await waitFor(() =>
+      expect(fake.subscribe).toHaveBeenCalledWith(
+        expect.objectContaining({
+          plan_slug: 'team_per_credit_annual',
+          team_credit_stop_id: 'stop_700',
+          return_url: expect.stringContaining('team_credit_stop_id=stop_700')
+        })
+      )
+    )
   })
 
   it('re-quotes when the entry names a different plan and never submits a stale quote', async () => {
@@ -385,6 +461,42 @@ describe('CheckoutView', () => {
     )
   })
 
+  it('returns the customer into the workspace the session was minted for', async () => {
+    workspace.session = teamSession()
+    workspace.bound = 'ws-other'
+    await renderCheckout(CHECKOUT_PATH, {
+      subscribe: {
+        status: 'ok',
+        value: { phase: 'succeeded', operation: succeededOperation('op_9') }
+      }
+    })
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+
+    reportConfirm('ctoken_1')
+
+    await screen.findByRole('heading', { name: "You're all set" })
+    expect(
+      screen.getByRole('link', { name: 'Return to ComfyUI' })
+    ).toHaveAttribute(
+      'href',
+      'https://testcloud.comfy.org/?workspace=ws-team&billing_result=success&billing_ref=op_9'
+    )
+  })
+
+  it('names the minted workspace on the hosted payment way back here', async () => {
+    workspace.session = teamSession()
+    const fake = await renderCheckout()
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+
+    reportConfirm('ctoken_1')
+
+    await waitFor(() => expect(fake.subscribe).toHaveBeenCalled())
+    const [request] = fake.subscribe.mock.calls[0]
+    const returnUrl = new URL(String(request.return_url))
+    expect(returnUrl.pathname).toBe('/v1/result')
+    expect(returnUrl.searchParams.get('workspace')).toBe('ws-team')
+  })
+
   it('keeps a declined customer on the page with the form one click away', async () => {
     await renderCheckout(CHECKOUT_PATH, {
       subscribe: {
@@ -520,6 +632,42 @@ describe('CheckoutView', () => {
       `/v1/subscription?${ENTRY_QUERY}`
     )
   })
+
+  it.for([
+    ['upgrade', true, 2800] as const,
+    ['downgrade', true, 1400] as const,
+    ['duration_change', false, 0] as const
+  ])(
+    'confirms a %s plan change against the saved payment method, no card form',
+    async ([transitionType, isImmediate, costTodayCents]) => {
+      const fake = await renderCheckout(CHECKOUT_PATH, {
+        preview: {
+          status: 'ok',
+          value: previewOf({
+            transition_type: transitionType,
+            is_immediate: isImmediate,
+            cost_today_cents: costTodayCents,
+            amount_due_cents: costTodayCents
+          })
+        }
+      })
+      const pay = await screen.findByRole('button', {
+        name: 'Pay and subscribe'
+      })
+      expect(formProps.mounted).toBe(false)
+
+      await userEvent.click(pay)
+
+      await waitFor(() =>
+        expect(fake.subscribe).toHaveBeenCalledWith(
+          expect.objectContaining({ plan_slug: 'creator_monthly' })
+        )
+      )
+      expect(fake.subscribe.mock.calls[0][0]).not.toHaveProperty(
+        'confirmation_token'
+      )
+    }
+  )
 
   it('explains a quote the server refused and offers the way back', async () => {
     await renderCheckout(CHECKOUT_PATH, {

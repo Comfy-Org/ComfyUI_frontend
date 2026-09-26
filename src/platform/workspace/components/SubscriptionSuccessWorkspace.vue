@@ -71,7 +71,7 @@
             v-if="invitedEmails.length > 0"
             ref="invitedMessage"
             tabindex="-1"
-            class="text-success-foreground m-0 text-sm"
+            class="m-0 text-sm text-success-background"
           >
             {{
               $t(

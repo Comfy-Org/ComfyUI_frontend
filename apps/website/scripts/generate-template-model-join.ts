@@ -14,8 +14,8 @@ import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import {
-  workshopModels,
-  routerModelSlugAliases
+  authoredRouterModelSlugAliases,
+  authoredWorkshopModels
 } from '../src/config/workshop-browse-content'
 import type { WorkshopModel } from '../src/config/models-catalogue'
 import { hubTemplatesSchema } from '../src/lib/hub/types'
@@ -63,7 +63,7 @@ function decodeFromName(name: string): string | undefined {
 
 export function buildTemplateModelJoin(
   rawTemplates: unknown,
-  models: readonly WorkshopModel[] = workshopModels
+  models: readonly WorkshopModel[] = authoredWorkshopModels
 ): { joined: Record<string, string>; rejected: string[] } {
   const templates = hubTemplatesSchema.parse(rawTemplates)
   const joined: Record<string, string> = {}
@@ -79,7 +79,7 @@ export function buildTemplateModelJoin(
     const sourceSlug =
       exactSlug ?? (exactId ? exactId.replace('/', '--') : family)
     if (!sourceSlug) continue
-    const slug = routerModelSlugAliases.get(sourceSlug) ?? sourceSlug
+    const slug = authoredRouterModelSlugAliases.get(sourceSlug) ?? sourceSlug
     const model = partnerModelFor(template, models, slug)
     if (model) {
       joined[template.name] = model.slug

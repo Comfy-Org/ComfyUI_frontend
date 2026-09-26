@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 
-import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 import type { MenuOption } from './useMoreOptionsMenu'
 import {
@@ -345,6 +345,27 @@ describe('contextMenuConverter', () => {
       const items = [{ content: 'Disabled Item', disabled: true }]
       const result = convertContextMenuToOptions(items, undefined, false)
       expect(result[0].disabled).toBe(true)
+    })
+
+    it('forwards the LGraphNode argument to the callback (LGraphCanvas.onMenuNode* contract)', () => {
+      const node = new LGraphNode('Custom Action')
+      let receivedNode: unknown = 'NOT_CALLED'
+      const callback = function (
+        this: unknown,
+        _value: unknown,
+        _options: unknown,
+        _e: unknown,
+        _menu: unknown,
+        node: unknown
+      ) {
+        receivedNode = node
+      }
+      const items = [{ content: 'Custom Action', callback }]
+
+      const result = convertContextMenuToOptions(items, node, false)
+      result[0].action?.()
+
+      expect(receivedNode).toBe(node)
     })
 
     it('should apply structuring by default', () => {

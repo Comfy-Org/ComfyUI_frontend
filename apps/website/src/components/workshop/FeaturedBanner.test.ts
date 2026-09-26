@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { WorkshopModel } from '../../config/models-catalogue'
 import FeaturedBanner from './FeaturedBanner.vue'
+import { modelSlides, studioSlide } from '../../lib/workshop/featured-slides'
 import {
   setAllIntersecting,
   stubIntersectionObserver
@@ -61,7 +62,9 @@ describe('FeaturedBanner', () => {
   })
 
   it('leads with the first model and links the whole slide to its page', () => {
-    render(FeaturedBanner, { props: { models: [base, kling] } })
+    render(FeaturedBanner, {
+      props: { slides: modelSlides([base, kling], 'en') }
+    })
     expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('Flux')
     expect(screen.getByText('Text to Image')).toBeTruthy()
     expect(screen.getByTestId('featured-slide-link').getAttribute('href')).toBe(
@@ -69,11 +72,32 @@ describe('FeaturedBanner', () => {
     )
   })
 
+  it('leads with Cinematic Studio when the catalogue promotes it', () => {
+    render(FeaturedBanner, {
+      props: {
+        slides: [studioSlide('en'), ...modelSlides([base, kling], 'en')]
+      }
+    })
+
+    expect(screen.getByRole('heading', { level: 2 }).textContent).toBe(
+      'Cinematic Studio'
+    )
+    expect(screen.getByRole('link', { name: 'Open studio' })).toHaveAttribute(
+      'href',
+      '/cinematic-studio'
+    )
+    expect(screen.queryByTestId('featured-docs-link')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Flux' })).toBeTruthy()
+  })
+
   it('localizes the task without leaving its English suffix in the model name', () => {
     render(FeaturedBanner, {
       props: {
         locale: 'zh-CN',
-        models: [{ ...kling, name: 'Kling Image to Video' }]
+        slides: modelSlides(
+          [{ ...kling, name: 'Kling Image to Video' }],
+          'zh-CN'
+        )
       }
     })
 
@@ -83,7 +107,9 @@ describe('FeaturedBanner', () => {
 
   it('shows the model a pagination bar names', async () => {
     const user = userEvent.setup()
-    render(FeaturedBanner, { props: { models: [base, kling] } })
+    render(FeaturedBanner, {
+      props: { slides: modelSlides([base, kling], 'en') }
+    })
 
     await user.click(screen.getByRole('button', { name: 'Kling' }))
 
@@ -104,7 +130,9 @@ describe('FeaturedBanner', () => {
       provider: 'Magnific',
       routerId: 'magnific/upscale'
     }
-    render(FeaturedBanner, { props: { models: [base, undocumented] } })
+    render(FeaturedBanner, {
+      props: { slides: modelSlides([base, undocumented], 'en') }
+    })
 
     const docs = screen.getByTestId('featured-docs-link')
     expect(docs.getAttribute('href')).toBe(
@@ -116,8 +144,13 @@ describe('FeaturedBanner', () => {
     expect(screen.queryByTestId('featured-docs-link')).toBeNull()
   })
 
+  it('stays out of the way when the catalogue has nothing to feature', () => {
+    render(FeaturedBanner, { props: { slides: [] } })
+    expect(screen.queryByTestId('section-featured')).toBeNull()
+  })
+
   it('drops the pagination when there is nothing to page through', () => {
-    render(FeaturedBanner, { props: { models: [base] } })
+    render(FeaturedBanner, { props: { slides: modelSlides([base], 'en') } })
     expect(screen.queryByTestId('featured-pagination')).toBeNull()
   })
 
@@ -125,18 +158,21 @@ describe('FeaturedBanner', () => {
     const user = userEvent.setup()
     render(FeaturedBanner, {
       props: {
-        models: [
-          {
-            ...kling,
-            thumbnailUrl: '/video.mp4',
-            thumbnail: { url: '/video.mp4', kind: 'video' }
-          },
-          {
-            ...base,
-            thumbnailUrl: '/image.webp',
-            thumbnail: { url: '/image.webp', kind: 'image' }
-          }
-        ]
+        slides: modelSlides(
+          [
+            {
+              ...kling,
+              thumbnailUrl: '/video.mp4',
+              thumbnail: { url: '/video.mp4', kind: 'video' }
+            },
+            {
+              ...base,
+              thumbnailUrl: '/image.webp',
+              thumbnail: { url: '/image.webp', kind: 'image' }
+            }
+          ],
+          'en'
+        )
       }
     })
     await setAllIntersecting(true)
@@ -148,19 +184,53 @@ describe('FeaturedBanner', () => {
     expect(screen.getByAltText('').getAttribute('src')).toBe('/image.webp')
   })
 
+  // A model's still and its video sit in different fields, and most models
+  // carry only the still. Leading with the ground instead would leave the
+  // banner blank for nearly all of them.
+  it('leads with the still when a model has no video', async () => {
+    render(FeaturedBanner, {
+      props: {
+        slides: modelSlides([{ ...base, thumbnailUrl: '/still.webp' }], 'en')
+      }
+    })
+    await setAllIntersecting(true)
+
+    expect(screen.queryByTestId('featured-video')).toBeNull()
+    expect(screen.getByAltText('').getAttribute('src')).toBe('/still.webp')
+  })
+
   it('advances to the next slide on the autoplay cadence', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: false })
-    render(FeaturedBanner, { props: { models: [base, kling] } })
+    render(FeaturedBanner, {
+      props: { slides: modelSlides([base, kling], 'en') }
+    })
 
     await advanceAutoplay()
 
     expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('Kling')
   })
 
+  it('keeps a manually selected highlight until the reader changes it', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: false })
+    const user = setupAutoplayUser()
+    render(FeaturedBanner, {
+      props: { slides: modelSlides([base, kling], 'en'), autoplay: false }
+    })
+    await user.click(screen.getByRole('button', { name: 'Kling' }))
+    await advanceAutoplay(AUTOPLAY_MS * 2)
+    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Kling')
+    expect(screen.getByRole('button', { name: 'Kling' })).toHaveAttribute(
+      'aria-current',
+      'true'
+    )
+  })
+
   it('pauses while hovered and resumes after the pointer leaves', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: false })
     const user = setupAutoplayUser()
-    render(FeaturedBanner, { props: { models: [base, kling] } })
+    render(FeaturedBanner, {
+      props: { slides: modelSlides([base, kling], 'en') }
+    })
     await nextTick()
 
     await user.hover(screen.getByTestId('section-featured'))
@@ -175,7 +245,9 @@ describe('FeaturedBanner', () => {
   it('pauses while a keyboard visitor is focused within the banner', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: false })
     const user = setupAutoplayUser()
-    render(FeaturedBanner, { props: { models: [base, kling] } })
+    render(FeaturedBanner, {
+      props: { slides: modelSlides([base, kling], 'en') }
+    })
     await nextTick()
 
     await user.tab()
@@ -187,7 +259,9 @@ describe('FeaturedBanner', () => {
   it('does not autoplay when reduced motion is preferred', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: false })
     motion.reduced = true
-    render(FeaturedBanner, { props: { models: [base, kling] } })
+    render(FeaturedBanner, {
+      props: { slides: modelSlides([base, kling], 'en') }
+    })
 
     await advanceAutoplay(AUTOPLAY_MS * 2)
 
@@ -196,7 +270,9 @@ describe('FeaturedBanner', () => {
 
   it('freezes rotation offscreen and in a hidden tab, then resumes where it stopped', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: false })
-    render(FeaturedBanner, { props: { models: [base, kling] } })
+    render(FeaturedBanner, {
+      props: { slides: modelSlides([base, kling], 'en') }
+    })
     await setAllIntersecting(false)
     await vi.advanceTimersByTimeAsync(AUTOPLAY_MS)
     expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('Flux')

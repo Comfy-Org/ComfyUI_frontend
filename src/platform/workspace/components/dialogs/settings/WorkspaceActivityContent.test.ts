@@ -7,25 +7,12 @@ import { createI18n } from 'vue-i18n'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import enMessages from '@/locales/en/main.json'
 import type { ActivityEvent } from '@/platform/workspace/composables/useWorkspaceActivity'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import WorkspaceActivityContent from './WorkspaceActivityContent.vue'
 
-const { mockWorkspaceRole } = vi.hoisted(() => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/consistent-type-imports
-  const { ref } = require('vue') as typeof import('vue')
-  return {
-    mockWorkspaceRole: ref<'owner' | 'member'>('owner')
-  }
-})
-
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useWorkspaceUI'),
-  () => ({
-    useWorkspaceUI: () => ({
-      workspaceRole: mockWorkspaceRole
-    })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
@@ -64,11 +51,11 @@ const creditedRow: ActivityEvent = {
 
 describe('WorkspaceActivityContent', () => {
   beforeEach(() => {
+    useWorkspaceUI().workspaceRole = computed(() => 'owner')
     useCurrentUser().resolvedUserInfo = computed(() => ({
       id: 'user-ada'
     }))
     globalThis.ResizeObserver = NoopResizeObserver
-    mockWorkspaceRole.value = 'owner'
   })
 
   it('renders the empty state when there is no activity', () => {
@@ -76,22 +63,23 @@ describe('WorkspaceActivityContent', () => {
     expect(screen.getByText('No activity yet.')).toBeTruthy()
   })
 
-  it('shows the per-user footer actions to an owner', () => {
+  it('links the full activity to platform in the active workspace', () => {
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-team-1' })
     renderContent([])
     const link = screen.getByRole('link', { name: /full activity/i })
     expect(link.getAttribute('href')).toBe(
-      'https://platform.test/profile/usage'
+      'https://platform.test/profile/usage?workspace=ws-team-1'
     )
   })
 
   it('hides the per-user footer from members', () => {
-    mockWorkspaceRole.value = 'member'
+    useWorkspaceUI().workspaceRole = computed(() => 'member')
     renderContent([])
     expect(screen.queryByRole('link', { name: /full activity/i })).toBeNull()
   })
 
   it('shows members only their own usage plus workspace credit inflows', async () => {
-    mockWorkspaceRole.value = 'member'
+    useWorkspaceUI().workspaceRole = computed(() => 'member')
     renderContent([
       {
         id: 'own-usage',

@@ -39,9 +39,12 @@ const {
   mockActiveView,
   mockSearchQuery,
   mockPermissions,
+  mockIsPlanEnded,
+  mockIsSalesManagedPlan,
+  mockIsEnterprisePlanStrict,
   mockUiConfig
 } = vi.hoisted(() => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/consistent-type-imports
+  // oxlint-disable-next-line typescript/no-require-imports, typescript/consistent-type-imports
   const { ref } = require('vue') as typeof import('vue')
 
   return {
@@ -53,6 +56,9 @@ const {
     mockShowViewTabs: ref(true),
     mockShowInviteButton: ref(true),
     mockIsInviteDisabled: ref(false),
+    mockIsPlanEnded: ref(false),
+    mockIsSalesManagedPlan: ref(false),
+    mockIsEnterprisePlanStrict: ref(false),
     mockFilteredMembers: ref<WorkspaceMember[]>([]),
     mockFilteredPendingInvites: ref<WorkspacePendingInvite[]>([]),
     mockMaxSeats: ref<number | null>(20),
@@ -108,6 +114,9 @@ vi.mock<unknown>(
       showViewTabs: mockShowViewTabs,
       showInviteButton: mockShowInviteButton,
       isInviteDisabled: mockIsInviteDisabled,
+      isPlanEnded: mockIsPlanEnded,
+      isSalesManagedPlan: mockIsSalesManagedPlan,
+      isEnterprisePlan: mockIsEnterprisePlanStrict,
       inviteTooltip: computed(() => null),
       handleInviteMember: mockHandleInviteMember,
       personalWorkspaceMember: computed(() => ({
@@ -171,21 +180,11 @@ const i18n = createI18n({
   fallbackWarn: false
 })
 
-const SearchInputStub = {
-  name: 'SearchInput',
-  template:
-    '<input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
-  props: ['modelValue', 'placeholder', 'size'],
-  emits: ['update:modelValue']
-}
-
 function renderComponent() {
   return render(MembersPanelContent, {
     global: {
       plugins: [i18n],
       stubs: {
-        SearchInput: SearchInputStub,
-        UserAvatar: true,
         WorkspaceMenuButton: true
       },
       directives: { tooltip: () => {} }
@@ -238,6 +237,9 @@ describe('MembersPanelContent', () => {
     mockShowViewTabs.value = true
     mockShowInviteButton.value = true
     mockIsInviteDisabled.value = false
+    mockIsPlanEnded.value = false
+    mockIsSalesManagedPlan.value = false
+    mockIsEnterprisePlanStrict.value = false
     mockActiveView.value = 'active'
     mockSearchQuery.value = ''
     mockPermissions.value = {
@@ -506,6 +508,74 @@ describe('MembersPanelContent', () => {
     expect(screen.queryByText('workspacePanel.members.upsellBanner')).toBeNull()
   })
 
+  describe('ended treatment gate (DES-1200)', () => {
+    it('shows the resume banner once a team plan has ended', () => {
+      mockIsPlanEnded.value = true
+      renderComponent()
+      expect(
+        screen.getByText('workspacePanel.members.endedTeamTitle')
+      ).toBeTruthy()
+      expect(
+        screen.getByText('workspacePanel.members.upsellBannerReactivate')
+      ).toBeTruthy()
+    })
+
+    it('lets an owner resume an ended Team plan', async () => {
+      mockHasTeamPlan.value = true
+      mockIsPlanEnded.value = true
+      renderComponent()
+
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: /workspacePanel\.members\.resubscribe/
+        })
+      )
+      expect(mockShowTeamPlans).toHaveBeenCalled()
+    })
+
+    it('routes an ended Enterprise plan to sales', async () => {
+      const openSpy = vi.spyOn(window, 'open').mockReturnValue(null)
+      mockIsPlanEnded.value = true
+      mockIsSalesManagedPlan.value = true
+      mockIsEnterprisePlanStrict.value = true
+      renderComponent()
+      expect(
+        screen.getByText('workspacePanel.members.endedEnterpriseTitle')
+      ).toBeTruthy()
+      expect(
+        screen.getByText('workspacePanel.members.upsellBannerEnterpriseEnded')
+      ).toBeTruthy()
+
+      // The action lands on the enterprise page, never the team-plan
+      // request form the footer's Contact us uses.
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: /workspacePanel\.members\.contactSales/
+        })
+      )
+      expect(openSpy).toHaveBeenCalledWith(
+        'https://comfy.org/cloud/enterprise/',
+        '_blank',
+        'noopener,noreferrer'
+      )
+      openSpy.mockRestore()
+    })
+
+    it('shows no banner while a cancellation is merely scheduled', () => {
+      // Cancel-scheduled maps to isPlanEnded false; the mapping itself is
+      // pinned in useMembersPanel.test.ts ('keeps a cancel-scheduled plan
+      // with live access un-ended') — this asserts the render consequence.
+      mockIsPlanEnded.value = false
+      renderComponent()
+      expect(
+        screen.queryByText('workspacePanel.members.endedTeamTitle')
+      ).toBeNull()
+      expect(
+        screen.queryByText('workspacePanel.members.upsellBannerReactivate')
+      ).toBeNull()
+    })
+  })
+
   describe('not on team plan', () => {
     beforeEach(() => {
       mockMaxSeats.value = 1
@@ -540,19 +610,6 @@ describe('MembersPanelContent', () => {
         name: /workspacePanel\.members\.upgradeToTeam/
       })
       await userEvent.click(upgradeBtn)
-      expect(mockShowTeamPlans).toHaveBeenCalled()
-    })
-
-    it('lets an owner reactivate a lapsed Team plan', async () => {
-      mockHasTeamPlan.value = true
-      mockHasLapsedTeamPlan.value = true
-      renderComponent()
-
-      await userEvent.click(
-        screen.getByRole('button', {
-          name: /workspacePanel\.members\.reactivateTeam/
-        })
-      )
       expect(mockShowTeamPlans).toHaveBeenCalled()
     })
 

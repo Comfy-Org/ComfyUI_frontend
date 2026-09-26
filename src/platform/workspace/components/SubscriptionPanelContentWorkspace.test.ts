@@ -1,8 +1,9 @@
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useDialogService } from '@/services/dialogService'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { getActivePinia } from 'pinia'
-import { computed, ref, toRef } from 'vue'
+import { computed, nextTick, ref, toRef } from 'vue'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { render, screen } from '@testing-library/vue'
@@ -22,14 +23,11 @@ import type {
 } from '@/platform/workspace/api/workspaceApi'
 
 import SubscriptionPanelContentWorkspace from './SubscriptionPanelContentWorkspace.vue'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 const mockDistributionState = vi.hoisted(() => ({ isCloud: true }))
 
-vi.mock<unknown>(import('@/composables/billing/useBillingRouting'), () => ({
-  useBillingRouting: () => ({
-    shouldUseWorkspaceBilling: mockShouldUseWorkspaceBilling
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingRouting'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
@@ -185,51 +183,18 @@ const mockIsDeleteDisabled = computed(
     !(mockSubscription.value?.isCancelled ?? false)
 )
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useWorkspaceUI'),
-  () => ({
-    useWorkspaceUI: () => ({
-      permissions: computed(() => ({
-        canManageSubscription: mockCanManageSubscription.value,
-        canManageSubscriptionLifecycle:
-          mockCanManageSubscriptionLifecycle.value,
-        canLeaveWorkspace: mockCanLeaveWorkspace.value
-      })),
-      canReactivatePlan: mockCanReactivatePlan,
-      canOpenPricingSurface: mockCanOpenPricingSurface,
-      uiConfig: computed(() => mockUiConfig.value),
-      isInPersonalWorkspace: toRef(
-        useTeamWorkspaceStore(),
-        'isInPersonalWorkspace'
-      ),
-      canAccessSubscriptionFeatures: computed(
-        () => mockIsActiveSubscription.value
-      ),
-      isSubscriptionCancelled: mockIsSubscriptionCancelled,
-      isTeamPlanCancelled: mockIsTeamPlanCancelled,
-      isDeleteDisabled: mockIsDeleteDisabled,
-      deleteDisabledTooltipKey: computed(() =>
-        mockIsDeleteDisabled.value
-          ? mockUiConfig.value.workspaceMenuDisabledTooltip
-          : null
-      )
-    })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 vi.mock(import('@/services/dialogService'))
 
-vi.mock<unknown>(
-  import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
-  () => ({
-    useSubscriptionDialog: () => ({ showPricingTable: vi.fn() })
-  })
+vi.mock(
+  import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
 )
 
 vi.mock<unknown>(
-  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
+  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
   () => ({
     useToast: () => ({ add: vi.fn() })
   })
@@ -284,25 +249,67 @@ function renderComponent({ stubFooter = true } = {}) {
 describe('SubscriptionPanelContentWorkspace', () => {
   beforeEach(() => {
     const billing = useBillingContext()
-    Object.assign(billing, {
-      type: computed(() => mockBillingType.value),
-      canAccessSubscriptionFeatures: computed(
-        () => mockIsActiveSubscription.value
-      ),
-      isFreeTier: computed(() => mockSubscriptionTier.value === 'FREE'),
-      billingStatus: computed(() => mockBillingStatus.value),
-      subscriptionStatus: computed(() => mockSubscriptionStatus.value),
-      isTeamPlan: mockIsTeamPlan,
-      subscription: mockSubscription,
-      plans: computed(() => mockPlans.value),
-      teamCreditStops: computed(() => mockTeamCreditStops.value),
-      currentTeamCreditStop: computed(() => mockCurrentTeamCreditStop.value),
-      isLoading: mockIsLoading,
-      error: mockError
-    })
+    billing.type = computed(() => mockBillingType.value)
+    billing.canAccessSubscriptionFeatures = computed(
+      () => mockIsActiveSubscription.value
+    )
+    billing.isFreeTier = computed(() => mockSubscriptionTier.value === 'FREE')
+    billing.billingStatus = computed(() => mockBillingStatus.value)
+    billing.subscriptionStatus = computed(() => mockSubscriptionStatus.value)
+    billing.isTeamPlan = mockIsTeamPlan
+    billing.subscription = mockSubscription
+    billing.plans = computed(() => mockPlans.value)
+    billing.teamCreditStops = computed(() => mockTeamCreditStops.value)
+    billing.currentTeamCreditStop = computed(
+      () => mockCurrentTeamCreditStop.value
+    )
+    billing.isLoading = mockIsLoading
+    billing.error = mockError
     vi.mocked(billing.getMaxSeats).mockReturnValue(5)
     vi.mocked(useBillingContext).mockReturnValue(billing)
-
+    const billingRouting = vi.mocked(useBillingRouting())
+    billingRouting.shouldUseWorkspaceBilling = computed(
+      () => mockShouldUseWorkspaceBilling.value
+    )
+    const workspaceUI = vi.mocked(useWorkspaceUI())
+    const defaultPermissions = workspaceUI.permissions.value
+    workspaceUI.permissions = computed(() => ({
+      ...defaultPermissions,
+      canManageSubscription: mockCanManageSubscription.value,
+      canManageSubscriptionLifecycle: mockCanManageSubscriptionLifecycle.value,
+      canLeaveWorkspace: mockCanLeaveWorkspace.value
+    }))
+    workspaceUI.canReactivatePlan = computed(() => mockCanReactivatePlan.value)
+    workspaceUI.canOpenPricingSurface = computed(
+      () => mockCanOpenPricingSurface.value
+    )
+    const defaultUiConfig = workspaceUI.uiConfig.value
+    workspaceUI.uiConfig = computed(() => ({
+      ...defaultUiConfig,
+      ...mockUiConfig.value
+    }))
+    const isInPersonalWorkspace = toRef(
+      useTeamWorkspaceStore(),
+      'isInPersonalWorkspace'
+    )
+    workspaceUI.isInPersonalWorkspace = computed(
+      () => isInPersonalWorkspace.value
+    )
+    workspaceUI.canAccessSubscriptionFeatures = computed(
+      () => mockIsActiveSubscription.value
+    )
+    workspaceUI.isSubscriptionCancelled = computed(
+      () => mockIsSubscriptionCancelled.value
+    )
+    workspaceUI.isTeamPlanCancelled = computed(
+      () => mockIsTeamPlanCancelled.value
+    )
+    workspaceUI.isDeleteDisabled = computed(() => mockIsDeleteDisabled.value)
+    workspaceUI.deleteDisabledTooltipKey = computed(() =>
+      mockIsDeleteDisabled.value
+        ? mockUiConfig.value.workspaceMenuDisabledTooltip
+        : null
+    )
     mockDistributionState.isCloud = true
     mockSubscriptionStatus.value = 'active'
     mockBillingStatus.value = 'paid'
@@ -457,7 +464,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
       renderComponent()
 
       expect(
-        screen.queryByRole('button', { name: /reactivate/i })
+        screen.queryByRole('button', { name: /resume subscription/i })
       ).not.toBeInTheDocument()
     })
 
@@ -469,7 +476,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
 
       expect(screen.getByText('Enterprise')).toBeInTheDocument()
       expect(
-        screen.queryByRole('button', { name: /subscribe|reactivate/i })
+        screen.queryByRole('button', { name: /subscribe|resume subscription/i })
       ).not.toBeInTheDocument()
     })
 
@@ -507,14 +514,163 @@ describe('SubscriptionPanelContentWorkspace', () => {
       ).not.toBeInTheDocument()
     })
 
-    it('keeps the cancelled badge while an Enterprise plan still runs', () => {
-      useEnterprisePlan()
-      mockSubscriptionStatus.value = 'canceled'
-      renderComponent()
+    // FE-2035: an Enterprise end date is an agreed ending set through sales,
+    // often months ahead. It must never borrow the self-serve cancelled
+    // treatment.
+    describe('end-dated Enterprise plan still running', () => {
+      const NOW = new Date('2026-09-03T12:00:00Z')
+      const DAY = 24 * 60 * 60 * 1000
 
-      expect(screen.getByText('Canceled')).toBeInTheDocument()
-      expect(screen.queryByText('Inactive')).not.toBeInTheDocument()
-      expect(screen.getByTestId('subscription-state-card')).toBeInTheDocument()
+      // The project vitest setup fakes timers for every test, so pinning the
+      // clock is just a setSystemTime away.
+      beforeEach(() => {
+        vi.setSystemTime(NOW)
+        useEnterprisePlan()
+        mockSubscriptionStatus.value = 'canceled'
+      })
+
+      function endInDays(days: number): string {
+        const iso = new Date(NOW.getTime() + days * DAY).toISOString()
+        mockEndDate.value = iso
+        return iso
+      }
+
+      it('renders as a plainly active plan outside the ending notice window', () => {
+        endInDays(30)
+        renderComponent()
+
+        expect(screen.getByText('Enterprise')).toBeInTheDocument()
+        expect(screen.queryByText('Canceled')).not.toBeInTheDocument()
+        expect(screen.queryByText('Inactive')).not.toBeInTheDocument()
+        expect(
+          screen.queryByTestId('subscription-state-card')
+        ).not.toBeInTheDocument()
+        expect(screen.queryByText(/^Ends on/)).not.toBeInTheDocument()
+        // Deliberately no date row at all: Enterprise contracts are billed
+        // yearly upfront and an end-dated one will not renew, so "Renews on"
+        // would be a false claim (decided with Sonam).
+        expect(screen.queryByText(/^Renews on/)).not.toBeInTheDocument()
+      })
+
+      it('keeps the quiet treatment inside the window, with only the end date line', () => {
+        const iso = endInDays(10)
+        renderComponent()
+
+        expect(screen.queryByText('Canceled')).not.toBeInTheDocument()
+        expect(
+          screen.queryByTestId('subscription-state-card')
+        ).not.toBeInTheDocument()
+        expect(
+          screen.getByText(`Ends on ${formatPanelDate(iso)}`)
+        ).toBeInTheDocument()
+      })
+
+      // The capability alone decides Reactivate — the server closes it for
+      // sales-managed tiers (hideLifecycleCapabilities), and the client adds
+      // no guard of its own on top (settled with the reviewer on #16934).
+      it('hides Reactivate while the capability resolves false', () => {
+        endInDays(10)
+        mockCanReactivatePlan.value = false
+        renderComponent()
+
+        expect(
+          screen.queryByRole('button', { name: /resume subscription/i })
+        ).not.toBeInTheDocument()
+      })
+
+      it('follows the capability if it ever resolves true', () => {
+        endInDays(10)
+        mockCanReactivatePlan.value = true
+        renderComponent()
+
+        expect(
+          screen.getByRole('button', { name: /resume subscription/i })
+        ).toBeInTheDocument()
+      })
+
+      it('names what stopped once the plan has ended (FE-2886)', () => {
+        endInDays(-5)
+        mockSubscriptionStatus.value = 'ended'
+        renderComponent()
+
+        expect(
+          screen.getByText(
+            "You can't run workflows or add new members. Contact sales to restore access."
+          )
+        ).toBeInTheDocument()
+      })
+
+      it('keeps the subtitle away while the plan still runs', () => {
+        endInDays(30)
+        renderComponent()
+
+        expect(
+          screen.queryByText(
+            "You can't run workflows or add new members. Contact sales to restore access."
+          )
+        ).not.toBeInTheDocument()
+      })
+
+      it('falls back to the stock cancelled treatment without an end date', () => {
+        mockEndDate.value = null
+        renderComponent()
+
+        expect(screen.getByText('Canceled')).toBeInTheDocument()
+        expect(
+          screen.getByTestId('subscription-state-card')
+        ).toBeInTheDocument()
+      })
+
+      it('falls back to the stock cancelled treatment on an unreadable end date', () => {
+        mockEndDate.value = 'not-a-date'
+        renderComponent()
+
+        expect(screen.getByText('Canceled')).toBeInTheDocument()
+        expect(
+          screen.getByTestId('subscription-state-card')
+        ).toBeInTheDocument()
+      })
+
+      it('restores the normal presentation when the end date clears between polls', async () => {
+        const iso = endInDays(10)
+        renderComponent()
+
+        expect(
+          screen.getByText(`Ends on ${formatPanelDate(iso)}`)
+        ).toBeInTheDocument()
+
+        // A webhook outage or reordering can clear cancel_at, flipping the
+        // workspace back to plainly active with a renewal date. Nothing is
+        // latched, so the presentation must follow the data.
+        mockSubscriptionStatus.value = 'active'
+        mockEndDate.value = null
+        mockRenewalDate.value = RENEWAL_DATE_ISO
+        await nextTick()
+
+        expect(
+          screen.getByText(`Renews on ${formatPanelDate(RENEWAL_DATE_ISO)}`)
+        ).toBeInTheDocument()
+        expect(screen.queryByText(/^Ends on/)).not.toBeInTheDocument()
+        expect(screen.queryByText('Canceled')).not.toBeInTheDocument()
+        expect(
+          screen.queryByTestId('subscription-state-card')
+        ).not.toBeInTheDocument()
+      })
+
+      it('leaves a cancelled unrecognized tier on the stock treatment too', () => {
+        mockSubscriptionTier.value = runtimeTier('GALACTIC')
+        mockPlanSlug.value = 'galactic_monthly'
+        endInDays(30)
+        renderComponent()
+
+        expect(screen.getByText('Canceled')).toBeInTheDocument()
+        expect(
+          screen.getByTestId('subscription-state-card')
+        ).toBeInTheDocument()
+        expect(
+          screen.getByText(`Ends on ${formatPanelDate(mockEndDate.value!)}`)
+        ).toBeInTheDocument()
+      })
     })
 
     it('renders an unrecognized tier as Current plan without catalog content', () => {

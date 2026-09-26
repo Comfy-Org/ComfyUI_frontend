@@ -9,18 +9,15 @@
       @click="hideModal"
     ></div>
 
-    <!-- Right-anchoring alone lets a toolbar wider than the canvas overhang
-         its left edge and cover the sidebar. Spanning the canvas and pushing
-         with an auto margin pins the toolbar there instead, and the width cap
-         keeps the overflow inside the canvas as a scroll. -->
+    <!-- Right-anchoring alone lets a toolbar wider than the canvas overhang its
+         left edge and cover the sidebar. Spanning the canvas and pushing with an
+         auto margin pins the toolbar to the right instead, and the width cap keeps
+         any overflow inside the canvas as a scroll. -->
     <div class="pointer-events-none absolute inset-x-0 bottom-0 z-1200 flex">
       <ButtonGroup
         role="toolbar"
         :aria-label="t('graphCanvasMenu.canvasToolbar')"
-        class="pointer-events-auto ml-auto max-w-full min-w-0 flex-row gap-1 overflow-x-auto border border-interface-stroke bg-comfy-menu-bg p-2"
-        :style="{
-          ...stringifiedMinimapStyles.buttonGroupStyles
-        }"
+        class="pointer-events-auto ml-auto max-w-full min-w-0 flex-row gap-1 overflow-x-auto floating-panel"
         @wheel="canvasInteractions.handleWheel"
       >
         <CanvasModeSelector
@@ -34,7 +31,7 @@
           variant="secondary"
           :aria-label="fitViewTooltip"
           :style="stringifiedMinimapStyles.buttonStyles"
-          class="size-8 bg-comfy-menu-bg p-0 hover:bg-interface-button-hover-surface!"
+          class="size-8 bg-transparent p-0 hover:bg-interface-button-hover-surface"
           @click="() => commandStore.execute('Comfy.Canvas.FitView')"
         >
           <i class="icon-[lucide--focus] size-4" aria-hidden="true" />
@@ -43,7 +40,12 @@
         <Button
           v-tooltip.top="t('zoomControls.label')"
           variant="secondary"
-          :class="zoomButtonClass"
+          :class="
+            cn(
+              'h-8 w-15 bg-transparent p-0 hover:bg-interface-button-hover-surface',
+              isModalVisible && 'not-active:bg-interface-panel-selected-surface'
+            )
+          "
           :aria-label="t('zoomControls.label')"
           data-testid="zoom-controls-button"
           :style="stringifiedMinimapStyles.buttonStyles"
@@ -63,7 +65,13 @@
           :aria-label="minimapTooltip"
           data-testid="toggle-minimap-button"
           :style="stringifiedMinimapStyles.buttonStyles"
-          :class="minimapButtonClass"
+          :class="
+            cn(
+              'size-8 bg-transparent p-0 hover:bg-interface-button-hover-surface',
+              settingStore.get('Comfy.Minimap.Visible') &&
+                'not-active:bg-interface-panel-selected-surface'
+            )
+          "
           @click="onMinimapToggleClick"
         >
           <i class="icon-[lucide--map] size-4" aria-hidden="true" />
@@ -79,7 +87,12 @@
             }
           }"
           variant="secondary"
-          :class="linkVisibleClass"
+          :class="
+            cn(
+              'size-8 bg-transparent p-0 hover:bg-interface-button-hover-surface',
+              linkHidden && 'not-active:bg-interface-panel-selected-surface'
+            )
+          "
           :aria-label="linkVisibilityAriaLabel"
           data-testid="toggle-link-visibility-button"
           :style="stringifiedMinimapStyles.buttonStyles"
@@ -106,6 +119,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
 import { useCommandStore } from '@/stores/commandStore'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import CanvasModeSelector from './CanvasModeSelector.vue'
 import ZoomControlsModal from './modals/ZoomControlsModal.vue'
@@ -122,7 +136,6 @@ const { isModalVisible, toggleModal, hideModal, hasActivePopup } =
   useZoomControls()
 
 const stringifiedMinimapStyles = computed(() => {
-  const buttonGroupKeys = ['borderRadius']
   const buttonKeys = ['borderRadius']
   const additionalButtonStyles = {
     border: 'none'
@@ -138,11 +151,7 @@ const stringifiedMinimapStyles = computed(() => {
     ),
     ...additionalButtonStyles
   }
-  const buttonGroupStyles = Object.entries(containerStyles)
-    .filter(([key]) => buttonGroupKeys.includes(key))
-    .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {})
-
-  return { buttonStyles, buttonGroupStyles }
+  return { buttonStyles }
 })
 
 // Computed properties for reactive states
@@ -161,27 +170,6 @@ const minimapCommandText = computed(() =>
     commandStore.getCommand('Comfy.Canvas.ToggleMinimap')
   ).toUpperCase()
 )
-
-// Computed properties for button classes and states
-const zoomButtonClass = computed(() => [
-  'bg-comfy-menu-bg',
-  isModalVisible.value ? 'not-active:bg-interface-panel-selected-surface!' : '',
-  'hover:bg-interface-button-hover-surface!',
-  'p-0',
-  'h-8',
-  'w-15'
-])
-
-const minimapButtonClass = computed(() => ({
-  'bg-comfy-menu-bg': true,
-  'hover:bg-interface-button-hover-surface!': true,
-  'not-active:bg-interface-panel-selected-surface!': settingStore.get(
-    'Comfy.Minimap.Visible'
-  ),
-  'p-0': true,
-  'w-8': true,
-  'h-8': true
-}))
 
 // Computed properties for tooltip and aria-label texts
 const fitViewTooltip = computed(() => {
@@ -206,15 +194,6 @@ const linkVisibilityAriaLabel = computed(() =>
     ? t('graphCanvasMenu.showLinks')
     : t('graphCanvasMenu.hideLinks')
 )
-const linkVisibleClass = computed(() => [
-  'bg-comfy-menu-bg',
-  linkHidden.value ? 'not-active:bg-interface-panel-selected-surface!' : '',
-  'hover:bg-interface-button-hover-surface!',
-  'p-0',
-  'w-8',
-  'h-8'
-])
-
 onMounted(() => {
   canvasStore.initScaleSync()
 })
