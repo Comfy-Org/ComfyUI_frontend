@@ -128,6 +128,10 @@ import {
 } from './crdt/crdtDebugGate'
 import { attachMintPortWiring } from './crdt/mintPortWiring'
 import {
+  clearPersistedDocId,
+  reconcilePersistedDocId
+} from './crdt/persistedDocId'
+import {
   createLiveWidgetProjection,
   owningGraph
 } from './crdt/liveWidgetProjection'
@@ -566,7 +570,12 @@ watch(
   { immediate: true }
 )
 
-const workflowDetached = computed(() => selectedTarget.value === null)
+const restorableDocId = ref<string | null>(reconcilePersistedDocId())
+const workflowDetached = computed(
+  () =>
+    selectedTarget.value === null &&
+    (!agentPanelStore.canRestoreWorkflow || restorableDocId.value === null)
+)
 
 // Resolves the tab a turn is attributed to. `null` (the send had no origin
 // tab) resolves to nothing rather than falling back to the selected target, so
@@ -726,7 +735,16 @@ const {
     initialize: agentPanelStore.initializeTargetTracking,
     current: targetWorkflowTurnContext,
     adopted: onWorkflowAdopted,
-    restored: onWorkflowRestored,
+    restored: async (workflowId, isCurrent) => {
+      await onWorkflowRestored(workflowId, isCurrent)
+      if (
+        workflowId !== undefined &&
+        isCurrent() &&
+        selectedTarget.value !== null &&
+        bindingStore.tabPathFor(workflowId) === selectedTarget.value.path
+      )
+        bindWorkflow(workflowId)
+    },
     prepare: async () => {
       try {
         await refreshCloudWorkflowIds()
@@ -747,8 +765,30 @@ const isSending = computed(
   () => sessionIsSending.value || composerStore.submission?.phase === 'pending'
 )
 
+// Reconciliation mutates storage, so run it only at explicit lifecycle edges;
+// computed getters below read reactive state without consuming the record.
+watch(
+  [() => workflowStore.activeWorkflow, boundWorkflowId],
+  () => {
+    restorableDocId.value = reconcilePersistedDocId()
+  },
+  { immediate: true }
+)
+
+function restorableWorkflowIdFor(tabPath: string): string | null {
+  const persisted = bindingStore.workflowIdFor(tabPath)
+  if (persisted === undefined) return null
+  return persisted === restorableDocId.value ? persisted : null
+}
+const followerWorkflowId = computed(() => {
+  if (workflowDetached.value) return null
+  if (boundWorkflowId.value !== null) return boundWorkflowId.value
+  const active = workflowStore.activeWorkflow
+  if (active === null) return null
+  return restorableWorkflowIdFor(active.path)
+})
 const isBoundWorkflowActive = computed(() => {
-  const bound = boundWorkflowId.value
+  const bound = followerWorkflowId.value
   const active = workflowStore.activeWorkflow
   return (
     bound !== null &&
@@ -766,7 +806,7 @@ const {
   debugSnapshot: crdtDebugSnapshot,
   enqueueHumanOperations
 } = useAgentCrdtFollower(
-  boundWorkflowId,
+  followerWorkflowId,
   graphMutations,
   () => resolvedUserInfo.value?.id ?? null,
   isBoundWorkflowActive,
@@ -800,7 +840,9 @@ function boundRootGraphId(): RootGraphId | null {
 }
 const mintPortWiring = attachMintPortWiring({
   isEnabled: () => agentPanelStore.enabled,
-  isDocBound: () => isBoundWorkflowActive.value,
+  isDocBound: () =>
+    crdtStatus.value.connected &&
+    crdtStatus.value.workflowId === followerWorkflowId.value,
   enqueue: enqueueHumanOperations,
   layoutChanges: (listener) => layoutStore.onChange(listener),
   localActorPrefix: ACTOR_CONFIG.USER_PREFIX,
@@ -990,6 +1032,73 @@ function agentTabFilename(name: string | undefined): string | undefined {
   return cleaned.length === 0 ? undefined : `${cleaned}.json`
 }
 
+async function activateBoundAgentWorkflow(
+  data: AgentActiveTabData,
+  bound: ComfyWorkflow,
+  stale: () => boolean,
+  previousWorkflowId: string | null
+): Promise<boolean> {
+  const opened = await workflowService.openWorkflow(bound)
+  if (stale()) return false
+  if (!opened) {
+    warnWorkflowUnavailable()
+    return false
+  }
+  // boundOrOpenWorkflowFor can resolve by cloud name, which leaves no binding behind
+  // for everything downstream that only reads tabPathFor.
+  bindingStore.bind(data.workflow_id, bound.path)
+  if (status.value === 'idle') agentPanelStore.setWorkflowTarget(bound)
+  if (status.value !== 'idle') tabActivity.setEditing(bound.path)
+  bindWorkflow(data.workflow_id)
+  reportWorkflowBound(data.workflow_id, previousWorkflowId, 'active_tab')
+  useTelemetry()?.trackAgentWorkflowApplied({
+    workflow_id: data.workflow_id,
+    target: 'active_tab_switch'
+  })
+  return true
+}
+
+async function createAgentWorkflow(
+  data: AgentActiveTabData,
+  stale: () => boolean,
+  previousWorkflowId: string | null
+): Promise<boolean> {
+  const creatingStartedAt = Date.now()
+  tabActivity.setCreating(true)
+  const remainingCreatingTime =
+    CREATING_TAB_MIN_DURATION_MS - (Date.now() - creatingStartedAt)
+  if (remainingCreatingTime > 0)
+    await new Promise((resolve) => setTimeout(resolve, remainingCreatingTime))
+  if (stale()) return false
+  const tab = workflowStore.createNewTemporary(
+    agentTabFilename(data.name),
+    agentTabGraph
+  )
+  tabActivity.setCreating(false)
+  let opened: boolean
+  try {
+    opened = await workflowService.openWorkflow(tab)
+  } catch (error) {
+    await workflowService.closeWorkflow(tab, { warnIfUnsaved: false })
+    throw error
+  }
+  if (stale() || !opened) {
+    await workflowService.closeWorkflow(tab, { warnIfUnsaved: false })
+    if (!stale()) warnWorkflowUnavailable()
+    return false
+  }
+  if (status.value !== 'idle') tabActivity.setEditing(tab.path)
+  bindingStore.bind(data.workflow_id, tab.path)
+  if (status.value === 'idle') agentPanelStore.setWorkflowTarget(tab)
+  bindWorkflow(data.workflow_id)
+  reportWorkflowBound(data.workflow_id, previousWorkflowId, 'active_tab')
+  useTelemetry()?.trackAgentWorkflowApplied({
+    workflow_id: data.workflow_id,
+    target: 'active_tab_open'
+  })
+  return true
+}
+
 async function onAgentActiveTab(
   data: AgentActiveTabData,
   generation: number
@@ -1000,57 +1109,14 @@ async function onAgentActiveTab(
   try {
     const bound = boundOrOpenWorkflowFor(data.workflow_id)
     if (bound) {
-      const opened = await workflowService.openWorkflow(bound)
-      if (stale()) return false
-      if (!opened) {
-        warnWorkflowUnavailable()
-        return false
-      }
-      // boundOrOpenWorkflowFor can resolve by cloud name, which leaves no binding behind
-      // for everything downstream that only reads tabPathFor.
-      bindingStore.bind(data.workflow_id, bound.path)
-      if (status.value !== 'idle') tabActivity.setEditing(bound.path)
-      bindWorkflow(data.workflow_id)
-      reportWorkflowBound(data.workflow_id, previousWorkflowId, 'active_tab')
-      useTelemetry()?.trackAgentWorkflowApplied({
-        workflow_id: data.workflow_id,
-        target: 'active_tab_switch'
-      })
-      return true
+      return await activateBoundAgentWorkflow(
+        data,
+        bound,
+        stale,
+        previousWorkflowId
+      )
     }
-    const creatingStartedAt = Date.now()
-    tabActivity.setCreating(true)
-    const remainingCreatingTime =
-      CREATING_TAB_MIN_DURATION_MS - (Date.now() - creatingStartedAt)
-    if (remainingCreatingTime > 0)
-      await new Promise((resolve) => setTimeout(resolve, remainingCreatingTime))
-    if (stale()) return false
-    const tab = workflowStore.createNewTemporary(
-      agentTabFilename(data.name),
-      agentTabGraph
-    )
-    tabActivity.setCreating(false)
-    let opened: boolean
-    try {
-      opened = await workflowService.openWorkflow(tab)
-    } catch (error) {
-      await workflowService.closeWorkflow(tab, { warnIfUnsaved: false })
-      throw error
-    }
-    if (stale() || !opened) {
-      await workflowService.closeWorkflow(tab, { warnIfUnsaved: false })
-      if (!stale()) warnWorkflowUnavailable()
-      return false
-    }
-    if (status.value !== 'idle') tabActivity.setEditing(tab.path)
-    bindingStore.bind(data.workflow_id, tab.path)
-    bindWorkflow(data.workflow_id)
-    reportWorkflowBound(data.workflow_id, previousWorkflowId, 'active_tab')
-    useTelemetry()?.trackAgentWorkflowApplied({
-      workflow_id: data.workflow_id,
-      target: 'active_tab_open'
-    })
-    return true
+    return await createAgentWorkflow(data, stale, previousWorkflowId)
   } catch (error) {
     if (stale()) return false
     bindWorkflow(data.workflow_id)
@@ -1176,6 +1242,8 @@ void refreshHistory()
 async function onSelectHistory(id: string): Promise<void> {
   composerStore.invalidateSubmission()
   cancelWorkflowSelection()
+  clearPersistedDocId()
+  restorableDocId.value = null
   agentPanelStore.beginWorkflowRestoration()
   exitNodeSelectionMode()
   if (await loadThread(id))
@@ -1298,6 +1366,8 @@ function onNewChat(source?: 'new_chat_button' | 'history_delete'): void {
   exitNodeSelectionMode()
   composerStore.setWorkflowReferences([])
   composerStore.resetPromptHistory()
+  clearPersistedDocId()
+  restorableDocId.value = null
   newChat(source)
   if (selectionTags.value.length) agentPanelStore.retainWorkflowTarget()
   else agentPanelStore.startFollowingVisibleWorkflow()

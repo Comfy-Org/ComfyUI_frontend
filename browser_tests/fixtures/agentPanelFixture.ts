@@ -1,4 +1,5 @@
-import type { Page, Route } from '@playwright/test'
+import { expect } from '@playwright/test'
+import type { Page, Route, WebSocketRoute } from '@playwright/test'
 
 import type {
   AgentRunMode,
@@ -11,13 +12,19 @@ import type {
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
+import { AGENT_CRDT_DOC_ID_SESSION_KEY } from '@/platform/workflow/persistence/base/storageKeyConstants'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import type { AgentTurnAccepted } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import type {
+  AgentTurnAccepted,
+  AgentWsEvent
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import { cloudAppFixture, waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
+import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import type { WorkspaceStore } from '@e2e/types/globals'
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 
@@ -186,6 +193,58 @@ type AgentFixtures = {
 export const agentTest = cloudAppFixture.extend<AgentFixtures>({
   agentFlagEnabled: [true, { option: true }]
 })
+
+export function pushAgentEvent(ws: WebSocketRoute, event: AgentWsEvent): void {
+  ws.send(JSON.stringify(event))
+}
+
+export async function getAgentActiveWorkflowPath(
+  page: Page
+): Promise<string | undefined> {
+  return await page.evaluate(
+    () =>
+      (window.app!.extensionManager as WorkspaceStore).workflow.activeWorkflow
+        ?.path
+  )
+}
+
+export async function switchToAgentWorkflowTab(
+  page: Page,
+  tabPath: string
+): Promise<void> {
+  const tabIndex = await page.evaluate(
+    (path) =>
+      (
+        window.app!.extensionManager as WorkspaceStore
+      ).workflow.openWorkflows.findIndex((workflow) => workflow.path === path),
+    tabPath
+  )
+  if (tabIndex < 0) throw new Error(`Workflow tab is not open: ${tabPath}`)
+  const tab = new Topbar(page).getTab(tabIndex)
+  await tab.click()
+  await expect(tab).toHaveClass(/p-togglebutton-checked/)
+  await expect.poll(() => getAgentActiveWorkflowPath(page)).toBe(tabPath)
+}
+
+export async function readPersistedAgentDocIdentity(page: Page) {
+  const raw = await page.evaluate(
+    (key) => sessionStorage.getItem(key),
+    AGENT_CRDT_DOC_ID_SESSION_KEY
+  )
+  if (raw === null) throw new Error('Persisted CRDT document record is missing')
+  const parsed: unknown = JSON.parse(raw)
+  if (
+    typeof parsed !== 'object' ||
+    parsed === null ||
+    !('docId' in parsed) ||
+    typeof parsed.docId !== 'string' ||
+    !('nonce' in parsed) ||
+    typeof parsed.nonce !== 'string'
+  ) {
+    throw new Error('Persisted CRDT document record is malformed')
+  }
+  return { docId: parsed.docId, nonce: parsed.nonce }
+}
 
 export async function bootAgentApp(
   page: Page,

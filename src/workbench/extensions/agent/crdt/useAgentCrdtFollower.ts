@@ -281,7 +281,7 @@ function startAgentCrdtFollower(
   getGraph: () => MaterializableGraph | null,
   events: AgentCrdtFollowerEvents
 ) {
-  const connected = ref(false)
+  const acknowledgedWorkflowId = ref<string | null>(null)
   const updatesApplied = ref(0)
   const lastFrameType = ref<string | null>(null)
   const subscribedWorkflowId = ref<string | null>(null)
@@ -302,7 +302,7 @@ function startAgentCrdtFollower(
     () => subscribedWorkflowId.value,
     () => bridge.resubscribe(),
     () => {
-      connected.value = false
+      acknowledgedWorkflowId.value = null
     }
   )
   const tabId = createUuidv4()
@@ -424,7 +424,7 @@ function startAgentCrdtFollower(
     if (!(event instanceof CustomEvent)) return
     if (!isTargetActive.value) return
     const ok = event.detail?.ok === true
-    connected.value = ok
+    acknowledgedWorkflowId.value = ok ? bridge.subscribedWorkflowId : null
     lastFrameType.value = event.type
     recordDevEvent('doc_subscribed', event.detail ?? null)
     if (ok) {
@@ -504,7 +504,7 @@ function startAgentCrdtFollower(
     projection.clearForReset(detail.workflowId, context)
     sender.abortAll()
     events.onReset?.(detail.workflowId)
-    connected.value = false
+    acknowledgedWorkflowId.value = null
     updatesApplied.value = 0
     lastFrameType.value = event.type
     lifecycle.clearStaleProbe()
@@ -544,7 +544,7 @@ function startAgentCrdtFollower(
     // KA-11 fail-closed: the bridge refused to propagate an unreadable doc, so
     // nothing was projected. Surface it as its own status rather than as a
     // generic "disconnected", which is indistinguishable from "never connected".
-    connected.value = false
+    acknowledgedWorkflowId.value = null
     lastFrameType.value = event.type
     lifecycle.clearStaleProbe()
     const detail =
@@ -580,7 +580,7 @@ function startAgentCrdtFollower(
     lifecycle.onSubscribeSent(detail.workflowId)
   }
   const onReconnected: EventListener = () => {
-    connected.value = false
+    acknowledgedWorkflowId.value = null
     lifecycle.onReconnected()
     recordDevEvent('reconnected', null)
     bridge.resubscribe()
@@ -736,7 +736,7 @@ function startAgentCrdtFollower(
       // existing "reconcile on frame or on graph readiness" behaviour.
       const justActivated = active && previous?.[1] === false
       lifecycle.clearForRetarget()
-      connected.value = false
+      acknowledgedWorkflowId.value = null
       knownDocNodeIds = new Set()
       pendingLiveNodeIds.clear()
       if (!active) {
@@ -778,7 +778,7 @@ function startAgentCrdtFollower(
 
   const status = computed<AgentCrdtStatus>(() => ({
     enabled: true,
-    connected: connected.value,
+    connected: acknowledgedWorkflowId.value !== null,
     workflowId: subscribedWorkflowId.value,
     updatesApplied: updatesApplied.value,
     lastFrameType: lastFrameType.value,

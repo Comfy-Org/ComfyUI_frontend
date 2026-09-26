@@ -1,32 +1,16 @@
 import { reportError } from '@/platform/telemetry/reportError'
-import { createUuidv4 } from '@/utils/uuid'
 
 import { recordDevEvent } from './devPanelLog'
+import {
+  DOC_ID_TTL_MS,
+  clearPersistedDocId,
+  persistDocId,
+  reconcilePersistedDocId
+} from './persistedDocId'
 
-// FE-1902: the doc id is otherwise held only in memory (set on turn ack), so a
-// panel remount loses the binding until the NEXT turn ack. Persist it per-tab
-// in sessionStorage so an in-page remount can rebind immediately. A full page
-// reload deliberately does NOT rebind (see the nonce below): it mints a new
-// nonce, refuses the pre-reload record, and waits for the next turn ack.
-//
-// FEC-5: a bare `docId` string has no owner and no lifetime, so it survives
-// (a) a workflow switch in the same browser tab - the NEXT panel mount rebinds
-// to whichever workflow last confirmed a subscribe, not necessarily the one
-// about to become active - and (b) a browser-tab duplication, which clones
-// sessionStorage verbatim into a second tab that never subscribed to that doc
-// at all. Neither case can be caught by re-checking `workflowId`, because the
-// whole reason a rebind is attempted is that the caller does NOT yet know
-// which workflow it's asking about. Instead the persisted record carries (1)
-// a per-page-load session nonce, so a value only ever rebinds within the
-// SAME top-level navigation that wrote it - a duplicated tab gets a fresh
-// nonce and its inherited record is refused - and (2) a short expiry that
-// slides while the doc keeps delivering frames, so a tab left idle past the
-// window a doc realistically stays relevant is refused rather than trusted
-// indefinitely. (1) closes case (b). Case (a) happens inside one page load,
-// so the nonce cannot see it; it is only BOUNDED by (2), not closed. The
-// `fec-docid-1` reproducer tracks the remaining same-tab window.
-const DOC_ID_SESSION_KEY = 'Comfy.Agent.CrdtDocId'
-const DOC_ID_TTL_MS = 5 * 60 * 1000
+// `persistedDocId.ts` is the single owner of the persisted doc-id key, shape,
+// page-load nonce, TTL, and reload adoption. This lifecycle only consumes it.
+
 // Re-stamp the expiry on doc traffic at most this often, so a busy channel
 // does not turn every frame into a sessionStorage write.
 const DOC_ID_REFRESH_INTERVAL_MS = DOC_ID_TTL_MS / 2
@@ -74,72 +58,6 @@ export const STALE_AFTER_MS = 30_000
  * `usedCatchUpGrace`.
  */
 export const SUBSCRIBE_CATCHUP_GRACE_MS = 2_000
-
-// One nonce per page load (module scope = one per top-level navigation, since
-// a full reload re-evaluates the module). A tab duplicated mid-session
-// inherits sessionStorage's persisted record but gets its own module
-// instance and thus its own nonce, so the inherited record's nonce mismatches
-// and is refused.
-const pageSessionNonce = createUuidv4()
-
-interface PersistedDocIdRecord {
-  docId: string
-  nonce: string
-  expiresAt: number
-}
-
-function safeSessionStorage(): Storage | null {
-  try {
-    return window.sessionStorage
-  } catch {
-    return null
-  }
-}
-
-function persistDocId(docId: string): void {
-  try {
-    const record: PersistedDocIdRecord = {
-      docId,
-      nonce: pageSessionNonce,
-      expiresAt: Date.now() + DOC_ID_TTL_MS
-    }
-    safeSessionStorage()?.setItem(DOC_ID_SESSION_KEY, JSON.stringify(record))
-  } catch {
-    // Quota / privacy mode: persistence is best-effort.
-  }
-}
-
-function readPersistedDocId(): string | null {
-  try {
-    const raw = safeSessionStorage()?.getItem(DOC_ID_SESSION_KEY)
-    if (!raw) return null
-    const record = JSON.parse(raw) as Partial<PersistedDocIdRecord>
-    if (
-      typeof record.docId !== 'string' ||
-      record.docId.length === 0 ||
-      typeof record.nonce !== 'string' ||
-      typeof record.expiresAt !== 'number'
-    ) {
-      // Legacy/malformed record (e.g. pre-FEC-5 bare-string value): treat as
-      // absent rather than trusting an unscoped id.
-      return null
-    }
-    if (record.nonce !== pageSessionNonce) return null
-    if (Date.now() >= record.expiresAt) return null
-    return record.docId
-  } catch {
-    return null
-  }
-}
-
-function clearPersistedDocId(): void {
-  try {
-    safeSessionStorage()?.removeItem(DOC_ID_SESSION_KEY)
-  } catch {
-    // Best-effort.
-  }
-}
-
 export class AgentCrdtDocLifecycle {
   private subscribeRetryTimer: ReturnType<typeof setTimeout> | null = null
   private subscribeRetryAttempt = 0
@@ -179,7 +97,7 @@ export class AgentCrdtDocLifecycle {
   ) {}
 
   readPersistedDocId(): string | null {
-    return readPersistedDocId()
+    return reconcilePersistedDocId()
   }
 
   clearPersistedDocId(): void {

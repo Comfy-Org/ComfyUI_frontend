@@ -11,42 +11,15 @@ import {
   StorageKeys
 } from '@/platform/workflow/persistence/base/storageKeys'
 
-const BINDING_TTL_MS = 30 * 24 * 60 * 60 * 1000
-
-interface PersistedBinding {
-  tabPath: string
-  graphId: string | null
-  confirmedAt: number
-}
-
-type PersistedBindings = Record<string, PersistedBinding>
+import { liveAgentWorkflowTabBindings } from './agentWorkflowTabBindingStorage'
+import type {
+  PersistedAgentWorkflowTabBinding,
+  PersistedAgentWorkflowTabBindings
+} from './agentWorkflowTabBindingStorage'
 
 interface OpenTab {
   tab: ComfyWorkflow
   path: string
-}
-
-function isPersistedBinding(value: unknown): value is PersistedBinding {
-  if (typeof value !== 'object' || value === null) return false
-  const { tabPath, graphId, confirmedAt } = value as Record<string, unknown>
-  return (
-    typeof tabPath === 'string' &&
-    (graphId === null || typeof graphId === 'string') &&
-    typeof confirmedAt === 'number'
-  )
-}
-
-function liveBindings(
-  bindings: Record<string, unknown>,
-  now: number
-): PersistedBindings {
-  return Object.fromEntries(
-    Object.entries(bindings).filter(
-      (entry): entry is [string, PersistedBinding] =>
-        isPersistedBinding(entry[1]) &&
-        entry[1].confirmedAt + BINDING_TTL_MS >= now
-    )
-  )
 }
 
 function graphIdOf(tab: ComfyWorkflow): string | undefined {
@@ -70,17 +43,22 @@ export const useAgentWorkflowTabBindingStore = defineStore(
   'agentWorkflowTabBinding',
   () => {
     clearLegacyAgentStorage()
-    const tabByWorkflow = useLocalStorage<PersistedBindings>(
+    const tabByWorkflow = useLocalStorage<PersistedAgentWorkflowTabBindings>(
       StorageKeys.agentWorkflowTabBindings(getWorkspaceId()),
       {}
     )
-    tabByWorkflow.value = liveBindings(tabByWorkflow.value, Date.now())
+    tabByWorkflow.value = liveAgentWorkflowTabBindings(
+      tabByWorkflow.value,
+      Date.now()
+    )
 
     const workflows = useWorkflowStore()
     const boundInstances = new Map<string, ComfyWorkflow>()
     const refusedInstances = new Map<string, ComfyWorkflow>()
 
-    function recordFor(workflowId: string): PersistedBinding | undefined {
+    function recordFor(
+      workflowId: string
+    ): PersistedAgentWorkflowTabBinding | undefined {
       return Object.hasOwn(tabByWorkflow.value, workflowId)
         ? tabByWorkflow.value[workflowId]
         : undefined
@@ -102,7 +80,7 @@ export const useAgentWorkflowTabBindingStore = defineStore(
     // by being saved in place at the record's path.
     function claimable(
       workflowId: string,
-      record: PersistedBinding,
+      record: PersistedAgentWorkflowTabBinding,
       tab: ComfyWorkflow
     ): boolean {
       if (refusedInstances.get(workflowId) === toRaw(tab)) return false
@@ -114,7 +92,7 @@ export const useAgentWorkflowTabBindingStore = defineStore(
 
     function blockedByOccupant(
       workflowId: string,
-      record: PersistedBinding
+      record: PersistedAgentWorkflowTabBinding
     ): boolean {
       const occupant = workflows.openWorkflows.find(
         (tab) => tab.path === record.tabPath

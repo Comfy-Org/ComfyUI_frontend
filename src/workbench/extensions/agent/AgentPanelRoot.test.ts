@@ -236,6 +236,7 @@ import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
 import { attachMintPortWiring } from './crdt/mintPortWiring'
 import type { MintPortWiring, MintPortWiringDeps } from './crdt/mintPortWiring'
+import { persistDocId } from './crdt/persistedDocId'
 
 const mintPortWiringDeps = vi.hoisted(() => ({
   current: null as MintPortWiringDeps | null
@@ -3914,6 +3915,115 @@ describe('AgentPanelRoot workflow binding', () => {
     return bodies
   }
 
+  it.for([
+    { label: 'an id-less thread', replacementWorkflowId: null },
+    { label: 'a delayed replacement workflow', replacementWorkflowId: 'wf-b' }
+  ])(
+    'detaches the persisted follower before loading $label',
+    async ({ replacementWorkflowId }) => {
+      const current = makeTab('wf-a')
+      persistDocId('wf-a')
+      if (replacementWorkflowId) {
+        const replacement = addTab('workflows/replacement.json')
+        useAgentWorkflowTabBindingStore().bind(
+          replacementWorkflowId,
+          replacement.path
+        )
+      }
+      let resolveHistory!: (response: Response) => void
+      const historyResponse = new Promise<Response>((resolve) => {
+        resolveHistory = resolve
+      })
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async (url: string) => {
+          if (url.includes('/messages')) return historyResponse
+          if (url.includes('/agent/threads'))
+            return json(
+              200,
+              agentThreadList([
+                agentThread({
+                  id: 'th-history',
+                  title: 'Earlier chat',
+                  last_message_at: '2026-09-01T00:00:00Z'
+                })
+              ])
+            )
+          if (url.includes('/workflows'))
+            return json(200, {
+              data: [],
+              pagination: { offset: 0, limit: 100, total: 0, has_more: false }
+            })
+          return json(200, {})
+        })
+      )
+
+      renderWithSelectedTarget()
+      await vi.waitFor(() =>
+        expect(
+          socketSend.mock.calls.some(([frame]) =>
+            String(frame).includes('"type":"doc_subscribe"')
+          )
+        ).toBe(true)
+      )
+      socketSend.mockClear()
+
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.showChatHistory')
+        })
+      )
+      await userEvent.click(await screen.findByText('Earlier chat'))
+
+      await vi.waitFor(() =>
+        expect(
+          socketSend.mock.calls.some(([frame]) =>
+            String(frame).includes('"type":"doc_unsubscribe"')
+          )
+        ).toBe(true)
+      )
+      expect(workflowStore.activeWorkflow).toEqual(current)
+
+      resolveHistory(
+        json(200, [
+          {
+            id: 'history-user',
+            thread_id: 'th-history',
+            seq: 1,
+            role: 'user',
+            status: 'complete',
+            turn_id: 'history-turn',
+            ...(replacementWorkflowId
+              ? { workflow_id: replacementWorkflowId }
+              : {}),
+            content: { text: 'Historical prompt' }
+          }
+        ])
+      )
+      await screen.findAllByText('Historical prompt')
+
+      if (replacementWorkflowId) {
+        await vi.waitFor(() =>
+          expect(
+            socketSend.mock.calls.some(([frame]) => {
+              const raw = String(frame)
+              return (
+                raw.includes('"type":"doc_subscribe"') &&
+                raw.includes(`"workflow_id":"${replacementWorkflowId}"`)
+              )
+            })
+          ).toBe(true)
+        )
+      } else {
+        expect(
+          socketSend.mock.calls.some(([frame]) =>
+            String(frame).includes('"type":"doc_subscribe"')
+          )
+        ).toBe(false)
+      }
+    }
+  )
+
   it('preserves active-turn graph activity across remount and delayed hydration', async () => {
     makeTab('wf-42')
     let resolveHistory!: (response: Response) => void
@@ -5662,6 +5772,43 @@ describe('AgentPanelRoot workflow binding', () => {
         target: 'active_tab_switch'
       })
     )
+  })
+
+  it('agent_active_tab selects a bound tab while the agent is idle', async () => {
+    const tab = makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+    await renderAndSend('work here')
+    ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
+    await screen.findByRole('button', { name: 'Send' })
+
+    ws.emit('agent_active_tab', { workflow_id: 'wf-42', thread_id: 'th-1' })
+
+    await vi.waitFor(() =>
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(tab.path)
+    )
+  })
+
+  it('agent_active_tab selects a minted tab while the agent is idle', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+    await renderAndSend('work here')
+    ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
+    await screen.findByRole('button', { name: 'Send' })
+
+    ws.emit('agent_active_tab', {
+      workflow_id: 'wf-77',
+      name: 'Video test',
+      thread_id: 'th-1'
+    })
+
+    await vi.waitFor(() => {
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(
+        'workflows/Video test.json'
+      )
+      expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-77')).toBe(
+        'workflows/Video test.json'
+      )
+    })
   })
 
   // A browser tab closed without the SPA's own unbind() left 'wf-abandoned'

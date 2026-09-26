@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { reportError } from '@/platform/telemetry/reportError'
@@ -9,6 +10,11 @@ import {
   SUBSCRIBE_CATCHUP_GRACE_MS
 } from './agentCrdtDocLifecycle'
 import { recordDevEvent } from './devPanelLog'
+import {
+  DOC_ID_SESSION_KEY,
+  persistDocId,
+  reconcilePersistedDocId
+} from './persistedDocId'
 
 vi.mock(import('./devPanelLog'), () => ({ recordDevEvent: vi.fn() }))
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
@@ -339,6 +345,46 @@ describe('AgentCrdtDocLifecycle ack timeout', () => {
 
     vi.advanceTimersByTime(3 * SUBSCRIBE_ACK_TIMEOUT_MS)
     expect(resubscribe).toHaveBeenCalledTimes(3)
+  })
+})
+
+describe('AgentCrdtDocLifecycle persisted doc id', () => {
+  beforeEach(() => {
+    sessionStorage.clear()
+  })
+
+  it('reads back a record written through the single persistence owner', () => {
+    const { lifecycle } = wire()
+    persistDocId(WORKFLOW_ID)
+
+    expect(lifecycle.readPersistedDocId()).toBe(WORKFLOW_ID)
+  })
+
+  it('still sees the record after a reload adoption re-stamps its nonce', () => {
+    const { lifecycle } = wire()
+    // A previous page load's record: right key and shape, foreign nonce.
+    sessionStorage.setItem(
+      DOC_ID_SESSION_KEY,
+      JSON.stringify({
+        docId: WORKFLOW_ID,
+        nonce: 'the-pre-reload-page-load',
+        expiresAt: Date.now() + 60_000
+      })
+    )
+    vi.spyOn(performance, 'getEntriesByType').mockReturnValue([
+      fromPartial<PerformanceNavigationTiming>({ type: 'reload' })
+    ])
+    // What useAgentDockMount does before the follower ever binds.
+    expect(reconcilePersistedDocId()).toBe(WORKFLOW_ID)
+
+    expect(lifecycle.readPersistedDocId()).toBe(WORKFLOW_ID)
+  })
+
+  it('a confirmed subscribe persists through the same owner', () => {
+    const { lifecycle } = wire()
+    lifecycle.onSubscribeConfirmed()
+
+    expect(reconcilePersistedDocId()).toBe(WORKFLOW_ID)
   })
 })
 
