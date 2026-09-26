@@ -156,6 +156,7 @@ async function exchangeWithSession(
     signal: context.signal
   })
   if (reread.status === 'error') return rereadFailure(reread)
+  if (!context.stillInScope()) return { status: 'error', code: 'SUPERSEDED' }
   return sendAs(reread.session)
 }
 
