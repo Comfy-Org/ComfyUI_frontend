@@ -10,11 +10,17 @@ import WorkshopHero from './WorkshopHero.vue'
 import WorkshopModelsGrid from './WorkshopModelsGrid.vue'
 import CatalogueTabs from './CatalogueTabs.vue'
 import type { CatalogueTab } from './CatalogueTabs.vue'
-import { captureWorkshopEvent, useWorkshopEnabled } from '../../scripts/posthog'
+import {
+  captureWorkshopEvent,
+  useWorkshopAppsEnabled,
+  useWorkshopEnabled
+} from '../../scripts/posthog'
+import { catalogueApps } from '../../lib/workshop/catalogue-apps'
 
 const WorkflowCatalogue = defineAsyncComponent(
   () => import('./WorkflowCatalogue.vue')
 )
+const AppCatalogue = defineAsyncComponent(() => import('./AppCatalogue.vue'))
 
 const { models, locale = 'en' } = defineProps<{
   models: readonly WorkshopModel[]
@@ -25,6 +31,8 @@ const inSection = ref(false)
 const browseAll = ref(false)
 const mounted = useMounted()
 const enabled = useWorkshopEnabled()
+const appsEnabled = useWorkshopAppsEnabled()
+const apps = catalogueApps(locale)
 const selectedTab = ref<CatalogueTab>('models')
 if (typeof location !== 'undefined') {
   const requested = new URLSearchParams(location.search).get('type')
@@ -148,6 +156,23 @@ watch(
       />
     </template>
   </WorkflowCatalogue>
+  <AppCatalogue
+    v-else-if="appsEnabled"
+    v-model:browse-all="browseAll"
+    :apps
+    :locale
+    @section="inSection = $event"
+  >
+    <template #tabs>
+      <CatalogueTabs
+        :model-value="activeTab"
+        :locale
+        :focus-active="focusTabs"
+        @update:model-value="changeTab"
+        @focused="focusTabs = false"
+      />
+    </template>
+  </AppCatalogue>
   <section v-else data-testid="apps-catalogue">
     <!-- Apps has no list of its own yet, so the tabs bring their own bar
       rather than leaving this half with no way back. -->
