@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { toNodeId } from '@/types/nodeId'
 
@@ -19,10 +19,6 @@ const context = {
 }
 
 describe('reportDomWidgetMountFailure', () => {
-  beforeEach(() => {
-    mockReportError.mockClear()
-  })
-
   it('reports the failure with the node and widget that could not mount', async () => {
     const report = await loadReporter()
 
