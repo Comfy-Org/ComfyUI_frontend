@@ -12,6 +12,7 @@
     "downloadImage": "Download image",
     "downloadVideo": "Download video",
     "downloadAudio": "Download audio",
+    "exportImages": "Export images",
     "editOrMaskImage": "Edit or mask image",
     "editImage": "Edit image",
     "openLayerEditor": "Open layer editor",
@@ -682,6 +683,7 @@
     "Copy Image": "Copy Image",
     "Paste Image": "Paste Image",
     "Save Image": "Save Image",
+    "Export Images": "Export Images",
     "Rename": "Rename",
     "RenameWidget": "Rename Widget",
     "FavoriteWidget": "Favorite Widget",
@@ -3992,6 +3994,11 @@
     "rename": {
       "failed": "Could not rename asset."
     }
+  },
+  "nodeOutputsExport": {
+    "title": "Export Assets",
+    "downloadAll": "Download all",
+    "export": "Export ({count})"
   },
   "mediaAsset": {
     "assetDelete": {

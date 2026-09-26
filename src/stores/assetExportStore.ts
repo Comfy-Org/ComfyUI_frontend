@@ -84,7 +84,7 @@ export const useAssetExportStore = defineStore('assetExport', () => {
       exp.downloadError = undefined
       const { url } = await assetService.getExportDownloadUrl(exp.exportName)
       const link = document.createElement('a')
-      link.href = url
+      link.href = url.startsWith('/') ? api.apiURL(url) : url
       link.download = exp.exportName
       link.style.display = 'none'
       link.target = '_blank'

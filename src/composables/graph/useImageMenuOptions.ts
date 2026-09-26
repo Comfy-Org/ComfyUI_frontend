@@ -2,6 +2,7 @@ import { useI18n } from 'vue-i18n'
 
 import { downloadFile, openFileInNewTab } from '@/base/common/downloadUtil'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { useNodeOutputsExport } from '@/platform/assets/composables/useNodeOutputsExport'
 import { useCommandStore } from '@/stores/commandStore'
 import type { CoreMediaMenuActionKind } from '@/utils/coreMediaMenuActionUtils'
 
@@ -44,6 +45,7 @@ async function pasteClipboardImageToNode(node: LGraphNode): Promise<void> {
  */
 export function useImageMenuOptions() {
   const { t } = useI18n()
+  const { hasMultipleOutputs, showOutputsExportDialog } = useNodeOutputsExport()
 
   const openMaskEditor = () => {
     const commandStore = useCommandStore()
@@ -113,9 +115,11 @@ export function useImageMenuOptions() {
   ): MenuOption[] => {
     const hasImages = !!node.imgs?.length
     const canPaste = canPasteImage(node)
+    const canExportOutputs = availability.preview && hasMultipleOutputs(node)
     if (
       (!hasImages || !availability.preview) &&
-      (!canPaste || !availability.input)
+      (!canPaste || !availability.input) &&
+      !canExportOutputs
     )
       return []
 
@@ -154,6 +158,14 @@ export function useImageMenuOptions() {
         label: t('contextMenu.Save Image'),
         icon: 'icon-[lucide--download]',
         action: () => saveImage(node)
+      })
+    }
+
+    if (canExportOutputs) {
+      options.push({
+        label: t('contextMenu.Export Images'),
+        icon: 'icon-[lucide--folder-down]',
+        action: () => showOutputsExportDialog(node)
       })
     }
 
