@@ -2,11 +2,11 @@ import type { VariantProps } from 'cva'
 import { cva } from 'cva'
 
 export const buttonVariants = cva({
-  base: 'relative inline-flex items-center justify-center gap-2 cursor-pointer touch-manipulation whitespace-nowrap appearance-none border-none rounded-md text-sm font-medium font-inter transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([width]):not([height])]:size-4 [&_svg]:shrink-0',
+  base: 'relative inline-flex cursor-pointer touch-manipulation appearance-none items-center justify-center gap-2 rounded-md border-none font-inter text-sm font-medium whitespace-nowrap transition-colors focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([width]):not([height])]:size-4',
   variants: {
     variant: {
       secondary:
-        'text-secondary-foreground bg-secondary-background hover:bg-secondary-background-hover',
+        'bg-secondary-background text-base-foreground hover:bg-secondary-background-hover',
       primary:
         'bg-primary-background text-base-foreground hover:bg-primary-background-hover',
       inverted:
@@ -40,8 +40,8 @@ export const buttonVariants = cva({
       md: 'h-8 rounded-lg p-2 text-xs',
       lg: 'h-10 rounded-lg px-4 py-2 text-sm',
       'icon-sm': 'size-5 p-0',
-      icon: 'size-8',
-      'icon-lg': 'size-10',
+      icon: 'size-8 rounded-lg',
+      'icon-lg': 'size-10 rounded-lg',
       brand:
         'h-12 rounded-2xl px-5 font-formula text-sm font-semibold tracking-[0.7px] uppercase lg:h-13 xl:h-14 2xl:h-16',
       'brand-icon': 'size-10 rounded-2xl xl:size-12',

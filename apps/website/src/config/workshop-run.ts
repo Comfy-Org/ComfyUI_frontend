@@ -1,5 +1,5 @@
 import type { FieldErrors } from './workshop-playground'
-import type { Modality, ModelStatus } from './models-catalogue'
+import type { Modality } from './models-catalogue'
 
 export const OUTPUT_TTL_MS = 24 * 60 * 60 * 1000
 
@@ -19,9 +19,12 @@ export type RunFailure =
   | 'timeout'
 
 export interface RunOutput {
+  readonly id?: string
   readonly kind: Modality | 'other'
   readonly purpose?: 'response-metadata'
   readonly url: string
+  readonly download?: { readonly url: string; readonly expiresAt: number }
+  readonly expiresAt?: number
   readonly byteLength?: number
   readonly text?: string
   readonly truncated?: boolean
@@ -40,13 +43,17 @@ export interface RunRecord {
 export type RunState =
   | { readonly status: 'idle' }
   | { readonly status: 'example'; readonly output: RunOutput }
-  | { readonly status: 'running'; readonly startedAt: number }
+  | {
+      readonly status: 'running'
+      readonly startedAt: number
+      readonly label?: string
+    }
   | { readonly status: 'cancelled' }
   | {
       readonly status: 'succeeded'
       readonly output: RunOutput
       readonly completedAt: number
-      readonly expiresAt: number
+      readonly expiresAt?: number
       readonly nsfw: boolean
     }
   | {
@@ -105,46 +112,12 @@ export function transition(state: RunState, event: RunEvent): RunState {
   }
 }
 
-export type RunGate =
-  | 'signedOut'
-  | 'noCredits'
-  | 'memberNoCredits'
-  | 'policy'
-  | 'unavailable'
-  | 'ready'
-
-export interface GateInput {
-  readonly signedIn: boolean
-  readonly credits: number
-  readonly creditsPerRun: number | undefined
-  readonly modelStatus?: ModelStatus
-  readonly policyDisabled: boolean
-  readonly unavailable: boolean
-  readonly role?: 'owner' | 'member'
-}
-
-// Order matters: sign-in is asked before anything the account could fix,
-// and a workspace policy block wins over credits because buying would not
-// unblock the run.
-export function runGate(input: GateInput): RunGate {
-  // No price means the cost of a run is unknown, not free.
-  if (
-    input.unavailable ||
-    input.modelStatus === 'deprecated' ||
-    input.creditsPerRun === undefined
-  ) {
-    return 'unavailable'
-  }
-  if (!input.signedIn) return 'signedOut'
-  if (input.policyDisabled) return 'policy'
-  if (input.credits < input.creditsPerRun) {
-    return input.role === 'member' ? 'memberNoCredits' : 'noCredits'
-  }
-  return 'ready'
-}
-
 export function isExpired(state: RunState, now: number): boolean {
-  return state.status === 'succeeded' && now >= state.expiresAt
+  return (
+    state.status === 'succeeded' &&
+    state.expiresAt !== undefined &&
+    now >= state.expiresAt
+  )
 }
 
 export function formatElapsed(ms: number): string {

@@ -2,7 +2,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { markRaw, ref } from 'vue'
 
 vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => ref('') }))
@@ -19,7 +19,6 @@ import type { Subgraph } from '@/lib/litegraph/src/LGraph'
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ComfyApi } from '@/scripts/api'
-import type { ComfyApp } from '@/scripts/app'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 
@@ -29,35 +28,7 @@ vi.mock(import('@/base/assert'), () => ({
   assert: mockAssert
 }))
 
-vi.mock(import('@/scripts/app'), () => ({
-  app: fromPartial<ComfyApp>({
-    nodeOutputs: {},
-    nodePreviewImages: {},
-    graph: {},
-    rootGraph: {
-      subgraphs: new Map(),
-      serialize: vi.fn(() => ({
-        nodes: [],
-        links: [],
-        groups: [],
-        extra: {},
-        config: {},
-        version: 0.4,
-        last_node_id: 0,
-        last_link_id: 0
-      }))
-    },
-    loadGraphData: vi.fn(() => Promise.resolve()),
-    canvas: {
-      ds: { scale: 1, offset: [0, 0] },
-      setGraph: vi.fn()
-    },
-    ui: {
-      autoQueueEnabled: false,
-      autoQueueMode: 'instant'
-    }
-  })
-}))
+vi.mock(import('@/scripts/app'))
 
 vi.mock(import('@/scripts/api'), () => ({
   api: fromPartial<ComfyApi>({
@@ -115,7 +86,7 @@ function createTracker(initialState?: ComfyWorkflowJSON): ChangeTracker {
 }
 
 function mockCanvasState(state: ComfyWorkflowJSON) {
-  vi.mocked(app.rootGraph.serialize).mockReturnValue(state as never)
+  vi.spyOn(app.rootGraph, 'serialize').mockReturnValue(state as never)
 }
 
 function dispatchedEventNames() {
@@ -220,13 +191,108 @@ describe('ChangeTracker', () => {
     app.rootGraph.subgraphs.clear()
   })
 
+  describe('undoRedo', () => {
+    it.for([
+      {
+        key: 'z',
+        shiftKey: false,
+        history: 'undo',
+        selectOnly: false,
+        calls: 1
+      },
+      {
+        key: 'z',
+        shiftKey: false,
+        history: 'undo',
+        selectOnly: true,
+        calls: 0
+      },
+      { key: 'z', shiftKey: true, history: 'redo', selectOnly: true, calls: 0 },
+      { key: 'y', shiftKey: false, history: 'redo', selectOnly: true, calls: 0 }
+    ] as const)(
+      'Ctrl+$key shift=$shiftKey with selectOnly=$selectOnly consumes the key and runs $history $calls times',
+      async ({ key, shiftKey, history, selectOnly, calls }) => {
+        const tracker = createTracker()
+        const run = vi.spyOn(tracker, history).mockResolvedValue()
+        app.canvas.selectOnly = selectOnly
+        onTestFinished(() => {
+          app.canvas.selectOnly = false
+        })
+
+        const handled = await tracker.undoRedo(
+          new KeyboardEvent('keydown', { key, ctrlKey: true, shiftKey })
+        )
+
+        expect(handled).toBe(true)
+        expect(run).toHaveBeenCalledTimes(calls)
+      }
+    )
+
+    it.for([
+      { key: 'a', ctrlKey: true, shiftKey: false, altKey: false },
+      { key: 'z', ctrlKey: false, shiftKey: false, altKey: false },
+      { key: 'z', ctrlKey: true, shiftKey: false, altKey: true },
+      { key: 'y', ctrlKey: true, shiftKey: true, altKey: false }
+    ])(
+      '$key ctrl=$ctrlKey shift=$shiftKey alt=$altKey is not a history shortcut',
+      async ({ key, ctrlKey, shiftKey, altKey }) => {
+        const tracker = createTracker()
+        const undo = vi.spyOn(tracker, 'undo').mockResolvedValue()
+        const redo = vi.spyOn(tracker, 'redo').mockResolvedValue()
+
+        const handled = await tracker.undoRedo(
+          new KeyboardEvent('keydown', { key, ctrlKey, shiftKey, altKey })
+        )
+
+        expect(handled).toBeUndefined()
+        expect(undo).not.toHaveBeenCalled()
+        expect(redo).not.toHaveBeenCalled()
+      }
+    )
+
+    it.for([
+      { selectOnlyAtKeydown: true, selectOnlyAtFrame: false, undoCalls: 0 },
+      { selectOnlyAtKeydown: false, selectOnlyAtFrame: true, undoCalls: 1 }
+    ])(
+      'Ctrl+Z with selectOnly=$selectOnlyAtKeydown at keydown and $selectOnlyAtFrame at the frame undoes $undoCalls times',
+      async ({ selectOnlyAtKeydown, selectOnlyAtFrame, undoCalls }) => {
+        const tracker = createTracker()
+        const undo = vi.spyOn(tracker, 'undo').mockResolvedValue()
+        const frames: FrameRequestCallback[] = []
+        vi.spyOn(window, 'requestAnimationFrame').mockImplementation((frame) =>
+          frames.push(frame)
+        )
+        const addEventListener = vi
+          .spyOn(window, 'addEventListener')
+          .mockImplementation(() => {})
+        ChangeTracker.init()
+        const keydown = addEventListener.mock.calls.find(
+          ([type]) => type === 'keydown'
+        )?.[1]
+        if (typeof keydown !== 'function')
+          throw new Error('keydown listener missing')
+        onTestFinished(() => {
+          app.canvas.selectOnly = false
+        })
+
+        app.canvas.selectOnly = selectOnlyAtKeydown
+        keydown(new KeyboardEvent('keydown', { key: 'z', ctrlKey: true }))
+        app.canvas.selectOnly = selectOnlyAtFrame
+        expect(frames).toHaveLength(1)
+        await frames[0](0)
+
+        expect(undo).toHaveBeenCalledTimes(undoCalls)
+      }
+    )
+  })
+
   describe('captureCanvasState', () => {
     describe('guards', () => {
-      it('is a no-op when app.graph is falsy', () => {
+      it('is a no-op when the graph is not ready', () => {
         const tracker = createTracker()
         const original = tracker.activeState
 
-        const spy = vi.spyOn(app, 'graph', 'get').mockReturnValue(null as never)
+        const spy = vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(false)
         tracker.captureCanvasState()
         spy.mockRestore()
 
@@ -727,7 +793,6 @@ describe('ChangeTracker', () => {
           node.id = String(node.id)
         }
         const initialLink = initial.links[0]
-        if (!initialLink) throw new Error('link missing')
         initialLink[1] = String(initialLink[1])
         initialLink[3] = String(initialLink[3])
         changed.nodes[0].pos = [40, 50]
@@ -927,7 +992,6 @@ describe('ChangeTracker', () => {
         const tracker = createTracker(initial)
         const changed = structuredClone(initial)
         const interior = getSubgraphDefinition(changed).nodes[0]
-        if (!interior) throw new Error('interior node missing')
         interior.pos = [40, 50]
         interior.size = [200, 100]
         mockCanvasState(changed)
@@ -946,7 +1010,6 @@ describe('ChangeTracker', () => {
         const tracker = createTracker(initial)
         const changed = structuredClone(initial)
         const interior = getSubgraphDefinition(changed).nodes[0]
-        if (!interior) throw new Error('interior node missing')
         interior.widgets_values = [2]
         mockCanvasState(changed)
 
@@ -982,12 +1045,10 @@ describe('ChangeTracker', () => {
           throw new Error('nested subgraph definitions missing')
         }
         const [leaf] = rootDefinitions.splice(leafIndex, 1)
-        if (!leaf) throw new Error('nested leaf definition missing')
         parent.definitions = { subgraphs: [leaf] }
         const initialLeaf = findSubgraphDefinition(initial, leafId)
         if (!initialLeaf) throw new Error('nested leaf definition missing')
         const initialLeafNode = initialLeaf.nodes[0]
-        if (!initialLeafNode) throw new Error('nested leaf node missing')
         initialLeafNode.widgets_values = [1]
         const tracker = createTracker(initial)
 
@@ -995,7 +1056,6 @@ describe('ChangeTracker', () => {
         const changedLeaf = findSubgraphDefinition(changed, leafId)
         if (!changedLeaf) throw new Error('nested leaf definition missing')
         const changedLeafNode = changedLeaf.nodes[0]
-        if (!changedLeafNode) throw new Error('nested leaf node missing')
         changedLeafNode.widgets_values = [2]
         mockCanvasState(changed)
 
@@ -1010,7 +1070,6 @@ describe('ChangeTracker', () => {
         const initial = await createSubgraphState()
         const changed = structuredClone(initial)
         const interior = getSubgraphDefinition(changed).nodes[0]
-        if (!interior) throw new Error('interior node missing')
         interior.widgets_values = [2]
         omitOptionalSubgraphCollections(initial)
         omitOptionalSubgraphCollections(changed)

@@ -47,6 +47,15 @@ export type BillingErrorCode =
   | 'REQUEST_FAILED'
   /** A 2xx whose body does not match the generated contract. */
   | 'MALFORMED_RESPONSE'
+  /**
+   * The server already had an operation of this kind pending that this
+   * attempt did not issue. Refusing is the only honest answer: the status
+   * response names no plan, so joining it would settle whatever the earlier
+   * attempt chose and report it as this caller's success. Unlike the others
+   * this one never comes from a response; the command declines before it
+   * sends anything.
+   */
+  | 'OPERATION_ALREADY_PENDING'
 
 declare const billingServerCodeBrand: unique symbol
 

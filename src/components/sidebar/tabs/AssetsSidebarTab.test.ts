@@ -14,12 +14,12 @@ beforeEach(() => {
     items: [],
     hasMore: false,
     isLoading: false,
-    loadMore: vi.fn(async () => {}),
+    loadMore: vi.fn(async () => false),
     loadNew: vi.fn(async () => {}),
     invalidate: vi.fn(async () => {})
   }
   vi.spyOn(store.inputAssets, 'loadNew').mockResolvedValue(undefined)
-  vi.spyOn(store.inputAssets, 'loadMore').mockResolvedValue(undefined)
+  vi.spyOn(store.inputAssets, 'loadMore').mockResolvedValue(false)
 })
 
 const folderAsset = vi.hoisted(() => ({
@@ -71,23 +71,12 @@ vi.mock<unknown>(
   }
 )
 
-vi.mock<unknown>(
-  import('@/platform/assets/composables/useMediaAssetActions'),
-  () => ({
-    useMediaAssetActions: () => ({
-      downloadAssets: vi.fn(),
-      deleteAssets: vi.fn(),
-      addMultipleToWorkflow: vi.fn(),
-      openMultipleWorkflows: vi.fn(),
-      exportMultipleWorkflows: vi.fn()
-    })
-  })
-)
+vi.mock(import('@/platform/assets/composables/useMediaAssetActions'))
 
 vi.mock(import('@/platform/assets/utils/outputAssetUtil'))
 
 vi.mock<unknown>(
-  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
+  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
   () => ({
     useToast: () => ({ add: vi.fn() })
   })

@@ -28,6 +28,7 @@ import type {
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
 import { isCloud } from '@/platform/distribution/types'
+import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
@@ -84,6 +85,7 @@ import { useLitegraphService } from '@/services/litegraphService'
 import { useSubgraphService } from '@/services/subgraphService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useCommandStore } from '@/stores/commandStore'
+import { createCanvasInteractionMode } from '@/renderer/core/canvas/interaction/canvasInteractionMode'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -95,8 +97,6 @@ import {
   getAncestorExecutionIds,
   tryNormalizeNodeExecutionId
 } from '@/types/nodeIdentification'
-import { KeyComboImpl } from '@/platform/keybindings/keyCombo'
-import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
 
@@ -142,6 +142,7 @@ import {
   executeWidgetsCallback,
   createNode,
   isImageNode,
+  isSelectOnly,
   isVideoNode
 } from '@/utils/litegraphUtil'
 import {
@@ -318,7 +319,7 @@ export class ComfyApp {
   static clipspace: Clipspace | null = null
   static clipspace_invalidate_handler: (() => void) | null = null
   static open_maskeditor: (() => void) | null = null
-  static maskeditor_is_opended: (() => void) | null = null
+  static maskeditor_is_opended: (() => boolean) | null = null
   static clipspace_return_node: LGraphNode | null = null
 
   vueAppReady: boolean
@@ -745,6 +746,7 @@ export class ComfyApp {
 
         const n = this.dragOverNode
         this.dragOverNode = null
+        if (isSelectOnly(canvas)) return
         // Node handles file drop, we dont use the built in onDropFile handler as its buggy
         // If you drag multiple files it will call it multiple times with the same file
         if (await n?.onDragDrop?.(event)) return
@@ -849,22 +851,9 @@ export class ComfyApp {
         return
       }
 
-      if (e.type == 'keydown' && !e.repeat) {
-        const keyCombo = KeyComboImpl.fromEvent(e)
-        const keybindingStore = useKeybindingStore()
-        const keybinding = keybindingStore.getKeybinding(keyCombo)
-
-        if (
-          keybinding &&
-          keybinding.targetElementId === 'graph-canvas-container'
-        ) {
-          void useCommandStore().execute(keybinding.commandId)
-
-          this.graph.change()
-          e.preventDefault()
-          e.stopImmediatePropagation()
-          return
-        }
+      if (useKeybindingService().executeCanvasKeybinding(e)) {
+        this.graph.change()
+        return
       }
 
       // Fall through to Litegraph defaults
@@ -951,15 +940,17 @@ export class ComfyApp {
 
   /** Flag that the graph is configuring to prevent nodes from running checks while its still loading */
   private addConfigureHandler() {
-    const app = this
     const configure = LGraph.prototype.configure
-    LGraph.prototype.configure = function (...args) {
-      app.configuringGraphLevel++
+    const trackConfiguring = <T>(run: () => T): T => {
+      this.configuringGraphLevel++
       try {
-        return configure.apply(this, args)
+        return run()
       } finally {
-        app.configuringGraphLevel--
+        this.configuringGraphLevel--
       }
+    }
+    LGraph.prototype.configure = function (...args) {
+      return trackConfiguring(() => configure.apply(this, args))
     }
   }
 
@@ -1022,7 +1013,9 @@ export class ComfyApp {
 
     this.rootGraphInternal = graph
     installNodeAddedTelemetry(graph)
-    this.canvas = new LGraphCanvas(canvasEl, graph)
+    const interactionMode = createCanvasInteractionMode()
+    this.canvas = new LGraphCanvas(canvasEl, graph, { interactionMode })
+    useCommandStore().setInteractionMode(interactionMode)
     // Make canvas states reactive so we can observe changes on them.
     this.canvas.state = reactive(this.canvas.state)
 
@@ -1983,15 +1976,14 @@ export class ComfyApp {
             const hasPromptNodeErrors =
               error instanceof PromptExecutionError &&
               Object.keys(error.response.node_errors ?? {}).length > 0
-            const preconditionResponseError =
-              error instanceof PromptExecutionError &&
-              typeof error.response.error === 'object'
-                ? error.response.error
-                : undefined
-            const promptPrecondition = preconditionResponseError
+            const promptError =
+              error instanceof PromptExecutionError
+                ? normalizePromptError(error.response.error)
+                : null
+            const promptPrecondition = promptError
               ? resolveAccountPrecondition({
-                  exceptionType: preconditionResponseError.type,
-                  exceptionMessage: preconditionResponseError.message
+                  exceptionType: promptError.type,
+                  exceptionMessage: promptError.message
                 })
               : undefined
             // Account preconditions (sign-in, subscription, credits) open their
@@ -2003,8 +1995,7 @@ export class ComfyApp {
             }
             if (
               error instanceof PromptExecutionError &&
-              typeof error.response.error === 'object' &&
-              error.response.error?.type === 'missing_node_type'
+              promptError?.type === 'missing_node_type'
             ) {
               // Re-scan the full graph instead of using the server's single-node response.
               rescanAndSurfaceMissingNodes(this.rootGraph)
@@ -2057,14 +2048,14 @@ export class ComfyApp {
               // Store prompt-level error separately only when no node-specific errors exist,
               // because node errors already carry the full context. Prompt-level errors
               // (e.g. prompt_no_outputs, no_prompt) lack node IDs and need their own path.
-              if (!nodeErrors || Object.keys(nodeErrors).length === 0) {
-                const promptError = normalizePromptError(error.response.error)
-                if (promptError) {
-                  executionErrorStore.recordPromptError(
-                    promptError,
-                    queuedRunErrorKey
-                  )
-                }
+              if (
+                (!nodeErrors || Object.keys(nodeErrors).length === 0) &&
+                promptError
+              ) {
+                executionErrorStore.recordPromptError(
+                  promptError,
+                  queuedRunErrorKey
+                )
               }
 
               if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {

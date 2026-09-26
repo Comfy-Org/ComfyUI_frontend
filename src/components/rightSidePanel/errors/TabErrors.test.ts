@@ -24,6 +24,7 @@ import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 
 import TabErrors from './TabErrors.vue'
+import { app } from '@/scripts/app'
 vi.mock(import('@/services/comfyRegistryService'), () => ({
   useComfyRegistryService: () =>
     fromAny<ReturnType<typeof useComfyRegistryService>, unknown>({
@@ -33,24 +34,11 @@ vi.mock(import('@/services/comfyRegistryService'), () => ({
     })
 }))
 
-const { mockFocusNode, mockRefreshMissingModels } = vi.hoisted(() => ({
-  mockFocusNode: vi.fn(),
-  mockRefreshMissingModels: vi.fn()
+const { mockFocusNode } = vi.hoisted(() => ({
+  mockFocusNode: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/scripts/app'), () => {
-  const rootGraph = {
-    serialize: vi.fn(() => ({})),
-    getNodeById: vi.fn()
-  }
-  return {
-    app: {
-      refreshMissingModels: mockRefreshMissingModels,
-      rootGraph,
-      rootGraphOrUndefined: rootGraph
-    }
-  }
-})
+vi.mock(import('@/scripts/app'))
 
 vi.mock(import('@/utils/graphTraversalUtil'), () => ({
   collectAllNodes: vi.fn(() => []),
@@ -489,7 +477,7 @@ describe('TabErrors.vue', () => {
 
     await user.click(screen.getByTestId('missing-model-header-refresh'))
 
-    expect(mockRefreshMissingModels).toHaveBeenCalledWith({ silent: true })
+    expect(app.refreshMissingModels).toHaveBeenCalledWith({ silent: true })
   })
 
   it('counts missing models per file when several share one directory', () => {
