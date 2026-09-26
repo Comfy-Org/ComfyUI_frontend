@@ -126,21 +126,24 @@ describe('useFirstRunEntry', () => {
   ] as const
 
   describe('what the boot reports to surfaces that must yield to it', () => {
-    it('records that Getting Started took the screen', async () => {
+    it('holds the screen once Getting Started is up', async () => {
       const entry = useFirstRunEntry()
 
       await entry.handleStartupOutcome('fresh')
 
-      expect(entry.firstRunTookScreen.value).toBe(true)
+      expect(entry.firstRunHoldsScreen.value).toBe(true)
     })
 
-    it('records that a url-intent tour took the screen', async () => {
+    it('holds nothing for a url-intent tour, which never took the screen', async () => {
       const entry = useFirstRunEntry()
 
       await entry.handleStartupOutcome('url-intent')
       await entry.handleUrlWorkflow('url-intent', 'image_z_image_turbo')
 
-      expect(entry.firstRunTookScreen.value).toBe(true)
+      expect(
+        entry.firstRunHoldsScreen.value,
+        'a share or template link never renders the screen, so reporting a first-run hold here would withhold the consent offer from users who never saw one'
+      ).toBe(false)
     })
 
     it.for([
@@ -169,7 +172,7 @@ describe('useFirstRunEntry', () => {
 
       await boot(entry)
 
-      expect(entry.firstRunTookScreen.value).toBe(false)
+      expect(entry.firstRunHoldsScreen.value).toBe(false)
     })
 
     it('settles a url-intent boot only once the url stage has run', async () => {
@@ -250,12 +253,10 @@ describe('useFirstRunEntry', () => {
       )
       await new Promise((resolve) => setTimeout(resolve))
       expect(decided).toBeUndefined()
-      expect(entry.firstRunTookScreen.value).toBe(false)
 
       start(true)
       await urlStage
       await vi.waitFor(() => expect(decided).toBe(true))
-      expect(entry.firstRunTookScreen.value).toBe(true)
     })
 
     it('settles the startup decision even when the tour fails to start', async () => {
@@ -268,7 +269,6 @@ describe('useFirstRunEntry', () => {
       ).rejects.toThrow('offline')
 
       await expect(entry.whenStartupDecided()).resolves.toBe(true)
-      expect(entry.firstRunTookScreen.value).toBe(false)
     })
 
     it('gives up with false only once the grace period has fully passed', async () => {
@@ -594,7 +594,10 @@ describe('useFirstRunEntry', () => {
       Object.assign(useAuthStore(), { userId: 'account-b' })
 
       expect(entry.gettingStartedVisible.value).toBe(false)
-      expect(entry.firstRunTookScreen.value).toBe(false)
+      expect(
+        entry.firstRunHoldsScreen.value,
+        'the new account is not the one being onboarded, so nothing may stay held on its screen'
+      ).toBe(false)
     })
   })
 
