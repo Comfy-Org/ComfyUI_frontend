@@ -242,11 +242,13 @@ describe('a refused request', () => {
     expect(screen.getByRole('button', { name: /credits/i })).toBeTruthy()
   })
 
-  // A session that expired and a form gone out of date are said in the page's
-  // own words elsewhere, so the panel is left alone for those.
-  it('leaves the panel alone for a refusal it has no words for', () => {
-    mountRefused('not_authenticated')
+  // A refusal the panel has no sentence for is said beside the form instead.
+  // The panel then shows nothing — not the example, which is a picture of a run
+  // that worked.
+  it('shows nothing rather than the example for a refusal it cannot word', () => {
+    mountRefused('access_denied')
 
-    expect(screen.getByText('An example from this template.')).toBeTruthy()
+    expect(screen.queryByText('An example from this template.')).toBeNull()
+    expect(screen.getByText('Your output will appear here.')).toBeTruthy()
   })
 })

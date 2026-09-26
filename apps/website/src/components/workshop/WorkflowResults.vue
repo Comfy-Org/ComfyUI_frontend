@@ -70,10 +70,14 @@ const outputState = computed<RunState>(() => {
     return { status: 'failed', reason: 'provider', fieldErrors: {} }
   // A request Cloud turned down used to fall through to the example, so the
   // panel showed what the workflow makes while the run had just been refused.
+  // Where the panel has the words for it, it says so; where it does not, the
+  // page says it beside the form and the panel shows nothing, because nothing
+  // was made.
   if (state.phase === 'failed') {
     const reason = workflowRunFailure(state.error)
-    if (reason)
-      return { status: 'failed', reason, fieldErrors: state.error.fieldErrors }
+    return reason
+      ? { status: 'failed', reason, fieldErrors: state.error.fieldErrors }
+      : { status: 'idle' }
   }
   if (busy) return runningState.value
   if (state.phase === 'settled') return { status: 'idle' }
