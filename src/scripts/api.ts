@@ -17,6 +17,7 @@ import { trimEnd } from 'es-toolkit'
 import { ref } from 'vue'
 
 import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json' with { type: 'json' }
+import { webSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import {
   fetchWithUnifiedRemint,
   shouldRemintCloudRequest
@@ -340,6 +341,8 @@ export type GlobalSubgraphData = {
   essentials_category?: string
 }
 
+type WebSessionSend = (url: string, init: RequestInit) => Promise<Response>
+
 function addHeaderEntry(headers: HeadersInit, key: string, value: string) {
   if (Array.isArray(headers)) {
     headers.push([key, value])
@@ -540,6 +543,35 @@ export class ComfyApi extends EventTarget {
     }
   }
 
+  private async getWebSessionSend(): Promise<WebSessionSend | undefined> {
+    const requests = webSessionRequests()
+    if (!requests) return undefined
+    const scope = await requests.scope()
+    return scope && ((url, init) => requests.send(url, init, scope))
+  }
+
+  /** Adds today's token header; true when a 401 may be re-minted. */
+  private async addCloudAuthHeader(headers: HeadersInit): Promise<boolean> {
+    // Get Firebase JWT token if user is logged in
+    const getAuthHeaderIfAvailable = async (): Promise<AuthHeader | null> => {
+      try {
+        const authStore = await this.getAuthStore()
+        return authStore ? await authStore.getAuthHeader() : null
+      } catch (error) {
+        console.warn('Failed to get auth header:', error)
+        return null
+      }
+    }
+
+    const authHeader = await getAuthHeaderIfAvailable()
+    if (!authHeader) return false
+
+    for (const [key, value] of Object.entries(authHeader)) {
+      addHeaderEntry(headers, key, value)
+    }
+    return shouldRemintCloudRequest()
+  }
+
   /**
    * Waits for Firebase auth to be initialized before proceeding.
    * Includes 10-second timeout to prevent infinite hanging.
@@ -568,28 +600,13 @@ export class ComfyApi extends EventTarget {
       options ?? {}
     const headers: HeadersInit = requestOptions.headers ?? {}
     let unifiedRetryOn401 = false
+    let sendOnWebSession: WebSessionSend | undefined
 
     if (isCloud) {
       await this.waitForAuthInitialization()
-
-      // Get Firebase JWT token if user is logged in
-      const getAuthHeaderIfAvailable = async (): Promise<AuthHeader | null> => {
-        try {
-          const authStore = await this.getAuthStore()
-          return authStore ? await authStore.getAuthHeader() : null
-        } catch (error) {
-          console.warn('Failed to get auth header:', error)
-          return null
-        }
-      }
-
-      const authHeader = await getAuthHeaderIfAvailable()
-
-      if (authHeader) {
-        for (const [key, value] of Object.entries(authHeader)) {
-          addHeaderEntry(headers, key, value)
-        }
-        unifiedRetryOn401 = await shouldRemintCloudRequest()
+      sendOnWebSession = await this.getWebSessionSend()
+      if (!sendOnWebSession) {
+        unifiedRetryOn401 = await this.addCloudAuthHeader(headers)
       }
     }
 
@@ -664,17 +681,21 @@ export class ComfyApi extends EventTarget {
         }
       : undefined
 
-    return fetchWithUnifiedRemint(
-      this.apiURL(route),
-      {
-        cache: 'no-cache',
-        ...requestOptions,
-        headers,
-        signal
-      },
-      unifiedRetryOn401,
-      retrySignalLifecycle
-    ).finally(() => {
+    const init: RequestInit = {
+      cache: 'no-cache',
+      ...requestOptions,
+      headers,
+      signal
+    }
+    const response = sendOnWebSession
+      ? sendOnWebSession(this.apiURL(route), init)
+      : fetchWithUnifiedRemint(
+          this.apiURL(route),
+          init,
+          unifiedRetryOn401,
+          retrySignalLifecycle
+        )
+    return response.finally(() => {
       if (timeoutId !== undefined) clearTimeout(timeoutId)
       if (retryTimeoutId !== undefined) clearTimeout(retryTimeoutId)
     })

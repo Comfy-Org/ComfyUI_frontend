@@ -4,12 +4,16 @@ import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
 
 import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
+import { COMFY_CLIENT } from '@comfyorg/account-core/requestAuth'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useSessionCookie } from '@/platform/auth/session/useSessionCookie'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { api } from '@/scripts/api'
 import type { ComfyApp } from '@/scripts/app'
@@ -303,5 +307,233 @@ describe('cloud app on the shared web session (unified_web_session on)', () => {
         detail: expect.stringContaining('user-b@example.com')
       })
     ])
+  })
+})
+
+interface ApiRequest {
+  method: string
+  path: string
+  headers: Record<string, string>
+  credentials: RequestCredentials | null
+}
+
+function recordApiRequest(
+  input: RequestInfo | URL,
+  init: RequestInit | undefined
+): ApiRequest {
+  return {
+    method: (init?.method ?? 'GET').toUpperCase(),
+    path: new URL(String(input), location.href).pathname,
+    headers: Object.fromEntries(
+      [...new Headers(init?.headers).entries()].map(([name, value]) => [
+        name.toLowerCase(),
+        value
+      ])
+    ),
+    credentials: init?.credentials ?? null
+  }
+}
+
+function currentWorkspaceResponse(workspaceId: string | undefined): Response {
+  if (workspaceId === 'ws-gone') {
+    return jsonResponse({ code: 'workspace_access_denied', message: 'no' }, 403)
+  }
+  const isTeam = workspaceId === 'ws-team'
+  return jsonResponse({
+    id: workspaceId ?? 'ws-personal',
+    name: isTeam ? 'Team' : 'Personal',
+    type: isTeam ? 'team' : 'personal',
+    role: 'owner',
+    auth_method: 'web_session',
+    permissions: ['owner:*']
+  })
+}
+
+function installIngest() {
+  const ingest = {
+    userId: 'user-a',
+    csrfToken: 'csrf-1',
+    refusals: [] as string[],
+    requests: [] as ApiRequest[]
+  }
+
+  const respond = ({ path, headers }: ApiRequest): Response => {
+    if (path === '/api/auth/session') {
+      return jsonResponse({
+        ...sessionBody(ingest.userId),
+        csrf_token: ingest.csrfToken
+      })
+    }
+    if (path === '/api/workspaces/current') {
+      return currentWorkspaceResponse(headers['x-comfy-workspace-id'])
+    }
+    const code = ingest.refusals.shift()
+    return code ? jsonResponse({ code, message: code }, 403) : jsonResponse({})
+  }
+
+  vi.stubGlobal(
+    'fetch',
+    vi.fn<typeof fetch>(async (input, init) => {
+      const request = recordApiRequest(input, init)
+      if (request.path === '/api/features') {
+        return jsonResponse({ unified_web_session: true })
+      }
+      ingest.requests.push(request)
+      return respond(request)
+    })
+  )
+  return ingest
+}
+
+async function bootOnSession() {
+  const ingest = installIngest()
+  await refreshRemoteConfig({ useAuth: false })
+  useAuthStore()
+  identity.signIn(USER_A)
+  await useSessionCookie().ensureSessionCookie()
+  ingest.requests.length = 0
+  return ingest
+}
+
+const postPrompt = () =>
+  api.fetchApi('/prompt', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: '{}'
+  })
+
+const sessionRequest = (
+  method: string,
+  path: string,
+  headers: Record<string, string> = {}
+): ApiRequest => ({
+  method,
+  path,
+  headers: { 'x-comfy-client': COMFY_CLIENT, ...headers },
+  credentials: 'include'
+})
+
+const LISTED = {
+  role: 'owner',
+  created_at: '2026-01-01T00:00:00Z',
+  joined_at: '2026-01-01T00:00:00Z'
+} as const
+
+const PROMPT_HEADERS = { 'comfy-user': '', 'content-type': 'application/json' }
+
+describe('cloud API requests on the shared web session', () => {
+  beforeEach(() => {
+    identity.reset()
+    vi.spyOn(api, 'resetSocket').mockResolvedValue()
+  })
+
+  afterEach(() => {
+    remoteConfig.value = {}
+    localStorage.clear()
+  })
+
+  it('sends the session headers instead of a token, and a workspace switch changes only the header', async () => {
+    const ingest = await bootOnSession()
+    const workspaceAuth = useWorkspaceAuthStore()
+    localStorage.setItem(WORKSPACE_STORAGE_KEYS.LAST_WORKSPACE_ID, 'ws-team')
+    vi.spyOn(workspaceApi, 'list').mockResolvedValue({
+      workspaces: [
+        { ...LISTED, id: 'ws-personal', name: 'Personal', type: 'personal' },
+        { ...LISTED, id: 'ws-team', name: 'Team', type: 'team' }
+      ]
+    })
+
+    await useTeamWorkspaceStore().initialize()
+    await api.fetchApi('/queue')
+    await postPrompt()
+    expect(await useAuthStore().getAuthHeader()).toEqual({
+      Authorization: 'Bearer firebase-id-token'
+    })
+    await workspaceAuth.switchWorkspace('ws-personal')
+    await api.fetchApi('/queue')
+
+    const team = { 'x-comfy-workspace-id': 'ws-team' }
+    expect(ingest.requests).toEqual([
+      sessionRequest('GET', '/api/workspaces/current', team),
+      sessionRequest('GET', '/api/queue', { ...team, 'comfy-user': '' }),
+      sessionRequest('POST', '/api/prompt', {
+        ...team,
+        ...PROMPT_HEADERS,
+        'x-csrf-token': 'csrf-1'
+      }),
+      sessionRequest('GET', '/api/workspaces/current', {
+        'x-comfy-workspace-id': 'ws-personal'
+      }),
+      sessionRequest('GET', '/api/queue', { 'comfy-user': '' })
+    ])
+    expect(workspaceAuth.currentWorkspace).toEqual({
+      id: 'ws-personal',
+      name: 'Personal',
+      type: 'personal',
+      role: 'owner'
+    })
+  })
+
+  it.for([
+    {
+      name: 'the same user is re-read once and retried once with the fresh token',
+      sessionUser: 'user-a',
+      status: 200,
+      tokens: ['csrf-1', 'session', 'csrf-2', 'csrf-2']
+    },
+    {
+      name: 'a changed user abandons the request',
+      sessionUser: 'user-b',
+      status: 403,
+      tokens: ['csrf-1', 'session', 'csrf-1']
+    }
+  ])('csrf_invalid: $name', async ({ sessionUser, status, tokens }) => {
+    const ingest = await bootOnSession()
+    ingest.refusals.push('csrf_invalid')
+    ingest.userId = sessionUser
+    ingest.csrfToken = 'csrf-2'
+
+    const response = await postPrompt()
+    await postPrompt()
+
+    expect(response.status).toBe(status)
+    expect(
+      ingest.requests.map(({ path, headers }) =>
+        path === '/api/auth/session' ? 'session' : headers['x-csrf-token']
+      )
+    ).toEqual(tokens)
+  })
+
+  it('workspace_access_denied drops the selection and is never replayed', async () => {
+    const ingest = await bootOnSession()
+    vi.spyOn(window.location, 'reload').mockImplementation(() => {})
+    const workspaceAuth = useWorkspaceAuthStore()
+    await workspaceAuth.switchWorkspace('ws-team')
+    ingest.requests.length = 0
+    ingest.refusals.push('workspace_access_denied')
+
+    const response = await postPrompt()
+    await api.fetchApi('/queue')
+
+    expect(response.status).toBe(403)
+    expect(workspaceAuth.currentWorkspace).toBeNull()
+    expect(ingest.requests).toEqual([
+      sessionRequest('POST', '/api/prompt', {
+        'x-comfy-workspace-id': 'ws-team',
+        ...PROMPT_HEADERS,
+        'x-csrf-token': 'csrf-1'
+      }),
+      sessionRequest('GET', '/api/queue', { 'comfy-user': '' })
+    ])
+  })
+
+  it('refuses a switch into a workspace the session cannot enter', async () => {
+    await bootOnSession()
+    const workspaceAuth = useWorkspaceAuthStore()
+
+    await expect(workspaceAuth.switchWorkspace('ws-gone')).rejects.toThrow(
+      '403'
+    )
+    expect(workspaceAuth.currentWorkspace).toBeNull()
   })
 })
