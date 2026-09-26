@@ -10604,6 +10604,25 @@ Enterprise`
     'zh-CN': '工作流栏目'
   },
   'workshop.workflow.tabDetails': { en: 'Details', 'zh-CN': '详情' },
+  'workshop.workflow.graphAlt': {
+    en: 'The nodes of this workflow and the links between them',
+    'zh-CN': '此工作流的节点及其连接'
+  },
+  'workshop.workflow.graphHint': {
+    en: 'Read-only \u00b7 drag to pan',
+    'zh-CN': '仅供查看 \u00b7 拖动平移'
+  },
+  'workshop.workflow.graphLoading': {
+    en: 'Loading the graph',
+    'zh-CN': '正在加载节点图'
+  },
+  'workshop.workflow.graphFailed': {
+    en: 'The graph could not be loaded. The download still works.',
+    'zh-CN': '节点图加载失败，下载仍然可用。'
+  },
+  'workshop.workflow.zoomIn': { en: 'Zoom in', 'zh-CN': '放大' },
+  'workshop.workflow.zoomOut': { en: 'Zoom out', 'zh-CN': '缩小' },
+  'workshop.workflow.zoomReset': { en: 'Reset', 'zh-CN': '重置' },
   'workshop.workflow.factWhere': { en: 'Where', 'zh-CN': '运行位置' },
   'workshop.workflow.factOutput': { en: 'Output', 'zh-CN': '输出' },
   'workshop.workflow.factAuthor': { en: 'Author', 'zh-CN': '作者' },
