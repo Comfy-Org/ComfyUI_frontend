@@ -49,6 +49,7 @@ import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { blankGraph } from '@/scripts/defaultGraph'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
@@ -248,6 +249,17 @@ const workflowResolver = useAgentWorkflowResolver({
   bindings: bindingStore,
   listCloudWorkflows: () => rest.listCloudWorkflows()
 })
+
+async function recoverWorkflow(
+  workflowId: string
+): Promise<ComfyWorkflow | null> {
+  const { content } = await rest.getDraft(workflowId)
+  const graph = await validateComfyWorkflow(content, () => {})
+  return graph === null
+    ? null
+    : workflowStore.createNewTemporary('Recovered Workflow.json', graph)
+}
+
 const {
   refreshCloudWorkflowIds,
   forgetCloudWorkflowId,
@@ -272,6 +284,7 @@ const {
   resolver: workflowResolver,
   canSelectTarget: () => !isSending.value && status.value === 'idle',
   warnWorkflowUnavailable,
+  recoverWorkflow,
   onTargetBound: (workflowId, previousWorkflowId, source) =>
     reportWorkflowBound(workflowId, previousWorkflowId, source)
 })
@@ -943,25 +956,63 @@ async function onOpenApprovalWorkflow(
     trackApprovalResolved(askId, 'open_workflow', decidedAt)
 }
 
+let referenceNavigationGeneration = 0
+
+async function resolveReferenceWorkflow(
+  workflowId: string,
+  isCurrent: () => boolean
+): Promise<{ recovered: boolean; target: ComfyWorkflow | null }> {
+  let target = openWorkflowFor(workflowId)
+  if (target === null) {
+    await Promise.all([
+      refreshCloudWorkflowIds(),
+      workflowStore.syncWorkflows()
+    ])
+    if (!isCurrent()) return { recovered: false, target: null }
+    target = storedWorkflowFor(workflowId)
+  }
+  if (target !== null) return { recovered: false, target }
+  target = await recoverWorkflow(workflowId)
+  return { recovered: target !== null, target }
+}
+
 async function onNavigateToReferenceWorkflow(
   workflowId: string
 ): Promise<void> {
+  const generation = ++referenceNavigationGeneration
+  const isCurrent = () => generation === referenceNavigationGeneration
+  let recoveredTarget: ComfyWorkflow | null = null
+  async function closeRecovered(): Promise<void> {
+    if (recoveredTarget === null) return
+    const target = recoveredTarget
+    recoveredTarget = null
+    await workflowService.closeWorkflow(target, {
+      warnIfUnsaved: false
+    })
+  }
   try {
-    let target = openWorkflowFor(workflowId)
-    if (target === null) {
-      await Promise.all([
-        refreshCloudWorkflowIds(),
-        workflowStore.syncWorkflows()
-      ])
-      target = storedWorkflowFor(workflowId)
+    const { target, recovered } = await resolveReferenceWorkflow(
+      workflowId,
+      isCurrent
+    )
+    if (recovered) recoveredTarget = target
+    if (!isCurrent()) {
+      await closeRecovered()
+      return
     }
     if (target === null || !(await workflowService.openWorkflow(target))) {
+      await closeRecovered()
       warnWorkflowUnavailable()
+      return
+    }
+    if (!isCurrent()) {
+      await closeRecovered()
       return
     }
     bindingStore.bind(workflowId, target.path)
   } catch {
-    warnWorkflowUnavailable()
+    await closeRecovered()
+    if (isCurrent()) warnWorkflowUnavailable()
   }
 }
 
@@ -1108,6 +1159,7 @@ async function onAnswerAsk(
 void refreshCloudWorkflowIds()
 onBeforeUnmount(() => {
   ++activeTabGeneration
+  ++referenceNavigationGeneration
   mintPortWiring.detach()
   exitNodeSelectionMode()
   stop()
@@ -1176,6 +1228,7 @@ void refreshHistory()
 async function onSelectHistory(id: string): Promise<void> {
   composerStore.invalidateSubmission()
   cancelWorkflowSelection()
+  ++referenceNavigationGeneration
   agentPanelStore.beginWorkflowRestoration()
   exitNodeSelectionMode()
   if (await loadThread(id))
@@ -1295,6 +1348,7 @@ function onDeleteHistory(id: string): void {
 function onNewChat(source?: 'new_chat_button' | 'history_delete'): void {
   composerStore.invalidateSubmission()
   cancelWorkflowSelection()
+  ++referenceNavigationGeneration
   exitNodeSelectionMode()
   composerStore.setWorkflowReferences([])
   composerStore.resetPromptHistory()

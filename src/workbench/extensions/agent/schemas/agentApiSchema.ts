@@ -137,6 +137,14 @@ export type AgentMessages = z.infer<typeof zAgentMessages>
 
 export const zAgentThreads = zGeneratedAgentThreadListResponse.passthrough()
 
+export const zAgentDraft = z
+  .object({
+    content: z.record(z.string(), z.unknown()),
+    version: z.number().int().nonnegative()
+  })
+  .passthrough()
+export type AgentDraft = z.infer<typeof zAgentDraft>
+
 export const zCloudWorkflowIndex = zWorkflowListResponse
   .pick({ pagination: true })
   .extend({

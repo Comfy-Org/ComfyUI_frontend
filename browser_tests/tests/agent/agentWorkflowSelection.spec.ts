@@ -5,6 +5,7 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { agentTest } from '@e2e/fixtures/agentPanelFixture'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { workflowSelectionTest } from '@e2e/fixtures/agentWorkflowSelectionFixture'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 const test = mergeTests(agentTest, workflowSelectionTest)
 
@@ -213,16 +214,78 @@ test.describe(
         }),
         contentType: 'image/png'
       })
+
+      // Simulate the original unsaved tab disappearing before the user
+      // follows its chat reference. It is no longer open, cloud-listed, or
+      // locally persisted, so navigation must recover the Agent draft rather
+      // than silently fail or open the currently selected workflow.
+      await page.route('**/api/workflows?*', (route) =>
+        route.fulfill(
+          jsonRoute({
+            data: [],
+            pagination: {
+              offset: 0,
+              limit: 100,
+              total: 0,
+              has_more: false
+            }
+          })
+        )
+      )
+      await page.route('**/api/userdata?*', (route) =>
+        route.fulfill(jsonRoute([]))
+      )
+      await page.route('**/api/agent/draft?*', (route) =>
+        route.fulfill(
+          jsonRoute({
+            content: {
+              version: 0.4,
+              last_node_id: 7,
+              last_link_id: 0,
+              nodes: [
+                {
+                  id: 7,
+                  type: 'KSampler',
+                  title: 'Recovered Draft Marker',
+                  pos: [0, 0],
+                  size: [320, 300],
+                  flags: {},
+                  order: 0,
+                  mode: 0,
+                  properties: {}
+                }
+              ],
+              links: []
+            },
+            version: 1
+          })
+        )
+      )
       await open.click()
       await expect(new Topbar(page).getActiveTab()).toHaveText(
-        'Unsaved Workflow'
+        'Recovered Workflow'
       )
+      await expect
+        .poll(() =>
+          page.evaluate(() =>
+            window.app!.graph.nodes.some(
+              ({ title }) => title === 'Recovered Draft Marker'
+            )
+          )
+        )
+        .toBe(true)
       await expect(targetPicker).toHaveText('Unsaved Workflow (2)')
       await expect(composer).toHaveText(
         'Unsaved Workflow Use this workflow as inspiration'
       )
       await expect(chip).toBeVisible()
       expect(workflowSelection.postedMessages).toHaveLength(1)
+      await testInfo.attach('recovered-workflow-reference', {
+        body: await page.screenshot({
+          path: testInfo.outputPath('recovered-workflow-reference.png')
+        }),
+        contentType: 'image/png'
+      })
 
       await open.focus()
       await open.press('Tab')
@@ -233,7 +296,7 @@ test.describe(
       await expect(composer).toHaveText('Use this workflow as inspiration')
       await expect(targetPicker).toHaveText('Unsaved Workflow (2)')
       await expect(new Topbar(page).getActiveTab()).toHaveText(
-        'Unsaved Workflow'
+        'Recovered Workflow'
       )
       expect(workflowSelection.postedMessages).toHaveLength(1)
     })

@@ -10,6 +10,7 @@ import { api } from '@/scripts/api'
 import {
   zAgentAnswerAccepted,
   zAgentCancelAccepted,
+  zAgentDraft,
   zAgentError,
   zAgentMessages,
   zAgentRunMode,
@@ -20,6 +21,7 @@ import {
 import type {
   AgentAnswerAccepted,
   AgentCancelAccepted,
+  AgentDraft,
   AgentMessages,
   AgentRunModePreference,
   AgentThreadSummary,
@@ -385,6 +387,14 @@ export function createAgentRestClient() {
     )
   }
 
+  async function getDraft(workflowId: string): Promise<AgentDraft> {
+    return request(
+      `/agent/draft?workflow_id=${encodeURIComponent(workflowId)}`,
+      { method: 'GET' },
+      zAgentDraft
+    )
+  }
+
   async function listThreads(): Promise<AgentThreadSummary[]> {
     const page = await request(
       '/agent/threads',
@@ -481,6 +491,7 @@ export function createAgentRestClient() {
   return {
     postMessage,
     getMessages,
+    getDraft,
     listThreads,
     getRunMode,
     putRunMode,

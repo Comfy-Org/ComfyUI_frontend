@@ -4545,6 +4545,196 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(useWorkflowService().saveWorkflowAs).not.toHaveBeenCalled()
   })
 
+  it('recovers a closed unsaved workflow from its durable Agent draft', async () => {
+    const viewed = makeTab('wf-viewed')
+    useAgentConversationStore().setThreadId('th-history')
+    const recoveredGraph = {
+      version: 0.4,
+      last_node_id: 7,
+      last_link_id: 0,
+      nodes: [
+        {
+          id: 7,
+          type: 'KSampler',
+          pos: [0, 0],
+          size: [320, 300],
+          flags: {},
+          order: 0,
+          mode: 0,
+          properties: {}
+        }
+      ],
+      links: []
+    }
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url.includes('/agent/draft'))
+          return json(200, { content: recoveredGraph, version: 4 })
+        if (url.includes('/messages'))
+          return json(200, [
+            {
+              id: 'history-user',
+              thread_id: 'th-history',
+              seq: 1,
+              role: 'user',
+              status: 'complete',
+              turn_id: 'history-turn',
+              workflow_id: 'wf-closed-unsaved',
+              content: { text: 'Continue the closed workflow' }
+            }
+          ])
+        if (url.includes('/workflows'))
+          return json(200, {
+            data: [],
+            pagination: { offset: 0, limit: 100, total: 0, has_more: false }
+          })
+        return json(200, agentThreadList())
+      })
+    )
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await vi.waitFor(() =>
+      expect(useAgentPanelStore().selectedWorkflow).toMatchObject({
+        filename: 'Recovered Workflow',
+        isTemporary: true
+      })
+    )
+    const recovered = useAgentPanelStore().selectedWorkflow
+    expect(recovered).not.toBe(viewed)
+    expect(recovered?.activeState?.nodes).toEqual(recoveredGraph.nodes)
+    expect(
+      useAgentWorkflowTabBindingStore().tabPathFor('wf-closed-unsaved')
+    ).toBe(recovered?.path)
+    expect(useToastStore().messagesToAdd).toHaveLength(0)
+    expect(useWorkflowService().saveWorkflowAs).not.toHaveBeenCalled()
+  })
+
+  it('restores the previous workflow when draft recovery becomes stale while opening', async () => {
+    const viewed = makeTab('wf-viewed')
+    useAgentConversationStore().setThreadId('th-history')
+    let finishOpening = () => {}
+    const opening = new Promise<void>((resolve) => {
+      finishOpening = resolve
+    })
+    let recovered: ComfyWorkflow | null = null
+    vi.mocked(useWorkflowService()).openWorkflow.mockImplementationOnce(
+      async (tab) => {
+        recovered = tab
+        await opening
+        workflowStore.openWorkflowsInBackground({ right: [tab.path] })
+        workflowStore.activeWorkflow = await tab.load()
+        return true
+      }
+    )
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url.includes('/agent/draft'))
+          return json(200, {
+            content: {
+              version: 0.4,
+              last_node_id: 0,
+              last_link_id: 0,
+              nodes: [],
+              links: []
+            },
+            version: 1
+          })
+        if (url.includes('/messages'))
+          return json(200, [
+            {
+              id: 'history-user',
+              thread_id: 'th-history',
+              seq: 1,
+              role: 'user',
+              status: 'complete',
+              turn_id: 'history-turn',
+              workflow_id: 'wf-closed-unsaved',
+              content: { text: 'Continue the closed workflow' }
+            }
+          ])
+        if (url.includes('/workflows'))
+          return json(200, {
+            data: [],
+            pagination: { offset: 0, limit: 100, total: 0, has_more: false }
+          })
+        return json(200, agentThreadList())
+      })
+    )
+
+    const view = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await vi.waitFor(() =>
+      expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(
+        expect.objectContaining({ filename: 'Recovered Workflow' })
+      )
+    )
+    view.unmount()
+    finishOpening()
+
+    await vi.waitFor(() => {
+      expect(useWorkflowService().closeWorkflow).toHaveBeenCalledWith(
+        expect.objectContaining({ filename: 'Recovered Workflow' }),
+        { warnIfUnsaved: false }
+      )
+      expect(workflowStore.activeWorkflow?.path).toBe(viewed.path)
+      expect(recovered).not.toBeNull()
+      if (recovered === null) throw new Error('Recovery was never opened')
+      expect(workflowStore.getWorkflowByPath(recovered.path)).toBeNull()
+      expect(
+        workflowStore.openWorkflows.filter(
+          ({ filename }) => filename === 'Recovered Workflow'
+        )
+      ).toHaveLength(0)
+    })
+  })
+
+  it('reopens a closed saved workflow before falling back to its Agent draft', async () => {
+    makeTab('wf-viewed')
+    const saved = addTab('workflows/saved.json')
+    await workflowStore.closeWorkflow(saved)
+    useAgentConversationStore().setThreadId('th-history')
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url.includes('/agent/draft'))
+          throw new Error('The saved workflow should win')
+        if (url.includes('/messages'))
+          return json(200, [
+            {
+              id: 'history-user',
+              thread_id: 'th-history',
+              seq: 1,
+              role: 'user',
+              status: 'complete',
+              turn_id: 'history-turn',
+              workflow_id: 'wf-saved',
+              content: { text: 'Continue the saved workflow' }
+            }
+          ])
+        if (url.includes('/workflows'))
+          return json(200, {
+            data: [{ id: 'wf-saved', name: 'saved' }],
+            pagination: { offset: 0, limit: 100, total: 1, has_more: false }
+          })
+        return json(200, agentThreadList())
+      })
+    )
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await vi.waitFor(() =>
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(saved.path)
+    )
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(saved)
+    expect(
+      workflowStore.openWorkflows.filter(
+        ({ filename }) => filename === 'Recovered Workflow'
+      )
+    ).toHaveLength(0)
+  })
+
   it.for(['wf-old', '', 'missing'])(
     'retains the explicit target when reopening history for %s',
     async (restoredId) => {
@@ -7250,6 +7440,146 @@ describe('AgentPanelRoot workflow binding', () => {
         name: i18n.global.t('agent.switchWorkflow')
       })
     ).toHaveTextContent(current.filename)
+  })
+
+  it('keeps only the latest recovery when a closed draft reference is opened twice', async () => {
+    const current = makeTab('wf-cloud-current')
+    mockMessagesEndpoint('wf-cloud-current')
+    renderWithSelectedTarget()
+    const conversation = useAgentConversationStore()
+    const historyMessageId = 'history-message' as TurnId
+    conversation.startTurn(historyMessageId)
+    conversation.recordUser(
+      historyMessageId,
+      'Compare these',
+      undefined,
+      undefined,
+      [{ id: 'wf-reference', name: 'reference', textOffset: 0 }]
+    )
+    conversation.ingest({
+      type: 'agent_message_done',
+      data: { message_id: 'history-message', thread_id: 'th-history' }
+    })
+    let releaseDrafts = () => {}
+    const draftsReleased = new Promise<void>((resolve) => {
+      releaseDrafts = resolve
+    })
+    let draftRequests = 0
+    const existingFetch = globalThis.fetch
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (url.includes('/agent/draft')) {
+          draftRequests++
+          await draftsReleased
+          return json(200, {
+            content: {
+              version: 0.4,
+              last_node_id: 0,
+              last_link_id: 0,
+              nodes: [],
+              links: []
+            },
+            version: 1
+          })
+        }
+        return existingFetch(url, init)
+      })
+    )
+
+    const openReference = await screen.findByRole('button', {
+      name: 'Open reference'
+    })
+    await userEvent.click(openReference)
+    await vi.waitFor(() => expect(draftRequests).toBe(1))
+    await userEvent.click(openReference)
+    await vi.waitFor(() => expect(draftRequests).toBe(2))
+    releaseDrafts()
+
+    await vi.waitFor(() => {
+      const recovered = workflowStore.openWorkflows.filter(
+        ({ path }) => path !== current.path
+      )
+      expect(recovered).toHaveLength(1)
+      expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-reference')).toBe(
+        recovered[0]?.path
+      )
+      expect(workflowStore.activeWorkflow?.path).toBe(recovered[0]?.path)
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(current.path)
+      expect(useWorkflowService().closeWorkflow).toHaveBeenCalledWith(
+        expect.objectContaining({ filename: 'Recovered Workflow' }),
+        { warnIfUnsaved: false }
+      )
+    })
+  })
+
+  it('discards a pending draft reference recovery when the user starts a new chat', async () => {
+    const current = makeTab('wf-cloud-current')
+    mockMessagesEndpoint('wf-cloud-current')
+    renderWithSelectedTarget()
+    const conversation = useAgentConversationStore()
+    const historyMessageId = 'history-message' as TurnId
+    conversation.startTurn(historyMessageId)
+    conversation.recordUser(
+      historyMessageId,
+      'Compare these',
+      undefined,
+      undefined,
+      [{ id: 'wf-reference', name: 'reference', textOffset: 0 }]
+    )
+    conversation.ingest({
+      type: 'agent_message_done',
+      data: { message_id: 'history-message', thread_id: 'th-history' }
+    })
+    let releaseDraft = () => {}
+    const draftReleased = new Promise<void>((resolve) => {
+      releaseDraft = resolve
+    })
+    let draftRequested = false
+    const existingFetch = globalThis.fetch
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (url.includes('/agent/draft')) {
+          draftRequested = true
+          await draftReleased
+          return json(200, {
+            content: {
+              version: 0.4,
+              last_node_id: 0,
+              last_link_id: 0,
+              nodes: [],
+              links: []
+            },
+            version: 1
+          })
+        }
+        return existingFetch(url, init)
+      })
+    )
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Open reference' })
+    )
+    await vi.waitFor(() => expect(draftRequested).toBe(true))
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+    )
+    releaseDraft()
+
+    await vi.waitFor(() => {
+      expect(useWorkflowService().closeWorkflow).toHaveBeenCalledWith(
+        expect.objectContaining({ filename: 'Recovered Workflow' }),
+        { warnIfUnsaved: false }
+      )
+      expect(workflowStore.openWorkflows.map(({ path }) => path)).toEqual([
+        current.path
+      ])
+      expect(workflowStore.activeWorkflow?.path).toBe(current.path)
+      expect(
+        useAgentWorkflowTabBindingStore().tabPathFor('wf-reference')
+      ).toBeUndefined()
+    })
   })
 
   it('sends every open tab that has a cloud id with the message', async () => {
