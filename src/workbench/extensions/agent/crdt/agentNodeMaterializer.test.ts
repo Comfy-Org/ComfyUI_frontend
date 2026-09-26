@@ -83,6 +83,18 @@ class WidgetNode extends LGraphNode {
   }
 }
 
+/** String seeds use live text/combo widgets, unlike op-layer placeholders. */
+class MixedWidgetNode extends LGraphNode {
+  constructor() {
+    super('mixed-widget-node')
+    this.addWidget('number', 'width', 512, () => {})
+    this.addWidget('text', 'prompt', '', () => {})
+    this.addWidget('combo', 'sampler', 'euler', () => {}, {
+      values: ['euler', 'dpmpp_2m']
+    })
+  }
+}
+
 /** Widget values observed by `onConfigure`, in configure order. */
 const configuredWidgetValues: unknown[] = []
 
@@ -131,6 +143,7 @@ const CATALOG: WidgetCatalog = {
   types: {
     dummy: { widget_order: [] },
     'widget-node': { widget_order: ['value'] },
+    'mixed-widget-node': { widget_order: ['width', 'prompt', 'sampler'] },
     'configure-capture': { widget_order: ['value'] },
     'throws-on-configure': { widget_order: [] }
   }
@@ -230,6 +243,7 @@ function seedAgentAddedNode(graph: LGraph, id: number, type = 'dummy') {
 beforeEach(() => {
   LiteGraph.registerNodeType('dummy', DummyNode)
   LiteGraph.registerNodeType('widget-node', WidgetNode)
+  LiteGraph.registerNodeType('mixed-widget-node', MixedWidgetNode)
   LiteGraph.registerNodeType('configure-capture', ConfigureCapturingWidgetNode)
   LiteGraph.registerNodeType('throws-on-configure', ThrowsOnConfigureNode)
   LiteGraph.registerNodeType('throws-on-added', ThrowsOnAddedNode)
@@ -511,6 +525,55 @@ describe('reconcileAgentAdapters', () => {
           widgetId(scope.rootGraphId, toNodeId(1), 'value')
         )?.value
       ).toBe(7)
+    })
+
+    it('keeps seeded values when the live widget type differs from the placeholder', () => {
+      const seeded = {
+        width: 832,
+        prompt: 'a cat on a bench',
+        sampler: 'dpmpp_2m'
+      }
+      const graph = new LGraph()
+      const scope = graphScopeOf(graph)
+      remoteMutations(scope).addNode(
+        { ...nodePayload(1, 'mixed-widget-node'), widgets_values: seeded },
+        REMOTE
+      )
+
+      reconcileAgentAdapters(graph)
+
+      const node = graph.getNodeById(toNodeId(1))
+      expect(node?.widgets?.map(({ name, value }) => [name, value])).toEqual(
+        Object.entries(seeded)
+      )
+      expect(
+        node?.widgets?.map(({ name }) => [
+          name,
+          useWidgetValueStore().getWidget(
+            widgetId(scope.rootGraphId, toNodeId(1), name)
+          )?.value
+        ])
+      ).toEqual(Object.entries(seeded))
+      expect(LiteGraph.namedValuesRestore).toBe(false)
+    })
+
+    it('preserves an already-enabled named restore flag', () => {
+      LiteGraph.namedValuesRestore = true
+      try {
+        const graph = new LGraph()
+        const scope = graphScopeOf(graph)
+        remoteMutations(scope).addNode(
+          { ...nodePayload(1, 'widget-node'), widgets_values: { value: 7 } },
+          REMOTE
+        )
+
+        reconcileAgentAdapters(graph)
+
+        expect(graph.getNodeById(toNodeId(1))?.widgets?.[0].value).toBe(7)
+        expect(LiteGraph.namedValuesRestore).toBe(true)
+      } finally {
+        LiteGraph.namedValuesRestore = false
+      }
     })
 
     it('applies a widget update received before the node materializes', () => {
@@ -1301,6 +1364,44 @@ describe('reconcileAgentAdapters', () => {
       const instance = graph.getNodeById(toNodeId(1)) as SubgraphNode
       const interior = instance.subgraph.getNodeById(toNodeId(7))
       expect(interior?.widgets?.[0]?.value).toBe(42)
+    })
+
+    it('preserves a quarantined host value when materializing a subgraph instance', () => {
+      const source = createTestSubgraph({
+        inputs: [{ name: 'value', type: 'number' }]
+      })
+      const interior = new WidgetNode()
+      interior.addInput('value', 'number').widget = { name: 'value' }
+      source.add(interior)
+      source.inputNode.slots[0].connect(interior.inputs[0], interior)
+      const definition = source.asSerialisable()
+      const { follower } = seedDocument(graph, {
+        nodes: [
+          {
+            ...nodePayload(1, definition.id),
+            widgets_values: { value: 7 },
+            properties: {
+              proxyWidgetErrorQuarantine: [
+                {
+                  originalEntry: ['-1', 'value'],
+                  reason: 'missingSourceNode',
+                  hostValue: 42,
+                  attemptedAtVersion: 1
+                }
+              ]
+            }
+          }
+        ],
+        links: [],
+        definitions: { subgraphs: [definition] }
+      })
+
+      reconcileAgentAdapters(graph, readSubgraphDefinitions(follower.doc))
+
+      const instance = graph.getNodeById(toNodeId(1)) as SubgraphNode
+      const promotedWidgetId = instance.inputs[0]?.widgetId
+      assert.exists(promotedWidgetId)
+      expect(useWidgetValueStore().getWidget(promotedWidgetId)?.value).toBe(42)
     })
 
     /**
