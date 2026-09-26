@@ -275,10 +275,6 @@ test.describe('Agent reply drafts', { tag: ['@cloud', '@agent'] }, () => {
     test(`a completed turn keeps its ${selection} approval action live`, async ({
       page
     }) => {
-      test.fail(
-        true,
-        'The approval card remains visible after its turn completes, but its action no longer reaches the answer endpoint.'
-      )
       test.setTimeout(60_000)
       const askId = `${MESSAGE_ID}:call-${selection}`
       const answeredRequests: Array<{ url: string; selected: string[] }> = []
@@ -329,6 +325,10 @@ test.describe('Agent reply drafts', { tag: ['@cloud', '@agent'] }, () => {
       await expect(action).toBeVisible()
       await action.click()
 
+      test.fail(
+        true,
+        'The approval card remains visible after its turn completes, but its action no longer reaches the answer endpoint.'
+      )
       await expect
         .poll(() => answeredRequests)
         .toEqual([
