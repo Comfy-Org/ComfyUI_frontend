@@ -744,6 +744,13 @@ export const zSavedPaymentMethod = z.object({
 })
 
 /**
+ * Response after signing out of all devices
+ */
+export const zRevokeAllSessionsResponse = z.object({
+  revoked: z.number().int()
+})
+
+/**
  * Response after accepting a resubscribe request.
  */
 export const zResubscribeResponse = z.object({
@@ -2028,6 +2035,25 @@ export const zForkWorkflowRequest = z.object({
 })
 
 /**
+ * 403 for a credential the route does not take. `accepted` names the ones it does, as `WWW-Authenticate` does.
+ */
+export const zAuthTypeNotAllowedError = z.object({
+  accepted: z.array(z.string()),
+  error: z.object({
+    message: z.string(),
+    type: z.enum(['auth_type_not_allowed'])
+  })
+})
+
+/**
+ * A 403 body: ErrorResponse, or AuthTypeNotAllowedError for a credential the route does not take.
+ */
+export const zForbiddenError = z.union([
+  zErrorResponse,
+  zAuthTypeNotAllowedError
+])
+
+/**
  * Response after submitting feedback
  */
 export const zFeedbackResponse = z.record(z.unknown())
@@ -2139,6 +2165,7 @@ export const zCurrentWorkspaceResponse = z.object({
   auth_method: z.string(),
   id: z.string(),
   name: z.string(),
+  permissions: z.array(z.string()).optional(),
   role: z.enum(['owner', 'member']).optional(),
   type: z.enum(['personal', 'team'])
 })
@@ -2290,7 +2317,8 @@ export const zCreateHubProfileRequest = z.object({
 export const zChurnkeyAuthResponse = z.object({
   auth_hash: z.string(),
   customer_id: z.string(),
-  mode: z.enum(['live', 'test', 'sandbox'])
+  mode: z.enum(['live', 'test', 'sandbox']),
+  offer_subscription_id: z.string().min(1).optional()
 })
 
 /**
@@ -3330,6 +3358,11 @@ export const zGetSessionResponse = zWebSessionResponse
  */
 export const zCreateSessionResponse2 = zCreateSessionResponse
 
+/**
+ * Every session ended
+ */
+export const zRevokeAllSessionsResponse2 = zRevokeAllSessionsResponse
+
 export const zExchangeTokenBody = zExchangeTokenRequest
 
 /**
@@ -3508,6 +3541,7 @@ export const zGetExtensionsResponse = z.array(z.string())
  * Success
  */
 export const zGetFeaturesResponse = z.object({
+  billing_web_url: z.string().optional(),
   free_tier_balance: z
     .object({
       allowance: z.number().int(),
@@ -4566,5 +4600,7 @@ export const zGetViewCompatAliasQuery = z.object({
 })
 
 export const zGetWebsocketQuery = z.object({
+  token: z.string().optional(),
+  workspace_id: z.string().optional(),
   clientId: z.string().optional()
 })
