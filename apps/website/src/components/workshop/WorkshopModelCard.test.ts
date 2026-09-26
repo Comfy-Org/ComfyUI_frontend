@@ -83,13 +83,15 @@ describe('WorkshopModelCard', () => {
       }
     })
     await nextTick()
-    const video = screen.getByLabelText<HTMLVideoElement>('Flux')
+    const video = screen.getByTestId<HTMLVideoElement>('model-card-video')
     expect(video).not.toHaveAttribute('src')
     expect(video.paused).toBe(true)
+    // The artwork is decorative; the name a reader hears comes from the link.
     expect(screen.getByRole('link', { name: /Flux/ })).toHaveAttribute(
       'href',
       base.href
     )
+    expect(screen.queryByLabelText('Flux')).toBeNull()
   })
 
   it('attaches the video source once the card is on screen', async () => {
@@ -106,7 +108,7 @@ describe('WorkshopModelCard', () => {
       }
     })
     await setAllIntersecting(true)
-    expect(screen.getByLabelText('Flux')).toHaveAttribute(
+    expect(screen.getByTestId('model-card-video')).toHaveAttribute(
       'src',
       'https://assets.example/preview.mp4'
     )
