@@ -43,6 +43,19 @@ function readIfPresent(path: string): string | null {
   }
 }
 
+export function readSnapshot(
+  snapshotPath: string
+): Record<string, unknown> | null {
+  const contents = readIfPresent(snapshotPath)
+  if (contents === null) return null
+  try {
+    const parsed: unknown = JSON.parse(contents)
+    return isRecord(parsed) ? parsed : null
+  } catch {
+    return null
+  }
+}
+
 /**
  * Every refresh stamps a new `fetchedAt`, so writing unconditionally makes the
  * file differ from HEAD on every run — which, on a schedule, means a pull

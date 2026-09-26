@@ -4,7 +4,7 @@ import { join } from 'node:path'
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
-import { writeSnapshotIfChanged } from './snapshot-writer'
+import { readSnapshot, writeSnapshotIfChanged } from './snapshot-writer'
 
 let dir: string
 let snapshotPath: string
@@ -199,5 +199,28 @@ describe('writeSnapshotIfChanged', () => {
 
     expect(wrote).toBe(true)
     expect(JSON.parse(readFileSync(snapshotPath, 'utf8'))).toEqual(emptied)
+  })
+})
+
+describe('readSnapshot', () => {
+  it('returns the snapshot the refresh scripts compare against', () => {
+    const snapshot = rolesSnapshot('2026-08-22T04:58:20.183Z')
+    seed(snapshot)
+
+    expect(readSnapshot(snapshotPath)).toEqual(snapshot)
+  })
+
+  // The refresh scripts treat null as "nothing to compare against" and write,
+  // so an unreadable file must never look like an empty one — that would turn
+  // a corrupt snapshot into a silent green wipe.
+  it.for([
+    ['a missing file', null],
+    ['malformed JSON', '{ not json'],
+    ['a JSON array', '[]'],
+    ['a JSON scalar', '"snapshot"']
+  ] as const)('returns null for %s', ([, contents]) => {
+    if (contents !== null) writeFileSync(snapshotPath, contents, 'utf8')
+
+    expect(readSnapshot(snapshotPath)).toBeNull()
   })
 })

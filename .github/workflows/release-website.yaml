@@ -58,9 +58,12 @@ jobs:
           persist-credentials: false
 
       # Compare against whatever the open refresh PR already proposes, not
-      # against main. Otherwise, while that PR waits to be merged, each run
-      # re-derives the same content with a new fetchedAt, force-pushes it, and
-      # spends another preview deploy saying nothing new.
+      # against main, so a run that changes nothing leaves that PR alone. This
+      # only establishes the baseline; the "Decide" step below is what stops
+      # the run reaching create-pull-request, which rebuilds the branch from
+      # current main and force-pushes whenever the two trees differ — and on
+      # this repo main moves dozens of commits between runs, so it always
+      # differs, snapshots or no snapshots.
       - name: Adopt the open refresh branch as the comparison baseline
         env:
           BRANCH: chore/refresh-website-snapshots
@@ -88,6 +91,14 @@ jobs:
               || echo "::notice::$f is not on $BRANCH; using the copy from main."
           done
 
+      - name: Record the baseline snapshot digest
+        id: baseline
+        run: |
+          echo "digest=$(sha256sum \
+            apps/website/src/data/ashby-roles.snapshot.json \
+            apps/website/src/data/cloud-nodes.snapshot.json \
+            | sha256sum | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+
       - name: Refresh Ashby snapshot
         uses: ./.github/actions/ashby-pull
         with:
@@ -105,7 +116,24 @@ jobs:
         with:
           api_key: ${{ secrets.WEBSITE_CLOUD_API_KEY }}
 
+      - name: Decide whether a snapshot actually changed
+        id: changed
+        run: |
+          digest=$(sha256sum \
+            apps/website/src/data/ashby-roles.snapshot.json \
+            apps/website/src/data/cloud-nodes.snapshot.json \
+            | sha256sum | cut -d' ' -f1)
+          if [ "$digest" = "$BASELINE" ]; then
+            echo "any=false" >> "$GITHUB_OUTPUT"
+            echo "Snapshots match the baseline; not touching the refresh branch."
+          else
+            echo "any=true" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          BASELINE: ${{ steps.baseline.outputs.digest }}
+
       - name: Create Pull Request
+        if: steps.changed.outputs.any == 'true'
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
           token: ${{ secrets.PR_GH_TOKEN }}

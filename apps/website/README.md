@@ -63,6 +63,10 @@ inline that into the client bundle).
 | `WEBSITE_ASHBY_API_KEY`        | Ashby API key (Basic auth)  | Build uses the committed snapshot |
 | `WEBSITE_ASHBY_JOB_BOARD_NAME` | Ashby public job board slug | Build uses the committed snapshot |
 
+The production deploy is the exception: `ci-vercel-website-preview.yaml` fails
+before `vercel build --prod` if either is empty, rather than shipping a
+careers page frozen at whatever the snapshot last held.
+
 ### CI wiring (manual step — required)
 
 This repo's `.github/workflows/*.yaml` changes cannot be pushed by a
@@ -154,9 +158,11 @@ It runs on three triggers:
 
 The webhook receiver lives in [`Comfy-Org/comfy-router`](https://github.com/Comfy-Org/comfy-router)
 (`src/ashby-webhook.js`), which serves `https://comfy.org/api/webhooks/ashby`.
-Ashby cannot call GitHub directly — it sends no custom headers — so the Worker
-verifies Ashby's signature and calls this workflow's dispatch endpoint. See that
-repo's `docs/ashby-webhook.md` for setup and key rotation.
+Ashby cannot call GitHub directly: the dispatch endpoint needs a GitHub-shaped
+body Ashby does not send, and it would put a release-capable credential in an
+ATS setting. So the Worker verifies Ashby's signature and calls this workflow's
+dispatch endpoint. See that repo's `docs/ashby-webhook.md` for setup and key
+rotation.
 
 A run only opens a PR when the underlying data actually changed; see
 "Refreshing the snapshot" below.
@@ -172,8 +178,12 @@ WEBSITE_ASHBY_API_KEY=… WEBSITE_ASHBY_JOB_BOARD_NAME=comfy-org \
 git commit apps/website/src/data/ashby-roles.snapshot.json
 ```
 
-The script exits non-zero on any non-fresh outcome so stale/empty
-snapshots can't be accidentally committed.
+The script exits non-zero on any non-fresh outcome, so a failed fetch cannot
+be committed as data. It also refuses to write when Ashby returns no usable
+roles while the committed snapshot has some — every posting failing schema
+validation is reported as a successful fetch of zero roles, which would
+otherwise empty the careers page. `refresh-cloud-nodes-snapshot.ts` has the
+equivalent guard for packs that lose their registry metadata.
 
 Each refresh stamps a fresh `fetchedAt`, so `scripts/snapshot-writer.ts` leaves
 the file untouched when that timestamp is the only thing that moved. Without
