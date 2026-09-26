@@ -29,6 +29,7 @@ import type {
   HumanOpsHost
 } from '@e2e/fixtures/agentFollowerHostSocket'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
+import { KeyboardHelper } from '@e2e/fixtures/helpers/KeyboardHelper'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { TestIds } from '@e2e/fixtures/selectors'
 import type {
@@ -176,6 +177,7 @@ export class AgentConversationHarness {
   readonly vueNodes: VueNodeHelpers
   readonly topbar: Topbar
   readonly composer: Locator
+  readonly keyboard: KeyboardHelper
 
   private readonly host: HostDoc
   private readonly hostSocket: AgentFollowerHostSocket
@@ -218,6 +220,7 @@ export class AgentConversationHarness {
     this.panel = page.locator('#agent-panel-root')
     this.streams = this.panel.getByTestId('markdown-stream')
     this.composer = this.panel.getByRole('textbox', { name: COMPOSER_LABEL })
+    this.keyboard = new KeyboardHelper(page, page.locator('#graph-canvas'))
     this.summaries = this.panel.getByRole('button', { name: SUMMARY_LABEL })
     this.vueNodes = new VueNodeHelpers(page)
     this.topbar = new Topbar(page)
