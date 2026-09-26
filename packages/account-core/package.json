@@ -26,6 +26,7 @@
     "./session": "./src/core/session.ts",
     "./webSession": "./src/core/webSession.ts",
     "./webSessionFlag": "./src/core/webSessionFlag.ts",
+    "./requestAuth": "./src/core/requestAuth.ts",
     "./webSessionIdentity": "./src/core/webSessionIdentity.ts",
     "./requestAuth": "./src/core/requestAuth.ts",
     "./billing": "./src/core/billing/index.ts",
@@ -61,6 +62,10 @@
       "./webSessionFlag": {
         "types": "./dist/core/webSessionFlag.d.ts",
         "import": "./dist/core/webSessionFlag.js"
+      },
+      "./requestAuth": {
+        "types": "./dist/core/requestAuth.d.ts",
+        "import": "./dist/core/requestAuth.js"
       },
       "./webSessionIdentity": {
         "types": "./dist/core/webSessionIdentity.d.ts",

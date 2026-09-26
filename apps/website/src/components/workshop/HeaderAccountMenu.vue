@@ -160,7 +160,7 @@ const surfaceClass =
                 {{ session.workspace.name }}
               </span>
               <span
-                class="text-[0.625rem] font-medium text-primary-warm-gray uppercase"
+                class="text-3xs font-medium text-primary-warm-gray uppercase"
               >
                 {{ workspaceRole }}
               </span>

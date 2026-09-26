@@ -3,7 +3,11 @@ import { readFileSync } from 'node:fs'
 import type { BrowserContext, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import type { JobDetailResponse } from '@comfyorg/ingest-types'
+import type {
+  BillingBalanceResponse,
+  JobDetailResponse
+} from '@comfyorg/ingest-types'
+import { centsToCredits } from '@comfyorg/shared-frontend-utils/creditsUtil'
 
 import { test } from './fixtures/modelsAccount'
 
@@ -231,6 +235,47 @@ test('Cloud upload, refresh, partial delivery and downloads retain one run @mobi
     page.getByRole('button', { name: 'Replace the_lily_veil.png' })
   ).toBeVisible()
   expect(submissions()).toHaveLength(1)
+})
+
+test('the credit chip shows a charge Cloud books after the run finishes', async ({
+  page,
+  context,
+  modelsAccount
+}) => {
+  const cloud = await setup(context)
+  let reads = 0
+  let chargedAfterRead = Number.POSITIVE_INFINITY
+  await context.route('**/api/billing/balance', (route) => {
+    reads++
+    const cents = reads > chargedAfterRead ? 483_200 : 583_200
+    return route.fulfill({
+      json: {
+        amount_micros: cents,
+        effective_balance_micros: cents,
+        currency: 'usd'
+      } satisfies BillingBalanceResponse
+    })
+  })
+  const chip = page.getByTestId('desktop-nav-cta').getByTestId('header-account')
+  const showing = (balance: number) =>
+    new RegExp(`, ${centsToCredits(balance).toLocaleString('en-US')} credits$`)
+  await signInAndRun(page, modelsAccount)
+  await expect(chip).toHaveAccessibleName(showing(583_200))
+  const readsBeforeCompletion = reads
+  chargedAfterRead = readsBeforeCompletion + 1
+
+  cloud.succeed(false)
+  await page.clock.fastForward(2100)
+  await expect(page.getByTestId('playground-output')).toHaveAttribute(
+    'data-state',
+    'succeeded'
+  )
+  await page.clock.fastForward(1)
+  await expect.poll(() => reads).toBeGreaterThan(readsBeforeCompletion)
+  await expect(chip).toHaveAccessibleName(showing(583_200))
+  await page.clock.fastForward(2_000)
+
+  await expect(chip).toHaveAccessibleName(showing(483_200))
 })
 
 test('workflow cancellation survives disabled admission and hides on sign-out', async ({
