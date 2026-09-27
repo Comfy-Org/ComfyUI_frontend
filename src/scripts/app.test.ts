@@ -1,4 +1,5 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { ComfyApp, app as singletonApp } from './app'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -39,7 +40,6 @@ import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacem
 import type { NodeReplacement } from '@/platform/nodeReplacement/types'
 import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
 import type { NodeError } from '@/platform/remote/comfyui/types'
-import { ComfyApp, app as singletonApp } from './app'
 import * as litegraphUtil from '@/utils/litegraphUtil'
 import { createNode } from '@/utils/litegraphUtil'
 import {
