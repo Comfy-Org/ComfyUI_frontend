@@ -1,7 +1,7 @@
 import { useNodeDragAndDrop } from '@/composables/node/useNodeDragAndDrop'
 import { useNodeFileInput } from '@/composables/node/useNodeFileInput'
 import { useNodePaste } from '@/composables/node/useNodePaste'
-import { ServerFeatureFlag } from '@/composables/useFeatureFlags'
+import { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useToastStore } from '@/platform/updates/common/toastStore'

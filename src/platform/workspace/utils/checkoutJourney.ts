@@ -1,3 +1,4 @@
+import type { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
 import type {
   CheckoutAssignmentStatus,
   CheckoutEntryFlow,
@@ -11,7 +12,6 @@ import {
   isContractIdentifier
 } from '@comfyorg/billing-contract'
 
-import type { ServerFeatureFlag } from '@/composables/useFeatureFlags'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import { paymentIntentSourceForJourneyEntry } from '@/platform/telemetry/utils/paymentIntentSource'
 
