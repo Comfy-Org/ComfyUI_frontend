@@ -26,9 +26,10 @@ describe('WorkshopModelCard', () => {
     render(WorkshopModelCard, { props: { model: base } })
     const link = screen.getByTestId('workshop-model-card')
     expect(link.getAttribute('href')).toBe('/models/flux/')
-    expect(screen.getByText('Flux')).toBeTruthy()
-    expect(screen.getByRole('img', { name: 'Black Forest Labs' })).toBeTruthy()
     expect(screen.getByTestId('model-card-name').textContent).toBe('Flux')
+    expect(screen.getByTestId('model-card-provider')).toHaveTextContent(
+      'Black Forest Labs'
+    )
     expect(screen.getByTestId('model-card-task').textContent).toBe(
       'Image to Image'
     )
@@ -37,6 +38,23 @@ describe('WorkshopModelCard', () => {
     expect(screen.getByTestId('model-media-placeholder')).toBeTruthy()
     expect(screen.queryByRole('img', { name: 'Flux' })).toBeNull()
     expect(screen.queryByLabelText('Flux')).toBeNull()
+  })
+
+  // The artwork is decorative: the mark says who made this and the heading
+  // says what it is, so a reader hears each of them once.
+  it('names the card link by its provider and then the model', () => {
+    render(WorkshopModelCard, {
+      props: {
+        model: {
+          ...base,
+          thumbnail: { kind: 'image', url: 'https://assets.example/flux' }
+        }
+      }
+    })
+    expect(screen.getByRole('link')).toHaveAccessibleName(
+      /^Black Forest Labs Flux Image to Image/
+    )
+    expect(screen.queryByRole('img', { name: 'Flux' })).toBeNull()
   })
 
   it.for([
@@ -83,7 +101,7 @@ describe('WorkshopModelCard', () => {
       }
     })
     await nextTick()
-    const video = screen.getByTestId<HTMLVideoElement>('model-card-video')
+    const video = screen.getByTestId<HTMLVideoElement>('model-card-media')
     expect(video).not.toHaveAttribute('src')
     expect(video.paused).toBe(true)
     // The artwork is decorative; the name a reader hears comes from the link.
@@ -110,13 +128,15 @@ describe('WorkshopModelCard', () => {
       })
 
       expect(
-        screen
-          .getAllByRole('img', { name: /./ })
-          .map((image) => image.getAttribute('aria-label'))
-      ).toEqual(['Black Forest Labs'])
+        screen.queryAllByRole('img', { name: /./ }),
+        'Artwork that names itself is read out before the card it decorates'
+      ).toHaveLength(0)
+      expect(
+        screen.getByRole('link', { name: /Black Forest Labs/ })
+      ).toBeVisible()
       expect(screen.queryByLabelText('Flux')).toBeNull()
       if (kind === 'video')
-        expect(screen.getByTestId('model-card-video')).toHaveAttribute(
+        expect(screen.getByTestId('model-card-media')).toHaveAttribute(
           'aria-hidden',
           'true'
         )
@@ -140,7 +160,7 @@ describe('WorkshopModelCard', () => {
       }
     })
     await setAllIntersecting(true)
-    expect(screen.getByTestId('model-card-video')).toHaveAttribute(
+    expect(screen.getByTestId('model-card-media')).toHaveAttribute(
       'src',
       'https://assets.example/preview.mp4'
     )
