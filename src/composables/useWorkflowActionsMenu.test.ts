@@ -12,6 +12,7 @@ import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useEnterBuilder } from '@/components/builder/useEnterBuilder'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useWorkflowActionsMenu as useWorkflowActionsMenuComposable } from '@/composables/useWorkflowActionsMenu'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
@@ -42,6 +43,12 @@ let mockAppModeStore: ReturnType<typeof useAppModeStore>
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
 vi.mock(import('@/composables/useFeatureFlags'))
+
+vi.mock<unknown>(import('@/components/builder/useEnterBuilder'), () => {
+  const enterBuilder = vi.fn()
+  return { useEnterBuilder: () => ({ enterBuilder }) }
+})
+
 function useWorkflowActionsMenu(
   ...args: Parameters<typeof useWorkflowActionsMenuComposable>
 ) {
@@ -291,7 +298,7 @@ describe('useWorkflowActionsMenu', () => {
       'breadcrumbsMenu.enterBuilderMode'
     ).command?.()
 
-    expect(mockAppModeStore.enterBuilder).toHaveBeenCalled()
+    expect(useEnterBuilder().enterBuilder).toHaveBeenCalled()
   })
 
   it('shows "Edit app" when workflow has linear data', async () => {
