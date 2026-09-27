@@ -207,7 +207,7 @@ describe('launchCancellationFlow', () => {
     )
   })
 
-  it('reports the vendor fallback when Churnkey resolves without a session', async () => {
+  it('silently falls back when Churnkey is not configured', async () => {
     mocks.reportError.mockClear()
     mocks.prepare.mockResolvedValueOnce(null)
     const showFallback = vi.fn()
@@ -215,14 +215,7 @@ describe('launchCancellationFlow', () => {
     await launchCancellationFlow({ showFallback })
 
     expect(showFallback).toHaveBeenCalledOnce()
-    expect(mocks.reportError).toHaveBeenCalledWith(
-      expect.any(Error),
-      expect.objectContaining({
-        errorType: 'cloud_cancellation_vendor_fallback',
-        tags: expect.objectContaining({ outcome: 'missing' }),
-        context: { workspace_still_current: true, vendor_threw: false }
-      })
-    )
+    expect(mocks.reportError).not.toHaveBeenCalled()
   })
 
   it('records an aborted fallback when the workspace changed mid-preparation', async () => {

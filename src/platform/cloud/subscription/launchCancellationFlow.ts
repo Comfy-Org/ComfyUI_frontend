@@ -44,29 +44,22 @@ export async function launchCancellationFlow({
   )
   if (!preparation.session) {
     const workspaceStillCurrent = isLaunchWorkspaceCurrent()
-    reportError(
-      preparation.threw
-        ? preparation.error
-        : new Error('Churnkey cancellation flow is not configured'),
-      {
+    if (preparation.threw) {
+      reportError(preparation.error, {
         errorType: 'cloud_cancellation_vendor_fallback',
         tags: {
           failure_kind: 'degraded',
           feature_area: 'billing',
           operation: 'load',
-          outcome: !workspaceStillCurrent
-            ? 'aborted'
-            : preparation.threw
-              ? 'recovered'
-              : 'missing'
+          outcome: workspaceStillCurrent ? 'recovered' : 'aborted'
         },
         context: {
           workspace_still_current: workspaceStillCurrent,
-          vendor_threw: preparation.threw
+          vendor_threw: true
         },
         level: 'warning'
-      }
-    )
+      })
+    }
     if (workspaceStillCurrent) await showFallback()
     return
   }
