@@ -21,6 +21,7 @@ import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumb
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { defaultGraph } from '@/scripts/defaultGraph'
+import { useExecutionStore } from '@/stores/executionStore'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import {
   createNodeExecutionId,
@@ -155,12 +156,15 @@ export const useWorkflowStore = defineStore('workflow', () => {
   const openWorkflowPaths = ref<string[]>([])
   const openWorkflowPathSet = computed(() => new Set(openWorkflowPaths.value))
   const openWorkflows = computed(() =>
-    openWorkflowPaths.value.map((path) => workflowLookup.value[path])
+    openWorkflowPaths.value
+      .map(getWorkflowByPath)
+      .filter((workflow) => workflow !== null)
   )
   const reorderWorkflows = (from: number, to: number) => {
-    const movedTab = openWorkflowPaths.value[from]
-    openWorkflowPaths.value.splice(from, 1)
-    openWorkflowPaths.value.splice(to, 0, movedTab)
+    const paths = openWorkflows.value.map((workflow) => workflow.path)
+    const [movedTab] = paths.splice(from, 1)
+    paths.splice(to, 0, movedTab)
+    openWorkflowPaths.value = paths
   }
   const isOpen = (workflow: ComfyWorkflow) =>
     openWorkflowPathSet.value.has(workflow.path)
@@ -229,7 +233,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     const { directory, filename, suffix } = getPathDetails(basePath)
     let counter = 2
     let newPath = basePath
-    while (workflowLookup.value[newPath]) {
+    while (Object.hasOwn(workflowLookup.value, newPath)) {
       newPath = `${directory}/${filename} (${counter}).${suffix}`
       counter++
     }
@@ -350,15 +354,15 @@ export const useWorkflowStore = defineStore('workflow', () => {
    * @returns The next workflow or null if the shift is out of bounds.
    */
   const openedWorkflowIndexShift = (shift: number): ComfyWorkflow | null => {
-    const index = openWorkflowPaths.value.indexOf(
-      activeWorkflow.value?.path ?? ''
+    const index = openWorkflows.value.findIndex(
+      (workflow) => workflow.path === activeWorkflow.value?.path
     )
 
     if (index !== -1) {
       const length = openWorkflows.value.length
       const nextIndex = (index + shift + length) % length
       const nextWorkflow = openWorkflows.value[nextIndex]
-      return nextWorkflow ?? null
+      return nextWorkflow
     }
     return null
   }
@@ -382,8 +386,8 @@ export const useWorkflowStore = defineStore('workflow', () => {
       // Check if workflow is still open
       if (openWorkflowPathSet.value.has(path)) {
         validPaths.unshift(path)
-        const workflow = workflowLookup.value[path]
-        if (workflow) {
+        const workflow = getWorkflowByPath(path)
+        {
           // Lazy cleanup: keep only valid paths
           tabActivationHistory.value = validPaths
           return workflow
@@ -448,7 +452,14 @@ export const useWorkflowStore = defineStore('workflow', () => {
 
           existingWorkflow.unload()
         },
-        /* exclude */ (workflow) => workflow.isTemporary
+        /* exclude */ (workflow) => workflow.isTemporary,
+        /* beforeDelete */ (workflow, path) => {
+          if (isActive(workflow)) return false
+          openWorkflowPaths.value = openWorkflowPaths.value.filter(
+            (openPath) => openPath !== path
+          )
+          return true
+        }
       )
     },
     undefined,
@@ -494,6 +505,10 @@ export const useWorkflowStore = defineStore('workflow', () => {
       const draftStore = useWorkflowDraftStoreV2()
 
       await workflow.rename(newPath)
+      useExecutionStore().rewriteSessionWorkflowPaths(
+        workflow.instanceId,
+        workflow.path
+      )
 
       // Synchronously swap old path for new path in lookup and open paths
       // to avoid a tab flicker caused by an async gap between detach/attach.
@@ -529,7 +544,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
       }
       // Clear thumbnail when workflow is deleted
       clearThumbnail(workflow.key)
-      delete workflowLookup.value[workflow.path]
+      detachWorkflow(workflow)
     } finally {
       isBusy.value = false
     }
@@ -560,9 +575,10 @@ export const useWorkflowStore = defineStore('workflow', () => {
 
   /** @see WorkflowStore.updateActiveGraph */
   const updateActiveGraph = () => {
-    const subgraph = comfyApp.canvas?.subgraph
+    const canvas = comfyApp.canvasOrUndefined
+    if (!canvas) return
+    const subgraph = canvas.subgraph
     activeSubgraph.value = subgraph ? markRaw(subgraph) : undefined
-    if (!comfyApp.canvas) return
 
     isSubgraphActive.value = isSubgraph(subgraph)
   }
@@ -578,7 +594,8 @@ export const useWorkflowStore = defineStore('workflow', () => {
     currentGraph: LGraph | Subgraph,
     subgraphNodeIds: string[]
   ): Subgraph[] | undefined => {
-    const [currentPart, ...remainingParts] = subgraphNodeIds
+    const currentPart = subgraphNodeIds.at(0)
+    const remainingParts = subgraphNodeIds.slice(1)
     if (currentPart === undefined) return []
 
     const subgraph = subgraphNodeIdToSubgraph(currentPart, currentGraph)
@@ -684,7 +701,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
       }
 
       for (const node of graph._nodes) {
-        if (node.isSubgraphNode() && node.subgraph) {
+        if (node.isSubgraphNode()) {
           const result = findSubgraphPath(node.subgraph, targetUuid, [
             ...path,
             node.id

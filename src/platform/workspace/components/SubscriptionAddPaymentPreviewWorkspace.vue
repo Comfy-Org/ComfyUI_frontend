@@ -27,7 +27,6 @@
         :class="cn('mb-8 flex items-center gap-3', captureMode && 'xl:mb-10')"
       >
         <Button
-          v-if="usePaymentElement"
           size="icon"
           variant="muted-textonly"
           class="shrink-0 rounded-full"
@@ -101,6 +100,7 @@
 
       <!-- Total Due Section -->
       <div
+        v-if="totalDueToday"
         :class="
           cn(
             'flex flex-col gap-2 border-t border-border-subtle pt-8',
@@ -245,53 +245,47 @@
       >
         {{
           authenticationError ||
-          (canRetryAuthentication
-            ? $t('billingOperation.authenticationFailedDetail')
-            : $t('billingOperation.authenticationManagerRequired'))
+          $t('billingOperation.authenticationFailedDetail')
         }}
       </div>
 
-      <Button
-        v-if="
-          embeddedCheckoutEnabled &&
-          (authenticationState === 'failed_retryable' ||
-            authenticationState === 'requires_action') &&
-          canRetryAuthentication
-        "
-        variant="inverted"
-        size="lg"
-        class="w-full rounded-lg"
-        :loading="isAuthenticating"
-        @click="$emit('retryAuthentication')"
-      >
-        {{
-          $t(
-            authenticationState === 'failed_retryable'
-              ? 'billingOperation.retryVerification'
-              : 'subscription.preview.completeVerification'
-          )
-        }}
-      </Button>
+      <div v-if="parkedCheckoutRecovery" class="flex flex-col gap-2">
+        <div
+          role="alert"
+          class="rounded-lg border border-interface-stroke bg-secondary-background p-4 text-sm text-base-foreground"
+        >
+          {{ $t('subscription.preview.parkedCheckoutDetail') }}
+        </div>
+        <Button
+          variant="inverted"
+          size="lg"
+          class="w-full rounded-lg"
+          :loading="isLoading"
+          :disabled="
+            interactionLocked || !quoteIsUsable || verificationRecoveryActive
+          "
+          @click="$emit('addCreditCard')"
+        >
+          {{ $t('subscription.preview.completePayment') }}
+        </Button>
+      </div>
 
-      <Button
-        v-if="
-          actionUrl &&
-          !(
-            (authenticationState === 'failed_retryable' ||
-              authenticationState === 'requires_action') &&
-            canRetryAuthentication
-          )
-        "
-        variant="inverted"
-        size="lg"
-        class="w-full rounded-lg"
-        @click="openVerification"
-      >
-        {{ $t('subscription.preview.completeVerification') }}
-      </Button>
+      <template v-if="verificationOffered">
+        <p role="status" class="m-0 text-sm text-muted-foreground">
+          {{ $t('subscription.preview.pendingVerificationDetail') }}
+        </p>
+        <Button
+          variant="inverted"
+          size="lg"
+          class="w-full rounded-lg"
+          @click="openVerification"
+        >
+          {{ $t('subscription.preview.completeVerification') }}
+        </Button>
+      </template>
 
       <UnifiedStripePaymentSelector
-        v-if="captureMode && quoteReady"
+        v-if="captureMode && quoteReady && !parkedCheckoutRecovery"
         :key="`${previewData?.quote_id}:${previewData?.quote_version}`"
         :amount-cents="amountDueCents"
         :currency="previewData?.currency ?? ''"
@@ -306,7 +300,7 @@
       />
 
       <Button
-        v-if="captureMode && !quoteReady"
+        v-if="captureMode && !quoteReady && !parkedCheckoutRecovery"
         variant="inverted"
         size="lg"
         class="w-full rounded-lg"
@@ -320,7 +314,7 @@
       </Button>
 
       <Button
-        v-if="savedMethods?.length"
+        v-if="savedMethods?.length && !parkedCheckoutRecovery"
         variant="inverted"
         size="lg"
         class="w-full rounded-lg"
@@ -334,7 +328,9 @@
       </Button>
 
       <Button
-        v-if="!usePaymentElement && !savedMethods?.length"
+        v-if="
+          !usePaymentElement && !savedMethods?.length && !parkedCheckoutRecovery
+        "
         variant="tertiary"
         size="lg"
         class="w-full rounded-lg"
@@ -394,9 +390,10 @@ interface Props {
   actionUrl?: string | null
   authenticationState?: BillingAuthenticationState | null
   authenticationError?: string | null
-  canRetryAuthentication?: boolean
-  isAuthenticating?: boolean
   reconciliationOperationId?: string | null
+  /** Subscribe landed on a checkout already waiting for a card; only another
+   *  subscribe can re-issue its payment link. */
+  parkedCheckoutRecovery?: boolean
   usePaymentElement?: boolean
   /** Saved payment methods; when present the capture form is skipped and the
    *  confirm renders as a narrow summary. One method shows a Change
@@ -418,9 +415,8 @@ const {
   actionUrl = null,
   authenticationState = null,
   authenticationError = null,
-  canRetryAuthentication = false,
-  isAuthenticating = false,
   reconciliationOperationId = null,
+  parkedCheckoutRecovery = false,
   usePaymentElement = false,
   savedMethods = null,
   quoteIsCurrent = false,
@@ -435,7 +431,6 @@ const emit = defineEmits<{
   changePaymentMethod: []
   applyPromotionCode: [code: string]
   invalidateQuote: []
-  retryAuthentication: []
 }>()
 
 const { locale, n, t } = useI18n()
@@ -460,12 +455,16 @@ const quoteReady = computed(
     Boolean(previewData?.quote_id) &&
     previewData?.quote_version !== undefined
 )
+const verificationOffered = computed(
+  () => Boolean(actionUrl) && authenticationState !== 'failed_retryable'
+)
 const verificationRecoveryActive = computed(
   () =>
-    embeddedCheckoutEnabled &&
-    (authenticationState === 'requires_action' ||
-      authenticationState === 'failed_retryable' ||
-      Boolean(reconciliationOperationId))
+    verificationOffered.value ||
+    (embeddedCheckoutEnabled &&
+      (authenticationState === 'requires_action' ||
+        authenticationState === 'failed_retryable' ||
+        Boolean(reconciliationOperationId)))
 )
 const quoteIsUsable = computed(() => !embeddedCheckoutEnabled || quoteIsCurrent)
 

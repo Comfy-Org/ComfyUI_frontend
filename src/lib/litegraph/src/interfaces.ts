@@ -539,7 +539,7 @@ export interface PanelWidgetOptions {
   label?: string
   type?: string
   widget?: string
-  values?: Array<string | IContextMenuValue<unknown, unknown, unknown> | null>
+  values?: Array<string | IContextMenuValue | null>
   callback?: PanelWidgetCallback
 }
 

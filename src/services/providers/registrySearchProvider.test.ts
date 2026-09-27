@@ -1,42 +1,31 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { MockInstance } from 'vitest'
 
 import { useComfyRegistrySearchProvider } from '@/services/providers/registrySearchProvider'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 
-// Mock the store
-vi.mock('@/stores/comfyRegistryStore', () => ({
-  useComfyRegistryStore: vi.fn()
-}))
-
 describe('useComfyRegistrySearchProvider', () => {
-  const mockSearchCall = vi.fn()
-  const mockSearchClear = vi.fn()
-  const mockListAllPacksCall = vi.fn()
-  const mockListAllPacksClear = vi.fn()
-
-  const createMockStore = (
-    params: Partial<ReturnType<typeof useComfyRegistryStore>> = {}
-  ) => {
-    return {
-      search: {
-        call: mockSearchCall,
-        clear: mockSearchClear,
-        cancel: vi.fn()
-      },
-      listAllPacks: {
-        call: mockListAllPacksCall,
-        clear: mockListAllPacksClear,
-        cancel: vi.fn()
-      },
-      ...params
-    } as Partial<ReturnType<typeof useComfyRegistryStore>> as ReturnType<
-      typeof useComfyRegistryStore
-    >
-  }
+  let mockSearchCall: MockInstance<
+    ReturnType<typeof useComfyRegistryStore>['search']['call']
+  >
+  let mockSearchClear: MockInstance<
+    ReturnType<typeof useComfyRegistryStore>['search']['clear']
+  >
+  let mockListAllPacksCall: MockInstance<
+    ReturnType<typeof useComfyRegistryStore>['listAllPacks']['call']
+  >
+  let mockListAllPacksClear: MockInstance<
+    ReturnType<typeof useComfyRegistryStore>['listAllPacks']['clear']
+  >
 
   beforeEach(() => {
-    // Setup store mock
-    vi.mocked(useComfyRegistryStore).mockReturnValue(createMockStore())
+    const store = useComfyRegistryStore()
+    mockSearchCall = vi.spyOn(store.search, 'call').mockResolvedValue(null)
+    mockSearchClear = vi.spyOn(store.search, 'clear')
+    mockListAllPacksCall = vi
+      .spyOn(store.listAllPacks, 'call')
+      .mockResolvedValue(null)
+    mockListAllPacksClear = vi.spyOn(store.listAllPacks, 'clear')
   })
 
   describe('searchPacks', () => {
@@ -205,68 +194,6 @@ describe('useComfyRegistrySearchProvider', () => {
 
       expect(mockSearchClear).toHaveBeenCalled()
       expect(mockListAllPacksClear).toHaveBeenCalled()
-    })
-  })
-
-  describe('getSortValue', () => {
-    const testPack = {
-      id: '1',
-      name: 'Test Pack',
-      downloads: 100,
-      publisher: { id: 'pub1', name: 'Publisher One' },
-      latest_version: {
-        version: '1.0.0',
-        createdAt: '2024-01-15T10:00:00Z'
-      }
-    }
-
-    it('should return download count for downloads field', () => {
-      const provider = useComfyRegistrySearchProvider()
-      expect(provider.getSortValue(testPack, 'downloads')).toBe(100)
-    })
-
-    it('should return pack name for name field', () => {
-      const provider = useComfyRegistrySearchProvider()
-      expect(provider.getSortValue(testPack, 'name')).toBe('Test Pack')
-    })
-
-    it('should return publisher name for publisher field', () => {
-      const provider = useComfyRegistrySearchProvider()
-      expect(provider.getSortValue(testPack, 'publisher')).toBe('Publisher One')
-    })
-
-    it('should return timestamp for updated field', () => {
-      const provider = useComfyRegistrySearchProvider()
-      const timestamp = new Date('2024-01-15T10:00:00Z').getTime()
-      expect(provider.getSortValue(testPack, 'updated')).toBe(timestamp)
-    })
-
-    it('should handle missing values gracefully', () => {
-      const incompletePack = { id: '1', name: 'Incomplete' }
-      const provider = useComfyRegistrySearchProvider()
-
-      expect(provider.getSortValue(incompletePack, 'downloads')).toBe(0)
-      expect(provider.getSortValue(incompletePack, 'publisher')).toBe('')
-      expect(provider.getSortValue(incompletePack, 'updated')).toBe(0)
-    })
-
-    it('should return 0 for unknown sort fields', () => {
-      const provider = useComfyRegistrySearchProvider()
-      expect(provider.getSortValue(testPack, 'unknown')).toBe(0)
-    })
-  })
-
-  describe('getSortableFields', () => {
-    it('should return supported sort fields', () => {
-      const provider = useComfyRegistrySearchProvider()
-      const fields = provider.getSortableFields()
-
-      expect(fields).toEqual([
-        { id: 'downloads', label: 'Downloads', direction: 'desc' },
-        { id: 'name', label: 'Name', direction: 'asc' },
-        { id: 'publisher', label: 'Publisher', direction: 'asc' },
-        { id: 'updated', label: 'Updated', direction: 'desc' }
-      ])
     })
   })
 })

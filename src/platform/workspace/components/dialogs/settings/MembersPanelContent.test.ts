@@ -39,9 +39,12 @@ const {
   mockActiveView,
   mockSearchQuery,
   mockPermissions,
+  mockIsPlanEnded,
+  mockIsSalesManagedPlan,
+  mockIsEnterprisePlanStrict,
   mockUiConfig
 } = vi.hoisted(() => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/consistent-type-imports
+  // oxlint-disable-next-line typescript/no-require-imports, typescript/consistent-type-imports
   const { ref } = require('vue') as typeof import('vue')
 
   return {
@@ -53,6 +56,9 @@ const {
     mockShowViewTabs: ref(true),
     mockShowInviteButton: ref(true),
     mockIsInviteDisabled: ref(false),
+    mockIsPlanEnded: ref(false),
+    mockIsSalesManagedPlan: ref(false),
+    mockIsEnterprisePlanStrict: ref(false),
     mockFilteredMembers: ref<WorkspaceMember[]>([]),
     mockFilteredPendingInvites: ref<WorkspacePendingInvite[]>([]),
     mockMaxSeats: ref<number | null>(20),
@@ -82,79 +88,86 @@ const {
       pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
       headerGridCols: 'grid-cols-[50%_40%_10%]',
       showEditWorkspaceMenuItem: true,
-      workspaceMenuAction: 'delete' as 'delete' | null,
+      workspaceMenuAction: 'delete',
       workspaceMenuDisabledTooltip: null as string | null
     })
   }
 })
 
-vi.mock('@/platform/workspace/composables/useMembersPanel', () => ({
-  useMembersPanel: () => ({
-    searchQuery: mockSearchQuery,
-    activeView: mockActiveView,
-    maxSeats: mockMaxSeats,
-    isInPersonalWorkspace: mockIsInPersonalWorkspace,
-    hasTeamPlan: mockHasTeamPlan,
-    hasMemberSeats: computed(
-      () => mockMaxSeats.value === 0 || (mockMaxSeats.value ?? 0) > 1
-    ),
-    isPlanLoading: mockIsPlanLoading,
-    isOnTeamPlan: mockIsOnTeamPlan,
-    hasLapsedTeamPlan: mockHasLapsedTeamPlan,
-    hasMultipleMembers: mockHasMultipleMembers,
-    showSearch: mockShowSearch,
-    showViewTabs: mockShowViewTabs,
-    showInviteButton: mockShowInviteButton,
-    isInviteDisabled: mockIsInviteDisabled,
-    inviteTooltip: computed(() => null),
-    handleInviteMember: mockHandleInviteMember,
-    personalWorkspaceMember: computed(() => ({
-      id: 'self',
-      name: 'Owner User',
-      email: 'owner@example.com',
-      role: 'owner' as const,
-      joinDate: new Date(0),
-      isOriginalOwner: true
-    })),
-    filteredMembers: mockFilteredMembers,
-    filteredPendingInvites: mockFilteredPendingInvites,
-    memberMenuItems: mockMemberMenuItems,
-    memberMenus: computed(
-      () =>
-        new Map(
-          mockFilteredMembers.value.map((member) => [
-            member.id,
-            member.email.toLowerCase() === 'owner@example.com' ||
-            member.id === mockOriginalOwnerId.value
-              ? []
-              : [
-                  { label: 'changeRole' },
-                  ...(member.role === 'member'
-                    ? [{ label: 'setCreditLimit' }]
-                    : []),
-                  { label: 'removeMember' }
-                ]
-          ])
-        )
-    ),
-    members: mockMembers,
-    pendingInvites: mockPendingInvites,
-    permissions: mockPermissions,
-    uiConfig: mockUiConfig,
-    userPhotoUrl: ref(null),
-    isCurrentUser: (m: WorkspaceMember) =>
-      m.email.toLowerCase() === 'owner@example.com',
-    isOriginalOwner: (m: WorkspaceMember) => m.id === mockOriginalOwnerId.value,
-    toggleSort: mockToggleSort,
-    showTeamPlans: mockShowTeamPlans,
-    handleResendInvite: mockHandleResendInvite,
-    handleRevokeInvite: mockHandleRevokeInvite,
-    handleRemoveMember: vi.fn(),
-    handleChangeRole: vi.fn()
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useMembersPanel'),
+  () => ({
+    useMembersPanel: () => ({
+      searchQuery: mockSearchQuery,
+      activeView: mockActiveView,
+      maxSeats: mockMaxSeats,
+      isInPersonalWorkspace: mockIsInPersonalWorkspace,
+      hasTeamPlan: mockHasTeamPlan,
+      hasMemberSeats: computed(
+        () => mockMaxSeats.value === 0 || (mockMaxSeats.value ?? 0) > 1
+      ),
+      isPlanLoading: mockIsPlanLoading,
+      isOnTeamPlan: mockIsOnTeamPlan,
+      hasLapsedTeamPlan: mockHasLapsedTeamPlan,
+      hasMultipleMembers: mockHasMultipleMembers,
+      showSearch: mockShowSearch,
+      showViewTabs: mockShowViewTabs,
+      showInviteButton: mockShowInviteButton,
+      isInviteDisabled: mockIsInviteDisabled,
+      isPlanEnded: mockIsPlanEnded,
+      isSalesManagedPlan: mockIsSalesManagedPlan,
+      isEnterprisePlan: mockIsEnterprisePlanStrict,
+      inviteTooltip: computed(() => null),
+      handleInviteMember: mockHandleInviteMember,
+      personalWorkspaceMember: computed(() => ({
+        id: 'self',
+        name: 'Owner User',
+        email: 'owner@example.com',
+        role: 'owner' as const,
+        joinDate: new Date(0),
+        isOriginalOwner: true
+      })),
+      filteredMembers: mockFilteredMembers,
+      filteredPendingInvites: mockFilteredPendingInvites,
+      memberMenuItems: mockMemberMenuItems,
+      memberMenus: computed(
+        () =>
+          new Map(
+            mockFilteredMembers.value.map((member) => [
+              member.id,
+              member.email.toLowerCase() === 'owner@example.com' ||
+              member.id === mockOriginalOwnerId.value
+                ? []
+                : [
+                    { label: 'changeRole' },
+                    ...(member.role === 'member'
+                      ? [{ label: 'setCreditLimit' }]
+                      : []),
+                    { label: 'removeMember' }
+                  ]
+            ])
+          )
+      ),
+      members: mockMembers,
+      pendingInvites: mockPendingInvites,
+      permissions: mockPermissions,
+      uiConfig: mockUiConfig,
+      userPhotoUrl: ref(null),
+      isCurrentUser: (m: WorkspaceMember) =>
+        m.email.toLowerCase() === 'owner@example.com',
+      isOriginalOwner: (m: WorkspaceMember) =>
+        m.id === mockOriginalOwnerId.value,
+      toggleSort: mockToggleSort,
+      showTeamPlans: mockShowTeamPlans,
+      handleResendInvite: mockHandleResendInvite,
+      handleRevokeInvite: mockHandleRevokeInvite,
+      handleRemoveMember: vi.fn(),
+      handleChangeRole: vi.fn()
+    })
   })
-}))
+)
 
-vi.mock('@/components/button/MoreButton.vue', () => ({
+vi.mock<unknown>(import('@/components/button/MoreButton.vue'), () => ({
   default: (_: unknown, { slots }: { slots: Slots }) =>
     h('div', slots.default?.({ close: () => {} }))
 }))
@@ -167,29 +180,11 @@ const i18n = createI18n({
   fallbackWarn: false
 })
 
-const ButtonStub = {
-  name: 'Button',
-  template:
-    '<button :disabled="disabled" :aria-label="ariaLabel" @click="$emit(\'click\', $event)"><slot /></button>',
-  props: ['disabled', 'loading', 'variant', 'size', 'ariaLabel']
-}
-
-const SearchInputStub = {
-  name: 'SearchInput',
-  template:
-    '<input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
-  props: ['modelValue', 'placeholder', 'size'],
-  emits: ['update:modelValue']
-}
-
 function renderComponent() {
   return render(MembersPanelContent, {
     global: {
       plugins: [i18n],
       stubs: {
-        Button: ButtonStub,
-        SearchInput: SearchInputStub,
-        UserAvatar: true,
         WorkspaceMenuButton: true
       },
       directives: { tooltip: () => {} }
@@ -242,6 +237,9 @@ describe('MembersPanelContent', () => {
     mockShowViewTabs.value = true
     mockShowInviteButton.value = true
     mockIsInviteDisabled.value = false
+    mockIsPlanEnded.value = false
+    mockIsSalesManagedPlan.value = false
+    mockIsEnterprisePlanStrict.value = false
     mockActiveView.value = 'active'
     mockSearchQuery.value = ''
     mockPermissions.value = {
@@ -510,6 +508,74 @@ describe('MembersPanelContent', () => {
     expect(screen.queryByText('workspacePanel.members.upsellBanner')).toBeNull()
   })
 
+  describe('ended treatment gate (DES-1200)', () => {
+    it('shows the resume banner once a team plan has ended', () => {
+      mockIsPlanEnded.value = true
+      renderComponent()
+      expect(
+        screen.getByText('workspacePanel.members.endedTeamTitle')
+      ).toBeTruthy()
+      expect(
+        screen.getByText('workspacePanel.members.upsellBannerReactivate')
+      ).toBeTruthy()
+    })
+
+    it('lets an owner resume an ended Team plan', async () => {
+      mockHasTeamPlan.value = true
+      mockIsPlanEnded.value = true
+      renderComponent()
+
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: /workspacePanel\.members\.resubscribe/
+        })
+      )
+      expect(mockShowTeamPlans).toHaveBeenCalled()
+    })
+
+    it('routes an ended Enterprise plan to sales', async () => {
+      const openSpy = vi.spyOn(window, 'open').mockReturnValue(null)
+      mockIsPlanEnded.value = true
+      mockIsSalesManagedPlan.value = true
+      mockIsEnterprisePlanStrict.value = true
+      renderComponent()
+      expect(
+        screen.getByText('workspacePanel.members.endedEnterpriseTitle')
+      ).toBeTruthy()
+      expect(
+        screen.getByText('workspacePanel.members.upsellBannerEnterpriseEnded')
+      ).toBeTruthy()
+
+      // The action lands on the enterprise page, never the team-plan
+      // request form the footer's Contact us uses.
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: /workspacePanel\.members\.contactSales/
+        })
+      )
+      expect(openSpy).toHaveBeenCalledWith(
+        'https://comfy.org/cloud/enterprise/',
+        '_blank',
+        'noopener,noreferrer'
+      )
+      openSpy.mockRestore()
+    })
+
+    it('shows no banner while a cancellation is merely scheduled', () => {
+      // Cancel-scheduled maps to isPlanEnded false; the mapping itself is
+      // pinned in useMembersPanel.test.ts ('keeps a cancel-scheduled plan
+      // with live access un-ended') — this asserts the render consequence.
+      mockIsPlanEnded.value = false
+      renderComponent()
+      expect(
+        screen.queryByText('workspacePanel.members.endedTeamTitle')
+      ).toBeNull()
+      expect(
+        screen.queryByText('workspacePanel.members.upsellBannerReactivate')
+      ).toBeNull()
+    })
+  })
+
   describe('not on team plan', () => {
     beforeEach(() => {
       mockMaxSeats.value = 1
@@ -544,19 +610,6 @@ describe('MembersPanelContent', () => {
         name: /workspacePanel\.members\.upgradeToTeam/
       })
       await userEvent.click(upgradeBtn)
-      expect(mockShowTeamPlans).toHaveBeenCalled()
-    })
-
-    it('lets an owner reactivate a lapsed Team plan', async () => {
-      mockHasTeamPlan.value = true
-      mockHasLapsedTeamPlan.value = true
-      renderComponent()
-
-      await userEvent.click(
-        screen.getByRole('button', {
-          name: /workspacePanel\.members\.reactivateTeam/
-        })
-      )
       expect(mockShowTeamPlans).toHaveBeenCalled()
     })
 

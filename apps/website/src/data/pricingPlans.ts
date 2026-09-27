@@ -28,7 +28,9 @@ export interface PricingPlan {
   eduYearlyPriceKey?: TranslationKey
   eduYearlyTotalKey?: TranslationKey
   creditsKey?: TranslationKey
+  yearlyCreditsKey?: TranslationKey
   estimateKey?: TranslationKey
+  yearlyEstimateKey?: TranslationKey
   ctaKey: TranslationKey
   ctaHref: (cycle: BillingCycle) => string
   features: PlanFeature[]
@@ -72,11 +74,14 @@ const standardPricingPlans: PricingPlan[] = [
     eduYearlyPriceKey: 'pricing.plan.standard.eduYearlyPrice',
     eduYearlyTotalKey: 'pricing.plan.standard.eduYearlyTotal',
     creditsKey: 'pricing.plan.standard.credits',
+    yearlyCreditsKey: 'pricing.plan.standard.yearlyCredits',
     estimateKey: 'pricing.plan.standard.estimate',
+    yearlyEstimateKey: 'pricing.plan.standard.yearlyEstimate',
     ctaKey: 'pricing.plan.standard.cta',
     ctaHref: (cycle) => subscribeUrl('standard', cycle),
     features: [
       { text: 'pricing.feature.shortRuntime' },
+      { text: 'pricing.feature.apiConcurrency1' },
       { text: 'pricing.feature.addCredits' },
       { text: 'pricing.feature.importModels', status: 'excluded' },
       { text: 'pricing.feature.longRuntime', status: 'excluded' }
@@ -92,11 +97,14 @@ const standardPricingPlans: PricingPlan[] = [
     eduYearlyPriceKey: 'pricing.plan.creator.eduYearlyPrice',
     eduYearlyTotalKey: 'pricing.plan.creator.eduYearlyTotal',
     creditsKey: 'pricing.plan.creator.credits',
+    yearlyCreditsKey: 'pricing.plan.creator.yearlyCredits',
     estimateKey: 'pricing.plan.creator.estimate',
+    yearlyEstimateKey: 'pricing.plan.creator.yearlyEstimate',
     ctaKey: 'pricing.plan.creator.cta',
     ctaHref: (cycle) => subscribeUrl('creator', cycle),
     features: [
       { text: 'pricing.feature.shortRuntime' },
+      { text: 'pricing.feature.apiConcurrency3' },
       { text: 'pricing.feature.addCredits' },
       { text: 'pricing.feature.importModels' },
       { text: 'pricing.feature.longRuntime', status: 'excluded' }
@@ -113,11 +121,14 @@ const standardPricingPlans: PricingPlan[] = [
     eduYearlyPriceKey: 'pricing.plan.pro.eduYearlyPrice',
     eduYearlyTotalKey: 'pricing.plan.pro.eduYearlyTotal',
     creditsKey: 'pricing.plan.pro.credits',
+    yearlyCreditsKey: 'pricing.plan.pro.yearlyCredits',
     estimateKey: 'pricing.plan.pro.estimate',
+    yearlyEstimateKey: 'pricing.plan.pro.yearlyEstimate',
     ctaKey: 'pricing.plan.pro.cta',
     ctaHref: (cycle) => subscribeUrl('pro', cycle),
     features: [
       { text: 'pricing.feature.shortRuntime' },
+      { text: 'pricing.feature.apiConcurrency5' },
       { text: 'pricing.feature.addCredits' },
       { text: 'pricing.feature.importModels' },
       { text: 'pricing.feature.longRuntime' }

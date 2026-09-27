@@ -1,24 +1,20 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { createNodeExecutionId } from '@/types/nodeIdentification'
 
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useMissingMediaStore } from './missingMediaStore'
 import type { MissingMediaCandidate } from './types'
 
 // Mock dependencies
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({
-    currentGraph: null
-  })
-}))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     rootGraph: null
   }
 }))
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
+vi.mock(import('@/utils/graphTraversalUtil'), () => ({
   getActiveGraphNodeIds: () => new Set<string>()
 }))
 
@@ -43,6 +39,24 @@ describe('useMissingMediaStore', () => {
     expect(store.missingMediaCandidates).toBeNull()
     expect(store.hasMissingMedia).toBe(false)
     expect(store.missingMediaCount).toBe(0)
+  })
+
+  it('hides derived state while the missing media warning is off', () => {
+    const settingStore = useSettingStore()
+    const store = useMissingMediaStore()
+    store.setMissingMedia([makeCandidate('1', 'photo.png')])
+    expect(store.hasMissingMedia).toBe(true)
+
+    settingStore.settingValues['Comfy.Workflow.ShowMissingMediaWarning'] = false
+
+    expect(store.missingMediaCandidates).toHaveLength(1)
+    expect(store.visibleMissingMediaCandidates).toBeNull()
+    expect(store.hasMissingMedia).toBe(false)
+    expect(store.missingMediaNodeIds.size).toBe(0)
+
+    settingStore.settingValues['Comfy.Workflow.ShowMissingMediaWarning'] = true
+
+    expect(store.hasMissingMedia).toBe(true)
   })
 
   it('setMissingMedia populates candidates', () => {

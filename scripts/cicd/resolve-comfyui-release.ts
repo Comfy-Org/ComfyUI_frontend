@@ -9,7 +9,9 @@ interface ReleaseInfo {
   target_version: string
   target_branch: string
   needs_release: boolean
+  pending_bump: boolean
   latest_patch_tag: string | null
+  branch_version: string | null
   branch_head_sha: string | null
   tag_commit_sha: string | null
   diff_url: string
@@ -126,11 +128,92 @@ function computeTargetVersion(
     : tagVersion
 }
 
+function compareSemver(a: string, b: string): number {
+  const [aMajor, aMinor, aPatch] = a.split('.').map(Number)
+  const [bMajor, bMinor, bPatch] = b.split('.').map(Number)
+  return aMajor - bMajor || aMinor - bMinor || aPatch - bPatch
+}
+
+/**
+ * Resolve the version this release should end at. The bump applies
+ * `pnpm version` to the branch's `package.json`, so a branch version ahead of
+ * the newest tag is a pending bump: it needs tagging, not another bump.
+ */
+function resolveTargetVersion({
+  targetMajor,
+  targetMinor,
+  latestPatchTag,
+  hasPendingCommits,
+  branchVersion
+}: {
+  targetMajor: number
+  targetMinor: number
+  latestPatchTag: string | null
+  hasPendingCommits: boolean
+  branchVersion: string | null
+}): {
+  targetVersion: string
+  pendingBump: boolean
+  needsRelease: boolean
+} | null {
+  const taggedVersion = latestPatchTag?.replace(/^v/, '') ?? null
+  const [branchMajor, branchMinor] = branchVersion?.split('.').map(Number) ?? []
+
+  if (
+    branchVersion !== null &&
+    isValidSemver(branchVersion) &&
+    branchMajor === targetMajor &&
+    branchMinor === targetMinor &&
+    (taggedVersion === null || compareSemver(branchVersion, taggedVersion) > 0)
+  ) {
+    return {
+      targetVersion: branchVersion,
+      pendingBump: true,
+      needsRelease: false
+    }
+  }
+
+  const targetVersion = computeTargetVersion(
+    targetMajor,
+    targetMinor,
+    latestPatchTag,
+    hasPendingCommits
+  )
+  return targetVersion
+    ? { targetVersion, pendingBump: false, needsRelease: hasPendingCommits }
+    : null
+}
+
 /**
  * Check whether a branch exists on origin in the given repo.
  */
 function branchExists(branch: string, repoPath: string): boolean {
   return Boolean(exec(`git rev-parse --verify origin/${branch}`, repoPath))
+}
+
+/**
+ * Read the version in a branch's package.json, or null if it cannot be read.
+ */
+function getBranchVersion(branch: string, repoPath: string): string | null {
+  const raw = exec(`git show origin/${branch}:package.json`, repoPath)
+  if (!raw) {
+    return null
+  }
+
+  try {
+    const parsed: unknown = JSON.parse(raw)
+    if (
+      typeof parsed === 'object' &&
+      parsed !== null &&
+      'version' in parsed &&
+      typeof parsed.version === 'string'
+    ) {
+      return parsed.version
+    }
+  } catch {
+    console.error(`Could not parse package.json on ${branch}`)
+  }
+  return null
 }
 
 /**
@@ -285,50 +368,45 @@ function resolveRelease(
     targetMinor
   )
 
-  let needsRelease: boolean
-  let branchHeadSha: string | null
+  const branchVersion = getBranchVersion(targetBranch, frontendRepoPath)
+  const branchHeadSha = exec(
+    `git rev-parse origin/${targetBranch}`,
+    frontendRepoPath
+  )
+
+  let hasPendingCommits = true
   let tagCommitSha: string | null = null
-  let targetVersion: string
 
   if (latestPatchTag) {
-    // Get commit SHA for the tag
     tagCommitSha = exec(`git rev-list -n 1 ${latestPatchTag}`, frontendRepoPath)
 
-    // Get commit SHA for branch head
-    branchHeadSha = exec(
-      `git rev-parse origin/${targetBranch}`,
-      frontendRepoPath
-    )
-
-    // Check if there are commits between tag and branch head
     const commitsBetween = exec(
       `git rev-list ${latestPatchTag}..origin/${targetBranch} --count`,
       frontendRepoPath
     )
-
     const commitCount = parseInt(commitsBetween, 10)
-    needsRelease = !isNaN(commitCount) && commitCount > 0
+    hasPendingCommits = !isNaN(commitCount) && commitCount > 0
+  }
 
-    const nextVersion = computeTargetVersion(
-      targetMajor,
-      targetMinor,
-      latestPatchTag,
-      needsRelease
+  const resolved = resolveTargetVersion({
+    targetMajor,
+    targetMinor,
+    latestPatchTag,
+    hasPendingCommits,
+    branchVersion
+  })
+  if (!resolved) {
+    console.error(
+      `Invalid tag version format: ${latestPatchTag}. Expected format: vX.Y.Z`
     )
-    if (!nextVersion) {
-      console.error(
-        `Invalid tag version format: ${latestPatchTag}. Expected format: vX.Y.Z`
-      )
-      return null
-    }
-    targetVersion = nextVersion
-  } else {
-    // No tags exist for this major.minor version, need to create the .0 patch
-    needsRelease = true
-    targetVersion = `${targetMajor}.${targetMinor}.0`
-    branchHeadSha = exec(
-      `git rev-parse origin/${targetBranch}`,
-      frontendRepoPath
+    return null
+  }
+
+  const { targetVersion, pendingBump, needsRelease } = resolved
+
+  if (pendingBump) {
+    console.error(
+      `${targetBranch} is at ${branchVersion} but its newest tag is ${latestPatchTag ?? '(none)'}: the bump already landed and was never released.`
     )
   }
 
@@ -340,7 +418,9 @@ function resolveRelease(
     target_version: targetVersion,
     target_branch: targetBranch,
     needs_release: needsRelease,
+    pending_bump: pendingBump,
     latest_patch_tag: latestPatchTag,
+    branch_version: branchVersion,
     branch_head_sha: branchHeadSha,
     tag_commit_sha: tagCommitSha,
     diff_url: diffUrl,
@@ -384,5 +464,6 @@ export {
   isValidSemver,
   parseRequirementsVersion,
   parseTargetBranchOverride,
-  resolveRelease
+  resolveRelease,
+  resolveTargetVersion
 }

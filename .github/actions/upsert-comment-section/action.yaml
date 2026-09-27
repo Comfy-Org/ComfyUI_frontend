@@ -14,7 +14,10 @@ inputs:
     required: true
   section-content:
     description: Markdown content for this section
-    required: true
+    required: false
+  section-content-file:
+    description: Path to a Markdown file containing this section
+    required: false
   comment-marker:
     description: Top-level HTML comment marker shared by all sections in this comment
     required: false
@@ -31,13 +34,22 @@ runs:
         INPUT_PR_NUMBER: ${{ inputs.pr-number }}
         INPUT_SECTION_NAME: ${{ inputs.section-name }}
         INPUT_SECTION_CONTENT: ${{ inputs.section-content }}
+        INPUT_SECTION_CONTENT_FILE: ${{ inputs.section-content-file }}
         INPUT_COMMENT_MARKER: ${{ inputs.comment-marker }}
       with:
         github-token: ${{ inputs.token }}
         script: |
           const prNumber = Number(process.env.INPUT_PR_NUMBER)
           const sectionName = process.env.INPUT_SECTION_NAME
-          const sectionContent = process.env.INPUT_SECTION_CONTENT
+          const sectionContentFile = process.env.INPUT_SECTION_CONTENT_FILE
+          if (!sectionContentFile && !process.env.INPUT_SECTION_CONTENT) {
+            throw new Error(
+              'Either section-content or section-content-file is required'
+            )
+          }
+          const sectionContent = sectionContentFile
+            ? require('node:fs').readFileSync(sectionContentFile, 'utf8')
+            : process.env.INPUT_SECTION_CONTENT
           const commentMarker = process.env.INPUT_COMMENT_MARKER
 
           if (!/^[a-z0-9-]+$/.test(sectionName)) {
