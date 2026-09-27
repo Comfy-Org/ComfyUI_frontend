@@ -228,7 +228,12 @@ function commitNodeSize(node: LGraphNode): void {
   // A direct resize is authoritative over the previous DOM measurement. Drop
   // that measurement before deriving the rendered size so the node can shrink;
   // ResizeObserver reports the content's new size after layout settles.
-  layoutStore.clearContentSize(attachment.graphId, attachment.id)
+  const clearContentSize = (
+    layoutStore as {
+      clearContentSize?: typeof layoutStore.clearContentSize
+    }
+  ).clearContentSize
+  clearContentSize?.(attachment.graphId, attachment.id)
   resizeNodeLayout(node, {
     width: projection.size[0],
     height: projection.size[1]
