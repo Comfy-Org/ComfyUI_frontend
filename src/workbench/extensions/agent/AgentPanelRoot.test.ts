@@ -3562,7 +3562,6 @@ describe('AgentPanelRoot run approval telemetry', () => {
     const now = vi.spyOn(Date, 'now').mockImplementation(() => currentTime)
     const workflow = addTab('workflows/Portrait workflow.json')
     workflowStore.activeWorkflow = workflow
-    useAgentWorkflowTabBindingStore().bind('workflow-1', workflow.path)
 
     const panel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
     const store = useAgentConversationStore()
