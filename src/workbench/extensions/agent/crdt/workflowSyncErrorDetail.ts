@@ -10,13 +10,20 @@ const SYNC_ERROR_RAW_MESSAGE_MAX_LENGTH = 200
  * the localized copy (so the person keeps the "canvas unchanged" reassurance
  * even when the doc-host's raw `message` is untranslated developer text or
  * absent), appending that raw message, clamped, as extra context only when
- * present.
+ * present. `code` picks which localized copy leads: `catalog_mismatch`
+ * names an incompatible node catalog, not an incompatible document version,
+ * so it gets its own key rather than reusing `schema_version_mismatch`'s.
  */
 export function formatWorkflowSyncErrorDetail(
   translate: (key: string) => string,
-  message: string | undefined
+  message: string | undefined,
+  code?: string
 ): string {
-  const detail = translate('agent.workflowSyncFailedDetail')
+  const detail = translate(
+    code === 'catalog_mismatch'
+      ? 'agent.workflowSyncFailedDetailCatalogMismatch'
+      : 'agent.workflowSyncFailedDetail'
+  )
   if (!message) return detail
   return `${detail} (${truncate(message, { length: SYNC_ERROR_RAW_MESSAGE_MAX_LENGTH })})`
 }

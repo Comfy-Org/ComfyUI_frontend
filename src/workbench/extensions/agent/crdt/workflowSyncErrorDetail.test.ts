@@ -2,8 +2,13 @@ import { describe, expect, it } from 'vitest'
 
 import { formatWorkflowSyncErrorDetail } from './workflowSyncErrorDetail'
 
-const translate = (key: string): string =>
-  key === 'agent.workflowSyncFailedDetail' ? 'Your canvas is unchanged.' : key
+const translate = (key: string): string => {
+  if (key === 'agent.workflowSyncFailedDetail')
+    return 'Your canvas is unchanged.'
+  if (key === 'agent.workflowSyncFailedDetailCatalogMismatch')
+    return 'Your node catalog is incompatible.'
+  return key
+}
 
 describe('formatWorkflowSyncErrorDetail', () => {
   it('falls back to the localized copy alone when there is no raw message', () => {
@@ -16,6 +21,22 @@ describe('formatWorkflowSyncErrorDetail', () => {
     expect(
       formatWorkflowSyncErrorDetail(translate, 'Expected schema 2, found 1')
     ).toBe('Your canvas is unchanged. (Expected schema 2, found 1)')
+  })
+
+  it('uses the catalog-mismatch copy when the code names that reason', () => {
+    expect(
+      formatWorkflowSyncErrorDetail(translate, undefined, 'catalog_mismatch')
+    ).toBe('Your node catalog is incompatible.')
+  })
+
+  it('falls back to the schema-mismatch copy for an undifferentiated code', () => {
+    expect(
+      formatWorkflowSyncErrorDetail(
+        translate,
+        undefined,
+        'schema_version_mismatch'
+      )
+    ).toBe('Your canvas is unchanged.')
   })
 
   it('clamps a multi-KB raw message instead of reproducing it in full', () => {

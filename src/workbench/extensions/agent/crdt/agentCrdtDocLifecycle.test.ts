@@ -573,6 +573,66 @@ describe('AgentCrdtDocLifecycle schema_version_mismatch refusal', () => {
     expect(reportError).toHaveBeenCalledTimes(1)
   })
 
+  it('a successful confirm after a permanent refusal re-arms notification for a later independent refusal', () => {
+    const { lifecycle, onGaveUp } = wire()
+    lifecycle.onSubscribeSent(WORKFLOW_ID)
+    lifecycle.onSubscribeRefused('schema_version_mismatch')
+    expect(onGaveUp).toHaveBeenCalledTimes(1)
+    expect(reportError).toHaveBeenCalledTimes(1)
+
+    // The reconnect recovers this time: the doc-host confirms the subscribe.
+    lifecycle.onReconnected()
+    lifecycle.onSubscribeSent(WORKFLOW_ID)
+    lifecycle.onSubscribeConfirmed()
+
+    // A later, independent permanent refusal for the SAME workflow is a new
+    // failure episode, not a duplicate of the one already reported - it
+    // must notify again rather than being suppressed by the stale marker.
+    lifecycle.onSubscribeSent(WORKFLOW_ID)
+    lifecycle.onSubscribeRefused('schema_version_mismatch')
+
+    expect(onGaveUp).toHaveBeenCalledTimes(2)
+    expect(reportError).toHaveBeenCalledTimes(2)
+  })
+
+  it('a stale permanent refusal answering a superseded attempt does not undo a confirm that already won', () => {
+    const { lifecycle, resubscribe, onGaveUp } = wire()
+    // Attempt 1 leaves the transport and gets no answer within the ack
+    // budget, so the timeout fires a second attempt while attempt 1 is
+    // still outstanding at the doc-host.
+    lifecycle.onSubscribeSent(WORKFLOW_ID)
+    vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
+    expect(resubscribe).toHaveBeenCalledTimes(1)
+
+    // Attempt 2 confirms first - the channel is healthy again.
+    lifecycle.onSubscribeConfirmed()
+    expect(lifecycle.shouldDeferSubscribe()).toBe(false)
+
+    // Attempt 1's answer finally lands, refusing permanently. It cannot be
+    // answering attempt 2 (which already confirmed), so it must be
+    // attempt 1's stale answer - it must not undo the confirmed channel.
+    const notified = lifecycle.onSubscribeRefused('schema_version_mismatch')
+
+    expect(notified).toBe(false)
+    expect(onGaveUp).not.toHaveBeenCalled()
+    expect(reportError).not.toHaveBeenCalled()
+    expect(lifecycle.shouldDeferSubscribe()).toBe(false)
+    expect(devEvents()).toEqual([
+      {
+        kind: 'subscribe_ack_timeout',
+        detail: { attempt: 1, workflowId: WORKFLOW_ID }
+      }
+    ])
+
+    // A genuinely new failure after a fresh send still latches normally.
+    lifecycle.onSubscribeSent(WORKFLOW_ID)
+    const notifiedAgain = lifecycle.onSubscribeRefused(
+      'schema_version_mismatch'
+    )
+    expect(notifiedAgain).toBe(true)
+    expect(onGaveUp).toHaveBeenCalledTimes(1)
+  })
+
   it('clearForRetarget re-arms notification for the same workflow id', () => {
     const { lifecycle, onGaveUp } = wire()
     lifecycle.onSubscribeSent(WORKFLOW_ID)

@@ -130,6 +130,7 @@ function emitPendingMaterializations(
 interface SubscribeRefusalOutcome {
   shouldNotify: boolean
   message?: string
+  code?: string
 }
 
 // PM-1604 / BE-11437: a subscribe refusal carries a `code` that is either
@@ -140,7 +141,9 @@ interface SubscribeRefusalOutcome {
 // deployment with the doc surface off shouldn't toast every user). The
 // caller notifies only after its own held-ops cleanup, matching
 // `onDocReset`'s cleanup-before-notify order, so a throw from consumer code
-// reaching into the toast store can't strand an in-flight op batch.
+// reaching into the toast store can't strand an in-flight op batch. `code`
+// rides along so the presentation layer can pick accurate copy instead of
+// collapsing every permanent code to the same message.
 function handleSubscribeRefusal(
   detail: { code?: unknown; message?: unknown } | null,
   lifecycle: AgentCrdtDocLifecycle
@@ -149,7 +152,8 @@ function handleSubscribeRefusal(
   if (!lifecycle.onSubscribeRefused(code)) return { shouldNotify: false }
   return {
     shouldNotify: true,
-    message: typeof detail?.message === 'string' ? detail.message : undefined
+    message: typeof detail?.message === 'string' ? detail.message : undefined,
+    code
   }
 }
 
@@ -217,9 +221,12 @@ export interface AgentCrdtFollowerEvents {
    * channel that silently stopped updating. Not fired for `unsupported`
    * (the doc surface is off for this deployment; every user hits it, so it
    * latches silently) or for a refusal that repeats on reconnect for a
-   * workflow already notified.
+   * workflow already notified. `code` is the doc-host's permanent refusal
+   * code (e.g. `schema_version_mismatch`, `catalog_mismatch`) so the
+   * presentation layer can choose accurate localized copy instead of a
+   * single message for every permanent reason.
    */
-  onSyncError?: (message?: string) => void
+  onSyncError?: (message?: string, code?: string) => void
 }
 
 // Nothing is re-thrown: an error escaping onBeforeUnmount reaches Vue's
@@ -479,7 +486,8 @@ function startAgentCrdtFollower(
       // the 10 s result-silence window to notice on its own.
       releaseHeldOps()
       sender.abortIfUnbound()
-      if (refusal.shouldNotify) events.onSyncError?.(refusal.message)
+      if (refusal.shouldNotify)
+        events.onSyncError?.(refusal.message, refusal.code)
     }
   }
   const onUpdate: EventListener = (event) => {

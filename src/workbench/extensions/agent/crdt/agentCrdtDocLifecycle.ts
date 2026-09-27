@@ -190,9 +190,20 @@ export class AgentCrdtDocLifecycle {
   // The workflow id last notified (reportError + onGaveUp) for a permanent
   // refusal. A reconnect to the SAME workflow answered with the SAME
   // permanent code is one unchanged fact, not a new one - re-arm only when
-  // the target actually changes (retarget/doc_reset), never on a bare
-  // reconnect. See `resetNotifiedGiveUp`.
+  // the target actually changes (retarget/doc_reset) or a subscribe for it
+  // actually succeeds (`onSubscribeConfirmed`), never on a bare reconnect
+  // that never recovers. See `resetNotifiedGiveUp`.
   private lastNotifiedGiveUpWorkflowId: string | null = null
+  // Stale-ack race: an ack-timeout resubscribe can leave the OLDER attempt
+  // still outstanding at the doc-host while a NEWER one (sent on the same
+  // lineage) confirms first. A confirm and a permanent refusal can never
+  // both be the answer to the SAME subscribe, so once this is true, any
+  // permanent refusal that arrives before another subscribe is sent cannot
+  // be answering the one that just confirmed - it must be the older
+  // attempt's late answer - and `onSubscribeRefused` discards it instead of
+  // tearing down the confirm's own probe/latch. Cleared by the next actual
+  // send (`onSubscribeSent`), which starts a fresh round.
+  private confirmedSinceLastSend = false
   // FEC-5: `Date.now()` of the last persisted-record write by this instance.
   // A confirmed subscribe always writes; doc-scoped frames re-stamp the expiry
   // no more often than DOC_ID_REFRESH_INTERVAL_MS, so a doc that keeps
@@ -220,6 +231,11 @@ export class AgentCrdtDocLifecycle {
   onSubscribeConfirmed(): void {
     this.clearAckTimer()
     this.gaveUp = false
+    this.confirmedSinceLastSend = true
+    // A successful confirm ends the outage a prior permanent refusal
+    // notified about: a LATER independent refusal for this same workflow is
+    // a new failure episode, not a duplicate of the one already reported.
+    this.resetNotifiedGiveUp()
     this.clearSubscribeRetry()
     if (this.usedCatchUpGrace) {
       this.armStaleProbe()
@@ -233,17 +249,24 @@ export class AgentCrdtDocLifecycle {
 
   /** Returns whether this refusal newly triggered a give-up notification. */
   onSubscribeRefused(code?: string): boolean {
+    if (code !== undefined && PERMANENT_SUBSCRIBE_REFUSAL_CODES.has(code)) {
+      // See `confirmedSinceLastSend`: bail out before touching any timer,
+      // so a stale straggler can't clear the probe/backoff state the
+      // confirm it raced behind already armed.
+      if (this.confirmedSinceLastSend) return false
+      this.clearAckTimer()
+      this.clearStaleProbe()
+      return this.giveUpPermanently(code, isNotifyingPermanentRefusalCode(code))
+    }
     this.clearAckTimer()
     this.clearStaleProbe()
-    if (code === undefined || !PERMANENT_SUBSCRIBE_REFUSAL_CODES.has(code)) {
-      this.scheduleSubscribeRetry()
-      return false
-    }
-    return this.giveUpPermanently(code, isNotifyingPermanentRefusalCode(code))
+    this.scheduleSubscribeRetry()
+    return false
   }
 
   onSubscribeSent(workflowId: string): void {
     this.clearAckTimer()
+    this.confirmedSinceLastSend = false
     if (this.gaveUp) return
     this.ackTimer = setTimeout(() => {
       this.ackTimer = null
@@ -306,10 +329,11 @@ export class AgentCrdtDocLifecycle {
   }
 
   /**
-   * Lets a permanent refusal for a different lineage of the same workflow
+   * Lets a permanent refusal for a different episode of the same workflow
    * id notify again. Called when the subscribed target actually changes
-   * (retarget) or its lineage restarts (`doc_reset`) - never on a bare
-   * reconnect, which keeps the same lineage and the same unrecoverable fact.
+   * (retarget), its lineage restarts (`doc_reset`), or it actually confirms
+   * (`onSubscribeConfirmed`) - never on a bare reconnect that never
+   * recovers, which keeps the same episode and the same unrecoverable fact.
    */
   resetNotifiedGiveUp(): void {
     this.lastNotifiedGiveUpWorkflowId = null

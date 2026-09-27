@@ -782,7 +782,8 @@ describe('useAgentCrdtFollower', () => {
     expect(bridge().resubscribe).not.toHaveBeenCalled()
     expect(bridge().reconcile).not.toHaveBeenCalled()
     expect(onSyncError).toHaveBeenCalledExactlyOnceWith(
-      'Expected schema 2, found 1'
+      'Expected schema 2, found 1',
+      'schema_version_mismatch'
     )
     unmount()
   })
@@ -805,7 +806,10 @@ describe('useAgentCrdtFollower', () => {
 
     expect(bridge().resubscribe).not.toHaveBeenCalled()
     expect(bridge().reconcile).not.toHaveBeenCalled()
-    expect(onSyncError).toHaveBeenCalledExactlyOnceWith('catalog v3 required')
+    expect(onSyncError).toHaveBeenCalledExactlyOnceWith(
+      'catalog v3 required',
+      'catalog_mismatch'
+    )
     unmount()
   })
 
