@@ -156,6 +156,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   const terminalResolvers = new Map<string, TerminalResolver>()
   const terminalPromises = new Map<string, Promise<BillingOperation>>()
   const autoHandledPaymentActions = new Set<string>()
+  /** Operations whose in-page challenge failed in this tab. */
+  const failedChallenges = new Set<string>()
   const paymentIntentClientSecrets = new Map<string, string>()
   const inFlightPolls = new Map<string, Promise<void>>()
 
@@ -634,6 +636,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         actionUrl: null
       })
       autoHandledPaymentActions.add(opId)
+      failedChallenges.delete(opId)
       intervals.set(opId, INITIAL_INTERVAL_MS)
       waitingWithoutActionSince.delete(opId)
       return true
@@ -651,6 +654,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   function setAuthenticationFailed(opId: string, errorMessage: string) {
     const operation = operations.value.get(opId)
     if (!operation) return
+    failedChallenges.add(opId)
     updateOperation(opId, {
       authenticationState: 'failed_retryable',
       isAuthenticating: false,
@@ -886,11 +890,18 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     // be recovered that way whatever the server reports.
     const chargesACard =
       operation.type !== 'cancel' && !operation.downgradeToPersonal
-    const detail = billingFailureDetail(
+    const declineDetail = billingFailureDetail(
       operation.type,
       errorMessage,
       chargesACard ? recovery : undefined
     )
+    // A challenge that failed in this tab is why the payment then settles as
+    // a card decline; the customer was already told verification failed.
+    const detail =
+      failedChallenges.has(opId) &&
+      declineDetail === t('billingOperation.paymentDeclinedDetail')
+        ? t('billingOperation.authenticationFailedDetail')
+        : declineDetail
 
     updateOperationStatus(opId, 'failed', detail ?? defaultMessage)
     cleanup(opId)
@@ -1243,6 +1254,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     intervals.delete(opId)
     waitingWithoutActionSince.delete(opId)
     autoHandledPaymentActions.delete(opId)
+    failedChallenges.delete(opId)
     paymentIntentClientSecrets.delete(opId)
 
     // Remove the "received" toast
