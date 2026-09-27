@@ -257,6 +257,32 @@ describe('remapClipboardSubgraphNodeIds', () => {
     expect(afterGraphChange).toHaveBeenCalledOnce()
     expect(afterCanvasChange).toHaveBeenCalledOnce()
   })
+
+  it('does not partially paste when a later ID allocation is exhausted', () => {
+    const nodeType = 'test/clipboard-id-preflight'
+    registerClipboardNodeType(nodeType)
+    const rootGraph = new LGraph()
+    rootGraph.state.lastGroupId = Number.MAX_SAFE_INTEGER - 1
+    rootGraph.state.lastNodeId = Number.MAX_SAFE_INTEGER
+    const canvas = createCanvas(rootGraph)
+    const parsed: ClipboardItems = {
+      groups: [
+        {
+          id: 1,
+          title: 'Group',
+          bounding: [0, 0, 100, 100]
+        }
+      ],
+      nodes: [createSerialisedNode(1, nodeType)]
+    }
+
+    expect(() => canvas._deserializeItems(parsed, {})).toThrow(
+      'ID space exhausted'
+    )
+    expect(rootGraph.groups).toHaveLength(0)
+    expect(rootGraph.nodes).toHaveLength(0)
+    expect(rootGraph.state.lastGroupId).toBe(Number.MAX_SAFE_INTEGER - 1)
+  })
 })
 
 function createCanvas(graph: LGraph): LGraphCanvas {
