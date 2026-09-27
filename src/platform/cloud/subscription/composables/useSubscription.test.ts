@@ -99,9 +99,15 @@ Object.defineProperty(globalThis, 'localStorage', {
   writable: true
 })
 
-vi.mock(import('@/composables/auth/useCurrentUser'))
+vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
+  useCurrentUser: vi.fn(() => ({
+    isLoggedIn: mockIsLoggedIn
+  }))
+}))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
+  useTelemetry: vi.fn(() => mockTelemetry)
+}))
 
 vi.mock<unknown>(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportTelemetryError
