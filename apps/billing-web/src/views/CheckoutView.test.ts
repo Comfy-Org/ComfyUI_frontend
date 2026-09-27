@@ -694,8 +694,11 @@ describe('CheckoutView', () => {
 
   it.for([
     ['card_declined', 'Your bank declined this payment.'],
+    ['generic', 'Your bank declined this payment.'],
     ['insufficient_funds', 'This payment method has insufficient funds.'],
     ['expired_card', 'This card has expired.'],
+    ['incorrect_cvc', 'The card security code is incorrect.'],
+    ['processing_error', "Your payment couldn't be processed."],
     [
       'authentication_failed',
       "We couldn't complete payment verification. Please try again."

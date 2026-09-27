@@ -9,6 +9,11 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import type { BillingDeclineReason } from '@comfyorg/account-core/billing'
+import {
+  awaitsVerification,
+  declineDetailKey
+} from '@comfyorg/account-core/billing'
 import {
   useBillingClient,
   useCheckout,
@@ -218,47 +223,8 @@ const billingCycle = computed(() =>
   isAnnualDuration(preview.value?.new_plan.duration) ? 'yearly' : 'monthly'
 )
 
-const DECLINED = [
-  'card_declined',
-  'generic_decline',
-  'approve_with_id',
-  'call_issuer',
-  'do_not_honor',
-  'do_not_try_again',
-  'not_permitted',
-  'restricted_card',
-  'security_violation',
-  'service_not_allowed',
-  'transaction_not_allowed',
-  'initial_subscription_rejected',
-  'subscribe_invoice_payment_failed',
-  'upgrade_payment_declined',
-  'upgrade_invoice_payment_failed',
-  'team_credit_raise_payment_declined'
-] as const
-
-/** The app's toast detail per decline reason (`billingFailureDetail`). */
-const DECLINE_DETAIL: Readonly<Record<string, string>> = {
-  insufficient_funds: 'insufficientFundsDetail',
-  expired_card: 'expiredCardDetail',
-  incorrect_cvc: 'incorrectCvcDetail',
-  invalid_cvc: 'incorrectCvcDetail',
-  authentication_failed: 'authenticationFailedDetail',
-  authentication_required: 'authenticationFailedDetail',
-  payment_intent_authentication_failure: 'authenticationFailedDetail',
-  processing_error: 'processingErrorDetail',
-  issuer_not_available: 'processingErrorDetail',
-  try_again_later: 'processingErrorDetail',
-  ...Object.fromEntries(
-    DECLINED.map((reason) => [reason, 'paymentDeclinedDetail'])
-  )
-}
-
-function declineDetail(reason: string | undefined): string {
-  const key =
-    (reason === undefined ? undefined : DECLINE_DETAIL[reason]) ??
-    'subscriptionFailedDetail'
-  return t(`checkout.operation.${key}`)
+function declineDetail(reason: BillingDeclineReason): string {
+  return t(`checkout.operation.${declineDetailKey(reason)}`)
 }
 
 /**
@@ -285,11 +251,7 @@ const operationToast = computed(() => {
   if (!operation || authenticationState.value === 'failed_retryable') {
     return undefined
   }
-  const awaitingCustomer =
-    operation.authenticationState === 'requires_action' ||
-    (operation.challenge !== undefined &&
-      operation.challenge.status !== 'completed')
-  return awaitingCustomer
+  return awaitsVerification(operation)
     ? {
         severity: 'warn' as const,
         summary: t('checkout.operation.subscriptionActionRequired')

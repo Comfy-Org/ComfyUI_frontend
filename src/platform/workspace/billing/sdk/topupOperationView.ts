@@ -10,7 +10,10 @@ import type {
   TopupFailure,
   TopupResult
 } from '@comfyorg/account-core/billing'
-import { unwrapServerCode } from '@comfyorg/account-core/billing'
+import {
+  declineDetailKey,
+  unwrapServerCode
+} from '@comfyorg/account-core/billing'
 
 import { t } from '@/i18n'
 import type {
@@ -32,22 +35,7 @@ export interface TopupOperationView {
 }
 
 export function declineDetail(reason: BillingDeclineReason): string {
-  switch (reason) {
-    case 'insufficient_funds':
-      return t('billingOperation.insufficientFundsDetail')
-    case 'expired_card':
-      return t('billingOperation.expiredCardDetail')
-    case 'incorrect_cvc':
-      return t('billingOperation.incorrectCvcDetail')
-    case 'authentication_required':
-    case 'authentication_failed':
-      return t('billingOperation.authenticationFailedDetail')
-    case 'processing_error':
-      return t('billingOperation.processingErrorDetail')
-    case 'card_declined':
-    case 'generic':
-      return t('billingOperation.paymentDeclinedDetail')
-  }
+  return t(`billingOperation.${declineDetailKey(reason)}`)
 }
 
 export function projectTopupOperation(

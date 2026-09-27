@@ -86,7 +86,7 @@ function stepForReason(reason: PaymentReasonKey): PaymentStep {
 }
 
 /** A completed challenge waits on the server, not on the customer. */
-function awaitsVerification(state: PendingBillingOperation): boolean {
+export function awaitsVerification(state: PendingBillingOperation): boolean {
   const challengeOpen =
     state.challenge !== undefined && state.challenge.status !== 'completed'
   return challengeOpen || state.actionUrl !== undefined
