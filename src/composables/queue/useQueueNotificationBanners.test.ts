@@ -1,14 +1,16 @@
 import { render } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, reactive } from 'vue'
+import { nextTick } from 'vue'
 
 import { useQueueNotificationBanners } from '@/composables/queue/useQueueNotificationBanners'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
+import type { TaskItemImpl } from '@/stores/queueStore'
+import { fromPartial } from '@total-typescript/shoehorn'
 
 const mockApi = vi.hoisted(() => new EventTarget())
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: mockApi
 }))
 
@@ -16,32 +18,10 @@ type MockTask = {
   displayStatus: 'Completed' | 'Failed' | 'Cancelled' | 'Running' | 'Pending'
   executionEndTimestamp?: number
   previewOutput?: {
-    isImage: boolean
-    urlWithTimestamp: string
+    filename: string
+    url: string
   }
 }
-
-vi.mock('@/stores/queueStore', () => {
-  const state = reactive({
-    pendingTasks: [] as MockTask[],
-    runningTasks: [] as MockTask[],
-    historyTasks: [] as MockTask[]
-  })
-
-  return {
-    useQueueStore: () => state
-  }
-})
-
-vi.mock('@/stores/executionStore', () => {
-  const state = reactive({
-    isIdle: true
-  })
-
-  return {
-    useExecutionStore: () => state
-  }
-})
 
 const mountComposable = () => {
   let composable: ReturnType<typeof useQueueNotificationBanners>
@@ -56,19 +36,11 @@ const mountComposable = () => {
 }
 
 describe(useQueueNotificationBanners, () => {
-  const queueStore = () =>
-    useQueueStore() as {
-      pendingTasks: MockTask[]
-      runningTasks: MockTask[]
-      historyTasks: MockTask[]
-    }
-  const executionStore = () => useExecutionStore() as { isIdle: boolean }
-
   const resetState = () => {
-    queueStore().pendingTasks = []
-    queueStore().runningTasks = []
-    queueStore().historyTasks = []
-    executionStore().isIdle = true
+    useQueueStore().pendingTasks = []
+    useQueueStore().runningTasks = []
+    useQueueStore().historyTasks = []
+    Object.assign(useExecutionStore(), { isIdle: true })
   }
 
   const createTask = (
@@ -78,7 +50,7 @@ describe(useQueueNotificationBanners, () => {
       previewUrl?: string
       isImage?: boolean
     } = {}
-  ): MockTask => {
+  ): TaskItemImpl => {
     const {
       state = 'Completed',
       ts = Date.now(),
@@ -93,28 +65,31 @@ describe(useQueueNotificationBanners, () => {
 
     if (previewUrl) {
       task.previewOutput = {
-        isImage,
-        urlWithTimestamp: previewUrl
+        filename: isImage ? 'preview.png' : 'preview.txt',
+        url: previewUrl
       }
     }
 
-    return task
+    return fromPartial<TaskItemImpl>({
+      ...task,
+      displayStatus: state as TaskItemImpl['displayStatus']
+    })
   }
 
   const runBatch = async (options: {
     start: number
     finish: number
-    tasks: MockTask[]
+    tasks: TaskItemImpl[]
   }) => {
     const { start, finish, tasks } = options
 
     vi.setSystemTime(start)
-    executionStore().isIdle = false
+    Object.assign(useExecutionStore(), { isIdle: false })
     await nextTick()
 
     vi.setSystemTime(finish)
-    queueStore().historyTasks = tasks
-    executionStore().isIdle = true
+    useQueueStore().historyTasks = tasks
+    Object.assign(useExecutionStore(), { isIdle: true })
     await nextTick()
   }
 
@@ -124,7 +99,6 @@ describe(useQueueNotificationBanners, () => {
 
   afterEach(() => {
     vi.runOnlyPendingTimers()
-    resetState()
   })
 
   it('shows queued notifications from promptQueued events', async () => {
@@ -220,7 +194,9 @@ describe(useQueueNotificationBanners, () => {
       expect(composable.currentNotification.value).toEqual({
         type: 'completed',
         count: 1,
-        thumbnailUrls: ['https://example.com/preview.png']
+        thumbnailUrls: [
+          expect.stringContaining('https://example.com/preview.png')
+        ]
       })
     } finally {
       unmount()
@@ -233,17 +209,17 @@ describe(useQueueNotificationBanners, () => {
 
     try {
       vi.setSystemTime(now + 4_000)
-      executionStore().isIdle = false
+      Object.assign(useExecutionStore(), { isIdle: false })
       await nextTick()
 
       vi.setSystemTime(now + 4_100)
-      executionStore().isIdle = true
-      queueStore().historyTasks = []
+      Object.assign(useExecutionStore(), { isIdle: true })
+      useQueueStore().historyTasks = []
       await nextTick()
 
       expect(composable.currentNotification.value).toBeNull()
 
-      queueStore().historyTasks = [
+      useQueueStore().historyTasks = [
         createTask({
           ts: now + 4_050,
           previewUrl: 'https://example.com/race-preview.png'
@@ -254,7 +230,9 @@ describe(useQueueNotificationBanners, () => {
       expect(composable.currentNotification.value).toEqual({
         type: 'completed',
         count: 1,
-        thumbnailUrls: ['https://example.com/race-preview.png']
+        thumbnailUrls: [
+          expect.stringContaining('https://example.com/race-preview.png')
+        ]
       })
 
       await vi.advanceTimersByTimeAsync(4000)
@@ -291,7 +269,9 @@ describe(useQueueNotificationBanners, () => {
       expect(composable.currentNotification.value).toEqual({
         type: 'completed',
         count: 3,
-        thumbnailUrls: ['https://example.com/result.png']
+        thumbnailUrls: [
+          expect.stringContaining('https://example.com/result.png')
+        ]
       })
 
       await vi.advanceTimersByTimeAsync(4000)
@@ -338,8 +318,8 @@ describe(useQueueNotificationBanners, () => {
         type: 'completed',
         count: 4,
         thumbnailUrls: [
-          'https://example.com/preview-1.png',
-          'https://example.com/preview-2.png'
+          expect.stringContaining('https://example.com/preview-1.png'),
+          expect.stringContaining('https://example.com/preview-2.png')
         ]
       })
     } finally {

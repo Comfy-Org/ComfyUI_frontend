@@ -21,7 +21,7 @@ export function onCapabilityRevision(
 }
 
 function isMutationResponse(response: AxiosResponse | undefined): boolean {
-  const method = response?.config?.method
+  const method = response?.config.method
   return (
     typeof method === 'string' && MUTATION_METHODS.has(method.toLowerCase())
   )
@@ -57,7 +57,7 @@ export function attachCapabilityRevisionInterceptor(
     if (!isMutationResponse(response)) return
     const revision = readCapabilityRevision(response)
     if (revision !== null) {
-      for (const listener of [...listeners]) listener(revision)
+      for (const listener of Array.from(listeners)) listener(revision)
     }
   }
 

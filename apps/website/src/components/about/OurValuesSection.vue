@@ -33,13 +33,13 @@ const values: {
 </script>
 
 <template>
-  <section class="max-w-9xl mx-auto px-6 py-24 lg:px-20 lg:py-32">
+  <section class="mx-auto max-w-9xl px-6 py-24 lg:px-20 lg:py-32">
     <div class="mx-auto max-w-5xl text-center">
       <SectionLabel>
         {{ t('about.values.label', locale) }}
       </SectionLabel>
       <h2
-        class="text-primary-comfy-canvas mt-6 text-3xl font-light lg:text-5xl"
+        class="mt-6 text-3xl font-light text-primary-comfy-canvas lg:text-5xl"
       >
         {{ t('about.values.headingBefore', locale)
         }}<span class="text-primary-comfy-yellow">{{
@@ -55,14 +55,14 @@ const values: {
         <!-- Row 1: SHIP IT + SHARE IT -->
         <div class="flex items-center gap-0">
           <div
-            class="border-primary-comfy-yellow flex-1 rounded-3xl border p-8"
+            class="flex-1 rounded-3xl border border-primary-comfy-yellow p-8"
           >
             <NodeBadge
               :segments="values[0].segments"
               size-class="h-9 lg:h-12"
               text-class="text-2xl lg:text-3xl"
             />
-            <p class="text-primary-comfy-canvas mt-4 text-sm/relaxed">
+            <p class="mt-4 text-sm/relaxed text-primary-comfy-canvas">
               {{ t(values[0].bodyKey, locale) }}
             </p>
           </div>
@@ -73,14 +73,14 @@ const values: {
             aria-hidden="true"
           />
           <div
-            class="border-primary-comfy-yellow flex-1 rounded-3xl border p-8"
+            class="flex-1 rounded-3xl border border-primary-comfy-yellow p-8"
           >
             <NodeBadge
               :segments="values[1].segments"
               size-class="h-9 lg:h-12"
               text-class="text-2xl lg:text-3xl"
             />
-            <p class="text-primary-comfy-canvas mt-4 text-sm/relaxed">
+            <p class="mt-4 text-sm/relaxed text-primary-comfy-canvas">
               {{ t(values[1].bodyKey, locale) }}
             </p>
           </div>
@@ -97,13 +97,13 @@ const values: {
         </div>
 
         <!-- Row 2: OPEN-SOURCE IT -->
-        <div class="border-primary-comfy-yellow rounded-3xl border p-8">
+        <div class="rounded-3xl border border-primary-comfy-yellow p-8">
           <NodeBadge
             :segments="values[2].segments"
             size-class="h-9 lg:h-12"
             text-class="text-2xl lg:text-3xl"
           />
-          <p class="text-primary-comfy-canvas mt-4 text-sm/relaxed">
+          <p class="mt-4 text-sm/relaxed text-primary-comfy-canvas">
             {{ t(values[2].bodyKey, locale) }}
           </p>
         </div>
@@ -119,13 +119,13 @@ const values: {
         </div>
 
         <!-- Row 3: RESPECT THE CRAFT -->
-        <div class="border-primary-comfy-yellow rounded-3xl border p-8">
+        <div class="rounded-3xl border border-primary-comfy-yellow p-8">
           <NodeBadge
             :segments="values[3].segments"
             size-class="h-9 lg:h-12"
             text-class="text-2xl lg:text-3xl"
           />
-          <p class="text-primary-comfy-canvas mt-4 text-sm/relaxed">
+          <p class="mt-4 text-sm/relaxed text-primary-comfy-canvas">
             {{ t(values[3].bodyKey, locale) }}
           </p>
         </div>
@@ -147,7 +147,7 @@ const values: {
             />
           </div>
           <div
-            class="border-primary-comfy-yellow w-full rounded-3xl border p-8"
+            class="w-full rounded-3xl border border-primary-comfy-yellow p-8"
           >
             <NodeBadge
               :segments="value.segments"
@@ -155,7 +155,7 @@ const values: {
               segment-class="px-3 sm:px-6"
               text-class="text-xl sm:text-2xl lg:text-3xl"
             />
-            <p class="text-primary-comfy-canvas mt-4 text-sm/relaxed">
+            <p class="mt-4 text-sm/relaxed text-primary-comfy-canvas">
               {{ t(value.bodyKey, locale) }}
             </p>
           </div>

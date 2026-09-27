@@ -55,7 +55,7 @@ const {
         muted
         playsinline
         preload="metadata"
-        class="rounded-4.5xl size-full object-cover"
+        class="size-full rounded-4.5xl object-cover"
       />
     </div>
   </section>

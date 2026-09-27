@@ -8,8 +8,8 @@ export function useQueueFeatureFlags() {
   const isQueuePanelV2Enabled = computed(() =>
     settingStore.get('Comfy.Queue.QPOV2')
   )
-  const isRunProgressBarEnabled = computed(
-    () => settingStore.get('Comfy.Queue.ShowRunProgressBar') !== false
+  const isRunProgressBarEnabled = computed(() =>
+    settingStore.get('Comfy.Queue.ShowRunProgressBar')
   )
 
   return {

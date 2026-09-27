@@ -31,7 +31,7 @@ import {
 import { PERSIST_DEBOUNCE_MS } from '../base/draftTypes'
 import type { StartupOutcome } from '../base/draftTypes'
 import {
-  clearAllWorkflowStorage,
+  clearAllWorkspaceStorage,
   completeWorkflowLogoutTransition,
   prepareWorkflowLogoutTransition,
   registerWorkflowPersistenceFlush
@@ -147,7 +147,7 @@ export function useWorkflowPersistenceV2() {
     stopPendingWorkspaceReadinessWatcher()
     debouncedPersist.cancel()
     prepareWorkflowLogoutTransition()
-    clearAllWorkflowStorage()
+    clearAllWorkspaceStorage()
   })
   onUserResolved(() => {
     if (!isCloud) return
@@ -320,21 +320,23 @@ export function useWorkflowPersistenceV2() {
   const activeWorkflow = computed(() => workflowStore.activeWorkflow)
   const restoreState = computed<{ paths: string[]; activeIndex: number }>(
     () => {
-      if (!openWorkflows.value || !activeWorkflow.value) {
-        return { paths: [], activeIndex: -1 }
-      }
-
+      const active = getActiveWorkflow()
+      if (!active) return { paths: [], activeIndex: -1 }
       const paths = openWorkflows.value
-        .map((workflow) => workflow?.path)
+        .map((workflow) => workflow.path)
         .filter(
           (path): path is string =>
             typeof path === 'string' && path.startsWith(ComfyWorkflow.basePath)
         )
-      const activeIndex = paths.indexOf(activeWorkflow.value.path)
+      const activeIndex = paths.indexOf(active.path)
 
       return { paths, activeIndex }
     }
   )
+
+  function getActiveWorkflow(): ComfyWorkflow | null {
+    return activeWorkflow.value
+  }
 
   // Track whether tab state has been properly restored to avoid
   // overwriting with stale data during initialization

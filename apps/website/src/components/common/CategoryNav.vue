@@ -18,7 +18,7 @@ const emit = defineEmits<{
 
 <template>
   <nav
-    class="flex w-full scrollbar-none items-center gap-3 overflow-x-auto lg:flex-col lg:overflow-x-hidden"
+    class="scrollbar-none flex w-full items-center gap-3 overflow-x-auto lg:flex-col lg:overflow-x-hidden"
     aria-label="Category filter"
   >
     <button
@@ -38,19 +38,19 @@ const emit = defineEmits<{
     >
       <span v-if="modelValue === category.value" class="relative inline-block">
         <span
-          class="bg-primary-comfy-yellow ppformula-text-center inline-flex items-center rounded-lg px-4 py-2"
+          class="ppformula-text-center inline-flex items-center rounded-lg bg-primary-comfy-yellow px-4 py-2"
         >
           {{ category.label }}
         </span>
         <!-- Triangle pointer -->
         <span
-          class="border-t-primary-comfy-yellow absolute bottom-0 left-4 translate-y-full border-x-[6px] border-t-[6px] border-x-transparent"
+          class="absolute bottom-0 left-4 translate-y-full border-x-[6px] border-t-[6px] border-x-transparent border-t-primary-comfy-yellow"
           aria-hidden="true"
         />
       </span>
       <span
         v-else
-        class="bg-transparency-white-t4 ppformula-text-center inline-flex items-center rounded-lg px-4 py-2"
+        class="ppformula-text-center inline-flex items-center rounded-lg bg-transparency-white-t4 px-4 py-2"
       >
         {{ category.label }}
       </span>

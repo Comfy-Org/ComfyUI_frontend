@@ -389,7 +389,7 @@ describe('Viewport3d', () => {
         x: rect.left,
         y: rect.top,
         toJSON: () => ({})
-      } as DOMRect)
+      })
       Object.assign(ctx.viewport, { view: { canvas } })
     }
 

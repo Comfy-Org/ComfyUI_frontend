@@ -154,7 +154,7 @@ export function setBackendNodeText(
 ): void {
   backendNodeText.clear()
   for (const def of defs) {
-    if (typeof def?.name !== 'string') continue
+    if (typeof def.name !== 'string') continue
     const entry: Partial<Record<NodeDefTextField, string>> = {}
     if (typeof def.display_name === 'string' && def.display_name) {
       entry.display_name = def.display_name

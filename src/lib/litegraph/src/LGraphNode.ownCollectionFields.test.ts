@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
@@ -20,10 +18,6 @@ function expectOwnAccessor(node: object, key: string): void {
 }
 
 describe('LGraphNode own collection fields', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('exposes the collections to shell introspection on a bare node', () => {
     const node = new LGraphNode('Bare')
 

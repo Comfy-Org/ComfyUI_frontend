@@ -1,33 +1,20 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { render, screen } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import CanvasModeSelector from '@/components/graph/CanvasModeSelector.vue'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useCommandStore } from '@/stores/commandStore'
 
-const mockExecute = vi.fn()
-const mockGetCommand = vi.fn(() => ({
-  keybinding: {
-    combo: {
-      getKeySequences: () => ['V']
-    }
+beforeEach(() => {
+  useCanvasStore().canvas = fromPartial({ read_only: false })
+  vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)
+  for (const id of ['Comfy.Canvas.Unlock', 'Comfy.Canvas.Lock']) {
+    useCommandStore().registerCommand({ id, function: vi.fn() })
   }
-}))
-const mockFormatKeySequence = vi.fn(() => 'V')
-
-vi.mock('@/stores/commandStore', () => ({
-  useCommandStore: () => ({
-    execute: mockExecute,
-    getCommand: mockGetCommand,
-    formatKeySequence: mockFormatKeySequence
-  })
-}))
-
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({
-    canvas: { read_only: false }
-  })
-}))
+})
 
 const i18n = createI18n({
   legacy: false,
@@ -43,30 +30,26 @@ const i18n = createI18n({
   }
 })
 
-const mockPopoverHide = vi.fn()
-
 function renderComponent() {
   const user = userEvent.setup()
   render(CanvasModeSelector, {
     global: {
-      plugins: [i18n],
-      stubs: {
-        Popover: {
-          template: '<div><slot /></div>',
-          methods: {
-            toggle: vi.fn(),
-            hide: mockPopoverHide
-          }
-        }
-      }
+      plugins: [i18n]
     }
   })
   return { user }
 }
 
+async function openMenu() {
+  const { user } = renderComponent()
+  await user.click(screen.getByRole('button', { name: 'Canvas Mode' }))
+  await screen.findByRole('menu')
+  return { user }
+}
+
 describe('CanvasModeSelector', () => {
-  it('should render menu with menuitemradio roles and aria-checked', () => {
-    renderComponent()
+  it('should render menu with menuitemradio roles and aria-checked', async () => {
+    await openMenu()
 
     expect(screen.getByRole('menu')).toBeInTheDocument()
 
@@ -77,8 +60,8 @@ describe('CanvasModeSelector', () => {
     expect(menuItems[1]).toHaveAttribute('aria-checked', 'false')
   })
 
-  it('should render menu items as buttons with aria-labels', () => {
-    renderComponent()
+  it('should render menu items as buttons with aria-labels', async () => {
+    await openMenu()
 
     const menuItems = screen.getAllByRole('menuitemradio')
     menuItems.forEach((item) => {
@@ -89,16 +72,16 @@ describe('CanvasModeSelector', () => {
     expect(menuItems[1]).toHaveAttribute('aria-label', 'Hand')
   })
 
-  it('should use roving tabindex based on active mode', () => {
-    renderComponent()
+  it('should use roving tabindex based on active mode', async () => {
+    await openMenu()
 
     const menuItems = screen.getAllByRole('menuitemradio')
     expect(menuItems[0]).toHaveAttribute('tabindex', '0')
     expect(menuItems[1]).toHaveAttribute('tabindex', '-1')
   })
 
-  it('should mark icons as aria-hidden', () => {
-    renderComponent()
+  it('should mark icons as aria-hidden', async () => {
+    await openMenu()
 
     const menuItems = screen.getAllByRole('menuitemradio')
     menuItems.forEach((item) => {
@@ -119,7 +102,7 @@ describe('CanvasModeSelector', () => {
   })
 
   it('should call focus on next item when ArrowDown is pressed', async () => {
-    const { user } = renderComponent()
+    const { user } = await openMenu()
 
     const menuItems = screen.getAllByRole('menuitemradio')
     const focusSpy = vi.spyOn(menuItems[1], 'focus')
@@ -130,7 +113,7 @@ describe('CanvasModeSelector', () => {
   })
 
   it('should call focus on previous item when ArrowUp is pressed', async () => {
-    const { user } = renderComponent()
+    const { user } = await openMenu()
 
     const menuItems = screen.getAllByRole('menuitemradio')
     const focusSpy = vi.spyOn(menuItems[0], 'focus')
@@ -141,7 +124,7 @@ describe('CanvasModeSelector', () => {
   })
 
   it('should close popover on Escape and restore focus to trigger', async () => {
-    const { user } = renderComponent()
+    const { user } = await openMenu()
 
     const menuItems = screen.getAllByRole('menuitemradio')
     const trigger = screen.getByRole('button', { name: 'Canvas Mode' })
@@ -149,7 +132,7 @@ describe('CanvasModeSelector', () => {
 
     menuItems[0].focus()
     await user.keyboard('{Escape}')
-    expect(mockPopoverHide).toHaveBeenCalled()
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
     expect(focusSpy).toHaveBeenCalled()
   })
 })

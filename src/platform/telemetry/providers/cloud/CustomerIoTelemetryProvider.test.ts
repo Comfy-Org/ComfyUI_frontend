@@ -1,4 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, watch } from 'vue'
+
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 
 const hoisted = vi.hoisted(() => {
   const analytics = {
@@ -13,6 +16,7 @@ const hoisted = vi.hoisted(() => {
   const resolvedUserInfo = { value: null as { id: string } | null }
   return {
     analytics,
+    reportError: vi.fn(),
     load: vi.fn(() => analytics),
     inAppPlugin: vi.fn(() => ({ name: 'Customer.io In-App Plugin' })),
     userEmail: { value: null as string | null },
@@ -40,19 +44,16 @@ const hoisted = vi.hoisted(() => {
   }
 })
 
-vi.mock('@customerio/cdp-analytics-browser', () => ({
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: hoisted.reportError
+}))
+
+vi.mock<unknown>(import('@customerio/cdp-analytics-browser'), () => ({
   AnalyticsBrowser: { load: hoisted.load },
   InAppPlugin: hoisted.inAppPlugin
 }))
 
-vi.mock('@/composables/auth/useCurrentUser', () => ({
-  useCurrentUser: () => ({
-    userEmail: hoisted.userEmail,
-    resolvedUserInfo: hoisted.resolvedUserInfo,
-    onUserResolved: hoisted.onUserResolved,
-    onUserLogout: hoisted.onUserLogout
-  })
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 import { i18n } from '@/i18n'
 
@@ -70,7 +71,7 @@ function createProvider(
     customer_io: { write_key: WRITE_KEY, site_id: SITE_ID }
   }
 ): CustomerIoTelemetryProvider {
-  window.__CONFIG__ = config as typeof window.__CONFIG__
+  window.__CONFIG__ = config
   return new CustomerIoTelemetryProvider()
 }
 
@@ -84,15 +85,34 @@ function createDeferred() {
 
 describe('CustomerIoTelemetryProvider', () => {
   beforeEach(() => {
+    const currentUser = vi.mocked(useCurrentUser())
+    currentUser.userEmail = computed(() => hoisted.userEmail.value)
+    currentUser.resolvedUserInfo = computed(
+      () => hoisted.resolvedUserInfo.value
+    )
+    currentUser.onUserResolved.mockImplementation((callback) => {
+      hoisted.onUserResolved(callback)
+      return watch(
+        () => false,
+        () => {}
+      )
+    })
+    currentUser.onUserLogout.mockImplementation((callback) => {
+      hoisted.onUserLogout(callback)
+      return watch(
+        () => false,
+        () => {}
+      )
+    })
     hoisted.resetCallbacks()
     hoisted.load.mockReturnValue(hoisted.analytics)
     hoisted.analytics.identify.mockResolvedValue(undefined)
     hoisted.analytics.track.mockResolvedValue(undefined)
-    hoisted.analytics.reset.mockReset().mockResolvedValue(undefined)
+    hoisted.analytics.reset.mockResolvedValue(undefined)
     hoisted.analytics.register.mockResolvedValue(undefined)
     hoisted.userEmail.value = null
     i18n.global.locale.value = 'en'
-    window.__CONFIG__ = {} as typeof window.__CONFIG__
+    window.__CONFIG__ = {}
   })
 
   it('loads the client and registers the in-app plugin with the site id', async () => {
@@ -155,7 +175,6 @@ describe('CustomerIoTelemetryProvider', () => {
   })
 
   it('continues tracking events and page views when the in-app plugin fails to register', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const registrationError = new Error('in-app setup failed')
     hoisted.analytics.register.mockRejectedValue(registrationError)
     const provider = createProvider()
@@ -171,10 +190,9 @@ describe('CustomerIoTelemetryProvider', () => {
       SOURCE
     )
     expect(hoisted.analytics.page).toHaveBeenCalledOnce()
-    expect(consoleError).toHaveBeenCalledWith(
-      'Failed to initialize Customer.io in-app plugin:',
-      registrationError
-    )
+    expect(hoisted.reportError).toHaveBeenCalledWith(registrationError, {
+      errorType: 'customerio_in_app_plugin_registration_failure'
+    })
 
     provider.trackAddApiCreditButtonClicked()
     await vi.waitFor(() =>

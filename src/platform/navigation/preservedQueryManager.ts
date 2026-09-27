@@ -100,9 +100,9 @@ export const capturePreservedQuery = (
 
   hydratePreservedQuery(namespace)
   const payload: Record<string, string> = {
-    ...(preservedQueries.get(namespace) ?? {})
+    ...preservedQueries.get(namespace)
   }
-  let changed = false
+  const state = { changed: false }
 
   keys.forEach((key) => {
     if (!Object.hasOwn(query, key)) return
@@ -110,19 +110,17 @@ export const capturePreservedQuery = (
     const value = readQueryParam(query[key])
     if (value) {
       payload[key] = value
-      changed = true
+      state.changed = true
       return
     }
 
     if (key in payload) {
       delete payload[key]
-      changed = true
+      state.changed = true
     }
   })
 
-  if (!changed) {
-    return
-  }
+  if (!state.changed) return
 
   if (Object.keys(payload).length === 0) {
     preservedQueries.delete(namespace)
@@ -147,7 +145,7 @@ export const mergePreservedQueryIntoQuery = (
   const payload = preservedQueries.get(namespace)
   if (!payload) return undefined
 
-  const nextQuery: LocationQueryRaw = { ...(query || {}) }
+  const nextQuery: LocationQueryRaw = { ...query }
   let changed = false
 
   for (const [key, value] of Object.entries(payload)) {

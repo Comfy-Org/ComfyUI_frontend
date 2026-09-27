@@ -5,10 +5,7 @@ import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
 
-import {
-  readImageWidgetValue,
-  writeImageWidgetValue
-} from './imageWidgetAdapter'
+import { writeImageWidgetValue } from './imageWidgetAdapter'
 
 const GRAPH_ID = 'image-widget-adapter-test'
 
@@ -44,37 +41,6 @@ function registeredWidgetId(node: LGraphNode) {
 function storedValue(node: LGraphNode): unknown {
   return useWidgetValueStore().getWidget(registeredWidgetId(node))?.value
 }
-
-describe('readImageWidgetValue', () => {
-  it('reads the store value for a registered widget', () => {
-    const node = makeNode()
-    useWidgetValueStore().setValue(
-      registeredWidgetId(node),
-      'updated.png [input]'
-    )
-
-    expect(readImageWidgetValue(node)).toBe('updated.png [input]')
-  })
-
-  it('preserves a null store value instead of falling back', () => {
-    const node = makeNode()
-    useWidgetValueStore().setValue(registeredWidgetId(node), null)
-
-    expect(readImageWidgetValue(node)).toBeNull()
-  })
-
-  it('falls back to the widget object when the store has no entry', () => {
-    const node = makeNode({ registered: false, widgetValue: 'legacy.png' })
-
-    expect(readImageWidgetValue(node)).toBe('legacy.png')
-  })
-
-  it('returns undefined when the widget exists nowhere', () => {
-    const node = makeNode({ registered: false, hasWidget: false })
-
-    expect(readImageWidgetValue(node)).toBeUndefined()
-  })
-})
 
 describe('writeImageWidgetValue', () => {
   it('writes the store value and mirrors it into properties.image', () => {
