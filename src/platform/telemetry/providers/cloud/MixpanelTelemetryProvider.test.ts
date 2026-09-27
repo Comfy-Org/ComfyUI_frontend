@@ -280,7 +280,8 @@ describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
   const templateLibraryMetadata: TemplateLibraryMetadata = { source: 'menu' }
   const templateLibraryClosedMetadata: TemplateLibraryClosedMetadata = {
     template_selected: false,
-    time_spent_seconds: 0
+    time_spent_seconds: 0,
+    close_method: 'dismissed'
   }
   const workflowImportMetadata: WorkflowImportMetadata = {
     missing_node_count: 0,

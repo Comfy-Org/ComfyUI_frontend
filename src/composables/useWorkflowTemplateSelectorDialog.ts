@@ -1,6 +1,9 @@
 import WorkflowTemplateSelectorDialog from '@/components/custom/widget/WorkflowTemplateSelectorDialog.vue'
 import { useTelemetry } from '@/platform/telemetry'
-import type { TemplateLibraryMetadata } from '@/platform/telemetry/types'
+import type {
+  TemplateLibraryClosedMetadata,
+  TemplateLibraryMetadata
+} from '@/platform/telemetry/types'
 import { useDialogService } from '@/services/dialogService'
 import { useNewUserService } from '@/services/useNewUserService'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -8,13 +11,29 @@ import { useDialogStore } from '@/stores/dialogStore'
 const DIALOG_KEY = 'global-workflow-template-selector'
 const POPULAR_CATEGORY_ID = 'popular'
 
+type CloseMethod = TemplateLibraryClosedMetadata['close_method']
+
+interface OpenSession {
+  openedAt: number
+  templateSelected: boolean
+  closeMethod?: CloseMethod
+  emitted: boolean
+}
+
+let openSession: OpenSession | undefined
+
 export const useWorkflowTemplateSelectorDialog = () => {
   const dialogService = useDialogService()
   const dialogStore = useDialogStore()
   const newUserService = useNewUserService()
 
-  function hide() {
+  function close(method: CloseMethod) {
+    if (openSession) openSession.closeMethod = method
     dialogStore.closeDialog({ key: DIALOG_KEY })
+  }
+
+  function hide() {
+    close('programmatic')
   }
 
   function show(
@@ -22,6 +41,13 @@ export const useWorkflowTemplateSelectorDialog = () => {
     options?: { initialCategory?: string; afterClose?: () => void }
   ) {
     useTelemetry()?.trackTemplateLibraryOpened({ source })
+
+    const session: OpenSession = {
+      openedAt: Date.now(),
+      templateSelected: false,
+      emitted: false
+    }
+    openSession = session
 
     const initialCategory =
       options?.initialCategory ??
@@ -32,8 +58,12 @@ export const useWorkflowTemplateSelectorDialog = () => {
       component: WorkflowTemplateSelectorDialog,
       props: {
         onClose: () => {
-          hide()
+          close('in_dialog')
           options?.afterClose?.()
+        },
+        onTemplateSelected: (selected: boolean) => {
+          session.templateSelected = selected
+          session.closeMethod = selected ? 'in_dialog' : undefined
         },
         initialCategory
       },
@@ -44,7 +74,21 @@ export const useWorkflowTemplateSelectorDialog = () => {
       dialogComponentProps: {
         size: 'full',
         contentClass:
-          'w-[90vw] max-w-[1400px] sm:max-w-[1400px] h-[80vh] rounded-2xl overflow-hidden'
+          'w-[90vw] max-w-[1400px] sm:max-w-[1400px] h-[80vh] rounded-2xl overflow-hidden',
+        onRemoved: () => {
+          if (session.emitted) return
+          session.emitted = true
+          useTelemetry()?.trackTemplateLibraryClosed({
+            template_selected: session.templateSelected,
+            time_spent_seconds: Math.floor(
+              (Date.now() - session.openedAt) / 1000
+            ),
+            close_method:
+              session.closeMethod ??
+              (dialogStore.dialogStack.length >= 10 ? 'evicted' : 'dismissed')
+          })
+          if (openSession === session) openSession = undefined
+        }
       }
     })
   }

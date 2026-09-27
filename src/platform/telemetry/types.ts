@@ -446,6 +446,7 @@ export interface TemplateLibraryMetadata {
 export interface TemplateLibraryClosedMetadata {
   template_selected: boolean
   time_spent_seconds: number
+  close_method: 'in_dialog' | 'dismissed' | 'programmatic' | 'evicted'
 }
 
 /**
