@@ -1,0 +1,37 @@
+/**
+ * Known server feature flags (top-level, not extensions)
+ */
+export enum ServerFeatureFlag {
+  SUPPORTS_PREVIEW_METADATA = 'supports_preview_metadata',
+  MAX_UPLOAD_SIZE = 'max_upload_size',
+  MANAGER_SUPPORTS_V4 = 'extension.manager.supports_v4',
+  MODEL_UPLOAD_BUTTON_ENABLED = 'model_upload_button_enabled',
+  ASSET_DELETION_ENABLED = 'asset_deletion_enabled',
+  ASSET_RENAME_ENABLED = 'asset_rename_enabled',
+  PRIVATE_MODELS_ENABLED = 'private_models_enabled',
+  ONBOARDING_SURVEY_ENABLED = 'onboarding_survey_enabled',
+  LINEAR_TOGGLE_ENABLED = 'linear_toggle_enabled',
+  PARTNER_NODE_GOVERNANCE_ENABLED = 'partner_node_governance_enabled',
+  PARTNER_RUN_GATE_ENABLED = 'partner_run_gate_enabled',
+  USER_SECRETS_ENABLED = 'user_secrets_enabled',
+  NODE_REPLACEMENTS = 'node_replacements',
+  NODE_LIBRARY_ESSENTIALS_ENABLED = 'node_library_essentials_enabled',
+  WORKFLOW_SHARING_ENABLED = 'workflow_sharing_enabled',
+  COMFYHUB_UPLOAD_ENABLED = 'comfyhub_upload_enabled',
+  COMFYHUB_PROFILE_GATE_ENABLED = 'comfyhub_profile_gate_enabled',
+  HOSTED_BILLING_DESTINATION = 'hosted_billing_destination',
+  SHOW_SIGNIN_BUTTON = 'show_signin_button',
+  UNIFIED_CLOUD_AUTH = 'unified_cloud_auth',
+  UNIFIED_WEB_SESSION = 'unified_web_session',
+  BILLING_CONTROL_ENABLED = 'billing_control_enabled',
+  LEGACY_BILLING_MIGRATION_ENABLED = 'legacy_billing_migration_enabled',
+  EMBEDDED_CHECKOUT_ENABLED = 'embedded_checked_enabled',
+  BILLING_SDK_TOPUP_ENABLED = 'billing_sdk_topup_enabled',
+  BILLING_SDK_SUBSCRIPTION_ENABLED = 'billing_sdk_subscription_enabled',
+  V1_PAYMENT_RECOVERY = 'v1_payment_recovery',
+  FREE_TIER_JOB_ALLOWANCE_ENABLED = 'free_tier_job_allowance_enabled',
+  CHURNKEY_APP_ID = 'churnkey_app_id',
+  SIGNUP_TURNSTILE = 'signup_turnstile',
+  SUPPORTS_MODEL_TYPE_TAGS = 'supports_model_type_tags',
+  ONBOARDING_TOUR_ENABLED = 'onboarding_tour_enabled'
+}
