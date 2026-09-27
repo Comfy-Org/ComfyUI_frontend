@@ -789,18 +789,18 @@ describe('CheckoutView', () => {
         "We couldn't complete payment verification. Please try again."
       )
     ).toBeInTheDocument()
-    expect(screen.getByRole('status')).toHaveTextContent(
-      'Processing payment — setting up your workspace...'
-    )
+    expect(
+      screen.getByText('Processing payment — setting up your workspace...')
+    ).toBeInTheDocument()
   })
 
-  it('shows the processing toast while the payment settles', async () => {
+  it('announces the processing toast as an alert, as the app does', async () => {
     const fake = await renderCheckout()
     await screen.findByRole('button', { name: 'Pay and subscribe' })
 
     fake.publishOperation(pendingOperation())
 
-    expect(await screen.findByRole('status')).toHaveTextContent(
+    expect(await screen.findByRole('alert')).toHaveTextContent(
       'Processing payment — setting up your workspace...'
     )
   })
