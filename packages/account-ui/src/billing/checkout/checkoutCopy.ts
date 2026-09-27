@@ -35,6 +35,13 @@ export interface CheckoutReactivationCopy {
   readonly downgradeBody: string
   readonly durationChangeBody: string
   readonly durationChangeBodyMonthly: string
+  /** The same bodies without the renewal clause, for a quote with no renewal date. */
+  readonly withoutRenewalDate: {
+    readonly upgradeBody: string
+    readonly downgradeBody: string
+    readonly durationChangeBody: string
+    readonly durationChangeBodyMonthly: string
+  }
   readonly confirmButton: string
   readonly confirmButtonWithCharge: (amount: string) => string
   readonly checkboxLabel: (amount: string) => string

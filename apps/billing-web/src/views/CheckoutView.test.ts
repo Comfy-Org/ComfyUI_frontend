@@ -843,6 +843,29 @@ describe('CheckoutView', () => {
     }
   )
 
+  it("names the end date the billing status reports, as the app's notice does", async () => {
+    await renderCheckout(CHECKOUT_PATH, {
+      preview: {
+        status: 'ok',
+        value: upgradeQuote({ requires_reactivation_confirmation: true })
+      },
+      status: {
+        is_active: true,
+        has_funds: true,
+        max_seats: 1,
+        occupied_seats: 1,
+        scheduled_change: null,
+        team_credit_stop: null,
+        cancel_at: '2026-10-25T00:00:00.000Z'
+      }
+    })
+
+    expect(
+      await screen.findByText(/was set to end on Oct 25, 2026/)
+    ).toBeInTheDocument()
+    expect(screen.queryByText(/was set to end on Oct 19, 2026/)).toBeNull()
+  })
+
   it('holds a reactivating plan change until its charge is acknowledged', async () => {
     const fake = await renderCheckout(CHECKOUT_PATH, {
       preview: {
