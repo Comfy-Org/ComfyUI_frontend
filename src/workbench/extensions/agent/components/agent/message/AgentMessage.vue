@@ -48,7 +48,7 @@ const emit = defineEmits<{
 }>()
 
 type Group =
-  | { kind: 'text'; part: TextPart }
+  | { kind: 'text'; parts: TextPart[] }
   | { kind: 'notice'; part: NoticePart }
   | { kind: 'paywall'; part: PaywallPart }
   | { kind: 'trace' }
@@ -67,22 +67,31 @@ const activityParts = computed<readonly ActivityPart[]>(() =>
 const groups = computed<Group[]>(() => {
   const out: Group[] = []
   let tracePlaced = activityParts.value.length === 0
+  let openTextGroup: Extract<Group, { kind: 'text' }> | null = null
   for (const part of message.parts) {
     if (part.type === 'tool' || part.type === 'thinking') {
       if (tracePlaced) continue
       tracePlaced = true
       out.push({ kind: 'trace' })
     } else if (part.type === 'text') {
-      out.push({ kind: 'text', part })
+      if (openTextGroup) openTextGroup.parts.push(part)
+      else {
+        openTextGroup = { kind: 'text', parts: [part] }
+        out.push(openTextGroup)
+      }
     } else if (part.type === 'tabLink') {
+      openTextGroup = null
       const prev = out.at(-1)
       if (prev?.kind === 'tabLinks') prev.parts.push(part)
       else out.push({ kind: 'tabLinks', parts: [part] })
     } else if (part.type === 'runApproval') {
+      openTextGroup = null
       out.push({ kind: 'runApproval', part })
     } else if (part.type === 'paywall') {
+      openTextGroup = null
       out.push({ kind: 'paywall', part })
     } else {
+      openTextGroup = null
       out.push({ kind: 'notice', part })
     }
   }
@@ -141,7 +150,10 @@ const status = computed(() => {
 <template>
   <div class="space-y-2 pb-4">
     <template v-for="(group, index) in groups" :key="index">
-      <MarkdownStream v-if="group.kind === 'text'" :text="group.part.text" />
+      <MarkdownStream
+        v-if="group.kind === 'text'"
+        :text="group.parts.map((part) => part.text).join('\n\n')"
+      />
       <template v-else-if="group.kind === 'trace'">
         <ActivityTrace v-if="message.streaming" :parts="activityParts" live />
         <WorkSummary v-else :parts="activityParts" />
