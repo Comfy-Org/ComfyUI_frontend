@@ -60,7 +60,7 @@ export interface LGraphNodeConstructor<T extends LGraphNode = LGraphNode> {
   new (title: string, type?: string): T
 
   title: string
-  description?: string
+  desc?: string
   type?: string // TODO: to be, or not to be--that is the question
   size?: Size
   min_height?: number

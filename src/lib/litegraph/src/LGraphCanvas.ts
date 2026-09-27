@@ -8390,9 +8390,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       // clear
       panel.content.innerHTML = ''
       const nodeType = DOMPurify.sanitize(node.type)
-      const nodeDescription = DOMPurify.sanitize(
-        node.constructor.description || ''
-      )
+      const nodeDescription = DOMPurify.sanitize(node.constructor.desc || '')
       panel.addHTML(
         `<span class='node_type'>${nodeType}</span><span class='node_desc'>${nodeDescription}</span><span class='separator'></span>`
       )
