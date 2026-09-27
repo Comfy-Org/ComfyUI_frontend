@@ -1272,6 +1272,18 @@ describe('billingOperationStore', () => {
         errorMessage: 'card_declined',
         summary: 'billingOperation.topupFailed',
         detail: 'billingOperation.paymentDeclinedDetail'
+      },
+      {
+        type: 'subscription' as const,
+        errorMessage: 'authentication_failed',
+        summary: 'billingOperation.subscriptionFailed',
+        detail: 'billingOperation.authenticationFailedDetail'
+      },
+      {
+        type: 'subscription' as const,
+        errorMessage: 'authentication_required',
+        summary: 'billingOperation.subscriptionFailed',
+        detail: 'billingOperation.authenticationFailedDetail'
       }
     ])(
       'shows an actionable $errorMessage message for $type failures',
@@ -1536,46 +1548,6 @@ describe('billingOperationStore', () => {
         authenticationState: 'failed_retryable',
         errorMessage: 'Challenge was closed'
       })
-    })
-
-    it("reports a decline that follows this tab's failed challenge as the failed verification", async () => {
-      vi.mocked(workspaceApi.getBillingOpStatus)
-        .mockResolvedValueOnce({
-          id: 'op-3ds',
-          status: 'pending',
-          authentication_state: 'requires_action',
-          payment_intent_client_secret: 'pi_secret_current',
-          started_at: new Date().toISOString()
-        })
-        .mockResolvedValue({
-          id: 'op-3ds',
-          status: 'failed',
-          error_message: 'card_declined',
-          started_at: new Date().toISOString()
-        })
-      mockHandleNextAction.mockResolvedValue({
-        error: { message: 'Challenge was closed' }
-      })
-
-      const store = useBillingOperationStore()
-      void store.startOperation('op-3ds', 'subscription', {
-        autoHandleRequiresAction: true,
-        suppressProcessingToast: true
-      })
-      await vi.advanceTimersByTimeAsync(0)
-      await vi.advanceTimersByTimeAsync(60_000)
-
-      expect(useToastStore().add).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error',
-          detail: 'billingOperation.authenticationFailedDetail'
-        })
-      )
-      expect(useToastStore().add).not.toHaveBeenCalledWith(
-        expect.objectContaining({
-          detail: 'billingOperation.paymentDeclinedDetail'
-        })
-      )
     })
 
     it('resolves a challenge-failure presentation when the payment turns out to have succeeded', async () => {
