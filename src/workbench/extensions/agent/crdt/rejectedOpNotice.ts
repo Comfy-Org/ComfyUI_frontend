@@ -109,11 +109,21 @@ export function createRejectedOpNotifier(): RejectedOpNotifier {
           }
         )
       }
+      // Schema §4 aborts the REMAINDER of a batch, so a valid prefix is still
+      // applied. Saying only "your edit was not saved" for a batch that did
+      // save several edits overstates the damage.
+      const partial = result.applied.length > 0 && failure?.index !== undefined
       const { t } = i18n.global
       throttledToast(
-        widgetWrite
-          ? t('agent.editRejected.widgetWrite')
-          : t('agent.editRejected.generic')
+        t(
+          widgetWrite
+            ? partial
+              ? 'agent.editRejected.widgetWritePartial'
+              : 'agent.editRejected.widgetWrite'
+            : partial
+              ? 'agent.editRejected.genericPartial'
+              : 'agent.editRejected.generic'
+        )
       )()
     },
     cancel() {

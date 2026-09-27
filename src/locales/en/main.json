@@ -5401,7 +5401,9 @@
     "showLess": "Show less",
     "editRejected": {
       "widgetWrite": "Widget edit was rejected and was not saved. Your typed value exists on the canvas only — reload the workflow to see the value that was kept.",
-      "generic": "Your edit was rejected and was not saved. The workflow may no longer match its canvas — reload the workflow to see what was kept."
+      "generic": "Your edit was rejected and was not saved. The workflow may no longer match its canvas — reload the workflow to see what was kept.",
+      "widgetWritePartial": "Widget edit was rejected and was not saved, though your other edits were. Your typed value exists on the canvas only — reload the workflow to see the values that were kept.",
+      "genericPartial": "Your edit was rejected and was not saved, though your other edits were. The workflow may no longer match its canvas — reload the workflow to see what was kept."
     },
     "consent": {
       "title": "Meet Comfy Agent",

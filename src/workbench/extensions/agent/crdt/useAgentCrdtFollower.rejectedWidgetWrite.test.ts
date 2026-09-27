@@ -4,6 +4,7 @@ import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 
 import { i18n } from '@/i18n'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
@@ -13,6 +14,10 @@ import { parseWireOps } from '@e2e/fixtures/agentWireFrame'
 import type { GraphMutations } from './graphMutations'
 import type { GraphOperation } from './graphOperations'
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'
+
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 
 const WORKFLOW_ID = 'wf-rejected-widget-write'
 
@@ -71,6 +76,9 @@ function answerWithOpsResult(detail: Record<string, unknown>): void {
 
 /** Mounts a follower and returns a submitter for one human edit at a time. */
 function mountFollower() {
+  // The telemetry dedupe is per notifier, and each mount makes a new one, so
+  // the assertion baseline has to reset with it.
+  vi.mocked(reportError).mockClear()
   const previousSocket = api.socket
   const send = vi.fn<(frame: string) => void>()
   api.socket = fromPartial<WebSocket>({ readyState: WebSocket.OPEN, send })
@@ -132,6 +140,29 @@ function rejection(opId: string, code: string): Record<string, unknown> {
 
 function toastDetails(): unknown[] {
   return useToastStore().messagesToAdd.map((message) => message.detail)
+}
+
+/**
+ * A batch-level refusal — `overloaded`, `catalog_mismatch` — which the host
+ * sends with a top-level `code` and NO `failed` entry at all.
+ */
+function batchRefusal(code: string): Record<string, unknown> {
+  return {
+    v: 1,
+    workflow_id: WORKFLOW_ID,
+    ok: false,
+    applied: [],
+    skipped: [],
+    code,
+    message: `the host refused the batch (${code})`
+  }
+}
+
+/** The `code` of every telemetry report raised so far, in order. */
+function reportedCodes(): unknown[] {
+  return vi
+    .mocked(reportError)
+    .mock.calls.map(([, options]) => options.context?.['code'])
 }
 
 describe('a human edit the doc host rejects', () => {
@@ -234,5 +265,66 @@ describe('a human edit the doc host rejects', () => {
     })
 
     expect(useToastStore().messagesToAdd).toEqual([])
+  })
+
+  // The host refuses a whole batch with a top-level `code` and no `failed`
+  // entry. Read only from `failure`, every one of these collapses to
+  // 'unspecified' — and because the telemetry dedupe keys on that, the first
+  // would suppress the report for every later kind.
+  it('classifies a batch-level refusal that carries no failed entry', async () => {
+    const submit = mountFollower()
+    await submit(WIDGET_EDIT)
+
+    answerWithOpsResult(batchRefusal('catalog_mismatch'))
+
+    expect(toastDetails()).toEqual([
+      expect.stringContaining(GENERIC_REJECTION_TEXT)
+    ])
+    expect(reportedCodes()).toEqual(['catalog_mismatch'])
+  })
+
+  // Asserted on telemetry rather than toasts: every generic notice renders the
+  // same string, so they share one throttle key and the second is swallowed on
+  // screen even though it is a different failure.
+  it('reports each distinct batch-level code once', async () => {
+    const submit = mountFollower()
+
+    // One pending batch per answer: the notifier runs when a batch SETTLES, so
+    // a result with nothing outstanding settles nothing and reports nothing.
+    await submit(WIDGET_EDIT)
+    answerWithOpsResult(batchRefusal('overloaded'))
+    await submit(WIDGET_EDIT)
+    answerWithOpsResult(batchRefusal('overloaded'))
+    await submit(WIDGET_EDIT)
+    answerWithOpsResult(batchRefusal('catalog_mismatch'))
+
+    expect(reportedCodes()).toEqual(['overloaded', 'catalog_mismatch'])
+  })
+
+  // Schema §4 aborts the remainder of a batch, so the prefix is still applied.
+  it('does not claim nothing was saved when a batch applied a prefix', async () => {
+    const submit = mountFollower()
+    const opId = await submit(WIDGET_EDIT)
+
+    answerWithOpsResult({
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: false,
+      applied: ['op-that-landed'],
+      skipped: [],
+      failed: {
+        index: 1,
+        op_id: opId,
+        code: 'opaque_widgets',
+        message: 'node is absent from the pinned catalog'
+      }
+    })
+
+    // Still carries the canonical substring the e2e spec filters on, so the
+    // partial variant cannot break that contract.
+    expect(toastDetails()).toEqual([
+      expect.stringContaining(WIDGET_REJECTION_TEXT)
+    ])
+    expect(String(toastDetails()[0])).toContain('your other edits were')
   })
 })
