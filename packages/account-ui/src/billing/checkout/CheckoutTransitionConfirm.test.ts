@@ -146,6 +146,25 @@ describe('CheckoutTransitionConfirm', () => {
       expect(onConfirm).toHaveBeenCalledWith(true)
     })
 
+    it('renews on the server renewal date, the one the summary shows', () => {
+      renderTransition({
+        subscriptionCancelled: true,
+        subscriptionEndDate: '2026-10-25T00:00:00Z',
+        previewData: upgrade({
+          effective_at: '2026-09-27T00:00:00Z',
+          renewal_at: '2026-10-25T00:00:00Z',
+          new_plan: plan('CREATOR', 'MONTHLY', 3500)
+        })
+      })
+      expect(
+        screen.getByText(/Your Standard was set to end on Oct 25, 2026/)
+          .textContent
+      ).toBe(
+        'Your Standard was set to end on Oct 25, 2026. You will be charged $15.00 today and renew on Oct 25, 2026.'
+      )
+      expect(screen.getByText(/Renews at .* on Oct 25, 2026/)).toBeTruthy()
+    })
+
     it('requires the charge to be acknowledged when it exceeds the current monthly price', async () => {
       const onConfirm = vi.fn()
       renderTransition({
@@ -208,12 +227,13 @@ describe('CheckoutTransitionConfirm', () => {
       ['2024-02-29T00:00:00Z', 'ANNUAL', 'Feb 28, 2025'],
       ['2026-03-31T00:00:00Z', 'MONTHLY', 'Apr 30, 2026']
     ] as const)(
-      'clamps the renewal fallback from %s (%s) to %s',
+      'clamps the renewal fallback from %s (%s) to %s for a server that sends no renewal date',
       ([effectiveAt, duration, expected]) => {
         renderTransition({
           forceReactivation: true,
           previewData: upgrade({
             effective_at: effectiveAt,
+            renewal_at: undefined,
             new_plan: plan('CREATOR', duration, 3500)
           })
         })
