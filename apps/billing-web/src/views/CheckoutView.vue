@@ -81,7 +81,9 @@ const { plans } = usePlans()
 // setup runs, instead of the fallback this ref started with.
 const stripeKey = useBillingWebStripeKey()
 
-const { lifecycle } = useBillingClient<'lifecycle'>(undefined)
+const { lifecycle, status } = useBillingClient<'lifecycle' | 'status'>(
+  undefined
+)
 
 const checkout = useCheckout({
   openUrl: (url) => window.location.assign(url),
@@ -116,8 +118,21 @@ async function quotePlan(
 
 // A payment the server still holds for this workspace is the one the confirm
 // reports on, as in the app, which adopts it from the billing status.
+/**
+ * When the subscription ends, from the billing status's `cancel_at`: the field
+ * the app's reactivation notice reads, so both hosts name the same date.
+ */
+const subscriptionEndDate = ref<string | null>(null)
+
+async function readSubscriptionEnd() {
+  const result = await status.read()
+  if (result.status === 'ok')
+    subscriptionEndDate.value = result.value.status.cancel_at ?? null
+}
+
 onMounted(() => {
   void lifecycle.recover()
+  void readSubscriptionEnd()
   void quotePlan(planSlug.value, teamCreditStopId.value)
 })
 
@@ -343,7 +358,6 @@ const succeeded = computed(() => checkout.projection.value.step === 'success')
  * subscribe settles and again after invites are sent, as the app refreshes
  * its billing status.
  */
-const { status } = useBillingClient<'status'>(undefined)
 const seats = ref<{ max: number | null; occupied: number | null }>({
   max: null,
   occupied: null
@@ -592,6 +606,7 @@ function leaveForHost() {
             :copy
             :locale
             :subscription-loaded="true"
+            :subscription-end-date
             :is-loading="paying"
             :force-reactivation="reactivationRequired"
             :action-url
