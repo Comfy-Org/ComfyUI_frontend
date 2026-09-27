@@ -66,23 +66,30 @@ describe('core import guard', () => {
 
   it('scans the web session sources', () => {
     expect(sources.map(({ name }) => name)).toEqual(
-      expect.arrayContaining(['webSession.ts', 'webSessionIdentity.ts'])
+      expect.arrayContaining([
+        'webSession.ts',
+        'sessionTokenMint.ts',
+        'webSessionIdentity.ts'
+      ])
     )
   })
 
-  it('keeps the web session identity and everything it imports off Firebase', () => {
-    const closure = relativeImportClosure('webSessionIdentity.ts')
-    const firebaseImports = [...closure].flatMap(([file, specifiers]) =>
-      specifiers
-        .filter((specifier) => FIREBASE_SPECIFIER.test(specifier))
-        .map((specifier) => `${relative(CORE_DIR, file)} -> ${specifier}`)
-    )
+  it.for(['webSession.ts', 'sessionTokenMint.ts', 'webSessionIdentity.ts'])(
+    'keeps %s and everything it imports off Firebase',
+    (entry) => {
+      const closure = relativeImportClosure(entry)
+      const firebaseImports = [...closure].flatMap(([file, specifiers]) =>
+        specifiers
+          .filter((specifier) => FIREBASE_SPECIFIER.test(specifier))
+          .map((specifier) => `${relative(CORE_DIR, file)} -> ${specifier}`)
+      )
 
-    expect([...closure.keys()].map((file) => relative(CORE_DIR, file))).toEqual(
-      expect.arrayContaining(['webSessionIdentity.ts', 'webSession.ts'])
-    )
-    expect(firebaseImports).toEqual([])
-  })
+      expect(
+        [...closure.keys()].map((file) => relative(CORE_DIR, file))
+      ).toEqual(expect.arrayContaining([entry]))
+      expect(firebaseImports).toEqual([])
+    }
+  )
 
   it.for([
     'firebase/auth',
