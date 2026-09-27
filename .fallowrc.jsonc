@@ -10,6 +10,7 @@
     "apps/website/src/**/__mocks__/**/*.ts",
     "index.html",
     "scripts/**/*.{js,ts}",
+    ".dependency-cruiser.ts",
     "apps/website/src/scripts/**/*.ts",
     // Astro injects these routes when WORKSHOP_IN_BUILD is enabled.
     "apps/website/src/routes/models/*.{astro,ts}",
@@ -39,7 +40,11 @@
     "eslint-plugin-playwright",
     "postcss-html",
     // Executed by models-snippets.test.ts inside the generated Node examples.
-    "mime-types"
+    "mime-types",
+    // dependency-cruiser loads it at runtime to parse .vue files (lint:cycles).
+    "@vue/compiler-sfc",
+    // Resolved by path string in scripts/vue-tsc-native.ts.
+    "typescript-native-bridge"
   ],
 
   "ignoreUnresolvedImports": [
