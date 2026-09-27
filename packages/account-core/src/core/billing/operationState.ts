@@ -219,28 +219,6 @@ function nextChallenge(
   return { clientSecret: secret, status: 'required' }
 }
 
-/**
- * A challenge that failed in this tab is why the payment then settles as
- * declined, and the server reports that decline as a generic card decline.
- * The customer was already told verification failed; a specific reason the
- * server does give (insufficient funds, an expired card) still stands.
- */
-const UNSPECIFIC_DECLINES: ReadonlySet<BillingDeclineReason> = new Set([
-  'generic',
-  'card_declined'
-])
-
-function settledDeclineReason(
-  state: PendingBillingOperation,
-  reason: BillingDeclineReason | undefined
-): BillingDeclineReason {
-  const declineReason = reason ?? 'generic'
-  return state.challenge?.status === 'failed' &&
-    UNSPECIFIC_DECLINES.has(declineReason)
-    ? 'authentication_failed'
-    : declineReason
-}
-
 function terminalFromStatus(
   state: PendingBillingOperation,
   status: BillingOpStatus
@@ -250,7 +228,7 @@ function terminalFromStatus(
     return {
       ...identityOf(state),
       phase: 'failed',
-      declineReason: settledDeclineReason(state, status.decline_reason),
+      declineReason: status.decline_reason ?? 'generic',
       ...(status.recovery_action === undefined
         ? {}
         : { recoveryAction: status.recovery_action }),

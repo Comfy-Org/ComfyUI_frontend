@@ -695,7 +695,15 @@ describe('CheckoutView', () => {
   it.for([
     ['card_declined', 'Your bank declined this payment.'],
     ['insufficient_funds', 'This payment method has insufficient funds.'],
-    ['expired_card', 'This card has expired.']
+    ['expired_card', 'This card has expired.'],
+    [
+      'authentication_failed',
+      "We couldn't complete payment verification. Please try again."
+    ],
+    [
+      'authentication_required',
+      "We couldn't complete payment verification. Please try again."
+    ]
   ] as const)(
     'reports a %s decline as the app does and keeps the confirm usable',
     async ([reason, detail]) => {
