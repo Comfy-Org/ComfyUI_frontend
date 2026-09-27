@@ -442,12 +442,12 @@ function addUtcMonthsClamped(date: Date, months: number): Date {
     )
   )
 }
-// Without an explicit period_end, fall back to one billing period after
-// activation: the activation date itself would read as "renews today".
+// The server's renewal date, the one the summary's renewal line shows. Only a
+// server that sends none falls back to one billing period after activation:
+// the activation date itself would read as "renews today".
 const nextPaymentDate = computed(() => {
-  if (previewData.new_plan.period_end) {
-    return formatDate(previewData.new_plan.period_end)
-  }
+  const renewsAt = resolveRenewalDate(previewData)
+  if (renewsAt) return formatDate(renewsAt)
   return formatDate(
     addUtcMonthsClamped(
       new Date(previewData.effective_at),

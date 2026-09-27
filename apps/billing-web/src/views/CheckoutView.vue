@@ -6,12 +6,13 @@
  * every way out leads back there. A hosted continuation redirects this tab
  * and comes back on `/v1/result`.
  */
+import { useTimeoutFn } from '@vueuse/core'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { BillingDeclineReason } from '@comfyorg/account-core/billing'
 import {
-  awaitsVerification,
+  awaitsHostedAction,
   declineDetailKey,
   validateActionUrl
 } from '@comfyorg/account-core/billing'
@@ -255,12 +256,11 @@ const authenticationState = computed(() => {
   return operation.authenticationState ?? null
 })
 
+/** The app's payment-progress toast: shown while the payment is pending. */
 const operationToast = computed(() => {
   const operation = pendingOperation.value
-  if (!operation || authenticationState.value === 'failed_retryable') {
-    return undefined
-  }
-  return awaitsVerification(operation)
+  if (!operation) return undefined
+  return awaitsHostedAction(operation)
     ? {
         severity: 'warn' as const,
         summary: t('checkout.operation.subscriptionActionRequired')
@@ -270,34 +270,6 @@ const operationToast = computed(() => {
         summary: t('checkout.operation.subscriptionProcessing')
       }
 })
-
-/** One toast at a time, as the app's toast host shows the latest. */
-const toast = computed(() => {
-  if (submitFailure.value) {
-    return {
-      severity: 'error' as const,
-      summary: t('checkout.error'),
-      detail: submitFailure.value,
-      dismiss: true
-    }
-  }
-  if (inviteFailure.value) {
-    return {
-      severity: 'error' as const,
-      summary: inviteFailure.value,
-      detail: undefined,
-      dismiss: true
-    }
-  }
-  return operationToast.value
-    ? { ...operationToast.value, detail: undefined, dismiss: false }
-    : undefined
-})
-
-function dismissToast() {
-  submitFailure.value = undefined
-  inviteFailure.value = undefined
-}
 
 const actionUrl = computed(
   () => validateActionUrl(pendingOperation.value?.actionUrl) ?? null
@@ -329,6 +301,14 @@ const operationHoldsConfirm = computed(() => {
     authenticationState.value !== 'requires_action'
   )
 })
+
+/** The app keeps a closed progress toast closed until the operation's state changes. */
+const operationToastKey = computed(() =>
+  operationToast.value
+    ? `${pendingOperation.value?.id}:${operationToast.value.severity}`
+    : undefined
+)
+const dismissedOperationToast = ref<string>()
 
 const reconciliationOperationId = computed(() => {
   const operation = checkout.operation.value
@@ -381,6 +361,31 @@ watch(succeeded, (done) => {
   if (done) void readSeats()
 })
 
+/**
+ * As in the app, a subscribe the server had to take a payment for (or one
+ * this tab recovered mid-payment) announces its success for five seconds.
+ */
+const SUCCESS_TOAST_LIFE_MS = 5000
+const {
+  isPending: successToastShown,
+  start: showSuccessToast,
+  stop: dismissSuccessToast
+} = useTimeoutFn(() => {}, SUCCESS_TOAST_LIFE_MS, { immediate: false })
+
+const announcedSuccess = ref<string>()
+watch(
+  () => [succeeded.value, checkout.submitting.value] as const,
+  ([settled, submitting]) => {
+    const id = checkout.projection.value.operationId
+    if (!settled || submitting || id === announcedSuccess.value) return
+    announcedSuccess.value = id
+    const result = checkout.result.value
+    const tookPayment =
+      result?.status !== 'ok' || result.value.issuedStatus !== 'subscribed'
+    if (tookPayment) showSuccessToast()
+  }
+)
+
 const paying = computed(
   () =>
     checkout.submitting.value ||
@@ -388,7 +393,7 @@ const paying = computed(
 )
 
 const frameStep = computed(() => {
-  if (succeeded.value) return 'success'
+  if (succeeded.value) return isNewSubscription.value ? 'success' : 'fit'
   return isNewSubscription.value && savedMethodsForConfirm.value.length === 0
     ? 'payment'
     : 'confirm'
@@ -568,13 +573,39 @@ function leaveForHost() {
         </CheckoutFrame>
       </template>
     </section>
-    <CheckoutToast
-      v-if="toast"
-      :severity="toast.severity"
-      :summary="toast.summary"
-      :detail="toast.detail"
-      :close-label="toast.dismiss ? t('checkout.close') : undefined"
-      @close="dismissToast"
-    />
+    <div
+      class="fixed top-5 right-5 z-10 flex max-w-[calc(100vw-2.5rem)] flex-col gap-4"
+    >
+      <CheckoutToast
+        v-if="operationToast && operationToastKey !== dismissedOperationToast"
+        variant="operation"
+        :severity="operationToast.severity"
+        :summary="operationToast.summary"
+        :close-label="t('checkout.close')"
+        @close="dismissedOperationToast = operationToastKey"
+      />
+      <CheckoutToast
+        v-if="submitFailure"
+        severity="error"
+        :summary="t('checkout.error')"
+        :detail="submitFailure"
+        :close-label="t('checkout.close')"
+        @close="submitFailure = undefined"
+      />
+      <CheckoutToast
+        v-if="inviteFailure"
+        severity="error"
+        :summary="inviteFailure"
+        :close-label="t('checkout.close')"
+        @close="inviteFailure = undefined"
+      />
+      <CheckoutToast
+        v-if="successToastShown"
+        severity="success"
+        :summary="t('checkout.operation.subscriptionSuccess')"
+        :close-label="t('checkout.close')"
+        @close="dismissSuccessToast"
+      />
+    </div>
   </main>
 </template>
