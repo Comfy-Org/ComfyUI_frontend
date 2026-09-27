@@ -4,6 +4,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import { useEnterBuilder } from '@/components/builder/useEnterBuilder'
 import { useAppMode } from '@/composables/useAppMode'
 import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -12,6 +13,7 @@ import { useAppModeStore } from '@/stores/appModeStore'
 const { t } = useI18n()
 const { setMode } = useAppMode()
 const appModeStore = useAppModeStore()
+const { enterBuilder } = useEnterBuilder()
 const { hasOutputs, hasNodes } = storeToRefs(appModeStore)
 const workflowStore = useWorkflowStore()
 const isAppDefault = computed(
@@ -93,7 +95,7 @@ const templateSelectorDialog = useWorkflowTemplateSelectorDialog()
           data-testid="linear-welcome-build-app"
           variant="primary"
           size="lg"
-          @click="appModeStore.enterBuilder()"
+          @click="enterBuilder"
         >
           <i class="icon-[lucide--hammer]" />
           {{ t('linearMode.welcome.buildApp') }}
