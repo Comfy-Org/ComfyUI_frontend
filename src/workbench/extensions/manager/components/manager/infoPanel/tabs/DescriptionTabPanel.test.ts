@@ -171,9 +171,7 @@ describe('DescriptionTabPanel', () => {
       })
 
       expect(screen.queryByRole('link')).toBeNull()
-      const repositoryText = screen.getByText('javascript:alert(1)')
-      expect(repositoryText).toBeInTheDocument()
-      expect(repositoryText.tagName).toBe('SPAN')
+      expect(screen.queryByText('javascript:alert(1)')).toBeNull()
     })
 
     it('does not bind a javascript: license URL as a clickable href', () => {

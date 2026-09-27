@@ -10,24 +10,20 @@
         {{ t('manager.noDescription') }}
       </span>
     </ModelInfoField>
-    <ModelInfoField v-if="nodePack.repository" :label="t('manager.repository')">
+    <ModelInfoField v-if="safeRepositoryHref" :label="t('manager.repository')">
       <a
-        v-if="safeRepositoryHref"
         :href="safeRepositoryHref"
         target="_blank"
         rel="noopener noreferrer"
         class="hover:text-foreground inline-flex items-center gap-1.5 text-muted-foreground no-underline transition-colors"
       >
         <i
-          v-if="isGitHubLink(nodePack.repository)"
+          v-if="isGitHubLink(safeRepositoryHref)"
           class="pi pi-github text-base"
         />
-        <span class="break-all">{{ nodePack.repository }}</span>
+        <span class="break-all">{{ safeRepositoryHref }}</span>
         <i class="icon-[lucide--external-link] size-4 shrink-0" />
       </a>
-      <span v-else class="break-all text-muted-foreground">
-        {{ nodePack.repository }}
-      </span>
     </ModelInfoField>
     <ModelInfoField v-if="licenseInfo" :label="t('manager.license')">
       <a
