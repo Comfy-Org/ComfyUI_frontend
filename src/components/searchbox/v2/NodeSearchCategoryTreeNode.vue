@@ -71,9 +71,9 @@ export interface CategoryNode {
 }
 
 export const CATEGORY_SELECTED_CLASS =
-  'bg-secondary-background-hover text-foreground'
+  'bg-secondary-background-hover text-base-foreground'
 export const CATEGORY_UNSELECTED_CLASS =
-  'text-muted-foreground hover:bg-secondary-background-hover hover:text-foreground'
+  'text-muted-foreground hover:bg-secondary-background-hover hover:text-base-foreground'
 </script>
 
 <script setup lang="ts">

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { modelReleaseSlides } from '../data/modelRelease'
-import { workshopModels } from './models-catalogue'
+import { workshopModels } from './workshop-browse-content'
 import { modelReleaseLinks } from './model-release-links'
 
 describe('homepage Models destinations', () => {

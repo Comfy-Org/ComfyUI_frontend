@@ -196,7 +196,10 @@ export function buildWorkshopDisplay(
   if (Array.isArray(input)) {
     const entries = workshopDisplayEntriesSchema.parse(input)
     for (const entry of entries)
-      if (!catalog.has(entry.modelId))
+      if (
+        (entry.type === undefined || entry.type === 'MODEL') &&
+        !catalog.has(entry.modelId)
+      )
         throw new Error(
           `Display overlay names model absent from catalog: ${entry.modelId}`
         )

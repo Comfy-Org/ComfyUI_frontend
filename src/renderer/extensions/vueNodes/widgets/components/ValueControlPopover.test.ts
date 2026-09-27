@@ -47,13 +47,6 @@ const i18n = createI18n({
   }
 })
 
-const ButtonStub = defineComponent({
-  name: 'Button',
-  inheritAttrs: false,
-  props: { as: { type: String, default: 'button' } },
-  template: '<label v-bind="$attrs"><slot /></label>'
-})
-
 function renderPopover(modelValue: ControlOptions = 'randomize') {
   const value = ref<ControlOptions | undefined>(modelValue)
   const Harness = defineComponent({
@@ -63,8 +56,7 @@ function renderPopover(modelValue: ControlOptions = 'randomize') {
   })
   const utils = render(Harness, {
     global: {
-      plugins: [PrimeVue, i18n],
-      stubs: { Button: ButtonStub }
+      plugins: [PrimeVue, i18n]
     }
   })
   return { ...utils, value }

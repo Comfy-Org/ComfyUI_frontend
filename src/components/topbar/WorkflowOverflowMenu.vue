@@ -1,8 +1,8 @@
 <template>
-  <div>
+  <div class="shrink-0 self-center">
     <Button
       v-tooltip="{ value: $t('g.moreWorkflows'), showDelay: 300 }"
-      class="aspect-square h-full w-auto rounded-none"
+      class="rounded-lg"
       variant="muted-textonly"
       size="icon"
       :aria-label="$t('g.moreWorkflows')"

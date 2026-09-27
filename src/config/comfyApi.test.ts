@@ -9,12 +9,7 @@ import {
   getComfyPlatformBaseUrl
 } from './comfyApi'
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    apiURL: (route: string) => `/api${route}`,
-    fetchApi: vi.fn()
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 interface BaseUrlCase {
   label: string

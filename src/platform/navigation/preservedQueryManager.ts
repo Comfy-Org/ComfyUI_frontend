@@ -100,7 +100,7 @@ export const capturePreservedQuery = (
 
   hydratePreservedQuery(namespace)
   const payload: Record<string, string> = {
-    ...(preservedQueries.get(namespace) ?? {})
+    ...preservedQueries.get(namespace)
   }
   const state = { changed: false }
 
@@ -145,7 +145,7 @@ export const mergePreservedQueryIntoQuery = (
   const payload = preservedQueries.get(namespace)
   if (!payload) return undefined
 
-  const nextQuery: LocationQueryRaw = { ...(query || {}) }
+  const nextQuery: LocationQueryRaw = { ...query }
   let changed = false
 
   for (const [key, value] of Object.entries(payload)) {

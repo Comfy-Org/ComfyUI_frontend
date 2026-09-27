@@ -16,8 +16,8 @@ export function getDataFromJSON(
         const jsonContent = parseJsonWithNonFinite<Record<string, unknown>>(
           reader.result
         )
-        if (jsonContent?.templates) {
-          resolve({ templates: jsonContent.templates as object })
+        if (jsonContent.templates) {
+          resolve({ templates: jsonContent.templates })
           return
         }
         if (isApiJson(jsonContent)) {

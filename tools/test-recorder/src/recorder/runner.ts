@@ -37,7 +37,7 @@ interface RecordingResult {
 export function findProjectRoot(): string {
   let dir = process.cwd()
   const { root } = parse(dir)
-  while (true) {
+  for (;;) {
     if (existsSync(join(dir, 'playwright.config.ts'))) {
       return dir
     }
