@@ -104,7 +104,7 @@ test('workflow launch groups lead to the existing shared form', async ({
     .click()
   await page.getByTestId('example-replace-keep').click()
   await expect(prompt).toHaveValue('Use the material from the second image.')
-  await page.getByRole('tab', { name: 'Workflow', exact: true }).click()
+  await page.getByRole('tab', { name: 'Details', exact: true }).click()
   await expect(
     page.getByRole('link', { name: 'Try in Cloud' })
   ).toHaveAttribute(
