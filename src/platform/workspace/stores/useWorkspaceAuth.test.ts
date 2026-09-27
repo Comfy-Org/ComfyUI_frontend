@@ -1589,7 +1589,9 @@ describe('useWorkspaceAuthStore', () => {
     })
 
     it('does not let an in-flight refresh re-arm timers after destroy', async () => {
-      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
+        'firebase-token-xyz'
+      )
       const mockFetch = vi.fn().mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve(mockTokenResponse)

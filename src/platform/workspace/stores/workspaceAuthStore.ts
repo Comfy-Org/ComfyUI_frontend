@@ -123,7 +123,6 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     hasValidWorkspaceToken,
     retireLegacyToken,
     dispose: disposeLegacyTokenRail,
-    stopRefreshTimer,
     clearLegacyContext
   } = createLegacyWorkspaceTokenRail({
     currentWorkspace,
