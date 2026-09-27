@@ -459,13 +459,11 @@ test.describe(
       })
 
       /**
-       * The cascade #17922 added. `manageSubscription` tries three
-       * destinations in order and each one opens a different page, so a
-       * browser refusing the first says nothing about the next: the rail is
-       * still asked, and the legacy call after it. A refused open must not be
-       * read as "the portal is handled".
+       * A pop-up blocker refuses this page, not one destination, so the portal
+       * tab is reserved before any portal session is minted: a refused
+       * reservation tells the customer why and asks neither transport.
        */
-      test('asks the next destination when the browser refuses the tab', async ({
+      test('mints no portal session when the browser refuses the tab', async ({
         page
       }) => {
         test.setTimeout(60_000)
@@ -476,18 +474,12 @@ test.describe(
         const panel = await openPlanAndCredits(page)
         await panel.getByRole('button', { name: 'Billing & invoices' }).click()
 
-        // The rail answered and its tab was refused, so the legacy call runs.
-        await expect.poll(() => routes.portalRequests.length).toBe(2)
-        expect(transport(routes.portalRequests[0])).toBe('fetch')
-        expect(transport(routes.portalRequests[1])).toBe('xhr')
-        await expect
-          .poll(
-            async () =>
-              (await openedUrls(page)).filter(
-                (destination) => destination === PROVIDER_PORTAL_URL
-              ).length
+        await expect(
+          page.getByText(
+            "Couldn't open the billing page. Allow pop-ups for this site and try again."
           )
-          .toBe(2)
+        ).toBeVisible()
+        expect(routes.portalRequests).toHaveLength(0)
       })
     })
   }

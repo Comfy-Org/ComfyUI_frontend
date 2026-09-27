@@ -90,7 +90,10 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await expect(panel.getByText(THINKING_TEXT)).toBeVisible()
 
     pushEvent(ws, TOOL_CALL_EVENT)
-    const summary = panel.getByRole('button', { name: /^Worked for / })
+    const summary = panel.getByRole('button', {
+      name: enMessages.agent.worked,
+      exact: true
+    })
     await expect(summary).toHaveCount(0)
     await expect(panel.getByText('Set widget')).toBeVisible()
     await expect(panel.getByText(THINKING_TEXT, { exact: true })).toBeVisible()
@@ -131,12 +134,8 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     const activityRows = panel.getByRole('listitem')
     await expect(activityRows).toHaveCount(5)
     await expect(activityRows.filter({ hasText: 'Set widget' })).toBeVisible()
-    await expect(
-      activityRows.filter({ hasText: 'Opened a new tab' }).getByText('0.5s')
-    ).toBeVisible()
-    await expect(
-      activityRows.filter({ hasText: 'Resize image node' }).getByText('0.2s')
-    ).toBeVisible()
+    await expect(panel.getByText('0.5s', { exact: true })).toHaveCount(0)
+    await expect(panel.getByText('0.2s', { exact: true })).toHaveCount(0)
 
     pushEvent(ws, MESSAGE_DELTA_EVENT)
     await expect(
@@ -244,6 +243,10 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
         ).toBeVisible()
         const ws = await getWebSocket()
         pushEvent(ws, THINKING_EVENT)
+        await expect(
+          agentPanel.root.getByText(THINKING_TEXT, { exact: true })
+        ).toBeVisible()
+
         pushEvent(ws, TOOL_CALL_EVENT)
         await expect(agentPanel.root.getByText('Set widget')).toBeVisible()
       })
@@ -400,6 +403,62 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
         return Math.abs(leftInset - rightInset)
       })
       .toBeLessThanOrEqual(1)
+  })
+
+  test('uses the server upload limit for Agent file attachments', async ({
+    comfyPage,
+    agentPanel
+  }) => {
+    test.setTimeout(60_000)
+    const page = comfyPage.page
+    let uploadCount = 0
+    await page.route('**/api/upload/image', async (route) => {
+      uploadCount += 1
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          name: 'uploaded_movie.mp4',
+          subfolder: '',
+          type: 'input'
+        })
+      })
+    })
+    await page.evaluate(() => {
+      window.app!.api.serverFeatureFlags.value = {
+        ...window.app!.api.serverFeatureFlags.value,
+        max_upload_size: 24 * 1024 * 1024
+      }
+    })
+
+    await agentPanel.open()
+    const panel = page.locator('#agent-panel-root')
+    const fileInput = panel.getByTestId('agent-file-input')
+
+    const uploadResponse = page.waitForResponse('**/api/upload/image')
+    await fileInput.setInputFiles({
+      name: 'movie.mp4',
+      mimeType: 'video/mp4',
+      buffer: Buffer.alloc(21 * 1024 * 1024)
+    })
+    expect((await uploadResponse).ok()).toBe(true)
+    await expect(
+      panel.getByTestId('composer-asset-section').getByText('movie.mp4')
+    ).toBeVisible()
+    await expect.poll(() => uploadCount).toBe(1)
+
+    await fileInput.setInputFiles({
+      name: 'too-large.mp4',
+      mimeType: 'video/mp4',
+      buffer: Buffer.alloc(25 * 1024 * 1024)
+    })
+    await expect(
+      page.getByText('too-large.mp4 is larger than 24 MB')
+    ).toBeVisible()
+    await expect(panel.getByText('too-large.mp4', { exact: true })).toHaveCount(
+      0
+    )
+    await expect.poll(() => uploadCount).toBe(1)
   })
 
   test('exits node selection when the active workflow changes', async ({

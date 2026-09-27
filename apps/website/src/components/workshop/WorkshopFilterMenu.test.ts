@@ -17,7 +17,7 @@ function mountMenu() {
   render(
     defineComponent({
       setup: () => () =>
-        h(WorkshopFilterMenu, {
+        h(WorkshopFilterMenu<UseCase>, {
           useCaseOptions,
           resultCount: 12,
           useCases: useCases.value,
@@ -37,9 +37,10 @@ describe('WorkshopFilterMenu', () => {
     const trigger = screen.getByRole('button', { name: 'Filter' })
     await user.click(trigger)
     const dialog = await screen.findByRole('dialog')
-    const useCase = within(dialog).getByRole('button', {
+    const useCase = await within(dialog).findByRole('button', {
       name: 'Generate images 4'
     })
+    expect(within(dialog).getByRole('searchbox')).toBeVisible()
     useCase.focus()
     await user.keyboard(' ')
     expect(useCase.getAttribute('aria-pressed')).toBe('true')

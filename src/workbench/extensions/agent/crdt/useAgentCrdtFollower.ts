@@ -62,6 +62,18 @@ interface AgentCrdtOutcomeCounters {
   received: number
   /** Passed this composable's own filter and the adapter had a bound session to apply it to. */
   applied: number
+  /**
+   * PM-1575: same as `applied`, excluding a subscribe's own catch-up frame
+   * (`update.catchUp`) -- the one-time state-vector sync that lands whenever
+   * a workflow is (re)subscribed to, unrelated to any in-flight tool call.
+   * `applied` alone is unusable as a canvas-sync gate for that reason: a tool
+   * call's baseline, captured before that catch-up lands, would otherwise
+   * read the catch-up itself as "the matching update already arrived" for
+   * whichever tool call happens to be first after a (re)subscribe. Consumers
+   * that need "did a LIVE update land" (agentEventTransport.ts's canvas-sync
+   * baseline) must read this field, not `applied`.
+   */
+  appliedLive: number
   /** Received but not applied: inactive target, workflow mismatch, or no bound adapter session. */
   skipped: number
   /** The merged doc failed the KA-11 read gate (`schema_error`). */
@@ -189,6 +201,36 @@ function runFollowerTeardown(cleanups: readonly (() => void)[]): void {
   }
 }
 
+/** The `beforeChange`/`afterChange` pair of a workflow's ChangeTracker. */
+export interface UndoBracket {
+  beforeChange(): void
+  afterChange(): void
+}
+
+interface DocResetDetail {
+  workflowId?: string
+  actor?: string
+  seq?: number
+}
+
+function readDocResetDetail(event: Event): DocResetDetail | undefined {
+  return event instanceof CustomEvent
+    ? (event.detail as DocResetDetail | undefined)
+    : undefined
+}
+
+function targetsActiveSubscription(
+  detail: DocResetDetail | undefined,
+  isTargetActive: boolean,
+  subscribedWorkflowId: string | null
+): detail is DocResetDetail & { workflowId: string } {
+  return (
+    isTargetActive &&
+    detail?.workflowId !== undefined &&
+    detail.workflowId === subscribedWorkflowId
+  )
+}
+
 export function useAgentCrdtFollower(
   workflowId: Ref<string | null>,
   graphMutations: MutationsForTarget,
@@ -200,7 +242,14 @@ export function useAgentCrdtFollower(
    * reconcile without waiting for the next remote frame.
    */
   getGraph: () => MaterializableGraph | null = () => null,
-  events: AgentCrdtFollowerEvents = {}
+  events: AgentCrdtFollowerEvents = {},
+  /**
+   * Undo tracker of the bound workflow. Remote frames mutate the live graph
+   * outside any human gesture, so without a `beforeChange`/`afterChange`
+   * bracket the ChangeTracker never captures the post-frame state and Ctrl+Z
+   * skips straight past what the agent drew (QAF-52).
+   */
+  getChangeTracker: () => UndoBracket | null = () => null
 ) {
   const productGate = useAgentPanelStore()
   const follower = shallowRef<ReturnType<typeof startAgentCrdtFollower>>()
@@ -213,6 +262,7 @@ export function useAgentCrdtFollower(
     outcomes: {
       received: 0,
       applied: 0,
+      appliedLive: 0,
       skipped: 0,
       errored: 0,
       gap: 0,
@@ -238,7 +288,8 @@ export function useAgentCrdtFollower(
           userId,
           isTargetActive,
           getGraph,
-          events
+          events,
+          getChangeTracker
         )
       )
     },
@@ -266,8 +317,18 @@ function startAgentCrdtFollower(
   userId: () => string | null,
   isTargetActive: Ref<boolean>,
   getGraph: () => MaterializableGraph | null,
-  events: AgentCrdtFollowerEvents
+  events: AgentCrdtFollowerEvents,
+  getChangeTracker: () => UndoBracket | null
 ) {
+  const withUndoBracket = <T>(fn: () => T): T => {
+    const tracker = getChangeTracker()
+    tracker?.beforeChange()
+    try {
+      return fn()
+    } finally {
+      tracker?.afterChange()
+    }
+  }
   const connected = ref(false)
   const updatesApplied = ref(0)
   const lastFrameType = ref<string | null>(null)
@@ -275,6 +336,7 @@ function startAgentCrdtFollower(
   const outcomes = ref<AgentCrdtOutcomeCounters>({
     received: 0,
     applied: 0,
+    appliedLive: 0,
     skipped: 0,
     errored: 0,
     gap: 0,
@@ -380,7 +442,7 @@ function startAgentCrdtFollower(
     )
   }
   const incrementOutcome = (
-    key: 'received' | 'applied' | 'skipped' | 'reset'
+    key: 'received' | 'applied' | 'appliedLive' | 'skipped' | 'reset'
   ): void => {
     outcomes.value = { ...outcomes.value, [key]: outcomes.value[key] + 1 }
   }
@@ -402,6 +464,7 @@ function startAgentCrdtFollower(
   const applyAndReconcile = (update: ClassifiedDocUpdate): NodeId[] => {
     const applied = projection.applyFrame(update)
     incrementOutcome(applied ? 'applied' : 'skipped')
+    if (applied && !update.catchUp) incrementOutcome('appliedLive')
     return applied ? projection.reconcileLiveGraph(update.workflowId) : []
   }
 
@@ -435,7 +498,7 @@ function startAgentCrdtFollower(
     lifecycle.onDocumentUpdate()
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
-    const materialized = applyAndReconcile(update)
+    const materialized = withUndoBracket(() => applyAndReconcile(update))
     recordDevEvent('doc_update', {
       workflowId: update.workflowId,
       seq: update.seq,
@@ -471,35 +534,49 @@ function startAgentCrdtFollower(
     recordDevEvent('doc_ops_result', event.detail ?? null)
   }
   const onDocReset: EventListener = (event) => {
-    const detail =
-      event instanceof CustomEvent
-        ? (event.detail as {
-            workflowId?: string
-            actor?: string
-            seq?: number
-          })
-        : undefined
+    const detail = readDocResetDetail(event)
+    if (
+      !targetsActiveSubscription(
+        detail,
+        isTargetActive.value,
+        subscribedWorkflowId.value
+      )
+    )
+      return
+    const resetWorkflowId = detail.workflowId
     incrementOutcome('reset')
-    if (!isCurrentWorkflow(detail?.workflowId)) return
     const context: RemoteMutationContext = {
       source: 'agent-remote',
       actor: detail.actor ?? 'agent-reset',
       opId: `doc-reset:${detail.seq ?? 'unknown'}`
     }
-    projection.clearForReset(detail.workflowId, context)
-    sender.abortAll()
-    events.onReset?.(detail.workflowId)
-    connected.value = false
-    updatesApplied.value = 0
-    lastFrameType.value = event.type
-    lifecycle.clearStaleProbe()
-    knownDocNodeIds = new Set()
-    pendingLiveNodeIds.clear()
-    confirmedDeletes.clear()
-    recordDevEvent(
-      'doc_reset',
-      event instanceof CustomEvent ? (event.detail ?? null) : null
-    )
+    // `afterChange()` runs on the way out of the bracket and can throw (undo
+    // capture serializes the graph, so one custom node is enough). The clear
+    // has already emptied the stores by then, so the bookkeeping that mirrors
+    // it must still run — otherwise the follower reports connected, keeps the
+    // stale probe, and retains node ids for a document that is gone. The
+    // capture error still propagates; only a clear that never completed skips
+    // the bookkeeping.
+    const clear = { completed: false }
+    try {
+      withUndoBracket(() => {
+        projection.clearForReset(resetWorkflowId, context)
+        clear.completed = true
+      })
+    } finally {
+      if (clear.completed) {
+        sender.abortAll()
+        events.onReset?.(resetWorkflowId)
+        connected.value = false
+        updatesApplied.value = 0
+        lastFrameType.value = event.type
+        lifecycle.clearStaleProbe()
+        knownDocNodeIds = new Set()
+        pendingLiveNodeIds.clear()
+        confirmedDeletes.clear()
+        recordDevEvent('doc_reset', detail)
+      }
+    }
   }
   const onFollowerReplaced: EventListener = (event) => {
     // Gate on this composable's own INTENT, not the bridge's send REALITY
@@ -517,12 +594,22 @@ function startAgentCrdtFollower(
     ) {
       updatesApplied.value = 0
       confirmedDeletes.clear()
-      projection.clearForReset(workflowId, {
-        source: 'agent-remote',
-        actor: 'agent-lineage',
-        opId: `follower-replaced:${workflowId}`
-      })
-      projection.bind(workflowId, bridge.follower)
+      // Same bracket hazard as onDocReset: a throwing undo capture must not
+      // leave the adapter observing the destroyed document. The rebind mirrors
+      // a completed clear, so it runs even when `afterChange()` throws.
+      const clear = { completed: false }
+      try {
+        withUndoBracket(() => {
+          projection.clearForReset(workflowId, {
+            source: 'agent-remote',
+            actor: 'agent-lineage',
+            opId: `follower-replaced:${workflowId}`
+          })
+          clear.completed = true
+        })
+      } finally {
+        if (clear.completed) projection.bind(workflowId, bridge.follower)
+      }
     }
   }
   const onSchemaError: EventListener = (event) => {

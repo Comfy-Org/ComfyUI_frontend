@@ -8,6 +8,7 @@ import {
   createNode,
   isAudioNode,
   isImageNode,
+  isSelectOnly,
   isVideoNode
 } from '@/utils/litegraphUtil'
 import { shouldIgnoreCopyPaste } from '@/workbench/eventHelpers'
@@ -207,7 +208,7 @@ export const usePaste = () => {
     if (workspaceStore.shiftDown) return
 
     const { canvas } = canvasStore
-    if (!canvas) return
+    if (!canvas || isSelectOnly(canvas)) return
 
     let data: DataTransfer | string | null = e.clipboardData
     if (!data) {

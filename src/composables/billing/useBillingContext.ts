@@ -1,3 +1,4 @@
+import { isAuthenticatedConfigLoaded } from '@/platform/remoteConfig/remoteConfig'
 import { computed, ref, shallowRef, toValue, watch } from 'vue'
 import { createSharedComposable } from '@vueuse/core'
 
@@ -7,6 +8,7 @@ import {
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
+import { isCloud } from '@/platform/distribution/types'
 import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type {
   PreviewSubscribeOptions,
@@ -55,6 +57,8 @@ function isTeamPlanSlug(planSlug: string | null | undefined): boolean {
  *
  * @example
  * ```typescript
+ * import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
+ *
  * const {
  *   type,
  *   subscription,
@@ -72,10 +76,10 @@ function isTeamPlanSlug(planSlug: string | null | undefined): boolean {
  *   console.log(`Tier: ${subscription.value.tier}`)
  * }
  *
- * // Check balance
+ * // Check balance (the *Micros fields are cents - see BalanceInfo)
  * if (balance.value) {
- *   const dollars = balance.value.amountMicros / 1_000_000
- *   console.log(`Balance: $${dollars.toFixed(2)}`)
+ *   const credits = formatCreditsFromCents({ cents: balance.value.amountMicros })
+ *   console.log(`Balance: ${credits} credits`)
  * }
  * ```
  */
@@ -155,7 +159,8 @@ function useBillingContextInternal(): BillingContext {
     () =>
       canAccessSubscriptionFeatures.value &&
       (!isFreeTier.value ||
-        !freeTierQuota.quotaEnabled.value ||
+        !isCloud ||
+        !isAuthenticatedConfigLoaded.value ||
         freeTierQuota.freeTierExecutionPermitted.value)
   )
 

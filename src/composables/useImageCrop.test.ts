@@ -70,7 +70,7 @@ const ImageCropHarness = defineComponent({
 })
 
 function flushResizeObservers() {
-  for (const cb of [...resizeObserverCallbacks]) {
+  for (const cb of Array.from(resizeObserverCallbacks)) {
     cb()
   }
 }

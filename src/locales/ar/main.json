@@ -2008,6 +2008,7 @@
     "removeAll": "إزالة الكل",
     "removeAllKeybindingsMessage": "سيتم إزالة جميع اختصارات المفاتيح لهذا الأمر",
     "removeAllKeybindingsTitle": "إزالة جميع اختصارات المفاتيح؟",
+    "removeFilter": "إزالة عامل تصفية {label}",
     "removeImage": "إزالة الصورة",
     "removeKeybinding": "إزالة اختصار المفتاح",
     "removeTag": "إزالة الوسم",
@@ -2222,8 +2223,10 @@
     "star": "نجمة"
   },
   "imageCompare": {
+    "afterAlt": "صورة بعد",
     "batchLabelA": "أ: ",
     "batchLabelB": "ب: ",
+    "beforeAlt": "صورة قبل",
     "noImages": "لا توجد صور للمقارنة"
   },
   "imageCrop": {
@@ -2758,6 +2761,9 @@
     "installationQueue": "قائمة التثبيت",
     "installingDependencies": "جاري تثبيت التبعيات...",
     "lastUpdated": "آخر تحديث",
+    "latestActive": "أحدث إصدار نشط",
+    "latestInstallable": "أحدث إصدار قابل للتثبيت",
+    "latestStableVersion": "أحدث إصدار مستقر",
     "latestVersion": "الأحدث",
     "legacyManagerSearchTip": "هل تبحث عن ComfyUI-Manager؟ يمكنك تفعيل واجهة المدير القديمة عن طريق تشغيل ComfyUI مع الخيار --enable-manager-legacy-ui.",
     "legacyManagerUI": "استخدام الواجهة القديمة",
@@ -2779,10 +2785,13 @@
       "updatesAvailable": "تحديثات متوفرة"
     },
     "nightlyVersion": "ليلي",
+    "noActiveVersions": "لا تحتوي هذه الحزمة على إصدارات نشطة.",
+    "noActiveVersionsFlagged": "لا تحتوي هذه الحزمة على إصدارات نشطة. حدّد إصدارًا معلَّمًا لطلب التثبيت، وفقًا لإعدادات أمان المدير.",
     "noDescription": "لا يوجد وصف متاح",
     "noNodesFound": "لم يتم العثور على عقد",
     "noNodesFoundDescription": "لم يمكن تحليل عقد الحزمة، أو أن الحزمة هي امتداد للواجهة فقط ولا تحتوي على أي عقد.",
     "noResultsFound": "لم يتم العثور على نتائج مطابقة لبحثك.",
+    "noUpdateVersion": "لا يتوفر إصدار لخيار التحديث المحدد.",
     "nodePack": "حزمة العقد",
     "nodePackInfo": "معلومات حزمة العقد",
     "notAvailable": "غير متوفر",
@@ -2790,9 +2799,11 @@
       "nodeIdRequired": "معرّف العقدة مطلوب للتثبيت"
     },
     "packsSelected": "الحزم المحددة",
+    "queueWaitingToContinue": "هناك مهام معلّقة. أعد المحاولة للمتابعة.",
     "repository": "المستودع",
     "restartToApplyChanges": "لـتطبيق التغييرات، يرجى إعادة تشغيل ComfyUI",
     "restartingBackend": "جاري إعادة تشغيل الخلفية لتطبيق التغييرات...",
+    "retryQueueStart": "إعادة المحاولة",
     "searchPlaceholder": "بحث",
     "selectVersion": "اختر الإصدار",
     "selected": "المحدد",
@@ -2833,9 +2844,15 @@
     },
     "update": "تحديث",
     "updateAll": "تحديث الكل",
+    "updateFailed": "تعذّر تغيير إصدار الحزمة. يُرجى المحاولة مجددًا.",
+    "updateLatestActiveTooltip": "التبديل إلى أحدث إصدار نشط (افتراضي).",
+    "updateLatestInstallableTooltip": "التبديل إلى أحدث إصدار قابل للتثبيت، بما في ذلك الإصدارات المعلَّمة والمعلَّقة. تظل إعدادات أمان المدير سارية.",
+    "updateOptions": "خيارات التحديث",
     "updateSelected": "تحديث المحدد",
+    "updateVersionInstalled": "الإصدار {version} مثبّت بالفعل.",
     "updatingAllPacks": "تحديث جميع الحزم",
-    "version": "الإصدار"
+    "version": "الإصدار",
+    "versionLoadFailed": "تعذّر تحميل الإصدارات. أغلق أداة الاختيار هذه وحاول مجددًا."
   },
   "maskEditor": {
     "activateLayer": "تفعيل الطبقة",
@@ -4794,6 +4811,7 @@
     },
     "clearAllFilters": "مسح جميع الفلاتر",
     "error": {
+      "loading": "تعذّر فتح القالب. يُرجى المحاولة مرة أخرى.",
       "templateNotFound": "النموذج \"{templateName}\" غير موجود"
     },
     "filtersApplied": "{count} فلتر مُطبَّق | {count} فلاتر مُطبَّقة",
@@ -5074,6 +5092,7 @@
   },
   "workspace": {
     "addedToWorkspace": "تمت إضافتك إلى:",
+    "deepLinkStayed": "تعذّر فتح مساحة العمل تلك. ما زلت في {workspaceName}.",
     "inviteAccepted": "تم قبول الدعوة",
     "inviteFailed": "فشل في قبول الدعوة",
     "switchFailed": "فشل في تبديل مساحة العمل. يرجى المحاولة مرة أخرى.",

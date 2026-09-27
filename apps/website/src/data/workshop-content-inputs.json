@@ -294,5 +294,9 @@
   "byteplus--seedance-2-image-to-video--animate-images": {
     "routerId": "byteplus/dreamina-seedance-2-0-260128",
     "options": { "mode": "first-last", "urlMedia": true }
+  },
+  "vertexai--veo-3-first-last-frame--animate-images": {
+    "routerId": "veo/veo-3.1-generate-001",
+    "options": { "mode": "image" }
   }
 }

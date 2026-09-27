@@ -13,14 +13,24 @@
  * `authenticationRetrySkipped` stays unset; it means a replayable retry was
  * possible and skipped, which is never the case on this transport.
  *
- * No CSRF header is sent. What stands in for one is the JSON content type
- * `exchangeBillingRequest` always sends: it makes every request non-simple,
- * so a cross-site caller has to clear a preflight it cannot satisfy. That
- * rests on the cookie's `SameSite` attribute and the backend's CORS
- * allowlist, neither of which is enforced here — sending a form-encoded or
- * otherwise CORS-simple request from this transport removes the protection.
- * A CSRF header is added here when the backend names one.
+ * Without a web session no CSRF header is sent. What stands in for one is
+ * the JSON content type `exchangeBillingRequest` always sends: it makes
+ * every request non-simple, so a cross-site caller has to clear a preflight
+ * it cannot satisfy. That rests on the cookie's `SameSite` attribute and the
+ * backend's CORS allowlist, neither of which is enforced here — sending a
+ * form-encoded or otherwise CORS-simple request from this transport removes
+ * the protection.
+ * A host on the shared web session opts in through `webSession`: headers
+ * then come from `authorize`, and a `csrf_invalid` answer is retried once
+ * after re-reading the session, only while it still belongs to the same user.
  */
+import type { RequestAuthorization, RequestAuthorizer } from '../requestAuth.js'
+import type {
+  WebSession,
+  WebSessionErrorCode,
+  WebSessionFailure,
+  WebSessionResult
+} from '../sessionContracts.js'
 import type {
   BillingHttpResponse,
   BillingRequest,
@@ -29,6 +39,7 @@ import type {
 } from './billingContracts.js'
 import type { BillingScope, BillingScopeSource } from './billingScope.js'
 import { sameBillingScope } from './billingScope.js'
+import { readBillingErrorCode } from './billingErrorBody.js'
 import {
   DEFAULT_BILLING_TIMEOUT_MS,
   exchangeBillingRequest,
@@ -43,7 +54,21 @@ export interface CredentialedBillingTransportOptions {
   readonly credentials?: RequestCredentials
   readonly fetchImpl?: typeof fetch
   readonly defaultTimeoutMs?: number
+  /** Opt-in cookie-session headers; `credentials` is then ignored. */
+  readonly webSession?: CredentialedWebSession
 }
+
+export interface CredentialedWebSession {
+  readonly authorize: RequestAuthorizer
+  readonly getSession: () => WebSession | undefined
+  /** `readWebSession` bound to the host's ingest options. */
+  readonly readSession: (request: {
+    readonly expectedUserId: string
+    readonly signal: AbortSignal
+  }) => Promise<WebSessionResult>
+}
+
+type Exchange = BillingResult<BillingHttpResponse>
 
 /**
  * Any scope other than the captured one supersedes the response, undefined
@@ -70,6 +95,70 @@ function markSessionEnded(response: BillingHttpResponse): BillingHttpResponse {
   return { ...response, authenticationNotRenewable: true }
 }
 
+const SESSION_ENDED: ReadonlySet<WebSessionErrorCode> = new Set([
+  'NO_SESSION',
+  'SESSION_EXPIRED',
+  'SESSION_REVOKED'
+])
+
+function isCsrfInvalid(response: BillingHttpResponse): boolean {
+  return (
+    response.httpStatus === 403 &&
+    readBillingErrorCode(response.body) === 'csrf_invalid'
+  )
+}
+
+function rereadFailure({ code }: WebSessionFailure): Exchange {
+  if (code === 'IDENTITY_CHANGED')
+    return { status: 'error', code: 'SUPERSEDED' }
+  return {
+    status: 'error',
+    code: SESSION_ENDED.has(code) ? 'NOT_AUTHENTICATED' : 'REQUEST_FAILED'
+  }
+}
+
+/**
+ * `csrf_invalid` is the one refusal a fresh token can fix, and the server
+ * refused before acting, so the replay is safe for a write too. The re-read
+ * is pinned to the user the request started as, and the retry to the
+ * captured workspace: a changed user abandons the request rather than
+ * finishing it as someone else.
+ */
+async function exchangeWithSession(
+  request: BillingRequest,
+  webSession: CredentialedWebSession,
+  session: WebSession,
+  context: {
+    readonly workspaceId: string
+    readonly signal: AbortSignal
+    readonly stillInScope: () => boolean
+    readonly send: (authorization: RequestAuthorization) => Promise<Exchange>
+  }
+): Promise<Exchange> {
+  const sendAs = async (current: WebSession) => {
+    const authorization = await webSession.authorize(
+      { kind: 'session', session: current },
+      {
+        target: 'ingest',
+        method: request.method,
+        workspaceId: context.workspaceId
+      }
+    )
+    return context.send(authorization)
+  }
+
+  const first = await sendAs(session)
+  if (first.status === 'error' || !isCsrfInvalid(first.value)) return first
+  if (!context.stillInScope()) return { status: 'error', code: 'SUPERSEDED' }
+
+  const reread = await webSession.readSession({
+    expectedUserId: session.user.id,
+    signal: context.signal
+  })
+  if (reread.status === 'error') return rereadFailure(reread)
+  return sendAs(reread.session)
+}
+
 export function createCredentialedBillingTransport(
   options: CredentialedBillingTransportOptions
 ): BillingTransport {
@@ -78,14 +167,54 @@ export function createCredentialedBillingTransport(
     scopeSource,
     credentials = 'include',
     fetchImpl = fetch,
-    defaultTimeoutMs = DEFAULT_BILLING_TIMEOUT_MS
+    defaultTimeoutMs = DEFAULT_BILLING_TIMEOUT_MS,
+    webSession
   } = options
+
+  type Send = (
+    request: BillingRequest,
+    captured: BillingScope,
+    signal: AbortSignal
+  ) => Promise<Exchange>
+
+  const exchange = (
+    request: BillingRequest,
+    signal: AbortSignal,
+    auth: {
+      readonly credentials?: RequestCredentials
+      readonly headers?: Readonly<Record<string, string>>
+    }
+  ) =>
+    exchangeBillingRequest(request, {
+      fetchImpl,
+      url: resolveUrl(request.route),
+      signal,
+      ...auth
+    })
+
+  const sendPlain: Send = (request, _captured, signal) =>
+    exchange(request, signal, { credentials })
+
+  function sessionSender(session: WebSession | undefined): Send | undefined {
+    if (webSession === undefined || session === undefined) return undefined
+    return (request, captured, signal) =>
+      exchangeWithSession(request, webSession, session, {
+        workspaceId: captured.workspaceId,
+        signal,
+        stillInScope: () => !movedOutOfScope(scopeSource, captured),
+        send: (authorization) => exchange(request, signal, authorization)
+      })
+  }
 
   return async function transport(
     request: BillingRequest
   ): Promise<BillingResult<BillingHttpResponse>> {
     const captured = scopeSource.getScope()
-    if (captured === undefined) {
+    const send =
+      webSession === undefined
+        ? sendPlain
+        : sessionSender(webSession.getSession())
+    if (captured === undefined || send === undefined) {
       return { status: 'error', code: 'NOT_AUTHENTICATED' }
     }
 
@@ -94,12 +223,7 @@ export function createCredentialedBillingTransport(
       request.timeoutMs ?? defaultTimeoutMs
     )
     try {
-      const response = await exchangeBillingRequest(request, {
-        fetchImpl,
-        url: resolveUrl(request.route),
-        signal: budget.signal,
-        credentials
-      })
+      const response = await send(request, captured, budget.signal)
       if (response.status === 'error') return response
       if (movedOutOfScope(scopeSource, captured)) {
         return { status: 'error', code: 'SUPERSEDED' }

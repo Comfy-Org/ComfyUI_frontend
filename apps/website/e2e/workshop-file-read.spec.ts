@@ -8,7 +8,7 @@ import { test } from './fixtures/modelsAccount'
 
 const scenarios = [
   {
-    name: 'Base64 input',
+    name: 'Gemini URL input',
     models: [
       'vertexai--gemini-nano-banana-2--edit-images',
       'vertexai--gemini-3-pro-image--edit-images'

@@ -16,8 +16,8 @@ import type {
 import { useBillingClient, useCheckout } from '@comfyorg/account-ui/billing'
 
 import { useHostedCopy } from '@/composables/useHostedCopy'
-import { STRIPE_PUBLISHABLE_KEY } from '@/config/env'
-import { createStripeChallengePort } from '@/session/stripeChallengePort'
+import { awaitBillingWebStripeKey } from '@/config/stripeKey'
+import { createDeferredStripeChallengePort } from '@/session/stripeChallengePort'
 
 const emit = defineEmits<{
   /** The subscription changed on the server; readers over it are stale. */
@@ -33,10 +33,8 @@ const { capabilities, commands } = useBillingClient<
 const checkout = useCheckout({
   openUrl: (url) => window.location.assign(url),
   navigationMode: 'redirect',
-  challengePort:
-    STRIPE_PUBLISHABLE_KEY === undefined
-      ? undefined
-      : createStripeChallengePort(STRIPE_PUBLISHABLE_KEY)
+  // Deferred: reads the key at challenge time, not this setup's snapshot.
+  challengePort: createDeferredStripeChallengePort(awaitBillingWebStripeKey)
 })
 
 const allowed = ref<BillingCapabilities | undefined>()

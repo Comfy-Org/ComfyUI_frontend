@@ -111,5 +111,14 @@ it.fails('surfaces a human add_node the doc host rejected instead of swallowing 
     })
   )
 
-  expect(reportError).toHaveBeenCalled()
+  expect(reportError).toHaveBeenCalledWith(
+    expect.any(Error),
+    expect.objectContaining({
+      context: expect.objectContaining({
+        workflowId: WORKFLOW_ID,
+        opId: op_id,
+        code: 'uncatalogued_widget_write'
+      })
+    })
+  )
 })

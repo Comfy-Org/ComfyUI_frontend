@@ -24,7 +24,7 @@ test('recovers the operation the server says is pending and reports it on the wa
     page.getByRole('link', { name: 'Return to ComfyUI' })
   ).toHaveAttribute(
     'href',
-    'https://testcloud.comfy.org/?billing_result=success&billing_ref=op_1'
+    'https://testcloud.comfy.org/?workspace=ws_e2e&billing_result=success&billing_ref=op_1'
   )
   expect(
     cloud.requests.some((request) => request.path === '/billing/ops/op_1')
@@ -44,6 +44,6 @@ test('says so when nothing is pending for the workspace', async ({
     page.getByRole('link', { name: 'Return to ComfyUI' })
   ).toHaveAttribute(
     'href',
-    'https://testcloud.comfy.org/?billing_result=pending'
+    'https://testcloud.comfy.org/?workspace=ws_e2e&billing_result=pending'
   )
 })

@@ -139,12 +139,7 @@ function renderList(pinia: Pinia) {
   })
   render(ErrorGroupList, {
     global: {
-      plugins: [PrimeVue, testI18n, pinia, router],
-      stubs: {
-        AsyncSearchInput: {
-          template: '<input />'
-        }
-      }
+      plugins: [PrimeVue, testI18n, pinia, router]
     }
   })
   return { user }
