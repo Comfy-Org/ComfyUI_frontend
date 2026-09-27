@@ -1,7 +1,19 @@
 // @vitest-environment jsdom
 
 import { render, screen, within } from '@testing-library/vue'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+
+// `AgentMessage` transitively reaches `useVueNodeResizeTracking`, which builds a
+// `ResizeObserver` at module scope. jsdom has none, so importing the component
+// throws before a single test is collected. Hoisted so it lands before the
+// import above runs. Same stub as `WhatsNewPopup.test.ts`.
+vi.hoisted(() => {
+  globalThis.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+})
 
 import { i18n } from '@/i18n'
 import { toTurnId } from '../../../schemas/agentApiSchema'
