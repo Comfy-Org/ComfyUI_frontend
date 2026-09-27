@@ -703,6 +703,27 @@ describe('useBillingSdkStore subscription commands', () => {
     expect(store.subscriptionActionUrl).toBe('https://pay.example/op-1')
   })
 
+  it('opens no payment page while this tab drives the in-page challenge', () => {
+    const openPage = vi.spyOn(window, 'open').mockReturnValue(null)
+    useBillingSdkStore()
+
+    harness.publish(
+      pendingSubscription({
+        presentation: 'embedded',
+        actionUrl: 'https://pay.example/invoice',
+        challenge: { clientSecret: 'pi_secret', status: 'required' }
+      })
+    )
+
+    expect(harness.sdk.driveChallenge).toHaveBeenCalledExactlyOnceWith('op-1')
+    expect(openPage).not.toHaveBeenCalled()
+    expect(
+      useToastStore().messagesToAdd.filter(
+        (message) => message.group !== 'billing-operation'
+      )
+    ).toEqual([])
+  })
+
   it('offers the next hosted page the same subscribe moves to', () => {
     const openPage = vi.spyOn(window, 'open').mockReturnValue(null)
     const store = useBillingSdkStore()
