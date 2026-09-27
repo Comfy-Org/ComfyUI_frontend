@@ -13,6 +13,7 @@ import {
 } from '@e2e/fixtures/assetApiFixture'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { WidgetSelectDropdownFixture } from '@e2e/fixtures/components/WidgetSelectDropdown'
 import type { WorkspaceStore } from '@e2e/types/globals'
 import {
   routeObjectInfoFromSetupApi,
@@ -30,6 +31,7 @@ import {
 import { TestIds } from '@e2e/fixtures/selectors'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
 import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { toNodeId } from '@/types/nodeId'
 
 const ossTest = mergeTests(test, jobsRouteFixture)
@@ -68,6 +70,26 @@ const emptyMediaLoaderNodes = [
     position: { x: 750, y: 150 }
   }
 ]
+
+const transparentPng = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAFgwJ/lwPIRwAAAABJRU5ErkJggg==',
+  'base64'
+)
+
+async function mockViewFiles(
+  page: Page,
+  filesByName: Readonly<Record<string, { contentType?: string }>>
+) {
+  await page.route('**/api/view**', async (route) => {
+    const filename = new URL(route.request().url()).searchParams.get('filename')
+    const file = filename ? filesByName[filename] : undefined
+    await route.fulfill(
+      file
+        ? { body: transparentPng, contentType: file.contentType ?? 'image/png' }
+        : { status: 404, json: { error: 'Unknown filename' } }
+    )
+  })
+}
 
 const cloudOutputAsset: Asset & { hash?: string } = {
   id: 'test-output-hash-001',
@@ -501,6 +523,162 @@ ossTest.describe(
 
         await delayedUpload.finishUpload()
         await expect(getErrorOverlay(comfyPage)).toBeHidden()
+      }
+    )
+  }
+)
+
+ossTest.describe(
+  'Errors tab - OSS output media widget options',
+  { tag: ['@ui', '@vue-nodes'] },
+  () => {
+    ossTest.beforeEach(async ({ page, jobsRoutes }) => {
+      await routeObjectInfoFromSetupApi(page, (objectInfo) => {
+        setComboInputOptions(objectInfo, 'LoadImage', 'image', [
+          'ComfyUI_00001_.png [output]'
+        ])
+        setComboInputOptions(objectInfo, 'LoadVideo', 'file', ['clip.mp4'])
+        setComboInputOptions(objectInfo, 'LoadAudio', 'audio', ['other.wav'])
+      })
+      await jobsRoutes.mockJobsHistory([])
+      await jobsRoutes.mockJobsQueue([])
+    })
+
+    ossTest(
+      'keeps an exact output option selectable with empty history and warns for absent outputs',
+      async ({ comfyPage }) => {
+        await loadWorkflowAndOpenErrorsTab(
+          comfyPage,
+          'missing/missing_media_output_annotations'
+        )
+
+        const missingMediaRows = comfyPage.page.getByTestId(
+          TestIds.dialogs.missingMediaRow
+        )
+        await expect(
+          missingMediaRows.getByRole('button', {
+            name: 'Load Video - file',
+            exact: true
+          })
+        ).toBeVisible()
+        await expect(
+          missingMediaRows.getByRole('button', {
+            name: 'Load Audio - audio',
+            exact: true
+          })
+        ).toBeVisible()
+        await expect(missingMediaRows).toHaveCount(2)
+
+        const panel = new PropertiesPanelHelper(comfyPage.page)
+        await panel.close()
+        await expect(comfyPage.vueNodes.nodes).toHaveCount(3)
+        const dropdown = new WidgetSelectDropdownFixture(
+          comfyPage.vueNodes.getWidgetRowByLabel('Load Image', 'image')
+        )
+        await expect(dropdown.selection).toHaveText(
+          'ComfyUI_00001_.png [output]'
+        )
+        await dropdown.selectOption('ComfyUI_00001_.png [output]')
+        await expect(dropdown.selection).toHaveText(
+          'ComfyUI_00001_.png [output]'
+        )
+      }
+    )
+  }
+)
+
+ossTest.describe(
+  'Errors tab - OSS remote output media options',
+  { tag: ['@ui', '@vue-nodes'] },
+  () => {
+    ossTest.beforeEach(async ({ page, jobsRoutes }) => {
+      await routeObjectInfoFromSetupApi(page, (objectInfo) => {
+        setComboInputOptions(objectInfo, 'LoadAudio', 'audio', ['other.wav'])
+      })
+      await page.route('**/internal/files/output**', async (route) => {
+        if (route.request().method() !== 'GET') {
+          await route.fallback()
+          return
+        }
+
+        const outputOptions: ComboInputSpec['options'] = [
+          'ComfyUI_00001_.png [output]'
+        ]
+        await route.fulfill({ json: outputOptions })
+      })
+      await mockViewFiles(page, { 'ComfyUI_00001_.png': {} })
+      await jobsRoutes.mockJobsHistory([])
+      await jobsRoutes.mockJobsQueue([])
+    })
+
+    ossTest(
+      'resolves a saved LoadImageOutput selection on reload with cached remote options and empty history',
+      async ({ comfyPage }) => {
+        const outputOptionsResponse = comfyPage.page.waitForResponse(
+          (response) =>
+            response.url().includes('/internal/files/output') &&
+            response.status() === 200
+        )
+
+        await loadWorkflowAndOpenErrorsTab(
+          comfyPage,
+          'missing/missing_media_remote_output_option'
+        )
+        await (await outputOptionsResponse).finished()
+        await expect
+          .poll(() =>
+            comfyPage.page.evaluate((nodeId) => {
+              const widget = window
+                .app!.graph.getNodeById(nodeId)
+                ?.widgets?.find((candidate) => candidate.name === 'image')
+              const values = widget?.options.values
+              return Array.isArray(values) ? values : []
+            }, toNodeId(1))
+          )
+          .toEqual(['ComfyUI_00001_.png [output]'])
+
+        const outputNode = await comfyPage.nodeOps.getNodeRefById('1')
+        const imageWidget = await outputNode.getWidgetByName('image')
+        await expect
+          .poll(() => imageWidget.getValue())
+          .toBe('ComfyUI_00001_.png [output]')
+
+        await comfyPage.page.unroute('**/internal/files/output**')
+        await comfyPage.page.route('**/internal/files/output**', (route) =>
+          route.fulfill({ status: 503 })
+        )
+
+        await loadWorkflowAndOpenErrorsTab(
+          comfyPage,
+          'missing/missing_media_remote_output_option'
+        )
+
+        const missingMediaRows = comfyPage.page.getByTestId(
+          TestIds.dialogs.missingMediaRow
+        )
+        await expect(
+          missingMediaRows.getByRole('button', {
+            name: 'Load Audio - audio',
+            exact: true
+          })
+        ).toBeVisible()
+        await expect(missingMediaRows).toHaveCount(1)
+
+        const panel = new PropertiesPanelHelper(comfyPage.page)
+        await panel.close()
+        const dropdown = new WidgetSelectDropdownFixture(
+          comfyPage.vueNodes.getWidgetRowByLabel(
+            'Load Image (from Outputs)',
+            'image'
+          )
+        )
+        await expect(dropdown.selection).toHaveText(
+          'ComfyUI_00001_.png [output]'
+        )
+        await dropdown.selectOption('ComfyUI_00001_.png [output]')
+        await expect(dropdown.selection).toHaveText(
+          'ComfyUI_00001_.png [output]'
+        )
       }
     )
   }
