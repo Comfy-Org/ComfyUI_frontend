@@ -87,6 +87,23 @@ describe('ModelsCatalogue', () => {
     ).toBeNull()
   })
 
+  // One page, one promise: the shelves hold models and the workflows built on
+  // them, so the line under the title does not change as the tabs do.
+  it('names the Hub once and keeps one line under it across the tabs', async () => {
+    const user = userEvent.setup()
+    render(ModelsCatalogue, { props: { models: launchModels } })
+    const subtitle =
+      'Models and the workflows built on them, by what you want to make.'
+
+    const hero = () => screen.getByTestId('workshop-hero')
+    expect(hero()).toHaveTextContent('Hub')
+    expect(hero()).toHaveTextContent(subtitle)
+
+    await user.click(screen.getByRole('button', { name: 'Workflows' }))
+    expect(hero()).toHaveTextContent('Hub')
+    expect(hero()).toHaveTextContent(subtitle)
+  })
+
   it('opens the workflow tab from its return link and filters by its own categories', async () => {
     history.replaceState(null, '', '/models/?type=workflows')
     const user = userEvent.setup()

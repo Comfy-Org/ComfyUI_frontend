@@ -79,16 +79,9 @@ watch(
 <template>
   <WorkshopHero
     v-if="!inSection"
-    :eyebrow="t('workshop.hero.eyebrow', locale)"
+    :eyebrow="t('workshop.catalogue.eyebrow', locale)"
     :heading="t('workshop.hero.heading', locale)"
-    :subtitle="
-      t(
-        activeTab === 'models'
-          ? 'workshop.hero.subtitle'
-          : 'workshop.catalogue.subtitle',
-        locale
-      )
-    "
+    :subtitle="t('workshop.catalogue.subtitle', locale)"
   >
     <template #aside>
       <button
