@@ -4,9 +4,9 @@ import { exactPreview, legacyPreview, plan } from './__fixtures__/preview'
 import {
   amountDueTodayChanged,
   formatAmountDueToday,
+  formatNumber,
   formatRenewalAmount,
   formatUsdFromCents,
-  formatWholeUsd,
   isYearlyCheckout,
   resolveRenewalDate
 } from './checkoutQuote'
@@ -109,8 +109,8 @@ describe('money display', () => {
   it.for([
     [28, '28'],
     [1295, '1,295'],
-    [27.5, '28']
-  ] as const)('shows %d as a whole grouped amount', ([usd, expected]) => {
-    expect(formatWholeUsd(usd, 'en')).toBe(expected)
+    [27.5, '27.5']
+  ] as const)('groups %d the way i18n n() does', ([usd, expected]) => {
+    expect(formatNumber(usd, 'en')).toBe(expected)
   })
 })

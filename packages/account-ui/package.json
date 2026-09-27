@@ -23,6 +23,7 @@
   "exports": {
     "./billing": "./src/billing/index.ts",
     "./billing/stripe": "./src/billing/stripe/index.ts",
+    "./billing/checkout": "./src/billing/checkout/index.ts",
     "./auth/PasswordRules": "./src/auth/PasswordRules.vue",
     "./auth/SocialAuthButtons": "./src/auth/SocialAuthButtons.vue",
     "./auth/TurnstileWidget": "./src/auth/TurnstileWidget.vue",
@@ -42,6 +43,10 @@
       "./billing/stripe": {
         "types": "./dist/billing/stripe/index.d.ts",
         "import": "./dist/billing/stripe/index.js"
+      },
+      "./billing/checkout": {
+        "types": "./dist/billing/checkout/index.d.ts",
+        "import": "./dist/billing/checkout/index.js"
       },
       "./auth/PasswordRules": {
         "types": "./dist/auth/PasswordRules.d.ts",
@@ -88,11 +93,11 @@
     "typecheck": "tsx ../../scripts/vue-tsc-native.ts --noEmit"
   },
   "dependencies": {
-    "@comfyorg/account-core": "workspace:^",
-    "@comfyorg/design-system": "workspace:^",
-    "@comfyorg/tailwind-utils": "workspace:^"
+    "@comfyorg/account-core": "workspace:^"
   },
   "devDependencies": {
+    "@comfyorg/design-system": "workspace:^",
+    "@comfyorg/tailwind-utils": "workspace:^",
     "@stripe/stripe-js": "catalog:",
     "@testing-library/user-event": "catalog:",
     "@testing-library/vue": "catalog:",
@@ -101,6 +106,7 @@
     "@vitest/coverage-v8": "catalog:",
     "@vueuse/core": "catalog:",
     "happy-dom": "catalog:",
+    "reka-ui": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plugin-dts": "catalog:",
@@ -110,6 +116,7 @@
   "peerDependencies": {
     "@stripe/stripe-js": "^9.0.0",
     "@vueuse/core": "^14.4.0",
+    "reka-ui": "^2.6.2",
     "vue": "^3.5.40"
   },
   "peerDependenciesMeta": {

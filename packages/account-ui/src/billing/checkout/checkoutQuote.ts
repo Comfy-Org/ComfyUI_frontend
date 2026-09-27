@@ -3,15 +3,23 @@ import type { SubscriptionPreview } from '@comfyorg/account-core/billing'
 export type CheckoutBillingCycle = 'monthly' | 'yearly'
 
 /**
- * Plan identity the host resolved (tier copy, team credit stop, or the
- * preview itself). The checkout surfaces format and lay it out; they never
- * consult a catalog.
+ * The plan being bought, as the host resolved it (tier copy or a team credit
+ * stop). The checkout surfaces format and lay it out; they never consult a
+ * catalog.
  */
 export interface CheckoutPlan {
   readonly name: string
-  readonly monthlyUsd: number
-  readonly annualTotalUsd: number
+  /** Per-month price billed monthly, and per-month price billed yearly. */
+  readonly monthlyPriceUsd: {
+    readonly monthly: number
+    readonly yearly: number
+  }
   readonly monthlyCredits: number
+  /**
+   * A tier plan shows the quote's price once one arrives; a team credit stop
+   * always shows its own.
+   */
+  readonly pricedByQuote: boolean
 }
 
 type PlanDuration = SubscriptionPreview['new_plan']['duration']
@@ -48,13 +56,13 @@ export function formatQuoteMoney(
   }).format(cents / 100)
 }
 
-/** Whole-dollar display for hero prices, grouped per the locale. */
-export function formatWholeUsd(usd: number, locale: string): string {
-  return new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(usd)
+/** Locale-grouped number, as the host's i18n `n()` prints one. */
+export function formatNumber(value: number, locale: string): string {
+  return new Intl.NumberFormat(locale).format(value)
 }
 
 /** Two-decimal display without a currency symbol; the template adds `$`. */
-export function formatUsdFromCents(cents: number, locale: string): string {
+export function formatUsdFromCents(cents: number, locale?: string): string {
   return new Intl.NumberFormat(locale, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2

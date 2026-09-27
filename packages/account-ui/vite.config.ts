@@ -11,6 +11,7 @@ import dts from 'vite-plugin-dts'
 const entries = {
   'billing/index': 'src/billing/index.ts',
   'billing/stripe/index': 'src/billing/stripe/index.ts',
+  'billing/checkout/index': 'src/billing/checkout/index.ts',
   'auth/PasswordRules': 'src/auth/PasswordRules.vue',
   'auth/SocialAuthButtons': 'src/auth/SocialAuthButtons.vue',
   'auth/TurnstileWidget': 'src/auth/TurnstileWidget.vue',
@@ -22,11 +23,20 @@ const entries = {
 }
 
 /**
- * Vue, VueUse and the sibling packages resolve from the consumer's tree. A
- * bundled copy of Vue would give the consumer two runtimes, and the injection
- * keys the billing composables share are identity-compared.
+ * Vue, VueUse, Reka and the sibling packages resolve from the consumer's
+ * tree. A bundled copy of Vue would give the consumer two runtimes, and the
+ * injection keys the billing composables share are identity-compared. The
+ * stateless class recipes (`design-system`'s variants, `tailwind-utils`'s
+ * `cn`) are the exception: they are bundled, since neither ships a build a
+ * plain consumer can import.
  */
-const EXTERNAL = [/^vue$/, /^@vueuse\//, /^@comfyorg\//, /^@stripe\//]
+const EXTERNAL = [
+  /^vue$/,
+  /^@vueuse\//,
+  /^@comfyorg\/(?!design-system\/|tailwind-utils$)/,
+  /^@stripe\//,
+  /^reka-ui$/
+]
 
 const resolveEntry = (path: string) =>
   fileURLToPath(new URL(path, import.meta.url))
