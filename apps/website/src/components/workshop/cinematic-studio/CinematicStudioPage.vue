@@ -51,7 +51,7 @@ const appOptions = computed(() => [
 onMounted(() => {
   const params = new URLSearchParams(window.location.search)
   const requestedLayout = params.get('ux')
-  if (LAYOUTS.some((option) => option.id === requestedLayout))
+  if (reviewing && LAYOUTS.some((option) => option.id === requestedLayout))
     layout.value = requestedLayout ?? layout.value
   const requestedApp = params.get('app')
   if (APPS.some((id) => id === requestedApp))

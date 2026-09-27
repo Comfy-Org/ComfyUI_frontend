@@ -952,15 +952,17 @@ describe('CinematicStudio', () => {
   })
 
   it.for([
-    { env: 'preview', menu: 1 },
-    { env: 'production', menu: 0 }
+    { env: 'preview', url: '?ux=hub', shown: 'cinematic-apps-hub', menu: 1 },
+    { env: 'production', url: '?ux=hub', shown: 'cinematic', menu: 0 },
+    { env: 'production', url: '?app=reshoot', shown: 'reshoot', menu: 0 }
   ])(
-    'offers the layout-to-review menu only outside production ($env)',
-    async ({ env, menu }) => {
+    'keeps review layouts and their menu off production ($env $url)',
+    async ({ env, url, shown, menu }) => {
       deploy.env = env
+      window.history.replaceState(null, '', `/cinematic-studio${url}`)
       render(CinematicStudioPage, { props: { models } })
 
-      expect(await screen.findByTestId('cinematic')).toBeVisible()
+      expect(await screen.findByTestId(shown)).toBeVisible()
       expect(
         screen.queryAllByRole('button', { name: /^Layout to review/ })
       ).toHaveLength(menu)
