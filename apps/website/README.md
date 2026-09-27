@@ -199,11 +199,18 @@ The guard is all-or-nothing: 9 of 10 postings failing still leaves one role
 and writes. Partial drops are surfaced as CI warnings by
 `src/utils/ashby.ci.ts` rather than blocked.
 
-Both guards read the committed snapshot to decide what a refresh would cost,
-so a snapshot that exists but is unreadable aborts the refresh instead of
-being silently replaced — otherwise the guards would see "no baseline" and
-wave through exactly the data they exist to catch. A missing file is still
-fine; that is a first run.
+Both guards decide what a refresh would cost by reading the committed
+snapshot, so a snapshot that exists but is unreadable aborts the refresh
+rather than being silently replaced — otherwise the guard would see "no
+baseline" and wave through exactly the data it exists to catch. A missing
+file is still fine; that is a first run.
+
+The two differ in when they read it. The cloud-nodes guard always does, so an
+unreadable snapshot always stops that refresh. The Ashby guard reads it only
+once the fetch already looks like a schema break (zero usable roles, at least
+one dropped), because that is the only case where the baseline changes the
+answer — a healthy fetch overwrites an unreadable snapshot, which is the
+outcome you want.
 
 `refresh-cloud-nodes-snapshot.ts` has the equivalent guard for packs that lose
 their registry metadata, tolerating up to two — a delisted pack is a real

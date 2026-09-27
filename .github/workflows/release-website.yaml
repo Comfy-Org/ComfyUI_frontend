@@ -115,10 +115,16 @@ jobs:
       - name: Record the baseline snapshot digest
         id: baseline
         run: |
-          echo "digest=$(sha256sum \
+          # Assigned before it is echoed, so `set -e` can see the failure:
+          # inline in the echo, a missing snapshot still exits 0 with a digest
+          # of whatever survived — pipefail included — and the two digests
+          # then disagree for a reason that is not the data.
+          set -o pipefail
+          digest=$(sha256sum \
             apps/website/src/data/ashby-roles.snapshot.json \
             apps/website/src/data/cloud-nodes.snapshot.json \
-            | sha256sum | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+            | sha256sum | cut -d' ' -f1)
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
 
       - name: Refresh Ashby snapshot
         uses: ./.github/actions/ashby-pull
@@ -140,6 +146,7 @@ jobs:
       - name: Decide whether a snapshot actually changed
         id: changed
         run: |
+          set -o pipefail
           digest=$(sha256sum \
             apps/website/src/data/ashby-roles.snapshot.json \
             apps/website/src/data/cloud-nodes.snapshot.json \
@@ -189,9 +196,7 @@ jobs:
             > the data later matches `main` — because someone refreshed it
             > another way — this PR is closed and the branch deleted. Runs
             > that find nothing new leave the branch alone entirely. To fix
-            > something, push to your own branch and open a separate PR. (The
-            > repository's lint autofixer is exempt: it re-applies itself
-            > after each update.)
+            > something, push to your own branch and open a separate PR.
 
             The snapshot fallback in `apps/website/src/utils/ashby.ts` and
             `apps/website/src/utils/cloudNodes.ts` remains intact: builds
@@ -211,5 +216,5 @@ jobs:
       - name: Fail if the cloud nodes refresh was skipped
         if: steps.cloud-nodes.outcome == 'failure'
         run: |
-          echo "::error title=Cloud nodes snapshot not refreshed::The Comfy Cloud pull failed, so any PR from this run carries Ashby changes only and apps/website/src/data/cloud-nodes.snapshot.json keeps its previous contents. Check WEBSITE_CLOUD_API_KEY and the Cloud API, then re-run."
+          echo "::error title=Cloud nodes snapshot not refreshed::The Comfy Cloud pull failed, so any PR from this run carries Ashby changes only and apps/website/src/data/cloud-nodes.snapshot.json keeps its previous contents. Either the Cloud API is unreachable or WEBSITE_CLOUD_API_KEY is invalid, or the registry-loss guard refused the write because packs lost their registry metadata — the step log says which. For the guard, see 'Refreshing the snapshot' in apps/website/README.md; it is cleared by a local re-run with WEBSITE_ALLOW_REGISTRY_LOSS=1 committed to main, not by re-running this workflow."
           exit 1
