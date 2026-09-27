@@ -843,7 +843,7 @@ class LayoutStoreImpl {
     const prefix = graphId + ':'
     let deleted = false
 
-    for (const key of [...this.ynodes.keys()]) {
+    for (const key of Array.from(this.ynodes.keys())) {
       if (!key.startsWith(prefix)) continue
       this.ynodes.delete(key)
       change.nodeIds.push(toNodeId(parseLayoutKey(key).localId))
@@ -861,12 +861,12 @@ class LayoutStoreImpl {
       slotOffsetsDropped = true
     }
     if (slotOffsetsDropped) this._slotOffsetVersion.value++
-    for (const key of [...this.ygroups.keys()]) {
+    for (const key of Array.from(this.ygroups.keys())) {
       if (!key.startsWith(prefix)) continue
       this.ygroups.delete(key)
       deleted = true
     }
-    for (const key of [...this.yreroutes.keys()]) {
+    for (const key of Array.from(this.yreroutes.keys())) {
       if (!key.startsWith(prefix)) continue
       this.yreroutes.delete(key)
       deleted = true

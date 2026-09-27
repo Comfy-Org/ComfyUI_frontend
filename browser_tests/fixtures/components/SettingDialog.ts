@@ -66,6 +66,15 @@ export class SettingDialog extends BaseDialog {
     await this.root.locator(`button[role="switch"][id="${id}"]`).click()
   }
 
+  async selectSetting(id: string, value: string) {
+    await this.root
+      .locator(`[data-setting-id="${id}"]`)
+      .getByRole('combobox')
+      .click()
+    await this.page.getByRole('option', { name: value, exact: true }).click()
+    await expect.poll(() => this.comfyPage.settings.getSetting(id)).toBe(value)
+  }
+
   category(name: string) {
     return this.root.locator('nav').getByRole('button', { name })
   }

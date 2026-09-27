@@ -51,7 +51,7 @@ function fakeSession(initial: SessionSnapshot = authenticated(credential())) {
     scopeSource: sessionBillingScopeSource(fake),
     moveTo(next: SessionSnapshot) {
       snapshot = next
-      for (const listener of [...listeners]) listener(snapshot)
+      for (const listener of Array.from(listeners)) listener(snapshot)
     },
     moveToTeam() {
       this.moveTo(authenticated(credential({ workspace: TEAM })))

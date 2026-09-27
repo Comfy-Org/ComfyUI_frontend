@@ -35,7 +35,7 @@ const MARKER_ADD: RecordedGraphOperation = {
 
 test.describe(
   'Agent new chat on a cleared saved workflow',
-  { tag: '@cloud' },
+  { tag: ['@cloud', '@vue-nodes'] },
   () => {
     test.use({ conversationCase: CONVERSATION_CASE, humanOpsHost: 'apply' })
 

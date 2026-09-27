@@ -6,7 +6,7 @@
           <div class="text-base">
             {{ slotProps.message.summary }}
           </div>
-          <div class="text-foreground mt-1 text-sm">
+          <div class="mt-1 text-sm text-base-foreground">
             {{ slotProps.message.detail.text }} <br />
             {{ slotProps.message.detail.workspaceName }}
           </div>

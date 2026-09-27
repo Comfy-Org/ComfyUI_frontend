@@ -62,6 +62,18 @@ interface AgentCrdtOutcomeCounters {
   received: number
   /** Passed this composable's own filter and the adapter had a bound session to apply it to. */
   applied: number
+  /**
+   * PM-1575: same as `applied`, excluding a subscribe's own catch-up frame
+   * (`update.catchUp`) -- the one-time state-vector sync that lands whenever
+   * a workflow is (re)subscribed to, unrelated to any in-flight tool call.
+   * `applied` alone is unusable as a canvas-sync gate for that reason: a tool
+   * call's baseline, captured before that catch-up lands, would otherwise
+   * read the catch-up itself as "the matching update already arrived" for
+   * whichever tool call happens to be first after a (re)subscribe. Consumers
+   * that need "did a LIVE update land" (agentEventTransport.ts's canvas-sync
+   * baseline) must read this field, not `applied`.
+   */
+  appliedLive: number
   /** Received but not applied: inactive target, workflow mismatch, or no bound adapter session. */
   skipped: number
   /** The merged doc failed the KA-11 read gate (`schema_error`). */
@@ -213,6 +225,7 @@ export function useAgentCrdtFollower(
     outcomes: {
       received: 0,
       applied: 0,
+      appliedLive: 0,
       skipped: 0,
       errored: 0,
       gap: 0,
@@ -275,6 +288,7 @@ function startAgentCrdtFollower(
   const outcomes = ref<AgentCrdtOutcomeCounters>({
     received: 0,
     applied: 0,
+    appliedLive: 0,
     skipped: 0,
     errored: 0,
     gap: 0,
@@ -380,7 +394,7 @@ function startAgentCrdtFollower(
     )
   }
   const incrementOutcome = (
-    key: 'received' | 'applied' | 'skipped' | 'reset'
+    key: 'received' | 'applied' | 'appliedLive' | 'skipped' | 'reset'
   ): void => {
     outcomes.value = { ...outcomes.value, [key]: outcomes.value[key] + 1 }
   }
@@ -402,6 +416,7 @@ function startAgentCrdtFollower(
   const applyAndReconcile = (update: ClassifiedDocUpdate): NodeId[] => {
     const applied = projection.applyFrame(update)
     incrementOutcome(applied ? 'applied' : 'skipped')
+    if (applied && !update.catchUp) incrementOutcome('appliedLive')
     return applied ? projection.reconcileLiveGraph(update.workflowId) : []
   }
 

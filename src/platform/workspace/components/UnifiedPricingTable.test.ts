@@ -1,8 +1,4 @@
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import type {
-  ScheduledPlanChange,
-  SubscriptionTier
-} from '@comfyorg/ingest-types'
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -11,40 +7,44 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
+import type { SubscriptionInfo } from '@/composables/billing/types'
 import enMessages from '@/locales/en/main.json'
 import type {
   BillingSubscriptionStatus,
   Plan
 } from '@/platform/workspace/api/workspaceApi'
 import UnifiedPricingTable from '@/platform/workspace/components/UnifiedPricingTable.vue'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 function apiPlan(
   tier: Plan['tier'],
   duration: Plan['duration'],
-  credits: number
+  creditsCents: number,
+  priceCents = 2000
 ): Plan {
   return {
     availability: { available: true },
-    credits_cents: credits,
+    credits_cents: creditsCents,
     duration,
     max_seats: 5,
-    price_cents: 2000,
+    price_cents: priceCents,
     seat_summary: {
       seat_count: 1,
-      total_cost_cents: 2000,
-      total_credits_cents: credits
+      total_cost_cents: priceCents,
+      total_credits_cents: creditsCents
     },
     slug: `${tier.toLowerCase()}-${duration.toLowerCase()}`,
     tier
   }
 }
 
-interface MockSubscription {
-  tier: SubscriptionTier | null
-  isCancelled?: boolean
-  duration?: string
-  scheduledChange?: ScheduledPlanChange
-}
+interface MockSubscription
+  extends
+    Pick<SubscriptionInfo, 'tier'>,
+    Partial<
+      Pick<SubscriptionInfo, 'isCancelled' | 'duration' | 'scheduledChange'>
+    > {}
 
 interface MockTeamStop {
   id: string
@@ -66,30 +66,13 @@ const mockPermissions = ref({
 const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
 const mockApiPlans = vi.hoisted(() => ({ value: [] as Plan[] }))
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    plans: computed(() => mockApiPlans.value),
-    currentPlanSlug: computed(() => mockCurrentPlanSlug.value),
-    fetchPlans: vi.fn(),
-    isTeamPlan: computed(() => mockIsTeamPlan.value),
-    subscription: computed(() => mockSubscription.value),
-    subscriptionStatus: computed(() => mockSubscriptionStatus.value),
-    currentTeamCreditStop: computed(() => mockCurrentTeamCreditStop.value)
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useWorkspaceUI'),
-  () => ({
-    useWorkspaceUI: () => ({
-      permissions: computed(() => mockPermissions.value)
-    })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
 const i18n = createI18n({
   legacy: false,
@@ -119,6 +102,38 @@ function renderComponent(props: Record<string, unknown> = {}) {
 
 beforeEach(() => {
   mockApiPlans.value = []
+  const billingContext = useBillingContext()
+  billingContext.plans = computed(() => mockApiPlans.value)
+  billingContext.currentPlanSlug = computed(() => mockCurrentPlanSlug.value)
+  billingContext.isTeamPlan = computed(() => mockIsTeamPlan.value)
+  billingContext.subscription = computed(() =>
+    mockSubscription.value
+      ? {
+          isActive: true,
+          duration: null,
+          planSlug: null,
+          scheduledChange: null,
+          renewalDate: null,
+          endDate: null,
+          isCancelled: false,
+          hasFunds: true,
+          ...mockSubscription.value
+        }
+      : null
+  )
+  billingContext.subscriptionStatus = computed(
+    () => mockSubscriptionStatus.value
+  )
+  billingContext.currentTeamCreditStop = computed(
+    () => mockCurrentTeamCreditStop.value
+  )
+  vi.mocked(useBillingContext).mockReturnValue(billingContext)
+  const workspaceUI = vi.mocked(useWorkspaceUI())
+  const defaultPermissions = workspaceUI.permissions.value
+  workspaceUI.permissions = computed(() => ({
+    ...defaultPermissions,
+    ...mockPermissions.value
+  }))
 })
 
 describe('UnifiedPricingTable plan CTA labels', () => {
@@ -701,6 +716,34 @@ describe('UnifiedPricingTable outside Cloud', () => {
   })
 })
 
+// GET /api/billing/plans on testcloud, 2026-09-25. credits_cents is the grant in
+// USD cents, not a credit count.
+const TESTCLOUD_CATALOG: Plan[] = [
+  apiPlan('STANDARD', 'MONTHLY', 1_991, 2_000),
+  apiPlan('STANDARD', 'ANNUAL', 23_887, 19_200),
+  apiPlan('CREATOR', 'MONTHLY', 3_508, 3_500),
+  apiPlan('CREATOR', 'ANNUAL', 42_086, 33_600),
+  apiPlan('PRO', 'MONTHLY', 10_000, 10_000),
+  apiPlan('PRO', 'ANNUAL', 120_000, 96_000)
+]
+
+const CATALOG_CARDS = [
+  {
+    cycle: 'yearly',
+    credits: ['50,400', '88,800', '253,200'],
+    videos: ['4,560', '8,040', '22,980'],
+    billed: ['$192 Billed yearly', '$336 Billed yearly', '$960 Billed yearly'],
+    neverShown: ['23,887', '42,086', '120,000', '50,402', '88,801']
+  },
+  {
+    cycle: 'monthly',
+    credits: ['4,200', '7,400', '21,100'],
+    videos: ['380', '670', '1,915'],
+    billed: ['Billed monthly', 'Billed monthly', 'Billed monthly'],
+    neverShown: ['1,991', '3,508', '10,000', '4,201', '7,402']
+  }
+] as const
+
 const cycleToggleStub = {
   props: ['options'],
   emits: ['update:modelValue'],
@@ -740,16 +783,31 @@ describe('UnifiedPricingTable credit allotment copy', () => {
     mockDistributionTypes.isCloud = true
   })
 
-  it('shows the catalog grant in preference to twelve static months', () => {
-    mockApiPlans.value = [apiPlan('STANDARD', 'ANNUAL', 60_000)]
+  it.for(CATALOG_CARDS)(
+    'shows the $cycle credit grant, not the catalog cents',
+    async ({ cycle, credits, videos, billed, neverShown }) => {
+      mockApiPlans.value = TESTCLOUD_CATALOG
+      const user = userEvent.setup()
+      renderWithCycleToggle()
 
-    renderComponent()
+      if (cycle === 'monthly') {
+        await user.click(screen.getByRole('button', { name: 'Monthly' }))
+        await nextTick()
+      }
 
-    expect(screen.getByText('60,000')).toBeTruthy()
-    expect(screen.queryByText('50,400')).toBeNull()
-    expect(screen.getByText(/~5,429/)).toBeTruthy()
-    expect(screen.getByText('88,800')).toBeTruthy()
-  })
+      for (const amount of credits)
+        expect(screen.getByText(amount)).toBeTruthy()
+      for (const count of videos)
+        expect(screen.getByText(`Generates ~${count} 5s videos*`)).toBeTruthy()
+      expect(
+        screen
+          .getAllByText(/Billed (yearly|monthly)/)
+          .map((el) => el.textContent.trim())
+      ).toEqual([...billed])
+      for (const amount of neverShown)
+        expect(screen.queryByText(amount)).toBeNull()
+    }
+  )
 
   it('states the whole-year allotment for personal tiers on the yearly cycle', () => {
     renderWithCycleToggle()

@@ -16,6 +16,9 @@ export class AgentPanel {
   public readonly fileInput: Locator
   public readonly composerAssetSection: Locator
   public readonly attachmentChips: Locator
+  public readonly composer: Locator
+  public readonly sendButton: Locator
+  public readonly nodeSelectionBanner: Locator
 
   constructor(private readonly page: Page) {
     this.root = page.locator('#agent-panel-root')
@@ -41,6 +44,11 @@ export class AgentPanel {
     this.fileInput = this.root.getByTestId('agent-file-input')
     this.composerAssetSection = this.root.getByTestId('composer-asset-section')
     this.attachmentChips = this.root.getByTestId('agent-attachment-chip')
+    this.composer = this.root.getByRole('textbox', { name: /^Describe ideas/ })
+    this.sendButton = this.root.getByRole('button', {
+      name: enMessages.agent.send
+    })
+    this.nodeSelectionBanner = page.getByTestId('node-selection-mode-banner')
   }
 
   /**
@@ -75,6 +83,30 @@ export class AgentPanel {
     await this.workflowPicker.click()
     await this.page.getByRole('menuitemradio', { name, exact: true }).click()
     await expect(this.workflowPicker).toHaveText(name)
+  }
+
+  async sendMessage(message: string): Promise<void> {
+    await this.composer.fill(message)
+    await this.sendButton.click()
+  }
+
+  async enterNodeSelectionMode(): Promise<void> {
+    await this.open()
+    await this.selectWorkflow()
+    await this.root
+      .getByRole('button', { name: enMessages.agent.addToPrompt })
+      .click()
+    await this.page
+      .getByRole('menuitem', { name: enMessages.agent.nodes })
+      .click()
+    await expect(this.nodeSelectionBanner).toBeVisible()
+  }
+
+  async exitNodeSelectionMode(): Promise<void> {
+    await this.nodeSelectionBanner
+      .getByRole('button', { name: enMessages.agent.nodeSelection.exit })
+      .click()
+    await expect(this.nodeSelectionBanner).toHaveCount(0)
   }
 
   async turnOffOptionalReportSources(): Promise<void> {

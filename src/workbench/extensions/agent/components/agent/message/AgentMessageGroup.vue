@@ -24,7 +24,8 @@ const { group } = defineProps<{
 
 const emit = defineEmits<{
   answer: [askId: string, selection: 'run' | 'cancel']
-  openWorkflow: [workflowId: string, workflowName?: string]
+  openWorkflow: [askId: string, workflowId: string, workflowName?: string]
+  approvalShown: [askId: string, workflowId: string | null]
   paywallAction: [action: AgentPaywallAction]
 }>()
 </script>
@@ -53,9 +54,10 @@ const emit = defineEmits<{
     :part="group.part"
     :answering="answeringAskIds.has(group.part.askId)"
     @answer="(askId, selection) => emit('answer', askId, selection)"
+    @shown="(askId, workflowId) => emit('approvalShown', askId, workflowId)"
     @open-workflow="
-      (workflowId, workflowName) =>
-        emit('openWorkflow', workflowId, workflowName)
+      (askId, workflowId, workflowName) =>
+        emit('openWorkflow', askId, workflowId, workflowName)
     "
   />
   <AgentPaywallCard

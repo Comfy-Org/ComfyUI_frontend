@@ -125,7 +125,7 @@ function openCard() {
     @click="openCard"
   >
     <div
-      class="relative aspect-4/3 overflow-hidden rounded-[1.75rem] bg-hub-surface"
+      class="relative aspect-4/3 overflow-hidden rounded-3.5xl bg-hub-surface"
     >
       <HubTypeBadge :kind="template.isApp ? 'comfyApp' : 'nodeGraph'" :locale />
       <div
@@ -305,9 +305,10 @@ function openCard() {
             class="grid grid-cols-[0fr] transition-[grid-template-columns] duration-500 group-hover/pill-trigger:grid-cols-[1fr]"
           >
             <span class="overflow-hidden">
-              <span class="ppformula-text-center relative leading-none">{{
-                tryNowLabel
-              }}</span>
+              <span
+                class="ppformula-text-center relative inline-block leading-none"
+                >{{ tryNowLabel }}</span
+              >
             </span>
           </span>
           <span

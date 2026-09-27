@@ -3,6 +3,7 @@ import { expect, mergeTests } from '@playwright/test'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import { agentTest } from '@e2e/fixtures/agentPanelFixture'
+import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { workflowSelectionTest } from '@e2e/fixtures/agentWorkflowSelectionFixture'
 
 const test = mergeTests(agentTest, workflowSelectionTest)
@@ -35,7 +36,7 @@ test.describe(
         name: enMessages.agent.switchWorkflow
       })
 
-      // Pin this chat's target to tab A ("Unsaved Workflow").
+      // Save tab A so the existing conversation has a Cloud identity.
       await targetPicker.click()
       await page
         .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
@@ -43,6 +44,14 @@ test.describe(
       await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
       workflowSelection.finishSave(true)
       await expect(targetPicker).toHaveText('Unsaved Workflow')
+      const initialComposer = panel.getByRole('textbox', {
+        includeHidden: true
+      })
+      await initialComposer.fill('Start in this workflow')
+      await initialComposer.press('Enter')
+      await expect.poll(() => workflowSelection.postedMessages.length).toBe(1)
+      await expect(initialComposer).toHaveText('Start in this workflow')
+      await initialComposer.fill('')
 
       // Open a second workflow tab (B), then switch back to A so B is just
       // another open tab rather than the newest/active one.
@@ -52,19 +61,18 @@ test.describe(
           exact: true
         })
         .click()
-      const tabs = page.getByTestId('workflow-tab')
-      await expect(tabs).toHaveCount(2)
-      const activeTab = page.locator('.workflow-tabs .p-togglebutton-checked')
-      await tabs.first().click()
-      await expect(activeTab).toHaveText('Unsaved Workflow')
+      const topbar = new Topbar(page)
+      await expect(topbar.tabs).toHaveCount(2)
+      await topbar.getTab(0).click()
+      await expect(topbar.getActiveTab()).toHaveText('Unsaved Workflow')
 
       // A pinned target surviving a plain tab switch is intentional (asserted
       // elsewhere in agentWorkflowSelection.spec.ts); it is not the bug here.
       await expect(targetPicker).toHaveText('Unsaved Workflow')
 
       // Now bring tab B on screen and start a new chat from there.
-      await tabs.last().click()
-      await expect(activeTab).toHaveText('Unsaved Workflow (2)')
+      await topbar.getTab(1).click()
+      await expect(topbar.getActiveTab()).toHaveText('Unsaved Workflow (2)')
       const panelBeforeNewChat = await panel.screenshot({
         path: testInfo.outputPath('before-new-chat.png')
       })
@@ -73,7 +81,7 @@ test.describe(
         .click()
       const composer = panel.getByRole('textbox', { includeHidden: true })
       await expect(composer).toHaveText('')
-      await expect(activeTab).toHaveText('Unsaved Workflow (2)')
+      await expect(topbar.getActiveTab()).toHaveText('Unsaved Workflow (2)')
       await expect(targetPicker).toHaveText('Unsaved Workflow (2)')
 
       await testInfo.attach('before-new-chat', {
@@ -103,7 +111,7 @@ test.describe(
         name: enMessages.agent.switchWorkflow
       })
 
-      // Pin this chat's target to the only tab open so far.
+      // Save the workflow before establishing this conversation.
       await targetPicker.click()
       await page
         .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
@@ -111,6 +119,14 @@ test.describe(
       await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
       workflowSelection.finishSave(true)
       await expect(targetPicker).toHaveText('Unsaved Workflow')
+      const initialComposer = panel.getByRole('textbox', {
+        includeHidden: true
+      })
+      await initialComposer.fill('Start in this workflow')
+      await initialComposer.press('Enter')
+      await expect.poll(() => workflowSelection.postedMessages.length).toBe(1)
+      await expect(initialComposer).toHaveText('Start in this workflow')
+      await initialComposer.fill('')
 
       // Create a brand new, still-unsaved tab - it becomes the one on screen.
       await page
@@ -119,8 +135,9 @@ test.describe(
           exact: true
         })
         .click()
-      const activeTab = page.locator('.workflow-tabs .p-togglebutton-checked')
-      await expect(activeTab).toHaveText('Unsaved Workflow (2)')
+      await expect(new Topbar(page).getActiveTab()).toHaveText(
+        'Unsaved Workflow (2)'
+      )
 
       await panel
         .getByRole('button', { name: enMessages.agent.newChat })

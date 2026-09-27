@@ -2008,6 +2008,7 @@
     "removeAll": "Удалить все",
     "removeAllKeybindingsMessage": "Все сочетания клавиш для этой команды будут удалены",
     "removeAllKeybindingsTitle": "Удалить все сочетания клавиш?",
+    "removeFilter": "Удалить фильтр {label}",
     "removeImage": "Удалить изображение",
     "removeKeybinding": "Удалить сочетание клавиш",
     "removeTag": "Удалить тег",
@@ -2222,8 +2223,10 @@
     "star": "Звезда"
   },
   "imageCompare": {
+    "afterAlt": "Изображение после",
     "batchLabelA": "A:",
     "batchLabelB": "B:",
+    "beforeAlt": "Изображение до",
     "noImages": "Нет изображений для сравнения"
   },
   "imageCrop": {
@@ -2758,6 +2761,9 @@
     "installationQueue": "Очередь установки",
     "installingDependencies": "Установка зависимостей...",
     "lastUpdated": "Последнее обновление",
+    "latestActive": "Последняя активная",
+    "latestInstallable": "Последняя доступная для установки",
+    "latestStableVersion": "Последняя стабильная",
     "latestVersion": "Последняя",
     "legacyManagerSearchTip": "Ищете ComfyUI-Manager? Вы можете включить устаревший интерфейс менеджера, запустив ComfyUI с флагом --enable-manager-legacy-ui.",
     "legacyManagerUI": "Использовать устаревший UI",
@@ -2779,10 +2785,13 @@
       "updatesAvailable": "Доступны обновления"
     },
     "nightlyVersion": "Ночная",
+    "noActiveVersions": "В этом пакете нет активных выпусков.",
+    "noActiveVersionsFlagged": "В этом пакете нет активных выпусков. Выберите помеченный выпуск, чтобы запросить установку с учётом настроек безопасности Manager.",
     "noDescription": "Описание отсутствует",
     "noNodesFound": "Узлы не найдены",
     "noNodesFoundDescription": "Узлы пакета не могут быть проанализированы, или пакет является только расширением интерфейса и не имеет узлов.",
     "noResultsFound": "По вашему запросу ничего не найдено.",
+    "noUpdateVersion": "Для выбранного варианта обновления нет доступных выпусков.",
     "nodePack": "Пакет Узлов",
     "nodePackInfo": "Информация о пакете узлов",
     "notAvailable": "Недоступно",
@@ -2790,9 +2799,11 @@
       "nodeIdRequired": "Для установки требуется идентификатор узла"
     },
     "packsSelected": "Выбрано пакетов",
+    "queueWaitingToContinue": "Задачи ожидают выполнения. Повторите попытку, чтобы продолжить.",
     "repository": "Репозиторий",
     "restartToApplyChanges": "Чтобы применить изменения, пожалуйста, перезапустите ComfyUI",
     "restartingBackend": "Перезапуск бэкенда для применения изменений...",
+    "retryQueueStart": "Повторить попытку",
     "searchPlaceholder": "Поиск",
     "selectVersion": "Выберите версию",
     "selected": "Выбрано",
@@ -2833,9 +2844,15 @@
     },
     "update": "Обновить",
     "updateAll": "Обновить всё",
+    "updateFailed": "Не удалось изменить версию пакета. Повторите попытку.",
+    "updateLatestActiveTooltip": "Перейти на последнюю активную версию (по умолчанию).",
+    "updateLatestInstallableTooltip": "Перейти на последнюю доступную для установки версию, включая помеченные и ожидающие выпуски. Настройки безопасности Manager по-прежнему применяются.",
+    "updateOptions": "Параметры обновления",
     "updateSelected": "Обновить выбранное",
+    "updateVersionInstalled": "Версия {version} уже установлена.",
     "updatingAllPacks": "Обновление всех пакетов",
-    "version": "Версия"
+    "version": "Версия",
+    "versionLoadFailed": "Не удалось загрузить версии. Закройте это окно выбора и повторите попытку."
   },
   "maskEditor": {
     "activateLayer": "Активировать слой",
@@ -4794,6 +4811,7 @@
     },
     "clearAllFilters": "Сбросить все фильтры",
     "error": {
+      "loading": "Не удалось открыть шаблон. Попробуйте ещё раз.",
       "templateNotFound": "Шаблон \"{templateName}\" не найден"
     },
     "filtersApplied": "{count} фильтр применён | {count} фильтра применено | {count} фильтров применено",
@@ -5074,6 +5092,7 @@
   },
   "workspace": {
     "addedToWorkspace": "Вас добавили в:",
+    "deepLinkStayed": "Не удалось открыть это рабочее пространство. Вы всё ещё находитесь в {workspaceName}.",
     "inviteAccepted": "Приглашение принято",
     "inviteFailed": "Не удалось принять приглашение",
     "switchFailed": "Не удалось переключить рабочее пространство. Пожалуйста, попробуйте еще раз.",

@@ -14,7 +14,7 @@ const toastService = vi.hoisted(() => ({
 }))
 
 vi.mock<unknown>(
-  // eslint-disable-next-line primevue-removal/no-imports
+  // oxlint-disable-next-line comfy/no-primevue-imports
   import('primevue/usetoast'),
   () => ({
     useToast: () => toastService

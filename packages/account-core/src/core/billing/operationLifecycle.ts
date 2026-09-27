@@ -169,6 +169,11 @@ const SUPERSEDED = {
   code: 'SUPERSEDED'
 } as const satisfies BillingFailure
 
+const OPERATION_ALREADY_PENDING = {
+  status: 'error',
+  code: 'OPERATION_ALREADY_PENDING'
+} as const satisfies BillingFailure
+
 /** A command attempt still settling, kept with the scope that issued it. */
 interface InFlightCommand {
   readonly context: BillingScopeContext
@@ -319,7 +324,7 @@ export function createBillingOperationLifecycle(
   }
 
   function publish(record: OperationRecord) {
-    for (const listener of [...listeners]) listener(record.state)
+    for (const listener of Array.from(listeners)) listener(record.state)
   }
 
   function stopTimer(record: OperationRecord) {
@@ -549,15 +554,13 @@ export function createBillingOperationLifecycle(
 
     const rail = status.value.status.billing_rail
     const pending = pendingFromStatus(status.value.status)
+    // Declining, rather than joining it, because the status names no plan:
+    // this caller asked for one outcome and the parked attempt settles
+    // another, so reporting that one as this command's result would tell the
+    // customer they bought something they did not choose. recover() is where
+    // a deliberate return to the parked operation belongs.
     if (pending !== undefined && pending.kind === kind) {
-      const record = adopt({
-        ...pending,
-        context,
-        presentation: routeFor(rail, pending),
-        attemptStartedAt: now(),
-        resumed: true
-      })
-      return { status: 'ok', value: record.state }
+      return OPERATION_ALREADY_PENDING
     }
 
     const attemptStartedAt = now()

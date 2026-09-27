@@ -2008,6 +2008,7 @@
     "removeAll": "הסרת הכול",
     "removeAllKeybindingsMessage": "כל מקשי הקיצור עבור פקודה זו יוסרו",
     "removeAllKeybindingsTitle": "להסיר את כל מקשי הקיצור?",
+    "removeFilter": "הסר מסנן {label}",
     "removeImage": "הסרת תמונה",
     "removeKeybinding": "הסרת מקש הקיצור",
     "removeTag": "הסרת תגית",
@@ -2222,8 +2223,10 @@
     "star": "כוכב"
   },
   "imageCompare": {
+    "afterAlt": "תמונה לאחר",
     "batchLabelA": "א:",
     "batchLabelB": "ב:",
+    "beforeAlt": "תמונה לפני",
     "noImages": "אין תמונות להשוואה"
   },
   "imageCrop": {
@@ -2758,6 +2761,9 @@
     "installationQueue": "תור ההתקנות",
     "installingDependencies": "מתקין תלויות...",
     "lastUpdated": "עודכן לאחרונה",
+    "latestActive": "הפעילה העדכנית ביותר",
+    "latestInstallable": "הניתנת להתקנה העדכנית ביותר",
+    "latestStableVersion": "היציבה העדכנית ביותר",
     "latestVersion": "האחרונה",
     "legacyManagerSearchTip": "מחפש את ComfyUI-Manager? ניתן להפעיל את ממשק המנהל הישן על-ידי הפעלת ComfyUI עם הדגל --enable-manager-legacy-ui.",
     "legacyManagerUI": "שימוש בממשק הישן",
@@ -2779,10 +2785,13 @@
       "updatesAvailable": "עדכונים זמינים"
     },
     "nightlyVersion": "Nightly",
+    "noActiveVersions": "לחבילה זו אין מהדורות פעילות.",
+    "noActiveVersionsFlagged": "לחבילה זו אין מהדורות פעילות. בחר מהדורה מסומנת כדי לבקש התקנה, בכפוף להגדרות האבטחה של המנהל.",
     "noDescription": "אין תיאור זמין",
     "noNodesFound": "לא נמצאו צמתים",
     "noNodesFoundDescription": "לא ניתן היה לנתח את צמתי החבילה, או שהחבילה היא הרחבת פרונטאנד בלבד ואין בה צמתים.",
     "noResultsFound": "לא נמצאו תוצאות התואמות לחיפוש שלך.",
+    "noUpdateVersion": "אין מהדורה זמינה עבור אפשרות העדכון שנבחרה.",
     "nodePack": "חבילת צמתים",
     "nodePackInfo": "מידע על חבילת הצמתים",
     "notAvailable": "לא זמין",
@@ -2790,9 +2799,11 @@
       "nodeIdRequired": "מזהה צומת נדרש לצורך ההתקנה"
     },
     "packsSelected": "חבילות נבחרו",
+    "queueWaitingToContinue": "משימות ממתינות. נסה שוב כדי להמשיך.",
     "repository": "מאגר",
     "restartToApplyChanges": "כדי להחיל את השינויים, אנא הפעל מחדש את ComfyUI",
     "restartingBackend": "מפעיל מחדש את השרת כדי להחיל את השינויים...",
+    "retryQueueStart": "נסה שוב",
     "searchPlaceholder": "חיפוש",
     "selectVersion": "בחירת גרסה",
     "selected": "נבחר",
@@ -2833,9 +2844,15 @@
     },
     "update": "עדכון",
     "updateAll": "עדכון הכול",
+    "updateFailed": "לא ניתן היה לשנות את גרסת החבילה. נסה שוב.",
+    "updateLatestActiveTooltip": "עבור לגרסה הפעילה העדכנית ביותר (ברירת מחדל).",
+    "updateLatestInstallableTooltip": "עבור לגרסה העדכנית ביותר הניתנת להתקנה, כולל מהדורות מסומנות וממתינות. הגדרות האבטחה של המנהל עדיין חלות.",
+    "updateOptions": "אפשרויות עדכון",
     "updateSelected": "עדכון הנבחרים",
+    "updateVersionInstalled": "גרסה {version} כבר מותקנת.",
     "updatingAllPacks": "מעדכן את כל החבילות",
-    "version": "גרסה"
+    "version": "גרסה",
+    "versionLoadFailed": "לא ניתן היה לטעון גרסאות. סגור בורר זה ונסה שוב."
   },
   "maskEditor": {
     "activateLayer": "הפעלת השכבה",
@@ -4794,6 +4811,7 @@
     },
     "clearAllFilters": "נקה את כל המסננים",
     "error": {
+      "loading": "לא ניתן היה לפתוח את התבנית. נסו שוב.",
       "templateNotFound": "התבנית \"{templateName}\" לא נמצאה"
     },
     "filtersApplied": "{count} מסנן הופעל | {count} מסננים הופעלו",
@@ -5074,6 +5092,7 @@
   },
   "workspace": {
     "addedToWorkspace": "נוספת אל:",
+    "deepLinkStayed": "לא ניתן היה לפתוח את סביבת העבודה הזו. אתם עדיין נמצאים ב-{workspaceName}.",
     "inviteAccepted": "ההזמנה התקבלה",
     "inviteFailed": "קבלת ההזמנה נכשלה",
     "switchFailed": "המעבר לסביבת העבודה נכשל. אנא נסה שוב.",
