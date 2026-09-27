@@ -1263,6 +1263,9 @@ importers:
       '@comfyorg/account-core':
         specifier: workspace:^
         version: link:../account-core
+      primeicons:
+        specifier: ^7.0.0
+        version: 7.0.0
     devDependencies:
       '@comfyorg/design-system':
         specifier: workspace:^
