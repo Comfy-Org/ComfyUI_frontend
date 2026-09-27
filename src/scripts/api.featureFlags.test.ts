@@ -50,6 +50,7 @@ describe('API Feature Flags', () => {
     it('should send client feature flags as first message on connection', async () => {
       // Initialize API connection
       const initPromise = api.init()
+      await vi.waitFor(() => expect(wsEventHandlers['open']).toBeDefined())
 
       // Simulate connection open
       wsEventHandlers['open'](new Event('open'))
@@ -108,6 +109,7 @@ describe('API Feature Flags', () => {
     it('should handle server without feature flags support', async () => {
       // Initialize API connection
       const initPromise = api.init()
+      await vi.waitFor(() => expect(wsEventHandlers['open']).toBeDefined())
 
       // Simulate connection open
       wsEventHandlers['open'](new Event('open'))
@@ -293,6 +295,7 @@ describe('API Feature Flags', () => {
 
       // Connect the WebSocket so the message handler is active
       const initPromise = api.init()
+      await vi.waitFor(() => expect(wsEventHandlers['open']).toBeDefined())
       wsEventHandlers['open'](new Event('open'))
       wsEventHandlers['message']({
         data: JSON.stringify({

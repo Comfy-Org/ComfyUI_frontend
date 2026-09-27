@@ -11,6 +11,7 @@ import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { TOKEN_REFRESH_BUFFER_MS } from '@/platform/workspace/workspaceConstants'
+import { installCloudApiAuth } from '@/platform/auth/cloudApiAuthProvider'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import { resultItemPreviewUrl, resultItemUrl } from '@/utils/resultItemUrl'
@@ -388,6 +389,7 @@ describe('cloud auth requests with unified_web_session off', () => {
 
   beforeEach(() => {
     identity.reset()
+    installCloudApiAuth()
   })
 
   afterEach(() => {
