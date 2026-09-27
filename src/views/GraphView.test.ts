@@ -85,6 +85,9 @@ vi.mock(import('@/composables/useErrorHandling'))
 vi.mock(import('@/composables/useProgressFavicon'), () => ({
   useProgressFavicon: vi.fn()
 }))
+vi.mock(import('@/composables/node/useProgressTextPreviews'), () => ({
+  useProgressTextPreviews: vi.fn()
+}))
 vi.mock(import('@/platform/distribution/types'), () => distribution)
 
 vi.mock(import('@/platform/telemetry'))

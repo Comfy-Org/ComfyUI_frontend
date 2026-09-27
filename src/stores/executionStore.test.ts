@@ -16,17 +16,7 @@ import {
   createNodeLocatorId
 } from '@/types/nodeIdentification'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
-import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { NodeProgressState } from '@/platform/remote/comfyui/execution/types'
-
-const { mockRemoveTextPreview, mockShowTextPreview } = await vi.hoisted(
-  async () => {
-    return {
-      mockRemoveTextPreview: vi.fn(),
-      mockShowTextPreview: vi.fn()
-    }
-  }
-)
 
 const defaultWorkflowExecutionIntent = {
   trigger_source: 'unknown'
@@ -47,13 +37,6 @@ vi.mock(import('@/platform/telemetry'))
 declare global {
   interface Window {}
 }
-
-vi.mock<unknown>(import('@/composables/node/useNodeProgressText'), () => ({
-  useNodeProgressText: () => ({
-    removeTextPreview: mockRemoveTextPreview,
-    showTextPreview: mockShowTextPreview
-  })
-}))
 
 /**
  * Captures event handlers registered via api.addEventListener so tests
@@ -1312,73 +1295,6 @@ describe('useExecutionStore - clearActiveJobIfStale', () => {
   })
 })
 
-describe('useExecutionStore - progress_text startup guard', () => {
-  let store: ReturnType<typeof useExecutionStore>
-
-  function fireProgressText(detail: {
-    nodeId: string
-    text: string
-    prompt_id?: string
-  }) {
-    const handler = apiEventHandlers.get('progress_text')
-    if (!handler) throw new Error('progress_text handler not bound')
-    handler(new CustomEvent('progress_text', { detail }))
-  }
-
-  beforeEach(() => {
-    apiEventHandlers.clear()
-    store = useExecutionStore()
-    store.bindExecutionEvents()
-  })
-
-  it('should ignore progress_text before the canvas is initialized', async () => {
-    const { useCanvasStore } =
-      await import('@/renderer/core/canvas/canvasStore')
-    useCanvasStore().canvas = null
-
-    expect(() =>
-      fireProgressText({
-        nodeId: toNodeId('1'),
-        text: 'warming up'
-      })
-    ).not.toThrow()
-
-    expect(mockShowTextPreview).not.toHaveBeenCalled()
-  })
-
-  it('should call showTextPreview when canvas is available', async () => {
-    const mockNode = createMockLGraphNode({ id: 1 })
-    const { useCanvasStore } =
-      await import('@/renderer/core/canvas/canvasStore')
-    useCanvasStore().canvas = {
-      graph: { getNodeById: vi.fn(() => mockNode) }
-    } as unknown as LGraphCanvas
-
-    fireProgressText({ nodeId: toNodeId('1'), text: 'warming up' })
-
-    expect(mockShowTextPreview).toHaveBeenCalledWith(mockNode, 'warming up')
-  })
-  it('should ignore nested progress_text when the execution ID cannot be mapped', async () => {
-    const { useCanvasStore } =
-      await import('@/renderer/core/canvas/canvasStore')
-    useCanvasStore().canvas = {
-      graph: { getNodeById: vi.fn() }
-    } as unknown as LGraphCanvas
-    vi.mocked(useWorkflowStore().executionIdToCurrentId).mockReturnValue(
-      undefined
-    )
-
-    expect(() =>
-      fireProgressText({ nodeId: toNodeId('1:2'), text: 'warming up' })
-    ).not.toThrow()
-
-    expect(
-      vi.mocked(useWorkflowStore().executionIdToCurrentId)
-    ).toHaveBeenCalledWith('1:2')
-    expect(mockShowTextPreview).not.toHaveBeenCalled()
-  })
-})
-
 describe('rewriteSessionWorkflowPaths', () => {
   let store: ReturnType<typeof useExecutionStore>
 
@@ -2453,82 +2369,29 @@ describe('useExecutionStore - WebSocket event handlers', () => {
         traceback: []
       }
     }
-  ])('removes progress text after $event', async ({ event, detail }) => {
-    const node = createMockLGraphNode({ id: 1 })
-    const { useCanvasStore } =
-      await import('@/renderer/core/canvas/canvasStore')
-    useCanvasStore().canvas = fromPartial<LGraphCanvas>({
-      graph: { getNodeById: vi.fn(() => node) }
-    })
-    const workflow = createQueuedWorkflow()
-    useWorkflowStore().activeWorkflow = workflow
-    vi.mocked(useWorkflowStore().executionIdToCurrentId).mockReturnValue('1')
-    store.storeJob({
-      nodes: ['1'],
-      id: 'job-1',
-      promptOutput: { '1': createPromptNode('Node', 'Node') },
-      workflow,
-      mode: 'graph'
-    })
-    fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
+  ])(
+    'notifies job reset listeners with the job after $event',
+    ({ event, detail }) => {
+      const onJobReset = vi.fn()
+      store.onJobReset(onJobReset)
+      const workflow = createQueuedWorkflow()
+      store.storeJob({
+        nodes: ['1'],
+        id: 'job-1',
+        promptOutput: { '1': createPromptNode('Node', 'Node') },
+        workflow,
+        mode: 'graph'
+      })
+      fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
 
-    fire(event, detail)
+      fire(event, detail)
 
-    expect(mockRemoveTextPreview).toHaveBeenCalledWith(node)
-  })
-
-  it('preserves progress text in another workflow with the same node ID', async () => {
-    const node = createMockLGraphNode({ id: 1 })
-    const { useCanvasStore } =
-      await import('@/renderer/core/canvas/canvasStore')
-    useCanvasStore().canvas = fromPartial<LGraphCanvas>({
-      graph: { getNodeById: vi.fn(() => node) }
-    })
-    const workflow = createQueuedWorkflow('workflows/finished.json')
-    store.storeJob({
-      nodes: ['1'],
-      id: 'job-1',
-      promptOutput: { '1': createPromptNode('Node', 'Node') },
-      workflow,
-      mode: 'graph'
-    })
-    fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
-    useWorkflowStore().activeWorkflow = createQueuedWorkflow(
-      'workflows/other.json'
-    )
-    vi.mocked(useWorkflowStore().executionIdToCurrentId).mockReturnValue('1')
-
-    fire('execution_success', { prompt_id: 'job-1', timestamp: 1 })
-
-    expect(mockRemoveTextPreview).not.toHaveBeenCalled()
-    expect(store.queuedJobs['job-1']).toBeUndefined()
-  })
-
-  it('preserves progress text when the executed node is outside the viewed subgraph', async () => {
-    const node = createMockLGraphNode({ id: 1 })
-    const { useCanvasStore } =
-      await import('@/renderer/core/canvas/canvasStore')
-    useCanvasStore().canvas = fromPartial<LGraphCanvas>({
-      graph: { getNodeById: vi.fn(() => node) }
-    })
-    const workflow = createQueuedWorkflow()
-    useWorkflowStore().activeWorkflow = workflow
-    vi.mocked(useWorkflowStore().executionIdToCurrentId).mockReturnValue(
-      undefined
-    )
-    store.storeJob({
-      nodes: ['1'],
-      id: 'job-1',
-      promptOutput: { '1': createPromptNode('Node', 'Node') },
-      workflow,
-      mode: 'graph'
-    })
-    fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
-
-    fire('execution_success', { prompt_id: 'job-1', timestamp: 1 })
-
-    expect(mockRemoveTextPreview).not.toHaveBeenCalled()
-  })
+      expect(onJobReset).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ workflow })
+      )
+      expect(store.queuedJobs['job-1']).toBeUndefined()
+    }
+  )
 
   describe('executed', () => {
     it('marks the executed node as done on the active job', () => {
@@ -2887,8 +2750,7 @@ describe('useExecutionStore - WebSocket event handlers', () => {
         'executing',
         'progress',
         'progress_state',
-        'execution_error',
-        'progress_text'
+        'execution_error'
       ]
 
       store.unbindExecutionEvents()
