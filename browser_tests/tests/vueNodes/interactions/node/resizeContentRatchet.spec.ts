@@ -81,6 +81,26 @@ test.describe(
       )
     }
 
+    /** Removes the connected reference image through LiteGraph's production
+     * disconnect path so the extra autogrow row is no longer intrinsically
+     * required before attempting to reclaim its height. */
+    async function disconnectReferenceImage(
+      comfyPage: ComfyPage,
+      fluxNodeId: NodeId
+    ): Promise<void> {
+      await comfyPage.page.evaluate((id) => {
+        const node = window.app!.canvas.graph!.getNodeById(id)
+        if (!node) throw new Error(`Node ${id} not found`)
+        const slotIndex = node.inputs.findIndex(
+          (input) =>
+            input.name.startsWith('model.images.image_') && input.link != null
+        )
+        if (slotIndex === -1)
+          throw new Error('Connected reference-image slot not found')
+        node.disconnectInput(slotIndex)
+      }, fluxNodeId)
+    }
+
     test('can shrink a node below a stale content height after it grows (PM-1304)', async ({
       comfyPage
     }) => {
@@ -114,6 +134,11 @@ test.describe(
       const getHeight = async () => (await node.boundingBox())?.height ?? -1
       await expect.poll(getHeight).toBeGreaterThan(baseline.height)
       const grownHeight = await getHeight()
+
+      // Remove the content that caused the growth. Keeping it connected would
+      // make grownHeight a real intrinsic minimum rather than a stale floor.
+      await disconnectReferenceImage(comfyPage, flux.id)
+      await comfyPage.nextFrame()
 
       // The user now tries to shrink the node back down via the resize
       // handle, dragging well past the original (pre-growth) height.
