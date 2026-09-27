@@ -9,7 +9,8 @@
     "./creditsUtil": "./src/creditsUtil.ts",
     "./formatUtil": "./src/formatUtil.ts",
     "./networkUtil": "./src/networkUtil.ts",
-    "./piiUtil": "./src/piiUtil.ts"
+    "./piiUtil": "./src/piiUtil.ts",
+    "./urlSafety": "./src/urlSafety.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"
