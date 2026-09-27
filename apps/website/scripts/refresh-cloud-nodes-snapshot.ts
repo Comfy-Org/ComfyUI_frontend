@@ -53,7 +53,7 @@ const lost = [...previouslyEnriched].filter(
 
 if (
   lost.length > TOLERATED_LOSSES &&
-  !process.env.WEBSITE_ALLOW_REGISTRY_LOSS
+  process.env.WEBSITE_ALLOW_REGISTRY_LOSS !== '1'
 ) {
   console.error(
     `Registry metadata regressed: ${lost.length} pack(s) still present lost their registry data ` +
