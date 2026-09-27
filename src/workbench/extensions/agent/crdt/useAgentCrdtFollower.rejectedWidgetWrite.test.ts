@@ -52,18 +52,18 @@ const NODE_ADD: GraphOperation = {
 }
 
 /** Narrows an outbound frame the same way a real host would. */
-function mintedOpId(raw: string): string | null {
+function mintedOpIds(raw: string): string[] {
   const frame: unknown = JSON.parse(raw)
   const { type, data } =
     typeof frame === 'object' && frame !== null
       ? (frame as { type?: unknown; data?: unknown })
       : {}
-  if (type !== 'doc_ops') return null
+  if (type !== 'doc_ops') return []
   const parsed =
     typeof data === 'object' && data !== null
       ? parseWireOps((data as { ops?: unknown }).ops)
       : { ok: false as const, reason: 'invalid_frame' as const }
-  return parsed.ok && parsed.ops.length > 0 ? parsed.ops[0].op_id : null
+  return parsed.ok ? parsed.ops.map((op) => op.op_id) : []
 }
 
 /** The transport listens on `api`; a server frame is a CustomEvent there. */
@@ -74,7 +74,11 @@ function answerWithOpsResult(detail: Record<string, unknown>): void {
   )
 }
 
-/** Mounts a follower and returns a submitter for one human edit at a time. */
+/**
+ * Mounts a follower and returns a submitter. `submit(op)` sends one edit;
+ * `submit.batch(ops)` sends several as ONE wire batch, which is what a
+ * prefix-applied rejection needs.
+ */
 function mountFollower() {
   // The telemetry dedupe is per notifier, and each mount makes a new one, so
   // the assertion baseline has to reset with it.
@@ -105,21 +109,28 @@ function mountFollower() {
   )
   onTestFinished(unmount)
 
-  return async function submit(operation: GraphOperation): Promise<string> {
+  async function batch(operations: GraphOperation[]): Promise<string[]> {
     const framesBefore = send.mock.calls.length
-    follower.enqueueHumanOperations([operation])
+    follower.enqueueHumanOperations(operations)
     // The coalescer defers delivery to the end of the tick.
     await vi.waitFor(() =>
       expect(send.mock.calls.length).toBeGreaterThan(framesBefore)
     )
-    const opId = send.mock.calls
+    const ids = send.mock.calls
       .slice(framesBefore)
-      .map(([frame]) => mintedOpId(frame))
-      .find((id) => id !== null)
-    if (opId == null)
+      .flatMap(([frame]) => mintedOpIds(frame))
+    if (ids.length === 0)
       throw new Error('the sender put no wire-shaped doc_ops frame on the wire')
-    return opId
+    return ids
   }
+
+  async function submit(operation: GraphOperation): Promise<string> {
+    // `batch` throws rather than returning an empty list.
+    const [first] = await batch([operation])
+    return first
+  }
+
+  return Object.assign(submit, { batch })
 }
 
 function rejection(opId: string, code: string): Record<string, unknown> {
@@ -302,19 +313,24 @@ describe('a human edit the doc host rejects', () => {
   })
 
   // Schema §4 aborts the remainder of a batch, so the prefix is still applied.
+  // A REAL two-op batch: the host applies the add and rejects the widget write
+  // behind it, so both the op ids and the failure index are the sender's own.
   it('does not claim nothing was saved when a batch applied a prefix', async () => {
     const submit = mountFollower()
-    const opId = await submit(WIDGET_EDIT)
+    const ids = await submit.batch([NODE_ADD, WIDGET_EDIT])
+    // Both must ride ONE frame, or this is not a prefix-applied batch.
+    expect(ids).toHaveLength(2)
+    const [appliedId, rejectedId] = ids
 
     answerWithOpsResult({
       v: 1,
       workflow_id: WORKFLOW_ID,
       ok: false,
-      applied: ['op-that-landed'],
+      applied: [appliedId],
       skipped: [],
       failed: {
         index: 1,
-        op_id: opId,
+        op_id: rejectedId,
         code: 'opaque_widgets',
         message: 'node is absent from the pinned catalog'
       }
@@ -325,6 +341,6 @@ describe('a human edit the doc host rejects', () => {
     expect(toastDetails()).toEqual([
       expect.stringContaining(WIDGET_REJECTION_TEXT)
     ])
-    expect(String(toastDetails()[0])).toContain('your other edits were')
+    expect(String(toastDetails()[0])).toContain('some earlier edits were')
   })
 })
