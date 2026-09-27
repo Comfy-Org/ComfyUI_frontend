@@ -284,6 +284,31 @@ describe('ChangeTracker', () => {
         expect(undo).toHaveBeenCalledTimes(undoCalls)
       }
     )
+
+    it('leaves contenteditable history to the editor without scanning modals', () => {
+      const editor = document.createElement('div')
+      Object.defineProperty(editor, 'isContentEditable', { value: true })
+      vi.spyOn(document, 'activeElement', 'get').mockReturnValue(editor)
+      const querySelectorAll = vi.spyOn(document, 'querySelectorAll')
+      const frames: FrameRequestCallback[] = []
+      vi.spyOn(window, 'requestAnimationFrame').mockImplementation((frame) =>
+        frames.push(frame)
+      )
+      const addEventListener = vi
+        .spyOn(window, 'addEventListener')
+        .mockImplementation(() => {})
+      ChangeTracker.init()
+      const keydown = addEventListener.mock.calls.find(
+        ([type]) => type === 'keydown'
+      )?.[1]
+      if (typeof keydown !== 'function')
+        throw new Error('keydown listener missing')
+
+      keydown(new KeyboardEvent('keydown', { key: 'a' }))
+
+      expect(querySelectorAll).not.toHaveBeenCalled()
+      expect(frames).toHaveLength(0)
+    })
   })
 
   describe('captureCanvasState', () => {
