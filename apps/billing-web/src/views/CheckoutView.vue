@@ -45,6 +45,7 @@ import {
   useBillingWebStripeKey
 } from '@/config/stripeKey'
 import { useBillingEntry } from '@/entry/billingEntry'
+import { returnToHost } from '@/entry/returnToHost'
 import { createDeferredStripeChallengePort } from '@/session/stripeChallengePort'
 import { useWorkspaceInvites } from '@/session/workspaceInvites'
 
@@ -459,9 +460,9 @@ function payWithoutCard() {
   )
 }
 
-function returnToHost() {
+function leaveForHost() {
   const href = returnLink.value
-  if (href !== undefined) window.location.assign(href)
+  if (href !== undefined) returnToHost(href)
 }
 </script>
 
@@ -486,7 +487,7 @@ function returnToHost() {
           v-if="returnLink"
           type="button"
           class="mt-4 cursor-pointer text-sm text-base-foreground underline underline-offset-4"
-          @click="returnToHost"
+          @click="leaveForHost"
         >
           {{ t('checkout.back') }}
         </button>
@@ -495,7 +496,7 @@ function returnToHost() {
         <CheckoutFrame
           :step="frameStep"
           :close-label="t('checkout.close')"
-          @close="returnToHost"
+          @close="leaveForHost"
         >
           <CheckoutTeamSuccess
             v-if="succeeded"
@@ -511,7 +512,7 @@ function returnToHost() {
             :invites
             @invited="readSeats"
             @invites-failed="inviteFailure = $event"
-            @close="returnToHost"
+            @close="leaveForHost"
           />
           <CheckoutSubscribeConfirm
             v-else-if="isNewSubscription"
@@ -536,7 +537,7 @@ function returnToHost() {
             @confirm-payment="pay({ confirmationToken: $event })"
             @apply-promotion-code="applyPromotionCode"
             @invalidate-quote="quoteIsCurrent = false"
-            @back="returnToHost"
+            @back="leaveForHost"
           />
           <CheckoutTransitionConfirm
             v-else
@@ -556,7 +557,7 @@ function returnToHost() {
             @confirm="pay({ confirmReactivation: $event })"
             @apply-promotion-code="applyPromotionCode"
             @invalidate-quote="quoteIsCurrent = false"
-            @back="returnToHost"
+            @back="leaveForHost"
           />
         </CheckoutFrame>
       </template>
