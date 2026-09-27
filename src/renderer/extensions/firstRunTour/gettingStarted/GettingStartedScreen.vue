@@ -93,7 +93,7 @@
                 <GettingStartedCard
                   v-for="tutorial in tutorialCards"
                   :key="tutorial.id"
-                  :image-src="tutorial.thumbnail"
+                  :image-src="api.fileURL(tutorial.thumbnail)"
                   :title="t(tutorial.titleKey)"
                   :badge-icon="TUTORIAL_BADGE_ICON"
                   :testid="`getting-started-tutorial-${tutorial.id}`"
@@ -130,6 +130,7 @@ import TabList from '@/components/tab/TabList.vue'
 import TabPanel from '@/components/tab/TabPanel.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { api } from '@/scripts/api'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import { useDialogStore } from '@/stores/dialogStore'

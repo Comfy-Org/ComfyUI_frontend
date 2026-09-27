@@ -4,11 +4,12 @@ import { getActivePinia } from 'pinia'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { api } from '@/scripts/api'
 import { useDialogStore } from '@/stores/dialogStore'
 
 import {
@@ -233,6 +234,14 @@ describe('GettingStartedScreen', () => {
       )
     }
 
+    function coverSources() {
+      return tutorialCards.map((tutorial) =>
+        screen
+          .getByAltText(i18n.global.t(tutorial.titleKey))
+          .getAttribute('src')
+      )
+    }
+
     it.for([[true], [false]])(
       'shows each tutorial its own bundled cover, catalog loaded: %s',
       async ([isLoaded]) => {
@@ -240,17 +249,26 @@ describe('GettingStartedScreen', () => {
 
         await openTutorials()
 
-        const sources = tutorialCards.map((tutorial) =>
-          screen
-            .getByAltText(i18n.global.t(tutorial.titleKey))
-            .getAttribute('src')
-        )
-
-        expect(sources).toEqual(
+        expect(coverSources()).toEqual(
           tutorialCards.map((tutorial) => tutorial.thumbnail)
         )
       }
     )
+
+    it('addresses the covers through the deployment base, not the origin root', async () => {
+      const root = api.api_base
+      onTestFinished(() => {
+        api.api_base = root
+      })
+      api.api_base = '/comfy'
+
+      await openTutorials()
+
+      expect(
+        coverSources(),
+        'Served under a path prefix, a cover pinned to the origin root 404s and the card falls back to the generic placeholder'
+      ).toEqual(tutorialCards.map((tutorial) => `/comfy${tutorial.thumbnail}`))
+    })
   })
 
   describe('exits', () => {
