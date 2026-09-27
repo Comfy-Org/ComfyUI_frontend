@@ -42,7 +42,8 @@ import {
   tierCheckoutPlan
 } from '@/checkout/checkoutRequest'
 import CheckoutFrame from '@/components/CheckoutFrame.vue'
-import CheckoutToast from '@/components/CheckoutToast.vue'
+import type { CheckoutToastItem } from '@/components/CheckoutToasts.vue'
+import CheckoutToasts from '@/components/CheckoutToasts.vue'
 import { useBilledWorkspace } from '@/composables/useBilledWorkspace'
 import { useCheckoutCopy } from '@/composables/useCheckoutCopy'
 import { useHostedCopy } from '@/composables/useHostedCopy'
@@ -386,6 +387,41 @@ watch(
   }
 )
 
+const toasts = computed(() => {
+  const shown: CheckoutToastItem[] = []
+  const operation = operationToast.value
+  if (operation && operationToastKey.value !== dismissedOperationToast.value)
+    shown.push({ key: 'operation', variant: 'operation', ...operation })
+  if (submitFailure.value)
+    shown.push({
+      key: 'failure',
+      severity: 'error',
+      summary: t('checkout.error'),
+      detail: submitFailure.value
+    })
+  if (inviteFailure.value)
+    shown.push({
+      key: 'invite',
+      severity: 'error',
+      summary: inviteFailure.value
+    })
+  if (successToastShown.value)
+    shown.push({
+      key: 'success',
+      severity: 'success',
+      summary: t('checkout.operation.subscriptionSuccess')
+    })
+  return shown
+})
+
+function closeToast(key: string) {
+  if (key === 'operation')
+    dismissedOperationToast.value = operationToastKey.value
+  if (key === 'failure') submitFailure.value = undefined
+  if (key === 'invite') inviteFailure.value = undefined
+  if (key === 'success') dismissSuccessToast()
+}
+
 const paying = computed(
   () =>
     checkout.submitting.value ||
@@ -573,39 +609,10 @@ function leaveForHost() {
         </CheckoutFrame>
       </template>
     </section>
-    <div
-      class="fixed top-5 right-5 z-10 flex max-w-[calc(100vw-2.5rem)] flex-col gap-4"
-    >
-      <CheckoutToast
-        v-if="operationToast && operationToastKey !== dismissedOperationToast"
-        variant="operation"
-        :severity="operationToast.severity"
-        :summary="operationToast.summary"
-        :close-label="t('checkout.close')"
-        @close="dismissedOperationToast = operationToastKey"
-      />
-      <CheckoutToast
-        v-if="submitFailure"
-        severity="error"
-        :summary="t('checkout.error')"
-        :detail="submitFailure"
-        :close-label="t('checkout.close')"
-        @close="submitFailure = undefined"
-      />
-      <CheckoutToast
-        v-if="inviteFailure"
-        severity="error"
-        :summary="inviteFailure"
-        :close-label="t('checkout.close')"
-        @close="inviteFailure = undefined"
-      />
-      <CheckoutToast
-        v-if="successToastShown"
-        severity="success"
-        :summary="t('checkout.operation.subscriptionSuccess')"
-        :close-label="t('checkout.close')"
-        @close="dismissSuccessToast"
-      />
-    </div>
+    <CheckoutToasts
+      :toasts
+      :close-label="t('checkout.close')"
+      @close="closeToast"
+    />
   </main>
 </template>
