@@ -1,10 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t, te } from '@/i18n'
-import { openModelLibraryBrowser } from '@/platform/assets/composables/openModelLibraryBrowser'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCommandStore } from '@/stores/commandStore'
 import type { SidebarTabExtension } from '@/types/extensionTypes'
 
@@ -68,21 +65,7 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
       versionAdded: '1.3.9',
       category: 'view-controls' as const,
       function: async () => {
-        const settingStore = useSettingStore()
-
-        // The asset browser cannot function without backend asset support, so
-        // the browser routing requires both the user preference and the server
-        // capability; without the capability the preference is inert and the
-        // tab opens the sidebar tree.
-        if (
-          tab.id === 'model-library' &&
-          settingStore.get('Comfy.ModelLibrary.UseAssetBrowser') &&
-          useFeatureFlags().flags.assetsEnabled
-        ) {
-          await openModelLibraryBrowser()
-          return
-        }
-
+        if (await tab.onToggle?.()) return
         toggleSidebarTab(tab.id)
       },
       active: () => activeSidebarTab.value?.id === tab.id,
