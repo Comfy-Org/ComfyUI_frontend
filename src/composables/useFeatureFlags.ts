@@ -50,7 +50,8 @@ export enum ServerFeatureFlag {
   CHURNKEY_APP_ID = 'churnkey_app_id',
   SIGNUP_TURNSTILE = 'signup_turnstile',
   SUPPORTS_MODEL_TYPE_TAGS = 'supports_model_type_tags',
-  ONBOARDING_TOUR_ENABLED = 'onboarding_tour_enabled'
+  ONBOARDING_TOUR_ENABLED = 'onboarding_tour_enabled',
+  AGENT_IN_APP_EXPERIENCE = 'agent-in-app-experience'
 }
 
 function reportFeatureFlagEvaluation<T>(flagKey: string, value: T): T {
@@ -116,6 +117,28 @@ function resolveAuthGatedFlag(
   if (!isAuthenticatedConfigLoaded.value) return cachedValue.value ?? false
 
   return remoteConfigValue ?? api.getServerFeature(flagKey, false)
+}
+
+/**
+ * Resolves a per-user allowlist flag. Unlike `resolveAuthGatedFlag` it keeps no
+ * cached fallback: a stale cached grant is what let one browser show a gated
+ * surface while another hid it for the same account (PM-1707). Until the
+ * authenticated config answers, the flag is off.
+ */
+function resolveWhitelistFlag(
+  flagKey: string,
+  remoteConfigValue: boolean | undefined
+): boolean {
+  const sessionOverride = getSessionOverride<boolean>(flagKey)
+  if (sessionOverride !== undefined) return  sessionOverride
+
+  const override = getDevOverride<boolean>(flagKey)
+  if (override !== undefined) return  override
+
+  if (!isCloud) return false
+  if (!isAuthenticatedConfigLoaded.value) return false
+
+  return remoteConfigValue === true
 }
 
 /**
@@ -357,6 +380,12 @@ export function useFeatureFlags() {
     },
     get assetsEnabled() {
       return isCloud || resolveFlag('assets', undefined, false)
+    },
+    get agentInAppExperienceEnabled() {
+      return resolveWhitelistFlag(
+        ServerFeatureFlag.AGENT_IN_APP_EXPERIENCE,
+        remoteConfig.value['agent-in-app-experience']
+      )
     }
   })
 
@@ -417,6 +446,8 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.SIGNUP_TURNSTILE]: flags.signupTurnstileMode,
       [ServerFeatureFlag.SUPPORTS_MODEL_TYPE_TAGS]: flags.supportsModelTypeTags,
       [ServerFeatureFlag.ONBOARDING_TOUR_ENABLED]: flags.onboardingTourEnabled,
+      [ServerFeatureFlag.AGENT_IN_APP_EXPERIENCE]:
+        flags.agentInAppExperienceEnabled,
       assets: flags.assetsEnabled
     }
 

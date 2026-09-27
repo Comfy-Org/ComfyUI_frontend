@@ -1154,4 +1154,72 @@ describe('useFeatureFlags', () => {
       expect(flags.billingControlEnabled).toBe(true)
     })
   })
+  describe('agentInAppExperienceEnabled', () => {
+    beforeEach(() => {
+      vi.mocked(distributionTypes).isCloud = true
+      remoteConfigState.value = 'unloaded'
+      remoteConfig.value = {}
+    })
+
+    afterEach(() => {
+      vi.mocked(distributionTypes).isCloud = false
+      remoteConfigState.value = 'unloaded'
+      remoteConfig.value = {}
+    })
+
+    it('is false off-cloud even when the authenticated config grants it', () => {
+      vi.mocked(distributionTypes).isCloud = false
+      remoteConfigState.value = 'authenticated'
+      remoteConfig.value = { 'agent-in-app-experience': true }
+
+      const { flags } = useFeatureFlags()
+      expect(flags.agentInAppExperienceEnabled).toBe(false)
+    })
+
+    it('is false during the anonymous window even when the config already grants it', () => {
+      remoteConfigState.value = 'anonymous'
+      remoteConfig.value = { 'agent-in-app-experience': true }
+
+      const { flags } = useFeatureFlags()
+      expect(flags.agentInAppExperienceEnabled).toBe(false)
+    })
+
+    it('is true once the authenticated config grants it', () => {
+      remoteConfigState.value = 'authenticated'
+      remoteConfig.value = { 'agent-in-app-experience': true }
+
+      const { flags } = useFeatureFlags()
+      expect(flags.agentInAppExperienceEnabled).toBe(true)
+    })
+
+    it('is false when the authenticated config omits the key', () => {
+      remoteConfigState.value = 'authenticated'
+      remoteConfig.value = {}
+
+      const { flags } = useFeatureFlags()
+      expect(flags.agentInAppExperienceEnabled).toBe(false)
+    })
+
+    it('does not retain an earlier grant once the config is no longer authenticated', () => {
+      remoteConfigState.value = 'authenticated'
+      remoteConfig.value = { 'agent-in-app-experience': true }
+      const { flags } = useFeatureFlags()
+      expect(flags.agentInAppExperienceEnabled).toBe(true)
+
+      remoteConfigState.value = 'error'
+      remoteConfig.value = {}
+
+      expect(flags.agentInAppExperienceEnabled).toBe(false)
+    })
+
+    it('honours a session override ahead of the cloud and auth guards', () => {
+      vi.mocked(distributionTypes).isCloud = false
+      vi.mocked(getSessionOverride).mockImplementation((flagKey) =>
+        flagKey === ServerFeatureFlag.AGENT_IN_APP_EXPERIENCE ? true : undefined
+      )
+
+      const { flags } = useFeatureFlags()
+      expect(flags.agentInAppExperienceEnabled).toBe(true)
+    })
+  })
 })
