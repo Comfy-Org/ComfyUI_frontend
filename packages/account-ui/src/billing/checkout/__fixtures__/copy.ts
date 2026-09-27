@@ -49,6 +49,16 @@ export const checkoutCopy: CheckoutCopy = {
       'Your {plan} was set to end on {date}. Annual billing charges {amount} today, renewing {nextDate}.',
     durationChangeBodyMonthly:
       'Your {plan} was set to end on {date}. Monthly billing charges {amount} today, renewing {nextDate}.',
+    withoutRenewalDate: {
+      upgradeBody:
+        'Your {plan} was set to end on {date}. You will be charged {amount} today and renew.',
+      downgradeBody:
+        'Your {plan} was set to end on {date}. Switching to {newPlan} renews it.',
+      durationChangeBody:
+        'Your {plan} was set to end on {date}. Annual billing charges {amount} today and renews.',
+      durationChangeBodyMonthly:
+        'Your {plan} was set to end on {date}. Monthly billing charges {amount} today and renews.'
+    },
     confirmButton: 'Confirm & reactivate',
     confirmButtonWithCharge: (amount) =>
       `Confirm & reactivate — ${amount} today`,
