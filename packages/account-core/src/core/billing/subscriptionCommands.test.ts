@@ -1317,6 +1317,9 @@ describe('createBillingCommands', () => {
           status: PARKED,
           script: {
             [GET_OP]: [http(200, opStatus({ phase }))],
+            [`GET ${operationRoute('op-2')}`]: [
+              http(200, opStatus({ id: 'op-2' }))
+            ],
             [POST_SUBSCRIBE]: [subscribeAnswer]
           }
         })

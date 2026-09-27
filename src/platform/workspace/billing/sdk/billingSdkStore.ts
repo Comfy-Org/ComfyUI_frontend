@@ -291,7 +291,13 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     }
     if (state.kind === 'subscription') syncProgressToast(state, 'subscription')
     void driveRequiredChallenge(state)
-    openHostedAction(state)
+    if (!drivesInPageChallenge(state)) openHostedAction(state)
+  }
+
+  // The server offers its hosted page beside the client secret, so an
+  // embedded operation carries both; the in-page challenge is its route.
+  function drivesInPageChallenge(state: PendingBillingOperation): boolean {
+    return state.presentation === 'embedded' && state.challenge !== undefined
   }
 
   // One offer per hosted step, not per poll, and not again for a step this
