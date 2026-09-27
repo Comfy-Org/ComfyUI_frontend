@@ -33,6 +33,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { installNodeAddedTelemetry } from '@/platform/telemetry/nodeAdded/installNodeAddedTelemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import { normalizeExecutionTriggerSource } from '@/platform/telemetry/types'
 import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionContext'
 import { groupMissingNodesByPack } from '@/platform/telemetry/utils/groupMissingNodesByPack'
@@ -46,7 +47,6 @@ import type {
 } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
-import { reportError } from '@/platform/telemetry/reportError'
 import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import {
@@ -2196,9 +2196,15 @@ export class ComfyApp {
             ? parseJsonWithNonFinite<ComfyApiWorkflow>(prompt)
             : prompt
         if (this.isApiJson(promptObj)) {
-          await this.loadApiJson(promptObj, fileName, {
-            deferWarnings: options?.deferWarnings
-          })
+          try {
+            await this.loadApiJson(promptObj, fileName, {
+              deferWarnings: options?.deferWarnings
+            })
+          } catch (err) {
+            console.error('Failed to load API prompt:', err)
+            reportError(err, { errorType: 'api_prompt_load_failure' })
+            this.showErrorOnFileLoad(file)
+          }
           return
         }
       } catch (err) {
