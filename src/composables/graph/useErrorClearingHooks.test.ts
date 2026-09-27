@@ -36,9 +36,6 @@ import type { MissingModelCandidate } from '@/platform/missingModel/types'
 
 function stubAppRootGraph(graph: LGraph | undefined) {
   vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockReturnValue(graph)
-  vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(
-    fromAny<LGraph, unknown>(graph)
-  )
 }
 
 function createNestedSubgraphRuntime() {
@@ -738,7 +735,6 @@ describe('installErrorClearingHooks lifecycle', () => {
     vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockImplementation(
       () => currentRoot
     )
-    vi.spyOn(app, 'rootGraph', 'get').mockImplementation(() => currentRoot)
     const modelScan = vi.spyOn(missingModelScan, 'scanNodeModelCandidates')
     const cleanup = installErrorClearingHooks(graphA)
     const nodeA = new LGraphNode('CheckpointLoaderSimple')
@@ -1352,7 +1348,6 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
       sourceNodes: [sourceNode]
     } = createPromotedMediaRuntime()
     stubAppRootGraph(rootGraph)
-    vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(true)
     installErrorClearingHooks(rootGraph)
 
     const mediaStore = useMissingMediaStore()

@@ -14,9 +14,7 @@ vi.mock(import('@/platform/nodeReplacement/cnrIdUtil'), () => ({
   getCnrIdFromNode: vi.fn(() => undefined)
 }))
 
-vi.mock(import('@/i18n'), () => ({
-  st: vi.fn((_key: string, fallback: string) => fallback)
-}))
+vi.mock(import('@/i18n'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false

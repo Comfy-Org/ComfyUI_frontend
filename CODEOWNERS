@@ -107,7 +107,6 @@
 .claude/
 .cursor/
 .cursorrules
-**/CLAUDE.md
 
 # Agent instructions
 **/AGENTS.md                                      @christian-byrne

@@ -17,33 +17,13 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/composables/billing/useBillingRouting'), () => ({
-  useBillingRouting: () => ({
-    shouldUseWorkspaceBilling: computed(
-      () => mockShouldUseWorkspaceBilling.value
-    )
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingRouting'))
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    canAccessSubscriptionFeatures: ref(mockIsActiveSubscription.value),
-    isTeamPlan: ref(mockIsTeamPlan.value),
-    subscription: ref({ isCancelled: mockIsCancelled.value })
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
-    flags: {
-      get billingControlEnabled() {
-        return mockBillingControlEnabled.value
-      }
-    }
-  })
-}))
+vi.mock(import('@/composables/useFeatureFlags'))
 
 const personalWorkspace: WorkspaceWithRole = {
   id: 'ws-personal',
@@ -79,6 +59,9 @@ const teamMemberWorkspace: WorkspaceWithRole = {
 }
 
 async function loadComposable() {
+  const { useFeatureFlags } = await import('@/composables/useFeatureFlags')
+  vi.mocked(useFeatureFlags().flags).billingControlEnabled =
+    mockBillingControlEnabled.value
   const module = await import('@/platform/workspace/composables/useWorkspaceUI')
   return module.useWorkspaceUI()
 }
@@ -105,9 +88,36 @@ describe('useWorkspaceUI', () => {
   beforeEach(async () => {
     vi.resetModules()
     resetStore()
-    const { useBillingCapabilities } =
-      await import('@/platform/workspace/composables/useBillingCapabilities')
+    const [
+      { useBillingContext },
+      { useBillingRouting },
+      { useBillingCapabilities }
+    ] = await Promise.all([
+      import('@/composables/billing/useBillingContext'),
+      import('@/composables/billing/useBillingRouting'),
+      import('@/platform/workspace/composables/useBillingCapabilities')
+    ])
 
+    const billingContext = useBillingContext()
+    billingContext.canAccessSubscriptionFeatures = computed(
+      () => mockIsActiveSubscription.value
+    )
+    billingContext.isTeamPlan = computed(() => mockIsTeamPlan.value)
+    billingContext.subscription = computed(() => ({
+      isActive: true,
+      tier: null,
+      duration: null,
+      planSlug: null,
+      scheduledChange: null,
+      renewalDate: null,
+      endDate: null,
+      hasFunds: true,
+      isCancelled: mockIsCancelled.value
+    }))
+    vi.mocked(useBillingContext).mockReturnValue(billingContext)
+    useBillingRouting().shouldUseWorkspaceBilling = computed(
+      () => mockShouldUseWorkspaceBilling.value
+    )
     useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
   })
 

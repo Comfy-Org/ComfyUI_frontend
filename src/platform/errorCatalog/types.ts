@@ -45,7 +45,10 @@ export type RunErrorMessageSource =
     }
   | {
       kind: 'execution'
-      error: ExecutionErrorWsMessage
+      error: Pick<
+        ExecutionErrorWsMessage,
+        'exception_type' | 'exception_message'
+      >
       nodeDisplayName: string
     }
 

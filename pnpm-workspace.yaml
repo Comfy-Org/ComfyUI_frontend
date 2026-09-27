@@ -55,6 +55,7 @@ catalog:
   '@tiptap/pm': 3.31.0
   '@tiptap/starter-kit': 3.31.0
   '@total-typescript/shoehorn': ^0.1.2
+  '@typescript-eslint/utils': ^8.69.0
   '@types/fs-extra': ^11.0.4
   '@types/jsdom': ^21.1.7
   '@types/leaflet': ^1.9.20
@@ -163,15 +164,16 @@ catalog:
   vue-tsc: ^3.3.11
   wwobjloader2: ^6.2.1
   yaml: ^2.8.3
-  yjs: ^13.6.27
+  yjs: ^13.6.32
   zod: ^3.23.8
   zod-to-json-schema: ^3.24.1
   zod-validation-error: ^3.3.0
+  '@datadog/browser-logs': 6.33.0
+  '@comfyorg/comfy-multi-player': 0.3.6
 
 cleanupUnusedCatalogs: true
 
 allowBuilds:
-  '@comfyorg/comfy-multi-player@https://codeload.github.com/Comfy-Org/comfy-multi-player/tar.gz/58e2333ce3bb6375fd2efbc1e9d7df17327f37e0': true
   '@firebase/util': false
   '@sentry/cli': true
   '@tailwindcss/oxide': true
@@ -205,7 +207,7 @@ overrides:
   brace-expansion@^5.0.0: ^5.0.9
   sharp@^0.34.0: ^0.35.0
 
-# Transitional - drop once 0.2.0 is older than the release-age gate.
+# Transitional - drop each entry once that version is older than the release-age gate.
 minimumReleaseAgeExclude:
   - '@comfyorg/comfyui-desktop-bridge-types@0.2.0'
-  - '@comfyorg/comfy-multi-player@0.2.0 || 0.2.1'
+  - '@comfyorg/comfy-multi-player@0.3.6'

@@ -35,6 +35,11 @@ describe('projectOperationRecord', () => {
       { status: 'pending', actionUrl: 'https://pay.example/1' }
     ],
     [
+      'a hosted step that is not https is refused, as the poller refuses it',
+      pendingTopup({ actionUrl: 'javascript:alert(1)' }),
+      { status: 'pending', actionUrl: null }
+    ],
+    [
       'the server phase is reported as the record phase',
       pendingTopup({ serverPhase: 'awaiting_payment_method' }),
       { status: 'pending', phase: 'awaiting_payment_method' }

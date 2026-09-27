@@ -875,6 +875,7 @@ export default defineConfig({
       '@/utils/formatUtil': '/packages/shared-frontend-utils/src/formatUtil.ts',
       '@/utils/networkUtil':
         '/packages/shared-frontend-utils/src/networkUtil.ts',
+      '@/utils/urlSafety': '/packages/shared-frontend-utils/src/urlSafety.ts',
       '@': '/src',
       '@e2e': BROWSER_TESTS_DIR
     }
@@ -935,9 +936,9 @@ export default defineConfig({
         ...LAYER_EDITOR_GPU_COVERAGE_EXCLUDE,
         ...NON_CRITICAL_LITEGRAPH_COVERAGE_EXCLUDE
       ],
-      thresholds: {
-        [CRITICAL_COVERAGE_GLOB]: CRITICAL_COVERAGE_THRESHOLDS
-      }
+      thresholds: process.env.VITEST_SHARD
+        ? undefined
+        : { [CRITICAL_COVERAGE_GLOB]: CRITICAL_COVERAGE_THRESHOLDS }
     },
     exclude: [
       'src/__ecs_matrix__/**',

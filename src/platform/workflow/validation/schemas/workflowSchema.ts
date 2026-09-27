@@ -568,7 +568,7 @@ export const zNodePackMetadata = zProperties
 const zNodeData = z.object({
   inputs: z.record(zNodeInputName, zNodeInputValue),
   class_type: z.string(),
-  _meta: zNodePackMetadata.extend({ title: z.string() })
+  _meta: zNodePackMetadata.extend({ title: z.string() }).optional()
 })
 
 export const zComfyApiWorkflow = z.record(zNodeId, zNodeData)

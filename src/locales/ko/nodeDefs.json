@@ -7955,6 +7955,87 @@
       }
     }
   },
+  "HunyuanImageEditApi": {
+    "description": "Tencent의 Hunyuan Image 모델을 사용하여 텍스트 프롬프트의 안내에 따라 최대 5장의 참조 이미지를 편집하거나 결합합니다.",
+    "display_name": "Tencent HY Image: 편집",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "사용할 모델입니다."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_height": {
+        "name": "높이"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_reference_detail": {
+        "name": "reference_detail"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
+      },
+      "model_watermark": {
+        "name": "워터마크"
+      },
+      "model_width": {
+        "name": "너비"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HunyuanImageTextToImageApi": {
+    "description": "Tencent의 Hunyuan Image 모델을 사용하여 텍스트 프롬프트로부터 이미지를 생성합니다.",
+    "display_name": "Tencent HY Image: 텍스트를 이미지로",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "사용할 모델입니다."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_height": {
+        "name": "높이"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
+      },
+      "model_watermark": {
+        "name": "워터마크"
+      },
+      "model_width": {
+        "name": "너비"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HunyuanImageToVideo": {
     "display_name": "HunyuanImageToVideo",
     "inputs": {
@@ -9137,6 +9218,7 @@
     }
   },
   "JsonExtractString": {
+    "description": "텍스트 내 첫 번째 유효한 JSON 객체에서 키의 값을 추출합니다. Markdown 코드 블록을 포함합니다.",
     "display_name": "JSON에서 문자열 추출",
     "inputs": {
       "json_string": {
@@ -13234,6 +13316,10 @@
       "ultra_mode": {
         "name": "ultra_mode",
         "tooltip": "더 정교한 표면 디테일과 높은 충실도의 기하 구조를 위해 추가 정제 패스를 실행합니다."
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "울트라 패스의 해상도: 2k는 2048³, 4k는 4096³로 실행되어 가장 섬세한 표면 디테일을 제공합니다. 4k에는 meshy-7.1 이상이 필요합니다. ultra_mode가 활성화된 경우에만 사용됩니다."
       }
     },
     "outputs": {
@@ -13300,6 +13386,10 @@
       },
       "symmetry_mode": {
         "name": "symmetry_mode"
+      },
+      "ultra_mode": {
+        "name": "ultra_mode",
+        "tooltip": "더 섬세한 표면 디테일과 높은 충실도의 형상을 위해 2048³에서 추가 정제 패스를 실행합니다."
       }
     },
     "outputs": {
@@ -13441,6 +13531,10 @@
       "ultra_mode": {
         "name": "ultra_mode",
         "tooltip": "더 정교한 표면 디테일과 높은 충실도의 기하 구조를 위해 추가 정제 패스를 실행합니다."
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "울트라 패스의 해상도: 2k는 2048³, 4k는 4096³로 실행되어 가장 섬세한 표면 디테일을 제공합니다. 4k에는 meshy-7.1 이상이 필요합니다. ultra_mode가 활성화된 경우에만 사용됩니다."
       }
     },
     "outputs": {
@@ -18353,6 +18447,10 @@
       "model_top_p": {
         "name": "top_p"
       },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "그리기 전에 모델이 수행하는 추론의 양입니다. 수준이 높을수록 세부 묘사가 개선되지만 더 많은 토큰이 소모됩니다. Arrow 2 모델에서만 사용됩니다."
+      },
       "seed": {
         "name": "seed",
         "tooltip": "노드가 다시 실행되어야 하는지 결정하는 시드입니다. 실제 결과는 시드와 관계없이 비결정적입니다."
@@ -18391,6 +18489,10 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "원하는 SVG 출력에 대한 텍스트 설명입니다."
+      },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "그리기 전에 모델이 수행하는 추론의 양입니다. 수준이 높을수록 세부 묘사가 개선되지만 더 많은 토큰이 소모됩니다. Arrow 2 모델에서만 사용됩니다."
       },
       "reference_images": {
         "name": "reference_images",
@@ -19062,7 +19164,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "생성에 사용할 모델입니다. recraftv4_styles 모델은 일관된 스타일의 생성을 위해 설계되었으며 항상 style_id 또는 style_references가 필요합니다."
+        "tooltip": "생성에 사용할 모델입니다. recraftv4_styles 모델은 일관된 스타일의 생성을 위해 설계되었으며 항상 style_id 또는 style_references가 필요합니다. recraftv4_1_flash는 가장 빠르고 저렴한 모델이며 스타일을 전혀 지원하지 않습니다."
       },
       "model_size": {
         "name": "size"
@@ -23955,6 +24057,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "모델의 채팅 템플릿에서 시스템 프롬프트를 대체합니다. 기본 템플릿을 사용하지 않을 때는 무시됩니다."
+      },
       "thinking": {
         "name": "생각 중",
         "tooltip": "모델이 지원하는 경우 생각 모드로 작동합니다."
@@ -23971,6 +24077,10 @@
     "outputs": {
       "0": {
         "name": "생성된 텍스트",
+        "tooltip": null
+      },
+      "1": {
+        "name": "사고 과정",
         "tooltip": null
       }
     }
@@ -24021,6 +24131,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "모델의 채팅 템플릿에서 시스템 프롬프트를 대체합니다. 기본 템플릿을 사용하지 않을 때는 무시됩니다."
+      },
       "thinking": {
         "name": "생각 중",
         "tooltip": "모델이 지원하는 경우 생각 모드로 작동합니다."
@@ -24037,6 +24151,10 @@
     "outputs": {
       "0": {
         "name": "생성된 텍스트",
+        "tooltip": null
+      },
+      "1": {
+        "name": "사고 과정",
         "tooltip": null
       }
     }

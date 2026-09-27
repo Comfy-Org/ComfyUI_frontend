@@ -1,11 +1,10 @@
 import { computed } from 'vue'
-import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { openFeedbackDialog as openGeneralFeedbackDialog } from '@/platform/support/feedbackDialog'
 import { openTypeformDialog } from '@/platform/surveys/openTypeformDialog'
-import type * as telemetryModule from '@/platform/telemetry'
+import { useTelemetry } from '@/platform/telemetry'
 import { toTurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import { openFeedbackDialog } from './feedback'
@@ -20,12 +19,7 @@ vi.mock(import('@/platform/support/feedbackDialog'), () => ({
   openFeedbackDialog: vi.fn()
 }))
 
-const trackUiButtonClicked = vi.fn()
-vi.mock(import('@/platform/telemetry'), (): typeof telemetryModule =>
-  fromPartial({
-    useTelemetry: vi.fn(() => fromPartial({ trackUiButtonClicked }))
-  })
-)
+vi.mock(import('@/platform/telemetry'))
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
@@ -107,7 +101,9 @@ describe('openFeedbackDialog (agent)', () => {
 
     openFeedbackDialog('agent-panel')
 
-    expect(trackUiButtonClicked).toHaveBeenCalledWith({
+    const telemetry = useTelemetry()
+    assert.exists(telemetry)
+    expect(telemetry.trackUiButtonClicked).toHaveBeenCalledWith({
       button_id: 'feedback_button_clicked',
       element_group: 'agent-panel'
     })

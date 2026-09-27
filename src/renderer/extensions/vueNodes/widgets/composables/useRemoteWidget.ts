@@ -110,7 +110,7 @@ export function useRemoteWidget<
     entry.data = data
   }
 
-  const setError = (entry: CacheEntry<T>, error: Error | unknown) => {
+  const setError = (entry: CacheEntry<T>, error: unknown) => {
     entry.retryCount = (entry.retryCount || 0) + 1
     entry.lastErrorTime = Date.now()
     entry.error = error instanceof Error ? error : new Error(String(error))

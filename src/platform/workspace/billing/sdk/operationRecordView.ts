@@ -6,6 +6,7 @@
  * templates or their conditions changing.
  */
 import type { BillingOperationState } from '@comfyorg/account-core/billing'
+import { validateActionUrl } from '@comfyorg/account-core/billing'
 
 import type {
   BillingAuthenticationState,
@@ -38,6 +39,10 @@ export interface BillingOperationRecordView {
 }
 
 /**
+ * `actionUrl` is validated here for the same reason the legacy store validates
+ * it at registration: the surfaces that read this record hand the URL to
+ * `window.open`.
+ *
  * `superseded` has no counterpart in the legacy record: the scope moved on
  * under the operation, so there is nothing for this workspace's surfaces to
  * read — the same outcome `readOnRail` gives a superseded read.
@@ -72,7 +77,7 @@ export function projectOperationRecord(
   return {
     ...identity,
     status: 'pending',
-    actionUrl: state.actionUrl ?? null,
+    actionUrl: validateActionUrl(state.actionUrl) ?? null,
     phase: state.serverPhase ?? null,
     authenticationState: state.authenticationState ?? null,
     isAuthenticating: state.challenge?.status === 'in_progress',

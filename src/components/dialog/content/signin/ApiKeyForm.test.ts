@@ -3,11 +3,11 @@ import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import PrimeVue from 'primevue/config'
 import InputText from 'primevue/inputtext'
-import Message from 'primevue/message'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import Message from '@/components/ui/message/Message.vue'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { useAuthStore } from '@/stores/authStore'
 

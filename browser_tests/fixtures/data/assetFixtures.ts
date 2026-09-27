@@ -75,6 +75,19 @@ export const AGENT_VIDEO_ASSET: Asset = createOutputAsset({
   last_access_time: '2026-09-18T00:00:00.000Z'
 })
 
+export const STALE_TEMP_FILENAME = 'ComfyUI_temp_thsmm_00001_.png'
+export const STALE_TEMP_CARD_TEXT = STALE_TEMP_FILENAME.replace(/\.[^.]+$/, '')
+export const STALE_TEMP_ASSET: Asset = createOutputAsset({
+  id: '55555555-5555-4555-a555-555555555555',
+  name: STALE_TEMP_FILENAME,
+  job_id: '66666666-6666-4666-a666-666666666666',
+  tags: ['output', 'temp'],
+  size: 12_345,
+  created_at: '2026-09-19T00:00:00.000Z',
+  updated_at: '2026-09-19T00:00:00.000Z',
+  last_access_time: '2026-09-19T00:00:00.000Z'
+})
+
 export const STABLE_CHECKPOINT: Asset = createModelAsset({
   id: 'test-checkpoint-001',
   name: 'sd_xl_base_1.0.safetensors',

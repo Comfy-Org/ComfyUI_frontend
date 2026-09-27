@@ -1,25 +1,34 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { expect, it, vi } from 'vitest'
+import { beforeEach, expect, it, vi } from 'vitest'
+import { readonly, ref } from 'vue'
+import type { Ref } from 'vue'
 
+import { workshopModels } from '../../config/workshop-browse-content'
 import './ModelPage.vue'
 import './ModelsCatalogue.vue'
 import { prepareModelPage } from '../../routes/models/model-page'
-import { workshopModels } from '../../config/workshop-browse-content'
+import {
+  useWorkshopEnabled,
+  useWorkshopEnabledSettled,
+  useWorkshopAuthFlag
+} from '../../scripts/posthog'
 import ModelsPage from './ModelsPage.vue'
 
 const modelSlug = 'bfl--flux-2-max--generate-images'
 const modelPage = await prepareModelPage(modelSlug)
 
-vi.mock(import('../../scripts/posthog'), async () => {
-  const { ref } = await import('vue')
-  return {
-    useWorkshopEnabled: () => ref(true),
-    useWorkshopEnabledSettled: () => ref(true),
-    useWorkshopAuthFlag: () => ref(false),
-    captureWorkshopEvent: vi.fn(),
-    identifyWorkshopUser: vi.fn()
-  }
+vi.mock(import('../../scripts/posthog'))
+
+let enabled: Ref<boolean>
+let settled: Ref<boolean>
+
+beforeEach(() => {
+  enabled = ref(true)
+  vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(enabled))
+  settled = ref(true)
+  vi.mocked(useWorkshopEnabledSettled).mockReturnValue(readonly(settled))
+  vi.mocked(useWorkshopAuthFlag).mockReturnValue(readonly(ref(false)))
 })
 
 const failed = () => Response.json({ error: 'down' }, { status: 500 })

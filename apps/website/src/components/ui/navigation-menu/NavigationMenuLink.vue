@@ -23,7 +23,7 @@ const forwarded = useForwardPropsEmits(
     v-bind="forwarded"
     :class="
       cn(
-        '[&_svg:not([class*=\'text-\'])]:text-muted-foreground flex flex-col gap-1 rounded-xl p-2 text-sm ring-primary-comfy-yellow outline-primary-comfy-yellow transition-[color,box-shadow] hover:text-white focus:bg-transparency-white-t4 focus:text-white focus-visible:ring-4 focus-visible:outline-1 data-active:bg-transparent data-active:text-primary-comfy-yellow data-active:hover:bg-transparent [&_svg:not([class*=\'size-\'])]:size-4',
+        'flex flex-col gap-1 rounded-xl p-2 text-sm ring-primary-comfy-yellow outline-primary-comfy-yellow transition-[color,box-shadow] hover:text-white focus:bg-transparency-white-t4 focus:text-white focus-visible:ring-4 focus-visible:outline-1 data-active:bg-transparent data-active:text-primary-comfy-yellow data-active:hover:bg-transparent [&_svg:not([class*=\'size-\'])]:size-4',
         className
       )
     "
