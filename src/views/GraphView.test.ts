@@ -28,9 +28,6 @@ beforeEach(() => {
   vi.mocked(
     useBottomPanelStore().registerCoreBottomPanelTabs
   ).mockResolvedValue(undefined)
-  vi.mocked(useSidebarTabStore().registerCoreSidebarTabs).mockImplementation(
-    () => {}
-  )
 })
 
 const apiMock = vi.hoisted(() =>
@@ -55,6 +52,10 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({ api: apiMock }))
 vi.mock(import('firebase/auth'))
 
 vi.mock(import('@/scripts/app'))
+
+vi.mock(import('@/composables/sidebarTabs/registerCoreSidebarTabs'), () => ({
+  registerCoreSidebarTabs: vi.fn()
+}))
 
 vi.mock(import('@/composables/useReconnectQueueRefresh'), () => {
   const refreshOnReconnect = vi.fn(async () => {})
