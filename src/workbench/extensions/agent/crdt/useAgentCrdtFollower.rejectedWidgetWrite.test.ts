@@ -20,6 +20,7 @@ const WORKFLOW_ID = 'wf-rejected-widget-write'
  * The exact text `agentDuplicateInsertOpaqueWidgetWrite.spec.ts` filters the
  * error toast on; the e2e contract breaks if this wording drifts.
  */
+const GENERIC_REJECTION_TEXT = 'Your edit was rejected and was not saved'
 const WIDGET_REJECTION_TEXT = 'Widget edit was rejected and was not saved'
 
 const WIDGET_EDIT: GraphOperation = {
@@ -179,7 +180,7 @@ describe('a human edit the doc host rejects', () => {
     )
 
     expect(toastDetails()).toEqual([
-      i18n.global.t('agent.editRejected.generic')
+      expect.stringContaining(GENERIC_REJECTION_TEXT)
     ])
   })
 
@@ -191,7 +192,7 @@ describe('a human edit the doc host rejects', () => {
     )
 
     expect(toastDetails()).toEqual([
-      i18n.global.t('agent.editRejected.generic')
+      expect.stringContaining(GENERIC_REJECTION_TEXT)
     ])
   })
 
@@ -216,7 +217,7 @@ describe('a human edit the doc host rejects', () => {
 
     expect(toastDetails()).toEqual([
       expect.stringContaining(WIDGET_REJECTION_TEXT),
-      i18n.global.t('agent.editRejected.generic')
+      expect.stringContaining(GENERIC_REJECTION_TEXT)
     ])
   })
 

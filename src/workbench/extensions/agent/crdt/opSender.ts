@@ -32,6 +32,8 @@ export interface OpsResultView {
   skipped: string[]
   /** Failed-batch diagnostics when the host provides them; `op_id` correlates an otherwise empty-list failure to its batch. `code` is the host's stable vocabulary — match on it, never on `message`. */
   failure?: Partial<DocOpFailure>
+  /** Batch-level refusal code (`overloaded`, `catalog_mismatch`, …), which arrives with no `failure` at all. */
+  code?: string
 }
 
 export interface OpSenderDeps {

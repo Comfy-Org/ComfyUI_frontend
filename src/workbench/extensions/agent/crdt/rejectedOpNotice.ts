@@ -11,18 +11,6 @@ import type { OpsResultView } from './opSender'
 
 const NOTICE_LIFE_MS = 10_000
 
-/**
- * Doc-host codes for a refused widget write. The applier raises
- * `uncatalogued_widget_write` and `unknown_widget` for `add_node` too, so the
- * op the host named decides the wording rather than the code alone.
- */
-const WIDGET_WRITE_REJECTION_CODES = new Set([
-  'opaque_widgets',
-  'uncatalogued_widget_write',
-  'unknown_widget',
-  'widget_out_of_range'
-])
-
 export interface RejectedOpNotifier {
   notify(ops: readonly Op[], result: OpsResultView): void
   cancel(): void
@@ -37,6 +25,20 @@ function rejectedOp(
     (failure.index === undefined ? undefined : ops[failure.index])
   )
 }
+
+/**
+ * Doc-host codes for a refused widget write. Both halves are load-bearing: the
+ * applier raises `uncatalogued_widget_write` and `unknown_widget` for
+ * `add_node` too, so the op the host NAMED must also be a widget write; and a
+ * `set_widget` refused for an unrelated reason (`catalog_required`,
+ * `malformed_op`) is not a widget-addressing failure and gets the generic copy.
+ */
+const WIDGET_WRITE_REJECTION_CODES = new Set([
+  'opaque_widgets',
+  'uncatalogued_widget_write',
+  'unknown_widget',
+  'widget_out_of_range'
+])
 
 function isRejectedWidgetWrite(
   ops: readonly Op[],
@@ -86,7 +88,10 @@ export function createRejectedOpNotifier(): RejectedOpNotifier {
       if (result.ok) return
       const { failure } = result
       const widgetWrite = isRejectedWidgetWrite(ops, failure)
-      const code = failure?.code ?? 'unspecified'
+      // A batch-level refusal (`overloaded`, `catalog_mismatch`, …) carries no
+      // `failure` at all; without this every one collapses to 'unspecified' and
+      // the first suppresses the telemetry report for every later kind.
+      const code = failure?.code ?? result.code ?? 'unspecified'
       if (!reportedCodes.has(code)) {
         reportedCodes.add(code)
         reportError(
@@ -98,7 +103,7 @@ export function createRejectedOpNotifier(): RejectedOpNotifier {
             context: {
               workflowId: result.workflowId,
               opId: failure?.op_id,
-              code: failure?.code
+              code
             },
             level: 'warning'
           }

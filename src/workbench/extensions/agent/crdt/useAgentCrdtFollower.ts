@@ -323,6 +323,7 @@ function startAgentCrdtFollower(
           ok: detail.ok,
           applied: detail.applied,
           skipped: detail.skipped,
+          ...(detail.code === undefined ? {} : { code: detail.code }),
           ...(detail.failed && typeof detail.failed === 'object'
             ? { failure: detail.failed }
             : {})

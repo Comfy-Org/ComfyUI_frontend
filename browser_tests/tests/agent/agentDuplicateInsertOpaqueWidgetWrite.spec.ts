@@ -400,7 +400,7 @@ async function driveThroughRejectedWidgetEdit(
 }
 
 test.describe(
-  'Agent duplicate insert_workflow + opaque widget-write silent failure',
+  'Agent duplicate insert_workflow + opaque widget-write rejection',
   { tag: ['@cloud', '@agent', '@canvas', '@node', '@widget'] },
   () => {
     test.use({ connectWebSocketToServer: false })
@@ -472,7 +472,7 @@ test.describe(
 
       // What the shared document actually has: still the ORIGINAL seed, since
       // the write never applied. The widget the human is looking at and the
-      // document a subsequent run would read from have now silently diverged.
+      // document a subsequent run would read from have now diverged.
       const projected = host.projection()
       const sampler = projected.nodes.find(
         (node) => String(node.id) === copyBNodeId
@@ -482,7 +482,7 @@ test.describe(
       )
     })
 
-    test('defect: a rejected widget write tells the user that their edit was not saved', async ({
+    test('a rejected widget write tells the user that their edit was not saved', async ({
       page,
       getWebSocket
     }) => {
