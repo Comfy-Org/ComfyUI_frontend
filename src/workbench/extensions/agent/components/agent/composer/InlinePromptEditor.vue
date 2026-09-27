@@ -14,7 +14,7 @@ import { buttonVariants } from '@comfyorg/design-system/button.variants'
 import {
   tagRemoveButtonVariants,
   tagVariants
-} from '@/components/chip/tag.variants'
+} from '@comfyorg/design-system/tag.variants'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { ComposerPrompt } from '../../../types/composerPrompt'
