@@ -7,10 +7,10 @@ import {
   zCreateSessionResponse,
   zDeleteSessionResponse,
   zErrorResponse,
-  zGetSessionResponse
+  zGetSessionResponse,
+  zRevokeAllSessionsResponse
 } from '@comfyorg/ingest-types/zod'
 
-import { zRevokeAllSessionsResponse } from './revokeAllSessionsDraft.js'
 import type {
   WebSessionCommandResult,
   WebSessionErrorCode,
