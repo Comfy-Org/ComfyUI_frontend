@@ -107,6 +107,55 @@ describe('AgentMessage asset grid fragmentation', () => {
     ).toBeInTheDocument()
   })
 
+  it('keeps streamed post-tool assets in the completed grid', async () => {
+    const firstPart: AssistantMessage = {
+      id: toTurnId('msg-streamed-assets'),
+      role: 'assistant',
+      streaming: true,
+      thinking: false,
+      parts: [
+        {
+          type: 'text',
+          text: '![i1.png](https://x/i1.png)',
+          state: 'done'
+        },
+        {
+          type: 'tool',
+          callId: 'tool_0',
+          name: 'preview_image',
+          state: 'done'
+        }
+      ]
+    }
+    const { rerender } = render(AgentMessage, {
+      props: { message: firstPart },
+      global: { plugins: [i18n] }
+    })
+
+    const completed: AssistantMessage = {
+      ...firstPart,
+      streaming: false,
+      parts: [
+        ...firstPart.parts,
+        {
+          type: 'text',
+          text: '![i2.png](https://x/i2.png)',
+          state: 'done'
+        }
+      ]
+    }
+    await rerender({ message: completed })
+
+    const groups = screen.getAllByTestId('reply-asset-group')
+    expect(groups).toHaveLength(1)
+    expect(
+      within(groups[0]).getByRole('img', { name: 'i1.png' })
+    ).toBeInTheDocument()
+    expect(
+      within(groups[0]).getByRole('img', { name: 'i2.png' })
+    ).toBeInTheDocument()
+  })
+
   it('PM-1135: puts a bare asset before later, unrelated prose', () => {
     const message: AssistantMessage = {
       id: toTurnId('msg-preview-failed'),
