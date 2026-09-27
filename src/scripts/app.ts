@@ -388,6 +388,7 @@ export class ComfyApp {
   }
 
   private configuringGraphLevel: number = 0
+  private pendingFitView: (() => void) | undefined
   get configuringGraph() {
     return this.configuringGraphLevel > 0
   }
@@ -1109,6 +1110,18 @@ export class ComfyApp {
     canvas.height = Math.round(height * scale)
     canvas.getContext('2d')?.scale(scale, scale)
     this.canvas.draw(true, true)
+    this.flushPendingFitView(canvas)
+  }
+
+  /**
+   * Fitting a zero-size canvas is a no-op, so a load that lands while App Mode
+   * hides it defers the fit here until the element regains a size.
+   */
+  private flushPendingFitView(canvas: HTMLCanvasElement) {
+    const fitView = this.pendingFitView
+    if (!fitView || !canvas.width || !canvas.height) return
+    this.pendingFitView = undefined
+    fitView()
   }
 
   private updateVueAppNodeDefs(defs: Record<string, ComfyNodeDefV1>) {
@@ -1316,6 +1329,7 @@ export class ComfyApp {
       silentAssetErrors = false,
       workflowNavigationId
     } = options
+    this.pendingFitView = undefined
     useWorkflowService().beforeLoadNewGraph(clean)
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
 
@@ -1480,33 +1494,35 @@ export class ComfyApp {
     }
 
     const canvasVisible = !!(this.canvasEl.width && this.canvasEl.height)
-    const fitView = () => {
-      if (
-        restore_view &&
-        useSettingStore().get('Comfy.EnableWorkflowViewRestore')
-      ) {
-        // Always fit view for templates to ensure they're visible on load
-        if (openSource === 'template') {
-          useLitegraphService().fitView()
-        } else if (graphData.extra?.ds) {
-          this.canvas.ds.offset = graphData.extra.ds.offset
-          this.canvas.ds.scale = graphData.extra.ds.scale
+    const viewRestoreEnabled = () =>
+      restore_view && useSettingStore().get('Comfy.EnableWorkflowViewRestore')
 
-          // Fit view if no nodes visible in restored viewport
-          this.canvas.ds.computeVisibleArea(this.canvas.viewport)
-          if (
-            this.canvas.visible_area.width &&
-            this.canvas.visible_area.height &&
-            !anyItemOverlapsRect(
-              this.rootGraph._nodes,
-              this.canvas.visible_area
-            )
-          ) {
-            requestAnimationFrame(() => useLitegraphService().fitView())
-          }
-        } else {
-          useLitegraphService().fitView()
-        }
+    // Needs no canvas dimensions, so it stays eager when the fit defers.
+    const restoreSavedViewport = () => {
+      const ds = graphData.extra?.ds
+      if (!ds) return false
+      this.canvas.ds.offset = ds.offset
+      this.canvas.ds.scale = ds.scale
+      return true
+    }
+
+    const fitView = () => {
+      if (!viewRestoreEnabled()) return
+
+      // Always fit view for templates to ensure they're visible on load
+      if (openSource === 'template' || !restoreSavedViewport()) {
+        useLitegraphService().fitView()
+        return
+      }
+
+      // Fit view if no nodes visible in restored viewport
+      this.canvas.ds.computeVisibleArea(this.canvas.viewport)
+      if (
+        this.canvas.visible_area.width &&
+        this.canvas.visible_area.height &&
+        !anyItemOverlapsRect(this.rootGraph._nodes, this.canvas.visible_area)
+      ) {
+        requestAnimationFrame(() => useLitegraphService().fitView())
       }
     }
 
@@ -1631,8 +1647,12 @@ export class ComfyApp {
       // If the canvas was not visible and we're a fresh load, resize the canvas and fit the view
       // This fixes switching from app mode to a new graph mode workflow (e.g. load template)
       if (!canvasVisible && (!workflow || typeof workflow === 'string')) {
+        if (viewRestoreEnabled() && openSource !== 'template') {
+          restoreSavedViewport()
+        }
+        this.pendingFitView = fitView
         this.canvas.resize()
-        requestAnimationFrame(() => fitView())
+        requestAnimationFrame(() => this.flushPendingFitView(this.canvasEl))
       }
 
       // Drop missing-node entries whose enclosing subgraph is
