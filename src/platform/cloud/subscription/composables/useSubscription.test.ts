@@ -16,31 +16,36 @@ import { PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY } from '@/platform/cloud/subs
 
 const {
   mockGetCheckoutAttribution,
+  mockTelemetry,
+  mockIsLoggedIn,
 
   mockIsCloud,
 
   mockGetBillingStatus,
 
-  mockSetWorkspaceBillingRail,
   mockLocalStorage,
-  mockReportTelemetryError
+  mockReportTelemetryError,
+  mockReportError,
+  mockAccessBillingPortal
 } = vi.hoisted(() => ({
+  mockIsLoggedIn: { value: false },
   mockIsCloud: { value: true },
 
   mockGetBillingStatus: vi.fn(),
 
-  mockSetWorkspaceBillingRail: vi.fn(),
   mockReportTelemetryError: vi.fn(),
   mockReportError: vi.fn(),
   mockAccessBillingPortal: vi.fn(),
-  mockShowSubscriptionRequiredDialog: vi.fn(),
-  mockGetAuthHeader: vi.fn(() =>
-    Promise.resolve({ Authorization: 'Bearer test-token' as const })
-  ),
   mockGetCheckoutAttribution: vi.fn(() => ({
     im_ref: 'impact-click-001',
     utm_source: 'impact'
   })),
+  mockTelemetry: {
+    trackSubscription: vi.fn(),
+    trackMonthlySubscriptionSucceeded: vi.fn(),
+    trackMonthlySubscriptionCancelled: vi.fn(),
+    trackBillingEvent: vi.fn()
+  },
   mockLocalStorage: (() => {
     const store = new Map<string, string>()
 

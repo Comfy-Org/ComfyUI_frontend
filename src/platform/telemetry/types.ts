@@ -1051,7 +1051,7 @@ type SubscriptionCheckoutBillingEvent = {
    * `started` event through to this terminal event.
    */
   duration_ms?: number
-} & (BillingStarted | BillingSucceeded | BillingFailed)
+} & (BillingStarted | BillingSucceeded | BillingFailed | BillingTimedOut)
 
 type BillingOperationBillingEvent = {
   operation: 'operation'
@@ -1568,6 +1568,8 @@ export const TelemetryEvents = {
   BILLING_SUBSCRIPTION_CHECKOUT_SUCCEEDED:
     'billing.subscription_checkout.succeeded',
   BILLING_SUBSCRIPTION_CHECKOUT_FAILED: 'billing.subscription_checkout.failed',
+  BILLING_SUBSCRIPTION_CHECKOUT_TIMEOUT:
+    'billing.subscription_checkout.timeout',
   BILLING_OPERATION_STARTED: 'billing.operation.started',
   BILLING_OPERATION_SUCCEEDED: 'billing.operation.succeeded',
   BILLING_OPERATION_FAILED: 'billing.operation.failed',
