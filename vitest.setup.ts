@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom/vitest'
 import { createTestingPinia } from '@pinia/testing'
-import { disposePinia, getActivePinia, setActivePinia } from 'pinia'
+import { disposePinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, vi } from 'vitest'
 import 'vue'
 
@@ -11,13 +11,14 @@ import { remoteConfigState } from '@/platform/remoteConfig/remoteConfig'
 
 beforeEach(() => {
   vi.stubGlobal('__VUE_DEVTOOLS_GLOBAL_HOOK__', { emit: vi.fn() })
-  setActivePinia(createTestingPinia({ stubActions: false }))
+  const pinia = createTestingPinia({ stubActions: false })
+  setActivePinia(pinia)
   remoteConfigState.value = 'anonymous'
+
+  return () => disposePinia(pinia)
 })
 
 afterEach(() => {
-  const pinia = getActivePinia()
-  if (pinia) disposePinia(pinia)
   clearRegisteredLiteGraphTypes()
 })
 
