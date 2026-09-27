@@ -8,7 +8,8 @@ import {
   cachedLegacyBillingMigrationEnabled,
   cachedV1PaymentRecovery,
   isAuthenticatedConfigLoaded,
-  remoteConfig
+  remoteConfig,
+  sessionAgentGrant
 } from '@/platform/remoteConfig/remoteConfig'
 import { useTelemetry } from '@/platform/telemetry'
 import { api } from '@/scripts/api'
@@ -120,14 +121,17 @@ function resolveAuthGatedFlag(
 }
 
 /**
- * Resolves a per-user allowlist flag. Unlike `resolveAuthGatedFlag` it keeps no
- * cached fallback: a stale cached grant is what let one browser show a gated
- * surface while another hid it for the same account (PM-1707). Until the
- * authenticated config answers, the flag is off.
+ * Resolves a per-user allowlist flag. Before the first authenticated answer it
+ * is off; after one, a failed refresh falls back to that answer so a blip
+ * cannot pull a granted surface out from under the user mid-session. Unlike
+ * `resolveAuthGatedFlag` the fallback is never read from storage — a persisted
+ * grant is what let one browser show the surface while another hid it for the
+ * same account (PM-1707).
  */
 function resolveWhitelistFlag(
   flagKey: string,
-  remoteConfigValue: boolean | undefined
+  remoteConfigValue: boolean | undefined,
+  grantedThisSession: Ref<boolean | undefined>
 ): boolean {
   const sessionOverride = getSessionOverride<boolean>(flagKey)
   if (sessionOverride !== undefined) return sessionOverride
@@ -136,7 +140,8 @@ function resolveWhitelistFlag(
   if (override !== undefined) return override
 
   if (!isCloud) return false
-  if (!isAuthenticatedConfigLoaded.value) return false
+  if (!isAuthenticatedConfigLoaded.value)
+    return grantedThisSession.value === true
 
   return remoteConfigValue === true
 }
@@ -384,7 +389,8 @@ export function useFeatureFlags() {
     get agentInAppExperienceEnabled() {
       return resolveWhitelistFlag(
         ServerFeatureFlag.AGENT_IN_APP_EXPERIENCE,
-        remoteConfig.value['agent-in-app-experience']
+        remoteConfig.value['agent-in-app-experience'],
+        sessionAgentGrant
       )
     }
   })

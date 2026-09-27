@@ -20,7 +20,8 @@ import {
   cachedLegacyBillingMigrationEnabled,
   cachedV1PaymentRecovery,
   remoteConfig,
-  remoteConfigState
+  remoteConfigState,
+  sessionAgentGrant
 } from '@/platform/remoteConfig/remoteConfig'
 import { useTelemetry } from '@/platform/telemetry'
 import { api } from '@/scripts/api'
@@ -1159,12 +1160,14 @@ describe('useFeatureFlags', () => {
       vi.mocked(distributionTypes).isCloud = true
       remoteConfigState.value = 'unloaded'
       remoteConfig.value = {}
+      sessionAgentGrant.value = undefined
     })
 
     afterEach(() => {
       vi.mocked(distributionTypes).isCloud = false
       remoteConfigState.value = 'unloaded'
       remoteConfig.value = {}
+      sessionAgentGrant.value = undefined
     })
 
     it('is false off-cloud even when the authenticated config grants it', () => {
@@ -1200,15 +1203,32 @@ describe('useFeatureFlags', () => {
       expect(flags.agentInAppExperienceEnabled).toBe(false)
     })
 
-    it('does not retain an earlier grant once the config is no longer authenticated', () => {
+    it('keeps this session granted when a later refresh fails transiently', () => {
       remoteConfigState.value = 'authenticated'
       remoteConfig.value = { 'agent-in-app-experience': true }
+      sessionAgentGrant.value = true
       const { flags } = useFeatureFlags()
       expect(flags.agentInAppExperienceEnabled).toBe(true)
 
       remoteConfigState.value = 'error'
-      remoteConfig.value = {}
 
+      expect(flags.agentInAppExperienceEnabled).toBe(true)
+    })
+
+    it('drops the grant when the session itself is gone', () => {
+      remoteConfigState.value = 'error'
+      remoteConfig.value = {}
+      sessionAgentGrant.value = undefined
+
+      const { flags } = useFeatureFlags()
+      expect(flags.agentInAppExperienceEnabled).toBe(false)
+    })
+
+    it('never reads the grant from persistent storage', () => {
+      localStorage.setItem('agent-in-app-experience', 'true')
+      remoteConfigState.value = 'error'
+
+      const { flags } = useFeatureFlags()
       expect(flags.agentInAppExperienceEnabled).toBe(false)
     })
 

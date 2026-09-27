@@ -368,6 +368,7 @@ function setupFlagGate(loadConsentIfEligible: () => void): void {
     { immediate: true }
   )
   // A signed-out session never runs the authenticated /features refresh
-  // (cloudRemoteConfig.ts returns early), so the watch above never fires for it.
+  // (WorkspaceAuthGate returns early with no user), so the watch above never
+  // reaches a decided state for it.
   setTimeout(settle, GATE_SETTLE_TIMEOUT_MS)
 }
