@@ -13,15 +13,16 @@ import {
 } from '@/lib/litegraph/src/constants'
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { LinkConnectorEventMap } from '@/lib/litegraph/src/infrastructure/LinkConnectorEventMap'
+import type { LinkSegment, Point } from '@/lib/litegraph/src/interfaces'
 import type {
   ConnectingLink,
   INodeInputSlot,
-  INodeOutputSlot,
+  INodeOutputSlot
+} from '@/lib/litegraph/src/types/slots'
+import type {
   ItemLocator,
-  LinkNetwork,
-  LinkSegment,
-  Point
-} from '@/lib/litegraph/src/interfaces'
+  LinkNetwork
+} from '@/lib/litegraph/src/types/linkNetwork'
 import { EmptySubgraphInput } from '@/lib/litegraph/src/subgraph/EmptySubgraphInput'
 import { EmptySubgraphOutput } from '@/lib/litegraph/src/subgraph/EmptySubgraphOutput'
 import { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
