@@ -20,7 +20,7 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import { snapPoint } from '@/lib/litegraph/src/measure'
-import type { Vector2 } from '@/lib/litegraph/src/litegraph'
+import type { ISerialisedGraph, Vector2 } from '@/lib/litegraph/src/litegraph'
 import type {
   IBaseWidget,
   TWidgetValue
@@ -1516,8 +1516,7 @@ export class ComfyApp {
     let resourceScanLoadCompleted = false
     try {
       try {
-        // @ts-expect-error Discrepancies between zod and litegraph - in progress
-        this.rootGraph.configure(graphData)
+        this.rootGraph.configure(graphData as ISerialisedGraph)
 
         // Save original renderer version before scaling (it gets modified during scaling)
         const originalMainGraphRenderer =
