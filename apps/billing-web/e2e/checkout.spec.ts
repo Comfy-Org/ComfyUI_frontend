@@ -182,7 +182,7 @@ test('a declined payment shows the reason and stays on checkout', async ({
   expect(await fakeStripeCalls(page, 'nextActions')).toBe(0)
 })
 
-test('a failure with no coded reason reports that the subscription was not updated', async ({
+test('a failure with no coded reason reads as a bank decline, as the app does', async ({
   page,
   cloud,
   signIn
@@ -195,7 +195,7 @@ test('a failure with no coded reason reports that the subscription was not updat
   await page.getByRole('button', { name: 'Pay and subscribe' }).click()
 
   await expect(page.getByRole('alert')).toContainText(
-    "We couldn't update your subscription. Please try again."
+    'Your bank declined this payment. Try another payment method or contact your bank.'
   )
   await expect(
     page.getByRole('heading', { name: 'Confirm your payment' })
