@@ -391,3 +391,39 @@ test('a checkout link that names no plan goes back to the host to choose one', a
   )
   await expect(page.getByRole('heading', { name: 'Host app' })).toBeVisible()
 })
+
+test('Close on a checkout tab the product opened closes that tab', async ({
+  page,
+  context,
+  signIn
+}) => {
+  await signIn(CHECKOUT)
+  const [checkoutTab] = await Promise.all([
+    context.waitForEvent('page'),
+    page.evaluate((url) => {
+      window.open(url, '_blank')
+    }, CHECKOUT)
+  ])
+  await expect(
+    checkoutTab.getByRole('heading', { name: 'Confirm your payment' })
+  ).toBeVisible()
+
+  const closed = checkoutTab.waitForEvent('close')
+  await checkoutTab.getByRole('button', { name: 'Close' }).click()
+  await closed
+
+  expect(checkoutTab.isClosed()).toBe(true)
+})
+
+test('Back on a checkout tab opened directly goes back to the product', async ({
+  page,
+  signIn
+}) => {
+  await signIn(CHECKOUT)
+
+  await page.getByRole('button', { name: 'Back' }).click()
+
+  await expect(page).toHaveURL(
+    `https://testcloud.comfy.org/?workspace=${E2E_USER.workspaceId}`
+  )
+})
