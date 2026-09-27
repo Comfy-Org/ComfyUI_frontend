@@ -7,8 +7,8 @@ import {
 import packedContracts from '../content/workshop-router-contracts.json'
 import packedIndex from '../content/workshop-router-index.json'
 import rawSnapshots from '../data/workshop-router-openapi.snapshot.json'
-import { workshopModels } from './models-catalogue'
 import {
+  workshopModels,
   routerWorkshopModelPaths,
   routerContentById
 } from './workshop-browse-content'

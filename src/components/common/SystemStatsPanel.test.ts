@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
-import type { SystemStats } from '@/schemas/apiSchema'
+import type { SystemStats } from '@/platform/remote/comfyui/types'
 
 import SystemStatsPanel from './SystemStatsPanel.vue'
 

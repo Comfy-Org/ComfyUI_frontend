@@ -16,20 +16,29 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
+import { isNavigationFailure, useRouter } from 'vue-router'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   getSurveyCompletedStatus,
   submitSurvey
 } from '@/platform/cloud/onboarding/auth'
+import {
+  isSurveyReplayRequested,
+  restoreSurveyReplayRequest
+} from '@/platform/onboarding/onboardingReplay'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useAuthStore } from '@/stores/authStore'
 
 import DynamicSurveyForm from './survey/DynamicSurveyForm.vue'
 import { defaultOnboardingSurvey } from './survey/defaultSurveySchema'
 
 const router = useRouter()
+const { t } = useI18n()
 const { flags } = useFeatureFlags()
 const onboardingSurveyEnabled = computed(() => flags.onboardingSurveyEnabled)
 
@@ -45,12 +54,15 @@ onMounted(async () => {
     return
   }
   try {
-    const surveyCompleted = await getSurveyCompletedStatus()
+    const surveyCompleted = await getSurveyCompletedStatus(
+      useAuthStore().userId
+    )
     if (surveyCompleted) {
       await router.replace({ name: 'cloud-user-check' })
       return
     }
-    useTelemetry()?.trackSurvey('opened')
+    if (!isSurveyReplayRequested(useAuthStore().userId))
+      useTelemetry()?.trackSurvey('opened')
   } catch (error) {
     console.error('Failed to check survey status:', error)
   }
@@ -62,12 +74,52 @@ const onSubmitSurvey = async (payload: Record<string, unknown>) => {
     return
   }
   isSubmitting.value = true
-  try {
-    await submitSurvey(payload)
+  const replayOwner = useAuthStore().userId
+  const replaying = isSurveyReplayRequested(replayOwner)
+  if (replayOwner === undefined) {
+    reportSurveySubmissionFailure(
+      new Error('No signed-in account while submitting the survey')
+    )
+    isSubmitting.value = false
+    return
+  }
+  const result = await submitSurvey(payload, replayOwner)
+  if (result.status === 'failed') {
+    reportSurveySubmissionFailure(result.cause)
+    isSubmitting.value = false
+    return
+  }
+  if (result.status === 'stored') {
     useTelemetry()?.trackSurvey('submitted', payload)
-    await router.push({ name: 'cloud-user-check' })
+  }
+
+  try {
+    const failure = await router.push({ name: 'cloud-user-check' })
+    if (isNavigationFailure(failure)) throw failure
+  } catch (error) {
+    if (replaying && useAuthStore().userId === replayOwner)
+      restoreSurveyReplayRequest(replayOwner)
+    reportError(error, { errorType: 'error_navigating_from_onboarding_survey' })
+    useToastStore().add({
+      severity: 'error',
+      summary: t('cloudOnboarding.survey.navigationFailed'),
+      detail: t('cloudOnboarding.survey.navigationFailedDetail'),
+      life: 5000
+    })
   } finally {
     isSubmitting.value = false
   }
+}
+
+function reportSurveySubmissionFailure(cause: unknown) {
+  reportError(cause, {
+    errorType: 'error_submitting_onboarding_survey'
+  })
+  useToastStore().add({
+    severity: 'error',
+    summary: t('cloudOnboarding.survey.submitFailed'),
+    detail: t('cloudOnboarding.survey.submitFailedDetail'),
+    life: 5000
+  })
 }
 </script>

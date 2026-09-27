@@ -1,6 +1,7 @@
 import type { UserCredential } from 'firebase/auth'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { captureSignupRollbackFailure } from '../scripts/posthog'
 import {
   isWorkshopProvisioningError,
   provisionCustomer,
@@ -11,31 +12,23 @@ import {
 } from './workshop-firebase'
 
 const h = vi.hoisted(() => ({
-  captureRollback: vi.fn(),
   createUserWithEmail: vi.fn(),
   signInWithEmail: vi.fn(),
-  signInWithGoogle: vi.fn(),
-  // Captured at module load; a plain field survives the suite's mockReset.
-  identityConfig: undefined as { actionTimeoutMs?: number } | undefined
+  signInWithGoogle: vi.fn()
 }))
 
-vi.mock<unknown>(import('../scripts/posthog'), () => ({
-  captureSignupRollbackFailure: h.captureRollback
-}))
+vi.mock(import('../scripts/posthog'))
 
-vi.mock<unknown>(import('@comfyorg/account/firebase'), () => ({
-  createFirebaseIdentity: (config: { actionTimeoutMs?: number }) => {
-    h.identityConfig = config
-    return {
-      onUserChanged: vi.fn(() => () => undefined),
-      signInWithGoogle: h.signInWithGoogle,
-      signInWithGitHub: vi.fn(),
-      signInWithEmail: h.signInWithEmail,
-      createUserWithEmail: h.createUserWithEmail,
-      sendPasswordReset: vi.fn(),
-      signOut: vi.fn()
-    }
-  }
+vi.mock<unknown>(import('@comfyorg/account-core/firebase'), () => ({
+  createFirebaseIdentity: () => ({
+    onUserChanged: vi.fn(() => () => undefined),
+    signInWithGoogle: h.signInWithGoogle,
+    signInWithGitHub: vi.fn(),
+    signInWithEmail: h.signInWithEmail,
+    createUserWithEmail: h.createUserWithEmail,
+    sendPasswordReset: vi.fn(),
+    signOut: vi.fn()
+  })
 }))
 
 describe('provisionCustomer', () => {
@@ -120,7 +113,7 @@ describe('signUpWorkshopWithEmail rollback reporting', () => {
 
     expect(deleteFn).toHaveBeenCalledTimes(2)
     expect(
-      h.captureRollback,
+      vi.mocked(captureSignupRollbackFailure),
       'a double delete failure orphans the account; without the event nobody ever learns'
     ).toHaveBeenCalledOnce()
   })
@@ -136,7 +129,7 @@ describe('signUpWorkshopWithEmail rollback reporting', () => {
       signUpWorkshopWithEmail('a@b.example', 'hunter22!', 'cf-token')
     ).rejects.toThrow('Customer provisioning failed')
 
-    expect(h.captureRollback).not.toHaveBeenCalled()
+    expect(vi.mocked(captureSignupRollbackFailure)).not.toHaveBeenCalled()
   })
 })
 
@@ -179,14 +172,5 @@ describe('email sign-in boundary', () => {
     h.signInWithEmail.mockRejectedValue(wrong)
 
     await expect(signInWorkshopWithEmail('a@b.co', 'nope')).rejects.toBe(wrong)
-  })
-})
-
-describe('bounded action ceiling', () => {
-  it('hands the package a finite ceiling so a stalled email sign-in or reset cannot pin the form', () => {
-    expect(
-      Number.isFinite(h.identityConfig?.actionTimeoutMs),
-      'without a finite actionTimeoutMs the package leaves email sign-in and reset unbounded'
-    ).toBe(true)
   })
 })

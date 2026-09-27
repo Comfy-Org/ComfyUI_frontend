@@ -4,26 +4,21 @@ import { render, screen } from '@testing-library/vue'
 import PrimeVue from 'primevue/config'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
-import ProgressSpinner from 'primevue/progressspinner'
 import ToastService from 'primevue/toastservice'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import Spinner from '@/components/ui/spinner/Spinner.vue'
+import { useAuthActions } from '@/composables/auth/useAuthActions'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useAuthStore } from '@/stores/authStore'
 
 import SignInForm from './SignInForm.vue'
 vi.mock(import('firebase/auth'))
-vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 
 // Mock the auth composables and stores
-const mockSendPasswordReset = vi.fn()
-vi.mock<unknown>(import('@/composables/auth/useAuthActions'), () => ({
-  useAuthActions: vi.fn(() => ({
-    sendPasswordReset: mockSendPasswordReset
-  }))
-}))
+vi.mock(import('@/composables/auth/useAuthActions'))
 
 // Mock toast
 const mockToastAdd = vi.fn()
@@ -51,7 +46,7 @@ describe('SignInForm', () => {
     const result = render(SignInForm, {
       global: {
         plugins: [PrimeVue, i18n, ToastService],
-        components: { Form, Button, InputText, Password, ProgressSpinner }
+        components: { Form, Button, InputText, Password, Spinner }
       },
       props
     })
@@ -85,7 +80,7 @@ describe('SignInForm', () => {
 
       expect(focusSpy).toHaveBeenCalled()
 
-      expect(mockSendPasswordReset).not.toHaveBeenCalled()
+      expect(useAuthActions().sendPasswordReset).not.toHaveBeenCalled()
     })
   })
 
@@ -121,7 +116,9 @@ describe('SignInForm', () => {
       useAuthStore().loading = true
       renderComponent()
 
-      expect(screen.getByRole('progressbar')).toBeInTheDocument()
+      expect(
+        screen.getByRole('progressbar', { name: 'Loading' })
+      ).toBeInTheDocument()
       expect(
         screen.queryByRole('button', { name: loginButtonText })
       ).not.toBeInTheDocument()
@@ -164,7 +161,9 @@ describe('SignInForm', () => {
       await user.type(getEmailInput(), 'test@example.com')
       await user.click(screen.getByText(forgotPasswordText))
 
-      expect(mockSendPasswordReset).toHaveBeenCalledWith('test@example.com')
+      expect(useAuthActions().sendPasswordReset).toHaveBeenCalledWith(
+        'test@example.com'
+      )
       expect(mockToastAdd).not.toHaveBeenCalled()
     })
   })

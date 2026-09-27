@@ -2,15 +2,10 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed, ref, useTemplateRef } from 'vue'
 
-import {
-  TURNSTILE_MESSAGES,
-  isTurnstileEnabled
-} from '@comfyorg/account/turnstile'
-import {
-  PasswordRules,
-  TurnstileWidget,
-  useTurnstileGate
-} from '@comfyorg/account/vue'
+import { isTurnstileEnabled } from '@comfyorg/account-core/turnstile'
+import PasswordRules from '@comfyorg/account-ui/auth/PasswordRules'
+import TurnstileWidget from '@comfyorg/account-ui/auth/TurnstileWidget'
+import { useTurnstileGate } from '@comfyorg/account-ui/auth/turnstileGate'
 
 import { authSchemasFor } from '../../config/auth-schemas'
 import { WORKSHOP_TURNSTILE_SITE_KEY } from '../../config/workshop-env'
@@ -259,8 +254,8 @@ defineExpose({ resetTurnstile })
       v-model:unavailable="unavailable"
       :site-key="WORKSHOP_TURNSTILE_SITE_KEY"
       theme="dark"
-      :expired-message="TURNSTILE_MESSAGES[locale].expired"
-      :failed-message="TURNSTILE_MESSAGES[locale].failed"
+      :expired-message="t('auth.turnstile.expired', locale)"
+      :failed-message="t('auth.turnstile.failed', locale)"
       error-class="text-red-500"
     />
     <small
@@ -270,7 +265,7 @@ defineExpose({ resetTurnstile })
       aria-live="polite"
       class="opacity-80"
     >
-      {{ TURNSTILE_MESSAGES[locale].submitBlockedHint }}
+      {{ t('auth.turnstile.submitBlockedHint', locale) }}
     </small>
 
     <button

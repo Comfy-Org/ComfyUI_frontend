@@ -13,7 +13,7 @@
 import { computed, inject, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
-import type { BookmarkCustomization } from '@/schemas/apiSchema'
+import type { BookmarkCustomization } from '@/platform/settings/types'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { InjectKeyExpandedKeys } from '@/types/treeExplorerTypes'

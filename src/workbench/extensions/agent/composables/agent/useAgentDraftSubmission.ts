@@ -1,14 +1,18 @@
 import { watch } from 'vue'
+import { v4 as uuidv4 } from 'uuid'
 
+import type { AgentInputMethod } from '@/platform/telemetry/types'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 
 import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 import type { WorkflowReference } from '../../types/workflowReference'
 import type { SelectedNode, useCanvasSelection } from './useCanvasSelection'
+import { selectedNodeKey } from './useCanvasSelection'
 import type { ComposerAttachment } from './useComposer'
 
 interface UseAgentDraftSubmissionOptions {
   canSubmit: () => boolean
+  onSubmit: () => void
   target: () => ComfyWorkflow | null
   editableWorkflowId: () => string | undefined
   selection: Pick<
@@ -22,9 +26,19 @@ interface UseAgentDraftSubmissionOptions {
     text: string,
     attachments: ComposerAttachment[],
     nodes: SelectedNode[],
-    references: WorkflowReference[]
+    references: WorkflowReference[],
+    meta: SubmissionMeta
   ) => Promise<boolean>
-  stop: () => Promise<void>
+}
+
+/**
+ * Identity of this send attempt, for the telemetry the caller emits. Carried
+ * through `send` because `startSubmission` clears the draft it is derived from
+ * before the send runs.
+ */
+export interface SubmissionMeta {
+  clientMessageId: string
+  inputMethod: AgentInputMethod
 }
 
 export function useAgentDraftSubmission(
@@ -32,24 +46,26 @@ export function useAgentDraftSubmission(
 ) {
   const composer = useAgentComposerStore()
   const { selection } = options
-  watch(
-    selection.staged,
-    (nodes, previous) => {
-      if (nodes.length > 0 || previous.length > 0) composer.markEdited()
-    },
-    { deep: true, flush: 'sync' }
-  )
 
   function recoverFailedSubmission(): void {
     const snapshot = composer.takeFailedSubmission()
     if (!snapshot || selection.staged.value.length > 0) return
 
-    composer.replaceDraft({
-      text: snapshot.draft,
-      attachments: snapshot.attachments,
-      workflowReferences: snapshot.references.filter(
-        ({ id }) => id !== options.editableWorkflowId()
-      )
+    composer.restorePrompt({
+      text: snapshot.prompt.text,
+      references: snapshot.prompt.references.filter((reference) => {
+        if (reference.kind === 'workflow')
+          return reference.id !== options.editableWorkflowId()
+        if (reference.kind === 'node')
+          return (
+            options.target() === snapshot.target &&
+            snapshot.nodes.some(
+              (node) =>
+                selectedNodeKey(node) === selectedNodeKey(reference.node)
+            )
+          )
+        return true
+      })
     })
     if (options.target() === snapshot.target) selection.replace(snapshot.nodes)
   }
@@ -74,8 +90,9 @@ export function useAgentDraftSubmission(
     )
       return
 
-    const draft = composer.draft
-    const draftReferences = [...composer.workflowReferences]
+    options.onSubmit()
+    const prompt = composer.prompt
+    const inputMethod = composer.promptOrigin
     const sentAttachments = [...attachments]
     const sentReferences = [...references]
     selection.exit()
@@ -84,8 +101,7 @@ export function useAgentDraftSubmission(
 
     selection.consume()
     const submissionId = composer.startSubmission({
-      draft,
-      references: draftReferences,
+      prompt,
       attachments: sentAttachments,
       nodes,
       target
@@ -95,13 +111,10 @@ export function useAgentDraftSubmission(
       text,
       sentAttachments,
       nodes,
-      sentReferences
+      sentReferences,
+      { clientMessageId: uuidv4(), inputMethod }
     )
-    const stopRequested =
-      composer.submission?.id === submissionId &&
-      composer.submission.stopRequested
     composer.settleSubmission(submissionId, sent)
-    if (sent && stopRequested) await options.stop()
   }
 
   return { submit }

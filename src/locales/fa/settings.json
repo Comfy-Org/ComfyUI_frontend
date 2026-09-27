@@ -84,6 +84,10 @@
   "Comfy_EnableWorkflowViewRestore": {
     "name": "ذخیره و بازیابی موقعیت و سطح بزرگ‌نمایی بوم در workflowها"
   },
+  "Comfy_ErrorSystem_ShowMissingModels": {
+    "name": "نمایش مدل‌های مفقود در برگهٔ مشکلات",
+    "tooltip": "وقتی غیرفعال باشد، فایل‌های مدل یافت‌نشده در برگهٔ مشکلات فهرست نمی‌شوند و nodeهای آن‌ها برجسته نمی‌شوند."
+  },
   "Comfy_Execution_PreviewMethod": {
     "name": "روش پیش‌نمایش زنده",
     "options": {
@@ -461,8 +465,13 @@
   "Comfy_Workflow_Persist": {
     "name": "حفظ وضعیت ورک‌فلو و بازیابی هنگام بارگذاری (مجدد) صفحه"
   },
-  "Comfy_Workflow_ShowMissingModelsWarning": {
-    "name": "نمایش هشدار مدل‌های مفقود"
+  "Comfy_Workflow_ShowMissingMediaWarning": {
+    "name": "نمایش رسانه‌های مفقود در برگهٔ مشکلات",
+    "tooltip": "وقتی غیرفعال باشد، تصاویر ورودی، ویدیوها و صوت‌های یافت‌نشده در برگهٔ مشکلات فهرست نمی‌شوند و nodeهای آن‌ها برجسته نمی‌شوند."
+  },
+  "Comfy_Workflow_ShowMissingNodesWarning": {
+    "name": "نمایش nodeهای مفقود در برگهٔ مشکلات",
+    "tooltip": "وقتی غیرفعال باشد، بسته‌های node مفقود در برگهٔ مشکلات فهرست نمی‌شوند و nodeهای آن‌ها برجسته نمی‌شوند. workflow همچنان تا زمان نصب آن‌ها اجرا نمی‌شود."
   },
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "مرتب‌سازی شناسه نودها هنگام ذخیره ورک‌فلو"

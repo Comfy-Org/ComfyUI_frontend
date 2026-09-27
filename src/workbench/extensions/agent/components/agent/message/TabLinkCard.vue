@@ -4,6 +4,7 @@ import { storeToRefs } from 'pinia'
 import { computed, ref, useId, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
 import { useAgentTargetNavigation } from '../../../composables/agent/useAgentTargetNavigation'
 import { useAgentPanelStore } from '../../../stores/agent/agentPanelStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -80,18 +81,20 @@ async function open(): Promise<void> {
 </script>
 
 <template>
-  <button
+  <Button
     v-if="agentEnabled && tab"
     type="button"
+    variant="outline"
+    size="unset"
     :aria-label="t('agent.openWorkflowTab', { name: label })"
     :aria-describedby="nodeCount === undefined ? undefined : nodeCountId"
-    class="border-agent-border hover:bg-agent-surface-hover flex h-[53px] w-full cursor-pointer items-center gap-2.5 rounded-[10px] border px-3 py-2.5 text-left transition-colors"
+    class="h-[53px] w-full justify-start gap-2.5 border-component-node-border px-3 py-2.5 text-left whitespace-normal"
     @click="open"
   >
     <span
       aria-hidden="true"
       data-testid="workflow-link-media"
-      class="border-agent-border bg-agent-surface-raised text-agent-fg-subtle flex size-8 shrink-0 items-center justify-center rounded-md border"
+      class="flex size-8 shrink-0 items-center justify-center rounded-md border border-component-node-border bg-secondary-background text-muted-foreground"
     >
       <span class="icon-[comfy--workflow] size-4" />
     </span>
@@ -99,13 +102,11 @@ async function open(): Promise<void> {
       data-testid="workflow-link-content"
       class="flex min-w-0 flex-1 flex-col gap-0.5"
     >
-      <span class="text-agent-fg truncate text-sm/4 font-medium">{{
-        label
-      }}</span>
+      <span class="truncate text-sm/4 text-base-foreground">{{ label }}</span>
       <span
         v-if="nodeCount !== undefined"
         :id="nodeCountId"
-        class="text-agent-fg-subtle text-xs"
+        class="text-xs text-muted-foreground"
       >
         {{ t('g.nodesCount', nodeCount) }}
       </span>
@@ -113,7 +114,7 @@ async function open(): Promise<void> {
     <span
       aria-hidden="true"
       data-testid="workflow-link-navigation"
-      class="text-agent-fg-subtle icon-[lucide--arrow-right] size-4 shrink-0"
+      class="icon-[lucide--arrow-right] size-4 shrink-0 text-muted-foreground"
     />
-  </button>
+  </Button>
 </template>

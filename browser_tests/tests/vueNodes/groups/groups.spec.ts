@@ -173,6 +173,46 @@ test.describe('Vue Node Groups', { tag: ['@screenshot', '@vue-nodes'] }, () => {
     }).toPass({ timeout: 5000 })
   })
 
+  test('undoing a group drag restores the group and its member nodes', async ({
+    comfyPage
+  }) => {
+    await comfyPage.workflow.loadWorkflow('groups/nested-groups-1-inner-node')
+
+    const memberNode = await comfyPage.nodeOps.getNodeRefById('17')
+    async function readMemberPos() {
+      const geometry = await comfyPage.canvasOps.getNodeGeometry(memberNode.id)
+      return geometry.pos
+    }
+
+    const groupBefore =
+      await comfyPage.canvasOps.getGroupPosition('Outer Group')
+    const memberBefore = await readMemberPos()
+
+    await comfyPage.canvasOps.dragGroup({
+      name: 'Outer Group',
+      deltaX: 120,
+      deltaY: 90
+    })
+
+    // Confirm the drag actually displaced both, otherwise "restored by undo"
+    // would hold trivially for anything that never moved.
+    await expect(async () => {
+      const groupMoved =
+        await comfyPage.canvasOps.getGroupPosition('Outer Group')
+      expect(groupMoved).not.toEqual(groupBefore)
+      expect(await readMemberPos()).not.toEqual(memberBefore)
+    }).toPass({ timeout: 5000 })
+
+    await comfyPage.keyboard.undo()
+
+    await expect(async () => {
+      const groupAfter =
+        await comfyPage.canvasOps.getGroupPosition('Outer Group')
+      expect(groupAfter).toEqual(groupBefore)
+      expect(await readMemberPos()).toEqual(memberBefore)
+    }).toPass({ timeout: 5000 })
+  })
+
   test('does not drag contents when control is held', async ({ comfyPage }) => {
     await comfyPage.keyboard.selectAll()
     await comfyPage.page.keyboard.press(CREATE_GROUP_HOTKEY)

@@ -19,16 +19,20 @@ jobs:
     permissions:
       contents: read
     outputs:
-      should-run: ${{ steps.changes.outputs.should-run }}
+      should-run: ${{ steps.changes.outputs.should-run-unit }}
     steps:
       - uses: actions/checkout@v7
       - id: changes
         uses: ./.github/actions/changes-filter
 
-  test:
+  test-shards:
     needs: changes
     if: ${{ needs.changes.outputs.should-run == 'true' }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
 
     steps:
       - uses: actions/checkout@v7
@@ -37,7 +41,46 @@ jobs:
         uses: ./.github/actions/setup-frontend
 
       - name: Run Vitest tests with coverage
-        run: pnpm test:coverage
+        env:
+          VITEST_SHARD: ${{ matrix.shard }}/${{ strategy.job-total }}
+        run: pnpm test:coverage --shard="$VITEST_SHARD" --reporter=default --reporter=blob
+
+      - name: Upload shard report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: unit-shard-${{ matrix.shard }}
+          path: .vitest-reports/*.json
+          include-hidden-files: true
+          retention-days: 1
+          if-no-files-found: error
+
+  test-report:
+    needs: test-shards
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Download shard reports
+        uses: actions/download-artifact@v8
+        with:
+          pattern: unit-shard-*
+          path: .vitest-reports
+          merge-multiple: true
+
+      - name: Merge reports and check coverage thresholds
+        run: pnpm test:coverage --merge-reports=.vitest-reports
+
+      - name: Run package unit tests with coverage
+        run: |
+          rc=0
+          for pkg in account-core account-ui billing-contract object-info-parser shared-frontend-utils design-system; do
+            pnpm --filter "@comfyorg/$pkg" exec vitest run --coverage || rc=1
+          done
+          exit $rc
 
       - name: Upload unit coverage artifact
         if: always() && github.event_name == 'push'
@@ -52,7 +95,27 @@ jobs:
         if: always()
         uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
-          files: coverage/lcov.info
+          files: coverage/lcov.info,packages/account-core/coverage/lcov.info,packages/account-ui/coverage/lcov.info,packages/billing-contract/coverage/lcov.info,packages/object-info-parser/coverage/lcov.info,packages/shared-frontend-utils/coverage/lcov.info,packages/design-system/coverage/lcov.info
           flags: unit
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
+
+  test:
+    if: ${{ always() }}
+    needs: [changes, test-shards, test-report]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check unit test results
+        env:
+          CHANGES: ${{ needs.changes.result }}
+          SHOULD_RUN: ${{ needs.changes.outputs.should-run }}
+          SHARDS: ${{ needs.test-shards.result }}
+          REPORT: ${{ needs.test-report.result }}
+        run: |
+          echo "changes=$CHANGES should_run=$SHOULD_RUN shards=$SHARDS report=$REPORT"
+          [[ "$CHANGES" == "success" ]] || exit 1
+          if [[ "$SHOULD_RUN" == "false" ]]; then
+            [[ "$SHARDS" == "skipped" && "$REPORT" == "skipped" ]]
+          else
+            [[ "$SHOULD_RUN" == "true" && "$SHARDS" == "success" && "$REPORT" == "success" ]]
+          fi

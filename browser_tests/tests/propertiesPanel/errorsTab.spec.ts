@@ -34,11 +34,6 @@ test.describe('Errors tab - common', { tag: '@ui' }, () => {
   })
 
   test.describe('Search and filter', () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-      await comfyPage.setup()
-    })
-
     test('Should keep execution errors matching the search query', async ({
       comfyPage
     }) => {

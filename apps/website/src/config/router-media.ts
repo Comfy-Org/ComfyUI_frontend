@@ -28,7 +28,10 @@ function dataUriFile(value: string, field: FieldSchema): FileValue {
     const data = Uint8Array.from(decoded, (character) =>
       character.charCodeAt(0)
     )
-    return mediaFile(new Blob([data], { type: match[1] }), field)
+    return {
+      ...mediaFile(new Blob([data], { type: match[1] }), field),
+      sourceDataUrl: value
+    }
   } catch {
     return rejected(field)
   }

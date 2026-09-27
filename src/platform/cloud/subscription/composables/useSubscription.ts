@@ -9,7 +9,7 @@ import {
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { getComfyApiBaseUrl, getComfyPlatformBaseUrl } from '@/config/comfyApi'
+import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
@@ -20,7 +20,10 @@ import type {
 } from '@/platform/telemetry/types'
 import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { readOnRail } from '@/platform/workspace/composables/readOnRail'
+import { useBillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { platformLink } from '@/platform/workspace/utils/platformLink'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import { useDialogService } from '@/services/dialogService'
 import { toTierKey } from '@/platform/cloud/subscription/constants/tierPricing'
@@ -310,7 +313,7 @@ function useSubscriptionInternal() {
   }
 
   const handleViewUsageHistory = () => {
-    window.open(`${getComfyPlatformBaseUrl()}/profile/usage`, '_blank')
+    window.open(platformLink('/profile/usage'), '_blank')
   }
 
   const handleLearnMore = () => {
@@ -380,15 +383,19 @@ function useSubscriptionInternal() {
     return fetchPromise
   }
 
-  async function performFetchSubscriptionStatus(
-    ownerId: string | null,
-    workspaceId: string | null
-  ): Promise<BillingStatusResponse | null> {
-    if (!isCloud) return null
-
-    let statusData: BillingStatusResponse
+  /**
+   * The status read on whichever rail is on, in the failure shape the legacy
+   * client threw in. The rail is taken before the read and held for it: a flag
+   * flip mid-read must not start on one client and publish through the other.
+   */
+  async function readSubscriptionStatus(): Promise<
+    BillingStatusResponse | undefined
+  > {
+    const rail = useBillingReadRail()
     try {
-      statusData = await workspaceApi.getBillingStatus()
+      return rail
+        ? await readOnRail(rail.readStatus)
+        : await workspaceApi.getBillingStatus()
     } catch (error) {
       throw new AuthStoreError(
         t('toastMessages.failedToFetchSubscription', {
@@ -396,6 +403,17 @@ function useSubscriptionInternal() {
         })
       )
     }
+  }
+
+  async function performFetchSubscriptionStatus(
+    ownerId: string | null,
+    workspaceId: string | null
+  ): Promise<BillingStatusResponse | null> {
+    if (!isCloud) return null
+
+    const statusData = await readSubscriptionStatus()
+    // A superseded read publishes nothing: the scope moved on under it.
+    if (statusData === undefined) return null
     if (
       (authStore.userId ?? null) !== ownerId ||
       workspaceStore.activeWorkspaceId !== workspaceId

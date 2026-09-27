@@ -62,7 +62,7 @@ function restart() {
 
     <button
       type="button"
-      class="hover:bg-primary-comfy-yellow/90 bg-primary-comfy-yellow mt-6 flex h-12 w-full items-center justify-center rounded-xl font-semibold text-primary-comfy-ink transition-colors"
+      class="mt-6 flex h-12 w-full items-center justify-center rounded-xl bg-primary-comfy-yellow font-semibold text-primary-comfy-ink transition-colors hover:bg-primary-comfy-yellow/90"
       @click="restart"
     >
       {{ t('auth.timeout.restart', locale) }}
