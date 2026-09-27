@@ -753,7 +753,7 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
     })
   })
 
-  describe('next payment date fallback', () => {
+  describe('next payment date fallback for a server that sends no renewal date', () => {
     it('falls back to one month after activation for a monthly plan with no period_end', () => {
       mockSubscription.value = {
         isCancelled: true,
@@ -763,6 +763,7 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
         makePreview({
           transition_type: 'upgrade',
           effective_at: '2026-08-01T00:00:00Z',
+          renewal_at: undefined,
           new_plan: {
             slug: 'creator-monthly',
             tier: 'CREATOR',
@@ -795,6 +796,7 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
         makePreview({
           transition_type: 'upgrade',
           effective_at: '2026-01-31T00:00:00Z',
+          renewal_at: undefined,
           new_plan: {
             slug: 'creator-monthly',
             tier: 'CREATOR',
@@ -825,6 +827,7 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
         makePreview({
           transition_type: 'upgrade',
           effective_at: '2028-02-29T00:00:00Z',
+          renewal_at: undefined,
           new_plan: {
             slug: 'creator-annual',
             tier: 'CREATOR',
@@ -855,6 +858,7 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
         makePreview({
           transition_type: 'upgrade',
           effective_at: '2026-03-31T00:00:00Z',
+          renewal_at: undefined,
           new_plan: {
             slug: 'creator-monthly',
             tier: 'CREATOR',
