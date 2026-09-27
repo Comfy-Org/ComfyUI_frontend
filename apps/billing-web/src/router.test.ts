@@ -22,8 +22,10 @@ function routerAt(phase: BillingWebSessionPhase) {
   return createBillingRouter(createMemoryHistory(), () => phase)
 }
 
-async function arriveAt(path: string): Promise<Router> {
-  const router = routerAt('authenticated')
+async function arriveAt(
+  path: string,
+  router: Router = routerAt('authenticated')
+): Promise<Router> {
   await router.push(path)
   await router.isReady()
   const { client } = createFakeBillingClient()
@@ -74,6 +76,60 @@ describe('entry workspace binding', () => {
     await router.push(`/v1/subscription?${ENTRY_QUERY}&workspace=ws/1`)
 
     expect(onEntryWorkspace).not.toHaveBeenCalled()
+  })
+})
+
+describe('plan selection, which the host app owns', () => {
+  function hostBoundRouter(phase: BillingWebSessionPhase = 'signed-out') {
+    const onEntryWorkspace = vi.fn()
+    const leave = vi.fn()
+    const router = createBillingRouter(
+      createMemoryHistory(),
+      () => phase,
+      onEntryWorkspace,
+      leave
+    )
+    return { router, onEntryWorkspace, leave }
+  }
+
+  it.for([
+    `/v1/pricing?${ENTRY_QUERY}&workspace=ws-team`,
+    `/v1/checkout?${ENTRY_QUERY}&workspace=ws-team`
+  ])('sends %s back to the host without rebinding the tab', async (path) => {
+    const { router, onEntryWorkspace, leave } = hostBoundRouter()
+
+    await router.push(path)
+
+    expect(leave).toHaveBeenCalledExactlyOnceWith(
+      'https://testcloud.comfy.org/?workspace=ws-team'
+    )
+    expect(onEntryWorkspace).not.toHaveBeenCalled()
+    expect(router.currentRoute.value.path).not.toBe('/sign-in')
+  })
+
+  it('keeps a checkout that names a plan', async () => {
+    const { router, leave } = hostBoundRouter('authenticated')
+
+    await router.push(`/v1/checkout?${ENTRY_QUERY}&plan=creator_monthly`)
+
+    expect(leave).not.toHaveBeenCalled()
+    expect(router.currentRoute.value.path).toBe('/v1/checkout')
+  })
+
+  it('explains a pricing link with nowhere to go back to', async () => {
+    const { router, leave } = hostBoundRouter('authenticated')
+
+    await arriveAt(
+      '/v1/pricing?product=platform&return_to=platform_account',
+      router
+    )
+
+    expect(
+      await screen.findByText(
+        "That link doesn't name a place we can send you back to."
+      )
+    ).toBeInTheDocument()
+    expect(leave).not.toHaveBeenCalled()
   })
 })
 
@@ -148,11 +204,9 @@ describe('the return destination', () => {
 describe('hosted billing entry routing', () => {
   it.for([
     { intent: 'subscription', surface: 'Your subscription' },
-    { intent: 'pricing', surface: 'Plans' },
     { intent: 'payment-methods', surface: 'Payment methods' },
     { intent: 'invoices', surface: 'Invoices' },
-    { intent: 'result', surface: 'Billing result' },
-    { intent: 'checkout', surface: 'Checkout' }
+    { intent: 'result', surface: 'Billing result' }
   ])('opens $intent on the $surface surface', async ({ intent, surface }) => {
     await arriveAt(`/v1/${intent}?${ENTRY_QUERY}`)
 

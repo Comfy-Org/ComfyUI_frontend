@@ -329,3 +329,38 @@ test('reloading on the result page while pending recovers it and shows the settl
     cloud.requests.some((request) => request.path === '/billing/ops/op_pending')
   ).toBe(true)
 })
+
+test('a checkout link naming a team credit stop quotes it along with the plan', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  await signIn(
+    entryPath('checkout', {
+      plan: 'pro_monthly',
+      team_credit_stop_id: 'stop_700'
+    })
+  )
+
+  await expect(
+    page.getByRole('heading', { name: 'Confirm your payment' })
+  ).toBeVisible()
+  const preview = cloud.requests.find(
+    (request) => request.path === '/billing/preview-subscribe'
+  )
+  expect(preview?.body).toStrictEqual({
+    plan_slug: 'pro_monthly',
+    team_credit_stop_id: 'stop_700'
+  })
+})
+
+test('a checkout link that names no plan goes back to the host to choose one', async ({
+  page
+}) => {
+  await page.goto(entryPath('checkout', { workspace: 'ws_team_e2e' }))
+
+  await expect(page).toHaveURL(
+    'https://testcloud.comfy.org/?workspace=ws_team_e2e'
+  )
+  await expect(page.getByRole('heading', { name: 'Host app' })).toBeVisible()
+})

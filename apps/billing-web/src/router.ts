@@ -3,13 +3,15 @@ import type { RouterHistory, RouteRecordRaw } from 'vue-router'
 import { createRouter, createWebHistory } from 'vue-router'
 
 import type { SessionSnapshot } from '@comfyorg/account-core/session'
-import type { BillingIntent } from '@comfyorg/billing-contract'
+import type { BillingEntry, BillingIntent } from '@comfyorg/billing-contract'
 import {
   BILLING_INTENTS,
   billingIntentPath,
+  buildReturnUrl,
   parseBillingEntry
 } from '@comfyorg/billing-contract'
 
+import { BILLING_WEB_ENV } from '@/config/env'
 import { recordBillingEntry } from '@/entry/billingEntry'
 import { bindEntryWorkspace } from '@/entry/workspaceBinding'
 import {
@@ -31,7 +33,7 @@ const APP_ENTRY_PATH = '/'
 export const SIGN_IN_PATH = '/sign-in'
 
 const INTENT_VIEWS: Record<BillingIntent, Component> = {
-  pricing: SubscriptionView,
+  pricing: EntryErrorView,
   subscription: SubscriptionView,
   checkout: CheckoutView,
   'payment-methods': PaymentMethodsView,
@@ -80,6 +82,27 @@ function defaultOnEntryWorkspace(workspaceId: string): void {
   void billingWebSessionClient().ensureFresh(undefined, { workspaceId })
 }
 
+/** Plan selection is the host app's: billing-web only takes a chosen plan to checkout. */
+function hostOwnsPlanSelection(entry: BillingEntry): boolean {
+  return (
+    entry.intent === 'pricing' ||
+    (entry.intent === 'checkout' && entry.plan === undefined)
+  )
+}
+
+/** Echoes the host's own workspace back, leaving this tab's binding alone. */
+function hostReturnHref(entry: BillingEntry): string | undefined {
+  return buildReturnUrl({
+    target: entry.returnTo,
+    environment: BILLING_WEB_ENV,
+    workspace: entry.workspaceId
+  })?.href
+}
+
+function leaveForHost(href: string): void {
+  window.location.replace(href)
+}
+
 /**
  * Billing is never public: every route but the sign-in page needs a live
  * workspace session, and `pending` is not one — a restored identity that
@@ -90,25 +113,49 @@ function defaultOnEntryWorkspace(workspaceId: string): void {
  * and signing in would not repair it. The sign-in page is the one route that
  * leaves the entry alone, because it is where that visitor was sent. The app's
  * own entry path carries no product request and clears what a previous link
- * left behind.
+ * left behind. A link that still needs a plan chosen goes back to its host
+ * before any session is asked for; with nowhere to go back to, it is an entry
+ * error.
  */
 export function createBillingRouter(
   history: RouterHistory = createWebHistory(import.meta.env.BASE_URL),
   readPhase: () => BillingWebSessionPhase = billingWebSessionPhase,
-  onEntryWorkspace: (workspaceId: string) => void = defaultOnEntryWorkspace
+  onEntryWorkspace: (workspaceId: string) => void = defaultOnEntryWorkspace,
+  leave: (href: string) => void = leaveForHost
 ) {
   const router = createRouter({ history, routes })
 
-  router.beforeEach((to) => {
-    if (to.path === APP_ENTRY_PATH) {
-      recordBillingEntry(undefined)
-    } else if (to.path !== SIGN_IN_PATH) {
-      const result = parseBillingEntry(to.fullPath)
-      recordBillingEntry(result)
-      if (result.status === 'ok' && result.entry.workspaceId !== undefined) {
-        onEntryWorkspace(result.entry.workspaceId)
-      }
+  /** False once the link has left this tab for its host. */
+  function sendToHost(entry: BillingEntry): boolean {
+    const href = hostReturnHref(entry)
+    if (href === undefined) {
+      recordBillingEntry({ status: 'error', code: 'UNKNOWN_RETURN_TARGET' })
+      return true
     }
+    leave(href)
+    return false
+  }
+
+  function admitEntry(entry: BillingEntry): boolean {
+    recordBillingEntry({ status: 'ok', entry })
+    if (entry.workspaceId !== undefined) onEntryWorkspace(entry.workspaceId)
+    return true
+  }
+
+  function readEntry(fullPath: string): boolean {
+    const result = parseBillingEntry(fullPath)
+    if (result.status === 'error') {
+      recordBillingEntry(result)
+      return true
+    }
+    return hostOwnsPlanSelection(result.entry)
+      ? sendToHost(result.entry)
+      : admitEntry(result.entry)
+  }
+
+  router.beforeEach((to) => {
+    if (to.path === APP_ENTRY_PATH) recordBillingEntry(undefined)
+    else if (to.path !== SIGN_IN_PATH && !readEntry(to.fullPath)) return false
     if (to.path === SIGN_IN_PATH || readPhase() === 'authenticated') return true
     return { path: SIGN_IN_PATH, query: { returnTo: to.fullPath } }
   })
