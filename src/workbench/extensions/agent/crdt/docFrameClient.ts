@@ -60,6 +60,17 @@ export interface DocOpsResult {
   failed?: DocOpFailure
 }
 
+/** The answer to a `doc_reseed`. */
+export interface DocReseedResult {
+  workflowId: string
+  ok: boolean
+  seq?: number
+  /** `reseeded` or `already_current` on success. */
+  outcome?: string
+  code?: string
+  message?: string
+}
+
 interface DocAwareness {
   workflowId: string
   actor: string
@@ -85,6 +96,7 @@ export type ServerDocFrame =
   | { type: 'doc_subscribed'; data: DocSubscribed }
   | { type: 'doc_ops_result'; data: DocOpsResult }
   | { type: 'doc_reset'; data: DocReset }
+  | { type: 'doc_reseed_result'; data: DocReseedResult }
   | { type: 'awareness'; data: DocAwareness }
 
 /** A frame as it travels the wire, before {@link parseServerDocFrame} reads it. */
@@ -123,6 +135,7 @@ interface WireData {
   expires_at?: unknown
   index?: unknown
   op_id?: unknown
+  outcome?: unknown
 }
 
 function decodeBase64(value: string): Uint8Array | null {
@@ -271,6 +284,24 @@ function encodedJsonSize(value: Record<string, unknown>): number | null {
   }
 }
 
+function parseDocReseedResult(
+  workflowId: string,
+  ok: boolean,
+  data: WireData
+): DocReseedResult {
+  const outcome = parseBoundedString(data.outcome, MAX_ERROR_CODE_LENGTH)
+  const code = parseBoundedString(data.code, MAX_ERROR_CODE_LENGTH)
+  const message = parseBoundedString(data.message, MAX_ERROR_MESSAGE_LENGTH)
+  return {
+    workflowId,
+    ok,
+    ...(isSequence(data.seq) && { seq: data.seq }),
+    ...(outcome !== undefined && { outcome }),
+    ...(code !== undefined && { code }),
+    ...(message !== undefined && { message })
+  }
+}
+
 export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
   if (typeof value !== 'object' || value === null) return null
   const frame = value as { type?: unknown; data?: unknown }
@@ -362,6 +393,12 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
     }
   }
 
+  if (frame.type === 'doc_reseed_result' && typeof data.ok === 'boolean')
+    return {
+      type: frame.type,
+      data: parseDocReseedResult(data.workflow_id, data.ok, data)
+    }
+
   if (frame.type === 'awareness' && typeof data.actor === 'string') {
     if (!isValidActor(data.actor)) return null
     const state = parseRecord(data.state)
@@ -399,6 +436,7 @@ export class DocFrameClient extends EventTarget {
       'doc_subscribed',
       'doc_ops_result',
       'doc_reset',
+      'doc_reseed_result',
       'awareness'
     ]) {
       const listener: EventListener = (event) => {
@@ -421,12 +459,33 @@ export class DocFrameClient extends EventTarget {
     }
   }
 
-  /** @returns whether the subscribe frame actually left the transport. */
+  /**
+   * Every subscribe advertises `supports_reseed`: this client answers a
+   * `stale_schema_reseed_required` refusal with {@link reseed}. A server
+   * that predates the flag ignores it.
+   *
+   * @returns whether the subscribe frame actually left the transport.
+   */
   subscribe(workflowId: string, stateVector: Uint8Array): boolean {
     return this.send('doc_subscribe', {
       v: DOC_PROTOCOL_VERSION,
       workflow_id: workflowId,
-      state_vector_b64: encodeBase64(stateVector)
+      state_vector_b64: encodeBase64(stateVector),
+      supports_reseed: true
+    })
+  }
+
+  /**
+   * Ask the server to re-mint a document it refused as an older schema from
+   * `workflow`, the serialized graph this tab currently shows.
+   *
+   * @returns whether the reseed frame actually left the transport.
+   */
+  reseed(workflowId: string, workflow: Record<string, unknown>): boolean {
+    return this.send('doc_reseed', {
+      v: DOC_PROTOCOL_VERSION,
+      workflow_id: workflowId,
+      workflow
     })
   }
 

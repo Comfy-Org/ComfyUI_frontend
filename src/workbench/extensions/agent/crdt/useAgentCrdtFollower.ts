@@ -31,6 +31,7 @@ import { recordDevEvent } from './devPanelLog'
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import { readCrdtSnapshot } from './crdtSnapshot'
 import { DocFrameClient } from './docFrameClient'
+import { STALE_SCHEMA_RESEED_REQUIRED } from './docFrameCodes'
 import type { GraphOperation } from './graphOperations'
 import type { ClassifiedDocUpdate } from './layoutFollowerBridge'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
@@ -177,6 +178,12 @@ function notifyAgentMaterialization(
   )
 }
 
+function hasNodes(
+  canvas: Record<string, unknown> | null
+): canvas is Record<string, unknown> {
+  return Array.isArray(canvas?.nodes) && canvas.nodes.length > 0
+}
+
 export interface AgentCrdtStatus {
   enabled: boolean
   connected: boolean
@@ -271,7 +278,14 @@ export function useAgentCrdtFollower(
    */
   getGraph: () => LGraph | null = () => null,
   events: AgentCrdtFollowerEvents = {},
-  applierDeps: AgentCrdtApplierDeps = {}
+  applierDeps: AgentCrdtApplierDeps = {},
+  /**
+   * The serialized graph the tab bound to `workflowId` currently shows, or
+   * `null`. Sent once to re-mint a document the server refused as an older
+   * schema (`stale_schema_reseed_required`); it is the only safe content for
+   * that, since the server's own copy can lag this canvas.
+   */
+  canvasFor: (workflowId: string) => Record<string, unknown> | null = () => null
 ) {
   const productGate = useAgentPanelStore()
   const follower = shallowRef<ReturnType<typeof startAgentCrdtFollower>>()
@@ -310,7 +324,8 @@ export function useAgentCrdtFollower(
           isTargetActive,
           getGraph,
           events,
-          applierDeps
+          applierDeps,
+          canvasFor
         )
       )
     },
@@ -340,7 +355,8 @@ function startAgentCrdtFollower(
   isTargetActive: Ref<boolean>,
   getGraph: () => LGraph | null,
   events: AgentCrdtFollowerEvents,
-  applierDeps: AgentCrdtApplierDeps
+  applierDeps: AgentCrdtApplierDeps,
+  canvasFor: (workflowId: string) => Record<string, unknown> | null
 ) {
   const connected = ref(false)
   const updatesApplied = ref(0)
@@ -481,6 +497,58 @@ function startAgentCrdtFollower(
     }
   }
 
+  // Workflows this binding already answered a stale_schema_reseed_required
+  // refusal for. One doc_reseed per binding: a second refusal takes the
+  // ordinary bounded retry, so a server that keeps refusing cannot turn the
+  // reseed into a loop. Cleared on retarget.
+  const reseedAttempted = new Set<string>()
+  /** The workflow a refusal asks this binding to reseed, if it asks at all. */
+  const reseedTarget = (detail: {
+    workflowId?: unknown
+    code?: unknown
+  }): string | null => {
+    const target = subscribedWorkflowId.value
+    if (detail.code !== STALE_SCHEMA_RESEED_REQUIRED || target === null)
+      return null
+    if (detail.workflowId !== undefined && detail.workflowId !== target)
+      return null
+    return reseedAttempted.has(target) ? null : target
+  }
+  /**
+   * Answer a `stale_schema_reseed_required` refusal with the canvas this tab
+   * shows. False when this binding already tried, there is no canvas with
+   * nodes to send, or the frame could not leave; the caller then treats the
+   * refusal like any other.
+   */
+  const tryReseed = (detail: {
+    workflowId?: unknown
+    code?: unknown
+  }): boolean => {
+    const target = reseedTarget(detail)
+    if (target === null) return false
+    reseedAttempted.add(target)
+    const canvas = canvasFor(target)
+    if (!hasNodes(canvas) || !bridge.reseed(target, canvas)) return false
+    recordDevEvent('doc_reseed_sent', { workflowId: target })
+    lifecycle.onReseedSent(target)
+    return true
+  }
+  const onReseedResult: EventListener = (event) => {
+    if (!(event instanceof CustomEvent)) return
+    const detail = event.detail as {
+      workflowId?: unknown
+      ok?: unknown
+      code?: unknown
+    } | null
+    if (!isCurrentWorkflow(detail?.workflowId)) return
+    lastFrameType.value = event.type
+    recordDevEvent('doc_reseed_result', detail)
+    // ok / conflict: the bridge has already reset the lineage and
+    // resubscribed. Anything else is final for this document.
+    if (detail.ok !== true && detail.code !== 'conflict')
+      lifecycle.stopProbing()
+  }
+
   const onSubscribed: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
     if (!isTargetActive.value) return
@@ -497,7 +565,7 @@ function startAgentCrdtFollower(
       lifecycle.onSubscribeConfirmed()
       resumeHeldOpsIfSubscribed()
     } else {
-      const refusal = handleSubscribeRefusal(detail, lifecycle)
+      if (!tryReseed(detail)) handleSubscribeRefusal(detail, lifecycle)
       // FE #16637 residual: a refusal is the earliest signal the sender can
       // get that its in-flight batch's doc is gone — don't make it wait out
       // the 10 s result-silence window to notice on its own.
@@ -663,6 +731,7 @@ function startAgentCrdtFollower(
   bridge.addEventListener('doc_gap', onGap)
   bridge.addEventListener('doc_stale', onStale)
   bridge.addEventListener('doc_subscribe_sent', onSubscribeSent)
+  bridge.addEventListener('doc_reseed_result', onReseedResult)
   api.addEventListener('reconnected', onReconnected)
   api.addEventListener('status', onSocketActivity)
 
@@ -779,6 +848,7 @@ function startAgentCrdtFollower(
       // collected changes to apply, the graph watcher covers readiness.
       const justActivated = active && previous?.[1] === false
       lifecycle.clearForRetarget()
+      reseedAttempted.clear()
       connected.value = false
       pendingLiveNodeIds.clear()
       if (!active) {
@@ -810,6 +880,7 @@ function startAgentCrdtFollower(
       () => bridge.removeEventListener('doc_gap', onGap),
       () => bridge.removeEventListener('doc_stale', onStale),
       () => bridge.removeEventListener('doc_subscribe_sent', onSubscribeSent),
+      () => bridge.removeEventListener('doc_reseed_result', onReseedResult),
       () => sender.detach(),
       () => rejectedOpNotifier.cancel(),
       () => coalescer.detach(),

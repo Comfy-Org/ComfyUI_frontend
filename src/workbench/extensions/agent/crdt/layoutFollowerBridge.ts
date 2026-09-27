@@ -3,6 +3,7 @@ import { reportError } from '@/platform/telemetry/reportError'
 import type {
   DocFrameClient,
   DocOp,
+  DocReseedResult,
   DocReset,
   DocSubscribed,
   DocUpdate
@@ -124,6 +125,11 @@ export class LayoutFollowerBridge extends EventTarget {
    * harmless). It never moves {@link lastSeq} backwards.
    */
   private catchUpPending = false
+  /**
+   * The workflow a `doc_reseed` went out for and has not been answered yet;
+   * only its answer is acted on (see {@link onDocReseedResult}).
+   */
+  private reseedWorkflowId: string | null = null
 
   constructor(private readonly client: DocFrameClient) {
     super()
@@ -131,6 +137,7 @@ export class LayoutFollowerBridge extends EventTarget {
     client.addEventListener('doc_reset', this.onDocReset)
     client.addEventListener('doc_subscribed', this.onDocSubscribed)
     client.addEventListener('doc_ops_result', this.forwardFrame)
+    client.addEventListener('doc_reseed_result', this.onDocReseedResult)
   }
 
   /** The semantic doc this bridge currently follows. */
@@ -234,6 +241,20 @@ export class LayoutFollowerBridge extends EventTarget {
     this.reconcile()
   }
 
+  /**
+   * Answer a `stale_schema_reseed_required` refusal: ask the server to re-mint
+   * the followed document from `workflow`, the canvas this tab shows. Only for
+   * the workflow this bridge wants followed.
+   *
+   * @returns whether the frame left the transport.
+   */
+  reseed(workflowId: string, workflow: Record<string, unknown>): boolean {
+    if (workflowId !== this.desiredWorkflowId) return false
+    if (!trySend(() => this.client.reseed(workflowId, workflow))) return false
+    this.reseedWorkflowId = workflowId
+    return true
+  }
+
   sendHumanOps(tab: string, ops: DocOp[]): void {
     const workflowId = this.sentWorkflowId
     if (workflowId === null || ops.length === 0) return
@@ -254,6 +275,10 @@ export class LayoutFollowerBridge extends EventTarget {
       this.client.removeEventListener('doc_reset', this.onDocReset)
       this.client.removeEventListener('doc_subscribed', this.onDocSubscribed)
       this.client.removeEventListener('doc_ops_result', this.forwardFrame)
+      this.client.removeEventListener(
+        'doc_reseed_result',
+        this.onDocReseedResult
+      )
       this.desiredWorkflowId = null
       this.sentWorkflowId = null
       this.followerDoc.destroy()
@@ -411,6 +436,33 @@ export class LayoutFollowerBridge extends EventTarget {
       this.catchUpPending = this.ackSeq !== null
     } else this.sentWorkflowId = null
     this.dispatchEvent(new CustomEvent(event.type, { detail: event.detail }))
+  }
+
+  /**
+   * A reseed that landed (`ok`), or lost the race to another writer
+   * (`conflict`), leaves the server holding a NEW lineage. This tab was
+   * refused, so it does not follow the channel the server's `doc_reset` went
+   * out on: take the same path that frame takes — drop the doc and resubscribe
+   * with an empty state vector — so the catch-up is the whole new document.
+   * Any other answer is final for this refusal and only forwarded.
+   */
+  private readonly onDocReseedResult: EventListener = (event) => {
+    if (!(event instanceof CustomEvent)) return
+    const result = event.detail as DocReseedResult
+    if (result.workflowId !== this.reseedWorkflowId) return
+    this.reseedWorkflowId = null
+    this.dispatchEvent(new CustomEvent(event.type, { detail: result }))
+    if (result.workflowId !== this.desiredWorkflowId) return
+    if (!result.ok && result.code !== 'conflict') return
+    const reset: DocReset = {
+      workflowId: result.workflowId,
+      seq: result.seq ?? 0,
+      actor: 'system:client-seed'
+    }
+    this.dispatchEvent(new CustomEvent('doc_reset', { detail: reset }))
+    this.dropDocForNewLineage()
+    this.resubscribe()
+    this.dispatchEvent(new CustomEvent('follower_replaced', { detail: reset }))
   }
 
   private readonly forwardFrame: EventListener = (event) => {
