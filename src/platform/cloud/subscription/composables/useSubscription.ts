@@ -225,12 +225,10 @@ function useSubscriptionInternal() {
     )
     telemetry?.trackBillingEvent({
       operation: 'subscription_checkout',
-      stage: 'failed',
+      stage: 'timeout',
       outcome: 'failure',
       checkout_attempt_id: attempt.attempt_id,
-      failure_category: didLastRecoveryAttemptThrow
-        ? 'network'
-        : 'reconciliation_needed',
+      failure_category: 'poll_timeout',
       tier: attempt.tier,
       cycle: attempt.cycle,
       checkout_type: attempt.checkout_type,
