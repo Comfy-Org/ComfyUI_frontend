@@ -38,7 +38,14 @@ function createPromotedComponentWidget(context: PromotedHostWidgetContext) {
     type: sourceWidget.type,
     options: {
       hideOnZoom: sourceWidget.options.hideOnZoom,
-      getMinHeight: sourceWidget.options.getMinHeight,
+      getMinHeight: () =>
+        sourceWidget.computedHeight ??
+        sourceWidget.options.getMinHeight?.() ??
+        50,
+      getMaxHeight: () =>
+        sourceWidget.computedHeight ??
+        sourceWidget.options.getMaxHeight?.() ??
+        Number.POSITIVE_INFINITY,
       getValue: () => {
         const stored = widgetStore.getWidget(widgetId)?.value
         return typeof stored === 'string' ||

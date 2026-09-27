@@ -926,6 +926,11 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
    */
   syncPromotedWidgetState(): void {
     const store = useWidgetValueStore()
+    // Host rows mirror the interior widget's allocated height (via the host
+    // options' getHeight/getMinHeight), but interior nodes are never laid
+    // out while their subgraph view is closed, so their computedHeight would
+    // stay stale at the fallback default.
+    const interiorNodesToArrange = new Set<LGraphNode>()
     for (const input of this.inputs) {
       if (!input.widgetId) continue
       const state = store.getWidget(input.widgetId)
@@ -933,6 +938,15 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
       const interior = this._resolveInteriorWidget(input.name)
       if (!interior) continue
+
+      const interiorOwner = (interior as { node?: unknown }).node
+      if (
+        interiorOwner instanceof LGraphNode &&
+        interiorOwner !== this &&
+        interiorOwner.graph
+      ) {
+        interiorNodesToArrange.add(interiorOwner)
+      }
 
       const disabledOverride = (input as PromotedHostInput)._disabledOverride
       if (
@@ -956,6 +970,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       if (state.serialize === false && state.value !== interior.value) {
         state.value = interior.value
       }
+    }
+    for (const interiorNode of interiorNodesToArrange) {
+      interiorNode.arrange()
     }
   }
 

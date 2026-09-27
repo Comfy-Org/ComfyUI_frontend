@@ -108,4 +108,23 @@ describe('createPromotedMultilineWidget', () => {
     expect(widget).toBeUndefined()
     expect(useDomWidgetStore().widgetStates.size).toBe(0)
   })
+
+  it('mirrors the interior computed height into the host height option', () => {
+    const source = fromAny<IBaseWidget, unknown>({
+      name: 'prompt',
+      type: 'customtext',
+      element: document.createElement('textarea'),
+      computedHeight: 420
+    })
+
+    const domWidget = promoteMultilineDom(source)
+
+    expect(domWidget.options.getHeight?.()).toBe(420)
+  })
+
+  it('leaves the host height to layout while the interior is not laid out', () => {
+    const domWidget = promoteMultilineDom()
+
+    expect(domWidget.options.getHeight?.()).toBe('')
+  })
 })

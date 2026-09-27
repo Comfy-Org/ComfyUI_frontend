@@ -22,6 +22,7 @@ import {
 import { reorderSubgraphInputsByName } from '@/core/graph/subgraph/promotionUtils'
 import type { SerializedProxyWidgetTuple } from '@/core/schemas/promotionSchema'
 import { IS_CONTROL_WIDGET } from '@/scripts/controlWidgetMarker'
+import { DOMWidgetImpl } from '@/scripts/domWidget'
 import {
   getPreviewExposureHostLocator,
   usePreviewExposureStore
@@ -2021,6 +2022,54 @@ describe('SubgraphWidgetPromotion', () => {
 
         expect(promotedWidgetStateByName(reloaded, 'value').value).toBeNull()
       })
+    })
+  })
+
+  describe('Interior layout for promoted widget heights', () => {
+    function setupPromotedDomHeight(minHeight: () => number) {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'value', type: 'STRING' }]
+      })
+
+      const interiorNode = new LGraphNode('Interior')
+      const input = interiorNode.addInput('value', 'STRING')
+      input.widget = { name: 'preview' }
+      interiorNode.addOutput('out', 'STRING')
+      const interiorWidget = new DOMWidgetImpl<HTMLElement, string>({
+        node: interiorNode,
+        name: 'preview',
+        type: 'preview',
+        element: document.createElement('div'),
+        options: {
+          getMinHeight: minHeight,
+          getMaxHeight: minHeight,
+          getValue: () => 'preview'
+        }
+      })
+      interiorNode.widgets = [interiorWidget]
+
+      const host = setupPromotedWidget(subgraph, interiorNode)
+      return { host, interiorWidget }
+    }
+
+    it('arranges interior widgets when the host arranges', () => {
+      const { host, interiorWidget } = setupPromotedDomHeight(() => 100)
+
+      expect(interiorWidget.computedHeight).toBeUndefined()
+      host.arrange()
+      expect(interiorWidget.computedHeight).toBe(100)
+    })
+
+    it('re-arranges interiors so host rows track later height changes', () => {
+      let minHeight = 100
+      const { host, interiorWidget } = setupPromotedDomHeight(() => minHeight)
+
+      host.arrange()
+      expect(interiorWidget.computedHeight).toBe(100)
+
+      minHeight = 700
+      host.arrange()
+      expect(interiorWidget.computedHeight).toBe(700)
     })
   })
 })

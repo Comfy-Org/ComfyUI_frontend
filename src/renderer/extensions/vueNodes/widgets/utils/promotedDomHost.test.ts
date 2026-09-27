@@ -505,4 +505,64 @@ describe('createPromotedDomWidget', () => {
   it('falls back to the canvas projection for non-DOM widgets', () => {
     expect(promote(fromAny({ name: 'value', type: 'number' }))).toBeUndefined()
   })
+
+  it('generic DOM host reads its height from the interior computed height', () => {
+    const source = fromAny<IBaseWidget, unknown>({
+      name: 'preview',
+      type: 'kj_preview',
+      element: document.createElement('div'),
+      options: {},
+      value: 'live',
+      computedHeight: 350
+    })
+
+    const widget = promoteDom(
+      source,
+      makeWidgetId('g', toNodeId('n'), 'height-mirror'),
+      'height-mirror'
+    )
+
+    expect(widget.options.getHeight?.()).toBe(350)
+  })
+
+  it('component host height options mirror the interior computed height', () => {
+    const source = fromAny<IBaseWidget, unknown>({
+      name: 'preview',
+      type: 'textPreview',
+      component: { name: 'WidgetTextPreview' },
+      inputSpec: { name: 'preview', type: 'TEXT_PREVIEW' },
+      options: { getMinHeight: () => 60 },
+      computedHeight: 700
+    })
+    useWidgetValueStore().registerWidget(WIDGET_ID, {
+      type: 'textPreview',
+      value: 'queued output',
+      options: {}
+    })
+
+    const widget = promoteComponent(source)
+
+    expect(widget.options.getMinHeight?.()).toBe(700)
+    expect(widget.options.getMaxHeight?.()).toBe(700)
+  })
+
+  it('component host keeps the source minHeight until the interior is laid out', () => {
+    const source = fromAny<IBaseWidget, unknown>({
+      name: 'preview',
+      type: 'textPreview',
+      component: { name: 'WidgetTextPreview' },
+      inputSpec: { name: 'preview', type: 'TEXT_PREVIEW' },
+      options: { getMinHeight: () => 60 }
+    })
+    useWidgetValueStore().registerWidget(WIDGET_ID, {
+      type: 'textPreview',
+      value: 'queued output',
+      options: {}
+    })
+
+    const widget = promoteComponent(source)
+
+    expect(widget.options.getMinHeight?.()).toBe(60)
+    expect(widget.options.getMaxHeight?.()).toBe(Number.POSITIVE_INFINITY)
+  })
 })

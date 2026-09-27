@@ -146,6 +146,7 @@ export function createPromotedMultilineWidget(
     options: {
       hideOnZoom: true,
       minNodeSize: [400, 200],
+      getHeight: () => sourceWidget.computedHeight ?? '',
       getValue: readValue,
       setValue: (value: string) => {
         element.value = value
