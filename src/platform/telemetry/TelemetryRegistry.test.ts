@@ -11,6 +11,8 @@ import type {
   AgentOnboardingStepMetadata,
   AgentPanelClosedMetadata,
   AgentPanelOpenedMetadata,
+  AgentPaywallCtaMetadata,
+  AgentPaywallShownMetadata,
   AgentWorkflowAppliedMetadata,
   BillingTelemetryEvent,
   CheckoutJourneyTelemetryEvent,
@@ -276,6 +278,7 @@ describe('TelemetryRegistry', () => {
   describe('agent telemetry dispatch', () => {
     const feedbackMetadata = {
       message_id: 'm1',
+      turn_id: 'm1',
       vote: 'up',
       workflow_id: null
     } satisfies AgentMessageFeedbackMetadata
@@ -314,6 +317,12 @@ describe('TelemetryRegistry', () => {
       workflow_id: 'w1',
       target: 'active_tab_open'
     } satisfies AgentWorkflowAppliedMetadata
+    const paywallShownMetadata = {
+      reason: 'subscription_inactive'
+    } satisfies AgentPaywallShownMetadata
+    const paywallCtaMetadata = {
+      cta: 'add_credits'
+    } satisfies AgentPaywallCtaMetadata
 
     const cases: Array<{
       method: keyof TelemetryProvider & `trackAgent${string}`
@@ -385,14 +394,74 @@ describe('TelemetryRegistry', () => {
       },
       {
         method: 'trackAgentAttachButtonClicked',
-        expected: undefined,
-        invoke: (registry) => registry.trackAgentAttachButtonClicked()
+        expected: { method: 'menu' },
+        invoke: (registry) =>
+          registry.trackAgentAttachButtonClicked({ method: 'menu' })
       },
       {
         method: 'trackAgentWorkflowApplied',
         expected: { ...workflowAppliedMetadata },
         invoke: (registry) =>
           registry.trackAgentWorkflowApplied(workflowAppliedMetadata)
+      },
+      {
+        method: 'trackAgentStopClicked',
+        expected: { method: 'escape', turn_id: 't1', turn_elapsed_ms: 42 },
+        invoke: (registry) =>
+          registry.trackAgentStopClicked({
+            method: 'escape',
+            turn_id: 't1',
+            turn_elapsed_ms: 42
+          })
+      },
+      {
+        method: 'trackAgentWorkflowBound',
+        expected: {
+          thread_id: 'th1',
+          workflow_id: 'w1',
+          prev_workflow_id: null,
+          bind_source: 'minted'
+        },
+        invoke: (registry) =>
+          registry.trackAgentWorkflowBound({
+            thread_id: 'th1',
+            workflow_id: 'w1',
+            prev_workflow_id: null,
+            bind_source: 'minted'
+          })
+      },
+      {
+        method: 'trackAgentRunApprovalShown',
+        expected: { turn_id: 't1', workflow_id: 'w1' },
+        invoke: (registry) =>
+          registry.trackAgentRunApprovalShown({
+            turn_id: 't1',
+            workflow_id: 'w1'
+          })
+      },
+      {
+        method: 'trackAgentRunApprovalResolved',
+        expected: { decision: 'run', time_to_decide_ms: 120 },
+        invoke: (registry) =>
+          registry.trackAgentRunApprovalResolved({
+            decision: 'run',
+            time_to_decide_ms: 120
+          })
+      },
+      {
+        method: 'trackAgentRunModeChanged',
+        expected: { from: 'ask_approval', to: 'auto' },
+        invoke: (registry) =>
+          registry.trackAgentRunModeChanged({
+            from: 'ask_approval',
+            to: 'auto'
+          })
+      },
+      {
+        method: 'trackAgentThreadStarted',
+        expected: { source: 'history_select' },
+        invoke: (registry) =>
+          registry.trackAgentThreadStarted({ source: 'history_select' })
       },
       {
         method: 'trackAgentConsentNotOffered',
@@ -405,6 +474,18 @@ describe('TelemetryRegistry', () => {
         expected: { reason: 'app_mode' },
         invoke: (registry) =>
           registry.trackAgentOnboardingNotShown({ reason: 'app_mode' })
+      },
+      {
+        method: 'trackAgentPaywallShown',
+        expected: { ...paywallShownMetadata },
+        invoke: (registry) =>
+          registry.trackAgentPaywallShown(paywallShownMetadata)
+      },
+      {
+        method: 'trackAgentPaywallCtaClicked',
+        expected: { ...paywallCtaMetadata },
+        invoke: (registry) =>
+          registry.trackAgentPaywallCtaClicked(paywallCtaMetadata)
       }
     ]
 

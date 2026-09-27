@@ -15,6 +15,7 @@ const {
   models,
   query,
   variant = 'dropdown',
+  kind = 'models',
   locale = 'en'
 } = defineProps<{
   models: readonly WorkshopModel[]
@@ -22,6 +23,7 @@ const {
   /** On a phone the same panel fills the screen instead of hanging off a
    * field. */
   variant?: 'dropdown' | 'sheet'
+  kind?: 'models' | 'workflows'
   locale?: Locale
 }>()
 
@@ -56,7 +58,14 @@ const suggestions = computed(() =>
       <p
         class="text-[11px] font-bold tracking-wider text-primary-warm-gray uppercase"
       >
-        {{ t('workshop.search.models', locale) }}
+        {{
+          t(
+            kind === 'models'
+              ? 'workshop.search.models'
+              : 'workshop.hub.workflows',
+            locale
+          )
+        }}
         <span class="tabular-nums opacity-60">({{ matching.length }})</span>
       </p>
       <button
@@ -88,7 +97,11 @@ const suggestions = computed(() =>
             {{ model.name }}
           </span>
           <span class="truncate text-xs text-primary-warm-gray">
-            {{ model.provider ?? t('workshop.card.partnerNode', locale) }}
+            {{
+              model.routerId === undefined
+                ? model.models?.join(', ')
+                : (model.provider ?? t('workshop.card.partnerNode', locale))
+            }}
           </span>
         </span>
       </button>

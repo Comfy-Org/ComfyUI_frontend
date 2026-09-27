@@ -535,6 +535,30 @@ describe('useAgentConversationStore', () => {
     expect(store.threadId).toBeNull()
   })
 
+  it('scopes approval dedupe and timing to the conversation that owns them', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    expect(store.recordApprovalShown('ask-1', 1_000)).toBe(true)
+    expect(store.recordApprovalShown('ask-1', 2_000)).toBe(false)
+    expect(store.approvalShownAt('ask-1')).toBe(1_000)
+
+    // Remount hydration of the same thread keeps the shown state: a replayed
+    // approval card must not re-emit or restart the decision timer.
+    store.setThreadId('th')
+    store.hydrate([])
+    expect(store.approvalShownAt('ask-1')).toBe(1_000)
+    expect(store.recordApprovalShown('ask-1', 3_000)).toBe(false)
+
+    // Leaving the thread drops its abandoned asks with it.
+    store.setThreadId('th-other')
+    expect(store.approvalShownAt('ask-1')).toBeUndefined()
+    expect(store.recordApprovalShown('ask-1', 4_000)).toBe(true)
+
+    store.reset()
+    expect(store.approvalShownAt('ask-1')).toBeUndefined()
+    expect(store.recordApprovalShown('ask-1', 5_000)).toBe(true)
+  })
+
   it('snapshots local workflow references on the submitted turn', () => {
     const store = useAgentConversationStore()
     store.startTurn(T1)
@@ -804,32 +828,21 @@ describe('useAgentConversationStore', () => {
     expect(store.isStreaming).toBe(false)
   })
 
-  it('resolves existing paywalls without resurrecting them after funds run out again', () => {
+  it('resolves existing paywalls without resurrecting them', () => {
     const store = useAgentConversationStore()
     store.recordPaywall(T1, 'subscribe')
+    store.resolvePaywalls()
 
-    store.setPaywallsResolved(true)
-    store.setPaywallsResolved(false)
-
-    expect(store.messages[0].parts).toEqual([])
-    expect(store.entries[0]).toMatchObject({ role: 'user', text: 'subscribe' })
-
-    store.recordPaywall(T2, 'top up')
-    expect(store.messages[1].parts).toEqual([
+    expect(store.entries).toMatchObject([{ role: 'user', text: 'subscribe' }])
+    expect(store.messages[0].parts).toEqual([
       { type: 'paywall', message: undefined }
     ])
-  })
-
-  it('shows a later paywall after resolving an earlier one', () => {
-    const store = useAgentConversationStore()
-    store.recordPaywall(T1, 'subscribe')
-    store.setPaywallsResolved(true)
 
     store.recordPaywall(T2, 'continue')
-
-    expect(store.messages[0].parts).toEqual([])
-    expect(store.messages[1].parts).toEqual([
-      { type: 'paywall', message: undefined }
+    expect(store.entries.map((entry) => entry.role)).toEqual([
+      'user',
+      'user',
+      'assistant'
     ])
   })
 })

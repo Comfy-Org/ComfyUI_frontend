@@ -51,16 +51,18 @@ function armReturnRefresh(): void {
   )
 }
 
+export type HostedBillingTabOutcome = 'opened' | 'unavailable' | 'blocked'
+
 /**
  * Opens `intent` in a hosted billing tab carrying the active workspace, and
- * arms the same-state refresh for when the customer comes back. Returns
- * `false` when the destination isn't billing_web or the tab was blocked, so
- * the caller can fall back to its legacy path.
+ * arms the same-state refresh for when the customer comes back. Reports
+ * `unavailable` when the destination isn't billing_web and `blocked` when the
+ * browser refused the tab.
  */
-export function openHostedBillingTab(
+export function openHostedBillingTabOutcome(
   intent: BillingIntent,
   options: OpenHostedBillingTabOptions = {}
-): boolean {
+): HostedBillingTabOutcome {
   const { flags } = useFeatureFlags()
   const workspaceId = useTeamWorkspaceStore().activeWorkspaceId ?? undefined
   const route = hostedBillingRoute(flags.hostedBillingDestination, intent, {
@@ -68,9 +70,19 @@ export function openHostedBillingTab(
     teamCreditStopId: options.teamCreditStopId,
     workspaceId
   })
-  if (route.kind !== 'billing_web' || !openDisownedTab(route.url)) {
-    return false
-  }
+  if (route.kind !== 'billing_web') return 'unavailable'
+  if (!openDisownedTab(route.url)) return 'blocked'
   armReturnRefresh()
-  return true
+  return 'opened'
+}
+
+/**
+ * {@link openHostedBillingTabOutcome} for callers whose fallback is the same
+ * whether the destination isn't billing_web or the tab was blocked.
+ */
+export function openHostedBillingTab(
+  intent: BillingIntent,
+  options: OpenHostedBillingTabOptions = {}
+): boolean {
+  return openHostedBillingTabOutcome(intent, options) === 'opened'
 }

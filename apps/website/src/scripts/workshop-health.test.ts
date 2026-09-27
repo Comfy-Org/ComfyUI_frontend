@@ -36,6 +36,29 @@ type FailureDetails = Pick<FailedRun, 'reason'> &
   >
 
 describe('Workshop health', () => {
+  it('keeps workflow delivery in the existing health stream with distinct engine tags', () => {
+    const record = workshopHealthLog({
+      name: 'delivery_finished',
+      properties: {
+        ...run,
+        page_type: 'workflow',
+        render_engine: 'cloud',
+        workflow_id: 'workflows/remove-background',
+        status: 'succeeded',
+        duration_ms: 15,
+        output_kind: 'image'
+      }
+    })
+    expect(record).toMatchObject({
+      feature: 'models',
+      event_name: 'delivery_finished',
+      page_type: 'workflow',
+      render_engine: 'cloud',
+      workflow_id: 'workflows/remove-background',
+      service_health: 'success'
+    })
+    expect(JSON.stringify(record)).not.toMatch(/private-user|private-workspace/)
+  })
   it('preserves declared field names for validation diagnostics', () => {
     expect(
       workshopHealthLog({
@@ -238,6 +261,28 @@ describe('Workshop health', () => {
         failure_stage: 'file_read',
         field_error_names: ['image'],
         field_error_codes: ['fileUnreadable']
+      }
+    },
+    {
+      name: 'provider-declined layer separation on a complex image',
+      failure: {
+        reason: 'validation',
+        request_id: 'router-request',
+        http_status: 400,
+        router_error_type: 'invalid_input',
+        field_error_names: ['images'],
+        field_error_codes: ['imageLayerDecompositionUnsupported']
+      }
+    },
+    {
+      name: 'provider-declined HDR source video',
+      failure: {
+        reason: 'validation',
+        request_id: 'router-request',
+        http_status: 502,
+        router_error_type: 'provider_error',
+        field_error_names: ['video_url'],
+        field_error_codes: ['videoHdrUnsupported']
       }
     }
   ] satisfies Array<{ name: string; failure: FailureDetails }>)(

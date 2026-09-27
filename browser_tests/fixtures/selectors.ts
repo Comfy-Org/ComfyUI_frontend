@@ -9,6 +9,7 @@ export const TestIds = {
   },
   sidebar: {
     toolbar: 'side-toolbar',
+    topGroup: 'sidebar-top-group',
     nodeLibrary: 'node-library-tree',
     nodeLibrarySearch: 'node-library-search',
     nodePreviewCard: 'node-preview-card',

@@ -239,25 +239,16 @@ void useBottomPanelStore().registerCoreBottomPanelTabs()
 
 useQueuePolling()
 const queuePendingTaskCountStore = useQueuePendingTaskCountStore()
-const sidebarTabStore = useSidebarTabStore()
 
 const onStatus = async (e: CustomEvent<StatusWsMessageStatus>) => {
   queuePendingTaskCountStore.update(e)
   await queueStore.update()
-  // Only update assets if the assets sidebar is currently open
-  // When sidebar is closed, AssetsSidebarTab.vue will refresh on mount
-  if (sidebarTabStore.activeSidebarTabId === 'assets' || linearMode.value) {
-    await assetsStore.outputAssets.loadNew()
-  }
+  await assetsStore.outputAssets.loadNew()
 }
 
 const onExecutionSuccess = async () => {
   await queueStore.update()
-  // Only update assets if the assets sidebar is currently open
-  // When sidebar is closed, AssetsSidebarTab.vue will refresh on mount
-  if (sidebarTabStore.activeSidebarTabId === 'assets' || linearMode.value) {
-    await assetsStore.outputAssets.loadNew()
-  }
+  await assetsStore.outputAssets.loadNew()
 }
 
 const { onReconnecting, onReconnected } = useReconnectingNotification()
