@@ -194,7 +194,7 @@ export type {
   PaymentReasonKey,
   PaymentStep
 } from './paymentProjection.js'
-export { awaitsVerification, projectPaymentStep } from './paymentProjection.js'
+export { awaitsHostedAction, projectPaymentStep } from './paymentProjection.js'
 export type {
   DeclineDetailKey,
   PaymentCopyKey,

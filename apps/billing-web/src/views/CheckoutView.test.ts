@@ -726,7 +726,9 @@ describe('CheckoutView', () => {
         "We couldn't complete payment verification. Please try again."
       )
     ).toBeInTheDocument()
-    expect(screen.queryByRole('status')).toBeNull()
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Processing payment — setting up your workspace...'
+    )
   })
 
   it('shows the processing toast while the payment settles', async () => {
@@ -739,6 +741,52 @@ describe('CheckoutView', () => {
       'Processing payment — setting up your workspace...'
     )
   })
+
+  it('prompts instead of spinning while a hosted page waits on the customer', async () => {
+    stubNavigation()
+    const fake = await renderCheckout()
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+
+    fake.publishOperation(hostedPendingOperation('https://bank.example/verify'))
+
+    expect(
+      await screen.findByText(
+        'Verify your payment to finish setting up your workspace'
+      )
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByText('Processing payment — setting up your workspace...')
+    ).toBeNull()
+  })
+
+  it.for([
+    ['a subscribe the server charged for', 'pending_payment', true],
+    ['a plan the server activated on the spot', 'subscribed', false]
+  ] as const)(
+    'announces success for %s: %s',
+    async ([, issuedStatus, announced]) => {
+      await renderCheckout(CHECKOUT_PATH, {
+        subscribe: {
+          status: 'ok',
+          value: {
+            phase: 'succeeded',
+            operation: succeededOperation(),
+            issuedStatus
+          }
+        }
+      })
+      await screen.findByRole('button', { name: 'Pay and subscribe' })
+
+      reportConfirm('ctoken_1')
+
+      await screen.findByRole('heading', { name: "You're all set" })
+      await waitFor(() =>
+        expect(
+          screen.queryByText('Subscription updated successfully') !== null
+        ).toBe(announced)
+      )
+    }
+  )
 
   it('holds a reactivating plan change until its charge is acknowledged', async () => {
     const fake = await renderCheckout(CHECKOUT_PATH, {

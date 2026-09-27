@@ -13,9 +13,10 @@
           '[--interface-stroke:color-mix(in_srgb,#171718_75.5%,#fff)] [&_a]:text-[revert] [&_input]:[font:revert] [&_input::placeholder]:text-[revert] **:[[role=combobox]]:p-[revert] **:[[role=combobox]]:[font:revert]',
           step === 'payment' &&
             'xl:h-[min(740px,90vh)] xl:min-h-[min(740px,90vh)] xl:w-[min(1280px,95vw)] xl:gap-0 xl:overflow-hidden xl:rounded-2xl xl:p-0',
-          step !== 'payment' &&
+          (step === 'confirm' || step === 'success') &&
             'h-[min(740px,85vh)] overflow-hidden rounded-2xl bg-base-background xl:h-[min(740px,90vh)] xl:w-[512px]',
-          'max-xl:w-[min(430px,92vw)] motion-safe:xl:transition-[width] motion-safe:xl:duration-300 motion-safe:xl:ease-in-out',
+          step !== 'fit' &&
+            'max-xl:w-[min(430px,92vw)] motion-safe:xl:transition-[width] motion-safe:xl:duration-300 motion-safe:xl:ease-in-out',
           step === 'payment' && 'max-xl:h-[85vh]'
         )
       "
@@ -44,13 +45,15 @@
  * (`useSubscriptionDialog`'s content class) around the step container
  * (`SubscriptionRequiredDialogContentUnified`'s embedded-step classes), so the
  * shared steps sit in the same box in both hosts. `payment` is the wide card
- * capture split; `confirm` and `success` are the narrow column.
+ * capture split; `confirm` and `success` are the narrow column; `fit` is the
+ * dialog's own content-sized box, which the app keeps for the success step
+ * of a plan change.
  */
 import { buttonVariants } from '@comfyorg/design-system/button.variants'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { step, closeLabel } = defineProps<{
-  step: 'payment' | 'confirm' | 'success'
+  step: 'payment' | 'confirm' | 'success' | 'fit'
   closeLabel: string
 }>()
 
