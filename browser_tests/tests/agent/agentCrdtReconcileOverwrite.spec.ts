@@ -37,10 +37,12 @@ import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPane
  * The widget-overwrite spec at the bottom of this file is a *different*
  * mechanism, not a third symptom of the reconcile root cause above: it never
  * goes through a follower rebind at all. It replays an agent turn's
- * `set_widget` while the target widget is focused, which is a plain
- * local-edit-vs-remote-write collision in `applyWidgetValues`/
- * `setWidgetValue` (`graphMutations.ts`) — those write straight into
- * `widgetValueStore` with no focus/in-progress-edit guard.
+ * `set_widget` while the target widget is focused — a plain
+ * local-edit-vs-remote-write collision on the incremental `setWidget` path
+ * in `graphMutations.ts`. Since PM-1191/PM-1697 that path consults the same
+ * `skipStaleReconcile` local-dirty guard a full reconcile does: a remote
+ * value that differs from an in-progress local edit is skipped until the
+ * document catches up to the local value, so the user's keystrokes survive.
  */
 
 // Five wired nodes (checkpoint -> CLIPTextEncode -> KSampler -> VAEDecode ->
@@ -209,18 +211,18 @@ test.describe(
 )
 
 test.describe(
-  'Agent CRDT reconcile stomps a locally renamed node title',
+  'A full workflow-tab reload stomps a locally renamed node title',
   { tag: ['@cloud', '@agent', '@vue-nodes'] },
   () => {
     test.use({ conversationCase: UNTOUCHED_CASE })
 
     test.beforeEach(async ({ page }) => enableCrdtDebugPanel(page))
 
-    test('keeps a manual canvas rename after an unrelated agent reconcile', async ({
+    test('keeps a manual canvas rename after leaving and reloading the workflow tab', async ({
       agentConversation,
       page
     }, testInfo) => {
-      // Known, intentionally unfixed repro: the workflow-tab reload wipes
+      // PM-1717. Known, intentionally unfixed repro: the workflow-tab reload wipes
       // this node's reconcile baseline before the title fix ever runs — see
       // the file-level comment and agentNodeMaterializer.test.ts's matching
       // `it.fails` case for the mechanism. The reconcile step below still
@@ -259,7 +261,7 @@ test.describe(
         contentType: 'image/png'
       })
 
-      await test.step('an unrelated agent-driven reconcile runs (returning to the tab)', async () => {
+      await test.step('leaving and returning fully reloads the workflow tab', async () => {
         // The doc's own projection never learns about this manual rename, so
         // its title stays stale regardless of whether the real "survives a
         // tab reload" gap below is fixed — skip only this node's title check
@@ -291,8 +293,11 @@ test.describe(
   () => {
     test.use({ conversationCase: ADD_THEN_SET_CASE })
 
+    test.beforeEach(async ({ page }) => enableCrdtDebugPanel(page))
+
     test('preserves a user’s in-progress edit when an agent turn sets the same widget', async ({
-      agentConversation
+      agentConversation,
+      page
     }, testInfo) => {
       test.setTimeout(90_000)
       const textField = agentConversation.vueNodes
@@ -326,6 +331,8 @@ test.describe(
         contentType: 'image/png'
       })
 
+      const appliedBeforeTurn = await appliedFrameCount(page)
+
       await test.step('the agent turn lands while the widget is still focused', async () => {
         await agentConversation.replayResponse(1)
       })
@@ -342,21 +349,57 @@ test.describe(
         contentType: 'image/png'
       })
 
-      // Pins the mechanism, not just the symptom: the remote write's own
-      // value ("blurry, low quality", the fixture's turn-1 set_widget) must
-      // actually have landed, or this could just as easily be documenting an
-      // unrelated regression — the second pressSequentially never arriving,
-      // or the field losing focus and going blank — instead of the
-      // overwrite this test is named for.
-      await expect(textField).toHaveValue(/blurry, low quality/)
+      // Pins the mechanism, not just the symptom: the turn's doc frame must
+      // actually have been applied and reconciled in the browser (the
+      // outcomes counter rises only after applyFrame + reconcileLiveGraph),
+      // or a green result could just as easily be documenting an unrelated
+      // regression — the replay never arriving — instead of proving the
+      // remote write was deliberately skipped while the edit was in
+      // progress.
+      await expect
+        .poll(() => appliedFrameCount(page))
+        .toBeGreaterThan(appliedBeforeTurn)
 
-      // Known bug: graphMutations.ts's
-      // applyWidgetValues/setWidgetValue write straight into
-      // widgetValueStore with no check for a focused/in-progress local
-      // edit, so an agent-driven set_widget on the same widget silently
-      // overwrites (or corrupts) whatever the user was mid-typing.
-      test.fail()
+      // The guarded behavior (PM-1191/PM-1697): the remote value must not
+      // land under the cursor, and the user's full text survives.
+      await expect(textField).not.toHaveValue(/blurry, low quality/)
       await expect(textField).toHaveValue('hello world')
+    })
+  }
+)
+
+test.describe(
+  'Completed widget edits survive unrelated agent turns',
+  { tag: ['@cloud', '@agent', '@vue-nodes', '@widget'] },
+  () => {
+    test.use({ conversationCase: UNTOUCHED_CASE })
+
+    test('keeps a completed widget edit after an unrelated agent turn', async ({
+      agentConversation
+    }) => {
+      test.setTimeout(90_000)
+      const textField = agentConversation.vueNodes
+        .getNodeLocator(UNTOUCHED_NODE_ID)
+        .getByLabel('text', { exact: true })
+      const agentEditedField = agentConversation.vueNodes
+        .getNodeLocator('3')
+        .getByLabel('steps', { exact: true })
+      const localValue = 'keep this completed local edit'
+
+      await agentConversation.sendPrompt(0)
+
+      await agentConversation.replayResponse(0, async () => {
+        await test.step('the user completes and leaves a widget edit', async () => {
+          await textField.fill(localValue)
+          await textField.press('Tab')
+          await expect(textField).not.toBeFocused()
+          await expect(textField).toHaveValue(localValue)
+        })
+      })
+      await agentConversation.waitForTurnComplete()
+
+      await expect(agentEditedField.getByRole('spinbutton')).toHaveValue('30')
+      await expect(textField).toHaveValue(localValue)
     })
   }
 )

@@ -19,7 +19,6 @@ import type { Subgraph } from '@/lib/litegraph/src/LGraph'
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ComfyApi } from '@/scripts/api'
-import type { ComfyApp } from '@/scripts/app'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 
@@ -29,36 +28,7 @@ vi.mock(import('@/base/assert'), () => ({
   assert: mockAssert
 }))
 
-vi.mock(import('@/scripts/app'), () => ({
-  app: fromPartial<ComfyApp>({
-    nodeOutputs: {},
-    nodePreviewImages: {},
-    graph: {},
-    isGraphReady: true,
-    rootGraph: {
-      subgraphs: new Map(),
-      serialize: vi.fn(() => ({
-        nodes: [],
-        links: [],
-        groups: [],
-        extra: {},
-        config: {},
-        version: 0.4,
-        last_node_id: 0,
-        last_link_id: 0
-      }))
-    },
-    loadGraphData: vi.fn(() => Promise.resolve()),
-    canvas: {
-      ds: { scale: 1, offset: [0, 0] },
-      setGraph: vi.fn()
-    },
-    ui: {
-      autoQueueEnabled: false,
-      autoQueueMode: 'instant'
-    }
-  })
-}))
+vi.mock(import('@/scripts/app'))
 
 vi.mock(import('@/scripts/api'), () => ({
   api: fromPartial<ComfyApi>({
@@ -116,7 +86,7 @@ function createTracker(initialState?: ComfyWorkflowJSON): ChangeTracker {
 }
 
 function mockCanvasState(state: ComfyWorkflowJSON) {
-  vi.mocked(app.rootGraph.serialize).mockReturnValue(state as never)
+  vi.spyOn(app.rootGraph, 'serialize').mockReturnValue(state as never)
 }
 
 function dispatchedEventNames() {

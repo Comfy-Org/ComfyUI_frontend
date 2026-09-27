@@ -71,11 +71,13 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import {
   adoptSharedOnboardingFlag,
   hasSeenCoach,
+  resetCoach,
   scopedOnboardingKey,
   trackCoachDeferral
 } from './composables/agent/useOnboarding'
 
 import AgentPanel from './components/agent/AgentPanel.vue'
+import { agentBoundWorkflowIdKey } from './components/agent/agentBoundWorkflowId'
 import AgentGraphActivityBar from './components/AgentGraphActivityBar.vue'
 import OnboardingCoach from './components/agent/OnboardingCoach.vue'
 import {
@@ -145,8 +147,10 @@ const { workspaceRole } = useWorkspaceUI()
 const { subscription, tier: subscriptionTier } = useBillingContext()
 const conversationStore = useAgentConversationStore()
 watch(
-  () => subscription.value?.hasFunds,
-  (hasFunds) => conversationStore.setPaywallsResolved(hasFunds === true),
+  subscription,
+  (currentSubscription) => {
+    if (currentSubscription?.hasFunds) conversationStore.resolvePaywalls()
+  },
   { immediate: true }
 )
 const {
@@ -260,6 +264,7 @@ const {
   isSelecting: workflowSelecting,
   selectingTarget,
   savingReference,
+  onVisibleWorkflowChanged,
   selectTarget: onSelectWorkflowTarget,
   selectReference: onSelectWorkflowReference,
   restoreTarget: onWorkflowRestored,
@@ -336,7 +341,10 @@ const onboardingKey = computed(() =>
 watch(
   onboardingKey,
   (key) => {
-    if (key) adoptSharedOnboardingFlag(key)
+    // Only carry the pre-consent, device-wide flag into a scope that had
+    // already accepted consent when it loaded. A newly consenting scope has
+    // not seen this scoped tour yet and should receive it once.
+    if (key && consentAccepted.value) adoptSharedOnboardingFlag(key)
   },
   { immediate: true }
 )
@@ -355,6 +363,14 @@ watch(
   },
   { immediate: true }
 )
+const coachRef = ref<InstanceType<typeof OnboardingCoach>>()
+function restartCoach(): void {
+  // Take-the-tour stays clickable while the coach is deferred by App Mode, and
+  // there is no instance to hand the transition to. Clearing the persisted flag
+  // makes the replay wait for the mount instead of being dropped.
+  if (coachRef.value) coachRef.value.restart()
+  else if (onboardingKey.value) resetCoach(onboardingKey.value)
+}
 const graphMutationsByWorkflow = new Map<
   string,
   ReturnType<typeof createGraphMutations>
@@ -500,6 +516,7 @@ const {
     get: () => composerStore.nodes,
     set: composerStore.setNodes
   }),
+  onNodesAdded: agentPanelStore.retainWorkflowTarget,
   retainWhenNotLive: true,
   selection: selectedNodes,
   enabled: () => agentEnabled.value && selectedTarget.value !== null,
@@ -719,6 +736,7 @@ const {
     useTelemetry()?.trackAgentThreadStarted({ source }),
   onAskResolved: forgetApproval,
   workflow: {
+    initialize: agentPanelStore.initializeTargetTracking,
     current: targetWorkflowTurnContext,
     adopted: onWorkflowAdopted,
     restored: onWorkflowRestored,
@@ -737,6 +755,11 @@ const {
     draft: targetWorkflowDraft
   }
 })
+
+provide(
+  agentBoundWorkflowIdKey,
+  computed(() => boundWorkflowId.value ?? undefined)
+)
 
 const isSending = computed(
   () => sessionIsSending.value || composerStore.submission?.phase === 'pending'
@@ -780,7 +803,8 @@ const {
       }
     },
     onReset: graphActivity.resetWorkflow
-  }
+  },
+  () => workflowStore.activeWorkflow?.changeTracker ?? null
 )
 // The bound document's serialized root graph id, independent of what is
 // currently on the canvas: `beforeLoadNewGraph` persists the outgoing
@@ -800,6 +824,8 @@ const mintPortWiring = attachMintPortWiring({
   layoutChanges: (listener) => layoutStore.onChange(listener),
   localActorPrefix: ACTOR_CONFIG.USER_PREFIX,
   getGraph: () => (app.isGraphReady ? app.rootGraph : null),
+  isRestoringState: () =>
+    workflowStore.activeWorkflow?.changeTracker?._restoringState === true,
   boundRootGraphId
 })
 const isCrdtDevPanelEnabled = resolveDebugPanelEnabled(
@@ -960,6 +986,16 @@ async function onNavigateToReferenceWorkflow(
   }
 }
 
+async function onShowTarget(): Promise<void> {
+  const target = selectedTarget.value
+  if (target === null) return
+  try {
+    if (!(await workflowService.openWorkflow(target))) warnWorkflowUnavailable()
+  } catch {
+    warnWorkflowUnavailable()
+  }
+}
+
 function agentTabFilename(name: string | undefined): string | undefined {
   const cleaned = [
     ...(name ?? '')
@@ -1090,7 +1126,6 @@ async function onAnswerAsk(
     trackApprovalResolved(askId, selection, decidedAt, shownAt)
 }
 
-start()
 void refreshCloudWorkflowIds()
 onBeforeUnmount(() => {
   ++activeTabGeneration
@@ -1162,7 +1197,7 @@ void refreshHistory()
 async function onSelectHistory(id: string): Promise<void> {
   composerStore.invalidateSubmission()
   cancelWorkflowSelection()
-  agentPanelStore.resetWorkflowTarget()
+  agentPanelStore.beginWorkflowRestoration()
   exitNodeSelectionMode()
   if (await loadThread(id))
     useTelemetry()?.trackAgentThreadStarted({ source: 'history_select' })
@@ -1210,6 +1245,7 @@ const coachSteps = computed<CoachStep[]>(() => [
   {
     target: '#agent-chat-history',
     placement: 'left-start',
+    tooltip: t('agent.showChatHistory'),
     title: t('agent.coachHistoryTitle'),
     body: t('agent.coachHistoryBody')
   }
@@ -1217,6 +1253,7 @@ const coachSteps = computed<CoachStep[]>(() => [
 
 const { submit: onSend } = useAgentDraftSubmission({
   canSubmit: () => !workflowSelecting.value && !isSending.value,
+  onSubmit: agentPanelStore.retainWorkflowTarget,
   target: () => selectedTarget.value,
   editableWorkflowId: () => editableWorkflowId.value,
   selection: {
@@ -1283,11 +1320,9 @@ function onNewChat(source?: 'new_chat_button' | 'history_delete'): void {
   exitNodeSelectionMode()
   composerStore.setWorkflowReferences([])
   composerStore.resetPromptHistory()
-  // A new chat targets whatever tab is on screen right now, not the previous
-  // chat's target - unlike onSelectHistory(), which resets to 'uninitialized'
-  // so restoreTarget() can re-apply the loaded thread's own binding.
-  agentPanelStore.setWorkflowTarget(workflowStore.activeWorkflow)
   newChat(source)
+  if (selectionTags.value.length) agentPanelStore.retainWorkflowTarget()
+  else agentPanelStore.startFollowingVisibleWorkflow()
 }
 
 const panelRef = ref<InstanceType<typeof AgentPanel>>()
@@ -1328,8 +1363,6 @@ watch(
   }
 )
 
-watch(() => workflowStore.activeWorkflow, exitNodeSelectionMode)
-
 watch(
   selectedTarget,
   (target, previous) => {
@@ -1341,6 +1374,19 @@ watch(
   },
   { flush: 'sync' }
 )
+
+watch(
+  () => workflowStore.activeWorkflow,
+  () => {
+    exitNodeSelectionMode()
+    onVisibleWorkflowChanged()
+  },
+  { flush: 'sync' }
+)
+
+// Target startup is an explicit session event, not a read of a thread ID that
+// happens to have been assigned by start(). Register scope cleanup first.
+start()
 
 watch(
   () => canvasStore.currentGraph,
@@ -1435,7 +1481,13 @@ function onMentionPick(node: SelectedNode): void {
 }
 
 function onRemoveSelectionTag(id: string): void {
+  const node = canvasStore.selectedItems
+    .filter(isLGraphNode)
+    .find((item) => selectedNodeKey(toSelectedNode(item)) === id)
   removeSelectionTag(id)
+  if (node) {
+    canvasStore.canvas?.deselect(node)
+  }
 }
 
 function onClosePanel(): void {
@@ -1585,6 +1637,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       :active-tab="selectedTargetTab"
       :workflow-tabs="workflowTabs"
       :visible-tab-path="workflowStore.activeWorkflow?.path ?? null"
+      :follows-visible-workflow="agentPanelStore.followsVisibleWorkflow"
       :selecting-tab-path="selectingTarget?.path ?? null"
       :select-tab="onSelectWorkflowTarget"
       :workflow-detached="workflowDetached"
@@ -1604,8 +1657,10 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       @approval-shown="onApprovalShown"
       @open-workflow="onOpenApprovalWorkflow"
       @open-reference-workflow="onNavigateToReferenceWorkflow"
+      @show-target="onShowTarget"
       @paywall-action="onPaywallAction"
       @new-chat="onNewChat('new_chat_button')"
+      @start-tour="restartCoach"
       @toggle-size="agentPanelStore.toggleMaximize()"
       @close="onClosePanel"
       @open-history="refreshHistory()"
@@ -1621,6 +1676,8 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
     </AgentPanel>
     <OnboardingCoach
       v-if="consentAccepted && onboardingKey && coachDeferredBy === null"
+      :key="onboardingKey"
+      ref="coachRef"
       :steps="coachSteps"
       :storage-key="onboardingKey"
     />

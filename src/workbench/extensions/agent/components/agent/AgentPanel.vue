@@ -58,6 +58,7 @@ const {
   activeTab = null,
   workflowTabs = [],
   visibleTabPath = null,
+  followsVisibleWorkflow = false,
   selectingTabPath = null,
   selectTab = async () => false,
   workflowDetached = false,
@@ -87,6 +88,7 @@ const {
   activeTab?: ActiveTab | null
   workflowTabs?: ActiveTab[]
   visibleTabPath?: string | null
+  followsVisibleWorkflow?: boolean
   selectingTabPath?: string | null
   selectTab?: (path: string) => Promise<boolean>
   workflowDetached?: boolean
@@ -115,6 +117,7 @@ const emit = defineEmits<{
   feedback: [turnId: string, vote: 'up' | 'down' | null]
   paywallAction: [action: AgentPaywallAction]
   newChat: []
+  startTour: []
   toggleSize: []
   close: []
   openHistory: []
@@ -127,7 +130,15 @@ const emit = defineEmits<{
   openWorkflow: [askId: string, workflowId: string, workflowName?: string]
   approvalShown: [askId: string, turnId: string, workflowId: string | null]
   openReferenceWorkflow: [workflowId: string, workflowName: string]
+  showTarget: []
 }>()
+
+const targetNotice = computed(() => {
+  if (workflowDetached || activeTab === null) return undefined
+  if (visibleTabPath !== null && visibleTabPath !== activeTab.path)
+    return 'mismatch'
+  return followsVisibleWorkflow ? 'following' : undefined
+})
 
 const showHistory = ref(false)
 
@@ -239,6 +250,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
     <PanelHeader
       :is-maximized
       @new-chat="onNewChat"
+      @start-tour="emit('startTour')"
       @toggle-size="emit('toggleSize')"
       @close="emit('close')"
     />
@@ -259,12 +271,12 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
       <div class="flex h-10 shrink-0 items-center px-2">
         <Button
           id="agent-chat-history"
-          v-tooltip.bottom="buildTooltipConfig(t('agent.showChatHistory'))"
+          v-tooltip.right="buildTooltipConfig(t('agent.showChatHistory'))"
           type="button"
           variant="muted-textonly"
           size="icon-sm"
           :aria-label="t('agent.showChatHistory')"
-          class="size-6 shrink-0"
+          class="size-6 shrink-0 data-coach-hover:bg-secondary-background-hover"
           @click="onOpenHistory"
         >
           <span class="icon-[lucide--history] size-4 shrink-0" />
@@ -382,6 +394,8 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           <RunNoticeBanner
             :expanded="isMaximized"
             :workflow-name="workflowDetached ? undefined : activeTab?.name"
+            :context="targetNotice"
+            @show-target="emit('showTarget')"
           />
           <Composer
             ref="composerRef"

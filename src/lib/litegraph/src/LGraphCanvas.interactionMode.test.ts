@@ -89,7 +89,7 @@ describe('LGraphCanvas interaction mode', () => {
 
     expect(dragStartsBefore).toBe(true)
     expect(canvas.pointer.onDragStart).toBeUndefined()
-    expect(canvas.selectedItems).toEqual(new Set([node]))
+    expect([...canvas.selectedItems]).toEqual([node])
   })
 
   it('keeps the injected mode when the canvas switches graphs', () => {
@@ -113,7 +113,7 @@ describe('LGraphCanvas interaction mode', () => {
         pointerDownOn(canvas, 150, 140)
         canvas.pointer.onClick?.(fromPartial<CanvasPointerEvent>({}))
 
-        expect(canvas.selectedItems).toEqual(new Set([node]))
+        expect([...canvas.selectedItems]).toEqual([node])
         expect(canvas.pointer.onDragStart).toBeUndefined()
         expect(canvas.pointer.onDrag).toBeUndefined()
         expect(canvas.pointer.onDoubleClick).toBeUndefined()

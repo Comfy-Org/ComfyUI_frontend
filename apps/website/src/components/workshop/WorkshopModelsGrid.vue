@@ -1,23 +1,9 @@
 <script setup lang="ts">
-import {
-  ArrowUpDown,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight
-} from '@lucide/vue'
-import {
-  DropdownMenuContent,
-  DropdownMenuPortal,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuRoot,
-  DropdownMenuTrigger
-} from 'reka-ui'
+import { ChevronLeft, ChevronRight } from '@lucide/vue'
 import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import { groupModels } from '../../config/model-family'
-import { cn } from '@comfyorg/tailwind-utils'
 
 import type {
   SortOrder,
@@ -34,14 +20,17 @@ import {
 } from '../../config/models-catalogue'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
-import { rememberShelf } from '../../lib/workshop/shelf-memory'
+import { rememberShelfOnClick } from '../../lib/workshop/shelf-memory'
 import { useCaseLabelKey } from '../../lib/workshop/use-case-label'
 import type { FacetMenuOption } from './WorkshopFilterMenu.vue'
 import WorkshopFilterMenu from './WorkshopFilterMenu.vue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
 import FeaturedBanner from './FeaturedBanner.vue'
+import { modelSlides, studioSlide } from '../../lib/workshop/featured-slides'
+import { useWorkshopAppsEnabled } from '../../scripts/posthog'
 import WorkshopSearchField from './WorkshopSearchField.vue'
 import WorkshopSections from './WorkshopSections.vue'
+import WorkshopSortMenu from './WorkshopSortMenu.vue'
 
 const { models, locale = 'en' } = defineProps<{
   models: readonly WorkshopModel[]
@@ -72,12 +61,6 @@ onMounted(() => {
 const toolbar = useTemplateRef<HTMLElement>('toolbar')
 const heading = useTemplateRef<HTMLElement>('heading')
 const sortOrders = sortOrdersFor(models)
-const sortLabelKey: Record<SortOrder, TranslationKey> = {
-  popular: 'workshop.sort.popular',
-  name: 'workshop.sort.name',
-  priceAsc: 'workshop.sort.priceAsc',
-  priceDesc: 'workshop.sort.priceDesc'
-}
 
 const useCaseOptions = computed<FacetMenuOption[]>(() => {
   const counts = countByUseCase(models)
@@ -164,6 +147,11 @@ const featured = computed(() => {
     'popular'
   )
 })
+const studioEnabled = useWorkshopAppsEnabled()
+const featuredSlides = computed(() => [
+  ...(studioEnabled.value ? [studioSlide(locale)] : []),
+  ...modelSlides(featured.value, locale)
+])
 
 function openSection(value: UseCase | 'other') {
   useCase.value = value
@@ -197,31 +185,14 @@ function rememberModel(
   event: MouseEvent,
   shelf = useCase.value
 ) {
-  if (
-    event.button !== 0 ||
-    event.metaKey ||
-    event.ctrlKey ||
-    event.shiftKey ||
-    event.altKey
-  )
-    return
-  rememberShelf(shelf, model.href)
+  rememberShelfOnClick(shelf, model.href, event)
 }
 
 watch(browseAll, (on) => on && resetFilters())
-const menuItemClass =
-  'flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-sm text-primary-comfy-canvas outline-none select-none data-[highlighted]:bg-transparency-white-t4'
 </script>
 
 <template>
   <section class="gap-10">
-    <FeaturedBanner
-      v-if="browsing && featured.length"
-      :models="featured"
-      :locale
-      class="mb-10 short:mb-6"
-    />
-
     <div class="min-w-0">
       <button
         v-if="inSection"
@@ -249,70 +220,40 @@ const menuItemClass =
       <div
         ref="toolbar"
         data-testid="workshop-toolbar"
-        class="sticky top-20 z-30 -mx-1 mb-8 flex scroll-mt-20 flex-wrap items-center justify-end gap-3 bg-page px-1 py-4 max-sm:mb-4 max-sm:py-2 sm:flex-nowrap lg:top-26 lg:scroll-mt-26"
+        class="sticky top-20 z-30 -mx-1 mb-8 flex scroll-mt-20 flex-wrap items-center gap-3 bg-page px-1 py-4 max-sm:mb-4 max-sm:py-2 lg:top-26 lg:scroll-mt-26"
       >
-        <WorkshopSearchField
-          v-model="query"
-          :models
-          :locale
-          compact
-          class="min-w-0 flex-1 sm:mr-auto sm:max-w-xl sm:min-w-32"
-        />
-
-        <div class="flex items-center gap-2" data-testid="workshop-filters">
-          <WorkshopFilterMenu
-            :use-cases="selectedUseCases"
-            :use-case-options="useCaseOptions"
-            :result-count="visible.length"
+        <slot name="tabs" />
+        <div
+          class="flex min-w-0 flex-1 items-center gap-3 max-sm:basis-full sm:min-w-fit"
+        >
+          <WorkshopSearchField
+            v-model="query"
+            :models
             :locale
-            @update:use-cases="applyUseCases"
+            compact
+            class="min-w-0 flex-1 sm:mr-auto sm:max-w-xl sm:min-w-32"
           />
 
-          <DropdownMenuRoot>
-            <DropdownMenuTrigger
-              data-testid="workshop-sort"
-              :aria-label="t('workshop.sort.label', locale)"
-              class="group inline-flex h-11 cursor-pointer items-center gap-2 rounded-2xl bg-transparency-white-t4 px-4 text-sm font-medium text-primary-comfy-canvas transition-colors outline-none hover:bg-transparency-white-t8 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 max-sm:size-10 max-sm:justify-center max-sm:rounded-xl max-sm:bg-white/8 max-sm:px-0"
-            >
-              <ArrowUpDown class="size-4 shrink-0" aria-hidden="true" />
-              <span class="max-sm:hidden">{{
-                t(sortLabelKey[sort], locale)
-              }}</span>
-              <ChevronDown
-                class="size-4 transition-transform duration-300 ease-out group-data-[state=open]:rotate-180 max-sm:hidden"
-                aria-hidden="true"
-              />
-            </DropdownMenuTrigger>
-            <DropdownMenuPortal>
-              <DropdownMenuContent
-                align="end"
-                :side-offset="8"
-                class="z-50 w-64 rounded-2xl border border-primary-comfy-ink-light bg-site-dropdown p-2 shadow-lg data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0"
-              >
-                <DropdownMenuRadioGroup v-model="sort">
-                  <DropdownMenuRadioItem
-                    v-for="order in sortOrders"
-                    :key="order"
-                    :value="order"
-                    :data-testid="`sort-${order}`"
-                    :class="
-                      cn(
-                        menuItemClass,
-                        sort === order &&
-                          'bg-transparency-white-t8 text-primary-warm-white'
-                      )
-                    "
-                  >
-                    <span class="flex-1">{{
-                      t(sortLabelKey[order], locale)
-                    }}</span>
-                  </DropdownMenuRadioItem>
-                </DropdownMenuRadioGroup>
-              </DropdownMenuContent>
-            </DropdownMenuPortal>
-          </DropdownMenuRoot>
+          <div class="flex items-center gap-2" data-testid="workshop-filters">
+            <WorkshopFilterMenu
+              :use-cases="selectedUseCases"
+              :use-case-options="useCaseOptions"
+              :result-count="visible.length"
+              :locale
+              @update:use-cases="applyUseCases"
+            />
+
+            <WorkshopSortMenu v-model="sort" :orders="sortOrders" :locale />
+          </div>
         </div>
       </div>
+
+      <FeaturedBanner
+        v-if="browsing && featured.length"
+        :slides="featuredSlides"
+        :locale
+        class="mb-10 short:mb-6"
+      />
 
       <template v-if="browsing">
         <WorkshopSections

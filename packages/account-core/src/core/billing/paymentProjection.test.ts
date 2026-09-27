@@ -99,10 +99,18 @@ const ROWS: readonly Row[] = [
     expected: { step: 'verifying' }
   },
   {
-    name: 'pending after this tab completed the challenge stays verifying while processing',
+    name: 'pending after this tab completed the challenge is not verifying again while the server settles',
     operation: pending({
       challenge: { clientSecret: 'pi_secret', status: 'completed' },
-      authenticationState: 'processing'
+      authenticationState: 'processing',
+      serverPhase: 'awaiting_invoice_payment'
+    }),
+    expected: { step: 'preview' }
+  },
+  {
+    name: 'pending on a challenge the customer has open is verifying',
+    operation: pending({
+      challenge: { clientSecret: 'pi_secret', status: 'in_progress' }
     }),
     expected: { step: 'verifying' }
   },

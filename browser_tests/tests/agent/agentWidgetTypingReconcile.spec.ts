@@ -73,10 +73,12 @@ test.describe(
         contentType: 'image/png'
       })
 
-      // Below is the known defect: a doc frame that resyncs this exact
-      // widget mid-keystroke wins over the live typed value, dropping
-      // whatever the user typed after the frame's snapshot was taken.
-      test.fail()
+      // This pinned the defect a doc frame that resyncs this exact widget
+      // mid-keystroke used to cause: the frame won over the live typed value
+      // and dropped whatever the user typed after its snapshot was taken.
+      // The stale-echo guard in `graphMutations.setWidget` (PM-1191/PM-1697)
+      // fixes it, so the marker comes off here rather than leaving the pin
+      // reporting "expected to fail, but passed" on main.
       await expect(field).toHaveValue(`a photo of a pier${APPENDED}`)
     })
   }

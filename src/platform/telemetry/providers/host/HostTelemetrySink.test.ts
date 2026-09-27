@@ -37,7 +37,8 @@ describe('HostTelemetrySink', () => {
       trigger_source: 'button',
       view_mode: 'graph',
       is_app_mode: false,
-      dock_state: 'docked'
+      dock_state: 'docked',
+      agent_panel_open: true
     })
 
     expect(state.capture).toHaveBeenCalledExactlyOnceWith(
@@ -56,7 +57,8 @@ describe('HostTelemetrySink', () => {
         trigger_source: 'button',
         view_mode: 'graph',
         is_app_mode: false,
-        dock_state: 'docked'
+        dock_state: 'docked',
+        agent_panel_open: true
       }
     )
   })

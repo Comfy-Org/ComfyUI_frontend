@@ -1,4 +1,4 @@
-type Locale = 'en' | 'zh-CN' | 'ja'
+import type { Locale } from '../config/locales'
 
 const translations = {
   'home.workshop.heading': {
@@ -23,6 +23,49 @@ const translations = {
     'zh-CN': '在 Comfy 上浏览并运行最新的 AI 图像、视频和音频模型。'
   },
   'workshop.hero.eyebrow': { en: 'Models', 'zh-CN': '模型' },
+  'workshop.catalogue.apps': { en: 'Apps', 'zh-CN': '应用' },
+  'workshop.catalogue.categories': { en: 'Categories', 'zh-CN': '分类' },
+  'workshop.catalogue.show': { en: 'Browse', 'zh-CN': '浏览' },
+  'workshop.catalogue.subtitle': {
+    en: 'Models and the workflows built on them, by what you want to make.',
+    'zh-CN': '按你想创作的内容浏览模型及其工作流。'
+  },
+  'workshop.catalogue.appsSoon': {
+    en: 'Apps are coming soon',
+    'zh-CN': '应用即将上线'
+  },
+  'workshop.catalogue.appsHint': {
+    en: 'For now, explore ready-to-run workflows or try a model with your own ideas.',
+    'zh-CN': '现在可以先探索现成的工作流，或用自己的创意试用模型。'
+  },
+  'workshop.catalogue.noWorkflows': {
+    en: 'No workflows match your search and filters.',
+    'zh-CN': '没有符合搜索和筛选条件的工作流。'
+  },
+  'workshop.catalogue.backToWorkflows': {
+    en: 'Back to workflows',
+    'zh-CN': '返回工作流'
+  },
+  'workshop.catalogue.allWorkflows': {
+    en: 'All workflows',
+    'zh-CN': '全部工作流'
+  },
+  'workshop.sort.recommended': {
+    en: 'Recommended',
+    'zh-CN': '推荐顺序'
+  },
+  'workshop.catalogue.browseAllWorkflows': {
+    en: 'Browse all workflows',
+    'zh-CN': '浏览全部工作流'
+  },
+  'workshop.catalogue.searchWorkflows': {
+    en: 'Search workflows…',
+    'zh-CN': '搜索工作流…'
+  },
+  'workshop.catalogue.showWorkflows': {
+    en: 'Show {n} workflows',
+    'zh-CN': '显示 {n} 个工作流'
+  },
   'workshop.hero.heading': {
     en: 'What will you make next?',
     'zh-CN': '接下来你想创造什么？'
@@ -2245,6 +2288,22 @@ Enterprise`
   'pricing.feature.shortRuntime': {
     en: '30 minute max workflow runtime',
     'zh-CN': '单个工作流最长运行 30 分钟'
+  },
+  'pricing.feature.apiConcurrency1': {
+    en: 'Run up to 1 concurrent workflow via Cloud API',
+    'zh-CN': '通过 Cloud API 最多并发运行 1 个工作流'
+  },
+  'pricing.feature.apiConcurrency3': {
+    en: 'Run up to 3 concurrent workflows via Cloud API',
+    'zh-CN': '通过 Cloud API 最多并发运行 3 个工作流'
+  },
+  'pricing.feature.apiConcurrency5': {
+    en: 'Run up to 5 concurrent workflows via Cloud API',
+    'zh-CN': '通过 Cloud API 最多并发运行 5 个工作流'
+  },
+  'pricing.feature.apiConcurrency25': {
+    en: 'Run up to 25 concurrent workflows via Cloud API',
+    'zh-CN': '通过 Cloud API 最多并发运行 25 个工作流'
   },
   'pricing.feature.addCredits': {
     en: 'Add more credits anytime',
@@ -6172,9 +6231,9 @@ Enterprise`
     'zh-CN': 'Comfy 企业版包含什么？'
   },
   'contact.faq.a3': {
-    en: 'Cloud or in-house deployment with data ownership, bring-your-own-key support, orchestration, support from the team that builds the engine, and add-ons like MiniMax commercial licensing. [See Comfy Enterprise](https://comfy.org/cloud/enterprise), or request a demo through this form.',
+    en: 'Cloud or in-house deployment with data ownership, bring-your-own-key support, orchestration, support from the team that builds the engine, and add-ons like MiniMax commercial licensing. [See Comfy Enterprise](https://comfy.org/enterprise/), or request a demo through this form.',
     'zh-CN':
-      '云端或自有环境部署，数据归属权、自带密钥支持、编排能力、来自引擎开发团队的支持，以及 MiniMax 商业许可等附加项。[了解 Comfy 企业版](https://comfy.org/zh-CN/cloud/enterprise)，或通过此表单预约演示。'
+      '云端或自有环境部署，数据归属权、自带密钥支持、编排能力、来自引擎开发团队的支持，以及 MiniMax 商业许可等附加项。[了解 Comfy 企业版](https://comfy.org/zh-CN/enterprise/)，或通过此表单预约演示。'
   },
   'contact.faq.q4': {
     en: 'Is Comfy SOC 2 compliant?',
@@ -9520,6 +9579,7 @@ Enterprise`
   // Workshop – header account + nav
   'nav.workshop': { en: 'Models', 'zh-CN': '模型' },
   'nav.comfyWorkshop': { en: 'Browse Models', 'zh-CN': '浏览模型' },
+  'nav.cinematicStudio': { en: 'Cinematic Studio', 'zh-CN': '电影工作室' },
   'nav.signIn': { en: 'Sign in', 'zh-CN': '登录' },
   'nav.signOut': { en: 'Log out', 'zh-CN': '退出登录' },
   'nav.accountMenu': { en: 'Account menu', 'zh-CN': '账户菜单' },
@@ -10199,6 +10259,25 @@ Enterprise`
     en: 'Stay in this workspace',
     'zh-CN': '留在此工作区'
   },
+  'workshop.run.savedTitle': {
+    en: 'Leave and stop the generation?',
+    'zh-CN': '离开并停止这次生成？'
+  },
+  'workshop.run.savedBody': {
+    en: 'You will not see the result on this page. Left running, it keeps spending credits until it finishes, and lands in your assets.',
+    'zh-CN':
+      '你不会在这个页面看到结果。若让它继续，它会一直消耗积分直到完成，结果会保存到你的素材中。'
+  },
+  'workshop.run.savedAssets': {
+    en: 'Open your assets',
+    'zh-CN': '打开你的素材'
+  },
+  'workshop.run.savedStay': { en: 'Stay on this page', 'zh-CN': '留在此页面' },
+  'workshop.run.savedLeave': { en: 'Leave and stop', 'zh-CN': '离开并停止' },
+  'workshop.run.savedKeep': {
+    en: 'Leave it running',
+    'zh-CN': '让它继续运行'
+  },
   'workshop.run.switchAnyway': {
     en: 'Switch and cancel',
     'zh-CN': '切换并取消'
@@ -10284,8 +10363,8 @@ Enterprise`
   'workshop.output.download': { en: 'Download', 'zh-CN': '下载' },
   'workshop.output.openOriginal': { en: 'Open output', 'zh-CN': '打开输出' },
   'workshop.output.downloadFallback': {
-    en: 'Automatic download failed. Open the output to save it.',
-    'zh-CN': '自动下载失败。请打开输出文件后保存。'
+    en: 'If your download did not start, open the output to save a copy.',
+    'zh-CN': '如果下载未开始，请打开输出文件并保存副本。'
   },
   'workshop.output.useInCode': {
     en: 'Use these settings in code',
@@ -10697,10 +10776,6 @@ Enterprise`
     en: 'Explore the possibilities',
     'zh-CN': '探索更多可能'
   },
-  'workshop.workflow.templateExample': {
-    en: 'Template example {n}',
-    'zh-CN': '模板示例 {n}'
-  },
   'workshop.workflow.by': { en: 'by {author}', 'zh-CN': '作者 {author}' },
   'workshop.workflow.nodeGraph': { en: 'Node Graph', 'zh-CN': '节点图' },
   'workshop.workflow.comfyApp': { en: 'Comfy App', 'zh-CN': 'Comfy 应用' },
@@ -10770,6 +10845,36 @@ Enterprise`
   'workshop.hub.models': { en: 'Model', 'zh-CN': '模型' },
   'workshop.hub.categories': { en: 'CATEGORIES', 'zh-CN': '分类' },
   'workshop.hub.docs': { en: 'Read docs', 'zh-CN': '阅读文档' },
+
+  'workshop.assets.title': { en: 'Your assets', 'zh-CN': '你的素材' },
+  'workshop.assets.seeAll': {
+    en: 'See all in Cloud',
+    'zh-CN': '在云端查看全部'
+  },
+  'workshop.assets.open': {
+    en: 'Open saved asset',
+    'zh-CN': '打开已保存的素材'
+  },
+  'workshop.assets.generating': { en: 'Generating…', 'zh-CN': '正在生成…' },
+  'workshop.assets.loadingMedia': {
+    en: 'Loading asset…',
+    'zh-CN': '正在加载素材…'
+  },
+  'workshop.assets.loadError': {
+    en: 'Could not load your assets.',
+    'zh-CN': '无法加载你的素材。'
+  },
+  'workshop.assets.previous': { en: 'Previous asset', 'zh-CN': '上一个素材' },
+  'workshop.assets.next': { en: 'Next asset', 'zh-CN': '下一个素材' },
+  'workshop.assets.go': { en: 'Show asset {n}', 'zh-CN': '显示第 {n} 个素材' },
+  'workshop.assets.notSaved': {
+    en: 'This generation could not be saved to your assets. The result is still on the page until it expires.',
+    'zh-CN': '这次生成未能保存到你的素材。结果在过期前仍然留在页面上。'
+  },
+  'workshop.assets.cancelError': {
+    en: 'Could not request cancellation. Your generation may still be running.',
+    'zh-CN': '无法请求取消。生成可能仍在进行。'
+  },
   'workshop.error.creditsTitle': {
     en: 'Not enough credits',
     'zh-CN': '积分不足'
@@ -10787,6 +10892,17 @@ Enterprise`
     'zh-CN': '在 platform.comfy.org 上为 {workspace} 添加积分'
   },
   'workshop.hub.tryNow': { en: 'Try now', 'zh-CN': '立即试用' },
+  'workshop.cinematic.badge': { en: 'New · Beta', 'zh-CN': '新 · 测试版' },
+  'workshop.cinematic.summary': {
+    en: 'Direct a shot with a real camera, light and grade, then run it on any image model.',
+    'zh-CN':
+      '用真实的摄影机、光线与调色导演一个镜头，然后在任意图像模型上运行。'
+  },
+  'workshop.cinematic.cta': { en: 'Open studio', 'zh-CN': '打开工作室' },
+  'workshop.cinematic.openInStudio': {
+    en: 'Open in Cinematic Studio',
+    'zh-CN': '在 Cinematic Studio 中打开'
+  },
   'workshop.hub.tag.partnerNodes': {
     en: 'Partner Nodes',
     'zh-CN': '合作伙伴节点'

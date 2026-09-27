@@ -193,11 +193,11 @@ export class AgentConversationHarness {
   readonly topbar: Topbar
   readonly composer: Locator
   readonly keyboard: KeyboardHelper
+  readonly summaries: Locator
 
   private readonly host: HostDoc
   private readonly hostSocket: AgentFollowerHostSocket
   private readonly streams: Locator
-  private readonly summaries: Locator
   // Every node id the host has held so far, seed included.
   private readonly seenIds: Set<string>
   private readonly expectations: ExpectedTurn[]

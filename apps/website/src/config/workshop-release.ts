@@ -9,7 +9,11 @@ export function isWorkshopInBuild(): boolean {
 export function isWorkshopRoute(pattern: string): boolean {
   const pathname = pattern.replace(/\/$/, '')
   // /models itself is the established marketing page when the gate is off.
-  return isLegacyWorkshopRoute(pathname) || pathname.startsWith('/models/')
+  return (
+    isLegacyWorkshopRoute(pathname) ||
+    pathname.startsWith('/models/') ||
+    pathname === '/cinematic-studio'
+  )
 }
 
 export function isLegacyWorkshopRoute(pattern: string): boolean {
