@@ -318,7 +318,7 @@ describe('AgentPanel extension flag gate', () => {
     await pending
   })
 
-  it('offers once the gate turns on after the authenticated config lands', async () => {
+  it('offers once the gate flips on after starting off', async () => {
     Object.assign(consentStore, { accepted: false, isChecking: false })
 
     await loadEntryAndSetup()

@@ -26,6 +26,10 @@ describe('refreshRemoteConfig', () => {
     } as Response
   }
 
+  function agentKeysIn(store: Storage): string[] {
+    return Object.keys(store).filter((key) => /agent/i.test(key))
+  }
+
   function mockErrorResponse(status: number, statusText: string) {
     return {
       ok: false,
@@ -232,8 +236,8 @@ describe('refreshRemoteConfig', () => {
       await refreshRemoteConfig()
 
       expect(sessionAgentGrant.value).toBe(true)
-      expect(localStorage.getItem('agent-in-app-experience')).toBeNull()
-      expect(sessionStorage.getItem('agent-in-app-experience')).toBeNull()
+      expect(agentKeysIn(localStorage)).toEqual([])
+      expect(agentKeysIn(sessionStorage)).toEqual([])
     })
 
     it('keeps this session granted when the poll fails transiently', async () => {

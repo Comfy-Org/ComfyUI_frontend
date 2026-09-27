@@ -237,7 +237,7 @@ within an enabled lifetime retain their existing state-vector recovery behavior.
 ### Current gate map
 
 ```text
-PostHog agent-in-app-experience ─┐
+/features agent-in-app-experience ─┐
 existing development override ──┴─> agentPanelStore.enabled
                                       ├─> docked panel mount
                                       ├─> follower lifetime / transport
@@ -254,9 +254,8 @@ human semantic operations ─> host applier (never raw shared-doc writes)
 general `useFeatureFlags` pipeline, backed by the server-evaluated `/features`
 payload; `utils/postHogFlagSource.ts` has been removed. It retains the existing
 development-mode override and settles the panel gate separately from flag
-enablement. [The pending feature-pipeline migration](https://github.com/Comfy-Org/ComfyUI_frontend/pull/16208)
-changes that producer; the follower continues to consume the same store rather
-than adding a second PostHog or server-feature reader.
+enablement. The follower continues to consume the same store rather than adding
+a second server-feature reader.
 
 | Surface       | Product transport control                               | Diagnostics                                              |
 | ------------- | ------------------------------------------------------- | -------------------------------------------------------- |
