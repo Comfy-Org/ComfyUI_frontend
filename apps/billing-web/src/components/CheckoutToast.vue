@@ -1,7 +1,9 @@
 <template>
   <div
     data-checkout-toast
-    :role="severity === 'error' ? 'alert' : 'status'"
+    role="alert"
+    aria-live="assertive"
+    aria-atomic="true"
     :class="
       cn(
         'w-100 max-w-full rounded-md border backdrop-blur-[10px]',
