@@ -21,7 +21,8 @@ import {
   hostedPendingOperation,
   pendingOperation,
   previewOf,
-  succeededOperation
+  succeededOperation,
+  serverPhasePendingOperation
 } from '@/test/fakeBillingClient'
 import { WORKSPACE_INVITES_KEY } from '@/session/workspaceInvites'
 import CheckoutView from '@/views/CheckoutView.vue'
@@ -721,6 +722,50 @@ describe('CheckoutView', () => {
       ).toBeInTheDocument()
     }
   )
+
+  it('picks up a checkout parked on a payment method and offers to complete it, as the app does', async () => {
+    const fake = await renderCheckout(CHECKOUT_PATH, {
+      recover: {
+        status: 'ok',
+        value: serverPhasePendingOperation('awaiting_payment_method')
+      },
+      subscribe: { status: 'error', code: 'OPERATION_ALREADY_PENDING' }
+    })
+
+    const complete = await screen.findByRole('button', {
+      name: 'Complete your payment'
+    })
+    expect(
+      screen.getByText(
+        'Your earlier checkout is still waiting for a payment method. Complete your payment to activate this plan.'
+      )
+    ).toBeInTheDocument()
+    expect(fake.recover).toHaveBeenCalled()
+    expect(complete).toBeEnabled()
+    expect(formProps.mounted).toBe(false)
+
+    await userEvent.click(complete)
+
+    expect(
+      await screen.findByText(
+        'A payment you started earlier is still going through. It has to finish before you can choose a different plan.'
+      )
+    ).toBeInTheDocument()
+  })
+
+  it('holds the confirm while a recovered invoice payment settles, as the app does', async () => {
+    await renderCheckout(CHECKOUT_PATH, {
+      recover: {
+        status: 'ok',
+        value: serverPhasePendingOperation('awaiting_invoice_payment')
+      }
+    })
+
+    await waitFor(() => expect(formProps.value.isLoading).toBe(true))
+    expect(
+      screen.queryByRole('button', { name: 'Complete your payment' })
+    ).toBeNull()
+  })
 
   it('shows a failed in-page verification inline, as the app does', async () => {
     const fake = await renderCheckout()

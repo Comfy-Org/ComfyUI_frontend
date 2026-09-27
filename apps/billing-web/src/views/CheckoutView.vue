@@ -12,7 +12,8 @@ import { useI18n } from 'vue-i18n'
 import type { BillingDeclineReason } from '@comfyorg/account-core/billing'
 import {
   awaitsVerification,
-  declineDetailKey
+  declineDetailKey,
+  validateActionUrl
 } from '@comfyorg/account-core/billing'
 import {
   useBillingClient,
@@ -77,6 +78,8 @@ const { plans } = usePlans()
 // setup runs, instead of the fallback this ref started with.
 const stripeKey = useBillingWebStripeKey()
 
+const { lifecycle } = useBillingClient<'lifecycle'>(undefined)
+
 const checkout = useCheckout({
   openUrl: (url) => window.location.assign(url),
   navigationMode: 'redirect',
@@ -108,7 +111,12 @@ async function quotePlan(
   return result
 }
 
-onMounted(() => void quotePlan(planSlug.value, teamCreditStopId.value))
+// A payment the server still holds for this workspace is the one the confirm
+// reports on, as in the app, which adopts it from the billing status.
+onMounted(() => {
+  void lifecycle.recover()
+  void quotePlan(planSlug.value, teamCreditStopId.value)
+})
 
 // The route record is shared, so arriving with a different plan (or, for a
 // team plan, a different credit stop) reuses the view. A payment in flight
@@ -290,6 +298,37 @@ function dismissToast() {
   inviteFailure.value = undefined
 }
 
+const actionUrl = computed(
+  () => validateActionUrl(pendingOperation.value?.actionUrl) ?? null
+)
+
+const parkedCheckoutRecovery = computed(
+  () => pendingOperation.value?.serverPhase === 'awaiting_payment_method'
+)
+
+const authenticationError = computed(() =>
+  authenticationState.value === 'failed_retryable'
+    ? declineDetail(
+        pendingOperation.value?.declineReason ?? 'authentication_failed'
+      )
+    : null
+)
+
+/**
+ * The app's busy rule: a pending payment holds the confirm unless it waits
+ * on the customer, and an in-page challenge holds it until it settles.
+ */
+const operationHoldsConfirm = computed(() => {
+  const operation = pendingOperation.value
+  if (!operation) return false
+  if (operation.challenge?.status === 'in_progress') return true
+  if (parkedCheckoutRecovery.value) return false
+  return (
+    authenticationState.value !== 'failed_retryable' &&
+    authenticationState.value !== 'requires_action'
+  )
+})
+
 const reconciliationOperationId = computed(() => {
   const operation = checkout.operation.value
   return operation?.phase === 'reconciliation_needed' ? operation.id : null
@@ -344,7 +383,7 @@ watch(succeeded, (done) => {
 const paying = computed(
   () =>
     checkout.submitting.value ||
-    (pendingOperation.value !== undefined && !succeeded.value)
+    (operationHoldsConfirm.value && !succeeded.value)
 )
 
 const frameStep = computed(() => {
@@ -487,8 +526,11 @@ function returnToHost() {
             :preview-data="preview"
             :use-payment-element="true"
             :saved-methods="savedMethodsForConfirm"
+            :action-url
             :authentication-state
+            :authentication-error
             :reconciliation-operation-id
+            :parked-checkout-recovery
             :quote-is-current
             :is-applying-promotion-code="applyingPromotionCode"
             :embedded-checkout-enabled="true"
@@ -510,7 +552,9 @@ function returnToHost() {
             :subscription-loaded="true"
             :is-loading="paying"
             :force-reactivation="reactivationRequired"
+            :action-url
             :authentication-state
+            :authentication-error
             :reconciliation-operation-id
             :quote-is-current
             :is-applying-promotion-code="applyingPromotionCode"
