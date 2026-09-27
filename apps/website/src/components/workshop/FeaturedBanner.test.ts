@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { WorkshopModel } from '../../config/models-catalogue'
 import FeaturedBanner from './FeaturedBanner.vue'
-import { modelSlides } from '../../lib/workshop/featured-slides'
+import { modelSlides, studioSlide } from '../../lib/workshop/featured-slides'
 import {
   setAllIntersecting,
   stubIntersectionObserver
@@ -70,6 +70,24 @@ describe('FeaturedBanner', () => {
     expect(screen.getByTestId('featured-slide-link').getAttribute('href')).toBe(
       '/models/flux/'
     )
+  })
+
+  it('leads with Cinematic Studio when the catalogue promotes it', () => {
+    render(FeaturedBanner, {
+      props: {
+        slides: [studioSlide('en'), ...modelSlides([base, kling], 'en')]
+      }
+    })
+
+    expect(screen.getByRole('heading', { level: 2 }).textContent).toBe(
+      'Cinematic Studio'
+    )
+    expect(screen.getByRole('link', { name: 'Open studio' })).toHaveAttribute(
+      'href',
+      '/cinematic-studio'
+    )
+    expect(screen.queryByTestId('featured-docs-link')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Flux' })).toBeTruthy()
   })
 
   it('localizes the task without leaving its English suffix in the model name', () => {

@@ -31,6 +31,7 @@ export interface FeaturedSlide {
   readonly summary: string | undefined
   readonly media: { url: string; kind: 'image' | 'video' } | undefined
   readonly docsHref: string | undefined
+  readonly cta?: string
 }
 
 const AUTOPLAY_MS = 7000
@@ -192,7 +193,7 @@ const fill = computed(() =>
 
         <div class="pointer-events-auto flex w-fit items-center gap-3">
           <Button as="a" :href="active.href" class="w-fit">
-            {{ t('workshop.hub.tryNow', locale) }}
+            {{ active.cta ?? t('workshop.hub.tryNow', locale) }}
           </Button>
           <Button
             v-if="active.docsHref"

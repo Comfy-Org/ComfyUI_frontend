@@ -155,7 +155,10 @@
     "plan": {
       "name": "{tier} · {duration}",
       "credits": "{amount} in monthly credits",
-      "seats": "{count} seat | {count} seats"
+      "seats": "{count} seat | {count} seats",
+      "stopCredits": "{credits} credits a month",
+      "stopOption": "{credits} · {price}",
+      "chooseStop": "Monthly credits for {plan}"
     },
     "availability": {
       "unknown": "This plan isn't available for your workspace.",
@@ -163,7 +166,8 @@
       "incompatible_transition": "You can't switch to this plan from your current one.",
       "requires_team": "This plan is only available to team workspaces.",
       "requires_personal": "This plan is only available to personal workspaces.",
-      "exceeds_max_seats": "This plan has fewer seats than your workspace uses."
+      "exceeds_max_seats": "This plan has fewer seats than your workspace uses.",
+      "credit_stop_unavailable": "This plan's pricing isn't available right now. Please try again later."
     },
     "subscription": {
       "currentPlan": "Current plan",
