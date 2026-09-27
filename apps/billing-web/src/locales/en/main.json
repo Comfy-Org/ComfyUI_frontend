@@ -143,7 +143,6 @@
       "expiredCardDetail": "This card has expired. Use a different payment method.",
       "incorrectCvcDetail": "The card security code is incorrect. Check it and try again.",
       "processingErrorDetail": "Your payment couldn't be processed. Try again or use another payment method.",
-      "subscriptionFailedDetail": "We couldn't update your subscription. Please try again.",
       "subscriptionTimeout": "Subscription verification timed out",
       "subscriptionProcessing": "Processing payment — setting up your workspace...",
       "subscriptionActionRequired": "Verify your payment to finish setting up your workspace"

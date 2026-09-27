@@ -3,10 +3,11 @@ import { describe, expect, it } from 'vitest'
 import type {
   BillingOperationState,
   BillingRecoveryAction,
+  EmbeddedChallenge,
   PendingBillingOperation
 } from './operationState.js'
 import type { HostPaymentStep, PaymentProjection } from './paymentProjection.js'
-import { projectPaymentStep } from './paymentProjection.js'
+import { awaitsVerification, projectPaymentStep } from './paymentProjection.js'
 
 const IDENTITY = {
   id: 'op-1',
@@ -293,5 +294,52 @@ describe('projectPaymentStep', () => {
     expect(projections.map((p) => p.step)).not.toContain(
       'payment_received_hold'
     )
+  })
+})
+
+describe('awaitsVerification', () => {
+  const challenge = (status: EmbeddedChallenge['status']) => ({
+    challenge: { clientSecret: 'pi_secret', status }
+  })
+
+  it.for<{
+    state: string
+    overrides: Partial<Pick<PendingBillingOperation, 'challenge' | 'actionUrl'>>
+    waits: boolean
+  }>([
+    { state: 'nothing asked of the customer', overrides: {}, waits: false },
+    {
+      state: 'a challenge to start',
+      overrides: challenge('required'),
+      waits: true
+    },
+    {
+      state: 'a challenge underway',
+      overrides: challenge('in_progress'),
+      waits: true
+    },
+    {
+      state: 'a failed challenge',
+      overrides: challenge('failed'),
+      waits: true
+    },
+    {
+      state: 'a completed challenge',
+      overrides: challenge('completed'),
+      waits: false
+    },
+    {
+      state: 'a hosted action page',
+      overrides: { actionUrl: 'https://bank.example' },
+      waits: true
+    }
+  ])('$state: waits on the customer is $waits', ({ overrides, waits }) => {
+    const operation: PendingBillingOperation = {
+      ...IDENTITY,
+      phase: 'pending',
+      customerActionSeen: false,
+      ...overrides
+    }
+    expect(awaitsVerification(operation)).toBe(waits)
   })
 })

@@ -5,6 +5,8 @@ import type {
 } from '@comfyorg/account-core/billing'
 import {
   TIER_CATALOG,
+  getStopDiscountedMonthlyUsd,
+  mapApiTeamCreditStops,
   toCatalogTierKey
 } from '@comfyorg/account-ui/billing/catalog'
 import type { CheckoutPlan } from '@comfyorg/account-ui/billing/checkout'
@@ -12,20 +14,34 @@ import { isAnnualDuration } from '@comfyorg/account-ui/billing/checkout'
 
 type TeamCreditStops = NonNullable<BillingPlansData['team_credit_stops']>
 
-/** A team credit stop is priced by the quote and granted by the stop. */
+/**
+ * A team credit stop is priced and granted by the stop, through the same
+ * catalog the app's pricing table and confirm read.
+ */
 export function teamCheckoutPlan(
   quoted: SubscriptionPreview,
   stops: TeamCreditStops | undefined,
   stopId: string,
   name: string
 ): CheckoutPlan {
-  const months = isAnnualDuration(quoted.new_plan.duration) ? 12 : 1
-  const monthlyUsd = quoted.new_plan.price_cents / months / 100
-  const stop = stops?.stops.find((candidate) => candidate.id === stopId)
+  const cycle = isAnnualDuration(quoted.new_plan.duration)
+    ? 'yearly'
+    : 'monthly'
+  const stop = mapApiTeamCreditStops(
+    (stops?.stops ?? []).map((candidate) => ({
+      id: candidate.id,
+      credits: Number(candidate.credits),
+      yearly: {
+        list_price_cents: Number(candidate.yearly.list_price_cents),
+        price_cents: Number(candidate.yearly.price_cents)
+      }
+    }))
+  ).find((candidate) => candidate.id === stopId)
+  const monthlyUsd = stop ? getStopDiscountedMonthlyUsd(stop, cycle) : 0
   return {
     name,
     monthlyPriceUsd: { monthly: monthlyUsd, yearly: monthlyUsd },
-    monthlyCredits: Number(stop?.credits ?? 0),
+    monthlyCredits: stop?.credits ?? 0,
     pricedByQuote: false
   }
 }

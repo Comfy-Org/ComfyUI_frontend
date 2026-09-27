@@ -16,31 +16,40 @@ const annualTeam = previewOf({
 })
 
 describe('teamCheckoutPlan', () => {
-  it('prices a stop by the quote and grants what the stop names', () => {
-    expect(
-      teamCheckoutPlan(
-        annualTeam,
-        {
-          default_stop_index: 0,
-          stops: [
-            {
-              id: 'stop_700',
-              credits: 147_700n,
-              monthly: { list_price_cents: 70_000n, price_cents: 66_500n },
-              yearly: { list_price_cents: 70_000n, price_cents: 63_000n }
-            }
-          ]
-        },
-        'stop_700',
-        'Team Plan'
-      )
-    ).toEqual({
-      name: 'Team Plan',
-      monthlyPriceUsd: { monthly: 630, yearly: 630 },
-      monthlyCredits: 147_700,
-      pricedByQuote: false
-    })
-  })
+  it.for([
+    ['ANNUAL', 630],
+    ['MONTHLY', 665]
+  ] as const)(
+    'prices a %s stop as the app does and grants what the stop names',
+    ([duration, monthlyUsd]) => {
+      const quoted = previewOf({
+        new_plan: { ...annualTeam.new_plan, duration }
+      })
+      expect(
+        teamCheckoutPlan(
+          quoted,
+          {
+            default_stop_index: 0,
+            stops: [
+              {
+                id: 'stop_700',
+                credits: 147_700n,
+                monthly: { list_price_cents: 70_000n, price_cents: 66_500n },
+                yearly: { list_price_cents: 70_000n, price_cents: 63_000n }
+              }
+            ]
+          },
+          'stop_700',
+          'Team Plan'
+        )
+      ).toEqual({
+        name: 'Team Plan',
+        monthlyPriceUsd: { monthly: monthlyUsd, yearly: monthlyUsd },
+        monthlyCredits: 147_700,
+        pricedByQuote: false
+      })
+    }
+  )
 
   it('grants nothing for a stop the catalog does not list', () => {
     expect(
