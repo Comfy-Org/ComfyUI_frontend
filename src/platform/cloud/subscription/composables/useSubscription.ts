@@ -192,23 +192,30 @@ function useSubscriptionInternal() {
     // collapsible downstream.
     markMissingCheckoutCompletionReported(attempt.attempt_id)
 
+    const report = didLastRecoveryAttemptThrow
+      ? {
+          message:
+            'Pending subscription checkout recovery could not reach billing',
+          errorType: 'cloud_checkout_recovery_unreachable' as const,
+          failureKind: 'degraded' as const,
+          outcome: 'aborted' as const
+        }
+      : {
+          message: 'Pending subscription checkout recovery timed out',
+          errorType: 'cloud_checkout_completion_missing' as const,
+          failureKind: 'missing_event' as const,
+          outcome: 'timed_out' as const
+        }
+
     reportTelemetryError(
-      new Error(
-        didLastRecoveryAttemptThrow
-          ? 'Pending subscription checkout recovery could not reach billing'
-          : 'Pending subscription checkout recovery timed out'
-      ),
+      new Error(report.message),
       {
-        errorType: didLastRecoveryAttemptThrow
-          ? 'cloud_checkout_recovery_unreachable'
-          : 'cloud_checkout_completion_missing',
+        errorType: report.errorType,
         tags: {
-          failure_kind: didLastRecoveryAttemptThrow
-            ? 'degraded'
-            : 'missing_event',
+          failure_kind: report.failureKind,
           feature_area: 'billing',
           operation: 'sync',
-          outcome: didLastRecoveryAttemptThrow ? 'aborted' : 'timed_out'
+          outcome: report.outcome
         },
         context: {
           checkout_attempt_id: attempt.attempt_id,
