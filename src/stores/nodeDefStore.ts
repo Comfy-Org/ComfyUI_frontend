@@ -23,7 +23,6 @@ import type {
 } from '@/schemas/nodeDefSchema'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { NodeSearchService } from '@/services/nodeSearchService'
-import { useSubgraphStore } from '@/stores/subgraphStore'
 import { NODE_TO_ESSENTIALS_CATEGORY } from '@/constants/essentialsNodes'
 import { CORE_NODE_MODULES, getNodeSource } from '@/types/nodeSource'
 import type { NodeSource } from '@/types/nodeSource'
@@ -375,14 +374,12 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     }
   })
 
-  const nodeDefs = computed(() => {
-    const subgraphStore = useSubgraphStore()
-    // Blueprints first for discoverability in the node library sidebar
-    return [
-      ...subgraphStore.subgraphBlueprints,
-      ...Object.values(nodeDefsByName.value)
-    ]
-  })
+  const blueprintNodeDefsByName = ref<Map<string, ComfyNodeDefImpl>>(new Map())
+  // Blueprints first for discoverability in the node library sidebar
+  const nodeDefs = computed(() => [
+    ...blueprintNodeDefsByName.value.values(),
+    ...Object.values(nodeDefsByName.value)
+  ])
   const nodeDataTypes = computed(() => {
     const types = new Set<string>()
     for (const nodeDef of nodeDefs.value) {
@@ -539,6 +536,7 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
 
   return {
     nodeDefsByName,
+    blueprintNodeDefsByName,
     nodeDefsByDisplayName,
     allNodeDefsByName,
     allNodeDefsByDisplayName,
