@@ -19,6 +19,7 @@ import {
   PLANS_ROUTE,
   TOPUP_ROUTE,
   createBillingCommands,
+  createBillingEventsReader,
   createBillingOperationLifecycle,
   createBillingStatusReader,
   createCapabilitiesReader,
@@ -92,7 +93,7 @@ function fakeSession() {
     session,
     moveTo(workspace: AccountCredential['workspace']) {
       snapshot = authenticated(credential(workspace))
-      for (const listener of [...listeners]) listener(snapshot)
+      for (const listener of Array.from(listeners)) listener(snapshot)
     }
   }
 }
@@ -236,6 +237,7 @@ export function createBillingHarness(options: HarnessOptions = {}) {
   const statusReader = createBillingStatusReader(readerOptions)
   const plans = createPlansReader(readerOptions)
   const paymentMethods = createPaymentMethodsReader(readerOptions)
+  const events = createBillingEventsReader(readerOptions)
   const lifecycle = createBillingOperationLifecycle({
     transport,
     scopeSource,
@@ -251,6 +253,7 @@ export function createBillingHarness(options: HarnessOptions = {}) {
     status: statusReader,
     plans,
     paymentMethods,
+    events,
     topup: createTopupCommand({
       transport,
       lifecycle,

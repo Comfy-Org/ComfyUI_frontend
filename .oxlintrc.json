@@ -6,9 +6,10 @@
     "components.d.ts",
     "coverage/*",
     "dist/*",
+    "packages/ingest-types/src/types.gen.ts",
+    "packages/ingest-types/src/zod.gen.ts",
     "packages/registry-types/src/comfyRegistryTypes.ts",
     "playwright-report/*",
-    "scripts/patch-playwright-agents.js",
     "scripts/registry-census/detection-proof/**",
     "src/__ecs_matrix__/**",
     "src/types/generatedManagerTypes.ts",
@@ -26,19 +27,35 @@
     "vue"
   ],
   "jsPlugins": ["./tools/oxlint-plugins/comfy.ts"],
+  "extends": ["./scripts/primevue-import-allowlist.json"],
   "rules": {
     "comfy/no-duplicate-ingest-type": "error",
+    "comfy/no-js-private-class-members": "error",
     "comfy/no-render-in-watch-effect": "error",
-    "no-async-promise-executor": "off",
+    "no-array-constructor": "error",
+    "no-case-declarations": "error",
     "no-console": [
       "error",
       {
         "allow": ["warn", "error"]
       }
     ],
-    "no-control-regex": "off",
+    "no-empty": "error",
     "no-eval": "error",
+    "no-fallthrough": [
+      "error",
+      {
+        "commentPattern": "falls?\\s?through"
+      }
+    ],
+    "no-prototype-builtins": "error",
     "no-redeclare": "error",
+    "no-regex-spaces": "error",
+    "no-var": "error",
+    "prefer-const": "error",
+    "prefer-rest-params": "error",
+    "prefer-spread": "error",
+    "preserve-caught-error": "error",
     "no-restricted-imports": [
       "error",
       {
@@ -69,10 +86,9 @@
     "no-unsafe-optional-chaining": "error",
     "no-self-assign": "allow",
     "no-unreachable": "error",
-    "no-unused-expressions": "off",
-    "no-unused-private-class-members": "off",
     "no-useless-rename": "off",
     "import/default": "error",
+    "import/no-named-as-default": "error",
     "import/export": "error",
     "import/namespace": "error",
     "import/no-duplicates": "error",
@@ -83,8 +99,13 @@
     "vitest/no-standalone-expect": "off",
     "vitest/valid-title": "off",
     "vitest/require-to-throw-message": "off",
-    "typescript/no-this-alias": "off",
-    "typescript/no-useless-default-assignment": "off",
+    "typescript/ban-ts-comment": "error",
+    "typescript/consistent-type-imports": "error",
+    "typescript/no-namespace": "error",
+    "typescript/no-require-imports": "error",
+    "typescript/no-this-alias": "error",
+    "typescript/no-unsafe-function-type": "error",
+    "typescript/no-useless-default-assignment": "error",
     "typescript/no-unnecessary-boolean-literal-compare": "error",
     "typescript/no-unnecessary-condition": "error",
     "typescript/no-unnecessary-parameter-property-assignment": "error",
@@ -114,15 +135,15 @@
         "suite": "for"
       }
     ],
-    "unicorn/no-new-array": "off",
-    "unicorn/no-single-promise-in-promise-methods": "off",
-    "unicorn/no-useless-fallback-in-spread": "off",
-    "unicorn/no-useless-spread": "off",
+    "unicorn/no-new-array": "error",
+    "unicorn/no-single-promise-in-promise-methods": "error",
+    "unicorn/no-useless-fallback-in-spread": "error",
+    "unicorn/no-useless-spread": "error",
     "typescript/await-thenable": "off",
     "typescript/no-base-to-string": "off",
-    "typescript/no-duplicate-type-constituents": "off",
-    "typescript/no-for-in-array": "off",
-    "typescript/no-meaningless-void-operator": "off",
+    "typescript/no-duplicate-type-constituents": "error",
+    "typescript/no-for-in-array": "error",
+    "typescript/no-meaningless-void-operator": "error",
     "typescript/no-redundant-type-constituents": "off",
     "typescript/restrict-template-expressions": "off",
     "typescript/unbound-method": "off",
@@ -167,16 +188,37 @@
       }
     },
     {
-      "files": ["src/extensions/core/groupNode.ts"],
-      "rules": {
-        "typescript/no-unnecessary-condition": "off"
-      }
-    },
-    {
       "files": ["src/**/*.ts", "src/**/*.vue"],
       "excludeFiles": ["**/*.test.ts", "**/*.spec.ts"],
       "rules": {
         "comfy/no-dom-in-computed": "warn"
+      }
+    },
+    {
+      "files": ["src/**/*.{js,mjs,cjs,ts,mts,cts,vue}"],
+      "excludeFiles": ["src/**/*.test.{ts,tsx}"],
+      "rules": {
+        "comfy/no-es2023-array-copy-method": "error"
+      }
+    },
+    {
+      "files": [
+        "src/composables/graph/**/*.{ts,vue}",
+        "src/lib/litegraph/src/**/*.{ts,vue}",
+        "src/renderer/core/canvas/**/*.{ts,vue}",
+        "src/renderer/extensions/vueNodes/**/*.{ts,vue}"
+      ],
+      "excludeFiles": [
+        "**/*.test.ts",
+        "**/*.spec.ts",
+        "src/lib/litegraph/src/CurveEditor.ts",
+        "src/lib/litegraph/src/LGraph.ts",
+        "src/lib/litegraph/src/LGraphCanvas.ts",
+        "src/lib/litegraph/src/LGraphNode.ts",
+        "src/renderer/core/canvas/litegraph/selectionAdapter.ts"
+      ],
+      "rules": {
+        "comfy/no-direct-selection-write": "error"
       }
     },
     {
@@ -192,12 +234,6 @@
       }
     },
     {
-      "files": ["src/scripts/app.test.ts", "src/scripts/app.ts"],
-      "rules": {
-        "typescript/no-unnecessary-condition": "off"
-      }
-    },
-    {
       "files": ["browser_tests/fixtures/data/**/*.ts"],
       "rules": {
         "comfy/no-playwright-imports-in-fixture-data": "error"
@@ -207,18 +243,6 @@
       "files": ["browser_tests/tests/**/*.test.ts"],
       "rules": {
         "comfy/no-unit-test-files-in-browser-tests": "error"
-      }
-    },
-    {
-      "files": [
-        "src/extensions/core/customWidgets.ts",
-        "src/extensions/core/widgetInputs.ts",
-        "src/extensions/core/widgetValuePropagation.ts",
-        "src/scripts/domWidget.ts",
-        "src/scripts/widgets.ts"
-      ],
-      "rules": {
-        "typescript/no-unnecessary-condition": "off"
       }
     },
     {
@@ -235,21 +259,6 @@
       "files": ["**/*.{ts,tsx,vue}"],
       "rules": {
         "comfy/no-deprecated-api-schema": "error"
-      }
-    },
-    {
-      "files": [
-        "src/scripts/metadata/json.ts",
-        "src/scripts/metadata/mp3.ts",
-        "src/scripts/metadata/ogg.ts",
-        "src/scripts/metadata/parser.ts",
-        "src/scripts/metadata/ply.ts",
-        "src/scripts/metadata/png.test.ts",
-        "src/scripts/metadata/png.ts",
-        "src/scripts/pnginfo.ts"
-      ],
-      "rules": {
-        "typescript/no-unnecessary-condition": "off"
       }
     },
     {
@@ -270,26 +279,31 @@
       }
     },
     {
-      "files": [
-        "src/scripts/api.ts",
-        "src/scripts/changeTracker.test.ts",
-        "src/scripts/changeTracker.ts",
-        "src/scripts/ui.ts",
-        "src/scripts/ui/components/button.ts",
-        "src/scripts/ui/draggableList.ts",
-        "src/scripts/ui/utils.ts"
-      ],
-      "rules": {
-        "typescript/no-unnecessary-condition": "off"
-      }
-    },
-    {
       "files": ["**/*.test.{ts,tsx}"],
       "rules": {
         "comfy/no-module-scope-vitest-mocks": "error",
         "comfy/no-persistent-litegraph-registration": "error",
         "comfy/no-redundant-litegraph-cleanup": "error",
-        "comfy/no-redundant-vitest-cleanup": "error"
+        "comfy/no-redundant-vitest-cleanup": "error",
+        "no-restricted-properties": [
+          "error",
+          {
+            "object": "vi",
+            "property": "doMock",
+            "message": "Use vi.mock() with vi.hoisted() instead of vi.doMock(). See docs/testing/vitest-patterns.md"
+          }
+        ]
+      }
+    },
+    {
+      "files": ["**/*.astro"],
+      "rules": {
+        "no-empty": [
+          "error",
+          {
+            "allowEmptyCatch": true
+          }
+        ]
       }
     },
     {
@@ -303,7 +317,7 @@
       }
     },
     {
-      "files": ["tools/test-recorder/**/*.ts"],
+      "files": ["scripts/**", "tools/test-recorder/**/*.ts"],
       "rules": {
         "no-console": "allow"
       }
@@ -350,10 +364,7 @@
       "jsPlugins": ["eslint-plugin-playwright"],
       "rules": {
         "typescript/no-explicit-any": "error",
-        "no-async-promise-executor": "error",
-        "no-control-regex": "error",
         "no-useless-rename": "error",
-        "no-unused-private-class-members": "error",
         "unicorn/no-empty-file": "error",
         "playwright/consistent-spacing-between-blocks": "error",
         "playwright/expect-expect": [

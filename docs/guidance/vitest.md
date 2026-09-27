@@ -44,10 +44,11 @@ ESLint rule enforces the Testing Library query rule. Do not disable it.
   `vi.fn<typeof realFn>` instead of setting it in `beforeEach`; `mockReset`
   restores that implementation before every test.
 - A composable mock returns one stable object, so a test can configure it
-  and then create the consumer that reads it. Never replace a field that
-  holds a `ref`, `computed`, or object: a consumer that already destructured
-  it keeps the old one. Because that object is shared by every test in the
-  file, tests that configure it must not run with `test.concurrent`.
+  and then create the consumer that reads it. Configure replacement fields
+  before creating consumers. Once a consumer captures a ref or object, keep
+  that identity and update its backing state for the rest of the test. Because
+  the result object is shared, tests that configure it must not run with
+  `test.concurrent`.
 - Until an older mock that builds a fresh object per call (`useBillingContext`)
   is converted, pin it in the test with
   `vi.mocked(useX).mockReturnValue(useX())` before configuring the result.
@@ -87,11 +88,18 @@ export const useFeatureFlags = vi.fn(() => {
 })
 ```
 
-Restore in place (`Object.assign(reactiveObject, defaults)`,
-`someRef.value = default`) so consumer `computed`s are notified. Do not call
-`beforeEach` inside a mock module: it binds to the file being collected, so a
-cached module (`isolate: false`) registers no hook for later files, and a
-re-import after `vi.resetModules()` registers a duplicate.
+Restore writable values in place (`Object.assign(reactiveObject, defaults)`,
+`someRef.value = default`). For replaceable fields containing readonly refs,
+the mock can use `Object.assign(state, defaults())` in `onTestFinished` to
+install fresh refs without changing the result object's identity. Finish async
+work and dispose consumers before this cleanup. No consumer may retain these
+fields across tests.
+The next test configures the result before creating its consumers. Build fresh
+mutable defaults on each reset, and keep action spies outside that factory.
+
+Do not call `beforeEach` inside a mock module: it binds to the file being
+collected, so a cached module (`isolate: false`) registers no hook for later
+files, and a re-import after `vi.resetModules()` registers a duplicate.
 
 `onTestFinished` throws `Hook onTestFinished() can only be called inside a
 test` when the mock is called at `describe` scope or in `beforeAll`. That is
@@ -125,21 +133,20 @@ cleanup can be attached to the test that dirtied it.
   })
   ```
 
-- Derived with no mutator (`isLoggedIn`, `canTopUp`): spy on the getter in
-  the test; `restoreMocks` removes it. Use `mockReturnValue` for a fixed
-  value. When the value changes mid-test, read a `ref` inside
-  `mockImplementation`, because Vue does not track a spy's fixed return and
-  a consumer `computed` caches the first read:
+- Derived with no mutator (`isLoggedIn`, `canTopUp`): configure a computed
+  field before creating the consumer. Keep the writable scenario ref local
+  to the test and update it to drive changes through the captured computed:
 
   ```ts
   const loggedIn = ref(false)
-  vi.spyOn(useCurrentUser().isLoggedIn, 'value', 'get').mockImplementation(
-    () => loggedIn.value
-  )
+  useCurrentUser().isLoggedIn = computed(() => loggedIn.value)
   ```
 
-Never assign `useCurrentUser().isLoggedIn = computed(() => true)`: it leaks,
-and a consumer created earlier keeps the old computed.
+  The mock owns restoring the field after the test. Do not add getter spies
+  or mock-only setters when this setup suffices. If the field itself is
+  non-replaceable, use a getter spy that reads the local ref; `restoreMocks`
+  restores the getter. A fixed getter return does not provide a reactive
+  dependency for consumer computeds.
 
 ## No Real Network
 

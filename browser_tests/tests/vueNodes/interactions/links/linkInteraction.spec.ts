@@ -124,7 +124,7 @@ test.describe(
       // Arbitrary value
       const dragTarget = {
         x: start.x + 180,
-        y: start.y - 140
+        y: start.y + 140
       }
 
       await comfyMouse.move(start)
@@ -132,6 +132,7 @@ test.describe(
       await comfyPage.nextFrame()
 
       try {
+        await expect(comfyPage.page.getByRole('tooltip')).toBeHidden()
         await expect(comfyPage.canvas).toHaveScreenshot(
           'vue-node-dragging-link.png'
         )
@@ -166,6 +167,26 @@ test.describe(
           targetId: vaeNode.id,
           targetSlot: 0
         })
+    })
+
+    test('undo right after dropping a link on a slot removes that link', async ({
+      comfyPage
+    }) => {
+      const samplerNode = await comfyPage.nodeOps.getNodeRefByType('KSampler')
+      const vaeNode = await comfyPage.nodeOps.getNodeRefByType('VAEDecode')
+      const vaeInput = await vaeNode.getInput(0)
+
+      await connectSlots(
+        comfyPage.page,
+        { nodeId: samplerNode.id, index: 0 },
+        { nodeId: vaeNode.id, index: 0 },
+        () => comfyPage.nextFrame()
+      )
+      await vaeInput.expectLinkCount(1)
+
+      await comfyPage.keyboard.undo()
+
+      await vaeInput.expectLinkCount(0)
     })
 
     test('should not create a link when slot types are incompatible', async ({

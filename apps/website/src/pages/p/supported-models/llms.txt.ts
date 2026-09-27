@@ -35,7 +35,7 @@ export const GET: APIRoute = ({ site }) => {
     ['MiniMax Music 3', routes.minimaxMusic3],
     ['Seedance 2.5', routes.seedance],
     ['ChatGPT Images 2.5', routes.chatgptImage25],
-    ['Qwen Image 2.1', routes.qwenImage21],
+    ['Qwen-Image 2.1', routes.qwenImage21],
     ['Wan 3.0', routes.wan3],
     ['Wan Animate 2', routes.wanAnimate2],
     ['LTX 2.5', routes.ltx]

@@ -60,6 +60,51 @@ export function succeededOperation(id: string): BillingOpStatusResponse {
   return { id, status: 'succeeded', started_at: now, completed_at: now }
 }
 
+/** Genuinely still pending: no next action, no verdict yet. */
+export function pendingOperation(id: string): BillingOpStatusResponse {
+  return { id, status: 'pending', started_at: new Date().toISOString() }
+}
+
+export function declinedOperation(id: string): BillingOpStatusResponse {
+  const now = new Date().toISOString()
+  return {
+    id,
+    status: 'failed',
+    decline_reason: 'card_declined',
+    retryable: true,
+    started_at: now,
+    completed_at: now
+  }
+}
+
+/** The live failure a misconfigured charge settles as: no retry, support only. */
+export function contactSupportOperation(id: string): BillingOpStatusResponse {
+  const now = new Date().toISOString()
+  return {
+    id,
+    status: 'failed',
+    error_message: 'parameter_missing',
+    recovery_action: 'contact_support',
+    retryable: false,
+    started_at: now,
+    completed_at: now
+  }
+}
+
+/** A poll response asking the tab to drive an embedded 3DS challenge. */
+export function challengeRequiredOperation(
+  id: string,
+  clientSecret: string
+): BillingOpStatusResponse {
+  return {
+    id,
+    status: 'pending',
+    started_at: new Date().toISOString(),
+    authentication_state: 'requires_action',
+    payment_intent_client_secret: clientSecret
+  }
+}
+
 /** A Creator subscriber looking at an upgrade to Pro. */
 export function defaultScenario(): CloudScenario {
   return {
@@ -124,7 +169,7 @@ export function defaultScenario(): CloudScenario {
     ],
     preview: {
       allowed: true,
-      transition_type: 'upgrade',
+      transition_type: 'new_subscription',
       is_immediate: true,
       effective_at: new Date().toISOString(),
       renewal_at: inAnHour(),

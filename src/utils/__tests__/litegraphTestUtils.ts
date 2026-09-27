@@ -150,9 +150,7 @@ export function createMockCanvas(
 ): LGraphCanvas {
   return {
     setDirty: vi.fn(),
-    state: {
-      selectionChanged: false
-    },
+    state: {},
     ...(overrides as Partial<LGraphCanvas>)
   } as LGraphCanvas
 }
@@ -346,6 +344,8 @@ export function createMockChangeTracker(
     undoQueue: [],
     redoQueue: [],
     changeCount: 0,
+    beforeChange: vi.fn(),
+    afterChange: vi.fn(),
     captureCanvasState: vi.fn(),
     checkState: vi.fn(),
     deactivate: vi.fn(),

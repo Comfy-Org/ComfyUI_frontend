@@ -20,7 +20,10 @@ export type {
 export { matchesServerCode, unwrapServerCode } from './billingContracts.js'
 export type { SessionBillingTransportOptions } from './transport.js'
 export { createSessionBillingTransport } from './transport.js'
-export type { CredentialedBillingTransportOptions } from './credentialedTransport.js'
+export type {
+  CredentialedBillingTransportOptions,
+  CredentialedWebSession
+} from './credentialedTransport.js'
 export { createCredentialedBillingTransport } from './credentialedTransport.js'
 export type { BillingScope, BillingScopeSource } from './billingScope.js'
 export { sessionBillingScopeSource } from './billingScope.js'
@@ -53,6 +56,16 @@ export type {
   CreditsSnapshot
 } from './credits.js'
 export { CREDITS_ROUTE, createCreditsReader } from './credits.js'
+export type {
+  BillingEvent,
+  BillingEventsData,
+  BillingEventsReader,
+  BillingEventsReaderOptions,
+  BillingEventsReadOptions,
+  BillingEventsScope,
+  BillingEventsSnapshot
+} from './events.js'
+export { BILLING_EVENTS_ROUTE, createBillingEventsReader } from './events.js'
 export type {
   BillingPlansData,
   PlansReadOptions,
@@ -110,11 +123,14 @@ export {
 export {
   OPERATION_POLL_BUDGET,
   OPERATION_POLL_TIMING,
+  customerCanActHere,
   hasExhaustedPollBudget,
   isParkedOnCustomer,
   nextPollDelayMs,
+  pendingOperationActionHold,
   pollBudgetMs
 } from './operationPolicy.js'
+export type { CustomerActionHold } from './operationPolicy.js'
 export type {
   BillingOperationPointer,
   BillingOperationPointerStorage,
@@ -145,7 +161,10 @@ export type {
   EmbeddedChallengePort
 } from './challengeDriver.js'
 export { driveEmbeddedChallenge } from './challengeDriver.js'
-export { readBillingErrorCode } from './billingErrorBody.js'
+export {
+  readBillingErrorCode,
+  readBillingErrorMessage
+} from './billingErrorBody.js'
 export type {
   BillingCommands,
   BillingCommandsOptions,

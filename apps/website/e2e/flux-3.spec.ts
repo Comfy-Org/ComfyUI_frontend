@@ -108,7 +108,7 @@ test.describe('Flux 3 page @smoke', () => {
           'script[type="application/ld+json"]'
         )
       ).flatMap((script) => {
-        const parsed = JSON.parse(script.textContent ?? '{}') as {
+        const parsed = JSON.parse(script.text) as {
           '@graph'?: { '@type': string }[]
         }
         return (parsed['@graph'] ?? []).map((node) => node['@type'])

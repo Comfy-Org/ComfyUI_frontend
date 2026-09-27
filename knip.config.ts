@@ -59,6 +59,7 @@ const config: KnipConfig = {
     }
   },
   ignoreBinaries: [
+    'ffmpeg',
     // Optional host tool the recorder probes for and degrades without
     'xcode-select'
   ],
@@ -70,11 +71,8 @@ const config: KnipConfig = {
     // Auto generated API types
     'src/workbench/extensions/manager/types/generatedManagerTypes.ts',
     'packages/ingest-types/src/zod.gen.ts',
-    // Pending integration in stacked PR
-    'src/components/sidebar/tabs/nodeLibrary/CustomNodesPanel.vue',
     // Marketing media tooling — adopted by pages in a follow-up PR
     'apps/website/src/components/common/SiteVideo.vue',
-    'apps/website/src/utils/marketingImage.ts',
     // Animated pill button — retained for reuse after the learning directory
     // switched to ButtonPill; no current consumer
     'apps/website/src/components/ui/button-mask/**',
@@ -100,11 +98,7 @@ const config: KnipConfig = {
     config: ['playwright?(.*).config.ts'],
     entry: ['browser_tests/**/*.@(spec|test).?(c|m)[jt]s?(x)']
   },
-  tags: [
-    '-knipIgnoreUnusedButUsedByCustomNodes',
-    '-knipIgnoreUnusedButUsedByVueNodesBranch',
-    '-knipIgnoreUsedByStackedPR'
-  ]
+  tags: ['-knipIgnoreUnusedButUsedByCustomNodes', '-knipIgnoreUsedByStackedPR']
 }
 
 export default config

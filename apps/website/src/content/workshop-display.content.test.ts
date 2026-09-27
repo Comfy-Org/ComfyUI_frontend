@@ -2,11 +2,11 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
-import { getRouterWorkshopModelDetail } from '../config/workshop-router-content'
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from '../config/workshop-router-content'
 import { workshopContract } from '../config/workshop-contract-catalog'
 import { schemaForModel } from '../config/workshop-playground'
 import {
-  workshopModels,
+  authoredWorkshopModels,
   routerAliasById,
   routerContentById
 } from '../config/workshop-browse-content'
@@ -16,6 +16,7 @@ import {
   workshopDisplayEntriesSchema
 } from './workshop-display.schema'
 import { workshopModelSchema } from './workshop-models.schema'
+import { workflowCatalog } from '../config/workshop-workflow-catalog'
 
 const here = import.meta.dirname
 const display = workshopDisplayEntriesSchema.parse(
@@ -105,11 +106,16 @@ describe('the display overlay against the catalog', () => {
     expect(contentFor(id)?.displayName).toBe(name)
   })
 
-  it('covers models the catalog actually has', () => {
+  it('covers models and workflows in the matching execution catalog', () => {
     expect(display.length).toBeGreaterThan(0)
-    const orphans = display
-      .map((entry) => entry.modelId)
-      .filter((id) => !modality.has(id))
+    const orphans = display.filter((entry) =>
+      entry.type === 'CLOUD' || entry.type === 'SERVERLESS'
+        ? !workflowCatalog.some(
+            (workflow) =>
+              workflow.id === entry.modelId && workflow.type === entry.type
+          )
+        : !modality.has(entry.modelId)
+    )
 
     expect(orphans).toEqual([])
   })
@@ -121,7 +127,7 @@ describe('the display overlay against the catalog', () => {
   })
 
   it('keeps every effective Advanced field attached to a real generated input', () => {
-    const stale = workshopModels.flatMap((model) => {
+    const stale = authoredWorkshopModels.flatMap((model) => {
       const detail = getRouterWorkshopModelDetail(model.slug)
       if (!detail) throw new Error('Missing model detail')
       const names = new Set(schemaForModel(detail).map((field) => field.name))

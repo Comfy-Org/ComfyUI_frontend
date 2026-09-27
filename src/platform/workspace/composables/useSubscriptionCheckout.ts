@@ -32,6 +32,7 @@ import type {
   SubscribeOptions
 } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { openHostedBillingTab } from '@/platform/workspace/billing/openHostedBillingTab'
 import type { SettledSubscribeResponse } from '@/platform/workspace/billing/sdk/subscriptionOperationView'
 import { readOnRail } from '@/platform/workspace/composables/readOnRail'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
@@ -45,6 +46,7 @@ import {
   getActiveCheckoutJourney,
   resolveCheckoutAssignment,
   resolveCheckoutJourney,
+  resolveEntrySource,
   toCheckoutJourneyContext
 } from '@/platform/workspace/utils/checkoutJourney'
 import type { CheckoutJourneyRecord } from '@/platform/workspace/utils/checkoutJourney'
@@ -554,19 +556,37 @@ export function useSubscriptionCheckout(
     )
   }
 
+  /**
+   * The portal URL for recovery, from whichever rail owns the subscription.
+   * An `unavailable` route is not deployed here, so the legacy client answers;
+   * a failure throws into the caller's catch, where a legacy throw already
+   * lands.
+   */
+  async function readPaymentPortalUrl(returnUrl: string): Promise<string> {
+    if (subscriptionRail) {
+      const outcome = await subscriptionRail.openPaymentPortal(returnUrl)
+      if (outcome.status === 'ok') return outcome.value
+      if (outcome.status === 'error') throw outcome.error
+    }
+    return (await workspaceApi.getPaymentPortalUrl(returnUrl)).url
+  }
+
   async function recoverOutstandingPayment(
     error: unknown,
     isCurrent: () => boolean = () => true
   ) {
+    const readRail = useBillingReadRail()
     const hasPaymentRecoveryCode =
       hasErrorCode(error, 'SUBSCRIPTION_PAYMENT_REQUIRED') ||
       hasErrorCode(error, 'OUTSTANDING_PAYMENT_REQUIRED')
     let requiresRecovery = hasPaymentRecoveryCode
     if (!requiresRecovery && hasErrorCode(error, 'TRANSITION_NOT_ALLOWED')) {
       try {
-        requiresRecovery =
-          (await workspaceApi.getBillingStatus()).billing_status ===
-          'payment_failed'
+        const status =
+          readRail === null
+            ? await workspaceApi.getBillingStatus()
+            : await readOnRail(readRail.readStatus)
+        requiresRecovery = status?.billing_status === 'payment_failed'
       } catch {
         return null
       }
@@ -576,7 +596,7 @@ export function useSubscriptionCheckout(
     try {
       const returnUrl = `${globalThis.location.origin}${globalThis.location.pathname}`
       const portalUrl = parseBillingPortalUrl(
-        (await workspaceApi.getPaymentPortalUrl(returnUrl)).url
+        await readPaymentPortalUrl(returnUrl)
       )
       if (!isCurrent()) return null
       if (!portalUrl) {
@@ -729,18 +749,23 @@ export function useSubscriptionCheckout(
       : canSubscribeSelfServe.value
   }
 
+  // Synchronous so the caller can branch before any await: a hosted-tab
+  // open right after this needs the click's transient user activation,
+  // which an await can drop in stricter browsers (Safari).
+  function needsTeamToPersonalDowngrade(): boolean {
+    return tierPlanType !== 'team' && isTeamPlan.value
+  }
+
   async function showTeamToPersonalDowngrade(
     planSlug: string,
     tierKey: CheckoutTierKey
-  ): Promise<boolean> {
-    if (tierPlanType === 'team' || !isTeamPlan.value) return false
-
+  ): Promise<void> {
     const { useDialogService } = await import('@/services/dialogService')
     const result = await useDialogService().showDowngradeToPersonalDialog({
       planName: t(`subscription.tiers.${tierKey}.name`),
       planSlug
     })
-    if (!result) return true
+    if (!result) return
 
     previewData.value = result.preview
     trackWorkspaceCheckoutStarted({
@@ -759,7 +784,6 @@ export function useSubscriptionCheckout(
       },
       false
     )
-    return true
   }
 
   const previewVariant = computed<PreviewVariant>(() => {
@@ -825,7 +849,14 @@ export function useSubscriptionCheckout(
         })
         return
       }
-      if (await showTeamToPersonalDowngrade(planSlug, tierKey)) return
+      if (needsTeamToPersonalDowngrade()) {
+        await showTeamToPersonalDowngrade(planSlug, tierKey)
+        return
+      }
+      if (openHostedBillingTab('checkout', { plan: planSlug })) {
+        emit('close', false)
+        return
+      }
       const response = embeddedCheckoutEnabled
         ? (
             await Promise.all([
@@ -907,6 +938,17 @@ export function useSubscriptionCheckout(
     previewData.value = null
     quoteIsCurrent.value = false
     enterCheckoutJourney(`team:${payload.stop.id}:${payload.billingCycle}`)
+
+    if (
+      payload.stop.id &&
+      openHostedBillingTab('checkout', {
+        plan: getTeamPlanSlug(payload.billingCycle),
+        teamCreditStopId: payload.stop.id
+      })
+    ) {
+      emit('close', false)
+      return
+    }
 
     if (!embeddedCheckoutEnabled) {
       const teamCreditStopId = payload.stop.id
@@ -1072,7 +1114,10 @@ export function useSubscriptionCheckout(
 
     isSubscribing.value = true
     try {
-      if (await showTeamToPersonalDowngrade(planSlug, tierKey)) return
+      if (needsTeamToPersonalDowngrade()) {
+        await showTeamToPersonalDowngrade(planSlug, tierKey)
+        return
+      }
       await fetchStatus()
       if (!confirmReactivation && requiresReactivationConfirmation()) {
         if (await refreshPreviewOnReactivationBlock(planSlug)) return
@@ -1284,12 +1329,20 @@ export function useSubscriptionCheckout(
     const ownerUid = useAuthStore().userId
     if (!workspaceId || !ownerUid) return null
 
+    const entrySource = resolveEntrySource(paymentIntentSource, 'pricing')
     const resolved = resolveCheckoutJourney({
       actorUid: ownerUid,
       workspaceId,
       entryFlow: currentSubscriptionEntryFlow(),
-      entrySource: 'pricing',
-      intent,
+      entrySource,
+      // Keyed by source as well as tier/cycle, the way the top-up rail keys by
+      // source alone. Resume matches on actor, workspace, flow and intent but
+      // not source, so without this an abandoned `pricing` preview for a plan
+      // would be resumed by an agent-paywall entry for that same plan and keep
+      // reporting `pricing` for the rest of the journey. A journey already
+      // bound to an operation still wins the slot: a non-match falls through
+      // to the bound-journey check below rather than evicting it.
+      intent: `${entrySource}:${intent}`,
       uiMode: embeddedCheckoutEnabled ? 'embedded' : 'hosted',
       assignment: resolveCheckoutAssignment(api.getServerFeatures())
     })
@@ -1716,6 +1769,11 @@ export function useSubscriptionCheckout(
 
   async function handleResubscribe() {
     if (!canReactivatePlan.value) return
+
+    if (openHostedBillingTab('subscription')) {
+      emit('close', false)
+      return
+    }
 
     const source = 'pricing_dialog' as const
 

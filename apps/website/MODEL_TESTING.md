@@ -1,5 +1,9 @@
 # Run the model-page generation tests
 
+Scheduled sweeps and real browser acceptance run in GitHub Actions under the
+**Workshop:** prefix. See [live acceptance](acceptance/README.md) for cadence,
+accounts, billing expectations, reports, and the remaining acceptance scope.
+
 The tester calls `router_render(slug, {})` with the same initial inputs,
 parameter mappings, media conversion, temporary uploads, Router client and
 response parser as the model pages. A pass requires downloading and decoding
@@ -119,6 +123,22 @@ limits still apply; see [Comfy's concurrency documentation](https://docs.comfy.o
 
 ## Run images first, then audio and video
 
+Run the input-validation grid without credentials or provider calls:
+
+```sh
+pnpm --filter @comfyorg/website test:router-validation
+```
+
+It uses the same published-page selection as the live sweep. Every initial
+RUN form and runnable example must validate; invalid types, required inputs,
+numeric/text boundaries, choices and upload limits must stop before credentials,
+uploads or generation. Shared regressions cover conditional inputs and video
+metadata. Availability changes automatically update the selected pages.
+These results prove client validation, not provider acceptance or delivery.
+The live automation in [#18313](https://github.com/Comfy-Org/ComfyUI_frontend/pull/18313)
+can use this command before its scheduled generations without changing the
+six-hour smoke, daily image/audio or weekly video cadence.
+
 First validate all initial page inputs without network calls or charges:
 
 ```sh
@@ -235,14 +255,21 @@ disables it. Entries are keyed by page slug:
 ```
 
 A disabled page leaves the catalogue, search, its detail route and every
-legacy redirect, and the tester no longer selects it. The build fails if an
-entry names a page that does not exist. The grid keeps a disabled page's last
-result and marks it `Disabled` with the reason.
+legacy redirect, and the tester omits it from default sweeps. An explicit
+`--slug` still selects a disabled authored page so it can be verified before
+re-enabling. The build fails if an entry names a page that does not exist. The
+grid keeps a disabled page's last result and marks it `Disabled` with the
+reason.
+
+Availability is publication state only. Authored model details, contracts,
+examples and canonical template joins remain testable while a page is
+disabled. Toggling an otherwise valid page requires only this JSON file; do
+not remove its content or contract, update tests, or regenerate derived data.
 
 Disable any page whose initial defaults do not produce a decoded artifact. To
-re-enable one, set `disabled` to `false` or delete its entry, run the tester for
-that slug with `--execute --slug <slug>`, and commit the manifest together with
-the updated grid only after the page passes.
+re-enable one, first run the tester for that slug with `--execute --slug
+<slug>`. After it passes, set `disabled` to `false` or delete its entry and
+commit the manifest change.
 
 Private evidence goes into a new, ignored `temp/router-model-tests/<run-id>/`
 directory at repository root. It includes the manifest, append-only events,

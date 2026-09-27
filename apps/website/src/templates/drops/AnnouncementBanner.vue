@@ -59,7 +59,7 @@ const { isVisible, close, persistHidden } = useBannerDismissal(version)
             "
           >
             <p
-              class="ppformula-text-center text-sm text-primary-warm-white md:text-base/6"
+              class="ppformula-text-center inline-block text-sm text-primary-warm-white md:text-base/6"
             >
               {{ data.title }}
               <span v-if="data.description" class="text-primary-warm-white/80">

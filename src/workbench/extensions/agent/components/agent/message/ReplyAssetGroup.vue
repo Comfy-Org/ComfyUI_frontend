@@ -169,6 +169,7 @@ function stopPreview(event: Event): void {
           v-if="asset.kind === 'image'"
           :src="asset.url"
           :alt="asset.label ?? asset.filename"
+          data-testid="reply-image-preview"
           loading="lazy"
           :class="multi ? 'size-full object-cover' : 'block h-auto max-w-full'"
         />
@@ -203,6 +204,18 @@ function stopPreview(event: Event): void {
           "
         >
           <span class="icon-[lucide--box] size-6 text-muted-foreground" />
+        </span>
+        <span
+          v-if="asset.kind === 'video'"
+          data-testid="reply-video-affordance"
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-0 flex items-center justify-center"
+        >
+          <span
+            class="flex size-9 items-center justify-center rounded-full bg-black/60 text-white shadow-sm backdrop-blur-sm"
+          >
+            <span class="icon-[lucide--play] size-4 fill-current" />
+          </span>
         </span>
       </button>
     </div>

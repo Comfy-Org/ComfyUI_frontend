@@ -7,16 +7,18 @@ import {
   getAssetSubfolder,
   getAssetUrl
 } from '@/platform/assets/utils/assetUrlUtil'
+import { api } from '@/scripts/api'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 
-const mockApiURL = vi.hoisted(() =>
-  vi.fn((path: string) => `http://localhost:8188/api${path}`)
-)
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: { apiURL: mockApiURL }
-}))
+vi.mock(import('@/scripts/api'))
 
 vi.mock(import('@/composables/useFeatureFlags'))
+
+beforeEach(() => {
+  vi.mocked(api.apiURL).mockImplementation(
+    (path) => `http://localhost:8188/api${path}`
+  )
+})
 function createAsset(overrides: Partial<AssetItem> = {}): AssetItem {
   return {
     id: 'asset-1',
@@ -126,6 +128,14 @@ describe('getAssetFileUrl', () => {
 
       expect(getAssetFileUrl(asset)).toBe(
         'http://localhost:8188/api/assets/asset-model/content'
+      )
+    })
+
+    it('requests an inline disposition when asked, for in-page playback', () => {
+      const asset = createAsset({ id: 'asset-1' })
+
+      expect(getAssetFileUrl(asset, { disposition: 'inline' })).toBe(
+        'http://localhost:8188/api/assets/asset-1/content?disposition=inline'
       )
     })
   })

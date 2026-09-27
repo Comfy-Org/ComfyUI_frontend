@@ -20,28 +20,34 @@ import {
   usePreviewSubscribe
 } from '@comfyorg/account-ui/billing'
 import type { StripePaymentCopy } from '@comfyorg/account-ui/billing/stripe'
-import { StripePaymentForm } from '@comfyorg/account-ui/billing/stripe'
 import {
   billingIntentPath,
   buildBillingEntryUrl,
   buildReturnUrl
 } from '@comfyorg/billing-contract'
 
-import CheckoutSubmit from '@/components/CheckoutSubmit.vue'
+import CheckoutPayment from '@/components/CheckoutPayment.vue'
 import EmbeddedCheckout from '@/components/EmbeddedCheckout.vue'
 import HostedSurface from '@/components/HostedSurface.vue'
+import { useBilledWorkspace } from '@/composables/useBilledWorkspace'
 import { useHostedCopy } from '@/composables/useHostedCopy'
-import { BILLING_WEB_ENV, STRIPE_PUBLISHABLE_KEY } from '@/config/env'
+import { BILLING_WEB_ENV } from '@/config/env'
+import {
+  awaitBillingWebStripeKey,
+  useBillingWebStripeKey
+} from '@/config/stripeKey'
 import { useBillingEntry } from '@/entry/billingEntry'
-import { createStripeChallengePort } from '@/session/stripeChallengePort'
+import { createDeferredStripeChallengePort } from '@/session/stripeChallengePort'
 
 const { t } = useI18n()
 const { coded } = useHostedCopy()
 const route = useRoute()
 const router = useRouter()
 const { entry } = useBillingEntry()
+const billedWorkspace = useBilledWorkspace()
 
 const planSlug = computed(() => entry.value?.plan)
+const teamCreditStopId = computed(() => entry.value?.teamCreditStopId)
 
 const {
   preview,
@@ -51,38 +57,51 @@ const {
   reset: resetQuote
 } = usePreviewSubscribe()
 
-const challengePort =
-  STRIPE_PUBLISHABLE_KEY === undefined
-    ? undefined
-    : createStripeChallengePort(STRIPE_PUBLISHABLE_KEY)
+// Reactive: `stripeKey` still reflects a server key that resolves after this
+// setup runs, instead of the fallback this ref started with.
+const stripeKey = useBillingWebStripeKey()
 
 const checkout = useCheckout({
   openUrl: (url) => window.location.assign(url),
   navigationMode: 'redirect',
-  challengePort
+  // Deferred: reads the key at challenge time, not this setup's snapshot.
+  challengePort: createDeferredStripeChallengePort(awaitBillingWebStripeKey)
 })
 
 const quotedPlan = ref<string | undefined>()
+const quotedTeamCreditStopId = ref<string | undefined>()
 
-function quotePlan(slug: string | undefined) {
+function quotePlan(slug: string | undefined, stopId: string | undefined) {
   quotedPlan.value = slug
-  if (slug !== undefined) void quote({ planSlug: slug })
+  quotedTeamCreditStopId.value = stopId
+  if (slug !== undefined) {
+    void quote({
+      planSlug: slug,
+      ...(stopId === undefined ? {} : { teamCreditStopId: stopId })
+    })
+  }
 }
 
-onMounted(() => quotePlan(planSlug.value))
+onMounted(() => quotePlan(planSlug.value, teamCreditStopId.value))
 
-// The route record is shared, so arriving with a different plan reuses the
-// view. A payment in flight outranks the new link — repricing under it would
-// show one plan's summary beside another plan's steps — but that deferral has
-// to be made good the moment the operation is dismissed, or the form returns
-// pricing the plan the customer left. Watching the operation is what closes
-// that gap; `quotedPlan` is what tells the two apart.
+// The route record is shared, so arriving with a different plan (or, for a
+// team plan, a different credit stop) reuses the view. A payment in flight
+// outranks the new link — repricing under it would show one plan's summary
+// beside another plan's steps — but that deferral has to be made good the
+// moment the operation is dismissed, or the form returns pricing what the
+// customer left. Watching the operation is what closes that gap;
+// `quotedPlan`/`quotedTeamCreditStopId` are what tell the two apart.
 watch(
-  [planSlug, () => checkout.operation.value !== undefined],
-  ([slug, busy]) => {
-    if (busy || slug === quotedPlan.value) return
+  [planSlug, teamCreditStopId, () => checkout.operation.value !== undefined],
+  ([slug, stopId, busy]) => {
+    if (
+      busy ||
+      (slug === quotedPlan.value && stopId === quotedTeamCreditStopId.value)
+    ) {
+      return
+    }
     resetQuote()
-    quotePlan(slug)
+    quotePlan(slug, stopId)
   }
 )
 
@@ -148,7 +167,18 @@ const paymentMethodConfigurationId = computed(
   () => preview.value?.payment_method_configuration_id ?? ''
 )
 
-const publishableKey = STRIPE_PUBLISHABLE_KEY ?? ''
+/**
+ * A plan change on an existing subscription charges its saved default
+ * payment method server-side and never accepts a new one (the ingest
+ * `subscribeAcceptsSavedMethod` comment in useSubscriptionCheckout.ts states
+ * this outright); only a genuine new subscription has no saved method yet,
+ * so only that transition needs the card form.
+ */
+const needsPaymentMethod = computed(
+  () => preview.value?.transition_type === 'new_subscription'
+)
+
+const publishableKey = computed(() => stripeKey.value ?? '')
 
 const quoting = computed(() => loading.value && summary.value === undefined)
 
@@ -164,6 +194,7 @@ const returnLink = computed(() => {
   const url = buildReturnUrl({
     target: arrival.returnTo,
     environment: BILLING_WEB_ENV,
+    workspace: billedWorkspace(),
     result: phase.value === 'success' ? 'success' : undefined,
     reference: checkout.projection.value.operationId
   })
@@ -174,26 +205,41 @@ const returnLink = computed(() => {
 function resultUrl(): string | undefined {
   const arrival = entry.value
   if (!arrival) return undefined
+  const workspaceId = billedWorkspace()
   const built = buildBillingEntryUrl({
     billingOrigin: window.location.origin,
     intent: 'result',
     product: arrival.product,
     returnTo: arrival.returnTo,
-    ...(arrival.plan === undefined ? {} : { plan: arrival.plan })
+    ...(arrival.plan === undefined ? {} : { plan: arrival.plan }),
+    ...(arrival.teamCreditStopId === undefined
+      ? {}
+      : { teamCreditStopId: arrival.teamCreditStopId }),
+    ...(workspaceId === undefined ? {} : { workspaceId })
   })
   return built.status === 'ok' ? built.url.href : undefined
 }
 
-/** The quote's identity travels with the charge, so the server prices what the customer saw. */
+/**
+ * The quote's identity travels with the charge, so the server prices what
+ * the customer saw. A plan change on an existing subscription (see
+ * `needsPaymentMethod`) has no `confirmationToken` — the server charges the
+ * saved method on file instead.
+ */
 function subscribeRequest(
   plan: string,
-  confirmationToken: string,
+  confirmationToken: string | undefined,
   quoted: SubscriptionPreview
 ): SubscribeInput {
   const returnUrl = resultUrl()
   return {
     plan_slug: plan,
-    confirmation_token: confirmationToken,
+    ...(confirmationToken === undefined
+      ? {}
+      : { confirmation_token: confirmationToken }),
+    ...(teamCreditStopId.value === undefined
+      ? {}
+      : { team_credit_stop_id: teamCreditStopId.value }),
     ...(quoted.quote_id === undefined ? {} : { quote_id: quoted.quote_id }),
     ...(quoted.quote_version === undefined
       ? {}
@@ -206,7 +252,7 @@ function subscribeRequest(
   }
 }
 
-async function confirm(confirmationToken: string) {
+async function confirm(confirmationToken?: string) {
   const quoted = preview.value
   if (planSlug.value === undefined || !quoted || loading.value) return
   submitFailure.value = undefined
@@ -302,33 +348,26 @@ const subscriptionPath = computed(() => ({
             reason-class="m-0 text-sm text-destructive-background"
             safety-class="m-0 text-sm text-muted-foreground"
             actions-class="mt-2 flex gap-2"
-            action-class="h-11 cursor-pointer rounded-lg bg-base-foreground px-5 font-semibold text-base-background"
+            action-class="inline-flex h-11 cursor-pointer items-center justify-center rounded-lg bg-base-foreground px-5 font-semibold text-base-background"
             @retry="checkout.reset()"
             @cancel="checkout.cancel()"
             @continue-verification="checkout.continueVerification()"
           />
-          <StripePaymentForm
+          <CheckoutPayment
             v-else
+            v-model:confirmed="reactivationConfirmed"
+            :needs-payment-method="needsPaymentMethod"
             :publishable-key="publishableKey"
             :amount-cents="amountCents"
             :currency="currency"
             :copy="paymentCopy"
             :payment-method-configuration-id="paymentMethodConfigurationId"
-            :is-loading="checkout.submitting.value"
+            :submitting="checkout.submitting.value"
             :can-submit="canSubmit"
+            :reactivation-required="reactivationRequired"
+            :failure="submitFailure"
             @confirm="confirm"
-          >
-            <template #submit="{ disabled, loading: submitting }">
-              <CheckoutSubmit
-                v-model:confirmed="reactivationConfirmed"
-                :amount-cents="amountCents"
-                :disabled="disabled"
-                :submitting="submitting"
-                :reactivation-required="reactivationRequired"
-                :failure="submitFailure"
-              />
-            </template>
-          </StripePaymentForm>
+          />
         </template>
         <template #done>
           <a

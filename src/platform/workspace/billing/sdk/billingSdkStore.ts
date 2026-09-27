@@ -7,6 +7,7 @@
  */
 import type {
   BillingOperationState,
+  BillingEventsReadOptions,
   BillingOperationTelemetryEvent,
   BillingResult,
   CapabilitiesReadOptions,
@@ -20,7 +21,7 @@ import {
   validateActionUrl
 } from '@comfyorg/account-core/billing'
 import { loadStripe } from '@stripe/stripe-js/pure'
-import { useEventListener } from '@vueuse/core'
+import { until, useEventListener } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, shallowRef } from 'vue'
 
@@ -28,12 +29,14 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type {
   BillingBalanceResponse,
   BillingCapabilitiesResponse,
+  BillingEventsResponse,
   BillingPlansResponse,
   BillingStatusResponse,
   CreateTopupResponse,
@@ -69,10 +72,34 @@ import {
 } from './topupOperationView'
 
 type ProgressKind = 'processing' | 'action'
+
+const PROGRESS_SUMMARY = {
+  topup: {
+    processing: 'billingOperation.topupProcessing',
+    action: 'billingOperation.topupActionRequired'
+  },
+  subscription: {
+    processing: 'billingOperation.subscriptionProcessing',
+    action: 'billingOperation.subscriptionActionRequired'
+  }
+} as const satisfies Record<string, Record<ProgressKind, string>>
 type ToastMessage = Parameters<ReturnType<typeof useToastStore>['add']>[0]
 
+/**
+ * The server's `/features` value when configured, this deployment's
+ * build-time fallback otherwise. `remoteConfig` already carries this
+ * document — fetched once at boot — so reading it here costs no extra
+ * request; a non-string or empty server value is treated as absent.
+ */
+function resolvedStripePublishableKey(): string | undefined {
+  const fromServer = remoteConfig.value.stripe_publishable_key
+  return typeof fromServer === 'string' && fromServer !== ''
+    ? fromServer
+    : import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
+}
+
 async function loadChallengePort(): Promise<EmbeddedChallengePort | undefined> {
-  const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
+  const publishableKey = resolvedStripePublishableKey()
   const stripe = publishableKey
     ? await loadStripe(publishableKey).catch(() => null)
     : null
@@ -105,8 +132,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     workspaceId: () => workspaceAuthStore.getUnifiedMintWorkspaceId(),
     pointerStorage: sessionStorage,
     embeddedCheckoutAvailable: () =>
-      flags.embeddedCheckoutEnabled &&
-      Boolean(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY),
+      flags.embeddedCheckoutEnabled && Boolean(resolvedStripePublishableKey()),
     hostedDestination: () => flags.hostedBillingDestination,
     onTelemetry: reportTelemetry,
     challengePort: loadChallengePort
@@ -208,7 +234,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
 
   function onTopupChanged(state: BillingOperationState) {
     if (state.phase === 'pending') {
-      syncProgressToast(state)
+      syncProgressToast(state, 'topup')
       void driveRequiredChallenge(state)
       return
     }
@@ -225,22 +251,21 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     if (resumedOperations.delete(state.id)) void settleResumed(state)
   }
 
-  function syncProgressToast(state: PendingBillingOperation) {
-    const kind: ProgressKind =
+  function syncProgressToast(
+    state: PendingBillingOperation,
+    kind: keyof typeof PROGRESS_SUMMARY
+  ) {
+    const progress: ProgressKind =
       state.actionUrl === undefined ? 'processing' : 'action'
     const current = progressToasts.get(state.id)
-    if (current?.kind === kind) return
-    if (current) toastStore.remove(current.message)
+    if (current?.kind === progress) return
+    clearProgressToast(state.id)
     const message: ToastMessage = {
-      severity: kind === 'action' ? 'warn' : 'info',
-      summary: t(
-        kind === 'action'
-          ? 'billingOperation.topupActionRequired'
-          : 'billingOperation.topupProcessing'
-      ),
+      severity: progress === 'action' ? 'warn' : 'info',
+      summary: t(PROGRESS_SUMMARY[kind][progress]),
       group: 'billing-operation'
     }
-    progressToasts.set(state.id, { kind, message })
+    progressToasts.set(state.id, { kind: progress, message })
     toastStore.add(message)
   }
 
@@ -257,9 +282,14 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
   // operation waits on a customer who was never shown anything.
   function onSubscriptionChanged(state: BillingOperationState) {
     if (state.phase !== 'pending') {
+      clearProgressToast(state.id)
       offeredActions.delete(state.id)
+      if (resumedOperations.delete(state.id)) {
+        void settleResumedSubscription(state)
+      }
       return
     }
+    if (state.kind === 'subscription') syncProgressToast(state, 'subscription')
     void driveRequiredChallenge(state)
     openHostedAction(state)
   }
@@ -314,6 +344,36 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
       toastStore.add({
         severity: 'error',
         summary: t('billingOperation.topupFailed'),
+        detail: declineDetail(state.declineReason),
+        life: 7000
+      })
+    }
+  }
+
+  // A subscribe this tab reattached to after a reload has no checkout left to
+  // report it, so it settles the way the poller settled it. Only a subscribe
+  // is ever reattached: the status names a pending subscription or top-up.
+  async function settleResumedSubscription(state: BillingOperationState) {
+    if (state.phase === 'succeeded') {
+      await refreshAfterSubscriptionChange()
+      toastStore.add({
+        severity: 'success',
+        summary: t('billingOperation.subscriptionSuccess'),
+        life: 5000
+      })
+      return
+    }
+    if (state.phase === 'timed_out') {
+      toastStore.add({
+        severity: 'error',
+        summary: t('billingOperation.subscriptionTimeout')
+      })
+      return
+    }
+    if (state.phase === 'failed') {
+      toastStore.add({
+        severity: 'error',
+        summary: t('billingOperation.subscriptionFailed'),
         detail: declineDetail(state.declineReason),
         life: 7000
       })
@@ -422,6 +482,26 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     void sdk.lifecycle.recover()
   }
 
+  /**
+   * Adopt the operation the server reports pending and resolve once it settles,
+   * for the caller that has something to decide on the outcome.
+   * `lifecycle.recover()` resolves at adoption, not at settlement, and it
+   * adopts whatever the server names — so an id other than the one asked for
+   * means the pointer this caller held is stale.
+   */
+  async function recoverPendingOperation(
+    opId: string
+  ): Promise<BillingOperationRecordView | undefined> {
+    const adopted = await sdk.lifecycle.recover()
+    if (adopted.status === 'error' || adopted.value?.id !== opId) {
+      return undefined
+    }
+    const record = computed(() => getOperation(opId))
+    return until(record).toMatch(
+      (view) => view === undefined || view.status !== 'pending'
+    )
+  }
+
   // The readers the commands above already refresh after a success, exposed
   // so the panels read the state the rail settled rather than a second read
   // through the workspace client.
@@ -468,6 +548,22 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
       : result
   }
 
+  // The one read with nothing to project: the events response carries no
+  // int64, so the decoded page already holds the numbers the host's type
+  // says it does. Only the scope and read instant the snapshot adds are
+  // dropped here.
+  async function readEvents(
+    options?: BillingEventsReadOptions
+  ): Promise<BillingResult<BillingEventsResponse>> {
+    const result = await sdk.events.read(options)
+    if (result.status === 'error') return result
+    const { events, page, limit, total, totalPages } = result.value
+    return {
+      status: 'ok',
+      value: { events: [...events], page, limit, total, totalPages }
+    }
+  }
+
   async function retryPaymentAuthentication(
     operationId: string
   ): Promise<boolean> {
@@ -488,6 +584,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     isSettingUp,
     subscriptionActionOperation,
     getOperation,
+    recoverPendingOperation,
     createTopup,
     subscribe,
     previewSubscribe,
@@ -500,6 +597,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     readPlans,
     readCapabilities,
     readPaymentMethods,
+    readEvents,
     retryPaymentAuthentication,
     dismissOperation
   }

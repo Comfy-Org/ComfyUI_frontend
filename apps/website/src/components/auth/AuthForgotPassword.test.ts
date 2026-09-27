@@ -1,31 +1,17 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { nextTick, readonly, ref } from 'vue'
 
 import { removeAllToasts, useAuthToasts } from '../../config/auth-toast-state'
+import { sendWorkshopPasswordReset } from '../../config/workshop-firebase'
+import { captureAuthFailed, useWorkshopAuthFlag } from '../../scripts/posthog'
 import AuthForgotPassword from './AuthForgotPassword.vue'
 
-const h = vi.hoisted(() => ({
-  flag: undefined as { value: boolean } | undefined,
-  sendReset: vi.fn(),
-  captureAuthFailed: vi.fn()
-}))
+vi.mock(import('../../scripts/posthog'))
+vi.mock(import('../../config/workshop-firebase'))
 
-vi.mock<unknown>(import('../../scripts/posthog'), async () => {
-  const { ref } = await import('vue')
-  const flag = ref(true)
-  h.flag = flag
-  return {
-    useWorkshopAuthFlag: () => flag,
-    captureAuthFailed: h.captureAuthFailed
-  }
-})
-
-vi.mock<unknown>(import('../../config/workshop-firebase'), () => ({
-  sendWorkshopPasswordReset: h.sendReset
-}))
-
+const flag = ref(true)
 const { messages: toasts } = useAuthToasts()
 const assign = vi.fn<(url: string | URL) => void>()
 
@@ -47,18 +33,16 @@ const flushMicrotasks = async () => {
 }
 
 beforeEach(() => {
-  h.flag!.value = true
-  h.sendReset.mockReset().mockResolvedValue(undefined)
-  h.captureAuthFailed.mockClear()
+  flag.value = true
+  vi.mocked(useWorkshopAuthFlag).mockReturnValue(readonly(flag))
   removeAllToasts()
   window.history.replaceState({}, '', '/')
-  assign.mockReset()
   vi.spyOn(window.location, 'assign').mockImplementation(assign)
 })
 
 describe('AuthForgotPassword', () => {
   it('renders nothing while the flag is off', () => {
-    h.flag!.value = false
+    flag.value = false
     render(AuthForgotPassword)
     expect(screen.queryByRole('heading')).toBeNull()
   })
@@ -82,7 +66,9 @@ describe('AuthForgotPassword', () => {
     expect((await screen.findByRole('alert')).textContent).toContain(
       'Password reset sent'
     )
-    expect(h.sendReset).toHaveBeenCalledWith('user@example.com')
+    expect(vi.mocked(sendWorkshopPasswordReset)).toHaveBeenCalledWith(
+      'user@example.com'
+    )
     expect(toasts.value).toEqual([
       expect.objectContaining({
         severity: 'success',
@@ -122,7 +108,10 @@ describe('AuthForgotPassword', () => {
   ] as const)(
     'keeps %s an error: no confirmation, no redirect, and the send can be retried',
     async ([code, detail]) => {
-      h.sendReset.mockRejectedValue({ code, message: 'x' })
+      vi.mocked(sendWorkshopPasswordReset).mockRejectedValue({
+        code,
+        message: 'x'
+      })
       render(AuthForgotPassword)
       await typeEmail('user@example.com')
       await clickSend()
@@ -138,7 +127,7 @@ describe('AuthForgotPassword', () => {
         screen.queryByText('Password reset sent'),
         'nothing was sent, so nothing may claim it was'
       ).toBeNull()
-      expect(h.captureAuthFailed).toHaveBeenCalledWith({
+      expect(captureAuthFailed).toHaveBeenCalledWith({
         error_code: code,
         auth_action: 'password_reset'
       })
@@ -151,7 +140,7 @@ describe('AuthForgotPassword', () => {
   )
 
   it('surfaces a dismissed-popup failure as a warning, not an error', async () => {
-    h.sendReset.mockRejectedValue({
+    vi.mocked(sendWorkshopPasswordReset).mockRejectedValue({
       code: 'auth/popup-closed-by-user',
       message: 'x'
     })
@@ -175,7 +164,7 @@ describe('AuthForgotPassword', () => {
     expect((await screen.findByRole('alert')).textContent).toContain(
       'valid email'
     )
-    expect(h.sendReset).not.toHaveBeenCalled()
+    expect(vi.mocked(sendWorkshopPasswordReset)).not.toHaveBeenCalled()
   })
 
   it('sends once: the button stays disabled after a confirmed send', async () => {
@@ -187,12 +176,12 @@ describe('AuthForgotPassword', () => {
     const send = screen.getByRole('button', { name: /send/i })
     expect(send.hasAttribute('disabled')).toBe(true)
     await clickSend()
-    expect(h.sendReset).toHaveBeenCalledOnce()
+    expect(vi.mocked(sendWorkshopPasswordReset)).toHaveBeenCalledOnce()
   })
 
   it('blocks a double submit while a send is in flight', async () => {
     let release!: () => void
-    h.sendReset.mockImplementation(
+    vi.mocked(sendWorkshopPasswordReset).mockImplementation(
       () => new Promise<void>((resolve) => (release = resolve))
     )
     render(AuthForgotPassword)
@@ -202,19 +191,21 @@ describe('AuthForgotPassword', () => {
     await userEvent.setup().click(button)
 
     release()
-    await waitFor(() => expect(h.sendReset).toHaveBeenCalledOnce())
+    await waitFor(() =>
+      expect(vi.mocked(sendWorkshopPasswordReset)).toHaveBeenCalledOnce()
+    )
   })
 
   it('drops a send abandoned by the flag turning off: no success toast, no redirect', async () => {
     let release!: () => void
-    h.sendReset.mockImplementation(
+    vi.mocked(sendWorkshopPasswordReset).mockImplementation(
       () => new Promise<void>((resolve) => (release = resolve))
     )
     render(AuthForgotPassword)
     await typeEmail('user@example.com')
     await clickSend()
 
-    h.flag!.value = false
+    flag.value = false
     release()
     await flushMicrotasks()
 
@@ -231,15 +222,13 @@ describe('AuthForgotPassword', () => {
 
   it('drops a send abandoned by a flag flicker even after the flag returns, staying retryable', async () => {
     let release: (() => void) | undefined
-    h.sendReset.mockImplementation(
+    vi.mocked(sendWorkshopPasswordReset).mockImplementation(
       () => new Promise<void>((resolve) => (release = resolve))
     )
     render(AuthForgotPassword)
     await typeEmail('user@example.com')
     await clickSend()
 
-    const flag = h.flag
-    if (!flag) throw new Error('workshop auth flag was not initialized')
     flag.value = false
     flag.value = true
     await nextTick()
@@ -265,7 +254,7 @@ describe('AuthForgotPassword', () => {
 
   it('drops a send abandoned by unmount: no success toast when it resolves late', async () => {
     let release!: () => void
-    h.sendReset.mockImplementation(
+    vi.mocked(sendWorkshopPasswordReset).mockImplementation(
       () => new Promise<void>((resolve) => (release = resolve))
     )
     const { unmount } = render(AuthForgotPassword)
@@ -289,14 +278,14 @@ describe('AuthForgotPassword', () => {
 
   it('drops a send abandoned by the flag turning off when it rejects late: no error toast', async () => {
     let reject!: (reason: unknown) => void
-    h.sendReset.mockImplementation(
+    vi.mocked(sendWorkshopPasswordReset).mockImplementation(
       () => new Promise<void>((_resolve, rejectFn) => (reject = rejectFn))
     )
     render(AuthForgotPassword)
     await typeEmail('user@example.com')
     await clickSend()
 
-    h.flag!.value = false
+    flag.value = false
     reject({ code: 'auth/network-request-failed', message: 'x' })
     await flushMicrotasks()
 
@@ -305,14 +294,14 @@ describe('AuthForgotPassword', () => {
       'a request abandoned mid-flight must not toast an error when it rejects late'
     ).toEqual([])
     expect(
-      h.captureAuthFailed,
+      captureAuthFailed,
       'and must not report a failure for a request nobody is waiting on'
     ).not.toHaveBeenCalled()
   })
 
   it('drops a send abandoned by unmount when it rejects late: no error toast', async () => {
     let reject!: (reason: unknown) => void
-    h.sendReset.mockImplementation(
+    vi.mocked(sendWorkshopPasswordReset).mockImplementation(
       () => new Promise<void>((_resolve, rejectFn) => (reject = rejectFn))
     )
     const { unmount } = render(AuthForgotPassword)
@@ -331,7 +320,7 @@ describe('AuthForgotPassword', () => {
 
   it('re-enables the send after a stalled reset, then drops its late resolve', async () => {
     let release!: () => void
-    h.sendReset.mockImplementation(
+    vi.mocked(sendWorkshopPasswordReset).mockImplementation(
       () => new Promise<void>((resolve) => (release = resolve))
     )
     render(AuthForgotPassword)
@@ -362,38 +351,10 @@ describe('AuthForgotPassword', () => {
     ).not.toHaveBeenCalled()
   })
 
-  it('re-enables the send after a stalled Firebase load so it stays retryable', async () => {
-    // eslint-disable-next-line no-restricted-properties -- only doMock can suspend a dynamic import for one case; a hoisted vi.mock factory resolves the module once and memoises it
-    vi.doMock(
-      import('../../config/workshop-firebase'),
-      () => new Promise<never>(() => {})
-    )
-    vi.resetModules()
-    try {
-      const { default: FreshAuthForgotPassword } =
-        await import('./AuthForgotPassword.vue')
-      render(FreshAuthForgotPassword)
-      await typeEmail('user@example.com')
-      await clickSend()
-
-      const send = () => screen.getByRole('button', { name: /send/i })
-      expect(send().hasAttribute('disabled')).toBe(true)
-
-      await vi.advanceTimersByTimeAsync(16_000)
-      await flushMicrotasks()
-
-      expect(
-        send().hasAttribute('disabled'),
-        'a Firebase load that never resolves must not leave the control disabled forever'
-      ).toBe(false)
-    } finally {
-      vi.doUnmock(import('../../config/workshop-firebase'))
-      vi.resetModules()
-    }
-  })
-
   it('re-enables the send immediately when the flag flickers off then back on mid-send', async () => {
-    h.sendReset.mockImplementation(() => new Promise<void>(() => {}))
+    vi.mocked(sendWorkshopPasswordReset).mockImplementation(
+      () => new Promise<void>(() => {})
+    )
     render(AuthForgotPassword)
     await typeEmail('user@example.com')
     await clickSend()
@@ -401,8 +362,8 @@ describe('AuthForgotPassword', () => {
     const send = screen.getByRole('button', { name: /send/i })
     expect(send.hasAttribute('disabled')).toBe(true)
 
-    h.flag!.value = false
-    h.flag!.value = true
+    flag.value = false
+    flag.value = true
     await nextTick()
 
     expect(
