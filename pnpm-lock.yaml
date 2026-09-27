@@ -1263,6 +1263,12 @@ importers:
       '@comfyorg/account-core':
         specifier: workspace:^
         version: link:../account-core
+      '@comfyorg/design-system':
+        specifier: workspace:^
+        version: link:../design-system
+      '@comfyorg/tailwind-utils':
+        specifier: workspace:^
+        version: link:../tailwind-utils
     devDependencies:
       '@stripe/stripe-js':
         specifier: 'catalog:'

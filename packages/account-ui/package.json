@@ -88,7 +88,9 @@
     "typecheck": "tsx ../../scripts/vue-tsc-native.ts --noEmit"
   },
   "dependencies": {
-    "@comfyorg/account-core": "workspace:^"
+    "@comfyorg/account-core": "workspace:^",
+    "@comfyorg/design-system": "workspace:^",
+    "@comfyorg/tailwind-utils": "workspace:^"
   },
   "devDependencies": {
     "@stripe/stripe-js": "catalog:",
