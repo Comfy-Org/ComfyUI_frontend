@@ -117,15 +117,6 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-const teamWorkspaceStoreMocks = reactive({
-  initState: 'uninitialized' as 'uninitialized' | 'ready' | 'error',
-  activeWorkspaceId: null as string | null
-})
-
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => teamWorkspaceStoreMocks
-}))
-
 type GraphChangedHandler = (() => void) | null
 
 const mocks = vi.hoisted(() => {
