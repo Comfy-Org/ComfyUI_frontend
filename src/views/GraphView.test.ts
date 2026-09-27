@@ -126,6 +126,10 @@ vi.mock<unknown>(
   () => stubModule
 )
 vi.mock<unknown>(
+  import('@/platform/assets/components/AssetBrowserModal.vue'),
+  () => stubModule
+)
+vi.mock<unknown>(
   import('@/components/builder/BuilderToolbar.vue'),
   () => stubModule
 )
