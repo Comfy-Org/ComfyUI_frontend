@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 
 import type { UUID } from '@/utils/uuid'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
@@ -758,19 +758,6 @@ describe('useWidgetValueStore', () => {
     })
   })
 
-  /**
-   * Extracted from the CRDT-STORES-0036 stack (PRs #18435..#18506), which is
-   * parked: it made the semantic stores projections of a per-root `Y.Doc`,
-   * deepening store-first apply rather than removing it. Its tests are almost
-   * all about that projection -- document key order, owner resolution, root
-   * membership -- and none of that is carried over.
-   *
-   * What is carried over is the question the stack answered about the user: a
-   * remote write and a local edit racing on one widget must not leave the user
-   * looking at the staler of the two. Written against the store's own public
-   * API rather than any document shape, so it keeps its meaning once remote
-   * ops apply through the graph API.
-   */
   describe('a remote write racing a local edit on the same widget', () => {
     const remote: RemoteMutationContext = {
       source: 'agent-remote',
@@ -780,9 +767,9 @@ describe('useWidgetValueStore', () => {
 
     it('shows the agent value and drops the local-dirty mark', () => {
       const store = useWidgetValueStore()
-      const registered = store.registerWidget(seedA, state('number', 1))!
+      const registered = store.registerWidget(seedA, state('number', 1))
+      assert.exists(registered)
 
-      // The user types while a frame is in flight.
       registered.value = 2
       expect(store.isLocallyDirty(seedA)).toBe(true)
 
@@ -794,7 +781,8 @@ describe('useWidgetValueStore', () => {
 
     it('a local edit after the remote write is the fresher value and is dirty again', () => {
       const store = useWidgetValueStore()
-      const registered = store.registerWidget(seedA, state('number', 1))!
+      const registered = store.registerWidget(seedA, state('number', 1))
+      assert.exists(registered)
 
       store.setValue(seedA, 42, remote)
       registered.value = 7
@@ -804,12 +792,9 @@ describe('useWidgetValueStore', () => {
     })
 
     it('a remote write landing on the value already shown still clears the mark', () => {
-      // The short-circuit case: the user typed the same value the agent was
-      // about to send. The write reports nothing changed, but the mark must
-      // still clear, or the widget stays dirty forever against a value the
-      // host already agrees with.
       const store = useWidgetValueStore()
-      const registered = store.registerWidget(seedA, state('number', 1))!
+      const registered = store.registerWidget(seedA, state('number', 1))
+      assert.exists(registered)
 
       registered.value = 42
       expect(store.isLocallyDirty(seedA)).toBe(true)
@@ -823,14 +808,12 @@ describe('useWidgetValueStore', () => {
     it('does not touch the same widget name on another graph', () => {
       const store = useWidgetValueStore()
       store.registerWidget(seedA, state('number', 1))
-      const other = store.registerWidget(seedB, state('number', 1))!
+      const other = store.registerWidget(seedB, state('number', 1))
+      assert.exists(other)
       other.value = 5
 
       store.setValue(seedA, 42, remote)
 
-      // Confirm the write landed before concluding anything from the other
-      // graph being untouched: a `setValue` that silently did nothing would
-      // satisfy the isolation assertions below without isolating anything.
       expect(store.getWidget(seedA)?.value).toBe(42)
 
       expect(store.getWidget(seedB)?.value).toBe(5)
