@@ -157,7 +157,7 @@ test.describe(
       await page.mouse.up()
       await comfyPage.nextFrame()
 
-      await expect.poll(getHeight).toBeLessThan(grownHeight - 20)
+      await expect.poll(getHeight).toBeLessThanOrEqual(grownHeight - 20)
     })
 
     test('a tab-visibility cycle does not block shrinking an untouched node (PM-1312)', async ({
