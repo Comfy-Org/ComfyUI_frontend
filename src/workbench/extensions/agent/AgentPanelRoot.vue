@@ -71,11 +71,13 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import {
   adoptSharedOnboardingFlag,
   hasSeenCoach,
+  resetCoach,
   scopedOnboardingKey,
   trackCoachDeferral
 } from './composables/agent/useOnboarding'
 
 import AgentPanel from './components/agent/AgentPanel.vue'
+import { agentBoundWorkflowIdKey } from './components/agent/agentBoundWorkflowId'
 import AgentGraphActivityBar from './components/AgentGraphActivityBar.vue'
 import OnboardingCoach from './components/agent/OnboardingCoach.vue'
 import {
@@ -339,7 +341,10 @@ const onboardingKey = computed(() =>
 watch(
   onboardingKey,
   (key) => {
-    if (key) adoptSharedOnboardingFlag(key)
+    // Only carry the pre-consent, device-wide flag into a scope that had
+    // already accepted consent when it loaded. A newly consenting scope has
+    // not seen this scoped tour yet and should receive it once.
+    if (key && consentAccepted.value) adoptSharedOnboardingFlag(key)
   },
   { immediate: true }
 )
@@ -358,6 +363,14 @@ watch(
   },
   { immediate: true }
 )
+const coachRef = ref<InstanceType<typeof OnboardingCoach>>()
+function restartCoach(): void {
+  // Take-the-tour stays clickable while the coach is deferred by App Mode, and
+  // there is no instance to hand the transition to. Clearing the persisted flag
+  // makes the replay wait for the mount instead of being dropped.
+  if (coachRef.value) coachRef.value.restart()
+  else if (onboardingKey.value) resetCoach(onboardingKey.value)
+}
 const graphMutationsByWorkflow = new Map<
   string,
   ReturnType<typeof createGraphMutations>
@@ -743,6 +756,11 @@ const {
   }
 })
 
+provide(
+  agentBoundWorkflowIdKey,
+  computed(() => boundWorkflowId.value ?? undefined)
+)
+
 const isSending = computed(
   () => sessionIsSending.value || composerStore.submission?.phase === 'pending'
 )
@@ -785,7 +803,8 @@ const {
       }
     },
     onReset: graphActivity.resetWorkflow
-  }
+  },
+  () => workflowStore.activeWorkflow?.changeTracker ?? null
 )
 // The bound document's serialized root graph id, independent of what is
 // currently on the canvas: `beforeLoadNewGraph` persists the outgoing
@@ -805,6 +824,8 @@ const mintPortWiring = attachMintPortWiring({
   layoutChanges: (listener) => layoutStore.onChange(listener),
   localActorPrefix: ACTOR_CONFIG.USER_PREFIX,
   getGraph: () => (app.isGraphReady ? app.rootGraph : null),
+  isRestoringState: () =>
+    workflowStore.activeWorkflow?.changeTracker?._restoringState === true,
   boundRootGraphId
 })
 const isCrdtDevPanelEnabled = resolveDebugPanelEnabled(
@@ -1224,6 +1245,7 @@ const coachSteps = computed<CoachStep[]>(() => [
   {
     target: '#agent-chat-history',
     placement: 'left-start',
+    tooltip: t('agent.showChatHistory'),
     title: t('agent.coachHistoryTitle'),
     body: t('agent.coachHistoryBody')
   }
@@ -1638,6 +1660,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       @show-target="onShowTarget"
       @paywall-action="onPaywallAction"
       @new-chat="onNewChat('new_chat_button')"
+      @start-tour="restartCoach"
       @toggle-size="agentPanelStore.toggleMaximize()"
       @close="onClosePanel"
       @open-history="refreshHistory()"
@@ -1653,6 +1676,8 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
     </AgentPanel>
     <OnboardingCoach
       v-if="consentAccepted && onboardingKey && coachDeferredBy === null"
+      :key="onboardingKey"
+      ref="coachRef"
       :steps="coachSteps"
       :storage-key="onboardingKey"
     />
