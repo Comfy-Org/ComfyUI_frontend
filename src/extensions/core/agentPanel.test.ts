@@ -563,6 +563,12 @@ describe('AgentPanel extension flag gate', () => {
         await nextTick()
         await flush()
 
+        agentFlagEnabled.value = false
+        await nextTick()
+        agentFlagEnabled.value = true
+        await nextTick()
+        await flush()
+
         expect(await notOffered()).toHaveBeenCalledExactlyOnceWith({ reason })
         expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
       }

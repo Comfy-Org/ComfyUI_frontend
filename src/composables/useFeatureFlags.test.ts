@@ -1224,9 +1224,9 @@ describe('useFeatureFlags', () => {
       expect(flags.agentInAppExperienceEnabled).toBe(false)
     })
 
-    it('never reads the grant from persistent storage', () => {
-      localStorage.setItem('agent-in-app-experience', 'true')
+    it('treats an explicitly revoked grant as off during a refresh failure', () => {
       remoteConfigState.value = 'error'
+      sessionAgentGrant.value = false
 
       const { flags } = useFeatureFlags()
       expect(flags.agentInAppExperienceEnabled).toBe(false)

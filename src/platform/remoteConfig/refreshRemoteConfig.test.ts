@@ -223,7 +223,7 @@ describe('refreshRemoteConfig', () => {
       expect(cachedLegacyBillingMigrationEnabled.value).toBeUndefined()
     })
 
-    it("records this session's grant from an authenticated load", async () => {
+    it("records this session's grant without persisting it anywhere", async () => {
       sessionAgentGrant.value = undefined
       vi.mocked(api.fetchApi).mockResolvedValue(
         mockSuccessResponse({ 'agent-in-app-experience': true })
@@ -232,6 +232,8 @@ describe('refreshRemoteConfig', () => {
       await refreshRemoteConfig()
 
       expect(sessionAgentGrant.value).toBe(true)
+      expect(localStorage.getItem('agent-in-app-experience')).toBeNull()
+      expect(sessionStorage.getItem('agent-in-app-experience')).toBeNull()
     })
 
     it('keeps this session granted when the poll fails transiently', async () => {

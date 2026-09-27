@@ -250,11 +250,11 @@ host document updates ─> follower ─> frontend stores / canvas
 human semantic operations ─> host applier (never raw shared-doc writes)
 ```
 
-`src/extensions/core/agentPanel.ts` currently obtains the product flag from
-`utils/postHogFlagSource.ts`. It retains the existing development-mode override
-and settles the panel gate separately from flag enablement. The general
-`useFeatureFlags` pipeline exists, but is not yet the agent flag's source on
-main. [The pending feature-pipeline migration](https://github.com/Comfy-Org/ComfyUI_frontend/pull/16208)
+`src/extensions/core/agentPanel.ts` now obtains the product flag from the
+general `useFeatureFlags` pipeline, backed by the server-evaluated `/features`
+payload; `utils/postHogFlagSource.ts` has been removed. It retains the existing
+development-mode override and settles the panel gate separately from flag
+enablement. [The pending feature-pipeline migration](https://github.com/Comfy-Org/ComfyUI_frontend/pull/16208)
 changes that producer; the follower continues to consume the same store rather
 than adding a second PostHog or server-feature reader.
 
