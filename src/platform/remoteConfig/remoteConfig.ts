@@ -1,6 +1,6 @@
 import { useStorage } from '@vueuse/core'
 
-import type { ServerFeatureFlag } from '@/composables/useFeatureFlags'
+import type { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
 
 /**
  * Remote configuration service
