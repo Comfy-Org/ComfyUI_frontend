@@ -187,6 +187,48 @@ describe('reduceBillingOperation', () => {
     ).toBeUndefined()
   })
 
+  it.for(['card_declined', 'generic'] as const)(
+    "reads a %s settle after this tab's failed challenge as the failed authentication",
+    (reason) => {
+      const challenged = polled(pending(), {
+        authentication_state: 'requires_action',
+        payment_intent_client_secret: 'pi_secret'
+      })
+      const challengeFailed = reduceBillingOperation(
+        reduceBillingOperation(challenged, { type: 'challenge_started' }),
+        { type: 'challenge_settled', outcome: 'failed' }
+      )
+
+      const settled = polled(challengeFailed, {
+        status: 'failed',
+        decline_reason: reason
+      })
+
+      expect(settled).toMatchObject({
+        phase: 'failed',
+        declineReason: 'authentication_failed'
+      })
+    }
+  )
+
+  it('keeps a specific decline reason the server gives after a failed challenge', () => {
+    const challenged = polled(pending(), {
+      authentication_state: 'requires_action',
+      payment_intent_client_secret: 'pi_secret'
+    })
+    const challengeFailed = reduceBillingOperation(
+      reduceBillingOperation(challenged, { type: 'challenge_started' }),
+      { type: 'challenge_settled', outcome: 'failed' }
+    )
+
+    expect(
+      polled(challengeFailed, {
+        status: 'failed',
+        decline_reason: 'insufficient_funds'
+      })
+    ).toMatchObject({ declineReason: 'insufficient_funds' })
+  })
+
   it('reads a retryable failure served without a reason as a generic decline', () => {
     const failed = polled(pending(), {
       authentication_state: 'failed_retryable'
