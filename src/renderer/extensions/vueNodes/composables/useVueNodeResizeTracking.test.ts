@@ -399,8 +399,8 @@ describe('useVueNodeResizeTracking', () => {
       // entry while hidden (e.g. a layout pass unrelated to either node's
       // own content), even though only the touched node's autogrow widget
       // is actually mid-resize.
-      vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden')
-      document.dispatchEvent(new Event('visibilitychange'))
+      if (!testState.visibility) throw new Error('visibility ref not initialized')
+      testState.visibility.value = 'hidden'
       await nextTick()
 
       const grownTouched = createResizeEntry({
@@ -423,8 +423,7 @@ describe('useVueNodeResizeTracking', () => {
       vi.clearAllMocks()
 
       // Tab becomes visible again.
-      vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible')
-      document.dispatchEvent(new Event('visibilitychange'))
+      testState.visibility.value = 'visible'
       await nextTick()
       vi.clearAllMocks()
 
