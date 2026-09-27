@@ -1,0 +1,54 @@
+---
+import ProductCard from '../../common/ProductCard.vue'
+import PricingFreeBanner from '../../pricing/PricingFreeBanner.vue'
+import type { Locale } from '../../../i18n/translations'
+
+interface ConversionCard {
+  title: string
+  description: string
+  cta: string
+  href: string
+  bg: string
+}
+
+interface Props {
+  heading: string
+  locale: Locale
+  bannerHref: string
+  cards: ConversionCard[]
+}
+
+const { heading, locale, bannerHref, cards } = Astro.props
+---
+
+<section
+  aria-labelledby="model-conversion-heading"
+  class="mx-auto max-w-10xl px-6 py-14 md:px-10 xl:px-30"
+>
+  <h2 id="model-conversion-heading" class="sr-only">{heading}</h2>
+  <PricingFreeBanner
+    titleKey="pricing.banner.title"
+    subtitleKey="pricing.banner.subtitle"
+    cta={{
+      labelKey: 'pricing.banner.cta',
+      href: bannerHref,
+      target: '_blank',
+    }}
+    {locale}
+  />
+  <div
+    class="bg-transparency-white-t4 rounded-5xl grid gap-4 p-4 sm:grid-cols-2 xl:grid-cols-4 xl:p-2"
+  >
+    {
+      cards.map((card) => (
+        <ProductCard
+          title={card.title}
+          description={card.description}
+          cta={card.cta}
+          href={card.href}
+          bg={card.bg}
+        />
+      ))
+    }
+  </div>
+</section>

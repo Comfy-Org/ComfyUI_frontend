@@ -1,7 +1,8 @@
 import generatedModels from './generated-models.json'
 import { modelMetadata } from './model-metadata'
+import type { ModelCategory } from './modelCategories'
 
-type ModelDirectory =
+export type ModelDirectory =
   | 'diffusion_models'
   | 'checkpoints'
   | 'loras'
@@ -34,7 +35,16 @@ export interface Model {
   readonly hubSlug?: string
   readonly featured: boolean
   readonly workflowCount: number
+  readonly categories: readonly ModelCategory[]
+  readonly workflowPreviews: readonly ModelWorkflowPreview[]
   readonly whatIsBacklinkUrl?: string
+}
+
+export interface ModelWorkflowPreview {
+  readonly id: string
+  readonly title: string
+  readonly thumbnailUrl: string
+  readonly publishedAt?: string
 }
 
 export const models: readonly Model[] = (
@@ -48,6 +58,8 @@ export const models: readonly Model[] = (
     docsUrl?: string
     thumbnailUrl?: string
     workflowCount: number
+    categories?: ModelCategory[]
+    workflowPreviews?: ModelWorkflowPreview[]
   }>
 ).map((m) => ({
   slug: m.slug,
@@ -60,6 +72,8 @@ export const models: readonly Model[] = (
   ...(m.thumbnailUrl ? { thumbnailUrl: m.thumbnailUrl } : {}),
   featured: false,
   workflowCount: m.workflowCount,
+  categories: m.categories ?? [],
+  workflowPreviews: m.workflowPreviews ?? [],
   ...modelMetadata[m.slug]
 }))
 

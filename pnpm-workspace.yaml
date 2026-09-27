@@ -40,10 +40,12 @@ catalog:
   '@sentry/vite-plugin': ^4.6.0
   '@sentry/vue': ^10.32.1
   '@sparkjsdev/spark': ^2.1.0
-  '@storybook/addon-docs': ^10.5.6
+  '@storybook/addon-docs': ^10.5.10
+  '@storybook/addon-designs': ^11.1.4
   '@storybook/addon-mcp': 0.7.0
-  '@storybook/vue3': ^10.5.6
-  '@storybook/vue3-vite': ^10.5.6
+  '@storybook/mcp': 0.8.0
+  '@storybook/vue3': ^10.5.10
+  '@storybook/vue3-vite': ^10.5.10
   '@stripe/stripe-js': ^9.12.0
   '@tailwindcss/vite': ^4.3.2
   '@tanstack/vue-virtual': ^3.13.12
@@ -103,6 +105,7 @@ catalog:
   happy-dom: 20.14.5
   husky: ^9.1.7
   jsdom: ^29.1.1
+  jose: ^6.2.10
   jsonata: ^2.1.0
   jsonc-parser: 3.3.1
   knip: ^6.27.0
@@ -135,7 +138,7 @@ catalog:
   shaders: ^3.1.463
   shiki: ^4.3.0
   start-server-and-test: ^3.0.11
-  storybook: ^10.5.6
+  storybook: ^10.5.10
   stylelint: ^17.14.0
   tailwindcss: ^4.3.2
   tailwindcss-primeui: ^0.6.1
@@ -170,6 +173,13 @@ catalog:
   zod-validation-error: ^3.3.0
   '@datadog/browser-logs': 6.33.0
   '@comfyorg/comfy-multi-player': 0.3.6
+  storybook-addon-tag-badges: ^3.1.0
+  '@storybook/addon-vitest': 10.5.10
+  '@vitest/browser-playwright': 4.1.10
+  playwright: 1.61.1
+  '@storybook/addon-a11y': ^10.5.10
+  '@auth/core': 0.41.3
+  '@vercel/functions': 3.9.5
 
 cleanupUnusedCatalogs: true
 
@@ -211,3 +221,10 @@ overrides:
 minimumReleaseAgeExclude:
   - '@comfyorg/comfyui-desktop-bridge-types@0.2.0'
   - '@comfyorg/comfy-multi-player@0.3.6'
+  - '@storybook/addon-docs@10.5.10'
+  - '@storybook/builder-vite@10.5.10'
+  - '@storybook/csf-plugin@10.5.10'
+  - '@storybook/react-dom-shim@10.5.10'
+  - '@storybook/vue3-vite@10.5.10'
+  - '@storybook/vue3@10.5.10'
+  - storybook@10.5.10

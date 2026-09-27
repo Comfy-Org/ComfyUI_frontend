@@ -18,3 +18,4 @@
 ## Screenshots (if applicable)
 
 <!-- Add screenshots or video recording to help explain your changes -->
+<!-- For mockup-derived UI, include the design reference, provenance map, verified viewports, reused components, blocked gaps, intentional deviations, and external pattern references. -->

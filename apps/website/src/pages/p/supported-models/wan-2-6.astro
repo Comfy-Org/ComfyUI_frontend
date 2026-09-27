@@ -1,0 +1,407 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro'
+import CardWorkflow01 from '../../../components/blocks/CardWorkflow01.vue'
+import FAQSplit01 from '../../../components/blocks/FAQSplit01.vue'
+import BrandButton from '../../../components/common/BrandButton.vue'
+import BreadcrumbBar from '../../../components/common/BreadcrumbBar.vue'
+import SectionHeader from '../../../components/common/SectionHeader.vue'
+import SectionLabel from '../../../components/common/SectionLabel.vue'
+import Badge from '../../../components/ui/badge/Badge.vue'
+import type { CardWorkflowItem } from '../../../components/blocks/CardWorkflow01.vue'
+import type { JsonLdNode } from '../../../utils/jsonLd'
+import {
+  absoluteUrl,
+  jsonLdId,
+  pageContext,
+  softwareApplicationNode,
+} from '../../../utils/jsonLd'
+
+const assetRoot = '/images/models/wan-2-6'
+
+const galleryItems = Array.from({ length: 6 }, (_, index) => ({
+  src: `${assetRoot}/gallery-${String(index + 1).padStart(2, '0')}.png`,
+  alt: `Community creation made with Wan 2.6, example ${index + 1}`,
+}))
+
+const workflows: CardWorkflowItem[] = [
+  {
+    id: 'wan-reference-video',
+    title: 'Reference image to video',
+    href: 'https://www.comfy.org/workflows/model/wan',
+    media: {
+      type: 'image',
+      src: `${assetRoot}/workflow-01.png`,
+      alt: 'Wan reference image to video workflow preview',
+    },
+    description: 'Animate a reference while preserving identity and motion.',
+    tags: ['Image to video'],
+  },
+  {
+    id: 'wan-native-audio',
+    title: 'Native audio generation',
+    href: 'https://www.comfy.org/workflows/model/wan',
+    media: {
+      type: 'image',
+      src: `${assetRoot}/workflow-02.png`,
+      alt: 'Wan native audio workflow preview',
+    },
+    description: 'Generate synchronized picture and sound in one graph.',
+    tags: ['Video + audio'],
+  },
+  {
+    id: 'wan-lora-control',
+    title: 'LoRA art direction',
+    href: 'https://www.comfy.org/workflows/model/wan',
+    media: {
+      type: 'image',
+      src: `${assetRoot}/workflow-03.png`,
+      alt: 'Wan LoRA workflow preview',
+    },
+    description: 'Chain LoRAs for a repeatable visual direction.',
+    tags: ['LoRA'],
+  },
+  {
+    id: 'wan-batch-render',
+    title: 'Overnight batch render',
+    href: 'https://www.comfy.org/workflows/model/wan',
+    media: {
+      type: 'image',
+      src: `${assetRoot}/workflow-04.png`,
+      alt: 'Wan batch render workflow preview',
+    },
+    description: 'Queue prompt variations and keep every graph editable.',
+    tags: ['Batch'],
+  },
+]
+
+const faqs = [
+  {
+    id: 'local',
+    question: 'Can I run Wan 2.6 locally?',
+    answer:
+      'Yes. Download the open weights and run the model in ComfyUI on compatible hardware.',
+  },
+  {
+    id: 'audio',
+    question: 'Does Wan 2.6 generate native audio?',
+    answer:
+      'Wan 2.6 supports video generation with native audio in supported workflows.',
+  },
+  {
+    id: 'commercial',
+    question: 'Can I use Wan 2.6 commercially?',
+    answer:
+      'Review the model license and the terms of the service you use before shipping commercial work.',
+  },
+  {
+    id: 'cloud',
+    question: 'Do I need a local GPU?',
+    answer:
+      'No. You can use a supported workflow on Comfy Cloud or run locally on your own compatible GPU.',
+  },
+  {
+    id: 'workflows',
+    question: 'Can I edit the full graph?',
+    answer:
+      'Yes. ComfyUI workflows expose the graph so you can inspect, replace, and chain model steps.',
+  },
+] as const
+
+const pageTitle = 'Wan 2.6 in ComfyUI'
+const pageDescription =
+  'Run Wan 2.6 with native audio and full graph control in ComfyUI, locally or on Comfy Cloud.'
+const { siteUrl, url } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
+const softwareId = jsonLdId(url, 'software')
+const software = softwareApplicationNode({
+  siteUrl,
+  id: softwareId,
+  name: 'Wan 2.6',
+  url,
+  applicationCategory: 'MultimediaApplication',
+  operatingSystem: 'Any',
+})
+const faqPage: JsonLdNode = {
+  '@type': 'FAQPage',
+  '@id': jsonLdId(url, 'faq'),
+  mainEntity: faqs.map((faq) => ({
+    '@type': 'Question',
+    name: faq.question,
+    acceptedAnswer: { '@type': 'Answer', text: faq.answer },
+  })),
+}
+const apiExample = `curl --request POST \\
+  --url https://api.comfy.org/v1/runs \\
+  --header 'content-type: application/json' \\
+  --data '{ "workflow": "wan-2-6-reference-video" }'`
+---
+
+<BaseLayout
+  title={`${pageTitle} - Comfy`}
+  description={pageDescription}
+  ogImage={`${assetRoot}/playground-result.png`}
+  mainEntityId={softwareId}
+  breadcrumbs={[
+    { name: 'Home', url: absoluteUrl(Astro.site, '/') },
+    {
+      name: 'Supported models',
+      url: absoluteUrl(Astro.site, '/p/supported-models'),
+    },
+    { name: 'Wan 2.6' },
+  ]}
+  extraJsonLd={[software, faqPage]}
+>
+  <BreadcrumbBar
+    crumbs={[
+      { label: 'Models', href: '/p/supported-models' },
+      { label: 'Video', href: '/p/supported-models' },
+      { label: 'Wan' },
+    ]}
+  />
+
+  <main class="overflow-x-clip">
+    <section class="max-w-9xl mx-auto px-6 pt-16 pb-20 lg:px-20 lg:pt-28">
+      <div class="max-w-5xl">
+        <div class="flex flex-wrap items-center gap-3">
+          <Badge variant="callout" size="md">OPEN WEIGHTS</Badge>
+          <Badge variant="subtle" size="card">COMMERCIAL USE</Badge>
+          <Badge variant="subtle" size="card">TEXT + IMAGE TO VIDEO</Badge>
+        </div>
+
+        <SectionHeader
+          headingTag="h1"
+          headingSize="hero"
+          align="start"
+          maxWidth="xl"
+        >
+          Wan 2.6 in ComfyUI
+          <p
+            slot="subtitle"
+            class="mt-6 max-w-3xl text-base/relaxed font-light text-primary-comfy-canvas/70 lg:text-xl/relaxed"
+          >
+            Alibaba’s open-weights video model with native audio, running under
+            full graph control. Chain LoRAs, drive it with ControlNet, and queue
+            overnight batches on Comfy Cloud or your own GPU.
+          </p>
+        </SectionHeader>
+
+        <div class="mt-8 flex flex-wrap gap-3">
+          <BrandButton
+            href="https://www.comfy.org/workflows/model/wan"
+            variant="solid"
+            size="nav"
+          >
+            RUN ON COMFY CLOUD
+          </BrandButton>
+          <BrandButton
+            href="https://huggingface.co/Wan-AI"
+            target="_blank"
+            rel="noopener noreferrer"
+            variant="outline"
+            size="nav"
+          >
+            DOWNLOAD WEIGHTS
+          </BrandButton>
+          <BrandButton
+            href="https://docs.comfy.org/tutorials/video/wan/wan2_2"
+            target="_blank"
+            rel="noopener noreferrer"
+            variant="outline"
+            size="nav"
+          >
+            VIEW API
+          </BrandButton>
+        </div>
+        <p class="mt-5 text-sm text-primary-comfy-canvas/50">
+          Preview pricing · verify current compute cost before running
+        </p>
+      </div>
+    </section>
+
+    <section class="bg-transparency-white-t4 py-16 lg:py-24">
+      <div class="max-w-9xl mx-auto px-6 lg:px-20">
+        <SectionLabel>PLAYGROUND PREVIEW</SectionLabel>
+        <div class="mt-8 grid gap-4 lg:grid-cols-2">
+          <article class="rounded-5xl flex flex-col bg-primary-comfy-ink p-6 text-primary-comfy-canvas lg:p-10">
+            <p class="text-xs font-semibold tracking-wide text-primary-comfy-yellow uppercase">
+              Prompt
+            </p>
+            <p class="mt-5 text-lg/relaxed font-light lg:text-2xl/relaxed">
+              A cinematic close-up of a runner at blue hour, natural camera
+              movement, detailed skin and synchronized city ambience.
+            </p>
+            <div class="mt-8 flex flex-wrap gap-2">
+              <Badge variant="subtle" size="card">720p</Badge>
+              <Badge variant="subtle" size="card">5 seconds</Badge>
+              <Badge variant="subtle" size="card">16:9</Badge>
+              <Badge variant="subtle" size="card">Random seed</Badge>
+            </div>
+            <div class="mt-auto pt-8">
+              <BrandButton
+                href="https://www.comfy.org/workflows/model/wan"
+                variant="solid"
+                size="nav"
+              >
+                OPEN RUNNABLE WORKFLOW
+              </BrandButton>
+            </div>
+          </article>
+          <article class="rounded-5xl overflow-hidden bg-primary-comfy-ink p-2">
+            <img
+              src={`${assetRoot}/playground-result.png`}
+              alt="Wan 2.6 playground result preview"
+              class="aspect-video w-full rounded-[2.25rem] object-cover"
+            />
+            <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-4 text-primary-comfy-canvas">
+              <span class="text-sm">OUTPUT PREVIEW</span>
+              <a
+                href="https://www.comfy.org/workflows/model/wan"
+                class="text-sm font-semibold text-primary-comfy-yellow"
+              >
+                OPEN THE FULL GRAPH
+              </a>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="max-w-9xl mx-auto px-6 py-20 lg:px-20 lg:py-28">
+      <SectionHeader label="MADE WITH WAN 2.6" align="start" maxWidth="xl">
+        Real outputs from the community.
+        <p
+          slot="subtitle"
+          class="mt-4 text-base font-light text-primary-comfy-canvas/60"
+        >
+          A visual preview using the exact media supplied with the page mockup.
+        </p>
+      </SectionHeader>
+      <div class="mt-12 grid grid-cols-2 gap-3 lg:grid-cols-3">
+        {
+          galleryItems.map((item, index) => (
+            <figure class="rounded-5xl bg-transparency-white-t4 aspect-square overflow-hidden p-2">
+              <img
+                src={item.src}
+                alt={item.alt}
+                loading="lazy"
+                decoding="async"
+                class={`size-full rounded-[2.25rem] object-cover ${index === 0 ? 'object-top' : ''}`}
+              />
+            </figure>
+          ))
+        }
+      </div>
+    </section>
+
+    <section class="max-w-9xl mx-auto px-6 py-20 lg:px-20 lg:py-28">
+      <div class="flex flex-wrap items-end justify-between gap-6">
+        <SectionHeader label="READY TO REMIX" align="start" maxWidth="xl">
+          Workflows using Wan 2.6
+        </SectionHeader>
+        <BrandButton
+          href="https://www.comfy.org/workflows/model/wan"
+          variant="outline"
+          size="nav"
+        >
+          ALL WAN WORKFLOWS
+        </BrandButton>
+      </div>
+      <div class="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {
+          workflows.map((item) => (
+            <CardWorkflow01 item={item} variant="compact" />
+          ))
+        }
+      </div>
+    </section>
+
+    <section class="max-w-9xl mx-auto grid gap-4 px-6 py-20 lg:grid-cols-2 lg:px-20 lg:py-28">
+      <article class="rounded-5xl bg-transparency-white-t4 p-8 lg:p-12">
+        <SectionLabel>WHAT IT COSTS</SectionLabel>
+        <h2 class="mt-4 text-4xl font-light text-primary-comfy-canvas">
+          Clear before you run
+        </h2>
+        <dl class="mt-10 divide-y divide-primary-comfy-canvas/15 text-sm">
+          <div class="flex justify-between gap-6 py-4">
+            <dt class="text-primary-comfy-canvas/60">Comfy Cloud</dt>
+            <dd class="text-right text-primary-comfy-canvas">Usage based</dd>
+          </div>
+          <div class="flex justify-between gap-6 py-4">
+            <dt class="text-primary-comfy-canvas/60">Local GPU</dt>
+            <dd class="text-right text-primary-comfy-canvas">Your hardware</dd>
+          </div>
+          <div class="flex justify-between gap-6 py-4">
+            <dt class="text-primary-comfy-canvas/60">Weights</dt>
+            <dd class="text-right text-primary-comfy-canvas">Open download</dd>
+          </div>
+        </dl>
+      </article>
+
+      <article class="rounded-5xl bg-transparency-white-t4 p-8 lg:p-12">
+        <SectionLabel>VARIANTS & CHECKPOINTS</SectionLabel>
+        <h2 class="mt-4 text-4xl font-light text-primary-comfy-canvas">
+          Choose the graph you need
+        </h2>
+        <div class="mt-10 flex flex-col divide-y divide-primary-comfy-canvas/15">
+          <a href="https://huggingface.co/Wan-AI" target="_blank" rel="noopener noreferrer" class="flex items-center justify-between gap-6 py-4 text-sm text-primary-comfy-canvas">
+            <span>Wan 2.6 text to video</span><span>Hugging Face</span>
+          </a>
+          <a href="https://huggingface.co/Wan-AI" target="_blank" rel="noopener noreferrer" class="flex items-center justify-between gap-6 py-4 text-sm text-primary-comfy-canvas">
+            <span>Wan 2.6 image to video</span><span>Hugging Face</span>
+          </a>
+          <a href="https://www.comfy.org/workflows/model/wan" class="flex items-center justify-between gap-6 py-4 text-sm text-primary-comfy-canvas">
+            <span>ComfyUI workflow templates</span><span>Browse</span>
+          </a>
+        </div>
+      </article>
+    </section>
+
+    <section class="max-w-9xl mx-auto px-6 py-20 lg:px-20 lg:py-28">
+      <SectionHeader label="RUN IT YOUR WAY" align="start" maxWidth="xl">
+        Start with the graph, not glue code.
+      </SectionHeader>
+      <div class="rounded-5xl mt-10 overflow-hidden bg-primary-comfy-canvas p-2">
+        <pre class="overflow-x-auto rounded-[2.25rem] bg-primary-comfy-ink p-6 text-sm/relaxed text-primary-comfy-canvas lg:p-10"><code>{apiExample}</code></pre>
+        <div class="flex flex-wrap gap-3 px-5 py-4">
+          <BrandButton href="https://docs.comfy.org" target="_blank" rel="noopener noreferrer" variant="inverse" size="sm">FULL API REFERENCE</BrandButton>
+          <BrandButton href="https://docs.comfy.org" target="_blank" rel="noopener noreferrer" variant="outline-dark" size="sm">COMFY MCP</BrandButton>
+        </div>
+      </div>
+    </section>
+
+    <section class="max-w-9xl mx-auto px-6 py-20 lg:px-20 lg:py-28">
+      <SectionHeader label="HOW IT STACKS UP" align="start" maxWidth="xl">
+        Pick the model that fits the shot.
+      </SectionHeader>
+      <div class="mt-10 grid gap-4 md:grid-cols-3">
+        {
+          [
+            ['Kling', 'Strong cinematic motion and partner API access.'],
+            ['Veo', 'High-end video generation in a managed workflow.'],
+            ['LTX', 'Fast iteration with open-weight model options.'],
+          ].map(([name, description]) => (
+            <article class="rounded-5xl bg-transparency-white-t4 flex min-h-72 flex-col p-8">
+              <h3 class="text-3xl font-light text-primary-comfy-canvas">{name}</h3>
+              <p class="mt-5 text-sm/relaxed text-primary-comfy-canvas/60">{description}</p>
+              <div class="mt-auto">
+                <BrandButton href="/p/supported-models" variant="outline" size="sm">COMPARE MODELS</BrandButton>
+              </div>
+            </article>
+          ))
+        }
+      </div>
+      <p class="mt-8 text-lg font-light text-primary-comfy-canvas/60">
+        Run them side by side in one graph—that is the point.
+      </p>
+    </section>
+
+    <FAQSplit01
+      client:load
+      heading="Wan 2.6 questions"
+      faqs={faqs}
+    />
+  </main>
+</BaseLayout>

@@ -1,0 +1,150 @@
+import { Meta } from '@storybook/addon-docs/blocks'
+
+<Meta title="Website/MCP Setup" />
+
+# Install the Storybook MCP
+
+Connect Codex, Claude Desktop, or Claude Code to this Storybook to discover
+approved marketing components and stories from an agent conversation.
+
+## Before you start
+
+You need a verified `@comfy.org` Google account. You do not need to request or
+manage a shared token.
+
+The remote MCP endpoint is:
+
+```text
+https://comfy-website-storybook-mcp.vercel.app/mcp
+```
+
+## Codex
+
+Verify that the Codex CLI is available:
+
+```bash
+codex --version
+```
+
+If the Codex desktop app is installed on macOS but Terminal reports `command
+not found`, expose the app's bundled CLI and restart the shell:
+
+```bash
+mkdir -p ~/.local/bin
+ln -s /Applications/ChatGPT.app/Contents/Resources/codex ~/.local/bin/codex
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
+exec zsh
+```
+
+If the link already exists, skip the `ln -s` command.
+
+Run:
+
+```bash
+codex mcp add comfy_marketing_storybook \
+  --url https://comfy-website-storybook-mcp.vercel.app/mcp
+```
+
+Codex detects OAuth and opens the Comfy sign-in flow. Continue with your
+`@comfy.org` Google account, return to Codex, then verify the saved
+configuration:
+
+```bash
+codex mcp get comfy_marketing_storybook
+```
+
+## Claude Desktop
+
+Remote MCP servers must be added through the connector interface, not
+`claude_desktop_config.json`:
+
+1. Open **Settings → Connectors**.
+2. For Team or Enterprise, an Owner or Primary Owner first opens
+   **Organization connectors**.
+3. Click **Add custom connector**.
+4. Name it `Comfy Marketing Storybook`.
+5. Enter `https://comfy-website-storybook-mcp.vercel.app/mcp` as the connector
+   URL and click **Add**.
+6. Click **Connect**, continue with Google, and use a verified `@comfy.org`
+   account.
+7. In a conversation, open **Search and tools** and enable the connector.
+
+Remote custom connectors require a Claude Pro, Max, Team, or Enterprise plan.
+
+## Claude Code
+
+Verify Claude Code is installed:
+
+```bash
+claude --version
+```
+
+On macOS or Linux, install it if needed:
+
+```bash
+curl -fsSL https://claude.ai/install.sh | bash
+```
+
+The repository includes a project-level `.mcp.json`. After cloning it, start
+Claude Code from the repository root and approve the
+`comfy-marketing-storybook` server when prompted. Claude opens the Comfy sign-in
+flow the first time it connects.
+
+To install it for your user account without cloning the repository, run:
+
+```bash
+claude mcp add --scope user --transport http comfy-marketing-storybook \
+  https://comfy-website-storybook-mcp.vercel.app/mcp
+```
+
+Start Claude Code, enter `/mcp`, select `comfy-marketing-storybook`, and follow
+the browser sign-in flow. Then verify the saved configuration:
+
+```bash
+claude mcp get comfy-marketing-storybook
+```
+
+## Test the connection
+
+Start a new agent conversation and ask:
+
+```text
+Use the Comfy marketing Storybook MCP. List the documented website components,
+then show me the available NodeBadge stories and their supported states.
+```
+
+A successful remote connection can read component and story documentation. It
+cannot edit files, preview unbuilt local changes, or run local interaction and
+accessibility tests.
+
+## Local development tools
+
+To author stories, preview changes, and run tests, start Storybook from the
+repository root:
+
+```bash
+pnpm install
+pnpm storybook
+```
+
+Use `http://localhost:6008/mcp` as a separate local MCP server. The local server
+does not use the remote OAuth flow.
+
+## Troubleshooting
+
+- **401 Authentication required:** run `codex mcp login
+comfy_marketing_storybook` again, or reconnect the server in Claude Code.
+- **Google sign-in is rejected:** use a verified `@comfy.org` account. Personal
+  Google accounts cannot access this MCP.
+- **Server is configured but unavailable:** restart the agent after adding the
+  MCP configuration.
+- **Documentation works but previews or tests do not:** the remote server is
+  documentation-only. Start the local Storybook for development tools.
+- **The browser asks for Google login:** this is expected. The client stores its
+  own OAuth session after sign-in; no token needs to be copied.
+
+## Security boundary
+
+The Storybook UI and MCP endpoint require a verified `@comfy.org` Google
+account. Each coworker authorizes their own client session. Anonymous and
+non-Comfy requests are rejected, and the deployment is marked `noindex`.

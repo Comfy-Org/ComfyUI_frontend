@@ -434,7 +434,9 @@ describe('workshopModels', () => {
         canonicalSlug: 'y',
         huggingFaceUrl: '',
         featured: false,
-        workflowCount: 0
+        workflowCount: 0,
+        categories: [],
+        workflowPreviews: []
       })
     ).toBe(false)
   })

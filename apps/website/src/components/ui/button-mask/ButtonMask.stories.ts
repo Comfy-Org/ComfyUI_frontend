@@ -1,8 +1,13 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
+import type { ComponentProps } from 'vue-component-type-helpers'
 
 import ButtonMask from './ButtonMask.vue'
 
-const meta: Meta<typeof ButtonMask> = {
+type ButtonMaskStoryArgs = ComponentProps<typeof ButtonMask> & {
+  href?: string
+}
+
+const meta = {
   title: 'Website/UI/ButtonMask',
   component: ButtonMask,
   tags: ['autodocs'],
@@ -24,7 +29,7 @@ const meta: Meta<typeof ButtonMask> = {
     },
     size: {
       control: { type: 'select' },
-      options: ['default', 'lg', 'icon']
+      options: ['default', 'lg']
     },
     iconPosition: {
       control: { type: 'select' },
@@ -32,10 +37,10 @@ const meta: Meta<typeof ButtonMask> = {
     },
     hideLabel: { control: 'boolean' }
   }
-}
+} satisfies Meta<ButtonMaskStoryArgs>
 
 export default meta
-type Story = StoryObj<typeof meta>
+type Story = StoryObj<ButtonMaskStoryArgs>
 
 export const Default: Story = {
   args: { as: 'a', href: '#' },

@@ -1,5 +1,9 @@
 # Storybook Guidelines
 
+This configuration covers the app frontend under `src/`. Use
+`pnpm storybook:frontend`; the repository default serves the marketing website
+Storybook.
+
 See `@docs/guidance/storybook.md` for story patterns (auto-loaded for `*.stories.ts`).
 
 ## Available Context

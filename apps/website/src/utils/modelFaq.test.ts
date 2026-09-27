@@ -10,7 +10,9 @@ const localModel: Model = {
   huggingFaceUrl: 'https://huggingface.co/local',
   docsUrl: 'https://docs.comfy.org/local',
   featured: false,
-  workflowCount: 1
+  workflowCount: 1,
+  categories: [],
+  workflowPreviews: []
 }
 
 const cloudModel: Model = {

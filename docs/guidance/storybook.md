@@ -52,6 +52,8 @@ Use realistic ComfyUI schemas for mocks (node definitions, components).
 ## Running Storybook
 
 ```bash
-pnpm storybook        # Development server
-pnpm build-storybook  # Production build
+pnpm storybook                     # Marketing website development server
+pnpm build-storybook               # Marketing website production build
+pnpm storybook:frontend            # App frontend development server
+pnpm build-storybook:frontend      # App frontend production build
 ```
