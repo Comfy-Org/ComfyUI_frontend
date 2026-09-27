@@ -82,7 +82,6 @@ import type { WidgetId } from '@/types/widgetId'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import {
   isAnimatedOutput,
-  isImageNode,
   isVideoNode,
   isVideoOutput,
   migrateWidgetsValues
@@ -90,7 +89,6 @@ import {
 import { getOrderedInputSpecs } from '@/workbench/utils/nodeDefOrderingUtil'
 
 import { useExtensionService } from './extensionService'
-import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 
 async function reencodeAsPngBlob(
   blob: Blob,
@@ -768,15 +766,6 @@ export const useLitegraphService = () => {
             callback: markCoreMediaMenuCallback(() => {
               ComfyApp.pasteFromClipspace(this)
             }, 'input')
-          })
-        }
-
-        if (isImageNode(this)) {
-          options.push({
-            content: 'Open in MaskEditor | Image Canvas',
-            callback: markCoreMediaMenuCallback(() => {
-              useMaskEditor().openMaskEditor(this)
-            }, 'preview')
           })
         }
       }
