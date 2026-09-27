@@ -336,7 +336,7 @@ describe('VirtualGrid scrolled deep into a large library', () => {
     }
   )
 
-  it.fails('KNOWN BUG: goes blank when the filtered list shrinks below the scrolled-to index', async () => {
+  it('goes blank when the filtered list shrinks below the scrolled-to index', async () => {
     const { rerender } = renderLibrary(createLibrary())
     await nextTick()
 
@@ -352,7 +352,7 @@ describe('VirtualGrid scrolled deep into a large library', () => {
     expect(renderedNames().length).toBeGreaterThan(0)
   })
 
-  it.fails('KNOWN BUG: goes blank when the column count grows while scrolled deep', async () => {
+  it('goes blank when the column count grows while scrolled deep', async () => {
     renderLibrary(createLibrary())
     await nextTick()
 
@@ -360,6 +360,29 @@ describe('VirtualGrid scrolled deep into a large library', () => {
     await nextTick()
 
     mockedWidth.value = PANEL_WIDTH * 2
+    await nextTick()
+
+    expect(renderedNames().length).toBeGreaterThan(0)
+  })
+
+  it('recovers when the filtered list shrinks to empty, then grows again', async () => {
+    const { rerender } = renderLibrary(createLibrary())
+    await nextTick()
+
+    scrollTo(100_000)
+    await nextTick()
+
+    await rerender({ items: [] })
+    await nextTick()
+    syncScrollPosition()
+    await nextTick()
+
+    expect(renderedNames().length).toBe(0)
+
+    const fullLibrary = createLibrary()
+    await rerender({ items: fullLibrary })
+    await nextTick()
+    syncScrollPosition()
     await nextTick()
 
     expect(renderedNames().length).toBeGreaterThan(0)
