@@ -622,15 +622,31 @@ function targetWorkflowTurnContext(
     : { id, tabPath: target.path }
 }
 
+// The serialized graph a tab shows right now. The active tab's change tracker
+// is flushed first so the last edit is in it.
+function serializedCanvas(
+  target: ComfyWorkflow
+): DraftSnapshot['content'] | undefined {
+  if (target.path === workflowStore.activeWorkflow?.path)
+    target.changeTracker?.prepareForSave()
+  return target.activeState ?? undefined
+}
+
 function targetWorkflowDraft(origin?: TurnOrigin): DraftSnapshot | undefined {
   if (workflowDetached.value) return undefined
   const target = originWorkflow(origin)
   if (!target) return undefined
-  if (target.path === workflowStore.activeWorkflow?.path)
-    target.changeTracker?.prepareForSave()
-  const content = target.activeState
+  const content = serializedCanvas(target)
   if (!content) return undefined
   return { content }
+}
+
+// What the CRDT follower sends to re-mint a document the server refused as an
+// older schema: the same serialized canvas a prompt posts as its draft.
+function canvasForWorkflow(workflowId: string): Record<string, unknown> | null {
+  const target = boundOrOpenWorkflowFor(workflowId)
+  if (!target) return null
+  return serializedCanvas(target) ?? null
 }
 
 const selectedTargetTab = computed<ActiveTab | null>(() => {
@@ -855,7 +871,8 @@ const {
       const [x, y, width, height] = canvas.ds.visible_area
       return { x, y, width, height }
     }
-  }
+  },
+  canvasForWorkflow
 )
 // The bound document's serialized root graph id, independent of what is
 // currently on the canvas: `beforeLoadNewGraph` persists the outgoing
