@@ -229,7 +229,10 @@ const onboardingKey = computed(() =>
 watch(
   onboardingKey,
   (key) => {
-    if (key) adoptSharedOnboardingFlag(key)
+    // Only carry the pre-consent, device-wide flag into a scope that had
+    // already accepted consent when it loaded. A newly consenting scope has
+    // not seen this scoped tour yet and should receive it once.
+    if (key && consentAccepted.value) adoptSharedOnboardingFlag(key)
   },
   { immediate: true }
 )
