@@ -22,6 +22,7 @@ import type { DOMWidget } from '@/scripts/domWidget'
 import { useAudioService } from '@/services/audioService'
 import type { NodeLocatorId } from '@/types'
 import { widgetId } from '@/types/widgetId'
+import { toError } from '@/utils/errorUtil'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 import { api } from '../../scripts/api'
@@ -37,6 +38,11 @@ function updateUIWidget(
   audioUIWidget.callback?.(url)
   if (url) audioUIWidget.element.classList.remove('empty-audio-widget')
   else audioUIWidget.element.classList.add('empty-audio-widget')
+}
+
+function appendWidgetValue(widget: IStringWidget, path: string) {
+  const values = widget.options.values
+  if (values && !values.includes(path)) values.push(path)
 }
 
 async function uploadFile(
@@ -58,16 +64,11 @@ async function uploadFile(
     })
 
     if (resp.status === 200) {
-      const data = await resp.json()
+      const data: { name: string; subfolder?: string } = await resp.json()
       // Add the file to the dropdown list and update the widget value
-      let path = data.name
-      if (data.subfolder) path = data.subfolder + '/' + path
+      const path = data.subfolder ? `${data.subfolder}/${data.name}` : data.name
 
-      // @ts-expect-error fixme ts strict error
-      if (!audioWidget.options.values.includes(path)) {
-        // @ts-expect-error fixme ts strict error
-        audioWidget.options.values.push(path)
-      }
+      appendWidgetValue(audioWidget, path)
 
       if (updateNode) {
         const oldValue = audioWidget.value
@@ -87,8 +88,7 @@ async function uploadFile(
       return false
     }
   } catch (error) {
-    // @ts-expect-error fixme ts strict error
-    useToastStore().addAlert(error)
+    useToastStore().addAlert(toError(error).message)
     return false
   }
 }
@@ -101,7 +101,9 @@ app.registerExtension({
     nodeType: typeof LGraphNode,
     nodeData: ComfyNodeDef
   ) {
+    const comfyClass = nodeType.prototype.comfyClass
     if (
+      comfyClass &&
       [
         'LoadAudio',
         'SaveAudio',
@@ -109,13 +111,11 @@ app.registerExtension({
         'SaveAudioMP3',
         'SaveAudioOpus',
         'SaveAudioAdvanced'
-      ].includes(
-        // @ts-expect-error fixme ts strict error
-        nodeType.prototype.comfyClass
-      )
+      ].includes(comfyClass)
     ) {
-      // @ts-expect-error fixme ts strict error
-      nodeData.input.required.audioUI = ['AUDIO_UI', {}]
+      const input = (nodeData.input ??= {})
+      const required = (input.required ??= {})
+      required.audioUI = ['AUDIO_UI', {}]
     }
   },
   getCustomWidgets() {
@@ -214,12 +214,10 @@ app.registerExtension({
     return {
       AUDIOUPLOAD(node, inputName: string) {
         // The widget that allows user to select file.
-        // @ts-expect-error fixme ts strict error
-        const audioWidget = node.widgets.find(
+        const audioWidget = node.widgets?.find(
           (w) => w.name === 'audio'
         ) as IStringWidget
-        // @ts-expect-error fixme ts strict error
-        const audioUIWidget = node.widgets.find(
+        const audioUIWidget = node.widgets?.find(
           (w) => w.name === 'audioUI'
         ) as unknown as DOMWidget<HTMLAudioElement, string>
 
@@ -510,4 +508,3 @@ app.registerExtension({
     await useAudioService().registerWavEncoder()
   }
 })
-

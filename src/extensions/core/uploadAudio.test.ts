@@ -249,7 +249,7 @@ describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
 
     expect(node.isUploading).toBe(false)
     expect(audioWidget.value).toBe('previous.mp3')
-    expect(useToastStore().addAlert).toHaveBeenCalledWith(error)
+    expect(useToastStore().addAlert).toHaveBeenCalledWith(error.message)
     expect(node.graph?.setDirtyCanvas).toHaveBeenCalledWith(true)
   })
 

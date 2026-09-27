@@ -285,7 +285,7 @@ describe('Comfy.Preview3D.beforeRegisterNodeDef', () => {
       app
     )
 
-    expect(nodeData.input!.required!.image).toEqual(['PREVIEW_3D'])
+    expect(nodeData.input!.required!.image).toEqual(['PREVIEW_3D', {}])
   })
 
   it('leaves non-Preview3D node defs unchanged', async () => {

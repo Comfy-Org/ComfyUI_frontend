@@ -350,7 +350,7 @@ export class GroupNodeConfig {
     node: GroupNodeData,
     inputName: string,
     seenInputs: Record<string, number>,
-    config: unknown[],
+    config: InputSpec,
     extra?: Record<string, unknown>
   ) {
     const nodeConfig = this.nodeData.config?.[node.index ?? -1]
@@ -378,8 +378,7 @@ export class GroupNodeConfig {
     if (config[0] === 'IMAGEUPLOAD') {
       if (!extra) extra = {}
       const nodeIndex = node.index ?? -1
-      const configOptions =
-        typeof config[1] === 'object' && config[1] !== null ? config[1] : {}
+      const configOptions = config[1] ?? {}
       const widgetKey =
         'widget' in configOptions && typeof configOptions.widget === 'string'
           ? configOptions.widget
@@ -388,9 +387,7 @@ export class GroupNodeConfig {
     }
 
     if (extra) {
-      const configObj =
-        typeof config[1] === 'object' && config[1] ? config[1] : {}
-      config = [config[0], { ...configObj, ...extra }]
+      config = [config[0], { ...config[1], ...extra }]
     }
 
     return { name, config, customConfig }
@@ -450,10 +447,9 @@ export class GroupNodeConfig {
             node,
             inputName,
             seenInputs,
-            inputs[inputName] as unknown[]
+            inputSpec as InputSpec
           )
           if (this.nodeDef?.input?.required) {
-            // @ts-expect-error legacy dynamic input assignment
             this.nodeDef.input.required[name] = config
           }
           widgetMap[inputName] = name
@@ -470,7 +466,7 @@ export class GroupNodeConfig {
   checkPrimitiveConnection(
     link: GroupNodeLink,
     inputName: string,
-    inputs: Record<string, unknown[]>
+    inputs: Record<string, InputSpec>
   ) {
     const [sourceNodeIndex, , targetNodeIndex] = link
     if (sourceNodeIndex == null) return
@@ -484,14 +480,12 @@ export class GroupNodeConfig {
         unknown,
         Record<string, unknown>
       ]
-      const output = { widget: primitiveConfig }
       const config = mergeIfValid(
-        // @ts-expect-error slot type mismatch - legacy API
-        output,
+        {},
         targetWidget,
         false,
         undefined,
-        primitiveConfig
+        primitiveConfig as InputSpec
       )
       const inputConfig = inputs[inputName]?.[1]
       primitiveConfig[1] =
@@ -524,7 +518,7 @@ export class GroupNodeConfig {
   }
 
   processInputSlots(
-    inputs: Record<string, unknown[]>,
+    inputs: Record<string, InputSpec>,
     node: GroupNodeData,
     slots: string[],
     linksTo: SlotLinks,
@@ -567,7 +561,6 @@ export class GroupNodeConfig {
       if (customConfig?.visible === false) continue
 
       if (this.nodeDef?.input?.required) {
-        // @ts-expect-error legacy dynamic input assignment
         this.nodeDef.input.required[name] = config
       }
       inputMap[inputName] = this.inputCount++
@@ -575,7 +568,7 @@ export class GroupNodeConfig {
   }
 
   processConvertedWidgets(
-    inputs: Record<string, unknown>,
+    inputs: Record<string, InputSpec>,
     node: GroupNodeData,
     converted: Map<number, string>,
     linksTo: SlotLinks,
@@ -593,11 +586,7 @@ export class GroupNodeConfig {
       if (!inputName) continue
       const link = linksTo[slotIndex]
       if (link) {
-        this.checkPrimitiveConnection(
-          link,
-          inputName,
-          inputs as Record<string, unknown[]>
-        )
+        this.checkPrimitiveConnection(link, inputName, inputs)
         // This input is linked so we can skip it
         continue
       }
@@ -606,14 +595,13 @@ export class GroupNodeConfig {
         node,
         inputName,
         seenInputs,
-        inputs[inputName] as unknown[],
+        inputs[inputName],
         {
           defaultInput: true
         }
       )
 
       if (this.nodeDef?.input?.required) {
-        // @ts-expect-error legacy dynamic input assignment
         this.nodeDef.input.required[name] = config
       }
       this.newToOldWidgetMap[name] = { node, inputName }
@@ -647,7 +635,7 @@ export class GroupNodeConfig {
     const inputMap: Record<string, number> = (this.oldToNewInputMap[nodeIndex] =
       {})
     this.processInputSlots(
-      inputs as unknown as Record<string, unknown[]>,
+      inputs as Record<string, InputSpec>,
       node,
       slots,
       linksTo,
@@ -658,7 +646,7 @@ export class GroupNodeConfig {
     // Converted inputs have to be processed after all other nodes as they'll be at the end of the list
     this._convertedToProcess.push(() =>
       this.processConvertedWidgets(
-        inputs,
+        inputs as Record<string, InputSpec>,
         node,
         converted,
         linksTo,
@@ -701,8 +689,18 @@ export class GroupNodeConfig {
           node,
           slot: outputId
         }
-        // @ts-expect-error legacy dynamic output type assignment
-        this.nodeDef.output.push(defOutput[outputId])
+        const output = defOutput[outputId]
+        if (
+          typeof output !== 'string' &&
+          !(
+            Array.isArray(output) &&
+            output.every(
+              (value) => typeof value === 'string' || typeof value === 'number'
+            )
+          )
+        )
+          continue
+        this.nodeDef.output.push(output)
         this.nodeDef.output_is_list?.push(
           def.output_is_list?.[outputId] ?? false
         )
