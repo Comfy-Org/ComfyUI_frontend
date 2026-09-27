@@ -54,6 +54,7 @@ const REACTIVATION_CONFIRMATION_REQUIRED_SERVER_CODE =
 const NOT_SCHEDULED_FOR_CANCELLATION_SERVER_CODE =
   'NOT_SCHEDULED_FOR_CANCELLATION'
 const ALREADY_CANCELED_SERVER_CODE = 'ALREADY_CANCELED'
+const SUBSCRIPTION_QUOTE_STALE_SERVER_CODE = 'SUBSCRIPTION_QUOTE_STALE'
 
 export type SubscribeInput = z.infer<typeof zSubscribeRequest>
 
@@ -354,11 +355,16 @@ export function createBillingCommands(
       key
     )
     if (response.status === 'error') {
-      return matchesServerCode(
-        response,
-        REACTIVATION_CONFIRMATION_REQUIRED_SERVER_CODE
-      )
-        ? coded('REACTIVATION_CONFIRMATION_REQUIRED')
+      if (
+        matchesServerCode(
+          response,
+          REACTIVATION_CONFIRMATION_REQUIRED_SERVER_CODE
+        )
+      ) {
+        return coded('REACTIVATION_CONFIRMATION_REQUIRED')
+      }
+      return matchesServerCode(response, SUBSCRIPTION_QUOTE_STALE_SERVER_CODE)
+        ? coded('QUOTE_STALE')
         : response
     }
     const { billing_op_id, status, payment_method_url } = response.value.data

@@ -505,6 +505,14 @@ async function pay(choice: PaymentChoice) {
     await quotePlan(planSlug.value, teamCreditStopId.value)
     return
   }
+  if (result.code === 'QUOTE_STALE') {
+    const requoted = await quotePlan(planSlug.value, teamCreditStopId.value)
+    submitFailure.value = coded(
+      'failure',
+      requoted?.status === 'ok' ? 'QUOTE_STALE' : 'QUOTE_REFRESH_FAILED'
+    )
+    return
+  }
   submitFailure.value = coded('failure', result.code)
 }
 
