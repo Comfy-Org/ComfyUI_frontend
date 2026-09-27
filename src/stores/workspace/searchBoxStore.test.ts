@@ -1,40 +1,38 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import type NodeSearchBoxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
-import type { useSettingStore } from '@/platform/settings/settingStore'
+import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
+import { createMockMinimapCanvas } from '@/utils/__tests__/litegraphTestUtils'
 
-// Mock dependencies
-vi.mock('@vueuse/core', () => ({
-  useMouse: vi.fn(() => ({
-    x: { value: 100 },
-    y: { value: 200 }
-  }))
-}))
-
-const mockSettingStore = createMockSettingStore()
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: vi.fn(() => mockSettingStore)
-}))
-
-function createMockPopover(): InstanceType<typeof NodeSearchBoxPopover> {
-  return { showSearchBox: vi.fn() } as Partial<
-    InstanceType<typeof NodeSearchBoxPopover>
-  > as InstanceType<typeof NodeSearchBoxPopover>
-}
-
-function createMockSettingStore(): ReturnType<typeof useSettingStore> {
-  return {
-    get: vi.fn()
-  } as Partial<ReturnType<typeof useSettingStore>> as ReturnType<
-    typeof useSettingStore
-  >
+function createMockPopover(): Pick<
+  InstanceType<typeof NodeSearchBoxPopover>,
+  'showSearchBox'
+> {
+  return { showSearchBox: vi.fn() }
 }
 
 describe('useSearchBoxStore', () => {
+  beforeEach(() => {
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(
+      createMockMinimapCanvas().getContext
+    )
+    const canvas = new LGraphCanvas(
+      document.createElement('canvas'),
+      new LGraph(),
+      { skip_render: true }
+    )
+    canvas.ds.scale = 2
+    canvas.ds.offset = [0, 25]
+    useCanvasStore().canvas = canvas
+  })
+
   describe('when user has new search box enabled', () => {
     beforeEach(() => {
-      vi.mocked(mockSettingStore.get).mockReturnValue('default')
+      useSettingStore().settingValues['Comfy.NodeSearchBoxImpl'] = 'default'
     })
 
     it('should show new search box is enabled', () => {
@@ -57,7 +55,8 @@ describe('useSearchBoxStore', () => {
 
   describe('when user has legacy search box enabled', () => {
     beforeEach(() => {
-      vi.mocked(mockSettingStore.get).mockReturnValue('litegraph (legacy)')
+      useSettingStore().settingValues['Comfy.NodeSearchBoxImpl'] =
+        'litegraph (legacy)'
     })
 
     it('should show new search box is disabled', () => {
@@ -65,10 +64,18 @@ describe('useSearchBoxStore', () => {
       expect(store.newSearchBoxEnabled).toBe(false)
     })
 
-    it('should open legacy search box at mouse position when user presses shortcut', () => {
+    it('should open legacy search box at mouse position when user presses shortcut', async () => {
       const store = useSearchBoxStore()
       const mockPopover = createMockPopover()
       store.setPopoverRef(mockPopover)
+      const adjustMouseEvent = vi.spyOn(
+        useCanvasStore().getCanvas(),
+        'adjustMouseEvent'
+      )
+      window.dispatchEvent(
+        new MouseEvent('mousemove', { clientX: 100, clientY: 200 })
+      )
+      await nextTick()
 
       expect(vi.mocked(store.visible)).toBe(false)
 
@@ -79,9 +86,12 @@ describe('useSearchBoxStore', () => {
       expect(vi.mocked(mockPopover.showSearchBox)).toHaveBeenCalledWith(
         expect.objectContaining({
           clientX: 100,
-          clientY: 200
+          clientY: 200,
+          canvasX: 50,
+          canvasY: 75
         })
       )
+      expect(adjustMouseEvent).toHaveBeenCalledOnce()
     })
 
     it('should do nothing when user presses shortcut but popover is not ready', () => {
@@ -96,7 +106,8 @@ describe('useSearchBoxStore', () => {
 
   describe('when user configures popover reference', () => {
     beforeEach(() => {
-      vi.mocked(mockSettingStore.get).mockReturnValue('litegraph (legacy)')
+      useSettingStore().settingValues['Comfy.NodeSearchBoxImpl'] =
+        'litegraph (legacy)'
     })
 
     it('should enable legacy search when popover is set', () => {

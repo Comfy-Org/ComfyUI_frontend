@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { SUBGRAPH_OUTPUT_ID } from '@/lib/litegraph/src/constants'
 import { LLink, slotFloatingLinks } from '@/lib/litegraph/src/LLink'
@@ -11,8 +9,6 @@ import { toRerouteId } from '@/types/rerouteId'
 
 import { createTestSubgraph } from '../subgraph/__fixtures__/subgraphHelpers'
 import { FloatingRenderLink } from './FloatingRenderLink'
-
-beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
 
 function inputFloatingLink(targetId: number, targetSlot: number): LLink {
   return new LLink(

@@ -29,8 +29,6 @@ class ClipTextEncodeLikeNode extends LGraphNode {
   }
 }
 
-LiteGraph.registerNodeType('test/CLIPTextEncodeLike', ClipTextEncodeLikeNode)
-
 /**
  * Regression #13861: a renamed widget label reverted to its default on
  * save/reload, delete/undo, and copy/paste for normal (input-backed) nodes.
@@ -52,6 +50,10 @@ LiteGraph.registerNodeType('test/CLIPTextEncodeLike', ClipTextEncodeLikeNode)
  */
 describe('renameWidget label persistence via input lookup (regression #13861)', () => {
   beforeEach(() => {
+    LiteGraph.registerNodeType(
+      'test/CLIPTextEncodeLike',
+      ClipTextEncodeLikeNode
+    )
     Object.assign(LiteGraph, {
       NODE_TITLE_HEIGHT: 20,
       NODE_SLOT_HEIGHT: 15,
@@ -83,7 +85,7 @@ describe('renameWidget label persistence via input lookup (regression #13861)', 
     const graph = new LGraph()
     const node = addClipNode(graph)
     const widget = node.widgets![0]
-    const input = node.inputs![0]
+    const input = node.inputs[0]
 
     // Preconditions that reproduced the bug: the in-graph widget has a truthy
     // widgetId, but the normal-node input carries none.
@@ -135,7 +137,7 @@ describe('renameWidget label persistence via input lookup (regression #13861)', 
     const kept = addClipNode(graph)
     renameWidget(kept.widgets![0], kept, 'Negative Prompt')
 
-    expect(cleared.inputs![0].label).toBeUndefined()
+    expect(cleared.inputs[0].label).toBeUndefined()
 
     const restored = reloadSerializedGraph(
       graph.serialize(),

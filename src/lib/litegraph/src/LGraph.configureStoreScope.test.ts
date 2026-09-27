@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest'
+import { beforeEach, describe, expect, test } from 'vitest'
 
 import type { ISerialisedGraph } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -18,8 +18,6 @@ class LabelledWidgetNode extends LGraphNode {
   }
 }
 
-LiteGraph.registerNodeType('test/LabelledWidget', LabelledWidgetNode)
-
 /**
  * `configure` adopts the payload's graph id (`_configureBase`), while `clear`
  * only drops store entries keyed by the id the graph held *before* configure.
@@ -27,6 +25,10 @@ LiteGraph.registerNodeType('test/LabelledWidget', LabelledWidgetNode)
  * outlives the reload and is re-adopted instead of being read from the payload.
  */
 describe('LGraph.configure clears graph-scoped stores for the incoming id', () => {
+  beforeEach(() => {
+    LiteGraph.registerNodeType('test/LabelledWidget', LabelledWidgetNode)
+  })
+
   function addLabelledNode(graph: LGraph, label: string) {
     const node = LiteGraph.createNode('test/LabelledWidget')!
     graph.add(node)

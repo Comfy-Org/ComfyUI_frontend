@@ -4,7 +4,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 
 export function useTeamPlan() {
   const {
-    isActiveSubscription,
+    canAccessSubscriptionFeatures,
     isInitialized,
     isTeamPlan,
     maxSeats,
@@ -14,7 +14,10 @@ export function useTeamPlan() {
 
   const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
   const isOnTeamPlan = computed(
-    () => isTeamPlan.value && isActiveSubscription.value && !isCancelled.value
+    () =>
+      isTeamPlan.value &&
+      canAccessSubscriptionFeatures.value &&
+      !isCancelled.value
   )
   const hasLapsedTeamPlan = computed(
     () =>

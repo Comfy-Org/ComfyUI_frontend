@@ -32,7 +32,7 @@ const EXPECTED_META = {
     description:
       'Beginner ComfyUI tutorials: learn the node graph, LoRAs, style transfer, and ControlNets from the ground up.',
     metaDescription:
-      'Free ComfyUI tutorials for beginners. Learn the node graph first, then add LoRAs, style transfer, and ControlNets, with a workflow to open at every step.',
+      'Free ComfyUI tutorials for beginners: the node graph, text-to-image and image-to-image, LoRAs and ControlNets, then inpainting, outpainting, and upscaling.',
     title: 'ComfyUI Basics for Beginners: Node Graph, LoRAs, ControlNet'
   },
   vfx: {
@@ -317,7 +317,7 @@ test.describe('Learning tutorial page @smoke', () => {
     ).toHaveAttribute('href', '/learning')
     await expect(
       breadcrumb.getByRole('link', {
-        name: t(`learning.categories.${firstTutorial.category}`, 'en')
+        name: t(`learning.categories.${firstTutorial.category}.label`, 'en')
       })
     ).toHaveAttribute('href', `/learning/${firstTutorial.category}`)
     await expect(breadcrumb.getByText(firstTutorial.title.en)).toBeVisible()

@@ -21,12 +21,12 @@ async function saveCloseAndReopenAsApp(
 }
 
 test.describe('Builder input reordering', { tag: '@ui' }, () => {
+  test.use({
+    initialSettings: { 'Comfy.AppBuilder.VueNodeSwitchDismissed': true }
+  })
+
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.appMode.enableLinearMode()
-    await comfyPage.settings.setSetting(
-      'Comfy.AppBuilder.VueNodeSwitchDismissed',
-      true
-    )
   })
 
   test('Drag first input to last position', async ({ comfyPage }) => {

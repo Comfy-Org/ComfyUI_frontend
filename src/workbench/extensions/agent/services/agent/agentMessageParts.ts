@@ -28,17 +28,45 @@ export interface NoticePart {
   type: 'notice'
   level: 'info' | 'warning' | 'error'
   text: string
+  /**
+   * Seconds the server asked the client to wait before retrying (parsed from
+   * a `Retry-After` response header), e.g. on `funds_unavailable` admission
+   * denials. Presentation-only - the caller decides whether/how to honour it
+   * (countdown, disabled input, auto-retry); never implies a scheduled retry
+   * on its own.
+   */
+  retryAfterSeconds?: number
 }
 
 export interface TabLinkPart {
   type: 'tabLink'
   workflowId: string
+  locatorId?: string
   name?: string
+}
+
+export interface RunApprovalPart {
+  type: 'runApproval'
+  askId: string
+  workflowId?: string
+  workflowName?: string
+}
+
+export interface PaywallPart {
+  type: 'paywall'
+  message?: string
 }
 
 export type ActivityPart = ThinkingPart | ToolPart
 
-type MessagePart = TextPart | ThinkingPart | ToolPart | NoticePart | TabLinkPart
+export type MessagePart =
+  | TextPart
+  | ThinkingPart
+  | ToolPart
+  | NoticePart
+  | TabLinkPart
+  | RunApprovalPart
+  | PaywallPart
 
 export interface AssistantMessage {
   id: TurnId
@@ -60,5 +88,5 @@ export function createAssistantMessage(id: TurnId): AssistantMessage {
 }
 
 export function snapshotMessage(message: AssistantMessage): AssistantMessage {
-  return { ...message, parts: [...message.parts] }
+  return { ...message, parts: message.parts.map((part) => ({ ...part })) }
 }

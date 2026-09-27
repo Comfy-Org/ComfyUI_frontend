@@ -9,7 +9,9 @@ import {
   writeFileSync
 } from 'node:fs'
 import { dirname, join, relative, resolve } from 'node:path'
-import { fileURLToPath, pathToFileURL } from 'node:url'
+import { fileURLToPath } from 'node:url'
+
+import type { ResponseUsage } from 'openai/resources/responses/responses'
 
 import type { OutputLocale, TranslationPipelineConfig } from './config'
 import { translationPipelineConfig } from './config'
@@ -38,10 +40,13 @@ import {
 } from './protected-tokens'
 import type { TranslateBatch, TranslationItem } from './translate'
 import {
+  chunkItems,
   createOpenAiTranslator,
+  createRequestCounter,
   mapWithConcurrency,
   translateLocaleItems
 } from './translate'
+import { isMainModule } from '../isMainModule'
 
 interface SourceManifest {
   files: Record<string, string>
@@ -327,6 +332,24 @@ function print(line: string): void {
   process.stdout.write(`${line}\n`)
 }
 
+export function formatUsageSummary(
+  usages: ReadonlyArray<Partial<ResponseUsage> | undefined>,
+  requestCount: number
+): string {
+  let inputTokens = 0
+  let outputTokens = 0
+  let reasoningTokens = 0
+  let totalTokens = 0
+  for (const usage of usages) {
+    if (!usage) continue
+    inputTokens += usage.input_tokens ?? 0
+    outputTokens += usage.output_tokens ?? 0
+    reasoningTokens += usage.output_tokens_details?.reasoning_tokens ?? 0
+    totalTokens += usage.total_tokens ?? 0
+  }
+  return `OpenAI usage: ${requestCount} HTTP requests for ${usages.length} responses; ${inputTokens} input, ${outputTokens} output (${reasoningTokens} reasoning), ${totalTokens} total tokens.`
+}
+
 function reportCheck(states: readonly LocaleFileState[]): number {
   let pendingTotal = 0
   let strayTotal = 0
@@ -435,16 +458,6 @@ async function run(argv: readonly string[]): Promise<void> {
   const states = loadLocaleFileStates(config, outputDir, plans)
   const orphans = orphanedOutputFiles(outputDir, config, filenames)
 
-  if (check) {
-    for (const orphan of orphans) {
-      print(
-        `${relative(repoRoot, orphan)}: the English source file was removed; this locale file will be deleted`
-      )
-    }
-    process.exitCode = reportCheck(states)
-    return
-  }
-
   const translationPlans = new Map(
     states.map((state) => [
       state,
@@ -455,6 +468,37 @@ async function run(argv: readonly string[]): Promise<void> {
     (count, plan) => count + plan.items.length,
     0
   )
+  const pendingPlans = [...translationPlans].filter(
+    ([, plan]) => plan.items.length > 0
+  )
+  const initialBatchCount = pendingPlans.reduce(
+    (count, [, plan]) =>
+      count +
+      chunkItems(
+        plan.items,
+        config.maxItemsPerRequest,
+        config.maxSourceCharsPerRequest
+      ).length,
+    0
+  )
+  const pendingLocaleCount = new Set(
+    pendingPlans.map(([state]) => state.locale.code)
+  ).size
+  if (pendingTotal > 0) {
+    print(
+      `Translation preflight: ${pendingTotal} strings in ${initialBatchCount} initial batches across ${pendingLocaleCount} locales; retries and truncation splits can add requests.`
+    )
+  }
+
+  if (check) {
+    for (const orphan of orphans) {
+      print(
+        `${relative(repoRoot, orphan)}: the English source file was removed; this locale file will be deleted`
+      )
+    }
+    process.exitCode = reportCheck(states)
+    return
+  }
 
   const apiKey = process.env.OPENAI_API_KEY
   if (pendingTotal > 0 && !apiKey) {
@@ -462,12 +506,19 @@ async function run(argv: readonly string[]): Promise<void> {
       `${pendingTotal} strings need translation but OPENAI_API_KEY is not set.`
     )
   }
+  const responseUsages: (ResponseUsage | undefined)[] = []
+  const counter = createRequestCounter()
   const translateBatch: TranslateBatch = apiKey
     ? createOpenAiTranslator({
         apiKey,
+        fetchFn: counter.fetch,
         model: config.model,
         reasoningEffort: config.reasoningEffort,
-        glossary: config.glossary
+        glossary: config.glossary,
+        maxTruncationSplitDepth: config.maxTruncationSplitDepth,
+        onUsage: (usage) => {
+          responseUsages.push(usage)
+        }
       })
     : async () => {
         throw new Error('No translator available')
@@ -475,7 +526,7 @@ async function run(argv: readonly string[]): Promise<void> {
 
   const outcomes = await mapWithConcurrency(
     states,
-    config.localeConcurrency,
+    config.localeFileConcurrency,
     async (
       state
     ): Promise<
@@ -514,6 +565,10 @@ async function run(argv: readonly string[]): Promise<void> {
       }
     }
   )
+
+  if (counter.requestCount() > 0) {
+    print(formatUsageSummary(responseUsages, counter.requestCount()))
+  }
 
   const failuresByFile = new Map<string, string[]>()
   function addFailure(filename: string, message: string): void {
@@ -611,10 +666,7 @@ async function run(argv: readonly string[]): Promise<void> {
   print(`Source provenance: ${relative(repoRoot, manifestFile)}`)
 }
 
-const invokedAsScript = process.argv[1]
-  ? pathToFileURL(process.argv[1]).href === import.meta.url
-  : false
-if (invokedAsScript) {
+if (isMainModule(import.meta.url)) {
   run(process.argv.slice(2)).catch((error: unknown) => {
     console.error(error instanceof Error ? error.message : error)
     process.exitCode = 1

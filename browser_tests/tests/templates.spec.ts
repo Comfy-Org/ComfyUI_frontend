@@ -5,6 +5,7 @@ import { getWav } from '@e2e/fixtures/components/AudioPreview'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { trackElementFlash } from '@e2e/fixtures/utils/flashDetector'
+import { assetPath } from '@e2e/fixtures/utils/paths'
 import type { WorkflowTemplates } from '@/platform/workflow/templates/types/template'
 
 async function checkTemplateFileExists(
@@ -18,6 +19,14 @@ async function checkTemplateFileExists(
 }
 
 test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
+  test.beforeEach(async ({ context }) => {
+    await context.route(
+      'https://comfyanonymous.github.io/ComfyUI_examples/',
+      (route) =>
+        route.fulfill({ contentType: 'text/html', body: '<!doctype html>' })
+    )
+  })
+
   test('should have a JSON workflow file for each template', async ({
     comfyPage
   }) => {
@@ -33,6 +42,15 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
   })
 
   test('Can load template workflows', async ({ comfyPage }) => {
+    await comfyPage.page.route(
+      /^https:\/\/raw\.githubusercontent\.com\/Comfy-Org\/workflow_templates\/[a-f0-9]{40}\/input\/transparent_rgb_gaming_mouse\.png$/,
+      (route) =>
+        route.fulfill({
+          path: assetPath('test_upload_image.png'),
+          contentType: 'image/png'
+        })
+    )
+
     // Clear the workflow
     await comfyPage.menu.workflowsTab.open()
     await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
@@ -61,6 +79,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     await comfyPage.settings.setSetting('Comfy.TutorialCompleted', false)
 
     // Load the page
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup({ clearStorage: true })
 
     await expect(comfyPage.templates.content).toBeVisible()
@@ -130,6 +149,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
 
     await comfyPage.settings.setSetting('Comfy.TutorialCompleted', false)
 
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup({
       clearStorage: true,
       url: '/?share=test-share-id'
@@ -183,10 +203,6 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
           body: 'Not Found'
         })
       }
-    )
-
-    await comfyPage.page.route('**/templates/index.json', (route) =>
-      route.continue()
     )
 
     await comfyPage.settings.setSetting('Comfy.Locale', locale)
@@ -511,6 +527,7 @@ test.describe(
 
       await comfyPage.settings.setSetting('Comfy.TutorialCompleted', false)
 
+      // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
       await comfyPage.setup({
         clearStorage: true,
         url: '/?template=default'

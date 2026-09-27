@@ -16,7 +16,7 @@ const routes = getRoutes(locale)
 const cards = [
   { product: 'local', href: routes.download, bg: 'bg-primary-warm-gray' },
   { product: 'cloud', href: routes.cloud, bg: 'bg-secondary-mauve' },
-  { product: 'api', href: routes.api, bg: 'bg-primary-comfy-plum' },
+  { product: 'platform', href: routes.platform, bg: 'bg-primary-comfy-plum' },
   {
     product: 'enterprise',
     href: routes.enterprise,
@@ -27,7 +27,7 @@ const cards = [
 
 <template>
   <section
-    class="max-w-9xl mx-auto bg-primary-comfy-ink px-0 py-20 lg:px-20 lg:py-24"
+    class="mx-auto max-w-9xl bg-primary-comfy-ink px-0 py-20 lg:px-20 lg:py-24"
   >
     <div class="flex flex-col items-center px-4 text-center">
       <h2
@@ -41,7 +41,7 @@ const cards = [
     </div>
 
     <div
-      class="rounded-5xl bg-transparency-white-t4 mt-16 grid grid-cols-1 gap-4 p-4 lg:grid-cols-4 lg:p-2"
+      class="mt-16 grid grid-cols-1 gap-4 rounded-5xl bg-transparency-white-t4 p-4 lg:grid-cols-4 lg:p-2"
     >
       <ProductCard
         v-for="card in cards"

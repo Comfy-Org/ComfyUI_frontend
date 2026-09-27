@@ -1,3 +1,5 @@
+import { useAuthStore } from '@/stores/authStore'
+
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
@@ -5,23 +7,17 @@ import type {
   SavedPaymentMethod
 } from './workspaceApi'
 
-const {
-  mockAxiosInstance,
-  mockGetWorkspaceAuthHeaderOrThrow,
-  mockGetFirebaseAuthHeaderOrThrow
-} = vi.hoisted(() => ({
+const { mockAxiosInstance } = vi.hoisted(() => ({
   mockAxiosInstance: {
     get: vi.fn(),
     post: vi.fn(),
     patch: vi.fn(),
     delete: vi.fn(),
     interceptors: { response: { use: vi.fn() } }
-  },
-  mockGetWorkspaceAuthHeaderOrThrow: vi.fn(),
-  mockGetFirebaseAuthHeaderOrThrow: vi.fn()
+  }
 }))
 
-vi.mock('axios', () => ({
+vi.mock<unknown>(import('axios'), () => ({
   default: {
     create: vi.fn(() => mockAxiosInstance),
     isAxiosError: vi.fn((err: unknown) => {
@@ -35,48 +31,48 @@ vi.mock('axios', () => ({
   }
 }))
 
-vi.mock('@/i18n', () => ({
-  t: vi.fn((key: string) => key)
-}))
+vi.mock(import('@/i18n'))
 
-vi.mock('@/scripts/api', () => ({
-  api: {
-    apiURL: vi.fn((path: string) => `/api${path}`)
-  }
-}))
-
-vi.mock('./workspaceApiUrl', () => ({
+vi.mock(import('./workspaceApiUrl'), () => ({
   workspaceApiUrl: (path: string) => `/api${path}`
 }))
 
-vi.mock('@/stores/authStore', () => ({
-  useAuthStore: () => ({
-    getWorkspaceAuthHeaderOrThrow: mockGetWorkspaceAuthHeaderOrThrow,
-    getFirebaseAuthHeaderOrThrow: mockGetFirebaseAuthHeaderOrThrow
-  })
-}))
+vi.mock(import('firebase/auth'), { spy: true })
+
+beforeEach(() => {
+  stubFirebaseAuthHarness()
+})
 
 import { workspaceApi } from './workspaceApi'
+import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
-const AUTH_HEADER = { Authorization: 'Bearer test-token' }
+const AUTH_HEADER = { Authorization: 'Bearer test-token' } as const
 
 describe('workspaceApi', () => {
   beforeEach(() => {
-    mockGetWorkspaceAuthHeaderOrThrow.mockResolvedValue(AUTH_HEADER)
-    mockGetFirebaseAuthHeaderOrThrow.mockResolvedValue(AUTH_HEADER)
+    vi.mocked(useAuthStore().getWorkspaceAuthHeaderOrThrow).mockResolvedValue(
+      AUTH_HEADER
+    )
+    vi.mocked(useAuthStore().getFirebaseAuthHeaderOrThrow).mockResolvedValue(
+      AUTH_HEADER
+    )
   })
 
   describe('authentication', () => {
     it('propagates error when workspace authentication rejects', async () => {
       const authError = new Error('toastMessages.userNotAuthenticated')
-      mockGetWorkspaceAuthHeaderOrThrow.mockRejectedValue(authError)
+      vi.mocked(useAuthStore().getWorkspaceAuthHeaderOrThrow).mockRejectedValue(
+        authError
+      )
 
       await expect(workspaceApi.list()).rejects.toBe(authError)
     })
 
     it('propagates error when getFirebaseAuthHeaderOrThrow rejects', async () => {
       const authError = new Error('toastMessages.userNotAuthenticated')
-      mockGetFirebaseAuthHeaderOrThrow.mockRejectedValue(authError)
+      vi.mocked(useAuthStore().getFirebaseAuthHeaderOrThrow).mockRejectedValue(
+        authError
+      )
 
       await expect(workspaceApi.acceptInvite('token')).rejects.toBe(authError)
     })
@@ -340,8 +336,10 @@ describe('workspaceApi', () => {
 
       const result = await workspaceApi.acceptInvite('abc-token')
 
-      expect(mockGetFirebaseAuthHeaderOrThrow).toHaveBeenCalled()
-      expect(mockGetWorkspaceAuthHeaderOrThrow).not.toHaveBeenCalled()
+      expect(useAuthStore().getFirebaseAuthHeaderOrThrow).toHaveBeenCalled()
+      expect(
+        useAuthStore().getWorkspaceAuthHeaderOrThrow
+      ).not.toHaveBeenCalled()
       expect(mockAxiosInstance.post).toHaveBeenCalledWith(
         '/api/invites/abc-token/accept',
         null,
@@ -421,34 +419,42 @@ describe('workspaceApi', () => {
       expect(result).toEqual(data)
     })
 
-    it('getChurnkeyAuth() returns validated Stripe-provider credentials', async () => {
-      const data = {
-        customer_id: 'cus_test_1',
-        auth_hash: 'hash-1',
-        mode: 'test'
-      }
-      mockAxiosInstance.get.mockResolvedValue({ data })
-
-      await expect(workspaceApi.getChurnkeyAuth()).resolves.toEqual(data)
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith(
-        '/api/billing/churnkey/auth',
-        { headers: AUTH_HEADER }
-      )
-    })
-
-    it('getChurnkeyAuth() rejects malformed credentials', async () => {
-      mockAxiosInstance.get.mockResolvedValue({
-        data: {
+    it.for([undefined, 'sub_offer_1'])(
+      'getChurnkeyAuth() retains the optional offer subscription %s',
+      async (offerSubscriptionId) => {
+        const data = {
           customer_id: 'cus_test_1',
-          auth_hash: '',
-          mode: 'test'
+          auth_hash: 'hash-1',
+          mode: 'test',
+          offer_subscription_id: offerSubscriptionId
         }
-      })
+        mockAxiosInstance.get.mockResolvedValue({ data })
 
-      await expect(workspaceApi.getChurnkeyAuth()).rejects.toMatchObject({
-        name: 'ZodError'
-      })
-    })
+        await expect(workspaceApi.getChurnkeyAuth()).resolves.toEqual(data)
+        expect(mockAxiosInstance.get).toHaveBeenCalledWith(
+          '/api/billing/churnkey/auth',
+          { headers: AUTH_HEADER }
+        )
+      }
+    )
+
+    it.for([{ auth_hash: '' }, { offer_subscription_id: '' }])(
+      'getChurnkeyAuth() rejects malformed credentials %j',
+      async (malformed) => {
+        mockAxiosInstance.get.mockResolvedValue({
+          data: {
+            customer_id: 'cus_test_1',
+            auth_hash: 'hash',
+            mode: 'test',
+            ...malformed
+          }
+        })
+
+        await expect(workspaceApi.getChurnkeyAuth()).rejects.toMatchObject({
+          name: 'ZodError'
+        })
+      }
+    )
 
     it('getChurnkeyAuth() normalizes Axios failures', async () => {
       mockAxiosInstance.get.mockRejectedValue({

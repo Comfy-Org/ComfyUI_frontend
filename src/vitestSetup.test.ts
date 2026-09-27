@@ -1,5 +1,25 @@
 import { describe, expect, it, vi } from 'vitest'
 
+describe.sequential('registered LiteGraph type cleanup', () => {
+  it('tracks a singleton registered after a module reset', async () => {
+    vi.resetModules()
+    const { LGraphNode, LiteGraph } =
+      await import('@/lib/litegraph/src/litegraph')
+    LiteGraph.registerNodeType(
+      'test/reset-module',
+      class ResetModuleNode extends LGraphNode {}
+    )
+    expect(LiteGraph.registered_node_types['test/reset-module']).toBeDefined()
+  })
+
+  it('clears registrations from the new singleton', async () => {
+    const { litegraph } = await import('@/lib/litegraph/src/litegraphInstance')
+    expect(
+      litegraph().registered_node_types['test/reset-module']
+    ).toBeUndefined()
+  })
+})
+
 /**
  * Guards the network block installed by `vitest.setup.ts`.
  *

@@ -143,6 +143,15 @@
             class="border-t border-secondary-background first:border-t-0"
             @update:collapse="setSectionCollapsed(group.groupKey, $event)"
           >
+            <template #title-badge>
+              <span
+                v-if="group.blockedLastRun"
+                data-testid="blocked-last-run-indicator"
+                class="flex shrink-0 items-center rounded-full bg-warning-background px-2 py-0.5 text-2xs font-medium text-warning-on-background"
+              >
+                {{ t('rightSidePanel.blockedLastRun') }}
+              </span>
+            </template>
             <template #actions>
               <Button
                 v-if="
@@ -276,7 +285,7 @@
                           showDelay: 300
                         }"
                         type="button"
-                        class="focus-visible:ring-ring m-0 inline max-w-full cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left text-xs/relaxed font-normal wrap-break-word text-muted-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:ring-1 focus-visible:outline-none focus-visible:ring-inset"
+                        class="m-0 inline max-w-full cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left text-xs/relaxed font-normal wrap-break-word text-muted-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none focus-visible:ring-inset"
                         @click="handleLocateNode(item.nodeId)"
                       >
                         {{ item.label }}

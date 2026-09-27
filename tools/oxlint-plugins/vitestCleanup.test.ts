@@ -184,6 +184,79 @@ vi.spyOn()
 vi.stubGlobal()
 `
 
+const liteGraphFixture = `import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  it,
+  onTestFinished,
+  suite
+} from 'vitest'
+import { LiteGraph as Graph } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph as RelativeGraph } from './litegraph'
+
+Graph.registerNodeType('module', class {})
+RelativeGraph.registerNodeType('relative-module', class {})
+beforeAll(() => Graph.registerNodeType('suite', class {}))
+beforeEach(() => Graph.registerNodeType('test', class {}))
+describe('collection registration', () => {
+  Graph.registerNodeType('describe', class {})
+})
+suite('collection registration alias', () => {
+  Graph.registerNodeType('suite-alias', class {})
+})
+describe.sequential('modified collection registration', () => {
+  Graph.registerNodeType('describe-sequential', class {})
+})
+suite.concurrent('modified collection registration alias', () => {
+  Graph.registerNodeType('suite-concurrent', class {})
+})
+describe.each([1])('parameterized collection registration', () => {
+  Graph.registerNodeType('describe-each', class {})
+})
+suite.each([1])('parameterized collection registration alias', () => {
+  Graph.registerNodeType('suite-each', class {})
+})
+describe.for([1])('parameterized collection registration', () => {
+  Graph.registerNodeType('describe-for', class {})
+})
+suite.for([1])('parameterized collection registration alias', () => {
+  Graph.registerNodeType('suite-for', class {})
+})
+describe.skipIf(true)('conditional collection registration', () => {
+  Graph.registerNodeType('describe-skip-if', class {})
+})
+suite.runIf(true)('conditional collection registration alias', () => {
+  Graph.registerNodeType('suite-run-if', class {})
+})
+describe.skipIf(true).sequential('modified conditional registration', () => {
+  Graph.registerNodeType('describe-skip-if-sequential', class {})
+})
+suite.runIf(true).concurrent('modified conditional registration alias', () => {
+  Graph.registerNodeType('suite-run-if-concurrent', class {})
+})
+
+afterAll(() => Graph.unregisterNodeType('suite'))
+afterEach(() => Graph.clearRegisteredTypes())
+onTestFinished(() => Graph.unregisterNodeType('finished'))
+it('allows per-test registration', () => {
+  Graph.registerNodeType('inline', class {})
+  Graph.unregisterNodeType('inline')
+  Graph.clearRegisteredTypes()
+})
+
+const LiteGraph = {
+  registerNodeType() {},
+  unregisterNodeType() {},
+  clearRegisteredTypes() {}
+}
+LiteGraph.registerNodeType()
+LiteGraph.unregisterNodeType()
+LiteGraph.clearRegisteredTypes()
+`
+
 function expectReportsAt(output: string, lines: readonly number[]) {
   const plainOutput = stripVTControlCharacters(output)
   for (const line of lines) {
@@ -198,6 +271,7 @@ describe('Vitest cleanup rules', () => {
   beforeAll(() => {
     workDir = mkdtempSync(path.join(tmpdir(), 'comfy-vitest-cleanup-'))
     writeFileSync(path.join(workDir, 'invalid.test.ts'), invalidFixture)
+    writeFileSync(path.join(workDir, 'litegraph.test.ts'), liteGraphFixture)
     writeFileSync(path.join(workDir, 'unrelated.test.ts'), unrelatedFixture)
     writeFileSync(path.join(workDir, 'playwright.spec.ts'), invalidFixture)
     writeFileSync(
@@ -209,6 +283,8 @@ describe('Vitest cleanup rules', () => {
             files: ['**/*.test.ts'],
             rules: {
               'comfy/no-module-scope-vitest-mocks': 'warn',
+              'comfy/no-persistent-litegraph-registration': 'warn',
+              'comfy/no-redundant-litegraph-cleanup': 'warn',
               'comfy/no-redundant-vitest-cleanup': 'warn'
             }
           }
@@ -223,6 +299,7 @@ describe('Vitest cleanup rules', () => {
         '--config',
         path.join(workDir, '.oxlintrc.json'),
         'invalid.test.ts',
+        'litegraph.test.ts',
         'unrelated.test.ts',
         'playwright.spec.ts'
       ],
@@ -275,6 +352,18 @@ describe('Vitest cleanup rules', () => {
 
   it('reports stubs and spies installed at module scope or in beforeAll', () => {
     expectReportsAt(output, [73, 74, 75, 76, 77, 80, 131, 136, 137, 138])
+  })
+
+  it('reports persistent LiteGraph registrations and redundant cleanup', () => {
+    expect(
+      output.match(/Register LiteGraph node types in beforeEach or a test/g)
+    ).toHaveLength(15)
+    expect(
+      output.match(/LiteGraph\.unregisterNodeType\(\) is redundant/g)
+    ).toHaveLength(2)
+    expect(
+      output.match(/LiteGraph\.clearRegisteredTypes\(\) is redundant/g)
+    ).toHaveLength(1)
   })
 
   it('ignores unrelated names, nested helpers, test bodies, and Playwright specs', () => {

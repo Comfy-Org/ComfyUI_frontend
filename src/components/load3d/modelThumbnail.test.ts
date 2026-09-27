@@ -4,13 +4,15 @@ import { generateModelThumbnail } from './modelThumbnail'
 
 const isAssetPreviewSupported = vi.hoisted(() => vi.fn(() => false))
 const persistThumbnail = vi.hoisted(() => vi.fn(async () => {}))
-vi.mock('@/platform/assets/utils/assetPreviewUtil', () => ({
+vi.mock(import('@/platform/assets/utils/assetPreviewUtil'), () => ({
   isAssetPreviewSupported,
   persistThumbnail
 }))
 
 const createLoad3d = vi.hoisted(() => vi.fn())
-vi.mock('@/extensions/core/load3d/createLoad3d', () => ({ createLoad3d }))
+vi.mock(import('@/extensions/core/load3d/createLoad3d'), () => ({
+  createLoad3d
+}))
 
 function mockInstance(overrides: Record<string, unknown> = {}) {
   return {
@@ -89,5 +91,25 @@ describe('generateModelThumbnail', () => {
     await secondRun
 
     expect(createLoad3d).toHaveBeenCalledTimes(2)
+  })
+
+  it('times out a stuck load, disposes it, and advances the queue', async () => {
+    vi.useFakeTimers()
+    const stuck = mockInstance({
+      loadModel: vi.fn(() => new Promise<void>(() => {}))
+    })
+    const next = mockInstance()
+    createLoad3d.mockReturnValueOnce(stuck).mockReturnValueOnce(next)
+
+    const stuckRun = generateModelThumbnail('/stuck.glb', 'stuck.glb')
+    const nextRun = generateModelThumbnail('/next.glb', 'next.glb')
+    await vi.waitFor(() => expect(createLoad3d).toHaveBeenCalledTimes(1))
+
+    await vi.advanceTimersByTimeAsync(15_000)
+
+    await expect(stuckRun).resolves.toBeNull()
+    await expect(nextRun).resolves.toBe('data:image/png;base64,thumb')
+    expect(stuck.remove).toHaveBeenCalledTimes(1)
+    expect(next.loadModel).toHaveBeenCalledWith('/next.glb')
   })
 })

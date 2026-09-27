@@ -10,15 +10,7 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({})
-}))
-vi.mock('@/stores/domWidgetStore', () => ({
-  useDomWidgetStore: () => ({ widgetStates: new Map() })
-}))
-vi.mock('@/services/litegraphService', () => ({
-  useLitegraphService: () => ({ updatePreviews: () => ({}) })
-}))
+vi.mock(import('@/services/litegraphService'))
 
 function createHostNode(id: number): SubgraphNode {
   return createTestSubgraphNode(createTestSubgraph(), { id })

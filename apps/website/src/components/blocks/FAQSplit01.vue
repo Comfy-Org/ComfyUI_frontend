@@ -10,10 +10,11 @@ import AccordionTrigger from '../ui/accordion/AccordionTrigger.vue'
 
 type Faq = { id: string; question: string; answer: string }
 
-const { faqs } = defineProps<{
+const { faqs, compact = false } = defineProps<{
   id?: string
   heading: string
   faqs: readonly Faq[]
+  compact?: boolean
 }>()
 
 const parsedFaqs = computed(() =>
@@ -22,12 +23,19 @@ const parsedFaqs = computed(() =>
 </script>
 
 <template>
-  <section :id class="max-w-9xl mx-auto px-4 py-16 lg:px-20 lg:py-24">
+  <section :id class="mx-auto max-w-9xl px-4 py-16 lg:px-20 lg:py-24">
     <div class="flex flex-col gap-6 md:flex-row md:gap-16">
       <div
         class="sticky top-20 z-10 w-full shrink-0 self-start bg-primary-comfy-ink py-4 md:top-28 md:w-80 md:py-0"
       >
-        <h2 class="text-4xl font-light text-primary-comfy-canvas md:text-5xl">
+        <h2
+          :class="
+            cn(
+              'font-light text-primary-comfy-canvas',
+              compact ? 'text-2xl md:text-3xl' : 'text-4xl md:text-5xl'
+            )
+          "
+        >
           {{ heading }}
         </h2>
       </div>
@@ -57,8 +65,13 @@ const parsedFaqs = computed(() =>
                   :href="part.value"
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 rounded-sm underline underline-offset-2 transition-opacity hover:opacity-70 focus-visible:ring-2 focus-visible:outline-none"
+                  class="rounded-sm text-primary-comfy-yellow underline underline-offset-2 transition-opacity hover:opacity-70 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
                   >{{ part.label ?? part.value }}</a
+                >
+                <strong
+                  v-else-if="part.type === 'strong'"
+                  class="font-semibold text-primary-comfy-canvas"
+                  >{{ part.value }}</strong
                 >
                 <template v-else>{{ part.value }}</template>
               </template>
