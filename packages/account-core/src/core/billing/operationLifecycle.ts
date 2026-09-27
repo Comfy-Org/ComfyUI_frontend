@@ -581,17 +581,7 @@ export function createBillingOperationLifecycle(
     const attemptStartedAt = now()
     const issued = await issue(context.scope)
     if (!isLive(context)) {
-      // The operation exists server-side under the scope this tab just left;
-      // the pointer waits there so a return recovers it rather than reissuing.
-      if (issued.status === 'ok') {
-        pointers.write(context.scope, {
-          operationId: issued.value.operationId,
-          kind,
-          presentation: routeFor(rail, issued.value),
-          attemptStartedAt
-        })
-      }
-      return SUPERSEDED
+      return leftScope(context, kind, rail, issued, attemptStartedAt)
     }
     if (issued.status === 'error') return issued
 
@@ -609,6 +599,26 @@ export function createBillingOperationLifecycle(
       resumed: false
     })
     return { status: 'ok', value: record.state }
+  }
+
+  // The operation exists server-side under the scope this tab just left; the
+  // pointer waits there so a return recovers it rather than reissuing.
+  function leftScope(
+    context: BillingScopeContext,
+    kind: BillingOperationKind,
+    rail: BillingStatusData['billing_rail'],
+    issued: BillingResult<IssuedBillingOperation>,
+    attemptStartedAt: number
+  ): typeof SUPERSEDED {
+    if (issued.status === 'ok') {
+      pointers.write(context.scope, {
+        operationId: issued.value.operationId,
+        kind,
+        presentation: routeFor(rail, issued.value),
+        attemptStartedAt
+      })
+    }
+    return SUPERSEDED
   }
 
   /**
