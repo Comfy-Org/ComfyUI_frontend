@@ -17,6 +17,10 @@
     padding: revert;
   }
 
+  [data-app-defaults] input[type='checkbox'] {
+    margin: revert;
+  }
+
   [data-app-defaults] input::placeholder,
   [data-app-defaults] a {
     color: revert;
