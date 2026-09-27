@@ -166,5 +166,18 @@ describe('refreshNodeGeometry non-decreasing content-size floor (PM-1304)', () =
     // Bug: the rendered size stays pinned to the stale content-size floor
     // instead of honoring the user's explicit smaller size.
     expect(refreshNodeGeometry(node)).toEqual([220, 120])
+
+    // ResizeObserver may immediately repeat the pre-resize measurement. It
+    // must remain suppressed until the content actually changes.
+    layoutStore.reportContentSize(graph.id, node.id, {
+      width: 220,
+      height: 400
+    })
+    expect(refreshNodeGeometry(node)).toEqual([220, 120])
+    layoutStore.reportContentSize(graph.id, node.id, {
+      width: 220,
+      height: 401
+    })
+    expect(refreshNodeGeometry(node)).toEqual([220, 401])
   })
 })

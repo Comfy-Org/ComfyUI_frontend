@@ -216,6 +216,7 @@ class LayoutStoreImpl {
   private linkSegmentLayouts = new Map<string, LinkSegmentLayout>() // Internal string key: ${linkId}:${rerouteId ?? 'final'}
   private slotOffsets = new Map<ScopedLayoutKey, SlotOffsetSnapshot>()
   private contentSizes = new Map<ScopedLayoutKey, Size>()
+  private suppressedContentSizes = new Map<ScopedLayoutKey, Size>()
   private rerouteLayouts = new Map<ScopedLayoutKey, RerouteLayout>()
 
   // Spatial index managers
@@ -423,6 +424,12 @@ class LayoutStoreImpl {
 
   reportContentSize(rootGraphId: UUID, nodeId: NodeId, size: Size): void {
     const key = makeScopedLayoutKey(rootGraphId, nodeId)
+    const suppressed = this.suppressedContentSizes.get(key)
+    if (suppressed) {
+      if (suppressed.width === size.width && suppressed.height === size.height)
+        return
+      this.suppressedContentSizes.delete(key)
+    }
     const previous = this.contentSizes.get(key)
     if (previous?.width === size.width && previous.height === size.height)
       return
@@ -432,7 +439,11 @@ class LayoutStoreImpl {
 
   clearContentSize(rootGraphId: UUID, nodeId: NodeId): void {
     const key = makeScopedLayoutKey(rootGraphId, nodeId)
-    if (this.contentSizes.delete(key)) this._contentSizeVersion++
+    const previous = this.contentSizes.get(key)
+    if (!previous) return
+    this.suppressedContentSizes.set(key, previous)
+    this.contentSizes.delete(key)
+    this._contentSizeVersion++
   }
 
   /**
@@ -859,6 +870,9 @@ class LayoutStoreImpl {
       this.contentSizes.delete(key)
       this._contentSizeVersion++
     }
+    for (const key of this.suppressedContentSizes.keys()) {
+      if (key.startsWith(prefix)) this.suppressedContentSizes.delete(key)
+    }
     let slotOffsetsDropped = false
     for (const key of this.slotOffsets.keys()) {
       if (!key.startsWith(prefix)) continue
@@ -983,6 +997,7 @@ class LayoutStoreImpl {
         this.contentSizes.clear()
         this._contentSizeVersion++
       }
+      this.suppressedContentSizes.clear()
       if (this.slotOffsets.size > 0) {
         this.slotOffsets.clear()
         this._slotOffsetVersion.value++
@@ -1098,6 +1113,7 @@ class LayoutStoreImpl {
 
     this.ynodes.delete(nodeKey)
     if (this.contentSizes.delete(nodeKey)) this._contentSizeVersion++
+    this.suppressedContentSizes.delete(nodeKey)
     this.slotOffsets.delete(nodeKey)
     // Link geometry is cleaned up per-link by LLink.disconnect as the node's
     // connections are severed, so nothing to do here.
