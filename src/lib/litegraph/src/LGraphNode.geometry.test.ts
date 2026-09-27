@@ -179,7 +179,7 @@ describe('layout geometry projection', () => {
     })
   })
 
-  test('keeps measured geometry separate from requested size', () => {
+  test('lets requested size supersede a stale content measurement', () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')
     node.size = [100, 50]
@@ -192,19 +192,19 @@ describe('layout geometry projection', () => {
     expect([...node.size]).toEqual([100, 50])
     expect(node.serialize().size).toEqual([100, 50])
     node.setSize([node.size[0] + 90, node.size[1] + 100])
-    expect([...node.renderingSize]).toEqual([225, 150])
+    expect([...node.renderingSize]).toEqual([190, 150])
     const bounds: Rect = [0, 0, 0, 0]
     node.measure(bounds)
     expect(bounds).toEqual([
       node.pos[0],
       node.pos[1] - LiteGraph.NODE_TITLE_HEIGHT,
-      225,
+      190,
       150 + LiteGraph.NODE_TITLE_HEIGHT
     ])
     expect(node.serialize().size).toEqual([190, 150])
   })
 
-  test('uses the attached graph for geometry and measured content', () => {
+  test('uses the attached graph when overriding measured content', () => {
     const attachedGraph = new LGraph()
     const currentGraph = new LGraph()
     const node = new LGraphNode('attached')
@@ -230,7 +230,7 @@ describe('layout geometry projection', () => {
       position: { x: 30, y: 40 },
       size: { width: 200, height: 80 }
     })
-    expect([...node.renderingSize]).toEqual([225, 90])
+    expect([...node.renderingSize]).toEqual([200, 80])
   })
 })
 
