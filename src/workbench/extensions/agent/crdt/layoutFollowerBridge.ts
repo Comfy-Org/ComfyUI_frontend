@@ -1,3 +1,4 @@
+import { assert } from '@/base/assert'
 import { reportError } from '@/platform/telemetry/reportError'
 
 import type {
@@ -9,6 +10,7 @@ import type {
   DocUpdate
 } from './docFrameClient'
 import { wireLog } from './crdtLog'
+import { STALE_SCHEMA_RESEED_REQUIRED } from './docFrameCodes'
 import { FollowerDoc } from './followerDoc'
 import { FollowerSchemaError, assertReadableSchema } from './schemaGuard'
 
@@ -43,6 +45,19 @@ function trySend(send: () => boolean): boolean {
     wireLog.warn('frame_send_failed', 'outbound doc frame dropped', error)
     return false
   }
+}
+
+/**
+ * {@link assert} for a guard whose caller must still bail out where assert
+ * does not throw (production reports instead).
+ */
+function holdsInvariant(
+  condition: boolean,
+  message: string,
+  context: Record<string, unknown>
+): boolean {
+  assert(condition, message, context)
+  return condition
 }
 
 /**
@@ -131,6 +146,12 @@ export class LayoutFollowerBridge extends EventTarget {
    * only its answer is acted on (see {@link onDocReseedResult}).
    */
   private reseedWorkflowId: string | null = null
+  /**
+   * The workflow the host last refused `stale_schema_reseed_required`, until
+   * this bridge answers it. The only state in which {@link reseed} may send a
+   * whole canvas (ADR-CRDT-FOLLOWER-0025, 2026-09-26 amendment).
+   */
+  private reseedEligibleWorkflowId: string | null = null
 
   constructor(private readonly client: DocFrameClient) {
     super()
@@ -250,7 +271,18 @@ export class LayoutFollowerBridge extends EventTarget {
    * @returns whether the frame left the transport.
    */
   reseed(workflowId: string, workflow: Record<string, unknown>): boolean {
-    if (workflowId !== this.desiredWorkflowId) return false
+    const eligible =
+      workflowId === this.reseedEligibleWorkflowId &&
+      workflowId === this.desiredWorkflowId
+    if (
+      !holdsInvariant(
+        eligible,
+        'followers send a whole canvas only to answer the host refusing that document as stale-schema, once — see ADR-CRDT-FOLLOWER-0025',
+        { workflowId }
+      )
+    )
+      return false
+    this.reseedEligibleWorkflowId = null
     if (!trySend(() => this.client.reseed(workflowId, workflow))) return false
     this.reseedWorkflowId = workflowId
     return true
@@ -432,6 +464,10 @@ export class LayoutFollowerBridge extends EventTarget {
     if (!(event instanceof CustomEvent)) return
     const subscribed = event.detail as DocSubscribed
     if (subscribed.workflowId !== this.sentWorkflowId) return
+    this.reseedEligibleWorkflowId =
+      !subscribed.ok && subscribed.code === STALE_SCHEMA_RESEED_REQUIRED
+        ? subscribed.workflowId
+        : null
     if (subscribed.ok) {
       this.ackSeq = subscribed.seq ?? null
       this.catchUpPending = this.ackSeq !== null

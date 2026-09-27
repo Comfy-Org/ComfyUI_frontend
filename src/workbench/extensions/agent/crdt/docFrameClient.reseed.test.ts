@@ -123,10 +123,43 @@ describe('layout follower bridge: stale-schema reseed', () => {
     return { transport, bridge }
   }
 
-  it('sends the reseed only for the workflow it is following', () => {
+  it('sends the reseed only for the workflow the host refused as stale', () => {
     const { transport, bridge } = refusedBridge()
-    expect(bridge.reseed('wf-other', canvas)).toBe(false)
+    expect(() => bridge.reseed('wf-other', canvas)).toThrow(
+      /ADR-CRDT-FOLLOWER-0025/
+    )
     expect(bridge.reseed('wf-1', canvas)).toBe(true)
+    expect(transport.frames('doc_reseed')).toHaveLength(1)
+  })
+
+  // ADR-CRDT-FOLLOWER-0025: a follower never sends a whole graph as a
+  // mutation. The one exception is answering the host's own
+  // stale_schema_reseed_required refusal, once; the bridge enforces it.
+  it('refuses a whole-canvas send the host did not ask for', () => {
+    const transport = new TestTransport()
+    const bridge = new LayoutFollowerBridge(new DocFrameClient(transport))
+    bridge.subscribe('wf-1')
+    expect(() => bridge.reseed('wf-1', canvas)).toThrow(
+      /ADR-CRDT-FOLLOWER-0025/
+    )
+    transport.receive('doc_subscribed', {
+      v: 1,
+      workflow_id: 'wf-1',
+      ok: false,
+      code: 'schema_version_mismatch'
+    })
+    expect(() => bridge.reseed('wf-1', canvas)).toThrow(
+      /ADR-CRDT-FOLLOWER-0025/
+    )
+    expect(transport.frames('doc_reseed')).toEqual([])
+  })
+
+  it('allows one reseed per refusal', () => {
+    const { transport, bridge } = refusedBridge()
+    expect(bridge.reseed('wf-1', canvas)).toBe(true)
+    expect(() => bridge.reseed('wf-1', canvas)).toThrow(
+      /ADR-CRDT-FOLLOWER-0025/
+    )
     expect(transport.frames('doc_reseed')).toHaveLength(1)
   })
 
