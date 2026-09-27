@@ -585,7 +585,9 @@ onMounted(async () => {
 
     // Restore saved workflow and workflow tabs state
     startupOutcome = await workflowPersistence.initializeWorkflow()
-    await workflowPersistence.restoreWorkflowTabsState()
+    if (startupOutcome === 'restored') {
+      await workflowPersistence.restoreWorkflowTabsState()
+    }
     urlTemplateId = await workflowPersistence.loadTemplateFromUrlIfPresent()
     await useFirstRunEntry().handleStartupOutcome(startupOutcome)
     bootstrapOutcome = 'completed'

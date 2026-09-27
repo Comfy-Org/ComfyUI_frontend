@@ -163,17 +163,17 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   firebaseIdentity.onUserChanged((user) => {
-    const previousUserId = currentUser.value?.uid ?? null
+    const previousUserId = currentUserIdentity()
+    const nextUserId = user?.uid ?? useApiKeyAuthStore().getApiKey()
     const identityChanged =
-      previousUserId !== null && previousUserId !== (user?.uid ?? null)
+      previousUserId !== null && previousUserId !== nextUserId
 
-    if (user === null || identityChanged) {
+    if (nextUserId === null || identityChanged) {
       useWorkspaceAuthStore().clearWorkspaceContext()
       mintUnifiedToken.clear()
     }
     if (identityChanged) {
       clearOnboardingReplay(previousUserId)
-      useTeamWorkspaceStore().resetForIdentityChange()
       invalidateRemoteConfig()
     }
 
@@ -356,7 +356,6 @@ export const useAuthStore = defineStore('auth', () => {
 
   const currentUserCredentialIdentity = (): string | null =>
     currentUser.value?.uid ?? useApiKeyAuthStore().getApiKey()
-
   /**
    * Response data from a user-scoped endpoint belongs to the identity that
    * asked for it. A 200 bypasses the recovery guards in

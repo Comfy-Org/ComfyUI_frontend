@@ -8,6 +8,7 @@ import { MAX_DRAFTS } from '../base/draftTypes'
 import { hashPath } from '../base/hashUtil'
 import { readIndex, resetStorageAvailable } from '../base/storageIO'
 import { StorageKeys } from '../base/storageKeys'
+import { unsafeStorageScope } from '@/platform/workflow/persistence/testUtils/storageScope'
 import { useWorkflowDraftStoreV2 } from './workflowDraftStoreV2'
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({
@@ -24,7 +25,7 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: reportErrorMock
 }))
 
-const WORKSPACE = 'personal'
+const WORKSPACE = unsafeStorageScope('personal')
 const INDEX_KEY = StorageKeys.draftIndex(WORKSPACE)
 const PAYLOAD_PREFIX = `${StorageKeys.prefixes.draftPayload}${WORKSPACE}:`
 
@@ -177,7 +178,7 @@ describe('workflowDraftStoreV2', () => {
 
       const newDraftPayloadKey = StorageKeys.draftPayload(
         'workflows/new.json',
-        'personal'
+        WORKSPACE
       )
       let quotaFailureInjected = false
       withQuotaMock((key) => {

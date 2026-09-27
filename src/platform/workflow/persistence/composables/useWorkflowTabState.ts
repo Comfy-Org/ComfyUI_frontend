@@ -6,9 +6,9 @@
  */
 
 import type { ActivePathPointer, OpenPathsPointer } from '../base/draftTypes'
-import { getWorkspaceId } from '../base/storageKeys'
 import {
   clearActivePath,
+  getStorageScope,
   readActivePath,
   readOpenPaths,
   writeActivePath,
@@ -34,10 +34,10 @@ export function useWorkflowTabState() {
    */
   function getActivePath(): string | null {
     const clientId = getClientId()
-    const workspaceId = getWorkspaceId()
-    if (!clientId) return null
+    const scope = getStorageScope()
+    if (!clientId || !scope) return null
 
-    const pointer = readActivePath(clientId, workspaceId)
+    const pointer = readActivePath(clientId, scope)
     return pointer?.path ?? null
   }
 
@@ -46,11 +46,11 @@ export function useWorkflowTabState() {
    */
   function setActivePath(path: string): void {
     const clientId = getClientId()
-    const workspaceId = getWorkspaceId()
-    if (!clientId) return
+    const scope = getStorageScope()
+    if (!clientId || !scope) return
 
     const pointer: ActivePathPointer = {
-      workspaceId,
+      workspaceId: scope,
       path
     }
     writeActivePath(clientId, pointer)
@@ -59,9 +59,10 @@ export function useWorkflowTabState() {
   /** Forgets the active workflow, so nothing is restored on the next boot. */
   function clearActivePathPointer(): void {
     const clientId = getClientId()
-    if (!clientId) return
+    const scope = getStorageScope()
+    if (!clientId || !scope) return
 
-    clearActivePath(clientId, getWorkspaceId())
+    clearActivePath(clientId, scope)
   }
 
   /**
@@ -70,10 +71,10 @@ export function useWorkflowTabState() {
    */
   function getOpenPaths(): { paths: string[]; activeIndex: number } | null {
     const clientId = getClientId()
-    const workspaceId = getWorkspaceId()
-    if (!clientId) return null
+    const scope = getStorageScope()
+    if (!clientId || !scope) return null
 
-    const pointer = readOpenPaths(clientId, workspaceId)
+    const pointer = readOpenPaths(clientId, scope)
     if (!pointer) return null
 
     return { paths: pointer.paths, activeIndex: pointer.activeIndex }
@@ -84,11 +85,11 @@ export function useWorkflowTabState() {
    */
   function setOpenPaths(paths: string[], activeIndex: number): void {
     const clientId = getClientId()
-    const workspaceId = getWorkspaceId()
-    if (!clientId) return
+    const scope = getStorageScope()
+    if (!clientId || !scope) return
 
     const pointer: OpenPathsPointer = {
-      workspaceId,
+      workspaceId: scope,
       paths,
       activeIndex
     }

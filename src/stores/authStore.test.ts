@@ -2567,6 +2567,26 @@ describe('useAuthStore', () => {
       expect(mockResetSocket).toHaveBeenCalledTimes(1)
     })
 
+    it('does not invalidate workspace state for an unchanged API-key session', () => {
+      vi.mocked(useApiKeyAuthStore().getApiKey).mockReturnValue('api-key-a')
+      authStateCallback(null)
+      const clearWorkspaceContext = vi.spyOn(
+        useWorkspaceAuthStore(),
+        'clearWorkspaceContext'
+      )
+      const resetWorkspace = vi.spyOn(
+        useTeamWorkspaceStore(),
+        'resetForIdentityChange'
+      )
+      clearWorkspaceContext.mockClear()
+      resetWorkspace.mockClear()
+
+      authStateCallback(null)
+
+      expect(clearWorkspaceContext).not.toHaveBeenCalled()
+      expect(resetWorkspace).not.toHaveBeenCalled()
+    })
+
     it('clears an onboarding replay on a direct account switch', () => {
       requestOnboardingReplay(mockUser.uid)
 

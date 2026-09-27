@@ -21,7 +21,8 @@ import type { AuthFlowAction } from '@/platform/telemetry/types'
 import { PaymentPopupBlockedError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import {
-  clearAllWorkspaceStorage,
+  clearWorkflowStorageForScope,
+  getStorageScope,
   prepareWorkflowLogoutTransition
 } from '@/platform/workflow/persistence/base/storageIO'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -111,6 +112,11 @@ export const useAuthActions = () => {
     async ({
       beforeSignOut
     }: { beforeSignOut?: () => Promise<boolean> } = {}) => {
+      const departingIdentity = isCloud
+        ? authStore.currentUserIdentity()
+        : null
+      const departingScope = isCloud ? getStorageScope() : null
+
       if (isCloud) {
         const workflowStore = useWorkflowStore()
         const modifiedWorkflows = workflowStore.modifiedWorkflows
@@ -140,12 +146,25 @@ export const useAuthActions = () => {
         }
       }
 
+      if (isCloud && authStore.currentUserIdentity() !== departingIdentity)
+        return
+
       if (beforeSignOut && !(await beforeSignOut())) return
+
+      if (isCloud && authStore.currentUserIdentity() !== departingIdentity)
+        return
 
       await authStore.logout()
       if (isCloud) {
+        const identityAfterLogout = authStore.currentUserIdentity()
+        if (
+          identityAfterLogout !== null &&
+          identityAfterLogout !== departingIdentity
+        )
+          return
         prepareWorkflowLogoutTransition()
-        clearAllWorkspaceStorage()
+        if (departingScope !== null)
+          clearWorkflowStorageForScope(departingScope)
       }
 
       toastStore.add({
