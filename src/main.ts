@@ -46,8 +46,8 @@ const hasHostTelemetryBridge = Boolean(window.__comfyDesktop2?.Telemetry)
 if (isCloud) {
   stripPaymentReturnParams()
   installCloudApiAuth()
+  installWorkspaceApiAuth()
 }
-installWorkspaceApiAuth()
 
 bootstrapTracer.armWatchdog()
 
