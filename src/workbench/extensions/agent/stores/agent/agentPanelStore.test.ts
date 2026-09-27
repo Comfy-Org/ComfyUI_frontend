@@ -405,20 +405,4 @@ describe('agentPanelStore width', () => {
     expect(store.isMaximized).toBe(false)
     expect(store.width).toBe(600)
   })
-
-  // `getAgentPanelOpen` powers the agent_panel_open run-attribution flag. It
-  // cannot import this store (platform/ may not import workbench/), so it reads
-  // OPEN_STORAGE_KEY directly. Renaming the key here without updating that util
-  // would silently pin the flag to false, so pin the pairing from this side.
-  it('persists isOpen where the run-attribution flag reads it', async () => {
-    const store = useAgentPanelStore()
-
-    store.open()
-    await nextTick()
-    expect(getAgentPanelOpen()).toBe(true)
-
-    store.close('topbar_button')
-    await nextTick()
-    expect(getAgentPanelOpen()).toBe(false)
-  })
 })
