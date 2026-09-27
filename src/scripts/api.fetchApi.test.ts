@@ -2,6 +2,9 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { useFeatureFlags } from '@/composables/useFeatureFlags'
+import type { ApiAuthProvider } from '@/platform/auth/apiAuthProvider'
+import { anonymousApiAuthProvider } from '@/platform/auth/apiAuthProvider'
+import { installCloudApiAuth } from '@/platform/auth/cloudApiAuthProvider'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useTelemetry } from '@/platform/telemetry'
@@ -203,6 +206,49 @@ describe('api.fetchApi', () => {
     })
   })
 
+  describe('auth provider', () => {
+    afterEach(() => {
+      api.setAuthProvider(anonymousApiAuthProvider)
+    })
+
+    it.for([
+      {
+        name: 'anonymous request skips the 401 retry decision',
+        authHeader: null,
+        expectedAuthorization: null,
+        expectedRetryOn401: false,
+        expectedRetryDecisions: 0
+      },
+      {
+        name: 'authenticated request applies the header and retry decision',
+        authHeader: { Authorization: 'Bearer token' },
+        expectedAuthorization: 'Bearer token',
+        expectedRetryOn401: true,
+        expectedRetryDecisions: 1
+      }
+    ])('$name', async (row) => {
+      const provider: ApiAuthProvider = {
+        ...anonymousApiAuthProvider,
+        getAuthHeader: vi.fn().mockResolvedValue(row.authHeader),
+        shouldRetryOn401: vi.fn().mockResolvedValue(true),
+        fetch: vi.fn().mockResolvedValue(new Response())
+      }
+      api.setAuthProvider(provider)
+
+      await api.fetchApi('/test')
+
+      const [, init, retryOn401] = vi.mocked(provider.fetch).mock.calls[0]
+      expect(new Headers(init.headers).get('Authorization')).toBe(
+        row.expectedAuthorization
+      )
+      expect(retryOn401).toBe(row.expectedRetryOn401)
+      expect(provider.shouldRetryOn401).toHaveBeenCalledTimes(
+        row.expectedRetryDecisions
+      )
+      expect(global.fetch).not.toHaveBeenCalled()
+    })
+  })
+
   describe('response header timeout', () => {
     beforeEach(() => {
       vi.useFakeTimers()
@@ -347,6 +393,7 @@ describe('api.fetchApi', () => {
     beforeEach(() => {
       vi.useFakeTimers()
       mockDistribution.isCloud = true
+      installCloudApiAuth()
       // Real Pinia stores (global testing Pinia from vitest.setup.ts): the
       // identity port is stubbed so constructing them never reaches real
       // Firebase, and their actions stay real functions we override below.
@@ -360,6 +407,7 @@ describe('api.fetchApi', () => {
 
     afterEach(() => {
       mockDistribution.isCloud = false
+      api.setAuthProvider(anonymousApiAuthProvider)
     })
 
     it('ends the initial timeout before re-minting and gives the retry a fresh window', async () => {

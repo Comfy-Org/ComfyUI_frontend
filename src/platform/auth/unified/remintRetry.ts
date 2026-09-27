@@ -5,6 +5,7 @@ import type {
 } from 'axios'
 import axios, { AxiosHeaders } from 'axios'
 
+import type { RetrySignalLifecycle } from '@/platform/auth/apiAuthProvider'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -102,11 +103,6 @@ function fetchRequestHeaders(
 ): Headers {
   if (init.headers !== undefined) return new Headers(init.headers)
   return input instanceof Request ? new Headers(input.headers) : new Headers()
-}
-
-interface RetrySignalLifecycle {
-  clearInitialTimeout: () => void
-  createSignal: () => AbortSignal | undefined
 }
 
 /**

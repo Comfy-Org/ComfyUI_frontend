@@ -14,6 +14,8 @@ import * as distributionTypes from '@/platform/distribution/types'
 import { capturePreservedQuery } from '@/platform/navigation/preservedQueryManager'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { anonymousApiAuthProvider } from '@/platform/auth/apiAuthProvider'
+import { installCloudApiAuth } from '@/platform/auth/cloudApiAuthProvider'
 import { api } from '@/scripts/api'
 import type { ComfyApp } from '@/scripts/app'
 import type { useDialogService } from '@/services/dialogService'
@@ -314,6 +316,7 @@ describe('clients the web session leaves on tokens', () => {
 
   beforeEach(() => {
     identity.reset()
+    installCloudApiAuth()
     vi.mocked(distributionTypes).isCloud = true
   })
 
@@ -344,6 +347,7 @@ describe('clients the web session leaves on tokens', () => {
     'a localhost frontend signs in, refreshes and calls the API with no session or cloud credential ($name)',
     async (row) => {
       vi.mocked(distributionTypes).isCloud = false
+      api.setAuthProvider(anonymousApiAuthProvider)
       const recorder = installFetchRecorder(featuresFor(row))
       await refreshRemoteConfig({ useAuth: false })
       hooks = wireSessionCookieExtension()
