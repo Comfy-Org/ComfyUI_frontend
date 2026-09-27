@@ -15,7 +15,7 @@
   },
   "scripts": {
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsx ../../scripts/vue-tsc-native.ts --noEmit"
   },
   "dependencies": {
     "@comfyorg/object-info-parser": "workspace:*",
