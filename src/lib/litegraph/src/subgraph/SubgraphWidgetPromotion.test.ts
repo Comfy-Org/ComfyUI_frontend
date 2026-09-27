@@ -2080,6 +2080,9 @@ describe('SubgraphWidgetPromotion', () => {
       host.arrange()
       expect(interiorWidget.computedHeight).toBe(100)
       expect(hostWidget.computedHeight).toBe(100)
+      expect(host.size[1]).toBeGreaterThanOrEqual(
+        hostWidget.y + (hostWidget.computedHeight ?? 0)
+      )
     })
 
     it('re-arranges interiors so host rows track later height changes', () => {
@@ -2091,11 +2094,17 @@ describe('SubgraphWidgetPromotion', () => {
       host.arrange()
       expect(interiorWidget.computedHeight).toBe(100)
       expect(hostWidget.computedHeight).toBe(100)
+      expect(host.size[1]).toBeGreaterThanOrEqual(
+        hostWidget.y + (hostWidget.computedHeight ?? 0)
+      )
 
       minHeight = 700
       host.arrange()
       expect(interiorWidget.computedHeight).toBe(700)
       expect(hostWidget.computedHeight).toBe(700)
+      expect(host.size[1]).toBeGreaterThanOrEqual(
+        hostWidget.y + (hostWidget.computedHeight ?? 0)
+      )
     })
   })
 })
