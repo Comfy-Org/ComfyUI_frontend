@@ -170,7 +170,7 @@ import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfil
 import WorkspaceSwitcherPopover from '@/platform/workspace/components/WorkspaceSwitcherPopover.vue'
 import { useWorkspaceTierLabel } from '@/platform/workspace/composables/useWorkspaceTierLabel'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useDialogService } from '@/services/dialogService'
+import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 
 const emit = defineEmits<{
   close: []
@@ -181,7 +181,7 @@ const { buildDocsUrl, docsPaths } = useExternalLink()
 const { userDisplayName, userEmail, userPhotoUrl, handleSignOut } =
   useCurrentUser()
 const settingsDialog = useSettingsDialog()
-const dialogService = useDialogService()
+const { showTopUpCreditsDialog } = useBillingDialogs()
 const {
   canAccessSubscriptionFeatures,
   tier,
@@ -248,7 +248,7 @@ const handleOpenPlanAndCreditsSettings = () => {
 
 const handleTopUp = () => {
   useTelemetry()?.trackAddApiCreditButtonClicked({ source: 'avatar_menu' })
-  dialogService.showTopUpCreditsDialog()
+  showTopUpCreditsDialog()
   emit('close')
 }
 

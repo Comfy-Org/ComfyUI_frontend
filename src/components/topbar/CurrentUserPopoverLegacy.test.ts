@@ -1,5 +1,5 @@
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { useDialogService } from '@/services/dialogService'
+import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
@@ -42,6 +42,7 @@ afterAll(() => {
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
 vi.mock(import('@/services/dialogService'))
+vi.mock(import('@/composables/billing/useBillingDialogs'))
 
 function makeSubscription(
   overrides: Partial<SubscriptionInfo> = {}
@@ -248,7 +249,7 @@ describe('CurrentUserPopoverLegacy', () => {
 
     await user.click(screen.getByTestId('add-credits-button'))
 
-    expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalled()
+    expect(useBillingDialogs().showTopUpCreditsDialog).toHaveBeenCalled()
     expect(onClose).toHaveBeenCalledTimes(1)
   })
 

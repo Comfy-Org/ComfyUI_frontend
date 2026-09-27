@@ -7,7 +7,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import type { AgentConsentTrigger } from '@/platform/telemetry/types'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import { useDialogService } from '@/services/dialogService'
+import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 
@@ -31,7 +31,7 @@ export interface ConsentOfferHooks {
 
 export function useAgentConsent() {
   const dialogStore = useDialogStore()
-  const dialogService = useDialogService()
+  const { showSignInDialog } = useAuthDialogs()
   const consentStore = useAgentConsentStore()
   const toastStore = useToastStore()
   const { isLoggedIn } = useCurrentUser()
@@ -156,7 +156,7 @@ export function useAgentConsent() {
     if (!(await showConsentDialog(trigger, false, undefined, hooks)))
       return null
     try {
-      if (!(await dialogService.showSignInDialog())) return null
+      if (!(await showSignInDialog())) return null
     } catch (error) {
       reportError(error, {
         errorType: 'agent_consent_sign_in_failure'

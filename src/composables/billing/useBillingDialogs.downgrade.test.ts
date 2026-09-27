@@ -73,7 +73,7 @@ vi.mock<unknown>(
   () => ({ default: { name: 'DowngradeRemoveMembersDialogContent' } })
 )
 
-import { useDialogService } from '@/services/dialogService'
+import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 
 describe('showDowngradeToPersonalDialog', () => {
   beforeEach(() => {
@@ -103,7 +103,7 @@ describe('showDowngradeToPersonalDialog', () => {
       return Promise.resolve()
     })
 
-    await useDialogService().showDowngradeToPersonalDialog(options)
+    await useBillingDialogs().showDowngradeToPersonalDialog(options)
 
     expect(calls).toEqual(['refresh', 'downgrade'])
     expect(downgradeToPersonal).toHaveBeenCalledWith('standard-monthly')
@@ -118,7 +118,7 @@ describe('showDowngradeToPersonalDialog', () => {
     downgradeToPersonal.mockResolvedValue(result)
 
     await expect(
-      useDialogService().showDowngradeToPersonalDialog(options)
+      useBillingDialogs().showDowngradeToPersonalDialog(options)
     ).resolves.toStrictEqual(result)
   })
 
@@ -126,7 +126,7 @@ describe('showDowngradeToPersonalDialog', () => {
     hasOtherMembers.value = true
 
     const resultPromise =
-      useDialogService().showDowngradeToPersonalDialog(options)
+      useBillingDialogs().showDowngradeToPersonalDialog(options)
     await vi.waitFor(() =>
       expect(useDialogStore().showDialog).toHaveBeenCalledOnce()
     )
@@ -162,7 +162,7 @@ describe('showDowngradeToPersonalDialog', () => {
     })
 
     const resultPromise =
-      useDialogService().showDowngradeToPersonalDialog(options)
+      useBillingDialogs().showDowngradeToPersonalDialog(options)
     await vi.waitFor(() =>
       expect(useDialogStore().showDialog).toHaveBeenCalledOnce()
     )
@@ -190,7 +190,7 @@ describe('showDowngradeToPersonalDialog', () => {
     downgradeToPersonal.mockResolvedValue(result)
 
     const resultPromise =
-      useDialogService().showDowngradeToPersonalDialog(options)
+      useBillingDialogs().showDowngradeToPersonalDialog(options)
     await vi.waitFor(() =>
       expect(useDialogStore().showDialog).toHaveBeenCalledOnce()
     )
@@ -222,7 +222,7 @@ describe('showDowngradeToPersonalDialog', () => {
     })
 
     const resultPromise =
-      useDialogService().showDowngradeToPersonalDialog(options)
+      useBillingDialogs().showDowngradeToPersonalDialog(options)
     await vi.waitFor(() =>
       expect(useDialogStore().showDialog).toHaveBeenCalledOnce()
     )
@@ -265,7 +265,7 @@ describe('showDowngradeToPersonalDialog', () => {
     downgradeToPersonal.mockResolvedValueOnce(result)
 
     const resultPromise =
-      useDialogService().showDowngradeToPersonalDialog(options)
+      useBillingDialogs().showDowngradeToPersonalDialog(options)
     await vi.waitFor(() =>
       expect(useDialogStore().showDialog).toHaveBeenCalledOnce()
     )
@@ -324,7 +324,7 @@ describe('showDowngradeToPersonalDialog', () => {
     downgradeToPersonal.mockResolvedValueOnce(result)
 
     const resultPromise =
-      useDialogService().showDowngradeToPersonalDialog(options)
+      useBillingDialogs().showDowngradeToPersonalDialog(options)
     await vi.waitFor(() =>
       expect(useDialogStore().showDialog).toHaveBeenCalledOnce()
     )
@@ -365,7 +365,7 @@ describe('showDowngradeToPersonalDialog', () => {
     hasOtherMembers.value = true
 
     const resultPromise =
-      useDialogService().showDowngradeToPersonalDialog(options)
+      useBillingDialogs().showDowngradeToPersonalDialog(options)
     await vi.waitFor(() =>
       expect(useDialogStore().showDialog).toHaveBeenCalledOnce()
     )
@@ -378,7 +378,7 @@ describe('showDowngradeToPersonalDialog', () => {
   it('toasts and does not rethrow when the fast-path downgrade fails', async () => {
     downgradeToPersonal.mockRejectedValue(new Error('Outstanding balance'))
 
-    await useDialogService().showDowngradeToPersonalDialog(options)
+    await useBillingDialogs().showDowngradeToPersonalDialog(options)
 
     expect(useToastStore().add).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -393,7 +393,7 @@ describe('showDowngradeToPersonalDialog', () => {
     hasOtherMembers.value = true
     refreshMembers.mockRejectedValue(new Error('network'))
 
-    await useDialogService().showDowngradeToPersonalDialog(options)
+    await useBillingDialogs().showDowngradeToPersonalDialog(options)
 
     expect(useToastStore().add).toHaveBeenCalledWith(
       expect.objectContaining({ severity: 'error', detail: 'network' })
@@ -405,7 +405,7 @@ describe('showDowngradeToPersonalDialog', () => {
   it('toasts and aborts when the preview fails', async () => {
     previewDowngrade.mockRejectedValue(new Error('Outstanding balance'))
 
-    await useDialogService().showDowngradeToPersonalDialog(options)
+    await useBillingDialogs().showDowngradeToPersonalDialog(options)
 
     expect(useToastStore().add).toHaveBeenCalledWith(
       expect.objectContaining({

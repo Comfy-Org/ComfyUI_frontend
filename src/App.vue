@@ -29,10 +29,13 @@ import {
   reportResourceLoadError
 } from '@/platform/telemetry/assetLoadErrorReporting'
 import { app } from '@/scripts/app'
+import { registerExtensionDialogService } from '@/services/dialogService'
+import { createExtensionDialogService } from '@/services/extensionDialogService'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { electronAPI } from '@/utils/envUtil'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
 
+registerExtensionDialogService(createExtensionDialogService())
 const workspaceStore = useWorkspaceStore()
 app.extensionManager = useWorkspaceStore()
 

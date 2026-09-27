@@ -9,7 +9,6 @@ import {
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
 import { isCloud } from '@/platform/distribution/types'
-import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type {
   PreviewSubscribeOptions,
   SubscribeOptions
@@ -21,6 +20,7 @@ import type {
   BillingActions,
   BillingContext,
   BillingState,
+  SubscriptionDialogOptions,
   SubscriptionInfo
 } from './types'
 import { useBillingRouting } from './useBillingRouting'

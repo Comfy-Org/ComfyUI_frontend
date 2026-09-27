@@ -26,6 +26,7 @@ import {
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { usePendingTopup } from '@/composables/billing/usePendingTopup'
+import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useDialogService } from '@/services/dialogService'
 import { useAuthStore } from '@/stores/authStore'
 import type { BillingPortalTargetTier } from '@/stores/authStore'
@@ -292,7 +293,7 @@ export const useAuthActions = () => {
 
         await authStore.logout()
 
-        const signedIn = await dialogService.showSignInDialog()
+        const signedIn = await useAuthDialogs().showSignInDialog()
 
         if (signedIn) {
           await retry(...args)

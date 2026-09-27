@@ -4,11 +4,11 @@ import { onMounted, onUnmounted } from 'vue'
 import { isDesktop } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useDialogService } from '@/services/dialogService'
+import { useCloudNotificationDialog } from '@/platform/cloud/notification/composables/useCloudNotificationDialog'
 import { electronAPI } from '@/utils/envUtil'
 
 const settingStore = useSettingStore()
-const dialogService = useDialogService()
+const { showCloudNotification } = useCloudNotificationDialog()
 
 let isDisposed = false
 let cloudNotificationTimer: ReturnType<typeof setTimeout> | undefined
@@ -80,7 +80,7 @@ async function scheduleCloudNotification() {
     }
 
     try {
-      await dialogService.showCloudNotification()
+      await showCloudNotification()
     } catch (error) {
       reportNotificationFailure(
         'cloud_notification_show_failed',

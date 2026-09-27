@@ -9,7 +9,8 @@ import { isSalesManagedTier } from '@/platform/cloud/subscription/constants/tier
 import { isCloud } from '@/platform/distribution/types'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
-import { useDialogService } from '@/services/dialogService'
+import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
+import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
 
 /**
  * Builds the Plan & Credits overflow-menu model for the workspace subscription
@@ -31,12 +32,12 @@ export function useWorkspaceMenuItems() {
     isDeleteDisabled,
     deleteDisabledTooltipKey
   } = useWorkspaceUI()
+  const { showCancelSubscriptionFlow } = useBillingDialogs()
   const {
-    showCancelSubscriptionFlow,
     showEditWorkspaceDialog,
     showDeleteWorkspaceDialog,
     showLeaveWorkspaceDialog
-  } = useDialogService()
+  } = useWorkspaceDialogs()
 
   function editWorkspace() {
     void showEditWorkspaceDialog()

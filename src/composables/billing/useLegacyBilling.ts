@@ -2,7 +2,6 @@ import { computed, ref } from 'vue'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
-import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type {
   BillingStatus,
   BillingSubscriptionStatus,
@@ -17,6 +16,7 @@ import type {
   BalanceInfo,
   BillingActions,
   BillingState,
+  SubscriptionDialogOptions,
   SubscriptionInfo
 } from './types'
 

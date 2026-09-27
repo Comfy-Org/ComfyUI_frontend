@@ -1,5 +1,5 @@
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { useDialogService } from '@/services/dialogService'
+import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -56,6 +56,7 @@ vi.mock(
 vi.mock(import('@/platform/cloud/subscription/composables/useSubscription'))
 
 vi.mock(import('@/services/dialogService'))
+vi.mock(import('@/composables/billing/useBillingDialogs'))
 
 vi.mock(import('@/platform/telemetry'))
 
@@ -558,7 +559,7 @@ describe('CreditsTile', () => {
     renderTile()
     expect(screen.queryByText('Upgrade to add credits')).toBeNull()
     await userEvent.click(screen.getByText('Add credits'))
-    expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalledOnce()
+    expect(useBillingDialogs().showTopUpCreditsDialog).toHaveBeenCalledOnce()
   })
 
   it('keeps add-credits available on local for an unsubscribed team workspace', async () => {
@@ -569,7 +570,7 @@ describe('CreditsTile', () => {
     renderTile()
     expect(screen.queryByText('Upgrade to add credits')).toBeNull()
     await userEvent.click(screen.getByText('Add credits'))
-    expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalledOnce()
+    expect(useBillingDialogs().showTopUpCreditsDialog).toHaveBeenCalledOnce()
   })
 
   it('shows no depletion notice or in-use badge while monthly credits remain', () => {
@@ -637,7 +638,7 @@ describe('CreditsTile', () => {
     expect(
       useTelemetry()?.trackAddApiCreditButtonClicked
     ).toHaveBeenCalledOnce()
-    expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalledOnce()
+    expect(useBillingDialogs().showTopUpCreditsDialog).toHaveBeenCalledOnce()
   })
 
   it('offers the upgrade path when top-up is denied but self-serve subscribe is allowed', async () => {

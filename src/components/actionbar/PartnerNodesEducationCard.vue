@@ -210,7 +210,7 @@ import Button from '@/components/ui/button/Button.vue'
 import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 import { usePartnerNodesRunGate } from '@/composables/billing/usePartnerNodesRunGate'
 import { usePartnerNodesInGraph } from '@/composables/node/usePartnerNodesInGraph'
-import { useDialogService } from '@/services/dialogService'
+import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { usePartnerNodesEducationStore } from '@/platform/workflow/templates/stores/partnerNodesEducationStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 
@@ -248,10 +248,10 @@ const { isCardRequested, requestedForWorkflowKey } = storeToRefs(educationStore)
 const { hasPartnerNodes } = usePartnerNodesInGraph()
 const { gate, partnerNodes } = usePartnerNodesRunGate()
 const { activeWorkflow } = storeToRefs(useWorkflowStore())
-const dialogService = useDialogService()
+const { showApiNodesSignInDialog } = useAuthDialogs()
 
 function openSignIn() {
-  void dialogService.showApiNodesSignInDialog(
+  void showApiNodesSignInDialog(
     partnerNodes.value.map((node) => node.displayName)
   )
 }

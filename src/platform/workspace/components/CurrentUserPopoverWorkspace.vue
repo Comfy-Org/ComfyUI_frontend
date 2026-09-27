@@ -274,7 +274,8 @@ import { useBillingCapabilities } from '@/platform/workspace/composables/useBill
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-import { useDialogService } from '@/services/dialogService'
+import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
+import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
 
 const workspaceStore = useTeamWorkspaceStore()
 const {
@@ -316,7 +317,8 @@ const {
   isApiKeyLogin
 } = useCurrentUser()
 const settingsDialog = useSettingsDialog()
-const dialogService = useDialogService()
+const { showTopUpCreditsDialog } = useBillingDialogs()
+const { showCreateWorkspaceDialog } = useWorkspaceDialogs()
 const {
   billingStatus,
   canAccessSubscriptionFeatures,
@@ -423,7 +425,7 @@ const handleUpgradeToAddCredits = () => {
 
 const handleTopUp = () => {
   useTelemetry()?.trackAddApiCreditButtonClicked({ source: 'avatar_menu' })
-  dialogService.showTopUpCreditsDialog()
+  showTopUpCreditsDialog()
   emit('close')
 }
 
@@ -442,7 +444,7 @@ const handleLogout = async () => {
 
 const handleCreateWorkspace = () => {
   isWorkspaceSwitcherOpen.value = false
-  dialogService.showCreateWorkspaceDialog()
+  showCreateWorkspaceDialog()
   emit('close')
 }
 
