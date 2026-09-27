@@ -7,11 +7,12 @@ const { app } = defineProps<{ app: CatalogueApp }>()
 <template>
   <a
     :href="app.href"
-    class="group flex cursor-pointer flex-col gap-4 overflow-hidden rounded-4xl bg-hub-surface px-2 pt-2 pb-4 transition-colors duration-200 hover:bg-hub-surface-hover"
+    class="group flex cursor-pointer flex-col gap-3 overflow-hidden rounded-4xl bg-hub-surface px-2 pt-2 pb-4 transition-colors duration-200 outline-none hover:bg-hub-surface-hover focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
     data-testid="workshop-app-card"
   >
     <div
       class="relative aspect-4/3 overflow-hidden rounded-3.5xl bg-hub-surface"
+      data-testid="app-card-artwork"
     >
       <img
         v-if="app.image"
@@ -34,23 +35,22 @@ const { app } = defineProps<{ app: CatalogueApp }>()
           {{ app.name[0] }}
         </span>
       </div>
-      <div
-        class="pointer-events-none absolute inset-x-0 bottom-0 h-2/3 bg-linear-to-t from-black/70 via-black/30 to-transparent"
-        aria-hidden="true"
-      />
+    </div>
+
+    <div class="flex flex-col gap-3 px-3">
       <h3
-        class="pointer-events-none absolute right-5 bottom-5 left-5 z-10 line-clamp-2 text-sm/[1.35] font-medium text-content-bright drop-shadow-md lg:text-base"
+        class="line-clamp-2 h-10 overflow-hidden text-xs/5 font-medium text-content-bright lg:text-sm/5"
         :title="app.name"
+        data-testid="app-card-name"
       >
         {{ app.name }}
       </h3>
+      <p
+        class="line-clamp-2 h-10 overflow-hidden text-xs/5 text-content-secondary"
+        data-testid="app-card-summary"
+      >
+        {{ app.summary }}
+      </p>
     </div>
-
-    <p
-      class="line-clamp-2 min-h-13 px-3 text-sm/6.5 text-content-secondary"
-      data-testid="app-card-summary"
-    >
-      {{ app.summary }}
-    </p>
   </a>
 </template>

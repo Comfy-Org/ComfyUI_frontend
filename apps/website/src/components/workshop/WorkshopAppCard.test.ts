@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
 import type { CatalogueApp } from '../../lib/workshop/catalogue-apps'
@@ -20,6 +20,20 @@ describe('WorkshopAppCard', () => {
       screen.getByRole('heading', { name: 'Re-shoot a video' })
     ).toBeVisible()
     expect(screen.getByText('Aim a new camera at your clip.')).toBeVisible()
+  })
+
+  it('reads its name under the artwork, never over it', () => {
+    render(WorkshopAppCard, {
+      props: { app: { ...app, image: '/images/app.jpg' } }
+    })
+
+    expect(
+      within(screen.getByTestId('app-card-artwork')).queryByRole('heading'),
+      'A name over the artwork covers the picture it is naming'
+    ).toBeNull()
+    expect(
+      screen.getByRole('heading', { name: 'Re-shoot a video' })
+    ).toBeVisible()
   })
 
   it.for([
