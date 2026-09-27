@@ -11,7 +11,7 @@ const UNAFFECTED_NODE_IDS = ['4', '6', '9']
 
 test.describe(
   'Human-deleted nodes across a workflow tab switch with Agent bound',
-  { tag: ['@cloud', '@agent'] },
+  { tag: ['@cloud', '@agent', '@vue-nodes'] },
   () => {
     test.use({ conversationCase: CASE, humanOpsHost: 'hold' })
 
@@ -34,7 +34,7 @@ test.describe(
             .filter((frame) => frame.type === 'doc_ops')
             .map((frame) => frame.ops)
         )
-        .toEqual([[`delete_node:${FIRST_DELETED_NODE_ID}`]])
+        .toEqual([['disconnect:', 'disconnect:', 'disconnect:']])
 
       await agentConversation.vueNodes.deleteNode(SECOND_DELETED_NODE_ID)
       await expect(

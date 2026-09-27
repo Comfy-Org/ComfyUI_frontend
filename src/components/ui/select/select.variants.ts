@@ -1,14 +1,14 @@
 import { cva } from 'cva'
 
 export const selectTriggerVariants = cva({
-  base: 'relative inline-flex cursor-pointer items-center select-none rounded-lg bg-secondary-background text-base-foreground outline-none transition-all duration-200 ease-in-out hover:bg-secondary-background-hover border-[2.5px] border-solid disabled:cursor-default disabled:opacity-30 disabled:hover:bg-secondary-background',
+  base: 'relative inline-flex cursor-pointer items-center rounded-lg border-[2.5px] border-solid bg-secondary-background text-base-foreground transition-all duration-200 ease-in-out outline-none select-none hover:bg-secondary-background-hover disabled:cursor-default disabled:opacity-30 disabled:hover:bg-secondary-background',
   variants: {
     size: {
       md: 'h-8',
       lg: 'h-10'
     },
     border: {
-      none: 'border-transparent focus-visible:border-node-component-border data-[state=open]:border-node-component-border',
+      none: 'border-transparent focus-visible:border-border-default data-[state=open]:border-border-default',
       active: 'border-base-foreground',
       invalid: 'border-destructive-background'
     }

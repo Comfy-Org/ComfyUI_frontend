@@ -16,9 +16,13 @@ billing and token request for assertions on what the app sent.
 mocked identity, and resolves once the app is back on that link.
 
 The app under test is a production build with the `test` Cloud family, a
-Firebase project that exists only in these fixtures, and no Stripe key, so
-every checkout routes hosted and no provider script loads. Nothing from a
-local `.env` reaches it.
+Firebase project that exists only in these fixtures, and a fake Stripe
+publishable key (`fixtures/env.ts`) so the embedded checkout can mount.
+Nothing from a local `.env` reaches it. Real Stripe.js is never loaded:
+`fixtures/stripe.ts`'s `installFakeStripe` fakes `js.stripe.com` for specs
+that submit a payment (see `checkout.spec.ts`); other specs never reach the
+checkout form's payment-method-configuration gate, so they never call
+`loadStripe` in the first place.
 
 ```sh
 pnpm --filter @comfyorg/billing-web test:e2e

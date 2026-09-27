@@ -58,9 +58,9 @@ function sanitizeNode(def: ComfyNodeDef): ComfyNodeDef {
 }
 
 function sanitizeInputSpecSection(
-  section: ComfyInputsSpec['required'] | ComfyInputsSpec['optional'],
+  section: ComfyInputsSpec['required'],
   forceEmpty: boolean
-): ComfyInputsSpec['required'] | ComfyInputsSpec['optional'] {
+): ComfyInputsSpec['required'] {
   if (!section) return section
 
   const nextEntries = Object.entries(section).map(([key, value]) => {

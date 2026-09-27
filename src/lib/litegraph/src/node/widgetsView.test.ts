@@ -10,10 +10,10 @@ const foreignBehavior = Symbol('foreignBehavior')
 
 class ForeignWidget implements IBaseWidget {
   [symbol: symbol]: boolean
-  #drawResult = 'drawn'
-  #name = 'foreign'
-  #value = 10
-  #symbolReads = 0
+  private drawResult = 'drawn'
+  private storedName = 'foreign'
+  private storedValue = 10
+  private symbolReads = 0
   type = 'foreign_test'
   options = {}
   y = 0
@@ -26,31 +26,31 @@ class ForeignWidget implements IBaseWidget {
 
   get name() {
     this.nameReads++
-    return this.#name
+    return this.storedName
   }
 
   set name(name: string) {
     this.nameWrites++
-    this.#name = name
+    this.storedName = name
   }
 
   get value() {
     this.valueReads++
-    return this.#value
+    return this.storedValue
   }
 
   set value(value: number) {
     this.valueWrites++
-    this.#value = value
+    this.storedValue = value
   }
 
   get [foreignBehavior]() {
-    this.#symbolReads++
-    return this.#symbolReads > 0
+    this.symbolReads++
+    return this.symbolReads > 0
   }
 
   draw() {
-    return this.#drawResult
+    return this.drawResult
   }
 
   mouse() {

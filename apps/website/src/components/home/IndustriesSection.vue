@@ -184,7 +184,11 @@ const ambientClipId = `industries-ambient-${uid}`
           </button>
         </nav>
 
-        <BrandButton :href="externalLinks.workflows" variant="outline">
+        <BrandButton
+          :href="externalLinks.workflows"
+          variant="outline"
+          class="font-bold"
+        >
           {{ t('industries.cta', locale) }}
         </BrandButton>
       </div>

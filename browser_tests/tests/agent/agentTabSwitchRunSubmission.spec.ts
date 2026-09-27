@@ -12,7 +12,7 @@ const KSAMPLER_NODE_ID = '3'
 
 test.describe(
   'Agent workflow tab switch run submission',
-  { tag: ['@cloud', '@agent'] },
+  { tag: ['@cloud', '@agent', '@vue-nodes'] },
   () => {
     test.use({ conversationCase: EDITED_CASE })
 
@@ -22,7 +22,7 @@ test.describe(
     }) => {
       test.setTimeout(90_000)
       const topbar = new Topbar(page)
-      const tabs = topbar.workflowTabs.locator('.p-togglebutton')
+      const tabs = topbar.tabs
       const lastTurn = agentConversation.conversation.turns.length - 1
 
       // What Run actually submits, independent of what the canvas paints:
@@ -42,26 +42,30 @@ test.describe(
       await agentConversation.replayResponse(0, async () => {
         await test.step('user switches workflows before the agent edits arrive', async () => {
           await expect(tabs).toHaveCount(1)
-          await expect(topbar.getTab(0)).toHaveClass(/p-togglebutton-checked/)
+          await expect(
+            topbar.getTab(0).and(topbar.getActiveTab())
+          ).toBeVisible()
           const inputs = await ksamplerInputs()
           expect(inputs.steps).toBe(20)
           expect(inputs.cfg).toBe(7)
           await topbar.newWorkflowButton.click()
           await expect(tabs).toHaveCount(2)
-          await expect(topbar.getTab(1)).toHaveClass(/p-togglebutton-checked/)
+          await expect(
+            topbar.getTab(1).and(topbar.getActiveTab())
+          ).toBeVisible()
           await expect(agentConversation.vueNodes.nodes).toHaveCount(0)
         })
       })
 
       await test.step('agent finishes editing the background workflow', async () => {
         await agentConversation.waitForTurnComplete()
-        await expect(topbar.getTab(1)).toHaveClass(/p-togglebutton-checked/)
+        await expect(topbar.getTab(1).and(topbar.getActiveTab())).toBeVisible()
         await expect(agentConversation.vueNodes.nodes).toHaveCount(0)
       })
 
       await test.step('user returns to the edited workflow', async () => {
         await topbar.getTab(0).click()
-        await expect(topbar.getTab(0)).toHaveClass(/p-togglebutton-checked/)
+        await expect(topbar.getTab(0).and(topbar.getActiveTab())).toBeVisible()
 
         // The canvas is correct straight through the round trip (covered by
         // agentTabSwitchCatchUp.spec.ts); PM-1318 is that Run's own graph

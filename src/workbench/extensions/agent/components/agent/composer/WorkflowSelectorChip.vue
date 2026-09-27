@@ -193,7 +193,7 @@ function onSearchKeydown(event: KeyboardEvent): void {
               <div
                 v-if="section.label"
                 aria-hidden="true"
-                class="px-1.5 py-1 text-[11px]/4 font-medium text-muted-foreground"
+                class="px-1.5 py-1 text-[11px]/4 text-muted-foreground"
               >
                 {{ section.label }}
               </div>
@@ -251,7 +251,7 @@ function onSearchKeydown(event: KeyboardEvent): void {
                   >
                     <span
                       aria-hidden="true"
-                      class="icon-[comfy--comfy-c] size-2.5 text-brand-yellow"
+                      class="icon-[lucide--check] size-3.5"
                     />
                   </DropdownMenuItemIndicator>
                 </span>

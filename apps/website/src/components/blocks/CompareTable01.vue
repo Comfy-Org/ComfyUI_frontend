@@ -5,10 +5,11 @@ import type { HTMLAttributes } from 'vue'
 
 import GlassCard from '../common/GlassCard.vue'
 
-interface CompareRow {
+export interface CompareRow {
   id: string
   feature: string
   cells: readonly string[]
+  class?: HTMLAttributes['class']
 }
 
 const {
@@ -36,13 +37,13 @@ const {
       {{ heading }}
     </h2>
     <p
-      v-if="subtitle"
+      v-if="subtitle || $slots.subtitle"
       class="mx-auto mt-6 max-w-2xl text-center text-base font-light text-primary-comfy-canvas/70"
     >
-      {{ subtitle }}
+      <slot name="subtitle">{{ subtitle }}</slot>
     </p>
 
-    <GlassCard class="mx-auto mt-12 max-w-7xl lg:mt-16">
+    <GlassCard class="relative mx-auto mt-12 max-w-7xl lg:mt-16">
       <div
         class="scrollbar-none overflow-x-auto rounded-4xl bg-primary-comfy-ink"
       >
@@ -61,29 +62,32 @@ const {
                 scope="col"
                 class="px-8 pt-8 pb-4 font-mono text-sm font-bold tracking-wide text-primary-comfy-yellow"
               >
-                {{ column }}
+                <slot name="column" :column="column">{{ column }}</slot>
               </th>
             </tr>
           </thead>
           <tbody class="divide-y divide-primary-warm-white/10">
-            <tr v-for="row in rows" :key="row.id">
+            <tr v-for="row in rows" :key="row.id" :class="row.class">
               <th
                 scope="row"
                 class="px-8 py-6 text-base font-normal text-primary-warm-white lg:text-lg"
               >
-                {{ row.feature }}
+                <slot name="feature" :row="row">{{ row.feature }}</slot>
               </th>
               <td
                 v-for="(cell, cellIndex) in row.cells"
                 :key="cellIndex"
                 class="px-8 py-6 text-base font-light text-primary-comfy-canvas/70 lg:text-lg"
               >
-                {{ cell }}
+                <slot name="cell" :row="row" :cell="cell" :index="cellIndex">{{
+                  cell
+                }}</slot>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
+      <slot name="footer" />
     </GlassCard>
   </section>
 </template>

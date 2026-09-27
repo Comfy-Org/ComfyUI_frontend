@@ -53,7 +53,6 @@
     "copy": "Copia",
     "copyMarkdown": "Copia come markdown",
     "copyUnavailable": "In questa versione è possibile copiare solo la conversazione corrente",
-    "credits": "crediti",
     "currentTab": "Scheda corrente",
     "delete": "Elimina",
     "diagnosticReport": {
@@ -66,6 +65,7 @@
     "dismiss": "Ignora",
     "downloadAssets": "Scarica risorse",
     "dragAndDropAssets": "Trascina qui le risorse",
+    "editWhileWorking": "Puoi continuare a modificare mentre lavora",
     "entryButton": "Agente",
     "feedbackCaption": "Condividi feedback",
     "focusNode": "Mostra sul canvas",
@@ -100,6 +100,7 @@
       "selectNode": "Seleziona nodo"
     },
     "nodes": "Nodi",
+    "nodesAdded": "L'agente ha aggiunto 1 nodo al grafo | L'agente ha aggiunto {count} nodi al grafo",
     "notHelpful": "Non utile",
     "openWorkflowTab": "Apri {name}",
     "otherOpenWorkflows": "Altri workflow aperti",
@@ -146,7 +147,6 @@
     "runNoticeExpanded": "L'agente può modificare il tuo workflow. Controlla le autorizzazioni di esecuzione prima di consentirgli di eseguire.",
     "runPermissions": "Autorizzazioni di esecuzione",
     "runPermissionsDescription": "Scegli quando l'agente necessita del tuo consenso",
-    "saveChanges": "Salva modifiche",
     "savingWorkflow": "Salvataggio del workflow",
     "searchWorkflows": "Cerca flussi di lavoro",
     "selectWorkflowForAgent": "Seleziona un workflow su cui l'agente possa lavorare",
@@ -185,7 +185,9 @@
     "unavailableWorkflowReference": "{name} (non disponibile)",
     "unsavedWorkflow": "Non salvato",
     "untitledChat": "Senza titolo",
+    "updatingGraph": "L'agente sta aggiornando il grafo",
     "uploading": "Caricamento in corso",
+    "viewAddedNodes": "Visualizza nodo | Visualizza nodi",
     "worked": "Ha lavorato",
     "workedForMinutes": "Ha lavorato per {minutes}m {seconds}s",
     "workedForSeconds": "Ha lavorato per {seconds} secondi",
@@ -2006,6 +2008,7 @@
     "removeAll": "Rimuovi tutto",
     "removeAllKeybindingsMessage": "Tutte le scorciatoie per questo comando verranno rimosse",
     "removeAllKeybindingsTitle": "Rimuovere tutte le scorciatoie?",
+    "removeFilter": "Rimuovi filtro {label}",
     "removeImage": "Rimuovi immagine",
     "removeKeybinding": "Rimuovi scorciatoia",
     "removeTag": "Rimuovi tag",
@@ -2220,8 +2223,10 @@
     "star": "Stella"
   },
   "imageCompare": {
+    "afterAlt": "Immagine dopo",
     "batchLabelA": "A:",
     "batchLabelB": "B:",
+    "beforeAlt": "Immagine prima",
     "noImages": "Nessuna immagine da confrontare"
   },
   "imageCrop": {
@@ -2463,7 +2468,9 @@
     "cancelThisRun": "Annulla questa esecuzione",
     "deleteAllAssets": "Elimina tutte le risorse di questa esecuzione",
     "downloadAll": "Scarica {count} risorse da questa esecuzione",
+    "dragAndDropAudio": "Fai clic per sfogliare o trascina un file audio",
     "dragAndDropImage": "Clicca per sfogliare o trascina un'immagine",
+    "dragAndDropVideo": "Fai clic per sfogliare o trascina un video",
     "emptyWorkflowExplanation": "Il tuo workflow è vuoto. Devi aggiungere alcuni nodi per iniziare a costruire un'app.",
     "enterNodeGraph": "Entra nel grafo dei nodi",
     "error": {
@@ -2754,6 +2761,9 @@
     "installationQueue": "Coda di Installazione",
     "installingDependencies": "Installazione delle dipendenze...",
     "lastUpdated": "Ultimo Aggiornamento",
+    "latestActive": "Ultima Active",
+    "latestInstallable": "Ultima installabile",
+    "latestStableVersion": "Ultima stabile",
     "latestVersion": "Ultima",
     "legacyManagerSearchTip": "Cerchi ComfyUI-Manager? Puoi abilitare l'interfaccia legacy del gestore avviando ComfyUI con il flag --enable-manager-legacy-ui.",
     "legacyManagerUI": "Usa Interfaccia Legacy",
@@ -2775,10 +2785,13 @@
       "updatesAvailable": "Aggiornamenti Disponibili"
     },
     "nightlyVersion": "Nightly",
+    "noActiveVersions": "Questo pacchetto non ha rilasci Active.",
+    "noActiveVersionsFlagged": "Questo pacchetto non ha rilasci Active. Seleziona un rilascio Contrassegnato per richiedere l'installazione, in base alle impostazioni di sicurezza del Manager.",
     "noDescription": "Nessuna descrizione disponibile",
     "noNodesFound": "Nessun nodo trovato",
     "noNodesFoundDescription": "I nodi del pacchetto non possono essere analizzati, oppure il pacchetto è solo un'estensione frontend e non contiene nodi.",
     "noResultsFound": "Nessun risultato trovato per la tua ricerca.",
+    "noUpdateVersion": "Nessun rilascio disponibile per l'opzione di aggiornamento selezionata.",
     "nodePack": "Pacchetto Nodi",
     "nodePackInfo": "Informazioni Pacchetto Nodi",
     "notAvailable": "Non Disponibile",
@@ -2786,9 +2799,11 @@
       "nodeIdRequired": "L'ID del nodo è richiesto per l'installazione"
     },
     "packsSelected": "pacchetti selezionati",
+    "queueWaitingToContinue": "Ci sono attività in sospeso. Riprova per continuare.",
     "repository": "Repository",
     "restartToApplyChanges": "Per applicare le modifiche, riavvia ComfyUI",
     "restartingBackend": "Riavvio del backend per applicare le modifiche...",
+    "retryQueueStart": "Riprova",
     "searchPlaceholder": "Cerca",
     "selectVersion": "Seleziona Versione",
     "selected": "Selezionato",
@@ -2829,9 +2844,15 @@
     },
     "update": "Aggiorna",
     "updateAll": "Aggiorna Tutto",
+    "updateFailed": "Impossibile modificare la versione del pacchetto. Riprova.",
+    "updateLatestActiveTooltip": "Passa alla versione Active più recente (predefinita).",
+    "updateLatestInstallableTooltip": "Passa alla versione installabile più recente, incluse le versioni Contrassegnate e In attesa. Le impostazioni di sicurezza del Manager sono comunque applicate.",
+    "updateOptions": "Opzioni di aggiornamento",
     "updateSelected": "Aggiorna Selezionati",
+    "updateVersionInstalled": "La versione {version} è già installata.",
     "updatingAllPacks": "Aggiornamento di tutti i pacchetti",
-    "version": "Versione"
+    "version": "Versione",
+    "versionLoadFailed": "Impossibile caricare le versioni. Chiudi questo selettore e riprova."
   },
   "maskEditor": {
     "activateLayer": "Attiva Livello",
@@ -3105,6 +3126,8 @@
     "linearMode_appModeToolbar_apps": "linearMode.appModeToolbar.apps"
   },
   "minimap": {
+    "highlightedNodes": "Nodi evidenziati: {count}",
+    "label": "Minimappa",
     "nodeColors": "Colori dei nodi",
     "renderBypassState": "Visualizza stato di bypass",
     "renderErrorState": "Visualizza stato di errore",
@@ -4788,6 +4811,7 @@
     },
     "clearAllFilters": "Cancella tutti i filtri",
     "error": {
+      "loading": "Non è stato possibile aprire il modello. Riprova.",
       "templateNotFound": "Modello \"{templateName}\" non trovato"
     },
     "filtersApplied": "{count} filtro applicato | {count} filtri applicati",
@@ -4829,6 +4853,7 @@
   "toastMessages": {
     "a1111CoreNodesUnavailable": "Impossibile caricare il workflow perché questa installazione di ComfyUI non ha i nodi core. Verifica che il backend sia stato avviato correttamente.",
     "a1111EmbeddingsUnavailable": "Non è stato possibile caricare gli embedding dal server. Il workflow è stato importato, ma i nomi degli embedding sono stati lasciati come testo normale.",
+    "assetDropFailed": "Impossibile caricare la risorsa trascinata",
     "cannotCreateSubgraph": "Impossibile creare il subgraph",
     "couldNotDetermineFileType": "Impossibile determinare il tipo di file",
     "dropFileError": "Impossibile elaborare l'elemento trascinato: {error}",
@@ -5067,6 +5092,7 @@
   },
   "workspace": {
     "addedToWorkspace": "Sei stato aggiunto a:",
+    "deepLinkStayed": "Non è stato possibile aprire quell'area di lavoro. Sei ancora in {workspaceName}.",
     "inviteAccepted": "Invito accettato",
     "inviteFailed": "Impossibile accettare l'invito",
     "switchFailed": "Cambio workspace non riuscito. Riprova.",

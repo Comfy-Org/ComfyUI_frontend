@@ -93,7 +93,7 @@ function fakeSession() {
     session,
     moveTo(workspace: AccountCredential['workspace']) {
       snapshot = authenticated(credential(workspace))
-      for (const listener of [...listeners]) listener(snapshot)
+      for (const listener of Array.from(listeners)) listener(snapshot)
     }
   }
 }

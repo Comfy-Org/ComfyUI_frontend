@@ -75,7 +75,10 @@ test.describe('Node replacement', { tag: ['@node', '@ui'] }, () => {
               swapGroup.getByTestId(TestIds.dialogs.swapNodeGroupCount)
             ).toHaveCount(0)
 
-            await comfyPage.canvasOps.pan({ x: -800, y: -800 })
+            await comfyPage.canvasOps.pan(
+              { x: -800, y: -800 },
+              { x: 200, y: 500 }
+            )
             const offsetBeforeLocate = await comfyPage.canvasOps.getOffset()
 
             await rowLabel.click()

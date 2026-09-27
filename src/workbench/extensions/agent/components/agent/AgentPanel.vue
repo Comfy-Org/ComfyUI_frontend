@@ -13,6 +13,7 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
+import type { AgentStopMethod } from '@/platform/telemetry/types'
 
 import type { ActiveTab } from '../../types/activeTab'
 import type {
@@ -57,6 +58,7 @@ const {
   activeTab = null,
   workflowTabs = [],
   visibleTabPath = null,
+  followsVisibleWorkflow = false,
   selectingTabPath = null,
   selectTab = async () => false,
   workflowDetached = false,
@@ -86,6 +88,7 @@ const {
   activeTab?: ActiveTab | null
   workflowTabs?: ActiveTab[]
   visibleTabPath?: string | null
+  followsVisibleWorkflow?: boolean
   selectingTabPath?: string | null
   selectTab?: (path: string) => Promise<boolean>
   workflowDetached?: boolean
@@ -103,7 +106,7 @@ const emit = defineEmits<{
     attachments: ComposerAttachment[],
     workflowReferences?: WorkflowReference[]
   ]
-  stop: []
+  stop: [method: AgentStopMethod]
   attach: []
   attachFiles: [files: File[]]
   openAssets: []
@@ -115,6 +118,7 @@ const emit = defineEmits<{
   feedback: [turnId: string, vote: 'up' | 'down' | null]
   paywallAction: [action: AgentPaywallAction]
   newChat: []
+  startTour: []
   toggleSize: []
   close: []
   openHistory: []
@@ -124,9 +128,18 @@ const emit = defineEmits<{
   renameHistory: [id: string, title: string]
   renameChat: [title: string]
   answerAsk: [askId: string, selection: 'run' | 'cancel']
-  openWorkflow: [workflowId: string, workflowName?: string]
+  openWorkflow: [askId: string, workflowId: string, workflowName?: string]
+  approvalShown: [askId: string, turnId: string, workflowId: string | null]
   openReferenceWorkflow: [workflowId: string, workflowName: string]
+  showTarget: []
 }>()
+
+const targetNotice = computed(() => {
+  if (workflowDetached || activeTab === null) return undefined
+  if (visibleTabPath !== null && visibleTabPath !== activeTab.path)
+    return 'mismatch'
+  return followsVisibleWorkflow ? 'following' : undefined
+})
 
 const showHistory = ref(false)
 
@@ -204,8 +217,8 @@ function onDeleteChat(): void {
   if (sessionId !== null) emit('deleteHistory', sessionId)
 }
 
-function addAttachment(attachment: ComposerAttachment): void {
-  composerRef.value?.addAttachment(attachment)
+function addAttachment(attachment: ComposerAttachment): boolean {
+  return composerRef.value?.addAttachment(attachment) ?? false
 }
 
 function updateAttachment(
@@ -238,6 +251,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
     <PanelHeader
       :is-maximized
       @new-chat="onNewChat"
+      @start-tour="emit('startTour')"
       @toggle-size="emit('toggleSize')"
       @close="emit('close')"
     />
@@ -258,12 +272,12 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
       <div class="flex h-10 shrink-0 items-center px-2">
         <Button
           id="agent-chat-history"
-          v-tooltip.bottom="buildTooltipConfig(t('agent.showChatHistory'))"
+          v-tooltip.right="buildTooltipConfig(t('agent.showChatHistory'))"
           type="button"
           variant="muted-textonly"
           size="icon-sm"
           :aria-label="t('agent.showChatHistory')"
-          class="size-6 shrink-0"
+          class="size-6 shrink-0 data-coach-hover:bg-secondary-background-hover"
           @click="onOpenHistory"
         >
           <span class="icon-[lucide--history] size-4 shrink-0" />
@@ -357,9 +371,13 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           @answer-ask="
             (askId, selection) => emit('answerAsk', askId, selection)
           "
+          @approval-shown="
+            (askId, turnId, workflowId) =>
+              emit('approvalShown', askId, turnId, workflowId)
+          "
           @open-workflow="
-            (workflowId, workflowName) =>
-              emit('openWorkflow', workflowId, workflowName)
+            (askId, workflowId, workflowName) =>
+              emit('openWorkflow', askId, workflowId, workflowName)
           "
           @open-reference-workflow="
             (workflowId, workflowName) =>
@@ -377,6 +395,8 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           <RunNoticeBanner
             :expanded="isMaximized"
             :workflow-name="workflowDetached ? undefined : activeTab?.name"
+            :context="targetNotice"
+            @show-target="emit('showTarget')"
           />
           <Composer
             ref="composerRef"
@@ -393,7 +413,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             :workflow-selecting="selectingTabPath !== null || savingReference"
             :get-mention-nodes
             @send="onComposerSend"
-            @stop="emit('stop')"
+            @stop="emit('stop', $event)"
             @attach="emit('attach')"
             @attach-files="emit('attachFiles', $event)"
             @open-assets="emit('openAssets')"

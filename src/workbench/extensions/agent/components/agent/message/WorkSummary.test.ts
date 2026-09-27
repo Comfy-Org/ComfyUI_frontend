@@ -67,7 +67,7 @@ describe('ActivityTrace', () => {
     ])
   })
 
-  it('shows settled thinking time beside narration while the next step runs', async () => {
+  it('keeps timing information out of settled rows', async () => {
     const { rerender } = render(ActivityTrace, {
       props: {
         parts: [
@@ -94,8 +94,8 @@ describe('ActivityTrace', () => {
     })
 
     const [thinking, nextStep] = screen.getAllByRole('listitem')
-    expect(thinking).toHaveTextContent(/^Inspecting the graph\s*1\.4s$/)
-    expect(within(thinking).getByText('1.4s')).toBeInTheDocument()
+    expect(thinking).toHaveTextContent(/^Inspecting the graph$/)
+    expect(screen.queryByText('1.4s')).not.toBeInTheDocument()
     expect(nextStep).toHaveTextContent('List slots')
   })
 
@@ -112,7 +112,7 @@ describe('ActivityTrace', () => {
 
     expect(screen.getAllByText('Add node')).toHaveLength(1)
     expect(screen.getByText('×2')).toBeInTheDocument()
-    expect(screen.getByText('1.5s')).toBeInTheDocument()
+    expect(screen.queryByText('1.5s')).not.toBeInTheDocument()
   })
 
   it('maps known tools to friendly labels and humanizes the rest', () => {
@@ -142,7 +142,7 @@ describe('ActivityTrace', () => {
 })
 
 describe('WorkSummary', () => {
-  it('sums thinking and tool time into the collapsed label', () => {
+  it('uses a timing-free collapsed label', () => {
     render(WorkSummary, {
       props: {
         parts: [
@@ -160,7 +160,7 @@ describe('WorkSummary', () => {
     })
 
     const trigger = screen.getByRole('button', {
-      name: /worked for 2.3 seconds/i
+      name: /^worked$/i
     })
     expect(trigger).toHaveAttribute('aria-expanded', 'false')
     expect(screen.queryByText('Add node')).not.toBeInTheDocument()
@@ -187,7 +187,7 @@ describe('WorkSummary', () => {
     const rows = within(screen.getByRole('list'))
     expect(rows.getByText('Add node')).toBeInTheDocument()
 
-    expect(screen.getByText('0.1s')).toBeInTheDocument()
+    expect(screen.queryByText('0.1s')).not.toBeInTheDocument()
     expect(screen.queryByText(/^Thought/)).not.toBeInTheDocument()
     expect(screen.getByText('Inspecting the graph')).toBeInTheDocument()
   })
@@ -207,18 +207,7 @@ describe('WorkSummary', () => {
     expect(screen.queryByText('Set widget')).not.toBeInTheDocument()
   })
 
-  it('reads a long turn in minutes', () => {
-    render(WorkSummary, {
-      props: { parts: [tool('c1', 'add_node', 'done', true, 204_900)] },
-      global: { plugins: [i18n] }
-    })
-
-    expect(
-      screen.getByRole('button', { name: /worked for 3m 25s/i })
-    ).toBeInTheDocument()
-  })
-
-  it('drops the duration from the label when no timings arrived', () => {
+  it('uses the same label when no timings arrived', () => {
     render(WorkSummary, {
       props: { parts: [tool('c1', 'add_node', 'done', true)] },
       global: { plugins: [i18n] }

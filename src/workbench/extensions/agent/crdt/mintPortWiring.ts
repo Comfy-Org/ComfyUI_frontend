@@ -6,8 +6,10 @@
  * over beforeLoadGraph/afterConfigureGraph: a failed load leaves mints
  * suppressed until the next load's pair recloses.
  */
+import { registerDocBoundRootGraphProbe } from '@/lib/litegraph/src/docBoundGraphs'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { RootGraphId } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'
 import type { WorkflowNode } from '@comfyorg/comfy-multi-player'
 
@@ -47,6 +49,16 @@ export interface MintPortWiringDeps {
   localActorPrefix: string
   /** The live root graph, or null when no workflow is open. */
   getGraph(): MintableGraph | null
+  /**
+   * The bound workflow's own stored root graph id, or null when no workflow
+   * is bound. Read from the workflow's serialized state rather than the live
+   * canvas graph, so it names the bound document's graph even while a
+   * different tab is on screen or a tab switch is loading another workflow
+   * into the shared canvas graph. Scopes layout mints to that graph so a load
+   * already in flight when the binding flips cannot mint the new graph's
+   * nodes into the old document.
+   */
+  boundRootGraphId(): RootGraphId | null
 }
 
 export interface MintPortWiring {
@@ -156,6 +168,7 @@ function valueWidgetsOnly(
 
 export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
   const session = createMintSession()
+  let intentionalClearDepth = 0
   const enqueue = (operations: GraphOperation[]) => {
     const pending = bufferedEnqueues.at(-1)
     if (pending) pending.push(() => deps.enqueue(operations))
@@ -189,6 +202,7 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
     session,
     isEnabled: deps.isEnabled,
     isDocBound: deps.isDocBound,
+    isIntentionalClear: () => intentionalClearDepth > 0,
     enqueue
   })
 
@@ -199,6 +213,7 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
     localActorPrefix: deps.localActorPrefix,
     isEnabled: deps.isEnabled,
     isDocBound: deps.isDocBound,
+    boundRootGraphId: deps.boundRootGraphId,
     source: {
       serializeNode(id) {
         const node = deps.getGraph()?.getNodeById(id as NodeId)
@@ -276,10 +291,26 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
 
   let loadBracketOpen = false
 
+  // The ports gate their sends on exactly this trio, so the same read also
+  // answers litegraph's mint-time question: a graph whose edits reach the doc
+  // is a graph the agent mints into too, and must mint from the disjoint
+  // range (`idAllocation.ts`).
+  const unregisterDocBoundProbe = registerDocBoundRootGraphProbe(() => {
+    if (!deps.isEnabled() || !deps.isDocBound()) return null
+    const graph = deps.getGraph()
+    if (!graph) return null
+    return graph.rootGraph?.id ?? graph.id
+  })
+
   const wiring: MintPortWiring = {
     session,
     runIntentionalClear(fn) {
-      return layoutPort.runIntentionalClear(fn)
+      intentionalClearDepth++
+      try {
+        return layoutPort.runIntentionalClear(fn)
+      } finally {
+        intentionalClearDepth--
+      }
     },
     onBeforeGraphLoad() {
       if (loadBracketOpen) return
@@ -293,6 +324,7 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
     },
     detach() {
       activeWirings.delete(wiring)
+      unregisterDocBoundProbe()
       detachLinkActions()
       detachWidgetChanges()
       widgetPort.detach()

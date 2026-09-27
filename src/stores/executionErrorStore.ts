@@ -178,6 +178,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   >()
 
   function getValidationErrorSurfaces(
+    rootGraph: LGraph | undefined,
     rawNodeId: NodeExecutionId,
     nodeError: NodeError,
     error: NodeValidationError
@@ -185,8 +186,8 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     const rawErrorRecord = {
       [rawNodeId]: { ...nodeError, errors: [error] }
     }
-    const surfacedErrorRecord = app.isGraphReady
-      ? liftNodeErrorsToBoundary(app.rootGraph, rawErrorRecord)
+    const surfacedErrorRecord = rootGraph
+      ? liftNodeErrorsToBoundary(rootGraph, rawErrorRecord)
       : rawErrorRecord
 
     return Object.entries(surfacedErrorRecord).flatMap(
@@ -201,7 +202,8 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   function captureValidationErrorSurfaces(
     nodeErrors: Record<string, NodeError>
   ): void {
-    if (!app.isGraphReady) return
+    const rootGraph = app.rootGraphOrUndefined
+    if (!rootGraph) return
 
     for (const [rawNodeId, nodeError] of Object.entries(nodeErrors)) {
       const executionId = tryNormalizeNodeExecutionId(rawNodeId)
@@ -209,7 +211,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
       for (const error of nodeError.errors) {
         validationErrorSurfaces.set(
           toRaw(error),
-          getValidationErrorSurfaces(executionId, nodeError, error)
+          getValidationErrorSurfaces(rootGraph, executionId, nodeError, error)
         )
       }
     }
@@ -224,8 +226,14 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     const cached = validationErrorSurfaces.get(rawError)
     if (cached) return cached
 
-    const surfaces = getValidationErrorSurfaces(executionId, nodeError, error)
-    if (app.isGraphReady) validationErrorSurfaces.set(rawError, surfaces)
+    const rootGraph = app.rootGraphOrUndefined
+    const surfaces = getValidationErrorSurfaces(
+      rootGraph,
+      executionId,
+      nodeError,
+      error
+    )
+    if (rootGraph) validationErrorSurfaces.set(rawError, surfaces)
     return surfaces
   }
 
@@ -550,7 +558,8 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     slotName: string
   ): SlotNodeErrorClearTarget[] {
     const surfaced = surfacedNodeErrors.value
-    if (!surfaced || !app.isGraphReady) return []
+    const rootGraph = app.rootGraphOrUndefined
+    if (!surfaced || !rootGraph) return []
 
     return Object.values(surfaced).flatMap((surface) =>
       surface.errors.flatMap((error): SlotNodeErrorClearTarget[] => {
@@ -563,7 +572,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
         if (!sourceExecutionId) return []
 
         const clearsThisError = resolveLiftChain(
-          app.rootGraph,
+          rootGraph,
           sourceExecutionId,
           source.source_input_name
         ).some(
@@ -767,7 +776,10 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   const lastExecutionErrorNodeLocatorId = computed(() => {
     const err = lastExecutionError.value
     if (!err) return null
-    return executionIdToNodeLocatorId(app.rootGraph, String(err.node_id))
+    return executionIdToNodeLocatorId(
+      app.rootGraphOrUndefined,
+      String(err.node_id)
+    )
   })
 
   const lastExecutionErrorNodeId = computed(() => {
@@ -784,11 +796,12 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   const hasNodeError = computed(() => lastNodeErrors.value !== null)
 
   // Re-lifts only when the record changes; topology is assumed stable while errors are displayed.
-  const surfacedNodeErrors = computed(() =>
-    lastNodeErrors.value && app.isGraphReady
-      ? liftNodeErrorsToBoundary(app.rootGraph, lastNodeErrors.value)
+  const surfacedNodeErrors = computed(() => {
+    const rootGraph = app.rootGraphOrUndefined
+    return lastNodeErrors.value && rootGraph
+      ? liftNodeErrorsToBoundary(rootGraph, lastNodeErrors.value)
       : lastNodeErrors.value
-  )
+  })
 
   const hasMissingError = computed(
     () =>
@@ -822,14 +835,15 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   /** Graph node IDs (as strings) that have errors in the current graph scope. */
   const activeGraphErrorNodeIds = computed<Set<string>>(() => {
     const ids = new Set<string>()
-    if (!app.isGraphReady) return ids
+    const rootGraph = app.rootGraphOrUndefined
+    if (!rootGraph) return ids
 
     // Fall back to rootGraph when currentGraph hasn't been initialized yet
-    const activeGraph = canvasStore.currentGraph ?? app.rootGraph
+    const activeGraph = canvasStore.currentGraph ?? rootGraph
 
     if (surfacedNodeErrors.value) {
       for (const executionId of Object.keys(surfacedNodeErrors.value)) {
-        const graphNode = getNodeByExecutionId(app.rootGraph, executionId)
+        const graphNode = getNodeByExecutionId(rootGraph, executionId)
         if (graphNode?.graph === activeGraph) {
           ids.add(String(graphNode.id))
         }
@@ -838,7 +852,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
     if (lastExecutionError.value) {
       const execNodeId = String(lastExecutionError.value.node_id)
-      const graphNode = getNodeByExecutionId(app.rootGraph, execNodeId)
+      const graphNode = getNodeByExecutionId(rootGraph, execNodeId)
       if (graphNode?.graph === activeGraph) {
         ids.add(String(graphNode.id))
       }
@@ -906,8 +920,9 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
   /** True if the node has errors inside it at any nesting depth. */
   function isContainerWithInternalError(node: LGraphNode): boolean {
-    if (!app.isGraphReady) return false
-    const execId = getExecutionIdByNode(app.rootGraph, node)
+    const rootGraph = app.rootGraphOrUndefined
+    if (!rootGraph) return false
+    const execId = getExecutionIdByNode(rootGraph, node)
     if (!execId) return false
     return errorAncestorExecutionIds.value.has(execId)
   }
