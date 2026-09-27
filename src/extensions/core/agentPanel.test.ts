@@ -140,6 +140,7 @@ vi.mock(import('@/composables/useFeatureFlags'), () => ({
 }))
 
 const { registerAgentPanelExtension } = await import('./agentPanel')
+const importRegistrationCount = mocks.capturedExtensions.length
 registerAgentPanelExtension()
 
 const flush = (): Promise<void> =>
@@ -1493,11 +1494,7 @@ describe('AgentPanel extension flag gate', () => {
     await extension!.afterConfigureGraph!([], {} as never)
   })
 
-  it('does not self-register when its module is imported', async () => {
-    const registeredExtensions = mocks.capturedExtensions.length
-    vi.resetModules()
-    await import('./agentPanel')
-
-    expect(mocks.capturedExtensions).toHaveLength(registeredExtensions)
+  it('does not self-register when its module is imported', () => {
+    expect(importRegistrationCount).toBe(0)
   })
 })
