@@ -130,10 +130,10 @@ function resolveWhitelistFlag(
   remoteConfigValue: boolean | undefined
 ): boolean {
   const sessionOverride = getSessionOverride<boolean>(flagKey)
-  if (sessionOverride !== undefined) return  sessionOverride
+  if (sessionOverride !== undefined) return sessionOverride
 
   const override = getDevOverride<boolean>(flagKey)
-  if (override !== undefined) return  override
+  if (override !== undefined) return override
 
   if (!isCloud) return false
   if (!isAuthenticatedConfigLoaded.value) return false

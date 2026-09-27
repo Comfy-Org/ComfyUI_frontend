@@ -146,6 +146,8 @@ const notOffered = async () =>
       .trackAgentConsentNotOffered
   )
 
+const GATE_SETTLE_TIMEOUT_MS = 5_000
+
 async function loadEntryAndSetup(): Promise<void> {
   const { registerAgentPanelExtension } = await import('./agentPanel')
   registerAgentPanelExtension()
@@ -1081,6 +1083,16 @@ describe('AgentPanel extension flag gate', () => {
     await loadEntryAndSetup()
 
     await setRemoteConfigState('error')
+
+    expect(agentStore.gateSettled).toBe(true)
+  })
+
+  it('settles the gate on the fallback when no authenticated config ever lands', async () => {
+    await setRemoteConfigState('anonymous')
+    await loadEntryAndSetup()
+    expect(agentStore.gateSettled).toBe(false)
+
+    await vi.advanceTimersByTimeAsync(GATE_SETTLE_TIMEOUT_MS)
 
     expect(agentStore.gateSettled).toBe(true)
   })

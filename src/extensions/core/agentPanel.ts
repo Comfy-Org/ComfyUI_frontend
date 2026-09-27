@@ -30,6 +30,9 @@ import {
   notifyMintPortsBeforeGraphLoad
 } from '@/workbench/extensions/agent/crdt/mintPortWiring'
 
+/** Upper bound on how long readiness consumers wait for a gate decision. */
+export const GATE_SETTLE_TIMEOUT_MS = 5_000
+
 const CONSENT_AUTO_SHOWN_PREFIX = 'Comfy.AgentConsent.AutoShown'
 
 function writeAutoShown(key: string, shown: boolean): boolean {
@@ -351,14 +354,20 @@ function setupFlagGate(loadConsentIfEligible: () => void): void {
     { immediate: true }
   )
 
+  const settle = (): void => {
+    agentPanelStore.gateSettled = true
+  }
   watch(
     () =>
       import.meta.env.MODE === 'development' ||
       remoteConfigState.value === 'authenticated' ||
       remoteConfigState.value === 'error',
     (decided) => {
-      if (decided) agentPanelStore.gateSettled = true
+      if (decided) settle()
     },
     { immediate: true }
   )
+  // A signed-out session never runs the authenticated /features refresh
+  // (cloudRemoteConfig.ts returns early), so the watch above never fires for it.
+  setTimeout(settle, GATE_SETTLE_TIMEOUT_MS)
 }
