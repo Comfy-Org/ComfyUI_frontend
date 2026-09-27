@@ -80,7 +80,7 @@ jobs:
             --filter @comfyorg/object-info-parser \
             --filter @comfyorg/shared-frontend-utils \
             --filter @comfyorg/design-system \
-            exec vitest run --coverage --maxWorkers=2
+            exec vitest run --coverage --maxWorkers=3
 
       - name: Upload package coverage
         if: ${{ !cancelled() }}
