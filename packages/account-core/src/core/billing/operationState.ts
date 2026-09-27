@@ -252,17 +252,24 @@ function terminalFromStatus(
 /**
  * A link echoed while this tab's completed challenge is still processing
  * points at that same challenge; surfacing it would ask the customer to
- * redo a step they just finished.
+ * redo a step they just finished. A checkout waiting on a card keeps the
+ * link a resubmit reissued, because the server stores none for that phase.
  */
 function nextActionUrl(
   state: PendingBillingOperation,
   status: BillingOpStatus,
   authenticationState: BillingAuthenticationState | undefined
 ): string | undefined {
-  return state.challenge?.status === 'completed' &&
+  if (
+    state.challenge?.status === 'completed' &&
     authenticationState !== 'requires_action'
+  ) {
+    return state.actionUrl
+  }
+  const served = validateActionUrl(status.action_url)
+  return served === undefined && status.phase === 'awaiting_payment_method'
     ? state.actionUrl
-    : validateActionUrl(status.action_url)
+    : served
 }
 
 /**

@@ -742,6 +742,23 @@ describe('useBillingSdkStore subscription commands', () => {
     ).toEqual([])
   })
 
+  it('opens the hosted page for an embedded operation that carries no in-page challenge', () => {
+    const openPage = vi.spyOn(window, 'open').mockReturnValue({} as Window)
+    useBillingSdkStore()
+
+    harness.publish(
+      pendingSubscription({
+        presentation: 'embedded',
+        actionUrl: 'https://pay.example/invoice'
+      })
+    )
+
+    expect(openPage).toHaveBeenCalledExactlyOnceWith(
+      'https://pay.example/invoice',
+      '_blank'
+    )
+  })
+
   it('offers the next hosted page the same subscribe moves to', () => {
     const openPage = vi.spyOn(window, 'open').mockReturnValue(null)
     const store = useBillingSdkStore()

@@ -571,7 +571,11 @@ export function createBillingOperationLifecycle(
     if (status.status === 'error') return status
 
     const rail = status.value.status.billing_rail
-    const parked = resubmitTarget(pendingFromStatus(status.value.status), kind)
+    const parked = await resubmitTarget(
+      pendingFromStatus(status.value.status),
+      kind
+    )
+    if (!isLive(context)) return SUPERSEDED
     if (parked === 'refused') return OPERATION_ALREADY_PENDING
 
     const attemptStartedAt = now()
@@ -618,12 +622,21 @@ export function createBillingOperationLifecycle(
    * keeps no link back to it, and a resubmit is how it resumes that checkout
    * or replaces it, so the command goes through with that record in hand.
    */
-  function resubmitTarget(
+  async function resubmitTarget(
     pending: ServerPendingOperation | undefined,
     kind: BillingOperationKind
-  ): OperationRecord | 'refused' | undefined {
+  ): Promise<OperationRecord | 'refused' | undefined> {
     if (pending?.kind !== kind) return undefined
     const record = operations.get(pending.id)
+    if (
+      record?.state.phase === 'pending' &&
+      record.state.serverPhase === undefined
+    ) {
+      const read = await readOperation(pending.id)
+      if (read.status === 'ok') {
+        dispatch(record, { type: 'status_polled', status: read.value.data })
+      }
+    }
     return record?.state.phase === 'pending' &&
       record.state.serverPhase === 'awaiting_payment_method'
       ? record
