@@ -333,7 +333,10 @@ export class AgentTurnLockHarness {
   public readonly stopButton: Locator
   public readonly workSummary: Locator
   public readonly workingRow: Locator
+  public readonly liveProgressRow: Locator
   public readonly userBubbles: Locator
+  private readonly entryButton: Locator
+  private readonly dock: Locator
   private readonly agentPanel: AgentPanel
 
   constructor(
@@ -368,7 +371,20 @@ export class AgentTurnLockHarness {
     this.workingRow = this.panel.getByText(enMessages.agent.working, {
       exact: true
     })
+    // The two status rows a live turn can show in this fixture's scenarios.
+    // `working` needs every part settled (AgentMessage.vue's `composing`), so
+    // it covers a turn resumed with its tool call intact; `thinking` covers one
+    // rebuilt from REST, which has no parts at all because the server stores a
+    // live row contentless. Asserting the pair keeps this about whether a live
+    // turn is on screen rather than which recovery shape produced it. Visible
+    // only, so a collapsed WorkSummary's retained trace cannot match.
+    this.liveProgressRow = this.workingRow
+      .or(this.panel.getByText(enMessages.agent.thinking, { exact: true }))
+      .filter({ visible: true })
+      .first()
     this.userBubbles = this.panel.getByTestId('user-message-bubble')
+    this.entryButton = this.agentPanel.openButton
+    this.dock = page.getByTestId('docked-agent-panel')
   }
 
   rejectedPosts(): number {
@@ -515,6 +531,34 @@ export class AgentTurnLockHarness {
   /** The socket the client is currently on, with no drop. */
   async liveSocket(): Promise<WebSocketRoute> {
     return this.getWebSocket()
+  }
+
+  /**
+   * Minimizes the panel from the topbar Agent button, the control the report
+   * used. `DockedAgentPanel.vue` gates the dock on `v-if`, so this unmounts
+   * `AgentPanelRoot` and runs its `onBeforeUnmount` — not a visual hide. The
+   * page is never reloaded and the shared websocket stays open.
+   */
+  async minimizePanel(): Promise<void> {
+    await this.entryButton.click()
+    await expect(this.dock).toHaveCount(0)
+  }
+
+  /**
+   * Restores the panel, then waits out the remount's REST hydration for the
+   * one case that can race: a restore over a turn the unmount abandoned. That
+   * turn keeps its parts and renders `Worked...`, and hydration replaces it
+   * with a contentless row that renders none, so the summary going away is a
+   * real settle — without it a frame pushed straight after a restore can reach
+   * `ingest` before the replacement transport exists and be dropped for a
+   * reason the caller never intended. It is a no-op, not a guarantee, when
+   * there was no turn to abandon or when a fix keeps one live across the
+   * remount; neither case leaves a summary on screen to wait on.
+   */
+  async restorePanel(): Promise<void> {
+    await this.entryButton.click()
+    await expect(this.panel).toBeVisible()
+    await expect(this.workSummary).toHaveCount(0)
   }
 
   /** Drops the live socket and resolves with the one the client reconnects on. */
