@@ -150,7 +150,7 @@ cleanup can be attached to the test that dirtied it.
 
 ## No Real Network
 
-`vitest.setup.ts` blocks every `http(s)` `fetch`, and happy-dom is configured not
+`vitest.network.setup.ts` blocks every `http(s)` `fetch`, and happy-dom is configured not
 to load iframes, stylesheets or scripts from remote hosts. A blocked request
 rejects with `Blocked a real network request to <url>`.
 
@@ -184,6 +184,38 @@ pnpm test:unit foo.test.ts -t "name" # Filter by test name (regex; it()/test() o
 ```
 
 Do not use the `--` separator before vitest args; pnpm forwards extra args automatically, and `--` mangles quoted args (e.g. `-t "two words"`) on Windows PowerShell.
+
+## Selective Concurrency
+
+Tests within a file run sequentially by default. `vite.config.mts` defines two
+mutually exclusive tags for suites and individual tests:
+
+- `{ tags: ['concurrent-safe'] }` enables concurrent execution. Use it for async
+  tests whose state and cleanup belong to each test, including inherited hooks.
+- `{ tags: ['shared-state'] }` keeps tests sequential. Use it for known conflicts
+  involving active Pinia, shared mocks, fake timers, the DOM, or singleton state.
+
+`shared-state` is a scheduling boundary among siblings, not a global lock.
+Keep conflicting groups under a sequential ancestor. Do not put them beneath
+separate concurrent branches or use explicit `.concurrent` modifiers to override
+the tag. Separate files still run in parallel.
+
+The `tooling` project loads only the network guard. Script tests that need
+frontend setup belong in `FRONTEND_SCRIPT_TESTS` in `vite.config.mts`.
+The `frontend` project still installs global Pinia, timer, and DOM cleanup hooks;
+its tests are not safe to mark concurrent until those dependencies are isolated.
+Automatic mock resets and global unstubbing also affect concurrent tests in the
+same worker, so concurrent tests must not mutate shared mocks or globals.
+
+Use the test context's `expect` for concurrent assertions. Allocate and dispose
+resources inside each test, as in `scripts/cicd/check-binary-size.test.ts`.
+Verify both filtered and mixed runs without retries:
+
+```bash
+pnpm test:unit --tags-filter=concurrent-safe --retry=0
+pnpm test:unit --tags-filter=shared-state --retry=0
+pnpm test:unit --retry=0
+```
 
 ## Expensive Imports Belong at Module Scope
 

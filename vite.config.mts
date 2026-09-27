@@ -860,6 +860,20 @@ export default defineConfig({
     restoreMocks: true,
     unstubEnvs: true,
     unstubGlobals: true,
+    strictTags: true,
+    tags: [
+      {
+        name: 'concurrent-safe',
+        description:
+          'Independent async tests with test-owned state and cleanup.',
+        concurrent: true
+      },
+      {
+        name: 'shared-state',
+        description: 'Sequential siblings; not a cross-file resource lock.',
+        concurrent: false
+      }
+    ],
     fakeTimers: { now: TEST_SYSTEM_TIME, shouldAdvanceTime: true },
     globals: true,
     environment: 'happy-dom',
