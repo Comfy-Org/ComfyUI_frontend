@@ -153,7 +153,7 @@ export function useAttachment(options: UseAttachmentOptions) {
   }
 
   function cancelAllUploads(): void {
-    for (const id of [...pending]) cancelUpload(id)
+    for (const id of Array.from(pending)) cancelUpload(id)
   }
 
   async function addDeferredFile(
@@ -184,7 +184,7 @@ export function useAttachment(options: UseAttachmentOptions) {
     }
   }
 
-  async function addFiles(files: Iterable<File>): Promise<void> {
+  async function addFiles(files: Iterable<File>): Promise<boolean> {
     const staged = [...files]
       .filter((file) => !isTooLarge(file))
       .map((file) => ({ file, id: stage(file.name) }))
@@ -195,6 +195,7 @@ export function useAttachment(options: UseAttachmentOptions) {
       })
     )
     if (uploaded > 0) options.onUploaded?.()
+    return uploaded > 0
   }
 
   return { addDeferredFile, addFiles, cancelUpload, cancelAllUploads }

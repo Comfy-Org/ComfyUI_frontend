@@ -63,6 +63,18 @@ interface AgentCrdtOutcomeCounters {
   received: number
   /** Passed this composable's own filter and the adapter had a bound session to apply it to. */
   applied: number
+  /**
+   * PM-1575: same as `applied`, excluding a subscribe's own catch-up frame
+   * (`update.catchUp`) -- the one-time state-vector sync that lands whenever
+   * a workflow is (re)subscribed to, unrelated to any in-flight tool call.
+   * `applied` alone is unusable as a canvas-sync gate for that reason: a tool
+   * call's baseline, captured before that catch-up lands, would otherwise
+   * read the catch-up itself as "the matching update already arrived" for
+   * whichever tool call happens to be first after a (re)subscribe. Consumers
+   * that need "did a LIVE update land" (agentEventTransport.ts's canvas-sync
+   * baseline) must read this field, not `applied`.
+   */
+  appliedLive: number
   /** Received but not applied: inactive target, workflow mismatch, or no bound adapter session. */
   skipped: number
   /** The merged doc failed the KA-11 read gate (`schema_error`). */
@@ -190,6 +202,36 @@ function runFollowerTeardown(cleanups: readonly (() => void)[]): void {
   }
 }
 
+/** The `beforeChange`/`afterChange` pair of a workflow's ChangeTracker. */
+export interface UndoBracket {
+  beforeChange(): void
+  afterChange(): void
+}
+
+interface DocResetDetail {
+  workflowId?: string
+  actor?: string
+  seq?: number
+}
+
+function readDocResetDetail(event: Event): DocResetDetail | undefined {
+  return event instanceof CustomEvent
+    ? (event.detail as DocResetDetail | undefined)
+    : undefined
+}
+
+function targetsActiveSubscription(
+  detail: DocResetDetail | undefined,
+  isTargetActive: boolean,
+  subscribedWorkflowId: string | null
+): detail is DocResetDetail & { workflowId: string } {
+  return (
+    isTargetActive &&
+    detail?.workflowId !== undefined &&
+    detail.workflowId === subscribedWorkflowId
+  )
+}
+
 export function useAgentCrdtFollower(
   workflowId: Ref<string | null>,
   graphMutations: MutationsForTarget,
@@ -201,7 +243,14 @@ export function useAgentCrdtFollower(
    * reconcile without waiting for the next remote frame.
    */
   getGraph: () => MaterializableGraph | null = () => null,
-  events: AgentCrdtFollowerEvents = {}
+  events: AgentCrdtFollowerEvents = {},
+  /**
+   * Undo tracker of the bound workflow. Remote frames mutate the live graph
+   * outside any human gesture, so without a `beforeChange`/`afterChange`
+   * bracket the ChangeTracker never captures the post-frame state and Ctrl+Z
+   * skips straight past what the agent drew (QAF-52).
+   */
+  getChangeTracker: () => UndoBracket | null = () => null
 ) {
   const productGate = useAgentPanelStore()
   const follower = shallowRef<ReturnType<typeof startAgentCrdtFollower>>()
@@ -214,6 +263,7 @@ export function useAgentCrdtFollower(
     outcomes: {
       received: 0,
       applied: 0,
+      appliedLive: 0,
       skipped: 0,
       errored: 0,
       gap: 0,
@@ -239,7 +289,8 @@ export function useAgentCrdtFollower(
           userId,
           isTargetActive,
           getGraph,
-          events
+          events,
+          getChangeTracker
         )
       )
     },
@@ -267,8 +318,18 @@ function startAgentCrdtFollower(
   userId: () => string | null,
   isTargetActive: Ref<boolean>,
   getGraph: () => MaterializableGraph | null,
-  events: AgentCrdtFollowerEvents
+  events: AgentCrdtFollowerEvents,
+  getChangeTracker: () => UndoBracket | null
 ) {
+  const withUndoBracket = <T>(fn: () => T): T => {
+    const tracker = getChangeTracker()
+    tracker?.beforeChange()
+    try {
+      return fn()
+    } finally {
+      tracker?.afterChange()
+    }
+  }
   const connected = ref(false)
   const updatesApplied = ref(0)
   const lastFrameType = ref<string | null>(null)
@@ -276,6 +337,7 @@ function startAgentCrdtFollower(
   const outcomes = ref<AgentCrdtOutcomeCounters>({
     received: 0,
     applied: 0,
+    appliedLive: 0,
     skipped: 0,
     errored: 0,
     gap: 0,
@@ -381,7 +443,7 @@ function startAgentCrdtFollower(
     )
   }
   const incrementOutcome = (
-    key: 'received' | 'applied' | 'skipped' | 'reset'
+    key: 'received' | 'applied' | 'appliedLive' | 'skipped' | 'reset'
   ): void => {
     outcomes.value = { ...outcomes.value, [key]: outcomes.value[key] + 1 }
   }
@@ -403,6 +465,7 @@ function startAgentCrdtFollower(
   const applyAndReconcile = (update: ClassifiedDocUpdate): NodeId[] => {
     const applied = projection.applyFrame(update)
     incrementOutcome(applied ? 'applied' : 'skipped')
+    if (applied && !update.catchUp) incrementOutcome('appliedLive')
     return applied ? projection.reconcileLiveGraph(update.workflowId) : []
   }
 
@@ -436,7 +499,7 @@ function startAgentCrdtFollower(
     lifecycle.onDocumentUpdate()
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
-    const materialized = applyAndReconcile(update)
+    const materialized = withUndoBracket(() => applyAndReconcile(update))
     recordDevEvent('doc_update', {
       workflowId: update.workflowId,
       seq: update.seq,
@@ -471,12 +534,6 @@ function startAgentCrdtFollower(
     lastFrameType.value = event.type
     recordDevEvent('doc_ops_result', event.detail ?? null)
   }
-  const parseDocResetDetail = (
-    event: Event
-  ): { workflowId?: string; actor?: string; seq?: number } | undefined =>
-    event instanceof CustomEvent
-      ? (event.detail as { workflowId?: string; actor?: string; seq?: number })
-      : undefined
   const buildDocResetContext = (
     actor: string | undefined,
     seq: number | undefined
@@ -498,42 +555,71 @@ function startAgentCrdtFollower(
   // deliberate workflow switch, not a reset) never carries.
   let pendingResetSweepDecision: { workflowId: string; skip: boolean } | null =
     null
-  // Skip-check lives here so a benign first-mint reset (no prior projection
-  // state to lose) doesn't clear the canvas out from under the user. A mint
-  // actor alone is not enough: the backend also mints mid-turn on a lineage
-  // break for a workflow the follower already has content for, and that
-  // reset must still sweep — so the skip additionally requires the
-  // projection to currently hold zero nodes for this workflow. `hasNodes` is
-  // read here, before the pre-drop doc is replaced, so it is a non-stale
-  // snapshot of the CRDT-tracked node count at the moment of this reset —
-  // that alone is sufficient to tell a benign empty mint from a mid-turn
-  // re-mint with real content to lose, so no seq corroboration is needed.
-  const sweepProjectionUnlessMintActor = (
-    workflowId: string,
-    actor: string | undefined,
-    seq: number | undefined
-  ): void => {
-    const skip = actor === SYSTEM_MINT_ACTOR && !projection.hasNodes(workflowId)
-    pendingResetSweepDecision = { workflowId, skip }
-    if (skip) return
-    projection.clearForReset(workflowId, buildDocResetContext(actor, seq))
-  }
   const onDocReset: EventListener = (event) => {
     pendingResetSweepDecision = null
-    const detail = parseDocResetDetail(event)
+    const detail = readDocResetDetail(event)
+    if (
+      !targetsActiveSubscription(
+        detail,
+        isTargetActive.value,
+        subscribedWorkflowId.value
+      )
+    )
+      return
+    const resetWorkflowId = detail.workflowId
     incrementOutcome('reset')
-    if (!isCurrentWorkflow(detail?.workflowId)) return
-    sweepProjectionUnlessMintActor(detail.workflowId, detail.actor, detail.seq)
-    sender.abortAll()
-    events.onReset?.(detail.workflowId)
-    connected.value = false
-    updatesApplied.value = 0
-    lastFrameType.value = event.type
-    lifecycle.clearStaleProbe()
-    knownDocNodeIds = new Set()
-    pendingLiveNodeIds.clear()
-    confirmedDeletes.clear()
-    recordDevEvent('doc_reset', detail)
+    const runResetBookkeeping = (): void => {
+      sender.abortAll()
+      events.onReset?.(resetWorkflowId)
+      connected.value = false
+      updatesApplied.value = 0
+      lastFrameType.value = event.type
+      lifecycle.clearStaleProbe()
+      knownDocNodeIds = new Set()
+      pendingLiveNodeIds.clear()
+      confirmedDeletes.clear()
+      recordDevEvent('doc_reset', detail)
+    }
+    // Skip-check lives here so a benign first-mint reset (no prior projection
+    // state to lose) doesn't clear the canvas out from under the user. A mint
+    // actor alone is not enough: the backend also mints mid-turn on a lineage
+    // break for a workflow the follower already has content for, and that
+    // reset must still sweep — so the skip additionally requires the
+    // projection to currently hold zero nodes for this workflow. `hasNodes` is
+    // read here, before the pre-drop doc is replaced, so it is a non-stale
+    // snapshot of the CRDT-tracked node count at the moment of this reset —
+    // that alone is sufficient to tell a benign empty mint from a mid-turn
+    // re-mint with real content to lose, so no seq corroboration is needed.
+    // Nothing is cleared on the skip path, so there is no undo bracket to
+    // guard — the bookkeeping below always runs.
+    const skip =
+      detail.actor === SYSTEM_MINT_ACTOR &&
+      !projection.hasNodes(resetWorkflowId)
+    pendingResetSweepDecision = { workflowId: resetWorkflowId, skip }
+    if (skip) {
+      runResetBookkeeping()
+      return
+    }
+    const context: RemoteMutationContext = buildDocResetContext(
+      detail.actor,
+      detail.seq
+    )
+    // `afterChange()` runs on the way out of the bracket and can throw (undo
+    // capture serializes the graph, so one custom node is enough). The clear
+    // has already emptied the stores by then, so the bookkeeping that mirrors
+    // it must still run — otherwise the follower reports connected, keeps the
+    // stale probe, and retains node ids for a document that is gone. The
+    // capture error still propagates; only a clear that never completed skips
+    // the bookkeeping.
+    const clear = { completed: false }
+    try {
+      withUndoBracket(() => {
+        projection.clearForReset(resetWorkflowId, context)
+        clear.completed = true
+      })
+    } finally {
+      if (clear.completed) runResetBookkeeping()
+    }
   }
   const onFollowerReplaced: EventListener = (event) => {
     // Gate on this composable's own INTENT, not the bridge's send REALITY
@@ -551,17 +637,38 @@ function startAgentCrdtFollower(
     ) {
       updatesApplied.value = 0
       confirmedDeletes.clear()
+      // A doc_reset is always followed synchronously by this event for the
+      // same lineage break, and onDocReset already made (and, unless
+      // skipped, applied) the one sweep decision for this workflow — redoing
+      // it here from the bare actor string would be wrong, since this
+      // dispatch's own `follower_replaced` for a deliberate workflow switch
+      // (not a reset) never carries an actor at all. Reuse that decision
+      // instead: it also covers the skip path, where onDocReset intentionally
+      // left the projection unswept.
       const handledByDocReset =
         pendingResetSweepDecision?.workflowId === workflowId
-      if (handledByDocReset) pendingResetSweepDecision = null
-      else {
-        projection.clearForReset(workflowId, {
-          source: 'agent-remote',
-          actor: 'agent-lineage',
-          opId: `follower-replaced:${workflowId}`
-        })
+      if (handledByDocReset) {
+        pendingResetSweepDecision = null
+        projection.bind(workflowId, bridge.follower)
+      } else {
+        // Same bracket hazard as onDocReset: a throwing undo capture must not
+        // leave the adapter observing the destroyed document. The rebind
+        // mirrors a completed clear, so it runs even when `afterChange()`
+        // throws.
+        const clear = { completed: false }
+        try {
+          withUndoBracket(() => {
+            projection.clearForReset(workflowId, {
+              source: 'agent-remote',
+              actor: 'agent-lineage',
+              opId: `follower-replaced:${workflowId}`
+            })
+            clear.completed = true
+          })
+        } finally {
+          if (clear.completed) projection.bind(workflowId, bridge.follower)
+        }
       }
-      projection.bind(workflowId, bridge.follower)
     }
   }
   const onSchemaError: EventListener = (event) => {

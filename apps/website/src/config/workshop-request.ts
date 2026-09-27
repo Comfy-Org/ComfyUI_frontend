@@ -133,7 +133,8 @@ export async function prepareWorkshopRouterInput(
         contract.creator,
         values,
         signal,
-        encodeFile
+        encodeFile,
+        uploadFile
       ))
     }
     const nativeErrors = validationErrors(contract, body)

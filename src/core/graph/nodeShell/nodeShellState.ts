@@ -165,6 +165,7 @@ function transferNodeState(node: LGraphNode, replacement: LGraphNode): void {
     shape: undefined,
     showAdvanced: undefined,
     titleMode: undefined,
+    titleReconcileBaseline: undefined,
     ...replacementState
   } satisfies {
     [K in Exclude<keyof NodeState, 'graphId' | 'id'>]-?:

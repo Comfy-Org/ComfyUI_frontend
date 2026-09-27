@@ -375,7 +375,7 @@ describe('useWorkflowStore', () => {
       const workflow = store.getWorkflowByPath('workflows/a.json')!
       const draftGraph = JSON.parse(defaultGraphJSON)
       draftGraph.extra = {
-        ...(draftGraph.extra ?? {}),
+        ...draftGraph.extra,
         draftMarker: 'v2'
       }
 
@@ -406,7 +406,7 @@ describe('useWorkflowStore', () => {
       const workflow = store.getWorkflowByPath('workflows/a.json')!
       const draftGraph = JSON.parse(defaultGraphJSON)
       draftGraph.extra = {
-        ...(draftGraph.extra ?? {}),
+        ...draftGraph.extra,
         draftMarker: 'stale-v2'
       }
       const draftStore = saveV2Draft(workflow.path, {

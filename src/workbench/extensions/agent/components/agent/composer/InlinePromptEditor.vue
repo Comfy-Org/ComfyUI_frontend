@@ -78,6 +78,24 @@ const plugins = [
     'Mod-z': undo,
     'Mod-Shift-z': redo,
     'Mod-y': redo,
+    ArrowRight: (state, dispatch) => {
+      if (state.selection.empty) return false
+      dispatch?.(
+        state.tr.setSelection(
+          TextSelection.create(state.doc, state.selection.to)
+        )
+      )
+      return true
+    },
+    ArrowLeft: (state, dispatch) => {
+      if (state.selection.empty) return false
+      dispatch?.(
+        state.tr.setSelection(
+          TextSelection.create(state.doc, state.selection.from)
+        )
+      )
+      return true
+    },
     'Shift-Enter': (state, dispatch) => {
       dispatch?.(state.tr.insertText('\n').scrollIntoView())
       return true
@@ -140,7 +158,7 @@ onMounted(() => {
         ? { 'aria-activedescendant': activeDescendant }
         : {}),
       class:
-        'text-base-foreground min-h-7 w-full cursor-text font-inter text-[14px]/7 font-normal wrap-anywhere whitespace-pre-wrap outline-none'
+        'text-base-foreground min-h-7 w-full cursor-text font-inter text-[14px]/5 font-normal wrap-anywhere whitespace-pre-wrap outline-none'
     }),
     decorations(state) {
       if (state.selection.empty) return null

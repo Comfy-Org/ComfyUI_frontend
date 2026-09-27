@@ -31,7 +31,7 @@ test.describe(
         page.locator('#graph-canvas'),
         page.getByRole('button', { name: 'Reset View' })
       )
-      const tabs = topbar.workflowTabs.locator('.p-togglebutton')
+      const tabs = topbar.tabs
       const lastTurn = agentConversation.conversation.turns.length - 1
 
       const widgetRows =
@@ -56,13 +56,13 @@ test.describe(
         await topbar.newWorkflowButton.click()
         await expect(tabs).toHaveCount(2)
         await expect(agentConversation.vueNodes.nodes).toHaveCount(0)
-        await expect(topbar.getTab(1)).toHaveClass(/p-togglebutton-checked/)
+        await expect(topbar.getTab(1).and(topbar.getActiveTab())).toBeVisible()
         await expect(panel).toBeVisible()
       })
 
       await test.step('user returns to the edited workflow', async () => {
         await topbar.getTab(0).click()
-        await expect(topbar.getTab(0)).toHaveClass(/p-togglebutton-checked/)
+        await expect(topbar.getTab(0).and(topbar.getActiveTab())).toBeVisible()
         await agentConversation.expectCanvasReplayed(lastTurn)
         await expect
           .poll(() => agentConversation.renderedWidgetRows())
@@ -147,7 +147,7 @@ test.describe(
         page.locator('#graph-canvas'),
         page.getByRole('button', { name: 'Reset View' })
       )
-      const tabs = topbar.workflowTabs.locator('.p-togglebutton')
+      const tabs = topbar.tabs
       const lastTurn = agentConversation.conversation.turns.length - 1
 
       const expectViewport = async (viewport: {
@@ -186,7 +186,7 @@ test.describe(
       const returnToTabA = async () => {
         const before = agentConversation.subscribeCount()
         await topbar.getTab(0).click()
-        await expect(topbar.getTab(0)).toHaveClass(/p-togglebutton-checked/)
+        await expect(topbar.getTab(0).and(topbar.getActiveTab())).toBeVisible()
         await expect
           .poll(() => agentConversation.subscribeCount())
           .toBe(before + 1)
@@ -254,9 +254,9 @@ test.describe(
       await expect(topbar.getTab(1)).toHaveCount(0)
       await topbar.newWorkflowButton.click()
       await expect(topbar.getTab(1)).toHaveCount(1)
-      await expect(topbar.getTab(1)).toHaveClass(/p-togglebutton-checked/)
+      await expect(topbar.getTab(1).and(topbar.getActiveTab())).toBeVisible()
       await topbar.getTab(0).click()
-      await expect(topbar.getTab(0)).toHaveClass(/p-togglebutton-checked/)
+      await expect(topbar.getTab(0).and(topbar.getActiveTab())).toBeVisible()
       await expect
         .poll(() => agentConversation.subscribeCount())
         .toBe(subscribeCount + 1)
@@ -300,9 +300,9 @@ test.describe(
       await expect(topbar.getTab(1)).toHaveCount(0)
       await topbar.newWorkflowButton.click()
       await expect(topbar.getTab(1)).toHaveCount(1)
-      await expect(topbar.getTab(1)).toHaveClass(/p-togglebutton-checked/)
+      await expect(topbar.getTab(1).and(topbar.getActiveTab())).toBeVisible()
       await topbar.getTab(0).click()
-      await expect(topbar.getTab(0)).toHaveClass(/p-togglebutton-checked/)
+      await expect(topbar.getTab(0).and(topbar.getActiveTab())).toBeVisible()
       await expect
         .poll(() => agentConversation.subscribeCount())
         .toBe(subscribeCount + 1)

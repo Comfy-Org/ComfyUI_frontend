@@ -336,6 +336,7 @@ describe('native Router requests', () => {
     expect(await requests[0].json()).toEqual({ prompt: 'Test', seed: 42 })
     expect(result.requestId).toBe('request-123')
     expect(result.outputs[0].url).toBe('https://assets.example/result.jpg')
+    expect(requests[0].signal.aborted).toBe(true)
   })
 
   it('preserves caller cancellation while a Router request is pending', async () => {
@@ -466,6 +467,189 @@ describe('native Router requests', () => {
       expect(requests).toHaveBeenCalledTimes(1)
     }
   )
+
+  it.for([
+    { status: 400, errorType: 'insufficient_credits', reason: 'noCredits' },
+    { status: 500, errorType: 'insufficient_credits', reason: 'noCredits' },
+    { status: 400, errorType: 'invalid_input', reason: 'validation' }
+  ])(
+    'classifies a $status whose body alone names $errorType',
+    async ({ status, errorType, reason }) => {
+      vi.stubGlobal(
+        'fetch',
+        vi
+          .fn<typeof fetch>()
+          .mockResolvedValue(
+            Response.json(
+              { detail: 'refused', error_type: errorType },
+              { status }
+            )
+          )
+      )
+      await expect(
+        runSynchronousWorkshopRouter({
+          contract: contractFor('bfl/flux-2-pro'),
+          body: { prompt: 'Test' },
+          token: 'test-token',
+          idempotencyKey: 'one-key',
+          signal: new AbortController().signal
+        })
+      ).rejects.toMatchObject({ reason, response: { status, errorType } })
+    }
+  )
+
+  it.for([
+    {
+      provider: 'WAN',
+      status: 502,
+      bucket: 'provider_error',
+      body: {
+        code: 'DataInspectionFailed',
+        message:
+          'Green net check failed for text (input): Input data may contain inappropriate content.'
+      }
+    },
+    {
+      provider: 'OpenAI',
+      status: 400,
+      bucket: 'invalid_input',
+      body: {
+        error: {
+          message: 'Your request was rejected by the safety system.',
+          type: 'image_generation_user_error',
+          code: 'moderation_blocked'
+        }
+      }
+    },
+    {
+      provider: 'Runway',
+      status: 502,
+      bucket: 'provider_error',
+      body: {
+        status: 'FAILED',
+        failure: 'Input media did not pass content moderation.',
+        failureCode: 'SAFETY.INPUT.MULTIMODAL'
+      }
+    }
+  ])(
+    'classifies a $provider moderation payload as policy despite $bucket',
+    async ({ status, bucket, body }) => {
+      const requests = vi.fn<typeof fetch>().mockResolvedValue(
+        Response.json(body, {
+          status,
+          headers: {
+            'X-Comfy-Error-Type': bucket,
+            'X-Comfy-Request-Id': 'moderated-request'
+          }
+        })
+      )
+      vi.stubGlobal('fetch', requests)
+
+      await expect(
+        runSynchronousWorkshopRouter({
+          contract: contractFor('bfl/flux-2-pro'),
+          body: { prompt: 'Test' },
+          token: 'test-token',
+          idempotencyKey: 'one-key',
+          signal: new AbortController().signal
+        })
+      ).rejects.toMatchObject({
+        reason: 'policy',
+        requestId: 'moderated-request',
+        response: { status, errorType: bucket }
+      })
+      expect(requests).toHaveBeenCalledTimes(1)
+    }
+  )
+
+  it('does not mistake a moderation service outage for a policy refusal', async () => {
+    const requests = vi.fn<typeof fetch>().mockResolvedValue(
+      Response.json(
+        {
+          code: 'ModerationServiceUnavailable',
+          message: 'The content moderation service is unavailable.'
+        },
+        {
+          status: 502,
+          headers: { 'X-Comfy-Error-Type': 'provider_error' }
+        }
+      )
+    )
+    vi.stubGlobal('fetch', requests)
+
+    await expect(
+      runSynchronousWorkshopRouter({
+        contract: contractFor('bfl/flux-2-pro'),
+        body: { prompt: 'Test' },
+        token: 'test-token',
+        idempotencyKey: 'one-key',
+        signal: new AbortController().signal
+      })
+    ).rejects.toMatchObject({ reason: 'provider' })
+  })
+
+  it.for([
+    [402, 'noCredits'],
+    [429, 'rateLimit'],
+    [409, 'conflict'],
+    [403, 'unavailable'],
+    [504, 'timeout']
+  ] as const)(
+    'keeps the status classification for a %i response with policy text',
+    async ([status, reason]) => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn<typeof fetch>().mockResolvedValue(
+          Response.json(
+            {
+              code: 'content_filter',
+              message: 'Content policy violation'
+            },
+            { status }
+          )
+        )
+      )
+
+      await expect(
+        runSynchronousWorkshopRouter({
+          contract: contractFor('bfl/flux-2-pro'),
+          body: { prompt: 'Test' },
+          token: 'test-token',
+          idempotencyKey: 'one-key',
+          signal: new AbortController().signal
+        })
+      ).rejects.toMatchObject({ reason })
+    }
+  )
+
+  it.for([
+    'Input media did not pass content moderation.',
+    '<html>content_filter upstream failure</html>',
+    JSON.stringify({
+      code: 'content_filter',
+      padding: 'x'.repeat(20_000)
+    })
+  ])('does not classify an incomplete or non-JSON error body', async (body) => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>().mockResolvedValue(
+        new Response(body, {
+          status: 502,
+          headers: { 'X-Comfy-Error-Type': 'provider_error' }
+        })
+      )
+    )
+
+    await expect(
+      runSynchronousWorkshopRouter({
+        contract: contractFor('bfl/flux-2-pro'),
+        body: { prompt: 'Test' },
+        token: 'test-token',
+        idempotencyKey: 'one-key',
+        signal: new AbortController().signal
+      })
+    ).rejects.toMatchObject({ reason: 'provider' })
+  })
 
   it('reports errors without silently retrying a paid request', async () => {
     const fetch = vi.fn().mockResolvedValue(
@@ -895,7 +1079,11 @@ describe('native Router requests', () => {
           idempotencyKey: 'one-key',
           signal: new AbortController().signal
         })
-      ).rejects.toMatchObject({ reason: 'response', response: { status: 200 } })
+      ).rejects.toMatchObject({
+        reason: 'response',
+        response: { status: 200 },
+        cause: expect.any(Error)
+      })
     }
   })
 })

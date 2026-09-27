@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -32,7 +33,6 @@ const {
   resetRoot,
   captureExpandedKeys,
   getExpandedKeys,
-  mockStartDrag,
   mockToggleNodeOnEvent
 } = vi.hoisted(() => {
   let capturedRoot: TreeExplorerNode | null = null
@@ -49,14 +49,11 @@ const {
       capturedExpandedKeys = keys
     },
     getExpandedKeys: () => capturedExpandedKeys,
-    mockStartDrag: vi.fn(),
     mockToggleNodeOnEvent: vi.fn()
   }
 })
 
-vi.mock<unknown>(import('@/composables/node/useNodeDragToCanvas'), () => ({
-  useNodeDragToCanvas: () => ({ startDrag: mockStartDrag })
-}))
+vi.mock(import('@/composables/node/useNodeDragToCanvas'))
 
 const mockModel = fromPartial<ComfyModelDef>({
   key: 'checkpoints/model.safetensors',
@@ -168,10 +165,10 @@ describe('ModelLibrarySidebarTab', () => {
     const mockEvent = new MouseEvent('click')
     await modelLeaf?.handleClick?.(mockEvent)
 
-    expect(
-      vi.mocked(useModelToNodeStore().getNodeProvider)
-    ).toHaveBeenCalledWith('checkpoints')
-    expect(mockStartDrag).toHaveBeenCalledWith(mockNodeDef, {
+    expect(useModelToNodeStore().getNodeProvider).toHaveBeenCalledWith(
+      'checkpoints'
+    )
+    expect(useNodeDragToCanvas().startDrag).toHaveBeenCalledWith(mockNodeDef, {
       widgetValues: { ckpt_name: 'model.safetensors' },
       source: 'sidebar_drag'
     })
@@ -194,7 +191,7 @@ describe('ModelLibrarySidebarTab', () => {
     renderComponent()
     await nextTick()
 
-    expect(vi.mocked(useModelStore().refreshModelFolder)).not.toHaveBeenCalled()
+    expect(useModelStore().refreshModelFolder).not.toHaveBeenCalled()
 
     useAssetDownloadStore().lastCompletedDownload = {
       taskId: 'task-1',
@@ -203,7 +200,7 @@ describe('ModelLibrarySidebarTab', () => {
     }
     await nextTick()
 
-    expect(vi.mocked(useModelStore().refreshModelFolder)).toHaveBeenCalledWith(
+    expect(useModelStore().refreshModelFolder).toHaveBeenCalledWith(
       'checkpoints'
     )
   })
@@ -212,7 +209,7 @@ describe('ModelLibrarySidebarTab', () => {
     renderComponent()
     await nextTick()
 
-    expect(vi.mocked(useModelStore().refreshModelFolder)).not.toHaveBeenCalled()
+    expect(useModelStore().refreshModelFolder).not.toHaveBeenCalled()
   })
 
   describe('search', () => {
@@ -224,7 +221,7 @@ describe('ModelLibrarySidebarTab', () => {
       await user.type(screen.getByRole('combobox'), 'model')
       await vi.advanceTimersByTimeAsync(300)
 
-      expect(vi.mocked(useModelStore().loadModels)).toHaveBeenCalled()
+      expect(useModelStore().loadModels).toHaveBeenCalled()
       const leafLabels = () => {
         const { children: folders = [] } = getRoot()
         return folders.flatMap(({ children: leaves = [] }) =>
@@ -409,7 +406,7 @@ describe('ModelLibrarySidebarTab', () => {
 
       expect(screen.queryByLabelText('g.loadAllFolders')).toBeNull()
       expect(screen.getByLabelText('g.refresh')).toBeInTheDocument()
-      expect(vi.mocked(useModelStore().loadModels)).toHaveBeenCalledTimes(1)
+      expect(useModelStore().loadModels).toHaveBeenCalledTimes(1)
     })
 
     it('legacy mode keeps the load-all button and stays lazy by default', async () => {
@@ -417,7 +414,7 @@ describe('ModelLibrarySidebarTab', () => {
       await nextTick()
 
       expect(screen.getByLabelText('g.loadAllFolders')).toBeInTheDocument()
-      expect(vi.mocked(useModelStore().loadModels)).not.toHaveBeenCalled()
+      expect(useModelStore().loadModels).not.toHaveBeenCalled()
     })
 
     it('legacy mode still honors AutoLoadAll', async () => {
@@ -425,7 +422,7 @@ describe('ModelLibrarySidebarTab', () => {
       renderComponent()
       await nextTick()
 
-      expect(vi.mocked(useModelStore().loadModels)).toHaveBeenCalledTimes(1)
+      expect(useModelStore().loadModels).toHaveBeenCalledTimes(1)
     })
   })
 })

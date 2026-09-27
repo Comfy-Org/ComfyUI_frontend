@@ -309,7 +309,7 @@ export class SceneModelManager implements ModelManagerInterface {
   clearModel(): void {
     const objectsToRemove: THREE.Object3D[] = []
 
-    for (const object of [...this.scene.children]) {
+    for (const object of Array.from(this.scene.children)) {
       const isEnvironmentObject =
         object instanceof THREE.GridHelper ||
         object instanceof THREE.Light ||

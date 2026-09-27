@@ -3,18 +3,20 @@ import { storeToRefs } from 'pinia'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { i18n } from '@/i18n'
+import { useTelemetry } from '@/platform/telemetry'
+import type { AgentConsentTrigger } from '@/platform/telemetry/types'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 
-const CONSENT_DIALOG_KEY = 'agent-consent'
+export const CONSENT_DIALOG_KEY = 'agent-consent'
 const DOCS_URL = 'https://docs.comfy.org/agent-tools/in-app-agent'
 const CONSENT_MEDIA_BASE = 'https://media.comfy.org/website/comfy-agent'
-const CONSENT_VIDEO_SRC = `${CONSENT_MEDIA_BASE}/agent-consent-1280.webm`
-const CONSENT_VIDEO_SRC_MP4 = `${CONSENT_MEDIA_BASE}/agent-consent-1280.mp4`
-const CONSENT_POSTER_SRC = `${CONSENT_MEDIA_BASE}/agent-consent-poster.jpg`
+const CONSENT_VIDEO_SRC = `${CONSENT_MEDIA_BASE}/agent-consent-v2-1280.webm`
+const CONSENT_VIDEO_SRC_MP4 = `${CONSENT_MEDIA_BASE}/agent-consent-v2-1280.mp4`
+const CONSENT_POSTER_SRC = `${CONSENT_MEDIA_BASE}/agent-consent-v2-poster.jpg`
 
 const AgentConsentCard = defineAsyncComponent(
   () =>
@@ -37,6 +39,7 @@ export function useAgentConsent() {
   const { t } = i18n.global
 
   function showConsentDialog(
+    trigger: AgentConsentTrigger,
     persistOnAccept = true,
     expectedIdentity?: string,
     { onShown, canShow }: ConsentOfferHooks = {}
@@ -91,6 +94,12 @@ export function useAgentConsent() {
           const saved = persistOnAccept
             ? await consentStore.accept(expectedIdentity)
             : true
+          // Only a persisted acceptance resolves here. Without `persistOnAccept`
+          // this card is the first half of the signed-out flow, which still has
+          // a sign-in and a real save to clear before consent exists, so that
+          // path reports its own acceptance once those land.
+          if (persistOnAccept && saved)
+            useTelemetry()?.trackAgentConsentResolved({ decision: 'accepted' })
           closeWith(saved)
         } catch (error) {
           handleSaveFailure(error)
@@ -111,11 +120,15 @@ export function useAgentConsent() {
           accepting: false,
           error: '',
           onVnodeMounted: () => {
+            useTelemetry()?.trackAgentConsentShown({ trigger })
             if (expectedIdentity && identity.value !== expectedIdentity) return
             onShown?.()
           },
           onAccept: () => void accept(),
-          onReject: () => closeWith(false)
+          onReject: () => {
+            useTelemetry()?.trackAgentConsentResolved({ decision: 'rejected' })
+            closeWith(false)
+          }
         },
         dialogComponentProps: {
           renderer: 'reka',
@@ -137,9 +150,11 @@ export function useAgentConsent() {
   }
 
   async function acceptAfterSignIn(
+    trigger: AgentConsentTrigger,
     hooks: ConsentOfferHooks
   ): Promise<string | null> {
-    if (!(await showConsentDialog(false, undefined, hooks))) return null
+    if (!(await showConsentDialog(trigger, false, undefined, hooks)))
+      return null
     try {
       if (!(await dialogService.showSignInDialog())) return null
     } catch (error) {
@@ -158,6 +173,7 @@ export function useAgentConsent() {
       const decisionIdentity = await consentStore.ensureScope()
       if (!decisionIdentity || !(await consentStore.accept(decisionIdentity)))
         return null
+      useTelemetry()?.trackAgentConsentResolved({ decision: 'accepted' })
       return decisionIdentity
     } catch (error) {
       reportError(error, {
@@ -173,6 +189,7 @@ export function useAgentConsent() {
   }
 
   async function requestConsentForCurrentUser(
+    trigger: AgentConsentTrigger,
     hooks: ConsentOfferHooks
   ): Promise<string | null> {
     let decisionIdentity: string | null
@@ -195,19 +212,20 @@ export function useAgentConsent() {
     if (identity.value !== decisionIdentity) return null
     if (
       !accepted.value &&
-      !(await showConsentDialog(true, decisionIdentity, hooks))
+      !(await showConsentDialog(trigger, true, decisionIdentity, hooks))
     )
       return null
     return decisionIdentity
   }
 
   async function withConsent(
+    trigger: AgentConsentTrigger,
     onAccept: () => void,
     hooks: ConsentOfferHooks = {}
   ): Promise<void> {
     const decisionIdentity = isLoggedIn.value
-      ? await requestConsentForCurrentUser(hooks)
-      : await acceptAfterSignIn(hooks)
+      ? await requestConsentForCurrentUser(trigger, hooks)
+      : await acceptAfterSignIn(trigger, hooks)
     if (
       !decisionIdentity ||
       identity.value !== decisionIdentity ||

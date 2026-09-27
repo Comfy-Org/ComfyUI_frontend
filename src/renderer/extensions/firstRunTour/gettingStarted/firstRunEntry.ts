@@ -4,28 +4,30 @@ import {
   until,
   useBreakpoints
 } from '@vueuse/core'
-import { readonly, ref } from 'vue'
+import { readonly, ref, watch } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { isCloud } from '@/platform/distribution/types'
+import {
+  consumeFirstRunReplayRequest,
+  isFirstRunReplayRequested
+} from '@/platform/onboarding/onboardingReplay'
+import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
 import type { SharedWorkflowUrlLoadStatus } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
 import { useNewUserService } from '@/services/useNewUserService'
+import { useAuthStore } from '@/stores/authStore'
 import { useCommandStore } from '@/stores/commandStore'
 
 import { useFirstRunTourController } from '../tour/useFirstRunTourController'
 
-/** Waiters give up after this; a healthy boot settles well inside it. */
 const STARTUP_DECISION_TIMEOUT_MS = 60_000
 
-/**
- * Decides what a first-time user sees once startup reports its outcome: the
- * Getting Started screen for first-run tour candidates, the template browser
- * for everyone else.
- */
 export const useFirstRunEntry = createSharedComposable(() => {
+  const authStore = useAuthStore()
   const settingStore = useSettingStore()
   const gettingStartedVisible = ref(false)
   const startupDecided = ref(false)
@@ -33,17 +35,26 @@ export const useFirstRunEntry = createSharedComposable(() => {
   const isDesktopWidth =
     useBreakpoints(breakpointsTailwind).greaterOrEqual('md')
 
-  /**
-   * `defer` is ineligibility a later boot can lift — the tour flag, the
-   * viewport, remote config that has not arrived. `Comfy.TutorialCompleted` is
-   * write-once and server-side, so only `complete` may set it.
-   */
+  watch(
+    () => authStore.userId,
+    (userId, previousUserId) => {
+      if (previousUserId === undefined || userId === previousUserId) return
+      gettingStartedVisible.value = false
+      firstRunTookScreen.value = false
+      const tourStore = useOnboardingTourStore()
+      if (tourStore.activeTour === 'firstRun') tourStore.postpone()
+    },
+    { flush: 'sync' }
+  )
+
   type FirstRunDecision = 'getting-started' | 'defer' | 'complete'
 
   function decideFirstRun(): FirstRunDecision {
     if (!isCloud) return 'complete'
 
-    const isNewUser = useNewUserService().isNewUser()
+    const isNewUser =
+      isFirstRunReplayRequested(authStore.userId) ||
+      useNewUserService().isNewUser()
     if (isNewUser === false) return 'complete'
 
     if (!useFeatureFlags().flags.onboardingTourEnabled) return 'defer'
@@ -58,8 +69,6 @@ export const useFirstRunEntry = createSharedComposable(() => {
     return decideFirstRun() === 'getting-started'
   }
 
-  // `url-intent` defers to handleUrlWorkflow: we don't know yet whether
-  // anything arrived to tour, and TutorialCompleted is write-once.
   async function handleStartupOutcome(outcome: StartupOutcome) {
     try {
       await showFirstRunScreen(outcome)
@@ -69,10 +78,15 @@ export const useFirstRunEntry = createSharedComposable(() => {
   }
 
   async function showFirstRunScreen(outcome: StartupOutcome) {
-    if (outcome === 'restored') return
-    if (settingStore.get('Comfy.TutorialCompleted')) return
-
     const decision = decideFirstRun()
+
+    const isReplay =
+      isFirstRunReplayRequested(authStore.userId) &&
+      decision === 'getting-started'
+    if (!isReplay) {
+      if (outcome === 'restored') return
+      if (settingStore.get('Comfy.TutorialCompleted')) return
+    }
 
     if (outcome === 'url-intent') {
       if (decision === 'complete') await markTutorialCompleted()
@@ -81,6 +95,7 @@ export const useFirstRunEntry = createSharedComposable(() => {
 
     if (decision === 'getting-started') {
       gettingStartedVisible.value = true
+      consumeFirstRunReplayRequest(authStore.userId)
       firstRunTookScreen.value = true
       return
     }
@@ -89,39 +104,44 @@ export const useFirstRunEntry = createSharedComposable(() => {
     await useCommandStore().execute('Comfy.BrowseTemplates')
   }
 
-  /**
-   * A share or template link loads its workflow instead of the Getting Started
-   * screen, so the tour is offered over whatever arrived. The engine declines
-   * to repeat a tour the user has already seen.
-   *
-   * A tour that actually started is what `Comfy.TutorialCompleted` pays for, so
-   * only that writes it. A link that loaded nothing, or a start the engine
-   * refused, leaves the account eligible: the next boot has no URL to honour and
-   * offers Getting Started, which is the onboarding this one failed to deliver.
-   */
   async function handleUrlWorkflow(
     outcome: StartupOutcome | undefined,
     templateId?: string,
     sharedStatus?: SharedWorkflowUrlLoadStatus
   ) {
     try {
-      if (outcome !== 'url-intent' || !isFirstRunCandidate()) return
-      const shareLoaded =
-        sharedStatus === 'loaded' || sharedStatus === 'loaded-without-assets'
-      if (templateId === undefined && !shareLoaded) return
+      if (!isTourableUrlWorkflow(outcome, templateId, sharedStatus)) return
+      const shareLoaded = isSharedWorkflowLoaded(sharedStatus)
+      const ownerId = authStore.userId
       const started = await useFirstRunTourController().beginTour(
-        shareLoaded ? undefined : templateId
+        shareLoaded ? undefined : templateId,
+        () => authStore.userId !== ownerId
       )
       if (!started) return
       firstRunTookScreen.value = true
+      consumeFirstRunReplayRequest(ownerId)
       await markTutorialCompleted()
     } finally {
       startupDecided.value = true
     }
   }
 
+  function isTourableUrlWorkflow(
+    outcome: StartupOutcome | undefined,
+    templateId?: string,
+    sharedStatus?: SharedWorkflowUrlLoadStatus
+  ): boolean {
+    if (outcome !== 'url-intent' || !isFirstRunCandidate()) return false
+    return templateId !== undefined || isSharedWorkflowLoaded(sharedStatus)
+  }
+
+  function isSharedWorkflowLoaded(
+    status: SharedWorkflowUrlLoadStatus | undefined
+  ): boolean {
+    return status === 'loaded' || status === 'loaded-without-assets'
+  }
+
   let startupDecision: Promise<boolean> | undefined
-  /** True once this boot's first-run stages have run, false if the grace period passes first. */
   function whenStartupDecided(): Promise<boolean> {
     if (startupDecided.value) return Promise.resolve(true)
     startupDecision ??= until(startupDecided).toBe(true, {
@@ -131,12 +151,14 @@ export const useFirstRunEntry = createSharedComposable(() => {
     return startupDecision
   }
 
-  // Applied locally before the request, so a failed write is next launch's problem.
   async function markTutorialCompleted() {
     try {
       await settingStore.set('Comfy.TutorialCompleted', true)
     } catch (error) {
-      console.error('Failed to persist Comfy.TutorialCompleted', error)
+      reportError(error, {
+        errorType: 'failure_writing_tutorial_completed_setting',
+        level: 'warning'
+      })
     }
   }
 

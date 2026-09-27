@@ -1,9 +1,12 @@
+import fs from 'fs'
+
 import { describe, expect, it, vi } from 'vitest'
 
 import type { AgentMessages } from '../../schemas/agentApiSchema'
 import { toTurnId, zAgentWsEvent } from '../../schemas/agentApiSchema'
 import { normalizeAgentTranscript } from './agentTranscript'
 
+import { STALE_AFTER_MS } from '../../crdt/agentCrdtDocLifecycle'
 import type { AgentChatEvent } from './agentEventTransport'
 import { createAgentEventTransport } from './agentEventTransport'
 import type {
@@ -82,6 +85,13 @@ function delta(text: string): AgentChatEvent {
     type: 'agent_message_delta',
     data: { delta: text, message_id: 'm', thread_id: 't' }
   }
+}
+
+function draft(text: string): AgentChatEvent {
+  return zAgentWsEvent.parse({
+    type: 'agent_message_draft',
+    data: { text, message_id: 'm', thread_id: 't' }
+  })
 }
 
 function activeTab(
@@ -193,6 +203,44 @@ describe('agentEventTransport fixture replay', () => {
       state: 'done'
     })
     expect(toolParts(message)).toHaveLength(0)
+    expect(message.streaming).toBe(false)
+  })
+})
+
+describe('agentEventTransport reply draft replay', () => {
+  // Recorded on a preview environment (Comfy-Org/cloud#10351): one narration
+  // round, then the resumed wait_for_job and the reply streaming as drafts.
+  const events = chatEventsFor(
+    'ws-turn-reply-drafts.jsonl',
+    '3d3cdb02-8d48-4fdc-8ab1-d8c18b07772e'
+  )
+  const drafts = events.filter(
+    (e): e is Extract<AgentChatEvent, { type: 'agent_message_draft' }> =>
+      e.type === 'agent_message_draft'
+  )
+  const finals = events.filter(
+    (e): e is Extract<AgentChatEvent, { type: 'agent_message_delta' }> =>
+      e.type === 'agent_message_delta'
+  )
+
+  it('shows the reply as it streams, with the narration draft already gone', () => {
+    const lastDraft = drafts.at(-1)
+    if (!lastDraft) throw new Error('the recording holds no drafts')
+    const message = drive(events.slice(0, events.indexOf(lastDraft) + 1))
+
+    expect(drafts.length).toBeGreaterThan(1)
+    expect(textParts(message).map((p) => p.text)).toEqual([lastDraft.data.text])
+    // What streamed is the start of the answer the turn delivered.
+    expect(finals[0].data.delta.startsWith(lastDraft.data.text)).toBe(true)
+  })
+
+  it('settles on the final answer alone', () => {
+    const message = drive(events)
+
+    expect(finals).toHaveLength(1)
+    expect(textParts(message).map((p) => p.text)).toEqual([
+      finals[0].data.delta
+    ])
     expect(message.streaming).toBe(false)
   })
 })
@@ -620,5 +668,342 @@ describe('agentEventTransport settle lifecycle', () => {
         part.type === 'tabLink' ? [part.workflowId] : []
       )
     ).toEqual(['wf-1', 'wf-2', 'wf-1'])
+  })
+})
+
+describe('agentEventTransport reply drafts', () => {
+  it('shows the answer while the model is still writing it', () => {
+    const message = drive([
+      toolCall('wait_for_job', 'success'),
+      draft('Here is'),
+      draft('Here is your video')
+    ])
+
+    expect(textParts(message)).toEqual([
+      { type: 'text', text: 'Here is your video', state: 'streaming' }
+    ])
+  })
+
+  it('replaces the draft with the answer instead of appending to it', () => {
+    const message = drive([draft('Here is your'), delta('Here is your video.')])
+
+    expect(textParts(message).map((p) => p.text)).toEqual([
+      'Here is your video.'
+    ])
+  })
+
+  it('moves narration out of the reply once the round turns out to be one', () => {
+    const message = drive([
+      draft('Let me check the'),
+      thinking('Let me check the widgets first'),
+      toolCall('set_widget', 'running')
+    ])
+
+    expect(textParts(message)).toEqual([])
+    expect(thinkingParts(message).map((p) => p.text)).toEqual([
+      'Let me check the widgets first'
+    ])
+  })
+
+  it('keeps the answer on screen through the reasoning frame that precedes it', () => {
+    const message = drive([
+      draft('Here is your'),
+      thinking('the render finished cleanly')
+    ])
+
+    expect(textParts(message).map((p) => p.text)).toEqual(['Here is your'])
+  })
+
+  it("drops the draft at the round's first tool call", () => {
+    const message = drive([draft('One moment'), toolCall('run', 'running')])
+
+    expect(textParts(message)).toEqual([])
+    expect(toolParts(message).map((p) => p.name)).toEqual(['run'])
+  })
+
+  it('drops the draft when the round stops for run approval', () => {
+    const message = drive([
+      draft('Validates clean and ready to run.'),
+      thinking('Validates clean and ready to run. Generating now.'),
+      runApproval()
+    ])
+
+    expect(textParts(message)).toEqual([])
+    expect(parts(message).map((p) => p.type)).toEqual([
+      'thinking',
+      'runApproval'
+    ])
+  })
+
+  it('withdraws the draft on an empty one, as a retried round sends', () => {
+    const message = drive([draft('half an'), draft(''), draft('the whole')])
+
+    expect(textParts(message).map((p) => p.text)).toEqual(['the whole'])
+  })
+
+  it('never leaves a provisional answer behind when the turn settles', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit)
+    transport.ingest(draft('Here is your'))
+    transport.settle()
+
+    expect(textParts(emit.mock.calls.at(-1)?.[0] ?? message)).toEqual([])
+  })
+
+  it('keeps the reply text of earlier rounds when a later round drafts', () => {
+    const message = drive([
+      delta('First, the plan.'),
+      toolCall('run', 'success'),
+      draft('And now the')
+    ])
+
+    expect(textParts(message).map((p) => p.text)).toEqual([
+      'First, the plan.',
+      'And now the'
+    ])
+  })
+})
+
+describe('agentEventTransport canvas-sync gate (PM-1575)', () => {
+  it('holds a successful tool call at streaming until the canvas catches up', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit, () => true)
+
+    transport.ingest(toolCall('add_node', 'success'))
+    expect(toolParts(message)[0]).toMatchObject({
+      ok: true,
+      state: 'streaming'
+    })
+
+    transport.notifyCanvasCaughtUp()
+    expect(toolParts(message)[0]).toMatchObject({ ok: true, state: 'done' })
+  })
+
+  // A failed tool call never mutates anything, so there is no forthcoming
+  // doc_update for it to wait on -- gating it the same as a success would
+  // strand it at the spinner glyph until STALE_AFTER_MS (30s), and, for a
+  // turn whose other tool calls also never touch the canvas,
+  // notifyCanvasCaughtUp may never fire at all to rescue it early.
+  it('settles an errored tool call immediately, even while the gate is open', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit, () => true)
+
+    transport.ingest(toolCall('validate', 'error'))
+
+    expect(toolParts(message)[0]).toMatchObject({ ok: false, state: 'done' })
+  })
+
+  it('does not defer when the gate is closed', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit, () => false)
+
+    transport.ingest(toolCall('add_node', 'success'))
+
+    expect(toolParts(message)[0]).toMatchObject({ ok: true, state: 'done' })
+  })
+
+  // PM-1575 regression: most agent tools are read-only or navigational and
+  // never produce a doc_update at all (confirmed against every recorded
+  // conversation under browser_tests/fixtures/data/agent/conversations/ --
+  // e.g. agent-rec-text-only-answer's switch_tab + print_workflow turn
+  // carries no graph_ops whatsoever). Gating those the same as a real graph
+  // edit stranded them at the spinner glyph for the full STALE_AFTER_MS,
+  // since nothing ever calls notifyCanvasCaughtUp for a turn with no canvas
+  // mutation to report.
+  it('settles a successful read-only tool call immediately, even while the gate is open', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit, () => true)
+
+    transport.ingest(toolCall('switch_tab', 'success'))
+    transport.ingest(toolCall('print_workflow', 'success', 'call-2'))
+
+    expect(toolParts(message)).toEqual([
+      expect.objectContaining({ name: 'switch_tab', ok: true, state: 'done' }),
+      expect.objectContaining({
+        name: 'print_workflow',
+        ok: true,
+        state: 'done'
+      })
+    ])
+  })
+
+  // PM-1575 regression (finding #1, high): the normal ordering on a healthy
+  // doc host is the op broadcasting a doc_update WHILE the tool runs, with
+  // the success frame landing after. notifyCanvasCaughtUp() used to fire on
+  // that update while pendingCanvasSync was still empty (the terminal frame
+  // hadn't arrived yet to populate it) and be a silent no-op -- stranding
+  // the part at 'streaming' for the full STALE_AFTER_MS fallback, since
+  // nothing else would call notifyCanvasCaughtUp() again for a turn with no
+  // further doc activity. See browser_tests spec for the e2e counterpart.
+  it('settles immediately when the matching doc_update already applied before the terminal frame arrives', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    let outcomeCount = 0
+    const transport = createAgentEventTransport(
+      message,
+      emit,
+      () => true,
+      () => outcomeCount
+    )
+
+    transport.ingest(toolCall('add_node', 'running'))
+    // The matching doc_update lands while the tool is still running.
+    outcomeCount += 1
+    // No notifyCanvasCaughtUp() call in between: nothing was pending yet for
+    // it to release.
+    transport.ingest(toolCall('add_node', 'success'))
+
+    expect(toolParts(message)[0]).toMatchObject({ ok: true, state: 'done' })
+  })
+
+  it('still defers when the outcome counter has not moved since the tool started', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const outcomeCount = 3
+    const transport = createAgentEventTransport(
+      message,
+      emit,
+      () => true,
+      () => outcomeCount
+    )
+
+    transport.ingest(toolCall('add_node', 'running'))
+    transport.ingest(toolCall('add_node', 'success'))
+
+    expect(toolParts(message)[0]).toMatchObject({
+      ok: true,
+      state: 'streaming'
+    })
+
+    transport.notifyCanvasCaughtUp()
+    expect(toolParts(message)[0]).toMatchObject({ ok: true, state: 'done' })
+  })
+
+  // PM-1575 regression (finding #6, medium): a duplicate or redelivered
+  // terminal frame for the same tool_call_id (e.g. a websocket retry) used
+  // to overwrite the pending timer's map entry without clearing the
+  // previous handle, leaving it to fire at the ORIGINAL, now-stale deadline
+  // and settle the part early against the newer timer's own bookkeeping.
+  it('does not settle early from an orphaned timer left by a redelivered terminal frame', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit, () => true)
+
+    transport.ingest(toolCall('add_node', 'success', 'call-1'))
+    expect(toolParts(message)[0]).toMatchObject({ state: 'streaming' })
+
+    vi.advanceTimersByTime(15_000)
+    transport.ingest(toolCall('add_node', 'success', 'call-1'))
+
+    vi.advanceTimersByTime(15_000)
+    expect(toolParts(message)[0]).toMatchObject({ state: 'streaming' })
+
+    vi.advanceTimersByTime(15_000)
+    expect(toolParts(message)[0]).toMatchObject({ state: 'done' })
+  })
+
+  it('hasPendingCanvasSync reflects whether a tool call is held back', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit, () => true)
+
+    expect(transport.hasPendingCanvasSync()).toBe(false)
+    transport.ingest(toolCall('add_node', 'success'))
+    expect(transport.hasPendingCanvasSync()).toBe(true)
+    transport.notifyCanvasCaughtUp()
+    expect(transport.hasPendingCanvasSync()).toBe(false)
+  })
+
+  // PM-1575 (findings #4/#5): a transport torn down for a reason other than
+  // natural completion (abort, drop, reset, hydrate) must flush anything it
+  // is still holding and cancel its timers, rather than leaving a part
+  // stranded at 'streaming' or an orphaned timer that can fire later against
+  // a message object the store has since discarded or replaced.
+  it('dispose flushes held parts to done and cancels their timers', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit, () => true)
+
+    transport.ingest(toolCall('add_node', 'success'))
+    expect(toolParts(message)[0]).toMatchObject({ state: 'streaming' })
+
+    transport.dispose()
+    expect(toolParts(message)[0]).toMatchObject({ state: 'done' })
+    expect(transport.hasPendingCanvasSync()).toBe(false)
+
+    const callsAfterDispose = emit.mock.calls.length
+    vi.advanceTimersByTime(STALE_AFTER_MS)
+    expect(emit.mock.calls.length).toBe(callsAfterDispose)
+  })
+})
+
+// PM-1575 (finding #8, low): CANVAS_MUTATING_TOOLS is a hand-maintained set
+// against an unconstrained `tool_name: z.string()` -- a renamed or newly
+// added mutating tool would silently take the "settle immediately" branch
+// and reintroduce the materialization-lag bug with no type or test failure.
+// This pins every tool name actually seen in the recorded conversation
+// fixtures against a hand-reviewed expectation, so a new, unreviewed name
+// fails CI instead of silently defaulting to "not canvas-mutating".
+describe('agentEventTransport CANVAS_MUTATING_TOOLS pinning (PM-1575)', () => {
+  const CONVERSATION_FIXTURES_DIR =
+    'browser_tests/fixtures/data/agent/conversations'
+
+  // Reviewed against every fixture under CONVERSATION_FIXTURES_DIR as of
+  // this test's authorship. A name appearing in a NEW or updated fixture
+  // that is not in this list fails the test below, forcing a reviewer to
+  // decide whether CANVAS_MUTATING_TOOLS needs it before updating this list.
+  const REVIEWED_TOOL_NAMES = new Set([
+    'add_node',
+    'apply_ops',
+    'clear_canvas',
+    'connect',
+    'delete_node',
+    'find_nodes',
+    'list_generate_models',
+    'list_model_picks',
+    'list_slots',
+    'list_workflows',
+    'ls_nodes',
+    'print_workflow',
+    'remember',
+    'set_widget',
+    'show_node',
+    'switch_tab',
+    'validate'
+  ])
+
+  function toolNamesInFixtures(): Set<string> {
+    const names = new Set<string>()
+    const collect = (value: unknown): void => {
+      if (Array.isArray(value)) {
+        for (const item of value) collect(item)
+        return
+      }
+      if (typeof value !== 'object' || value === null) return
+      for (const [key, nested] of Object.entries(value)) {
+        if (key === 'tool_name' && typeof nested === 'string') names.add(nested)
+        else collect(nested)
+      }
+    }
+    for (const file of fs.readdirSync(CONVERSATION_FIXTURES_DIR)) {
+      if (!file.endsWith('.json')) continue
+      const contents = fs.readFileSync(
+        `${CONVERSATION_FIXTURES_DIR}/${file}`,
+        'utf-8'
+      )
+      collect(JSON.parse(contents))
+    }
+    return names
+  }
+
+  it('pins every tool name recorded in the conversation fixtures', () => {
+    expect([...toolNamesInFixtures()].sort()).toEqual(
+      [...REVIEWED_TOOL_NAMES].sort()
+    )
   })
 })

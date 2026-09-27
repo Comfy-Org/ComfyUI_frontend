@@ -1,6 +1,6 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, effectScope } from 'vue'
+import { effectScope } from 'vue'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
@@ -19,14 +19,7 @@ const graphNode = createMockLGraphNode({
   flags: { pinned: false }
 })
 
-vi.mock<unknown>(
-  import('@/renderer/core/canvas/useCanvasInteractions'),
-  () => ({
-    useCanvasInteractions: vi.fn(() => ({
-      shouldHandleNodePointerEvents: computed(() => true) // Default to allowing pointer events
-    }))
-  })
-)
+vi.mock(import('@/renderer/core/canvas/useCanvasInteractions'))
 
 vi.mock<unknown>(
   import('@/renderer/core/layout/operations/layoutMutations'),
@@ -50,6 +43,8 @@ afterEach(() => scope.stop())
 
 beforeEach(() => {
   const store = useCanvasStore()
+  graphNode.selected = false
+  graphNode.flags.pinned = false
   const graph = fromPartial<NonNullable<typeof store.currentGraph>>({
     getNodeById: vi.fn(() => graphNode)
   })
@@ -67,7 +62,6 @@ beforeEach(() => {
 
 describe('useNodeEventHandlers', () => {
   const mockNode = graphNode
-  const mockLayoutMutations = useLayoutMutations(LayoutSource.Vue)
 
   const testNodeId = toNodeId('node-1')
 
@@ -107,11 +101,9 @@ describe('useNodeEventHandlers', () => {
       handleNodeSelect(ctrlClickEvent, testNodeId)
 
       // On pointer down with multi-select: bring to front
-      expect(mockLayoutMutations.setNodeOrder).toHaveBeenCalledWith(
-        useCanvasStore().currentGraph,
-        'node-1',
-        'front'
-      )
+      expect(
+        useLayoutMutations(LayoutSource.Vue).setNodeOrder
+      ).toHaveBeenCalledWith(useCanvasStore().currentGraph, 'node-1', 'front')
 
       // Selection happens immediately so dragging includes this node
       expect(canvas?.deselectAll).not.toHaveBeenCalled()
@@ -135,11 +127,9 @@ describe('useNodeEventHandlers', () => {
       handleNodeSelect(ctrlClickEvent, testNodeId)
 
       // On pointer down: bring to front
-      expect(mockLayoutMutations.setNodeOrder).toHaveBeenCalledWith(
-        useCanvasStore().currentGraph,
-        'node-1',
-        'front'
-      )
+      expect(
+        useLayoutMutations(LayoutSource.Vue).setNodeOrder
+      ).toHaveBeenCalledWith(useCanvasStore().currentGraph, 'node-1', 'front')
 
       // But don't deselect yet (deferred to pointer up)
       expect(canvas?.deselect).not.toHaveBeenCalled()
@@ -162,11 +152,9 @@ describe('useNodeEventHandlers', () => {
       handleNodeSelect(metaClickEvent, testNodeId)
 
       // On pointer down with meta key: bring to front
-      expect(mockLayoutMutations.setNodeOrder).toHaveBeenCalledWith(
-        useCanvasStore().currentGraph,
-        'node-1',
-        'front'
-      )
+      expect(
+        useLayoutMutations(LayoutSource.Vue).setNodeOrder
+      ).toHaveBeenCalledWith(useCanvasStore().currentGraph, 'node-1', 'front')
 
       // Selection happens immediately
       expect(canvas?.select).toHaveBeenCalledWith(mockNode)
@@ -189,11 +177,9 @@ describe('useNodeEventHandlers', () => {
       handleNodeSelect(shiftClickEvent, testNodeId)
 
       // On pointer down with shift: bring to front
-      expect(mockLayoutMutations.setNodeOrder).toHaveBeenCalledWith(
-        useCanvasStore().currentGraph,
-        'node-1',
-        'front'
-      )
+      expect(
+        useLayoutMutations(LayoutSource.Vue).setNodeOrder
+      ).toHaveBeenCalledWith(useCanvasStore().currentGraph, 'node-1', 'front')
 
       // Selection happens immediately for shift-click as well
       expect(canvas?.select).toHaveBeenCalledWith(mockNode)
@@ -231,11 +217,9 @@ describe('useNodeEventHandlers', () => {
       const event = new PointerEvent('pointerdown')
       handleNodeSelect(event, testNodeId)
 
-      expect(mockLayoutMutations.setNodeOrder).toHaveBeenCalledWith(
-        useCanvasStore().currentGraph,
-        'node-1',
-        'front'
-      )
+      expect(
+        useLayoutMutations(LayoutSource.Vue).setNodeOrder
+      ).toHaveBeenCalledWith(useCanvasStore().currentGraph, 'node-1', 'front')
     })
 
     it('should not bring pinned node to front', () => {
@@ -246,7 +230,9 @@ describe('useNodeEventHandlers', () => {
       const event = new PointerEvent('pointerdown')
       handleNodeSelect(event, testNodeId)
 
-      expect(mockLayoutMutations.setNodeOrder).not.toHaveBeenCalled()
+      expect(
+        useLayoutMutations(LayoutSource.Vue).setNodeOrder
+      ).not.toHaveBeenCalled()
     })
   })
 

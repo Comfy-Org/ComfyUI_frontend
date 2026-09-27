@@ -21,6 +21,7 @@ import type { WorkshopContract } from '../../config/workshop-contract'
 import { prepareWorkshopRouterInput } from '../../config/workshop-request'
 import { WorkshopRouterError } from '../../config/workshop-router-errors'
 import { workshopIdempotencyKey } from '../../config/workshop-snippets'
+import { workspaceLinkedHref } from '../../config/workshop-workspace-link'
 import type { Locale } from '../../i18n/translations'
 import { useTablist } from '../../composables/useTablist'
 import { t } from '../../i18n/translations'
@@ -30,14 +31,23 @@ import HighlightedCode from './HighlightedCode.vue'
 const {
   contract,
   values,
+  workspaceId,
   locale = 'en',
   modelSlug
 } = defineProps<{
   contract?: WorkshopContract
   values: FormValues
+  workspaceId?: string
   locale?: Locale
   modelSlug?: string
 }>()
+
+const apiKeyHref = computed(() =>
+  workspaceLinkedHref(
+    apiKeysLink({ onboarding: 'models', model: modelSlug }),
+    workspaceId
+  )
+)
 
 const language = ref<SnippetLanguage>('python')
 const { onKeydown: onLanguageKeydown } = useTablist(
@@ -281,7 +291,7 @@ const highlightLanguage = {
     <div class="flex flex-wrap gap-3">
       <Button
         as="a"
-        :href="apiKeysLink({ onboarding: 'models', model: modelSlug })"
+        :href="apiKeyHref"
         target="_blank"
         rel="noopener noreferrer"
         data-testid="api-get-key"
