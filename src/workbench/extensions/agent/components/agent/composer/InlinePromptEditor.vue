@@ -291,7 +291,7 @@ onMounted(() => {
       if (!clipboard) return false
       const files = attachableClipboardFiles(clipboard)
       const text = clipboard.getData('text/plain')
-      const attachmentsOnly = files.length > 0 && text === ''
+      const attachmentsOnly = clipboard.files.length > 0 && text === ''
       // Attaching rewrites the prompt through the store, so the document edit
       // has to land first or the editor overwrites the staged attachment.
       if (!attachmentsOnly) insertPastedContent(editor, clipboard, slice, text)
