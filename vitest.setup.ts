@@ -9,7 +9,21 @@ import './vitest.network.setup'
 import { clearRegisteredLiteGraphTypes } from '@/lib/litegraph/src/litegraphInstance'
 import { remoteConfigState } from '@/platform/remoteConfig/remoteConfig'
 
-beforeEach(() => {
+beforeEach(({ task }) => {
+  for (
+    let current: typeof task | typeof task.suite = task;
+    current;
+    current = current.suite
+  ) {
+    if (current.concurrent) {
+      throw new Error(
+        'Frontend setup shares Pinia, timers, and DOM state. ' +
+          'Keep this test and its ancestor suites sequential, or move it to ' +
+          'a project with test-owned fixtures and no frontend setup.'
+      )
+    }
+  }
+
   vi.stubGlobal('__VUE_DEVTOOLS_GLOBAL_HOOK__', { emit: vi.fn() })
   const pinia = createTestingPinia({ stubActions: false })
   setActivePinia(pinia)

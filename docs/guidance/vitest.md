@@ -204,6 +204,9 @@ The `tooling` project loads only the network guard. Script tests that need
 frontend setup belong in `FRONTEND_SCRIPT_TESTS` in `vite.config.mts`.
 The `frontend` project still installs global Pinia, timer, and DOM cleanup hooks;
 its tests are not safe to mark concurrent until those dependencies are isolated.
+Frontend setup rejects concurrent tests and concurrent ancestor suites before
+the test body runs. A `shared-state` tag on a child cannot protect it from a
+separate concurrent ancestor branch.
 Automatic mock resets and global unstubbing also affect concurrent tests in the
 same worker, so concurrent tests must not mutate shared mocks or globals.
 
@@ -216,6 +219,38 @@ pnpm test:unit --tags-filter=concurrent-safe --retry=0
 pnpm test:unit --tags-filter=shared-state --retry=0
 pnpm test:unit --retry=0
 ```
+
+### Own setup resources and test teardown
+
+Capture each resource in the setup that creates it. Return a cleanup callback
+from `beforeEach`, or use a test-scoped `test.extend` fixture with `try/finally`.
+Dispose that exact resource rather than looking up a mutable global during
+teardown. Global Pinia setup follows this rule, but implicit `useStore()` calls
+still depend on shared active Pinia and are not concurrency-local.
+
+For a concurrent store fixture, pass its Pinia explicitly through the full
+dependency path. Audit nested store lookups and asynchronous callbacks too.
+Do not use `createTestingPinia()` as a concurrency workaround: it also changes
+active Pinia. Keep shared DOM, timers, module mocks, and registries in the
+sequential project until their consumers no longer depend on shared state.
+
+Await or cancel work before disposing its dependencies. Use readiness promises
+or explicit timer advancement instead of sleeps. Pin inputs such as time,
+locale, random seeds, and IDs when assertions depend on them.
+
+Assert teardown effects from the test context's `onTestFinished` callback,
+after `afterEach` and returned setup cleanup. Do not split setup and verification
+between two tests: the second test must work when run alone or first.
+
+Run changed suites alone and together, with retries disabled and multiple
+recorded shuffle seeds. To test cross-file reuse with `isolate: false`, use one
+worker so files actually share a worker. Shuffled passes are evidence, not proof
+that every interleaving is safe. Use controlled overlapping lifetimes to verify
+that one test's cleanup leaves another test's resources usable.
+
+Vitest 4.1.11 does not propagate CLI `--maxConcurrency` into projects. Set
+`test.maxConcurrency` in configuration when comparing limits, and verify actual
+overlap rather than relying on the command-line value.
 
 ## Expensive Imports Belong at Module Scope
 
