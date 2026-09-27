@@ -10,12 +10,10 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type {
-  PaymentStep,
   SubscribeInput,
   SubscriptionPreview
 } from '@comfyorg/account-core/billing'
 import {
-  CheckoutSteps,
   useCheckout,
   usePaymentMethods,
   usePlans,
@@ -38,6 +36,7 @@ import {
 } from '@comfyorg/billing-contract'
 
 import CheckoutFrame from '@/components/CheckoutFrame.vue'
+import CheckoutToast from '@/components/CheckoutToast.vue'
 import { useBilledWorkspace } from '@/composables/useBilledWorkspace'
 import { useCheckoutCopy } from '@/composables/useCheckoutCopy'
 import { useHostedCopy } from '@/composables/useHostedCopy'
@@ -231,17 +230,111 @@ const billingCycle = computed(() =>
   isAnnualDuration(preview.value?.new_plan.duration) ? 'yearly' : 'monthly'
 )
 
-/** Outcomes the app reports in a toast; this page has none, so it says them here. */
-const SETTLED_FAILURE_STEPS: readonly PaymentStep[] = [
-  'declined',
-  'processing_error',
-  'payment_received_hold'
-]
+const DECLINED = [
+  'card_declined',
+  'generic_decline',
+  'approve_with_id',
+  'call_issuer',
+  'do_not_honor',
+  'do_not_try_again',
+  'not_permitted',
+  'restricted_card',
+  'security_violation',
+  'service_not_allowed',
+  'transaction_not_allowed',
+  'initial_subscription_rejected',
+  'subscribe_invoice_payment_failed',
+  'upgrade_payment_declined',
+  'upgrade_invoice_payment_failed',
+  'team_credit_raise_payment_declined'
+] as const
 
-const settledFailure = computed(
-  () =>
-    checkout.operation.value !== undefined &&
-    SETTLED_FAILURE_STEPS.includes(checkout.projection.value.step)
+/** The app's toast detail per decline reason (`billingFailureDetail`). */
+const DECLINE_DETAIL: Readonly<Record<string, string>> = {
+  insufficient_funds: 'insufficientFundsDetail',
+  expired_card: 'expiredCardDetail',
+  incorrect_cvc: 'incorrectCvcDetail',
+  invalid_cvc: 'incorrectCvcDetail',
+  authentication_failed: 'authenticationFailedDetail',
+  authentication_required: 'authenticationFailedDetail',
+  payment_intent_authentication_failure: 'authenticationFailedDetail',
+  processing_error: 'processingErrorDetail',
+  issuer_not_available: 'processingErrorDetail',
+  try_again_later: 'processingErrorDetail',
+  ...Object.fromEntries(
+    DECLINED.map((reason) => [reason, 'paymentDeclinedDetail'])
+  )
+}
+
+function declineDetail(reason: string | undefined): string {
+  const key =
+    (reason === undefined ? undefined : DECLINE_DETAIL[reason]) ??
+    'subscriptionFailedDetail'
+  return t(`checkout.operation.${key}`)
+}
+
+/**
+ * The app keeps the confirm on screen through a payment and reports how it
+ * ended: a verification that failed in this tab as the confirm's inline
+ * notice, a settlement the server holds as its reconciliation notice, and a
+ * decline or a timeout as an error toast, after which the confirm is usable
+ * again.
+ */
+const pendingOperation = computed(() => {
+  const operation = checkout.operation.value
+  return operation?.phase === 'pending' ? operation : undefined
+})
+
+const authenticationState = computed(() => {
+  const operation = pendingOperation.value
+  if (!operation) return null
+  if (operation.challenge?.status === 'failed') return 'failed_retryable'
+  return operation.authenticationState ?? null
+})
+
+const operationToast = computed(() => {
+  const operation = pendingOperation.value
+  if (!operation || authenticationState.value === 'failed_retryable') {
+    return undefined
+  }
+  const awaitingCustomer =
+    operation.authenticationState === 'requires_action' ||
+    (operation.challenge !== undefined &&
+      operation.challenge.status !== 'completed')
+  return awaitingCustomer
+    ? {
+        severity: 'warn' as const,
+        summary: t('checkout.operation.subscriptionActionRequired')
+      }
+    : {
+        severity: 'info' as const,
+        summary: t('checkout.operation.subscriptionProcessing')
+      }
+})
+
+const reconciliationOperationId = computed(() => {
+  const operation = checkout.operation.value
+  return operation?.phase === 'reconciliation_needed' ? operation.id : null
+})
+
+watch(
+  () => checkout.operation.value,
+  (operation) => {
+    if (operation === undefined) return
+    if (operation.phase === 'failed') {
+      submitFailure.value = declineDetail(operation.declineReason)
+      checkout.reset()
+    } else if (operation.phase === 'timed_out') {
+      submitFailure.value = t('checkout.operation.subscriptionTimeout')
+      checkout.reset()
+    } else if (
+      operation.phase === 'pending' &&
+      operation.declineReason !== undefined
+    ) {
+      submitFailure.value = declineDetail(operation.declineReason)
+      checkout.reset()
+    }
+  }
 )
 
 const succeeded = computed(() => checkout.projection.value.step === 'success')
@@ -249,9 +342,7 @@ const succeeded = computed(() => checkout.projection.value.step === 'success')
 const paying = computed(
   () =>
     checkout.submitting.value ||
-    (checkout.operation.value !== undefined &&
-      !settledFailure.value &&
-      !succeeded.value)
+    (pendingOperation.value !== undefined && !succeeded.value)
 )
 
 const frameStep = computed(() => {
@@ -395,13 +486,6 @@ function returnToHost() {
         </button>
       </section>
       <template v-else-if="preview && checkoutPlan">
-        <p
-          v-if="submitFailure"
-          role="alert"
-          class="m-0 rounded-lg border border-interface-stroke bg-secondary-background p-4 text-sm text-base-foreground"
-        >
-          {{ submitFailure }}
-        </p>
         <CheckoutFrame
           :step="frameStep"
           :close-label="t('checkout.close')"
@@ -417,20 +501,6 @@ function returnToHost() {
             :dark-surface="isNewSubscription"
             @close="returnToHost"
           />
-          <CheckoutSteps
-            v-else-if="settledFailure"
-            :projection="checkout.projection.value"
-            root-class="flex flex-col gap-3 pt-8"
-            header-class="m-0 text-base font-semibold text-base-foreground"
-            body-class="m-0 text-sm text-muted-foreground"
-            reason-class="m-0 text-sm text-destructive-background"
-            safety-class="m-0 text-sm text-muted-foreground"
-            actions-class="mt-2 flex gap-2"
-            action-class="inline-flex h-11 cursor-pointer items-center justify-center rounded-lg bg-base-foreground px-5 font-semibold text-base-background"
-            @retry="checkout.reset()"
-            @cancel="checkout.cancel()"
-            @continue-verification="checkout.continueVerification()"
-          />
           <CheckoutSubscribeConfirm
             v-else-if="isNewSubscription"
             :selected-saved-method-id="selectedSavedMethodId"
@@ -443,6 +513,8 @@ function returnToHost() {
             :preview-data="preview"
             :use-payment-element="true"
             :saved-methods="savedMethodsForConfirm"
+            :authentication-state
+            :reconciliation-operation-id
             :quote-is-current
             :is-applying-promotion-code="applyingPromotionCode"
             :embedded-checkout-enabled="true"
@@ -464,6 +536,8 @@ function returnToHost() {
             :subscription-loaded="true"
             :is-loading="paying"
             :force-reactivation="reactivationRequired"
+            :authentication-state
+            :reconciliation-operation-id
             :quote-is-current
             :is-applying-promotion-code="applyingPromotionCode"
             :embedded-checkout-enabled="true"
@@ -475,5 +549,18 @@ function returnToHost() {
         </CheckoutFrame>
       </template>
     </section>
+    <CheckoutToast
+      v-if="submitFailure"
+      severity="error"
+      :summary="t('checkout.error')"
+      :detail="submitFailure"
+      :close-label="t('checkout.close')"
+      @close="submitFailure = undefined"
+    />
+    <CheckoutToast
+      v-else-if="operationToast"
+      :severity="operationToast.severity"
+      :summary="operationToast.summary"
+    />
   </main>
 </template>

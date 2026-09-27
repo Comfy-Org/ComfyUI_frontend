@@ -137,7 +137,16 @@
     "operation": {
       "reconciliationTitle": "Payment received — confirmation pending",
       "reconciliationDetail": "Your payment was received, but we couldn't finish updating your workspace. Contact support and include this operation ID:",
-      "authenticationFailedDetail": "We couldn't complete payment verification. Please try again."
+      "authenticationFailedDetail": "We couldn't complete payment verification. Please try again.",
+      "paymentDeclinedDetail": "Your bank declined this payment. Try another payment method or contact your bank.",
+      "insufficientFundsDetail": "This payment method has insufficient funds. Try another payment method or contact your bank.",
+      "expiredCardDetail": "This card has expired. Use a different payment method.",
+      "incorrectCvcDetail": "The card security code is incorrect. Check it and try again.",
+      "processingErrorDetail": "Your payment couldn't be processed. Try again or use another payment method.",
+      "subscriptionFailedDetail": "We couldn't update your subscription. Please try again.",
+      "subscriptionTimeout": "Subscription verification timed out",
+      "subscriptionProcessing": "Processing payment — setting up your workspace...",
+      "subscriptionActionRequired": "Verify your payment to finish setting up your workspace"
     },
     "success": {
       "allSet": "You're all set",
@@ -145,7 +154,8 @@
       "receiptEmailed": "A receipt has been emailed to you.",
       "promoApplied": "{code} applied.",
       "promoRenews": "Renews at {amount} on {date}"
-    }
+    },
+    "error": "Error"
   },
   "hosted": {
     "loading": "Loading…",

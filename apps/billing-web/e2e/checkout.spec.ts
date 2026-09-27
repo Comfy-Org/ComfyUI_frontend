@@ -170,18 +170,19 @@ test('a declined payment shows the reason and stays on checkout', async ({
 
   await page.getByRole('button', { name: 'Pay and subscribe' }).click()
 
+  await expect(page.getByRole('alert')).toContainText(
+    'Your bank declined this payment. Try another payment method or contact your bank.'
+  )
   await expect(
-    page.getByRole('heading', { name: 'Payment declined' })
-  ).toBeVisible()
-  await expect(page.getByText('Your bank declined the payment.')).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Try again' })).toBeVisible()
+    page.getByRole('button', { name: 'Pay and subscribe' })
+  ).toBeEnabled()
   await expect(page).toHaveURL(/\/v1\/checkout\?/)
 
   expect(await fakeStripeCalls(page, 'confirmationTokens')).toBe(1)
   expect(await fakeStripeCalls(page, 'nextActions')).toBe(0)
 })
 
-test('a failure the server routes to support offers support, not a retry', async ({
+test('a failure with no coded reason reports that the subscription was not updated', async ({
   page,
   cloud,
   signIn
@@ -193,14 +194,12 @@ test('a failure the server routes to support offers support, not a retry', async
 
   await page.getByRole('button', { name: 'Pay and subscribe' }).click()
 
+  await expect(page.getByRole('alert')).toContainText(
+    "We couldn't update your subscription. Please try again."
+  )
   await expect(
-    page.getByRole('heading', { name: 'Payment could not be processed' })
+    page.getByRole('heading', { name: 'Confirm your payment' })
   ).toBeVisible()
-  await expect(page.getByText(/Contact support@comfy\.org/)).toBeVisible()
-  await expect(
-    page.getByRole('link', { name: 'Contact support' })
-  ).toHaveAttribute('href', 'mailto:support@comfy.org')
-  await expect(page.getByRole('button', { name: 'Try again' })).toBeHidden()
 })
 
 test('a 3DS challenge is driven by the fake and settles as success', async ({

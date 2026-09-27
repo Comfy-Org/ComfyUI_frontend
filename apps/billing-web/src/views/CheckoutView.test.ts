@@ -332,15 +332,10 @@ describe('CheckoutView', () => {
     ).toBeInTheDocument()
   })
 
-  it('re-quotes the deferred plan once a settled operation is dismissed', async () => {
+  it('re-quotes the deferred plan once the payment in flight settles', async () => {
     const fake = await renderCheckout()
     await screen.findByRole('button', { name: 'Pay and subscribe' })
-    fake.publishOperation(failedOperation('card_declined'))
-    await waitFor(() =>
-      expect(
-        screen.queryByRole('button', { name: 'Pay and subscribe' })
-      ).toBeNull()
-    )
+    fake.publishOperation(pendingOperation())
 
     const next = `${ENTRY_QUERY_PATH}&plan=creator_annual`
     fake.previewSubscribe.mockResolvedValue({
@@ -350,12 +345,10 @@ describe('CheckoutView', () => {
     recordBillingEntry(parseBillingEntry(next))
     await fake.router.push(next)
     await nextTick()
+    expect(fake.previewSubscribe).toHaveBeenCalledTimes(1)
 
-    // Dismissing the decline puts the form back; it must not price the plan
-    // the customer navigated away from.
-    await userEvent
-      .setup()
-      .click(screen.getByRole('button', { name: 'Try again' }))
+    // The decline ends the attempt; only then may the new link be priced.
+    fake.publishOperation(failedOperation('card_declined'))
     await waitFor(() =>
       expect(fake.previewSubscribe).toHaveBeenLastCalledWith(
         { planSlug: 'creator_annual' },
@@ -644,33 +637,59 @@ describe('CheckoutView', () => {
     expect(returnUrl.searchParams.get('workspace')).toBe('ws-team')
   })
 
-  it('keeps a declined customer on the page with the form one click away', async () => {
-    await renderCheckout(CHECKOUT_PATH, {
-      subscribe: {
-        status: 'ok',
-        value: {
-          phase: 'failed',
-          operation: failedOperation('card_declined')
+  it.for([
+    ['card_declined', 'Your bank declined this payment.'],
+    ['insufficient_funds', 'This payment method has insufficient funds.'],
+    ['expired_card', 'This card has expired.']
+  ] as const)(
+    'reports a %s decline as the app does and keeps the confirm usable',
+    async ([reason, detail]) => {
+      await renderCheckout(CHECKOUT_PATH, {
+        subscribe: {
+          status: 'ok',
+          value: { phase: 'failed', operation: failedOperation(reason) }
         }
-      }
-    })
+      })
+      await screen.findByRole('button', { name: 'Pay and subscribe' })
+
+      reportConfirm('ctoken_1')
+
+      const toast = await screen.findByRole('alert')
+      expect(toast).toHaveTextContent('Error')
+      expect(toast).toHaveTextContent(detail)
+      expect(formProps.value.isLoading).toBe(false)
+      expect(
+        screen.getByRole('heading', { name: 'Confirm your payment' })
+      ).toBeInTheDocument()
+    }
+  )
+
+  it('shows a failed in-page verification inline, as the app does', async () => {
+    const fake = await renderCheckout()
     await screen.findByRole('button', { name: 'Pay and subscribe' })
 
-    reportConfirm('ctoken_1')
-
-    const declined = await screen.findByRole('region', {
-      name: 'Payment declined'
+    fake.publishOperation({
+      ...challengedPendingOperation('pi_1_secret'),
+      challenge: { status: 'failed', clientSecret: 'pi_1_secret' }
     })
-    expect(declined).toHaveAttribute('data-billing-step', 'declined')
-    expect(
-      screen.queryByRole('button', { name: 'Pay and subscribe' })
-    ).not.toBeInTheDocument()
-
-    await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
 
     expect(
-      await screen.findByRole('button', { name: 'Pay and subscribe' })
+      await screen.findByText(
+        "We couldn't complete payment verification. Please try again."
+      )
     ).toBeInTheDocument()
+    expect(screen.queryByRole('status')).toBeNull()
+  })
+
+  it('shows the processing toast while the payment settles', async () => {
+    const fake = await renderCheckout()
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+
+    fake.publishOperation(pendingOperation())
+
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'Processing payment — setting up your workspace...'
+    )
   })
 
   it('holds a reactivating plan change until its charge is acknowledged', async () => {
