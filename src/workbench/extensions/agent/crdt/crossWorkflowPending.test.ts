@@ -597,6 +597,7 @@ describe('a human edit made while the document connection is down', () => {
     clientState.transportUp = true
     apiState.target.dispatchEvent(new Event('reconnected'))
     ackResubscribe('wf-a')
+    const sentAfterFirstAck = clientState.sent.length
 
     // The host applies the replay, then the socket drops again. A retained
     // batch that is never retired would go out a second time.
@@ -609,6 +610,6 @@ describe('a human edit made while the document connection is down', () => {
     apiState.target.dispatchEvent(new Event('reconnected'))
     ackResubscribe('wf-a')
 
-    expect(clientState.sent).toHaveLength(1)
+    expect([sentAfterFirstAck, clientState.sent.length]).toEqual([1, 1])
   })
 })
