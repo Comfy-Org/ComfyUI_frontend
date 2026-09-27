@@ -31,3 +31,10 @@ export function isVerificationRecoveryActive(
         Boolean(state.reconciliationOperationId)))
   )
 }
+
+/**
+ * `parked`: complete the checkout an earlier subscribe left waiting;
+ * `form`: the card form; `pay`: pay without it (saved method, $0 or an
+ * unidentified quote); `subscribe`: hand off to a hosted continuation.
+ */
+export type CheckoutPayAction = 'parked' | 'form' | 'pay' | 'subscribe'

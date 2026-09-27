@@ -256,6 +256,8 @@ import type { StripePaymentPhase } from '@comfyorg/account-ui/billing/stripe'
 import { StripePaymentForm } from '@comfyorg/account-ui/billing/stripe'
 import type { CheckoutCopy } from '@comfyorg/account-ui/billing/checkout'
 import { CheckoutSubscribeConfirm } from '@comfyorg/account-ui/billing/checkout'
+import type { CatalogTierKey } from '@comfyorg/account-ui/billing/catalog'
+import { TIER_CATALOG } from '@comfyorg/account-ui/billing/catalog'
 import type { PasswordRulesCopy } from '@comfyorg/account-ui/auth/PasswordRules'
 import PasswordRules from '@comfyorg/account-ui/auth/PasswordRules'
 import SocialAuthButtons from '@comfyorg/account-ui/auth/SocialAuthButtons'
@@ -297,6 +299,7 @@ export const values = {
   useCredits,
   StripePaymentForm,
   CheckoutSubscribeConfirm,
+  TIER_CATALOG,
   PasswordRules,
   SocialAuthButtons,
   TurnstileWidget,
@@ -336,6 +339,7 @@ export interface Types {
   accountUiBilling: Credits
   accountUiStripe: StripePaymentPhase
   accountUiCheckout: CheckoutCopy
+  accountUiCatalog: CatalogTierKey
   passwordRules: PasswordRulesCopy
   socialAuthButtons: typeof SocialAuthButtons
   turnstileWidget: typeof TurnstileWidget

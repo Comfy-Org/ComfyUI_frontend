@@ -12,6 +12,7 @@ const entries = {
   'billing/index': 'src/billing/index.ts',
   'billing/stripe/index': 'src/billing/stripe/index.ts',
   'billing/checkout/index': 'src/billing/checkout/index.ts',
+  'billing/catalog': 'src/billing/catalog.ts',
   'auth/PasswordRules': 'src/auth/PasswordRules.vue',
   'auth/SocialAuthButtons': 'src/auth/SocialAuthButtons.vue',
   'auth/TurnstileWidget': 'src/auth/TurnstileWidget.vue',
