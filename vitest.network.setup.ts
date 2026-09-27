@@ -1,13 +1,6 @@
 const originalFetch = globalThis.fetch
 
-function resolveRequestUrl(input: RequestInfo | URL): string {
-  const requestedUrl =
-    typeof input === 'string'
-      ? input
-      : input instanceof URL
-        ? input.href
-        : input.url
-
+function resolveRequestUrl(requestedUrl: string): string {
   try {
     const base = typeof location === 'undefined' ? undefined : location.href
     return new URL(requestedUrl, base).href
@@ -17,7 +10,13 @@ function resolveRequestUrl(input: RequestInfo | URL): string {
 }
 
 const blockedNetworkFetch: typeof globalThis.fetch = (input, init) => {
-  const requestUrl = resolveRequestUrl(input)
+  const requestUrl = resolveRequestUrl(
+    typeof input === 'string'
+      ? input
+      : input instanceof URL
+        ? input.href
+        : input.url
+  )
 
   if (!/^https?:/i.test(requestUrl)) {
     return originalFetch(input, init)
