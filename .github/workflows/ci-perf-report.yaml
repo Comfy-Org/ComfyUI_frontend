@@ -68,7 +68,7 @@ jobs:
 
       - name: Preserve localhost performance metrics
         if: always() && hashFiles('test-results/perf-metrics.json') != ''
-        run: cp test-results/perf-metrics.json /tmp/perf-metrics-localhost.json
+        run: mv test-results/perf-metrics.json /tmp/perf-metrics-localhost.json
 
       # Cloud-only surfaces such as the Agent panel are compiled out of the
       # localhost production artifact. Rebuild before measuring them instead
