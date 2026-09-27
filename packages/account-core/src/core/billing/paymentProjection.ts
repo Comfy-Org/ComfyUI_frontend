@@ -86,10 +86,19 @@ function stepForReason(reason: PaymentReasonKey): PaymentStep {
 }
 
 /** A completed challenge waits on the server, not on the customer. */
-export function awaitsVerification(state: PendingBillingOperation): boolean {
+function awaitsVerification(state: PendingBillingOperation): boolean {
   const challengeOpen =
     state.challenge !== undefined && state.challenge.status !== 'completed'
   return challengeOpen || state.actionUrl !== undefined
+}
+
+/**
+ * Whether a pending payment's progress reads as a prompt rather than a
+ * spinner: only a hosted page the customer still has to visit asks them for
+ * anything. An in-page challenge is driven by the host itself.
+ */
+export function awaitsHostedAction(state: PendingBillingOperation): boolean {
+  return state.actionUrl !== undefined
 }
 
 function projectPending(

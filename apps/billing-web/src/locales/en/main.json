@@ -145,6 +145,7 @@
       "processingErrorDetail": "Your payment couldn't be processed. Try again or use another payment method.",
       "subscriptionTimeout": "Subscription verification timed out",
       "subscriptionProcessing": "Processing payment — setting up your workspace...",
+      "subscriptionSuccess": "Subscription updated successfully",
       "subscriptionActionRequired": "Verify your payment to finish setting up your workspace"
     },
     "success": {
