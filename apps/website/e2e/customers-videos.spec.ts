@@ -79,14 +79,13 @@ test.describe('Customer watch pages @smoke', () => {
       expect(video?.thumbnailUrl).toBe(story.poster)
       expect(video?.contentUrl).toBe(story.videoSrc)
       expect(video?.inLanguage).toBe('en')
-      expect((video?.publisher as { '@id'?: string })?.['@id']).toBe(
+      expect(video?.publisher).toHaveProperty(
+        '@id',
         'https://comfy.org/#organization'
       )
 
       const webPage = graph.find((node) => node['@type'] === 'WebPage')
-      expect((webPage?.mainEntity as { '@id'?: string })?.['@id']).toBe(
-        video?.['@id']
-      )
+      expect(webPage?.mainEntity).toHaveProperty('@id', video?.['@id'])
 
       const player = page.locator('video')
       await expect(player).toHaveCount(1)

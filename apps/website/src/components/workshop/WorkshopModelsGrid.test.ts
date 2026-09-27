@@ -2,11 +2,14 @@ import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { nextTick } from 'vue'
+import { computed, nextTick } from 'vue'
 
 import type { WorkshopModel } from '../../config/models-catalogue'
 import { lastShelf } from '../../lib/workshop/shelf-memory'
+import { useWorkshopAppsEnabled } from '../../scripts/posthog'
 import WorkshopModelsGrid from './WorkshopModelsGrid.vue'
+
+vi.mock(import('../../scripts/posthog'))
 
 const models: WorkshopModel[] = [
   {
@@ -48,7 +51,7 @@ function cardNames() {
 }
 
 async function search() {
-  const field = screen.getByRole('combobox', {
+  const field = screen.getByRole('searchbox', {
     name: 'Search models, providers, and categories'
   })
   await waitFor(() => expect(field).not.toHaveProperty('disabled', true))
@@ -83,37 +86,26 @@ describe('WorkshopModelsGrid', () => {
     )
   })
 
-  it('does not show default search options', async () => {
-    const user = userEvent.setup()
-    render(WorkshopModelsGrid, { props: { models } })
-
-    await user.click(await search())
-    expect(screen.queryByTestId('workshop-search-panel')).toBeNull()
-  })
-
-  it('fills the search from a matching model', async () => {
+  it('does not show a duplicate search results panel', async () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
 
     await user.type(await search(), 'flux')
-    await user.click(
-      screen.getByRole('button', { name: 'Flux Black Forest Labs' })
-    )
-    expect(cardNames()).toEqual([expect.stringContaining('Flux')])
+    expect(screen.queryByTestId('workshop-search-panel')).toBeNull()
   })
 
   it('narrows the grid to one use case', async () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
 
-    await user.click(screen.getByRole('button', { name: 'Edit images 1' }))
+    await user.click(screen.getByRole('button', { name: 'Edit images' }))
     expect(
       screen.getByRole('heading', { level: 1, name: 'Edit images 1' })
     ).toBeTruthy()
     expect(cardNames()).toEqual([expect.stringContaining('Flux')])
 
     await user.click(screen.getByRole('button', { name: /Back to/ }))
-    await user.click(screen.getByRole('button', { name: 'Generate videos 1' }))
+    await user.click(screen.getByRole('button', { name: 'Generate videos' }))
     expect(cardNames()).toEqual([expect.stringContaining('Kling AI')])
   })
 
@@ -124,7 +116,7 @@ describe('WorkshopModelsGrid', () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
 
-    await user.click(screen.getByRole('button', { name: 'Edit images 1' }))
+    await user.click(screen.getByRole('button', { name: 'Edit images' }))
     await nextTick()
     await vi.waitFor(() => expect(scrollTo).toHaveBeenCalledWith({ top: 0 }))
 
@@ -158,7 +150,7 @@ describe('WorkshopModelsGrid', () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
 
-    await user.click(screen.getByRole('button', { name: 'Edit images 1' }))
+    await user.click(screen.getByRole('button', { name: 'Edit images' }))
     await user.click(screen.getByRole('button', { name: 'Filter' }))
     const dialog = await screen.findByRole('dialog', { name: 'Filter' })
     await user.click(
@@ -200,41 +192,48 @@ describe('WorkshopModelsGrid', () => {
     expect(cardNames()[0]).toContain('Flux')
   })
 
-  it('keeps Flux 3 out of the featured models', () => {
-    const featured = [
-      {
-        slug: 'byteplus--seedance-2-fast-text-to-video--generate-videos',
-        name: 'Seedance 2 Fast',
-        rank: 32
-      },
-      {
-        slug: 'bfl--flux-3-text-to-video--generate-videos',
-        name: 'FLUX.3 Video',
-        rank: 63
-      },
-      {
-        slug: 'byteplus--seedream-5-pro--generate-images',
-        name: 'Seedream 5 Pro',
-        rank: 0
-      }
-    ].map(({ slug, name, rank }) => ({
-      ...models[0],
-      slug,
-      name,
-      href: `/models/${slug}/`,
-      recommendedRank: rank,
-      thumbnailUrl: `https://example.com/${rank}.webp`
-    }))
+  it.for([
+    { studio: true, lead: ['Cinematic Studio'] },
+    { studio: false, lead: [] }
+  ])(
+    'keeps Flux 3 out of the featured models (studio flag $studio)',
+    ({ studio, lead }) => {
+      vi.mocked(useWorkshopAppsEnabled).mockReturnValue(computed(() => studio))
+      const featured = [
+        {
+          slug: 'byteplus--seedance-2-fast-text-to-video--generate-videos',
+          name: 'Seedance 2 Fast',
+          rank: 32
+        },
+        {
+          slug: 'bfl--flux-3-text-to-video--generate-videos',
+          name: 'FLUX.3 Video',
+          rank: 63
+        },
+        {
+          slug: 'byteplus--seedream-5-pro--generate-images',
+          name: 'Seedream 5 Pro',
+          rank: 0
+        }
+      ].map(({ slug, name, rank }) => ({
+        ...models[0],
+        slug,
+        name,
+        href: `/models/${slug}/`,
+        recommendedRank: rank,
+        thumbnailUrl: `https://example.com/${rank}.webp`
+      }))
 
-    render(WorkshopModelsGrid, { props: { models: featured } })
+      render(WorkshopModelsGrid, { props: { models: featured } })
 
-    const pagination = screen.getByTestId('featured-pagination')
-    expect(
-      within(pagination)
-        .getAllByRole('button')
-        .map((button) => button.getAttribute('aria-label'))
-    ).toEqual(['Seedream 5 Pro', 'Seedance 2 Fast'])
-  })
+      const pagination = screen.getByTestId('featured-pagination')
+      expect(
+        within(pagination)
+          .getAllByRole('button')
+          .map((button) => button.getAttribute('aria-label'))
+      ).toEqual([...lead, 'Seedream 5 Pro', 'Seedance 2 Fast'])
+    }
+  )
 
   it('does not manufacture a return shelf before a model is opened', () => {
     sessionStorage.setItem('comfy-models-shelf', 'generate-videos')
@@ -285,6 +284,24 @@ describe('WorkshopModelsGrid', () => {
 
       expect(field).toHaveProperty('value', '')
       expect(screen.getByTestId('workshop-sections')).toBeTruthy()
+    })
+
+    it('leaves the heading above the toolbar holding the controls', async () => {
+      const user = userEvent.setup()
+      render(WorkshopModelsGrid, { props: { models } })
+      await user.click(screen.getByTestId('browse-all-end'))
+
+      const toolbar = screen.getByTestId('workshop-toolbar')
+      const heading = screen.getByRole('heading', { level: 1 })
+
+      expect(toolbar).not.toContainElement(heading)
+      expect(
+        heading.compareDocumentPosition(toolbar) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
+      expect(within(toolbar).getByRole('searchbox')).toBeVisible()
+      expect(within(toolbar).getByTestId('workshop-filters')).toBeVisible()
+      expect(within(toolbar).getByTestId('workshop-sort')).toBeVisible()
     })
   })
 })

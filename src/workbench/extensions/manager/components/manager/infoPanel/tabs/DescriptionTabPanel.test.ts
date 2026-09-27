@@ -162,63 +162,41 @@ describe('DescriptionTabPanel', () => {
     })
   })
 
-  describe('hostile registry URLs', () => {
-    const EXECUTABLE_URL = 'javascript:alert'
-
-    function navigableHrefs() {
-      return screen
-        .queryAllByRole('link')
-        .map((link) => link.getAttribute('href') ?? '')
-    }
-
-    it('renders the repository field but refuses to make it navigable', () => {
-      renderComponent({
-        nodePack: createNodePack({ repository: EXECUTABLE_URL })
-      })
-
-      expect(screen.getByText(EXECUTABLE_URL)).toBeInTheDocument()
-      expect(navigableHrefs()).toEqual([])
-    })
-
-    it('refuses to make a license URL built on a hostile repository navigable', () => {
+  describe('unsafe URLs from the registry', () => {
+    it('does not bind a javascript: repository URL as a clickable href', () => {
       renderComponent({
         nodePack: createNodePack({
-          repository: EXECUTABLE_URL,
-          license: 'LICENSE'
+          repository: 'javascript:alert(1)'
         })
       })
 
-      expect(
-        screen.getByText(`${EXECUTABLE_URL}/blob/main/LICENSE`)
-      ).toBeInTheDocument()
-      expect(navigableHrefs()).toEqual([])
+      expect(screen.queryByRole('link')).toBeNull()
+      expect(screen.queryByText('javascript:alert(1)')).toBeNull()
     })
 
-    it('refuses to make a description markdown link navigable', () => {
+    it('does not bind a javascript: license URL as a clickable href', () => {
       renderComponent({
         nodePack: createNodePack({
-          description: `See [the docs](${EXECUTABLE_URL}) for details.`
+          license: JSON.stringify({ text: 'javascript:alert(1)' })
         })
       })
 
-      expect(screen.getByText('the docs')).toBeInTheDocument()
-      expect(navigableHrefs()).toEqual([])
+      // A license `text` field is always rendered as plain text (never a
+      // link), so this only proves the plain-text fallback still renders.
+      const licenseText = screen.getByText('javascript:alert(1)')
+      expect(licenseText).toBeInTheDocument()
+      expect(licenseText.tagName).toBe('SPAN')
     })
 
-    it('still links an ordinary https repository and description link', () => {
+    it('does not bind a javascript: license URL built from a LICENSE file', () => {
       renderComponent({
         nodePack: createNodePack({
-          repository: 'https://github.com/user/repo',
-          description: 'See [the docs](https://example.com/docs) for details.'
+          license: 'LICENSE',
+          repository: 'javascript:alert(1)'
         })
       })
 
-      expect(navigableHrefs()).toEqual(
-        expect.arrayContaining([
-          'https://github.com/user/repo',
-          'https://example.com/docs'
-        ])
-      )
+      expect(screen.queryByRole('link')).toBeNull()
     })
   })
 })

@@ -17,6 +17,7 @@ const {
   models,
   inputId = 'workshop-search',
   compact = false,
+  kind = 'models',
   locale = 'en'
 } = defineProps<{
   models: readonly WorkshopModel[]
@@ -24,14 +25,32 @@ const {
   /** In a crowded toolbar a phone gets a button, and the field fills the
    * screen once it is tapped. */
   compact?: boolean
+  kind?: 'models' | 'workflows'
   locale?: Locale
 }>()
 
 const query = defineModel<string>({ required: true })
 const mounted = useMounted()
+const label = computed(() =>
+  t(kind === 'models' ? 'workshop.search.label' : 'workshop.hub.search', locale)
+)
+const shortLabel = computed(() =>
+  t(
+    kind === 'models'
+      ? 'workshop.search.short'
+      : 'workshop.catalogue.searchWorkflows',
+    locale
+  )
+)
+const showLabel = computed(() =>
+  t(
+    kind === 'models'
+      ? 'workshop.search.show'
+      : 'workshop.catalogue.showWorkflows',
+    locale
+  )
+)
 
-const open = ref(false)
-const panelOpen = computed(() => open.value && query.value.trim() !== '')
 const sheetOpen = ref(false)
 const sheetInput = useTemplateRef<HTMLInputElement>('sheetInput')
 const sheetTrigger = useTemplateRef<HTMLButtonElement>('sheetTrigger')
@@ -44,23 +63,6 @@ const sheetStyle = computed(() =>
         transform: `translateY(${screenTop.value}px)`
       }
 )
-
-// Focus moving to the clear button or into the panel itself is still inside
-// the search, so only a move out of the wrapper closes it.
-function closeOnLeave(event: FocusEvent) {
-  const wrapper = event.currentTarget
-  const moved = event.relatedTarget
-  if (
-    wrapper instanceof HTMLElement &&
-    (!(moved instanceof Node) || !wrapper.contains(moved))
-  )
-    open.value = false
-}
-
-function pickModel(model: WorkshopModel) {
-  query.value = model.name
-  open.value = false
-}
 
 // The sheet applies as you tap, so its button is a way out that says what is
 // waiting behind it.
@@ -85,17 +87,17 @@ const clearButtonClass =
 </script>
 
 <template>
-  <div class="relative" @focusout="closeOnLeave">
+  <div class="relative">
     <button
       v-if="compact"
       ref="sheetTrigger"
       type="button"
       :disabled="!mounted"
-      :aria-label="t('workshop.search.label', locale)"
+      :aria-label="label"
       data-testid="workshop-search-button"
       :class="
         cn(
-          'focus-visible:ring-brand flex h-10 w-full cursor-pointer items-center gap-2 rounded-xl bg-white/8 px-3 text-left text-sm outline-none hover:bg-white/12 focus-visible:ring-2 sm:hidden',
+          'flex h-10 w-full cursor-pointer items-center gap-2 rounded-xl bg-white/8 px-3 text-left text-sm outline-none hover:bg-white/12 focus-visible:ring-2 focus-visible:ring-brand sm:hidden',
           query ? 'text-primary-warm-white' : 'text-primary-warm-gray'
         )
       "
@@ -103,13 +105,13 @@ const clearButtonClass =
     >
       <Search class="size-4 shrink-0" aria-hidden="true" />
       <span class="truncate">
-        {{ query || t('workshop.search.short', locale) }}
+        {{ query || shortLabel }}
       </span>
     </button>
 
     <div :class="cn('relative', compact && 'max-sm:hidden')">
       <label :for="inputId" class="sr-only">
-        {{ t('workshop.search.label', locale) }}
+        {{ label }}
       </label>
       <Search :class="leadingIconClass" aria-hidden="true" />
       <input
@@ -117,18 +119,10 @@ const clearButtonClass =
         v-model="query"
         type="search"
         :disabled="!mounted"
-        :placeholder="
-          t(compact ? 'workshop.search.short' : 'workshop.search.label', locale)
-        "
-        :aria-label="t('workshop.search.label', locale)"
+        :placeholder="compact ? shortLabel : label"
+        :aria-label="label"
         data-testid="workshop-search"
         :class="fieldClass"
-        role="combobox"
-        :aria-controls="panelOpen ? `${inputId}-panel` : undefined"
-        :aria-expanded="panelOpen"
-        @focus="open = true"
-        @input="open = true"
-        @keydown.escape.prevent="open = false"
       />
       <button
         v-if="query"
@@ -140,30 +134,19 @@ const clearButtonClass =
       >
         <X class="size-4" aria-hidden="true" />
       </button>
-
-      <WorkshopSearchPanel
-        v-if="panelOpen"
-        :id="`${inputId}-panel`"
-        :models
-        :query
-        :locale
-        @pick="pickModel"
-      />
     </div>
 
     <DialogRoot v-model:open="sheetOpen">
       <DialogPortal>
         <DialogContent
-          class="bg-page fixed inset-x-0 top-0 z-50 flex flex-col sm:hidden"
+          class="fixed inset-x-0 top-0 z-50 flex flex-col bg-page sm:hidden"
           :style="sheetStyle"
           :aria-describedby="undefined"
           data-testid="workshop-search-sheet"
           @open-auto-focus.prevent="sheetInput?.focus()"
           @close-auto-focus.prevent="sheetTrigger?.focus()"
         >
-          <DialogTitle class="sr-only">{{
-            t('workshop.search.label', locale)
-          }}</DialogTitle>
+          <DialogTitle class="sr-only">{{ label }}</DialogTitle>
           <div
             class="flex items-center gap-3 border-b border-transparency-white-t8 p-3"
           >
@@ -173,8 +156,8 @@ const clearButtonClass =
                 ref="sheetInput"
                 v-model="query"
                 type="search"
-                :placeholder="t('workshop.search.label', locale)"
-                :aria-label="t('workshop.search.label', locale)"
+                :placeholder="label"
+                :aria-label="label"
                 data-testid="workshop-search-sheet-input"
                 :class="fieldClass"
               />
@@ -202,6 +185,7 @@ const clearButtonClass =
           <WorkshopSearchPanel
             :models
             :query
+            :kind
             :locale
             variant="sheet"
             @pick="
@@ -226,13 +210,11 @@ const clearButtonClass =
             </button>
             <button
               type="button"
-              class="bg-primary-comfy-yellow hover:bg-primary-comfy-yellow/90 h-11 flex-1 cursor-pointer rounded-2xl text-sm font-bold text-primary-comfy-ink"
+              class="h-11 flex-1 cursor-pointer rounded-2xl bg-primary-comfy-yellow text-sm font-bold text-primary-comfy-ink hover:bg-primary-comfy-yellow/90"
               data-testid="workshop-search-sheet-apply"
               @click="sheetOpen = false"
             >
-              {{
-                t('workshop.search.show', locale).replace('{n}', `${matches}`)
-              }}
+              {{ showLabel.replace('{n}', `${matches}`) }}
             </button>
           </div>
         </DialogContent>

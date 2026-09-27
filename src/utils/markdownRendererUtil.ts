@@ -17,6 +17,19 @@ type RuntimeLinkToken = Omit<Tokens.Link, 'tokens'> & {
   tokens?: Tokens.Link['tokens']
 }
 
+// Escapes a value for safe interpolation into an HTML attribute or text
+// node, preventing it from breaking out of a quoted attribute (e.g. a
+// markdown image/link whose href or alt text contains a `"` followed by a
+// new attribute such as `style="..."`).
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 // Matches relative src attributes in img, source, and video HTML tags
 // Captures: 1) opening tag with src=", 2) relative path, 3) closing quote
 // Excludes absolute paths (starting with /) and URLs (http:// or https://)
@@ -66,10 +79,10 @@ function createMarkdownRenderer(baseUrl?: string): Renderer {
     const target = resolveMarkdownUrl(href, normalizedBase)
     const linkText =
       text === href
-        ? target
+        ? escapeHtml(target)
         : tokens
           ? renderer.parser.parseInline(tokens)
-          : text
+          : escapeHtml(text)
     const titleAttr = title ? ` title="${escape(title)}"` : ''
     return `<a href="${escapeUrlOnce(target)}" ${titleAttr} target="_blank" rel="noopener noreferrer">${linkText}</a>`
   }

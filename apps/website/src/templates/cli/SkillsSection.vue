@@ -69,7 +69,7 @@ const copiedLabel = t('ui.copied', locale)
 </script>
 
 <template>
-  <section class="max-w-9xl mx-auto px-6 py-16 lg:py-24">
+  <section class="mx-auto max-w-9xl px-6 py-16 lg:py-24">
     <SectionHeader
       max-width="xl"
       :label="t('cli.skills.label', locale)"
@@ -102,7 +102,7 @@ const copiedLabel = t('ui.copied', locale)
           :key="skill.name"
           class="flex items-baseline gap-2 rounded-xl border border-white/15 bg-white/4 px-3.5 py-2"
         >
-          <span class="text-primary-comfy-yellow font-mono text-xs">
+          <span class="font-mono text-xs text-primary-comfy-yellow">
             {{ skill.name }}
           </span>
           <span class="text-xs text-smoke-700">
@@ -116,11 +116,11 @@ const copiedLabel = t('ui.copied', locale)
       <article
         v-for="card in cards"
         :key="card.id"
-        class="bg-transparency-white-t4 flex flex-col gap-4 rounded-3xl p-6"
+        class="flex flex-col gap-4 rounded-3xl bg-transparency-white-t4 p-6"
       >
         <div class="flex flex-wrap items-center justify-between gap-2">
           <h3
-            class="text-primary-comfy-yellow font-formula text-sm font-extrabold tracking-[0.7px] uppercase"
+            class="font-formula text-sm font-extrabold tracking-[0.7px] text-primary-comfy-yellow uppercase"
           >
             {{ t(card.titleKey, locale) }}
           </h3>
@@ -143,7 +143,7 @@ const copiedLabel = t('ui.copied', locale)
         :href="externalLinks.mcpSkills"
         target="_blank"
         rel="noopener noreferrer"
-        class="focus-visible:ring-primary-comfy-yellow/50 rounded-sm text-primary-comfy-canvas underline underline-offset-4 focus-visible:ring-2 focus-visible:outline-none"
+        class="rounded-sm text-primary-comfy-canvas underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
         >{{ t('cli.skills.moreSkillsLinkLabel', locale) }}</a
       >{{ t('cli.skills.moreSkillsSuffix', locale) }}
     </p>

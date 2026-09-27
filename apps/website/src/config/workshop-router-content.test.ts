@@ -1,12 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import {
-  workshopModels,
-  routerContentById,
-  routerContentBySlug
+  authoredRouterContentBySlug,
+  authoredWorkshopModels
 } from './workshop-browse-content'
 import { deriveWorkshopFields } from './workshop-fields'
-import { getRouterWorkshopModelDetail } from './workshop-router-content'
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from './workshop-router-content'
 import {
   defaultValues,
   groupPlaygroundFields,
@@ -113,7 +112,9 @@ describe('Router catalog form projection', () => {
     'gemini-interactions/gemini-omni-flash-preview',
     'ideogram/ideogram-v3'
   ])('enables the previously incomplete %s with a seeded prompt', (id) => {
-    const pages = workshopModels.filter((model) => model.routerId === id)
+    const pages = authoredWorkshopModels.filter(
+      (model) => model.routerId === id
+    )
     expect(pages.length).toBeGreaterThan(0)
     for (const page of pages) {
       const detail = getRouterWorkshopModelDetail(page.slug)
@@ -147,23 +148,23 @@ describe('Router catalog form projection', () => {
         model.examples.every((example) => example.name.startsWith(model.slug))
       ).toBe(true)
     }
-    expect(edit.examples.every((example) => example.sampleOnly)).toBe(true)
+    expect(edit.examples.every((example) => !example.sampleOnly)).toBe(true)
     expect(edit.examples.map((example) => example.name)).not.toEqual(
       create.examples.map((example) => example.name)
     )
     expect(getRouterWorkshopModelDetail('byteplus--seedream-4-5')).toBe(create)
     for (const model of [create, edit])
-      expect(routerContentBySlug.get(model.slug)?.overlay.slug).toBe(model.slug)
+      expect(authoredRouterContentBySlug.get(model.slug)?.overlay.slug).toBe(
+        model.slug
+      )
   })
 
   it("starts a native request with Rob's prompt without importing legacy settings", async () => {
     const model = getRouterWorkshopModelDetail('bfl--flux-3-video')
     if (!model?.execution) throw new Error('Missing model')
-    const prompt = routerContentById
-      .get(model.routerId)
-      ?.filter(({ alias }) => !alias.contentIssue)
-      .flatMap(({ overlay }) => overlay.examples)
-      .map((example) => example.values.prompt)
+    const prompt = authoredRouterContentBySlug
+      .get(model.slug)
+      ?.overlay.examples.map((example) => example.values.prompt)
       .find((value) => typeof value === 'string' && value.trim())
     expect(typeof prompt).toBe('string')
     const body = await prepareWorkshopRouterInput(
@@ -182,19 +183,20 @@ describe('Router catalog form projection', () => {
       'byteplus--dreamina-seedance-2-0-fast-260128'
     )
     if (!model?.execution) throw new Error('Missing model')
+    const values = defaultValues(schemaForModel(model), model.defaults)
     const body = await prepareWorkshopRouterInput(
       model.execution,
-      defaultValues(schemaForModel(model), model.defaults),
+      values,
       new AbortController().signal
     )
     expect(body.content).toEqual([{ type: 'text', text: expect.any(String) }])
     expect(JSON.stringify(body.content)).not.toContain('image_url')
-    expect(body.duration).toBe(5)
+    expect(body.duration).toBe(values.duration)
     expect(body).not.toHaveProperty('callback_url')
   })
 
   it('starts every visible plain prompt with schema-valid text', () => {
-    for (const entry of workshopModels) {
+    for (const entry of authoredWorkshopModels) {
       const model = getRouterWorkshopModelDetail(entry.slug)
       if (!model) throw new Error('Missing model')
       const schema = schemaForModel(model)
@@ -221,7 +223,7 @@ describe('Router catalog form projection', () => {
     }
   })
 
-  it.for(workshopModels)(
+  it.for(authoredWorkshopModels)(
     'preserves native input types and constraints with curated presentation on $routerId',
     (model) => {
       const detail = getRouterWorkshopModelDetail(model.slug)
@@ -347,7 +349,10 @@ describe('authored Router task defaults', () => {
     expect(page.firstExample).toBeDefined()
     expect(resolveModelRouterRender(model).values).toEqual(page.values)
     const prepared = await prepareModelRouterRender(model)
-    expect(prepared.body).toHaveProperty('layer_decomposition', true)
+    expect(prepared.body).toMatchObject({
+      layer_decomposition: true,
+      size: 'auto'
+    })
   })
 
   it('lets an explicit style override the authored initial style', async () => {

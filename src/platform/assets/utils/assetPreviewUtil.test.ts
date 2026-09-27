@@ -1,19 +1,19 @@
-import type { ComfyApp } from '@/scripts/app'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   findOutputAsset,
   findServerPreviewUrl,
   isAssetPreviewSupported,
-  persistThumbnail
+  persistThumbnail,
+  resolvePreviewUrl
 } from '@/platform/assets/utils/assetPreviewUtil'
 
 const mockFetchApi = vi.hoisted(() => vi.fn())
 const mockApiURL = vi.hoisted(() =>
   vi.fn((path: string) => `http://localhost:8188${path}`)
 )
-const mockAssetsEnabled = vi.hoisted(() => ({ value: false }))
 const mockUploadAssetFromBase64 = vi.hoisted(() => vi.fn())
 const mockUpdateAsset = vi.hoisted(() => vi.fn())
 const mockInvalidateOutputAssets = vi.hoisted(() => vi.fn())
@@ -27,16 +27,7 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
-    flags: {
-      get assetsEnabled() {
-        return mockAssetsEnabled.value
-      }
-    }
-  })
-}))
-
+vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   assetService: {
     uploadAssetFromBase64: mockUploadAssetFromBase64,
@@ -95,13 +86,43 @@ beforeEach(() => {
 
 describe('isAssetPreviewSupported', () => {
   it('returns true when the assets feature flag is enabled', () => {
-    mockAssetsEnabled.value = true
+    vi.mocked(useFeatureFlags().flags).assetsEnabled = true
     expect(isAssetPreviewSupported()).toBe(true)
   })
 
   it('returns false when the assets feature flag is disabled', () => {
-    mockAssetsEnabled.value = false
     expect(isAssetPreviewSupported()).toBe(false)
+  })
+})
+
+describe('resolvePreviewUrl', () => {
+  it.for([
+    {
+      kind: 'a preview_url',
+      asset: cloudAssetWithPreview,
+      url: 'http://localhost:8188/api/view?type=output&filename=preview.png'
+    },
+    {
+      kind: 'a preview_id without preview_url',
+      asset: { ...cloudAsset, preview_id: 'aaaa-bbbb' },
+      url: 'http://localhost:8188/assets/aaaa-bbbb/content'
+    },
+    {
+      kind: 'a job-grouped card with no preview',
+      asset: {
+        ...cloudAsset,
+        id: 'job-1',
+        user_metadata: { jobId: 'job-1', subfolder: '', assetId: 'file-1' }
+      },
+      url: 'http://localhost:8188/assets/file-1/content'
+    },
+    {
+      kind: 'an ungrouped card with no preview',
+      asset: cloudAsset,
+      url: `http://localhost:8188/assets/${cloudAsset.id}/content`
+    }
+  ])('resolves $kind', ({ asset, url }) => {
+    expect(resolvePreviewUrl(asset)).toBe(url)
   })
 })
 
@@ -321,7 +342,4 @@ describe('persistThumbnail', () => {
   })
 })
 
-vi.mock(import('@/scripts/app'), async () => {
-  const { fromPartial } = await import('@total-typescript/shoehorn')
-  return { app: fromPartial<ComfyApp>({}) }
-})
+vi.mock(import('@/scripts/app'))

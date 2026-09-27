@@ -1,15 +1,15 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, ref } from 'vue'
+import { computed, defineComponent, h } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import CurrentUserButton from './CurrentUserButton.vue'
 vi.mock(import('firebase/auth'))
-vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 
 const mockIsCloud = vi.hoisted(() => ({ value: false }))
 
@@ -19,25 +19,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-// Mock the useCurrentUser composable
-vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: vi.fn(() => ({
-    isLoggedIn: true,
-    userPhotoUrl: 'https://example.com/avatar.jpg',
-    userDisplayName: 'Test User',
-    userEmail: 'test@example.com'
-  }))
-}))
-
-// Mock the UserAvatar component
-vi.mock<unknown>(import('@/components/common/UserAvatar.vue'), () => ({
-  default: {
-    name: 'UserAvatarMock',
-    render() {
-      return h('div', 'Avatar')
-    }
-  }
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 // Mock the WorkspaceProfilePic component
 vi.mock<unknown>(
@@ -90,6 +72,12 @@ vi.mock(import('./CurrentUserPopoverLegacy.vue'), () => ({
 
 describe('CurrentUserButton', () => {
   beforeEach(() => {
+    useCurrentUser().isLoggedIn = computed(() => true)
+    useCurrentUser().userPhotoUrl = computed(
+      () => 'https://example.com/avatar.jpg'
+    )
+    useCurrentUser().userDisplayName = computed(() => 'Test User')
+    useCurrentUser().userEmail = computed(() => 'test@example.com')
     Object.assign(useTeamWorkspaceStore(), { workspaceName: '' })
     useTeamWorkspaceStore().initState = 'uninitialized'
     Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: false })
@@ -108,21 +96,7 @@ describe('CurrentUserButton', () => {
       global: {
         plugins: [i18n],
         stubs: {
-          CurrentUserPopoverWorkspace: CurrentUserPopoverWorkspaceStub,
-          Popover: defineComponent({
-            setup(_, { slots, expose }) {
-              const shown = ref(false)
-              expose({
-                toggle: () => {
-                  shown.value = !shown.value
-                },
-                hide: () => {
-                  shown.value = false
-                }
-              })
-              return () => (shown.value ? h('div', slots.default?.()) : null)
-            }
-          })
+          CurrentUserPopoverWorkspace: CurrentUserPopoverWorkspaceStub
         }
       }
     })
@@ -178,7 +152,10 @@ describe('CurrentUserButton', () => {
     Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: true })
 
     renderComponent()
-    expect(screen.getByText('Avatar')).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'User Avatar' })).toHaveAttribute(
+      'src',
+      'https://example.com/avatar.jpg'
+    )
     expect(screen.queryByText('WorkspaceProfilePic')).not.toBeInTheDocument()
   })
 

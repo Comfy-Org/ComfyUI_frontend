@@ -23,15 +23,12 @@ import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
 
 import ComfyQueueButton from './ComfyQueueButton.vue'
 vi.mock(import('firebase/auth'))
-vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
 
-vi.mock(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => null
-}))
+vi.mock(import('@/platform/telemetry'))
 
 const BatchCountEditStub = {
   template: '<div data-testid="batch-count-edit" />'

@@ -39,7 +39,7 @@ const clients = [
       </template>
     </HeroSplit01>
 
-    <div class="max-w-9xl mx-auto px-6 pb-16 lg:px-16">
+    <div class="mx-auto max-w-9xl px-6 pb-16 lg:px-16">
       <div
         class="flex flex-wrap items-center gap-x-8 gap-y-3 border-t border-white/10 pt-8"
       >

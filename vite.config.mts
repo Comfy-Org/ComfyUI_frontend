@@ -204,6 +204,7 @@ const DEV_SERVER_COMFYUI_URL =
   DEV_SERVER_COMFYUI_ENV_URL || DEV_SEVER_FALLBACK_URL
 const DEV_AGENT_URL = process.env.DEV_AGENT_URL
 const DEV_AGENT_SESSION_TOKEN = process.env.DEV_AGENT_SESSION_TOKEN
+const DEV_AGENT_COMFY_TOKEN = process.env.DEV_AGENT_COMFY_TOKEN
 
 if (Boolean(DEV_AGENT_URL) !== Boolean(DEV_AGENT_SESSION_TOKEN)) {
   throw new Error(
@@ -330,7 +331,11 @@ const vuePluginOptions = process.env.VITEST
 export default defineConfig({
   base: DISTRIBUTION === 'cloud' ? '/' : '',
   server: {
-    host: VITE_REMOTE_DEV ? '0.0.0.0' : undefined,
+    host: DEV_AGENT_COMFY_TOKEN
+      ? undefined
+      : VITE_REMOTE_DEV
+        ? '0.0.0.0'
+        : undefined,
     allowedHosts: process.env.AMP_ORB ? true : undefined,
     watch: {
       ignored: [
@@ -367,7 +372,10 @@ export default defineConfig({
               target: DEV_AGENT_URL,
               ws: true,
               headers: {
-                Authorization: `Bearer ${DEV_AGENT_SESSION_TOKEN}`
+                Authorization: `Bearer ${DEV_AGENT_SESSION_TOKEN}`,
+                ...(DEV_AGENT_COMFY_TOKEN
+                  ? { 'X-Comfy-Token': DEV_AGENT_COMFY_TOKEN }
+                  : {})
               },
               rewrite: (path: string) => path.replace(/^\/api/, ''),
               configure: (proxy) => {
@@ -867,6 +875,7 @@ export default defineConfig({
       '@/utils/formatUtil': '/packages/shared-frontend-utils/src/formatUtil.ts',
       '@/utils/networkUtil':
         '/packages/shared-frontend-utils/src/networkUtil.ts',
+      '@/utils/urlSafety': '/packages/shared-frontend-utils/src/urlSafety.ts',
       '@': '/src',
       '@e2e': BROWSER_TESTS_DIR
     }
@@ -907,7 +916,6 @@ export default defineConfig({
     retry: process.env.CI ? 2 : 0,
     include: [
       'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
-      'packages/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
       'scripts/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
       'browser_tests/**/*.test.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
       'tools/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
@@ -924,12 +932,13 @@ export default defineConfig({
         'src/**/*.d.ts',
         'src/locales/**',
         'src/assets/**',
+        'packages/**',
         ...LAYER_EDITOR_GPU_COVERAGE_EXCLUDE,
         ...NON_CRITICAL_LITEGRAPH_COVERAGE_EXCLUDE
       ],
-      thresholds: {
-        [CRITICAL_COVERAGE_GLOB]: CRITICAL_COVERAGE_THRESHOLDS
-      }
+      thresholds: process.env.VITEST_SHARD
+        ? undefined
+        : { [CRITICAL_COVERAGE_GLOB]: CRITICAL_COVERAGE_THRESHOLDS }
     },
     exclude: [
       'src/__ecs_matrix__/**',

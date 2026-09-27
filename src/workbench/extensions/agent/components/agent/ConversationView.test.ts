@@ -111,6 +111,61 @@ describe('ConversationView', () => {
     })
   })
 
+  it('follows the reply as each kind of content lands', async () => {
+    const settle = async () => {
+      await nextTick()
+      await nextTick()
+    }
+
+    const { store } = mountHarness()
+    store.recordUser(T, 'make a cat')
+    store.startTurn(T)
+    await settle()
+
+    const scrollIntoView = vi.fn()
+    Element.prototype.scrollIntoView = scrollIntoView
+
+    // a new part
+    store.ingest(thinking('msg-1', 'pondering'))
+    await settle()
+    expect(scrollIntoView).toHaveBeenCalled()
+
+    // the tail part growing
+    scrollIntoView.mockClear()
+    store.ingest(delta('msg-1', 'Here is a cat'))
+    await settle()
+    expect(scrollIntoView).toHaveBeenCalled()
+
+    // a tool call starting
+    scrollIntoView.mockClear()
+    store.ingest(toolCall('msg-1', 'add_node', 'running'))
+    await settle()
+    expect(scrollIntoView).toHaveBeenCalled()
+
+    // the same tool call settling
+    scrollIntoView.mockClear()
+    store.ingest(toolCall('msg-1', 'add_node', 'success'))
+    await settle()
+    expect(scrollIntoView).toHaveBeenCalled()
+
+    // a tool call settling behind a text tail
+    store.ingest(toolCall('msg-1', 'ls_nodes', 'running'))
+    store.ingest(delta('msg-1', 'Checking the graph'))
+    await settle()
+    scrollIntoView.mockClear()
+    store.ingest(toolCall('msg-1', 'ls_nodes', 'success'))
+    await settle()
+    expect(scrollIntoView).toHaveBeenCalled()
+
+    // the turn settling with a text tail
+    store.ingest(delta('msg-1', 'Done.'))
+    await settle()
+    scrollIntoView.mockClear()
+    store.ingest(done('msg-1'))
+    await settle()
+    expect(scrollIntoView).toHaveBeenCalled()
+  })
+
   it('shows a scroll-to-latest button when scrolled up and returns to bottom on click', async () => {
     const assistant: AssistantMessage = {
       id: 'msg-1' as TurnId,

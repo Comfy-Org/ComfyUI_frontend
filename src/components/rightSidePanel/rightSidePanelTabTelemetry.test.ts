@@ -1,14 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
 
-const { mockTrackUiButtonClicked } = vi.hoisted(() => ({
-  mockTrackUiButtonClicked: vi.fn()
-}))
+import { useTelemetry } from '@/platform/telemetry'
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackUiButtonClicked: mockTrackUiButtonClicked
-  })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 import { trackRightSidePanelTabOpened } from './rightSidePanelTabTelemetry'
 
@@ -16,7 +10,9 @@ describe('trackRightSidePanelTabOpened', () => {
   it('tracks opening the settings tab', () => {
     trackRightSidePanelTabOpened('settings')
 
-    expect(mockTrackUiButtonClicked).toHaveBeenCalledExactlyOnceWith({
+    expect(
+      useTelemetry()?.trackUiButtonClicked
+    ).toHaveBeenCalledExactlyOnceWith({
       button_id: 'right_side_panel_settings_tab_opened',
       element_group: 'right_side_panel'
     })
@@ -25,7 +21,9 @@ describe('trackRightSidePanelTabOpened', () => {
   it('tracks opening the info tab', () => {
     trackRightSidePanelTabOpened('info')
 
-    expect(mockTrackUiButtonClicked).toHaveBeenCalledExactlyOnceWith({
+    expect(
+      useTelemetry()?.trackUiButtonClicked
+    ).toHaveBeenCalledExactlyOnceWith({
       button_id: 'right_side_panel_info_tab_opened',
       element_group: 'right_side_panel'
     })
@@ -36,7 +34,7 @@ describe('trackRightSidePanelTabOpened', () => {
     (tab) => {
       trackRightSidePanelTabOpened(tab)
 
-      expect(mockTrackUiButtonClicked).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackUiButtonClicked).not.toHaveBeenCalled()
     }
   )
 })

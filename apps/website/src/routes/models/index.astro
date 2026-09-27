@@ -2,7 +2,6 @@
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import ModelsPage from '../../components/workshop/ModelsPage.vue'
 import ModelsShowcase from '../../components/models/ModelsShowcase.astro'
-
 ---
 
 <BaseLayout
@@ -12,4 +11,7 @@ import ModelsShowcase from '../../components/models/ModelsShowcase.astro'
   <ModelsPage client:load>
     <ModelsShowcase slot="fallback" />
   </ModelsPage>
+  <noscript>
+    <ModelsShowcase />
+  </noscript>
 </BaseLayout>

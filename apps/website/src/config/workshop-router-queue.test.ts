@@ -1,0 +1,647 @@
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { workshopContract } from './workshop-contract-catalog'
+import { WORKSHOP_ROUTER_BASE_URL } from './workshop-env'
+import { WorkshopRouterError } from './workshop-router-errors'
+import {
+  runWorkshopRouter,
+  WORKSHOP_LEAVE_RUNNING
+} from './workshop-router-queue'
+import { workshopFailureAnalytics } from '../scripts/workshop-analytics'
+
+const MODEL = 'bfl/flux-2-pro'
+const REQUEST_ID = '6f1a1a6e-6a53-4a5f-9d3a-2b3b0a1f9c21'
+const SUBMIT_URL = `${WORKSHOP_ROUTER_BASE_URL}/v2/models/${MODEL}/requests`
+const RESULT_URL = `${SUBMIT_URL}/${REQUEST_ID}`
+
+function options(signal = new AbortController().signal) {
+  const contract = workshopContract(MODEL)
+  assert.exists(contract)
+  return {
+    contract,
+    body: { prompt: 'Private prompt' },
+    token: 'test-token',
+    idempotencyKey: 'logical-run',
+    signal
+  }
+}
+
+function admitted() {
+  return Response.json(
+    { request_id: REQUEST_ID, status: 'IN_QUEUE' },
+    { status: 201, headers: { 'X-Comfy-Request-Id': 'submit-call' } }
+  )
+}
+
+function pending(retryAfter = '1') {
+  return Response.json(
+    { request_id: REQUEST_ID, status: 'IN_PROGRESS' },
+    { status: 202, headers: { 'Retry-After': retryAfter } }
+  )
+}
+
+function result() {
+  return Response.json({
+    id: 'generation',
+    status: 'Ready',
+    result: { sample: 'https://media.example/result.png' }
+  })
+}
+
+function refusal(status: number, errorType: string, retryAfter?: string) {
+  return Response.json(
+    { detail: 'refused', error_type: errorType },
+    {
+      status,
+      headers: {
+        'X-Comfy-Request-Id': 'submit-call',
+        'X-Comfy-Error-Type': errorType,
+        ...(retryAfter === undefined ? {} : { 'Retry-After': retryAfter })
+      }
+    }
+  )
+}
+
+function stubFetch(...responses: (Response | Error)[]) {
+  const calls = vi.fn<typeof fetch>()
+  for (const response of responses)
+    if (response instanceof Error) calls.mockRejectedValueOnce(response)
+    else calls.mockResolvedValueOnce(response)
+  vi.stubGlobal('fetch', calls)
+  return calls
+}
+
+async function settle<T>(run: Promise<T>): Promise<T> {
+  const outcome = run.then(
+    (value) => ({ value }),
+    (error: unknown) => ({ error })
+  )
+  await vi.runAllTimersAsync()
+  const settled = await outcome
+  if ('error' in settled) throw settled.error
+  return settled.value
+}
+
+async function withoutStaticAbortSignalHelpers<T>(
+  action: () => Promise<T>
+): Promise<T> {
+  const nativeAny = Object.getOwnPropertyDescriptor(AbortSignal, 'any')
+  const nativeTimeout = Object.getOwnPropertyDescriptor(AbortSignal, 'timeout')
+  Object.defineProperty(AbortSignal, 'any', {
+    configurable: true,
+    value: undefined
+  })
+  Object.defineProperty(AbortSignal, 'timeout', {
+    configurable: true,
+    value: undefined
+  })
+  try {
+    return await action()
+  } finally {
+    if (nativeAny) Object.defineProperty(AbortSignal, 'any', nativeAny)
+    else Reflect.deleteProperty(AbortSignal, 'any')
+    if (nativeTimeout)
+      Object.defineProperty(AbortSignal, 'timeout', nativeTimeout)
+    else Reflect.deleteProperty(AbortSignal, 'timeout')
+  }
+}
+
+function requestedUrls(calls: ReturnType<typeof stubFetch>) {
+  return calls.mock.calls.map(([url, init]) => `${init?.method} ${String(url)}`)
+}
+
+describe('queued Router delivery', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-09-19T12:00:00Z'))
+  })
+
+  it('asks for saving in the address and leaves the provider body alone', async () => {
+    const calls = stubFetch(
+      Response.json(
+        { request_id: REQUEST_ID, status: 'IN_QUEUE', comfy_save_asset: true },
+        { status: 201 }
+      ),
+      result()
+    )
+    await settle(runWorkshopRouter({ ...options(), comfy_save_asset: true }))
+    const [url, init] = calls.mock.calls[0]
+    expect(String(url)).toBe(`${SUBMIT_URL}?comfy_save_asset=true`)
+    expect(init?.body).toBe('{"prompt":"Private prompt"}')
+  })
+
+  // The request was admitted before the refusal was noticed, so the machine is
+  // already running: throwing without stopping it would bill for nothing.
+  it('cancels an admitted run whose save the router never acknowledged', async () => {
+    const calls = stubFetch(admitted(), Response.json({}, { status: 202 }))
+    const onRequestId = vi.fn()
+    await expect(
+      settle(
+        runWorkshopRouter({ ...options(), comfy_save_asset: true, onRequestId })
+      )
+    ).rejects.toBeInstanceOf(WorkshopRouterError)
+    expect(onRequestId).toHaveBeenLastCalledWith(REQUEST_ID)
+    expect(requestedUrls(calls)).toEqual([
+      `POST ${SUBMIT_URL}?comfy_save_asset=true`,
+      `PUT ${RESULT_URL}/cancel`
+    ])
+  })
+
+  // A refused submit carries a call id like any other answer, but nothing was
+  // admitted. Handing that id out would let the page offer to leave running a
+  // generation the Router never took.
+  it('does not fall back to an unsaved synchronous generation when saving is refused', async () => {
+    const calls = stubFetch(refusal(403, 'not_enabled'))
+    const onRequestId = vi.fn()
+    await expect(
+      settle(
+        runWorkshopRouter({ ...options(), comfy_save_asset: true, onRequestId })
+      )
+    ).rejects.toBeInstanceOf(WorkshopRouterError)
+    expect(onRequestId).not.toHaveBeenCalled()
+    expect(calls).toHaveBeenCalledTimes(1)
+    expect(String(calls.mock.calls[0][0])).toBe(
+      `${SUBMIT_URL}?comfy_save_asset=true`
+    )
+  })
+
+  it('cancels the admitted generation when its page goes away for any other reason', async () => {
+    const controller = new AbortController()
+    const calls = vi.fn<typeof fetch>(async (_, init) => {
+      if (init?.method === 'POST') return admitted()
+      controller.abort()
+      throw controller.signal.reason
+    })
+    vi.stubGlobal('fetch', calls)
+    await expect(
+      settle(runWorkshopRouter(options(controller.signal)))
+    ).rejects.toMatchObject({ name: 'AbortError' })
+    expect(requestedUrls(calls).at(-1)).toBe(`PUT ${RESULT_URL}/cancel`)
+  })
+
+  it('leaves the admitted generation running only when told to leave it running', async () => {
+    const controller = new AbortController()
+    const calls = vi.fn<typeof fetch>(async (_, init) => {
+      if (init?.method === 'POST') return admitted()
+      controller.abort(WORKSHOP_LEAVE_RUNNING)
+      throw controller.signal.reason
+    })
+    vi.stubGlobal('fetch', calls)
+    await expect(
+      settle(runWorkshopRouter(options(controller.signal)))
+    ).rejects.toMatchObject({ name: 'AbortError' })
+    expect(requestedUrls(calls)).toEqual([
+      `POST ${SUBMIT_URL}`,
+      `GET ${RESULT_URL}`
+    ])
+  })
+
+  it('submits once, polls until the run finishes, and reports the durable request id', async () => {
+    const calls = stubFetch(admitted(), pending(), pending(), result())
+    const onRequestId = vi.fn()
+    const rendered = await settle(
+      runWorkshopRouter({ ...options(), onRequestId })
+    )
+    expect(rendered.outputs[0].url).toBe('https://media.example/result.png')
+    expect(rendered.requestId).toBe(REQUEST_ID)
+    expect(onRequestId).toHaveBeenLastCalledWith(REQUEST_ID)
+    expect(requestedUrls(calls)).toEqual([
+      `POST ${SUBMIT_URL}`,
+      `GET ${RESULT_URL}`,
+      `GET ${RESULT_URL}`,
+      `GET ${RESULT_URL}`
+    ])
+    const submit = calls.mock.calls[0][1]
+    expect(new Headers(submit?.headers).get('Idempotency-Key')).toBe(
+      'logical-run'
+    )
+    expect(submit?.body).toBe('{"prompt":"Private prompt"}')
+  })
+
+  it('runs when Safari lacks the static AbortSignal helpers', async () => {
+    const calls = stubFetch(admitted(), result())
+    const controller = new AbortController()
+
+    const rendered = await withoutStaticAbortSignalHelpers(() =>
+      runWorkshopRouter(options(controller.signal))
+    )
+
+    expect(rendered.outputs[0].url).toBe('https://media.example/result.png')
+    expect(calls).toHaveBeenCalledTimes(2)
+    expect(
+      calls.mock.calls.every(([, init]) => init?.signal?.aborted === true)
+    ).toBe(true)
+    expect(controller.signal.aborted).toBe(false)
+  })
+
+  it('keeps collecting the same run when the connection drops mid-generation', async () => {
+    const calls = stubFetch(
+      admitted(),
+      pending(),
+      new TypeError('Failed to fetch'),
+      new TypeError('Failed to fetch'),
+      refusal(503, 'service_unavailable'),
+      result()
+    )
+    const rendered = await settle(runWorkshopRouter(options()))
+    expect(rendered.requestId).toBe(REQUEST_ID)
+    expect(
+      requestedUrls(calls).filter((request) => request.startsWith('POST'))
+    ).toHaveLength(1)
+  })
+
+  it.for([
+    ['numeric', '60'],
+    ['HTTP-date', 'Sat, 19 Sep 2026 12:01:00 GMT']
+  ])(
+    'respects a %s Retry-After on an interrupted result read',
+    async ([, retryAfter]) => {
+      stubFetch(
+        admitted(),
+        refusal(503, 'service_unavailable', retryAfter),
+        result()
+      )
+      const startedAt = Date.now()
+      await settle(runWorkshopRouter(options()))
+      expect(Date.now() - startedAt).toBe(60_000)
+    }
+  )
+
+  it('backs off repeated result-read interruptions without a valid Retry-After', async () => {
+    stubFetch(
+      admitted(),
+      refusal(503, 'service_unavailable'),
+      refusal(503, 'service_unavailable', 'invalid'),
+      result()
+    )
+    const startedAt = Date.now()
+    await settle(runWorkshopRouter(options()))
+    expect(Date.now() - startedAt).toBe(6_000)
+  })
+
+  it('backs off an interrupted result read with a past HTTP-date', async () => {
+    stubFetch(
+      admitted(),
+      refusal(503, 'service_unavailable', 'Sat, 19 Sep 2026 11:59:00 GMT'),
+      result()
+    )
+    const startedAt = Date.now()
+    await settle(runWorkshopRouter(options()))
+    expect(Date.now() - startedAt).toBe(2_000)
+  })
+
+  it('resubmits an interrupted submit with the identical key and body', async () => {
+    const calls = stubFetch(
+      new TypeError('Failed to fetch'),
+      admitted(),
+      result()
+    )
+    await settle(runWorkshopRouter(options()))
+    const submits = calls.mock.calls.slice(0, 2)
+    for (const [url, init] of submits) {
+      expect(String(url)).toBe(SUBMIT_URL)
+      expect(new Headers(init?.headers).get('Idempotency-Key')).toBe(
+        'logical-run'
+      )
+      expect(init?.body).toBe('{"prompt":"Private prompt"}')
+    }
+  })
+
+  it('reads the result again when its body is cut off, without resubmitting', async () => {
+    const cutOff = new Response(
+      new ReadableStream({
+        start(controller) {
+          controller.error(new TypeError('Connection lost'))
+        }
+      }),
+      { headers: { 'Content-Type': 'application/json' } }
+    )
+    const calls = stubFetch(admitted(), cutOff, result())
+    const rendered = await settle(runWorkshopRouter(options()))
+    expect(rendered.outputs[0].url).toBe('https://media.example/result.png')
+    expect(requestedUrls(calls)).toEqual([
+      `POST ${SUBMIT_URL}`,
+      `GET ${RESULT_URL}`,
+      `GET ${RESULT_URL}`
+    ])
+  })
+
+  it('gives up as a network failure that still names the run once the connection stays down', async () => {
+    const calls = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(admitted())
+      .mockRejectedValue(new TypeError('Failed to fetch'))
+    vi.stubGlobal('fetch', calls)
+    await expect(settle(runWorkshopRouter(options()))).rejects.toMatchObject({
+      reason: 'network',
+      requestId: REQUEST_ID,
+      requestSettlement: 'pending'
+    })
+  })
+
+  it('keeps the admitted run recoverable when credential refresh fails while collecting', async () => {
+    stubFetch(admitted())
+    const freshToken = vi
+      .fn<() => Promise<string>>()
+      .mockResolvedValueOnce('submit-token')
+      .mockRejectedValueOnce(new WorkshopRouterError('unavailable'))
+    await expect(
+      settle(runWorkshopRouter({ ...options(), freshToken }))
+    ).rejects.toMatchObject({
+      reason: 'unavailable',
+      requestId: REQUEST_ID,
+      requestSettlement: 'pending'
+    })
+  })
+
+  it('keeps the admitted run recoverable after repeated result-read refusals', async () => {
+    const refusals = Array.from({ length: 21 }, () =>
+      refusal(503, 'service_unavailable')
+    )
+    stubFetch(admitted(), ...refusals)
+    await expect(settle(runWorkshopRouter(options()))).rejects.toMatchObject({
+      reason: 'provider',
+      requestId: REQUEST_ID,
+      response: { status: 503, errorType: 'service_unavailable' },
+      requestSettlement: 'pending'
+    })
+  })
+
+  it.for([
+    [402, 'insufficient_credits', 'noCredits'],
+    [422, 'invalid_input', 'validation'],
+    [400, 'content_policy_violation', 'policy']
+  ] as const)(
+    'reports a %i %s refusal at submit without polling',
+    async ([status, errorType, reason]) => {
+      const calls = stubFetch(refusal(status, errorType))
+      await expect(settle(runWorkshopRouter(options()))).rejects.toMatchObject({
+        reason,
+        response: { status, errorType }
+      })
+      expect(calls).toHaveBeenCalledOnce()
+    }
+  )
+
+  it('reports the stored failure of a finished run', async () => {
+    stubFetch(admitted(), pending(), refusal(502, 'provider_error'))
+    const failure: unknown = await settle(runWorkshopRouter(options())).catch(
+      (error: unknown) => error
+    )
+
+    assert.instanceOf(failure, WorkshopRouterError)
+    expect(failure).toMatchObject({
+      reason: 'provider',
+      requestId: REQUEST_ID,
+      response: { status: 502 },
+      requestSettlement: 'terminal'
+    })
+    expect(workshopFailureAnalytics(failure)).not.toHaveProperty(
+      'exception_name'
+    )
+  })
+
+  it('attributes a Kling HDR refusal to the source video field', async () => {
+    const contract = workshopContract('kling/kling-v3-omni')
+    assert.exists(contract)
+    stubFetch(
+      admitted(),
+      Response.json(
+        {
+          code: 0,
+          data: {
+            task_status: 'failed',
+            task_status_msg: 'VideoNormalize failed, HDR video is not supported'
+          }
+        },
+        {
+          status: 502,
+          headers: { 'X-Comfy-Error-Type': 'provider_error' }
+        }
+      )
+    )
+
+    await expect(
+      settle(runWorkshopRouter({ ...options(), contract }))
+    ).rejects.toMatchObject({
+      reason: 'validation',
+      fieldErrors: { video_url: 'videoHdrUnsupported' },
+      response: { status: 502, errorType: 'provider_error' },
+      requestSettlement: 'terminal'
+    })
+  })
+
+  it('attributes a Seedream layer-decomposition refusal to the source image', async () => {
+    const contract = workshopContract('byteplus/seedream-5-0-pro-260628')
+    assert.exists(contract)
+    stubFetch(
+      admitted(),
+      Response.json(
+        {
+          error: {
+            code: 'InvalidParameter',
+            message:
+              'The image content is too complex to decompose into layers',
+            param: 'image'
+          }
+        },
+        {
+          status: 400,
+          headers: { 'X-Comfy-Error-Type': 'invalid_input' }
+        }
+      )
+    )
+
+    await expect(
+      settle(
+        runWorkshopRouter({
+          ...options(),
+          contract,
+          body: {
+            prompt: 'Separate this image',
+            image: 'data:image/png;base64,AA==',
+            layer_decomposition: true
+          }
+        })
+      )
+    ).rejects.toMatchObject({
+      reason: 'validation',
+      fieldErrors: { images: 'imageLayerDecompositionUnsupported' },
+      response: { status: 400, errorType: 'invalid_input' },
+      requestSettlement: 'terminal'
+    })
+  })
+
+  it.for([
+    {
+      name: 'layer separation was not requested',
+      body: { image: 'data:image/png;base64,AA==' },
+      message: 'The image content is too complex to decompose into layers'
+    },
+    {
+      name: 'the provider rejected a different image constraint',
+      body: {
+        image: 'data:image/png;base64,AA==',
+        layer_decomposition: true
+      },
+      message: 'The image width is invalid'
+    }
+  ])(
+    'does not attribute Seedream validation when $name',
+    async ({ body, message }) => {
+      const contract = workshopContract('byteplus/seedream-5-0-pro-260628')
+      assert.exists(contract)
+      stubFetch(
+        admitted(),
+        Response.json(
+          { error: { code: 'InvalidParameter', message, param: 'image' } },
+          {
+            status: 400,
+            headers: { 'X-Comfy-Error-Type': 'invalid_input' }
+          }
+        )
+      )
+
+      await expect(
+        settle(runWorkshopRouter({ ...options(), contract, body }))
+      ).rejects.toMatchObject({
+        reason: 'validation',
+        fieldErrors: {},
+        response: { status: 400, errorType: 'invalid_input' }
+      })
+    }
+  )
+
+  it('reports a stored provider moderation payload as a terminal policy refusal', async () => {
+    stubFetch(
+      admitted(),
+      Response.json(
+        {
+          code: 'DataInspectionFailed',
+          message:
+            'Green net check failed for image (input): Input data may contain inappropriate content.'
+        },
+        {
+          status: 502,
+          headers: { 'X-Comfy-Error-Type': 'provider_error' }
+        }
+      )
+    )
+
+    await expect(settle(runWorkshopRouter(options()))).rejects.toMatchObject({
+      reason: 'policy',
+      requestId: REQUEST_ID,
+      response: { status: 502, errorType: 'provider_error' },
+      requestSettlement: 'terminal'
+    })
+  })
+
+  it('settles a successful HTTP result with a BFL moderation status', async () => {
+    stubFetch(
+      admitted(),
+      Response.json({
+        id: 'bfl-task',
+        status: 'Content Moderated',
+        result: null
+      })
+    )
+
+    await expect(settle(runWorkshopRouter(options()))).rejects.toMatchObject({
+      reason: 'policy',
+      requestId: REQUEST_ID,
+      response: { status: 200, errorType: null },
+      requestSettlement: 'terminal'
+    })
+  })
+
+  it('retains a queued response parser exception for analytics', async () => {
+    const malformed = () =>
+      new Response('{', { headers: { 'Content-Type': 'application/json' } })
+    stubFetch(admitted(), malformed(), malformed(), malformed())
+
+    const failure: unknown = await settle(runWorkshopRouter(options())).catch(
+      (error: unknown) => error
+    )
+
+    assert.instanceOf(failure, WorkshopRouterError)
+    expect(workshopFailureAnalytics(failure)).toMatchObject({
+      reason: 'response',
+      request_id: REQUEST_ID,
+      exception_name: 'SyntaxError'
+    })
+  })
+
+  it('falls back to the synchronous route when queued delivery is not enabled for the caller', async () => {
+    const calls = stubFetch(refusal(403, 'not_enabled'), result())
+    const tokens = ['queued-token', 'synchronous-token']
+    const rendered = await settle(
+      runWorkshopRouter({
+        ...options(),
+        token: 'initial-token',
+        freshToken: async () => tokens.shift() ?? 'exhausted'
+      })
+    )
+    expect(rendered.outputs[0].url).toBe('https://media.example/result.png')
+    expect(requestedUrls(calls)).toEqual([
+      `POST ${SUBMIT_URL}`,
+      `POST ${WORKSHOP_ROUTER_BASE_URL}/v2/models/${MODEL}`
+    ])
+    expect(
+      new Headers(calls.mock.calls[1][1]?.headers).get('Idempotency-Key')
+    ).toBe('logical-run')
+    expect(
+      new Headers(calls.mock.calls[1][1]?.headers).get('Authorization')
+    ).toBe('Bearer synchronous-token')
+  })
+
+  it('uses a fresh credential for every request of a long run', async () => {
+    const calls = stubFetch(admitted(), pending(), result())
+    const tokens = ['first', 'second', 'third']
+    await settle(
+      runWorkshopRouter({
+        ...options(),
+        freshToken: async () => tokens.shift() ?? 'exhausted'
+      })
+    )
+    expect(
+      calls.mock.calls.map(([, init]) =>
+        new Headers(init?.headers).get('Authorization')
+      )
+    ).toEqual(['Bearer first', 'Bearer second', 'Bearer third'])
+  })
+
+  it('asks Router to cancel the admitted run with the latest credential', async () => {
+    const controller = new AbortController()
+    const calls = vi.fn<typeof fetch>(async (_, init) => {
+      if (init?.method === 'POST') return admitted()
+      if (init?.method === 'PUT') return Response.json({}, { status: 202 })
+      controller.abort()
+      throw controller.signal.reason
+    })
+    vi.stubGlobal('fetch', calls)
+    const tokens = ['submit-token', 'poll-token']
+    await expect(
+      settle(
+        runWorkshopRouter({
+          ...options(controller.signal),
+          freshToken: async () => tokens.shift() ?? 'exhausted'
+        })
+      )
+    ).rejects.toMatchObject({ name: 'AbortError' })
+    expect(requestedUrls(calls).at(-1)).toBe(`PUT ${RESULT_URL}/cancel`)
+    expect(
+      new Headers(calls.mock.calls.at(-1)?.[1]?.headers).get('Authorization')
+    ).toBe('Bearer poll-token')
+  })
+
+  it.for([
+    ['a path-shaped request id', '{"request_id":"../other"}'],
+    ['a body that is not JSON', '<html>']
+  ])('rejects a submit answered with %s', async ([, body]) => {
+    const calls = stubFetch(new Response(body, { status: 201 }))
+    await expect(settle(runWorkshopRouter(options()))).rejects.toMatchObject({
+      reason: 'response'
+    })
+    expect(calls).toHaveBeenCalledOnce()
+  })
+})

@@ -26,9 +26,116 @@ function imageAndMask(): WorkshopMediaBinding[] {
   }))
 }
 
+function withGrokReferenceResolutionConstraint(
+  contract: WorkshopContract
+): WorkshopContract {
+  const allOf = Array.isArray(contract.inputSchema.allOf)
+    ? contract.inputSchema.allOf
+    : []
+  return {
+    ...contract,
+    inputSchema: {
+      ...contract.inputSchema,
+      allOf: [
+        ...allOf,
+        {
+          not: {
+            required: ['reference_images', 'resolution'],
+            properties: { resolution: { const: '1080p' } }
+          }
+        }
+      ]
+    }
+  }
+}
+
+function withSeedanceEditDurationConstraint(
+  contract: WorkshopContract
+): WorkshopContract {
+  const allOf = Array.isArray(contract.inputSchema.allOf)
+    ? contract.inputSchema.allOf
+    : []
+  return {
+    ...contract,
+    inputSchema: {
+      ...contract.inputSchema,
+      allOf: [
+        ...allOf,
+        {
+          if: {
+            required: ['content', 'omni_reference_task_type'],
+            properties: {
+              omni_reference_task_type: { const: 'edit' },
+              content: {
+                contains: {
+                  required: ['type', 'role', 'video_url'],
+                  properties: {
+                    type: { const: 'video_url' },
+                    role: { const: 'reference_video' }
+                  }
+                }
+              }
+            }
+          },
+          then: { properties: { duration: { const: -1 } } }
+        }
+      ]
+    }
+  }
+}
+
 export function adaptRouterModel(contract: WorkshopContract): WorkshopContract {
   if (['wan/wan3.0-video', 'wan/wan3.0-video-prime'].includes(contract.id))
     return { ...contract, rehostUrlInputs: true }
+  if (contract.id === 'xai/grok-imagine-video-1.5')
+    return withGrokReferenceResolutionConstraint(contract)
+  if (contract.id === 'byteplus/dreamina-seedance-2-5-260628')
+    return withSeedanceEditDurationConstraint(contract)
+  if (contract.id === 'byteplus/seedream-5-0-pro-260628') {
+    const slug = 'byteplus--seedream-5-pro-layer-separation--edit-images'
+    const edit =
+      contract.creatorVariants?.['byteplus--seedream-5-pro--edit-images']
+    if (!edit) throw new Error('Missing Seedream 5 Pro edit form')
+    const sizes = ['auto', '1K', '1.5K', '2K']
+    const inputProperties = z
+      .record(z.string(), z.json())
+      .parse(contract.inputSchema.properties)
+    const inputSize = z.record(z.string(), z.json()).parse(inputProperties.size)
+    const inputSizeOptions = z.array(z.string()).parse(inputSize.enum)
+    const editProperties = z
+      .record(z.string(), z.json())
+      .parse(edit.parameters.properties)
+    const editSize = z.record(z.string(), z.json()).parse(editProperties.size)
+    return {
+      ...contract,
+      inputSchema: {
+        ...contract.inputSchema,
+        properties: {
+          ...inputProperties,
+          size: {
+            ...inputSize,
+            enum: [...new Set([...inputSizeOptions, ...sizes])]
+          }
+        }
+      },
+      creatorVariants: {
+        ...contract.creatorVariants,
+        [slug]: {
+          ...edit,
+          parameters: {
+            ...edit.parameters,
+            properties: {
+              ...editProperties,
+              size: { ...editSize, enum: sizes, default: 'auto' }
+            }
+          },
+          files: edit.files.map((file) =>
+            file.name === 'images' ? { ...file, maxItems: 1 } : file
+          )
+        }
+      }
+    }
+  }
   if (['luma/photon-1', 'luma/photon-flash-1'].includes(contract.id)) {
     const output = contract.output
     if (output.format === 'binary' || !output.schema)

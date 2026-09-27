@@ -241,9 +241,7 @@ export class SceneModelManager implements ModelManagerInterface {
       this.viewState.outputColorSpace = THREE.SRGBColorSpace
     }
 
-    if (this.currentModel) {
-      this.currentModel.visible = true
-    }
+    this.currentModel.visible = true
 
     this.currentModel.traverse((child) => {
       if (child instanceof THREE.Mesh) {
@@ -273,7 +271,7 @@ export class SceneModelManager implements ModelManagerInterface {
             child.material = this.clayMaterial
             break
           case 'original':
-          case 'pointCloud':
+          case 'pointCloud': {
             const originalMaterial = this.originalMaterials.get(child)
             if (originalMaterial) {
               child.material = originalMaterial
@@ -290,6 +288,7 @@ export class SceneModelManager implements ModelManagerInterface {
               }
             }
             break
+          }
         }
       }
     })
@@ -310,7 +309,7 @@ export class SceneModelManager implements ModelManagerInterface {
   clearModel(): void {
     const objectsToRemove: THREE.Object3D[] = []
 
-    for (const object of [...this.scene.children]) {
+    for (const object of Array.from(this.scene.children)) {
       const isEnvironmentObject =
         object instanceof THREE.GridHelper ||
         object instanceof THREE.Light ||
@@ -370,7 +369,7 @@ export class SceneModelManager implements ModelManagerInterface {
     if (!this.currentModel) return false
     let found = false
     this.currentModel.traverse((child) => {
-      if (child instanceof THREE.SkinnedMesh && child.skeleton) {
+      if (child instanceof THREE.SkinnedMesh) {
         found = true
       }
     })
@@ -382,30 +381,23 @@ export class SceneModelManager implements ModelManagerInterface {
 
     if (show) {
       if (!this.skeletonHelper && this.currentModel) {
-        let rootBone: THREE.Bone | null = null
+        const rootBones: THREE.Bone[] = []
+        const skinnedMeshes: THREE.SkinnedMesh[] = []
         this.currentModel.traverse((child) => {
-          if (child instanceof THREE.Bone && !rootBone) {
-            if (!(child.parent instanceof THREE.Bone)) {
-              rootBone = child
-            }
+          if (
+            child instanceof THREE.Bone &&
+            !(child.parent instanceof THREE.Bone)
+          ) {
+            rootBones.push(child)
+          } else if (child instanceof THREE.SkinnedMesh) {
+            skinnedMeshes.push(child)
           }
         })
 
-        if (rootBone) {
-          this.skeletonHelper = new THREE.SkeletonHelper(rootBone)
+        const skeletonRoot = rootBones.at(0) ?? skinnedMeshes.at(0)
+        if (skeletonRoot) {
+          this.skeletonHelper = new THREE.SkeletonHelper(skeletonRoot)
           this.scene.add(this.skeletonHelper)
-        } else {
-          let skinnedMesh: THREE.SkinnedMesh | null = null
-          this.currentModel.traverse((child) => {
-            if (child instanceof THREE.SkinnedMesh && !skinnedMesh) {
-              skinnedMesh = child
-            }
-          })
-
-          if (skinnedMesh) {
-            this.skeletonHelper = new THREE.SkeletonHelper(skinnedMesh)
-            this.scene.add(this.skeletonHelper)
-          }
         }
       } else if (this.skeletonHelper) {
         this.skeletonHelper.visible = true
@@ -526,15 +518,9 @@ export class SceneModelManager implements ModelManagerInterface {
 
     const directionChanged = this.currentUpDirection !== direction
 
-    if (!this.originalRotation && this.currentModel.rotation) {
-      this.originalRotation = this.currentModel.rotation.clone()
-    }
-
+    this.originalRotation ??= this.currentModel.rotation.clone()
     this.currentUpDirection = direction
-
-    if (this.originalRotation) {
-      this.currentModel.rotation.copy(this.originalRotation)
-    }
+    this.currentModel.rotation.copy(this.originalRotation)
 
     switch (direction) {
       case 'original':

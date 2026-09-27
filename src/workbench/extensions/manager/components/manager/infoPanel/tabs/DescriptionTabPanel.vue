@@ -10,28 +10,28 @@
         {{ t('manager.noDescription') }}
       </span>
     </ModelInfoField>
-    <ModelInfoField v-if="nodePack.repository" :label="t('manager.repository')">
+    <ModelInfoField v-if="safeRepositoryHref" :label="t('manager.repository')">
       <a
-        :href="toSafeExternalHref(nodePack.repository)"
+        :href="safeRepositoryHref"
         target="_blank"
         rel="noopener noreferrer"
-        class="hover:text-foreground inline-flex items-center gap-1.5 text-muted-foreground no-underline transition-colors"
+        class="inline-flex items-center gap-1.5 text-muted-foreground no-underline transition-colors hover:text-base-foreground"
       >
         <i
-          v-if="isGitHubLink(nodePack.repository)"
+          v-if="isGitHubLink(safeRepositoryHref)"
           class="pi pi-github text-base"
         />
-        <span class="break-all">{{ nodePack.repository }}</span>
+        <span class="break-all">{{ safeRepositoryHref }}</span>
         <i class="icon-[lucide--external-link] size-4 shrink-0" />
       </a>
     </ModelInfoField>
     <ModelInfoField v-if="licenseInfo" :label="t('manager.license')">
       <a
-        v-if="licenseInfo.href"
-        :href="licenseInfo.href"
+        v-if="safeLicenseHref"
+        :href="safeLicenseHref"
         target="_blank"
         rel="noopener noreferrer"
-        class="hover:text-foreground inline-flex items-center gap-1.5 text-muted-foreground no-underline transition-colors"
+        class="inline-flex items-center gap-1.5 text-muted-foreground no-underline transition-colors hover:text-base-foreground"
       >
         <span class="break-all">{{ licenseInfo.text }}</span>
         <i class="icon-[lucide--external-link] size-4 shrink-0" />
@@ -61,7 +61,7 @@ import { useI18n } from 'vue-i18n'
 
 import ModelInfoField from '@/platform/assets/components/modelInfo/ModelInfoField.vue'
 import type { components } from '@/types/comfyRegistryTypes'
-import { toSafeExternalHref } from '@/utils/urlSafety'
+import { isSafeExternalUrl } from '@/utils/urlSafety'
 import MarkdownText from '@/workbench/extensions/manager/components/manager/infoPanel/MarkdownText.vue'
 
 const { t } = useI18n()
@@ -69,6 +69,17 @@ const { t } = useI18n()
 const { nodePack } = defineProps<{
   nodePack: components['schemas']['Node']
 }>()
+
+/**
+ * Resolves to `nodePack.repository` only when it is a safe http(s) URL,
+ * otherwise `undefined` so the template never binds an unsafe (e.g.
+ * `javascript:`) value to a clickable `href`.
+ */
+const safeRepositoryHref = computed<string | undefined>(() =>
+  nodePack.repository && isSafeExternalUrl(nodePack.repository)
+    ? nodePack.repository
+    : undefined
+)
 
 const isGitHubLink = (url: string): boolean => url.includes('github.com')
 
@@ -97,17 +108,9 @@ interface LicenseObject {
   text?: string
 }
 
-interface LicenseDisplay {
-  text: string
-  href?: string
-}
-
-function asLicenseLink(filename: string, repoUrl: string): LicenseDisplay {
-  const url = createLicenseUrl(filename, repoUrl)
-  return { text: url, href: toSafeExternalHref(url) }
-}
-
-function parseLicenseObject(licenseObj: LicenseObject): LicenseDisplay {
+const parseLicenseObject = (
+  licenseObj: LicenseObject
+): { text: string; isUrl: boolean } => {
   const licenseFile = licenseObj.file || licenseObj.text
 
   if (
@@ -115,17 +118,32 @@ function parseLicenseObject(licenseObj: LicenseObject): LicenseDisplay {
     isLicenseFile(licenseFile) &&
     nodePack.repository
   ) {
-    return asLicenseLink(licenseFile, nodePack.repository)
+    const url = createLicenseUrl(licenseFile, nodePack.repository)
+    return {
+      text: url,
+      isUrl: !!url && isSafeExternalUrl(url)
+    }
   } else if (licenseObj.text) {
-    return { text: licenseObj.text }
+    return {
+      text: licenseObj.text,
+      isUrl: false
+    }
   } else if (typeof licenseFile === 'string') {
     // Return the license file name if repository is missing
-    return { text: licenseFile }
+    return {
+      text: licenseFile,
+      isUrl: false
+    }
   }
-  return { text: JSON.stringify(licenseObj) }
+  return {
+    text: JSON.stringify(licenseObj),
+    isUrl: false
+  }
 }
 
-function formatLicense(license: string): LicenseDisplay | null {
+const formatLicense = (
+  license: string
+): { text: string; isUrl: boolean } | null => {
   // Treat "{}" JSON string as undefined
   if (license === '{}') return null
 
@@ -138,9 +156,16 @@ function formatLicense(license: string): LicenseDisplay | null {
     return parseLicenseObject(licenseObj)
   } catch (e) {
     if (isLicenseFile(license) && nodePack.repository) {
-      return asLicenseLink(license, nodePack.repository)
+      const url = createLicenseUrl(license, nodePack.repository)
+      return {
+        text: url,
+        isUrl: !!url && isSafeExternalUrl(url)
+      }
     }
-    return { text: license }
+    return {
+      text: license,
+      isUrl: false
+    }
   }
 }
 
@@ -148,4 +173,13 @@ const licenseInfo = computed(() => {
   if (!nodePack.license) return null
   return formatLicense(nodePack.license)
 })
+
+/**
+ * Resolves to the license URL only when `licenseInfo` marked it safe,
+ * otherwise `undefined`, so the template never binds an unsafe value to a
+ * clickable `href`.
+ */
+const safeLicenseHref = computed<string | undefined>(() =>
+  licenseInfo.value?.isUrl ? licenseInfo.value.text : undefined
+)
 </script>

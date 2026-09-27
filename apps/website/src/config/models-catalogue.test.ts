@@ -64,6 +64,33 @@ const fixture: WorkshopModel[] = [
   }
 ]
 
+type DisplayEntry = (typeof display)[number]
+
+function resolvedRouterId(entry: DisplayEntry): string | undefined {
+  const contentInput = workshopContentInputs.get(entry.id)
+  if (contentInput?.routerId) return contentInput.routerId
+  return routerAliasById.get(entry.modelId)?.routerId
+}
+
+function pageIsAvailable(entry: DisplayEntry): boolean {
+  const unavailableReason = workshopContentInputs.get(
+    entry.id
+  )?.unavailableReason
+  return !unavailableReason && !isWorkshopModelDisabled(entry.slug)
+}
+
+function routerIsAvailable(routerId: string | undefined): routerId is string {
+  if (!routerId || !workshopContract(routerId)) return false
+  return !Object.hasOwn(availability, routerId)
+}
+
+function expectedPublishedRouterId(entry: DisplayEntry): string | undefined {
+  if (!pageIsAvailable(entry)) return
+  const routerId = resolvedRouterId(entry)
+  if (!routerIsAvailable(routerId)) return
+  return routerId
+}
+
 it('keeps generated video ahead of animated-image use cases', () => {
   expect(USE_CASES.indexOf('generate-videos')).toBeLessThan(
     USE_CASES.indexOf('animate-images')
@@ -361,14 +388,8 @@ describe('workshopModels', () => {
   it('publishes the available content/input-schema intersection with unique use-case links', () => {
     const ids = new Set(
       display.flatMap((entry) => {
-        const alias = routerAliasById.get(entry.modelId)
-        return alias &&
-          workshopContract(alias.routerId) &&
-          !Object.hasOwn(availability, alias.routerId) &&
-          !workshopContentInputs.get(entry.id)?.unavailableReason &&
-          !isWorkshopModelDisabled(entry.slug)
-          ? [alias.routerId]
-          : []
+        const routerId = expectedPublishedRouterId(entry)
+        return routerId ? [routerId] : []
       })
     )
     expect(new Set(workshopModels.map((model) => model.routerId))).toEqual(ids)

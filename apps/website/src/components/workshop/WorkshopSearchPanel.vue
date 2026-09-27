@@ -15,6 +15,7 @@ const {
   models,
   query,
   variant = 'dropdown',
+  kind = 'models',
   locale = 'en'
 } = defineProps<{
   models: readonly WorkshopModel[]
@@ -22,6 +23,7 @@ const {
   /** On a phone the same panel fills the screen instead of hanging off a
    * field. */
   variant?: 'dropdown' | 'sheet'
+  kind?: 'models' | 'workflows'
   locale?: Locale
 }>()
 
@@ -44,7 +46,7 @@ const suggestions = computed(() =>
   <div
     :class="
       cn(
-        'bg-page flex flex-col gap-5 p-4',
+        'flex flex-col gap-5 bg-page p-4',
         variant === 'sheet'
           ? 'min-h-0 flex-1 overflow-y-auto overscroll-contain'
           : 'absolute inset-x-0 top-full z-30 mt-2 max-h-[70dvh] overflow-y-auto overscroll-contain rounded-2xl border border-transparency-white-t20 shadow-lg'
@@ -56,14 +58,21 @@ const suggestions = computed(() =>
       <p
         class="text-[11px] font-bold tracking-wider text-primary-warm-gray uppercase"
       >
-        {{ t('workshop.search.models', locale) }}
+        {{
+          t(
+            kind === 'models'
+              ? 'workshop.search.models'
+              : 'workshop.hub.workflows',
+            locale
+          )
+        }}
         <span class="tabular-nums opacity-60">({{ matching.length }})</span>
       </p>
       <button
         v-for="model in suggestions"
         :key="model.slug"
         type="button"
-        class="hover:bg-transparency-white-t4 focus-visible:bg-transparency-white-t4 flex cursor-pointer items-center gap-3 rounded-xl p-2 text-left outline-none"
+        class="flex cursor-pointer items-center gap-3 rounded-xl p-2 text-left outline-none hover:bg-transparency-white-t4 focus-visible:bg-transparency-white-t4"
         data-testid="workshop-search-model"
         @mousedown.prevent
         @click="emit('pick', model)"
@@ -88,7 +97,11 @@ const suggestions = computed(() =>
             {{ model.name }}
           </span>
           <span class="truncate text-xs text-primary-warm-gray">
-            {{ model.provider ?? t('workshop.card.partnerNode', locale) }}
+            {{
+              model.routerId === undefined
+                ? model.models?.join(', ')
+                : (model.provider ?? t('workshop.card.partnerNode', locale))
+            }}
           </span>
         </span>
       </button>
