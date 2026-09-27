@@ -124,8 +124,11 @@
       {
         "vars": "all",
         "varsIgnorePattern": "^_",
-        "args": "none",
-        "caughtErrors": "none",
+        "args": "all",
+        "argsIgnorePattern": "^_",
+        "caughtErrors": "all",
+        "caughtErrorsIgnorePattern": "^_",
+        "destructuredArrayIgnorePattern": "^_",
         "ignoreRestSiblings": true,
         "fix": { "imports": "safe-fix", "variables": "off" }
       }
