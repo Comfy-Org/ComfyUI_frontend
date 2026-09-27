@@ -35,13 +35,41 @@ function openDisownedTab(url: URL): boolean {
 }
 
 let stopReturnRefresh: (() => void) | null = null
+let stopOperationWatch: (() => void) | null = null
 
 export function disarmHostedBillingReturnRefresh(): void {
   stopReturnRefresh?.()
   stopReturnRefresh = null
+  stopOperationWatch?.()
+  stopOperationWatch = null
 }
 
-function armReturnRefresh(): void {
+const OPERATION_INTENTS: ReadonlySet<BillingIntent> = new Set([
+  'checkout',
+  'subscription'
+])
+const OPERATION_POLL_MS = 4_000
+const OPERATION_WATCH_MS = 15 * 60_000
+
+/**
+ * A payment billing-web takes never pushes back to this tab, but each status
+ * read resumes the operation the server reports pending, which shows the same
+ * progress and outcome toasts the embedded checkout shows. Reading it while
+ * the hosted tab is open is what lets this tab show them too.
+ */
+function watchForHostedOperation(fetchStatus: () => Promise<unknown>) {
+  const startedAt = Date.now()
+  const timer = setInterval(() => {
+    if (Date.now() - startedAt >= OPERATION_WATCH_MS) {
+      clearInterval(timer)
+      return
+    }
+    void fetchStatus()
+  }, OPERATION_POLL_MS)
+  return () => clearInterval(timer)
+}
+
+function armReturnRefresh(intent: BillingIntent): void {
   disarmHostedBillingReturnRefresh()
   // Resolved inside the call, not at module scope: useBillingContext ->
   // useWorkspaceBilling -> this module would otherwise dereference the
@@ -54,6 +82,9 @@ function armReturnRefresh(): void {
       useBillingCapabilities().refresh()
     ])
   )
+  if (OPERATION_INTENTS.has(intent)) {
+    stopOperationWatch = watchForHostedOperation(fetchStatus)
+  }
 }
 
 export type HostedBillingTabOutcome = 'opened' | 'unavailable' | 'blocked'
@@ -77,7 +108,7 @@ export function openHostedBillingTabOutcome(
   })
   if (route.kind !== 'billing_web') return 'unavailable'
   if (!openDisownedTab(route.url)) return 'blocked'
-  armReturnRefresh()
+  armReturnRefresh(intent)
   return 'opened'
 }
 
