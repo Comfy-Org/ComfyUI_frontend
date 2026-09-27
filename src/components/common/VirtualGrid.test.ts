@@ -229,3 +229,128 @@ describe('VirtualGrid', () => {
     }
   })
 })
+
+const TILE_HEIGHT = 190
+const TILE_WIDTH = 129
+const PANEL_WIDTH = 414
+const PANEL_HEIGHT = 700
+const LIBRARY_SIZE = 2000
+
+function isAudio(index: number): boolean {
+  return index % 100 === 0
+}
+
+function createLibrary(): TestItem[] {
+  return Array.from({ length: LIBRARY_SIZE }, (_, i) => ({
+    key: `asset-${i}`,
+    name: `asset-${i}`
+  }))
+}
+
+describe('VirtualGrid scrolled deep into a large library', () => {
+  const gridStyle = {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))',
+    gap: '0.5rem'
+  }
+
+  function renderLibrary(items: TestItem[]) {
+    return render(VirtualGrid, {
+      props: {
+        items,
+        gridStyle,
+        defaultItemHeight: TILE_HEIGHT,
+        defaultItemWidth: TILE_WIDTH,
+        bufferRows: 1
+      },
+      slots: {
+        item: `<template #item="{ item }">
+          <div>{{ item.name }}</div>
+        </template>`
+      },
+      container: document.body.appendChild(document.createElement('div'))
+    })
+  }
+
+  function renderedNames() {
+    return screen.queryAllByText(/^asset-\d+$/).map((el) => el.textContent)
+  }
+
+  beforeEach(() => {
+    mockedWidth.value = PANEL_WIDTH
+    mockedHeight.value = PANEL_HEIGHT
+    mockedScrollY.value = 0
+  })
+
+  function scrollTo(offset: number) {
+    mockedScrollY.value = offset
+  }
+
+  it.for([
+    { offset: 20_000, expectedItem: 'asset-312' },
+    { offset: 100_000, expectedItem: 'asset-1575' }
+  ])(
+    'windows onto $expectedItem at offset $offset',
+    async ({ offset, expectedItem }) => {
+      renderLibrary(createLibrary())
+      await nextTick()
+
+      expect(renderedNames().length).toBeLessThan(LIBRARY_SIZE)
+
+      scrollTo(offset)
+      await nextTick()
+
+      expect(renderedNames()).toContain(expectedItem)
+      expect(renderedNames()).not.toContain('asset-0')
+    }
+  )
+
+  it('goes blank when the filtered list shrinks below the scrolled-to index', async () => {
+    const { rerender } = renderLibrary(createLibrary())
+    await nextTick()
+
+    scrollTo(20_000)
+    await nextTick()
+
+    const audioOnly = createLibrary().filter((_, i) => isAudio(i))
+    await rerender({ items: audioOnly })
+    await nextTick()
+    await nextTick()
+
+    expect(renderedNames().length).toBeGreaterThan(0)
+  })
+
+  it('goes blank when the column count grows while scrolled deep', async () => {
+    renderLibrary(createLibrary())
+    await nextTick()
+
+    scrollTo(100_000)
+    await nextTick()
+
+    mockedWidth.value = PANEL_WIDTH * 2
+    await nextTick()
+
+    expect(renderedNames().length).toBeGreaterThan(0)
+  })
+
+  it('recovers when the filtered list shrinks to empty, then grows again', async () => {
+    const { rerender } = renderLibrary(createLibrary())
+    await nextTick()
+
+    scrollTo(100_000)
+    await nextTick()
+
+    await rerender({ items: [] })
+    await nextTick()
+    await nextTick()
+
+    expect(renderedNames().length).toBe(0)
+
+    const fullLibrary = createLibrary()
+    await rerender({ items: fullLibrary })
+    await nextTick()
+    await nextTick()
+
+    expect(renderedNames().length).toBeGreaterThan(0)
+  })
+})
