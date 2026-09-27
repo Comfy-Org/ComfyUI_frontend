@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { defineStore } from 'pinia'
 import { expect, it, vi } from 'vitest'
 import { onScopeDispose, ref, watch } from 'vue'
