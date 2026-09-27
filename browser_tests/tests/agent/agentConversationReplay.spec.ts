@@ -3,6 +3,7 @@ import { expect } from '@playwright/test'
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import { listRecordedConversations } from '@e2e/fixtures/data/agent/agentConversation'
 import { toNodeId } from '@/types/nodeId'
+import { assetPath } from '@e2e/fixtures/utils/paths'
 
 import {
   BYTEDANCE_REFERENCE_NODE_TYPE,
@@ -14,6 +15,11 @@ import { wireAndReopen } from '@e2e/fixtures/utils/minimaxAutogrowReload'
 // A recording whose second turn wires two nodes; the first turn only adds.
 const WIRING_CASE = 'agent-rec-two-turn-dependent-edit'
 const WIDGET_CASE = 'agent-rec-set-widget-existing'
+
+// Synthesized (not a cloud capture, see the fixture's `source.note`), so it
+// lives under conversations/repro/ rather than conversations/ and is
+// deliberately absent from listRecordedConversations() below.
+const ASSET_GRID_CASE = 'repro/pm-1135-asset-grid-fragmentation'
 
 test.describe(
   'Agent conversation replay',
@@ -37,6 +43,55 @@ test.describe(
           { mask: [agentConversation.panel] }
         )
       })
+    })
+
+    // PM-1135 / PM-1313: replays a captioned batch reply split across two
+    // tool calls through the real chat panel (see agentMessageGroup.ts for
+    // the grouping logic under test).
+    test.describe(`recorded ${ASSET_GRID_CASE}`, () => {
+      test.use({ conversationCase: ASSET_GRID_CASE })
+
+      test(
+        'PM-1135: a captioned batch reply keeps each caption paired with its own asset, even when a tool call splits it across two message deltas, see linear.app/comfyorg/issue/PM-1135',
+        { tag: ['@screenshot'] },
+        async ({ agentConversation, page }) => {
+          test.setTimeout(90_000)
+          await page.route(
+            'https://assets.example/outputs/render_a.png',
+            (route) =>
+              route.fulfill({ path: assetPath('agent/asset-grid-repro-a.png') })
+          )
+          await page.route(
+            'https://assets.example/outputs/render_b.png',
+            (route) =>
+              route.fulfill({ path: assetPath('agent/asset-grid-repro-b.png') })
+          )
+
+          await agentConversation.runTurns()
+
+          const images = agentConversation.panel.getByRole('img', {
+            name: /^render_[ab]\.png$/
+          })
+          await expect(images).toHaveCount(2)
+
+          // Visual proof of the fix: "Version A:" stays directly above its
+          // own render, and "Version B:" stays directly above its own render,
+          // instead of both captions floating above a merged gallery.
+          // The "Worked for N seconds" summary is wall-clock and drifts under
+          // SLOW_MO, so it is masked out.
+          // The `cloud` project's container still shows a consistent ~0.7%
+          // diff against its own regenerated baseline (verified: unrelated to
+          // this test's layout, matches the tolerance other screenshot tests
+          // in this suite already carry for their own environments, e.g.
+          // imageCrop.spec.ts, load3d.spec.ts), so this follows the same
+          // convention rather than chasing an environment-only diff with more
+          // baseline regenerations.
+          await expect(agentConversation.panel).toHaveScreenshot(
+            'asset-grid-fragmentation.png',
+            { mask: [agentConversation.summaries], maxDiffPixelRatio: 0.015 }
+          )
+        }
+      )
     })
 
     test.describe('live widget effects', () => {
