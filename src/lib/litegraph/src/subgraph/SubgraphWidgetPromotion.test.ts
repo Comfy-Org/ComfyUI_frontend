@@ -2,6 +2,7 @@ import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
+  INodeInputSlot,
   ISlotType,
   LGraphCanvas,
   Subgraph,
@@ -20,6 +21,7 @@ import {
   makeQuarantineEntry
 } from '@/core/graph/subgraph/migration/proxyWidgetMigration'
 import { reorderSubgraphInputsByName } from '@/core/graph/subgraph/promotionUtils'
+import { createPromotedDomWidget } from '@/renderer/extensions/vueNodes/widgets/utils/promotedDomHost'
 import type { SerializedProxyWidgetTuple } from '@/core/schemas/promotionSchema'
 import { IS_CONTROL_WIDGET } from '@/scripts/controlWidgetMarker'
 import { DOMWidgetImpl } from '@/scripts/domWidget'
@@ -2051,14 +2053,23 @@ describe('SubgraphWidgetPromotion', () => {
       interiorNode.widgets = [interiorWidget]
 
       const host = setupPromotedWidget(subgraph, interiorNode)
+      subgraph.rootGraph.add(host)
+      const createHostWidget = (
+        input: INodeInputSlot,
+        id: WidgetId,
+        sourceWidget: Readonly<IBaseWidget>
+      ): IBaseWidget | undefined =>
+        createPromotedDomWidget({
+          subgraphNode: host,
+          input,
+          widgetId: id,
+          sourceWidget
+        })
+      Object.assign(host, { createPromotedHostWidget: createHostWidget })
+      host.rebuildInputWidgetBindings()
       const [hostWidget] = host.widgets
       return { host, hostWidget, interiorWidget }
     }
-
-    const mirroredRowHeight = (widget?: IBaseWidget) =>
-      (
-        widget?.options as { getMinHeight?: () => number } | undefined
-      )?.getMinHeight?.()
 
     it('arranges interior widgets when the host arranges', () => {
       const { host, hostWidget, interiorWidget } = setupPromotedDomHeight(
@@ -2068,7 +2079,7 @@ describe('SubgraphWidgetPromotion', () => {
       expect(interiorWidget.computedHeight).toBeUndefined()
       host.arrange()
       expect(interiorWidget.computedHeight).toBe(100)
-      expect(mirroredRowHeight(hostWidget)).toBe(100)
+      expect(hostWidget.computedHeight).toBe(100)
     })
 
     it('re-arranges interiors so host rows track later height changes', () => {
@@ -2079,12 +2090,12 @@ describe('SubgraphWidgetPromotion', () => {
 
       host.arrange()
       expect(interiorWidget.computedHeight).toBe(100)
-      expect(mirroredRowHeight(hostWidget)).toBe(100)
+      expect(hostWidget.computedHeight).toBe(100)
 
       minHeight = 700
       host.arrange()
       expect(interiorWidget.computedHeight).toBe(700)
-      expect(mirroredRowHeight(hostWidget)).toBe(700)
+      expect(hostWidget.computedHeight).toBe(700)
     })
   })
 })
