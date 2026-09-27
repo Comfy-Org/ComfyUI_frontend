@@ -40,15 +40,18 @@ jobs:
 
     steps:
       # The webhook fires on the event; the job board API this workflow reads
-      # is a separate surface that trails it. Ashby documents no bound on that
-      # lag, so this is a guess — if it proves too short the symptom is a run
-      # that fetches pre-change data, writes nothing, and leaves the committed
-      # snapshot behind until the next Ashby event or manual run. The live
-      # careers page is unaffected either way: it re-fetches Ashby on every
-      # production build.
+      # is a separate surface that trails it. It answers
+      # `max-age=60, stale-while-revalidate=60`, so an edge hit can serve
+      # pre-change data for 120s — hence 120 rather than 60. Ashby documents
+      # no bound on its own emitter-to-read-model lag, so this does not
+      # guarantee freshness. If it proves short the symptom is a run that
+      # fetches pre-change data, writes nothing, and leaves the committed
+      # snapshot behind until the next Ashby event or manual run; the step at
+      # the end of this job annotates that case. The live careers page is
+      # unaffected either way: it re-fetches Ashby on every production build.
       - name: Let the Ashby job board catch up
         if: inputs.source == 'ashby-webhook'
-        run: sleep 60
+        run: sleep 120
 
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -112,19 +115,20 @@ jobs:
               || echo "::notice::$f is not on $BRANCH; using the copy from main."
           done
 
-      - name: Record the baseline snapshot digest
+      # Per file, because the two are judged independently below: a cloud pull
+      # that failed must not let its own file decide anything.
+      - name: Record the baseline snapshot digests
         id: baseline
         run: |
-          # Assigned before it is echoed, so `set -e` can see the failure:
+          # Assigned before they are echoed, so `set -e` can see the failure:
           # inline in the echo, a missing snapshot still exits 0 with a digest
-          # of whatever survived — pipefail included — and the two digests
-          # then disagree for a reason that is not the data.
+          # of whatever survived — pipefail included — and the comparison
+          # below then disagrees for a reason that is not the data.
           set -o pipefail
-          digest=$(sha256sum \
-            apps/website/src/data/ashby-roles.snapshot.json \
-            apps/website/src/data/cloud-nodes.snapshot.json \
-            | sha256sum | cut -d' ' -f1)
-          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+          ashby=$(sha256sum apps/website/src/data/ashby-roles.snapshot.json | cut -d' ' -f1)
+          cloud=$(sha256sum apps/website/src/data/cloud-nodes.snapshot.json | cut -d' ' -f1)
+          echo "ashby=$ashby" >> "$GITHUB_OUTPUT"
+          echo "cloud=$cloud" >> "$GITHUB_OUTPUT"
 
       - name: Refresh Ashby snapshot
         uses: ./.github/actions/ashby-pull
@@ -143,10 +147,14 @@ jobs:
         with:
           api_key: ${{ secrets.WEBSITE_CLOUD_API_KEY }}
 
-      # The adopt step left the open PR's copy of this file in the tree. If
-      # the pull failed, that copy is all the PR would carry — and if main has
-      # moved on since the branch was cut, proposing it is a revert of
-      # somebody's commit, in a PR whose stated subject is Ashby.
+      # The adopt step left the open PR's copy of this file in the tree. If the
+      # pull failed, that copy is all the PR would carry — and once main has
+      # moved on, which the registry-loss instructions in apps/website/README.md
+      # tell people to do, proposing it reverts somebody's commit inside a PR
+      # whose stated subject is Ashby. Losing the branch's pending cloud delta
+      # is the lesser harm: the next successful pull regenerates it from live
+      # data, and a run that finds no Ashby change leaves the branch untouched
+      # anyway.
       - name: Drop a cloud snapshot this run did not produce
         if: steps.cloud-nodes.outcome == 'failure'
         run: git checkout HEAD -- apps/website/src/data/cloud-nodes.snapshot.json
@@ -155,29 +163,39 @@ jobs:
         id: changed
         run: |
           set -o pipefail
-          digest=$(sha256sum \
-            apps/website/src/data/ashby-roles.snapshot.json \
-            apps/website/src/data/cloud-nodes.snapshot.json \
-            | sha256sum | cut -d' ' -f1)
-          if [ "$digest" = "$BASELINE" ]; then
-            echo "any=false" >> "$GITHUB_OUTPUT"
+          ashby=$(sha256sum apps/website/src/data/ashby-roles.snapshot.json | cut -d' ' -f1)
+          cloud=$(sha256sum apps/website/src/data/cloud-nodes.snapshot.json | cut -d' ' -f1)
+          any=false
+          if [ "$ashby" != "$ASHBY_BASELINE" ]; then
+            any=true
+          fi
+          # Skipped when the pull failed: the step above reset this file to
+          # main, which differs from the adopted baseline whenever the open PR
+          # carried a cloud change — so comparing it would report a change this
+          # run did not make and reopen the PR around a reverted file.
+          if [ "$CLOUD_REFRESHED" = 'true' ] && [ "$cloud" != "$CLOUD_BASELINE" ]; then
+            any=true
+          fi
+          echo "any=$any" >> "$GITHUB_OUTPUT"
+          if [ "$any" = 'false' ]; then
             echo "Snapshots match the baseline; not touching the refresh branch."
-          else
-            echo "any=true" >> "$GITHUB_OUTPUT"
           fi
         env:
-          BASELINE: ${{ steps.baseline.outputs.digest }}
+          ASHBY_BASELINE: ${{ steps.baseline.outputs.ashby }}
+          CLOUD_BASELINE: ${{ steps.baseline.outputs.cloud }}
+          CLOUD_REFRESHED: ${{ steps.cloud-nodes.outcome != 'failure' }}
 
-      # Expected on a manual run; not on a webhook run, where Ashby has just
-      # asserted a posting changed and the job board disagrees. Without this
-      # the two are the same green run, and the 60s wait above can never be
-      # shown to be too short.
+      # Usually benign — the snapshot keeps only title, department, location
+      # and URL, so editing a description or compensation legitimately changes
+      # nothing here. Annotated anyway, because this is also what the job
+      # board trailing the webhook looks like, and without a record the wait
+      # above can never be shown to be too short.
       - name: Note a webhook run that found nothing
         if: >-
           inputs.source == 'ashby-webhook' &&
           steps.changed.outputs.any == 'false'
         run: |
-          echo "::warning title=Ashby reported a change this run did not see::The job board API returned data matching the committed snapshot, so no PR was opened. Either an earlier run in this burst already captured the change, or the job board trailed the webhook by longer than the wait at the top of this workflow. If this recurs for single, isolated edits, that wait is too short."
+          echo "::notice title=Ashby event produced no snapshot change::The job board API returned data matching the committed snapshot, so no PR was opened. Most likely the edit did not touch a field the snapshot stores (it holds title, department, location and URL only), or an earlier run in this burst already captured it. The remaining possibility is that the job board trailed the webhook by longer than the wait at the top of this workflow — suspect that only if it recurs for edits that did change one of those fields."
 
       - name: Create Pull Request
         if: steps.changed.outputs.any == 'true'
@@ -231,9 +249,11 @@ jobs:
 
       # Runs last so the Ashby half is already safely in a PR: the Cloud
       # failure must not cost a role change, but it still has to turn the run
-      # red, or a revoked WEBSITE_CLOUD_API_KEY is green forever.
+      # red, or a revoked WEBSITE_CLOUD_API_KEY is green forever. `always()`
+      # because a PR step that failed first would otherwise skip this and take
+      # the only explanation of the Cloud failure with it.
       - name: Fail if the cloud nodes refresh was skipped
-        if: steps.cloud-nodes.outcome == 'failure'
+        if: always() && steps.cloud-nodes.outcome == 'failure'
         run: |
           echo "::error title=Cloud nodes snapshot not refreshed::The Comfy Cloud pull failed, so any PR from this run carries Ashby changes only and apps/website/src/data/cloud-nodes.snapshot.json is left at whatever main holds. Either the Cloud API is unreachable or WEBSITE_CLOUD_API_KEY is invalid, or the registry-loss guard refused the write because packs lost their registry metadata — the step log says which. For the guard, see 'Refreshing the snapshot' in apps/website/README.md; it is cleared by a local re-run with WEBSITE_ALLOW_REGISTRY_LOSS=1 committed to main, not by re-running this workflow."
           exit 1
