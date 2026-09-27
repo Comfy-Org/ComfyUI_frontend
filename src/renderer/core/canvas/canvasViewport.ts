@@ -9,13 +9,19 @@ interface CanvasViewport {
 
 let currentGeneration = 0
 
+function normalizeDpr(rawDpr: number): number {
+  return rawDpr > 0 && Number.isFinite(rawDpr) ? rawDpr : 1
+}
+
 function measureViewport(
   cssWidth: number,
   cssHeight: number,
   rawDpr: number,
   prevGeneration?: number
 ): CanvasViewport {
-  const dpr = Math.max(rawDpr, 1)
+  // Preserve raw DPR so sub-1 displays (e.g. chromium-0.5x) keep their
+  // native scale. Only fall back to 1 for invalid values.
+  const dpr = normalizeDpr(rawDpr)
   return Object.freeze({
     cssWidth,
     cssHeight,
@@ -48,7 +54,7 @@ function applyViewport(
   viewport: CanvasViewport,
   fg: HTMLCanvasElement,
   bg: HTMLCanvasElement
-): void {
+): CanvasViewport {
   fg.width = viewport.physicalWidth
   fg.height = viewport.physicalHeight
   bg.width = viewport.physicalWidth
@@ -58,6 +64,12 @@ function applyViewport(
   bg.getContext('2d')?.scale(viewport.dpr, viewport.dpr)
 
   currentGeneration = viewport.generation
+  return viewport
 }
 
-export { measureViewport, measureViewportFromElement, applyViewport }
+export {
+  normalizeDpr,
+  measureViewport,
+  measureViewportFromElement,
+  applyViewport
+}

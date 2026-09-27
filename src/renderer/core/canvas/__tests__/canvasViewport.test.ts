@@ -30,16 +30,21 @@ describe('measureViewport', () => {
     expect(vp.physicalHeight).toBe(1200)
   })
 
-  it('clamps DPR to minimum of 1', () => {
+  it('preserves sub-1 DPR (e.g. chromium-0.5x test matrix)', () => {
     const vp = measureViewport(800, 600, 0.5, 0)
-    expect(vp.dpr).toBe(1)
-    expect(vp.physicalWidth).toBe(800)
-    expect(vp.physicalHeight).toBe(600)
+    expect(vp.dpr).toBe(0.5)
+    expect(vp.physicalWidth).toBe(400)
+    expect(vp.physicalHeight).toBe(300)
   })
 
-  it('clamps negative DPR to 1', () => {
+  it('falls back to 1 for invalid (non-positive) DPR', () => {
     const vp = measureViewport(100, 100, -1, 0)
     expect(vp.dpr).toBe(1)
+  })
+
+  it('falls back to 1 for non-finite DPR', () => {
+    expect(measureViewport(100, 100, Number.POSITIVE_INFINITY, 0).dpr).toBe(1)
+    expect(measureViewport(100, 100, Number.NaN, 0).dpr).toBe(1)
   })
 
   it('increments generation from previous value', () => {
