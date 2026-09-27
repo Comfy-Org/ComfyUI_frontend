@@ -487,7 +487,7 @@ export class LiteGraphGlobal {
 
   /**
    * Save a slot type and his node
-   * @param type name of the node or the node constructor itself
+   * @param type the node instance whose class is registered for the slot type
    * @param slot_type name of the slot type (variable type), eg. string, number, array, boolean, ..
    */
   registerNodeAndSlotType(

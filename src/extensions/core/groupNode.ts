@@ -14,7 +14,11 @@ import type {
   ComfyNode,
   ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
+import type {
+  ComfyNodeDef,
+  ComfyOutputTypesSpec,
+  InputSpec
+} from '@/schemas/nodeDefSchema'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
@@ -83,6 +87,18 @@ export interface GroupNodeWorkflowData {
   links: GroupNodeLink[]
   nodes: GroupNodeData[]
   config?: Record<number, GroupNodeConfigEntry>
+}
+
+function isOutputTypeSpec(
+  value: unknown
+): value is ComfyOutputTypesSpec[number] {
+  return (
+    typeof value === 'string' ||
+    (Array.isArray(value) &&
+      value.every(
+        (option) => typeof option === 'string' || typeof option === 'number'
+      ))
+  )
 }
 
 interface GroupNodeDef {
@@ -683,23 +699,15 @@ export class GroupNodeConfig {
         continue
       }
 
+      const output = defOutput[outputId]
+      if (!isOutputTypeSpec(output)) continue
+
       if (this.nodeDef?.output) {
         oldToNew[outputId] = this.nodeDef.output.length
         this.newToOldOutputMap[this.nodeDef.output.length] = {
           node,
           slot: outputId
         }
-        const output = defOutput[outputId]
-        if (
-          typeof output !== 'string' &&
-          !(
-            Array.isArray(output) &&
-            output.every(
-              (value) => typeof value === 'string' || typeof value === 'number'
-            )
-          )
-        )
-          continue
         this.nodeDef.output.push(output)
         this.nodeDef.output_is_list?.push(
           def.output_is_list?.[outputId] ?? false
