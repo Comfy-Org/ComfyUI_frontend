@@ -17,6 +17,7 @@
  */
 import type { Op } from '@comfyorg/comfy-multi-player'
 
+import type { DocOpFailure } from './docFrameClient'
 import type { GraphOperation } from './graphOperations'
 import { chunkWireOps, mintWireOps } from './opEnvelope'
 
@@ -29,8 +30,8 @@ export interface OpsResultView {
   ok: boolean
   applied: string[]
   skipped: string[]
-  /** Failed-batch diagnostics when the host provides them; `op_id` correlates an otherwise empty-list failure to its batch. */
-  failure?: { op_id?: string }
+  /** Failed-batch diagnostics when the host provides them; `op_id` correlates an otherwise empty-list failure to its batch. `code` is the host's stable vocabulary — match on it, never on `message`. */
+  failure?: Partial<DocOpFailure>
 }
 
 export interface OpSenderDeps {

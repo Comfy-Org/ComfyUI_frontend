@@ -33,17 +33,21 @@ const test = mergeTests(agentTest, webSocketFixture)
  * and then the FRONTEND-observable half of the actual complaint: a widget
  * write the doc host rejects with an `opaque_widgets`-shaped failure
  * (`<node> is absent from the pinned catalog, so its widgets_values is
- * stored opaquely (schema §1.2) and is not name-addressable`) never reaches
- * the human as any visible indication -- the edited widget just keeps
- * showing the human's typed value while the shared document silently keeps
- * the old one.
+ * stored opaquely (schema §1.2) and is not name-addressable`) leaves the
+ * canvas and the shared document holding different values -- the edited
+ * widget keeps showing the human's typed value while the document keeps the
+ * old one.
  *
- * `opaque_widgets` itself is a cloud doc-host error code with no frontend
- * equivalent (`docFrameClient.ts`'s `DocOpFailure.code` is opaque wire text,
- * never matched against a fixed vocabulary), so this repro injects the
- * host's raw wire response directly rather than trying to make the real
- * `comfy-multi-player` applier produce it -- exactly what a real doc host
- * running this rejection logic would put on the wire.
+ * PM-1716 made that divergence VISIBLE rather than silent: `rejectedOpNotice`
+ * matches the host's `code` against the applier's rejection vocabulary and
+ * raises a toast. The divergence itself is unchanged and is still pinned
+ * below -- a rejected write is not rolled back on the canvas.
+ *
+ * `opaque_widgets` is a cloud doc-host error code the frontend never
+ * produces, so this repro injects the host's raw wire response directly
+ * rather than trying to make the real `comfy-multi-player` applier produce
+ * it -- exactly what a real doc host running this rejection logic would put
+ * on the wire.
  */
 
 const WORKFLOW_ID = 'b3f1c4a2-0000-4000-8000-000000000030'
@@ -454,18 +458,17 @@ test.describe(
       expect(boxB).toEqual(boxA)
     })
 
-    test('a widget edit the host rejects as opaque leaves the human-typed value on screen and the shared document silently unrevised', async ({
+    test('a widget edit the host rejects as opaque leaves the human-typed value on screen and the shared document unrevised', async ({
       page,
       getWebSocket
     }) => {
       const { host, seedInput, copyBNodeId } =
         await driveThroughRejectedWidgetEdit(page, getWebSocket)
 
-      // What the human sees: the widget still shows what they typed. Nothing
-      // rolled it back, and nothing marked it as failed.
+      // What the human sees: the widget still shows what they typed. The
+      // rejection is reported (PM-1716, asserted below) but never rolls the
+      // canvas back, so the two views genuinely hold different values.
       await expect(seedInput).toHaveValue(String(EDITED_SEED_VALUE))
-      await expect(new ToastHelper(page).toastErrors).toHaveCount(0)
-      await expect(page.getByRole('alert')).toHaveCount(0)
 
       // What the shared document actually has: still the ORIGINAL seed, since
       // the write never applied. The widget the human is looking at and the
@@ -496,7 +499,6 @@ test.describe(
       const rejectionToast = new ToastHelper(page).toastErrors.filter({
         hasText: 'Widget edit was rejected and was not saved'
       })
-      test.fail()
       await expect(rejectionToast).toBeVisible({ timeout: 3_000 })
     })
   }

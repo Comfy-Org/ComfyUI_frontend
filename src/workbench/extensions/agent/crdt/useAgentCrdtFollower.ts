@@ -37,6 +37,7 @@ import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import { createOpCoalescer } from './opCoalescer'
 import type { OpsResultView } from './opSender'
 import { createOpSender } from './opSender'
+import { createRejectedOpNotifier } from './rejectedOpNotice'
 
 export { apiTransport, STALE_AFTER_MS, SUBSCRIBE_CATCHUP_GRACE_MS }
 
@@ -310,6 +311,7 @@ function startAgentCrdtFollower(
   // frame has not yet removed them from the doc. Kept pending for the
   // reconcile so the result-to-effect window cannot resurrect them.
   const confirmedDeletes = new Set<string>()
+  const rejectedOpNotifier = createRejectedOpNotifier()
   const sender = createOpSender({
     sendOps: (target, tab, ops) => client.sendOps(target, tab, ops),
     onOpsResult(listener) {
@@ -342,6 +344,7 @@ function startAgentCrdtFollower(
           if (op.op === 'delete_node' && applied.has(op.op_id))
             confirmedDeletes.add(String(op.node_id))
         }
+        rejectedOpNotifier.notify(outcome.ops, outcome.result)
       }
       recordDevEvent('human_ops_settled', outcome)
     }
@@ -769,6 +772,7 @@ function startAgentCrdtFollower(
       () => bridge.removeEventListener('doc_stale', onStale),
       () => bridge.removeEventListener('doc_subscribe_sent', onSubscribeSent),
       () => sender.detach(),
+      () => rejectedOpNotifier.cancel(),
       () => coalescer.detach(),
       () => projection.destroy(),
       () => bridge.destroy(),
