@@ -408,6 +408,9 @@ catalogs:
     typescript-eslint:
       specifier: ^8.69.0
       version: 8.69.0
+    typescript-native-bridge:
+      specifier: 6.0.3-bridge.17.tsgo.7.0.2
+      version: 6.0.3-bridge.17.tsgo.7.0.2
     undici:
       specifier: ^7.29.0
       version: 7.29.0
@@ -915,6 +918,9 @@ importers:
       typescript-eslint:
         specifier: 'catalog:'
         version: 8.69.0(eslint@10.10.0(jiti@2.7.0))(typescript@6.0.3)
+      typescript-native-bridge:
+        specifier: 'catalog:'
+        version: 6.0.3-bridge.17.tsgo.7.0.2
       unplugin-icons:
         specifier: 'catalog:'
         version: 23.0.1(@vue/compiler-sfc@3.5.42)
@@ -4756,6 +4762,41 @@ packages:
   '@typescript-eslint/visitor-keys@8.69.0':
     resolution: {integrity: sha512-+rmdgPA+EXkNgKYvHvFfhrs35utXbwaC5PGpDquSXcoXQDKUA5UjV0LmTucG/4JXkM31BTu4TilHtrN8IVBe8w==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
+
+  '@typescript-native-bridge/darwin-arm64@6.0.3-bridge.17.tsgo.7.0.2':
+    resolution: {integrity: sha512-Vpg8so68YwnLB7IU+/j2bKjIvDaXY9oMY+k4VyesFpJLGTE4O6JAmOk8v6S6pHo7C417S6b3qIkvWjYGBkEiXQ==}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@typescript-native-bridge/darwin-x64@6.0.3-bridge.17.tsgo.7.0.2':
+    resolution: {integrity: sha512-OWvfgOINl0+ALgsPhsXpNgCkpzefyV44StqmyUVXq7yzz9DEPynLPi9Giv6IMQE8vmdS4rOA7bs4i/DggamMtw==}
+    cpu: [x64]
+    os: [darwin]
+
+  '@typescript-native-bridge/linux-arm64@6.0.3-bridge.17.tsgo.7.0.2':
+    resolution: {integrity: sha512-TtDJqezDnZ1vm8CHzYtkceoA7ugo//NE9Mm3/zwVXdvYDxUCUlG9kDE5HUJlB3Xymi5opnTs6RroSLi10aENYQ==}
+    cpu: [arm64]
+    os: [linux]
+
+  '@typescript-native-bridge/linux-arm@6.0.3-bridge.17.tsgo.7.0.2':
+    resolution: {integrity: sha512-Hci0x6qA1/mCoWp4hDGOYG4RGtLrzY7AFN+jSlb4d/HT8N1Wge1MYgQzg7DWmg42D+PjQYoeGOcGf6QCQ2zq0A==}
+    cpu: [arm]
+    os: [linux]
+
+  '@typescript-native-bridge/linux-x64@6.0.3-bridge.17.tsgo.7.0.2':
+    resolution: {integrity: sha512-yGedsXO9a0nTGwZ/vI+tDZ9SD8HDu+TnQbYIlSMLTbtYl8CKXNCFVBvw8XEro6DDGo8CIB3uNYHUXPRwZ7CwOg==}
+    cpu: [x64]
+    os: [linux]
+
+  '@typescript-native-bridge/win32-arm64@6.0.3-bridge.17.tsgo.7.0.2':
+    resolution: {integrity: sha512-RMm/YbPyv0qMRJV1378DPddut8jHXRYvHpb2ETT2VOx/ehfc4jvDD0uysaqivU//JjxRS3J+39ldXD+00Lwr1A==}
+    cpu: [arm64]
+    os: [win32]
+
+  '@typescript-native-bridge/win32-x64@6.0.3-bridge.17.tsgo.7.0.2':
+    resolution: {integrity: sha512-gbTIfontb1I9SomZw5mXn+k2ekQnBkRu3lmCy4zuHvEqNFwFFA936CkwGpgifs/SK/fU2B2hGcksm1pQJ6w6mg==}
+    cpu: [x64]
+    os: [win32]
 
   '@typescript/typescript-aix-ppc64@7.0.2':
     resolution: {integrity: sha512-MTKKkWB7p/0E9xi1d1tHtZ5PiLkGEMIq88pK2CubZjOsLtYTLqhgIgi6zepFa+9GHZ6h05NMCkQxGKiPXMxXtQ==}
@@ -9073,6 +9114,11 @@ packages:
       eslint: ^8.57.0 || ^9.0.0 || ^10.0.0
       typescript: '>=4.8.4 <6.1.0'
 
+  typescript-native-bridge@6.0.3-bridge.17.tsgo.7.0.2:
+    resolution: {integrity: sha512-n4rPgV60szK0/nJjqXnETdrWCr70EysgH3FRheHL5UME1lRBJhDhUZOoLNulnXlqB+2SXSpxn4KKF3S3l7ZUFA==}
+    engines: {node: '>=20.19'}
+    hasBin: true
+
   typescript@5.9.3:
     resolution: {integrity: sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==}
     engines: {node: '>=14.17'}
@@ -13209,6 +13255,27 @@ snapshots:
     dependencies:
       '@typescript-eslint/types': 8.69.0
       eslint-visitor-keys: 5.0.1
+
+  '@typescript-native-bridge/darwin-arm64@6.0.3-bridge.17.tsgo.7.0.2':
+    optional: true
+
+  '@typescript-native-bridge/darwin-x64@6.0.3-bridge.17.tsgo.7.0.2':
+    optional: true
+
+  '@typescript-native-bridge/linux-arm64@6.0.3-bridge.17.tsgo.7.0.2':
+    optional: true
+
+  '@typescript-native-bridge/linux-arm@6.0.3-bridge.17.tsgo.7.0.2':
+    optional: true
+
+  '@typescript-native-bridge/linux-x64@6.0.3-bridge.17.tsgo.7.0.2':
+    optional: true
+
+  '@typescript-native-bridge/win32-arm64@6.0.3-bridge.17.tsgo.7.0.2':
+    optional: true
+
+  '@typescript-native-bridge/win32-x64@6.0.3-bridge.17.tsgo.7.0.2':
+    optional: true
 
   '@typescript/typescript-aix-ppc64@7.0.2':
     optional: true
@@ -18357,6 +18424,16 @@ snapshots:
       typescript: 6.0.3
     transitivePeerDependencies:
       - supports-color
+
+  typescript-native-bridge@6.0.3-bridge.17.tsgo.7.0.2:
+    optionalDependencies:
+      '@typescript-native-bridge/darwin-arm64': 6.0.3-bridge.17.tsgo.7.0.2
+      '@typescript-native-bridge/darwin-x64': 6.0.3-bridge.17.tsgo.7.0.2
+      '@typescript-native-bridge/linux-arm': 6.0.3-bridge.17.tsgo.7.0.2
+      '@typescript-native-bridge/linux-arm64': 6.0.3-bridge.17.tsgo.7.0.2
+      '@typescript-native-bridge/linux-x64': 6.0.3-bridge.17.tsgo.7.0.2
+      '@typescript-native-bridge/win32-arm64': 6.0.3-bridge.17.tsgo.7.0.2
+      '@typescript-native-bridge/win32-x64': 6.0.3-bridge.17.tsgo.7.0.2
 
   typescript@5.9.3: {}
 
