@@ -12,6 +12,7 @@ import type { ComfyNode } from '@/platform/workflow/validation/schemas/workflowS
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { useWidgetStore } from '@/stores/widgetStore'
 
 import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
 
@@ -44,6 +45,7 @@ vi.mock('@/scripts/app', () => ({
 import {
   GroupNodeConfig,
   GroupNodeHandler,
+  findUnconsumedWidgetIndex,
   replaceLegacySeparators
 } from './groupNode'
 
@@ -162,6 +164,86 @@ describe('GroupNodeConfig.processInputSlots', () => {
     )
 
     expect(inputMap).toEqual({ model: 0, latent_image: 1 })
+  })
+
+  it('falls back to the positional slot index for a Reroute input', () => {
+    const config = new GroupNodeConfig('group', {
+      nodes: [{ index: 0, type: 'Reroute' }],
+      links: [],
+      external: []
+    })
+    const inputMap: Record<string, number> = {}
+    const link: SerialisedLLinkArray = [1, 0, 0, 0, 0, 'MODEL']
+
+    config.processInputSlots(
+      { MODEL: ['MODEL', {}] },
+      fromPartial({ index: 0, type: 'Reroute', inputs: [{ name: '' }] }),
+      ['MODEL'],
+      { 0: link },
+      inputMap,
+      {}
+    )
+
+    expect(inputMap).toEqual({})
+  })
+})
+
+describe('findUnconsumedWidgetIndex', () => {
+  it('pairs same-named widgets in request order without reusing an index', () => {
+    const widgets = [{ name: 'text' }, { name: 'text' }]
+    const consumed = new Set<number>()
+    const first = findUnconsumedWidgetIndex(widgets, 'text', consumed)
+    consumed.add(first)
+    const second = findUnconsumedWidgetIndex(widgets, 'text', consumed)
+
+    expect([first, second]).toEqual([0, 1])
+  })
+})
+
+describe('GroupNodeConfig.processWidgetInputs', () => {
+  it('keeps a forceInput combo as a slot', () => {
+    const config = new GroupNodeConfig('group', {
+      nodes: [{ index: 0, type: 'KSampler' }],
+      links: [],
+      external: []
+    })
+
+    const { slots, converted } = config.processWidgetInputs(
+      {
+        sampler_name: [['euler', 'ddim'], { forceInput: true }],
+        steps: ['INT', {}]
+      },
+      { index: 0, type: 'KSampler' },
+      ['sampler_name', 'steps'],
+      {}
+    )
+
+    expect(slots).toEqual(['sampler_name'])
+    expect(converted.size).toBe(0)
+    expect(useWidgetStore().inputIsWidget(['INT', {}])).toBe(true)
+  })
+})
+
+describe('GroupNodeConfig.processConvertedWidgets', () => {
+  it('uses each converted widget serialized slot index for link lookup', () => {
+    const config = new GroupNodeConfig('group', {
+      nodes: [{ index: 0, type: 'KSampler' }],
+      links: [],
+      external: []
+    })
+    const inputMap: Record<string, number> = {}
+    const link: SerialisedLLinkArray = [1, 0, 0, 0, 0, 'INT']
+
+    config.processConvertedWidgets(
+      { b: ['INT'] },
+      { index: 0, type: 'KSampler' },
+      new Map([[5, 'b']]),
+      { 5: link },
+      inputMap,
+      {}
+    )
+
+    expect(inputMap).toEqual({})
   })
 })
 
