@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { toCatalogTierKey } from './tierCatalog'
+import { toCatalogTierKey } from './catalog'
 
 describe('toCatalogTierKey', () => {
   it.for([

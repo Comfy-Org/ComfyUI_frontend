@@ -24,6 +24,7 @@
     "./billing": "./src/billing/index.ts",
     "./billing/stripe": "./src/billing/stripe/index.ts",
     "./billing/checkout": "./src/billing/checkout/index.ts",
+    "./billing/catalog": "./src/billing/catalog.ts",
     "./auth/PasswordRules": "./src/auth/PasswordRules.vue",
     "./auth/SocialAuthButtons": "./src/auth/SocialAuthButtons.vue",
     "./auth/TurnstileWidget": "./src/auth/TurnstileWidget.vue",
@@ -47,6 +48,10 @@
       "./billing/checkout": {
         "types": "./dist/billing/checkout/index.d.ts",
         "import": "./dist/billing/checkout/index.js"
+      },
+      "./billing/catalog": {
+        "types": "./dist/billing/catalog.d.ts",
+        "import": "./dist/billing/catalog.js"
       },
       "./auth/PasswordRules": {
         "types": "./dist/auth/PasswordRules.d.ts",

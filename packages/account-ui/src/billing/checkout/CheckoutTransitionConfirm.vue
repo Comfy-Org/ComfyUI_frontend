@@ -21,155 +21,46 @@
         </h2>
         <div class="size-8 shrink-0" aria-hidden="true" />
       </div>
-      <div
+      <CheckoutReactivationBanner
         v-if="isReactivating"
-        class="mb-6 flex gap-3 rounded-2xl border border-warning-background bg-warning-background/20 p-4"
-      >
-        <div
-          class="flex size-8 shrink-0 items-center justify-center rounded-full text-warning-background"
-        >
-          <i class="pi pi-info-circle" />
-        </div>
-        <div class="flex flex-col gap-2">
-          <p class="m-0 text-sm font-bold text-base-foreground">
-            {{ bannerTitle }}
-          </p>
-          <p class="m-0 text-sm text-muted-foreground">
-            <span>
-              <template v-for="(segment, index) in bannerSegments" :key="index">
-                <template v-if="segment.kind === 'text'">{{
-                  segment.text
-                }}</template>
-                <span
-                  v-else-if="segment.key === 'amount'"
-                  :class="
-                    cn(
-                      'font-bold text-base-foreground',
-                      exceedsMonthlyThreshold && 'text-base font-extrabold'
-                    )
-                  "
-                  >{{ chargeDisplay }}</span
-                >
-                <template v-else>{{ bannerValues[segment.key] }}</template>
-              </template>
-            </span>
-          </p>
-          <label
-            v-if="exceedsMonthlyThreshold"
-            class="flex items-center gap-2 pt-1 text-sm text-muted-foreground"
-          >
-            <input
-              v-model="reactivationConfirmed"
-              type="checkbox"
-              class="size-4 rounded-sm border-interface-stroke"
-            />
-            {{ copy.reactivation.checkboxLabel(chargeDisplay) }}
-          </label>
-        </div>
-      </div>
+        v-model:confirmed="reactivationConfirmed"
+        :title="bannerTitle"
+        :segments="bannerSegments"
+        :checkbox-label="
+          exceedsMonthlyThreshold
+            ? copy.reactivation.checkboxLabel(chargeDisplay)
+            : null
+        "
+      />
 
-      <div class="flex flex-col gap-2">
-        <span class="text-sm font-semibold text-base-foreground">
-          {{ plan.name }}
-        </span>
-        <div class="flex items-baseline gap-2">
-          <span
-            class="text-2xl font-semibold text-base-foreground tabular-nums"
-          >
-            ${{ heroPrice }}
-          </span>
-          <span class="text-base text-base-foreground">
-            {{ copy.usdPerMonth }}
-          </span>
-        </div>
-        <template v-if="isImmediate">
-          <span class="text-muted-foreground">
-            {{
-              newIsYearly
-                ? copy.billedYearly(annualTotalFormatted)
-                : copy.billedMonthly
-            }}
-          </span>
-          <span class="text-muted-foreground">
-            {{ copy.switchesToday }}
-          </span>
-        </template>
-        <span v-else class="text-muted-foreground">
-          {{ copy.startsOn(effectiveDateLabel) }}
-        </span>
-      </div>
-
-      <div v-if="isImmediate" class="flex flex-col gap-2 pt-10">
-        <div class="flex items-center justify-between">
-          <span class="text-base-foreground">{{ refillLabel }}</span>
-          <div class="flex items-center gap-1">
-            <i class="icon-[lucide--coins] size-4 shrink-0 bg-credit" />
-            <span class="font-bold text-base-foreground tabular-nums">{{
-              refillCredits
-            }}</span>
-          </div>
-        </div>
-        <span v-if="newIsYearly" class="text-sm text-muted-foreground">
-          {{ copy.refillReplacesNote }}
-        </span>
-      </div>
-
-      <div v-else class="flex flex-col gap-2 pt-10">
-        <span
-          class="text-xs font-semibold tracking-wide text-muted-foreground uppercase"
-        >
-          {{ copy.afterThat }}
-        </span>
-        <div class="flex items-center justify-between">
-          <span class="text-base-foreground">
-            {{
-              newIsYearly
-                ? copy.eachYearCreditsRefill
-                : copy.creditsRefillMonthlyTo
-            }}
-          </span>
-          <div class="flex items-center gap-1">
-            <i class="icon-[lucide--coins] size-4 shrink-0 bg-credit" />
-            <span class="font-bold text-base-foreground tabular-nums">{{
-              refillCredits
-            }}</span>
-          </div>
-        </div>
-        <span class="text-sm text-muted-foreground">
-          {{
-            newIsYearly
-              ? copy.billedYearly(annualTotalFormatted)
-              : copy.billedEachMonth(`$${formatNumber(newMonthlyUsd, locale)}`)
-          }}
-        </span>
-      </div>
+      <CheckoutTransitionSummary
+        :plan-name="plan.name"
+        :hero-price
+        :usd-per-month="copy.usdPerMonth"
+        :details="planDetails"
+        :heading="isImmediate ? '' : copy.afterThat"
+        :refill-label="refillLabel"
+        :refill-credits
+        :note="refillNote"
+      />
 
       <!-- Immediate changes carry their addends: one sum under one divider
            (Figma 5344-35724). -->
-      <div
-        :class="
-          cn(
-            'flex flex-col gap-2 border-t border-border-subtle pt-6',
-            !isImmediate && 'mt-10'
-          )
-        "
-      >
-        <template v-if="isImmediate && previewData.discounts?.length">
+      <div :class="totalClass">
+        <template v-if="discounts.length">
           <div class="flex items-center justify-between text-muted-foreground">
             <span>{{ copy.discountComposition }}</span>
           </div>
           <div
-            v-for="discount in previewData.discounts"
-            :key="`${discount.kind}:${discount.code}`"
+            v-for="discount in discounts"
+            :key="discount.key"
             class="flex items-center justify-between text-muted-foreground"
           >
-            <span>{{ copy.discount[discount.kind] }}</span>
+            <span>{{ discount.label }}</span>
             <span class="text-base-foreground">
-              {{ discount.name || discount.code
-              }}<template v-if="discount.amount_off_cents">
-                · −${{
-                  formatUsdFromCents(discount.amount_off_cents)
-                }}</template
+              {{ discount.name
+              }}<template v-if="discount.amount">
+                · −{{ discount.amount }}</template
               >
             </span>
           </div>
@@ -204,8 +95,8 @@
       />
 
       <CheckoutVerificationPrompt
-        v-if="verificationOffered && actionUrl"
-        :action-url
+        v-if="verificationUrl"
+        :action-url="verificationUrl"
         :copy
       />
 
@@ -214,9 +105,7 @@
         size="lg"
         class="w-full rounded-lg"
         :loading="isLoading"
-        :disabled="
-          confirmDisabled || !quoteIsUsable || verificationRecoveryActive
-        "
+        :disabled="confirmBlocked"
         @click="emit('confirm', confirmReactivation)"
       >
         {{ confirmCta }}
@@ -245,7 +134,9 @@ import { cn } from '@comfyorg/tailwind-utils'
 import CheckoutButton from './CheckoutButton.vue'
 import CheckoutPaymentNotices from './CheckoutPaymentNotices.vue'
 import CheckoutPromotionCode from './CheckoutPromotionCode.vue'
+import CheckoutReactivationBanner from './CheckoutReactivationBanner.vue'
 import CheckoutTermsNote from './CheckoutTermsNote.vue'
+import CheckoutTransitionSummary from './CheckoutTransitionSummary.vue'
 import CheckoutVerificationPrompt from './CheckoutVerificationPrompt.vue'
 import type { CheckoutCopy } from './checkoutCopy'
 import { splitPlaceholders } from './checkoutCopy'
@@ -321,8 +212,8 @@ const recoveryState = computed(() => ({
   reconciliationOperationId,
   embeddedCheckoutEnabled
 }))
-const verificationOffered = computed(() =>
-  isVerificationOffered(recoveryState.value)
+const verificationUrl = computed(() =>
+  isVerificationOffered(recoveryState.value) ? actionUrl : null
 )
 const verificationRecoveryActive = computed(() =>
   isVerificationRecoveryActive(recoveryState.value)
@@ -420,6 +311,12 @@ const confirmDisabled = computed(
     !subscriptionLoaded ||
     (exceedsMonthlyThreshold.value && !reactivationConfirmed.value)
 )
+const confirmBlocked = computed(
+  () =>
+    confirmDisabled.value ||
+    !quoteIsUsable.value ||
+    verificationRecoveryActive.value
+)
 const confirmReactivation = computed(
   () =>
     isReactivating.value &&
@@ -452,7 +349,13 @@ const bannerSegments = computed(() =>
     'newPlan',
     'nextDate',
     'amount'
-  ] as const)
+  ] as const).map((segment) => {
+    if (segment.kind === 'text') return { text: segment.text, emphasis: false }
+    if (segment.key === 'amount') {
+      return { text: chargeDisplay.value, emphasis: true }
+    }
+    return { text: bannerValues.value[segment.key], emphasis: false }
+  })
 )
 
 const newMonthlyUsd = computed(() => {
@@ -471,8 +374,54 @@ const refillCredits = computed(() =>
     locale
   )
 )
-const refillLabel = computed(() =>
-  newIsYearly.value ? copy.creditsYoullGetToday : copy.eachMonthCreditsRefill
+const refillLabel = computed(() => {
+  if (isImmediate.value) {
+    return newIsYearly.value
+      ? copy.creditsYoullGetToday
+      : copy.eachMonthCreditsRefill
+  }
+  return newIsYearly.value
+    ? copy.eachYearCreditsRefill
+    : copy.creditsRefillMonthlyTo
+})
+
+const billedLabel = computed(() =>
+  newIsYearly.value
+    ? copy.billedYearly(annualTotalFormatted.value)
+    : copy.billedMonthly
+)
+
+const planDetails = computed(() =>
+  isImmediate.value
+    ? [billedLabel.value, copy.switchesToday]
+    : [copy.startsOn(effectiveDateLabel.value)]
+)
+
+const refillNote = computed(() => {
+  if (isImmediate.value) return newIsYearly.value ? copy.refillReplacesNote : ''
+  return newIsYearly.value
+    ? copy.billedYearly(annualTotalFormatted.value)
+    : copy.billedEachMonth(`$${formatNumber(newMonthlyUsd.value, locale)}`)
+})
+
+const totalClass = computed(() =>
+  cn(
+    'flex flex-col gap-2 border-t border-border-subtle pt-6',
+    !isImmediate.value && 'mt-10'
+  )
+)
+
+const discounts = computed(() =>
+  isImmediate.value
+    ? (previewData.discounts ?? []).map((discount) => ({
+        key: `${discount.kind}:${discount.code}`,
+        label: copy.discount[discount.kind],
+        name: discount.name || discount.code,
+        amount: discount.amount_off_cents
+          ? `$${formatUsdFromCents(discount.amount_off_cents)}`
+          : ''
+      }))
+    : []
 )
 
 const effectiveDateLabel = computed(() => formatDate(previewData.effective_at))
