@@ -53,7 +53,7 @@ jobs:
       - name: Repair and deduplicate lockfile
         run: |
           pnpm install --lockfile-only --ignore-scripts --no-frozen-lockfile
-          pnpm dedupe --ignore-scripts
+          pnpm dedupe --lockfile-only --ignore-scripts
         working-directory: pull-request
 
       - name: Prepare repair artifact
