@@ -635,7 +635,7 @@ describe('useSubscription', () => {
       )
     })
 
-    it('closes the billing funnel when the completion never lands', async () => {
+    it('times out the billing funnel when the completion never lands', async () => {
       localStorage.setItem(
         PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
         JSON.stringify({
@@ -661,9 +661,9 @@ describe('useSubscription', () => {
       expect(mockTelemetry.trackBillingEvent).toHaveBeenCalledWith(
         expect.objectContaining({
           operation: 'subscription_checkout',
-          stage: 'failed',
+          stage: 'timeout',
           outcome: 'failure',
-          failure_category: 'reconciliation_needed',
+          failure_category: 'poll_timeout',
           checkout_type: 'new',
           checkout_attempt_id: 'attempt-funnel'
         })
