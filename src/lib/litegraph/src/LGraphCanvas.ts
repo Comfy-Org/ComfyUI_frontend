@@ -43,13 +43,16 @@ import type { ContextMenu } from './ContextMenu'
 import { createCursorCache } from './cursorCache'
 import { DragAndScale } from './DragAndScale'
 import type { AnimationOptions } from './DragAndScale'
+import { isRootGraphDocBound } from './docBoundGraphs'
 import {
   cloneLGraphState,
   commitLGraphState,
   findNextAvailableId,
+  mintGroupId,
   mintNodeId,
   observeNodeId
 } from './idAllocation'
+import type { NodeIdMintMode } from './idAllocation'
 import type { LGraph, SubgraphId } from './LGraph'
 import { LGraphGroup } from './LGraphGroup'
 import type { SlotTypeDefaultNodeOpts } from './LiteGraphGlobal'
@@ -4238,6 +4241,18 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       if (nodeInfo.type in subgraphIdMap)
         nodeInfo.type = subgraphIdMap[nodeInfo.type]
     remapClipboardSubgraphNodeIds(parsed, graph.rootGraph)
+    // Preflight the target graph's id space against a disposable clone
+    // before mutating anything: minting group/node ids is not
+    // transactional, so an exhaustion partway through the Groups/Nodes
+    // loops below would otherwise leave earlier groups already committed.
+    const idPreflightState = cloneLGraphState(graph.state)
+    const nodeMintMode: NodeIdMintMode =
+      graph.isRootGraph && isRootGraphDocBound(graph.id)
+        ? 'crdt-disjoint'
+        : 'sequential'
+    for (let i = parsed.groups.length; i > 0; i--) mintGroupId(idPreflightState)
+    for (let i = parsed.nodes.length; i > 0; i--)
+      mintNodeId(idPreflightState, nodeMintMode)
     // Subgraphs
     const subgraphs = graph.createSubgraphs(parsed.subgraphs)
     for (const subgraph of subgraphs)
