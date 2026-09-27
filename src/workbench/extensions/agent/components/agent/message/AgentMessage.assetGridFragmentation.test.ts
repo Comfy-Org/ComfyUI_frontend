@@ -105,6 +105,11 @@ describe('AgentMessage asset grid fragmentation', () => {
     expect(
       within(groups[0]).getByRole('img', { name: 'i2.png' })
     ).toBeInTheDocument()
+    expect(
+      within(groups[0])
+        .getAllByRole('img')
+        .map((image) => image.getAttribute('alt'))
+    ).toEqual(['i1.png', 'i2.png'])
   })
 
   it('PM-1135: puts a bare asset before later, unrelated prose', () => {
