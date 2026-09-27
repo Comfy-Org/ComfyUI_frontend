@@ -68,6 +68,7 @@ import {
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 import AgentPanel from './components/agent/AgentPanel.vue'
+import { agentBoundWorkflowIdKey } from './components/agent/agentBoundWorkflowId'
 import OnboardingCoach from './components/agent/OnboardingCoach.vue'
 import {
   MAX_ATTACHMENT_BYTES,
@@ -575,6 +576,11 @@ const {
     draft: targetWorkflowDraft
   }
 })
+
+provide(
+  agentBoundWorkflowIdKey,
+  computed(() => boundWorkflowId.value ?? undefined)
+)
 
 const isSending = computed(
   () => sessionIsSending.value || composerStore.submission?.phase === 'pending'
