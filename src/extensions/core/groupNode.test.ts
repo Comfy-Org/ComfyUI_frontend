@@ -770,6 +770,8 @@ describe('GroupNodeHandler.convertToNodes', () => {
     }
     setOuterWidget('steps', 999)
     setOuterWidget('cfg', 4.5)
+    setOuterWidget('text', 'edited_positive_prompt')
+    setOuterWidget('CLIPTextEncode text', 'edited_negative_prompt')
     setOuterWidget('sampler_name', 'dpmpp_2m')
     setOuterWidget('scheduler', 'karras')
     setOuterWidget('denoise', 0.42)
@@ -784,6 +786,13 @@ describe('GroupNodeHandler.convertToNodes', () => {
 
     const ksampler = innerNodes.find((n) => n.comfyClass === 'KSampler')
     const saveImage = innerNodes.find((n) => n.comfyClass === 'SaveImage')
+
+    expect(innerNodes[2]?.widgets?.find((w) => w.name === 'text')?.value).toBe(
+      'edited_positive_prompt'
+    )
+    expect(innerNodes[3]?.widgets?.find((w) => w.name === 'text')?.value).toBe(
+      'edited_negative_prompt'
+    )
 
     expect(widgetValues(ksampler)).toMatchObject({
       seed: 156680208700286,
