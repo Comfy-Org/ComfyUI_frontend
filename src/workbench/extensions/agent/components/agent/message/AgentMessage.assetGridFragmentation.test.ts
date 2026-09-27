@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+
 import { render, screen, within } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
