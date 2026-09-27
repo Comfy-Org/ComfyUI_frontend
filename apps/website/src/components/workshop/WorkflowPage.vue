@@ -32,6 +32,8 @@ const shelf = computed(() => {
       }
     : undefined
 })
+const eyebrowClass =
+  'text-sm leading-none font-medium tracking-widest text-primary-comfy-yellow uppercase'
 const pillClass =
   'inline-flex h-7 items-center rounded-full border border-transparency-white-t20 px-3 text-xs leading-none text-primary-comfy-canvas transition-colors hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow'
 
@@ -52,8 +54,12 @@ const cloudHref = template
     </a>
     <header class="mb-9" data-testid="workflow-hero">
       <div class="mb-3 flex flex-wrap items-center gap-3">
-        <p v-if="model.category" class="text-sm text-primary-comfy-yellow">
-          {{ model.categoryLabel?.en ?? model.category }}
+        <p
+          v-if="model.author"
+          :class="eyebrowClass"
+          data-testid="workflow-author"
+        >
+          {{ model.author }}
         </p>
         <a
           v-if="shelf"

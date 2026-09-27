@@ -7,8 +7,8 @@ import WorkflowPage from './WorkflowPage.vue'
 const model = workflowDetailsBySlug.get('workflows/remove-background')
 assert(model)
 
-// The eyebrow named the shelf this workflow sits on, and a word is not a way
-// back. It is the one thing up there that can lead somewhere.
+// Who made the workflow stands over its name, and the shelf it sits on is the
+// one thing up there that leads somewhere.
 describe('WorkflowPage header', () => {
   it('sends the shelf it names to that shelf, filtered', () => {
     render(WorkflowPage, { props: { model } })
@@ -33,22 +33,15 @@ describe('WorkflowPage header', () => {
     expect(screen.queryByTestId('workflow-use-case')).toBeNull()
   })
 
-  // The eyebrow's two halves are independent: the category reads its English
-  // label where there is one and the raw category where there is not, and the
-  // shelf link stands whether or not a category sits beside it.
   it.for([
-    {
-      category: 'Utilities',
-      categoryLabel: { en: 'Clean-up', 'zh-CN': '清理' },
-      reads: 'Clean-up'
-    },
-    { category: 'Utilities', categoryLabel: undefined, reads: 'Utilities' },
-    { category: undefined, categoryLabel: undefined, reads: undefined }
-  ] as const)('reads the category as $reads', ({ reads, ...category }) => {
-    render(WorkflowPage, { props: { model: { ...model, ...category } } })
+    { author: 'ComfyUI', authors: 1 },
+    { author: undefined, authors: 0 }
+  ] as const)('names $authors author(s)', ({ author, authors }) => {
+    render(WorkflowPage, { props: { model: { ...model, author } } })
 
-    if (reads) expect(screen.getByText(reads)).toBeTruthy()
-    else expect(screen.queryByText('Utilities')).toBeNull()
+    const named = screen.queryAllByTestId('workflow-author')
+    expect(named).toHaveLength(authors)
+    if (author) expect(named[0]).toHaveTextContent(author)
     expect(screen.getByTestId('workflow-use-case')).toBeTruthy()
   })
 })
