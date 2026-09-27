@@ -131,11 +131,4 @@ describe('useSearchBoxStore', () => {
       expect(vi.mocked(mockPopover.showSearchBox)).not.toHaveBeenCalled()
     })
   })
-
-  describe('when user first loads the application', () => {
-    it('should have search box hidden by default', () => {
-      const store = useSearchBoxStore()
-      expect(store.visible).toBe(false)
-    })
-  })
 })

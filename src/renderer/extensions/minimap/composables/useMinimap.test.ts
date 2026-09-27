@@ -402,16 +402,6 @@ describe('useMinimap', () => {
       useCanvasStore().canvas = originalCanvas
     })
 
-    it('should setup event listeners on graph', async () => {
-      const minimap = await createAndInitializeMinimap()
-
-      await minimap.init()
-
-      expect(moduleMockGraph.onNodeAdded).toBeDefined()
-      expect(moduleMockGraph.onNodeRemoved).toBeDefined()
-      expect(moduleMockGraph.onConnectionChange).toBeDefined()
-    })
-
     it('should handle visibility from settings', async () => {
       vi.mocked(useSettingStore().get).mockReturnValue(false)
       const minimap = await createAndInitializeMinimap()

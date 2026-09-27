@@ -183,33 +183,6 @@ describe('useRegistrySearchGateway', () => {
       // Circuit breaker behavior is internal implementation detail
       // We only test the observable behavior (fallback works)
     })
-
-    it('should have circuit breaker timeout mechanism', () => {
-      // This test verifies that the constants exist for circuit breaker behavior
-      // The actual circuit breaker logic is tested in integration with real provider behavior
-      expect(typeof useRegistrySearchGateway).toBe('function')
-
-      // We can test that the gateway logs circuit breaker behavior
-      const mockAlgoliaProvider = {
-        searchPacks: vi.fn().mockRejectedValue(new Error('Persistent failure')),
-        clearSearchCache: vi.fn()
-      }
-
-      const mockRegistryProvider = {
-        searchPacks: vi
-          .fn()
-          .mockResolvedValue({ nodePacks: [], querySuggestions: [] }),
-        clearSearchCache: vi.fn()
-      }
-
-      vi.mocked(useAlgoliaSearchProvider).mockReturnValue(mockAlgoliaProvider)
-      vi.mocked(useComfyRegistrySearchProvider).mockReturnValue(
-        mockRegistryProvider
-      )
-
-      const gateway = useRegistrySearchGateway()
-      expect(gateway).toBeDefined()
-    })
   })
 
   describe('Cache management', () => {

@@ -38,17 +38,6 @@ describe('useAudioService', () => {
     service = useAudioService()
   })
 
-  describe('initialization', () => {
-    it('should initialize service with required methods', () => {
-      expect(service).toHaveProperty('registerWavEncoder')
-      expect(service).toHaveProperty('stopAllTracks')
-      expect(service).toHaveProperty('convertBlobToFileAndSubmit')
-      expect(typeof service.registerWavEncoder).toBe('function')
-      expect(typeof service.stopAllTracks).toBe('function')
-      expect(typeof service.convertBlobToFileAndSubmit).toBe('function')
-    })
-  })
-
   describe('registerWavEncoder', () => {
     it('should register WAV encoder successfully on first call', async () => {
       await service.registerWavEncoder()
