@@ -1,4 +1,4 @@
-import { TIER_CATALOG } from '@comfyorg/account-ui/billing/checkout'
+import { TIER_CATALOG } from '@comfyorg/account-ui/billing/catalog'
 import type { SubscriptionTier as IngestSubscriptionTier } from '@comfyorg/ingest-types'
 
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
