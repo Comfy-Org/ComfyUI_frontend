@@ -52,6 +52,22 @@ function isRejectedWidgetWrite(
 }
 
 /**
+ * Schema §4 aborts the REMAINDER of a batch, so a valid prefix is still
+ * applied. Each partial variant keeps its non-partial text as a PREFIX, so the
+ * substring the e2e spec filters on still matches either way.
+ */
+function noticeKey(widgetWrite: boolean, partial: boolean): string {
+  if (widgetWrite) {
+    return partial
+      ? 'agent.editRejected.widgetWritePartial'
+      : 'agent.editRejected.widgetWrite'
+  }
+  return partial
+    ? 'agent.editRejected.genericPartial'
+    : 'agent.editRejected.generic'
+}
+
+/**
  * Tells the human a batch the host refused never reached the shared document.
  *
  * One follower owns one notifier. An uncatalogued node refuses every edit it
@@ -63,6 +79,26 @@ function isRejectedWidgetWrite(
 export function createRejectedOpNotifier(): RejectedOpNotifier {
   const throttledToasts = new Map<string, ThrottledFunction<() => void>>()
   const reportedCodes = new Set<string>()
+
+  function reportOnce(
+    code: string,
+    widgetWrite: boolean,
+    result: OpsResultView,
+    failure: Partial<DocOpFailure> | undefined
+  ): void {
+    if (reportedCodes.has(code)) return
+    reportedCodes.add(code)
+    reportError(
+      new Error(`the agent doc host rejected a human edit (${code})`),
+      {
+        errorType: widgetWrite
+          ? 'error_applying_agent_widget_edit'
+          : 'error_applying_agent_graph_edit',
+        context: { workflowId: result.workflowId, opId: failure?.op_id, code },
+        level: 'warning'
+      }
+    )
+  }
 
   function throttledToast(detail: string): ThrottledFunction<() => void> {
     const existing = throttledToasts.get(detail)
@@ -92,39 +128,9 @@ export function createRejectedOpNotifier(): RejectedOpNotifier {
       // `failure` at all; without this every one collapses to 'unspecified' and
       // the first suppresses the telemetry report for every later kind.
       const code = failure?.code ?? result.code ?? 'unspecified'
-      if (!reportedCodes.has(code)) {
-        reportedCodes.add(code)
-        reportError(
-          new Error(`the agent doc host rejected a human edit (${code})`),
-          {
-            errorType: widgetWrite
-              ? 'error_applying_agent_widget_edit'
-              : 'error_applying_agent_graph_edit',
-            context: {
-              workflowId: result.workflowId,
-              opId: failure?.op_id,
-              code
-            },
-            level: 'warning'
-          }
-        )
-      }
-      // Schema §4 aborts the REMAINDER of a batch, so a valid prefix is still
-      // applied. Saying only "your edit was not saved" for a batch that did
-      // save several edits overstates the damage.
+      reportOnce(code, widgetWrite, result, failure)
       const partial = result.applied.length > 0 && failure?.index !== undefined
-      const { t } = i18n.global
-      throttledToast(
-        t(
-          widgetWrite
-            ? partial
-              ? 'agent.editRejected.widgetWritePartial'
-              : 'agent.editRejected.widgetWrite'
-            : partial
-              ? 'agent.editRejected.genericPartial'
-              : 'agent.editRejected.generic'
-        )
-      )()
+      throttledToast(i18n.global.t(noticeKey(widgetWrite, partial)))()
     },
     cancel() {
       for (const throttled of throttledToasts.values()) throttled.cancel()
