@@ -6,7 +6,7 @@ import { CONTROL_OPTIONS } from '@/types/simplifiedWidget'
 import {
   addValueControlWidget,
   addValueControlWidgets
-} from '@/scripts/widgets'
+} from '@/scripts/valueControlWidgets'
 
 function intNode() {
   const graph = new LGraph()
