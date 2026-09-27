@@ -703,6 +703,57 @@ describe('reconcileAgentAdapters', () => {
       expect(graph.serialize().nodes).toHaveLength(1)
     })
 
+    /**
+     * Extracted from the PM-1293 node-replacement stack (PR #18150), which is
+     * parked. That stack modelled replacement as a state machine inside the
+     * materializer and its tests assert that machine's transition table -- an
+     * implementation that is not landing, so the table is not carried over.
+     *
+     * The invariant the machine existed to enforce is carried over: replacing a
+     * node under the same id must not lose what the user can see on it. The
+     * sibling test below already covers widget values and links; the title did
+     * not have an assertion, and it is the field a user is most likely to have
+     * set by hand.
+     *
+     * The incumbent title and the replacement payload's title DIFFER on
+     * purpose. An earlier version of this test supplied 'Upscale pass' on both
+     * sides, so a materializer that simply took the replacement payload's title
+     * produced the expected string and the test could not tell preservation from
+     * overwriting -- it passed while proving nothing.
+     *
+     * Making them differ turned it red, so this is `it.fails`: the live title is
+     * NOT preserved, the replacement payload's title wins, and a user who
+     * renamed the node loses the name. That is the same loss the two
+     * `keeps a live rename ...` pins in this file already record under different
+     * triggers (a tab reload, an unrelated reconcile); this one is the
+     * same-id replacement trigger the PM-1293 stack existed to fix.
+     */
+    it.fails('KNOWN GAP: keeps the live title when a replacement payload carries another', () => {
+      const graph = new LGraph()
+      const scope = graphScopeOf(graph)
+      const mutations = remoteMutations(scope)
+      mutations.addNode(
+        { ...nodePayload(1), title: 'Upscale pass' },
+        { ...REMOTE, opId: 'op-1' }
+      )
+      reconcileAgentAdapters(graph)
+      const stale = graph.getNodeById(toNodeId(1))
+      // The user renames the node by hand after it was materialized.
+      if (stale) stale.title = 'My hand-named node'
+
+      mutations.deleteNode(toNodeId(1), [], REMOTE)
+      mutations.addNode(
+        { ...nodePayload(1), title: 'Upscale pass' },
+        { ...REMOTE, opId: 'op-1-again' }
+      )
+
+      expect(reconcileAgentAdapters(graph)).toEqual([toNodeId(1)])
+
+      const replacement = graph.getNodeById(toNodeId(1))
+      expect(replacement).not.toBe(stale)
+      expect(replacement?.title).toBe('My hand-named node')
+    })
+
     it('runs stale-node lifecycle without clearing successor-owned state', () => {
       const graph = new LGraph()
       const scope = graphScopeOf(graph)

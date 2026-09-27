@@ -412,6 +412,12 @@ describe('abortIfUnbound settles delivered ops as undeliverable', () => {
   })
 })
 
+/**
+ * The FakeBridge's `resubscribe` is a bare vi.fn, so a test that wants the
+ * post-reconnect subscribe ack must play the host's part itself: mark the
+ * workflow subscribed again and forward the `doc_subscribed` ok frame the
+ * bridge would have re-emitted.
+ */
 function ackResubscribe(workflowId: string): void {
   bridge().subscribedWorkflowId = workflowId
   bridge().dispatchEvent(
@@ -421,6 +427,41 @@ function ackResubscribe(workflowId: string): void {
   )
 }
 
+/**
+ * Queue-and-replay of an edit made while the connection was down is WANTED
+ * product behaviour, ruled 2026-09-26: "yes we definitely want queued and
+ * replay edits. edits while connection is down should definitely still be
+ * pushed eventually. if adrs are saying otherwise, change the adrs as well."
+ *
+ * That ruling is why the expected failures below are pins on desired behaviour
+ * rather than an argument with a decision. Exactly ONE recorded sentence is in
+ * the way -- CRDT-AUTHORITY-0035 decision 3, "The frontend does not persist or
+ * re-send operations dropped as `undeliverable`" -- and it is being amended
+ * rather than obeyed. It is `Status: Proposed` and agent-authored (#18064).
+ * Do not delete these pins to reconcile the suite with that clause.
+ *
+ * CRDT-WRITE-0035 is NOT in the way and needs no reversal: it already holds a
+ * delete minted before a tab switch and delivers it on return, which is this
+ * same direction. What it rejects is "a retry queue that resends undeliverable
+ * ops when the workflow rebinds", because that "duplicates the sender's
+ * ordering and never-re-mint rules outside the module that owns them" -- a
+ * PLACEMENT objection protecting FORECLOSE #7 (never regenerate `op_id` on
+ * retry) and KEEP-ALIVE #2 (the creator mints `op_id` once). It stands, and the
+ * pin below on id retention is what holds us to it: retention belongs inside
+ * `opSender`, not in a second queue beside it.
+ *
+ * What has to change is smaller than "add a queue": the sender's five retries
+ * 500 ms apart are a DELIVERY budget where the ruling wants a RETENTION budget.
+ * Stop `undeliverable` being terminal.
+ *
+ * SCOPE, because the pins are narrower than the product property and the two
+ * are easy to conflate. Everything below lives inside ONE page session: the
+ * socket drops, the retry budget runs out, the socket returns. Surviving a
+ * RELOAD is a strictly stronger property that needs persistence, which is what
+ * the parked human-op outbox stack (#18510, #18519, #18533, #18537, #18538,
+ * #18545) was actually built for. Nothing here asserts it, and no pin here
+ * should be read as covering it.
+ */
 describe('a human edit made while the document connection is down', () => {
   const RETRY_INTERVAL_MS = 500
   const RETRY_BUDGET_MS = 5 * RETRY_INTERVAL_MS
@@ -437,6 +478,13 @@ describe('a human edit made while the document connection is down', () => {
     vi.useFakeTimers()
   })
 
+  /**
+   * Characterization of today, NOT a desired property. Under the ruling above
+   * this behaviour is the defect: the budget is a delivery budget, so the batch
+   * is dropped rather than retained. When retention lands this test goes red and
+   * the three pins below go green, in the same change. Do not "fix" it by
+   * relaxing the assertion.
+   */
   it('is abandoned once the retry budget runs out, and nothing retains it', async () => {
     const { enqueue } = mountFollower('wf-a')
     clientState.transportUp = false
@@ -479,5 +527,88 @@ describe('a human edit made while the document connection is down', () => {
     apiState.target.dispatchEvent(new Event('reconnected'))
     expect(bridge().resubscribe).toHaveBeenCalledTimes(1)
     expect(clientState.sent).toHaveLength(0)
+  })
+
+  /**
+   * Three pins, one property each, because `it.fails` passes on the FIRST
+   * failing assertion and abandons the rest of the body. Bundled, the delivery
+   * assertion fails while `sent` is still empty, so an id or duplicate check
+   * behind it never executes -- and an implementation that delivered the op
+   * while re-minting its `op_id` would still report as an expected failure,
+   * hiding a FORECLOSE #7 violation behind a green run. Split, each property
+   * fails and gets fixed on its own name.
+   *
+   * Stated rather than papered over: nothing is delivered at all today, so pins
+   * 2 and 3 currently fail for pin 1's reason and cannot yet reach their own
+   * subject. That is why they are separate names now -- when delivery lands,
+   * each one starts reporting on the property it is named for instead of one
+   * masking the other two.
+   *
+   * All three are same-page-session: socket drop, budget exhaustion, socket
+   * return. None asserts survival across a reload; see the describe docstring.
+   */
+  it.fails('KNOWN GAP: still reaches the host after reconnect, in the same session', async () => {
+    const { enqueue } = mountFollower('wf-a')
+    clientState.transportUp = false
+
+    await enqueue([deleteNode('edited-during-outage')])
+    vi.advanceTimersByTime(RETRY_BUDGET_MS)
+
+    clientState.transportUp = true
+    apiState.target.dispatchEvent(new Event('reconnected'))
+    ackResubscribe('wf-a')
+
+    // Delivered, toward the workflow it was minted against. The ONLY
+    // assertion in this body, so this is the property that fails.
+    expect(clientState.sent).toMatchObject([{ workflowId: 'wf-a' }])
+  })
+
+  it.fails('KNOWN GAP: that replay carries the op_id it was minted with', async () => {
+    const { enqueue } = mountFollower('wf-a')
+    clientState.transportUp = false
+
+    await enqueue([deleteNode('edited-during-outage')])
+    vi.advanceTimersByTime(RETRY_BUDGET_MS)
+    const operationId = clientState.attempts[0].ops[0].op_id
+
+    clientState.transportUp = true
+    apiState.target.dispatchEvent(new Event('reconnected'))
+    ackResubscribe('wf-a')
+
+    // Re-minting would defeat the applier's op_id dedupe and let a replay
+    // apply the edit a second time (FORECLOSE #7). Retention has to live in
+    // the module that owns minting, which is why CRDT-WRITE-0035's rejection
+    // of a queue beside the sender still stands.
+    expect(clientState.sent[0]?.ops[0]).toMatchObject({
+      op_id: operationId,
+      op: 'delete_node',
+      node_id: 'edited-during-outage'
+    })
+  })
+
+  it.fails('KNOWN GAP: that replay happens exactly once, not on every later reconnect', async () => {
+    const { enqueue } = mountFollower('wf-a')
+    clientState.transportUp = false
+
+    await enqueue([deleteNode('edited-during-outage')])
+    vi.advanceTimersByTime(RETRY_BUDGET_MS)
+    const operationId = clientState.attempts[0].ops[0].op_id
+
+    clientState.transportUp = true
+    apiState.target.dispatchEvent(new Event('reconnected'))
+    ackResubscribe('wf-a')
+
+    // The host applies the replay, then the socket drops again. A retained
+    // batch that is never retired would go out a second time.
+    dispatchOpsResult({
+      workflowId: 'wf-a',
+      ok: true,
+      applied: [operationId],
+      skipped: []
+    })
+    apiState.target.dispatchEvent(new Event('reconnected'))
+    ackResubscribe('wf-a')
+
+    expect(clientState.sent).toHaveLength(1)
   })
 })
