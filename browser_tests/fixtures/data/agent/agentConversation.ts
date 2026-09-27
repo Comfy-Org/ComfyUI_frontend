@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 import { FROZEN_OPS } from '@comfyorg/comfy-multi-player'
@@ -263,9 +263,9 @@ export function assertOpsApply(conversation: AgentConversation): HostDoc {
 }
 
 export function loadAgentConversation(caseId: string): AgentConversation {
-  const file = fileURLToPath(
-    new URL(`./conversations/${caseId}.json`, import.meta.url)
-  )
+  const recorded = new URL(`./conversations/${caseId}.json`, import.meta.url)
+  const synthesized = new URL(`./synthesized/${caseId}.json`, import.meta.url)
+  const file = fileURLToPath(existsSync(recorded) ? recorded : synthesized)
   const conversation = zAgentConversation.parse(
     JSON.parse(readFileSync(file, 'utf-8'))
   )
