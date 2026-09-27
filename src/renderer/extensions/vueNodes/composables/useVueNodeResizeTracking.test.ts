@@ -399,7 +399,8 @@ describe('useVueNodeResizeTracking', () => {
       // entry while hidden (e.g. a layout pass unrelated to either node's
       // own content), even though only the touched node's autogrow widget
       // is actually mid-resize.
-      if (!testState.visibility) throw new Error('visibility ref not initialized')
+      if (!testState.visibility)
+        throw new Error('visibility ref not initialized')
       testState.visibility.value = 'hidden'
       await nextTick()
 
