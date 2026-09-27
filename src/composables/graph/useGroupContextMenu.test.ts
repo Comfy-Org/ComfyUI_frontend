@@ -1,15 +1,18 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
+import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useGroupContextMenu } from '@/composables/graph/useGroupContextMenu'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/litegraph'
 import {
   LGraph,
   LGraphCanvas,
+  LGraphEventMode,
   LGraphGroup,
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import {
   createMockCanvasRenderingContext2D,
@@ -90,6 +93,10 @@ describe('useGroupContextMenu', () => {
     const canvas = createTestCanvas(graph, createMockCanvasRenderingContext2D())
     const targetGroup = new LGraphGroup('Target')
     const node = new LGraphNode('Selected node')
+    targetGroup._bounding.set([100, 100, 500, 500])
+    node.pos = [200, 200]
+    node.size = [100, 100]
+    node.updateArea()
     graph.add(targetGroup)
     graph.add(node)
     mockGetCanvasContextMenuTarget.mockReturnValue({ group: targetGroup })
@@ -133,6 +140,20 @@ describe('useGroupContextMenu', () => {
       expect(canvas.groupSelectChildren).toBe(cascade)
     }
   )
+
+  it('refreshes group contents for commands after selecting only the group', () => {
+    const { canvas, node } = createRealCanvasHarness()
+    const canvasStore = useCanvasStore()
+    canvasStore.canvas = canvas
+    onTestFinished(() => {
+      canvasStore.canvas = null
+    })
+
+    canvas.processContextMenu(undefined, event)
+    useSelectedLiteGraphItems().toggleSelectedNodesMode(LGraphEventMode.NEVER)
+
+    expect(node.mode).toBe(LGraphEventMode.NEVER)
+  })
 
   it('preserves selected nodes when select-only mode rejects the group', () => {
     const { canvas, node } = createRealCanvasHarness()

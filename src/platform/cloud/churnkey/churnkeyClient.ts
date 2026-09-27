@@ -3,6 +3,7 @@ import { createScriptLoader } from '@comfyorg/shared-frontend-utils/loadExternal
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
+import { reportError } from '@/platform/telemetry/reportError'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { toError } from '@/utils/errorUtil'
 
@@ -10,7 +11,8 @@ import type {
   ChurnkeyHandlerResult,
   ChurnkeyInit,
   ChurnkeyInitConfig,
-  ChurnkeySessionResults
+  ChurnkeyOfferConfig,
+  ChurnkeySessionOutcome
 } from './types'
 
 const EMBED_SCRIPT_URL = 'https://assets.churnkey.co/js/app.js'
@@ -41,8 +43,13 @@ export interface ChurnkeyShowOptions {
 }
 
 export interface ChurnkeySession {
-  show: (options: ChurnkeyShowOptions) => Promise<ChurnkeySessionResults>
+  show: (options: ChurnkeyShowOptions) => Promise<ChurnkeySessionOutcome>
 }
+
+type RetentionState =
+  | { type: 'undecided' }
+  | { type: 'discounted' }
+  | { type: 'cancelling'; cancellation: Promise<ChurnkeyHandlerResult> }
 
 function rejectUnsupportedOffer(): Promise<never> {
   return Promise.reject(
@@ -55,11 +62,12 @@ function createSession(
   auth: ChurnkeyAuthResponse,
   configuredAppId: string
 ): ChurnkeySession {
+  const offerSubscriptionId = auth.offer_subscription_id
   return {
     show: (options) =>
-      new Promise<ChurnkeySessionResults>((resolve, reject) => {
+      new Promise<ChurnkeySessionOutcome>((resolve, reject) => {
         let settled = false
-        let pendingCancellation: Promise<ChurnkeyHandlerResult> | null = null
+        let retention: RetentionState = { type: 'undecided' }
 
         function settle(fn: () => void) {
           if (settled) return
@@ -68,41 +76,139 @@ function createSession(
           window.churnkey?.clearState?.()
         }
 
+        function handleCancel(
+          surveyResponse?: string | null,
+          freeformFeedback?: string | null
+        ): Promise<ChurnkeyHandlerResult> {
+          switch (retention.type) {
+            case 'discounted':
+              return Promise.reject(
+                new Error(t('subscription.cancelDialog.discountApplied'))
+              )
+            case 'cancelling':
+              return retention.cancellation
+            case 'undecided': {
+              const cancellation = options.handleCancel(
+                surveyResponse,
+                freeformFeedback
+              )
+              retention = { type: 'cancelling', cancellation }
+              return cancellation
+            }
+          }
+        }
+
+        function settleAfterCancellation(
+          cancellation: Promise<ChurnkeyHandlerResult>,
+          outcome: ChurnkeySessionOutcome
+        ) {
+          void cancellation.then(
+            () => settle(() => resolve(outcome)),
+            (error) => settle(() => reject(toError(error)))
+          )
+        }
+
+        function recordDiscount() {
+          if (settled) return
+          switch (retention.type) {
+            case 'undecided':
+              retention = { type: 'discounted' }
+              return
+            case 'discounted':
+              return
+            case 'cancelling':
+              reportError(
+                new Error('Churnkey applied a discount during cancellation'),
+                {
+                  errorType:
+                    'error_applying_churnkey_discount_during_cancellation'
+                }
+              )
+              return
+            default: {
+              const unreachable: never = retention
+              return unreachable
+            }
+          }
+        }
+
+        const offerConfig: ChurnkeyOfferConfig = offerSubscriptionId
+          ? {
+              subscriptionId: offerSubscriptionId,
+              onDiscount: recordDiscount,
+              customerAttributes: { nativeOfferEligible: true }
+            }
+          : {
+              handleDiscount: rejectUnsupportedOffer,
+              customerAttributes: { nativeOfferEligible: false }
+            }
+
         const config: ChurnkeyInitConfig = {
           appId: configuredAppId,
           authHash: auth.auth_hash,
           customerId: auth.customer_id,
           provider: 'stripe',
           mode: auth.mode,
-          handleCancel: (_customer, surveyResponse, freeformFeedback) => {
-            pendingCancellation = options.handleCancel(
-              surveyResponse,
-              freeformFeedback
-            )
-            return pendingCancellation
-          },
+          handleCancel: (_customer, surveyResponse, freeformFeedback) =>
+            handleCancel(surveyResponse, freeformFeedback),
           handlePause: rejectUnsupportedOffer,
-          handleDiscount: rejectUnsupportedOffer,
+          ...offerConfig,
           handleTrialExtension: rejectUnsupportedOffer,
           handlePlanChange: rejectUnsupportedOffer,
           handleRebate: rejectUnsupportedOffer,
           handleRedirect: rejectUnsupportedOffer,
           onClose: (results) => {
-            if (!pendingCancellation) {
-              settle(() => resolve(results))
-              return
+            const closedOutcome: ChurnkeySessionOutcome = {
+              type: results.aborted === true ? 'abandoned' : 'closed'
             }
-            void pendingCancellation.then(
-              () => settle(() => resolve(results)),
-              (error) => settle(() => reject(toError(error)))
-            )
+            switch (retention.type) {
+              case 'undecided':
+                settle(() => resolve(closedOutcome))
+                return
+              case 'discounted':
+                settle(() => resolve({ type: 'discount-applied' }))
+                return
+              case 'cancelling':
+                settleAfterCancellation(retention.cancellation, closedOutcome)
+                return
+              default: {
+                const unreachable: never = retention
+                return unreachable
+              }
+            }
           },
           onError: (error, type) => {
             if (settled) return
-            settled = true
             window.churnkey?.hide?.()
-            reject(churnkeyError(error, type))
-            queueMicrotask(() => window.churnkey?.clearState?.())
+            switch (retention.type) {
+              case 'undecided':
+                settled = true
+                reject(churnkeyError(error, type))
+                queueMicrotask(() => window.churnkey?.clearState?.())
+                return
+              case 'discounted':
+                settled = true
+                resolve({ type: 'discount-applied' })
+                reportError(error, {
+                  errorType: 'error_displaying_churnkey_after_discount',
+                  context: { churnkeyErrorType: type }
+                })
+                queueMicrotask(() => window.churnkey?.clearState?.())
+                return
+              case 'cancelling':
+                reportError(error, {
+                  errorType: 'error_displaying_churnkey_during_cancellation',
+                  context: { churnkeyErrorType: type }
+                })
+                settleAfterCancellation(retention.cancellation, {
+                  type: 'closed'
+                })
+                return
+              default: {
+                const unreachable: never = retention
+                return unreachable
+              }
+            }
           }
         }
 

@@ -170,6 +170,7 @@ catalog:
   zod-validation-error: ^3.3.0
   '@datadog/browser-logs': 6.33.0
   '@comfyorg/comfy-multi-player': 0.3.6
+  typescript-native-bridge: 6.0.3-bridge.17.tsgo.7.0.2
 
 cleanupUnusedCatalogs: true
 
@@ -211,3 +212,6 @@ overrides:
 minimumReleaseAgeExclude:
   - '@comfyorg/comfyui-desktop-bridge-types@0.2.0'
   - '@comfyorg/comfy-multi-player@0.3.6'
+
+patchedDependencies:
+  '@total-typescript/shoehorn@0.1.2': patches/@total-typescript__shoehorn@0.1.2.patch

@@ -11,7 +11,8 @@ import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type {
   BillingTelemetryEvent,
   BootstrapCompleteMetadata,
-  OnboardingTourStage
+  OnboardingTourStage,
+  RunButtonProperties
 } from '../../types'
 import { TelemetryEvents } from '../../types'
 
@@ -52,6 +53,7 @@ const hoisted = vi.hoisted(() => {
     mockRegister,
     mockReset,
     executionContext,
+    agentPanelOpen: false,
     refs,
     mockPosthog: {
       default: {
@@ -76,9 +78,37 @@ vi.mock(import('@/platform/telemetry/utils/getExecutionContext'), () => ({
   getExecutionContext: () => hoisted.executionContext
 }))
 
+vi.mock(import('@/platform/telemetry/utils/getAgentPanelOpen'), () => ({
+  getAgentPanelOpen: () => hoisted.agentPanelOpen
+}))
+
 vi.mock(import('@/composables/billing/useBillingContext'))
 
 import { PostHogTelemetryProvider } from './PostHogTelemetryProvider'
+
+/** A complete run-button payload; override only what a test cares about. */
+function runButtonProperties(
+  overrides: Partial<RunButtonProperties> = {}
+): RunButtonProperties {
+  return {
+    subscribe_to_run: false,
+    workflow_type: 'template',
+    workflow_name: 'image_qwen_image_edit_2509',
+    custom_node_count: 2,
+    total_node_count: 4,
+    subgraph_count: 0,
+    has_api_nodes: true,
+    api_node_names: ['OpenAIImageNode'],
+    has_toolkit_nodes: true,
+    toolkit_node_names: ['LoadImage'],
+    trigger_source: 'keybinding',
+    view_mode: 'graph',
+    is_app_mode: false,
+    dock_state: 'docked',
+    agent_panel_open: false,
+    ...overrides
+  }
+}
 
 function createProvider(
   config: Partial<typeof window.__CONFIG__> = {}
@@ -546,22 +576,7 @@ describe('PostHogTelemetryProvider', () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()
 
-      provider.trackRunButton({
-        subscribe_to_run: false,
-        workflow_type: 'template',
-        workflow_name: 'image_qwen_image_edit_2509',
-        custom_node_count: 2,
-        total_node_count: 4,
-        subgraph_count: 0,
-        has_api_nodes: true,
-        api_node_names: ['OpenAIImageNode'],
-        has_toolkit_nodes: true,
-        toolkit_node_names: ['LoadImage'],
-        trigger_source: 'keybinding',
-        view_mode: 'graph',
-        is_app_mode: false,
-        dock_state: 'docked'
-      })
+      provider.trackRunButton(runButtonProperties())
       provider.trackWorkflowExecution()
 
       expect(hoisted.mockCapture).toHaveBeenCalledWith(
@@ -569,6 +584,7 @@ describe('PostHogTelemetryProvider', () => {
         {
           ...hoisted.executionContext,
           trigger_source: 'keybinding',
+          agent_panel_open: false,
           event_source: 'web-sdk'
         }
       )
@@ -580,8 +596,47 @@ describe('PostHogTelemetryProvider', () => {
         {
           ...hoisted.executionContext,
           trigger_source: 'unknown',
+          agent_panel_open: false,
           event_source: 'web-sdk'
         }
+      )
+    })
+
+    // Two executions rather than one: a provider that sampled the panel once
+    // and reused the answer would still satisfy the carry-over case below.
+    it('samples the panel state afresh for each execution', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      hoisted.agentPanelOpen = true
+      provider.trackWorkflowExecution()
+
+      expect(hoisted.mockCapture).toHaveBeenLastCalledWith(
+        TelemetryEvents.EXECUTION_START,
+        expect.objectContaining({ agent_panel_open: true })
+      )
+
+      hoisted.agentPanelOpen = false
+      provider.trackWorkflowExecution()
+
+      expect(hoisted.mockCapture).toHaveBeenLastCalledWith(
+        TelemetryEvents.EXECUTION_START,
+        expect.objectContaining({ agent_panel_open: false })
+      )
+    })
+
+    it('does not carry a panel state from a click that never executed', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+      hoisted.agentPanelOpen = true
+      provider.trackRunButton(runButtonProperties({ agent_panel_open: true }))
+
+      hoisted.agentPanelOpen = false
+      provider.trackWorkflowExecution()
+
+      expect(hoisted.mockCapture).toHaveBeenLastCalledWith(
+        TelemetryEvents.EXECUTION_START,
+        expect.objectContaining({ agent_panel_open: false })
       )
     })
 
