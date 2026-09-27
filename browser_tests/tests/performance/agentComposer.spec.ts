@@ -60,8 +60,9 @@ test.describe(
   () => {
     for (const turnCount of [0, 100]) {
       const sessionSize = turnCount === 0 ? 'empty' : 'long'
+      const article = turnCount === 0 ? 'an' : 'a'
 
-      test(`typing with a ${sessionSize} restored conversation`, async ({
+      test(`typing with ${article} ${sessionSize} restored conversation`, async ({
         page,
         agentFlagEnabled
       }) => {
