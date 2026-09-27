@@ -1,7 +1,7 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 
 import { app } from '../app'
-import { $el } from '../ui'
+import { $el } from './utils'
 
 export function calculateImageGrid(
   // @ts-expect-error fixme ts strict error

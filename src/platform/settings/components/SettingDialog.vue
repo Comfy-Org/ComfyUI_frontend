@@ -97,7 +97,7 @@ import SettingsPanel from '@/platform/settings/components/SettingsPanel.vue'
 import { useSettingSearch } from '@/platform/settings/composables/useSettingSearch'
 import { useSettingUI } from '@/platform/settings/composables/useSettingUI'
 import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
-import type { SettingTreeNode } from '@/platform/settings/settingStore'
+import type { SettingTreeNode } from '@/platform/settings/composables/useSettingSearch'
 import type {
   ISettingGroup,
   SettingDialogProps,

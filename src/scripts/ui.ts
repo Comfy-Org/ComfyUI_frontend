@@ -15,81 +15,16 @@ import { api } from './api'
 import type { ComfyApp } from './app'
 import { app } from './app'
 import { ComfyDialog as _ComfyDialog } from './ui/dialog'
+import { $el as _$el } from './ui/utils'
 import { ComfySettingsDialog } from './ui/settings'
 import { toggleSwitch } from './ui/toggleSwitch'
 
 export const ComfyDialog = _ComfyDialog
+export const $el = _$el
 
 type Position2D = {
   x: number
   y: number
-}
-
-type Props = {
-  parent?: HTMLElement
-  $?: (el: HTMLElement) => void
-  dataset?: DOMStringMap
-  style?: Partial<CSSStyleDeclaration>
-  for?: string
-  textContent?: string
-  [key: string]: unknown
-}
-
-type Children = Element[] | Element | string | string[]
-
-type ElementType<K extends string> = K extends keyof HTMLElementTagNameMap
-  ? HTMLElementTagNameMap[K]
-  : HTMLElement
-
-export function $el<TTag extends string>(
-  tag: TTag,
-  propsOrChildren?: Children | Props,
-  children?: Children
-): ElementType<TTag> {
-  const split = tag.split('.')
-  const element = document.createElement(split.shift() as string)
-  if (split.length > 0) {
-    element.classList.add(...split)
-  }
-
-  if (propsOrChildren) {
-    if (typeof propsOrChildren === 'string') {
-      propsOrChildren = { textContent: propsOrChildren }
-    } else if (propsOrChildren instanceof Element) {
-      propsOrChildren = [propsOrChildren]
-    }
-    if (Array.isArray(propsOrChildren)) {
-      element.append(...propsOrChildren)
-    } else {
-      const { parent, $: cb, dataset, style, ...rest } = propsOrChildren
-
-      if (rest.for) {
-        element.setAttribute('for', rest.for)
-      }
-
-      if (style) {
-        Object.assign(element.style, style)
-      }
-
-      if (dataset) {
-        Object.assign(element.dataset, dataset)
-      }
-
-      Object.assign(element, rest)
-      if (children) {
-        element.append(...(Array.isArray(children) ? children : [children]))
-      }
-
-      if (parent) {
-        parent.append(element)
-      }
-
-      if (cb) {
-        cb(element)
-      }
-    }
-  }
-  return element as ElementType<TTag>
 }
 
 // @ts-expect-error fixme ts strict error

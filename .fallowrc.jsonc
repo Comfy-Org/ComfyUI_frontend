@@ -72,6 +72,9 @@
       "file": "src/scripts/utils.ts",
       "exports": ["applyTextReplacements", "addStylesheet"]
     },
+    // Public re-export of the ui/utils leaf; the comfyAPI shim only sees
+    // declarations in ui.ts.
+    { "file": "src/scripts/ui.ts", "exports": ["$el"] },
     {
       "file": "src/scripts/ui/imagePreview.ts",
       "exports": ["createImageHost"]
