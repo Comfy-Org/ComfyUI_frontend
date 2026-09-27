@@ -255,12 +255,12 @@ describe('NodeDef Migration', () => {
   })
 
   it('should not transform hidden fields', () => {
-    const plainObject = {
+    const plainObject: NonNullable<ComfyNodeDefV1['input']> = {
       hidden: {
         someHiddenValue: 42,
         anotherHiddenValue: { nested: 'object' }
       }
-    } as ComfyNodeDefV1['input']
+    }
 
     const nodeDef: ComfyNodeDefV1 = {
       name: 'TestNode',
@@ -277,7 +277,6 @@ describe('NodeDef Migration', () => {
 
     const result = transformNodeDefV1ToV2(nodeDef)
 
-    // @ts-expect-error fixme ts strict error
     expect(result.hidden).toEqual(plainObject.hidden)
     expect(result.hidden?.someHiddenValue).toBe(42)
     expect(result.hidden?.anotherHiddenValue).toEqual({ nested: 'object' })

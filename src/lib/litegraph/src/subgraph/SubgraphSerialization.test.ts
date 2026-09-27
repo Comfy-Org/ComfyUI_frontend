@@ -8,6 +8,7 @@ import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
+import { omit } from 'es-toolkit'
 import { afterEach, assert, beforeEach, describe, expect, it } from 'vitest'
 
 import { duplicateSubgraphNodeIds } from '@/lib/litegraph/src/__fixtures__/duplicateSubgraphNodeIds'
@@ -25,6 +26,7 @@ import { toNodeId, UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import { createUuidv4 } from '@/utils/uuid'
 import {
   createTestSubgraph,
+  createTestSubgraphData,
   createTestSubgraphNode,
   resetSubgraphFixtureState
 } from './__fixtures__/subgraphHelpers'
@@ -274,65 +276,42 @@ describe('SubgraphSerialization - Version Compatibility', () => {
   })
 
   it('should load version 1.0+ format', () => {
-    const modernFormat = {
-      version: 1, // Number as expected by current implementation
+    const modernFormat = createTestSubgraphData({
       id: 'test-modern-id',
       name: 'Modern Subgraph',
-      nodes: [],
-      links: {},
-      groups: [],
-      config: {},
-      definitions: { subgraphs: [] },
       inputs: [{ id: 'input-id', name: 'modern_input', type: 'number' }],
       outputs: [{ id: 'output-id', name: 'modern_output', type: 'string' }],
-      inputNode: {
-        id: LEGACY_SUBGRAPH_INPUT_ID,
-        bounding: [0, 0, 120, 60]
-      },
-      outputNode: {
-        id: LEGACY_SUBGRAPH_OUTPUT_ID,
-        bounding: [300, 0, 120, 60]
-      },
-      widgets: []
-    }
+      inputNode: { id: LEGACY_SUBGRAPH_INPUT_ID, bounding: [0, 0, 120, 60] },
+      outputNode: { id: LEGACY_SUBGRAPH_OUTPUT_ID, bounding: [300, 0, 120, 60] }
+    })
 
     expect(() => {
-      // @ts-expect-error Type mismatch in ExportedSubgraph format
       const subgraph = new Subgraph(new LGraph(), modernFormat)
       expect(subgraph.name).toBe('Modern Subgraph')
-      expect(subgraph.inputs.length).toBe(1)
-      expect(subgraph.outputs.length).toBe(1)
+      expect(subgraph.inputs).toHaveLength(1)
+      expect(subgraph.outputs).toHaveLength(1)
       expect(subgraph.inputNode.id).toBe(SUBGRAPH_INPUT_ID)
       expect(subgraph.outputNode.id).toBe(SUBGRAPH_OUTPUT_ID)
     }).not.toThrow()
   })
 
   it('should handle missing fields gracefully', () => {
-    const incompleteFormat = {
-      version: 1,
-      id: 'incomplete-id',
-      name: 'Incomplete Subgraph',
-      nodes: [],
-      links: {},
-      groups: [],
-      config: {},
-      definitions: { subgraphs: [] },
-      inputNode: {
-        id: LEGACY_SUBGRAPH_INPUT_ID,
-        bounding: [0, 0, 120, 60]
-      },
-      outputNode: {
-        id: LEGACY_SUBGRAPH_OUTPUT_ID,
-        bounding: [300, 0, 120, 60]
-      }
-      // Missing optional: inputs, outputs, widgets
-    }
+    const incompleteFormat = omit(
+      createTestSubgraphData({
+        id: 'incomplete-id',
+        name: 'Incomplete Subgraph',
+        inputNode: { id: LEGACY_SUBGRAPH_INPUT_ID, bounding: [0, 0, 120, 60] },
+        outputNode: {
+          id: LEGACY_SUBGRAPH_OUTPUT_ID,
+          bounding: [300, 0, 120, 60]
+        }
+      }),
+      ['inputs', 'outputs', 'widgets']
+    )
 
     expect(() => {
-      // @ts-expect-error Type mismatch in ExportedSubgraph format
       const subgraph = new Subgraph(new LGraph(), incompleteFormat)
       expect(subgraph.name).toBe('Incomplete Subgraph')
-      // Should have default empty arrays
       expect(Array.isArray(subgraph.inputs)).toBe(true)
       expect(Array.isArray(subgraph.outputs)).toBe(true)
       expect(subgraph.inputNode.id).toBe(SUBGRAPH_INPUT_ID)
@@ -342,31 +321,21 @@ describe('SubgraphSerialization - Version Compatibility', () => {
 
   it('should consider future-proofing', () => {
     const futureFormat = {
-      version: 2, // Future version (number)
-      id: 'future-id',
-      name: 'Future Subgraph',
-      nodes: [],
-      links: {},
-      groups: [],
-      config: {},
-      definitions: { subgraphs: [] },
-      inputs: [],
-      outputs: [],
-      inputNode: {
-        id: LEGACY_SUBGRAPH_INPUT_ID,
-        bounding: [0, 0, 120, 60]
-      },
-      outputNode: {
-        id: LEGACY_SUBGRAPH_OUTPUT_ID,
-        bounding: [300, 0, 120, 60]
-      },
-      widgets: [],
-      futureFeature: 'unknown_data' // Unknown future field
+      ...createTestSubgraphData({
+        id: 'future-id',
+        name: 'Future Subgraph',
+        inputNode: { id: LEGACY_SUBGRAPH_INPUT_ID, bounding: [0, 0, 120, 60] },
+        outputNode: {
+          id: LEGACY_SUBGRAPH_OUTPUT_ID,
+          bounding: [300, 0, 120, 60]
+        }
+      }),
+      version: 2,
+      futureFeature: 'unknown_data'
     }
 
-    // Should handle future format gracefully
     expect(() => {
-      // @ts-expect-error Type mismatch in ExportedSubgraph format
+      // @ts-expect-error version 2 is not a known SerialisableGraph version
       const subgraph = new Subgraph(new LGraph(), futureFormat)
       expect(subgraph.name).toBe('Future Subgraph')
       expect(subgraph.inputNode.id).toBe(SUBGRAPH_INPUT_ID)
