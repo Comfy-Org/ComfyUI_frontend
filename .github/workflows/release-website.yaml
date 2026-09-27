@@ -143,6 +143,14 @@ jobs:
         with:
           api_key: ${{ secrets.WEBSITE_CLOUD_API_KEY }}
 
+      # The adopt step left the open PR's copy of this file in the tree. If
+      # the pull failed, that copy is all the PR would carry — and if main has
+      # moved on since the branch was cut, proposing it is a revert of
+      # somebody's commit, in a PR whose stated subject is Ashby.
+      - name: Drop a cloud snapshot this run did not produce
+        if: steps.cloud-nodes.outcome == 'failure'
+        run: git checkout HEAD -- apps/website/src/data/cloud-nodes.snapshot.json
+
       - name: Decide whether a snapshot actually changed
         id: changed
         run: |
@@ -159,6 +167,17 @@ jobs:
           fi
         env:
           BASELINE: ${{ steps.baseline.outputs.digest }}
+
+      # Expected on a manual run; not on a webhook run, where Ashby has just
+      # asserted a posting changed and the job board disagrees. Without this
+      # the two are the same green run, and the 60s wait above can never be
+      # shown to be too short.
+      - name: Note a webhook run that found nothing
+        if: >-
+          inputs.source == 'ashby-webhook' &&
+          steps.changed.outputs.any == 'false'
+        run: |
+          echo "::warning title=Ashby reported a change this run did not see::The job board API returned data matching the committed snapshot, so no PR was opened. Either an earlier run in this burst already captured the change, or the job board trailed the webhook by longer than the wait at the top of this workflow. If this recurs for single, isolated edits, that wait is too short."
 
       - name: Create Pull Request
         if: steps.changed.outputs.any == 'true'
@@ -216,5 +235,5 @@ jobs:
       - name: Fail if the cloud nodes refresh was skipped
         if: steps.cloud-nodes.outcome == 'failure'
         run: |
-          echo "::error title=Cloud nodes snapshot not refreshed::The Comfy Cloud pull failed, so any PR from this run carries Ashby changes only and apps/website/src/data/cloud-nodes.snapshot.json keeps its previous contents. Either the Cloud API is unreachable or WEBSITE_CLOUD_API_KEY is invalid, or the registry-loss guard refused the write because packs lost their registry metadata — the step log says which. For the guard, see 'Refreshing the snapshot' in apps/website/README.md; it is cleared by a local re-run with WEBSITE_ALLOW_REGISTRY_LOSS=1 committed to main, not by re-running this workflow."
+          echo "::error title=Cloud nodes snapshot not refreshed::The Comfy Cloud pull failed, so any PR from this run carries Ashby changes only and apps/website/src/data/cloud-nodes.snapshot.json is left at whatever main holds. Either the Cloud API is unreachable or WEBSITE_CLOUD_API_KEY is invalid, or the registry-loss guard refused the write because packs lost their registry metadata — the step log says which. For the guard, see 'Refreshing the snapshot' in apps/website/README.md; it is cleared by a local re-run with WEBSITE_ALLOW_REGISTRY_LOSS=1 committed to main, not by re-running this workflow."
           exit 1
