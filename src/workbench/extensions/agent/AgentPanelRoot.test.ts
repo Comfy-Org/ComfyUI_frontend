@@ -229,6 +229,7 @@ const clipboard = vi.hoisted(() => ({ copy: vi.fn() }))
 vi.mock(import('@vueuse/core'), { spy: true })
 
 const telemetry = vi.hoisted(() => ({
+  trackAgentOnboardingShown: vi.fn(),
   trackAgentMessageFeedback: vi.fn(),
   trackAgentWorkflowApplied: vi.fn(),
   trackAgentMessageSent: vi.fn(),
