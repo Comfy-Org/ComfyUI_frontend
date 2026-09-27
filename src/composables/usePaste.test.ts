@@ -499,6 +499,25 @@ describe('usePaste', () => {
     expect(createNode).not.toHaveBeenCalled()
   })
 
+  it('leaves the graph alone when another handler claims workflow JSON', () => {
+    usePaste()
+
+    const dataTransfer = new DataTransfer()
+    dataTransfer.setData(
+      'text/plain',
+      JSON.stringify({ version: '1.0', nodes: [], extra: {} })
+    )
+    const event = new ClipboardEvent('paste', {
+      clipboardData: dataTransfer,
+      cancelable: true
+    })
+    event.preventDefault()
+    document.dispatchEvent(event)
+
+    expect(app.loadGraphData).not.toHaveBeenCalled()
+    expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
+  })
+
   it('should handle workflow JSON paste', async () => {
     const workflow = { version: '1.0', nodes: [], extra: {} }
 
