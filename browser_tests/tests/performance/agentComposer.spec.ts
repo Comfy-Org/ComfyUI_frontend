@@ -77,6 +77,14 @@ test.describe(
       await expect(panel.getByTestId('user-message-bubble')).toHaveCount(
         TURN_COUNT
       )
+      const assistantResponses = panel.getByTestId('markdown-stream')
+      await expect(assistantResponses).toHaveCount(TURN_COUNT)
+      await expect(assistantResponses.first()).toContainText(
+        'Turn 1 is complete'
+      )
+      await expect(assistantResponses.last()).toContainText(
+        `Turn ${TURN_COUNT} is complete`
+      )
       await expect(editor).toBeEditable()
 
       const text =
