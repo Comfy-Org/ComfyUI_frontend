@@ -152,13 +152,18 @@ and fetch live, same as production. Refreshing the snapshot is the
 PR, and merging the PR also triggers a production deploy — which is what makes
 it useful during a quiet week with no other website commits.
 
-It runs on three triggers:
+It runs on two triggers:
 
 | Trigger             | When                                              |
 | ------------------- | ------------------------------------------------- |
-| `schedule`          | 05:37 and 17:37 UTC                               |
 | `workflow_dispatch` | A maintainer clicks **Run workflow**              |
 | `workflow_dispatch` | The Ashby webhook fires (`source: ashby-webhook`) |
+
+There is deliberately no `schedule`. A periodic refresh was considered and
+dropped: the live page already tracks Ashby through ordinary deploys (256 in
+one five-week sample), so a cron would only be maintaining the fallback file,
+and it would do so by opening PRs nobody asked for. The webhook covers the
+case the deploy stream does not — an Ashby change during a quiet week.
 
 The webhook receiver lives in [`Comfy-Org/comfy-router`](https://github.com/Comfy-Org/comfy-router)
 (`src/ashby-webhook.js`), which serves `https://comfy.org/api/webhooks/ashby`.
@@ -216,7 +221,7 @@ would not clear the guard.
 
 Each refresh stamps a fresh `fetchedAt`, so `scripts/snapshot-writer.ts` leaves
 the file untouched when that timestamp is the only thing that moved. Without
-that, every scheduled run would open a PR whose whole diff is a timestamp.
+that, every webhook run would open a PR whose whole diff is a timestamp.
 
 The cloud-nodes snapshot needs the same treatment for `downloads` and
 `githubStars`, which the registry moves continuously — across two real
@@ -266,9 +271,15 @@ git commit apps/website/src/data/cloud-nodes.snapshot.json
 
 The script exits non-zero on any non-fresh outcome so stale/empty snapshots
 can't be accidentally committed. Otherwise the `Release: Website` GitHub
-Actions workflow runs the same step on a schedule, on the Ashby webhook, and
-on manual dispatch, opening a PR only when the refreshed data differs from
-what is already proposed. See "Keeping the careers page current" above.
+Actions workflow runs the same step on the Ashby webhook and on manual
+dispatch, opening a PR only when the refreshed data differs from what is
+already proposed. See "Keeping the careers page current" above.
+
+Note that this snapshot therefore refreshes on an Ashby event, which has
+nothing to do with cloud nodes. The coupling is harmless — production fetches
+the Cloud API live on every build, so only the fallback is involved — but if
+this snapshot ever needs refreshing on its own cadence, dispatch the workflow
+or run the script above.
 
 ## Models rollout
 

@@ -68,8 +68,8 @@ or change MP4 URLs to an origin that serves them as `application/octet-stream`.
 
 Pulls the latest job postings from Ashby and writes
 `src/data/ashby-roles.snapshot.json`. Invoked by the `Release: Website`
-GitHub Actions workflow — on a schedule, from the Ashby webhook, or manually —
-and also runnable locally via
+GitHub Actions workflow — from the Ashby webhook or manually — and also
+runnable locally via
 `pnpm --filter @comfyorg/website ashby:refresh-snapshot`.
 
 The write goes through `snapshot-writer.ts`, which leaves the file alone when

@@ -21,9 +21,6 @@ on:
         options:
           - manual
           - ashby-webhook
-  schedule:
-    # 05:37 and 17:37 UTC — evening and mid-morning Pacific.
-    - cron: '37 5,17 * * *'
 
 concurrency:
   group: release-website
@@ -45,8 +42,10 @@ jobs:
       # The webhook fires on the event; the job board API this workflow reads
       # is a separate surface that trails it. Ashby documents no bound on that
       # lag, so this is a guess — if it proves too short the symptom is a run
-      # that fetches pre-change data, writes nothing, and waits for the next
-      # schedule.
+      # that fetches pre-change data, writes nothing, and leaves the committed
+      # snapshot behind until the next Ashby event or manual run. The live
+      # careers page is unaffected either way: it re-fetches Ashby on every
+      # production build.
       - name: Let the Ashby job board catch up
         if: inputs.source == 'ashby-webhook'
         run: sleep 60
@@ -208,7 +207,7 @@ jobs:
 
       # Runs last so the Ashby half is already safely in a PR: the Cloud
       # failure must not cost a role change, but it still has to turn the run
-      # red, or a revoked WEBSITE_CLOUD_API_KEY is a green cron forever.
+      # red, or a revoked WEBSITE_CLOUD_API_KEY is green forever.
       - name: Fail if the cloud nodes refresh was skipped
         if: steps.cloud-nodes.outcome == 'failure'
         run: |

@@ -92,10 +92,11 @@ export function readSnapshot(
 
 /**
  * Every refresh stamps a new `fetchedAt`, so writing unconditionally makes the
- * file differ from HEAD on every run — which, on a schedule, means a pull
- * request whose entire diff is a timestamp. Leaving the file untouched when
- * only the timestamp moved keeps `fetchedAt` meaning "when this content was
- * captured", and keeps scheduled runs silent unless the data actually changed.
+ * file differ from HEAD on every run — which, once a webhook drives the
+ * workflow, means a pull request whose entire diff is a timestamp. Leaving the
+ * file untouched when only the timestamp moved keeps `fetchedAt` meaning "when
+ * this content was captured", and keeps unattended runs silent unless the data
+ * actually changed.
  *
  * `volatileKeys` names fields that drift on their own — download and star
  * counters, say — which would otherwise defeat that just as thoroughly as the

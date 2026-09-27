@@ -322,12 +322,20 @@ const AUTOMATION_AUTHORS = [
   'comfy-pr-bot'
 ]
 
+// release-website.yaml's snapshot refresh, which AUTOMATION_AUTHORS already
+// catches today. Kept as a second route because that one turns on which
+// credential signs the PR: swap PR_GH_TOKEN for github.token and the author
+// becomes github-actions[bot], silently unowned. The workflow applies this
+// label itself.
+const WEBSITE_RELEASE_LABEL = 'release:website'
+
 export function isSheriffPr(pr: PullRequestSummary): boolean {
   const labels = pr.labels.map((label) => label.name.toLowerCase())
   return (
     labels.includes('backport') ||
     pr.title.toLowerCase().startsWith(BACKPORT_TITLE) ||
     labels.includes('release') ||
+    labels.includes(WEBSITE_RELEASE_LABEL) ||
     VERSION_BUMP_BRANCH.test(pr.headRefName) ||
     AUTOMATION_AUTHORS.includes(pr.author?.login ?? '')
   )
@@ -446,6 +454,7 @@ function collectCandidatePrs(): PullRequestSummary[] {
   const found = [
     ...ghPrList(['--label', 'backport']),
     ...ghPrList(['--label', 'Release']),
+    ...ghPrList(['--label', 'Release:Website']),
     ...ghPrList(['--search', 'backport in:title']),
     ...ghPrList(['--search', 'head:version-bump-']),
     ...AUTOMATION_AUTHORS.flatMap((author) =>
