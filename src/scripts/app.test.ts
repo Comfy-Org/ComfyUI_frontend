@@ -40,7 +40,8 @@ import type { NodeReplacement } from '@/platform/nodeReplacement/types'
 import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
 import type { NodeError } from '@/platform/remote/comfyui/types'
 import { ComfyApp, app as singletonApp } from './app'
-import { createNode, isSelectOnly } from '@/utils/litegraphUtil'
+import * as litegraphUtil from '@/utils/litegraphUtil'
+import { createNode } from '@/utils/litegraphUtil'
 import {
   pasteAudioNode,
   pasteAudioNodes,
@@ -122,14 +123,7 @@ vi.mock(
   })
 )
 
-vi.mock(import('@/utils/litegraphUtil'), () => ({
-  createNode: vi.fn(),
-  isImageNode: fromAny(vi.fn()),
-  isVideoNode: fromAny(vi.fn()),
-  isAudioNode: fromAny(vi.fn()),
-  isSelectOnly: vi.fn(() => false),
-  executeWidgetsCallback: vi.fn()
-}))
+vi.mock(import('@/utils/litegraphUtil'))
 
 vi.mock(import('@/composables/usePaste'), () => ({
   pasteAudioNode: vi.fn(),
@@ -3240,7 +3234,7 @@ describe('ComfyApp', () => {
         graph_mouse: [0, 0],
         adjustMouseEvent: vi.fn()
       })
-      vi.mocked(isSelectOnly).mockReturnValue(true)
+      vi.spyOn(litegraphUtil, 'isSelectOnly').mockReturnValue(true)
       const onDragDrop = vi.fn()
       app.dragOverNode = fromPartial({ onDragDrop })
       app['addDropHandler']()

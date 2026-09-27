@@ -935,9 +935,9 @@ export default defineConfig({
         ...LAYER_EDITOR_GPU_COVERAGE_EXCLUDE,
         ...NON_CRITICAL_LITEGRAPH_COVERAGE_EXCLUDE
       ],
-      thresholds: {
-        [CRITICAL_COVERAGE_GLOB]: CRITICAL_COVERAGE_THRESHOLDS
-      }
+      thresholds: process.env.VITEST_SHARD
+        ? undefined
+        : { [CRITICAL_COVERAGE_GLOB]: CRITICAL_COVERAGE_THRESHOLDS }
     },
     exclude: [
       'src/__ecs_matrix__/**',

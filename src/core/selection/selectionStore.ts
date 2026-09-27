@@ -1,5 +1,6 @@
 import { isEqual } from 'es-toolkit'
-import { defineStore } from 'pinia'
+import { defineStore, getActivePinia } from 'pinia'
+import type { Pinia } from 'pinia'
 import { reactive, ref } from 'vue'
 
 import type {
@@ -11,6 +12,11 @@ import type {
   OwningGraphId,
   RootGraphId
 } from '@/types/graphScopeId'
+
+type SelectionRoots = ReadonlyMap<
+  RootGraphId,
+  ReadonlyMap<OwningGraphId, ReadonlySet<SelectableKey>>
+>
 
 export const useSelectionStore = defineStore('selection', () => {
   const roots = reactive(
@@ -95,5 +101,56 @@ export const useSelectionStore = defineStore('selection', () => {
     )
   }
 
-  return { apply, clearRoot, getRevision, selectedKeys, isSelected }
+  const readonlyRoots: SelectionRoots = roots
+
+  return {
+    roots: readonlyRoots,
+    apply,
+    clearRoot,
+    getRevision,
+    selectedKeys,
+    isSelected
+  }
 })
+
+/**
+ * Item `selected` accessors run once per item per frame, so they skip
+ * pinia's store lookup and action wrapper: the store instance is memoized per
+ * active pinia and membership is read straight from its state.
+ */
+type SelectionStore = ReturnType<typeof useSelectionStore>
+
+let memoized: { pinia: Pinia | undefined; store: SelectionStore } | undefined
+
+function selectionStore(): SelectionStore {
+  const pinia = getActivePinia()
+  if (memoized && memoized.pinia === pinia) return memoized.store
+  memoized = { pinia, store: useSelectionStore() }
+  return memoized.store
+}
+
+export function isSelectedIn(
+  scope: GraphScope | undefined,
+  key: SelectableKey
+): boolean {
+  return (
+    scope !== undefined &&
+    (selectionStore()
+      .roots.get(scope.rootGraphId)
+      ?.get(scope.owningGraphId)
+      ?.has(key) ??
+      false)
+  )
+}
+
+export function setSelectedIn(
+  scope: GraphScope | undefined,
+  key: SelectableKey,
+  selected: boolean
+): void {
+  if (!scope) return
+  selectionStore().apply(scope, {
+    type: selected ? 'selection.add' : 'selection.remove',
+    key
+  })
+}

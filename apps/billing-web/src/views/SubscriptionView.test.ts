@@ -66,7 +66,10 @@ const CATALOG: BillingPlansData = {
 const SURFACE_PATH = '/v1/subscription'
 const ENTRY_QUERY = 'product=comfyui&return_to=comfyui_workspace'
 
-async function renderSubscription(options: FakeBillingClientOptions = {}) {
+async function renderSubscription(
+  options: FakeBillingClientOptions = {},
+  entryQuery = ENTRY_QUERY
+) {
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
@@ -79,7 +82,7 @@ async function renderSubscription(options: FakeBillingClientOptions = {}) {
     preview: { status: 'ok', value: previewOf() },
     ...options
   })
-  await router.push(`${SURFACE_PATH}?${ENTRY_QUERY}`)
+  await router.push(`${SURFACE_PATH}?${entryQuery}`)
   await router.isReady()
   render(SubscriptionView, {
     global: {
@@ -152,6 +155,24 @@ describe('SubscriptionView', () => {
     )
   })
 
+  it('drops an entry credit stop the quote did not use', async () => {
+    const fake = await renderSubscription(
+      {},
+      `${ENTRY_QUERY}&team_credit_stop_id=team_200`
+    )
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Choose Creator · Monthly' })
+    )
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Continue to checkout' })
+    )
+
+    expect(fake.router.currentRoute.value.fullPath).toBe(
+      `/v1/checkout?${ENTRY_QUERY}&plan=creator_monthly`
+    )
+  })
+
   it('explains a quote the server will not allow', async () => {
     const fake = await renderSubscription({
       preview: { status: 'ok', value: previewOf({ allowed: false }) }
@@ -205,6 +226,93 @@ describe('SubscriptionView', () => {
       forceRefresh: true
     })
     expect(fake.readPlans).toHaveBeenCalledTimes(2)
+  })
+
+  it('says when a cancelled plan ends, as the server reports it', async () => {
+    await renderSubscription({
+      status: {
+        is_active: true,
+        has_funds: true,
+        max_seats: 1,
+        occupied_seats: 1,
+        scheduled_change: null,
+        team_credit_stop: null,
+        subscription_status: 'canceled',
+        cancel_at: '2026-10-24T12:00:00.000Z'
+      }
+    })
+
+    expect(await screen.findByText('Ends on Oct 24, 2026')).toBeInTheDocument()
+  })
+
+  it('shows the end date once a cancellation lands, without a reload', async () => {
+    const fake = await renderSubscription({
+      capabilities: { can_cancel: true },
+      cancel: { status: 'ok', value: { phase: 'succeeded' } }
+    })
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Cancel subscription' })
+    )
+    expect(screen.queryByText(/^Ends on/)).not.toBeInTheDocument()
+
+    fake.readStatus.mockResolvedValue({
+      status: 'ok',
+      value: {
+        status: {
+          is_active: true,
+          has_funds: true,
+          max_seats: 1,
+          occupied_seats: 1,
+          scheduled_change: null,
+          team_credit_stop: null,
+          cancel_at: '2026-10-24T12:00:00.000Z'
+        },
+        scope: { userId: 'uid-1', workspaceId: 'ws-1', role: 'owner' },
+        readAt: 0
+      }
+    })
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Confirm cancellation' })
+    )
+
+    expect(await screen.findByText('Ends on Oct 24, 2026')).toBeInTheDocument()
+  })
+
+  it('drops the end date once a resubscription lands', async () => {
+    const cancelled = {
+      is_active: true,
+      has_funds: true,
+      max_seats: 1,
+      occupied_seats: 1,
+      scheduled_change: null,
+      team_credit_stop: null,
+      subscription_status: 'canceled',
+      cancel_at: '2026-10-24T12:00:00.000Z'
+    } as const
+    const fake = await renderSubscription({
+      capabilities: { can_reactivate: true },
+      resubscribe: { status: 'ok', value: { phase: 'succeeded' } },
+      status: cancelled
+    })
+    expect(await screen.findByText('Ends on Oct 24, 2026')).toBeInTheDocument()
+
+    const { cancel_at: _, ...active } = cancelled
+    fake.readStatus.mockResolvedValue({
+      status: 'ok',
+      value: {
+        status: { ...active, subscription_status: 'active' },
+        scope: { userId: 'uid-1', workspaceId: 'ws-1', role: 'owner' },
+        readAt: 0
+      }
+    })
+    await userEvent.click(screen.getByRole('button', { name: 'Resubscribe' }))
+
+    expect(
+      await screen.findByText('Your subscription is active again.')
+    ).toBeInTheDocument()
+    await waitFor(() =>
+      expect(screen.queryByText(/^Ends on/)).not.toBeInTheDocument()
+    )
   })
 
   it('keeps the plan when the customer backs out of cancelling', async () => {
@@ -332,6 +440,147 @@ describe('SubscriptionView', () => {
     expect(
       await screen.findByText('There is no active subscription to change.')
     ).toBeInTheDocument()
+  })
+
+  describe('a team plan priced by credit stop', () => {
+    const TEAM_CATALOG: BillingPlansData = {
+      current_plan_slug: undefined,
+      plans: [
+        planOf({
+          slug: 'team_per_credit_monthly',
+          tier: 'TEAM',
+          max_seats: 50n,
+          price_cents: 0n,
+          credits_cents: 0n
+        })
+      ],
+      team_credit_stops: {
+        default_stop_index: 1,
+        stops: [
+          {
+            id: 'team_200',
+            credits: 42_200n,
+            monthly: { list_price_cents: 20_000n, price_cents: 20_000n },
+            yearly: { list_price_cents: 20_000n, price_cents: 20_000n }
+          },
+          {
+            id: 'team_700',
+            credits: 147_700n,
+            monthly: { list_price_cents: 70_000n, price_cents: 66_500n },
+            yearly: { list_price_cents: 70_000n, price_cents: 63_000n }
+          }
+        ]
+      }
+    }
+
+    const TEAM_STATUS = {
+      is_active: true,
+      has_funds: true,
+      max_seats: 50,
+      occupied_seats: 1,
+      scheduled_change: null,
+      team_credit_stop: null
+    }
+
+    it('prices the plan at the stop the server marks as default', async () => {
+      await renderSubscription({
+        plans: { status: 'ok', value: TEAM_CATALOG },
+        status: TEAM_STATUS
+      })
+
+      expect(await screen.findByText('$665.00')).toBeInTheDocument()
+      expect(screen.getByText('147,700 credits a month')).toBeInTheDocument()
+      expect(screen.queryByText('$0.00')).not.toBeInTheDocument()
+      expect(
+        screen.getByRole('combobox', {
+          name: 'Monthly credits for Team · Monthly'
+        })
+      ).toHaveValue('team_700')
+    })
+
+    it('prices the plan at the stop the workspace is subscribed to', async () => {
+      await renderSubscription({
+        plans: { status: 'ok', value: TEAM_CATALOG },
+        status: {
+          ...TEAM_STATUS,
+          team_credit_stop: {
+            id: 'team_200',
+            credits_monthly: 42_200n,
+            stop_usd: 200n
+          }
+        }
+      })
+
+      expect(await screen.findByText('$200.00')).toBeInTheDocument()
+      expect(screen.getByText('42,200 credits a month')).toBeInTheDocument()
+    })
+
+    it('quotes the chosen stop and carries it into checkout', async () => {
+      const fake = await renderSubscription({
+        plans: { status: 'ok', value: TEAM_CATALOG },
+        status: TEAM_STATUS
+      })
+
+      await userEvent.selectOptions(
+        await screen.findByRole('combobox', {
+          name: 'Monthly credits for Team · Monthly'
+        }),
+        'team_200'
+      )
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Choose Team · Monthly' })
+      )
+
+      expect(fake.previewSubscribe).toHaveBeenCalledWith(
+        { planSlug: 'team_per_credit_monthly', teamCreditStopId: 'team_200' },
+        expect.anything()
+      )
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Continue to checkout' })
+      )
+      await waitFor(() =>
+        expect(fake.router.currentRoute.value.query).toMatchObject({
+          plan: 'team_per_credit_monthly',
+          team_credit_stop_id: 'team_200'
+        })
+      )
+    })
+
+    it.for([
+      {
+        ladder: 'is missing',
+        catalog: { ...TEAM_CATALOG, team_credit_stops: undefined }
+      },
+      {
+        ladder: 'has no stop at its default index',
+        catalog: {
+          ...TEAM_CATALOG,
+          team_credit_stops: {
+            default_stop_index: 9,
+            stops: TEAM_CATALOG.team_credit_stops?.stops ?? []
+          }
+        }
+      }
+    ])(
+      'offers no price and no quote when the ladder $ladder',
+      async ({ catalog }) => {
+        const fake = await renderSubscription({
+          plans: { status: 'ok', value: catalog },
+          status: TEAM_STATUS
+        })
+
+        expect(
+          await screen.findByRole('button', { name: 'Choose Team · Monthly' })
+        ).toBeDisabled()
+        expect(
+          screen.getByText(
+            "This plan's pricing isn't available right now. Please try again later."
+          )
+        ).toBeInTheDocument()
+        expect(screen.queryByText('$0.00')).not.toBeInTheDocument()
+        expect(fake.previewSubscribe).not.toHaveBeenCalled()
+      }
+    )
   })
 
   it('explains a failed catalog read with copy of our own', async () => {

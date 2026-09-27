@@ -8,6 +8,7 @@
     :is-loading
     :verification-pending
     :can-submit
+    :theme-key="colorPaletteStore.activePaletteId"
     @confirm="emit('confirm', $event)"
     @submitting-change="emit('submittingChange', $event)"
     @phase="emitPaymentJourneyPhase"
@@ -45,6 +46,7 @@ import {
   getActiveCheckoutJourney,
   toCheckoutJourneyContext
 } from '@/platform/workspace/utils/checkoutJourney'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
 const {
   amountCents,
@@ -73,6 +75,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const telemetry = useTelemetry()
+const colorPaletteStore = useColorPaletteStore()
 
 const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY ?? ''
 

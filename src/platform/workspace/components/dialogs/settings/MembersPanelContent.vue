@@ -1,5 +1,26 @@
 <template>
   <div class="grow overflow-auto pt-6">
+    <!-- Upsell Banner -->
+    <MemberUpsellBanner
+      v-if="
+        !isPlanLoading &&
+        ((isInPersonalWorkspace && maxSeats === 1) || isPlanEnded) &&
+        permissions.canManageSubscription
+      "
+      :variant="
+        isPlanEnded
+          ? isSalesManagedPlan
+            ? 'contactSales'
+            : 'reactivate'
+          : 'upgrade'
+      "
+      :enterprise="isEnterprisePlan"
+      @action="
+        isPlanEnded && isSalesManagedPlan
+          ? handleContactSales()
+          : showTeamPlans()
+      "
+    />
     <div
       class="flex size-full flex-col gap-2 rounded-2xl border border-interface-stroke p-6"
     >
@@ -197,16 +218,6 @@
         </div>
       </div>
     </div>
-    <!-- Upsell Banner -->
-    <MemberUpsellBanner
-      v-if="
-        !isPlanLoading &&
-        ((isInPersonalWorkspace && maxSeats === 1) || isCancelled) &&
-        permissions.canManageSubscription
-      "
-      :reactivate="hasLapsedTeamPlan"
-      @show-plans="showTeamPlans()"
-    />
     <!-- Need More Members Footer -->
     <div v-if="hasMemberSeats" class="flex items-center pt-2">
       <p class="text-sm text-muted-foreground">
@@ -231,6 +242,7 @@ import MemberListItem from '@/platform/workspace/components/dialogs/settings/Mem
 import MemberUpsellBanner from '@/platform/workspace/components/dialogs/settings/MemberUpsellBanner.vue'
 import PendingInvitesList from '@/platform/workspace/components/dialogs/settings/PendingInvitesList.vue'
 import WorkspaceMenuButton from '@/platform/workspace/components/dialogs/settings/WorkspaceMenuButton.vue'
+import { ENTERPRISE_URL } from '@/platform/cloud/subscription/constants/tierPricing'
 import { useMembersPanel } from '@/platform/workspace/composables/useMembersPanel'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -242,9 +254,10 @@ const {
   activeView,
   maxSeats,
   isInPersonalWorkspace,
-  hasLapsedTeamPlan,
+  isPlanEnded,
+  isSalesManagedPlan,
+  isEnterprisePlan,
   hasMemberSeats,
-  isCancelled,
   isPlanLoading,
   hasMultipleMembers,
   showSearch,
@@ -271,5 +284,11 @@ const {
 
 function handleContactUs() {
   window.open(TEAM_PLAN_REQUEST_URL, '_blank', 'noopener,noreferrer')
+}
+
+// The ended-banner action: a sales-managed plan's route back is the
+// enterprise page, not the team-plan request form the footer link uses.
+function handleContactSales() {
+  window.open(ENTERPRISE_URL, '_blank', 'noopener,noreferrer')
 }
 </script>

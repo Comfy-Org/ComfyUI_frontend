@@ -5,6 +5,7 @@ import {
   createSubscriptionHelper,
   withActiveSubscription,
   withFreeTier,
+  withFreeTierEnabled,
   withUnsubscribed
 } from '@e2e/fixtures/helpers/SubscriptionHelper'
 import type { SubscriptionHelper } from '@e2e/fixtures/helpers/SubscriptionHelper'
@@ -29,9 +30,10 @@ function createSubscriptionTest(
         await comfyPage.page.reload()
         // Firebase auth resolves asynchronously after app boot — wait for the
         // user button (v-if="isLoggedIn") before any test body interacts with it.
+        // Note: The 15s timeout accounts for video recording overhead in CI rather than expected load time.
         await expect(
           comfyPage.page.getByTestId(TestIds.user.currentUserButton)
-        ).toBeVisible()
+        ).toBeVisible({ timeout: 15000 })
         // Defense-in-depth: dismiss the dialog if it surfaces via a different code path.
         await helper.dismissSubscriptionDialogIfOpen()
         await use(helper)
@@ -44,7 +46,11 @@ function createSubscriptionTest(
 
 const unsubscribedTest = createSubscriptionTest(withUnsubscribed())
 const subscribedTest = createSubscriptionTest(withActiveSubscription('CREATOR'))
-const freeTierTest = createSubscriptionTest(withFreeTier())
+const freeTierTest = createSubscriptionTest(
+  withFreeTier(),
+  withFreeTierEnabled()
+)
+const freeTierDisabledTest = createSubscriptionTest(withFreeTier())
 
 unsubscribedTest.describe(
   'Subscription buttons — unsubscribed',
@@ -209,6 +215,27 @@ freeTierTest.describe(
         await expect(
           comfyPage.page.getByTestId(TestIds.topbar.subscribeButton)
         ).toBeVisible()
+      }
+    )
+  }
+)
+
+freeTierDisabledTest.describe(
+  'Subscription buttons — free tier disabled',
+  { tag: '@cloud' },
+  () => {
+    freeTierDisabledTest(
+      'SubscribeToRun visible and Topbar subscribe button hidden for free tier disabled',
+      async ({ comfyPage }) => {
+        await expect(
+          comfyPage.page.getByTestId(TestIds.topbar.subscribeToRunButton)
+        ).toBeVisible()
+        await expect(
+          comfyPage.page.getByTestId(TestIds.topbar.subscribeButton)
+        ).toBeHidden()
+        await expect(
+          comfyPage.page.getByTestId(TestIds.topbar.queueButton)
+        ).toBeHidden()
       }
     )
   }

@@ -4,6 +4,8 @@
  * gap (e.g. `Idempotency-Key` missing from `Access-Control-Allow-Headers`)
  * — that is covered by the live test plan, not here.
  */
+import type { BillingOpStatusResponse } from '@comfyorg/ingest-types'
+
 import type { MockCloud } from './fixtures/cloud'
 import { E2E_USER } from './fixtures/env'
 import {
@@ -31,6 +33,9 @@ const test = base.extend<{ stripeFake: void }>({
 })
 
 const CHECKOUT = entryPath('checkout', { plan: 'pro_monthly' })
+
+// Above the 8 s poll backoff cap, well below the 30 s parked cadence.
+const FAST_BACKOFF_DEADLINE_MS = 15_000
 
 /** The only scenarios in this fixture set with a payment method configured. */
 function withEmbeddedPaymentMethod(cloud: MockCloud): void {
@@ -205,6 +210,44 @@ test('a 3DS challenge is driven by the fake and settles as success', async ({
   expect(polls).toBeGreaterThanOrEqual(2)
 })
 
+test('a completed 3DS challenge does not ask to verify again while the server settles', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  withEmbeddedPaymentMethod(cloud)
+  let polls = 0
+  let settled = false
+  cloud.reply('GET', '/billing/ops/op_subscribe', () => {
+    polls += 1
+    return {
+      body: settled
+        ? succeededOperation('op_subscribe')
+        : challengeRequiredOperation('op_subscribe', 'seti_e2e_secret')
+    }
+  })
+  await signIn(CHECKOUT)
+
+  await page.getByRole('button', { name: 'Pay and subscribe' }).click()
+
+  await expect.poll(() => fakeStripeCalls(page, 'nextActions')).toBe(1)
+  const pollsAtChallengeEnd = polls
+  await expect.poll(() => polls).toBeGreaterThan(pollsAtChallengeEnd)
+
+  await expect(
+    page.getByRole('heading', { name: 'Review payment' })
+  ).toBeVisible()
+  await expect(
+    page.getByRole('button', { name: 'Continue verification' })
+  ).toHaveCount(0)
+
+  settled = true
+  await expect(
+    page.getByRole('heading', { name: "You're all set" })
+  ).toBeVisible()
+  expect(await fakeStripeCalls(page, 'nextActions')).toBe(1)
+})
+
 test('a challenge whose authentication state lags the client secret is still driven in-session', async ({
   page,
   cloud,
@@ -215,32 +258,26 @@ test('a challenge whose authentication state lags the client secret is still dri
     'op_subscribe',
     'seti_e2e_secret'
   )
+  const blocked: BillingOpStatusResponse = {
+    ...challenge,
+    phase: 'awaiting_invoice_payment'
+  }
+  const actionless: BillingOpStatusResponse = {
+    ...blocked,
+    authentication_state: 'processing'
+  }
+  const replies = [actionless, actionless, blocked]
   let polls = 0
-  cloud.reply('GET', '/billing/ops/op_subscribe', () => {
-    polls += 1
-    if (polls === 1) {
-      return {
-        body: {
-          ...challenge,
-          phase: 'awaiting_invoice_payment',
-          authentication_state: 'processing'
-        }
-      }
-    }
-    return {
-      body:
-        polls === 2
-          ? { ...challenge, phase: 'awaiting_invoice_payment' }
-          : succeededOperation('op_subscribe')
-    }
-  })
+  cloud.reply('GET', '/billing/ops/op_subscribe', () => ({
+    body: replies[polls++] ?? succeededOperation('op_subscribe')
+  }))
   await signIn(CHECKOUT)
 
   await page.getByRole('button', { name: 'Pay and subscribe' }).click()
 
   await expect(
     page.getByRole('heading', { name: "You're all set" })
-  ).toBeVisible()
+  ).toBeVisible({ timeout: FAST_BACKOFF_DEADLINE_MS })
   expect(await fakeStripeNextActionCalls(page)).toEqual([
     { clientSecret: 'seti_e2e_secret' }
   ])
