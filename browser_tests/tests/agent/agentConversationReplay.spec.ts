@@ -71,11 +71,8 @@ test.describe(
           })
           await expect(images).toHaveCount(2)
 
-          // The "Worked for N seconds" summary is wall-clock and drifts under
-          // SLOW_MO, so it is masked out.
           await expect(agentConversation.panel).toHaveScreenshot(
-            'asset-grid-fragmentation.png',
-            { mask: [agentConversation.summaries] }
+            'asset-grid-fragmentation.png'
           )
         }
       )
