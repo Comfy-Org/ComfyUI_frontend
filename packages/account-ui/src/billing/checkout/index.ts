@@ -22,7 +22,6 @@ export {
   isYearlyCheckout,
   resolveRenewalDate
 } from './checkoutQuote'
-export { default as CheckoutButton } from './CheckoutButton.vue'
 export { default as CheckoutPaymentForm } from './CheckoutPaymentForm.vue'
 export { default as CheckoutSubscribeConfirm } from './CheckoutSubscribeConfirm.vue'
 export { default as CheckoutSuccess } from './CheckoutSuccess.vue'

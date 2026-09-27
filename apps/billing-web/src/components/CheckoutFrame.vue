@@ -20,15 +20,19 @@
         )
       "
     >
-      <CheckoutButton
-        size="icon"
-        variant="muted-textonly"
-        class="absolute top-6 right-4 shrink-0 rounded-full text-text-secondary hover:bg-white/10"
+      <button
+        type="button"
+        :class="
+          cn(
+            buttonVariants({ variant: 'muted-textonly', size: 'icon' }),
+            'absolute top-6 right-4 shrink-0 rounded-full text-text-secondary hover:bg-white/10'
+          )
+        "
         :aria-label="closeLabel"
         @click="emit('close')"
       >
         <i class="pi pi-times text-xl" />
-      </CheckoutButton>
+      </button>
       <slot />
     </div>
   </div>
@@ -42,7 +46,7 @@
  * shared steps sit in the same box in both hosts. `payment` is the wide card
  * capture split; `confirm` and `success` are the narrow column.
  */
-import { CheckoutButton } from '@comfyorg/account-ui/billing/checkout'
+import { buttonVariants } from '@comfyorg/design-system/button.variants'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { step, closeLabel } = defineProps<{

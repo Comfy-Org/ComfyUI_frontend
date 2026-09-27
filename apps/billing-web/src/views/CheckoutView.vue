@@ -9,10 +9,6 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type {
-  SubscribeInput,
-  SubscriptionPreview
-} from '@comfyorg/account-core/billing'
 import {
   useCheckout,
   usePaymentMethods,
@@ -20,10 +16,6 @@ import {
   usePreviewSubscribe
 } from '@comfyorg/account-ui/billing'
 import type { CheckoutPlan } from '@comfyorg/account-ui/billing/checkout'
-import {
-  TIER_CATALOG,
-  toCatalogTierKey
-} from '@comfyorg/account-ui/billing/catalog'
 import {
   CheckoutSubscribeConfirm,
   CheckoutSuccess,
@@ -35,6 +27,12 @@ import {
   buildReturnUrl
 } from '@comfyorg/billing-contract'
 
+import type { PaymentChoice } from '@/checkout/checkoutRequest'
+import {
+  buildSubscribeRequest,
+  teamCheckoutPlan,
+  tierCheckoutPlan
+} from '@/checkout/checkoutRequest'
 import CheckoutFrame from '@/components/CheckoutFrame.vue'
 import CheckoutToast from '@/components/CheckoutToast.vue'
 import { useBilledWorkspace } from '@/composables/useBilledWorkspace'
@@ -195,29 +193,15 @@ const isNewSubscription = computed(
 const checkoutPlan = computed<CheckoutPlan | undefined>(() => {
   const quoted = preview.value
   if (!quoted) return undefined
-  if (teamCreditStopId.value !== undefined) {
-    const monthlyUsd =
-      quoted.new_plan.price_cents /
-      (isAnnualDuration(quoted.new_plan.duration) ? 12 : 1) /
-      100
-    const stop = plans.value?.team_credit_stops?.stops.find(
-      (candidate) => candidate.id === teamCreditStopId.value
-    )
-    return {
-      name: t('checkout.teamPlanName'),
-      monthlyPriceUsd: { monthly: monthlyUsd, yearly: monthlyUsd },
-      monthlyCredits: stop ? Number(stop.credits) : 0,
-      pricedByQuote: false
-    }
-  }
-  const tierKey = toCatalogTierKey(quoted.new_plan.tier)
-  const tier = tierKey === undefined ? undefined : TIER_CATALOG[tierKey]
-  return {
-    name: tierName(quoted.new_plan.tier),
-    monthlyPriceUsd: { monthly: tier?.monthly ?? 0, yearly: tier?.yearly ?? 0 },
-    monthlyCredits: tier?.credits ?? 0,
-    pricedByQuote: true
-  }
+  const stopId = teamCreditStopId.value
+  return stopId === undefined
+    ? tierCheckoutPlan(quoted, tierName(quoted.new_plan.tier))
+    : teamCheckoutPlan(
+        quoted,
+        plans.value?.team_credit_stops,
+        stopId,
+        t('checkout.teamPlanName')
+      )
 })
 
 const currentPlanName = computed(() => {
@@ -386,54 +370,20 @@ function resultUrl(): string | undefined {
   return built.status === 'ok' ? built.url.href : undefined
 }
 
-interface PaymentChoice {
-  readonly confirmationToken?: string
-  readonly savedPaymentMethodId?: string
-  readonly confirmReactivation?: boolean
-}
-
-/**
- * The quote's identity travels with the charge, so the server prices what
- * the customer saw. A card entered here travels as `confirmationToken`; a
- * saved method as its id; a plan change carries neither, and the server
- * charges the method on file.
- */
-function subscribeRequest(
-  plan: string,
-  quoted: SubscriptionPreview,
-  choice: PaymentChoice
-): SubscribeInput {
-  const returnUrl = resultUrl()
-  return {
-    plan_slug: plan,
-    ...(choice.confirmationToken === undefined
-      ? {}
-      : { confirmation_token: choice.confirmationToken }),
-    ...(choice.savedPaymentMethodId === undefined
-      ? {}
-      : { saved_payment_method_id: choice.savedPaymentMethodId }),
-    ...(teamCreditStopId.value === undefined
-      ? {}
-      : { team_credit_stop_id: teamCreditStopId.value }),
-    ...(quoted.quote_id === undefined ? {} : { quote_id: quoted.quote_id }),
-    ...(quoted.quote_version === undefined
-      ? {}
-      : { quote_version: quoted.quote_version }),
-    ...(quoted.promotion_code ? { promotion_code: quoted.promotion_code } : {}),
-    ...(quoted.is_immediate && quoted.proration_at !== undefined
-      ? { proration_at: quoted.proration_at }
-      : {}),
-    ...(returnUrl === undefined ? {} : { return_url: returnUrl }),
-    ...(choice.confirmReactivation ? { confirm_reactivation: true } : {})
-  }
-}
-
 async function pay(choice: PaymentChoice) {
   const quoted = preview.value
   if (planSlug.value === undefined || !quoted || loading.value) return
   submitFailure.value = undefined
   const result = await checkout.subscribe(
-    subscribeRequest(planSlug.value, quoted, choice)
+    buildSubscribeRequest(
+      {
+        planSlug: planSlug.value,
+        teamCreditStopId: teamCreditStopId.value,
+        returnUrl: resultUrl()
+      },
+      quoted,
+      choice
+    )
   )
   if (result.status === 'ok') return
   if (result.code === 'REACTIVATION_CONFIRMATION_REQUIRED') {
