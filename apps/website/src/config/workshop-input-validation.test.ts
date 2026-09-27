@@ -131,6 +131,61 @@ describe('production input validation regressions', () => {
   )
 
   it.for([
+    'xai--grok-imagine-video-reference--animate-images',
+    'xai--grok-imagine-video-1.5-reference--animate-images'
+  ])(
+    'blocks 1080p Grok reference video before uploading for %s',
+    async (slug) => {
+      const { schema, values, contract } = form(slug, { resolution: '1080p' })
+      const errors = validateForm(schema, values)
+      expect(errors).toMatchObject({ resolution: 'badOption' })
+      const upload = vi.fn()
+      await expect(
+        prepareWorkshopRouterInput(
+          contract,
+          values,
+          new AbortController().signal,
+          undefined,
+          upload
+        )
+      ).rejects.toMatchObject({
+        reason: 'validation',
+        fieldErrors: { resolution: 'badOption' }
+      })
+      expect(upload).not.toHaveBeenCalled()
+    }
+  )
+
+  it('blocks 1080p Grok reference video in the raw request editor', async () => {
+    const contract = workshopContract('xai/grok-imagine-video-1.5')
+    assert(contract)
+    const reference = {
+      prompt: 'Animate this reference',
+      reference_images: [{ url: 'https://example.com/reference.png' }]
+    }
+    const prepare = (body: Record<string, unknown>) =>
+      prepareWorkshopRouterInput(
+        contract,
+        { request_body: JSON.stringify(body) },
+        new AbortController().signal
+      )
+
+    await expect(
+      prepare({ ...reference, resolution: '1080p' })
+    ).rejects.toMatchObject({
+      reason: 'validation',
+      fieldErrors: { request_body: 'rejected' }
+    })
+    await expect(
+      prepare({ ...reference, resolution: '720p' })
+    ).resolves.toEqual({ ...reference, resolution: '720p' })
+    await expect(prepare(reference)).resolves.toEqual(reference)
+    await expect(
+      prepare({ prompt: 'A landscape', resolution: '1080p' })
+    ).resolves.toEqual({ prompt: 'A landscape', resolution: '1080p' })
+  })
+
+  it.for([
     { layer_decomposition: true, size: '1024x1024', invalid: true },
     { layer_decomposition: true, size: 'auto', invalid: false },
     { layer_decomposition: true, size: '1.5K', invalid: false },

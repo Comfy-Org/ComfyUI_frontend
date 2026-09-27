@@ -5,9 +5,9 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import AgentConsentCard from '@/workbench/extensions/agent/components/agent/AgentConsentCard.vue'
 
 const MEDIA_BASE = 'https://media.comfy.org/website/comfy-agent'
-const VIDEO_SRC = `${MEDIA_BASE}/agent-consent-1280.webm`
-const VIDEO_SRC_MP4 = `${MEDIA_BASE}/agent-consent-1280.mp4`
-const POSTER_SRC = `${MEDIA_BASE}/agent-consent-poster.jpg`
+const VIDEO_SRC = `${MEDIA_BASE}/agent-consent-v2-1280.webm`
+const VIDEO_SRC_MP4 = `${MEDIA_BASE}/agent-consent-v2-1280.mp4`
+const POSTER_SRC = `${MEDIA_BASE}/agent-consent-v2-poster.jpg`
 
 const paragraphs = [
   enMessages.agent.consent.body1,

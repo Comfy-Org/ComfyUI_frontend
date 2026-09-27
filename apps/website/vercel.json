@@ -94,12 +94,12 @@
     },
     {
       "source": "/zh-CN/cloud/enterprise",
-      "destination": "/enterprise/",
+      "destination": "/zh-CN/enterprise/",
       "permanent": true
     },
     {
       "source": "/zh-CN/cloud/enterprise/",
-      "destination": "/enterprise/",
+      "destination": "/zh-CN/enterprise/",
       "permanent": true
     },
     {

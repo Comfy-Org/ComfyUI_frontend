@@ -8,7 +8,7 @@ export const selectTriggerVariants = cva({
       lg: 'h-10'
     },
     border: {
-      none: 'border-transparent focus-visible:border-node-component-border data-[state=open]:border-node-component-border',
+      none: 'border-transparent focus-visible:border-border-default data-[state=open]:border-border-default',
       active: 'border-base-foreground',
       invalid: 'border-destructive-background'
     }

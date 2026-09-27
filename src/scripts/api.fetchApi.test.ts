@@ -4,26 +4,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
-import type { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@/platform/telemetry'
 import { useAuthStore } from '@/stores/authStore'
 
-const { addBreadcrumb, trackFetchTimeout, trackUnifiedAuthRetry } = vi.hoisted(
-  () => ({
-    addBreadcrumb: vi.fn(),
-    trackFetchTimeout: vi.fn(),
-    trackUnifiedAuthRetry: vi.fn()
-  })
-)
+const { addBreadcrumb } = vi.hoisted(() => ({
+  addBreadcrumb: vi.fn()
+}))
 
 vi.mock(import('@sentry/vue'), () => ({ addBreadcrumb }))
 
-vi.mock(import('@/platform/telemetry'), () => ({
-  useTelemetry: () =>
-    fromPartial<ReturnType<typeof useTelemetry>>({
-      trackFetchTimeout,
-      trackUnifiedAuthRetry
-    })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 // Only the unified-remint regression suite below flips this to `true`; every
 // other test in this file runs the (unaffected) non-cloud path.
@@ -77,15 +67,13 @@ describe('api.fetchApi', () => {
 
   describe('header handling', () => {
     it('should add Comfy-User header with plain object headers', async () => {
-      const mockFetch = vi
-        .mocked(global.fetch)
-        .mockResolvedValue(new Response())
+      vi.mocked(global.fetch).mockResolvedValue(new Response())
 
       await api.fetchApi('/test', {
         headers: {}
       })
 
-      expect(mockFetch).toHaveBeenCalledWith(
+      expect(global.fetch).toHaveBeenCalledWith(
         expect.stringContaining('/test'),
         expect.objectContaining({
           headers: {
@@ -96,35 +84,29 @@ describe('api.fetchApi', () => {
     })
 
     it('should add Comfy-User header with Headers instance', async () => {
-      const mockFetch = vi
-        .mocked(global.fetch)
-        .mockResolvedValue(new Response())
+      vi.mocked(global.fetch).mockResolvedValue(new Response())
       const headers = new Headers()
 
       await api.fetchApi('/test', { headers })
 
-      expect(mockFetch).toHaveBeenCalled()
-      const callHeaders = mockFetch.mock.calls[0][1]?.headers
+      expect(global.fetch).toHaveBeenCalled()
+      const callHeaders = vi.mocked(global.fetch).mock.calls[0][1]?.headers
       expect(callHeaders).toEqual(headers)
     })
 
     it('should add Comfy-User header with array headers', async () => {
-      const mockFetch = vi
-        .mocked(global.fetch)
-        .mockResolvedValue(new Response())
+      vi.mocked(global.fetch).mockResolvedValue(new Response())
       const headers: [string, string][] = []
 
       await api.fetchApi('/test', { headers })
 
-      expect(mockFetch).toHaveBeenCalled()
-      const callHeaders = mockFetch.mock.calls[0][1]?.headers
+      expect(global.fetch).toHaveBeenCalled()
+      const callHeaders = vi.mocked(global.fetch).mock.calls[0][1]?.headers
       expect(callHeaders).toContainEqual(['Comfy-User', 'test-user'])
     })
 
     it('should preserve existing headers when adding Comfy-User', async () => {
-      const mockFetch = vi
-        .mocked(global.fetch)
-        .mockResolvedValue(new Response())
+      vi.mocked(global.fetch).mockResolvedValue(new Response())
 
       await api.fetchApi('/test', {
         headers: {
@@ -133,7 +115,7 @@ describe('api.fetchApi', () => {
         }
       })
 
-      expect(mockFetch).toHaveBeenCalledWith(
+      expect(global.fetch).toHaveBeenCalledWith(
         expect.stringContaining('/test'),
         expect.objectContaining({
           headers: {
@@ -146,9 +128,7 @@ describe('api.fetchApi', () => {
     })
 
     it('should not allow developer-specified headers to be overridden by options', async () => {
-      const mockFetch = vi
-        .mocked(global.fetch)
-        .mockResolvedValue(new Response())
+      vi.mocked(global.fetch).mockResolvedValue(new Response())
 
       await api.fetchApi('/test', {
         headers: {
@@ -156,7 +136,7 @@ describe('api.fetchApi', () => {
         }
       })
 
-      expect(mockFetch).toHaveBeenCalledWith(
+      expect(global.fetch).toHaveBeenCalledWith(
         expect.stringContaining('/test'),
         expect.objectContaining({
           headers: {
@@ -169,13 +149,11 @@ describe('api.fetchApi', () => {
 
   describe('default options', () => {
     it('should set cache to no-cache by default', async () => {
-      const mockFetch = vi
-        .mocked(global.fetch)
-        .mockResolvedValue(new Response())
+      vi.mocked(global.fetch).mockResolvedValue(new Response())
 
       await api.fetchApi('/test')
 
-      expect(mockFetch).toHaveBeenCalledWith(
+      expect(global.fetch).toHaveBeenCalledWith(
         expect.any(String),
         expect.objectContaining({
           cache: 'no-cache'
@@ -184,13 +162,11 @@ describe('api.fetchApi', () => {
     })
 
     it('should include required headers even when no headers option is provided', async () => {
-      const mockFetch = vi
-        .mocked(global.fetch)
-        .mockResolvedValue(new Response())
+      vi.mocked(global.fetch).mockResolvedValue(new Response())
 
       await api.fetchApi('/test')
 
-      expect(mockFetch).toHaveBeenCalledWith(
+      expect(global.fetch).toHaveBeenCalledWith(
         expect.any(String),
         expect.objectContaining({
           headers: expect.objectContaining({
@@ -201,13 +177,11 @@ describe('api.fetchApi', () => {
     })
 
     it('should not override existing cache option', async () => {
-      const mockFetch = vi
-        .mocked(global.fetch)
-        .mockResolvedValue(new Response())
+      vi.mocked(global.fetch).mockResolvedValue(new Response())
 
       await api.fetchApi('/test', { cache: 'force-cache' })
 
-      expect(mockFetch).toHaveBeenCalledWith(
+      expect(global.fetch).toHaveBeenCalledWith(
         expect.any(String),
         expect.objectContaining({
           cache: 'force-cache'
@@ -218,13 +192,11 @@ describe('api.fetchApi', () => {
 
   describe('URL construction', () => {
     it('should use apiURL for route construction', async () => {
-      const mockFetch = vi
-        .mocked(global.fetch)
-        .mockResolvedValue(new Response())
+      vi.mocked(global.fetch).mockResolvedValue(new Response())
 
       await api.fetchApi('/test/route')
 
-      expect(mockFetch).toHaveBeenCalledWith(
+      expect(global.fetch).toHaveBeenCalledWith(
         expect.stringContaining('/api/test/route'),
         expect.any(Object)
       )
@@ -247,11 +219,13 @@ describe('api.fetchApi', () => {
       await vi.advanceTimersByTimeAsync(60_000)
 
       expect(await settled).toMatchObject([fetchTimeoutRejection])
-      expect(trackFetchTimeout).toHaveBeenCalledExactlyOnceWith({
-        route: '/userdata/:resource',
-        method: 'POST',
-        timeout_ms: 60_000
-      })
+      expect(useTelemetry()?.trackFetchTimeout).toHaveBeenCalledExactlyOnceWith(
+        {
+          route: '/userdata/:resource',
+          method: 'POST',
+          timeout_ms: 60_000
+        }
+      )
       expect(addBreadcrumb).toHaveBeenCalledExactlyOnceWith({
         category: 'fetch',
         message: 'Timeout on POST /userdata/:resource',
@@ -268,11 +242,13 @@ describe('api.fetchApi', () => {
       await vi.advanceTimersByTimeAsync(60_000)
 
       expect(await settled).toMatchObject([fetchTimeoutRejection])
-      expect(trackFetchTimeout).toHaveBeenCalledExactlyOnceWith({
-        route: '/other',
-        method: 'GET',
-        timeout_ms: 60_000
-      })
+      expect(useTelemetry()?.trackFetchTimeout).toHaveBeenCalledExactlyOnceWith(
+        {
+          route: '/other',
+          method: 'GET',
+          timeout_ms: 60_000
+        }
+      )
     })
 
     it('normalizes the video metadata endpoint', async () => {
@@ -283,11 +259,13 @@ describe('api.fetchApi', () => {
       await vi.advanceTimersByTimeAsync(60_000)
 
       expect(await settled).toMatchObject([fetchTimeoutRejection])
-      expect(trackFetchTimeout).toHaveBeenCalledExactlyOnceWith({
-        route: '/video_metadata',
-        method: 'GET',
-        timeout_ms: 60_000
-      })
+      expect(useTelemetry()?.trackFetchTimeout).toHaveBeenCalledExactlyOnceWith(
+        {
+          route: '/video_metadata',
+          method: 'GET',
+          timeout_ms: 60_000
+        }
+      )
     })
 
     it('uses a caller-owned 120 second timeout', async () => {
@@ -299,15 +277,17 @@ describe('api.fetchApi', () => {
       const settled = Promise.allSettled([request])
       await vi.advanceTimersByTimeAsync(60_000)
 
-      expect(trackFetchTimeout).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackFetchTimeout).not.toHaveBeenCalled()
 
       await vi.advanceTimersByTimeAsync(60_000)
       expect(await settled).toMatchObject([fetchTimeoutRejection])
-      expect(trackFetchTimeout).toHaveBeenCalledExactlyOnceWith({
-        route: '/upload/:resource',
-        method: 'GET',
-        timeout_ms: 120_000
-      })
+      expect(useTelemetry()?.trackFetchTimeout).toHaveBeenCalledExactlyOnceWith(
+        {
+          route: '/upload/:resource',
+          method: 'GET',
+          timeout_ms: 120_000
+        }
+      )
     })
 
     it('applies the default timeout alongside caller cancellation', async () => {
@@ -319,11 +299,13 @@ describe('api.fetchApi', () => {
       await vi.advanceTimersByTimeAsync(60_000)
 
       expect(await settled).toMatchObject([fetchTimeoutRejection])
-      expect(trackFetchTimeout).toHaveBeenCalledExactlyOnceWith({
-        route: '/assets',
-        method: 'GET',
-        timeout_ms: 60_000
-      })
+      expect(useTelemetry()?.trackFetchTimeout).toHaveBeenCalledExactlyOnceWith(
+        {
+          route: '/assets',
+          method: 'GET',
+          timeout_ms: 60_000
+        }
+      )
     })
 
     it('preserves caller cancellation without timeout telemetry', async () => {
@@ -334,7 +316,7 @@ describe('api.fetchApi', () => {
       controller.abort()
 
       await expect(request).rejects.toMatchObject({ name: 'AbortError' })
-      expect(trackFetchTimeout).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackFetchTimeout).not.toHaveBeenCalled()
       expect(addBreadcrumb).not.toHaveBeenCalled()
     })
 
@@ -417,7 +399,7 @@ describe('api.fetchApi', () => {
         { status: 'fulfilled', value: { status: 200 } }
       ])
       expect(fetchCall).toBe(2)
-      expect(trackFetchTimeout).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackFetchTimeout).not.toHaveBeenCalled()
       expect(addBreadcrumb).not.toHaveBeenCalled()
     })
   })

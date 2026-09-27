@@ -22,6 +22,24 @@ export function rememberShelf(shelf: Shelf, modelHref: string): void {
   }
 }
 
+// A middle, modified or right click opens the model somewhere else, and the
+// visitor stays on the shelf they are standing on.
+export function rememberShelfOnClick(
+  shelf: Shelf,
+  modelHref: string,
+  event: MouseEvent
+): void {
+  if (
+    event.button !== 0 ||
+    event.metaKey ||
+    event.ctrlKey ||
+    event.shiftKey ||
+    event.altKey
+  )
+    return
+  rememberShelf(shelf, modelHref)
+}
+
 // The intent belongs to one navigation. Matching the destination prevents an
 // old shelf from leaking onto a shared link; consuming it prevents a reload or
 // an unrelated later visit from reusing it.

@@ -17,7 +17,7 @@ export const noNewErrorThrow: Rule.RuleModule = {
       ThrowStatement(node) {
         const expression = node.argument
         if (
-          expression?.type !== 'NewExpression' ||
+          expression.type !== 'NewExpression' ||
           expression.callee.type !== 'Identifier' ||
           expression.callee.name !== 'Error' ||
           !context.sourceCode.isGlobalReference(expression.callee)
