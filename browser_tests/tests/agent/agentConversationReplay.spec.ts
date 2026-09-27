@@ -3,6 +3,7 @@ import { expect } from '@playwright/test'
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import { listRecordedConversations } from '@e2e/fixtures/data/agent/agentConversation'
 import { toNodeId } from '@/types/nodeId'
+import { assetPath } from '@e2e/fixtures/utils/paths'
 
 import {
   BYTEDANCE_REFERENCE_NODE_TYPE,
@@ -14,6 +15,11 @@ import { wireAndReopen } from '@e2e/fixtures/utils/minimaxAutogrowReload'
 // A recording whose second turn wires two nodes; the first turn only adds.
 const WIRING_CASE = 'agent-rec-two-turn-dependent-edit'
 const WIDGET_CASE = 'agent-rec-set-widget-existing'
+
+// Synthesized (not a cloud capture, see the fixture's `source.note`), so it
+// lives under conversations/repro/ rather than conversations/ and is
+// deliberately absent from listRecordedConversations() below.
+const ASSET_GRID_CASE = 'repro/pm-1135-asset-grid-fragmentation'
 
 test.describe(
   'Agent conversation replay',
@@ -35,6 +41,39 @@ test.describe(
     // deliberately, with the lead written down, instead of shipped red or
     // quietly neutered. Restore this describe once the toast is explained.
     // Derivation: reports/jobs/call-6.md in the program repo.
+
+    test.describe(`recorded ${ASSET_GRID_CASE}`, () => {
+      test.use({ conversationCase: ASSET_GRID_CASE })
+
+      test(
+        'PM-1135: a captioned batch reply keeps each caption paired with its own asset, even when a tool call splits it across two message deltas, see linear.app/comfyorg/issue/PM-1135',
+        { tag: ['@screenshot'] },
+        async ({ agentConversation, page }) => {
+          test.setTimeout(90_000)
+          await page.route(
+            'https://assets.example/outputs/render_a.png',
+            (route) =>
+              route.fulfill({ path: assetPath('agent/asset-grid-repro-a.png') })
+          )
+          await page.route(
+            'https://assets.example/outputs/render_b.png',
+            (route) =>
+              route.fulfill({ path: assetPath('agent/asset-grid-repro-b.png') })
+          )
+
+          await agentConversation.runTurns()
+
+          const images = agentConversation.panel.getByRole('img', {
+            name: /^render_[ab]\.png$/
+          })
+          await expect(images).toHaveCount(2)
+
+          await expect(agentConversation.panel).toHaveScreenshot(
+            'asset-grid-fragmentation.png'
+          )
+        }
+      )
+    })
 
     test.describe('live widget effects', () => {
       test.use({ conversationCase: WIDGET_CASE })
