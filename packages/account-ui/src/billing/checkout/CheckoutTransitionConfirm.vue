@@ -329,15 +329,19 @@ const bannerTitle = computed(() =>
     : copy.reactivation.title
 )
 const bannerBody = computed(() => {
+  const bodies =
+    nextPaymentDate.value === undefined
+      ? copy.reactivation.withoutRenewalDate
+      : copy.reactivation
   switch (reactivationVariant.value) {
     case 'upgrade':
-      return copy.reactivation.upgradeBody
+      return bodies.upgradeBody
     case 'downgrade':
-      return copy.reactivation.downgradeBody
+      return bodies.downgradeBody
     case 'duration_change':
       return newIsYearly.value
-        ? copy.reactivation.durationChangeBody
-        : copy.reactivation.durationChangeBodyMonthly
+        ? bodies.durationChangeBody
+        : bodies.durationChangeBodyMonthly
     default:
       return ''
   }
@@ -425,42 +429,18 @@ const discounts = computed(() =>
 )
 
 const effectiveDateLabel = computed(() => formatDate(previewData.effective_at))
-// Date.setUTCMonth rolls a day-of-month past the target month's end into the
-// following month (Jan 31 + 1mo => Mar 3); clamp to the target month's last
-// day instead.
-function addUtcMonthsClamped(date: Date, months: number): Date {
-  const year = date.getUTCFullYear()
-  const targetMonthIndex = date.getUTCMonth() + months
-  const lastDayOfTargetMonth = new Date(
-    Date.UTC(year, targetMonthIndex + 1, 0)
-  ).getUTCDate()
-  return new Date(
-    Date.UTC(
-      year,
-      targetMonthIndex,
-      Math.min(date.getUTCDate(), lastDayOfTargetMonth)
-    )
-  )
-}
-// The server's renewal date, the one the summary's renewal line shows. Only a
-// server that sends none falls back to one billing period after activation:
-// the activation date itself would read as "renews today".
+// The server's renewal date, the one the summary's renewal line shows. With
+// none, the notice leaves the renewal clause out rather than guess one.
 const nextPaymentDate = computed(() => {
   const renewsAt = resolveRenewalDate(previewData)
-  if (renewsAt) return formatDate(renewsAt)
-  return formatDate(
-    addUtcMonthsClamped(
-      new Date(previewData.effective_at),
-      newIsYearly.value ? 12 : 1
-    )
-  )
+  return renewsAt ? formatDate(renewsAt) : undefined
 })
 
 const bannerValues = computed(() => ({
   plan: currentPlanName,
   date: cancelAt.value ? formatDate(cancelAt.value) : '',
   newPlan: plan.name,
-  nextDate: nextPaymentDate.value
+  nextDate: nextPaymentDate.value ?? ''
 }))
 
 const confirmTitle = computed(() =>

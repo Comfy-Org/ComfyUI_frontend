@@ -222,26 +222,19 @@ describe('CheckoutTransitionConfirm', () => {
       ).toBeTruthy()
     })
 
-    it.for([
-      ['2026-01-31T00:00:00Z', 'MONTHLY', 'Feb 28, 2026'],
-      ['2024-02-29T00:00:00Z', 'ANNUAL', 'Feb 28, 2025'],
-      ['2026-03-31T00:00:00Z', 'MONTHLY', 'Apr 30, 2026']
-    ] as const)(
-      'clamps the renewal fallback from %s (%s) to %s for a server that sends no renewal date',
-      ([effectiveAt, duration, expected]) => {
-        renderTransition({
-          forceReactivation: true,
-          previewData: upgrade({
-            effective_at: effectiveAt,
-            renewal_at: undefined,
-            new_plan: plan('CREATOR', duration, 3500)
-          })
+    it('leaves the renewal clause out when the quote carries no renewal date', () => {
+      renderTransition({
+        forceReactivation: true,
+        previewData: upgrade({
+          effective_at: '2026-01-31T00:00:00Z',
+          renewal_at: undefined,
+          new_plan: plan('CREATOR', 'MONTHLY', 3500)
         })
-        expect(
-          screen.getByText(/Your Standard was set to end/).textContent
-        ).toContain(`renew on ${expected}`)
-      }
-    )
+      })
+      expect(screen.getByText(/Your Standard was set to end/).textContent).toBe(
+        'Your Standard was set to end on Jul 1, 2026. You will be charged $15.00 today and renew.'
+      )
+    })
 
     it('hides the banner when the preview carries no current plan', () => {
       renderTransition({
