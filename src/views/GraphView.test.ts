@@ -122,6 +122,10 @@ vi.mock<unknown>(
 vi.mock<unknown>(import('@/components/graph/GraphCanvas.vue'), () => stubModule)
 vi.mock<unknown>(import('@/views/LinearView.vue'), () => stubModule)
 vi.mock<unknown>(
+  import('@/platform/settings/components/SettingDialog.vue'),
+  () => stubModule
+)
+vi.mock<unknown>(
   import('@/components/builder/BuilderToolbar.vue'),
   () => stubModule
 )

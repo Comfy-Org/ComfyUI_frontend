@@ -73,6 +73,8 @@ import AssetExportProgressDialog from '@/platform/assets/components/AssetExportP
 import ModelImportProgressDialog from '@/platform/assets/components/ModelImportProgressDialog.vue'
 import DesktopCloudNotificationController from '@/platform/cloud/notification/components/DesktopCloudNotificationController.vue'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
+import SettingDialog from '@/platform/settings/components/SettingDialog.vue'
+import { registerSettingDialogComponent } from '@/platform/settings/composables/useSettingsDialog'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { getShellLayoutSnapshot } from '@/platform/telemetry/utils/getShellLayoutSnapshot'
@@ -236,6 +238,7 @@ useCommandStore().registerCommands(coreCommands)
 useMenuItemStore().registerCoreMenuCommands()
 useKeybindingService().registerCoreKeybindings()
 registerCoreSidebarTabs()
+registerSettingDialogComponent(SettingDialog)
 void useBottomPanelStore().registerCoreBottomPanelTabs()
 
 useQueuePolling()
