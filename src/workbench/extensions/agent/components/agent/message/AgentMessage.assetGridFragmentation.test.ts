@@ -1,6 +1,14 @@
 // @vitest-environment jsdom
 import { render, screen, within } from '@testing-library/vue'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+
+vi.hoisted(() => {
+  globalThis.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+})
 
 import { i18n } from '@/i18n'
 import { toTurnId } from '../../../schemas/agentApiSchema'
