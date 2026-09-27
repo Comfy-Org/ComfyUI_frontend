@@ -2,9 +2,11 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
-test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-  await comfyPage.settings.setSetting('Comfy.NodeSearchBoxImpl', 'v1 (legacy)')
+test.use({
+  initialSettings: {
+    'Comfy.UseNewMenu': 'Disabled',
+    'Comfy.NodeSearchBoxImpl': 'v1 (legacy)'
+  }
 })
 
 test.describe('Record Audio Node', { tag: '@screenshot' }, () => {

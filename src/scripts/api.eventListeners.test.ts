@@ -27,13 +27,11 @@ describe('ComfyApi event listener error isolation', () => {
 
   it('preserves the native `this` binding when invoking listeners', () => {
     const api = new ComfyApi()
-    let receivedThis: unknown
-    api.addEventListener('reconnected', function (this: unknown) {
-      receivedThis = this
-    })
+    const listener = vi.fn()
+    api.addEventListener('reconnected', listener)
     api.dispatchCustomEvent('reconnected')
     // Native EventTarget binds `this` to the target; the wrapper must too.
-    expect(receivedThis).toBe(api)
+    expect(listener.mock.contexts[0]).toBe(api)
   })
 
   it('guards async listener rejections and logs the error object', async () => {

@@ -44,6 +44,7 @@ const teamSubscription: SubscriptionInfo = {
   tier: null,
   duration: 'MONTHLY',
   planSlug: 'team-monthly',
+  scheduledChange: null,
   renewalDate: RENEWAL_DATE,
   endDate: null,
   isCancelled: false,

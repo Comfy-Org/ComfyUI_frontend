@@ -1,6 +1,12 @@
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 
-const STRIPE_RETURN_PARAMS = [
+/**
+ * Stripe appends these on the return leg. They are stripped through
+ * `history.replaceState`, which the router does not observe, so anything that
+ * later writes the router's own query has to drop them too or it puts them —
+ * the client secret included — back in the address bar.
+ */
+export const STRIPE_RETURN_PARAMS = [
   'payment_intent',
   'payment_intent_client_secret',
   'redirect_status'
@@ -37,7 +43,7 @@ export function consumePaymentReturn(): boolean {
  */
 export function paymentReturnUrl(): string {
   const { origin, pathname } = globalThis.location
-  if (origin?.startsWith('https://') || origin?.startsWith('http://')) {
+  if (origin.startsWith('https://') || origin.startsWith('http://')) {
     return `${origin}${pathname}`
   }
   return `${getComfyPlatformBaseUrl()}/payment/success`

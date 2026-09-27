@@ -35,6 +35,13 @@ const sequencedFrame = (
   }
 })
 
+function unsequencedSubscribedFrame() {
+  return {
+    type: 'doc_subscribed',
+    data: { v: 1, workflow_id: 'wf-1', ok: true }
+  }
+}
+
 const docOpsResultFrame = (seq?: unknown) => ({
   type: 'doc_ops_result',
   data: {
@@ -88,6 +95,15 @@ describe('doc frame numeric domains', () => {
       })
     }
   )
+
+  it('accepts doc_subscribed without seq', () => {
+    const frame = parseServerDocFrame(unsequencedSubscribedFrame())
+    expect(frame).toEqual({
+      type: 'doc_subscribed',
+      data: { workflowId: 'wf-1', ok: true }
+    })
+    expect(frame?.data).not.toHaveProperty('seq')
+  })
 
   it.for([-1, 1.5, Number.POSITIVE_INFINITY, Number.NaN, '1'])(
     'omits an invalid doc_ops_result seq while preserving the result: %s',

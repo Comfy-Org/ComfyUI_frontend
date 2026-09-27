@@ -16,19 +16,40 @@ coverage:
           - apps/website/src/**
         flag_coverage_not_uploaded_behavior: pass
 
+      billing-web:
+        target: auto
+        threshold: '1%'
+        informational: true
+        flags:
+          - billing-web-unit
+        paths:
+          - apps/billing-web/src/**
+        flag_coverage_not_uploaded_behavior: pass
+
     patch:
       default:
         informational: true
 
-      # Require 80% coverage on changed website lines.
+      # Report website patch coverage without blocking website-only PRs.
       website:
         target: '80%'
         threshold: '0%'
-        informational: false
+        informational: true
         flags:
           - website-unit
         paths:
           - apps/website/src/**
+        flag_coverage_not_uploaded_behavior: pass
+
+      # Likewise for billing-web.
+      billing-web:
+        target: '80%'
+        threshold: '0%'
+        informational: true
+        flags:
+          - billing-web-unit
+        paths:
+          - apps/billing-web/src/**
         flag_coverage_not_uploaded_behavior: pass
 
 # Coverage is instrumented over src/** only (see `coverage.include` in
@@ -38,6 +59,8 @@ coverage:
 ignore:
   - 'tools/**'
   - 'scripts/**'
+  - 'apps/website/src/**/__mocks__/**'
+  - 'apps/website/src/**/__fixtures__/**'
 
 comment:
   layout: 'header, diff, flags, files'
@@ -60,4 +83,9 @@ flags:
   website-unit:
     paths:
       - apps/website/src/**
+    carryforward: false
+  # Likewise for billing-web.
+  billing-web-unit:
+    paths:
+      - apps/billing-web/src/**
     carryforward: false

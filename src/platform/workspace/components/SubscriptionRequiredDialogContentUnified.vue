@@ -101,6 +101,7 @@
         :authentication-state
         :authentication-error
         :reconciliation-operation-id
+        :parked-checkout-recovery
         :use-payment-element="stripePaymentElementEnabled"
         :saved-methods="savedMethodsForConfirm"
         :selected-saved-method-id="selectedSavedPaymentMethodId"
@@ -126,6 +127,7 @@
         :authentication-state
         :authentication-error
         :reconciliation-operation-id
+        :parked-checkout-recovery
         :use-payment-element="stripePaymentElementEnabled"
         :saved-methods="savedMethodsForConfirm"
         :selected-saved-method-id="selectedSavedPaymentMethodId"
@@ -191,12 +193,14 @@ import UnifiedPricingTable from './UnifiedPricingTable.vue'
 const {
   onClose,
   reason,
+  paymentIntentSource,
   embeddedCheckoutEnabled = false,
   initialPlanMode,
   initialCheckout
 } = defineProps<{
   onClose: () => void
   reason?: PaymentIntentSource
+  paymentIntentSource: PaymentIntentSource | undefined
   embeddedCheckoutEnabled?: boolean
   initialPlanMode?: 'personal' | 'team'
   initialCheckout?: SubscriptionCheckoutSelection
@@ -234,6 +238,7 @@ const {
   authenticationState,
   authenticationError,
   reconciliationOperationId,
+  parkedCheckoutRecovery,
   isPolling,
   isTeamCheckout,
   previewVariant,
@@ -249,7 +254,9 @@ const {
   applyPromotionCode,
   invalidateQuote,
   handleResubscribe
-} = useSubscriptionCheckout(emit, reason, { embeddedCheckoutEnabled })
+} = useSubscriptionCheckout(emit, paymentIntentSource, {
+  embeddedCheckoutEnabled
+})
 
 const savedMethodsForConfirm = computed(() =>
   collectingNewPaymentMethod.value || !selectedSavedPaymentMethodId.value

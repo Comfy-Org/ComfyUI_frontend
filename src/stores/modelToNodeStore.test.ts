@@ -1,7 +1,5 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 
 import {
   ModelNodeProvider,
@@ -76,13 +74,11 @@ const mockNodeDefsByName = Object.fromEntries(
   MOCK_NODE_NAMES.map((name) => [name, createMockNodeDef(name)])
 )
 
-vi.mock('@/stores/nodeDefStore', () => ({
-  useNodeDefStore: vi.fn(() => ({
-    nodeDefsByName: mockNodeDefsByName
-  }))
-}))
-
 describe('useModelToNodeStore', () => {
+  beforeEach(() => {
+    useNodeDefStore().nodeDefsByName = mockNodeDefsByName
+  })
+
   describe('modelToNodeMap', () => {
     it('should initialize as empty', () => {
       const modelToNodeStore = useModelToNodeStore()
@@ -105,7 +101,7 @@ describe('useModelToNodeStore', () => {
 
       const provider = modelToNodeStore.getNodeProvider('checkpoints')
       expect(provider).toBeDefined()
-      expect(provider?.nodeDef?.name).toBe('CheckpointLoaderSimple')
+      expect(provider?.nodeDef.name).toBe('CheckpointLoaderSimple')
       expect(provider?.key).toBe('ckpt_name')
     })
 
@@ -120,7 +116,7 @@ describe('useModelToNodeStore', () => {
       modelToNodeStore.registerDefaults()
 
       const provider = modelToNodeStore.getNodeProvider('checkpoints')
-      expect(provider?.nodeDef?.name).toBe('CheckpointLoaderSimple')
+      expect(provider?.nodeDef.name).toBe('CheckpointLoaderSimple')
     })
 
     it('should trigger lazy registration when called before registerDefaults', () => {
@@ -136,7 +132,7 @@ describe('useModelToNodeStore', () => {
 
       const provider = modelToNodeStore.getNodeProvider('checkpoints/subfolder')
       expect(provider).toBeDefined()
-      expect(provider?.nodeDef?.name).toBe('CheckpointLoaderSimple')
+      expect(provider?.nodeDef.name).toBe('CheckpointLoaderSimple')
     })
 
     it('should return undefined for hierarchical type with unregistered top-level', () => {
@@ -154,7 +150,7 @@ describe('useModelToNodeStore', () => {
         modelToNodeStore.quickRegister('level1', 'UNETLoader', 'key1')
 
         const provider = modelToNodeStore.getNodeProvider('level1')
-        expect(provider?.nodeDef?.name).toBe('UNETLoader')
+        expect(provider?.nodeDef.name).toBe('UNETLoader')
       })
 
       it('should resolve 2-level path to registered parent', () => {
@@ -162,7 +158,7 @@ describe('useModelToNodeStore', () => {
         modelToNodeStore.quickRegister('level1', 'UNETLoader', 'key1')
 
         const provider = modelToNodeStore.getNodeProvider('level1/child')
-        expect(provider?.nodeDef?.name).toBe('UNETLoader')
+        expect(provider?.nodeDef.name).toBe('UNETLoader')
       })
 
       it('should resolve 3-level path to nearest registered ancestor', () => {
@@ -172,7 +168,7 @@ describe('useModelToNodeStore', () => {
 
         // 3 levels: should match level1/level2 (nearest), not level1
         const provider = modelToNodeStore.getNodeProvider('level1/level2/child')
-        expect(provider?.nodeDef?.name).toBe('VAELoader')
+        expect(provider?.nodeDef.name).toBe('VAELoader')
       })
 
       it('should resolve 4-level path to nearest registered ancestor', () => {
@@ -183,7 +179,7 @@ describe('useModelToNodeStore', () => {
 
         // 4 levels: should match a/b/c (nearest), not a/b or a
         const provider = modelToNodeStore.getNodeProvider('a/b/c/d')
-        expect(provider?.nodeDef?.name).toBe('StyleModelLoader')
+        expect(provider?.nodeDef.name).toBe('StyleModelLoader')
       })
 
       it('should skip intermediate unregistered levels', () => {
@@ -193,7 +189,7 @@ describe('useModelToNodeStore', () => {
 
         // 3 levels: a/b not found, falls back to a
         const provider = modelToNodeStore.getNodeProvider('a/b/c')
-        expect(provider?.nodeDef?.name).toBe('UNETLoader')
+        expect(provider?.nodeDef.name).toBe('UNETLoader')
       })
 
       it('should prefer exact match over any fallback', () => {
@@ -202,7 +198,7 @@ describe('useModelToNodeStore', () => {
         modelToNodeStore.quickRegister('a/b/c', 'VAELoader', 'k2')
 
         const provider = modelToNodeStore.getNodeProvider('a/b/c')
-        expect(provider?.nodeDef?.name).toBe('VAELoader')
+        expect(provider?.nodeDef.name).toBe('VAELoader')
       })
 
       it('should return undefined when no ancestor is registered', () => {
@@ -221,7 +217,7 @@ describe('useModelToNodeStore', () => {
         'chatterbox/chatterbox_vc'
       )
       expect(provider).toBeDefined()
-      expect(provider?.nodeDef?.name).toBe('FL_ChatterboxVC')
+      expect(provider?.nodeDef.name).toBe('FL_ChatterboxVC')
       expect(provider?.key).toBe('')
     })
 
@@ -238,7 +234,7 @@ describe('useModelToNodeStore', () => {
         modelToNodeStore.registerDefaults()
 
         const provider = modelToNodeStore.getNodeProvider(modelType)
-        expect(provider?.nodeDef?.name).toBe(expectedNodeName)
+        expect(provider?.nodeDef.name).toBe(expectedNodeName)
         expect(provider?.key).toBe(expectedKey)
       }
     )
@@ -332,10 +328,7 @@ describe('useModelToNodeStore', () => {
   describe('registerNodeProvider', () => {
     it('should not register provider when nodeDef is undefined', () => {
       const modelToNodeStore = useModelToNodeStore()
-      const providerWithoutNodeDef = new ModelNodeProvider(
-        undefined!,
-        'custom_key'
-      )
+      const providerWithoutNodeDef = { nodeDef: undefined, key: 'custom_key' }
 
       modelToNodeStore.registerNodeProvider(
         'custom_type',
@@ -471,18 +464,10 @@ describe('useModelToNodeStore', () => {
     })
 
     it('should not register when nodeDefStore is empty', () => {
-      setActivePinia(createTestingPinia({ stubActions: false }))
-
-      vi.mocked(useNodeDefStore, { partial: true }).mockReturnValue({
-        nodeDefsByName: {}
-      })
+      useNodeDefStore().nodeDefsByName = {}
       const modelToNodeStore = useModelToNodeStore()
       modelToNodeStore.registerDefaults()
       expect(modelToNodeStore.getNodeProvider('checkpoints')).toBeUndefined()
-
-      vi.mocked(useNodeDefStore, { partial: true }).mockReturnValue({
-        nodeDefsByName: mockNodeDefsByName
-      })
     })
   })
 
@@ -494,19 +479,11 @@ describe('useModelToNodeStore', () => {
     })
 
     it('should return empty Record when nodeDefStore is empty', () => {
-      setActivePinia(createTestingPinia({ stubActions: false }))
-
-      vi.mocked(useNodeDefStore, { partial: true }).mockReturnValue({
-        nodeDefsByName: {}
-      })
+      useNodeDefStore().nodeDefsByName = {}
       const modelToNodeStore = useModelToNodeStore()
 
       const result = modelToNodeStore.getRegisteredNodeTypes()
       expect(result).toStrictEqual({})
-
-      vi.mocked(useNodeDefStore, { partial: true }).mockReturnValue({
-        nodeDefsByName: mockNodeDefsByName
-      })
     })
 
     it('should contain node types to resolve widget name', () => {

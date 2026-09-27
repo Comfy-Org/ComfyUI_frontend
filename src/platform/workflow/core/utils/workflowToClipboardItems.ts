@@ -7,10 +7,12 @@ import type {
   SerialisableReroute
 } from '@/lib/litegraph/src/types/serialisation'
 
-type WorkflowGraph = ISerialisedGraph | SerialisableGraph
+type LegacyWorkflowGraph = Omit<ISerialisedGraph, 'links'> & {
+  links?: ISerialisedGraph['links']
+}
 
 export function workflowToClipboardItems(
-  workflow: WorkflowGraph
+  workflow: LegacyWorkflowGraph | SerialisableGraph
 ): ClipboardItems {
   const graph = structuredClone(workflow)
 
@@ -18,7 +20,7 @@ export function workflowToClipboardItems(
     nodes: graph.nodes ?? [],
     groups: (graph.groups ?? []).map((group) => ({
       ...group,
-      id: group.id ?? -1
+      id: group.id
     })),
     reroutes: getReroutes(graph),
     links: getLinks(graph),
@@ -26,42 +28,46 @@ export function workflowToClipboardItems(
   }
 }
 
-function getLinks(graph: WorkflowGraph): SerialisableLLink[] {
+function getLinks(
+  graph: LegacyWorkflowGraph | SerialisableGraph
+): SerialisableLLink[] {
   if (graph.version !== 0.4) return graph.links ?? []
 
+  const presentation = graph.extra?.linkPresentation
   const parentIds = new Map<number, number | undefined>(
-    graph.extra?.linkExtensions?.map(({ id, parentId }) => [
-      Number(id),
+    graph.extra?.linkExtensions?.map(({ id: extensionId, parentId }) => [
+      Number(extensionId),
       parentId
     ])
   )
   return (graph.links ?? []).map(
-    ([
-      id,
-      origin_id,
-      origin_slot,
-      target_id,
-      target_slot,
-      type
-    ]): SerialisableLLink => ({
-      id,
-      origin_id,
-      origin_slot,
-      target_id,
-      target_slot,
-      type,
-      parentId: parentIds.get(id)
-    })
+    ([id, origin_id, origin_slot, target_id, target_slot, type]) => {
+      const link: SerialisableLLink = {
+        id,
+        origin_id,
+        origin_slot,
+        target_id,
+        target_slot,
+        type,
+        parentId: parentIds.get(id)
+      }
+      const entry = presentation?.[id]
+      if (entry?.hidden === true) link.hidden = true
+      if (typeof entry?.label === 'string') link.label = entry.label
+      return link
+    }
   )
 }
 
-function getReroutes(graph: WorkflowGraph): SerialisableReroute[] {
+function getReroutes(
+  graph: LegacyWorkflowGraph | SerialisableGraph
+): SerialisableReroute[] {
   const reroutes =
     graph.version === 0.4 ? graph.extra?.reroutes : graph.reroutes
 
   return (reroutes ?? []).map((reroute) => ({
     ...reroute,
-    linkIds: reroute.linkIds ?? []
+    linkIds: reroute.linkIds
   }))
 }
 

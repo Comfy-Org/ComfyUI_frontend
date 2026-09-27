@@ -1,5 +1,3 @@
-// @vitest-environment jsdom
-
 /* eslint-disable testing-library/no-container, testing-library/no-node-access */
 /* eslint-disable testing-library/prefer-user-event */
 import { fireEvent, render, screen } from '@testing-library/vue'
@@ -15,7 +13,7 @@ import WidgetMarkdown from './WidgetMarkdown.vue'
 import { createMockWidget } from './widgetTestUtils'
 
 // Mock the markdown renderer utility
-vi.mock('@/utils/markdownRendererUtil', () => ({
+vi.mock(import('@/utils/markdownRendererUtil'), () => ({
   renderMarkdownToHtml: vi.fn((markdown: string) => {
     // Simple mock that converts some markdown to HTML
     return markdown

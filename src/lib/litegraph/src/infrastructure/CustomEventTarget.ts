@@ -42,7 +42,7 @@ export interface CustomEventDispatcher<
     type: T,
     detail: EventMap[T]
   ): boolean
-  dispatch<T extends keyof PickNevers<EventMap>>(type: T): boolean
+  dispatch(type: keyof PickNevers<EventMap>): boolean
 }
 
 /**
@@ -98,7 +98,7 @@ export class CustomEventTarget<
     type: T,
     detail: EventMap[T]
   ): boolean
-  dispatch<T extends keyof PickNevers<EventMap>>(type: T): boolean
+  dispatch(type: keyof PickNevers<EventMap>): boolean
   dispatch<T extends keyof EventMap>(type: T, detail?: EventMap[T]) {
     const event = new CustomEvent(type as string, { detail, cancelable: true })
     return super.dispatchEvent(event)

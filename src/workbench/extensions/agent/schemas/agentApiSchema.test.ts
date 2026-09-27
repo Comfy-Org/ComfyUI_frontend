@@ -193,6 +193,30 @@ describe('agentApiSchema contract subtleties', () => {
     ).toBe(false)
   })
 
+  it.for([
+    ['no_funds', 'PAYMENT_REQUIRED'],
+    ['manual_block', 'PAYMENT_REQUIRED'],
+    ['funds_unavailable', 'SERVICE_UNAVAILABLE']
+  ] as const)('accepts the Agent admission reason %s', ([reason, type]) => {
+    expect(
+      zAgentError.safeParse({
+        error: { message: 'actionable message', type, reason }
+      }).success
+    ).toBe(true)
+  })
+
+  it('rejects an unknown Agent admission reason', () => {
+    expect(
+      zAgentError.safeParse({
+        error: {
+          message: 'unknown denial',
+          type: 'PAYMENT_REQUIRED',
+          reason: 'subscription_inactive'
+        }
+      }).success
+    ).toBe(false)
+  })
+
   it('exposes the Agent event types, including the ask lifecycle', () => {
     expect([...AGENT_WS_EVENT_TYPES].sort()).toEqual(
       [
@@ -201,10 +225,32 @@ describe('agentApiSchema contract subtleties', () => {
         'agent_ask_resolved',
         'agent_message_delta',
         'agent_message_done',
+        'agent_message_draft',
         'agent_thinking',
         'agent_tool_call'
       ].sort()
     )
+  })
+
+  it('parses an agent_message_draft frame, including the empty draft that withdraws one', () => {
+    for (const text of ['Here is your video', '']) {
+      const parsed = parseAgentWsEvent({
+        type: 'agent_message_draft',
+        data: { thread_id: 'th-1', message_id: 'message-1', text }
+      })
+      expect(parsed.success).toBe(true)
+    }
+  })
+
+  it('rejects an agent_message_draft frame without a string text', () => {
+    for (const data of [
+      { thread_id: 'th-1', message_id: 'message-1' },
+      { thread_id: 'th-1', message_id: 'message-1', text: 42 }
+    ]) {
+      expect(
+        parseAgentWsEvent({ type: 'agent_message_draft', data }).success
+      ).toBe(false)
+    }
   })
 
   it('parses the additive run-approval ask and resolution contract', () => {

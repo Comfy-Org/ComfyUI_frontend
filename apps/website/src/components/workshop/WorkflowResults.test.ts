@@ -1,0 +1,198 @@
+import userEvent from '@testing-library/user-event'
+import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
+import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { defineComponent, h, shallowRef } from 'vue'
+
+import { createWorkflowApi } from '../../config/workshop-workflow-api'
+import { workflowDetailsBySlug } from '../../config/workshop-workflow-content'
+import { createWorkflowController } from '../../config/workshop-workflow-controller'
+import type { WorkflowState } from '../../config/workshop-workflow-state'
+import { workflowStorage } from '../../config/workshop-workflow-storage'
+import { captureWorkshopEvent } from '../../scripts/posthog'
+import { workshopModelAnalytics } from '../../scripts/workshop-analytics'
+import WorkflowResults from './WorkflowResults.vue'
+
+vi.mock(import('../../scripts/posthog'))
+
+const id = 'bafc696e-e5d4-42f1-9a3d-d01f82a0629b'
+
+function completed(shortUrl: string) {
+  return Response.json({
+    id,
+    status: 'completed',
+    create_time: Date.now(),
+    update_time: Date.now(),
+    outputs: {
+      '18': { images: [{ filename: 'result.png', short_url: shortUrl }] }
+    }
+  })
+}
+
+async function mountResult(trackDelivery = false) {
+  const model = workflowDetailsBySlug.get('workflows/remove-background')
+  assert(model)
+  const state = shallowRef<WorkflowState>({ phase: 'idle' })
+  const fetch = vi
+    .fn<typeof globalThis.fetch>()
+    .mockResolvedValueOnce(Response.json({ prompt_id: id }))
+    .mockResolvedValueOnce(completed('/api/s/expired'))
+  const controller = createWorkflowController({
+    model,
+    api: createWorkflowApi({
+      token: 'session',
+      definition: model.workflow,
+      fetch
+    }),
+    storage: workflowStorage(sessionStorage, 'download-test', model.workflowId),
+    uploadFile: async () => 'input.webp',
+    onChange: (next) => {
+      state.value = next
+    }
+  })
+  onTestFinished(() => controller.dispose())
+  render(
+    defineComponent({
+      setup: () => () =>
+        h(WorkflowResults, {
+          model,
+          state: state.value,
+          exampleIndex: 0,
+          busy: false,
+          statusLabel: '',
+          canStart: true,
+          analytics: trackDelivery
+            ? {
+                ...workshopModelAnalytics(model),
+                attempt_id: 'attempt-1',
+                user_id: 'user-1',
+                workspace_id: 'workspace-1'
+              }
+            : undefined,
+          refreshOutput: controller.refreshOutput
+        })
+    })
+  )
+  await controller.start({ image: 'https://example.com/input.webp' })
+  return { fetch, state, refreshOutput: controller.refreshOutput }
+}
+
+describe('WorkflowResults', () => {
+  it('reports delivery only after the actual generated preview loads and once across link refresh', async () => {
+    const f = await mountResult(true)
+    expect(captureWorkshopEvent).not.toHaveBeenCalled()
+    await fireEvent.load(screen.getByRole('img', { name: 'Output' }))
+    expect(captureWorkshopEvent).toHaveBeenCalledExactlyOnceWith({
+      name: 'delivery_finished',
+      properties: expect.objectContaining({
+        page_type: 'workflow',
+        render_engine: 'cloud',
+        workflow_id: 'workflows/remove-background',
+        attempt_id: 'attempt-1',
+        request_id: id,
+        status: 'succeeded',
+        output_kind: 'image'
+      })
+    })
+    assert(f.state.value.phase === 'settled')
+    const output = f.state.value.observation.outputs[0]
+    assert(output)
+    f.fetch.mockResolvedValueOnce(completed('/api/s/refreshed'))
+    await f.refreshOutput(output.id)
+    await fireEvent.load(screen.getByRole('img', { name: 'Output' }))
+    expect(captureWorkshopEvent).toHaveBeenCalledOnce()
+  })
+
+  it.for(['/api/s/refreshed', '/api/s/expired'])(
+    'refreshes a failed download to %s without losing the loaded preview or submitting another job',
+    async (refreshed) => {
+      const f = await mountResult()
+      const user = userEvent.setup()
+      const download = vi
+        .fn<typeof globalThis.fetch>()
+        .mockResolvedValue(new Response(null, { status: 404 }))
+      vi.stubGlobal('fetch', download)
+      const open = vi.spyOn(window, 'open').mockReturnValue(null)
+      const preview = screen.getByRole('img', { name: 'Output' })
+      const original = preview.getAttribute('src')
+      await fireEvent.load(preview)
+      f.fetch.mockResolvedValueOnce(new Response(null, { status: 503 }))
+
+      await user.click(screen.getByRole('link', { name: 'Download' }))
+      await screen.findByRole('link', { name: 'Refresh download link' })
+      await waitFor(() => expect(f.fetch).toHaveBeenCalledTimes(3))
+      expect(download).toHaveBeenCalledWith(
+        original,
+        expect.objectContaining({ credentials: 'omit' })
+      )
+      expect(open).not.toHaveBeenCalled()
+      expect(preview).toHaveAttribute('src', original)
+      expect(f.state.value.phase).toBe('settled')
+
+      f.fetch.mockResolvedValueOnce(completed(refreshed))
+      await user.click(
+        screen.getByRole('link', { name: 'Refresh download link' })
+      )
+      expect(
+        await screen.findByRole('link', { name: 'Download' })
+      ).toHaveAttribute('href', expect.stringContaining(refreshed))
+      expect(screen.getByRole('img', { name: 'Output' })).toHaveAttribute(
+        'src',
+        expect.stringContaining(refreshed)
+      )
+      expect(
+        f.fetch.mock.calls.map(([url, init]) => [
+          new URL(String(url)).pathname,
+          init?.method
+        ])
+      ).toEqual([
+        ['/api/prompt', 'POST'],
+        [`/api/jobs/${id}`, 'GET'],
+        [`/api/jobs/${id}`, 'GET'],
+        [`/api/jobs/${id}`, 'GET']
+      ])
+    }
+  )
+
+  it('keeps the direct download fallback when the browser cannot fetch the media', async () => {
+    const f = await mountResult()
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn<typeof globalThis.fetch>()
+        .mockRejectedValue(new TypeError('Failed to fetch'))
+    )
+    const open = vi.spyOn(window, 'open').mockReturnValue(null)
+    const url = screen.getByRole('img', { name: 'Output' }).getAttribute('src')
+    await userEvent
+      .setup()
+      .click(screen.getByRole('link', { name: 'Download' }))
+    expect(
+      await screen.findByRole('link', { name: 'Open output' })
+    ).toHaveAttribute('href', url)
+    expect(open).toHaveBeenCalledWith(url, '_blank', 'noopener')
+    expect(f.fetch).toHaveBeenCalledTimes(2)
+    expect(f.state.value.phase).toBe('settled')
+    expect(captureWorkshopEvent).toHaveBeenCalledExactlyOnceWith({
+      name: 'output_download_clicked',
+      properties: expect.objectContaining({
+        page_type: 'workflow',
+        render_engine: 'cloud',
+        output_kind: 'image'
+      })
+    })
+  })
+
+  it('automatically refreshes a failed preview once and keeps manual refresh available', async () => {
+    const f = await mountResult()
+    f.fetch.mockImplementation(async () => completed('/api/s/expired'))
+    await fireEvent.error(screen.getByRole('img', { name: 'Output' }))
+    await waitFor(() => expect(f.fetch).toHaveBeenCalledTimes(3))
+    await fireEvent.error(screen.getByRole('img', { name: 'Output' }))
+    expect(f.fetch).toHaveBeenCalledTimes(3)
+    await userEvent
+      .setup()
+      .click(screen.getByRole('button', { name: 'Refresh download link' }))
+    await waitFor(() => expect(f.fetch).toHaveBeenCalledTimes(4))
+    expect(f.state.value.phase).toBe('settled')
+  })
+})

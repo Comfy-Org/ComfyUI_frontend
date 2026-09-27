@@ -5,5 +5,8 @@
   "type": "module",
   "exports": {
     ".": "./src/comfyRegistryTypes.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
   }
 }

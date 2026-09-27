@@ -5,20 +5,19 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 
 import CloudSignupView from '@/platform/cloud/onboarding/CloudSignupView.vue'
 
-vi.mock('@/composables/auth/useAuthActions', () => ({
-  useAuthActions: () => ({
-    signInWithGoogle: vi.fn(),
-    signInWithGithub: vi.fn(),
-    signUpWithEmail: vi.fn()
+vi.mock(import('@/composables/auth/useAuthActions'))
+
+vi.mock(
+  import('@/platform/cloud/onboarding/composables/usePostAuthRedirect'),
+  () => ({
+    usePostAuthRedirect: () => ({ onAuthSuccess: vi.fn() })
   })
-}))
+)
 
-vi.mock('@/platform/cloud/onboarding/composables/usePostAuthRedirect', () => ({
-  usePostAuthRedirect: () => ({ onAuthSuccess: vi.fn() })
+vi.mock(import('@comfyorg/account-core/webviewDetection'), () => ({
+  isEmbeddedWebView: () => false
 }))
-
-vi.mock('@/base/webviewDetection', () => ({ isEmbeddedWebView: () => false }))
-vi.mock('@/platform/telemetry', () => ({ useTelemetry: () => undefined }))
+vi.mock(import('@/platform/telemetry'))
 
 const inChina = vi.hoisted(() => ({
   value: false,
@@ -39,13 +38,13 @@ const inChina = vi.hoisted(() => ({
     this.pending = Promise.reject(error)
   }
 }))
-vi.mock('@/utils/networkUtil', () => ({
+vi.mock(import('@comfyorg/account-ui/auth/regionProbe'), () => ({
   isInChina: () => inChina.pending ?? Promise.resolve(inChina.value)
 }))
 
 const freeTier = vi.hoisted(() => ({ value: false }))
-vi.mock(
-  '@/platform/cloud/onboarding/composables/useFreeTierOnboarding',
+vi.mock<unknown>(
+  import('@/platform/cloud/onboarding/composables/useFreeTierOnboarding'),
   () => ({
     useFreeTierOnboarding: () => ({
       isFreeTierEnabled: { value: freeTier.value }

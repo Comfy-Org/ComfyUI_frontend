@@ -296,8 +296,8 @@ describe('deduplicateSubgraphLinkIds', () => {
 
     const remappedLinkId = subgraph.links[0].id
     expect(remappedLinkId).not.toBe(1)
-    expect(node.inputs?.[0].link).toBe(remappedLinkId)
-    expect(node.outputs?.[0].links).toEqual([remappedLinkId])
+    expect(node.inputs[0].link).toBe(remappedLinkId)
+    expect(node.outputs[0].links).toEqual([remappedLinkId])
     expect(subgraph.inputs[0].linkIds).toEqual([remappedLinkId])
     expect(subgraph.outputs[0].linkIds).toEqual([remappedLinkId])
     expect(subgraph.reroutes[0].linkIds).toEqual([remappedLinkId])

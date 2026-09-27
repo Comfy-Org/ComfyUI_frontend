@@ -25,13 +25,13 @@ const WORKFLOWS = 'https://comfy.org/workflows'
 /** Mirror of the workflows page's FEATURED · STAFF PICK carousel. */
 const slides: Slide[] = [
   {
-    title: 'FLUX 3 Video: Text to Video',
-    href: `${WORKFLOWS}/182021fcf3dc-182021fcf3dc/`,
-    media: `${HUB}/5d8fc016-bf9f-4bef-af85-7af8b8c05345.mp4`,
+    title: 'Product Advertisement Video',
+    href: `${WORKFLOWS}/c98e5c457e1e-c98e5c457e1e/`,
+    media: `${HUB}/a8c26beb-d463-40a0-8547-fa942e53ad70.mp4`,
     mediaType: 'video',
-    author: 'ComfyUI',
-    avatar: `${HUB}/a04e16f3-d01d-4118-b6e1-9ad00f0da3cf.png`,
-    tags: ['Partner Nodes', 'Text to Video']
+    author: 'Rob',
+    avatar: `${HUB}/a3578974-5cb8-40ab-9753-9c401fa198bb.png`,
+    tags: ['Product', 'Video']
   },
   {
     title: 'MiniMax H3: Image to Video',
@@ -61,15 +61,6 @@ const slides: Slide[] = [
     tags: ['Text to Video', 'Video']
   },
   {
-    title: 'Product Advertisement Video',
-    href: `${WORKFLOWS}/c98e5c457e1e-c98e5c457e1e/`,
-    media: `${HUB}/a8c26beb-d463-40a0-8547-fa942e53ad70.mp4`,
-    mediaType: 'video',
-    author: 'Rob',
-    avatar: `${HUB}/a3578974-5cb8-40ab-9753-9c401fa198bb.png`,
-    tags: ['Product', 'Video']
-  },
-  {
     title: 'Topaz: Image Enhance Bloom 2',
     href: `${WORKFLOWS}/1c0a3a9faad3-1c0a3a9faad3/`,
     media: `${HUB}/549fd615-446c-44bd-a225-e60ad4634f12.png`,
@@ -77,6 +68,15 @@ const slides: Slide[] = [
     author: 'ComfyUI',
     avatar: `${HUB}/a04e16f3-d01d-4118-b6e1-9ad00f0da3cf.png`,
     tags: ['API', 'Image Upscale']
+  },
+  {
+    title: 'FLUX 3 Video: Text to Video',
+    href: `${WORKFLOWS}/182021fcf3dc-182021fcf3dc/`,
+    media: `${HUB}/5d8fc016-bf9f-4bef-af85-7af8b8c05345.mp4`,
+    mediaType: 'video',
+    author: 'ComfyUI',
+    avatar: `${HUB}/a04e16f3-d01d-4118-b6e1-9ad00f0da3cf.png`,
+    tags: ['Partner Nodes', 'Text to Video']
   }
 ]
 
@@ -130,10 +130,10 @@ watch([active, onScreen], ([current, visible], [previous]) => {
 </script>
 
 <template>
-  <section class="max-w-9xl mx-auto w-full p-6 md:py-10 lg:px-12">
+  <section class="mx-auto w-full max-w-9xl p-6 md:py-10 lg:px-12">
     <div
       ref="sectionRef"
-      class="relative h-[clamp(300px,44vw,520px)] rounded-[2.5rem] border-[1.5px] border-white/15"
+      class="relative h-[clamp(300px,44vw,520px)] rounded-5xl border-[1.5px] border-white/15"
       role="region"
       aria-roledescription="carousel"
       :aria-label="t('featuredWorkflows.label', locale)"
@@ -179,7 +179,7 @@ watch([active, onScreen], ([current, visible], [previous]) => {
             <a
               :href="slide.href"
               :aria-label="slide.title"
-              class="focus-visible:ring-primary-comfy-yellow absolute inset-0 z-10 focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset"
+              class="absolute inset-0 z-10 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow focus-visible:outline-none focus-visible:ring-inset"
             />
 
             <div

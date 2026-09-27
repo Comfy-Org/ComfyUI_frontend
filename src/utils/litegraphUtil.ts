@@ -1,13 +1,12 @@
 import { every, filter, head, isEmpty, isEqual, map } from 'es-toolkit/compat'
 
 import type { ColorOption, LGraph } from '@/lib/litegraph/src/litegraph'
-import type { ExecutedWsMessage } from '@/schemas/apiSchema'
+import type { ExecutedWsMessage } from '@/platform/remote/comfyui/execution/types'
 import {
   LGraphCanvas,
   LGraphGroup,
   LGraphNode,
   LiteGraph,
-  Reroute,
   isColorable
 } from '@/lib/litegraph/src/litegraph'
 import type {
@@ -92,7 +91,7 @@ export function isVideoNode(node: LGraphNode | undefined): node is VideoNode {
  * Check if output data indicates animated content (animated webp/png or video).
  */
 export function isAnimatedOutput(
-  output: ExecutedWsMessage['output'] | undefined
+  output: Pick<ExecutedWsMessage['output'], 'animated'> | undefined
 ): boolean {
   return !!output?.animated?.find(Boolean)
 }
@@ -118,17 +117,14 @@ export function isAudioNode(node: LGraphNode | undefined): boolean {
   return !!node && node.previewMediaType === 'audio'
 }
 
-export function resolveComboValues(widget: IComboWidget): string[] {
-  const values = widget.options?.values
-  if (!values) return []
+export function resolveComboValues(widget: IComboWidget): (string | number)[] {
+  const values = widget.options.values
   if (typeof values === 'function') return values(widget)
   if (Array.isArray(values)) return values
   return Object.keys(values)
 }
 
 export function addToComboValues(widget: IComboWidget, value: string) {
-  if (!widget.options) widget.options = { values: [] }
-  if (!widget.options.values) widget.options.values = []
   // @ts-expect-error Combo widget values may be a dictionary or legacy function type
   if (!widget.options.values.includes(value)) {
     // @ts-expect-error Combo widget values may be a dictionary or legacy function type
@@ -137,13 +133,13 @@ export function addToComboValues(widget: IComboWidget, value: string) {
 }
 
 /**
- * True while the canvas is a picking surface rather than an editable one - the
- * agent's node selection mode sets `selectOnly`.
+ * True while the canvas is a picking surface rather than an editable one: its
+ * own `selectOnly` flag is set, or the interaction mode the application
+ * injected reads select-only (ADR-CANVAS-INTERACTION-0035).
  *
- * Guard every editing operation with this. It is checked at each call site
- * rather than inside litegraph itself, to keep that vendored library untouched.
- * A new way to edit the canvas therefore has to opt in: add the guard, or the
- * operation will run during picking.
+ * The canvas pointer and key dispatch and the command store read the mode
+ * themselves. The document-level paste, drop and history listeners guard with
+ * this helper, so a new document-level edit path has to opt in.
  */
 export const isSelectOnly = (canvas: LGraphCanvas | undefined): boolean =>
   canvas?.selectOnly === true
@@ -154,10 +150,6 @@ export const isLGraphNode = (item: unknown): item is LGraphNode => {
 
 export const isLGraphGroup = (item: unknown): item is LGraphGroup => {
   return item instanceof LGraphGroup
-}
-
-export const isReroute = (item: unknown): item is Reroute => {
-  return item instanceof Reroute
 }
 
 /**
@@ -342,7 +334,7 @@ export function resolveNodeWidget(
     if (locator?.subgraphUuid) {
       const host = graph.getNodeById(locator.localNodeId)
       if (host?.isSubgraphNode()) {
-        const widget = host.widgets?.find((w) => w.name === widgetName)
+        const widget = host.widgets.find((w) => w.name === widgetName)
         return widget ? [host, widget] : []
       }
     }
@@ -416,8 +408,6 @@ export function mapLiveWidgetsById(
 
 export function isLoad3dNode(node: LGraphNode) {
   return (
-    node &&
-    node.type &&
-    (node.type === 'Load3D' || node.type === 'Load3DAnimation')
+    node.type && (node.type === 'Load3D' || node.type === 'Load3DAnimation')
   )
 }

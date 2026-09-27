@@ -1,14 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type * as LGraphCanvasModule from '@/lib/litegraph/src/LGraphCanvas'
+import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
+import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
 import { ComboWidget } from '@/lib/litegraph/src/widgets/ComboWidget'
 
-const { LGraphCanvas } = await vi.importActual<typeof LGraphCanvasModule>(
-  '@/lib/litegraph/src/LGraphCanvas'
-)
 type LGraphCanvasType = InstanceType<typeof LGraphCanvas>
 
 interface MockWidgetConfig extends Omit<IComboWidget, 'options'> {
@@ -92,17 +90,36 @@ describe('ComboWidget', () => {
       expect(widget._displayValue).toBe('')
     })
 
-    it('should convert number values to string before display', () => {
+    it.for([
+      { source: 'static', values: ['0', '1', '42'] },
+      { source: 'callback', values: () => [0, 1, 42] }
+    ])(
+      'converts numeric values from $source options to display text',
+      ({ values }) => {
+        widget = new ComboWidget(
+          createMockWidgetConfig({
+            name: 'index',
+            value: 42,
+            options: { values }
+          }),
+          node
+        )
+
+        expect(widget._displayValue).toBe('42')
+      }
+    )
+
+    it('renders numeric zero without an option label formatter', () => {
       widget = new ComboWidget(
         createMockWidgetConfig({
           name: 'index',
-          value: 42,
-          options: { values: ['0', '1', '42'] }
+          value: 0,
+          options: { values: [0, 1] }
         }),
         node
       )
 
-      expect(widget._displayValue).toBe('42')
+      expect(widget._displayValue).toBe('0')
     })
   })
 
@@ -163,18 +180,18 @@ describe('ComboWidget', () => {
       expect(widget.canDecrement()).toBe(false)
     })
 
-    it('should allow increment/decrement when duplicate values exist at different indices', () => {
+    it('uses the first exact duplicate when determining arrow state', () => {
       widget = new ComboWidget(
         createMockWidgetConfig({
           name: 'mode',
-          value: 'duplicate',
-          options: { values: ['duplicate', 'other', 'duplicate'] }
+          value: 1,
+          options: { values: [1, 'other', 1] }
         }),
         node
       )
 
       expect(widget.canIncrement()).toBe(true)
-      expect(widget.canDecrement()).toBe(true)
+      expect(widget.canDecrement()).toBe(false)
     })
 
     it('should return false for function values (DEPRECATED - legacy duck-typed behavior)', () => {
@@ -195,6 +212,117 @@ describe('ComboWidget', () => {
   })
 
   describe('incrementValue / decrementValue', () => {
+    it('incrementing a numeric combo steps to the next option', () => {
+      widget = new ComboWidget(
+        createMockWidgetConfig({
+          value: 8,
+          options: { values: [6, 8, 10] }
+        }),
+        node
+      )
+
+      const { mockCanvas, mockEvent } = setupIncrementDecrementTest()
+
+      widget.incrementValue({ e: mockEvent, node, canvas: mockCanvas })
+
+      expect(widget.value).toBe(10)
+    })
+
+    it('decrementing a numeric combo steps to the previous option', () => {
+      widget = new ComboWidget(
+        createMockWidgetConfig({
+          value: 10,
+          options: { values: [6, 8, 10] }
+        }),
+        node
+      )
+
+      const { mockCanvas, mockEvent } = setupIncrementDecrementTest()
+
+      widget.decrementValue({ e: mockEvent, node, canvas: mockCanvas })
+
+      expect(widget.value).toBe(8)
+    })
+
+    it('incrementing from the first numeric option is not a no-op', () => {
+      widget = new ComboWidget(
+        createMockWidgetConfig({
+          value: 6,
+          options: { values: [6, 8, 10] }
+        }),
+        node
+      )
+
+      const { mockCanvas, mockEvent } = setupIncrementDecrementTest()
+
+      widget.incrementValue({ e: mockEvent, node, canvas: mockCanvas })
+
+      expect(widget.value).toBe(8)
+    })
+
+    it('increments string options when the current value drifted to a number', () => {
+      widget = new ComboWidget(
+        createMockWidgetConfig({
+          value: 2,
+          options: { values: ['1', '2', '3'] }
+        }),
+        node
+      )
+
+      const { mockCanvas, mockEvent } = setupIncrementDecrementTest()
+
+      expect(widget.canIncrement()).toBe(true)
+      expect(widget.canDecrement()).toBe(true)
+
+      widget.incrementValue({ e: mockEvent, node, canvas: mockCanvas })
+
+      expect(widget.value).toBe('3')
+      expect(widget.canIncrement()).toBe(false)
+      expect(widget.canDecrement()).toBe(true)
+    })
+
+    it('increments numeric options when the current value drifted to a string', () => {
+      widget = new ComboWidget(
+        createMockWidgetConfig({
+          value: '8',
+          options: { values: [6, 8, 10] }
+        }),
+        node
+      )
+
+      const { mockCanvas, mockEvent } = setupIncrementDecrementTest()
+
+      expect(widget.canIncrement()).toBe(true)
+      expect(widget.canDecrement()).toBe(true)
+
+      widget.incrementValue({ e: mockEvent, node, canvas: mockCanvas })
+
+      expect(widget.value).toBe(10)
+      expect(widget.canIncrement()).toBe(false)
+      expect(widget.canDecrement()).toBe(true)
+    })
+
+    it('prefers an exact option over a string-equivalent option', () => {
+      widget = new ComboWidget(
+        createMockWidgetConfig({
+          value: '1',
+          options: { values: [1, '1', 2] }
+        }),
+        node
+      )
+
+      const { mockCanvas, mockEvent } = setupIncrementDecrementTest()
+
+      expect(widget.canIncrement()).toBe(true)
+      expect(widget.canDecrement()).toBe(true)
+
+      widget.incrementValue({ e: mockEvent, node, canvas: mockCanvas })
+
+      expect(widget.value).toBe(2)
+      expect(widget.canIncrement()).toBe(false)
+      expect(widget.canDecrement()).toBe(true)
+    })
+
     it('should increment value to next in list', () => {
       widget = new ComboWidget(
         createMockWidgetConfig({
@@ -313,6 +441,40 @@ describe('ComboWidget', () => {
         node,
         canvas: mockCanvas
       })
+    })
+
+    it('steps record-backed values by index and disables arrows at the ends', () => {
+      const values = {
+        0: 'Low Quality',
+        1: 'Medium Quality',
+        2: 'High Quality'
+      }
+      const { mockCanvas, mockEvent } = setupIncrementDecrementTest()
+
+      widget = new ComboWidget(
+        createMockWidgetConfig({ value: 1, options: { values } }),
+        node
+      )
+
+      expect(widget.canIncrement()).toBe(true)
+      expect(widget.canDecrement()).toBe(true)
+
+      widget.incrementValue({ e: mockEvent, node, canvas: mockCanvas })
+
+      expect(widget.value).toBe(2)
+      expect(widget.canIncrement()).toBe(false)
+      expect(widget.canDecrement()).toBe(true)
+
+      widget = new ComboWidget(
+        createMockWidgetConfig({ value: 1, options: { values } }),
+        node
+      )
+
+      widget.decrementValue({ e: mockEvent, node, canvas: mockCanvas })
+
+      expect(widget.value).toBe(0)
+      expect(widget.canIncrement()).toBe(true)
+      expect(widget.canDecrement()).toBe(false)
     })
   })
 
@@ -462,7 +624,7 @@ describe('ComboWidget', () => {
       const mockContextMenu = vi
         .fn<typeof LiteGraph.ContextMenu>()
         .mockImplementation(function (_values, options) {
-          capturedCallback = options.callback
+          capturedCallback = options?.callback
         })
       LiteGraph.ContextMenu = mockContextMenu as Partial<
         typeof LiteGraph.ContextMenu
@@ -475,6 +637,43 @@ describe('ComboWidget', () => {
       capturedCallback?.('slow')
 
       expect(setValueSpy).toHaveBeenCalledWith('slow', {
+        e: mockEvent,
+        node,
+        canvas: mockCanvas
+      })
+    })
+
+    it('sets numeric zero when selecting from the plain dropdown', () => {
+      widget = new ComboWidget(
+        createMockWidgetConfig({
+          name: 'index',
+          value: 1,
+          options: { values: [0, 1] }
+        }),
+        node
+      )
+
+      const mockCanvas = { ds: { scale: 1 } } as LGraphCanvasType
+      const mockEvent = { canvasX: 150 } as CanvasPointerEvent
+      node.pos = [50, 50]
+      node.size = [200, 30]
+
+      let capturedCallback: ((value?: string | number) => void) | undefined
+      const mockContextMenu = vi
+        .fn<typeof LiteGraph.ContextMenu>()
+        .mockImplementation(function (_values, options) {
+          capturedCallback = options?.callback as typeof capturedCallback
+        })
+      LiteGraph.ContextMenu = mockContextMenu as Partial<
+        typeof LiteGraph.ContextMenu
+      > as typeof LiteGraph.ContextMenu
+
+      const setValueSpy = vi.spyOn(widget, 'setValue')
+      widget.onClick({ e: mockEvent, node, canvas: mockCanvas })
+
+      capturedCallback?.(0)
+
+      expect(setValueSpy).toHaveBeenCalledWith(0, {
         e: mockEvent,
         node,
         canvas: mockCanvas
@@ -506,7 +705,7 @@ describe('ComboWidget', () => {
       const mockContextMenu = vi
         .fn<typeof LiteGraph.ContextMenu>()
         .mockImplementation(function (_values, options) {
-          capturedCallback = options.callback
+          capturedCallback = options?.callback
         })
       LiteGraph.ContextMenu = mockContextMenu as Partial<
         typeof LiteGraph.ContextMenu
@@ -652,34 +851,41 @@ describe('ComboWidget', () => {
         expect(mockGetOptionLabel).not.toHaveBeenCalled()
       })
 
-      it('should handle getOptionLabel error gracefully', () => {
-        const mockGetOptionLabel = vi.fn().mockImplementation(function () {
-          throw new Error('Formatting failed')
-        })
-        const consoleErrorSpy = vi
-          .spyOn(console, 'error')
-          .mockImplementation(() => {})
+      it.for([
+        [HASH_FILENAME, HASH_FILENAME],
+        [0, '0'],
+        [null, ''],
+        [undefined, '']
+      ] as const)(
+        'keeps a safe label when the formatter throws for %j',
+        ([value, expected]) => {
+          const mockGetOptionLabel = vi.fn().mockImplementation(function () {
+            throw new Error('Formatting failed')
+          })
+          const consoleErrorSpy = vi
+            .spyOn(console, 'error')
+            .mockImplementation(() => {})
 
-        widget = new ComboWidget(
-          createMockWidgetConfig({
-            name: 'image',
-            value: HASH_FILENAME,
-            options: {
-              values: [HASH_FILENAME],
-              getOptionLabel: mockGetOptionLabel
-            }
-          }),
-          node
-        )
+          widget = new ComboWidget(
+            createMockWidgetConfig({
+              name: 'image',
+              value: HASH_FILENAME,
+              options: {
+                values: [HASH_FILENAME],
+                getOptionLabel: mockGetOptionLabel
+              }
+            }),
+            node
+          )
 
-        expect(widget._displayValue).toBe(HASH_FILENAME)
-        expect(consoleErrorSpy).toHaveBeenCalledWith(
-          'Failed to map value:',
-          expect.any(Error)
-        )
-
-        consoleErrorSpy.mockRestore()
-      })
+          Reflect.set(widget, 'value', value)
+          expect(widget._displayValue).toBe(expected)
+          expect(consoleErrorSpy).toHaveBeenCalledWith(
+            'Failed to map value:',
+            expect.any(Error)
+          )
+        }
+      )
 
       it('should format non-hash filenames using getOptionLabel', () => {
         const mockGetOptionLabel = vi.fn((value) => `Formatted ${value}`)
@@ -740,6 +946,25 @@ describe('ComboWidget', () => {
 
         expect(widget._displayValue).toBe('Number: 42')
         expect(mockGetOptionLabel).toHaveBeenCalledWith('42')
+      })
+
+      it('passes numeric zero to getOptionLabel as a string', () => {
+        const mockGetOptionLabel = vi.fn((value) => `Number: ${value}`)
+
+        widget = new ComboWidget(
+          createMockWidgetConfig({
+            name: 'index',
+            value: 0,
+            options: {
+              values: [0, 1],
+              getOptionLabel: mockGetOptionLabel
+            }
+          }),
+          node
+        )
+
+        expect(widget._displayValue).toBe('Number: 0')
+        expect(mockGetOptionLabel).toHaveBeenCalledWith('0')
       })
     })
 
@@ -834,7 +1059,7 @@ describe('ComboWidget', () => {
         const mockContextMenu = vi
           .fn<typeof LiteGraph.ContextMenu>()
           .mockImplementation(function (_values, options) {
-            capturedCallback = options.callback
+            capturedCallback = options?.callback
             this.addItem = mockAddItem
           })
         LiteGraph.ContextMenu = mockContextMenu as Partial<
@@ -849,6 +1074,57 @@ describe('ComboWidget', () => {
 
         // Should set the actual hash value, not the formatted label
         expect(setValueSpy).toHaveBeenCalledWith(HASH_FILENAME_2, {
+          e: mockEvent,
+          node,
+          canvas: mockCanvas
+        })
+      })
+
+      it('sets numeric zero when selecting from the formatted dropdown', () => {
+        const mockGetOptionLabel = vi.fn((value) => `Number: ${value}`)
+
+        widget = new ComboWidget(
+          createMockWidgetConfig({
+            name: 'index',
+            value: 1,
+            options: {
+              values: [0, 1],
+              getOptionLabel: mockGetOptionLabel
+            }
+          }),
+          node
+        )
+
+        const mockCanvas = { ds: { scale: 1 } } as LGraphCanvasType
+        const mockEvent = { canvasX: 150 } as CanvasPointerEvent
+        node.pos = [50, 50]
+        node.size = [200, 30]
+
+        const mockAddItem = vi.fn()
+        let capturedCallback:
+          | ((value?: string | IContextMenuValue<number>) => void)
+          | undefined
+        const mockContextMenu = vi
+          .fn<typeof LiteGraph.ContextMenu>()
+          .mockImplementation(function (_values, options) {
+            capturedCallback = options?.callback
+            this.addItem = mockAddItem
+          })
+        LiteGraph.ContextMenu = mockContextMenu as Partial<
+          typeof LiteGraph.ContextMenu
+        > as typeof LiteGraph.ContextMenu
+
+        const setValueSpy = vi.spyOn(widget, 'setValue')
+        widget.onClick({ e: mockEvent, node, canvas: mockCanvas })
+
+        expect(mockAddItem).toHaveBeenCalledWith(
+          'Number: 0',
+          { content: 'Number: 0', value: 0 },
+          expect.objectContaining({ callback: expect.any(Function) })
+        )
+        capturedCallback?.({ content: 'Number: 0', value: 0 })
+
+        expect(setValueSpy).toHaveBeenCalledWith(0, {
           e: mockEvent,
           node,
           canvas: mockCanvas
@@ -889,7 +1165,7 @@ describe('ComboWidget', () => {
         const mockContextMenu = vi
           .fn<typeof LiteGraph.ContextMenu>()
           .mockImplementation(function (_values, options) {
-            capturedCallback = options.callback
+            capturedCallback = options?.callback
             this.addItem = mockAddItem
           })
         LiteGraph.ContextMenu = mockContextMenu as Partial<

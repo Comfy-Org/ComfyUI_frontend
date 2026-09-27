@@ -243,22 +243,22 @@ export function rendererLedgerFor<T>(
 }
 
 export function staleValueDriftIndices(
-  allowed: Record<string, number[]>,
+  allowed: Partial<Record<string, number[]>>,
   observed: Record<string, number[]>
 ): string[] {
   return Object.entries(allowed).flatMap(([node, indices]) =>
-    indices
+    (indices ?? [])
       .filter((index) => !observed[node]?.includes(index))
       .map((index) => `${node}[${index}]`)
   )
 }
 
 export function staleValueDriftKeys(
-  allowed: Record<string, string[]>,
+  allowed: Partial<Record<string, string[]>>,
   observed: Record<string, string[]>
 ): string[] {
   return Object.entries(allowed).flatMap(([node, keys]) =>
-    keys
+    (keys ?? [])
       .filter((key) => !observed[node]?.includes(key))
       .map((key) => `${node}.${key}`)
   )
@@ -275,7 +275,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 export function declaredInputNamesForTypes(
-  defs: Record<string, RawNodeDef>,
+  defs: Partial<Record<string, RawNodeDef>>,
   types: readonly string[]
 ): Record<string, string[]> {
   return Object.fromEntries(

@@ -232,10 +232,6 @@ export function useMaskEditorLoader() {
   }
 
   function validateNode(node: LGraphNode): void {
-    if (!node) {
-      throw new Error('Node is null or undefined')
-    }
-
     const hasImages = node.imgs?.length || node.previewMediaType === 'image'
     if (!hasImages) {
       throw new Error('Node has no images')

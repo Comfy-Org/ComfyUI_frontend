@@ -62,6 +62,10 @@ interface Context {
   seenImages: Set<string>
 }
 
+interface HtmlToTwinOptions {
+  canonical?: string
+}
+
 function collapse(text: string): string {
   return text.replace(/\s+/g, ' ')
 }
@@ -110,7 +114,7 @@ function joinInline(nodes: Node[], ctx: Context): string {
 }
 
 function inline(node: Node, ctx: Context): string {
-  if (node.nodeType === TEXT_NODE) return collapse(node.textContent ?? '')
+  if (node.nodeType === TEXT_NODE) return collapse(node.textContent)
   if (node.nodeType !== ELEMENT_NODE) return ''
   const element = node as Element
   if (isDropped(element)) return ''
@@ -143,7 +147,7 @@ function inline(node: Node, ctx: Context): string {
       return text ? `*${text}*` : ''
     }
     case 'CODE': {
-      const text = element.textContent?.trim() ?? ''
+      const text = element.textContent.trim()
       return text ? `\`${text}\`` : ''
     }
     default:
@@ -205,7 +209,7 @@ function block(element: Element, ctx: Context): string {
     case 'OL':
       return list(element, ctx, true)
     case 'PRE':
-      return `\`\`\`\n${(element.textContent ?? '').replace(/\s+$/, '')}\n\`\`\``
+      return `\`\`\`\n${element.textContent.replace(/\s+$/, '')}\n\`\`\``
     case 'TABLE':
       return table(element, ctx)
     case 'BLOCKQUOTE':
@@ -273,7 +277,11 @@ function meta(document: Document, name: string): string {
 }
 
 /** Extract the page's main content as markdown, with absolute links. */
-export function htmlToTwin(html: string, fallbackCanonical: string): TwinPage {
+export function htmlToTwin(
+  html: string,
+  fallbackCanonical: string,
+  options: HtmlToTwinOptions = {}
+): TwinPage {
   const window = new Window({
     settings: {
       disableJavaScriptEvaluation: true,
@@ -284,6 +292,7 @@ export function htmlToTwin(html: string, fallbackCanonical: string): TwinPage {
   try {
     const document = new window.DOMParser().parseFromString(html, 'text/html')
     const canonical =
+      options.canonical ??
       document.querySelector('link[rel="canonical"]')?.getAttribute('href') ??
       fallbackCanonical
     const ctx: Context = { base: canonical, seenImages: new Set() }

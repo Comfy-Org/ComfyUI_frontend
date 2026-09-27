@@ -3,7 +3,7 @@ name: 'CI: Vercel Website Preview'
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, labeled, unlabeled]
     branches-ignore:
       - 'core/**'
       - 'cloud/**'
@@ -36,6 +36,7 @@ jobs:
       contents: read
     env:
       ALIAS_HOST: comfy-website-preview-pr-${{ github.event.pull_request.number }}.vercel.app
+      WORKSHOP_TEST_LABELLED: ${{ contains(github.event.pull_request.labels.*.name, 'workshop-test') }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -59,7 +60,11 @@ jobs:
           WEBSITE_ASHBY_API_KEY: ${{ secrets.WEBSITE_ASHBY_API_KEY }}
           WEBSITE_ASHBY_JOB_BOARD_NAME: ${{ secrets.WEBSITE_ASHBY_JOB_BOARD_NAME }}
           WEBSITE_CLOUD_API_KEY: ${{ secrets.WEBSITE_CLOUD_API_KEY }}
-        run: vercel build
+          WORKSHOP_IN_BUILD: '1'
+          PUBLIC_WORKSHOP_AUTH_FLAG: '1'
+          PUBLIC_WORKSHOP_ROUTER_RUN: '1'
+          PUBLIC_WORKSHOP_CLOUD_ENV: ${{ contains(github.event.pull_request.labels.*.name, 'workshop-test') && 'test' || 'staging' }}
+        run: NODE_ENV=production VERCEL_ENV=preview vercel build
 
       - name: Fetch head commit metadata
         id: head-commit
@@ -113,9 +118,15 @@ jobs:
           else
             STABLE_URL="$DEPLOY_URL"
           fi
+          if [[ "$WORKSHOP_TEST_LABELLED" == "true" ]]; then
+            BUILD_NOTE="Models is built and gated by PostHog (workshop-enabled), using **test** Cloud."
+          else
+            BUILD_NOTE="Models is built and gated by PostHog (workshop-enabled), using **staging** Cloud."
+          fi
           mkdir -p temp/vercel-preview
           echo "$DEPLOY_URL" > temp/vercel-preview/url.txt
           echo "$STABLE_URL" > temp/vercel-preview/stable-url.txt
+          echo "$BUILD_NOTE" > temp/vercel-preview/build-note.txt
           {
             echo "**Preview:** $STABLE_URL"
             if [[ "$ALIAS_OK" == "true" ]]; then
@@ -123,6 +134,7 @@ jobs:
             else
               echo "_Stable alias update failed — URL reflects this commit only._"
             fi
+            echo "$BUILD_NOTE"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload preview metadata
@@ -166,7 +178,10 @@ jobs:
           WEBSITE_ASHBY_API_KEY: ${{ secrets.WEBSITE_ASHBY_API_KEY }}
           WEBSITE_ASHBY_JOB_BOARD_NAME: ${{ secrets.WEBSITE_ASHBY_JOB_BOARD_NAME }}
           WEBSITE_CLOUD_API_KEY: ${{ secrets.WEBSITE_CLOUD_API_KEY }}
-        run: vercel build --prod
+          WORKSHOP_IN_BUILD: '1'
+          PUBLIC_WORKSHOP_ROUTER_RUN: '1'
+          PUBLIC_WORKSHOP_CLOUD_ENV: prod
+        run: NODE_ENV=production VERCEL_ENV=production vercel build --prod
 
       - name: Deploy project artifacts to Vercel
         id: deploy

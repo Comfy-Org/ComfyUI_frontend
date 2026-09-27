@@ -9,6 +9,7 @@ import type {
   Plan,
   PreviewSubscribeOptions,
   PreviewSubscribeResponse,
+  ScheduledPlanChange,
   SubscribeOptions,
   SubscribeResponse,
   SubscriptionDuration,
@@ -24,9 +25,7 @@ export interface SubscriptionInfo {
   tier: SubscriptionTier | null
   duration: SubscriptionDuration | null
   planSlug: string | null
-  scheduledPlanSlug?: string | null
-  /** ISO 8601; format at the display site. */
-  changeAt?: string | null
+  scheduledChange: ScheduledPlanChange | null
   /** ISO 8601; format at the display site. */
   renewalDate: string | null
   /** ISO 8601; format at the display site. */
@@ -35,6 +34,13 @@ export interface SubscriptionInfo {
   hasFunds: boolean
 }
 
+/**
+ * Balance amounts from `GET /customers/balance` and `GET /api/billing/balance`.
+ * Despite the `Micros` suffixes every field is in CENTS: the backend reports
+ * Metronome's USD-cents credit balance verbatim, so format with
+ * `formatCreditsFromCents` (credits) or `formatMetronomeCurrency` (dollars)
+ * rather than dividing by 1,000,000.
+ */
 export interface BalanceInfo {
   amountMicros: number
   currency: string
