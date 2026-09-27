@@ -470,6 +470,69 @@ describe('fetchJobs', () => {
       ).toEqual(apiPrompt)
     })
   })
+  describe('PM-1150 — agent-submitted job round trip (synthetic fixture)', () => {
+    const PM_1150_JOB_ID = '33a723f2-bf1f-4faf-9c42-1b83e2185601'
+    const PM_1150_API_PROMPT = {
+      '1': {
+        class_type: 'CheckpointLoaderSimple',
+        inputs: { ckpt_name: 'v1-5-pruned-emaonly.ckpt' },
+        _meta: { title: 'Load Checkpoint' }
+      },
+      '2': {
+        class_type: 'KSampler',
+        inputs: {
+          seed: 156680208700286,
+          steps: 20,
+          cfg: 8,
+          sampler_name: 'euler',
+          scheduler: 'normal',
+          denoise: 1,
+          model: ['1', 0],
+          positive: ['1', 1],
+          negative: ['1', 1],
+          latent_image: ['1', 2]
+        },
+        _meta: { title: 'KSampler' }
+      },
+      '3': {
+        class_type: 'SaveImage',
+        inputs: { filename_prefix: 'ComfyUI', images: ['2', 0] },
+        _meta: { title: 'Save Image' }
+      }
+    }
+
+    function pm1150JobDetailJson() {
+      return {
+        ...createMockJob(PM_1150_JOB_ID, 'completed'),
+        workflow_id: 'agent-service-workflow',
+        outputs: {
+          '3': {
+            images: [
+              {
+                filename: 'agent_job_output.png',
+                subfolder: '',
+                type: 'output'
+              }
+            ]
+          }
+        },
+        // No `extra_data` key at all — the fallback path this fixture covers.
+        workflow: { prompt: PM_1150_API_PROMPT }
+      }
+    }
+
+    it('parses workflow.prompt through the real zJobDetail schema and extracts it', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(pm1150JobDetailJson())
+      })
+
+      const jobDetail = await fetchJobDetail(mockFetch, PM_1150_JOB_ID)
+
+      expect(jobDetail).toBeDefined()
+      expect(extractApiPrompt(jobDetail)).toEqual(PM_1150_API_PROMPT)
+    })
+  })
   describe('fetchJobAssets', () => {
     function createAssetsResponse(
       jobId: string,
