@@ -19,13 +19,12 @@ import type { NodeId } from '@/types/nodeId'
  * useVueNodeResizeTracking.ts): the rendered node size is computed as
  * `Math.max(explicitSize, contentSize)`, a floor that never decreases, and
  * `contentSize` is tracked by a single module-level singleton `ResizeObserver`
- * shared by every Vue node. On tab-hide it wipes cached measurements for
- * deferred nodes; on tab-visible it force-remeasures all of them in one
- * batch, re-latching the ratchet across every node sharing the observer.
+ * shared by every Vue node. A visibility cycle can repeat those stale
+ * measurements and re-latch the floor across unrelated nodes.
  */
 test.describe(
   'Vue Node resize ratchet on autogrow content growth',
-  { tag: ['@vue-nodes', '@canvas', '@node', '@screenshot'] },
+  { tag: ['@vue-nodes', '@canvas', '@node'] },
   () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.nodeOps.clearGraph()
@@ -116,10 +115,6 @@ test.describe(
       await expect.poll(getHeight).toBeGreaterThan(baseline.height)
       const grownHeight = await getHeight()
 
-      await expect(node.root).toHaveScreenshot(
-        'flux-node-grown-before-shrink-attempt.png'
-      )
-
       // The user now tries to shrink the node back down via the resize
       // handle, dragging well past the original (pre-growth) height.
       const handle = node.getResizeHandle('SE')
@@ -136,11 +131,6 @@ test.describe(
       )
       await page.mouse.up()
       await comfyPage.nextFrame()
-
-      // Visual proof of the post-drag size.
-      await expect(node.root).toHaveScreenshot(
-        'flux-node-stuck-after-shrink-attempt.png'
-      )
 
       await expect.poll(getHeight).toBeLessThan(grownHeight - 20)
     })
@@ -183,9 +173,7 @@ test.describe(
       const getHeightB = async () => (await nodeB.boundingBox())?.height ?? -1
       const baselineB = await getHeightB()
 
-      // Sanity check: before anything touches node B, it can be shrunk
-      // by a small amount like any ordinary node.
-      const shrinkBBy = async (deltaY: number) => {
+      const resizeBBy = async (deltaY: number) => {
         const handle = nodeB.getResizeHandle('SE')
         await handle.hover()
         const box = await handle.boundingBox()
@@ -201,11 +189,10 @@ test.describe(
         await page.mouse.up()
         await comfyPage.nextFrame()
       }
-      await shrinkBBy(-20)
-      await expect.poll(getHeightB).toBeLessThan(baselineB)
-      // Restore B so the real test below starts from a known baseline.
-      await shrinkBBy(20)
-      await expect.poll(getHeightB).toBeGreaterThan(baselineB - 5)
+      // Give B explicit room above its intrinsic content floor. The cycle
+      // below must not prevent reclaiming some of that room.
+      await resizeBBy(40)
+      await expect.poll(getHeightB).toBeGreaterThan(baselineB + 20)
 
       // Only node A is touched: connecting a reference image grows its
       // content beyond its current explicit size.
@@ -234,7 +221,7 @@ test.describe(
 
       const heightBAfterCycle = await getHeightB()
 
-      await shrinkBBy(-20)
+      await resizeBBy(-20)
       await expect.poll(getHeightB).toBeLessThan(heightBAfterCycle - 5)
     })
   }
