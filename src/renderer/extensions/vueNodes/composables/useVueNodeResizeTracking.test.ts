@@ -313,7 +313,7 @@ describe('useVueNodeResizeTracking', () => {
     expect(testState.syncSlotOffsets).toHaveBeenCalledWith(nodeId)
   })
 
-  it('defers hidden entries and re-observes connected elements when visible', async () => {
+  it('re-observes hidden elements without re-reporting an unchanged size', async () => {
     const nodeId = toNodeId('hidden-node')
     const { entry } = createResizeEntry({ nodeId })
     document.body.append(entry.target)
@@ -340,15 +340,8 @@ describe('useVueNodeResizeTracking', () => {
 
     vi.clearAllMocks()
     resizeObserverState.callback?.([entry], createObserverMock())
-    expect(testState.reportContentSize).toHaveBeenCalledWith(
-      ROOT_GRAPH_ID,
-      nodeId,
-      {
-        width: 240,
-        height: 180 - LiteGraph.NODE_TITLE_HEIGHT
-      }
-    )
-    expect(testState.syncSlotOffsets).toHaveBeenCalledWith(nodeId)
+    expect(testState.reportContentSize).not.toHaveBeenCalled()
+    expect(testState.syncSlotOffsets).not.toHaveBeenCalled()
     entry.target.remove()
   })
 
@@ -356,7 +349,7 @@ describe('useVueNodeResizeTracking', () => {
   // measurement pipeline for every deferred node in one batch, not just the
   // node whose content actually grew. This spreads the "can't shrink"
   // ratchet from `refreshNodeGeometry` to nodes the user never touched.
-  it.fails(
+  it(
     "does not re-report an untouched node's unchanged content size after a " +
       'tab-visibility cycle triggered by a different node',
     async () => {

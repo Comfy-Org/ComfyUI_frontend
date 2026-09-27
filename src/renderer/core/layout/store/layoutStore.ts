@@ -430,6 +430,11 @@ class LayoutStoreImpl {
     this._contentSizeVersion++
   }
 
+  clearContentSize(rootGraphId: UUID, nodeId: NodeId): void {
+    const key = makeScopedLayoutKey(rootGraphId, nodeId)
+    if (this.contentSizes.delete(key)) this._contentSizeVersion++
+  }
+
   /**
    * Get current version for change detection
    */

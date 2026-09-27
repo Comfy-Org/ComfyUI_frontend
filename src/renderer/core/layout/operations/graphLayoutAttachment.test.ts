@@ -141,7 +141,7 @@ describe('refreshNodeGeometry non-decreasing content-size floor (PM-1304)', () =
     return node
   }
 
-  it.fails('lets an explicit resize shrink the node below a previously reported (now stale) content size', () => {
+  it('lets an explicit resize shrink the node below a previously reported (now stale) content size', () => {
     const graph = new LGraph()
     const node = nodeFor(graph, 'flux-image-node')
     attachNodeLayout(graph, node)
