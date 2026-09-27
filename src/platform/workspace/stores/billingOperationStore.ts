@@ -1,6 +1,7 @@
 import type { ToastMessageOptions } from 'primevue/toast'
 import type { PaymentIntent } from '@stripe/stripe-js'
 import { loadStripe } from '@stripe/stripe-js/pure'
+import { customerCanActHere } from '@comfyorg/account-core/billing'
 import { useEventListener } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
@@ -30,6 +31,7 @@ import type {
 } from '@/platform/workspace/api/workspaceApi'
 import {
   isBlockedOnCustomerPhase,
+  legacyOperationActionHold,
   needsCustomerAttention
 } from '@/platform/workspace/billing/customerAttention'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
@@ -43,6 +45,8 @@ import { useDialogStore } from '@/stores/dialogStore'
 const INITIAL_INTERVAL_MS = 1000
 const MAX_INTERVAL_MS = 8000
 const ACTION_REQUIRED_INTERVAL_MS = 30_000
+// Twenty turns of the backend's 3 s PaymentIntent status cache.
+const ACTION_DISCOVERY_WINDOW_MS = 60_000
 const BACKOFF_MULTIPLIER = 1.5
 const TIMEOUT_MS = 120_000
 const SUBSCRIPTION_ACTION_DISCOVERY_TIMEOUT_MS = 5 * 60_000
@@ -147,6 +151,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   const operations = ref<Map<string, BillingOperation>>(new Map())
   const timeouts = new Map<string, ReturnType<typeof setTimeout>>()
   const intervals = new Map<string, number>()
+  const waitingWithoutActionSince = new Map<string, number>()
   const receivedToasts = new Map<string, ToastMessageOptions>()
   const terminalResolvers = new Map<string, TerminalResolver>()
   const terminalPromises = new Map<string, Promise<BillingOperation>>()
@@ -405,27 +410,49 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   // tab's own challenge completes, the state reads processing and nothing
   // waits on the customer anymore — holding the slow cadence there left a
   // settled payment spinning for half a minute.
-  //
-  // Only parked while the customer can act here. The server can report a
-  // blocked phase and a client secret before its cached authentication_state
-  // catches up, and the slow cadence would then hold a screen with no action.
-  function isParkedAwaitingCustomer(operation: BillingOperation): boolean {
+  function isWaitingOnCustomer(operation: BillingOperation): boolean {
     return (
-      customerCanAct(operation) &&
-      (isBlockedOnCustomerPhase(operation.phase) ||
-        operation.authenticationState === 'requires_action' ||
-        operation.actionUrl !== null ||
-        (operation.authenticationState === 'failed_retryable' &&
-          operation.authenticationRequiredSeen))
+      isBlockedOnCustomerPhase(operation.phase) ||
+      operation.authenticationState === 'requires_action' ||
+      operation.actionUrl !== null ||
+      (operation.authenticationState === 'failed_retryable' &&
+        operation.authenticationRequiredSeen)
     )
   }
 
-  function customerCanAct(operation: BillingOperation): boolean {
-    if (operation.actionUrl !== null) return true
-    if (operation.authenticationState === 'failed_retryable') return true
+  // Parked straight away only while the customer can act here. The server can
+  // report a blocked phase and a client secret before its cached
+  // authentication_state catches up, so an actionless wait keeps the backoff
+  // for the discovery window. Past it the action is not coming to this tab (a
+  // member without billing permission, embedded checkout off) and it parks.
+  function isParkedAwaitingCustomer(
+    operation: BillingOperation,
+    waitedWithoutActionMs: number
+  ): boolean {
+    if (!isWaitingOnCustomer(operation)) return false
     return (
-      operation.authenticationState === 'requires_action' &&
-      paymentIntentClientSecrets.has(operation.opId)
+      customerCanAct(operation) ||
+      waitedWithoutActionMs >= ACTION_DISCOVERY_WINDOW_MS
+    )
+  }
+
+  function trackWaitWithoutAction(operation: BillingOperation): number {
+    if (!isWaitingOnCustomer(operation) || customerCanAct(operation)) {
+      waitingWithoutActionSince.delete(operation.opId)
+      return 0
+    }
+    const now = Date.now()
+    const since = waitingWithoutActionSince.get(operation.opId) ?? now
+    waitingWithoutActionSince.set(operation.opId, since)
+    return now - since
+  }
+
+  function customerCanAct(operation: BillingOperation): boolean {
+    return customerCanActHere(
+      legacyOperationActionHold(
+        operation,
+        paymentIntentClientSecrets.has(operation.opId)
+      )
     )
   }
 
@@ -436,7 +463,10 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     // scheduled poll may still be armed, and two chains would double the
     // request rate and race each other's state writes.
     pausePolling(opId)
-    const nextInterval = isParkedAwaitingCustomer(operation)
+    const nextInterval = isParkedAwaitingCustomer(
+      operation,
+      trackWaitWithoutAction(operation)
+    )
       ? ACTION_REQUIRED_INTERVAL_MS
       : Math.min(
           (intervals.get(opId) ?? INITIAL_INTERVAL_MS) * BACKOFF_MULTIPLIER,
@@ -605,6 +635,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       })
       autoHandledPaymentActions.add(opId)
       intervals.set(opId, INITIAL_INTERVAL_MS)
+      waitingWithoutActionSince.delete(opId)
       return true
     } catch (error) {
       setAuthenticationFailed(
@@ -1210,6 +1241,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       timeouts.delete(opId)
     }
     intervals.delete(opId)
+    waitingWithoutActionSince.delete(opId)
     autoHandledPaymentActions.delete(opId)
     paymentIntentClientSecrets.delete(opId)
 

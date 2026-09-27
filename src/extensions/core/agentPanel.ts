@@ -16,6 +16,11 @@ import {
 import { registerWorkflowTabActivityTracker } from '@/workbench/extensions/agent/services/agent/workflowTabActivityTracker'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import {
+  notifyRestoreMintersAfterGraphConfigure,
+  notifyRestoreMintersBeforeGraphLoad,
+  notifyRestoreMintersGraphLoadError
+} from '@/workbench/extensions/agent/crdt/restoreOpMinter'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useExtensionService } from '@/services/extensionService'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
@@ -62,6 +67,7 @@ export function registerAgentPanelExtension(): void {
   useExtensionService().registerExtension({
     name: 'Comfy.AgentPanel',
     beforeLoadGraph() {
+      notifyRestoreMintersBeforeGraphLoad()
       const agentPanelStore = useAgentPanelStore()
       if (!agentPanelStore.isVisible) return
 
@@ -104,10 +110,14 @@ export function registerAgentPanelExtension(): void {
       }
     },
     onGraphLoadError() {
+      notifyRestoreMintersGraphLoadError()
       const nodeSelectionStore = useAgentNodeSelectionStore()
       if (nodeSelectionStore.isLoadingWorkflow) {
         nodeSelectionStore.finishWorkflowLoad()
       }
+    },
+    afterConfigureGraph() {
+      notifyRestoreMintersAfterGraphConfigure()
     },
     setup() {
       const agentPanelStore = useAgentPanelStore()

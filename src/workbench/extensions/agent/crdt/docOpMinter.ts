@@ -88,7 +88,7 @@ type PendingOp =
  * `flags.ghost` is a placement-in-progress marker the placement click clears
  * without minting, so the document must not record it.
  */
-function wireNodeSnapshot(node: LGraphNode): WorkflowNode | null {
+export function wireNodeSnapshot(node: LGraphNode): WorkflowNode | null {
   let serialized: ISerialisedNode
   try {
     serialized = node.serialize()
