@@ -4,6 +4,7 @@ import { createI18n } from 'vue-i18n'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import type { WorkflowListResponse } from '@comfyorg/ingest-types'
+import { zAgentAnswerRequest } from '@comfyorg/ingest-types/zod'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
@@ -269,4 +270,86 @@ test.describe('Agent reply drafts', { tag: ['@cloud', '@agent'] }, () => {
       panel.getByText('Checking it once more', { exact: true })
     ).toHaveCount(0)
   })
+
+  for (const selection of ['run', 'cancel'] as const) {
+    test(`a completed turn keeps its ${selection} approval action live`, async ({
+      page
+    }) => {
+      test.setTimeout(60_000)
+      const askId = `${MESSAGE_ID}:call-${selection}`
+      const answeredRequests: Array<{ url: string; selected: string[] }> = []
+      await page.route(
+        '**/api/agent/threads/*/asks/*/answer',
+        async (route) => {
+          const request = route.request()
+          const body = zAgentAnswerRequest.parse(request.postDataJSON())
+          answeredRequests.push({ url: request.url(), selected: body.selected })
+          await route.fulfill({
+            ...jsonRoute({ status: 'answered' }),
+            status: 202
+          })
+        }
+      )
+      const { panel, send } = await startTurn(page, 'Run it when ready.')
+
+      send({
+        type: 'agent_ask',
+        data: {
+          ...ids,
+          ask_id: askId,
+          kind: 'run_approval',
+          context: {
+            workflow_id: WORKFLOW_ID,
+            workflow_name: 'Unsaved Workflow'
+          },
+          prompt: 'Run workflow “Unsaved Workflow”?',
+          options: [
+            { id: 'run', label: 'Run' },
+            { id: 'cancel', label: 'Cancel' }
+          ],
+          min_selections: 1,
+          max_selections: 1,
+          allow_other: false
+        }
+      })
+      const action = panel.getByRole('button', {
+        name: enMessages.agent.runApproval[selection],
+        exact: true
+      })
+      await expect(action).toBeVisible()
+
+      send({ type: 'agent_message_done', data: { ...ids, usage: null } })
+      await expect(
+        panel.getByRole('button', { name: SEND_LABEL })
+      ).toBeVisible()
+      await expect(action).toBeVisible()
+      await action.click()
+
+      test.fail(
+        true,
+        'The approval card remains visible after its turn completes, but its action no longer reaches the answer endpoint.'
+      )
+      await expect
+        .poll(() => answeredRequests)
+        .toEqual([
+          {
+            url: expect.stringContaining(
+              `/threads/${THREAD_ID}/asks/${encodeURIComponent(askId)}/answer`
+            ),
+            selected: [selection]
+          }
+        ])
+      await expect(action).toHaveAttribute('aria-busy', 'true')
+      send({
+        type: 'agent_ask_resolved',
+        data: {
+          ...ids,
+          ask_id: askId,
+          status: 'answered',
+          selected: [selection]
+        }
+      })
+      await expect(action).toHaveCount(0)
+    })
+  }
 })

@@ -12,7 +12,10 @@ import {
   router_render
 } from '../src/config/router-render'
 import { validateWorkshopMediaInputs } from '../src/config/workshop-media-validation'
-import { readWorkshopVideoMetadata } from '../src/config/workshop-media-metadata'
+import {
+  readWorkshopImageMetadata,
+  readWorkshopVideoMetadata
+} from '../src/config/workshop-media-metadata'
 import type { WorkshopUrlEncoder } from '../src/config/workshop-url-input'
 
 vi.mock(import('../src/config/workshop-media-metadata'))
@@ -193,6 +196,77 @@ describe('published model validation grid', () => {
           ).rejects.toMatchObject({
             reason: 'validation',
             fieldErrors: { [field]: 'videoWidthOutOfRange' }
+          })
+          expect(network).not.toHaveBeenCalled()
+        }
+      )
+
+      const imageRatios = schema.flatMap((field) => {
+        const range = field.presentation?.imageAspectRatio
+        if (!range) return []
+        return [
+          {
+            field: field.name,
+            boundary: 'minimum',
+            ratio: range.minimum,
+            invalidRatio: range.minimum - 0.01
+          },
+          {
+            field: field.name,
+            boundary: 'maximum',
+            ratio: range.maximum,
+            invalidRatio: range.maximum + 0.01
+          }
+        ]
+      })
+      const withoutConstrainedImages = Object.fromEntries(
+        schema
+          .filter((field) => field.presentation?.imageAspectRatio)
+          .map((field) => [field.name, undefined])
+      )
+      it.for(imageRatios)(
+        'accepts $field at its $boundary image ratio',
+        async ({ field, ratio }) => {
+          vi.mocked(readWorkshopImageMetadata).mockResolvedValue({
+            widthPixels: ratio * 1000,
+            heightPixels: 1000
+          })
+          await expect(
+            validateWorkshopMediaInputs(
+              schema,
+              {
+                ...values,
+                ...withoutConstrainedImages,
+                [field]: 'https://media.example/source.png'
+              },
+              new AbortController().signal
+            )
+          ).resolves.toBeUndefined()
+          expect(readWorkshopImageMetadata).toHaveBeenCalled()
+          expect(network).not.toHaveBeenCalled()
+        }
+      )
+
+      it.for(imageRatios)(
+        'rejects $field outside its $boundary image ratio',
+        async ({ field, invalidRatio }) => {
+          vi.mocked(readWorkshopImageMetadata).mockResolvedValue({
+            widthPixels: invalidRatio * 1000,
+            heightPixels: 1000
+          })
+          await expect(
+            validateWorkshopMediaInputs(
+              schema,
+              {
+                ...values,
+                ...withoutConstrainedImages,
+                [field]: 'https://media.example/source.png'
+              },
+              new AbortController().signal
+            )
+          ).rejects.toMatchObject({
+            reason: 'validation',
+            fieldErrors: { [field]: 'imageAspectRatioOutOfRange' }
           })
           expect(network).not.toHaveBeenCalled()
         }

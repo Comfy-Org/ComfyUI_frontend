@@ -115,21 +115,24 @@ describe('Workshop output delivery', () => {
     )
   })
 
-  it('does not classify a hidden-page deadline as media failure', async () => {
-    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden')
-    tracker()
+  it('keeps a result pending while hidden and confirms it after returning', async () => {
+    const visibility = vi
+      .spyOn(document, 'visibilityState', 'get')
+      .mockReturnValue('hidden')
+    const delivery = tracker()
+    await vi.advanceTimersByTimeAsync(120_000)
+    expect(captureWorkshopEvent).not.toHaveBeenCalled()
+
+    visibility.mockReturnValue('visible')
+    document.dispatchEvent(new Event('visibilitychange'))
+    delivery.settle(output.url, 'succeeded')
     expect(captureWorkshopEvent).toHaveBeenCalledExactlyOnceWith({
       name: 'delivery_finished',
-      properties: expect.objectContaining({ status: 'cancelled' })
-    })
-    await vi.advanceTimersByTimeAsync(120_000)
-    expect(captureWorkshopEvent).toHaveBeenCalledWith({
-      name: 'delivery_finished',
-      properties: expect.objectContaining({ status: 'cancelled' })
+      properties: expect.objectContaining({ status: 'succeeded' })
     })
   })
 
-  it('excludes a backgrounded delivery even when its delayed timer runs after returning', async () => {
+  it('pauses a delivery deadline while hidden and restarts it on return', async () => {
     const visibility = vi
       .spyOn(document, 'visibilityState', 'get')
       .mockReturnValue('visible')
@@ -138,10 +141,16 @@ describe('Workshop output delivery', () => {
     document.dispatchEvent(new Event('visibilitychange'))
     visibility.mockReturnValue('visible')
     document.dispatchEvent(new Event('visibilitychange'))
-    await vi.advanceTimersByTimeAsync(120_000)
+    await vi.advanceTimersByTimeAsync(119_999)
+    expect(captureWorkshopEvent).not.toHaveBeenCalled()
+    await vi.advanceTimersByTimeAsync(1)
     expect(captureWorkshopEvent).toHaveBeenCalledExactlyOnceWith({
       name: 'delivery_finished',
-      properties: expect.objectContaining({ status: 'cancelled' })
+      properties: expect.objectContaining({
+        request_id: 'router-id',
+        status: 'failed',
+        reason: 'media_timeout'
+      })
     })
 
     delivery.start(analytics, 'next-id', output)

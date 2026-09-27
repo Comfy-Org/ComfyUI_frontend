@@ -31,6 +31,9 @@
       "@/utils/networkUtil": [
         "./packages/shared-frontend-utils/src/networkUtil.ts"
       ],
+      "@/utils/urlSafety": [
+        "./packages/shared-frontend-utils/src/urlSafety.ts"
+      ],
       "@/base/credits/comfyCredits": [
         "./packages/shared-frontend-utils/src/creditsUtil.ts"
       ]

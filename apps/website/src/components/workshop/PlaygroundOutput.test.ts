@@ -32,6 +32,90 @@ const succeeded = (out: RunOutput, nsfw = false): RunState => ({
 })
 
 describe('PlaygroundOutput', () => {
+  it('uses a signed download without buffering media and refreshes an expired link', async () => {
+    const user = userEvent.setup()
+    const media = {
+      ...output('signed'),
+      id: 'primary',
+      download: { url: 'https://storage.example/download', expiresAt: 5000 }
+    }
+    const view = render(PlaygroundOutput, {
+      props: {
+        modelName: 'Workflow',
+        now: 2000,
+        state: {
+          status: 'succeeded',
+          output: media,
+          completedAt: 1000,
+          nsfw: false
+        }
+      }
+    })
+    const download = screen.getByRole('link', { name: 'Download' })
+    let followsLink = false
+    download.addEventListener('click', (event) => {
+      followsLink = !event.defaultPrevented
+      event.preventDefault()
+    })
+    expect(download).toHaveAttribute('href', media.download.url)
+    await user.click(download)
+    expect(followsLink).toBe(true)
+    expect(downloadOutput).not.toHaveBeenCalled()
+    await view.rerender({ now: 6000 })
+    expect(screen.getByRole('img', { name: 'Output' })).toHaveAttribute(
+      'src',
+      media.url
+    )
+    await user.click(
+      screen.getByRole('link', { name: 'Refresh download link' })
+    )
+    expect(view.emitted().refresh).toEqual([[media.url]])
+    expect(view.emitted().retry).toBeUndefined()
+    expect(downloadOutput).not.toHaveBeenCalled()
+  })
+
+  it('keeps the selected file while its link is renewed and expires files independently', async () => {
+    const user = userEvent.setup()
+    const primary = { ...output('first'), id: 'first', expiresAt: 3000 }
+    const second = { ...output('second'), id: 'second', expiresAt: 10000 }
+    const state: RunState = {
+      status: 'succeeded',
+      output: primary,
+      completedAt: 1000,
+      nsfw: false
+    }
+    const view = render(PlaygroundOutput, {
+      props: { modelName: 'Workflow', state, attachments: [second], now: 2000 }
+    })
+    await user.click(screen.getByRole('button', { name: 'Image 2' }))
+    await view.rerender({
+      state: { ...state, output: { ...primary } },
+      attachments: [{ ...second, url: 'https://example.com/renewed.webp' }],
+      now: 5000
+    })
+    expect(screen.getByRole('img', { name: 'Output' })).toHaveAttribute(
+      'src',
+      'https://example.com/renewed.webp'
+    )
+    await user.click(screen.getByRole('button', { name: 'Image 1' }))
+    expect(screen.getByTestId('run-expired')).toHaveTextContent(
+      'This output has expired.'
+    )
+    await user.click(screen.getByRole('button', { name: 'Image 2' }))
+    expect(screen.queryByTestId('run-expired')).toBeNull()
+  })
+
+  it('shows the supplied run phase before generation begins', () => {
+    render(PlaygroundOutput, {
+      props: {
+        modelName: 'Workflow',
+        now: 3000,
+        state: { status: 'running', startedAt: 1000, label: 'Queued' }
+      }
+    })
+    expect(screen.getByRole('status')).toHaveTextContent('Queued')
+    expect(screen.queryByText('Generating…')).toBeNull()
+  })
   it.for([
     { event: 'playing', status: 'succeeded' },
     { event: 'pause', status: 'cancelled' }
@@ -436,13 +520,15 @@ describe('PlaygroundOutput', () => {
     await user.click(screen.getByTestId('output-download'))
     expect(downloadOutput).toHaveBeenLastCalledWith(
       'https://example.com/b.webp',
-      'latest.webp'
+      'latest.webp',
+      { onUnavailable: undefined }
     )
     await user.click(screen.getByTestId('earlier-run-0'))
     await user.click(screen.getByTestId('output-download'))
     expect(downloadOutput).toHaveBeenLastCalledWith(
       'https://example.com/first.webp',
-      'first.webp'
+      'first.webp',
+      { onUnavailable: undefined }
     )
   })
 
@@ -450,12 +536,12 @@ describe('PlaygroundOutput', () => {
     {
       locale: 'en' as const,
       label: 'Open output',
-      hint: 'Automatic download failed. Open the output to save it.'
+      hint: 'If your download did not start, open the output to save a copy.'
     },
     {
       locale: 'zh-CN' as const,
       label: '打开输出',
-      hint: '自动下载失败。请打开输出文件后保存。'
+      hint: '如果下载未开始，请打开输出文件并保存副本。'
     }
   ])(
     'offers a native fallback link after download failure in $locale',

@@ -1,3 +1,4 @@
+import { isAuthenticatedConfigLoaded } from '@/platform/remoteConfig/remoteConfig'
 import { computed, ref, shallowRef, toValue, watch } from 'vue'
 import { createSharedComposable } from '@vueuse/core'
 
@@ -7,6 +8,7 @@ import {
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
+import { isCloud } from '@/platform/distribution/types'
 import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type {
   PreviewSubscribeOptions,
@@ -157,7 +159,8 @@ function useBillingContextInternal(): BillingContext {
     () =>
       canAccessSubscriptionFeatures.value &&
       (!isFreeTier.value ||
-        !freeTierQuota.quotaEnabled.value ||
+        !isCloud ||
+        !isAuthenticatedConfigLoaded.value ||
         freeTierQuota.freeTierExecutionPermitted.value)
   )
 

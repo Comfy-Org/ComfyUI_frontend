@@ -3,7 +3,10 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { workshopContract } from './workshop-contract-catalog'
 import { WORKSHOP_ROUTER_BASE_URL } from './workshop-env'
 import { WorkshopRouterError } from './workshop-router-errors'
-import { runWorkshopRouter } from './workshop-router-queue'
+import {
+  runWorkshopRouter,
+  WORKSHOP_LEAVE_RUNNING
+} from './workshop-router-queue'
 import { workshopFailureAnalytics } from '../scripts/workshop-analytics'
 
 const MODEL = 'bfl/flux-2-pro'
@@ -51,6 +54,7 @@ function refusal(status: number, errorType: string, retryAfter?: string) {
     {
       status,
       headers: {
+        'X-Comfy-Request-Id': 'submit-call',
         'X-Comfy-Error-Type': errorType,
         ...(retryAfter === undefined ? {} : { 'Retry-After': retryAfter })
       }
@@ -110,6 +114,86 @@ describe('queued Router delivery', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-09-19T12:00:00Z'))
+  })
+
+  it('asks for saving in the address and leaves the provider body alone', async () => {
+    const calls = stubFetch(
+      Response.json(
+        { request_id: REQUEST_ID, status: 'IN_QUEUE', comfy_save_asset: true },
+        { status: 201 }
+      ),
+      result()
+    )
+    await settle(runWorkshopRouter({ ...options(), comfy_save_asset: true }))
+    const [url, init] = calls.mock.calls[0]
+    expect(String(url)).toBe(`${SUBMIT_URL}?comfy_save_asset=true`)
+    expect(init?.body).toBe('{"prompt":"Private prompt"}')
+  })
+
+  // The request was admitted before the refusal was noticed, so the machine is
+  // already running: throwing without stopping it would bill for nothing.
+  it('cancels an admitted run whose save the router never acknowledged', async () => {
+    const calls = stubFetch(admitted(), Response.json({}, { status: 202 }))
+    const onRequestId = vi.fn()
+    await expect(
+      settle(
+        runWorkshopRouter({ ...options(), comfy_save_asset: true, onRequestId })
+      )
+    ).rejects.toBeInstanceOf(WorkshopRouterError)
+    expect(onRequestId).toHaveBeenLastCalledWith(REQUEST_ID)
+    expect(requestedUrls(calls)).toEqual([
+      `POST ${SUBMIT_URL}?comfy_save_asset=true`,
+      `PUT ${RESULT_URL}/cancel`
+    ])
+  })
+
+  // A refused submit carries a call id like any other answer, but nothing was
+  // admitted. Handing that id out would let the page offer to leave running a
+  // generation the Router never took.
+  it('does not fall back to an unsaved synchronous generation when saving is refused', async () => {
+    const calls = stubFetch(refusal(403, 'not_enabled'))
+    const onRequestId = vi.fn()
+    await expect(
+      settle(
+        runWorkshopRouter({ ...options(), comfy_save_asset: true, onRequestId })
+      )
+    ).rejects.toBeInstanceOf(WorkshopRouterError)
+    expect(onRequestId).not.toHaveBeenCalled()
+    expect(calls).toHaveBeenCalledTimes(1)
+    expect(String(calls.mock.calls[0][0])).toBe(
+      `${SUBMIT_URL}?comfy_save_asset=true`
+    )
+  })
+
+  it('cancels the admitted generation when its page goes away for any other reason', async () => {
+    const controller = new AbortController()
+    const calls = vi.fn<typeof fetch>(async (_, init) => {
+      if (init?.method === 'POST') return admitted()
+      controller.abort()
+      throw controller.signal.reason
+    })
+    vi.stubGlobal('fetch', calls)
+    await expect(
+      settle(runWorkshopRouter(options(controller.signal)))
+    ).rejects.toMatchObject({ name: 'AbortError' })
+    expect(requestedUrls(calls).at(-1)).toBe(`PUT ${RESULT_URL}/cancel`)
+  })
+
+  it('leaves the admitted generation running only when told to leave it running', async () => {
+    const controller = new AbortController()
+    const calls = vi.fn<typeof fetch>(async (_, init) => {
+      if (init?.method === 'POST') return admitted()
+      controller.abort(WORKSHOP_LEAVE_RUNNING)
+      throw controller.signal.reason
+    })
+    vi.stubGlobal('fetch', calls)
+    await expect(
+      settle(runWorkshopRouter(options(controller.signal)))
+    ).rejects.toMatchObject({ name: 'AbortError' })
+    expect(requestedUrls(calls)).toEqual([
+      `POST ${SUBMIT_URL}`,
+      `GET ${RESULT_URL}`
+    ])
   })
 
   it('submits once, polls until the run finishes, and reports the durable request id', async () => {
@@ -316,6 +400,117 @@ describe('queued Router delivery', () => {
       'exception_name'
     )
   })
+
+  it('attributes a Kling HDR refusal to the source video field', async () => {
+    const contract = workshopContract('kling/kling-v3-omni')
+    assert.exists(contract)
+    stubFetch(
+      admitted(),
+      Response.json(
+        {
+          code: 0,
+          data: {
+            task_status: 'failed',
+            task_status_msg: 'VideoNormalize failed, HDR video is not supported'
+          }
+        },
+        {
+          status: 502,
+          headers: { 'X-Comfy-Error-Type': 'provider_error' }
+        }
+      )
+    )
+
+    await expect(
+      settle(runWorkshopRouter({ ...options(), contract }))
+    ).rejects.toMatchObject({
+      reason: 'validation',
+      fieldErrors: { video_url: 'videoHdrUnsupported' },
+      response: { status: 502, errorType: 'provider_error' },
+      requestSettlement: 'terminal'
+    })
+  })
+
+  it('attributes a Seedream layer-decomposition refusal to the source image', async () => {
+    const contract = workshopContract('byteplus/seedream-5-0-pro-260628')
+    assert.exists(contract)
+    stubFetch(
+      admitted(),
+      Response.json(
+        {
+          error: {
+            code: 'InvalidParameter',
+            message:
+              'The image content is too complex to decompose into layers',
+            param: 'image'
+          }
+        },
+        {
+          status: 400,
+          headers: { 'X-Comfy-Error-Type': 'invalid_input' }
+        }
+      )
+    )
+
+    await expect(
+      settle(
+        runWorkshopRouter({
+          ...options(),
+          contract,
+          body: {
+            prompt: 'Separate this image',
+            image: 'data:image/png;base64,AA==',
+            layer_decomposition: true
+          }
+        })
+      )
+    ).rejects.toMatchObject({
+      reason: 'validation',
+      fieldErrors: { images: 'imageLayerDecompositionUnsupported' },
+      response: { status: 400, errorType: 'invalid_input' },
+      requestSettlement: 'terminal'
+    })
+  })
+
+  it.for([
+    {
+      name: 'layer separation was not requested',
+      body: { image: 'data:image/png;base64,AA==' },
+      message: 'The image content is too complex to decompose into layers'
+    },
+    {
+      name: 'the provider rejected a different image constraint',
+      body: {
+        image: 'data:image/png;base64,AA==',
+        layer_decomposition: true
+      },
+      message: 'The image width is invalid'
+    }
+  ])(
+    'does not attribute Seedream validation when $name',
+    async ({ body, message }) => {
+      const contract = workshopContract('byteplus/seedream-5-0-pro-260628')
+      assert.exists(contract)
+      stubFetch(
+        admitted(),
+        Response.json(
+          { error: { code: 'InvalidParameter', message, param: 'image' } },
+          {
+            status: 400,
+            headers: { 'X-Comfy-Error-Type': 'invalid_input' }
+          }
+        )
+      )
+
+      await expect(
+        settle(runWorkshopRouter({ ...options(), contract, body }))
+      ).rejects.toMatchObject({
+        reason: 'validation',
+        fieldErrors: {},
+        response: { status: 400, errorType: 'invalid_input' }
+      })
+    }
+  )
 
   it('reports a stored provider moderation payload as a terminal policy refusal', async () => {
     stubFetch(

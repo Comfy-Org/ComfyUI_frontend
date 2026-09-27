@@ -79,6 +79,7 @@ const featureGroups = computed<PlanFeatureGroup[]>(() => [
     features: [
       { text: inviteMembersKey },
       { text: 'pricing.feature.concurrentWorkflows' },
+      { text: 'pricing.feature.apiConcurrency25' },
       { text: 'pricing.feature.sharedCreditPool' },
       { text: 'pricing.feature.roleBasedPermissions' }
     ]

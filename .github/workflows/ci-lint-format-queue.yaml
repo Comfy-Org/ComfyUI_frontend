@@ -83,7 +83,7 @@ jobs:
           path: ${{ env.TYPECHECK_CACHE_PATHS }}
 
       - name: Typecheck application and packages
-        run: pnpm typecheck
+        run: pnpm typecheck && pnpm typecheck:workspaces
 
       - name: Save incremental typecheck cache
         if: always()

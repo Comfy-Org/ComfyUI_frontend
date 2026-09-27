@@ -30,7 +30,7 @@ test(
     }
     const captured: z.infer<typeof eventSchema>[] = []
     await context.route(
-      (url) => url.hostname === 't.comfy.org' && /\/e\/$/.test(url.pathname),
+      (url) => url.hostname === 't.comfy.org' && url.pathname.endsWith('/e/'),
       async (route) => {
         const body = route.request().postDataBuffer()
         if (!body) throw new Error('Missing analytics request body')
