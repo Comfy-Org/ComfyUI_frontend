@@ -914,12 +914,29 @@ export default defineConfig({
     env: { TZ: 'UTC' },
     setupFiles: ['./vitest.timer.setup.ts', './vitest.setup.ts'],
     retry: process.env.CI ? 2 : 0,
-    include: [
-      'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
-      'scripts/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
-      'browser_tests/**/*.test.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
-      'tools/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
-      'build/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: 'frontend',
+          include: [
+            'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
+            'browser_tests/**/*.test.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'
+          ]
+        }
+      },
+      {
+        extends: true,
+        test: {
+          name: 'tooling',
+          environment: 'node',
+          include: [
+            'scripts/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
+            'tools/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
+            'build/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'
+          ]
+        }
+      }
     ],
     coverage: {
       provider: 'v8',
