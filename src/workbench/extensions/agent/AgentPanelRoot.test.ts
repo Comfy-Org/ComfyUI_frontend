@@ -574,7 +574,7 @@ describe('AgentPanelRoot onboarding', () => {
     expect(
       screen.queryByRole('dialog', { name: 'Meet your Comfy Agent' })
     ).not.toBeInTheDocument()
-    vi.mocked(useTelemetry()!.trackAgentOnboardingShown).mockClear()
+    telemetry.trackAgentOnboardingShown.mockClear()
 
     await userEvent.click(screen.getByRole('button', { name: 'Take the tour' }))
 
@@ -584,7 +584,7 @@ describe('AgentPanelRoot onboarding', () => {
     expect(
       await screen.findByRole('dialog', { name: 'Meet your Comfy Agent' })
     ).toBeInTheDocument()
-    expect(useTelemetry()!.trackAgentOnboardingShown).toHaveBeenCalledTimes(1)
+    expect(telemetry.trackAgentOnboardingShown).toHaveBeenCalledTimes(1)
   })
 
   it('holds a replay requested while App Mode has the coach deferred', async () => {
