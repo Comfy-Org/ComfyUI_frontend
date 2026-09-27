@@ -2,3 +2,6 @@
 @import '@comfyorg/design-system/css/style.css';
 
 @source './**/*.{ts,vue}';
+/* The shared checkout steps and the class recipes they render. */
+@source '../../../packages/account-ui/src/billing/checkout/**/*.vue';
+@source '../../../packages/design-system/src/*.variants.ts';

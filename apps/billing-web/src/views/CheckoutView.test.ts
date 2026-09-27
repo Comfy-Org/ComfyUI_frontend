@@ -1,9 +1,12 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
-import { nextTick, ref } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
-import type { BillingOperationState } from '@comfyorg/account-core/billing'
+import type {
+  BillingOperationState,
+  SubscriptionPreview
+} from '@comfyorg/account-core/billing'
 import type { AccountCredential } from '@comfyorg/account-core/session'
 import { BILLING_CLIENT_KEY } from '@comfyorg/account-ui/billing'
 import { parseBillingEntry } from '@comfyorg/billing-contract'
@@ -87,8 +90,8 @@ vi.mock(import('@/session/stripeChallengePort'), () => ({
 }))
 
 /**
- * The provider form is covered in the package against the real Stripe mocks.
- * Here it records what it was handed and lets a test hand back a token.
+ * The card form is covered in the package against the real Stripe mocks. Here
+ * it records what it was handed and lets a test hand back a token.
  */
 const formProps = vi.hoisted(() => ({
   value: {} as Record<string, unknown>,
@@ -96,37 +99,65 @@ const formProps = vi.hoisted(() => ({
 }))
 let reportConfirm: (confirmationToken: string) => void = () => {}
 
-vi.mock<unknown>(import('@comfyorg/account-ui/billing/stripe'), () => ({
-  StripePaymentForm: {
-    name: 'StripePaymentForm',
-    props: {
-      publishableKey: { type: String, default: '' },
-      amountCents: { type: Number, default: 0 },
-      currency: { type: String, default: '' },
-      copy: { type: Object, default: () => ({}) },
-      paymentMethodConfigurationId: { type: String, default: '' },
-      isLoading: { type: Boolean, default: false },
-      canSubmit: { type: Boolean, default: true }
-    },
-    emits: ['confirm', 'submittingChange', 'phase'],
-    setup(
-      props: Record<string, unknown>,
-      {
-        emit,
-        slots
-      }: {
-        emit: (event: string, payload: unknown) => void
-        slots: { submit?: (slotProps: Record<string, unknown>) => unknown }
-      }
-    ) {
-      formProps.value = props
-      formProps.mounted = true
-      reportConfirm = (token) => emit('confirm', token)
-      return () =>
-        slots.submit?.({ disabled: !props.canSubmit, loading: props.isLoading })
-    }
+const PaymentFormStub = defineComponent({
+  name: 'CheckoutPaymentForm',
+  props: {
+    publishableKey: { type: String, default: '' },
+    amountCents: { type: Number, default: 0 },
+    currency: { type: String, default: '' },
+    submitLabel: { type: String, default: '' },
+    isLoading: { type: Boolean, default: false },
+    canSubmit: { type: Boolean, default: true }
+  },
+  emits: ['confirm'],
+  setup(props, { emit }) {
+    formProps.value = props
+    formProps.mounted = true
+    reportConfirm = (token) => emit('confirm', token)
+    return () =>
+      h(
+        'button',
+        {
+          type: 'submit',
+          disabled: !props.canSubmit,
+          'aria-busy': props.isLoading || undefined
+        },
+        props.submitLabel
+      )
   }
-}))
+})
+
+/** A quote the card form can price: an exact amount, a currency and an identity. */
+function cardQuote(overrides: Partial<SubscriptionPreview> = {}) {
+  return previewOf({
+    quote_id: 'q_1',
+    quote_version: 3,
+    amount_due_cents: 2800,
+    currency: 'usd',
+    ...overrides
+  })
+}
+
+/** A cancelled Standard subscriber upgrading to Creator. */
+function upgradeQuote(overrides: Partial<SubscriptionPreview> = {}) {
+  return cardQuote({
+    transition_type: 'upgrade',
+    current_plan: {
+      slug: 'standard_monthly',
+      tier: 'STANDARD',
+      duration: 'MONTHLY',
+      price_cents: 2000,
+      credits_cents: 0,
+      seat_summary: {
+        seat_count: 1,
+        total_cost_cents: 2000,
+        total_credits_cents: 0
+      },
+      period_end: '2026-10-19T00:00:00.000Z'
+    },
+    ...overrides
+  })
+}
 
 async function renderCheckout(
   path = CHECKOUT_PATH,
@@ -140,10 +171,7 @@ async function renderCheckout(
     routes: [{ path: '/v1/checkout', component: CheckoutView }]
   })
   const fake = createFakeBillingClient({
-    preview: {
-      status: 'ok',
-      value: previewOf({ quote_id: 'q_1', quote_version: 3 })
-    },
+    preview: { status: 'ok', value: cardQuote() },
     ...options
   })
   if (live !== undefined) fake.publishOperation(live)
@@ -152,7 +180,8 @@ async function renderCheckout(
   render(CheckoutView, {
     global: {
       plugins: [createBillingI18n(), router],
-      provide: { [BILLING_CLIENT_KEY]: fake.client }
+      provide: { [BILLING_CLIENT_KEY]: fake.client },
+      stubs: { CheckoutPaymentForm: PaymentFormStub }
     }
   })
   return { ...fake, router }
@@ -171,28 +200,66 @@ describe('CheckoutView', () => {
     formProps.mounted = false
   })
 
-  it('quotes the plan the link names and prices the summary from it', async () => {
+  it('quotes the plan the link names and prices the confirm from it', async () => {
     const fake = await renderCheckout()
 
-    expect(await screen.findByText('Creator · Monthly')).toBeInTheDocument()
+    expect(
+      await screen.findByRole('heading', { name: 'Confirm your payment' })
+    ).toBeInTheDocument()
     expect(fake.previewSubscribe).toHaveBeenCalledWith(
       { planSlug: 'creator_monthly' },
       expect.anything()
     )
-    expect(screen.getAllByText('$28.00')).toHaveLength(2)
-    expect(screen.getByText('USD per month')).toBeInTheDocument()
-    expect(screen.getByText('$69.00')).toBeInTheDocument()
+    expect(screen.getByText('Creator')).toBeInTheDocument()
+    expect(screen.getByText('$28')).toBeInTheDocument()
+    expect(screen.getByText('USD / mo')).toBeInTheDocument()
+    expect(screen.getByText('7,400')).toBeInTheDocument()
+    expect(screen.getByText('$28.00')).toBeInTheDocument()
   })
 
   it('quotes and subscribes with the team credit stop the link names', async () => {
     const path = `${ENTRY_QUERY_PATH}&plan=team_per_credit_annual&team_credit_stop_id=stop_700`
-    const fake = await renderCheckout(path)
+    const fake = await renderCheckout(path, {
+      preview: {
+        status: 'ok',
+        value: cardQuote({
+          new_plan: {
+            ...cardQuote().new_plan,
+            slug: 'team_per_credit_annual',
+            tier: 'TEAM',
+            duration: 'ANNUAL',
+            price_cents: 756_000
+          }
+        })
+      },
+      plans: {
+        status: 'ok',
+        value: {
+          current_plan_slug: undefined,
+          plans: [],
+          team_credit_stops: {
+            default_stop_index: 0,
+            stops: [
+              {
+                id: 'stop_700',
+                credits: 147_700n,
+                monthly: { list_price_cents: 70_000n, price_cents: 66_500n },
+                yearly: { list_price_cents: 70_000n, price_cents: 63_000n }
+              }
+            ]
+          }
+        }
+      }
+    })
     await screen.findByRole('button', { name: 'Pay and subscribe' })
 
     expect(fake.previewSubscribe).toHaveBeenCalledWith(
       { planSlug: 'team_per_credit_annual', teamCreditStopId: 'stop_700' },
       expect.anything()
     )
+    expect(screen.getByText('Team Plan')).toBeInTheDocument()
+    expect(screen.getByText('$630')).toBeInTheDocument()
+    expect(screen.getByText('1,772,400')).toBeInTheDocument()
 
     reportConfirm('ctoken_1')
 
@@ -214,7 +281,7 @@ describe('CheckoutView', () => {
     const next = `/v1/checkout?${ENTRY_QUERY}&plan=creator_annual`
     fake.previewSubscribe.mockResolvedValue({
       status: 'ok',
-      value: previewOf({ quote_id: 'q_2', quote_version: 7 })
+      value: cardQuote({ quote_id: 'q_2', quote_version: 7 })
     })
     // The router guard republishes the entry on every navigation; the route
     // record is the same, so the view is reused rather than remounted.
@@ -239,15 +306,11 @@ describe('CheckoutView', () => {
     )
   })
 
-  it('keeps a live operation on the plan it was quoted for', async () => {
+  it('keeps a live operation on the plan it was quoted for, paying', async () => {
     const fake = await renderCheckout()
     await screen.findByRole('button', { name: 'Pay and subscribe' })
     fake.publishOperation(pendingOperation())
-    await waitFor(() =>
-      expect(
-        screen.queryByRole('button', { name: 'Pay and subscribe' })
-      ).toBeNull()
-    )
+    await waitFor(() => expect(formProps.value.isLoading).toBe(true))
 
     const next = `/v1/checkout?${ENTRY_QUERY}&plan=creator_annual`
     recordBillingEntry(parseBillingEntry(next))
@@ -257,14 +320,16 @@ describe('CheckoutView', () => {
     // The operation is still running against creator_monthly, so the page
     // stays on the quote that produced it rather than pricing another plan.
     expect(fake.previewSubscribe).toHaveBeenCalledTimes(1)
-    expect(screen.getByText('Creator · Monthly')).toBeInTheDocument()
+    expect(screen.getByText('Creator')).toBeInTheDocument()
   })
 
   it('still quotes when the lifecycle already carries an operation at mount', async () => {
     const fake = await renderCheckout(CHECKOUT_PATH, {}, pendingOperation())
 
     await waitFor(() => expect(fake.previewSubscribe).toHaveBeenCalledTimes(1))
-    expect(await screen.findByText('Creator · Monthly')).toBeInTheDocument()
+    expect(
+      await screen.findByRole('heading', { name: 'Confirm your payment' })
+    ).toBeInTheDocument()
   })
 
   it('re-quotes the deferred plan once a settled operation is dismissed', async () => {
@@ -280,7 +345,7 @@ describe('CheckoutView', () => {
     const next = `${ENTRY_QUERY_PATH}&plan=creator_annual`
     fake.previewSubscribe.mockResolvedValue({
       status: 'ok',
-      value: previewOf({ quote_id: 'q_2', quote_version: 7 })
+      value: cardQuote({ quote_id: 'q_2', quote_version: 7 })
     })
     recordBillingEntry(parseBillingEntry(next))
     await fake.router.push(next)
@@ -305,7 +370,7 @@ describe('CheckoutView', () => {
     )
   })
 
-  it("hands the form the quote and this deployment's key", async () => {
+  it("hands the card form the quote and this deployment's key", async () => {
     await renderCheckout()
 
     await screen.findByRole('button', { name: 'Pay and subscribe' })
@@ -337,11 +402,97 @@ describe('CheckoutView', () => {
     )
   })
 
+  it('charges the default saved method instead of showing the card form', async () => {
+    const fake = await renderCheckout(CHECKOUT_PATH, {
+      paymentMethods: {
+        status: 'ok',
+        value: [
+          {
+            id: 'pm_visa',
+            type: 'card',
+            brand: 'visa',
+            last4: '4242',
+            is_default: true
+          }
+        ]
+      }
+    })
+
+    expect(await screen.findByText('visa •••• 4242')).toBeInTheDocument()
+    expect(formProps.mounted).toBe(false)
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Pay and subscribe' })
+    )
+
+    await waitFor(() =>
+      expect(fake.subscribe).toHaveBeenCalledWith(
+        expect.objectContaining({ saved_payment_method_id: 'pm_visa' })
+      )
+    )
+    expect(fake.subscribe.mock.calls[0][0]).not.toHaveProperty(
+      'confirmation_token'
+    )
+  })
+
+  it('swaps the saved method for the card form on Change', async () => {
+    await renderCheckout(CHECKOUT_PATH, {
+      paymentMethods: {
+        status: 'ok',
+        value: [
+          {
+            id: 'pm_visa',
+            type: 'card',
+            brand: 'visa',
+            last4: '4242',
+            is_default: true
+          }
+        ]
+      }
+    })
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Change' }))
+
+    await waitFor(() => expect(formProps.mounted).toBe(true))
+    expect(screen.queryByText('visa •••• 4242')).toBeNull()
+  })
+
+  it('re-quotes with a promo code only when it is applied', async () => {
+    const fake = await renderCheckout()
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+
+    await userEvent.type(
+      screen.getByRole('textbox', { name: 'Promo code' }),
+      'SPRING'
+    )
+    await waitFor(() => expect(formProps.value.canSubmit).toBe(false))
+    expect(fake.previewSubscribe).toHaveBeenCalledTimes(1)
+
+    fake.previewSubscribe.mockResolvedValue({
+      status: 'ok',
+      value: cardQuote({ promotion_code: 'SPRING', quote_version: 4 })
+    })
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }))
+
+    await waitFor(() =>
+      expect(fake.previewSubscribe).toHaveBeenLastCalledWith(
+        { planSlug: 'creator_monthly', promotionCode: 'SPRING' },
+        expect.anything()
+      )
+    )
+    await waitFor(() => expect(formProps.value.canSubmit).toBe(true))
+    reportConfirm('ctoken_1')
+    await waitFor(() =>
+      expect(fake.subscribe).toHaveBeenCalledWith(
+        expect.objectContaining({ promotion_code: 'SPRING', quote_version: 4 })
+      )
+    )
+  })
+
   it('charges at the instant the quote was priced, not at the instant it arrives', async () => {
     const fake = await renderCheckout(CHECKOUT_PATH, {
       preview: {
         status: 'ok',
-        value: previewOf({ proration_at: '2026-09-18T12:00:00.000Z' })
+        value: cardQuote({ proration_at: '2026-09-18T12:00:00.000Z' })
       }
     })
     await screen.findByRole('button', { name: 'Pay and subscribe' })
@@ -359,7 +510,7 @@ describe('CheckoutView', () => {
     const fake = await renderCheckout(CHECKOUT_PATH, {
       preview: {
         status: 'ok',
-        value: previewOf({
+        value: cardQuote({
           is_immediate: false,
           proration_at: '2026-09-18T12:00:00.000Z'
         })
@@ -379,16 +530,14 @@ describe('CheckoutView', () => {
     fake.subscribe.mockResolvedValueOnce({ status: 'error', code: 'CONFLICT' })
 
     reportConfirm('ctoken_1')
-    expect(
-      await screen.findByText(
-        'That change conflicts with your current subscription.'
-      )
-    ).toBeInTheDocument()
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'That change conflicts with your current subscription.'
+    )
 
     const next = `/v1/checkout?${ENTRY_QUERY}&plan=creator_annual`
     fake.previewSubscribe.mockResolvedValue({
       status: 'ok',
-      value: previewOf({ quote_id: 'q_2' })
+      value: cardQuote({ quote_id: 'q_2' })
     })
     recordBillingEntry(parseBillingEntry(next))
     await fake.router.push(next)
@@ -437,7 +586,8 @@ describe('CheckoutView', () => {
     expect(assign).not.toHaveBeenCalled()
   })
 
-  it('shows the completed state and carries the outcome on the way back', async () => {
+  it('shows the success step and closes back to the product with the outcome', async () => {
+    const assign = stubNavigation()
     await renderCheckout(CHECKOUT_PATH, {
       subscribe: {
         status: 'ok',
@@ -451,14 +601,15 @@ describe('CheckoutView', () => {
     expect(
       await screen.findByRole('heading', { name: "You're all set" })
     ).toBeInTheDocument()
-    const back = screen.getByRole('link', { name: 'Return to ComfyUI' })
-    expect(back).toHaveAttribute(
-      'href',
+    const [, close] = screen.getAllByRole('button', { name: 'Close' })
+    await userEvent.click(close)
+    expect(assign).toHaveBeenCalledExactlyOnceWith(
       'https://testcloud.comfy.org/?billing_result=success&billing_ref=op_9'
     )
   })
 
   it('returns the customer into the workspace the session was minted for', async () => {
+    const assign = stubNavigation()
     workspace.session = teamSession()
     workspace.bound = 'ws-other'
     await renderCheckout(CHECKOUT_PATH, {
@@ -472,10 +623,9 @@ describe('CheckoutView', () => {
     reportConfirm('ctoken_1')
 
     await screen.findByRole('heading', { name: "You're all set" })
-    expect(
-      screen.getByRole('link', { name: 'Return to ComfyUI' })
-    ).toHaveAttribute(
-      'href',
+    const [, close] = screen.getAllByRole('button', { name: 'Close' })
+    await userEvent.click(close)
+    expect(assign).toHaveBeenCalledExactlyOnceWith(
       'https://testcloud.comfy.org/?workspace=ws-team&billing_result=success&billing_ref=op_9'
     )
   })
@@ -523,57 +673,65 @@ describe('CheckoutView', () => {
     ).toBeInTheDocument()
   })
 
-  it('holds the pay action until a reactivation charge the quote names is confirmed', async () => {
+  it('holds a reactivating plan change until its charge is acknowledged', async () => {
     const fake = await renderCheckout(CHECKOUT_PATH, {
       preview: {
         status: 'ok',
-        value: previewOf({ requires_reactivation_confirmation: true })
+        value: upgradeQuote({
+          requires_reactivation_confirmation: true,
+          amount_due_cents: 4500
+        })
       }
     })
-    const pay = await screen.findByRole('button', { name: 'Pay and subscribe' })
-    expect(pay).toBeDisabled()
+    const confirm = await screen.findByRole('button', {
+      name: 'Confirm & reactivate — $45.00 today'
+    })
+    expect(confirm).toBeDisabled()
 
     await userEvent.click(
       screen.getByRole('checkbox', {
-        name: 'Your subscription was cancelled. I confirm the $28.00 charge to reactivate it.'
+        name: "I understand I'll be charged $45.00 today"
       })
     )
-    expect(pay).toBeEnabled()
-    reportConfirm('ctoken_1')
+    expect(confirm).toBeEnabled()
+    await userEvent.click(confirm)
 
     await waitFor(() =>
       expect(fake.subscribe).toHaveBeenCalledWith(
         expect.objectContaining({ confirm_reactivation: true })
       )
     )
+    expect(fake.subscribe.mock.calls[0][0]).not.toHaveProperty(
+      'confirmation_token'
+    )
   })
 
   it('re-quotes and asks when the server, not the quote, demands the confirmation', async () => {
-    const fake = await renderCheckout()
+    const fake = await renderCheckout(CHECKOUT_PATH, {
+      preview: { status: 'ok', value: upgradeQuote() }
+    })
     fake.subscribe.mockResolvedValueOnce({
       status: 'error',
       code: 'REACTIVATION_CONFIRMATION_REQUIRED'
     })
-    await screen.findByRole('button', { name: 'Pay and subscribe' })
 
-    reportConfirm('ctoken_1')
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Confirm upgrade' })
+    )
 
-    const confirmBox = await screen.findByRole('checkbox')
+    const reactivate = await screen.findByRole('button', {
+      name: 'Confirm & reactivate — $28.00 today'
+    })
     expect(fake.previewSubscribe).toHaveBeenCalledTimes(2)
-    expect(
-      screen.getByRole('button', { name: 'Pay and subscribe' })
-    ).toBeDisabled()
     expect(fake.subscribe).toHaveBeenCalledTimes(1)
+    expect(reactivate).toBeDisabled()
 
-    await userEvent.click(confirmBox)
-    reportConfirm('ctoken_2')
+    await userEvent.click(screen.getByRole('checkbox'))
+    await userEvent.click(reactivate)
 
     await waitFor(() => expect(fake.subscribe).toHaveBeenCalledTimes(2))
     expect(fake.subscribe).toHaveBeenLastCalledWith(
-      expect.objectContaining({
-        confirmation_token: 'ctoken_2',
-        confirm_reactivation: true
-      })
+      expect.objectContaining({ confirm_reactivation: true })
     )
   })
 
@@ -585,11 +743,9 @@ describe('CheckoutView', () => {
 
     reportConfirm('ctoken_1')
 
-    expect(
-      await screen.findByText(
-        "We couldn't reach the billing service. Please try again."
-      )
-    ).toBeInTheDocument()
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      "We couldn't reach the billing service. Please try again."
+    )
     // Present is not the same as usable: a refused charge has to leave the
     // customer able to try again.
     expect(
@@ -602,7 +758,7 @@ describe('CheckoutView', () => {
     async (action) => {
       const assign = stubNavigation()
       await renderCheckout()
-      await screen.findByText('Creator · Monthly')
+      await screen.findByRole('button', { name: 'Pay and subscribe' })
 
       await userEvent.click(screen.getByRole('button', { name: action }))
 
@@ -613,16 +769,16 @@ describe('CheckoutView', () => {
   )
 
   it.for([
-    ['upgrade', true, 2800] as const,
-    ['downgrade', true, 1400] as const,
-    ['duration_change', false, 0] as const
+    ['upgrade', true, 2800, 'Confirm upgrade'] as const,
+    ['downgrade', true, 1400, 'Confirm upgrade'] as const,
+    ['duration_change', false, 0, 'Confirm change'] as const
   ])(
     'confirms a %s plan change against the saved payment method, no card form',
-    async ([transitionType, isImmediate, costTodayCents]) => {
+    async ([transitionType, isImmediate, costTodayCents, cta]) => {
       const fake = await renderCheckout(CHECKOUT_PATH, {
         preview: {
           status: 'ok',
-          value: previewOf({
+          value: cardQuote({
             transition_type: transitionType,
             is_immediate: isImmediate,
             cost_today_cents: costTodayCents,
@@ -630,21 +786,19 @@ describe('CheckoutView', () => {
           })
         }
       })
-      const pay = await screen.findByRole('button', {
-        name: 'Pay and subscribe'
-      })
+      const confirm = await screen.findByRole('button', { name: cta })
       expect(formProps.mounted).toBe(false)
 
-      await userEvent.click(pay)
+      await userEvent.click(confirm)
 
       await waitFor(() =>
         expect(fake.subscribe).toHaveBeenCalledWith(
           expect.objectContaining({ plan_slug: 'creator_monthly' })
         )
       )
-      expect(fake.subscribe.mock.calls[0][0]).not.toHaveProperty(
-        'confirmation_token'
-      )
+      const [request] = fake.subscribe.mock.calls[0]
+      expect(request).not.toHaveProperty('confirmation_token')
+      expect(request).not.toHaveProperty('saved_payment_method_id')
     }
   )
 

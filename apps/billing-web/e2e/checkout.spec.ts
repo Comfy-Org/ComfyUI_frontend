@@ -37,12 +37,16 @@ const CHECKOUT = entryPath('checkout', { plan: 'pro_monthly' })
 // Above the 8 s poll backoff cap, well below the 30 s parked cadence.
 const FAST_BACKOFF_DEADLINE_MS = 15_000
 
-/** The only scenarios in this fixture set with a payment method configured. */
+/**
+ * The only scenarios in this fixture set that collect a card: a payment
+ * method configured, and no saved method standing in for the card form.
+ */
 function withEmbeddedPaymentMethod(cloud: MockCloud): void {
   cloud.scenario.preview = {
     ...cloud.scenario.preview,
     payment_method_configuration_id: 'pmc_e2e'
   }
+  cloud.scenario.paymentMethods = []
 }
 
 async function fakeStripeCalls(
@@ -70,14 +74,14 @@ test('submitting payment carries the idempotency key and plan, and settles as su
   await expect(
     page.getByRole('heading', { name: 'Confirm your payment' })
   ).toBeVisible()
-  await expect(page.getByText('Pro · Monthly')).toBeVisible()
+  await expect(page.getByText('Pro', { exact: true })).toBeVisible()
 
   await page.getByRole('button', { name: 'Pay and subscribe' }).click()
 
   await expect(
     page.getByRole('heading', { name: "You're all set" })
   ).toBeVisible()
-  await expect(page.getByText('Pro · Monthly')).toBeVisible()
+  await expect(page.getByText('Pro', { exact: true })).toBeVisible()
 
   const subscribe = cloud.requests.find(
     (request) => request.path === '/billing/subscribe'
@@ -110,11 +114,11 @@ test('a scheduled plan change confirms against the saved payment method, no card
   await signIn(CHECKOUT)
 
   await expect(
-    page.getByRole('button', { name: 'Pay and subscribe' })
+    page.getByRole('heading', { name: 'Review your scheduled change' })
   ).toBeVisible()
-  await expect(page.getByText('Pro · Monthly')).toBeVisible()
+  await expect(page.getByText('Pro', { exact: true })).toBeVisible()
 
-  await page.getByRole('button', { name: 'Pay and subscribe' }).click()
+  await page.getByRole('button', { name: 'Confirm change' }).click()
 
   await expect(
     page.getByRole('heading', { name: "You're all set" })
@@ -128,6 +132,30 @@ test('a scheduled plan change confirms against the saved payment method, no card
 
   // The fake only installs itself once the app requests js.stripe.com, so
   // its absence proves Stripe.js was never loaded for this path.
+  expect(await page.evaluate('window.__e2eFakeStripe')).toBeUndefined()
+})
+
+test('a saved default method is charged in place of the card form', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  await signIn(CHECKOUT)
+
+  await expect(page.getByText('visa •••• 4242')).toBeVisible()
+  await page.getByRole('button', { name: 'Pay and subscribe' }).click()
+
+  await expect(
+    page.getByRole('heading', { name: "You're all set" })
+  ).toBeVisible()
+  const subscribe = cloud.requests.find(
+    (request) => request.path === '/billing/subscribe'
+  )
+  expect(subscribe?.body).toMatchObject({
+    plan_slug: 'pro_monthly',
+    saved_payment_method_id: 'pm_e2e'
+  })
+  expect(subscribe?.body).not.toHaveProperty('confirmation_token')
   expect(await page.evaluate('window.__e2eFakeStripe')).toBeUndefined()
 })
 
@@ -235,10 +263,10 @@ test('a completed 3DS challenge does not ask to verify again while the server se
   await expect.poll(() => polls).toBeGreaterThan(pollsAtChallengeEnd)
 
   await expect(
-    page.getByRole('heading', { name: 'Review payment' })
+    page.getByRole('heading', { name: 'Confirm your payment' })
   ).toBeVisible()
   await expect(
-    page.getByRole('button', { name: 'Continue verification' })
+    page.getByRole('button', { name: 'Complete verification' })
   ).toHaveCount(0)
 
   settled = true

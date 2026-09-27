@@ -24,6 +24,7 @@ export {
 } from './checkoutQuote'
 export type { CatalogTierKey } from './tierCatalog'
 export { TIER_CATALOG, toCatalogTierKey } from './tierCatalog'
+export { default as CheckoutButton } from './CheckoutButton.vue'
 export { default as CheckoutPaymentForm } from './CheckoutPaymentForm.vue'
 export { default as CheckoutSubscribeConfirm } from './CheckoutSubscribeConfirm.vue'
 export { default as CheckoutSuccess } from './CheckoutSuccess.vue'
