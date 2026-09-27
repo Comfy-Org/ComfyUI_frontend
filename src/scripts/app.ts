@@ -105,7 +105,8 @@ import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
+import type { ComfyExtension } from '@/types/comfy'
+import type { MissingNodeType } from '@/platform/nodeReplacement/types'
 import type {
   ExtensionManager,
   ToastMessageOptions
