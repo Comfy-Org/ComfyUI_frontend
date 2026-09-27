@@ -1,7 +1,7 @@
 import type { Plugin } from 'vite'
 
 const CATALOGUE_MODULE =
-  /\/src\/(?:config\/(?:workshop-browse-content|workshop-router-content|workshop-contract-catalog|workshop-model-order)\.ts|(?:content|data)\/workshop-[^/]+\.json)$/
+  /\/src\/(?:config\/(?:workshop-browse-content|workshop-router-content|workshop-contract-catalog|workshop-model-order|workshop-page-content|workshop-workflow-content|workshop-workflow-catalog)\.ts|(?:content|data)\/workshop-[^/]+\.jsonl?)$/
 
 export function workshopClientBoundary(): Plugin {
   return {

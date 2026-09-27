@@ -12,6 +12,7 @@ import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 
 import {
   UNIFIED_IDENTITY_SETTLE_TIMEOUT_MS,
@@ -80,6 +81,7 @@ vi.mock<unknown>(import('@/platform/auth/session/useSessionCookie'), () => ({
 }))
 
 vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 vi.mock(import('@/platform/workspace/api/workspaceApiUrl'), () => ({
   workspaceApiUrl: (route: string) => `https://api.example.com/api${route}`
@@ -3044,21 +3046,24 @@ describe('useWorkspaceAuthStore', () => {
       {
         status: 403,
         statusText: 'Forbidden',
-        detailKey: 'workspaceAuth.errors.accessDenied'
+        detailKey: 'workspaceAuth.errors.accessDenied',
+        code: 'ACCESS_DENIED'
       },
       {
         status: 404,
         statusText: 'Not Found',
-        detailKey: 'workspaceAuth.errors.workspaceNotFound'
+        detailKey: 'workspaceAuth.errors.workspaceNotFound',
+        code: 'WORKSPACE_NOT_FOUND'
       },
       {
         status: 401,
         statusText: 'Unauthorized',
-        detailKey: 'workspaceAuth.errors.invalidFirebaseToken'
+        detailKey: 'workspaceAuth.errors.invalidFirebaseToken',
+        code: 'INVALID_FIREBASE_TOKEN'
       }
     ])(
       'surfaces the $status permanent refresh error as a toast and clears the slot',
-      async ({ status, statusText, detailKey }) => {
+      async ({ status, statusText, detailKey, code }) => {
         vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
           'firebase-token-xyz'
         )
@@ -3099,6 +3104,15 @@ describe('useWorkspaceAuthStore', () => {
           outcome: 'permanent_failure',
           retry_count: 0
         })
+        expect(reportError).toHaveBeenCalledWith(
+          expect.any(Error),
+          expect.objectContaining({
+            errorType: 'failure_refreshing_unified_auth_permanent',
+            tags: { failure_code: code, retry_count: 0 },
+            // The toast path owns the console line for this failure.
+            logToConsole: false
+          })
+        )
         expect(unifiedToken.value).toBeNull()
       }
     )
@@ -3337,6 +3351,15 @@ describe('useWorkspaceAuthStore', () => {
         outcome: 'retries_exhausted',
         retry_count: 3
       })
+      // A RUM action cannot raise a Sentry alert, so the moment the cookie
+      // rail dies must also reach the error tracker (FE-1595).
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'failure_refreshing_unified_auth_retries_exhausted',
+          tags: expect.objectContaining({ retry_count: 3 })
+        })
+      )
       expect(
         unifiedToken.value,
         'a still-valid token keeps serving while there is time on it'

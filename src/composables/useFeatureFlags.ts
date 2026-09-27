@@ -39,6 +39,7 @@ export enum ServerFeatureFlag {
   HOSTED_BILLING_DESTINATION = 'hosted_billing_destination',
   SHOW_SIGNIN_BUTTON = 'show_signin_button',
   UNIFIED_CLOUD_AUTH = 'unified_cloud_auth',
+  UNIFIED_WEB_SESSION = 'unified_web_session',
   BILLING_CONTROL_ENABLED = 'billing_control_enabled',
   LEGACY_BILLING_MIGRATION_ENABLED = 'legacy_billing_migration_enabled',
   EMBEDDED_CHECKOUT_ENABLED = 'embedded_checked_enabled',
@@ -256,6 +257,18 @@ export function useFeatureFlags() {
         remoteConfig.value.unified_cloud_auth,
         false
       )
+    },
+    get unifiedWebSessionEnabled() {
+      if (!isCloud) return false
+
+      const key = ServerFeatureFlag.UNIFIED_WEB_SESSION
+      // Overrides skip the server's web_session_enabled pairing; whoever overrides
+      // this key must also be in the web_session_enabled set.
+      const value =
+        getSessionOverride<unknown>(key) ??
+        getDevOverride<unknown>(key) ??
+        remoteConfig.value.unified_web_session
+      return value === true
     },
     get billingControlEnabled() {
       return resolveAuthGatedFlag(

@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { CheckoutEntrySource } from '@/platform/telemetry/types'
+
 import {
   bindOperationToCheckoutJourney,
   clearCheckoutJourney,
@@ -7,6 +9,7 @@ import {
   getActiveCheckoutJourney,
   resolveCheckoutAssignment,
   resolveCheckoutJourney,
+  resolveEntrySource,
   toCheckoutJourneyContext
 } from './checkoutJourney'
 import type {
@@ -181,6 +184,44 @@ describe('resolveCheckoutJourney', () => {
     expect(getActiveCheckoutJourney()?.billing_op_id).toBe('op-1')
   })
 
+  it('blocks a same-rail entry under a different intent rather than evicting a bound journey', () => {
+    const first = activeJourney({
+      ...baseInput,
+      entryFlow: 'topup',
+      intent: 'settings_billing'
+    })
+    bindOperationToCheckoutJourney('op-1')
+
+    const second = resolveCheckoutJourney({
+      ...baseInput,
+      entryFlow: 'topup',
+      intent: 'agent_paywall'
+    })
+
+    expect(second.status).toBe('blocked')
+    expect(getActiveCheckoutJourney()?.journey_id).toBe(first.record.journey_id)
+    expect(getActiveCheckoutJourney()?.intent).toBe('settings_billing')
+    expect(getActiveCheckoutJourney()?.billing_op_id).toBe('op-1')
+  })
+
+  it('starts a new journey under a different intent once nothing is bound', () => {
+    const first = activeJourney({
+      ...baseInput,
+      entryFlow: 'topup',
+      intent: 'settings_billing'
+    })
+
+    const second = activeJourney({
+      ...baseInput,
+      entryFlow: 'topup',
+      intent: 'agent_paywall'
+    })
+
+    expect(second.resumed).toBe(false)
+    expect(second.record.journey_id).not.toBe(first.record.journey_id)
+    expect(second.record.intent).toBe('agent_paywall')
+  })
+
   it('still starts a fresh journey for a different rail when none is bound', () => {
     const subscription = activeJourney(baseInput)
     const topup = activeJourney({ ...baseInput, entryFlow: 'topup' })
@@ -331,4 +372,110 @@ describe('corrupt storage', () => {
     clearCheckoutJourney()
     expect(getActiveCheckoutJourney()).toBeNull()
   })
+})
+
+describe('entry source attribution across rehydration', () => {
+  const ENTRY_SOURCES: CheckoutEntrySource[] = [
+    'pricing',
+    'deep_link',
+    'recovery',
+    'settings_billing',
+    'other',
+    'unknown',
+    'agent_paywall'
+  ]
+
+  function persistHostedJourney(entrySource: CheckoutEntrySource): void {
+    const { record } = activeJourney({
+      ...baseInput,
+      entrySource,
+      uiMode: 'hosted'
+    })
+    const persisted = sessionStorage.getItem(STORAGE_KEY)
+    clearCheckoutJourney()
+    sessionStorage.setItem(STORAGE_KEY, persisted ?? '')
+    expect(record.entry_source).toBe(entrySource)
+  }
+
+  it.for(ENTRY_SOURCES)(
+    'carries %s from a persisted hosted journey into the resumed telemetry context',
+    (entrySource) => {
+      persistHostedJourney(entrySource)
+
+      const rehydrated = getActiveCheckoutJourney()
+
+      expect(rehydrated?.entry_source).toBe(entrySource)
+      expect(toCheckoutJourneyContext(rehydrated!)).toMatchObject({
+        entry_source: entrySource,
+        ui_mode: 'hosted'
+      })
+    }
+  )
+
+  it('resumes the persisted agent-paywall journey rather than starting a new one', () => {
+    persistHostedJourney('agent_paywall')
+
+    const resumed = activeJourney({
+      ...baseInput,
+      entrySource: 'agent_paywall',
+      uiMode: 'hosted'
+    })
+
+    expect(resumed.resumed).toBe(true)
+    expect(resumed.record.entry_source).toBe('agent_paywall')
+  })
+
+  it('still degrades an unrecognised persisted entry source to unknown', () => {
+    sessionStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        journey_id: 'journey-1',
+        entered_at: '2026-09-09T00:00:00.000Z',
+        started_at_ms: Date.now(),
+        actor_uid: 'user-1',
+        workspace_id: 'ws-1',
+        entry_flow: 'initial_subscription',
+        entry_source: 'not_a_source',
+        assignment_status: 'unavailable'
+      })
+    )
+
+    expect(getActiveCheckoutJourney()?.entry_source).toBe('unknown')
+  })
+})
+
+describe('resolveEntrySource', () => {
+  it('pins the agent paywall entry source from its payment intent source', () => {
+    expect(resolveEntrySource('agent_paywall', 'pricing')).toBe('agent_paywall')
+    expect(resolveEntrySource('agent_paywall', 'settings_billing')).toBe(
+      'agent_paywall'
+    )
+  })
+
+  it.for([
+    'subscription_required',
+    'out_of_credits',
+    'deep_link',
+    'free_tier_quota',
+    undefined
+  ] as const)(
+    'leaves the rail default in place for %s so existing attribution is unchanged',
+    (paymentIntentSource) => {
+      expect(resolveEntrySource(paymentIntentSource, 'pricing')).toBe('pricing')
+      expect(resolveEntrySource(paymentIntentSource, 'settings_billing')).toBe(
+        'settings_billing'
+      )
+    }
+  )
+})
+
+describe('resolveEntrySource prototype safety', () => {
+  it.for(['constructor', 'toString', 'hasOwnProperty', '__proto__'])(
+    'falls back rather than resolving the inherited %s member',
+    (key) => {
+      expect(resolveEntrySource(key, 'settings_billing')).toBe(
+        'settings_billing'
+      )
+    }
+  )
 })

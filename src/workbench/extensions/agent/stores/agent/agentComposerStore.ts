@@ -79,7 +79,6 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
   const submission = shallowRef<{
     id: number
     phase: 'pending' | 'failed'
-    stopRequested: boolean
     revision: number
     origin: AgentInputMethod
     snapshot: SubmittedDraft
@@ -276,9 +275,9 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     })
   }
 
-  function addAttachment(attachment: ComposerAttachment): void {
+  function addAttachment(attachment: ComposerAttachment): boolean {
     if (undoAssets.has(attachment.id) || retiredAssets.has(attachment.id))
-      return
+      return false
     undoAssets.set(attachment.id, { ...attachment })
     const inserted = insertComposerReference(
       prompt.value,
@@ -287,6 +286,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     )
     insertionPoint.value = inserted.insertion
     updateDraft(inserted.prompt)
+    return true
   }
 
   function revokePreview(attachment: ComposerAttachment): void {
@@ -355,19 +355,11 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     submission.value = {
       id,
       phase: 'pending',
-      stopRequested: false,
       revision,
       origin,
       snapshot
     }
     return id
-  }
-
-  function requestSubmissionStop(): boolean {
-    const pending = submission.value
-    if (pending?.phase !== 'pending') return false
-    submission.value = { ...pending, stopRequested: true }
-    return true
   }
 
   function settleSubmission(id: number, sent: boolean): void {
@@ -423,7 +415,6 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     removeAttachment,
     releaseUnusedAssets,
     startSubmission,
-    requestSubmissionStop,
     settleSubmission,
     takeFailedSubmission,
     invalidateSubmission
