@@ -283,6 +283,46 @@ describe('remapClipboardSubgraphNodeIds', () => {
     expect(rootGraph.nodes).toHaveLength(0)
     expect(rootGraph.state.lastGroupId).toBe(Number.MAX_SAFE_INTEGER - 1)
   })
+
+  it('does not partially paste when reroute ID allocation is exhausted', () => {
+    const rootGraph = new LGraph()
+    rootGraph.state.lastGroupId = Number.MAX_SAFE_INTEGER - 1
+    rootGraph.state.lastRerouteId = toRerouteId(Number.MAX_SAFE_INTEGER)
+    const canvas = createCanvas(rootGraph)
+    const parsed: ClipboardItems = {
+      groups: [
+        {
+          id: 1,
+          title: 'Group',
+          bounding: [0, 0, 100, 100]
+        }
+      ],
+      reroutes: [{ id: 1, pos: [0, 0], linkIds: [] }]
+    }
+
+    expect(() => canvas._deserializeItems(parsed, {})).toThrow(
+      'ID space exhausted'
+    )
+    expect(rootGraph.groups).toHaveLength(0)
+    expect(rootGraph.state.lastGroupId).toBe(Number.MAX_SAFE_INTEGER - 1)
+  })
+
+  it('preserves counters when preflight fails after subgraph remapping', () => {
+    const rootGraph = new LGraph()
+    const existingNode = new LGraphNode('existing')
+    existingNode.id = toNodeId(1)
+    rootGraph.add(existingNode)
+    rootGraph.state.lastNodeId = Number.MAX_SAFE_INTEGER - 1
+    rootGraph.state.lastGroupId = Number.MAX_SAFE_INTEGER
+    const canvas = createCanvas(rootGraph)
+    const parsed = createSubgraphClipboardItems(1)
+    parsed.groups = [{ id: 1, title: 'Group', bounding: [0, 0, 100, 100] }]
+
+    expect(() => canvas._deserializeItems(parsed, {})).toThrow(
+      'ID space exhausted'
+    )
+    expect(rootGraph.state.lastNodeId).toBe(Number.MAX_SAFE_INTEGER - 1)
+  })
 })
 
 function createCanvas(graph: LGraph): LGraphCanvas {

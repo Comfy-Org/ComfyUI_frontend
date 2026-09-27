@@ -41,18 +41,19 @@ import { forEachNode } from '@/utils/graphTraversalUtil'
 import { CanvasPointer } from './CanvasPointer'
 import type { ContextMenu } from './ContextMenu'
 import { createCursorCache } from './cursorCache'
+import { isRootGraphDocBound } from './docBoundGraphs'
 import { DragAndScale } from './DragAndScale'
 import type { AnimationOptions } from './DragAndScale'
-import { isRootGraphDocBound } from './docBoundGraphs'
 import {
   cloneLGraphState,
   commitLGraphState,
   findNextAvailableId,
   mintGroupId,
+  mintLinkId,
   mintNodeId,
+  mintRerouteId,
   observeNodeId
 } from './idAllocation'
-import type { NodeIdMintMode } from './idAllocation'
 import type { LGraph, SubgraphId } from './LGraph'
 import { LGraphGroup } from './LGraphGroup'
 import type { SlotTypeDefaultNodeOpts } from './LiteGraphGlobal'
@@ -60,7 +61,7 @@ import { LGraphNode } from './LGraphNode'
 import type { NodeProperty } from './LGraphNode'
 import { detachSerialisedLinks } from './linkDeduplication'
 import { parseNodeId, serializeNodeId, toNodeId } from '@/types/nodeId'
-import type { SerializedNodeId } from '@/types/nodeId'
+import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import { LLink, slotFloatingLinks } from './LLink'
 import {
   inputHasLink,
@@ -71,6 +72,12 @@ import {
 import type { LinkId } from './LLink'
 import { Reroute } from './Reroute'
 import type { RerouteId } from './Reroute'
+import {
+  collectReservedGroupIds,
+  collectReservedLinkIds,
+  collectReservedRerouteIds,
+  normalizeSubgraphDefinitions
+} from './subgraph/subgraphDeduplication'
 import type { CanvasInteractionModeReader } from './canvas/CanvasInteractionMode'
 import { LinkConnector } from './canvas/LinkConnector'
 import {
@@ -4197,6 +4204,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     connectInputs: boolean,
     position: Point
   ): ClipboardPasteResult | undefined {
+    preflightClipboardItemIds(parsed, graph)
+
     // Parse & initialise
     parsed.nodes ??= []
     parsed.groups ??= []
@@ -4241,18 +4250,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       if (nodeInfo.type in subgraphIdMap)
         nodeInfo.type = subgraphIdMap[nodeInfo.type]
     remapClipboardSubgraphNodeIds(parsed, graph.rootGraph)
-    // Preflight the target graph's id space against a disposable clone
-    // before mutating anything: minting group/node ids is not
-    // transactional, so an exhaustion partway through the Groups/Nodes
-    // loops below would otherwise leave earlier groups already committed.
-    const idPreflightState = cloneLGraphState(graph.state)
-    const nodeMintMode: NodeIdMintMode =
-      graph.isRootGraph && isRootGraphDocBound(graph.id)
-        ? 'crdt-disjoint'
-        : 'sequential'
-    for (let i = parsed.groups.length; i > 0; i--) mintGroupId(idPreflightState)
-    for (let i = parsed.nodes.length; i > 0; i--)
-      mintNodeId(idPreflightState, nodeMintMode)
     // Subgraphs
     const subgraphs = graph.createSubgraphs(parsed.subgraphs)
     for (const subgraph of subgraphs)
@@ -9215,4 +9212,37 @@ export function remapClipboardSubgraphNodeIds(
   }
 
   commitLGraphState(rootGraph.state, workingState)
+}
+
+function preflightClipboardItemIds(
+  parsed: ClipboardItems,
+  graph: LGraph
+): void {
+  const rootGraph = graph.rootGraph
+  const workingState = cloneLGraphState(rootGraph.state)
+  if (parsed.subgraphs?.length) {
+    const nodeIds = new Set<NodeId>()
+    forEachNode(rootGraph, (node) => nodeIds.add(node.id))
+    normalizeSubgraphDefinitions(
+      parsed.subgraphs,
+      {
+        nodeIds,
+        groupIds: collectReservedGroupIds(rootGraph),
+        linkIds: collectReservedLinkIds(rootGraph),
+        rerouteIds: collectReservedRerouteIds(rootGraph)
+      },
+      workingState
+    )
+  }
+
+  for (let index = 0; index < (parsed.groups?.length ?? 0); index++)
+    mintGroupId(workingState)
+  if (!graph.isRootGraph || !isRootGraphDocBound(graph.id)) {
+    for (let index = 0; index < (parsed.nodes?.length ?? 0); index++)
+      mintNodeId(workingState)
+  }
+  for (let index = 0; index < (parsed.reroutes?.length ?? 0); index++)
+    mintRerouteId(workingState)
+  for (let index = 0; index < (parsed.links?.length ?? 0); index++)
+    mintLinkId(workingState)
 }
