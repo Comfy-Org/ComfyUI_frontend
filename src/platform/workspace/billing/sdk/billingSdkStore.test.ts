@@ -591,6 +591,24 @@ describe('useBillingSdkStore subscription commands', () => {
     })
   }
 
+  it('opens no payment page for a subscribe it reattached to, leaving it to the customer', () => {
+    const openPage = vi.spyOn(window, 'open').mockReturnValue(null)
+    const store = useBillingSdkStore()
+
+    reattachedSubscribe()
+    harness.publish(
+      pendingSubscription({ actionUrl: 'https://pay.example/op-1' })
+    )
+
+    expect(openPage).not.toHaveBeenCalled()
+    expect(
+      useToastStore().messagesToAdd.filter(
+        (message) => message.group !== 'billing-operation'
+      )
+    ).toEqual([])
+    expect(store.subscriptionActionUrl).toBe('https://pay.example/op-1')
+  })
+
   it('finishes a reattached subscribe the way the poller did', async () => {
     useBillingSdkStore()
 
