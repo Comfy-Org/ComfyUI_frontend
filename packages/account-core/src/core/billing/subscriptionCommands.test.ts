@@ -1348,6 +1348,31 @@ describe('createBillingCommands', () => {
         })
       })
 
+      it('resolves the recovered checkout before deciding, so a click before its first read still resumes it', async () => {
+        const h = harness({
+          status: PARKED,
+          script: {
+            [GET_OP]: [
+              new Promise<never>(() => {}),
+              http(200, opStatus({ phase: 'awaiting_payment_method' }))
+            ],
+            [POST_SUBSCRIBE]: [
+              http(200, {
+                billing_op_id: 'op-1',
+                status: 'needs_payment_method',
+                payment_method_url: 'https://checkout.example/resumed'
+              })
+            ]
+          }
+        })
+        await h.lifecycle.recover()
+
+        void h.commands.subscribe(PLAN)
+        await flush()
+
+        expect(h.posts()).toHaveLength(1)
+      })
+
       it('stops watching the checkout the server replaced with a new one', async () => {
         const h = await recoveredAt(
           'awaiting_payment_method',
