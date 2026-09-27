@@ -7,10 +7,6 @@ import type { AssistantMessage } from '../../../services/agent/agentMessageParts
 
 import AgentMessage from './AgentMessage.vue'
 
-// PM-1135 / PM-1313 regressions across a tool-call split, at the AgentMessage
-// render level (see agentMessageGroup.ts for the grouping logic itself):
-// bare assets should coalesce into one grid, captioned assets should keep
-// their order and pairing.
 function fragmentedCaptionedAssetsMessage(): AssistantMessage {
   return {
     id: toTurnId('msg-assets'),
@@ -54,8 +50,6 @@ describe('AgentMessage asset grid fragmentation', () => {
       within(groups[1]).getByRole('img', { name: 'i2.png' })
     ).toBeInTheDocument()
 
-    // Each caption sits directly beside its own asset group, in the
-    // original order, not both captions floated above a merged gallery.
     const versionA = screen.getByText('Version A:')
     const versionB = screen.getByText('Version B:')
     expect(

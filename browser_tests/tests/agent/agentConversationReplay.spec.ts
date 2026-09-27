@@ -45,9 +45,6 @@ test.describe(
       })
     })
 
-    // PM-1135 / PM-1313: replays a captioned batch reply split across two
-    // tool calls through the real chat panel (see agentMessageGroup.ts for
-    // the grouping logic under test).
     test.describe(`recorded ${ASSET_GRID_CASE}`, () => {
       test.use({ conversationCase: ASSET_GRID_CASE })
 
@@ -74,21 +71,11 @@ test.describe(
           })
           await expect(images).toHaveCount(2)
 
-          // Visual proof of the fix: "Version A:" stays directly above its
-          // own render, and "Version B:" stays directly above its own render,
-          // instead of both captions floating above a merged gallery.
           // The "Worked for N seconds" summary is wall-clock and drifts under
           // SLOW_MO, so it is masked out.
-          // The `cloud` project's container still shows a consistent ~0.7%
-          // diff against its own regenerated baseline (verified: unrelated to
-          // this test's layout, matches the tolerance other screenshot tests
-          // in this suite already carry for their own environments, e.g.
-          // imageCrop.spec.ts, load3d.spec.ts), so this follows the same
-          // convention rather than chasing an environment-only diff with more
-          // baseline regenerations.
           await expect(agentConversation.panel).toHaveScreenshot(
             'asset-grid-fragmentation.png',
-            { mask: [agentConversation.summaries], maxDiffPixelRatio: 0.015 }
+            { mask: [agentConversation.summaries] }
           )
         }
       )
