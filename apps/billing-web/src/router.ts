@@ -125,13 +125,15 @@ export function createBillingRouter(
 ) {
   const router = createRouter({ history, routes })
 
+  function recordUnknownReturn(): boolean {
+    recordBillingEntry({ status: 'error', code: 'UNKNOWN_RETURN_TARGET' })
+    return true
+  }
+
   /** False once the link has left this tab for its host. */
   function sendToHost(entry: BillingEntry): boolean {
     const href = hostReturnHref(entry)
-    if (href === undefined) {
-      recordBillingEntry({ status: 'error', code: 'UNKNOWN_RETURN_TARGET' })
-      return true
-    }
+    if (href === undefined) return recordUnknownReturn()
     leave(href)
     return false
   }
@@ -148,9 +150,14 @@ export function createBillingRouter(
       recordBillingEntry(result)
       return true
     }
-    return hostOwnsPlanSelection(result.entry)
-      ? sendToHost(result.entry)
-      : admitEntry(result.entry)
+    const { entry } = result
+    if (hostOwnsPlanSelection(entry)) return sendToHost(entry)
+    // Every way out of checkout leads back to the host, so a checkout with
+    // no resolvable return is an entry error rather than a dead-ended form.
+    if (entry.intent === 'checkout' && hostReturnHref(entry) === undefined) {
+      return recordUnknownReturn()
+    }
+    return admitEntry(entry)
   }
 
   router.beforeEach((to) => {

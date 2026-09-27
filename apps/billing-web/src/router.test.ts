@@ -116,13 +116,13 @@ describe('plan selection, which the host app owns', () => {
     expect(router.currentRoute.value.path).toBe('/v1/checkout')
   })
 
-  it('explains a pricing link with nowhere to go back to', async () => {
-    const { router, leave } = hostBoundRouter('authenticated')
+  it.for([
+    '/v1/pricing?product=platform&return_to=platform_account',
+    '/v1/checkout?product=platform&return_to=platform_account&plan=creator_monthly'
+  ])('explains %s, which has nowhere to go back to', async (path) => {
+    const { router, onEntryWorkspace, leave } = hostBoundRouter('authenticated')
 
-    await arriveAt(
-      '/v1/pricing?product=platform&return_to=platform_account',
-      router
-    )
+    await arriveAt(path, router)
 
     expect(
       await screen.findByText(
@@ -130,6 +130,8 @@ describe('plan selection, which the host app owns', () => {
       )
     ).toBeInTheDocument()
     expect(leave).not.toHaveBeenCalled()
+    expect(onEntryWorkspace).not.toHaveBeenCalled()
+    expect(useBillingEntry().entry.value).toBeUndefined()
   })
 })
 
