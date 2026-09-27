@@ -10,16 +10,9 @@ const copy = {
   allApps: { en: 'All apps', 'zh-CN': '全部应用' },
   browseAllApps: { en: 'Browse all apps', 'zh-CN': '浏览全部应用' },
   studioName: { en: 'Cinematic Studio', 'zh-CN': '电影工作室' },
-  studioSummary: {
-    en: 'Direct a shot with a real camera, light and grade, then run it on any image model.',
-    'zh-CN':
-      '用真实的摄影机、光线与调色导演一个镜头，然后在任意图像模型上运行。'
-  },
+  studioTask: { en: 'Image to Video', 'zh-CN': '图像转视频' },
   reshootName: { en: 'Re-shoot a video', 'zh-CN': '重拍视频' },
-  reshootSummary: {
-    en: 'Aim a new camera at your clip and generate the scene from that angle.',
-    'zh-CN': '为你的片段重新架设机位，从新的角度生成这一场景。'
-  }
+  reshootTask: { en: 'Video to Video', 'zh-CN': '视频转视频' }
 } as const satisfies Record<string, LocalizedText>
 
 export function ac(key: keyof typeof copy, locale: Locale = 'en'): string {
@@ -29,7 +22,7 @@ export function ac(key: keyof typeof copy, locale: Locale = 'en'): string {
 export interface CatalogueApp {
   readonly key: string
   readonly name: string
-  readonly summary: string
+  readonly task: string
   readonly href: string
   readonly image?: string
 }
@@ -40,14 +33,14 @@ export function catalogueApps(locale: Locale = 'en'): CatalogueApp[] {
     {
       key: 'cinematic-studio',
       name: ac('studioName', locale),
-      summary: ac('studioSummary', locale),
+      task: ac('studioTask', locale),
       href: studio,
       image: '/images/cinematic-studio/neon-street.jpg'
     },
     {
       key: 'reshoot',
       name: ac('reshootName', locale),
-      summary: ac('reshootSummary', locale),
+      task: ac('reshootTask', locale),
       href: `${studio}?app=reshoot`
     }
   ]

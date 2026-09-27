@@ -9,7 +9,7 @@ function appsOf(count: number): CatalogueApp[] {
   return Array.from({ length: count }, (_, index) => ({
     key: `app-${index}`,
     name: `App ${index}`,
-    summary: `Summary ${index}`,
+    task: `Task ${index}`,
     href: `/apps/${index}`
   }))
 }

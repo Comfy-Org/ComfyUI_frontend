@@ -7,19 +7,21 @@ import WorkshopAppCard from './WorkshopAppCard.vue'
 const app: CatalogueApp = {
   key: 'reshoot',
   name: 'Re-shoot a video',
-  summary: 'Aim a new camera at your clip.',
+  task: 'Video to Video',
   href: '/cinematic-studio?app=reshoot'
 }
 
 describe('WorkshopAppCard', () => {
-  it('links to the app and shows its name and summary', () => {
+  it('links to the app and names it and what it makes', () => {
     render(WorkshopAppCard, { props: { app } })
     const link = screen.getByRole('link')
     expect(link).toHaveAttribute('href', '/cinematic-studio?app=reshoot')
     expect(
       screen.getByRole('heading', { name: 'Re-shoot a video' })
     ).toBeVisible()
-    expect(screen.getByText('Aim a new camera at your clip.')).toBeVisible()
+    expect(screen.getByTestId('app-card-task')).toHaveTextContent(
+      'Video to Video'
+    )
   })
 
   it('reads its name under the artwork, never over it', () => {
