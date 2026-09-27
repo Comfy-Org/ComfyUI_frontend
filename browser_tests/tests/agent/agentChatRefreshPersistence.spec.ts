@@ -3,6 +3,7 @@ import { expect } from '@playwright/test'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import { promptHistoryTest as test } from '@e2e/fixtures/agentPromptHistoryFixture'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 // PM-679: the transcript must survive a browser refresh with its content and
 // order intact. `promptHistory` mocks `/api/agent/threads*` statefully (POST
@@ -121,5 +122,18 @@ test(
     await expect(
       reopenedPanel.getByTestId('user-message-bubble').nth(1)
     ).toBeInViewport()
+    const scrollContainer = reopenedPanel.getByTestId(
+      TestIds.agent.conversationScroll
+    )
+    await expect
+      .poll(() =>
+        scrollContainer.evaluate((element) => ({
+          overflows: element.scrollHeight > element.clientHeight,
+          distanceFromBottom: Math.round(
+            element.scrollHeight - element.scrollTop - element.clientHeight
+          )
+        }))
+      )
+      .toEqual({ overflows: true, distanceFromBottom: 0 })
   }
 )
