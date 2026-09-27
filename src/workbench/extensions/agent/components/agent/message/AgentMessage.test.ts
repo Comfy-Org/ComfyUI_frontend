@@ -1,6 +1,7 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 import { i18n } from '@/i18n'
 import type { TurnId } from '../../../schemas/agentApiSchema'
 import { createAgentEventTransport } from '../../../services/agent/agentEventTransport'
@@ -11,6 +12,7 @@ import type {
 import { createAssistantMessage } from '../../../services/agent/agentMessageParts'
 
 import AgentMessage from './AgentMessage.vue'
+import { agentBoundWorkflowIdKey } from '../agentBoundWorkflowId'
 
 function thinkingMessage(thinkingText?: string): AssistantMessage {
   return {
@@ -647,6 +649,24 @@ describe('AgentMessage run approval', () => {
       expect(button).toBeDisabled()
       expect(button).toHaveAttribute('aria-busy', 'true')
     }
+  })
+
+  it('omits the redundant workflow name for a 1:1 bound chat', () => {
+    render(AgentMessage, {
+      props: {
+        message: approvalMessage()
+      },
+      global: {
+        plugins: [i18n],
+        provide: { [agentBoundWorkflowIdKey as symbol]: ref('workflow-1') }
+      }
+    })
+
+    expect(
+      screen.getByText('This tool wants to run this workflow.')
+    ).toBeInTheDocument()
+    expect(screen.queryByText('Portrait workflow')).not.toBeInTheDocument()
+    expect(screen.getByText('Do you approve?')).toBeInTheDocument()
   })
 
   it.for([
