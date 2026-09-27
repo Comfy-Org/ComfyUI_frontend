@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockHostedBillingRoute = vi.hoisted(() => vi.fn())
 vi.mock<unknown>(
@@ -43,7 +43,10 @@ vi.mock<unknown>(
 
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
-import { openHostedBillingTab } from './openHostedBillingTab'
+import {
+  disarmHostedBillingReturnRefresh,
+  openHostedBillingTab
+} from './openHostedBillingTab'
 
 const BILLING_WEB_ROUTE = {
   kind: 'billing_web' as const,
@@ -164,5 +167,58 @@ describe('openHostedBillingTab', () => {
 
     expect(mockStop.mock.calls.length).toBe(stopCallsAfterFirstOpen + 1)
     expect(mockRegisterRefreshOnReturn).toHaveBeenCalledTimes(2)
+  })
+
+  describe('while a hosted payment tab is open', () => {
+    beforeEach(() => {
+      vi.useFakeTimers()
+      vi.spyOn(window, 'open').mockReturnValue(fakeTab())
+    })
+
+    afterEach(() => {
+      disarmHostedBillingReturnRefresh()
+    })
+
+    it.for(['checkout', 'subscription'] as const)(
+      're-reads the billing status so the app picks up the payment %s starts',
+      (intent) => {
+        openHostedBillingTab(intent)
+        mockFetchStatus.mockClear()
+
+        vi.advanceTimersByTime(4_000)
+        expect(mockFetchStatus).toHaveBeenCalledTimes(1)
+        vi.advanceTimersByTime(4_000)
+        expect(mockFetchStatus).toHaveBeenCalledTimes(2)
+      }
+    )
+
+    it('does not watch for an intent that starts no payment', () => {
+      openHostedBillingTab('payment-methods')
+      mockFetchStatus.mockClear()
+
+      vi.advanceTimersByTime(60_000)
+
+      expect(mockFetchStatus).not.toHaveBeenCalled()
+    })
+
+    it('stops watching after fifteen minutes', () => {
+      openHostedBillingTab('checkout')
+      vi.advanceTimersByTime(15 * 60_000)
+      mockFetchStatus.mockClear()
+
+      vi.advanceTimersByTime(60_000)
+
+      expect(mockFetchStatus).not.toHaveBeenCalled()
+    })
+
+    it('stops watching when disarmed', () => {
+      openHostedBillingTab('checkout')
+      disarmHostedBillingReturnRefresh()
+      mockFetchStatus.mockClear()
+
+      vi.advanceTimersByTime(60_000)
+
+      expect(mockFetchStatus).not.toHaveBeenCalled()
+    })
   })
 })
