@@ -1,4 +1,4 @@
-import { useDialogService } from '@/services/dialogService'
+import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -21,6 +21,7 @@ vi.mock(import('@/composables/auth/useAuthActions'))
 vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock(import('@/services/dialogService'))
+vi.mock(import('@/composables/billing/useBillingDialogs'))
 
 // useTelemetry() returns null in OSS, a dispatcher in cloud — toggle via mockIsCloud.
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
@@ -51,7 +52,7 @@ describe('useSubscriptionActions', () => {
     it('should call showTopUpCreditsDialog', () => {
       const { handleAddApiCredits } = useSubscriptionActions()
       handleAddApiCredits()
-      expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalledOnce()
+      expect(useBillingDialogs().showTopUpCreditsDialog).toHaveBeenCalledOnce()
       expect(
         useTelemetry()?.trackAddApiCreditButtonClicked
       ).toHaveBeenCalledWith({ source: 'settings_billing_panel' })

@@ -42,6 +42,7 @@ import {
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useAssetsStore } from '@/stores/assetsStore'
@@ -104,6 +105,7 @@ export function useCoreCommands(): ComfyCommand[] {
   const workflowStore = useWorkflowStore()
   const settingsDialog = useSettingsDialog()
   const dialogService = useDialogService()
+  const { showSignInDialog } = useAuthDialogs()
   const colorPaletteStore = useColorPaletteStore()
   const authActions = useAuthActions()
   const toastStore = useToastStore()
@@ -1073,7 +1075,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Open Sign In Dialog',
       versionAdded: '1.17.6',
       function: async () => {
-        await dialogService.showSignInDialog()
+        await showSignInDialog()
       }
     },
     {

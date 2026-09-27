@@ -1,5 +1,5 @@
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { useDialogService } from '@/services/dialogService'
+import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
 import { getActivePinia } from 'pinia'
 import type { Pinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -398,6 +398,7 @@ vi.mock(
 vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock(import('@/services/dialogService'))
+vi.mock(import('@/platform/workspace/composables/useWorkspaceDialogs'))
 
 vi.mock(import('@/composables/useFeatureFlags'))
 describe('useMembersPanel', () => {
@@ -709,7 +710,7 @@ describe('useMembersPanel', () => {
     it('calls showRevokeInviteDialog', async () => {
       const panel = await setup()
       panel.handleRevokeInvite(createInvite({ id: 'inv-42' }))
-      expect(useDialogService().showRevokeInviteDialog).toHaveBeenCalledWith(
+      expect(useWorkspaceDialogs().showRevokeInviteDialog).toHaveBeenCalledWith(
         'inv-42'
       )
     })
@@ -719,7 +720,7 @@ describe('useMembersPanel', () => {
     it('calls showRemoveMemberDialog', async () => {
       const panel = await setup()
       panel.handleRemoveMember(createMember({ id: 'mem-7' }))
-      expect(useDialogService().showRemoveMemberDialog).toHaveBeenCalledWith(
+      expect(useWorkspaceDialogs().showRemoveMemberDialog).toHaveBeenCalledWith(
         'mem-7'
       )
     })
@@ -733,7 +734,7 @@ describe('useMembersPanel', () => {
         'owner'
       )
       expect(
-        useDialogService().showChangeMemberRoleDialog
+        useWorkspaceDialogs().showChangeMemberRoleDialog
       ).toHaveBeenCalledWith({
         memberId: 'mem-7',
         memberName: 'Jane',
@@ -748,7 +749,7 @@ describe('useMembersPanel', () => {
         'member'
       )
       expect(
-        useDialogService().showChangeMemberRoleDialog
+        useWorkspaceDialogs().showChangeMemberRoleDialog
       ).toHaveBeenCalledWith({
         memberId: 'own-2',
         memberName: 'Jane',
@@ -760,7 +761,7 @@ describe('useMembersPanel', () => {
       const panel = await setup()
       panel.handleChangeRole(createMember({ role: 'member' }), 'member')
       expect(
-        useDialogService().showChangeMemberRoleDialog
+        useWorkspaceDialogs().showChangeMemberRoleDialog
       ).not.toHaveBeenCalled()
     })
   })
@@ -807,7 +808,7 @@ describe('useMembersPanel', () => {
       })
 
       expect(
-        useDialogService().showChangeMemberRoleDialog
+        useWorkspaceDialogs().showChangeMemberRoleDialog
       ).toHaveBeenCalledWith(
         expect.objectContaining({ memberId: 'mem-9', targetRole: 'owner' })
       )
@@ -823,7 +824,7 @@ describe('useMembersPanel', () => {
         item: removeItem
       })
 
-      expect(useDialogService().showRemoveMemberDialog).toHaveBeenCalledWith(
+      expect(useWorkspaceDialogs().showRemoveMemberDialog).toHaveBeenCalledWith(
         'mem-9'
       )
     })
@@ -844,7 +845,7 @@ describe('useMembersPanel', () => {
       })
 
       expect(
-        useDialogService().showSetMemberCreditLimitDialog
+        useWorkspaceDialogs().showSetMemberCreditLimitDialog
       ).toHaveBeenCalledWith({
         memberId: 'mem-9',
         memberName: 'Jane',
@@ -864,7 +865,7 @@ describe('useMembersPanel', () => {
       })
 
       expect(
-        useDialogService().showSetMemberCreditLimitDialog
+        useWorkspaceDialogs().showSetMemberCreditLimitDialog
       ).toHaveBeenCalledWith({
         memberId: 'mem-9',
         memberName: 'Jane',
@@ -984,9 +985,9 @@ describe('useMembersPanel', () => {
     it('opens the invite dialog on an active team plan', async () => {
       const panel = await setup()
       panel.handleInviteMember()
-      expect(useDialogService().showInviteMemberDialog).toHaveBeenCalled()
+      expect(useWorkspaceDialogs().showInviteMemberDialog).toHaveBeenCalled()
       expect(
-        useDialogService().showInviteMemberUpsellDialog
+        useWorkspaceDialogs().showInviteMemberUpsellDialog
       ).not.toHaveBeenCalled()
     })
 
@@ -995,8 +996,12 @@ describe('useMembersPanel', () => {
       mockMaxSeats.value = 1
       const panel = await setup()
       panel.handleInviteMember()
-      expect(useDialogService().showInviteMemberUpsellDialog).toHaveBeenCalled()
-      expect(useDialogService().showInviteMemberDialog).not.toHaveBeenCalled()
+      expect(
+        useWorkspaceDialogs().showInviteMemberUpsellDialog
+      ).toHaveBeenCalled()
+      expect(
+        useWorkspaceDialogs().showInviteMemberDialog
+      ).not.toHaveBeenCalled()
     })
 
     it('disables the invite button at the backend member limit', async () => {
@@ -1007,7 +1012,9 @@ describe('useMembersPanel', () => {
         'workspacePanel.inviteLimitReached'
       )
       panel.handleInviteMember()
-      expect(useDialogService().showInviteMemberDialog).not.toHaveBeenCalled()
+      expect(
+        useWorkspaceDialogs().showInviteMemberDialog
+      ).not.toHaveBeenCalled()
     })
 
     it('keeps the invite button enabled below the member cap', async () => {
@@ -1053,7 +1060,7 @@ describe('useMembersPanel', () => {
       expect(panel.isInviteDisabled.value).toBe(false)
       expect(panel.permissions.value.canInviteMembers).toBe(true)
       panel.handleInviteMember()
-      expect(useDialogService().showInviteMemberDialog).toHaveBeenCalled()
+      expect(useWorkspaceDialogs().showInviteMemberDialog).toHaveBeenCalled()
     })
 
     it('keeps invites live for an end-dated Enterprise plan still running', async () => {
@@ -1066,7 +1073,7 @@ describe('useMembersPanel', () => {
       expect(panel.isInviteDisabled.value).toBe(false)
       expect(panel.permissions.value.canInviteMembers).toBe(true)
       panel.handleInviteMember()
-      expect(useDialogService().showInviteMemberDialog).toHaveBeenCalled()
+      expect(useWorkspaceDialogs().showInviteMemberDialog).toHaveBeenCalled()
     })
 
     it('freezes invites only once the plan has ended, visibly for owners', async () => {
@@ -1077,7 +1084,9 @@ describe('useMembersPanel', () => {
       expect(panel.showInviteButton.value).toBe(true)
       expect(panel.isInviteDisabled.value).toBe(true)
       panel.handleInviteMember()
-      expect(useDialogService().showInviteMemberDialog).not.toHaveBeenCalled()
+      expect(
+        useWorkspaceDialogs().showInviteMemberDialog
+      ).not.toHaveBeenCalled()
     })
 
     it('keeps the ended invite button hidden from members', async () => {
@@ -1223,8 +1232,12 @@ describe('useMembersPanel', () => {
       panel.handleInviteMember()
 
       expect(workspaceStore.resendInvite).not.toHaveBeenCalled()
-      expect(useDialogService().showRevokeInviteDialog).not.toHaveBeenCalled()
-      expect(useDialogService().showInviteMemberDialog).not.toHaveBeenCalled()
+      expect(
+        useWorkspaceDialogs().showRevokeInviteDialog
+      ).not.toHaveBeenCalled()
+      expect(
+        useWorkspaceDialogs().showInviteMemberDialog
+      ).not.toHaveBeenCalled()
     })
 
     it('hides member management when the server denies seat changes', async () => {
@@ -1236,9 +1249,11 @@ describe('useMembersPanel', () => {
       panel.handleRemoveMember(member)
       panel.handleChangeRole(member, 'owner')
 
-      expect(useDialogService().showRemoveMemberDialog).not.toHaveBeenCalled()
       expect(
-        useDialogService().showChangeMemberRoleDialog
+        useWorkspaceDialogs().showRemoveMemberDialog
+      ).not.toHaveBeenCalled()
+      expect(
+        useWorkspaceDialogs().showChangeMemberRoleDialog
       ).not.toHaveBeenCalled()
     })
 
@@ -1247,9 +1262,11 @@ describe('useMembersPanel', () => {
       const panel = await setup()
       expect(panel.isInviteDisabled.value).toBe(true)
       panel.handleInviteMember()
-      expect(useDialogService().showInviteMemberDialog).not.toHaveBeenCalled()
       expect(
-        useDialogService().showInviteMemberUpsellDialog
+        useWorkspaceDialogs().showInviteMemberDialog
+      ).not.toHaveBeenCalled()
+      expect(
+        useWorkspaceDialogs().showInviteMemberUpsellDialog
       ).not.toHaveBeenCalled()
     })
   })

@@ -7,7 +7,7 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { Settings } from '@/platform/settings/types'
 import { useColorPaletteService } from '@/services/colorPaletteService'
-import { useDialogService } from '@/services/dialogService'
+import { useExtensionDialogService } from '@/services/dialogService'
 import type { SidebarTabExtension, ToastManager } from '@/types/extensionTypes'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
@@ -50,7 +50,7 @@ function workspaceStoreSetup() {
   }))
   const workflow = computed(() => useWorkflowStore())
   const colorPalette = useColorPaletteService()
-  const dialog = useDialogService()
+  const dialog = computed(() => useExtensionDialogService())
   const bottomPanel = useBottomPanelStore()
 
   const authStore = useAuthStore()

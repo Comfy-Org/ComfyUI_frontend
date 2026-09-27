@@ -15,6 +15,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useDialogService } from '@/services/dialogService'
+import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
 import type { SubscriptionInfo } from '@/composables/billing/types'
 import type {
   BillingSubscriptionStatus,
@@ -54,6 +55,7 @@ const mockSubscriptionStatus = vi.hoisted(() => ({
 }))
 
 vi.mock(import('@/services/dialogService'))
+vi.mock(import('@/platform/workspace/composables/useWorkspaceDialogs'))
 
 vi.mock(import('@/composables/billing/useBillingRouting'))
 
@@ -110,7 +112,7 @@ beforeEach(() => {
   vi.mocked(useDialogService().showLayoutDialog).mockImplementation(
     mockShowLayoutDialog
   )
-  vi.mocked(useDialogService().showTeamWorkspacesDialog).mockImplementation(
+  vi.mocked(useWorkspaceDialogs().showTeamWorkspacesDialog).mockImplementation(
     mockShowTeamWorkspacesDialog
   )
   const billing = useBillingContext()

@@ -1,5 +1,6 @@
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { useDialogService } from '@/services/dialogService'
+import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
+import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { getActivePinia } from 'pinia'
 import { render, screen, waitFor } from '@testing-library/vue'
@@ -74,6 +75,8 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 }))
 
 vi.mock(import('@/services/dialogService'))
+vi.mock(import('@/composables/billing/useBillingDialogs'))
+vi.mock(import('@/platform/workspace/composables/useWorkspaceDialogs'))
 
 vi.mock(import('@/platform/telemetry'))
 
@@ -283,7 +286,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     await user.click(screen.getByTestId('workspace-switcher-trigger'))
     await user.click(screen.getByTestId('stub-create-workspace'))
 
-    expect(useDialogService().showCreateWorkspaceDialog).toHaveBeenCalled()
+    expect(useWorkspaceDialogs().showCreateWorkspaceDialog).toHaveBeenCalled()
     expect(emitted('close')).toHaveLength(1)
     expect(
       screen.queryByTestId('workspace-switcher-panel')
@@ -414,7 +417,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     ).not.toBeInTheDocument()
     await user.click(screen.getByTestId('add-credits-button'))
 
-    expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalledOnce()
+    expect(useBillingDialogs().showTopUpCreditsDialog).toHaveBeenCalledOnce()
   })
 
   it('offers add-credits alongside Subscribe for an unsubscribed Cloud owner', () => {

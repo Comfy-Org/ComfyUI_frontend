@@ -1269,6 +1269,11 @@
         "count": 1
       }
     },
+    "src/composables/billing/useBillingDialogs.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
     "src/composables/bottomPanelTabs/useLogsTerminal.ts": {
       "crap_moderate": {
         "count": 1
