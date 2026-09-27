@@ -100,6 +100,7 @@ describe('ModelsCatalogue', () => {
     expect(hero()).toHaveTextContent(subtitle)
 
     await user.click(screen.getByRole('button', { name: 'Workflows' }))
+    await screen.findByRole('heading', { name: 'Create product photos & ads' })
     expect(hero()).toHaveTextContent('Hub')
     expect(hero()).toHaveTextContent(subtitle)
   })
