@@ -487,9 +487,11 @@ export class ComfyApi extends EventTarget {
   /**
    * Whether feature-flag negotiation for the current socket has settled: the
    * server delivered a map, or delivery was abandoned (5s timeout, or the
-   * socket closed first). True does not imply the map is non-empty, and after
-   * {@link resetSocket} {@link serverFeatureFlags} still holds the previous
-   * identity's map until the next `feature_flags` message replaces it.
+   * socket closed first). Not monotonic: each replacement socket resets it to
+   * false, so it can flip repeatedly while a connection is reconnecting. True
+   * does not imply the map is non-empty, and after {@link resetSocket}
+   * {@link serverFeatureFlags} still holds the previous identity's map until
+   * the next `feature_flags` message replaces it.
    */
   serverFeatureFlagsSettled = ref(false)
 
