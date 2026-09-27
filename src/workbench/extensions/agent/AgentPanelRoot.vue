@@ -633,7 +633,6 @@ const editableWorkflowId = computed(() => {
   const target = selectedTarget.value
   return target ? cloudIdFor(target) : undefined
 })
-provide(agentBoundWorkflowIdKey, editableWorkflowId)
 
 const workflowTabs = computed<ActiveTab[]>(() =>
   workflowStore.openWorkflows.map((tab) => ({
@@ -753,6 +752,11 @@ const {
     draft: targetWorkflowDraft
   }
 })
+
+provide(
+  agentBoundWorkflowIdKey,
+  computed(() => boundWorkflowId.value ?? undefined)
+)
 
 const isSending = computed(
   () => sessionIsSending.value || composerStore.submission?.phase === 'pending'
