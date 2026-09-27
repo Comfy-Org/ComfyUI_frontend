@@ -199,6 +199,7 @@ export function registerAgentPanelExtension(): void {
       ): void => {
         if (!userId || !workspaceId) return
         if (
+          reason !== 'already_offered' &&
           wasAutoShown(`${CONSENT_AUTO_SHOWN_PREFIX}.${userId}.${workspaceId}`)
         )
           return
@@ -256,8 +257,10 @@ export function registerAgentPanelExtension(): void {
         if (!userId || !workspaceId || workspaceStore.isSwitching) return
         const key = `${CONSENT_AUTO_SHOWN_PREFIX}.${userId}.${workspaceId}`
         const autoShow = prepareAutoShow(key)
-        if (autoShow === 'storage_unavailable') withholdOffer(autoShow)
-        if (autoShow !== 'ready') return
+        if (autoShow !== 'ready') {
+          withholdOffer(autoShow)
+          return
+        }
 
         const offeredIdentity = consentStore.identity
         autoShowInFlight = true

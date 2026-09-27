@@ -592,6 +592,16 @@ export type AgentConsentNotOfferedReason =
   | 'dialog_open'
   | 'boot_undecided'
   | 'storage_unavailable'
+  /**
+   * This browser already spent its one automatic offer for this
+   * user + workspace, and consent is still not accepted - so the card will
+   * never be offered automatically here again. The one-shot key is burned
+   * when the card *mounts*, not when the user answers it, so an Escape, an
+   * overlay-mask dismissal or a save failure lands here just as a deliberate
+   * "No thanks" does. Unlike every other reason this is terminal rather than
+   * per-boot, which is why it is reported even though the key is set.
+   */
+  | 'already_offered'
 export interface AgentConsentNotOfferedMetadata extends Record<
   string,
   unknown

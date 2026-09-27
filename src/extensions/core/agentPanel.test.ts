@@ -555,6 +555,54 @@ describe('AgentPanel extension flag gate', () => {
       }
     )
 
+    it('reports already_offered when this browser spent its one offer and consent is still unaccepted', async () => {
+      mocks.flagEnabled = true
+      Object.assign(consentStore, { accepted: false, isChecking: false })
+      localStorage.setItem(AUTO_SHOWN_KEY, 'true')
+
+      await loadEntryAndSetup()
+      mocks.flagListener?.()
+      await flush()
+
+      expect(await notOffered()).toHaveBeenCalledExactlyOnceWith({
+        reason: 'already_offered'
+      })
+      expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+      expect(agentStore.open).not.toHaveBeenCalled()
+    })
+
+    it('does not report already_offered once consent is accepted', async () => {
+      mocks.flagEnabled = true
+      Object.assign(consentStore, { accepted: true, isChecking: false })
+      localStorage.setItem(AUTO_SHOWN_KEY, 'true')
+
+      await loadEntryAndSetup()
+      mocks.flagListener?.()
+      await flush()
+
+      expect(await notOffered()).not.toHaveBeenCalled()
+    })
+
+    it('keeps a screen hold ahead of already_offered, so the terminal reason is not attributed to a tour', async () => {
+      mocks.flagEnabled = true
+      activeTour.value = 'appMode'
+      Object.assign(consentStore, { accepted: false, isChecking: false })
+      localStorage.setItem(AUTO_SHOWN_KEY, 'true')
+
+      await loadEntryAndSetup()
+      mocks.flagListener?.()
+      await flush()
+
+      expect(await notOffered()).not.toHaveBeenCalled()
+
+      activeTour.value = null
+      await flush()
+
+      expect(await notOffered()).toHaveBeenCalledExactlyOnceWith({
+        reason: 'already_offered'
+      })
+    })
+
     it.for([
       {
         name: 'the user accepted',
