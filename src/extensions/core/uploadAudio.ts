@@ -510,3 +510,4 @@ app.registerExtension({
     await useAudioService().registerWavEncoder()
   }
 })
+
