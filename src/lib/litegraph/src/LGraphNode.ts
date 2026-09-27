@@ -185,7 +185,7 @@ function legacyValue<T>(value: T): T | undefined {
   return value
 }
 
-function schedulePromotedInputPrune(
+export function schedulePromotedInputPrune(
   node: LGraphNode,
   graph: LGraph,
   input: INodeInputSlot,
@@ -197,6 +197,9 @@ function schedulePromotedInputPrune(
   queueMicrotask(() => {
     if (node.graph !== graph || node.inputs[slotIndex] !== input) return
     if (inputHasLink(graph, node.id, slotIndex)) return
+    // A retained floating link still targets this slot; its removal in
+    // LGraph.removeFloatingLink reschedules the prune.
+    if (slotFloatingLinks(graph, 'input', node.id, slotIndex).length > 0) return
     node.removeInput(slotIndex)
   })
 }

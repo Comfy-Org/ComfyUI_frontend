@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { slotFloatingLinks } from '@/lib/litegraph/src/LLink'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 
 import type { PromotionAwareInputSlot } from '@/lib/litegraph/src/node/slotUtils'
@@ -103,5 +104,35 @@ describe('LGraphNode promotion-created input pruning', () => {
     await Promise.resolve()
 
     expect(target.inputs).toHaveLength(1)
+  })
+
+  it('keeps a promotion-created input while a floating link targets it', async () => {
+    const graph = new LGraph()
+    const source = createTestNode(graph, [], ['INT'])
+    const target = createTestNode(graph)
+    const slot = createFallbackSlot(target)
+    const slotIndex = target.inputs.indexOf(slot)
+    const link = source.connect(0, target, slotIndex)
+    if (!link) throw new Error('Missing link')
+    graph.createReroute([0, 20], link)
+
+    source.disconnectOutput(0)
+    await Promise.resolve()
+
+    expect(
+      slotFloatingLinks(graph, 'input', target.id, slotIndex)
+    ).toHaveLength(1)
+    expect(target.inputs).toContain(slot)
+
+    const [floatingLink] = slotFloatingLinks(
+      graph,
+      'input',
+      target.id,
+      slotIndex
+    )
+    graph.removeFloatingLink(floatingLink)
+    await Promise.resolve()
+
+    expect(target.inputs).not.toContain(slot)
   })
 })
