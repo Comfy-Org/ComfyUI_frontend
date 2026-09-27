@@ -47,7 +47,6 @@ describe('fetchFeatureFlagsForBuild', () => {
     for (const dir of tempSnapshotDirs.splice(0)) {
       rmSync(dir, { recursive: true, force: true })
     }
-    vi.restoreAllMocks()
   })
 
   it('returns fresh with cloudFreeTier=true when /features sets the flag', async () => {
