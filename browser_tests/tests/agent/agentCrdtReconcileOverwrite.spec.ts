@@ -211,18 +211,18 @@ test.describe(
 )
 
 test.describe(
-  'Agent CRDT reconcile stomps a locally renamed node title',
+  'A full workflow-tab reload stomps a locally renamed node title',
   { tag: ['@cloud', '@agent', '@vue-nodes'] },
   () => {
     test.use({ conversationCase: UNTOUCHED_CASE })
 
     test.beforeEach(async ({ page }) => enableCrdtDebugPanel(page))
 
-    test('keeps a manual canvas rename after an unrelated agent reconcile', async ({
+    test('keeps a manual canvas rename after leaving and reloading the workflow tab', async ({
       agentConversation,
       page
     }, testInfo) => {
-      // Known, intentionally unfixed repro: the workflow-tab reload wipes
+      // PM-1717. Known, intentionally unfixed repro: the workflow-tab reload wipes
       // this node's reconcile baseline before the title fix ever runs — see
       // the file-level comment and agentNodeMaterializer.test.ts's matching
       // `it.fails` case for the mechanism. The reconcile step below still
@@ -261,7 +261,7 @@ test.describe(
         contentType: 'image/png'
       })
 
-      await test.step('an unrelated agent-driven reconcile runs (returning to the tab)', async () => {
+      await test.step('leaving and returning fully reloads the workflow tab', async () => {
         // The doc's own projection never learns about this manual rename, so
         // its title stays stale regardless of whether the real "survives a
         // tab reload" gap below is fixed — skip only this node's title check
@@ -364,6 +364,42 @@ test.describe(
       // land under the cursor, and the user's full text survives.
       await expect(textField).not.toHaveValue(/blurry, low quality/)
       await expect(textField).toHaveValue('hello world')
+    })
+  }
+)
+
+test.describe(
+  'Completed widget edits survive unrelated agent turns',
+  { tag: ['@cloud', '@agent', '@vue-nodes', '@widget'] },
+  () => {
+    test.use({ conversationCase: UNTOUCHED_CASE })
+
+    test('keeps a completed widget edit after an unrelated agent turn', async ({
+      agentConversation
+    }) => {
+      test.setTimeout(90_000)
+      const textField = agentConversation.vueNodes
+        .getNodeLocator(UNTOUCHED_NODE_ID)
+        .getByLabel('text', { exact: true })
+      const agentEditedField = agentConversation.vueNodes
+        .getNodeLocator('3')
+        .getByLabel('steps', { exact: true })
+      const localValue = 'keep this completed local edit'
+
+      await agentConversation.sendPrompt(0)
+
+      await agentConversation.replayResponse(0, async () => {
+        await test.step('the user completes and leaves a widget edit', async () => {
+          await textField.fill(localValue)
+          await textField.press('Tab')
+          await expect(textField).not.toBeFocused()
+          await expect(textField).toHaveValue(localValue)
+        })
+      })
+      await agentConversation.waitForTurnComplete()
+
+      await expect(agentEditedField.getByRole('spinbutton')).toHaveValue('30')
+      await expect(textField).toHaveValue(localValue)
     })
   }
 )

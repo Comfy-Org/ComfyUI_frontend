@@ -11,7 +11,7 @@ const ready: StudioGateInput = {
   authAvailable: true,
   sessionSettled: true,
   role: 'owner',
-  outOfCredits: false
+  credits: 100
 }
 
 describe('studioGate', () => {
@@ -31,10 +31,28 @@ describe('studioGate', () => {
     ['is unavailable without auth', { authAvailable: false }, 'unavailable'],
     ['waits for the session to settle', { sessionSettled: false }, 'pending'],
     ['asks a visitor to sign in', { role: undefined }, 'signedOut'],
-    ['asks an owner to buy credits', { outOfCredits: true }, 'noCredits'],
+    [
+      'asks for sign-in before credits',
+      { role: undefined, credits: 0 },
+      'signedOut'
+    ],
+    ['runs before the balance is read', { credits: undefined }, 'ready'],
+    ['asks an owner to buy credits', { credits: 0 }, 'noCredits'],
     [
       'tells a member the workspace is out',
-      { outOfCredits: true, role: 'member' },
+      { credits: 0, role: 'member' },
+      'memberNoCredits'
+    ],
+    ['runs an unpriced shot on any balance', { credits: 1 }, 'ready'],
+    ['runs a shot the balance covers', { credits: 24, cost: 24 }, 'ready'],
+    [
+      'blocks an owner below the estimate',
+      { credits: 23, cost: 24 },
+      'noCredits'
+    ],
+    [
+      'blocks a member below the estimate',
+      { credits: 23, cost: 24, role: 'member' },
       'memberNoCredits'
     ]
   ])('%s', ([, overrides, expected]) => {

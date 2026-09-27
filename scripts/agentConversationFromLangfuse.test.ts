@@ -1,3 +1,4 @@
+import { spawnSync } from 'node:child_process'
 import {
   existsSync,
   mkdtempSync,
@@ -652,4 +653,27 @@ describe('main', () => {
     expect(fetchImpl).not.toHaveBeenCalled()
     expect(existsSync(s.workDir)).toBe(false)
   })
+})
+
+describe('the documented tsx capture commands', () => {
+  it.for([
+    ['scripts/agentConversationFromLangfuse.ts'],
+    ['scripts/agentConversationRecord.ts']
+  ])(
+    '%s loads without a Vite define and refuses on its own terms',
+    ([script]) => {
+      const root = join(import.meta.dirname, '..')
+      const result = spawnSync(join(root, 'node_modules/.bin/tsx'), [script], {
+        cwd: root,
+        encoding: 'utf8',
+        timeout: 120_000
+      })
+      const output = `${result.stdout}${result.stderr}`
+
+      expect(result.error).toBeUndefined()
+      expect(result.status).toBe(1)
+      expect(output).not.toMatch(/is not defined/)
+      expect(output).toContain(`usage: pnpm exec tsx ${script}`)
+    }
+  )
 })
