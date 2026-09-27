@@ -333,6 +333,7 @@ export interface INodeSlot extends HasBoundingRect {
   locked?: boolean
   nameLocked?: boolean
   pos?: Point
+  slot_index?: SlotIndex
   /** @remarks Automatically calculated; not included in serialisation. */
   boundingRect: ReadOnlyRect
   /**
@@ -394,7 +395,6 @@ export interface INodeOutputSlot extends INodeSlot {
    */
   links?: LinkId[] | null
   _data?: unknown
-  slot_index?: SlotIndex
 }
 
 /** Options for {@link LiteGraphGlobal.createNode}. Shallow-copied onto the new node. */
@@ -539,7 +539,9 @@ export interface PanelWidgetOptions {
   label?: string
   type?: string
   widget?: string
-  values?: Array<string | IContextMenuValue | null>
+  values?:
+    | Array<string | IContextMenuValue | null>
+    | Record<string, TWidgetValue>
   callback?: PanelWidgetCallback
 }
 

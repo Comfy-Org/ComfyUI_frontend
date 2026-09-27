@@ -167,7 +167,11 @@ interface INodePropertyInfo {
   default_value?: NodeProperty
   widget?: string
   label?: string
-  values?: TWidgetValue[]
+  values?: string[] | Record<string, TWidgetValue>
+}
+
+function isNodePropertyInfo(value: unknown): value is INodePropertyInfo {
+  return typeof value === 'object' && value !== null
 }
 
 interface IMouseOverData {
@@ -347,7 +351,7 @@ export class LGraphNode
 {
   // Static properties used by dynamic child classes
   static title?: string
-  static MAX_CONSOLE?: number
+  static MAX_CONSOLE?: number = 100
   static type?: string
   static category?: string
   static description?: string
@@ -392,6 +396,7 @@ export class LGraphNode
   }
 
   graph: LGraph | Subgraph | null = null
+  priority?: number
 
   /** Shell state for the fields the renderer draws; the `nodeDataStore` proxy once registered. */
   _state: NodeState
@@ -1113,7 +1118,9 @@ export class LGraphNode
     if (this.graph) {
       this.graph.incrementVersion()
     }
-    for (const j in info) {
+    const target = this as unknown as Record<string, unknown>
+    const source = info as unknown as Record<string, unknown>
+    for (const j in source) {
       if (!NODE_CANONICAL_FIELDS.has(j)) continue
       if (j == 'properties') {
         // i don't want to clone properties, I want to reuse the old container
@@ -1136,23 +1143,28 @@ export class LGraphNode
         continue
       }
 
-      // @ts-expect-error #594
-      if (info[j] == null) {
+      if (source[j] == null) {
         continue
-        // @ts-expect-error #594
-      } else if (typeof info[j] == 'object') {
-        // @ts-expect-error #594
-        if (this[j]?.configure) {
-          // @ts-expect-error #594
-          this[j]?.configure(info[j])
+      } else if (typeof source[j] == 'object') {
+        const current = target[j]
+        if (
+          current &&
+          typeof current === 'object' &&
+          'configure' in current &&
+          typeof current.configure === 'function'
+        ) {
+          current.configure(source[j])
         } else {
-          // @ts-expect-error #594
-          this[j] = LiteGraph.cloneObject(info[j], this[j])
+          target[j] = LiteGraph.cloneObject(
+            source[j],
+            typeof current === 'object' && current !== null
+              ? current
+              : undefined
+          )
         }
       } else {
         // value
-        // @ts-expect-error #594
-        this[j] = info[j]
+        target[j] = source[j]
       }
     }
 
@@ -1352,9 +1364,6 @@ export class LGraphNode
         if (links) links.length = 0
       }
     }
-
-    // @ts-expect-error Exceptional case: id is removed so that the graph can assign a new one on add.
-    data.id = undefined
 
     node.id = this.id
     node.configure(data)
@@ -1692,10 +1701,6 @@ export class LGraphNode
       case LGraphEventMode.ALWAYS:
         break
 
-      // @ts-expect-error Not impl.
-      case LiteGraph.ON_REQUEST:
-        break
-
       default:
         return false
     }
@@ -1713,17 +1718,14 @@ export class LGraphNode
       options.action_call ||= `${this.id}_exec_${Math.floor(Math.random() * 9999)}`
       if (!this.graph) throw new NullGraphError()
 
-      // @ts-expect-error Technically it works when id is a string. Array gets props.
       this.graph.nodes_executing[this.id] = true
       this.onExecute(param, options)
-      // @ts-expect-error deprecated
       this.graph.nodes_executing[this.id] = false
 
       // save execution/action ref
       this.exec_version = this.graph.iteration
       if (options.action_call) {
         this.action_call = options.action_call
-        // @ts-expect-error deprecated
         this.graph.nodes_executedAction[this.id] = options.action_call
       }
     }
@@ -1747,16 +1749,13 @@ export class LGraphNode
       options.action_call ||= `${this.id}_${action || 'action'}_${Math.floor(Math.random() * 9999)}`
       if (!this.graph) throw new NullGraphError()
 
-      // @ts-expect-error deprecated
       this.graph.nodes_actioning[this.id] = action || 'actioning'
       this.onAction(action, param, options)
-      // @ts-expect-error deprecated
       this.graph.nodes_actioning[this.id] = false
 
       // save execution/action ref
       if (options.action_call) {
         this.action_call = options.action_call
-        // @ts-expect-error deprecated
         this.graph.nodes_executedAction[this.id] = options.action_call
       }
     }
@@ -2194,8 +2193,8 @@ export class LGraphNode
    * @param property name of the property
    * @returns the object with all the available info
    */
-  getPropertyInfo(property: string) {
-    let info = null
+  getPropertyInfo(property: string): INodePropertyInfo & { type: string } {
+    let info: INodePropertyInfo | null = null
 
     // there are several ways to define info about a property
     // legacy mode
@@ -2207,24 +2206,27 @@ export class LGraphNode
       }
     }
     // litescene mode using the constructor
-    // @ts-expect-error deprecated https://github.com/Comfy-Org/litegraph.js/issues/639
-    if (this.constructor[`@${property}`])
-      // @ts-expect-error deprecated https://github.com/Comfy-Org/litegraph.js/issues/639
-      info = this.constructor[`@${property}`]
+    const constructorProperties = this.constructor as unknown as Record<
+      string,
+      unknown
+    >
+    const constructorProperty = constructorProperties[`@${property}`]
+    if (isNodePropertyInfo(constructorProperty)) info = constructorProperty
 
-    if (this.constructor.widgets_info?.[property])
-      info = this.constructor.widgets_info[property]
+    const widgetInfo = this.constructor.widgets_info?.[property]
+    if (isNodePropertyInfo(widgetInfo)) info = widgetInfo
 
     // litescene mode using the constructor
     if (!info && this.onGetPropertyInfo) {
       info = this.onGetPropertyInfo(property)
     }
 
-    info ||= {}
-    info.type ||= typeof this.properties[property]
-    if (info.widget == 'combo') info.type = 'enum'
+    const type =
+      info?.widget == 'combo'
+        ? 'enum'
+        : info?.type || typeof this.properties[property]
 
-    return info
+    return { ...info, type }
   }
 
   /**
@@ -2264,8 +2266,7 @@ export class LGraphNode
     }
 
     const w: IBaseWidget & { type: Type } = {
-      // @ts-expect-error - Type casting for widget type property
-      type: type.toLowerCase(),
+      type: type.toLowerCase() as Type,
       name: name,
       value: value,
       callback: typeof callback !== 'function' ? undefined : callback,
@@ -3714,8 +3715,9 @@ export class LGraphNode
   trace(msg: string): void {
     this.console ||= []
     this.console.push(msg)
-    // @ts-expect-error deprecated
-    if (this.console.length > LGraphNode.MAX_CONSOLE) this.console.shift()
+    const { MAX_CONSOLE } = LGraphNode
+    if (MAX_CONSOLE !== undefined && this.console.length > MAX_CONSOLE)
+      this.console.shift()
   }
 
   /* Forces to redraw or the main canvas (LGraphNode) or the bg canvas (links) */
