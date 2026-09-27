@@ -194,7 +194,10 @@ export const usePaste = () => {
     if (!canvas) return
 
     let data: DataTransfer | string | null = e.clipboardData
-    if (!data) throw new Error('No clipboard data on clipboard event')
+    if (!data) {
+      console.error('No clipboard data on clipboard event')
+      return
+    }
     data = cloneDataTransfer(data)
 
     const { items } = data
@@ -236,7 +239,7 @@ export const usePaste = () => {
 
     // No image found. Look for node data
     data = data.getData('text/plain')
-    let workflow: ComfyWorkflowJSON | null = null
+    let workflow: ComfyWorkflowJSON | null
     try {
       data = data.slice(data.indexOf('{'))
       workflow = JSON.parse(data)

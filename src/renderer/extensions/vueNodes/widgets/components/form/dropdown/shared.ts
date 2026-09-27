@@ -4,6 +4,14 @@ import { sortAssets } from '@/platform/assets/utils/assetSortUtils'
 
 import type { FormDropdownItem, SortOption } from './types'
 
+/**
+ * Marker class for the dropdown's sub-popover panels (Sort / Ownership /
+ * Base-model). Those panels teleport to `document.body`, so they render outside
+ * the menu's DOM subtree; the outside-press dismiss logic uses this class to
+ * recognize a press inside them as still "inside" the dropdown.
+ */
+export const DROPDOWN_PANEL_CLASS = 'comfy-form-dropdown-panel'
+
 export async function defaultSearcher(
   query: string,
   items: FormDropdownItem[]
@@ -33,7 +41,7 @@ function createSortOption(
 
 export function getDefaultSortOptions(): SortOption<AssetSortOption>[] {
   return [
-    createSortOption('default', t('assetBrowser.sortDefault')),
+    createSortOption('default', t('assetBrowser.sortUnsorted')),
     createSortOption('name-asc', t('assetBrowser.sortAZ'))
   ]
 }

@@ -1,0 +1,69 @@
+{
+  "last_node_id": 1,
+  "last_link_id": 0,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "GLSLShader",
+      "pos": [200, 200],
+      "size": [460, 320],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "fragment_shader",
+          "name": "fragment_shader",
+          "type": "STRING",
+          "widget": { "name": "fragment_shader" },
+          "link": null
+        },
+        {
+          "localized_name": "size_mode",
+          "name": "size_mode",
+          "type": "COMFY_DYNAMICCOMBO_V3",
+          "widget": { "name": "size_mode" },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "IMAGE0",
+          "name": "IMAGE0",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "localized_name": "IMAGE1",
+          "name": "IMAGE1",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "localized_name": "IMAGE2",
+          "name": "IMAGE2",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "localized_name": "IMAGE3",
+          "name": "IMAGE3",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "properties": { "Node name for S&R": "GLSLShader" },
+      "widgets_values": [
+        "#version 300 es\nprecision highp float;\nuniform vec2 u_resolution;\nin vec2 v_texCoord;\nlayout(location = 0) out vec4 fragColor0;\nvoid main() {\n    fragColor0 = vec4(v_texCoord.x, v_texCoord.y, 0.5, 1.0);\n}\n",
+        "from_input"
+      ]
+    }
+  ],
+  "links": [],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": { "offset": [0, 0], "scale": 1 }
+  },
+  "version": 0.4
+}

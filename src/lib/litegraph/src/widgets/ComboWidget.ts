@@ -58,7 +58,10 @@ export class ComboWidget
 
   private getValues(node: LGraphNode): Values {
     const { values } = this.options
-    if (values == null) throw new Error('[ComboWidget]: values is required')
+    if (values == null) {
+      console.error('[ComboWidget]: values is required')
+      return []
+    }
 
     return typeof values === 'function' ? values(this, node) : values
   }

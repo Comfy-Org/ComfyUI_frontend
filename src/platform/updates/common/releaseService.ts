@@ -98,8 +98,9 @@ export const useReleaseService = () => {
   // Fetch release notes from API
   const getReleases = async (
     params: GetReleasesParams,
-    signal?: AbortSignal
+    options: { signal?: AbortSignal; deployEnvironment?: string } = {}
   ): Promise<ReleaseNote[] | null> => {
+    const { signal, deployEnvironment } = options
     const endpoint = '/releases'
     const errorContext = 'Failed to get releases'
     const routeSpecificErrors = {
@@ -110,7 +111,10 @@ export const useReleaseService = () => {
       () =>
         releaseApiClient.get<ReleaseNote[]>(endpoint, {
           params,
-          signal
+          signal,
+          headers: deployEnvironment
+            ? { 'Comfy-Env': deployEnvironment }
+            : undefined
         }),
       errorContext,
       routeSpecificErrors

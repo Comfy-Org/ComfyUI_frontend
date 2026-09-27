@@ -129,7 +129,7 @@ Note: Watch mode provides faster rebuilds than full builds, but still no hot rel
 For cloud extensions, modify `.env`:
 
 ```
-DEV_SERVER_COMFYUI_URL=http://stagingcloud.comfy.org/
+DEV_SERVER_COMFYUI_URL=https://stagingcloud.comfy.org/
 ```
 
 ## Key Points

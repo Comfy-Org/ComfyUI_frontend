@@ -1,5 +1,5 @@
 <template>
-  <div class="grow overflow-auto pt-6">
+  <div class="flex grow flex-col overflow-auto pt-6">
     <!-- Loading state while subscription is being set up -->
     <div
       v-if="isSettingUp"
@@ -9,12 +9,52 @@
         <i class="pi pi-spin pi-spinner" />
         <span>{{ $t('billingOperation.subscriptionProcessing') }}</span>
       </div>
+      <Button
+        v-if="subscriptionActionUrl && permissions.canManageSubscription"
+        variant="primary"
+        size="lg"
+        class="rounded-lg px-4 text-sm font-normal"
+        @click="openSubscriptionVerification"
+      >
+        {{ $t('subscription.preview.completeVerification') }}
+      </Button>
+    </div>
+
+    <!-- Billing data still loading: avoid rendering a false Free/$0 plan -->
+    <div
+      v-else-if="isLoading && !subscription"
+      class="rounded-2xl border border-interface-stroke p-6"
+    >
+      <div class="flex items-center gap-2 py-4 text-muted-foreground">
+        <i class="pi pi-spin pi-spinner" />
+        <span>{{ $t('g.loading') }}</span>
+      </div>
+    </div>
+
+    <!-- Billing fetch failed: offer retry rather than a misleading Free plan -->
+    <div
+      v-else-if="error && !subscription"
+      class="flex flex-col items-start gap-3 rounded-2xl border border-interface-stroke p-6"
+    >
+      <div class="flex items-center gap-2 text-text-secondary">
+        <i class="pi pi-exclamation-circle text-danger" />
+        <span class="text-sm">{{ $t('subscription.planLoadError') }}</span>
+      </div>
+      <Button
+        variant="secondary"
+        size="lg"
+        class="rounded-lg px-4 text-sm font-normal"
+        :loading="isLoading"
+        @click="handleRetry"
+      >
+        {{ $t('subscription.planLoadErrorRetry') }}
+      </Button>
     </div>
 
     <template v-else>
       <!-- Cancelled subscription info card -->
       <div
-        v-if="isCancelled"
+        v-if="showSubscriptionStateCard"
         class="mb-6 flex gap-1 rounded-2xl border border-warning-background bg-warning-background/20 p-4"
       >
         <div
@@ -24,14 +64,10 @@
         </div>
         <div class="flex flex-col gap-2">
           <h2 class="m-0 pt-1.5 text-sm font-bold text-text-primary">
-            {{ $t('subscription.canceledCard.title') }}
+            {{ subscriptionStateCardTitle }}
           </h2>
           <p class="m-0 text-sm text-text-secondary">
-            {{
-              $t('subscription.canceledCard.description', {
-                date: formattedEndDate
-              })
-            }}
+            {{ subscriptionStateCardDescription }}
           </p>
         </div>
       </div>
@@ -41,35 +77,138 @@
           <div
             class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between md:gap-2"
           >
-            <!-- OWNER Unsubscribed State -->
-            <template v-if="showSubscribePrompt">
+            <!-- OWNER Unsubscribed TEAM workspace -->
+            <template v-if="showTeamSubscribePrompt">
               <div class="flex flex-col gap-2">
-                <div class="text-sm font-bold text-text-primary">
-                  {{ $t('subscription.workspaceNotSubscribed') }}
-                </div>
+                <h3
+                  :class="
+                    cn(
+                      'm-0 font-bold text-text-primary',
+                      showInactiveTeamSubscription ? 'text-base' : 'text-sm'
+                    )
+                  "
+                >
+                  {{
+                    $t(
+                      showInactiveTeamSubscription
+                        ? 'subscription.inactiveTeamTitle'
+                        : 'subscription.workspaceNotSubscribed'
+                    )
+                  }}
+                </h3>
                 <div class="text-sm text-text-secondary">
-                  {{ $t('subscription.subscriptionRequiredMessage') }}
+                  {{
+                    $t(
+                      showInactiveTeamSubscription
+                        ? 'subscription.inactiveTeamDescription'
+                        : 'subscription.subscriptionRequiredMessage'
+                    )
+                  }}
                 </div>
               </div>
-              <Button
-                variant="primary"
-                size="lg"
-                class="ml-auto rounded-lg px-4 py-2 text-sm font-normal"
-                @click="handleSubscribeWorkspace"
-              >
-                {{ $t('subscription.subscribeNow') }}
-              </Button>
+              <div class="flex flex-wrap gap-2 md:ml-auto">
+                <Button
+                  v-if="
+                    permissions.canManageSubscription &&
+                    (isCloud || showInactiveTeamSubscription)
+                  "
+                  size="lg"
+                  variant="secondary"
+                  class="rounded-lg bg-interface-menu-component-surface-selected px-4 text-sm font-normal text-text-primary"
+                  @click="manageSubscription"
+                >
+                  {{ $t('subscription.billingAndInvoices') }}
+                </Button>
+                <Button
+                  variant="primary"
+                  size="lg"
+                  class="rounded-lg px-4 py-2 text-sm font-normal"
+                  @click="handleSubscribeWorkspace"
+                >
+                  {{
+                    $t(
+                      showInactiveTeamSubscription
+                        ? 'subscription.reactivatePlan'
+                        : 'subscription.subscribeNow'
+                    )
+                  }}
+                </Button>
+                <DropdownMenu
+                  v-if="showInactiveTeamSubscription && menuEntries.length > 0"
+                  :entries="menuEntries"
+                >
+                  <template #button>
+                    <Button
+                      v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
+                      variant="secondary"
+                      size="icon-lg"
+                      class="rounded-lg bg-interface-menu-component-surface-selected text-text-primary"
+                      :aria-label="$t('g.moreOptions')"
+                    >
+                      <i class="pi pi-ellipsis-h" />
+                    </Button>
+                  </template>
+                </DropdownMenu>
+              </div>
             </template>
 
             <!-- MEMBER View - read-only, workspace not subscribed -->
             <template v-else-if="isMemberView">
               <div class="flex flex-col gap-2">
-                <div class="text-sm font-bold text-text-primary">
+                <h3 class="m-0 text-sm font-bold text-text-primary">
                   {{ $t('subscription.workspaceNotSubscribed') }}
-                </div>
+                </h3>
                 <div class="text-sm text-text-secondary">
                   {{ $t('subscription.contactOwnerToSubscribe') }}
                 </div>
+              </div>
+            </template>
+
+            <!-- OWNER personal workspace without subscription (Free plan) -->
+            <template v-else-if="isPersonalFree">
+              <div class="flex flex-col gap-2">
+                <h3 class="m-0 text-base font-bold text-text-primary">
+                  {{ $t('subscription.tiers.free.name') }}
+                </h3>
+                <div class="flex items-baseline gap-1 font-inter">
+                  <span class="text-2xl font-semibold">{{ displayPrice }}</span>
+                  <span class="text-base">{{ priceUnitLabel }}</span>
+                </div>
+              </div>
+              <div class="flex flex-wrap gap-2 md:ml-auto">
+                <Button
+                  v-if="isCloud && permissions.canManageSubscription"
+                  size="lg"
+                  variant="secondary"
+                  class="rounded-lg bg-interface-menu-component-surface-selected px-4 text-sm font-normal text-text-primary"
+                  @click="manageSubscription"
+                >
+                  {{ $t('subscription.billingAndInvoices') }}
+                </Button>
+                <Button
+                  variant="primary"
+                  size="lg"
+                  class="rounded-lg px-4 text-sm font-normal"
+                  @click="handleSubscribeWorkspace"
+                >
+                  {{ $t('subscription.subscribe') }}
+                </Button>
+                <DropdownMenu
+                  v-if="menuEntries.length > 0"
+                  :entries="menuEntries"
+                >
+                  <template #button>
+                    <Button
+                      v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
+                      variant="secondary"
+                      size="icon-lg"
+                      class="rounded-lg bg-interface-menu-component-surface-selected text-text-primary"
+                      :aria-label="$t('g.moreOptions')"
+                    >
+                      <i class="pi pi-ellipsis-h" />
+                    </Button>
+                  </template>
+                </DropdownMenu>
               </div>
             </template>
 
@@ -77,206 +216,137 @@
             <template v-else>
               <div class="flex flex-col gap-2">
                 <div class="flex items-center gap-2">
-                  <span class="text-sm font-bold text-text-primary">
-                    {{ subscriptionTierName }}
-                  </span>
+                  <h3 class="m-0 text-base font-bold text-text-primary">
+                    {{ planDisplayName }}
+                  </h3>
                   <StatusBadge
-                    v-if="isCancelled"
+                    v-if="isSubscriptionCancelled"
                     :label="$t('subscription.canceled')"
                     severity="warn"
                   />
                 </div>
-                <div class="flex items-baseline gap-1 font-inter font-semibold">
-                  <span class="text-2xl">${{ tierPrice }}</span>
-                  <span class="text-base">
-                    {{
-                      isInPersonalWorkspace
-                        ? $t('subscription.usdPerMonth')
-                        : $t('subscription.usdPerMonthPerMember')
-                    }}
-                  </span>
-                </div>
                 <div
-                  v-if="isActiveSubscription"
-                  :class="
-                    cn(
-                      'text-sm',
-                      isCancelled
-                        ? 'text-warning-background'
-                        : 'text-text-secondary'
-                    )
-                  "
+                  v-if="!isNonCatalogPlan"
+                  class="flex items-baseline gap-1 font-inter"
                 >
-                  <template v-if="isCancelled">
-                    {{
-                      $t('subscription.expiresDate', {
-                        date: formattedEndDate
-                      })
-                    }}
-                  </template>
-                  <template v-else>
-                    {{
-                      $t('subscription.renewsDate', {
-                        date: formattedRenewalDate
-                      })
-                    }}
-                  </template>
+                  <span class="text-2xl font-semibold">{{ displayPrice }}</span>
+                  <span class="text-base">{{ priceUnitLabel }}</span>
+                </div>
+                <div v-if="planDateDisplay" class="text-sm text-text-secondary">
+                  {{ planDateDisplay }}
                 </div>
               </div>
 
               <div
-                v-if="isActiveSubscription && permissions.canManageSubscription"
+                v-if="
+                  canAccessSubscriptionFeatures ||
+                  (isCloud && permissions.canManageSubscription)
+                "
                 class="flex flex-wrap gap-2 md:ml-auto"
               >
-                <!-- Cancelled state: show only Resubscribe button -->
-                <template v-if="isCancelled">
-                  <Button
-                    size="lg"
-                    variant="primary"
-                    class="rounded-lg px-4 text-sm font-normal"
-                    :loading="isResubscribing"
-                    @click="handleResubscribe"
-                  >
-                    {{ $t('subscription.resubscribe') }}
-                  </Button>
-                </template>
-
-                <!-- Active state: show Manage Payment, Upgrade, and menu -->
-                <template v-else>
-                  <Button
-                    v-if="!isFreeTierPlan"
-                    size="lg"
-                    variant="secondary"
-                    class="rounded-lg bg-interface-menu-component-surface-selected px-4 text-sm font-normal text-text-primary"
-                    @click="manageSubscription"
-                  >
-                    {{ $t('subscription.managePayment') }}
-                  </Button>
-                  <Button
-                    size="lg"
-                    variant="primary"
-                    class="rounded-lg px-4 text-sm font-normal text-text-primary"
-                    @click="handleUpgrade"
-                  >
-                    {{ $t('subscription.upgradePlan') }}
-                  </Button>
-                  <Button
-                    v-if="!isFreeTierPlan"
-                    v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
-                    variant="secondary"
-                    size="lg"
-                    :aria-label="$t('g.moreOptions')"
-                    @click="planMenu?.toggle($event)"
-                  >
-                    <i class="pi pi-ellipsis-h" />
-                  </Button>
-                  <Menu ref="planMenu" :model="planMenuItems" :popup="true" />
-                </template>
+                <Button
+                  v-if="
+                    permissions.canManageSubscription &&
+                    (isCloud || !isFreeTierPlan)
+                  "
+                  size="lg"
+                  variant="secondary"
+                  class="rounded-lg bg-interface-menu-component-surface-selected px-4 text-sm font-normal text-text-primary"
+                  @click="manageSubscription"
+                >
+                  {{
+                    $t(
+                      isCloud
+                        ? 'subscription.billingAndInvoices'
+                        : 'subscription.manageBilling'
+                    )
+                  }}
+                </Button>
+                <Button
+                  v-if="isSubscriptionCancelled && canReactivatePlan"
+                  size="lg"
+                  variant="primary"
+                  class="rounded-lg px-4 text-sm font-normal"
+                  :loading="isResubscribing"
+                  @click="handleResubscribe"
+                >
+                  {{ $t('subscription.reactivatePlan') }}
+                </Button>
+                <Button
+                  v-else-if="
+                    !isSubscriptionCancelled &&
+                    canAccessSubscriptionFeatures &&
+                    canChangePlan
+                  "
+                  size="lg"
+                  variant="secondary"
+                  class="rounded-lg bg-interface-menu-component-surface-selected px-4 text-sm font-normal text-text-primary"
+                  @click="handleUpgrade"
+                >
+                  {{
+                    isInPersonalWorkspace && !isTeamPlan
+                      ? $t('subscription.upgradePlan')
+                      : $t('subscription.changePlan')
+                  }}
+                </Button>
+                <DropdownMenu
+                  v-if="menuEntries.length > 0"
+                  :entries="menuEntries"
+                >
+                  <template #button>
+                    <Button
+                      v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
+                      variant="secondary"
+                      size="icon-lg"
+                      class="rounded-lg bg-interface-menu-component-surface-selected text-text-primary"
+                      :aria-label="$t('g.moreOptions')"
+                    >
+                      <i class="pi pi-ellipsis-h" />
+                    </Button>
+                  </template>
+                </DropdownMenu>
               </div>
             </template>
           </div>
         </div>
 
         <div class="flex flex-col gap-6 pt-6 lg:flex-row lg:items-stretch">
-          <div class="flex flex-col">
-            <div class="flex h-full flex-col gap-3">
-              <div
-                class="relative flex h-full flex-col justify-between gap-6 rounded-2xl bg-secondary-background p-5"
-              >
-                <Button
-                  variant="muted-textonly"
-                  size="icon-sm"
-                  class="absolute top-4 right-4"
-                  :loading="isLoadingBalance"
-                  @click="handleRefresh"
-                >
-                  <i class="pi pi-sync text-sm text-text-secondary" />
-                </Button>
-
-                <div class="flex flex-col gap-2">
-                  <div class="text-sm text-muted">
-                    {{ $t('subscription.totalCredits') }}
-                  </div>
-                  <Skeleton
-                    v-if="isLoadingBalance"
-                    width="8rem"
-                    height="2rem"
-                  />
-                  <div v-else class="text-2xl font-bold">
-                    {{ showZeroState ? '0' : totalCredits }}
-                  </div>
-                </div>
-
-                <!-- Credit Breakdown -->
-                <table class="text-sm text-muted">
-                  <tbody>
-                    <tr>
-                      <td class="pr-4 text-left align-middle font-bold">
-                        <Skeleton
-                          v-if="isLoadingBalance"
-                          width="5rem"
-                          height="1rem"
-                        />
-                        <span v-else>{{
-                          showZeroState ? '0 / 0' : includedCreditsDisplay
-                        }}</span>
-                      </td>
-                      <td class="align-middle" :title="creditsRemainingLabel">
-                        {{ creditsRemainingLabel }}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td class="pr-4 text-left align-middle font-bold">
-                        <Skeleton
-                          v-if="isLoadingBalance"
-                          width="3rem"
-                          height="1rem"
-                        />
-                        <span v-else>{{
-                          showZeroState ? '0' : prepaidCredits
-                        }}</span>
-                      </td>
-                      <td
-                        class="align-middle"
-                        :title="$t('subscription.creditsYouveAdded')"
-                      >
-                        {{ $t('subscription.creditsYouveAdded') }}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-
-                <div
-                  v-if="
-                    isActiveSubscription &&
-                    !showZeroState &&
-                    permissions.canTopUp
-                  "
-                  class="flex flex-col gap-3"
-                >
-                  <Button
-                    v-if="isFreeTierPlan"
-                    variant="gradient"
-                    class="min-h-8 w-full rounded-lg p-2 text-sm font-normal"
-                    @click="handleUpgradeToAddCredits"
-                  >
-                    {{ $t('subscription.upgradeToAddCredits') }}
-                  </Button>
-                  <Button
-                    v-else
-                    variant="secondary"
-                    class="min-h-8 rounded-lg bg-interface-menu-component-surface-selected p-2 text-sm font-normal text-text-primary"
-                    @click="handleAddApiCredits"
-                  >
-                    {{ $t('subscription.addCredits') }}
-                  </Button>
-                </div>
-              </div>
-            </div>
+          <div class="w-full lg:max-w-md">
+            <CreditsTile
+              :zero-state="showZeroState"
+              :inactive-plan="showInactiveTeamSubscription"
+            />
           </div>
 
-          <div v-if="isActiveSubscription" class="flex flex-col gap-2">
-            <div class="text-sm text-text-primary">
+          <div
+            v-if="
+              !isNonCatalogPlan &&
+              (canAccessSubscriptionFeatures ||
+                isPersonalFree ||
+                showInactiveTeamSubscription)
+            "
+            class="flex flex-col gap-2"
+          >
+            <i18n-t
+              v-if="isTeamActive || showInactiveTeamSubscription"
+              :keypath="
+                showInactiveTeamSubscription
+                  ? 'subscription.inactiveTeamPlanIncludes'
+                  : 'subscription.teamPlanIncludes'
+              "
+              tag="div"
+              class="text-sm text-muted"
+            >
+              <template #plan>
+                <span class="text-text-primary">
+                  {{ $t('subscription.tiers.pro.name') }}
+                </span>
+              </template>
+            </i18n-t>
+            <div v-else-if="isPersonalFree" class="text-sm text-muted">
+              {{ $t('subscription.whatsIncluded') }}
+            </div>
+            <div v-else class="text-sm text-text-primary">
               {{ $t('subscription.yourPlanIncludes') }}
             </div>
 
@@ -288,11 +358,14 @@
               >
                 <i
                   v-if="benefit.type === 'feature'"
-                  class="pi pi-check text-xs text-text-primary"
-                />
-                <i
-                  v-else-if="benefit.type === 'icon' && benefit.icon"
-                  :class="[benefit.icon, 'text-xs text-text-primary']"
+                  :class="
+                    cn(
+                      'pi pi-check text-xs',
+                      showInactiveTeamSubscription
+                        ? 'text-muted'
+                        : 'text-text-primary'
+                    )
+                  "
                 />
                 <span
                   v-else-if="benefit.type === 'metric' && benefit.value"
@@ -309,325 +382,351 @@
         </div>
       </div>
 
-      <!-- Members invoice card -->
-      <div
-        v-if="
-          isActiveSubscription &&
-          !isInPersonalWorkspace &&
-          permissions.canManageSubscription
-        "
-        class="mt-6 flex items-center justify-between gap-1 rounded-2xl border border-interface-stroke p-6 text-sm"
-      >
-        <div class="flex flex-col gap-2">
-          <h4 class="m-0 text-sm text-text-primary">
-            {{ $t('subscription.nextMonthInvoice') }}
-          </h4>
-          <span
-            class="cursor-pointer text-muted-foreground underline"
-            @click="manageSubscription"
-          >
-            {{ $t('subscription.invoiceHistory') }}
-          </span>
-        </div>
-        <div class="flex flex-col items-end gap-2">
-          <h4 class="m-0 font-bold">${{ nextMonthInvoice }}</h4>
-          <h5 class="m-0 text-muted-foreground">
-            {{ $t('subscription.memberCount', memberCount) }}
-          </h5>
-        </div>
-      </div>
-
       <!-- View More Details - Outside main content -->
-      <div
-        v-if="permissions.canManageSubscription"
-        class="flex items-center gap-2 py-6"
-      >
-        <i class="pi pi-external-link text-muted"></i>
-        <a
-          href="https://www.comfy.org/cloud/pricing"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="text-sm text-muted underline hover:opacity-80"
+      <div v-if="canOpenPricingSurface" class="py-6">
+        <Button
+          variant="muted-textonly"
+          class="text-sm text-muted"
+          @click="handleViewMoreDetails"
         >
           {{ $t('subscription.viewMoreDetailsPlans') }}
-        </a>
+          <i class="pi pi-external-link text-muted" />
+        </Button>
       </div>
+
+      <SubscriptionFooterLinks
+        class="mt-auto pt-6"
+        :show-invoice-history="permissions.canManageSubscription"
+        :show-usage-activity="workspaceRole === 'owner'"
+      />
     </template>
   </div>
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { storeToRefs } from 'pinia'
-import Menu from 'primevue/menu'
-import Skeleton from 'primevue/skeleton'
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useToast } from 'primevue/usetoast'
-
+import CreditsTile from '@/platform/cloud/subscription/components/CreditsTile.vue'
+import SubscriptionFooterLinks from '@/platform/cloud/subscription/components/SubscriptionFooterLinks.vue'
+import DropdownMenu from '@/components/common/DropdownMenu.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
-import { useSubscriptionActions } from '@/platform/cloud/subscription/composables/useSubscriptionActions'
-import { useSubscriptionCredits } from '@/platform/cloud/subscription/composables/useSubscriptionCredits'
-import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
-import { useDialogService } from '@/services/dialogService'
-import {
-  DEFAULT_TIER_KEY,
-  TIER_TO_KEY,
-  getTierCredits,
-  getTierPrice
-} from '@/platform/cloud/subscription/constants/tierPricing'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
+import {
+  isEnterprisePlanSlug,
+  isSalesManagedTier,
+  isUnknownTier
+} from '@/platform/cloud/subscription/constants/tierPricing'
 import type { TierBenefit } from '@/platform/cloud/subscription/utils/tierBenefits'
 import { getCommonTierBenefits } from '@/platform/cloud/subscription/utils/tierBenefits'
+import { isCloud } from '@/platform/distribution/types'
+import { useResubscribe } from '@/platform/workspace/composables/useResubscribe'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useWorkspaceMenuItems } from '@/platform/workspace/composables/useWorkspaceMenuItems'
+import { useWorkspacePlanPricing } from '@/platform/workspace/composables/useWorkspacePlanPricing'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { cn } from '@/utils/tailwindUtil'
+import {
+  formatSubscriptionDate,
+  resolveSubscriptionTierKey
+} from './subscriptionPanelWorkspace.logic'
 
 const workspaceStore = useTeamWorkspaceStore()
-const { isWorkspaceSubscribed, isInPersonalWorkspace, members } =
+const { isWorkspaceSubscribed, isInPersonalWorkspace } =
   storeToRefs(workspaceStore)
-const { permissions } = useWorkspaceUI()
-const { t, n } = useI18n()
-const toast = useToast()
+const {
+  permissions,
+  isSubscriptionCancelled,
+  workspaceRole,
+  canReactivatePlan,
+  canOpenPricingSurface
+} = useWorkspaceUI()
+const { canChangeSeats, canSubscribeSelfServe } = useBillingCapabilities()
+const { maxAvailable: freeRunsAllowance, quotaEnabled: freeRunsQuotaEnabled } =
+  useFreeTierQuota()
+const { t, n, locale } = useI18n()
 
 const billingOperationStore = useBillingOperationStore()
 const isSettingUp = computed(() => billingOperationStore.isSettingUp)
-
-const {
-  isActiveSubscription,
-  isFreeTier: isFreeTierPlan,
-  subscription,
-  showSubscriptionDialog,
-  manageSubscription,
-  fetchStatus,
-  fetchBalance,
-  getMaxSeats
-} = useBillingContext()
-
-const { showCancelSubscriptionDialog } = useDialogService()
-const { showPricingTable } = useSubscriptionDialog()
-
-const isResubscribing = ref(false)
-
-async function handleResubscribe() {
-  isResubscribing.value = true
-  try {
-    await workspaceApi.resubscribe()
-    toast.add({
-      severity: 'success',
-      summary: t('subscription.resubscribeSuccess'),
-      life: 5000
-    })
-    await Promise.all([fetchStatus(), fetchBalance()])
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : 'Failed to resubscribe'
-    toast.add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail: message
-    })
-  } finally {
-    isResubscribing.value = false
-  }
-}
-
-// Only show cancelled state for team workspaces (workspace billing)
-// Personal workspaces use legacy billing which has different cancellation semantics
-const isCancelled = computed(
-  () =>
-    !isInPersonalWorkspace.value && (subscription.value?.isCancelled ?? false)
+const subscriptionActionUrl = computed(
+  () => billingOperationStore.subscriptionActionOperation?.actionUrl ?? null
 )
 
-// Show subscribe prompt to owners without active subscription
-// Don't show if subscription is cancelled (still active until end date)
+function openSubscriptionVerification() {
+  if (!subscriptionActionUrl.value) return
+  window.open(subscriptionActionUrl.value, '_blank', 'noopener,noreferrer')
+}
+
+const {
+  canAccessSubscriptionFeatures,
+  isFreeTier: isFreeTierPlan,
+  isTeamPlan,
+  subscription,
+  plans,
+  billingStatus,
+  subscriptionStatus,
+  isLoading,
+  error,
+  showSubscriptionDialog,
+  manageSubscription,
+  initialize
+} = useBillingContext()
+
+const { showPricingTable } = useSubscriptionDialog()
+
+const { isResubscribing, handleResubscribe } = useResubscribe()
+const { displayPrice, priceUnitLabel } = useWorkspacePlanPricing()
+const { menuEntries } = useWorkspaceMenuItems()
+
+const isSubscriptionEnded = computed(() => {
+  if (subscriptionStatus.value === 'ended') return true
+  if (canAccessSubscriptionFeatures.value) return false
+  return (
+    isSubscriptionCancelled.value ||
+    (isInPersonalWorkspace.value && billingStatus.value === 'inactive')
+  )
+})
+
+// Show subscribe prompt to owners without active subscription. A cancelled plan
+// stays active until its end date, so it keeps the subscribed treatment.
 const showSubscribePrompt = computed(() => {
-  if (!permissions.value.canManageSubscription) return false
-  if (isCancelled.value) return false
-  if (isInPersonalWorkspace.value) return !isActiveSubscription.value
+  if (
+    !(isCloud
+      ? canSubscribeSelfServe.value
+      : permissions.value.canManageSubscription)
+  )
+    return false
+  if (isSubscriptionEnded.value) return true
+  if (isSubscriptionCancelled.value) return false
+  if (
+    subscription.value &&
+    !isFreeTierPlan.value &&
+    (subscription.value.planSlug || subscription.value.tier)
+  )
+    return false
+  if (isInPersonalWorkspace.value) return !canAccessSubscriptionFeatures.value
   return !isWorkspaceSubscribed.value
 })
 
-// MEMBER view without subscription - members can't manage subscription
+const canChangePlan = computed(() =>
+  isCloud ? canChangeSeats.value : permissions.value.canManageSubscription
+)
+
+// The never-subscribed upsell is Cloud-only; on Local the policy table keeps
+// top-up available instead. An ended Team plan keeps its inactive treatment
+// everywhere so billing, invoices, and reactivation stay reachable.
+const showTeamSubscribePrompt = computed(
+  () =>
+    showSubscribePrompt.value &&
+    !isInPersonalWorkspace.value &&
+    (isCloud || (isSubscriptionEnded.value && isTeamPlan.value))
+)
+
+const showInactiveTeamSubscription = computed(
+  () =>
+    permissions.value.canManageSubscription &&
+    !isInPersonalWorkspace.value &&
+    isSubscriptionEnded.value &&
+    isTeamPlan.value
+)
+
+const isPersonalFree = computed(
+  () =>
+    isInPersonalWorkspace.value &&
+    (showSubscribePrompt.value || isFreeTierPlan.value)
+)
+
+const isTeamActive = computed(
+  () => isTeamPlan.value && canAccessSubscriptionFeatures.value
+)
+
 const isMemberView = computed(
   () =>
     !permissions.value.canManageSubscription &&
-    !isActiveSubscription.value &&
+    !canAccessSubscriptionFeatures.value &&
     !isWorkspaceSubscribed.value
 )
 
-// Show zero state for credits (no real billing data yet)
 const showZeroState = computed(
-  () => showSubscribePrompt.value || isMemberView.value
+  () => showTeamSubscribePrompt.value || isMemberView.value
 )
 
-// Subscribe workspace - opens the subscription dialog (personal or workspace variant)
 function handleSubscribeWorkspace() {
-  showSubscriptionDialog()
+  showSubscriptionDialog({ reason: 'settings_billing_panel' })
 }
 
 function handleUpgrade() {
-  if (isFreeTierPlan.value) showPricingTable()
-  else showSubscriptionDialog()
+  if (isFreeTierPlan.value)
+    showPricingTable({ reason: 'settings_billing_panel' })
+  else showSubscriptionDialog({ reason: 'settings_billing_panel' })
 }
 
-function handleUpgradeToAddCredits() {
-  showPricingTable()
+function handleViewMoreDetails() {
+  window.open('https://comfy.org/cloud/pricing/', '_blank')
 }
-const subscriptionTier = computed(() => subscription.value?.tier ?? null)
+
+async function handleRetry() {
+  await initialize()
+}
+
 const isYearlySubscription = computed(
   () => subscription.value?.duration === 'ANNUAL'
 )
 
-const formattedRenewalDate = computed(() => {
-  if (!subscription.value?.renewalDate) return ''
-  const renewalDate = new Date(subscription.value.renewalDate)
-  return renewalDate.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric'
+const formattedRenewalDate = computed(() =>
+  formatSubscriptionDate(subscription.value?.renewalDate, locale.value)
+)
+
+const formattedEndDate = computed(() =>
+  formatSubscriptionDate(subscription.value?.endDate, locale.value)
+)
+
+const formattedChangeDate = computed(() =>
+  formatSubscriptionDate(subscription.value?.changeAt, locale.value)
+)
+
+const scheduledPlanName = computed(() => {
+  const scheduledPlanSlug = subscription.value?.scheduledPlanSlug
+  if (isEnterprisePlanSlug(scheduledPlanSlug)) {
+    return t('subscription.tiers.enterprise.name')
+  }
+  const scheduledPlan = plans.value.find(
+    (plan) => plan.slug === scheduledPlanSlug
+  )
+  if (!scheduledPlan) return ''
+  if (scheduledPlan.tier === 'ENTERPRISE') {
+    return t('subscription.tiers.enterprise.name')
+  }
+  if (scheduledPlan.slug.startsWith('team')) {
+    return t('subscription.teamPlanName')
+  }
+  if (isUnknownTier(scheduledPlan.tier)) {
+    return t('subscription.unknownTierName')
+  }
+  return t(
+    `subscription.tiers.${resolveSubscriptionTierKey(scheduledPlan.tier)}.name`
+  )
+})
+
+const showSubscriptionStateCard = computed(
+  () => isSubscriptionCancelled.value || isSubscriptionEnded.value
+)
+
+const subscriptionStateCardTitle = computed(() =>
+  isSubscriptionEnded.value
+    ? t('subscription.canceledCard.endedTitle')
+    : t('subscription.canceledCard.title')
+)
+
+const subscriptionStateCardDescription = computed(() => {
+  if (isSubscriptionEnded.value) {
+    return t('subscription.canceledCard.endedDescription')
+  }
+  if (!formattedEndDate.value) {
+    return t('subscription.canceledCard.descriptionWithoutDate')
+  }
+  return t('subscription.canceledCard.description', {
+    date: formattedEndDate.value
   })
 })
 
-const formattedEndDate = computed(() => {
-  if (!subscription.value?.endDate) return ''
-  const endDate = new Date(subscription.value.endDate)
-  return endDate.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric'
-  })
+const planDateDisplay = computed(() => {
+  if (!canAccessSubscriptionFeatures.value || isSubscriptionEnded.value)
+    return ''
+  if (isSubscriptionCancelled.value) {
+    return formattedEndDate.value
+      ? t('subscription.endsOnDate', { date: formattedEndDate.value })
+      : ''
+  }
+  if (subscription.value?.scheduledPlanSlug || subscription.value?.changeAt) {
+    return scheduledPlanName.value && formattedChangeDate.value
+      ? t('subscription.changesToPlanOnDate', {
+          plan: scheduledPlanName.value,
+          date: formattedChangeDate.value
+        })
+      : ''
+  }
+  return formattedRenewalDate.value
+    ? t('subscription.renewsOnDate', { date: formattedRenewalDate.value })
+    : ''
 })
 
 const subscriptionTierName = computed(() => {
-  const tier = subscriptionTier.value
+  const tier = subscription.value?.tier
   if (!tier) return ''
-  const key = TIER_TO_KEY[tier] ?? 'standard'
+  const key = resolveSubscriptionTierKey(tier)
   const baseName = t(`subscription.tiers.${key}.name`)
   return isYearlySubscription.value
     ? t('subscription.tierNameYearly', { name: baseName })
     : baseName
 })
 
-const planMenu = ref<InstanceType<typeof Menu> | null>(null)
-
-const planMenuItems = computed(() => [
-  {
-    label: t('subscription.cancelSubscription'),
-    icon: 'pi pi-times',
-    command: () => {
-      showCancelSubscriptionDialog(subscription.value?.endDate ?? undefined)
-    }
-  }
-])
-
-const tierKey = computed(() => {
-  const tier = subscriptionTier.value
-  if (!tier) return DEFAULT_TIER_KEY
-  return TIER_TO_KEY[tier] ?? DEFAULT_TIER_KEY
-})
-const tierPrice = computed(() =>
-  getTierPrice(tierKey.value, isYearlySubscription.value)
+const isEnterprisePlan = computed(
+  () => subscription.value?.tier === 'ENTERPRISE'
 )
 
-const memberCount = computed(() => members.value.length)
-const nextMonthInvoice = computed(() => memberCount.value * tierPrice.value)
-
-const refillsDate = computed(() => {
-  if (!subscription.value?.renewalDate) return ''
-  const date = new Date(subscription.value.renewalDate)
-  const day = String(date.getDate()).padStart(2, '0')
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const year = String(date.getFullYear()).slice(-2)
-  return `${month}/${day}/${year}`
-})
-
-const creditsRemainingLabel = computed(() =>
-  isYearlySubscription.value
-    ? t(
-        'subscription.creditsRemainingThisYear',
-        {
-          date: refillsDate.value
-        },
-        {
-          escapeParameter: false
-        }
-      )
-    : t(
-        'subscription.creditsRemainingThisMonth',
-        {
-          date: refillsDate.value
-        },
-        {
-          escapeParameter: false
-        }
-      )
+const isNonCatalogPlan = computed(() =>
+  isSalesManagedTier(subscription.value?.tier)
 )
 
-const planTotalCredits = computed(() => {
-  const credits = getTierCredits(tierKey.value)
-  if (credits === null) return '—'
-  const total = isYearlySubscription.value ? credits * 12 : credits
-  return n(total)
+const planDisplayName = computed(() => {
+  if (isEnterprisePlan.value) return t('subscription.tiers.enterprise.name')
+  if (isNonCatalogPlan.value) return t('subscription.unknownTierName')
+  return isTeamPlan.value
+    ? t('subscription.teamPlanName')
+    : subscriptionTierName.value
 })
 
-const includedCreditsDisplay = computed(
-  () => `${monthlyBonusCredits.value} / ${planTotalCredits.value}`
+const tierKey = computed(() =>
+  resolveSubscriptionTierKey(subscription.value?.tier)
 )
+
+const TEAM_PERK_KEYS = [
+  'inviteMembers',
+  'concurrentRuns',
+  'sharedCreditPool',
+  'rolePermissions'
+] as const
 
 const tierBenefits = computed((): TierBenefit[] => {
-  const key = tierKey.value
-  const benefits: TierBenefit[] = []
-
-  if (!isInPersonalWorkspace.value) {
-    benefits.push({
-      key: 'members',
-      type: 'icon',
-      label: t('subscription.membersLabel', { count: getMaxSeats(key) }),
-      icon: 'pi pi-user'
-    })
+  if (isNonCatalogPlan.value) return []
+  if (isTeamActive.value || showInactiveTeamSubscription.value) {
+    return TEAM_PERK_KEYS.map((key) => ({
+      key,
+      type: 'feature',
+      label: t(`subscription.teamPerks.${key}`)
+    }))
   }
-
-  benefits.push(...getCommonTierBenefits(key, t, n))
-  return benefits
-})
-
-const { totalCredits, monthlyBonusCredits, prepaidCredits, isLoadingBalance } =
-  useSubscriptionCredits()
-
-const { handleAddApiCredits, handleRefresh } = useSubscriptionActions()
-
-// Focus-based polling: refresh balance when user returns from Stripe checkout
-const PENDING_TOPUP_KEY = 'pending_topup_timestamp'
-const TOPUP_EXPIRY_MS = 5 * 60 * 1000 // 5 minutes
-
-function handleWindowFocus() {
-  const timestampStr = localStorage.getItem(PENDING_TOPUP_KEY)
-  if (!timestampStr) return
-
-  const timestamp = parseInt(timestampStr, 10)
-
-  // Clear expired tracking (older than 5 minutes)
-  if (Date.now() - timestamp > TOPUP_EXPIRY_MS) {
-    localStorage.removeItem(PENDING_TOPUP_KEY)
-    return
+  if (isPersonalFree.value) {
+    return [
+      ...(freeRunsQuotaEnabled.value
+        ? [
+            {
+              key: 'freeRuns',
+              type: 'feature' as const,
+              label: t(
+                'subscription.freePerks.freeRuns',
+                freeRunsAllowance.value
+              )
+            }
+          ]
+        : []),
+      {
+        key: 'maxRuntime',
+        type: 'feature',
+        label: t('subscription.freePerks.maxRuntime', {
+          duration: t('subscription.maxDuration.free')
+        })
+      }
+    ]
   }
-
-  // Refresh and clear tracking to prevent repeated calls
-  void handleRefresh()
-  localStorage.removeItem(PENDING_TOPUP_KEY)
-}
-
-onMounted(() => {
-  window.addEventListener('focus', handleWindowFocus)
-  void Promise.all([fetchStatus(), fetchBalance()])
-})
-
-onBeforeUnmount(() => {
-  window.removeEventListener('focus', handleWindowFocus)
+  return getCommonTierBenefits(tierKey.value, t, n)
 })
 </script>
 

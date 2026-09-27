@@ -37,7 +37,7 @@ import GradientSlider from '@/components/gradientslider/GradientSlider.vue'
 import type { ColorStop } from '@/lib/litegraph/src/interfaces'
 import type { IWidgetGradientSliderOptions } from '@/lib/litegraph/src/types/widgets'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 import {
   STANDARD_EXCLUDED_PROPS,
   filterWidgetProps

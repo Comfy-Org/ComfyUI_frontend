@@ -1,7 +1,10 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
-import { logMeasurement, recordMeasurement } from '@e2e/helpers/perfReporter'
+import {
+  logMeasurement,
+  recordMeasurement
+} from '@e2e/fixtures/utils/perfReporter'
 
 test.describe('Performance', { tag: ['@perf'] }, () => {
   test('canvas idle style recalculations', async ({ comfyPage }) => {
@@ -151,6 +154,56 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
     recordMeasurement(m)
     console.log(
       `Large graph pan: ${m.styleRecalcs} style recalcs, ${m.layouts} layouts, ${m.taskDurationMs.toFixed(1)}ms task`
+    )
+  })
+
+  test('large graph legacy node drag', async ({ comfyPage }) => {
+    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
+    await comfyPage.workflow.loadWorkflow('large-graph-workflow')
+
+    // Legacy drags write to layoutStore every frame because registration is
+    // renderer-independent.
+    const nodePos = await comfyPage.page.evaluate(() => {
+      const app = window.app
+      if (!app) throw new Error('window.app is not available')
+
+      const { canvas } = app
+      const node = app.graph.nodes[0]
+      if (!node) throw new Error('Graph has no nodes')
+
+      canvas.ds.scale = 1
+      canvas.centerOnNode(node)
+      const [x, y] = app.canvasPosToClientPos(node.pos)
+      return { id: node.id, x, y, graphX: node.pos[0] }
+    })
+    await comfyPage.nextFrame()
+
+    await comfyPage.perf.startMeasuring()
+
+    await comfyPage.page.mouse.move(nodePos.x + 40, nodePos.y + 10)
+    await comfyPage.page.mouse.down()
+    for (let i = 0; i < 60; i++) {
+      await comfyPage.page.mouse.move(
+        nodePos.x + 40 + i * 4,
+        nodePos.y + 10 + i * 2
+      )
+      await comfyPage.nextFrame()
+    }
+    await comfyPage.page.mouse.up()
+
+    const m = await comfyPage.perf.stopMeasuring('legacy-node-drag')
+    recordMeasurement(m)
+
+    // Verify the measured interaction was a node drag, not a canvas pan.
+    const movedX = await comfyPage.page.evaluate((id) => {
+      const node = window.app?.graph.getNodeById(id)
+      if (!node) throw new Error(`Node ${id} not found`)
+      return node.pos[0]
+    }, nodePos.id)
+    expect(movedX).not.toBeCloseTo(nodePos.graphX, 0)
+
+    console.log(
+      `Legacy node drag: ${m.styleRecalcs} style recalcs, ${m.layouts} layouts, ${m.taskDurationMs.toFixed(1)}ms task`
     )
   })
 
@@ -316,6 +369,56 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
       )
     })
 
+    test('node resize workload', async ({ comfyPage }) => {
+      const nodeCount = await comfyPage.page
+        .locator('[data-node-id]')
+        .evaluateAll((elements) => {
+          const nodes = elements.slice(0, 100) as HTMLElement[]
+          for (const node of nodes) {
+            node.dataset.perfOriginalWidth = node.style.width
+            node.dataset.perfWidth = `${node.getBoundingClientRect().width}px`
+          }
+          return nodes.length
+        })
+      expect(nodeCount).toBe(100)
+
+      await comfyPage.perf.startMeasuring()
+      for (let index = 0; index < 10; index++) {
+        await comfyPage.page
+          .locator('[data-perf-width]')
+          .evaluateAll((elements) => {
+            for (const element of elements as HTMLElement[]) {
+              const width = Number.parseFloat(element.dataset.perfWidth ?? '')
+              element.style.width = `${width + 1}px`
+            }
+          })
+        await comfyPage.nextFrame()
+        await comfyPage.page
+          .locator('[data-perf-width]')
+          .evaluateAll((elements) => {
+            for (const element of elements as HTMLElement[]) {
+              element.style.width = element.dataset.perfWidth ?? ''
+            }
+          })
+        await comfyPage.nextFrame()
+      }
+
+      const measurement = await comfyPage.perf.stopMeasuring(
+        'vue-node-resize-workload'
+      )
+      recordMeasurement(measurement)
+
+      await comfyPage.page
+        .locator('[data-perf-width]')
+        .evaluateAll((elements) => {
+          for (const element of elements as HTMLElement[]) {
+            element.style.width = element.dataset.perfOriginalWidth ?? ''
+            delete element.dataset.perfOriginalWidth
+            delete element.dataset.perfWidth
+          }
+        })
+    })
+
     test('zoom out culling', async ({ comfyPage }) => {
       await comfyPage.perf.startMeasuring()
 
@@ -347,6 +450,45 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
       )
     })
   })
+
+  test(
+    'subgraph transition (enter and exit)',
+    { tag: ['@vue-nodes'] },
+    async ({ comfyPage }, testInfo) => {
+      // Heaviest perf test: loads an 80-node subgraph and pays ~30s/repeat.
+      // The signal is dominated by N=80 mount cost, so a single sample per
+      // CI invocation is sufficient — early-return on subsequent repeats.
+      if (testInfo.repeatEachIndex > 0) return
+
+      // Load workflow with a subgraph containing 80 interior nodes.
+      // Entering the subgraph unmounts root nodes and mounts all 80 interior
+      // nodes synchronously — this is the bottleneck we're measuring.
+      await comfyPage.workflow.loadWorkflow('subgraphs/large-subgraph-80-nodes')
+
+      await comfyPage.idleFrames(30)
+
+      await comfyPage.vueNodes.enterSubgraph()
+      await comfyPage.vueNodes.waitForNodes(80)
+      await comfyPage.idleFrames(30)
+
+      // Exit back to root graph before measuring a fresh enter/exit cycle
+      await comfyPage.subgraph.exitViaBreadcrumb()
+      await comfyPage.idleFrames(10)
+
+      // Start measuring the enter transition
+      await comfyPage.perf.startMeasuring()
+
+      await comfyPage.vueNodes.enterSubgraph()
+      await comfyPage.vueNodes.waitForNodes(80)
+      await comfyPage.idleFrames(30)
+
+      const m = await comfyPage.perf.stopMeasuring('subgraph-transition-enter')
+      recordMeasurement(m)
+      console.log(
+        `Subgraph enter (80 nodes): ${m.taskDurationMs.toFixed(0)}ms task, ${m.layouts} layouts, TBT=${m.totalBlockingTimeMs.toFixed(0)}ms`
+      )
+    }
+  )
 
   test('workflow execution', async ({ comfyPage }) => {
     // Uses lightweight PrimitiveString → PreviewAny workflow (no GPU needed)

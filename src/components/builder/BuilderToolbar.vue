@@ -36,7 +36,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import StepBadge from './StepBadge.vue'
 import StepLabel from './StepLabel.vue'

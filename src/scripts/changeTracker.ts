@@ -1,16 +1,21 @@
+import { useDebounceFn } from '@vueuse/core'
 import _ from 'es-toolkit/compat'
-import * as jsondiffpatch from 'jsondiffpatch'
-import log from 'loglevel'
 
+import { assert } from '@/base/assert'
+import { LAYER_EDITOR_DIALOG_KEY } from '@/renderer/extensions/layerEditor/composables/layerEditorDialog'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/litegraph'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
+import { useDialogStore } from '@/stores/dialogStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
+import { serializeNodeId } from '@/types/nodeId'
+import { isModalOpen } from '@/utils/modalUtil'
 
 import { api } from './api'
 import type { ComfyApp } from './app'
@@ -20,12 +25,217 @@ function clone<T>(obj: T): T {
   return JSON.parse(JSON.stringify(obj))
 }
 
-const logger = log.getLogger('ChangeTracker')
-// Change to debug for more verbose logging
-logger.setLevel('info')
-
 function isActiveTracker(tracker: ChangeTracker): boolean {
   return useWorkflowStore().activeWorkflow?.changeTracker === tracker
+}
+
+function isAutoQueueOnChange(): boolean {
+  return (
+    useQueueSettingsStore().mode === 'change' ||
+    (app.ui.autoQueueEnabled === true && app.ui.autoQueueMode === 'change')
+  )
+}
+
+const nonExecutionGraphProperties = new Set([
+  'id',
+  'revision',
+  'last_node_id',
+  'last_link_id',
+  'state',
+  'groups',
+  'config',
+  'extra',
+  'version',
+  'models',
+  'reroutes',
+  'floatingLinks',
+  'subgraphs',
+  'definitions',
+  'name',
+  'description',
+  'category',
+  'essentials_category'
+])
+
+const nonExecutionNodeProperties = new Set([
+  'pos',
+  'size',
+  // Node flags, including skip_repeated_outputs, only affect the editor.
+  'flags',
+  'order',
+  'color',
+  'bgcolor',
+  'boxcolor',
+  'shape',
+  'showAdvanced',
+  'title'
+])
+
+const nonExecutionSlotProperties = new Set([
+  'localized_name',
+  'label',
+  'shape',
+  'color_off',
+  'color_on',
+  'pos',
+  'link',
+  'links',
+  'linkIds',
+  'slot_index'
+])
+
+const nonExecutionBoundaryNodeProperties = new Set(['bounding', 'pinned'])
+const nonExecutableNodeTypes = new Set(['Note', 'MarkdownNote'])
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return isRecord(value) ? value : null
+}
+
+function omitProperties(
+  record: Record<string, unknown>,
+  properties: ReadonlySet<string>
+): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(record).filter(([key]) => !properties.has(key))
+  )
+}
+
+function getExecutionSlotState(value: unknown): unknown {
+  const slot = asRecord(value)
+  return slot ? omitProperties(slot, nonExecutionSlotProperties) : value
+}
+
+function getExecutionNodeState(value: unknown): unknown {
+  const node = asRecord(value)
+  if (!node) return value
+
+  const executionNode = omitProperties(node, nonExecutionNodeProperties)
+  if ('id' in node) {
+    executionNode.id = normalizeNodeId(node.id)
+  }
+  if (Array.isArray(node.inputs)) {
+    executionNode.inputs = node.inputs.map(getExecutionSlotState)
+  }
+  if (Array.isArray(node.outputs)) {
+    executionNode.outputs = node.outputs.map(getExecutionSlotState)
+  }
+  return executionNode
+}
+
+function getExecutionBoundaryNodeState(value: unknown): unknown {
+  const node = asRecord(value)
+  if (!node) return value
+
+  const executionNode = omitProperties(node, nonExecutionBoundaryNodeProperties)
+  if ('id' in node) {
+    executionNode.id = normalizeNodeId(node.id)
+  }
+  return executionNode
+}
+
+function getExecutionLinkState(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return [
+      normalizeNodeId(value[1]),
+      normalizeSlotIndex(value[2]),
+      normalizeNodeId(value[3]),
+      normalizeSlotIndex(value[4])
+    ]
+  }
+
+  const link = asRecord(value)
+  if (!link) return value
+  return [
+    normalizeNodeId(link.origin_id),
+    normalizeSlotIndex(link.origin_slot),
+    normalizeNodeId(link.target_id),
+    normalizeSlotIndex(link.target_slot)
+  ]
+}
+
+function normalizeNodeId(value: unknown): unknown {
+  return typeof value === 'number' || typeof value === 'string'
+    ? serializeNodeId(value)
+    : value
+}
+
+function normalizeSlotIndex(value: unknown): unknown {
+  if (typeof value !== 'string') return value
+
+  const index = parseInt(value)
+  return Number.isNaN(index) ? value : index
+}
+
+function isExecutableNodeState(value: unknown): boolean {
+  const node = asRecord(value)
+  return (
+    !node ||
+    typeof node.type !== 'string' ||
+    !nonExecutableNodeTypes.has(node.type)
+  )
+}
+
+function getExecutionDefinitionsState(value: unknown): unknown {
+  const definitions = asRecord(value)
+  if (!definitions || !Array.isArray(definitions.subgraphs)) return value
+
+  return {
+    ...definitions,
+    subgraphs: _.sortBy(
+      definitions.subgraphs,
+      (subgraph) => asRecord(subgraph)?.id
+    ).map(getExecutionGraphState)
+  }
+}
+
+function getExecutionGraphState(value: unknown): unknown {
+  const graph = asRecord(value)
+  if (!graph) return value
+
+  const executionGraph = omitProperties(graph, nonExecutionGraphProperties)
+  if (Array.isArray(graph.nodes)) {
+    executionGraph.nodes = _.sortBy(
+      graph.nodes.filter(isExecutableNodeState).map(getExecutionNodeState),
+      (node) => asRecord(node)?.id
+    )
+  }
+  if (Array.isArray(graph.links)) {
+    executionGraph.links = _.sortBy(
+      graph.links.map(getExecutionLinkState),
+      (link) => JSON.stringify(link)
+    )
+  } else if (!('links' in graph)) {
+    executionGraph.links = []
+  }
+  if (Array.isArray(graph.inputs)) {
+    executionGraph.inputs = graph.inputs.map(getExecutionSlotState)
+  }
+  if (Array.isArray(graph.outputs)) {
+    executionGraph.outputs = graph.outputs.map(getExecutionSlotState)
+  }
+  if ('inputNode' in graph) {
+    executionGraph.inputNode = getExecutionBoundaryNodeState(graph.inputNode)
+  }
+  if ('outputNode' in graph) {
+    executionGraph.outputNode = getExecutionBoundaryNodeState(graph.outputNode)
+  }
+  if ('definitions' in graph) {
+    executionGraph.definitions = getExecutionDefinitionsState(graph.definitions)
+  }
+  return executionGraph
+}
+
+const reportedInactiveCalls = new Set<string>()
+
+function reportInactiveTrackerCall(method: string, workflowPath: string) {
+  const key = `${method}:${workflowPath}`
+  if (reportedInactiveCalls.has(key)) return
+  reportedInactiveCalls.add(key)
+  assert(false, `ChangeTracker.${method}() called on inactive tracker`)
 }
 
 export class ChangeTracker {
@@ -77,7 +287,6 @@ export class ChangeTracker {
     // Do not reset the state if we are restoring.
     if (this._restoringState) return
 
-    logger.debug('Reset State')
     if (state) this.activeState = clone(state)
     this.initialState = clone(this.activeState)
   }
@@ -107,10 +316,7 @@ export class ChangeTracker {
    */
   deactivate() {
     if (!isActiveTracker(this)) {
-      logger.warn(
-        'deactivate() called on inactive tracker for:',
-        this.workflow.path
-      )
+      reportInactiveTrackerCall('deactivate', this.workflow.path)
       return
     }
     if (!this._restoringState) this.captureCanvasState()
@@ -138,6 +344,10 @@ export class ChangeTracker {
     }
     if (this.subgraphState) {
       const { navigation } = this.subgraphState
+      const firstInvalidIndex = navigation.findIndex(
+        (id) => !app.rootGraph.subgraphs.has(id)
+      )
+      if (firstInvalidIndex !== -1) navigation.splice(firstInvalidIndex)
       useSubgraphNavigationStore().restoreState(navigation)
 
       const activeId = navigation.at(-1)
@@ -154,9 +364,7 @@ export class ChangeTracker {
     }
   }
 
-  updateModified() {
-    api.dispatchCustomEvent('graphChanged', this.activeState)
-
+  updateModified(previousState?: ComfyWorkflowJSON) {
     // Get the workflow from the store as ChangeTracker is raw object, i.e.
     // `this.workflow` is not reactive.
     const workflow = useWorkflowStore().getWorkflowByPath(this.workflow.path)
@@ -165,13 +373,19 @@ export class ChangeTracker {
         this.initialState,
         this.activeState
       )
-      if (logger.getLevel() <= logger.levels.DEBUG && workflow.isModified) {
-        const diff = ChangeTracker.graphDiff(
-          this.initialState,
-          this.activeState
-        )
-        logger.debug('Graph diff:', diff)
-      }
+    }
+
+    const autoQueueGraphChanged =
+      !!previousState &&
+      isAutoQueueOnChange() &&
+      !_.isEqual(
+        getExecutionGraphState(previousState),
+        getExecutionGraphState(this.activeState)
+      )
+
+    api.dispatchCustomEvent('graphChanged', this.activeState)
+    if (autoQueueGraphChanged) {
+      api.dispatchCustomEvent('autoQueueGraphChanged')
     }
   }
 
@@ -181,19 +395,18 @@ export class ChangeTracker {
    * Calling this on an inactive tracker would capture the wrong graph.
    */
   captureCanvasState() {
+    const isUndoRedoing = this._restoringState
+    const isInsideChangeTransaction = this.changeCount > 0
     if (
       !app.graph ||
-      this.changeCount ||
-      this._restoringState ||
+      isInsideChangeTransaction ||
+      isUndoRedoing ||
       ChangeTracker.isLoadingGraph
     )
       return
 
     if (!isActiveTracker(this)) {
-      logger.warn(
-        'captureCanvasState called on inactive tracker for:',
-        this.workflow.path
-      )
+      reportInactiveTrackerCall('captureCanvasState', this.workflow.path)
       return
     }
 
@@ -203,23 +416,38 @@ export class ChangeTracker {
       return
     }
     if (!ChangeTracker.graphEqual(this.activeState, currentState)) {
-      this.undoQueue.push(this.activeState)
+      const previousState = this.activeState
+      this.undoQueue.push(previousState)
       if (this.undoQueue.length > ChangeTracker.MAX_HISTORY) {
         this.undoQueue.shift()
       }
-      logger.debug('Diff detected. Undo queue length:', this.undoQueue.length)
 
       this.activeState = currentState
       this.redoQueue.length = 0
-      this.updateModified()
+      this.updateModified(previousState)
+      this.squashState()
     }
   }
+  squashState = useDebounceFn(() => {
+    if (
+      this !== useWorkflowStore().activeWorkflow?.changeTracker ||
+      ChangeTracker.isLoadingGraph
+    )
+      return
+
+    const currentState = clone(app.rootGraph.serialize()) as ComfyWorkflowJSON
+    if (ChangeTracker.graphEqual(this.activeState, currentState)) return
+
+    const previousState = this.activeState
+    this.activeState = currentState
+    this.updateModified(previousState)
+  }, 50)
 
   /** @deprecated Use {@link captureCanvasState} instead. */
   checkState() {
     if (!ChangeTracker._checkStateWarned) {
       ChangeTracker._checkStateWarned = true
-      logger.warn(
+      console.warn(
         'checkState() is deprecated — use captureCanvasState() instead.'
       )
     }
@@ -228,10 +456,15 @@ export class ChangeTracker {
 
   private static _checkStateWarned = false
 
+  static resetCheckStateWarningForTest() {
+    ChangeTracker._checkStateWarned = false
+  }
+
   async updateState(source: ComfyWorkflowJSON[], target: ComfyWorkflowJSON[]) {
     const prevState = source.pop()
     if (prevState) {
-      target.push(this.activeState)
+      const previousState = this.activeState
+      target.push(previousState)
       this._restoringState = true
       try {
         await app.loadGraphData(prevState, false, false, this.workflow, {
@@ -239,7 +472,7 @@ export class ChangeTracker {
           silentAssetErrors: true
         })
         this.activeState = prevState
-        this.updateModified()
+        this.updateModified(previousState)
       } finally {
         this._restoringState = false
       }
@@ -248,22 +481,10 @@ export class ChangeTracker {
 
   async undo() {
     await this.updateState(this.undoQueue, this.redoQueue)
-    logger.debug(
-      'Undo. Undo queue length:',
-      this.undoQueue.length,
-      'Redo queue length:',
-      this.redoQueue.length
-    )
   }
 
   async redo() {
     await this.updateState(this.redoQueue, this.undoQueue)
-    logger.debug(
-      'Redo. Undo queue length:',
-      this.undoQueue.length,
-      'Redo queue length:',
-      this.redoQueue.length
-    )
   }
 
   async undoRedo(e: KeyboardEvent) {
@@ -294,6 +515,7 @@ export class ChangeTracker {
     const getCurrentChangeTracker = () =>
       useWorkflowStore().activeWorkflow?.changeTracker
     const captureState = () => getCurrentChangeTracker()?.captureCanvasState()
+    const dialogStore = useDialogStore()
 
     let keyIgnored = false
     window.addEventListener(
@@ -306,6 +528,10 @@ export class ChangeTracker {
         // If the mask editor is opened, we don't want to trigger on key events
         const comfyApp = app.constructor as typeof ComfyApp
         if (comfyApp.maskeditor_is_opended?.()) return
+        if (isModalOpen(dialogStore.dialogStack.length)) return
+
+        // The layer editor has its own session-local undo history
+        if (useDialogStore().isDialogOpen(LAYER_EDITOR_DIALOG_KEY)) return
 
         const activeEl = document.activeElement
         requestAnimationFrame(async () => {
@@ -337,7 +563,6 @@ export class ChangeTracker {
 
           // If our active element is some type of input then handle changes after they're done
           if (ChangeTracker.bindInput(bindInputEl)) return
-          logger.debug('captureCanvasState on keydown')
           changeTracker.captureCanvasState()
         })
       },
@@ -347,25 +572,21 @@ export class ChangeTracker {
     window.addEventListener('keyup', () => {
       if (keyIgnored) {
         keyIgnored = false
-        logger.debug('captureCanvasState on keyup')
         captureState()
       }
     })
 
     // Handle clicking DOM elements (e.g. widgets)
     window.addEventListener('mouseup', () => {
-      logger.debug('captureCanvasState on mouseup')
       captureState()
     })
 
     // Handle prompt queue event for dynamic widget changes
     api.addEventListener('promptQueued', () => {
-      logger.debug('captureCanvasState on promptQueued')
       captureState()
     })
 
     api.addEventListener('graphCleared', () => {
-      logger.debug('captureCanvasState on graphCleared')
       captureState()
     })
 
@@ -373,7 +594,6 @@ export class ChangeTracker {
     const processMouseUp = LGraphCanvas.prototype.processMouseUp
     LGraphCanvas.prototype.processMouseUp = function (e) {
       const v = processMouseUp.apply(this, [e])
-      logger.debug('captureCanvasState on processMouseUp')
       captureState()
       return v
     }
@@ -390,7 +610,6 @@ export class ChangeTracker {
         callback(v)
         captureState()
       }
-      logger.debug('captureCanvasState on prompt')
       return prompt.apply(this, [title, value, extendedCallback, event])
     }
 
@@ -398,7 +617,6 @@ export class ChangeTracker {
     const close = LiteGraph.ContextMenu.prototype.close
     LiteGraph.ContextMenu.prototype.close = function (e: MouseEvent) {
       const v = close.apply(this, [e])
-      logger.debug('captureCanvasState on contextMenuClose')
       captureState()
       return v
     }
@@ -500,26 +718,5 @@ export class ChangeTracker {
     }
 
     return false
-  }
-
-  private static graphDiff(a: ComfyWorkflowJSON, b: ComfyWorkflowJSON) {
-    function sortGraphNodes(graph: ComfyWorkflowJSON) {
-      return {
-        links: graph.links,
-        floatingLinks: graph.floatingLinks,
-        reroutes: graph.reroutes,
-        groups: graph.groups,
-        extra: graph.extra,
-        definitions: graph.definitions,
-        subgraphs: graph.subgraphs,
-        nodes: graph.nodes.sort((a, b) => {
-          if (typeof a.id === 'number' && typeof b.id === 'number') {
-            return a.id - b.id
-          }
-          return 0
-        })
-      }
-    }
-    return jsondiffpatch.diff(sortGraphNodes(a), sortGraphNodes(b))
   }
 }

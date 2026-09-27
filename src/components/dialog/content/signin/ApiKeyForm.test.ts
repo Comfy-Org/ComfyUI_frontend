@@ -58,8 +58,6 @@ const i18n = createI18n({
 
 describe('ApiKeyForm', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-    mockStoreApiKey.mockReset()
     mockLoadingRef.value = false
   })
 
@@ -110,6 +108,12 @@ describe('ApiKeyForm', () => {
     expect(screen.getByRole('link', { name: 'Get one here' })).toHaveAttribute(
       'href',
       `${getComfyPlatformBaseUrl()}/login`
+    )
+    expect(
+      screen.getByRole('link', { name: 'About non-whitelisted sites' })
+    ).toHaveAttribute(
+      'href',
+      'https://docs.comfy.org/tutorials/partner-nodes/overview#log-in-with-comfyui-account-api-key-on-non-whitelisted-websites'
     )
   })
 })

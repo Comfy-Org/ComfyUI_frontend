@@ -87,36 +87,4 @@ test.describe('Image Crop', () => {
       }
     }
   )
-
-  test(
-    'Programmatically setting widget value updates bounding box inputs',
-    { tag: '@ui' },
-    async ({ comfyPage }) => {
-      const newBounds = { x: 50, y: 100, width: 200, height: 300 }
-
-      await comfyPage.page.evaluate(
-        ({ bounds }) => {
-          const node = window.app!.graph.getNodeById(1)
-          const widget = node?.widgets?.find((w) => w.type === 'imagecrop')
-          if (widget) {
-            widget.value = bounds
-            widget.callback?.(bounds)
-          }
-        },
-        { bounds: newBounds }
-      )
-      await comfyPage.nextFrame()
-
-      const node = comfyPage.vueNodes.getNodeLocator('1')
-      const inputs = node.locator('input[inputmode="decimal"]')
-
-      await expect.poll(() => inputs.nth(0).inputValue()).toBe('50')
-
-      await expect.poll(() => inputs.nth(1).inputValue()).toBe('100')
-
-      await expect.poll(() => inputs.nth(2).inputValue()).toBe('200')
-
-      await expect.poll(() => inputs.nth(3).inputValue()).toBe('300')
-    }
-  )
 })

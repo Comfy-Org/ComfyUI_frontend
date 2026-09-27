@@ -1,0 +1,49 @@
+---
+import { agentCards } from '../components/agent/agentCards'
+import HeroWaitlist01 from '../components/blocks/HeroWaitlist01.vue'
+import BaseLayout from '../layouts/BaseLayout.astro'
+---
+
+<BaseLayout
+  title="The first agent for craft"
+  description="The Comfy Agent lives inside ComfyUI, local and cloud. Describe what you want: it builds the workflow on your canvas, runs it, and hands back the result."
+  noindex
+>
+  <HeroWaitlist01
+    client:load
+    badgeText="AGENT"
+    title="The first agent for craft"
+    subtitle="An agent that lives inside ComfyUI, local and cloud. Describe what you want: it builds the workflow on your canvas with you, reviews assets, runs generations, and iterates until the result is production ready."
+    footnote="We'll prepare your account and email you when it's ready."
+    signupEvent="agent_beta_waitlist_joined"
+  />
+
+  <!-- ============ CARDS ============ -->
+  <section
+    class="mx-auto max-w-295 px-6 pt-15 pb-35 max-[820px]:pt-20 max-[820px]:pb-24"
+  >
+    <div class="mx-auto mb-13.5 max-w-180 text-center">
+      <h2
+        class="text-[clamp(28px,4.2vw,48px)]/[1.12] font-light tracking-[-0.02em] text-primary-comfy-canvas"
+      >
+        It fits the way you already work
+      </h2>
+    </div>
+
+    <div class="grid grid-cols-2 gap-6 max-[820px]:grid-cols-1">
+      {
+        agentCards.map((card) => (
+          <div class="rounded-3xl bg-primary-comfy-ink-light p-8.5 pb-9.5">
+            <p class="mb-4 text-xs font-bold tracking-[0.14em] text-primary-comfy-yellow uppercase">
+              {card.tag}
+            </p>
+            <h3 class="mb-3 text-xl/[1.25] font-medium tracking-[-0.01em] text-primary-comfy-canvas">
+              {card.title}
+            </h3>
+            <p class="text-sm/[1.62] text-primary-warm-white/66">{card.body}</p>
+          </div>
+        ))
+      }
+    </div>
+  </section>
+</BaseLayout>

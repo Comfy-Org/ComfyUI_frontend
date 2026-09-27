@@ -33,6 +33,12 @@ jobs:
       pull-requests: write
       issues: write
 
+    # `gh pr view <n>` fails with the auto-provided GITHUB_TOKEN even with
+    # pull-requests: write, which is what silently broke manual dispatch.
+    # Steps needing a different token still set GH_TOKEN themselves.
+    env:
+      GH_TOKEN: ${{ secrets.PR_GH_TOKEN || secrets.GH_TOKEN }}
+
     steps:
       - name: Validate inputs for manual triggers
         if: github.event_name == 'workflow_dispatch'
@@ -43,9 +49,11 @@ jobs:
             exit 1
           fi
 
-          # Validate PR exists and is merged
-          if ! gh pr view "${{ inputs.pr_number }}" --json merged >/dev/null 2>&1; then
-            echo "::error::PR #${{ inputs.pr_number }} not found or inaccessible."
+          # Validate PR exists and is merged. The gh error is surfaced rather
+          # than discarded: an auth failure and a genuinely missing PR are
+          # indistinguishable once it is swallowed.
+          if ! PR_VIEW_ERR=$(gh pr view "${{ inputs.pr_number }}" --json merged 2>&1 >/dev/null); then
+            echo "::error::PR #${{ inputs.pr_number }} not found or inaccessible: ${PR_VIEW_ERR}"
             exit 1
           fi
 
@@ -61,12 +69,17 @@ jobs:
             exit 1
           fi
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
 
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
+          # Persist a token with `workflow` scope so the backport push can
+          # include changes to .github/workflows/**. The default GITHUB_TOKEN
+          # is refused by GitHub when a push creates/updates workflow files,
+          # which silently aborted the whole job (see PR #12804 backport).
+          token: ${{ secrets.PR_GH_TOKEN }}
 
       - name: Configure git
         run: |
@@ -75,6 +88,8 @@ jobs:
 
       - name: Collect backport targets
         id: targets
+        env:
+          GH_REPO: ${{ github.repository }}
         run: |
           TARGETS=()
           declare -A SEEN=()
@@ -142,7 +157,6 @@ jobs:
           FORCE_RERUN_INPUT: >-
             ${{ github.event_name == 'workflow_dispatch' && inputs.force_rerun
             || 'false' }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: >-
             ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number
             || github.event.pull_request.number }}
@@ -225,6 +239,7 @@ jobs:
         id: backport
         env:
           PR_NUMBER: ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }}
+          GH_REPO: ${{ github.repository }}
         run: |
           FAILED=""
           SUCCESS=""
@@ -273,32 +288,49 @@ jobs:
               continue
             fi
 
-            # Create backport branch
-            git checkout -b "${BACKPORT_BRANCH}" "origin/${TARGET_BRANCH}"
+            # Create backport branch. A failure here (e.g. dirty state left
+            # by a prior target) must not abort the loop and skip remaining
+            # targets, so fall back to a clean checkout and record the error.
+            if ! git checkout -B "${BACKPORT_BRANCH}" "origin/${TARGET_BRANCH}"; then
+              echo "::error::Failed to create branch ${BACKPORT_BRANCH} for ${TARGET_BRANCH}"
+              FAILED="${FAILED}${TARGET_BRANCH}:branch-create-failed "
+              git checkout main || git checkout -f main
+              echo "::endgroup::"
+              continue
+            fi
 
             # Try cherry-pick
             if git cherry-pick "${MERGE_COMMIT}"; then
               if [ "$REMOTE_BACKPORT_EXISTS" = true ]; then
-                git push --force-with-lease origin "${BACKPORT_BRANCH}"
+                PUSH_CMD=(git push --force-with-lease origin "${BACKPORT_BRANCH}")
               else
-                git push origin "${BACKPORT_BRANCH}"
+                PUSH_CMD=(git push origin "${BACKPORT_BRANCH}")
               fi
-              echo "${BACKPORT_BRANCH}" >> "$CREATED_BRANCHES_FILE"
-              SUCCESS="${SUCCESS}${TARGET_BRANCH}:${BACKPORT_BRANCH} "
-              echo "Successfully created backport branch: ${BACKPORT_BRANCH}"
+
+              # A push failure for one target must not abort the loop and
+              # prevent remaining targets from being attempted.
+              if "${PUSH_CMD[@]}"; then
+                echo "${BACKPORT_BRANCH}" >> "$CREATED_BRANCHES_FILE"
+                SUCCESS="${SUCCESS}${TARGET_BRANCH}:${BACKPORT_BRANCH} "
+                echo "Successfully created backport branch: ${BACKPORT_BRANCH}"
+              else
+                echo "::error::Failed to push ${BACKPORT_BRANCH} for ${TARGET_BRANCH}"
+                FAILED="${FAILED}${TARGET_BRANCH}:push-failed "
+              fi
+
               # Return to main (keep the branch, we need it for PR)
-              git checkout main
+              git checkout main || git checkout -f main
             else
               # Get conflict info
               CONFLICTS=$(git diff --name-only --diff-filter=U | tr '\n' ',')
-              git cherry-pick --abort
+              git cherry-pick --abort || true
 
               echo "::error::Cherry-pick failed due to conflicts"
               FAILED="${FAILED}${TARGET_BRANCH}:conflicts:${CONFLICTS} "
 
               # Clean up the failed branch
-              git checkout main
-              git branch -D "${BACKPORT_BRANCH}"
+              git checkout main || git checkout -f main
+              git branch -D "${BACKPORT_BRANCH}" || true
             fi
 
             echo "::endgroup::"
@@ -329,9 +361,11 @@ jobs:
             PR_DATA=$(gh pr view ${{ inputs.pr_number }} --json title,author)
             PR_TITLE=$(echo "$PR_DATA" | jq -r '.title')
             PR_AUTHOR=$(echo "$PR_DATA" | jq -r '.author.login')
+            PR_AUTHOR_IS_BOT=$(echo "$PR_DATA" | jq -r '.author.is_bot')
           else
             PR_TITLE=$(jq -r '.pull_request.title' "$GITHUB_EVENT_PATH")
             PR_AUTHOR=$(jq -r '.pull_request.user.login' "$GITHUB_EVENT_PATH")
+            PR_AUTHOR_IS_BOT=$(jq -r '.pull_request.user.type == "Bot"' "$GITHUB_EVENT_PATH")
           fi
 
           for backport in ${{ steps.backport.outputs.success }}; do
@@ -348,6 +382,10 @@ jobs:
               PR_NUM=$(echo "${PR_URL}" | grep -o '[0-9]*$')
 
               if [ -n "${PR_NUM}" ]; then
+                if [ "${PR_AUTHOR_IS_BOT}" != "true" ]; then
+                  gh pr edit "${PR_NUM}" --add-assignee "${PR_AUTHOR}" \
+                    || echo "::warning::Failed to assign @${PR_AUTHOR} to PR #${PR_NUM}"
+                fi
                 gh pr merge "${PR_NUM}" --auto --squash --repo "${{ github.repository }}" \
                   || echo "::warning::Failed to enable auto-merge for PR #${PR_NUM}"
                 gh pr comment "${PR_NUMBER}" --body "@${PR_AUTHOR} Successfully backported to #${PR_NUM}"
@@ -362,12 +400,14 @@ jobs:
       - name: Comment on failures
         if: steps.filter-targets.outputs.skip != 'true' && failure() && steps.backport.outputs.failed
         env:
-          GH_TOKEN: ${{ github.token }}
           BACKPORT_AGENT_PROMPT_TEMPLATE: |
             Backport PR #${PR_NUMBER} (${PR_URL}) to ${target}.
             Cherry-pick merge commit ${MERGE_COMMIT} onto new branch
             ${BACKPORT_BRANCH} from origin/${target}.
             Resolve conflicts in: ${CONFLICTS_INLINE}.
+
+            ${STACK_HINT}
+
             For test snapshots (browser_tests/**/*-snapshots/), accept PR version if
             changed in original PR, else keep target. For package.json versions, keep
             target branch. For pnpm-lock.yaml, regenerate with pnpm install.
@@ -378,6 +418,12 @@ jobs:
             ### ⚠️ Backport to `${target}` failed
 
             **Reason:** Merge conflicts detected during cherry-pick of `${MERGE_COMMIT_SHORT}`
+
+            The auto-backport could not be completed automatically. Please backport
+            manually onto branch `${BACKPORT_BRANCH}` (from `origin/${target}`) and
+            open a PR to `${target}`.
+
+            ${STACK_HINT}
 
             <details>
             <summary>📄 Conflicting files</summary>
@@ -411,38 +457,67 @@ jobs:
             MERGE_COMMIT=$(jq -r '.pull_request.merge_commit_sha' "$GITHUB_EVENT_PATH")
           fi
 
+          # Post a comment without letting a single failed `gh pr comment` (e.g.
+          # a locked issue, as happened for PR #13359, or a transient API error)
+          # abort the step under `set -e` and swallow the remaining failures.
+          post_comment() {
+            local body="$1"
+            local context="$2"
+            if ! gh pr comment "${PR_NUMBER}" --body "${body}"; then
+              echo "::warning::Could not comment on PR #${PR_NUMBER} about ${context}. Manual backport required."
+            fi
+          }
+
           for failure in ${{ steps.backport.outputs.failed }}; do
             IFS=':' read -r target reason conflicts <<< "${failure}"
 
+            SAFE_TARGET=$(echo "$target" | tr '/' '-')
+            BACKPORT_BRANCH="backport-${PR_NUMBER}-to-${SAFE_TARGET}"
+
             if [ "${reason}" = "branch-missing" ]; then
-              gh pr comment "${PR_NUMBER}" --body "@${PR_AUTHOR} Backport failed: Branch \`${target}\` does not exist"
+              post_comment "@${PR_AUTHOR} Backport failed: Branch \`${target}\` does not exist" "missing branch ${target}"
 
             elif [ "${reason}" = "already-exists" ]; then
-              gh pr comment "${PR_NUMBER}" --body "@${PR_AUTHOR} Commit \`${MERGE_COMMIT}\` already exists on branch \`${target}\`. No backport needed."
+              post_comment "@${PR_AUTHOR} Commit \`${MERGE_COMMIT}\` already exists on branch \`${target}\`. No backport needed." "already-backported ${target}"
+
+            elif [ "${reason}" = "branch-create-failed" ]; then
+              gh pr comment "${PR_NUMBER}" --body "@${PR_AUTHOR} Backport to \`${target}\` failed: could not create the backport branch. Please retry or backport manually."
+
+            elif [ "${reason}" = "push-failed" ]; then
+              gh pr comment "${PR_NUMBER}" --body "@${PR_AUTHOR} Backport to \`${target}\` cherry-picked cleanly but the push failed. Please retry or push the backport branch manually."
 
             elif [ "${reason}" = "conflicts" ]; then
               CONFLICTS_INLINE=$(echo "${conflicts}" | tr ',' ' ')
-              SAFE_TARGET=$(echo "$target" | tr '/' '-')
-              BACKPORT_BRANCH="backport-${PR_NUMBER}-to-${SAFE_TARGET}"
               PR_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}"
 
-              export PR_NUMBER PR_URL MERGE_COMMIT target BACKPORT_BRANCH CONFLICTS_INLINE
+              # Stacked PRs conflict here until the one below them merges into the target; note other open backports so the failure reads as that artifact, not a real conflict.
+              STACK_HINT=""
+              OPEN_BACKPORTS=$(
+                gh pr list --repo "${GITHUB_REPOSITORY}" --state open \
+                  --base "${target}" --label backport --json number \
+                  --jq '[.[].number | "#\(.)"] | join(", ")' 2>/dev/null
+              ) || OPEN_BACKPORTS=""
+              if [ -n "${OPEN_BACKPORTS}" ]; then
+                STACK_HINT="> **This may be a stacking conflict rather than a real one.** ${OPEN_BACKPORTS} are still open against \`${target}\`. If this PR sits on top of any of them, the conflict will disappear once they merge — wait for that, then remove and re-add the \`needs-backport\` label to re-run this workflow."
+              fi
+
+              export PR_NUMBER PR_URL MERGE_COMMIT target BACKPORT_BRANCH CONFLICTS_INLINE STACK_HINT
 
               # envsubst is provided by gettext-base
               if ! command -v envsubst >/dev/null 2>&1; then
                 sudo apt-get update && sudo apt-get install -y gettext-base
               fi
 
-              AGENT_PROMPT=$(envsubst '${PR_NUMBER} ${PR_URL} ${target} ${MERGE_COMMIT} ${BACKPORT_BRANCH} ${CONFLICTS_INLINE}' <<<"$BACKPORT_AGENT_PROMPT_TEMPLATE")
+              AGENT_PROMPT=$(envsubst '${PR_NUMBER} ${PR_URL} ${target} ${MERGE_COMMIT} ${BACKPORT_BRANCH} ${CONFLICTS_INLINE} ${STACK_HINT}' <<<"$BACKPORT_AGENT_PROMPT_TEMPLATE")
 
               # Use fenced code block for conflicts to handle special chars in filenames
               CONFLICTS_BLOCK=$(echo "${conflicts}" | tr ',' '\n')
               MERGE_COMMIT_SHORT="${MERGE_COMMIT:0:7}"
 
-              export target MERGE_COMMIT_SHORT CONFLICTS_BLOCK AGENT_PROMPT PR_AUTHOR
-              COMMENT_BODY=$(envsubst '${target} ${MERGE_COMMIT_SHORT} ${CONFLICTS_BLOCK} ${AGENT_PROMPT} ${PR_AUTHOR}' <<<"$COMMENT_BODY_TEMPLATE")
+              export target MERGE_COMMIT_SHORT BACKPORT_BRANCH CONFLICTS_BLOCK AGENT_PROMPT PR_AUTHOR STACK_HINT
+              COMMENT_BODY=$(envsubst '${target} ${MERGE_COMMIT_SHORT} ${BACKPORT_BRANCH} ${CONFLICTS_BLOCK} ${AGENT_PROMPT} ${PR_AUTHOR} ${STACK_HINT}' <<<"$COMMENT_BODY_TEMPLATE")
 
-              gh pr comment "${PR_NUMBER}" --body "${COMMENT_BODY}"
+              post_comment "${COMMENT_BODY}" "cherry-pick conflict on ${target} (backport manually onto ${BACKPORT_BRANCH})"
             fi
           done
 
@@ -467,5 +542,3 @@ jobs:
       - name: Remove needs-backport label
         if: steps.filter-targets.outputs.skip != 'true' && success()
         run: gh pr edit ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }} --remove-label "needs-backport"
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

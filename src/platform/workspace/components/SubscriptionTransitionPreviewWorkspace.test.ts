@@ -1,0 +1,402 @@
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
+import { createI18n } from 'vue-i18n'
+import { describe, expect, it, vi } from 'vitest'
+
+import type {
+  PreviewSubscribeResponse,
+  SubscriptionDuration,
+  SubscriptionTier
+} from '@/platform/workspace/api/workspaceApi'
+
+import SubscriptionTransitionPreviewWorkspace from './SubscriptionTransitionPreviewWorkspace.vue'
+
+// Not cancelled: keeps the reactivation banner out of these baseline scenarios.
+vi.mock('@/composables/billing/useBillingContext', () => ({
+  useBillingContext: () => ({
+    subscription: { value: { isCancelled: false, endDate: null } },
+    isInitialized: { value: true }
+  })
+}))
+
+// Only the renewal messages are supplied, so the renewal assertions verify
+// real interpolated output while every other key still renders as itself.
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: {
+    en: {
+      subscription: {
+        preview: {
+          renewsAt: 'Renews at {amount} on {date}. Cancel anytime.',
+          renewsAtAmount: 'Renews at {amount}. Cancel anytime.'
+        }
+      }
+    }
+  }
+})
+
+const globalOptions = {
+  plugins: [i18n],
+  stubs: {
+    SubscriptionTermsNote: { template: '<div />' },
+    Button: { template: '<button @click="$emit(\'click\')"><slot /></button>' }
+  }
+}
+
+function plan(
+  tier: SubscriptionTier,
+  duration: SubscriptionDuration,
+  priceCents: number
+) {
+  return {
+    slug: `${tier.toLowerCase()}-${duration.toLowerCase()}`,
+    tier,
+    duration,
+    price_cents: priceCents,
+    credits_cents: 0,
+    seat_summary: {
+      seat_count: 1,
+      total_cost_cents: priceCents,
+      total_credits_cents: 0
+    },
+    period_end: '2027-06-28T00:00:00Z'
+  }
+}
+
+function preview(
+  overrides: Partial<PreviewSubscribeResponse>
+): PreviewSubscribeResponse {
+  const newPlan = overrides.new_plan ?? plan('CREATOR', 'MONTHLY', 3500)
+  return {
+    allowed: true,
+    transition_type: 'upgrade',
+    effective_at: '2026-06-19T00:00:00Z',
+    is_immediate: true,
+    cost_today_cents: 0,
+    cost_next_period_cents: 0,
+    credits_today_cents: 0,
+    credits_next_period_cents: 0,
+    new_plan: newPlan,
+    quote_id: 'quote_123',
+    quote_version: 1,
+    amount_due_cents: overrides.cost_today_cents ?? 0,
+    currency: 'usd',
+    renewal_amount_cents: newPlan.price_cents,
+    renewal_at: '2027-06-28T00:00:00Z',
+    ...overrides
+  }
+}
+
+// Shape returned while embedded checkout is disabled: every exact-quote field
+// is absent and only the legacy cost fields are populated.
+function legacyPreview(
+  overrides: Partial<PreviewSubscribeResponse>
+): PreviewSubscribeResponse {
+  const {
+    amount_due_cents,
+    currency,
+    renewal_amount_cents,
+    renewal_at,
+    quote_id,
+    quote_version,
+    ...legacy
+  } = preview(overrides)
+  return legacy
+}
+
+describe('SubscriptionTransitionPreviewWorkspace', () => {
+  it('renders an immediate yearly upgrade with proration and upfront credits', () => {
+    render(SubscriptionTransitionPreviewWorkspace, {
+      props: {
+        previewData: preview({
+          transition_type: 'duration_change',
+          is_immediate: true,
+          cost_today_cents: 31_850,
+          current_plan: plan('CREATOR', 'MONTHLY', 3500),
+          new_plan: plan('CREATOR', 'ANNUAL', 33_600)
+        })
+      },
+      global: globalOptions
+    })
+    expect(
+      screen.getByText('subscription.preview.confirmUpgradeTitle')
+    ).toBeTruthy()
+    expect(screen.getByText('$28')).toBeTruthy()
+    expect(screen.getByText('subscription.billedYearly')).toBeTruthy()
+    expect(screen.getByText('subscription.preview.switchesToday')).toBeTruthy()
+    expect(
+      screen.getByText('subscription.preview.creditsYoullGetToday')
+    ).toBeTruthy()
+    expect(screen.getByText('88,800')).toBeTruthy()
+    expect(screen.getByText('$318.50')).toBeTruthy()
+    expect(
+      screen.getByText('subscription.preview.confirmUpgradeCta')
+    ).toBeTruthy()
+    expect(screen.queryByText('subscription.preview.startsOn')).toBeNull()
+  })
+
+  it('renders an immediate monthly tier upgrade with monthly refill', () => {
+    render(SubscriptionTransitionPreviewWorkspace, {
+      props: {
+        previewData: preview({
+          transition_type: 'upgrade',
+          is_immediate: true,
+          cost_today_cents: 8250,
+          current_plan: plan('CREATOR', 'MONTHLY', 3500),
+          new_plan: plan('PRO', 'MONTHLY', 10_000)
+        })
+      },
+      global: globalOptions
+    })
+    expect(screen.getByText('$100')).toBeTruthy()
+    expect(screen.getByText('subscription.billedMonthly')).toBeTruthy()
+    expect(
+      screen.getByText('subscription.preview.eachMonthCreditsRefill')
+    ).toBeTruthy()
+    expect(screen.getByText('21,100')).toBeTruthy()
+    expect(screen.getByText('$82.50')).toBeTruthy()
+  })
+
+  it('opens verification only from its button without exposing the URL', async () => {
+    const actionUrl = 'https://verify.example/sensitive-token'
+    const open = vi.spyOn(window, 'open').mockReturnValue({} as Window)
+    const { container } = render(SubscriptionTransitionPreviewWorkspace, {
+      props: {
+        previewData: preview({}),
+        actionUrl
+      },
+      global: globalOptions
+    })
+
+    expect(open).not.toHaveBeenCalled()
+    expect(container.innerHTML).not.toContain(actionUrl)
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: 'subscription.preview.completeVerification'
+      })
+    )
+    expect(open).toHaveBeenCalledWith(
+      actionUrl,
+      '_blank',
+      'noopener,noreferrer'
+    )
+  })
+
+  it('renders a scheduled downgrade with the after-that block and no charge', () => {
+    render(SubscriptionTransitionPreviewWorkspace, {
+      props: {
+        previewData: preview({
+          transition_type: 'downgrade',
+          is_immediate: false,
+          cost_today_cents: 0,
+          effective_at: '2027-06-28T00:00:00Z',
+          current_plan: plan('PRO', 'MONTHLY', 10_000),
+          new_plan: plan('CREATOR', 'MONTHLY', 3500)
+        })
+      },
+      global: globalOptions
+    })
+    expect(
+      screen.getAllByText('subscription.preview.confirmChange').length
+    ).toBeGreaterThan(0)
+    expect(screen.getByText('$35')).toBeTruthy()
+    expect(screen.getByText('subscription.preview.startsOn')).toBeTruthy()
+    expect(screen.getByText('$0.00')).toBeTruthy()
+    expect(screen.getByText('subscription.preview.afterThat')).toBeTruthy()
+    expect(
+      screen.getByText('subscription.preview.creditsRefillMonthlyTo')
+    ).toBeTruthy()
+    expect(screen.getByText('7,400')).toBeTruthy()
+    expect(screen.queryByText('subscription.preview.switchesToday')).toBeNull()
+    expect(
+      screen.queryByText('subscription.preview.yearlySubscription')
+    ).toBeNull()
+  })
+
+  it('renders a scheduled annual downgrade with yearly refill and billing', () => {
+    render(SubscriptionTransitionPreviewWorkspace, {
+      props: {
+        previewData: preview({
+          transition_type: 'downgrade',
+          is_immediate: false,
+          cost_today_cents: 0,
+          effective_at: '2026-08-30T00:00:00Z',
+          current_plan: plan('CREATOR', 'MONTHLY', 3500),
+          new_plan: plan('STANDARD', 'ANNUAL', 19_200)
+        })
+      },
+      global: globalOptions
+    })
+
+    expect(screen.getByText('$16')).toBeTruthy()
+    expect(
+      screen.getByText('subscription.preview.eachYearCreditsRefill')
+    ).toBeTruthy()
+    expect(screen.getByText('50,400')).toBeTruthy()
+    expect(screen.getByText('subscription.billedYearly')).toBeTruthy()
+    expect(
+      screen.queryByText('subscription.preview.creditsRefillMonthlyTo')
+    ).toBeNull()
+    expect(
+      screen.queryByText('subscription.preview.billedEachMonth')
+    ).toBeNull()
+  })
+
+  it('renders a team credit-commit change using the slider stop for name and credits', () => {
+    render(SubscriptionTransitionPreviewWorkspace, {
+      props: {
+        previewData: preview({
+          transition_type: 'upgrade',
+          is_immediate: true,
+          cost_today_cents: 105_000,
+          current_plan: plan('PRO', 'MONTHLY', 70_000),
+          new_plan: plan('PRO', 'MONTHLY', 140_000)
+        }),
+        teamPlan: {
+          id: 'team_1400',
+          usd: 1400,
+          credits: 295_400,
+          discountedUsd: 1295
+        }
+      },
+      global: globalOptions
+    })
+    // Plan name and refill credits come from the team stop, not the personal
+    // tier table (which would yield 0 credits for a team plan).
+    expect(screen.getByText('subscription.teamPlan.name')).toBeTruthy()
+    expect(screen.getByText('295,400')).toBeTruthy()
+    expect(screen.getByText('$1,050.00')).toBeTruthy()
+    expect(
+      screen.getByText('subscription.preview.confirmUpgradeCta')
+    ).toBeTruthy()
+  })
+
+  it('renders a yearly team credit-commit change with annual refill and yearly labels', () => {
+    render(SubscriptionTransitionPreviewWorkspace, {
+      props: {
+        previewData: preview({
+          transition_type: 'upgrade',
+          is_immediate: true,
+          cost_today_cents: 1_260_000,
+          current_plan: plan('PRO', 'MONTHLY', 70_000),
+          new_plan: plan('PRO', 'ANNUAL', 1_680_000)
+        }),
+        teamPlan: {
+          id: 'team_1400',
+          usd: 1400,
+          credits: 295_400,
+          discountedUsd: 1295
+        }
+      },
+      global: globalOptions
+    })
+    // Yearly grants 12 months of the stop's monthly credits up front.
+    expect(screen.getByText('subscription.teamPlan.name')).toBeTruthy()
+    expect(screen.getByText('3,544,800')).toBeTruthy()
+    expect(
+      screen.getByText('subscription.preview.creditsYoullGetToday')
+    ).toBeTruthy()
+    expect(
+      screen.getByText('subscription.preview.refillReplacesNote')
+    ).toBeTruthy()
+    expect(screen.getByText('$12,600.00')).toBeTruthy()
+  })
+
+  it('renders a Founders Edition refill without borrowing a catalog lookup', () => {
+    render(SubscriptionTransitionPreviewWorkspace, {
+      props: {
+        previewData: preview({
+          transition_type: 'upgrade',
+          is_immediate: true,
+          cost_today_cents: 1000,
+          current_plan: plan('STANDARD', 'MONTHLY', 2000),
+          new_plan: plan('FOUNDERS_EDITION', 'MONTHLY', 10_000)
+        })
+      },
+      global: globalOptions
+    })
+    expect(screen.getByText(/Founders Edition/)).toBeTruthy()
+  })
+
+  it('renders a tier the catalog does not know as readable words', () => {
+    render(SubscriptionTransitionPreviewWorkspace, {
+      props: {
+        previewData: preview({
+          transition_type: 'upgrade',
+          is_immediate: true,
+          cost_today_cents: 1000,
+          current_plan: plan('PRO', 'MONTHLY', 10_000),
+          new_plan: plan(
+            'SOME_FUTURE_TIER' as SubscriptionTier,
+            'MONTHLY',
+            20_000
+          )
+        })
+      },
+      global: globalOptions
+    })
+    expect(screen.getByText(/Some Future Tier/)).toBeTruthy()
+  })
+
+  it('prices a legacy preview from the server costs instead of reporting the quote unavailable', () => {
+    render(SubscriptionTransitionPreviewWorkspace, {
+      props: {
+        previewData: legacyPreview({
+          cost_today_cents: 31_850,
+          cost_next_period_cents: 33_600,
+          new_plan: plan('CREATOR', 'ANNUAL', 33_600)
+        })
+      },
+      global: globalOptions
+    })
+
+    expect(screen.getByText('$318.50')).toBeTruthy()
+    expect(
+      screen.getByText('Renews at $336.00 on Jun 28, 2027. Cancel anytime.')
+    ).toBeTruthy()
+    expect(
+      screen.queryByText('subscription.preview.quoteUnavailable')
+    ).toBeNull()
+  })
+
+  it('states legacy renewal terms without a date when the server supplies no period end', () => {
+    const { period_end, ...planWithoutPeriodEnd } = plan(
+      'CREATOR',
+      'ANNUAL',
+      33_600
+    )
+    render(SubscriptionTransitionPreviewWorkspace, {
+      props: {
+        previewData: legacyPreview({
+          cost_today_cents: 31_850,
+          cost_next_period_cents: 33_600,
+          new_plan: planWithoutPeriodEnd
+        })
+      },
+      global: globalOptions
+    })
+
+    expect(screen.getByText('Renews at $336.00. Cancel anytime.')).toBeTruthy()
+    expect(
+      screen.queryByText('subscription.preview.quoteUnavailable')
+    ).toBeNull()
+  })
+
+  it('withholds an exact quote that arrives without a currency to price it in', () => {
+    render(SubscriptionTransitionPreviewWorkspace, {
+      props: {
+        previewData: preview({
+          cost_today_cents: 31_850,
+          new_plan: plan('CREATOR', 'ANNUAL', 33_600),
+          currency: undefined
+        })
+      },
+      global: globalOptions
+    })
+
+    expect(
+      screen.getAllByText('subscription.preview.quoteUnavailable')
+    ).toHaveLength(2)
+  })
+})

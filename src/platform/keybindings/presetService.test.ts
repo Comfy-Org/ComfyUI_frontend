@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { KeybindingImpl } from '@/platform/keybindings/keybinding'
@@ -15,10 +13,12 @@ const mockApi = vi.hoisted(() => ({
 
 const mockDownloadBlob = vi.hoisted(() => vi.fn())
 const mockUploadFile = vi.hoisted(() => vi.fn())
-const mockConfirm = vi.hoisted(() => vi.fn().mockResolvedValue(true))
-const mockPrompt = vi.hoisted(() => vi.fn().mockResolvedValue('test-preset'))
+const mockConfirm = vi.hoisted(() => vi.fn(async () => true))
+const mockPrompt = vi.hoisted(() =>
+  vi.fn<() => Promise<string | null>>(async () => 'test-preset')
+)
 const mockShowSmallLayoutDialog = vi.hoisted(() =>
-  vi.fn().mockImplementation((options: Record<string, unknown>) => {
+  vi.fn((options: Record<string, unknown>) => {
     const props = options.props as Record<string, unknown> | undefined
     const onResult = props?.onResult as ((v: boolean) => void) | undefined
     onResult?.(true)
@@ -27,7 +27,7 @@ const mockShowSmallLayoutDialog = vi.hoisted(() =>
 const mockSettingSet = vi.hoisted(() => vi.fn())
 const mockToastAdd = vi.hoisted(() => vi.fn())
 const mockPersistUserKeybindings = vi.hoisted(() =>
-  vi.fn().mockResolvedValue(undefined)
+  vi.fn(async () => undefined)
 )
 
 vi.mock('@/scripts/api', () => ({
@@ -53,7 +53,7 @@ vi.mock('@/services/dialogService', () => ({
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
     set: mockSettingSet,
-    get: vi.fn().mockReturnValue('default')
+    get: vi.fn(() => 'default')
   })
 }))
 
@@ -96,8 +96,6 @@ describe('useKeybindingPresetService', () => {
   let store: ReturnType<typeof useKeybindingStore>
 
   beforeEach(() => {
-    vi.clearAllMocks()
-    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useKeybindingStore()
   })
 
@@ -207,6 +205,29 @@ describe('useKeybindingPresetService', () => {
         'g.keybindingPresets.deletePresetFailed'
       )
     })
+
+    it('does nothing when user cancels confirmation', async () => {
+      mockConfirm.mockResolvedValueOnce(false)
+
+      const service = await getPresetService()
+      await service.deletePreset('vim')
+
+      expect(mockApi.deleteUserData).not.toHaveBeenCalled()
+    })
+
+    it('does not reset to default when deleting a non-active preset', async () => {
+      mockApi.deleteUserData.mockResolvedValue(
+        new Response(null, { status: 200 })
+      )
+
+      store.currentPresetName = 'emacs'
+
+      const service = await getPresetService()
+      await service.deletePreset('vim')
+
+      expect(store.currentPresetName).toBe('emacs')
+      expect(mockPersistUserKeybindings).not.toHaveBeenCalled()
+    })
   })
 
   describe('exportPreset', () => {
@@ -233,6 +254,19 @@ describe('useKeybindingPresetService', () => {
 
       const service = await getPresetService()
       await expect(service.importPreset()).rejects.toThrow()
+    })
+
+    it('throws when file contains non-JSON content', async () => {
+      mockUploadFile.mockResolvedValue(
+        new File(['not valid json {{'], 'bad.json', {
+          type: 'application/json'
+        })
+      )
+
+      const service = await getPresetService()
+      await expect(service.importPreset()).rejects.toThrow(
+        'g.keybindingPresets.invalidPresetFile'
+      )
     })
 
     it('saves preset to storage and switches to it', async () => {
@@ -395,6 +429,31 @@ describe('useKeybindingPresetService', () => {
       const bindings = Object.values(store.getUserKeybindings())
       expect(bindings[0].commandId).toBe('new.cmd')
     })
+
+    it('applies unset bindings from preset', async () => {
+      store.addDefaultKeybinding(
+        new KeybindingImpl({
+          commandId: 'test.selectAll',
+          combo: { key: 'a', ctrl: true }
+        })
+      )
+
+      const preset: KeybindingPreset = {
+        name: 'vim',
+        newBindings: [],
+        unsetBindings: [
+          { commandId: 'test.selectAll', combo: { key: 'a', ctrl: true } }
+        ]
+      }
+
+      const service = await getPresetService()
+      service.applyPreset(preset)
+
+      expect(store.currentPresetName).toBe('vim')
+      const unset = Object.values(store.getUserUnsetKeybindings())
+      expect(unset).toHaveLength(1)
+      expect(unset[0].commandId).toBe('test.selectAll')
+    })
   })
 
   describe('switchPreset', () => {
@@ -513,6 +572,84 @@ describe('useKeybindingPresetService', () => {
 
       expect(mockShowSmallLayoutDialog).not.toHaveBeenCalled()
       expect(store.currentPresetName).toBe('vim')
+    })
+
+    it('prompts save-as-new when modified default preset and user chooses save', async () => {
+      store.addUserKeybinding(
+        new KeybindingImpl({
+          commandId: 'dirty.cmd',
+          combo: { key: 'X', ctrl: true }
+        })
+      )
+
+      // promptAndSaveNewPreset succeeds
+      mockApi.listUserDataFullInfo.mockResolvedValueOnce([])
+      mockApi.storeUserData.mockResolvedValueOnce(new Response())
+
+      const targetPreset: KeybindingPreset = {
+        name: 'vim',
+        newBindings: [
+          { commandId: 'vim.cmd', combo: { key: 'J', ctrl: false } }
+        ],
+        unsetBindings: []
+      }
+      mockApi.getUserData.mockResolvedValueOnce(
+        new Response(JSON.stringify(targetPreset), { status: 200 })
+      )
+
+      const service = await getPresetService()
+      await service.switchPreset('vim')
+
+      expect(mockPrompt).toHaveBeenCalled()
+      expect(store.currentPresetName).toBe('vim')
+    })
+
+    it('cancels switch when modified default preset and save-as-new is cancelled', async () => {
+      store.addUserKeybinding(
+        new KeybindingImpl({
+          commandId: 'dirty.cmd',
+          combo: { key: 'X', ctrl: true }
+        })
+      )
+
+      // promptAndSaveNewPreset returns false (user cancels prompt)
+      mockPrompt.mockResolvedValueOnce(null)
+
+      const service = await getPresetService()
+      await service.switchPreset('vim')
+
+      expect(mockApi.getUserData).not.toHaveBeenCalled()
+      expect(store.currentPresetName).toBe('default')
+    })
+
+    it('switches to default target after unsaved changes dialog', async () => {
+      store.currentPresetName = 'my-preset'
+      store.savedPresetData = {
+        name: 'my-preset',
+        newBindings: [],
+        unsetBindings: []
+      }
+      store.addUserKeybinding(
+        new KeybindingImpl({
+          commandId: 'dirty.cmd',
+          combo: { key: 'X', ctrl: true }
+        })
+      )
+
+      // Dialog returns false (discard)
+      mockShowSmallLayoutDialog.mockImplementationOnce(
+        (options: Record<string, unknown>) => {
+          const props = options.props as Record<string, unknown> | undefined
+          const onResult = props?.onResult as ((v: boolean) => void) | undefined
+          onResult?.(false)
+        }
+      )
+
+      const service = await getPresetService()
+      await service.switchPreset('default')
+
+      expect(store.currentPresetName).toBe('default')
+      expect(store.savedPresetData).toBeNull()
     })
   })
 

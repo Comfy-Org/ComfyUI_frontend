@@ -167,15 +167,11 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
       ...mockSystemStats,
       system: {
         ...mockSystemStats.system,
-        argv: ['main.py', '--listen', '0.0.0.0', '--enable-manager']
+        argv: ['main.py', '--enable-manager']
       }
     }
     await comfyPage.page.route('**/system_stats**', async (route) => {
       await route.fulfill({ json: statsWithManager })
-    })
-
-    await comfyPage.featureFlags.mockServerFeatures({
-      'extension.manager.supports_v4': true
     })
 
     await comfyPage.page.route(
@@ -252,6 +248,24 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
     )
 
     await comfyPage.setup()
+
+    // Seed manager-ready server feature flags AFTER setup so the WebSocket
+    // feature_flags payload can't overwrite them. mockServerFeatures (on
+    // /api/features) does not populate the serverFeatureFlags ref; direct
+    // reactive-ref mutation is the only reliable approach.
+    // See shareWorkflowDialog.spec.ts:34-48 for the canonical pattern.
+    await comfyPage.page.evaluate(() => {
+      const api = window.app!.api
+      api.serverFeatureFlags.value = {
+        ...api.serverFeatureFlags.value,
+        extension: {
+          manager: {
+            supports_v4: true,
+            supports_csrf_post: true
+          }
+        }
+      }
+    })
   })
 
   async function openManagerDialog(comfyPage: ComfyPage) {

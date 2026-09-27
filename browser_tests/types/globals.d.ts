@@ -37,6 +37,7 @@ declare global {
     TestCommand?: boolean
     changeCount?: number
     widgetValue?: unknown
+    __commandExecutionCounts?: Record<string, number>
 
     // Feature flags test globals
     __capturedMessages?: CapturedMessages

@@ -1,4 +1,5 @@
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
+import { serializeNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import type { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type {
@@ -87,13 +88,19 @@ export abstract class SubgraphIONodeBase<
   ) {}
 
   move(deltaX: number, deltaY: number): void {
-    this.pos[0] += deltaX
-    this.pos[1] += deltaY
+    this.pos = [this.pos[0] + deltaX, this.pos[1] + deltaY]
   }
 
   /** @inheritdoc */
   snapToGrid(snapTo: number): boolean {
-    return this.pinned ? false : snapPoint(this.pos, snapTo)
+    if (this.pinned || !snapTo) return false
+
+    const snapped: Point = [this.pos[0], this.pos[1]]
+    snapPoint(snapped, snapTo)
+    if (snapped[0] === this.pos[0] && snapped[1] === this.pos[1]) return false
+
+    this.pos = snapped
+    return true
   }
 
   abstract onPointerDown(
@@ -265,7 +272,7 @@ export abstract class SubgraphIONodeBase<
         break
     }
 
-    this.subgraph.setDirtyCanvas(true)
+    this.subgraph.setDirtyCanvas(true, true)
   }
 
   /**
@@ -291,7 +298,6 @@ export abstract class SubgraphIONodeBase<
     const { minWidth, roundedRadius } = SubgraphIONodeBase
     const [, y] = this.boundingRect
     const x = this.slotAnchorX
-    const { size } = this
 
     let maxWidth = minWidth
     let currentY = y + roundedRadius
@@ -304,8 +310,7 @@ export abstract class SubgraphIONodeBase<
       if (slotWidth > maxWidth) maxWidth = slotWidth
     }
 
-    size[0] = maxWidth + 2 * roundedRadius
-    size[1] = currentY - y + roundedRadius
+    this.size = [maxWidth + 2 * roundedRadius, currentY - y + roundedRadius]
   }
 
   draw(
@@ -368,7 +373,7 @@ export abstract class SubgraphIONodeBase<
 
   asSerialisable(): ExportedSubgraphIONode {
     return {
-      id: this.id,
+      id: serializeNodeId(this.id),
       bounding: this.boundingRect.export(),
       pinned: this.pinned ? true : undefined
     }

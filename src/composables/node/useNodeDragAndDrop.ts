@@ -1,4 +1,7 @@
+import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { parseAssetInfo } from '@/platform/assets/schemas/mediaAssetSchema'
+import type { ResultItem } from '@/schemas/apiSchema'
 
 type DragHandler = (e: DragEvent) => boolean
 type DropHandler<T> = (files: File[]) => Promise<T[]>
@@ -6,6 +9,7 @@ type DropHandler<T> = (files: File[]) => Promise<T[]>
 interface DragAndDropOptions<T> {
   onDragOver?: DragHandler
   onDrop: DropHandler<T>
+  onResultItemDrop?: (item: ResultItem) => void
   fileFilter?: (file: File) => boolean
 }
 
@@ -43,9 +47,10 @@ export const useNodeDragAndDrop = <T>(
     return !!e?.dataTransfer?.getData('text/uri-list')
   }
 
-  node.onDragOver = isDraggingFiles
+  const installedDragOver = isDraggingFiles
+  node.onDragOver = installedDragOver
 
-  node.onDragDrop = async function (e: DragEvent) {
+  const installedDragDrop = async function (e: DragEvent) {
     if (!isDraggingValidFiles(e)) return false
 
     const files = filterFiles(e.dataTransfer!.files)
@@ -53,13 +58,20 @@ export const useNodeDragAndDrop = <T>(
       await onDrop(files)
       return true
     }
+    const asset = parseAssetInfo(e.dataTransfer!)
+    if (asset?.filename && options.onResultItemDrop) {
+      await options.onResultItemDrop(asset)
+      return true
+    }
 
-    const uri = URL.parse(e?.dataTransfer?.getData('text/uri-list') ?? '')
+    const baseUri = e?.dataTransfer?.getData('text/uri-list') ?? ''
+    const uri = URL.parse(baseUri, location.href)
     if (!uri || uri.origin !== location.origin) return false
 
     try {
       const resp = await fetch(uri)
-      const fileName = uri?.searchParams?.get('filename')
+      const fileName =
+        uri?.searchParams?.get('filename') ?? baseUri.split('/').at(-1)
       if (!fileName || !resp.ok) return false
 
       const blob = await resp.blob()
@@ -73,4 +85,10 @@ export const useNodeDragAndDrop = <T>(
     }
     return true
   }
+  node.onDragDrop = installedDragDrop
+
+  node.onRemoved = useChainCallback(node.onRemoved, () => {
+    if (node.onDragOver === installedDragOver) node.onDragOver = undefined
+    if (node.onDragDrop === installedDragDrop) node.onDragDrop = undefined
+  })
 }

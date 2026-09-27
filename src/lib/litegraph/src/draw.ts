@@ -1,6 +1,6 @@
 import type { Rectangle } from './infrastructure/Rectangle'
 import type { CanvasColour } from './interfaces'
-import { LiteGraph } from './litegraph'
+import { litegraph } from './litegraphInstance'
 import { RenderShape, TitleMode } from './types/globalEnums'
 import { cachedMeasureText } from './utils/textMeasureCache'
 
@@ -81,12 +81,12 @@ export function strokeShape(
   }: IDrawBoundingOptions = {}
 ): void {
   // These param defaults are not compile-time static, and must be re-evaluated at runtime
-  round_radius ??= LiteGraph.ROUND_RADIUS
-  color ??= LiteGraph.NODE_BOX_OUTLINE_COLOR
+  round_radius ??= litegraph().ROUND_RADIUS
+  color ??= litegraph().NODE_BOX_OUTLINE_COLOR
 
   // Adjust area if title is transparent
   if (title_mode === TitleMode.TRANSPARENT_TITLE) {
-    const height = title_height ?? LiteGraph.NODE_TITLE_HEIGHT
+    const height = title_height ?? litegraph().NODE_TITLE_HEIGHT
     area[1] -= height
     area[3] += height
   }

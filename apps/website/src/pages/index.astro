@@ -1,22 +1,60 @@
 ---
-import BaseLayout from '../layouts/BaseLayout.astro'
-import ProductCardsSection from '../components/home/ProductCardsSection.vue'
-import HeroSection from '../components/home/HeroSection.vue'
-import SocialProofBarSection from '../components/common/SocialProofBarSection.vue'
-import ProductShowcaseSection from '../components/home/ProductShowcaseSection.vue'
-import UseCaseSection from '../components/home/UseCaseSection.vue'
-import CaseStudySpotlightSection from '../components/home/CaseStudySpotlightSection.vue'
-import GetStartedSection from '../components/home/GetStartedSection.vue'
-import BuildWhatSection from '../components/home/BuildWhatSection.vue'
+import BaseLayout from "../layouts/BaseLayout.astro";
+import ProductCardsSection from "../components/home/ProductCardsSection.vue";
+import HeroGraphSection from "../components/hero/HeroGraphSection.vue";
+import SocialProofBarSection from "../components/common/SocialProofBarSection.vue";
+import MinimaxLicenseHeroSection from "../components/common/MinimaxLicenseHeroSection.vue";
+import DeveloperPlatformSection from "../components/home/DeveloperPlatformSection.vue";
+import IndustriesSection from "../components/home/IndustriesSection.vue";
+import ModelReleaseSection from "../components/home/ModelReleaseSection.vue";
+import ProductShowcaseSection from "../components/home/ProductShowcaseSection.vue";
+import FeaturedWorkflowsSection from "../components/home/FeaturedWorkflowsSection.vue";
+import CaseStudySpotlightSection from "../components/home/CaseStudySpotlightSection.vue";
+import GetStartedSection from "../components/home/GetStartedSection.vue";
+import { t } from "../i18n/translations";
+import {
+  comfyUiApplicationNode,
+  comfyUiSoftwareId,
+  comfyUiSourceCodeNode,
+  pageContext,
+} from "../utils/jsonLd";
+
+const { siteUrl } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+);
 ---
 
-<BaseLayout title="Comfy — Professional Control of Visual AI">
-  <HeroSection client:load />
+<BaseLayout
+  title="Comfy - Professional Control of Visual AI"
+  description={t("hero.subtitle", "en")}
+  mainEntityId={comfyUiSoftwareId(siteUrl)}
+  extraJsonLd={[
+    comfyUiApplicationNode(siteUrl),
+    comfyUiSourceCodeNode(siteUrl),
+  ]}
+  keywords={[
+    "comfyui app",
+    "comfyui web app",
+    "comfy ui application",
+    "comfyui application",
+    "comfy app",
+    "comfyui",
+    "visual ai app",
+    "node-based ai",
+    "generative ai workflows",
+  ]}
+>
+  <HeroGraphSection client:load />
   <SocialProofBarSection />
+  <MinimaxLicenseHeroSection client:visible />
+  <DeveloperPlatformSection client:visible />
+  <ModelReleaseSection client:visible />
+  <FeaturedWorkflowsSection client:load />
   <ProductShowcaseSection client:load />
-  <UseCaseSection client:load />
+  <IndustriesSection client:load />
   <GetStartedSection />
   <ProductCardsSection />
-  <CaseStudySpotlightSection />
-  <BuildWhatSection />
+  <CaseStudySpotlightSection client:load />
 </BaseLayout>

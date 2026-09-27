@@ -34,6 +34,40 @@ test.describe('Properties panel - Node selection', () => {
       await expect(panel.contentArea.getByText('seed')).toBeVisible()
       await expect(panel.contentArea.getByText('steps')).toBeVisible()
     })
+
+    test(
+      'should not display canvasOnly widgets',
+      { tag: '@vue-nodes' },
+      async ({ comfyPage }) => {
+        await comfyPage.contextMenu
+          .openFor(comfyPage.vueNodes.getNodeByTitle('KSampler'))
+          .then((m) => m.clickMenuItemExact('Convert to Subgraph'))
+
+        await panel.contentArea
+          .getByRole('button', { name: 'ADVANCED INPUTS' })
+          .click()
+        await expect(panel.contentArea.getByText('steps')).toBeVisible()
+        await expect(
+          panel.contentArea.getByText('control after generate')
+        ).toBeHidden()
+      }
+    )
+
+    test(
+      'a linked widget is disabled',
+      { tag: '@vue-nodes' },
+      async ({ comfyPage }) => {
+        const seed = panel.contentArea.getByLabel('seed').locator('input')
+        await comfyPage.searchBoxV2.addNode('Int')
+        const intNode = await comfyPage.vueNodes.getFixtureByTitle(/Int/)
+        const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+
+        await ksampler.select()
+        await expect(seed).toBeEnabled()
+        await intNode.getSlot('INT').dragTo(ksampler.getSlot('seed'))
+        await expect(seed).toBeDisabled()
+      }
+    )
   })
 
   test.describe('Multi-node', () => {

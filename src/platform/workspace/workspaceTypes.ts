@@ -1,6 +1,27 @@
-export interface WorkspaceWithRole {
-  id: string
-  name: string
-  type: 'personal' | 'team'
-  role: 'owner' | 'member'
-}
+import type { WorkspaceWithRole } from '@comfyorg/ingest-types'
+
+/**
+ * The subset of a workspace needed to identify the active session. Kept in this
+ * leaf module so stores can import it without pulling in the API client.
+ */
+export type WorkspaceIdentity = Pick<
+  WorkspaceWithRole,
+  'id' | 'name' | 'type' | 'role'
+>
+
+/**
+ * Identifier for a workspace.
+ *
+ * Backed by the `id` field returned by the workspace REST API. This alias
+ * names that primitive at use sites (api, types, stores) without changing
+ * structural typing.
+ */
+export type WorkspaceId = string
+
+/**
+ * Identifier for a pending workspace invite.
+ *
+ * Backed by the `id` field on `PendingInvite`. This alias names that
+ * primitive at use sites without changing structural typing.
+ */
+export type WorkspaceInviteId = string

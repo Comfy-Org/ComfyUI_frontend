@@ -42,7 +42,10 @@ test.describe('Vue Node Pin', { tag: '@vue-nodes' }, () => {
     await expect(pinIndicator2).toBeHidden()
   })
 
-  test('should not allow dragging pinned nodes', async ({ comfyPage }) => {
+  test('should not allow dragging pinned nodes', async ({
+    comfyMouse,
+    comfyPage
+  }) => {
     const checkpointNodeHeader = comfyPage.page.getByText('Load Checkpoint')
     await checkpointNodeHeader.click()
     await comfyPage.page.keyboard.press(PIN_HOTKEY)
@@ -50,10 +53,7 @@ test.describe('Vue Node Pin', { tag: '@vue-nodes' }, () => {
     // Try to drag the node
     const headerPos = await checkpointNodeHeader.boundingBox()
     if (!headerPos) throw new Error('Failed to get header position')
-    await comfyPage.canvasOps.dragAndDrop(
-      { x: headerPos.x, y: headerPos.y },
-      { x: headerPos.x + 256, y: headerPos.y + 256 }
-    )
+    await comfyMouse.dragElementBy(checkpointNodeHeader, { x: 256, y: 256 })
 
     // Verify the node is not dragged (same position before and after click-and-drag)
     await expect
@@ -64,11 +64,7 @@ test.describe('Vue Node Pin', { tag: '@vue-nodes' }, () => {
     await checkpointNodeHeader.click()
     await comfyPage.page.keyboard.press(PIN_HOTKEY)
 
-    // Try to drag the node again
-    await comfyPage.canvasOps.dragAndDrop(
-      { x: headerPos.x, y: headerPos.y },
-      { x: headerPos.x + 256, y: headerPos.y + 256 }
-    )
+    await comfyMouse.dragElementBy(checkpointNodeHeader, { x: 256, y: 256 })
 
     // Verify the node is dragged
     await expect

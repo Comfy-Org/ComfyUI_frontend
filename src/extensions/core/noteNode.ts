@@ -49,7 +49,7 @@ app.registerExtension({
       })
     )
 
-    NoteNode.category = 'utils'
+    NoteNode.category = 'utilities'
 
     /** Markdown variant of NoteNode */
     class MarkdownNoteNode extends LGraphNode {
@@ -79,6 +79,6 @@ app.registerExtension({
     }
 
     LiteGraph.registerNodeType('MarkdownNote', MarkdownNoteNode)
-    MarkdownNoteNode.category = 'utils'
+    MarkdownNoteNode.category = 'utilities'
   }
 })

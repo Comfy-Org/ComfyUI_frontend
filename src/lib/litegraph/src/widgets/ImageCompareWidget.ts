@@ -23,7 +23,7 @@ export class ImageCompareWidget
     ctx.fillStyle = this.background_color
     ctx.fillRect(15, y, width - 30, height)
 
-    ctx.strokeStyle = this.getOutlineColor(options.suppressPromotedOutline)
+    ctx.strokeStyle = this.getOutlineColor()
     ctx.strokeRect(15, y, width - 30, height)
 
     ctx.fillStyle = this.text_color

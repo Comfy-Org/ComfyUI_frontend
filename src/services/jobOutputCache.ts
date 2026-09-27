@@ -8,7 +8,10 @@
 
 import QuickLRU from '@alloc/quick-lru'
 
-import type { JobDetail } from '@/platform/remote/comfyui/jobs/jobTypes'
+import type {
+  JobDetail,
+  JobOutputAsset
+} from '@/platform/remote/comfyui/jobs/jobTypes'
 import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { TaskOutput } from '@/schemas/apiSchema'
@@ -19,6 +22,7 @@ import { parseTaskOutput } from '@/stores/resultItemParsing'
 
 const MAX_TASK_CACHE_SIZE = 50
 const MAX_JOB_DETAIL_CACHE_SIZE = 50
+const MAX_JOB_ASSETS_CACHE_SIZE = 50
 
 const taskCache = new QuickLRU<string, TaskItemImpl>({
   maxSize: MAX_TASK_CACHE_SIZE
@@ -26,6 +30,10 @@ const taskCache = new QuickLRU<string, TaskItemImpl>({
 const jobDetailCache = new QuickLRU<string, JobDetail>({
   maxSize: MAX_JOB_DETAIL_CACHE_SIZE
 })
+const jobAssetsCache = new QuickLRU<string, JobOutputAsset[]>({
+  maxSize: MAX_JOB_ASSETS_CACHE_SIZE
+})
+const inFlightJobAssets = new Map<string, Promise<JobOutputAsset[]>>()
 
 // Track latest request to dedupe stale responses
 let latestTaskRequestId: string | null = null
@@ -106,6 +114,32 @@ export async function getJobDetail(
     console.warn('Failed to fetch job detail:', error)
     return undefined
   }
+}
+
+/**
+ * Gets a job's output assets with LRU caching and in-flight request dedupe,
+ * so N concurrent resolutions of the same job issue one network request.
+ * Only complete, non-empty results are cached: an empty list usually means the
+ * endpoint is unavailable or the assets are not yet persisted, and a truncated
+ * one means a page failed mid-pagination. Caching either would pin an
+ * under-resolved set until LRU eviction, long after the endpoint recovered.
+ */
+export async function getJobAssets(jobId: string): Promise<JobOutputAsset[]> {
+  const cached = jobAssetsCache.get(jobId)
+  if (cached) return cached
+
+  const inFlight = inFlightJobAssets.get(jobId)
+  if (inFlight) return inFlight
+
+  const request = api
+    .getJobAssets(jobId)
+    .then(({ assets, complete }) => {
+      if (complete && assets.length) jobAssetsCache.set(jobId, assets)
+      return assets
+    })
+    .finally(() => inFlightJobAssets.delete(jobId))
+  inFlightJobAssets.set(jobId, request)
+  return request
 }
 
 export async function getJobWorkflow(

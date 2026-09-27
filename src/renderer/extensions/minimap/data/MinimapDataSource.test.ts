@@ -1,182 +1,182 @@
-import { describe, expect, it, vi } from 'vitest'
-import { computed } from 'vue'
-import type { ComputedRef } from 'vue'
+import { createTestingPinia } from '@pinia/testing'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
-import type { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import type { NodeLayout } from '@/renderer/core/layout/types'
-import { MinimapDataSourceFactory } from '@/renderer/extensions/minimap/data/MinimapDataSourceFactory'
+import type { INodeOutputSlot } from '@/lib/litegraph/src/interfaces'
+import type {
+  LGraph,
+  LGraphGroup,
+  LGraphNode
+} from '@/lib/litegraph/src/litegraph'
+import { MinimapDataSource } from '@/renderer/extensions/minimap/data/MinimapDataSource'
+import { useLinkStore } from '@/stores/linkStore'
+import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
+import { toLinkId } from '@/types/linkId'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
+import { toNodeId } from '@/types/nodeId'
+import {
+  createMockLGraph,
+  createMockLGraphNode
+} from '@/utils/__tests__/litegraphTestUtils'
 
-// Mock layoutStore
-vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
-  layoutStore: {
-    getAllNodes: vi.fn()
-  }
-}))
+const useExecutionStore = vi.hoisted(() => vi.fn())
 
-// Mock useExecutionStore
-vi.mock('@/stores/executionStore', () => ({
-  useExecutionStore: vi.fn().mockReturnValue({
-    nodeProgressStates: {}
+vi.mock('@/stores/executionStore', () => ({ useExecutionStore }))
+
+const ROOT_GRAPH_ID = '00000000-0000-0000-0000-000000000001'
+const SUBGRAPH_ID = '00000000-0000-0000-0000-000000000002'
+const GRAPH_SCOPE = {
+  rootGraphId: toRootGraphId(ROOT_GRAPH_ID),
+  owningGraphId: toOwningGraphId(ROOT_GRAPH_ID)
+}
+
+function graphNode(
+  id: string,
+  pos: [number, number],
+  outputs = 0,
+  size: [number, number] = [100, 50],
+  renderingSize = size
+): LGraphNode {
+  return createMockLGraphNode({
+    id: toNodeId(id),
+    pos,
+    size,
+    renderingSize,
+    bgcolor: '#fff',
+    has_errors: false,
+    outputs: Array.from({ length: outputs }, () =>
+      fromPartial<INodeOutputSlot>({})
+    )
   })
-}))
+}
 
-// Helper to create mock links that satisfy LGraph['links'] type
-function createMockLinks(): LGraph['links'] {
-  const map = new Map<number, LLink>()
-  return Object.assign(map, {}) as LGraph['links']
+function rootGraph(
+  nodes: LGraphNode[] = [],
+  groups: LGraphGroup[] = []
+): LGraph {
+  return createMockLGraph({
+    id: ROOT_GRAPH_ID,
+    isRootGraph: true,
+    _nodes: nodes,
+    _groups: groups
+  })
 }
 
 describe('MinimapDataSource', () => {
-  describe('MinimapDataSourceFactory', () => {
-    it('should create LayoutStoreDataSource when LayoutStore has data', () => {
-      // Arrange
-      const mockNodes = new Map<string, NodeLayout>([
-        [
-          'node1',
-          {
-            id: 'node1',
-            position: { x: 0, y: 0 },
-            size: { width: 100, height: 50 },
-            zIndex: 0,
-            visible: true,
-            bounds: { x: 0, y: 0, width: 100, height: 50 }
-          }
-        ]
-      ])
-
-      // Create a computed ref that returns the map
-      const computedNodes: ComputedRef<ReadonlyMap<string, NodeLayout>> =
-        computed(() => mockNodes)
-      vi.mocked(layoutStore.getAllNodes).mockReturnValue(computedNodes)
-
-      const mockGraph: Pick<LGraph, '_nodes' | '_groups' | 'links'> = {
-        _nodes: [],
-        _groups: [],
-        links: createMockLinks()
-      }
-
-      // Act
-      const dataSource = MinimapDataSourceFactory.create(mockGraph as LGraph)
-
-      // Assert
-      expect(dataSource).toBeDefined()
-      expect(dataSource.hasData()).toBe(true)
-      expect(dataSource.getNodeCount()).toBe(1)
-    })
-
-    it('should create LiteGraphDataSource when LayoutStore is empty', () => {
-      // Arrange
-      const emptyMap = new Map<string, NodeLayout>()
-      const computedEmpty: ComputedRef<ReadonlyMap<string, NodeLayout>> =
-        computed(() => emptyMap)
-      vi.mocked(layoutStore.getAllNodes).mockReturnValue(computedEmpty)
-
-      const mockNode: Pick<
-        LGraphNode,
-        'id' | 'pos' | 'size' | 'bgcolor' | 'mode' | 'has_errors' | 'outputs'
-      > = {
-        id: 'node1' as NodeId,
-        pos: [0, 0],
-        size: [100, 50],
-        bgcolor: '#fff',
-        mode: 0,
-        has_errors: false,
-        outputs: []
-      }
-
-      const mockGraph: Pick<LGraph, '_nodes' | '_groups' | 'links'> = {
-        _nodes: [mockNode as LGraphNode],
-        _groups: [],
-        links: createMockLinks()
-      }
-
-      // Act
-      const dataSource = MinimapDataSourceFactory.create(mockGraph as LGraph)
-
-      // Assert
-      expect(dataSource).toBeDefined()
-      expect(dataSource.hasData()).toBe(true)
-      expect(dataSource.getNodeCount()).toBe(1)
-
-      const nodes = dataSource.getNodes()
-      expect(nodes).toHaveLength(1)
-      expect(nodes[0]).toMatchObject({
-        id: 'node1',
-        x: 0,
-        y: 0,
-        width: 100,
-        height: 50
-      })
-    })
-
-    it('should handle empty graph correctly', () => {
-      // Arrange
-      const emptyMap = new Map<string, NodeLayout>()
-      const computedEmpty: ComputedRef<ReadonlyMap<string, NodeLayout>> =
-        computed(() => emptyMap)
-      vi.mocked(layoutStore.getAllNodes).mockReturnValue(computedEmpty)
-
-      const mockGraph: Pick<LGraph, '_nodes' | '_groups' | 'links'> = {
-        _nodes: [],
-        _groups: [],
-        links: createMockLinks()
-      }
-
-      // Act
-      const dataSource = MinimapDataSourceFactory.create(mockGraph as LGraph)
-
-      // Assert
-      expect(dataSource.hasData()).toBe(false)
-      expect(dataSource.getNodeCount()).toBe(0)
-      expect(dataSource.getNodes()).toEqual([])
-      expect(dataSource.getLinks()).toEqual([])
-      expect(dataSource.getGroups()).toEqual([])
-    })
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    useExecutionStore.mockReturnValue({ nodeLocationProgressStates: {} })
   })
 
-  describe('Bounds calculation', () => {
-    it('should calculate correct bounds from nodes', () => {
-      // Arrange
-      const emptyMap = new Map<string, NodeLayout>()
-      const computedEmpty: ComputedRef<ReadonlyMap<string, NodeLayout>> =
-        computed(() => emptyMap)
-      vi.mocked(layoutStore.getAllNodes).mockReturnValue(computedEmpty)
+  it('uses graph position and rendered size', () => {
+    const source = new MinimapDataSource(
+      rootGraph([graphNode('node1', [10, 20], 0, [100, 50], [240, 180])])
+    )
 
-      const mockNode1: Pick<LGraphNode, 'id' | 'pos' | 'size' | 'outputs'> = {
-        id: 'node1' as NodeId,
-        pos: [0, 0],
-        size: [100, 50],
-        outputs: []
+    expect(source.getNodes()).toMatchObject([
+      { id: toNodeId('node1'), x: 10, y: 20, width: 240, height: 180 }
+    ])
+  })
+
+  it('uses graph-scoped execution state', () => {
+    const node = graphNode('node1', [0, 0])
+    const subgraph = createMockLGraph({
+      id: SUBGRAPH_ID,
+      isRootGraph: false,
+      rootGraph: rootGraph(),
+      _nodes: [node]
+    })
+    useExecutionStore.mockReturnValue({
+      nodeLocationProgressStates: {
+        [createNodeLocatorId(SUBGRAPH_ID, node.id)]: { state: 'running' }
       }
+    })
 
-      const mockNode2: Pick<LGraphNode, 'id' | 'pos' | 'size' | 'outputs'> = {
-        id: 'node2' as NodeId,
-        pos: [200, 100],
-        size: [150, 75],
-        outputs: []
+    expect(new MinimapDataSource(subgraph).getNodes()).toMatchObject([
+      { executionState: 'running' }
+    ])
+  })
+
+  it('handles an empty graph', () => {
+    const source = new MinimapDataSource(rootGraph())
+
+    expect(source.hasData()).toBe(false)
+    expect(source.getNodeCount()).toBe(0)
+    expect(source.getNodes()).toEqual([])
+    expect(source.getLinks()).toEqual([])
+    expect(source.getGroups()).toEqual([])
+  })
+
+  it('uses graph group geometry', () => {
+    const group = fromPartial<LGraphGroup>({
+      pos: [40, 60],
+      size: [300, 200],
+      color: '#abcdef'
+    })
+
+    expect(new MinimapDataSource(rootGraph([], [group])).getGroups()).toEqual([
+      { x: 40, y: 60, width: 300, height: 200, color: '#abcdef' }
+    ])
+  })
+
+  it('derives links between nodes in the active graph', () => {
+    useLinkStore().registerLink(GRAPH_SCOPE, {
+      id: toLinkId(1),
+      graphId: GRAPH_SCOPE.owningGraphId,
+      originNodeId: toNodeId('node1'),
+      originSlot: 0,
+      targetNodeId: toNodeId('node2'),
+      targetSlot: 1,
+      type: 'INT'
+    })
+    const source = new MinimapDataSource(
+      rootGraph([graphNode('node1', [0, 0], 1), graphNode('node2', [0, 0])])
+    )
+
+    expect(source.getLinks()).toMatchObject([
+      {
+        sourceNode: { id: toNodeId('node1') },
+        targetNode: { id: toNodeId('node2') },
+        sourceSlot: 0,
+        targetSlot: 1
       }
+    ])
+  })
 
-      const mockGraph: Pick<LGraph, '_nodes' | '_groups' | 'links'> = {
-        _nodes: [mockNode1 as LGraphNode, mockNode2 as LGraphNode],
-        _groups: [],
-        links: createMockLinks()
-      }
+  it('omits links to nodes outside the active graph', () => {
+    useLinkStore().registerLink(GRAPH_SCOPE, {
+      id: toLinkId(1),
+      graphId: GRAPH_SCOPE.owningGraphId,
+      originNodeId: toNodeId('node1'),
+      originSlot: 0,
+      targetNodeId: toNodeId('elsewhere'),
+      targetSlot: 0,
+      type: 'INT'
+    })
 
-      // Act
-      const dataSource = MinimapDataSourceFactory.create(mockGraph as LGraph)
-      const bounds = dataSource.getBounds()
+    expect(
+      new MinimapDataSource(
+        rootGraph([graphNode('node1', [0, 0], 1)])
+      ).getLinks()
+    ).toEqual([])
+  })
 
-      // Assert
-      expect(bounds).toEqual({
-        minX: 0,
-        minY: 0,
-        maxX: 350,
-        maxY: 175,
-        width: 350,
-        height: 175
-      })
+  it('calculates bounds from rendered node geometry', () => {
+    const source = new MinimapDataSource(
+      rootGraph([
+        graphNode('node1', [0, 0]),
+        graphNode('node2', [200, 100], 0, [100, 50], [150, 75])
+      ])
+    )
+
+    expect(source.getBounds()).toEqual({
+      minX: 0,
+      minY: 0,
+      maxX: 350,
+      maxY: 175,
+      width: 350,
+      height: 175
     })
   })
 })

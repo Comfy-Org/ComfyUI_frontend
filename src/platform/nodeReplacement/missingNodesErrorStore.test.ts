@@ -1,5 +1,4 @@
-import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { MissingNodeType } from '@/types/comfy'
 
@@ -22,10 +21,6 @@ vi.mock('@/platform/settings/settingStore', () => ({
 import { useMissingNodesErrorStore } from './missingNodesErrorStore'
 
 describe('missingNodesErrorStore', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-  })
-
   describe('setMissingNodeTypes', () => {
     it('sets missingNodesError with provided types', () => {
       const store = useMissingNodesErrorStore()
@@ -239,6 +234,20 @@ describe('missingNodesErrorStore', () => {
 
       expect(store.missingNodesError?.nodeTypes).toHaveLength(1)
       expect(store.missingNodesError?.nodeTypes[0]).toBe('StringNode')
+    })
+
+    it('matches numeric node IDs against string execution IDs', () => {
+      const store = useMissingNodesErrorStore()
+      store.setMissingNodeTypes([
+        { type: 'NodeA', nodeId: 1, isReplaceable: false },
+        { type: 'NodeB', nodeId: 2, isReplaceable: false }
+      ])
+
+      store.removeMissingNodesByNodeId('1')
+
+      expect(store.missingNodesError?.nodeTypes).toStrictEqual([
+        { type: 'NodeB', nodeId: 2, isReplaceable: false }
+      ])
     })
 
     it('keeps entries with different nodeIds', () => {

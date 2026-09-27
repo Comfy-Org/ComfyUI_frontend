@@ -3,7 +3,6 @@ import type { Component } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
@@ -13,6 +12,8 @@ import {
 } from '@/platform/settings/settingStore'
 import type { SettingTreeNode } from '@/platform/settings/settingStore'
 import type { SettingPanelType, SettingParams } from '@/platform/settings/types'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { usePartnerNodeGovernanceStore } from '@/platform/workspace/stores/partnerNodeGovernanceStore'
 import type { NavGroupData } from '@/types/navTypes'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { buildTree } from '@/utils/treeUtil'
@@ -27,13 +28,15 @@ const CATEGORY_ICONS: Record<string, string> = {
   keybinding: 'icon-[lucide--keyboard]',
   LiteGraph: 'icon-[lucide--workflow]',
   'Mask Editor': 'icon-[lucide--pen-tool]',
+  Members: 'icon-[lucide--users]',
   Other: 'icon-[lucide--ellipsis]',
-  PlanCredits: 'icon-[lucide--credit-card]',
+  PlanCredits: 'icon-[lucide--receipt-text]',
   secrets: 'icon-[lucide--key-round]',
   'server-config': 'icon-[lucide--server]',
-  subscription: 'icon-[lucide--credit-card]',
   user: 'icon-[lucide--user]',
-  workspace: 'icon-[lucide--building-2]'
+  workspace: 'icon-[lucide--building-2]',
+  'workspace-allowlist': 'icon-[comfy--ai-model]',
+  'workspace-members': 'icon-[lucide--users]'
 }
 
 interface SettingPanelItem {
@@ -53,11 +56,8 @@ export function useSettingUI(
 
   const { flags } = useFeatureFlags()
   const { shouldRenderVueNodes } = useVueFeatureFlags()
-  const { isActiveSubscription } = useBillingContext()
-
-  const teamWorkspacesEnabled = computed(
-    () => isCloud && flags.teamWorkspacesEnabled
-  )
+  const { workspaceRole } = useWorkspaceUI()
+  const governanceStore = usePartnerNodeGovernanceStore()
 
   const settingRoot = computed<SettingTreeNode>(() => {
     const root = buildTree(
@@ -133,29 +133,9 @@ export function useSettingUI(
       children: []
     },
     component: defineAsyncComponent(
-      () => import('@/components/dialog/content/setting/LegacyCreditsPanel.vue')
+      () => import('@/components/dialog/content/setting/CreditsPanel.vue')
     )
   }
-
-  const subscriptionPanel: SettingPanelItem | null =
-    !isCloud || !window.__CONFIG__?.subscription_required
-      ? null
-      : {
-          node: {
-            key: 'subscription',
-            label: 'PlanCredits',
-            children: []
-          },
-          component: defineAsyncComponent(
-            () =>
-              import('@/platform/cloud/subscription/components/SubscriptionPanel.vue')
-          )
-        }
-
-  const shouldShowPlanCreditsPanel = computed(() => {
-    if (!subscriptionPanel) return false
-    return isActiveSubscription.value
-  })
 
   const userPanel: SettingPanelItem = {
     node: {
@@ -168,22 +148,59 @@ export function useSettingUI(
     )
   }
 
-  // Workspace panel: only available on cloud with team workspaces enabled
-  const workspacePanel: SettingPanelItem = {
+  const workspaceSettingsPanelComponent = defineAsyncComponent(
+    () =>
+      import('@/platform/workspace/components/dialogs/settings/WorkspaceSettingsPanelContent.vue')
+  )
+
+  const planCreditsPanel: SettingPanelItem = {
     node: {
       key: 'workspace',
-      label: 'Workspace',
+      label: 'PlanCredits',
       children: []
     },
-    component: defineAsyncComponent(
-      () =>
-        import('@/platform/workspace/components/dialogs/settings/WorkspacePanelContent.vue')
-    )
+    component: workspaceSettingsPanelComponent,
+    props: { section: 'planCredits' }
   }
 
-  const shouldShowWorkspacePanel = computed(
-    () => teamWorkspacesEnabled.value && isLoggedIn.value
+  const membersPanel: SettingPanelItem = {
+    node: {
+      key: 'workspace-members',
+      label: 'Members',
+      children: []
+    },
+    component: workspaceSettingsPanelComponent,
+    props: { section: 'members' }
+  }
+
+  const allowlistPanel: SettingPanelItem = {
+    node: {
+      key: 'workspace-allowlist',
+      label: 'Allowlist',
+      children: []
+    },
+    component: workspaceSettingsPanelComponent,
+    props: { section: 'allowlist' }
+  }
+
+  const shouldShowWorkspacePanel = computed(() => isLoggedIn.value)
+  const shouldShowWorkspaceAllowlist = computed(
+    () =>
+      isCloud &&
+      shouldShowWorkspacePanel.value &&
+      flags.partnerNodeGovernanceEnabled &&
+      workspaceRole.value === 'owner'
   )
+
+  const visibleWorkspacePanels = computed<SettingPanelItem[]>(() => {
+    if (!shouldShowWorkspacePanel.value) return []
+    const workspacePanels = isCloud
+      ? [planCreditsPanel, membersPanel]
+      : [planCreditsPanel]
+    return shouldShowWorkspaceAllowlist.value
+      ? [...workspacePanels, allowlistPanel]
+      : workspacePanels
+  })
 
   const secretsPanel: SettingPanelItem = {
     node: {
@@ -238,13 +255,10 @@ export function useSettingUI(
       aboutPanel,
       creditsPanel,
       userPanel,
-      ...(shouldShowWorkspacePanel.value ? [workspacePanel] : []),
+      ...visibleWorkspacePanels.value,
       keybindingPanel,
       extensionPanel,
       ...(isDesktop ? [serverConfigPanel] : []),
-      ...(shouldShowPlanCreditsPanel.value && subscriptionPanel
-        ? [subscriptionPanel]
-        : []),
       ...(shouldShowSecretsPanel.value ? [secretsPanel] : [])
     ].filter((panel) => panel !== null && panel.component)
   )
@@ -258,6 +272,10 @@ export function useSettingUI(
         const found = group.children?.find((node) => node.key === defaultPanel)
         if (found) return found
       }
+      const hiddenPanel = panels.value.find(
+        (panel) => panel.node.key === defaultPanel
+      )
+      if (hiddenPanel) return translateCategory(hiddenPanel.node)
       return settingCategories.value[0]
     }
 
@@ -281,21 +299,14 @@ export function useSettingUI(
     )
   })
 
-  // Sidebar structure when team workspaces is enabled
   const workspaceMenuTreeNodes = computed<SettingTreeNode[]>(() => [
-    // Workspace settings
     translateCategory({
       key: 'workspace',
       label: 'Workspace',
-      children: [
-        ...(shouldShowWorkspacePanel.value ? [workspacePanel.node] : []),
-        ...(isLoggedIn.value &&
-        !(isCloud && window.__CONFIG__?.subscription_required)
-          ? [creditsPanel.node]
-          : [])
-      ].map(translateCategory)
+      children: visibleWorkspacePanels.value
+        .map((panel) => panel.node)
+        .map(translateCategory)
     }),
-    // General settings - Profile + all core settings + special panels
     translateCategory({
       key: 'general',
       label: 'General',
@@ -312,7 +323,6 @@ export function useSettingUI(
         ...(isDesktop ? [translateCategory(serverConfigPanel.node)] : [])
       ]
     }),
-    // Custom node settings (only shown if custom nodes have registered settings)
     ...(customNodeSettingCategories.value.length > 0
       ? [
           translateCategory({
@@ -324,67 +334,33 @@ export function useSettingUI(
       : [])
   ])
 
-  // Sidebar structure when team workspaces is disabled (legacy)
-  const legacyMenuTreeNodes = computed<SettingTreeNode[]>(() => [
-    // Account settings - show different panels based on distribution and auth state
-    {
-      key: 'account',
-      label: 'Account',
-      children: [
-        userPanel.node,
-        ...(isLoggedIn.value &&
-        shouldShowPlanCreditsPanel.value &&
-        subscriptionPanel
-          ? [subscriptionPanel.node]
-          : []),
-        ...(shouldShowSecretsPanel.value ? [secretsPanel.node] : []),
-        ...(isLoggedIn.value &&
-        !(isCloud && window.__CONFIG__?.subscription_required)
-          ? [creditsPanel.node]
-          : [])
-      ].map(translateCategory)
-    },
-    // Normal settings stored in the settingStore
-    {
-      key: 'settings',
-      label: 'Application Settings',
-      children: settingCategories.value.map(translateCategory)
-    },
-    // Special settings such as about, keybinding, extension, server-config
-    {
-      key: 'specialSettings',
-      label: 'Special Settings',
-      children: [
-        keybindingPanel.node,
-        extensionPanel.node,
-        aboutPanel.node,
-        ...(isDesktop ? [serverConfigPanel.node] : [])
-      ].map(translateCategory)
-    }
-  ])
-
-  const groupedMenuTreeNodes = computed<SettingTreeNode[]>(() =>
-    teamWorkspacesEnabled.value
-      ? workspaceMenuTreeNodes.value
-      : legacyMenuTreeNodes.value
-  )
+  const groupedMenuTreeNodes = workspaceMenuTreeNodes
 
   const navGroups = computed<NavGroupData[]>(() =>
-    groupedMenuTreeNodes.value.map((group) => ({
-      title:
-        (group as SettingTreeNode & { translatedLabel?: string })
-          .translatedLabel ?? group.label,
-      items: (group.children ?? []).map((child) => ({
-        id: child.key,
-        label:
-          (child as SettingTreeNode & { translatedLabel?: string })
-            .translatedLabel ?? child.label,
-        icon:
-          CATEGORY_ICONS[child.key] ??
-          CATEGORY_ICONS[child.label] ??
-          'icon-[lucide--plug]'
+    groupedMenuTreeNodes.value
+      .filter((group) => group.children?.length)
+      .map((group) => ({
+        title:
+          (group as SettingTreeNode & { translatedLabel?: string })
+            .translatedLabel ?? group.label,
+        items: (group.children ?? []).map((child) => ({
+          id: child.key,
+          label:
+            (child as SettingTreeNode & { translatedLabel?: string })
+              .translatedLabel ?? child.label,
+          icon:
+            child.key === 'workspace'
+              ? CATEGORY_ICONS.PlanCredits
+              : (CATEGORY_ICONS[child.key] ??
+                CATEGORY_ICONS[child.label] ??
+                'icon-[lucide--plug]'),
+          ...(child.key === 'workspace-allowlist' &&
+          governanceStore.status === 'ineligible' &&
+          governanceStore.providers.length > 0
+            ? { suffixIcon: 'icon-[lucide--crown]' }
+            : {})
+        }))
       }))
-    }))
   )
 
   function findCategoryByKey(key: string): SettingTreeNode | null {
@@ -410,7 +386,6 @@ export function useSettingUI(
     groupedMenuTreeNodes,
     settingCategories,
     navGroups,
-    teamWorkspacesEnabled,
     findCategoryByKey,
     findPanelByKey
   }

@@ -11,11 +11,12 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { augmentToCanvasPointerEvent } from '@/renderer/extensions/vueNodes/utils/eventUtils'
 import { resolveWidgetFromHostNode } from '@/renderer/extensions/vueNodes/widgets/utils/resolvePromotedWidget'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import type { NodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 const props = defineProps<{
-  widget: SimplifiedWidget<void>
-  nodeId: string
+  widget: SimplifiedWidget<undefined>
+  nodeId: NodeId
 }>()
 
 const canvasEl = ref()
@@ -64,7 +65,7 @@ onMounted(() => {
   canvasEl.value.width *= scaleFactor
   bindWidget()
   if (!widgetInstance) return
-  useResizeObserver(canvasEl.value.parentElement, draw)
+  useResizeObserver(canvasEl, draw)
   watch(() => useColorPaletteStore().activePaletteId, draw)
   pointer = new CanvasPointer(canvasEl.value)
 })
@@ -77,7 +78,9 @@ watch(() => canvasStore.currentGraph, bindWidget)
 
 function draw() {
   if (!widgetInstance || !node) return
-  const width = canvasEl.value.parentElement.clientWidth
+  const width =
+    canvasEl.value.getBoundingClientRect().width ||
+    canvasEl.value.parentElement.clientWidth
   // Priority: computedHeight (from litegraph) > computeLayoutSize > computeSize
   let height = 20
   if (widgetInstance.computedHeight) {
@@ -92,6 +95,7 @@ function draw() {
   // @ts-expect-error canvasHeight is a custom property used by some extensions
   node.canvasHeight = height
   widgetInstance.y = 0
+  widgetInstance.width = width
   canvasEl.value.height = (height + 2) * scaleFactor
   canvasEl.value.width = width * scaleFactor
   const ctx = canvasEl.value?.getContext('2d')
@@ -124,7 +128,7 @@ function handleMove(e: PointerEvent) {
 </script>
 <template>
   <div
-    class="relative mx-[-12px] min-w-0 basis-0"
+    class="relative mx-[-12px] w-full min-w-0"
     :style="{ minHeight: `${containerHeight}px` }"
   >
     <canvas

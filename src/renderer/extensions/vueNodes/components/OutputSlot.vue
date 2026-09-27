@@ -16,7 +16,7 @@
     </div>
     <!-- Connection Dot -->
     <SlotConnectionDot
-      ref="connectionDotRef"
+      :slot-key
       class="w-3 translate-x-1/2"
       :slot-data
       @pointerdown="onPointerDown"
@@ -25,8 +25,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onErrorCaptured, ref, watchEffect } from 'vue'
-import type { ComponentPublicInstance } from 'vue'
+import { computed, onErrorCaptured, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -35,15 +34,15 @@ import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
-import { useSlotElementTracking } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
+import type { NodeId } from '@/types/nodeId'
 
 import SlotConnectionDot from './SlotConnectionDot.vue'
 
 interface OutputSlotProps {
   nodeType?: string
-  nodeId?: string
+  nodeId?: NodeId
   slotData: INodeSlot
   index: number
   connected?: boolean
@@ -88,18 +87,18 @@ onErrorCaptured((error) => {
 
 const { state: dragState } = useSlotLinkDragUIState()
 const slotKey = computed(() =>
-  getSlotKey(props.nodeId ?? '', props.index, false)
+  props.nodeId ? getSlotKey(props.nodeId, props.index, false) : undefined
 )
 const shouldDim = computed(() => {
   if (!dragState.active) return false
-  return !dragState.compatible.get(slotKey.value)
+  return !slotKey.value || !dragState.compatible.get(slotKey.value)
 })
 
 const slotWrapperClass = computed(() =>
   cn(
-    'lg-slot lg-slot--output group flex h-6 items-center justify-end rounded-l-lg',
+    'lg-slot lg-slot--output group flex h-5 items-center justify-end rounded-l-lg',
     'cursor-crosshair',
-    dotOnly.value ? 'lg-slot--dot-only justify-center' : 'pl-6',
+    dotOnly.value ? 'lg-slot--dot-only justify-center' : 'pl-2',
     {
       'lg-slot--connected': props.connected,
       'lg-slot--compatible': props.compatible,
@@ -108,27 +107,8 @@ const slotWrapperClass = computed(() =>
   )
 )
 
-const connectionDotRef = ref<ComponentPublicInstance<{
-  slotElRef: HTMLElement | undefined
-}> | null>(null)
-const slotElRef = ref<HTMLElement | null>(null)
-
-// Watch for when the child component's ref becomes available
-// Vue automatically unwraps the Ref when exposing it
-watchEffect(() => {
-  const el = connectionDotRef.value?.slotElRef
-  slotElRef.value = el || null
-})
-
-useSlotElementTracking({
-  nodeId: props.nodeId ?? '',
-  index: props.index,
-  type: 'output',
-  element: slotElRef
-})
-
 const { onPointerDown } = useSlotLinkInteraction({
-  nodeId: props.nodeId ?? '',
+  nodeId: props.nodeId,
   index: props.index,
   type: 'output'
 })

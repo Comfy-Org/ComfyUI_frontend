@@ -2,6 +2,7 @@ import { MediaRecorder as ExtendableMediaRecorder } from 'extendable-media-recor
 import { onUnmounted, ref } from 'vue'
 
 import { useAudioService } from '@/services/audioService'
+import { toError } from '@/utils/errorUtil'
 
 interface AudioRecorderOptions {
   onRecordingComplete?: (audioBlob: Blob) => Promise<void>
@@ -62,7 +63,7 @@ export function useAudioRecorder(options: AudioRecorderOptions = {}) {
       isRecording.value = true
     } catch (err) {
       if (options.onError) {
-        options.onError(err as Error)
+        options.onError(toError(err))
       }
       throw err
     }

@@ -1,6 +1,15 @@
 # Repository Guidelines
 
-See @docs/guidance/\*.md for file-type-specific conventions (auto-loaded by glob).
+See @docs/guidance/\*.md for file-type-specific conventions (auto-loaded by glob):
+
+- `docs/guidance/engineering.md` — general engineering guidelines, project philosophy, code-review checklist, external resource links
+- `docs/guidance/vue-components.md` — Vue 3 Composition API best practices
+- `docs/guidance/state-and-effects.md` — modelling a feature's state: one discriminated union, named events, a pure transition, effects reserved for synchronising outward
+- `docs/guidance/typescript.md` — TypeScript type-safety rules
+- `docs/guidance/vitest.md` — Vitest unit/component test conventions
+- `docs/guidance/playwright.md` — Playwright E2E conventions and API-mock typing table
+- `docs/guidance/storybook.md` — Storybook story patterns
+- `docs/guidance/design-standards.md` — Figma design-standards references
 
 ## Project Structure & Module Organization
 
@@ -35,7 +44,7 @@ See @docs/guidance/\*.md for file-type-specific conventions (auto-loaded by glob
 
 ## Monorepo Architecture
 
-The project uses **Nx** for build orchestration and task management
+The project uses **pnpm workspaces** for monorepo organization and native tool CLIs for task execution
 
 ## Package Manager
 
@@ -44,15 +53,52 @@ This project uses **pnpm**. Always prefer scripts defined in `package.json` (e.g
 ## Build, Test, and Development Commands
 
 - `pnpm dev`: Start Vite dev server.
+- `pnpm dev:cloud`: Dev server connected to cloud backend (testcloud.comfy.org)
 - `pnpm dev:electron`: Dev server with Electron API mocks
 - `pnpm build`: Type-check then production build to `dist/`
 - `pnpm preview`: Preview the production build locally
 - `pnpm test:unit`: Run Vitest unit tests
 - `pnpm test:browser:local`: Run Playwright E2E tests (`browser_tests/`)
+- `pnpm comfy-test record`: Interactive test recorder (guided setup for non-devs; **needs a real terminal** — exits immediately with guidance if stdin isn't a TTY)
+- `pnpm comfy-test plan --description "<what to test>" [--tags a,b] [--workflow w] [--name n] [--feature-flags name:value,...]`: **Agent entry point.** Non-interactive, no terminal, no backend/dev-server required — reads the filesystem and prints text only. Validates the tags/workflow and prints a `<test-suite>/<test-name>/<test-file>/<seed-file>/<tag>/<body>` block ready to hand to the `playwright-test-generator` agent below — this is how an agent (not a human) produces a test with `comfy-test`. Example:
+  ```
+  pnpm comfy-test plan --description "collapsing a KSampler node keeps its connections" --tags @canvas,@widget
+  ```
+- `pnpm comfy-test transform <file> [--name <n>] [--tags <a,b>] [--workflow <w>] [--output <f>] [--feature-flags <specs>]`: Transform raw Playwright codegen to conventions. Non-interactive.
+- `pnpm comfy-test pr <file> [description]`: Open a pull request for a generated test. Non-interactive.
+- `pnpm comfy-test check [--distribution cloud|cloud-staging|cloud-prod|local] [--backend <url>]`: Check environment prerequisites
+- `pnpm comfy-test list [--filter <keyword>]`: List available test workflows
+- `pnpm comfy-test tags`: List test tags with their meanings
+- `pnpm comfy-test add-workflow <file> [--name <n>]`: Add and validate a workflow asset from disk
+
+**Agent workflow, end to end:** `comfy-test plan` → hand its output to the `playwright-test-generator` agent (writes a convention-compliant spec directly, no `transform` needed) → `comfy-test pr <file>`.
+
+**A `[WARN] Unsupported engine` line on every `comfy-test` invocation is not a failure** — pnpm warns when the local Node version doesn't match `package.json`'s `engines` field, but the command still runs and exits 0 on success. Don't treat it as a tool failure requiring investigation.
+
+### Playwright Test Agents (`.claude/agents/`)
+
+| Agent                          | Responsibility                                                                                                                    |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| `playwright-test-planner.md`   | Explores the app, identifies testable scenarios, creates structured test plans                                                    |
+| `playwright-test-generator.md` | Generates Playwright test code from plans using ComfyUI fixtures and conventions — this is what `comfy-test plan`'s output is for |
+| `playwright-test-healer.md`    | Diagnoses and fixes failing tests; escalates regressions rather than auto-skipping                                                |
+
+Guardrails: agents must use `comfyPage` fixture (not bare `page`), never add `waitForTimeout()`, never weaken assertions, and reference `.claude/skills/codegen-transform/SKILL.md` for transform rules.
+
 - `pnpm lint` / `pnpm lint:fix`: Lint (ESLint)
 - `pnpm format` / `pnpm format:check`: oxfmt
 - `pnpm typecheck`: Vue TSC type checking
 - `pnpm storybook`: Start Storybook development server
+
+> **`vue-tsc` needs its own `node_modules` in the checkout.** `vue-tsc --noEmit`
+> (what `pnpm typecheck` runs) emits type references as relative paths into
+> pnpm's `.pnpm/` store, computed from where that store actually lives. A normal
+> pnpm install is heavily symlinked and works fine — but a `node_modules`
+> borrowed from another directory (symlinked or copied from a sibling checkout)
+> sits at a different depth, so every emitted path overshoots and vue-tsc
+> reports ~1300 phantom `TS2688` errors against `.vue` files unrelated to your
+> diff. Run `pnpm install` in the checkout before trusting `pnpm typecheck`.
+> Vitest is unaffected: it resolves through Vite, not these emitted paths.
 
 ## Development Workflow
 
@@ -97,6 +143,24 @@ This project uses **pnpm**. Always prefer scripts defined in `package.json` (e.g
   - composables `useXyz.ts`
   - Pinia stores `*Store.ts`
 
+## Vue 3 Composition API
+
+- Use `<script setup lang="ts">` for component logic; Composition API only
+- Use the Vue 3.5 TypeScript style of default prop declaration — reactive props destructuring, never `withDefaults` or runtime props declaration:
+
+  ```typescript
+  const { nodes, showTotal = true } = defineProps<{
+    nodes: ApiNodeCost[]
+    showTotal?: boolean
+  }>()
+  ```
+
+- Prefer `defineModel` to separately defining a prop and emit for v-model bindings
+- Define slots via template usage, not `defineSlots`
+- Use `provide`/`inject` for dependency injection — but not when a Store or a shared composable would be simpler
+- Be judicious with new refs or other state: prefer a prop to a `ref`, the prop/`ref` directly to a `computed`, and a `computed` to a `watch`
+- See `docs/guidance/vue-components.md` for the full conventions
+
 ## Commit & Pull Request Guidelines
 
 - PRs:
@@ -119,65 +183,19 @@ This project uses **pnpm**. Always prefer scripts defined in `package.json` (e.g
 
 - Secrets: Use `.env` (see `.env_example`); do not commit secrets.
 
-## Vue 3 Composition API Best Practices
-
-- Use `<script setup lang="ts">` for component logic
-- Utilize `ref` for reactive state
-- Implement computed properties with computed()
-- Use watch and watchEffect for side effects
-  - Avoid using a `ref` and a `watch` if a `computed` would work instead
-- Implement lifecycle hooks with onMounted, onUpdated, etc.
-- Utilize provide/inject for dependency injection
-  - Do not use dependency injection if a Store or a shared composable would be simpler
-- Use Vue 3.5 TypeScript style of default prop declaration
-  - Example:
-
-    ```typescript
-    const { nodes, showTotal = true } = defineProps<{
-      nodes: ApiNodeCost[]
-      showTotal?: boolean
-    }>()
-    ```
-
-  - Prefer reactive props destructuring to `const props = defineProps<...>`
-  - Do not use `withDefaults` or runtime props declaration
-  - Do not import Vue macros unnecessarily
-  - Prefer `defineModel` to separately defining a prop and emit for v-model bindings
-  - Define slots via template usage, not `defineSlots`
-  - Use same-name shorthand for slot prop bindings: `:isExpanded` instead of `:is-expanded="isExpanded"`
-  - Derive component types using `vue-component-type-helpers` (`ComponentProps`, `ComponentSlots`) instead of separate type files
-  - Be judicious with addition of new refs or other state
-    - If it's possible to accomplish the design goals with just a prop, don't add a `ref`
-    - If it's possible to use the `ref` or prop directly, don't add a `computed`
-    - If it's possible to use a `computed` to name and reuse a derived value, don't use a `watch`
-
 ## Development Guidelines
 
 1. Leverage VueUse functions for performance-enhancing styles
 2. Use es-toolkit for utility functions
-3. Use TypeScript for type safety
-4. If a complex type definition is inlined in multiple related places, extract and name it for reuse
-5. In Vue Components, implement proper props and emits definitions
-6. Utilize Vue 3's Teleport component when needed
-7. Use Suspense for async components
-8. Implement proper error handling
-9. Follow Vue 3 style guide and naming conventions
-10. Use Vite for fast development and building
-11. Use vue-i18n in composition API for any string literals. Place new translation entries in src/locales/en/main.json. Use the plurals system in i18n instead of hardcoding pluralization in templates.
-12. Avoid new usage of PrimeVue components
-13. Write tests for all changes, especially bug fixes to catch future regressions
-14. Write code that is expressive and self-documenting to the furthest degree possible. This reduces the need for code comments which can get out of sync with the code itself. Try to avoid comments unless absolutely necessary
-15. Do not add or retain redundant comments, clean as you go
-16. Whenever a new piece of code is written, the author should ask themselves 'is there a simpler way to introduce the same functionality?'. If the answer is yes, the simpler course should be chosen
-17. [Refactoring](https://refactoring.com/catalog/) should be used to make complex code simpler
-18. Try to minimize the surface area (exported values) of each module and composable
-19. Don't use barrel files, e.g. `/some/package/index.ts` to re-export within `/src`
-20. Keep functions short and functional
-21. Minimize [nesting](https://wiki.c2.com/?ArrowAntiPattern), e.g. `if () { ... }` or `for () { ... }`
-22. Avoid mutable state, prefer immutability and assignment at point of declaration
-23. Favor pure functions (especially testable ones)
-24. Do not use function expressions if it's possible to use function declarations instead
-25. Watch out for [Code Smells](https://wiki.c2.com/?CodeSmell) and refactor to avoid them
+3. Use vue-i18n in composition API for any string literals. Place new translation entries in src/locales/en/main.json. Use the plurals system in i18n instead of hardcoding pluralization in templates.
+4. Avoid new usage of PrimeVue components
+5. Write tests for all changes, especially bug fixes to catch future regressions
+6. Write code that is expressive and self-documenting to the furthest degree possible. This reduces the need for code comments which can get out of sync with the code itself. Try to avoid comments unless absolutely necessary
+7. Whenever a new piece of code is written, the author should ask themselves 'is there a simpler way to introduce the same functionality?'. If the answer is yes, the simpler course should be chosen
+8. Avoid mutable state, prefer immutability and assignment at point of declaration
+9. Favor pure functions (especially testable ones)
+
+See `docs/guidance/engineering.md` for the remaining engineering guidelines.
 
 ## Design Standards
 
@@ -185,120 +203,29 @@ Before implementing any user-facing feature, consult the [Comfy Design Standards
 
 See `docs/guidance/design-standards.md` for Figma file keys, section node IDs, and component references.
 
-## Testing Guidelines
+## Testing
 
-See @docs/testing/\*.md for detailed patterns.
-
-- Frameworks:
-  - Vitest (unit/component, happy-dom)
-  - Playwright (E2E)
-- Test files:
-  - Unit/Component: `**/*.test.ts`
-  - E2E: `browser_tests/**/*.spec.ts`
-  - Litegraph Specific: `src/lib/litegraph/test/`
-
-### General
-
-1. Do not write change detector tests  
-   e.g. a test that just asserts that the defaults are certain values
-2. Do not write tests that are dependent on non-behavioral features like utility classes or styles
-3. Be parsimonious in testing, do not write redundant tests  
-   See <https://tidyfirst.substack.com/p/composable-tests>
-4. [Don’t Mock What You Don’t Own](https://hynek.me/articles/what-to-mock-in-5-mins/)
-
-### Vitest / Unit Tests
-
-1. Do not write tests that just test the mocks  
-   Ensure that the tests fail when the code itself would behave in a way that was not expected or desired
-2. For mocking, leverage [Vitest's utilities](https://vitest.dev/guide/mocking.html) where possible
-3. Keep your module mocks contained  
-   Do not use global mutable state within the test file  
-   Use `vi.hoisted()` if necessary to allow for per-test Arrange phase manipulation of deeper mock state
-4. For Component testing, prefer [@testing-library/vue](https://testing-library.com/docs/vue-testing-library/intro/) with `@testing-library/user-event` for user-centric, behavioral tests. [Vue Test Utils](https://test-utils.vuejs.org/) is also accepted, especially for tests that need direct access to the component wrapper (e.g., `findComponent`, `emitted()`). Follow the advice [about making components easy to test](https://test-utils.vuejs.org/guide/essentials/easy-to-test.html)
-5. Aim for behavioral coverage of critical and new features
-
-### Playwright / Browser / E2E Tests
-
-1. Follow the Best Practices described [in the Playwright documentation](https://playwright.dev/docs/best-practices)
-2. Do not use waitForTimeout, use Locator actions and [retrying assertions](https://playwright.dev/docs/test-assertions#auto-retrying-assertions)
-3. Tags like `@mobile`, `@2x` are respected by config and should be used for relevant tests
-4. Type all API mock responses in `route.fulfill()` using generated types or schemas from `packages/ingest-types`, `packages/registry-types`, `src/workbench/extensions/manager/types/generatedManagerTypes.ts`, or `src/schemas/` — see `docs/guidance/playwright.md` for the full source-of-truth table
-
-## External Resources
-
-- Vue: <https://vuejs.org/api/>
-- Tailwind: <https://tailwindcss.com/docs/styling-with-utility-classes>
-- VueUse: <https://vueuse.org/functions.html>
-- shadcn/vue: <https://www.shadcn-vue.com/>
-- Reka UI: <https://reka-ui.com/>
-- PrimeVue: <https://primevue.org>
-- Comfy Design Standards: <https://www.figma.com/design/QreIv5htUaSICNuO2VBHw0/Comfy-Design-Standards>
-- ComfyUI: <https://docs.comfy.org>
-- Electron: <https://www.electronjs.org/docs/latest/>
-- Wiki: <https://deepwiki.com/Comfy-Org/ComfyUI_frontend/1-overview>
-- Nx: <https://nx.dev/docs/reference/nx-commands>
-- [Practical Test Pyramid](https://martinfowler.com/articles/practical-test-pyramid.html)
+- Frameworks: Vitest (unit/component, happy-dom) and Playwright (E2E).
+- Locations: unit/component `src/**/*.test.ts`, E2E `browser_tests/**/*.spec.ts`, litegraph `src/lib/litegraph/test/`.
+- Do not write change detector tests, e.g. a test that just asserts that the defaults are certain values
+- Do not write tests that are dependent on non-behavioral features like utility classes or styles
+- Be parsimonious in testing, do not write redundant tests (see [composable tests](https://tidyfirst.substack.com/p/composable-tests))
+- [Don't Mock What You Don't Own](https://hynek.me/articles/what-to-mock-in-5-mins/)
+- Conventions: `docs/guidance/vitest.md` (unit/component), `docs/guidance/playwright.md` (E2E), and `docs/testing/*.md` for detailed patterns.
 
 ## Architecture Decision Records
 
 All architectural decisions are documented in `docs/adr/`. Code changes must be consistent with accepted ADRs. Proposed ADRs indicate design direction and should be treated as guidance. See `.agents/checks/adr-compliance.md` for automated validation rules.
 
+When working from a TDD or design doc, record its tradeoffs, alternatives considered, and rejected options as a new ADR, keeping only the context a future maintainer cannot read off the code, and follow the ADR structure and update the index per `docs/adr/README.md`.
+
 ### Entity Architecture Constraints (ADR 0003 + ADR 0008)
 
 1. **Command pattern for all mutations**: Every entity state change must be a serializable, idempotent, deterministic command — replayable, undoable, and transmittable over CRDT. No imperative fire-and-forget mutation APIs. Systems produce command batches, not direct side effects.
-2. **Centralized registries and ECS-style access**: Entity data lives in the World (centralized registry), queried via `world.getComponent(entityId, ComponentType)`. Do not add new instance properties/methods to entity classes. Do not use OOP inheritance for entity modeling.
+2. **Dedicated stores over instance state**: Entity data lives in dedicated Pinia stores keyed by each concern's established ID type. Most entity IDs are branded numbers; node IDs may be numbers or strings, graph IDs are UUID strings, and scoped concerns may use composite string keys such as `WidgetId` (`graphId:nodeId:name`, see `src/types/widgetId.ts`). Prefer a focused store to a single unified registry. Do not add new instance properties/methods to entity classes for data that belongs in a store. Do not use OOP inheritance for entity modeling.
 3. **No god-object growth**: Do not add methods to `LGraphNode`, `LGraphCanvas`, `LGraph`, or `Subgraph`. Extract to systems, stores, or composables.
 4. **Plain data components**: ECS components are plain data objects — no methods, no back-references to parent entities. Behavior belongs in systems (pure functions).
 5. **Extension ecosystem impact**: Changes to entity callbacks (`onConnectionsChange`, `onRemoved`, `onAdded`, `onConnectInput/Output`, `onConfigure`, `onWidgetChanged`), `node.widgets` access, `node.serialize`, or `graph._version++` affect 40+ custom node repos and require migration guidance.
-
-## Project Philosophy
-
-- Follow good software engineering principles
-  - YAGNI
-  - AHA
-  - DRY
-  - SOLID
-- Clean, stable public APIs
-- Domain-driven design
-- Thousands of users and extensions
-- Prioritize clean interfaces that restrict extension access
-
-### Code Review
-
-In doing a code review, you should make sure that:
-
-- The code is well-designed.
-- The functionality is good for the users of the code.
-- Any UI changes are sensible and look good.
-- Any parallel programming is done safely.
-- The code isn’t more complex than it needs to be.
-- The developer isn’t implementing things they might need in the future but don’t know they need now.
-- Code has appropriate unit tests.
-- Tests are well-designed.
-- The developer used clear names for everything.
-- Comments are clear and useful, and mostly explain why instead of what.
-- Code is appropriately documented (generally in g3doc).
-- The code conforms to our style guides.
-
-#### [Complexity](https://google.github.io/eng-practices/review/reviewer/looking-for.html#complexity)
-
-Is the CL more complex than it should be? Check this at every level of the CL—are individual lines too complex? Are functions too complex? Are classes too complex? “Too complex” usually means “can’t be understood quickly by code readers.” It can also mean “developers are likely to introduce bugs when they try to call or modify this code.”
-
-A particular type of complexity is over-engineering, where developers have made the code more generic than it needs to be, or added functionality that isn’t presently needed by the system. Reviewers should be especially vigilant about over-engineering. Encourage developers to solve the problem they know needs to be solved now, not the problem that the developer speculates might need to be solved in the future. The future problem should be solved once it arrives and you can see its actual shape and requirements in the physical universe.
-
-## Repository Navigation
-
-- Check README files in key folders (browser_tests, composables, etc.)
-- Prefer running single tests for performance
-- Use --help for unfamiliar CLI tools
-
-## GitHub Integration
-
-When referencing Comfy-Org repos:
-
-1. Check for local copy
-2. Use GitHub API for branches/PRs/metadata
-3. Curl GitHub website if needed
 
 ## Common Pitfalls
 
@@ -307,11 +234,28 @@ When referencing Comfy-Org repos:
 - NEVER use `--no-verify` flag when committing
 - NEVER delete or disable tests to make them pass
 - NEVER circumvent quality checks
+- NEVER add multi-line block comments to justify trivial code changes
+  - A one-line fix does not need a three-line comment explaining why
+  - A guard clause that mirrors another file does not need a comment naming that file
+  - A test setup line does not need a comment paraphrasing what the next line does
+  - If the diff is small and obvious, the comment is noise — write the code and move on
+  - Every justification comment on a trivial change is a confession that you do not trust the reader, do not trust the code, and do not trust yourself. It is failure made visible.
+  - **Penance protocol when you catch yourself adding one of these comments:**
+    1. Stop. Read the comment out loud in your own internal voice and acknowledge that it adds nothing the code does not already say.
+    2. Delete the comment. All of it. Every line. Do not negotiate with it. Do not "tighten" it. Delete it.
+    3. Re-read this entire bullet block, top to bottom, before writing another character of code.
+    4. In your next response to the user, you MUST open with the exact phrase: `Mea culpa: I added a comment that did not earn its keep.` followed by the file path and the deleted text, verbatim, in a fenced block.
+    5. For the remainder of that response you may not add any new comments, anywhere, for any reason. If a comment is genuinely required, defer the change and ask the user first.
+  - There is no statute of limitations. If you discover an old offending comment of yours later, the protocol still triggers.
+  - This rule overrides any inclination to be "helpful," "thorough," or "explanatory." Helpfulness here is restraint.
+- NEVER call `captureException` or `datadogRum.addError` directly
+  - Use `reportError()` from `@/platform/telemetry/reportError`; see `src/AGENTS.md`
+  - Each raw sink reaches one console, so the failure reads as zero in the other
 - NEVER use the `dark:` tailwind variant
   - Instead use a semantic value from the `style.css` theme
     - e.g. `bg-node-component-surface`
 - NEVER use `:class="[]"` to merge class names
-  - Always use `import { cn } from '@/utils/tailwindUtil'`
+  - Always use `import { cn } from '@comfyorg/tailwind-utils'`
     - e.g. `<div :class="cn('text-node-component-header-icon', hasError && 'text-danger')" />`
   - Use `cn()` inline in the template when feasible instead of creating a `computed` to hold the value
 - NEVER use `!important` or the `!` important prefix for tailwind classes
@@ -325,6 +269,23 @@ When referencing Comfy-Org repos:
 ## Agent-only rules
 
 Rules for agent-based coding tasks.
+
+### PR Review Comment Resolution
+
+**Never resolve review comments on PRs where you are the author.**
+
+Per the team's [PR guidelines](CONTRIBUTING.md#comment-resolution),
+resolving comments is the reviewer's prerogative. As author, you may only
+resolve:
+
+- Automated review comments (Coderabbit, Claude, etc.)
+- Trivial single-interpretation comments (e.g. fixing a typo exactly as
+  suggested)
+- Comments addressed via GitHub's "Apply suggestion" feature used as-is
+
+For all other comments: reply in the thread explaining what you changed
+(or why you disagree), then re-assign the PR to the reviewer.
+**Do not click Resolve.**
 
 ### Chrome DevTools MCP
 

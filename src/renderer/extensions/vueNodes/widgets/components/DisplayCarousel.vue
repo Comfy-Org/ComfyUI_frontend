@@ -19,12 +19,7 @@
             v-if="activeItem"
             :src="getItemSrc(activeItem)"
             :alt="getItemAlt(activeItem, activeIndex)"
-            :class="
-              cn(
-                'h-auto w-full rounded-sm object-contain transition-opacity',
-                showControls && 'opacity-50'
-              )
-            "
+            class="h-auto w-full rounded-sm object-contain"
             @load="handleImageLoad"
           />
 
@@ -172,9 +167,10 @@ import { downloadFile } from '@/base/common/downloadUtil'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import type { NodeId } from '@/types/nodeId'
 import { resolveNode } from '@/utils/litegraphUtil'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 export interface GalleryImage {
   itemImageSrc?: string
@@ -195,7 +191,7 @@ const value = defineModel<GalleryValue>({ required: true })
 
 const { widget, nodeId } = defineProps<{
   widget: SimplifiedWidget<GalleryValue>
-  nodeId?: string
+  nodeId?: NodeId
 }>()
 
 const { t } = useI18n()
@@ -238,7 +234,7 @@ const showNavButtons = computed(
 )
 
 const actionButtonClass =
-  'flex size-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-base-foreground text-base-background shadow-md transition-colors hover:bg-base-foreground/90'
+  'flex size-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-base-foreground text-base-background shadow-interface transition-colors hover:bg-base-foreground/90'
 
 const toggleButtonClass = actionButtonClass
 
@@ -346,7 +342,7 @@ function selectFromGrid(index: number) {
 
 function handleEditMask() {
   if (!nodeId) return
-  const node = resolveNode(Number(nodeId))
+  const node = resolveNode(nodeId)
   if (!node) return
   maskEditor.openMaskEditor(node)
 }
@@ -367,7 +363,7 @@ function handleDownload() {
 
 function handleRemove() {
   if (!nodeId) return
-  const node = resolveNode(Number(nodeId))
+  const node = resolveNode(nodeId)
   nodeOutputStore.removeNodeOutputs(nodeId)
   if (node) {
     node.imgs = undefined

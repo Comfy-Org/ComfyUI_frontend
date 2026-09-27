@@ -3,7 +3,6 @@ import userEvent from '@testing-library/user-event'
 import { createTestingPinia } from '@pinia/testing'
 import PrimeVue from 'primevue/config'
 import { describe, expect, it, vi } from 'vitest'
-import { createI18n } from 'vue-i18n'
 
 import type { SwapNodeGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
 
@@ -11,21 +10,13 @@ vi.mock('./SwapNodeGroupRow.vue', () => ({
   default: {
     name: 'SwapNodeGroupRow',
     template:
-      '<div class="swap-row" :data-show-node-id-badge="showNodeIdBadge" :data-group-type="group?.type"><button class="locate-trigger" @click="$emit(\'locate-node\', group?.nodeTypes?.[0]?.nodeId)">Locate</button><button class="replace-trigger" @click="$emit(\'replace\', group)">Replace</button></div>',
-    props: ['group', 'showNodeIdBadge'],
+      '<div class="swap-row" :data-group-type="group?.type"><button class="locate-trigger" @click="$emit(\'locate-node\', group?.nodeTypes?.[0]?.nodeId)">Locate</button><button class="replace-trigger" @click="$emit(\'replace\', group)">Replace</button></div>',
+    props: ['group'],
     emits: ['locate-node', 'replace']
   }
 }))
 
 import SwapNodesCard from './SwapNodesCard.vue'
-
-const i18n = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: { en: {} },
-  missingWarn: false,
-  fallbackWarn: false
-})
 
 function makeGroups(count = 2): SwapNodeGroup[] {
   return Array.from({ length: count }, (_, i) => ({
@@ -38,7 +29,6 @@ function makeGroups(count = 2): SwapNodeGroup[] {
 function mountCard(
   props: Partial<{
     swapNodeGroups: SwapNodeGroup[]
-    showNodeIdBadge: boolean
   }> = {},
   callbacks?: {
     onLocateNode?: (nodeId: string) => void
@@ -48,7 +38,6 @@ function mountCard(
   return render(SwapNodesCard, {
     props: {
       swapNodeGroups: makeGroups(),
-      showNodeIdBadge: false,
       ...props,
       ...(callbacks?.onLocateNode
         ? { 'onLocate-node': callbacks.onLocateNode }
@@ -56,19 +45,13 @@ function mountCard(
       ...(callbacks?.onReplace ? { onReplace: callbacks.onReplace } : {})
     },
     global: {
-      plugins: [createTestingPinia({ createSpy: vi.fn }), PrimeVue, i18n]
+      plugins: [createTestingPinia({ createSpy: vi.fn }), PrimeVue]
     }
   })
 }
 
 describe('SwapNodesCard', () => {
   describe('Rendering', () => {
-    it('renders guidance message', () => {
-      const { container } = mountCard()
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-      expect(container.querySelector('p')).not.toBeNull()
-    })
-
     it('renders correct number of SwapNodeGroupRow components', () => {
       const { container } = mountCard({ swapNodeGroups: makeGroups(3) })
       // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
@@ -85,16 +68,6 @@ describe('SwapNodesCard', () => {
       const { container } = mountCard({ swapNodeGroups: makeGroups(1) })
       // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
       expect(container.querySelectorAll('.swap-row')).toHaveLength(1)
-    })
-
-    it('passes showNodeIdBadge to children', () => {
-      const { container } = mountCard({
-        swapNodeGroups: makeGroups(1),
-        showNodeIdBadge: true
-      })
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-      const row = container.querySelector('.swap-row')
-      expect(row!.getAttribute('data-show-node-id-badge')).toBe('true')
     })
 
     it('passes group prop to children', () => {

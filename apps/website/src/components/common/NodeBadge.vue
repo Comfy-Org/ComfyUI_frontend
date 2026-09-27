@@ -4,22 +4,29 @@ import { cn } from '@comfyorg/tailwind-utils'
 const {
   segments,
   segmentClass = 'px-6',
-  textClass = 'text-2xl sm:text-3xl lg:text-5xl'
+  textClass = 'text-2xl sm:text-3xl lg:text-5xl',
+  sizeClass = ''
 } = defineProps<{
   segments: Array<{ text?: string; logoSrc?: string; logoAlt?: string }>
   segmentClass?: string
   textClass?: string
+  sizeClass?: string
 }>()
 </script>
 
 <template>
   <div
-    class="font-formula-condensed flex h-11 items-stretch font-semibold **:select-none sm:h-auto"
+    :class="
+      cn(
+        'font-formula-narrow flex h-11 items-stretch font-semibold **:select-none sm:h-auto',
+        sizeClass
+      )
+    "
   >
     <img
       src="/icons/node-left.svg"
       alt=""
-      class="-mx-px self-stretch"
+      class="-mx-px h-full w-auto self-stretch"
       aria-hidden="true"
     />
 
@@ -31,7 +38,7 @@ const {
         v-if="i > 0"
         src="/icons/node-union.svg"
         alt=""
-        class="-mx-px self-stretch"
+        class="-mx-px h-full w-auto self-stretch"
         aria-hidden="true"
       />
       <span
@@ -65,7 +72,7 @@ const {
     <img
       src="/icons/node-right.svg"
       alt=""
-      class="-mx-px self-stretch"
+      class="-mx-px h-full w-auto self-stretch"
       aria-hidden="true"
     />
   </div>

@@ -6,6 +6,7 @@ import type {
   NodePackSearchProvider,
   SearchPacksResult
 } from '@/types/searchServiceTypes'
+import { toError } from '@/utils/errorUtil'
 
 type RegistryNodePack = components['schemas']['Node']
 
@@ -152,7 +153,7 @@ export const useRegistrySearchGateway = (): NodePackSearchProvider => {
         recordSuccess(providerState)
         return result
       } catch (error) {
-        lastError = error as Error
+        lastError = toError(error)
         const providerState = providers[activeProviderIndex]
         recordFailure(providerState, lastError)
         console.warn(

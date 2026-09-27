@@ -1,10 +1,8 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import { useLinearOutputStore } from '@/renderer/extensions/linearMode/linearOutputStore'
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
-import { ResultItemImpl } from '@/stores/queueStore'
 
 const activeJobIdRef = ref<string | null>(null)
 const previewsRef = ref<Record<string, { url: string; nodeId?: string }>>({})
@@ -16,6 +14,8 @@ const selectedOutputsRef = ref<string[]>([])
 const { apiTarget } = vi.hoisted(() => ({
   apiTarget: new EventTarget()
 }))
+
+vi.mock('@/platform/assets/composables/media/assetMappers')
 
 vi.mock('@/composables/useAppMode', () => ({
   useAppMode: () => ({
@@ -64,23 +64,6 @@ vi.mock('@/scripts/api', () => ({
   })
 }))
 
-vi.mock('@/renderer/extensions/linearMode/flattenNodeOutput', () => ({
-  flattenNodeOutput: ([nodeId, output]: [
-    string | number,
-    Record<string, unknown>
-  ]) => {
-    if (!output.images) return []
-    return (output.images as Array<Record<string, string>>).map(
-      (img) =>
-        new ResultItemImpl({
-          ...img,
-          nodeId: String(nodeId),
-          mediaType: 'images'
-        })
-    )
-  }
-}))
-
 function setJobWorkflowPath(jobId: string, path: string) {
   const next = new Map(jobIdToWorkflowPathRef.value)
   next.set(jobId, path)
@@ -104,7 +87,6 @@ function makeExecutedDetail(
 
 describe('linearOutputStore', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     activeJobIdRef.value = null
     previewsRef.value = {}
     isAppModeRef.value = true
@@ -131,7 +113,6 @@ describe('linearOutputStore', () => {
   })
 
   it('transitions to latent on preview', () => {
-    vi.useFakeTimers()
     const store = useLinearOutputStore()
     setJobWorkflowPath('job-1', 'workflows/test-workflow.json')
     store.onJobStart('job-1')
@@ -143,7 +124,6 @@ describe('linearOutputStore', () => {
     expect(store.inProgressItems[0].state).toBe('latent')
     expect(store.inProgressItems[0].latentPreviewUrl).toBe('blob:preview')
     expect(store.selectedId).toBe(`slot:${itemId}`)
-    vi.useRealTimers()
   })
 
   it('ignores latent preview for other jobs', () => {
@@ -301,7 +281,6 @@ describe('linearOutputStore', () => {
   })
 
   it('creates skeleton on-demand when latent arrives after execute', () => {
-    vi.useFakeTimers()
     const store = useLinearOutputStore()
     store.onJobStart('job-1')
     store.onNodeExecuted('job-1', makeExecutedDetail('job-1'))
@@ -318,7 +297,6 @@ describe('linearOutputStore', () => {
     expect(store.inProgressItems[0].state).toBe('latent')
     expect(store.inProgressItems[0].latentPreviewUrl).toBe('blob:next')
     expect(store.inProgressItems).toHaveLength(2)
-    vi.useRealTimers()
   })
 
   it('handles execute without prior skeleton (no latent preview)', () => {
@@ -361,7 +339,6 @@ describe('linearOutputStore', () => {
   })
 
   it('transitions to latent via previews watcher', async () => {
-    vi.useFakeTimers()
     const { nextTick } = await import('vue')
     const store = useLinearOutputStore()
 
@@ -381,7 +358,6 @@ describe('linearOutputStore', () => {
 
     expect(store.inProgressItems[0].state).toBe('latent')
     expect(store.inProgressItems[0].latentPreviewUrl).toBe('blob:preview-1')
-    vi.useRealTimers()
   })
 
   it('completes previous job on direct job transition', async () => {
@@ -526,7 +502,6 @@ describe('linearOutputStore', () => {
   })
 
   it('discards latent previews for already-executed nodes', () => {
-    vi.useFakeTimers()
     const store = useLinearOutputStore()
     store.onJobStart('job-1')
 
@@ -543,11 +518,9 @@ describe('linearOutputStore', () => {
     expect(
       store.inProgressItems.filter((i) => i.state === 'latent')
     ).toHaveLength(0)
-    vi.useRealTimers()
   })
 
   it('accepts latent previews for new nodes after prior node executed', () => {
-    vi.useFakeTimers()
     const store = useLinearOutputStore()
     store.onJobStart('job-1')
 
@@ -562,11 +535,9 @@ describe('linearOutputStore', () => {
       store.inProgressItems.filter((i) => i.state === 'latent')
     ).toHaveLength(1)
     expect(store.inProgressItems[0].latentPreviewUrl).toBe('blob:node2-latent')
-    vi.useRealTimers()
   })
 
   it('cancels pending RAF when a node executes', () => {
-    vi.useFakeTimers()
     const store = useLinearOutputStore()
     store.onJobStart('job-1')
 
@@ -583,11 +554,9 @@ describe('linearOutputStore', () => {
     expect(
       store.inProgressItems.filter((i) => i.state === 'image')
     ).toHaveLength(1)
-    vi.useRealTimers()
   })
 
   it('discards latent previews arriving after job completion', () => {
-    vi.useFakeTimers()
     const store = useLinearOutputStore()
     store.onJobStart('job-1')
     store.onNodeExecuted('job-1', makeExecutedDetail('job-1'))
@@ -603,11 +572,9 @@ describe('linearOutputStore', () => {
     expect(
       store.inProgressItems.filter((i) => i.state === 'latent')
     ).toHaveLength(0)
-    vi.useRealTimers()
   })
 
   it('discards latent previews for completed job after RAF', () => {
-    vi.useFakeTimers()
     const store = useLinearOutputStore()
     store.onJobStart('job-1')
     store.onNodeExecuted('job-1', makeExecutedDetail('job-1'))
@@ -620,7 +587,6 @@ describe('linearOutputStore', () => {
     expect(
       store.inProgressItems.filter((i) => i.state === 'latent')
     ).toHaveLength(0)
-    vi.useRealTimers()
   })
 
   it('ignores executed events for other jobs', () => {
@@ -674,7 +640,6 @@ describe('linearOutputStore', () => {
   })
 
   it('recovers latent preview when re-entering app mode', async () => {
-    vi.useFakeTimers()
     const { nextTick } = await import('vue')
     const store = useLinearOutputStore()
 
@@ -704,7 +669,6 @@ describe('linearOutputStore', () => {
     )
     expect(latentItems).toHaveLength(1)
     expect(latentItems[0].latentPreviewUrl).toBe('blob:preview-while-away')
-    vi.useRealTimers()
   })
 
   it('does not show in-progress items from another workflow', () => {
@@ -747,7 +711,6 @@ describe('linearOutputStore', () => {
   })
 
   it('scopes in-progress items per workflow with concurrent jobs', () => {
-    vi.useFakeTimers()
     const store = useLinearOutputStore()
 
     // Job-1 on workflow-a (dog)
@@ -772,7 +735,6 @@ describe('linearOutputStore', () => {
     expect(items).toHaveLength(1)
     expect(items[0].jobId).toBe('job-2')
     expect(items[0].latentPreviewUrl).toBe('blob:landscape')
-    vi.useRealTimers()
   })
 
   it('skips output items for nodes not in selectedOutputs', () => {
@@ -847,15 +809,10 @@ describe('linearOutputStore', () => {
 
   describe('workflow switching during generation', () => {
     async function setup() {
-      vi.useFakeTimers()
       const { nextTick } = await import('vue')
       const store = useLinearOutputStore()
       return { store, nextTick }
     }
-
-    afterEach(() => {
-      vi.useRealTimers()
-    })
 
     it('preserves images and latent previews across tab switch', async () => {
       const { store, nextTick } = await setup()
@@ -1099,7 +1056,6 @@ describe('linearOutputStore', () => {
     })
 
     it('evicts prior pendingResolve entries when a new job completes', () => {
-      vi.useFakeTimers()
       const store = useLinearOutputStore()
 
       // Job 1: produce image, complete
@@ -1120,8 +1076,6 @@ describe('linearOutputStore', () => {
       expect(store.inProgressItems.some((i) => i.jobId === 'job-1')).toBe(false)
       // Job 2 is now pending resolve
       expect(store.pendingResolve.has('job-2')).toBe(true)
-
-      vi.useRealTimers()
     })
 
     it('cleans up finished tracked job on exit when job ended while in app mode', async () => {
@@ -1152,7 +1106,6 @@ describe('linearOutputStore', () => {
     })
 
     it('does not leak items across many job cycles', () => {
-      vi.useFakeTimers()
       const store = useLinearOutputStore()
 
       for (let i = 1; i <= 5; i++) {
@@ -1168,8 +1121,6 @@ describe('linearOutputStore', () => {
       expect(store.pendingResolve.size).toBe(1)
       expect(store.pendingResolve.has('job-5')).toBe(true)
       expect(store.inProgressItems.every((i) => i.jobId === 'job-5')).toBe(true)
-
-      vi.useRealTimers()
     })
 
     it('does not adopt another workflow job when switching back', async () => {

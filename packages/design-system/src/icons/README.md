@@ -164,6 +164,34 @@ packages/design-system/src/icons/
 
 No imports needed - icons are auto-discovered!
 
+## Render Mode: Mask vs Image
+
+The default render mode is decided by the SVG's own colors:
+
+- **Mask** — SVG with `currentColor`. The shape is displayed as a background
+  mask, so it adapts to the theme via `text-*` classes.
+- **Image** — the SVG uses concrete colors (e.g. `#d97757`). It is embedded
+  as an image, preserving its own colors; `text-*` has no effect. Use this for
+  brand logos that must keep their palette.
+
+```
+workflow.svg   fill="currentColor"  -> mask  (themeable)
+claude.svg     fill="#d97757"       -> image (brand color preserved)
+```
+
+### Forcing a mode at usage time
+
+```vue
+<template>
+  <i class="icon-[comfy--openai]" />
+  <!-- default from SVG colors -->
+  <i class="icon-img-[comfy--openai]" />
+  <!-- force image, own colors -->
+  <i class="icon-mask-[comfy--luma]" />
+  <!-- force themeable mask -->
+</template>
+```
+
 ## Icon Guidelines
 
 ### Naming Conventions

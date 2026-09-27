@@ -1,12 +1,12 @@
-import { createTestingPinia } from '@pinia/testing'
 import { render } from '@testing-library/vue'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { api } from '@/scripts/api'
+import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 
 import { usePainter } from './usePainter'
 
@@ -94,7 +94,10 @@ function makeWidget(name: string, value: unknown = null): IBaseWidget {
 /**
  * Mounts a thin wrapper component so Vue lifecycle hooks fire.
  */
-function mountPainter(nodeId = 'test-node', initialModelValue = '') {
+function mountPainter(
+  nodeId: NodeId = toNodeId('test-node'),
+  initialModelValue = ''
+) {
   let painter!: PainterResult
   const canvasEl = ref<HTMLCanvasElement | null>(null)
   const cursorEl = ref<HTMLElement | null>(null)
@@ -120,8 +123,6 @@ function mountPainter(nodeId = 'test-node', initialModelValue = '') {
 
 describe('usePainter', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.resetAllMocks()
     mockWidgets.length = 0
     for (const key of Object.keys(mockProperties)) {
       delete mockProperties[key]
@@ -349,42 +350,139 @@ describe('usePainter', () => {
   })
 
   describe('serializeValue', () => {
-    it('returns empty string when canvas has no strokes', async () => {
+    it('returns existing modelValue when not dirty (preserves workflow-restored mask reference across WidgetPainter remount)', async () => {
       const maskWidget = makeWidget('mask', '')
       mockWidgets.push(maskWidget)
 
-      mountPainter()
+      mountPainter(toNodeId('test-node'), 'painter/existing.png [temp]')
 
       const result = await maskWidget.serializeValue!({} as LGraphNode, 0)
-      expect(result).toBe('')
+      expect(result).toBe('painter/existing.png [temp]')
     })
 
-    it('returns existing modelValue when not dirty', async () => {
+    it('uploads the current canvas when no cached modelValue is present, even if nothing has been painted yet', async () => {
       const maskWidget = makeWidget('mask', '')
       mockWidgets.push(maskWidget)
 
-      const { modelValue } = mountPainter()
-      modelValue.value = 'painter/existing.png [temp]'
+      const fetchApiMock = vi.mocked(api.fetchApi)
+      fetchApiMock.mockResolvedValueOnce({
+        status: 200,
+        json: async () => ({ name: 'uploaded.png' })
+      } as Response)
+
+      const fakeCanvas = {
+        width: 4,
+        height: 4,
+        toBlob: (cb: BlobCallback) => cb(new Blob(['x']))
+      } as unknown as HTMLCanvasElement
+
+      const { canvasEl } = mountPainter(toNodeId('test-node'), '')
+      canvasEl.value = fakeCanvas
+      await nextTick()
 
       const result = await maskWidget.serializeValue!({} as LGraphNode, 0)
-      // isCanvasEmpty() is true (no strokes drawn), so returns ''
-      expect(result).toBe('')
+      expect(fetchApiMock).toHaveBeenCalledWith(
+        '/upload/image',
+        expect.objectContaining({ method: 'POST' })
+      )
+      expect(result).toBe('uploaded.png [input]')
+
+      const [, init] = fetchApiMock.mock.calls[0]
+      const body = init?.body as FormData
+      expect(body).toBeInstanceOf(FormData)
+      expect(body.get('type')).toBe('input')
+      expect(body.get('subfolder')).toBeNull()
+    })
+
+    it('throws when the upload response is missing a name', async () => {
+      const maskWidget = makeWidget('mask', '')
+      mockWidgets.push(maskWidget)
+
+      vi.mocked(api.fetchApi).mockResolvedValueOnce({
+        status: 200,
+        json: async () => ({})
+      } as Response)
+
+      const fakeCanvas = {
+        width: 4,
+        height: 4,
+        toBlob: (cb: BlobCallback) => cb(new Blob(['x']))
+      } as unknown as HTMLCanvasElement
+
+      const { canvasEl } = mountPainter(toNodeId('test-node'), '')
+      canvasEl.value = fakeCanvas
+      await nextTick()
+
+      await expect(
+        maskWidget.serializeValue!({} as LGraphNode, 0)
+      ).rejects.toThrow(/missing 'name'/)
+    })
+
+    it('throws when the upload response body is not valid JSON', async () => {
+      const maskWidget = makeWidget('mask', '')
+      mockWidgets.push(maskWidget)
+
+      vi.mocked(api.fetchApi).mockResolvedValueOnce({
+        status: 200,
+        json: async () => {
+          throw new SyntaxError('Unexpected token')
+        }
+      } as unknown as Response)
+
+      const fakeCanvas = {
+        width: 4,
+        height: 4,
+        toBlob: (cb: BlobCallback) => cb(new Blob(['x']))
+      } as unknown as HTMLCanvasElement
+
+      const { canvasEl } = mountPainter(toNodeId('test-node'), '')
+      canvasEl.value = fakeCanvas
+      await nextTick()
+
+      await expect(
+        maskWidget.serializeValue!({} as LGraphNode, 0)
+      ).rejects.toThrow(/painter\.uploadError/)
+    })
+
+    it('returns existing modelValue when canvas element is unmounted at serialize time', async () => {
+      const maskWidget = makeWidget('mask', '')
+      mockWidgets.push(maskWidget)
+
+      mountPainter(toNodeId('test-node'), 'painter/cached.png [temp]')
+
+      const result = await maskWidget.serializeValue!({} as LGraphNode, 0)
+      expect(result).toBe('painter/cached.png [temp]')
+    })
+
+    it('clears the cached upload reference when the user clears the canvas', () => {
+      const maskWidget = makeWidget('mask', '')
+      mockWidgets.push(maskWidget)
+
+      const fakeCanvas = {
+        width: 4,
+        height: 4,
+        getContext: vi.fn(() => ({
+          clearRect: vi.fn()
+        }))
+      } as unknown as HTMLCanvasElement
+
+      const { painter, canvasEl, modelValue } = mountPainter(
+        toNodeId('test-node'),
+        'painter/old-upload.png [temp]'
+      )
+      canvasEl.value = fakeCanvas
+
+      painter.handleClear()
+
+      expect(modelValue.value).toBe('')
     })
   })
 
   describe('restoreCanvas', () => {
-    it('builds correct URL from modelValue on mount', () => {
-      const { modelValue } = mountPainter()
-      // Before mount, set the modelValue
-      // restoreCanvas is called in onMounted, so we test by observing api.apiURL calls
-      // With empty modelValue, restoreCanvas exits early
-      expect(modelValue.value).toBe('')
-    })
-
     it('calls api.apiURL with parsed filename params when modelValue is set', () => {
       vi.mocked(api.apiURL).mockClear()
 
-      mountPainter('test-node', 'painter/my-image.png [temp]')
+      mountPainter(toNodeId('test-node'), 'painter/my-image.png [temp]')
 
       expect(api.apiURL).toHaveBeenCalledWith(
         expect.stringContaining('filename=my-image.png')
@@ -424,6 +522,27 @@ describe('usePainter', () => {
 
       expect(mockSetPointerCapture).not.toHaveBeenCalled()
     })
+
+    it('tolerates setPointerCapture throwing for synthetic events', () => {
+      const { painter } = mountPainter()
+
+      const event = new PointerEvent('pointerdown', { button: 0, pointerId: 1 })
+      Object.defineProperty(event, 'target', {
+        value: {
+          setPointerCapture: vi.fn(() => {
+            throw new DOMException('NotFoundError')
+          }),
+          getBoundingClientRect: vi.fn(() => ({
+            left: 0,
+            top: 0,
+            width: 100,
+            height: 100
+          }))
+        }
+      })
+
+      expect(() => painter.handlePointerDown(event)).not.toThrow()
+    })
   })
 
   describe('handlePointerUp', () => {
@@ -441,6 +560,22 @@ describe('usePainter', () => {
       painter.handlePointerUp(event)
 
       expect(mockReleasePointerCapture).not.toHaveBeenCalled()
+    })
+
+    it('tolerates releasePointerCapture throwing for synthetic events', () => {
+      const { painter } = mountPainter()
+
+      const event = {
+        button: 0,
+        pointerId: 1,
+        target: {
+          releasePointerCapture: vi.fn(() => {
+            throw new DOMException('NotFoundError')
+          })
+        }
+      } as unknown as PointerEvent
+
+      expect(() => painter.handlePointerUp(event)).not.toThrow()
     })
   })
 })

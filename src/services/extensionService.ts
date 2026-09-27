@@ -15,6 +15,19 @@ import type { AuthUserInfo } from '@/types/authTypes'
 import { app } from '@/scripts/app'
 import type { ComfyApp } from '@/scripts/app'
 
+const INLINED_CLOUD_EXTENSIONS = new Set([
+  '/extensions/cloud/rum.js',
+  '/extensions/cloud/sentry.js'
+])
+
+export function shouldLoadExtension(
+  extension: string,
+  isCloudBuild: boolean
+): boolean {
+  if (extension.includes('extensions/core')) return false
+  return !isCloudBuild || !INLINED_CLOUD_EXTENSIONS.has(extension)
+}
+
 export const useExtensionService = () => {
   const extensionStore = useExtensionStore()
   const settingStore = useSettingStore()
@@ -41,7 +54,9 @@ export const useExtensionService = () => {
     extensionStore.captureCoreExtensions()
     await Promise.all(
       extensions
-        .filter((extension) => !extension.includes('extensions/core'))
+        .filter((extension) =>
+          shouldLoadExtension(extension, __DISTRIBUTION__ === 'cloud')
+        )
         .map(async (ext) => {
           try {
             await import(/* @vite-ignore */ api.fileURL(ext))

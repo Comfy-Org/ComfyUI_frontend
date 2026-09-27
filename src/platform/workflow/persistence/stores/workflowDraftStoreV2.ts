@@ -8,6 +8,9 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
+import { reportError } from '@/platform/telemetry/reportError'
+import { app as comfyApp } from '@/scripts/app'
+
 import type { DraftIndexV2 } from '../base/draftTypes'
 import { MAX_DRAFTS } from '../base/draftTypes'
 import {
@@ -17,6 +20,7 @@ import {
   moveEntry,
   removeEntry,
   removeOrphanedEntries,
+  touchOrder,
   upsertEntry
 } from '../base/draftCacheV2'
 import { hashPath } from '../base/hashUtil'
@@ -33,8 +37,6 @@ import {
   writeIndex,
   writePayload
 } from '../base/storageIO'
-import { api } from '@/scripts/api'
-import { app as comfyApp } from '@/scripts/app'
 
 interface DraftMeta {
   name: string
@@ -42,7 +44,6 @@ interface DraftMeta {
 }
 
 interface LoadPersistedWorkflowOptions {
-  workflowName: string | null
   preferredPath?: string | null
   fallbackToLatestDraft?: boolean
 }
@@ -131,21 +132,28 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
       MAX_DRAFTS
     )
 
-    // Delete evicted payloads
-    deletePayloads(workspaceId, evicted)
-
-    // Persist index
     if (!persistIndex(newIndex)) {
-      // Index write failed - try to recover
       deletePayload(workspaceId, draftKey)
+      persistIndex(index)
       return false
     }
 
+    deletePayloads(workspaceId, evicted)
     return true
   }
 
   /**
    * Handles quota exceeded by evicting oldest drafts until write succeeds.
+   *
+   * Tolerates index/payload desync: orphaned `order` keys with no matching
+   * entry in `entries` are stripped in-place and the loop continues, rather
+   * than bailing out and leaving evictable drafts behind.
+   *
+   * Recovery writes (`persistIndex(currentIndex)` after a failed write) are
+   * best-effort; their return value is intentionally ignored because there
+   * is no useful action to take when the recovery itself also fails — the
+   * caller will already see `false` and surface the toast. A subsequent
+   * `saveDraft` will re-converge the index via `removeOrphanedEntries`.
    */
   function handleQuotaExceeded(
     path: string,
@@ -153,52 +161,88 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     meta: DraftMeta
   ): boolean {
     const workspaceId = currentWorkspaceId()
-    const index = loadIndex()
     const draftKey = hashPath(path)
 
-    // Try evicting oldest entries until we can write
-    let currentIndex = index
+    let currentIndex = loadIndex()
+    let evictedCount = 0
+
     while (currentIndex.order.length > 0) {
       const oldestKey = currentIndex.order.find((key) => key !== draftKey)
-      if (!oldestKey) break // Only the target draft remains
+      if (!oldestKey) break
 
-      // Evict oldest
-      const oldestEntry = Object.values(currentIndex.entries).find(
-        (e) => hashPath(e.path) === oldestKey
-      )
-      if (!oldestEntry) break
+      const oldestEntry = currentIndex.entries[oldestKey]
+      if (!oldestEntry) {
+        currentIndex = stripOrderKey(currentIndex, oldestKey)
+        continue
+      }
 
       const result = removeEntry(currentIndex, oldestEntry.path)
       currentIndex = result.index
       if (result.removedKey) {
         deletePayload(workspaceId, result.removedKey)
+        evictedCount++
       }
 
-      // Try writing again
-      const success = writePayload(workspaceId, draftKey, {
-        data,
-        updatedAt: Date.now()
-      })
-
-      if (success) {
-        // Update index with the new entry
+      const now = Date.now()
+      if (writePayload(workspaceId, draftKey, { data, updatedAt: now })) {
         const { index: finalIndex } = upsertEntry(
           currentIndex,
           path,
-          { ...meta, updatedAt: Date.now() },
+          { ...meta, updatedAt: now },
           MAX_DRAFTS
         )
         if (!persistIndex(finalIndex)) {
           deletePayload(workspaceId, draftKey)
+          persistIndex(currentIndex)
           return false
         }
         return true
       }
     }
 
-    // All evictions failed - mark storage as unavailable
+    persistIndex(currentIndex)
+    reportQuotaExhausted(currentIndex, evictedCount, payloadByteSize(data))
     markStorageUnavailable()
     return false
+  }
+
+  /**
+   * Approximates the UTF-8 byte size of the envelope `writePayload` actually
+   * stores. We hard-code `updatedAt: 0` rather than the real timestamp because
+   * the missing ~12 bytes are noise compared to the kilobyte-scale workflow
+   * payload this telemetry exists to measure.
+   */
+  function payloadByteSize(data: string): number {
+    return new TextEncoder().encode(JSON.stringify({ data, updatedAt: 0 }))
+      .length
+  }
+
+  function stripOrderKey(index: DraftIndexV2, orphanKey: string): DraftIndexV2 {
+    return {
+      ...index,
+      updatedAt: Date.now(),
+      order: index.order.filter((key) => key !== orphanKey)
+    }
+  }
+
+  function reportQuotaExhausted(
+    finalIndex: DraftIndexV2,
+    evicted: number,
+    payloadBytes: number
+  ): void {
+    reportError(
+      new Error('localStorage quota exhausted after full draft eviction'),
+      {
+        errorType: 'storage_quota_exhausted',
+        level: 'warning',
+        tags: { store: 'workflowDraftStoreV2' },
+        context: {
+          evictedDrafts: evicted,
+          remainingDrafts: finalIndex.order.length,
+          incomingPayloadBytes: payloadBytes
+        }
+      }
+    )
   }
 
   /**
@@ -228,7 +272,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
       if (oldPayload) {
         const written = writePayload(workspaceId, result.newKey, {
           data: oldPayload.data,
-          updatedAt: Date.now()
+          updatedAt: oldPayload.updatedAt
         })
         if (!written) return
 
@@ -244,9 +288,12 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
   /**
    * Gets draft data by path.
    */
-  function getDraft(
-    path: string
-  ): { data: string; name: string; isTemporary: boolean } | null {
+  function getDraft(path: string): {
+    data: string
+    name: string
+    isTemporary: boolean
+    updatedAt: number
+  } | null {
     const workspaceId = currentWorkspaceId()
     const index = loadIndex()
     const entry = getEntryByPath(index, path)
@@ -263,8 +310,25 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     return {
       data: payload.data,
       name: entry.name,
-      isTemporary: entry.isTemporary
+      isTemporary: entry.isTemporary,
+      updatedAt: payload.updatedAt
     }
+  }
+
+  /**
+   * Marks a draft as recently used without rewriting its payload.
+   */
+  function markDraftUsed(path: string): void {
+    const index = loadIndex()
+    const entry = getEntryByPath(index, path)
+    if (!entry) return
+
+    const draftKey = hashPath(path)
+    persistIndex({
+      ...index,
+      updatedAt: Date.now(),
+      order: touchOrder(index.order, draftKey)
+    })
   }
 
   /**
@@ -309,6 +373,10 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     const loaded = await tryLoadGraph(draft.data, draft.name, () => {
       removeDraft(path)
     })
+    if (loaded) {
+      // Direct persisted-draft restores do not go through ComfyWorkflow.load().
+      markDraftUsed(path)
+    }
 
     return loaded
   }
@@ -319,11 +387,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
   async function loadPersistedWorkflow(
     options: LoadPersistedWorkflowOptions
   ): Promise<boolean> {
-    const {
-      workflowName,
-      preferredPath,
-      fallbackToLatestDraft = false
-    } = options
+    const { preferredPath, fallbackToLatestDraft = false } = options
 
     // 1. Try preferred path
     if (preferredPath && (await loadDraft(preferredPath))) {
@@ -338,33 +402,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
       }
     }
 
-    // Legacy fallbacks are NOT workspace-scoped and must only be used for
-    // personal workspace to prevent cross-workspace data leakage.
-    // These exist only for migration from V1 and should be removed after 2026-07-15.
-    if (currentWorkspaceId() !== 'personal') {
-      return false
-    }
-
-    // 3. Legacy fallback: sessionStorage payload (remove after 2026-07-15)
-    const clientId = api.initialClientId ?? api.clientId
-    if (clientId) {
-      try {
-        const sessionPayload = sessionStorage.getItem(`workflow:${clientId}`)
-        if (await tryLoadGraph(sessionPayload, workflowName)) {
-          return true
-        }
-      } catch {
-        // Ignore storage access errors and continue fallback chain
-      }
-    }
-
-    // 4. Legacy fallback: localStorage payload (remove after 2026-07-15)
-    try {
-      const localPayload = localStorage.getItem('workflow')
-      return await tryLoadGraph(localPayload, workflowName)
-    } catch {
-      return false
-    }
+    return false
   }
 
   /**
@@ -379,6 +417,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     saveDraft,
     removeDraft,
     moveDraft,
+    markDraftUsed,
     getDraft,
     getMostRecentPath,
     loadPersistedWorkflow,

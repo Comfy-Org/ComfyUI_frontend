@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n'
 import EditableText from '@/components/common/EditableText.vue'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()
 

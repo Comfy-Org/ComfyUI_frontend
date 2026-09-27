@@ -4,7 +4,7 @@ import { ref } from 'vue'
 import ProgressToastItem from '@/components/toast/ProgressToastItem.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { AssetDownload } from '@/stores/assetDownloadStore'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import HoneyToast from './HoneyToast.vue'
 

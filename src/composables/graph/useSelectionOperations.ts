@@ -9,6 +9,7 @@ import {
 } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
+import { isSelectOnly } from '@/utils/litegraphUtil'
 
 /**
  * Composable for handling basic selection operations like copy, paste, duplicate, delete, rename
@@ -78,6 +79,9 @@ export function useSelectionOperations() {
 
   const deleteSelection = () => {
     const canvas = app.canvas
+    // Picking nodes for the agent is not editing: deleting stays off until the
+    // mode ends.
+    if (isSelectOnly(canvas)) return
     if (!canvas.selectedItems || canvas.selectedItems.size === 0) {
       toastStore.add({
         severity: 'warn',

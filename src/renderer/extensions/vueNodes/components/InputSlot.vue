@@ -7,7 +7,7 @@
       cn(
         'lg-slot lg-slot--input group m-0 flex items-center rounded-r-lg',
         'cursor-crosshair',
-        dotOnly ? 'lg-slot--dot-only' : 'pr-6',
+        dotOnly ? 'lg-slot--dot-only' : 'h-5 pr-2',
         {
           'lg-slot--connected': props.connected,
           'lg-slot--compatible': props.compatible,
@@ -19,7 +19,7 @@
   >
     <!-- Connection Dot -->
     <SlotConnectionDot
-      ref="connectionDotRef"
+      :slot-key
       :class="
         cn(
           'w-3 -translate-x-1/2',
@@ -55,17 +55,17 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onErrorCaptured, ref, watchEffect } from 'vue'
-import type { ComponentPublicInstance } from 'vue'
+import { computed, onErrorCaptured, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
-import { useSlotElementTracking } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
+import type { NodeId } from '@/types/nodeId'
 
 import SlotConnectionDot from './SlotConnectionDot.vue'
 
@@ -77,11 +77,12 @@ interface InputSlotProps {
   hasError?: boolean
   index: number
   nodeType?: string
-  nodeId?: string
+  nodeId?: NodeId
   socketless?: boolean
 }
 
 const props = defineProps<InputSlotProps>()
+const { t } = useI18n()
 
 const hasNoLabel = computed(
   () =>
@@ -99,9 +100,10 @@ const { getInputSlotTooltip, createTooltipConfig } = useNodeTooltips(
 )
 
 const tooltipConfig = computed(() => {
-  const slotName = props.slotData.localized_name || props.slotData.name || ''
-  const tooltipText = getInputSlotTooltip(slotName)
-  const fallbackText = tooltipText || `Input: ${slotName}`
+  const inputName = props.slotData.name || ''
+  const displayName = props.slotData.localized_name || inputName
+  const tooltipText = getInputSlotTooltip(inputName)
+  const fallbackText = tooltipText || t('g.inputTooltip', { name: displayName })
   return createTooltipConfig(fallbackText)
 })
 
@@ -113,32 +115,16 @@ onErrorCaptured((error) => {
 
 const { state: dragState } = useSlotLinkDragUIState()
 const slotKey = computed(() =>
-  getSlotKey(props.nodeId ?? '', props.index, true)
+  props.nodeId ? getSlotKey(props.nodeId, props.index, true) : undefined
 )
 const shouldDim = computed(() => {
   if (!dragState.active) return false
+  if (!slotKey.value) return false
   return !dragState.compatible.get(slotKey.value)
 })
 
-const connectionDotRef = ref<ComponentPublicInstance<{
-  slotElRef: HTMLElement | undefined
-}> | null>(null)
-const slotElRef = ref<HTMLElement | null>(null)
-
-watchEffect(() => {
-  const el = connectionDotRef.value?.slotElRef
-  slotElRef.value = el || null
-})
-
-useSlotElementTracking({
-  nodeId: props.nodeId ?? '',
-  index: props.index,
-  type: 'input',
-  element: slotElRef
-})
-
 const { onClick, onDoubleClick, onPointerDown } = useSlotLinkInteraction({
-  nodeId: props.nodeId ?? '',
+  nodeId: props.nodeId,
   index: props.index,
   type: 'input'
 })

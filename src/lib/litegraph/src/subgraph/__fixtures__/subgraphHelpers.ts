@@ -11,9 +11,15 @@ import type {
   ExportedSubgraph,
   ExportedSubgraphInstance,
   ISlotType,
-  NodeId,
   UUID
 } from '@/lib/litegraph/src/litegraph'
+import {
+  SUBGRAPH_INPUT_ID,
+  SUBGRAPH_OUTPUT_ID
+} from '@/lib/litegraph/src/constants'
+import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
+import type { SerializedNodeId } from '@/types/nodeId'
+import { toNodeId } from '@/types/nodeId'
 import {
   LGraph,
   LGraphNode,
@@ -57,6 +63,42 @@ export function resetSubgraphFixtureState(): void {
   cleanupComplexPromotionFixtureNodeType()
 }
 
+export function enableSubgraphNodeCreation(rootGraph: LGraph): () => void {
+  const registrations = new Map<string, typeof LGraphNode>()
+  const listener = (
+    e: CustomEvent<LGraphEventMap['subgraph-created']>
+  ): void => {
+    const { subgraph } = e.detail
+    class TestSubgraphNode extends SubgraphNode {
+      constructor() {
+        super(rootGraph, subgraph, {
+          id: -1,
+          type: subgraph.id,
+          pos: [0, 0],
+          size: [100, 100],
+          inputs: [],
+          outputs: [],
+          flags: {},
+          mode: 0,
+          order: 0
+        })
+      }
+    }
+    LiteGraph.registered_node_types[subgraph.id] = TestSubgraphNode
+    registrations.set(subgraph.id, TestSubgraphNode)
+  }
+  rootGraph.events.addEventListener('subgraph-created', listener)
+
+  return () => {
+    rootGraph.events.removeEventListener('subgraph-created', listener)
+    for (const [type, constructor] of registrations) {
+      if (LiteGraph.registered_node_types[type] === constructor) {
+        delete LiteGraph.registered_node_types[type]
+      }
+    }
+  }
+}
+
 export function createTestRootGraph(id: UUID = nextFixtureUuid()): LGraph {
   const graph = new LGraph()
   graph.id = id
@@ -77,9 +119,26 @@ interface TestSubgraphOptions {
 
 interface TestSubgraphNodeOptions {
   parentGraph?: LGraph | Subgraph
-  id?: NodeId
+  id?: SerializedNodeId
   pos?: [number, number]
   size?: [number, number]
+}
+
+interface BoundaryLinkedSubgraphOptions {
+  rootGraph?: LGraph
+  hostId?: SerializedNodeId
+  interiorId?: SerializedNodeId
+  boundaryName?: string
+  inputName?: string
+  hostTitle?: string
+  interiorType?: string
+}
+
+export interface BoundaryLinkedSubgraphFixture {
+  rootGraph: LGraph
+  subgraph: Subgraph
+  host: SubgraphNode
+  interior: LGraphNode
 }
 
 interface NestedSubgraphOptions {
@@ -176,12 +235,12 @@ export function createTestSubgraph(
     name: options.name || 'Test Subgraph',
 
     inputNode: {
-      id: -10,
+      id: SUBGRAPH_INPUT_ID,
       bounding: [10, 100, 150, 126],
       pinned: false
     },
     outputNode: {
-      id: -20,
+      id: SUBGRAPH_OUTPUT_ID,
       bounding: [400, 100, 140, 126],
       pinned: false
     },
@@ -262,7 +321,62 @@ export function createTestSubgraphNode(
     order: 0
   }
 
-  return new SubgraphNode(parentGraph, subgraph, instanceData)
+  const subgraphNode = new SubgraphNode(parentGraph, subgraph, instanceData)
+  // Reserve the id: the node is not add()ed here, so without this a later
+  // parentGraph.add() would mint a duplicate id.
+  const numericId = Number(subgraphNode.id)
+  if (Number.isInteger(numericId) && numericId > parentGraph.state.lastNodeId) {
+    parentGraph.state.lastNodeId = numericId
+  }
+  return subgraphNode
+}
+
+export function registerTestSubgraphNodeTypes(rootGraph: LGraph): void {
+  rootGraph.events.addEventListener('subgraph-created', (event) => {
+    const subgraph = event.detail.subgraph
+    class TestSubgraphNode extends SubgraphNode {
+      constructor() {
+        super(rootGraph, subgraph, {
+          id: -1,
+          type: subgraph.id,
+          pos: [0, 0],
+          size: [100, 100],
+          inputs: [],
+          outputs: [],
+          flags: {},
+          order: 0,
+          mode: 0
+        })
+      }
+    }
+    LiteGraph.registerNodeType(subgraph.id, TestSubgraphNode)
+  })
+}
+
+export function createBoundaryLinkedSubgraph({
+  rootGraph = createTestRootGraph(),
+  hostId = 12,
+  interiorId = 5,
+  boundaryName = 'seed',
+  inputName = 'seed_input',
+  hostTitle = 'Host Subgraph',
+  interiorType = 'InteriorNode'
+}: BoundaryLinkedSubgraphOptions = {}): BoundaryLinkedSubgraphFixture {
+  const subgraph = createTestSubgraph({
+    rootGraph,
+    inputs: [{ name: boundaryName, type: '*' }]
+  })
+  const host = createTestSubgraphNode(subgraph, { id: hostId })
+  host.title = hostTitle
+  rootGraph.add(host)
+
+  const interior = new LGraphNode(interiorType)
+  interior.id = toNodeId(interiorId)
+  const input = interior.addInput(inputName, '*')
+  subgraph.add(interior)
+  subgraph.inputNode.slots[0].connect(input, interior)
+
+  return { rootGraph, subgraph, host, interior }
 }
 
 export function setupComplexPromotionFixture(): {
@@ -292,7 +406,6 @@ export function setupComplexPromotionFixture(): {
 
   const graph = createTestRootGraph()
   const subgraph = graph.createSubgraph(subgraphData as ExportedSubgraph)
-  subgraph.configure(subgraphData as ExportedSubgraph)
   const hostNode = new SubgraphNode(
     graph,
     subgraph,
@@ -400,12 +513,12 @@ export function assertSubgraphStructure(
 
   if (expected.hasInputNode !== false) {
     expect(subgraph.inputNode).toBeDefined()
-    expect(subgraph.inputNode.id).toBe(-10)
+    expect(subgraph.inputNode.id).toBe(SUBGRAPH_INPUT_ID)
   }
 
   if (expected.hasOutputNode !== false) {
     expect(subgraph.outputNode).toBeDefined()
-    expect(subgraph.outputNode.id).toBe(-20)
+    expect(subgraph.outputNode.id).toBe(SUBGRAPH_OUTPUT_ID)
   }
 }
 
@@ -470,12 +583,12 @@ export function createTestSubgraphData(
     name: 'Test Data Subgraph',
 
     inputNode: {
-      id: -10,
+      id: SUBGRAPH_INPUT_ID,
       bounding: [10, 100, 150, 126],
       pinned: false
     },
     outputNode: {
-      id: -20,
+      id: SUBGRAPH_OUTPUT_ID,
       bounding: [400, 100, 140, 126],
       pinned: false
     },

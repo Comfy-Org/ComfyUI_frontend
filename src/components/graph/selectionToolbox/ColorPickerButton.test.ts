@@ -1,7 +1,6 @@
 import type { Mock } from 'vitest'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { createPinia, setActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import Tooltip from 'primevue/tooltip'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -95,7 +94,6 @@ describe('ColorPickerButton', () => {
   })
 
   beforeEach(() => {
-    setActivePinia(createPinia())
     canvasStore = useCanvasStore()
     workflowStore = useWorkflowStore()
 

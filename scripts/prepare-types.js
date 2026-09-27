@@ -1,7 +1,15 @@
-import fs from 'fs'
-import path from 'path'
+import fs from 'node:fs'
+import { createRequire } from 'node:module'
+import path from 'node:path'
 
+const require = createRequire(import.meta.url)
 const mainPackage = JSON.parse(fs.readFileSync('./package.json', 'utf8'))
+const desktopBridgeTypesPackage = JSON.parse(
+  fs.readFileSync(
+    require.resolve('@comfyorg/comfyui-desktop-bridge-types/package.json'),
+    'utf8'
+  )
+)
 
 // Create the types-only package.json
 const typesPackage = {
@@ -16,7 +24,9 @@ const typesPackage = {
   homepage: mainPackage.homepage,
   description: `TypeScript definitions for ${mainPackage.name}`,
   license: mainPackage.license,
-  dependencies: {},
+  dependencies: {
+    '@comfyorg/comfyui-desktop-bridge-types': desktopBridgeTypesPackage.version
+  },
   peerDependencies: {
     vue: mainPackage.dependencies.vue,
     zod: mainPackage.dependencies.zod
@@ -34,5 +44,3 @@ fs.writeFileSync(
   path.join(distDir, 'package.json'),
   JSON.stringify(typesPackage, null, 2)
 )
-
-console.log('Types package.json have been prepared in the dist directory')

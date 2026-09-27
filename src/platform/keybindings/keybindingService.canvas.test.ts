@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
@@ -58,9 +56,6 @@ describe('keybindingService - Canvas Keybindings', () => {
   let canvasChild: HTMLCanvasElement
 
   beforeEach(() => {
-    vi.clearAllMocks()
-    setActivePinia(createTestingPinia({ stubActions: false }))
-
     const commandStore = useCommandStore()
     commandStore.execute = vi.fn()
 

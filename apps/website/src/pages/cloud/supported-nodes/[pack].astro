@@ -1,0 +1,78 @@
+---
+import type { GetStaticPaths } from 'astro'
+
+import type { Pack } from '../../../data/cloudNodes'
+
+import PackDetail from '../../../components/cloud-nodes/PackDetail.vue'
+import BaseLayout from '../../../layouts/BaseLayout.astro'
+import { t } from '../../../i18n/translations'
+import { loadPacksForBuild } from '../../../utils/cloudNodes.build'
+import {
+  absoluteUrl,
+  jsonLdId,
+  pageContext,
+  softwareApplicationNode,
+} from '../../../utils/jsonLd'
+
+export const getStaticPaths: GetStaticPaths = async () => {
+  const packs = await loadPacksForBuild()
+  return packs.map((pack) => ({
+    params: { pack: pack.id },
+    props: { pack }
+  }))
+}
+
+const { pack } = Astro.props as { pack: Pack }
+const fallbackDescription = t('cloudNodes.card.unavailableDescription', 'en')
+const description = pack.description || fallbackDescription
+const title = t('cloudNodes.detail.metaTitle', 'en').replace(
+  '{pack}',
+  pack.displayName
+)
+const metaDescription = t('cloudNodes.detail.metaDescription', 'en')
+  .replace('{pack}', pack.displayName)
+  .replace('{nodeCount}', String(pack.nodes.length))
+  .replace('{description}', description)
+
+const { siteUrl, locale, url } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
+const softwareId = jsonLdId(url, 'software')
+const software = softwareApplicationNode({
+  siteUrl,
+  id: softwareId,
+  name: pack.displayName,
+  url,
+  applicationCategory: 'DeveloperApplication',
+  applicationSubCategory: 'ComfyUI custom-node pack',
+  operatingSystem: 'Comfy Cloud (managed)',
+  description: pack.description || undefined,
+  image: pack.bannerUrl || pack.iconUrl,
+  softwareVersion: pack.latestVersion,
+  license: pack.license,
+  codeRepository: pack.repoUrl,
+  authorName: pack.publisher?.name,
+  isFree: true,
+})
+---
+
+<BaseLayout
+  title={title}
+  description={metaDescription}
+  ogImage={pack.bannerUrl}
+  mainEntityId={softwareId}
+  breadcrumbs={[
+    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
+    { name: 'Comfy Cloud', url: absoluteUrl(Astro.site, '/cloud') },
+    {
+      name: t('breadcrumb.supportedNodes', locale),
+      url: absoluteUrl(Astro.site, '/cloud/supported-nodes'),
+    },
+    { name: pack.displayName },
+  ]}
+  extraJsonLd={[software]}
+>
+  <PackDetail pack={pack} />
+</BaseLayout>

@@ -1,19 +1,24 @@
 import type { Locator } from '@playwright/test'
 
-import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type {
+  GraphAddOptions,
+  LGraph,
+  LGraphNode
+} from '@/lib/litegraph/src/litegraph'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { toNodeId } from '@/types/nodeId'
+import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
 import type { Position, Size } from '@e2e/fixtures/types'
 import { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
+import type { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 
 export class NodeOperationsHelper {
   public readonly promptDialogInput: Locator
 
   constructor(private comfyPage: ComfyPage) {
-    this.promptDialogInput = this.page.locator(
-      '.p-dialog-content input[type="text"]'
-    )
+    this.promptDialogInput = this.page.getByRole('dialog').getByRole('textbox')
   }
 
   private get page() {
@@ -36,6 +41,49 @@ export class NodeOperationsHelper {
     })
   }
 
+  async getSelectedNodeIds(): Promise<NodeId[]> {
+    const selectedNodeIds = await this.page.evaluate(() => {
+      const selected = window.app?.canvas?.selected_nodes
+      if (!selected) return []
+      return Object.keys(selected)
+    })
+    return selectedNodeIds.map(toNodeId)
+  }
+
+  /**
+   * Add a node to the graph by type.
+   * @param type - The node type (e.g. 'KSampler', 'VAEDecode')
+   * @param options - GraphAddOptions (ghost, skipComputeOrder). When ghost is
+   *   true and position is provided, a synthetic MouseEvent is created as the
+   *   dragEvent.
+   * @param position - When ghost is true, client coordinates for the ghost
+   *   placement dragEvent. Otherwise, world coordinates assigned to node.pos.
+   */
+  async addNode(
+    type: string,
+    options?: Omit<GraphAddOptions, 'dragEvent'>,
+    position?: Position
+  ): Promise<NodeReference> {
+    const id = await this.page.evaluate(
+      ([nodeType, opts, pos]) => {
+        const node = window.LiteGraph!.createNode(nodeType)!
+        const addOpts: Record<string, unknown> = { ...opts }
+        if (opts?.ghost && pos) {
+          addOpts.dragEvent = new MouseEvent('click', {
+            clientX: pos.x,
+            clientY: pos.y
+          })
+        } else if (pos) {
+          node.pos = [pos.x, pos.y]
+        }
+        window.app!.graph.add(node, addOpts as GraphAddOptions)
+        return node.id
+      },
+      [type, options ?? {}, position ?? null] as const
+    )
+    return new NodeReference(id, this.comfyPage)
+  }
+
   /** Remove all nodes from the graph and clean. */
   async clearGraph() {
     await this.comfyPage.settings.setSetting('Comfy.ConfirmClear', false)
@@ -45,12 +93,6 @@ export class NodeOperationsHelper {
   /** Reads from `window.app.graph` (the root workflow graph). */
   async getNodeCount(): Promise<number> {
     return await this.page.evaluate(() => window.app!.graph.nodes.length)
-  }
-
-  async getNodes(): Promise<LGraphNode[]> {
-    return await this.page.evaluate(() => {
-      return window.app!.graph.nodes
-    })
   }
 
   async waitForGraphNodes(count: number): Promise<void> {
@@ -67,8 +109,8 @@ export class NodeOperationsHelper {
     return this.getNodeRefById(id)
   }
 
-  async getNodeRefById(id: NodeId): Promise<NodeReference> {
-    return new NodeReference(id, this.comfyPage)
+  async getNodeRefById(id: SerializedNodeId): Promise<NodeReference> {
+    return new NodeReference(toNodeId(id), this.comfyPage)
   }
 
   async getNodeRefsByType(
@@ -89,7 +131,7 @@ export class NodeOperationsHelper {
           },
           { type, includeSubgraph }
         )
-      ).map((id: NodeId) => this.getNodeRefById(id))
+      ).map((id: SerializedNodeId) => this.getNodeRefById(id))
     )
   }
 
@@ -101,7 +143,7 @@ export class NodeOperationsHelper {
             .app!.graph.nodes.filter((n: LGraphNode) => n.title === title)
             .map((n: LGraphNode) => n.id)
         }, title)
-      ).map((id: NodeId) => this.getNodeRefById(id))
+      ).map((id: SerializedNodeId) => this.getNodeRefById(id))
     )
   }
 
@@ -118,6 +160,27 @@ export class NodeOperationsHelper {
       await this.page.keyboard.up('Control')
       await this.comfyPage.nextFrame()
     }
+  }
+
+  async getSerializedGraph(): Promise<ComfyWorkflowJSON> {
+    return this.page.evaluate(
+      () => window.app!.graph.serialize() as ComfyWorkflowJSON
+    )
+  }
+
+  async loadGraph(data: ComfyWorkflowJSON): Promise<void> {
+    await this.page.evaluate(
+      (d) => window.app!.loadGraphData(d, true, true, null),
+      data
+    )
+  }
+
+  async repositionNodes(
+    positions: Record<string, [number, number]>
+  ): Promise<void> {
+    const data = await this.getSerializedGraph()
+    applyNodePositions(data, positions)
+    await this.loadGraph(data)
   }
 
   async resizeNode(
@@ -148,20 +211,48 @@ export class NodeOperationsHelper {
     }
   }
 
-  async convertAllNodesToGroupNode(groupNodeName: string): Promise<void> {
-    await this.comfyPage.canvas.press('Control+a')
-    const node = await this.getFirstNodeRef()
-    if (!node) {
-      throw new Error('No nodes found to convert')
+  /**
+   * Enlarges the node titled `title` by dragging its bottom-right Vue resize
+   * handle. The returned size is read from the graph model, not a DOM bounding
+   * box, so it stays comparable across zoom and side-panel layout changes.
+   */
+  async growNodeByDrag(
+    title: string,
+    delta: { x: number; y: number }
+  ): Promise<{ nodeRef: NodeReference; node: VueNodeFixture; size: Size }> {
+    const [nodeRef] = await this.getNodeRefsByTitle(title)
+    if (!nodeRef) throw new Error(`No node titled "${title}" on the canvas`)
+
+    // Saved pans can leave the node too low for a downward drag to stay onscreen.
+    await nodeRef.centerOnNode()
+
+    const node = await this.comfyPage.vueNodes.getFixtureByTitle(title)
+    const sizeBefore = await nodeRef.getSize()
+    await node.resizeFromCorner('SE', delta.x, delta.y)
+    await this.comfyPage.nextFrame()
+
+    const size = await nodeRef.getSize()
+    if (size.width <= sizeBefore.width || size.height <= sizeBefore.height) {
+      throw new Error(
+        `Resize drag did not enlarge "${title}": ${sizeBefore.width}x${sizeBefore.height} -> ${size.width}x${size.height}`
+      )
     }
-    await node.clickContextMenuOption('Convert to Group Node')
-    await this.fillPromptDialog(groupNodeName)
+
+    return { nodeRef, node, size }
   }
 
   async fillPromptDialog(value: string): Promise<void> {
     await this.promptDialogInput.fill(value)
     await this.page.keyboard.press('Enter')
     await this.promptDialogInput.waitFor({ state: 'hidden' })
+    await this.comfyPage.nextFrame()
+  }
+
+  async fillLegacyWidgetDialog(value: string): Promise<void> {
+    const dialogInput = this.page.locator('.graphdialog input[type="text"]')
+    await dialogInput.click()
+    await dialogInput.fill(value)
+    await dialogInput.press('Enter')
     await this.comfyPage.nextFrame()
   }
 
@@ -195,10 +286,16 @@ export class NodeOperationsHelper {
     await this.page.locator('#graph-canvas').click({
       position: DefaultGraphPositions.emptyLatentWidgetClick
     })
-    const dialogInput = this.page.locator('.graphdialog input[type="text"]')
-    await dialogInput.click()
-    await dialogInput.fill('128')
-    await dialogInput.press('Enter')
-    await this.comfyPage.nextFrame()
+    await this.fillLegacyWidgetDialog('128')
+  }
+}
+
+function applyNodePositions(
+  data: ComfyWorkflowJSON,
+  positions: Record<string, [number, number]>
+): void {
+  for (const node of data.nodes) {
+    const pos = positions[String(node.id)]
+    if (pos) node.pos = pos
   }
 }

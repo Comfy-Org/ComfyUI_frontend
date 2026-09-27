@@ -13,7 +13,6 @@ describe('useRegistrySearchGateway', () => {
   let consoleInfoSpy: ReturnType<typeof vi.spyOn>
 
   beforeEach(() => {
-    vi.clearAllMocks()
     consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     consoleInfoSpy = vi.spyOn(console, 'info').mockImplementation(() => {})
   })
@@ -21,7 +20,6 @@ describe('useRegistrySearchGateway', () => {
   afterEach(() => {
     consoleWarnSpy.mockRestore()
     consoleInfoSpy.mockRestore()
-    vi.useRealTimers()
   })
 
   describe('Provider initialization', () => {

@@ -1,4 +1,3 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
@@ -26,7 +25,6 @@ describe('useWorkflowThumbnail', () => {
   let workflowStore: ReturnType<typeof useWorkflowStore>
 
   beforeEach(() => {
-    setActivePinia(createPinia())
     workflowStore = useWorkflowStore()
 
     // Clear any existing thumbnails from previous tests BEFORE mocking
@@ -34,7 +32,6 @@ describe('useWorkflowThumbnail', () => {
     clearAllThumbnails()
 
     // Now set up mocks
-    vi.clearAllMocks()
 
     global.URL.createObjectURL = vi.fn(() => 'data:image/png;base64,test')
     global.URL.revokeObjectURL = vi.fn()
@@ -266,5 +263,29 @@ describe('useWorkflowThumbnail', () => {
     moveWorkflowThumbnail('test-key', 'test-key')
     expect(workflowThumbnails.value.size).toBe(1)
     expect(getThumbnail('test-key')).toBe('data:image/png;base64,test')
+  })
+
+  it('should return null when createGraphThumbnail throws', async () => {
+    vi.mocked(createGraphThumbnail).mockImplementation(() => {
+      throw new Error('Canvas not available')
+    })
+
+    const { createMinimapPreview } = useWorkflowThumbnail()
+    const result = await createMinimapPreview()
+
+    expect(result).toBeNull()
+  })
+
+  it('should not store thumbnail when createGraphThumbnail throws', async () => {
+    vi.mocked(createGraphThumbnail).mockImplementation(() => {
+      throw new Error('Canvas not available')
+    })
+
+    const { storeThumbnail, getThumbnail } = useWorkflowThumbnail()
+    const mockWorkflow = { key: 'error-workflow' } as ComfyWorkflow
+
+    await storeThumbnail(mockWorkflow)
+
+    expect(getThumbnail('error-workflow')).toBeUndefined()
   })
 })

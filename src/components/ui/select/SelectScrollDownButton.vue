@@ -3,7 +3,7 @@ import type { SelectScrollDownButtonProps } from 'reka-ui'
 import { SelectScrollDownButton } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
 
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { class: className, ...restProps } = defineProps<
   SelectScrollDownButtonProps & { class?: HTMLAttributes['class'] }

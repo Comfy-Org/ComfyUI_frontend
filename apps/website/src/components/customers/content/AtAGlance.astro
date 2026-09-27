@@ -1,0 +1,29 @@
+---
+interface Row {
+  label: string
+  value: string
+}
+
+interface Props {
+  rows: Row[]
+}
+
+const { rows } = Astro.props
+---
+
+<div
+  class="my-8 overflow-hidden rounded-2xl border border-white/10 bg-site-bg-soft"
+>
+  <dl class="divide-y divide-white/10">
+    {
+      rows.map((row) => (
+        <div class="flex flex-col gap-1 p-5 sm:flex-row sm:gap-6">
+          <dt class="text-primary-comfy-yellow shrink-0 text-xs font-bold tracking-widest uppercase sm:w-44">
+            {row.label}
+          </dt>
+          <dd class="text-sm/relaxed text-primary-comfy-canvas">{row.value}</dd>
+        </div>
+      ))
+    }
+  </dl>
+</div>

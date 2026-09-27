@@ -19,11 +19,21 @@ export const buttonVariants = cva({
         'bg-transparent text-muted-foreground hover:bg-secondary-background-hover',
       'destructive-textonly':
         'bg-transparent text-destructive-background hover:bg-destructive-background/10',
+      outline:
+        'border border-solid border-border-default bg-transparent text-base-foreground hover:bg-secondary-background-hover',
       link: 'bg-transparent text-muted-foreground hover:text-base-foreground',
       'overlay-white': 'bg-white text-gray-600 hover:bg-white/90',
       base: 'bg-base-background text-base-foreground hover:bg-secondary-background-hover',
-      gradient:
-        'border-transparent bg-(image:--subscription-button-gradient) text-white hover:opacity-90'
+      tertiary:
+        'bg-tertiary-background text-base-foreground hover:bg-tertiary-background-hover',
+      subscribe:
+        'border-transparent bg-credit text-charcoal-800 hover:opacity-80',
+      'brand-ghost':
+        'bg-transparency-white-t8 text-primary-warm-white hover:bg-transparency-white-t20 focus-visible:ring-2 focus-visible:ring-brand-yellow',
+      'brand-solid':
+        'bg-brand-yellow text-primary-comfy-ink hover:bg-brand-yellow/90 focus-visible:ring-2 focus-visible:ring-primary-warm-white',
+      'brand-ghost-accent':
+        'bg-transparency-white-t8 text-primary-warm-white hover:bg-brand-yellow hover:text-primary-comfy-ink focus-visible:ring-2 focus-visible:ring-brand-yellow'
     },
     size: {
       sm: 'h-6 rounded-sm px-2 py-1 text-xs',
@@ -32,6 +42,9 @@ export const buttonVariants = cva({
       'icon-sm': 'size-5 p-0',
       icon: 'size-8',
       'icon-lg': 'size-10',
+      brand:
+        'h-12 rounded-2xl px-5 font-formula text-sm font-semibold tracking-[0.7px] uppercase lg:h-13 xl:h-14 2xl:h-16',
+      'brand-icon': 'size-10 rounded-2xl xl:size-12',
       unset: ''
     }
   },
@@ -52,10 +65,15 @@ const variants = [
   'textonly',
   'muted-textonly',
   'destructive-textonly',
+  'outline',
   'link',
   'base',
+  'tertiary',
   'overlay-white',
-  'gradient'
+  'subscribe',
+  'brand-ghost',
+  'brand-solid',
+  'brand-ghost-accent'
 ] as const satisfies Array<ButtonVariants['variant']>
 const sizes = [
   'sm',
@@ -63,7 +81,9 @@ const sizes = [
   'lg',
   'icon-sm',
   'icon',
-  'icon-lg'
+  'icon-lg',
+  'brand',
+  'brand-icon'
 ] as const satisfies Array<ButtonVariants['size']>
 
 export const FOR_STORIES = { variants, sizes } as const

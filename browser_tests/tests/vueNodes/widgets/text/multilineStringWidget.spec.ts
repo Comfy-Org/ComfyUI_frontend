@@ -5,6 +5,10 @@ import {
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Vue Multiline String Widget', { tag: '@vue-nodes' }, () => {
+  test.afterEach(async ({ comfyPage }) => {
+    await comfyPage.canvasOps.resetView()
+  })
+
   const getFirstClipNode = (comfyPage: ComfyPage) =>
     comfyPage.vueNodes.getNodeByTitle('CLIP Text Encode (Prompt)').first()
 
@@ -54,4 +58,23 @@ test.describe('Vue Multiline String Widget', { tag: '@vue-nodes' }, () => {
     await textarea.click({ button: 'right' })
     await expect(vueContextMenu).toBeVisible()
   })
+
+  test(
+    'Middle-click drag on textarea should pan canvas',
+    { tag: ['@canvas', '@widget'] },
+    async ({ comfyPage, comfyMouse }) => {
+      const textarea = getFirstMultilineStringWidget(comfyPage)
+      const offsetBefore = await comfyPage.canvasOps.getOffset()
+
+      await comfyMouse.middleDragFromCenter(
+        textarea,
+        { x: 140, y: 90 },
+        { steps: 10 }
+      )
+
+      await expect
+        .poll(() => comfyPage.canvasOps.getOffset())
+        .not.toEqual(offsetBefore)
+    }
+  )
 })

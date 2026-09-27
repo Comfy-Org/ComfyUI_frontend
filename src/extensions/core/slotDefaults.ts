@@ -18,7 +18,6 @@ app.registerExtension({
   suggestionsNumber: null,
   init(this: SlotDefaultsExtension) {
     LiteGraph.search_filter_enabled = true
-    LiteGraph.middle_click_slot_add_default_node = true
     this.suggestionsNumber = app.ui.settings.addSetting({
       id: 'Comfy.NodeSuggestions.number',
       category: ['Comfy', 'Node Search Box', 'NodeSuggestions'],

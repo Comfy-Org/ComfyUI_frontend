@@ -31,8 +31,6 @@ describe('useAlgoliaSearchProvider', () => {
   let mockSearchClient: MockSearchClient
 
   beforeEach(() => {
-    vi.clearAllMocks()
-
     // Create mock search client
     mockSearchClient = {
       search: vi.fn()

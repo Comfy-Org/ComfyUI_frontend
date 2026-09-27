@@ -5,13 +5,13 @@ import type { Preview, StoryContext, StoryFn } from '@storybook/vue3-vite'
 import { createPinia } from 'pinia'
 import 'primeicons/primeicons.css'
 import PrimeVue from 'primevue/config'
-import ConfirmationService from 'primevue/confirmationservice'
 import ToastService from 'primevue/toastservice'
 import Tooltip from 'primevue/tooltip'
 
 import { i18n } from '@/i18n'
 import '@/lib/litegraph/public/css/litegraph.css'
 import '@/assets/css/style.css'
+import '@comfyorg/website/src/styles/global.css'
 
 const ComfyUIPreset = definePreset(Aura, {
   semantic: {
@@ -42,7 +42,6 @@ setup((app) => {
       }
     }
   })
-  app.use(ConfirmationService)
   app.use(ToastService)
 })
 

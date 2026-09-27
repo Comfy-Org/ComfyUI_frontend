@@ -4,6 +4,7 @@
     <div
       v-if="isHelpCenterVisible"
       class="help-center-popup"
+      data-testid="help-center-popup"
       :class="{
         'sidebar-left': sidebarLocation === 'left',
         'sidebar-right': sidebarLocation === 'right',
@@ -38,6 +39,7 @@
     <div
       v-if="isHelpCenterVisible"
       class="help-center-backdrop"
+      data-testid="help-center-backdrop"
       @click="closeHelpCenter"
     />
   </Teleport>

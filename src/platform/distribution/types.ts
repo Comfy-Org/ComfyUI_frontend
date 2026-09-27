@@ -3,15 +3,14 @@
  * multi-distribution builds (Desktop, Localhost, Cloud)
  */
 
-type Distribution = 'desktop' | 'localhost' | 'cloud'
+export type Distribution = 'desktop' | 'localhost' | 'cloud'
 
 declare global {
   const __DISTRIBUTION__: Distribution
   const __IS_NIGHTLY__: boolean
 }
 
-/** Current distribution - replaced at compile time */
-const DISTRIBUTION: Distribution = __DISTRIBUTION__
+export const DISTRIBUTION: Distribution = __DISTRIBUTION__
 
 export const isDesktop = DISTRIBUTION === 'desktop'
 export const isCloud = DISTRIBUTION === 'cloud'

@@ -41,7 +41,6 @@ vi.mock('@/stores/authStore', () => ({
 
 describe('UserCredit', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockBalance.value = {
       amount_micros: 100_000,
       effective_balance_micros: 100_000,

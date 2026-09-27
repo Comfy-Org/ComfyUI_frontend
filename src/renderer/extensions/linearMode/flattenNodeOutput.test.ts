@@ -1,5 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+
+vi.mock('@/platform/assets/composables/media/assetMappers')
 
 import { flattenNodeOutput } from '@/renderer/extensions/linearMode/flattenNodeOutput'
 import type { NodeExecutionOutput } from '@/schemas/apiSchema'
@@ -11,6 +13,11 @@ function makeOutput(
 }
 
 describe(flattenNodeOutput, () => {
+  it('returns empty array for nullish node output', () => {
+    expect(flattenNodeOutput(['1', null])).toEqual([])
+    expect(flattenNodeOutput(['1', undefined])).toEqual([])
+  })
+
   it('returns empty array for output with no known media types', () => {
     const result = flattenNodeOutput(['1', makeOutput({ unknown: 'hello' })])
     expect(result).toEqual([])

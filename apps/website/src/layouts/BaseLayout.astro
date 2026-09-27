@@ -2,67 +2,137 @@
 import { ClientRouter } from 'astro:transitions'
 import Analytics from '@vercel/analytics/astro'
 import '../styles/global.css'
-import type { Locale } from '../i18n/translations'
 import SiteFooter from '../components/common/SiteFooter.vue'
-import SiteNav from '../components/common/SiteNav.vue'
+import HeaderMain from '../components/common/HeaderMain/HeaderMain.vue'
+import AnnouncementBanner from '../templates/drops/AnnouncementBanner.vue'
+import { bannerConfig, getBannerData } from '../config/banner'
+import { isNoindexPathname } from '../config/indexing'
+import { hreflangAlternates } from '../lib/hreflang'
+import { markdownTwinPath } from '../lib/markdown-twin-path'
+import { isHrefActive } from '../composables/useCurrentPath'
+import {
+  BANNER_DISMISS_ATTR,
+  BANNER_STORAGE_KEY,
+  createBannerVersion,
+  evaluateBannerVisibility
+} from '../utils/banner'
+import { fetchGitHubStars, formatStarCount } from '../utils/github'
+import { buildPageGraph, pageContext } from '../utils/jsonLd'
+import type { Crumb, JsonLdNode, WebPageType } from '../utils/jsonLd'
+import JsonLdGraph from '../components/common/JsonLdGraph.astro'
 
 interface Props {
   title: string
   description?: string
+  keywords?: string[]
   ogImage?: string
   noindex?: boolean
+  pageType?: WebPageType
+  breadcrumbs?: Crumb[]
+  mainEntityId?: string
+  extraJsonLd?: (JsonLdNode | null | undefined)[]
 }
 
 const {
   title,
   description = 'Comfy is the AI creation engine for visual professionals who demand control.',
-  ogImage = '/og-default.png',
+  keywords,
+  ogImage = 'https://media.comfy.org/website/comfy.webp',
   noindex = false,
+  pageType,
+  breadcrumbs,
+  mainEntityId,
+  extraJsonLd,
 } = Astro.props
 
-const siteBase = Astro.site ?? 'https://comfy.org'
-const canonicalURL = new URL(Astro.url.pathname, siteBase)
-const ogImageURL = new URL(ogImage, siteBase)
-const rawLocale = Astro.currentLocale ?? 'en'
-const locale: Locale = rawLocale === 'zh-CN' ? 'zh-CN' : 'en'
+const keywordsContent = keywords && keywords.length > 0 ? keywords.join(', ') : undefined
+
+const { siteUrl, locale, url } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
+const canonicalURL = new URL(url)
+const shouldNoindex = noindex || isNoindexPathname(Astro.url.pathname)
+const alternates = shouldNoindex
+  ? []
+  : hreflangAlternates(canonicalURL.pathname, canonicalURL.origin)
+const ogImageURL = new URL(ogImage, Astro.site ?? 'https://comfy.org')
+const rawStars = await fetchGitHubStars('Comfy-Org', 'ComfyUI')
+const githubStars = rawStars ? formatStarCount(rawStars) : ''
+
+// Announcement banner — build-time visibility gate + content-hash version key.
+// A promo never advertises the page you are already on, so the banner is
+// suppressed when its CTA points at the current path.
+const bannerData = getBannerData(bannerConfig, locale)
+const bannerVisible =
+  evaluateBannerVisibility(bannerConfig, {
+    currentLocale: locale,
+    currentSection: 'sitewide',
+    now: new Date(),
+  }) && !isHrefActive(bannerData.link?.href ?? '', Astro.url.pathname)
+const bannerVersion = createBannerVersion(bannerData, locale)
+
 const gtmId = 'GTM-NP9JM6K7'
 const gtmEnabled = import.meta.env.PROD
 
-const organizationJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'Organization',
-  name: 'Comfy Org',
-  url: 'https://comfy.org',
-  logo: 'https://comfy.org/icons/logomark.svg',
-  sameAs: [
-    'https://github.com/comfyanonymous/ComfyUI',
-    'https://discord.gg/comfyorg',
-    'https://x.com/comaboratory',
-    'https://reddit.com/r/comfyui',
-    'https://linkedin.com/company/comfyorg',
-    'https://instagram.com/comfyorg',
-  ],
-}
-
-const websiteJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'WebSite',
-  name: 'Comfy',
-  url: 'https://comfy.org',
-}
+const structuredData = shouldNoindex
+  ? undefined
+  : buildPageGraph(
+      { siteUrl, locale },
+      {
+        url,
+        name: title,
+        description,
+        imageUrl: ogImageURL.href,
+        type: pageType,
+        crumbs: breadcrumbs,
+        mainEntityId,
+      },
+      ...(extraJsonLd ?? []),
+    )
 ---
 
 <!doctype html>
+{
+  /* <html> must stay overflow: visible — body's overflow (incl. reka-ui's
+     dialog scroll lock) only propagates to the viewport when the root is
+     visible. The horizontal clip lives on <body>. */
+}
 <html lang={locale}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
-    {noindex && <meta name="robots" content="noindex, nofollow" />}
+    {keywordsContent && <meta name="keywords" content={keywordsContent} />}
+    {shouldNoindex && <meta name="robots" content="noindex, nofollow" />}
     <title>{title}</title>
 
-    <link rel="icon" href="/icons/logomark.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="shortcut icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="theme-color" content="#211927" />
     <link rel="canonical" href={canonicalURL.href} />
+    {
+      !shouldNoindex && (
+        <link
+          rel="alternate"
+          type="text/markdown"
+          href={markdownTwinPath(canonicalURL.pathname)}
+        />
+      )
+    }
+    {
+      alternates.map((alternate) => (
+        <link
+          rel="alternate"
+          hreflang={alternate.hreflang}
+          href={alternate.href}
+        />
+      ))
+    }
     <link rel="preconnect" href="https://www.googletagmanager.com" />
     <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
 
@@ -85,8 +155,8 @@ const websiteJsonLd = {
     <meta name="twitter:image" content={ogImageURL.href} />
 
     <!-- Structured Data -->
-    <script is:inline type="application/ld+json" set:html={JSON.stringify(organizationJsonLd)} />
-    <script is:inline type="application/ld+json" set:html={JSON.stringify(websiteJsonLd)} />
+    {structuredData && <JsonLdGraph graph={structuredData} />}
+    <slot name="head" />
 
     <!-- Google Tag Manager -->
     {gtmEnabled && (
@@ -105,6 +175,37 @@ const websiteJsonLd = {
     )}
 
     <ClientRouter />
+
+    <!-- Chrome initializes a video's muted state from the `muted` attribute
+         only during document parsing, not for the DOMParser-built pages the
+         ClientRouter swaps in — re-assert it before paint or autoplaying
+         videos come back with sound. -->
+    <script>
+      document.addEventListener('astro:after-swap', () => {
+        document.querySelectorAll('video').forEach((video) => {
+          if (video.hasAttribute('muted')) video.muted = true
+        })
+      })
+    </script>
+
+    <!-- Hide an already-dismissed announcement banner before first paint (no flash/shift). -->
+    {bannerVisible && (
+      <script
+        is:inline
+        define:vars={{
+          bannerVersion,
+          storageKey: BANNER_STORAGE_KEY,
+          dismissAttr: BANNER_DISMISS_ATTR
+        }}
+      >
+        try {
+          const dismissed = JSON.parse(localStorage.getItem(storageKey) || '{}')
+          if (dismissed[bannerVersion]) {
+            document.documentElement.setAttribute(dismissAttr, '')
+          }
+        } catch (e) {}
+      </script>
+    )}
   </head>
   <body class="bg-primary-comfy-ink text-white font-formula antialiased overflow-x-clip">
     {gtmEnabled && (
@@ -118,8 +219,21 @@ const websiteJsonLd = {
       </noscript>
     )}
 
-    <SiteNav locale={locale} client:load />
-    <main class="mt-20 lg:mt-32">
+    {bannerVisible && (
+      <AnnouncementBanner
+        data={bannerData}
+        version={bannerVersion}
+        locale={locale}
+        client:load
+      />
+    )}
+    <HeaderMain locale={locale} github-stars={githubStars} client:load />
+    <!-- Horizontal clip lives here (not on <html>, which must stay overflow:
+         visible for reka-ui's dialog scroll lock). <body>'s clip does not
+         contain overflow once <html> is visible, because the root propagates
+         body overflow to the viewport; clipping <main> keeps the page from
+         exceeding the viewport width. -->
+    <main class="overflow-x-clip">
       <slot />
     </main>
     <SiteFooter locale={locale} client:load />
@@ -127,8 +241,30 @@ const websiteJsonLd = {
     <Analytics />
 
     <script>
-      import { initSmoothScroll } from '../scripts/smoothScroll'
+      import { initSmoothScroll, cancelScroll } from '../scripts/smoothScroll'
+      import { ScrollTrigger } from '../scripts/gsapSetup'
+      import { initPostHog, capturePageview } from '../scripts/posthog'
+      import { reifyMediaElements } from '../scripts/reifyMediaElements'
+
       initSmoothScroll()
+
+      if (import.meta.env.PROD) {
+        initPostHog()
+        document.addEventListener('astro:page-load', capturePageview)
+      }
+
+      document.addEventListener('astro:page-load', () => {
+        ScrollTrigger.refresh()
+      })
+
+      document.addEventListener('astro:before-preparation', () => {
+        cancelScroll()
+      })
+
+      // Synchronous, so it runs before island hydration touches the DOM.
+      document.addEventListener('astro:after-swap', () => {
+        reifyMediaElements(document.body)
+      })
     </script>
   </body>
 </html>

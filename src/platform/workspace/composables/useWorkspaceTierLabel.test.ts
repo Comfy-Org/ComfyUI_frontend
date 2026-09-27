@@ -12,7 +12,8 @@ vi.mock('vue-i18n', () => ({
         'subscription.tiers.standard.name': 'Standard',
         'subscription.tiers.creator.name': 'Creator',
         'subscription.tiers.pro.name': 'Pro',
-        'subscription.tiers.founder.name': "Founder's Edition"
+        'subscription.tiers.founder.name': "Founder's Edition",
+        'subscription.tiers.enterprise.name': 'Enterprise'
       }
       return tierNames[key] ?? key
     })
@@ -103,10 +104,28 @@ describe('useWorkspaceTierLabel', () => {
       expect(result).toBeNull()
     })
 
-    it('returns null when plan slug does not match any known tier', () => {
+    it('labels lowercase enterprise plan slugs', () => {
+      const result = getTierLabel({
+        isSubscribed: true,
+        subscriptionPlan: 'enterprise_monthly',
+        subscriptionTier: null
+      })
+      expect(result).toBe('Enterprise')
+    })
+
+    it('labels enterprise plan slugs', () => {
       const result = getTierLabel({
         isSubscribed: true,
         subscriptionPlan: 'ENTERPRISE_CUSTOM',
+        subscriptionTier: null
+      })
+      expect(result).toBe('Enterprise')
+    })
+
+    it('returns null when plan slug does not match any known tier', () => {
+      const result = getTierLabel({
+        isSubscribed: true,
+        subscriptionPlan: 'ULTRA_CUSTOM',
         subscriptionTier: null
       })
       expect(result).toBeNull()

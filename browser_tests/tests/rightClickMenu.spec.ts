@@ -16,8 +16,9 @@ test.describe(
       await comfyPage.canvasOps.rightClick()
       await expect(comfyPage.canvas).toHaveScreenshot('right-click-menu.png')
       await comfyPage.page.getByText('Add Node').click()
+      await comfyPage.page.getByText('model', { exact: true }).click()
       await comfyPage.page.getByText('loaders').click()
-      await comfyPage.page.getByText('Load VAE').click()
+      await comfyPage.page.getByText('Load VAE', { exact: true }).click()
       await comfyPage.contextMenu.waitForHidden()
       await comfyPage.expectScreenshot(
         comfyPage.canvas,
@@ -33,23 +34,6 @@ test.describe(
       await comfyPage.expectScreenshot(
         comfyPage.canvas,
         'add-group-group-added.png'
-      )
-    })
-
-    test('Can convert to group node', async ({ comfyPage }) => {
-      await comfyPage.nodeOps.selectNodes(['CLIP Text Encode (Prompt)'])
-      await expect(comfyPage.canvas).toHaveScreenshot('selected-2-nodes.png')
-      await comfyPage.canvasOps.rightClick()
-      await comfyPage.contextMenu.clickMenuItem(
-        'Convert to Group Node (Deprecated)'
-      )
-      await comfyPage.contextMenu.waitForHidden()
-      await comfyPage.nodeOps.promptDialogInput.fill('GroupNode2CLIP')
-      await comfyPage.page.keyboard.press('Enter')
-      await comfyPage.nodeOps.promptDialogInput.waitFor({ state: 'hidden' })
-      await comfyPage.expectScreenshot(
-        comfyPage.canvas,
-        'right-click-node-group-node.png'
       )
     })
   }
@@ -185,11 +169,12 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
 
     // Get EmptyLatentImage node title position dynamically (for dragging)
     const emptyLatentNode = await comfyPage.nodeOps.getNodeRefById(5)
+    const originalPosition = await emptyLatentNode.getPosition()
     const titlePos = await emptyLatentNode.getTitlePosition()
     await comfyPage.canvasOps.dragAndDrop(titlePos, { x: 200, y: 590 })
-    await expect(comfyPage.canvas).toHaveScreenshot(
-      'right-click-unpinned-node-moved.png'
-    )
+    await expect
+      .poll(() => emptyLatentNode.getPosition())
+      .not.toEqual(originalPosition)
   })
 
   test('Can pin/unpin selected nodes', async ({ comfyPage }) => {

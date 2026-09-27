@@ -17,8 +17,6 @@ describe('useMinimapRenderer', () => {
   let mockGraph: LGraph
 
   beforeEach(() => {
-    vi.clearAllMocks()
-
     mockContext = {
       clearRect: vi.fn(),
       save: vi.fn(),

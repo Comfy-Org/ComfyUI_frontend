@@ -1,0 +1,30 @@
+---
+import { cn } from '@comfyorg/tailwind-utils'
+
+interface Props {
+  src: string
+  alt: string
+  caption?: string
+  width?: 'full' | 'compact'
+}
+
+const { src, alt, caption, width = 'full' } = Astro.props
+const hasCaptionSlot = Astro.slots.has('default')
+---
+
+<figure class={cn('my-8', width === 'compact' && 'max-w-md')}>
+  <img
+    src={src}
+    alt={alt}
+    loading="lazy"
+    decoding="async"
+    class="w-full rounded-2xl object-cover"
+  />
+  {
+    (hasCaptionSlot || caption) && (
+      <figcaption class="mt-3 text-xs text-primary-comfy-canvas">
+        {hasCaptionSlot ? <slot /> : caption}
+      </figcaption>
+    )
+  }
+</figure>

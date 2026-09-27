@@ -126,7 +126,6 @@ function setOwnedWorkspaces() {
 
 describe('TeamWorkspacesDialogContent', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockSharedWorkspaces.value = []
   })
 

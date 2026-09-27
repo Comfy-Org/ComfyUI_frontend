@@ -1,3 +1,7 @@
+import type { UploadImageResponse } from '@comfyorg/ingest-types'
+
+import { writeImageWidgetValue } from '@/composables/maskeditor/imageWidgetAdapter'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useMaskEditorDataStore } from '@/stores/maskEditorDataStore'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -6,11 +10,10 @@ import type {
   EditorOutputLayer,
   ImageRef
 } from '@/stores/maskEditorDataStore'
-import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { encodeRgbaAsPng } from '@/utils/pngEncodeUtil'
+import { isResultItemType } from '@/utils/typeGuardUtil'
 
 // Private layer filename functions
 interface ImageLayerFilenames {
@@ -37,7 +40,7 @@ export function useMaskEditorSaver() {
   const nodeOutputStore = useNodeOutputStore()
 
   const save = async (): Promise<void> => {
-    const sourceNode = dataStore.sourceNode as LGraphNode
+    const sourceNode = dataStore.sourceNode
     if (!sourceNode || !dataStore.inputData) {
       throw new Error('No source node or input data')
     }
@@ -92,6 +95,39 @@ export function useMaskEditorSaver() {
     }
   }
 
+  /**
+   * Writes the inverted mask into the alpha channel and returns the pixel
+   * buffer whose RGB was captured while the canvas was still fully opaque.
+   * Encode that buffer (not the canvas): once transparent pixels are written
+   * to the premultiplied canvas bitmap their RGB is lost, so blobs derived
+   * from the canvas serialize black under the mask.
+   */
+  function applyMaskAsAlpha(
+    ctx: CanvasRenderingContext2D,
+    maskCanvas: HTMLCanvasElement
+  ): ImageData {
+    const maskCtx = maskCanvas.getContext('2d')!
+    const maskData = maskCtx.getImageData(
+      0,
+      0,
+      maskCanvas.width,
+      maskCanvas.height
+    )
+
+    const imageData = ctx.getImageData(
+      0,
+      0,
+      ctx.canvas.width,
+      ctx.canvas.height
+    )
+    for (let i = 0; i < imageData.data.length; i += 4) {
+      imageData.data[i + 3] = 255 - maskData.data[i + 3]
+    }
+    ctx.putImageData(imageData, 0, 0)
+
+    return imageData
+  }
+
   async function createMaskedImage(
     imgCanvas: HTMLCanvasElement,
     maskCanvas: HTMLCanvasElement,
@@ -104,29 +140,9 @@ export function useMaskEditorSaver() {
 
     ctx.drawImage(imgCanvas, 0, 0)
 
-    const maskCtx = maskCanvas.getContext('2d')!
-    const maskData = maskCtx.getImageData(
-      0,
-      0,
-      maskCanvas.width,
-      maskCanvas.height
-    )
+    const imageData = applyMaskAsAlpha(ctx, maskCanvas)
 
-    const refinedMaskData = new Uint8ClampedArray(maskData.data.length)
-    for (let i = 0; i < maskData.data.length; i += 4) {
-      refinedMaskData[i] = 0
-      refinedMaskData[i + 1] = 0
-      refinedMaskData[i + 2] = 0
-      refinedMaskData[i + 3] = 255 - maskData.data[i + 3]
-    }
-
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
-    for (let i = 0; i < imageData.data.length; i += 4) {
-      imageData.data[i + 3] = refinedMaskData[i + 3]
-    }
-    ctx.putImageData(imageData, 0, 0)
-
-    const blob = await canvasToBlob(canvas)
+    const blob = await encodeRgbaAsPng(imageData)
     const ref = createFileRef(filename)
 
     return { canvas, blob, ref }
@@ -180,47 +196,20 @@ export function useMaskEditorSaver() {
     ctx.globalCompositeOperation = 'source-over'
     ctx.drawImage(paintCanvas, 0, 0)
 
-    const maskCtx = maskCanvas.getContext('2d')!
-    const maskData = maskCtx.getImageData(
-      0,
-      0,
-      maskCanvas.width,
-      maskCanvas.height
-    )
+    const imageData = applyMaskAsAlpha(ctx, maskCanvas)
 
-    const refinedMaskData = new Uint8ClampedArray(maskData.data.length)
-    for (let i = 0; i < maskData.data.length; i += 4) {
-      refinedMaskData[i] = 0
-      refinedMaskData[i + 1] = 0
-      refinedMaskData[i + 2] = 0
-      refinedMaskData[i + 3] = 255 - maskData.data[i + 3]
-    }
-
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
-    for (let i = 0; i < imageData.data.length; i += 4) {
-      imageData.data[i + 3] = refinedMaskData[i + 3]
-    }
-    ctx.putImageData(imageData, 0, 0)
-
-    const blob = await canvasToBlob(canvas)
+    const blob = await encodeRgbaAsPng(imageData)
     const ref = createFileRef(filename)
 
     return { canvas, blob, ref }
   }
 
   async function uploadAllLayers(outputData: EditorOutputData): Promise<void> {
-    const sourceRef = dataStore.inputData!.sourceRef
-
-    const actualMaskedRef = await uploadMask(outputData.maskedImage, sourceRef)
-    const actualPaintRef = await uploadImage(outputData.paintLayer, sourceRef)
-    const actualPaintedRef = await uploadImage(
-      outputData.paintedImage,
-      sourceRef
-    )
-
-    const actualPaintedMaskedRef = await uploadMask(
-      outputData.paintedMaskedImage,
-      actualPaintedRef
+    const actualMaskedRef = await uploadLayer(outputData.maskedImage)
+    const actualPaintRef = await uploadLayer(outputData.paintLayer)
+    const actualPaintedRef = await uploadLayer(outputData.paintedImage)
+    const actualPaintedMaskedRef = await uploadLayer(
+      outputData.paintedMaskedImage
     )
 
     outputData.maskedImage.ref = actualMaskedRef
@@ -229,50 +218,10 @@ export function useMaskEditorSaver() {
     outputData.paintedMaskedImage.ref = actualPaintedMaskedRef
   }
 
-  async function uploadMask(
-    layer: EditorOutputLayer,
-    originalRef: ImageRef
-  ): Promise<ImageRef> {
+  async function uploadLayer(layer: EditorOutputLayer): Promise<ImageRef> {
     const formData = new FormData()
     formData.append('image', layer.blob, layer.ref.filename)
-    formData.append('original_ref', JSON.stringify(originalRef))
     formData.append('type', 'input')
-    formData.append('subfolder', 'clipspace')
-
-    const response = await api.fetchApi('/upload/mask', {
-      method: 'POST',
-      body: formData
-    })
-
-    if (!response.ok) {
-      throw new Error(`Failed to upload mask: ${layer.ref.filename}`)
-    }
-
-    try {
-      const data = await response.json()
-      if (data?.name) {
-        return {
-          filename: data.name,
-          subfolder: data.subfolder || layer.ref.subfolder,
-          type: data.type || layer.ref.type
-        }
-      }
-    } catch (error) {
-      console.warn('[MaskEditorSaver] Failed to parse upload response:', error)
-    }
-
-    return layer.ref
-  }
-
-  async function uploadImage(
-    layer: EditorOutputLayer,
-    originalRef: ImageRef
-  ): Promise<ImageRef> {
-    const formData = new FormData()
-    formData.append('image', layer.blob, layer.ref.filename)
-    formData.append('original_ref', JSON.stringify(originalRef))
-    formData.append('type', 'input')
-    formData.append('subfolder', 'clipspace')
 
     const response = await api.fetchApi('/upload/image', {
       method: 'POST',
@@ -280,23 +229,35 @@ export function useMaskEditorSaver() {
     })
 
     if (!response.ok) {
-      throw new Error(`Failed to upload image: ${layer.ref.filename}`)
+      const body = await response.text().catch(() => '')
+      throw new Error(
+        `Failed to upload ${layer.ref.filename} (${response.status}${body ? `: ${body}` : ''})`
+      )
     }
 
+    let data: UploadImageResponse
     try {
-      const data = await response.json()
-      if (data?.name) {
-        return {
-          filename: data.name,
-          subfolder: data.subfolder || layer.ref.subfolder,
-          type: data.type || layer.ref.type
-        }
-      }
+      data = await response.json()
     } catch (error) {
-      console.warn('[MaskEditorSaver] Failed to parse upload response:', error)
+      throw new Error(
+        `Invalid upload response for ${layer.ref.filename}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+        { cause: error }
+      )
     }
 
-    return layer.ref
+    if (!data?.name) {
+      throw new Error(
+        `Upload response missing 'name' for ${layer.ref.filename}`
+      )
+    }
+
+    return {
+      filename: data.name,
+      subfolder: data.subfolder || '',
+      type: data.type || 'input'
+    }
   }
 
   async function updateNodePreview(
@@ -316,46 +277,23 @@ export function useMaskEditorSaver() {
     node: LGraphNode,
     outputData: EditorOutputData
   ): void {
+    if (!node.graph) return
+
     const mainRef = outputData.paintedMaskedImage.ref
 
-    node.images = [mainRef]
-
-    const imageWidget = node.widgets?.find((w) => w.name === 'image')
-    if (imageWidget) {
-      // Widget value format differs between Cloud and OSS:
-      // - Cloud: JUST the filename (subfolder handled by backend)
-      // - OSS: subfolder/filename (traditional format)
-      let widgetValue: string
-      if (isCloud) {
-        widgetValue =
-          mainRef.filename + (mainRef.type ? ` [${mainRef.type}]` : '')
-      } else {
-        widgetValue =
-          (mainRef.subfolder ? mainRef.subfolder + '/' : '') +
-          mainRef.filename +
-          (mainRef.type ? ` [${mainRef.type}]` : '')
-      }
-
-      imageWidget.value = widgetValue
-
-      if (node.properties) {
-        node.properties['image'] = widgetValue
-      }
-
-      if (node.widgets_values && node.widgets) {
-        const widgetIndex = node.widgets.indexOf(imageWidget)
-        if (widgetIndex >= 0) {
-          node.widgets_values[widgetIndex] = widgetValue
-        }
-      }
-    }
+    writeImageWidgetValue(
+      node,
+      mainRef.filename + (mainRef.type ? ` [${mainRef.type}]` : '')
+    )
 
     node.imgs = undefined
-    const annotatedPath = createAnnotatedPath(mainRef.filename, {
-      subfolder: mainRef.subfolder,
-      rootFolder: mainRef.type
-    })
-    nodeOutputStore.setNodeOutputs(node, annotatedPath, { folder: 'input' })
+    nodeOutputStore.replaceNodeOutputImages(node, [
+      {
+        filename: mainRef.filename,
+        subfolder: mainRef.subfolder,
+        type: isResultItemType(mainRef.type) ? mainRef.type : 'input'
+      }
+    ])
     node.graph?.setDirtyCanvas(true)
   }
 

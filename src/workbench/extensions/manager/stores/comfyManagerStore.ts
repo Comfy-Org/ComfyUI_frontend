@@ -12,7 +12,10 @@ import { app } from '@/scripts/app'
 import { normalizePackKeys } from '@/utils/packUtils'
 import { useManagerQueue } from '@/workbench/extensions/manager/composables/useManagerQueue'
 import { useComfyManagerService } from '@/workbench/extensions/manager/services/comfyManagerService'
-import type { TaskLog } from '@/workbench/extensions/manager/types/comfyManagerTypes'
+import type {
+  NodePackId,
+  TaskLog
+} from '@/workbench/extensions/manager/types/comfyManagerTypes'
 import type { components } from '@/workbench/extensions/manager/types/generatedManagerTypes'
 
 type InstallPackParams = components['schemas']['InstallPackParams']
@@ -33,10 +36,10 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
   const managerService = useComfyManagerService()
 
   const installedPacks = ref<InstalledPacksResponse>({})
-  const enabledPacksIds = ref<Set<string>>(new Set())
-  const disabledPacksIds = ref<Set<string>>(new Set())
-  const installedPacksIds = ref<Set<string>>(new Set())
-  const installingPacksIds = ref<Set<string>>(new Set())
+  const enabledPacksIds = ref<Set<NodePackId>>(new Set())
+  const disabledPacksIds = ref<Set<NodePackId>>(new Set())
+  const installedPacksIds = ref<Set<NodePackId>>(new Set())
+  const installingPacksIds = ref<Set<NodePackId>>(new Set())
   const isStale = ref(true)
   const taskLogs = ref<TaskLog[]>([])
   const succeededTasksLogs = ref<TaskLog[]>([])
@@ -53,7 +56,7 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
   })
 
   // Track task ID to pack ID mapping for proper state cleanup
-  const taskIdToPackId = ref(new Map<string, string>())
+  const taskIdToPackId = ref(new Map<string, NodePackId>())
 
   const managerQueue = useManagerQueue(taskHistory, taskQueue, installedPacks)
 
@@ -114,15 +117,15 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
 
   const getPackId = (pack: ManagerPackInstalled) => pack.cnr_id || pack.aux_id
 
-  const isInstalledPackId = (packName: string | undefined): boolean =>
+  const isInstalledPackId = (packName: NodePackId | undefined): boolean =>
     !!packName && installedPacksIds.value.has(packName)
 
-  const isEnabledPackId = (packName: string | undefined): boolean =>
+  const isEnabledPackId = (packName: NodePackId | undefined): boolean =>
     !!packName &&
     isInstalledPackId(packName) &&
     enabledPacksIds.value.has(packName)
 
-  const isInstallingPackId = (packName: string | undefined): boolean =>
+  const isInstallingPackId = (packName: NodePackId | undefined): boolean =>
     !!packName && installingPacksIds.value.has(packName)
 
   const packsToIdSet = (packs: ManagerPackInstalled[]) =>
@@ -130,7 +133,7 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
       const id = pack.cnr_id || pack.aux_id
       if (id) acc.add(id)
       return acc
-    }, new Set<string>())
+    }, new Set<NodePackId>())
 
   /**
    * A pack is disabled if there is a disabled entry and no corresponding
@@ -151,8 +154,8 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
    */
   const updateDisabledIds = (packs: ManagerPackInstalled[]) => {
     // Use temporary variables to avoid triggering reactivity
-    const enabledIds = new Set<string>()
-    const disabledIds = new Set<string>()
+    const enabledIds = new Set<NodePackId>()
+    const disabledIds = new Set<NodePackId>()
 
     for (const pack of packs) {
       const id = getPackId(pack)
@@ -326,7 +329,7 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
     await enqueueTaskWithLogs(task, t('g.enabling', { id: params.id }))
   }
 
-  const getInstalledPackVersion = (packId: string) => {
+  const getInstalledPackVersion = (packId: NodePackId) => {
     const pack = installedPacks.value[packId]
     return pack?.ver
   }

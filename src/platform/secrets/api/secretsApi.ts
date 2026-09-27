@@ -1,21 +1,19 @@
+import type {
+  SecretListResponse,
+  SecretProvidersResponse
+} from '@comfyorg/ingest-types'
+
+import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 import { api } from '@/scripts/api'
 
 import type {
   SecretCreateRequest,
   SecretErrorCode,
   SecretMetadata,
+  SecretProviderInfo,
   SecretUpdateRequest
 } from '../types'
 import { SECRET_ERROR_CODES } from '../types'
-
-interface ListSecretsResponse {
-  data: SecretMetadata[]
-}
-
-interface ErrorResponse {
-  message?: string
-  code?: string
-}
 
 export class SecretsApiError extends Error {
   constructor(
@@ -30,30 +28,27 @@ export class SecretsApiError extends Error {
 
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
-    let errorData: ErrorResponse = {}
-    try {
-      errorData = await response.json()
-    } catch {
-      // Response body is not JSON
-    }
+    const errorData = await parseErrorResponse(response)
     const code = SECRET_ERROR_CODES.includes(
       errorData.code as (typeof SECRET_ERROR_CODES)[number]
     )
       ? (errorData.code as SecretErrorCode)
       : undefined
-    throw new SecretsApiError(
-      errorData.message ?? response.statusText,
-      response.status,
-      code
-    )
+    throw new SecretsApiError(errorData.message, response.status, code)
   }
   return response.json()
 }
 
 export async function listSecrets(): Promise<SecretMetadata[]> {
   const response = await api.fetchApi('/secrets')
-  const data = await handleResponse<ListSecretsResponse>(response)
+  const data = await handleResponse<SecretListResponse>(response)
   return data.data
+}
+
+export async function listSecretProviders(): Promise<SecretProviderInfo[]> {
+  const response = await api.fetchApi('/secrets/providers')
+  const data = await handleResponse<SecretProvidersResponse>(response)
+  return data.data ?? []
 }
 
 export async function createSecret(

@@ -41,7 +41,7 @@ test.describe('Errors tab - Execution errors', { tag: '@ui' }, () => {
     ).toBeVisible()
   })
 
-  test('Should show error message in runtime error panel', async ({
+  test('Should show runtime error log in the execution error group', async ({
     comfyPage
   }) => {
     await openExecutionErrorTab(comfyPage)
@@ -50,6 +50,6 @@ test.describe('Errors tab - Execution errors', { tag: '@ui' }, () => {
       TestIds.dialogs.runtimeErrorPanel
     )
     await expect(runtimePanel).toBeVisible()
-    await expect(runtimePanel).toContainText(/\S/)
+    await expect(runtimePanel).toContainText('Error log')
   })
 })

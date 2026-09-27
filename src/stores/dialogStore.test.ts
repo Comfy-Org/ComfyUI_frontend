@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { defineComponent } from 'vue'
 
 import { useDialogStore } from '@/stores/dialogStore'
@@ -10,11 +8,18 @@ const MockComponent = defineComponent({
   template: '<div>Mock</div>'
 })
 
-describe('dialogStore', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
+const MockContentPropsComponent = defineComponent({
+  name: 'MockContentPropsComponent',
+  props: {
+    openingAction: {
+      type: String,
+      default: null
+    }
+  },
+  template: '<div>Mock</div>'
+})
 
+describe('dialogStore', () => {
   describe('priority system', () => {
     it('should create dialogs in correct priority order', () => {
       const store = useDialogStore()
@@ -171,6 +176,31 @@ describe('dialogStore', () => {
       expect(store.dialogStack).toHaveLength(1)
       expect(store.dialogStack[0].key).toBe('reusable-dialog')
       expect(store.dialogStack[0].title).toBe('Original Title')
+    })
+
+    it('should update existing dialog props by key', () => {
+      const store = useDialogStore()
+
+      store.showDialog({
+        key: 'updatable-dialog',
+        component: MockContentPropsComponent,
+        props: { openingAction: null },
+        dialogComponentProps: { dismissableMask: true }
+      })
+
+      const updated = store.updateDialog({
+        key: 'updatable-dialog',
+        contentProps: { openingAction: 'copy-and-open' },
+        dialogComponentProps: { dismissableMask: false }
+      })
+
+      expect(updated).toBe(true)
+      expect(store.dialogStack[0].contentProps).toMatchObject({
+        openingAction: 'copy-and-open'
+      })
+      expect(store.dialogStack[0].dialogComponentProps.dismissableMask).toBe(
+        false
+      )
     })
   })
 

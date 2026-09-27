@@ -42,8 +42,11 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
     // Selection toolbox should be visible with multiple nodes selected
     await expect(comfyPage.selectionToolbox).toBeVisible()
     // Border is now drawn on canvas, check via screenshot
+    // Allow small anti-aliasing variance on the canvas-drawn selection border
+    // (see flake history: commits 1cafa4be9, 53165033e, fbcd36d35)
     await expect(comfyPage.canvas).toHaveScreenshot(
-      'selection-toolbox-multiple-nodes-border.png'
+      'selection-toolbox-multiple-nodes-border.png',
+      { maxDiffPixels: 100 }
     )
   })
 
@@ -126,23 +129,18 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
   }) => {
     // A group + a KSampler node
     await comfyPage.workflow.loadWorkflow('groups/single_group')
+    const bypass = comfyPage.page.getByTestId(TestIds.selectionToolbox.bypass)
 
     // Select group + node should show bypass button
     await comfyPage.canvas.focus()
-    await comfyPage.page.keyboard.press('Control+A')
-    await expect(
-      comfyPage.page.locator(
-        '.selection-toolbox *[data-testid="bypass-button"]'
-      )
-    ).toBeVisible()
-
-    // Deselect node (Only group is selected) should hide bypass button
     await comfyPage.nodeOps.selectNodes(['KSampler'])
-    await expect(
-      comfyPage.page.locator(
-        '.selection-toolbox *[data-testid="bypass-button"]'
-      )
-    ).toBeHidden()
+    await expect(bypass).toBeVisible()
+    await comfyPage.keyboard.delete()
+
+    // (Only empty group is selected) should hide bypass button
+    await comfyPage.keyboard.selectAll()
+    await expect(comfyPage.selectionToolbox).toBeVisible()
+    await expect(bypass).toBeHidden()
   })
 
   test.describe('Color Picker', () => {

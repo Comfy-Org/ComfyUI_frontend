@@ -1,3 +1,4 @@
+import type { UploadImageResponse } from '@comfyorg/ingest-types'
 import type { Ref } from 'vue'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useElementSize } from '@vueuse/core'
@@ -12,11 +13,11 @@ import { hexToRgb } from '@/utils/colorUtil'
 import type { Point } from '@/extensions/core/maskeditor/types'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { isCloud } from '@/platform/distribution/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import type { NodeId } from '@/types/nodeId'
 
 type PainterTool = 'brush' | 'eraser'
 
@@ -31,7 +32,7 @@ interface UsePainterOptions {
   modelValue: Ref<string>
 }
 
-export function usePainter(nodeId: string, options: UsePainterOptions) {
+export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
   const { canvasEl, cursorEl, modelValue } = options
   const { t } = useI18n()
   const nodeOutputStore = useNodeOutputStore()
@@ -61,7 +62,6 @@ export function usePainter(nodeId: string, options: UsePainterOptions) {
   let baseCanvas: HTMLCanvasElement | null = null
   let baseCtx: CanvasRenderingContext2D | null = null
   let hasBaseSnapshot = false
-  let hasStrokes = false
 
   let dirtyX0 = 0
   let dirtyY0 = 0
@@ -413,7 +413,6 @@ export function usePainter(nodeId: string, options: UsePainterOptions) {
 
     isDrawing = true
     isDirty.value = true
-    hasStrokes = true
     snapshotBrush()
     strokeProcessor = new StrokeProcessor(Math.max(1, strokeBrush!.radius / 2))
     strokeProcessor.addPoint(point)
@@ -513,7 +512,7 @@ export function usePainter(nodeId: string, options: UsePainterOptions) {
     if (!el || !ctx) return
     ctx.clearRect(0, 0, el.width, el.height)
     isDirty.value = true
-    hasStrokes = false
+    modelValue.value = ''
   }
 
   function updateCursorPos(e: PointerEvent) {
@@ -525,10 +524,14 @@ export function usePainter(nodeId: string, options: UsePainterOptions) {
 
   function handlePointerDown(e: PointerEvent) {
     if (e.button !== 0) return
-    ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
     cacheCanvasRect()
     updateCursorPos(e)
     startStroke(e)
+    try {
+      ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
+    } catch {
+      // setPointerCapture may throw for synthetic events (e.g. in tests)
+    }
   }
 
   let pendingMoveEvent: PointerEvent | null = null
@@ -558,7 +561,11 @@ export function usePainter(nodeId: string, options: UsePainterOptions) {
       cancelAnimationFrame(rafId)
       flushPendingStroke()
     }
-    ;(e.target as HTMLElement).releasePointerCapture(e.pointerId)
+    try {
+      ;(e.target as HTMLElement).releasePointerCapture(e.pointerId)
+    } catch {
+      // releasePointerCapture may throw for synthetic events (e.g. in tests)
+    }
     endStroke()
   }
 
@@ -611,17 +618,11 @@ export function usePainter(nodeId: string, options: UsePainterOptions) {
     return { filename, subfolder, type }
   }
 
-  function isCanvasEmpty(): boolean {
-    return !hasStrokes
-  }
-
   async function serializeValue(): Promise<string> {
     const el = canvasEl.value
-    if (!el) return ''
+    if (!el) return modelValue.value
 
-    if (isCanvasEmpty()) return ''
-
-    if (!isDirty.value) return modelValue.value
+    if (!isDirty.value && modelValue.value) return modelValue.value
 
     const blob = await new Promise<Blob | null>((resolve) =>
       el.toBlob(resolve, 'image/png')
@@ -631,8 +632,7 @@ export function usePainter(nodeId: string, options: UsePainterOptions) {
     const name = `painter-${nodeId}-${Date.now()}.png`
     const body = new FormData()
     body.append('image', blob, name)
-    if (!isCloud) body.append('subfolder', 'painter')
-    body.append('type', isCloud ? 'input' : 'temp')
+    body.append('type', 'input')
 
     let resp: Response
     try {
@@ -646,19 +646,20 @@ export function usePainter(nodeId: string, options: UsePainterOptions) {
         statusText: e instanceof Error ? e.message : String(e)
       })
       toastStore.addAlert(err)
-      throw new Error(err)
+      throw new Error(err, { cause: e })
     }
 
     if (resp.status !== 200) {
+      const bodyText = await resp.text().catch(() => '')
       const err = t('painter.uploadError', {
         status: resp.status,
-        statusText: resp.statusText
+        statusText: bodyText || resp.statusText || 'unknown error'
       })
       toastStore.addAlert(err)
       throw new Error(err)
     }
 
-    let data: { name: string }
+    let data: UploadImageResponse
     try {
       data = await resp.json()
     } catch (e) {
@@ -667,12 +668,16 @@ export function usePainter(nodeId: string, options: UsePainterOptions) {
         statusText: e instanceof Error ? e.message : String(e)
       })
       toastStore.addAlert(err)
-      throw new Error(err)
+      throw new Error(err, { cause: e })
     }
 
-    const result = isCloud
-      ? `${data.name} [input]`
-      : `painter/${data.name} [temp]`
+    if (!data?.name) {
+      const detail = `Painter upload succeeded (${resp.status}) but response is missing 'name'`
+      toastStore.addAlert(detail)
+      throw new Error(detail)
+    }
+
+    const result = `${data.name} [input]`
     modelValue.value = result
     isDirty.value = false
     return result
@@ -709,7 +714,6 @@ export function usePainter(nodeId: string, options: UsePainterOptions) {
       mainCtx = null
       getCtx()?.drawImage(img, 0, 0)
       isDirty.value = false
-      hasStrokes = true
     }
     img.onerror = () => {
       modelValue.value = ''

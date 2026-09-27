@@ -1,6 +1,9 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
+import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
+
 import type { MenuOption } from './useMoreOptionsMenu'
 import { useNodeCustomization } from './useNodeCustomization'
 import { useSelectedNodeActions } from './useSelectedNodeActions'
@@ -20,6 +23,7 @@ export function useNodeMenuOptions() {
     toggleNodeBypass,
     runBranch
   } = useSelectedNodeActions()
+  const { areAllSelectedNodesInMode } = useSelectedLiteGraphItems()
 
   const shapeSubmenu = computed(() =>
     shapeOptions.map((shape) => ({
@@ -66,6 +70,7 @@ export function useNodeMenuOptions() {
       icon: 'icon-[lucide--box]',
       hasSubmenu: true,
       submenu: shapeSubmenu.value,
+      isShapePicker: true,
       action: () => {}
     },
     {
@@ -90,11 +95,8 @@ export function useNodeMenuOptions() {
     }
   })
 
-  const getBypassOption = (
-    states: NodeSelectionState,
-    bump: () => void
-  ): MenuOption => ({
-    label: states.bypassed
+  const getBypassOption = (bump: () => void): MenuOption => ({
+    label: areAllSelectedNodesInMode(LGraphEventMode.BYPASS)
       ? t('contextMenu.Remove Bypass')
       : t('contextMenu.Bypass'),
     icon: 'icon-[lucide--redo-dot]',
@@ -111,10 +113,10 @@ export function useNodeMenuOptions() {
     action: runBranch
   })
 
-  const getNodeInfoOption = (showNodeHelp: () => void): MenuOption => ({
+  const getNodeInfoOption = (openNodeInfo: () => boolean): MenuOption => ({
     label: t('contextMenu.Node Info'),
     icon: 'icon-[lucide--info]',
-    action: showNodeHelp
+    action: openNodeInfo
   })
 
   return {

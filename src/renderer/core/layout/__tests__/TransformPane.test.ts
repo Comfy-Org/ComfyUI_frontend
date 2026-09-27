@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { computed, nextTick } from 'vue'
 
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
@@ -21,7 +21,6 @@ vi.mock('@/renderer/core/layout/transform/useTransformState', () => {
     useTransformState: () => ({
       camera: computed(() => mockData.mockCamera),
       transformStyle: computed(() => mockData.mockTransformStyle),
-      canvasToScreen: vi.fn(),
       screenToCanvas: vi.fn(),
       isNodeInViewport: vi.fn(),
       syncWithCanvas
@@ -43,11 +42,6 @@ function createMockLGraphCanvas() {
 }
 
 describe('TransformPane', () => {
-  beforeEach(() => {
-    vi.useFakeTimers()
-    vi.resetAllMocks()
-  })
-
   describe('component mounting', () => {
     it('should mount successfully with minimal props', () => {
       const mockCanvas = createMockLGraphCanvas()
@@ -180,7 +174,6 @@ describe('TransformPane', () => {
 
       const transformState = useTransformState()
       expect(transformState.syncWithCanvas).toBeDefined()
-      expect(transformState.canvasToScreen).toBeDefined()
       expect(transformState.screenToCanvas).toBeDefined()
     })
   })

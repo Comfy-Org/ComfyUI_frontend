@@ -7,10 +7,12 @@ import type { NodeReplacement } from '@/platform/nodeReplacement/types'
 import type { SettingParams } from '@/platform/settings/types'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { Keybinding } from '@/platform/keybindings/types'
+import type { NodeExecutionOutput } from '@/schemas/apiSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { ComfyApp } from '@/scripts/app'
 import type { ComfyWidgetConstructor } from '@/scripts/widgets'
 import type { ComfyCommand } from '@/stores/commandStore'
+import type { NodeLocatorId } from '@/types/nodeIdentification'
 import type { AuthUserInfo } from '@/types/authTypes'
 import type { BottomPanelExtension } from '@/types/extensionTypes'
 
@@ -224,6 +226,17 @@ export interface ComfyExtension {
    */
   nodeCreated?(node: LGraphNode, app: ComfyApp): void
 
+  beforeLoadGraph?(app: ComfyApp): Promise<void> | void
+
+  afterLoadGraph?(app: ComfyApp): Promise<void> | void
+
+  /**
+   * Allows the extension to clean up state when graph configuration fails.
+   * @param error The graph configuration error
+   * @param app The app instance
+   */
+  onGraphLoadError?(error: unknown, app: ComfyApp): Promise<void> | void
+
   /**
    * Allows the extension to modify the graph data before it is configured.
    * @param graphData The graph data
@@ -264,6 +277,10 @@ export interface ComfyExtension {
    * This is an experimental API and may be changed or removed in the future.
    */
   onAuthUserLogout?(): Promise<void> | void
+
+  onNodeOutputsUpdated?(
+    nodeOutputs: Record<NodeLocatorId, NodeExecutionOutput>
+  ): void
 
   [key: string]: unknown
 }

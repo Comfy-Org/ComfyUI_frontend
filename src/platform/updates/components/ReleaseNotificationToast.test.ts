@@ -1,10 +1,23 @@
+// @vitest-environment jsdom
+// dompurify is inert under happy-dom — see the tripwire note in
+// vitest.setup.ts (capricorn86/happy-dom#2182, FE-1189).
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
+
 import type { ReleaseNote } from '../common/releaseService'
 import ReleaseNotificationToast from './ReleaseNotificationToast.vue'
+
+vi.hoisted(() => {
+  globalThis.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+})
 
 const mockData = vi.hoisted(() => ({ isDesktop: false }))
 
@@ -116,7 +129,6 @@ describe('ReleaseNotificationToast', () => {
   }
 
   beforeEach(() => {
-    vi.clearAllMocks()
     mockData.isDesktop = false
     mockReleaseStore.recentRelease = null
     mockReleaseStore.shouldShowToast = true
@@ -130,6 +142,17 @@ describe('ReleaseNotificationToast', () => {
 
     renderComponent()
     expect(screen.getByText('New update is out!')).toBeInTheDocument()
+  })
+
+  it('stays hidden while node selection mode is active', () => {
+    mockReleaseStore.recentRelease = {
+      version: '1.2.3',
+      content: '# Test Release\n\nSome content'
+    } as ReleaseNote
+    useAgentNodeSelectionStore().isActive = true
+
+    renderComponent()
+    expect(screen.queryByText('New update is out!')).not.toBeInTheDocument()
   })
 
   it('displays rocket icon', () => {
@@ -314,46 +337,36 @@ describe('ReleaseNotificationToast', () => {
   })
 
   it('auto-hides after timeout', async () => {
-    vi.useFakeTimers()
-    try {
-      mockReleaseStore.recentRelease = {
-        version: '1.2.3',
-        content: '# Test Release'
-      } as ReleaseNote
+    mockReleaseStore.recentRelease = {
+      version: '1.2.3',
+      content: '# Test Release'
+    } as ReleaseNote
 
-      renderComponent()
+    renderComponent()
 
-      expect(screen.getByText('New update is out!')).toBeInTheDocument()
+    expect(screen.getByText('New update is out!')).toBeInTheDocument()
 
-      vi.advanceTimersByTime(8000)
-      await nextTick()
+    vi.advanceTimersByTime(8000)
+    await nextTick()
 
-      expect(vi.getTimerCount()).toBe(0)
-    } finally {
-      vi.useRealTimers()
-    }
+    expect(vi.getTimerCount()).toBe(0)
   })
 
   it('clears auto-hide timer when manually dismissed', async () => {
-    vi.useFakeTimers()
-    try {
-      mockReleaseStore.recentRelease = {
-        version: '1.2.3',
-        content: '# Test Release'
-      } as ReleaseNote
+    mockReleaseStore.recentRelease = {
+      version: '1.2.3',
+      content: '# Test Release'
+    } as ReleaseNote
 
-      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
 
-      renderComponent()
+    renderComponent()
 
-      vi.advanceTimersByTime(1000)
+    vi.advanceTimersByTime(1000)
 
-      await user.click(screen.getByRole('button', { name: /skip/i }))
+    await user.click(screen.getByRole('button', { name: /skip/i }))
 
-      expect(vi.getTimerCount()).toBe(0)
-      expect(mockReleaseStore.handleSkipRelease).toHaveBeenCalled()
-    } finally {
-      vi.useRealTimers()
-    }
+    expect(vi.getTimerCount()).toBe(0)
+    expect(mockReleaseStore.handleSkipRelease).toHaveBeenCalled()
   })
 })

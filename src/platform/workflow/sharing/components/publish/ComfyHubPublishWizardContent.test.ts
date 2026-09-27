@@ -52,8 +52,11 @@ function createDefaultFormData(): ComfyHubPublishFormData {
     customNodes: [],
     thumbnailType: 'image',
     thumbnailFile: null,
+    thumbnailUrl: null,
+    existingThumbnailType: null,
     comparisonBeforeFile: null,
     comparisonAfterFile: null,
+    comparisonAfterUrl: null,
     exampleImages: [],
     tutorialUrl: '',
     metadata: {}
@@ -74,7 +77,6 @@ describe('ComfyHubPublishWizardContent', () => {
   const onGateClose = vi.fn()
 
   beforeEach(() => {
-    vi.clearAllMocks()
     onPublish.mockResolvedValue(undefined)
     mockCheckProfile.mockResolvedValue(true)
     mockHasProfile.value = true

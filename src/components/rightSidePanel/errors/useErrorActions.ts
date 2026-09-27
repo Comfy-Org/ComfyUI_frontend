@@ -9,7 +9,8 @@ export function useErrorActions() {
 
   function openGitHubIssues() {
     telemetry?.trackUiButtonClicked({
-      button_id: 'error_tab_github_issues_clicked'
+      button_id: 'error_tab_github_issues_clicked',
+      element_group: 'errors_panel'
     })
     window.open(staticUrls.githubIssues, '_blank', 'noopener,noreferrer')
   }
@@ -25,7 +26,8 @@ export function useErrorActions() {
 
   function findOnGitHub(errorMessage: string) {
     telemetry?.trackUiButtonClicked({
-      button_id: 'error_tab_find_existing_issues_clicked'
+      button_id: 'error_tab_find_existing_issues_clicked',
+      element_group: 'errors_panel'
     })
     const query = encodeURIComponent(errorMessage + ' is:issue')
     window.open(

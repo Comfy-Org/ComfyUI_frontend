@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useSurveyEligibility } from './useSurveyEligibility'
 
@@ -30,18 +30,9 @@ describe('useSurveyEligibility', () => {
   }
 
   beforeEach(() => {
-    localStorage.clear()
-    vi.useFakeTimers()
-    vi.setSystemTime(new Date('2024-06-15T12:00:00Z'))
-
     mockDistribution.isNightly = true
     mockDistribution.isCloud = false
     mockDistribution.isDesktop = false
-  })
-
-  afterEach(() => {
-    localStorage.clear()
-    vi.useRealTimers()
   })
 
   function setFeatureUsage(featureId: string, useCount: number) {

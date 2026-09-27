@@ -158,15 +158,6 @@
   "Comfy_Graph_UnpackSubgraph": {
     "label": "선택한 서브그래프 묶음 풀기"
   },
-  "Comfy_GroupNode_ConvertSelectedNodesToGroupNode": {
-    "label": "선택한 노드를 그룹 노드로 변환"
-  },
-  "Comfy_GroupNode_ManageGroupNodes": {
-    "label": "그룹 노드 관리"
-  },
-  "Comfy_GroupNode_UngroupSelectedGroupNodes": {
-    "label": "선택한 그룹 노드 분리"
-  },
   "Comfy_Help_AboutComfyUI": {
     "label": "ComfyUI 정보 열기"
   },
@@ -184,6 +175,9 @@
   },
   "Comfy_Interrupt": {
     "label": "중단"
+  },
+  "Comfy_LayerEditor_OpenLayerEditor": {
+    "label": "선택한 노드의 레이어 에디터 열기"
   },
   "Comfy_LoadDefaultWorkflow": {
     "label": "기본 워크플로 로드"

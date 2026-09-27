@@ -1,4 +1,5 @@
-/* eslint-disable vue/one-component-per-file */
+import { fromPartial } from '@total-typescript/shoehorn'
+
 import { render, fireEvent } from '@testing-library/vue'
 import { defineComponent } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
@@ -59,11 +60,11 @@ const AssetsListItemStub = defineComponent({
 })
 
 const buildAsset = (id: string, name: string): AssetItem =>
-  ({
+  fromPartial({
     id,
     name,
     tags: []
-  }) satisfies AssetItem
+  })
 
 const buildOutputItem = (asset: AssetItem): OutputStackListItem => ({
   key: `asset-${asset.id}`,

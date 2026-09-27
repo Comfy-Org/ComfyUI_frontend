@@ -19,63 +19,31 @@
 
 **Time required: ~10 minutes**
 
-#### 1.1 Update `.i18nrc.cjs`
+#### 1.1 Update `scripts/i18n/config.ts`
 
-Add your language code to the `outputLocales` array:
-
-```javascript
-module.exports = defineConfig({
-  // ... existing config
-  outputLocales: ['zh', 'zh-TW', 'ru', 'ja', 'ko', 'fr', 'es', 'tr'], // Add your language here
-  reference: `Special names to keep untranslated: flux, photomaker, clip, vae, cfg, stable audio, stable cascade, stable zero, controlnet, lora, HiDream.
-  'latent' is the short form of 'latent space'.
-  'mask' is in the context of image processing.
-  Note: For Traditional Chinese (Taiwan), use Taiwan-specific terminology and traditional characters.
-  `
-})
-```
-
-#### 1.2 Update `src/platform/settings/constants/coreSettings.ts`
-
-Add your language to the dropdown options:
+Add your language to the `outputLocales` array. `name` is the English name of
+the language the translation model is asked to write, and the optional
+`guidance` string carries language-specific instructions (tone, script,
+glossary):
 
 ```typescript
-{
-  id: 'Comfy.Locale',
-  name: 'Language',
-  type: 'combo',
-  options: [
-    { value: 'en', text: 'English' },
-    { value: 'zh', text: '中文' },
-    { value: 'zh-TW', text: '繁體中文 (台灣)' }, // Add your language here
-    { value: 'ru', text: 'Русский' },
-    { value: 'ja', text: '日本語' },
-    { value: 'ko', text: '한국어' },
-    { value: 'fr', text: 'Français' },
-    { value: 'es', text: 'Español' }
-  ],
-  defaultValue: () => navigator.language.split('-')[0] || 'en'
-},
+outputLocales: [
+  // ... existing locales
+  {
+    code: 'zh-TW',
+    name: 'Traditional Chinese (Taiwan)',
+    guidance: chineseTraditionalGuidance
+  }
+]
 ```
 
-#### 1.3 Update `src/i18n.ts`
+#### 1.2 Update `src/locales/localeConfig.ts`
 
-Add imports for your new language files:
+Add your language to the shared runtime locale definition. This feeds the
+settings dropdown, supported-locale resolution, and lazy locale loading:
 
 ```typescript
-// Add these imports (replace zh-TW with your language code)
-import zhTWCommands from './locales/zh-TW/commands.json'
-import zhTW from './locales/zh-TW/main.json'
-import zhTWNodes from './locales/zh-TW/nodeDefs.json'
-import zhTWSettings from './locales/zh-TW/settings.json'
-
-// Add to the messages object
-const messages = {
-  en: buildLocale(en, enNodes, enCommands, enSettings),
-  zh: buildLocale(zh, zhNodes, zhCommands, zhSettings),
-  'zh-TW': buildLocale(zhTW, zhTWNodes, zhTWCommands, zhTWSettings) // Add this line
-  // ... other languages
-}
+'zh-TW': { text: '繁體中文', loaders: loadersFor('zh-TW') }
 ```
 
 ### Step 2: Generate Translation Files
@@ -85,7 +53,14 @@ const messages = {
 ```bash
 # Only if you have OpenAI API key configured
 pnpm locale
+
+# Report pending work without calling the API
+pnpm locale:check
 ```
+
+Both commands need a clone with full history (a blobless partial clone works):
+the source manifest records git blob hashes of past English sources, and the
+pipeline reads them back with `git cat-file`.
 
 #### Option B: Let CI Handle It (Recommended)
 
@@ -133,6 +108,30 @@ Our automated translation workflow now runs on release PRs (version-bump-\* bran
 3. **Generates translations**: Uses OpenAI API to translate to all configured languages
 4. **Commits back**: Automatically updates the release PR with complete translations
 
+The pipeline (`scripts/i18n/update-locales.ts`) records the English sources it
+last translated in `src/locales/.source-manifest.json`. On each run it
+retranslates strings whose English text changed, backfills missing keys, prunes
+keys removed from English (deleting whole locale files whose English source
+file was removed), and validates that interpolation placeholders and protected
+literals (e.g. `<Picture N>`, `17k+5`) survive translation exactly. Existing
+translations whose placeholders no longer match the English source are
+re-queued for translation, so corrupted strings heal on the next run. Results
+persist per entry file: a failure translating one file does not discard the
+completed, validated work of the others — those are written and their manifest
+entries advance, and only the failed files retry on the next run. Runs that
+prune keys report each affected file's exact deleted-key count. The release PR
+diff and review approve those deletions; there is no separate size-based bypass.
+Source-manifest, translation, and protected-token integrity failures remain hard
+failures.
+`pnpm locale:check` runs offline in CI: it reports pending work and fails on
+protected-token violations that are not already queued for retranslation
+because the English source changed. The manifest's `knownViolations` field
+baselines violations that predate the pipeline; a successful locale run heals
+and drops them, and any corruption introduced beyond the baseline fails the
+check immediately. oxfmt ignores `src/locales/**/*.json` — the pipeline is the
+sole writer of those bytes, which keeps the manifest's recorded blob hashes
+valid.
+
 ### Manual Translation Updates
 
 If urgent translation updates are needed outside of releases, maintainers can:
@@ -148,6 +147,29 @@ Each language has 4 translation files:
 - `commands.json` - Command descriptions (~200+ entries)
 - `settings.json` - Settings panel (~400+ entries)
 - `nodeDefs.json` - Node definitions (~varies based on installed nodes)
+
+### What `en/nodeDefs.json` is (and is not)
+
+It is **not** the source of English node text. The backend is: `/object_info`
+ships each node's `display_name` and `description`, and those are the English
+strings users see.
+
+`en/nodeDefs.json` is a point-in-time snapshot of that backend text, serving two
+purposes:
+
+1. **An extraction basis** for the lobe-i18n pipeline, which translates it into
+   the other locales.
+2. **An offline fallback** for nodes the connected backend does not describe.
+
+Treating it as authoritative is what produced the bug where a renamed or
+custom-built node showed a stale name: the snapshot outranked the live backend.
+So `resolveNodeDefText` in `src/i18n.ts` prefers, in order, a custom node's
+`/api/i18n` translation, then the live backend value, then this snapshot — and
+in English it returns the backend value uncompiled, because English is source
+text rather than a translation.
+
+Because the snapshot lags whatever nodes are actually installed, a missing entry
+here is normal and is not a bug to fix by hand-editing the file.
 
 ## Translation Quality
 
@@ -168,7 +190,7 @@ Each language has 4 translation files:
 
 ### Issue: Language not appearing in dropdown
 
-**Solution**: Check that the language code in `coreSettings.ts` matches your other files exactly
+**Solution**: Check that the language code in `src/locales/localeConfig.ts` matches your other files exactly
 
 ### Issue: Rate limits during local translation
 

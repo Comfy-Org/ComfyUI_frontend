@@ -2,6 +2,8 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { ref } from 'vue'
 
+import { visibleGalleryItems as items } from '../../data/gallery'
+import type { GalleryItem } from '../../data/gallery'
 import type { Locale } from '../../i18n/translations'
 import GalleryCard from './GalleryCard.vue'
 import GalleryDetailModal from './GalleryDetailModal.vue'
@@ -15,24 +17,6 @@ function openDetail(index: number) {
   modalIndex.value = index
   modalOpen.value = true
 }
-
-export interface GalleryItem {
-  image: string
-  title: string
-  userAlias: string
-  teamAlias: string
-  tool: string
-  href?: string
-}
-
-const items: GalleryItem[] = Array.from({ length: 12 }, () => ({
-  image: '/images/gallery/gallery.webp',
-  title: 'Image Title',
-  userAlias: 'User Alias',
-  teamAlias: 'Team Alias',
-  tool: 'Tool',
-  href: '#'
-}))
 
 /**
  * Desktop layout pattern (repeating):
@@ -81,9 +65,14 @@ while (idx < items.length) {
 </script>
 
 <template>
-  <section class="px-4 pb-20 lg:px-20">
+  <section
+    data-testid="gallery-grid"
+    class="max-w-9xl mx-auto px-4 pb-20 lg:px-20"
+  >
     <!-- Desktop grid -->
-    <div class="hidden flex-col gap-2 lg:flex">
+    <div
+      class="rounded-5xl bg-transparency-white-t4 hidden flex-col gap-2 p-2 lg:flex"
+    >
       <template v-for="(row, rowIdx) in rows" :key="rowIdx">
         <!-- Symmetric rows: full / 2-col / 3-col -->
         <div
@@ -99,7 +88,7 @@ while (idx < items.length) {
             :key="i"
             :item="item"
             :locale="locale"
-            :hero="row.layout === 'full'"
+            :aspect="row.layout === 'full' ? '16/9' : undefined"
             :class="
               cn(
                 row.layout === 'full' && 'col-span-6',
@@ -114,15 +103,16 @@ while (idx < items.length) {
         <!-- Large left + 2 stacked right -->
         <div
           v-else-if="row.layout === 'large-left'"
-          class="grid grid-cols-3 gap-2"
+          class="grid grid-cols-2 gap-2"
         >
           <GalleryCard
             :item="row.items[0]"
             :locale="locale"
-            class="col-span-2 row-span-2"
+            aspect="3/4"
+            class="row-span-2"
             @click="openDetail(row.startIndex)"
           />
-          <div class="col-span-1 flex flex-col gap-2">
+          <div class="flex flex-col gap-2">
             <GalleryCard
               :item="row.items[1]"
               :locale="locale"
@@ -139,8 +129,8 @@ while (idx < items.length) {
         </div>
 
         <!-- 2 stacked left + large right -->
-        <div v-else class="grid grid-cols-3 gap-2">
-          <div class="col-span-1 flex flex-col gap-2">
+        <div v-else class="grid grid-cols-2 gap-2">
+          <div class="flex flex-col gap-2">
             <GalleryCard
               :item="row.items[0]"
               :locale="locale"
@@ -157,7 +147,8 @@ while (idx < items.length) {
           <GalleryCard
             :item="row.items[2]"
             :locale="locale"
-            class="col-span-2 row-span-2"
+            aspect="3/4"
+            class="row-span-2"
             @click="openDetail(row.startIndex + 2)"
           />
         </div>
@@ -165,7 +156,9 @@ while (idx < items.length) {
     </div>
 
     <!-- Mobile list -->
-    <div class="flex flex-col gap-6 lg:hidden">
+    <div
+      class="rounded-5xl bg-transparency-white-t4 flex flex-col gap-6 p-2 lg:hidden"
+    >
       <GalleryCard
         v-for="(item, i) in items"
         :key="i"

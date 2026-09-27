@@ -1,5 +1,8 @@
 <template>
-  <div class="flex min-h-0 flex-1 flex-col gap-4 px-6 py-4">
+  <div
+    data-testid="publish-profile-prompt"
+    class="flex min-h-0 flex-1 flex-col gap-4 px-6 py-4"
+  >
     <p class="text-sm text-base-foreground">
       {{ $t('comfyHubPublish.createProfileToPublish') }}
     </p>

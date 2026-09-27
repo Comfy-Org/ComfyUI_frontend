@@ -7,7 +7,7 @@ import {
   interpolateStops,
   stopsToGradient
 } from '@/components/gradientslider/gradients'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   stops,

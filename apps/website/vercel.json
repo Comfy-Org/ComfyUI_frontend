@@ -7,15 +7,99 @@
   "github": {
     "enabled": false
   },
+  "headers": [
+    {
+      "source": "/(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "website-frontend-comfyui.vercel.app"
+        }
+      ],
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "index, follow"
+        }
+      ]
+    },
+    {
+      "source": "/((?!.*\\.(?:txt|xml|json|ico|png|jpg|jpeg|webp|avif|gif|svg|css|js|mjs|map|woff|woff2|ttf|otf|eot|mp4|webm|vtt|pdf|zip|webmanifest)$).*)",
+      "headers": [
+        {
+          "key": "Link",
+          "value": "<https://comfy.org/llms.txt>; rel=\"describedby\""
+        }
+      ]
+    },
+    {
+      "source": "/payment/(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex"
+        }
+      ]
+    },
+    {
+      "source": "/:locale/payment/(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex"
+        }
+      ]
+    }
+  ],
   "redirects": [
     {
-      "source": "/pricing",
-      "destination": "/cloud/pricing",
+      "source": "/career",
+      "destination": "/careers",
       "permanent": true
     },
     {
-      "source": "/enterprise",
-      "destination": "/cloud/enterprise",
+      "source": "/privacy",
+      "destination": "/privacy-policy",
+      "permanent": true
+    },
+    {
+      "source": "/minimax",
+      "destination": "/minimax-h3/",
+      "permanent": false
+    },
+    {
+      "source": "/minimax/",
+      "destination": "/minimax-h3/",
+      "permanent": false
+    },
+    {
+      "source": "/zh-CN/minimax",
+      "destination": "/zh-CN/minimax-h3/",
+      "permanent": false
+    },
+    {
+      "source": "/zh-CN/minimax/",
+      "destination": "/zh-CN/minimax-h3/",
+      "permanent": false
+    },
+    {
+      "source": "/cloud/enterprise",
+      "destination": "/enterprise/",
+      "permanent": true
+    },
+    {
+      "source": "/cloud/enterprise/",
+      "destination": "/enterprise/",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/cloud/enterprise",
+      "destination": "/enterprise/",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/cloud/enterprise/",
+      "destination": "/enterprise/",
       "permanent": true
     },
     {
@@ -23,6 +107,85 @@
       "destination": "https://blog.comfy.org/",
       "permanent": true
     },
-    { "source": "/press", "destination": "/about", "permanent": true }
+    {
+      "source": "/discord",
+      "destination": "https://discord.com/invite/comfyorg",
+      "permanent": true
+    },
+    {
+      "source": "/press",
+      "destination": "/about",
+      "permanent": true
+    },
+    {
+      "source": "/trust",
+      "destination": "https://trust.comfy.org",
+      "permanent": false
+    },
+    {
+      "source": "/login",
+      "destination": "https://cloud.comfy.org/cloud/login",
+      "permanent": false
+    },
+    {
+      "source": "/api",
+      "destination": "/platform",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/api",
+      "destination": "/zh-CN/platform",
+      "permanent": true
+    },
+    {
+      "source": "/platform/router",
+      "destination": "/platform/models",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/platform/router",
+      "destination": "/zh-CN/platform/models",
+      "permanent": true
+    },
+    {
+      "source": "/cloud/pricing",
+      "destination": "/pricing",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/cloud/pricing",
+      "destination": "/zh-CN/pricing",
+      "permanent": true
+    },
+    {
+      "source": "/api/",
+      "destination": "/platform",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/api/",
+      "destination": "/zh-CN/platform",
+      "permanent": true
+    },
+    {
+      "source": "/cloud/pricing/",
+      "destination": "/pricing",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/cloud/pricing/",
+      "destination": "/zh-CN/pricing",
+      "permanent": true
+    },
+    {
+      "source": "/platform/router/",
+      "destination": "/platform/models",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/platform/router/",
+      "destination": "/zh-CN/platform/models",
+      "permanent": true
+    }
   ]
 }

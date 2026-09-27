@@ -1,11 +1,10 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { AppMode } from '@/composables/useAppMode'
+import type { AppMode } from '@/utils/appMode'
 
 import BuilderFooterToolbar from '@/components/builder/BuilderFooterToolbar.vue'
 
@@ -99,8 +98,6 @@ const i18n = createI18n({
 
 describe('BuilderFooterToolbar', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
-    vi.clearAllMocks()
     mockState.mode = 'builder:inputs'
     mockHasOutputs.value = true
     mockActiveWorkflow.value = { isTemporary: true, initialMode: 'app' }

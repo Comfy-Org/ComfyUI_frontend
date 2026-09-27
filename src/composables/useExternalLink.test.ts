@@ -31,7 +31,6 @@ import { electronAPI } from '@/utils/envUtil'
 
 describe('useExternalLink', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     // Reset to default state
     i18n.global.locale.value = 'en'
     mockData.isDesktop = false
@@ -42,12 +41,10 @@ describe('useExternalLink', () => {
       const { staticUrls } = useExternalLink()
 
       // Static URLs
-      expect(staticUrls.discord).toBe('https://www.comfy.org/discord')
-      expect(staticUrls.github).toBe(
-        'https://github.com/comfyanonymous/ComfyUI'
-      )
+      expect(staticUrls.discord).toBe('https://discord.com/invite/comfyorg')
+      expect(staticUrls.github).toBe('https://github.com/Comfy-Org/ComfyUI')
       expect(staticUrls.githubIssues).toBe(
-        'https://github.com/comfyanonymous/ComfyUI/issues'
+        'https://github.com/Comfy-Org/ComfyUI/issues'
       )
       expect(staticUrls.githubFrontend).toBe(
         'https://github.com/Comfy-Org/ComfyUI_frontend'
@@ -56,7 +53,7 @@ describe('useExternalLink', () => {
         'https://github.com/Comfy-Org/electron'
       )
       expect(staticUrls.forum).toBe('https://forum.comfy.org/')
-      expect(staticUrls.comfyOrg).toBe('https://www.comfy.org/')
+      expect(staticUrls.comfyOrg).toBe('https://comfy.org/')
     })
   })
 
@@ -74,7 +71,7 @@ describe('useExternalLink', () => {
       const { buildDocsUrl } = useExternalLink()
 
       const url = buildDocsUrl('/changelog', { includeLocale: true })
-      expect(url).toBe('https://docs.comfy.org/zh-CN/changelog')
+      expect(url).toBe('https://docs.comfy.org/zh/changelog')
     })
 
     it('should build docs URL with Chinese (zh-TW) locale when requested', () => {
@@ -82,7 +79,7 @@ describe('useExternalLink', () => {
       const { buildDocsUrl } = useExternalLink()
 
       const url = buildDocsUrl('/changelog', { includeLocale: true })
-      expect(url).toBe('https://docs.comfy.org/zh-CN/changelog')
+      expect(url).toBe('https://docs.comfy.org/zh/changelog')
     })
 
     it('should not include locale for English when requested', () => {
@@ -136,9 +133,7 @@ describe('useExternalLink', () => {
         includeLocale: true,
         platform: true
       })
-      expect(url).toBe(
-        'https://docs.comfy.org/zh-CN/installation/desktop/macos'
-      )
+      expect(url).toBe('https://docs.comfy.org/zh/installation/desktop/macos')
     })
 
     it('should not add platform when not desktop', () => {

@@ -1,0 +1,142 @@
+{
+  "id": "6f67f4ec-2d15-45a3-bbd1-7b02d1eb1b1a",
+  "revision": 0,
+  "last_node_id": 2,
+  "last_link_id": 2,
+  "nodes": [
+    {
+      "id": 2,
+      "type": "77d6275c-b34f-400f-8f99-cbfc042be06c",
+      "pos": [419.39990234375006, 317.39997558593745],
+      "size": [270, 120],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "proxyWidgets": [
+          ["-1", "batch_size"],
+          ["-1", "width"]
+        ]
+      },
+      "widgets_values": [1, 512]
+    }
+  ],
+  "links": [],
+  "groups": [],
+  "definitions": {
+    "subgraphs": [
+      {
+        "id": "77d6275c-b34f-400f-8f99-cbfc042be06c",
+        "version": 1,
+        "state": {
+          "lastGroupId": 0,
+          "lastNodeId": 2,
+          "lastLinkId": 2,
+          "lastRerouteId": 0
+        },
+        "revision": 0,
+        "config": {},
+        "name": "New Subgraph",
+        "inputNode": {
+          "id": -10,
+          "bounding": [208.8800000000001, 346.88000000000005, 120, 80]
+        },
+        "outputNode": {
+          "id": -20,
+          "bounding": [820.8800000000001, 346.88000000000005, 120, 40]
+        },
+        "inputs": [
+          {
+            "id": "90f6ab57-8627-4ba8-a73c-97ac17f0e2be",
+            "name": "width",
+            "type": "INT",
+            "linkIds": [1],
+            "pos": [308.8800000000001, 366.88000000000005]
+          },
+          {
+            "id": "d84f0275-5302-433b-a3d7-f1331fd90cf5",
+            "name": "batch_size",
+            "type": "INT",
+            "linkIds": [2],
+            "pos": [308.8800000000001, 386.88000000000005]
+          }
+        ],
+        "outputs": [],
+        "widgets": [],
+        "nodes": [
+          {
+            "id": 1,
+            "type": "EmptyLatentImage",
+            "pos": [424.8799560546875, 302.47999267578126],
+            "size": [324, 172.796875],
+            "flags": {},
+            "order": 0,
+            "mode": 0,
+            "inputs": [
+              {
+                "localized_name": "width",
+                "name": "width",
+                "type": "INT",
+                "widget": {
+                  "name": "width"
+                },
+                "link": 1
+              },
+              {
+                "localized_name": "batch_size",
+                "name": "batch_size",
+                "type": "INT",
+                "widget": {
+                  "name": "batch_size"
+                },
+                "link": 2
+              }
+            ],
+            "outputs": [
+              {
+                "localized_name": "LATENT",
+                "name": "LATENT",
+                "type": "LATENT",
+                "links": null
+              }
+            ],
+            "properties": {
+              "Node name for S&R": "EmptyLatentImage"
+            },
+            "widgets_values": [512, 512, 1]
+          }
+        ],
+        "groups": [],
+        "links": [
+          {
+            "id": 1,
+            "origin_id": -10,
+            "origin_slot": 0,
+            "target_id": 1,
+            "target_slot": 0,
+            "type": "INT"
+          },
+          {
+            "id": 2,
+            "origin_id": -10,
+            "origin_slot": 1,
+            "target_id": 1,
+            "target_slot": 1,
+            "type": "INT"
+          }
+        ],
+        "extra": {
+          "workflowRendererVersion": "Vue"
+        }
+      }
+    ]
+  },
+  "config": {},
+  "extra": {
+    "workflowRendererVersion": "Vue",
+    "frontendVersion": "1.40.0"
+  },
+  "version": 0.4
+}

@@ -1,0 +1,126 @@
+{
+  "fetchedAt": "2026-08-22T04:58:20.183Z",
+  "departments": [
+    {
+      "name": "DESIGN",
+      "key": "design",
+      "roles": [
+        {
+          "id": "18743530eb448c99",
+          "title": "Senior Product Designer",
+          "department": "Design",
+          "location": "San Francisco",
+          "jobUrl": "https://jobs.ashbyhq.com/comfy-org/b2e864c6-4754-4e04-8f46-1022baa103c3"
+        }
+      ]
+    },
+    {
+      "name": "ENGINEERING",
+      "key": "engineering",
+      "roles": [
+        {
+          "id": "6a6d865eeb3c10a8",
+          "title": "Member of Technical Staff, Frontend",
+          "department": "Engineering",
+          "location": "San Francisco",
+          "jobUrl": "https://jobs.ashbyhq.com/comfy-org/c3e0584d-5490-491f-aae4-b5922ef63fd2"
+        },
+        {
+          "id": "1b4f7f1da9616e14",
+          "title": "Member of Technical Staff, Backend",
+          "department": "Engineering",
+          "location": "San Francisco",
+          "jobUrl": "https://jobs.ashbyhq.com/comfy-org/732f8b39-076d-4847-afe3-f54d4451607e"
+        },
+        {
+          "id": "0b8f4fecd89c3b11",
+          "title": "Product Manager, ComfyUI",
+          "department": "Engineering",
+          "location": "San Francisco",
+          "jobUrl": "https://jobs.ashbyhq.com/comfy-org/9e4b9029-c3e9-436b-82c4-a1a9f1b8c16e"
+        },
+        {
+          "id": "fbc63e32c721290d",
+          "title": "Developer Relations",
+          "department": "Engineering",
+          "location": "San Francisco",
+          "jobUrl": "https://jobs.ashbyhq.com/comfy-org/3e0ec22c-758d-4a47-aebe-ac4583ae3d8a"
+        },
+        {
+          "id": "f5145a857c5fcba1",
+          "title": "Member of Technical Staff, Quality Systems",
+          "department": "Engineering",
+          "location": "San Francisco",
+          "jobUrl": "https://jobs.ashbyhq.com/comfy-org/902a3d00-ee3a-48ef-bd37-bd6099b55339"
+        },
+        {
+          "id": "8abfa6f8285b40dc",
+          "title": "Member of Technical Staff, Release Engineering",
+          "department": "Engineering",
+          "location": "San Francisco",
+          "jobUrl": "https://jobs.ashbyhq.com/comfy-org/bbcd32a3-27fb-40f7-94ff-8ec1166b5694"
+        }
+      ]
+    },
+    {
+      "name": "MARKETING",
+      "key": "marketing",
+      "roles": [
+        {
+          "id": "5e009d0decba8e55",
+          "title": "Freelance Graphic Designer",
+          "department": "Marketing",
+          "location": "San Francisco",
+          "jobUrl": "https://jobs.ashbyhq.com/comfy-org/a1c5c0e6-960b-4b63-88f4-83bfe08535bf"
+        }
+      ]
+    },
+    {
+      "name": "OPERATIONS",
+      "key": "operations",
+      "roles": [
+        {
+          "id": "6d2dac733df9c6f5",
+          "title": "Head of Finance",
+          "department": "Operations",
+          "location": "San Francisco",
+          "jobUrl": "https://jobs.ashbyhq.com/comfy-org/4c077431-89e0-488c-8af5-d0f3e738c742"
+        },
+        {
+          "id": "bbfdbffb63ea93ac",
+          "title": "Lead, Strategic Finance",
+          "department": "Operations",
+          "location": "San Francisco",
+          "jobUrl": "https://jobs.ashbyhq.com/comfy-org/29c7f055-02d1-408a-98d9-e83d0772719a"
+        }
+      ]
+    },
+    {
+      "name": "SALES",
+      "key": "sales",
+      "roles": [
+        {
+          "id": "ac930fdae3b69872",
+          "title": "Enterprise Account Executive",
+          "department": "Sales",
+          "location": "San Francisco",
+          "jobUrl": "https://jobs.ashbyhq.com/comfy-org/f0eb916e-73f7-4e89-9342-6f0789c3aaff"
+        },
+        {
+          "id": "26ff408d46a914fa",
+          "title": "Senior Data Scientist, Product & Growth",
+          "department": "Sales",
+          "location": "San Francisco",
+          "jobUrl": "https://jobs.ashbyhq.com/comfy-org/57ff81f6-7df4-4f9d-be21-ce55f348bdad"
+        },
+        {
+          "id": "ecbfd8b4411ce699",
+          "title": "Forward Deployed Creative",
+          "department": "Sales",
+          "location": "San Francisco",
+          "jobUrl": "https://jobs.ashbyhq.com/comfy-org/b8faf3c0-a21c-4bed-8651-93daa6bfe81c"
+        }
+      ]
+    }
+  ]
+}

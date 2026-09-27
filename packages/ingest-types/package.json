@@ -14,13 +14,6 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@hey-api/openapi-ts": "0.93.0"
-  },
-  "packageManager": "pnpm@10.17.1",
-  "nx": {
-    "tags": [
-      "scope:shared",
-      "type:types"
-    ]
+    "@hey-api/openapi-ts": "0.97.3"
   }
 }

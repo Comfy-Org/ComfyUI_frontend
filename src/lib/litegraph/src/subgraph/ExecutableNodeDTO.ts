@@ -1,6 +1,10 @@
+import { inputLinkId } from '@/lib/litegraph/src/node/slotLinks'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { SerializedNodeId } from '@/types/nodeId'
+import type { LinkId } from '@/lib/litegraph/src/LLink'
 import { InvalidLinkError } from '@/lib/litegraph/src/infrastructure/InvalidLinkError'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphError'
 import { RecursionError } from '@/lib/litegraph/src/infrastructure/RecursionError'
 import { SlotIndexError } from '@/lib/litegraph/src/infrastructure/SlotIndexError'
@@ -47,7 +51,7 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
   /** The graph that this node is a part of. */
   readonly graph: LGraph | Subgraph
 
-  inputs: { linkId: number | null; name: string; type: ISlotType }[]
+  inputs: { linkId: LinkId | null; name: string; type: ISlotType }[]
 
   /** Backing field for {@link id}. */
   private _id: ExecutionId
@@ -97,7 +101,7 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
     /** The actual node that this DTO wraps. */
     readonly node: LGraphNode | SubgraphNode,
     /** A list of subgraph instance node IDs from the root graph to the containing instance. @see {@link id} */
-    readonly subgraphNodePath: readonly NodeId[],
+    readonly subgraphNodePath: readonly SerializedNodeId[],
     /** A flattened map of all DTOs in this node network. Subgraph instances have been expanded into their inner nodes. */
     readonly nodesByExecutionId: Map<ExecutionId, ExecutableLGraphNode>,
     /** The actual subgraph instance that contains this node, otherwise undefined. */
@@ -108,8 +112,8 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
     // Set the internal ID of the DTO
     this._id = [...this.subgraphNodePath, this.node.id].join(':')
     this.graph = node.graph
-    this.inputs = this.node.inputs.map((x) => ({
-      linkId: x.link,
+    this.inputs = this.node.inputs.map((x, index) => ({
+      linkId: inputLinkId(node.graph!, node.id, index) ?? null,
       name: x.name,
       type: x.type
     }))
@@ -179,37 +183,34 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
           `No input found for slot [${link.origin_slot}] ${input.name}`
         )
 
-      // Nothing connected
-      const linkId = subgraphNodeInput.link
-      if (linkId == null) {
-        const widget = subgraphNode.getWidgetFromSlot(subgraphNodeInput)
-        if (!widget) return
-
-        // Special case: SubgraphNode widget.
-        // Prefer serializeValue (per-instance) over the shared .value getter
-        // so multiple SubgraphNode instances return their own configured values.
-        const widgetValue = widget.serializeValue
-          ? widget.serializeValue(subgraphNode, -1)
-          : widget.value
-        return {
-          node: this,
-          origin_id: this.id,
-          origin_slot: -1,
-          widgetInfo: { value: widgetValue }
-        }
-      }
-
       if (!subgraphNode.graph)
         throw new NullGraphError(
           `SubgraphNode ${subgraphNode.id} has no graph during input resolution`
         )
+      // Nothing connected
+      const linkId =
+        inputLinkId(subgraphNode.graph, subgraphNode.id, link.origin_slot) ??
+        null
+      if (linkId === null) {
+        const id = subgraphNodeInput.widgetId
+        if (!id) return
+
+        return {
+          node: this,
+          origin_id: this.id,
+          origin_slot: -1,
+          widgetInfo: { value: useWidgetValueStore().getWidget(id)?.value }
+        }
+      }
+
       const outerLink = subgraphNode.graph.getLink(linkId)
       if (!outerLink)
         throw new InvalidLinkError(
           `No outer link found for slot [${link.origin_slot}] ${input.name}`
         )
 
-      const subgraphNodeExecutionId = this.subgraphNodePath.join(':')
+      const subgraphNodeExecutionId: ExecutionId =
+        this.subgraphNodePath.join(':')
       const subgraphNodeDto = this.nodesByExecutionId.get(
         subgraphNodeExecutionId
       )
@@ -228,7 +229,7 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
         `No input node found for id [${this.id}] slot [${slot}] ${input.name}`
       )
 
-    const outputNodeExecutionId = [
+    const outputNodeExecutionId: ExecutionId = [
       ...this.subgraphNodePath,
       outputNode.id
     ].join(':')
@@ -318,7 +319,7 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
             `Virtual node failed to resolve parent [${this.id}] slot [${slot}]`
           )
 
-        const inputNodeExecutionId = [
+        const inputNodeExecutionId: ExecutionId = [
           ...this.subgraphNodePath,
           inputNode.id
         ].join(':')
@@ -410,7 +411,7 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
       )
 
     // Recurse into the subgraph
-    const innerNodeExecutionId = [
+    const innerNodeExecutionId: ExecutionId = [
       ...this.subgraphNodePath,
       node.id,
       innerNode.id

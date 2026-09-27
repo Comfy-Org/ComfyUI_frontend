@@ -1,7 +1,11 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { LinkConnectorEventMap } from '@/lib/litegraph/src/infrastructure/LinkConnectorEventMap'
-import type { LinkNetwork, Point } from '@/lib/litegraph/src/interfaces'
+import type {
+  LinkNetwork,
+  Point,
+  SlotIndex
+} from '@/lib/litegraph/src/interfaces'
 import type {
   INodeInputSlot,
   INodeOutputSlot,
@@ -35,9 +39,14 @@ export interface RenderLink {
     | SubgraphInput
     | SubgraphOutput
   /** The index of the slot that the link is being connected from. */
-  readonly fromSlotIndex: number
+  readonly fromSlotIndex: SlotIndex
   /** The reroute that the link is being connected from. */
   readonly fromReroute?: Reroute
+
+  readonly isIoNodeLink?: boolean
+
+  disconnectOnDrop?: boolean
+  readonly disconnectOrigin?: Point
 
   /**
    * Capability checks used for hit-testing and validation during drag.

@@ -3,7 +3,7 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import { fitToViewInstant } from '@e2e/helpers/fitToView'
+import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 
 test.describe(
   'Vue Node Bring to Front',
@@ -90,6 +90,12 @@ test.describe(
           return clipZ - ksamplerZ
         })
         .toBeGreaterThan(0)
+
+      const clipZ = await getNodeZIndex(comfyPage, 'CLIP Text Encode')
+      const allZIndexes = await comfyPage.vueNodes.nodes.evaluateAll((nodes) =>
+        nodes.map((node) => Number(getComputedStyle(node).zIndex))
+      )
+      expect(clipZ).toBe(Math.max(...allZIndexes))
 
       // Screenshot showing CLIP now on top
       await expect(comfyPage.canvas).toHaveScreenshot(

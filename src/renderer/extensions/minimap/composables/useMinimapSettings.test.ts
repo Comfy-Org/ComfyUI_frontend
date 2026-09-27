@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useMinimapSettings } from '@/renderer/extensions/minimap/composables/useMinimapSettings'
@@ -15,11 +13,6 @@ vi.mock('@/stores/workspace/colorPaletteStore', () => ({
 }))
 
 describe('useMinimapSettings', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
-  })
-
   it('should return all minimap settings as computed refs', () => {
     const mockSettingStore = {
       get: vi.fn((key: string) => {

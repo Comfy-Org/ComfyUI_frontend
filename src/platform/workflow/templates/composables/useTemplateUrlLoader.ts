@@ -63,8 +63,9 @@ export function useTemplateUrlLoader() {
   /**
    * Loads template from URL query parameters if present
    * Handles errors internally and shows appropriate user feedback
+   * @returns the id of the template that loaded, if one did
    */
-  const loadTemplateFromUrl = async () => {
+  const loadTemplateFromUrl = async (): Promise<string | undefined> => {
     const templateParam = route.query.template
 
     if (!templateParam || typeof templateParam !== 'string') {
@@ -121,11 +122,15 @@ export function useTemplateUrlLoader() {
             templateName: templateParam
           })
         })
-      } else if (modeParam === 'linear') {
+        return
+      }
+
+      if (modeParam === 'linear') {
         // Set linear mode after successful template load
         useTelemetry()?.trackEnterLinear({ source: 'template_url' })
         canvasStore.linearMode = true
       }
+      return sourceParam === 'default' ? templateParam : undefined
     } catch (error) {
       console.error(
         '[useTemplateUrlLoader] Failed to load template from URL:',

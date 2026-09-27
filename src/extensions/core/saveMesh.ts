@@ -6,7 +6,11 @@ import { createExportMenuItems } from '@/extensions/core/load3d/exportMenuHelper
 import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
-import type { NodeOutputWith, ResultItem } from '@/schemas/apiSchema'
+import type {
+  NodeExecutionOutput,
+  NodeOutputWith,
+  ResultItem
+} from '@/schemas/apiSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
 type SaveMeshOutput = NodeOutputWith<{
@@ -17,14 +21,55 @@ import {
   isAssetPreviewSupported,
   persistThumbnail
 } from '@/platform/assets/utils/assetPreviewUtil'
+import { app } from '@/scripts/app'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import { useExtensionService } from '@/services/extensionService'
 import { useLoad3dService } from '@/services/load3dService'
+import type { NodeLocatorId } from '@/types/nodeIdentification'
+import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 const inputSpec: CustomInputSpec = {
   name: 'image',
   type: 'Preview3D',
   isPreview: true
+}
+
+function applySaveGLBOutput(node: LGraphNode, fileInfo: ResultItem): void {
+  const filePath = (fileInfo.subfolder ?? '') + '/' + (fileInfo.filename ?? '')
+  const loadFolder = fileInfo.type as 'input' | 'output'
+
+  const modelWidget = node.widgets?.find((w) => w.name === 'image')
+  if (!modelWidget) return
+
+  if (
+    modelWidget.value === filePath &&
+    node.properties['Last Time Model File'] === filePath &&
+    node.properties['Last Time Model Folder'] === loadFolder
+  ) {
+    return
+  }
+
+  modelWidget.value = filePath
+  node.properties['Last Time Model File'] = filePath
+  node.properties['Last Time Model Folder'] = loadFolder
+
+  useLoad3d(node).waitForLoad3d((load3d) => {
+    if (!load3d) return
+    const config = new Load3DConfiguration(load3d, node.properties)
+    config.configureForSaveMesh(loadFolder, filePath, {
+      silentOnNotFound: true
+    })
+
+    if (isAssetPreviewSupported()) {
+      const filename = fileInfo.filename ?? ''
+      void load3d
+        .whenLoadIdle()
+        .then(() => load3d.captureThumbnail(256, 256))
+        .then((dataUrl) => fetch(dataUrl).then((r) => r.blob()))
+        .then((blob) => persistThumbnail(filename, blob))
+        .catch(() => {})
+    }
+  })
 }
 
 useExtensionService().registerExtension({
@@ -40,6 +85,20 @@ useExtensionService().registerExtension({
     }
   },
 
+  onNodeOutputsUpdated(
+    nodeOutputs: Record<NodeLocatorId, NodeExecutionOutput>
+  ) {
+    for (const [locatorId, output] of Object.entries(nodeOutputs)) {
+      const fileInfo = (output as SaveMeshOutput)['3d']?.[0]
+      if (!fileInfo) continue
+
+      const node = getNodeByLocatorId(app.rootGraph, locatorId)
+      if (!node || node.constructor.comfyClass !== 'SaveGLB') continue
+
+      applySaveGLBOutput(node, fileInfo)
+    }
+  },
+
   getCustomWidgets() {
     return {
       PREVIEW_3D(node) {
@@ -48,7 +107,7 @@ useExtensionService().registerExtension({
           name: inputSpec.name,
           component: Load3D,
           inputSpec,
-          options: {}
+          options: { hideInPanel: true }
         })
 
         widget.type = 'load3D'
@@ -81,6 +140,31 @@ useExtensionService().registerExtension({
 
     await nextTick()
 
+    useLoad3d(node).onLoad3dReady((load3d) => {
+      if (!load3d) return
+
+      const modelWidget = node.widgets?.find((w) => w.name === 'image')
+      if (!modelWidget) return
+
+      const lastTimeModelFile = node.properties['Last Time Model File'] as
+        | string
+        | undefined
+      const lastTimeModelFolder =
+        (node.properties['Last Time Model Folder'] as
+          | 'input'
+          | 'output'
+          | undefined) ?? 'output'
+
+      if (!lastTimeModelFile) return
+
+      modelWidget.value = lastTimeModelFile
+
+      const config = new Load3DConfiguration(load3d, node.properties)
+      config.configureForSaveMesh(lastTimeModelFolder, lastTimeModelFile, {
+        silentOnNotFound: true
+      })
+    })
+
     const onExecuted = node.onExecuted
 
     node.onExecuted = function (output: SaveMeshOutput) {
@@ -103,19 +187,22 @@ useExtensionService().registerExtension({
 
           const loadFolder = fileInfo.type as 'input' | 'output'
 
-          config.configureForSaveMesh(loadFolder, filePath)
+          node.properties['Last Time Model File'] = filePath
+          node.properties['Last Time Model Folder'] = loadFolder
+
+          config.configureForSaveMesh(loadFolder, filePath, {
+            silentOnNotFound: true
+          })
 
           if (isAssetPreviewSupported()) {
             const filename = fileInfo.filename ?? ''
-            const onModelLoaded = () => {
-              load3d.removeEventListener('modelLoadingEnd', onModelLoaded)
-              load3d
-                .captureThumbnail(256, 256)
-                .then((dataUrl) => fetch(dataUrl).then((r) => r.blob()))
-                .then((blob) => persistThumbnail(filename, blob))
-                .catch(() => {})
-            }
-            load3d.addEventListener('modelLoadingEnd', onModelLoaded)
+
+            void load3d
+              .whenLoadIdle()
+              .then(() => load3d.captureThumbnail(256, 256))
+              .then((dataUrl) => fetch(dataUrl).then((r) => r.blob()))
+              .then((blob) => persistThumbnail(filename, blob))
+              .catch(() => {})
           }
         }
       })
