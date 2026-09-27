@@ -18,7 +18,6 @@ export function openFeedbackDialog(source: FeedbackSource) {
   const hiddenFields = Object.entries({
     email: userEmail.value,
     userid: resolvedUserInfo.value?.id,
-    intent: 'feedback',
     source,
     version: __COMFYUI_FRONTEND_VERSION__,
     os: navigator.platform,

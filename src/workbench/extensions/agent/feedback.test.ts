@@ -57,7 +57,6 @@ describe('openFeedbackDialog (agent)', () => {
       hiddenFields: [
         'email=alpha@example.com',
         'userid=user-264',
-        'intent=feedback',
         'source=agent-panel',
         'version=1.55.4',
         'os=MacIntel',
@@ -75,7 +74,7 @@ describe('openFeedbackDialog (agent)', () => {
     expect(openTypeformDialog).toHaveBeenCalledWith(
       expect.objectContaining({
         hiddenFields:
-          'userid=user-264,intent=feedback,source=agent-panel,version=1.55.4,os=MacIntel'
+          'userid=user-264,source=agent-panel,version=1.55.4,os=MacIntel'
       })
     )
   })
@@ -88,7 +87,7 @@ describe('openFeedbackDialog (agent)', () => {
 
     expect(openTypeformDialog).toHaveBeenCalledWith(
       expect.objectContaining({
-        hiddenFields: 'intent=feedback,source=agent-panel,version=1.55.4'
+        hiddenFields: 'source=agent-panel,version=1.55.4'
       })
     )
   })
@@ -105,7 +104,6 @@ describe('openFeedbackDialog (agent)', () => {
       expect.objectContaining({
         hiddenFields: [
           'email=alpha\\,graph=private@example.com',
-          'intent=feedback',
           'source=agent-panel',
           'version=1.55.4',
           'os=MacIntel'
