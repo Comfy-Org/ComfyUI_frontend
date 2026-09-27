@@ -73,6 +73,8 @@ export type SubscriptionCommandCode =
   | 'NO_ACTIVE_SUBSCRIPTION'
   /** The server asked for a hosted payment step but offered no page for it. */
   | 'MISSING_PAYMENT_METHOD_URL'
+  /** The quote no longer matches what the server would charge; re-preview. */
+  | 'QUOTE_STALE'
 
 export type SubscriptionCommandFailure =
   | BillingFailure

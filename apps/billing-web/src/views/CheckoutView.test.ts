@@ -936,6 +936,28 @@ describe('CheckoutView', () => {
     )
   })
 
+  it('re-quotes and says the quote changed when the server refuses a stale quote', async () => {
+    const fake = await renderCheckout(CHECKOUT_PATH, {
+      preview: { status: 'ok', value: upgradeQuote() }
+    })
+    fake.subscribe.mockResolvedValueOnce({
+      status: 'error',
+      code: 'QUOTE_STALE'
+    })
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Confirm upgrade' })
+    )
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Your quote changed. Review the updated amount and try again.'
+    )
+    expect(fake.previewSubscribe).toHaveBeenCalledTimes(2)
+    expect(
+      screen.getByRole('button', { name: 'Confirm upgrade' })
+    ).toBeEnabled()
+  })
+
   it('tells the customer when the subscribe itself was refused and keeps the form', async () => {
     await renderCheckout(CHECKOUT_PATH, {
       subscribe: { status: 'error', code: 'REQUEST_FAILED' }

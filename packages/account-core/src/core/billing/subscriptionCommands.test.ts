@@ -1128,6 +1128,19 @@ describe('createBillingCommands', () => {
       expect(h.readCredits).not.toHaveBeenCalled()
     })
 
+    it('surfaces QUOTE_STALE for the host to re-preview when the quote no longer matches', async () => {
+      const h = harness({
+        status: FREE,
+        script: {
+          [POST_SUBSCRIBE]: [serverError(400, 'SUBSCRIPTION_QUOTE_STALE')]
+        }
+      })
+
+      const result = await h.commands.subscribe(PLAN)
+
+      expect(result).toEqual({ status: 'error', code: 'QUOTE_STALE' })
+    })
+
     it('surfaces REACTIVATION_CONFIRMATION_REQUIRED for the host to re-preview', async () => {
       const h = harness({
         status: FREE,
