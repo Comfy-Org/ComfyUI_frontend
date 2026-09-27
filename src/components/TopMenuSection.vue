@@ -332,13 +332,17 @@ function checkLegacyContent() {
     el.querySelector(':scope > * > *:not(:empty)') !== null
 }
 
-useMutationObserver(legacyCommandsContainerRef, () => {
-  if (legacyContentCheckRafId !== null) return
-  legacyContentCheckRafId = requestAnimationFrame(() => {
-    legacyContentCheckRafId = null
-    checkLegacyContent()
-  })
-}, { childList: true, subtree: true })
+useMutationObserver(
+  legacyCommandsContainerRef,
+  () => {
+    if (legacyContentCheckRafId !== null) return
+    legacyContentCheckRafId = requestAnimationFrame(() => {
+      legacyContentCheckRafId = null
+      checkLegacyContent()
+    })
+  },
+  { childList: true, subtree: true }
+)
 
 onMounted(() => {
   const container = legacyCommandsContainerRef.value
