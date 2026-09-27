@@ -40,6 +40,15 @@ vi.mock(import('../../../config/workshop-credits'))
 vi.mock(import('../../../scripts/posthog'))
 vi.mock(import('../../../config/router-render'), { spy: true })
 
+const deploy = vi.hoisted(() => ({ env: '' }))
+vi.mock(import('astro:env/client'), () => ({
+  WORKSHOP_LOCAL_DEV: false,
+  WORKSHOP_RELEASE: 'test',
+  get WORKSHOP_DEPLOY_ENV() {
+    return deploy.env
+  }
+}))
+
 const models = runnableCinematicModels(getRouterWorkshopModelDetail)
 const [first, second] = models
 
@@ -89,6 +98,7 @@ const generateButton = () => screen.getByTestId('cinematic-generate')
 
 describe('CinematicStudio', () => {
   beforeEach(() => {
+    deploy.env = ''
     vi.stubEnv('PUBLIC_WORKSHOP_ROUTER_RUN', '1')
     vi.mocked(useWorkshopEnabled).mockReturnValue(computed(() => true))
     vi.mocked(useWorkshopEnabledSettled).mockReturnValue(computed(() => true))
@@ -940,6 +950,22 @@ describe('CinematicStudio', () => {
       await vi.waitFor(() => expect(router_render).toHaveBeenCalledTimes(3))
     })
   })
+
+  it.for([
+    { env: 'preview', menu: 1 },
+    { env: 'production', menu: 0 }
+  ])(
+    'offers the layout-to-review menu only outside production ($env)',
+    async ({ env, menu }) => {
+      deploy.env = env
+      render(CinematicStudioPage, { props: { models } })
+
+      expect(await screen.findByTestId('cinematic')).toBeVisible()
+      expect(
+        screen.queryAllByRole('button', { name: /^Layout to review/ })
+      ).toHaveLength(menu)
+    }
+  )
 
   describe('layout switch', () => {
     const panel = () =>

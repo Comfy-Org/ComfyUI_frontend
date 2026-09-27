@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { WORKSHOP_DEPLOY_ENV } from 'astro:env/client'
 import { computed, onMounted, ref, shallowRef } from 'vue'
 
 import { provideStudioSwitchGuard } from '../../../composables/useStudioSwitchGuard'
@@ -30,6 +31,7 @@ const LAYOUTS = [
 ] as const
 
 const APPS = ['studio', 'reshoot'] as const
+const reviewing = WORKSHOP_DEPLOY_ENV !== 'production'
 
 const appsEnabled = useWorkshopAppsEnabled()
 const workflowsEnabled = useWorkshopWorkflowsEnabled()
@@ -101,6 +103,7 @@ function pickApp(id: string) {
     <CinematicStudioPanel v-else-if="layout === 'd'" :models :locale />
     <CinematicStudio v-else :models :locale />
     <CinematicScenarioMenu
+      v-if="reviewing"
       :app
       :layout
       :apps="appOptions"
