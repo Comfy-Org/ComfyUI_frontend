@@ -997,6 +997,41 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
+    it('reports correlated operation identities only after an applied frame is reconciled', () => {
+      const onAppliedUpdate = vi.fn()
+      const { unmount } = mountFollower('wf-1', true, () => fakeGraph, {
+        onAppliedUpdate
+      })
+
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 9,
+        opIds: ['op-2', 'op-1']
+      })
+
+      expect(onAppliedUpdate).toHaveBeenCalledWith({
+        workflowId: 'wf-1',
+        opIds: ['op-2', 'op-1']
+      })
+      expect(
+        materializerState.reconcileAgentAdapters.mock.invocationCallOrder[0]
+      ).toBeLessThan(onAppliedUpdate.mock.invocationCallOrder[0])
+
+      adapterState.applyFrame.mockReturnValueOnce(false)
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 10,
+        opIds: ['op-skipped']
+      })
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 11,
+        opIds: []
+      })
+      expect(onAppliedUpdate).toHaveBeenCalledTimes(1)
+      unmount()
+    })
+
     it('does not deep-copy definitions for a frame when all are registered', () => {
       const registeredGraph = {
         rootGraph: {

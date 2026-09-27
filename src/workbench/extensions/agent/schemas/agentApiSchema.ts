@@ -175,9 +175,22 @@ const zAgentToolCallData = z
     args: z.never().optional(),
     duration_ms: z.number().optional(),
     message_id: z.string(),
-    thread_id: z.string()
+    thread_id: z.string(),
+    workflow_id: z.string().min(1).optional(),
+    op_ids: z
+      .array(z.string().min(1))
+      .min(1)
+      .refine((ids) => new Set(ids).size === ids.length)
+      .optional()
   })
   .passthrough()
+  .superRefine((data, context) => {
+    if ((data.workflow_id === undefined) === (data.op_ids === undefined)) return
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'workflow_id and op_ids must be provided together'
+    })
+  })
 
 const zAgentMessageDeltaData = z
   .object({
