@@ -39,6 +39,7 @@ jobs:
                     and . != "README.md"
                     and . != "src/workspaceAvatar.ts"
                     and . != "src/button.variants.ts"
+                    and . != "src/select.variants.ts"
                     and (startswith("src/css/") | not)
                     and (startswith("src/icons/") | not)
                   )
