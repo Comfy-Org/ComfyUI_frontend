@@ -152,12 +152,12 @@ and fetch live, same as production. Refreshing the snapshot is the
 PR, and merging the PR also triggers a production deploy — which is what makes
 it useful during a quiet week with no other website commits.
 
-It runs on two triggers:
+It has one trigger, `workflow_dispatch`, reached two ways:
 
-| Trigger             | When                                              |
-| ------------------- | ------------------------------------------------- |
-| `workflow_dispatch` | A maintainer clicks **Run workflow**              |
-| `workflow_dispatch` | The Ashby webhook fires (`source: ashby-webhook`) |
+| `inputs.source` | Dispatched by                                |
+| --------------- | -------------------------------------------- |
+| `manual`        | A maintainer clicking **Run workflow**       |
+| `ashby-webhook` | The `comfy-router` Worker, on an Ashby event |
 
 There is deliberately no `schedule`. A periodic refresh was considered and
 dropped: the live page already tracks Ashby through ordinary deploys (256 in

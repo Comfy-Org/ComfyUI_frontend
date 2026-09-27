@@ -229,10 +229,11 @@ jobs:
             > [!WARNING]
             > **Do not commit to `chore/refresh-website-snapshots`.** Any run
             > that finds new snapshot data rebuilds this branch from `main`
-            > and force-pushes it, overwriting anything pushed here. And if
-            > the data later matches `main` — because someone refreshed it
-            > another way — this PR is closed and the branch deleted. Runs
-            > that find nothing new leave the branch alone entirely. To fix
+            > and force-pushes it, overwriting anything pushed here — and if
+            > that new data turns out to match `main`, because someone
+            > refreshed it another way, the same run closes this PR and
+            > deletes the branch. Runs that find nothing new do not reach
+            > either path and leave the branch alone entirely. To fix
             > something, push to your own branch and open a separate PR.
 
             The snapshot fallback in `apps/website/src/utils/ashby.ts` and
