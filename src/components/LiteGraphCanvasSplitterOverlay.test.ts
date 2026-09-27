@@ -1,7 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
 import { readFileSync } from 'fs'
-import { setActivePinia } from 'pinia'
+import { getActivePinia, setActivePinia } from 'pinia'
 import { resolve } from 'path'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
