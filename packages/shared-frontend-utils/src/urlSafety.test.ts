@@ -13,6 +13,8 @@ describe('isSafeExternalUrl', () => {
 
   it.for([
     ['javascript', 'javascript:alert(1)'],
+    ['mixed-case javascript', 'JaVaScRiPt:alert(1)'],
+    ['whitespace-prefixed javascript', ' \t\njavascript:alert(1)'],
     ['data', 'data:text/html,<script>alert(1)</script>'],
     ['vbscript', 'vbscript:msgbox(1)'],
     ['file', 'file:///etc/passwd'],
