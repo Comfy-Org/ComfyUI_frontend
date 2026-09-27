@@ -15,12 +15,7 @@ export interface LGraphState {
   lastRerouteId: RerouteId
 }
 
-class IdSpaceExhaustedError extends Error {
-  constructor() {
-    super('ID space exhausted')
-    this.name = 'IdSpaceExhaustedError'
-  }
-}
+type ReservedIds = ReadonlySet<number> | (() => ReadonlySet<number>)
 
 export function createLGraphState(): LGraphState {
   return {
@@ -31,44 +26,36 @@ export function createLGraphState(): LGraphState {
   }
 }
 
-export function cloneLGraphState(state: LGraphState): LGraphState {
-  return { ...state }
-}
-
-export function commitLGraphState(
-  target: LGraphState,
-  source: LGraphState
-): void {
-  Object.assign(target, source)
-}
-
-function advanceCounter(counter: number): number {
-  if (
-    !Number.isSafeInteger(counter) ||
-    counter < 0 ||
-    counter === Number.MAX_SAFE_INTEGER
-  ) {
-    throw new IdSpaceExhaustedError()
-  }
-  return counter + 1
-}
-
 export function findNextAvailableId(
-  usedIds: Set<number>,
-  advance: () => number
+  usedIds: ReadonlySet<number>,
+  startAt = 1
 ): number {
-  for (let attempts = 0; attempts <= usedIds.size; attempts++) {
-    const nextId = advance()
-    if (!Number.isSafeInteger(nextId) || nextId < 0) {
-      throw new IdSpaceExhaustedError()
-    }
-    if (!usedIds.has(nextId)) return nextId
+  let candidate = Number.isSafeInteger(startAt) && startAt > 0 ? startAt : 1
+  let attempts = 0
+  while (usedIds.has(candidate) && attempts < usedIds.size) {
+    candidate = candidate === Number.MAX_SAFE_INTEGER ? 1 : candidate + 1
+    attempts++
   }
-  throw new IdSpaceExhaustedError()
+  return candidate
+}
+
+function mintSequentialId(lastId: number, reservedIds: ReservedIds): number {
+  if (Number.isSafeInteger(lastId) && lastId >= 0) {
+    const nextId = lastId + 1
+    if (
+      Number.isSafeInteger(nextId) &&
+      (typeof reservedIds === 'function' || !reservedIds.has(nextId))
+    )
+      return nextId
+  }
+  const usedIds =
+    typeof reservedIds === 'function' ? reservedIds() : reservedIds
+  return findNextAvailableId(usedIds, lastId + 1)
 }
 
 /**
- * `'sequential'` (default) is the plain-local `++lastNodeId` counter.
+ * `'sequential'` advances the local counter, wrapping to an unused safe integer
+ * at the boundary.
  * `'crdt-disjoint'` is for a graph bound to the in-app agent's collaborative
  * doc, where a local mint can otherwise land on an id the agent independently
  * mints for the same doc — see {@link mintCrdtDisjointNodeId}.
@@ -175,25 +162,42 @@ export function matchesReservedBitConvention(id: NodeId): boolean {
 
 export function mintNodeId(
   state: LGraphState,
-  mode: NodeIdMintMode = 'sequential'
+  mode: NodeIdMintMode,
+  reservedIds: ReservedIds
 ): NodeId {
-  return mode === 'crdt-disjoint'
-    ? mintCrdtDisjointNodeId()
-    : toNodeId((state.lastNodeId = advanceCounter(state.lastNodeId)))
+  if (mode === 'crdt-disjoint') return mintCrdtDisjointNodeId()
+  const id = mintSequentialId(state.lastNodeId, reservedIds)
+  if (id > state.lastNodeId) state.lastNodeId = id
+  return toNodeId(id)
 }
 
-export function mintGroupId(state: LGraphState): GroupId {
-  return toGroupId((state.lastGroupId = advanceCounter(state.lastGroupId)))
+export function mintGroupId(
+  state: LGraphState,
+  reservedIds: ReservedIds
+): GroupId {
+  const id = mintSequentialId(state.lastGroupId, reservedIds)
+  if (id > state.lastGroupId) state.lastGroupId = id
+  return toGroupId(id)
 }
 
-export function mintLinkId(state: LGraphState): LinkId {
-  state.lastLinkId = toLinkId(advanceCounter(Number(state.lastLinkId)))
-  return state.lastLinkId
+export function mintLinkId(
+  state: LGraphState,
+  reservedIds: ReservedIds
+): LinkId {
+  const lastLinkId = Number(state.lastLinkId)
+  const id = mintSequentialId(lastLinkId, reservedIds)
+  if (id > lastLinkId) state.lastLinkId = toLinkId(id)
+  return toLinkId(id)
 }
 
-export function mintRerouteId(state: LGraphState): RerouteId {
-  state.lastRerouteId = toRerouteId(advanceCounter(Number(state.lastRerouteId)))
-  return state.lastRerouteId
+export function mintRerouteId(
+  state: LGraphState,
+  reservedIds: ReservedIds
+): RerouteId {
+  const lastRerouteId = Number(state.lastRerouteId)
+  const id = mintSequentialId(lastRerouteId, reservedIds)
+  if (id > lastRerouteId) state.lastRerouteId = toRerouteId(id)
+  return toRerouteId(id)
 }
 
 export function observeNodeId(state: LGraphState, id: NodeId): void {

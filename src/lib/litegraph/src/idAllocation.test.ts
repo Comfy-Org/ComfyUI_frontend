@@ -2,8 +2,6 @@ import { describe, expect, it } from 'vitest'
 
 import {
   AGENT_RESERVED_BIT,
-  cloneLGraphState,
-  commitLGraphState,
   createLGraphState,
   findNextAvailableId,
   isReservedBitRangeNodeId,
@@ -25,18 +23,31 @@ import { toRerouteId } from '@/types/rerouteId'
 describe('idAllocation', () => {
   it('mints increasing ids for each entity kind', () => {
     const state = createLGraphState()
+    const reservedIds = new Set<number>()
 
-    expect([mintNodeId(state), mintNodeId(state)]).toEqual(['1', '2'])
-    expect([mintGroupId(state), mintGroupId(state)]).toEqual([1, 2])
-    expect([mintLinkId(state), mintLinkId(state)]).toEqual([1, 2])
-    expect([mintRerouteId(state), mintRerouteId(state)]).toEqual([1, 2])
+    expect([
+      mintNodeId(state, 'sequential', reservedIds),
+      mintNodeId(state, 'sequential', reservedIds)
+    ]).toEqual(['1', '2'])
+    expect([
+      mintGroupId(state, reservedIds),
+      mintGroupId(state, reservedIds)
+    ]).toEqual([1, 2])
+    expect([
+      mintLinkId(state, reservedIds),
+      mintLinkId(state, reservedIds)
+    ]).toEqual([1, 2])
+    expect([
+      mintRerouteId(state, reservedIds),
+      mintRerouteId(state, reservedIds)
+    ]).toEqual([1, 2])
   })
 
   it("mints from a disjoint range in 'crdt-disjoint' mode, ignoring lastNodeId", () => {
     const state = createLGraphState()
     state.lastNodeId = 5
 
-    const id = BigInt(mintNodeId(state, 'crdt-disjoint'))
+    const id = BigInt(mintNodeId(state, 'crdt-disjoint', new Set()))
 
     expect(state.lastNodeId).toBe(5)
     // Bit 40 clear (never the agent's `2**40 | random52` range), bit 41 set.
@@ -78,25 +89,29 @@ describe('idAllocation', () => {
       name: 'node',
       observe: (state: ReturnType<typeof createLGraphState>, value: number) =>
         observeNodeId(state, toNodeId(value)),
-      mint: mintNodeId
+      mint: (state: ReturnType<typeof createLGraphState>) =>
+        mintNodeId(state, 'sequential', new Set())
     },
     {
       name: 'group',
       observe: (state: ReturnType<typeof createLGraphState>, value: number) =>
         observeGroupId(state, toGroupId(value)),
-      mint: mintGroupId
+      mint: (state: ReturnType<typeof createLGraphState>) =>
+        mintGroupId(state, new Set())
     },
     {
       name: 'link',
       observe: (state: ReturnType<typeof createLGraphState>, value: number) =>
         observeLinkId(state, toLinkId(value)),
-      mint: mintLinkId
+      mint: (state: ReturnType<typeof createLGraphState>) =>
+        mintLinkId(state, new Set())
     },
     {
       name: 'reroute',
       observe: (state: ReturnType<typeof createLGraphState>, value: number) =>
         observeRerouteId(state, toRerouteId(value)),
-      mint: mintRerouteId
+      mint: (state: ReturnType<typeof createLGraphState>) =>
+        mintRerouteId(state, new Set())
     }
   ])(
     'continues $name allocation above the former limit',
@@ -114,7 +129,10 @@ describe('idAllocation', () => {
       setCounter: (state: ReturnType<typeof createLGraphState>) => {
         state.lastNodeId = Number.MAX_SAFE_INTEGER
       },
-      mint: mintNodeId
+      mint: (
+        state: ReturnType<typeof createLGraphState>,
+        reservedIds: ReadonlySet<number>
+      ) => mintNodeId(state, 'sequential', reservedIds)
     },
     {
       name: 'group',
@@ -137,33 +155,50 @@ describe('idAllocation', () => {
       },
       mint: mintRerouteId
     }
-  ])('rejects unsafe $name allocation', ({ setCounter, mint }) => {
-    const state = createLGraphState()
-    setCounter(state)
+  ])(
+    'wraps $name allocation to an available safe ID',
+    ({ setCounter, mint }) => {
+      const state = createLGraphState()
+      setCounter(state)
 
-    expect(() => mint(state)).toThrow('ID space exhausted')
+      expect(Number(mint(state, new Set([1])))).toBe(2)
+    }
+  )
+
+  it('checks the candidate after the last reserved ID', () => {
+    expect(findNextAvailableId(new Set([1, 2, 3]), 1)).toBe(4)
   })
 
-  it('bounds collision searches by the number of reservations', () => {
-    let calls = 0
+  it('skips a reserved ID above a stale counter', () => {
+    const state = createLGraphState()
+    state.lastGroupId = 1
 
-    expect(() =>
-      findNextAvailableId(new Set([1, 2]), () => {
-        calls++
-        return 1
-      })
-    ).toThrow('ID space exhausted')
-    expect(calls).toBe(3)
+    expect(mintGroupId(state, new Set([2]))).toBe(3)
   })
 
-  it('commits speculative counter updates only when requested', () => {
+  it('collects reservations only when the counter reaches its boundary', () => {
     const state = createLGraphState()
-    const workingState = cloneLGraphState(state)
-    mintNodeId(workingState)
+    let collections = 0
+    const collectReservedIds = () => {
+      collections++
+      return new Set([1])
+    }
 
-    expect(state.lastNodeId).toBe(0)
-    commitLGraphState(state, workingState)
-    expect(state.lastNodeId).toBe(1)
+    expect(mintGroupId(state, collectReservedIds)).toBe(1)
+    expect(collections).toBe(0)
+
+    state.lastGroupId = Number.MAX_SAFE_INTEGER
+    expect(mintGroupId(state, collectReservedIds)).toBe(2)
+    expect(collections).toBe(1)
+  })
+
+  it('wraps a reserved maximum candidate to the first available ID', () => {
+    expect(
+      findNextAvailableId(
+        new Set([Number.MAX_SAFE_INTEGER, 1]),
+        Number.MAX_SAFE_INTEGER
+      )
+    ).toBe(2)
   })
 
   describe('isReservedBitRangeNodeId', () => {

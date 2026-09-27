@@ -2,7 +2,6 @@ import { useEventListener } from '@vueuse/core'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { ClipboardItems } from '@/lib/litegraph/src/types/serialisation'
 import { zClipboardItems } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
@@ -45,7 +44,9 @@ export function cloneDataTransfer(original: DataTransfer): DataTransfer {
 
 function pasteClipboardItems(data: DataTransfer): boolean {
   const rawData = data.getData('text/html')
-  const match = rawData.match(/data-comfy-metadata="([A-Za-z0-9+/=]+)"/)?.[1]
+  const match = rawData.match(
+    /data-(?:comfy-)?metadata="([A-Za-z0-9+/=]+)"/
+  )?.[1]
   if (!match) return false
 
   let parsed: unknown
@@ -63,9 +64,7 @@ function pasteClipboardItems(data: DataTransfer): boolean {
   if (!clipboardItems.success) return false
 
   try {
-    useCanvasStore()
-      .getCanvas()
-      ._deserializeItems(clipboardItems.data as ClipboardItems, {})
+    useCanvasStore().getCanvas()._deserializeItems(clipboardItems.data, {})
   } catch (err) {
     useErrorHandling().toastErrorHandler(err)
   }

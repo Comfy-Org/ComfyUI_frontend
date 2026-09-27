@@ -41,27 +41,16 @@ import { forEachNode } from '@/utils/graphTraversalUtil'
 import { CanvasPointer } from './CanvasPointer'
 import type { ContextMenu } from './ContextMenu'
 import { createCursorCache } from './cursorCache'
-import { isRootGraphDocBound } from './docBoundGraphs'
 import { DragAndScale } from './DragAndScale'
 import type { AnimationOptions } from './DragAndScale'
-import {
-  cloneLGraphState,
-  commitLGraphState,
-  findNextAvailableId,
-  mintGroupId,
-  mintLinkId,
-  mintNodeId,
-  mintRerouteId,
-  observeNodeId
-} from './idAllocation'
 import type { LGraph, SubgraphId } from './LGraph'
 import { LGraphGroup } from './LGraphGroup'
 import type { SlotTypeDefaultNodeOpts } from './LiteGraphGlobal'
 import { LGraphNode } from './LGraphNode'
 import type { NodeProperty } from './LGraphNode'
 import { detachSerialisedLinks } from './linkDeduplication'
-import { parseNodeId, serializeNodeId, toNodeId } from '@/types/nodeId'
-import type { NodeId, SerializedNodeId } from '@/types/nodeId'
+import { parseNodeId, serializeNodeId } from '@/types/nodeId'
+import type { SerializedNodeId } from '@/types/nodeId'
 import { LLink, slotFloatingLinks } from './LLink'
 import {
   inputHasLink,
@@ -72,12 +61,6 @@ import {
 import type { LinkId } from './LLink'
 import { Reroute } from './Reroute'
 import type { RerouteId } from './Reroute'
-import {
-  collectReservedGroupIds,
-  collectReservedLinkIds,
-  collectReservedRerouteIds,
-  normalizeSubgraphDefinitions
-} from './subgraph/subgraphDeduplication'
 import type { CanvasInteractionModeReader } from './canvas/CanvasInteractionMode'
 import { LinkConnector } from './canvas/LinkConnector'
 import {
@@ -185,6 +168,7 @@ import type { IBaseWidget, TWidgetValue } from './types/widgets'
 import { alignNodes, distributeNodes, getBoundaryNodes } from './utils/arrange'
 import { findFirstNode, getDraggedItems } from './utils/collections'
 import { resolveConnectingLinkColor } from './utils/linkColors'
+import { slotTypeKey } from './utils/type'
 import { createUuidv4 } from '@/utils/uuid'
 import { BaseWidget } from './widgets/BaseWidget'
 import { toConcreteWidget } from './widgets/widgetMap'
@@ -4199,12 +4183,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   }
 
   private _deserializeItemsBody(
-    parsed: ClipboardItems,
+    clipboardItems: ClipboardItems,
     graph: LGraph,
     connectInputs: boolean,
     position: Point
   ): ClipboardPasteResult | undefined {
-    preflightClipboardItemIds(parsed, graph)
+    const parsed = structuredClone(clipboardItems)
 
     // Parse & initialise
     parsed.nodes ??= []
@@ -4249,9 +4233,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     for (const nodeInfo of allNodeInfo)
       if (nodeInfo.type in subgraphIdMap)
         nodeInfo.type = subgraphIdMap[nodeInfo.type]
-    remapClipboardSubgraphNodeIds(parsed, graph.rootGraph)
     // Subgraphs
-    const subgraphs = graph.createSubgraphs(parsed.subgraphs)
+    const subgraphs = graph.createSubgraphs(parsed.subgraphs, parsed.nodes)
     for (const subgraph of subgraphs)
       results.subgraphs.set(subgraph.id, subgraph)
 
@@ -4420,12 +4403,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   }
 
   pasteFromClipboard(options: IPasteFromClipboardOptions = {}): void {
-    this.emitBeforeChange()
-    try {
-      this._pasteFromClipboard(options)
-    } finally {
-      this.emitAfterChange()
-    }
+    this._pasteFromClipboard(options)
   }
 
   processNodeDblClicked(n: LGraphNode): void {
@@ -6477,7 +6455,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             visibleReroutes.push(reroute)
             reroute._colour =
               link.color ||
-              LGraphCanvas.link_type_colors[link.type] ||
+              LGraphCanvas.link_type_colors[slotTypeKey(link.type)] ||
               this.default_link_color
           }
 
@@ -6989,7 +6967,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     // check for defaults nodes for this slottype
-    const fromSlotType = slotX.type == LiteGraph.EVENT ? '_event_' : slotX.type
+    const fromSlotType =
+      slotX.type == LiteGraph.EVENT ? '_event_' : slotTypeKey(slotX.type)
     const slotTypesDefault = isFrom
       ? LiteGraph.slot_types_default_out
       : LiteGraph.slot_types_default_in
@@ -7182,7 +7161,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     // get defaults nodes for this slottype
-    const fromSlotType = slotX.type == LiteGraph.EVENT ? '_event_' : slotX.type
+    const fromSlotType =
+      slotX.type == LiteGraph.EVENT ? '_event_' : slotTypeKey(slotX.type)
     const slotTypesDefault = isFrom
       ? LiteGraph.slot_types_default_out
       : LiteGraph.slot_types_default_in
@@ -9066,183 +9046,3 @@ defineDeprecatedProperty(
   'applyNodePositions',
   'LGraphCanvas.repositionNodesVueMode is deprecated. Use applyNodePositions instead.'
 )
-
-function patchLinkNodeIds(
-  links:
-    | { origin_id: SerializedNodeId; target_id: SerializedNodeId }[]
-    | undefined,
-  remappedIds: Map<SerializedNodeId, SerializedNodeId>
-) {
-  if (!links?.length) return
-
-  for (const link of links) {
-    const newOriginId = remappedIds.get(link.origin_id)
-    if (newOriginId !== undefined) link.origin_id = newOriginId
-
-    const newTargetId = remappedIds.get(link.target_id)
-    if (newTargetId !== undefined) link.target_id = newTargetId
-  }
-}
-
-function remapNodeId(
-  nodeId: string,
-  remappedIds: Map<SerializedNodeId, SerializedNodeId>
-): SerializedNodeId | undefined {
-  const directMatch = remappedIds.get(nodeId)
-  if (directMatch !== undefined) return directMatch
-  if (!/^-?\d+$/.test(nodeId)) return undefined
-
-  const numericId = Number(nodeId)
-  if (!Number.isSafeInteger(numericId)) return undefined
-
-  return remappedIds.get(numericId)
-}
-
-function remapProxyWidgets(
-  info: ISerialisedNode,
-  remappedIds: Map<SerializedNodeId, SerializedNodeId> | undefined
-) {
-  if (!remappedIds || remappedIds.size === 0) return
-
-  const proxyWidgets = info.properties?.proxyWidgets
-  if (!Array.isArray(proxyWidgets)) return
-
-  for (const entry of proxyWidgets) {
-    if (!Array.isArray(entry)) continue
-
-    const [nodeId] = entry
-    if (typeof nodeId !== 'string' || nodeId === '-1') continue
-
-    const remappedNodeId = remapNodeId(nodeId, remappedIds)
-    if (remappedNodeId !== undefined) entry[0] = String(remappedNodeId)
-  }
-}
-
-function hasStringSourceNodeId(
-  value: unknown
-): value is { sourceNodeId: string } {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'sourceNodeId' in value &&
-    typeof value.sourceNodeId === 'string'
-  )
-}
-
-function remapPreviewExposures(
-  info: ISerialisedNode,
-  remappedIds: Map<SerializedNodeId, SerializedNodeId> | undefined
-) {
-  if (!remappedIds || remappedIds.size === 0) return
-
-  const previewExposures = info.properties?.previewExposures
-  if (!Array.isArray(previewExposures)) return
-
-  for (const entry of previewExposures) {
-    if (!hasStringSourceNodeId(entry) || entry.sourceNodeId === '-1') continue
-
-    const remappedNodeId = remapNodeId(entry.sourceNodeId, remappedIds)
-    if (remappedNodeId !== undefined)
-      entry.sourceNodeId = String(remappedNodeId)
-  }
-}
-
-export function remapClipboardSubgraphNodeIds(
-  parsed: ClipboardItems,
-  rootGraph: LGraph
-): void {
-  // Mint/observe against a disposable copy of the graph's ID state so a
-  // throw (e.g. ID space exhaustion) leaves the real allocator untouched.
-  const workingState = cloneLGraphState(rootGraph.state)
-
-  const usedNodeIds = new Set<number>()
-  forEachNode(rootGraph, (node) => {
-    const numericId = Number(node.id)
-    if (!Number.isInteger(numericId)) return
-    usedNodeIds.add(numericId)
-    observeNodeId(workingState, toNodeId(numericId))
-  })
-
-  function nextUniqueNodeId(): number {
-    return findNextAvailableId(usedNodeIds, () =>
-      Number(mintNodeId(workingState))
-    )
-  }
-
-  const subgraphNodeIdMap = new Map<
-    SubgraphId,
-    Map<SerializedNodeId, SerializedNodeId>
-  >()
-  for (const subgraphInfo of parsed.subgraphs ?? []) {
-    const remappedIds = new Map<SerializedNodeId, SerializedNodeId>()
-    const interiorNodes = subgraphInfo.nodes ?? []
-
-    for (const nodeInfo of interiorNodes) {
-      if (typeof nodeInfo.id !== 'number') continue
-
-      if (usedNodeIds.has(nodeInfo.id)) {
-        const oldId = nodeInfo.id
-        const newId = nextUniqueNodeId()
-        usedNodeIds.add(newId)
-        remappedIds.set(oldId, newId)
-        nodeInfo.id = newId
-        continue
-      }
-
-      usedNodeIds.add(nodeInfo.id)
-      observeNodeId(workingState, toNodeId(nodeInfo.id))
-    }
-
-    if (remappedIds.size > 0) {
-      patchLinkNodeIds(subgraphInfo.links, remappedIds)
-      subgraphNodeIdMap.set(subgraphInfo.id, remappedIds)
-    }
-  }
-
-  const allNodeInfo: ISerialisedNode[] = [
-    parsed.nodes ? [parsed.nodes] : [],
-    parsed.subgraphs ? parsed.subgraphs.map((s) => s.nodes ?? []) : []
-  ].flat(2)
-
-  for (const nodeInfo of allNodeInfo) {
-    if (typeof nodeInfo.type !== 'string') continue
-    const remappedIds = subgraphNodeIdMap.get(nodeInfo.type)
-    remapProxyWidgets(nodeInfo, remappedIds)
-    remapPreviewExposures(nodeInfo, remappedIds)
-  }
-
-  commitLGraphState(rootGraph.state, workingState)
-}
-
-function preflightClipboardItemIds(
-  parsed: ClipboardItems,
-  graph: LGraph
-): void {
-  const rootGraph = graph.rootGraph
-  const workingState = cloneLGraphState(rootGraph.state)
-  if (parsed.subgraphs?.length) {
-    const nodeIds = new Set<NodeId>()
-    forEachNode(rootGraph, (node) => nodeIds.add(node.id))
-    normalizeSubgraphDefinitions(
-      parsed.subgraphs,
-      {
-        nodeIds,
-        groupIds: collectReservedGroupIds(rootGraph),
-        linkIds: collectReservedLinkIds(rootGraph),
-        rerouteIds: collectReservedRerouteIds(rootGraph)
-      },
-      workingState
-    )
-  }
-
-  for (let index = 0; index < (parsed.groups?.length ?? 0); index++)
-    mintGroupId(workingState)
-  if (!graph.isRootGraph || !isRootGraphDocBound(graph.id)) {
-    for (let index = 0; index < (parsed.nodes?.length ?? 0); index++)
-      mintNodeId(workingState)
-  }
-  for (let index = 0; index < (parsed.reroutes?.length ?? 0); index++)
-    mintRerouteId(workingState)
-  for (let index = 0; index < (parsed.links?.length ?? 0); index++)
-    mintLinkId(workingState)
-}

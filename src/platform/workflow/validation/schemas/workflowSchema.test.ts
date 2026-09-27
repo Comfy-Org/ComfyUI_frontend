@@ -1,7 +1,10 @@
 import fs from 'fs'
 import { describe, expect, it } from 'vitest'
 
-import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import {
+  validateComfyWorkflow,
+  zClipboardItems
+} from '@/platform/workflow/validation/schemas/workflowSchema'
 import { defaultGraph } from '@/scripts/defaultGraph'
 
 const WORKFLOW_DIR = 'src/platform/workflow/validation/schemas/__fixtures__'
@@ -389,5 +392,31 @@ describe('parseComfyWorkflow', () => {
       workflow.nodes[0].properties.ver = ver
       await expect(validateComfyWorkflow(workflow)).resolves.toBeNull()
     })
+  })
+})
+
+describe('zClipboardItems', () => {
+  it('normalizes array-like widget values and preserves array slot types', () => {
+    const node = JSON.parse(JSON.stringify(defaultGraph.nodes[0]))
+    node.inputs = [{ name: 'input', type: ['IMAGE', 'MASK'] }]
+    node.widgets_values = { 0: 'first', 1: 2, length: 2 }
+
+    const result = zClipboardItems.safeParse({ nodes: [node] })
+
+    expect(result.success).toBe(true)
+    if (!result.success) throw result.error
+    expect(result.data.nodes?.[0].inputs?.[0].type).toEqual(['IMAGE', 'MASK'])
+    expect(result.data.nodes?.[0].widgets_values).toEqual(['first', 2])
+  })
+
+  it('normalizes sparse widget values without allocating their declared length', () => {
+    const node = JSON.parse(JSON.stringify(defaultGraph.nodes[0]))
+    node.widgets_values = { 0: 'first', length: Number.MAX_SAFE_INTEGER }
+
+    const result = zClipboardItems.safeParse({ nodes: [node] })
+
+    expect(result.success).toBe(true)
+    if (!result.success) throw result.error
+    expect(result.data.nodes?.[0].widgets_values).toEqual(['first'])
   })
 })

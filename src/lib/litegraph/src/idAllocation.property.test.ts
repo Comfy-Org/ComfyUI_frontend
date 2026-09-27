@@ -53,10 +53,10 @@ describe('idAllocation has no collision avoidance against a concurrent external 
           agent.lastNodeId = lastObservedId
 
           const frontendIds = Array.from({ length: mintCount }, () =>
-            Number(mintNodeId(frontend))
+            Number(mintNodeId(frontend, 'sequential', new Set()))
           )
           const agentIds = Array.from({ length: mintCount }, () =>
-            Number(mintNodeId(agent))
+            Number(mintNodeId(agent, 'sequential', new Set()))
           )
 
           return frontendIds.every((id, index) => id === agentIds[index])
@@ -97,7 +97,9 @@ describe("mintNodeId's 'crdt-disjoint' mode never collides with a simulated agen
           const frontend = createLGraphState()
           frontend.lastNodeId = lastObservedId
 
-          const frontendMintedId = BigInt(mintNodeId(frontend, 'crdt-disjoint'))
+          const frontendMintedId = BigInt(
+            mintNodeId(frontend, 'crdt-disjoint', new Set())
+          )
 
           return frontendMintedId !== agentId
         }
@@ -113,7 +115,7 @@ describe("mintNodeId's 'crdt-disjoint' mode never collides with a simulated agen
         (mintCount, agentIds) => {
           const frontend = createLGraphState()
           const frontendIds = Array.from({ length: mintCount }, () =>
-            BigInt(mintNodeId(frontend, 'crdt-disjoint'))
+            BigInt(mintNodeId(frontend, 'crdt-disjoint', new Set()))
           )
           const agentIdSet = new Set(agentIds)
           return frontendIds.every((id) => !agentIdSet.has(id))
@@ -140,7 +142,7 @@ describe("mintNodeId's 'crdt-disjoint' mode never collides with a simulated agen
       fc.property(fc.integer({ min: 1, max: 50 }), (mintCount) => {
         const frontend = createLGraphState()
         const ids = Array.from({ length: mintCount }, () =>
-          BigInt(mintNodeId(frontend, 'crdt-disjoint'))
+          BigInt(mintNodeId(frontend, 'crdt-disjoint', new Set()))
         )
 
         return ids.every(
@@ -158,7 +160,7 @@ describe("mintNodeId's 'crdt-disjoint' mode never collides with a simulated agen
       fc.property(fc.integer({ min: 2, max: 50 }), (mintCount) => {
         const frontend = createLGraphState()
         const ids = Array.from({ length: mintCount }, () =>
-          BigInt(mintNodeId(frontend, 'crdt-disjoint'))
+          BigInt(mintNodeId(frontend, 'crdt-disjoint', new Set()))
         )
 
         return new Set(ids).size === ids.length

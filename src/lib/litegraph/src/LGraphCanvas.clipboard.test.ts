@@ -27,7 +27,7 @@ import {
   SubgraphNode,
   createUuidv4
 } from '@/lib/litegraph/src/litegraph'
-import { remapClipboardSubgraphNodeIds } from '@/lib/litegraph/src/LGraphCanvas'
+import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import type {
   ClipboardItems,
@@ -65,263 +65,67 @@ function createSerialisedNode(
   }
 }
 
-function createSubgraphClipboardItems(interiorNodeId: number): ClipboardItems {
-  return {
-    nodes: [],
-    groups: [],
-    reroutes: [],
-    links: [],
-    subgraphs: [
-      {
-        id: createUuidv4(),
-        version: 1,
-        revision: 0,
-        state: {
-          lastNodeId: 0,
-          lastLinkId: 0,
-          lastGroupId: 0,
-          lastRerouteId: 0
-        },
-        name: 'Pasted Subgraph',
-        inputNode: { id: SUBGRAPH_INPUT_ID, bounding: [0, 0, 10, 10] },
-        outputNode: { id: SUBGRAPH_OUTPUT_ID, bounding: [0, 0, 10, 10] },
-        nodes: [createSerialisedNode(interiorNodeId, 'test/node')]
-      }
-    ]
-  }
-}
-
-describe('remapClipboardSubgraphNodeIds', () => {
-  it('remaps pasted subgraph interior IDs and proxyWidgets references', () => {
-    const rootGraph = new LGraph()
-    const existingNode = new LGraphNode('existing')
-    existingNode.id = toNodeId(1)
-    rootGraph.add(existingNode)
-
-    const subgraphId = createUuidv4()
-    const pastedSubgraph: ExportedSubgraph = {
-      id: subgraphId,
-      version: 1,
-      revision: 0,
-      state: {
-        lastNodeId: 0,
-        lastLinkId: 0,
-        lastGroupId: 0,
-        lastRerouteId: 0
-      },
-      config: {},
-      name: 'Pasted Subgraph',
-      inputNode: {
-        id: SUBGRAPH_INPUT_ID,
-        bounding: [0, 0, 10, 10]
-      },
-      outputNode: {
-        id: SUBGRAPH_OUTPUT_ID,
-        bounding: [0, 0, 10, 10]
-      },
-      inputs: [],
-      outputs: [],
-      widgets: [],
-      nodes: [createSerialisedNode(1, 'test/node')],
-      links: [
-        {
-          id: 1,
-          type: '*',
-          origin_id: 1,
-          origin_slot: 0,
-          target_id: 1,
-          target_slot: 0
-        }
-      ],
-      groups: []
-    }
-
-    const parsed: ClipboardItems = {
-      nodes: [createSerialisedNode(99, subgraphId, [['1', 'seed']])],
-      groups: [],
-      reroutes: [],
-      links: [],
-      subgraphs: [pastedSubgraph]
-    }
-
-    remapClipboardSubgraphNodeIds(parsed, rootGraph)
-
-    const remappedSubgraph = parsed.subgraphs?.[0]
-    expect(remappedSubgraph).toBeDefined()
-
-    const remappedLink = remappedSubgraph?.links?.[0]
-    expect(remappedLink).toBeDefined()
-
-    const remappedInteriorId = remappedSubgraph?.nodes?.[0]?.id
-    expect(remappedInteriorId).not.toBe(1)
-    expect(remappedLink?.origin_id).toBe(remappedInteriorId)
-    expect(remappedLink?.target_id).toBe(remappedInteriorId)
-
-    const remappedNode = parsed.nodes?.[0]
-    expect(remappedNode).toBeDefined()
-    expect(remappedNode?.properties?.proxyWidgets).toStrictEqual([
-      [String(remappedInteriorId), 'seed']
-    ])
-  })
-
-  it('remaps pasted SubgraphNode previewExposures sourceNodeId references', () => {
-    const rootGraph = new LGraph()
-    const existingNode = new LGraphNode('existing')
-    existingNode.id = toNodeId(1)
-    rootGraph.add(existingNode)
-
-    const subgraphId = createUuidv4()
-    const pastedSubgraph: ExportedSubgraph = {
-      id: subgraphId,
-      version: 1,
-      revision: 0,
-      state: {
-        lastNodeId: 0,
-        lastLinkId: 0,
-        lastGroupId: 0,
-        lastRerouteId: 0
-      },
-      config: {},
-      name: 'Pasted Subgraph',
-      inputNode: { id: SUBGRAPH_INPUT_ID, bounding: [0, 0, 10, 10] },
-      outputNode: { id: SUBGRAPH_OUTPUT_ID, bounding: [0, 0, 10, 10] },
-      inputs: [],
-      outputs: [],
-      widgets: [],
-      nodes: [createSerialisedNode(1, 'test/node')],
-      links: [],
-      groups: []
-    }
-
-    const hostInfo = createSerialisedNode(99, subgraphId)
-    hostInfo.properties = {
-      previewExposures: [
-        {
-          name: '$$canvas-image-preview',
-          sourceNodeId: '1',
-          sourcePreviewName: '$$canvas-image-preview'
-        }
-      ]
-    }
-
-    const parsed: ClipboardItems = {
-      nodes: [hostInfo],
-      groups: [],
-      reroutes: [],
-      links: [],
-      subgraphs: [pastedSubgraph]
-    }
-
-    remapClipboardSubgraphNodeIds(parsed, rootGraph)
-
-    const remappedInteriorId = parsed.subgraphs?.[0]?.nodes?.[0]?.id
-    expect(remappedInteriorId).not.toBe(1)
-    expect(parsed.nodes?.[0]?.properties?.previewExposures).toStrictEqual([
-      {
-        name: '$$canvas-image-preview',
-        sourceNodeId: String(remappedInteriorId),
-        sourcePreviewName: '$$canvas-image-preview'
-      }
-    ])
-  })
-
-  it('remaps collisions above the former fixed limit', () => {
-    const rootGraph = new LGraph()
-    const existingNode = new LGraphNode('existing')
-    existingNode.id = toNodeId(1)
-    rootGraph.add(existingNode)
-    rootGraph.state.lastNodeId = 100_000_000
-    const parsed = createSubgraphClipboardItems(1)
-
-    remapClipboardSubgraphNodeIds(parsed, rootGraph)
-
-    expect(parsed.subgraphs?.[0].nodes?.[0].id).toBe(100_000_001)
-    expect(rootGraph.state.lastNodeId).toBe(100_000_001)
-  })
-
-  it('closes change tracking and preserves counters when remapping fails', () => {
-    const rootGraph = new LGraph()
-    const existingNode = new LGraphNode('existing')
-    existingNode.id = toNodeId(1)
-    rootGraph.add(existingNode)
-    rootGraph.state.lastNodeId = Number.MAX_SAFE_INTEGER
-    const canvas = createCanvas(rootGraph)
-    const afterGraphChange = vi.spyOn(rootGraph, 'afterChange')
-    const afterCanvasChange = vi.spyOn(canvas, 'emitAfterChange')
-    const parsed = createSubgraphClipboardItems(1)
-
-    expect(() => canvas._deserializeItems(parsed, {})).toThrow(
-      'ID space exhausted'
-    )
-    expect(rootGraph.state.lastNodeId).toBe(Number.MAX_SAFE_INTEGER)
-    expect(afterGraphChange).toHaveBeenCalledOnce()
-    expect(afterCanvasChange).toHaveBeenCalledOnce()
-  })
-
-  it('does not partially paste when a later ID allocation is exhausted', () => {
-    const nodeType = 'test/clipboard-id-preflight'
+describe('clipboard ID allocation', () => {
+  it('wraps at the safe-integer boundary without mutating clipboard data', () => {
+    const nodeType = 'test/clipboard-id-wrap'
     registerClipboardNodeType(nodeType)
     const rootGraph = new LGraph()
-    rootGraph.state.lastGroupId = Number.MAX_SAFE_INTEGER - 1
     rootGraph.state.lastNodeId = Number.MAX_SAFE_INTEGER
-    const canvas = createCanvas(rootGraph)
-    const parsed: ClipboardItems = {
-      groups: [
-        {
-          id: 1,
-          title: 'Group',
-          bounding: [0, 0, 100, 100]
-        }
-      ],
-      nodes: [createSerialisedNode(1, nodeType)]
-    }
-
-    expect(() => canvas._deserializeItems(parsed, {})).toThrow(
-      'ID space exhausted'
-    )
-    expect(rootGraph.groups).toHaveLength(0)
-    expect(rootGraph.nodes).toHaveLength(0)
-    expect(rootGraph.state.lastGroupId).toBe(Number.MAX_SAFE_INTEGER - 1)
-  })
-
-  it('does not partially paste when reroute ID allocation is exhausted', () => {
-    const rootGraph = new LGraph()
-    rootGraph.state.lastGroupId = Number.MAX_SAFE_INTEGER - 1
+    rootGraph.state.lastGroupId = Number.MAX_SAFE_INTEGER
+    rootGraph.state.lastLinkId = toLinkId(Number.MAX_SAFE_INTEGER)
     rootGraph.state.lastRerouteId = toRerouteId(Number.MAX_SAFE_INTEGER)
     const canvas = createCanvas(rootGraph)
     const parsed: ClipboardItems = {
-      groups: [
+      nodes: [
+        createSerialisedNode(7, nodeType),
+        createSerialisedNode(8, nodeType)
+      ],
+      groups: [{ id: 7, title: 'Group', bounding: [0, 0, 100, 100] }],
+      links: [
         {
-          id: 1,
-          title: 'Group',
-          bounding: [0, 0, 100, 100]
+          id: 7,
+          origin_id: 7,
+          origin_slot: 0,
+          target_id: 8,
+          target_slot: 0,
+          type: '*',
+          parentId: 7
         }
       ],
-      reroutes: [{ id: 1, pos: [0, 0], linkIds: [] }]
+      reroutes: [{ id: 7, pos: [0, 0], linkIds: [7] }]
     }
+    const original = structuredClone(parsed)
 
-    expect(() => canvas._deserializeItems(parsed, {})).toThrow(
-      'ID space exhausted'
-    )
-    expect(rootGraph.groups).toHaveLength(0)
-    expect(rootGraph.state.lastGroupId).toBe(Number.MAX_SAFE_INTEGER - 1)
+    const result = canvas._deserializeItems(parsed, {})
+
+    expect(parsed).toEqual(original)
+    expect(result?.created).toHaveLength(4)
+    expect(rootGraph.nodes.map((node) => node.id)).toEqual([
+      toNodeId(1),
+      toNodeId(2)
+    ])
+    expect(rootGraph.groups[0].id).toBe(1)
+    expect([...rootGraph.links.keys()]).toEqual([toLinkId(1)])
+    expect([...rootGraph.reroutes.keys()]).toEqual([toRerouteId(1)])
   })
 
-  it('preserves counters when preflight fails after subgraph remapping', () => {
+  it('emits one complete canvas change pair for public paste', () => {
+    const nodeType = 'test/clipboard-change-hooks'
+    registerClipboardNodeType(nodeType)
     const rootGraph = new LGraph()
-    const existingNode = new LGraphNode('existing')
-    existingNode.id = toNodeId(1)
-    rootGraph.add(existingNode)
-    rootGraph.state.lastNodeId = Number.MAX_SAFE_INTEGER - 1
-    rootGraph.state.lastGroupId = Number.MAX_SAFE_INTEGER
     const canvas = createCanvas(rootGraph)
-    const parsed = createSubgraphClipboardItems(1)
-    parsed.groups = [{ id: 1, title: 'Group', bounding: [0, 0, 100, 100] }]
-
-    expect(() => canvas._deserializeItems(parsed, {})).toThrow(
-      'ID space exhausted'
+    const before = vi.spyOn(canvas, 'emitBeforeChange')
+    const after = vi.spyOn(canvas, 'emitAfterChange')
+    localStorage.setItem(
+      'litegrapheditor_clipboard',
+      JSON.stringify({ nodes: [createSerialisedNode(1, nodeType)] })
     )
-    expect(rootGraph.state.lastNodeId).toBe(Number.MAX_SAFE_INTEGER - 1)
+    onTestFinished(() => localStorage.removeItem('litegrapheditor_clipboard'))
+
+    canvas.pasteFromClipboard()
+
+    expect(before).toHaveBeenCalledOnce()
+    expect(after).toHaveBeenCalledOnce()
   })
 })
 

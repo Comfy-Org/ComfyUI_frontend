@@ -15,6 +15,7 @@ import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import type { SubgraphInput } from './SubgraphInput'
 import type { SubgraphOutputNode } from './SubgraphOutputNode'
 import { SubgraphSlot } from './SubgraphSlotBase'
+import { collectReservedLinkIds } from './subgraphDeduplication'
 import { isNodeSlot, isSubgraphInput } from './subgraphUtils'
 
 /**
@@ -58,7 +59,9 @@ export class SubgraphOutput extends SubgraphSlot {
       subgraph.beforeChange()
     }
 
-    const linkId = mintLinkId(subgraph.state)
+    const linkId = mintLinkId(subgraph.state, () =>
+      collectReservedLinkIds(subgraph.rootGraph)
+    )
 
     const link = new LLink(
       linkId,

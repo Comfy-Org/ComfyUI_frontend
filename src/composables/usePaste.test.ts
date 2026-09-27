@@ -642,8 +642,9 @@ describe('usePaste', () => {
     })
   })
 
-  it('should ignore metadata from other applications', async () => {
-    const encoded = btoa(JSON.stringify({ test: 'data' }))
+  it('accepts validated legacy data-metadata clipboard items', async () => {
+    const data = { nodes: [] }
+    const encoded = btoa(JSON.stringify(data))
     const html = `<div data-metadata="${encoded}"></div>`
 
     usePaste()
@@ -656,15 +657,21 @@ describe('usePaste', () => {
     document.dispatchEvent(event)
 
     await vi.waitFor(() => {
-      expect(mockCanvas._deserializeItems).not.toHaveBeenCalled()
-      expect(mockCanvas.pasteFromClipboard).toHaveBeenCalled()
+      expect(mockCanvas._deserializeItems).toHaveBeenCalledWith(
+        data,
+        expect.any(Object)
+      )
     })
   })
 
   it.for([
     { name: 'null payload', data: null },
     { name: 'empty object', data: {} },
-    { name: 'malformed node', data: { nodes: [{ type: 'KSampler' }] } }
+    { name: 'malformed node', data: { nodes: [{ type: 'KSampler' }] } },
+    { name: 'malformed group', data: { groups: [{ id: 1 }] } },
+    { name: 'malformed reroute', data: { reroutes: [{ id: 1 }] } },
+    { name: 'malformed link', data: { links: [{ id: 1 }] } },
+    { name: 'malformed subgraph', data: { subgraphs: [{ id: 'invalid' }] } }
   ])('falls back for malformed Comfy metadata: $name', async ({ data }) => {
     const encoded = btoa(JSON.stringify(data))
     const html = `<div data-comfy-metadata="${encoded}"></div>`
@@ -708,7 +715,7 @@ describe('usePaste', () => {
   })
 
   it('should toast a deserialization error without falling back', async () => {
-    const deserializeError = new Error('ID space exhausted')
+    const deserializeError = new Error('Paste failed')
     vi.mocked(mockCanvas._deserializeItems).mockImplementation(() => {
       throw deserializeError
     })

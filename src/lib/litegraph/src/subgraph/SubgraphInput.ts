@@ -19,6 +19,7 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { SubgraphInputNode } from './SubgraphInputNode'
 import type { SubgraphOutput } from './SubgraphOutput'
 import { SubgraphSlot } from './SubgraphSlotBase'
+import { collectReservedLinkIds } from './subgraphDeduplication'
 import { isNodeSlot, isSubgraphOutput } from './subgraphUtils'
 
 /**
@@ -87,7 +88,9 @@ export class SubgraphInput extends SubgraphSlot {
       subgraph.beforeChange()
     }
 
-    const linkId = mintLinkId(subgraph.state)
+    const linkId = mintLinkId(subgraph.state, () =>
+      collectReservedLinkIds(subgraph.rootGraph)
+    )
 
     const link = new LLink(
       linkId,

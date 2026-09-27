@@ -2,8 +2,15 @@ import { z } from 'zod'
 import type { SafeParseReturnType } from 'zod'
 import { fromZodError } from 'zod-validation-error'
 import type { RendererType } from '@/lib/litegraph/src/LGraph'
-import { parseLinkId } from '@/types/linkId'
+import type {
+  ClipboardItems,
+  ExportedSubgraph
+} from '@/lib/litegraph/src/types/serialisation'
+import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
+import { parseLinkId, toLinkId } from '@/types/linkId'
 import type { LinkPresentation } from '@/types/linkPresentation'
+import type { NodeProperty } from '@/types/nodeState'
+import { toRerouteId } from '@/types/rerouteId'
 
 const zRendererType = z.enum([
   'LG',
@@ -210,6 +217,15 @@ const zVersion = z.union([
   z.literal('unknown')
 ])
 
+const zNodeProperty = z.union([
+  z.string(),
+  z.number(),
+  z.boolean(),
+  z.null(),
+  z.record(z.unknown()),
+  z.array(z.unknown())
+]) satisfies z.ZodType<NodeProperty>
+
 const zProperties = z
   .object({
     ['Node name for S&R']: z.string().optional(),
@@ -218,9 +234,24 @@ const zProperties = z
     ver: zVersion.optional(),
     models: z.array(zModelFile).optional()
   })
-  .passthrough()
+  .catchall(zNodeProperty.optional())
 
 const zWidgetValues = z.union([z.array(z.any()), z.record(z.any())])
+
+function normalizeClipboardWidgetValues(
+  values: z.output<typeof zWidgetValues> | undefined
+): TWidgetValue[] | undefined {
+  if (!values || Array.isArray(values)) return values
+  const length = values.length
+  if (!Number.isSafeInteger(length) || length < 0) return []
+  return Object.entries(values)
+    .filter(([key]) => {
+      const index = Number(key)
+      return Number.isInteger(index) && index >= 0 && index < length
+    })
+    .sort(([left], [right]) => Number(left) - Number(right))
+    .map(([, value]) => value)
+}
 
 const zComfyNode = z
   .object({
@@ -511,15 +542,79 @@ const zSubgraphDefinition = zComfyWorkflow1
   })
   .passthrough()
 
-export const zClipboardItems = z
+const zClipboardNode = zComfyNode.transform((node) => {
+  return {
+    ...node,
+    widgets_values: normalizeClipboardWidgetValues(node.widgets_values)
+  }
+})
+
+const zClipboardSubgraphInstance = zSubgraphInstance.transform((node) => {
+  return {
+    ...node,
+    widgets_values: normalizeClipboardWidgetValues(node.widgets_values)
+  }
+})
+
+const zClipboardGroup = zGroup.extend({ id: z.number() })
+const zClipboardReroute = zReroute.extend({ linkIds: z.array(z.number()) })
+
+interface ClipboardSubgraphInput extends Omit<
+  z.input<typeof zSubgraphDefinition>,
+  'groups' | 'nodes' | 'reroutes' | 'subgraphs' | 'definitions'
+> {
+  groups?: z.input<typeof zClipboardGroup>[]
+  nodes: z.input<typeof zClipboardNode>[]
+  reroutes?: z.input<typeof zClipboardReroute>[]
+  subgraphs?: z.input<typeof zClipboardSubgraphInstance>[]
+  definitions?: { subgraphs: ClipboardSubgraphInput[] }
+}
+
+const zClipboardSubgraphDefinition: z.ZodType<
+  ExportedSubgraph,
+  z.ZodTypeDef,
+  ClipboardSubgraphInput
+> = zSubgraphDefinition
+  .extend({
+    groups: z.array(zClipboardGroup).optional(),
+    nodes: z.array(zClipboardNode),
+    reroutes: z.array(zClipboardReroute).optional(),
+    subgraphs: z.array(zClipboardSubgraphInstance).optional(),
+    definitions: z
+      .object({
+        subgraphs: z.lazy(() => z.array(zClipboardSubgraphDefinition))
+      })
+      .optional()
+  })
+  .transform(({ config, extra, ...subgraph }) => {
+    const normalizedExtra = extra
+      ? {
+          ...extra,
+          reroutes: extra.reroutes?.map((reroute) => ({
+            ...reroute,
+            linkIds: reroute.linkIds ?? []
+          })),
+          linkExtensions: extra.linkExtensions?.map((link) => ({
+            ...link,
+            id: toLinkId(link.id),
+            parentId: toRerouteId(link.parentId)
+          }))
+        }
+      : undefined
+    return {
+      ...subgraph,
+      config: config ?? undefined,
+      extra: normalizedExtra
+    }
+  })
+
+const zClipboardItemsSchema = z
   .object({
-    nodes: z.array(zComfyNode).optional(),
-    groups: z.array(zGroup.extend({ id: z.number() })).optional(),
-    reroutes: z
-      .array(zReroute.extend({ linkIds: z.array(z.number()) }))
-      .optional(),
+    nodes: z.array(zClipboardNode).optional(),
+    groups: z.array(zClipboardGroup).optional(),
+    reroutes: z.array(zClipboardReroute).optional(),
     links: z.array(zComfyLinkObject).optional(),
-    subgraphs: z.array(zSubgraphDefinition).optional()
+    subgraphs: z.array(zClipboardSubgraphDefinition).optional()
   })
   .refine(
     (items) =>
@@ -529,6 +624,12 @@ export const zClipboardItems = z
       items.links !== undefined ||
       items.subgraphs !== undefined
   )
+
+export const zClipboardItems: z.ZodType<
+  ClipboardItems,
+  z.ZodTypeDef,
+  z.input<typeof zClipboardItemsSchema>
+> = zClipboardItemsSchema
 
 export type ModelFile = z.infer<typeof zModelFile>
 export type ComfyLinkObject = z.infer<typeof zComfyLinkObject>

@@ -9,6 +9,8 @@
  */
 import type { NodeId as WireNodeId } from '@comfyorg/comfy-multi-player'
 
+import type { ISlotType } from '@/lib/litegraph/src/interfaces'
+
 import type { GraphOperation } from './graphOperations'
 import { shouldMint } from './mintGate'
 import type { MintSession } from './mintSession'
@@ -30,7 +32,7 @@ export interface LinkTopologyView {
   originSlot: number
   targetNodeId: string | number
   targetSlot: number
-  type: string | number
+  type: ISlotType
 }
 
 interface LinkEventFeed {

@@ -72,6 +72,7 @@ import {
   resolveInputSlotView
 } from './node/slotDescriptorView'
 import { initializeWidgetsView } from './node/widgetsView'
+import { collectReservedLinkIds } from './subgraph/subgraphDeduplication'
 import {
   extensionConfigureView,
   hydrateExtensionPayload,
@@ -3036,7 +3037,7 @@ export class LGraphNode
   connect(
     slot: number | string,
     target_node: LGraphNode | number | null,
-    target_slot: ISlotType,
+    target_slot: number | string,
     afterRerouteId?: RerouteId
   ): LLink | null {
     // Allow legacy API support for searching target_slot by string, without mutating the input variables
@@ -3198,7 +3199,9 @@ export class LGraphNode
     const maybeCommonType =
       input.type && output.type && commonType(input.type, output.type)
 
-    const linkId = mintLinkId(graph.state)
+    const linkId = mintLinkId(graph.state, () =>
+      collectReservedLinkIds(graph.rootGraph)
+    )
 
     const link = new LLink(
       linkId,
