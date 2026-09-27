@@ -23,12 +23,14 @@ import {
 } from '@comfyorg/account-ui/billing'
 import type { CheckoutPlan } from '@comfyorg/account-ui/billing/checkout'
 import {
+  TIER_CATALOG,
+  toCatalogTierKey
+} from '@comfyorg/account-ui/billing/catalog'
+import {
   CheckoutSubscribeConfirm,
   CheckoutSuccess,
   CheckoutTransitionConfirm,
-  TIER_CATALOG,
-  isAnnualDuration,
-  toCatalogTierKey
+  isAnnualDuration
 } from '@comfyorg/account-ui/billing/checkout'
 import {
   buildBillingEntryUrl,
