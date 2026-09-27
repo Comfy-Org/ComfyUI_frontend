@@ -545,6 +545,31 @@ describe('AgentPanelRoot onboarding', () => {
     localStorage.removeItem(SCOPED_KEY)
   })
 
+  it('shows the scoped coach after first consent despite a legacy seen flag', async () => {
+    localStorage.setItem('Comfy.AgentPanel.onboarded', 'true')
+    const consentStore = useAgentConsentStore()
+    Object.assign(consentStore, { accepted: false })
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    expect(localStorage.getItem(SCOPED_KEY)).toBeNull()
+
+    Object.assign(consentStore, { accepted: true })
+
+    expect(
+      await screen.findByRole('dialog', { name: 'Meet your Comfy Agent' })
+    ).toBeInTheDocument()
+    expect(localStorage.getItem(SCOPED_KEY)).not.toBe('true')
+  })
+
+  it('still carries the legacy seen flag for an already-consented scope', () => {
+    localStorage.setItem('Comfy.AgentPanel.onboarded', 'true')
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    expect(localStorage.getItem(SCOPED_KEY)).toBe('true')
+    expect(localStorage.getItem('Comfy.AgentPanel.onboarded')).toBeNull()
+  })
+
   it('replays a finished tour from the header and reports it shown again', async () => {
     localStorage.setItem(SCOPED_KEY, 'true')
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
