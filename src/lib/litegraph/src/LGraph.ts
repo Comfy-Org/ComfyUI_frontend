@@ -1901,8 +1901,7 @@ export class LGraph
         schedulePromotedInputPrune(
           targetNode,
           this,
-          targetNode.inputs[link.target_slot],
-          link.target_slot
+          targetNode.inputs[link.target_slot]
         )
       }
     }

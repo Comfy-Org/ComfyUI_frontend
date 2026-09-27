@@ -35,6 +35,8 @@ import { widgetId } from '@/types/widgetId'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { graphToPrompt } from '@/utils/executionUtil'
 
+import { createMockLGraphNodeWithArrayBoundingRect } from '@/utils/__tests__/litegraphTestUtils'
+
 import {
   createEventCapture,
   createTestRootGraph,
@@ -2031,7 +2033,7 @@ describe('SubgraphWidgetPromotion', () => {
         inputs: [{ name: 'value', type: 'STRING' }]
       })
 
-      const interiorNode = new LGraphNode('Interior')
+      const interiorNode = createMockLGraphNodeWithArrayBoundingRect('Interior')
       const input = interiorNode.addInput('value', 'STRING')
       input.widget = { name: 'preview' }
       interiorNode.addOutput('out', 'STRING')
@@ -2049,27 +2051,40 @@ describe('SubgraphWidgetPromotion', () => {
       interiorNode.widgets = [interiorWidget]
 
       const host = setupPromotedWidget(subgraph, interiorNode)
-      return { host, interiorWidget }
+      const [hostWidget] = host.widgets
+      return { host, hostWidget, interiorWidget }
     }
 
+    const mirroredRowHeight = (widget?: IBaseWidget) =>
+      (
+        widget?.options as { getMinHeight?: () => number } | undefined
+      )?.getMinHeight?.()
+
     it('arranges interior widgets when the host arranges', () => {
-      const { host, interiorWidget } = setupPromotedDomHeight(() => 100)
+      const { host, hostWidget, interiorWidget } = setupPromotedDomHeight(
+        () => 100
+      )
 
       expect(interiorWidget.computedHeight).toBeUndefined()
       host.arrange()
       expect(interiorWidget.computedHeight).toBe(100)
+      expect(mirroredRowHeight(hostWidget)).toBe(100)
     })
 
     it('re-arranges interiors so host rows track later height changes', () => {
       let minHeight = 100
-      const { host, interiorWidget } = setupPromotedDomHeight(() => minHeight)
+      const { host, hostWidget, interiorWidget } = setupPromotedDomHeight(
+        () => minHeight
+      )
 
       host.arrange()
       expect(interiorWidget.computedHeight).toBe(100)
+      expect(mirroredRowHeight(hostWidget)).toBe(100)
 
       minHeight = 700
       host.arrange()
       expect(interiorWidget.computedHeight).toBe(700)
+      expect(mirroredRowHeight(hostWidget)).toBe(700)
     })
   })
 })

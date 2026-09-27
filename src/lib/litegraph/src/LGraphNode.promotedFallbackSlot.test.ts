@@ -94,6 +94,22 @@ describe('LGraphNode promotion-created input pruning', () => {
     expect(target.isInputConnected(slotIndex)).toBe(true)
   })
 
+  it('prunes two promotion-created inputs disconnected by one output in the same tick', async () => {
+    const graph = new LGraph()
+    const source = createTestNode(graph, [], ['INT'])
+    const target = createTestNode(graph, [])
+    const first = createFallbackSlot(target)
+    const second = createFallbackSlot(target)
+    source.connect(0, target, target.inputs.indexOf(first))
+    source.connect(0, target, target.inputs.indexOf(second))
+
+    source.disconnectOutput(0)
+    await Promise.resolve()
+
+    expect(target.inputs).not.toContain(first)
+    expect(target.inputs).not.toContain(second)
+  })
+
   it('keeps a declared input when its link disconnects', async () => {
     const graph = new LGraph()
     const source = createTestNode(graph, [], ['INT'])
