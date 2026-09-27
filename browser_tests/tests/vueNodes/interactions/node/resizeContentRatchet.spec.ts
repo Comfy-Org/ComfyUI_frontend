@@ -82,7 +82,7 @@ test.describe(
       )
     }
 
-    test('cannot shrink a node below content height it once grew to fit (PM-1304)', async ({
+    test('can shrink a node below a stale content height after it grows (PM-1304)', async ({
       comfyPage
     }) => {
       const flux = await comfyPage.nodeOps.addNode(
@@ -137,19 +137,15 @@ test.describe(
       await page.mouse.up()
       await comfyPage.nextFrame()
 
-      // Visual proof first: capture the post-drag state regardless of the
-      // numeric outcome below, so the screenshot exists even though the
-      // next assertion is the one that throws.
+      // Visual proof of the post-drag size.
       await expect(node.root).toHaveScreenshot(
         'flux-node-stuck-after-shrink-attempt.png'
       )
 
-      // Bug: the rendered height stays pinned at (or above) the grown
-      // content floor instead of honoring the user's explicit shrink.
       await expect.poll(getHeight).toBeLessThan(grownHeight - 20)
     })
 
-    test('a tab-visibility cycle spreads the shrink ratchet to an untouched node (PM-1312)', async ({
+    test('a tab-visibility cycle does not block shrinking an untouched node (PM-1312)', async ({
       comfyPage
     }) => {
       const fluxA = await comfyPage.nodeOps.addNode(
@@ -238,10 +234,6 @@ test.describe(
 
       const heightBAfterCycle = await getHeightB()
 
-      // Bug: node B, which the user never touched, is now also stuck and
-      // cannot be shrunk back down — the tab-visibility cycle spread the
-      // "can't shrink" ratchet from node A to every node sharing the
-      // measurement singleton.
       await shrinkBBy(-20)
       await expect.poll(getHeightB).toBeLessThan(heightBAfterCycle - 5)
     })
