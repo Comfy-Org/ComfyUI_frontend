@@ -8,7 +8,7 @@
 import type { DraftIndexV2 } from '../base/draftTypes'
 import { upsertEntry, createEmptyIndex } from '../base/draftCacheV2'
 import { hashPath } from '../base/hashUtil'
-import { getWorkspaceId } from '../base/storageKeys'
+import type { StorageScope } from '../base/storageKeys'
 import {
   readIndex,
   writeIndex,
@@ -39,8 +39,8 @@ const V1_KEYS = {
 /**
  * Checks if V2 migration has been completed for the current workspace.
  */
-export function isV2MigrationComplete(workspaceId: string): boolean {
-  const v2Index = readIndex(workspaceId)
+export function isV2MigrationComplete(scope: StorageScope): boolean {
+  const v2Index = readIndex(scope)
   return v2Index !== null
 }
 
@@ -70,12 +70,10 @@ function readV1Drafts(
  *
  * @returns Number of drafts migrated, or -1 if migration not needed/failed
  */
-export function migrateV1toV2(
-  workspaceId: string = getWorkspaceId(),
-  clientId?: string
-): number {
+export function migrateV1toV2(scope: StorageScope, clientId?: string): number {
+  const workspaceId = scope
   // Check if V2 already exists
-  if (isV2MigrationComplete(workspaceId)) {
+  if (isV2MigrationComplete(scope)) {
     return -1
   }
 
@@ -83,7 +81,7 @@ export function migrateV1toV2(
   const v1Data = readV1Drafts(workspaceId)
   if (!v1Data) {
     // No V1 data to migrate - create empty V2 index
-    if (!writeIndex(workspaceId, createEmptyIndex())) return -1
+    if (!writeIndex(scope, createEmptyIndex())) return -1
     return 0
   }
 
@@ -100,7 +98,7 @@ export function migrateV1toV2(
     const draftKey = hashPath(path)
 
     // Write payload
-    const payloadWritten = writePayload(workspaceId, draftKey, {
+    const payloadWritten = writePayload(scope, draftKey, {
       data: draft.data,
       updatedAt: draft.updatedAt
     })
@@ -121,7 +119,7 @@ export function migrateV1toV2(
   }
 
   // Write final index
-  if (!writeIndex(workspaceId, index)) {
+  if (!writeIndex(scope, index)) {
     console.error('[V2 Migration] Failed to write index')
     return -1
   }
@@ -130,7 +128,7 @@ export function migrateV1toV2(
   // V1 used setStorageValue which stored tab state in localStorage as fallback.
   // V2 uses sessionStorage keyed by clientId. Without this migration,
   // users upgrading from V1 lose their open tab list.
-  migrateV1TabState(workspaceId, clientId)
+  migrateV1TabState(scope, clientId)
 
   if (migrated > 0) {
     console.warn(`[V2 Migration] Migrated ${migrated} drafts from V1 to V2`)
@@ -143,7 +141,7 @@ export function migrateV1toV2(
  * V1 stored these in localStorage via setStorageValue fallback.
  * V2 uses sessionStorage keyed by clientId.
  */
-function migrateV1TabState(workspaceId: string, clientId?: string): void {
+function migrateV1TabState(scope: StorageScope, clientId?: string): void {
   if (!clientId) return
 
   try {
@@ -162,7 +160,7 @@ function migrateV1TabState(workspaceId: string, clientId?: string): void {
       }
     }
 
-    writeOpenPaths(clientId, { workspaceId, paths, activeIndex })
+    writeOpenPaths(clientId, { workspaceId: scope, paths, activeIndex })
   } catch {
     // Best effort - don't block draft migration on tab state errors
   }

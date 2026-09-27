@@ -2,10 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { hashPath } from '../base/hashUtil'
 import { readOpenPaths } from '../base/storageIO'
+import { unsafeStorageScope } from '@/platform/workflow/persistence/testUtils/storageScope'
 import { isV2MigrationComplete, migrateV1toV2 } from './migrateV1toV2'
 
 describe('migrateV1toV2', () => {
-  const workspaceId = 'test-workspace'
+  const workspaceId = unsafeStorageScope('test-workspace')
 
   beforeEach(() => {
     vi.resetModules()

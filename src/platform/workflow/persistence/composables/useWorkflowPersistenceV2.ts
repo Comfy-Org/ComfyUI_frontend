@@ -10,12 +10,11 @@
 
 import { debounce } from 'es-toolkit'
 import { useToast } from 'primevue'
-import { tryOnScopeDispose, whenever } from '@vueuse/core'
+import { tryOnScopeDispose, until } from '@vueuse/core'
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import {
   hydratePreservedQuery,
   mergePreservedQueryIntoQuery
@@ -31,10 +30,11 @@ import {
 } from '@/platform/workflow/management/stores/workflowStore'
 import { PERSIST_DEBOUNCE_MS } from '../base/draftTypes'
 import type { StartupOutcome } from '../base/draftTypes'
+import { resolveStorageScope } from '../base/storageKeys'
 import {
-  clearAllWorkspaceStorage,
-  completeWorkflowLogoutTransition,
-  prepareWorkflowLogoutTransition,
+  getStorageIdentity,
+  getStorageScope,
+  getStorageWriteGate,
   registerWorkflowPersistenceFlush
 } from '../base/storageIO'
 import { migrateV1toV2 } from '../migration/migrateV1toV2'
@@ -44,6 +44,15 @@ import { useSharedWorkflowUrlLoader } from '@/platform/workflow/sharing/composab
 import { useTemplateUrlLoader } from '@/platform/workflow/templates/composables/useTemplateUrlLoader'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
+
+function migratePersonalStorage(): void {
+  if (isCloud) return
+
+  const personalScope = resolveStorageScope(null, 'personal')
+  if (!personalScope) return
+
+  migrateV1toV2(personalScope, api.clientId ?? api.initialClientId ?? undefined)
+}
 
 export function useWorkflowPersistenceV2() {
   const { t } = useI18n()
@@ -58,17 +67,12 @@ export function useWorkflowPersistenceV2() {
   const draftStore = useWorkflowDraftStoreV2()
   const tabState = useWorkflowTabState()
   const toast = useToast()
-  const { onUserLogout, onUserResolved } = useCurrentUser()
   const teamWorkspaceStore = useTeamWorkspaceStore()
-  let stopWorkspaceReadinessWatcher: (() => void) | undefined
 
-  function stopPendingWorkspaceReadinessWatcher(): void {
-    stopWorkspaceReadinessWatcher?.()
-    stopWorkspaceReadinessWatcher = undefined
-  }
-
-  // Run migration on module load, passing clientId for tab state migration
-  migrateV1toV2(undefined, api.clientId ?? api.initialClientId ?? undefined)
+  // Personal/offline storage has no unresolved identity. Cloud migration is a
+  // separate protocol and must not claim a workspace for whichever user wins
+  // startup first.
+  migratePersonalStorage()
 
   const ensureTemplateQueryFromIntent = async () => {
     hydratePreservedQuery(TEMPLATE_NAMESPACE)
@@ -89,6 +93,9 @@ export function useWorkflowPersistenceV2() {
   )
 
   const lastSavedJsonByPath = ref<Record<string, string>>({})
+  let hasPendingPersistence = false
+  let pendingPersistenceOwnerId: string | null = null
+  let graphChangeRevision = 0
 
   watch(workflowPersistenceEnabled, (enabled) => {
     if (!enabled) {
@@ -98,16 +105,31 @@ export function useWorkflowPersistenceV2() {
   })
 
   const persistCurrentWorkflow = () => {
-    if (!workflowPersistenceEnabled.value) return
+    if (!workflowPersistenceEnabled.value) {
+      hasPendingPersistence = false
+      pendingPersistenceOwnerId = null
+      return
+    }
     const activeWorkflow = workflowStore.activeWorkflow
-    if (!activeWorkflow) return
+    if (!activeWorkflow) {
+      hasPendingPersistence = false
+      pendingPersistenceOwnerId = null
+      return
+    }
 
     const graphData = comfyApp.rootGraph.serialize()
     const workflowJson = JSON.stringify(graphData)
     const workflowPath = activeWorkflow.path
 
     // Skip if unchanged
-    if (workflowJson === lastSavedJsonByPath.value[workflowPath]) return
+    if (workflowJson === lastSavedJsonByPath.value[workflowPath]) {
+      hasPendingPersistence = false
+      pendingPersistenceOwnerId = null
+      return
+    }
+    if (getStorageWriteGate() === 'deferred') return
+    hasPendingPersistence = false
+    pendingPersistenceOwnerId = null
 
     // Save to V2 draft store
     const saved = draftStore.saveDraft(workflowPath, workflowJson, {
@@ -138,6 +160,19 @@ export function useWorkflowPersistenceV2() {
   // Debounced version for graphChanged events
   const debouncedPersist = debounce(persistCurrentWorkflow, PERSIST_DEBOUNCE_MS)
 
+  function scheduleWorkflowPersistence(): void {
+    graphChangeRevision++
+    hasPendingPersistence = true
+    pendingPersistenceOwnerId = getStorageIdentity()
+    debouncedPersist()
+  }
+
+  function persistWorkflowForCurrentOwner(): void {
+    hasPendingPersistence = true
+    pendingPersistenceOwnerId = getStorageIdentity()
+    persistCurrentWorkflow()
+  }
+
   function flushPendingPersistence() {
     debouncedPersist.flush()
   }
@@ -147,39 +182,45 @@ export function useWorkflowPersistenceV2() {
   )
   window.addEventListener('pagehide', flushPendingPersistence)
 
-  onUserLogout(() => {
-    if (!isCloud) return
-    stopPendingWorkspaceReadinessWatcher()
+  function resetPersistenceForIdentityChange(clearPending: boolean): void {
     debouncedPersist.cancel()
-    prepareWorkflowLogoutTransition()
-    clearAllWorkspaceStorage()
-  })
-  onUserResolved(() => {
-    if (!isCloud) return
-    stopPendingWorkspaceReadinessWatcher()
-
-    // Release the fence once initialization concludes either way: a resolved
-    // workspace, or a permanent init failure. Waiting on 'ready' alone would
-    // leave writes blocked for the rest of the session if init settles on
-    // 'error' (e.g. no workspaces available, retries exhausted).
-    const isWorkspaceInitConcluded = () =>
-      (teamWorkspaceStore.initState === 'ready' &&
-        teamWorkspaceStore.activeWorkspaceId !== null) ||
-      teamWorkspaceStore.initState === 'error'
-    if (isWorkspaceInitConcluded()) {
-      completeWorkflowLogoutTransition()
-      return
+    if (clearPending) {
+      hasPendingPersistence = false
+      pendingPersistenceOwnerId = null
     }
+    lastSavedJsonByPath.value = {}
+  }
 
-    stopWorkspaceReadinessWatcher = whenever(
-      isWorkspaceInitConcluded,
-      () => {
-        stopWorkspaceReadinessWatcher = undefined
-        completeWorkflowLogoutTransition()
-      },
-      { once: true }
-    )
-  })
+  let observedStorageIdentity = getStorageIdentity()
+  watch(
+    getStorageIdentity,
+    (identity) => {
+      if (identity === observedStorageIdentity) return
+      const previousIdentity = observedStorageIdentity
+      observedStorageIdentity = identity
+      // Work produced before the first Cloud identity resolves belongs to that
+      // first resolved owner. Work from a known owner must never cross into a
+      // different identity.
+      resetPersistenceForIdentityChange(previousIdentity !== null)
+    },
+    { flush: 'sync' }
+  )
+
+  watch(
+    getStorageWriteGate,
+    (gate) => {
+      if (
+        gate === 'open' &&
+        hasPendingPersistence &&
+        (pendingPersistenceOwnerId === null ||
+          pendingPersistenceOwnerId === getStorageIdentity())
+      ) {
+        debouncedPersist.cancel()
+        persistCurrentWorkflow()
+      }
+    },
+    { flush: 'sync' }
+  )
 
   const loadPreviousWorkflowFromStorage = async () => {
     const sessionPath = tabState.getActivePath()
@@ -267,6 +308,15 @@ export function useWorkflowPersistenceV2() {
       return await resolveStartupOutcome()
     }
 
+    if (isCloud && getStorageScope() === null) {
+      const revisionBeforeScopeResolution = graphChangeRevision
+      await until(
+        () =>
+          getStorageScope() !== null || teamWorkspaceStore.initState === 'error'
+      ).toBe(true)
+      if (graphChangeRevision !== revisionBeforeScopeResolution) return 'fresh'
+    }
+
     try {
       if (getRestorableTabState()) {
         // GraphCanvas calls restoreWorkflowTabsState next; skip the single-workflow
@@ -304,20 +354,19 @@ export function useWorkflowPersistenceV2() {
       // Flush any pending persistence from the previous workflow
       debouncedPersist.flush()
       // Persist the new workflow immediately
-      persistCurrentWorkflow()
+      persistWorkflowForCurrentOwner()
     }
   )
 
   // Debounced persistence on graph changes
-  api.addEventListener('graphChanged', debouncedPersist)
+  api.addEventListener('graphChanged', scheduleWorkflowPersistence)
 
   // Clean up event listener when component unmounts
   tryOnScopeDispose(() => {
-    api.removeEventListener('graphChanged', debouncedPersist)
+    api.removeEventListener('graphChanged', scheduleWorkflowPersistence)
     window.removeEventListener('pagehide', flushPendingPersistence)
     unregisterPersistenceFlush()
     debouncedPersist.cancel()
-    stopPendingWorkspaceReadinessWatcher()
   })
 
   // Restore workflow tabs states

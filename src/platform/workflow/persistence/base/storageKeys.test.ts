@@ -10,10 +10,10 @@ describe('storageKeys', () => {
     vi.resetModules()
   })
 
-  describe('getWorkspaceId', () => {
-    it('returns personal when no workspace is set', async () => {
-      const { getWorkspaceId } = await import('./storageKeys')
-      expect(getWorkspaceId()).toBe('personal')
+  describe('readWorkspaceId', () => {
+    it('returns null when no Cloud workspace is set', async () => {
+      const { readWorkspaceId } = await import('./storageKeys')
+      expect(readWorkspaceId()).toBeNull()
     })
 
     it('returns personal for personal workspace type', async () => {
@@ -21,8 +21,8 @@ describe('storageKeys', () => {
         'Comfy.Workspace.Current',
         JSON.stringify({ type: 'personal', id: null })
       )
-      const { getWorkspaceId } = await import('./storageKeys')
-      expect(getWorkspaceId()).toBe('personal')
+      const { readWorkspaceId } = await import('./storageKeys')
+      expect(readWorkspaceId()).toBe('personal')
     })
 
     it('returns workspace ID for team workspace', async () => {
@@ -30,8 +30,8 @@ describe('storageKeys', () => {
         'Comfy.Workspace.Current',
         JSON.stringify({ type: 'team', id: 'ws-abc-123' })
       )
-      const { getWorkspaceId } = await import('./storageKeys')
-      expect(getWorkspaceId()).toBe('ws-abc-123')
+      const { readWorkspaceId } = await import('./storageKeys')
+      expect(readWorkspaceId()).toBe('ws-abc-123')
     })
 
     it('keeps local workflow storage in the personal namespace', async () => {
@@ -40,31 +40,40 @@ describe('storageKeys', () => {
         'Comfy.Workspace.Current',
         JSON.stringify({ type: 'team', id: 'ws-abc-123' })
       )
-      const { getWorkspaceId } = await import('./storageKeys')
+      const { readWorkspaceId } = await import('./storageKeys')
 
-      expect(getWorkspaceId()).toBe('personal')
+      expect(readWorkspaceId()).toBe('personal')
     })
 
-    it('returns personal when JSON parsing fails', async () => {
+    it('returns null when JSON parsing fails', async () => {
       sessionStorage.setItem('Comfy.Workspace.Current', 'invalid-json')
-      const { getWorkspaceId } = await import('./storageKeys')
-      expect(getWorkspaceId()).toBe('personal')
+      const { readWorkspaceId } = await import('./storageKeys')
+      expect(readWorkspaceId()).toBeNull()
     })
 
-    it('returns personal when workspace has no id', async () => {
+    it('returns null when parsed workspace data is not an object', async () => {
+      sessionStorage.setItem(
+        'Comfy.Workspace.Current',
+        JSON.stringify('workspace-id')
+      )
+      const { readWorkspaceId } = await import('./storageKeys')
+      expect(readWorkspaceId()).toBeNull()
+    })
+
+    it('returns null when a team workspace has no id', async () => {
       sessionStorage.setItem(
         'Comfy.Workspace.Current',
         JSON.stringify({ type: 'team', id: '' })
       )
-      const { getWorkspaceId } = await import('./storageKeys')
-      expect(getWorkspaceId()).toBe('personal')
+      const { readWorkspaceId } = await import('./storageKeys')
+      expect(readWorkspaceId()).toBeNull()
     })
 
     it('reads fresh value on each call (not cached)', async () => {
-      const { getWorkspaceId } = await import('./storageKeys')
+      const { readWorkspaceId } = await import('./storageKeys')
 
       // Initially no workspace set
-      expect(getWorkspaceId()).toBe('personal')
+      expect(readWorkspaceId()).toBeNull()
 
       // Set workspace after import
       sessionStorage.setItem(
@@ -73,7 +82,7 @@ describe('storageKeys', () => {
       )
 
       // Should read the new value (not cached 'personal')
-      expect(getWorkspaceId()).toBe('ws-new')
+      expect(readWorkspaceId()).toBe('ws-new')
 
       // Change workspace again
       sessionStorage.setItem(
@@ -81,22 +90,47 @@ describe('storageKeys', () => {
         JSON.stringify({ type: 'team', id: 'ws-another' })
       )
 
-      expect(getWorkspaceId()).toBe('ws-another')
+      expect(readWorkspaceId()).toBe('ws-another')
     })
   })
 
   describe('StorageKeys', () => {
+    it('separates Cloud users in one workspace and defers unresolved identity', async () => {
+      const { resolveStorageScope } = await import('./storageKeys')
+
+      expect(resolveStorageScope('user-a', 'workspace-1')).toBe(
+        'user-a:workspace-1'
+      )
+      expect(resolveStorageScope('user-b', 'workspace-1')).toBe(
+        'user-b:workspace-1'
+      )
+      expect(resolveStorageScope(null, 'workspace-1')).toBeNull()
+      expect(resolveStorageScope('user-a', null)).toBeNull()
+    })
+
+    it('uses the personal scope outside Cloud', async () => {
+      mockDistributionTypes.isCloud = false
+      const { resolveStorageScope } = await import('./storageKeys')
+
+      expect(resolveStorageScope(null, null)).toBe('personal')
+    })
+
     it('generates draftIndex key with workspace scope', async () => {
       const { StorageKeys } = await import('./storageKeys')
+      const { unsafeStorageScope } = await import('../testUtils/storageScope')
 
-      expect(StorageKeys.draftIndex('ws-123')).toBe(
+      expect(StorageKeys.draftIndex(unsafeStorageScope('ws-123'))).toBe(
         'Comfy.Workflow.DraftIndex.v2:ws-123'
       )
     })
 
     it('generates draftPayload key with hash', async () => {
       const { StorageKeys } = await import('./storageKeys')
-      const key = StorageKeys.draftPayload('workflows/test.json', 'ws-1')
+      const { unsafeStorageScope } = await import('../testUtils/storageScope')
+      const key = StorageKeys.draftPayload(
+        'workflows/test.json',
+        unsafeStorageScope('ws-1')
+      )
 
       expect(key).toMatch(/^Comfy\.Workflow\.Draft\.v2:ws-1:[0-9a-f]{8}$/)
     })
@@ -126,17 +160,17 @@ describe('storageKeys', () => {
 
     it('scopes Agent persistence keys to the workspace', async () => {
       const { StorageKeys } = await import('./storageKeys')
+      const { unsafeStorageScope } = await import('../testUtils/storageScope')
+      const scope = unsafeStorageScope('ws-123')
 
-      expect(StorageKeys.agentThread('ws-123')).toBe(
-        'Comfy.Agent.ThreadId:ws-123'
-      )
-      expect(StorageKeys.agentWorkflowTabBindings('ws-123')).toBe(
+      expect(StorageKeys.agentThread(scope)).toBe('Comfy.Agent.ThreadId:ws-123')
+      expect(StorageKeys.agentWorkflowTabBindings(scope)).toBe(
         'Comfy.Agent.WorkflowTabBindings:ws-123'
       )
-      expect(StorageKeys.agentChatTitles('ws-123')).toBe(
+      expect(StorageKeys.agentChatTitles(scope)).toBe(
         'Comfy.Agent.ChatTitles:ws-123'
       )
-      expect(StorageKeys.agentDeletedThreads('ws-123')).toBe(
+      expect(StorageKeys.agentDeletedThreads(scope)).toBe(
         'Comfy.Agent.DeletedThreads:ws-123'
       )
     })

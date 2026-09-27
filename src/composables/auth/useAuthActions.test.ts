@@ -19,6 +19,8 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workfl
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { unsafeStorageScope } from '@/platform/workflow/persistence/testUtils/storageScope'
+import type { StorageScope } from '@/platform/workflow/persistence/base/storageKeys'
 
 vi.mock(import('firebase/auth'), { spy: true })
 
@@ -34,7 +36,8 @@ const mockToastErrorHandler = vi.hoisted(() => vi.fn())
 
 const mockStartPendingTopup = vi.hoisted(() => vi.fn())
 const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
-const mockClearAllWorkspaceStorage = vi.hoisted(() => vi.fn())
+const mockClearWorkflowStorageForScope = vi.hoisted(() => vi.fn())
+const mockGetStorageScope = vi.hoisted(() => vi.fn<() => StorageScope | null>())
 const mockPrepareWorkflowLogoutTransition = vi.hoisted(() => vi.fn())
 
 const authErrorMessages: Record<string, string> = enLocale.auth.errors
@@ -70,7 +73,8 @@ vi.mock<unknown>(import('@/composables/billing/usePendingTopup'), () => ({
 }))
 
 vi.mock(import('@/platform/workflow/persistence/base/storageIO'), () => ({
-  clearAllWorkspaceStorage: mockClearAllWorkspaceStorage,
+  clearWorkflowStorageForScope: mockClearWorkflowStorageForScope,
+  getStorageScope: mockGetStorageScope,
   prepareWorkflowLogoutTransition: mockPrepareWorkflowLogoutTransition
 }))
 
@@ -128,6 +132,7 @@ beforeEach(() => {
   vi.mocked(mockAuthStore.login).mockResolvedValue(credential)
   vi.mocked(mockAuthStore.register).mockResolvedValue(credential)
   vi.mocked(mockAuthStore.loginWithGoogle).mockResolvedValue(credential)
+  mockGetStorageScope.mockReturnValue(unsafeStorageScope('user-a:workspace-a'))
   mockDistributionState.isCloud = false
 })
 
@@ -192,7 +197,7 @@ describe('useAuthActions.logout', () => {
     expect(useDialogService().confirm).not.toHaveBeenCalled()
     expect(useWorkflowService().saveWorkflow).not.toHaveBeenCalled()
     expect(mockAuthStore.logout).toHaveBeenCalledTimes(1)
-    expect(mockClearAllWorkspaceStorage).not.toHaveBeenCalled()
+    expect(mockClearWorkflowStorageForScope).not.toHaveBeenCalled()
   })
 
   it('logs out without prompting when no workflows are modified', async () => {
@@ -214,7 +219,12 @@ describe('useAuthActions.logout', () => {
     await logout()
 
     expect(mockPrepareWorkflowLogoutTransition).toHaveBeenCalledOnce()
-    expect(mockClearAllWorkspaceStorage).toHaveBeenCalledExactlyOnceWith()
+    expect(mockClearWorkflowStorageForScope).toHaveBeenCalledExactlyOnceWith(
+      'user-a:workspace-a'
+    )
+    expect(mockGetStorageScope.mock.invocationCallOrder[0]).toBeLessThan(
+      vi.mocked(mockAuthStore.logout).mock.invocationCallOrder[0]
+    )
     expect(
       vi.mocked(mockAuthStore.logout).mock.invocationCallOrder[0]
     ).toBeLessThan(
@@ -222,9 +232,9 @@ describe('useAuthActions.logout', () => {
     )
     expect(
       mockPrepareWorkflowLogoutTransition.mock.invocationCallOrder[0]
-    ).toBeLessThan(mockClearAllWorkspaceStorage.mock.invocationCallOrder[0])
+    ).toBeLessThan(mockClearWorkflowStorageForScope.mock.invocationCallOrder[0])
     expect(
-      mockClearAllWorkspaceStorage.mock.invocationCallOrder[0]
+      mockClearWorkflowStorageForScope.mock.invocationCallOrder[0]
     ).toBeLessThan(navigationSpy.mock.invocationCallOrder[0])
   })
 
@@ -237,7 +247,49 @@ describe('useAuthActions.logout', () => {
     await logout()
 
     expect(mockPrepareWorkflowLogoutTransition).not.toHaveBeenCalled()
-    expect(mockClearAllWorkspaceStorage).not.toHaveBeenCalled()
+    expect(mockClearWorkflowStorageForScope).not.toHaveBeenCalled()
+  })
+
+  it('abandons logout when identity changes while confirmation is pending', async () => {
+    Object.assign(mockWorkflowStore, {
+      modifiedWorkflows: [makeWorkflow('a.json')]
+    })
+    vi.mocked(mockAuthStore.currentUserIdentity)
+      .mockReturnValueOnce('user-a')
+      .mockReturnValueOnce('user-b')
+    vi.mocked(useDialogService().confirm).mockResolvedValueOnce(false)
+    const { logout } = useAuthActions()
+
+    await logout()
+
+    expect(mockAuthStore.logout).not.toHaveBeenCalled()
+    expect(mockPrepareWorkflowLogoutTransition).not.toHaveBeenCalled()
+    expect(mockClearWorkflowStorageForScope).not.toHaveBeenCalled()
+  })
+
+  it('does not clear the captured scope when a replacement identity appears during logout', async () => {
+    vi.mocked(mockAuthStore.currentUserIdentity)
+      .mockReturnValueOnce('user-a')
+      .mockReturnValueOnce('user-a')
+      .mockReturnValueOnce('user-b')
+    const { logout } = useAuthActions()
+
+    await logout()
+
+    expect(mockAuthStore.logout).toHaveBeenCalledOnce()
+    expect(mockPrepareWorkflowLogoutTransition).not.toHaveBeenCalled()
+    expect(mockClearWorkflowStorageForScope).not.toHaveBeenCalled()
+  })
+
+  it('does not guess a scope when identity is unresolved', async () => {
+    mockGetStorageScope.mockReturnValueOnce(null)
+    const { logout } = useAuthActions()
+
+    await logout()
+
+    expect(mockAuthStore.logout).toHaveBeenCalledOnce()
+    expect(mockPrepareWorkflowLogoutTransition).toHaveBeenCalledOnce()
+    expect(mockClearWorkflowStorageForScope).not.toHaveBeenCalled()
   })
 
   it('cancels sign-out when the dialog is dismissed (null)', async () => {

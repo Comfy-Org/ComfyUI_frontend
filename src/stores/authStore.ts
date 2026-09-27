@@ -102,6 +102,10 @@ export const useAuthStore = defineStore('auth', () => {
   const userEmail = computed(() => currentUser.value?.email)
   const userId = computed(() => currentUser.value?.uid)
 
+  function currentUserIdentity(): string | null {
+    return currentUser.value?.uid ?? useApiKeyAuthStore().getApiKey()
+  }
+
   function getShareAuthMetadata() {
     const shareId = getPreservedQueryParam(
       PRESERVED_QUERY_NAMESPACES.SHARE_AUTH,
@@ -112,14 +116,13 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   firebaseIdentity.onUserChanged((user) => {
-    const previousUserId = currentUser.value?.uid ?? null
+    const previousUserId = currentUserIdentity()
+    const nextUserId = user?.uid ?? useApiKeyAuthStore().getApiKey()
     const identityChanged =
-      previousUserId !== null && previousUserId !== (user?.uid ?? null)
+      previousUserId !== null && previousUserId !== nextUserId
 
-    if (user === null || identityChanged) {
-      useWorkspaceAuthStore().clearWorkspaceContext()
-    }
     if (identityChanged) {
+      useWorkspaceAuthStore().clearWorkspaceContext()
       clearOnboardingReplay(previousUserId)
       useTeamWorkspaceStore().resetForIdentityChange()
       invalidateRemoteConfig()
@@ -269,9 +272,6 @@ export const useAuthStore = defineStore('auth', () => {
     currentUser.value === null
       ? useApiKeyAuthStore().getAuthHeader()
       : await getFirebaseAuthHeader()
-
-  const currentUserIdentity = (): string | null =>
-    currentUser.value?.uid ?? useApiKeyAuthStore().getApiKey()
 
   /**
    * Response data from a user-scoped endpoint belongs to the identity that

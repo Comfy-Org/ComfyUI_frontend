@@ -10,8 +10,16 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
 describe('useWorkflowTabState', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.resetModules()
+    sessionStorage.setItem(
+      'Comfy.Workspace.Current',
+      JSON.stringify({ type: 'personal', id: null })
+    )
+    const { setStorageIdentity, setStorageWorkspaceId } =
+      await import('../base/storageIO')
+    setStorageIdentity('user-a')
+    setStorageWorkspaceId('personal')
   })
 
   describe('activePath', () => {
@@ -35,6 +43,9 @@ describe('useWorkflowTabState', () => {
         'Comfy.Workspace.Current',
         JSON.stringify({ type: 'team', id: 'ws-1' })
       )
+      const { setStorageWorkspaceId: setInitialStorageWorkspaceId } =
+        await import('../base/storageIO')
+      setInitialStorageWorkspaceId('ws-1')
       const { useWorkflowTabState } = await import('./useWorkflowTabState')
       const { setActivePath } = useWorkflowTabState()
       setActivePath('workflows/test.json')
@@ -44,6 +55,10 @@ describe('useWorkflowTabState', () => {
         'Comfy.Workspace.Current',
         JSON.stringify({ type: 'team', id: 'ws-2' })
       )
+      const { setStorageIdentity, setStorageWorkspaceId } =
+        await import('../base/storageIO')
+      setStorageIdentity('user-a')
+      setStorageWorkspaceId('ws-2')
 
       const { useWorkflowTabState: useWorkflowTabState2 } =
         await import('./useWorkflowTabState')
@@ -79,6 +94,9 @@ describe('useWorkflowTabState', () => {
         'Comfy.Workspace.Current',
         JSON.stringify({ type: 'team', id: 'ws-1' })
       )
+      const { setStorageWorkspaceId: setInitialStorageWorkspaceId } =
+        await import('../base/storageIO')
+      setInitialStorageWorkspaceId('ws-1')
       const { useWorkflowTabState } = await import('./useWorkflowTabState')
       const { setOpenPaths } = useWorkflowTabState()
       setOpenPaths(['workflows/test.json'], 0)
@@ -88,6 +106,10 @@ describe('useWorkflowTabState', () => {
         'Comfy.Workspace.Current',
         JSON.stringify({ type: 'team', id: 'ws-2' })
       )
+      const { setStorageIdentity, setStorageWorkspaceId } =
+        await import('../base/storageIO')
+      setStorageIdentity('user-a')
+      setStorageWorkspaceId('ws-2')
 
       const { useWorkflowTabState: useWorkflowTabState2 } =
         await import('./useWorkflowTabState')
@@ -101,6 +123,8 @@ describe('useWorkflowTabState', () => {
         'Comfy.Workspace.Current',
         JSON.stringify({ type: 'team', id: 'ws-1' })
       )
+      const { setStorageWorkspaceId } = await import('../base/storageIO')
+      setStorageWorkspaceId('ws-1')
       const { useWorkflowTabState } = await import('./useWorkflowTabState')
       const { setOpenPaths, getOpenPaths } = useWorkflowTabState()
 

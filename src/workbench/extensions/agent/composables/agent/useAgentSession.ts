@@ -9,11 +9,11 @@ import type {
   AgentThreadStartSource,
   AgentWorkflowBindSource
 } from '@/platform/telemetry/types'
-import { clearLegacyAgentStorage } from '@/platform/workflow/persistence/base/storageIO'
 import {
-  getWorkspaceId,
-  StorageKeys
-} from '@/platform/workflow/persistence/base/storageKeys'
+  clearLegacyAgentStorage,
+  getStorageScope
+} from '@/platform/workflow/persistence/base/storageIO'
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import { createUuidv4 } from '@/utils/uuid'
 import type {
   AgentActiveTabData,
@@ -167,8 +167,22 @@ function disownsWorkflow(error: unknown): boolean {
 
 export function useAgentSession(deps: AgentSessionDeps) {
   const { rest, events, onThreadStarted, onAskResolved, workflow } = deps
-  const threadStorageKey = StorageKeys.agentThread(getWorkspaceId())
   clearLegacyAgentStorage()
+
+  function readStoredThread(): string | null {
+    const scope = getStorageScope()
+    return scope ? localStorage.getItem(StorageKeys.agentThread(scope)) : null
+  }
+
+  function writeStoredThread(threadId: string): void {
+    const scope = getStorageScope()
+    if (scope) localStorage.setItem(StorageKeys.agentThread(scope), threadId)
+  }
+
+  function removeStoredThread(): void {
+    const scope = getStorageScope()
+    if (scope) localStorage.removeItem(StorageKeys.agentThread(scope))
+  }
 
   const conversationStore = useAgentConversationStore()
   const bindingStore = useAgentWorkflowTabBindingStore()
@@ -261,16 +275,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
     everLive = false
     const surviving = conversationStore.threadId
     const stored =
-      conversationStore.messages.length === 0
-        ? localStorage.getItem(threadStorageKey)
-        : null
+      conversationStore.messages.length === 0 ? readStoredThread() : null
     workflow?.initialize?.(surviving !== null || stored !== null)
     // The binding only outlives a remount together with its thread: a page
     // with no surviving thread has no resumed turn the binding could serve.
-    if (
-      conversationStore.threadId === null &&
-      localStorage.getItem(threadStorageKey) === null
-    ) {
+    if (conversationStore.threadId === null && readStoredThread() === null) {
       rememberedWorkflowId = null
       boundWorkflowId.value = null
     }
@@ -314,7 +323,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       if (error instanceof AgentApiError && error.status === 404) {
         if (conversationStore.threadId === threadId)
           conversationStore.setThreadId(null)
-        localStorage.removeItem(threadStorageKey)
+        removeStoredThread()
         return false
       }
       pushError(error instanceof Error ? error.message : String(error))
@@ -505,7 +514,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   ): void {
     const startsThread = conversationStore.threadId === null
     conversationStore.setThreadId(ack.thread_id)
-    localStorage.setItem(threadStorageKey, ack.thread_id)
+    writeStoredThread(ack.thread_id)
     if (ack.workflow_id !== undefined) {
       const boundAtAck = boundWorkflowId.value
       bindWorkflow(ack.workflow_id)
@@ -791,7 +800,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     boundWorkflowId.value = null
     rememberedWorkflowId = null
     pendingWorkflowBind = null
-    localStorage.removeItem(threadStorageKey)
+    removeStoredThread()
     pendingThreadSource.value = source ?? null
   }
 
@@ -809,7 +818,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     rememberedWorkflowId = null
     pendingWorkflowBind = null
     conversationStore.setThreadId(threadId)
-    localStorage.setItem(threadStorageKey, threadId)
+    writeStoredThread(threadId)
     const hydrated = await hydrateFromServer(threadId, isCurrent)
     if (hydrated && isCurrent()) conversationStore.resumeBackgroundTurn()
     return hydrated && isCurrent()
