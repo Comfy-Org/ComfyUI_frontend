@@ -99,7 +99,7 @@
     "vitest/no-standalone-expect": "off",
     "vitest/valid-title": "off",
     "vitest/require-to-throw-message": "off",
-    "typescript/ban-ts-comment": "error",
+    "typescript/ban-ts-comment": ["error", { "ts-expect-error": true }],
     "typescript/consistent-type-imports": "error",
     "typescript/no-namespace": "error",
     "typescript/no-require-imports": "error",
@@ -166,7 +166,11 @@
       ],
       "rules": {
         "comfy/no-import-actual": "error",
-        "comfy/use-global-pinia": "error"
+        "comfy/use-global-pinia": "error",
+        "typescript/ban-ts-comment": [
+          "error",
+          { "ts-expect-error": "allow-with-description" }
+        ]
       }
     },
     {
