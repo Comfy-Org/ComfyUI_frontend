@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { effect, stop } from 'vue'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
@@ -26,7 +24,6 @@ type RenderCounts = {
 
 describe('renderer geometry boundary complexity', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     layoutStore.resetForTests()
     LiteGraph.vueNodesMode = false
   })

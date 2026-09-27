@@ -7,7 +7,7 @@ import { createI18n } from 'vue-i18n'
 
 import SecretFormDialog from './SecretFormDialog.vue'
 
-vi.mock('../composables/useSecretForm', () => ({
+vi.mock<unknown>(import('../composables/useSecretForm'), () => ({
   useSecretForm: () => ({
     form: { provider: '', name: '', secretValue: '' },
     errors: {},
@@ -24,30 +24,15 @@ vi.mock('../composables/useSecretForm', () => ({
   })
 }))
 
-vi.mock('primevue/inputtext', () => ({
-  default: { name: 'InputText', template: '<input />' }
-}))
-vi.mock('primevue/password', () => ({
-  default: { name: 'Password', template: '<input type="password" />' }
-}))
+vi.mock<unknown>(
+  import('primevue/inputtext'),
 
-vi.mock('@/components/ui/button/Button.vue', () => ({
-  default: { name: 'Button', template: '<button><slot /></button>' }
-}))
-vi.mock('@/components/ui/select/Select.vue', () => ({
-  default: { name: 'Select', template: '<div><slot /></div>' }
-}))
-vi.mock('@/components/ui/select/SelectContent.vue', () => ({
-  default: { name: 'SelectContent', template: '<div><slot /></div>' }
-}))
-vi.mock('@/components/ui/select/SelectItem.vue', () => ({
-  default: { name: 'SelectItem', template: '<div><slot /></div>' }
-}))
-vi.mock('@/components/ui/select/SelectTrigger.vue', () => ({
-  default: { name: 'SelectTrigger', template: '<div><slot /></div>' }
-}))
-vi.mock('@/components/ui/select/SelectValue.vue', () => ({
-  default: { name: 'SelectValue', template: '<span />' }
+  () => ({
+    default: { name: 'InputText', template: '<input />' }
+  })
+)
+vi.mock<unknown>(import('primevue/password'), () => ({
+  default: { name: 'Password', template: '<input type="password" />' }
 }))
 
 const i18n = createI18n({

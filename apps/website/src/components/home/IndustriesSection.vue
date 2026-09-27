@@ -11,7 +11,15 @@ import { externalLinks } from '../../config/routes'
 import BrandButton from '../common/BrandButton.vue'
 import BlobMedia from './BlobMedia.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const {
+  locale = 'en',
+  heading,
+  body
+} = defineProps<{
+  locale?: Locale
+  heading?: string
+  body?: string
+}>()
 
 interface Industry {
   label: string
@@ -121,17 +129,30 @@ const ambientClipId = `industries-ambient-${uid}`
     </svg>
 
     <div
-      class="max-w-9xl mx-auto grid grid-cols-1 gap-16 px-6 py-20 lg:grid-cols-2 lg:items-center lg:gap-10 lg:px-20 lg:py-28"
+      class="mx-auto grid max-w-9xl grid-cols-1 gap-16 px-6 py-20 lg:grid-cols-2 lg:items-center lg:gap-10 lg:px-20 lg:py-28"
     >
       <!-- Copy column -->
       <div class="flex flex-col items-start gap-10">
-        <div class="flex flex-col gap-6">
+        <div v-if="heading" class="flex flex-col gap-6">
+          <h2
+            class="max-w-md text-4xl font-light tracking-tight text-primary-comfy-canvas lg:text-6xl"
+          >
+            {{ heading }}
+          </h2>
           <p
-            class="text-primary-comfy-yellow text-sm font-bold tracking-widest uppercase"
+            v-if="body"
+            class="max-w-md text-lg/relaxed text-primary-warm-gray"
+          >
+            {{ body }}
+          </p>
+        </div>
+        <div v-else class="flex flex-col gap-6">
+          <p
+            class="text-sm font-bold tracking-widest text-primary-comfy-yellow uppercase"
           >
             {{ t('industries.label', locale) }}
           </p>
-          <p class="text-primary-warm-gray max-w-md text-lg/relaxed">
+          <p class="max-w-md text-lg/relaxed text-primary-warm-gray">
             {{ t('industries.body', locale) }}
           </p>
         </div>
@@ -163,7 +184,11 @@ const ambientClipId = `industries-ambient-${uid}`
           </button>
         </nav>
 
-        <BrandButton :href="externalLinks.workflows" variant="outline">
+        <BrandButton
+          :href="externalLinks.workflows"
+          variant="outline"
+          class="font-bold"
+        >
           {{ t('industries.cta', locale) }}
         </BrandButton>
       </div>

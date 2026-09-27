@@ -69,7 +69,7 @@ class NodeHelpService {
       return { text: null, errorText: res.statusText }
     }
 
-    const contentType = res.headers?.get?.('content-type') ?? ''
+    const contentType = res.headers.get('content-type') ?? ''
     const text = await res.text()
 
     const isHtmlContentType = contentType.includes('text/html')

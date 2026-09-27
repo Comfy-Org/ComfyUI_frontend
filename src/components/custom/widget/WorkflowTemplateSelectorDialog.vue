@@ -6,7 +6,7 @@
   >
     <template #leftPanelHeaderTitle>
       <i class="icon-[comfy--template]" />
-      <h2 class="text-neutral text-base font-semibold">
+      <h2 class="text-base font-semibold text-base-foreground">
         {{ $t('sideToolbar.templates', 'Templates') }}
       </h2>
     </template>
@@ -17,7 +17,7 @@
     <template #header>
       <div class="flex min-w-0 flex-1 items-center gap-2">
         <h2
-          class="text-neutral m-0 hidden shrink-0 truncate text-base font-medium min-[880px]:block"
+          class="m-0 hidden shrink-0 truncate text-base font-medium text-base-foreground min-[880px]:block"
         >
           {{ pageTitle }}
         </h2>
@@ -268,8 +268,8 @@
                       :get-logo-url="workflowTemplatesStore.getLogoUrl"
                       default-position="right-2 bottom-2"
                     />
-                    <ProgressSpinner
-                      v-if="loadingTemplate === template.name"
+                    <Spinner
+                      v-if="loadingTemplateId === template.name"
                       class="absolute inset-0 z-10 m-auto size-12"
                     />
                   </div>
@@ -421,7 +421,6 @@
 
 <script setup lang="ts">
 import { useAsyncState } from '@vueuse/core'
-import ProgressSpinner from 'primevue/progressspinner'
 import { computed, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -441,6 +440,7 @@ import Button from '@/components/ui/button/Button.vue'
 import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 import { selectCountBadgeClass } from '@/components/ui/select/select.variants'
 import type { SelectOption } from '@/components/ui/select/types'
+import Spinner from '@/components/ui/spinner/Spinner.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import { useIntersectionObserver } from '@/composables/useIntersectionObserver'
@@ -499,6 +499,7 @@ const workflowTemplatesStore = useWorkflowTemplatesStore()
 const {
   loadTemplates,
   loadWorkflowTemplate,
+  loadingTemplateId,
   getTemplateThumbnailUrl,
   getTemplateTitle
 } = useTemplateWorkflows()
@@ -709,7 +710,6 @@ const hasActiveFilters = computed(
 
 // UI state
 const mobileFiltersOpen = ref(false)
-const loadingTemplate = ref<string | null>(null)
 const hoveredTemplate = ref<string | null>(null)
 const cardRefs = ref<HTMLElement[]>([])
 
@@ -887,25 +887,20 @@ watch(
   ],
   () => {
     resetPagination()
-    // Clear loading state and force re-render of template list
-    loadingTemplate.value = null
     templateListKey.value++
   }
 )
 
 // Methods
-const onLoadWorkflow = async (template: TemplateInfo) => {
-  loadingTemplate.value = template.name
-  try {
-    await loadWorkflowTemplate(
-      template.name,
-      getEffectiveSourceModule(template)
-    )
-    templateWasSelected.value = true
-    onClose()
-  } finally {
-    loadingTemplate.value = null
-  }
+async function onLoadWorkflow(template: TemplateInfo) {
+  const result = await loadWorkflowTemplate(
+    template.name,
+    getEffectiveSourceModule(template)
+  )
+  if (result === 'not-started') return
+
+  templateWasSelected.value = result === 'loaded'
+  onClose()
 }
 
 const pageTitle = computed(() => {

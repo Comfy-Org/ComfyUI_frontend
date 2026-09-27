@@ -10,7 +10,7 @@ import {
   absoluteUrl,
   jsonLdId,
   pageContext,
-  softwareApplicationNode,
+  softwareApplicationNode
 } from '../../../utils/jsonLd'
 import { buildModelFaqs, modelFaqJsonLd } from '../../../utils/modelFaq'
 import { getPageDescription } from '../../../utils/modelSeoCopy'
@@ -39,7 +39,7 @@ const pageDescription = getPageDescription(model)
 const { siteUrl, locale, url } = pageContext(
   Astro.site,
   Astro.url.pathname,
-  Astro.currentLocale,
+  Astro.currentLocale
 )
 const softwareId = jsonLdId(url, 'software')
 const software = softwareApplicationNode({
@@ -48,11 +48,22 @@ const software = softwareApplicationNode({
   name: displayName,
   url,
   applicationCategory: 'MultimediaApplication',
-  operatingSystem: 'Any',
+  operatingSystem: 'Any'
 })
 const faqs = buildModelFaqs(model, locale)
 const whatIsDescription = faqs[0].answer
 const faqPage = modelFaqJsonLd(faqs, jsonLdId(url, 'faq'))
+
+// Backlink the leading "{displayName}" in the What-is paragraph to the
+// model's own site when configured (e.g. MiniMax -> design.minimax.io),
+// without touching the JSON-LD/FAQ-accordion copies of the same string.
+const whatIsBacklinkUrl =
+  model.whatIsBacklinkUrl && whatIsDescription.startsWith(displayName)
+    ? model.whatIsBacklinkUrl
+    : undefined
+const whatIsRest = whatIsBacklinkUrl
+  ? whatIsDescription.slice(displayName.length)
+  : whatIsDescription
 ---
 
 <BaseLayout
@@ -64,13 +75,12 @@ const faqPage = modelFaqJsonLd(faqs, jsonLdId(url, 'faq'))
     { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
     {
       name: t('models.breadcrumb.models', locale),
-      url: absoluteUrl(Astro.site, '/p/supported-models'),
+      url: absoluteUrl(Astro.site, '/p/supported-models')
     },
-    { name: displayName },
+    { name: displayName }
   ]}
   extraJsonLd={[software, faqPage]}
 >
-
   <div class="mx-auto flex max-w-7xl justify-end px-6 pt-6 lg:px-8">
     <div class="relative" id="llms-wrap" data-md={llms.mdPath}>
       <button
@@ -83,15 +93,22 @@ const faqPage = modelFaqJsonLd(faqs, jsonLdId(url, 'faq'))
       </button>
       <div
         id="llms-menu"
-        class="absolute right-0 top-full z-40 mt-1.5 hidden w-60 overflow-hidden rounded-xl border border-white/15 bg-primary-comfy-ink py-1.5 shadow-2xl"
+        class="absolute top-full right-0 z-40 mt-1.5 hidden w-60 overflow-hidden rounded-xl border border-white/15 bg-primary-comfy-ink py-1.5 shadow-2xl"
       >
         <button
           id="llms-copy"
           class="block w-full cursor-pointer px-4 py-2.5 text-left text-xs text-primary-comfy-canvas hover:bg-white/5"
         >
-          {t('models.llms.copy')}<span id="llms-copied" class="hidden pl-2 text-primary-comfy-yellow">✓</span>
+          {t('models.llms.copy')}<span
+            id="llms-copied"
+            class="hidden pl-2 text-primary-comfy-yellow"
+            >✓</span
+          >
         </button>
-        <a href={llms.mdPath} class="block px-4 py-2.5 text-xs text-primary-comfy-canvas hover:bg-white/5">
+        <a
+          href={llms.mdPath}
+          class="block px-4 py-2.5 text-xs text-primary-comfy-canvas hover:bg-white/5"
+        >
           {t('models.llms.view')}
         </a>
         <a
@@ -135,19 +152,33 @@ const faqPage = modelFaqJsonLd(faqs, jsonLdId(url, 'faq'))
     <h2 class="text-2xl font-bold text-primary-comfy-canvas lg:text-3xl">
       {t('models.whatIs.heading').replace('{name}', displayName)}
     </h2>
-    <p class="mt-4 max-w-3xl text-base/relaxed text-primary-comfy-canvas/70 lg:text-lg/relaxed">
-      {whatIsDescription}
+    <p
+      class="mt-4 max-w-3xl text-base/relaxed text-primary-comfy-canvas/70 lg:text-lg/relaxed"
+    >
+      {whatIsBacklinkUrl ? (
+        <>
+          <a
+            href={whatIsBacklinkUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-primary-comfy-yellow hover:underline"
+          >
+            {displayName}
+          </a>
+          {whatIsRest}
+        </>
+      ) : (
+        whatIsDescription
+      )}
     </p>
-    {model.docsUrl && (
-      <a
-        href={model.docsUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        class="mt-6 inline-block text-primary-comfy-yellow hover:underline"
-      >
-        {t('models.whatIs.tutorialLink')}
-      </a>
-    )}
+    {model.docsUrl && <a
+      href={model.docsUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      class="mt-6 inline-block text-primary-comfy-yellow hover:underline"
+    >
+      {t('models.whatIs.tutorialLink')}
+    </a>}
   </section>
 
   <section>

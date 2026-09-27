@@ -1,28 +1,13 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-import { ResultItemImpl } from '@/stores/queueStore'
+import { describe, expect, it } from 'vitest'
 
 import type { AssetMeta } from '../schemas/mediaAssetSchema'
 import { useMediaAssetGalleryStore } from './useMediaAssetGalleryStore'
 
-vi.mock('@/stores/queueStore', () => ({
-  ResultItemImpl: vi.fn<typeof ResultItemImpl>()
-}))
-
 describe('useMediaAssetGalleryStore', () => {
-  beforeEach(() => {
-    vi.mocked(ResultItemImpl).mockImplementation(function (data) {
-      Object.assign(this, {
-        ...data,
-        url: ''
-      })
-    })
-  })
-
   describe('openSingle', () => {
-    it('should convert AssetMeta to ResultItemImpl format', () => {
+    it('should convert AssetMeta to result item data', () => {
       const store = useMediaAssetGalleryStore()
       const mockAsset = fromPartial<AssetMeta>({
         id: 'test-1',
@@ -36,14 +21,15 @@ describe('useMediaAssetGalleryStore', () => {
 
       store.openSingle(mockAsset)
 
-      expect(ResultItemImpl).toHaveBeenCalledWith({
+      expect(store.items).toHaveLength(1)
+      expect(store.items[0]).toEqual({
         filename: 'test-image.png',
         subfolder: '',
         type: 'output',
         nodeId: '0',
-        mediaType: 'images'
+        mediaType: 'images',
+        url: 'https://example.com/image.png'
       })
-      expect(store.items).toHaveLength(1)
       expect(store.activeIndex).toBe(0)
     })
 
@@ -61,12 +47,10 @@ describe('useMediaAssetGalleryStore', () => {
 
       store.openSingle(mockVideoAsset)
 
-      expect(ResultItemImpl).toHaveBeenCalledWith(
-        expect.objectContaining({
-          filename: 'test-video.mp4',
-          mediaType: 'video'
-        })
-      )
+      expect(store.items[0]).toMatchObject({
+        filename: 'test-video.mp4',
+        mediaType: 'video'
+      })
     })
 
     it('should set correct mediaType for audio assets', () => {
@@ -83,15 +67,13 @@ describe('useMediaAssetGalleryStore', () => {
 
       store.openSingle(mockAudioAsset)
 
-      expect(ResultItemImpl).toHaveBeenCalledWith(
-        expect.objectContaining({
-          filename: 'test-audio.mp3',
-          mediaType: 'audio'
-        })
-      )
+      expect(store.items[0]).toMatchObject({
+        filename: 'test-audio.mp3',
+        mediaType: 'audio'
+      })
     })
 
-    it('should override url getter with asset.src', () => {
+    it('should use asset.src as the url', () => {
       const store = useMediaAssetGalleryStore()
       const mockAsset = fromPartial<AssetMeta>({
         id: 'test-4',
@@ -105,8 +87,7 @@ describe('useMediaAssetGalleryStore', () => {
 
       store.openSingle(mockAsset)
 
-      const resultItem = store.items[0]
-      expect(resultItem.url).toBe('https://example.com/custom-url.png')
+      expect(store.items[0].url).toBe('https://example.com/custom-url.png')
     })
 
     it('should handle assets without src gracefully', () => {
@@ -123,8 +104,7 @@ describe('useMediaAssetGalleryStore', () => {
 
       store.openSingle(mockAsset)
 
-      const resultItem = store.items[0]
-      expect(resultItem.url).toBe('')
+      expect(store.items[0].url).toBe('')
     })
 
     it('should update activeIndex and items when called multiple times', () => {

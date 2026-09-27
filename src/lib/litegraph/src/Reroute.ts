@@ -1,5 +1,7 @@
 import { moveRerouteLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { isSelectedIn, setSelectedIn } from '@/core/selection/selectionStore'
+import { toSelectableKey } from '@/core/selection/selectionState'
 import { EMPTY_MEMBERSHIP, useRerouteStore } from '@/stores/rerouteStore'
 import type { RerouteMembership } from '@/stores/rerouteStore'
 import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
@@ -11,6 +13,20 @@ import type { FloatingRerouteSlot, RerouteChain } from '@/types/rerouteChain'
 import type { RerouteId } from '@/types/rerouteId'
 import type { UUID } from '@/utils/uuid'
 import type { Point as LayoutPoint } from '@/renderer/core/layout/types'
+
+function isPointLike(value: unknown): value is ArrayLike<number> {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'length' in value &&
+    typeof value.length === 'number' &&
+    value.length >= 2
+  )
+}
+
+function hasPointLength(value: unknown): boolean {
+  return Array.isArray(value) && value.length === 2
+}
 
 import { LGraphBadge } from './LGraphBadge'
 import type { LGraph } from './LGraph'
@@ -121,7 +137,7 @@ export class Reroute
   }
 
   set pos(value: Point) {
-    if (!(value?.length >= 2))
+    if (!isPointLike(value))
       throw new TypeError(
         'Reroute.pos is an x,y point, and expects an indexable with at least two values.'
       )
@@ -142,7 +158,7 @@ export class Reroute
   }
 
   private commitPosition(): void {
-    if (this.position.length !== 2) {
+    if (!hasPointLength(this.position)) {
       this.syncPosition()
       return
     }
@@ -183,7 +199,17 @@ export class Reroute
   }
 
   /** @inheritdoc */
-  selected?: boolean
+  get selected(): boolean {
+    return isSelectedIn(this._graphScope, toSelectableKey('reroute', this.id))
+  }
+
+  set selected(value: boolean | undefined) {
+    setSelectedIn(
+      this._graphScope,
+      toSelectableKey('reroute', this.id),
+      !!value
+    )
+  }
 
   private get membership(): RerouteMembership {
     return this._graphScope
@@ -462,7 +488,7 @@ export class Reroute
     const network = this.network.deref()
     if (!network) return
 
-    for (const linkId of [...this.floatingLinkIds]) {
+    for (const linkId of Array.from(this.floatingLinkIds)) {
       const floatingLink = network.floatingLinks.get(linkId)
       if (floatingLink) network.removeFloatingLink(floatingLink)
     }
@@ -644,7 +670,7 @@ export class Reroute
       this.hideSlots()
     }
 
-    return input.dirty || output.dirty
+    return output.dirty
   }
 
   /** Prevents rendering of the input and output slots. */

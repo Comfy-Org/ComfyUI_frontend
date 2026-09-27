@@ -11,7 +11,7 @@ import {
 } from 'node:fs'
 import { homedir, tmpdir } from 'node:os'
 import { basename, dirname, join } from 'node:path'
-import { pathToFileURL } from 'node:url'
+import { isMainModule } from '../isMainModule'
 
 export interface ShardPack {
   pack: string
@@ -275,11 +275,7 @@ export async function main(): Promise<void> {
     )
 }
 
-const invokedDirectly =
-  process.argv[1] !== undefined &&
-  import.meta.url === pathToFileURL(process.argv[1]).href
-
-if (invokedDirectly)
+if (isMainModule(import.meta.url))
   void main().catch((error: unknown) => {
     console.error(
       `::error::${error instanceof Error ? error.message : String(error)}`

@@ -45,11 +45,7 @@ const SELF_EMAIL = 'e2e@test.comfy.org'
 const BOOT_FEATURES = {
   billing_control_enabled: true
 } satisfies RemoteConfig
-// Disable the experimental Asset API: with it on (cloud default) the unmocked
-// asset endpoints 403 and workflow restore throws uncaught, aborting the
-// GraphCanvas onMounted chain before the deep-link loader.
 const BOOT_SETTINGS = {
-  'Comfy.Assets.UseAssetAPI': false,
   'Comfy.TutorialCompleted': true
 }
 
@@ -97,6 +93,7 @@ const ACTIVE_TEAM_STATUS = {
     credits_monthly: 147_700,
     stop_usd: 700
   },
+  scheduled_change: null,
   max_seats: 5,
   occupied_seats: 1
 } satisfies BillingStatusResponse
@@ -111,6 +108,7 @@ const ACTIVE_STANDARD_STATUS = {
   has_funds: true,
   renewal_date: '2099-02-20T00:00:00Z',
   team_credit_stop: null,
+  scheduled_change: null,
   max_seats: 1,
   occupied_seats: 1
 } satisfies BillingStatusResponse
@@ -192,6 +190,60 @@ const TEAM_SUBSCRIBED_RESPONSE = {
   status: 'subscribed',
   effective_at: '2026-07-21T00:00:00Z'
 } satisfies SubscribeResponse
+
+const TEAM_ANNUAL_PLAN = {
+  slug: 'team_per_credit_annual',
+  tier: 'TEAM',
+  duration: 'ANNUAL',
+  price_cents: 756_000,
+  credits_cents: 1_772_400,
+  max_seats: 100,
+  availability: { available: true },
+  seat_summary: {
+    seat_count: 1,
+    total_cost_cents: 756_000,
+    total_credits_cents: 1_772_400
+  }
+} satisfies Plan
+
+const TEAM_MONTHLY_PLAN = {
+  slug: 'team_per_credit_monthly',
+  tier: 'TEAM',
+  duration: 'MONTHLY',
+  price_cents: 39_000,
+  credits_cents: 84_400,
+  max_seats: 100,
+  availability: { available: true },
+  seat_summary: {
+    seat_count: 1,
+    total_cost_cents: 39_000,
+    total_credits_cents: 84_400
+  }
+} satisfies Plan
+
+const NEW_TEAM_ANNUAL_SUBSCRIPTION = {
+  allowed: true,
+  transition_type: 'new_subscription',
+  effective_at: '2026-07-21T00:00:00Z',
+  is_immediate: true,
+  cost_today_cents: 756_000,
+  cost_next_period_cents: 756_000,
+  credits_today_cents: 1_772_400,
+  credits_next_period_cents: 1_772_400,
+  new_plan: TEAM_ANNUAL_PLAN
+} satisfies PreviewSubscribeResponse
+
+const NEW_TEAM_MONTHLY_SUBSCRIPTION = {
+  allowed: true,
+  transition_type: 'new_subscription',
+  effective_at: '2026-07-21T00:00:00Z',
+  is_immediate: true,
+  cost_today_cents: 39_000,
+  cost_next_period_cents: 39_000,
+  credits_today_cents: 84_400,
+  credits_next_period_cents: 84_400,
+  new_plan: TEAM_MONTHLY_PLAN
+} satisfies PreviewSubscribeResponse
 
 const NEW_CREATOR_SUBSCRIPTION = {
   allowed: true,
@@ -314,13 +366,20 @@ const TRANSIENT_STATUS_ERROR = {
 
 // The deep-link loader runs at the tail of GraphCanvas onMounted, so the boot
 // chain must not throw before it: a missing settings subpath, prompt exec_info,
-// or queue status each abort that chain.
+// queue status, or an unmocked asset endpoint each abort that chain.
 async function mockGraphBootExtras(page: Page) {
   // Boot only reads these; fall back on any write so an unexpected POST/PUT
   // surfaces instead of being masked by a blanket 200.
   await page.route('**/api/settings/**', (route) => {
     if (route.request().method() !== 'GET') return route.fallback()
     return route.fulfill(jsonRoute({}))
+  })
+  // Cloud always has assets enabled, so the unmocked asset endpoints would 403
+  // and workflow restore would throw uncaught. One glob covers every shape boot
+  // asks for: `/api/assets`, `?query`, `/seed`, `/<id>`.
+  await page.route('**/api/assets**', (route) => {
+    if (route.request().method() !== 'GET') return route.fallback()
+    return route.fulfill(jsonRoute({ assets: [], total: 0, has_more: false }))
   })
   await page.route('**/api/prompt', (route) => {
     if (route.request().method() !== 'GET') return route.fallback()
@@ -711,6 +770,9 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
     await page.route('**/api/billing/plans', (route) =>
       route.fulfill(jsonRoute(TEAM_CATALOG_PLANS))
     )
+    await page.route('**/api/billing/preview-subscribe', (route) =>
+      route.fulfill(jsonRoute(NEW_TEAM_ANNUAL_SUBSCRIPTION))
+    )
     await page.route('**/api/billing/subscribe', (route) => {
       subscribeRequests.push(route.request())
       return route.fulfill(jsonRoute(TEAM_SUBSCRIBED_RESPONSE))
@@ -728,7 +790,11 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
       confirmationDialog.getByText('$630', { exact: true }).last()
     ).toBeVisible()
     await expect(
-      confirmationDialog.getByText('1,772,400', { exact: true })
+      // `.last()`: the yearly figure now also renders in the embedded
+      // PricingTableWorkspace behind the dialog (previously it showed the
+      // monthly amount), so scope to the confirm summary like the `$630`
+      // assertion above.
+      confirmationDialog.getByText('1,772,400', { exact: true }).last()
     ).toBeVisible()
     expect(subscribeRequests).toHaveLength(0)
     await expect(page).toHaveURL(/[?&]keep=1(?:&|$)/)
@@ -757,6 +823,10 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
     ])
     await page.route('**/api/billing/plans', (route) =>
       route.fulfill(jsonRoute(TEAM_CATALOG_PLANS))
+    )
+
+    await page.route('**/api/billing/preview-subscribe', (route) =>
+      route.fulfill(jsonRoute(NEW_TEAM_MONTHLY_SUBSCRIPTION))
     )
 
     await page.goto(`${APP_URL}/?pricing=team&stop=team_400&cycle=monthly`)

@@ -150,7 +150,6 @@ export class AppModeHelper {
     return this.comfyPage.page
   }
 
-  /** Enable the linear mode feature flag and top menu. */
   async enableLinearMode() {
     await this.page.evaluate(() => {
       window.app!.api.serverFeatureFlags.value = {
@@ -158,35 +157,11 @@ export class AppModeHelper {
         linear_toggle_enabled: true
       }
     })
-    await this.comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-  }
-
-  /** Set preference so the Vue node switch popup does not appear in builder. */
-  async suppressVueNodeSwitchPopup() {
-    await this.comfyPage.settings.setSetting(
-      'Comfy.AppBuilder.VueNodeSwitchDismissed',
-      true
-    )
-  }
-
-  /** Allow the Vue node switch popup so tests can assert its behavior. */
-  async allowVueNodeSwitchPopup() {
-    await this.comfyPage.settings.setSetting(
-      'Comfy.AppBuilder.VueNodeSwitchDismissed',
-      false
-    )
   }
 
   /** Enter builder mode via the "Workflow actions" dropdown. */
   async enterBuilder() {
-    // Wait for any workflow-tab popover to dismiss before clicking —
-    // the popover overlay can intercept the "Workflow actions" click.
-    // Best-effort: the popover may or may not exist; if it stays visible
-    // past the timeout we still proceed with the click.
-    await this.page
-      .locator('.workflow-popover-fade')
-      .waitFor({ state: 'hidden', timeout: 5000 })
-      .catch(() => {})
+    await this.comfyPage.menu.topbar.dismissWorkflowPopover()
 
     await this.workflowActions.trigger.click()
     await this.page
@@ -213,7 +188,6 @@ export class AppModeHelper {
   async enterAppModeWithInputs(inputs: [string, string][]) {
     await this.page.evaluate(async (inputTuples) => {
       const graph = window.app!.graph
-      if (!graph) return
 
       const outputNodeIds = graph.nodes
         .filter(

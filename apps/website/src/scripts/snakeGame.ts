@@ -89,7 +89,7 @@ const DIRS = {
 } satisfies Record<string, Dir>
 const ALL_DIRS = [DIRS.up, DIRS.down, DIRS.left, DIRS.right]
 
-const KEY_INTENTS: Record<string, [number, number]> = {
+const KEY_INTENTS: Record<string, [number, number] | undefined> = {
   arrowup: [0, -1],
   w: [0, -1],
   arrowdown: [0, 1],
@@ -640,7 +640,7 @@ svg?.addEventListener('mousemove', onMouseMove)
 svg?.addEventListener('mouseleave', onMouseLeave)
 
 function mouseTargetDir(): Dir | null {
-  if (!mousePos || !snake) return null
+  if (!mousePos) return null
   const [hx, hy] = iso(snake[0].i, snake[0].j)
   const dx = mousePos.x - hx
   const dy = mousePos.y - LIFT - hy

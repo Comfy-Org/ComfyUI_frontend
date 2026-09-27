@@ -1,7 +1,6 @@
 /* eslint-disable testing-library/no-node-access */
 /* eslint-disable testing-library/no-container */
 /* eslint-disable testing-library/prefer-user-event */
-import { createTestingPinia } from '@pinia/testing'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
@@ -11,11 +10,12 @@ import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 
 import PackVersionBadge from './PackVersionBadge.vue'
 
 // Mock config to prevent __COMFYUI_FRONTEND_VERSION__ error
-vi.mock('@/config', () => ({
+vi.mock(import('@/config'), () => ({
   default: {
     app_title: 'ComfyUI',
     app_version: '1.0.0'
@@ -31,42 +31,19 @@ const mockNodePack = {
 }
 
 const mockInstalledPacks = {
-  'test-pack': { ver: '1.5.0' },
-  'installed-pack': { ver: '2.0.0' }
+  'test-pack': { ver: '1.5.0', cnr_id: 'test-pack', enabled: true },
+  'installed-pack': { ver: '2.0.0', cnr_id: 'installed-pack', enabled: true }
 }
 
-const mockIsPackEnabled = vi.fn(() => true)
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/composables/nodePack/usePackUpdateStatus'),
 
-vi.mock('@/workbench/extensions/manager/stores/comfyManagerStore', () => ({
-  useComfyManagerStore: vi.fn(() => ({
-    installedPacks: mockInstalledPacks,
-    isPackInstalled: (id: string) =>
-      !!mockInstalledPacks[id as keyof typeof mockInstalledPacks],
-    isPackEnabled: mockIsPackEnabled,
-    getInstalledPackVersion: (id: string) =>
-      mockInstalledPacks[id as keyof typeof mockInstalledPacks]?.ver
-  }))
-}))
-
-vi.mock(
-  '@/workbench/extensions/manager/composables/nodePack/usePackUpdateStatus',
   () => ({
     usePackUpdateStatus: vi.fn(() => ({
       isUpdateAvailable: false
     }))
   })
 )
-
-const mockToggle = vi.fn()
-const mockHide = vi.fn()
-const PopoverStub = {
-  name: 'Popover',
-  template: '<div><slot></slot></div>',
-  methods: {
-    toggle: mockToggle,
-    hide: mockHide
-  }
-}
 
 const PackVersionSelectorPopoverStub = {
   name: 'PackVersionSelectorPopover',
@@ -76,8 +53,11 @@ const PackVersionSelectorPopoverStub = {
 }
 
 describe('PackVersionBadge', () => {
-  beforeEach(() => {
-    mockIsPackEnabled.mockReturnValue(true)
+  beforeEach(async () => {
+    const store = useComfyManagerStore()
+    store.installedPacks = mockInstalledPacks
+    await nextTick()
+    vi.mocked(useComfyManagerStore().isPackEnabled).mockReturnValue(true)
   })
 
   function renderComponent({
@@ -96,12 +76,11 @@ describe('PackVersionBadge', () => {
         ...props
       },
       global: {
-        plugins: [PrimeVue, createTestingPinia({ stubActions: false }), i18n],
+        plugins: [PrimeVue, i18n],
         directives: {
           tooltip: Tooltip
         },
         stubs: {
-          Popover: PopoverStub,
           PackVersionSelectorPopover: PackVersionSelectorPopoverStub
         }
       }
@@ -161,27 +140,29 @@ describe('PackVersionBadge', () => {
 
     await user.click(screen.getByRole('button', { name: /1\.5\.0/ }))
 
-    expect(mockToggle).toHaveBeenCalled()
+    expect(await screen.findByRole('dialog')).toBeVisible()
   })
 
   it('closes the popover when cancel is emitted', async () => {
     const user = userEvent.setup()
     renderComponent()
 
+    await user.click(screen.getByRole('button', { name: /1\.5\.0/ }))
     await user.click(screen.getByTestId('cancel-btn'))
     await nextTick()
 
-    expect(mockHide).toHaveBeenCalled()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
   it('closes the popover when submit is emitted', async () => {
     const user = userEvent.setup()
     renderComponent()
 
+    await user.click(screen.getByRole('button', { name: /1\.5\.0/ }))
     await user.click(screen.getByTestId('submit-btn'))
     await nextTick()
 
-    expect(mockHide).toHaveBeenCalled()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
   describe('selection state changes', () => {
@@ -190,10 +171,14 @@ describe('PackVersionBadge', () => {
         props: { isSelected: true }
       })
 
+      await userEvent
+        .setup()
+        .click(screen.getByRole('button', { name: /1\.5\.0/ }))
+      expect(await screen.findByRole('dialog')).toBeVisible()
       await rerender({ nodePack: mockNodePack, isSelected: false })
       await nextTick()
 
-      expect(mockHide).toHaveBeenCalled()
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     })
 
     it('does not close the popover when card is selected', async () => {
@@ -201,10 +186,13 @@ describe('PackVersionBadge', () => {
         props: { isSelected: false }
       })
 
+      await userEvent
+        .setup()
+        .click(screen.getByRole('button', { name: /1\.5\.0/ }))
       await rerender({ nodePack: mockNodePack, isSelected: true })
       await nextTick()
 
-      expect(mockHide).not.toHaveBeenCalled()
+      expect(screen.getByRole('dialog')).toBeVisible()
     })
 
     it('does not close the popover when isSelected remains false', async () => {
@@ -212,10 +200,13 @@ describe('PackVersionBadge', () => {
         props: { isSelected: false }
       })
 
+      await userEvent
+        .setup()
+        .click(screen.getByRole('button', { name: /1\.5\.0/ }))
       await rerender({ nodePack: mockNodePack, isSelected: false })
       await nextTick()
 
-      expect(mockHide).not.toHaveBeenCalled()
+      expect(screen.getByRole('dialog')).toBeVisible()
     })
 
     it('does not close the popover when isSelected remains true', async () => {
@@ -223,16 +214,19 @@ describe('PackVersionBadge', () => {
         props: { isSelected: true }
       })
 
+      await userEvent
+        .setup()
+        .click(screen.getByRole('button', { name: /1\.5\.0/ }))
       await rerender({ nodePack: mockNodePack, isSelected: true })
       await nextTick()
 
-      expect(mockHide).not.toHaveBeenCalled()
+      expect(screen.getByRole('dialog')).toBeVisible()
     })
   })
 
   describe('disabled state', () => {
     beforeEach(() => {
-      mockIsPackEnabled.mockReturnValue(false)
+      vi.mocked(useComfyManagerStore().isPackEnabled).mockReturnValue(false)
     })
 
     it('adds disabled styles when pack is disabled', () => {
@@ -263,7 +257,7 @@ describe('PackVersionBadge', () => {
       const badge = container.querySelector('[role="text"]')!
       await fireEvent.click(badge)
 
-      expect(mockToggle).not.toHaveBeenCalled()
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     })
 
     it('has correct tabindex when disabled', () => {
@@ -281,7 +275,7 @@ describe('PackVersionBadge', () => {
       await fireEvent.keyDown(badge, { key: 'Enter' })
       await fireEvent.keyDown(badge, { key: ' ' })
 
-      expect(mockToggle).not.toHaveBeenCalled()
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     })
   })
 })

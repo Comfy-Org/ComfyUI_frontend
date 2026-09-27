@@ -22,7 +22,7 @@ jobs:
     permissions:
       contents: read
     outputs:
-      should-run: ${{ steps.changes.outputs.should-run }}
+      should-run: ${{ steps.changes.outputs.should-run-source }}
     steps:
       - uses: actions/checkout@v7
       - id: changes
@@ -43,7 +43,7 @@ jobs:
         run: pnpm build
 
       - name: Collect size data
-        run: node scripts/size-collect.js
+        run: pnpm size:collect
 
       - name: Upload size data
         uses: actions/upload-artifact@v6

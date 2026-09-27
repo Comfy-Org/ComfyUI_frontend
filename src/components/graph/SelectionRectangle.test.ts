@@ -1,26 +1,17 @@
-import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { useRafFn } from '@vueuse/core'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, ref } from 'vue'
+import { nextTick } from 'vue'
+
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import SelectionRectangle from './SelectionRectangle.vue'
 
-const rafCallbacks: Array<() => void> = []
-vi.mock('@vueuse/core', () => ({
-  useRafFn: (cb: () => void) => {
-    rafCallbacks.push(cb)
-    return { pause: vi.fn(), resume: vi.fn() }
-  }
-}))
+type RafCallback = Parameters<typeof useRafFn>[0]
 
-const mockCanvas = ref<unknown>(null)
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({
-    get canvas() {
-      return mockCanvas.value
-    }
-  })
-}))
+const rafCallbacks: RafCallback[] = []
+vi.mock(import('@vueuse/core'), { spy: true })
 
 function createPanelEl() {
   const panel = document.createElement('div')
@@ -35,21 +26,35 @@ function dragRectangle(eDown: [number, number], eMove: [number, number]) {
   vi.spyOn(canvasEl, 'getBoundingClientRect').mockReturnValue(
     fromPartial<DOMRect>({ left: 0, top: 0, right: 1000, bottom: 800 })
   )
-  mockCanvas.value = {
+  useCanvasStore().canvas = fromPartial({
     canvas: canvasEl,
-    dragging_rectangle: true,
+    dragging_rectangle: [
+      eDown[0],
+      eDown[1],
+      eMove[0] - eDown[0],
+      eMove[1] - eDown[1]
+    ],
     pointer: {
       eDown: { safeOffsetX: eDown[0], safeOffsetY: eDown[1] },
       eMove: { safeOffsetX: eMove[0], safeOffsetY: eMove[1] }
     }
-  }
-  rafCallbacks[rafCallbacks.length - 1]()
+  })
+  rafCallbacks[rafCallbacks.length - 1](
+    fromPartial({ delta: 0, timestamp: performance.now() })
+  )
 }
 
 describe('SelectionRectangle', () => {
+  beforeEach(() => {
+    vi.mocked(useRafFn).mockImplementation((cb) => {
+      rafCallbacks.push(cb)
+      return fromPartial({ pause: vi.fn(), resume: vi.fn() })
+    })
+  })
+
   afterEach(() => {
     rafCallbacks.length = 0
-    mockCanvas.value = null
+    useCanvasStore().canvas = null
   })
 
   it('clips the rectangle to the canvas panel when dragged over the sidebar', async () => {
