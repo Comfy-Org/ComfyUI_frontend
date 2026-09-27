@@ -104,13 +104,13 @@ test('workflow launch groups lead to the existing shared form', async ({
     .click()
   await page.getByTestId('example-replace-keep').click()
   await expect(prompt).toHaveValue('Use the material from the second image.')
+  await page.getByRole('tab', { name: 'Workflow', exact: true }).click()
   await expect(
     page.getByRole('link', { name: 'Try in Cloud' })
   ).toHaveAttribute(
     'href',
     'https://testcloud.comfy.org/?template=image_qwen_image_edit_2511'
   )
-  await page.getByRole('tab', { name: 'Workflow', exact: true }).click()
   const graphFiles = [
     {
       link: page.getByRole('link', { name: 'Open full-size workflow preview' }),

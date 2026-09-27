@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ArrowUpRight } from '@lucide/vue'
 import { useMounted } from '@vueuse/core'
 import { computed, onScopeDispose, ref, watch } from 'vue'
 
@@ -196,7 +195,7 @@ function start() {
       :aria-selected="section === item"
       :aria-controls="`workflow-panel-${item}`"
       :tabindex="tabIndex(item)"
-      class="min-h-12 cursor-pointer border-b-2 border-transparent px-1 text-sm font-medium text-primary-warm-gray transition-colors hover:text-primary-comfy-yellow aria-selected:border-primary-comfy-yellow aria-selected:text-primary-comfy-canvas aria-selected:hover:text-primary-comfy-yellow"
+      class="min-h-12 cursor-pointer border-b-2 border-transparent px-1 text-sm font-bold tracking-wider text-primary-warm-gray uppercase transition-colors hover:text-primary-warm-white aria-selected:border-primary-comfy-yellow aria-selected:text-primary-warm-white"
       @click="section = item"
     >
       {{ t(sectionLabels[item]) }}
@@ -207,25 +206,20 @@ function start() {
     id="workflow-panel-playground"
     role="tabpanel"
     aria-labelledby="workflow-tab-playground"
-    class="grid items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]"
+    class="grid gap-8 lg:grid-cols-12"
   >
     <section
-      class="overflow-hidden rounded-2xl border border-transparency-white-t20"
+      class="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4 lg:col-span-5"
       aria-labelledby="workflow-inputs-heading"
     >
-      <form @submit.prevent="start">
-        <div class="space-y-6 p-5 lg:p-6">
-          <div>
-            <h2
-              id="workflow-inputs-heading"
-              class="text-lg font-medium text-primary-comfy-canvas"
-            >
-              {{ t('workshop.workflow.makeYours') }}
-            </h2>
-            <p class="mt-1 text-sm text-primary-warm-gray">
-              {{ t('workshop.workflow.inputHint') }}
-            </p>
-          </div>
+      <form class="flex min-h-full flex-col" @submit.prevent="start">
+        <h2
+          id="workflow-inputs-heading"
+          class="border-b border-transparency-white-t8 px-5 py-3 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase"
+        >
+          {{ t('workshop.input.title') }}
+        </h2>
+        <div class="space-y-6 p-5">
           <PlaygroundForm
             v-model="values"
             :schema="initial.schema"
@@ -240,10 +234,9 @@ function start() {
             {{ t('workshop.form.draftRestoreFailed') }}
           </p>
         </div>
-        <div class="space-y-3 border-t border-transparency-white-t8 p-5 lg:p-6">
-          <p class="text-xs/relaxed text-primary-warm-gray">
-            {{ t('workshop.workflow.cloudBilling') }}
-          </p>
+        <div
+          class="mt-auto space-y-3 border-t border-transparency-white-t8 p-3"
+        >
           <p
             v-if="admissionPaused"
             role="status"
@@ -263,19 +256,10 @@ function start() {
             @cancel="workflow.cancel()"
             @dismiss="workflow.dismiss()"
           />
-          <a
-            v-if="cloudHref"
-            :href="cloudHref"
-            target="_blank"
-            rel="noopener"
-            class="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-transparency-white-t20 text-sm font-medium text-primary-comfy-canvas hover:bg-transparency-white-t8"
-            >{{ t('workshop.workflow.tryCloud')
-            }}<ArrowUpRight class="size-4" aria-hidden="true"
-          /></a>
         </div>
       </form>
     </section>
-    <div class="space-y-4 lg:sticky lg:top-24">
+    <div class="space-y-4 lg:sticky lg:top-24 lg:col-span-7">
       <WorkflowResults
         :key="selectedRunId"
         :model="model"
