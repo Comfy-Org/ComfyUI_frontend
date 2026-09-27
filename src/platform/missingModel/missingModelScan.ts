@@ -12,6 +12,11 @@ import {
   promotedInputWidgets
 } from '@/core/graph/subgraph/promotedInputWidget'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
+import {
+  buildPromotedWidgetExecutionSources,
+  resolveActivePromotedWidgetConsumers
+} from '@/core/graph/subgraph/resolveConcretePromotedWidget'
+import type { PromotedWidgetExecutionSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type {
@@ -108,6 +113,7 @@ interface ModelWidgetScanTarget {
   candidateWidgetName: string
   definitionWidgetName: string
   sourceExecutionId?: NodeExecutionId
+  promotedSources?: PromotedWidgetExecutionSource[]
   valueWidget: IBaseWidget
   definitionWidget: IBaseWidget
   embeddedModels?: ModelFile[]
@@ -205,11 +211,13 @@ export function scanNodeModelCandidates(
       candidate = scanComboWidget(target, isAssetSupported, getDirectory)
     }
 
-    if (candidate) {
-      candidates.push(
-        enrichCandidateFromNodeProperties(candidate, target.embeddedModels)
-      )
+    if (!candidate) continue
+    if (target.promotedSources) {
+      candidate.promotedSources = target.promotedSources
     }
+    candidates.push(
+      enrichCandidateFromNodeProperties(candidate, target.embeddedModels)
+    )
   }
 
   return candidates
@@ -243,7 +251,18 @@ function getModelWidgetScanTarget(
   const source = resolvePromotedWidgetSource(rootGraph, node, widget)
   const sourceExecutionId = source?.sourceExecutionId
   if (!sourceExecutionId) return null
-  if (!isExecutionPathActive(rootGraph, sourceExecutionId)) return null
+  const consumers = resolveActivePromotedWidgetConsumers(node, widget.name)
+  const promotedSources = buildPromotedWidgetExecutionSources(
+    executionId,
+    consumers
+  )
+  if (
+    !promotedSources.some((source) =>
+      isExecutionPathActive(rootGraph, source.executionId)
+    )
+  ) {
+    return null
+  }
 
   return {
     executionId,
@@ -251,6 +270,7 @@ function getModelWidgetScanTarget(
     candidateWidgetName: widget.name,
     definitionWidgetName: source.sourceWidgetName,
     sourceExecutionId,
+    promotedSources,
     valueWidget: widget,
     definitionWidget: source.sourceWidget,
     embeddedModels: getEmbeddedModels(source.sourceNode)

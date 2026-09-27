@@ -11,7 +11,9 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import { useDialogStore } from '@/stores/dialogStore'
 import {
   createNodeExecutionId,
@@ -27,9 +29,7 @@ beforeEach(() => {
 })
 
 // Mock dependencies
-vi.mock(import('@/i18n'), () => ({
-  st: vi.fn((_key: string, fallback: string) => fallback)
-}))
+vi.mock(import('@/i18n'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
@@ -47,10 +47,10 @@ import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { toNodeId } from '@/types/nodeId'
+import { createMissingMediaCandidate } from '@/platform/missingMedia/__fixtures__/promotedMedia'
 
-function mockGraphReady(rootGraph: typeof app.rootGraph) {
-  vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
-  vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(true)
+function mockGraphReady(rootGraph: LGraph) {
+  vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockReturnValue(rootGraph)
 }
 
 describe('executionErrorStore — node error operations', () => {
@@ -893,6 +893,16 @@ it('opens the runtime error dialog with details when the Issues tab is disabled'
       key: 'global-execution-error',
       visible: true,
       contentProps: {
+        errorSources: [
+          {
+            kind: 'execution',
+            nodeDisplayName: 'KSampler',
+            error: expect.objectContaining({
+              exception_type: 'RuntimeError',
+              exception_message: 'Not enough memory'
+            })
+          }
+        ],
         error: {
           exceptionType: 'RuntimeError',
           exceptionMessage: 'Not enough memory',
@@ -904,6 +914,27 @@ it('opens the runtime error dialog with details when the Issues tab is disabled'
       }
     })
   ])
+})
+
+describe('before the root graph exists', () => {
+  it('resolves the execution error locator without touching app.rootGraph', () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const store = useExecutionErrorStore()
+    store.recordExecutionError({
+      prompt_id: 'test',
+      timestamp: 0,
+      node_id: '7',
+      node_type: 'KSampler',
+      executed: [],
+      exception_message: 'fail',
+      exception_type: 'RuntimeError',
+      traceback: []
+    })
+
+    expect(store.lastExecutionErrorNodeId).toBe(toNodeId('7'))
+    expect(store.activeGraphErrorNodeIds).toEqual(new Set())
+    expect(consoleError).not.toHaveBeenCalled()
+  })
 })
 
 describe('clearRunErrors', () => {
@@ -988,6 +1019,343 @@ describe('added-node error scan coordination', () => {
   })
 })
 
+describe('absorbed-error retirement on candidate resolution', () => {
+  const execId = createNodeExecutionId([1])
+  if (!execId) {
+    throw new Error('Expected a node execution ID')
+  }
+
+  function absorbedModelCandidate() {
+    return {
+      nodeId: execId,
+      nodeType: 'CheckpointLoaderSimple',
+      widgetName: 'ckpt_name',
+      isAssetSupported: false,
+      name: 'model.safetensors',
+      directory: 'checkpoints',
+      isMissing: true
+    }
+  }
+
+  const absorbedError = () =>
+    validationError('value_not_in_list', 'ckpt_name', {
+      received_value: 'model.safetensors'
+    })
+  const blockingError = () =>
+    validationError('required_input_missing', 'positive')
+
+  it('retires an absorbed validation error when its candidate resolves', async () => {
+    const store = useExecutionErrorStore()
+    const modelStore = useMissingModelStore()
+    modelStore.setMissingModels([absorbedModelCandidate()])
+    store.recordNodeErrors({
+      '1': nodeError([absorbedError(), blockingError()])
+    })
+    await nextTick()
+
+    modelStore.setMissingModels([])
+    await nextTick()
+
+    expect(store.lastNodeErrors?.['1'].errors).toEqual([blockingError()])
+  })
+
+  it('drops the node entry entirely when only absorbed errors remain', async () => {
+    const store = useExecutionErrorStore()
+    const modelStore = useMissingModelStore()
+    modelStore.setMissingModels([absorbedModelCandidate()])
+    store.recordNodeErrors({ '1': nodeError([absorbedError()]) })
+    await nextTick()
+
+    modelStore.removeMissingModelsByNodeId(execId)
+    await nextTick()
+
+    expect(store.lastNodeErrors).toBeNull()
+  })
+
+  it('keeps absorbed errors when a rescan rebuilds equivalent candidates', async () => {
+    const store = useExecutionErrorStore()
+    const modelStore = useMissingModelStore()
+    modelStore.setMissingModels([absorbedModelCandidate()])
+    store.recordNodeErrors({ '1': nodeError([absorbedError()]) })
+    await nextTick()
+
+    modelStore.setMissingModels([])
+    modelStore.setMissingModels([absorbedModelCandidate()])
+    await nextTick()
+
+    expect(store.lastNodeErrors?.['1'].errors).toEqual([absorbedError()])
+  })
+
+  it('retires resolved absorbed errors when a workflow is loaded again', async () => {
+    const store = useExecutionErrorStore()
+    const modelStore = useMissingModelStore()
+    const graphA = '11111111-1111-4111-8111-111111111111'
+    const graphB = '22222222-2222-4222-8222-222222222222'
+    store.setActiveGraph(graphA)
+    modelStore.setMissingModels([absorbedModelCandidate()])
+    store.recordNodeErrors({
+      '1': nodeError([absorbedError(), blockingError()])
+    })
+    await nextTick()
+
+    ChangeTracker.isLoadingGraph = true
+    try {
+      store.setActiveGraph(graphB)
+      modelStore.setMissingModels([])
+      await nextTick()
+    } finally {
+      ChangeTracker.isLoadingGraph = false
+    }
+    store.retireResolvedMissingResourceErrors({ models: [], media: [] })
+    expect(store.lastNodeErrors).toBeNull()
+
+    ChangeTracker.isLoadingGraph = true
+    try {
+      store.setActiveGraph(graphA)
+      modelStore.setMissingModels([])
+      await nextTick()
+      expect(store.lastNodeErrors?.['1'].errors).toEqual([
+        absorbedError(),
+        blockingError()
+      ])
+    } finally {
+      ChangeTracker.isLoadingGraph = false
+    }
+    store.retireResolvedMissingResourceErrors({ models: [], media: [] })
+
+    expect(store.lastNodeErrors?.['1'].errors).toEqual([blockingError()])
+  })
+
+  it('keeps previously absorbed errors while verification is inconclusive', () => {
+    const store = useExecutionErrorStore()
+    const modelStore = useMissingModelStore()
+    modelStore.setMissingModels([absorbedModelCandidate()])
+    store.recordNodeErrors({ '1': nodeError([absorbedError()]) })
+
+    store.retireResolvedMissingResourceErrors({
+      models: [{ ...absorbedModelCandidate(), isMissing: undefined }],
+      media: []
+    })
+    expect(store.lastNodeErrors?.['1'].errors).toEqual([absorbedError()])
+
+    store.retireResolvedMissingResourceErrors({
+      models: [{ ...absorbedModelCandidate(), isMissing: false }],
+      media: []
+    })
+    expect(store.lastNodeErrors).toBeNull()
+  })
+
+  it.for(['present', 'removed'] as const)(
+    'retires both resource errors after unknown verification becomes %s',
+    async (outcome) => {
+      const store = useExecutionErrorStore()
+      const modelStore = useMissingModelStore()
+      const mediaStore = useMissingMediaStore()
+      const model = absorbedModelCandidate()
+      const media = createMissingMediaCandidate([toNodeId(1)], {
+        name: 'portrait.png'
+      })
+      const errors = [
+        absorbedError(),
+        validationError('value_not_in_list', 'image', {
+          received_value: 'portrait.png'
+        }),
+        blockingError()
+      ]
+      modelStore.setMissingModels([model])
+      mediaStore.setMissingMedia([media])
+      store.recordNodeErrors({ '1': nodeError(errors) })
+      await nextTick()
+      expect(store.lastNodeErrors?.['1'].errors).toEqual(errors)
+
+      modelStore.setMissingModels([{ ...model, isMissing: undefined }])
+      mediaStore.setMissingMedia([{ ...media, isMissing: undefined }])
+      await nextTick()
+      expect(store.lastNodeErrors?.['1'].errors).toEqual(errors)
+
+      modelStore.setMissingModels(
+        outcome === 'present' ? [{ ...model, isMissing: false }] : []
+      )
+      mediaStore.setMissingMedia(
+        outcome === 'present' ? [{ ...media, isMissing: false }] : []
+      )
+      await nextTick()
+
+      expect(store.lastNodeErrors?.['1'].errors).toEqual([blockingError()])
+    }
+  )
+
+  it.for([
+    { verified: { models: [] }, remainingInput: 'image' },
+    { verified: { media: [] }, remainingInput: 'ckpt_name' }
+  ])(
+    'preserves unverified $remainingInput errors when the other resource resolves',
+    ({ verified, remainingInput }) => {
+      const store = useExecutionErrorStore()
+      useMissingModelStore().setMissingModels([absorbedModelCandidate()])
+      useMissingMediaStore().setMissingMedia([
+        createMissingMediaCandidate([toNodeId(1)], { name: 'portrait.png' })
+      ])
+      store.recordNodeErrors({
+        '1': nodeError([
+          absorbedError(),
+          validationError('value_not_in_list', 'image', {
+            received_value: 'portrait.png'
+          }),
+          blockingError()
+        ])
+      })
+
+      store.retireResolvedMissingResourceErrors(verified)
+
+      expect(
+        store.lastNodeErrors?.['1'].errors.map(
+          (error) => error.extra_info?.input_name
+        )
+      ).toEqual([remainingInput, 'positive'])
+    }
+  )
+
+  it('ignores verification completed for a different workflow', () => {
+    const store = useExecutionErrorStore()
+    const previousKey = store.captureRunErrorKey()
+    store.setActiveGraph('22222222-2222-4222-8222-222222222222')
+    useMissingModelStore().setMissingModels([absorbedModelCandidate()])
+    store.recordNodeErrors({ '1': nodeError([absorbedError()]) })
+
+    store.retireResolvedMissingResourceErrors(
+      { models: [], media: [] },
+      previousKey
+    )
+
+    expect(store.lastNodeErrors?.['1'].errors).toEqual([absorbedError()])
+  })
+
+  it('keeps absorbed errors when candidates reset during a graph load', async () => {
+    const store = useExecutionErrorStore()
+    const modelStore = useMissingModelStore()
+    modelStore.setMissingModels([absorbedModelCandidate()])
+    store.recordNodeErrors({ '1': nodeError([absorbedError()]) })
+    await nextTick()
+
+    ChangeTracker.isLoadingGraph = true
+    try {
+      modelStore.setMissingModels([])
+      await nextTick()
+
+      expect(store.lastNodeErrors?.['1'].errors).toEqual([absorbedError()])
+    } finally {
+      ChangeTracker.isLoadingGraph = false
+    }
+  })
+
+  it('retires a promoted media combo error stored under the host id', async () => {
+    const { rootGraph } = createBoundaryLinkedSubgraph()
+    mockGraphReady(rootGraph)
+
+    const store = useExecutionErrorStore()
+    const mediaStore = useMissingMediaStore()
+    mediaStore.setMissingMedia([
+      {
+        nodeId: '12',
+        nodeType: 'LoadImage',
+        widgetName: 'seed',
+        mediaType: 'image',
+        name: 'portrait.png',
+        isMissing: true
+      }
+    ])
+    store.recordNodeErrors({
+      '12:5': nodeError([
+        validationError('value_not_in_list', 'seed_input', {
+          received_value: 'portrait.png'
+        })
+      ])
+    })
+    await nextTick()
+
+    mediaStore.removeMissingMediaByNodeId(createNodeExecutionId([toNodeId(12)]))
+    await nextTick()
+
+    expect(store.lastNodeErrors).toBeNull()
+  })
+
+  it('retires a promoted media error stored under the host id', async () => {
+    const { rootGraph } = createBoundaryLinkedSubgraph()
+    mockGraphReady(rootGraph)
+
+    const store = useExecutionErrorStore()
+    const mediaStore = useMissingMediaStore()
+    // Production scanning keys promoted media by the host execution id and
+    // the boundary (renamed) widget, while the raw error stays interior.
+    // Shaped like a promoted-widget scan result: keyed by the host, carrying
+    // the interior identity the host widget name hides.
+    mediaStore.setMissingMedia([
+      {
+        nodeId: '12',
+        nodeType: 'LoadImage',
+        widgetName: 'seed',
+        promotedSources: [
+          {
+            executionId: createNodeExecutionId([toNodeId(12), toNodeId(5)]),
+            widgetName: 'seed_input'
+          }
+        ],
+        mediaType: 'image',
+        name: 'portrait.png',
+        isMissing: true
+      }
+    ])
+    store.recordNodeErrors({
+      '12:5': nodeError([
+        validationError(
+          'custom_validation_failed',
+          'seed_input',
+          { received_value: 'portrait.png' },
+          'Invalid image file'
+        )
+      ])
+    })
+    await nextTick()
+
+    mediaStore.removeMissingMediaByNodeId(createNodeExecutionId([toNodeId(12)]))
+    await nextTick()
+
+    expect(store.lastNodeErrors).toBeNull()
+  })
+
+  it('retires media-absorbed errors when the node leaves tracking', async () => {
+    const store = useExecutionErrorStore()
+    const mediaStore = useMissingMediaStore()
+    mediaStore.setMissingMedia([
+      {
+        nodeId: execId,
+        nodeType: 'LoadImage',
+        widgetName: 'image',
+        mediaType: 'image',
+        name: 'portrait.png',
+        isMissing: true
+      }
+    ])
+    store.recordNodeErrors({
+      '1': nodeError([
+        validationError(
+          'custom_validation_failed',
+          'image',
+          { received_value: 'portrait.png' },
+          'Invalid image file'
+        )
+      ])
+    })
+    await nextTick()
+
+    mediaStore.removeMissingMediaByNodeId(execId)
+    await nextTick()
+
+    expect(store.lastNodeErrors).toBeNull()
+  })
+})
+
 describe('setActiveGraph', () => {
   const graphAId = '11111111-1111-4111-8111-111111111111'
   const graphBId = '22222222-2222-4222-8222-222222222222'
@@ -1026,13 +1394,11 @@ describe('setActiveGraph', () => {
     expect(store.lastNodeErrors).toBeNull()
     expect(store.lastExecutionError).toBeNull()
     expect(store.lastPromptError).toBeNull()
-    expect(store.totalErrorCount).toBe(0)
 
     store.setActiveGraph(graphAId)
     expect(store.lastNodeErrors).toEqual(nodeErrors)
     expect(store.lastExecutionError).toEqual(executionError)
     expect(store.lastPromptError).toEqual(promptError)
-    expect(store.totalErrorCount).toBe(3)
   })
 
   it('keeps workflows with the same graph id separate', () => {

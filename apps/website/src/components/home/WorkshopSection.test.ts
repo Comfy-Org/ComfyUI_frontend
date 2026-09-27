@@ -1,23 +1,25 @@
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { readonly, ref, nextTick } from 'vue'
+import type { Ref } from 'vue'
 
 import type { WorkshopBrowseModel } from '../../config/workshop'
+import {
+  useWorkshopEnabled,
+  useWorkshopEnabledSettled
+} from '../../scripts/posthog'
 import WorkshopSection from './WorkshopSection.vue'
 
-const { enabled, settled } = await vi.hoisted(async () => {
-  const { ref } = await import('vue')
-  return { enabled: ref(true), settled: ref(true) }
-})
+vi.mock(import('../../scripts/posthog'))
 
-vi.mock(import('../../scripts/posthog'), () => ({
-  useWorkshopEnabled: () => enabled,
-  useWorkshopEnabledSettled: () => settled
-}))
+let enabled: Ref<boolean>
+let settled: Ref<boolean>
 
 beforeEach(() => {
-  enabled.value = true
-  settled.value = true
+  enabled = ref(true)
+  vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(enabled))
+  settled = ref(true)
+  vi.mocked(useWorkshopEnabledSettled).mockReturnValue(readonly(settled))
 })
 
 const models: WorkshopBrowseModel[] = [

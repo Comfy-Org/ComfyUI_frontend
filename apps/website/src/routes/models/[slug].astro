@@ -3,12 +3,12 @@ import type { GetStaticPaths } from 'astro'
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import ModelsPage from '../../components/workshop/ModelsPage.vue'
 import ModelsShowcase from '../../components/models/ModelsShowcase.astro'
-import { routerWorkshopModelPaths } from '../../config/workshop-browse-content'
+import { workshopPagePaths } from '../../config/workshop-page-content'
 import { t } from '../../i18n/translations'
 import { prepareModelPage } from './model-page'
 
 export const getStaticPaths: GetStaticPaths = () =>
-  routerWorkshopModelPaths.map((slug) => ({ params: { slug } }))
+  workshopPagePaths.map((slug) => ({ params: { slug } }))
 
 const page = await prepareModelPage(Astro.params.slug)
 // Static output uses an immediate meta refresh, not an HTTP 301 response.
@@ -27,7 +27,7 @@ const { model } = page
   ogImage={model.thumbnailUrl}
   noindex
 >
-  <ModelsPage slug={model.slug} client:load>
+  <ModelsPage slug={model.slug} workflowId={model.workflowId} client:load>
     <ModelsShowcase slot="fallback" />
   </ModelsPage>
   <noscript>

@@ -9,7 +9,7 @@ import type {
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 
-import type { UserDataFullInfo } from '@/schemas/apiSchema'
+import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
 import type {
@@ -17,6 +17,7 @@ import type {
   AgentTurnAccepted,
   AgentWsEvent
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import { zAgentAdmissionError } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
@@ -35,6 +36,16 @@ const TURN_ACCEPTED: AgentTurnAccepted = {
 }
 
 const CANCEL_ACCEPTED: AgentCancelAccepted = { status: 'cancelling' }
+
+export const FUNDS_UNAVAILABLE_MESSAGE =
+  'Billing status is temporarily unavailable; please retry.'
+const FUNDS_UNAVAILABLE = zAgentAdmissionError.parse({
+  error: {
+    message: FUNDS_UNAVAILABLE_MESSAGE,
+    reason: 'funds_unavailable',
+    type: 'SERVICE_UNAVAILABLE'
+  }
+})
 
 export const THINKING_TEXT =
   "I'll set the positive prompt to your red fox scene."
@@ -145,14 +156,24 @@ async function mockAgentBoot(
   page: Page,
   {
     agentConsentAccepted,
+    agentConsentReads,
     agentConsentSave,
     agentConsentWrites,
     agentFlagEnabled,
     agentPanelInitiallyOpen,
     agentOnboardingCompleted,
+    agentRetryAfter,
     crdtDebugEnabled,
-    postedMessages
-  }: Omit<AgentFixtures, 'agentPanel'>
+    initialFeatureFlags,
+    initialSettings,
+    objectInfo,
+    postedMessages,
+    vueNodes
+  }: Omit<AgentFixtures, 'agentPanel'> & {
+    initialFeatureFlags: Record<string, unknown>
+    initialSettings: Record<string, unknown>
+    vueNodes: boolean
+  }
 ): Promise<void> {
   let consentAccepted = agentConsentAccepted
 
@@ -181,23 +202,33 @@ async function mockAgentBoot(
 
   await mockBilling(page)
   await page.route(
-    'https://media.comfy.org/website/mcp/launch-film.mp4',
-    (route) =>
-      route.fulfill({
-        contentType: 'video/mp4',
-        path: assetPath('plain_video.mp4')
-      })
+    'https://media.comfy.org/website/comfy-agent/**',
+    (route) => {
+      const url = route.request().url()
+      if (url.endsWith('.mp4')) {
+        return route.fulfill({ path: assetPath('plain_video.mp4') })
+      }
+      if (url.endsWith('.webm')) {
+        return route.fulfill({
+          path: assetPath('video/video-preview-wide.webm')
+        })
+      }
+      return route.fulfill({ path: assetPath('image64x64.webp') })
+    }
   )
   await page.route('**/api/assets**', (r) =>
     r.fulfill(jsonRoute({ assets: [] }))
   )
 
   await mockCloudBootRoutes(page, {
-    features: agentFeatures(agentFlagEnabled),
+    features: { ...agentFeatures(agentFlagEnabled), ...initialFeatureFlags },
     settings: {
       'Comfy.TutorialCompleted': true,
-      'Comfy.RightSidePanel.ShowErrorsTab': false
-    }
+      'Comfy.RightSidePanel.ShowErrorsTab': false,
+      ...(vueNodes && { 'Comfy.VueNodes.Enabled': true }),
+      ...initialSettings
+    },
+    objectInfo
   })
   let savedWorkflow: UserDataFullInfo | undefined
   let savedContent: string | undefined
@@ -271,8 +302,9 @@ async function mockAgentBoot(
   }
   await page.route(
     `**/api/global-settings/${AGENT_CONSENT_SETTING_ID}`,
-    (route) =>
-      route.fulfill(
+    (route) => {
+      agentConsentReads.push(consentAccepted)
+      return route.fulfill(
         consentAccepted
           ? jsonRoute(storedConsent)
           : {
@@ -283,6 +315,7 @@ async function mockAgentBoot(
               status: 404
             }
       )
+    }
   )
   await page.route('**/api/global-settings', async (route) => {
     const request = route.request()
@@ -328,6 +361,15 @@ async function mockAgentBoot(
     const request = route.request()
     if (request.method() === 'POST') {
       postedMessages.push(request.postData() ?? '')
+      if (agentRetryAfter !== undefined)
+        return route.fulfill({
+          status: 503,
+          headers: {
+            'content-type': 'application/json',
+            'retry-after': agentRetryAfter
+          },
+          body: JSON.stringify(FUNDS_UNAVAILABLE)
+        })
       const accepted: AgentTurnAccepted = {
         ...TURN_ACCEPTED,
         message_id:
@@ -351,18 +393,25 @@ async function mockAgentBoot(
 
 type AgentFixtures = {
   agentConsentAccepted: boolean
+  agentConsentReads: boolean[]
   agentConsentSave: { status: number; pending?: Promise<void> }
   agentConsentWrites: boolean[]
   agentFlagEnabled: boolean
   agentPanel: AgentPanel
   agentPanelInitiallyOpen: boolean
   agentOnboardingCompleted: boolean
+  agentRetryAfter: string | undefined
   crdtDebugEnabled: boolean
+  /** `'server'` loads real node definitions instead of the empty catalog. */
+  objectInfo: 'server' | undefined
   postedMessages: string[]
 }
 
 export const agentTest = comfyPageFixture.extend<AgentFixtures>({
   agentConsentAccepted: [true, { option: true }],
+  agentConsentReads: async ({ agentFlagEnabled: _agentFlagEnabled }, use) => {
+    await use([])
+  },
   agentConsentSave: async ({ agentFlagEnabled: _agentFlagEnabled }, use) => {
     await use({ status: 200 })
   },
@@ -375,30 +424,44 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
   },
   agentPanelInitiallyOpen: [false, { option: true }],
   agentOnboardingCompleted: [true, { option: true }],
+  agentRetryAfter: [undefined, { option: true }],
   crdtDebugEnabled: [false, { option: true }],
+  objectInfo: [undefined, { option: true }],
   page: async (
     {
       agentConsentAccepted,
+      agentConsentReads,
       agentConsentSave,
       agentConsentWrites,
       agentFlagEnabled,
       agentPanelInitiallyOpen,
       agentOnboardingCompleted,
+      agentRetryAfter,
       crdtDebugEnabled,
+      initialFeatureFlags,
+      initialSettings,
+      objectInfo,
       page,
       postedMessages
     },
-    use
+    use,
+    testInfo
   ) => {
     await mockAgentBoot(page, {
       agentConsentAccepted,
+      agentConsentReads,
       agentConsentSave,
       agentConsentWrites,
       agentFlagEnabled,
       agentPanelInitiallyOpen,
       agentOnboardingCompleted,
+      agentRetryAfter,
       crdtDebugEnabled,
-      postedMessages
+      initialFeatureFlags,
+      initialSettings,
+      objectInfo,
+      postedMessages,
+      vueNodes: testInfo.tags.includes('@vue-nodes')
     })
     await use(page)
   },

@@ -1,16 +1,11 @@
 import type { User } from 'firebase/auth'
 import * as firebaseAuth from 'firebase/auth'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import * as vuefire from 'vuefire'
 
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 
 const mockFetch = vi.fn()
-
-vi.mock(import('vuefire'), () => ({
-  useFirebaseAuth: vi.fn()
-}))
 
 vi.mock(import('firebase/auth'))
 
@@ -28,9 +23,7 @@ vi.mock(import('@/composables/useFeatureFlags'))
 
 vi.mock(import('@/platform/telemetry'))
 
-vi.mock<unknown>(import('@/services/dialogService'), () => ({
-  useDialogService: () => ({ showErrorDialog: vi.fn() })
-}))
+vi.mock(import('@/services/dialogService'))
 
 describe('API key authentication initialization', () => {
   beforeEach(() => {
@@ -42,9 +35,6 @@ describe('API key authentication initialization', () => {
       json: () => Promise.resolve({ id: 'test-customer-id' })
     })
 
-    vi.mocked(vuefire.useFirebaseAuth).mockReturnValue(
-      {} as ReturnType<typeof vuefire.useFirebaseAuth>
-    )
     vi.mocked(firebaseAuth.onAuthStateChanged).mockImplementation(
       (_, callback) => {
         ;(callback as (user: User | null) => void)(null)

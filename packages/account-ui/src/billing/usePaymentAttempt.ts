@@ -15,12 +15,12 @@ import type {
   EmbeddedChallengePort,
   HostPaymentStep,
   PaymentProjection
-} from '@comfyorg/account/billing'
+} from '@comfyorg/account-core/billing'
 import {
   driveEmbeddedChallenge,
   isTerminal,
   projectPaymentStep
-} from '@comfyorg/account/billing'
+} from '@comfyorg/account-core/billing'
 
 import type { BillingClient } from './billingClient'
 import { useBillingOperation } from './useBillingOperation'

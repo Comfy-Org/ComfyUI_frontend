@@ -1,9 +1,9 @@
 import { catalogSearch, useCaseFor } from '../../config/models-catalogue'
+import { getWorkshopModel } from '../../config/workshop-browse-content'
 import {
-  getWorkshopModel,
-  workshopModels
-} from '../../config/workshop-browse-content'
-import { getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
+  getWorkshopPageDetail,
+  workshopPages
+} from '../../config/workshop-page-content'
 import { relatedModels } from '../../config/workshop-related'
 import { estimateWorkshopNodePrice } from '../../config/workshop-node-pricing'
 import type { Locale } from '../../i18n/translations'
@@ -22,11 +22,16 @@ export async function prepareModelPage(
   slug: string | undefined,
   locale: Locale = 'en'
 ) {
-  const model = slug ? getRouterWorkshopModelDetail(slug) : undefined
+  const model = slug ? getWorkshopPageDetail(slug) : undefined
   if (!model) throw new Error(`Unknown Models route: ${slug ?? '(missing)'}`)
   if (slug !== model.slug)
     return { kind: 'redirect', href: model.href } as const
-  const related = relatedModels(model, workshopModels)
+  const related = relatedModels(
+    model,
+    workshopPages.filter(
+      (other) => (other.type ?? 'MODEL') === (model.type ?? 'MODEL')
+    )
+  )
   const useCase = useCaseFor(model)
   const relatedProvider =
     related.length > 0 &&

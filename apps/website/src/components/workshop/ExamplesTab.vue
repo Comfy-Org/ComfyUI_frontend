@@ -27,8 +27,11 @@ const samplesOnly = computed(
 )
 // A sample exists to be judged, and on a phone it was 144px wide: an 81px
 // preview of a generated image decides nothing. A lone sample takes the row,
-// and several leave the next one peeking so the strip still reads as one.
-const phoneWidth = computed(() => (examples.length === 1 ? 'w-full' : 'w-72'))
+// and several take four fifths of it, so the next one peeks in at every width
+// the phone layout covers, up to the 18rem past which a card gains nothing.
+const phoneWidth = computed(() =>
+  examples.length === 1 ? 'w-full' : 'w-4/5 max-sm:max-w-72'
+)
 const desktopGridColumns = computed(() =>
   examples.length === 3
     ? 'sm:grid-cols-[repeat(auto-fit,minmax(14rem,1fr))]'

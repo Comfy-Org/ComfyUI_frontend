@@ -2,6 +2,7 @@ import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { readFileAsArrayBuffer } from '@/utils/fileUtil'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 
 const NULL = '\0'
@@ -17,14 +18,7 @@ function readNullTerminatedJson(header: string, key: string) {
 }
 
 export async function getMp3Metadata(file: File) {
-  const reader = new FileReader()
-  const read_process = new Promise<ArrayBuffer | null>((r) => {
-    reader.onload = (event) => r((event?.target?.result as ArrayBuffer) ?? null)
-    reader.onerror = () => r(null)
-    reader.onabort = () => r(null)
-  })
-  reader.readAsArrayBuffer(file)
-  const arrayBuffer = await read_process
+  const arrayBuffer = await readFileAsArrayBuffer(file)
   if (!arrayBuffer) return { prompt: undefined, workflow: undefined }
   //https://stackoverflow.com/questions/7302439/how-can-i-determine-that-a-particular-file-is-in-fact-an-mp3-file#7302482
   const sig_bytes = new Uint8Array(arrayBuffer, 0, 3)

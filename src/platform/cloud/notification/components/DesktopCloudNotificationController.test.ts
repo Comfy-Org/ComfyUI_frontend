@@ -1,3 +1,4 @@
+import { useDialogService } from '@/services/dialogService'
 import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
@@ -6,10 +7,6 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import DesktopCloudNotificationController from './DesktopCloudNotificationController.vue'
 
 let settingStore: ReturnType<typeof useSettingStore>
-
-const dialogService = {
-  showCloudNotification: vi.fn<() => Promise<void>>()
-}
 
 const electron = {
   getPlatform: vi.fn(() => 'darwin')
@@ -32,9 +29,7 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: errorReporter
 }))
 
-vi.mock<unknown>(import('@/services/dialogService'), () => ({
-  useDialogService: () => dialogService
-}))
+vi.mock(import('@/services/dialogService'))
 
 vi.mock<unknown>(import('@/utils/envUtil'), () => ({
   electronAPI: () => electron
@@ -55,13 +50,9 @@ describe('DesktopCloudNotificationController', () => {
     settingStore.settingValues['Comfy.Desktop.CloudNotificationShown'] = false
     electron.getPlatform.mockReturnValue('darwin')
     vi.mocked(settingStore.load).mockResolvedValue(undefined)
-    vi.mocked(settingStore.set).mockImplementation(
-      async (_key: string, value: boolean) => {
-        settingStore.settingValues['Comfy.Desktop.CloudNotificationShown'] =
-          value
-      }
-    )
-    dialogService.showCloudNotification.mockResolvedValue(undefined)
+    vi.mocked(settingStore.set).mockImplementation(async (key, value) => {
+      Object.assign(settingStore.settingValues, { [key]: value })
+    })
   })
 
   it('waits for settings to load before deciding whether to show the notification', async () => {
@@ -77,7 +68,7 @@ describe('DesktopCloudNotificationController', () => {
     await vi.advanceTimersByTimeAsync(0)
     await vi.advanceTimersByTimeAsync(2000)
 
-    expect(dialogService.showCloudNotification).not.toHaveBeenCalled()
+    expect(useDialogService().showCloudNotification).not.toHaveBeenCalled()
 
     unmount()
   })
@@ -96,12 +87,12 @@ describe('DesktopCloudNotificationController', () => {
     await vi.advanceTimersByTimeAsync(2000)
 
     expect(settingStore.set).not.toHaveBeenCalled()
-    expect(dialogService.showCloudNotification).not.toHaveBeenCalled()
+    expect(useDialogService().showCloudNotification).not.toHaveBeenCalled()
   })
 
   it('marks the notification as shown before awaiting dialog close', async () => {
     const dialogOpen = createDeferred()
-    dialogService.showCloudNotification.mockImplementation(
+    vi.mocked(useDialogService().showCloudNotification).mockImplementation(
       () => dialogOpen.promise
     )
 
@@ -117,7 +108,8 @@ describe('DesktopCloudNotificationController', () => {
     expect(
       vi.mocked(settingStore.set).mock.invocationCallOrder[0]
     ).toBeLessThan(
-      dialogService.showCloudNotification.mock.invocationCallOrder[0]
+      vi.mocked(useDialogService().showCloudNotification).mock
+        .invocationCallOrder[0]
     )
 
     dialogOpen.resolve()
@@ -128,8 +120,8 @@ describe('DesktopCloudNotificationController', () => {
 
   it('resets the shown state when unmounted before the initial save completes', async () => {
     const saveSettings = createDeferred()
-    vi.mocked(settingStore.set).mockImplementationOnce(async (_key, value) => {
-      settingStore.settingValues['Comfy.Desktop.CloudNotificationShown'] = value
+    vi.mocked(settingStore.set).mockImplementationOnce(async (key, value) => {
+      Object.assign(settingStore.settingValues, { [key]: value })
       await saveSettings.promise
     })
 
@@ -150,7 +142,7 @@ describe('DesktopCloudNotificationController', () => {
     expect(
       settingStore.settingValues['Comfy.Desktop.CloudNotificationShown']
     ).toBe(false)
-    expect(dialogService.showCloudNotification).not.toHaveBeenCalled()
+    expect(useDialogService().showCloudNotification).not.toHaveBeenCalled()
   })
 
   it('aborts without reporting a stored settings error', async () => {
@@ -163,7 +155,7 @@ describe('DesktopCloudNotificationController', () => {
 
     expect(errorReporter).not.toHaveBeenCalled()
     expect(settingStore.set).not.toHaveBeenCalled()
-    expect(dialogService.showCloudNotification).not.toHaveBeenCalled()
+    expect(useDialogService().showCloudNotification).not.toHaveBeenCalled()
 
     unmount()
   })
@@ -202,14 +194,14 @@ describe('DesktopCloudNotificationController', () => {
       'Comfy.Desktop.CloudNotificationShown',
       false
     )
-    expect(dialogService.showCloudNotification).not.toHaveBeenCalled()
+    expect(useDialogService().showCloudNotification).not.toHaveBeenCalled()
 
     unmount()
   })
 
   it('reports a notification failure and resets its shown state', async () => {
     const error = new Error('show failed')
-    dialogService.showCloudNotification.mockRejectedValue(error)
+    vi.mocked(useDialogService().showCloudNotification).mockRejectedValue(error)
 
     const { unmount } = render(DesktopCloudNotificationController)
     await vi.advanceTimersByTimeAsync(2000)
@@ -246,16 +238,15 @@ describe('DesktopCloudNotificationController', () => {
       const initialError = new Error('initial failure')
       const resetError = new Error('reset failed')
       if (failure === 'display') {
-        dialogService.showCloudNotification.mockRejectedValue(initialError)
+        vi.mocked(useDialogService().showCloudNotification).mockRejectedValue(
+          initialError
+        )
       }
-      vi.mocked(settingStore.set).mockImplementation(
-        async (_key: string, value: boolean) => {
-          if (!value) throw resetError
-          if (failure === 'save') throw initialError
-          settingStore.settingValues['Comfy.Desktop.CloudNotificationShown'] =
-            value
-        }
-      )
+      vi.mocked(settingStore.set).mockImplementation(async (key, value) => {
+        if (!value) throw resetError
+        if (failure === 'save') throw initialError
+        Object.assign(settingStore.settingValues, { [key]: value })
+      })
 
       const { unmount } = render(DesktopCloudNotificationController)
       await vi.advanceTimersByTimeAsync(2000)

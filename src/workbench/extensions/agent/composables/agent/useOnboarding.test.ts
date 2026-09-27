@@ -2,7 +2,12 @@ import { nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import type { CoachStep } from './useOnboarding'
-import { useOnboarding } from './useOnboarding'
+import {
+  adoptSharedOnboardingFlag,
+  resetCoach,
+  scopedOnboardingKey,
+  useOnboarding
+} from './useOnboarding'
 
 const KEY = 'test.onboarded'
 const STEPS: CoachStep[] = Array.from({ length: 4 }, (_, index) => ({
@@ -14,6 +19,47 @@ const STEPS: CoachStep[] = Array.from({ length: 4 }, (_, index) => ({
 
 describe('useOnboarding', () => {
   beforeEach(() => window.localStorage.clear())
+
+  it('honours a replay requested while no tour is mounted', async () => {
+    // The take-the-tour button stays clickable while the coach is deferred by
+    // App Mode, so there is no instance to take restart(). Clearing the flag
+    // has to survive until the coach next mounts, or the click is dropped.
+    const finished = useOnboarding(STEPS, KEY)
+    finished.finish()
+    await nextTick()
+
+    resetCoach(KEY)
+
+    expect(useOnboarding(STEPS, KEY).active.value).toBe(true)
+  })
+
+  it('replays from the first card on the same instance after finishing', async () => {
+    const tour = useOnboarding(STEPS, KEY)
+    tour.next()
+    tour.finish()
+    await nextTick()
+    expect(tour.active.value).toBe(false)
+
+    tour.restart()
+    await nextTick()
+
+    // Same instance, no remount: the tour reads `seen` reactively, so the
+    // transition is visible to the consumer that was already listening.
+    expect(tour.active.value).toBe(true)
+    expect(tour.index.value).toBe(0)
+    expect(tour.step.value).toEqual(STEPS[0])
+  })
+
+  it('clears the persisted completion flag so a reload does not re-hide it', async () => {
+    const tour = useOnboarding(STEPS, KEY)
+    tour.finish()
+    await nextTick()
+
+    tour.restart()
+    await nextTick()
+
+    expect(useOnboarding(STEPS, KEY).active.value).toBe(true)
+  })
 
   it('advances in order and persists completion only after the final card', async () => {
     const tour = useOnboarding(STEPS, KEY)
@@ -72,6 +118,39 @@ describe('useOnboarding', () => {
     }))
     expect(tour.index.value).toBe(1)
     expect(tour.step.value.title).toBe('Translated Card 2')
+  })
+
+  it('scopes the stored flag to the account and workspace', () => {
+    expect(scopedOnboardingKey('user-a', 'workspace-a')).toBe(
+      'Comfy.AgentPanel.onboarded.user-a.workspace-a'
+    )
+  })
+
+  it('has no scope until both the account and workspace are known', () => {
+    expect(scopedOnboardingKey(undefined, 'workspace-a')).toBeNull()
+    expect(scopedOnboardingKey('user-a', null)).toBeNull()
+  })
+
+  it('carries a device-wide flag onto the scope in front of the user', () => {
+    localStorage.setItem('Comfy.AgentPanel.onboarded', 'true')
+
+    adoptSharedOnboardingFlag('Comfy.AgentPanel.onboarded.user-a.workspace-a')
+
+    expect(
+      localStorage.getItem('Comfy.AgentPanel.onboarded.user-a.workspace-a')
+    ).toBe('true')
+    expect(localStorage.getItem('Comfy.AgentPanel.onboarded')).toBeNull()
+  })
+
+  it('leaves a workspace the user has not seen clear of the old flag', () => {
+    localStorage.setItem('Comfy.AgentPanel.onboarded', 'true')
+    adoptSharedOnboardingFlag('Comfy.AgentPanel.onboarded.user-a.workspace-a')
+
+    adoptSharedOnboardingFlag('Comfy.AgentPanel.onboarded.user-a.workspace-b')
+
+    expect(
+      localStorage.getItem('Comfy.AgentPanel.onboarded.user-a.workspace-b')
+    ).toBeNull()
   })
 
   it('does not complete when there are no cards', () => {

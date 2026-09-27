@@ -265,9 +265,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 
 import { useExternalLink } from '@/composables/useExternalLink'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { getBillingWebUrl } from '@/config/billingWeb'
 import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { isCloud } from '@/platform/distribution/types'
@@ -309,7 +307,6 @@ const { accountActionsOnly = false } = defineProps<{
 }>()
 
 const { buildDocsUrl, docsPaths } = useExternalLink()
-const { flags } = useFeatureFlags()
 
 const {
   userDisplayName,
@@ -392,15 +389,15 @@ const handleOpenWorkspaceSettings = () => {
   emit('close')
 }
 
+/**
+ * Plan selection stays in the app: billing-web's `/v1/pricing` has no
+ * personal/team tabs, cycle toggle, or credit slider (G7), and a per-credit
+ * Team plan 400s there (FE-2642). Only checkout hands off to billing-web,
+ * from inside the table (`useSubscriptionCheckout`'s `handleSubscribeClick`
+ * / `handleSubscribeTeamClick`).
+ */
 const handleOpenPlansAndPricing = () => {
-  const billingWebUrl = getBillingWebUrl()
-  const hostedTab =
-    flags.hostedBillingWebEnabled && billingWebUrl
-      ? window.open(billingWebUrl.href, '_blank', 'noopener,noreferrer')
-      : null
-  if (!hostedTab) {
-    subscriptionDialog.showPricingTable({ reason: 'avatar_menu_plans' })
-  }
+  subscriptionDialog.showPricingTable({ reason: 'avatar_menu_plans' })
   emit('close')
 }
 

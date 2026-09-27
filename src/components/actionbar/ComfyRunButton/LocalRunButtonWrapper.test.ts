@@ -1,3 +1,4 @@
+import { useDialogService } from '@/services/dialogService'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -11,10 +12,6 @@ const gateState = vi.hoisted(() => ({
   gate: { value: 'none' },
   partnerNodes: { value: [] as PartnerNode[] }
 }))
-
-const showApiNodesSignInDialog = vi.hoisted(() =>
-  vi.fn(() => Promise.resolve(false))
-)
 
 vi.mock<unknown>(
   import('@/composables/billing/usePartnerNodesRunGate'),
@@ -31,9 +28,7 @@ vi.mock<unknown>(
   }
 )
 
-vi.mock<unknown>(import('@/services/dialogService'), () => ({
-  useDialogService: () => ({ showApiNodesSignInDialog })
-}))
+vi.mock(import('@/services/dialogService'))
 
 vi.mock<unknown>(
   import('@/components/actionbar/ComfyRunButton/ComfyQueueButton.vue'),
@@ -125,7 +120,7 @@ describe('LocalRunButtonWrapper', () => {
       screen.getByRole('button', { name: 'Sign in to run' })
     )
 
-    expect(showApiNodesSignInDialog).toHaveBeenCalledWith([
+    expect(useDialogService().showApiNodesSignInDialog).toHaveBeenCalledWith([
       'Partner A',
       'Partner B'
     ])

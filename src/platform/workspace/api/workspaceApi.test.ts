@@ -1,9 +1,5 @@
 import { useAuthStore } from '@/stores/authStore'
-import {
-  onAuthStateChanged,
-  onIdTokenChanged,
-  setPersistence
-} from 'firebase/auth'
+
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
@@ -35,9 +31,7 @@ vi.mock<unknown>(import('axios'), () => ({
   }
 }))
 
-vi.mock(import('@/i18n'), () => ({
-  t: vi.fn((key: string) => key)
-}))
+vi.mock(import('@/i18n'))
 
 vi.mock(import('./workspaceApiUrl'), () => ({
   workspaceApiUrl: (path: string) => `/api${path}`
@@ -46,12 +40,11 @@ vi.mock(import('./workspaceApiUrl'), () => ({
 vi.mock(import('firebase/auth'), { spy: true })
 
 beforeEach(() => {
-  vi.mocked(setPersistence).mockResolvedValue(undefined)
-  vi.mocked(onAuthStateChanged).mockImplementation(vi.fn())
-  vi.mocked(onIdTokenChanged).mockImplementation(vi.fn())
+  stubFirebaseAuthHarness()
 })
 
 import { workspaceApi } from './workspaceApi'
+import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
 const AUTH_HEADER = { Authorization: 'Bearer test-token' } as const
 
@@ -426,34 +419,42 @@ describe('workspaceApi', () => {
       expect(result).toEqual(data)
     })
 
-    it('getChurnkeyAuth() returns validated Stripe-provider credentials', async () => {
-      const data = {
-        customer_id: 'cus_test_1',
-        auth_hash: 'hash-1',
-        mode: 'test'
-      }
-      mockAxiosInstance.get.mockResolvedValue({ data })
-
-      await expect(workspaceApi.getChurnkeyAuth()).resolves.toEqual(data)
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith(
-        '/api/billing/churnkey/auth',
-        { headers: AUTH_HEADER }
-      )
-    })
-
-    it('getChurnkeyAuth() rejects malformed credentials', async () => {
-      mockAxiosInstance.get.mockResolvedValue({
-        data: {
+    it.for([undefined, 'sub_offer_1'])(
+      'getChurnkeyAuth() retains the optional offer subscription %s',
+      async (offerSubscriptionId) => {
+        const data = {
           customer_id: 'cus_test_1',
-          auth_hash: '',
-          mode: 'test'
+          auth_hash: 'hash-1',
+          mode: 'test',
+          offer_subscription_id: offerSubscriptionId
         }
-      })
+        mockAxiosInstance.get.mockResolvedValue({ data })
 
-      await expect(workspaceApi.getChurnkeyAuth()).rejects.toMatchObject({
-        name: 'ZodError'
-      })
-    })
+        await expect(workspaceApi.getChurnkeyAuth()).resolves.toEqual(data)
+        expect(mockAxiosInstance.get).toHaveBeenCalledWith(
+          '/api/billing/churnkey/auth',
+          { headers: AUTH_HEADER }
+        )
+      }
+    )
+
+    it.for([{ auth_hash: '' }, { offer_subscription_id: '' }])(
+      'getChurnkeyAuth() rejects malformed credentials %j',
+      async (malformed) => {
+        mockAxiosInstance.get.mockResolvedValue({
+          data: {
+            customer_id: 'cus_test_1',
+            auth_hash: 'hash',
+            mode: 'test',
+            ...malformed
+          }
+        })
+
+        await expect(workspaceApi.getChurnkeyAuth()).rejects.toMatchObject({
+          name: 'ZodError'
+        })
+      }
+    )
 
     it('getChurnkeyAuth() normalizes Axios failures', async () => {
       mockAxiosInstance.get.mockRejectedValue({

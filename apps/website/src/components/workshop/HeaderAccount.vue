@@ -165,15 +165,53 @@ async function restorePreviousWorkspace(
 // A run belongs to the workspace that is paying for it, so switching ends it.
 // The playground guards every way off the page; this is the way off the
 // workspace, and it has to ask the same question before it takes the credits.
-const switchPending = ref<string>()
+type PendingWorkspaceSwitch = {
+  targetWorkspaceId: string
+  sourceUid: string
+  sourceWorkspaceId: string
+}
+
+const switchPending = ref<PendingWorkspaceSwitch>()
+
+function pendingSwitchStillOwnsSession(
+  pending: PendingWorkspaceSwitch
+): boolean {
+  const current = session.value
+  return (
+    current?.uid === pending.sourceUid &&
+    current.workspace.id === pending.sourceWorkspaceId
+  )
+}
 
 function confirmSwitch() {
-  const workspaceId = switchPending.value
+  const pending = switchPending.value
   switchPending.value = undefined
-  if (!workspaceId) return
+  if (!pending || !pendingSwitchStillOwnsSession(pending)) return
   cancelWorkshopRun()
-  void switchWorkspace(workspaceId, { runAlreadyCancelled: true })
+  void switchWorkspace(pending.targetWorkspaceId, {
+    runAlreadyCancelled: true
+  })
 }
+
+// The question only exists because a run would be thrown away. A run that ends
+// on its own answers it: there is nothing left to cancel, so the switch the
+// reader already asked for goes through and the dialog closes with it.
+watch(
+  [
+    workshopRunInFlight,
+    () => session.value?.uid,
+    () => session.value?.workspace.id
+  ],
+  ([inFlight]) => {
+    const pending = switchPending.value
+    if (!pending) return
+    if (inFlight && pendingSwitchStillOwnsSession(pending)) return
+
+    const shouldContinue = pendingSwitchStillOwnsSession(pending)
+    switchPending.value = undefined
+    if (shouldContinue) void switchWorkspace(pending.targetWorkspaceId)
+  }
+)
 
 async function applySwitch(
   workspaceId: string,
@@ -215,7 +253,11 @@ async function switchWorkspace(
     return
   }
   if (workshopRunInFlight.value && !options?.runAlreadyCancelled) {
-    switchPending.value = workspaceId
+    switchPending.value = {
+      targetWorkspaceId: workspaceId,
+      sourceUid: previous.uid,
+      sourceWorkspaceId: previous.workspace.id
+    }
     return
   }
   await applySwitch(workspaceId, previous)

@@ -11,7 +11,7 @@ The combined preview now builds on `maanil/auth-stack-combined` (#17283),
 commit `957a2403112291d666a8a1fa8ba4bc98b3d98f19`, rather than the older
 `throwaway/christian-closure-2026-09-09` snapshot. This is committed auth work,
 not a claim that its PR is merged or review-approved. The account package is
-unchanged from that base; Models uses its current `@comfyorg/account/session`
+unchanged from that base; Models uses its current `@comfyorg/account-core/session`
 entry instead of restoring the removed core barrel.
 
 The earlier September 10 rebase preserved the assembled prototype/content/Router
@@ -432,7 +432,7 @@ accepted parameter combination succeeds in a live paid request.
 
 ### Live API-key smoke check — September 9
 
-One production request was authorized for testing, using `COMFY_KEY` only in
+One production request was authorized for testing, using `COMFY_API_KEY` only in
 a local process, never in browser code, generated snippets or a committed file.
 Production `GET /customers/balance` authenticated (200) and returned zero total,
 effective, prepaid and cloud-credit balances. The live FLUX 2 Pro input schema

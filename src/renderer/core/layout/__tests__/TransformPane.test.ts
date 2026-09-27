@@ -7,29 +7,7 @@ import { createMockCanvas } from '@/utils/__tests__/litegraphTestUtils'
 
 import TransformPane from '../transform/TransformPane.vue'
 
-const mockData = vi.hoisted(() => ({
-  mockTransformStyle: {
-    transform: 'scale(1) translate(0px, 0px)',
-    transformOrigin: '0 0'
-  },
-  mockCamera: { x: 0, y: 0, z: 1 }
-}))
-
-vi.mock<unknown>(
-  import('@/renderer/core/layout/transform/useTransformState'),
-  () => {
-    const syncWithCanvas = vi.fn()
-    return {
-      useTransformState: () => ({
-        camera: computed(() => mockData.mockCamera),
-        transformStyle: computed(() => mockData.mockTransformStyle),
-        screenToCanvas: vi.fn(),
-        isNodeInViewport: vi.fn(),
-        syncWithCanvas
-      })
-    }
-  }
-)
+vi.mock(import('@/renderer/core/layout/transform/useTransformState'))
 
 function createMockLGraphCanvas() {
   return createMockCanvas({
@@ -58,10 +36,10 @@ describe('TransformPane', () => {
     })
 
     it('should apply transform style from composable', async () => {
-      mockData.mockTransformStyle = {
+      useTransformState().transformStyle = computed(() => ({
         transform: 'scale(2) translate(100px, 50px)',
         transformOrigin: '0 0'
-      }
+      }))
 
       const mockCanvas = createMockLGraphCanvas()
       render(TransformPane, {

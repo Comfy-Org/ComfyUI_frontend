@@ -26,6 +26,21 @@ describe('needsCustomerAttention', () => {
       true
     ],
     [
+      'claims a checkout the server parked on the customer for a card',
+      { phase: 'awaiting_payment_method' },
+      true
+    ],
+    [
+      'claims an invoice the server parked on the customer for their bank',
+      { phase: 'awaiting_invoice_payment' },
+      true
+    ],
+    [
+      'leaves a phase the server is still working alone',
+      { phase: 'in_progress' },
+      false
+    ],
+    [
       'claims an operation support must reconcile',
       { status: 'reconciliation_needed' },
       true

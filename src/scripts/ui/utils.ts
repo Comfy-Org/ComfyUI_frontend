@@ -5,8 +5,6 @@ export function applyClasses(
   classList: ClassList,
   ...requiredClasses: string[]
 ) {
-  classList ??= ''
-
   let str: string
   if (typeof classList === 'string') {
     str = classList
@@ -21,37 +19,29 @@ export function applyClasses(
     }, '')
   }
   element.className = str
-  if (requiredClasses) {
-    element.classList.add(...requiredClasses)
-  }
+  element.classList.add(...requiredClasses)
 }
 
-export function toggleElement(
+export function toggleElement<T>(
   element: HTMLElement,
   {
     onHide,
     onShow
   }: {
     onHide?: (el: HTMLElement) => void
-    // @ts-expect-error fixme ts strict error
-    onShow?: (el: HTMLElement, value) => void
+    onShow?: (el: HTMLElement, value: NonNullable<T>) => void
   } = {}
 ) {
-  let placeholder: HTMLElement | Comment
-  let hidden: boolean
-  // @ts-expect-error fixme ts strict error
-  return (value) => {
+  let placeholder: Comment | undefined
+  return (value: T) => {
     if (value) {
-      if (hidden) {
-        hidden = false
+      if (placeholder) {
         placeholder.replaceWith(element)
+        placeholder = undefined
       }
       onShow?.(element, value)
     } else {
-      if (!placeholder) {
-        placeholder = document.createComment('')
-      }
-      hidden = true
+      placeholder ??= document.createComment('')
       element.replaceWith(placeholder)
       onHide?.(element)
     }

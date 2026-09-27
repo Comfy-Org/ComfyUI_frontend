@@ -22,4 +22,12 @@ describe('HeaderMainMobile', () => {
 
     expect(screen.getByRole('link', { name: /^Models\b/i })).toBeTruthy()
   })
+
+  it('labels a new top-level section with a NEW badge', async () => {
+    await openMenu(false)
+
+    expect(
+      screen.getByRole('button', { name: /^Products\s*NEW$/i })
+    ).toBeTruthy()
+  })
 })

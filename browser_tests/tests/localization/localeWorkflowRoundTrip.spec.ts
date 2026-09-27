@@ -6,6 +6,125 @@ import {
   captureCanvasTextGeometry,
   expectDomTextGeometry
 } from '@e2e/fixtures/utils/localizedTextGeometry'
+import type { Locator, Page } from '@playwright/test'
+
+async function moveTextOntoTarget(
+  text: Locator,
+  target: Locator,
+  missingGeometryMessage: string
+) {
+  const targetBounds = await target.boundingBox()
+  await text.evaluate(
+    (element, { targetBounds, missingGeometryMessage }) => {
+      if (!(element instanceof HTMLElement) || !targetBounds)
+        throw new Error(missingGeometryMessage)
+      const bounds = element.getBoundingClientRect()
+      const scale = bounds.width / element.offsetWidth
+      element.style.transform = `translate(${(targetBounds.x - bounds.x) / scale}px, ${(targetBounds.y - bounds.y) / scale}px)`
+    },
+    { targetBounds, missingGeometryMessage }
+  )
+}
+
+async function restoreStyle(element: Locator, style: string | null) {
+  await element.evaluate((element, style) => {
+    if (style === null) element.removeAttribute('style')
+    else element.setAttribute('style', style)
+  }, style)
+}
+
+async function expectVueChineseGeometry(
+  page: Page,
+  labels: string[],
+  portLabels: string[]
+) {
+  const root = page.locator('[data-node-id="3"]')
+  const texts = labels.map((label) =>
+    root.getByText(label, { exact: true }).first()
+  )
+  const portTexts = portLabels.map((label) =>
+    root
+      .locator('.lg-slot--input, .lg-slot--output')
+      .getByText(label, { exact: true })
+  )
+  for (const text of [...texts, ...portTexts]) await expect(text).toBeVisible()
+  await expectDomTextGeometry(texts)
+  await expectDomTextGeometry(portTexts)
+  await expectDomTextGeometry([...texts, ...portTexts])
+
+  const originalStyle = await texts[2].getAttribute('style')
+  await moveTextOntoTarget(texts[2], texts[1], 'Missing label geometry')
+  try {
+    await expect(expectDomTextGeometry(texts)).rejects.toThrow(
+      'rendered label bounds must not overlap'
+    )
+  } finally {
+    await restoreStyle(texts[2], originalStyle)
+  }
+  await expectDomTextGeometry(texts)
+
+  const originalPortStyle = await portTexts[2].getAttribute('style')
+  await moveTextOntoTarget(
+    portTexts[2],
+    portTexts[1],
+    'Missing port label geometry'
+  )
+  try {
+    await expect(expectDomTextGeometry(portTexts)).rejects.toThrow(
+      'rendered label bounds must not overlap'
+    )
+  } finally {
+    await restoreStyle(portTexts[2], originalPortStyle)
+  }
+  await expectDomTextGeometry(portTexts)
+
+  const portRow = portTexts[0].locator('..')
+  const originalPortRowStyle = await portRow.getAttribute('style')
+  await moveTextOntoTarget(
+    portRow,
+    texts[1],
+    'Missing cross-family label geometry'
+  )
+  try {
+    await expectDomTextGeometry(texts)
+    await expectDomTextGeometry(portTexts)
+    await expect(
+      expectDomTextGeometry([...texts, ...portTexts])
+    ).rejects.toThrow('rendered label bounds must not overlap')
+  } finally {
+    await restoreStyle(portRow, originalPortRowStyle)
+  }
+  await expectDomTextGeometry([...texts, ...portTexts])
+}
+
+async function expectCanvasChineseGeometry(
+  page: Page,
+  labels: string[],
+  portLabels: string[]
+) {
+  await captureCanvasTextGeometry(page, labels)
+  await expect(captureCanvasTextGeometry(page, labels, true)).rejects.toThrow(
+    'rendered label bounds must not overlap'
+  )
+  await captureCanvasTextGeometry(page, labels)
+  await captureCanvasTextGeometry(page, portLabels, false, '3')
+  await expect(
+    captureCanvasTextGeometry(page, portLabels, true, '3')
+  ).rejects.toThrow('rendered label bounds must not overlap')
+  await captureCanvasTextGeometry(page, portLabels, false, '3')
+  const combinedLabels = [
+    labels[0],
+    portLabels[0],
+    labels[1],
+    ...labels.slice(2),
+    ...portLabels.slice(1)
+  ]
+  await captureCanvasTextGeometry(page, combinedLabels, false, '3')
+  await expect(
+    captureCanvasTextGeometry(page, combinedLabels, true, '3')
+  ).rejects.toThrow('rendered label bounds must not overlap')
+  await captureCanvasTextGeometry(page, combinedLabels, false, '3')
+}
 
 test.describe(
   'Localized workflow round trip',
@@ -32,6 +151,20 @@ test.describe(
         'sampler_name',
         'scheduler',
         'denoise'
+      ]
+      const zhPortLabels = [
+        '模型',
+        '正面条件',
+        '负面条件',
+        'Latent图像',
+        'Latent'
+      ]
+      const enPortLabels = [
+        'model',
+        'positive',
+        'negative',
+        'latent_image',
+        'LATENT'
       ]
       for (const vueNodesEnabled of [false, true]) {
         await test.step(
@@ -63,40 +196,17 @@ test.describe(
             ).toBeVisible()
 
             if (vueNodesEnabled) {
-              const root = comfyPage.page.locator('[data-node-id="3"]')
-              const texts = zhLabels.map((label) =>
-                root.getByText(label, { exact: true }).first()
+              await expectVueChineseGeometry(
+                comfyPage.page,
+                zhLabels,
+                zhPortLabels
               )
-              for (const text of texts) {
-                await expect(text).toBeVisible()
-              }
-              await expectDomTextGeometry(texts)
-              const originalStyle = await texts[2].getAttribute('style')
-              const target = await texts[1].boundingBox()
-              await texts[2].evaluate((element, target) => {
-                if (!(element instanceof HTMLElement) || !target)
-                  throw new Error('Missing label geometry')
-                const bounds = element.getBoundingClientRect()
-                const scale = bounds.width / element.offsetWidth
-                element.style.transform = `translate(${(target.x - bounds.x) / scale}px, ${(target.y - bounds.y) / scale}px)`
-              }, target)
-              try {
-                await expect(expectDomTextGeometry(texts)).rejects.toThrow(
-                  'rendered label bounds must not overlap'
-                )
-              } finally {
-                await texts[2].evaluate((element, style) => {
-                  if (style === null) element.removeAttribute('style')
-                  else element.setAttribute('style', style)
-                }, originalStyle)
-              }
-              await expectDomTextGeometry(texts)
             } else {
-              await captureCanvasTextGeometry(comfyPage.page, zhLabels)
-              await expect(
-                captureCanvasTextGeometry(comfyPage.page, zhLabels, true)
-              ).rejects.toThrow('rendered label bounds must not overlap')
-              await captureCanvasTextGeometry(comfyPage.page, zhLabels)
+              await expectCanvasChineseGeometry(
+                comfyPage.page,
+                zhLabels,
+                zhPortLabels
+              )
             }
             await comfyPage.page.screenshot({
               path: test
@@ -158,12 +268,34 @@ test.describe(
               const texts = enLabels.map((label) =>
                 root.getByText(label, { exact: true }).first()
               )
+              const portTexts = enPortLabels.map((label) =>
+                root
+                  .locator('.lg-slot--input, .lg-slot--output')
+                  .getByText(label, { exact: true })
+              )
               for (const text of texts) {
                 await expect(text).toBeVisible()
               }
+              for (const text of portTexts) {
+                await expect(text).toBeVisible()
+              }
               await expectDomTextGeometry(texts)
+              await expectDomTextGeometry(portTexts)
+              await expectDomTextGeometry([...texts, ...portTexts])
             } else {
               await captureCanvasTextGeometry(comfyPage.page, enLabels)
+              await captureCanvasTextGeometry(
+                comfyPage.page,
+                enPortLabels,
+                false,
+                '3'
+              )
+              await captureCanvasTextGeometry(
+                comfyPage.page,
+                [...enLabels, ...enPortLabels],
+                false,
+                '3'
+              )
             }
             await expect
               .poll(() =>

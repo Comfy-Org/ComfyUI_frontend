@@ -3,8 +3,9 @@
  * phases, the identity restore listener, and the commands the view calls. The
  * view reads the returned state and holds no flow logic of its own.
  */
-import type { FirebaseIdentity } from '@comfyorg/account/firebase'
-import { authErrorMessage } from '@comfyorg/account/firebaseAuthError'
+import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
+import { authErrorMessage } from '@comfyorg/account-core/firebaseAuthError'
+import type { AuthErrorCopy } from '@comfyorg/account-core/firebaseAuthError'
 import type { User, UserCredential } from 'firebase/auth'
 import { computed, ref, watch } from 'vue'
 
@@ -14,15 +15,27 @@ import type {
   SignInState
 } from '@/auth/signInState'
 import { signInTransition } from '@/auth/signInState'
-import { billingWebIdentity } from '@/config/firebase'
+import en from '@/locales/en/main.json' with { type: 'json' }
+import { resolveBillingWebIdentity } from '@/config/firebase'
+import { boundWorkspaceId } from '@/entry/workspaceBinding'
 import {
   billingWebSessionClient,
   useBillingWebSession
 } from '@/session/billingWebSession'
 
+const AUTH_ERROR_COPY: AuthErrorCopy = en.auth.errors
+
 export function useSignInController(onSignedIn: () => void) {
-  const { user } = useBillingWebSession()
+  const { user, failure } = useBillingWebSession()
   const state = ref<SignInState>({ step: 'idle' })
+  // Resolved asynchronously so it can't block first paint. A failed fetch no
+  // longer sticks in account-core's cache, so calling this again (from
+  // `retryAvailability`) genuinely re-fetches instead of replaying `undefined`.
+  const identity = ref<FirebaseIdentity>()
+  async function loadIdentity(): Promise<void> {
+    identity.value = await resolveBillingWebIdentity()
+  }
+  void loadIdentity()
 
   const busy = computed(
     () => state.value.step === 'pending' || state.value.step === 'minting'
@@ -40,7 +53,7 @@ export function useSignInController(onSignedIn: () => void) {
   })
   const errorMessage = computed(() =>
     state.value.step === 'error'
-      ? authErrorMessage(state.value.classification, 'en')
+      ? authErrorMessage(state.value.classification, AUTH_ERROR_COPY)
       : ''
   )
 
@@ -59,8 +72,17 @@ export function useSignInController(onSignedIn: () => void) {
     return next
   }
 
+  /**
+   * The client no longer auto-mints (see `billingWebSession.ts`), so every
+   * mint this app issues goes through here — the one place that reads the
+   * entry binding at the moment it actually mints, not at construction, so a
+   * rebind that lands while the tab is signed out is not lost to a stale
+   * default.
+   */
   async function mint(requestedUser?: User): Promise<void> {
-    const result = await billingWebSessionClient().ensureFresh(requestedUser)
+    const result = await billingWebSessionClient().ensureFresh(requestedUser, {
+      workspaceId: boundWorkspaceId()
+    })
     dispatch(
       result?.status === 'ok'
         ? { type: 'mintSucceeded' }
@@ -72,11 +94,11 @@ export function useSignInController(onSignedIn: () => void) {
     provider: SignInProvider,
     authenticate: (identity: FirebaseIdentity) => Promise<UserCredential>
   ): Promise<void> {
-    if (!billingWebIdentity || busy.value) return
+    if (!identity.value || busy.value) return
     dispatch({ type: 'signInStarted', provider })
     let credential: UserCredential
     try {
-      credential = await authenticate(billingWebIdentity)
+      credential = await authenticate(identity.value)
     } catch (error) {
       dispatch({ type: 'signInFailed', error })
       return
@@ -107,6 +129,11 @@ export function useSignInController(onSignedIn: () => void) {
     await mint()
   }
 
+  /** For the "sign-in unavailable" notice: re-fetches instead of leaving the page dead. */
+  async function retryAvailability(): Promise<void> {
+    await loadIdentity()
+  }
+
   watch(
     user,
     (restored) => {
@@ -128,9 +155,12 @@ export function useSignInController(onSignedIn: () => void) {
     busy,
     leaving,
     errorMessage,
-    available: billingWebIdentity !== undefined,
+    /** The mint's own refusal, e.g. naming a workspace this account is not in. */
+    sessionFailureCode: computed(() => failure.value?.code),
+    available: computed(() => identity.value !== undefined),
     signInWith,
     submitEmail,
-    retryMint
+    retryMint,
+    retryAvailability
   }
 }

@@ -1,0 +1,216 @@
+name: Publish Package
+
+on:
+  workflow_dispatch:
+    inputs:
+      package:
+        description: 'Package to publish'
+        required: true
+        type: 'choice'
+        options: [account-core, account-ui, billing-contract, ingest-types]
+      version:
+        description: 'Version to publish (e.g., 1.0.0-alpha.1)'
+        required: true
+        type: string
+      dist_tag:
+        description: 'npm dist-tag to use'
+        required: true
+        default: next
+        type: string
+  workflow_call:
+    inputs:
+      package:
+        required: true
+        type: string
+      version:
+        required: true
+        type: string
+      dist_tag:
+        required: false
+        type: string
+        default: next
+      # Only an in-repo caller sets this. The dispatch path has no ref input
+      # on purpose: it publishes the ref it was dispatched on, so nobody who
+      # can press the button hands NPM_TOKEN an arbitrary commit.
+      ref:
+        required: false
+        type: string
+    outputs:
+      published:
+        description: >-
+          'true' when this run uploaded a tarball, 'false' when the version
+          was already on npm and the publish step was skipped.
+        value: ${{ jobs.publish_package.outputs.published }}
+    secrets:
+      NPM_TOKEN:
+        required: true
+
+concurrency:
+  group: publish-package-${{ inputs.package }}-${{ inputs.version }}
+  cancel-in-progress: false
+
+jobs:
+  publish_package:
+    name: Publish @comfyorg/${{ inputs.package }}
+    # A dispatch publishes the ref it runs on, and a workflow_call carries the
+    # caller's event, so the on-merge path is unaffected by this.
+    if: github.event_name != 'workflow_dispatch' || github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      published: ${{ steps.check_npm.outputs.exists == 'false' }}
+    steps:
+      - name: Resolve package
+        id: resolve
+        env:
+          PACKAGE: ${{ inputs.package }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "$PACKAGE" in
+            account-core) NPM_NAME='@comfyorg/account-core' ;;
+            account-ui) NPM_NAME='@comfyorg/account-ui' ;;
+            billing-contract) NPM_NAME='@comfyorg/billing-contract' ;;
+            ingest-types) NPM_NAME='@comfyorg/ingest-types' ;;
+            *)
+              echo "::error title=Unknown package::'$PACKAGE' is not a releasable package" >&2
+              exit 1
+              ;;
+          esac
+          echo "npm_name=$NPM_NAME" >> "$GITHUB_OUTPUT"
+          echo "directory=packages/$PACKAGE" >> "$GITHUB_OUTPUT"
+
+      - name: Determine ref to checkout
+        id: resolve_ref
+        env:
+          REF: ${{ inputs.ref }}
+          DEFAULT_REF: ${{ github.ref_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "$REF" ]; then
+            REF="$DEFAULT_REF"
+          fi
+          if ! git check-ref-format --allow-onelevel "$REF"; then
+            echo "::error title=Invalid ref::Ref '$REF' fails git check-ref-format validation." >&2
+            exit 1
+          fi
+          echo "ref=$REF" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ steps.resolve_ref.outputs.ref }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'pnpm'
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+
+      - name: Validate version and dist-tag
+        env:
+          DIST_TAG: ${{ inputs.dist_tag }}
+          INPUT_VERSION: ${{ inputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "$DIST_TAG" ]; then
+            echo "::error title=Invalid dist-tag::dist_tag must not be empty" >&2
+            exit 1
+          fi
+          if ! node -e "process.exit(require('semver').validRange(process.argv[1]) ? 1 : 0)" "$DIST_TAG"; then
+            echo "::error title=Invalid dist-tag::Tag '$DIST_TAG' must not parse as a valid SemVer version or range (npm rejects such tags)" >&2
+            exit 1
+          fi
+          if ! node -e "process.exit(require('semver').valid(process.argv[1]) ? 0 : 1)" "$INPUT_VERSION"; then
+            echo "::error title=Invalid version::Version '$INPUT_VERSION' is not a valid SemVer version" >&2
+            exit 1
+          fi
+          # The on-merge caller derives the tag from the version, but a manual
+          # dispatch can pair any tag with any version.
+          if [ "$DIST_TAG" = 'latest' ] && node -e "process.exit(require('semver').prerelease(process.argv[1]) ? 0 : 1)" "$INPUT_VERSION"; then
+            echo "::error title=Prerelease on latest::Version '$INPUT_VERSION' is a prerelease and must not take the 'latest' dist-tag. Publish it to 'next' (ADR-RELEASES-PACKAGES-0033, 'Prereleases go to next, releases to latest')." >&2
+            exit 1
+          fi
+
+      - name: Verify package
+        id: pkg
+        env:
+          DIRECTORY: ${{ steps.resolve.outputs.directory }}
+          EXPECTED_NAME: ${{ steps.resolve.outputs.npm_name }}
+          INPUT_VERSION: ${{ inputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          PACKAGE_JSON="$DIRECTORY/package.json"
+          NAME=$(node -p "require('./${PACKAGE_JSON}').name")
+          VERSION=$(node -p "require('./${PACKAGE_JSON}').version")
+          PRIVATE=$(node -p "String(require('./${PACKAGE_JSON}').private === true)")
+          if [ "$NAME" != "$EXPECTED_NAME" ]; then
+            echo "::error title=Package name mismatch::${PACKAGE_JSON} name '$NAME' is not '$EXPECTED_NAME'" >&2
+            exit 1
+          fi
+          if [ "$VERSION" != "$INPUT_VERSION" ]; then
+            echo "::error title=Version mismatch::${PACKAGE_JSON} version $VERSION does not match input $INPUT_VERSION" >&2
+            exit 1
+          fi
+          if [ "$PRIVATE" = "true" ]; then
+            echo "::error title=Package is private::${PACKAGE_JSON} still sets \"private\": true. Publishing requires removing the private flag in a reviewed PR first; it is the latch that prevents an accidental publish." >&2
+            exit 1
+          fi
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Build package
+        env:
+          NAME: ${{ steps.pkg.outputs.name }}
+        run: pnpm --filter "$NAME" run --if-present build
+
+      # One shared script packs every publishable package and imports each
+      # entry from a clean consumer, whichever package this run publishes.
+      - name: Smoke-test the packed tarballs
+        run: pnpm --filter @comfyorg/account-core run smoke:pack
+
+      - name: Check if version already on npm
+        id: check_npm
+        env:
+          NAME: ${{ steps.pkg.outputs.name }}
+          VER: ${{ steps.pkg.outputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          STATUS=0
+          OUTPUT=$(npm view "${NAME}@${VER}" --json 2>&1) || STATUS=$?
+          if [ "$STATUS" -eq 0 ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "::warning title=Already published::${NAME}@${VER} already exists on npm. Skipping publish."
+          else
+            if echo "$OUTPUT" | grep -q "E404"; then
+              echo "exists=false" >> "$GITHUB_OUTPUT"
+            else
+              echo "::error title=Registry lookup failed::$OUTPUT" >&2
+              exit "$STATUS"
+            fi
+          fi
+
+      - name: Publish package
+        if: steps.check_npm.outputs.exists == 'false'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          DIST_TAG: ${{ inputs.dist_tag }}
+        run: pnpm publish --access public --tag "$DIST_TAG" --no-git-checks --ignore-scripts --provenance
+        working-directory: ${{ steps.resolve.outputs.directory }}

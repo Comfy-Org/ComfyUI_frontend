@@ -1,26 +1,58 @@
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { Teleport, createSSRApp, h, nextTick } from 'vue'
+import { readonly, ref, Teleport, createSSRApp, h, nextTick } from 'vue'
+import type { Ref } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 
 import { htmlToTwin } from '../../lib/markdown-twin'
+import {
+  useWorkshopEnabled,
+  useWorkshopEnabledSettled
+} from '../../scripts/posthog'
 import WorkshopGate from './WorkshopGate.vue'
 
-const { enabled, settled } = await vi.hoisted(async () => {
-  const { ref } = await import('vue')
-  return { enabled: ref(false), settled: ref(true) }
+vi.mock(import('../../scripts/posthog'))
+
+let enabled: Ref<boolean>
+let settled: Ref<boolean>
+
+beforeEach(() => {
+  enabled = ref(false)
+  vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(enabled))
+  settled = ref(true)
+  vi.mocked(useWorkshopEnabledSettled).mockReturnValue(readonly(settled))
 })
-vi.mock(import('../../scripts/posthog'), () => ({
-  useWorkshopEnabled: () => enabled,
-  useWorkshopEnabledSettled: () => settled
-}))
 
 describe('WorkshopGate', () => {
-  beforeEach(() => {
-    enabled.value = false
-    settled.value = true
+  it('restores a caller-owned recovery view while new admission is disabled', async () => {
+    const view = render(WorkshopGate, {
+      props: { allowRecovery: true },
+      slots: {
+        default: '<h1>Saved run</h1>',
+        fallback: '<h1>Public models</h1>'
+      }
+    })
+    expect(
+      await screen.findByRole('heading', { name: 'Saved run' })
+    ).toBeVisible()
+    await view.rerender({ allowRecovery: false })
+    expect(screen.getByRole('heading', { name: 'Public models' })).toBeVisible()
   })
-
+  it('retains an existing recovery view after admission is disabled but never grants a new visit', async () => {
+    const view = render(WorkshopGate, {
+      props: { keepMounted: true, retainGranted: true },
+      slots: { default: '<h1>My run</h1>', fallback: '<h1>Public models</h1>' }
+    })
+    await nextTick()
+    expect(screen.getByRole('heading', { name: 'Public models' })).toBeVisible()
+    enabled.value = true
+    await nextTick()
+    enabled.value = false
+    await nextTick()
+    expect(screen.getByRole('heading', { name: 'My run' })).toBeVisible()
+    await view.rerender({ retainGranted: false })
+    expect(screen.getByRole('heading', { name: 'Public models' })).toBeVisible()
+  })
   it('keeps gated sections out of public HTML and Markdown exports', async () => {
     const html = await renderToString(
       createSSRApp({

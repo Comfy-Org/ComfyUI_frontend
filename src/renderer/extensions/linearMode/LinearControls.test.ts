@@ -5,12 +5,13 @@ import { createI18n } from 'vue-i18n'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import * as distributionModule from '@/platform/distribution/types'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
-import type { NodeError } from '@/schemas/apiSchema'
+import type { NodeError } from '@/platform/remote/comfyui/types'
 import LinearControls from '@/renderer/extensions/linearMode/LinearControls.vue'
 import { LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID } from '@/renderer/extensions/linearMode/linearRunErrorWarningIds'
 import { useAppModeStore } from '@/stores/appModeStore'
@@ -22,7 +23,11 @@ const overlayMock = vi.hoisted(() => ({
   overlayTitle: 'Required input missing'
 }))
 
+const distributionMock = vi.hoisted(() => ({ isCloud: true }))
+
 vi.mock(import('@/composables/billing/useBillingContext'))
+
+vi.mock(import('@/platform/distribution/types'), { spy: true })
 
 vi.mock<unknown>(import('@/components/error/useErrorOverlayState'), () => ({
   useErrorOverlayState: () => ({
@@ -97,15 +102,18 @@ function renderControls({
   hasError = false,
   missingResource,
   canRunWorkflows = true,
+  showsSubscribeToRunPrompt = false,
   mobile = false
 }: {
   hasError?: boolean
   missingResource?: MissingResource
   canRunWorkflows?: boolean
+  showsSubscribeToRunPrompt?: boolean
   mobile?: boolean
 } = {}) {
   const billing = useBillingContext()
   billing.canRunWorkflows = computed(() => canRunWorkflows)
+  billing.showsSubscribeToRunPrompt = computed(() => showsSubscribeToRunPrompt)
   vi.mocked(useBillingContext).mockReturnValue(billing)
 
   const pinia = getActivePinia()!
@@ -132,11 +140,11 @@ function renderControls({
         AppModeWidgetList: true,
         Loader: true,
         PartnerNodesList: true,
-        Popover: {
-          template: '<div><slot name="button" /><slot /></div>'
-        },
         ScrubableNumberInput: true,
-        SubscribeToRunButton: true
+        FreeTierQuota: true,
+        SubscribeToRunButton: {
+          template: '<button data-testid="subscribe-to-run-button" />'
+        }
       }
     }
   })
@@ -158,9 +166,45 @@ function clearMissingResource(resource: MissingResource) {
 
 describe('LinearControls', () => {
   beforeEach(() => {
+    distributionMock.isCloud = true
+    vi.spyOn(distributionModule, 'isCloud', 'get').mockImplementation(
+      () => distributionMock.isCloud
+    )
     overlayMock.overlayMessage = 'KSampler is missing a required input: model'
     overlayMock.overlayTitle = 'Required input missing'
   })
+
+  it.for([
+    { label: 'desktop', mobile: false },
+    { label: 'mobile', mobile: true }
+  ])(
+    'replaces the run button with the subscribe prompt in $label controls on Cloud',
+    ({ mobile }) => {
+      renderControls({ showsSubscribeToRunPrompt: true, mobile })
+
+      expect(screen.getByTestId('subscribe-to-run-button')).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'Run' })
+      ).not.toBeInTheDocument()
+    }
+  )
+
+  it.for([
+    { label: 'desktop', mobile: false },
+    { label: 'mobile', mobile: true }
+  ])(
+    'keeps the run button instead of the subscribe prompt in $label controls off Cloud',
+    ({ mobile }) => {
+      distributionMock.isCloud = false
+
+      renderControls({ showsSubscribeToRunPrompt: true, mobile })
+
+      expect(screen.getByRole('button', { name: 'Run' })).toBeInTheDocument()
+      expect(
+        screen.queryByTestId('subscribe-to-run-button')
+      ).not.toBeInTheDocument()
+    }
+  )
 
   it.for([
     { label: 'desktop', mobile: false },

@@ -9,9 +9,11 @@ import type {
   GraphMutations,
   SemanticLinkPayload,
   SemanticNodePayload
-} from '@/core/graph/graphMutations'
+} from './graphMutations'
+import { isIncompatibleLinkType } from './graphMutations'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
+import { parseLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 
 import { readSubgraphDefinitions } from './agentSubgraphDefinitions'
@@ -48,13 +50,21 @@ export type MutationsForTarget =
   | GraphMutations
   | ((workflowId: string) => GraphMutations)
 
+/**
+ * The local human's edits the host has not yet reflected in the doc. A full
+ * reconcile treats the doc as authoritative for everything else; without
+ * this seam it would recreate a node whose delete is still on its way.
+ */
+export interface LocalIntent {
+  /** Doc node ids (string keys) with a pending human `delete_node`. */
+  pendingDeletes(workflowId: string): ReadonlySet<string>
+}
+
+const NO_LOCAL_INTENT: LocalIntent = { pendingDeletes: () => new Set() }
+
 function plain(value: unknown): unknown {
   if (value instanceof Y.Map || value instanceof Y.Array) return value.toJSON()
   return structuredClone(value)
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
 /**
@@ -207,6 +217,17 @@ function reportInvalidHostTarget(
   )
 }
 
+function resolveLinkId(raw: unknown): number | null {
+  return typeof raw === 'number' && raw >= 0 && Number.isSafeInteger(raw)
+    ? raw
+    : null
+}
+
+function resolveLinkMapKey(id: string): number | null {
+  const linkId = parseLinkId(id)
+  return linkId !== undefined && linkId >= 0 ? linkId : null
+}
+
 function readSemanticLink(
   doc: Y.Doc,
   id: string,
@@ -216,11 +237,13 @@ function readSemanticLink(
   const raw = linksMap(doc).get(id)
   const tuple = raw instanceof Y.Array ? raw.toArray() : raw
   if (!Array.isArray(tuple) || tuple.length < 5) return null
-  const linkId = Number(tuple[0] ?? id)
+  const linkId = resolveLinkId(tuple[0])
+  const mapLinkId = resolveLinkMapKey(id)
   const originSlot = Number(tuple[2])
   const targetSlot = Number(tuple[4])
   if (
-    !Number.isInteger(linkId) ||
+    linkId === null ||
+    mapLinkId !== linkId ||
     tuple[1] == null ||
     tuple[3] == null ||
     !Number.isInteger(originSlot) ||
@@ -270,6 +293,54 @@ function readNodeSlots<TKey extends 'inputs' | 'outputs'>(
     : 'originOutputs']
 }
 
+/**
+ * Drops any link whose declared origin/target types `connect` would refuse.
+ * `GraphMutations.batch` validates a whole batch atomically (by design —
+ * see the "validates the whole plan before committing any writes" tests in
+ * graphMutations.test.ts), so replaying every retained link unconditionally
+ * during reconciliation means a single incompatible link already sitting in
+ * the host-owned document — written before this type check existed, or by
+ * any other path that bypassed it — would fail the SAME `connect` every
+ * time reconciliation re-reads it, taking every other node/link/widget
+ * queued in that batch down with it. Because a failed batch also re-arms
+ * `reconcileNextFrame`, the next frame replays the identical bad link and
+ * fails again, forever: no later valid mutation can ever land while that
+ * one link remains.
+ *
+ * This never rewrites the shared document to "recover" — the excluded
+ * link's doc entry is untouched, so it stays there exactly as before. It
+ * only keeps this follower from materializing that one link into the local
+ * canvas mirror, which is enough for the rest of the batch (every other
+ * retained node and link, plus any new mutation queued in the same frame)
+ * to validate and commit normally.
+ */
+function excludeIncompatibleLinks(
+  links: readonly SemanticLinkPayload[],
+  reported: Set<string>
+): SemanticLinkPayload[] {
+  return links.filter((link) => {
+    if (!isIncompatibleLinkType(link)) return true
+    reportOnce(
+      reported,
+      `link-type:${link.id}`,
+      new Error(
+        `Link ${link.id} (node ${link.originNodeId} slot ${link.originSlot} -> node ${link.targetNodeId} slot ${link.targetSlot}) has an incompatible origin/target type and will not be projected`
+      ),
+      {
+        errorType: 'error_reconciling_agent_incompatible_link_type',
+        context: {
+          linkId: link.id,
+          originNodeId: link.originNodeId,
+          originSlot: link.originSlot,
+          targetNodeId: link.targetNodeId,
+          targetSlot: link.targetSlot
+        }
+      }
+    )
+    return false
+  })
+}
+
 function frameContext(update: DocUpdate): RemoteMutationContext {
   const opIds = update.opIds?.filter((id) => id.length > 0)
   return {
@@ -310,7 +381,10 @@ interface TargetSession {
 export class EcsFollowerAdapter {
   private readonly targets = new Map<string, TargetSession>()
 
-  constructor(private readonly mutations: MutationsForTarget) {}
+  constructor(
+    private readonly mutations: MutationsForTarget,
+    private readonly intent: LocalIntent = NO_LOCAL_INTENT
+  ) {}
 
   bind(workflowId: string, follower: FollowerDoc): void {
     this.unbind(workflowId)
@@ -364,7 +438,8 @@ export class EcsFollowerAdapter {
   }
 
   destroy(): void {
-    for (const workflowId of [...this.targets.keys()]) this.unbind(workflowId)
+    for (const workflowId of Array.from(this.targets.keys()))
+      this.unbind(workflowId)
   }
 
   private createSession(
@@ -451,60 +526,59 @@ export class EcsFollowerAdapter {
           : null
       ])
     )
-    const removedLinkIds = [...changedLinks].flatMap(([id, link]) =>
-      link ? [] : [Number(id)]
-    )
+    const removedLinkIds = [...changedLinks].flatMap(([id, link]) => {
+      if (link && !isIncompatibleLinkType(link)) return []
+      const linkId = resolveLinkMapKey(id)
+      return linkId === null ? [] : [linkId]
+    })
     const committed = session.mutations.batch(frameContext(update), (batch) => {
       // A SubgraphNode host that is already live must never be rebuilt from
       // its doc entry: `reconcileNode` (and delete + `addNode`) replaces the
       // host's input list in place, which drops the `widgetId` /
       // `_subgraphSlot` bindings its promoted widgets hang off, leaving the
       // host with no widgets at all. Resync the host's scalar fields (title,
-      // mode, flags, properties, colors) and write the promoted values by name
-      // instead; `readSemanticNode` has already keyed them from the
-      // definition. A host whose stored values are not a record (malformed
-      // opaque payload) keeps its widgets untouched rather than wiped.
+      // mode, flags, properties, colors) and promoted values only;
+      // `readSemanticNode` has already keyed the values from the definition.
       const isHost = (payload: SemanticNodePayload) =>
         definitions().has(payload.type)
       const upsertNode = (
         payload: SemanticNodePayload,
         mode: 'add' | 'reconcile'
       ) => {
-        if (mode === 'add') {
-          batch.addNode(payload)
-          return
-        }
-        if (!isHost(payload)) {
-          batch.reconcileNode(payload)
-          return
-        }
-        batch.reconcileNodeFields(payload)
-        const values = payload.widgets_values
-        if (!isRecord(values)) return
-        for (const [name, value] of Object.entries(values)) {
-          batch.setWidget(toNodeId(payload.id), name, value)
-        }
+        if (mode === 'add') batch.addNode(payload)
+        else if (isHost(payload)) batch.reconcileNodeFields(payload)
+        else batch.reconcileNode(payload)
       }
 
       if (reconcile) {
-        const nodes = [...session.nodes.keys()].flatMap((id) => {
-          const payload = readSemanticNode(
-            doc,
-            id,
-            definitions,
-            session.reportedErrors
-          )
-          return payload ? [payload] : []
-        })
-        const links = [...session.links.keys()].flatMap((id) => {
-          const link = readSemanticLink(
-            doc,
-            id,
-            definitions(),
-            session.reportedErrors
-          )
-          return link ? [link] : []
-        })
+        const pendingDeletes = this.intent.pendingDeletes(session.workflowId)
+        const nodes = [...session.nodes.keys()]
+          .filter((id) => !pendingDeletes.has(id))
+          .flatMap((id) => {
+            const payload = readSemanticNode(
+              doc,
+              id,
+              definitions,
+              session.reportedErrors
+            )
+            return payload ? [payload] : []
+          })
+        const links = excludeIncompatibleLinks(
+          [...session.links.keys()].flatMap((id) => {
+            const link = readSemanticLink(
+              doc,
+              id,
+              definitions(),
+              session.reportedErrors
+            )
+            return link &&
+              !pendingDeletes.has(String(link.originNodeId)) &&
+              !pendingDeletes.has(String(link.targetNodeId))
+              ? [link]
+              : []
+          }),
+          session.reportedErrors
+        )
         batch.removeMissing(
           nodes.map(({ id }) => toNodeId(id)),
           links.map(({ id }) => id)
@@ -593,9 +667,13 @@ export class EcsFollowerAdapter {
           batch.setWidget(toNodeId(id), name, plain(widgets.get(name)))
         }
       }
-      for (const link of changedLinks.values()) {
-        if (link) batch.connect(link)
-      }
+      const incomingLinks = excludeIncompatibleLinks(
+        [...changedLinks.values()].filter(
+          (link): link is SemanticLinkPayload => link !== null
+        ),
+        session.reportedErrors
+      )
+      for (const link of incomingLinks) batch.connect(link)
     })
 
     // The pending sets were snapshotted and cleared before `batch` ran, so a

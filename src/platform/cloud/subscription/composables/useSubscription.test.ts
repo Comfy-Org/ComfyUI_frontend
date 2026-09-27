@@ -1,47 +1,36 @@
+import { useDialogService } from '@/services/dialogService'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useAuthStore } from '@/stores/authStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { effectScope } from 'vue'
+import { computed, effectScope } from 'vue'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useErrorHandling } from '@/composables/useErrorHandling'
+import { useTelemetry } from '@/platform/telemetry'
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
+import type { BillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 
 const {
-  mockIsLoggedIn,
-  mockShowSubscriptionRequiredDialog,
-  mockGetAuthHeader,
   mockGetCheckoutAttribution,
-  mockTelemetry,
 
   mockIsCloud,
 
   mockGetBillingStatus,
 
-  mockSetWorkspaceBillingRail,
   mockLocalStorage
 } = vi.hoisted(() => ({
-  mockIsLoggedIn: { value: false },
   mockIsCloud: { value: true },
 
   mockGetBillingStatus: vi.fn(),
 
-  mockSetWorkspaceBillingRail: vi.fn(),
-  mockShowSubscriptionRequiredDialog: vi.fn(),
-  mockGetAuthHeader: vi.fn(() =>
-    Promise.resolve({ Authorization: 'Bearer test-token' as const })
-  ),
   mockGetCheckoutAttribution: vi.fn(() => ({
     im_ref: 'impact-click-001',
     utm_source: 'impact'
   })),
-  mockTelemetry: {
-    trackSubscription: vi.fn(),
-    trackMonthlySubscriptionSucceeded: vi.fn(),
-    trackMonthlySubscriptionCancelled: vi.fn(),
-    trackBillingEvent: vi.fn()
-  },
-
   mockLocalStorage: (() => {
     const store = new Map<string, string>()
 
@@ -95,35 +84,13 @@ Object.defineProperty(globalThis, 'localStorage', {
   writable: true
 })
 
-vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: vi.fn(() => ({
-    isLoggedIn: mockIsLoggedIn
-  }))
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: vi.fn(() => mockTelemetry)
-}))
+vi.mock(import('@/platform/telemetry'))
 
 vi.mock(import('@/composables/auth/useAuthActions'))
 
-vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
-  useErrorHandling: vi.fn(() => ({
-    wrapWithErrorHandlingAsync: vi.fn(
-      (fn, errorHandler) =>
-        async (...args: Parameters<typeof fn>) => {
-          try {
-            return await fn(...args)
-          } catch (error) {
-            if (errorHandler) {
-              errorHandler(error)
-            }
-            throw error
-          }
-        }
-    )
-  }))
-}))
+vi.mock(import('@/composables/useErrorHandling'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
@@ -138,32 +105,97 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
-  workspaceApi: {
-    getBillingStatus: mockGetBillingStatus
-  }
-}))
+vi.mock(import('@/platform/workspace/api/workspaceApi'))
 
-vi.mock<unknown>(import('@/services/dialogService'), () => ({
-  useDialogService: vi.fn(() => ({
-    showSubscriptionRequiredDialog: mockShowSubscriptionRequiredDialog
-  }))
+/** Null is the legacy client; a rail is what the SDK store would hand back. */
+const railState = vi.hoisted(() => ({
+  rail: null as Pick<BillingReadRail, 'readStatus'> | null
 }))
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useBillingReadRail'),
+  () => ({ useBillingReadRail: () => railState.rail })
+)
+
+vi.mock(import('@/services/dialogService'))
+
+const mockReadStatus = vi.fn<BillingReadRail['readStatus']>()
+
+const buildStatus = (
+  overrides: Partial<BillingStatusResponse> = {}
+): BillingStatusResponse => ({
+  is_active: true,
+  has_funds: true,
+  max_seats: 1,
+  occupied_seats: 1,
+  scheduled_change: null,
+  team_credit_stop: null,
+  ...overrides
+})
+
+/**
+ * The two clients the status read can go through, so the rows below pin one
+ * behaviour on both rather than one path's behaviour twice.
+ */
+const statusReadPaths = [
+  {
+    reader: 'the workspace client',
+    select: () => {
+      railState.rail = null
+    },
+    resolve: (status: BillingStatusResponse) => {
+      mockGetBillingStatus.mockResolvedValue(status)
+    },
+    fail: () => {
+      mockGetBillingStatus.mockRejectedValue(
+        new Error('Subscription not found')
+      )
+    },
+    failure: 'Subscription not found',
+    idleReader: () => mockReadStatus
+  },
+  {
+    reader: 'the SDK reader',
+    select: () => {
+      railState.rail = { readStatus: mockReadStatus }
+    },
+    resolve: (status: BillingStatusResponse) => {
+      mockReadStatus.mockResolvedValue({ status: 'ok', value: status })
+    },
+    fail: () => {
+      mockReadStatus.mockResolvedValue({
+        status: 'error',
+        code: 'ACCESS_DENIED',
+        httpStatus: 403
+      })
+    },
+    failure: 'ACCESS_DENIED',
+    idleReader: () => mockGetBillingStatus
+  }
+]
 
 // Mock fetch
 global.fetch = vi.fn()
 
 beforeEach(() => {
-  Object.assign(useAuthStore(), { isInitialized: true, userId: 'user-123' })
-  vi.mocked(useAuthStore().getFirebaseAuthHeader).mockImplementation(
-    mockGetAuthHeader
+  useErrorHandling().wrapWithErrorHandlingAsync =
+    (action, errorHandler) =>
+    async (...args) => {
+      try {
+        return await action(...args)
+      } catch (error) {
+        errorHandler?.(error)
+        throw error
+      }
+    }
+  vi.mocked(workspaceApi.getBillingStatus).mockImplementation(
+    mockGetBillingStatus
   )
+  Object.assign(useAuthStore(), { isInitialized: true, userId: 'user-123' })
+  vi.mocked(useAuthStore().getFirebaseAuthHeader).mockResolvedValue({
+    Authorization: 'Bearer test-token' as const
+  })
   vi.mocked(useAuthStore().fetchWithCustomerRecovery).mockImplementation(
     (input, init) => fetch(input, init)
-  )
-
-  vi.mocked(useTeamWorkspaceStore().setWorkspaceBillingRail).mockImplementation(
-    mockSetWorkspaceBillingRail
   )
 })
 
@@ -181,7 +213,7 @@ describe('useSubscription', () => {
     setDistribution('cloud')
 
     mockLocalStorage.__reset()
-    mockIsLoggedIn.value = false
+    railState.rail = null
     Object.assign(useAuthStore(), { userId: 'user-123' })
     mockIsCloud.value = true
     Object.assign(useAuthStore(), { isInitialized: true })
@@ -216,7 +248,7 @@ describe('useSubscription', () => {
         renewal_date: '2025-11-16'
       })
 
-      mockIsLoggedIn.value = true
+      useCurrentUser().isLoggedIn = computed(() => true)
       const { canAccessSubscriptionFeatures, fetchStatus } =
         useSubscriptionWithScope()
 
@@ -233,7 +265,7 @@ describe('useSubscription', () => {
         renewal_date: '2025-11-16'
       })
 
-      mockIsLoggedIn.value = true
+      useCurrentUser().isLoggedIn = computed(() => true)
       const { canAccessSubscriptionFeatures, fetchStatus } =
         useSubscriptionWithScope()
 
@@ -248,7 +280,7 @@ describe('useSubscription', () => {
         renewal_date: '2025-11-16T12:00:00Z'
       })
 
-      mockIsLoggedIn.value = true
+      useCurrentUser().isLoggedIn = computed(() => true)
       const { formattedRenewalDate, fetchStatus } = useSubscriptionWithScope()
 
       await fetchStatus()
@@ -272,7 +304,7 @@ describe('useSubscription', () => {
         renewal_date: '2025-11-16T12:00:00Z'
       })
 
-      mockIsLoggedIn.value = true
+      useCurrentUser().isLoggedIn = computed(() => true)
       const { subscriptionTier, fetchStatus } = useSubscriptionWithScope()
 
       await fetchStatus()
@@ -302,50 +334,59 @@ describe('useSubscription', () => {
   })
 
   describe('fetchStatus', () => {
-    it('should fetch subscription status successfully', async () => {
-      const mockStatus = {
-        is_active: true,
-        has_funds: true,
-        renewal_date: '2025-11-16',
-        team_credit_stop: null
+    it.for(statusReadPaths)(
+      'publishes a status read through $reader and updates the workspace billing rail',
+      async (path) => {
+        const status = buildStatus({
+          renewal_date: '2025-11-16',
+          billing_rail: 'stripe'
+        })
+        path.select()
+        path.resolve(status)
+
+        useCurrentUser().isLoggedIn = computed(() => true)
+        const { subscriptionStatus, fetchStatus } = useSubscriptionWithScope()
+
+        await fetchStatus()
+
+        expect(subscriptionStatus.value).toEqual(status)
+        expect(
+          useTeamWorkspaceStore().setWorkspaceBillingRail
+        ).toHaveBeenCalledWith('workspace-123', 'stripe')
+        // One transport per read: the rail a read is on is the only client it
+        // asks, or the panels read one thing and the rail settled another.
+        expect(path.idleReader()).not.toHaveBeenCalled()
       }
+    )
 
-      mockGetBillingStatus.mockResolvedValue(mockStatus)
+    it.for(statusReadPaths)(
+      'reports a failed read through $reader in the same message',
+      async (path) => {
+        path.select()
+        path.fail()
 
-      mockIsLoggedIn.value = true
-      const { fetchStatus } = useSubscriptionWithScope()
+        const { fetchStatus } = useSubscriptionWithScope()
 
+        await expect(fetchStatus()).rejects.toThrow(
+          `Failed to fetch subscription status: ${path.failure}`
+        )
+      }
+    )
+
+    it('keeps the published status when a rail read is superseded', async () => {
+      const published = buildStatus({ renewal_date: '2025-11-16' })
+      mockGetBillingStatus.mockResolvedValue(published)
+      const { subscriptionStatus, fetchStatus } = useSubscriptionWithScope()
       await fetchStatus()
 
-      expect(mockGetBillingStatus).toHaveBeenCalledOnce()
-    })
-
-    it('should handle fetch errors gracefully', async () => {
-      mockGetBillingStatus.mockRejectedValue(
-        new Error('Subscription not found')
-      )
-
-      const { fetchStatus } = useSubscriptionWithScope()
-
-      await expect(fetchStatus()).rejects.toThrow(
-        'Failed to fetch subscription status: Subscription not found'
-      )
-    })
-
-    it('updates the active workspace billing rail from status', async () => {
-      mockGetBillingStatus.mockResolvedValue({
-        is_active: true,
-        has_funds: true,
-        billing_rail: 'stripe'
+      railState.rail = { readStatus: mockReadStatus }
+      mockReadStatus.mockResolvedValue({
+        status: 'error',
+        code: 'SUPERSEDED'
       })
+      await expect(fetchStatus()).resolves.toBeNull()
 
-      const { fetchStatus } = useSubscriptionWithScope()
-      await fetchStatus()
-
-      expect(mockSetWorkspaceBillingRail).toHaveBeenCalledWith(
-        'workspace-123',
-        'stripe'
-      )
+      expect(subscriptionStatus.value).toEqual(published)
     })
 
     it('does not apply the previous account response after an identity switch', async () => {
@@ -389,11 +430,12 @@ describe('useSubscription', () => {
         has_funds: false,
         billing_rail: 'legacy_stripe'
       })
-      expect(mockSetWorkspaceBillingRail).toHaveBeenCalledOnce()
-      expect(mockSetWorkspaceBillingRail).toHaveBeenCalledWith(
-        'workspace-456',
-        'legacy_stripe'
-      )
+      expect(
+        useTeamWorkspaceStore().setWorkspaceBillingRail
+      ).toHaveBeenCalledOnce()
+      expect(
+        useTeamWorkspaceStore().setWorkspaceBillingRail
+      ).toHaveBeenCalledWith('workspace-456', 'legacy_stripe')
     })
 
     it('coalesces concurrent callers into one fetch', async () => {
@@ -574,12 +616,12 @@ describe('useSubscription', () => {
         renewal_date: '2025-11-16'
       })
 
-      mockIsLoggedIn.value = true
+      useCurrentUser().isLoggedIn = computed(() => true)
       useSubscriptionWithScope()
 
       await vi.waitFor(() => {
         expect(
-          mockTelemetry.trackMonthlySubscriptionSucceeded
+          useTelemetry()?.trackMonthlySubscriptionSucceeded
         ).toHaveBeenCalledWith(
           expect.objectContaining({
             user_id: 'user-123',
@@ -619,12 +661,12 @@ describe('useSubscription', () => {
         renewal_date: '2025-11-16'
       })
 
-      mockIsLoggedIn.value = true
+      useCurrentUser().isLoggedIn = computed(() => true)
       useSubscriptionWithScope()
 
       await vi.waitFor(() => {
         expect(
-          mockTelemetry.trackMonthlySubscriptionSucceeded
+          useTelemetry()?.trackMonthlySubscriptionSucceeded
         ).toHaveBeenCalledWith(
           expect.objectContaining({
             checkout_attempt_id: 'attempt-456',
@@ -660,11 +702,11 @@ describe('useSubscription', () => {
         renewal_date: '2025-11-16'
       })
 
-      mockIsLoggedIn.value = true
+      useCurrentUser().isLoggedIn = computed(() => true)
       useSubscriptionWithScope()
 
       await vi.waitFor(() => {
-        expect(mockTelemetry.trackBillingEvent).toHaveBeenCalledWith({
+        expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
           operation: 'resubscribe',
           stage: 'succeeded',
           outcome: 'success',
@@ -693,19 +735,19 @@ describe('useSubscription', () => {
         renewal_date: '2025-11-16'
       })
 
-      mockIsLoggedIn.value = true
+      useCurrentUser().isLoggedIn = computed(() => true)
       useSubscriptionWithScope()
 
       await vi.waitFor(() => {
         expect(
-          mockTelemetry.trackMonthlySubscriptionSucceeded
+          useTelemetry()?.trackMonthlySubscriptionSucceeded
         ).toHaveBeenCalled()
       })
-      expect(mockTelemetry.trackBillingEvent).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackBillingEvent).not.toHaveBeenCalled()
     })
 
     it('rechecks pending checkout attempts when the document becomes visible', async () => {
-      mockIsLoggedIn.value = true
+      useCurrentUser().isLoggedIn = computed(() => true)
       const visibilityStateSpy = vi
         .spyOn(document, 'visibilityState', 'get')
         .mockReturnValue('visible')
@@ -771,7 +813,7 @@ describe('useSubscription', () => {
 
     it('does not clear pending attempts before auth initialization resolves', async () => {
       Object.assign(useAuthStore(), { isInitialized: false })
-      mockIsLoggedIn.value = false
+      useCurrentUser().isLoggedIn = computed(() => false)
 
       localStorage.setItem(
         PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
@@ -805,7 +847,7 @@ describe('useSubscription', () => {
         })
       )
 
-      mockIsLoggedIn.value = false
+      useCurrentUser().isLoggedIn = computed(() => false)
       useSubscriptionWithScope()
 
       await vi.waitFor(() => {
@@ -828,7 +870,9 @@ describe('useSubscription', () => {
 
       await requireActiveSubscription()
 
-      expect(mockShowSubscriptionRequiredDialog).not.toHaveBeenCalled()
+      expect(
+        useDialogService().showSubscriptionRequiredDialog
+      ).not.toHaveBeenCalled()
     })
 
     it('should show dialog when subscription is inactive', async () => {
@@ -842,14 +886,16 @@ describe('useSubscription', () => {
 
       await requireActiveSubscription()
 
-      expect(mockShowSubscriptionRequiredDialog).toHaveBeenCalled()
+      expect(
+        useDialogService().showSubscriptionRequiredDialog
+      ).toHaveBeenCalled()
     })
   })
 
   describe('non-cloud environments', () => {
     it('should not fetch subscription status when not on cloud', async () => {
       mockIsCloud.value = false
-      mockIsLoggedIn.value = true
+      useCurrentUser().isLoggedIn = computed(() => true)
 
       useSubscriptionWithScope()
 
@@ -878,16 +924,19 @@ describe('useSubscription', () => {
   })
 
   describe('action handlers', () => {
-    it('should open usage history URL', () => {
+    it('should open usage history URL in the active workspace', () => {
       const windowOpenSpy = vi
         .spyOn(window, 'open')
         .mockImplementation(() => null)
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'ws-team-1'
+      })
 
       const { handleViewUsageHistory } = useSubscriptionWithScope()
       handleViewUsageHistory()
 
       expect(windowOpenSpy).toHaveBeenCalledWith(
-        'https://stagingplatform.comfy.org/profile/usage',
+        'https://stagingplatform.comfy.org/profile/usage?workspace=ws-team-1',
         '_blank'
       )
 
@@ -927,7 +976,7 @@ describe('useSubscription', () => {
     })
 
     it('does not start cancellation watching when the billing portal does not open', async () => {
-      mockIsLoggedIn.value = true
+      useCurrentUser().isLoggedIn = computed(() => true)
       vi.mocked(useAuthActions().accessBillingPortal).mockResolvedValueOnce(
         false
       )
@@ -948,12 +997,12 @@ describe('useSubscription', () => {
 
       expect(mockGetBillingStatus).not.toHaveBeenCalled()
       expect(
-        mockTelemetry.trackMonthlySubscriptionCancelled
+        useTelemetry()?.trackMonthlySubscriptionCancelled
       ).not.toHaveBeenCalled()
     })
 
     it('tracks cancellation after manage subscription when status flips', async () => {
-      mockIsLoggedIn.value = true
+      useCurrentUser().isLoggedIn = computed(() => true)
 
       const activeStatus = {
         is_active: true,
@@ -980,12 +1029,12 @@ describe('useSubscription', () => {
       await vi.advanceTimersByTimeAsync(5000)
 
       expect(
-        mockTelemetry.trackMonthlySubscriptionCancelled
+        useTelemetry()?.trackMonthlySubscriptionCancelled
       ).toHaveBeenCalledTimes(1)
     })
 
     it('handles rapid focus events during cancellation polling', async () => {
-      mockIsLoggedIn.value = true
+      useCurrentUser().isLoggedIn = computed(() => true)
 
       const activeStatus = {
         is_active: true,
@@ -1012,7 +1061,7 @@ describe('useSubscription', () => {
       window.dispatchEvent(new Event('focus'))
       await vi.waitFor(() => {
         expect(
-          mockTelemetry.trackMonthlySubscriptionCancelled
+          useTelemetry()?.trackMonthlySubscriptionCancelled
         ).toHaveBeenCalledTimes(1)
       })
     })

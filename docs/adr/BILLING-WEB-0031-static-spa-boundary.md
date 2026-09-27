@@ -42,19 +42,35 @@ credential lifecycle. Integration code must follow
 [ADR-AUTH-CREDENTIALS-0011](AUTH-CREDENTIALS-0011-cloud-credential-lifecycle-invariants.md)
 and consume authoritative SDK or generated API types once they exist.
 
-The hosting provider is not selected by this decision. Viable deployment
-options remain:
+Host the MVP on a static Vercel project with SPA rewrites, and move to
+self-hosted nginx once the hosted app carries production billing traffic.
 
-1. A static Vercel project with SPA rewrites.
-2. A dedicated static asset image served by GCS, nginx, or GKE.
-3. A path-mounted build served under `cloud.comfy.org/billing`.
+Vercel is the MVP host because the repository already deploys `apps/website`
+that way, so the preview-per-pull-request and production-on-merge pipeline is a
+known quantity and needs no new infrastructure to review the app. The
+configuration lives in `apps/billing-web/vercel.json` and
+`.github/workflows/ci-vercel-billing-web-preview.yaml`.
 
-Each option must serve `index.html` for client-side routes, configure security
-headers, and keep environment-specific values in build configuration rather
-than source. The default build targets an origin root. A path-mounted deployment
-must build with the matching Vite base (for example,
-`vite build --base=/billing/`); the router derives its history base from the
-same generated `BASE_URL`.
+Self-hosted nginx is the long-term host because billing is a payment surface:
+its availability, egress path, request logs, and security headers should sit
+under the same operational control as the rest of Comfy Cloud rather than
+behind a third-party edge. The target is a static asset image served by nginx
+alongside the existing Cloud infrastructure.
+
+The two hosts are interchangeable because the artifact is a directory of static
+files. Any host of it must serve `index.html` for client-side routes, return a
+genuine 404 for a file request that misses (a blanket rewrite that answers a
+missing asset with the HTML shell turns a stale chunk into a blank page rather
+than a visible failure), set security headers, and keep environment-specific
+values in build configuration rather than source. Nothing may depend on a
+Vercel-specific primitive: no edge middleware, no serverless function, no
+provider-managed redirect that is not reproducible as an nginx rule.
+
+The default build targets an origin root. A path-mounted deployment, such as
+`cloud.comfy.org/billing` under the Cloud ingress, must build with the matching
+Vite base (for example, `vite build --base=/billing/`); the router derives its
+history base from the same generated `BASE_URL`. That remains available to the
+nginx migration without a further decision.
 
 Alternatives considered:
 
@@ -67,6 +83,10 @@ Alternatives considered:
   couples billing deployment and release cadence to the editor application.
 - **A separate repository.** Rejected because the existing pnpm workspace
   already provides shared tooling and design-system dependencies.
+- **Self-hosted nginx from the start.** Rejected for the MVP because it blocks
+  the first reviewable deployment on infrastructure work that the static
+  artifact does not yet justify. It remains the destination, not a discarded
+  option.
 
 ## Consequences
 
@@ -75,6 +95,8 @@ Alternatives considered:
 - The app can be built, tested, and previewed before production integrations
   are ready.
 - Static hosting keeps the runtime and operational surface small.
+- The MVP host is replaceable. Choosing Vercel now costs a configuration file
+  and a workflow, not an architectural dependency.
 - Backend ownership remains explicit and no Cloud service is duplicated in the
   frontend repository.
 - The package can consume shared workspace packages without publishing them
@@ -83,8 +105,12 @@ Alternatives considered:
 ### Negative
 
 - Client-side routing requires a host-level fallback to `index.html`.
-- A provider-specific deployment configuration and domain mapping still need a
-  separate decision.
+- Two hosting configurations exist over the app's lifetime, and the migration
+  to nginx must re-establish the rewrite, header, and caching behavior that
+  `vercel.json` expresses declaratively.
+- A custom domain is a separate step. `comfy.org` DNS is on Cloudflare, so a
+  `billing.comfy.org` record is owned outside this repository; until it exists
+  the deployment is reachable at its provider-assigned host.
 - Production activation is blocked on agreed authentication and Billing SDK
   contracts.
 - If future requirements need server-only secrets or orchestration, the static
