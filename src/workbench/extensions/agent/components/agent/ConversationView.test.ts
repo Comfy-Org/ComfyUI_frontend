@@ -166,6 +166,45 @@ describe('ConversationView', () => {
     expect(scrollIntoView).toHaveBeenCalled()
   })
 
+  it('starts a restored conversation at the latest message', async () => {
+    const assistant: AssistantMessage = {
+      id: 'msg-1' as TurnId,
+      role: 'assistant',
+      parts: [{ type: 'text', text: 'latest reply', state: 'done' }],
+      streaming: false,
+      thinking: false
+    }
+    const scrollIntoView = vi.fn()
+    Element.prototype.scrollIntoView = scrollIntoView
+
+    render(ConversationView, {
+      props: { entries: [assistant] },
+      global: { plugins: [i18n] }
+    })
+    await nextTick()
+
+    expect(scrollIntoView).toHaveBeenCalledWith({ block: 'end' })
+  })
+
+  it('does not follow new content after the user scrolls up', async () => {
+    const { store } = mountHarness()
+    store.recordUser(T, 'make a cat')
+    store.startTurn(T)
+    await nextTick()
+    await nextTick()
+
+    const scrollIntoView = vi.fn()
+    Element.prototype.scrollIntoView = scrollIntoView
+    const [fireBottom] = intersectionCallbacks
+    fireBottom([{ isIntersecting: false }])
+
+    store.ingest(delta('msg-1', 'Here is a cat'))
+    await nextTick()
+    await nextTick()
+
+    expect(scrollIntoView).not.toHaveBeenCalled()
+  })
+
   it('shows a scroll-to-latest button when scrolled up and returns to bottom on click', async () => {
     const assistant: AssistantMessage = {
       id: 'msg-1' as TurnId,

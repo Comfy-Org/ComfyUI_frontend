@@ -79,7 +79,7 @@ watch(
     await nextTick()
     scrollToLatest()
   },
-  { flush: 'post' }
+  { flush: 'post', immediate: true }
 )
 </script>
 
