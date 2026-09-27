@@ -23,7 +23,42 @@ const run: WorkshopRunAnalytics = {
   workspace_id: 'private-workspace'
 }
 
+type FailedRun = Extract<
+  Extract<WorkshopAnalyticsEvent, { name: 'run_finished' }>['properties'],
+  { status: 'failed' }
+>
+type FailureDetails = Pick<FailedRun, 'reason'> &
+  Partial<
+    Omit<
+      FailedRun,
+      keyof WorkshopRunAnalytics | 'status' | 'duration_ms' | 'reason'
+    >
+  >
+
 describe('Workshop health', () => {
+  it('keeps workflow delivery in the existing health stream with distinct engine tags', () => {
+    const record = workshopHealthLog({
+      name: 'delivery_finished',
+      properties: {
+        ...run,
+        page_type: 'workflow',
+        render_engine: 'cloud',
+        workflow_id: 'workflows/remove-background',
+        status: 'succeeded',
+        duration_ms: 15,
+        output_kind: 'image'
+      }
+    })
+    expect(record).toMatchObject({
+      feature: 'models',
+      event_name: 'delivery_finished',
+      page_type: 'workflow',
+      render_engine: 'cloud',
+      workflow_id: 'workflows/remove-background',
+      service_health: 'success'
+    })
+    expect(JSON.stringify(record)).not.toMatch(/private-user|private-workspace/)
+  })
   it('preserves declared field names for validation diagnostics', () => {
     expect(
       workshopHealthLog({
@@ -41,22 +76,38 @@ describe('Workshop health', () => {
     })
   })
   it.for([
-    { reason: 'response' as const, expected: 'failure' },
-    { reason: 'upload' as const, expected: 'failure' },
-    { reason: 'provider' as const, expected: 'failure' },
-    { reason: 'validation' as const, expected: 'failure' },
-    { reason: 'policy' as const, expected: 'excluded' },
-    { reason: 'noCredits' as const, expected: 'excluded' },
-    { reason: 'concurrency' as const, expected: 'excluded' }
+    { reason: 'response' as const, expected: 'failure', type: 'response' },
+    { reason: 'upload' as const, expected: 'failure', type: 'upload' },
+    { reason: 'provider' as const, expected: 'failure', type: 'provider' },
+    {
+      reason: 'validation' as const,
+      expected: 'failure',
+      type: 'validation'
+    },
+    {
+      reason: 'policy' as const,
+      expected: 'excluded',
+      type: 'content_policy_violation'
+    },
+    {
+      reason: 'noCredits' as const,
+      expected: 'excluded',
+      type: 'noCredits'
+    },
+    {
+      reason: 'concurrency' as const,
+      expected: 'excluded',
+      type: 'concurrency'
+    }
   ])(
     'classifies $reason separately for service paging',
-    ({ reason, expected }) => {
+    ({ reason, expected, type }) => {
       expect(
         workshopHealthLog({
           name: 'run_finished',
           properties: { ...run, status: 'failed', reason, duration_ms: 10 }
         })
-      ).toMatchObject({ service_health: expected, failure_type: reason })
+      ).toMatchObject({ service_health: expected, failure_type: type })
     }
   )
 
@@ -194,6 +245,134 @@ describe('Workshop health', () => {
   })
 
   it.for([
+    {
+      name: 'client-side video duration validation',
+      failure: {
+        reason: 'validation',
+        failure_stage: 'input_preparation',
+        field_error_names: ['video_url'],
+        field_error_codes: ['videoTooLong']
+      }
+    },
+    {
+      name: 'unreadable selected file',
+      failure: {
+        reason: 'client',
+        failure_stage: 'file_read',
+        field_error_names: ['image'],
+        field_error_codes: ['fileUnreadable']
+      }
+    },
+    {
+      name: 'provider-declined layer separation on a complex image',
+      failure: {
+        reason: 'validation',
+        request_id: 'router-request',
+        http_status: 400,
+        router_error_type: 'invalid_input',
+        field_error_names: ['images'],
+        field_error_codes: ['imageLayerDecompositionUnsupported']
+      }
+    },
+    {
+      name: 'provider-declined HDR source video',
+      failure: {
+        reason: 'validation',
+        request_id: 'router-request',
+        http_status: 502,
+        router_error_type: 'provider_error',
+        field_error_names: ['video_url'],
+        field_error_codes: ['videoHdrUnsupported']
+      }
+    }
+  ] satisfies Array<{ name: string; failure: FailureDetails }>)(
+    'excludes $name from service failures',
+    ({ failure }) => {
+      expect(
+        workshopHealthLog({
+          name: 'run_finished',
+          properties: {
+            ...run,
+            status: 'failed',
+            duration_ms: 10,
+            ...failure
+          }
+        })?.service_health
+      ).toBe('excluded')
+    }
+  )
+
+  it.for([
+    {
+      name: 'validation without a visible field',
+      failure: {
+        reason: 'validation',
+        field_error_codes: ['videoTooLong']
+      }
+    },
+    {
+      name: 'validation with a request ID',
+      failure: {
+        reason: 'validation',
+        request_id: 'router-request',
+        field_error_names: ['video_url'],
+        field_error_codes: ['videoTooLong']
+      }
+    },
+    {
+      name: 'validation with an HTTP status',
+      failure: {
+        reason: 'validation',
+        http_status: 422,
+        field_error_names: ['video_url'],
+        field_error_codes: ['videoTooLong']
+      }
+    },
+    {
+      name: 'validation with a Router error type',
+      failure: {
+        reason: 'validation',
+        router_error_type: 'invalid_input',
+        field_error_names: ['video_url'],
+        field_error_codes: ['videoTooLong']
+      }
+    },
+    {
+      name: 'unreadable remote example video',
+      failure: {
+        reason: 'client',
+        failure_stage: 'input_preparation',
+        field_error_names: ['video_url'],
+        field_error_codes: ['videoUnreadable']
+      }
+    },
+    {
+      name: 'failed file upload',
+      failure: {
+        reason: 'upload',
+        failure_stage: 'upload_put',
+        field_error_names: ['image'],
+        field_error_codes: ['uploadFailed']
+      }
+    }
+  ] satisfies Array<{ name: string; failure: FailureDetails }>)(
+    'retains $name as a service failure',
+    ({ failure }) => {
+      expect(
+        workshopHealthLog({
+          name: 'run_finished',
+          properties: {
+            ...run,
+            status: 'failed',
+            duration_ms: 10,
+            ...failure
+          }
+        })?.service_health
+      ).toBe('failure')
+    }
+  )
+
+  it.for([
     { status: 'succeeded' as const, expected: 'success' },
     { status: 'failed' as const, expected: 'failure' },
     { status: 'cancelled' as const, expected: 'excluded' },
@@ -221,6 +400,25 @@ describe('Workshop health', () => {
         }
       })
     ).toMatchObject({ failure_type: 'provider_error' })
+  })
+
+  it('uses normalized policy attribution when Router mislabeled the refusal', () => {
+    expect(
+      workshopHealthLog({
+        name: 'run_finished',
+        properties: {
+          ...run,
+          status: 'failed',
+          reason: 'policy',
+          duration_ms: 10,
+          router_error_type: 'provider_error'
+        }
+      })
+    ).toMatchObject({
+      service_health: 'excluded',
+      failure_type: 'content_policy_violation',
+      router_error_type: 'provider_error'
+    })
   })
 
   it.for([

@@ -6,14 +6,7 @@ import { createI18n } from 'vue-i18n'
 
 import WaveAudioPlayer from './WaveAudioPlayer.vue'
 
-const mockFetchApi = vi.fn()
-
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    apiURL: (route: string) => '/api' + route,
-    fetchApi: (...args: unknown[]) => mockFetchApi(...args)
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 const SRC = 'https://example.com/a.wav'
 const RETRY_DELAYS_MS = [500, 1000, 2000, 4000, 8000]
@@ -83,7 +76,6 @@ async function exhaustRetries(audio: HTMLAudioElement) {
 describe('WaveAudioPlayer', () => {
   beforeEach(() => {
     vi.useFakeTimers({ shouldAdvanceTime: false })
-    mockFetchApi.mockRejectedValue(new Error('network down'))
   })
 
   it('binds the source to the hidden audio element', () => {

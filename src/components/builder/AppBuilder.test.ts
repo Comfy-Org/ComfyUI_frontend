@@ -17,16 +17,7 @@ beforeEach(async () => {
   useWorkflowStore().activeWorkflow = workflow
 })
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    rootGraph: {
-      id: '11111111-1111-4111-8111-111111111111',
-      nodes: [],
-      events: new EventTarget(),
-      getNodeById: vi.fn()
-    }
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
 const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
 

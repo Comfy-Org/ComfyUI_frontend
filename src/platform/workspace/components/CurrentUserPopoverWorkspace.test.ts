@@ -11,7 +11,15 @@ import { computed, defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingRouting } from '@/composables/billing/useBillingRouting'
+import type { BalanceInfo, SubscriptionInfo } from '@/composables/billing/types'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import enMessages from '@/locales/en/main.json'
+import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import type { BillingStatus } from '@/platform/workspace/api/workspaceApi'
 
 import CurrentUserPopoverWorkspace from './CurrentUserPopoverWorkspace.vue'
 
@@ -24,9 +32,13 @@ const state = vi.hoisted(() => {
     return new URL('http://localhost:5174')
   }
 
+  function initialBillingStatus(): BillingStatus {
+    return 'paid'
+  }
+
   return {
     isCloud: true,
-    billingStatus: 'paid',
+    billingStatus: initialBillingStatus(),
     canAccessSubscriptionFeatures: true,
     isCancelled: false,
     planSlug: initialPlanSlug(),
@@ -35,72 +47,25 @@ const state = vi.hoisted(() => {
     canReactivatePlan: false,
     canOpenPricingSurface: false,
     shouldUseWorkspaceBilling: true,
-    hostedBillingDestination: 'stripe',
-    billingWebUrl: initialBillingWebUrl(),
-    showPricingTable: vi.fn(),
-    showSettingsDialog: vi.fn()
+    billingWebUrl: initialBillingWebUrl()
   }
 })
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
-// Stable across calls: the hosted-billing opener reads fetchStatus/fetchBalance
-// on one call and a test asserts on them via another, so a fresh vi.fn() pair
-// per call would make the two invisible to each other.
-const mockBillingContextFetchStatus = vi.hoisted(() => vi.fn())
-const mockBillingContextFetchBalance = vi.hoisted(() => vi.fn())
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    billingStatus: computed(() => state.billingStatus),
-    canAccessSubscriptionFeatures: computed(
-      () => state.canAccessSubscriptionFeatures
-    ),
-    subscription: computed(() => ({
-      isCancelled: state.isCancelled,
-      planSlug: state.planSlug
-    })),
-    balance: ref({ amountMicros: 100 }),
-    isLoading: ref(false),
-    fetchStatus: mockBillingContextFetchStatus,
-    fetchBalance: mockBillingContextFetchBalance
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useWorkspaceUI'),
-  () => ({
-    useWorkspaceUI: () => ({
-      permissions: computed(() => ({
-        canManageSubscription: state.canManageSubscription,
-        canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle
-      })),
-      canReactivatePlan: computed(() => state.canReactivatePlan),
-      canOpenPricingSurface: computed(() => state.canOpenPricingSurface)
-    })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
-vi.mock<unknown>(import('@/composables/billing/useBillingRouting'), () => ({
-  useBillingRouting: () => ({
-    shouldUseWorkspaceBilling: computed(() => state.shouldUseWorkspaceBilling)
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingRouting'))
 
-vi.mock<unknown>(
-  import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
-  () => ({
-    useSubscriptionDialog: () => ({ showPricingTable: state.showPricingTable })
-  })
+vi.mock(
+  import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
 )
 
-vi.mock<unknown>(
-  import('@/platform/settings/composables/useSettingsDialog'),
-  () => ({
-    useSettingsDialog: () => ({ show: state.showSettingsDialog })
-  })
-)
+vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
@@ -112,15 +77,7 @@ vi.mock(import('@/services/dialogService'))
 
 vi.mock(import('@/platform/telemetry'))
 
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
-    flags: {
-      get hostedBillingDestination() {
-        return state.hostedBillingDestination
-      }
-    }
-  })
-}))
+vi.mock(import('@/composables/useFeatureFlags'))
 
 vi.mock<unknown>(import('@/config/billingWeb'), () => ({
   getBillingWebUrl: () => state.billingWebUrl
@@ -199,8 +156,50 @@ describe('CurrentUserPopoverWorkspace', () => {
     state.canOpenPricingSurface = false
 
     state.shouldUseWorkspaceBilling = true
-    state.hostedBillingDestination = 'stripe'
+    vi.mocked(useFeatureFlags().flags).hostedBillingDestination = 'stripe'
     state.billingWebUrl = new URL('http://localhost:5174')
+    const billingContext = useBillingContext()
+    billingContext.billingStatus = computed(() => state.billingStatus)
+    billingContext.canAccessSubscriptionFeatures = computed(
+      () => state.canAccessSubscriptionFeatures
+    )
+    billingContext.subscription = computed(
+      () =>
+        ({
+          isActive: true,
+          tier: null,
+          duration: null,
+          isCancelled: state.isCancelled,
+          planSlug: state.planSlug,
+          scheduledChange: null,
+          renewalDate: null,
+          endDate: null,
+          hasFunds: true
+        }) satisfies SubscriptionInfo
+    )
+    billingContext.balance = computed(
+      () => ({ amountMicros: 100, currency: 'USD' }) satisfies BalanceInfo
+    )
+    billingContext.isLoading = ref(false)
+    vi.mocked(useBillingContext).mockReturnValue(billingContext)
+    const workspaceUI = vi.mocked(useWorkspaceUI())
+    workspaceUI.permissions = computed(() => ({
+      canViewOtherMembers: false,
+      canViewPendingInvites: false,
+      canLeaveWorkspace: false,
+      canAccessWorkspaceMenu: false,
+      canManageSubscription: state.canManageSubscription,
+      canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle,
+      canDowngradeToPersonal: false
+    }))
+    workspaceUI.canReactivatePlan = computed(() => state.canReactivatePlan)
+    workspaceUI.canOpenPricingSurface = computed(
+      () => state.canOpenPricingSurface
+    )
+    const billingRouting = vi.mocked(useBillingRouting())
+    billingRouting.shouldUseWorkspaceBilling = computed(
+      () => state.shouldUseWorkspaceBilling
+    )
   })
 
   it('toggles the workspace switcher panel from the selector row', async () => {
@@ -320,12 +319,12 @@ describe('CurrentUserPopoverWorkspace', () => {
       const user = userEvent.setup()
       const open = vi.spyOn(window, 'open')
       state.canOpenPricingSurface = true
-      state.hostedBillingDestination = destination
+      vi.mocked(useFeatureFlags().flags).hostedBillingDestination = destination
       renderComponent('team')
 
       await user.click(screen.getByTestId('plans-pricing-menu-item'))
 
-      expect(state.showPricingTable).toHaveBeenCalledWith({
+      expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith({
         reason: 'avatar_menu_plans'
       })
       expect(open).not.toHaveBeenCalled()
@@ -339,12 +338,12 @@ describe('CurrentUserPopoverWorkspace', () => {
 
     await user.click(screen.getByTestId('upgrade-to-add-credits-button'))
 
-    expect(state.showPricingTable).toHaveBeenCalledWith({
+    expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith({
       reason: 'upgrade_to_add_credits'
     })
   })
 
-  it.for(['payment_failed', 'paused'])(
+  it.for(['payment_failed', 'paused'] as const)(
     'keeps Manage plan available for an existing %s subscription',
     (billingStatus) => {
       state.billingStatus = billingStatus
@@ -578,7 +577,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     state.canManageSubscriptionLifecycle = true
     state.canReactivatePlan = true
     state.canOpenPricingSurface = true
-    state.hostedBillingDestination = 'billing_web'
+    vi.mocked(useFeatureFlags().flags).hostedBillingDestination = 'billing_web'
     renderComponent('team')
 
     expect(screen.getByTestId('add-credits-button')).toBeInTheDocument()
@@ -587,7 +586,7 @@ describe('CurrentUserPopoverWorkspace', () => {
 
     await user.click(screen.getByRole('button', { name: 'Resubscribe' }))
 
-    expect(state.showPricingTable).toHaveBeenCalledOnce()
+    expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledOnce()
   })
 
   it('hides Plans & pricing on a sales-managed plan but keeps Manage plan', () => {
@@ -645,7 +644,7 @@ describe('CurrentUserPopoverWorkspace', () => {
       menuItem.focus()
       await user.keyboard('{Enter}')
 
-      expect(state.showSettingsDialog).toHaveBeenCalledWith('workspace')
+      expect(useSettingsDialog().show).toHaveBeenCalledWith('workspace')
       expect(emitted('close')).toHaveLength(1)
     })
   }
@@ -669,8 +668,8 @@ describe('CurrentUserPopoverWorkspace', () => {
       })
     )
 
-    expect(state.showSettingsDialog).toHaveBeenCalledWith('workspace')
-    expect(state.showPricingTable).not.toHaveBeenCalled()
+    expect(useSettingsDialog().show).toHaveBeenCalledWith('workspace')
+    expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
     expect(emitted('close')).toHaveLength(1)
   })
 

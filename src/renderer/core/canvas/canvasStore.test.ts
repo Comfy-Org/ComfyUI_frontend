@@ -1,5 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { nextTick } from 'vue'
+import { nextTick, watch } from 'vue'
 import {
   assert,
   beforeEach,
@@ -15,7 +15,7 @@ import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { selectableKeyOf } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useSelectionStore } from '@/renderer/core/canvas/selectionStore'
+import { useSelectionStore } from '@/core/selection/selectionStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import {
@@ -188,6 +188,35 @@ describe('useCanvasStore', () => {
         expect(replacement.selected).toBeFalsy()
       }
     )
+  })
+
+  it('publishes adopted selection after the node can be resolved', async () => {
+    const graph = new LGraph()
+    const canvas = createTestCanvas(graph, createMockCanvasRenderingContext2D())
+    document.body.append(canvas.canvas)
+    onTestFinished(() => {
+      canvas.unbindEvents()
+      canvas.canvas.remove()
+    })
+    store.canvas = canvas
+    await nextTick()
+
+    const selections: LGraphNode[][] = []
+    const stop = watch(
+      () => store.selectedItems,
+      (items) =>
+        selections.push(items.filter((item) => item instanceof LGraphNode)),
+      { flush: 'sync' }
+    )
+    onTestFinished(stop)
+    const node = new LGraphNode('selected')
+    node.selected = true
+
+    graph.add(node)
+    await nextTick()
+
+    expect(selections.at(-1)).toEqual([node])
+    expect(store.selectedItems).toEqual([node])
   })
 
   describe('rootGraphId', () => {

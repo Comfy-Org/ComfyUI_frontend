@@ -1,0 +1,790 @@
+{
+  "id": "f7435406-80be-44c7-9d7f-1d544497454c",
+  "revision": 0,
+  "last_node_id": 30,
+  "last_link_id": 41,
+  "nodes": [
+    {
+      "id": 10,
+      "type": "ByteDanceSeedreamNode",
+      "pos": [2526.725175568671, 431.3332844999543],
+      "size": [400, 615],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 10
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [9, 17, 19, 21]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.4.0",
+        "Node name for S&R": "ByteDanceSeedreamNode"
+      },
+      "widgets_values": [
+        "seedream-4-5-251128",
+        "Professional studio product photography of the exact product shown in image 1, positioned at a dynamic three-quarter angle. Preserve its shape, proportions, materials, colors, markings, and existing logo; do not add or replace branding. The lighting is dramatic and cool-toned, featuring a hard spotlight that creates a glowing halo effect on the ground while casting soft shadows. The background is a seamless, clean gradient transitioning from a light silver-gray top to a deep anthracite black floor. Minimal composition with generous negative space, shot with shallow depth of field (f/2.8) to emphasize product details while softly blurring the background.",
+        "1664x2496 (2:3)",
+        2048,
+        2048,
+        "disabled",
+        1,
+        555,
+        "fixed",
+        false,
+        true
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 9,
+      "type": "SaveImage",
+      "pos": [2976.3332442553233, 431.3332844999543],
+      "size": [510, 615],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 9
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.4.0",
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": ["ComfyUI"]
+    },
+    {
+      "id": 19,
+      "type": "SaveVideo",
+      "pos": [4066.3332695243143, 1401.3333986822865],
+      "size": [510, 863],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 20
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.4.0",
+        "Node name for S&R": "SaveVideo"
+      },
+      "widgets_values": ["video/ComfyUI-2", "auto", "auto"]
+    },
+    {
+      "id": 18,
+      "type": "MinimaxHailuoVideoNode",
+      "pos": [3606.3334166614623, 441.33329646024174],
+      "size": [400, 275],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "first_frame_image",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 19
+        }
+      ],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [18, 34]
+        }
+      ],
+      "title": "Detailed Texture Vid - MiniMax Hailuo Video",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.4.0",
+        "Node name for S&R": "MinimaxHailuoVideoNode"
+      },
+      "widgets_values": [
+        "Product video — the camera slowly zooms toward the exact product in the input image, revealing its material and texture details with cinematic shallow depth of field. Preserve the product’s shape, proportions, materials, colors, markings, and existing logo throughout the shot.",
+        222,
+        "fixed",
+        true,
+        6,
+        "1080P"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 20,
+      "type": "MinimaxHailuoVideoNode",
+      "pos": [3606.3334166614623, 1401.3333986822865],
+      "size": [400, 275],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "first_frame_image",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 21
+        }
+      ],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [20, 35]
+        }
+      ],
+      "title": "Cinematic Pan Vid - MiniMax Hailuo Video",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.4.0",
+        "Node name for S&R": "MinimaxHailuoVideoNode"
+      },
+      "widgets_values": [
+        "Product video — the camera pans across the exact product in the input image from one end to the other. Dramatic cinematic light sweeps across it and dust motes float in the air. Preserve the product’s shape, proportions, materials, colors, markings, and existing logo throughout the shot.",
+        333,
+        "fixed",
+        true,
+        6,
+        "1080P"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 5,
+      "type": "MinimaxHailuoVideoNode",
+      "pos": [3606.3334166614623, -448.6666929851903],
+      "size": [400, 275],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "first_frame_image",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 17
+        }
+      ],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [16, 33]
+        }
+      ],
+      "title": "360 Rotation Vid - MiniMax Hailuo Video",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.4.0",
+        "Node name for S&R": "MinimaxHailuoVideoNode"
+      },
+      "widgets_values": [
+        "Product video — a 360° rotating hero showcase of the exact product in the input image, with a cinematic soft spotlight, minimal studio background, and seamless loop. Preserve the product’s shape, proportions, materials, colors, markings, and existing logo throughout the shot.",
+        111,
+        "fixed",
+        true,
+        6,
+        "1080P"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 1,
+      "type": "LoadImage",
+      "pos": [1956.3333027083456, 431.3332844999543],
+      "size": [510, 782.9427083333334],
+      "flags": {
+        "collapsed": false
+      },
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [10]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "title": "Load Product Image",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.4.0",
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": ["product_shoe.jpeg", "image"],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 27,
+      "type": "23514ff4-69d2-461d-97d8-8b34d2981d4b",
+      "pos": [4746.333153076701, 441.33329646024174],
+      "size": [187.5, 80],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 33
+        },
+        {
+          "name": "video_1",
+          "type": "VIDEO",
+          "link": 34
+        },
+        {
+          "name": "video_2",
+          "type": "VIDEO",
+          "link": 35
+        }
+      ],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [41]
+        }
+      ],
+      "properties": {
+        "proxyWidgets": [],
+        "cnr_id": "comfy-core",
+        "ver": "0.4.0"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 17,
+      "type": "SaveVideo",
+      "pos": [4066.3332695243143, 441.33329646024185],
+      "size": [510, 863],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 18
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.4.0",
+        "Node name for S&R": "SaveVideo"
+      },
+      "widgets_values": ["video/ComfyUI-2", "auto", "auto"]
+    },
+    {
+      "id": 16,
+      "type": "SaveVideo",
+      "pos": [4066.3332695243143, -448.6666929851903],
+      "size": [510, 820],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 16
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.4.0",
+        "Node name for S&R": "SaveVideo"
+      },
+      "widgets_values": ["video/ComfyUI-1", "auto", "auto"]
+    },
+    {
+      "id": 30,
+      "type": "SaveVideo",
+      "pos": [4990, 441.33329646024185],
+      "size": [800, 863],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 41
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.6.0"
+      },
+      "widgets_values": ["video/ComfyUI", "auto", "auto"]
+    }
+  ],
+  "links": [
+    [9, 10, 0, 9, 0, "IMAGE"],
+    [10, 1, 0, 10, 0, "IMAGE"],
+    [16, 5, 0, 16, 0, "VIDEO"],
+    [17, 10, 0, 5, 0, "IMAGE"],
+    [18, 18, 0, 17, 0, "VIDEO"],
+    [19, 10, 0, 18, 0, "IMAGE"],
+    [20, 20, 0, 19, 0, "VIDEO"],
+    [21, 10, 0, 20, 0, "IMAGE"],
+    [33, 5, 0, 27, 0, "VIDEO"],
+    [34, 18, 0, 27, 1, "VIDEO"],
+    [35, 20, 0, 27, 2, "VIDEO"],
+    [41, 27, 0, 30, 0, "VIDEO"]
+  ],
+  "groups": [],
+  "definitions": {
+    "subgraphs": [
+      {
+        "id": "23514ff4-69d2-461d-97d8-8b34d2981d4b",
+        "version": 1,
+        "state": {
+          "lastGroupId": 0,
+          "lastNodeId": 27,
+          "lastLinkId": 35,
+          "lastRerouteId": 0
+        },
+        "revision": 0,
+        "config": {},
+        "name": "Combine Video",
+        "inputNode": {
+          "id": -10,
+          "bounding": [4110, 543, 120, 100]
+        },
+        "outputNode": {
+          "id": -20,
+          "bounding": [5120, 540, 120, 60]
+        },
+        "inputs": [
+          {
+            "id": "cbb00ca3-c8cc-4124-8c74-b4986b6b94d4",
+            "name": "video",
+            "type": "VIDEO",
+            "linkIds": [22],
+            "localized_name": "video",
+            "pos": [4210, 563]
+          },
+          {
+            "id": "152af177-b42b-47cb-b63f-1f470fde7945",
+            "name": "video_1",
+            "type": "VIDEO",
+            "linkIds": [25],
+            "localized_name": "video_1",
+            "pos": [4210, 583]
+          },
+          {
+            "id": "9cfeacf0-907c-4651-8450-d25015853fb8",
+            "name": "video_2",
+            "type": "VIDEO",
+            "linkIds": [30],
+            "localized_name": "video_2",
+            "pos": [4210, 603]
+          }
+        ],
+        "outputs": [
+          {
+            "id": "fc0e17ea-29af-42fa-b499-4431e72be414",
+            "name": "VIDEO",
+            "type": "VIDEO",
+            "linkIds": [35],
+            "pos": [5140, 560]
+          }
+        ],
+        "widgets": [],
+        "nodes": [
+          {
+            "id": 23,
+            "type": "GetVideoComponents",
+            "pos": [4279.999889840299, 520.0000256225275],
+            "size": [193.530859375, 80],
+            "flags": {},
+            "order": 1,
+            "mode": 0,
+            "inputs": [
+              {
+                "localized_name": "video",
+                "name": "video",
+                "type": "VIDEO",
+                "link": 25
+              }
+            ],
+            "outputs": [
+              {
+                "localized_name": "images",
+                "name": "images",
+                "type": "IMAGE",
+                "links": [28]
+              },
+              {
+                "localized_name": "audio",
+                "name": "audio",
+                "type": "AUDIO",
+                "links": null
+              },
+              {
+                "localized_name": "fps",
+                "name": "fps",
+                "type": "FLOAT",
+                "links": []
+              }
+            ],
+            "properties": {
+              "cnr_id": "comfy-core",
+              "ver": "0.4.0",
+              "Node name for S&R": "GetVideoComponents"
+            },
+            "widgets_values": []
+          },
+          {
+            "id": 26,
+            "type": "GetVideoComponents",
+            "pos": [4279.999889840299, 739.9999982028642],
+            "size": [193.530859375, 80],
+            "flags": {},
+            "order": 4,
+            "mode": 0,
+            "inputs": [
+              {
+                "localized_name": "video",
+                "name": "video",
+                "type": "VIDEO",
+                "link": 30
+              }
+            ],
+            "outputs": [
+              {
+                "localized_name": "images",
+                "name": "images",
+                "type": "IMAGE",
+                "links": [31]
+              },
+              {
+                "localized_name": "audio",
+                "name": "audio",
+                "type": "AUDIO",
+                "links": null
+              },
+              {
+                "localized_name": "fps",
+                "name": "fps",
+                "type": "FLOAT",
+                "links": []
+              }
+            ],
+            "properties": {
+              "cnr_id": "comfy-core",
+              "ver": "0.4.0",
+              "Node name for S&R": "GetVideoComponents"
+            },
+            "widgets_values": []
+          },
+          {
+            "id": 24,
+            "type": "ImageBatch",
+            "pos": [4550, 440],
+            "size": [187.5, 60],
+            "flags": {
+              "collapsed": false
+            },
+            "order": 2,
+            "mode": 0,
+            "inputs": [
+              {
+                "localized_name": "image1",
+                "name": "image1",
+                "type": "IMAGE",
+                "link": 27
+              },
+              {
+                "localized_name": "image2",
+                "name": "image2",
+                "type": "IMAGE",
+                "link": 28
+              }
+            ],
+            "outputs": [
+              {
+                "localized_name": "IMAGE",
+                "name": "IMAGE",
+                "type": "IMAGE",
+                "links": [29]
+              }
+            ],
+            "properties": {
+              "cnr_id": "comfy-core",
+              "ver": "0.4.0",
+              "Node name for S&R": "ImageBatch"
+            },
+            "widgets_values": []
+          },
+          {
+            "id": 25,
+            "type": "ImageBatch",
+            "pos": [4550, 590],
+            "size": [187.5, 60],
+            "flags": {
+              "collapsed": false
+            },
+            "order": 3,
+            "mode": 0,
+            "inputs": [
+              {
+                "localized_name": "image1",
+                "name": "image1",
+                "type": "IMAGE",
+                "link": 29
+              },
+              {
+                "localized_name": "image2",
+                "name": "image2",
+                "type": "IMAGE",
+                "link": 31
+              }
+            ],
+            "outputs": [
+              {
+                "localized_name": "IMAGE",
+                "name": "IMAGE",
+                "type": "IMAGE",
+                "links": [33]
+              }
+            ],
+            "properties": {
+              "cnr_id": "comfy-core",
+              "ver": "0.4.0",
+              "Node name for S&R": "ImageBatch"
+            },
+            "widgets_values": []
+          },
+          {
+            "id": 22,
+            "type": "GetVideoComponents",
+            "pos": [4279.999889840299, 310.00000689328004],
+            "size": [193.530859375, 80],
+            "flags": {},
+            "order": 0,
+            "mode": 0,
+            "inputs": [
+              {
+                "localized_name": "video",
+                "name": "video",
+                "type": "VIDEO",
+                "link": 22
+              }
+            ],
+            "outputs": [
+              {
+                "localized_name": "images",
+                "name": "images",
+                "type": "IMAGE",
+                "links": [27]
+              },
+              {
+                "localized_name": "audio",
+                "name": "audio",
+                "type": "AUDIO",
+                "links": null
+              },
+              {
+                "localized_name": "fps",
+                "name": "fps",
+                "type": "FLOAT",
+                "links": [34]
+              }
+            ],
+            "properties": {
+              "cnr_id": "comfy-core",
+              "ver": "0.4.0",
+              "Node name for S&R": "GetVideoComponents"
+            },
+            "widgets_values": []
+          },
+          {
+            "id": 27,
+            "type": "CreateVideo",
+            "pos": [4790, 500],
+            "size": [270, 78],
+            "flags": {},
+            "order": 5,
+            "mode": 0,
+            "inputs": [
+              {
+                "localized_name": "images",
+                "name": "images",
+                "type": "IMAGE",
+                "link": 33
+              },
+              {
+                "localized_name": "audio",
+                "name": "audio",
+                "shape": 7,
+                "type": "AUDIO",
+                "link": null
+              },
+              {
+                "localized_name": "fps",
+                "name": "fps",
+                "type": "FLOAT",
+                "widget": {
+                  "name": "fps"
+                },
+                "link": 34
+              }
+            ],
+            "outputs": [
+              {
+                "localized_name": "VIDEO",
+                "name": "VIDEO",
+                "type": "VIDEO",
+                "links": [35]
+              }
+            ],
+            "properties": {
+              "cnr_id": "comfy-core",
+              "ver": "0.6.0",
+              "Node name for S&R": "CreateVideo"
+            },
+            "widgets_values": [30]
+          }
+        ],
+        "groups": [],
+        "links": [
+          {
+            "id": 27,
+            "origin_id": 22,
+            "origin_slot": 0,
+            "target_id": 24,
+            "target_slot": 0,
+            "type": "IMAGE"
+          },
+          {
+            "id": 28,
+            "origin_id": 23,
+            "origin_slot": 0,
+            "target_id": 24,
+            "target_slot": 1,
+            "type": "IMAGE"
+          },
+          {
+            "id": 29,
+            "origin_id": 24,
+            "origin_slot": 0,
+            "target_id": 25,
+            "target_slot": 0,
+            "type": "IMAGE"
+          },
+          {
+            "id": 31,
+            "origin_id": 26,
+            "origin_slot": 0,
+            "target_id": 25,
+            "target_slot": 1,
+            "type": "IMAGE"
+          },
+          {
+            "id": 22,
+            "origin_id": -10,
+            "origin_slot": 0,
+            "target_id": 22,
+            "target_slot": 0,
+            "type": "VIDEO"
+          },
+          {
+            "id": 25,
+            "origin_id": -10,
+            "origin_slot": 1,
+            "target_id": 23,
+            "target_slot": 0,
+            "type": "VIDEO"
+          },
+          {
+            "id": 30,
+            "origin_id": -10,
+            "origin_slot": 2,
+            "target_id": 26,
+            "target_slot": 0,
+            "type": "VIDEO"
+          },
+          {
+            "id": 33,
+            "origin_id": 25,
+            "origin_slot": 0,
+            "target_id": 27,
+            "target_slot": 0,
+            "type": "IMAGE"
+          },
+          {
+            "id": 34,
+            "origin_id": 22,
+            "origin_slot": 2,
+            "target_id": 27,
+            "target_slot": 2,
+            "type": "FLOAT"
+          },
+          {
+            "id": 35,
+            "origin_id": 27,
+            "origin_slot": 0,
+            "target_id": -20,
+            "target_slot": 0,
+            "type": "VIDEO"
+          }
+        ],
+        "extra": {
+          "workflowRendererVersion": "LG"
+        }
+      }
+    ]
+  },
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.27854483637981103,
+      "offset": [-687.6993930063913, 975.7438486175533]
+    },
+    "frontendVersion": "1.35.9",
+    "workflowRendererVersion": "LG",
+    "VHS_latentpreview": false,
+    "VHS_latentpreviewrate": 0,
+    "VHS_MetadataImage": true,
+    "VHS_KeepIntermediate": true
+  },
+  "version": 0.4
+}

@@ -74,7 +74,7 @@
           <slot name="contentFilter" />
           <h2
             v-if="!hasLeftPanel"
-            class="text-xxl m-0 px-6 pt-2 pb-6 capitalize select-none"
+            class="m-0 px-6 pt-2 pb-6 text-2xl capitalize select-none"
           >
             {{ contentTitle }}
           </h2>

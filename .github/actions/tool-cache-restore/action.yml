@@ -28,7 +28,7 @@ runs:
       env:
         SCOPE: ${{ inputs.scope }}
         LOCK_HASH: ${{ hashFiles('pnpm-lock.yaml') }}
-        CONFIG_HASH: ${{ hashFiles('eslint.config.ts', 'tools/eslint-plugins/**', '.stylelintrc.json', '**/tsconfig*.json', '!**/node_modules/**') }}
+        CONFIG_HASH: ${{ hashFiles('eslint.config.ts', 'tools/eslint-plugins/**', '.oxlintrc.json', 'scripts/primevue-import-allowlist.json', '.stylelintrc.json', '**/tsconfig*.json', '!**/node_modules/**') }}
       run: |
         lockfile_prefix="${SCOPE}-cache-${RUNNER_OS}-${LOCK_HASH}"
         config_prefix="${lockfile_prefix}-${CONFIG_HASH}"

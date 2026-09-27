@@ -10,18 +10,8 @@ import type { NodeLayout } from '@/renderer/core/layout/types'
 import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
 import { createNodeState } from '@/utils/__tests__/litegraphTestUtils'
 
-const forwardEventToCanvasMock = vi.fn()
-
 // Mock the dependencies
-vi.mock<unknown>(
-  import('@/renderer/core/canvas/useCanvasInteractions'),
-  () => ({
-    useCanvasInteractions: () => ({
-      forwardEventToCanvas: forwardEventToCanvasMock,
-      shouldHandleNodePointerEvents: ref(true)
-    })
-  })
-)
+vi.mock(import('@/renderer/core/canvas/useCanvasInteractions'))
 
 vi.mock(import('@/renderer/extensions/vueNodes/layout/useNodeDrag'), () => {
   const startDrag = vi.fn()

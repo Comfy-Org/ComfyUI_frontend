@@ -87,6 +87,13 @@ function delta(text: string): AgentChatEvent {
   }
 }
 
+function draft(text: string): AgentChatEvent {
+  return zAgentWsEvent.parse({
+    type: 'agent_message_draft',
+    data: { text, message_id: 'm', thread_id: 't' }
+  })
+}
+
 function activeTab(
   workflow_id: string,
   name?: string,
@@ -196,6 +203,44 @@ describe('agentEventTransport fixture replay', () => {
       state: 'done'
     })
     expect(toolParts(message)).toHaveLength(0)
+    expect(message.streaming).toBe(false)
+  })
+})
+
+describe('agentEventTransport reply draft replay', () => {
+  // Recorded on a preview environment (Comfy-Org/cloud#10351): one narration
+  // round, then the resumed wait_for_job and the reply streaming as drafts.
+  const events = chatEventsFor(
+    'ws-turn-reply-drafts.jsonl',
+    '3d3cdb02-8d48-4fdc-8ab1-d8c18b07772e'
+  )
+  const drafts = events.filter(
+    (e): e is Extract<AgentChatEvent, { type: 'agent_message_draft' }> =>
+      e.type === 'agent_message_draft'
+  )
+  const finals = events.filter(
+    (e): e is Extract<AgentChatEvent, { type: 'agent_message_delta' }> =>
+      e.type === 'agent_message_delta'
+  )
+
+  it('shows the reply as it streams, with the narration draft already gone', () => {
+    const lastDraft = drafts.at(-1)
+    if (!lastDraft) throw new Error('the recording holds no drafts')
+    const message = drive(events.slice(0, events.indexOf(lastDraft) + 1))
+
+    expect(drafts.length).toBeGreaterThan(1)
+    expect(textParts(message).map((p) => p.text)).toEqual([lastDraft.data.text])
+    // What streamed is the start of the answer the turn delivered.
+    expect(finals[0].data.delta.startsWith(lastDraft.data.text)).toBe(true)
+  })
+
+  it('settles on the final answer alone', () => {
+    const message = drive(events)
+
+    expect(finals).toHaveLength(1)
+    expect(textParts(message).map((p) => p.text)).toEqual([
+      finals[0].data.delta
+    ])
     expect(message.streaming).toBe(false)
   })
 })
@@ -623,6 +668,100 @@ describe('agentEventTransport settle lifecycle', () => {
         part.type === 'tabLink' ? [part.workflowId] : []
       )
     ).toEqual(['wf-1', 'wf-2', 'wf-1'])
+  })
+})
+
+describe('agentEventTransport reply drafts', () => {
+  it('shows the answer while the model is still writing it', () => {
+    const message = drive([
+      toolCall('wait_for_job', 'success'),
+      draft('Here is'),
+      draft('Here is your video')
+    ])
+
+    expect(textParts(message)).toEqual([
+      { type: 'text', text: 'Here is your video', state: 'streaming' }
+    ])
+  })
+
+  it('replaces the draft with the answer instead of appending to it', () => {
+    const message = drive([draft('Here is your'), delta('Here is your video.')])
+
+    expect(textParts(message).map((p) => p.text)).toEqual([
+      'Here is your video.'
+    ])
+  })
+
+  it('moves narration out of the reply once the round turns out to be one', () => {
+    const message = drive([
+      draft('Let me check the'),
+      thinking('Let me check the widgets first'),
+      toolCall('set_widget', 'running')
+    ])
+
+    expect(textParts(message)).toEqual([])
+    expect(thinkingParts(message).map((p) => p.text)).toEqual([
+      'Let me check the widgets first'
+    ])
+  })
+
+  it('keeps the answer on screen through the reasoning frame that precedes it', () => {
+    const message = drive([
+      draft('Here is your'),
+      thinking('the render finished cleanly')
+    ])
+
+    expect(textParts(message).map((p) => p.text)).toEqual(['Here is your'])
+  })
+
+  it("drops the draft at the round's first tool call", () => {
+    const message = drive([draft('One moment'), toolCall('run', 'running')])
+
+    expect(textParts(message)).toEqual([])
+    expect(toolParts(message).map((p) => p.name)).toEqual(['run'])
+  })
+
+  it('drops the draft when the round stops for run approval', () => {
+    const message = drive([
+      draft('Validates clean and ready to run.'),
+      thinking('Validates clean and ready to run. Generating now.'),
+      runApproval()
+    ])
+
+    expect(textParts(message)).toEqual([])
+    expect(parts(message).map((p) => p.type)).toEqual([
+      'thinking',
+      'runApproval'
+    ])
+  })
+
+  it('withdraws the draft on an empty one, as a retried round sends', () => {
+    const message = drive([draft('half an'), draft(''), draft('the whole')])
+
+    expect(textParts(message).map((p) => p.text)).toEqual(['the whole'])
+  })
+
+  it('never leaves a provisional answer behind when the turn settles', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit)
+    transport.ingest(draft('Here is your'))
+    transport.settle()
+
+    expect(textParts(emit.mock.calls.at(-1)?.[0] ?? message)).toEqual([])
+  })
+
+  it('keeps the reply text of earlier rounds when a later round drafts', () => {
+    const message = drive([
+      delta('First, the plan.'),
+      toolCall('run', 'success'),
+      draft('And now the')
+    ])
+
+    expect(textParts(message).map((p) => p.text)).toEqual([
+      'First, the plan.',
+      'And now the'
+    ])
   })
 })
 

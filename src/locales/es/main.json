@@ -2223,8 +2223,10 @@
     "star": "Estrella"
   },
   "imageCompare": {
+    "afterAlt": "Imagen posterior",
     "batchLabelA": "A:",
     "batchLabelB": "B:",
+    "beforeAlt": "Imagen anterior",
     "noImages": "No hay imágenes para comparar"
   },
   "imageCrop": {
@@ -4809,6 +4811,7 @@
     },
     "clearAllFilters": "Borrar todos los filtros",
     "error": {
+      "loading": "No se pudo abrir la plantilla. Inténtalo de nuevo.",
       "templateNotFound": "Plantilla \"{templateName}\" no encontrada"
     },
     "filtersApplied": "{count} filtro aplicado | {count} filtros aplicados",
@@ -5089,6 +5092,7 @@
   },
   "workspace": {
     "addedToWorkspace": "Te han añadido a:",
+    "deepLinkStayed": "No se pudo abrir ese espacio de trabajo. Sigues en {workspaceName}.",
     "inviteAccepted": "Invitación aceptada",
     "inviteFailed": "No se pudo aceptar la invitación",
     "switchFailed": "No se pudo cambiar de espacio de trabajo. Por favor, inténtalo de nuevo.",

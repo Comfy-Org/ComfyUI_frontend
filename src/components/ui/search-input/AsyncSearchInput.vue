@@ -89,10 +89,10 @@ function handleKeydownEnter(event: KeyboardEvent) {
     :class="
       cn(
         'group',
-        'rounded-lg bg-component-node-widget-background transition-all duration-150',
+        'rounded-lg bg-secondary-background transition-all duration-150',
         'flex flex-1 items-center',
         'border-0 text-base-foreground',
-        'focus-within:ring focus-within:ring-component-node-widget-background-highlighted/80',
+        'focus-within:ring focus-within:ring-border-default/80',
         customClass
       )
     "

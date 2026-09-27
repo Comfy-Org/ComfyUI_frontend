@@ -45,14 +45,7 @@ function mockSettingValues(overrides: Record<string, unknown> = {}) {
 }
 
 // Mock the composables and services
-vi.mock<unknown>(
-  import('@/renderer/core/canvas/useCanvasInteractions'),
-  () => ({
-    useCanvasInteractions: vi.fn(() => ({
-      handleWheel: vi.fn()
-    }))
-  })
-)
+vi.mock(import('@/renderer/core/canvas/useCanvasInteractions'))
 
 vi.mock<unknown>(
   import('@/composables/canvas/useSelectionToolboxPosition'),

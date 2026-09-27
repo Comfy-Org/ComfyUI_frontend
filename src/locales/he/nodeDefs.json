@@ -7955,6 +7955,87 @@
       }
     }
   },
+  "HunyuanImageEditApi": {
+    "description": "עורך או משלב עד 5 תמונות ייחוס, בהנחיית פרומפט טקסט, באמצעות מודל Hunyuan Image של Tencent.",
+    "display_name": "Tencent HY Image: עריכה",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר היצירה"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "המודל שבו יש להשתמש."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_height": {
+        "name": "height"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reference_detail": {
+        "name": "reference_detail"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_watermark": {
+        "name": "watermark"
+      },
+      "model_width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HunyuanImageTextToImageApi": {
+    "description": "יוצר תמונות מפרומפט טקסט באמצעות מודל Hunyuan Image של Tencent.",
+    "display_name": "Tencent HY Image: טקסט לתמונה",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר היצירה"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "המודל שבו יש להשתמש."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_height": {
+        "name": "height"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_watermark": {
+        "name": "watermark"
+      },
+      "model_width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HunyuanImageToVideo": {
     "display_name": "HunyuanImageToVideo",
     "inputs": {
@@ -18366,6 +18447,10 @@
       "model_top_p": {
         "name": "top_p"
       },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "מידת ההסקה שהמודל מבצע לפני הציור. רמות גבוהות יותר משפרות את רמת הפירוט וצורכות יותר אסימונים. בשימוש רק במודלי Arrow 2."
+      },
       "seed": {
         "name": "seed",
         "tooltip": "seed לקביעת האם הצומת ירוץ מחדש; התוצאות בפועל אינן דטרמיניסטיות ללא קשר ל-seed."
@@ -18404,6 +18489,10 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "תיאור טקסטואלי של פלט ה-SVG הרצוי."
+      },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "מידת ההסקה שהמודל מבצע לפני הציור. רמות גבוהות יותר משפרות את רמת הפירוט וצורכות יותר אסימונים. בשימוש רק במודלי Arrow 2."
       },
       "reference_images": {
         "name": "reference_images",
@@ -19075,7 +19164,7 @@
       },
       "model": {
         "name": "מודל",
-        "tooltip": "המודל לשימוש ביצירה. המודלים recraftv4_styles מיועדים ליצירה עקבית מבחינת סגנון ותמיד דורשים style_id או style_references."
+        "tooltip": "המודל שישמש ליצירה. המודלים recraftv4_styles מיועדים ליצירה עקבית מבחינת סגנון ותמיד מחייבים style_id או style_references; ‏recraftv4_1_flash הוא המודל המהיר והזול ביותר ואינו תומך בסגנונות כלל."
       },
       "model_size": {
         "name": "גודל"
@@ -23968,6 +24057,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "מחליף את הנחיית המערכת בתבנית הצ'אט של המודל. מתעלמים ממנה כאשר לא נעשה שימוש בתבנית ברירת המחדל."
+      },
       "thinking": {
         "name": "מצב_חשיבה",
         "tooltip": "הפעל במצב חשיבה אם המודל תומך בכך."
@@ -23984,6 +24077,10 @@
     "outputs": {
       "0": {
         "name": "טקסט_שנוצר",
+        "tooltip": null
+      },
+      "1": {
+        "name": "thinking",
         "tooltip": null
       }
     }
@@ -24034,6 +24131,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "מחליף את הנחיית המערכת בתבנית הצ'אט של המודל. מתעלמים ממנה כאשר לא נעשה שימוש בתבנית ברירת המחדל."
+      },
       "thinking": {
         "name": "מצב חשיבה",
         "tooltip": "הפעל במצב חשיבה אם המודל תומך בכך."
@@ -24050,6 +24151,10 @@
     "outputs": {
       "0": {
         "name": "טקסט שנוצר",
+        "tooltip": null
+      },
+      "1": {
+        "name": "thinking",
         "tooltip": null
       }
     }

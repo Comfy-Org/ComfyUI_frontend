@@ -8,14 +8,6 @@
  * types promoted together, subgraph-instance id collisions, several
  * instances of one definition in a single op, and coexistence with a
  * pre-existing instance.
- *
- * NOTE: an interior node that is ITSELF a subgraph instance (a subgraph
- * nested inside another subgraph, as opposed to two sibling definitions)
- * does not currently materialize through this pipeline — its `type` still
- * names the un-remapped blueprint definition id, which nothing registers on
- * the live side, so it falls back to a plain, widget-less node. That gap is
- * outside this PR's fix scope; it is called out in the PR description as a
- * follow-up rather than silently asserted around.
  */
 import { applyOps, mint } from '@comfyorg/comfy-multi-player'
 import type {
@@ -652,5 +644,62 @@ describe('insert_workflow materializes subgraphs correctly', () => {
     expect(promotedWidgetValues(instance)).toEqual({
       enabled: true
     })
+  })
+
+  it('materializes a subgraph instance nested inside another subgraph, with its widget visible', () => {
+    const graph = new LGraph()
+    onTestFinished(enableSubgraphNodeCreation(graph))
+
+    const blueprintGraph = new LGraph()
+    const subgraphB = createTestSubgraph({
+      rootGraph: blueprintGraph,
+      inputs: [{ name: 'value', type: 'NUMBER' }]
+    })
+    blueprintGraph.subgraphs.set(subgraphB.id, subgraphB)
+    const leafB = LiteGraph.createNode('number-widget')
+    if (!leafB) throw new Error('Failed to create number-widget node')
+    leafB.id = toNodeId(90)
+    subgraphB.add(leafB)
+    subgraphB.inputNode.slots[0].connect(leafB.inputs[0], leafB)
+
+    const subgraphA = createTestSubgraph({ rootGraph: blueprintGraph })
+    blueprintGraph.subgraphs.set(subgraphA.id, subgraphA)
+    const interiorHostB = createTestSubgraphNode(subgraphB, {
+      parentGraph: subgraphA,
+      id: 91
+    })
+    interiorHostB.widgets[0].value = 42
+    subgraphA.add(interiorHostB)
+
+    const hostA = createTestSubgraphNode(subgraphA, { id: 1 })
+    blueprintGraph.add(hostA)
+
+    const workflow = serializeBlueprint(blueprintGraph)
+    expect(workflow.definitions?.subgraphs).toHaveLength(2)
+
+    const hostDoc = mint({ nodes: [], links: [] }, CATALOG)
+    onTestFinished(() => hostDoc.destroy())
+    const op = insertOp(workflow)
+    expect(applyOps(hostDoc, [op], CATALOG).outcomes).toEqual([
+      { op_id: op.op_id, outcome: 'applied' }
+    ])
+
+    const deliver = bindProjection('wf-nested-subgraph-instance', graph)
+    expect(deliver(Y.encodeStateAsUpdate(hostDoc), [op.op_id])).toBe(true)
+
+    const rootInstances = findSubgraphInstances(graph)
+    expect(rootInstances).toHaveLength(1)
+    const [rootInstance] = rootInstances
+
+    const interiorInstances = rootInstance.subgraph.nodes.filter(
+      (node): node is SubgraphNode => node instanceof SubgraphNode
+    )
+    expect(interiorInstances).toHaveLength(1)
+    const [interiorInstance] = interiorInstances
+    expect(interiorInstance.has_errors).not.toBe(true)
+    expect(interiorInstance.widgets.map((widget) => widget.name)).toEqual([
+      'value'
+    ])
+    expect(interiorInstance.widgets[0]?.value).toBe(42)
   })
 })

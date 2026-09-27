@@ -269,6 +269,7 @@
 
   --palette-interface-panel-box-shadow: 1px 1px 8px 0 rgb(0 0 0 / 0.4);
   --palette-interface-panel-drop-shadow: 1px 1px 4px rgb(0 0 0 / 0.4);
+  --palette-interface-floating-panel-shadow: 0 2px 16px 0 rgb(0 0 0 / 0.5);
   --palette-interface-panel-hover-surface: color-mix(
     in srgb,
     var(--interface-panel-surface) 92.5%,
@@ -579,6 +580,14 @@
   .dark-theme & {
     @slot;
   }
+}
+
+@utility floating-panel {
+  border-radius: var(--radius-xl);
+  padding: --spacing(1);
+  background-color: var(--color-interface-panel-surface);
+  box-shadow:
+    var(--shadow-inset-highlight), var(--interface-floating-panel-shadow);
 }
 
 @utility highlight {

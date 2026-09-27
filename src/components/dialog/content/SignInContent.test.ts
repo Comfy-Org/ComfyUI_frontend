@@ -1,6 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -16,11 +15,7 @@ vi.mock(import('@/utils/hostWhitelist'), () => ({
   isHostWhitelisted: () => true,
   normalizeHost: (host: string) => host
 }))
-vi.mock<unknown>(import('@/platform/remoteConfig/remoteConfig'), () => ({
-  remoteConfig: ref({}),
-  configValueOrDefault: (_config: unknown, _key: string, fallback: string) =>
-    fallback
-}))
+vi.mock(import('@/platform/remoteConfig/remoteConfig'))
 
 const inChina = vi.hoisted(() => ({
   value: false,

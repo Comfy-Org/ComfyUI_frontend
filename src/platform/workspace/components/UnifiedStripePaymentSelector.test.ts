@@ -1,25 +1,20 @@
 import { cleanup, render, screen } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { StripePaymentPhase } from '@comfyorg/account-ui/billing/stripe'
 
-import type { CheckoutJourneyTelemetryEvent } from '@/platform/telemetry/types'
+import { useTelemetry } from '@/platform/telemetry'
 import {
   clearCheckoutJourney,
   resolveCheckoutJourney
 } from '@/platform/workspace/utils/checkoutJourney'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
 import UnifiedStripePaymentSelector from './UnifiedStripePaymentSelector.vue'
 
-const mockTrackCheckoutJourneyEvent = vi.hoisted(() =>
-  vi.fn<(event: CheckoutJourneyTelemetryEvent) => void>()
-)
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackCheckoutJourneyEvent: mockTrackCheckoutJourneyEvent
-  })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 /**
  * The provider work is covered in the package, against the real Stripe mocks.
@@ -40,7 +35,8 @@ vi.mock<unknown>(import('@comfyorg/account-ui/billing/stripe'), () => ({
       paymentMethodConfigurationId: { type: String, default: '' },
       isLoading: { type: Boolean, default: false },
       verificationPending: { type: Boolean, default: false },
-      canSubmit: { type: Boolean, default: true }
+      canSubmit: { type: Boolean, default: true },
+      themeKey: { type: String, default: '' }
     },
     emits: ['confirm', 'submittingChange', 'phase'],
     setup(
@@ -101,7 +97,6 @@ describe('UnifiedStripePaymentSelector', () => {
   beforeEach(() => {
     sessionStorage.clear()
     clearCheckoutJourney()
-    mockTrackCheckoutJourneyEvent.mockClear()
     vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', 'pk_test_example')
   })
 
@@ -119,6 +114,16 @@ describe('UnifiedStripePaymentSelector', () => {
       unavailable: 'Stripe is unavailable',
       genericError: 'Error'
     })
+  })
+
+  it('re-keys the form theme when the active colour palette changes', async () => {
+    renderSelector()
+    const colorPaletteStore = useColorPaletteStore()
+
+    colorPaletteStore.activePaletteId = 'light'
+    await nextTick()
+
+    expect(formProps.value.themeKey).toBe('light')
   })
 
   it('renders the pay action into the form through the submit slot', () => {
@@ -145,7 +150,7 @@ describe('UnifiedStripePaymentSelector', () => {
 
     reportPhase({ phase: 'payment_element_ready', element: 'payment' })
 
-    expect(mockTrackCheckoutJourneyEvent).toHaveBeenCalledWith(
+    expect(useTelemetry()?.trackCheckoutJourneyEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         checkout_journey_id:
           seeded.status === 'active' ? seeded.record.journey_id : '',
@@ -161,6 +166,6 @@ describe('UnifiedStripePaymentSelector', () => {
 
     reportPhase({ phase: 'payment_submit_attempted' })
 
-    expect(mockTrackCheckoutJourneyEvent).not.toHaveBeenCalled()
+    expect(useTelemetry()?.trackCheckoutJourneyEvent).not.toHaveBeenCalled()
   })
 })
