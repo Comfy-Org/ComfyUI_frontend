@@ -217,7 +217,8 @@
       "NO_ACTIVE_SUBSCRIPTION": "There is no active subscription to change.",
       "REACTIVATION_CONFIRMATION_REQUIRED": "Confirm the reactivation charge before continuing.",
       "CONFLICTING_PAYMENT_METHOD": "That request named two payment methods; choose one.",
-      "MISSING_PAYMENT_METHOD_URL": "The billing service asked for a payment step but didn't say where."
+      "MISSING_PAYMENT_METHOD_URL": "The billing service asked for a payment step but didn't say where.",
+      "OPERATION_ALREADY_PENDING": "A payment you started earlier is still going through. It has to finish before you can choose a different plan."
     },
     "tier": {
       "unknown": "Plan",
