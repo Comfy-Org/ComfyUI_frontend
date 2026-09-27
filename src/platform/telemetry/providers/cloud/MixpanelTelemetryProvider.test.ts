@@ -1,4 +1,10 @@
+import { getActivePinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import {
+  markStoresPending,
+  markStoresReady
+} from '@/platform/telemetry/storeReadiness'
 
 const mockMixpanel = vi.hoisted(() => ({
   init: vi.fn(),
@@ -256,13 +262,33 @@ describe('MixpanelTelemetryProvider — with configured token', () => {
     new MixpanelTelemetryProvider()
     await waitForMixpanelInit()
 
-    expect(mockOnUserResolved).toHaveBeenCalled()
+    await vi.waitFor(() => expect(mockOnUserResolved).toHaveBeenCalled())
     const callback = mockOnUserResolved.mock.calls[0]?.[0] as (user: {
       id?: string
     }) => void
     callback({ id: 'user-42' })
 
     expect(mockMixpanel.identify).toHaveBeenCalledWith('user-42')
+  })
+
+  it('defers user identification until stores are ready', async () => {
+    const pinia = getActivePinia()
+    setActivePinia(undefined)
+    markStoresPending()
+    try {
+      new MixpanelTelemetryProvider()
+      await waitForMixpanelInit()
+      await Promise.resolve()
+
+      expect(mockOnUserResolved).not.toHaveBeenCalled()
+
+      markStoresReady()
+
+      await vi.waitFor(() => expect(mockOnUserResolved).toHaveBeenCalled())
+    } finally {
+      markStoresReady()
+      setActivePinia(pinia)
+    }
   })
 })
 
