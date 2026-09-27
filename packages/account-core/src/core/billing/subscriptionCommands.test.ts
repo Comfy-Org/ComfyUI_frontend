@@ -316,6 +316,40 @@ describe('createBillingCommands', () => {
       expect(h.lifecycle.getSnapshot()).toEqual([])
     })
 
+    it.for([
+      {
+        name: 'cancel',
+        route: POST_CANCEL,
+        run: (h: ReturnType<typeof harness>) => h.commands.cancelSubscription()
+      },
+      {
+        name: 'resubscribe',
+        route: POST_RESUBSCRIBE,
+        run: (h: ReturnType<typeof harness>) => h.commands.resubscribe()
+      },
+      {
+        name: 'subscribe',
+        route: POST_SUBSCRIBE,
+        run: (h: ReturnType<typeof harness>) => h.commands.subscribe(PLAN)
+      }
+    ])(
+      'PRO active: $name refused while a plan change is in progress is OPERATION_ALREADY_PENDING',
+      async ({ route, run }) => {
+        const h = harness({
+          status: PRO_ACTIVE,
+          script: {
+            [route]: [serverError(400, 'SUBSCRIPTION_CHANGE_IN_PROGRESS')]
+          }
+        })
+
+        await expect(run(h)).resolves.toMatchObject({
+          status: 'error',
+          code: 'OPERATION_ALREADY_PENDING'
+        })
+        expect(h.invalidate).not.toHaveBeenCalled()
+      }
+    )
+
     it('PRO active: subscribe issues the plan change the server has to price', async () => {
       const h = harness({
         status: PRO_ACTIVE,
