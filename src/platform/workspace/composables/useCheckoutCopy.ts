@@ -98,6 +98,24 @@ export function useCheckoutCopy() {
         'subscription.preview.reactivation.durationChangeBodyMonthly',
         reactivationTokens
       ),
+      withoutRenewalDate: {
+        upgradeBody: t(
+          'subscription.preview.reactivation.withoutRenewalDate.upgradeBody',
+          reactivationTokens
+        ),
+        downgradeBody: t(
+          'subscription.preview.reactivation.withoutRenewalDate.downgradeBody',
+          reactivationTokens
+        ),
+        durationChangeBody: t(
+          'subscription.preview.reactivation.withoutRenewalDate.durationChangeBody',
+          reactivationTokens
+        ),
+        durationChangeBodyMonthly: t(
+          'subscription.preview.reactivation.withoutRenewalDate.durationChangeBodyMonthly',
+          reactivationTokens
+        )
+      },
       confirmButton: t('subscription.preview.reactivation.confirmButton'),
       confirmButtonWithCharge: (amount) =>
         t('subscription.preview.reactivation.confirmButtonWithCharge', {

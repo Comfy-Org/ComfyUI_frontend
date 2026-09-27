@@ -82,6 +82,24 @@ export function useCheckoutCopy() {
         'reactivation.durationChangeBodyMonthly',
         reactivationTokens
       ),
+      withoutRenewalDate: {
+        upgradeBody: preview(
+          'reactivation.withoutRenewalDate.upgradeBody',
+          reactivationTokens
+        ),
+        downgradeBody: preview(
+          'reactivation.withoutRenewalDate.downgradeBody',
+          reactivationTokens
+        ),
+        durationChangeBody: preview(
+          'reactivation.withoutRenewalDate.durationChangeBody',
+          reactivationTokens
+        ),
+        durationChangeBodyMonthly: preview(
+          'reactivation.withoutRenewalDate.durationChangeBodyMonthly',
+          reactivationTokens
+        )
+      },
       confirmButton: preview('reactivation.confirmButton'),
       confirmButtonWithCharge: (amount) =>
         preview('reactivation.confirmButtonWithCharge', { amount }),
