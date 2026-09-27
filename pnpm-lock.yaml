@@ -493,6 +493,9 @@ overrides:
   brace-expansion@^5.0.0: ^5.0.9
   sharp@^0.34.0: ^0.35.0
 
+patchedDependencies:
+  '@total-typescript/shoehorn@0.1.2': 8860f8e380c137bc50b1976516d562675229ce1e5b436bb48c7daf65a3dbec15
+
 importers:
 
   .:
@@ -758,7 +761,7 @@ importers:
         version: 8.1.0(@vue/compiler-dom@3.5.42)(@vue/compiler-sfc@3.5.41)(@vue/server-renderer@3.5.42)(vue@3.5.42(typescript@6.0.3))
       '@total-typescript/shoehorn':
         specifier: 'catalog:'
-        version: 0.1.2
+        version: 0.1.2(patch_hash=8860f8e380c137bc50b1976516d562675229ce1e5b436bb48c7daf65a3dbec15)
       '@types/fs-extra':
         specifier: 'catalog:'
         version: 11.0.4
@@ -1177,7 +1180,7 @@ importers:
         version: 8.1.0(@vue/compiler-dom@3.5.42)(@vue/compiler-sfc@3.5.41)(@vue/server-renderer@3.5.42)(vue@3.5.42(typescript@6.0.3))
       '@total-typescript/shoehorn':
         specifier: 'catalog:'
-        version: 0.1.2
+        version: 0.1.2(patch_hash=8860f8e380c137bc50b1976516d562675229ce1e5b436bb48c7daf65a3dbec15)
       '@types/leaflet':
         specifier: 'catalog:'
         version: 1.9.22
@@ -12961,7 +12964,7 @@ snapshots:
       esm-env: 1.2.2
       tmcp: 1.19.4(typescript@6.0.3)
 
-  '@total-typescript/shoehorn@0.1.2': {}
+  '@total-typescript/shoehorn@0.1.2(patch_hash=8860f8e380c137bc50b1976516d562675229ce1e5b436bb48c7daf65a3dbec15)': {}
 
   '@tweenjs/tween.js@23.1.3': {}
 
