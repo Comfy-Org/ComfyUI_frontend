@@ -13,6 +13,7 @@ import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
 import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
+import { recordOpenedUrl } from '@e2e/fixtures/utils/recordOpenedUrl'
 import {
   mockWorkspaceTokenMint,
   workspace
@@ -244,12 +245,7 @@ async function openPlanAndCredits(page: Page) {
 
 test.describe('Credits tile (Plan & Credits)', { tag: '@cloud' }, () => {
   test.beforeEach(async ({ page }) => {
-    await page.addInitScript(() => {
-      window.open = (url) => {
-        document.documentElement.dataset.openedUrl = String(url)
-        return window
-      }
-    })
+    await recordOpenedUrl(page)
   })
 
   test('opens Billing & invoices for a paid owner without a duplicate invoice link', async ({

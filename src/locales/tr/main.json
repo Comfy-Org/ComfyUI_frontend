@@ -2223,8 +2223,10 @@
     "star": "Yıldız"
   },
   "imageCompare": {
+    "afterAlt": "Sonraki görüntü",
     "batchLabelA": "A:",
     "batchLabelB": "B:",
+    "beforeAlt": "Önceki görüntü",
     "noImages": "Karşılaştırılacak görsel yok"
   },
   "imageCrop": {
@@ -4809,6 +4811,7 @@
     },
     "clearAllFilters": "Tüm filtreleri temizle",
     "error": {
+      "loading": "Şablon açılamadı. Lütfen tekrar deneyin.",
       "templateNotFound": "\"{templateName}\" şablonu bulunamadı"
     },
     "filtersApplied": "{count} filtre uygulandı | {count} filtre uygulandı",
@@ -5089,6 +5092,7 @@
   },
   "workspace": {
     "addedToWorkspace": "Şu çalışma alanına eklendiniz:",
+    "deepLinkStayed": "Bu çalışma alanı açılamadı. Hâlâ {workspaceName} içindesiniz.",
     "inviteAccepted": "Davet kabul edildi",
     "inviteFailed": "Davet kabul edilemedi",
     "switchFailed": "Çalışma alanı değiştirilemedi. Lütfen tekrar deneyin.",

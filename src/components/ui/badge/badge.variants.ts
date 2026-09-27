@@ -2,7 +2,7 @@ import type { VariantProps } from 'cva'
 import { cva } from 'cva'
 
 export const badgeVariants = cva({
-  base: 'inline-flex shrink-0 items-center justify-center gap-1 whitespace-nowrap font-medium',
+  base: 'inline-flex shrink-0 items-center justify-center gap-1 font-medium whitespace-nowrap',
   variants: {
     variant: {
       tag: 'rounded-md px-2 py-1 text-sm font-bold',

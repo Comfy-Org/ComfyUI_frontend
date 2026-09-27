@@ -1,15 +1,18 @@
 import { expect } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import { promptHistoryTest as test } from '@e2e/fixtures/agentPromptHistoryFixture'
 
 // PM-679: the transcript must survive a browser refresh with its content and
 // order intact. `promptHistory` mocks `/api/agent/threads*` statefully (POST
 // appends rows an in-memory array, GET replays it), so a `page.reload()` here
 // exercises the real client path: `useAgentSession.start()` reads the
-// persisted `Comfy.Agent.ThreadId` from localStorage and calls
+// persisted workspace-scoped thread ID from localStorage and calls
 // `hydrateFromServer`, which re-fetches this same history and replays it
 // through `agentConversationStore.hydrate()`.
+const THREAD_KEY = StorageKeys.agentThread('personal')
+
 test.describe.configure({ timeout: 120_000 })
 test.use({ connectWebSocketToServer: false })
 
@@ -80,19 +83,20 @@ test(
       .getByTestId('user-message-bubble')
       .allTextContents()
     const historyReadsBeforeReload = promptHistory.historyReads()
-    const persistedThreadId = await page.evaluate(() =>
-      localStorage.getItem('Comfy.Agent.ThreadId')
+    const persistedThreadId = await page.evaluate(
+      (threadKey) => localStorage.getItem(threadKey),
+      THREAD_KEY
     )
     expect(persistedThreadId).not.toBeNull()
 
     await page.reload()
+    await expect(
+      page.getByTestId('integrated-tab-bar-actions')
+    ).toHaveAttribute('data-agent-gate-settled', 'true', { timeout: 30_000 })
     await expect
       .poll(() => promptHistory.historyReads())
       .toBeGreaterThan(historyReadsBeforeReload)
     expect(promptHistory.historyRequestThreadIds.at(-1)).toBe(persistedThreadId)
-    await expect(
-      page.getByTestId('integrated-tab-bar-actions')
-    ).toHaveAttribute('data-agent-gate-settled', 'true', { timeout: 30_000 })
     const reopenedPanel = page.locator('#agent-panel-root')
     await expect(reopenedPanel).toBeVisible({ timeout: 30_000 })
     await expect(

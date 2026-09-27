@@ -1,4 +1,4 @@
-import type { IContextMenuValue } from '@/lib/litegraph/src/litegraph'
+import type { IContextMenuValue, LGraph } from '@/lib/litegraph/src/litegraph'
 import {
   LGraphCanvas,
   LGraphNode,
@@ -74,44 +74,15 @@ app.registerExtension({
           }
         }
 
-        // Find root input
-        let currentNode: RerouteNode | null = this
-        const updateNodes: RerouteNode[] = []
-        let inputType = null
-        let inputNode = null
-        while (currentNode) {
-          updateNodes.unshift(currentNode)
-          if (currentNode.isInputConnected(0)) {
-            const link = currentNode.getInputLink(0)
-            if (!link) return
-            const node = graph.getNodeById(link.origin_id)
-            if (!node) return
-            if (node instanceof RerouteNode) {
-              if (node === this) {
-                // We've found a circle
-                currentNode.disconnectInput(link.target_slot)
-                currentNode = null
-              } else {
-                // Move the previous node
-                currentNode = node
-              }
-            } else {
-              // We've found the end
-              inputNode = currentNode
-              inputType = node.outputs[link.origin_slot]?.type ?? null
-              break
-            }
-          } else {
-            // This path has no input node
-            break
-          }
-        }
+        const rootInput = findRootInput(this, graph)
+        if (!rootInput) return
+        const { updateNodes, inputNode, inputType } = rootInput
 
         // Find all outputs
         const nodes: RerouteNode[] = [this]
         let outputType = null
         while (nodes.length) {
-          currentNode = nodes.pop()!
+          const currentNode = nodes.pop()!
           for (const link of outputLinks(graph, currentNode.id, 0)) {
             const node = graph.getNodeById(link.target_id)
             if (!node) continue
@@ -261,6 +232,34 @@ app.registerExtension({
     RerouteNode.setDefaultTextVisibility(
       !!localStorage['Comfy.RerouteNode.DefaultVisibility']
     )
+
+    function findRootInput(start: RerouteNode, graph: LGraph) {
+      const updateNodes: RerouteNode[] = [start]
+      let currentNode = start
+      let inputType: ISlotType | null = null
+      let inputNode: RerouteNode | null = null
+      while (currentNode.isInputConnected(0)) {
+        const link = currentNode.getInputLink(0)
+        if (!link) return null
+        const node = graph.getNodeById(link.origin_id)
+        if (!node) return null
+        if (!(node instanceof RerouteNode)) {
+          // We've found the end
+          inputNode = currentNode
+          inputType = node.outputs[link.origin_slot]?.type ?? null
+          break
+        }
+        if (node === start) {
+          // We've found a circle
+          currentNode.disconnectInput(link.target_slot)
+          break
+        }
+        // Move the previous node
+        updateNodes.unshift(node)
+        currentNode = node
+      }
+      return { updateNodes, inputNode, inputType }
+    }
 
     LiteGraph.registerNodeType(
       'Reroute',

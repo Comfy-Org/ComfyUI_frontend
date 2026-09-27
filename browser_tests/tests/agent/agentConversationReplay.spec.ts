@@ -3,6 +3,7 @@ import { expect } from '@playwright/test'
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import { listRecordedConversations } from '@e2e/fixtures/data/agent/agentConversation'
 import { toNodeId } from '@/types/nodeId'
+import { assetPath } from '@e2e/fixtures/utils/paths'
 
 import {
   BYTEDANCE_REFERENCE_NODE_TYPE,
@@ -15,6 +16,11 @@ import { wireAndReopen } from '@e2e/fixtures/utils/minimaxAutogrowReload'
 const WIRING_CASE = 'agent-rec-two-turn-dependent-edit'
 const WIDGET_CASE = 'agent-rec-set-widget-existing'
 
+// Synthesized (not a cloud capture, see the fixture's `source.note`), so it
+// lives under conversations/repro/ rather than conversations/ and is
+// deliberately absent from listRecordedConversations() below.
+const ASSET_GRID_CASE = 'repro/pm-1135-asset-grid-fragmentation'
+
 test.describe(
   'Agent conversation replay',
   { tag: ['@cloud', '@vue-nodes'] },
@@ -22,6 +28,9 @@ test.describe(
     test.describe('wire evidence', () => {
       test.use({ conversationCase: WIRING_CASE })
 
+      // The second turn's only edit is a connect, so what the canvas shows after
+      // it is the wire itself: the app's own render loop paints it, and the
+      // expectation is the picture, not a reconstruction of the renderer.
       test('paints the wire the second turn connects @screenshot', async ({
         agentConversation,
         page
@@ -34,6 +43,39 @@ test.describe(
           { mask: [agentConversation.panel] }
         )
       })
+    })
+
+    test.describe(`recorded ${ASSET_GRID_CASE}`, () => {
+      test.use({ conversationCase: ASSET_GRID_CASE })
+
+      test(
+        'PM-1135: a captioned batch reply keeps each caption paired with its own asset, even when a tool call splits it across two message deltas, see linear.app/comfyorg/issue/PM-1135',
+        { tag: ['@screenshot'] },
+        async ({ agentConversation, page }) => {
+          test.setTimeout(90_000)
+          await page.route(
+            'https://assets.example/outputs/render_a.png',
+            (route) =>
+              route.fulfill({ path: assetPath('agent/asset-grid-repro-a.png') })
+          )
+          await page.route(
+            'https://assets.example/outputs/render_b.png',
+            (route) =>
+              route.fulfill({ path: assetPath('agent/asset-grid-repro-b.png') })
+          )
+
+          await agentConversation.runTurns()
+
+          const images = agentConversation.panel.getByRole('img', {
+            name: /^render_[ab]\.png$/
+          })
+          await expect(images).toHaveCount(2)
+
+          await expect(agentConversation.panel).toHaveScreenshot(
+            'asset-grid-fragmentation.png'
+          )
+        }
+      )
     })
 
     test.describe('live widget effects', () => {
@@ -67,6 +109,76 @@ test.describe(
         await sampler.click()
         await expect(page.getByRole('option', { name: 'heun' })).toBeVisible()
         await expect(sampler).not.toHaveAttribute('aria-invalid')
+      })
+    })
+
+    test.describe('remote apply acceptance', () => {
+      test.describe('manual title', () => {
+        test.use({ conversationCase: 'agent-rec-clarifying-question' })
+
+        test('keeps a manual rename across an unrelated agent widget update', async ({
+          agentConversation
+        }) => {
+          test.setTimeout(90_000)
+          const customTitle = 'My renamed sampler'
+
+          await agentConversation.sendPrompt(0)
+          await agentConversation.replayResponse(0)
+          await agentConversation.waitForTurnComplete()
+          const sampler =
+            await agentConversation.vueNodes.getFixtureByTitle('KSampler')
+          await sampler.setTitle(customTitle)
+          await expect(sampler.title).toHaveText(customTitle)
+
+          await agentConversation.sendPrompt(1)
+          await agentConversation.replayResponse(1)
+          await agentConversation.waitForTurnComplete()
+
+          await expect(sampler.title).toHaveText(customTitle)
+        })
+      })
+
+      test.describe('active widget edit', () => {
+        test.use({
+          conversationCase: 'agent-rec-replace-prompt-encoder',
+          humanOpsHost: 'apply'
+        })
+
+        test('keeps prompt keystrokes when a doc frame resyncs the widget', async ({
+          agentConversation
+        }) => {
+          test.setTimeout(60_000)
+          const nodeId = '4181654812796082'
+          const appended = ' at sunset, golden hour, cinematic lighting'
+          await agentConversation.runTurns()
+          await expect(
+            agentConversation.resyncWidget(nodeId, 'missing-widget')
+          ).rejects.toThrow(
+            `Host widget ${nodeId}.missing-widget does not exist`
+          )
+
+          const field = agentConversation.vueNodes
+            .getNodeLocator(nodeId)
+            .getByLabel('text', { exact: true })
+          await expect(field).toHaveValue('a photo of a pier')
+          await field.click()
+          await field.press('End')
+          await field.pressSequentially(appended.slice(0, 5), { delay: 20 })
+
+          const typing = field.pressSequentially(appended.slice(5), {
+            delay: 20
+          })
+          const resync = agentConversation.resyncWidget(nodeId, 'text')
+          await typing
+          await resync
+
+          // PM-1191/PM-1697: the resync's whole-value set_widget is stale by
+          // however many keystrokes were in flight when the host built it.
+          // The local-dirty guard on the incremental setWidget path
+          // (graphMutations.ts) now skips it, so the typed text survives
+          // regardless of where the resync interleaves with the keystrokes.
+          await expect(field).toHaveValue(`a photo of a pier${appended}`)
+        })
       })
     })
 

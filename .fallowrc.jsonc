@@ -7,13 +7,17 @@
   "entry": [
     "src/main.ts",
     "src/**/__mocks__/**/*.ts",
+    "apps/website/src/**/__mocks__/**/*.ts",
     "index.html",
     "scripts/**/*.{js,ts}",
     "apps/website/src/scripts/**/*.ts",
     // Astro injects these routes when WORKSHOP_IN_BUILD is enabled.
     "apps/website/src/routes/models/*.{astro,ts}",
     "**/.storybook/{main,preview}.ts",
-    "packages/ingest-types/openapi-ts.config.ts"
+    "packages/ingest-types/openapi-ts.config.ts",
+    // Playwright loads these by path string from playwright.config.ts, so the
+    // reference is not in the import graph.
+    "browser_tests/global{Setup,Teardown}.ts"
   ],
 
   "ignorePatterns": [

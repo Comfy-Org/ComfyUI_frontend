@@ -8,12 +8,7 @@ import { useWorkflowActionsService } from './workflowActionsService'
 
 vi.mock(import('@/services/dialogService'))
 
-vi.mock<unknown>(
-  import('@/platform/workflow/core/services/workflowService'),
-  () => ({
-    useWorkflowService: () => ({ openWorkflow: vi.fn() })
-  })
-)
+vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
 const minimalWorkflow: ComfyWorkflowJSON = {
   version: 0.4,

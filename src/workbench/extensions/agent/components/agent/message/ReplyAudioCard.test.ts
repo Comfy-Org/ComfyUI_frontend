@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { i18n } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { api } from '@/scripts/api'
 
 import type { ReplyAsset } from '../../../utils/replyAssets'
 import ReplyAudioCard from './ReplyAudioCard.vue'
@@ -12,15 +13,7 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
 }))
 
-const fetchApi = vi.hoisted(() =>
-  vi.fn(async () => new Response(new Blob(['x'])))
-)
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    apiURL: (route: string) => `http://x/api${route}`,
-    fetchApi
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 const isAssetPreviewSupported = vi.hoisted(() => vi.fn(() => false))
 const findOutputAsset = vi.hoisted(() =>
@@ -56,7 +49,10 @@ describe('ReplyAudioCard', () => {
   let anchorClick: ReturnType<typeof vi.spyOn>
 
   beforeEach(() => {
-    fetchApi.mockReset().mockResolvedValue(new Response(new Blob(['x'])))
+    vi.mocked(api.apiURL).mockImplementation((route) => `http://x/api${route}`)
+    vi.mocked(api.fetchApi)
+      .mockReset()
+      .mockResolvedValue(new Response(new Blob(['x'])))
     vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:mock')
     vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
     anchorClick = vi
@@ -71,7 +67,7 @@ describe('ReplyAudioCard', () => {
 
     expect(screen.getByText('qa_audio_opus_00001')).toBeInTheDocument()
     expect(screen.getByText('0:00 / 0:00')).toBeInTheDocument()
-    expect(fetchApi).not.toHaveBeenCalled()
+    expect(api.fetchApi).not.toHaveBeenCalled()
   })
 
   it('starts playback from the play button', async () => {
@@ -119,13 +115,13 @@ describe('ReplyAudioCard', () => {
 
     await waitFor(() => expect(anchorClick).toHaveBeenCalledOnce())
     expect(anchorClick.mock.instances[0].download).toBe('song.mp3')
-    expect(fetchApi).toHaveBeenCalledWith('/view?filename=song.mp3')
+    expect(api.fetchApi).toHaveBeenCalledWith('/view?filename=song.mp3')
   })
 
   it('downloads under the resolved display name instead of the hash', async () => {
     isAssetPreviewSupported.mockReturnValue(true)
     findOutputAsset.mockResolvedValue({ name: 'qa_audio_mp3_00001' })
-    fetchApi.mockResolvedValue(
+    vi.mocked(api.fetchApi).mockResolvedValue(
       new Response(new Blob(['x']), {
         headers: {
           'Content-Disposition': 'attachment; filename="storage-hash.mp3"'
@@ -144,7 +140,7 @@ describe('ReplyAudioCard', () => {
   })
 
   it('reports a rejected download and allows retry', async () => {
-    fetchApi
+    vi.mocked(api.fetchApi)
       .mockRejectedValueOnce(new Error('network unavailable'))
       .mockResolvedValueOnce(new Response(new Blob(['retry'])))
     renderCard()
@@ -163,7 +159,7 @@ describe('ReplyAudioCard', () => {
 
     await userEvent.click(download)
 
-    await waitFor(() => expect(fetchApi).toHaveBeenCalledTimes(2))
+    await waitFor(() => expect(api.fetchApi).toHaveBeenCalledTimes(2))
     expect(anchorClick).toHaveBeenCalledOnce()
   })
 })

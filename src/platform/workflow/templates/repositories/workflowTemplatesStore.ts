@@ -30,6 +30,41 @@ interface EnhancedTemplate extends TemplateInfo {
 export const useWorkflowTemplatesStore = defineStore(
   'workflowTemplates',
   () => {
+    const activeTemplateLoad = shallowRef<{
+      id: string
+      controller: AbortController
+      phase: 'preparing' | 'loading'
+    } | null>(null)
+    const loadingTemplateId = computed(
+      () => activeTemplateLoad.value?.id ?? null
+    )
+
+    function startTemplateLoad(id: string) {
+      if (activeTemplateLoad.value?.phase === 'loading') return
+      activeTemplateLoad.value?.controller.abort()
+      const controller = new AbortController()
+      activeTemplateLoad.value = { id, controller, phase: 'preparing' }
+      return controller
+    }
+
+    function startTemplateGraphLoad(controller: AbortController) {
+      const load = activeTemplateLoad.value
+      if (load?.controller !== controller) return false
+      activeTemplateLoad.value = { ...load, phase: 'loading' }
+      return true
+    }
+
+    function finishTemplateLoad(controller: AbortController) {
+      if (activeTemplateLoad.value?.controller === controller)
+        activeTemplateLoad.value = null
+    }
+
+    function cancelTemplateLoad(controller: AbortController | undefined) {
+      const load = activeTemplateLoad.value
+      if (load?.controller !== controller || load?.phase !== 'preparing') return
+      load.controller.abort()
+      activeTemplateLoad.value = null
+    }
     const customTemplates = shallowRef<{ [moduleName: string]: string[] }>({})
     const coreTemplates = shallowRef<WorkflowTemplates[]>([])
     const englishTemplates = shallowRef<WorkflowTemplates[]>([])
@@ -581,6 +616,11 @@ export const useWorkflowTemplatesStore = defineStore(
       filterTemplatesByCategory,
       isLoaded,
       loadWorkflowTemplates,
+      loadingTemplateId,
+      startTemplateLoad,
+      startTemplateGraphLoad,
+      finishTemplateLoad,
+      cancelTemplateLoad,
       knownTemplateNames,
       getTemplateByName,
       getEnglishMetadata,

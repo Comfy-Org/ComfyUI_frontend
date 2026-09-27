@@ -355,7 +355,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
                 "
                 @pointerdown.stop
               >
-                <i class="bg-text-foreground icon-[lucide--check] size-full" />
+                <i class="icon-[lucide--check] size-full bg-base-foreground" />
               </div>
               <div
                 v-else

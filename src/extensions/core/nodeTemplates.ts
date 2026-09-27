@@ -323,9 +323,8 @@ class ManageTemplates extends ComfyDialog {
                       this.templates.splice(item.dataset.id * 1, 1)
                       void this.store()
                       // update the rows index, setTimeout ensures that the list is updated
-                      const that = this
-                      setTimeout(function () {
-                        that.element
+                      setTimeout(() => {
+                        this.element
                           .querySelectorAll('.templateManagerRow')
                           // @ts-expect-error fixme ts strict error
                           .forEach((el: HTMLElement, i) => {

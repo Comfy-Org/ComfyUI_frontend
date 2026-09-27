@@ -20,21 +20,7 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: apiMock
 }))
 
-const appMock = vi.hoisted(() => ({
-  ui: {
-    settings: {
-      dispatchChange: vi.fn()
-    }
-  },
-  rootGraph: {
-    events: new EventTarget(),
-    nodes: []
-  }
-}))
-
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: appMock
-}))
+vi.mock(import('@/scripts/app'))
 
 function createSelectedCanvas() {
   const graph = new LGraph()

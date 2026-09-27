@@ -58,7 +58,7 @@ declare module '@/lib/litegraph/src/types/widgets' {
     onRemove?(): void
     beforeQueued?(options?: WidgetCallbackOptions): unknown
     afterQueued?(options?: WidgetCallbackOptions): unknown
-    serializeValue?(node: LGraphNode, index: number): Promise<unknown> | unknown
+    serializeValue?(node: LGraphNode, index: number): unknown
 
     /**
      * Refreshes the widget's value or options from its remote source.

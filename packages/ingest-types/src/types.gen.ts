@@ -280,6 +280,45 @@ export type WorkflowApiAssetsRequest = {
 }
 
 /**
+ * The user a web session belongs to
+ */
+export type WebSessionUser = {
+  email: string
+  /**
+   * The identity provider's verified-email claim when the session was created
+   */
+  email_verified: boolean
+  /**
+   * Comfy user id
+   */
+  id: string
+  name?: string
+  /**
+   * Sign-in method, for example `google.com` or `password`
+   */
+  sign_in_provider?: string
+}
+
+/**
+ * The live web session and the user it belongs to
+ */
+export type WebSessionResponse = {
+  /**
+   * The session ends at this time regardless of use
+   */
+  absolute_expires_at: string
+  /**
+   * Send as `X-CSRF-Token` on requests that change data with this session
+   */
+  csrf_token: string
+  /**
+   * Idle expiry. Real use slides it; reading the session does not.
+   */
+  expires_at: string
+  user: WebSessionUser
+}
+
+/**
  * Result of validating a set of asset operations.
  */
 export type ValidationResult = {
@@ -967,6 +1006,7 @@ export type DocOpsResultFrame = {
 
 export type DocResetData = {
   actor?: string
+  lineage_seq: number
   seq: number
   v: number
   workflow_id: string
@@ -982,6 +1022,11 @@ export type DocResetFrame = {
 
 export type DocUpdateData = {
   actor?: string
+  lineage_seq: number
+  /**
+   * Semantic op IDs whose effects are encoded in this live update. Absent on state-vector catch-up updates, which can fold arbitrary history and have no bounded one-frame op set.
+   */
+  op_ids?: Array<string>
   seq: number
   /**
    * Standard-base64 encoded Yjs update. Host-to-follower only.
@@ -1460,11 +1505,11 @@ export type PreviewSubscribeResponse = {
   new_plan: PreviewPlanInfo
   /**
    * The Stripe payment method configuration governing which payment
-   * methods the embedded checkout offers for this environment. Mount
-   * Stripe Elements with `paymentMethodConfiguration` set to this id
-   * instead of hardcoding payment method types. Present on every
-   * successful preview while embedded checkout is enabled and absent
-   * from legacy previews.
+   * methods a checkout offers for this environment. Mount Stripe
+   * Elements with `paymentMethodConfiguration` set to this id instead
+   * of hardcoding payment method types. Present on every successful
+   * preview whenever the environment has one configured, independent
+   * of embedded_checked_enabled; absent when it is not configured.
    *
    */
   payment_method_configuration_id?: string
@@ -3630,7 +3675,7 @@ export type CreateTopupCheckoutResponse = {
 export type CreateTopupCheckoutRequest = {
   /**
    * Amount to charge in cents, before any promotion code the customer
-   * enters. Whole dollars only, from $5.00 to $4,739.00. The ceiling is
+   * enters. Whole dollars only, from $5.00 to $16,000.00. The ceiling is
    * a fixed business limit (not a Stripe technical constraint) on how
    * much a single unauthenticated-approval session may sell. The
    * credits granted are derived server-side from this amount and
@@ -3744,6 +3789,16 @@ export type ChurnkeyAuthResponse = {
    * Churnkey environment matching the configured app
    */
   mode: 'live' | 'test' | 'sandbox'
+  /**
+   * Stripe subscription a native Churnkey retention offer may apply to.
+   * Present only when the caller is in the native-offer rollout and owns
+   * a Personal workspace on an active paid monthly plan with no billing
+   * change in flight; absent otherwise, and the client then keeps offers
+   * disabled. Present in any mode. Not a signed authorization: the HMAC
+   * covers only the customer ID.
+   *
+   */
+  offer_subscription_id?: string
 }
 
 /**
@@ -4516,7 +4571,11 @@ export type AgentPostMessageRequest = {
    */
   current_tab?: string
   /**
-   * The client's live canvas, sent so the agent operates on what the user currently sees instead of an empty or stale draft. Reuses the {content, version} shape returned by GET /api/agent/draft. Additive — older clients omit it and the agent falls back to the stored draft.
+   * The client's active editor tab has no workflow yet (a fresh, unsaved tab), so it sends neither workflow_id nor current_tab. Without this signal the turn falls back to the thread's remembered workflow and the fresh tab is presented to the model as having no workflow selected. With it, the turn mints a workflow for the tab instead and that workflow is treated as selected. An explicit workflow_id or a resolvable current_tab still wins.
+   */
+  current_tab_unbound?: boolean
+  /**
+   * The client's live canvas, sent so the agent operates on what the user currently sees instead of an empty or stale draft. The canvas is authoritative for this send and carries no version token — the draft version returned by GET /api/agent/draft is a projection-cache snapshot counter, not a concurrency token, so there is no version to reconcile and no 409 on this field. Additive — older clients omit the whole object and the agent falls back to the stored draft.
    */
   draft?: {
     /**
@@ -4525,10 +4584,6 @@ export type AgentPostMessageRequest = {
     content?: {
       [key: string]: unknown
     }
-    /**
-     * The draft version the client last saw; null or 0 on first send. If it does not match the server's current draft version, the server returns 409 with the current version (an agent write landed since the client last saw the draft).
-     */
-    version?: number | null
   }
   /**
    * Snapshot of the client's open editor tabs in editor order. Advisory context, not a grant — entries outside the caller's workspace are ignored. With workflow_references present, only the editable target and explicit references enter the model's workflow context.
@@ -6954,6 +7009,46 @@ export type DeleteSessionResponses = {
 export type DeleteSessionResponse2 =
   DeleteSessionResponses[keyof DeleteSessionResponses]
 
+export type GetSessionData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/auth/session'
+}
+
+export type GetSessionErrors = {
+  /**
+   * No live session. `code` is `session_expired`, `session_revoked`,
+   * or `no_session`: no cookie, a cookie the server never issued, a
+   * session whose user no longer exists, or `web_session_enabled` off
+   * for the session's user.
+   *
+   */
+  401: ErrorResponse
+  /**
+   * Refused. `code` is `origin_not_allowed` (untrusted or missing
+   * Origin), `cross_site_request`, or `FORBIDDEN` when the account is
+   * scheduled for deletion.
+   *
+   */
+  403: ErrorResponse
+  /**
+   * The session store is unreachable; retry with backoff
+   */
+  500: ErrorResponse
+}
+
+export type GetSessionError = GetSessionErrors[keyof GetSessionErrors]
+
+export type GetSessionResponses = {
+  /**
+   * The live session
+   */
+  200: WebSessionResponse
+}
+
+export type GetSessionResponse = GetSessionResponses[keyof GetSessionResponses]
+
 export type CreateSessionData = {
   body?: never
   path?: never
@@ -7038,6 +7133,10 @@ export type GetBillingBalanceErrors = {
    * Internal server error
    */
   500: ErrorResponse
+  /**
+   * Balance read temporarily unavailable
+   */
+  503: ErrorResponse
 }
 
 export type GetBillingBalanceError =
@@ -7893,6 +7992,10 @@ export type GetFeaturesResponses = {
    */
   200: {
     /**
+     * Origin of the billing-web deployment paired with this Cloud environment (e.g. https://billing.comfy.org). Absent when BILLING_WEB_URL is not configured on the server, so a client can tell "not configured" from "configured as empty".
+     */
+    billing_web_url?: string
+    /**
      * Free-tier job allowance for an authenticated non-paid (FREE-tier) user in the rollout. Absent for paid users and unauthenticated requests. Synthesized from config before a grant row exists so a brand-new user still sees their full allowance.
      */
     free_tier_balance?: {
@@ -7913,6 +8016,10 @@ export type GetFeaturesResponses = {
      * Maximum upload size in bytes
      */
     max_upload_size?: number
+    /**
+     * Stripe publishable key (pk_...) for the environment's Stripe account. Public by design (the secret key is never exposed here). Absent when STRIPE_PUBLISHABLE_KEY is not configured on the server, so a client can tell "not configured" from "configured as empty".
+     */
+    stripe_publishable_key?: string
     /**
      * Whether the server supports preview metadata
      */

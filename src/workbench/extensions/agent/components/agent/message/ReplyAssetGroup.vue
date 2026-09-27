@@ -149,7 +149,7 @@ function stopPreview(event: Event): void {
 </script>
 
 <template>
-  <div class="my-4 flex flex-col gap-2">
+  <div data-testid="reply-asset-group" class="my-4 flex flex-col gap-2">
     <div v-if="visibleVisual.length" :class="cn('grid gap-1', gridColsClass)">
       <button
         v-for="asset in visibleVisual"
@@ -204,6 +204,18 @@ function stopPreview(event: Event): void {
           "
         >
           <span class="icon-[lucide--box] size-6 text-muted-foreground" />
+        </span>
+        <span
+          v-if="asset.kind === 'video'"
+          data-testid="reply-video-affordance"
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-0 flex items-center justify-center"
+        >
+          <span
+            class="flex size-9 items-center justify-center rounded-full bg-black/60 text-white shadow-sm backdrop-blur-sm"
+          >
+            <span class="icon-[lucide--play] size-4 fill-current" />
+          </span>
         </span>
       </button>
     </div>

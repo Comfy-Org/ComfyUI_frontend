@@ -22,9 +22,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { rootGraph: { extra: {} } }
 }))
 
-vi.mock(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => null
-}))
+vi.mock(import('@/platform/telemetry'))
 
 vi.mock<unknown>(import('./useBuilderSave'), () => ({
   useBuilderSave: () => ({
