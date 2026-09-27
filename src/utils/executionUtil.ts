@@ -160,11 +160,7 @@ export const graphToPrompt = async (
         continue
       }
 
-      inputs[input.name] = [
-        resolvedInput.origin_id,
-        // @ts-expect-error link.origin_slot is already number.
-        parseInt(resolvedInput.origin_slot)
-      ]
+      inputs[input.name] = [resolvedInput.origin_id, resolvedInput.origin_slot]
     }
 
     output[node.id] = {

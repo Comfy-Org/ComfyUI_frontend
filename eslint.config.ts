@@ -19,6 +19,7 @@ import { configs as storybookConfigs } from 'eslint-plugin-storybook'
 import unusedImports from 'eslint-plugin-unused-imports'
 import pluginVue from 'eslint-plugin-vue'
 import { defineConfig } from 'eslint/config'
+import type { ESLint, Linter } from 'eslint'
 import globals from 'globals'
 import {
   configs as tseslintConfigs,
@@ -297,15 +298,13 @@ export default defineConfig([
   },
   // Disables ESLint rules that conflict with formatters
   eslintConfigPrettier,
-  // @ts-expect-error Type incompatibility between storybook plugin and ESLint config types
-  storybookConfigs['flat/recommended'],
+  ...(storybookConfigs['flat/recommended'] as unknown as Linter.Config[]),
   importX.flatConfigs.recommended,
   importX.flatConfigs.typescript,
   {
     plugins: {
       'unused-imports': unusedImports,
-      // @ts-expect-error Type incompatibility in i18n plugin
-      '@intlify/vue-i18n': pluginI18n
+      '@intlify/vue-i18n': pluginI18n as unknown as ESLint.Plugin
     },
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
