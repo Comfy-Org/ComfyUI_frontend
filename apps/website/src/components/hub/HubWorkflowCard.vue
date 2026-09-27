@@ -125,7 +125,7 @@ function openCard() {
     @click="openCard"
   >
     <div
-      class="relative aspect-4/3 overflow-hidden rounded-[1.75rem] bg-hub-surface"
+      class="relative aspect-4/3 overflow-hidden rounded-3.5xl bg-hub-surface"
     >
       <HubTypeBadge :kind="template.isApp ? 'comfyApp' : 'nodeGraph'" :locale />
       <div

@@ -21,7 +21,10 @@ import type {
 import type { WorkshopModelDetail } from '../../config/models-catalogue'
 import type { Locale } from '../../i18n/translations'
 import { subscribeToWorkshopBuyCredits } from '../../config/workshop-buy-credits'
-import { runWorkshopRouter } from '../../config/workshop-router-queue'
+import {
+  runWorkshopRouter,
+  WORKSHOP_LEAVE_RUNNING
+} from '../../config/workshop-router-queue'
 import { WorkshopRouterError } from '../../config/workshop-router-errors'
 import { workshopContract } from '../../config/workshop-contract-catalog'
 import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
@@ -39,18 +42,21 @@ import {
   captureWorkshopEvent,
   useWorkshopAuthFlag,
   useWorkshopEnabled,
-  useWorkshopEnabledSettled
+  useWorkshopEnabledSettled,
+  useWorkshopAppsEnabled
 } from '../../scripts/posthog'
 import ModelDetail from './ModelDetail.vue'
 import WorkshopGate from './WorkshopGate.vue'
+import { listWorkshopGenerations } from '../../config/workshop-generation-assets'
+import { WORKSHOP_ASSETS_URL } from '../../config/workshop-env'
 import { workshopHealthLog } from '../../scripts/workshop-health'
 
 vi.mock(import('../../config/workshop-session-state'))
 vi.mock(import('../../scripts/posthog'))
 
-vi.mock(import('../../config/workshop-router-queue'), () => ({
-  runWorkshopRouter: vi.fn()
-}))
+vi.mock(import('../../config/workshop-router-queue'), { spy: true })
+
+vi.mock(import('../../config/workshop-generation-assets'), { spy: true })
 
 vi.mock(import('../../config/workshop-output-download'), () => ({
   downloadOutput: vi.fn().mockResolvedValue(true)
@@ -143,6 +149,13 @@ const runnable: WorkshopModelDetail = {
   examples: []
 }
 
+const unkeepable: WorkshopModelDetail = {
+  ...runnable,
+  routerId: 'byteplus/seedream-4-0-250828',
+  slug: 'byteplus--seedream-4-0-250828',
+  execution: workshopContract('byteplus/seedream-4-0-250828')
+}
+
 const uncuratedRunnable: WorkshopModelDetail = {
   ...runnable,
   execution: runnable.execution
@@ -233,6 +246,201 @@ describe('ModelDetail', () => {
     })
   })
 
+  // Ben's finding, pinned: whatever the flag says, a page that goes away takes
+  // its run with it. Only the reader can choose otherwise, and only out loud.
+  it.for([{ saving: '1' }, { saving: '0' }])(
+    'stops the run on unmount, with saving $saving',
+    async ({ saving }) => {
+      vi.stubEnv('PUBLIC_WORKSHOP_SAVE_ASSETS', saving)
+      auth.session.value = credential
+      vi.mocked(listWorkshopGenerations).mockResolvedValue({ requests: [] })
+      vi.mocked(runWorkshopRouter).mockReturnValue(
+        Promise.withResolvers<typeof routerResult>().promise
+      )
+      const { unmount } = mountDetail({ model: runnable })
+      await user().type(screen.getByTestId('field-prompt'), 'A teapot')
+      await user().click(screen.getByTestId('run-button'))
+      await vi.waitFor(() => expect(runWorkshopRouter).toHaveBeenCalledOnce())
+      const run = vi.mocked(runWorkshopRouter).mock.calls[0][0]
+      expect(run.comfy_save_asset).toBe(saving === '1')
+      expect(
+        window.dispatchEvent(new Event('beforeunload', { cancelable: true }))
+      ).toBe(false)
+
+      unmount()
+
+      expect(run.signal.aborted).toBe(true)
+      expect(run.signal.reason === WORKSHOP_LEAVE_RUNNING).toBe(false)
+    }
+  )
+
+  // Leaving stops the machine, because a reader who walks away is not waiting
+  // for this result. Carrying on is offered, never assumed.
+  it.for([
+    { press: 'run-leave-confirm', named: 'Leave and stop', keeps: false },
+    { press: 'run-leave-keep', named: 'Leave it running', keeps: true }
+  ])('$named leaves and keeps the run: $keeps', async ({ press, keeps }) => {
+    vi.stubEnv('PUBLIC_WORKSHOP_SAVE_ASSETS', '1')
+    auth.session.value = credential
+    vi.mocked(listWorkshopGenerations).mockResolvedValue({ requests: [] })
+    // The Router takes the request, which is what puts a run on offer to keep.
+    vi.mocked(runWorkshopRouter).mockImplementation((options) => {
+      options.onRequestId?.('18655193-3f73-4abf-b49c-1c6a058355bc')
+      return Promise.withResolvers<typeof routerResult>().promise
+    })
+    const assign = vi.spyOn(location, 'assign').mockImplementation(() => {})
+    onTestFinished(() => assign.mockRestore())
+    const link = document.createElement('a')
+    link.href = `${location.origin}/models/another-model/`
+    document.body.append(link)
+    onTestFinished(() => link.remove())
+    mountDetail({ model: runnable })
+    await user().type(screen.getByTestId('field-prompt'), 'A teapot')
+    await user().click(screen.getByTestId('run-button'))
+    await vi.waitFor(() => expect(runWorkshopRouter).toHaveBeenCalledOnce())
+
+    link.dispatchEvent(
+      new MouseEvent('click', { bubbles: true, cancelable: true })
+    )
+    await screen.findByTestId('run-leave-dialog')
+    expect(screen.getByText('Leave and stop the generation?')).toBeVisible()
+    expect(screen.getByTestId('run-leave-assets').getAttribute('href')).toBe(
+      WORKSHOP_ASSETS_URL
+    )
+
+    await user().click(screen.getByTestId(press))
+
+    expect(assign).toHaveBeenCalledWith(link.href)
+    const run = vi.mocked(runWorkshopRouter).mock.calls[0][0]
+    expect(run.signal.aborted).toBe(true)
+    expect(run.signal.reason === WORKSHOP_LEAVE_RUNNING).toBe(keeps)
+  })
+
+  // Pressing Run puts the page in its running state well before the Router has
+  // taken the request. Offering to leave that running would promise a
+  // generation that never starts, so until there is a run to keep, leaving
+  // stops it and says so.
+  it('offers no way to keep a run the router has not taken', async () => {
+    vi.stubEnv('PUBLIC_WORKSHOP_SAVE_ASSETS', '1')
+    auth.session.value = credential
+    vi.mocked(listWorkshopGenerations).mockResolvedValue({ requests: [] })
+    vi.mocked(runWorkshopRouter).mockReturnValue(
+      Promise.withResolvers<typeof routerResult>().promise
+    )
+    const assign = vi.spyOn(location, 'assign').mockImplementation(() => {})
+    onTestFinished(() => assign.mockRestore())
+    const link = document.createElement('a')
+    link.href = `${location.origin}/models/another-model/`
+    document.body.append(link)
+    onTestFinished(() => link.remove())
+    mountDetail({ model: runnable })
+    await user().type(screen.getByTestId('field-prompt'), 'A teapot')
+    await user().click(screen.getByTestId('run-button'))
+    await vi.waitFor(() => expect(runWorkshopRouter).toHaveBeenCalledOnce())
+
+    link.dispatchEvent(
+      new MouseEvent('click', { bubbles: true, cancelable: true })
+    )
+    await screen.findByTestId('run-leave-dialog')
+
+    expect(screen.queryByTestId('run-leave-keep')).toBeNull()
+    expect(screen.getByTestId('run-leave-stay')).toBeVisible()
+    expect(screen.queryByTestId('run-leave-assets')).toBeNull()
+
+    await user().click(screen.getByTestId('run-leave-confirm'))
+
+    const run = vi.mocked(runWorkshopRouter).mock.calls[0][0]
+    expect(run.signal.aborted).toBe(true)
+    expect(run.signal.reason === WORKSHOP_LEAVE_RUNNING).toBe(false)
+  })
+
+  // The address carries the run so a reload finds it again. Cancelling ends
+  // that run, so the id goes with it rather than waiting to be restored as
+  // though the machine were still working.
+  it('takes the run out of the address when it is cancelled', async () => {
+    vi.stubEnv('PUBLIC_WORKSHOP_SAVE_ASSETS', '1')
+    auth.session.value = credential
+    vi.mocked(listWorkshopGenerations).mockResolvedValue({ requests: [] })
+    vi.mocked(runWorkshopRouter).mockImplementation((options) => {
+      options.onRequestId?.('18655193-3f73-4abf-b49c-1c6a058355bc')
+      return Promise.withResolvers<typeof routerResult>().promise
+    })
+    const address = location.href
+    onTestFinished(() => history.replaceState(null, '', address))
+    mountDetail({ model: runnable })
+    await user().type(screen.getByTestId('field-prompt'), 'A teapot')
+    await user().click(screen.getByTestId('run-button'))
+    await vi.waitFor(() =>
+      expect(new URL(location.href).searchParams.get('request_id')).toBe(
+        '18655193-3f73-4abf-b49c-1c6a058355bc'
+      )
+    )
+
+    await user().click(screen.getByTestId('run-button'))
+
+    expect(new URL(location.href).searchParams.get('request_id')).toBeNull()
+  })
+
+  // Ben's finding: a run the cloud failed to keep expires like any other, and
+  // the note under the output is the only place that says so.
+  it('warns that a result the cloud could not keep still expires', async () => {
+    vi.stubEnv('PUBLIC_WORKSHOP_SAVE_ASSETS', '1')
+    auth.session.value = credential
+    const requestId = '18655193-3f73-4abf-b49c-1c6a058355bc'
+    vi.mocked(listWorkshopGenerations).mockResolvedValue({
+      requests: [
+        {
+          request_id: requestId,
+          provider: 'bfl',
+          model: 'flux-2-pro',
+          created_at: '2026-09-20T12:00:00Z',
+          status: 'COMPLETED',
+          asset_save_status: 'failed',
+          asset_outputs: []
+        }
+      ]
+    })
+    vi.mocked(runWorkshopRouter).mockResolvedValue({
+      ...routerResult,
+      requestId
+    })
+    mountDetail({ model: runnable })
+    await user().type(screen.getByTestId('field-prompt'), 'A teapot')
+    await user().click(screen.getByTestId('run-button'))
+    await vi.waitFor(() =>
+      expect(
+        screen.getByTestId('playground-output').getAttribute('data-state')
+      ).toBe('succeeded')
+    )
+
+    await vi.waitFor(() =>
+      expect(screen.getByTestId('output-expires')).toBeVisible()
+    )
+  })
+
+  // Ben's finding: the Router refuses to admit a run at all when it is asked
+  // to keep an operation whose output shape it cannot read, so asking for
+  // every model would break the pages it cannot keep instead of leaving their
+  // results unkept.
+  it('asks the router to keep only a generation it can keep', async () => {
+    vi.stubEnv('PUBLIC_WORKSHOP_SAVE_ASSETS', '1')
+    auth.session.value = credential
+    vi.mocked(listWorkshopGenerations).mockResolvedValue({ requests: [] })
+    vi.mocked(runWorkshopRouter).mockResolvedValue(routerResult)
+    mountDetail({ model: unkeepable })
+    await user().type(screen.getByTestId('field-prompt'), 'A teapot')
+    await user().click(screen.getByTestId('run-button'))
+    await vi.waitFor(() => expect(runWorkshopRouter).toHaveBeenCalledOnce())
+
+    expect(vi.mocked(runWorkshopRouter).mock.calls[0][0].comfy_save_asset).toBe(
+      false
+    )
+    expect(screen.queryByTestId('saved-assets')).toBeNull()
+    await vi.waitFor(() =>
+      expect(screen.getByTestId('output-expires')).toBeVisible()
+    )
+  })
+
   it('links a documented provider in a new tab', () => {
     mountDetail({
       model: {
@@ -249,6 +457,27 @@ describe('ModelDetail', () => {
     expect(link.getAttribute('target')).toBe('_blank')
     expect(link.getAttribute('rel')).toBe('noopener noreferrer')
   })
+
+  it.for([
+    { studio: true, offered: true },
+    { studio: false, offered: false }
+  ])(
+    'offers Cinematic Studio on a studio model only inside the staff rollout: $studio',
+    ({ studio, offered }) => {
+      vi.mocked(useWorkshopAppsEnabled).mockReturnValue(computed(() => studio))
+      mountDetail({
+        model: { ...model, slug: 'bfl--flux-2-pro--generate-images' }
+      })
+
+      const link = screen.queryByTestId('model-studio-link')
+      expect(link !== null).toBe(offered)
+      if (offered)
+        expect(link).toHaveAttribute(
+          'href',
+          '/cinematic-studio?model=bfl--flux-2-pro--generate-images'
+        )
+    }
+  )
 
   it('does not offer a generic docs link for an undocumented provider', () => {
     mountDetail()

@@ -7,6 +7,6 @@
     ".": "./src/comfyRegistryTypes.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsx ../../scripts/vue-tsc-native.ts --noEmit"
   }
 }
