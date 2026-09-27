@@ -26,6 +26,7 @@
     "./session": "./src/core/session.ts",
     "./webSession": "./src/core/webSession.ts",
     "./requestAuth": "./src/core/requestAuth.ts",
+    "./webSessionIdentity": "./src/core/webSessionIdentity.ts",
     "./billing": "./src/core/billing/index.ts",
     "./firebase": "./src/firebase/index.ts",
     "./web": "./src/web/crossTabRefresh.ts",
@@ -59,6 +60,10 @@
       "./requestAuth": {
         "types": "./dist/core/requestAuth.d.ts",
         "import": "./dist/core/requestAuth.js"
+      },
+      "./webSessionIdentity": {
+        "types": "./dist/core/webSessionIdentity.d.ts",
+        "import": "./dist/core/webSessionIdentity.js"
       },
       "./billing": {
         "types": "./dist/core/billing/index.d.ts",
