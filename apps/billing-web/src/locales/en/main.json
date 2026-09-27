@@ -155,7 +155,20 @@
       "promoApplied": "{code} applied.",
       "promoRenews": "Renews at {amount} on {date}"
     },
-    "error": "Error"
+    "error": "Error",
+    "invite": {
+      "title": "Invite your team",
+      "subtext": "You can also invite people later from Settings",
+      "placeholder": "Enter emails separated by commas",
+      "sendInvites": "Send invites",
+      "removeTag": "Remove tag",
+      "invalidEmailCount": "{count} invalid email address | {count} invalid email addresses",
+      "pendingInviteSingle": "This person already has a pending invite",
+      "pendingInviteCount": "{count} of these people already have a pending invite. They'll be skipped.",
+      "seatLimitExceeded": "This workspace is capped at {max} members. Remove {overage} to continue.",
+      "invitedMessage": "An invite was sent to {emails} | Invites were sent to {emails}",
+      "failedCount": "Couldn't send {count} invite. Try again. | Couldn't send {count} invites. Try again."
+    }
   },
   "hosted": {
     "loading": "Loading…",

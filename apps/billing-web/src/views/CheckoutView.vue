@@ -10,6 +10,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import {
+  useBillingClient,
   useCheckout,
   usePaymentMethods,
   usePlans,
@@ -18,7 +19,7 @@ import {
 import type { CheckoutPlan } from '@comfyorg/account-ui/billing/checkout'
 import {
   CheckoutSubscribeConfirm,
-  CheckoutSuccess,
+  CheckoutTeamSuccess,
   CheckoutTransitionConfirm,
   isAnnualDuration
 } from '@comfyorg/account-ui/billing/checkout'
@@ -45,10 +46,12 @@ import {
 } from '@/config/stripeKey'
 import { useBillingEntry } from '@/entry/billingEntry'
 import { createDeferredStripeChallengePort } from '@/session/stripeChallengePort'
+import { useWorkspaceInvites } from '@/session/workspaceInvites'
 
 const { locale, t } = useI18n()
 const { coded } = useHostedCopy()
-const { copy, successCopy, tierName } = useCheckoutCopy()
+const { copy, successCopy, inviteCopy, tierName } = useCheckoutCopy()
+const invites = useWorkspaceInvites()
 const { entry } = useBillingEntry()
 const billedWorkspace = useBilledWorkspace()
 
@@ -81,6 +84,7 @@ const quotedTeamCreditStopId = ref<string | undefined>()
 const quoteIsCurrent = ref(false)
 const applyingPromotionCode = ref(false)
 const submitFailure = ref<string | undefined>()
+const inviteFailure = ref<string | undefined>()
 
 async function quotePlan(
   slug: string | undefined,
@@ -296,6 +300,34 @@ const operationToast = computed(() => {
       }
 })
 
+/** One toast at a time, as the app's toast host shows the latest. */
+const toast = computed(() => {
+  if (submitFailure.value) {
+    return {
+      severity: 'error' as const,
+      summary: t('checkout.error'),
+      detail: submitFailure.value,
+      dismiss: true
+    }
+  }
+  if (inviteFailure.value) {
+    return {
+      severity: 'error' as const,
+      summary: inviteFailure.value,
+      detail: undefined,
+      dismiss: true
+    }
+  }
+  return operationToast.value
+    ? { ...operationToast.value, detail: undefined, dismiss: false }
+    : undefined
+})
+
+function dismissToast() {
+  submitFailure.value = undefined
+  inviteFailure.value = undefined
+}
+
 const reconciliationOperationId = computed(() => {
   const operation = checkout.operation.value
   return operation?.phase === 'reconciliation_needed' ? operation.id : null
@@ -322,6 +354,30 @@ watch(
 )
 
 const succeeded = computed(() => checkout.projection.value.step === 'success')
+
+/**
+ * The seats the success step's team invite counts against, read once the
+ * subscribe settles and again after invites are sent, as the app refreshes
+ * its billing status.
+ */
+const { status } = useBillingClient<'status'>(undefined)
+const seats = ref<{ max: number | null; occupied: number | null }>({
+  max: null,
+  occupied: null
+})
+
+async function readSeats() {
+  const result = await status.read()
+  if (result.status !== 'ok') return
+  seats.value = {
+    max: result.value.status.max_seats,
+    occupied: result.value.status.occupied_seats
+  }
+}
+
+watch(succeeded, (done) => {
+  if (done) void readSeats()
+})
 
 const paying = computed(
   () =>
@@ -441,14 +497,20 @@ function returnToHost() {
           :close-label="t('checkout.close')"
           @close="returnToHost"
         >
-          <CheckoutSuccess
+          <CheckoutTeamSuccess
             v-if="succeeded"
             :plan="checkoutPlan"
             :copy="successCopy"
+            :invite-copy="inviteCopy"
             :locale
             :preview-data="preview"
             :billing-cycle
             :dark-surface="isNewSubscription"
+            :max-seats="seats.max"
+            :occupied-seats="seats.occupied"
+            :invites
+            @invited="readSeats"
+            @invites-failed="inviteFailure = $event"
             @close="returnToHost"
           />
           <CheckoutSubscribeConfirm
@@ -500,17 +562,12 @@ function returnToHost() {
       </template>
     </section>
     <CheckoutToast
-      v-if="submitFailure"
-      severity="error"
-      :summary="t('checkout.error')"
-      :detail="submitFailure"
-      :close-label="t('checkout.close')"
-      @close="submitFailure = undefined"
-    />
-    <CheckoutToast
-      v-else-if="operationToast"
-      :severity="operationToast.severity"
-      :summary="operationToast.summary"
+      v-if="toast"
+      :severity="toast.severity"
+      :summary="toast.summary"
+      :detail="toast.detail"
+      :close-label="toast.dismiss ? t('checkout.close') : undefined"
+      @close="dismissToast"
     />
   </main>
 </template>

@@ -23,6 +23,7 @@ import {
   previewOf,
   succeededOperation
 } from '@/test/fakeBillingClient'
+import { WORKSPACE_INVITES_KEY } from '@/session/workspaceInvites'
 import CheckoutView from '@/views/CheckoutView.vue'
 
 const ENTRY_QUERY = 'product=comfyui&return_to=comfyui_workspace'
@@ -180,7 +181,10 @@ async function renderCheckout(
   render(CheckoutView, {
     global: {
       plugins: [createBillingI18n(), router],
-      provide: { [BILLING_CLIENT_KEY]: fake.client },
+      provide: {
+        [BILLING_CLIENT_KEY]: fake.client,
+        [WORKSPACE_INVITES_KEY]: fake.invites
+      },
       stubs: { CheckoutPaymentForm: PaymentFormStub }
     }
   })
@@ -599,6 +603,57 @@ describe('CheckoutView', () => {
     expect(assign).toHaveBeenCalledExactlyOnceWith(
       'https://testcloud.comfy.org/?billing_result=success&billing_ref=op_9'
     )
+  })
+
+  it('offers the team invite on a multi-seat success and sends it to the workspace', async () => {
+    const fake = await renderCheckout(CHECKOUT_PATH, {
+      subscribe: {
+        status: 'ok',
+        value: { phase: 'succeeded', operation: succeededOperation('op_9') }
+      },
+      status: {
+        is_active: true,
+        has_funds: true,
+        max_seats: 20,
+        occupied_seats: 1,
+        scheduled_change: null,
+        team_credit_stop: null
+      }
+    })
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+    reportConfirm('ctoken_1')
+
+    expect(
+      await screen.findByRole('heading', { name: 'Invite your team' })
+    ).toBeInTheDocument()
+    await userEvent.type(
+      screen.getByRole('textbox', { name: 'Enter emails separated by commas' }),
+      'ada@example.com,'
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Send invites' }))
+
+    expect(
+      await screen.findByText('An invite was sent to ada@example.com')
+    ).toBeInTheDocument()
+    expect(fake.invites.createInvite).toHaveBeenCalledWith('ada@example.com')
+  })
+
+  it('shows no invite on a single-seat success', async () => {
+    const fake = await renderCheckout(CHECKOUT_PATH, {
+      subscribe: {
+        status: 'ok',
+        value: { phase: 'succeeded', operation: succeededOperation('op_9') }
+      }
+    })
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+    reportConfirm('ctoken_1')
+
+    await screen.findByRole('heading', { name: "You're all set" })
+    await waitFor(() => expect(fake.readStatus).toHaveBeenCalled())
+    expect(
+      screen.queryByRole('heading', { name: 'Invite your team' })
+    ).toBeNull()
+    expect(fake.invites.listPendingInvites).not.toHaveBeenCalled()
   })
 
   it('returns the customer into the workspace the session was minted for', async () => {
