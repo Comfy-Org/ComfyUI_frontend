@@ -13,6 +13,8 @@ interface BaseSidebarTabExtension {
   iconBadge?: string | (() => string | null)
   tooltip?: string
   label?: string
+  /** Returns true when the tab handled the toggle itself. */
+  onToggle?: () => boolean | Promise<boolean>
 }
 
 interface BaseBottomPanelExtension {
