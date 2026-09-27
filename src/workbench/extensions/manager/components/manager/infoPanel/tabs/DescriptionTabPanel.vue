@@ -12,6 +12,7 @@
     </ModelInfoField>
     <ModelInfoField v-if="nodePack.repository" :label="t('manager.repository')">
       <a
+        v-if="safeRepositoryHref"
         :href="safeRepositoryHref"
         target="_blank"
         rel="noopener noreferrer"
@@ -24,9 +25,13 @@
         <span class="break-all">{{ nodePack.repository }}</span>
         <i class="icon-[lucide--external-link] size-4 shrink-0" />
       </a>
+      <span v-else class="break-all text-muted-foreground">
+        {{ nodePack.repository }}
+      </span>
     </ModelInfoField>
     <ModelInfoField v-if="licenseInfo" :label="t('manager.license')">
       <a
+        v-if="safeLicenseHref"
         :href="safeLicenseHref"
         target="_blank"
         rel="noopener noreferrer"
@@ -35,6 +40,9 @@
         <span class="break-all">{{ licenseInfo.text }}</span>
         <i class="icon-[lucide--external-link] size-4 shrink-0" />
       </a>
+      <span v-else class="break-all text-muted-foreground">
+        {{ licenseInfo.text }}
+      </span>
     </ModelInfoField>
     <ModelInfoField
       v-if="nodePack.latest_version?.dependencies?.length"

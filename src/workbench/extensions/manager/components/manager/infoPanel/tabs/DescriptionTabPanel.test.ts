@@ -171,7 +171,9 @@ describe('DescriptionTabPanel', () => {
       })
 
       expect(screen.queryByRole('link')).toBeNull()
-      expect(screen.getByText('javascript:alert(1)')).toBeInTheDocument()
+      const repositoryText = screen.getByText('javascript:alert(1)')
+      expect(repositoryText).toBeInTheDocument()
+      expect(repositoryText.tagName).toBe('SPAN')
     })
 
     it('does not bind a javascript: license URL as a clickable href', () => {
@@ -183,7 +185,9 @@ describe('DescriptionTabPanel', () => {
 
       // A license `text` field is always rendered as plain text (never a
       // link), so this only proves the plain-text fallback still renders.
-      expect(screen.getByText('javascript:alert(1)')).toBeInTheDocument()
+      const licenseText = screen.getByText('javascript:alert(1)')
+      expect(licenseText).toBeInTheDocument()
+      expect(licenseText.tagName).toBe('SPAN')
     })
 
     it('does not bind a javascript: license URL built from a LICENSE file', () => {
