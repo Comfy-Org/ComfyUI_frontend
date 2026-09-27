@@ -38,9 +38,9 @@ import type {
   UpdateWorkspaceRequest,
   WorkspaceWithRole
 } from '@comfyorg/ingest-types'
+import type { AxiosInstance } from 'axios'
 import axios from 'axios'
 
-import { attachUnifiedRemintInterceptor } from '@/platform/auth/unified/remintRetry'
 import { churnkeyAuthResponseSchema } from '@/platform/cloud/churnkey/churnkeyAuthSchema'
 import {
   UNKNOWN_ERROR_CODE,
@@ -51,8 +51,7 @@ import type {
   WorkspaceId,
   WorkspaceInviteId
 } from '@/platform/workspace/workspaceTypes'
-import { useAuthStore } from '@/stores/authStore'
-import type { UserId } from '@/types/authTypes'
+import type { AuthHeader, UserId } from '@/types/authTypes'
 
 import { workspaceApiUrl } from './workspaceApiUrl'
 
@@ -152,18 +151,41 @@ export class WorkspaceApiError extends Error {
   }
 }
 
+/**
+ * Credentials for workspace requests. The composition root installs the
+ * auth-store backed implementation; the client itself stays free of the
+ * auth layer.
+ */
+export interface WorkspaceApiAuth {
+  getWorkspaceAuthHeader(): Promise<AuthHeader>
+  getFirebaseAuthHeader(): Promise<AuthHeader>
+  attachRetryInterceptor(client: AxiosInstance): void
+}
+
 const workspaceApiClient = axios.create({
   headers: {
     'Content-Type': 'application/json'
   }
 })
 
-// acceptInvite opts out via __skipUnifiedRemint (it is deliberately Firebase-authed).
-attachUnifiedRemintInterceptor(workspaceApiClient)
 attachCapabilityRevisionInterceptor(workspaceApiClient)
 
+let workspaceApiAuth: WorkspaceApiAuth | undefined
+
+export function setWorkspaceApiAuth(auth: WorkspaceApiAuth): void {
+  workspaceApiAuth = auth
+  auth.attachRetryInterceptor(workspaceApiClient)
+}
+
+function requireWorkspaceApiAuth(): WorkspaceApiAuth {
+  if (!workspaceApiAuth) {
+    throw new WorkspaceApiError('Workspace API auth is not installed', 401)
+  }
+  return workspaceApiAuth
+}
+
 async function getAuthHeaderOrThrow() {
-  return useAuthStore().getWorkspaceAuthHeaderOrThrow()
+  return requireWorkspaceApiAuth().getWorkspaceAuthHeader()
 }
 
 function handleAxiosError(err: unknown): never {
@@ -415,7 +437,7 @@ export const workspaceApi = {
    * Uses Firebase auth (user identity) since the user isn't yet a workspace member.
    */
   async acceptInvite(token: string): Promise<AcceptInviteResponse> {
-    const headers = await useAuthStore().getFirebaseAuthHeaderOrThrow()
+    const headers = await requireWorkspaceApiAuth().getFirebaseAuthHeader()
     try {
       const response = await workspaceApiClient.post<AcceptInviteResponse>(
         workspaceApiUrl(`/invites/${token}/accept`),
