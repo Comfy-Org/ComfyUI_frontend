@@ -71,6 +71,8 @@ import type { ServerConfig, ServerConfigValue } from '@/constants/serverConfig'
 import { setActiveLocale } from '@/i18n'
 import AssetExportProgressDialog from '@/platform/assets/components/AssetExportProgressDialog.vue'
 import ModelImportProgressDialog from '@/platform/assets/components/ModelImportProgressDialog.vue'
+import AssetBrowserModal from '@/platform/assets/components/AssetBrowserModal.vue'
+import { registerAssetBrowserModalComponent } from '@/platform/assets/composables/useAssetBrowserDialog'
 import DesktopCloudNotificationController from '@/platform/cloud/notification/components/DesktopCloudNotificationController.vue'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import SettingDialog from '@/platform/settings/components/SettingDialog.vue'
@@ -239,6 +241,7 @@ useMenuItemStore().registerCoreMenuCommands()
 useKeybindingService().registerCoreKeybindings()
 registerCoreSidebarTabs()
 registerSettingDialogComponent(SettingDialog)
+registerAssetBrowserModalComponent(AssetBrowserModal)
 void useBottomPanelStore().registerCoreBottomPanelTabs()
 
 useQueuePolling()
