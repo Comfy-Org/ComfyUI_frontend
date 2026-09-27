@@ -16,7 +16,7 @@ import {
   ToInputRenderLink,
   LinkDirection
 } from '@/lib/litegraph/src/litegraph'
-import type { ConnectingLink } from '@/lib/litegraph/src/interfaces'
+import type { ConnectingLink } from '@/lib/litegraph/src/types/slots'
 import type { LinkId } from '@/types/linkId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'

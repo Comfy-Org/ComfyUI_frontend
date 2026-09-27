@@ -3,11 +3,11 @@ import { isEqual } from 'es-toolkit/compat'
 
 import { isAutogrowGroupMember } from '@/core/graph/widgets/dynamicWidgets'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { INodeSlot } from '@/lib/litegraph/src/interfaces'
 import type {
   INodeInputSlot,
-  INodeOutputSlot,
-  INodeSlot
-} from '@/lib/litegraph/src/interfaces'
+  INodeOutputSlot
+} from '@/lib/litegraph/src/types/slots'
 import type {
   ISerialisableNodeInput,
   ISerialisableNodeOutput,

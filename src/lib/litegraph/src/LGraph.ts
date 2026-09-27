@@ -118,9 +118,6 @@ import type {
   DefaultConnectionColors,
   Dictionary,
   HasBoundingRect,
-  INodeInputSlot,
-  INodeOutputSlot,
-  LinkNetwork,
   LinkSegment,
   MethodNames,
   OptionalProps,
@@ -128,6 +125,8 @@ import type {
   Positionable,
   Size
 } from './interfaces'
+import type { INodeInputSlot, INodeOutputSlot } from './types/slots'
+import type { LinkNetwork } from './types/linkNetwork'
 import { LiteGraph, SubgraphNode } from './litegraph'
 import {
   alignOutsideContainer,

@@ -7,16 +7,20 @@ import { ConstrainedSize } from '@/lib/litegraph/src/infrastructure/ConstrainedS
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type {
   DefaultConnectionColors,
-  Hoverable,
-  INodeInputSlot,
-  INodeOutputSlot,
   Point,
   ReadOnlyRect,
   Size
 } from '@/lib/litegraph/src/interfaces'
+import type {
+  INodeInputSlot,
+  INodeOutputSlot
+} from '@/lib/litegraph/src/types/slots'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { SlotBase } from '@/lib/litegraph/src/node/SlotBase'
-import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+import type {
+  CanvasPointerEvent,
+  Hoverable
+} from '@/lib/litegraph/src/types/events'
 import type {
   Serialisable,
   SubgraphIO
