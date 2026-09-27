@@ -200,21 +200,22 @@ and writes. Partial drops are surfaced as CI warnings by
 `src/utils/ashby.ci.ts` rather than blocked.
 
 Both guards decide what a refresh would cost by reading the committed
-snapshot, so a snapshot that exists but cannot be parsed aborts the refresh
-rather than being silently replaced — otherwise the guard would see "no
-baseline" and wave through exactly the data it exists to catch. A missing
-file is still fine; that is a first run.
+snapshot, so a snapshot that exists but cannot be parsed generally aborts the
+refresh rather than being silently replaced — otherwise the guard would see
+"no baseline" and wave through exactly the data it exists to catch. There is
+one exception, in the table below. A missing file is still fine; that is a
+first run.
 
 The two guards differ in when they read it, so an unparseable snapshot does
 not behave the same way on both sides:
 
-| Committed snapshot            | Cloud-nodes refresh | Ashby refresh                        |
-| ----------------------------- | ------------------- | ------------------------------------ |
-| Absent                        | Writes (first run)  | Writes (first run)                   |
-| Valid                         | Guard applies       | Guard applies                        |
-| Unparseable, fetch degraded   | Aborts              | Aborts                               |
-| Unparseable, fetch healthy    | Aborts              | **Overwrites it with the good data** |
-| Unreadable (permissions, I/O) | Aborts              | Aborts                               |
+| Committed snapshot            | Cloud-nodes refresh                                                  | Ashby refresh                        |
+| ----------------------------- | -------------------------------------------------------------------- | ------------------------------------ |
+| Absent                        | Writes (first run — no baseline, so a degraded fetch is written too) | Writes (first run)                   |
+| Valid                         | Guard applies                                                        | Guard applies                        |
+| Unparseable, fetch degraded   | Aborts                                                               | Aborts                               |
+| Unparseable, fetch healthy    | Aborts                                                               | **Overwrites it with the good data** |
+| Unreadable (permissions, I/O) | Aborts                                                               | Aborts                               |
 
 The cloud-nodes guard reads the snapshot unconditionally, so it aborts on
 anything it cannot parse. The Ashby guard reads it only once the fetch already
@@ -224,10 +225,11 @@ fetch it never looks, and `writeSnapshotIfChanged` replaces the corrupt file —
 which is the outcome you want, and what `snapshot-writer.test.ts` asserts.
 
 Note the last row is not the same thing. Unparseable means the bytes are
-there and are not JSON; unreadable means the read itself failed. Only ENOENT
-is treated as "no snapshot yet", so a permissions error or a directory in the
-file's place aborts every refresh, including a healthy one. Neither script
-repairs that for you.
+there and are not a JSON object — malformed JSON, or a valid array or scalar,
+all three of which `snapshot-writer.test.ts` covers. Unreadable means the read
+itself failed. Only ENOENT is treated as "no snapshot yet", so a permissions
+error or a directory in the file's place aborts every refresh, including a
+healthy one. Neither script repairs that for you.
 
 `refresh-cloud-nodes-snapshot.ts` has the equivalent guard for packs that lose
 their registry metadata, tolerating up to two — a delisted pack is a real
