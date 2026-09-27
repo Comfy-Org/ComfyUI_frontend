@@ -94,12 +94,14 @@ describe('canvas node media failure telemetry', () => {
       class {
         onload: (() => void) | null = null
         onerror: (() => void) | null = null
-        #src = ''
+        private srcValue = ''
         get src() {
-          return this.#src
+          return this.srcValue
         }
+        // Setting `src` is what starts a load in the real DOM, so recording the
+        // instance here is what lets a case fire onload/onerror per attempt.
         set src(value: string) {
-          this.#src = value
+          this.srcValue = value
           created.push(this as unknown as HTMLImageElement)
         }
       }
