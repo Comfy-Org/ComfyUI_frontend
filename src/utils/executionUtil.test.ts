@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import type { CurveData } from '@/components/curve/types'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -126,10 +124,6 @@ describe('graphToPrompt widget serialization', () => {
 })
 
 describe('graphToPrompt', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('excludes nodes with isVirtualNode from API output', async () => {
     const realNode = makeNode('RealNode', 'KSampler')
     const virtualNode = makeNode('VirtualNode', 'Note', true)
