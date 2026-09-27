@@ -11,4 +11,5 @@ if [ -n "${CI-}" ]; then
 fi
 
 pnpm knip 1>&2
-pnpm fallow:audit --changed-since "$(git merge-base HEAD origin/main)" 1>&2
+git fetch origin main 1>&2
+pnpm fallow:audit --changed-since "$(git rev-parse origin/main)" 1>&2
