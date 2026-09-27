@@ -1,4 +1,4 @@
-import { useEventListener, useLocalStorage, useWindowSize } from '@vueuse/core'
+import { useLocalStorage, useWindowSize } from '@vueuse/core'
 import { clamp } from 'es-toolkit'
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
