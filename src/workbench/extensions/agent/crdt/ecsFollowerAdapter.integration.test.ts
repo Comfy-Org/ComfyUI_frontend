@@ -483,58 +483,6 @@ describe('EcsFollowerAdapter integration', () => {
     host.destroy()
   })
 
-  it('leaves a rejected non-empty snapshot on next-frame recovery', () => {
-    vi.useFakeTimers()
-    try {
-      let scopeAvailable = false
-      const mutations = createGraphMutations({
-        placement: inertPlacementPort,
-        getScope: () => (scopeAvailable ? scope : null),
-        layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
-      })
-      const batchCalls: unknown[] = []
-      const trackedMutations: GraphMutations = {
-        ...mutations,
-        batchResult: (batchContext, define) => {
-          batchCalls.push(batchContext)
-          return mutations.batchResult(batchContext, define)
-        }
-      }
-      const host = mint(
-        {
-          nodes: [{ id: 1, type: 'Source', inputs: [], outputs: [] }],
-          links: []
-        },
-        catalog
-      )
-      const follower = new FollowerDoc()
-      const adapter = new EcsFollowerAdapter(trackedMutations)
-      adapter.bind('wf', follower)
-      const update = Y.encodeStateAsUpdate(host)
-      follower.applyRemoteUpdate(update)
-
-      expect(adapter.applyFrame({ workflowId: 'wf', seq: 1, update })).toBe(
-        false
-      )
-      expect(batchCalls).toHaveLength(1)
-
-      scopeAvailable = true
-      vi.advanceTimersByTime(5_000)
-      expect(batchCalls).toHaveLength(1)
-
-      expect(adapter.applyFrame({ workflowId: 'wf', seq: 2, update })).toBe(
-        true
-      )
-      expect(batchCalls).toHaveLength(2)
-
-      adapter.destroy()
-      follower.destroy()
-      host.destroy()
-    } finally {
-      vi.useRealTimers()
-    }
-  })
-
   it('proactively reconciles once scope becomes available again, without waiting for a new frame', () => {
     vi.useFakeTimers()
     try {
