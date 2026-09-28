@@ -60,12 +60,20 @@ const anchorTop = ref(0)
 async function openPicker(key: PickerKey) {
   togglePicker(key)
   await nextTick()
-  const trigger = layout.value?.querySelector(
-    '[aria-haspopup="dialog"][aria-expanded="true"]'
-  )
+  const trigger = layout.value
+    ?.querySelector('[aria-haspopup="dialog"][aria-expanded="true"]')
+    ?.getBoundingClientRect()
+  const sheet = layout.value
+    ?.querySelector('[data-testid="cinematic-picker"]')
+    ?.getBoundingClientRect()
   const bounds = layout.value?.getBoundingClientRect()
-  if (trigger && bounds)
-    anchorTop.value = trigger.getBoundingClientRect().top - bounds.top
+  if (!trigger || !sheet || !bounds) return
+  const centered =
+    trigger.top + trigger.height / 2 - sheet.height / 2 - bounds.top
+  anchorTop.value = Math.max(
+    0,
+    Math.min(centered, bounds.height - sheet.height)
+  )
 }
 
 function generate() {
