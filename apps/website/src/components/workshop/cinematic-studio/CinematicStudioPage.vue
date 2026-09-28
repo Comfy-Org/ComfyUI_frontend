@@ -8,10 +8,7 @@ import { workshopAppHref } from '../../../lib/workshop/apps'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
-import {
-  useWorkshopAppsEnabled,
-  useWorkshopWorkflowsEnabled
-} from '../../../scripts/posthog'
+import { useWorkshopAppsEnabled } from '../../../scripts/posthog'
 import { rc } from '../../../lib/workshop/cinematic-studio/reshoot-copy'
 import RunLeaveDialog from '../RunLeaveDialog.vue'
 import WorkshopGate from '../WorkshopGate.vue'
@@ -40,11 +37,7 @@ const LAYOUTS = [
 const APPS = ['studio', 'reshoot'] as const
 const reviewing = WORKSHOP_DEPLOY_ENV !== 'production'
 
-const appsEnabled = useWorkshopAppsEnabled()
-const workflowsEnabled = useWorkshopWorkflowsEnabled()
-const studioEnabled = computed(
-  () => appsEnabled.value || workflowsEnabled.value
-)
+const studioEnabled = useWorkshopAppsEnabled()
 const layout = ref('e')
 const app = ref<WorkshopAppId>(initialApp)
 const layoutOptions = computed(() =>

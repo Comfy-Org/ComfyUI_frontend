@@ -24,8 +24,7 @@ import { prepareModelPage } from '../../../routes/models/model-page'
 import {
   useWorkshopEnabled,
   useWorkshopEnabledSettled,
-  useWorkshopAppsEnabled,
-  useWorkshopWorkflowsEnabled
+  useWorkshopAppsEnabled
 } from '../../../scripts/posthog'
 import { t } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
@@ -651,16 +650,12 @@ describe('CinematicStudio', () => {
   })
 
   it.for([
-    { apps: false, workflows: false, open: false },
-    { apps: true, workflows: false, open: true },
-    { apps: false, workflows: true, open: true }
+    { apps: false, open: false },
+    { apps: true, open: true }
   ])(
-    'opens the studio to the apps or workflows rollout (apps $apps, workflows $workflows)',
-    async ({ apps, workflows, open }) => {
+    'opens the studio only to the Apps rollout (apps $apps)',
+    async ({ apps, open }) => {
       vi.mocked(useWorkshopAppsEnabled).mockReturnValue(computed(() => apps))
-      vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(
-        computed(() => workflows)
-      )
       render(CinematicStudioPage, { props: { models } })
 
       await vi.waitFor(() => {
