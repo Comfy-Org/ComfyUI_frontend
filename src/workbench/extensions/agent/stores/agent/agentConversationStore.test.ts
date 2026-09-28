@@ -689,10 +689,20 @@ describe('useAgentConversationStore', () => {
       }
     ])
 
+    // Ingested before the resume, which is the ordering the defect takes: the
+    // done has to reach the stash through `ingestBackgroundTurnEvent`, and it
+    // only can while the snapshot has not claimed the active slot. Resuming
+    // first instead settles the reactivated stash through the active path,
+    // which holds whether or not the snapshot was demoted.
     store.ingest(done('t1'))
     store.resumeBackgroundTurn()
 
     expect(store.isStreaming).toBe(false)
+    // One row, not two: settled with its own row id already hydrated, the
+    // stash defers to the persisted copy instead of pushing a second.
+    expect(
+      store.entries.filter((entry) => entry.role === 'assistant')
+    ).toHaveLength(1)
   })
 
   it('keeps a settled background reply when an earlier history turn shares its prompt text', () => {
