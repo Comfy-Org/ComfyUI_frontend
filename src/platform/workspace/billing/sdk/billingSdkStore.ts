@@ -45,7 +45,11 @@ import type {
   SubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApiUrl } from '@/platform/workspace/api/workspaceApiUrl'
-import { needsCustomerAttention } from '@/platform/workspace/billing/customerAttention'
+import type { ProgressToastKind } from '@/platform/workspace/billing/customerAttention'
+import {
+  needsCustomerAttention,
+  progressToastKind
+} from '@/platform/workspace/billing/customerAttention'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
@@ -71,8 +75,6 @@ import {
   projectTopupResult
 } from './topupOperationView'
 
-type ProgressKind = 'processing' | 'action'
-
 const PROGRESS_SUMMARY = {
   topup: {
     processing: 'billingOperation.topupProcessing',
@@ -82,7 +84,7 @@ const PROGRESS_SUMMARY = {
     processing: 'billingOperation.subscriptionProcessing',
     action: 'billingOperation.subscriptionActionRequired'
   }
-} as const satisfies Record<string, Record<ProgressKind, string>>
+} as const satisfies Record<string, Record<ProgressToastKind, string>>
 type ToastMessage = Parameters<ReturnType<typeof useToastStore>['add']>[0]
 
 /**
@@ -123,7 +125,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
   const offeredActions = new Map<string, Set<string>>()
   const progressToasts = new Map<
     string,
-    { kind: ProgressKind; message: ToastMessage }
+    { kind: ProgressToastKind; message: ToastMessage }
   >()
 
   const sdk = createBillingSdk({
@@ -255,11 +257,14 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     state: PendingBillingOperation,
     kind: keyof typeof PROGRESS_SUMMARY
   ) {
-    const progress: ProgressKind =
-      state.actionUrl === undefined ? 'processing' : 'action'
+    const progress = progressToastKind({
+      actionUrl: state.actionUrl,
+      phase: state.serverPhase
+    })
     const current = progressToasts.get(state.id)
     if (current?.kind === progress) return
     clearProgressToast(state.id)
+    if (progress === undefined) return
     const message: ToastMessage = {
       severity: progress === 'action' ? 'warn' : 'info',
       summary: t(PROGRESS_SUMMARY[kind][progress]),
