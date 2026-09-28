@@ -60,6 +60,14 @@ type SlotLinks = Partial<Record<number, GroupNodeLink>>
 type LinksFromMap = Partial<
   Record<number, Partial<Record<number, GroupNodeLink[]>>>
 >
+
+function isSlotType(value: unknown): value is ISlotType {
+  return (
+    typeof value === 'number' ||
+    typeof value === 'string' ||
+    (Array.isArray(value) && value.every((item) => typeof item === 'string'))
+  )
+}
 type LinksToMap = Partial<Record<number, SlotLinks>>
 type ExternalFromMap = Partial<
   Record<number, Partial<Record<number, string | number>>>
@@ -234,7 +242,9 @@ export class GroupNodeConfig {
       let type: string | number | null = firstLink
         ? linkedType == null
           ? null
-          : slotTypeKey(linkedType as ISlotType)
+          : isSlotType(linkedType)
+            ? slotTypeKey(linkedType)
+            : null
         : null
       if (type === 'COMBO') {
         // Use the array items

@@ -130,6 +130,18 @@ describe('GroupNodeConfig.getLinks', () => {
       config.getNodeDef({ index: 0, type: 'PrimitiveNode' })?.output
     ).toEqual([null])
   })
+
+  it.each([{ unexpected: true }, ['IMAGE', 42]])(
+    'normalizes an invalid primitive link type to null',
+    (invalidType) => {
+      const link = [0, 0, 1, 0, 1, invalidType] as unknown as GroupNodeLink
+      const config = configFrom([link])
+
+      expect(
+        config.getNodeDef({ index: 0, type: 'PrimitiveNode' })?.output
+      ).toEqual([null])
+    }
+  )
 })
 
 describe('findUnconsumedWidgetIndex', () => {
