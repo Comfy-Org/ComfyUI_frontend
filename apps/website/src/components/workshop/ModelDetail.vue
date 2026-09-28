@@ -58,7 +58,10 @@ import { reportWorkshopRun } from '../../config/workshop-run-state'
 import { modelDocsHref } from '../../lib/workshop/model-docs'
 import { linkLeavingPage } from '../../lib/workshop/leaving-link'
 import type { WorkshopSession } from '../../config/workshop-session-state'
-import { useWorkshopSession } from '../../config/workshop-session-state'
+import {
+  stopWorkshopSession,
+  useWorkshopSession
+} from '../../config/workshop-session-state'
 import { workshopIdempotencyKey } from '../../config/workshop-snippets'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -219,10 +222,16 @@ function startAccountServices() {
   return { ...useWorkshopSession(), balance: useWorkshopCredits().balance }
 }
 const account = shallowRef<ReturnType<typeof startAccountServices>>()
+function stopAccountServices() {
+  stopWorkshopSession()
+  account.value = undefined
+}
 watch(
   workshopEnabled,
   (enabled) => {
     if (enabled) account.value ??= startAccountServices()
+    else if (account.value && runState.value.status !== 'running')
+      stopAccountServices()
   },
   { immediate: true }
 )
@@ -259,7 +268,7 @@ const canRunModel = computed(
     !clone
 )
 const flagOffGate = computed(() =>
-  workshopEnabledSettled.value ? 'rollingOut' : 'pending'
+  workshopEnabledSettled.value ? 'rollingOut' : 'resolving'
 )
 const gate = computed(() => {
   if (!canRunModel.value) return 'unavailable'
@@ -275,6 +284,13 @@ const gate = computed(() => {
   )
     return session.value.role === 'member' ? 'memberNoCredits' : 'noCredits'
   return 'ready'
+})
+const blockedRunLabel = computed<TranslationKey>(() => {
+  if (gate.value === 'resolving') return 'workshop.run.resolvingAvailability'
+  if (gate.value === 'pending') return 'workshop.run.preparingSession'
+  return model.incompleteReason
+    ? 'workshop.model.notSupported'
+    : 'workshop.run.mappingUnavailable'
 })
 const errors = computed<FieldErrors>(() =>
   runState.value.status === 'failed' ? runState.value.fieldErrors : {}
@@ -946,16 +962,7 @@ function useInCode() {
             data-testid="run-button"
             :data-gate="gate"
           >
-            {{
-              t(
-                gate === 'pending'
-                  ? 'workshop.run.preparingSession'
-                  : model.incompleteReason
-                    ? 'workshop.model.notSupported'
-                    : 'workshop.run.mappingUnavailable',
-                locale
-              )
-            }}
+            {{ t(blockedRunLabel, locale) }}
           </Button>
         </div>
       </div>
@@ -964,6 +971,7 @@ function useInCode() {
         class="flex min-w-0 flex-col gap-4 lg:sticky lg:top-26 lg:col-span-7 lg:self-start"
       >
         <PlaygroundOutput
+          v-if="workshopEnabled || isRunning || runState.status === 'example'"
           v-model:revealed="revealed"
           :state="runState"
           :earlier

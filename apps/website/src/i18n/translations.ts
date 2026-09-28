@@ -10203,6 +10203,10 @@ Enterprise`
     'zh-CN':
       '浏览器内运行正在逐步开放。你可以通过 API 调用此模型，或在 ComfyUI 中运行。'
   },
+  'workshop.run.resolvingAvailability': {
+    en: 'Just a moment…',
+    'zh-CN': '请稍候…'
+  },
   'workshop.run.rollingOutApi': {
     en: 'See the API',
     'zh-CN': '查看 API'
