@@ -7,6 +7,25 @@ import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConve
 
 const CASE = 'agent-rec-clear-workflow'
 
+async function enableCrdtDebugPanel(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    localStorage.setItem('Comfy.Agent.CrdtDebug.enabled', 'true')
+    localStorage.setItem('Comfy.Agent.CrdtDevPanel.open', 'true')
+  })
+}
+
+async function appliedFrameCount(page: Page): Promise<number> {
+  const outcomesCell = page
+    .locator('[data-testid="crdt-dev-panel"] tr', { hasText: 'outcomes' })
+    .locator('td')
+    .nth(1)
+  const applied = Number.parseInt(
+    (await outcomesCell.innerText()).split('/')[1] ?? '',
+    10
+  )
+  return Number.isNaN(applied) ? -1 : applied
+}
+
 // A host add pushed after the tab-return catch-up. Frames reach the follower
 // in order on one channel, so once this renders, the catch-up ahead of it has
 // been applied -- which is what makes the emptiness assertions below about the
@@ -112,6 +131,8 @@ test.describe(
     // Replaying the recorded gaps puts a rendered checkpoint between them.
     test.use({ conversationCase: CASE, replayTiming: 'recorded' })
 
+    test.beforeEach(async ({ page }) => enableCrdtDebugPanel(page))
+
     test('leaves the canvas empty of the node the same turn put on it', async ({
       agentConversation,
       page
@@ -164,6 +185,7 @@ test.describe(
       // Returning re-subscribes the follower, which replays the bound
       // document over the tab's own snapshot.
       const subscribes = agentConversation.subscribeCount()
+      const appliedFrames = await appliedFrameCount(page)
       await topbar.getTab(0).click()
       await expect(topbar.getTab(0).and(topbar.getActiveTab())).toBeVisible()
       // At least one more, not exactly one: the blank tab may still be
@@ -173,6 +195,21 @@ test.describe(
       await expect
         .poll(() => agentConversation.subscribeCount())
         .toBeGreaterThanOrEqual(subscribes + 1)
+
+      // The host-side counter above rises when the catch-up is sent. This
+      // browser-side counter rises only after the frame is applied and the
+      // live graph is committed, so the emptiness check cannot resolve
+      // against the pre-catch-up canvas. Assert before sending the marker:
+      // its full-reconcile path can itself remove a stale node and hide the
+      // regression this case exists to catch.
+      await expect
+        .poll(() => appliedFrameCount(page))
+        .toBeGreaterThanOrEqual(appliedFrames + 1)
+      for (const id of added)
+        await expect(agentConversation.vueNodes.getNodeLocator(id)).toHaveCount(
+          0
+        )
+      await expect(agentConversation.vueNodes.nodes).toHaveCount(0)
 
       // That counter rises when the host has SENT the catch-up, not when the
       // follower applied it, so asserting emptiness on the strength of it
