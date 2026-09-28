@@ -122,7 +122,7 @@ const chipClass = (key: PickerKey) =>
     role="group"
     :aria-label="tc('cinematic.composer.label', locale)"
   >
-    <div class="flex items-start gap-2.5 px-4 pt-3.5 pb-3">
+    <div class="flex flex-wrap items-start gap-x-2.5 gap-y-1 px-4 pt-3.5 pb-3">
       <CinematicReferenceMenu
         v-model:cast="cast"
         v-model:palette="palette"
@@ -143,7 +143,7 @@ const chipClass = (key: PickerKey) =>
       <CinematicEnhanceSwitch
         v-model="enhance"
         :locale
-        class="h-9 shrink-0 text-primary-comfy-canvas"
+        class="h-9 shrink-0 text-primary-comfy-canvas max-sm:order-first max-sm:h-6 max-sm:basis-full max-sm:justify-end"
       />
     </div>
 
