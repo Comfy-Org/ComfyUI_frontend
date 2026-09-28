@@ -279,6 +279,28 @@ describe('refreshRemoteConfig', () => {
       expect(sessionAgentGrantValidUntil.value).toBeUndefined()
     })
 
+    it('keeps anonymous state after an older authenticated refresh settles', async () => {
+      authenticatedRemoteConfigState.value = 'error'
+      let resolveAuthenticated: ((response: Response) => void) | undefined
+      vi.mocked(api.fetchApi).mockImplementation(
+        (_route, options) =>
+          new Promise<Response>((resolve) => {
+            options?.onAuthHeader?.(true)
+            resolveAuthenticated = resolve
+          })
+      )
+      vi.mocked(global.fetch).mockResolvedValue(mockSuccessResponse())
+
+      const authenticatedRefresh = refreshRemoteConfig()
+      await vi.waitFor(() => expect(api.fetchApi).toHaveBeenCalledOnce())
+      await refreshRemoteConfig({ useAuth: false })
+      resolveAuthenticated?.(mockSuccessResponse())
+      await authenticatedRefresh
+
+      expect(authenticatedRemoteConfigState.value).toBe('unloaded')
+      expect(remoteConfigState.value).toBe('anonymous')
+    })
+
     it('does not erase authenticated config or its grant on an anonymous 401', async () => {
       const existingConfig = {
         subscription_required: false,

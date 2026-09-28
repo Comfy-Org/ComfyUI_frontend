@@ -114,6 +114,7 @@ function commitRemoteConfigSuccess(
     cacheSessionAgentGrant(config['agent-in-app-experience'] === true)
   } else {
     authenticatedRemoteConfigState.value = 'unloaded'
+    authenticatedLoadingGeneration = undefined
     clearSessionAgentGrant()
   }
   remoteConfigRevision.value++
