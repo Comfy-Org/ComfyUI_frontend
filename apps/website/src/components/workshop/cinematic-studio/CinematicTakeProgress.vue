@@ -12,11 +12,9 @@ const LONG_WAIT_MS = 30_000
 
 const {
   take,
-  video = false,
   locale = 'en'
 } = defineProps<{
   take: Take
-  video?: boolean
   locale?: Locale
 }>()
 
@@ -46,23 +44,13 @@ const elapsed = computed(() => Math.max(0, now.value - take.startedAt))
       aria-hidden="true"
     />
     {{
-      tc(
-        video
-          ? 'cinematic.stage.generatingVideo'
-          : 'cinematic.stage.generatingImage',
-        locale
-      )
+      tc('cinematic.stage.takeName', locale, {
+        shot: take.shot,
+        take: take.letter
+      })
     }}
     <span class="font-mono text-primary-comfy-canvas tabular-nums">
       {{ formatElapsed(elapsed) }}
     </span>
   </figcaption>
-  <span
-    class="absolute inset-x-0 bottom-0 h-0.5 overflow-hidden bg-transparency-white-t8"
-    aria-hidden="true"
-  >
-    <span
-      class="block h-full w-1/3 bg-primary-comfy-yellow motion-safe:animate-pulse"
-    />
-  </span>
 </template>
