@@ -107,7 +107,7 @@ const i18n = createI18n({
 })
 
 // Component tests: pass via global plugins
-mount(MyComponent, { global: { plugins: [i18n] } })
+render(MyComponent, { global: { plugins: [i18n] } })
 
 // Composable tests: provide via a host component (see useMediaAssetActions.test.ts pattern)
 const app = createApp(HostComponent)
