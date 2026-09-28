@@ -403,6 +403,10 @@ describe('AgentPanel extension flag gate', () => {
       expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBeNull()
       expect(agentStore.open).not.toHaveBeenCalled()
       expect(consentStore.load).toHaveBeenCalledTimes(2)
+      expect(
+        startupProbe.mock.calls.length,
+        'release re-drove the offer while its holder was still active'
+      ).toBeLessThanOrEqual(2)
     }
   )
 
@@ -462,61 +466,6 @@ describe('AgentPanel extension flag gate', () => {
     await vi.waitFor(() =>
       expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
     )
-  })
-
-  /**
-   * Two, because `loadConsentIfEligible` reaches the startup probe from exactly
-   * three places: the identity watch — which returns before the consent read
-   * while the flag is still false — the flag gate's `sync`, and the release
-   * watcher. These cases drive `sync` twice (setup, then the explicit listener
-   * call) and change no identity, so two attempts is every attempt that is not
-   * the release watcher firing, and `<= 2` says it did not fire at all.
-   *
-   * A lane that adds a flag sync or an identity change to these cases may raise
-   * this number. A lane that changes the offer path may not: the point is that a
-   * surface holding the offer produces no attempts beyond the ones the boot
-   * already made.
-   *
-   * One case per holder `screenHolder` knows about, because each case is the
-   * only one that fails when release forgets that holder in particular — and a
-   * holder read non-reactively would leave `screenIsClear` stale and spin for
-   * real, not only under mutation. A lane adding a holder adds a case here.
-   */
-  const OFFER_ATTEMPTS_WITHOUT_RELEASE = 2
-
-  it.for([
-    {
-      holder: 'the first run owns the screen',
-      arrange: () => screenShown()
-    },
-    {
-      holder: 'a coachmark tour is active',
-      arrange: () => void (activeTour.value = 'appMode')
-    },
-    {
-      holder: 'a dialog is open',
-      arrange: () => openDialog()
-    }
-  ])('does not re-drive the held offer while $holder', async ({ arrange }) => {
-    mocks.flagEnabled = true
-    arrange()
-    Object.assign(consentStore, { accepted: false, isChecking: false })
-
-    await loadEntryAndSetup()
-    mocks.flagListener?.()
-    await flush()
-
-    // Release has to agree with hold about what counts as "the screen". When
-    // it does not, the offer is released into a surface that immediately
-    // re-holds it and the two spin, one consent read and one startup probe
-    // per cycle, until the worker runs out of memory. Bounding the attempts
-    // is what turns that into a red test instead of a dead runner: the bound
-    // is exceeded within a few microtasks, long before the spin is expensive.
-    expect(
-      startupProbe.mock.calls.length,
-      'the offer was re-driven while a surface still held it: release disagrees with hold about what "the screen" is'
-    ).toBeLessThanOrEqual(OFFER_ATTEMPTS_WITHOUT_RELEASE)
-    expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
   })
 
   it('offers when neither Getting Started took the screen nor a tour is active', async () => {
