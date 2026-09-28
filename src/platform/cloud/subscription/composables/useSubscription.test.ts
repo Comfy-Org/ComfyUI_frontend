@@ -980,11 +980,7 @@ describe('useSubscription', () => {
       expect(mockReportTelemetryError).toHaveBeenCalledWith(
         expect.any(Error),
         expect.objectContaining({
-          errorType: 'cloud_checkout_recovery_unreachable',
-          tags: expect.objectContaining({
-            failure_kind: 'degraded',
-            outcome: 'aborted'
-          })
+          errorType: 'cloud_checkout_recovery_unreachable'
         })
       )
     })

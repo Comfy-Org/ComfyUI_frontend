@@ -218,25 +218,15 @@ function useSubscriptionInternal() {
       ? {
           message:
             'Pending subscription checkout recovery could not reach billing',
-          errorType: 'cloud_checkout_recovery_unreachable' as const,
-          failureKind: 'degraded' as const,
-          outcome: 'aborted' as const
+          errorType: 'cloud_checkout_recovery_unreachable' as const
         }
       : {
           message: 'Pending subscription checkout recovery timed out',
-          errorType: 'cloud_checkout_completion_missing' as const,
-          failureKind: 'missing_event' as const,
-          outcome: 'timed_out' as const
+          errorType: 'cloud_checkout_completion_missing' as const
         }
 
     reportTelemetryError(new Error(report.message), {
       errorType: report.errorType,
-      tags: {
-        failure_kind: report.failureKind,
-        feature_area: 'billing',
-        operation: 'sync',
-        outcome: report.outcome
-      },
       context: {
         checkout_attempt_id: attempt.attempt_id,
         checkout_type: attempt.checkout_type,
