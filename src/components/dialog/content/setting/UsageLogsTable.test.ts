@@ -1,6 +1,7 @@
 import { getActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import Tooltip from 'primevue/tooltip'
+import type { Mocked } from 'vitest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -8,11 +9,11 @@ import { createI18n } from 'vue-i18n'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 
-import type {
-  AuditLog,
+import type { AuditLog } from '@/services/customerEventsService'
+import {
+  EventType,
   useCustomerEventsService
 } from '@/services/customerEventsService'
-import { EventType } from '@/services/customerEventsService'
 
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { useTelemetry } from '@/platform/telemetry'
@@ -22,29 +23,7 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 
 import UsageLogsTable from './UsageLogsTable.vue'
 
-const mockCustomerEventsService = vi.hoisted(() => ({
-  getMyEvents: vi.fn(),
-  formatEventType:
-    vi.fn<ReturnType<typeof useCustomerEventsService>['formatEventType']>(),
-  getEventSeverity:
-    vi.fn<ReturnType<typeof useCustomerEventsService>['getEventSeverity']>(),
-  formatAmount: vi.fn(),
-  formatDate: vi.fn(),
-  hasAdditionalInfo: vi.fn(),
-  getTooltipContent: vi.fn(),
-  error: { value: null as string | null },
-  isLoading: { value: false }
-}))
-
-vi.mock<unknown>(import('@/services/customerEventsService'), () => ({
-  useCustomerEventsService: () => mockCustomerEventsService,
-  EventType: {
-    CREDIT_ADDED: 'credit_added',
-    ACCOUNT_CREATED: 'account_created',
-    API_USAGE_STARTED: 'api_usage_started',
-    API_USAGE_COMPLETED: 'api_usage_completed'
-  }
-}))
+vi.mock(import('@/services/customerEventsService'))
 
 vi.mock(import('@/platform/telemetry'))
 
@@ -123,6 +102,9 @@ function makeEventsResponse(
 }
 
 describe('UsageLogsTable', () => {
+  let mockCustomerEventsService: Mocked<
+    ReturnType<typeof useCustomerEventsService>
+  >
   const mockEventsResponse = makeEventsResponse([
     {
       event_id: 'event-1',
@@ -146,6 +128,7 @@ describe('UsageLogsTable', () => {
   ])
 
   beforeEach(() => {
+    mockCustomerEventsService = vi.mocked(useCustomerEventsService())
     setWorkspaceBilling(false)
     mockCustomerEventsService.getMyEvents.mockResolvedValue(mockEventsResponse)
     vi.mocked(workspaceApi.getBillingEvents).mockResolvedValue(
@@ -172,12 +155,10 @@ describe('UsageLogsTable', () => {
       .thenReturn('success')
       .calledWith(EventType.API_USAGE_COMPLETED)
       .thenReturn('warning')
-    mockCustomerEventsService.formatAmount.mockImplementation(
-      (amount: number) => {
-        if (!amount) return '0.00'
-        return (amount / 100).toFixed(2)
-      }
-    )
+    mockCustomerEventsService.formatAmount.mockImplementation((amount) => {
+      if (!amount) return '0.00'
+      return (amount / 100).toFixed(2)
+    })
     mockCustomerEventsService.formatDate.mockImplementation(
       (dateString: string) => new Date(dateString).toLocaleDateString()
     )
@@ -191,8 +172,6 @@ describe('UsageLogsTable', () => {
     mockCustomerEventsService.getTooltipContent.mockImplementation(
       () => '<strong>Transaction Id:</strong> txn-123'
     )
-    mockCustomerEventsService.error.value = null
-    mockCustomerEventsService.isLoading.value = false
   })
 
   function renderComponent() {
