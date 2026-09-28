@@ -1869,6 +1869,33 @@ describe('FullPageCheckoutView promo codes', () => {
     expect(orderSummary()).toHaveAttribute('aria-busy', 'false')
   })
 
+  it('keeps an applied code through a fresh capture after money it was watching declined', async () => {
+    const fake = await renderCheckout({}, quotesByCode)
+    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+    await enterCode('LAUNCH20')
+    await screen.findByText('−$5.60')
+    fake.recover.mockImplementationOnce(async () => {
+      fake.publishOperation(pendingOperation('op_watched'))
+      return { status: 'ok', value: pendingOperation('op_watched') }
+    })
+    window.dispatchEvent(pageShow(true))
+    await screen.findByTestId('checkout-waiting')
+
+    fake.publishOperation(failedOperation('card_declined', 'op_watched'))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Payment declined'
+    )
+    expect(fake.previewSubscribe).toHaveBeenLastCalledWith(
+      expect.objectContaining({ promotionCode: 'LAUNCH20' }),
+      expect.anything()
+    )
+    expect(screen.getByText('−$5.60')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Remove LAUNCH20' })
+    ).toBeEnabled()
+  })
+
   it('offers no promo entry on a change that charges nothing today', async () => {
     await renderCheckout({
       preview: {
