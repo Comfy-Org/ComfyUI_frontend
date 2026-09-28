@@ -36,7 +36,7 @@ vi.mock('@vueuse/core', async (importOriginal) => ({
 
 import { i18n } from '@/i18n'
 import type { TurnId } from '../../schemas/agentApiSchema'
-import { zAgentWsEvent } from '../../schemas/agentApiSchema'
+import { toTurnId, zAgentWsEvent } from '../../schemas/agentApiSchema'
 import type { AgentChatEvent } from '../../services/agent/agentEventTransport'
 import type { AssistantMessage } from '../../services/agent/agentMessageParts'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
@@ -174,7 +174,7 @@ describe('ConversationView', () => {
 
   it('starts a restored conversation at the latest message', async () => {
     const assistant: AssistantMessage = {
-      id: 'msg-1' as TurnId,
+      id: toTurnId('msg-1'),
       role: 'assistant',
       parts: [{ type: 'text', text: 'latest reply', state: 'done' }],
       streaming: false,
@@ -205,13 +205,21 @@ describe('ConversationView', () => {
     const scrollTo = vi.fn()
     Element.prototype.scrollTo = scrollTo
     const scrollContainer = screen.getByTestId('agent-conversation-scroll')
+    let scrollHeight = 1_000
+    let scrollTop = 100
     Object.defineProperties(scrollContainer, {
-      scrollHeight: { value: 1_000 },
-      scrollTop: { value: 100 },
+      scrollHeight: { get: () => scrollHeight },
+      scrollTop: { get: () => scrollTop },
       clientHeight: { value: 500 }
     })
     await nextTick()
+    for (const callback of resizeCallbacks) callback()
+    for (const callback of resizeCallbacks) callback()
+    scrollHeight = 1_200
+    scrollTop = 490
+    await userEvent.pointer([{ target: scrollContainer, keys: '[MouseLeft>]' }])
     await fireEvent.scroll(scrollContainer)
+    scrollTo.mockClear()
     for (const callback of resizeCallbacks) callback()
 
     store.ingest(delta('msg-1', 'Here is a cat'))
@@ -223,7 +231,7 @@ describe('ConversationView', () => {
 
   it('shows a scroll-to-latest button when scrolled up and returns to bottom on click', async () => {
     const assistant: AssistantMessage = {
-      id: 'msg-1' as TurnId,
+      id: toTurnId('msg-1'),
       role: 'assistant',
       parts: [{ type: 'text', text: 'hello', state: 'done' }],
       streaming: false,
@@ -273,7 +281,7 @@ describe('ConversationView', () => {
 
   it('resumes following when the conversation identity changes', async () => {
     const assistant: AssistantMessage = {
-      id: 'msg-1' as TurnId,
+      id: toTurnId('msg-1'),
       role: 'assistant',
       parts: [{ type: 'text', text: 'first thread', state: 'done' }],
       streaming: false,
@@ -301,54 +309,21 @@ describe('ConversationView', () => {
     scrollTo.mockClear()
     await rerender({
       conversationId: 'thread-2',
-      entries: [
-        {
-          ...assistant,
-          id: 'msg-2' as TurnId,
-          parts: [{ type: 'text', text: 'second thread', state: 'done' }]
-        }
-      ]
+      entries: [assistant]
     })
-    await nextTick()
-    await nextTick()
-
-    expect(
-      screen.queryByRole('button', { name: 'Latest' })
-    ).not.toBeInTheDocument()
-    expect(scrollTo).toHaveBeenCalled()
-  })
-
-  it('keeps following within the fractional bottom tolerance', async () => {
-    const assistant: AssistantMessage = {
-      id: 'msg-1' as TurnId,
-      role: 'assistant',
-      parts: [{ type: 'text', text: 'hello', state: 'done' }],
-      streaming: false,
-      thinking: false
-    }
-    const scrollTo = vi.fn()
-    Element.prototype.scrollTo = scrollTo
-    const { rerender } = render(ConversationView, {
-      props: { entries: [assistant] },
-      global: { plugins: [i18n] }
-    })
-    const scrollContainer = screen.getByTestId('agent-conversation-scroll')
-    Object.defineProperties(scrollContainer, {
-      scrollHeight: { value: 1_000 },
-      scrollTop: { value: 485 },
-      clientHeight: { value: 500 }
-    })
+    await userEvent.pointer([{ target: scrollContainer, keys: '[MouseLeft>]' }])
     await fireEvent.scroll(scrollContainer)
-
-    scrollTo.mockClear()
     await rerender({
+      conversationId: 'thread-2',
       entries: [
         {
           ...assistant,
-          parts: [{ type: 'text', text: 'hello again', state: 'done' }]
+          id: toTurnId('msg-2'),
+          parts: [{ type: 'text', text: 'other thread', state: 'done' }]
         }
       ]
     })
+    await nextTick()
     await nextTick()
 
     expect(
@@ -356,6 +331,55 @@ describe('ConversationView', () => {
     ).not.toBeInTheDocument()
     expect(scrollTo).toHaveBeenCalled()
   })
+
+  it.for([
+    { distance: 16, follows: true },
+    { distance: 17, follows: false }
+  ])(
+    'measures the bottom tolerance at $distance px',
+    async ({ distance, follows }) => {
+      const assistant: AssistantMessage = {
+        id: toTurnId('msg-1'),
+        role: 'assistant',
+        parts: [{ type: 'text', text: 'hello', state: 'done' }],
+        streaming: false,
+        thinking: false
+      }
+      const scrollTo = vi.fn()
+      Element.prototype.scrollTo = scrollTo
+      const { rerender } = render(ConversationView, {
+        props: { entries: [assistant] },
+        global: { plugins: [i18n] }
+      })
+      const scrollContainer = screen.getByTestId('agent-conversation-scroll')
+      Object.defineProperties(scrollContainer, {
+        scrollHeight: { value: 1_000 },
+        scrollTop: { value: 500 - distance },
+        clientHeight: { value: 500 }
+      })
+      await nextTick()
+      await userEvent.pointer([
+        { target: scrollContainer, keys: '[MouseLeft>]' }
+      ])
+      await fireEvent.scroll(scrollContainer)
+
+      scrollTo.mockClear()
+      await rerender({
+        entries: [
+          {
+            ...assistant,
+            parts: [{ type: 'text', text: 'hello again', state: 'done' }]
+          }
+        ]
+      })
+      await nextTick()
+
+      expect(Boolean(screen.queryByRole('button', { name: 'Latest' }))).toBe(
+        !follows
+      )
+      expect(scrollTo).toHaveBeenCalledTimes(follows ? 1 : 0)
+    }
+  )
 
   it('fades only the edges where content continues past the view', async () => {
     const assistant: AssistantMessage = {
