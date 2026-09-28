@@ -83,6 +83,6 @@ test.describe('Load3D Viewer', { tag: '@vue-nodes' }, () => {
       expect(dialogBox.y + dialogBox.height).toBeLessThanOrEqual(
         viewport.height + 1
       )
-    }).toPass()
+    }).toPass({ timeout: 5000 })
   })
 })
