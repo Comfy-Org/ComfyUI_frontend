@@ -54,10 +54,9 @@ const content = ref<HTMLElement>()
 const shouldFollowLatest = ref(true)
 const atBottom = ref(true)
 const bottomGracePx = 16
-let pendingProgrammaticTarget: number | null = null
-let pendingProgrammaticFrame: number | undefined
-let pendingConversationId: string | null | undefined
-let pendingConversationReset = false
+const followIntentTolerancePx = 1
+let pendingProgrammaticScroll: { target: number; frame: number } | undefined
+let pendingConversationId: string | undefined
 
 const top = ref<HTMLElement>()
 const atTop = ref(true)
@@ -67,10 +66,9 @@ useIntersectionObserver(top, ([entry]) => {
 })
 
 function clearPendingProgrammaticScroll(): void {
-  pendingProgrammaticTarget = null
-  if (pendingProgrammaticFrame !== undefined)
-    cancelAnimationFrame(pendingProgrammaticFrame)
-  pendingProgrammaticFrame = undefined
+  if (pendingProgrammaticScroll)
+    cancelAnimationFrame(pendingProgrammaticScroll.frame)
+  pendingProgrammaticScroll = undefined
 }
 
 useEventListener(scrollContainer, 'pointerdown', clearPendingProgrammaticScroll)
@@ -100,10 +98,10 @@ function scrollToLatest(): void {
     element.scrollHeight > element.clientHeight &&
     Math.abs(element.scrollTop - target) > bottomGracePx
   if (willMove) {
-    pendingProgrammaticTarget = target
-    pendingProgrammaticFrame = requestAnimationFrame(
-      clearPendingProgrammaticScroll
-    )
+    pendingProgrammaticScroll = {
+      target,
+      frame: requestAnimationFrame(clearPendingProgrammaticScroll)
+    }
   }
   if (typeof element.scrollTo === 'function') {
     element.scrollTo({ top: target, behavior: 'instant' })
@@ -119,13 +117,16 @@ useEventListener(scrollContainer, 'scroll', () => {
     element.scrollHeight - element.scrollTop - element.clientHeight <=
     bottomGracePx
   if (
-    pendingProgrammaticTarget !== null &&
-    Math.abs(element.scrollTop - pendingProgrammaticTarget) <= bottomGracePx
+    pendingProgrammaticScroll &&
+    Math.abs(element.scrollTop - pendingProgrammaticScroll.target) <=
+      bottomGracePx
   ) {
     clearPendingProgrammaticScroll()
     return
   }
-  shouldFollowLatest.value = atBottom.value
+  shouldFollowLatest.value =
+    element.scrollHeight - element.scrollTop - element.clientHeight <=
+    followIntentTolerancePx
   clearPendingProgrammaticScroll()
 })
 
@@ -157,7 +158,6 @@ watch(
   (current, previous) => {
     if (current == null || previous == null) return
     pendingConversationId = current
-    pendingConversationReset = true
     shouldFollowLatest.value = true
   }
 )
@@ -166,14 +166,15 @@ watch(
   () => entries,
   async () => {
     if (entries.length === 0) {
-      pendingConversationReset = false
       pendingConversationId = undefined
       shouldFollowLatest.value = true
       return
     }
-    if (!pendingConversationReset || pendingConversationId !== conversationId)
+    if (
+      pendingConversationId === undefined ||
+      pendingConversationId !== conversationId
+    )
       return
-    pendingConversationReset = false
     pendingConversationId = undefined
     shouldFollowLatest.value = true
     await nextTick()
