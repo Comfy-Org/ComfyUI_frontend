@@ -5,10 +5,10 @@
  * after the card is submitted comes from the lifecycle's projection, so this
  * page renders what the SDK says and never keeps a payment state of its own.
  * A hosted continuation redirects this tab and comes back on `/v1/result`.
+ * The plan was chosen in the host app, so every way out leads back there.
  */
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRoute, useRouter } from 'vue-router'
 
 import type {
   SubscribeInput,
@@ -21,14 +21,12 @@ import {
 } from '@comfyorg/account-ui/billing'
 import type { StripePaymentCopy } from '@comfyorg/account-ui/billing/stripe'
 import {
-  billingIntentPath,
   buildBillingEntryUrl,
   buildReturnUrl
 } from '@comfyorg/billing-contract'
 
 import CheckoutPayment from '@/components/CheckoutPayment.vue'
 import EmbeddedCheckout from '@/components/EmbeddedCheckout.vue'
-import HostedSurface from '@/components/HostedSurface.vue'
 import { useBilledWorkspace } from '@/composables/useBilledWorkspace'
 import { useHostedCopy } from '@/composables/useHostedCopy'
 import { BILLING_WEB_ENV } from '@/config/env'
@@ -41,8 +39,6 @@ import { createDeferredStripeChallengePort } from '@/session/stripeChallengePort
 
 const { t } = useI18n()
 const { coded } = useHostedCopy()
-const route = useRoute()
-const router = useRouter()
 const { entry } = useBillingEntry()
 const billedWorkspace = useBilledWorkspace()
 
@@ -269,47 +265,14 @@ async function confirm(confirmationToken?: string) {
   submitFailure.value = coded('failure', result.code)
 }
 
-function back() {
-  void router.push({
-    path: billingIntentPath('subscription'),
-    query: route.query
-  })
-}
-
-function close() {
+function returnToHost() {
   const href = returnLink.value
-  if (href === undefined) back()
-  else window.location.assign(href)
+  if (href !== undefined) window.location.assign(href)
 }
-
-const subscriptionPath = computed(() => ({
-  path: billingIntentPath('subscription'),
-  query: route.query
-}))
 </script>
 
 <template>
-  <HostedSurface v-if="planSlug === undefined">
-    <section
-      class="rounded-xl border border-border-subtle bg-secondary-background p-6"
-    >
-      <h2 class="m-0 text-base font-semibold text-base-foreground">
-        {{ t('checkout.noPlanTitle') }}
-      </h2>
-      <p class="mt-2 mb-0 text-sm text-muted-foreground">
-        {{ t('checkout.noPlanBody') }}
-      </p>
-      <RouterLink
-        :to="subscriptionPath"
-        class="mt-4 inline-block text-sm text-base-foreground underline underline-offset-4"
-      >
-        {{ t('checkout.choosePlan') }}
-      </RouterLink>
-    </section>
-  </HostedSurface>
-
   <main
-    v-else
     class="dark-theme fixed inset-0 overflow-auto bg-charcoal-950 px-4 py-6 font-inter sm:px-6 sm:py-10"
   >
     <section class="mx-auto flex min-h-full max-w-7xl items-center">
@@ -324,9 +287,10 @@ const subscriptionPath = computed(() => ({
           {{ coded('failure', failure.code) }}
         </p>
         <button
+          v-if="returnLink"
           type="button"
           class="mt-4 cursor-pointer text-sm text-base-foreground underline underline-offset-4"
-          @click="back"
+          @click="returnToHost"
         >
           {{ t('checkout.back') }}
         </button>
@@ -335,8 +299,8 @@ const subscriptionPath = computed(() => ({
         v-else-if="summary"
         v-bind="summary"
         :phase="phase"
-        @back="back"
-        @close="close"
+        @back="returnToHost"
+        @close="returnToHost"
       >
         <template #form>
           <CheckoutSteps
