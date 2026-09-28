@@ -9,6 +9,7 @@ import { useSubscription } from '@/platform/cloud/subscription/composables/useSu
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useAgentDockMount } from '@/workbench/extensions/agent/composables/useAgentDockMount'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import { api } from '@/scripts/api'
 
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import type {
@@ -368,6 +369,49 @@ describe('useBillingContext', () => {
   it('exposes fetchStatus action', async () => {
     const { fetchStatus } = useBillingContext()
     await expect(fetchStatus()).resolves.toBeUndefined()
+  })
+
+  it('refreshes billing when Agent-effective funds change', async () => {
+    const context = useBillingContext()
+    await vi.waitFor(() => expect(context.isInitialized.value).toBe(true))
+    vi.mocked(workspaceApi.getBillingStatus).mockClear()
+
+    api.dispatchCustomEvent('agent_billing_status', {
+      has_funds: false,
+      as_of_ns: 1_790_000_000_000_000_000
+    })
+
+    await vi.waitFor(() =>
+      expect(workspaceApi.getBillingStatus).toHaveBeenCalledOnce()
+    )
+  })
+
+  it('reports a failed post-discount refresh through the workspace billing adapter', async () => {
+    mockBillingRail.value = 'stripe'
+    vi.spyOn(
+      useTeamWorkspaceStore(),
+      'activeWorkspaceId',
+      'get'
+    ).mockReturnValue('personal-123')
+    const scope = effectScope()
+    onTestFinished(() => scope.stop())
+    const billing = scope.run(useSharedBillingContext)
+    assert.exists(billing)
+    await vi.waitFor(() => expect(billing.isInitialized.value).toBe(true))
+    const error = new Error('Billing status unavailable')
+    vi.mocked(workspaceApi.getBillingStatus).mockRejectedValue(error)
+    vi.mocked(prepareChurnkey).mockResolvedValue({
+      show: async () => ({ type: 'discount-applied' })
+    })
+    const showFallback = vi.fn()
+
+    await scope.run(() => launchCancellationFlow({ showFallback }))
+
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
+      errorType: 'error_refreshing_billing_after_churnkey_discount'
+    })
+    expect(useSubscription().fetchStatus).not.toHaveBeenCalled()
+    expect(showFallback).not.toHaveBeenCalled()
   })
 
   it('exposes fetchBalance action', async () => {
