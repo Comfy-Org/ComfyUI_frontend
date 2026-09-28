@@ -374,32 +374,57 @@ describe('CinematicStudio', () => {
     }
   )
 
-  it('names an attached reference in the composer menu and removes it from there', async () => {
-    const user = renderStudio()
-    const face = new File(['face'], 'mara.png', { type: 'image/png' })
-    const openMenu = async () =>
-      user.click(
-        screen.getByRole('button', {
-          name: tc('cinematic.composer.references')
+  const openReferenceMenu = (user: ReturnType<typeof userEvent.setup>) =>
+    user.click(
+      screen.getByRole('button', { name: tc('cinematic.composer.references') })
+    )
+
+  it.for([
+    { kind: 'cast', label: 'Character', action: 'Add a character reference' },
+    { kind: 'palette', label: 'Palette', action: 'Add a palette reference' }
+  ])(
+    'names an attached $label reference in the composer menu and removes it from there',
+    async ({ kind, label, action }) => {
+      const user = renderStudio()
+      const file = new File(['ref'], 'ref.png', { type: 'image/png' })
+
+      await user.upload(screen.getByTestId(`cinematic-reference-${kind}`), file)
+      await openReferenceMenu(user)
+      expect(
+        await screen.findByRole('menuitem', {
+          name: new RegExp(`^${label}.*ref\\.png`)
+        })
+      ).toBeInTheDocument()
+      await user.click(
+        screen.getByRole('menuitem', {
+          name: new RegExp(`^Remove reference: ${label}`)
         })
       )
 
-    await user.upload(screen.getByTestId('cinematic-reference-cast'), face)
-    await openMenu()
-    expect(
-      await screen.findByRole('menuitem', { name: /^Character.*mara\.png/ })
-    ).toBeInTheDocument()
-    await user.click(
-      screen.getByRole('menuitem', { name: /^Remove reference: Character/ })
-    )
+      await openReferenceMenu(user)
+      expect(
+        await screen.findByRole('menuitem', {
+          name: new RegExp(`^${label}.*${action}`)
+        })
+      ).toBeInTheDocument()
+      expect(screen.queryByRole('menuitem', { name: /^Remove/ })).toBeNull()
+    }
+  )
 
-    await openMenu()
+  it('counts both references on the composer + once both are attached', async () => {
+    const user = renderStudio()
+    const file = new File(['ref'], 'ref.png', { type: 'image/png' })
+
+    await user.upload(screen.getByTestId('cinematic-reference-cast'), file)
+    await user.upload(screen.getByTestId('cinematic-reference-palette'), file)
+
     expect(
-      await screen.findByRole('menuitem', {
-        name: /^Character.*Add a character reference/
-      })
+      within(
+        screen.getByRole('button', {
+          name: tc('cinematic.composer.references')
+        })
+      ).getByText('2')
     ).toBeInTheDocument()
-    expect(screen.queryByRole('menuitem', { name: /^Remove/ })).toBeNull()
   })
 
   it('keeps the camera picker open across columns until clicked away', async () => {
