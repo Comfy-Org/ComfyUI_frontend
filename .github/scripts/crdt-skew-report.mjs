@@ -13,6 +13,8 @@
  * Environment (supplied by the workflow):
  *   CMP_PACKAGE, CMP_SHA, CMP_SPEC, PINNED_VERSION, TESTS_OUTCOME
  */
+/* global process */
+
 import {
   appendFileSync,
   existsSync,

@@ -14,6 +14,8 @@
  *
  * Usage: node .github/scripts/crdt-skew-override.mjs --spec <tarball-url>
  */
+/* global process */
+
 import { readFileSync, writeFileSync } from 'node:fs'
 
 const PACKAGE = '@comfyorg/comfy-multi-player'
