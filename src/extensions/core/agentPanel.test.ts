@@ -54,9 +54,14 @@ let workspaceStore: ReturnType<typeof useTeamWorkspaceStore>
 
 const currentUser = ref<{ id: string } | null>({ id: 'account-a' })
 const isAuthInitialized = ref(true)
-/** Independent because the rendered screen can close before ownership ends. */
-const gettingStartedVisible = ref(false)
-const firstRunHoldsScreen = ref(false)
+type FirstRunScreenState = 'released' | 'visible' | 'handoff'
+const firstRunScreenState = ref<FirstRunScreenState>('released')
+const gettingStartedVisible = computed(
+  () => firstRunScreenState.value === 'visible'
+)
+const firstRunHoldsScreen = computed(
+  () => firstRunScreenState.value !== 'released'
+)
 const activeTour = ref<EntryPath | null>(null)
 let startupDecision: Promise<boolean> = Promise.resolve(true)
 
@@ -72,21 +77,16 @@ const startupProbe = vi.fn(() =>
     : startupDecision
 )
 
-/** Getting Started takes the screen. */
-function screenShown(): void {
-  gettingStartedVisible.value = true
-  firstRunHoldsScreen.value = true
+function showFirstRunScreen(): void {
+  firstRunScreenState.value = 'visible'
 }
 
-/** The screen goes and nothing takes over: the `start_blank`/`escape` closes. */
-function screenClosed(): void {
-  gettingStartedVisible.value = false
-  firstRunHoldsScreen.value = false
+function releaseFirstRunScreen(): void {
+  firstRunScreenState.value = 'released'
 }
 
-/** The screen closes while first-run ownership passes to the tour. */
-function screenClosedIntoTour(): void {
-  gettingStartedVisible.value = false
+function beginFirstRunScreenHandoff(): void {
+  firstRunScreenState.value = 'handoff'
 }
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
@@ -250,7 +250,7 @@ describe('AgentPanel extension flag gate', () => {
     agentStore.enabled = false
     agentStore.isOpen = true
     agentFlagEnabled.value = false
-    screenClosed()
+    releaseFirstRunScreen()
     activeTour.value = null
     startupDecision = Promise.resolve(true)
     vi.spyOn(useOnboardingTourStore(), 'activeTour', 'get').mockImplementation(
@@ -375,7 +375,7 @@ describe('AgentPanel extension flag gate', () => {
   it.for([
     {
       surface: 'the Getting Started screen is up',
-      arrange: () => screenShown()
+      arrange: () => showFirstRunScreen()
     },
     {
       surface: 'a coachmark tour is active',
@@ -384,7 +384,7 @@ describe('AgentPanel extension flag gate', () => {
     {
       surface: 'the Getting Started screen is up and a tour is active',
       arrange: () => {
-        screenShown()
+        showFirstRunScreen()
         activeTour.value = 'appMode'
       }
     },
@@ -412,7 +412,7 @@ describe('AgentPanel extension flag gate', () => {
 
   it('offers in the same session once the Getting Started screen closes', async () => {
     agentFlagEnabled.value = true
-    screenShown()
+    showFirstRunScreen()
     Object.assign(consentStore, { accepted: false, isChecking: false })
 
     await loadEntryAndSetup()
@@ -423,7 +423,7 @@ describe('AgentPanel extension flag gate', () => {
     })
     expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBeNull()
 
-    screenClosed()
+    releaseFirstRunScreen()
     await vi.waitFor(() =>
       expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
     )
@@ -432,7 +432,7 @@ describe('AgentPanel extension flag gate', () => {
 
   it('keeps waiting when Getting Started closes straight into the first-run tour', async () => {
     agentFlagEnabled.value = true
-    screenShown()
+    showFirstRunScreen()
     Object.assign(consentStore, { accepted: false, isChecking: false })
 
     await loadEntryAndSetup()
@@ -445,7 +445,7 @@ describe('AgentPanel extension flag gate', () => {
     // failure the first-run hold exists to prevent. Asserting the other order
     // (tour active *before* the screen closes) passes without pinning any of
     // this, because the tour alone already holds the offer.
-    screenClosedIntoTour()
+    beginFirstRunScreenHandoff()
     await flush()
     expect(
       useAgentConsent().withConsent,
@@ -453,7 +453,7 @@ describe('AgentPanel extension flag gate', () => {
     ).not.toHaveBeenCalled()
 
     activeTour.value = 'firstRun'
-    firstRunHoldsScreen.value = false
+    releaseFirstRunScreen()
     await flush()
     expect(
       useAgentConsent().withConsent,
@@ -624,7 +624,7 @@ describe('AgentPanel extension flag gate', () => {
       {
         reason: 'first_run_screen',
         arrange: () => {
-          screenShown()
+          showFirstRunScreen()
         }
       },
       {
@@ -709,7 +709,7 @@ describe('AgentPanel extension flag gate', () => {
 
     it('reports the first-run screen over a dialog sitting on top of it', async () => {
       agentFlagEnabled.value = true
-      screenShown()
+      showFirstRunScreen()
       openDialog()
       Object.assign(consentStore, { accepted: false, isChecking: false })
 
@@ -796,7 +796,7 @@ describe('AgentPanel extension flag gate', () => {
 
   it('keeps waiting when a tour ends while Getting Started is still up', async () => {
     agentFlagEnabled.value = true
-    screenShown()
+    showFirstRunScreen()
     activeTour.value = 'appMode'
     Object.assign(consentStore, { accepted: false, isChecking: false })
 
@@ -809,7 +809,7 @@ describe('AgentPanel extension flag gate', () => {
     expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
     expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBeNull()
 
-    screenClosed()
+    releaseFirstRunScreen()
     await vi.waitFor(() =>
       expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
     )
