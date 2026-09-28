@@ -12,8 +12,9 @@ import type {
   AgentPanelCloseSource,
   AgentPanelOpenedMetadata
 } from '@/platform/telemetry/types'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { api } from '@/scripts/api'
 
 const PANEL_MIN_WIDTH = 420
 const PANEL_MAX_WIDTH = 960
@@ -38,6 +39,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     writeDefaults: false
   })
   const gateSettled = ref(false)
+  const flagsSettled = computed(() => api.serverFeatureFlagsSettled.value)
   const maximized = ref(false)
   const draggedWidth = ref(PANEL_MIN_WIDTH)
   /**
@@ -222,6 +224,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     isVisible,
     hasEverOpened,
     gateSettled,
+    flagsSettled,
     width,
     isMaximized,
     dismissedSelectionSignature,
