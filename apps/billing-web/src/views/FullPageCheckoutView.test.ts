@@ -1658,6 +1658,7 @@ function quotesByCode(
 }
 
 const promoField = () => screen.getByRole('textbox', { name: 'Promo code' })
+const orderSummary = () => screen.getByRole('region', { name: 'Order summary' })
 
 async function enterCode(code: string) {
   await userEvent.click(screen.getByRole('button', { name: 'Add promo code' }))
@@ -1730,7 +1731,9 @@ describe('FullPageCheckoutView promo codes', () => {
 
     await enterCode('NOPE')
 
-    expect(await screen.findByText("This code isn't valid.")).toBeVisible()
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      "This code isn't valid."
+    )
     expect(promoField()).toHaveValue('NOPE')
     expect(promoField()).toHaveAttribute('aria-invalid', 'true')
     expect(screen.getAllByText('$28.00')).toHaveLength(2)
@@ -1860,8 +1863,10 @@ describe('FullPageCheckoutView promo codes', () => {
     await enterCode('LAUNCH20')
 
     expect(payButton()).toBeDisabled()
+    expect(orderSummary()).toHaveAttribute('aria-busy', 'true')
     answer({ status: 'ok', value: LAUNCH20_QUOTE })
     await waitFor(() => expect(payButton()).toBeEnabled())
+    expect(orderSummary()).toHaveAttribute('aria-busy', 'false')
   })
 
   it('offers no promo entry on a change that charges nothing today', async () => {

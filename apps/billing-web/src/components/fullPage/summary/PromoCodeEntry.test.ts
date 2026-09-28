@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 
-import type { PromoEntry } from '@/checkout/promoEntry'
+import type { PromoEntry, PromoRejection } from '@/checkout/promoEntry'
 import type { PromoChip } from '@/checkout/summaryLedger'
 import PromoCodeEntry from '@/components/fullPage/summary/PromoCodeEntry.vue'
 import { createBillingI18n } from '@/i18n'
@@ -78,18 +78,30 @@ describe('PromoCodeEntry', () => {
     }
   )
 
-  it('says a code it could not check apart from one the server refused', () => {
-    renderEntry({
-      entry: { kind: 'rejected', draft: 'LAUNCH20', reason: 'unchecked' }
-    })
+  it.for<{ reason: PromoRejection; message: string }>([
+    { reason: 'invalid', message: "This code isn't valid." },
+    { reason: 'unchecked', message: "We couldn't check this code. Try again." }
+  ])(
+    'announces the $reason result of Apply as an alert and keeps the code typed',
+    async ({ reason, message }) => {
+      const { rerender } = renderEntry({
+        entry: { kind: 'applying', draft: 'LAUNCH20' }
+      })
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument()
 
-    expect(
-      screen.getByText("We couldn't check this code. Try again.")
-    ).toBeInTheDocument()
-    expect(screen.getByRole('textbox', { name: 'Promo code' })).toHaveValue(
-      'LAUNCH20'
-    )
-  })
+      await rerender({
+        chips: [],
+        entry: { kind: 'rejected', draft: 'LAUNCH20', reason },
+        accepts: true,
+        live: true
+      })
+
+      expect(screen.getByRole('alert')).toHaveTextContent(message)
+      expect(screen.getByRole('textbox', { name: 'Promo code' })).toHaveValue(
+        'LAUNCH20'
+      )
+    }
+  )
 
   it('renders no entry anywhere on a charge that takes no code', () => {
     renderEntry({ accepts: false })
