@@ -7,6 +7,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
 import { openDeployToComfyApiDialog } from '@/platform/workflow/deploy/composables/lazyDeployToComfyApiDialog'
 import { useDeployToComfyApiGate } from '@/platform/workflow/deploy/composables/useDeployToComfyApiGate'
+import type { DeployGateState } from '@/platform/workflow/deploy/composables/useDeployToComfyApiGate'
 import { openShareDialog } from '@/platform/workflow/sharing/composables/lazyShareDialog'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
@@ -53,7 +54,11 @@ interface AddItemOptions {
 
 interface DeployRow {
   shown: boolean
-  answeredFor: number | undefined
+  generation: number | undefined
+}
+
+function isDeployAllowed(gate: DeployGateState): boolean {
+  return gate.status === 'answered' && gate.enabled
 }
 
 /**
@@ -64,12 +69,13 @@ interface DeployRow {
  */
 function nextDeployRow(
   row: DeployRow,
-  gate: { open: boolean; enabled: boolean; answeredFor: number | undefined }
+  open: boolean,
+  gate: DeployGateState
 ): DeployRow {
-  if (!gate.open) return { shown: gate.enabled, answeredFor: gate.answeredFor }
-  if (gate.answeredFor === undefined || gate.answeredFor === row.answeredFor)
-    return row
-  return { shown: row.shown || gate.enabled, answeredFor: gate.answeredFor }
+  const generation = gate.status === 'answered' ? gate.generation : undefined
+  if (!open) return { shown: isDeployAllowed(gate), generation }
+  if (generation === undefined || generation === row.generation) return row
+  return { shown: row.shown || isDeployAllowed(gate), generation }
 }
 
 export function useWorkflowActionsMenu(
@@ -86,17 +92,19 @@ export function useWorkflowActionsMenu(
   const menuItemStore = useMenuItemStore()
   const { flags } = useFeatureFlags()
   const deployGate = useDeployToComfyApiGate()
-  let deployRow: DeployRow = {
-    shown: deployGate.enabled.value,
-    answeredFor: deployGate.answeredFor.value
-  }
-  const showDeploy = ref(deployRow.shown)
+  const deployAllowed = computed(() => isDeployAllowed(deployGate.state.value))
+  const deployRow = ref(
+    nextDeployRow(
+      { shown: false, generation: undefined },
+      false,
+      deployGate.state.value
+    )
+  )
   watch(
-    [() => isOpen?.value ?? false, deployGate.enabled, deployGate.answeredFor],
-    ([open, enabled, answeredFor], [wasOpen]) => {
-      deployRow = nextDeployRow(deployRow, { open, enabled, answeredFor })
-      showDeploy.value = deployRow.shown
-      if (open && (!wasOpen || answeredFor === undefined)) deployGate.check()
+    [() => isOpen?.value ?? false, deployGate.state],
+    ([open, gate], [wasOpen]) => {
+      deployRow.value = nextDeployRow(deployRow.value, open, gate)
+      if (open && (!wasOpen || gate.status === 'awaiting')) deployGate.check()
     }
   )
   if (!isOpen) deployGate.check()
@@ -251,13 +259,13 @@ export function useWorkflowActionsMenu(
       label: t('deployToComfyApi.buttonLabel'),
       icon: 'icon-[lucide--rocket]',
       command: async () => {
-        if (!deployGate.enabled.value) return
+        if (!deployAllowed.value) return
         await ensureWorkflowActive(targetWorkflow.value)
-        if (!unref(deployGate.enabled)) return
+        if (!unref(deployAllowed)) return
         await openDeployToComfyApiDialog().catch(toastErrorHandler)
       },
-      visible: isRoot && showDeploy.value,
-      disabled: !deployGate.enabled.value,
+      visible: isRoot && deployRow.value.shown,
+      disabled: !deployAllowed.value,
       isNew: true,
       badge: t('g.new')
     })
