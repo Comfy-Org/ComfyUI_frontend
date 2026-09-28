@@ -16,6 +16,9 @@ import {
   workflowErrorKey,
   workflowStatusKey
 } from '../../config/workshop-workflow-presentation'
+import { useWorkshopCredits } from '../../config/workshop-credits'
+import type { WorkflowCreditsRefusal } from '../../lib/workshop/workflow-credits-gate'
+import { workflowCreditsGate } from '../../lib/workshop/workflow-credits-gate'
 import { panelSaysRefusal } from '../../lib/workshop/workflow-refusal'
 import { useStickyFooterScrollPadding } from '../../composables/useStickyFooterScrollPadding'
 import { useTablist } from '../../composables/useTablist'
@@ -32,6 +35,7 @@ import { sameFormValues } from '../../lib/workshop/form-values'
 import ExampleReplaceDialog from './ExampleReplaceDialog.vue'
 import PlaygroundForm from './PlaygroundForm.vue'
 import WorkflowResults from './WorkflowResults.vue'
+import WorkflowCreditsGuard from './WorkflowCreditsGuard.vue'
 import WorkflowRunControls from './WorkflowRunControls.vue'
 import WorkflowPreview from './WorkflowPreview.vue'
 import WorkflowApi from './WorkflowApi.vue'
@@ -133,6 +137,29 @@ const refusalSaidHere = computed(() =>
   error.value && !panelSaysRefusal(state.value)
     ? t(workflowErrorKey(error.value))
     : undefined
+)
+const { balance, session } = useWorkshopCredits()
+const credits = computed(() =>
+  balance.value.status === 'ok' ? balance.value.credits : undefined
+)
+const refusal = ref<WorkflowCreditsRefusal>()
+watch(
+  () =>
+    state.value.phase === 'failed' &&
+    state.value.error.code === 'insufficient_credits',
+  (refused) => {
+    refusal.value = refused ? { credits: credits.value } : undefined
+  }
+)
+const creditsGate = computed(() =>
+  signedIn.value
+    ? workflowCreditsGate({
+        busy: busy.value,
+        member: session.value?.role === 'member',
+        credits: credits.value,
+        refusal: refusal.value
+      })
+    : 'run'
 )
 const statusLabel = computed(() => {
   if (cancelRequested.value && busy.value)
@@ -263,15 +290,20 @@ function start() {
           >
             {{ refusalSaidHere }}
           </p>
-          <WorkflowRunControls
-            :state="state"
-            :signed-in="signedIn"
-            :can-start="canStart"
-            :status-label="statusLabel"
-            @resume="workflow.resume()"
-            @cancel="workflow.cancel()"
-            @dismiss="workflow.dismiss()"
-          />
+          <WorkflowCreditsGuard
+            :gate="creditsGate"
+            :workspace-name="session?.workspace.name"
+          >
+            <WorkflowRunControls
+              :state="state"
+              :signed-in="signedIn"
+              :can-start="canStart"
+              :status-label="statusLabel"
+              @resume="workflow.resume()"
+              @cancel="workflow.cancel()"
+              @dismiss="workflow.dismiss()"
+            />
+          </WorkflowCreditsGuard>
         </div>
       </form>
     </section>
