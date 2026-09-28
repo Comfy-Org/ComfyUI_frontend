@@ -338,3 +338,15 @@ export function resolveStripePublishableKey(
     ({ stripePublishableKey }) => stripePublishableKey
   )
 }
+
+/**
+ * `web_session_probe` from the same shared `/api/features` document, so a
+ * host that already reads it for Firebase or Stripe pays no extra request.
+ */
+export function resolveWebSessionProbe(
+  options: Pick<ResolveFirebaseIdentityOptions, 'cloudBaseUrl' | 'timeoutMs'>
+): Promise<boolean> {
+  return resolveCloudFeatures(options.cloudBaseUrl, options.timeoutMs).then(
+    ({ webSessionProbe }) => webSessionProbe === true
+  )
+}
