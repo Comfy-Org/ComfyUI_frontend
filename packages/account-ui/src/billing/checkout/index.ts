@@ -23,6 +23,7 @@ export {
   resolveRenewalDate
 } from './checkoutQuote'
 export { default as CheckoutPaymentForm } from './CheckoutPaymentForm.vue'
+export { default as CheckoutSavedMethods } from './CheckoutSavedMethods.vue'
 export { default as CheckoutSubscribeConfirm } from './CheckoutSubscribeConfirm.vue'
 export { default as CheckoutSuccess } from './CheckoutSuccess.vue'
 export { default as CheckoutTermsNote } from './CheckoutTermsNote.vue'
