@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* global process */
 /**
  * Turn the vitest JSON report from the `CI: CRDT Skew Alarm` workflow into pass/fail
  * counts, a job summary, and a machine-readable artifact.
@@ -20,6 +21,10 @@ import {
   writeFileSync
 } from 'node:fs'
 
+/**
+ * @param {string[]} argv
+ * @returns {{ report: string | null | undefined, out: string | null | undefined }}
+ */
 function parseArgs(argv) {
   const args = { report: null, out: null }
   for (let i = 0; i < argv.length; i++) {
