@@ -38,7 +38,7 @@ import { useBillingEntry } from '@/entry/billingEntry'
 import { createDeferredStripeChallengePort } from '@/session/stripeChallengePort'
 
 const { t } = useI18n()
-const { coded } = useHostedCopy()
+const { coded, refusal } = useHostedCopy()
 const { entry } = useBillingEntry()
 const billedWorkspace = useBilledWorkspace()
 
@@ -262,7 +262,7 @@ async function confirm(confirmationToken?: string) {
     reactivationRequired.value = true
     return
   }
-  submitFailure.value = coded('failure', result.code)
+  submitFailure.value = refusal(result)
 }
 
 function returnToHost() {
@@ -284,7 +284,7 @@ function returnToHost() {
         class="rounded-xl border border-border-subtle bg-secondary-background p-6"
       >
         <p class="m-0 text-sm text-destructive-background">
-          {{ coded('failure', failure.code) }}
+          {{ refusal(failure) }}
         </p>
         <button
           v-if="returnLink"
