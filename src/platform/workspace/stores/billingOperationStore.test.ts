@@ -14,7 +14,10 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import type { BillingOpStatusResponse } from '@/platform/workspace/api/workspaceApi'
+import type {
+  BillingAuthenticationState,
+  BillingOpStatusResponse
+} from '@/platform/workspace/api/workspaceApi'
 import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
 
 const { mockHandleNextAction, mockLoadStripe } = vi.hoisted(() => ({
@@ -78,6 +81,61 @@ describe('billingOperationStore', () => {
       handleNextAction: mockHandleNextAction
     })
   })
+
+  it.for([
+    ['subscription', 'succeeded'],
+    ['subscription', 'failed'],
+    ['topup', 'succeeded'],
+    ['topup', 'failed']
+  ] as const)(
+    'records %s completion only after the backend reports %s',
+    async ([type, status]) => {
+      const trackBillingEvent = vi.mocked(useTelemetry()?.trackBillingEvent)
+      const pending: BillingOpStatusResponse = {
+        id: 'op-completion',
+        status: 'pending',
+        authentication_state: 'succeeded',
+        started_at: new Date().toISOString()
+      }
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue(pending)
+      const store = useBillingOperationStore()
+      const terminal = store.startOperation('op-completion', type, {
+        attemptStartedAt: Date.now()
+      })
+      await vi.advanceTimersByTimeAsync(0)
+      expect(store.getOperation('op-completion')?.status).toBe('pending')
+      expect(trackBillingEvent).not.toHaveBeenCalledWith(
+        expect.objectContaining({ stage: 'succeeded' })
+      )
+
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        ...pending,
+        status
+      })
+      await vi.advanceTimersByTimeAsync(2_000)
+      expect((await terminal).status).toBe(status)
+      const operation =
+        type === 'subscription' ? 'subscription_checkout' : 'topup'
+      expect(trackBillingEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          operation,
+          stage: status,
+          outcome: status === 'succeeded' ? 'success' : 'failure',
+          billing_op_id: 'op-completion'
+        })
+      )
+      const terminalEvents = trackBillingEvent?.mock.calls.filter(
+        ([event]) => event.operation === operation && event.stage === status
+      )
+      expect(terminalEvents).toHaveLength(1)
+      await vi.advanceTimersByTimeAsync(4_000)
+      expect(
+        trackBillingEvent?.mock.calls.filter(
+          ([event]) => event.operation === operation && event.stage === status
+        )
+      ).toHaveLength(1)
+    }
+  )
 
   describe('startOperation', () => {
     it('creates a pending operation', () => {
@@ -1372,6 +1430,98 @@ describe('billingOperationStore', () => {
       })
     })
 
+    describe('a blocked phase that offers the customer no action', () => {
+      function answerActionlessUntil(challengePoll: number) {
+        let polls = 0
+        vi.mocked(workspaceApi.getBillingOpStatus).mockImplementation(
+          async () => {
+            polls += 1
+            return {
+              id: 'op-3ds',
+              status: 'pending',
+              phase: polls === 1 ? 'in_progress' : 'awaiting_invoice_payment',
+              payment_intent_client_secret: 'pi_secret_current',
+              authentication_state:
+                polls >= challengePoll ? 'requires_action' : 'processing',
+              started_at: new Date().toISOString()
+            }
+          }
+        )
+      }
+
+      function startSubscription() {
+        mockHandleNextAction.mockReturnValue(new Promise(() => {}))
+        return useBillingOperationStore().startOperation(
+          'op-3ds',
+          'subscription',
+          { autoHandleRequiresAction: true, suppressProcessingToast: true }
+        )
+      }
+
+      it('reaches a challenge on the last poll the discovery window schedules on the fast backoff', async () => {
+        answerActionlessUntil(12)
+        void startSubscription()
+
+        await vi.advanceTimersByTimeAsync(68_000)
+
+        expect(mockHandleNextAction).toHaveBeenCalledWith({
+          clientSecret: 'pi_secret_current'
+        })
+      })
+
+      it('falls back to the parked cadence once the discovery window passes', async () => {
+        answerActionlessUntil(Number.POSITIVE_INFINITY)
+        void startSubscription()
+        await vi.advanceTimersByTimeAsync(76_000)
+        const polledBeforeParking = vi.mocked(workspaceApi.getBillingOpStatus)
+          .mock.calls.length
+
+        await vi.advanceTimersByTimeAsync(30_000)
+        expect(workspaceApi.getBillingOpStatus).toHaveBeenCalledTimes(
+          polledBeforeParking + 1
+        )
+        await vi.advanceTimersByTimeAsync(30_000)
+        expect(workspaceApi.getBillingOpStatus).toHaveBeenCalledTimes(
+          polledBeforeParking + 2
+        )
+      })
+
+      it('returns to the fast backoff after a challenge that arrived past the discovery window completes', async () => {
+        let authenticationState: BillingAuthenticationState = 'processing'
+        vi.mocked(workspaceApi.getBillingOpStatus).mockImplementation(
+          async () => ({
+            id: 'op-3ds',
+            status: 'pending',
+            phase: 'awaiting_invoice_payment',
+            payment_intent_client_secret: 'pi_secret_current',
+            authentication_state: authenticationState,
+            started_at: new Date().toISOString()
+          })
+        )
+        mockHandleNextAction.mockResolvedValue({
+          paymentIntent: { status: 'processing' }
+        })
+        void useBillingOperationStore().startOperation(
+          'op-3ds',
+          'subscription',
+          { autoHandleRequiresAction: true, suppressProcessingToast: true }
+        )
+        await vi.advanceTimersByTimeAsync(76_000)
+
+        authenticationState = 'requires_action'
+        await vi.advanceTimersToNextTimerAsync()
+        expect(mockHandleNextAction).toHaveBeenCalledOnce()
+        authenticationState = 'processing'
+        const polledAfterChallenge = vi.mocked(workspaceApi.getBillingOpStatus)
+          .mock.calls.length
+
+        await vi.advanceTimersByTimeAsync(2_000)
+        expect(workspaceApi.getBillingOpStatus).toHaveBeenCalledTimes(
+          polledAfterChallenge + 1
+        )
+      })
+    })
+
     it('recovers when Stripe.js fails to load', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-3ds',
@@ -2127,7 +2277,7 @@ describe('billingOperationStore', () => {
       })
     })
 
-    it('keeps checkout recovery pending on the normal cadence until the long timeout', async () => {
+    it('keeps checkout recovery pending until the long timeout', async () => {
       const startedAt = Date.now()
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-checkout',

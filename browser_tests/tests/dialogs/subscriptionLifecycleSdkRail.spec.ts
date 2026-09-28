@@ -5,7 +5,6 @@ import type {
   BillingOpStatusResponse,
   BillingPlansResponse,
   PaymentPortalResponse,
-  Plan,
   ResubscribeResponse
 } from '@comfyorg/ingest-types'
 
@@ -13,6 +12,7 @@ import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceAp
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
+import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
@@ -48,29 +48,15 @@ const PLAN_CATALOG = {
   current_plan_slug: 'pro-monthly',
   plans: (
     [
-      ['pro-monthly', 'PRO', 'MONTHLY', 2_000, 800],
-      ['pro-annual', 'PRO', 'ANNUAL', 19_200, 8_600],
-      ['standard-monthly', 'STANDARD', 'MONTHLY', 4_000, 1_600],
-      ['standard-annual', 'STANDARD', 'ANNUAL', 38_400, 17_200],
-      ['creator-monthly', 'CREATOR', 'MONTHLY', 8_000, 3_200],
-      ['creator-annual', 'CREATOR', 'ANNUAL', 76_800, 34_400]
+      ['pro-monthly', 'PRO', 'MONTHLY', 2_000, 21_100],
+      ['pro-annual', 'PRO', 'ANNUAL', 19_200, 21_100],
+      ['standard-monthly', 'STANDARD', 'MONTHLY', 4_000, 4_200],
+      ['standard-annual', 'STANDARD', 'ANNUAL', 38_400, 4_200],
+      ['creator-monthly', 'CREATOR', 'MONTHLY', 8_000, 7_400],
+      ['creator-annual', 'CREATOR', 'ANNUAL', 76_800, 7_400]
     ] as const
-  ).map(
-    ([slug, tier, duration, price_cents, credits_cents]) =>
-      ({
-        slug,
-        tier,
-        duration,
-        price_cents,
-        credits_cents,
-        max_seats: 1,
-        availability: { available: true },
-        seat_summary: {
-          seat_count: 1,
-          total_cost_cents: price_cents,
-          total_credits_cents: credits_cents
-        }
-      }) satisfies Plan
+  ).map(([slug, tier, duration, priceCents, monthlyCredits]) =>
+    createPlan({ slug, tier, duration, priceCents, monthlyCredits })
   )
 } satisfies BillingPlansResponse
 
