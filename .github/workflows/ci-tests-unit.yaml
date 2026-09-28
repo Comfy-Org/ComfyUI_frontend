@@ -24,6 +24,10 @@ jobs:
       - uses: actions/checkout@v7
       - id: changes
         uses: ./.github/actions/changes-filter
+        with:
+          # `test` is emitted whatever the verdict, so a candidate with no
+          # unit-relevant changes can skip the shards without stalling the queue.
+          evaluate-candidate: 'true'
 
   test-shards:
     needs: changes
