@@ -14,5 +14,6 @@ export type WorkflowGraphNode = MotionNode & {
 }
 
 export type WorkflowGraph = Omit<MotionWorkflow, 'nodes'> & {
+  height: number
   nodes: WorkflowGraphNode[]
 }

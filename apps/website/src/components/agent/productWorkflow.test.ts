@@ -2,13 +2,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { assert, describe, expect, it } from 'vitest'
 
-import {
-  productWorkflow,
-  productWorkflowAgentRest,
-  productWorkflowHoldDuration,
-  productWorkflowSize,
-  productWorkflowUserRest
-} from './productWorkflow'
+import { productWorkflow } from './productWorkflow'
 import { createWorkflowMotion } from './workflowMotion'
 
 function animationFrames(
@@ -29,21 +23,8 @@ function animationFrames(
 }
 
 describe('conditioner workflow', () => {
-  const motion = createWorkflowMotion(productWorkflow, {
-    width: productWorkflowSize.width,
-    holdDuration: productWorkflowHoldDuration,
-    connectionSpeed: 2,
-    agentRest: productWorkflowAgentRest,
-    userRest: productWorkflowUserRest
-  })
+  const motion = createWorkflowMotion(productWorkflow)
   const { scene } = motion
-  const connections = scene.timeline.flatMap((event) => {
-    if (event.type === 'connect') return [event]
-    if (event.type === 'connect-group') {
-      return event.to.map((to) => ({ ...event, type: 'connect' as const, to }))
-    }
-    return []
-  })
 
   it('keeps the animation duration synchronized with media playback', () => {
     expect(motion.duration).toBeCloseTo(23.52772575250836, 6)
@@ -70,17 +51,12 @@ describe('conditioner workflow', () => {
     (id) => {
       const index = productWorkflow.nodes.findIndex((node) => node.id === id)
       const point = productWorkflow.nodes[index].clickPoint
-      const placement = scene.timeline.find(
-        (event) => event.type === 'place' && event.node === id
-      )
       assert.exists(point)
-      assert.exists(placement)
+      const position = `left:${(point.x / productWorkflow.width) * 100}cqw;top:${(point.y / productWorkflow.width) * 100}cqw;`
       const nodeFrames = animationFrames(motion, scene.nodes[index].name)
       const clicks = animationFrames(motion, scene.userCursor.name).filter(
         (frame) =>
-          frame.time >= placement.start &&
-          frame.time <= placement.end &&
-          frame.value.includes('scale(0.82)')
+          frame.value.includes(position) && frame.value.includes('scale(0.82)')
       )
       const visible = nodeFrames.find(
         (frame) =>
@@ -89,9 +65,6 @@ describe('conditioner workflow', () => {
       )
       assert.exists(visible)
       expect(clicks).toHaveLength(1)
-      expect(clicks[0].value).toContain(
-        `left:${(point.x / productWorkflowSize.width) * 100}cqw;top:${(point.y / productWorkflowSize.width) * 100}cqw;`
-      )
       expect(visible.time).toBeGreaterThan(clicks[0].time)
       expect([
         ...new Set(
@@ -104,37 +77,30 @@ describe('conditioner workflow', () => {
   )
 
   it('lets the user choose purple after seeing all keyframes, then add the motion reference', () => {
-    const userDrops = scene.timeline.filter(
-      (event) => event.type === 'place' && event.actor === 'user'
+    const selection = animationFrames(
+      motion,
+      'wf-conditioner-keyframe-purple-selection'
+    ).find((frame) => frame.value === 'opacity:1;')
+    const previews = ['white', 'gold', 'purple'].map((variant) =>
+      animationFrames(motion, `wf-conditioner-keyframe-${variant}-image`).find(
+        (frame) => frame.value === 'opacity:1;'
+      )
     )
-    const keyframeGeneration = scene.timeline.find(
-      (event) => event.type === 'place' && event.node === 'keygen'
+    const reference = animationFrames(motion, 'wf-conditioner-motionref').find(
+      (frame) => frame.value.includes('scale(1)')
     )
-    const keyframes = scene.timeline.find(
-      (event) =>
-        event.type === 'images' && event.nodes.includes('keyframe-white')
+    const generation = animationFrames(motion, 'wf-conditioner-videogen').find(
+      (frame) => frame.value.includes('scale(1)')
     )
-    const videoGeneration = scene.timeline.find(
-      (event) => event.type === 'place' && event.node === 'videogen'
-    )
-    const selection = scene.timeline.find((event) => event.type === 'select')
-    const videoInputs = connections.filter((event) => event.to === 'videogen')
-    assert.exists(keyframeGeneration)
-    assert.exists(keyframes?.imagesAt)
-    assert.exists(selection?.selectionAt)
-    assert.exists(videoGeneration)
-    expect(
-      userDrops.map((event) => event.type === 'place' && event.node)
-    ).toEqual(['base', 'products', 'motionref'])
-    expect(userDrops[1].end).toBeLessThan(keyframeGeneration.start)
-    expect(selection.node).toBe('keyframe-purple')
-    expect(selection.start).toBeGreaterThan(keyframes.imagesAt + 0.2)
-    expect(userDrops[2].start).toBeGreaterThanOrEqual(selection.end)
-    expect(userDrops[2].end).toBeLessThanOrEqual(videoGeneration.start)
-    expect(videoInputs.map((event) => event.from)).toEqual([
-      'keyframe-purple',
-      'motionref'
-    ])
+    assert.exists(selection)
+    assert.exists(reference)
+    assert.exists(generation)
+    for (const preview of previews) {
+      assert.exists(preview)
+      expect(selection.time).toBeGreaterThan(preview.time)
+    }
+    expect(reference.time).toBeGreaterThan(selection.time)
+    expect(generation.time).toBeGreaterThan(reference.time)
     expect(
       scene.nodes
         .filter((node) => node.selectionName)
@@ -160,49 +126,72 @@ describe('conditioner workflow', () => {
   ])(
     'shows the full $processor prompt with its window, then generates the connected outputs',
     ({ processor, text, output, inputCount, outputCount }) => {
-      const incoming = connections.filter((event) => event.to === processor)
-      const placement = scene.timeline.find(
-        (event) => event.type === 'place' && event.node === processor
+      const incoming = scene.wires.filter((wire) =>
+        wire.name.endsWith(`-${processor}`)
       )
-      const outgoing = connections.filter((event) => event.from === processor)
-      const shells = scene.timeline.find(
-        (event) => event.type === 'show' && event.nodes.includes(output)
+      const outgoing = scene.wires.filter((wire) =>
+        wire.name.startsWith(`wf-conditioner-${processor}-`)
       )
-      const media = scene.timeline.find(
-        (event) => event.type === 'images' && event.nodes.includes(output)
+      const placement = animationFrames(
+        motion,
+        `wf-conditioner-${processor}`
+      ).find((frame) => frame.value.includes('scale(1)'))
+      const shell = animationFrames(motion, `wf-conditioner-${output}`).find(
+        (frame) => frame.value.includes('scale(1)')
       )
+      const media = animationFrames(
+        motion,
+        `wf-conditioner-${output}-image`
+      ).find((frame) => frame.value === 'opacity:1;')
       const processorIndex = productWorkflow.nodes.findIndex(
         (node) => node.id === processor
       )
-      assert.exists(placement?.dropAt)
-      assert.exists(shells)
-      assert.exists(media?.imagesAt)
-      assert.exists(incoming[0].drawStart)
+      assert.exists(placement)
+      assert.exists(shell)
+      assert.exists(media)
       expect(incoming).toHaveLength(inputCount)
-      expect(placement.dropAt).toBeLessThan(incoming[0].drawStart)
-      expect(
-        Math.max(...incoming.map((event) => event.end))
-      ).toBeLessThanOrEqual(shells.start)
       expect(productWorkflow.nodes[processorIndex].text).toBe(text)
-      expect(shells.end).toBeLessThanOrEqual(outgoing[0].start)
       expect(outgoing).toHaveLength(outputCount)
-      expect(Math.max(...outgoing.map((event) => event.end))).toBeLessThan(
-        media.imagesAt
-      )
+      for (const wire of incoming) {
+        const frames = animationFrames(motion, wire.name)
+        const start = frames.find(
+          (frame) => frame.value === 'stroke-dashoffset:1;opacity:1;'
+        )
+        const end = frames.find(
+          (frame) => frame.value === 'stroke-dashoffset:0;opacity:1;'
+        )
+        assert.exists(start)
+        assert.exists(end)
+        expect(placement.time).toBeLessThan(start.time)
+        expect(end.time).toBeLessThan(shell.time)
+      }
+      for (const wire of outgoing) {
+        const frames = animationFrames(motion, wire.name)
+        const start = frames.find(
+          (frame) => frame.value === 'stroke-dashoffset:1;opacity:1;'
+        )
+        const end = frames.find(
+          (frame) => frame.value === 'stroke-dashoffset:0;opacity:1;'
+        )
+        assert.exists(start)
+        assert.exists(end)
+        expect(shell.time).toBeLessThan(start.time)
+        expect(end.time).toBeLessThan(media.time)
+      }
     }
   )
 
   it('loops the final purple video in place during a ten-second hold', () => {
-    const videos = scene.timeline.find(
-      (event) =>
-        event.type === 'images' && event.nodes.includes('result-purple')
-    )
+    const imageFrames = animationFrames(
+      motion,
+      'wf-conditioner-result-purple-image'
+    ).filter((frame) => frame.value === 'opacity:1;')
     const final = productWorkflow.nodes.find(
       (node) => node.id === 'result-purple'
     )
-    assert.exists(videos?.imagesAt)
     assert.exists(final)
-    expect(motion.duration - 0.25 - videos.end).toBeCloseTo(10)
+    expect(imageFrames).toHaveLength(2)
+    expect(imageFrames[1].time - imageFrames[0].time).toBeCloseTo(10, 5)
     const finalIndex = productWorkflow.nodes.indexOf(final)
     const holdFrame = animationFrames(
       motion,
@@ -239,16 +228,16 @@ describe('conditioner workflow', () => {
     const index = productWorkflow.nodes.findIndex(
       (node) => node.id === 'motionref'
     )
-    const placement = scene.timeline.find(
-      (event) => event.type === 'place' && event.node === 'motionref'
+    const placement = animationFrames(motion, 'wf-conditioner-motionref').find(
+      (frame) => frame.value.includes('scale(1)')
     )
-    const generation = scene.timeline.find(
-      (event) => event.type === 'place' && event.node === 'videogen'
+    const generation = animationFrames(motion, 'wf-conditioner-videogen').find(
+      (frame) => frame.value.includes('scale(1)')
     )
-    assert.exists(placement?.dropAt)
+    assert.exists(placement)
     assert.exists(generation)
-    expect(scene.nodes[index].mediaAt).toBe(placement.dropAt)
-    expect(scene.nodes[index].mediaAt).toBeLessThan(generation.start)
+    expect(scene.nodes[index].mediaAt).toBeCloseTo(placement.time, 5)
+    expect(scene.nodes[index].mediaAt).toBeLessThan(generation.time)
     expect(scene.nodes[index].imageName).toBeUndefined()
     expect(productWorkflow.nodes[index].video).toBe(
       'conditioner/motion-reference.mp4'
@@ -291,8 +280,8 @@ describe('conditioner workflow', () => {
       (node) =>
         node.x < 0 ||
         node.y < 0 ||
-        node.x + node.width > productWorkflowSize.width ||
-        node.y + node.height > productWorkflowSize.height
+        node.x + node.width > productWorkflow.width ||
+        node.y + node.height > productWorkflow.height
     )
     const overlaps = productWorkflow.nodes.flatMap((node, index) =>
       productWorkflow.nodes
@@ -337,12 +326,13 @@ describe('conditioner workflow', () => {
   })
 
   it('connects every animated wire exactly once through its node ports', () => {
-    const connectedWireIds = connections.map(
-      (event) => `${event.from}:${event.to}`
-    )
-    const wireIds = productWorkflow.edges.map(
-      (edge) => `${edge.from}:${edge.to}`
-    )
+    expect(scene.wires).toHaveLength(productWorkflow.edges.length)
+    for (const wire of scene.wires) {
+      const starts = animationFrames(motion, wire.name).filter(
+        (frame) => frame.value === 'stroke-dashoffset:1;opacity:1;'
+      )
+      expect(starts).toHaveLength(1)
+    }
     for (const edge of productWorkflow.edges) {
       const source = productWorkflow.nodes.find((node) => node.id === edge.from)
       const target = productWorkflow.nodes.find((node) => node.id === edge.to)
@@ -355,8 +345,6 @@ describe('conditioner workflow', () => {
       expect(from).toEqual(source.output)
       expect([target.input, ...(target.extraPorts ?? [])]).toContainEqual(to)
     }
-    expect(connectedWireIds.toSorted()).toEqual(wireIds.toSorted())
-    expect(new Set(connectedWireIds).size).toBe(wireIds.length)
   })
 
   it('connects right-side outputs to left-side inputs across the workflow', () => {

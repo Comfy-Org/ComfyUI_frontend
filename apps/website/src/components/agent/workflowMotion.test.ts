@@ -47,27 +47,16 @@ describe('workflow motion', () => {
 
   it('draws grouped connections together from their shared source', () => {
     const motion = createWorkflowMotion(productWorkflow)
-    const group = motion.scene.timeline.find(
-      (event) => event.type === 'connect-group'
-    )
-    assert.isDefined(group?.drawStart)
-    assert.isDefined(group.drawEnd)
     const groupedWires = motion.scene.wires.filter((wire) =>
       wire.name.includes('-keygen-keyframe-')
     )
 
     expect(groupedWires).toHaveLength(3)
-    for (const wire of groupedWires) {
-      const frames = animation(motion, wire.name)
-      expect(
-        frames.find((frame) => frame.value === 'stroke-dashoffset:1;opacity:1;')
-          ?.time
-      ).toBeCloseTo(group.drawStart, 5)
-      expect(
-        frames.find((frame) => frame.value === 'stroke-dashoffset:0;opacity:1;')
-          ?.time
-      ).toBeCloseTo(group.drawEnd, 5)
-    }
+    const [white, gold, purple] = groupedWires.map((wire) =>
+      animation(motion, wire.name)
+    )
+    expect(gold).toEqual(white)
+    expect(purple).toEqual(white)
   })
 
   it('rejects duplicate grouped destinations', () => {

@@ -1,45 +1,25 @@
 ---
-import type { WorkflowGraph } from './workflowGraph'
+import productWorkflowKeyframes from '../../styles/product-workflow-keyframes.css?raw'
 import WorkflowNode from './WorkflowNode.astro'
-import type { Point } from './workflowMotion'
+import { productWorkflow as workflow } from './productWorkflow'
 import { createWorkflowMotion } from './workflowMotion'
 
 interface Props {
-  workflow: WorkflowGraph
-  height: number
-  width?: number
-  motionCss?: string
-  userRest?: Point
-  holdDuration?: number
-  agentRest?: Point
   userCursorLabel: string
 }
 
-const {
-  workflow,
-  height,
-  width = 1600,
-  holdDuration = 4,
-  agentRest,
-  userRest,
-  motionCss,
-  userCursorLabel
-} = Astro.props
+const { userCursorLabel } = Astro.props
+const { nodes, width, height, agentRest, userRest } = workflow
 const unit = width / 100
-
-const { nodes } = workflow
 const imageRoot = 'https://media.comfy.org/website/comfy-agent'
-const motion = createWorkflowMotion(workflow, {
-  width,
-  holdDuration,
-  connectionSpeed: 2,
-  agentRest,
-  userRest
-})
+const motion = createWorkflowMotion(workflow)
 const { scene } = motion
 ---
 
-<style is:inline set:html={`${motion.css}\n${motionCss ?? ''}`}></style>
+<style
+  is:inline
+  set:html={`${motion.css}\n${productWorkflowKeyframes}`}
+></style>
 <div
   style={`--wf-duration:${motion.duration}s;--wf-aspect:${width} / ${height}`}
   class="wf-example"
@@ -50,8 +30,6 @@ const { scene } = motion
       <div
         class="wf-scene"
         id={`workflow-${workflow.id}`}
-        data-workflow={workflow.id}
-        data-start={scene.start}
         style={`animation-name:wf-scene-${workflow.id}`}
       >
         <svg
@@ -71,13 +49,12 @@ const { scene } = motion
           <WorkflowNode
             node={node}
             motion={scene.nodes[index]}
-            index={index}
             unit={unit}
             imageRoot={imageRoot}
           />
         ))}
         <div
-          style={`animation-name:${scene.userCursor.name};${userRest ? `left:${userRest.x / unit}cqw;top:${userRest.y / unit}cqw` : ''}`}
+          style={`animation-name:${scene.userCursor.name};left:${userRest.x / unit}cqw;top:${userRest.y / unit}cqw`}
           class="wf-user"
           role="img"
           aria-label={userCursorLabel}
@@ -104,7 +81,7 @@ const { scene } = motion
           /></span>
         </div>
         <div
-          style={`animation-name:${scene.agentCursor.name};${agentRest ? `left:${agentRest.x / unit}cqw;top:${agentRest.y / unit}cqw` : ''}`}
+          style={`animation-name:${scene.agentCursor.name};left:${agentRest.x / unit}cqw;top:${agentRest.y / unit}cqw`}
           class="wf-agent"
           role="img"
           aria-label="Comfy Agent"

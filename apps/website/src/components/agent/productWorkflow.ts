@@ -1,11 +1,6 @@
 import type { WorkflowGraph, WorkflowGraphNode } from './workflowGraph'
 import type { MotionEdge, Point } from './workflowMotion'
 
-export const productWorkflowSize = { width: 1739, height: 599 }
-export const productWorkflowHoldDuration = 10
-export const productWorkflowUserRest = { x: 24, y: 67 }
-export const productWorkflowAgentRest = { x: 1638, y: 521 }
-
 const variants = [
   { id: 'white', label: 'White' },
   { id: 'gold', label: 'Gold' },
@@ -178,6 +173,11 @@ function connection(
 
 export const productWorkflow: WorkflowGraph = {
   id: 'conditioner',
+  width: 1739,
+  height: 599,
+  holdDuration: 10,
+  userRest: { x: 24, y: 67 },
+  agentRest: { x: 1638, y: 521 },
   nodes,
   edges: [
     connection('base', 'keygen', 263.5),

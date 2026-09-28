@@ -9,12 +9,11 @@ type NodeMotion = ReturnType<
 interface Props {
   node: WorkflowGraphNode
   motion: NodeMotion
-  index: number
   unit: number
   imageRoot: string
 }
 
-const { node, motion, index, unit, imageRoot } = Astro.props
+const { node, motion, unit, imageRoot } = Astro.props
 const nodeKindClasses = {
   landscape: 'wf-kind-landscape',
   featured: 'wf-kind-featured',
@@ -39,7 +38,6 @@ const portStyle = (port: Point) =>
 ---
 
 <div
-  data-step={index}
   data-node={node.id}
   class:list={['wf-node', nodeKindClasses[node.kind]]}
   style={`left:${node.x / unit}cqw;top:${node.y / unit}cqw;width:${node.width / unit}cqw;height:${node.height / unit}cqw;animation-name:${motion.name}`}

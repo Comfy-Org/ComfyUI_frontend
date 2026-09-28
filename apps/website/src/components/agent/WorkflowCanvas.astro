@@ -1,16 +1,8 @@
 ---
 import '../../styles/workflow-canvas.css'
-import productWorkflowKeyframes from '../../styles/product-workflow-keyframes.css?raw'
 import type { Locale } from '../../i18n/translations'
 import WorkflowScene from './WorkflowScene.astro'
 import { tAgent } from './agentTranslations'
-import {
-  productWorkflow,
-  productWorkflowAgentRest,
-  productWorkflowUserRest,
-  productWorkflowHoldDuration,
-  productWorkflowSize
-} from './productWorkflow'
 
 interface Props {
   locale: Locale
@@ -25,13 +17,6 @@ const { locale } = Astro.props
 >
   <workflow-examples>
     <WorkflowScene
-      workflow={productWorkflow}
-      width={productWorkflowSize.width}
-      height={productWorkflowSize.height}
-      motionCss={productWorkflowKeyframes}
-      holdDuration={productWorkflowHoldDuration}
-      agentRest={productWorkflowAgentRest}
-      userRest={productWorkflowUserRest}
       userCursorLabel={tAgent('agentPage.workflow.userCursorLabel', locale)}
     />
   </workflow-examples>

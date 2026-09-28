@@ -31,25 +31,13 @@ export type MotionStep =
   | { type: 'pause'; duration: number }
 export type MotionWorkflow = {
   id: string
+  width: number
+  holdDuration: number
+  agentRest: Point
+  userRest: Point
   nodes: MotionNode[]
   edges: MotionEdge[]
   steps: MotionStep[]
-}
-type MotionOptions = {
-  width?: number
-  holdDuration?: number
-  connectionSpeed?: number
-  agentRest?: Point
-  userRest?: Point
-}
-type MotionEvent = MotionStep & {
-  start: number
-  end: number
-  dropAt?: number
-  drawStart?: number
-  drawEnd?: number
-  imagesAt?: number
-  selectionAt?: number
 }
 type StepOf<T extends MotionStep['type']> = Extract<MotionStep, { type: T }>
 type Frame = { time: number; value: string }
@@ -135,26 +123,17 @@ function placementDuration(step: StepOf<'place'>) {
   return duration
 }
 
-export function createWorkflowMotion(
-  workflow: MotionWorkflow,
-  {
-    width = 1600,
-    holdDuration = 4,
-    connectionSpeed = 2,
-    agentRest = { x: width - 120, y: 24 },
-    userRest = { x: 24, y: 24 }
-  }: MotionOptions = {}
-) {
+export function createWorkflowMotion(workflow: MotionWorkflow) {
+  const { width, holdDuration, agentRest, userRest } = workflow
+  const connectionSpeed = 2
   if (
     !Number.isFinite(width) ||
     width <= 0 ||
     !Number.isFinite(holdDuration) ||
-    holdDuration < 0 ||
-    !Number.isFinite(connectionSpeed) ||
-    connectionSpeed <= 0
+    holdDuration < 0
   ) {
     throw new Error(
-      'Workflow motion needs a positive width/speed and a nonnegative hold'
+      'Workflow motion needs a positive width and a nonnegative hold'
     )
   }
   const position = (point: Point) =>
@@ -262,9 +241,8 @@ export function createWorkflowMotion(
       state.shownAt = start + entranceDuration
       return state.shownAt
     }
-    const timeline: MotionEvent[] = []
     let time = 0.15
-    function placeNode(step: StepOf<'place'>, event: MotionEvent) {
+    function placeNode(step: StepOf<'place'>) {
       const state = getNode(step.node)
       const node = state.node
       if (state.shownAt !== undefined)
@@ -275,7 +253,6 @@ export function createWorkflowMotion(
       moveCursor(cursor, point, time, duration)
       time += duration
       const shownAt = reveal(state, time + 0.1)
-      event.dropAt = shownAt
       click(cursor, time)
       time = Math.max(time + 0.2, shownAt)
       if (step.actor === 'user') {
@@ -284,10 +261,7 @@ export function createWorkflowMotion(
       }
     }
 
-    function connectNodes(
-      step: StepOf<'connect' | 'connect-group'>,
-      event: MotionEvent
-    ) {
+    function connectNodes(step: StepOf<'connect' | 'connect-group'>) {
       requireShown(step.from, time)
       const targets = step.type === 'connect' ? [step.to] : step.to
       if (!targets.length || new Set(targets).size !== targets.length)
@@ -337,12 +311,10 @@ export function createWorkflowMotion(
       } else {
         cursor.frames.push({ time: drawEnd, value: cursorValue(source) })
       }
-      event.drawStart = time
-      event.drawEnd = drawEnd
       time = drawEnd + 0.35 / 1.15 / connectionSpeed
     }
 
-    function revealImages(step: StepOf<'images'>, event: MotionEvent) {
+    function revealImages(step: StepOf<'images'>) {
       const delay = step.delay ?? 0.25
       if (!Number.isFinite(delay) || delay < 0)
         throw new Error('Workflow image delay must be nonnegative')
@@ -360,13 +332,12 @@ export function createWorkflowMotion(
           )
         state.imageAt = time + delay
       }
-      event.imagesAt = time + delay
       if (cursors.agent.visible)
         moveCursor(cursors.agent, cursors.agent.rest, time, 0.3)
       time += Math.max(delay + 0.2, 0.3)
     }
 
-    function selectNode(step: StepOf<'select'>, event: MotionEvent) {
+    function selectNode(step: StepOf<'select'>) {
       const state = requireShown(step.node, time)
       if (state.imageAt === undefined || state.imageAt + 0.2 > time)
         throw new Error('Workflow selection needs a completed preview image')
@@ -379,24 +350,12 @@ export function createWorkflowMotion(
       time += 0.45
       click(cursors.user, time)
       state.selectionAt = time + 0.07
-      event.selectionAt = state.selectionAt
       time += 0.2
       moveCursor(cursors.user, cursors.user.rest, time, 0.25)
       time += 0.25
     }
 
-    function applyBuildStep(
-      step: StepOf<'connect' | 'connect-group' | 'images'>,
-      event: MotionEvent
-    ) {
-      if (step.type === 'connect' || step.type === 'connect-group') {
-        connectNodes(step, event)
-      } else {
-        revealImages(step, event)
-      }
-    }
-
-    function applyStep(step: MotionStep, event: MotionEvent) {
+    for (const step of workflow.steps) {
       switch (step.type) {
         case 'pause':
           if (!Number.isFinite(step.duration) || step.duration < 0)
@@ -404,26 +363,23 @@ export function createWorkflowMotion(
           time += step.duration
           break
         case 'place':
-          placeNode(step, event)
+          placeNode(step)
           break
         case 'show':
           step.nodes.forEach((id) => reveal(getNode(id), time))
           time += entranceDuration + 0.03
           break
         case 'select':
-          selectNode(step, event)
+          selectNode(step)
           break
-        default:
-          applyBuildStep(step, event)
+        case 'images':
+          revealImages(step)
+          break
+        case 'connect':
+        case 'connect-group':
+          connectNodes(step)
+          break
       }
-    }
-
-    for (const step of workflow.steps) {
-      const start = time
-      const event: MotionEvent = { ...step, start, end: start }
-      applyStep(step, event)
-      event.end = time
-      timeline.push(event)
     }
     const end = time + holdDuration
     return {
@@ -431,7 +387,6 @@ export function createWorkflowMotion(
       nodes,
       wires,
       cursors,
-      timeline,
       end,
       slot: end + 0.25
     }
@@ -454,12 +409,11 @@ export function createWorkflowMotion(
     return `@keyframes ${name}{${ordered.map(({ time, value }) => `${((time / duration) * 100).toFixed(6)}%{${value}}`).join('')}}`
   }
   const scene = (() => {
-    const start = 0
-    const end = start + plan.end
+    const end = plan.end
     const rules: string[] = []
     const closeFrames = (frames: Frame[], hidden: string) => [
       { time: 0, value: hidden },
-      ...frames.map((frame) => ({ ...frame, time: frame.time + start })),
+      ...frames,
       { time: end, value: frames[frames.length - 1].value },
       { time: end + 0.15, value: hidden },
       { time: duration, value: hidden }
@@ -493,8 +447,7 @@ export function createWorkflowMotion(
         state.selectionAt,
         0.05
       )
-      const mediaTime = state.imageAt ?? state.shownAt
-      const mediaAt = mediaTime === undefined ? undefined : mediaTime + start
+      const mediaAt = state.imageAt ?? state.shownAt
       return { name, imageName, selectionName, mediaAt }
     })
     const wires = plan.wires.map((wire) => {
@@ -527,13 +480,11 @@ export function createWorkflowMotion(
     const agentCursor = addCursor('agent')
     rules.push(
       keyframes(`wf-scene-${plan.workflow.id}`, [
-        { time: 0, value: 'opacity:0;visibility:hidden;' },
-        { time: start, value: 'opacity:1;visibility:visible;' },
+        { time: 0, value: 'opacity:1;visibility:visible;' },
         {
-          time: start + plan.slot - 0.01,
+          time: plan.slot - 0.01,
           value: 'opacity:1;visibility:visible;'
         },
-        { time: start + plan.slot, value: 'opacity:0;visibility:hidden;' },
         { time: duration, value: 'opacity:0;visibility:hidden;' }
       ])
     )
@@ -542,8 +493,6 @@ export function createWorkflowMotion(
       wires,
       userCursor,
       agentCursor,
-      start,
-      timeline: plan.timeline,
       css: rules.join('\n')
     }
   })()
