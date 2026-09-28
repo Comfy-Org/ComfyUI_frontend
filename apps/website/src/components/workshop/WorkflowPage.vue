@@ -80,7 +80,9 @@ const cloudHref = template
         data-testid="workflow-author"
       >
         {{
-          t('workshop.workflow.templateBy').replace('{author}', template.author)
+          t('workshop.workflow.templateBy', 'en', {
+            author: template.author
+          })
         }}
       </p>
     </header>

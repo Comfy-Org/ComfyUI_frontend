@@ -58,7 +58,7 @@ async function clear() {
         type="button"
         class="-me-1 flex size-6 shrink-0 cursor-pointer items-center justify-center text-content-muted transition-colors outline-none hover:text-content-bright focus-visible:text-content-bright"
         :aria-label="
-          t('workshop.filter.remove', locale).replace('{filter}', chip.label)
+          t('workshop.filter.remove', locale, { filter: chip.label })
         "
         @click="remove(index)"
       >

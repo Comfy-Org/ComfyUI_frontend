@@ -73,10 +73,9 @@ const model = computed(() =>
 )
 const blockedNote = computed(() =>
   (cast.value || palette.value) && !model.value?.referenceSlug
-    ? tc('cinematic.references.unsupported', locale).replace(
-        '{model}',
-        model.value?.name ?? ''
-      )
+    ? tc('cinematic.references.unsupported', locale, {
+        model: model.value?.name ?? ''
+      })
     : undefined
 )
 const canGenerate = computed(
