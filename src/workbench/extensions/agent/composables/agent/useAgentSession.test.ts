@@ -1284,6 +1284,35 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(conversation.activeTurnId).toBeNull()
   })
 
+  // The launch window: `Launch` commits the `streaming` row and then starts
+  // the run from a goroutine, so a Stop that beats it there names a workflow
+  // that does not exist yet and is answered exactly like one that finished.
+  // A turn this client started has its own stream and must survive that --
+  // abandoning it hands the user a thread the server goes on to run and then
+  // answers with 409, which is the state this change exists to remove.
+  it('keeps a turn it started when a stop reports the run missing', async () => {
+    const cancelMessage = vi
+      .fn()
+      .mockRejectedValue(
+        new AgentApiError('turn is no longer running', 404, undefined)
+      )
+    const conversation = useAgentConversationStore()
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ cancelMessage }),
+      events: source
+    })
+    session.start()
+    await session.sendMessage('go')
+    emit(delta('msg-1', 'working'))
+
+    await session.stopTurn('button')
+
+    expect(cancelMessage).toHaveBeenCalledWith('th-1', 'msg-1')
+    expect(session.isStreaming.value).toBe(true)
+    expect(conversation.activeTurnId).toBe('msg-1')
+  })
+
   // The done-before-open ordering, which (b4b) cannot reach because it emits
   // through a listener already installed. Here the turn ends while this
   // session's socket is still attaching, so the frame reaches nobody and is

@@ -805,26 +805,26 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function handleStopFailure(error: unknown, turnId: TurnId): void {
     if (error instanceof AgentApiError) {
-      // 409 and 404 both mean the server has no turn to stop. They differ in
-      // what else is owed: 409 says the row is already terminal, so a turn
-      // this client started still has trailing frames coming, and swallowing
-      // the error lets `handleMessageDone` deliver them and promote the phase
-      // to `ready` -- the only route to an editable prompt. A turn restored
-      // from a snapshot has no such frames to wait for, so the same 409 is the
-      // end of it. 404 says the row is still `streaming` with nothing behind
-      // it; that is definitive for the turn asked about, where other failures
-      // may be transient and must not tear down a turn still running.
+      // 409 and 404 both say the server has no turn to stop, but only for a
+      // turn restored from a snapshot is that the end of it. A turn this
+      // client started has a stream that will settle it, and neither status
+      // proves otherwise: a 409 still owes its trailing frames, and a 404
+      // answers a cancel that beat the run into existence as readily as one
+      // that outlived it. Tearing either down would abandon a turn the server
+      // goes on to run -- the state this whole change exists to remove.
       const terminal =
-        error.status === 404 ||
-        (error.status === 409 && snapshotTurns.has(turnId))
+        snapshotTurns.has(turnId) &&
+        (error.status === 404 || error.status === 409)
       if (terminal && conversationStore.activeTurnId === turnId) {
         conversationStore.abortActiveTurn()
         snapshotTurns.delete(turnId)
-      }
-      if (error.status === 409) {
-        if (terminal) promptEditState.value = { phase: 'idle' }
+        promptEditState.value = { phase: 'idle' }
         return
       }
+      // A 409 for a turn we started is swallowed whole: `handleMessageDone`
+      // settles it, keeps the trailing content, and promotes the phase to
+      // `ready`, the only route to an editable prompt.
+      if (error.status === 409) return
       promptEditState.value = { phase: 'idle' }
       pushError(error.message)
       return
