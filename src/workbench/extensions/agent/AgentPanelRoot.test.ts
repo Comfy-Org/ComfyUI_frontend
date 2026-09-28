@@ -1103,6 +1103,7 @@ describe('AgentPanelRoot paywall telemetry', () => {
     telemetry.trackAgentPaywallShown.mockClear()
     telemetry.trackAgentPaywallCtaClicked.mockClear()
     telemetry.trackAddApiCreditButtonClicked.mockClear()
+    telemetry.trackSubscription.mockClear()
 
     canTopUp = ref(true)
     canSubscribeSelfServe = ref(true)
@@ -1396,6 +1397,36 @@ describe('AgentPanelRoot paywall telemetry', () => {
     )
 
     expect(telemetry.trackAddApiCreditButtonClicked).not.toHaveBeenCalled()
+  })
+
+  it.for([
+    { button: 'Subscribe', canSubscriberTopUp: false },
+    { button: 'Upgrade plan', canSubscriberTopUp: true }
+  ])(
+    'carries agent_paywall to the subscribe event from the $button CTA',
+    async ({ button, canSubscriberTopUp }) => {
+      canTopUp.value = canSubscriberTopUp
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      showPaywall()
+
+      await userEvent.click(await screen.findByRole('button', { name: button }))
+
+      expect(telemetry.trackSubscription).toHaveBeenCalledExactlyOnceWith(
+        'subscribe_clicked',
+        { current_tier: 'standard', reason: 'agent_paywall' }
+      )
+    }
+  )
+
+  it('does not report a subscribe click for the add-credits CTA', async () => {
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    showPaywall()
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Add credits' })
+    )
+
+    expect(telemetry.trackSubscription).not.toHaveBeenCalled()
   })
 })
 
