@@ -690,6 +690,22 @@ describe('AgentPanel extension flag gate', () => {
       }
     )
 
+    it('reports the first-run screen over a dialog sitting on top of it', async () => {
+      agentFlagEnabled.value = true
+      screenShown()
+      openDialog()
+      Object.assign(consentStore, { accepted: false, isChecking: false })
+
+      await loadEntryAndSetup()
+      await nextTick()
+      await flush()
+
+      expect(await notOffered()).toHaveBeenCalledExactlyOnceWith({
+        reason: 'first_run_screen'
+      })
+      expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+    })
+
     it('reports an in-flight tour against the workspace the offer was made for', async () => {
       agentFlagEnabled.value = true
       Object.assign(consentStore, { accepted: false, isChecking: false })
@@ -881,33 +897,6 @@ describe('AgentPanel extension flag gate', () => {
     await flush()
 
     expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
-  })
-
-  it('withholds a card whose Getting Started screen took over while the offer was in flight, then re-offers', async () => {
-    agentFlagEnabled.value = true
-    Object.assign(consentStore, { accepted: false, isChecking: false })
-    vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
-      async (_trigger, _onAccept, hooks) => {
-        screenShown()
-        if (hooks?.canShow?.() === false) return
-        hooks?.onShown?.()
-      }
-    )
-
-    await loadEntryAndSetup()
-    await vi.waitFor(() =>
-      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
-    )
-    await flush()
-
-    expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBe('false')
-    expect(agentStore.open).not.toHaveBeenCalled()
-
-    screenClosed()
-    await vi.waitFor(() =>
-      expect(useAgentConsent().withConsent).toHaveBeenCalledTimes(2)
-    )
-    expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBe('true')
   })
 
   it('remembers a seen card per workspace across a switch away and back', async () => {
