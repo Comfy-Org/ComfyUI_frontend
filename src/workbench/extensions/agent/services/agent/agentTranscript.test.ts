@@ -390,6 +390,9 @@ describe('normalizeAgentTranscript', () => {
   it('ignores a streaming row an older turn left behind', () => {
     const stale = row(1, 'assistant', 'turn-a', '', 'row-1')
     stale.status = 'streaming'
+    stale.content = {
+      tool_calls: [{ id: 'call-1', tool_name: 'add_node', status: 'running' }]
+    }
 
     const transcript = normalizeAgentTranscript([
       stale,
@@ -401,6 +404,15 @@ describe('normalizeAgentTranscript', () => {
     expect(transcript.messages.map((message) => message.streaming)).toEqual([
       false,
       false
+    ])
+    expect(transcript.messages[0].parts).toEqual([
+      {
+        type: 'tool',
+        callId: 'call-1',
+        name: 'add_node',
+        state: 'done',
+        ok: false
+      }
     ])
   })
 

@@ -319,12 +319,21 @@ export function useAgentSession(deps: AgentSessionDeps) {
    * replaying one whose hydrate was superseded or failed still reaches the
    * background turn it belongs to -- and a background turn that never receives
    * its own `agent_message_done` is one `resumeBackgroundTurn` later restores
-   * as permanently running. Frames taken while a newer hydrate owns the slot
-   * land in that hydrate's buffer and are deferred again rather than lost.
+   * as permanently running.
+   *
+   * A newer hydrate of the same thread inherits them rather than taking them
+   * through `handleAgentEvent`, which would append: these were buffered first,
+   * and an `agent_message_done` replayed ahead of an older delta clears the
+   * turn that delta still has to reach.
    */
   function drainHydration(buffer: HydrationBuffer): void {
+    const events = buffer.events.splice(0)
     if (hydration === buffer) hydration = null
-    for (const event of buffer.events.splice(0)) handleAgentEvent(event)
+    else if (hydration?.threadId === buffer.threadId) {
+      hydration.events.unshift(...events)
+      return
+    }
+    for (const event of events) handleAgentEvent(event)
   }
 
   async function hydrateFromServer(
@@ -361,6 +370,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     unsubscribeStatus?.()
     unsubscribe = null
     unsubscribeStatus = null
+    // The buffer belongs to this instance, so a hydrate still in flight would
+    // replay into whatever the successor has set up by then. Deliver now,
+    // while the turn these frames describe is still the one on the store.
+    if (hydration !== null) drainHydration(hydration)
     const stoppedGeneration = ownedGeneration
     queueMicrotask(() => {
       if (stoppedGeneration !== sessionGeneration) return

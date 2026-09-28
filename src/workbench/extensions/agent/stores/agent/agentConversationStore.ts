@@ -9,7 +9,10 @@ import type {
 import { createAgentEventTransport } from '../../services/agent/agentEventTransport'
 import type { AssistantMessage } from '../../services/agent/agentMessageParts'
 import { createAssistantMessage } from '../../services/agent/agentMessageParts'
-import { normalizeAgentTranscript } from '../../services/agent/agentTranscript'
+import {
+  normalizeAgentTranscript,
+  settleLiveMessage
+} from '../../services/agent/agentTranscript'
 import type {
   NormalizedAgentTranscript,
   UserAttachment
@@ -509,24 +512,8 @@ export const useAgentConversationStore = defineStore(
           ? undefined
           : backgroundTurns.get(threadId.value)
       if (stashed?.messageId !== pending.messageId) return pending
-      demoteToSettled(pending.message)
+      settleLiveMessage(pending.message)
       return undefined
-    }
-
-    /**
-     * Strips the liveness `normalizeAgentTranscript` granted a row that turns
-     * out to already have an owner. The tool parts matter as much as the flag:
-     * the transcript left any still-in-flight call at `streaming` on the
-     * understanding that a transport would settle it, and this message is not
-     * getting one.
-     */
-    function demoteToSettled(message: AssistantMessage): void {
-      message.streaming = false
-      message.parts = message.parts.map((part) =>
-        part.type === 'tool' && part.state === 'streaming'
-          ? { ...part, state: 'done', ok: false }
-          : part
-      )
     }
 
     const entries = computed<ConversationEntry[]>(() =>

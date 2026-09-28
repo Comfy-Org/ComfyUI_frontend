@@ -355,6 +355,21 @@ function recordAssistantRow(
   return rowPending
 }
 
+/**
+ * Strips the liveness a row's `streaming` status granted a message that turns
+ * out not to be getting a transport. The tool parts matter as much as the
+ * flag: `toolCallPartState` left any still-in-flight call at `streaming` on
+ * the understanding that a transport would settle it, and nothing else can.
+ */
+export function settleLiveMessage(message: AssistantMessage): void {
+  message.streaming = false
+  message.parts = message.parts.map((part) =>
+    part.type === 'tool' && part.state === 'streaming'
+      ? { ...part, state: 'done', ok: false }
+      : part
+  )
+}
+
 export function normalizeAgentTranscript(
   history: AgentMessages
 ): NormalizedAgentTranscript {
@@ -397,8 +412,10 @@ export function normalizeAgentTranscript(
   if (
     pending &&
     (liveTurn === undefined || pending.message !== assistants.get(liveTurn))
-  )
+  ) {
+    settleLiveMessage(pending.message)
     pending = undefined
+  }
 
   const messages = turnOrder.map((turnId) => {
     const message = assistants.get(turnId) ?? createAssistantMessage(turnId)
