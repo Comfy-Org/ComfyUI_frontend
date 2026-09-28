@@ -36,7 +36,7 @@ const SEED: WorkflowJSON = { nodes: [], links: [] }
 
 const OPEN_AGENT_LABEL = enMessages.agent.entryButton
 const SEND_LABEL = enMessages.agent.send
-const CARD_LEAD = enMessages.agent.runApproval.lead
+const CARD_LEAD = enMessages.agent.runApproval.leadBound
 const RUN_LABEL = enMessages.agent.runApproval.run
 const CANCEL_LABEL = enMessages.agent.runApproval.cancel
 const COMPOSER_LABEL = createI18n({

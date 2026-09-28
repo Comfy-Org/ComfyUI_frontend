@@ -29,6 +29,17 @@ interface CapturedMessages {
   serverFeatureFlags: unknown
 }
 
+interface PerfFrameState {
+  frameRequestId: number
+  lastTimestamp: number | null
+  durationsMs: number[]
+}
+
+interface PerfLongtaskState {
+  observer: PerformanceObserver
+  tbtMs: number
+}
+
 declare global {
   interface Window {
     app?: ComfyApp
@@ -42,6 +53,8 @@ declare global {
     changeCount?: number
     widgetValue?: unknown
     __commandExecutionCounts?: Record<string, number>
+    __perfFrameState?: PerfFrameState
+    __perfLongtaskState?: PerfLongtaskState
 
     // Feature flags test globals
     __capturedMessages?: CapturedMessages
