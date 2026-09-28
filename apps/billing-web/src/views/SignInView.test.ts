@@ -228,6 +228,23 @@ describe('SignInView', () => {
     ).toBeInTheDocument()
   })
 
+  it('keeps a restored shared-session failure on its retry, never on sign-in', async () => {
+    h.available = false
+    h.initialState = { step: 'signedIn', origin: 'restored', mintFailed: true }
+    h.sessionFailureCode = 'TOKEN_EXCHANGE_FAILED'
+    await renderSignIn()
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'You are signed in, but your workspace session could not be started'
+    )
+    expect(
+      screen.queryByRole('button', { name: 'Sign in with Google' })
+    ).toBeNull()
+    expect(
+      screen.getByRole('button', { name: 'Retry session' })
+    ).toBeInTheDocument()
+  })
+
   it.for(['ACCESS_DENIED', 'WORKSPACE_NOT_FOUND'] as const)(
     'offers a way back to the app instead of a retry for %s',
     async (code) => {
