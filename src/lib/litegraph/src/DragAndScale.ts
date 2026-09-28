@@ -181,8 +181,8 @@ export class DragAndScale {
   }
 
   /**
-   * Fits the view to the specified bounds. No-ops when the element has no
-   * visible area.
+   * Fits the view to the specified bounds. No-ops when the canvas backing
+   * store has zero width or height.
    * @param bounds The bounds to fit the view to, defined by a rectangle.
    */
   fitToBounds(

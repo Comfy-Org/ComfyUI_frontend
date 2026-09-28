@@ -53,13 +53,14 @@ describe('DragAndScale.fitToBounds', () => {
     'leaves the view untouched when the canvas is hidden — %s',
     ([, width, height]) => {
       const ds = createDragAndScale(width, height)
+      ds.offset[0] = 416
+      ds.offset[1] = 110
+      ds.scale = 0.9
       const offsetBefore = [...ds.offset]
       const scaleBefore = ds.scale
 
       ds.fitToBounds(BOUNDS)
 
-      expect(ds.offset.every(Number.isFinite)).toBe(true)
-      expect(ds.scale).toBeGreaterThan(0)
       expect([...ds.offset]).toEqual(offsetBefore)
       expect(ds.scale).toBe(scaleBefore)
     }
