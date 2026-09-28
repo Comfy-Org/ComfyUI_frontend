@@ -1,13 +1,16 @@
 import { expect } from '@playwright/test'
 
 import type {
+  AgentRunMode,
   AgentMessage,
   AgentThreadSummary,
-  AgentThreadListResponse
+  AgentThreadListResponse,
+  GlobalSetting
 } from '@comfyorg/ingest-types'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
+import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
 import type {
   DraftIndexV2,
   DraftPayloadV2
@@ -118,11 +121,21 @@ async function installIdentitySentinels(page: Page): Promise<void> {
       [StorageKeys.agentThread(scope), sentinel.thread],
       [
         StorageKeys.agentWorkflowTabBindings(scope),
-        JSON.stringify({ [sentinel.binding]: path })
-      ]
+        JSON.stringify({
+          [sentinel.binding]: {
+            tabPath: path,
+            graphId: null,
+            confirmedAt: updatedAt
+          }
+        })
+      ],
+      [`Comfy.AgentPanel.onboarded.${account.uid}.${workspaceId}`, 'true']
     )
   }
   await page.addInitScript((storageEntries) => {
+    const seededKey = 'e2e-identity-sentinels-seeded'
+    if (sessionStorage.getItem(seededKey) === 'true') return
+    sessionStorage.setItem(seededKey, 'true')
     for (const [key, value] of storageEntries) localStorage.setItem(key, value)
   }, entries)
 
@@ -162,6 +175,22 @@ async function installIdentitySentinels(page: Page): Promise<void> {
       jsonRoute(messages.filter((message) => message.thread_id === threadId))
     )
   })
+  const runMode: AgentRunMode = {
+    mode: 'ask_approval',
+    credit_limit: null
+  }
+  await page.route('**/api/agent/run-mode', (route) =>
+    route.fulfill(jsonRoute(runMode))
+  )
+  const consent: GlobalSetting = {
+    key: AGENT_CONSENT_SETTING_ID,
+    value: true,
+    updated_at: '2026-09-28T00:00:00Z'
+  }
+  await page.route(
+    `**/api/global-settings/${AGENT_CONSENT_SETTING_ID}`,
+    (route) => route.fulfill(jsonRoute(consent))
+  )
 }
 
 interface FirebasePasswordSignInResponse {
@@ -428,8 +457,18 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
       await expect
         .poll(() => sessionOwners, { timeout: 15_000 })
         .toContain(ACCOUNT_A.id)
-      await expect(page.getByText(IDENTITY_SENTINELS.a.draft)).toBeVisible()
-      await expect(page.getByText(IDENTITY_SENTINELS.b.draft)).toHaveCount(0)
+      await expect(
+        page.getByRole('tab', {
+          name: IDENTITY_SENTINELS.a.draft,
+          exact: true
+        })
+      ).toBeVisible()
+      await expect(
+        page.getByRole('tab', {
+          name: IDENTITY_SENTINELS.b.draft,
+          exact: true
+        })
+      ).toHaveCount(0)
       await page
         .getByRole('button', {
           name: enMessages.agent.entryButton,
@@ -443,6 +482,12 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
       await expect(
         panel.getByText(IDENTITY_SENTINELS.b.transcript)
       ).toHaveCount(0)
+      await page
+        .getByRole('button', {
+          name: enMessages.agent.entryButton,
+          exact: true
+        })
+        .click()
     })
 
     await test.step('Switch to account B', async () => {
@@ -492,8 +537,18 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
       expect(credentialEvents.indexOf(`session:${ACCOUNT_B.id}`)).toBeLessThan(
         credentialEvents.indexOf(`workspace:${ACCOUNT_B.id}`)
       )
-      await expect(page.getByText(IDENTITY_SENTINELS.b.draft)).toBeVisible()
-      await expect(page.getByText(IDENTITY_SENTINELS.a.draft)).toHaveCount(0)
+      await expect(
+        page.getByRole('tab', {
+          name: IDENTITY_SENTINELS.b.draft,
+          exact: true
+        })
+      ).toBeVisible()
+      await expect(
+        page.getByRole('tab', {
+          name: IDENTITY_SENTINELS.a.draft,
+          exact: true
+        })
+      ).toHaveCount(0)
       await page
         .getByRole('button', {
           name: enMessages.agent.entryButton,
@@ -507,6 +562,12 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
       await expect(
         panel.getByText(IDENTITY_SENTINELS.a.transcript)
       ).toHaveCount(0)
+      await page
+        .getByRole('button', {
+          name: enMessages.agent.entryButton,
+          exact: true
+        })
+        .click()
 
       const bindings = await page.evaluate(
         ({ workspaceId, userA, userB }) => {
@@ -601,8 +662,18 @@ test.describe('Cloud cross-tab sign-out', { tag: '@cloud' }, () => {
     await installIdentitySentinels(page)
     await bootSignedIn(page)
 
-    await expect(page.getByText(IDENTITY_SENTINELS.a.draft)).toBeVisible()
-    await expect(page.getByText(IDENTITY_SENTINELS.b.draft)).toHaveCount(0)
+    await expect(
+      page.getByRole('tab', {
+        name: IDENTITY_SENTINELS.a.draft,
+        exact: true
+      })
+    ).toBeVisible()
+    await expect(
+      page.getByRole('tab', {
+        name: IDENTITY_SENTINELS.b.draft,
+        exact: true
+      })
+    ).toHaveCount(0)
     await clickLogout(page)
     await expectSignedOut(page, 'logout must complete before cleanup is read')
 
