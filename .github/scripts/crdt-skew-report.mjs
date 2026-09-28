@@ -21,6 +21,7 @@ import {
 } from 'node:fs'
 
 function parseArgs(argv) {
+  /** @type {{ report: string | null, out: string | null }} */
   const args = { report: null, out: null }
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === '--report') args.report = argv[++i]
