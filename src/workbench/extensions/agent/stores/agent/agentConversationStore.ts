@@ -135,8 +135,20 @@ function interleaveLocalParts(
   localParts: AnchoredLocalPart[]
 ): AssistantMessage['parts'] {
   const mergedParts = [...persistedParts]
-  for (const localPart of localParts)
-    insertAnchoredLocalPart(mergedParts, localPart)
+  let groupStart = 0
+  while (groupStart < localParts.length) {
+    const first = localParts[groupStart]
+    let groupEnd = groupStart + 1
+    while (
+      groupEnd < localParts.length &&
+      localParts[groupEnd].toolCount === first.toolCount &&
+      localParts[groupEnd].textOffset === first.textOffset
+    )
+      groupEnd += 1
+    for (let index = groupEnd - 1; index >= groupStart; index -= 1)
+      insertAnchoredLocalPart(mergedParts, localParts[index])
+    groupStart = groupEnd
+  }
   return mergedParts
 }
 

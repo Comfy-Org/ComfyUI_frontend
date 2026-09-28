@@ -1009,6 +1009,27 @@ describe('useAgentConversationStore', () => {
     ])
   })
 
+  it('keeps consecutive local tab links in order at one text boundary', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.ingest(delta('t1', 'before'))
+    store.ingest(activeTab('wf-1', 't1'))
+    store.ingest(activeTab('wf-2', 't1'))
+    store.ingest(delta('t1', 'after'))
+
+    store.settleTurn({ threadId: 'th', messageId: T1 }, [
+      { type: 'text', text: 'beforeafter', state: 'done' }
+    ])
+
+    expect(store.messages[0].parts).toMatchObject([
+      { type: 'text', text: 'before' },
+      { type: 'tabLink', workflowId: 'wf-1' },
+      { type: 'tabLink', workflowId: 'wf-2' },
+      { type: 'text', text: 'after' }
+    ])
+  })
+
   it('resolves existing paywalls without resurrecting them', () => {
     const store = useAgentConversationStore()
     store.recordPaywall(T1, 'subscribe')
