@@ -235,6 +235,12 @@ function resolveLinkMapKey(id: string): number | null {
   return linkId !== undefined && linkId >= 0 ? linkId : null
 }
 
+function resolveLinkId(raw: unknown): number | null {
+  return typeof raw === 'number' && raw >= 0 && Number.isSafeInteger(raw)
+    ? raw
+    : null
+}
+
 function readSemanticLink(
   doc: Y.Doc,
   id: string,
@@ -244,11 +250,13 @@ function readSemanticLink(
   const raw = linksMap(doc).get(id)
   const tuple = raw instanceof Y.Array ? raw.toArray() : raw
   if (!Array.isArray(tuple) || tuple.length < 5) return null
-  const linkId = Number(tuple[0] ?? id)
+  const linkId = resolveLinkId(tuple[0])
+  const mapLinkId = resolveLinkMapKey(id)
   const originSlot = Number(tuple[2])
   const targetSlot = Number(tuple[4])
   if (
-    !Number.isInteger(linkId) ||
+    linkId === null ||
+    mapLinkId !== linkId ||
     tuple[1] == null ||
     tuple[3] == null ||
     !Number.isInteger(originSlot) ||
