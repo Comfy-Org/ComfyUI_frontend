@@ -37,6 +37,10 @@ const FRONTEND_SCRIPT_TESTS = [
   'scripts/registry-census/matrix_runner.test.ts',
   'scripts/testingPinia.test.ts'
 ]
+const ISOLATED_STORE_TESTS = [
+  'src/stores/entityIdStore.test.ts',
+  'src/testing/pinia.test.ts'
+]
 
 const CRITICAL_COVERAGE_DIRS = [
   'src/base',
@@ -901,11 +905,21 @@ export default defineConfig({
         test: {
           name: 'frontend',
           setupFiles: ['./vitest.timer.setup.ts', './vitest.setup.ts'],
+          exclude: ISOLATED_STORE_TESTS,
           include: [
             'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
             'browser_tests/**/*.test.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
             ...FRONTEND_SCRIPT_TESTS
           ]
+        }
+      },
+      {
+        extends: true,
+        test: {
+          name: 'isolated-stores',
+          environment: 'node',
+          setupFiles: ['./vitest.network.setup.ts'],
+          include: ISOLATED_STORE_TESTS
         }
       },
       {
