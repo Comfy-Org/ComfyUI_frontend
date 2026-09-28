@@ -3,6 +3,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import type {
   AgentThreadListResponse,
   AgentThreadSummary,
+  BillingStatus,
   SubscriptionTier
 } from '@comfyorg/ingest-types'
 import { render, screen, waitFor, within } from '@testing-library/vue'
@@ -207,7 +208,10 @@ const paywallCapabilities = vi.hoisted(() => ({
   hasResolvedCapabilities: true
 }))
 const paywallBilling = vi.hoisted(() => ({
-  tier: 'STANDARD' as SubscriptionTier | null
+  tier: 'STANDARD' as SubscriptionTier | null,
+  type: 'workspace' as 'workspace' | 'legacy',
+  status: 'paid' as BillingStatus | null,
+  fetchStatus: vi.fn<() => Promise<void>>()
 }))
 const paywallHasFunds = ref<boolean | null>(false)
 const paywallAgentHasFunds = ref<boolean | undefined>()
@@ -294,7 +298,10 @@ beforeEach(() => {
               agentHasFunds: paywallAgentHasFunds.value
             })
       ),
-      tier: computed(() => paywallBilling.tier)
+      tier: computed(() => paywallBilling.tier),
+      type: computed(() => paywallBilling.type),
+      billingStatus: computed(() => paywallBilling.status),
+      fetchStatus: paywallBilling.fetchStatus
     })
   )
   vi.mocked(useBillingCapabilities).mockReturnValue(
@@ -392,6 +399,9 @@ beforeEach(() => {
   paywallCapabilities.isReady = true
   paywallCapabilities.hasResolvedCapabilities = true
   paywallBilling.tier = 'STANDARD'
+  paywallBilling.type = 'workspace'
+  paywallBilling.status = 'paid'
+  paywallBilling.fetchStatus.mockReset().mockResolvedValue(undefined)
   paywallHasFunds.value = false
   paywallAgentHasFunds.value = undefined
 })
@@ -1466,6 +1476,27 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
     expect(useTelemetry()!.trackAgentPaywallShown).not.toHaveBeenCalled()
   })
 
+  it('stays hidden on the legacy rail whose unloaded balance reads as false', async () => {
+    paywallHasFunds.value = false
+    paywallBilling.type = 'legacy'
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
+  })
+
+  it.for(['payment_failed', 'paused'] as const)(
+    'defers to the %s billing-recovery surface',
+    async (status) => {
+      paywallHasFunds.value = false
+      paywallBilling.status = status
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      await screen.findByRole('textbox')
+
+      expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
+    }
+  )
+
   // `null` is "not loaded yet", not "no funds". Treating it as exhaustion would
   // flash an out-of-credits card at every funded user on every cold start.
   it('stays hidden while the billing read has not answered', async () => {
@@ -1500,6 +1531,16 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await screen.findByRole('textbox')
     await nextTick()
+
+    expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
+  })
+
+  it('stays hidden when the current member cannot act on billing', async () => {
+    paywallHasFunds.value = false
+    paywallWorkspace.role = 'member'
+    paywallCapabilities.canTopUp = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
 
     expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
   })
@@ -1613,6 +1654,22 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
     await waitFor(() =>
       expect(useTelemetry()!.trackAgentPaywallShown).toHaveBeenCalledTimes(2)
     )
+  })
+
+  it('does not re-arm the impression when capabilities refresh while still exhausted', async () => {
+    paywallHasFunds.value = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByTestId(STANDING)
+    await waitFor(() =>
+      expect(useTelemetry()!.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
+    )
+
+    paywallCapabilities.isReady = false
+    await nextTick()
+    paywallCapabilities.isReady = true
+    await screen.findByTestId(STANDING)
+
+    expect(useTelemetry()!.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
   })
 
   it('does not report the same exhaustion episode after a panel remount', async () => {

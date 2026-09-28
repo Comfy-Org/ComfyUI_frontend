@@ -133,7 +133,13 @@ const { t } = useI18n()
 const toast = useToastStore()
 const { open: openAccountPrecondition } = useAccountPreconditionDialog()
 const { workspaceRole } = useWorkspaceUI()
-const { subscription, tier: subscriptionTier } = useBillingContext()
+const {
+  subscription,
+  tier: subscriptionTier,
+  type: billingType,
+  billingStatus,
+  fetchStatus: refreshBillingStatus
+} = useBillingContext()
 const conversationStore = useAgentConversationStore()
 watch(
   subscription,
@@ -232,58 +238,54 @@ watch(
  *
  * The inline card above is reachable from exactly one moment: a turn POST that
  * came back 402/`no_funds` (`recordSendError` -> `recordPaywall`). Every other
- * way a user meets the ceiling — a turn that dies at the agent runtime's own
- * LLM hop, which the browser never calls and so never sees a 402 for, or simply
- * not typing again after a turn failed — left no upgrade path at all. Measured
- * on 2026-09-24..25: 65 cloud personal workspaces hit `no_funds` at the agent
- * admission gate; `app:agent_paywall_shown` had fired for 3 people in total,
- * ever. The one existing `hasFunds === false` surface in the product
- * (`useBillingBanner`'s `outOfCredits`) is gated to team plans and rendered
- * only inside the settings dialog, so none of those 65 could have seen it.
+ * way a user meets the ceiling — including a refusal inside a server-side LLM
+ * hop that the browser cannot observe — needs a durable upgrade path.
  *
  * So this reads the funds signal the client already holds rather than waiting
  * for a refusal to carry it. It is deliberately the symmetric half of the
  * `hasFunds` watch above, which already clears paywalls when funds return.
  *
- * Cloud only: the measured population is entirely cloud personal workspaces,
- * and local's `hasFunds` comes from a legacy balance read whose meaning for
- * the agent is not established here.
+ * Consolidated cloud billing only: legacy balance loading currently collapses
+ * unknown into false, so it cannot safely drive this surface.
  *
  * Non-blocking by construction — it renders beside the composer and disables
- * nothing. An aggressive gate on a surface at 15%-and-climbing exposure would
- * put the activation numbers the rest of this program is moving at risk.
+ * nothing.
  */
+const agentHasFunds = computed(
+  () => subscription.value?.agentHasFunds ?? subscription.value?.hasFunds
+)
 const creditsExhausted = computed(() => {
-  if (!isCloud) return false
+  if (!isCloud || billingType.value !== 'workspace') return false
   // Same gate as the impression report above: an unsettled read cannot say
   // which presentation is right, and a card naming the wrong remediation is
   // worse than no card.
   if (!capabilityReadSettled.value) return false
+  if (agentHasFunds.value !== false) return false
   if (
-    (subscription.value?.agentHasFunds ?? subscription.value?.hasFunds) !==
-    false
+    billingStatus.value === 'paused' ||
+    billingStatus.value === 'payment_failed'
   )
     return false
-  // `unavailable` renders a body with no action at all, so showing it standing
-  // would be noise the user cannot act on. The inline card still uses it,
-  // because there a refusal already happened and needs explaining.
-  return paywallPresentation.value.kind !== 'unavailable'
+  // A standing card must offer a next step. Refusal-anchored inline cards can
+  // still explain member, sales-managed, or unavailable states without a CTA.
+  return ['subscribed', 'subscriptionRequired', 'local'].includes(
+    paywallPresentation.value.kind
+  )
 })
 
 /**
- * Suppressed while an unresolved inline card is on screen: the two render the
- * same component with the same copy. The conversation entries omit resolved
- * paywalls, so this is exactly "a card the user can see right now".
+ * Suppressed while the latest transcript entry is an unresolved inline card:
+ * the two render the same copy. An older card may be scrolled away and must not
+ * hide the standing recovery path after a later server-side refusal.
  */
-const showStandingPaywall = computed(
-  () =>
-    creditsExhausted.value &&
-    !conversationEntries.value.some(
-      (entry) =>
-        entry.role === 'assistant' &&
-        entry.parts.some((part) => part.type === 'paywall')
-    )
-)
+const showStandingPaywall = computed(() => {
+  if (!creditsExhausted.value) return false
+  const latestEntry = conversationEntries.value.at(-1)
+  return !(
+    latestEntry?.role === 'assistant' &&
+    latestEntry.parts.some((part) => part.type === 'paywall')
+  )
+})
 
 const agentPanelStore = useAgentPanelStore()
 
@@ -294,8 +296,8 @@ const agentPanelStore = useAgentPanelStore()
  * Reset when funds return, so a later exhaustion reports again — mirroring how
  * `useBillingBanner` scopes its dismissal to one episode.
  */
-watch(creditsExhausted, (exhausted) => {
-  if (!exhausted) agentPanelStore.hasReportedExhaustionImpression = false
+watch(agentHasFunds, (hasFunds) => {
+  if (hasFunds === true) agentPanelStore.hasReportedExhaustionImpression = false
 })
 
 function onStandingPaywallShown(): void {
@@ -846,6 +848,10 @@ watch(
     } else graphActivity.startTurn(turnId)
     observedActivityStatus = true
     if (value === 'idle') {
+      // A server-side LLM-hop refusal does not reach the browser as a 402.
+      // Refresh the authoritative effective-funds verdict after every observed
+      // turn completion so both exhaustion and external top-ups converge.
+      if (billingType.value === 'workspace') void refreshBillingStatus()
       const completedPath = tabActivity.editingTabPath
       tabActivity.setEditing(null)
       if (completedPath !== null) tabActivity.markModified(completedPath)
