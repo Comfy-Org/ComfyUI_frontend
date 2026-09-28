@@ -590,11 +590,9 @@ export const useAgentConversationStore = defineStore(
      * transport never delivered.
      *
      * `transport` is the one still bound to `live`, or undefined when the
-     * caller is about to dispose it. It decides two things a plain merge
-     * cannot: an adopted call has to be registered with a surviving
-     * transport or the call's next frame pushes a second copy beside it, and
-     * an adopted call that is still running has to be forced terminal when
-     * no transport survives, because nothing would be left to settle it.
+     * caller is about to dispose it. A surviving one has to be told about
+     * every call adopted off the row, or that call's next frame arrives as a
+     * stranger and pushes a second copy beside the first.
      */
     function adoptHydratedOnlyParts(
       live: AssistantMessage,
@@ -612,6 +610,11 @@ export const useAgentConversationStore = defineStore(
      * carries the duration the transport measured. A live copy is updated in
      * place rather than replaced, so the transport's own handle on it stays
      * good.
+     *
+     * A call adopted off the row is settled unconditionally: history returns
+     * terminal rows only, and nothing would finish one that did arrive
+     * unresolved, since `settle()` closes text and thinking and leaves tool
+     * parts alone.
      */
     function adoptHydratedTools(
       live: AssistantMessage,
@@ -629,16 +632,23 @@ export const useAgentConversationStore = defineStore(
         const alreadyLive = liveTools.get(part.callId)
         if (alreadyLive === undefined) {
           const copy: ToolPart =
-            transport === undefined && part.state === 'streaming'
+            part.state === 'streaming'
               ? { ...part, state: 'done', ok: part.ok ?? false }
               : { ...part }
           adopted.push(copy)
           transport?.adoptToolPart(copy)
           continue
         }
-        if (alreadyLive.state === 'done' || part.state !== 'done') continue
+        if (part.state !== 'done' || alreadyLive.state === 'done') continue
+        // PM-1575: an `ok` already set while the state is still `streaming`
+        // is the canvas gate holding a call that DID succeed until its edit
+        // shows up on the graph -- not a call whose end the transport
+        // missed. Settling it here is the premature success glyph that gate
+        // exists to prevent, and would strand its entry in the transport's
+        // pending map besides.
+        if (alreadyLive.ok !== undefined) continue
         alreadyLive.state = 'done'
-        alreadyLive.ok = part.ok
+        alreadyLive.ok = part.ok ?? false
         if (part.durationMs !== undefined)
           alreadyLive.durationMs = part.durationMs
       }

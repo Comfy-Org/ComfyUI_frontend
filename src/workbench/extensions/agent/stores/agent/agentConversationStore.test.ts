@@ -1484,10 +1484,44 @@ describe('useAgentConversationStore', () => {
   })
 
   /**
-   * A delta that fails validation on the way in is dropped with no replay,
-   * so the row can hold reply the transport never got. Only the tail it adds
-   * rides across -- handing the whole row over would print what is already
-   * on screen twice.
+   * A terminal row keeps its own text unless the live copy strictly extends
+   * it -- and a draft is not the live copy extending anything. It is
+   * provisional narration the next frame withdraws, so counting it here
+   * would freeze abandoned narration as the answer the user is left with.
+   */
+  it('does not freeze a draft as the final reply beside a terminal row', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'upscale this')
+    store.ingest(delta('t1', 'All done.'))
+    store.ingest(
+      chat({
+        type: 'agent_message_draft',
+        data: { text: 'wait, actually', message_id: 't1', thread_id: 'th' }
+      })
+    )
+    store.stashActiveTurn()
+
+    store.setThreadId('th-other')
+    store.hydrate([])
+    store.setThreadId('th')
+    store.hydrate([
+      historyRow(1, 'user', 'server-turn', 'upscale this'),
+      historyRow(2, 'assistant', 'server-turn', 'All done.', 't1')
+    ])
+    store.resumeBackgroundTurn()
+
+    expect(partTexts(store)).toEqual(['All done.'])
+  })
+
+  /**
+   * Defensive path: `cloud` pairs every assistant-row `SetContent` with a
+   * terminal status (services/agent/internal/persist/threads.go), so a
+   * streaming row carrying reply text is a shape no current producer emits.
+   * This and the draft case below pin `adoptFresherHydratedText`'s contract
+   * rather than a live wire shape -- a dropped delta has no replay, so if
+   * that pairing ever loosens the row becomes the only copy of the tail.
    */
   it('recovers only the reply tail a streaming row is ahead by', () => {
     const store = useAgentConversationStore()
@@ -1547,6 +1581,47 @@ describe('useAgentConversationStore', () => {
     store.resumeBackgroundTurn()
 
     expect(partTexts(store)).toEqual(['Done'])
+  })
+
+  /**
+   * PM-1575: a canvas-mutating call that succeeded is held at the spinner
+   * with `ok` already true until its edit reaches the graph. The row calls
+   * that same call finished, and adopting that verbatim would put the
+   * success glyph up early -- exactly what the gate exists to stop.
+   */
+  it('leaves a call the canvas gate is holding alone when the row calls it done', () => {
+    const store = useAgentConversationStore()
+    store.setCanvasSyncGate(() => true)
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'add a node')
+    store.ingest(toolCall('t1', 'add_node', 'running'))
+    store.ingest(toolCall('t1', 'add_node', 'success'))
+    store.stashActiveTurn()
+
+    const streamingRow = historyRow(2, 'assistant', 'server-turn', '', 't1')
+    streamingRow.status = 'streaming'
+    streamingRow.content = {
+      tool_calls: [{ id: 'call-add_node', tool_name: 'add_node', status: 'ok' }]
+    }
+    store.setThreadId('th-other')
+    store.hydrate([])
+    store.setThreadId('th')
+    store.hydrate([
+      historyRow(1, 'user', 'server-turn', 'add a node'),
+      streamingRow
+    ])
+    store.resumeBackgroundTurn()
+
+    expect(
+      store.messages[0].parts.filter((part) => part.type === 'tool')
+    ).toEqual([
+      expect.objectContaining({
+        callId: 'call-add_node',
+        state: 'streaming',
+        ok: true
+      })
+    ])
   })
 
   /**

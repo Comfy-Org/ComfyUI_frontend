@@ -402,6 +402,9 @@ export function createAgentEventTransport(
   function appendReplyText(text: string): void {
     if (text === '') return
     dropDraft()
+    closeOpenThinking()
+    message.thinking = false
+    message.thinkingText = undefined
     ;(openText ?? openNewText()).text += text
   }
 
