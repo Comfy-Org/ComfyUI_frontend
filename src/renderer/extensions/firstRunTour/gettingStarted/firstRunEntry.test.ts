@@ -126,52 +126,6 @@ describe('useFirstRunEntry', () => {
   ] as const
 
   describe('what the boot reports to surfaces that must yield to it', () => {
-    it('records that Getting Started took the screen', async () => {
-      const entry = useFirstRunEntry()
-
-      await entry.handleStartupOutcome('fresh')
-
-      expect(entry.firstRunTookScreen.value).toBe(true)
-    })
-
-    it('records that a url-intent tour took the screen', async () => {
-      const entry = useFirstRunEntry()
-
-      await entry.handleStartupOutcome('url-intent')
-      await entry.handleUrlWorkflow('url-intent', 'image_z_image_turbo')
-
-      expect(entry.firstRunTookScreen.value).toBe(true)
-    })
-
-    it.for([
-      {
-        label: 'restored work',
-        boot: async (entry: FirstRunEntry) =>
-          entry.handleStartupOutcome('restored')
-      },
-      {
-        label: 'a boot that only deferred',
-        boot: async (entry: FirstRunEntry) => {
-          mocks.isDesktopWidth = false
-          await entry.handleStartupOutcome('fresh')
-        }
-      },
-      {
-        label: 'a url-intent boot whose tour did not start',
-        boot: async (entry: FirstRunEntry) => {
-          mocks.beginTour.mockResolvedValue(false)
-          await entry.handleStartupOutcome('url-intent')
-          await entry.handleUrlWorkflow('url-intent', 'image_z_image_turbo')
-        }
-      }
-    ])('reports no first-run screen for $label', async ({ boot }) => {
-      const entry = useFirstRunEntry()
-
-      await boot(entry)
-
-      expect(entry.firstRunTookScreen.value).toBe(false)
-    })
-
     it('settles a url-intent boot only once the url stage has run', async () => {
       const entry = useFirstRunEntry()
       let decided: boolean | undefined
@@ -250,12 +204,10 @@ describe('useFirstRunEntry', () => {
       )
       await new Promise((resolve) => setTimeout(resolve))
       expect(decided).toBeUndefined()
-      expect(entry.firstRunTookScreen.value).toBe(false)
 
       start(true)
       await urlStage
       await vi.waitFor(() => expect(decided).toBe(true))
-      expect(entry.firstRunTookScreen.value).toBe(true)
     })
 
     it('settles the startup decision even when the tour fails to start', async () => {
@@ -268,7 +220,6 @@ describe('useFirstRunEntry', () => {
       ).rejects.toThrow('offline')
 
       await expect(entry.whenStartupDecided()).resolves.toBe(true)
-      expect(entry.firstRunTookScreen.value).toBe(false)
     })
 
     it('gives up with false only once the grace period has fully passed', async () => {
@@ -594,7 +545,6 @@ describe('useFirstRunEntry', () => {
       Object.assign(useAuthStore(), { userId: 'account-b' })
 
       expect(entry.gettingStartedVisible.value).toBe(false)
-      expect(entry.firstRunTookScreen.value).toBe(false)
     })
   })
 

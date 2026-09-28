@@ -31,7 +31,6 @@ export const useFirstRunEntry = createSharedComposable(() => {
   const settingStore = useSettingStore()
   const gettingStartedVisible = ref(false)
   const startupDecided = ref(false)
-  const firstRunTookScreen = ref(false)
   /**
    * Handoffs out of the screen that are still in flight. Counted rather than a
    * flag so an overlapping handoff cannot clear a hold it does not own.
@@ -62,7 +61,6 @@ export const useFirstRunEntry = createSharedComposable(() => {
     (userId, previousUserId) => {
       if (previousUserId === undefined || userId === previousUserId) return
       gettingStartedVisible.value = false
-      firstRunTookScreen.value = false
       handoffEpoch++
       tourHandoffs.value = 0
       const tourStore = useOnboardingTourStore()
@@ -120,7 +118,6 @@ export const useFirstRunEntry = createSharedComposable(() => {
     if (decision === 'getting-started') {
       gettingStartedVisible.value = true
       consumeFirstRunReplayRequest(authStore.userId)
-      firstRunTookScreen.value = true
       return
     }
 
@@ -142,7 +139,6 @@ export const useFirstRunEntry = createSharedComposable(() => {
         () => authStore.userId !== ownerId
       )
       if (!started) return
-      firstRunTookScreen.value = true
       consumeFirstRunReplayRequest(ownerId)
       await markTutorialCompleted()
     } finally {
@@ -217,7 +213,6 @@ export const useFirstRunEntry = createSharedComposable(() => {
   return {
     gettingStartedVisible: readonly(gettingStartedVisible),
     firstRunHoldsScreen,
-    firstRunTookScreen: readonly(firstRunTookScreen),
     whenStartupDecided,
     handleStartupOutcome,
     handleUrlWorkflow,
