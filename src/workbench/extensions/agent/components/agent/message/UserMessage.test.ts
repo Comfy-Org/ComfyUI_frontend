@@ -10,29 +10,26 @@ import UserMessage from './UserMessage.vue'
 
 const clipboard = vi.hoisted(() => ({
   text: '',
-  copy: vi.fn((value: string) => {
+  copyToClipboard: vi.fn(async (value: string) => {
     clipboard.text = value
+    return true
   })
 }))
 
 beforeEach(() => {
   clipboard.text = ''
-  clipboard.copy.mockClear()
+  clipboard.copyToClipboard.mockClear()
 })
+
+vi.mock(import('@/composables/useCopyToClipboard'), () => ({
+  useCopyToClipboard: () => ({
+    copied: ref(false),
+    copyToClipboard: clipboard.copyToClipboard
+  })
+}))
 
 vi.mock<unknown>(import('@vueuse/core'), () => ({
   createSharedComposable: (composable: () => unknown) => composable,
-  useClipboard: () => ({
-    copy: clipboard.copy,
-    copied: ref(false),
-    isSupported: ref(true),
-    text: ref('')
-  }),
-  useClipboardItems: () => ({
-    copy: vi.fn(),
-    copied: ref(false),
-    isSupported: ref(false)
-  }),
   useDocumentVisibility: () => ref('visible'),
   useStorage: (_key: string, defaultValue: unknown) => ref(defaultValue)
 }))
@@ -231,7 +228,7 @@ describe('UserMessage', () => {
     ).toHaveTextContent(t('agent.copy'))
     await user.click(copyButton)
 
-    expect(clipboard.copy).toHaveBeenCalledWith('make it cinematic')
+    expect(clipboard.copyToClipboard).toHaveBeenCalledWith('make it cinematic')
   })
 
   it('copies a reference-only message with readable workflow names', async () => {
@@ -272,7 +269,7 @@ describe('UserMessage', () => {
     expect(screen.getByRole('button', { name: t('agent.copy') })).toHaveFocus()
 
     await user.keyboard('{Enter}')
-    expect(clipboard.copy).toHaveBeenCalledWith('make it cinematic')
+    expect(clipboard.copyToClipboard).toHaveBeenCalledWith('make it cinematic')
   })
 
   it('offers an accessible edit action only when the prompt is editable', async () => {
