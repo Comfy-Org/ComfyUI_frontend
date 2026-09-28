@@ -4,7 +4,9 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { zAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import {
+  RUN_APPROVAL_ASK_ID,
   RUN_APPROVAL_EVENT,
+  THREAD_ID,
   agentTurnLockTest as test
 } from '@e2e/fixtures/agentTurnLockFixture'
 
@@ -110,6 +112,45 @@ test.describe(
         .click()
       await expect.poll(() => turnLock.answeredAsks()).toEqual(['run'])
     })
+
+    const invalidAnswers = [
+      {
+        name: 'wrong thread',
+        threadId: 'another-thread',
+        askId: RUN_APPROVAL_ASK_ID,
+        selected: ['run'],
+        status: 404
+      },
+      {
+        name: 'wrong ask',
+        threadId: THREAD_ID,
+        askId: 'another-ask',
+        selected: ['run'],
+        status: 404
+      },
+      {
+        name: 'option the ask did not offer',
+        threadId: THREAD_ID,
+        askId: RUN_APPROVAL_ASK_ID,
+        selected: ['always'],
+        status: 422
+      }
+    ]
+
+    for (const answer of invalidAnswers) {
+      test(`the fake server rejects an answer for the ${answer.name}`, async ({
+        turnLock
+      }) => {
+        expect(
+          await turnLock.postAnswer(
+            answer.threadId,
+            answer.askId,
+            answer.selected
+          )
+        ).toBe(answer.status)
+        expect(turnLock.answeredAsks()).toEqual([])
+      })
+    }
 
     // Asserting the wire shape here, not in the fixture, so a future edit to
     // RUN_APPROVAL_EVENT that made it unparseable would surface as a failed
