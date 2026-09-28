@@ -90,7 +90,10 @@ vi.mock(import('@/session/stripeChallengePort'), () => ({
  * The provider form is covered in the package against the real Stripe mocks.
  * Here it records what it was handed and lets a test hand back a token.
  */
-const formProps = vi.hoisted(() => ({ value: {} as Record<string, unknown> }))
+const formProps = vi.hoisted(() => ({
+  value: {} as Record<string, unknown>,
+  mounted: false
+}))
 let reportConfirm: (confirmationToken: string) => void = () => {}
 
 vi.mock<unknown>(import('@comfyorg/account-ui/billing/stripe'), () => ({
@@ -117,6 +120,7 @@ vi.mock<unknown>(import('@comfyorg/account-ui/billing/stripe'), () => ({
       }
     ) {
       formProps.value = props
+      formProps.mounted = true
       reportConfirm = (token) => emit('confirm', token)
       return () =>
         slots.submit?.({ disabled: !props.canSubmit, loading: props.isLoading })
@@ -133,10 +137,7 @@ async function renderCheckout(
   recordBillingEntry(parseBillingEntry(path))
   const router = createRouter({
     history: createMemoryHistory(),
-    routes: [
-      { path: '/v1/checkout', component: CheckoutView },
-      { path: '/v1/subscription', component: { template: '<div />' } }
-    ]
+    routes: [{ path: '/v1/checkout', component: CheckoutView }]
   })
   const fake = createFakeBillingClient({
     preview: {
@@ -167,6 +168,7 @@ describe('CheckoutView', () => {
   beforeEach(() => {
     workspace.session = undefined
     workspace.bound = undefined
+    formProps.mounted = false
   })
 
   it('quotes the plan the link names and prices the summary from it', async () => {
@@ -595,47 +597,71 @@ describe('CheckoutView', () => {
     ).toBeEnabled()
   })
 
-  it('goes back to the plans with the same request', async () => {
-    const { router } = await renderCheckout()
-    await screen.findByText('Creator · Monthly')
+  it.for(['Back', 'Close'])(
+    'returns to the product, where plans are chosen, on %s',
+    async (action) => {
+      const assign = stubNavigation()
+      await renderCheckout()
+      await screen.findByText('Creator · Monthly')
 
-    await userEvent.click(screen.getByRole('button', { name: 'Back' }))
+      await userEvent.click(screen.getByRole('button', { name: action }))
 
-    expect(router.currentRoute.value.fullPath).toBe(
-      `/v1/subscription?${ENTRY_QUERY}&plan=creator_monthly`
-    )
-  })
+      expect(assign).toHaveBeenCalledExactlyOnceWith(
+        'https://testcloud.comfy.org/'
+      )
+    }
+  )
 
-  it('returns to the product on close once there is somewhere to go', async () => {
-    const assign = stubNavigation()
-    await renderCheckout()
-    await screen.findByText('Creator · Monthly')
+  it.for([
+    ['upgrade', true, 2800] as const,
+    ['downgrade', true, 1400] as const,
+    ['duration_change', false, 0] as const
+  ])(
+    'confirms a %s plan change against the saved payment method, no card form',
+    async ([transitionType, isImmediate, costTodayCents]) => {
+      const fake = await renderCheckout(CHECKOUT_PATH, {
+        preview: {
+          status: 'ok',
+          value: previewOf({
+            transition_type: transitionType,
+            is_immediate: isImmediate,
+            cost_today_cents: costTodayCents,
+            amount_due_cents: costTodayCents
+          })
+        }
+      })
+      const pay = await screen.findByRole('button', {
+        name: 'Pay and subscribe'
+      })
+      expect(formProps.mounted).toBe(false)
 
-    await userEvent.click(screen.getByRole('button', { name: 'Close' }))
+      await userEvent.click(pay)
 
-    expect(assign).toHaveBeenCalledWith('https://testcloud.comfy.org/')
-  })
-
-  it('asks for a plan when the link names none', async () => {
-    await renderCheckout(`/v1/checkout?${ENTRY_QUERY}`)
-
-    expect(
-      await screen.findByRole('heading', { name: 'Choose a plan first' })
-    ).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'See plans' })).toHaveAttribute(
-      'href',
-      `/v1/subscription?${ENTRY_QUERY}`
-    )
-  })
+      await waitFor(() =>
+        expect(fake.subscribe).toHaveBeenCalledWith(
+          expect.objectContaining({ plan_slug: 'creator_monthly' })
+        )
+      )
+      expect(fake.subscribe.mock.calls[0][0]).not.toHaveProperty(
+        'confirmation_token'
+      )
+    }
+  )
 
   it('explains a quote the server refused and offers the way back', async () => {
     await renderCheckout(CHECKOUT_PATH, {
       preview: { status: 'error', code: 'NO_ACTIVE_SUBSCRIPTION' }
     })
 
+    const assign = stubNavigation()
     expect(
       await screen.findByText('There is no active subscription to change.')
     ).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Back' })).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Back' }))
+
+    expect(assign).toHaveBeenCalledExactlyOnceWith(
+      'https://testcloud.comfy.org/'
+    )
   })
 })

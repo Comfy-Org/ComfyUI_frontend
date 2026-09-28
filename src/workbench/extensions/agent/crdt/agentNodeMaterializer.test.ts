@@ -239,6 +239,119 @@ beforeEach(() => {
 })
 
 describe('reconcileAgentAdapters', () => {
+  // Materializing a store-only record into a live node is a rendering-layer
+  // step, not a content change: `materialize()` deletes and re-registers the
+  // record's `NodeState` so a real `LGraphNode` can own it, but that record
+  // is the same logical node the doc already described. Dropping its
+  // `titleReconcileBaseline` here means the very next reconcile sees a node
+  // with no baseline at all and cannot tell an unrelated local edit from a
+  // stale doc replay (graphMutations.ts's `resolveNodeTitle`).
+  it('keeps the record titleReconcileBaseline across materialization', () => {
+    const graph = new LGraph()
+    const scope = seedAgentAddedNode(graph, 1)
+    const beforeBaseline = useNodeDataStore().getNode(
+      scope.rootGraphId,
+      toNodeId(1)
+    )?.titleReconcileBaseline
+    expect(beforeBaseline).toBeDefined()
+
+    reconcileAgentAdapters(graph)
+
+    expect(graph.getNodeById(toNodeId(1))).toBeInstanceOf(DummyNode)
+    expect(
+      useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))
+        ?.titleReconcileBaseline
+    ).toEqual(beforeBaseline)
+  })
+
+  // Proves the behavior the carried-over baseline above exists for, not just
+  // that the field was copied: after materialization, a local rename must
+  // survive an unrelated reconcile, and a genuine remote rename must still
+  // win, exactly as it would without ever having gone through materialize().
+  it('preserves a local rename after materialization through an unchanged reconcile, but not a changed one', () => {
+    const graph = new LGraph()
+    const scope = seedAgentAddedNode(graph, 1)
+    reconcileAgentAdapters(graph)
+    const live = graph.getNodeById(toNodeId(1))
+    assert.exists(live)
+    live.title = 'My Custom Title'
+
+    remoteMutations(scope).batch(
+      { ...REMOTE, opId: 'op-unchanged' },
+      (batch) => {
+        batch.reconcileNode(nodePayload(1))
+      }
+    )
+    reconcileAgentAdapters(graph)
+    expect(graph.getNodeById(toNodeId(1))?.title).toBe('My Custom Title')
+
+    remoteMutations(scope).batch({ ...REMOTE, opId: 'op-changed' }, (batch) => {
+      batch.reconcileNode({ ...nodePayload(1), title: 'Renamed By Agent' })
+    })
+    reconcileAgentAdapters(graph)
+    expect(graph.getNodeById(toNodeId(1))?.title).toBe('Renamed By Agent')
+  })
+
+  // Known, intentionally unfixed gap: returning to a workflow tab reloads
+  // it, and `LGraph.clear()` (called by `configure()`) tears its nodes down
+  // individually via `teardownOwnedGraphs` *before* it resets the
+  // nodeDataStore bucket, so each node's reconcile baseline
+  // (`lastSerialization`, graphMutations.ts's `resolveNodeTitle`) is gone by
+  // the time any bucket-level hook could try to preserve it. A live rename
+  // does survive the reload itself (`serialize()` captured it), but the very
+  // next reconcile has no baseline to compare the doc's title against and
+  // replays it over the reload's rename regardless. A real fix needs the
+  // same kind of dedicated cross-layer plumbing as the widget-overwrite
+  // case below - threading a "preserve this node's reconcile baseline"
+  // signal through `LGraph.clear()`'s per-node teardown - not a change
+  // local to this module.
+  // The missing-node fallback (`missingNode`) constructs a bare `LGraphNode`,
+  // which is exactly the type `serializeFromStoreState` special-cases to
+  // replay a frozen doc snapshot instead of serializing live state (see its
+  // `this.constructor === LGraphNode` branch). Carrying the record's CRDT
+  // reconcile baseline into that node's `lastSerialization` would trip that
+  // branch and silently drop every change made after materialization.
+  it('serializes current state, not a stale doc snapshot, for a node materialized via the missing-node fallback', () => {
+    const graph = new LGraph()
+    seedAgentAddedNode(graph, 1, 'unregistered-type')
+
+    reconcileAgentAdapters(graph)
+
+    const live = graph.getNodeById(toNodeId(1))
+    assert.exists(live)
+    expect(live.constructor).toBe(LGraphNode)
+
+    live.title = 'Renamed Locally'
+    expect(live.serialize().title).toBe('Renamed Locally')
+  })
+
+  it.fails('keeps a live rename after the workflow tab reloads and an unrelated reconcile runs', () => {
+    const graph = new LGraph()
+    const scope = graphScopeOf(graph)
+    const docPayload = {
+      id: 1,
+      type: 'dummy',
+      title: 'Positive prompt',
+      pos: [0, 0],
+      size: [100, 80],
+      inputs: [],
+      outputs: []
+    }
+    remoteMutations(scope).addNode(docPayload, { ...REMOTE, opId: 'op-1' })
+    reconcileAgentAdapters(graph)
+
+    const live = graph.getNodeById(toNodeId(1))
+    assert.exists(live)
+    live.title = 'My Custom Prompt'
+    graph.configure(graph.serialize())
+
+    remoteMutations(scope).batch({ ...REMOTE, opId: 'op-2' }, (batch) => {
+      batch.reconcileNode(docPayload)
+    })
+
+    expect(graph.getNodeById(toNodeId(1))?.title).toBe('My Custom Prompt')
+  })
+
   it('converges create, connect, save/reload, readback, and delete across every graph surface', () => {
     const graph = new LGraph()
     const scope = graphScopeOf(graph)

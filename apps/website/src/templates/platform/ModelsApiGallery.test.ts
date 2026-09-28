@@ -2,8 +2,11 @@ import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
+import { getRouterModelHref } from '../../config/workshop-router-content'
 import { t } from '../../i18n/translations'
 import ModelsApiGallery from './ModelsApiGallery.vue'
+import type { ModelsGalleryCard } from './modelsGalleryCards'
+import { modelsGalleryCards } from './modelsGalleryCards'
 
 describe('ModelsApiGallery', () => {
   beforeEach(() => {
@@ -15,7 +18,6 @@ describe('ModelsApiGallery', () => {
 
     for (const titleKey of [
       'cloud.aiModels.card.seedance25',
-      'cloud.aiModels.card.minimaxH3',
       'cloud.aiModels.card.nanoBananaPro',
       'cloud.aiModels.card.chatgptImages25',
       'cloud.aiModels.card.klingAi30',
@@ -32,5 +34,56 @@ describe('ModelsApiGallery', () => {
     await vi.advanceTimersByTimeAsync(6000)
     await nextTick()
     expect(seedanceClip()).not.toBe(firstClip)
+  })
+
+  it('links a card with a model id to its canonical Models page, not a redirecting short slug', () => {
+    render(ModelsApiGallery, { props: { locale: 'en' } })
+
+    expect(
+      screen.getByRole('link', {
+        name: new RegExp(t('cloud.aiModels.card.seedance25', 'en'))
+      })
+    ).toHaveAttribute(
+      'href',
+      '/models/byteplus--seedance-2-5-text-to-video--generate-videos/'
+    )
+  })
+
+  it('links a model id shared by several use cases to the specific page the card names', () => {
+    render(ModelsApiGallery, { props: { locale: 'en' } })
+
+    expect(
+      screen.getByRole('link', {
+        name: new RegExp(t('cloud.aiModels.card.geminiOmniFlash', 'en'))
+      })
+    ).toHaveAttribute('href', '/models/gemini--omni-1.1-flash--animate-images/')
+  })
+
+  it('bakes in the href the Router catalogue resolves for each card, so the two never drift', () => {
+    for (const card of modelsGalleryCards) {
+      if (!card.modelId) continue
+      expect(card.href).toBe(getRouterModelHref(card.modelId, card.useCase))
+    }
+  })
+
+  it('renders a card without a model id as a plain, non-linked div', () => {
+    const cards: ModelsGalleryCard[] = [
+      {
+        titleKey: 'cloud.aiModels.card.seedance25',
+        badgeIcon: '/icons/ai-models/bytedance.svg',
+        media: [{ src: 'https://media.comfy.org/website/test.webp' }]
+      }
+    ]
+
+    render(ModelsApiGallery, { props: { locale: 'en', cards } })
+
+    expect(
+      screen.queryByRole('link', {
+        name: new RegExp(t('cloud.aiModels.card.seedance25', 'en'))
+      })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByText(t('cloud.aiModels.card.seedance25', 'en'))
+    ).toBeTruthy()
   })
 })
