@@ -207,7 +207,8 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     const scope = await requests.scope()
     if (!scope) return switchTokenWorkspace(workspaceId)
 
-    currentWorkspace.value = null
+    if (currentWorkspace.value?.id !== workspaceId)
+      currentWorkspace.value = null
     const response = await requests.send(
       workspaceApiUrl('/workspaces/current'),
       { method: 'GET', cache: 'no-store' },

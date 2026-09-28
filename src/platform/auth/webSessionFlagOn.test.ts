@@ -354,7 +354,8 @@ function installIngest() {
     userId: 'user-a',
     csrfToken: 'csrf-1',
     refusals: [] as string[],
-    requests: [] as ApiRequest[]
+    requests: [] as ApiRequest[],
+    currentWorkspaceDown: undefined as (() => Response) | undefined
   }
 
   const respond = ({ path, headers }: ApiRequest): Response => {
@@ -365,6 +366,7 @@ function installIngest() {
       })
     }
     if (path === '/api/workspaces/current') {
+      if (ingest.currentWorkspaceDown) return ingest.currentWorkspaceDown()
       return currentWorkspaceResponse(headers['x-comfy-workspace-id'])
     }
     const code = ingest.refusals.shift()
@@ -536,4 +538,37 @@ describe('cloud API requests on the shared web session', () => {
     )
     expect(workspaceAuth.currentWorkspace).toBeNull()
   })
+
+  it.for([
+    {
+      name: 'a 503',
+      down: () => jsonResponse({ code: 'internal', message: 'down' }, 503)
+    },
+    {
+      name: 'a network failure',
+      down: () => {
+        throw new TypeError('Failed to fetch')
+      }
+    }
+  ])(
+    're-entering the current workspace keeps it through $name',
+    async ({ down }) => {
+      const ingest = await bootOnSession()
+      const workspaceAuth = useWorkspaceAuthStore()
+      await workspaceAuth.switchWorkspace('ws-team')
+      ingest.currentWorkspaceDown = down
+
+      await expect(workspaceAuth.switchWorkspace('ws-team')).rejects.toThrow()
+      ingest.requests.length = 0
+      await api.fetchApi('/queue')
+
+      expect(workspaceAuth.currentWorkspace?.id).toBe('ws-team')
+      expect(ingest.requests).toEqual([
+        sessionRequest('GET', '/api/queue', {
+          'x-comfy-workspace-id': 'ws-team',
+          'comfy-user': ''
+        })
+      ])
+    }
+  )
 })
