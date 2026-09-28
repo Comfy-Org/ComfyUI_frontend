@@ -20,6 +20,7 @@ import { toNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import { toLinkId } from '@/types/linkId'
 import { toRerouteId } from '@/types/rerouteId'
+import type { NodeProperty } from '@/types/nodeState'
 import { createUuidv4 } from '@/utils/uuid'
 import type {
   ExportedSubgraph,
@@ -252,11 +253,15 @@ function deduplicateClonedSubgraphNodeIds(
   }
 
   for (const subgraph of clonedSubgraphs) {
-    patchProxyWidgets(subgraph.nodes ?? [], subgraphIdSet, remapBySubgraph)
+    patchSubgraphNodeReferences(
+      subgraph.nodes ?? [],
+      subgraphIdSet,
+      remapBySubgraph
+    )
   }
 
   if (clonedRootNodes) {
-    patchProxyWidgets(clonedRootNodes, subgraphIdSet, remapBySubgraph)
+    patchSubgraphNodeReferences(clonedRootNodes, subgraphIdSet, remapBySubgraph)
   }
 }
 
@@ -572,8 +577,7 @@ export function topologicalSortSubgraphs(
   return sorted
 }
 
-/** Patches node references in root-level SubgraphNode instances. */
-function patchProxyWidgets(
+function patchSubgraphNodeReferences(
   rootNodes: ISerialisedNode[],
   subgraphIdSet: Set<string>,
   remapBySubgraph: Map<string, Map<NodeId, SerializedNodeId>>
@@ -583,28 +587,40 @@ function patchProxyWidgets(
     const remappedIds = remapBySubgraph.get(node.type)
     if (!remappedIds) continue
 
-    const proxyWidgets = node.properties?.proxyWidgets
-    if (Array.isArray(proxyWidgets)) {
-      for (const entry of proxyWidgets) {
-        if (!Array.isArray(entry)) continue
-        const oldId = toNodeId(entry[0])
-        const newId = remappedIds.get(oldId)
-        if (newId !== undefined) entry[0] = String(newId)
-      }
-    }
+    patchProxyWidgetReferences(node.properties?.proxyWidgets, remappedIds)
+    patchPreviewExposureReferences(
+      node.properties?.previewExposures,
+      remappedIds
+    )
+  }
+}
 
-    const previewExposures = node.properties?.previewExposures
-    if (!Array.isArray(previewExposures)) continue
-    for (const entry of previewExposures) {
-      if (
-        typeof entry !== 'object' ||
-        entry === null ||
-        !('sourceNodeId' in entry) ||
-        typeof entry.sourceNodeId !== 'string'
-      )
-        continue
-      const newId = remappedIds.get(toNodeId(entry.sourceNodeId))
-      if (newId !== undefined) entry.sourceNodeId = String(newId)
-    }
+function patchProxyWidgetReferences(
+  property: NodeProperty | undefined,
+  remappedIds: Map<NodeId, SerializedNodeId>
+): void {
+  if (!Array.isArray(property)) return
+  for (const entry of property) {
+    if (!Array.isArray(entry)) continue
+    const newId = remappedIds.get(toNodeId(entry[0]))
+    if (newId !== undefined) entry[0] = String(newId)
+  }
+}
+
+function patchPreviewExposureReferences(
+  property: NodeProperty | undefined,
+  remappedIds: Map<NodeId, SerializedNodeId>
+): void {
+  if (!Array.isArray(property)) return
+  for (const entry of property) {
+    if (
+      typeof entry !== 'object' ||
+      entry === null ||
+      !('sourceNodeId' in entry) ||
+      typeof entry.sourceNodeId !== 'string'
+    )
+      continue
+    const newId = remappedIds.get(toNodeId(entry.sourceNodeId))
+    if (newId !== undefined) entry.sourceNodeId = String(newId)
   }
 }

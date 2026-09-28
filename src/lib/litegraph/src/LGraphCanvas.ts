@@ -287,6 +287,20 @@ interface ClipboardPasteResult {
   subgraphs: Map<SubgraphId, Subgraph>
 }
 
+type InitializedClipboardItems = {
+  [Key in keyof ClipboardItems]-?: NonNullable<ClipboardItems[Key]>
+}
+
+interface ClipboardPasteContext {
+  connectInputs: boolean
+  dx: number
+  dy: number
+  graph: LGraph
+  items: InitializedClipboardItems
+  result: ClipboardPasteResult
+  targetSlotByLink: Map<LinkId, number>
+}
+
 /** Legacy selection views derived from the selection store. */
 interface SelectionView {
   items: SelectedItemsView
@@ -4257,7 +4271,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   }
 
   _deserializeItems(
-    parsed: ClipboardItems,
+    clipboardItems: ClipboardItems,
     options: IPasteFromClipboardOptions
   ): ClipboardPasteResult | undefined {
     const { connectInputs = false, position = this.graph_mouse } = options
@@ -4275,231 +4289,38 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.emitBeforeChange()
 
     try {
-      return this._deserializeItemsBody(parsed, graph, connectInputs, position)
+      const items = initializeClipboardItems(clipboardItems)
+      const [offsetX, offsetY] = clipboardOffset(items)
+      const result = createClipboardPasteResult()
+      const context: ClipboardPasteContext = {
+        connectInputs,
+        dx: position[0] - offsetX,
+        dy: position[1] - offsetY,
+        graph,
+        items,
+        result,
+        targetSlotByLink: new Map()
+      }
+
+      remapClipboardSubgraphIds(items)
+      createClipboardSubgraphs(context)
+      createClipboardGroups(context)
+      createClipboardNodes(context)
+      createClipboardReroutes(context)
+      createClipboardLinks(context)
+      removeUnusedClipboardReroutes(context)
+      positionClipboardItems(context)
+      updateClipboardNodeLayout(context)
+
+      this.selectItems(result.created)
+      forEachNode(graph, (n) => n.onGraphConfigured?.())
+      forEachNode(graph, (n) => n.onAfterGraphConfigured?.())
+
+      return result
     } finally {
       graph.afterChange()
       this.emitAfterChange()
     }
-  }
-
-  private _deserializeItemsBody(
-    clipboardItems: ClipboardItems,
-    graph: LGraph,
-    connectInputs: boolean,
-    position: Point
-  ): ClipboardPasteResult | undefined {
-    const parsed = structuredClone(clipboardItems)
-
-    // Parse & initialise
-    parsed.nodes ??= []
-    parsed.groups ??= []
-    parsed.reroutes ??= []
-    parsed.links ??= []
-    parsed.subgraphs ??= []
-
-    // Find top-left-most boundary
-    let offsetX = Infinity
-    let offsetY = Infinity
-    for (const item of [...parsed.nodes, ...parsed.reroutes]) {
-      if (item.pos[0] < offsetX) offsetX = item.pos[0]
-      if (item.pos[1] < offsetY) offsetY = item.pos[1]
-    }
-
-    // TODO: Remove when implementing `asSerialisable`
-    for (const group of parsed.groups) {
-      if (group.bounding[0] < offsetX) offsetX = group.bounding[0]
-      if (group.bounding[1] < offsetY) offsetY = group.bounding[1]
-    }
-
-    const results: ClipboardPasteResult = {
-      created: [],
-      nodes: new Map<SerializedNodeId, LGraphNode>(),
-      links: new Map<LinkId, LLink>(),
-      reroutes: new Map<RerouteId, Reroute>(),
-      subgraphs: new Map<SubgraphId, Subgraph>()
-    }
-    const { created, nodes, links, reroutes } = results
-
-    // const failedNodes: ISerialisedNode[] = []
-    const subgraphIdMap: Record<string, string> = {}
-    // SubgraphV2: Remove always-clone behaviour
-    //Update subgraph ids
-    for (const subgraphInfo of parsed.subgraphs)
-      subgraphInfo.id = subgraphIdMap[subgraphInfo.id] = createUuidv4()
-    const allNodeInfo: ISerialisedNode[] = [
-      [parsed.nodes],
-      parsed.subgraphs.map((s) => s.nodes ?? [])
-    ].flat(2)
-    for (const nodeInfo of allNodeInfo)
-      if (nodeInfo.type in subgraphIdMap)
-        nodeInfo.type = subgraphIdMap[nodeInfo.type]
-    // Subgraphs
-    const subgraphs = graph.createSubgraphs(parsed.subgraphs, parsed.nodes)
-    for (const subgraph of subgraphs)
-      results.subgraphs.set(subgraph.id, subgraph)
-
-    // Groups
-    for (const info of parsed.groups) {
-      info.id = -1
-
-      const group = new LGraphGroup()
-      group.configure(info)
-      graph.add(group)
-      created.push(group)
-    }
-
-    // Nodes
-    const dx = position[0] - offsetX
-    const dy = position[1] - offsetY
-    const targetSlotByLink = new Map<LinkId, number>()
-    for (const info of parsed.nodes) {
-      const node = LiteGraph.createNode(info.type)
-      if (!node) {
-        // failedNodes.push(info)
-        continue
-      }
-
-      nodes.set(serializeNodeId(info.id), node)
-      info.id = -1
-
-      const linkByInputName = detachSerialisedLinks(info)
-      // `add` snapshots the position into the layout store; configure runs after.
-      node.pos = [info.pos[0] + dx, info.pos[1] + dy]
-      graph.add(node)
-      node.configure(info)
-
-      // `configure` overrides may reorder inputs to match the node definition,
-      // moving the slot each serialized link targets.
-      for (const [slot, input] of (info.inputs ?? []).entries()) {
-        const linkId = linkByInputName.get(input.name)
-        if (linkId != null && !targetSlotByLink.has(linkId))
-          targetSlotByLink.set(linkId, slot)
-      }
-
-      if (node instanceof SubgraphNode) {
-        if (
-          node.properties.proxyWidgets !== undefined &&
-          LiteGraph.LGraph.proxyWidgetMigrationFlush
-        ) {
-          LiteGraph.LGraph.proxyWidgetMigrationFlush(node, info)
-        }
-        LiteGraph.LGraph.autoExposePreviewNodes?.(node)
-      }
-
-      created.push(node)
-    }
-
-    // Reroutes
-    for (const info of parsed.reroutes) {
-      const { id, ...rerouteInfo } = info
-
-      const reroute = graph.setReroute(rerouteInfo)
-      if (!reroute) continue
-      created.push(reroute)
-      reroutes.set(toRerouteId(id), reroute)
-    }
-
-    // Remap reroute parentIds for pasted reroutes
-    for (const reroute of reroutes.values()) {
-      if (reroute.parentId == null) continue
-
-      const mapped = reroutes.get(reroute.parentId)
-      if (mapped) reroute.parentId = mapped.id
-    }
-
-    // Links
-    for (const info of parsed.links) {
-      // Find the copied node / reroute ID
-      let outNode: LGraphNode | null | undefined = nodes.get(
-        serializeNodeId(info.origin_id)
-      )
-      let afterRerouteId: RerouteId | undefined
-      if (info.parentId != null)
-        afterRerouteId = reroutes.get(toRerouteId(info.parentId))?.id
-
-      // If it wasn't copied, use the original graph value
-      if (
-        connectInputs &&
-        LiteGraph.ctrl_shift_v_paste_connect_unselected_outputs
-      ) {
-        const originNodeId = parseNodeId(info.origin_id)
-        outNode ??= originNodeId ? graph.getNodeById(originNodeId) : null
-        if (info.parentId !== undefined) {
-          afterRerouteId ??= toRerouteId(info.parentId)
-        }
-      }
-
-      const inNode = nodes.get(serializeNodeId(info.target_id))
-      if (inNode) {
-        const link = outNode?.connect(
-          info.origin_slot,
-          inNode,
-          targetSlotByLink.get(toLinkId(info.id)) ?? info.target_slot,
-          afterRerouteId
-        )
-        if (link) {
-          transferLinkPresentation(
-            graphScopeOf(graph),
-            {
-              hidden: info.hidden === true,
-              label: typeof info.label === 'string' ? info.label : undefined
-            },
-            link.id
-          )
-          links.set(toLinkId(info.id), link)
-        }
-      }
-    }
-
-    // Remove reroutes that no pasted link passes through
-    for (const [sourceId, reroute] of reroutes) {
-      if (reroute.totalLinks === 0) {
-        graph.removeReroute(reroute.id)
-        reroutes.delete(sourceId)
-
-        const index = created.indexOf(reroute)
-        if (index !== -1) created.splice(index, 1)
-      }
-    }
-
-    // Children of pasted groups are in `created` already, so skip them here.
-    for (const item of created) {
-      // Repositioning a paste is not a user drag, so it ignores the pin.
-      if (item instanceof LGraphNode)
-        item.setPos(item.pos[0] + dx, item.pos[1] + dy)
-      else item.move(dx, dy, true)
-    }
-
-    // TODO: Report failures, i.e. `failedNodes`
-
-    const newPositions = created
-      .filter((item): item is LGraphNode => item instanceof LGraphNode)
-      .map((node) => ({
-        nodeId: node.id,
-        bounds: {
-          x: node.pos[0],
-          y: node.pos[1],
-          width: node.size[0],
-          height: node.size[1]
-        }
-      }))
-
-    const rootGraphId = graph.rootGraph.id
-    layoutStore.batchUpdateNodeBounds(rootGraphId, newPositions, {
-      source: LayoutSource.Canvas
-    })
-
-    // Bring cloned/pasted nodes to front so they render above the originals
-    const { setNodeZIndex } = useLayoutMutations(LayoutSource.Canvas)
-    for (const { nodeId } of newPositions) {
-      setNodeZIndex(rootGraphId, nodeId, layoutStore.allocateZIndex())
-    }
-
-    this.selectItems(created)
-    forEachNode(graph, (n) => n.onGraphConfigured?.())
-    forEachNode(graph, (n) => n.onAfterGraphConfigured?.())
-
-    return results
   }
 
   pasteFromClipboard(options: IPasteFromClipboardOptions = {}): void {
@@ -8970,6 +8791,247 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         offset: [...this.ds.offset] as [number, number]
       }
     }
+  }
+}
+
+function initializeClipboardItems(
+  clipboardItems: ClipboardItems
+): InitializedClipboardItems {
+  const items = structuredClone(clipboardItems)
+  return {
+    groups: items.groups ?? [],
+    links: items.links ?? [],
+    nodes: items.nodes ?? [],
+    reroutes: items.reroutes ?? [],
+    subgraphs: items.subgraphs ?? []
+  }
+}
+
+function clipboardOffset(items: InitializedClipboardItems): Point {
+  let x = Infinity
+  let y = Infinity
+  for (const item of [...items.nodes, ...items.reroutes]) {
+    x = Math.min(x, item.pos[0])
+    y = Math.min(y, item.pos[1])
+  }
+  for (const group of items.groups) {
+    x = Math.min(x, group.bounding[0])
+    y = Math.min(y, group.bounding[1])
+  }
+  return [x, y]
+}
+
+function createClipboardPasteResult(): ClipboardPasteResult {
+  return {
+    created: [],
+    links: new Map(),
+    nodes: new Map(),
+    reroutes: new Map(),
+    subgraphs: new Map()
+  }
+}
+
+function remapClipboardSubgraphIds(items: InitializedClipboardItems): void {
+  const remappedIds = new Map<string, string>()
+  for (const subgraph of items.subgraphs) {
+    const nextId = createUuidv4()
+    remappedIds.set(subgraph.id, nextId)
+    subgraph.id = nextId
+  }
+
+  const allNodes = [
+    ...items.nodes,
+    ...items.subgraphs.flatMap((subgraph) => subgraph.nodes ?? [])
+  ]
+  for (const node of allNodes) {
+    const nextType = remappedIds.get(node.type)
+    if (nextType) node.type = nextType
+  }
+}
+
+function createClipboardSubgraphs(context: ClipboardPasteContext): void {
+  const { graph, items, result } = context
+  for (const subgraph of graph.createSubgraphs(items.subgraphs, items.nodes)) {
+    result.subgraphs.set(subgraph.id, subgraph)
+  }
+}
+
+function createClipboardGroups(context: ClipboardPasteContext): void {
+  const { graph, items, result } = context
+  for (const info of items.groups) {
+    info.id = -1
+    const group = new LGraphGroup()
+    group.configure(info)
+    graph.add(group)
+    result.created.push(group)
+  }
+}
+
+function createClipboardNodes(context: ClipboardPasteContext): void {
+  const { dx, dy, graph, items, result, targetSlotByLink } = context
+  for (const info of items.nodes) {
+    const node = LiteGraph.createNode(info.type)
+    if (!node) continue
+
+    result.nodes.set(serializeNodeId(info.id), node)
+    info.id = -1
+    const linkByInputName = detachSerialisedLinks(info)
+    node.pos = [info.pos[0] + dx, info.pos[1] + dy]
+    graph.add(node)
+    node.configure(info)
+
+    recordClipboardTargetSlots(info, linkByInputName, targetSlotByLink)
+    configurePastedSubgraphNode(node, info)
+    result.created.push(node)
+  }
+}
+
+function recordClipboardTargetSlots(
+  info: ISerialisedNode,
+  linkByInputName: Map<string, LinkId>,
+  targetSlotByLink: Map<LinkId, number>
+): void {
+  for (const [slot, input] of (info.inputs ?? []).entries()) {
+    const linkId = linkByInputName.get(input.name)
+    if (linkId != null && !targetSlotByLink.has(linkId)) {
+      targetSlotByLink.set(linkId, slot)
+    }
+  }
+}
+
+function configurePastedSubgraphNode(
+  node: LGraphNode,
+  info: ISerialisedNode
+): void {
+  if (!(node instanceof SubgraphNode)) return
+
+  const flushProxyWidgets = LiteGraph.LGraph.proxyWidgetMigrationFlush
+  if (node.properties.proxyWidgets !== undefined && flushProxyWidgets) {
+    flushProxyWidgets(node, info)
+  }
+  LiteGraph.LGraph.autoExposePreviewNodes?.(node)
+}
+
+function createClipboardReroutes(context: ClipboardPasteContext): void {
+  const { graph, items, result } = context
+  for (const info of items.reroutes) {
+    const { id, ...rerouteInfo } = info
+    const reroute = graph.setReroute(rerouteInfo)
+    if (!reroute) continue
+    result.created.push(reroute)
+    result.reroutes.set(toRerouteId(id), reroute)
+  }
+
+  for (const reroute of result.reroutes.values()) {
+    if (reroute.parentId == null) continue
+    const parent = result.reroutes.get(reroute.parentId)
+    if (parent) reroute.parentId = parent.id
+  }
+}
+
+function createClipboardLinks(context: ClipboardPasteContext): void {
+  for (const info of context.items.links) createClipboardLink(context, info)
+}
+
+function createClipboardLink(
+  context: ClipboardPasteContext,
+  info: InitializedClipboardItems['links'][number]
+): void {
+  const { graph, result, targetSlotByLink } = context
+  const targetNode = result.nodes.get(serializeNodeId(info.target_id))
+  if (!targetNode) return
+
+  const [originNode, afterRerouteId] = clipboardLinkOrigin(context, info)
+  const link = originNode?.connect(
+    info.origin_slot,
+    targetNode,
+    targetSlotByLink.get(toLinkId(info.id)) ?? info.target_slot,
+    afterRerouteId
+  )
+  if (!link) return
+
+  transferLinkPresentation(
+    graphScopeOf(graph),
+    {
+      hidden: info.hidden === true,
+      label: typeof info.label === 'string' ? info.label : undefined
+    },
+    link.id
+  )
+  result.links.set(toLinkId(info.id), link)
+}
+
+function clipboardLinkOrigin(
+  context: ClipboardPasteContext,
+  info: InitializedClipboardItems['links'][number]
+): [LGraphNode | null | undefined, RerouteId | undefined] {
+  const { connectInputs, graph, result } = context
+  let originNode: LGraphNode | null | undefined = result.nodes.get(
+    serializeNodeId(info.origin_id)
+  )
+  let afterRerouteId =
+    info.parentId == null
+      ? undefined
+      : result.reroutes.get(toRerouteId(info.parentId))?.id
+
+  if (
+    connectInputs &&
+    LiteGraph.ctrl_shift_v_paste_connect_unselected_outputs
+  ) {
+    const originNodeId = parseNodeId(info.origin_id)
+    originNode ??= originNodeId ? graph.getNodeById(originNodeId) : null
+    if (info.parentId !== undefined) {
+      afterRerouteId ??= toRerouteId(info.parentId)
+    }
+  }
+
+  return [originNode, afterRerouteId]
+}
+
+function removeUnusedClipboardReroutes(context: ClipboardPasteContext): void {
+  const { graph, result } = context
+  for (const [sourceId, reroute] of result.reroutes) {
+    if (reroute.totalLinks !== 0) continue
+
+    graph.removeReroute(reroute.id)
+    result.reroutes.delete(sourceId)
+    const index = result.created.indexOf(reroute)
+    if (index !== -1) result.created.splice(index, 1)
+  }
+}
+
+function positionClipboardItems(context: ClipboardPasteContext): void {
+  const { dx, dy, result } = context
+  for (const item of result.created) {
+    if (item instanceof LGraphNode) {
+      item.setPos(item.pos[0] + dx, item.pos[1] + dy)
+    } else {
+      item.move(dx, dy, true)
+    }
+  }
+}
+
+function updateClipboardNodeLayout(context: ClipboardPasteContext): void {
+  const { graph, result } = context
+  const positions = result.created
+    .filter((item): item is LGraphNode => item instanceof LGraphNode)
+    .map((node) => ({
+      nodeId: node.id,
+      bounds: {
+        x: node.pos[0],
+        y: node.pos[1],
+        width: node.size[0],
+        height: node.size[1]
+      }
+    }))
+
+  const rootGraphId = graph.rootGraph.id
+  layoutStore.batchUpdateNodeBounds(rootGraphId, positions, {
+    source: LayoutSource.Canvas
+  })
+  const { setNodeZIndex } = useLayoutMutations(LayoutSource.Canvas)
+  for (const { nodeId } of positions) {
+    setNodeZIndex(rootGraphId, nodeId, layoutStore.allocateZIndex())
   }
 }
 

@@ -108,44 +108,60 @@ export class SubgraphInput extends SubgraphSlot {
     }
     subgraph._addLink(link)
 
-    if (existingLink) {
-      this.parent._disconnectNodeInput(node, slot, existingLink)
-      if (subgraph.getLink(link.id) !== link) {
-        subgraph.afterChange()
-        return
+    return this.finishConnection(
+      link,
+      existingLink,
+      slot,
+      node,
+      inputIndex,
+      inputWidget
+    )
+  }
+
+  private finishConnection(
+    link: LLink,
+    existingLink: LLink | undefined,
+    slot: INodeInputSlot,
+    node: LGraphNode,
+    inputIndex: number,
+    inputWidget: IBaseWidget | undefined
+  ): LLink | undefined {
+    const { subgraph } = this.parent
+    try {
+      if (existingLink) {
+        this.parent._disconnectNodeInput(node, slot, existingLink)
+        if (subgraph.getLink(link.id) !== link) return
       }
-    }
 
-    this.linkIds.push(link.id)
-    anchorRerouteChain(subgraph, link)
-    subgraph.incrementVersion()
+      this.linkIds.push(link.id)
+      anchorRerouteChain(subgraph, link)
+      subgraph.incrementVersion()
 
-    if (inputWidget) {
-      // Keep the widget reference in sync with the active upstream widget.
-      // Stale references can appear across nested promotion rebinds.
-      this._widget = inputWidget
-      this.events.dispatch('input-connected', {
-        input: slot,
-        widget: inputWidget,
-        node
-      })
-    } else {
-      this.events.dispatch('input-connected', { input: slot })
-    }
-    if (subgraph.getLink(link.id) !== link) {
+      if (inputWidget) {
+        this._widget = inputWidget
+        this.events.dispatch('input-connected', {
+          input: slot,
+          widget: inputWidget,
+          node
+        })
+      } else {
+        this.events.dispatch('input-connected', { input: slot })
+      }
+      if (subgraph.getLink(link.id) !== link) return
+
+      node.onConnectionsChange?.(
+        NodeSlotType.INPUT,
+        inputIndex,
+        true,
+        link,
+        slot
+      )
+      if (subgraph.getLink(link.id) !== link) return
+
+      return link
+    } finally {
       subgraph.afterChange()
-      return
     }
-
-    node.onConnectionsChange?.(NodeSlotType.INPUT, inputIndex, true, link, slot)
-    if (subgraph.getLink(link.id) !== link) {
-      subgraph.afterChange()
-      return
-    }
-
-    subgraph.afterChange()
-
-    return link
   }
 
   get labelPos(): Point {
