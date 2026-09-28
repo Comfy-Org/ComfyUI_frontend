@@ -61,6 +61,7 @@ describe('refreshRemoteConfig', () => {
       comfy_platform_base_url: 'https://platform.example.com'
     }
     window.__CONFIG__ = remoteConfig.value
+    sessionAgentGrant.value = true
 
     invalidateRemoteConfig()
 
@@ -71,6 +72,7 @@ describe('refreshRemoteConfig', () => {
     })
     expect(window.__CONFIG__).toEqual(remoteConfig.value)
     expect(remoteConfigState.value).toBe('unloaded')
+    expect(sessionAgentGrant.value).toBeUndefined()
   })
 
   describe('with auth (default)', () => {
@@ -230,9 +232,19 @@ describe('refreshRemoteConfig', () => {
     })
 
     it("records this session's grant without persisting it anywhere", async () => {
-      sessionAgentGrant.value = undefined
+      // Baseline through an ungranted refresh first. cachedBillingControlEnabled
+      // and cachedV1PaymentRecovery are module-scope useStorage refs still
+      // holding undefined, so the run's first authenticated refresh resolves
+      // them to false and writes two keys. Snapshotting before that happens
+      // makes the delta order-dependent: green in file order, red under -t.
+      vi.mocked(api.fetchApi).mockResolvedValue(
+        mockSuccessResponse({ 'agent-in-app-experience': false })
+      )
+      await refreshRemoteConfig()
       const localStorageBefore = storageEntries(localStorage)
       const sessionStorageBefore = storageEntries(sessionStorage)
+
+      sessionAgentGrant.value = undefined
       vi.mocked(api.fetchApi).mockResolvedValue(
         mockSuccessResponse({ 'agent-in-app-experience': true })
       )
