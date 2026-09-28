@@ -143,6 +143,13 @@ function readQuote(quote: SubscriptionPreview, context: LedgerContext) {
         year: 'numeric',
         timeZone: 'UTC'
       }).format(new Date(iso)),
+    /** Month and day only: a credits expiry always falls within the current period. */
+    monthDay: (iso: string) =>
+      new Intl.DateTimeFormat(locale, {
+        month: 'long',
+        day: 'numeric',
+        timeZone: 'UTC'
+      }).format(new Date(iso)),
     headlineMoney: (cents: number) =>
       formatHeadlineMoney(cents, currency, locale),
     credits: (cents: number) =>
@@ -223,7 +230,9 @@ function proratedLedger(r: QuoteReading): SummaryLedger {
       qualifier:
         expiresAt === undefined
           ? r.t(`${S}.credits.addedToday`, {})
-          : r.t(`${S}.credits.addedTodayExpire`, { date: r.date(expiresAt) })
+          : r.t(`${S}.credits.addedTodayExpire`, {
+              date: r.monthDay(expiresAt)
+            })
     },
     items: [
       {

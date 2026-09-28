@@ -163,7 +163,7 @@ describe('buildSummaryLedger', () => {
         headline: { amount: '$32.50', currency: 'USD' },
         credits: {
           count: '6,858',
-          qualifier: 'credits added today (expire July 28, 2026)'
+          qualifier: 'credits added today (expire July 28)'
         },
         items: [
           {
