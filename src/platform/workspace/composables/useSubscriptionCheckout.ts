@@ -599,10 +599,7 @@ export function useSubscriptionCheckout(
           })
         )
       }
-      // A popup opened here would run after the awaited fetch above, with no
-      // user gesture behind it, so browsers silently block it. Navigate the
-      // same tab instead; the portal session's return URL brings the
-      // customer back to this page once they're done.
+      // Same tab: a popup opened after the await above has no user gesture and is blocked.
       globalThis.location.href = portalUrl.href
       return 'opened'
     } catch (portalError) {
