@@ -91,6 +91,7 @@ export type CheckoutPage =
   | { readonly kind: 'resolving'; readonly outcome?: InlineOutcome }
   | { readonly kind: 'refused'; readonly reason: CapabilityDenialReason }
   | { readonly kind: 'unavailable'; readonly code: string }
+  | { readonly kind: 'plan_unavailable' }
   | Capture
   | { readonly kind: 'waiting'; readonly operation: PendingBillingOperation }
   | { readonly kind: 'unconfirmed'; readonly operationId: string }
@@ -109,6 +110,10 @@ export type OperationOutcome = Exclude<
 export type CheckoutPageEvent =
   | { readonly type: 'refused'; readonly reason: CapabilityDenialReason }
   | { readonly type: 'unavailable'; readonly code: string }
+  /** The quote named a plan the catalog does not have. */
+  | { readonly type: 'planUnavailable' }
+  /** Try again on a checkout that could not load. */
+  | { readonly type: 'retried' }
   | ({ readonly type: 'quoted'; readonly reactivation: boolean } & (
       | { readonly method: 'collect'; readonly saved: SavedArrival }
       | { readonly method: 'on_file' }
@@ -209,6 +214,10 @@ export function reduceCheckoutPage(
       return page.kind === 'resolving'
         ? { kind: 'unavailable', code: event.code }
         : page
+    case 'planUnavailable':
+      return page.kind === 'resolving' ? { kind: 'plan_unavailable' } : page
+    case 'retried':
+      return page.kind === 'unavailable' ? RESOLVING : page
     case 'quoted':
       return page.kind === 'resolving' ? arrived(page, event) : page
     case 'reconciled':

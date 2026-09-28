@@ -1,6 +1,9 @@
 import type { CheckoutPage } from '@/checkout/checkoutPage'
 import { waitingOn } from '@/checkout/checkoutPage'
 
+/** The code a stale plan link shows; the catalog's verdict, not a capability denial. */
+const PLAN_NOT_FOUND = 'PLAN_NOT_FOUND'
+
 /**
  * The full-page screen a checkout ends on, and the code support can act on.
  * `success` is the only one that may name a plan: this page's own Pay sent
@@ -14,12 +17,21 @@ export type EndingScreen =
   | { readonly kind: 'in_progress'; readonly code: string }
   | { readonly kind: 'received'; readonly code: string }
   | { readonly kind: 'unconfirmed'; readonly code: string }
+  | { readonly kind: 'refused'; readonly code: string }
+  | { readonly kind: 'plan_unavailable'; readonly code: string }
+  | { readonly kind: 'load_failed'; readonly code: string }
 
 export type EndingKind = EndingScreen['kind']
 
 /** The page's screen when it has ended, or no screen while capture or verifying owns it. */
 export function endingOf(page: CheckoutPage): EndingScreen | undefined {
   switch (page.kind) {
+    case 'refused':
+      return { kind: 'refused', code: page.reason.toUpperCase() }
+    case 'unavailable':
+      return { kind: 'load_failed', code: page.code }
+    case 'plan_unavailable':
+      return { kind: 'plan_unavailable', code: PLAN_NOT_FOUND }
     case 'unconfirmed':
       return { kind: 'unconfirmed', code: page.operationId }
     case 'waiting':

@@ -1,12 +1,16 @@
 /**
  * The full-page terminals, each reached the way a customer reaches it: their
- * own Pay, a revisit after the money settled, and a bank capture that is
- * still settling.
+ * own Pay, a revisit after the money settled, a bank capture that is still
+ * settling, a refusal, a stale plan link and a checkout that could not load.
  */
 import type { Page } from '@playwright/test'
 
 import type { MockCloud } from './fixtures/cloud'
-import { pendingOperation, succeededOperation } from './fixtures/scenario'
+import {
+  capabilitiesWith,
+  pendingOperation,
+  succeededOperation
+} from './fixtures/scenario'
 import { installFakeStripe } from './fixtures/stripe'
 import { entryPath, expect, test as base } from './fixtures/test'
 
@@ -121,4 +125,71 @@ test('FE-2856: a capture the bank is still settling renders Payment in progress,
   ).toBeVisible()
   await expect(code(page)).toHaveText('op_bank')
   expect(subscribeRequests(cloud)).toHaveLength(0)
+})
+
+test('a member the owner manages billing for sees Checkout not available with the reason code, and support only', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  const refused = capabilitiesWith({ can_subscribe_self_serve: false })
+  cloud.reply('GET', '/billing/capabilities', () => ({
+    body: {
+      ...refused,
+      denied_reasons: { can_subscribe_self_serve: 'not_workspace_owner' }
+    },
+    headers: { 'x-capability-revision': String(refused.revision) }
+  }))
+  await signIn(CHECKOUT)
+
+  await expect(heading(page, 'Checkout not available')).toBeVisible()
+  await expect(code(page)).toHaveText('NOT_WORKSPACE_OWNER')
+  await expect(contactSupport(page)).toBeVisible()
+  await expect(
+    page.getByRole('button', { name: /Close|Try again/ })
+  ).toBeHidden()
+})
+
+test('a link to a plan the catalog lacks renders Plan not available, and View plans goes back to the host catalog', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.reply('POST', '/billing/preview-subscribe', () => ({
+    status: 400,
+    body: { code: 'INVALID_PLAN', message: 'Plan not found: pro_monthly' }
+  }))
+  await signIn(CHECKOUT)
+
+  await expect(heading(page, 'This plan is no longer available')).toBeVisible()
+  await expect(code(page)).toHaveText('PLAN_NOT_FOUND')
+
+  await page.getByRole('button', { name: 'View plans' }).click()
+
+  await expect(heading(page, 'Host app')).toBeVisible()
+  expect(new URL(page.url()).searchParams.has('billing_result')).toBe(false)
+})
+
+test("a checkout that couldn't load retries in place on Try again, without leaving the URL", async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  let quotes = 0
+  cloud.reply('POST', '/billing/preview-subscribe', () => {
+    quotes += 1
+    return quotes === 1
+      ? { status: 503, body: { code: 'UNAVAILABLE', message: 'down' } }
+      : { body: cloud.scenario.preview }
+  })
+  await signIn(CHECKOUT)
+
+  await expect(heading(page, "Couldn't load your checkout")).toBeVisible()
+  await expect(code(page)).toHaveText('REQUEST_FAILED')
+
+  await page.getByRole('button', { name: 'Try again' }).click()
+
+  await expect(payButton(page)).toBeEnabled()
+  await expect(page).toHaveURL(CHECKOUT)
+  expect(quotes).toBe(2)
 })

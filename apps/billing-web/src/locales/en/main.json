@@ -119,10 +119,6 @@
         },
         "retry": "Try again"
       },
-      "refused": {
-        "title": "You can't subscribe from this account",
-        "body": "This account can't start or change a subscription for this workspace. Ask the workspace owner, or go back and choose another workspace."
-      },
       "outcome": {
         "declined": {
           "title": "Payment declined",
@@ -180,7 +176,9 @@
         "copied": "Copied",
         "closeLine": "You can close this page. We'll email your invoice once this goes through and this page will automatically update.",
         "actions": {
-          "close": "Close"
+          "close": "Close",
+          "retry": "Try again",
+          "view_plans": "View plans"
         },
         "success": {
           "title": "You're all set",
@@ -210,6 +208,21 @@
           "title": "We couldn't confirm your payment",
           "body": "Your payment may or may not have gone through. Don't pay again yet, you could be charged twice.",
           "codeLabel": "If this page still can't confirm it after a few minutes, contact support with this code:"
+        },
+        "refused": {
+          "title": "Checkout not available",
+          "body": "Billing for this workspace is managed by its owner. Ask them to make this change.",
+          "codeLabel": "If this is an error, contact support with this code:"
+        },
+        "plan_unavailable": {
+          "title": "This plan is no longer available",
+          "body": "The plan in your link isn't offered anymore. Nothing has been charged. See our current plans instead.",
+          "codeLabel": "If you think this is a mistake, contact support with this code:"
+        },
+        "load_failed": {
+          "title": "Couldn't load your checkout",
+          "body": "We couldn't load your quote. Nothing has been charged. Try again, or contact support if this keeps happening.",
+          "codeLabel": "If this keeps happening, contact support with this code:"
         }
       }
     }

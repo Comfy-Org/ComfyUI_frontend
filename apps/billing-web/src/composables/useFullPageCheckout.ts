@@ -14,6 +14,7 @@ import type {
   SubscribeInput,
   SubscriptionPreview
 } from '@comfyorg/account-core/billing'
+import { matchesServerCode } from '@comfyorg/account-core/billing'
 import type { BillingEntry } from '@comfyorg/billing-contract'
 import { buildReturnUrl } from '@comfyorg/billing-contract'
 
@@ -52,6 +53,9 @@ export type PayChoice =
   | undefined
 
 type PlannedEntry = BillingEntry & { plan: string }
+
+/** What the quote answers for a plan slug the catalog does not have. */
+const UNKNOWN_PLAN_SERVER_CODE = 'INVALID_PLAN'
 
 /**
  * The full-page checkout's effects around one `CheckoutPage` state: the
@@ -165,7 +169,10 @@ export function useFullPageCheckout() {
         reason: allowed.value.denials.can_subscribe_self_serve ?? 'unspecified'
       }
     if (quoted.status === 'error')
-      return { type: 'unavailable', code: quoted.code }
+      return 'serverCode' in quoted &&
+        matchesServerCode(quoted, UNKNOWN_PLAN_SERVER_CODE)
+        ? { type: 'planUnavailable' }
+        : { type: 'unavailable', code: quoted.code }
     const reactivation = consentAsked(asksReactivation(quoted.value))
     return quoted.value.transition_type === 'new_subscription'
       ? {
@@ -325,6 +332,12 @@ export function useFullPageCheckout() {
     else window.location.assign(returnLink.value)
   }
 
+  /** Try again re-runs the whole resolve in place: the re-read and the capture read. */
+  function retryLoad() {
+    void reconcile()
+    dispatch({ type: 'retried' })
+  }
+
   function requestFor(
     arrival: PlannedEntry,
     quoted: SubscriptionPreview,
@@ -402,6 +415,7 @@ export function useFullPageCheckout() {
     payFailure,
     returnLink,
     close,
+    retryLoad,
     onPaymentPhase,
     savedMethods: saved.methods,
     reconcile,

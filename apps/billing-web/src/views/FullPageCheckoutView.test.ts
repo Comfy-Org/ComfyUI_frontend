@@ -373,10 +373,13 @@ describe('FullPageCheckoutView', () => {
       await renderCheckout(options, arrange)
 
       expect(
-        await screen.findByText(
-          "We couldn't reach the billing service. Please try again."
-        )
+        await screen.findByRole('heading', {
+          name: "Couldn't load your checkout"
+        })
       ).toBeInTheDocument()
+      expect(screen.getByTestId('checkout-ending-code')).toHaveTextContent(
+        'REQUEST_FAILED'
+      )
       expect(
         screen.queryByRole('button', { name: 'Pay and subscribe' })
       ).not.toBeInTheDocument()
@@ -387,10 +390,12 @@ describe('FullPageCheckoutView', () => {
     await renderCheckout({ capabilities: {} })
 
     expect(
-      await screen.findByRole('heading', {
-        name: "You can't subscribe from this account"
-      })
+      await screen.findByRole('heading', { name: 'Checkout not available' })
     ).toBeInTheDocument()
+    expect(screen.getByTestId('checkout-ending-code')).toHaveTextContent(
+      'UNSPECIFIED'
+    )
+    expect(screen.getByRole('link', { name: 'Contact support' })).toBeVisible()
     expect(
       screen.queryByRole('button', { name: 'Pay and subscribe' })
     ).not.toBeInTheDocument()
@@ -422,6 +427,33 @@ describe('FullPageCheckoutView', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Back' }))
 
     expect(assign).toHaveBeenCalledWith(href)
+  })
+
+  it.for<{ name: string; serverCode: string; heading: string }>([
+    {
+      name: 'a plan the catalog lacks is Plan not available',
+      serverCode: 'INVALID_PLAN',
+      heading: 'This plan is no longer available'
+    },
+    {
+      name: 'any other refused quote is a load failure',
+      serverCode: 'TRANSITION_NOT_ALLOWED',
+      heading: "Couldn't load your checkout"
+    }
+  ])('$name', async ({ serverCode, heading }) => {
+    await renderCheckout({
+      preview: {
+        status: 'error',
+        code: 'REQUEST_FAILED',
+        httpStatus: 400,
+        serverCode: readBillingErrorCode({ code: serverCode, message: 'no' })
+      }
+    })
+
+    expect(
+      await screen.findByRole('heading', { name: heading })
+    ).toBeInTheDocument()
+    expect(form.mounts).toBe(0)
   })
 })
 
@@ -1111,17 +1143,30 @@ describe('FullPageCheckoutView mount reconciliation', () => {
     expect(form.mounts).toBe(1)
   })
 
-  it('says so instead of a form when the recovery itself fails', async () => {
-    await renderCheckout({
+  it('says so instead of a form when the recovery itself fails, and Try again resolves again in place', async () => {
+    const fake = await renderCheckout({
       recover: { status: 'error', code: 'REQUEST_FAILED' }
     })
 
     expect(
-      await screen.findByText(
-        "We couldn't reach the billing service. Please try again."
-      )
+      await screen.findByRole('heading', {
+        name: "Couldn't load your checkout"
+      })
     ).toBeInTheDocument()
+    expect(screen.getByTestId('checkout-ending-code')).toHaveTextContent(
+      'REQUEST_FAILED'
+    )
     expect(form.mounts).toBe(0)
+
+    fake.recover.mockResolvedValue({ status: 'ok', value: undefined })
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
+
+    expect(
+      await screen.findByText('Subscribe to Creator Plan · Acme Team')
+    ).toBeInTheDocument()
+    expect(fake.recover).toHaveBeenCalledTimes(2)
+    expect(fake.previewSubscribe).toHaveBeenCalledTimes(2)
+    expect(form.mounts).toBe(1)
   })
 
   it('renders Payment in progress for a capture the bank is still settling, then follows it to a card-less success', async () => {
