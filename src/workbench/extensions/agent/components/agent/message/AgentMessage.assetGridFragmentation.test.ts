@@ -1,0 +1,211 @@
+// @vitest-environment jsdom
+import { render, screen, within } from '@testing-library/vue'
+import { describe, expect, it, vi } from 'vitest'
+
+vi.hoisted(() => {
+  globalThis.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+})
+
+import { i18n } from '@/i18n'
+import { toTurnId } from '../../../schemas/agentApiSchema'
+import type { AssistantMessage } from '../../../services/agent/agentMessageParts'
+
+import AgentMessage from './AgentMessage.vue'
+
+function fragmentedCaptionedAssetsMessage(): AssistantMessage {
+  return {
+    id: toTurnId('msg-assets'),
+    role: 'assistant',
+    streaming: false,
+    thinking: false,
+    parts: [
+      {
+        type: 'text',
+        text: 'Version A:\n\n![i1.png](https://x/i1.png)',
+        state: 'done'
+      },
+      {
+        type: 'tool',
+        callId: 'tool_0',
+        name: 'preview_image',
+        state: 'done'
+      },
+      {
+        type: 'text',
+        text: 'Version B:\n\n![i2.png](https://x/i2.png)',
+        state: 'done'
+      }
+    ]
+  }
+}
+
+describe('AgentMessage asset grid fragmentation', () => {
+  it('PM-1135: keeps each caption paired with its own asset, in order, across a tool-call split', () => {
+    render(AgentMessage, {
+      props: { message: fragmentedCaptionedAssetsMessage() },
+      global: { plugins: [i18n] }
+    })
+
+    const groups = screen.getAllByTestId('reply-asset-group')
+    expect(groups).toHaveLength(2)
+    expect(
+      within(groups[0]).getByRole('img', { name: 'i1.png' })
+    ).toBeInTheDocument()
+    expect(
+      within(groups[1]).getByRole('img', { name: 'i2.png' })
+    ).toBeInTheDocument()
+
+    const versionA = screen.getByText('Version A:')
+    const versionB = screen.getByText('Version B:')
+    expect(
+      versionA.compareDocumentPosition(groups[0]) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
+    expect(
+      groups[0].compareDocumentPosition(versionB) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
+    expect(
+      versionB.compareDocumentPosition(groups[1]) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
+  })
+
+  it('PM-1135: coalesces two bare, uncaptioned assets split by a tool call into one grid', () => {
+    const message: AssistantMessage = {
+      id: toTurnId('msg-bare-assets'),
+      role: 'assistant',
+      streaming: false,
+      thinking: false,
+      parts: [
+        {
+          type: 'text',
+          text: '![i1.png](https://x/i1.png)',
+          state: 'done'
+        },
+        {
+          type: 'tool',
+          callId: 'tool_0',
+          name: 'preview_image',
+          state: 'done'
+        },
+        {
+          type: 'text',
+          text: '![i2.png](https://x/i2.png)',
+          state: 'done'
+        }
+      ]
+    }
+
+    render(AgentMessage, {
+      props: { message },
+      global: { plugins: [i18n] }
+    })
+
+    const groups = screen.getAllByTestId('reply-asset-group')
+    expect(groups).toHaveLength(1)
+    expect(
+      within(groups[0]).getByRole('img', { name: 'i1.png' })
+    ).toBeInTheDocument()
+    expect(
+      within(groups[0]).getByRole('img', { name: 'i2.png' })
+    ).toBeInTheDocument()
+    expect(
+      within(groups[0])
+        .getAllByRole('img')
+        .map((image) => image.getAttribute('alt'))
+    ).toEqual(['i1.png', 'i2.png'])
+  })
+
+  it('keeps streamed post-tool assets in the completed grid', async () => {
+    const firstPart: AssistantMessage = {
+      id: toTurnId('msg-streamed-assets'),
+      role: 'assistant',
+      streaming: true,
+      thinking: false,
+      parts: [
+        {
+          type: 'text',
+          text: '![i1.png](https://x/i1.png)',
+          state: 'done'
+        },
+        {
+          type: 'tool',
+          callId: 'tool_0',
+          name: 'preview_image',
+          state: 'done'
+        }
+      ]
+    }
+    const { rerender } = render(AgentMessage, {
+      props: { message: firstPart },
+      global: { plugins: [i18n] }
+    })
+
+    const completed: AssistantMessage = {
+      ...firstPart,
+      streaming: false,
+      parts: [
+        ...firstPart.parts,
+        {
+          type: 'text',
+          text: '![i2.png](https://x/i2.png)',
+          state: 'done'
+        }
+      ]
+    }
+    await rerender({ message: completed })
+
+    const groups = screen.getAllByTestId('reply-asset-group')
+    expect(groups).toHaveLength(1)
+    expect(
+      within(groups[0]).getByRole('img', { name: 'i1.png' })
+    ).toBeInTheDocument()
+    expect(
+      within(groups[0]).getByRole('img', { name: 'i2.png' })
+    ).toBeInTheDocument()
+  })
+
+  it('PM-1135: puts a bare asset before later, unrelated prose', () => {
+    const message: AssistantMessage = {
+      id: toTurnId('msg-preview-failed'),
+      role: 'assistant',
+      streaming: false,
+      thinking: false,
+      parts: [
+        {
+          type: 'text',
+          text: '![preview.png](https://x/preview.png)',
+          state: 'done'
+        },
+        {
+          type: 'tool',
+          callId: 'tool_0',
+          name: 'preview_image',
+          state: 'done'
+        },
+        {
+          type: 'text',
+          text: 'The preview above failed to render.',
+          state: 'done'
+        }
+      ]
+    }
+
+    render(AgentMessage, {
+      props: { message },
+      global: { plugins: [i18n] }
+    })
+
+    const group = screen.getByTestId('reply-asset-group')
+    const explanation = screen.getByText('The preview above failed to render.')
+    expect(
+      group.compareDocumentPosition(explanation) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
+  })
+})
