@@ -75,6 +75,55 @@ async function fetchRemoteConfig(
   return { response, authenticated }
 }
 
+function commitRemoteConfigSuccess(
+  config: Record<string, unknown>,
+  useAuth: boolean
+): void {
+  window.__CONFIG__ = config
+  remoteConfig.value = config
+  remoteConfigErrorStatus.value = null
+  remoteConfigState.value = useAuth ? 'authenticated' : 'anonymous'
+  if (useAuth) {
+    authenticatedRemoteConfigState.value = 'authenticated'
+    cachedBillingControlEnabled.value = Boolean(config.billing_control_enabled)
+    cachedLegacyBillingMigrationEnabled.value = Boolean(
+      config.legacy_billing_migration_enabled
+    )
+    cachedV1PaymentRecovery.value = Boolean(config.v1_payment_recovery)
+    sessionAgentGrant.value = config['agent-in-app-experience'] === true
+    sessionAgentGrantValidUntil.value = Date.now() + AGENT_GRANT_FALLBACK_MS
+  }
+  remoteConfigRevision.value++
+}
+
+function commitRemoteConfigFailure(response: Response, useAuth: boolean): void {
+  console.warn('Failed to load remote config:', response.statusText)
+  if (response.status === 401 || response.status === 403) {
+    remoteConfigErrorStatus.value = response.status
+    if (useAuth) {
+      window.__CONFIG__ = {}
+      remoteConfig.value = {}
+      sessionAgentGrant.value = undefined
+      sessionAgentGrantValidUntil.value = undefined
+    }
+  } else {
+    remoteConfigErrorStatus.value = null
+  }
+  if (useAuth) cachedLegacyBillingMigrationEnabled.value = undefined
+  if (useAuth) authenticatedRemoteConfigState.value = 'error'
+  remoteConfigState.value = 'error'
+  remoteConfigRevision.value++
+}
+
+function commitRemoteConfigException(error: unknown, useAuth: boolean): void {
+  console.error('Failed to fetch remote config:', error)
+  remoteConfigErrorStatus.value = null
+  if (useAuth) cachedLegacyBillingMigrationEnabled.value = undefined
+  if (useAuth) authenticatedRemoteConfigState.value = 'error'
+  remoteConfigState.value = 'error'
+  remoteConfigRevision.value++
+}
+
 /**
  * Loads remote configuration from the backend /features endpoint
  * and updates the reactive remoteConfig ref.
@@ -118,51 +167,14 @@ export async function refreshRemoteConfig(
         remoteConfigRevision.value++
         return
       }
-      window.__CONFIG__ = config
-      remoteConfig.value = config
-      remoteConfigErrorStatus.value = null
-      remoteConfigState.value = useAuth ? 'authenticated' : 'anonymous'
-      if (useAuth) {
-        authenticatedRemoteConfigState.value = 'authenticated'
-        cachedBillingControlEnabled.value = Boolean(
-          config.billing_control_enabled
-        )
-        cachedLegacyBillingMigrationEnabled.value = Boolean(
-          config.legacy_billing_migration_enabled
-        )
-        cachedV1PaymentRecovery.value = Boolean(config.v1_payment_recovery)
-        sessionAgentGrant.value = config['agent-in-app-experience'] === true
-        sessionAgentGrantValidUntil.value = Date.now() + AGENT_GRANT_FALLBACK_MS
-      }
-      remoteConfigRevision.value++
+      commitRemoteConfigSuccess(config, useAuth)
       return
     }
-
-    console.warn('Failed to load remote config:', response.statusText)
-    if (response.status === 401 || response.status === 403) {
-      remoteConfigErrorStatus.value = response.status
-      if (useAuth) {
-        window.__CONFIG__ = {}
-        remoteConfig.value = {}
-        sessionAgentGrant.value = undefined
-        sessionAgentGrantValidUntil.value = undefined
-      }
-    } else {
-      remoteConfigErrorStatus.value = null
-    }
-    if (useAuth) cachedLegacyBillingMigrationEnabled.value = undefined
-    if (useAuth) authenticatedRemoteConfigState.value = 'error'
-    remoteConfigState.value = 'error'
-    remoteConfigRevision.value++
+    commitRemoteConfigFailure(response, useAuth)
   } catch (error) {
     if (generation !== refreshGeneration) return
     if (signal?.aborted) return
-    console.error('Failed to fetch remote config:', error)
-    remoteConfigErrorStatus.value = null
-    if (useAuth) cachedLegacyBillingMigrationEnabled.value = undefined
-    if (useAuth) authenticatedRemoteConfigState.value = 'error'
-    remoteConfigState.value = 'error'
-    remoteConfigRevision.value++
+    commitRemoteConfigException(error, useAuth)
   } finally {
     clearTimeout(timeoutId)
     signal?.removeEventListener('abort', abort)
