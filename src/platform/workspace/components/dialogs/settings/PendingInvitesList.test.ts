@@ -160,9 +160,9 @@ describe('PendingInvitesList', () => {
       global: { plugins: [shippedI18n] }
     })
 
-    for (const button of screen.getAllByRole('button')) {
-      expect(button).not.toHaveAccessibleName(/^workspacePanel\./)
-    }
+    expect(
+      screen.queryAllByRole('button', { name: /^workspacePanel\./ })
+    ).toHaveLength(0)
     expect(
       screen.getByRole('button', { name: 'Copy invite link' })
     ).toBeInTheDocument()
