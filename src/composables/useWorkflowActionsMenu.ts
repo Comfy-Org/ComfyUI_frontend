@@ -31,11 +31,10 @@ interface WorkflowActionsMenuOptions {
   /** Override the workflow to operate on. If not provided, uses activeWorkflow. */
   workflow?: Ref<ComfyWorkflow | null> | ComputedRef<ComfyWorkflow | null>
   /**
-   * Whether the host's menu is open. While it is, a row that comes and goes
-   * with an account flag is never removed, so nothing moves under the pointer:
-   * a settled answer is held, and an opening still awaiting the current
-   * account's answer may only add the row once a yes arrives. A row whose
-   * account loses access stays in place, disabled, until the menu closes.
+   * Whether the host's menu is open. While it is, an already-visible row that
+   * comes and goes with an account flag is never removed; a menu awaiting the
+   * current account's answer may still add it on a yes. A row whose account
+   * loses access stays in place, disabled, until the menu closes.
    */
   isOpen?: Readonly<Ref<boolean>>
 }
@@ -52,6 +51,27 @@ interface AddItemOptions {
   badge?: string
 }
 
+interface DeployRow {
+  shown: boolean
+  answeredFor: number | undefined
+}
+
+/**
+ * Closed, the deploy row follows the gate. Open, it only changes when an
+ * answer arrives for an account generation the menu has not seen, and then
+ * only to add the row on a yes: a same-account flag change never moves it,
+ * and a row already shown stays until the menu closes.
+ */
+function nextDeployRow(
+  row: DeployRow,
+  gate: { open: boolean; enabled: boolean; answeredFor: number | undefined }
+): DeployRow {
+  if (!gate.open) return { shown: gate.enabled, answeredFor: gate.answeredFor }
+  if (gate.answeredFor === undefined || gate.answeredFor === row.answeredFor)
+    return row
+  return { shown: row.shown || gate.enabled, answeredFor: gate.answeredFor }
+}
+
 export function useWorkflowActionsMenu(
   startRename: () => void,
   options: WorkflowActionsMenuOptions = {}
@@ -66,33 +86,20 @@ export function useWorkflowActionsMenu(
   const menuItemStore = useMenuItemStore()
   const { flags } = useFeatureFlags()
   const deployGate = useDeployToComfyApiGate()
-  const showDeploy = ref(deployGate.enabled.value)
-  let followWhileOpen = false
+  let deployRow: DeployRow = {
+    shown: deployGate.enabled.value,
+    answeredFor: deployGate.answeredFor.value
+  }
+  const showDeploy = ref(deployRow.shown)
   watch(
-    () => isOpen?.value ?? false,
-    (open) => {
-      if (!open) return
-      followWhileOpen = !deployGate.settled.value
-      deployGate.check()
+    [() => isOpen?.value ?? false, deployGate.enabled, deployGate.answeredFor],
+    ([open, enabled, answeredFor], [wasOpen]) => {
+      deployRow = nextDeployRow(deployRow, { open, enabled, answeredFor })
+      showDeploy.value = deployRow.shown
+      if (open && (!wasOpen || answeredFor === undefined)) deployGate.check()
     }
   )
-  watch(deployGate.settled, (settled) => {
-    if (settled || !isOpen?.value) return
-    followWhileOpen = true
-    deployGate.check()
-  })
   if (!isOpen) deployGate.check()
-  watch(
-    [deployGate.enabled, deployGate.settled, () => isOpen?.value ?? false],
-    ([enabled, settled, open]) => {
-      if (!open) {
-        showDeploy.value = enabled
-        return
-      }
-      if (followWhileOpen && enabled) showDeploy.value = true
-      if (settled) followWhileOpen = false
-    }
-  )
   const appModeStore = useAppModeStore()
   const { enterBuilder, pruneLinearData } = appModeStore
   const { toastErrorHandler } = useErrorHandling()
