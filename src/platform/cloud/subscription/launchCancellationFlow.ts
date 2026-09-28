@@ -1,6 +1,7 @@
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { t } from '@/i18n'
 import { prepareChurnkey } from '@/platform/cloud/churnkey/churnkeyClient'
+import type { ChurnkeySession } from '@/platform/cloud/churnkey/churnkeyClient'
 import { getSubscriptionCancellationMetadata } from '@/platform/cloud/subscription/utils/subscriptionCancellationTelemetry'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -17,6 +18,37 @@ interface LaunchCancellationFlowOptions {
   showFallback: (
     options?: CancellationFallbackOptions
   ) => void | Promise<unknown>
+}
+
+async function prepareCancellationSession(
+  isLaunchWorkspaceCurrent: () => boolean,
+  showFallback: LaunchCancellationFlowOptions['showFallback']
+): Promise<ChurnkeySession | null> {
+  const preparation = await prepareChurnkey().then(
+    (session) => ({ session, threw: false as const }),
+    (error: unknown) => ({ session: null, threw: true as const, error })
+  )
+  if (preparation.session) return preparation.session
+
+  const workspaceStillCurrent = isLaunchWorkspaceCurrent()
+  if (preparation.threw) {
+    reportError(preparation.error, {
+      errorType: 'cloud_cancellation_vendor_fallback',
+      tags: {
+        failure_kind: 'degraded',
+        feature_area: 'billing',
+        operation: 'load',
+        outcome: workspaceStillCurrent ? 'recovered' : 'aborted'
+      },
+      context: {
+        workspace_still_current: workspaceStillCurrent,
+        vendor_threw: true
+      },
+      level: 'warning'
+    })
+  }
+  if (workspaceStillCurrent) await showFallback()
+  return null
 }
 
 export async function launchCancellationFlow({
@@ -39,32 +71,11 @@ export async function launchCancellationFlow({
     return workspaceStore.activeWorkspaceId === launchWorkspaceId
   }
 
-  const preparation = await prepareChurnkey().then(
-    (session) => ({ session, threw: false as const }),
-    (error: unknown) => ({ session: null, threw: true as const, error })
+  const session = await prepareCancellationSession(
+    isLaunchWorkspaceCurrent,
+    showFallback
   )
-  if (!preparation.session) {
-    const workspaceStillCurrent = isLaunchWorkspaceCurrent()
-    if (preparation.threw) {
-      reportError(preparation.error, {
-        errorType: 'cloud_cancellation_vendor_fallback',
-        tags: {
-          failure_kind: 'degraded',
-          feature_area: 'billing',
-          operation: 'load',
-          outcome: workspaceStillCurrent ? 'recovered' : 'aborted'
-        },
-        context: {
-          workspace_still_current: workspaceStillCurrent,
-          vendor_threw: true
-        },
-        level: 'warning'
-      })
-    }
-    if (workspaceStillCurrent) await showFallback()
-    return
-  }
-  const session = preparation.session
+  if (!session) return
   if (!isLaunchWorkspaceCurrent()) return
 
   const telemetry = useTelemetry()
