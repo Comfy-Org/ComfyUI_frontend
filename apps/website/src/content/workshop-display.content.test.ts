@@ -16,7 +16,10 @@ import {
   workshopDisplayEntriesSchema
 } from './workshop-display.schema'
 import { workshopModelSchema } from './workshop-models.schema'
-import { workflowCatalog } from '../config/workshop-workflow-catalog'
+import {
+  appCatalog,
+  workflowCatalog
+} from '../config/workshop-workflow-catalog'
 
 const here = import.meta.dirname
 const display = workshopDisplayEntriesSchema.parse(
@@ -106,7 +109,7 @@ describe('the display overlay against the catalog', () => {
     expect(contentFor(id)?.displayName).toBe(name)
   })
 
-  it('covers models and workflows in the matching execution catalog', () => {
+  it('covers models, workflows and apps in the matching execution catalog', () => {
     expect(display.length).toBeGreaterThan(0)
     const orphans = display.filter((entry) =>
       entry.type === 'CLOUD' || entry.type === 'SERVERLESS'
@@ -114,7 +117,9 @@ describe('the display overlay against the catalog', () => {
             (workflow) =>
               workflow.id === entry.modelId && workflow.type === entry.type
           )
-        : !modality.has(entry.modelId)
+        : entry.type === 'APP'
+          ? !appCatalog.some((app) => app.id === entry.modelId)
+          : !modality.has(entry.modelId)
     )
 
     expect(orphans).toEqual([])
@@ -237,11 +242,11 @@ describe('the display overlay against the catalog', () => {
     expect(unplayable).toEqual([])
   })
 
-  it('points every asset at https', () => {
+  it('points every asset at https or at a file this site serves', () => {
     const insecure = display.flatMap((entry) =>
       [entry.media.thumbnail, ...(entry.media.samples ?? [])]
         .filter((asset) => asset !== undefined)
-        .filter((asset) => !asset.url.startsWith('https://'))
+        .filter((asset) => !/^(?:https:\/\/|\/(?!\/))/.test(asset.url))
         .map((asset) => asset.url)
     )
 
