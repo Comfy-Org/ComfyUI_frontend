@@ -208,14 +208,14 @@ const showLeftPanel = computed(() => {
 const headerClass = computed(() =>
   cn(
     'flex w-full items-center justify-between gap-2',
-    headerPadding === 'symmetric' ? 'min-h-11 p-6' : 'h-18 px-6'
+    headerPadding === 'symmetric' ? 'px-6 py-5' : 'h-18 px-6'
   )
 )
 
 const headerContentClass = computed(() =>
   cn(
     'flex min-w-0 flex-1 gap-2',
-    headerPadding === 'symmetric' && 'min-h-11 items-center'
+    headerPadding === 'symmetric' && 'min-h-10 items-center'
   )
 )
 
