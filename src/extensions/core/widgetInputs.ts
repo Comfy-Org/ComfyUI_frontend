@@ -13,6 +13,7 @@ import type {
 import type { IWidgetLocator } from '@/lib/litegraph/src/interfaces'
 import { NodeSlot } from '@/lib/litegraph/src/node/NodeSlot'
 import { outputHasLinks, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
+import { slotTypeKey } from '@/lib/litegraph/src/utils/type'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { assetService } from '@/platform/assets/services/assetService'
 import { createAssetWidget } from '@/platform/assets/utils/createAssetWidget'
@@ -196,7 +197,7 @@ export class PrimitiveNode extends LGraphNode {
   ) {
     // Fires before the link is made allowing us to reject it if it isn't valid
     // No widget, we can't connect
-    if (!input.widget && !(input.type in ComfyWidgets)) {
+    if (!input.widget && !(slotTypeKey(input.type) in ComfyWidgets)) {
       return false
     }
 

@@ -8,6 +8,7 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { outputLinks } from '@/lib/litegraph/src/node/slotLinks'
+import { slotTypeKey } from '@/lib/litegraph/src/utils/type'
 import type { SerializedNodeId } from '@/types/nodeId'
 import { parseNodeId } from '@/types/nodeId'
 import type {
@@ -229,7 +230,9 @@ export class GroupNodeConfig {
       if (!linksFrom) return
 
       const firstLink = linksFrom[0]?.at(0)
-      let type: string | number | null = firstLink?.[5] ?? null
+      let type: string | number | null = firstLink
+        ? slotTypeKey(firstLink[5])
+        : null
       if (type === 'COMBO') {
         // Use the array items
         const output = node.outputs?.[0]
@@ -326,13 +329,14 @@ export class GroupNodeConfig {
       }
 
       config.forceInput = true
+      const rerouteTypeKey = slotTypeKey(rerouteType)
       return {
         input: {
           required: {
-            [rerouteType]: [rerouteType, config]
+            [rerouteTypeKey]: [rerouteTypeKey, config]
           }
         },
-        output: [rerouteType],
+        output: [rerouteTypeKey],
         output_name: [],
         output_is_list: []
       }

@@ -23,6 +23,7 @@ import { EmptySubgraphInput } from './EmptySubgraphInput'
 import { SubgraphIONodeBase } from './SubgraphIONodeBase'
 import type { SubgraphInput } from './SubgraphInput'
 import type { SubgraphOutput } from './SubgraphOutput'
+import { collectReservedLinkIds } from './subgraphDeduplication'
 
 export class SubgraphInputNode
   extends SubgraphIONodeBase<SubgraphInput>
@@ -108,7 +109,9 @@ export class SubgraphInputNode
     if (outputIndex === -1 || inputIndex === -1)
       throw new Error('Invalid slot indices.')
 
-    const linkId = mintLinkId(subgraph.state)
+    const linkId = mintLinkId(subgraph.state, () =>
+      collectReservedLinkIds(subgraph.rootGraph)
+    )
 
     return new LLink(
       linkId,

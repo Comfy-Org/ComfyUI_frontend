@@ -57,7 +57,7 @@ import {
 } from './__fixtures__/duplicateLinks'
 import { duplicateSubgraphNodeIds } from './__fixtures__/duplicateSubgraphNodeIds'
 import { nestedSubgraphProxyWidgets } from './__fixtures__/nestedSubgraphProxyWidgets'
-import { nodeIdSpaceExhausted } from './__fixtures__/nodeIdSpaceExhausted'
+import { nodeIdsAtFormerLimit } from './__fixtures__/nodeIdsAtFormerLimit'
 import { uniqueSubgraphNodeIds } from './__fixtures__/uniqueSubgraphNodeIds'
 import { test } from './__fixtures__/testExtensions'
 
@@ -2347,11 +2347,19 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
     })
   })
 
-  it('throws when node ID space is exhausted', () => {
-    expect(() => {
-      const graph = new LGraph()
-      graph.configure(structuredClone(nodeIdSpaceExhausted))
-    }).toThrow('Node ID space exhausted')
+  it('remaps duplicate node IDs above the former fixed limit', () => {
+    const graph = new LGraph()
+
+    graph.configure(structuredClone(nodeIdsAtFormerLimit))
+
+    expect(nodeIdSet(graph, SUBGRAPH_B)).toEqual(
+      new Set([
+        toNodeId(100_000_001),
+        toNodeId(100_000_002),
+        toNodeId(100_000_003)
+      ])
+    )
+    expect(graph.state.lastNodeId).toBe(100_000_003)
   })
 
   it('is a no-op when subgraph node IDs are already unique', () => {
