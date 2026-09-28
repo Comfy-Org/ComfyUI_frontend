@@ -48,6 +48,7 @@ let consentStore: ReturnType<typeof useAgentConsentStore>
 let workspaceStore: ReturnType<typeof useTeamWorkspaceStore>
 
 const currentUser = ref<{ id: string } | null>({ id: 'account-a' })
+const isAuthInitialized = ref(true)
 const firstRunTookScreen = ref(false)
 const activeTour = ref<EntryPath | null>(null)
 let startupDecision: Promise<boolean> = Promise.resolve(true)
@@ -55,6 +56,7 @@ let startupDecision: Promise<boolean> = Promise.resolve(true)
 vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: () => ({
     resolvedUserInfo: currentUser,
+    isAuthInitialized,
     isLoggedIn: computed(() => currentUser.value !== null)
   })
 }))
@@ -189,6 +191,7 @@ describe('AgentPanel extension flag gate', () => {
     vi.resetModules()
     setupScope = effectScope()
     currentUser.value = { id: 'account-a' }
+    isAuthInitialized.value = true
     consentStore = useAgentConsentStore()
     workspaceStore = useTeamWorkspaceStore()
     Object.assign(workspaceStore, {

@@ -39,8 +39,7 @@ export const workflowSelectionTest = base.extend<{
     let pendingLookup: Promise<void> | undefined
     let resumeWorkflowLookups = () => {}
     let lookupCount = 0
-    let refuseNextWorkflowMessage = false
-    let failNextWorkflowMessage = false
+    let nextWorkflowMessageResponse: 'accept' | 'fail' | 'refuse' = 'accept'
     await page.route('**/api/workflows?*', async (route) => {
       lookupCount++
       await pendingLookup
@@ -63,15 +62,15 @@ export const workflowSelectionTest = base.extend<{
         new URL(request.url()).pathname.endsWith('/messages')
       ) {
         postedMessages.push(route.request().postData() ?? '')
-        if (failNextWorkflowMessage) {
-          failNextWorkflowMessage = false
+        if (nextWorkflowMessageResponse === 'fail') {
+          nextWorkflowMessageResponse = 'accept'
           return route.fulfill({
             ...jsonRoute({ error: 'send unavailable' }),
             status: 500
           })
         }
-        if (refuseNextWorkflowMessage) {
-          refuseNextWorkflowMessage = false
+        if (nextWorkflowMessageResponse === 'refuse') {
+          nextWorkflowMessageResponse = 'accept'
           const refusedId = route.request().postDataJSON().workflow_id
           const refusedIndex = workflows.findIndex(({ id }) => id === refusedId)
           if (refusedIndex !== -1) workflows.splice(refusedIndex, 1)
@@ -141,7 +140,7 @@ export const workflowSelectionTest = base.extend<{
       postedMessages,
       finishSave: (success) => finishSave(success),
       failNextWorkflowMessage: () => {
-        failNextWorkflowMessage = true
+        nextWorkflowMessageResponse = 'fail'
       },
       pauseWorkflowLookups: () => {
         pendingLookup = new Promise<void>((resolve) => {
@@ -149,7 +148,7 @@ export const workflowSelectionTest = base.extend<{
         })
       },
       refuseNextWorkflowMessage: () => {
-        refuseNextWorkflowMessage = true
+        nextWorkflowMessageResponse = 'refuse'
       },
       resumeWorkflowLookups: () => resumeWorkflowLookups(),
       workflowLookups: () => lookupCount
