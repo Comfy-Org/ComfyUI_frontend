@@ -21,15 +21,15 @@ type AttachmentKind = 'image' | 'video' | 'audio'
 
 /**
  * A file attached to a user turn. `ref` is the uploaded input-namespace
- * filename that resolves the preview; on a persisted row this is the only
- * name the server ever saw, so `name` and `ref` are the same string.
+ * filename that resolves the preview. `name` is the label shown to the user;
+ * it falls back to `ref` for legacy/unresolved rows and otherwise comes from
+ * the persisted asset `display_name`.
  *
  * `id` and `kind` are the server's own resolution of that name, replayed off
  * the row's `attachment_refs`. `kind` is what lets a rehydrated attachment be
  * classified when its name cannot classify itself — a library asset is
  * attached under its content hash, which carries no extension to read a kind
- * off. `id` has no reader yet: it is the asset behind that same hash, which
- * PM-1705 needs to recover the filename the user attached.
+ * off. `id` identifies the asset behind that same hash.
  */
 export interface UserAttachment {
   name: string
@@ -37,6 +37,10 @@ export interface UserAttachment {
   ref?: string
   id?: string
   kind?: AttachmentKind
+}
+
+type ResolvedAttachment = Pick<UserAttachment, 'id' | 'kind'> & {
+  displayName?: string
 }
 
 export interface NormalizedAgentTranscript {
@@ -83,11 +87,12 @@ function isAttachmentKind(value: unknown): value is AttachmentKind {
 }
 
 /**
- * One `attachment_refs` entry, as the `{name, id?, kind?}` the server wrote,
- * reduced to the trimmed name it is keyed by and the resolution it carries.
- * `id` and `kind` are each omitted rather than stored empty, matching the
- * writer (`attachmentRefsForRow`, services/agent/server/agent_handler.go), so
- * an unresolved attachment reads the same as one written before ids existed.
+ * One `attachment_refs` entry, as the
+ * `{name, id?, kind?, display_name?}` the server wrote, reduced to the trimmed
+ * name it is keyed by and the resolution it carries. Optional fields are
+ * omitted rather than stored empty, matching the writer
+ * (`attachmentRefsForRow`, services/agent/server/agent_handler.go), so an
+ * unresolved attachment reads the same as one written before ids existed.
  *
  * The name is trimmed for the KEY only, because the two keys disagree about
  * whitespace: the writer trims a ref's name while `attachments` is stored
@@ -96,15 +101,21 @@ function isAttachmentKind(value: unknown): value is AttachmentKind {
  */
 function resolvedAttachmentRef(
   entry: unknown
-): [string, Pick<UserAttachment, 'id' | 'kind'>] | undefined {
+): [string, ResolvedAttachment] | undefined {
   if (typeof entry !== 'object' || entry === null) return undefined
-  const { name, id, kind } = entry as Record<string, unknown>
+  const {
+    name,
+    id,
+    kind,
+    display_name: displayName
+  } = entry as Record<string, unknown>
   if (typeof name !== 'string') return undefined
   return [
     name.trim(),
     {
       ...(typeof id === 'string' && id !== '' ? { id } : {}),
-      ...(isAttachmentKind(kind) ? { kind } : {})
+      ...(isAttachmentKind(kind) ? { kind } : {}),
+      ...(isNamedAttachment(displayName) ? { displayName } : {})
     }
   ]
 }
@@ -118,8 +129,8 @@ function resolvedAttachmentRef(
  */
 function resolvedAttachmentRefs(
   value: unknown
-): Map<string, Pick<UserAttachment, 'id' | 'kind'>> {
-  const resolved = new Map<string, Pick<UserAttachment, 'id' | 'kind'>>()
+): Map<string, ResolvedAttachment> {
+  const resolved = new Map<string, ResolvedAttachment>()
   if (!Array.isArray(value)) return resolved
   for (const entry of value as unknown[]) {
     const ref = resolvedAttachmentRef(entry)
@@ -153,7 +164,10 @@ function parseUserAttachments(
       ? postedNames
       : attachmentRefNames(content?.attachment_refs)
   return names.length > 0
-    ? names.map((name) => ({ name, ref: name, ...resolved.get(name.trim()) }))
+    ? names.map((ref) => {
+        const { displayName, ...metadata } = resolved.get(ref.trim()) ?? {}
+        return { name: displayName ?? ref, ref, ...metadata }
+      })
     : undefined
 }
 

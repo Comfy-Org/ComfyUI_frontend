@@ -28,8 +28,8 @@ import { assetPath } from '@e2e/fixtures/utils/paths'
  * spec attaches two ordinary `*.png` names, so its previews survive on the
  * extension alone; these cases cover the rows where the stored name cannot
  * carry the file — a library asset attached under its bare content hash, a
- * blank name the API let through, a name the wire has no slot for, and a turn
- * that was mid-flight when the user left the thread (PM-1149).
+ * blank name the API let through, a persisted display name, and a turn that
+ * was mid-flight when the user left the thread (PM-1149).
  *
  * Each case drives the real composer and a real reload, and stands in for one
  * thing only: the history GET the reload hydrates from. The agent service
@@ -60,8 +60,8 @@ test(
     await expect.poll(() => promptHistory.requests.length).toBe(1)
     expect(promptHistory.requests[0].attachments).toEqual([BARE_DIGEST])
     await expect(panel.getByTestId('reply-image-preview')).toHaveCount(1)
-    // The live label, asserted here rather than in the PM-1705 case below: an
-    // expected-failure body gives a working assertion no regression cover.
+    // The live label proves the drag/drop name is shown before persistence is
+    // involved; the PM-1705 case below covers the rehydrated contract.
     await expect(
       panel.getByRole('img', { name: 'Beach photo.png', exact: true })
     ).toBeVisible()
@@ -112,34 +112,25 @@ test(
   }
 )
 
-/**
- * PM-1705, tracked and deliberately still red. `AgentPostMessageRequest`
- * declares `attachments` as filenames and has no slot for the name the user
- * recognises (services/ingest/openapi.yaml), so the turn is posted knowing
- * only the storage ref and no reload can recover what was never sent.
- *
- * Widening that contract is out of reach here — it is a cloud change followed
- * by regenerating `packages/ingest-types`, whose openapi.yaml is not checked
- * in. The other repair is reachable: the read path can resolve the name from
- * the asset behind `attachment_refs[].id`, which `assetService.getAssetDetails`
- * already fetches, at the cost of a request per attachment on hydrate. That
- * one would retire this case rather than turn it green, since this arrange
- * routes no asset endpoint.
- *
- * Twin of the `(h-gap)` pin in useAgentSession.test.ts, kept here because only
- * the browser shows what the user is left looking at. The pre-reload half of
- * the claim lives in the unmarked case above, where a regression can still
- * turn it red.
- */
+/** PM-1705: the service persists the resolved asset name beside its storage ref. */
 test(
   'labels a refreshed attachment with the filename the user attached',
   { tag: ['@cloud', '@ui'] },
   async ({ page, promptHistory, workflowSelection }) => {
-    test.fail()
     await page.route(`**/view?filename=${BARE_DIGEST}&type=input`, (route) =>
       route.fulfill({ path: assetPath('image64x64.webp') })
     )
-    await serveHistory(page, promptHistory.requests, resolvedImageRefs)
+    await serveHistory(page, promptHistory.requests, (posted) => ({
+      ...resolvedImageRefs(posted),
+      attachment_refs: [
+        {
+          name: BARE_DIGEST,
+          display_name: 'Beach photo.png',
+          id: 'asset-rehydrated',
+          kind: 'image'
+        }
+      ]
+    }))
 
     const panel = await openAgentPanel(page, workflowSelection)
     await dropLibraryAsset(page, panel, {
