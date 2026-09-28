@@ -114,7 +114,10 @@ export type BillingOperationState =
   | (BillingOperationIdentity & { readonly phase: 'timed_out' })
   /** The server cannot settle it without a human; surface the id to support. */
   | (BillingOperationIdentity & { readonly phase: 'reconciliation_needed' })
-  /** The session or workspace changed underneath it; nothing here may be attributed to the new scope. */
+  /**
+   * The session or workspace changed underneath it, or the server replaced it
+   * with a newer operation; nothing here may be attributed to this tab now.
+   */
   | (BillingOperationIdentity & { readonly phase: 'superseded' })
 
 export type BillingOperationPhase = BillingOperationState['phase']
@@ -135,6 +138,8 @@ export type BillingOperationEvent =
       readonly presentation: 'embedded'
     }
   | { readonly type: 'challenge_started' }
+  /** The server answered a resubmit with a fresh hosted step for this same operation. */
+  | { readonly type: 'action_reissued'; readonly actionUrl: string }
   | {
       readonly type: 'challenge_settled'
       readonly outcome: 'completed' | 'failed'
@@ -247,17 +252,24 @@ function terminalFromStatus(
 /**
  * A link echoed while this tab's completed challenge is still processing
  * points at that same challenge; surfacing it would ask the customer to
- * redo a step they just finished.
+ * redo a step they just finished. A checkout waiting on a card keeps the
+ * link a resubmit reissued, because the server stores none for that phase.
  */
 function nextActionUrl(
   state: PendingBillingOperation,
   status: BillingOpStatus,
   authenticationState: BillingAuthenticationState | undefined
 ): string | undefined {
-  return state.challenge?.status === 'completed' &&
+  if (
+    state.challenge?.status === 'completed' &&
     authenticationState !== 'requires_action'
+  ) {
+    return state.actionUrl
+  }
+  const served = validateActionUrl(status.action_url)
+  return served === undefined && status.phase === 'awaiting_payment_method'
     ? state.actionUrl
-    : validateActionUrl(status.action_url)
+    : served
 }
 
 /**
@@ -369,5 +381,11 @@ export function reduceBillingOperation(
         : state
     case 'challenge_settled':
       return settleChallenge(state, event.outcome)
+    case 'action_reissued': {
+      const actionUrl = validateActionUrl(event.actionUrl)
+      return actionUrl === undefined
+        ? state
+        : { ...state, actionUrl, customerActionSeen: true }
+    }
   }
 }

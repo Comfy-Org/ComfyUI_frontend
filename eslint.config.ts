@@ -408,6 +408,14 @@ export default defineConfig([
     }
   },
   {
+    files: ['.github/scripts/**/*.mjs'],
+    languageOptions: {
+      globals: {
+        ...globals.node
+      }
+    }
+  },
+  {
     // Devtools extension scripts are loaded by ComfyUI in the browser.
     files: ['tools/devtools/web/**/*.js'],
     languageOptions: {
