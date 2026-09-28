@@ -74,7 +74,9 @@ function generate() {
         {{ tc('cinematic.beta', locale) }}
       </span>
     </div>
-    <div class="grid gap-6 lg:grid-cols-12 lg:gap-8">
+    <div
+      class="grid items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]"
+    >
       <CinematicPanel
         v-model:model="modelSlug"
         v-model:scene="scene"
@@ -94,14 +96,13 @@ function generate() {
         :credits="studio.credits.value"
         :open-picker="picker"
         :locale
-        class="lg:col-span-5"
         @open="togglePicker"
         @generate="generate"
         @cancel="studio.cancel"
       />
       <div
         ref="output"
-        class="relative flex min-w-0 flex-col lg:sticky lg:top-26 lg:col-span-7 lg:self-start"
+        class="relative flex min-w-0 flex-col lg:sticky lg:top-26 lg:self-start"
       >
         <CinematicStageCard
           :reel="studio.reel.value"

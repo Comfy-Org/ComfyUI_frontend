@@ -267,6 +267,7 @@ const cardClass =
         :estimate
         :credits
         wide
+        :show-credits="false"
         :locale
         @generate="emit('generate')"
         @cancel="emit('cancel')"

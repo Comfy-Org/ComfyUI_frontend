@@ -771,6 +771,19 @@ describe('CinematicStudio', () => {
       }
     )
 
+    it('keeps credit amounts off the side panel', async () => {
+      withBalance(5)
+      render(CinematicStudioPage, { props: { models: priced } })
+
+      expect(
+        await screen.findByRole('button', {
+          name: t('workshop.run.buyCredits')
+        })
+      ).toBeInTheDocument()
+      expect(screen.queryByTestId('cinematic-estimate')).toBeNull()
+      expect(screen.queryByTestId('cinematic-credit-note')).toBeNull()
+    })
+
     it('generates the takes a short balance covers once reduced', async () => {
       withBalance(20)
       vi.mocked(router_render).mockImplementation(async (slug) =>

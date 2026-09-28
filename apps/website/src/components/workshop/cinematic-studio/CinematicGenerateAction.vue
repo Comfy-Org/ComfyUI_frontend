@@ -25,6 +25,7 @@ const {
   estimate,
   credits,
   wide = false,
+  showCredits = true,
   locale = 'en'
 } = defineProps<{
   gate: StudioGate
@@ -35,6 +36,7 @@ const {
   estimate?: ShotEstimate
   credits?: number
   wide?: boolean
+  showCredits?: boolean
   locale?: Locale
 }>()
 
@@ -58,7 +60,8 @@ function shortfallNote(shot: ShotEstimate, balance: number): string {
 }
 
 const shortfall = computed(() => {
-  if (!creditGate.value || !estimate || credits === undefined) return undefined
+  if (!showCredits || !creditGate.value || !estimate || credits === undefined)
+    return undefined
   return {
     note: shortfallNote(estimate, credits),
     fits: Math.min(takesWithin(credits, estimate.perTake), estimate.takes - 1)
@@ -131,7 +134,8 @@ const reduceLabel = computed(() =>
       )
 )
 const showCost = computed(
-  () => !rendering && gate !== 'unavailable' && gate !== 'pending'
+  () =>
+    showCredits && !rendering && gate !== 'unavailable' && gate !== 'pending'
 )
 const layout = computed(() =>
   wide

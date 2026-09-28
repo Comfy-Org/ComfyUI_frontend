@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { Check } from '@lucide/vue'
 import {
   DropdownMenuContent,
   DropdownMenuLabel,
@@ -64,7 +63,7 @@ const triggerLabel = computed(() => {
             v-for="option in options"
             :key="option.id"
             :value="option.id"
-            class="flex h-9 cursor-pointer items-center gap-2.5 rounded-lg px-2.5 text-sm text-primary-warm-white outline-none data-highlighted:bg-transparency-white-t8"
+            class="flex h-9 cursor-pointer items-center gap-2.5 rounded-xl px-3 text-sm text-content-secondary outline-none select-none data-highlighted:bg-transparency-white-t4 data-highlighted:text-content-bright data-[state=checked]:bg-transparency-white-t8 data-[state=checked]:text-content-bright"
           >
             <img
               v-if="option.logo"
@@ -76,10 +75,6 @@ const triggerLabel = computed(() => {
             <span v-if="option.meta" class="text-xs text-primary-warm-gray">
               {{ option.meta }}
             </span>
-            <Check
-              class="size-3.5 opacity-0 in-data-[state=checked]:opacity-100"
-              aria-hidden="true"
-            />
           </DropdownMenuRadioItem>
         </DropdownMenuRadioGroup>
       </DropdownMenuContent>
