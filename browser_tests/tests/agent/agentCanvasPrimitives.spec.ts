@@ -4,6 +4,10 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 
 test.describe('Agent canvas primitives', { tag: '@agent' }, () => {
+  test.afterEach(async ({ comfyPage }) => {
+    await comfyPage.canvasOps.resetView()
+  })
+
   test('select-only preserves the semantic workflow graph', async ({
     comfyPage
   }) => {
