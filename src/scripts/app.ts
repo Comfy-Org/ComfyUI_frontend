@@ -389,8 +389,6 @@ export class ComfyApp {
   }
 
   private configuringGraphLevel: number = 0
-  private pendingFitView: { loadId: number; run: () => void } | undefined
-  private graphLoadId = 0
   get configuringGraph() {
     return this.configuringGraphLevel > 0
   }
@@ -1111,25 +1109,7 @@ export class ComfyApp {
     canvas.width = Math.round(width * scale)
     canvas.height = Math.round(height * scale)
     canvas.getContext('2d')?.scale(scale, scale)
-    this.flushPendingFitView(canvas)
     this.canvas.draw(true, true)
-  }
-
-  private armPendingFitView(loadId: number, run: () => void) {
-    if (loadId !== this.graphLoadId) return
-    this.pendingFitView = { loadId, run }
-  }
-
-  private flushPendingFitView(canvas: HTMLCanvasElement) {
-    const pending = this.pendingFitView
-    if (!pending || !canvas.width || !canvas.height) return
-    this.pendingFitView = undefined
-    pending.run()
-  }
-
-  private beginGraphReplacement() {
-    this.pendingFitView = undefined
-    return ++this.graphLoadId
   }
 
   private updateVueAppNodeDefs(defs: Record<string, ComfyNodeDefV1>) {
@@ -1337,7 +1317,6 @@ export class ComfyApp {
       silentAssetErrors = false,
       workflowNavigationId
     } = options
-    const loadId = this.beginGraphReplacement()
     useWorkflowService().beforeLoadNewGraph(clean)
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
 
@@ -1502,37 +1481,33 @@ export class ComfyApp {
     }
 
     const canvasVisible = !!(this.canvasEl.width && this.canvasEl.height)
-    const viewRestoreEnabled = () =>
-      restore_view && useSettingStore().get('Comfy.EnableWorkflowViewRestore')
-
-    const restoreSavedViewport = () => {
-      const ds = graphData.extra?.ds
-      if (!ds) return false
-      this.canvas.ds.offset = ds.offset
-      this.canvas.ds.scale = ds.scale
-      return true
-    }
-
     const fitView = () => {
-      if (!viewRestoreEnabled()) return
-
-      // Always fit view for templates to ensure they're visible on load
-      if (openSource === 'template' || !restoreSavedViewport()) {
-        useLitegraphService().fitView()
-        return
-      }
-
-      // Fit view if no nodes visible in restored viewport
-      this.canvas.ds.computeVisibleArea(this.canvas.viewport)
       if (
-        this.canvas.visible_area.width &&
-        this.canvas.visible_area.height &&
-        !anyItemOverlapsRect(this.rootGraph._nodes, this.canvas.visible_area)
+        restore_view &&
+        useSettingStore().get('Comfy.EnableWorkflowViewRestore')
       ) {
-        requestAnimationFrame(() => {
-          if (loadId !== this.graphLoadId) return
+        // Always fit view for templates to ensure they're visible on load
+        if (openSource === 'template') {
           useLitegraphService().fitView()
-        })
+        } else if (graphData.extra?.ds) {
+          this.canvas.ds.offset = graphData.extra.ds.offset
+          this.canvas.ds.scale = graphData.extra.ds.scale
+
+          // Fit view if no nodes visible in restored viewport
+          this.canvas.ds.computeVisibleArea(this.canvas.viewport)
+          if (
+            this.canvas.visible_area.width &&
+            this.canvas.visible_area.height &&
+            !anyItemOverlapsRect(
+              this.rootGraph._nodes,
+              this.canvas.visible_area
+            )
+          ) {
+            requestAnimationFrame(() => useLitegraphService().fitView())
+          }
+        } else {
+          useLitegraphService().fitView()
+        }
       }
     }
 
@@ -1561,14 +1536,7 @@ export class ComfyApp {
           )
         }
 
-        if (canvasVisible) {
-          fitView()
-        } else if (!workflow || typeof workflow === 'string') {
-          // Armed here rather than after the awaits below so a throw in
-          // between still leaves the recovery in place.
-          if (viewRestoreEnabled()) restoreSavedViewport()
-          this.armPendingFitView(loadId, fitView)
-        }
+        if (canvasVisible) fitView()
       } catch (error) {
         await this.reportGraphLoadFailure(error)
         // Resolves rather than throws: the close/replacement guards read this outcome.
@@ -1661,12 +1629,11 @@ export class ComfyApp {
       // below can hand control back and let the user switch to another one.
       activatedWorkflow = useWorkflowStore().activeWorkflow ?? undefined
 
-      // The fit above is skipped while App Mode hides the canvas, and a load
-      // can also be superseded mid-flight. Defer it to the next resize that
-      // reports a real size, for this load only.
-      if (this.pendingFitView?.loadId === loadId) {
+      // If the canvas was not visible and we're a fresh load, resize the canvas and fit the view
+      // This fixes switching from app mode to a new graph mode workflow (e.g. load template)
+      if (!canvasVisible && (!workflow || typeof workflow === 'string')) {
         this.canvas.resize()
-        requestAnimationFrame(() => this.flushPendingFitView(this.canvasEl))
+        requestAnimationFrame(() => fitView())
       }
 
       // Drop missing-node entries whose enclosing subgraph is
@@ -2255,7 +2222,6 @@ export class ComfyApp {
         async () => {
           try {
             // false: final destination; no later load republishes the hash.
-            this.beginGraphReplacement()
             useWorkflowService().beforeLoadNewGraph(false)
             await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
           } finally {
@@ -2432,7 +2398,6 @@ export class ComfyApp {
     options: { deferWarnings?: boolean } = {}
   ): Promise<void> {
     // false: no workflow load follows to republish the hash.
-    this.beginGraphReplacement()
     useWorkflowService().beforeLoadNewGraph(false)
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
     this.canvas.setGraph(this.rootGraph)

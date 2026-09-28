@@ -210,19 +210,6 @@ export class CanvasHelper {
     })
   }
 
-  /** Moves the camera well away from all content, for framing regressions. */
-  async parkOffscreen(offset: number, scale: number): Promise<void> {
-    await this.page.evaluate(
-      (camera) => {
-        const { ds } = window.app!.canvas
-        ds.offset[0] = camera.offset
-        ds.offset[1] = camera.offset
-        ds.scale = camera.scale
-      },
-      { offset, scale }
-    )
-  }
-
   async waitForViewToSettle(): Promise<void> {
     await this.page.waitForFunction(
       () =>
