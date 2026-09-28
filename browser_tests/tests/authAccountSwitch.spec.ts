@@ -553,9 +553,9 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
       expect(credentialEvents.indexOf(`session:${ACCOUNT_B.id}`)).toBeLessThan(
         credentialEvents.indexOf(`workspace:${ACCOUNT_B.id}`)
       )
-      await seedIdentitySentinel(page, ACCOUNT_B)
       await page.reload({ waitUntil: 'domcontentloaded' })
       await comfyPage.waitForAppReady()
+      await seedIdentitySentinel(page, ACCOUNT_B)
       await comfyPage.workflow.openPersistedWorkflow(IDENTITY_SENTINELS.b.draft)
       await expect(
         page.getByRole('tab', {
