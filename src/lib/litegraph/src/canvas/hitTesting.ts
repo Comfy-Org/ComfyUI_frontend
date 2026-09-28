@@ -38,8 +38,12 @@ export function queryRenderedLinkSegmentsAtPoint(
   const hits = new Set<LinkSegment>()
   ctx.lineWidth = canvas.connections_width + 7
   try {
-    const layoutHit = layoutStore.queryLinkSegmentAtPoint({ x, y }, ctx)
-    const dpi = Math.max(window.devicePixelRatio, 1)
+    const layoutHit = layoutStore.queryLinkSegmentAtPoint(
+      { x, y },
+      ctx,
+      canvas.dpr
+    )
+    const dpi = canvas.dpr
     for (const segment of renderedPaths) {
       const layoutId =
         segment instanceof Reroute ? layoutHit?.rerouteId : layoutHit?.linkId
