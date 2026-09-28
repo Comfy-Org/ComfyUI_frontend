@@ -8,7 +8,10 @@ import { createI18n } from 'vue-i18n'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 
-import type { AuditLog } from '@/services/customerEventsService'
+import type {
+  AuditLog,
+  useCustomerEventsService
+} from '@/services/customerEventsService'
 import { EventType } from '@/services/customerEventsService'
 
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
@@ -21,8 +24,10 @@ import UsageLogsTable from './UsageLogsTable.vue'
 
 const mockCustomerEventsService = vi.hoisted(() => ({
   getMyEvents: vi.fn(),
-  formatEventType: vi.fn(),
-  getEventSeverity: vi.fn(),
+  formatEventType:
+    vi.fn<ReturnType<typeof useCustomerEventsService>['formatEventType']>(),
+  getEventSeverity:
+    vi.fn<ReturnType<typeof useCustomerEventsService>['getEventSeverity']>(),
   formatAmount: vi.fn(),
   formatDate: vi.fn(),
   hasAdditionalInfo: vi.fn(),
@@ -151,34 +156,22 @@ describe('UsageLogsTable', () => {
       value: mockEventsResponse
     })
     mockBillingReadRail.enabled = false
-    mockCustomerEventsService.formatEventType.mockImplementation(
-      (type: string) => {
-        switch (type) {
-          case EventType.CREDIT_ADDED:
-            return 'Credits Added'
-          case EventType.ACCOUNT_CREATED:
-            return 'Account Created'
-          case EventType.API_USAGE_COMPLETED:
-            return 'API Usage'
-          default:
-            return type
-        }
-      }
-    )
-    mockCustomerEventsService.getEventSeverity.mockImplementation(
-      (type: string) => {
-        switch (type) {
-          case EventType.CREDIT_ADDED:
-            return 'success'
-          case EventType.ACCOUNT_CREATED:
-            return 'info'
-          case EventType.API_USAGE_COMPLETED:
-            return 'warning'
-          default:
-            return 'info'
-        }
-      }
-    )
+    vi.when(mockCustomerEventsService.formatEventType, {
+      onUnmatched: (type) => type
+    })
+      .calledWith(EventType.CREDIT_ADDED)
+      .thenReturn('Credits Added')
+      .calledWith(EventType.ACCOUNT_CREATED)
+      .thenReturn('Account Created')
+      .calledWith(EventType.API_USAGE_COMPLETED)
+      .thenReturn('API Usage')
+    vi.when(mockCustomerEventsService.getEventSeverity, {
+      onUnmatched: () => 'info'
+    })
+      .calledWith(EventType.CREDIT_ADDED)
+      .thenReturn('success')
+      .calledWith(EventType.API_USAGE_COMPLETED)
+      .thenReturn('warning')
     mockCustomerEventsService.formatAmount.mockImplementation(
       (amount: number) => {
         if (!amount) return '0.00'

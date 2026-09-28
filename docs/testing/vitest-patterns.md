@@ -186,6 +186,20 @@ it('handles success', () => {
 })
 ```
 
+### Match mock arguments with `vi.when`
+
+Use [Vitest 5's `vi.when`](https://vitest.dev/guide/recipes/conditional-mocking)
+when a mock returns fixed values for specific arguments. Keep
+`mockImplementation` for calculations and side effects. See
+[`UsageLogsTable.test.ts`](../../src/components/dialog/content/setting/UsageLogsTable.test.ts)
+for typed event-label and severity mappings.
+
+Register behaviors inside the test or `beforeEach`; `mockReset` clears them
+before the next test. Preserve unmatched-call behavior with `onUnmatched`.
+Register exact matches before asymmetric catch-all matchers: Vitest matches
+behaviors in registration order and merges new arguments into an existing
+matching behavior.
+
 ## Testing Event Listeners
 
 When a store registers event listeners at module load time:
