@@ -3,6 +3,7 @@ import { watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { isCloud } from '@/platform/distribution/types'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
   completeWorkflowLogoutTransition,
@@ -21,6 +22,7 @@ export function useStorageScopeLifecycle(): void {
   const { resolvedUserInfo } = useCurrentUser()
   const teamWorkspaceStore = useTeamWorkspaceStore()
   let stopWorkspaceReadinessWatcher: (() => void) | undefined
+  let workspaceInitializationPending = false
 
   function stopPendingWorkspaceReadinessWatcher(): void {
     stopWorkspaceReadinessWatcher?.()
@@ -60,10 +62,14 @@ export function useStorageScopeLifecycle(): void {
     )
   }
 
-  function resetWorkspaceForIdentityReplacement(): boolean {
-    if (!isCloud || getStorageIdentity() === null) return false
-    teamWorkspaceStore.resetForIdentityChange()
-    return true
+  function initializeWorkspaceAfterIdentityChange(): void {
+    if (!workspaceInitializationPending) return
+    workspaceInitializationPending = false
+    void teamWorkspaceStore.initialize().catch((error: unknown) => {
+      reportError(error, {
+        errorType: 'workspace_auth_gate_initialization_failure'
+      })
+    })
   }
 
   watch(
@@ -74,14 +80,16 @@ export function useStorageScopeLifecycle(): void {
 
       stopPendingWorkspaceReadinessWatcher()
       if (isCloud) prepareWorkflowLogoutTransition()
-      const isIdentityReplacement = resetWorkspaceForIdentityReplacement()
+      const isIdentityReplacement = isCloud && getStorageIdentity() !== null
+      if (isIdentityReplacement) {
+        teamWorkspaceStore.resetForIdentityChange()
+        workspaceInitializationPending = true
+      }
       setStorageIdentity(nextIdentity)
       setStorageWorkspaceId(null)
 
       if (!isCloud || nextIdentity === null) return
-      if (isIdentityReplacement) {
-        void teamWorkspaceStore.initialize().catch(() => undefined)
-      }
+      initializeWorkspaceAfterIdentityChange()
       releaseIdentityFenceWhenReady()
     },
     { immediate: true, flush: 'sync' }
