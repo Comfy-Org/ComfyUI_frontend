@@ -22,8 +22,6 @@ import {
   isMarkdownHostElement
 } from './promotedMarkdownHost'
 
-export type { PromotedHostWidgetContext } from './promotedHostPrimitives'
-
 function createPromotedComponentWidget(context: PromotedHostWidgetContext) {
   const { subgraphNode, input, widgetId, sourceWidget } = context
   const widgetStore = useWidgetValueStore()

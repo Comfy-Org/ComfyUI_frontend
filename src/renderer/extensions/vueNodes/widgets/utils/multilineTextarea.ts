@@ -9,6 +9,7 @@ import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 import type { PromotedHostWidgetContext } from './promotedHostPrimitives'
+import { isHostNodeSettled } from './promotedHostPrimitives'
 
 const TRACKPAD_DETECTION_THRESHOLD = 50
 
@@ -118,11 +119,7 @@ export function createPromotedMultilineWidget(
 ): IBaseWidget | undefined {
   const { subgraphNode, input, widgetId, sourceWidget } = context
 
-  // Only materialize once the host node is settled in its graph; clone/configure
-  // run with a transient id and would leak duplicate DOM widgets.
-  const graph = subgraphNode.graph
-  if (!graph || graph.getNodeById(subgraphNode.id) !== subgraphNode)
-    return undefined
+  if (!isHostNodeSettled(subgraphNode)) return undefined
   if (!isDOMWidget(sourceWidget)) return undefined
   if (!(sourceWidget.element instanceof HTMLTextAreaElement)) return undefined
 
