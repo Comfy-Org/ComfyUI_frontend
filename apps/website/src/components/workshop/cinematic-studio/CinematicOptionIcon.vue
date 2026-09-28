@@ -36,8 +36,8 @@ const GRADIENTS = [
     x2: 0,
     y2: 1,
     stops: [
-      'color-mix(in srgb, var(--color-primary-comfy-orange) 55%, var(--color-primary-warm-white))',
-      'color-mix(in srgb, var(--color-primary-comfy-orange) 45%, var(--color-primary-comfy-ink))'
+      'color-mix(in srgb, var(--color-primary-comfy-orange) 45%, var(--color-primary-comfy-canvas))',
+      'color-mix(in srgb, var(--color-primary-comfy-orange) 30%, var(--color-primary-comfy-ink))'
     ]
   },
   {

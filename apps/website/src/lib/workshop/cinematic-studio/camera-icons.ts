@@ -113,7 +113,12 @@ function box(x: number, y: number, w: number, h: number, depth: number) {
   ]
 }
 
-/** A cylinder lying along x with its front face at `front`, facing left. */
+/**
+ * A cylinder lying along x with its front at `front`, facing left. Both ends
+ * are elliptical, so bands stacked on a barrel read as turned metal rather
+ * than blocks. A focus ring (tone `ring`) is knurled; a barrel carries a lit
+ * edge and a white index mark.
+ */
 function cylinder(
   front: number,
   back: number,
@@ -123,32 +128,36 @@ function cylinder(
 ) {
   const curve = r * 0.38
   const width = back - front
-  const knurled = tone === 'ring' && width <= 10
-  const grip = Math.max(3, Math.floor(width / 1.3))
-  const detail = knurled
-    ? Array.from({ length: grip }, (_, index) => {
-        const x = front + ((index + 0.5) * width) / grip
-        return shape(
-          `M${num(x)} ${num(cy - r + 1.2)}V${num(cy + r - 1.2)}`,
-          'knurl'
-        )
-      })
-    : [
-        shape(
-          `M${num(front + width * 0.7)} ${num(cy - r)}v${num(r * 0.35)}`,
-          'tick'
-        )
-      ]
+  const outline = flat(
+    `M${num(front)} ${num(cy - r)}H${num(back)}a${num(curve)} ${num(r)} 0 0 1 0 ${num(2 * r)}H${num(front)}a${num(curve)} ${num(r)} 0 0 1 0 ${num(-2 * r)}Z`,
+    tone
+  )
+  const edge = shape(
+    `M${num(front)} ${num(cy - r)}a${num(curve)} ${num(r)} 0 0 0 0 ${num(2 * r)}`,
+    'highlightFaint'
+  )
+  if (tone === 'ring') {
+    const grip = Math.max(3, Math.floor((width - 1.6) / 1.1))
+    const knurls = Array.from({ length: grip }, (_, index) => {
+      const x = front + 0.8 + ((index + 0.5) * (width - 1.6)) / grip
+      return shape(
+        `M${num(x)} ${num(cy - r + 1.8)}V${num(cy + r - 1.8)}`,
+        'knurl'
+      )
+    })
+    return [outline, edge, ...knurls]
+  }
   return [
+    outline,
+    edge,
     shape(
-      `M${num(front)} ${num(cy - r)}H${num(back)}a${num(curve)} ${num(r)} 0 0 1 0 ${num(2 * r)}H${num(front)}Z`,
-      tone
-    ),
-    shape(
-      `M${num(front)} ${num(cy - r * 0.62)}H${num(back + curve * 0.6)}`,
+      `M${num(front + curve)} ${num(cy - r * 0.5)}H${num(back + curve * 0.5)}`,
       'highlightSoft'
     ),
-    ...detail
+    shape(
+      `M${num(back - Math.min(4, width * 0.25))} ${num(cy - r + 0.9)}v${num(r * 0.22)}`,
+      'tick'
+    )
   ]
 }
 
