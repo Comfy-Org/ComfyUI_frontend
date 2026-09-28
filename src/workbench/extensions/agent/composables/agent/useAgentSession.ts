@@ -932,7 +932,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function onStatus(live: boolean): void {
     if (!live) {
-      if (connection === 'live') connection = 'dropped'
+      connection = 'dropped'
       return
     }
     const reconnected = connection === 'dropped'
