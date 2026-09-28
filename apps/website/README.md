@@ -82,6 +82,24 @@ approved translation is available. The page headers and
 `LOCALE_INVARIANT_ROUTE_KEYS` document the English-only route policies;
 desktop privacy retains its localized route.
 
+Use `pnpm locale:check` inside this package for an offline preflight, or
+`pnpm locale` with `OPENAI_API_KEY` to translate eligible missing or changed
+copy. The equivalent repository-root commands are `pnpm locale:website:check`
+and `pnpm locale:website`.
+
+The shared pipeline records English source blobs in `.source-manifest.json`
+and generated-value hashes in `.machine-translations.json`. Existing values
+without a matching machine hash are reviewed copy, including intentional
+empty strings. They survive English changes. Editing a generated value makes
+it reviewed; to approve an unchanged generated value, remove its entry from
+`.machine-translations.json`. Source-key deletion removes either ownership
+kind. Review catalog and metadata changes together.
+
+Legal namespaces and opted-out pages are excluded from generation. Reviewed
+translations there remain intact; missing or machine-owned excluded values
+fall back to English. New generation does not activate routes or indexing.
+The app target keeps its existing policy.
+
 ## Ashby careers integration
 
 `/careers` and `/zh-CN/careers` are rendered from Ashby's public job board

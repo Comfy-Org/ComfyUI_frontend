@@ -13,8 +13,12 @@ import { fileURLToPath } from 'node:url'
 
 import type { ResponseUsage } from 'openai/resources/responses/responses'
 
-import type { OutputLocale, TranslationPipelineConfig } from './config'
-import { translationPipelineConfig } from './config'
+import type {
+  OutputLocale,
+  TranslationPipelineConfig,
+  TranslationTarget
+} from './config'
+import { translationTargets } from './config'
 import type {
   LocaleChanges,
   LocaleLeafEntry,
@@ -46,13 +50,19 @@ import {
   mapWithConcurrency,
   translateLocaleItems
 } from './translate'
+import {
+  auditRetainedTranslations,
+  machineTranslationsSchema,
+  partitionOwnedLocale,
+  projectLocale,
+  translationDigest
+} from './translation-ownership'
 import { isMainModule } from '../isMainModule'
 
 interface SourceManifest {
   files: Record<string, string>
-  // Transitional baseline: leaf path keys per entry file whose committed
-  // translations violated token validation when the manifest was recorded.
-  // The check exempts them; a successful locale run heals and drops them.
+  // Transitional baseline: exact locale-scoped validation errors per entry
+  // file. A successful locale run heals and drops them.
   knownViolations?: Record<string, string[]>
   version: 1
 }
@@ -64,7 +74,7 @@ interface SourcePlan {
   invalidated: Set<string>
   previousLeafCount: number
   degraded: boolean
-  knownViolationKeys: ReadonlySet<string>
+  knownViolations: ReadonlySet<string>
 }
 
 interface LocaleFileState {
@@ -72,6 +82,8 @@ interface LocaleFileState {
   plan: SourcePlan
   outputFile: string
   existing: LocaleObject
+  source: LocaleObject
+  retained: ReadonlyMap<string, LocaleTrackedLeaf>
   pendingLeaves: LocaleLeafEntry[]
   strayPaths: string[][]
 }
@@ -301,12 +313,24 @@ function orphanedOutputFiles(
 function loadLocaleFileStates(
   config: TranslationPipelineConfig,
   outputDir: string,
-  plans: readonly SourcePlan[]
+  plans: readonly SourcePlan[],
+  machineFiles: Readonly<Record<string, Readonly<Record<string, string>>>>
 ): LocaleFileState[] {
   return config.outputLocales.flatMap((locale) =>
     plans.map((plan) => {
       const outputFile = join(outputDir, locale.code, plan.filename)
       const existing = existsSync(outputFile) ? readLocale(outputFile) : {}
+      const { source, retained } = config.preserveReviewedTranslations
+        ? partitionOwnedLocale(
+            plan.source,
+            existing,
+            machineFiles[`${locale.code}/${plan.filename}`] ?? {},
+            config.excludedKeyPrefixes ?? []
+          )
+        : {
+            source: plan.source,
+            retained: new Map<string, LocaleTrackedLeaf>()
+          }
       const sourceLeafKeys = new Set(collectLeaves(plan.source).keys())
       const strayPaths = [...collectLeaves(existing).values()]
         .filter((leaf) => !sourceLeafKeys.has(pathKey(leaf.path)))
@@ -316,11 +340,14 @@ function loadLocaleFileStates(
         plan,
         outputFile,
         existing,
+        source,
+        retained,
         pendingLeaves: collectPendingLeaves(
-          plan.source,
+          source,
           existing,
           plan.invalidated,
-          leafTokensDiffer
+          (source, target) =>
+            leafTokensDiffer(source, target, config.strictProtectedTokens)
         ),
         strayPaths
       }
@@ -350,7 +377,19 @@ export function formatUsageSummary(
   return `OpenAI usage: ${requestCount} HTTP requests for ${usages.length} responses; ${inputTokens} input, ${outputTokens} output (${reasoningTokens} reasoning), ${totalTokens} total tokens.`
 }
 
-function reportCheck(states: readonly LocaleFileState[]): number {
+function knownLocaleViolations(state: LocaleFileState): ReadonlySet<string> {
+  const localePrefix = `${state.locale.code}: `
+  return new Set(
+    [...state.plan.knownViolations]
+      .filter((error) => error.startsWith(localePrefix))
+      .map((error) => error.slice(localePrefix.length))
+  )
+}
+
+function reportCheck(
+  states: readonly LocaleFileState[],
+  strictProtectedTokens: boolean
+): number {
   let pendingTotal = 0
   let strayTotal = 0
   const auditErrors: string[] = []
@@ -375,15 +414,28 @@ function reportCheck(states: readonly LocaleFileState[]): number {
     }
     // Skip keys queued because the English source changed (comparing an old
     // translation against new English is meaningless) and baseline violations
-    // recorded in the manifest; a key newly corrupted beyond those must fail
-    // the check. Degraded plans (recorded source unavailable) cannot tell
-    // staleness from corruption, so they skip the audit.
-    if (state.plan.degraded) continue
-    for (const error of auditProtectedLiterals(
-      state.plan.source,
-      state.existing,
-      new Set([...state.plan.invalidated, ...state.plan.knownViolationKeys])
-    )) {
+    // recorded in the manifest; an error beyond those must fail the check.
+    // Degraded plans (recorded source unavailable) cannot tell staleness from
+    // corruption, so they skip the audit.
+    const knownViolations = knownLocaleViolations(state)
+    const machineErrors = state.plan.degraded
+      ? []
+      : auditProtectedLiterals(
+          state.source,
+          state.existing,
+          state.plan.invalidated,
+          strictProtectedTokens,
+          knownViolations
+        )
+    for (const error of [
+      ...machineErrors,
+      ...auditRetainedTranslations(
+        state.plan.source,
+        state.retained,
+        strictProtectedTokens,
+        knownViolations
+      )
+    ]) {
       auditErrors.push(`${label}: ${error}`)
     }
   }
@@ -399,15 +451,44 @@ function reportCheck(states: readonly LocaleFileState[]): number {
   return auditErrors.length > 0 ? 1 : 0
 }
 
+function isTranslationTarget(
+  name: string | undefined
+): name is TranslationTarget {
+  return name !== undefined && Object.hasOwn(translationTargets, name)
+}
+
+/** `--target <name>` or `--target=<name>` selects which catalogs to translate; the app is the default. */
+export function resolveTargetConfig(
+  argv: readonly string[]
+): TranslationPipelineConfig {
+  const flagIndex = argv.indexOf('--target')
+  const inlineTarget = argv.find((arg) => arg.startsWith('--target='))
+  const name =
+    inlineTarget?.slice('--target='.length) ??
+    (flagIndex === -1 ? 'app' : argv.at(flagIndex + 1))
+  if (!isTranslationTarget(name)) {
+    throw new Error(
+      `Unknown translation target "${name ?? ''}"; expected one of: ${Object.keys(translationTargets).join(', ')}.`
+    )
+  }
+  return translationTargets[name]
+}
+
 async function run(argv: readonly string[]): Promise<void> {
   const check = argv.includes('--check')
   const scriptDir = dirname(fileURLToPath(import.meta.url))
   const repoRoot = resolve(scriptDir, '../..')
-  const config = translationPipelineConfig
+  const config = resolveTargetConfig(argv)
   const entryDir = resolve(repoRoot, config.entry)
   const outputDir = resolve(repoRoot, config.output)
   const manifestFile = join(outputDir, '.source-manifest.json')
   const manifest = loadManifest(manifestFile)
+  const machineFile = join(outputDir, '.machine-translations.json')
+  const machineManifest = config.preserveReviewedTranslations
+    ? machineTranslationsSchema.parse(
+        JSON.parse(readFileSync(machineFile, 'utf8'))
+      )
+    : undefined
   const filenames = sourceFiles(entryDir)
 
   const plans: SourcePlan[] = filenames.map((filename) => {
@@ -442,7 +523,7 @@ async function run(argv: readonly string[]): Promise<void> {
       ),
       previousLeafCount: collectLeaves(previous).size,
       degraded: recorded === undefined,
-      knownViolationKeys: new Set(manifest.knownViolations?.[filename] ?? [])
+      knownViolations: new Set(manifest.knownViolations?.[filename] ?? [])
     }
   })
 
@@ -455,7 +536,12 @@ async function run(argv: readonly string[]): Promise<void> {
     if (summary) print(summary)
   }
 
-  const states = loadLocaleFileStates(config, outputDir, plans)
+  const states = loadLocaleFileStates(
+    config,
+    outputDir,
+    plans,
+    machineManifest?.files ?? {}
+  )
   const orphans = orphanedOutputFiles(outputDir, config, filenames)
 
   const translationPlans = new Map(
@@ -496,7 +582,7 @@ async function run(argv: readonly string[]): Promise<void> {
         `${relative(repoRoot, orphan)}: the English source file was removed; this locale file will be deleted`
       )
     }
-    process.exitCode = reportCheck(states)
+    process.exitCode = reportCheck(states, config.strictProtectedTokens)
     return
   }
 
@@ -514,6 +600,7 @@ async function run(argv: readonly string[]): Promise<void> {
         fetchFn: counter.fetch,
         model: config.model,
         reasoningEffort: config.reasoningEffort,
+        translationContext: config.translationContext,
         glossary: config.glossary,
         maxTruncationSplitDepth: config.maxTruncationSplitDepth,
         onUsage: (usage) => {
@@ -530,7 +617,11 @@ async function run(argv: readonly string[]): Promise<void> {
     async (
       state
     ): Promise<
-      | { state: LocaleFileState; output: LocaleObject }
+      | {
+          state: LocaleFileState
+          output: LocaleObject
+          generated: LocaleObject
+        }
       | { state: LocaleFileState; failure: string }
     > => {
       try {
@@ -550,13 +641,24 @@ async function run(argv: readonly string[]): Promise<void> {
           plan,
           translations
         )
-        const output = rebuildLocale(
-          state.plan.source,
+        const generated = rebuildLocale(
+          state.source,
           state.existing,
           state.plan.invalidated,
           leafTranslations
         )
-        return { state, output }
+        const output = config.preserveReviewedTranslations
+          ? projectLocale(
+              state.plan.source,
+              new Map([
+                ...[...collectLeaves(generated)].map(
+                  ([key, leaf]) => [key, leaf.value] as const
+                ),
+                ...state.retained
+              ])
+            )
+          : generated
+        return { state, output, generated }
       } catch (error) {
         return {
           state,
@@ -588,12 +690,32 @@ async function run(argv: readonly string[]): Promise<void> {
   const rebuilt = outcomes.flatMap((outcome) =>
     'output' in outcome ? [outcome] : []
   )
-  for (const { state, output } of rebuilt) {
-    for (const error of validateLocale(
+  const retainedViolations = new Map<string, string[]>()
+  for (const { state, generated } of rebuilt) {
+    const known = knownLocaleViolations(state)
+    const stillKnown = auditRetainedTranslations(
       state.plan.source,
-      output,
-      state.plan.changes
-    )) {
+      state.retained,
+      config.strictProtectedTokens
+    ).filter((error) => known.has(error))
+    retainedViolations.set(state.plan.filename, [
+      ...(retainedViolations.get(state.plan.filename) ?? []),
+      ...stillKnown.map((error) => `${state.locale.code}: ${error}`)
+    ])
+    for (const error of [
+      ...validateLocale(
+        state.source,
+        generated,
+        state.plan.changes,
+        config.strictProtectedTokens
+      ),
+      ...auditRetainedTranslations(
+        state.plan.source,
+        state.retained,
+        config.strictProtectedTokens,
+        known
+      )
+    ]) {
       addFailure(
         state.plan.filename,
         `${state.locale.code}/${state.plan.filename}: ${error}`
@@ -633,16 +755,45 @@ async function run(argv: readonly string[]): Promise<void> {
         return hash ? [[filename, hash] as const] : []
       })
     ),
-    // A completed file's translations were fully revalidated, so its baseline
-    // violations are healed and dropped; failed files keep theirs
+    // A completed file's generated translations were fully revalidated, so
+    // only baseline violations that retained reviewed copy still has survive;
+    // failed files keep their whole baseline
     Object.fromEntries(
       filenames.flatMap((filename) => {
-        if (completedFilenames.has(filename)) return []
-        const keys = manifest.knownViolations?.[filename]
-        return keys && keys.length > 0 ? [[filename, keys] as const] : []
+        const errors = completedFilenames.has(filename)
+          ? retainedViolations.get(filename)?.toSorted()
+          : manifest.knownViolations?.[filename]
+        return errors && errors.length > 0 ? [[filename, errors] as const] : []
       })
     )
   )
+
+  if (machineManifest) {
+    const previous = new Map(Object.entries(machineManifest.files))
+    const updated = new Map(
+      rebuilt
+        .filter(({ state }) => completedFilenames.has(state.plan.filename))
+        .map(({ state, generated }) => [
+          `${state.locale.code}/${state.plan.filename}`,
+          Object.fromEntries(
+            [...collectLeaves(generated)].map(([key, leaf]) => [
+              key,
+              translationDigest(leaf.value)
+            ])
+          )
+        ])
+    )
+    const files = Object.fromEntries(
+      states.map((state) => {
+        const key = `${state.locale.code}/${state.plan.filename}`
+        return [key, updated.get(key) ?? previous.get(key) ?? {}]
+      })
+    )
+    writeFileSync(
+      machineFile,
+      `${JSON.stringify({ version: 1, files }, null, 2)}\n`
+    )
+  }
 
   if (failuresByFile.size > 0) {
     const details = [...failuresByFile.values()].flat()
