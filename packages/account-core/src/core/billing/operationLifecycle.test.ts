@@ -881,6 +881,31 @@ describe('createBillingOperationLifecycle', () => {
       })
     })
 
+    it("announces the backend's pending operation with its served link even when the operation read fails", async () => {
+      const { lifecycle, calls } = harness({
+        status: statusSnapshot({
+          pending_billing_op_id: 'op-1',
+          pending_billing_op_type: 'subscription',
+          action_url: 'https://billing.example/continue'
+        }),
+        answers: [httpStatus(503)]
+      })
+      const announced: BillingOperationState[] = []
+      lifecycle.subscribe((state) => announced.push(state))
+
+      await lifecycle.recover()
+      await flush()
+
+      expect(calls.map((call) => call.route)).toEqual([operationRoute('op-1')])
+      expect(announced).toEqual([
+        expect.objectContaining({
+          id: 'op-1',
+          phase: 'pending',
+          actionUrl: 'https://billing.example/continue'
+        })
+      ])
+    })
+
     it('resumes from the pointer when the status read is unreachable', async () => {
       const { lifecycle } = harness({
         storage: storageWith(POINTER),
