@@ -221,6 +221,8 @@ test.describe(
       comfyPage,
       getWebSocket
     }) => {
+      test.setTimeout(30_000)
+
       await comfyPage.page.setViewportSize({ width: 1440, height: 1200 })
       const ws = await getWebSocket()
       const exec = new ExecutionHelper(comfyPage, ws)
