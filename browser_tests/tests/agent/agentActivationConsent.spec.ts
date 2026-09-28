@@ -16,6 +16,7 @@ test.describe(
     })
 
     test('opens before consent and resumes the held first send exactly once', async ({
+      agentConsentSave,
       agentConsentWrites,
       agentPanel,
       comfyPage,
@@ -37,13 +38,21 @@ test.describe(
       await expect(dialog).toBeVisible()
       expect(postedMessages).toHaveLength(0)
 
+      let releaseConsentSave = () => {}
+      agentConsentSave.pending = new Promise<void>((resolve) => {
+        releaseConsentSave = resolve
+      })
       await dialog
         .getByRole('button', { name: enMessages.agent.consent.accept })
         .click()
 
       await expect.poll(() => agentConsentWrites).toEqual([true])
-      await expect.poll(() => postedMessages).toHaveLength(1)
-      await expect.poll(() => postedMessages).toHaveLength(1)
+      expect(postedMessages).toHaveLength(0)
+      releaseConsentSave()
+
+      await expect(dialog).toHaveCount(0)
+      await expect(agentPanel.composer).toHaveText('')
+      expect(postedMessages).toHaveLength(1)
     })
 
     test('keeps a cancelled held draft unsent and lets the user retry', async ({
