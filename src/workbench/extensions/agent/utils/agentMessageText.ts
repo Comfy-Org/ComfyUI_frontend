@@ -38,11 +38,16 @@ export function agentMessageText(
       part.type === 'text' ? part.text : `@[Workflow: ${part.reference.name}]`
     )
     .join('')
+  const attachmentNames = new Set(
+    [...text.matchAll(/@\[(?:Image|Video|Audio|3D|File): ([^\]]+)\]/g)].map(
+      (match) => match[1]
+    )
+  )
   const context = [
     ...(message.tags ?? []).map(nodeReferenceText),
-    ...(message.attachments ?? []).map(({ name, kind }) =>
-      assetReferenceText(name, kind)
-    )
+    ...(message.attachments ?? [])
+      .filter(({ name }) => !attachmentNames.has(name))
+      .map(({ name, kind }) => assetReferenceText(name, kind))
   ].filter((label) => !text.includes(label))
   return [text, ...new Set(context)].filter(Boolean).join('\n')
 }

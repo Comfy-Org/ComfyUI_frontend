@@ -167,8 +167,9 @@ describe('UserMessage', () => {
         url: expect.stringContaining(
           '/view?filename=upload_clip.mp4&type=input'
         ),
-        filename: 'clip.mp4',
-        kind: 'video'
+        filename: 'upload_clip.mp4',
+        kind: 'video',
+        label: 'clip.mp4'
       }
     ])
     expect(screen.getByText('use these')).toBeInTheDocument()
@@ -283,8 +284,9 @@ describe('UserMessage', () => {
         url: expect.stringContaining(
           '/view?filename=upload_song.mp3&type=input'
         ),
-        filename: 'song.mp3',
-        kind: 'audio'
+        filename: 'upload_song.mp3',
+        kind: 'audio',
+        label: 'song.mp3'
       }
     ])
     expect(screen.getByText('notes.md')).toBeInTheDocument()

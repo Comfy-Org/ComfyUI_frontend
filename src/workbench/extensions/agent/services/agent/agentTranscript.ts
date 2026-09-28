@@ -471,7 +471,10 @@ export function normalizeAgentTranscript(
   const turnOrder: TurnId[] = []
   const seenTurns = new Set<TurnId>()
   const turnIdsByRowId = new Map<string, TurnId>()
-  const streamingTurnIds = new Set<TurnId>()
+  const latestAssistantStatus = new Map<
+    TurnId,
+    AgentMessages[number]['status']
+  >()
   let pending: NormalizedAgentTranscript['pending']
   let latestWorkflowId: string | undefined
 
@@ -492,7 +495,7 @@ export function normalizeAgentTranscript(
         ) ?? latestWorkflowId
     }
     if (row.role === 'assistant') {
-      if (row.status === 'streaming') streamingTurnIds.add(turnId)
+      latestAssistantStatus.set(turnId, row.status)
       pending = recordAssistantRow(row, turnId, text, assistants) ?? pending
     }
   }
@@ -502,6 +505,11 @@ export function normalizeAgentTranscript(
     message.streaming = message === pending?.message
     return message
   })
+  const streamingTurnIds = new Set(
+    [...latestAssistantStatus]
+      .filter(([, status]) => status === 'streaming')
+      .map(([turnId]) => turnId)
+  )
 
   return {
     messages,

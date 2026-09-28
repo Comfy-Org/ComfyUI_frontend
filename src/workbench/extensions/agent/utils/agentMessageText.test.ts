@@ -47,6 +47,22 @@ describe('readable agent message', () => {
     ).toBe(text)
   })
 
+  it('does not duplicate an inline attachment when its resolved kind differs', () => {
+    const text = 'Use @[File: extensionless-ref].'
+    expect(
+      agentMessageText({
+        text,
+        attachments: [
+          {
+            name: 'extensionless-ref',
+            ref: 'extensionless-ref',
+            kind: 'image'
+          }
+        ]
+      })
+    ).toBe(text)
+  })
+
   it('copies context-only messages and preserves ordinary prompt whitespace', () => {
     expect(agentMessageText({ text: '', tags: ['Load Image #2'] })).toBe(
       '@[Node: Load Image #2]'

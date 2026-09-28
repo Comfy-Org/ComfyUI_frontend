@@ -81,6 +81,16 @@ describe('normalizeAgentTranscript', () => {
     )
   })
 
+  it('uses the latest assistant row status for a multi-row turn', () => {
+    const streaming = row(1, 'assistant', 'turn-a', 'partial', 'row-streaming')
+    streaming.status = 'streaming'
+    const terminal = row(2, 'assistant', 'turn-a', 'complete', 'row-terminal')
+
+    const transcript = normalizeAgentTranscript([streaming, terminal])
+
+    expect(transcript.streamingTurnIds).not.toContain(toTurnId('turn-a'))
+  })
+
   it('keeps message identity stable when persisted row ids change', () => {
     const first = normalizeAgentTranscript([
       row(1, 'user', 'turn-a', 'Prompt', 'user-row-v1'),

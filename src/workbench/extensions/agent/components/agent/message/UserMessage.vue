@@ -142,11 +142,25 @@ function attachmentUrl(item: UserAttachment): string | undefined {
   return api.apiURL(`/view?filename=${encodeURIComponent(item.ref)}&type=input`)
 }
 
+function replyAssetIdentity(
+  item: UserAttachment
+): Pick<ReplyAsset, 'filename' | 'label'> {
+  const filename = item.ref ?? item.name
+  return {
+    filename,
+    label: filename === item.name ? undefined : item.name
+  }
+}
+
 function gridAsset(item: UserAttachment): ReplyAsset | undefined {
   const kind = item.kind ?? getMediaTypeFromFilename(item.name)
   const url = attachmentUrl(item)
   if (!url || !isGridKind(kind)) return undefined
-  return { url, filename: item.name, kind }
+  return {
+    url,
+    kind,
+    ...replyAssetIdentity(item)
+  }
 }
 
 const splitAttachments = computed(() => {

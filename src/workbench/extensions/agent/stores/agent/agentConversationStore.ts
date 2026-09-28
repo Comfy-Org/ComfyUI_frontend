@@ -98,6 +98,7 @@ export const useAgentConversationStore = defineStore(
       string,
       Map<TurnId, Map<string, string>>
     >()
+    const maxRememberedAttachmentThreads = 50
 
     function rememberAttachmentName(
       turnId: TurnId,
@@ -110,7 +111,13 @@ export const useAgentConversationStore = defineStore(
       const names = turns.get(turnId) ?? new Map()
       names.set(ref, name)
       turns.set(turnId, names)
+      // Refresh insertion order so the outer map doubles as a small LRU.
+      attachmentNamesByThread.delete(thread)
       attachmentNamesByThread.set(thread, turns)
+      if (attachmentNamesByThread.size > maxRememberedAttachmentThreads) {
+        const oldest = attachmentNamesByThread.keys().next().value
+        if (oldest !== undefined) attachmentNamesByThread.delete(oldest)
+      }
     }
     const settledActiveTransports = new Set<AgentEventTransport>()
     const backgroundTurns = new Map<string, BackgroundTurn>()
