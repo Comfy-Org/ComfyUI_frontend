@@ -1730,12 +1730,6 @@ describe('useAgentSession (v1 composition root)', () => {
   })
 
   it('(g22) a settlement failure after the fetch is reported, not floated as an unhandled rejection', async () => {
-    // `onStatus` floats the recovery job (`void reconcileTurn(turn)`), so a
-    // rethrow past the fetch has no rejection owner: it becomes a global
-    // `unhandledrejection` the session never sees and telemetry files as an
-    // uncaught error rather than an agent failure. `getMessages` already maps
-    // its own failures onto `TurnOutcome`, so the remaining sources are the
-    // settlement calls — here an unavailable `localStorage` implementation.
     const storageFailure = new Error('localStorage is unavailable')
     vi.spyOn(localStorage, 'removeItem').mockImplementation((key: string) => {
       if (key === StorageKeys.agentThread('personal')) throw storageFailure
