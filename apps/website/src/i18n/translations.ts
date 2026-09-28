@@ -4329,26 +4329,26 @@ Enterprise`
   'agentPage.hero.titleLine1': { en: 'Comfy Agent:', 'zh-CN': 'Comfy Agent：' },
   'agentPage.hero.titleLine2': {
     en: 'The first agent for craft',
-    'zh-CN': '为创作而生的第一个智能体'
+    'zh-CN': '为与你并肩创作而生'
   },
   'agentPage.hero.subtitle': {
     en: 'Describe what you want right inside ComfyUI. It plans, builds and runs workflows. Editing the canvas while you work, it crafts side by side with you.',
     'zh-CN':
-      '直接在 ComfyUI 里描述你想要什么。它会规划、构建并运行工作流。你在编辑画布的同时，它与你并肩创作。'
+      '请直接在 ComfyUI 里描述你的想法，Comfy Agent 会规划、构建并运行工作流，还能与你同时编辑画布，互不干扰。'
   },
   'agentPage.cta': { en: 'Try Comfy Agent', 'zh-CN': '试用 Comfy Agent' },
-  'agentPage.capabilities.eyebrow': { en: 'The agent', 'zh-CN': '智能体' },
+  'agentPage.capabilities.eyebrow': { en: 'The agent', 'zh-CN': 'Agent' },
   'agentPage.capabilities.heading': {
     en: 'Your teammate inside ComfyUI',
-    'zh-CN': '你在 ComfyUI 里的队友'
+    'zh-CN': 'ComfyUI 界面里的队友'
   },
   'agentPage.capabilities.1.title': {
     en: 'Workflow Master',
-    'zh-CN': '工作流大师'
+    'zh-CN': '工作流专家'
   },
   'agentPage.capabilities.1.bullet.1': {
     en: 'Curated knowledge for model recommendations and node selection.',
-    'zh-CN': '精选知识库，用于推荐模型和选择节点。'
+    'zh-CN': '精选知识库，用于推荐模型和选择节点'
   },
   'agentPage.capabilities.1.bullet.2': {
     en: 'Builds, edits, explains, and debugs workflows',
@@ -4368,7 +4368,7 @@ Enterprise`
   },
   'agentPage.capabilities.2.bullet.2': {
     en: 'References assets or nodes directly from the graph or library',
-    'zh-CN': '直接从图表或素材库中引用资产或节点'
+    'zh-CN': '直接从画布或素材库中引用资产或节点'
   },
   'agentPage.capabilities.2.bullet.3': {
     en: 'Understands assets visually. It sees what you see',
@@ -4376,7 +4376,7 @@ Enterprise`
   },
   'agentPage.capabilities.3.title': {
     en: 'Vibe Crafting',
-    'zh-CN': '氛围创作'
+    'zh-CN': 'Vibe Crafting'
   },
   'agentPage.capabilities.3.bullet.1': {
     en: 'Builds any custom nodes on local Comfy',
@@ -4423,7 +4423,7 @@ Enterprise`
   },
   'agentPage.usecases.brief.1.title': {
     en: 'VFX: isolate, mask, and refine',
-    'zh-CN': '视效：抠像、蒙版与精修'
+    'zh-CN': 'VFX特效：抠像、蒙版与精修'
   },
   'agentPage.usecases.brief.1.description': {
     en: 'Take a shot from image to compositing passes. Isolate the subject, generate masks, and work with depth and normals in one workflow.',
@@ -4433,7 +4433,7 @@ Enterprise`
   'agentPage.usecases.brief.1.tag': { en: 'VFX', 'zh-CN': '视效' },
   'agentPage.usecases.brief.1.ariaLabel': {
     en: 'VFX: isolate, mask, and refine — by Doug Hogan',
-    'zh-CN': '视效：抠像、蒙版与精修 — 作者：Doug Hogan'
+    'zh-CN': 'VFX特效：抠像、蒙版与精修 — 作者：Doug Hogan'
   },
   'agentPage.usecases.brief.2.byline': {
     en: 'By shanef3d',
@@ -4441,7 +4441,7 @@ Enterprise`
   },
   'agentPage.usecases.brief.2.title': {
     en: 'Product imagery, from brief to campaign',
-    'zh-CN': '产品图片：从需求到整场营销活动'
+    'zh-CN': '高端广告：从灵感到完整营销方案'
   },
   'agentPage.usecases.brief.2.description': {
     en: 'Build a product scene with precision in Blender. Explore rendering, lighting, materials, and composition, then refine the details on the canvas.',
@@ -4451,11 +4451,15 @@ Enterprise`
   'agentPage.usecases.brief.2.tag': { en: 'Marketing', 'zh-CN': '营销' },
   'agentPage.usecases.brief.2.ariaLabel': {
     en: 'Product imagery, from brief to campaign — by shanef3d',
-    'zh-CN': '产品图片：从需求到整场营销活动 — 作者：shanef3d'
+    'zh-CN': '高端广告：从灵感到完整营销方案 — 作者：shanef3d'
   },
-  'agentPage.difference.heading': {
-    en: 'Every result is a workflow, not just an asset.',
-    'zh-CN': '每一个结果都是一条工作流，而不仅仅是一个素材文件。'
+  'agentPage.difference.headingLine1': {
+    en: 'Every result is a workflow, not',
+    'zh-CN': '每一个结果都是一条工作流，'
+  },
+  'agentPage.difference.headingLine2': {
+    en: 'just an asset.',
+    'zh-CN': '而不仅仅是一个素材文件。'
   },
   'agentPage.difference.body': {
     en: 'Everywhere else, you get the output file. With ComfyUI, Comfy Agent hands you the pipeline that made it: every node, seed, sampler, and model. Reuse it at any time.',
@@ -4477,7 +4481,7 @@ Enterprise`
   'agentPage.start.cloud.body': {
     en: 'Try on Comfy Cloud to get free tokens. No setup needed. The agent is there when you log in. You can start with all your saved workflows and assets.',
     'zh-CN':
-      '在 Comfy Cloud 上试用即可获得免费代币，无需任何配置。登录后智能体就在那里，你可以直接用上已保存的所有工作流和素材。'
+      '在 Comfy Cloud 上领取免费对话次数试用，无需任何配置。登录后智能体就在那里，你可以直接用上已保存的所有工作流和素材。'
   },
   'agentPage.start.cloud.noAccount': {
     en: 'No account yet?',
@@ -4499,7 +4503,7 @@ Enterprise`
   },
   'agentPage.comparison.heading': {
     en: 'Which one should I use?',
-    'zh-CN': '我该用哪一个？'
+    'zh-CN': '如何选择'
   },
   'agentPage.comparison.featureSr': { en: 'Feature', 'zh-CN': '功能' },
   'agentPage.comparison.colAgent': {
@@ -4596,7 +4600,7 @@ Enterprise`
   },
   'agentPage.faq.2.q': {
     en: 'What model powers it?',
-    'zh-CN': '它由什么模型驱动？'
+    'zh-CN': '它底层是什么语言模型。'
   },
   'agentPage.faq.2.a': {
     en: 'Frontier models by Anthropic. We always provide the strongest we can offer for the job. Choices for switching LLMs is on the way. What they lack alone, the agent adds: full context of your workflow, your errors, and Comfy itself.',
