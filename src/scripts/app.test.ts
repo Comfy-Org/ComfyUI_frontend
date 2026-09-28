@@ -501,12 +501,14 @@ describe('ComfyApp', () => {
           fitView
         })
 
-        let releaseFirstLoad = () => {}
-        const firstLoadReachedHook = new Promise<void>((resolveReached) => {
+        // Gated on beforeLoadGraph, which is awaited before the fit is armed,
+        // so the superseded load is still upstream of its own arming point.
+        let releaseSuperseded = () => {}
+        const supersededReachedHook = new Promise<void>((resolveReached) => {
           const gate = new Promise<void>((release) => {
-            releaseFirstLoad = () => release()
+            releaseSuperseded = () => release()
           })
-          mockWorkflowService.afterLoadNewGraph.mockImplementationOnce(
+          mockExtensionService.invokeExtensionsAsync.mockImplementationOnce(
             async () => {
               resolveReached()
               await gate
@@ -514,7 +516,9 @@ describe('ComfyApp', () => {
           )
         })
 
-        // The superseded load would fit; the load that replaces it would not.
+        // The two loads fit differently: a template always calls through to
+        // litegraph, while a workflow with a saved viewport restores it and
+        // measures instead. That is what identifies the closure that ran.
         const supersededLoad = app.loadGraphData(
           createWorkflowGraphData(),
           true,
@@ -522,21 +526,24 @@ describe('ComfyApp', () => {
           'superseded',
           { openSource: 'template' }
         )
-        await firstLoadReachedHook
-        await app.loadGraphData(
-          createWorkflowGraphData(),
-          true,
-          false,
-          'winner'
-        )
+        await supersededReachedHook
 
-        releaseFirstLoad()
+        const winnerData = createWorkflowGraphData()
+        winnerData.extra = { ds: { offset: [7, 9], scale: 0.25 } }
+        await app.loadGraphData(winnerData, true, true, 'winner')
+
+        releaseSuperseded()
         await supersededLoad
 
         canvasEl.width = 1600
         canvasEl.height = 900
-        Reflect.get(app, 'flushPendingFitView')?.call(app, canvasEl)
+        const flushPendingFitView = Reflect.get(app, 'flushPendingFitView') as (
+          canvas: HTMLCanvasElement
+        ) => void
+        expect(flushPendingFitView).toBeInstanceOf(Function)
+        flushPendingFitView.call(app, canvasEl)
 
+        expect(app.canvas.ds.computeVisibleArea).toHaveBeenCalled()
         expect(fitView).not.toHaveBeenCalled()
       })
     })

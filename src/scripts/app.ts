@@ -1495,8 +1495,9 @@ export class ComfyApp {
       return false
     }
 
-    // Per use: an awaited hook below can enter App Mode and hide the canvas.
     const canvasVisible = () => !!(this.canvasEl.width && this.canvasEl.height)
+    // A hook below can enter App Mode and hide the canvas after the fit runs,
+    // so the deferred branch keys off whether the fit happened, not visibility.
     let viewFitted = false
     const viewRestoreEnabled = () =>
       restore_view && useSettingStore().get('Comfy.EnableWorkflowViewRestore')
@@ -1558,6 +1559,14 @@ export class ComfyApp {
         if (canvasVisible()) {
           fitView()
           viewFitted = true
+        } else if (
+          loadId === this.graphLoadId &&
+          (!workflow || typeof workflow === 'string')
+        ) {
+          // Armed here rather than after the awaits below so a throw in
+          // between still leaves the recovery in place.
+          if (viewRestoreEnabled()) restoreSavedViewport()
+          this.pendingFitView = fitView
         }
       } catch (error) {
         await this.reportGraphLoadFailure(error)
@@ -1654,15 +1663,7 @@ export class ComfyApp {
       // The fit above is skipped while App Mode hides the canvas, and a load
       // can also be superseded mid-flight. Defer it to the next resize that
       // reports a real size, for this load only.
-      if (
-        !viewFitted &&
-        loadId === this.graphLoadId &&
-        (!workflow || typeof workflow === 'string')
-      ) {
-        if (viewRestoreEnabled() && openSource !== 'template') {
-          restoreSavedViewport()
-        }
-        this.pendingFitView = fitView
+      if (!viewFitted && loadId === this.graphLoadId) {
         this.canvas.resize()
         requestAnimationFrame(() => this.flushPendingFitView(this.canvasEl))
       }
