@@ -387,6 +387,25 @@ describe('normalizeAgentTranscript', () => {
     ])
   })
 
+  // The pair below fixes which trailing row counts as "a later turn started".
+  // `StartTurn` writes a turn's user and assistant rows in one transaction, so
+  // a started turn always has an assistant row; a trailing row without one
+  // belongs to no turn the server ever began, and treating it as one would put
+  // the thread back in PM-1776's state -- no indicator, and a send answered
+  // with 409.
+  it('keeps a streaming row that only a later assistant-less row follows', () => {
+    const live = row(1, 'assistant', 'turn-a', '', 'row-1')
+    live.status = 'streaming'
+
+    const transcript = normalizeAgentTranscript([
+      live,
+      row(2, 'user', 'turn-b', 'next', 'row-2')
+    ])
+
+    expect(transcript.pending?.messageId).toBe('row-1')
+    expect(transcript.messages[0].streaming).toBe(true)
+  })
+
   it('ignores a streaming row an older turn left behind', () => {
     const stale = row(1, 'assistant', 'turn-a', '', 'row-1')
     stale.status = 'streaming'
