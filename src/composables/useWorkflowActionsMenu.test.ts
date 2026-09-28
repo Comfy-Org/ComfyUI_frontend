@@ -444,6 +444,44 @@ describe('useWorkflowActionsMenu', () => {
     expect(check).toHaveBeenCalledTimes(2)
   })
 
+  it('keeps a visible row in place, disabled, when another account without access signs in while the menu is open', async () => {
+    const enabled = ref(true)
+    const settled = ref(true)
+    const check = vi.fn()
+    vi.mocked(useDeployToComfyApiGate).mockReturnValue({
+      enabled,
+      settled,
+      check
+    })
+    const isOpen = ref(false)
+    const { menuItems } = useWorkflowActionsMenu(vi.fn(), {
+      isRoot: true,
+      isOpen
+    })
+    isOpen.value = true
+    await nextTick()
+
+    enabled.value = false
+    settled.value = false
+    await nextTick()
+    expect(check).toHaveBeenCalledTimes(2)
+    expect(
+      findItem(menuItems.value, 'deployToComfyApi.buttonLabel').disabled
+    ).toBe(true)
+
+    settled.value = true
+    await nextTick()
+    expect(
+      findItem(menuItems.value, 'deployToComfyApi.buttonLabel').disabled
+    ).toBe(true)
+
+    isOpen.value = false
+    await nextTick()
+    expect(menuLabels(menuItems.value)).not.toContain(
+      'deployToComfyApi.buttonLabel'
+    )
+  })
+
   it('asks for the account that signs in while the menu is already open, and shows its answer in that open', async () => {
     const enabled = ref(false)
     const settled = ref(true)

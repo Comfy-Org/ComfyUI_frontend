@@ -31,9 +31,11 @@ interface WorkflowActionsMenuOptions {
   /** Override the workflow to operate on. If not provided, uses activeWorkflow. */
   workflow?: Ref<ComfyWorkflow | null> | ComputedRef<ComfyWorkflow | null>
   /**
-   * Whether the host's menu is open. Rows that come and go with an account
-   * flag hold still while it is, so a late flag cannot move the row under
-   * the pointer.
+   * Whether the host's menu is open. While it is, a row that comes and goes
+   * with an account flag is never removed, so nothing moves under the pointer:
+   * a settled answer is held, and an opening still awaiting the current
+   * account's answer may only add the row once a yes arrives. A row whose
+   * account loses access stays in place, disabled, until the menu closes.
    */
   isOpen?: Readonly<Ref<boolean>>
 }
@@ -83,8 +85,11 @@ export function useWorkflowActionsMenu(
   watch(
     [deployGate.enabled, deployGate.settled, () => isOpen?.value ?? false],
     ([enabled, settled, open]) => {
-      if (open && !followWhileOpen) return
-      showDeploy.value = enabled
+      if (!open) {
+        showDeploy.value = enabled
+        return
+      }
+      if (followWhileOpen && enabled) showDeploy.value = true
       if (settled) followWhileOpen = false
     }
   )
