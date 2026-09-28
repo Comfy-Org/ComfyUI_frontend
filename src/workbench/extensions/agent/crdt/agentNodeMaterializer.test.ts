@@ -552,24 +552,26 @@ describe('reconcileAgentAdapters', () => {
     }
 
     it('stores the remote layout used by the canonical-layout gap pin', () => {
-      const { scope } = arrangeCanonicalLayoutNode()
+      const { graph, scope } = arrangeCanonicalLayoutNode()
 
       expect(
         layoutStore.getNodeLayout(scope.rootGraphId, toNodeId(1))?.position
       ).toEqual({ x: 400, y: 500 })
+
+      reconcileAgentAdapters(graph)
+      const live = graph.getNodeById(toNodeId(1))
+      assert.exists(live)
+      expect(live.id).toBe(toNodeId(1))
     })
 
     it.fails('keeps canonical layout geometry when configuring a materialized node', () => {
-      const { graph, scope } = arrangeCanonicalLayoutNode()
+      const { graph } = arrangeCanonicalLayoutNode()
 
       reconcileAgentAdapters(graph)
 
       const live = graph.getNodeById(toNodeId(1))
-      expect({
-        live: live ? [...live.pos] : undefined,
-        stored: layoutStore.getNodeLayout(scope.rootGraphId, toNodeId(1))
-          ?.position
-      }).toEqual({ live: [400, 500], stored: { x: 400, y: 500 } })
+      assert.exists(live)
+      expect([...live.pos]).toEqual([400, 500])
     })
 
     it('is idempotent once the node is live', () => {
