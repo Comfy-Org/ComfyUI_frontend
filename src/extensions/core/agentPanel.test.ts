@@ -294,7 +294,7 @@ describe('AgentPanel extension flag gate', () => {
   })
 
   it('does not reopen a dismissed activation panel after flag synchronization', async () => {
-    mocks.flagEnabled = true
+    agentFlagEnabled.value = true
     agentStore.isOpen = false
 
     await loadEntryAndSetup()
@@ -303,7 +303,9 @@ describe('AgentPanel extension flag gate', () => {
     )
 
     agentStore.close('close_button')
-    mocks.flagListener!()
+    agentFlagEnabled.value = false
+    await nextTick()
+    agentFlagEnabled.value = true
     await flush()
 
     expect(agentStore.isOpen).toBe(false)
@@ -381,7 +383,7 @@ describe('AgentPanel extension flag gate', () => {
     await vi.waitFor(() =>
       expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
     )
-    expect(agentStore.open).toHaveBeenCalledOnce()
+    expect(agentStore.open).not.toHaveBeenCalled()
   })
 
   const AUTO_SHOWN_KEY = 'Comfy.AgentConsent.AutoShown.account-a.workspace-a'
@@ -561,7 +563,7 @@ describe('AgentPanel extension flag gate', () => {
       expect(useAgentConsent().withConsent).toHaveBeenCalledTimes(2)
     )
     expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBe('true')
-    expect(agentStore.open).toHaveBeenCalledOnce()
+    expect(agentStore.open).not.toHaveBeenCalled()
   })
 
   it('stays silent after a tour ends when the saved consent cannot be read', async () => {
