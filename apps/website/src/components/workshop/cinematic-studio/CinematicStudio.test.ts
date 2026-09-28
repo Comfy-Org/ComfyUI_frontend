@@ -1009,6 +1009,23 @@ describe('CinematicStudio', () => {
     ).toEqual(['References', 'Camera', 'Direction', 'Format'])
   })
 
+  it('opens the camera picker beside the side panel and closes it again', async () => {
+    render(CinematicStudioPage, { props: { models } })
+    const user = userEvent.setup()
+    const panel = await screen.findByRole('complementary', {
+      name: 'Shot settings'
+    })
+    const camera = within(panel).getByRole('button', { name: /Large format/ })
+
+    await user.click(camera)
+    const picker = await screen.findByTestId('cinematic-picker')
+    expect(camera).toHaveAttribute('aria-expanded', 'true')
+    expect(picker.style.getPropertyValue('--anchor-top')).toMatch(/px$/)
+
+    await user.click(camera)
+    expect(screen.queryByTestId('cinematic-picker')).toBeNull()
+  })
+
   describe('layout switch', () => {
     const panel = () =>
       screen.queryByRole('complementary', { name: 'Shot settings' })
