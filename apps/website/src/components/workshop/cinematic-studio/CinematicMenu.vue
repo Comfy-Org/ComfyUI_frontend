@@ -43,53 +43,55 @@ const triggerLabel = computed(() => {
 </script>
 
 <template>
-  <DropdownMenuRoot>
-    <CinematicTooltip :text="triggerLabel" :disabled="!tooltip">
-      <DropdownMenuTrigger
-        :aria-label="triggerLabel"
-        :class="
-          cn(
-            'flex items-center rounded-xl outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 data-[state=open]:bg-transparency-white-t8',
-            triggerClass
-          )
-        "
-      >
-        <slot />
-      </DropdownMenuTrigger>
-    </CinematicTooltip>
-    <DropdownMenuPortal>
-      <DropdownMenuContent
-        :side
-        align="start"
-        :side-offset="8"
-        :collision-padding="8"
-        class="z-50 min-w-72 rounded-2xl border border-transparency-white-t8 bg-site-dropdown p-1.5 shadow-lg data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0"
-      >
-        <DropdownMenuLabel
-          class="px-2.5 pt-1.5 pb-1 text-xs text-primary-warm-gray"
+  <CinematicTooltip :text="triggerLabel" :disabled="!tooltip">
+    <span class="flex h-full">
+      <DropdownMenuRoot>
+        <DropdownMenuTrigger
+          :aria-label="triggerLabel"
+          :class="
+            cn(
+              'flex items-center rounded-xl outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 data-[state=open]:bg-transparency-white-t8',
+              triggerClass
+            )
+          "
         >
-          {{ heading }}
-        </DropdownMenuLabel>
-        <DropdownMenuRadioGroup v-model="value">
-          <DropdownMenuRadioItem
-            v-for="option in options"
-            :key="option.id"
-            :value="option.id"
-            class="flex h-9 cursor-pointer items-center gap-2.5 rounded-xl px-3 text-sm text-content-secondary outline-none select-none data-highlighted:bg-transparency-white-t4 data-highlighted:text-content-bright data-[state=checked]:bg-transparency-white-t8 data-[state=checked]:text-content-bright"
+          <slot />
+        </DropdownMenuTrigger>
+        <DropdownMenuPortal>
+          <DropdownMenuContent
+            :side
+            align="start"
+            :side-offset="8"
+            :collision-padding="8"
+            class="z-50 min-w-72 rounded-2xl border border-transparency-white-t8 bg-site-dropdown p-1.5 shadow-lg data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0"
           >
-            <img
-              v-if="option.logo"
-              :src="option.logo"
-              alt=""
-              class="size-4 brightness-0 invert"
-            />
-            <span class="flex-1">{{ option.label }}</span>
-            <span v-if="option.meta" class="text-xs text-primary-warm-gray">
-              {{ option.meta }}
-            </span>
-          </DropdownMenuRadioItem>
-        </DropdownMenuRadioGroup>
-      </DropdownMenuContent>
-    </DropdownMenuPortal>
-  </DropdownMenuRoot>
+            <DropdownMenuLabel
+              class="px-2.5 pt-1.5 pb-1 text-xs text-primary-warm-gray"
+            >
+              {{ heading }}
+            </DropdownMenuLabel>
+            <DropdownMenuRadioGroup v-model="value">
+              <DropdownMenuRadioItem
+                v-for="option in options"
+                :key="option.id"
+                :value="option.id"
+                class="flex h-9 cursor-pointer items-center gap-2.5 rounded-xl px-3 text-sm text-content-secondary outline-none select-none data-highlighted:bg-transparency-white-t4 data-highlighted:text-content-bright data-[state=checked]:bg-transparency-white-t8 data-[state=checked]:text-content-bright"
+              >
+                <img
+                  v-if="option.logo"
+                  :src="option.logo"
+                  alt=""
+                  class="size-4 brightness-0 invert"
+                />
+                <span class="flex-1">{{ option.label }}</span>
+                <span v-if="option.meta" class="text-xs text-primary-warm-gray">
+                  {{ option.meta }}
+                </span>
+              </DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenuPortal>
+      </DropdownMenuRoot>
+    </span>
+  </CinematicTooltip>
 </template>

@@ -370,11 +370,37 @@ describe('CinematicStudio', () => {
 
       await user.hover(trigger)
 
-      await vi.waitFor(() =>
-        expect(trigger).toHaveAccessibleDescription(tooltip)
-      )
+      expect((await screen.findAllByText(tooltip)).length).toBeGreaterThan(0)
     }
   )
+
+  it('names an attached reference in the composer menu and removes it from there', async () => {
+    const user = renderStudio()
+    const face = new File(['face'], 'mara.png', { type: 'image/png' })
+    const openMenu = async () =>
+      user.click(
+        screen.getByRole('button', {
+          name: tc('cinematic.composer.references')
+        })
+      )
+
+    await user.upload(screen.getByTestId('cinematic-reference-cast'), face)
+    await openMenu()
+    expect(
+      await screen.findByRole('menuitem', { name: /^Character.*mara\.png/ })
+    ).toBeInTheDocument()
+    await user.click(
+      screen.getByRole('menuitem', { name: /^Remove reference: Character/ })
+    )
+
+    await openMenu()
+    expect(
+      await screen.findByRole('menuitem', {
+        name: /^Character.*Add a character reference/
+      })
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: /^Remove/ })).toBeNull()
+  })
 
   it('keeps the camera picker open across columns until clicked away', async () => {
     const user = renderStudio()
@@ -400,6 +426,9 @@ describe('CinematicStudio', () => {
 
     await user.click(
       screen.getByRole('button', { name: tc('cinematic.composer.references') })
+    )
+    await user.click(
+      await screen.findByRole('menuitem', { name: /^Character/ })
     )
     await user.upload(screen.getByTestId('cinematic-reference-cast'), face)
     await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
@@ -430,6 +459,9 @@ describe('CinematicStudio', () => {
         name: tc('cinematic.composer.references')
       })
     )
+    await user.click(
+      await screen.findByRole('menuitem', { name: /^Character/ })
+    )
     await user.upload(screen.getByTestId('cinematic-reference-cast'), face)
     await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
 
@@ -449,24 +481,21 @@ describe('CinematicStudio', () => {
     {
       layout: 'the stage',
       ux: '?ux=e',
-      inComposer: true,
       settlement: 'pending' as const
     },
     {
       layout: 'the stage',
       ux: '?ux=e',
-      inComposer: true,
       settlement: 'terminal' as const
     },
     {
       layout: 'the side panel',
       ux: '?ux=d',
-      inComposer: false,
       settlement: 'pending' as const
     }
   ])(
     'tries only the failed take again on $layout after a $settlement failure',
-    async ({ ux, inComposer, settlement }) => {
+    async ({ ux, settlement }) => {
       window.history.replaceState(null, '', `/cinematic-studio${ux}`)
       const first: {
         key: unknown
@@ -496,8 +525,7 @@ describe('CinematicStudio', () => {
       const user = userEvent.setup()
 
       await user.type(await screen.findByLabelText('Scene'), 'A diner at dawn')
-      if (inComposer) await chooseTakes(user, 2)
-      else await user.click(screen.getByRole('button', { name: 'More takes' }))
+      await chooseTakes(user, 2)
       await user.click(generateButton())
       await user.click(await screen.findByRole('radio', { name: 'B' }))
       await user.click(

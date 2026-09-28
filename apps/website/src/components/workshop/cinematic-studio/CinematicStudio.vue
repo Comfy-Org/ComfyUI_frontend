@@ -14,10 +14,8 @@ import RunLeaveDialog from '../RunLeaveDialog.vue'
 import AppsBackLink from './AppsBackLink.vue'
 import CinematicComposer from './CinematicComposer.vue'
 import CinematicPicker from './CinematicPicker.vue'
-import CinematicPopover from './CinematicPopover.vue'
-import CinematicReferenceSlot from './CinematicReferenceSlot.vue'
 import CinematicStage from './CinematicStage.vue'
-import type { PopoverKey } from './picker-key'
+import type { PickerKey } from './picker-key'
 import { pickerGroups, popoverTitle } from './picker-key'
 
 const {
@@ -41,7 +39,6 @@ const {
   takes,
   cast,
   palette,
-  references,
   estimate,
   memberWorkspace,
   choose,
@@ -53,11 +50,10 @@ const {
   open: popover,
   toggle: togglePopover,
   close: closePopover
-} = useCinematicPopover<PopoverKey>()
+} = useCinematicPopover<PickerKey>()
 
-const POPOVER_WIDTH: Readonly<Partial<Record<PopoverKey, string>>> = {
-  camera: 'lg:w-4xl',
-  references: 'lg:w-96'
+const POPOVER_WIDTH: Readonly<Partial<Record<PickerKey, string>>> = {
+  camera: 'lg:w-4xl'
 }
 const popoverClass = computed(() =>
   cn(
@@ -133,7 +129,7 @@ function generateOn(slug: string) {
           aria-hidden="true"
         />
         <CinematicPicker
-          v-if="popover && pickerGroups(popover).length"
+          v-if="popover"
           :key="popover"
           :groups="pickerGroups(popover)"
           :direction
@@ -143,19 +139,6 @@ function generateOn(slug: string) {
           @choose="choose"
           @close="closePopover"
         />
-        <CinematicPopover
-          v-else-if="popover"
-          :key="popover"
-          :title="popoverTitle(popover, locale)"
-          :locale
-          :class="popoverClass"
-          @close="closePopover"
-        >
-          <div class="grid grid-cols-2 gap-2">
-            <CinematicReferenceSlot v-model="cast" kind="cast" :locale />
-            <CinematicReferenceSlot v-model="palette" kind="palette" :locale />
-          </div>
-        </CinematicPopover>
         <CinematicComposer
           v-model:scene="scene"
           v-model:model="modelSlug"
@@ -163,9 +146,10 @@ function generateOn(slug: string) {
           v-model:aspect="aspect"
           v-model:resolution="resolution"
           v-model:enhance="enhance"
+          v-model:cast="cast"
+          v-model:palette="palette"
           :models
           :direction
-          :references
           :gate="studio.gate.value"
           :workspace-name="studio.session.value?.workspace.name"
           :rendering="studio.rendering.value"

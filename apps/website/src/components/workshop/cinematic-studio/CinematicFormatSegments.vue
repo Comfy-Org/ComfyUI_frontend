@@ -1,19 +1,13 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-
 import type {
   AspectRatio,
   Resolution
-} from '../../../lib/workshop/cinematic-studio/catalog'
-import {
-  ASPECT_RATIOS,
-  MAX_TAKES,
-  RESOLUTIONS
 } from '../../../lib/workshop/cinematic-studio/catalog'
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import { framedStyle } from './aspect-style'
 import CinematicMenu from './CinematicMenu.vue'
+import { useFormatMenus } from './useFormatMenus'
 
 const { locale = 'en' } = defineProps<{
   locale?: Locale
@@ -23,42 +17,14 @@ const aspect = defineModel<AspectRatio>('aspect', { required: true })
 const resolution = defineModel<Resolution>('resolution', { required: true })
 const takes = defineModel<number>('takes', { required: true })
 
-const aspectOptions = computed(() =>
-  ASPECT_RATIOS.map((ratio) => ({
-    id: ratio.id,
-    label: ratio.id,
-    meta: tc(ratio.label, locale)
-  }))
-)
-const resolutionOptions = RESOLUTIONS.map((option) => ({
-  id: option.id,
-  label: option.id
-}))
-const takeOptions = Array.from({ length: MAX_TAKES }, (_, index) => ({
-  id: String(index + 1),
-  label: `×${index + 1}`
-}))
-
-const aspectValue = computed({
-  get: () => aspect.value,
-  set: (id: string) => {
-    const match = ASPECT_RATIOS.find((ratio) => ratio.id === id)
-    if (match) aspect.value = match.id
-  }
-})
-const resolutionValue = computed({
-  get: () => resolution.value,
-  set: (id: string) => {
-    const match = RESOLUTIONS.find((option) => option.id === id)
-    if (match) resolution.value = match.id
-  }
-})
-const takesValue = computed({
-  get: () => String(takes.value),
-  set: (id: string) => {
-    takes.value = Number(id)
-  }
-})
+const {
+  aspectOptions,
+  resolutionOptions,
+  takeOptions,
+  aspectValue,
+  resolutionValue,
+  takesValue
+} = useFormatMenus(aspect, resolution, takes, () => locale)
 
 const segmentClass =
   'h-full gap-2 rounded-none px-3 text-primary-comfy-canvas hover:bg-transparency-white-t4 hover:text-primary-warm-white data-[state=open]:text-primary-warm-white'

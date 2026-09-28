@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { ChevronDown, Plus } from '@lucide/vue'
-import { useObjectUrl } from '@vueuse/core'
+import { ChevronDown } from '@lucide/vue'
 import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -25,13 +24,13 @@ import CinematicFormatSegments from './CinematicFormatSegments.vue'
 import CinematicGenerateAction from './CinematicGenerateAction.vue'
 import CinematicMenu from './CinematicMenu.vue'
 import CinematicOptionIcon from './CinematicOptionIcon.vue'
+import CinematicReferenceMenu from './CinematicReferenceMenu.vue'
 import CinematicTooltip from './CinematicTooltip.vue'
-import type { PopoverKey } from './picker-key'
+import type { PickerKey } from './picker-key'
 
 const {
   models,
   direction,
-  references,
   gate,
   workspaceName,
   rendering,
@@ -43,19 +42,18 @@ const {
 } = defineProps<{
   models: readonly CinematicModel[]
   direction: Direction
-  references: readonly File[]
   gate: StudioGate
   workspaceName?: string
   rendering: boolean
   estimate?: ShotEstimate
   credits?: number
   showCredits?: boolean
-  openPopover?: PopoverKey
+  openPopover?: PickerKey
   locale?: Locale
 }>()
 
 const emit = defineEmits<{
-  open: [key: PopoverKey]
+  open: [key: PickerKey]
   generate: []
   cancel: []
 }>()
@@ -66,6 +64,8 @@ const takes = defineModel<number>('takes', { required: true })
 const aspect = defineModel<AspectRatio>('aspect', { required: true })
 const resolution = defineModel<Resolution>('resolution', { required: true })
 const enhance = defineModel<boolean>('enhance', { required: true })
+const cast = defineModel<File | undefined>('cast')
+const palette = defineModel<File | undefined>('palette')
 
 const modelOptions = computed(() =>
   models.map((model) => ({
@@ -92,9 +92,8 @@ const focalLabel = computed(() => {
   const focal = directionOption('focal', direction)
   return focal.id === 'auto' ? undefined : tc(focal.label, locale)
 })
-const referencePreview = useObjectUrl(() => references[0])
 const blockedNote = computed(() =>
-  references.length > 0 && !model.value?.referenceSlug
+  (cast.value || palette.value) && !model.value?.referenceSlug
     ? tc('cinematic.references.unsupported', locale).replace(
         '{model}',
         model.value?.name ?? ''
@@ -109,7 +108,7 @@ function generateFromKeyboard() {
   if (canGenerate.value && !rendering) emit('generate')
 }
 
-const chipClass = (key: PopoverKey) =>
+const chipClass = (key: PickerKey) =>
   cn(
     'flex h-9 max-w-80 shrink-0 items-center gap-2 rounded-xl px-3 text-[13px] whitespace-nowrap text-primary-comfy-canvas ring-1 ring-transparency-white-t8 transition-colors ring-inset hover:bg-transparency-white-t4 hover:text-primary-warm-white',
     openPopover === key &&
@@ -124,34 +123,11 @@ const chipClass = (key: PopoverKey) =>
     :aria-label="tc('cinematic.composer.label', locale)"
   >
     <div class="flex items-start gap-2.5 px-4 pt-3.5 pb-3">
-      <button
-        type="button"
-        aria-haspopup="dialog"
-        :aria-expanded="openPopover === 'references'"
-        :aria-label="tc('cinematic.composer.references', locale)"
-        :class="
-          cn(
-            'relative grid size-9 shrink-0 place-items-center overflow-visible rounded-xl border border-dashed border-transparency-white-t20 text-primary-comfy-canvas hover:border-primary-warm-white/50 hover:text-primary-warm-white',
-            openPopover === 'references' && 'border-primary-warm-white',
-            referencePreview && 'border-solid'
-          )
-        "
-        @click="emit('open', 'references')"
-      >
-        <img
-          v-if="referencePreview"
-          :src="referencePreview"
-          alt=""
-          class="size-full rounded-[inherit] object-cover"
-        />
-        <Plus v-else class="size-4" aria-hidden="true" />
-        <span
-          v-if="references.length > 1"
-          class="absolute -top-1.5 -right-1.5 grid size-4 place-items-center rounded-full bg-primary-comfy-yellow text-[10px] font-bold text-primary-comfy-ink"
-        >
-          {{ references.length }}
-        </span>
-      </button>
+      <CinematicReferenceMenu
+        v-model:cast="cast"
+        v-model:palette="palette"
+        :locale
+      />
       <label for="cinematic-scene" class="sr-only">
         {{ tc('cinematic.section.scene', locale) }}
       </label>
@@ -201,18 +177,16 @@ const chipClass = (key: PopoverKey) =>
             type="button"
             aria-haspopup="dialog"
             :aria-expanded="openPopover === 'camera'"
+            :aria-label="cameraSummary"
             :class="chipClass('camera')"
             @click="emit('open', 'camera')"
           >
             <CinematicOptionIcon
               part="body"
               :option="direction.body"
-              class="h-5 w-8 shrink-0"
+              class="h-6 w-10 shrink-0"
             />
-            {{ bodyLabel }}
-            <span v-if="focalLabel" class="text-primary-warm-gray">
-              {{ focalLabel }}
-            </span>
+            <span class="tabular-nums">{{ focalLabel ?? bodyLabel }}</span>
           </button>
         </CinematicTooltip>
         <CinematicDirectionSegments
