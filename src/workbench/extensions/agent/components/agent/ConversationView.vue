@@ -194,13 +194,6 @@ watch(
 </script>
 
 <template>
-  <!--
-    The testid scopes assertions to the transcript. The panel now has two places
-    a paywall card can appear - inline against the turn that was refused, and
-    standing beside the composer - and they render the same component with the
-    same copy, so an unscoped `getByRole('button', { name: 'Subscribe' })` is
-    ambiguous about which surface it found.
-  -->
   <div data-testid="agent-conversation" class="relative h-full">
     <div
       ref="scrollContainer"

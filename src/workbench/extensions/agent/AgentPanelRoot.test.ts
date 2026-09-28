@@ -1427,9 +1427,9 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
   beforeEach(() => {
     ws.clear()
     openAccountPrecondition.mockClear()
-    vi.mocked(useTelemetry())!.trackAgentPaywallShown.mockClear()
-    vi.mocked(useTelemetry())!.trackAgentPaywallCtaClicked.mockClear()
-    vi.mocked(useTelemetry())!.trackAddApiCreditButtonClicked.mockClear()
+    telemetry.trackAgentPaywallShown.mockClear()
+    telemetry.trackAgentPaywallCtaClicked.mockClear()
+    telemetry.trackAddApiCreditButtonClicked.mockClear()
   })
 
   it.for([
@@ -1486,9 +1486,7 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
     await waitFor(() =>
-      expect(
-        useTelemetry()!.trackAgentPaywallShown
-      ).toHaveBeenCalledExactlyOnceWith({
+      expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledExactlyOnceWith({
         reason: 'no_funds',
         surface: 'credits_exhausted'
       })
@@ -1505,7 +1503,7 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
     )
 
     expect(
-      useTelemetry()!.trackAgentPaywallCtaClicked
+      telemetry.trackAgentPaywallCtaClicked
     ).toHaveBeenCalledExactlyOnceWith({
       cta: 'add_credits',
       surface: 'credits_exhausted'
@@ -1521,7 +1519,7 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
     await screen.findByRole('textbox')
 
     expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
-    expect(useTelemetry()!.trackAgentPaywallShown).not.toHaveBeenCalled()
+    expect(telemetry.trackAgentPaywallShown).not.toHaveBeenCalled()
   })
 
   it('stays hidden while Agent-scoped gratis can fund the turn', async () => {
@@ -1531,7 +1529,7 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
     await screen.findByRole('textbox')
 
     expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
-    expect(useTelemetry()!.trackAgentPaywallShown).not.toHaveBeenCalled()
+    expect(telemetry.trackAgentPaywallShown).not.toHaveBeenCalled()
   })
 
   it('stays hidden on the legacy rail whose unloaded balance reads as false', async () => {
@@ -1563,7 +1561,7 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
     await screen.findByRole('textbox')
 
     expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
-    expect(useTelemetry()!.trackAgentPaywallShown).not.toHaveBeenCalled()
+    expect(telemetry.trackAgentPaywallShown).not.toHaveBeenCalled()
   })
 
   // An unsettled capability read cannot say which remediation is right, and a
@@ -1577,7 +1575,7 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
     await nextTick()
 
     expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
-    expect(useTelemetry()!.trackAgentPaywallShown).not.toHaveBeenCalled()
+    expect(telemetry.trackAgentPaywallShown).not.toHaveBeenCalled()
   })
 
   // `unavailable` renders a body with no action at all, so standing it up would
@@ -1677,7 +1675,7 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
 
     paywallHasFunds.value = false
     await nextTick()
-    expect(useTelemetry()!.trackAgentPaywallShown).not.toHaveBeenCalled()
+    expect(telemetry.trackAgentPaywallShown).not.toHaveBeenCalled()
 
     await userEvent.click(
       screen.getByRole('button', {
@@ -1686,9 +1684,7 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
     )
 
     await waitFor(() =>
-      expect(
-        useTelemetry()!.trackAgentPaywallShown
-      ).toHaveBeenCalledExactlyOnceWith({
+      expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledExactlyOnceWith({
         reason: 'no_funds',
         surface: 'credits_exhausted'
       })
@@ -1714,16 +1710,14 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await screen.findByTestId(STANDING)
     await waitFor(() =>
-      expect(useTelemetry()!.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
+      expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
     )
 
     paywallCapabilities.canSubscribeSelfServe = false
     await nextTick()
     await nextTick()
 
-    expect(useTelemetry()!.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
-
-    expect(useTelemetry()!.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
+    expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
   })
 
   it('does not re-arm the impression when capabilities refresh while still exhausted', async () => {
@@ -1731,7 +1725,7 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await screen.findByTestId(STANDING)
     await waitFor(() =>
-      expect(useTelemetry()!.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
+      expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
     )
 
     paywallCapabilities.isReady = false
@@ -1739,7 +1733,7 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
     paywallCapabilities.isReady = true
     await screen.findByTestId(STANDING)
 
-    expect(useTelemetry()!.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
+    expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
   })
 
   it('does not report the same exhaustion episode after a panel remount', async () => {
@@ -1747,14 +1741,14 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
     const firstPanel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await screen.findByTestId(STANDING)
     await waitFor(() =>
-      expect(useTelemetry()!.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
+      expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
     )
 
     firstPanel.unmount()
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await screen.findByTestId(STANDING)
 
-    expect(useTelemetry()!.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
+    expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
   })
   it('refreshes workspace billing after an active turn becomes idle', async () => {
     paywallHasFunds.value = true
