@@ -195,14 +195,14 @@ describe('createDeployToComfyApiGate on localhost and Desktop', () => {
   })
 
   it('makes no request on sign-in, and never loads PostHog', () => {
-    const { enabled, settled, sources, user } = gate({
+    const { enabled, answeredFor, sources, user } = gate({
       askPlatform: vi.fn(() => Promise.resolve(true))
     })
 
     user.signIn('alice')
 
     expect(enabled.value).toBe(false)
-    expect(settled.value).toBe(false)
+    expect(answeredFor.value).toBeUndefined()
     expect(sources.askPlatform).not.toHaveBeenCalled()
     expect(sources.loadFlags).not.toHaveBeenCalled()
   })
@@ -222,7 +222,7 @@ describe('createDeployToComfyApiGate on localhost and Desktop', () => {
     'asks the platform the first time a menu checks, and follows its answer ($answer)',
     async ({ answer, shown }) => {
       const reply = deferred<boolean>()
-      const { enabled, settled, sources, user, check } = gate({
+      const { enabled, answeredFor, sources, user, check } = gate({
         askPlatform: vi.fn(() => reply.promise)
       })
       user.signIn('alice')
@@ -234,7 +234,7 @@ describe('createDeployToComfyApiGate on localhost and Desktop', () => {
 
       expect(sources.askPlatform).toHaveBeenCalledOnce()
       expect(enabled.value).toBe(shown)
-      expect(settled.value).toBe(true)
+      expect(answeredFor.value).toBeTypeOf('number')
     }
   )
 

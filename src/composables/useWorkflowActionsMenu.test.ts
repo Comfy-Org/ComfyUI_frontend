@@ -90,7 +90,7 @@ describe('useWorkflowActionsMenu', () => {
   beforeEach(() => {
     vi.mocked(useDeployToComfyApiGate).mockReturnValue({
       enabled: ref(false),
-      settled: ref(true),
+      answeredFor: ref(0),
       check: vi.fn()
     })
     mockBookmarkStore = useWorkflowBookmarkStore()
@@ -373,7 +373,7 @@ describe('useWorkflowActionsMenu', () => {
   it('offers Deploy to Comfy API as a new root-level item once the platform has distributions on', () => {
     vi.mocked(useDeployToComfyApiGate).mockReturnValue({
       enabled: ref(true),
-      settled: ref(true),
+      answeredFor: ref(0),
       check: vi.fn()
     })
     const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
@@ -401,7 +401,7 @@ describe('useWorkflowActionsMenu', () => {
     const enabled = ref(false)
     vi.mocked(useDeployToComfyApiGate).mockReturnValue({
       enabled,
-      settled: ref(true),
+      answeredFor: ref(0),
       check: vi.fn()
     })
     const isOpen = ref(true)
@@ -427,7 +427,7 @@ describe('useWorkflowActionsMenu', () => {
     const check = vi.fn()
     vi.mocked(useDeployToComfyApiGate).mockReturnValue({
       enabled: ref(false),
-      settled: ref(true),
+      answeredFor: ref(0),
       check
     })
     const isOpen = ref(false)
@@ -446,11 +446,11 @@ describe('useWorkflowActionsMenu', () => {
 
   it('keeps a visible row in place, disabled, when another account without access signs in while the menu is open', async () => {
     const enabled = ref(true)
-    const settled = ref(true)
+    const answeredFor = ref<number | undefined>(0)
     const check = vi.fn()
     vi.mocked(useDeployToComfyApiGate).mockReturnValue({
       enabled,
-      settled,
+      answeredFor,
       check
     })
     const isOpen = ref(false)
@@ -462,14 +462,14 @@ describe('useWorkflowActionsMenu', () => {
     await nextTick()
 
     enabled.value = false
-    settled.value = false
+    answeredFor.value = undefined
     await nextTick()
     expect(check).toHaveBeenCalledTimes(2)
     expect(
       findItem(menuItems.value, 'deployToComfyApi.buttonLabel').disabled
     ).toBe(true)
 
-    settled.value = true
+    answeredFor.value = 1
     await nextTick()
     expect(
       findItem(menuItems.value, 'deployToComfyApi.buttonLabel').disabled
@@ -484,11 +484,11 @@ describe('useWorkflowActionsMenu', () => {
 
   it('asks for the account that signs in while the menu is already open, and shows its answer in that open', async () => {
     const enabled = ref(false)
-    const settled = ref(true)
+    const answeredFor = ref<number | undefined>(0)
     const check = vi.fn()
     vi.mocked(useDeployToComfyApiGate).mockReturnValue({
       enabled,
-      settled,
+      answeredFor,
       check
     })
     const isOpen = ref(false)
@@ -500,24 +500,24 @@ describe('useWorkflowActionsMenu', () => {
     await nextTick()
     expect(check).toHaveBeenCalledOnce()
 
-    settled.value = false
+    answeredFor.value = undefined
     await nextTick()
     expect(check).toHaveBeenCalledTimes(2)
 
     enabled.value = true
-    settled.value = true
+    answeredFor.value = 1
     await nextTick()
     expect(menuLabels(menuItems.value)).toContain(
       'deployToComfyApi.buttonLabel'
     )
   })
 
-  it('shows the row in the same open when the menu opened before the account had an answer', async () => {
+  it('shows the row in the same open when a new account arrives already answered yes', async () => {
     const enabled = ref(false)
-    const settled = ref(false)
+    const answeredFor = ref<number | undefined>(0)
     vi.mocked(useDeployToComfyApiGate).mockReturnValue({
       enabled,
-      settled,
+      answeredFor,
       check: vi.fn()
     })
     const isOpen = ref(false)
@@ -529,7 +529,32 @@ describe('useWorkflowActionsMenu', () => {
     await nextTick()
 
     enabled.value = true
-    settled.value = true
+    answeredFor.value = 1
+    await nextTick()
+
+    expect(menuLabels(menuItems.value)).toContain(
+      'deployToComfyApi.buttonLabel'
+    )
+  })
+
+  it('shows the row in the same open when the menu opened before the account had an answer', async () => {
+    const enabled = ref(false)
+    const answeredFor = ref<number | undefined>(undefined)
+    vi.mocked(useDeployToComfyApiGate).mockReturnValue({
+      enabled,
+      answeredFor,
+      check: vi.fn()
+    })
+    const isOpen = ref(false)
+    const { menuItems } = useWorkflowActionsMenu(vi.fn(), {
+      isRoot: true,
+      isOpen
+    })
+    isOpen.value = true
+    await nextTick()
+
+    enabled.value = true
+    answeredFor.value = 1
     await nextTick()
 
     expect(menuLabels(menuItems.value)).toContain(
@@ -541,7 +566,7 @@ describe('useWorkflowActionsMenu', () => {
     const enabled = ref(true)
     vi.mocked(useDeployToComfyApiGate).mockReturnValue({
       enabled,
-      settled: ref(true),
+      answeredFor: ref(0),
       check: vi.fn()
     })
     const isOpen = ref(true)
@@ -567,7 +592,7 @@ describe('useWorkflowActionsMenu', () => {
   it('deploy command opens the Deploy to Comfy API dialog', async () => {
     vi.mocked(useDeployToComfyApiGate).mockReturnValue({
       enabled: ref(true),
-      settled: ref(true),
+      answeredFor: ref(0),
       check: vi.fn()
     })
     const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
@@ -600,7 +625,7 @@ describe('useWorkflowActionsMenu', () => {
   it('switches to the right-clicked workflow before opening the deploy dialog', async () => {
     vi.mocked(useDeployToComfyApiGate).mockReturnValue({
       enabled: ref(true),
-      settled: ref(true),
+      answeredFor: ref(0),
       check: vi.fn()
     })
     const customWorkflow = ref(
@@ -637,7 +662,7 @@ describe('useWorkflowActionsMenu', () => {
     const enabled = ref(true)
     vi.mocked(useDeployToComfyApiGate).mockReturnValue({
       enabled,
-      settled: ref(true),
+      answeredFor: ref(0),
       check: vi.fn()
     })
     const customWorkflow = ref(
