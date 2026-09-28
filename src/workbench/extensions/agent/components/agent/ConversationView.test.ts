@@ -215,10 +215,10 @@ describe('ConversationView', () => {
     const scrollContainer = screen.getByTestId('agent-conversation-scroll')
     Object.defineProperties(scrollContainer, {
       scrollHeight: { value: 1_000 },
-      scrollTop: { value: 0 },
+      scrollTop: { value: 100 },
       clientHeight: { value: 500 }
     })
-    await fireEvent.wheel(scrollContainer, { deltaY: -1 })
+    await nextTick()
     await fireEvent.scroll(scrollContainer)
     for (const callback of resizeCallbacks) callback()
 
@@ -249,10 +249,14 @@ describe('ConversationView', () => {
       screen.queryByRole('button', { name: 'Latest' })
     ).not.toBeInTheDocument()
 
-    await nextTick()
-    await fireEvent.wheel(screen.getByTestId('agent-conversation-scroll'), {
-      deltaY: -1
+    const scrollContainer = screen.getByTestId('agent-conversation-scroll')
+    Object.defineProperties(scrollContainer, {
+      scrollHeight: { value: 1_000 },
+      scrollTop: { value: 100 },
+      clientHeight: { value: 500 }
     })
+    await nextTick()
+    await fireEvent.scroll(scrollContainer)
     const jump = await screen.findByRole('button', { name: 'Latest' })
     expect(jump).toHaveTextContent('')
 
@@ -286,20 +290,25 @@ describe('ConversationView', () => {
     const scrollTo = vi.fn()
     Element.prototype.scrollTo = scrollTo
     const { rerender } = render(ConversationView, {
-      props: { entries: [assistant] },
+      props: { entries: [assistant], conversationId: 'thread-1' },
       global: { plugins: [i18n] }
     })
 
-    await nextTick()
-    await fireEvent.wheel(screen.getByTestId('agent-conversation-scroll'), {
-      deltaY: -1
+    const scrollContainer = screen.getByTestId('agent-conversation-scroll')
+    Object.defineProperties(scrollContainer, {
+      scrollHeight: { value: 1_000 },
+      scrollTop: { value: 100 },
+      clientHeight: { value: 500 }
     })
+    await nextTick()
+    await fireEvent.scroll(scrollContainer)
     expect(
       await screen.findByRole('button', { name: 'Latest' })
     ).toBeInTheDocument()
 
     scrollTo.mockClear()
     await rerender({
+      conversationId: 'thread-2',
       entries: [
         {
           ...assistant,
@@ -308,6 +317,7 @@ describe('ConversationView', () => {
         }
       ]
     })
+    await nextTick()
     await nextTick()
 
     expect(
@@ -336,7 +346,6 @@ describe('ConversationView', () => {
       scrollTop: { value: 485 },
       clientHeight: { value: 500 }
     })
-    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
     await fireEvent.scroll(scrollContainer)
 
     scrollTo.mockClear()
@@ -389,7 +398,12 @@ describe('ConversationView', () => {
     await nextTick()
     expect(scroll.classList.contains(topMask)).toBe(false)
 
-    await fireEvent.wheel(scroll, { deltaY: -1 })
+    Object.defineProperties(scroll, {
+      scrollHeight: { value: 1_000 },
+      scrollTop: { value: 100 },
+      clientHeight: { value: 500 }
+    })
+    await fireEvent.scroll(scroll)
     expect(scroll.classList.contains(bottomMask)).toBe(true)
     expect(scroll.classList.contains(topMask)).toBe(false)
   })

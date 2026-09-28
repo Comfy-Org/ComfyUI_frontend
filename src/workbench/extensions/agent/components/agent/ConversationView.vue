@@ -26,11 +26,13 @@ import UserMessage from './message/UserMessage.vue'
 
 const {
   entries,
+  conversationId,
   paywallPresentation = DEFAULT_AGENT_PAYWALL_PRESENTATION,
   editableTurnId = null,
   answeringAskIds = new Set<string>()
 } = defineProps<{
   entries: ConversationEntry[]
+  conversationId?: string | null
   paywallPresentation?: AgentPaywallPresentation
   editableTurnId?: TurnId | null
   answeringAskIds?: ReadonlySet<string>
@@ -49,8 +51,9 @@ const { t } = useI18n()
 const scrollContainer = ref<HTMLElement>()
 const content = ref<HTMLElement>()
 const shouldFollowLatest = ref(true)
+const atBottom = ref(true)
 const bottomTolerance = 16
-let ignoreProgrammaticScroll = false
+let programmaticScrollTargets: number[] = []
 
 const top = ref<HTMLElement>()
 const atTop = ref(true)
@@ -63,48 +66,40 @@ function scrollToLatest(): void {
   const element = scrollContainer.value
   if (!element) return
   shouldFollowLatest.value = true
-  ignoreProgrammaticScroll = true
+  atBottom.value = true
+  const target = Math.max(0, element.scrollHeight - element.clientHeight)
+  programmaticScrollTargets = [...programmaticScrollTargets, target].slice(-10)
   if (typeof element.scrollTo === 'function') {
     element.scrollTo({ top: element.scrollHeight })
   } else {
     element.scrollTop = element.scrollHeight
   }
-  requestAnimationFrame(() => {
-    ignoreProgrammaticScroll = false
-  })
 }
 
 useEventListener(scrollContainer, 'scroll', () => {
-  if (ignoreProgrammaticScroll) return
   const element = scrollContainer.value
   if (!element) return
-  shouldFollowLatest.value =
+  const targetIndex = programmaticScrollTargets.findIndex(
+    (target) => Math.abs(element.scrollTop - target) <= bottomTolerance
+  )
+  if (targetIndex !== -1) {
+    programmaticScrollTargets.splice(targetIndex, 1)
+    return
+  }
+  atBottom.value =
     element.scrollHeight - element.scrollTop - element.clientHeight <=
     bottomTolerance
-})
-
-useEventListener(scrollContainer, 'wheel', (event) => {
-  if (event.deltaY < 0) {
-    ignoreProgrammaticScroll = false
-    shouldFollowLatest.value = false
-  }
-})
-
-useEventListener(scrollContainer, 'touchmove', () => {
-  ignoreProgrammaticScroll = false
-  shouldFollowLatest.value = false
+  shouldFollowLatest.value = atBottom.value
+  programmaticScrollTargets = []
 })
 
 function followLatestAfterResize(): void {
   const element = scrollContainer.value
   if (!element) return
-  if (
-    shouldFollowLatest.value ||
+  atBottom.value =
     element.scrollHeight - element.scrollTop - element.clientHeight <=
-      bottomTolerance
-  ) {
-    scrollToLatest()
-  }
+    bottomTolerance
+  if (shouldFollowLatest.value) scrollToLatest()
 }
 
 useResizeObserver(content, followLatestAfterResize)
@@ -122,9 +117,12 @@ const latestContentSignal = computed(() => {
 })
 
 watch(
-  () => entries[0]?.id,
-  () => {
+  () => conversationId,
+  async (current, previous) => {
+    if (current === previous) return
     shouldFollowLatest.value = true
+    await nextTick()
+    scrollToLatest()
   }
 )
 
@@ -149,7 +147,7 @@ watch(
         cn(
           'h-full overflow-y-auto',
           !atTop && 'mask-t-from-[calc(100%-2rem)]',
-          !shouldFollowLatest && 'mask-b-from-[calc(100%-2rem)]'
+          !atBottom && 'mask-b-from-[calc(100%-2rem)]'
         )
       "
     >
@@ -187,13 +185,12 @@ watch(
               @paywall-action="emit('paywallAction', $event)"
             />
           </template>
-          <div />
         </div>
       </div>
     </div>
 
     <Button
-      v-if="!shouldFollowLatest"
+      v-if="!atBottom"
       v-tooltip.top="buildTooltipConfig(t('agent.latest'))"
       type="button"
       variant="secondary"
