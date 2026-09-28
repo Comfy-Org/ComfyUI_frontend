@@ -168,6 +168,19 @@ export function parseRepeats(entries: readonly string[]): Map<string, number> {
   )
 }
 
+export function publishedRepeats(
+  repeats: ReadonlyMap<string, number>,
+  published: ReadonlySet<string>
+): { repeats: Map<string, number>; unpublished: string[] } {
+  const entries = [...repeats]
+  return {
+    repeats: new Map(entries.filter(([slug]) => published.has(slug))),
+    unpublished: entries
+      .filter(([slug]) => !published.has(slug))
+      .map(([slug]) => slug)
+  }
+}
+
 export function settledRunOutcome(
   state: string,
   selected: number,

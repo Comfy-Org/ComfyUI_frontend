@@ -12,6 +12,7 @@ import {
   failureReason,
   hasFunds,
   parseRepeats,
+  publishedRepeats,
   retryServerError,
   runPassed,
   settledRunOutcome,
@@ -60,15 +61,21 @@ const concurrency = Number(values.concurrency)
 if (!Number.isInteger(concurrency) || concurrency < 1 || concurrency > 8)
   throw new Error('--concurrency must be an integer from 1 to 8')
 
-const repeats = parseRepeats(values.repeat ?? [])
-
 const published = publishedWorkflows()
+const publishedSlugs = new Set(published.map((detail) => detail.slug))
 const details = published.filter(
   (detail) => !values.slug || values.slug.includes(detail.slug)
 )
-for (const slug of [...(values.slug ?? []), ...repeats.keys()])
-  if (!published.some((detail) => detail.slug === slug))
+for (const slug of values.slug ?? [])
+  if (!publishedSlugs.has(slug))
     throw new Error(`Not a published workflow page: ${slug}`)
+
+const { repeats, unpublished } = publishedRepeats(
+  parseRepeats(values.repeat ?? []),
+  publishedSlugs
+)
+for (const slug of unpublished)
+  process.stderr.write(`Skipping --repeat for unpublished page: ${slug}\n`)
 
 async function fetchStatus(url: string): Promise<number | 'error'> {
   try {

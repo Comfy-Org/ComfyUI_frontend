@@ -8,6 +8,7 @@ import {
   failureReason,
   hasFunds,
   parseRepeats,
+  publishedRepeats,
   retryServerError,
   runPassed,
   settledRunOutcome,
@@ -152,6 +153,21 @@ describe('workflow sweep inputs and outcomes', () => {
       'workflows/a=2=extra'
     ])
       expect(() => parseRepeats([bad])).toThrow('--repeat expects')
+  })
+
+  it('drops repeats for pages that are no longer published', () => {
+    expect(
+      publishedRepeats(
+        new Map([
+          ['workflows/product-photo-to-video', 3],
+          ['workflows/remove-object', 2]
+        ]),
+        new Set(['workflows/remove-object'])
+      )
+    ).toEqual({
+      repeats: new Map([['workflows/remove-object', 2]]),
+      unpublished: ['workflows/product-photo-to-video']
+    })
   })
 
   it.for([
