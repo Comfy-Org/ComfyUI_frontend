@@ -11,7 +11,8 @@
     "./loadExternalScript": "./src/loadExternalScript.ts",
     "./networkUtil": "./src/networkUtil.ts",
     "./nodePricing": "./src/nodePricing.ts",
-    "./piiUtil": "./src/piiUtil.ts"
+    "./piiUtil": "./src/piiUtil.ts",
+    "./urlSafety": "./src/urlSafety.ts"
   },
   "scripts": {
     "test": "vitest run",
