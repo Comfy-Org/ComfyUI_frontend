@@ -31,7 +31,6 @@ import { recordDevEvent } from './devPanelLog'
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import { readCrdtSnapshot } from './crdtSnapshot'
 import { DocFrameClient } from './docFrameClient'
-import type { DocOpsResult } from './docFrameClient'
 import type { GraphOperation } from './graphOperations'
 import type { ClassifiedDocUpdate } from './layoutFollowerBridge'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
@@ -40,6 +39,7 @@ import { readDocSlotNames } from './liveGraphApplier'
 import { createOpCoalescer } from './opCoalescer'
 import { createOpSender } from './opSender'
 import type { OpsResultView } from './opSender'
+import { createRejectedOpNotifier } from './rejectedOpNotice'
 
 export { apiTransport, STALE_AFTER_MS, SUBSCRIBE_CATCHUP_GRACE_MS }
 
@@ -243,17 +243,17 @@ function reportRejectedHumanOps(
 ): void {
   const settled = new Set([...result.applied, ...result.skipped])
   const rejected = ops.filter((op) => !settled.has(op.op_id))
-  const { failure } = result
+  const { failed } = result
   reportError(
     new Error(
-      `The doc host rejected ${rejected.length} local edit(s): ${failure?.message ?? 'no diagnostics'}`
+      `The doc host rejected ${rejected.length} local edit(s): ${failed?.message ?? 'no diagnostics'}`
     ),
     {
       errorType: 'agent_crdt_human_ops_rejected',
       context: {
         workflowId,
-        opId: failure?.op_id ?? rejected[0]?.op_id,
-        code: failure?.code,
+        opId: failed?.op_id ?? rejected[0]?.op_id,
+        code: failed?.code ?? result.code,
         rejectedOps: rejected.map((op) => op.op)
       }
     }
@@ -368,19 +368,15 @@ function startAgentCrdtFollower(
   )
   const tabId = createUuidv4()
   const ownActor = (): string => `human:${userId() ?? 'anonymous'}:${tabId}`
+  const rejectedOpNotifier = createRejectedOpNotifier()
   const sender = createOpSender({
     sendOps: (target, tab, ops) => client.sendOps(target, tab, ops),
     onOpsResult(listener) {
       const handler: EventListener = (event) => {
-        if (!(event instanceof CustomEvent)) return
-        const detail = event.detail as DocOpsResult
-        listener({
-          workflowId: detail.workflowId,
-          ok: detail.ok,
-          applied: detail.applied,
-          skipped: detail.skipped,
-          ...(detail.failed ? { failure: detail.failed } : {})
-        })
+        // `docFrameClient` already validated this into a DocOpsResult, which
+        // OpsResultView is derived from, so it travels whole.
+        if (event instanceof CustomEvent)
+          listener(event.detail as OpsResultView)
       }
       bridge.addEventListener('doc_ops_result', handler)
       return () => bridge.removeEventListener('doc_ops_result', handler)
@@ -392,12 +388,19 @@ function startAgentCrdtFollower(
     actor: ownActor,
     baseVersion: () => bridge.lastSequence,
     onBatchSettled: (outcome) => {
+      if (outcome.state === 'acknowledged') {
+        rejectedOpNotifier.notify(outcome.ops, outcome.result)
+      }
       recordDevEvent('human_ops_settled', outcome)
       projection.settleLocalWrites(outcome.ops)
       if (outcome.state !== 'acknowledged' || outcome.result.ok) return
       const workflowId =
         outcome.result.workflowId ?? bridge.subscribedWorkflowId
-      reportRejectedHumanOps(workflowId, outcome.ops, outcome.result)
+      // The notifier owns batch-level refusal telemetry and deduplication.
+      // Keep the rewrite's per-op diagnostic only when the host identifies a
+      // failed operation; otherwise both paths would report the same refusal.
+      if (outcome.result.failed)
+        reportRejectedHumanOps(workflowId, outcome.ops, outcome.result)
       if (workflowId === null) return
       const applied = new Set(outcome.result.applied)
       const rejected = outcome.ops.filter((op) => !applied.has(op.op_id))
@@ -789,6 +792,7 @@ function startAgentCrdtFollower(
       () => bridge.removeEventListener('doc_stale', onStale),
       () => bridge.removeEventListener('doc_subscribe_sent', onSubscribeSent),
       () => sender.detach(),
+      () => rejectedOpNotifier.cancel(),
       () => coalescer.detach(),
       () => projection.destroy(),
       () => bridge.destroy(),

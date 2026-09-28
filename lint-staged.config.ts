@@ -63,16 +63,27 @@ function lintCommands(
       styleFiles,
       'pnpm exec stylelint --cache --cache-strategy content --allow-empty-input'
     ),
-    ...commandsWithFiles(
-      codeFiles,
-      'pnpm exec oxlint --type-aware --no-error-on-unmatched-pattern --fix'
-    ),
+    ...Array.from({ length: Math.ceil(codeFiles.length / 30) }, (_, index) =>
+      commandsWithFiles(
+        codeFiles.slice(index * 30, index * 30 + 30),
+        'pnpm exec oxlint --threads=1 --no-error-on-unmatched-pattern --fix'
+      )
+    ).flat(),
     ...commandsWithFiles(
       [...codeFiles, ...astroFiles],
-      'pnpm exec eslint --cache --cache-strategy content --concurrency auto --fix --no-warn-ignored'
+      `pnpm exec eslint --cache --cache-strategy content --concurrency auto --fix --no-warn-ignored ${skipCanonicalClasses}`
     )
   ]
 }
+
+// enforce-canonical-classes pays a ~4.5 s Tailwind warm-up in every ESLint
+// process; the CI lint job runs it with --fix and commits the result instead.
+// Reporting unused directives must stay off, or --fix would strip the
+// directives that silence the rule in the full run.
+const skipCanonicalClasses = [
+  "--rule 'better-tailwindcss/enforce-canonical-classes: off'",
+  '--report-unused-disable-directives-severity off'
+].join(' ')
 
 // Directories outside the root program, each with its own tsconfig.
 const standaloneTypecheckScripts = {
