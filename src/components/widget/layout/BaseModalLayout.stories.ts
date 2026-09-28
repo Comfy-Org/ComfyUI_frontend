@@ -24,7 +24,7 @@ interface StoryArgs {
   hasHeader: boolean
   hasContentFilter: boolean
   hasHeaderRightArea: boolean
-  headerPadding: 'default' | 'symmetric'
+  headerPadding?: 'default' | 'symmetric'
   cardCount: number
 }
 
