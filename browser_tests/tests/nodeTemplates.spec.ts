@@ -95,6 +95,67 @@ test.describe('Node Templates', { tag: ['@canvas'] }, () => {
     defineNodeTemplatesTests('litegraph')
   })
 
+  const seededTemplates = [
+    {
+      name: 'existing-template-a',
+      data: JSON.stringify({ nodes: [] })
+    },
+    {
+      name: 'existing-template-b',
+      data: JSON.stringify({ nodes: [], links: [] })
+    }
+  ]
+
+  test.describe('Load failure', () => {
+    test.describe.configure({ timeout: 30_000 })
+
+    test.beforeEach(async ({ comfyPage, nodeTemplates }) => {
+      await nodeTemplates.seedTemplates(seededTemplates)
+      await nodeTemplates.mockUnreadableTemplateLoad()
+      await nodeTemplates.reloadAndWaitForTemplates()
+      await comfyPage.workflow.loadWorkflow('default')
+      await comfyPage.canvasOps.resetView()
+    })
+
+    test('Failed template load does not overwrite persisted templates', async ({
+      nodeTemplates
+    }) => {
+      await nodeTemplates.selectKSampler()
+      await nodeTemplates.expectSaveSelectionDisabled()
+
+      expect(nodeTemplates.getTemplateWriteCount()).toBe(0)
+      await expect
+        .poll(() => nodeTemplates.readPersistedTemplates())
+        .toEqual(seededTemplates)
+    })
+  })
+
+  test.describe('Retry after failed load', () => {
+    test.describe.configure({ timeout: 30_000 })
+
+    test.beforeEach(async ({ nodeTemplates }) => {
+      await nodeTemplates.seedTemplates(seededTemplates)
+      await nodeTemplates.mockUnreadableTemplateLoadOnce()
+      await nodeTemplates.reloadAndWaitForTemplates()
+    })
+
+    test('restores saved templates after a failed load', async ({
+      nodeTemplates
+    }) => {
+      await nodeTemplates.openManageDialog()
+      await nodeTemplates.manageDialog.root
+        .getByRole('button', { name: 'Retry' })
+        .click()
+
+      await expect(
+        nodeTemplates.manageDialog.rowByName('existing-template-a')
+      ).toHaveCount(1)
+      await expect(
+        nodeTemplates.manageDialog.rowByName('existing-template-b')
+      ).toHaveCount(1)
+    })
+  })
+
   // Import/Export are dialog-only flows unaffected by node rendering mode;
   // run once outside the Vue/Litegraph matrix.
   test.describe('Dialog import/export', () => {
@@ -139,7 +200,10 @@ test.describe('Node Templates', { tag: ['@canvas'] }, () => {
       const name = templateName('shared', testInfo)
       const { manageDialog } = nodeTemplates
       const payload = {
-        templates: [{ name, data: JSON.stringify({ nodes: [] }) }]
+        templates: [
+          { name, data: JSON.stringify({ nodes: [] }) },
+          { name: `${name}-invalid`, data: {} }
+        ]
       }
 
       await nodeTemplates.openManageDialog()
@@ -153,11 +217,19 @@ test.describe('Node Templates', { tag: ['@canvas'] }, () => {
         mimeType: 'application/json',
         buffer: Buffer.from(JSON.stringify(payload))
       })
-      expect((await storeResponse).ok()).toBe(true)
+      const response = await storeResponse
+      expect(response.ok()).toBe(true)
+      const stored = JSON.parse(response.request().postData() ?? '') as {
+        name: string
+      }[]
+      expect(stored.filter((t) => t.name.startsWith(name))).toEqual([
+        payload.templates[0]
+      ])
       await manageDialog.waitForHidden()
 
       await nodeTemplates.openManageDialog()
       await expect(manageDialog.rowByName(name)).toHaveCount(1)
+      await expect(manageDialog.rowByName(`${name}-invalid`)).toHaveCount(0)
       await manageDialog.close()
     })
   })
