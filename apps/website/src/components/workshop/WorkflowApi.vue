@@ -48,12 +48,6 @@ const facts = computed(() => [
     mono: true
   },
   { label: t('workshop.api.needsKey'), value: 'X-API-Key', mono: true },
-  {
-    label: t('workshop.api.needsInputs'),
-    value: t(
-      code.value ? 'workshop.api.inputsReady' : 'workshop.api.inputsNotSet'
-    )
-  },
   ...(hasMedia
     ? [
         {

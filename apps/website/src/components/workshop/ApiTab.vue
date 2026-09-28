@@ -212,13 +212,6 @@ const facts = computed(() => [
     value: 'COMFY_API_KEY',
     mono: true
   },
-  {
-    label: t('workshop.api.needsInputs', locale),
-    value: t(
-      snippet.value ? 'workshop.api.inputsReady' : 'workshop.api.inputsNotSet',
-      locale
-    )
-  },
   ...(request.value?.files.length
     ? [
         {

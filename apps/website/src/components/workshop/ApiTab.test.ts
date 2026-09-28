@@ -111,18 +111,28 @@ describe('ApiTab', () => {
     expect(screen.queryByRole('button', { name: 'Copy snippet' })).toBeNull()
   })
 
-  it('names the endpoint, the key and the state of the inputs beside the snippet', async () => {
+  it('names the endpoint and the key beside the snippet, and the files only when the request carries them', async () => {
+    const file = new File(['pixels'], 'reference.webp', { type: 'image/webp' })
     const { rerender } = render(ApiTab, {
-      props: { contract, values: { prompt: '', width: 0 } }
+      props: { contract, values }
     })
     const facts = screen.getByTestId('api-facts')
     expect(facts.textContent).toContain(`POST /v2/models/${routerId}`)
     expect(facts.textContent).toContain('COMFY_API_KEY')
-    expect(facts.textContent).toContain('Not set yet')
-    await rerender({ contract, values })
-    await waitFor(() =>
-      expect(facts.textContent).toContain('Whatever the Playground holds now')
+    expect(facts.textContent).not.toContain('Your files')
+
+    const model = getRouterWorkshopModelDetail(
+      'byteplus--seedream-4-5--edit-images'
     )
+    if (!model) throw new Error('Missing model')
+    await rerender({
+      contract: model.execution,
+      values: {
+        ...initialWorkshopPageState(model).values,
+        images: [{ file, name: file.name, type: file.type, size: file.size }]
+      }
+    })
+    await waitFor(() => expect(facts.textContent).toContain('Your files'))
   })
 
   it('uses local file examples for Base64 inputs without exposing embedded bytes', async () => {
