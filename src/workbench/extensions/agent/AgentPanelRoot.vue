@@ -183,6 +183,7 @@ const sidebarTabStore = useSidebarTabStore()
 const { isBuilderMode } = useAppMode()
 
 const { resolvedUserInfo, userDisplayName } = useCurrentUser()
+const teamWorkspaceStore = useTeamWorkspaceStore()
 const userName = computed(
   () => userDisplayName.value?.trim().split(/\s+/)[0] || undefined
 )
@@ -271,7 +272,7 @@ const agentHasFunds = computed(
   () => subscription.value?.agentHasFunds ?? subscription.value?.hasFunds
 )
 const creditsExhausted = computed(() => {
-  if (!isCloud || billingType.value !== 'workspace') return false
+  if (billingType.value !== 'workspace') return false
   // Same gate as the impression report above: an unsettled read cannot say
   // which presentation is right, and a card naming the wrong remediation is
   // worse than no card.
@@ -304,6 +305,10 @@ const showStandingPaywall = computed(() => {
 })
 
 const agentPanelStore = useAgentPanelStore()
+const billingIdentity = computed(
+  () =>
+    `${resolvedUserInfo.value?.id ?? 'anonymous'}:${teamWorkspaceStore.workspaceId ?? 'none'}`
+)
 
 /**
  * One impression per exhaustion episode, not per render: the surface is
@@ -312,19 +317,28 @@ const agentPanelStore = useAgentPanelStore()
  * Reset when funds return, so a later exhaustion reports again — mirroring how
  * `useBillingBanner` scopes its dismissal to one episode.
  */
-watch(agentHasFunds, (hasFunds) => {
-  if (hasFunds === true) agentPanelStore.hasReportedExhaustionImpression = false
+watch(
+  agentHasFunds,
+  (hasFunds) => {
+    if (hasFunds === true) agentPanelStore.reportedExhaustionIdentity = null
+  },
+  { immediate: true }
+)
+
+watch(billingIdentity, () => {
+  agentPanelStore.reportedExhaustionIdentity = null
+  onStandingPaywallShown()
 })
 
 function onStandingPaywallShown(): void {
   if (
     !showStandingPaywall.value ||
-    agentPanelStore.hasReportedExhaustionImpression
+    agentPanelStore.reportedExhaustionIdentity === billingIdentity.value
   )
     return
   const telemetry = useTelemetry()
   if (!telemetry) return
-  agentPanelStore.hasReportedExhaustionImpression = true
+  agentPanelStore.reportedExhaustionIdentity = billingIdentity.value
   telemetry.trackAgentPaywallShown({
     reason: snapshotAuthoritative.value
       ? toAgentPaywallReason(paywallPresentation.value)
@@ -966,7 +980,13 @@ watch(
       // A server-side LLM-hop refusal does not reach the browser as a 402.
       // Refresh the authoritative effective-funds verdict after every observed
       // turn completion so both exhaustion and external top-ups converge.
-      if (billingType.value === 'workspace') void refreshBillingStatus()
+      if (billingType?.value === 'workspace') {
+        void refreshBillingStatus().catch((error: unknown) => {
+          reportError(error, {
+            errorType: 'error_refreshing_agent_billing_status'
+          })
+        })
+      }
       const completedPath = tabActivity.editingTabPath
       tabActivity.setEditing(null)
       if (completedPath !== null) tabActivity.markModified(completedPath)

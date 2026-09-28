@@ -62,6 +62,7 @@ export function useLegacyBilling(): BillingState & BillingActions {
   const maxSeats = computed(() => null)
   const occupiedSeats = computed(() => null)
 
+  const hasFunds = computed(() => (authStore.balance?.amount_micros ?? 0) > 0)
   const subscription = computed<SubscriptionInfo | null>(() => {
     if (!legacyCanAccessSubscriptionFeatures.value && !subscriptionTier.value) {
       return null
@@ -76,8 +77,8 @@ export function useLegacyBilling(): BillingState & BillingActions {
       renewalDate: legacySubscriptionStatus.value?.renewal_date ?? null,
       endDate: legacySubscriptionStatus.value?.cancel_at ?? null,
       isCancelled: isCancelled.value,
-      hasFunds: (authStore.balance?.amount_micros ?? 0) > 0,
-      agentHasFunds: (authStore.balance?.amount_micros ?? 0) > 0
+      hasFunds: hasFunds.value,
+      agentHasFunds: hasFunds.value
     }
   })
 
