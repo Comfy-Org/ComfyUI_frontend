@@ -51,19 +51,24 @@ const NODE_ADD: GraphOperation = {
   }
 }
 
-/** Narrows an outbound frame the same way a real host would. */
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
 function mintedOpIds(raw: string): string[] {
   const frame: unknown = JSON.parse(raw)
-  const { type, data } =
-    typeof frame === 'object' && frame !== null
-      ? (frame as { type?: unknown; data?: unknown })
-      : {}
-  if (type !== 'doc_ops') return []
-  const parsed =
-    typeof data === 'object' && data !== null
-      ? parseWireOps((data as { ops?: unknown }).ops)
-      : { ok: false as const, reason: 'invalid_frame' as const }
+  if (!isRecord(frame) || !('type' in frame) || frame['type'] !== 'doc_ops')
+    return []
+  if (!('data' in frame) || !isRecord(frame['data'])) return []
+  const data = frame['data']
+  if (!('ops' in data)) return []
+  const parsed = parseWireOps(data['ops'])
   return parsed.ok ? parsed.ops.map((op) => op.op_id) : []
+}
+
+/** Every `doc_ops` frame among the raw frames, as its list of minted op ids. */
+function docOpsFrames(raw: string[]): string[][] {
+  return raw.map(mintedOpIds).filter((ids) => ids.length > 0)
 }
 
 /** The transport listens on `api`; a server frame is a CustomEvent there. */
@@ -75,13 +80,12 @@ function answerWithOpsResult(detail: Record<string, unknown>): void {
 }
 
 /**
- * Mounts a follower and returns a submitter. `submit(op)` sends one edit;
- * `submit.batch(ops)` sends several as ONE wire batch, which is what a
- * prefix-applied rejection needs.
+ * Mounts a follower. `submitBatch` returns ONE entry per `doc_ops` frame the
+ * sender emitted, so a caller can require that its operations rode a single
+ * frame rather than inferring it from an id count.
  */
 function mountFollower() {
-  // The telemetry dedupe is per notifier, and each mount makes a new one, so
-  // the assertion baseline has to reset with it.
+  // The telemetry dedupe is per notifier and each mount makes a new one.
   vi.mocked(reportError).mockClear()
   const previousSocket = api.socket
   const send = vi.fn<(frame: string) => void>()
@@ -109,28 +113,29 @@ function mountFollower() {
   )
   onTestFinished(unmount)
 
-  async function batch(operations: GraphOperation[]): Promise<string[]> {
+  async function submitBatch(
+    operations: GraphOperation[]
+  ): Promise<string[][]> {
     const framesBefore = send.mock.calls.length
     follower.enqueueHumanOperations(operations)
     // The coalescer defers delivery to the end of the tick.
     await vi.waitFor(() =>
       expect(send.mock.calls.length).toBeGreaterThan(framesBefore)
     )
-    const ids = send.mock.calls
-      .slice(framesBefore)
-      .flatMap(([frame]) => mintedOpIds(frame))
-    if (ids.length === 0)
+    const frames = docOpsFrames(
+      send.mock.calls.slice(framesBefore).map(([frame]) => frame)
+    )
+    if (frames.length === 0)
       throw new Error('the sender put no wire-shaped doc_ops frame on the wire')
-    return ids
+    return frames
   }
 
   async function submit(operation: GraphOperation): Promise<string> {
-    // `batch` throws rather than returning an empty list.
-    const [first] = await batch([operation])
+    const [[first]] = await submitBatch([operation])
     return first
   }
 
-  return Object.assign(submit, { batch })
+  return { submit, submitBatch }
 }
 
 function rejection(opId: string, code: string): Record<string, unknown> {
@@ -169,7 +174,6 @@ function batchRefusal(code: string): Record<string, unknown> {
   }
 }
 
-/** The `code` of every telemetry report raised so far, in order. */
 function reportedCodes(): unknown[] {
   return vi
     .mocked(reportError)
@@ -187,7 +191,7 @@ describe('a human edit the doc host rejects', () => {
   ])(
     'tells the user their widget edit was not saved when the host answers %s',
     async (code) => {
-      const submit = mountFollower()
+      const { submit } = mountFollower()
 
       answerWithOpsResult(rejection(await submit(WIDGET_EDIT), code))
 
@@ -197,8 +201,33 @@ describe('a human edit the doc host rejects', () => {
     }
   )
 
+  // `op_id` is optional on the wire — the relay omits it when it cannot map
+  // the failing index. Resolving by index is the only path left, and an
+  // op_id-only implementation would misclassify this as generic.
+  it('identifies the rejected op by index when the host sends no op_id', async () => {
+    const { submit } = mountFollower()
+    await submit(WIDGET_EDIT)
+
+    answerWithOpsResult({
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: false,
+      applied: [],
+      skipped: [],
+      failed: {
+        index: 0,
+        code: 'opaque_widgets',
+        message: 'node is absent from the pinned catalog'
+      }
+    })
+
+    expect(toastDetails()).toEqual([
+      expect.stringContaining(WIDGET_REJECTION_TEXT)
+    ])
+  })
+
   it('raises the notice as a self-dismissing error toast', async () => {
-    const submit = mountFollower()
+    const { submit } = mountFollower()
 
     answerWithOpsResult(rejection(await submit(WIDGET_EDIT), 'opaque_widgets'))
 
@@ -215,7 +244,7 @@ describe('a human edit the doc host rejects', () => {
   // The applier raises this code for `add_node` too, and a node the host never
   // added has no widget value left on screen to warn about.
   it('does not blame a widget when the rejected op added a node', async () => {
-    const submit = mountFollower()
+    const { submit } = mountFollower()
 
     answerWithOpsResult(
       rejection(await submit(NODE_ADD), 'uncatalogued_widget_write')
@@ -227,7 +256,7 @@ describe('a human edit the doc host rejects', () => {
   })
 
   it('falls back to a generic notice for a code that names no widget write', async () => {
-    const submit = mountFollower()
+    const { submit } = mountFollower()
 
     answerWithOpsResult(
       rejection(await submit(WIDGET_EDIT), 'base_version_conflict')
@@ -239,7 +268,7 @@ describe('a human edit the doc host rejects', () => {
   })
 
   it('repeats no notice a rejection already put on screen', async () => {
-    const submit = mountFollower()
+    const { submit } = mountFollower()
 
     answerWithOpsResult(rejection(await submit(WIDGET_EDIT), 'opaque_widgets'))
     answerWithOpsResult(rejection(await submit(WIDGET_EDIT), 'opaque_widgets'))
@@ -249,8 +278,27 @@ describe('a human edit the doc host rejects', () => {
     ])
   })
 
+  // A permanent seen-message set would pass the suppression test above and
+  // then silence every later rejection for the follower's lifetime.
+  it('speaks again once the throttle window has passed', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+    const { submit } = mountFollower()
+
+    answerWithOpsResult(rejection(await submit(WIDGET_EDIT), 'opaque_widgets'))
+    await vi.advanceTimersByTimeAsync(10_001)
+    answerWithOpsResult(rejection(await submit(WIDGET_EDIT), 'opaque_widgets'))
+
+    expect(toastDetails()).toEqual([
+      expect.stringContaining(WIDGET_REJECTION_TEXT),
+      expect.stringContaining(WIDGET_REJECTION_TEXT)
+    ])
+  })
+
   it('still speaks for a rejection of another kind inside that window', async () => {
-    const submit = mountFollower()
+    const { submit } = mountFollower()
 
     answerWithOpsResult(rejection(await submit(WIDGET_EDIT), 'opaque_widgets'))
     answerWithOpsResult(
@@ -264,7 +312,7 @@ describe('a human edit the doc host rejects', () => {
   })
 
   it('stays silent when the host applies the edit', async () => {
-    const submit = mountFollower()
+    const { submit } = mountFollower()
     const opId = await submit(WIDGET_EDIT)
 
     answerWithOpsResult({
@@ -279,11 +327,11 @@ describe('a human edit the doc host rejects', () => {
   })
 
   // The host refuses a whole batch with a top-level `code` and no `failed`
-  // entry. Read only from `failure`, every one of these collapses to
+  // entry. Read only from `failed`, every one of these collapses to
   // 'unspecified' — and because the telemetry dedupe keys on that, the first
   // would suppress the report for every later kind.
   it('classifies a batch-level refusal that carries no failed entry', async () => {
-    const submit = mountFollower()
+    const { submit } = mountFollower()
     await submit(WIDGET_EDIT)
 
     answerWithOpsResult(batchRefusal('catalog_mismatch'))
@@ -298,7 +346,7 @@ describe('a human edit the doc host rejects', () => {
   // same string, so they share one throttle key and the second is swallowed on
   // screen even though it is a different failure.
   it('reports each distinct batch-level code once', async () => {
-    const submit = mountFollower()
+    const { submit } = mountFollower()
 
     // One pending batch per answer: the notifier runs when a batch SETTLES, so
     // a result with nothing outstanding settles nothing and reports nothing.
@@ -313,34 +361,52 @@ describe('a human edit the doc host rejects', () => {
   })
 
   // Schema §4 aborts the remainder of a batch, so the prefix is still applied.
-  // A REAL two-op batch: the host applies the add and rejects the widget write
-  // behind it, so both the op ids and the failure index are the sender's own.
-  it('does not claim nothing was saved when a batch applied a prefix', async () => {
-    const submit = mountFollower()
-    const ids = await submit.batch([NODE_ADD, WIDGET_EDIT])
-    // Both must ride ONE frame, or this is not a prefix-applied batch.
-    expect(ids).toHaveLength(2)
-    const [appliedId, rejectedId] = ids
+  // Both partial branches are user-facing copy, so both are exercised: a wrong
+  // key on either would tell the user nothing was saved after a batch that
+  // saved a prefix. The rejected op's KIND picks the branch, so the two rows
+  // differ only in which op the host rejects.
+  it.for([
+    {
+      branch: 'widget',
+      ops: [NODE_ADD, WIDGET_EDIT],
+      code: 'opaque_widgets',
+      expected: WIDGET_REJECTION_TEXT
+    },
+    {
+      branch: 'generic',
+      ops: [WIDGET_EDIT, NODE_ADD],
+      code: 'uncatalogued_widget_write',
+      expected: GENERIC_REJECTION_TEXT
+    }
+  ])(
+    'does not claim nothing was saved when a batch applied a prefix ($branch)',
+    async ({ ops, code, expected }) => {
+      const { submitBatch } = mountFollower()
+      const frames = await submitBatch(ops)
+      // EXACTLY one frame carrying BOTH ops: across two frames the host could
+      // never answer with one applied id and one failure index.
+      expect(frames).toHaveLength(1)
+      const [[appliedId, rejectedId]] = frames
+      expect(rejectedId).toBeDefined()
 
-    answerWithOpsResult({
-      v: 1,
-      workflow_id: WORKFLOW_ID,
-      ok: false,
-      applied: [appliedId],
-      skipped: [],
-      failed: {
-        index: 1,
-        op_id: rejectedId,
-        code: 'opaque_widgets',
-        message: 'node is absent from the pinned catalog'
-      }
-    })
+      answerWithOpsResult({
+        v: 1,
+        workflow_id: WORKFLOW_ID,
+        ok: false,
+        applied: [appliedId],
+        skipped: [],
+        failed: {
+          index: 1,
+          op_id: rejectedId,
+          code,
+          message: 'node is absent from the pinned catalog'
+        }
+      })
 
-    // Still carries the canonical substring the e2e spec filters on, so the
-    // partial variant cannot break that contract.
-    expect(toastDetails()).toEqual([
-      expect.stringContaining(WIDGET_REJECTION_TEXT)
-    ])
-    expect(String(toastDetails()[0])).toContain('some earlier edits were')
-  })
+      // Still carries the canonical substring the e2e spec filters on, so the
+      // partial variant cannot break that contract.
+      expect(toastDetails()).toEqual([expect.stringContaining(expected)])
+      expect(String(toastDetails()[0])).toContain('some earlier edits were')
+    }
+  )
 })

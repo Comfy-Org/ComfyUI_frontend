@@ -458,21 +458,15 @@ test.describe(
       expect(boxB).toEqual(boxA)
     })
 
-    test('a widget edit the host rejects as opaque leaves the human-typed value on screen and the shared document unrevised', async ({
+    test('a rejected widget edit is reported to the human, and leaves the canvas and the document holding different values', async ({
       page,
       getWebSocket
     }) => {
       const { host, seedInput, copyBNodeId } =
         await driveThroughRejectedWidgetEdit(page, getWebSocket)
 
-      // What the human sees: the widget still shows what they typed. The
-      // rejection is reported (PM-1716, asserted below) but never rolls the
-      // canvas back, so the two views genuinely hold different values.
       await expect(seedInput).toHaveValue(String(EDITED_SEED_VALUE))
 
-      // What the shared document actually has: still the ORIGINAL seed, since
-      // the write never applied. The widget the human is looking at and the
-      // document a subsequent run would read from have now diverged.
       const projected = host.projection()
       const sampler = projected.nodes.find(
         (node) => String(node.id) === copyBNodeId
@@ -480,22 +474,11 @@ test.describe(
       expect(sampler?.widgets_values).toEqual(
         expect.arrayContaining([SEED_VALUE])
       )
-    })
 
-    test('a rejected widget write tells the user that their edit was not saved', async ({
-      page,
-      getWebSocket
-    }) => {
-      await driveThroughRejectedWidgetEdit(page, getWebSocket)
-
-      // PM-1716: KEEP-ALIVE #12 requires uncatalogued widget writes to fail
-      // loudly. Pin an actionable user-visible contract rather than merely
-      // requiring some generic error chrome.
-      // `toastErrors` is not filtered on `:visible` (only `visibleToasts` is),
-      // and `toContainText` passes on any matching node in the collection. Both
-      // together would accept a rejection message the user never sees, which is
-      // the opposite of "fail loudly". Filter to the message and require it on
-      // screen.
+      // `toastErrors` is not filtered on `:visible` (only `visibleToasts` is)
+      // and `toContainText` passes on any node in the collection, so either
+      // alone would accept a message the user never sees. Filter to the text
+      // and require it on screen.
       const rejectionToast = new ToastHelper(page).toastErrors.filter({
         hasText: 'Widget edit was rejected and was not saved'
       })

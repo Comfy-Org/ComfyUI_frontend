@@ -47,7 +47,7 @@ export interface DocOpFailure {
   message: string
 }
 
-interface DocOpsResult {
+export interface DocOpsResult {
   workflowId: string
   ok: boolean
   seq?: number

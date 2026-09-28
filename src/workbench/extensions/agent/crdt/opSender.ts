@@ -17,7 +17,7 @@
  */
 import type { Op } from '@comfyorg/comfy-multi-player'
 
-import type { DocOpFailure } from './docFrameClient'
+import type { DocOpsResult } from './docFrameClient'
 import type { GraphOperation } from './graphOperations'
 import { chunkWireOps, mintWireOps } from './opEnvelope'
 
@@ -25,16 +25,18 @@ const SEND_RETRY_LIMIT = 5
 const SEND_RETRY_INTERVAL_MS = 500
 const RESULT_TIMEOUT_MS = 10_000
 
-export interface OpsResultView {
-  workflowId?: string
-  ok: boolean
-  applied: string[]
-  skipped: string[]
-  /** Failed-batch diagnostics when the host provides them; `op_id` correlates an otherwise empty-list failure to its batch. `code` is the host's stable vocabulary — match on it, never on `message`. */
-  failure?: Partial<DocOpFailure>
-  /** Batch-level refusal code (`overloaded`, `catalog_mismatch`, …), which arrives with no `failure` at all. */
-  code?: string
-}
+/**
+ * The sender's view of a parsed `doc_ops_result`. Derived from the
+ * authoritative {@link DocOpsResult} rather than restated, so a protocol field
+ * has one owner and one name: a field that parses cannot then be dropped on
+ * its way here. `workflowId` is optional only because a sender may be driven
+ * without one.
+ */
+export type OpsResultView = Pick<
+  DocOpsResult,
+  'ok' | 'applied' | 'skipped' | 'code' | 'failed'
+> &
+  Partial<Pick<DocOpsResult, 'workflowId'>>
 
 export interface OpSenderDeps {
   /** `DocFrameClient.sendOps` shape: false = the transport cannot carry it now. */
@@ -279,7 +281,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       return
     }
     const identified = [...result.applied, ...result.skipped]
-    if (result.failure?.op_id) identified.push(result.failure.op_id)
+    if (result.failed?.op_id) identified.push(result.failed.op_id)
     if (identified.length > 0) {
       if (!identified.some((opId) => inFlight!.opIds.has(opId))) {
         // Names ops that are not in flight: a retired batch's own result, if
@@ -290,7 +292,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       settle({ state: 'acknowledged', ops: inFlight.ops, result })
       return
     }
-    // Anonymous failure (empty lists, no failure op_id): only attribute it
+    // Anonymous failure (empty lists, no failed op_id): only attribute it
     // to the in-flight batch once no stale credit could explain it.
     if (staleAnonymousBudget > 0) {
       staleAnonymousBudget--

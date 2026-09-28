@@ -11,19 +11,8 @@ import type { OpsResultView } from './opSender'
 
 const NOTICE_LIFE_MS = 10_000
 
-export interface RejectedOpNotifier {
-  notify(ops: readonly Op[], result: OpsResultView): void
-  cancel(): void
-}
-
-function rejectedOp(
-  ops: readonly Op[],
-  failure: Partial<DocOpFailure>
-): Op | undefined {
-  return (
-    ops.find((op) => op.op_id === failure.op_id) ??
-    (failure.index === undefined ? undefined : ops[failure.index])
-  )
+function rejectedOp(ops: readonly Op[], failed: DocOpFailure): Op | undefined {
+  return ops.find((op) => op.op_id === failed.op_id) ?? ops[failed.index]
 }
 
 /**
@@ -42,19 +31,18 @@ const WIDGET_WRITE_REJECTION_CODES = new Set([
 
 function isRejectedWidgetWrite(
   ops: readonly Op[],
-  failure: Partial<DocOpFailure> | undefined
+  failed: DocOpFailure | undefined
 ): boolean {
-  if (failure?.code === undefined) return false
+  if (failed === undefined) return false
   return (
-    WIDGET_WRITE_REJECTION_CODES.has(failure.code) &&
-    rejectedOp(ops, failure)?.op === 'set_widget'
+    WIDGET_WRITE_REJECTION_CODES.has(failed.code) &&
+    rejectedOp(ops, failed)?.op === 'set_widget'
   )
 }
 
 /**
- * Schema §4 aborts the REMAINDER of a batch, so a valid prefix is still
- * applied. Each partial variant keeps its non-partial text as a PREFIX, so the
- * substring the e2e spec filters on still matches either way.
+ * Schema §4 aborts the REMAINDER of a batch, so a rejected result can still
+ * carry an applied prefix — which is what `partial` distinguishes.
  */
 function noticeKey(widgetWrite: boolean, partial: boolean): string {
   if (widgetWrite) {
@@ -68,15 +56,20 @@ function noticeKey(widgetWrite: boolean, partial: boolean): string {
 }
 
 /**
- * Tells the human a batch the host refused never reached the shared document.
+ * Tells the human which of their edits the host refused. One follower owns one
+ * notifier. Actual guarantees, since two of them are narrower than they look:
  *
- * One follower owns one notifier. An uncatalogued node refuses every edit it
- * receives, so each distinct message is rate-limited to one toast per
- * `NOTICE_LIFE_MS` — per message, so a rejection of another kind inside that
- * window still speaks for itself — and each distinct failure code is reported
- * once, the policy `docFrameClient` already applies to invalid frames.
+ * - A refused batch may still have applied a prefix (schema §4 aborts the
+ *   remainder, not the batch), so this reports the REJECTED operations and not
+ *   that nothing reached the document.
+ * - Toasts are throttled per RENDERED MESSAGE, not per code, so two rejections
+ *   that render the same copy — every generic one does — collapse to one toast
+ *   for `NOTICE_LIFE_MS`. Only a differently-worded rejection speaks inside
+ *   that window.
+ * - Telemetry is deduplicated per CODE, so a distinct code still reports even
+ *   when its toast was collapsed. That is the channel to trust for counting.
  */
-export function createRejectedOpNotifier(): RejectedOpNotifier {
+export function createRejectedOpNotifier() {
   const throttledToasts = new Map<string, ThrottledFunction<() => void>>()
   const reportedCodes = new Set<string>()
 
@@ -84,7 +77,7 @@ export function createRejectedOpNotifier(): RejectedOpNotifier {
     code: string,
     widgetWrite: boolean,
     result: OpsResultView,
-    failure: Partial<DocOpFailure> | undefined
+    failed: DocOpFailure | undefined
   ): void {
     if (reportedCodes.has(code)) return
     reportedCodes.add(code)
@@ -94,7 +87,7 @@ export function createRejectedOpNotifier(): RejectedOpNotifier {
         errorType: widgetWrite
           ? 'error_applying_agent_widget_edit'
           : 'error_applying_agent_graph_edit',
-        context: { workflowId: result.workflowId, opId: failure?.op_id, code },
+        context: { workflowId: result.workflowId, opId: failed?.op_id, code },
         level: 'warning'
       }
     )
@@ -120,16 +113,16 @@ export function createRejectedOpNotifier(): RejectedOpNotifier {
   }
 
   return {
-    notify(ops, result) {
+    notify(ops: readonly Op[], result: OpsResultView) {
       if (result.ok) return
-      const { failure } = result
-      const widgetWrite = isRejectedWidgetWrite(ops, failure)
+      const { failed } = result
+      const widgetWrite = isRejectedWidgetWrite(ops, failed)
       // A batch-level refusal (`overloaded`, `catalog_mismatch`, …) carries no
       // `failure` at all; without this every one collapses to 'unspecified' and
       // the first suppresses the telemetry report for every later kind.
-      const code = failure?.code ?? result.code ?? 'unspecified'
-      reportOnce(code, widgetWrite, result, failure)
-      const partial = result.applied.length > 0 && failure?.index !== undefined
+      const code = failed?.code ?? result.code ?? 'unspecified'
+      reportOnce(code, widgetWrite, result, failed)
+      const partial = result.applied.length > 0 && failed !== undefined
       throttledToast(i18n.global.t(noticeKey(widgetWrite, partial)))()
     },
     cancel() {

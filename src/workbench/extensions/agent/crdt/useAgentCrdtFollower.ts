@@ -316,18 +316,10 @@ function startAgentCrdtFollower(
     sendOps: (target, tab, ops) => client.sendOps(target, tab, ops),
     onOpsResult(listener) {
       const handler: EventListener = (event) => {
-        if (!(event instanceof CustomEvent)) return
-        const detail = event.detail as OpsResultView & { failed?: unknown }
-        listener({
-          workflowId: detail.workflowId,
-          ok: detail.ok,
-          applied: detail.applied,
-          skipped: detail.skipped,
-          ...(detail.code === undefined ? {} : { code: detail.code }),
-          ...(detail.failed && typeof detail.failed === 'object'
-            ? { failure: detail.failed }
-            : {})
-        })
+        // `docFrameClient` already validated this into a DocOpsResult, which
+        // OpsResultView is derived from, so it travels whole.
+        if (event instanceof CustomEvent)
+          listener(event.detail as OpsResultView)
       }
       bridge.addEventListener('doc_ops_result', handler)
       return () => bridge.removeEventListener('doc_ops_result', handler)
