@@ -1,5 +1,6 @@
+import { whenever } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -172,7 +173,7 @@ export function registerAgentPanelExtension(): void {
       const { resolvedUserInfo, isAuthInitialized, isLoggedIn } =
         useCurrentUser()
       const { withConsent } = useAgentConsent()
-      const { firstRunTookScreen, whenStartupDecided } = useFirstRunEntry()
+      const { firstRunHoldsScreen, whenStartupDecided } = useFirstRunEntry()
       const onboardingTourStore = useOnboardingTourStore()
       registerWorkflowTabActivityTracker(enabled)
 
@@ -185,13 +186,15 @@ export function registerAgentPanelExtension(): void {
       )
 
       const screenHolder = (): AgentConsentNotOfferedReason | null =>
-        firstRunTookScreen.value
+        firstRunHoldsScreen.value
           ? 'first_run_screen'
           : onboardingTourStore.activeTour !== null
             ? 'tour_active'
             : null
+      const screenIsClear = computed(() => screenHolder() === null)
 
       const reportedWithheld = new Set<string>()
+      const offerHeld = ref(false)
       const withholdOffer = (
         reason: AgentConsentNotOfferedReason,
         userId = resolvedUserInfo.value?.id,
@@ -222,6 +225,7 @@ export function registerAgentPanelExtension(): void {
         const held = screenHolder()
         if (held) {
           withholdOffer(held)
+          offerHeld.value = true
           return
         }
 
@@ -247,7 +251,10 @@ export function registerAgentPanelExtension(): void {
             },
             canShow: () => {
               const heldAtMount = screenHolder()
-              if (heldAtMount) withholdOffer(heldAtMount, userId, workspaceId)
+              if (heldAtMount) {
+                withholdOffer(heldAtMount, userId, workspaceId)
+                offerHeld.value = true
+              }
               return heldAtMount === null
             }
           }
@@ -289,6 +296,13 @@ export function registerAgentPanelExtension(): void {
         [() => resolvedUserInfo.value?.id, () => consentStore.identity],
         loadConsentIfEligible,
         { immediate: true }
+      )
+      whenever(
+        () => offerHeld.value && screenIsClear.value,
+        () => {
+          offerHeld.value = false
+          loadConsentIfEligible()
+        }
       )
       watch(
         () => onboardingTourStore.activeTour,
