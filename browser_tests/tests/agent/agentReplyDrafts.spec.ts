@@ -258,7 +258,7 @@ test.describe('Agent reply drafts', { tag: ['@cloud', '@agent'] }, () => {
     })
 
     await expect(
-      panel.getByText(enMessages.agent.runApproval.lead)
+      panel.getByText(enMessages.agent.runApproval.leadBound)
     ).toBeVisible()
     await expect(
       panel.getByRole('button', {

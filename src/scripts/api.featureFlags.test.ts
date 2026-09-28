@@ -14,6 +14,7 @@ interface MockWebSocket {
 
 describe('API Feature Flags', () => {
   let mockWebSocket: MockWebSocket
+  let webSocketConstructor: Mock
   const wsEventHandlers: { [key: string]: (event: unknown) => void } = {}
 
   beforeEach(() => {
@@ -31,12 +32,15 @@ describe('API Feature Flags', () => {
     }
 
     // Mock WebSocket constructor
-    vi.stubGlobal('WebSocket', function (this: WebSocket) {
+    webSocketConstructor = vi.fn(function (this: WebSocket) {
       Object.assign(this, mockWebSocket)
     })
+    vi.stubGlobal('WebSocket', webSocketConstructor)
 
     // Reset API state
+    api.socket = null
     api.serverFeatureFlags.value = {}
+    api.serverFeatureFlagsSettled.value = false
 
     // Mock getClientFeatureFlags to return test feature flags
     vi.spyOn(api, 'getClientFeatureFlags').mockReturnValue({
@@ -47,6 +51,20 @@ describe('API Feature Flags', () => {
   })
 
   describe('Feature flags negotiation', () => {
+    it('marks feature flags stale without clearing them when resetting the socket identity', async () => {
+      const resettingApi = new ComfyApi()
+      resettingApi.serverFeatureFlags.value = { account_a_feature: true }
+      resettingApi.serverFeatureFlagsSettled.value = true
+
+      const resetPromise = resettingApi.resetSocket()
+
+      expect(resettingApi.serverFeatureFlags.value).toEqual({
+        account_a_feature: true
+      })
+      expect(resettingApi.serverFeatureFlagsSettled.value).toBe(false)
+      await resetPromise
+    })
+
     it('should send client feature flags as first message on connection', async () => {
       // Initialize API connection
       const initPromise = api.init()
@@ -103,6 +121,21 @@ describe('API Feature Flags', () => {
         max_upload_size: 104857600,
         capabilities: ['isolated_nodes', 'dynamic_models']
       })
+      expect(api.serverFeatureFlagsSettled.value).toBe(true)
+    })
+
+    it('settles feature flags immediately when the server delivers an empty map', () => {
+      void api.init()
+
+      wsEventHandlers['message']({
+        data: JSON.stringify({
+          type: 'feature_flags',
+          data: {}
+        })
+      })
+
+      expect(api.serverFeatureFlags.value).toEqual({})
+      expect(api.serverFeatureFlagsSettled.value).toBe(true)
     })
 
     it('should handle server without feature flags support', async () => {
@@ -136,8 +169,37 @@ describe('API Feature Flags', () => {
 
       await initPromise
 
+      await vi.advanceTimersByTimeAsync(5_000)
+
       // Server features should remain empty
       expect(api.serverFeatureFlags.value).toEqual({})
+      expect(api.serverFeatureFlagsSettled.value).toBe(true)
+    })
+
+    it('settles feature flags when the socket closes before opening', () => {
+      void api.init()
+
+      wsEventHandlers['error'](new Event('error'))
+      wsEventHandlers['close'](new Event('close'))
+
+      expect(mockWebSocket.close).toHaveBeenCalledOnce()
+      expect(api.serverFeatureFlagsSettled.value).toBe(true)
+    })
+
+    it('resets feature flag settlement for each replacement socket', async () => {
+      void api.init()
+
+      for (let attempt = 0; attempt < 3; attempt++) {
+        wsEventHandlers['open'](new Event('open'))
+        await vi.advanceTimersByTimeAsync(1_000)
+        wsEventHandlers['close'](new Event('close'))
+        expect(api.serverFeatureFlagsSettled.value).toBe(true)
+        await vi.advanceTimersByTimeAsync(300)
+        expect(api.serverFeatureFlagsSettled.value).toBe(false)
+      }
+
+      expect(api.serverFeatureFlags.value).toEqual({})
+      expect(webSocketConstructor).toHaveBeenCalledTimes(4)
     })
   })
 
