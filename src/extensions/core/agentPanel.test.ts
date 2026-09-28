@@ -66,7 +66,12 @@ let startupDecision: Promise<boolean> = Promise.resolve(true)
  * leaving the probe pending turns that cycle into an ordinary assertion.
  */
 const OFFER_ATTEMPT_CAP = 20
-let offerAttempts = 0
+// Probe here rather than `consentStore.load`, which individual tests replace.
+const startupProbe = vi.fn(() =>
+  startupProbe.mock.calls.length > OFFER_ATTEMPT_CAP
+    ? new Promise<boolean>(() => {})
+    : startupDecision
+)
 
 /** Getting Started takes the screen. */
 function screenShown(): void {
@@ -131,15 +136,7 @@ vi.mock(
       fromPartial<ReturnType<typeof useFirstRunEntry>>({
         gettingStartedVisible,
         firstRunHoldsScreen,
-        whenStartupDecided: () => {
-          offerAttempts += 1
-          // Counted here rather than on `consentStore.load` because tests
-          // override `startupDecision`, never this function, so no test can
-          // opt out of the breaker by installing its own consent read.
-          return offerAttempts > OFFER_ATTEMPT_CAP
-            ? new Promise<boolean>(() => {})
-            : startupDecision
-        }
+        whenStartupDecided: startupProbe
       })
   })
 )
@@ -250,7 +247,6 @@ describe('AgentPanel extension flag gate', () => {
     screenClosed()
     activeTour.value = null
     startupDecision = Promise.resolve(true)
-    offerAttempts = 0
     vi.spyOn(useOnboardingTourStore(), 'activeTour', 'get').mockImplementation(
       () => activeTour.value
     )
@@ -517,7 +513,7 @@ describe('AgentPanel extension flag gate', () => {
     // is what turns that into a red test instead of a dead runner: the bound
     // is exceeded within a few microtasks, long before the spin is expensive.
     expect(
-      offerAttempts,
+      startupProbe.mock.calls.length,
       'the offer was re-driven while a surface still held it: release disagrees with hold about what "the screen" is'
     ).toBeLessThanOrEqual(OFFER_ATTEMPTS_WITHOUT_RELEASE)
     expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
