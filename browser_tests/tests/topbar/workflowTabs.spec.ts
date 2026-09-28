@@ -5,6 +5,17 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Workflow tabs', () => {
   test.describe('Path-backed active-tab identity', () => {
+    const pathBackedWorkflowNames = [
+      'path-backed-first',
+      'path-backed-second'
+    ] as const
+
+    test.afterEach(async ({ comfyPage }) => {
+      for (const name of pathBackedWorkflowNames) {
+        await comfyPage.workflow.deleteWorkflow(name)
+      }
+    })
+
     test('keeps exactly one active tab after selecting several workflows', async ({
       comfyPage
     }) => {
@@ -21,8 +32,7 @@ test.describe('Workflow tabs', () => {
       comfyPage
     }) => {
       const topbar = comfyPage.menu.topbar
-      const firstWorkflow = 'path-backed-first'
-      const secondWorkflow = 'path-backed-second'
+      const [firstWorkflow, secondWorkflow] = pathBackedWorkflowNames
 
       await topbar.saveWorkflow(firstWorkflow)
       await topbar.newWorkflowButton.click()
