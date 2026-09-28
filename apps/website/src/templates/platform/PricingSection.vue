@@ -4,6 +4,7 @@ import { Coins as CreditsIcon } from '@lucide/vue'
 import SectionHeader from '../../components/common/SectionHeader.vue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import type { StorageLabelKey } from '../../data/rateCard'
 import {
   formatCreditsPerGbMonth,
   formatCreditsPerHour,
@@ -11,7 +12,8 @@ import {
   formatUsdPerGbMonth,
   formatUsdPerHour,
   getStorageRate,
-  rateCard
+  rateCard,
+  STORAGE_TYPE_LABEL_KEYS
 } from '../../data/rateCard'
 
 const {
@@ -34,21 +36,6 @@ const gpuRates = rateCard.gpus.map((rate) => ({
   price: formatUsdPerHour(rate.pricePerHourUsd),
   credits: formatCreditsPerHour(rate.creditsPerHour)
 }))
-
-type StorageLabelKey =
-  | 'standardUnder1tb'
-  | 'standardOver1tb'
-  | 'highPerformance'
-  | 'containerDisk'
-
-// Maps the rate card's stable storageType to the i18n label keys below,
-// which predate the rate card and read better split into title + sub-label.
-const STORAGE_TYPE_LABEL_KEYS: Record<string, StorageLabelKey> = {
-  network_standard: 'standardUnder1tb',
-  network_standard_1tb_plus: 'standardOver1tb',
-  network_high_performance: 'highPerformance',
-  container_disk: 'containerDisk'
-}
 
 function storageLabelKey(storageType: string): StorageLabelKey {
   const key = STORAGE_TYPE_LABEL_KEYS[storageType]

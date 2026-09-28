@@ -1,6 +1,7 @@
 import { renameSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
+import { findRateCardProblems } from '../src/data/rateCard'
 import { zRateCard } from '../src/types/rate-card/zod.gen'
 
 const RATE_CARD_URL = 'https://platformapi.comfy.org/deploy/v1/rate-card'
@@ -26,6 +27,16 @@ if (!result.success) {
     `Snapshot refresh aborted. Response failed schema validation: ${result.error.issues
       .map((issue) => `${issue.path.join('.') || '<root>'}: ${issue.message}`)
       .join('; ')}`
+  )
+  process.exit(1)
+}
+
+// Schema-valid doesn't mean render-safe: PricingSection throws if a storage
+// entry has no label mapping or the worked example's rate is missing.
+const problems = findRateCardProblems(result.data)
+if (problems.length > 0) {
+  console.error(
+    `Snapshot refresh aborted. Response would break the pricing page: ${problems.join('; ')}`
   )
   process.exit(1)
 }

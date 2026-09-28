@@ -1,14 +1,29 @@
 import { describe, expect, it } from 'vitest'
 
+import type { RateCard } from '../types/rate-card'
 import {
+  findRateCardProblems,
   formatCreditsPerGbMonth,
   formatCreditsPerHour,
   formatStorageExampleAmount,
   formatUsdPerGbMonth,
   formatUsdPerHour,
   getStorageRate,
-  rateCard
+  rateCard,
+  STORAGE_TYPE_LABEL_KEYS
 } from './rateCard'
+
+function cardWithStorageTypes(storageTypes: string[]): RateCard {
+  return {
+    gpus: rateCard.gpus,
+    storage: storageTypes.map((storageType) => ({
+      storageType,
+      label: storageType,
+      pricePerGbMonthUsd: 0.2,
+      creditsPerGbMonth: 42.2
+    }))
+  }
+}
 
 describe('rateCard', () => {
   it('parses the committed snapshot into a validated rate card', () => {
@@ -38,5 +53,31 @@ describe('rateCard', () => {
   it('computes the storage worked example from the storage rate', () => {
     const rate = getStorageRate('network_standard')
     expect(formatStorageExampleAmount(rate)).toBe('$100.00')
+  })
+
+  it('maps every storageType in the committed snapshot to a label key', () => {
+    for (const rate of rateCard.storage) {
+      expect(STORAGE_TYPE_LABEL_KEYS[rate.storageType]).toBeDefined()
+    }
+  })
+
+  describe('findRateCardProblems', () => {
+    it('finds no problems in the committed snapshot', () => {
+      expect(findRateCardProblems(rateCard)).toEqual([])
+    })
+
+    it('reports a storage entry with no label mapping', () => {
+      const card = cardWithStorageTypes(['network_standard', 'unmapped_type'])
+      expect(findRateCardProblems(card)).toEqual([
+        'No pricing label mapped for storage type: unmapped_type'
+      ])
+    })
+
+    it('reports a missing network_standard rate', () => {
+      const card = cardWithStorageTypes(['container_disk'])
+      expect(findRateCardProblems(card)).toEqual([
+        'Missing required storage type: network_standard'
+      ])
+    })
   })
 })
