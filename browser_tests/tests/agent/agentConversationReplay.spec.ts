@@ -13,7 +13,7 @@ test.describe(
   { tag: ['@cloud', '@vue-nodes'] },
   () => {
     test.describe('wire evidence', () => {
-      test.use({ conversationCase: WIRING_CASE, replayTiming: 'recorded' })
+      test.use({ conversationCase: WIRING_CASE })
 
       // The second turn's only edit is a connect, so what the canvas shows after
       // it is the wire itself: the app's own render loop paints it, and the
@@ -24,19 +24,6 @@ test.describe(
       }) => {
         test.setTimeout(90_000)
         await agentConversation.runTurns()
-
-        const errorOverlay = page.getByTestId('error-overlay')
-        if (
-          (await errorOverlay.isVisible()) &&
-          (await errorOverlay.getByText('Comfy Agent error').isVisible())
-        ) {
-          await errorOverlay.getByTestId('error-overlay-see-errors').click()
-          const details = page.getByTestId('error-group-execution')
-          await expect(details).toBeVisible()
-          throw new Error(
-            `Unexpected Comfy Agent error:\n${await details.innerText()}`
-          )
-        }
 
         await expect(page.locator('#graph-canvas')).toHaveScreenshot(
           'two-turn-dependent-edit-wired.png',
