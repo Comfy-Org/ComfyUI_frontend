@@ -4,10 +4,22 @@ import { watch } from 'vue'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 type CanvasOp = () => void
+export interface CameraIntent {
+  key: string
+  loadId: number
+  graph: object
+  kind: 'fit' | 'restore'
+  isCurrent: () => boolean
+  run: CanvasOp
+}
+type ScheduledCanvasOp =
+  | { type: 'op'; run: CanvasOp }
+  | { type: 'camera'; intent: CameraIntent }
 
 interface CanvasScheduler {
   /** Queue an op that runs in the next RAF when canvas is visible. */
   schedule(op: CanvasOp): void
+  scheduleCameraIntent(intent: CameraIntent): void
   /** Execute all queued ops synchronously (if canvas is ready). */
   flush(): void
   /** Discard all pending ops and cancel any scheduled RAF. */
@@ -21,7 +33,7 @@ interface CanvasScheduler {
 export const useCanvasScheduler = createSharedComposable(
   (): CanvasScheduler => {
     const canvasStore = useCanvasStore()
-    const queue: CanvasOp[] = []
+    const queue: ScheduledCanvasOp[] = []
     let rafId: number | null = null
 
     function isCanvasReady(): boolean {
@@ -43,16 +55,27 @@ export const useCanvasScheduler = createSharedComposable(
     }
 
     function schedule(op: CanvasOp): void {
-      queue.push(op)
+      queue.push({ type: 'op', run: op })
+      if (isCanvasReady()) requestFlush()
+    }
+
+    function scheduleCameraIntent(intent: CameraIntent): void {
+      const index = queue.findIndex(
+        (entry) => entry.type === 'camera' && entry.intent.key === intent.key
+      )
+      if (index >= 0) queue.splice(index, 1)
+      queue.push({ type: 'camera', intent })
       if (isCanvasReady()) requestFlush()
     }
 
     function flush(): void {
       if (!isCanvasReady()) return
       const ops = queue.splice(0)
-      for (const [index, op] of ops.entries()) {
+      for (const [index, entry] of ops.entries()) {
         try {
-          op()
+          if (entry.type === 'camera' && !entry.intent.isCurrent()) continue
+          if (entry.type === 'camera') entry.intent.run()
+          else entry.run()
         } catch (err) {
           console.error(
             '[CanvasScheduler] Scheduled canvas operation failed during flush',
@@ -89,6 +112,13 @@ export const useCanvasScheduler = createSharedComposable(
       }
     )
 
-    return { schedule, flush, clear, pending, isCanvasReady }
+    return {
+      schedule,
+      scheduleCameraIntent,
+      flush,
+      clear,
+      pending,
+      isCanvasReady
+    }
   }
 )

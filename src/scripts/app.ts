@@ -298,6 +298,7 @@ function createNodeOutputsMutationView(
 }
 
 export class ComfyApp {
+  private graphLoadId = 0
   /**
    * List of entries to queue
    */
@@ -1086,6 +1087,7 @@ export class ComfyApp {
     const viewport = measureViewportFromElement(canvas)
     applyViewport(viewport, canvas, this.canvas.bgcanvas)
     this.canvas.dpr = viewport.dpr
+    useCanvasScheduler().flush()
     this.canvas?.draw(true, true)
   }
 
@@ -1265,7 +1267,7 @@ export class ComfyApp {
     } = {}
   ): Promise<LoadedComfyWorkflow | boolean> {
     const canvasScheduler = useCanvasScheduler()
-    canvasScheduler.clear()
+    const loadId = ++this.graphLoadId
 
     const {
       checkForRerouteMigration = false,
@@ -1439,7 +1441,14 @@ export class ComfyApp {
               this.canvas.visible_area
             )
           ) {
-            canvasScheduler.schedule(() => useLitegraphService().fitView())
+            canvasScheduler.scheduleCameraIntent({
+              key: 'workflow-load-fallback',
+              loadId,
+              graph: this.rootGraph,
+              kind: 'fit',
+              isCurrent: () => loadId === this.graphLoadId,
+              run: () => useLitegraphService().fitView()
+            })
           }
         } else {
           useLitegraphService().fitView()
@@ -1470,17 +1479,19 @@ export class ComfyApp {
           )
         }
 
-        canvasScheduler.schedule(() => {
-          const vp = measureViewportFromElement(this.canvasEl)
-          applyViewport(vp, this.canvasEl, this.canvas.bgcanvas)
-          this.canvas.dpr = vp.dpr
-          // Match the deprecated resizeCanvas() flush so the canvas paints
-          // immediately after the scheduler restores its size; without this
-          // the template-load path can leave #graph-canvas at width=0/height=0
-          // when transitioning from app mode (regression of
-          // appModeTemplateViewport.spec.ts).
-          this.canvas?.draw(true, true)
-          fitView()
+        canvasScheduler.scheduleCameraIntent({
+          key: 'workflow-load',
+          loadId,
+          graph: this.rootGraph,
+          kind: openSource === 'template' ? 'fit' : 'restore',
+          isCurrent: () => loadId === this.graphLoadId,
+          run: () => {
+            const vp = measureViewportFromElement(this.canvasEl)
+            applyViewport(vp, this.canvasEl, this.canvas.bgcanvas)
+            this.canvas.dpr = vp.dpr
+            fitView()
+            this.canvas.draw(true, true)
+          }
         })
       } catch (error) {
         useDialogService().showErrorDialog(error, {

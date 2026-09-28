@@ -164,6 +164,32 @@ describe('useCanvasScheduler', () => {
     expect(calls).toEqual(['first', 'second', 'third'])
   })
 
+  it('supersedes camera intent by key and rejects stale identity', async () => {
+    const scheduler = await createScheduler()
+    const stale = vi.fn()
+    const current = vi.fn()
+    scheduler.scheduleCameraIntent({
+      key: 'workflow-load',
+      loadId: 1,
+      graph: {},
+      kind: 'fit',
+      isCurrent: () => false,
+      run: stale
+    })
+    scheduler.scheduleCameraIntent({
+      key: 'workflow-load',
+      loadId: 2,
+      graph: {},
+      kind: 'restore',
+      isCurrent: () => true,
+      run: current
+    })
+    expect(scheduler.pending()).toBe(1)
+    runNextAnimationFrame()
+    expect(stale).not.toHaveBeenCalled()
+    expect(current).toHaveBeenCalledOnce()
+  })
+
   it('continues executing remaining ops when one throws', async () => {
     const scheduler = await createScheduler()
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})

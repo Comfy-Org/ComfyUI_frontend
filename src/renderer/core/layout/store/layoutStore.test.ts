@@ -943,7 +943,7 @@ describe('layoutStore content-size performance contract', () => {
 
 describe('layoutStore queryLinkSegmentAtPoint DPR threading', () => {
   beforeEach(() => {
-    layoutStore.initializeFromLiteGraph([])
+    layoutStore.resetForTests()
   })
 
   // Minimal Path2D stub — happy-dom does not implement Path2D, but the store
@@ -951,12 +951,14 @@ describe('layoutStore queryLinkSegmentAtPoint DPR threading', () => {
   const stubPath = {} as unknown as Path2D
 
   const seedSegment = (linkId = 1, rerouteId: number | null = null) => {
-    layoutStore.updateLinkSegmentLayout(linkId, rerouteId, {
+    const brandedLinkId = toLinkId(linkId)
+    const brandedRerouteId = rerouteId == null ? null : toRerouteId(rerouteId)
+    layoutStore.updateLinkSegmentLayout(brandedLinkId, brandedRerouteId, {
       path: stubPath,
       bounds: { x: 0, y: 0, width: 100, height: 100 },
       centerPos: { x: 50, y: 50 }
     })
-    return { linkId, rerouteId }
+    return { linkId: brandedLinkId, rerouteId: brandedRerouteId }
   }
 
   const makeCtx = (hit = true) => {
