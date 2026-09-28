@@ -40,6 +40,10 @@ test.describe('Agent run permissions popover', { tag: '@cloud' }, () => {
       exact: true
     })
 
+    await expect(composer).toBeVisible()
+    await expect(addToPrompt).toBeVisible()
+    await expect(runMode).toBeVisible()
+    await expect(send).toBeVisible()
     await composer.fill('Make the image warmer')
     await composer.focus()
     await comfyPage.page.keyboard.press('Tab')
@@ -58,22 +62,28 @@ test.describe('Agent run permissions popover', { tag: '@cloud' }, () => {
     await agentPanel.open()
     await agentPanel.selectWorkflow()
     const panel = agentPanel.root
-    const addToPrompt = panel.getByRole('button', {
-      name: enMessages.agent.addToPrompt
-    })
+    // The modal menu makes the composer subtree inert while it is open, so a
+    // role locator intentionally stops resolving the trigger at that point.
+    // Keep the trigger's DOM identity to inspect its disclosure state through
+    // the complete closed → open → closed transition.
+    const addToPrompt = panel.locator(
+      `button[aria-label="${enMessages.agent.addToPrompt}"]`
+    )
     const runMode = panel.getByRole('button', {
       name: enMessages.agent.runModeTriggerAsk,
       exact: true
     })
+    const attachFiles = comfyPage.page.getByRole('menuitem', {
+      name: enMessages.agent.attachFiles
+    })
+
+    await expect(addToPrompt).toBeVisible()
+    await expect(runMode).toBeVisible()
 
     await expect(addToPrompt).toHaveAttribute('aria-expanded', 'false')
     await addToPrompt.click()
     await expect(addToPrompt).toHaveAttribute('aria-expanded', 'true')
-    await expect(
-      comfyPage.page.getByRole('menuitem', {
-        name: enMessages.agent.attachFiles
-      })
-    ).toBeVisible()
+    await expect(attachFiles).toBeVisible()
 
     await comfyPage.page.keyboard.press('Escape')
     await expect(addToPrompt).toHaveAttribute('aria-expanded', 'false')
