@@ -986,6 +986,40 @@ describe('CinematicStudio', () => {
       expect(signals[0].aborted).toBe(true)
     })
 
+    it('asks before Back to the other app would cancel a take still rendering', async () => {
+      const signals: AbortSignal[] = []
+      vi.mocked(router_render).mockImplementation(
+        (_slug, _parameters, options) =>
+          new Promise(() => {
+            if (options.signal) signals.push(options.signal)
+          })
+      )
+      render(CinematicStudioPage, { props: { models } })
+      const user = userEvent.setup()
+      await user.type(await screen.findByLabelText('Scene'), 'A diner at dawn')
+      await user.click(generateButton())
+
+      window.history.replaceState(null, '', '/models/apps/reshoot/')
+      window.dispatchEvent(new PopStateEvent('popstate'))
+      const dialog = await screen.findByRole('dialog', {
+        name: t('workshop.run.leaveTitle')
+      })
+
+      expect(screen.getByLabelText('Scene')).toBeInTheDocument()
+      expect(signals[0].aborted).toBe(false)
+      expect(window.location.pathname).toBe('/models/apps/cinematic-studio/')
+      await user.click(
+        within(dialog).getByRole('button', {
+          name: t('workshop.run.leaveAnyway')
+        })
+      )
+      expect(
+        await screen.findByRole('complementary', { name: 'Your clip' })
+      ).toBeInTheDocument()
+      expect(signals[0].aborted).toBe(true)
+      expect(window.location.pathname).toBe('/models/apps/reshoot/')
+    })
+
     it('swaps to the Re-shoot app, which has a single layout', async () => {
       window.history.replaceState(
         null,
