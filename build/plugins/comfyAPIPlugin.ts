@@ -38,10 +38,7 @@ function defaultSrcRoot(): string {
   return path.join(process.cwd(), 'src')
 }
 
-export function isLegacyFile(
-  id: string,
-  srcRoot: string = defaultSrcRoot()
-): boolean {
+function isLegacyFile(id: string, srcRoot: string = defaultSrcRoot()): boolean {
   if (!id.endsWith('.ts')) return false
 
   const relativePath = path.relative(srcRoot, id).replace(/\\/g, '/')
