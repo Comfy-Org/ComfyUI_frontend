@@ -208,6 +208,8 @@ import type { AccountUser, SessionSnapshot } from '@comfyorg/account-core/sessio
 import { createSessionClient } from '@comfyorg/account-core/session'
 import type { WebSessionResult } from '@comfyorg/account-core/webSession'
 import { readWebSession } from '@comfyorg/account-core/webSession'
+import type { FeaturesReadOptions } from '@comfyorg/account-core/webSessionFlag'
+import { readWebSessionProbe } from '@comfyorg/account-core/webSessionFlag'
 import type { RequestAuthorization } from '@comfyorg/account-core/requestAuth'
 import { createRequestAuthorizer } from '@comfyorg/account-core/requestAuth'
 import type { SessionTokenResult } from '@comfyorg/account-core/sessionTokenMint'
@@ -274,6 +276,7 @@ export const values = {
   createBoundedOperation,
   createSessionClient,
   readWebSession,
+  readWebSessionProbe,
   createRequestAuthorizer,
   createSessionTokenMint,
   createWebSessionIdentity,
@@ -314,6 +317,7 @@ export interface Types {
   boundedOperation: OperationHandle
   session: SessionSnapshot
   webSession: WebSessionResult
+  featuresRead: FeaturesReadOptions
   requestAuth: RequestAuthorization
   sessionTokenMint: SessionTokenResult
   webSessionIdentity: WebSessionIdentityState

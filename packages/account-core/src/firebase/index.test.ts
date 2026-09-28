@@ -910,3 +910,38 @@ describe('resolveStripePublishableKey', () => {
     expect(second).toBe('pk_live_123')
   })
 })
+
+describe('resolveWebSessionProbe', () => {
+  function jsonFetch(body: unknown): typeof fetch {
+    return vi.fn(async () => new Response(JSON.stringify(body)))
+  }
+
+  it.for([
+    { body: { stripe_publishable_key: 'pk' }, expected: false },
+    {
+      body: { stripe_publishable_key: 'pk', web_session_probe: false },
+      expected: false
+    },
+    {
+      body: { stripe_publishable_key: 'pk', web_session_probe: true },
+      expected: true
+    }
+  ])(
+    'reads $body from the fetch resolveStripePublishableKey already shares',
+    async ({ body, expected }) => {
+      const fetchImpl = jsonFetch(body)
+      vi.stubGlobal('fetch', fetchImpl)
+      const { resolveStripePublishableKey, resolveWebSessionProbe } =
+        await import('./index.js')
+      const options = { cloudBaseUrl: 'https://probe.example', timeoutMs: 4000 }
+
+      const [, probe] = await Promise.all([
+        resolveStripePublishableKey(options),
+        resolveWebSessionProbe(options)
+      ])
+
+      expect(probe).toBe(expected)
+      expect(fetchImpl).toHaveBeenCalledOnce()
+    }
+  )
+})
