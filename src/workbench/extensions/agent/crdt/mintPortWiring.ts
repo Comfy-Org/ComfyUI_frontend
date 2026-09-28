@@ -8,7 +8,7 @@
  */
 import { registerDocBoundRootGraphProbe } from '@/lib/litegraph/src/docBoundGraphs'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import type { RootGraphId } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'
 import type { WorkflowNode } from '@comfyorg/comfy-multi-player'
@@ -28,12 +28,37 @@ import { attachWidgetMintPort } from './widgetMintPort'
 import { createMintSession } from './mintSession'
 import type { MintSession } from './mintSession'
 
+/** Node fields required to serialize an undo/redo restore snapshot. */
+type MintableNodeSerialization = Pick<
+  ISerialisedNode,
+  'id' | 'type' | 'pos' | 'widgets_values_named'
+>
+
+export interface MintableNode {
+  id: string | number
+  isVirtualNode?: boolean
+  widgets?: { name: string; type: string; serialize?: boolean }[]
+  serialize(): MintableNodeSerialization
+}
+
 /** The graph surface the wiring reads for snapshots and scope. */
 export interface MintableGraph {
   id: string
   rootGraph?: { id: string }
-  getNodeById(id: NodeId): LGraphNode | null
-  _nodes: LGraphNode[]
+  getNodeById(id: NodeId): MintableNode | null
+  _nodes: MintableNode[]
+  /** Root-graph links; read only to diff an undo/redo restore. */
+  links?: { values(): Iterable<MintableLink> }
+}
+
+/** The link fields an undo/redo restore diff needs. */
+export interface MintableLink {
+  id: string | number
+  origin_id: string | number
+  origin_slot: number
+  target_id: string | number
+  target_slot: number
+  type: unknown
 }
 
 export interface MintPortWiringDeps {
@@ -49,6 +74,16 @@ export interface MintPortWiringDeps {
   localActorPrefix: string
   /** The live root graph, or null when no workflow is open. */
   getGraph(): MintableGraph | null
+  /**
+   * True while the active workflow's ChangeTracker replays an undo/redo
+   * state (`_restoringState`). Such a load is a human intent whose result
+   * must reach the doc, so the wiring diffs the graph across the load bracket
+   * and mints node additions/deletions, changed present widget values, and
+   * link additions (QAF-51). Widget-key deletion and standalone disconnect
+   * are outside that subset; FE-2229 tracks them along with the restore
+   * target/follower races. Optional: absent means never.
+   */
+  isRestoringState?(): boolean
   /**
    * The bound workflow's own stored root graph id, or null when no workflow
    * is bound. Read from the workflow's serialized state rather than the live
@@ -135,10 +170,10 @@ export function runMintPortsIntentionalClear<T>(clear: () => T): T {
  * (`uncatalogued_widget_write`) but stores a positional array opaquely, so
  * those keep the positional form `serialize()` already produced.
  */
-function serializeForMint(node: LGraphNode): WorkflowNode | null {
+function serializeForMint(node: MintableNode): WorkflowNode | null {
   let serialized: Record<string, unknown>
   try {
-    serialized = node.serialize() as unknown as Record<string, unknown>
+    serialized = { ...node.serialize() }
   } catch {
     return null
   }
@@ -153,7 +188,7 @@ function serializeForMint(node: LGraphNode): WorkflowNode | null {
 }
 
 function valueWidgetsOnly(
-  node: LGraphNode,
+  node: MintableNode,
   named: object
 ): Record<string, unknown> {
   const filtered: Record<string, unknown> = {}
@@ -164,6 +199,171 @@ function valueWidgetsOnly(
     }
   }
   return filtered
+}
+
+/** Root-graph nodes and links keyed by stringified id (undo/redo diff input). */
+interface RestoreSnapshot {
+  nodes: Map<string, WorkflowNode>
+  links: Map<string, MintableLink>
+  /**
+   * Ids of nodes that are present in the graph but whose `serialize()` threw,
+   * so they are missing from `nodes`. Absence from `nodes` otherwise means
+   * "not in the graph", which the diff reads as an addition or a deletion.
+   */
+  unserializableNodeIds: string[]
+}
+
+function snapshotGraph(graph: MintableGraph): RestoreSnapshot {
+  const nodes = new Map<string, WorkflowNode>()
+  const unserializableNodeIds: string[] = []
+  for (const node of graph._nodes) {
+    const serialized = serializeForMint(node)
+    if (serialized) nodes.set(String(node.id), serialized)
+    else unserializableNodeIds.push(String(node.id))
+  }
+  const links = new Map<string, MintableLink>()
+  if (typeof graph.links?.values === 'function') {
+    for (const link of graph.links.values()) links.set(String(link.id), link)
+  }
+  return { nodes, links, unserializableNodeIds }
+}
+
+function widgetValuesOf(node: WorkflowNode): Record<string, unknown> {
+  const values = node.widgets_values
+  return values != null && typeof values === 'object' && !Array.isArray(values)
+    ? values
+    : {}
+}
+
+function removedNodeOperations(
+  before: RestoreSnapshot,
+  after: RestoreSnapshot
+): GraphOperation[] {
+  return [...before.nodes.keys()].flatMap((id) => {
+    if (after.nodes.has(id)) return []
+    const removedLinks = [...before.links.values()]
+      .filter(
+        (link) => String(link.origin_id) === id || String(link.target_id) === id
+      )
+      .map((link) => link.id)
+    return [{ op: 'delete_node', node_id: id, removed_links: removedLinks }]
+  })
+}
+
+function addedNodeOperations(
+  before: RestoreSnapshot,
+  after: RestoreSnapshot
+): GraphOperation[] {
+  return [...after.nodes].flatMap(([id, node]) =>
+    before.nodes.has(id)
+      ? []
+      : [
+          {
+            op: 'add_node',
+            node_id: id,
+            class_type: node.type,
+            pos: Array.isArray(node.pos) ? node.pos : [0, 0],
+            node
+          }
+        ]
+  )
+}
+
+function changedWidgetOperations(
+  before: RestoreSnapshot,
+  after: RestoreSnapshot
+): GraphOperation[] {
+  return [...after.nodes].flatMap(([id, node]) => {
+    const previous = before.nodes.get(id)
+    if (!previous) return []
+    const oldValues = widgetValuesOf(previous)
+    return Object.entries(widgetValuesOf(node)).flatMap(([name, value]) => {
+      const old = oldValues[name]
+      return JSON.stringify(old) === JSON.stringify(value)
+        ? []
+        : [{ op: 'set_widget', node_id: id, widget: name, value, old }]
+    })
+  })
+}
+
+function addedLinkOperations(
+  before: RestoreSnapshot,
+  after: RestoreSnapshot
+): GraphOperation[] {
+  return [...after.links].flatMap(([id, link]) =>
+    before.links.has(id)
+      ? []
+      : [
+          {
+            op: 'connect',
+            link_id: link.id,
+            from_node: link.origin_id,
+            from_slot: link.origin_slot,
+            to_node: link.target_id,
+            to_slot: link.target_slot,
+            link_type: String(link.type)
+          }
+        ]
+  )
+}
+
+function reportDetachedLinks(
+  before: RestoreSnapshot,
+  after: RestoreSnapshot
+): void {
+  for (const [id, link] of before.links) {
+    if (after.links.has(id)) continue
+    const endpointRemoved =
+      !after.nodes.has(String(link.origin_id)) ||
+      !after.nodes.has(String(link.target_id))
+    if (!endpointRemoved) {
+      console.error(
+        '[agent-crdt] undo/redo restore removed link without its node; doc may diverge',
+        id
+      )
+    }
+  }
+}
+
+/**
+ * Express the supported undo/redo subset as semantic ops: node deletions
+ * (with the links they severed), node additions, changed values for widget
+ * keys present after restore, and link additions. Removed widget keys and
+ * standalone disconnects are not representable by the current operation
+ * contract; a standalone disconnect is surfaced rather than silently dropped.
+ * FE-2229 tracks lifting both limits.
+ *
+ * A snapshot that could not serialize every present node is incomplete, not a
+ * smaller graph: the diff would read a node that threw only after the restore
+ * as a deletion and mint `delete_node` for a node still on the canvas (and the
+ * mirror case as a duplicate `add_node`). Serialization failure is not
+ * representable as an operation either, so an incomplete snapshot on either
+ * side aborts the whole diff loudly instead of minting a destructive guess.
+ */
+function diffRestore(
+  before: RestoreSnapshot,
+  after: RestoreSnapshot
+): GraphOperation[] {
+  const unserializable = [
+    ...new Set([
+      ...before.unserializableNodeIds,
+      ...after.unserializableNodeIds
+    ])
+  ]
+  if (unserializable.length > 0) {
+    console.error(
+      '[agent-crdt] undo/redo restore snapshot could not serialize every present node; skipping the restore diff so the doc is not told a still-present node was deleted',
+      unserializable
+    )
+    return []
+  }
+  reportDetachedLinks(before, after)
+  return [
+    ...removedNodeOperations(before, after),
+    ...addedNodeOperations(before, after),
+    ...changedWidgetOperations(before, after),
+    ...addedLinkOperations(before, after)
+  ]
 }
 
 export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
@@ -291,6 +491,14 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
 
   let loadBracketOpen = false
 
+  /**
+   * Graph snapshot taken at the open of an undo/redo restore bracket. Every
+   * mint is suppressed while a graph loads, so without this diff the doc never
+   * learns what the undo removed and the next remote frame re-materialises it
+   * (QAF-51).
+   */
+  let restoreSnapshot: RestoreSnapshot | null = null
+
   // The ports gate their sends on exactly this trio, so the same read also
   // answers litegraph's mint-time question: a graph whose edits reach the doc
   // is a graph the agent mints into too, and must mint from the disjoint
@@ -316,11 +524,23 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
       if (loadBracketOpen) return
       loadBracketOpen = true
       session.beginGraphTeardown()
+      restoreSnapshot = null
+      if (deps.isRestoringState?.() && deps.isEnabled() && deps.isDocBound()) {
+        const graph = deps.getGraph()
+        if (graph) restoreSnapshot = snapshotGraph(graph)
+      }
     },
     onAfterGraphConfigure() {
       if (!loadBracketOpen) return
       loadBracketOpen = false
       session.endGraphTeardown()
+      const before = restoreSnapshot
+      restoreSnapshot = null
+      if (!before) return
+      const graph = deps.getGraph()
+      if (!graph) return
+      const operations = diffRestore(before, snapshotGraph(graph))
+      if (operations.length > 0) deps.enqueue(operations)
     },
     detach() {
       activeWirings.delete(wiring)

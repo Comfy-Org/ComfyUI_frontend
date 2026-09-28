@@ -207,6 +207,8 @@ import type { FeaturesReadOptions } from '@comfyorg/account-core/webSessionFlag'
 import { readWebSessionProbe } from '@comfyorg/account-core/webSessionFlag'
 import type { RequestAuthorization } from '@comfyorg/account-core/requestAuth'
 import { createRequestAuthorizer } from '@comfyorg/account-core/requestAuth'
+import type { SessionTokenResult } from '@comfyorg/account-core/sessionTokenMint'
+import { createSessionTokenMint } from '@comfyorg/account-core/sessionTokenMint'
 import type { WebSessionIdentityState } from '@comfyorg/account-core/webSessionIdentity'
 import { createWebSessionIdentity } from '@comfyorg/account-core/webSessionIdentity'
 import type { BillingErrorCode } from '@comfyorg/account-core/billing'
@@ -267,6 +269,7 @@ export const values = {
   readWebSession,
   readWebSessionProbe,
   createRequestAuthorizer,
+  createSessionTokenMint,
   createWebSessionIdentity,
   createSessionBillingTransport,
   createFirebaseIdentity,
@@ -305,6 +308,7 @@ export interface Types {
   webSession: WebSessionResult
   featuresRead: FeaturesReadOptions
   requestAuth: RequestAuthorization
+  sessionTokenMint: SessionTokenResult
   webSessionIdentity: WebSessionIdentityState
   billing: BillingErrorCode
   firebase: FirebaseIdentityAppConfig

@@ -588,6 +588,29 @@ describe('SubscriptionPanelContentWorkspace', () => {
         ).toBeInTheDocument()
       })
 
+      it('names what stopped once the plan has ended (FE-2886)', () => {
+        endInDays(-5)
+        mockSubscriptionStatus.value = 'ended'
+        renderComponent()
+
+        expect(
+          screen.getByText(
+            "You can't run workflows or add new members. Contact sales to restore access."
+          )
+        ).toBeInTheDocument()
+      })
+
+      it('keeps the subtitle away while the plan still runs', () => {
+        endInDays(30)
+        renderComponent()
+
+        expect(
+          screen.queryByText(
+            "You can't run workflows or add new members. Contact sales to restore access."
+          )
+        ).not.toBeInTheDocument()
+      })
+
       it('falls back to the stock cancelled treatment without an end date', () => {
         mockEndDate.value = null
         renderComponent()
@@ -886,7 +909,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
       })
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: 'Subscribe Now' })
+      screen.getByRole('button', { name: 'Subscribe' })
     ).toBeInTheDocument()
     expect(
       screen.queryByRole('heading', { name: 'Standard' })
@@ -1093,7 +1116,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
       screen.getByRole('button', { name: 'Resume subscription' })
     ).toBeInTheDocument()
     expect(
-      screen.queryByRole('button', { name: 'Subscribe Now' })
+      screen.queryByRole('button', { name: 'Subscribe' })
     ).not.toBeInTheDocument()
   })
 
@@ -1124,7 +1147,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
       screen.getByText('This workspace is not on a subscription')
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: 'Subscribe Now' })
+      screen.getByRole('button', { name: 'Subscribe' })
     ).toBeInTheDocument()
     expect(screen.getByTestId('credits-tile')).toHaveAttribute(
       'data-zero-state',
@@ -1146,7 +1169,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
       screen.queryByText('This workspace is not on a subscription')
     ).not.toBeInTheDocument()
     expect(
-      screen.queryByRole('button', { name: 'Subscribe Now' })
+      screen.queryByRole('button', { name: 'Subscribe' })
     ).not.toBeInTheDocument()
     expect(screen.getByTestId('credits-tile')).toHaveAttribute(
       'data-zero-state',
@@ -1179,7 +1202,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(useBillingContext().initialize).toHaveBeenCalledOnce()
   })
 
-  it('hides Subscribe Now when the server denies self-serve to a client-side owner', () => {
+  it('hides Subscribe when the server denies self-serve to a client-side owner', () => {
     mockIsActiveSubscription.value = false
     Object.assign(useTeamWorkspaceStore(), { isWorkspaceSubscribed: false })
     mockHasSubscription.value = false
@@ -1188,7 +1211,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     renderComponent()
 
     expect(
-      screen.queryByRole('button', { name: 'Subscribe Now' })
+      screen.queryByRole('button', { name: 'Subscribe' })
     ).not.toBeInTheDocument()
   })
 
@@ -1208,7 +1231,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
       screen.getByText('Contact the workspace owner to subscribe')
     ).toBeInTheDocument()
     expect(
-      screen.queryByRole('button', { name: 'Subscribe Now' })
+      screen.queryByRole('button', { name: 'Subscribe' })
     ).not.toBeInTheDocument()
     expect(screen.getByTestId('credits-tile')).toHaveAttribute(
       'data-zero-state',

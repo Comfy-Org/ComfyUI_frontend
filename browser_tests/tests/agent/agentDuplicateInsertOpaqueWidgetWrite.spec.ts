@@ -479,19 +479,25 @@ test.describe(
       )
     })
 
-    test('defect: a rejected widget write ought to surface visibly to the human, but currently does not', async ({
+    test('defect: a rejected widget write tells the user that their edit was not saved', async ({
       page,
       getWebSocket
     }) => {
       await driveThroughRejectedWidgetEdit(page, getWebSocket)
 
-      // The known gap: nothing in the ordinary product UI (no toast, no
-      // inline alert on the widget or the panel) tells the human this write
-      // never reached the shared document.
-      test.fail()
-      await expect(new ToastHelper(page).toastErrors).toBeVisible({
-        timeout: 3_000
+      // PM-1716: KEEP-ALIVE #12 requires uncatalogued widget writes to fail
+      // loudly. Pin an actionable user-visible contract rather than merely
+      // requiring some generic error chrome.
+      // `toastErrors` is not filtered on `:visible` (only `visibleToasts` is),
+      // and `toContainText` passes on any matching node in the collection. Both
+      // together would accept a rejection message the user never sees, which is
+      // the opposite of "fail loudly". Filter to the message and require it on
+      // screen.
+      const rejectionToast = new ToastHelper(page).toastErrors.filter({
+        hasText: 'Widget edit was rejected and was not saved'
       })
+      test.fail()
+      await expect(rejectionToast).toBeVisible({ timeout: 3_000 })
     })
   }
 )
