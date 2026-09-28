@@ -3,6 +3,7 @@ import { WORKSHOP_DEPLOY_ENV } from 'astro:env/client'
 import { computed, onMounted, ref, shallowRef } from 'vue'
 
 import { provideStudioSwitchGuard } from '../../../composables/useStudioSwitchGuard'
+import type { AppWorkshopModel } from '../../../config/models-catalogue'
 import type { WorkshopAppId } from '../../../lib/workshop/apps'
 import { workshopAppHref } from '../../../lib/workshop/apps'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
@@ -19,10 +20,12 @@ import CinematicStudioPanel from './CinematicStudioPanel.vue'
 import ReshootStudio from './reshoot/ReshootStudio.vue'
 
 const {
+  apps,
   models,
   initialApp = 'studio',
   locale = 'en'
 } = defineProps<{
+  apps: readonly AppWorkshopModel[]
   models: readonly CinematicModel[]
   initialApp?: WorkshopAppId
   locale?: Locale
@@ -108,7 +111,7 @@ function pickApp(id: string) {
 
 <template>
   <WorkshopGate :allowed="studioEnabled">
-    <CinematicAppsHub v-if="layout === 'hub'" :locale />
+    <CinematicAppsHub v-if="layout === 'hub'" :models="apps" :locale />
     <ReshootStudio v-else-if="app === 'reshoot'" :locale />
     <CinematicStudioPanel v-else-if="layout === 'd'" :models :locale />
     <CinematicStudio v-else :models :locale />

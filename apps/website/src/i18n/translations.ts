@@ -10621,7 +10621,6 @@ Enterprise`
     en: 'Template by {author}',
     'zh-CN': '模板作者：{author}'
   },
-  'workshop.workflow.makeYours': { en: 'Make it yours', 'zh-CN': '开始创作' },
   'workshop.workflow.sections': {
     en: 'Workflow sections',
     'zh-CN': '工作流栏目'
@@ -10712,14 +10711,6 @@ Enterprise`
   'workshop.workflow.exampleHint': {
     en: 'An example from this template.',
     'zh-CN': '此模板的示例。'
-  },
-  'workshop.workflow.inputHint': {
-    en: 'Upload your inputs and adjust the settings.',
-    'zh-CN': '上传素材并调整设置。'
-  },
-  'workshop.workflow.cloudBilling': {
-    en: 'Runs in your Cloud workspace. Your plan and compute credits apply.',
-    'zh-CN': '在你的 Cloud 工作区中运行，使用你的套餐和计算积分。'
   },
   'workshop.output.refreshLink': {
     en: 'Refresh download link',

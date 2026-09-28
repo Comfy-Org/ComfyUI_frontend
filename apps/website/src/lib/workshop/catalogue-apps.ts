@@ -1,4 +1,3 @@
-import { getRoutes } from '../../config/routes'
 import type { Locale, LocalizedText } from '../../i18n/translations'
 
 /**
@@ -25,24 +24,4 @@ export interface CatalogueApp {
   readonly task: string
   readonly href: string
   readonly image?: string
-}
-
-export function catalogueApps(locale: Locale = 'en'): CatalogueApp[] {
-  const routes = getRoutes(locale)
-  return [
-    {
-      key: 'cinematic-studio',
-      name: ac('studioName', locale),
-      task: ac('studioTask', locale),
-      href: routes.cinematicStudio,
-      image: '/images/cinematic-studio/neon-street.jpg'
-    },
-    {
-      key: 'reshoot',
-      name: ac('reshootName', locale),
-      task: ac('reshootTask', locale),
-      href: routes.reshoot,
-      image: '/images/cinematic-studio/train.jpg'
-    }
-  ]
 }

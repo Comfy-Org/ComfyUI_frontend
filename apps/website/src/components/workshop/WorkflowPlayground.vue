@@ -289,6 +289,7 @@ function start() {
   </div>
   <WorkflowPreview
     v-show="section === 'workflow'"
+    :active="section === 'workflow'"
     :model="model"
     :cloud-href="cloudHref"
   />
