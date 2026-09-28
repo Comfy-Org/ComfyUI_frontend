@@ -233,18 +233,31 @@ function useFirstRunTourControllerInternal() {
     nudgeArmed.value = false
   }
 
+  async function cleanUpFailedTourStart(
+    enabledForTour: boolean,
+    shouldCancel: () => boolean
+  ) {
+    releaseFirstRunTargets()
+    tourWorkflow.value = null
+    if (enabledForTour && !shouldCancel()) {
+      await settingStore.set('Comfy.VueNodes.Enabled', false)
+    }
+  }
+
+  function canBeginTour(shouldCancel: () => boolean): boolean {
+    return !shouldCancel() && !engine.activeTour && canvasContextHolds.value
+  }
+
   /** False when there is no tour to give; any renderer switch is undone. */
   async function beginTour(
     templateId?: string,
     shouldCancel: () => boolean = () => false
   ): Promise<boolean> {
-    if (shouldCancel()) return false
-    if (engine.activeTour) return false
     // Holds only ever end a tour that is already running, and only when they
     // change — a context lost before the tour opens (`?template=X&mode=linear`
     // boots straight into linear mode) never produces that change. Refused
     // here, ahead of the renderer switch below, so nothing is left to undo.
-    if (!canvasContextHolds.value) return false
+    if (!canBeginTour(shouldCancel)) return false
 
     const enabledForTour = !settingStore.get('Comfy.VueNodes.Enabled')
     if (enabledForTour) await settingStore.set('Comfy.VueNodes.Enabled', true)
@@ -267,10 +280,7 @@ function useFirstRunTourControllerInternal() {
       !shouldCancel() &&
       (await engine.startTour('firstRun'))
     if (!started) {
-      releaseFirstRunTargets()
-      tourWorkflow.value = null
-      if (enabledForTour && !shouldCancel())
-        await settingStore.set('Comfy.VueNodes.Enabled', false)
+      await cleanUpFailedTourStart(enabledForTour, shouldCancel)
     }
     return started
   }
