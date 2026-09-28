@@ -194,6 +194,38 @@ describe('useBillingSdkStore', () => {
     expect(toasts.messagesToRemove.at(-1)).toMatchObject({ severity: 'warn' })
   })
 
+  it('keeps a subscribe in step with its progress toast, as the poller did', () => {
+    useBillingSdkStore()
+    const toasts = useToastStore()
+
+    harness.publish(pendingSubscription())
+    expect(toasts.messagesToAdd).toEqual([
+      expect.objectContaining({
+        severity: 'info',
+        summary: 'Processing payment — setting up your workspace...'
+      })
+    ])
+
+    harness.publish(
+      pendingSubscription({ actionUrl: 'https://verify.example/op-1' })
+    )
+    expect(toasts.messagesToAdd.at(-1)).toMatchObject({
+      severity: 'warn',
+      summary: 'Verify your payment to finish setting up your workspace'
+    })
+
+    harness.publish(settledOperation('succeeded', 'subscription'))
+    expect(toasts.messagesToRemove.at(-1)).toMatchObject({ severity: 'warn' })
+  })
+
+  it('shows no progress toast for a cancel', () => {
+    useBillingSdkStore()
+
+    harness.publish(pendingTopup({ kind: 'cancel' }))
+
+    expect(useToastStore().messagesToAdd).toEqual([])
+  })
+
   it('drives a required in-page challenge once per operation', () => {
     useBillingSdkStore()
     const challenged = pendingTopup({
@@ -559,6 +591,24 @@ describe('useBillingSdkStore subscription commands', () => {
     })
   }
 
+  it('opens no payment page for a subscribe it reattached to, leaving it to the customer', () => {
+    const openPage = vi.spyOn(window, 'open').mockReturnValue(null)
+    const store = useBillingSdkStore()
+
+    reattachedSubscribe()
+    harness.publish(
+      pendingSubscription({ actionUrl: 'https://pay.example/op-1' })
+    )
+
+    expect(openPage).not.toHaveBeenCalled()
+    expect(
+      useToastStore().messagesToAdd.filter(
+        (message) => message.group !== 'billing-operation'
+      )
+    ).toEqual([])
+    expect(store.subscriptionActionUrl).toBe('https://pay.example/op-1')
+  })
+
   it('finishes a reattached subscribe the way the poller did', async () => {
     useBillingSdkStore()
 
@@ -663,10 +713,50 @@ describe('useBillingSdkStore subscription commands', () => {
       'https://pay.example/op-1',
       '_blank'
     )
-    expect(toasts.messagesToAdd).toEqual([
-      expect.objectContaining({ severity: 'warn' })
-    ])
+    expect(
+      toasts.messagesToAdd.filter(
+        (message) => message.group !== 'billing-operation'
+      )
+    ).toEqual([expect.objectContaining({ severity: 'warn' })])
     expect(store.subscriptionActionUrl).toBe('https://pay.example/op-1')
+  })
+
+  it('opens no payment page while this tab drives the in-page challenge', () => {
+    const openPage = vi.spyOn(window, 'open').mockReturnValue(null)
+    useBillingSdkStore()
+
+    harness.publish(
+      pendingSubscription({
+        presentation: 'embedded',
+        actionUrl: 'https://pay.example/invoice',
+        challenge: { clientSecret: 'pi_secret', status: 'required' }
+      })
+    )
+
+    expect(harness.sdk.driveChallenge).toHaveBeenCalledExactlyOnceWith('op-1')
+    expect(openPage).not.toHaveBeenCalled()
+    expect(
+      useToastStore().messagesToAdd.filter(
+        (message) => message.group !== 'billing-operation'
+      )
+    ).toEqual([])
+  })
+
+  it('opens the hosted page for an embedded operation that carries no in-page challenge', () => {
+    const openPage = vi.spyOn(window, 'open').mockReturnValue({} as Window)
+    useBillingSdkStore()
+
+    harness.publish(
+      pendingSubscription({
+        presentation: 'embedded',
+        actionUrl: 'https://pay.example/invoice'
+      })
+    )
+
+    expect(openPage).toHaveBeenCalledExactlyOnceWith(
+      'https://pay.example/invoice',
+      '_blank'
+    )
   })
 
   it('offers the next hosted page the same subscribe moves to', () => {

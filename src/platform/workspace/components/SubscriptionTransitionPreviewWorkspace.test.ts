@@ -196,6 +196,25 @@ describe('SubscriptionTransitionPreviewWorkspace', () => {
     )
   })
 
+  it('locks the plan change while an earlier payment awaits verification', () => {
+    render(SubscriptionTransitionPreviewWorkspace, {
+      props: {
+        previewData: preview({}),
+        actionUrl: 'https://verify.example/sensitive-token'
+      },
+      global: globalOptions
+    })
+
+    expect(
+      screen.getByText('subscription.preview.pendingVerificationDetail')
+    ).toBeTruthy()
+    expect(
+      screen.getByRole('button', {
+        name: 'subscription.preview.confirmUpgradeCta'
+      })
+    ).toBeDisabled()
+  })
+
   it('reports failed verification without offering to resume it', () => {
     render(SubscriptionTransitionPreviewWorkspace, {
       props: {

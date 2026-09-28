@@ -198,7 +198,8 @@ describe('GtmTelemetryProvider', () => {
         trigger_source: 'button',
         view_mode: 'app',
         is_app_mode: true,
-        dock_state: 'floating'
+        dock_state: 'floating',
+        agent_panel_open: true
       })
       expect(lastDataLayerEntry()).toMatchObject({
         event: 'run_workflow',
@@ -206,7 +207,8 @@ describe('GtmTelemetryProvider', () => {
         subscribe_to_run: false,
         view_mode: 'app',
         is_app_mode: true,
-        dock_state: 'floating'
+        dock_state: 'floating',
+        agent_panel_open: true
       })
     })
 

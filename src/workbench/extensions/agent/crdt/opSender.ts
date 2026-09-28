@@ -19,6 +19,7 @@ import type { Op } from '@comfyorg/comfy-multi-player'
 
 import { reportError } from '@/platform/telemetry/reportError'
 
+import type { DocOpsResult } from './docFrameClient'
 import type { GraphOperation } from './graphOperations'
 import { chunkWireOps, mintWireOps } from './opEnvelope'
 
@@ -26,14 +27,17 @@ const SEND_RETRY_LIMIT = 5
 const SEND_RETRY_INTERVAL_MS = 500
 const RESULT_TIMEOUT_MS = 10_000
 
-export interface OpsResultView {
-  workflowId?: string
-  ok: boolean
-  applied: string[]
-  skipped: string[]
-  /** Failed-batch diagnostics when the host provides them; `op_id` correlates an otherwise empty-list failure to its batch. */
-  failure?: { op_id?: string }
-}
+/**
+ * The sender's view of a parsed `doc_ops_result`. Derived from the
+ * authoritative {@link DocOpsResult} rather than restated, so the fields the
+ * sender consumes retain their canonical names and types. `workflowId` is
+ * optional only because a sender may be driven without one.
+ */
+export type OpsResultView = Pick<
+  DocOpsResult,
+  'ok' | 'applied' | 'skipped' | 'code' | 'failed'
+> &
+  Partial<Pick<DocOpsResult, 'workflowId'>>
 
 export interface OpSenderDeps {
   /** `DocFrameClient.sendOps` shape: false = the transport cannot carry it now. */
@@ -400,7 +404,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
    */
   function namesRetiredBatch(result: OpsResultView, batch: InFlight): boolean {
     const identified = [...result.applied, ...result.skipped]
-    if (result.failure?.op_id) identified.push(result.failure.op_id)
+    if (result.failed?.op_id) identified.push(result.failed.op_id)
     if (identified.length > 0) {
       return !identified.some((opId) => batch.opIds.has(opId))
     }

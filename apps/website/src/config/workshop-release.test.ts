@@ -57,6 +57,7 @@ describe('isWorkshopRoute', () => {
     expect(isWorkshopRoute('/workshop/models/[slug]')).toBe(true)
     expect(isWorkshopRoute('/models/demo/')).toBe(true)
     expect(isWorkshopRoute('/models/showcase/')).toBe(true)
+    expect(isWorkshopRoute('/cinematic-studio/')).toBe(true)
     expect(isWorkshopRoute('/models')).toBe(false)
     expect(isWorkshopRoute('/models/')).toBe(false)
 

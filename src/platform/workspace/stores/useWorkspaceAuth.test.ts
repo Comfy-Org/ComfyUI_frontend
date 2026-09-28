@@ -12,6 +12,7 @@ import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 
 import {
   UNIFIED_IDENTITY_SETTLE_TIMEOUT_MS,
@@ -80,6 +81,7 @@ vi.mock<unknown>(import('@/platform/auth/session/useSessionCookie'), () => ({
 }))
 
 vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 vi.mock(import('@/platform/workspace/api/workspaceApiUrl'), () => ({
   workspaceApiUrl: (route: string) => `https://api.example.com/api${route}`
@@ -1440,6 +1442,7 @@ describe('useWorkspaceAuthStore', () => {
 
   describe('refreshToken retry/race paths', () => {
     it('ends an expired workspace session behind the workflow write barrier', async () => {
+      const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0)
       vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
         'firebase-token-xyz'
       )
@@ -1483,9 +1486,11 @@ describe('useWorkspaceAuthStore', () => {
       expect(
         sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE)
       ).toBeNull()
+      randomSpy.mockRestore()
     })
 
     it('retries up to 3 times with exponential backoff on TOKEN_EXCHANGE_FAILED, then preserves valid context', async () => {
+      const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.5)
       vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
         'firebase-token-xyz'
       )
@@ -1523,27 +1528,27 @@ describe('useWorkspaceAuthStore', () => {
 
       // Drain only the retry backoff delays; do not advance to the scheduled
       // proactive refresh timer for the still-valid token.
-      await vi.advanceTimersByTimeAsync(1000)
-      await vi.advanceTimersByTimeAsync(2000)
-      await vi.advanceTimersByTimeAsync(4000)
+      await vi.advanceTimersByTimeAsync(1500)
+      await vi.advanceTimersByTimeAsync(2500)
+      await vi.advanceTimersByTimeAsync(4500)
       await refreshPromise
 
       // 1 initial switchWorkspace + 4 refresh attempts = 5 total fetch calls.
       expect(mockFetch).toHaveBeenCalledTimes(5)
-      // Backoff: 1s + 2s + 4s = 7s of cumulative warn-logged delays.
+      // Each exponential-backoff delay includes bounded jitter.
       expect(
         consoleWarnSpy.mock.calls.some((c) =>
-          /retrying in 1000ms/.test(String(c[0]))
+          /retrying in 1500ms/.test(String(c[0]))
         )
       ).toBe(true)
       expect(
         consoleWarnSpy.mock.calls.some((c) =>
-          /retrying in 2000ms/.test(String(c[0]))
+          /retrying in 2500ms/.test(String(c[0]))
         )
       ).toBe(true)
       expect(
         consoleWarnSpy.mock.calls.some((c) =>
-          /retrying in 4000ms/.test(String(c[0]))
+          /retrying in 4500ms/.test(String(c[0]))
         )
       ).toBe(true)
 
@@ -1568,8 +1573,8 @@ describe('useWorkspaceAuthStore', () => {
           Promise.resolve({ ...mockTokenResponse, token: 'retry-token' })
       })
 
-      // Retry is scheduled at baseDelayMs * 2^maxRetries = 8000ms.
-      await vi.advanceTimersByTimeAsync(7999)
+      // The scheduled retry also includes bounded jitter (8000ms + 500ms).
+      await vi.advanceTimersByTimeAsync(8499)
       expect(mockFetch).toHaveBeenCalledTimes(5)
 
       await vi.advanceTimersByTimeAsync(1)
@@ -1580,6 +1585,45 @@ describe('useWorkspaceAuthStore', () => {
 
       consoleErrorSpy.mockRestore()
       consoleWarnSpy.mockRestore()
+      randomSpy.mockRestore()
+    })
+
+    it('does not let an in-flight refresh re-arm timers after destroy', async () => {
+      vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
+        'firebase-token-xyz'
+      )
+      const mockFetch = vi.fn().mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockTokenResponse)
+      })
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+      await store.switchWorkspace('workspace-123')
+
+      let resolveRefreshFetch: (value: unknown) => void = () => {}
+      mockFetch.mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveRefreshFetch = resolve
+        })
+      )
+
+      const refreshPromise = store.refreshToken()
+      await vi.waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(2))
+      store.destroy()
+      resolveRefreshFetch({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            ...mockTokenResponse,
+            token: 'late-refresh-token'
+          })
+      })
+      await refreshPromise
+
+      expect(store.workspaceToken).toBe('workspace-token-abc')
+      await vi.advanceTimersByTimeAsync(60 * 60 * 1000)
+      expect(mockFetch).toHaveBeenCalledTimes(2)
     })
 
     it('clears context immediately on INVALID_FIREBASE_TOKEN without retrying', async () => {
@@ -3044,21 +3088,24 @@ describe('useWorkspaceAuthStore', () => {
       {
         status: 403,
         statusText: 'Forbidden',
-        detailKey: 'workspaceAuth.errors.accessDenied'
+        detailKey: 'workspaceAuth.errors.accessDenied',
+        code: 'ACCESS_DENIED'
       },
       {
         status: 404,
         statusText: 'Not Found',
-        detailKey: 'workspaceAuth.errors.workspaceNotFound'
+        detailKey: 'workspaceAuth.errors.workspaceNotFound',
+        code: 'WORKSPACE_NOT_FOUND'
       },
       {
         status: 401,
         statusText: 'Unauthorized',
-        detailKey: 'workspaceAuth.errors.invalidFirebaseToken'
+        detailKey: 'workspaceAuth.errors.invalidFirebaseToken',
+        code: 'INVALID_FIREBASE_TOKEN'
       }
     ])(
       'surfaces the $status permanent refresh error as a toast and clears the slot',
-      async ({ status, statusText, detailKey }) => {
+      async ({ status, statusText, detailKey, code }) => {
         vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
           'firebase-token-xyz'
         )
@@ -3099,6 +3146,15 @@ describe('useWorkspaceAuthStore', () => {
           outcome: 'permanent_failure',
           retry_count: 0
         })
+        expect(reportError).toHaveBeenCalledWith(
+          expect.any(Error),
+          expect.objectContaining({
+            errorType: 'failure_refreshing_unified_auth_permanent',
+            tags: { failure_code: code, retry_count: 0 },
+            // The toast path owns the console line for this failure.
+            logToConsole: false
+          })
+        )
         expect(unifiedToken.value).toBeNull()
       }
     )
@@ -3337,6 +3393,15 @@ describe('useWorkspaceAuthStore', () => {
         outcome: 'retries_exhausted',
         retry_count: 3
       })
+      // A RUM action cannot raise a Sentry alert, so the moment the cookie
+      // rail dies must also reach the error tracker (FE-1595).
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'failure_refreshing_unified_auth_retries_exhausted',
+          tags: expect.objectContaining({ retry_count: 3 })
+        })
+      )
       expect(
         unifiedToken.value,
         'a still-valid token keeps serving while there is time on it'
