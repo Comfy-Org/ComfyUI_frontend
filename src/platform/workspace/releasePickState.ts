@@ -5,9 +5,20 @@ import type { WorkspaceRelease } from '@comfyorg/ingest-types'
  * the list it may pick from (FE-2434). The pick itself is an HttpOnly cookie
  * ingest sets; the editor learns it from the listing and never reads it.
  */
+/** Where the current pick came from (BE-17480). */
+export type ReleasePickSource = 'browser' | 'workspace_default'
+
 export interface ReleaseListing {
   releases: WorkspaceRelease[]
   pickedReleaseId: string | null
+  /**
+   * `browser` when this browser picked for itself (a Release, or Comfy
+   * Cloud); `workspace_default` when it follows the workspace's default
+   * Release; null when there is neither, so it runs on Comfy Cloud.
+   */
+  pickSource: ReleasePickSource | null
+  /** The workspace's default Release an owner set, or null. */
+  defaultReleaseId: string | null
   buildsVisible: boolean
 }
 
@@ -41,6 +52,8 @@ export function reduceReleasePick(
         phase: 'ready',
         releases: event.releases,
         pickedReleaseId: event.pickedReleaseId,
+        pickSource: event.pickSource,
+        defaultReleaseId: event.defaultReleaseId,
         buildsVisible: event.buildsVisible
       }
     case 'loadRefused':
@@ -54,6 +67,8 @@ export function reduceReleasePick(
         target: event.target,
         releases: state.releases,
         pickedReleaseId: state.pickedReleaseId,
+        pickSource: state.pickSource,
+        defaultReleaseId: state.defaultReleaseId,
         buildsVisible: state.buildsVisible
       }
     case 'switchFailed':
@@ -62,6 +77,8 @@ export function reduceReleasePick(
         phase: 'ready',
         releases: state.releases,
         pickedReleaseId: state.pickedReleaseId,
+        pickSource: state.pickSource,
+        defaultReleaseId: state.defaultReleaseId,
         buildsVisible: state.buildsVisible
       }
   }
