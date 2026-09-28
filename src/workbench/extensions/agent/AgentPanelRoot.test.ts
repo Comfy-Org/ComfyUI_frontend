@@ -11,7 +11,8 @@ import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Mocked } from 'vitest'
-import { computed, defineComponent, h, nextTick, ref } from 'vue'
+import { computed, defineComponent, h, nextTick, reactive, ref } from 'vue'
+import type { Ref } from 'vue'
 import { useClipboard } from '@vueuse/core'
 
 // jsdom does not implement ResizeObserver (happy-dom does); stub it before the
@@ -271,11 +272,13 @@ vi.mock(
 const paywallWorkspace = vi.hoisted(() => ({
   role: 'owner' as 'owner' | 'member'
 }))
-const paywallCapabilities = vi.hoisted(() => ({
+const paywallCapabilities = reactive({
   canTopUp: true,
   canSubscribeSelfServe: true,
-  isReady: true
-}))
+  isReady: true,
+  hasResolvedCapabilities: true,
+  snapshotAuthoritative: true
+})
 const paywallBilling = vi.hoisted(() => ({
   tier: 'STANDARD' as SubscriptionTier | null,
   type: 'workspace' as 'workspace' | 'legacy',
@@ -1114,7 +1117,10 @@ describe('AgentPanelRoot paywall telemetry', () => {
     vi.mocked(useBillingContext).mockReturnValue(
       fromPartial({
         subscription: computed(() => fromPartial({ hasFunds: hasFunds.value })),
-        tier
+        tier,
+        type: computed(() => 'workspace'),
+        billingStatus: computed(() => 'paid'),
+        fetchStatus: vi.fn().mockResolvedValue(undefined)
       })
     )
   })
@@ -1425,6 +1431,44 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
     vi.mocked(useTelemetry())!.trackAgentPaywallCtaClicked.mockClear()
     vi.mocked(useTelemetry())!.trackAddApiCreditButtonClicked.mockClear()
   })
+
+  it.for([
+    {
+      subscription: null,
+      effectiveFunds: true,
+      expectedVisible: false
+    },
+    {
+      subscription: null,
+      effectiveFunds: false,
+      expectedVisible: true
+    },
+    {
+      subscription: 'STANDARD' as const,
+      effectiveFunds: true,
+      expectedVisible: false
+    },
+    {
+      subscription: 'STANDARD' as const,
+      effectiveFunds: false,
+      expectedVisible: true
+    }
+  ])(
+    'applies the subscription=$subscription effectiveFunds=$effectiveFunds contract',
+    async ({ subscription, effectiveFunds, expectedVisible }) => {
+      paywallBilling.tier = subscription
+      paywallHasFunds.value = effectiveFunds
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      await screen.findByRole('textbox')
+
+      if (!expectedVisible) {
+        expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
+        return
+      }
+
+      expect(await screen.findByTestId(STANDING)).toBeInTheDocument()
+    }
+  )
 
   it('shows an upgrade path when the workspace is out of credits, with no refusal first', async () => {
     paywallHasFunds.value = false
@@ -2990,6 +3034,7 @@ describe('AgentPanelRoot attach flow', () => {
     ).toBeInTheDocument()
 
     executionErrors.showErrorOverlay.mockClear()
+    vi.mocked(reportError).mockClear()
     failUpload()
     await vi.waitFor(() =>
       expect(screen.queryByText('cat.png')).not.toBeInTheDocument()
