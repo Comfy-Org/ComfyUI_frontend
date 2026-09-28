@@ -4,12 +4,14 @@ import { useI18n } from 'vue-i18n'
 
 import Loader from '@/components/loader/Loader.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
+import Button from '@/components/ui/button/Button.vue'
 import type { AssetDownload } from '@/stores/assetDownloadStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { job } = defineProps<{
   job: AssetDownload
 }>()
+const emit = defineEmits<{ cancel: [taskId: string] }>()
 
 const { t } = useI18n()
 
@@ -18,6 +20,7 @@ const isCompleted = computed(() => job.status === 'completed')
 const isFailed = computed(() => job.status === 'failed')
 const isRunning = computed(() => job.status === 'running')
 const isPending = computed(() => job.status === 'created')
+const isCancelled = computed(() => job.status === 'cancelled')
 </script>
 
 <template>
@@ -42,6 +45,13 @@ const isPending = computed(() => job.status === 'created')
         <StatusBadge :label="t('progressToast.finished')" severity="contrast" />
       </template>
 
+      <template v-else-if="isCancelled">
+        <StatusBadge
+          :label="t('electronFileDownload.cancelled')"
+          severity="secondary"
+        />
+      </template>
+
       <template v-else-if="isRunning">
         <Loader size="sm" class="text-base-foreground" />
         <span class="text-xs text-base-foreground">
@@ -54,6 +64,16 @@ const isPending = computed(() => job.status === 'created')
           {{ t('progressToast.pending') }}
         </span>
       </template>
+
+      <Button
+        v-if="isRunning || isPending"
+        variant="muted-textonly"
+        size="sm"
+        :aria-label="t('electronFileDownload.cancel')"
+        @click="emit('cancel', job.taskId)"
+      >
+        {{ t('g.cancel') }}
+      </Button>
     </div>
   </div>
 </template>

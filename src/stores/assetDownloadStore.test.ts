@@ -23,7 +23,8 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
 
 vi.mock(import('@/platform/tasks/services/taskService'), () => ({
   taskService: {
-    getTask: vi.fn()
+    getTask: vi.fn(),
+    cancelTask: vi.fn()
   }
 }))
 
@@ -182,6 +183,29 @@ describe('useAssetDownloadStore', () => {
       expect(store.finishedDownloads).toHaveLength(1)
       expect(store.finishedDownloads[0].status).toBe('completed')
       expect(store.lastCompletedDownload?.modelType).toBe('checkpoints')
+    })
+  })
+
+  describe('cancelDownload', () => {
+    it('cancels an active backend task and marks it terminal', async () => {
+      const store = useAssetDownloadStore()
+      vi.mocked(taskService.cancelTask).mockResolvedValue()
+      dispatch(createDownloadMessage({ status: 'running' }))
+
+      await store.cancelDownload('task-123')
+
+      expect(taskService.cancelTask).toHaveBeenCalledWith('task-123')
+      expect(store.activeDownloads).toHaveLength(0)
+      expect(store.finishedDownloads[0].status).toBe('cancelled')
+    })
+
+    it('keeps the download active when backend cancellation fails', async () => {
+      const store = useAssetDownloadStore()
+      vi.mocked(taskService.cancelTask).mockRejectedValue(new Error('network'))
+      dispatch(createDownloadMessage({ status: 'running' }))
+
+      await expect(store.cancelDownload('task-123')).rejects.toThrow('network')
+      expect(store.activeDownloads).toHaveLength(1)
     })
   })
 

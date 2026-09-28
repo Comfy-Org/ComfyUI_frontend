@@ -152,6 +152,7 @@ function closeDialog() {
             v-for="job in filteredJobs"
             :key="job.taskId"
             :job="job"
+            @cancel="assetDownloadStore.cancelDownload"
           />
         </div>
 

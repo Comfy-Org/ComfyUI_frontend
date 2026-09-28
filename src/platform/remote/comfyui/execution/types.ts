@@ -124,7 +124,7 @@ export interface AssetDownloadWsMessage {
   bytes_total: number
   bytes_downloaded: number
   progress: number
-  status: AssetTaskStatus
+  status: AssetTaskStatus | 'cancelled'
   asset_id?: string
   error?: string
 }

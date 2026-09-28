@@ -13,7 +13,13 @@ import { api } from '@/scripts/api'
 
 const TASKS_ENDPOINT = '/tasks'
 
-const zTaskStatus = z.enum(['created', 'running', 'completed', 'failed'])
+const zTaskStatus = z.enum([
+  'created',
+  'running',
+  'completed',
+  'failed',
+  'cancelled'
+])
 
 const zDownloadFileResult = z.object({
   success: z.boolean(),
@@ -51,28 +57,46 @@ export type TaskResponse = z.infer<typeof zTaskResponse>
  */
 export type TaskId = string
 
+class TaskServiceError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'TaskServiceError'
+  }
+}
+
 function createTaskService() {
   async function getTask(taskId: TaskId): Promise<TaskResponse> {
     const res = await api.fetchApi(`${TASKS_ENDPOINT}/${taskId}`)
 
     if (!res.ok) {
       if (res.status === 404) {
-        throw new Error(`Task not found: ${taskId}`)
+        throw new TaskServiceError(`Task not found: ${taskId}`)
       }
-      throw new Error(`Failed to get task ${taskId}: ${res.status}`)
+      throw new TaskServiceError(`Failed to get task ${taskId}: ${res.status}`)
     }
 
     const data = await res.json()
     const result = zTaskResponse.safeParse(data)
 
     if (!result.success) {
-      throw new Error(fromZodError(result.error).message)
+      throw new TaskServiceError(fromZodError(result.error).message)
     }
 
     return result.data
   }
 
-  return { getTask }
+  async function cancelTask(taskId: TaskId): Promise<void> {
+    const res = await api.fetchApi(`${TASKS_ENDPOINT}/${taskId}`, {
+      method: 'DELETE'
+    })
+    if (!res.ok) {
+      throw new TaskServiceError(
+        `Failed to cancel task ${taskId}: ${res.status}`
+      )
+    }
+  }
+
+  return { getTask, cancelTask }
 }
 
 export const taskService = createTaskService()

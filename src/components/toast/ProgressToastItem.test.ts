@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -15,7 +16,12 @@ const i18n = createI18n({
         finished: 'Finished',
         failed: 'Failed',
         pending: 'Pending'
-      }
+      },
+      electronFileDownload: {
+        cancel: 'Cancel Download',
+        cancelled: 'Cancelled'
+      },
+      g: { cancel: 'Cancel' }
     }
   }
 })
@@ -47,5 +53,30 @@ describe('ProgressToastItem — completed state', () => {
     const assetName = screen.getByText('controlnet-canny.safetensors')
     // eslint-disable-next-line testing-library/no-node-access -- verifying structural placement of opacity-50 boundary, which is the subject of this fix
     expect(assetName.closest('.opacity-50')).not.toBeNull()
+  })
+})
+
+describe('ProgressToastItem — cancellation', () => {
+  it('offers cancellation for running downloads', async () => {
+    const user = userEvent.setup()
+    const running = { ...completedJob(), status: 'running' as const }
+    const { emitted } = render(ProgressToastItem, {
+      props: { job: running },
+      global: { plugins: [i18n] }
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Cancel Download' }))
+    expect(emitted().cancel).toEqual([['task-1']])
+  })
+
+  it('shows cancelled as terminal without another cancel button', () => {
+    const cancelled = { ...completedJob(), status: 'cancelled' as const }
+    render(ProgressToastItem, {
+      props: { job: cancelled },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByText('Cancelled')).toBeVisible()
+    expect(screen.queryByRole('button', { name: 'Cancel Download' })).toBeNull()
   })
 })

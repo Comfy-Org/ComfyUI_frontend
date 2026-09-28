@@ -13,7 +13,7 @@ export interface AssetDownload {
   bytesTotal: number
   bytesDownloaded: number
   progress: number
-  status: 'created' | 'running' | 'completed' | 'failed'
+  status: 'created' | 'running' | 'completed' | 'failed' | 'cancelled'
   lastUpdate: number
   assetId?: string
   error?: string
@@ -58,7 +58,10 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
   )
   const finishedDownloads = computed(() =>
     downloadList.value.filter(
-      (d) => d.status === 'completed' || d.status === 'failed'
+      (d) =>
+        d.status === 'completed' ||
+        d.status === 'failed' ||
+        d.status === 'cancelled'
     )
   )
   const unacknowledgedDownloads = computed(() =>
@@ -117,7 +120,7 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
     // broadcast a premature terminal `failed` message for an error it goes
     // on to retry (and succeed at), so a `failed` download must stay open to
     // a later message for the same task_id updating it again.
-    if (existing?.status === 'completed') {
+    if (existing?.status === 'completed' || existing?.status === 'cancelled') {
       return
     }
 
@@ -158,7 +161,11 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
         const task = await taskService.getTask(download.taskId)
         if (downloads.value.get(download.taskId) !== download) return
 
-        if (task.status === 'completed' || task.status === 'failed') {
+        if (
+          task.status === 'completed' ||
+          task.status === 'failed' ||
+          task.status === 'cancelled'
+        ) {
           const result = task.result
           handleAssetDownload(
             new CustomEvent('asset_download', {
@@ -207,6 +214,19 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
     }
   }
 
+  async function cancelDownload(taskId: TaskId) {
+    const download = downloads.value.get(taskId)
+    if (
+      !download ||
+      (download.status !== 'created' && download.status !== 'running')
+    ) {
+      return
+    }
+    await taskService.cancelTask(taskId)
+    download.status = 'cancelled'
+    download.lastUpdate = Date.now()
+  }
+
   return {
     activeDownloads,
     finishedDownloads,
@@ -216,6 +236,7 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
     lastCompletedDownload,
     sessionDownloadCount,
     trackDownload,
+    cancelDownload,
     clearFinishedDownloads,
     isDownloadedThisSession,
     acknowledgeAsset
