@@ -5,7 +5,7 @@ import { useLoad3d } from '@/composables/useLoad3d'
 import { createExportMenuItems } from '@/extensions/core/load3d/exportMenuHelper'
 import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
+import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
 import type {
   NodeExecutionOutput,
   NodeOutputWith,

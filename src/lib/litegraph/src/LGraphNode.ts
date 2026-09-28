@@ -94,16 +94,10 @@ import type {
   DefaultConnectionColors,
   Dictionary,
   IColorable,
-  IContextMenuValue,
-  IFoundSlot,
   INodeFlags,
-  INodeInputSlot,
-  INodeOutputSlot,
   INodeSlot,
-  INodeSlotContextItem,
   IPinnable,
   ISlotType,
-  Panel,
   Point,
   Positionable,
   ReadOnlyRect,
@@ -111,6 +105,14 @@ import type {
   Size,
   SlotIndex
 } from './interfaces'
+import type { IContextMenuValue } from './types/contextMenu'
+import type {
+  IFoundSlot,
+  INodeInputSlot,
+  INodeOutputSlot,
+  INodeSlotContextItem
+} from './types/slots'
+import type { Panel } from './types/panel'
 import { LiteGraph, Subgraph } from './litegraph'
 import type { LGraphNodeConstructor, SubgraphNode } from './litegraph'
 import {

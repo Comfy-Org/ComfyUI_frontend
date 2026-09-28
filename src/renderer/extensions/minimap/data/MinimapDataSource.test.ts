@@ -2,7 +2,7 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import type { INodeOutputSlot } from '@/lib/litegraph/src/interfaces'
+import type { INodeOutputSlot } from '@/lib/litegraph/src/types/slots'
 import type {
   LGraph,
   LGraphGroup,

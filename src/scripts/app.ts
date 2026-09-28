@@ -10,7 +10,7 @@ import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConc
 import { setBackendNodeText, st, t } from '@/i18n'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { ChangeTracker } from '@/scripts/changeTracker'
-import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
+import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
 import { createMutationView } from '@/lib/litegraph/src/infrastructure/createMutationView'
 import {
   inputAsSerialisable,

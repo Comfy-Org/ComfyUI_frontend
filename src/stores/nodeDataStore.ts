@@ -1,11 +1,11 @@
 import { defineStore } from 'pinia'
 import { reactive, toRaw } from 'vue'
 
+import type { INodeSlot } from '@/lib/litegraph/src/interfaces'
 import type {
   INodeInputSlot,
-  INodeOutputSlot,
-  INodeSlot
-} from '@/lib/litegraph/src/interfaces'
+  INodeOutputSlot
+} from '@/lib/litegraph/src/types/slots'
 import { NodeInputSlot, NodeOutputSlot } from '@/lib/litegraph/src/litegraph'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import type {

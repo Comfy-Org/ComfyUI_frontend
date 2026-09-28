@@ -1,6 +1,6 @@
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { t } from '@/i18n'
-import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
+import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
