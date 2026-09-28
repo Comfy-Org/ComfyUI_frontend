@@ -346,6 +346,42 @@ describe('tabs of one site', () => {
     expect(methods(endpoint).slice(afterSecond)).not.toContain('DELETE')
   })
 
+  it('a stale sign-in still deletes its session when the later sign-in failed', async () => {
+    const endpoint = liveEndpoint({ kind: 'dead', code: 'no_session' })
+    let releaseFirstPost = () => {}
+    const firstPostHeld = new Promise<void>((resolve) => {
+      releaseFirstPost = resolve
+    })
+    let posts = 0
+    const tab = openTab({
+      endpoint,
+      remembered: null,
+      fetchImpl: async (input, init) => {
+        const post = init?.method === 'POST' ? ++posts : 0
+        if (post === 1) await firstPostHeld
+        if (post === 2) return new Response('{}', { status: 503 })
+        return endpoint.fetch(input, init)
+      }
+    })
+    await settle()
+
+    const stale = tab.identity.signedIn(async () => 'first-proof')
+    await settle()
+    await tab.identity.signOut()
+    expect(
+      await tab.identity.signedIn(async () => 'second-proof')
+    ).toMatchObject({ status: 'error' })
+    releaseFirstPost()
+
+    expect(await stale).toMatchObject({
+      status: 'error',
+      code: 'SESSION_REVOKED'
+    })
+    await settle()
+    expect(summarize(tab.identity.getState())).toBe('signed_out:signed_out')
+    expect(endpoint.state.kind).toBe('dead')
+  })
+
   it('reports a failed cleanup instead of a clean revocation', async () => {
     const endpoint = liveEndpoint({ kind: 'dead', code: 'no_session' })
     let releasePost = () => {}

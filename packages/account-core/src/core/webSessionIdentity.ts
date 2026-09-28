@@ -519,6 +519,7 @@ function createAccountIdentity(
   let epoch = 0
   let signOuts = 0
   let signIns = 0
+  let liveSignIn = 0
   let cancelRetry: (() => void) | undefined
   let cancelBeat: (() => void) | undefined
   let releaseLeadership: (() => void) | undefined
@@ -723,16 +724,18 @@ function createAccountIdentity(
       if (result.status !== 'ok') return result
       if (signOuts !== signOutsAtStart) {
         // A later sign-in owns the cookie now; deleting would end its session.
-        if (signIn !== signIns) return revoked
+        if (liveSignIn > signIn) return revoked
         const cleanup = await deleteWebSession(options.session)
         return cleanup.status === 'ok' ? revoked : cleanup
       }
+      liveSignIn = signIn
       dispatch({ type: 'session_created', session: result.session })
       publish('sign_in', result)
       return result
     },
     signOut: async () => {
       signOuts += 1
+      liveSignIn = 0
       dispatch({ type: 'sign_out_requested' })
       const result = await deleteWebSession(options.session)
       if (result.status === 'ok') publish('sign_out', revoked)
