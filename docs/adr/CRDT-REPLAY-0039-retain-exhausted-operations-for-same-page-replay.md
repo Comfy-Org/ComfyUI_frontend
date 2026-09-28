@@ -30,6 +30,16 @@ Within one page session, `opSender` retains a locally minted operation after
 transport retries are exhausted. Transport retry exhaustion is not terminal
 discard.
 
+Closing or remounting the agent panel does not end the page session and must
+not discard a retained operation. Sender teardown must first transfer every
+retained operation, unchanged and in order, to a page-session owner from which
+the next sender instance can resume it. An implementation may instead make the
+sender itself page-session-owned so panel teardown does not detach it. The
+current panel-owned sender does neither: `useAgentCrdtFollower` creates it in
+the panel's effect scope, scope disposal calls `sender.detach()`, and
+`detach()` clears the in-flight batch, queue, and open admission group without
+settlement. That is an implementation gap, not a narrower lifetime contract.
+
 After the transport reconnects and the workflow subscription is acknowledged,
 `opSender` replays the retained operation. Replay uses the operation's
 original `op_id`; it never re-mints identity. The normal host result remains
@@ -41,7 +51,9 @@ Notes only where they classify transport retry exhaustion as terminal
 `undeliverable` delivery. It does not change that record's behavior for an
 unbind, workflow retarget, or `doc_reset` lineage break. It also does not add a
 second retry queue: retention and replay stay inside `opSender`, which already
-owns ordering and identity.
+owns ordering and identity. A page-session owner used only to preserve the
+same sender state across panel instances is lifecycle ownership, not a second
+delivery queue.
 
 Persistence across a full page reload remains undecided. This decision neither
 requires browser storage nor promises delivery after the page session ends.
@@ -72,14 +84,28 @@ requires browser storage nor promises delivery after the page session ends.
 ### Negative
 
 - `opSender` can retain exhausted operations in memory for the rest of the page
-  session, so it needs an explicit terminal settlement or teardown policy.
+  session. Panel teardown must preserve or transfer that state, while page
+  teardown may discard it because reload persistence remains undecided.
 - This does not protect an edit across a full page reload.
 - Until runtime support lands, this is a policy contract rather than a claim
   about current behavior.
 
 ## Notes
 
-The ratified source for this proposal is the 2026-09-28 clarification in
-[program ADR-012](https://github.com/christian-byrne/in-app-agent-program/blob/955f4dd3e/decisions/ADR-012-lifecycle-and-reconnect-semantics.md).
-This frontend record is self-contained because that provenance repository is
-not accessible to every frontend reviewer.
+Christian Byrne approved the product direction on 2026-09-26:
+
+> yes we definiteliy want queued and replay edits. edits while connection is
+> down should definitely still be pushed eventually. if adrs are saying
+> otherwise, change the adrs as well.
+
+On 2026-09-28, Christian clarified that the suspended-tab resume case is
+required within the same page session, retention belongs in `opSender`, replay
+keeps the original `op_id`, and persistence across a full page reload remains
+undecided. The program operator recorded that clarification as Accepted
+ADR-012 at immutable commit `955f4dd3eab7e3a6992e409239463ddc5fa5c296`.
+
+The program repository is private to some frontend reviewers, so its
+[immutable record](https://github.com/christian-byrne/in-app-agent-program/blob/955f4dd3eab7e3a6992e409239463ddc5fa5c296/decisions/ADR-012-lifecycle-and-reconnect-semantics.md)
+is provenance, not required reading. The approval and complete normative
+policy are transcribed above and in this proposal. This frontend ADR remains
+Proposed until frontend maintainers independently ratify it.
