@@ -158,7 +158,7 @@ describe('revealDynamicInputSlot', () => {
     expect(node.widgets[0].value).toBe('batch')
   })
 
-  it('reports and does not reveal a slot for a malformed spec', () => {
+  it('does not reveal a slot for a malformed spec', () => {
     const node = nodeWithCombo()
     Object.assign(node.constructor, {
       nodeData: {

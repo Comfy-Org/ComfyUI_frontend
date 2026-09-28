@@ -104,7 +104,7 @@ describe('collectSearchableInputTypes', () => {
       expect(collectSearchableInputTypes(toV2(spec))).toEqual(['IMAGE'])
     })
 
-    it('reports and yields nothing for a spec with no options array', () => {
+    it('yields nothing for a spec with no options array', () => {
       expect(
         collectSearchableInputTypes(toV2(['COMFY_DYNAMICCOMBO_V3', {}]))
       ).toEqual([])
@@ -173,7 +173,7 @@ describe('collectSearchableInputTypes', () => {
   })
 
   describe('COMFY_AUTOGROW_V3', () => {
-    it('reports and yields nothing when the template is malformed', () => {
+    it('yields nothing when the template is malformed', () => {
       expect(
         collectSearchableInputTypes(
           toV2(['COMFY_AUTOGROW_V3', { template: {} }])
@@ -187,7 +187,7 @@ describe('collectSearchableInputTypes', () => {
       expect(resolve(matchType('IMAGE, MASK'))).toEqual(['IMAGE', 'MASK'])
     })
 
-    it('reports and yields nothing when template_id is missing', () => {
+    it('yields nothing when template_id is missing', () => {
       const spec: InputSpec = [
         'COMFY_MATCHTYPE_V3',
         { template: { allowed_types: 'IMAGE' } }

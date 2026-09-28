@@ -180,7 +180,7 @@ describe('flattenInputSpecs', () => {
     expect(result.map((spec) => spec.name)).toEqual(['model'])
   })
 
-  it('reports and skips a dynamic combo whose options field is not an array', () => {
+  it('skips a dynamic combo whose options field is not an array', () => {
     const nodeDef: ComfyNodeDefV1 = {
       name: 'MalformedOptionsNode',
       display_name: 'Malformed Options Node',
