@@ -35,6 +35,11 @@ const OFFLINE_GRACE_MS = 20_000
 /** How long a submitted run has to be accepted before the card stops promising. */
 const ACCEPT_DEADLINE_MS = 15_000
 
+interface RendererEnablement {
+  owner: symbol
+  write: Promise<void> | undefined
+}
+
 function useFirstRunTourControllerInternal() {
   const engine = useOnboardingTourStore()
   const billing = useBillingContext()
@@ -46,8 +51,7 @@ function useFirstRunTourControllerInternal() {
   const desktopLayout = useBreakpoints(breakpointsTailwind).greaterOrEqual('md')
   const tourWorkflow = shallowRef<ComfyWorkflow | null>(null)
   const nudgeArmed = ref(false)
-  let rendererEnableOwner: symbol | undefined
-  let rendererEnableWrite: Promise<void> | undefined
+  let rendererEnablement: RendererEnablement | undefined
   let tourSetupOwner: symbol | undefined
   /** Only a tour walked to the end made a first result to be congratulated for. */
   const tourWasCompleted = ref(false)
@@ -245,16 +249,16 @@ function useFirstRunTourControllerInternal() {
     releaseFirstRunTargets()
     tourWorkflow.value = null
     tourSetupOwner = undefined
-    if (
-      enabledForTour &&
-      rendererEnableOwner === ownership &&
-      !shouldCancel()
-    ) {
+    const enablement = rendererEnablement
+    if (enabledForTour && enablement?.owner === ownership && !shouldCancel()) {
       const write = settingStore.set('Comfy.VueNodes.Enabled', false)
-      rendererEnableWrite = write
-      await write
-      if (rendererEnableOwner === ownership) rendererEnableOwner = undefined
-      if (rendererEnableWrite === write) rendererEnableWrite = undefined
+      enablement.write = write
+      try {
+        await write
+      } finally {
+        if (rendererEnablement === enablement && enablement.owner === ownership)
+          rendererEnablement = undefined
+      }
     }
   }
 
@@ -262,26 +266,79 @@ function useFirstRunTourControllerInternal() {
     return !shouldCancel() && !engine.activeTour && canvasContextHolds.value
   }
 
+  async function settleRendererWrite(
+    enablement: RendererEnablement
+  ): Promise<void> {
+    try {
+      await enablement.write
+    } catch {
+      // The local setting may already have changed before persistence failed.
+    }
+  }
+
+  async function adoptRendererEnablement(ownership: symbol): Promise<void> {
+    const enablement = rendererEnablement
+    if (enablement === undefined) return
+    enablement.owner = ownership
+    await settleRendererWrite(enablement)
+    if (
+      rendererEnablement !== enablement ||
+      enablement.owner !== ownership ||
+      settingStore.get('Comfy.VueNodes.Enabled')
+    )
+      return
+
+    const write = settingStore.set('Comfy.VueNodes.Enabled', true)
+    enablement.write = write
+    try {
+      await write
+    } finally {
+      if (enablement.write === write) enablement.write = undefined
+    }
+  }
+
   async function claimRendererForTour(ownership: symbol): Promise<boolean> {
-    if (rendererEnableOwner !== undefined) {
-      rendererEnableOwner = ownership
-      await rendererEnableWrite
-      if (!settingStore.get('Comfy.VueNodes.Enabled')) {
-        const write = settingStore.set('Comfy.VueNodes.Enabled', true)
-        rendererEnableWrite = write
-        await write
-        if (rendererEnableWrite === write) rendererEnableWrite = undefined
-      }
+    if (rendererEnablement !== undefined) {
+      await adoptRendererEnablement(ownership)
       return true
     }
     if (settingStore.get('Comfy.VueNodes.Enabled')) return false
 
-    rendererEnableOwner = ownership
+    const enablement: RendererEnablement = {
+      owner: ownership,
+      write: undefined
+    }
+    rendererEnablement = enablement
     const write = settingStore.set('Comfy.VueNodes.Enabled', true)
-    rendererEnableWrite = write
-    await write
-    if (rendererEnableWrite === write) rendererEnableWrite = undefined
+    enablement.write = write
+    try {
+      await write
+    } finally {
+      if (enablement.write === write) enablement.write = undefined
+    }
     return true
+  }
+
+  async function cancelPendingStart(): Promise<void> {
+    const enablement = rendererEnablement
+    if (enablement === undefined) return
+    const ownership = Symbol('cancelled-first-run-tour-start')
+    enablement.owner = ownership
+    try {
+      await settleRendererWrite(enablement)
+      if (
+        rendererEnablement === enablement &&
+        enablement.owner === ownership &&
+        settingStore.get('Comfy.VueNodes.Enabled')
+      ) {
+        const write = settingStore.set('Comfy.VueNodes.Enabled', false)
+        enablement.write = write
+        await write
+      }
+    } finally {
+      if (rendererEnablement === enablement && enablement.owner === ownership)
+        rendererEnablement = undefined
+    }
   }
 
   /** False when there is no tour to give; any renderer switch is undone. */
@@ -318,14 +375,15 @@ function useFirstRunTourControllerInternal() {
       (await engine.startTour('firstRun'))
     if (!started) {
       await cleanUpFailedTourStart(ownership, enabledForTour, shouldCancel)
-    } else if (rendererEnableOwner === ownership) {
-      rendererEnableOwner = undefined
+    } else if (rendererEnablement?.owner === ownership) {
+      rendererEnablement = undefined
     }
     return started
   }
 
   return {
     beginTour,
+    cancelPendingStart,
     nudgeArmed: readonly(nudgeArmed),
     tourWasCompleted: readonly(tourWasCompleted),
     dismissNudge

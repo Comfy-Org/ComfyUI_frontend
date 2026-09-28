@@ -388,7 +388,7 @@ describe('useFirstRunTourController', () => {
       ).not.toHaveBeenCalledWith('Comfy.VueNodes.Enabled', false)
     })
 
-    it('cancels during renderer setup before replacing shared tour state', async () => {
+    it('preserves an armed nudge when renderer setup is cancelled', async () => {
       const controller = await freshController()
       const initialStart = controller.beginTour('image_z_image_turbo')
       await vi.advanceTimersByTimeAsync(INTRO_PREVIEW_MS)
@@ -424,7 +424,7 @@ describe('useFirstRunTourController', () => {
       ).not.toHaveBeenCalled()
       expect(
         controller.nudgeArmed.value,
-        "account A's cancelled setup must not replace account B's shared tour state"
+        'cancelled setup must not replace existing shared tour state'
       ).toBe(true)
       expect(
         vi.mocked(useSettingStore().set),
@@ -432,7 +432,7 @@ describe('useFirstRunTourController', () => {
       ).toHaveBeenCalledExactlyOnceWith('Comfy.VueNodes.Enabled', true)
     })
 
-    it('transfers a cancelled renderer enable to the next handoff for cleanup', async () => {
+    it('cleans up a cancelled renderer enable when no next handoff arrives', async () => {
       useSettingStore().settingValues['Comfy.VueNodes.Enabled'] = false
       let finishRendererSetup: (() => void) | undefined
       vi.mocked(useSettingStore().set).mockImplementation(
@@ -453,15 +453,114 @@ describe('useFirstRunTourController', () => {
       )
       await vi.advanceTimersByTimeAsync(0)
       accountAIsStale = true
+      const cancelling = controller.cancelPendingStart()
+      assert.exists(finishRendererSetup)
+      finishRendererSetup()
+      await expect(accountAStart).resolves.toBe(false)
+      await cancelling
+
+      expect(useSettingStore().settingValues['Comfy.VueNodes.Enabled']).toBe(
+        false
+      )
+    })
+
+    it('transfers a pending renderer enable to the next handoff for cleanup', async () => {
+      useSettingStore().settingValues['Comfy.VueNodes.Enabled'] = false
+      let finishRendererSetup: (() => void) | undefined
+      vi.mocked(useSettingStore().set).mockImplementation(
+        async (key, value) => {
+          Object.assign(useSettingStore().settingValues, { [key]: value })
+          if (value === true)
+            await new Promise<void>((resolve) => {
+              finishRendererSetup = resolve
+            })
+        }
+      )
+      let accountAIsStale = false
+      const controller = await freshController()
+
+      const accountAStart = controller.beginTour(
+        'image_z_image_turbo',
+        () => accountAIsStale
+      )
+      await vi.advanceTimersByTimeAsync(0)
+      accountAIsStale = true
+      vi.mocked(useOnboardingTourStore().startTour).mockResolvedValue(false)
+      const accountBStart = controller.beginTour('image_z_image_turbo')
       assert.exists(finishRendererSetup)
       finishRendererSetup()
       await expect(accountAStart).resolves.toBe(false)
 
-      vi.mocked(useOnboardingTourStore().startTour).mockResolvedValue(false)
-      const accountBStart = controller.beginTour('image_z_image_turbo')
       await vi.advanceTimersByTimeAsync(INTRO_PREVIEW_MS)
       await expect(accountBStart).resolves.toBe(false)
 
+      expect(vi.mocked(useSettingStore().set)).toHaveBeenCalledTimes(2)
+      expect(vi.mocked(useSettingStore().set)).toHaveBeenNthCalledWith(
+        1,
+        'Comfy.VueNodes.Enabled',
+        true
+      )
+      expect(useSettingStore().settingValues['Comfy.VueNodes.Enabled']).toBe(
+        false
+      )
+    })
+
+    it('cleans up when the successor adopting a pending enable is cancelled', async () => {
+      useSettingStore().settingValues['Comfy.VueNodes.Enabled'] = false
+      let finishRendererSetup: (() => void) | undefined
+      vi.mocked(useSettingStore().set).mockImplementation(
+        async (key, value) => {
+          Object.assign(useSettingStore().settingValues, { [key]: value })
+          if (value === true)
+            await new Promise<void>((resolve) => {
+              finishRendererSetup = resolve
+            })
+        }
+      )
+      let accountAIsStale = false
+      let accountBIsStale = false
+      const controller = await freshController()
+
+      const accountAStart = controller.beginTour(
+        'image_z_image_turbo',
+        () => accountAIsStale
+      )
+      await vi.advanceTimersByTimeAsync(0)
+      accountAIsStale = true
+      const accountBStart = controller.beginTour(
+        'image_z_image_turbo',
+        () => accountBIsStale
+      )
+      accountBIsStale = true
+      const cancelling = controller.cancelPendingStart()
+      assert.exists(finishRendererSetup)
+      finishRendererSetup()
+
+      await expect(accountAStart).resolves.toBe(false)
+      await expect(accountBStart).resolves.toBe(false)
+      await cancelling
+      expect(useSettingStore().settingValues['Comfy.VueNodes.Enabled']).toBe(
+        false
+      )
+    })
+
+    it('recovers when a rejected renderer enable is retried', async () => {
+      useSettingStore().settingValues['Comfy.VueNodes.Enabled'] = false
+      vi.mocked(useSettingStore().set)
+        .mockRejectedValueOnce(new Error('failed to persist renderer setting'))
+        .mockImplementation(async (key, value) => {
+          Object.assign(useSettingStore().settingValues, { [key]: value })
+        })
+      const controller = await freshController()
+
+      await expect(controller.beginTour('image_z_image_turbo')).rejects.toThrow(
+        'failed to persist renderer setting'
+      )
+      vi.mocked(useOnboardingTourStore().startTour).mockResolvedValue(false)
+      const retrying = controller.beginTour('image_z_image_turbo')
+      await vi.advanceTimersByTimeAsync(INTRO_PREVIEW_MS)
+
+      await expect(retrying).resolves.toBe(false)
       expect(useSettingStore().settingValues['Comfy.VueNodes.Enabled']).toBe(
         false
       )

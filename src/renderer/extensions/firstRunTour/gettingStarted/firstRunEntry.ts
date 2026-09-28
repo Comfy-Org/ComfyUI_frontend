@@ -48,6 +48,14 @@ export const useFirstRunEntry = createSharedComposable(() => {
       authGeneration++
       gettingStartedVisible.value = false
       activeTourHandoffs.value = new Set()
+      void useFirstRunTourController()
+        .cancelPendingStart()
+        .catch((error) =>
+          reportError(error, {
+            errorType: 'failure_restoring_first_run_renderer_setting',
+            level: 'warning'
+          })
+        )
       const tourStore = useOnboardingTourStore()
       if (tourStore.activeTour === 'firstRun') tourStore.postpone()
     },

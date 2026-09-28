@@ -23,13 +23,15 @@ const mocks = vi.hoisted<{
   subscriptionEnabled: boolean
   isNewUser: boolean | null
   beginTour: ReturnType<typeof vi.fn>
+  cancelPendingStart: ReturnType<typeof vi.fn>
 }>(() => ({
   isCloud: true,
   isDesktopWidth: true,
   subscriptionEnabled: true,
   isNewUser: true,
 
-  beginTour: vi.fn()
+  beginTour: vi.fn(),
+  cancelPendingStart: vi.fn(async () => {})
 }))
 
 const sharedComposable = vi.hoisted(() => {
@@ -71,7 +73,10 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
 }))
 vi.mock<unknown>(import('../tour/useFirstRunTourController'), () => ({
-  useFirstRunTourController: () => ({ beginTour: mocks.beginTour })
+  useFirstRunTourController: () => ({
+    beginTour: mocks.beginTour,
+    cancelPendingStart: mocks.cancelPendingStart
+  })
 }))
 
 const { useFirstRunEntry } = await import('./firstRunEntry')
@@ -913,6 +918,7 @@ describe('useFirstRunEntry', () => {
         entry.firstRunHoldsScreen.value,
         "account B must not inherit account A's pending consent hold"
       ).toBe(false)
+      expect(mocks.cancelPendingStart).toHaveBeenCalledOnce()
       assert.exists(finishTour)
       finishTour(false)
       await handoff
