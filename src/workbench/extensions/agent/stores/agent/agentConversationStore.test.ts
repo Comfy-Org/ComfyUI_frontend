@@ -645,6 +645,37 @@ describe('useAgentConversationStore', () => {
     expect(store.isStreaming).toBe(true)
   })
 
+  // PM-1776: hydrate restores a `streaming` row as the live turn, but the
+  // stash is the copy that kept this turn's parts and never stopped taking its
+  // frames. Letting the snapshot take the active slot would route the rest of
+  // the stream to the wrong copy, and the entry `resumeBackgroundTurn` restores
+  // would never have seen its own done.
+  it('leaves a still-streaming row to the background turn already stashed for it', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'go')
+    store.ingest(delta('t1', 'work'))
+    store.stashActiveTurn()
+
+    store.setThreadId('th-other')
+    store.hydrate([])
+
+    store.setThreadId('th')
+    store.hydrate([
+      historyRow(1, 'user', 'turn-a', 'go'),
+      { ...historyRow(2, 'assistant', 'turn-a', '', 't1'), status: 'streaming' }
+    ])
+
+    expect(store.activeTurnId).toBeNull()
+    expect(store.messages[0].streaming).toBe(false)
+
+    store.ingest(done('t1'))
+    store.resumeBackgroundTurn()
+
+    expect(store.isStreaming).toBe(false)
+  })
+
   it('keeps a settled background reply when an earlier history turn shares its prompt text', () => {
     const store = useAgentConversationStore()
     store.setThreadId('th')

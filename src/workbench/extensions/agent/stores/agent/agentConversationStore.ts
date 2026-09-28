@@ -10,7 +10,10 @@ import { createAgentEventTransport } from '../../services/agent/agentEventTransp
 import type { AssistantMessage } from '../../services/agent/agentMessageParts'
 import { createAssistantMessage } from '../../services/agent/agentMessageParts'
 import { normalizeAgentTranscript } from '../../services/agent/agentTranscript'
-import type { UserAttachment } from '../../services/agent/agentTranscript'
+import type {
+  NormalizedAgentTranscript,
+  UserAttachment
+} from '../../services/agent/agentTranscript'
 import type { WorkflowReference } from '../../types/workflowReference'
 
 export type { UserAttachment }
@@ -470,17 +473,44 @@ export const useAgentConversationStore = defineStore(
       hydratedAssistantTurnIds = transcript.assistantTurnIds
       dropAttachmentPreviews()
       userAttachments.value = transcript.userAttachments
-      if (transcript.pending) {
-        liveMessage = transcript.pending.message
-        activeTurnId.value = transcript.pending.messageId
-        activeIndex.value = messages.value.indexOf(transcript.pending.message)
+      const pending = unstashedLiveTurn(transcript)
+      if (pending) {
+        liveMessage = pending.message
+        activeTurnId.value = pending.messageId
+        activeIndex.value = messages.value.indexOf(pending.message)
         transport = createAgentEventTransport(
-          transcript.pending.message,
+          pending.message,
           replaceActive,
           () => canvasSyncGate(),
           () => canvasSyncOutcomeCount()
         )
       }
+    }
+
+    /**
+     * The transcript's live turn, unless a stashed background turn already
+     * owns that same turn. The stash kept the turn's parts and never stopped
+     * receiving frames, so letting the server's snapshot take the active slot
+     * would route the rest of the stream to the wrong copy and leave
+     * `resumeBackgroundTurn` restoring an entry that never saw its own
+     * `agent_message_done` -- a turn stuck running for good.
+     *
+     * Demoted rather than merely skipped: the snapshot stays on screen when
+     * its row id differs from the stash's, and a second live-looking row is
+     * exactly what the caller is hydrating to get rid of.
+     */
+    function unstashedLiveTurn(
+      transcript: NormalizedAgentTranscript
+    ): NormalizedAgentTranscript['pending'] {
+      const pending = transcript.pending
+      if (!pending) return undefined
+      const stashed =
+        threadId.value === null
+          ? undefined
+          : backgroundTurns.get(threadId.value)
+      if (stashed?.messageId !== pending.messageId) return pending
+      pending.message.streaming = false
+      return undefined
     }
 
     const entries = computed<ConversationEntry[]>(() =>

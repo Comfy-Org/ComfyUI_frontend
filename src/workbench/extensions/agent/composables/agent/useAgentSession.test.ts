@@ -395,6 +395,51 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(conversation.activeTurnId).toBe('msg-1')
   })
 
+  // The other half of (b4a): `subscribe()` runs before the GET resolves, and
+  // the reopen dropped its background turns, so a done arriving in that window
+  // has nowhere to land. Lost, it would leave the restored turn running for
+  // good -- Stop answered 409 and swallowed, Send never offered.
+  it('(b4b) a done that lands while the reopen is hydrating still settles the turn', async () => {
+    const conversation = useAgentConversationStore()
+    let deliverHistory!: (history: AgentMessages) => void
+    const rest = fakeRest({
+      getMessages: vi.fn(
+        () =>
+          new Promise<AgentMessages>((resolve) => {
+            deliverHistory = resolve
+          })
+      )
+    })
+
+    const minimized = useAgentSession({ rest, events: fakeEvents().source })
+    minimized.start()
+    await minimized.sendMessage('add an audio output node')
+    minimized.stop()
+    await Promise.resolve()
+
+    const { source, emit } = fakeEvents()
+    const reopened = useAgentSession({ rest, events: source })
+    reopened.start()
+
+    emit(done('msg-1'))
+    deliverHistory([
+      historyRow(1, 'user', 'turn-1', 'add an audio output node'),
+      {
+        ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+        content: {},
+        status: 'streaming'
+      }
+    ])
+
+    await vi.waitFor(() =>
+      expect(conversation.messages.map((message) => message.id)).toEqual([
+        'turn-1'
+      ])
+    )
+    expect(reopened.isStreaming.value).toBe(false)
+    expect(conversation.activeTurnId).toBeNull()
+  })
+
   it('does not persist a send that resolves after the session stops', async () => {
     let resolvePost: (value: AgentTurnAccepted) => void = () => {}
     const postMessage = vi.fn(

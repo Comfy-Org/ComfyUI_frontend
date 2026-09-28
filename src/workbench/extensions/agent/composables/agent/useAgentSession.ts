@@ -298,14 +298,36 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
+  /**
+   * Frames for the thread a hydrate is currently fetching. `subscribe()` runs
+   * before the GET resolves, and until the transcript installs a transport
+   * there is nothing for `ingest` to route them to -- a panel reopened over a
+   * live turn has no background entry to fall back on either, so they are
+   * dropped outright. Losing an `agent_message_done` that way leaves the turn
+   * the transcript then restores running for good (PM-1776); losing a delta
+   * silently truncates the reply. Scoped to the one thread, so a hydrate that
+   * is abandoned discards only frames its own thread would have replayed.
+   */
+  let hydration: { threadId: string; events: AgentWsEvent[] } | null = null
+
+  function drainHydration(): void {
+    const buffered = hydration
+    hydration = null
+    if (buffered === null) return
+    for (const event of buffered.events) handleAgentEvent(event)
+  }
+
   async function hydrateFromServer(
     threadId: string,
     isCurrent: () => boolean = () => true
   ): Promise<boolean> {
+    const buffer: NonNullable<typeof hydration> = { threadId, events: [] }
+    hydration = buffer
     try {
       const history = await rest.getMessages(threadId)
       if (conversationStore.threadId !== threadId || !isCurrent()) return false
       conversationStore.hydrate(history)
+      drainHydration()
       await workflow?.restored?.(conversationStore.latestWorkflowId, isCurrent)
       if (conversationStore.threadId !== threadId || !isCurrent()) return false
       return true
@@ -319,6 +341,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
       }
       pushError(error instanceof Error ? error.message : String(error))
       return false
+    } finally {
+      // Only the owner clears the slot: a hydrate that superseded this one has
+      // its own buffer waiting on a GET that has not landed yet.
+      if (hydration === buffer) hydration = null
     }
   }
 
@@ -858,6 +884,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   function handleAgentEvent(event: AgentWsEvent): void {
+    if (hydration !== null && event.data.thread_id === hydration.threadId) {
+      hydration.events.push(event)
+      return
+    }
     if (event.type === 'agent_ask_resolved') {
       setAskAnswering(event.data.ask_id, false)
       onAskResolved?.(event.data.ask_id)

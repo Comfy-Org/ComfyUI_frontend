@@ -202,9 +202,10 @@ function parseToolCalls(
 
 /**
  * Appends a persisted assistant row's tool-call and text parts onto its
- * running message. `isLive` is true only when this row is the one that will
- * be handed a live `AgentEventTransport` (the run_approval mid-ask case), so
- * its still-in-flight tool parts may legitimately stay `streaming`.
+ * running message. `isLive` is true when the row is the one that will be
+ * handed a live `AgentEventTransport` — the row the server still reports as
+ * `streaming` — so its still-in-flight tool parts may legitimately stay
+ * `streaming`.
  *
  * `message.parts` is shared across every assistant row of one turn (via
  * `assistants.get(turnId)` in `recordAssistantRow`), but `parseToolCalls`
