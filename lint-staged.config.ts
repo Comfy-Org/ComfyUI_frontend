@@ -63,12 +63,10 @@ function lintCommands(
       styleFiles,
       'pnpm exec stylelint --cache --cache-strategy content --allow-empty-input'
     ),
-    ...Array.from({ length: Math.ceil(codeFiles.length / 30) }, (_, index) =>
-      commandsWithFiles(
-        codeFiles.slice(index * 30, index * 30 + 30),
-        'pnpm exec oxlint --threads=1 --no-error-on-unmatched-pattern --fix'
-      )
-    ).flat(),
+    ...commandsWithFiles(
+      codeFiles,
+      'pnpm exec oxlint --type-aware --no-error-on-unmatched-pattern --fix'
+    ),
     ...commandsWithFiles(
       [...codeFiles, ...astroFiles],
       `pnpm exec eslint --cache --cache-strategy content --concurrency auto --fix --no-warn-ignored ${skipCanonicalClasses}`
