@@ -20,6 +20,7 @@ import CheckoutPaymentColumn from '@/components/fullPage/CheckoutPaymentColumn.v
 import { buildSummaryLedger } from '@/checkout/summaryLedger'
 import CheckoutSummaryColumn from '@/components/fullPage/CheckoutSummaryColumn.vue'
 import { keepSubscriptionCopy } from '@/checkout/keepSubscription'
+import PromoCodeEntry from '@/components/fullPage/summary/PromoCodeEntry.vue'
 import { useFullPageCheckout } from '@/composables/useFullPageCheckout'
 import { useHostedCopy } from '@/composables/useHostedCopy'
 import { useBillingWebStripeKey } from '@/config/stripeKey'
@@ -48,6 +49,8 @@ const {
   confirmReactivation,
   payWithoutConsent,
   cancelAt,
+  promo,
+  promoLive,
   pay,
   continueVerification,
   reconcile
@@ -156,7 +159,24 @@ function viewPlans() {
   >
     <h1 class="sr-only">{{ t('hosted.title.checkout') }}</h1>
     <div class="flex min-h-full flex-col lg:flex-row">
-      <CheckoutSummaryColumn :ledger :locked @back="returnToProduct" />
+      <CheckoutSummaryColumn
+        v-slot="{ ledger: shown }"
+        :ledger
+        :locked
+        @back="returnToProduct"
+      >
+        <PromoCodeEntry
+          :chips="shown.chips"
+          :entry="promo.entry.value"
+          :accepts="shown.acceptsPromo"
+          :live="promoLive"
+          @open="promo.open"
+          @edit="promo.edit"
+          @dismiss="promo.dismiss"
+          @apply="promo.apply"
+          @remove="promo.remove"
+        />
+      </CheckoutSummaryColumn>
       <CheckoutPaymentColumn
         v-if="
           page.kind === 'resolving' ||

@@ -34,6 +34,7 @@ import {
 } from '@/checkout/checkoutPage'
 import { planCreditsSettingsUrl, pricingTableUrl } from '@/checkout/cloudLinks'
 import { createOperationChannel } from '@/checkout/operationChannel'
+import { promoEntryLive, promoRejectionOf } from '@/checkout/promoEntry'
 import type { PayVerdict } from '@/checkout/payVerdict'
 import { operationOutcomeOf, payVerdictOf } from '@/checkout/payVerdict'
 import {
@@ -41,6 +42,7 @@ import {
   checkoutReturnUrl
 } from '@/checkout/subscribeRequest'
 import { useBilledWorkspace } from '@/composables/useBilledWorkspace'
+import { useCheckoutPromo } from '@/composables/useCheckoutPromo'
 import { BILLING_WEB_ENV } from '@/config/env'
 import { awaitBillingWebStripeKey } from '@/config/stripeKey'
 import { useBillingEntry } from '@/entry/billingEntry'
@@ -142,12 +144,13 @@ export function useFullPageCheckout() {
     }
   }
 
-  function quoteArrival(arrival: PlannedEntry) {
+  function quoteArrival(arrival: PlannedEntry, promotionCode?: string) {
     return quote({
       planSlug: arrival.plan,
       ...(arrival.teamCreditStopId === undefined
         ? {}
-        : { teamCreditStopId: arrival.teamCreditStopId })
+        : { teamCreditStopId: arrival.teamCreditStopId }),
+      ...(promotionCode === undefined ? {} : { promotionCode })
     })
   }
 
@@ -159,6 +162,24 @@ export function useFullPageCheckout() {
     cancelAt.value =
       read.status === 'ok' ? read.value.status.cancel_at : undefined
   }
+
+  const promoLive = computed(() =>
+    promoEntryLive(
+      page.value,
+      checkout.submitting.value || checkout.operation.value !== undefined
+    )
+  )
+
+  const promo = useCheckoutPromo({
+    prefill: entry.value?.promotionCode,
+    live: () => promoLive.value,
+    requote: (promotionCode) => {
+      const arrival = entry.value
+      return arrival?.plan === undefined
+        ? Promise.resolve({ status: 'error', code: 'REQUEST_FAILED' })
+        : quoteArrival({ ...arrival, plan: arrival.plan }, promotionCode)
+    }
+  })
 
   const asksReactivation = (quoted: SubscriptionPreview) =>
     quoted.requires_reactivation_confirmation === true
@@ -308,12 +329,16 @@ export function useFullPageCheckout() {
   /**
    * Money in flight keeps Pay locked, so a second click cannot charge twice.
    * An operation parked on a card is what a Pay resubmits, so it does not.
+   * A re-quote for a promo code holds Pay until the price settles.
    */
   const canPay = computed(() => {
     const operation = checkout.operation.value
     const inFlight = operation?.phase === 'pending' && !isParked(operation)
     return (
-      railAcceptsPay(page.value) && preview.value?.allowed === true && !inFlight
+      railAcceptsPay(page.value) &&
+      preview.value?.allowed === true &&
+      !inFlight &&
+      !promo.busy.value
     )
   })
 
@@ -411,15 +436,24 @@ export function useFullPageCheckout() {
       checkout.reset()
       dispatch({ type: 'payFailed', outcome: verdict.outcome })
     } else if (verdict.kind === 'requote') {
-      const requoted = await quoteArrival(arrival)
+      const code = promo.appliedCode.value
+      const withCode = await quoteArrival(arrival, code)
+      const lapsed =
+        code !== undefined &&
+        withCode.status === 'error' &&
+        promoRejectionOf(withCode) === 'invalid'
+      const requoted = lapsed ? await quoteArrival(arrival) : withCode
       if (requoted.status !== 'ok') return
+      const expiredPromo = lapsed ? code : undefined
+      if (expiredPromo !== undefined) promo.expire()
       dispatch({
         type: 'requoted',
         reactivation: consentAsked(
           verdict.because === 'reactivation_required' ||
             asksReactivation(requoted.value)
         ),
-        priceUpdated: verdict.because === 'quote_expired'
+        priceUpdated: verdict.because === 'quote_expired',
+        ...(expiredPromo === undefined ? {} : { expiredPromo })
       })
     }
   }
@@ -480,6 +514,8 @@ export function useFullPageCheckout() {
       dispatch({ type: 'reactivationConfirmed', confirmed }),
     payWithoutConsent,
     cancelAt: shallowReadonly(cancelAt),
+    promo,
+    promoLive,
     pay,
     continueVerification: checkout.continueVerification
   }

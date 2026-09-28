@@ -93,6 +93,10 @@ const { t } = useI18n()
     </span>
   </div>
 
+  <div class="pt-4 empty:hidden">
+    <slot />
+  </div>
+
   <hr class="mt-6 mb-0 border-border-default" />
   <div class="flex items-center justify-between gap-4 pt-6">
     <span class="text-base font-semibold text-base-foreground">

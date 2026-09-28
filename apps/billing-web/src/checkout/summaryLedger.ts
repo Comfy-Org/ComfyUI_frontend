@@ -25,7 +25,7 @@ interface DiscountRow {
 }
 
 /** Which code produced a discount. Only the customer's own code comes off. */
-interface PromoChip {
+export interface PromoChip {
   readonly code: string
   readonly removable: boolean
 }
