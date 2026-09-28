@@ -10815,6 +10815,11 @@ Enterprise`
     en: 'The run could not be checked. Reconnect to recover its current status.',
     'zh-CN': '无法查看运行状态。请重新连接以获取最新状态。'
   },
+  'workshop.workflow.lostContact': {
+    en: 'This page lost contact with the run. It may still be running on Cloud and using credits. Reconnect to see its current status.',
+    'zh-CN':
+      '此页面与运行失去了联系。它可能仍在 Cloud 上运行并消耗积分。请重新连接以查看最新状态。'
+  },
   'workshop.workflow.browserUnavailable': {
     en: 'Running workflows from this page is not available yet.',
     'zh-CN': '暂不支持从此页面运行工作流。'

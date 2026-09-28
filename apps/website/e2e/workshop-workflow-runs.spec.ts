@@ -405,4 +405,7 @@ test('a run the page stops hearing about holds the panel still', async ({
   await expect(
     page.getByRole('button', { name: 'Reconnect to this run' })
   ).toBeVisible()
+  await expect(page.getByTestId('workflow-run-footer')).toContainText(
+    'It may still be running on Cloud and using credits.'
+  )
 })

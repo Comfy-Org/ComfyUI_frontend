@@ -13,7 +13,7 @@ import {
 } from '../../config/workshop-playground'
 import { WorkshopWorkflowError } from '../../config/workshop-workflow-api'
 import {
-  workflowErrorKey,
+  workflowNoticeKey,
   workflowStatusKey
 } from '../../config/workshop-workflow-presentation'
 import {
@@ -141,7 +141,7 @@ const fieldErrors = computed(() => error.value?.fieldErrors ?? {})
 // What is left for this page to say is what the panel does not carry.
 const refusalSaidHere = computed(() =>
   error.value && !panelSaysRefusal(state.value)
-    ? t(workflowErrorKey(error.value))
+    ? t(workflowNoticeKey(state.value, error.value))
     : undefined
 )
 const { balance, session } = useWorkshopCredits()
