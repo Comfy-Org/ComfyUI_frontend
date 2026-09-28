@@ -7,7 +7,6 @@ import {
 import { templateApiFixture } from '@e2e/fixtures/templateApiFixture'
 import {
   APP_MODE_TEMPLATE,
-  APP_MODE_TEMPLATE_NODE_COUNT,
   mockAppModeTemplate
 } from '@e2e/fixtures/utils/appModeTemplate'
 
@@ -32,17 +31,22 @@ test.describe('App mode template load', { tag: ['@canvas'] }, () => {
     await comfyPage.canvasOps.resetView()
   })
 
-  test('leaves the graph camera usable when returning from app mode', async ({
+  test('preserves the graph camera when returning from app mode', async ({
     comfyPage,
     templateApi
   }) => {
-    const { appMode, canvasOps, workflow, nodeOps } = comfyPage
+    const { appMode, canvasOps, workflow } = comfyPage
 
-    await test.step('app mode hides the canvas', async () => {
-      await appMode.enterAppModeWithInputs([['3', 'seed']])
-      await expect(appMode.centerPanel).toBeVisible()
-      await expect.poll(() => canvasOps.getElementWidth()).toBe(0)
-    })
+    const cameraOnEntry =
+      await test.step('app mode hides the canvas', async () => {
+        await appMode.enterAppModeWithInputs([['3', 'seed']])
+        await expect(appMode.centerPanel).toBeVisible()
+        await expect.poll(() => canvasOps.getElementWidth()).toBe(0)
+        return {
+          scale: await canvasOps.getScale(),
+          offset: await canvasOps.getOffset()
+        }
+      })
 
     await test.step('the template loads while the canvas is hidden', async () => {
       await templateApi.load(APP_MODE_TEMPLATE)
@@ -56,26 +60,19 @@ test.describe('App mode template load', { tag: ['@canvas'] }, () => {
       await expect.poll(() => canvasOps.getElementWidth()).toBe(0)
     })
 
-    await test.step('returning to the graph leaves a usable camera', async () => {
+    await test.step('returning to the graph keeps that camera', async () => {
       await appMode.toggleAppMode()
       await expect
         .poll(() => workflow.getActiveWorkflowResolvedMode())
         .toBe('graph')
       await expect.poll(() => canvasOps.getElementWidth()).toBeGreaterThan(0)
 
-      expect(
-        await nodeOps.getNodeCount(),
-        'the template is still in the graph'
-      ).toBe(APP_MODE_TEMPLATE_NODE_COUNT)
-      expect(
-        await canvasOps.getScale(),
-        'camera scale stays usable'
-      ).toBeGreaterThan(0)
-      const offset = await canvasOps.getOffset()
-      expect(
-        offset.every(Number.isFinite),
-        `camera offset stays finite, got ${JSON.stringify(offset)}`
-      ).toBe(true)
+      expect(await canvasOps.getScale(), 'camera scale is unchanged').toBe(
+        cameraOnEntry.scale
+      )
+      expect(await canvasOps.getOffset(), 'camera offset is unchanged').toEqual(
+        cameraOnEntry.offset
+      )
     })
   })
 })

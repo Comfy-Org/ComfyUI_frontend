@@ -5,14 +5,9 @@ import type { TemplateHelper } from '@e2e/fixtures/helpers/TemplateHelper'
 /** Name of the App Mode template registered by {@link mockAppModeTemplate}. */
 export const APP_MODE_TEMPLATE = 'pm-1733-app-template'
 
-/** Node count of the workflow {@link mockAppModeTemplate} registers. */
-export const APP_MODE_TEMPLATE_NODE_COUNT = 7
-
 /**
  * Registers a template whose workflow carries `extra.linearMode`, so loading
- * it keeps App Mode active and the graph canvas hidden. Kept minimal; whether
- * it carries `extra.ds` is irrelevant, because a template load always takes
- * the unconditional fit branch (`app.ts`, `openSource === 'template'`).
+ * it keeps App Mode active and the graph canvas hidden.
  */
 export async function mockAppModeTemplate(
   templates: TemplateHelper

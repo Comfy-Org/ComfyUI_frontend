@@ -3,8 +3,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { DragAndScale } from '@/lib/litegraph/src/DragAndScale'
 import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 
-// Node bounds measured from browser_tests/assets/linear-basic-app-template.json,
-// the same fixture the e2e regression loads.
 const BOUNDS: ReadOnlyRect = [26, 156, 1635, 559]
 
 function createDragAndScale(width: number, height: number) {
