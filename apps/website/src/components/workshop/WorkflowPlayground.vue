@@ -47,7 +47,7 @@ const section = ref<(typeof sections)[number]>('playground')
 const { onKeydown } = useTablist(() => sections, section)
 const sectionLabels = {
   playground: 'workshop.model.tabs.playground',
-  workflow: 'workshop.workflow.tabDetails',
+  workflow: 'workshop.model.tabs.details',
   api: 'workshop.model.tabs.api'
 } as const
 const initial = initialWorkshopPageState(model)

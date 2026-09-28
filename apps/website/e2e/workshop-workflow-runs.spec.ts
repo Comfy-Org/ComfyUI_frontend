@@ -178,11 +178,7 @@ test('Cloud upload, refresh, partial delivery and downloads retain one run @mobi
   ).toBeVisible()
   const panelRight = await page
     .getByRole('tabpanel', { name: 'Details', exact: true })
-    .evaluate(
-      (panel) =>
-        panel.getBoundingClientRect().right -
-        parseFloat(getComputedStyle(panel).paddingRight)
-    )
+    .evaluate((panel) => panel.getBoundingClientRect().right)
   const downloadRight = await page
     .getByRole('link', { name: 'Download workflow JSON' })
     .evaluate((link) => link.getBoundingClientRect().right)

@@ -10619,7 +10619,6 @@ Enterprise`
     en: 'Workflow sections',
     'zh-CN': '工作流栏目'
   },
-  'workshop.workflow.tabDetails': { en: 'Details', 'zh-CN': '详情' },
   'workshop.workflow.runsOn': { en: 'Runs on', 'zh-CN': '运行于' },
   'workshop.workflow.inside': {
     en: 'Inside the workflow',

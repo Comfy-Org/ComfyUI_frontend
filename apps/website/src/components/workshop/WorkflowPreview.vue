@@ -11,12 +11,6 @@ const { model, cloudHref } = defineProps<{
 }>()
 
 const template = model.workflow.template
-
-const sectionTitle =
-  'text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase'
-const band = 'border-t border-transparency-white-t8 px-5 py-4 first:border-t-0'
-const bandHeading =
-  'text-2xs font-bold tracking-wider text-primary-warm-gray uppercase'
 </script>
 
 <template>
@@ -25,17 +19,19 @@ const bandHeading =
     role="tabpanel"
     aria-labelledby="workflow-tab-workflow"
   >
-    <!-- The heading spans both columns, so the graph and the column beside it
-      start on the same line rather than one hanging below the other. -->
     <div class="mb-8">
-      <h2 :class="sectionTitle">{{ t('workshop.workflow.inside') }}</h2>
+      <h2
+        class="text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase"
+      >
+        {{ t('workshop.workflow.inside') }}
+      </h2>
       <p class="mt-2 text-sm/relaxed text-primary-warm-gray">
         {{ t('workshop.workflow.previewHint') }}
       </p>
     </div>
 
     <div class="grid gap-10 lg:grid-cols-12">
-      <div class="lg:col-span-8" data-testid="workflow-graph-section">
+      <div class="lg:col-span-8">
         <a
           v-if="template?.previewUrl"
           :href="template.previewUrl"
@@ -54,7 +50,7 @@ const bandHeading =
       </div>
 
       <div class="lg:col-span-4">
-        <div class="flex flex-col gap-4 lg:sticky lg:top-28">
+        <div class="flex flex-col gap-4 lg:sticky lg:top-24">
           <div class="flex flex-col gap-3" data-testid="workflow-actions">
             <Button
               v-if="cloudHref"
@@ -81,8 +77,10 @@ const bandHeading =
             class="overflow-hidden rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4"
             data-testid="workflow-facts"
           >
-            <section :class="band" data-testid="workflow-runs-on">
-              <h3 :class="bandHeading">
+            <section class="px-5 py-4" data-testid="workflow-runs-on">
+              <h3
+                class="text-2xs font-bold tracking-wider text-primary-warm-gray uppercase"
+              >
                 {{ t('workshop.workflow.runsOn') }}
               </h3>
               <ul class="mt-2 flex flex-col gap-1">
