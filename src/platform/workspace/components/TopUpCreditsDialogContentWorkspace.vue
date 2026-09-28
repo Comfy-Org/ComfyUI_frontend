@@ -539,7 +539,8 @@ function handlePrimaryAction() {
     telemetry?.trackBillingEvent({
       operation: 'topup',
       stage: 'intent',
-      outcome: 'pending'
+      outcome: 'pending',
+      payment_intent_source: source
     })
     step.value = 'confirm'
     return

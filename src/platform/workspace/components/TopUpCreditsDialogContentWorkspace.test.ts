@@ -917,10 +917,10 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
   // whose terminal events are attributed while its `started` is not reads as
   // a conversion cliff rather than a gap.
   it.for([
-    { outcome: 'completed', stages: ['started', 'succeeded'] },
-    { outcome: 'failed', stages: ['started', 'failed'] },
-    { outcome: 'no response', stages: ['started', 'failed'] },
-    { outcome: 'rejected', stages: ['started', 'failed'] }
+    { outcome: 'completed', stages: ['intent', 'started', 'succeeded'] },
+    { outcome: 'failed', stages: ['intent', 'started', 'failed'] },
+    { outcome: 'no response', stages: ['intent', 'started', 'failed'] },
+    { outcome: 'rejected', stages: ['intent', 'started', 'failed'] }
   ] as const)(
     'carries the opening surface onto every top-up event when the purchase is $outcome',
     async ({ outcome, stages }) => {
