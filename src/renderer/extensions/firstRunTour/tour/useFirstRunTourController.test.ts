@@ -7,7 +7,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 import type { DetachedWindowAPI } from 'happy-dom'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick, ref, computed } from 'vue'
 import type { EffectScope, Ref } from 'vue'
 
@@ -382,9 +382,41 @@ describe('useFirstRunTourController', () => {
       expect(
         vi.mocked(useOnboardingTourStore().startTour)
       ).not.toHaveBeenCalled()
-      expect(useSettingStore().settingValues['Comfy.VueNodes.Enabled']).toBe(
-        false
+      expect(
+        vi.mocked(useSettingStore().set),
+        'a stale owner must not compensate by writing under the replacement identity'
+      ).not.toHaveBeenCalledWith('Comfy.VueNodes.Enabled', false)
+    })
+
+    it('cancels during renderer setup before replacing shared tour state', async () => {
+      useSettingStore().settingValues['Comfy.VueNodes.Enabled'] = false
+      let finishRendererSetup: (() => void) | undefined
+      vi.mocked(useSettingStore().set).mockImplementation(
+        () =>
+          new Promise<void>((resolve) => {
+            finishRendererSetup = resolve
+          })
       )
+      let cancelled = false
+      const controller = await freshController()
+
+      const starting = controller.beginTour(
+        'image_z_image_turbo',
+        () => cancelled
+      )
+      await vi.advanceTimersByTimeAsync(0)
+      cancelled = true
+      assert.exists(finishRendererSetup)
+      finishRendererSetup()
+
+      await expect(starting).resolves.toBe(false)
+      expect(
+        vi.mocked(useOnboardingTourStore().startTour)
+      ).not.toHaveBeenCalled()
+      expect(
+        vi.mocked(useSettingStore().set),
+        'cancellation must not issue a compensating renderer write under the new owner'
+      ).toHaveBeenCalledExactlyOnceWith('Comfy.VueNodes.Enabled', true)
     })
 
     it('leaves the workflow undimmed before taking the screen over', async () => {

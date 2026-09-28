@@ -238,6 +238,7 @@ function useFirstRunTourControllerInternal() {
     templateId?: string,
     shouldCancel: () => boolean = () => false
   ): Promise<boolean> {
+    if (shouldCancel()) return false
     if (engine.activeTour) return false
     // Holds only ever end a tour that is already running, and only when they
     // change — a context lost before the tour opens (`?template=X&mode=linear`
@@ -247,6 +248,7 @@ function useFirstRunTourControllerInternal() {
 
     const enabledForTour = !settingStore.get('Comfy.VueNodes.Enabled')
     if (enabledForTour) await settingStore.set('Comfy.VueNodes.Enabled', true)
+    if (shouldCancel()) return false
 
     tourWorkflow.value = workflowStore.activeWorkflow ?? null
     runState.value = 'idle'
@@ -267,7 +269,7 @@ function useFirstRunTourControllerInternal() {
     if (!started) {
       releaseFirstRunTargets()
       tourWorkflow.value = null
-      if (enabledForTour)
+      if (enabledForTour && !shouldCancel())
         await settingStore.set('Comfy.VueNodes.Enabled', false)
     }
     return started

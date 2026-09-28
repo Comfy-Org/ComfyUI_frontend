@@ -3,7 +3,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { fromAny } from '@total-typescript/shoehorn'
 import * as VueUse from '@vueuse/core'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -843,16 +843,28 @@ describe('useFirstRunEntry', () => {
       ).toBe(false)
     })
 
-    it('cancels a pending handoff when the signed-in account changes', async () => {
+    it('cancels a handoff before tour setup when the account changes during dismissal', async () => {
+      let finishDismissal: (() => void) | undefined
+      vi.mocked(useSettingStore().set).mockImplementation(
+        () =>
+          new Promise<void>((resolve) => {
+            finishDismissal = resolve
+          })
+      )
       const entry = useFirstRunEntry()
       await entry.handleStartupOutcome('fresh')
 
-      await entry.dismissIntoFirstRunTour('image_z_image_turbo')
-      const [, shouldCancel] = mocks.beginTour.mock.calls.at(-1)!
-
-      expect(shouldCancel()).toBe(false)
+      const handoff = entry.dismissIntoFirstRunTour('image_z_image_turbo')
+      await vi.waitFor(() => expect(finishDismissal).toBeTypeOf('function'))
       Object.assign(useAuthStore(), { userId: 'account-b' })
-      expect(shouldCancel()).toBe(true)
+      assert.exists(finishDismissal)
+      finishDismissal()
+      await handoff
+
+      expect(
+        mocks.beginTour,
+        "account A's continuation must not set up a tour against account B's renderer state"
+      ).not.toHaveBeenCalled()
     })
 
     it('releases a pending handoff hold at the account boundary', async () => {
@@ -878,6 +890,42 @@ describe('useFirstRunEntry', () => {
       ).toBe(false)
       finishTour(false)
       await handoff
+      expect(entry.firstRunHoldsScreen.value).toBe(false)
+    })
+
+    it("keeps account B's hold when account A's stale handoff completes", async () => {
+      const finishTours: Array<(started: boolean) => void> = []
+      mocks.beginTour.mockImplementation(
+        () =>
+          new Promise<boolean>((resolve) => {
+            finishTours.push(resolve)
+          })
+      )
+      const entry = useFirstRunEntry()
+      await entry.handleStartupOutcome('fresh')
+
+      const accountAHandoff = entry.dismissIntoFirstRunTour(
+        'image_z_image_turbo'
+      )
+      await vi.waitFor(() => expect(finishTours).toHaveLength(1))
+      Object.assign(useAuthStore(), { userId: 'account-b' })
+      const accountBHandoff = entry.dismissIntoFirstRunTour(
+        'image_z_image_turbo'
+      )
+      await vi.waitFor(() => expect(finishTours).toHaveLength(2))
+
+      const [finishAccountA, finishAccountB] = finishTours
+      assert.exists(finishAccountA)
+      finishAccountA(false)
+      await accountAHandoff
+      expect(
+        entry.firstRunHoldsScreen.value,
+        "deleting account A's ownership must not delete account B's token"
+      ).toBe(true)
+
+      assert.exists(finishAccountB)
+      finishAccountB(false)
+      await accountBHandoff
       expect(entry.firstRunHoldsScreen.value).toBe(false)
     })
   })

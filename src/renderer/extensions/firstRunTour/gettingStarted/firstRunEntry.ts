@@ -31,18 +31,13 @@ export const useFirstRunEntry = createSharedComposable(() => {
   const settingStore = useSettingStore()
   const gettingStartedVisible = ref(false)
   const startupDecided = ref(false)
-  /**
-   * Handoffs out of the screen that are still in flight. Counted rather than a
-   * flag so an overlapping handoff cannot clear a hold it does not own.
-   */
-  const tourHandoffs = ref(0)
-  let handoffEpoch = 0
+  const activeTourHandoffs = ref<ReadonlySet<symbol>>(new Set())
   const isDesktopWidth =
     useBreakpoints(breakpointsTailwind).greaterOrEqual('md')
 
   /** Keeps ownership through the gap between dismissal and tour activation. */
   const firstRunHoldsScreen = computed(
-    () => gettingStartedVisible.value || tourHandoffs.value > 0
+    () => gettingStartedVisible.value || activeTourHandoffs.value.size > 0
   )
 
   watch(
@@ -50,8 +45,7 @@ export const useFirstRunEntry = createSharedComposable(() => {
     (userId, previousUserId) => {
       if (previousUserId === undefined || userId === previousUserId) return
       gettingStartedVisible.value = false
-      handoffEpoch++
-      tourHandoffs.value = 0
+      activeTourHandoffs.value = new Set()
       const tourStore = useOnboardingTourStore()
       if (tourStore.activeTour === 'firstRun') tourStore.postpone()
     },
@@ -179,16 +173,21 @@ export const useFirstRunEntry = createSharedComposable(() => {
   /** Dismisses into a tour without exposing the transition as a clear screen. */
   async function dismissIntoFirstRunTour(templateId: string): Promise<void> {
     const ownerId = authStore.userId
-    const epoch = handoffEpoch
-    tourHandoffs.value++
+    const ownership = Symbol('first-run-tour-handoff')
+    activeTourHandoffs.value = new Set([...activeTourHandoffs.value, ownership])
     try {
       await dismissGettingStarted()
+      if (authStore.userId !== ownerId) return
       await useFirstRunTourController().beginTour(
         templateId,
         () => authStore.userId !== ownerId
       )
     } finally {
-      if (epoch === handoffEpoch) tourHandoffs.value--
+      if (activeTourHandoffs.value.has(ownership)) {
+        const remainingHandoffs = new Set(activeTourHandoffs.value)
+        remainingHandoffs.delete(ownership)
+        activeTourHandoffs.value = remainingHandoffs
+      }
     }
   }
 
