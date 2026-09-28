@@ -1755,8 +1755,6 @@ describe('useAgentSession (v1 composition root)', () => {
           errorType: 'failure_recovering_agent_turn'
         })
       )
-      // The job still cleans up after itself: the turn is settled and the
-      // deleted thread is forgotten in memory despite the storage failure.
       expect(useAgentConversationStore().liveTurns()).toEqual([])
       expect(session.threadId.value).toBe(null)
   })
