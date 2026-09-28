@@ -37,6 +37,7 @@ import { setTelemetryRegistry } from '@/platform/telemetry'
 import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
 import * as executionContextUtils from '@/platform/telemetry/utils/getExecutionContext'
 import { isCloud } from '@/platform/distribution/types'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import { PromptExecutionError, api } from '@/scripts/api'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -320,6 +321,59 @@ describe('ComfyApp', () => {
   })
 
   describe('loadGraphData', () => {
+    it('fits an off-screen restored workflow before the camera draw', async () => {
+      const canvas = document.createElement('canvas')
+      Object.defineProperties(canvas, {
+        offsetParent: { value: document.body },
+        offsetWidth: { value: 800 },
+        offsetHeight: { value: 600 }
+      })
+      app.canvasElRef.value = canvas
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+
+      const calls: string[] = []
+      mockSettingStore.get.mockImplementation(
+        (key: string) => key === 'Comfy.EnableWorkflowViewRestore'
+      )
+      const visibleArea = new Float32Array([0, 0, 800, 600])
+      Object.defineProperties(visibleArea, {
+        width: { value: 800 },
+        height: { value: 600 }
+      })
+      Object.assign(mockCanvas, {
+        canvas,
+        bgcanvas: document.createElement('canvas'),
+        viewport: new Float32Array([0, 0, 800, 600]),
+        visible_area: visibleArea,
+        dpr: 1,
+        ds: {
+          offset: [0, 0],
+          scale: 1,
+          fitToBounds: vi.fn(() => calls.push('fit')),
+          visible_area: visibleArea,
+          computeVisibleArea: vi.fn()
+        }
+      })
+      useCanvasStore().canvas = mockCanvas as LGraphCanvas
+      vi.mocked(mockCanvas.draw).mockImplementation(() => {
+        calls.push('draw')
+      })
+
+      await app.loadGraphData({
+        ...createWorkflowGraphData(),
+        extra: { ds: { offset: [-60_000, -60_000], scale: 0.05 } }
+      })
+      const node = new LGraphNode('off-screen')
+      node.pos = [10_000, 10_000]
+      node.size = [200, 100]
+      graph.add(node)
+      mockCanvas.graph = graph
+      Reflect.get(app, 'resizeCanvas').call(app, canvas)
+
+      expect(calls).toEqual(['fit', 'draw', 'draw'])
+    })
+
     it('forwards clean and navigation intent to workflow navigation', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       Reflect.set(app, 'rootGraphInternal', new LGraph())

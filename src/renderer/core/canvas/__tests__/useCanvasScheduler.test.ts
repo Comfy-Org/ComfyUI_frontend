@@ -164,30 +164,66 @@ describe('useCanvasScheduler', () => {
     expect(calls).toEqual(['first', 'second', 'third'])
   })
 
-  it('supersedes camera intent by key and rejects stale identity', async () => {
+  it('rejects a stale camera intent that reaches flush', async () => {
     const scheduler = await createScheduler()
     const stale = vi.fn()
-    const current = vi.fn()
+    let isCurrent = true
     scheduler.scheduleCameraIntent({
-      key: 'workflow-load',
-      loadId: 1,
-      graph: {},
-      kind: 'fit',
-      isCurrent: () => false,
+      key: 'stale-workflow-load',
+      isCurrent: () => isCurrent,
       run: stale
     })
+
+    expect(scheduler.pending()).toBe(1)
+    isCurrent = false
+    runNextAnimationFrame()
+    expect(stale).not.toHaveBeenCalled()
+  })
+
+  it('does not let a late stale intent replace current same-key work', async () => {
+    const scheduler = await createScheduler()
+    const current = vi.fn()
+    const stale = vi.fn()
     scheduler.scheduleCameraIntent({
       key: 'workflow-load',
-      loadId: 2,
-      graph: {},
-      kind: 'restore',
       isCurrent: () => true,
       run: current
     })
+    scheduler.scheduleCameraIntent({
+      key: 'workflow-load',
+      isCurrent: () => false,
+      run: stale
+    })
+
     expect(scheduler.pending()).toBe(1)
     runNextAnimationFrame()
     expect(stale).not.toHaveBeenCalled()
     expect(current).toHaveBeenCalledOnce()
+  })
+
+  it('preserves unrelated work when replacing same-key camera intent', async () => {
+    const scheduler = await createScheduler()
+    const calls: string[] = []
+
+    scheduler.schedule(() => calls.push('ordinary'))
+    scheduler.scheduleCameraIntent({
+      key: 'subgraph-camera',
+      isCurrent: () => true,
+      run: () => calls.push('different-key')
+    })
+    scheduler.scheduleCameraIntent({
+      key: 'workflow-load',
+      isCurrent: () => true,
+      run: () => calls.push('superseded')
+    })
+    scheduler.scheduleCameraIntent({
+      key: 'workflow-load',
+      isCurrent: () => true,
+      run: () => calls.push('current')
+    })
+
+    runNextAnimationFrame()
+    expect(calls).toEqual(['ordinary', 'different-key', 'current'])
   })
 
   it('continues executing remaining ops when one throws', async () => {

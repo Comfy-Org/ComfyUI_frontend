@@ -5,6 +5,7 @@ import type {
   TemplateInfo,
   WorkflowTemplates
 } from '@/platform/workflow/templates/types/template'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import {
   makeTemplate,
   mockTemplateIndex
@@ -133,6 +134,19 @@ export class TemplateHelper {
           'Content-Type': 'application/json',
           'Cache-Control': 'no-store'
         }
+      })
+    )
+  }
+
+  async mockWorkflowData(
+    name: string,
+    workflow: ComfyWorkflowJSON
+  ): Promise<void> {
+    await this.page.route(`**/templates/${name}.json`, (route) =>
+      route.fulfill({
+        status: 200,
+        json: workflow,
+        headers: { 'Cache-Control': 'no-store' }
       })
     )
   }

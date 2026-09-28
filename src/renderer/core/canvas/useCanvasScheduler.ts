@@ -4,11 +4,8 @@ import { watch } from 'vue'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 type CanvasOp = () => void
-export interface CameraIntent {
+interface CameraIntent {
   key: string
-  loadId: number
-  graph: object
-  kind: 'fit' | 'restore'
   isCurrent: () => boolean
   run: CanvasOp
 }
@@ -60,6 +57,7 @@ export const useCanvasScheduler = createSharedComposable(
     }
 
     function scheduleCameraIntent(intent: CameraIntent): void {
+      if (!intent.isCurrent()) return
       const index = queue.findIndex(
         (entry) => entry.type === 'camera' && entry.intent.key === intent.key
       )

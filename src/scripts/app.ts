@@ -1441,14 +1441,7 @@ export class ComfyApp {
               this.canvas.visible_area
             )
           ) {
-            canvasScheduler.scheduleCameraIntent({
-              key: 'workflow-load-fallback',
-              loadId,
-              graph: this.rootGraph,
-              kind: 'fit',
-              isCurrent: () => loadId === this.graphLoadId,
-              run: () => useLitegraphService().fitView()
-            })
+            useLitegraphService().fitView()
           }
         } else {
           useLitegraphService().fitView()
@@ -1481,9 +1474,6 @@ export class ComfyApp {
 
         canvasScheduler.scheduleCameraIntent({
           key: 'workflow-load',
-          loadId,
-          graph: this.rootGraph,
-          kind: openSource === 'template' ? 'fit' : 'restore',
           isCurrent: () => loadId === this.graphLoadId,
           run: () => {
             const vp = measureViewportFromElement(this.canvasEl)
