@@ -47,7 +47,8 @@ const remoteConfigModule: typeof realRemoteConfig = {
   },
   cachedBillingControlEnabled: testScopedRemovableRef(undefined),
   cachedLegacyBillingMigrationEnabled: testScopedRef(undefined),
-  cachedV1PaymentRecovery: testScopedRemovableRef(undefined)
+  cachedV1PaymentRecovery: testScopedRemovableRef(undefined),
+  sessionAgentGrant: testScopedRef(undefined)
 }
 
 export const {
@@ -58,5 +59,6 @@ export const {
   configValueOrDefault,
   cachedBillingControlEnabled,
   cachedLegacyBillingMigrationEnabled,
+  sessionAgentGrant,
   cachedV1PaymentRecovery
 } = remoteConfigModule

@@ -536,6 +536,11 @@ function handlePresetClick(amount: number) {
 
 function handlePrimaryAction() {
   if (step.value === 'amount') {
+    telemetry?.trackBillingEvent({
+      operation: 'topup',
+      stage: 'intent',
+      outcome: 'pending'
+    })
     step.value = 'confirm'
     return
   }
