@@ -217,7 +217,7 @@ describe('AgentPanel extension flag gate', () => {
     })
   })
 
-  it('attributes automatic acceptance with a restored open preference to the consent card', async () => {
+  it('keeps a restored panel open while automatic consent is accepted', async () => {
     mocks.flagEnabled = true
     Object.assign(consentStore, { accepted: false, isChecking: false })
     vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
@@ -238,10 +238,44 @@ describe('AgentPanel extension flag gate', () => {
     expect(vi.mocked(useAgentConsent().withConsent).mock.calls[0][0]).toBe(
       'first_load'
     )
-    expect(agentStore.open).toHaveBeenCalledExactlyOnceWith('automatic_consent')
+    expect(agentStore.open).not.toHaveBeenCalled()
     expect(
       useTelemetry()?.trackAgentPanelOpened
-    ).toHaveBeenCalledExactlyOnceWith({ source: 'automatic_consent' })
+    ).toHaveBeenCalledExactlyOnceWith({ source: 'restored' })
+  })
+
+  it.for([
+    { session: 'cloud logged in without consent', user: { id: 'account-a' } },
+    { session: 'local logged out', user: null }
+  ])('opens after startup for $session', async ({ user }) => {
+    mocks.flagEnabled = true
+    currentUser.value = user
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    agentStore.isOpen = false
+
+    await loadEntryAndSetup()
+    await vi.waitFor(() =>
+      expect(agentStore.open).toHaveBeenCalledWith('activation')
+    )
+
+    expect(agentStore.isVisible).toBe(true)
+  })
+
+  it('waits for the general onboarding decision before activation', async () => {
+    mocks.flagEnabled = true
+    agentStore.isOpen = false
+    let decide = (_: boolean) => {}
+    startupDecision = new Promise<boolean>((resolve) => {
+      decide = resolve
+    })
+
+    await loadEntryAndSetup()
+    expect(agentStore.open).not.toHaveBeenCalled()
+
+    decide(true)
+    await vi.waitFor(() =>
+      expect(agentStore.open).toHaveBeenCalledExactlyOnceWith('activation')
+    )
   })
 
   it('keeps the panel closed if the feature is disabled before acceptance', async () => {

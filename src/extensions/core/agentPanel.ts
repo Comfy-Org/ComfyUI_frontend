@@ -110,7 +110,7 @@ export function registerAgentPanelExtension(): void {
       notifyMintPortsBeforeGraphLoad()
       openWidgetDirtySuppression()
       const agentPanelStore = useAgentPanelStore()
-      if (!agentPanelStore.isVisible) return
+      if (!agentPanelStore.isVisible || !agentPanelStore.consentAccepted) return
 
       const nodeSelectionStore = useAgentNodeSelectionStore()
       nodeSelectionStore.beginWorkflowLoad()
@@ -119,7 +119,7 @@ export function registerAgentPanelExtension(): void {
       const agentPanelStore = useAgentPanelStore()
       const nodeSelectionStore = useAgentNodeSelectionStore()
       if (!nodeSelectionStore.isLoadingWorkflow) return
-      if (!agentPanelStore.isVisible) {
+      if (!agentPanelStore.isVisible || !agentPanelStore.consentAccepted) {
         nodeSelectionStore.finishWorkflowLoad()
         return
       }
@@ -299,6 +299,25 @@ export function registerAgentPanelExtension(): void {
           })
       }
 
+      let activationPending = false
+      const openWhenStartupDecided = (): void => {
+        if (!agentPanelStore.enabled || activationPending) return
+        activationPending = true
+        whenStartupDecided()
+          .then((decided) => {
+            if (decided && agentPanelStore.enabled && !agentPanelStore.isOpen)
+              agentPanelStore.open('activation')
+          })
+          .catch((error: unknown) => {
+            reportError(error, {
+              errorType: 'agent_panel_activation_failure'
+            })
+          })
+          .finally(() => {
+            activationPending = false
+          })
+      }
+
       const loadConsentIfEligible = (): void => {
         if (!agentPanelStore.enabled || !resolvedUserInfo.value) return
         void consentStore
@@ -324,12 +343,15 @@ export function registerAgentPanelExtension(): void {
           loadConsentIfEligible()
         }
       )
-      return setupFlagGate(loadConsentIfEligible)
+      return setupFlagGate(loadConsentIfEligible, openWhenStartupDecided)
     }
   })
 }
 
-async function setupFlagGate(loadConsentIfEligible: () => void): Promise<void> {
+async function setupFlagGate(
+  loadConsentIfEligible: () => void,
+  openWhenStartupDecided: () => void
+): Promise<void> {
   const agentPanelStore = useAgentPanelStore()
   const settle = (): void => {
     agentPanelStore.gateSettled = true
@@ -347,6 +369,7 @@ async function setupFlagGate(loadConsentIfEligible: () => void): Promise<void> {
       const forceInDev = import.meta.env.MODE === 'development'
       agentPanelStore.enabled = forceInDev || source.isEnabled()
       loadConsentIfEligible()
+      openWhenStartupDecided()
       if (!agentPanelStore.enabled) {
         const nodeSelectionStore = useAgentNodeSelectionStore()
         if (nodeSelectionStore.isLoadingWorkflow)
