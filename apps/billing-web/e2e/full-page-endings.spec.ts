@@ -150,7 +150,7 @@ test('a member the owner manages billing for sees Checkout not available with th
   ).toBeHidden()
 })
 
-test('a link to a plan the catalog lacks renders Plan not available, and View plans goes back to the host catalog', async ({
+test('433-6840: a link to a plan the catalog lacks renders Plan not available with PLAN_NOT_FOUND, and View plans opens the cloud pricing table', async ({
   page,
   cloud,
   signIn
@@ -161,13 +161,65 @@ test('a link to a plan the catalog lacks renders Plan not available, and View pl
   }))
   await signIn(CHECKOUT)
 
-  await expect(heading(page, 'This plan is no longer available')).toBeVisible()
+  await expect(heading(page, "This plan isn't available")).toBeVisible()
   await expect(code(page)).toHaveText('PLAN_NOT_FOUND')
 
   await page.getByRole('button', { name: 'View plans' }).click()
 
   await expect(heading(page, 'Host app')).toBeVisible()
-  expect(new URL(page.url()).searchParams.has('billing_result')).toBe(false)
+  await expect(page).toHaveURL(
+    'https://testcloud.comfy.org/?pricing=1&workspace=ws_e2e'
+  )
+})
+
+test('433-6840: a team link without its commit stop is an invalid link, and View plans opens the pricing table on the Team tab', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.scenario.preview = {
+    ...cloud.scenario.preview,
+    new_plan: { ...cloud.scenario.preview.new_plan, tier: 'TEAM' }
+  }
+  await signIn(entryPath('checkout', { plan: 'team_per_credit_monthly' }))
+
+  await expect(heading(page, "This plan isn't available")).toBeVisible()
+  await expect(code(page)).toHaveText('CHECKOUT_LINK_INVALID')
+  await expect(payButton(page)).toBeHidden()
+  expect(subscribeRequests(cloud)).toHaveLength(0)
+
+  await page.getByRole('button', { name: 'View plans' }).click()
+
+  await expect(heading(page, 'Host app')).toBeVisible()
+  await expect(page).toHaveURL(
+    'https://testcloud.comfy.org/?pricing=team&workspace=ws_e2e'
+  )
+})
+
+test("433-6840: a checkout link the contract cannot read is the checkout's 404 on the full page, and still the entry error on the embedded one", async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  const unreadable = entryPath('checkout', {
+    product: 'spreadsheet',
+    plan: 'pro_monthly'
+  })
+  await signIn(unreadable)
+
+  await expect(heading(page, "This plan isn't available")).toBeVisible()
+  await expect(code(page)).toHaveText('CHECKOUT_LINK_INVALID')
+  await expect(payButton(page)).toBeHidden()
+
+  cloud.scenario.checkoutUi = 'embedded'
+  await page.goto(unreadable)
+
+  await expect(
+    heading(page, "We couldn't open that billing page")
+  ).toBeVisible()
+  await expect(
+    page.getByText("That link doesn't say which product sent you here.")
+  ).toBeVisible()
 })
 
 test("a checkout that couldn't load retries in place on Try again, without leaving the URL", async ({

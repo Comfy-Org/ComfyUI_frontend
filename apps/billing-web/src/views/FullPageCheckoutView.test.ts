@@ -433,7 +433,7 @@ describe('FullPageCheckoutView', () => {
     {
       name: 'a plan the catalog lacks is Plan not available',
       serverCode: 'INVALID_PLAN',
-      heading: 'This plan is no longer available'
+      heading: "This plan isn't available"
     },
     {
       name: 'any other refused quote is a load failure',
@@ -455,6 +455,74 @@ describe('FullPageCheckoutView', () => {
     ).toBeInTheDocument()
     expect(form.mounts).toBe(0)
   })
+
+  it.for<{
+    name: string
+    path: string
+    options: FakeBillingClientOptions
+    code: string
+    plans: string
+  }>([
+    {
+      name: 'a retired plan',
+      path: CHECKOUT_PATH,
+      options: {
+        preview: {
+          status: 'error',
+          code: 'REQUEST_FAILED',
+          httpStatus: 400,
+          serverCode: readBillingErrorCode({
+            code: 'INVALID_PLAN',
+            message: 'no'
+          })
+        }
+      },
+      code: 'PLAN_NOT_FOUND',
+      plans: 'https://testcloud.comfy.org/?pricing=1&workspace=ws-team'
+    },
+    {
+      name: 'a team plan named without its commit stop',
+      path: '/v1/checkout?product=comfyui&return_to=comfyui_workspace&plan=team_per_credit_monthly',
+      options: {
+        preview: {
+          status: 'ok',
+          value: previewOf({
+            new_plan: { ...previewOf().new_plan, tier: 'TEAM' }
+          })
+        }
+      },
+      code: 'CHECKOUT_LINK_INVALID',
+      plans: 'https://testcloud.comfy.org/?pricing=team&workspace=ws-team'
+    },
+    {
+      name: 'a link the contract cannot read',
+      path: '/v1/checkout?product=comfyui&return_to=comfyui_workspace&plan=creator/monthly',
+      options: {},
+      code: 'CHECKOUT_LINK_INVALID',
+      plans: 'https://testcloud.comfy.org/?pricing=1&workspace=ws-team'
+    }
+  ])(
+    '$name is Plan not available, coded for support, and View plans opens the live catalog',
+    async ({ path, options, code, plans }) => {
+      const assign = vi
+        .spyOn(window.location, 'assign')
+        .mockImplementation(() => {})
+      const fake = await renderCheckout(options, () => {}, path)
+
+      expect(
+        await screen.findByRole('heading', {
+          name: "This plan isn't available"
+        })
+      ).toBeInTheDocument()
+      expect(screen.getByTestId('checkout-ending-code')).toHaveTextContent(code)
+      expect(form.mounts).toBe(0)
+      expect(fake.subscribe).not.toHaveBeenCalled()
+
+      await userEvent.click(screen.getByRole('button', { name: 'View plans' }))
+
+      expect(assign).toHaveBeenCalledWith(plans)
+    }
+  )
 })
 
 const VISA: SavedPaymentMethod = {

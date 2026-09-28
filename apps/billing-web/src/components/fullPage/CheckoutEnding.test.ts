@@ -93,8 +93,8 @@ describe('CheckoutEnding', () => {
     },
     {
       ending: { kind: 'plan_unavailable', code: 'PLAN_NOT_FOUND' },
-      title: 'This plan is no longer available',
-      body: "The plan in your link isn't offered anymore. Nothing has been charged. See our current plans instead.",
+      title: "This plan isn't available",
+      body: "The plan in your link isn't available. Nothing has been charged. See our current plans instead.",
       codeLabel:
         'If you think this is a mistake, contact support with this code:',
       action: 'View plans',

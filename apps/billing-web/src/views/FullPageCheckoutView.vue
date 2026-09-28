@@ -33,6 +33,7 @@ const {
   submitting,
   payFailure,
   returnLink,
+  viewPlansLink,
   close,
   retryLoad,
   onPaymentPhase,
@@ -138,6 +139,10 @@ const endingPlan = computed<EndingPlan | undefined>(() => {
 function returnToProduct() {
   window.location.assign(returnLink.value)
 }
+
+function viewPlans() {
+  window.location.assign(viewPlansLink.value)
+}
 </script>
 
 <template>
@@ -150,7 +155,7 @@ function returnToProduct() {
     :plan="endingPlan"
     @close="close"
     @retry="retryLoad"
-    @view-plans="returnToProduct"
+    @view-plans="viewPlans"
   />
   <main
     v-else

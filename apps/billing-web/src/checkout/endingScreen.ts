@@ -1,8 +1,15 @@
-import type { CheckoutPage } from '@/checkout/checkoutPage'
+import type {
+  CheckoutPage,
+  PlanUnavailableReason
+} from '@/checkout/checkoutPage'
 import { waitingOn } from '@/checkout/checkoutPage'
 
-/** The code a stale plan link shows; the catalog's verdict, not a capability denial. */
-const PLAN_NOT_FOUND = 'PLAN_NOT_FOUND'
+/** The code Plan not available shows support: the catalog's verdict on a retired slug, or a link that could not be read. */
+const PLAN_UNAVAILABLE_CODE: Readonly<Record<PlanUnavailableReason, string>> = {
+  retired: 'PLAN_NOT_FOUND',
+  team_stop_missing: 'CHECKOUT_LINK_INVALID',
+  unreadable: 'CHECKOUT_LINK_INVALID'
+}
 
 /**
  * The full-page screen a checkout ends on, and the code support can act on.
@@ -31,7 +38,10 @@ export function endingOf(page: CheckoutPage): EndingScreen | undefined {
     case 'unavailable':
       return { kind: 'load_failed', code: page.code }
     case 'plan_unavailable':
-      return { kind: 'plan_unavailable', code: PLAN_NOT_FOUND }
+      return {
+        kind: 'plan_unavailable',
+        code: PLAN_UNAVAILABLE_CODE[page.reason]
+      }
     case 'unconfirmed':
       return { kind: 'unconfirmed', code: page.operationId }
     case 'waiting':
