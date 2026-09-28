@@ -208,7 +208,8 @@ function onPaywallAction(
   openAccountPrecondition('subscription', { source: 'agent_paywall' })
 }
 
-const { messages: conversationMessages } = storeToRefs(conversationStore)
+const { messages: conversationMessages, entries: conversationEntries } =
+  storeToRefs(conversationStore)
 watch(
   () =>
     // Gated on the read having *settled*, which includes settling as
@@ -283,14 +284,16 @@ const creditsExhausted = computed(() => {
 
 /**
  * Suppressed while an unresolved inline card is on screen: the two render the
- * same component with the same copy, and `conversationMessages` already omits
- * resolved paywalls, so this is exactly "a card the user can see right now".
+ * same component with the same copy. The conversation entries omit resolved
+ * paywalls, so this is exactly "a card the user can see right now".
  */
 const showStandingPaywall = computed(
   () =>
     creditsExhausted.value &&
-    !conversationMessages.value.some((message) =>
-      message.parts.some((part) => part.type === 'paywall')
+    !conversationEntries.value.some(
+      (entry) =>
+        entry.role === 'assistant' &&
+        entry.parts.some((part) => part.type === 'paywall')
     )
 )
 
