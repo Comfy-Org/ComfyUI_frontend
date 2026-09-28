@@ -1,10 +1,13 @@
+import { nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import { useAgentDockMount } from './useAgentDockMount'
 
 vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@/composables/billing/useBillingContext'))
 const { loadDockedAgentPanel } = vi.hoisted(() => ({
   loadDockedAgentPanel: vi.fn(() => ({ name: 'DockedAgentPanel' }))
 }))
@@ -28,6 +31,27 @@ function getAsyncLoader(component: unknown): () => Promise<unknown> {
 describe('useAgentDockMount', () => {
   beforeEach(() => {
     localStorage.clear()
+    vi.mocked(useBillingContext).mockReturnValue({
+      subscription: ref({ hasFunds: false, agentHasFunds: false })
+    } as ReturnType<typeof useBillingContext>)
+  })
+
+  it('re-arms exhaustion after funds recover while the panel is closed', async () => {
+    vi.stubGlobal('__DISTRIBUTION__', 'cloud')
+    const subscription = ref({ hasFunds: false, agentHasFunds: false })
+    vi.mocked(useBillingContext).mockReturnValue({
+      subscription
+    } as ReturnType<typeof useBillingContext>)
+    const store = useAgentPanelStore()
+    store.reportedExhaustionIdentity = 'account-a:workspace-a'
+
+    const { docked } = useAgentDockMount()
+    expect(docked.value).toBe(false)
+
+    subscription.value = { hasFunds: false, agentHasFunds: true }
+    await nextTick()
+
+    expect(store.reportedExhaustionIdentity).toBeNull()
   })
 
   it('returns an inert mount on non-cloud distributions', () => {
