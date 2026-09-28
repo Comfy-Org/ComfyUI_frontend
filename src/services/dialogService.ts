@@ -6,72 +6,26 @@ import type { ComponentAttrs } from 'vue-component-type-helpers'
 
 import { assert } from '@/base/assert'
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
-import type { ConfirmationDialogType } from '@/components/dialog/content/confirmationDialogTypes'
 import ErrorDialogContent from '@/components/dialog/content/ErrorDialogContent.vue'
 import PromptDialogContent from '@/components/dialog/content/PromptDialogContent.vue'
-import type {
-  DowngradeToPersonalResult,
-  SubscriptionDialogOptions,
-  TopUpCreditsDialogOptions
-} from '@/composables/billing/types'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import type { RunErrorMessageSource } from '@/platform/errorCatalog/types'
 import type { PromptError } from '@/platform/remote/comfyui/types'
 import { useTelemetry } from '@/platform/telemetry'
-import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
 import { PromptExecutionError } from '@/scripts/api'
 import { useDialogStore } from '@/stores/dialogStore'
 import type {
+  ConfirmOptions,
+  CoreDialogService,
+  ExecutionErrorDialogInput,
+  ExtensionDialogService
+} from '@/services/dialogServiceTypes'
+import type {
   DialogComponentProps,
-  DialogInstance,
   ShowDialogOptions
 } from '@/stores/dialogStore'
 import { tryExtractValidationError } from '@/utils/executionErrorUtil'
-
-interface BaseConfirmOptions {
-  /** Dialog heading */
-  title: string
-  /** The main message body */
-  message: string
-  /** Displayed as an unordered list immediately below the message body */
-  itemList?: string[]
-  hint?: string
-  /**
-   * Dialog-stack key, defaulting to the shared `global-prompt`. `showDialog`
-   * reuses an existing entry with the same key and discards the new resolver,
-   * leaving the caller's promise pending forever — a flow whose confirmation
-   * must survive an already-open shared prompt passes its own key.
-   */
-  key?: string
-}
-
-type ConfirmOptions = BaseConfirmOptions &
-  (
-    | {
-        /** Pre-configured dialog type */
-        type: 'dirtyClose'
-        /** Override the deny button label. Defaults to `g.no`. */
-        denyLabel?: string
-      }
-    | {
-        /** Pre-configured dialog type */
-        type?: Exclude<ConfirmationDialogType, 'dirtyClose'>
-        denyLabel?: never
-      }
-  )
-
-/**
- * Minimal interface for execution error dialogs.
- * Satisfied by both ExecutionErrorWsMessage (WebSocket) and ExecutionError (Jobs API).
- */
-export interface ExecutionErrorDialogInput {
-  exception_type: string
-  exception_message: string
-  node_id?: string | number | null
-  node_type?: string | null
-  traceback?: string[] | null
-}
 
 const GLOBAL_PROMPT_KEY = 'global-prompt'
 
@@ -176,7 +130,7 @@ function enqueuePrompt<T>(
   return result
 }
 
-export const useDialogService = () => {
+export const useDialogService = (): CoreDialogService => {
   const dialogStore = useDialogStore()
 
   function showExecutionErrorDialog(executionError: ExecutionErrorDialogInput) {
@@ -435,63 +389,10 @@ export const useDialogService = () => {
   }
 }
 
-type CoreDialogService = ReturnType<typeof useDialogService>
-
-/**
- * Dialog surface exposed to extensions via `app.extensionManager.dialog`.
- * Feature dialogs live in their own composables; `createExtensionDialogService`
- * assembles them so this module never imports the features it fronts.
- */
-export interface ExtensionDialogService extends CoreDialogService {
-  showApiNodesSignInDialog(apiNodeNames: string[]): Promise<boolean>
-  showSignInDialog(): Promise<boolean>
-  showUpdatePasswordDialog(): Promise<DialogInstance>
-  showTopUpCreditsDialog(
-    options?: TopUpCreditsDialogOptions
-  ): Promise<DialogInstance | undefined>
-  showSubscriptionRequiredDialog(
-    options?: SubscriptionDialogOptions
-  ): Promise<void>
-  showBillingComingSoonDialog(): DialogInstance
-  showCancelSubscriptionDialog(
-    cancelAt?: string,
-    flowAlreadyOpened?: boolean
-  ): Promise<DialogInstance>
-  showCancelSubscriptionFlow(cancelAt?: string): Promise<void>
-  showDowngradeToPersonalDialog(options: {
-    planName: string
-    planSlug: string
-  }): Promise<DowngradeToPersonalResult | null>
-  showDeleteWorkspaceDialog(options?: {
-    workspaceId?: string
-    workspaceName?: string
-  }): Promise<DialogInstance>
-  showCreateWorkspaceDialog(
-    onConfirm?: (name: string) => void | Promise<void>
-  ): Promise<DialogInstance>
-  showTeamWorkspacesDialog(
-    onConfirm?: (name: string) => void | Promise<void>
-  ): Promise<DialogInstance>
-  showLeaveWorkspaceDialog(): Promise<DialogInstance>
-  showEditWorkspaceDialog(): Promise<DialogInstance>
-  showRemoveMemberDialog(memberId: string): Promise<DialogInstance>
-  showChangeMemberRoleDialog(props: {
-    memberId: string
-    memberName: string
-    targetRole: WorkspaceRole
-  }): Promise<DialogInstance>
-  showSetMemberCreditLimitDialog(props: {
-    memberId: string
-    memberName: string
-    creditsUsed?: number
-    currentLimit?: number | null
-  }): Promise<DialogInstance>
-  showInviteMemberDialog(): Promise<DialogInstance>
-  showInviteMemberUpsellDialog(): Promise<DialogInstance>
-  showRevokeInviteDialog(inviteId: string): Promise<DialogInstance>
-  showCloudNotification(): Promise<void>
-  showPublishDialog(): Promise<void>
-}
+export type {
+  ExecutionErrorDialogInput,
+  ExtensionDialogService
+} from '@/services/dialogServiceTypes'
 
 let extensionDialogService: ExtensionDialogService | undefined
 

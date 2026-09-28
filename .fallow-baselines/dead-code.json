@@ -91,10 +91,15 @@
     "src/core/graph/subgraph/promotionUtils.ts->src/renderer/core/canvas/canvasStore.ts->src/services/litegraphService.ts",
     "src/core/graph/subgraph/promotionUtils.ts->src/renderer/core/canvas/canvasStore.ts->src/stores/subgraphNavigationStore.ts",
     "src/core/graph/subgraph/promotionUtils.ts->src/services/litegraphService.ts->src/stores/subgraphNavigationStore.ts",
-    "src/platform/workflow/management/stores/comfyWorkflow.ts->src/platform/workflow/management/stores/workflowStore.ts->src/scripts/changeTracker.ts",
     "src/platform/workflow/management/stores/workflowStore.ts->src/stores/executionErrorStore.ts->src/stores/executionStore.ts",
     "src/composables/billing/useBillingDialogs.ts->src/platform/cloud/subscription/components/SubscribeButton.vue->src/platform/cloud/subscription/components/SubscriptionRequiredDialogContent.vue->src/platform/cloud/subscription/composables/useSubscriptionDialog.ts",
-    "src/composables/billing/useBillingDialogs.ts->src/platform/cloud/subscription/composables/useSubscriptionDialog.ts->src/platform/workspace/components/SubscriptionRequiredDialogContentWorkspace.vue->src/platform/workspace/composables/useSubscriptionCheckout.ts"
+    "src/composables/billing/useBillingDialogs.ts->src/platform/cloud/subscription/composables/useSubscriptionDialog.ts->src/platform/workspace/components/SubscriptionRequiredDialogContentWorkspace.vue->src/platform/workspace/composables/useSubscriptionCheckout.ts",
+    "src/composables/useAppMode.ts->src/platform/workflow/management/stores/workflowStore.ts->src/scripts/changeTracker.ts->src/stores/executionStore.ts",
+    "src/platform/workflow/management/stores/workflowStore.ts->src/scripts/changeTracker.ts",
+    "src/platform/workflow/management/stores/workflowStore.ts->src/scripts/changeTracker.ts->src/stores/executionStore.ts",
+    "src/platform/workflow/management/stores/workflowStore.ts->src/scripts/changeTracker.ts->src/stores/nodeOutputStore.ts",
+    "src/platform/workflow/management/stores/workflowStore.ts->src/scripts/changeTracker.ts->src/stores/subgraphNavigationStore.ts",
+    "src/scripts/changeTracker.ts->src/stores/executionErrorStore.ts->src/stores/executionStore.ts"
   ],
   "re_export_cycles": [],
   "unused_optional_dependencies": [],
