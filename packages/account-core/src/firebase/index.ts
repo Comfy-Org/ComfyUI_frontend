@@ -13,14 +13,17 @@
  * importGuard.test.ts holds `./core` to that boundary.
  */
 import type { FirebaseOptions } from 'firebase/app'
-import { getApps, initializeApp } from 'firebase/app'
+import { FirebaseError, getApps, initializeApp } from 'firebase/app'
 import type { Auth, Dependencies, User, UserCredential } from 'firebase/auth'
 import {
   GithubAuthProvider,
   GoogleAuthProvider,
+  browserLocalPersistence,
   browserPopupRedirectResolver,
+  browserSessionPersistence,
   createUserWithEmailAndPassword,
   getAuth,
+  indexedDBLocalPersistence,
   initializeAuth,
   onAuthStateChanged,
   onIdTokenChanged,
@@ -36,6 +39,9 @@ import { brandIdentity } from '../core/identity.js'
 import { isFirebaseAuthErrorLike } from '../firebaseAuthError.js'
 import type { CloudFeatures } from './configSource.js'
 import { fetchCloudFeatures } from './configSource.js'
+import { runWatchedPopup, watchedPopupRedirectResolver } from './popupWatch.js'
+
+export { watchedPopupRedirectResolver } from './popupWatch.js'
 
 export interface FirebaseIdentityAppConfig {
   readonly options: FirebaseOptions | (() => FirebaseOptions)
@@ -43,6 +49,12 @@ export interface FirebaseIdentityAppConfig {
   readonly appName?: string
   /** One persistence or an ordered hierarchy, handed to `initializeAuth` as is; Firebase's default when omitted. */
   readonly persistence?: Dependencies['persistence']
+  /**
+   * Report a closed popup at once instead of after Firebase's 8-10s wait (see
+   * `PopupSignInOptions`). Auth is then created with the dependencies `getAuth`
+   * would pick, plus `watchedPopupRedirectResolver`.
+   */
+  readonly watchPopupSignIn?: boolean
   /** A host-owned `Auth` and package-owned app options are exclusive. */
   readonly auth?: never
 }
@@ -53,6 +65,8 @@ export interface FirebaseIdentityAppConfig {
  */
 export interface FirebaseIdentityAuthConfig {
   readonly auth: Auth
+  /** Only when the host created `auth` with `watchedPopupRedirectResolver`. */
+  readonly watchPopupSignIn?: boolean
   readonly options?: never
   readonly appName?: never
   readonly persistence?: never
@@ -61,6 +75,24 @@ export interface FirebaseIdentityAuthConfig {
 export type FirebaseIdentityConfig =
   | FirebaseIdentityAppConfig
   | FirebaseIdentityAuthConfig
+
+/**
+ * On a watched identity a popup the visitor closes rejects at once with
+ * `auth/popup-closed-by-user`, the same error Firebase raises 8-10s later, so
+ * a host's usual handling applies. Rarely the sign-in result still arrives
+ * after that; these decide whether it is finished or discarded unused.
+ */
+export interface PopupSignInOptions {
+  /**
+   * Finishes a result that arrived after the popup was reported closed, given
+   * the credential still being exchanged. Without it such a result is
+   * discarded. It is also discarded when another sign-in started since or
+   * someone else is now signed in.
+   */
+  readonly onResumed?: (credential: Promise<UserCredential>) => void
+  /** Asked before a late result is kept; false discards it. */
+  readonly keepLateResult?: () => boolean
+}
 
 export interface FirebaseIdentity extends AccountIdentity<User> {
   /**
@@ -74,8 +106,8 @@ export interface FirebaseIdentity extends AccountIdentity<User> {
   initialize: () => void
   /** Null until `initialize()` or a subscribing/sign-in call has resolved `Auth`. */
   currentUser: () => User | null
-  signInWithGoogle: () => Promise<UserCredential>
-  signInWithGitHub: () => Promise<UserCredential>
+  signInWithGoogle: (options?: PopupSignInOptions) => Promise<UserCredential>
+  signInWithGitHub: (options?: PopupSignInOptions) => Promise<UserCredential>
   signInWithEmail: (email: string, password: string) => Promise<UserCredential>
   createUserWithEmail: (
     email: string,
@@ -118,6 +150,13 @@ interface AuthResolver {
   peek: () => Auth | undefined
 }
 
+/** What `getAuth` hands `initializeAuth` in a browser. */
+const GET_AUTH_PERSISTENCE: Dependencies['persistence'] = [
+  indexedDBLocalPersistence,
+  browserLocalPersistence,
+  browserSessionPersistence
+]
+
 /**
  * A pre-existing app under this name must be the same Firebase project, or
  * `Auth` binds to another project's session. Deliberately a "same project"
@@ -137,6 +176,20 @@ function assertSameProject(
     throw new Error(
       `Firebase app "${appName}" already exists for a different project (${mismatch})`
     )
+  }
+}
+
+/** What `initializeAuth` needs beyond `getAuth`'s defaults; none means `getAuth`. */
+function authDependencies(
+  persistence: Dependencies['persistence'],
+  watchPopupSignIn: boolean | undefined
+): Dependencies | undefined {
+  if (!persistence && !watchPopupSignIn) return undefined
+  return {
+    persistence: persistence ?? GET_AUTH_PERSISTENCE,
+    popupRedirectResolver: watchPopupSignIn
+      ? watchedPopupRedirectResolver
+      : browserPopupRedirectResolver
   }
 }
 
@@ -164,12 +217,11 @@ function authResolver(config: FirebaseIdentityConfig): AuthResolver {
     const existing = getApps().find((app) => app.name === appName)
     if (existing) assertSameProject(existing.options, options, appName)
     const app = existing ?? initializeApp(options, appName)
-    resolved = config.persistence
-      ? initializeAuth(app, {
-          persistence: config.persistence,
-          popupRedirectResolver: browserPopupRedirectResolver
-        })
-      : getAuth(app)
+    const dependencies = authDependencies(
+      config.persistence,
+      config.watchPopupSignIn
+    )
+    resolved = dependencies ? initializeAuth(app, dependencies) : getAuth(app)
     return resolved
   }
   return { resolve, peek: () => resolved }
@@ -179,6 +231,36 @@ export function createFirebaseIdentity(
   config: FirebaseIdentityConfig
 ): FirebaseIdentity {
   const { resolve: auth, peek } = authResolver(config)
+  let signInsStarted = 0
+
+  function popupSignIn(
+    createProvider: () => GoogleAuthProvider | GithubAuthProvider,
+    options: PopupSignInOptions | undefined
+  ): Promise<UserCredential> {
+    const started = ++signInsStarted
+    const provider = createProvider()
+    const signIn = () => signInWithPopup(auth(), provider)
+    if (!config.watchPopupSignIn) return signIn()
+    const userAtStart = auth().currentUser?.uid
+    return new Promise((resolve, reject) => {
+      const firebaseCall = runWatchedPopup(provider, signIn, {
+        onAbandoned: () =>
+          reject(
+            new FirebaseError(
+              'auth/popup-closed-by-user',
+              'The popup has been closed by the user before finalizing the operation.'
+            )
+          ),
+        discardLateResult: () =>
+          !options?.onResumed ||
+          signInsStarted !== started ||
+          auth().currentUser?.uid !== userAtStart ||
+          options.keepLateResult?.() === false,
+        onResumed: () => options?.onResumed?.(firebaseCall)
+      })
+      firebaseCall.then(resolve, reject)
+    })
+  }
 
   return {
     ...brandIdentity<User>({
@@ -189,12 +271,16 @@ export function createFirebaseIdentity(
       auth()
     },
     currentUser: () => peek()?.currentUser ?? null,
-    signInWithGoogle: () => signInWithPopup(auth(), googleProvider()),
-    signInWithGitHub: () => signInWithPopup(auth(), githubProvider()),
-    signInWithEmail: (email, password) =>
-      signInWithEmailAndPassword(auth(), email, password),
-    createUserWithEmail: (email, password) =>
-      createUserWithEmailAndPassword(auth(), email, password),
+    signInWithGoogle: (options) => popupSignIn(googleProvider, options),
+    signInWithGitHub: (options) => popupSignIn(githubProvider, options),
+    signInWithEmail: (email, password) => {
+      signInsStarted += 1
+      return signInWithEmailAndPassword(auth(), email, password)
+    },
+    createUserWithEmail: (email, password) => {
+      signInsStarted += 1
+      return createUserWithEmailAndPassword(auth(), email, password)
+    },
     sendPasswordReset: (email) =>
       sendPasswordResetEmail(auth(), email).catch(resolveUnknownEmailAsSent),
     updatePassword: (newPassword) => {

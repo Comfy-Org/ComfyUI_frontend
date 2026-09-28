@@ -14,7 +14,10 @@ const sdk = vi.hoisted(() => {
     listeners,
     tokenListeners,
     resolvedAuth,
-    browserPopupRedirectResolver: { resolver: 'popup' },
+    browserPopupRedirectResolver: class BrowserPopupRedirectResolver {},
+    indexedDBLocalPersistence: { persistence: 'indexedDB' },
+    browserLocalPersistence: { persistence: 'local' },
+    browserSessionPersistence: { persistence: 'session' },
     getAuth: vi.fn(() => resolvedAuth),
     initializeAuth: vi.fn(() => resolvedAuth),
     onAuthStateChanged: vi.fn(
@@ -42,8 +45,54 @@ const app = vi.hoisted(() => ({
 }))
 
 vi.mock<unknown>(import('firebase/app'), () => ({
+  FirebaseError: class FirebaseError extends Error {
+    constructor(
+      readonly code: string,
+      message: string
+    ) {
+      super(message)
+    }
+  },
   getApps: () => app.existing,
   initializeApp: app.initializeApp
+}))
+
+/**
+ * A stand-in for the popup watch (tested on its own in popupWatch.test.ts):
+ * it records the rules the identity hands over, so a test can play the popup
+ * closing and a result arriving late in any order.
+ */
+const watch = vi.hoisted(() => {
+  const state: {
+    options?: {
+      onAbandoned?: () => void
+      onResumed?: () => void
+      discardLateResult?: () => boolean
+    }
+  } = {}
+  return {
+    state,
+    resolver: class WatchingResolver {},
+    abandon: () => state.options?.onAbandoned?.(),
+    /** The watch's rule for a late result: discard, or resume and deliver. */
+    lateResult(): 'discarded' | 'kept' {
+      if (state.options?.discardLateResult?.()) return 'discarded'
+      state.options?.onResumed?.()
+      return 'kept'
+    }
+  }
+})
+
+vi.mock<unknown>(import('./popupWatch.js'), () => ({
+  watchedPopupRedirectResolver: watch.resolver,
+  runWatchedPopup: (
+    _provider: object,
+    signIn: () => Promise<unknown>,
+    callbacks: typeof watch.state.options
+  ) => {
+    watch.state.options = callbacks
+    return signIn()
+  }
 }))
 
 vi.mock<unknown>(import('firebase/auth'), () => ({
@@ -56,6 +105,9 @@ vi.mock<unknown>(import('firebase/auth'), () => ({
     setCustomParameters() {}
   },
   browserPopupRedirectResolver: sdk.browserPopupRedirectResolver,
+  indexedDBLocalPersistence: sdk.indexedDBLocalPersistence,
+  browserLocalPersistence: sdk.browserLocalPersistence,
+  browserSessionPersistence: sdk.browserSessionPersistence,
   getAuth: sdk.getAuth,
   initializeAuth: sdk.initializeAuth,
   onAuthStateChanged: sdk.onAuthStateChanged,
@@ -257,6 +309,239 @@ describe('createFirebaseIdentity over package-initialized Firebase', () => {
 
     expect(app.initializeApp).toHaveBeenCalledOnce()
     expect(sdk.getAuth).toHaveBeenCalledOnce()
+  })
+})
+
+describe('popup sign-in with the popup watched', () => {
+  const otherUser = { uid: 'user-2' } as Partial<User> as User
+
+  /** The Firebase popup call, settled by the test. */
+  function pendingPopup() {
+    const popup = deferred<UserCredential>()
+    sdk.signInWithPopup.mockReturnValueOnce(popup.promise)
+    return popup
+  }
+
+  async function watchedIdentity() {
+    const { createFirebaseIdentity } = await import('./index.js')
+    return createFirebaseIdentity({
+      options: { apiKey: 'test' },
+      watchPopupSignIn: true
+    })
+  }
+
+  beforeEach(() => {
+    watch.state.options = undefined
+    sdk.initializeAuth.mockImplementation(() => sdk.resolvedAuth)
+    sdk.signInWithEmailAndPassword.mockResolvedValue(testCredential)
+  })
+
+  it('creates Auth with the watching resolver and the persistence getAuth would pick', async () => {
+    const identity = await watchedIdentity()
+
+    identity.initialize()
+
+    expect(sdk.getAuth).not.toHaveBeenCalled()
+    expect(sdk.initializeAuth).toHaveBeenCalledWith(
+      { name: 'comfy-account' },
+      {
+        persistence: [
+          sdk.indexedDBLocalPersistence,
+          sdk.browserLocalPersistence,
+          sdk.browserSessionPersistence
+        ],
+        popupRedirectResolver: watch.resolver
+      }
+    )
+  })
+
+  it('keeps the host persistence when it chose one', async () => {
+    const { createFirebaseIdentity } = await import('./index.js')
+    const identity = createFirebaseIdentity({
+      options: { apiKey: 'test' },
+      persistence: [localStore],
+      watchPopupSignIn: true
+    })
+
+    identity.initialize()
+
+    expect(sdk.initializeAuth).toHaveBeenCalledWith(
+      { name: 'comfy-account' },
+      { persistence: [localStore], popupRedirectResolver: watch.resolver }
+    )
+  })
+
+  it('rejects with Firebase’s own dismissal the moment the popup closes with no result', async () => {
+    pendingPopup()
+    const identity = await watchedIdentity()
+    const outcome = identity.signInWithGoogle()
+    await vi.advanceTimersByTimeAsync(0)
+
+    watch.abandon()
+
+    await expect(outcome).rejects.toMatchObject({
+      code: 'auth/popup-closed-by-user'
+    })
+  })
+
+  it('resolves with the credential when the popup completes', async () => {
+    const popup = pendingPopup()
+    const identity = await watchedIdentity()
+    const outcome = identity.signInWithGitHub()
+
+    popup.resolve(testCredential)
+
+    await expect(outcome).resolves.toBe(testCredential)
+  })
+
+  it('swallows Firebase’s own rejection of a popup it already reported as closed', async () => {
+    const popup = pendingPopup()
+    const identity = await watchedIdentity()
+    const outcome = identity.signInWithGoogle()
+    await vi.advanceTimersByTimeAsync(0)
+    watch.abandon()
+    await expect(outcome).rejects.toMatchObject({
+      code: 'auth/popup-closed-by-user'
+    })
+
+    // Settling Firebase's own call afterwards must not surface anywhere; an
+    // unhandled rejection would fail this run.
+    popup.reject({ code: 'auth/popup-closed-by-user' })
+    await vi.advanceTimersByTimeAsync(10_000)
+  })
+
+  it('rejects with Firebase’s own error when a watched popup fails for another reason', async () => {
+    const popup = pendingPopup()
+    const identity = await watchedIdentity()
+    const outcome = identity.signInWithGoogle({ onResumed: vi.fn() })
+
+    popup.reject({ code: 'auth/popup-blocked' })
+
+    await expect(outcome).rejects.toMatchObject({ code: 'auth/popup-blocked' })
+  })
+
+  it('hands a late result to the host to finish when nothing else happened', async () => {
+    const popup = pendingPopup()
+    const onResumed = vi.fn()
+    const identity = await watchedIdentity()
+    void identity.signInWithGoogle({ onResumed }).catch(() => {})
+    await vi.advanceTimersByTimeAsync(0)
+    watch.abandon()
+
+    expect(watch.lateResult()).toBe('kept')
+    popup.resolve(testCredential)
+
+    expect(onResumed).toHaveBeenCalledOnce()
+    await expect(onResumed.mock.calls[0][0]).resolves.toBe(testCredential)
+  })
+
+  it('discards a late result no host asked to finish', async () => {
+    pendingPopup()
+    const identity = await watchedIdentity()
+    void identity.signInWithGoogle().catch(() => {})
+    await vi.advanceTimersByTimeAsync(0)
+    watch.abandon()
+
+    expect(watch.lateResult()).toBe('discarded')
+  })
+
+  it.for([
+    [
+      'an email sign-in',
+      (identity: Awaited<ReturnType<typeof watchedIdentity>>) =>
+        identity.signInWithEmail('a@b.co', 'pw')
+    ],
+    [
+      'an account creation',
+      (identity: Awaited<ReturnType<typeof watchedIdentity>>) =>
+        identity.createUserWithEmail('a@b.co', 'pw')
+    ],
+    [
+      'another popup',
+      (identity: Awaited<ReturnType<typeof watchedIdentity>>) =>
+        identity.signInWithGitHub()
+    ]
+  ] as const)(
+    'discards a late result once %s has started since',
+    async ([, startAnother]) => {
+      pendingPopup()
+      const onResumed = vi.fn()
+      const identity = await watchedIdentity()
+      void identity.signInWithGoogle({ onResumed }).catch(() => {})
+      await vi.advanceTimersByTimeAsync(0)
+      watch.abandon()
+      const lateResultRules = watch.state.options
+
+      void startAnother(identity).catch(() => {})
+      watch.state.options = lateResultRules
+
+      expect(watch.lateResult()).toBe('discarded')
+      expect(onResumed).not.toHaveBeenCalled()
+    }
+  )
+
+  it('discards a late result once somebody else is signed in, such as from another tab', async () => {
+    pendingPopup()
+    const onResumed = vi.fn()
+    const identity = await watchedIdentity()
+    void identity.signInWithGoogle({ onResumed }).catch(() => {})
+    await vi.advanceTimersByTimeAsync(0)
+    watch.abandon()
+
+    sdk.resolvedAuth.currentUser = otherUser
+
+    expect(watch.lateResult()).toBe('discarded')
+  })
+
+  it('keeps a late result that replaces the account being switched away from', async () => {
+    sdk.resolvedAuth.currentUser = otherUser
+    pendingPopup()
+    const onResumed = vi.fn()
+    const identity = await watchedIdentity()
+    void identity.signInWithGoogle({ onResumed }).catch(() => {})
+    await vi.advanceTimersByTimeAsync(0)
+    watch.abandon()
+
+    expect(watch.lateResult()).toBe('kept')
+  })
+
+  it('discards a late result the host no longer wants', async () => {
+    pendingPopup()
+    const identity = await watchedIdentity()
+    void identity
+      .signInWithGoogle({ onResumed: vi.fn(), keepLateResult: () => false })
+      .catch(() => {})
+    await vi.advanceTimersByTimeAsync(0)
+    watch.abandon()
+
+    expect(watch.lateResult()).toBe('discarded')
+  })
+
+  it('watches popups on a host-owned Auth the host created with the watched resolver', async () => {
+    const { createFirebaseIdentity, watchedPopupRedirectResolver } =
+      await import('./index.js')
+    expect(watchedPopupRedirectResolver).toBe(watch.resolver)
+    pendingPopup()
+    const identity = createFirebaseIdentity({
+      auth: hostAuth,
+      watchPopupSignIn: true
+    })
+    const outcome = identity.signInWithGoogle()
+    await vi.advanceTimersByTimeAsync(0)
+
+    watch.abandon()
+
+    await expect(outcome).rejects.toMatchObject({
+      code: 'auth/popup-closed-by-user'
+    })
+  })
+
+  it('leaves popups unwatched on an identity that did not ask', async () => {
+    sdk.signInWithPopup.mockResolvedValueOnce(testCredential)
+    const identity = await makeIdentity()
+
+    await expect(identity.signInWithGoogle()).resolves.toBe(testCredential)
+    expect(watch.state.options).toBeUndefined()
   })
 })
 
