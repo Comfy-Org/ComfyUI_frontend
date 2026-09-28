@@ -34,10 +34,12 @@ test(
       await expect(vaeDecode.header).toBeInViewport({ ratio: 1 })
 
       await comfyPage.vueNodes.selectNodes(['3', '8'])
-      expect(
-        await comfyPage.nodeOps.getSelectedNodeIds(),
-        'both nodes must be selected, or the conversion under test is not the one being asserted'
-      ).toEqual(['3', '8'])
+      await expect
+        .poll(() => comfyPage.nodeOps.getSelectedNodeIds(), {
+          message:
+            'both nodes must be selected, or the conversion under test is not the one being asserted'
+        })
+        .toEqual(['3', '8'])
     })
 
     await test.step('Convert and verify the boundary links', async () => {
