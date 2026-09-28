@@ -8,6 +8,7 @@ import {
 } from './refreshRemoteConfig'
 import {
   cachedLegacyBillingMigrationEnabled,
+  sessionAgentGrant,
   remoteConfig,
   remoteConfigErrorStatus,
   remoteConfigState
@@ -30,6 +31,12 @@ describe('refreshRemoteConfig', () => {
     } as Response
   }
 
+  function storageEntries(store: Storage): Record<string, string | null> {
+    return Object.fromEntries(
+      Object.keys(store).map((key) => [key, store.getItem(key)])
+    )
+  }
+
   function mockErrorResponse(status: number, statusText: string) {
     return {
       ok: false,
@@ -47,6 +54,7 @@ describe('refreshRemoteConfig', () => {
     remoteConfigErrorStatus.value = null
     remoteConfigState.value = 'unloaded'
     cachedLegacyBillingMigrationEnabled.value = undefined
+    sessionAgentGrant.value = undefined
     window.__CONFIG__ = {}
   })
 
@@ -224,6 +232,43 @@ describe('refreshRemoteConfig', () => {
       expect(remoteConfig.value).toEqual({})
       expect(window.__CONFIG__).toEqual({})
       expect(cachedLegacyBillingMigrationEnabled.value).toBeUndefined()
+    })
+
+    it("records this session's grant without persisting it anywhere", async () => {
+      sessionAgentGrant.value = undefined
+      const localStorageBefore = storageEntries(localStorage)
+      const sessionStorageBefore = storageEntries(sessionStorage)
+      vi.mocked(api.fetchApi).mockResolvedValue(
+        mockSuccessResponse({ 'agent-in-app-experience': true })
+      )
+
+      await refreshRemoteConfig()
+
+      expect(sessionAgentGrant.value).toBe(true)
+      expect(storageEntries(localStorage)).toEqual(localStorageBefore)
+      expect(storageEntries(sessionStorage)).toEqual(sessionStorageBefore)
+    })
+
+    it('keeps this session granted when the poll fails transiently', async () => {
+      sessionAgentGrant.value = true
+      vi.mocked(api.fetchApi).mockResolvedValue(
+        mockErrorResponse(503, 'Service Unavailable')
+      )
+
+      await refreshRemoteConfig()
+
+      expect(sessionAgentGrant.value).toBe(true)
+    })
+
+    it('drops the grant when auth itself is rejected', async () => {
+      sessionAgentGrant.value = true
+      vi.mocked(api.fetchApi).mockResolvedValue(
+        mockErrorResponse(401, 'Unauthorized')
+      )
+
+      await refreshRemoteConfig()
+
+      expect(sessionAgentGrant.value).toBeUndefined()
     })
 
     it('clears config on 403 response', async () => {
