@@ -220,14 +220,11 @@ function coded(code: SubscriptionCommandCode): SubscriptionCommandFailure {
 }
 
 /**
- * A server code the caller's request already satisfies is a success, but
- * only from a 4xx: a 5xx echoing the code is an upstream failure that
- * happens to carry it, and the requested state cannot be assumed to hold.
+ * A server code is trusted as state only from a 4xx: a 5xx echoing the code
+ * is an upstream failure that happens to carry it, and the state it names
+ * cannot be assumed to hold.
  */
-function alreadyInRequestedState(
-  failure: BillingFailure,
-  serverCode: string
-): boolean {
+function refusedWith(failure: BillingFailure, serverCode: string): boolean {
   return (
     matchesServerCode(failure, serverCode) &&
     failure.httpStatus !== undefined &&
@@ -241,7 +238,7 @@ function alreadyInRequestedState(
  * is the same answer the lifecycle gives when it sees that operation first.
  */
 function refusedWhilePending(failure: BillingFailure): BillingFailure {
-  return matchesServerCode(failure, SUBSCRIPTION_CHANGE_IN_PROGRESS_SERVER_CODE)
+  return refusedWith(failure, SUBSCRIPTION_CHANGE_IN_PROGRESS_SERVER_CODE)
     ? { ...failure, code: 'OPERATION_ALREADY_PENDING' }
     : failure
 }
@@ -250,7 +247,8 @@ function mapServerCode(
   failure: BillingFailure,
   alreadyHeldCode: string
 ): IssueOutcome {
-  if (alreadyInRequestedState(failure, alreadyHeldCode)) {
+  // A server code the caller's request already satisfies is a success.
+  if (refusedWith(failure, alreadyHeldCode)) {
     return { status: 'already_held' }
   }
   return matchesServerCode(failure, NO_ACTIVE_SUBSCRIPTION_SERVER_CODE)
