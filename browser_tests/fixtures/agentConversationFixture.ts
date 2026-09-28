@@ -11,7 +11,7 @@ import { toNodeId } from '@/types/nodeId'
 import type {
   AgentCancelAccepted,
   AgentMessages,
-  AgentRunModePreference,
+  AgentTurnAccepted,
   AgentWsEvent
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
@@ -630,13 +630,6 @@ export class AgentConversationHarness {
 
   private async mockAgentApi(): Promise<void> {
     const { page } = this
-    const runModePreference: AgentRunModePreference = {
-      mode: 'ask_approval',
-      credit_limit: null
-    }
-    await page.route('**/api/agent/run-mode', (route) =>
-      route.fulfill(jsonRoute(runModePreference))
-    )
     await page.route('**/api/agent/threads', (route) =>
       route.fulfill(jsonRoute({ threads: [] }))
     )
@@ -644,14 +637,13 @@ export class AgentConversationHarness {
       const request = route.request()
       if (request.method() === 'POST') {
         this.postedTurns += 1
+        const accepted: AgentTurnAccepted = {
+          thread_id: THREAD_ID,
+          message_id: turnId(this.postedTurns - 1)
+        }
         return route.fulfill({
-          status: 202,
-          contentType: 'application/json',
-          body: JSON.stringify({
-            thread_id: THREAD_ID,
-            message_id: turnId(this.postedTurns - 1),
-            workflow_id: this.conversation.workflow.id
-          })
+          ...jsonRoute(accepted),
+          status: 202
         })
       }
       const history: AgentMessages = []
