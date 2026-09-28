@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
+import { nextFrame } from '@e2e/fixtures/utils/timing'
 
 const CASE = 'agent-rec-text-only-answer'
 const PROMPT_NODE_ID = '6'
@@ -37,6 +38,7 @@ test.describe(
 
       await test.step('undo the echoed addition', async () => {
         await page.locator('#graph-canvas').press('Control+KeyZ')
+        await nextFrame(page)
         await expect(
           agentConversation.vueNodes.getNodeLocator(nodeId)
         ).toBeHidden()
