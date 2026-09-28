@@ -569,22 +569,33 @@ const briefs = [
     captureAgentUsecaseVideoPlayed
   } from '../../scripts/posthog'
 
-  document.querySelectorAll('[data-faq]').forEach((details) => {
-    details.addEventListener('toggle', () => {
-      if (!(details instanceof HTMLDetailsElement) || !details.open) return
+  document.addEventListener(
+    'toggle',
+    ({ target: details }) => {
+      if (
+        !(details instanceof HTMLDetailsElement) ||
+        !details.matches('[data-faq]') ||
+        !details.open
+      )
+        return
       const question = details.dataset.question
       if (question) captureAgentFaqExpanded(question)
-    })
-  })
+    },
+    true
+  )
 
-  document
-    .querySelector('#usecase-videos')
-    ?.querySelectorAll('video')
-    .forEach((video) => {
-      video.addEventListener('play', () => {
-        captureAgentUsecaseVideoPlayed(
-          video.getAttribute('aria-label') ?? 'unknown'
-        )
-      })
-    })
+  document.addEventListener(
+    'play',
+    ({ target: video }) => {
+      if (
+        !(video instanceof HTMLVideoElement) ||
+        !video.closest('#usecase-videos')
+      )
+        return
+      captureAgentUsecaseVideoPlayed(
+        video.getAttribute('aria-label') ?? 'unknown'
+      )
+    },
+    true
+  )
 </script>
