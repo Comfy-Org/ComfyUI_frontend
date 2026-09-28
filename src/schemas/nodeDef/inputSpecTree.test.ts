@@ -45,15 +45,23 @@ describe('input specification diagnostics', () => {
 
     testCase.resolve(spec)
 
-    expect(reportError).toHaveBeenCalledWith(
-      expect.any(Error),
-      expect.objectContaining({
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      new Error('Unable to parse dynamic node input specification'),
+      {
         errorType: 'error_parsing_node_input_spec',
-        context: expect.objectContaining({
+        tags: {
+          failure_kind: 'degraded',
+          feature_area: 'node_definition',
+          operation: 'parse_input_spec',
+          outcome: 'recovered'
+        },
+        context: {
           controlType: spec.type,
-          optionIndex: testCase.optionIndex
-        })
-      })
+          optionIndex: testCase.optionIndex,
+          issueCount: 1
+        },
+        level: 'warning'
+      }
     )
   })
 })
