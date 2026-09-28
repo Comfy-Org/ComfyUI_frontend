@@ -91,7 +91,10 @@ export type CheckoutPage =
   | { readonly kind: 'resolving'; readonly outcome?: InlineOutcome }
   | { readonly kind: 'refused'; readonly reason: CapabilityDenialReason }
   | { readonly kind: 'unavailable'; readonly code: string }
-  | { readonly kind: 'plan_unavailable' }
+  | {
+      readonly kind: 'plan_unavailable'
+      readonly reason: PlanUnavailableReason
+    }
   | Capture
   | { readonly kind: 'waiting'; readonly operation: PendingBillingOperation }
   | { readonly kind: 'unconfirmed'; readonly operationId: string }
@@ -110,8 +113,7 @@ export type OperationOutcome = Exclude<
 export type CheckoutPageEvent =
   | { readonly type: 'refused'; readonly reason: CapabilityDenialReason }
   | { readonly type: 'unavailable'; readonly code: string }
-  /** The quote named a plan the catalog does not have. */
-  | { readonly type: 'planUnavailable' }
+  | { readonly type: 'planUnavailable'; readonly reason: PlanUnavailableReason }
   /** Try again on a checkout that could not load. */
   | { readonly type: 'retried' }
   | ({ readonly type: 'quoted'; readonly reactivation: boolean } & (
@@ -156,6 +158,22 @@ export type CheckoutPageEvent =
     }
 
 export const RESOLVING: CheckoutPage = { kind: 'resolving' }
+
+/**
+ * Why no plan can be quoted for this link: the checkout's 404. `retired` is
+ * a slug the catalog no longer has; the other two are links nobody could
+ * have been sent, a team plan named without its commit stop, or a URL the
+ * entry contract cannot read at all.
+ */
+export type PlanUnavailableReason =
+  | 'retired'
+  | 'team_stop_missing'
+  | 'unreadable'
+
+export const UNREADABLE_LINK: CheckoutPage = {
+  kind: 'plan_unavailable',
+  reason: 'unreadable'
+}
 
 /** The first read picks the tab: Saved whenever the tab row shows at all. */
 function arrivedRail(saved: SavedArrival): CollectRail {
@@ -215,7 +233,9 @@ export function reduceCheckoutPage(
         ? { kind: 'unavailable', code: event.code }
         : page
     case 'planUnavailable':
-      return page.kind === 'resolving' ? { kind: 'plan_unavailable' } : page
+      return page.kind === 'resolving'
+        ? { kind: 'plan_unavailable', reason: event.reason }
+        : page
     case 'retried':
       return page.kind === 'unavailable' ? RESOLVING : page
     case 'quoted':

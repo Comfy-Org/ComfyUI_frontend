@@ -26,12 +26,13 @@ import type {
 } from '@/checkout/checkoutPage'
 import {
   RESOLVING,
+  UNREADABLE_LINK,
   isParked,
   needsConsent,
   railAcceptsPay,
   reduceCheckoutPage
 } from '@/checkout/checkoutPage'
-import { planCreditsSettingsUrl } from '@/checkout/cloudLinks'
+import { planCreditsSettingsUrl, pricingTableUrl } from '@/checkout/cloudLinks'
 import { createOperationChannel } from '@/checkout/operationChannel'
 import type { PayVerdict } from '@/checkout/payVerdict'
 import { operationOutcomeOf, payVerdictOf } from '@/checkout/payVerdict'
@@ -77,7 +78,7 @@ const UNKNOWN_PLAN_SERVER_CODE = 'INVALID_PLAN'
  * so no tab ever re-broadcasts what it merely heard.
  */
 export function useFullPageCheckout() {
-  const { entry } = useBillingEntry()
+  const { entry, error: unreadableLink } = useBillingEntry()
   const { session } = useBillingWebSession()
   const billedWorkspace = useBilledWorkspace()
   const { capabilities, lifecycle, status } = useBillingClient<
@@ -91,7 +92,9 @@ export function useFullPageCheckout() {
     challengePort: createDeferredStripeChallengePort(awaitBillingWebStripeKey)
   })
 
-  const page = shallowRef<CheckoutPage>(RESOLVING)
+  const page = shallowRef<CheckoutPage>(
+    unreadableLink.value === undefined ? RESOLVING : UNREADABLE_LINK
+  )
 
   /** A page sent back to resolving by the lifecycle reads its capture again. */
   function dispatch(event: CheckoutPageEvent) {
@@ -171,8 +174,13 @@ export function useFullPageCheckout() {
     if (quoted.status === 'error')
       return 'serverCode' in quoted &&
         matchesServerCode(quoted, UNKNOWN_PLAN_SERVER_CODE)
-        ? { type: 'planUnavailable' }
+        ? { type: 'planUnavailable', reason: 'retired' }
         : { type: 'unavailable', code: quoted.code }
+    if (
+      quoted.value.new_plan.tier === 'TEAM' &&
+      arrival.teamCreditStopId === undefined
+    )
+      return { type: 'planUnavailable', reason: 'team_stop_missing' }
     const reactivation = consentAsked(asksReactivation(quoted.value))
     return quoted.value.transition_type === 'new_subscription'
       ? {
@@ -332,6 +340,17 @@ export function useFullPageCheckout() {
     else window.location.assign(returnLink.value)
   }
 
+  /** The live catalog, on the Team tab when the link asked for a team plan. */
+  const viewPlansLink = computed(() =>
+    pricingTableUrl(
+      page.value.kind === 'plan_unavailable' &&
+        page.value.reason === 'team_stop_missing'
+        ? 'team'
+        : 'default',
+      billedWorkspace()
+    )
+  )
+
   /** Try again re-runs the whole resolve in place: the re-read and the capture read. */
   function retryLoad() {
     void reconcile()
@@ -414,6 +433,7 @@ export function useFullPageCheckout() {
     submitting: checkout.submitting,
     payFailure,
     returnLink,
+    viewPlansLink,
     close,
     retryLoad,
     onPaymentPhase,

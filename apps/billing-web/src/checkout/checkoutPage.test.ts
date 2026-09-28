@@ -756,7 +756,10 @@ const parkedForAHuman = (): BillingOperationState => ({
   ...succeededOperation(),
   phase: 'reconciliation_needed'
 })
-const planUnavailable: CheckoutPageEvent = { type: 'planUnavailable' }
+const planUnavailable: CheckoutPageEvent = {
+  type: 'planUnavailable',
+  reason: 'retired'
+}
 const tryAgain: CheckoutPageEvent = { type: 'retried' }
 const UNCONFIRMED: CheckoutPage = { kind: 'unconfirmed', operationId: 'op_1' }
 
@@ -769,7 +772,12 @@ describe('reduceCheckoutPage endings', () => {
     {
       name: 'a plan the catalog lacks is Plan not available',
       events: [planUnavailable],
-      expected: { kind: 'plan_unavailable' }
+      expected: { kind: 'plan_unavailable', reason: 'retired' }
+    },
+    {
+      name: 'a team link without its stop is Plan not available',
+      events: [{ type: 'planUnavailable', reason: 'team_stop_missing' }],
+      expected: { kind: 'plan_unavailable', reason: 'team_stop_missing' }
     },
     {
       name: 'Try again after a failed load resolves again',

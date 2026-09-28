@@ -98,8 +98,18 @@ describe('endingOf', () => {
     },
     {
       name: 'a plan the catalog lacks',
-      page: { kind: 'plan_unavailable' },
+      page: { kind: 'plan_unavailable', reason: 'retired' },
       screen: { kind: 'plan_unavailable', code: 'PLAN_NOT_FOUND' }
+    },
+    {
+      name: 'a team link without its commit stop',
+      page: { kind: 'plan_unavailable', reason: 'team_stop_missing' },
+      screen: { kind: 'plan_unavailable', code: 'CHECKOUT_LINK_INVALID' }
+    },
+    {
+      name: 'a link the contract cannot read',
+      page: { kind: 'plan_unavailable', reason: 'unreadable' },
+      screen: { kind: 'plan_unavailable', code: 'CHECKOUT_LINK_INVALID' }
     }
   ])('$name', ({ page, screen }) => {
     expect(endingOf(page)).toEqual(screen)
