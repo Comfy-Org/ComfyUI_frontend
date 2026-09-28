@@ -369,6 +369,7 @@ function startAgentCrdtFollower(
   const tabId = createUuidv4()
   const ownActor = (): string => `human:${userId() ?? 'anonymous'}:${tabId}`
   const rejectedOpNotifier = createRejectedOpNotifier()
+
   const sender = createOpSender({
     sendOps: (target, tab, ops) => client.sendOps(target, tab, ops),
     onOpsResult(listener) {

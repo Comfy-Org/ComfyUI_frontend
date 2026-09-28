@@ -225,6 +225,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     renderState?: WidgetRenderState,
     visibility?: WidgetVisibilityComponent
   ): WidgetState<TValue, TType, TOptions> | undefined
+  // fallow-ignore-next-line complexity -- existing overload implementation moved upward after this PR removes obsolete mutation-context bookkeeping.
   function registerWidget(
     widgetId: WidgetId,
     init: WidgetStateInit,

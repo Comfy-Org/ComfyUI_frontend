@@ -37,9 +37,10 @@ const skipped = computed(() => takes.filter(isUnpaid))
         aria-hidden="true"
       />
       {{
-        tc('cinematic.credits.skipped', locale)
-          .replace('{failed}', String(skipped.length))
-          .replace('{total}', String(takes.length))
+        tc('cinematic.credits.skipped', locale, {
+          failed: skipped.length,
+          total: takes.length
+        })
       }}
     </span>
     <CinematicCreditAction

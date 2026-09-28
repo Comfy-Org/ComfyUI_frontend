@@ -1,65 +1,44 @@
-import { cleanup, render, screen } from '@testing-library/vue'
+import { cleanup, render } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { defineComponent, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { StripePaymentPhase } from '@comfyorg/account-ui/billing/stripe'
 
 import { useTelemetry } from '@/platform/telemetry'
+import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
 import {
   clearCheckoutJourney,
   resolveCheckoutJourney
 } from '@/platform/workspace/utils/checkoutJourney'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
-import UnifiedStripePaymentSelector from './UnifiedStripePaymentSelector.vue'
+import SubscriptionAddPaymentPreviewWorkspace from './SubscriptionAddPaymentPreviewWorkspace.vue'
 
 vi.mock(import('@/platform/telemetry'))
 
 /**
- * The provider work is covered in the package, against the real Stripe mocks.
- * What is left here is the binding: the key, the copy, the button and the
- * journey context the form cannot know about.
+ * The card form itself is covered in the package. What is left here is the
+ * app's binding: the key, the copy, the theme and the journey context the
+ * form cannot know about.
  */
 const formProps = vi.hoisted(() => ({ value: {} as Record<string, unknown> }))
 let reportPhase: (phase: StripePaymentPhase) => void = () => {}
 
-vi.mock<unknown>(import('@comfyorg/account-ui/billing/stripe'), () => ({
-  StripePaymentForm: {
-    name: 'StripePaymentForm',
-    props: {
-      publishableKey: { type: String, default: '' },
-      amountCents: { type: Number, default: 0 },
-      currency: { type: String, default: '' },
-      copy: { type: Object, default: () => ({}) },
-      paymentMethodConfigurationId: { type: String, default: '' },
-      isLoading: { type: Boolean, default: false },
-      verificationPending: { type: Boolean, default: false },
-      canSubmit: { type: Boolean, default: true },
-      themeKey: { type: String, default: '' }
-    },
-    emits: ['confirm', 'submittingChange', 'phase'],
-    setup(
-      props: Record<string, unknown>,
-      {
-        emit,
-        slots
-      }: {
-        emit: (event: string, payload: unknown) => void
-        slots: { submit?: (slotProps: Record<string, unknown>) => unknown }
-      }
-    ) {
-      formProps.value = props
-      reportPhase = (phase) => emit('phase', phase)
-      return () =>
-        slots.submit?.({
-          disabled: props.verificationPending,
-          loading: props.isLoading,
-          verificationPending: props.verificationPending
-        })
-    }
+const PaymentFormStub = defineComponent({
+  name: 'CheckoutPaymentForm',
+  props: {
+    publishableKey: { type: String, default: '' },
+    copy: { type: Object, default: () => ({}) },
+    themeKey: { type: String, default: '' }
+  },
+  emits: ['phase'],
+  setup(props, { emit }) {
+    formProps.value = props
+    reportPhase = (phase) => emit('phase', phase)
+    return () => null
   }
-}))
+})
 
 const i18n = createI18n({
   legacy: false,
@@ -73,7 +52,6 @@ const i18n = createI18n({
           billingAddress: 'Billing address',
           stripeMethodChoice: 'Choose a payment method',
           alipayRenewalNote: 'Alipay renewal note',
-          payAndSubscribe: 'Pay and subscribe',
           stripeUnavailable: 'Stripe is unavailable'
         }
       }
@@ -81,19 +59,49 @@ const i18n = createI18n({
   }
 })
 
-function renderSelector(props: Record<string, unknown> = {}) {
-  return render(UnifiedStripePaymentSelector, {
+const quote: PreviewSubscribeResponse = {
+  allowed: true,
+  transition_type: 'new_subscription',
+  effective_at: '2026-06-19T00:00:00Z',
+  is_immediate: true,
+  cost_today_cents: 66_500,
+  cost_next_period_cents: 66_500,
+  credits_today_cents: 0,
+  credits_next_period_cents: 0,
+  quote_id: 'quote_123',
+  quote_version: 1,
+  amount_due_cents: 66_500,
+  currency: 'usd',
+  new_plan: {
+    slug: 'creator',
+    tier: 'CREATOR',
+    duration: 'MONTHLY',
+    price_cents: 66_500,
+    credits_cents: 0,
+    seat_summary: {
+      seat_count: 1,
+      total_cost_cents: 66_500,
+      total_credits_cents: 0
+    }
+  }
+}
+
+function renderConfirm() {
+  return render(SubscriptionAddPaymentPreviewWorkspace, {
     props: {
-      amountCents: 66500,
-      currency: 'usd',
-      paymentMethodConfigurationId: 'pmc_test',
-      ...props
+      tierKey: 'creator',
+      previewData: quote,
+      usePaymentElement: true,
+      quoteIsCurrent: true
     },
-    global: { plugins: [i18n] }
+    global: {
+      plugins: [i18n],
+      stubs: { CheckoutPaymentForm: PaymentFormStub }
+    }
   })
 }
 
-describe('UnifiedStripePaymentSelector', () => {
+describe('SubscriptionAddPaymentPreviewWorkspace payment binding', () => {
   beforeEach(() => {
     sessionStorage.clear()
     clearCheckoutJourney()
@@ -103,7 +111,7 @@ describe('UnifiedStripePaymentSelector', () => {
   afterEach(cleanup)
 
   it('hands the form this deployment key and the host translations', () => {
-    renderSelector()
+    renderConfirm()
 
     expect(formProps.value.publishableKey).toBe('pk_test_example')
     expect(formProps.value.copy).toStrictEqual({
@@ -117,25 +125,13 @@ describe('UnifiedStripePaymentSelector', () => {
   })
 
   it('re-keys the form theme when the active colour palette changes', async () => {
-    renderSelector()
+    renderConfirm()
     const colorPaletteStore = useColorPaletteStore()
 
     colorPaletteStore.activePaletteId = 'light'
     await nextTick()
 
     expect(formProps.value.themeKey).toBe('light')
-  })
-
-  it('renders the pay action into the form through the submit slot', () => {
-    renderSelector({ verificationPending: true })
-
-    // Stepping back behind Complete verification is the host's decision, so
-    // the disabled state has to survive the slot rather than live in the form.
-    expect(
-      screen.getByRole<HTMLButtonElement>('button', {
-        name: 'Pay and subscribe'
-      }).disabled
-    ).toBe(true)
   })
 
   it('stamps the active journey onto a phase the form reports', () => {
@@ -146,7 +142,7 @@ describe('UnifiedStripePaymentSelector', () => {
       entrySource: 'pricing',
       assignment: { status: 'resolved', arm: 'treatment' }
     })
-    renderSelector()
+    renderConfirm()
 
     reportPhase({ phase: 'payment_element_ready', element: 'payment' })
 
@@ -161,7 +157,7 @@ describe('UnifiedStripePaymentSelector', () => {
   })
 
   it('drops a phase that arrives with no active journey', () => {
-    renderSelector()
+    renderConfirm()
     clearCheckoutJourney()
 
     reportPhase({ phase: 'payment_submit_attempted' })

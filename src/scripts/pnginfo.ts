@@ -406,6 +406,7 @@ export async function importA1111(
               setWidgetValue(samplerNode, 'sampler_name', o)
             }
           },
+          // fallow-ignore-next-line complexity -- legacy A1111 size/hires importer; this PR only scopes its existing branches under load provenance.
           size(v: string) {
             const wxh = v.split('x')
             const w = ceil64(+wxh[0])

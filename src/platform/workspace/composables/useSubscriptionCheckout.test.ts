@@ -198,6 +198,7 @@ const {
   mockPlans,
   mockResubscribe,
   mockToastAdd,
+  mockToastRemoveGroup,
   mockListSavedPaymentMethods,
   mockShowDowngradeToPersonalDialog,
   mockIsTeamPlan,
@@ -223,6 +224,7 @@ const {
     mockPlans: { value: [] as Plan[] },
     mockResubscribe: vi.fn(),
     mockToastAdd: vi.fn(),
+    mockToastRemoveGroup: vi.fn(),
     mockListSavedPaymentMethods: vi.fn(),
     mockShowDowngradeToPersonalDialog: vi.fn(),
     mockIsTeamPlan: { value: false },
@@ -408,7 +410,7 @@ vi.mock(import('@/config/comfyApi'), () => ({
 vi.mock<unknown>(
   import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
   () => ({
-    useToast: () => ({ add: mockToastAdd })
+    useToast: () => ({ add: mockToastAdd, removeGroup: mockToastRemoveGroup })
   })
 )
 
@@ -427,6 +429,7 @@ const i18n = createI18n({
       subscription: {
         subscribeFailed: 'Subscription failed',
         resubscribeSuccess: 'Subscription restored',
+        planLoadErrorRetry: 'Try again',
         tiers: {
           standard: { name: 'Standard' },
           creator: { name: 'Creator' }
@@ -540,7 +543,7 @@ describe('useSubscriptionCheckout', () => {
     mockSubscribe.mockReset()
     mockPreviewSubscribe.mockReset()
     mockFetchPlans.mockReset()
-    mockFetchStatus.mockReset()
+    mockFetchStatus.mockReset().mockResolvedValue(undefined)
     vi.mocked(useBillingOperationStore().startOperation).mockReset()
     mockListSavedPaymentMethods.mockReset()
     mockOpenHostedBillingTab.mockReset().mockReturnValue(false)
@@ -1482,7 +1485,7 @@ describe('useSubscriptionCheckout', () => {
       }
     )
 
-    it('preserves the checkout when the billing portal popup is blocked', async () => {
+    it('offers a retry action when the billing portal popup is blocked', async () => {
       mockOpen.mockReturnValueOnce(null)
       const checkout = await submitRejectedPreview(
         'SUBSCRIPTION_PAYMENT_REQUIRED'
@@ -1494,10 +1497,131 @@ describe('useSubscriptionCheckout', () => {
       )
       expect(mockToastAdd).toHaveBeenCalledWith(
         expect.objectContaining({
+          group: 'payment-recovery',
           severity: 'warn',
-          detail: 'Payment popup blocked'
+          detail: expect.objectContaining({
+            text: 'Payment popup blocked',
+            actionLabel: 'Try again',
+            onAction: expect.any(Function)
+          })
         })
       )
+    })
+
+    it('opens the portal and arms the focus refresh when the retry action is clicked', async () => {
+      mockOpen.mockReturnValueOnce(null)
+      await submitRejectedPreview('SUBSCRIPTION_PAYMENT_REQUIRED')
+      const [{ detail }] = mockToastAdd.mock.calls.at(-1)!
+
+      mockOpen.mockReturnValueOnce({})
+      detail.onAction()
+
+      expect(mockOpen).toHaveBeenLastCalledWith(
+        'https://billing.stripe.com/portal',
+        '_blank'
+      )
+      window.dispatchEvent(new Event('focus'))
+      await vi.waitFor(() => expect(mockFetchStatus).toHaveBeenCalledOnce())
+    })
+
+    it('removes the retry toast when returning to pricing', async () => {
+      mockOpen.mockReturnValueOnce(null)
+      const checkout = await submitRejectedPreview(
+        'SUBSCRIPTION_PAYMENT_REQUIRED'
+      )
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ group: 'payment-recovery' })
+      )
+
+      checkout.handleBackToPricing()
+
+      expect(mockToastRemoveGroup).toHaveBeenCalledWith('payment-recovery')
+    })
+
+    it('removes the retry toast when the checkout composable is disposed', async () => {
+      mockOpen.mockReturnValueOnce(null)
+      mockPreviewSubscribe.mockRejectedValueOnce(
+        errorWithCode('SUBSCRIPTION_PAYMENT_REQUIRED', 'error')
+      )
+      let checkout!: ReturnType<typeof useSubscriptionCheckout>
+      const { unmount } = render(
+        {
+          setup() {
+            checkout = useSubscriptionCheckout(emit)
+            return () => null
+          }
+        },
+        { global: { plugins: [i18n] } }
+      )
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ group: 'payment-recovery' })
+      )
+
+      unmount()
+
+      expect(mockToastRemoveGroup).toHaveBeenCalledWith('payment-recovery')
+    })
+
+    it('refreshes status on return even after checkout is disposed', async () => {
+      mockOpen.mockReturnValueOnce(null)
+      mockPreviewSubscribe.mockRejectedValueOnce(
+        errorWithCode('SUBSCRIPTION_PAYMENT_REQUIRED', 'error')
+      )
+      let checkout!: ReturnType<typeof useSubscriptionCheckout>
+      const { unmount } = render(
+        {
+          setup() {
+            checkout = useSubscriptionCheckout(emit)
+            return () => null
+          }
+        },
+        { global: { plugins: [i18n] } }
+      )
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+      const [{ detail }] = mockToastAdd.mock.calls.at(-1)!
+
+      // Click retry (a real gesture opens the popup this time), then close
+      // checkout — completing payment in that popup and returning must still
+      // refresh status even though the checkout that armed this is gone.
+      mockOpen.mockReturnValueOnce({})
+      detail.onAction()
+      unmount()
+
+      window.dispatchEvent(new Event('focus'))
+      await vi.waitFor(() => expect(mockFetchStatus).toHaveBeenCalledOnce())
+    })
+
+    it('refreshes status on return after checkout is disposed when the portal opened first time', async () => {
+      mockOpen.mockReturnValueOnce({})
+      mockPreviewSubscribe.mockRejectedValueOnce(
+        errorWithCode('SUBSCRIPTION_PAYMENT_REQUIRED', 'error')
+      )
+      let checkout!: ReturnType<typeof useSubscriptionCheckout>
+      const { unmount } = render(
+        {
+          setup() {
+            checkout = useSubscriptionCheckout(emit)
+            return () => null
+          }
+        },
+        { global: { plugins: [i18n] } }
+      )
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+      expect(mockOpen).toHaveBeenCalledOnce()
+      unmount()
+
+      window.dispatchEvent(new Event('focus'))
+      await vi.waitFor(() => expect(mockFetchStatus).toHaveBeenCalledOnce())
     })
 
     it('keeps the original error path for non-payment transition failures', async () => {
@@ -2364,6 +2488,21 @@ describe('useSubscriptionCheckout', () => {
       expect(checkout.checkoutStep.value).toBe('pricing')
       expect(mockOpen).not.toHaveBeenCalled()
       expect(mockToastAdd).not.toHaveBeenCalled()
+    })
+
+    it('does nothing when the retry action is clicked after returning to pricing', async () => {
+      mockOpen.mockReturnValueOnce(null)
+      const { checkout, selection } = await startTeamPaymentRecovery()
+      await selection
+      const [{ detail }] = mockToastAdd.mock.calls.at(-1)!
+
+      // The retry toast can survive a reset that raced ahead of removing it;
+      // its action must still refuse to reopen a URL from the old attempt.
+      checkout.handleBackToPricing()
+      mockOpen.mockClear()
+      detail.onAction()
+
+      expect(mockOpen).not.toHaveBeenCalled()
     })
 
     it('returns a failed Team payment recovery to pricing', async () => {
@@ -4277,8 +4416,13 @@ describe('useSubscriptionCheckout', () => {
 
       expect(mockToastAdd).toHaveBeenCalledWith(
         expect.objectContaining({
+          group: 'payment-recovery',
           severity: 'warn',
-          detail: 'Payment popup blocked'
+          detail: expect.objectContaining({
+            text: 'Payment popup blocked',
+            actionLabel: 'Try again',
+            onAction: expect.any(Function)
+          })
         })
       )
       expect(useBillingOperationStore().startOperation).toHaveBeenCalledWith(
@@ -4287,6 +4431,15 @@ describe('useSubscriptionCheckout', () => {
         expect.any(Object),
         'https://stripe.com/pay'
       )
+
+      const [{ detail }] = mockToastAdd.mock.calls.at(-1)!
+      openSpy.mockClear().mockReturnValue({} as Window)
+      detail.onAction()
+      expect(openSpy).toHaveBeenLastCalledWith(
+        'https://stripe.com/pay',
+        '_blank'
+      )
+
       openSpy.mockRestore()
     })
 
