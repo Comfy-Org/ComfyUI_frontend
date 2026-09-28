@@ -300,13 +300,17 @@ export function registerAgentPanelExtension(): void {
       }
 
       let activationPending = false
+      let activationOffered = false
       const openWhenStartupDecided = (): void => {
-        if (!agentPanelStore.enabled || activationPending) return
+        if (!agentPanelStore.enabled || activationPending || activationOffered)
+          return
         activationPending = true
         whenStartupDecided()
           .then((decided) => {
-            if (decided && agentPanelStore.enabled && !agentPanelStore.isOpen)
-              agentPanelStore.open('activation')
+            if (decided && agentPanelStore.enabled) {
+              activationOffered = true
+              if (!agentPanelStore.isOpen) agentPanelStore.open('activation')
+            }
           })
           .catch((error: unknown) => {
             reportError(error, {
