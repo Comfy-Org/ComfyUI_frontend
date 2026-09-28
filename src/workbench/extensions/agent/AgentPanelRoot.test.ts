@@ -131,6 +131,7 @@ const appMock = vi.hoisted(() => {
   Object.assign(graph, { rootGraph: graph })
   return {
     loadGraphData: vi.fn(),
+    refreshMissingModels: vi.fn(() => Promise.resolve()),
     graph,
     rootGraph: graph,
     isGraphReady: false,
