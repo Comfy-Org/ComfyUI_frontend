@@ -26,8 +26,10 @@ describe('refreshRemoteConfig', () => {
     } as Response
   }
 
-  function agentKeysIn(store: Storage): string[] {
-    return Object.keys(store).filter((key) => /agent/i.test(key))
+  function storageEntries(store: Storage): Record<string, string | null> {
+    return Object.fromEntries(
+      Object.keys(store).map((key) => [key, store.getItem(key)])
+    )
   }
 
   function mockErrorResponse(status: number, statusText: string) {
@@ -229,6 +231,8 @@ describe('refreshRemoteConfig', () => {
 
     it("records this session's grant without persisting it anywhere", async () => {
       sessionAgentGrant.value = undefined
+      const localStorageBefore = storageEntries(localStorage)
+      const sessionStorageBefore = storageEntries(sessionStorage)
       vi.mocked(api.fetchApi).mockResolvedValue(
         mockSuccessResponse({ 'agent-in-app-experience': true })
       )
@@ -236,8 +240,8 @@ describe('refreshRemoteConfig', () => {
       await refreshRemoteConfig()
 
       expect(sessionAgentGrant.value).toBe(true)
-      expect(agentKeysIn(localStorage)).toEqual([])
-      expect(agentKeysIn(sessionStorage)).toEqual([])
+      expect(storageEntries(localStorage)).toEqual(localStorageBefore)
+      expect(storageEntries(sessionStorage)).toEqual(sessionStorageBefore)
     })
 
     it('keeps this session granted when the poll fails transiently', async () => {
