@@ -22,11 +22,13 @@ const { t } = useI18n()
     </p>
     <p
       v-if="ledger.credits"
-      class="m-0 flex items-center gap-1.5 text-base text-muted-foreground"
+      class="m-0 flex items-start gap-1.5 text-base text-muted-foreground"
     >
-      <i class="icon-[lucide--coins] size-4 shrink-0" aria-hidden="true" />
-      <span class="tabular-nums">{{ ledger.credits.count }}</span>
-      {{ ledger.credits.qualifier }}
+      <i class="mt-1 icon-[lucide--coins] size-4 shrink-0" aria-hidden="true" />
+      <span>
+        <span class="tabular-nums">{{ ledger.credits.count }}</span>
+        {{ ledger.credits.qualifier }}
+      </span>
     </p>
   </div>
 
