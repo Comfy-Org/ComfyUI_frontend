@@ -945,6 +945,31 @@ describe('useAgentConversationStore', () => {
     ])
   })
 
+  it('keeps a live reply when the persisted text differs at the same length', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'upscale this')
+    store.ingest(delta('t1', 'All done!'))
+    store.stashActiveTurn()
+
+    store.setThreadId('th-other')
+    store.hydrate([])
+    store.setThreadId('th')
+    store.hydrate([
+      historyRow(1, 'user', 'server-turn', 'upscale this'),
+      historyRow(2, 'assistant', 'server-turn', 'All done?', 't1')
+    ])
+    store.resumeBackgroundTurn()
+
+    expect(partTexts(store)).toEqual(['All done!'])
+    expect(store.isStreaming).toBe(true)
+    expect(store.entries.map((entry) => entry.role)).toEqual([
+      'user',
+      'assistant'
+    ])
+  })
+
   /**
    * The blind spot in the case above: a live transport also emits thinking and
    * tab links, which a persisted row never carries, so a narrated stash holds

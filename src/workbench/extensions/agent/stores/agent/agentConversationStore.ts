@@ -474,11 +474,11 @@ export const useAgentConversationStore = defineStore(
      * copy holds the user-side record hydrate() rebuilt; so the copy goes and
      * its record moves onto the live turn.
      */
-    function replyTextLength(message: AssistantMessage): number {
-      return message.parts.reduce(
-        (total, part) => total + (part.type === 'text' ? part.text.length : 0),
-        0
-      )
+    function replyText(message: AssistantMessage): string {
+      return message.parts
+        .filter((part) => part.type === 'text')
+        .map((part) => part.text)
+        .join('')
     }
 
     /**
@@ -501,7 +501,7 @@ export const useAgentConversationStore = defineStore(
       live: AssistantMessage
     ): boolean {
       if (live.parts.length === 0) return hydrated.parts.length > 0
-      return replyTextLength(hydrated) >= replyTextLength(live)
+      return replyText(hydrated).startsWith(replyText(live))
     }
 
     /**
