@@ -1,3 +1,5 @@
+import { expect } from '@playwright/test'
+
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { NodeTemplatesManageDialog } from '@e2e/fixtures/components/NodeTemplatesManageDialog'
 import { DefaultGraphNewMenuPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
@@ -47,7 +49,13 @@ export class NodeTemplatesHelper {
     await this.comfyPage.contextMenu.clickLitegraphMenuItem(
       'Save Selected as Template'
     )
+    const storeResponse = this.comfyPage.page.waitForResponse(
+      (response) =>
+        response.request().method() === 'POST' &&
+        response.url().includes(`/api/userdata/${TEMPLATES_FILE}`)
+    )
     await this.comfyPage.nodeOps.fillPromptDialog(name)
+    expect((await storeResponse).ok()).toBe(true)
   }
 
   async insertTemplate(name: string): Promise<void> {
