@@ -35,36 +35,59 @@ describe('registerRefreshOnReturn', () => {
     expect(refresh).toHaveBeenCalledTimes(1)
   })
 
+  function held() {
+    const settles: Array<() => void> = []
+    const refresh = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          settles.push(resolve)
+        })
+    )
+    const settle = async (index: number) => {
+      settles[index]()
+      await refresh.mock.results[index]?.value
+      await Promise.resolve()
+    }
+    return { refresh, settle }
+  }
+
+  const leave = () => window.dispatchEvent(new Event('blur'))
+  const come = () => window.dispatchEvent(new Event('focus'))
+
   it('refreshes again on a later return, so a return before the hosted tab finishes does not spend it', async () => {
-    const refresh = vi.fn(async () => {})
+    const { refresh, settle } = held()
     registerRefreshOnReturn(refresh)
 
-    window.dispatchEvent(new Event('focus'))
-    await refresh.mock.results[0]?.value
-    await Promise.resolve()
-    window.dispatchEvent(new Event('focus'))
+    come()
+    await settle(0)
+    leave()
+    come()
 
     expect(refresh).toHaveBeenCalledTimes(2)
   })
 
   it('coalesces the focus and visibilitychange of one return into one refresh', async () => {
-    let settle!: () => void
-    const refresh = vi.fn(
-      () =>
-        new Promise<void>((resolve) => {
-          settle = resolve
-        })
-    )
+    const { refresh, settle } = held()
     registerRefreshOnReturn(refresh)
 
-    window.dispatchEvent(new Event('focus'))
+    come()
     document.dispatchEvent(new Event('visibilitychange'))
     expect(refresh).toHaveBeenCalledTimes(1)
+    await settle(0)
 
-    settle()
-    await refresh.mock.results[0]?.value
-    await Promise.resolve()
-    window.dispatchEvent(new Event('focus'))
+    expect(refresh).toHaveBeenCalledTimes(1)
+  })
+
+  it('runs one trailing refresh for a return that arrives while a refresh is in flight', async () => {
+    const { refresh, settle } = held()
+    registerRefreshOnReturn(refresh)
+
+    come()
+    leave()
+    come()
+    expect(refresh).toHaveBeenCalledTimes(1)
+
+    await settle(0)
 
     expect(refresh).toHaveBeenCalledTimes(2)
   })
