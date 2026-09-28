@@ -961,6 +961,35 @@ describe('useAgentConversationStore', () => {
     }
   )
 
+  it('keeps a local tab link between persisted text and tool parts', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.ingest(delta('t1', 'before'))
+    store.ingest(activeTab('wf-1', 't1'))
+    store.ingest(toolCall('t1', 'add_node', 'running'))
+    store.ingest(delta('t1', 'after'))
+
+    store.settleTurn({ threadId: 'th', messageId: T1 }, [
+      { type: 'text', text: 'before', state: 'done' },
+      {
+        type: 'tool',
+        callId: 'call-add_node',
+        name: 'add_node',
+        state: 'done',
+        ok: true
+      },
+      { type: 'text', text: 'after', state: 'done' }
+    ])
+
+    expect(store.messages[0].parts.map((part) => part.type)).toEqual([
+      'text',
+      'tabLink',
+      'tool',
+      'text'
+    ])
+  })
+
   it('resolves existing paywalls without resurrecting them', () => {
     const store = useAgentConversationStore()
     store.recordPaywall(T1, 'subscribe')

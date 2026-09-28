@@ -42,6 +42,39 @@ export interface LiveTurn {
   messageId: TurnId
 }
 
+function localPartsBySemanticSlot(
+  parts: AssistantMessage['parts']
+): Map<number, AssistantMessage['parts']> {
+  const localParts = new Map<number, AssistantMessage['parts']>()
+  let semanticSlot = 0
+  for (const part of parts) {
+    if (part.type === 'text' || part.type === 'tool') {
+      semanticSlot += 1
+      continue
+    }
+    if (part.type === 'runApproval') continue
+    const slot = localParts.get(semanticSlot) ?? []
+    slot.push(part)
+    localParts.set(semanticSlot, slot)
+  }
+  return localParts
+}
+
+function interleaveLocalParts(
+  persistedParts: AssistantMessage['parts'],
+  localParts: Map<number, AssistantMessage['parts']>
+): AssistantMessage['parts'] {
+  const mergedParts: AssistantMessage['parts'] = []
+  for (let index = 0; index <= persistedParts.length; index += 1) {
+    mergedParts.push(...(localParts.get(index) ?? []))
+    if (index < persistedParts.length) mergedParts.push(persistedParts[index])
+  }
+  for (const [index, parts] of localParts) {
+    if (index > persistedParts.length) mergedParts.push(...parts)
+  }
+  return mergedParts
+}
+
 function finishWithPersistedParts(
   message: AssistantMessage,
   persistedParts: AssistantMessage['parts'] | undefined
@@ -50,13 +83,10 @@ function finishWithPersistedParts(
     message.parts = message.parts.filter((part) => part.type !== 'runApproval')
     return
   }
-  const localOnly = message.parts.filter(
-    (part) =>
-      part.type !== 'text' &&
-      part.type !== 'tool' &&
-      part.type !== 'runApproval'
+  message.parts = interleaveLocalParts(
+    persistedParts,
+    localPartsBySemanticSlot(message.parts)
   )
-  message.parts = [...localOnly, ...persistedParts]
 }
 
 export const useAgentConversationStore = defineStore(

@@ -1121,9 +1121,6 @@ describe('useAgentSession (v1 composition root)', () => {
     const { source, emit, status } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
     session.start()
-    // Establish a live connection first: only a live->down transition is a
-    // real disconnect. An initial `false` snapshot (no prior `true`) must
-    // not touch turns; see test (g2).
     status(true)
 
     await session.sendMessage('go')
@@ -1425,9 +1422,7 @@ describe('useAgentSession (v1 composition root)', () => {
     status(true)
     status(false)
     status(true)
-    await vi.advanceTimersByTimeAsync(0)
-
-    expect(rest.getMessages).toHaveBeenCalledTimes(1)
+    await vi.waitFor(() => expect(rest.getMessages).toHaveBeenCalledTimes(1))
   })
 
   it('(g8) a recovery result landing after the session stopped touches nothing', async () => {
@@ -1449,8 +1444,7 @@ describe('useAgentSession (v1 composition root)', () => {
 
     status(false)
     status(true)
-    await vi.advanceTimersByTimeAsync(0)
-    expect(getMessages).toHaveBeenCalledTimes(1)
+    await vi.waitFor(() => expect(getMessages).toHaveBeenCalledTimes(1))
 
     const successorEvents = fakeEvents()
     const successor = useAgentSession({
@@ -1459,23 +1453,20 @@ describe('useAgentSession (v1 composition root)', () => {
     })
     session.stop()
     successor.start()
-    await vi.advanceTimersByTimeAsync(0)
+    await vi.waitFor(() => expect(pendingHistory).toHaveLength(2))
     const [staleRecovery, remountHydrate] = pendingHistory
     assert.exists(staleRecovery)
     assert.exists(remountHydrate)
 
     remountHydrate([])
-    await vi.advanceTimersByTimeAsync(0)
-    expect(successor.isStreaming.value).toBe(true)
+    await vi.waitFor(() => expect(successor.isStreaming.value).toBe(true))
     successorEvents.emit(delta('msg-1', ' still going'))
 
     staleRecovery([
       historyRow(1, 'user', 'msg-1', 'go'),
       historyRow(2, 'assistant', 'msg-1', 'stale', 'msg-1')
     ])
-    await vi.advanceTimersByTimeAsync(0)
-
-    expect(successor.isStreaming.value).toBe(true)
+    await vi.waitFor(() => expect(successor.isStreaming.value).toBe(true))
     const assistant = successor.entries.value.at(-1)
     assert(assistant?.role === 'assistant')
     expect(assistant.parts).toEqual([
@@ -1513,7 +1504,7 @@ describe('useAgentSession (v1 composition root)', () => {
           .mocked(rest.getMessages)
           .mock.calls.slice(getsBefore)
           .map(([threadId]) => threadId)
-          .toSorted()
+          .sort()
       ).toEqual(['th-1', 'th-2'])
     )
   })
@@ -1614,15 +1605,12 @@ describe('useAgentSession (v1 composition root)', () => {
       >()
       .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
       .mockResolvedValueOnce({ thread_id: 'th-2', message_id: 'msg-2' })
-    const responses: Record<string, () => Promise<AgentMessages>> = {
-      'th-1': async () => {
-        throw new AgentApiError('gone', 404, undefined)
-      },
-      'th-2': async () => []
-    }
+    const getMessages = vi.fn<(threadId: string) => Promise<AgentMessages>>(
+      async () => []
+    )
     const rest = fakeRest({
       postMessage,
-      getMessages: vi.fn((threadId: string) => responses[threadId]())
+      getMessages
     })
     const { source, emit, status } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
@@ -1634,19 +1622,31 @@ describe('useAgentSession (v1 composition root)', () => {
     session.newChat()
     await session.sendMessage('second')
     emit(deltaIn('th-2', 'msg-2', 'two'))
+    emit(doneIn('th-2', 'msg-2'))
 
+    getMessages.mockReset()
+    getMessages.mockRejectedValue(new AgentApiError('gone', 404, undefined))
     status(false)
     status(true)
-    await vi.advanceTimersByTimeAsync(1000)
 
+    await vi.waitFor(() =>
+      expect(getMessages.mock.calls.map(([threadId]) => threadId)).toEqual([
+        'th-1'
+      ])
+    )
+    await vi.advanceTimersByTimeAsync(1000)
     await vi.waitFor(() =>
       expect(
         useAgentConversationStore()
           .liveTurns()
           .map((turn) => turn.threadId)
-      ).toEqual(['th-2'])
+      ).toEqual([])
     )
     expect(session.threadId.value).toBe('th-2')
+    expect(session.entries.value.at(-1)).toMatchObject({
+      role: 'assistant',
+      parts: [{ type: 'text', text: 'two', state: 'done' }]
+    })
     expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBe(
       'th-2'
     )
@@ -1695,7 +1695,7 @@ describe('useAgentSession (v1 composition root)', () => {
 
     status(false)
     status(true)
-    await vi.advanceTimersByTimeAsync(0)
+    await vi.waitFor(() => expect(getMessages).toHaveBeenCalledTimes(1))
     const signal = getMessages.mock.calls[0]?.[1]?.signal
     assert.exists(signal)
 
@@ -1739,11 +1739,12 @@ describe('useAgentSession (v1 composition root)', () => {
 
       status(false)
       status(true)
-      await vi.advanceTimersByTimeAsync(0)
-      expect(getMessages.mock.calls.map(([id]) => id).toSorted()).toEqual([
-        'th',
-        'th/1'
-      ])
+      await vi.waitFor(() =>
+        expect(getMessages.mock.calls.map(([id]) => id).sort()).toEqual([
+          'th',
+          'th/1'
+        ])
+      )
 
       pendingHistory.get('th/1')?.([
         { ...historyRow(1, 'user', 'msg-1', 'first'), thread_id: 'th/1' },
@@ -1752,13 +1753,17 @@ describe('useAgentSession (v1 composition root)', () => {
           thread_id: 'th/1'
         }
       ])
-      await vi.advanceTimersByTimeAsync(0)
+      await vi.waitFor(() =>
+        expect(
+          useAgentConversationStore()
+            .liveTurns()
+            .map((turn) => turn.threadId)
+        ).toEqual(['th'])
+      )
 
       status(false)
       status(true)
-      await vi.advanceTimersByTimeAsync(0)
-
-      expect(getMessages).toHaveBeenCalledTimes(2)
+      await vi.waitFor(() => expect(getMessages).toHaveBeenCalledTimes(2))
     } finally {
       session.stop()
     }
@@ -1783,7 +1788,7 @@ describe('useAgentSession (v1 composition root)', () => {
 
     status(false)
     status(true)
-    await vi.advanceTimersByTimeAsync(0)
+    await vi.waitFor(() => expect(pendingHistory).toHaveLength(1))
     const [recovery] = pendingHistory
     assert.exists(recovery)
 
@@ -1795,14 +1800,14 @@ describe('useAgentSession (v1 composition root)', () => {
       historyRow(1, 'user', 'msg-1', 'go'),
       historyRow(2, 'assistant', 'msg-1', 'rest wins', 'msg-1')
     ])
-    await vi.advanceTimersByTimeAsync(60_000)
-
-    expect(getMessages).toHaveBeenCalledTimes(1)
-    const assistant = session.entries.value.at(-1)
-    assert(assistant?.role === 'assistant')
-    expect(assistant.parts).toEqual([
-      { type: 'text', text: 'partial from socket', state: 'done' }
-    ])
+    await vi.waitFor(() => {
+      expect(getMessages).toHaveBeenCalledTimes(1)
+      const assistant = session.entries.value.at(-1)
+      assert(assistant?.role === 'assistant')
+      expect(assistant.parts).toEqual([
+        { type: 'text', text: 'partial from socket', state: 'done' }
+      ])
+    })
   })
 
   it('(g22) a settlement failure after the fetch is reported, not floated as an unhandled rejection', async () => {

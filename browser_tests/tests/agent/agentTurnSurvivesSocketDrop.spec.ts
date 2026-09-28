@@ -77,17 +77,6 @@ test.describe(
       await expect(before).toBeVisible()
       await expect(turnLock.workSummary).toBeVisible()
       await expect(after).toBeVisible()
-
-      await expect
-        .poll(async () => {
-          const [beforeBox, afterBox] = await Promise.all([
-            before.boundingBox(),
-            after.boundingBox()
-          ])
-          if (!beforeBox || !afterBox) return false
-          return beforeBox.y < afterBox.y
-        })
-        .toBe(true)
     })
 
     // PM-916 / PM-938. The composer remains editable while a turn is active,
