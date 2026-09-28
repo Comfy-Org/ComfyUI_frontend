@@ -444,6 +444,22 @@ describe('CinematicStudio', () => {
     ).toHaveTextContent('85mm')
   })
 
+  it('names the camera chip by its body when the focal length is left to auto', async () => {
+    const user = renderStudio()
+
+    await user.click(screen.getByRole('button', { name: 'Camera: 50mm' }))
+    const picker = screen.getByRole('dialog', { name: 'Camera' })
+    await user.click(
+      within(
+        within(picker).getByRole('radiogroup', { name: 'Focal length' })
+      ).getByRole('radio', { name: 'Auto' })
+    )
+
+    expect(
+      screen.getByRole('button', { name: 'Camera: Large format' })
+    ).toBeInTheDocument()
+  })
+
   it('sends a character reference with the prompt that names it', async () => {
     vi.mocked(router_render).mockImplementation(async (slug) => rendered(slug))
     const user = renderStudio()

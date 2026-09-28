@@ -14,6 +14,7 @@ import {
 } from '../../../lib/workshop/cinematic-studio/catalog'
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import CinematicDirectionIcon from './CinematicDirectionIcon.vue'
 import CinematicTooltip from './CinematicTooltip.vue'
 
 const {
@@ -35,7 +36,7 @@ const segments = computed(() =>
       part: group.part,
       title: tc(group.title, locale),
       label: tc(option.label, locale),
-      preview: option.preview,
+      option: option.id,
       palette: option.palette
     }
   })
@@ -68,14 +69,8 @@ const segments = computed(() =>
           "
           @click="emit('open', segment.part)"
         >
-          <img
-            v-if="segment.preview"
-            :src="segment.preview"
-            alt=""
-            class="size-6 shrink-0 rounded-md object-cover"
-          />
           <span
-            v-else-if="segment.palette"
+            v-if="segment.palette"
             class="flex size-6 shrink-0 overflow-hidden rounded-md"
             aria-hidden="true"
           >
@@ -86,10 +81,11 @@ const segments = computed(() =>
               :style="{ backgroundColor: color }"
             />
           </span>
-          <span
+          <CinematicDirectionIcon
             v-else
-            class="size-6 shrink-0 rounded-md bg-transparency-white-t8"
-            aria-hidden="true"
+            :part="segment.part"
+            :option="segment.option"
+            class="size-7 shrink-0 text-primary-warm-white"
           />
         </button>
       </CinematicTooltip>
