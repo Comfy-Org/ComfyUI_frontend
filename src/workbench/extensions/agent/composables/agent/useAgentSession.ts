@@ -367,6 +367,21 @@ export function useAgentSession(deps: AgentSessionDeps) {
     for (const event of buffer.events.splice(0)) handleAgentEvent(event)
   }
 
+  /**
+   * Turns whose liveness came from a transcript snapshot rather than from a
+   * turn this client started. A snapshot is taken at one instant and the
+   * stream carries no replay, so a terminal frame broadcast before this
+   * session's socket attached reaches nobody: the row still read `streaming`
+   * when the GET ran, and the frame that would have settled it is gone. Such a
+   * turn has no in-flight local content to protect, which is what lets a 409
+   * retire it outright.
+   */
+  const snapshotTurns = new Set<TurnId>()
+
+  function rememberSnapshotTurn(turnId: TurnId | null): void {
+    if (turnId !== null) snapshotTurns.add(turnId)
+  }
+
   async function hydrateFromServer(
     threadId: string,
     isCurrent: () => boolean = () => true
@@ -376,6 +391,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       const history = await rest.getMessages(threadId)
       if (conversationStore.threadId !== threadId || !isCurrent()) return false
       conversationStore.hydrate(history)
+      rememberSnapshotTurn(conversationStore.activeTurnId)
       drainHydration(buffer)
       await workflow?.restored?.(conversationStore.latestWorkflowId, isCurrent)
       if (conversationStore.threadId !== threadId || !isCurrent()) return false
@@ -403,8 +419,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     // The buffers belong to this instance, so a hydrate still in flight would
     // replay into whatever the successor has set up by then. Deliver now,
     // while the turns these frames describe are still the ones on the store.
-    // Snapshot and clear first: replaying a frame can arm a fresh hydration,
-    // and a live iterator would drain that one too -- before its GET returns.
+    // Clear before replaying: a replayed frame runs `heldForHydration` again,
+    // and a buffer still registered would simply re-capture it.
     const armed = [...hydrations.values()]
     hydrations.clear()
     for (const buffer of armed) drainHydration(buffer)
@@ -789,27 +805,26 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function handleStopFailure(error: unknown, turnId: TurnId): void {
     if (error instanceof AgentApiError) {
-      // 409 means the row is already terminal, so the turn ended on its own
-      // and the socket still owes us its last frames. Both the error and the
-      // `stopping` phase are held deliberately: `handleMessageDone` settles
-      // the turn, keeps the trailing content, and promotes the phase to
-      // `ready`, which is the only route to an editable prompt. Resetting the
-      // phase here would unblock a later Stop but cost that promotion -- and
-      // buy nothing, since the only run where the phase stays stuck is the one
-      // where no frame arrives, which leaves the turn streaming regardless.
-      if (error.status === 409) return
-      // 404 is the other shape: a row still marked `streaming` with no process
-      // behind it, which hydration now restores as live. Without settling it
-      // here the indicator spins and Stop is offered for a turn no frame will
-      // ever end. Only the inline engine reports it -- `ErrTurnNotRunning` has
-      // one producer (`agent/main.go` realLauncher) and every deployed overlay
-      // pins AGENT_ENGINE=temporal, whose canceller passes CancelWorkflow
-      // straight through, so the same orphan arrives as a 500. That is not
-      // separable from a transient failure here, and guessing would tear down
-      // a turn that is still running; recovering it needs the backend to map
-      // that error, which is why this stops at 404.
-      if (error.status === 404 && conversationStore.activeTurnId === turnId)
+      // 409 and 404 both mean the server has no turn to stop. They differ in
+      // what else is owed: 409 says the row is already terminal, so a turn
+      // this client started still has trailing frames coming, and swallowing
+      // the error lets `handleMessageDone` deliver them and promote the phase
+      // to `ready` -- the only route to an editable prompt. A turn restored
+      // from a snapshot has no such frames to wait for, so the same 409 is the
+      // end of it. 404 says the row is still `streaming` with nothing behind
+      // it; that is definitive for the turn asked about, where other failures
+      // may be transient and must not tear down a turn still running.
+      const terminal =
+        error.status === 404 ||
+        (error.status === 409 && snapshotTurns.has(turnId))
+      if (terminal && conversationStore.activeTurnId === turnId) {
         conversationStore.abortActiveTurn()
+        snapshotTurns.delete(turnId)
+      }
+      if (error.status === 409) {
+        if (terminal) promptEditState.value = { phase: 'idle' }
+        return
+      }
       promptEditState.value = { phase: 'idle' }
       pushError(error.message)
       return

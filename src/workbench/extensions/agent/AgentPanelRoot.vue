@@ -1111,6 +1111,11 @@ onBeforeUnmount(() => {
   mintPortWiring.detach()
   exitNodeSelectionMode()
   stop()
+  // Again, because `stop()` drains any frames a hydrate was still holding and
+  // an `agent_active_tab` among them runs `enqueueActiveTab`, which mints a
+  // generation of its own -- one the bump above cannot have invalidated. Left
+  // at that, a tab is created and opened on the canvas after the panel is gone.
+  ++activeTabGeneration
   tabActivity.setEditing(null)
   tabActivity.setCreating(false)
   agentMinimapLayer.dispose()

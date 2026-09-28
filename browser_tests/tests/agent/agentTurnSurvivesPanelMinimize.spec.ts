@@ -87,8 +87,6 @@ test.describe(
         await test.step('reopened panel still shows the turn running', async () => {
           await expect(turnLock.userBubbles).toHaveText([PROMPT])
 
-          // The reported symptom: the panel came back looking like a finished
-          // thread while the server was still building.
           await expect(turnLock.liveProgressRow).toBeVisible()
           await expect(turnLock.stopButton).toBeVisible()
           await expect(turnLock.workSummary).toHaveCount(0)
@@ -107,10 +105,6 @@ test.describe(
         })
 
         await test.step('a later frame for that turn still renders', async () => {
-          // The server never stopped running this turn, so it keeps
-          // broadcasting the same message_id. The restored turn has to be the
-          // one that receives it: without a transport keyed to that id,
-          // `agentConversationStore.ingest` drops the frame on the floor.
           turnLock.push(await getWebSocket(), POST_RECONNECT_EVENT)
 
           await expect(

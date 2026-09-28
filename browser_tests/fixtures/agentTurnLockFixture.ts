@@ -2,7 +2,6 @@ import { expect, mergeTests } from '@playwright/test'
 import type { Locator, Page, WebSocketRoute } from '@playwright/test'
 
 import type {
-  AgentCancelAccepted,
   AgentError,
   AgentMessage,
   AgentTurnAccepted
@@ -73,17 +72,15 @@ export const TURN_DONE_EVENT: AgentWsEvent = {
  * state when the turn completes, fails, or is cancelled. Dropping the client's
  * socket does not touch it — that asymmetry is what these specs exercise.
  *
- * `transcript()` is the REST hydration input the minimize/restore specs read:
- * its assistant row carries `streaming` for exactly as long as the turn runs,
- * which is what a reopened panel uses to learn the turn is still going. The
- * cancel route is still unreached, kept so a spec that clicks Stop has a
- * faithful server to click against rather than one that makes the fix look
- * broken.
+ * `transcript()` is the REST hydration input the minimize/restore specs read,
+ * and this fake keeps its assistant row `streaming` for exactly as long as the
+ * turn it simulates. The real server is weaker: a row can outlive the process
+ * running it and stay `streaming` with nothing behind it. That orphan is out of
+ * scope here, so these specs read a status that always matches the turn.
  *
- * One deliberate infidelity: the assistant row's `id` is `TURN_ID`, so row id
- * and turn id coincide here where the real server mints them separately. That
- * keeps these specs on the turn-lock behaviour they exist for, at the cost of
- * being unable to reach anything that turns on the two differing.
+ * One deliberate infidelity beyond that: the assistant row's `id` is `TURN_ID`,
+ * so row id and turn id coincide where the real server mints them separately.
+ * That keeps these specs on the turn-lock behaviour they exist for.
  */
 class TurnLockServer {
   private streaming = false
@@ -106,10 +103,6 @@ class TurnLockServer {
 
   countPost(): void {
     this.posts++
-  }
-
-  completeTurn(): void {
-    this.streaming = false
   }
 
   transcript(): AgentMessage[] {
@@ -165,12 +158,6 @@ async function routeTurnLock(
       ...jsonRoute(server.startTurn(request.content)),
       status: 202
     })
-  })
-
-  await page.route('**/api/agent/threads/*/messages/*/cancel', (route) => {
-    server.completeTurn()
-    const accepted: AgentCancelAccepted = { status: 'cancelling' }
-    return route.fulfill(jsonRoute(accepted))
   })
 }
 

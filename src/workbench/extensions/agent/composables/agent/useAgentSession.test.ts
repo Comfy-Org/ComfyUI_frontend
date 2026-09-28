@@ -1284,6 +1284,50 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(conversation.activeTurnId).toBeNull()
   })
 
+  // The done-before-open ordering, which (b4b) cannot reach because it emits
+  // through a listener already installed. Here the turn ends while this
+  // session's socket is still attaching, so the frame reaches nobody and is
+  // never replayed -- yet the GET, taken at an earlier instant, still reports
+  // `streaming`. Nothing will settle the turn it restores, so the 409 that
+  // Stop earns against the now-terminal row has to be the thing that does.
+  it('settles a snapshot-restored turn whose completion was never delivered', async () => {
+    const cancelMessage = vi
+      .fn()
+      .mockRejectedValue(
+        new AgentApiError('turn is not running', 409, undefined)
+      )
+    const rest = fakeRest({
+      cancelMessage,
+      getMessages: vi.fn(
+        async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'turn-1', 'go'),
+          {
+            ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+            content: {},
+            status: 'streaming'
+          }
+        ]
+      )
+    })
+    const conversation = useAgentConversationStore()
+
+    const minimized = useAgentSession({ rest, events: fakeEvents().source })
+    minimized.start()
+    await minimized.sendMessage('go')
+    minimized.stop()
+    await Promise.resolve()
+
+    const reopened = useAgentSession({ rest, events: fakeEvents().source })
+    reopened.start()
+    await vi.waitFor(() => expect(reopened.isStreaming.value).toBe(true))
+
+    await reopened.stopTurn('button')
+
+    expect(reopened.isStreaming.value).toBe(false)
+    expect(conversation.activeTurnId).toBeNull()
+    expect(reopened.notices.value).toHaveLength(0)
+  })
+
   // The rejection can outlive the turn it was issued for: the stop is awaited
   // while frames keep arriving, so by the time a 404 lands the user may have
   // sent again. Settling whatever is active then would abandon a turn that is
