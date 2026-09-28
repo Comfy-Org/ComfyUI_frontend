@@ -435,6 +435,62 @@ describe('normalizeAgentTranscript', () => {
     ])
   })
 
+  // A turn's own later row retires it just as a later turn does. Rows of one
+  // turn share a message, so the turn-level check above cannot see this: the
+  // stale row's `pending` still points at the message the newest turn owns.
+  it('ignores a streaming row a later row of the same turn completed', () => {
+    const started = row(1, 'assistant', 'turn-a', '', 'row-1')
+    started.status = 'streaming'
+    started.content = {
+      tool_calls: [{ id: 'call-1', tool_name: 'add_node', status: 'running' }]
+    }
+
+    const transcript = normalizeAgentTranscript([
+      started,
+      row(2, 'assistant', 'turn-a', 'all done', 'row-2')
+    ])
+
+    expect(transcript.pending).toBeUndefined()
+    expect(transcript.messages[0].streaming).toBe(false)
+    expect(transcript.messages[0].parts).toEqual([
+      {
+        type: 'tool',
+        callId: 'call-1',
+        name: 'add_node',
+        state: 'done',
+        ok: false
+      },
+      { type: 'text', text: 'all done', state: 'done' }
+    ])
+  })
+
+  // Only a transport can resolve an ask, and a demoted row is not getting one.
+  // Kept, the card renders enabled and answering it posts against a turn that
+  // is no longer active -- a button that silently does nothing.
+  it('drops the approval card from a streaming row a later turn retired', () => {
+    const asked = row(1, 'assistant', 'turn-a', '', 'row-1')
+    asked.status = 'streaming'
+    asked.pending_ask = {
+      message_id: 'row-1',
+      ask_id: 'ask-1',
+      kind: 'run_approval',
+      prompt: 'Run it?',
+      options: [],
+      min_selections: 1,
+      max_selections: 1,
+      allow_other: false
+    }
+
+    const transcript = normalizeAgentTranscript([
+      asked,
+      row(2, 'user', 'turn-b', 'next', 'row-2'),
+      row(3, 'assistant', 'turn-b', 'all done', 'row-3')
+    ])
+
+    expect(transcript.pending).toBeUndefined()
+    expect(transcript.messages[0].parts).toEqual([])
+  })
+
   it.for(['success', 'failed', 'cancelled', 'timeout', 'unrecognized'])(
     'maps terminal tool-call status %s through the broadened vocabulary',
     (status) => {

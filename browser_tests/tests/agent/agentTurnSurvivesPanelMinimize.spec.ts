@@ -49,17 +49,21 @@ test.describe(
       turnLock,
       getWebSocket
     }) => {
-      await turnLock.openOnBlankWorkflow()
-      await turnLock.minimizePanel()
-      await turnLock.restorePanel()
+      await test.step('minimize and restore an idle panel', async () => {
+        await turnLock.openOnBlankWorkflow()
+        await turnLock.minimizePanel()
+        await turnLock.restorePanel()
+      })
 
-      await turnLock.startTurn(PROMPT)
-      await expect(turnLock.workSummary).toHaveCount(0)
+      await test.step('run a turn to completion in the restored panel', async () => {
+        await turnLock.startTurn(PROMPT)
+        await expect(turnLock.workSummary).toHaveCount(0)
 
-      turnLock.push(await getWebSocket(), TURN_DONE_EVENT)
+        turnLock.push(await getWebSocket(), TURN_DONE_EVENT)
 
-      await expect(turnLock.workSummary).toBeVisible()
-      await expect(turnLock.sendButton).toBeVisible()
+        await expect(turnLock.workSummary).toBeVisible()
+        await expect(turnLock.sendButton).toBeVisible()
+      })
     })
 
     test.describe('minimized while a turn is still running', () => {
@@ -71,73 +75,85 @@ test.describe(
       test('keeps the turn marked as running after the panel is reopened', async ({
         turnLock
       }) => {
-        await expect(turnLock.workingRow).toBeVisible()
-        await expect(turnLock.stopButton).toBeVisible()
-        await expect(turnLock.workSummary).toHaveCount(0)
+        await test.step('minimize while the turn is live', async () => {
+          await expect(turnLock.workingRow).toBeVisible()
+          await expect(turnLock.stopButton).toBeVisible()
+          await expect(turnLock.workSummary).toHaveCount(0)
 
-        await turnLock.minimizePanel()
-        await turnLock.restorePanel()
+          await turnLock.minimizePanel()
+          await turnLock.restorePanel()
+        })
 
-        await expect(turnLock.userBubbles).toHaveText([PROMPT])
+        await test.step('reopened panel still shows the turn running', async () => {
+          await expect(turnLock.userBubbles).toHaveText([PROMPT])
 
-        // The reported symptom: the panel came back looking like a finished
-        // thread while the server was still building.
-        await expect(turnLock.liveProgressRow).toBeVisible()
-        await expect(turnLock.stopButton).toBeVisible()
-        await expect(turnLock.workSummary).toHaveCount(0)
+          // The reported symptom: the panel came back looking like a finished
+          // thread while the server was still building.
+          await expect(turnLock.liveProgressRow).toBeVisible()
+          await expect(turnLock.stopButton).toBeVisible()
+          await expect(turnLock.workSummary).toHaveCount(0)
+        })
       })
 
       test('keeps rendering the turn after the panel is reopened', async ({
         turnLock,
         getWebSocket
       }) => {
-        await turnLock.minimizePanel()
-        await turnLock.restorePanel()
+        await test.step('minimize and reopen over the live turn', async () => {
+          await turnLock.minimizePanel()
+          await turnLock.restorePanel()
 
-        await expect(turnLock.userBubbles).toHaveText([PROMPT])
+          await expect(turnLock.userBubbles).toHaveText([PROMPT])
+        })
 
-        // The server never stopped running this turn, so it keeps broadcasting
-        // the same message_id. The restored turn has to be the one that
-        // receives it: without a transport keyed to that id,
-        // `agentConversationStore.ingest` drops the frame on the floor.
-        turnLock.push(await getWebSocket(), POST_RECONNECT_EVENT)
+        await test.step('a later frame for that turn still renders', async () => {
+          // The server never stopped running this turn, so it keeps
+          // broadcasting the same message_id. The restored turn has to be the
+          // one that receives it: without a transport keyed to that id,
+          // `agentConversationStore.ingest` drops the frame on the floor.
+          turnLock.push(await getWebSocket(), POST_RECONNECT_EVENT)
 
-        await expect(
-          turnLock.panel.getByText(POST_RECONNECT_TEXT)
-        ).toBeVisible()
+          await expect(
+            turnLock.panel.getByText(POST_RECONNECT_TEXT)
+          ).toBeVisible()
+        })
       })
 
       test('does not reject the next message after the panel is reopened', async ({
         turnLock
       }) => {
-        await turnLock.minimizePanel()
-        await turnLock.restorePanel()
+        await test.step('reopened panel withholds Send', async () => {
+          await turnLock.minimizePanel()
+          await turnLock.restorePanel()
 
-        await expect(turnLock.composer).toBeVisible()
-        await expect(turnLock.userBubbles).toHaveText([PROMPT])
+          await expect(turnLock.composer).toBeVisible()
+          await expect(turnLock.userBubbles).toHaveText([PROMPT])
 
-        // Composer renders Stop and Send as one button whose label flips, so
-        // Send being absent IS Stop being offered: the restored turn withholds
-        // the send the server would answer with 409.
-        await expect(turnLock.sendButton).toHaveCount(0)
-        await expect(turnLock.stopButton).toBeVisible()
+          // Composer renders Stop and Send as one button whose label flips, so
+          // Send being absent IS Stop being offered: the restored turn
+          // withholds the send the server would answer with 409.
+          await expect(turnLock.sendButton).toHaveCount(0)
+          await expect(turnLock.stopButton).toBeVisible()
+        })
 
-        // Enter is the one affordance left that could still post. A running
-        // turn swallows it, so the draft staying in the composer is the settle
-        // that makes the three negative assertions below real checks rather
-        // than ones that pass on a send still in flight.
-        await turnLock.composer.fill('are you still there?')
-        await turnLock.composer.press('Enter')
-        await expect(turnLock.composer).toHaveText('are you still there?')
+        await test.step('Enter does not post a second message', async () => {
+          // Enter is the one affordance left that could still post. A running
+          // turn swallows it, so the draft staying in the composer is the
+          // settle that makes the three negative assertions below real checks
+          // rather than ones that pass on a send still in flight.
+          await turnLock.composer.fill('are you still there?')
+          await turnLock.composer.press('Enter')
+          await expect(turnLock.composer).toHaveText('are you still there?')
 
-        await expect(turnLock.userBubbles).toHaveText([PROMPT])
-        await expect(
-          turnLock.panel
-            .getByRole('alert')
-            .filter({ hasText: TURN_IN_PROGRESS_MESSAGE })
-        ).toHaveCount(0)
-        expect(turnLock.postAttempts()).toBe(1)
-        expect(turnLock.rejectedPosts()).toBe(0)
+          await expect(turnLock.userBubbles).toHaveText([PROMPT])
+          await expect(
+            turnLock.panel
+              .getByRole('alert')
+              .filter({ hasText: TURN_IN_PROGRESS_MESSAGE })
+          ).toHaveCount(0)
+          expect(turnLock.postAttempts()).toBe(1)
+          expect(turnLock.rejectedPosts()).toBe(0)
+        })
       })
     })
   }

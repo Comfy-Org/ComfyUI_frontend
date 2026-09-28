@@ -304,7 +304,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   /**
-   * Buffers held by hydrates still fetching, in the order they were armed.
+   * The buffer holding for each thread whose hydrate is still fetching.
    * `subscribe()` runs before the GET resolves, and until the transcript
    * installs a transport there is nothing for `ingest` to route a frame to --
    * a panel reopened over a live turn has no background entry to fall back on
@@ -312,51 +312,39 @@ export function useAgentSession(deps: AgentSessionDeps) {
    * way leaves the turn the transcript then restores running for good
    * (PM-1776); losing a delta silently truncates the reply.
    *
-   * More than one at a time is ordinary: `start()`'s hydrate is often still
-   * fetching when the user picks a thread out of history.
+   * More than one thread at a time is ordinary: `start()`'s hydrate is often
+   * still fetching when the user picks a thread out of history. Keying by
+   * thread is what makes "one buffer per thread" unrepresentable rather than
+   * merely maintained.
    */
-  const hydrations: HydrationBuffer[] = []
+  const hydrations = new Map<string, HydrationBuffer>()
 
   function bufferFor(
     threadId: string | undefined
   ): HydrationBuffer | undefined {
-    if (threadId === undefined) return undefined
-    for (let index = hydrations.length - 1; index >= 0; index--) {
-      const buffer = hydrations[index]
-      if (buffer.threadId === threadId) return buffer
-    }
-    return undefined
+    return threadId === undefined ? undefined : hydrations.get(threadId)
   }
 
   /**
    * Arms a buffer for the thread a hydrate is about to fetch, taking over the
-   * frames -- and the registration -- of any in-flight hydrate of that thread,
-   * so a thread never has more than one buffer holding for it.
+   * frames of any in-flight hydrate of that thread.
    *
    * Claimed here rather than when that earlier hydrate finishes, because the
    * two GETs can resolve in either order and only this end of the overlap is
    * ordered. Replayed after ours, its older delta lands on a turn our
    * `agent_message_done` has already settled -- and both `ingest` and a
    * settled transport drop what they cannot place.
-   *
-   * Retired, not merely emptied: a superseded buffer left registered is one
-   * `bufferFor` finds again while a later drain replays through it, holding
-   * the frame instead of delivering it. An `agent_message_done` held there is
-   * a turn `resumeBackgroundTurn` restores as permanently running -- PM-1776's
-   * own symptom, through the machinery that exists to prevent it.
    */
   function armHydration(threadId: string): HydrationBuffer {
-    const superseded = hydrations.filter((armed) => armed.threadId === threadId)
-    for (const armed of superseded)
-      hydrations.splice(hydrations.indexOf(armed), 1)
+    const superseded = hydrations.get(threadId)
     const buffer: HydrationBuffer = {
       threadId,
       // Moved, not copied: a superseded hydrate still drains from its own
       // `finally`, and a frame left behind there is replayed a second time
       // into whatever is active by then.
-      events: superseded.flatMap((armed) => armed.events.splice(0))
+      events: superseded?.events.splice(0) ?? []
     }
-    hydrations.push(buffer)
+    hydrations.set(threadId, buffer)
     return buffer
   }
 
@@ -368,10 +356,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
    * `agent_message_done` is one `resumeBackgroundTurn` later restores as
    * permanently running. Idempotent, so the success path and the `finally`
    * can both call it.
+   *
+   * Only ever deletes its own registration: a superseded hydrate draining
+   * late would otherwise unregister the buffer that replaced it, leaving the
+   * live hydrate's frames with nowhere to be held.
    */
   function drainHydration(buffer: HydrationBuffer): void {
-    const index = hydrations.indexOf(buffer)
-    if (index >= 0) hydrations.splice(index, 1)
+    if (hydrations.get(buffer.threadId) === buffer)
+      hydrations.delete(buffer.threadId)
     for (const event of buffer.events.splice(0)) handleAgentEvent(event)
   }
 
@@ -411,7 +403,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
     // The buffers belong to this instance, so a hydrate still in flight would
     // replay into whatever the successor has set up by then. Deliver now,
     // while the turns these frames describe are still the ones on the store.
-    for (const buffer of hydrations.splice(0)) drainHydration(buffer)
+    // Snapshot and clear first: replaying a frame can arm a fresh hydration,
+    // and a live iterator would drain that one too -- before its GET returns.
+    const armed = [...hydrations.values()]
+    hydrations.clear()
+    for (const buffer of armed) drainHydration(buffer)
     const stoppedGeneration = ownedGeneration
     queueMicrotask(() => {
       if (stoppedGeneration !== sessionGeneration) return
@@ -791,9 +787,29 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (metadata !== null) useTelemetry()?.trackAgentStopClicked(metadata)
   }
 
-  function handleStopFailure(error: unknown): void {
+  function handleStopFailure(error: unknown, turnId: TurnId): void {
     if (error instanceof AgentApiError) {
+      // 409 means the row is already terminal, so the turn ended on its own
+      // and the socket still owes us its last frames. Both the error and the
+      // `stopping` phase are held deliberately: `handleMessageDone` settles
+      // the turn, keeps the trailing content, and promotes the phase to
+      // `ready`, which is the only route to an editable prompt. Resetting the
+      // phase here would unblock a later Stop but cost that promotion -- and
+      // buy nothing, since the only run where the phase stays stuck is the one
+      // where no frame arrives, which leaves the turn streaming regardless.
       if (error.status === 409) return
+      // 404 is the other shape: a row still marked `streaming` with no process
+      // behind it, which hydration now restores as live. Without settling it
+      // here the indicator spins and Stop is offered for a turn no frame will
+      // ever end. Only the inline engine reports it -- `ErrTurnNotRunning` has
+      // one producer (`agent/main.go` realLauncher) and every deployed overlay
+      // pins AGENT_ENGINE=temporal, whose canceller passes CancelWorkflow
+      // straight through, so the same orphan arrives as a 500. That is not
+      // separable from a transient failure here, and guessing would tear down
+      // a turn that is still running; recovering it needs the backend to map
+      // that error, which is why this stops at 404.
+      if (error.status === 404 && conversationStore.activeTurnId === turnId)
+        conversationStore.abortActiveTurn()
       promptEditState.value = { phase: 'idle' }
       pushError(error.message)
       return
@@ -822,7 +838,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       await rest.cancelMessage(threadId, turnId)
       trackCommittedStop(stopMetadata)
     } catch (error) {
-      handleStopFailure(error)
+      handleStopFailure(error, turnId)
     }
   }
 

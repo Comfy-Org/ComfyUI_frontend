@@ -401,7 +401,7 @@ describe('useAgentSession (v1 composition root)', () => {
   // good -- Stop answered 409 and swallowed, Send never offered.
   it('(b4b) a done that lands while the reopen is hydrating still settles the turn', async () => {
     const conversation = useAgentConversationStore()
-    let deliverHistory!: (history: AgentMessages) => void
+    let deliverHistory: ((history: AgentMessages) => void) | undefined
     const rest = fakeRest({
       getMessages: vi.fn(
         () =>
@@ -422,6 +422,7 @@ describe('useAgentSession (v1 composition root)', () => {
     reopened.start()
 
     emit(done('msg-1'))
+    assert(deliverHistory !== undefined)
     deliverHistory([
       historyRow(1, 'user', 'turn-1', 'add an audio output node'),
       {
@@ -446,7 +447,7 @@ describe('useAgentSession (v1 composition root)', () => {
   // permanently running.
   it('(b4c) a superseded hydrate still delivers the done its stashed turn waits on', async () => {
     const conversation = useAgentConversationStore()
-    let deliverHistory!: (history: AgentMessages) => void
+    let deliverHistory: ((history: AgentMessages) => void) | undefined
     const rest = fakeRest({
       getMessages: vi.fn(
         () =>
@@ -468,6 +469,7 @@ describe('useAgentSession (v1 composition root)', () => {
     session.newChat('new_chat_button')
 
     emit(done('msg-1'))
+    assert(deliverHistory !== undefined)
     deliverHistory([])
     await reselect
 
@@ -547,15 +549,16 @@ describe('useAgentSession (v1 composition root)', () => {
   })
 
   // Two overlapping hydrates of one thread, which `onSelectHistory` reaches on
-  // a double-click. Both resolution orders, because only arrival order may
-  // decide the replay: a done ahead of an older delta settles the turn that
-  // delta still has to reach, and a settled turn drops what it cannot place.
+  // a double-click. Both resolution orders assert the same outcome, and that
+  // symmetry is the point: arming moves the superseded buffer's frames, so
+  // neither GET resolving first may change what is replayed. (b4g) below is
+  // what fails if that move degrades to a copy; these two only fail together.
   it.for([
     ['superseded hydrate first', [0, 1]],
     ['newer hydrate first', [1, 0]]
   ] as const)(
     '(b4e) replays both hydrates in arrival order, %s',
-    async ([, order]) => {
+    async ([, [first, second]]) => {
       const deliver: ((history: AgentMessages) => void)[] = []
       const history: AgentMessages = [
         historyRow(1, 'user', 'turn-1', 'go'),
@@ -588,7 +591,8 @@ describe('useAgentSession (v1 composition root)', () => {
       const reselect = session.loadThread('th-1')
       emit(done('msg-1'))
 
-      for (const index of order) deliver[index](history)
+      deliver[first](history)
+      deliver[second](history)
       await reselect
 
       const assistant = session.entries.value.at(-1)
@@ -646,6 +650,55 @@ describe('useAgentSession (v1 composition root)', () => {
         .flatMap((part) => (part.type === 'text' ? [part.text] : []))
         .join('')
     ).toBe('half ')
+  })
+
+  // The mirror of (b4g): there the superseding hydrate drains first, here the
+  // superseded one does, while its replacement is still fetching. Retiring a
+  // thread's registration on that drain takes the live buffer with it, and the
+  // `done` arriving in the window left behind reaches a turn that is stashed
+  // rather than active, so `ingest` drops it -- restoring the turn for good.
+  it('(b4h) keeps buffering for a hydrate whose superseded twin drained first', async () => {
+    const conversation = useAgentConversationStore()
+    const deliver: ((history: AgentMessages) => void)[] = []
+    const history: AgentMessages = [
+      historyRow(1, 'user', 'turn-1', 'go'),
+      {
+        ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+        content: {},
+        status: 'streaming'
+      }
+    ]
+    const rest = fakeRest({
+      getMessages: vi.fn(
+        () =>
+          new Promise<AgentMessages>((resolve) => {
+            deliver.push(resolve)
+          })
+      )
+    })
+
+    const minimized = useAgentSession({ rest, events: fakeEvents().source })
+    minimized.start()
+    await minimized.sendMessage('go')
+    minimized.stop()
+    await Promise.resolve()
+
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+    const superseded = session.loadThread('th-1')
+    const reselect = session.loadThread('th-1')
+
+    deliver[1](history)
+    await superseded
+
+    emit(done('msg-1'))
+
+    deliver[2](history)
+    await reselect
+
+    expect(conversation.isStreaming).toBe(false)
+    expect(conversation.activeTurnId).toBeNull()
   })
 
   it('does not persist a send that resolves after the session stops', async () => {
@@ -1185,6 +1238,92 @@ describe('useAgentSession (v1 composition root)', () => {
       turn_elapsed_ms: 450
     })
     now.mockRestore()
+  })
+
+  // PM-1776's other end. Reading `streaming` as live restores a row whose
+  // worker died too, and the server only reclaims those on a boot at least
+  // `staleStreamingCutoff` later -- so the row outlives its process by a long
+  // way. 404 is how the server says the row is an orphan rather than that the
+  // stop landed; ignoring it leaves the indicator up and Stop offered for a
+  // turn no frame will ever settle, which no reopen or refresh escapes.
+  it('settles a restored turn the server reports as no longer running', async () => {
+    const cancelMessage = vi
+      .fn()
+      .mockRejectedValue(
+        new AgentApiError('turn is no longer running', 404, undefined)
+      )
+    const rest = fakeRest({
+      cancelMessage,
+      getMessages: vi.fn(
+        async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'turn-1', 'go'),
+          {
+            ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+            content: {},
+            status: 'streaming'
+          }
+        ]
+      )
+    })
+    const conversation = useAgentConversationStore()
+
+    const minimized = useAgentSession({ rest, events: fakeEvents().source })
+    minimized.start()
+    await minimized.sendMessage('go')
+    minimized.stop()
+    await Promise.resolve()
+
+    const reopened = useAgentSession({ rest, events: fakeEvents().source })
+    reopened.start()
+    await vi.waitFor(() => expect(reopened.isStreaming.value).toBe(true))
+
+    await reopened.stopTurn('button')
+
+    expect(cancelMessage).toHaveBeenCalledWith('th-1', 'msg-1')
+    expect(reopened.isStreaming.value).toBe(false)
+    expect(conversation.activeTurnId).toBeNull()
+  })
+
+  // The rejection can outlive the turn it was issued for: the stop is awaited
+  // while frames keep arriving, so by the time a 404 lands the user may have
+  // sent again. Settling whatever is active then would abandon a turn that is
+  // genuinely running -- the very state this change exists to prevent.
+  it('leaves a newer turn alone when a stale stop reports not running', async () => {
+    let rejectCancel: ((error: unknown) => void) | undefined
+    const cancelMessage = vi.fn(
+      () =>
+        new Promise<AgentCancelAccepted>((_resolve, reject) => {
+          rejectCancel = reject
+        })
+    )
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
+      .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-2' })
+    const conversation = useAgentConversationStore()
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ cancelMessage, postMessage }),
+      events: source
+    })
+    session.start()
+
+    await session.sendMessage('go')
+    const stopping = session.stopTurn('button')
+    emit(done('msg-1'))
+
+    await session.sendMessage('go again')
+    emit(delta('msg-2', 'working'))
+    expect(conversation.activeTurnId).toBe('msg-2')
+
+    assert(rejectCancel !== undefined)
+    rejectCancel(new AgentApiError('turn is no longer running', 404, undefined))
+    await stopping
+
+    expect(conversation.activeTurnId).toBe('msg-2')
+    expect(session.isStreaming.value).toBe(true)
   })
 
   it('tracks a stop when completion arrives before cancellation responds', async () => {

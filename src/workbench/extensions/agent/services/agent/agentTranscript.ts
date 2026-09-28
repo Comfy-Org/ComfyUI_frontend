@@ -357,32 +357,37 @@ function recordAssistantRow(
 
 /**
  * Strips the liveness a row's `streaming` status granted a message that turns
- * out not to be getting a transport. The tool parts matter as much as the
- * flag: `toolCallPartState` left any still-in-flight call at `streaming` on
- * the understanding that a transport would settle it, and nothing else can.
+ * out not to be getting a transport. The parts matter as much as the flag,
+ * and both kinds this row could have been granted are settled here because a
+ * transport is the only thing that could have settled either: a still-running
+ * tool call is clamped, and a `runApproval` ask is dropped the way
+ * `agent_ask_resolved` drops it -- left in place it renders an enabled card
+ * whose answer would be posted against a turn that is no longer active.
  */
 export function settleLiveMessage(message: AssistantMessage): void {
   message.streaming = false
-  message.parts = message.parts.map((part) =>
-    part.type === 'tool' && part.state === 'streaming'
-      ? { ...part, state: 'done', ok: false }
-      : part
-  )
+  message.parts = message.parts
+    .filter((part) => part.type !== 'runApproval')
+    .map((part) =>
+      part.type === 'tool' && part.state === 'streaming'
+        ? { ...part, state: 'done', ok: false }
+        : part
+    )
 }
 
 /**
  * The live turn the transcript may restore: only the thread's newest turn can
- * still be running. A `streaming` row an older one left behind is a stale
- * write the thread has moved past, and restoring it would hand the composer a
- * turn nothing will ever settle.
+ * still be running, and within that turn only its own newest assistant row
+ * decides. A `streaming` row that any later row has moved past — a newer turn's
+ * or its own turn's — is a stale write, and restoring it would hand the
+ * composer a turn nothing will ever settle.
  */
 function liveTranscriptTurn(
-  pending: NormalizedAgentTranscript['pending'],
+  pendingByTurn: Map<TurnId, NormalizedAgentTranscript['pending']>,
   assistants: Map<TurnId, AssistantMessage>
 ): NormalizedAgentTranscript['pending'] {
   const liveTurn = [...assistants.keys()].at(-1)
-  if (pending === undefined || liveTurn === undefined) return undefined
-  return pending.message === assistants.get(liveTurn) ? pending : undefined
+  return liveTurn === undefined ? undefined : pendingByTurn.get(liveTurn)
 }
 
 export function normalizeAgentTranscript(
@@ -395,7 +400,7 @@ export function normalizeAgentTranscript(
   const turnOrder: TurnId[] = []
   const seenTurns = new Set<TurnId>()
   const rowIds = new Set<string>()
-  let pending: NormalizedAgentTranscript['pending']
+  const pendingByTurn = new Map<TurnId, NormalizedAgentTranscript['pending']>()
   let latestWorkflowId: string | undefined
 
   for (const row of [...history].sort((a, b) => a.seq - b.seq)) {
@@ -415,12 +420,14 @@ export function normalizeAgentTranscript(
       if (workflowId) latestWorkflowId = workflowId
     }
     if (row.role === 'assistant') {
-      const rowPending = recordAssistantRow(row, turnId, text, assistants)
-      if (rowPending) pending = rowPending
+      pendingByTurn.set(
+        turnId,
+        recordAssistantRow(row, turnId, text, assistants)
+      )
     }
   }
 
-  const live = liveTranscriptTurn(pending, assistants)
+  const live = liveTranscriptTurn(pendingByTurn, assistants)
   const messages = turnOrder.map((turnId) => {
     const message = assistants.get(turnId) ?? createAssistantMessage(turnId)
     if (message === live?.message) message.streaming = true

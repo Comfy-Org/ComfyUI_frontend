@@ -73,10 +73,17 @@ export const TURN_DONE_EVENT: AgentWsEvent = {
  * state when the turn completes, fails, or is cancelled. Dropping the client's
  * socket does not touch it — that asymmetry is what these specs exercise.
  *
- * `transcript()` and the cancel route are not reached by the current specs.
- * They are here so the fake stays a faithful server: a repair that re-hydrates
- * on reconnect, or a spec that clicks Stop, needs both, and a half-modelled
- * server would make such a fix look broken.
+ * `transcript()` is the REST hydration input the minimize/restore specs read:
+ * its assistant row carries `streaming` for exactly as long as the turn runs,
+ * which is what a reopened panel uses to learn the turn is still going. The
+ * cancel route is still unreached, kept so a spec that clicks Stop has a
+ * faithful server to click against rather than one that makes the fix look
+ * broken.
+ *
+ * One deliberate infidelity: the assistant row's `id` is `TURN_ID`, so row id
+ * and turn id coincide here where the real server mints them separately. That
+ * keeps these specs on the turn-lock behaviour they exist for, at the cost of
+ * being unable to reach anything that turns on the two differing.
  */
 class TurnLockServer {
   private streaming = false
