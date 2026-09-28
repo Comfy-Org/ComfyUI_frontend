@@ -349,6 +349,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       const history = await rest.getMessages(threadId)
       if (conversationStore.threadId !== threadId || !isCurrent()) return false
       conversationStore.hydrate(history)
+      reconcileLiveTurns()
       await workflow?.restored?.(conversationStore.latestWorkflowId, isCurrent)
       if (conversationStore.threadId !== threadId || !isCurrent()) return false
       return true
@@ -937,6 +938,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const reconnected = connection === 'dropped'
     connection = 'live'
     if (!reconnected) return
+    reconcileLiveTurns()
+  }
+
+  function reconcileLiveTurns(): void {
     const turns = conversationStore
       .liveTurns()
       .filter((turn) => !recoveringTurns.has(recoveryKey(turn)))
