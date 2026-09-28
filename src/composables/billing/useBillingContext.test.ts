@@ -22,6 +22,7 @@ import {
 } from '@/platform/remoteConfig/remoteConfig'
 import { useAgentDockMount } from '@/workbench/extensions/agent/composables/useAgentDockMount'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import { api } from '@/scripts/api'
 
 import { useBillingContext as useSharedBillingContext } from './useBillingContext'
 
@@ -320,6 +321,21 @@ describe('useBillingContext', () => {
   it('exposes fetchStatus action', async () => {
     const { fetchStatus } = useBillingContext()
     await expect(fetchStatus()).resolves.toBeUndefined()
+  })
+
+  it('refreshes billing when Agent-effective funds change', async () => {
+    const context = useBillingContext()
+    await vi.waitFor(() => expect(context.isInitialized.value).toBe(true))
+    vi.mocked(workspaceApi.getBillingStatus).mockClear()
+
+    api.dispatchCustomEvent('agent_billing_status', {
+      has_funds: false,
+      as_of_ns: 1_790_000_000_000_000_000
+    })
+
+    await vi.waitFor(() =>
+      expect(workspaceApi.getBillingStatus).toHaveBeenCalledOnce()
+    )
   })
 
   it('exposes fetchBalance action', async () => {
