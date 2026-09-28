@@ -79,7 +79,7 @@ const facts = computed(() => [
       </p>
     </div>
     <div class="flex flex-col gap-8 lg:flex-row-reverse lg:items-start">
-      <aside
+      <div
         class="flex w-full flex-col gap-3 lg:sticky lg:top-24 lg:w-95 lg:shrink-0"
       >
         <Button
@@ -97,7 +97,7 @@ const facts = computed(() => [
         <p class="text-sm/relaxed text-primary-warm-gray">
           {{ t('workshop.workflow.apiNote') }}
         </p>
-      </aside>
+      </div>
 
       <div class="flex min-w-0 flex-1 flex-col gap-4">
         <div

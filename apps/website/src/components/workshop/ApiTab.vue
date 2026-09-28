@@ -241,7 +241,7 @@ const facts = computed(() => [
     </div>
 
     <div class="flex flex-col gap-8 lg:flex-row-reverse lg:items-start">
-      <aside
+      <div
         class="flex w-full flex-col gap-3 lg:sticky lg:top-24 lg:w-95 lg:shrink-0"
       >
         <Button
@@ -259,7 +259,7 @@ const facts = computed(() => [
           :rows="facts"
           :locale="locale"
         />
-      </aside>
+      </div>
 
       <div class="flex min-w-0 flex-1 flex-col gap-4">
         <div
