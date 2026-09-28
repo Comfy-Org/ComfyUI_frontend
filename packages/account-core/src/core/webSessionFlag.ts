@@ -67,16 +67,26 @@ async function probeIsOn(probe: () => Promise<boolean>): Promise<boolean> {
   }
 }
 
+async function loadClientHeader(): Promise<string | undefined> {
+  try {
+    const { COMFY_CLIENT } = await import('./requestAuth.js')
+    return COMFY_CLIENT
+  } catch {
+    return undefined
+  }
+}
+
 export async function resolveUnifiedWebSession({
   probe,
   ...options
 }: UnifiedWebSessionOptions): Promise<boolean> {
   if (!(await probeIsOn(probe))) return false
-  const { COMFY_CLIENT } = await import('./requestAuth.js')
+  const client = await loadClientHeader()
+  if (client === undefined) return false
   const body = await readFeatures(options, {
     credentials: 'include',
     cache: 'no-store',
-    headers: { 'X-Comfy-Client': COMFY_CLIENT }
+    headers: { 'X-Comfy-Client': client }
   })
   return readsLiteralTrue(body, 'unified_web_session')
 }
