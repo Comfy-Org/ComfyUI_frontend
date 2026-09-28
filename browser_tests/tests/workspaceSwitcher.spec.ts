@@ -2,10 +2,13 @@ import { expect } from '@playwright/test'
 
 import type {
   AgentMessage,
-  AgentThreadListResponse
+  AgentRunMode,
+  AgentThreadListResponse,
+  GlobalSetting
 } from '@comfyorg/ingest-types'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import { unsafeStorageScope } from '@/platform/workflow/persistence/testUtils/storageScope'
 
@@ -302,6 +305,22 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
       const threadId = new URL(route.request().url()).pathname.split('/').at(-2)
       return route.fulfill(jsonRoute(messages.get(threadId ?? '') ?? []))
     })
+    const runMode: AgentRunMode = {
+      mode: 'ask_approval',
+      credit_limit: null
+    }
+    await page.route('**/api/agent/run-mode', (route) =>
+      route.fulfill(jsonRoute(runMode))
+    )
+    const consent: GlobalSetting = {
+      key: AGENT_CONSENT_SETTING_ID,
+      value: true,
+      updated_at: '2026-09-28T00:00:00Z'
+    }
+    await page.route(
+      `**/api/global-settings/${AGENT_CONSENT_SETTING_ID}`,
+      (route) => route.fulfill(jsonRoute(consent))
+    )
     await page.route('**/api/features', (route) =>
       route.fulfill(
         jsonRoute({
@@ -316,6 +335,8 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
         teamThreadKey,
         personalBindingKey,
         teamBindingKey,
+        personalOnboardingKey,
+        teamOnboardingKey,
         personalThread,
         teamThread,
         personalBinding,
@@ -325,18 +346,34 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
         localStorage.setItem(teamThreadKey, teamThread)
         localStorage.setItem(
           personalBindingKey,
-          JSON.stringify({ [personalBinding]: 'workflows/personal.json' })
+          JSON.stringify({
+            [personalBinding]: {
+              tabPath: 'workflows/personal.json',
+              graphId: null,
+              confirmedAt: Date.now()
+            }
+          })
         )
         localStorage.setItem(
           teamBindingKey,
-          JSON.stringify({ [teamBinding]: 'workflows/team.json' })
+          JSON.stringify({
+            [teamBinding]: {
+              tabPath: 'workflows/team.json',
+              graphId: null,
+              confirmedAt: Date.now()
+            }
+          })
         )
+        localStorage.setItem(personalOnboardingKey, 'true')
+        localStorage.setItem(teamOnboardingKey, 'true')
       },
       {
         personalThreadKey: StorageKeys.agentThread(personalScope),
         teamThreadKey: StorageKeys.agentThread(teamScope),
         personalBindingKey: StorageKeys.agentWorkflowTabBindings(personalScope),
         teamBindingKey: StorageKeys.agentWorkflowTabBindings(teamScope),
+        personalOnboardingKey: `Comfy.AgentPanel.onboarded.${userId}.ws-personal`,
+        teamOnboardingKey: `Comfy.AgentPanel.onboarded.${userId}.ws-team`,
         personalThread,
         teamThread,
         personalBinding,
@@ -359,6 +396,9 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
       personalTranscript
     ])
     await expect(panel.getByText(teamTranscript)).toHaveCount(0)
+    await page
+      .getByRole('button', { name: enMessages.agent.entryButton, exact: true })
+      .click()
 
     await page.getByRole('button', { name: 'Current user' }).click()
     await page.getByTestId('workspace-switcher-trigger').click()
@@ -372,6 +412,9 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
       .poll(() => comfyPage.menu.topbar.getTabNames())
       .not.toContain(personalWorkflow)
     await comfyPage.menu.topbar.saveWorkflow(teamWorkflow)
+    await page
+      .getByRole('button', { name: enMessages.agent.entryButton, exact: true })
+      .click()
     await expect(panel.getByTestId('user-message-bubble')).toHaveText([
       teamTranscript
     ])
