@@ -17,9 +17,12 @@ const { t } = useI18n()
 
 <template>
   <div class="flex flex-col gap-6">
-    <div role="alert" class="rounded-lg bg-secondary-background-hover p-4">
+    <div
+      role="alert"
+      class="flex flex-col gap-2 rounded-lg bg-tertiary-background p-4"
+    >
       <p
-        class="m-0 flex items-center gap-2 text-sm font-semibold text-base-foreground"
+        class="m-0 flex items-center gap-2 text-sm/5 font-medium text-base-foreground"
       >
         <i
           class="icon-[lucide--circle-alert] size-4 shrink-0 text-warning-background"
@@ -27,7 +30,7 @@ const { t } = useI18n()
         />
         {{ t(`checkout.fullPage.railFailed.${rail}.title`) }}
       </p>
-      <p class="m-0 mt-2 text-sm/5 text-muted-foreground">
+      <p class="m-0 text-sm/5 text-muted-foreground">
         {{ t(`checkout.fullPage.railFailed.${rail}.body`) }}
       </p>
     </div>
