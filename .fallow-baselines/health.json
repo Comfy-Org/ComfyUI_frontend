@@ -3542,10 +3542,12 @@
         "count": 1
       }
     },
-    "src/workbench/extensions/manager/composables/useManagerState.ts": {
+    "src/workbench/extensions/manager/composables/useManagerDialog.ts": {
       "crap_high": {
         "count": 1
-      },
+      }
+    },
+    "src/workbench/extensions/manager/composables/useManagerState.ts": {
       "crap_moderate": {
         "count": 1
       }

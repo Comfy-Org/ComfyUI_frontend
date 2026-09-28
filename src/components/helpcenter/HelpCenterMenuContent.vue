@@ -172,6 +172,7 @@ import { getErrorMessage } from '@/utils/errorUtil'
 import { electronAPI } from '@/utils/envUtil'
 import { formatVersionAnchor } from '@/utils/formatUtil'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
+import { useManagerDialog } from '@/workbench/extensions/manager/composables/useManagerDialog'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { useComfyManagerService } from '@/workbench/extensions/manager/services/comfyManagerService'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
@@ -405,7 +406,7 @@ const menuItems = computed<MenuItem[]>(() => {
       showRedDot: shouldShowManagerRedDot.value,
       action: async () => {
         trackResourceClick('manager', false)
-        await useManagerState().openManager({
+        await useManagerDialog().openManager({
           initialTab: ManagerTab.All,
           showToastOnLegacyError: false
         })
