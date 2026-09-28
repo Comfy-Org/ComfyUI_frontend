@@ -1744,12 +1744,9 @@ describe('useAgentSession (v1 composition root)', () => {
     // its own failures onto `TurnOutcome`, so the remaining sources are the
     // settlement calls — here an unavailable `localStorage` implementation.
     const storageFailure = new Error('localStorage is unavailable')
-    const removeItem = vi
-      .spyOn(localStorage, 'removeItem')
-      .mockImplementation((key: string) => {
-        if (key === StorageKeys.agentThread('personal')) throw storageFailure
-      })
-    try {
+    vi.spyOn(localStorage, 'removeItem').mockImplementation((key: string) => {
+      if (key === StorageKeys.agentThread('personal')) throw storageFailure
+    })
       const rest = fakeRest({
         getMessages: vi.fn(async (): Promise<AgentMessages> => {
           throw new AgentApiError('gone', 404, undefined)
@@ -1775,9 +1772,6 @@ describe('useAgentSession (v1 composition root)', () => {
       // deleted thread is forgotten in memory despite the storage failure.
       expect(useAgentConversationStore().liveTurns()).toEqual([])
       expect(session.threadId.value).toBe(null)
-    } finally {
-      removeItem.mockRestore()
-    }
   })
 
   it('(h) attachments pass through to the postMessage wire body', async () => {
