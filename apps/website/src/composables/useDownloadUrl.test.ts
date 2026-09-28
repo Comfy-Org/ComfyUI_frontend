@@ -1,6 +1,9 @@
-import { describe, expect, it } from 'vitest'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { render, screen } from '@testing-library/vue'
+import { describe, expect, it, vi } from 'vitest'
+import { defineComponent, h, nextTick } from 'vue'
 
-import { detectDevice, isArmCpu } from './useDownloadUrl'
+import { detectDevice, useDownloadUrl } from './useDownloadUrl'
 
 const UA = {
   iphone:
@@ -62,33 +65,144 @@ describe('detectDevice', () => {
   })
 })
 
-function userAgentDataReporting(architecture: string): NavigatorUAData {
+const DEBUG_RENDERER_INFO = { UNMASKED_RENDERER_WEBGL: 0x9246 }
+
+function reportingCpu(architecture: string): NavigatorUAData {
   return { getHighEntropyValues: async () => ({ architecture }) }
 }
 
-describe('isArmCpu', () => {
+function reportingGpu(renderer: string): () => WebGLRenderingContext {
+  return () =>
+    fromPartial<WebGLRenderingContext>({
+      getExtension: (name: string) =>
+        name === 'WEBGL_debug_renderer_info' ? DEBUG_RENDERER_INFO : null,
+      getParameter: (pname: number) =>
+        pname === DEBUG_RENDERER_INFO.UNMASKED_RENDERER_WEBGL ? renderer : null
+    })
+}
+
+const NVIDIA_GPU = reportingGpu(
+  'ANGLE (NVIDIA, NVIDIA GeForce RTX 5090 (0x00002B85) Direct3D11 vs_5_0 ps_5_0, D3D11)'
+)
+
+function visitOnWindows(
+  userAgentData: NavigatorUAData | undefined,
+  webgl: () => WebGLRenderingContext | null
+) {
+  vi.stubGlobal('navigator', {
+    userAgent: UA.windows,
+    maxTouchPoints: 0,
+    userAgentData
+  } satisfies Partial<Navigator>)
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(webgl)
+}
+
+const DownloadLink = defineComponent({
+  setup() {
+    const { downloadUrl, platform } = useDownloadUrl()
+    return () =>
+      platform.value ? h('a', { href: downloadUrl.value }, 'Download') : null
+  }
+})
+
+describe('useDownloadUrl on Windows', () => {
   it.for([
-    { label: 'an ARM CPU', uaData: userAgentDataReporting('arm'), isArm: true },
     {
-      label: 'an x86 CPU',
-      uaData: userAgentDataReporting('x86'),
-      isArm: false
+      label: 'an ARM PC with an NVIDIA GPU',
+      cpu: reportingCpu('arm'),
+      gpu: NVIDIA_GPU,
+      installer: 'arm64'
     },
     {
-      label: 'a hidden architecture',
-      uaData: userAgentDataReporting(''),
-      isArm: false
+      label: 'an ARM PC with a Qualcomm GPU',
+      cpu: reportingCpu('arm'),
+      gpu: reportingGpu(
+        'ANGLE (Qualcomm, Qualcomm(R) Adreno(TM) X1-85 GPU (0x0000364E) Direct3D11 vs_5_0 ps_5_0, D3D11)'
+      ),
+      installer: 'x64'
     },
-    { label: 'no client hints', uaData: undefined, isArm: false },
     {
-      label: 'rejected client hints',
-      uaData: {
+      label: 'an ARM PC without WebGL',
+      cpu: reportingCpu('arm'),
+      gpu: () => null,
+      installer: 'x64'
+    },
+    {
+      label: 'an ARM PC hiding its GPU renderer',
+      cpu: reportingCpu('arm'),
+      gpu: () =>
+        fromPartial<WebGLRenderingContext>({ getExtension: () => null }),
+      installer: 'x64'
+    },
+    {
+      label: 'an ARM PC whose WebGL probe throws',
+      cpu: reportingCpu('arm'),
+      gpu: () => {
+        throw new DOMException('blocked', 'SecurityError')
+      },
+      installer: 'x64'
+    },
+    {
+      label: 'an x86 PC with an NVIDIA GPU',
+      cpu: reportingCpu('x86'),
+      gpu: NVIDIA_GPU,
+      installer: 'x64'
+    },
+    {
+      label: 'a PC hiding its CPU architecture',
+      cpu: reportingCpu(''),
+      gpu: NVIDIA_GPU,
+      installer: 'x64'
+    },
+    {
+      label: 'a browser without client hints',
+      cpu: undefined,
+      gpu: NVIDIA_GPU,
+      installer: 'x64'
+    },
+    {
+      label: 'a browser rejecting client hints',
+      cpu: {
         getHighEntropyValues: () =>
           Promise.reject(new DOMException('blocked', 'NotAllowedError'))
       },
-      isArm: false
+      gpu: NVIDIA_GPU,
+      installer: 'x64'
     }
-  ])('reports $isArm for $label', async ({ uaData, isArm }) => {
-    await expect(isArmCpu(uaData)).resolves.toBe(isArm)
+  ])(
+    'links $label to the $installer installer',
+    async ({ cpu, gpu, installer }) => {
+      visitOnWindows(cpu, gpu)
+
+      render(DownloadLink)
+
+      expect(await screen.findByRole('link')).toHaveAttribute(
+        'href',
+        `https://comfy.org/download/windows/nsis/${installer}`
+      )
+    }
+  )
+
+  it('shows no installer link until the CPU architecture is known', async () => {
+    let reportArchitecture!: (hints: { architecture: string }) => void
+    visitOnWindows(
+      {
+        getHighEntropyValues: () =>
+          new Promise((resolve) => {
+            reportArchitecture = resolve
+          })
+      },
+      NVIDIA_GPU
+    )
+
+    render(DownloadLink)
+    await nextTick()
+    expect(screen.queryByRole('link')).toBeNull()
+
+    reportArchitecture({ architecture: 'arm' })
+    expect(await screen.findByRole('link')).toHaveAttribute(
+      'href',
+      'https://comfy.org/download/windows/nsis/arm64'
+    )
   })
 })

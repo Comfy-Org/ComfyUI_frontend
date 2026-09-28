@@ -34,7 +34,7 @@ export function detectDevice(
 
 // Windows on ARM browsers still send an x64 UA string, so the CPU is only
 // visible through User-Agent Client Hints (Chromium-based browsers).
-export async function isArmCpu(
+async function isArmCpu(
   userAgentData: NavigatorUAData | undefined
 ): Promise<boolean> {
   if (!userAgentData) return false
@@ -48,17 +48,36 @@ export async function isArmCpu(
   }
 }
 
+function hasNvidiaGpu(): boolean {
+  try {
+    const gl = document.createElement('canvas').getContext('webgl')
+    if (!gl) return false
+    const info = gl.getExtension('WEBGL_debug_renderer_info')
+    const renderer = info ? gl.getParameter(info.UNMASKED_RENDERER_WEBGL) : ''
+    gl.getExtension('WEBGL_lose_context')?.loseContext()
+    return /nvidia/i.test(String(renderer))
+  } catch {
+    return false
+  }
+}
+
+// The arm64 desktop build only ships an NVIDIA runtime; other ARM PCs
+// (Snapdragon) need the x64 build, which runs emulated on a CPU runtime.
+async function needsArmInstaller(): Promise<boolean> {
+  return (await isArmCpu(navigator.userAgentData)) && hasNvidiaGpu()
+}
+
 // TODO: Only Windows x64/arm64 and macOS arm64 are available today.
 // When Linux and/or macIntel builds are added, extend detection and URLs here.
 export function useDownloadUrl() {
   const platform = ref<Platform | null>(null)
   const detected = ref(false)
   const isMobileUa = ref(false)
-  const isWindowsArm = ref(false)
+  const armInstaller = ref(false)
 
   const downloadUrl = computed(() => {
     if (platform.value === 'windows') {
-      return isWindowsArm.value ? downloadUrls.windowsArm : downloadUrls.windows
+      return armInstaller.value ? downloadUrls.windowsArm : downloadUrls.windows
     }
     if (platform.value === 'mac') return downloadUrls.macArm
     return externalLinks.github
@@ -70,12 +89,12 @@ export function useDownloadUrl() {
 
   onMounted(async () => {
     const device = detectDevice(navigator.userAgent, navigator.maxTouchPoints)
+    if (device.platform === 'windows') {
+      armInstaller.value = await needsArmInstaller()
+    }
     isMobileUa.value = device.isMobileUa
     platform.value = device.platform
     detected.value = true
-    if (device.platform === 'windows') {
-      isWindowsArm.value = await isArmCpu(navigator.userAgentData)
-    }
   })
 
   return { downloadUrl, platform, showFallback, isMobileUa }
