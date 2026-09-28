@@ -1,7 +1,7 @@
 import { renameSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
-import { findRateCardProblems } from '../src/data/rateCard'
+import { findRateCardProblems } from '../src/data/rateCardChecks'
 import { zRateCard } from '../src/types/rate-card/zod.gen'
 
 const RATE_CARD_URL = 'https://platformapi.comfy.org/deploy/v1/rate-card'

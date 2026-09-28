@@ -4,7 +4,6 @@ import { Coins as CreditsIcon } from '@lucide/vue'
 import SectionHeader from '../../components/common/SectionHeader.vue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
-import type { StorageLabelKey } from '../../data/rateCard'
 import {
   formatCreditsPerGbMonth,
   formatCreditsPerHour,
@@ -12,9 +11,10 @@ import {
   formatUsdPerGbMonth,
   formatUsdPerHour,
   getStorageRate,
-  rateCard,
-  STORAGE_TYPE_LABEL_KEYS
+  rateCard
 } from '../../data/rateCard'
+import type { StorageLabelKey } from '../../data/rateCardChecks'
+import { STORAGE_TYPE_LABEL_KEYS } from '../../data/rateCardChecks'
 
 const {
   locale = 'en',

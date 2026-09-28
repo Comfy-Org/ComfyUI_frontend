@@ -2,16 +2,15 @@ import { describe, expect, it } from 'vitest'
 
 import type { RateCard } from '../types/rate-card'
 import {
-  findRateCardProblems,
   formatCreditsPerGbMonth,
   formatCreditsPerHour,
   formatStorageExampleAmount,
   formatUsdPerGbMonth,
   formatUsdPerHour,
   getStorageRate,
-  rateCard,
-  STORAGE_TYPE_LABEL_KEYS
+  rateCard
 } from './rateCard'
+import { findRateCardProblems, STORAGE_TYPE_LABEL_KEYS } from './rateCardChecks'
 
 function cardWithStorageTypes(storageTypes: string[]): RateCard {
   return {
