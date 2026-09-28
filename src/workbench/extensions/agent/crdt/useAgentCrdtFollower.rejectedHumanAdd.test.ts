@@ -83,7 +83,9 @@ it('surfaces a human add_node the doc host rejected instead of swallowing the re
       }
     }
   ])
-  await Promise.resolve()
+  // opCoalescer defers the flush to a microtask, so the frame is not on the
+  // mock until the queue drains.
+  await vi.waitFor(() => expect(send.mock.calls.length).toBeGreaterThan(1))
   const { type, op_id } = sentOp(send.mock.calls[1][0])
   expect(type).toBe('doc_ops')
 
