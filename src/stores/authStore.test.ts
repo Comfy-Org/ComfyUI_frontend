@@ -2166,15 +2166,17 @@ describe('useAuthStore', () => {
           (_route, options) =>
             new Promise<Response>((resolve) => {
               accountASignal = options?.signal ?? undefined
+              options?.onAuthHeader?.(true)
               resolveAccountA = resolve
             })
         )
-        .mockResolvedValueOnce(
-          new Response(
+        .mockImplementationOnce(async (_route, options) => {
+          options?.onAuthHeader?.(true)
+          return new Response(
             JSON.stringify({ legacy_billing_migration_enabled: false }),
             { status: 200 }
           )
-        )
+        })
 
       const accountARefresh = refreshRemoteConfig()
       await vi.waitFor(() => expect(api.fetchApi).toHaveBeenCalledTimes(1))
