@@ -10,19 +10,26 @@ import { createAssistantMessage } from './agentMessageParts'
  * type. `mediaKind` (services/agent/server/agent_handler.go) writes only these
  * three and omits the key otherwise, so anything else on the wire reads as
  * unresolved rather than as a fourth kind.
+ *
+ * The composer admits 3D too, and the preview grid renders it, so a 3D asset
+ * stored under an extensionless key still degrades to a plain tile after a
+ * refresh. Widening this union cannot fix that on its own — the kind has to be
+ * written before it can be read, which is a change to `mimeFamily` in the same
+ * Go file.
  */
 type AttachmentKind = 'image' | 'video' | 'audio'
 
 /**
  * A file attached to a user turn. `ref` is the uploaded input-namespace
- * filename that resolves the preview; on a persisted row this is the only
- * name the server ever saw, so `name` and `ref` are the same string.
+ * filename that resolves the preview. `name` is the label shown to the user;
+ * it falls back to `ref` for legacy/unresolved rows and otherwise comes from
+ * the persisted asset `display_name`.
  *
  * `id` and `kind` are the server's own resolution of that name, replayed off
- * the row's `attachment_refs`. They are what let a rehydrated attachment be
+ * the row's `attachment_refs`. `kind` is what lets a rehydrated attachment be
  * classified when its name cannot classify itself — a library asset is
  * attached under its content hash, which carries no extension to read a kind
- * off.
+ * off. `id` identifies the asset behind that same hash.
  */
 export interface UserAttachment {
   name: string
@@ -32,6 +39,10 @@ export interface UserAttachment {
   kind?: AttachmentKind
 }
 
+type ResolvedAttachment = Pick<UserAttachment, 'id' | 'kind'> & {
+  displayName?: string
+}
+
 export interface NormalizedAgentTranscript {
   /** Includes placeholders for turns without assistant text. */
   messages: AssistantMessage[]
@@ -39,9 +50,16 @@ export interface NormalizedAgentTranscript {
   userAttachments: Map<TurnId, UserAttachment[]>
   userWorkflowReferences: Map<TurnId, WorkflowReference[]>
   latestWorkflowId?: string
-  rowIds: Set<string>
+  /**
+   * Every persisted row read, mapped to the turn it landed on. A live turn id
+   * is the assistant row's own id, so this is what resolves one back to the
+   * hydrated turn it belongs to.
+   */
+  turnIdsByRowId: Map<string, TurnId>
   /** Tracks turns with assistant rows, including rows that produce no parts. */
   assistantTurnIds: Set<TurnId>
+  /** Turns the service still considers unfinished, by its own row status. */
+  streamingTurnIds: Set<TurnId>
   pending?: {
     messageId: TurnId
     message: AssistantMessage
@@ -69,37 +87,54 @@ function isAttachmentKind(value: unknown): value is AttachmentKind {
 }
 
 /**
- * The resolution `attachment_refs` carries for each name, keyed by the name it
- * shares with `attachments`. An entry is kept even when it resolves to
- * nothing, since the shared name is what makes it a ref at all; `id` and
- * `kind` are each omitted rather than stored empty, matching the writer
+ * One `attachment_refs` entry, as the
+ * `{name, id?, kind?, display_name?}` the server wrote, reduced to the trimmed
+ * name it is keyed by and the resolution it carries. Optional fields are
+ * omitted rather than stored empty, matching the writer
  * (`attachmentRefsForRow`, services/agent/server/agent_handler.go), so an
  * unresolved attachment reads the same as one written before ids existed.
  *
- * Keyed on the trimmed name, because the two keys disagree about whitespace:
- * the writer trims a ref's name while `attachments` is stored verbatim, so a
- * padded name would otherwise never find its own resolution. Only the lookup
- * key is trimmed — the name a row was stored under is what `/view?filename=`
- * has to ask for.
- *
- * First entry wins for a repeated name: the writer emits one ref per posted
- * name, so a duplicate is the same file resolved the same way.
+ * The name is trimmed for the KEY only, because the two keys disagree about
+ * whitespace: the writer trims a ref's name while `attachments` is stored
+ * verbatim, so a padded name would otherwise never find its own resolution.
+ * The name a row was stored under is what `/view?filename=` has to ask for.
+ */
+function resolvedAttachmentRef(
+  entry: unknown
+): [string, ResolvedAttachment] | undefined {
+  if (typeof entry !== 'object' || entry === null) return undefined
+  const {
+    name,
+    id,
+    kind,
+    display_name: displayName
+  } = entry as Record<string, unknown>
+  if (typeof name !== 'string') return undefined
+  return [
+    name.trim(),
+    {
+      ...(typeof id === 'string' && id !== '' ? { id } : {}),
+      ...(isAttachmentKind(kind) ? { kind } : {}),
+      ...(isNamedAttachment(displayName) ? { displayName } : {})
+    }
+  ]
+}
+
+/**
+ * Every entry keyed by the trimmed name it shares with `attachments`. An entry
+ * is kept even when it resolves to nothing, since the shared name is what
+ * makes it a ref at all. First entry wins for a repeated name: the writer
+ * emits one ref per posted name, so a duplicate is the same file resolved the
+ * same way.
  */
 function resolvedAttachmentRefs(
   value: unknown
-): Map<string, Pick<UserAttachment, 'id' | 'kind'>> {
-  const resolved = new Map<string, Pick<UserAttachment, 'id' | 'kind'>>()
+): Map<string, ResolvedAttachment> {
+  const resolved = new Map<string, ResolvedAttachment>()
   if (!Array.isArray(value)) return resolved
   for (const entry of value as unknown[]) {
-    if (typeof entry !== 'object' || entry === null) continue
-    const { name, id, kind } = entry as Record<string, unknown>
-    if (typeof name !== 'string') continue
-    const key = name.trim()
-    if (resolved.has(key)) continue
-    resolved.set(key, {
-      ...(typeof id === 'string' && id !== '' ? { id } : {}),
-      ...(isAttachmentKind(kind) ? { kind } : {})
-    })
+    const ref = resolvedAttachmentRef(entry)
+    if (ref && !resolved.has(ref[0])) resolved.set(ref[0], ref[1])
   }
   return resolved
 }
@@ -121,11 +156,18 @@ function parseUserAttachments(
   content: Record<string, unknown> | undefined
 ): UserAttachment[] | undefined {
   const resolved = resolvedAttachmentRefs(content?.attachment_refs)
-  const names = Array.isArray(content?.attachments)
+  const postedNames = Array.isArray(content?.attachments)
     ? content.attachments.filter(isNamedAttachment)
-    : attachmentRefNames(content?.attachment_refs)
+    : []
+  const names =
+    postedNames.length > 0
+      ? postedNames
+      : attachmentRefNames(content?.attachment_refs)
   return names.length > 0
-    ? names.map((name) => ({ name, ref: name, ...resolved.get(name.trim()) }))
+    ? names.map((ref) => {
+        const { displayName, ...metadata } = resolved.get(ref.trim()) ?? {}
+        return { name: displayName ?? ref, ref, ...metadata }
+      })
     : undefined
 }
 
@@ -365,6 +407,8 @@ function applyUserRow(row: AgentMessages[number], text: string): UserRowUpdate {
     text: referenceUpdate?.text ?? text,
     attachments: parseUserAttachments(row.content),
     workflowReferences: referenceUpdate?.references,
+    // `||`, not `??`: normalizeAgentTranscript collapses this with `??`, so
+    // a blank id has to be undefined by here or it would win as a value.
     workflowId: row.workflow_id || undefined
   }
 }
@@ -426,29 +470,30 @@ export function normalizeAgentTranscript(
   const assistants = new Map<TurnId, AssistantMessage>()
   const turnOrder: TurnId[] = []
   const seenTurns = new Set<TurnId>()
-  const rowIds = new Set<string>()
+  const turnIdsByRowId = new Map<string, TurnId>()
+  const streamingTurnIds = new Set<TurnId>()
   let pending: NormalizedAgentTranscript['pending']
   let latestWorkflowId: string | undefined
 
   for (const row of [...history].sort((a, b) => a.seq - b.seq)) {
     const turnId = row.turn_id as TurnId
-    rowIds.add(row.id)
+    turnIdsByRowId.set(row.id, turnId)
     recordTurnOrder(turnId, seenTurns, turnOrder)
     const text = typeof row.content?.text === 'string' ? row.content.text : ''
     if (row.role === 'user') {
-      const workflowId = recordUserRow(
-        row,
-        turnId,
-        text,
-        userTexts,
-        userAttachments,
-        userWorkflowReferences
-      )
-      if (workflowId) latestWorkflowId = workflowId
+      latestWorkflowId =
+        recordUserRow(
+          row,
+          turnId,
+          text,
+          userTexts,
+          userAttachments,
+          userWorkflowReferences
+        ) ?? latestWorkflowId
     }
     if (row.role === 'assistant') {
-      const rowPending = recordAssistantRow(row, turnId, text, assistants)
-      if (rowPending) pending = rowPending
+      if (row.status === 'streaming') streamingTurnIds.add(turnId)
+      pending = recordAssistantRow(row, turnId, text, assistants) ?? pending
     }
   }
 
@@ -464,8 +509,9 @@ export function normalizeAgentTranscript(
     userAttachments,
     userWorkflowReferences,
     latestWorkflowId,
-    rowIds,
+    turnIdsByRowId,
     assistantTurnIds: new Set(assistants.keys()),
+    streamingTurnIds,
     pending
   }
 }

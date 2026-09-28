@@ -161,6 +161,33 @@ describe('normalizeAgentTranscript', () => {
     ])
   })
 
+  it('uses a persisted display name without changing the storage ref', () => {
+    const message = row(1, 'user', 'turn-a', '', 'row-1')
+    message.content = {
+      text: 'inspect this',
+      attachments: ['content-hash'],
+      attachment_refs: [
+        {
+          name: 'content-hash',
+          display_name: 'Beach photo.png',
+          id: 'asset-1',
+          kind: 'image'
+        }
+      ]
+    }
+
+    const transcript = normalizeAgentTranscript([message])
+
+    expect(transcript.userAttachments.get(toTurnId('turn-a'))).toEqual([
+      {
+        name: 'Beach photo.png',
+        ref: 'content-hash',
+        id: 'asset-1',
+        kind: 'image'
+      }
+    ])
+  })
+
   it('leaves userAttachments empty for a turn with no attachment fields', () => {
     const message = row(1, 'user', 'turn-a', 'no attachments here', 'row-1')
 
