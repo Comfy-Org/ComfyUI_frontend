@@ -59,6 +59,19 @@ const firstRunHoldsScreen = ref(false)
 const activeTour = ref<EntryPath | null>(null)
 let startupDecision: Promise<boolean> = Promise.resolve(true)
 
+/**
+ * Bounds the release watcher in the three single-holder cases below. If
+ * release disagrees with hold, the offer is repeatedly released and re-held;
+ * leaving the probe pending turns that cycle into an ordinary assertion.
+ */
+const OFFER_ATTEMPT_CAP = 20
+// Probe here rather than `consentStore.load`, which individual tests replace.
+const startupProbe = vi.fn(() =>
+  startupProbe.mock.calls.length > OFFER_ATTEMPT_CAP
+    ? new Promise<boolean>(() => {})
+    : startupDecision
+)
+
 /** Getting Started takes the screen. */
 function screenShown(): void {
   gettingStartedVisible.value = true
@@ -115,7 +128,7 @@ vi.mock(
       fromPartial<ReturnType<typeof useFirstRunEntry>>({
         gettingStartedVisible,
         firstRunHoldsScreen,
-        whenStartupDecided: () => startupDecision
+        whenStartupDecided: startupProbe
       })
   })
 )
