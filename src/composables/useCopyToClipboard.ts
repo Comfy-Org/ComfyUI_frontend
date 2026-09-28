@@ -19,6 +19,33 @@ function legacyCopy(text: string): boolean {
   }
 }
 
+async function writeToClipboard(
+  text: string,
+  clipboardItems?: ClipboardItem[]
+): Promise<boolean> {
+  if (clipboardItems) {
+    try {
+      await navigator.clipboard.write(clipboardItems)
+      return true
+    } catch {
+      // Rich clipboard failed, fall through to plain text
+    }
+  }
+
+  try {
+    await navigator.clipboard.writeText(text)
+    return true
+  } catch {
+    // Modern clipboard API failed, fall through to legacy
+  }
+
+  try {
+    return legacyCopy(text)
+  } catch {
+    return false
+  }
+}
+
 export function useCopyToClipboard({
   copiedDuring,
   showSuccessToast = true
@@ -34,35 +61,9 @@ export function useCopyToClipboard({
     text: string,
     clipboardItems?: ClipboardItem[]
   ): Promise<boolean> {
-    let success = false
     copied.value = false
     clearTimeout(copiedReset)
-
-    if (clipboardItems) {
-      try {
-        await navigator.clipboard.write(clipboardItems)
-        success = true
-      } catch {
-        // Rich clipboard failed, fall through to plain text
-      }
-    }
-
-    if (!success) {
-      try {
-        await navigator.clipboard.writeText(text)
-        success = true
-      } catch {
-        // Modern clipboard API failed, fall through to legacy
-      }
-    }
-
-    if (!success) {
-      try {
-        success = legacyCopy(text)
-      } catch {
-        // Legacy also failed
-      }
-    }
+    const success = await writeToClipboard(text, clipboardItems)
 
     if (success) {
       copied.value = true
