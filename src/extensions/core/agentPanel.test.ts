@@ -60,9 +60,7 @@ let startupDecision: Promise<boolean> = Promise.resolve(true)
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock(import('@/platform/telemetry'))
 
 vi.mock(

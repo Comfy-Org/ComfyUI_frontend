@@ -62,9 +62,7 @@ import type { GraphOperation } from './graphOperations'
 import { attachMintPortWiring } from './mintPortWiring'
 import type { MintPortWiring } from './mintPortWiring'
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 class DummyNode extends LGraphNode {
   constructor() {

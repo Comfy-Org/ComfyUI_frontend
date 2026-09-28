@@ -9,9 +9,7 @@ const getUserData = vi.hoisted(() => vi.fn())
 
 vi.mock(import('@/base/common/downloadUtil'), () => ({ downloadBlob: vi.fn() }))
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 vi.mock(import('@/services/dialogService'))
 

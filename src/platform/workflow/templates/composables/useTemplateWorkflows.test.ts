@@ -14,9 +14,7 @@ import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 function deferred<T>() {
   let resolve: (value: T | PromiseLike<T>) => void = () => {}

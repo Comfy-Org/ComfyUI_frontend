@@ -10,9 +10,7 @@ import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflo
 
 import { useAgentWorkflowResolver } from './useAgentWorkflowResolver'
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 function workflow(
   path: string,

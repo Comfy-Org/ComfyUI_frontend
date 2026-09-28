@@ -14,9 +14,7 @@ import {
   resolveFollowerEnabled
 } from './followerGate'
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 class FakeStorage {
   private readonly map = new Map<string, string>()

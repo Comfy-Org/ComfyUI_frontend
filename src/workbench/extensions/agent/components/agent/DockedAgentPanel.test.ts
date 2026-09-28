@@ -14,9 +14,7 @@ import { useAgentRunModeStore } from '@/workbench/extensions/agent/stores/agent/
 import DockedAgentPanel from './DockedAgentPanel.vue'
 
 vi.mock(import('@/platform/telemetry'))
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 const fetchApi = vi.hoisted(() =>
   vi.fn<(route: string, init?: RequestInit) => Promise<Response>>()

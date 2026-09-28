@@ -6,9 +6,7 @@ import { toLinkId } from '@/types/linkId'
 
 import { useLinkPresentationStore } from './linkPresentationStore'
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 const graphA = {
   rootGraphId: toRootGraphId('graph-a'),
