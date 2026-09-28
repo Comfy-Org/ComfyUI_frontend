@@ -3966,18 +3966,6 @@ export type BillingStatusResponse = {
    */
   cancel_at?: string
   /**
-   * Per-product funds verdict, keyed by product name. Omitted by older servers.
-   */
-  scoped_effective_has_funds?: {
-    [key: string]: boolean
-  }
-  /**
-   * Per-product scoped balance state, keyed by product name. Omitted by older servers.
-   */
-  scoped_has_funds?: {
-    [key: string]: boolean
-  }
-  /**
    * Whether the workspace has available credits
    */
   has_funds: boolean
