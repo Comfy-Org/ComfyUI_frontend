@@ -32,7 +32,7 @@ import type {
   AgentPaywallAction,
   AgentPaywallPresentation
 } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
-import AgentPaywallCard from './message/AgentPaywallCard.vue'
+import StandingAgentPaywall from './message/StandingAgentPaywall.vue'
 import type { ConversationEntry } from '../../stores/agent/agentConversationStore'
 import type { HistoryGroups } from '../../stores/agent/agentChatHistoryStore'
 
@@ -395,9 +395,8 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
       <slot name="instrument" />
       <footer class="shrink-0 py-3">
         <div class="mx-auto flex w-full max-w-[640px] flex-col gap-4 px-4">
-          <AgentPaywallCard
-            v-if="creditsExhausted"
-            data-testid="agent-credits-exhausted-paywall"
+          <StandingAgentPaywall
+            :visible="creditsExhausted"
             :presentation="paywallPresentation"
             @paywall-action="emit('paywallAction', $event, 'credits_exhausted')"
           />
