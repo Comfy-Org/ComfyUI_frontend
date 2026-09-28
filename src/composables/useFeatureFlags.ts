@@ -9,7 +9,8 @@ import {
   cachedV1PaymentRecovery,
   isAuthenticatedConfigLoaded,
   remoteConfig,
-  sessionAgentGrant
+  sessionAgentGrant,
+  sessionAgentGrantValidUntil
 } from '@/platform/remoteConfig/remoteConfig'
 import { useTelemetry } from '@/platform/telemetry'
 import { api } from '@/scripts/api'
@@ -130,7 +131,8 @@ function resolveAuthGatedFlag(
 function resolveWhitelistFlag(
   flagKey: string,
   remoteConfigValue: boolean | undefined,
-  grantedThisSession: Ref<boolean | undefined>
+  grantedThisSession: Ref<boolean | undefined>,
+  grantValidUntil: Ref<number | undefined>
 ): boolean {
   const sessionOverride = getSessionOverride<boolean>(flagKey)
   if (sessionOverride !== undefined) return sessionOverride
@@ -140,7 +142,10 @@ function resolveWhitelistFlag(
 
   if (!isCloud) return false
   if (!isAuthenticatedConfigLoaded.value)
-    return grantedThisSession.value === true
+    return (
+      grantedThisSession.value === true &&
+      (grantValidUntil.value ?? 0) > Date.now()
+    )
 
   return remoteConfigValue === true
 }
@@ -377,7 +382,8 @@ export function useFeatureFlags() {
       return resolveWhitelistFlag(
         ServerFeatureFlag.AGENT_IN_APP_EXPERIENCE,
         remoteConfig.value['agent-in-app-experience'],
-        sessionAgentGrant
+        sessionAgentGrant,
+        sessionAgentGrantValidUntil
       )
     }
   })
