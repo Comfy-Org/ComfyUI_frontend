@@ -67,7 +67,7 @@ for pattern in "${AGENT_PATTERNS[@]}"; do
 done
 
 commit_trailers="$(
-    git log --format='  %h: %(trailers:key=Co-authored-by,separator=%x09)' \
+    git log --first-parent --format='  %h: %(trailers:key=Co-authored-by,separator=%x09)' \
         "${base_sha}..${head_sha}"
 )"
 violations="$(grep -iE "$regex" <<<"$commit_trailers" || true)"
