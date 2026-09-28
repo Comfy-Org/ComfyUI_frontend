@@ -5,6 +5,7 @@ import { createMemoryHistory } from 'vue-router'
 import type { SessionErrorCode } from '@comfyorg/account-core/session'
 
 import type { SignInState } from '@/auth/signInState'
+import { recordBillingEntry } from '@/entry/billingEntry'
 import { createBillingI18n } from '@/i18n'
 import { createBillingRouter } from '@/router'
 import SignInView from '@/views/SignInView.vue'
@@ -37,20 +38,29 @@ vi.mock(import('@/auth/useSignInController'), async () => {
   }
 })
 
-async function renderSignIn() {
-  const router = createBillingRouter(createMemoryHistory(), () => 'signed-out')
-  await router.push('/sign-in')
+async function renderSignIn(path = '/sign-in') {
+  const router = createBillingRouter(
+    createMemoryHistory(),
+    () => 'signed-out',
+    () => {}
+  )
+  await router.push(path)
   await router.isReady()
   render(SignInView, {
     global: { plugins: [createBillingI18n(), router] }
   })
 }
 
+const REFUSED_ENTRY =
+  '/v1/subscription?product=comfyui&return_to=comfyui_credits&workspace=ws_refused'
+
 beforeEach(() => {
   h.available = true
   h.retryAvailability.mockClear()
+  h.retryMint.mockClear()
   h.initialState = undefined
   h.sessionFailureCode = undefined
+  recordBillingEntry(undefined)
 })
 
 describe('SignInView', () => {
@@ -198,6 +208,59 @@ describe('SignInView', () => {
       expect(screen.getByRole('alert')).toHaveTextContent(
         'You are signed in, but your workspace session could not be started'
       )
+    }
+  )
+
+  it.for(['ACCESS_DENIED', 'WORKSPACE_NOT_FOUND'] as const)(
+    'offers a way back to the app instead of a retry for %s',
+    async (code) => {
+      h.initialState = {
+        step: 'signedIn',
+        origin: 'interactive',
+        mintFailed: true
+      }
+      h.sessionFailureCode = code
+      await renderSignIn(REFUSED_ENTRY)
+
+      expect(
+        screen.getByRole('link', { name: 'Return to ComfyUI' })
+      ).toHaveAttribute(
+        'href',
+        'https://testcloud.comfy.org/?settings=plan-credits'
+      )
+      expect(
+        screen.queryByRole('button', { name: 'Retry session' })
+      ).not.toBeInTheDocument()
+    }
+  )
+
+  it.for([
+    { code: 'NOT_AUTHENTICATED', path: REFUSED_ENTRY },
+    { code: undefined, path: REFUSED_ENTRY },
+    {
+      code: 'WORKSPACE_NOT_FOUND',
+      path: '/v1/subscription?product=platform&return_to=platform_account&workspace=ws_refused'
+    },
+    { code: 'WORKSPACE_NOT_FOUND', path: '/sign-in' }
+  ] as const)(
+    'keeps the retry for $code arriving at $path',
+    async ({ code, path }) => {
+      h.initialState = {
+        step: 'signedIn',
+        origin: 'interactive',
+        mintFailed: true
+      }
+      h.sessionFailureCode = code
+      await renderSignIn(path)
+
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Retry session' })
+      )
+
+      expect(h.retryMint).toHaveBeenCalledOnce()
+      expect(
+        screen.queryByRole('link', { name: 'Return to ComfyUI' })
+      ).not.toBeInTheDocument()
     }
   )
 })
