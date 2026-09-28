@@ -280,6 +280,7 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
     request
   }) => {
     test.setTimeout(60_000)
+    const comfyPage = new ComfyPage(page, request)
 
     await new CloudWorkspaceMockHelper(page).setup([
       ...DEFAULT_TEAM_MEMBERS,
@@ -541,7 +542,8 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
         credentialEvents.indexOf(`workspace:${ACCOUNT_B.id}`)
       )
       await page.reload({ waitUntil: 'domcontentloaded' })
-      await new ComfyPage(page, request).waitForAppReady()
+      await comfyPage.waitForAppReady()
+      await comfyPage.workflow.openPersistedWorkflow(IDENTITY_SENTINELS.b.draft)
       await expect(
         page.getByRole('tab', {
           name: IDENTITY_SENTINELS.b.draft,
