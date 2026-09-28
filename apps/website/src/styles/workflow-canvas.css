@@ -7,7 +7,7 @@
   max-width: 1440px;
   margin: 28px auto 0;
   padding: 0 40px;
-  color: #eee;
+  color: var(--color-workflow-foreground);
 }
 .wf-showcase::before {
   content: '';
@@ -21,7 +21,11 @@
     transparent 1.1px
   );
   background-size: 5px 5px;
-  mask-image: radial-gradient(ellipse at center, #000 25%, transparent 72%);
+  mask-image: radial-gradient(
+    ellipse at center,
+    currentColor 25%,
+    transparent 72%
+  );
 }
 .wf-scroll {
   overflow: hidden;
@@ -103,7 +107,7 @@ video.wf-node-image {
 .wf-selection {
   position: absolute;
   inset: -3px;
-  border: 2px solid #a894ef;
+  border: 2px solid var(--color-workflow-selection);
   border-radius: inherit;
   pointer-events: none;
 }

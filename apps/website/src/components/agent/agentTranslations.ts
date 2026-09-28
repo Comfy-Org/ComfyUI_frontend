@@ -304,7 +304,7 @@ const translations = {
   },
   'agentPage.faq.2.q': {
     en: 'What model powers it?',
-    'zh-CN': '它底层是什么语言模型。'
+    'zh-CN': '它底层是什么语言模型？'
   },
   'agentPage.faq.2.a': {
     en: 'Frontier models by Anthropic. We always provide the strongest we can offer for the job. Choices for switching LLMs is on the way. What they lack alone, the agent adds: full context of your workflow, your errors, and Comfy itself.',
