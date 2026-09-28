@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="docked"
+    v-if="isDockVisible"
     data-testid="docked-agent-panel"
     role="complementary"
     aria-labelledby="agent-panel-title"
@@ -35,9 +35,9 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { useEventListener } from '@vueuse/core'
+import { useEventListener, useWindowSize } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { defineAsyncComponent, defineComponent, h, ref } from 'vue'
+import { computed, defineAsyncComponent, defineComponent, h, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useWorkspaceInsetRight } from '@/composables/useWorkspaceInset'
@@ -79,7 +79,11 @@ const { hasOpaqueNeighbor = false } = defineProps<{
 
 const agentPanelStore = useAgentPanelStore()
 const { isVisible: docked, width } = storeToRefs(agentPanelStore)
-useWorkspaceInsetRight(() => (docked.value ? width.value : 0))
+const { width: viewportWidth } = useWindowSize()
+const isDockVisible = computed(
+  () => docked.value && viewportWidth.value > width.value + 16
+)
+useWorkspaceInsetRight(() => (isDockVisible.value ? width.value : 0))
 const agentRunModeStore = useAgentRunModeStore()
 
 void agentRunModeStore.load().catch((error: unknown) => {
