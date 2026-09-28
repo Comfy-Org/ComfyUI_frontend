@@ -221,6 +221,17 @@ describe('idAllocation', () => {
     expect(collections).toBe(1)
   })
 
+  it('skips an occupied indexed fast-path candidate', () => {
+    const state = createLGraphState()
+    state.lastGroupId = 1
+    const reservedIds = {
+      has: (id: number) => id === 2,
+      collect: () => new Set([2])
+    }
+
+    expect(mintGroupId(state, reservedIds)).toBe(3)
+  })
+
   it.for([
     {
       name: 'node',
