@@ -189,7 +189,17 @@ test.describe(
           return
         }
 
-        await route.fallback()
+        await route.fulfill({
+          json: {
+            id: taskId,
+            idempotency_key: taskId,
+            task_name: 'task:download_file',
+            payload: {},
+            status: 'running',
+            create_time: new Date().toISOString(),
+            update_time: new Date().toISOString()
+          } satisfies TaskResponse
+        })
       })
 
       await dispatchAssetDownload(page, {
