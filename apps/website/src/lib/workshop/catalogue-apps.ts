@@ -41,7 +41,8 @@ export function catalogueApps(locale: Locale = 'en'): CatalogueApp[] {
       key: 'reshoot',
       name: ac('reshootName', locale),
       task: ac('reshootTask', locale),
-      href: `${studio}?app=reshoot`
+      href: `${studio}?app=reshoot`,
+      image: '/images/cinematic-studio/train.jpg'
     }
   ]
 }

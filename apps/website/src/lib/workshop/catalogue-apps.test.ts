@@ -19,4 +19,12 @@ describe('catalogueApps', () => {
       '/cinematic-studio?app=reshoot'
     ])
   })
+
+  it('gives every app its artwork', () => {
+    expect(
+      catalogueApps()
+        .filter((app) => !app.image)
+        .map((app) => app.key)
+    ).toEqual([])
+  })
 })

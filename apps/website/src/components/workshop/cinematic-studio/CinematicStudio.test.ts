@@ -969,6 +969,14 @@ describe('CinematicStudio', () => {
     }
   )
 
+  it('leads back to the Apps tab of the catalogue', async () => {
+    render(CinematicStudioPage, { props: { models } })
+
+    expect(
+      await screen.findByRole('link', { name: tc('cinematic.backToApps') })
+    ).toHaveAttribute('href', '/models?type=apps')
+  })
+
   describe('layout switch', () => {
     const panel = () =>
       screen.queryByRole('complementary', { name: 'Shot settings' })
@@ -1042,13 +1050,15 @@ describe('CinematicStudio', () => {
       expect(window.location.search).toBe('?ux=d&app=reshoot')
     })
 
-    it('lists Cinematic Studio first and Re-shoot a video next in the Hub apps tab', async () => {
+    it('lists only Cinematic Studio and Re-shoot a video in the Hub apps tab', async () => {
       window.history.replaceState(null, '', '/cinematic-studio?ux=hub')
       render(CinematicStudioPage, { props: { models } })
 
       const tab = await screen.findByRole('button', { name: 'Apps' })
       expect(tab).toHaveAttribute('aria-pressed', 'true')
-      const [firstApp, secondApp] = screen.getAllByRole('listitem')
+      const apps = screen.getAllByRole('listitem')
+      expect(apps, 'Apps that do not open yet stay off the Hub').toHaveLength(2)
+      const [firstApp, secondApp] = apps
       expect(
         within(firstApp).getByRole('link', { name: 'Cinematic Studio' })
       ).toHaveAttribute('href', '/cinematic-studio?ux=e')
