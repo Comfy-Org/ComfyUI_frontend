@@ -651,9 +651,7 @@ function followedOwn(
  * a card answers neither `action_url` nor `authentication_state`, and a
  * link alone is the hosted invoice page (FE-2643).
  */
-export function isChallengePending(
-  operation: PendingBillingOperation
-): boolean {
+function isChallengePending(operation: PendingBillingOperation): boolean {
   return operation.authenticationState === 'requires_action'
 }
 

@@ -4,24 +4,30 @@ import type {
 } from '@comfyorg/account-core/billing'
 
 import type {
+  Attempt,
   CheckoutPage,
   CheckoutPageEvent,
   OperationOutcome,
   PaymentTab,
   RailView,
   SavedArrival,
+  SubmitPhase,
   WaitingOn
 } from '@/checkout/checkoutPage'
 import {
   RESOLVING,
+  isChallengeReopenable,
+  isLocked,
   isParked,
   railAcceptsPay,
   railView,
   reduceCheckoutPage,
+  submitPhaseOf,
   waitingOn
 } from '@/checkout/checkoutPage'
 import {
   failedOperation,
+  hostedPendingOperation,
   pendingOperation,
   succeededOperation
 } from '@/test/fakeBillingClient'
@@ -752,7 +758,23 @@ describe('reduceCheckoutPage reconciliation', () => {
       },
       parked: false
     },
-    { name: 'succeeded', operation: succeededOperation(), parked: false }
+    { name: 'succeeded', operation: succeededOperation(), parked: false },
+    {
+      name: 'a challenge the bank refused',
+      operation: {
+        ...pendingOperation(),
+        authenticationState: 'failed_retryable'
+      },
+      parked: true
+    },
+    {
+      name: 'a challenge still required',
+      operation: {
+        ...pendingOperation(),
+        authenticationState: 'requires_action'
+      },
+      parked: false
+    }
   ])('$name is parked: $parked', ({ operation, parked }) => {
     expect(isParked(operation)).toBe(parked)
   })
@@ -970,5 +992,256 @@ describe('waitingOn', () => {
     }
   ])('$name is $on', ({ operation, on }) => {
     expect(waitingOn(operation)).toBe(on)
+  })
+})
+
+const challengedOperation = (id = 'op_3ds'): PendingBillingOperation => ({
+  ...pendingOperation(id),
+  authenticationState: 'requires_action'
+})
+const refusedChallenge = (id = 'op_3ds'): PendingBillingOperation => ({
+  ...pendingOperation(id),
+  authenticationState: 'failed_retryable'
+})
+const notCompleted: OperationOutcome = {
+  kind: 'not_completed',
+  operationId: 'op_3ds'
+}
+const redirected = (method: string): CheckoutPageEvent => ({
+  type: 'paySubmitted',
+  redirectMethod: method
+})
+
+type SubmitPage = Extract<
+  CheckoutPage,
+  { kind: 'resolving' | 'capture' | 'waiting' }
+>
+
+const capturing = (
+  attempt: Attempt
+): Extract<CheckoutPage, { kind: 'capture' }> => ({
+  kind: 'capture',
+  rail: { method: 'collect', element: 'ready', saved: 'none', tab: 'new' },
+  reactivation: 'not_required',
+  attempt
+})
+
+describe('submitPhaseOf', () => {
+  it.for<{ name: string; page: SubmitPage; phase: SubmitPhase }>([
+    {
+      name: 'resolving',
+      page: { kind: 'resolving' },
+      phase: { kind: 'capture' }
+    },
+    {
+      name: 'capture at rest',
+      page: capturing({ kind: 'idle' }),
+      phase: { kind: 'capture' }
+    },
+    {
+      name: 'a Pay sent with no operation yet',
+      page: capturing({ kind: 'sent' }),
+      phase: { kind: 'processing' }
+    },
+    {
+      name: 'a Pay whose operation asks for a challenge',
+      page: capturing({ kind: 'sent', operation: challengedOperation() }),
+      phase: { kind: 'challenge', operation: challengedOperation() }
+    },
+    {
+      name: 'a Pay whose operation is processing',
+      page: capturing({
+        kind: 'sent',
+        operation: { ...pendingOperation(), authenticationState: 'processing' }
+      }),
+      phase: { kind: 'processing' }
+    },
+    {
+      name: 'an Alipay Pay, even over a challenge',
+      page: capturing({
+        kind: 'sent',
+        redirectMethod: 'alipay',
+        operation: challengedOperation()
+      }),
+      phase: { kind: 'redirecting', method: 'alipay' }
+    },
+    {
+      name: 'waiting over a challenge',
+      page: { kind: 'waiting', operation: challengedOperation() },
+      phase: { kind: 'challenge', operation: challengedOperation() }
+    },
+    {
+      name: 'waiting over plain pending money',
+      page: { kind: 'waiting', operation: pendingOperation() },
+      phase: { kind: 'processing' }
+    }
+  ])('$name is $phase.kind', ({ page, phase }) => {
+    expect(submitPhaseOf(page)).toEqual(phase)
+  })
+})
+
+describe('isLocked', () => {
+  it.for<{ name: string; page: CheckoutPage; locked: boolean }>([
+    { name: 'resolving', page: RESOLVING, locked: false },
+    {
+      name: 'refused',
+      page: { kind: 'refused', reason: 'not_workspace_owner' },
+      locked: false
+    },
+    {
+      name: 'unavailable',
+      page: { kind: 'unavailable', code: 'REQUEST_FAILED' },
+      locked: false
+    },
+    {
+      name: 'plan unavailable',
+      page: { kind: 'plan_unavailable', reason: 'retired' },
+      locked: false
+    },
+    {
+      name: 'capture at rest',
+      page: capturing({ kind: 'idle' }),
+      locked: false
+    },
+    {
+      name: 'capture with Pay sent',
+      page: capturing({ kind: 'sent' }),
+      locked: true
+    },
+    {
+      name: 'waiting',
+      page: { kind: 'waiting', operation: pendingOperation() },
+      locked: true
+    },
+    { name: 'unconfirmed', page: UNCONFIRMED, locked: false },
+    {
+      name: 'terminal',
+      page: { kind: 'terminal', attribution: 'started' },
+      locked: false
+    }
+  ])('$name is locked: $locked', ({ page, locked }) => {
+    expect(isLocked(page)).toBe(locked)
+  })
+})
+
+describe('isChallengeReopenable', () => {
+  it.for<{
+    name: string
+    operation: PendingBillingOperation
+    reopenable: boolean
+  }>([
+    {
+      name: 'a hosted step with a link',
+      operation: hostedPendingOperation('https://hooks.stripe.test/3ds'),
+      reopenable: true
+    },
+    {
+      name: 'a hosted step with no link',
+      operation: {
+        ...hostedPendingOperation('https://hooks.stripe.test/3ds'),
+        actionUrl: undefined
+      },
+      reopenable: false
+    },
+    {
+      name: 'an embedded challenge still required',
+      operation: {
+        ...challengedOperation(),
+        challenge: { clientSecret: 'cs', status: 'required' }
+      },
+      reopenable: true
+    },
+    {
+      name: 'an embedded challenge this tab is showing',
+      operation: {
+        ...challengedOperation(),
+        challenge: { clientSecret: 'cs', status: 'in_progress' }
+      },
+      reopenable: false
+    },
+    {
+      name: 'an embedded challenge already completed',
+      operation: {
+        ...challengedOperation(),
+        challenge: { clientSecret: 'cs', status: 'completed' }
+      },
+      reopenable: false
+    },
+    {
+      name: 'an embedded operation with no challenge',
+      operation: challengedOperation(),
+      reopenable: false
+    }
+  ])('$name is reopenable: $reopenable', ({ operation, reopenable }) => {
+    expect(isChallengeReopenable(operation)).toBe(reopenable)
+  })
+})
+
+describe('reduceCheckoutPage through a challenge', () => {
+  it.for<{
+    name: string
+    events: CheckoutPageEvent[]
+    expected: CheckoutPage
+  }>([
+    {
+      name: "this page's own Pay carries its challenged operation on the form",
+      events: [...live, submitted, changed(challengedOperation())],
+      expected: capturing({ kind: 'sent', operation: challengedOperation() })
+    },
+    {
+      name: "a challenge the bank refused on this page's own Pay frees Pay on its card",
+      events: [
+        ...live,
+        submitted,
+        changed(challengedOperation()),
+        changed(refusedChallenge(), notCompleted)
+      ],
+      expected: { ...capturing({ kind: 'idle' }), outcome: notCompleted }
+    },
+    {
+      name: 'a redirect Pay keeps its method through the operation it starts',
+      events: [...live, redirected('alipay'), changed(challengedOperation())],
+      expected: capturing({
+        kind: 'sent',
+        redirectMethod: 'alipay',
+        operation: challengedOperation()
+      })
+    },
+    {
+      name: 'waiting over a challenge the bank refused resolves on its card',
+      events: [
+        reconciled(challengedOperation()),
+        changed(refusedChallenge(), notCompleted)
+      ],
+      expected: { kind: 'resolving', outcome: notCompleted }
+    },
+    {
+      name: 'a challenge already refused on arrival resolves on its card',
+      events: [reconciled(refusedChallenge(), notCompleted)],
+      expected: { kind: 'resolving', outcome: notCompleted }
+    },
+    {
+      name: 'a refused challenge found on arrival opens capture on its card',
+      events: [reconciled(refusedChallenge(), notCompleted), quoted(0), ready],
+      expected: { ...capturing({ kind: 'idle' }), outcome: notCompleted }
+    }
+  ])('$name', ({ events, expected }) => {
+    expect(replay(events)).toEqual(expected)
+  })
+
+  it.for<{ name: string; events: CheckoutPageEvent[]; pay: boolean }>([
+    { name: 'a Pay in flight', events: [...live, submitted], pay: false },
+    {
+      name: 'a Pay held in a challenge',
+      events: [...live, submitted, changed(challengedOperation())],
+      pay: false
+    },
+    {
+      name: 'a Pay whose challenge the bank refused',
+      events: [...live, submitted, changed(refusedChallenge(), notCompleted)],
+      pay: true
+    }
+  ])('accepts Pay after $name: $pay', ({ events, pay }) => {
+    expect(railAcceptsPay(replay(events))).toBe(pay)
   })
 })

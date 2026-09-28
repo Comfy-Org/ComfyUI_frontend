@@ -60,9 +60,22 @@ const FAKE_STRIPE_JS = `
           }
         })
       },
+      // A spec sets window.__e2eStripeRedirectTo before load to make the
+      // challenge leave the page the way a redirect method does, or
+      // window.__e2eStripeHoldNextAction to keep it open until the spec
+      // settles it through window.__e2eFakeStripe.releaseNextAction.
       handleNextAction: (args) => {
         window.__e2eFakeStripe.nextActions += 1
         window.__e2eFakeStripe.nextActionCalls.push(args)
+        if (window.__e2eStripeRedirectTo) {
+          window.location.assign(window.__e2eStripeRedirectTo)
+          return new Promise(() => {})
+        }
+        if (window.__e2eStripeHoldNextAction) {
+          return new Promise((resolve) => {
+            window.__e2eFakeStripe.releaseNextAction = resolve
+          })
+        }
         return Promise.resolve({ paymentIntent: { status: 'succeeded' } })
       }
     }

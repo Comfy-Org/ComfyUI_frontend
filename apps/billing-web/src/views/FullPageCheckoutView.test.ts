@@ -119,7 +119,8 @@ vi.mock(import('@/session/billingWebSession'), async () => {
 /** The provider form is covered in its package; here it reports phases and hands back a token. */
 const form = vi.hoisted(() => ({
   mounts: 0,
-  emit: (() => {}) as (event: string, payload: unknown) => void
+  emit: (() => {}) as (event: string, ...payload: unknown[]) => void,
+  locked: (): boolean => false
 }))
 
 vi.mock<unknown>(import('@comfyorg/account-ui/billing/stripe'), async () => {
@@ -129,21 +130,23 @@ vi.mock<unknown>(import('@comfyorg/account-ui/billing/stripe'), async () => {
       name: 'StripePaymentForm',
       props: {
         canSubmit: { type: Boolean, default: true },
-        isLoading: { type: Boolean, default: false }
+        isLoading: { type: Boolean, default: false },
+        locked: { type: Boolean, default: false }
       },
       emits: ['confirm', 'phase'],
       setup(
-        props: { canSubmit: boolean; isLoading: boolean },
+        props: { canSubmit: boolean; isLoading: boolean; locked: boolean },
         {
           emit,
           slots
         }: {
-          emit: (event: string, payload: unknown) => void
+          emit: (event: string, ...payload: unknown[]) => void
           slots: { submit?: (slotProps: Record<string, unknown>) => VNode[] }
         }
       ) {
         form.mounts += 1
         form.emit = emit
+        form.locked = () => props.locked
         return () =>
           h(
             'div',
@@ -1491,5 +1494,184 @@ describe('FullPageCheckoutView re-reconciliation', () => {
     await screen.findByRole('heading', { name: 'Already completed' })
 
     expect(siblings.published).toEqual([])
+  })
+})
+
+const challengedOperation = (
+  id: string,
+  status: 'required' | 'in_progress'
+): PendingBillingOperation => ({
+  ...pendingOperation(id),
+  authenticationState: 'requires_action',
+  challenge: { clientSecret: 'cs', status }
+})
+
+const PHASE_A = 'Nothing has been charged yet.'
+const PHASE_B = "This payment is already processing and can't be canceled."
+const ALIPAY =
+  'Taking you to Alipay to finish paying. Nothing has been charged yet.'
+
+const footnote = () => screen.getByTestId('checkout-phase-footnote')
+
+/** A Pay whose subscribe never answers, so the page follows only what the lifecycle publishes. */
+async function payHeld(methodType?: string) {
+  const fake = await payReady()
+  fake.subscribe.mockImplementation(() => new Promise(() => {}))
+  form.emit('confirm', 'ctoken_1', methodType)
+  await waitFor(() => expect(fake.subscribe).toHaveBeenCalledOnce())
+  return fake
+}
+
+describe('FullPageCheckoutView payment authentication', () => {
+  beforeEach(() => {
+    form.mounts = 0
+  })
+
+  it('locks its own Pay through a challenge, then processing, then lands on the success', async () => {
+    const fake = await payReady()
+    expect(screen.getByRole('button', { name: 'Back' })).toBeInTheDocument()
+    fake.subscribe.mockImplementation(() => new Promise(() => {}))
+    form.emit('confirm', 'ctoken_1')
+
+    fake.publishOperation(challengedOperation('op_3ds', 'in_progress'))
+
+    await waitFor(() => expect(footnote()).toHaveTextContent(PHASE_A))
+    expect(payButton()).toBeDisabled()
+    expect(payButton()).toHaveAttribute('aria-busy', 'true')
+    expect(form.locked()).toBe(true)
+    expect(
+      screen.queryByRole('button', { name: 'Back' })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Cancel payment' })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Continue verification' })
+    ).not.toBeInTheDocument()
+
+    fake.publishOperation({
+      ...pendingOperation('op_3ds'),
+      authenticationState: 'processing'
+    })
+
+    await waitFor(() => expect(footnote()).toHaveTextContent(PHASE_B))
+    expect(payButton()).toBeDisabled()
+
+    fake.publishOperation(succeededOperation('op_3ds'))
+
+    expect(
+      await screen.findByRole('heading', { name: "You're all set" })
+    ).toBeInTheDocument()
+  })
+
+  it('makes the payment tabs inert while its own Pay is in flight', async () => {
+    const fake = await renderQuoted({
+      paymentMethods: { status: 'ok', value: [VISA] }
+    })
+    fake.subscribe.mockImplementation(() => new Promise(() => {}))
+    expect(screen.getByRole('tablist')).not.toHaveAttribute('inert')
+
+    await userEvent.click(payButton())
+
+    await waitFor(() => expect(footnote()).toHaveTextContent(PHASE_B))
+    expect(screen.getByRole('tablist')).toHaveAttribute('inert')
+  })
+
+  it('puts a challenge the bank refused on its card and frees Pay for the retry, on the same form', async () => {
+    const fake = await payHeld()
+    fake.publishOperation(challengedOperation('op_3ds', 'in_progress'))
+    await waitFor(() => expect(footnote()).toHaveTextContent(PHASE_A))
+
+    fake.publishOperation({
+      ...pendingOperation('op_3ds'),
+      authenticationState: 'failed_retryable',
+      challenge: { clientSecret: 'cs', status: 'failed' }
+    })
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Payment not completed'
+    )
+    await waitFor(() => expect(payButton()).toBeEnabled())
+    expect(footnote()).toBeEmptyDOMElement()
+    expect(form.locked()).toBe(false)
+    expect(form.mounts).toBe(1)
+
+    form.emit('confirm', 'ctoken_2')
+
+    await waitFor(() => expect(fake.subscribe).toHaveBeenCalledTimes(2))
+    expect(fake.subscribe.mock.calls[1][0]).toMatchObject({
+      confirmation_token: 'ctoken_2'
+    })
+  })
+
+  it.for<{
+    name: string
+    methodType: string
+    sent: string
+    challenged: string
+  }>([
+    {
+      name: 'an Alipay Pay names where it is going, even over a challenge',
+      methodType: 'alipay',
+      sent: ALIPAY,
+      challenged: ALIPAY
+    },
+    {
+      name: 'a card Pay is processing until the bank asks for a challenge',
+      methodType: 'card',
+      sent: PHASE_B,
+      challenged: PHASE_A
+    }
+  ])('$name', async ({ methodType, sent, challenged }) => {
+    const fake = await payHeld(methodType)
+
+    await waitFor(() => expect(footnote()).toHaveTextContent(sent))
+
+    fake.publishOperation(challengedOperation('op_3ds', 'in_progress'))
+
+    await waitFor(() => expect(footnote()).toHaveTextContent(challenged))
+  })
+
+  it('offers Continue verification after a reload mid-challenge, and drives the challenge again on click', async () => {
+    const fake = await renderCheckout({
+      recover: {
+        status: 'ok',
+        value: challengedOperation('op_reload', 'required')
+      }
+    })
+
+    await waitFor(() => expect(footnote()).toHaveTextContent(PHASE_A))
+    expect(payButton()).toBeDisabled()
+    expect(
+      screen.queryByRole('button', { name: 'Back' })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Cancel payment' })
+    ).not.toBeInTheDocument()
+    await capturePromisesFlushed()
+    fake.reportChallengeStarted.mockClear()
+    fake.reportChallengeSettled.mockClear()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Continue verification' })
+    )
+
+    expect(fake.reportChallengeStarted).toHaveBeenCalledExactlyOnceWith(
+      'op_reload'
+    )
+    await waitFor(() =>
+      expect(fake.reportChallengeSettled).toHaveBeenCalledExactlyOnceWith(
+        'op_reload',
+        'completed'
+      )
+    )
+  })
+
+  it('returns a challenge to this checkout, not the result page', async () => {
+    const fake = await payHeld()
+
+    const request = fake.subscribe.mock.calls[0][0]
+    expect(request.return_url).toContain('/v1/checkout')
+    expect(request.return_url).not.toContain('/v1/result')
   })
 })
