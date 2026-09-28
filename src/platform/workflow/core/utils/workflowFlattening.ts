@@ -134,6 +134,30 @@ export function collectSubgraphDefinitions(
 }
 
 /**
+ * The subgraph definitions the root nodes instantiate, directly or through
+ * nested subgraphs, each returned once. It visits each definition once, where
+ * `buildSubgraphExecutionPaths` visits every instantiation path, which grows
+ * exponentially when a definition is reused at each nesting level.
+ */
+export function collectReachableSubgraphDefinitions(
+  rootNodes: readonly FlattenableWorkflowNode[],
+  allSubgraphDefs: readonly unknown[]
+): FlattenableSubgraphDefinition[] {
+  const byId = new Map(
+    collectSubgraphDefinitions(allSubgraphDefs).map((def) => [def.id, def])
+  )
+  const reached = new Map<string, FlattenableSubgraphDefinition>()
+  const pending = [...rootNodes]
+  for (let node = pending.pop(); node; node = pending.pop()) {
+    const def = byId.get(node.type)
+    if (!def || reached.has(def.id)) continue
+    reached.set(def.id, def)
+    pending.push(...def.nodes)
+  }
+  return [...reached.values()]
+}
+
+/**
  * Flatten all workflow nodes (root + subgraphs) into a single array.
  * Each node's `id` is prefixed with its execution path (e.g. node "3" inside container "11" -> "11:3").
  */

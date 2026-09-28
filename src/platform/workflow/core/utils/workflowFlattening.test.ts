@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { FlattenableWorkflowNode } from '@/platform/workflow/core/utils/workflowFlattening'
 import {
   buildSubgraphExecutionPaths,
+  collectReachableSubgraphDefinitions,
   collectSubgraphDefinitions,
   flattenWorkflowNodes
 } from '@/platform/workflow/core/utils/workflowFlattening'
@@ -36,6 +37,54 @@ describe('collectSubgraphDefinitions', () => {
     const ids = collectSubgraphDefinitions([defA]).map(({ id }) => id)
     expect(ids).toHaveLength(2)
     expect(new Set(ids)).toEqual(new Set(['def-A', 'def-B']))
+  })
+})
+
+describe('collectReachableSubgraphDefinitions', () => {
+  it('returns only definitions the root graph instantiates', () => {
+    const used = subgraphDef('used', [node(2, 'KSampler')])
+    const orphan = subgraphDef('orphan', [node(3, 'StaleLoader')])
+
+    const ids = collectReachableSubgraphDefinitions(
+      [node(1, 'used')],
+      [used, orphan]
+    ).map(({ id }) => id)
+
+    expect(ids).toEqual(['used'])
+  })
+
+  it('visits a definition reused at every level once', () => {
+    let visits = 0
+    const levels = 24
+    const defs = Array.from({ length: levels }, (_, level) => {
+      const inner =
+        level + 1 < levels
+          ? [node(1, `level-${level + 1}`), node(2, `level-${level + 1}`)]
+          : []
+      return {
+        ...subgraphDef(`level-${level}`, []),
+        get nodes() {
+          visits++
+          return inner
+        }
+      }
+    })
+
+    const reached = collectReachableSubgraphDefinitions(
+      [node(1, 'level-0'), node(2, 'level-0')],
+      defs
+    )
+
+    expect(reached).toHaveLength(levels)
+    expect(visits).toBeLessThan(levels * 4)
+  })
+
+  it('stops on self-referential definitions', () => {
+    const selfRef = subgraphDef('self', [node(5, 'self')])
+
+    expect(
+      collectReachableSubgraphDefinitions([node(1, 'self')], [selfRef])
+    ).toHaveLength(1)
   })
 })
 
