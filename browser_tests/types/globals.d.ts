@@ -29,6 +29,12 @@ interface CapturedMessages {
   serverFeatureFlags: unknown
 }
 
+interface PerfFrameState {
+  frameRequestId: number
+  lastTimestamp: number | null
+  durationsMs: number[]
+}
+
 declare global {
   interface Window {
     app?: ComfyApp
@@ -46,6 +52,7 @@ declare global {
     // Feature flags test globals
     __capturedMessages?: CapturedMessages
     __appReadiness?: AppReadiness
+    __perfFrameState?: PerfFrameState
 
     /**
      * WebSocket store used by test fixtures for mocking WebSocket connections.

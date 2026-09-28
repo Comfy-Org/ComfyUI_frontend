@@ -107,15 +107,9 @@ export class PerformanceHelper {
     })
   }
 
-  /** Start collecting frame intervals for the duration of the measurement. */
   private async startFrameMeasurement(): Promise<void> {
     await this.page.evaluate(() => {
-      const win = window as unknown as Record<string, unknown>
-      const state: {
-        frameRequestId: number
-        lastTimestamp: number | null
-        durationsMs: number[]
-      } = {
+      const state: NonNullable<Window['__perfFrameState']> = {
         frameRequestId: 0,
         lastTimestamp: null,
         durationsMs: []
@@ -130,21 +124,17 @@ export class PerformanceHelper {
       }
 
       state.frameRequestId = requestAnimationFrame(tick)
-      win.__perfFrameState = state
+      window.__perfFrameState = state
     })
   }
 
-  /** Stop the active frame sampler and return only intervals from its window. */
   private async stopFrameMeasurement(): Promise<number[]> {
     return this.page.evaluate(() => {
-      const win = window as unknown as Record<string, unknown>
-      const state = win.__perfFrameState as
-        | { frameRequestId: number; durationsMs: number[] }
-        | undefined
+      const state = window.__perfFrameState
       if (!state) return []
 
       cancelAnimationFrame(state.frameRequestId)
-      delete win.__perfFrameState
+      delete window.__perfFrameState
       return state.durationsMs
     })
   }
