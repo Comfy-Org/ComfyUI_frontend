@@ -5291,18 +5291,18 @@
     "placeholder": "Describe ideas, {'@'} to reference workflows, drag in media asset and files, or\nmention nodes",
     "suggestedPrompts": {
       "cloud": [
-        "Create a photorealistic image",
-        "Turn an image into a short video",
-        "Find a workflow for upscaling an image",
-        "Explain the selected node",
-        "Improve this workflow's image quality"
+        "Generate a character sheet of an astronaut",
+        "Turn the product image into a short ad",
+        "Explain the selected nodes",
+        "Best image upscale workflow for 4K",
+        "Fix the errors in this workflow"
       ],
       "local": [
-        "Build a workflow using my installed models",
-        "Fix the errors in this workflow",
-        "Improve this workflow's image quality",
-        "Explain the selected node",
-        "Help me install the missing nodes for this workflow"
+        "Generate a realistic portrait of an astronaut",
+        "Find an image-to-video workflow that works on my GPU",
+        "Explain the selected nodes",
+        "Help me install the missing nodes for this workflow",
+        "Fix the errors in this workflow"
       ]
     },
     "attach": "Attach a file",
