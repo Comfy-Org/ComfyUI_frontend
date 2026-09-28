@@ -20,8 +20,15 @@ test('every PP Formula face rendered above the fold is preloaded', async ({
     await page.evaluate(() => document.fonts.ready)
 
     const gaps = await page.evaluate(() => {
+      // A font request is always CORS-mode, so a preload without `crossorigin`
+      // is fetched separately and never reused — counting one would pass this
+      // case while the face still arrives too late to be applied.
       const preloaded = new Set(
-        [...document.querySelectorAll('link[rel="preload"][as="font"]')].map(
+        [
+          ...document.querySelectorAll(
+            'link[rel="preload"][as="font"][crossorigin]'
+          )
+        ].map(
           (link) =>
             new URL(link.getAttribute('href') ?? '', location.href).pathname
         )
@@ -74,7 +81,9 @@ test('every PP Formula face rendered above the fold is preloaded', async ({
           // file that actually serves this text rather than the weight asked
           // for: 800 is served by the Bold face until an Extrabold exists.
           const candidates = faces.filter((face) => face.family === family)
-          if (candidates.length === 0) return null
+          if (candidates.length === 0) {
+            return `${family} ${weight} → no @font-face declares this family`
+          }
           const nearest = candidates.reduce((best, face) =>
             Math.abs(Number(face.weight) - Number(weight)) <
             Math.abs(Number(best.weight) - Number(weight))
