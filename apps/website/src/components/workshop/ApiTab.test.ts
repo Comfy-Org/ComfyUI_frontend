@@ -111,6 +111,20 @@ describe('ApiTab', () => {
     expect(screen.queryByRole('button', { name: 'Copy snippet' })).toBeNull()
   })
 
+  it('names the endpoint, the key and the state of the inputs beside the snippet', async () => {
+    const { rerender } = render(ApiTab, {
+      props: { contract, values: { prompt: '', width: 0 } }
+    })
+    const facts = screen.getByTestId('api-facts')
+    expect(facts.textContent).toContain(`POST /v2/models/${routerId}`)
+    expect(facts.textContent).toContain('COMFY_API_KEY')
+    expect(facts.textContent).toContain('Not set yet')
+    await rerender({ contract, values })
+    await waitFor(() =>
+      expect(facts.textContent).toContain('Whatever the Playground holds now')
+    )
+  })
+
   it('uses local file examples for Base64 inputs without exposing embedded bytes', async () => {
     const visitor = userEvent.setup()
     const encoded = btoa('private pixels')
