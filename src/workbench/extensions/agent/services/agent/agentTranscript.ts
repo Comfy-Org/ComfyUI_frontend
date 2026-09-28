@@ -370,6 +370,21 @@ export function settleLiveMessage(message: AssistantMessage): void {
   )
 }
 
+/**
+ * The live turn the transcript may restore: only the thread's newest turn can
+ * still be running. A `streaming` row an older one left behind is a stale
+ * write the thread has moved past, and restoring it would hand the composer a
+ * turn nothing will ever settle.
+ */
+function liveTranscriptTurn(
+  pending: NormalizedAgentTranscript['pending'],
+  assistants: Map<TurnId, AssistantMessage>
+): NormalizedAgentTranscript['pending'] {
+  const liveTurn = [...assistants.keys()].at(-1)
+  if (pending === undefined || liveTurn === undefined) return undefined
+  return pending.message === assistants.get(liveTurn) ? pending : undefined
+}
+
 export function normalizeAgentTranscript(
   history: AgentMessages
 ): NormalizedAgentTranscript {
@@ -405,19 +420,10 @@ export function normalizeAgentTranscript(
     }
   }
 
-  // Only the thread's newest turn can still be running. A `streaming` row an
-  // older one left behind is a stale write the thread has moved past, and
-  // restoring it would hand the composer a turn nothing will ever settle.
-  const liveTurn = [...assistants.keys()].at(-1)
-  if (
-    pending &&
-    (liveTurn === undefined || pending.message !== assistants.get(liveTurn))
-  )
-    pending = undefined
-
+  const live = liveTranscriptTurn(pending, assistants)
   const messages = turnOrder.map((turnId) => {
     const message = assistants.get(turnId) ?? createAssistantMessage(turnId)
-    if (message === pending?.message) message.streaming = true
+    if (message === live?.message) message.streaming = true
     else settleLiveMessage(message)
     return message
   })
@@ -430,6 +436,6 @@ export function normalizeAgentTranscript(
     latestWorkflowId,
     rowIds,
     assistantTurnIds: new Set(assistants.keys()),
-    pending
+    pending: live
   }
 }

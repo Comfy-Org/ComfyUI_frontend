@@ -939,30 +939,37 @@ export function useAgentSession(deps: AgentSessionDeps) {
       }
   }
 
+  /**
+   * Holds a frame a hydrate has nowhere to put yet. A frame for the turn
+   * already on the store is not one of them -- it has a transport waiting.
+   */
+  function heldForHydration(event: AgentWsEvent): boolean {
+    if (event.data.message_id === conversationStore.activeTurnId) return false
+    const buffer = bufferFor(event.data.thread_id)
+    if (buffer === undefined) return false
+    buffer.events.push(event)
+    return true
+  }
+
+  function handleActiveTab(
+    event: Extract<AgentWsEvent, { type: 'agent_active_tab' }>
+  ): void {
+    if (
+      event.data.thread_id === undefined ||
+      event.data.thread_id === conversationStore.threadId
+    )
+      workflow?.activeTab?.(event.data)
+  }
+
   function handleAgentEvent(event: AgentWsEvent): void {
-    // A frame for the turn already on the store has a transport waiting for
-    // it; only the ones a hydrate has nowhere to put need holding.
-    if (event.data.message_id !== conversationStore.activeTurnId) {
-      const buffer = bufferFor(event.data.thread_id)
-      if (buffer) {
-        buffer.events.push(event)
-        return
-      }
-    }
+    if (heldForHydration(event)) return
     if (event.type === 'agent_ask_resolved') {
       setAskAnswering(event.data.ask_id, false)
       onAskResolved?.(event.data.ask_id)
     }
     conversationStore.ingest(event)
-    if (event.type === 'agent_active_tab') {
-      if (
-        event.data.thread_id === undefined ||
-        event.data.thread_id === conversationStore.threadId
-      )
-        workflow?.activeTab?.(event.data)
-      return
-    }
-    if (event.type === 'agent_message_done') handleMessageDone(event)
+    if (event.type === 'agent_active_tab') handleActiveTab(event)
+    else if (event.type === 'agent_message_done') handleMessageDone(event)
   }
 
   function onRaw(raw: unknown): void {
