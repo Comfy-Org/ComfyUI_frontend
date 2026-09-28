@@ -10,21 +10,19 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type {
-  SubscribeInput,
-  SubscriptionPreview
-} from '@comfyorg/account-core/billing'
+import type { SubscriptionPreview } from '@comfyorg/account-core/billing'
 import {
   CheckoutSteps,
   useCheckout,
   usePreviewSubscribe
 } from '@comfyorg/account-ui/billing'
 import type { StripePaymentCopy } from '@comfyorg/account-ui/billing/stripe'
-import {
-  buildBillingEntryUrl,
-  buildReturnUrl
-} from '@comfyorg/billing-contract'
+import { buildReturnUrl } from '@comfyorg/billing-contract'
 
+import {
+  buildSubscribeRequest,
+  checkoutResultUrl
+} from '@/checkout/subscribeRequest'
 import CheckoutPayment from '@/components/CheckoutPayment.vue'
 import EmbeddedCheckout from '@/components/EmbeddedCheckout.vue'
 import { useBilledWorkspace } from '@/composables/useBilledWorkspace'
@@ -197,63 +195,30 @@ const returnLink = computed(() => {
   return url?.href
 })
 
-/** Where a hosted payment step sends the customer back: this origin, same request. */
-function resultUrl(): string | undefined {
-  const arrival = entry.value
-  if (!arrival) return undefined
-  const workspaceId = billedWorkspace()
-  const built = buildBillingEntryUrl({
-    billingOrigin: window.location.origin,
-    intent: 'result',
-    product: arrival.product,
-    returnTo: arrival.returnTo,
-    ...(arrival.plan === undefined ? {} : { plan: arrival.plan }),
-    ...(arrival.teamCreditStopId === undefined
-      ? {}
-      : { teamCreditStopId: arrival.teamCreditStopId }),
-    ...(workspaceId === undefined ? {} : { workspaceId })
-  })
-  return built.status === 'ok' ? built.url.href : undefined
-}
-
-/**
- * The quote's identity travels with the charge, so the server prices what
- * the customer saw. A plan change on an existing subscription (see
- * `needsPaymentMethod`) has no `confirmationToken` — the server charges the
- * saved method on file instead.
- */
-function subscribeRequest(
-  plan: string,
-  confirmationToken: string | undefined,
-  quoted: SubscriptionPreview
-): SubscribeInput {
-  const returnUrl = resultUrl()
-  return {
-    plan_slug: plan,
-    ...(confirmationToken === undefined
-      ? {}
-      : { confirmation_token: confirmationToken }),
-    ...(teamCreditStopId.value === undefined
-      ? {}
-      : { team_credit_stop_id: teamCreditStopId.value }),
-    ...(quoted.quote_id === undefined ? {} : { quote_id: quoted.quote_id }),
-    ...(quoted.quote_version === undefined
-      ? {}
-      : { quote_version: quoted.quote_version }),
-    ...(quoted.is_immediate && quoted.proration_at !== undefined
-      ? { proration_at: quoted.proration_at }
-      : {}),
-    ...(returnUrl === undefined ? {} : { return_url: returnUrl }),
-    ...(reactivationConfirmed.value ? { confirm_reactivation: true } : {})
-  }
-}
-
 async function confirm(confirmationToken?: string) {
+  const arrival = entry.value
   const quoted = preview.value
-  if (planSlug.value === undefined || !quoted || loading.value) return
+  if (
+    planSlug.value === undefined ||
+    arrival === undefined ||
+    !quoted ||
+    loading.value
+  )
+    return
   submitFailure.value = undefined
   const result = await checkout.subscribe(
-    subscribeRequest(planSlug.value, confirmationToken, quoted)
+    buildSubscribeRequest({
+      arrival,
+      plan: planSlug.value,
+      quoted,
+      confirmationToken,
+      confirmReactivation: reactivationConfirmed.value,
+      returnUrl: checkoutResultUrl(
+        arrival,
+        billedWorkspace(),
+        window.location.origin
+      )
+    })
   )
   if (result.status === 'ok') return
   if (result.code === 'REACTIVATION_CONFIRMATION_REQUIRED') {

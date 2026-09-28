@@ -1,9 +1,5 @@
 import { computed, shallowReadonly, shallowRef } from 'vue'
 
-import type {
-  SubscribeInput,
-  SubscriptionPreview
-} from '@comfyorg/account-core/billing'
 import {
   useBillingClient,
   useCheckout,
@@ -11,10 +7,7 @@ import {
 } from '@comfyorg/account-ui/billing'
 import type { StripePaymentPhase } from '@comfyorg/account-ui/billing/stripe'
 import type { BillingEntry } from '@comfyorg/billing-contract'
-import {
-  buildBillingEntryUrl,
-  buildReturnUrl
-} from '@comfyorg/billing-contract'
+import { buildReturnUrl } from '@comfyorg/billing-contract'
 
 import type { CheckoutPage, CheckoutPageEvent } from '@/checkout/checkoutPage'
 import {
@@ -22,6 +15,10 @@ import {
   railAcceptsPay,
   reduceCheckoutPage
 } from '@/checkout/checkoutPage'
+import {
+  buildSubscribeRequest,
+  checkoutResultUrl
+} from '@/checkout/subscribeRequest'
 import { useBilledWorkspace } from '@/composables/useBilledWorkspace'
 import { BILLING_WEB_ENV } from '@/config/env'
 import { awaitBillingWebStripeKey } from '@/config/stripeKey'
@@ -117,55 +114,23 @@ export function useFullPageCheckout() {
     })?.href
   })
 
-  /** Where a hosted payment step sends the customer back: this origin, same request. */
-  function resultUrl(arrival: BillingEntry): string | undefined {
-    const workspaceId = billedWorkspace()
-    const built = buildBillingEntryUrl({
-      billingOrigin: window.location.origin,
-      intent: 'result',
-      product: arrival.product,
-      returnTo: arrival.returnTo,
-      ...(arrival.plan === undefined ? {} : { plan: arrival.plan }),
-      ...(arrival.teamCreditStopId === undefined
-        ? {}
-        : { teamCreditStopId: arrival.teamCreditStopId }),
-      ...(workspaceId === undefined ? {} : { workspaceId })
-    })
-    return built.status === 'ok' ? built.url.href : undefined
-  }
-
-  function subscribeRequest(
-    arrival: BillingEntry,
-    plan: string,
-    quoted: SubscriptionPreview,
-    confirmationToken: string | undefined
-  ): SubscribeInput {
-    const returnUrl = resultUrl(arrival)
-    return {
-      plan_slug: plan,
-      ...(confirmationToken === undefined
-        ? {}
-        : { confirmation_token: confirmationToken }),
-      ...(arrival.teamCreditStopId === undefined
-        ? {}
-        : { team_credit_stop_id: arrival.teamCreditStopId }),
-      ...(quoted.quote_id === undefined ? {} : { quote_id: quoted.quote_id }),
-      ...(quoted.quote_version === undefined
-        ? {}
-        : { quote_version: quoted.quote_version }),
-      ...(quoted.is_immediate && quoted.proration_at !== undefined
-        ? { proration_at: quoted.proration_at }
-        : {}),
-      ...(returnUrl === undefined ? {} : { return_url: returnUrl })
-    }
-  }
-
   async function pay(confirmationToken?: string) {
     const arrival = entry.value
     const quoted = preview.value
     if (arrival?.plan === undefined || !quoted || !canPay.value) return
     await checkout.subscribe(
-      subscribeRequest(arrival, arrival.plan, quoted, confirmationToken)
+      buildSubscribeRequest({
+        arrival,
+        plan: arrival.plan,
+        quoted,
+        confirmationToken,
+        confirmReactivation: false,
+        returnUrl: checkoutResultUrl(
+          arrival,
+          billedWorkspace(),
+          window.location.origin
+        )
+      })
     )
   }
 
