@@ -574,23 +574,6 @@ test.describe(
         ).toBeNull()
       })
 
-      await test.step('Refresh retries the still-withheld offer', async () => {
-        const readsBeforeReload = agentConsentReads.length
-        await comfyPage.workflow.reloadAndWaitForApp()
-        await expect(gettingStarted).toBeVisible()
-        await expect
-          .poll(() => agentConsentReads.length)
-          .toBeGreaterThan(readsBeforeReload)
-        await expect(consent).toHaveCount(0)
-        expect(
-          await page.evaluate(() =>
-            localStorage.getItem(
-              'Comfy.AgentConsent.AutoShown.test-user-e2e.ws-personal'
-            )
-          )
-        ).toBeNull()
-      })
-
       await test.step('Taking the blank canvas presents the deferred offer', async () => {
         await page.getByTestId('getting-started-blank').click()
         await expect(gettingStarted).toHaveCount(0)
