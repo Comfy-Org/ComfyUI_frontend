@@ -3,8 +3,11 @@ import { describe, expect, it } from 'vitest'
 import type { Locale } from '../config/locales'
 import { LOCALE_CODES } from '../config/locales'
 import cinematicEn from '../locales/en/cinematic.json' with { type: 'json' }
+import cinematicJa from '../locales/ja/cinematic.json' with { type: 'json' }
 import reshootEn from '../locales/en/reshoot.json' with { type: 'json' }
+import reshootJa from '../locales/ja/reshoot.json' with { type: 'json' }
 import routerEn from '../locales/en/router.json' with { type: 'json' }
+import routerJa from '../locales/ja/router.json' with { type: 'json' }
 import cinematicZhCN from '../locales/zh-CN/cinematic.json' with { type: 'json' }
 import reshootZhCN from '../locales/zh-CN/reshoot.json' with { type: 'json' }
 import routerZhCN from '../locales/zh-CN/router.json' with { type: 'json' }
@@ -45,7 +48,11 @@ const catalogs = [
     file: 'cinematic.json',
     unrenderable: (locale: Locale) =>
       unrenderable(
-        createTranslator({ en: cinematicEn, 'zh-CN': cinematicZhCN }),
+        createTranslator({
+          en: cinematicEn,
+          'zh-CN': cinematicZhCN,
+          ja: cinematicJa
+        }),
         locale
       )
   },
@@ -53,7 +60,11 @@ const catalogs = [
     file: 'reshoot.json',
     unrenderable: (locale: Locale) =>
       unrenderable(
-        createTranslator({ en: reshootEn, 'zh-CN': reshootZhCN }),
+        createTranslator({
+          en: reshootEn,
+          'zh-CN': reshootZhCN,
+          ja: reshootJa
+        }),
         locale
       )
   },
@@ -61,7 +72,7 @@ const catalogs = [
     file: 'router.json',
     unrenderable: (locale: Locale) =>
       unrenderable(
-        createTranslator({ en: routerEn, 'zh-CN': routerZhCN }),
+        createTranslator({ en: routerEn, 'zh-CN': routerZhCN, ja: routerJa }),
         locale
       )
   }
