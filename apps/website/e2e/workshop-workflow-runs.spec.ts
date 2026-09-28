@@ -35,7 +35,12 @@ async function setup(context: BrowserContext) {
     update_time: Date.now(),
     outputs: {}
   }
-  const commands: Array<{ method: string; path: string; body: unknown }> = []
+  const commands: Array<{
+    method: string
+    path: string
+    body: unknown
+    authorization?: string
+  }> = []
   const uploads: Buffer[] = []
   const access = (index: number) =>
     'https://testcloud.comfy.org/api/s/output-' + index + '-' + generation
@@ -96,7 +101,8 @@ async function setup(context: BrowserContext) {
     commands.push({
       method,
       path: url.pathname,
-      body: request.postData() ? request.postDataJSON() : undefined
+      body: request.postData() ? request.postDataJSON() : undefined,
+      authorization: request.headers().authorization
     })
     if (url.pathname === '/api/prompt') {
       expect(request.headers()).toHaveProperty('authorization')
@@ -160,7 +166,13 @@ test('Cloud upload, refresh, partial delivery and downloads retain one run @mobi
   expect(cloud.uploads).toEqual([image])
   expect(submissions()).toHaveLength(1)
   expect(submissions()[0].body).toMatchObject({
-    prompt: { '17': { class_type: 'LoadImage', inputs: { image: inputName } } }
+    prompt: { '17': { class_type: 'LoadImage', inputs: { image: inputName } } },
+    extra_data: {
+      auth_token_comfy_org: submissions()[0].authorization?.replace(
+        /^Bearer /,
+        ''
+      )
+    }
   })
 
   await page.reload()

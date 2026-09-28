@@ -48,7 +48,10 @@ describe('workflow API snippets', () => {
       ['-c', `curl() { printf '%s\\n' "$@"; }\n${code}`],
       { encoding: 'utf8' }
     )
-    expect(JSON.parse(args.split('--data\n')[1])).toEqual(request)
+    expect(JSON.parse(args.split('--data\n')[1])).toEqual({
+      ...request,
+      extra_data: { api_key_comfy_org: 'YOUR_API_KEY' }
+    })
     expect(args).toContain('X-API-Key: YOUR_API_KEY\n')
     expect(args).toContain('/api/prompt')
     expect(args).not.toContain('base64')

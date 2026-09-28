@@ -19,6 +19,8 @@ import {
   workflowOutputs
 } from './workshop-workflow-response'
 
+type PromptBody = { prompt: unknown; extra_data?: Record<string, unknown> }
+
 const id = 'bafc696e-e5d4-42f1-9a3d-d01f82a0629b'
 const otherId = 'caa84bc4-cd81-50fd-8c0e-ebac0d902a53'
 const path = `/api/jobs/${id}?short_link=ephemeral_tool_chain`
@@ -92,7 +94,13 @@ describe('Workshop workflow HTTP client', () => {
         '170:169': { inputs: { seed: 677909188488042 } }
       }
     })
-    expect(bodies[1]).toEqual(bodies[0])
+    expect(bodies[1]).toMatchObject({
+      prompt: (bodies[0] as { prompt: unknown }).prompt
+    })
+    expect(bodies.map((body) => (body as PromptBody).extra_data)).toEqual([
+      { auth_token_comfy_org: 'before' },
+      { auth_token_comfy_org: 'after' }
+    ])
     expect(source.cloud.workflow).toEqual(original)
     expect(
       fetch.mock.calls.map(([, init]) =>
@@ -187,6 +195,10 @@ describe('Workshop workflow HTTP client', () => {
     const headers = new Headers(fetch.mock.calls[0][1]?.headers)
     expect(headers.get('X-API-Key')).toBe('caller-key')
     expect(headers.has('Authorization')).toBe(false)
+    expect(
+      (JSON.parse(String(fetch.mock.calls[0][1]?.body)) as PromptBody)
+        .extra_data
+    ).toEqual({ api_key_comfy_org: 'caller-key' })
   })
 
   it('discards authentication renewed after caller cancellation', async () => {

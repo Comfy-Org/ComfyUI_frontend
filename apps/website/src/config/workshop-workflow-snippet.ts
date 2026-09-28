@@ -29,6 +29,12 @@ export function workflowCurl(request: PromptRequest): string {
     `curl --fail-with-body --max-time 60 --request POST ${quote(`${WORKSHOP_CLOUD_BASE_URL}/api/prompt`)} \\`,
     `  --header 'X-API-Key: YOUR_API_KEY' \\`,
     `  --header 'Content-Type: application/json' \\`,
-    `  --data ${quote(JSON.stringify(request, null, 2))}`
+    `  --data ${quote(
+      JSON.stringify(
+        { ...request, extra_data: { api_key_comfy_org: 'YOUR_API_KEY' } },
+        null,
+        2
+      )
+    )}`
   ].join('\n')
 }
