@@ -137,32 +137,44 @@ test.describe(
 
         const text =
           'Keep the lighting soft, preserve the framing, and render four variations.'
-        const perf = new PerformanceHelper(page)
-        await perf.init()
-        try {
-          await perf.startMeasuring()
-          await editor.pressSequentially(text)
-          const measurement = await perf.stopMeasuring(
-            `agent-composer-${sessionSize}-conversation-typing`
-          )
 
-          await expect(editor).toHaveText(text)
-          recordMeasurement(measurement)
-          logMeasurement(
-            `Agent composer ${sessionSize}-conversation typing`,
-            measurement,
-            [
-              'taskDurationMs',
-              'scriptDurationMs',
-              'styleRecalcs',
-              'layouts',
-              'totalBlockingTimeMs',
-              'heapUsedBytes'
-            ]
-          )
-        } finally {
-          await perf.dispose()
-        }
+        await test.step('warm the composer twice', async () => {
+          for (let warmup = 0; warmup < 2; warmup++) {
+            await editor.pressSequentially(text)
+            await expect(editor).toHaveText(text)
+            await editor.fill('')
+            await expect(editor).toBeEmpty()
+          }
+        })
+
+        await test.step('measure composer typing', async () => {
+          const perf = new PerformanceHelper(page)
+          await perf.init()
+          try {
+            await perf.startMeasuring()
+            await editor.pressSequentially(text)
+            const measurement = await perf.stopMeasuring(
+              `agent-composer-${sessionSize}-conversation-typing`
+            )
+
+            await expect(editor).toHaveText(text)
+            recordMeasurement(measurement)
+            logMeasurement(
+              `Agent composer ${sessionSize}-conversation typing`,
+              measurement,
+              [
+                'taskDurationMs',
+                'scriptDurationMs',
+                'styleRecalcs',
+                'layouts',
+                'totalBlockingTimeMs',
+                'heapUsedBytes'
+              ]
+            )
+          } finally {
+            await perf.dispose()
+          }
+        })
       })
     }
   }
