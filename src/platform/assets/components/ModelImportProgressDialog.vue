@@ -8,11 +8,13 @@ import Loader from '@/components/loader/Loader.vue'
 import HoneyToast from '@/components/honeyToast/HoneyToast.vue'
 import ProgressToastItem from '@/components/toast/ProgressToastItem.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()
 const assetDownloadStore = useAssetDownloadStore()
+const { toastErrorHandler } = useErrorHandling()
 
 const visible = computed(() => assetDownloadStore.hasDownloads)
 
@@ -47,6 +49,9 @@ const completedJobs = computed(() =>
 const failedJobs = computed(() =>
   assetDownloadStore.finishedDownloads.filter((d) => d.status === 'failed')
 )
+const cancelledJobs = computed(() =>
+  assetDownloadStore.finishedDownloads.filter((d) => d.status === 'cancelled')
+)
 
 const isInProgress = computed(() => assetDownloadStore.hasActiveDownloads)
 const currentJobName = computed(() => {
@@ -55,7 +60,10 @@ const currentJobName = computed(() => {
 })
 
 const completedCount = computed(
-  () => completedJobs.value.length + failedJobs.value.length
+  () =>
+    completedJobs.value.length +
+    failedJobs.value.length +
+    cancelledJobs.value.length
 )
 const totalCount = computed(() => downloadJobs.value.length)
 
@@ -80,6 +88,14 @@ const activeFilterLabel = computed(() => {
 function closeDialog() {
   assetDownloadStore.clearFinishedDownloads()
   isExpanded.value = false
+}
+
+async function cancelDownload(taskId: string) {
+  try {
+    await assetDownloadStore.cancelDownload(taskId)
+  } catch (error) {
+    toastErrorHandler(error)
+  }
 }
 </script>
 
@@ -152,7 +168,7 @@ function closeDialog() {
             v-for="job in filteredJobs"
             :key="job.taskId"
             :job="job"
-            @cancel="assetDownloadStore.cancelDownload"
+            @cancel="cancelDownload"
           />
         </div>
 
@@ -194,6 +210,14 @@ function closeDialog() {
                   count: failedJobs.length
                 })
               }}
+            </span>
+          </template>
+          <template v-else-if="cancelledJobs.length > 0">
+            <i
+              class="icon-[lucide--circle-x] size-4 shrink-0 text-muted-foreground"
+            />
+            <span class="min-w-0 truncate font-bold text-base-foreground">
+              {{ t('electronFileDownload.cancelled') }}
             </span>
           </template>
           <template v-else>

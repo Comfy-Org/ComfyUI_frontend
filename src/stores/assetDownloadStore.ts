@@ -223,8 +223,16 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
       return
     }
     await taskService.cancelTask(taskId)
-    download.status = 'cancelled'
-    download.lastUpdate = Date.now()
+    const current = downloads.value.get(taskId)
+    if (
+      !current ||
+      current.status === 'completed' ||
+      current.status === 'cancelled'
+    ) {
+      return
+    }
+    current.status = 'cancelled'
+    current.lastUpdate = Date.now()
   }
 
   return {

@@ -207,6 +207,25 @@ describe('useAssetDownloadStore', () => {
       await expect(store.cancelDownload('task-123')).rejects.toThrow('network')
       expect(store.activeDownloads).toHaveLength(1)
     })
+
+    it('preserves a completion that arrives while cancellation is pending', async () => {
+      const store = useAssetDownloadStore()
+      let resolveCancellation!: () => void
+      vi.mocked(taskService.cancelTask).mockImplementation(
+        () =>
+          new Promise<void>((resolve) => {
+            resolveCancellation = resolve
+          })
+      )
+      dispatch(createDownloadMessage({ status: 'running' }))
+
+      const cancellation = store.cancelDownload('task-123')
+      dispatch(createDownloadMessage({ status: 'completed', progress: 100 }))
+      resolveCancellation()
+      await cancellation
+
+      expect(store.finishedDownloads[0].status).toBe('completed')
+    })
   })
 
   describe('stale download polling', () => {
