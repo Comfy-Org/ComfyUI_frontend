@@ -27,10 +27,9 @@ const RESULT_TIMEOUT_MS = 10_000
 
 /**
  * The sender's view of a parsed `doc_ops_result`. Derived from the
- * authoritative {@link DocOpsResult} rather than restated, so a protocol field
- * has one owner and one name: a field that parses cannot then be dropped on
- * its way here. `workflowId` is optional only because a sender may be driven
- * without one.
+ * authoritative {@link DocOpsResult} rather than restated, so the fields the
+ * sender consumes retain their canonical names and types. `workflowId` is
+ * optional only because a sender may be driven without one.
  */
 export type OpsResultView = Pick<
   DocOpsResult,

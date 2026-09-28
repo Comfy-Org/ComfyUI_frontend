@@ -203,19 +203,21 @@ describe('a human edit the doc host rejects', () => {
 
   // `op_id` is optional on the wire — the relay omits it when it cannot map
   // the failing index. Resolving by index is the only path left, and an
-  // op_id-only implementation would misclassify this as generic.
+  // op_id-only or first-op-only implementation would misclassify this as generic.
   it('identifies the rejected op by index when the host sends no op_id', async () => {
-    const { submit } = mountFollower()
-    await submit(WIDGET_EDIT)
+    const { submitBatch } = mountFollower()
+    const frames = await submitBatch([NODE_ADD, WIDGET_EDIT])
+    expect(frames).toHaveLength(1)
+    const [[appliedId]] = frames
 
     answerWithOpsResult({
       v: 1,
       workflow_id: WORKFLOW_ID,
       ok: false,
-      applied: [],
+      applied: [appliedId],
       skipped: [],
       failed: {
-        index: 0,
+        index: 1,
         code: 'opaque_widgets',
         message: 'node is absent from the pinned catalog'
       }

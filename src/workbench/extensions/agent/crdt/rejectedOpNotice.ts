@@ -66,8 +66,8 @@ function noticeKey(widgetWrite: boolean, partial: boolean): string {
  *   that render the same copy — every generic one does — collapse to one toast
  *   for `NOTICE_LIFE_MS`. Only a differently-worded rejection speaks inside
  *   that window.
- * - Telemetry is deduplicated per CODE, so a distinct code still reports even
- *   when its toast was collapsed. That is the channel to trust for counting.
+ * - Telemetry records each distinct CODE once for this notifier's lifetime,
+ *   even when its toast was collapsed. It does not count rejection events.
  */
 export function createRejectedOpNotifier() {
   const throttledToasts = new Map<string, ThrottledFunction<() => void>>()
