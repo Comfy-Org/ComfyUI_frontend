@@ -1,3 +1,4 @@
+import { tryOnScopeDispose } from '@vueuse/core'
 import { computed, shallowReadonly, shallowRef, watch } from 'vue'
 
 import {
@@ -30,6 +31,7 @@ import {
   reduceCheckoutPage
 } from '@/checkout/checkoutPage'
 import { planCreditsSettingsUrl } from '@/checkout/cloudLinks'
+import { createOperationChannel } from '@/checkout/operationChannel'
 import type { PayVerdict } from '@/checkout/payVerdict'
 import { operationOutcomeOf, payVerdictOf } from '@/checkout/payVerdict'
 import {
@@ -40,6 +42,7 @@ import { useBilledWorkspace } from '@/composables/useBilledWorkspace'
 import { BILLING_WEB_ENV } from '@/config/env'
 import { awaitBillingWebStripeKey } from '@/config/stripeKey'
 import { useBillingEntry } from '@/entry/billingEntry'
+import { useBillingWebSession } from '@/session/billingWebSession'
 import { createDeferredStripeChallengePort } from '@/session/stripeChallengePort'
 
 /** What Pay charges: a new card's token, a saved method, or the method on file. */
@@ -63,9 +66,15 @@ type PlannedEntry = BillingEntry & { plan: string }
  * that a later one overtook drops its answer, so a reload, a return from a
  * provider page, a restore from the back-forward cache and a sibling tab's
  * nudge all land on the same page for the same server state.
+ *
+ * Sibling tabs on this checkout hear when this page's own Pay starts an
+ * operation and when it settles, and re-read the server for themselves. The
+ * notice carries no state, and only an operation this page sent is announced,
+ * so no tab ever re-broadcasts what it merely heard.
  */
 export function useFullPageCheckout() {
   const { entry } = useBillingEntry()
+  const { session } = useBillingWebSession()
   const billedWorkspace = useBilledWorkspace()
   const { capabilities, lifecycle, status } = useBillingClient<
     'capabilities' | 'lifecycle' | 'status'
@@ -211,13 +220,42 @@ export function useFullPageCheckout() {
     void readCapture()
   }
 
+  const scope = session.value
+  const channel =
+    scope === undefined
+      ? undefined
+      : createOperationChannel(scope.uid, scope.workspace.id)
+  const unsubscribe = channel?.subscribe(() => void reconcile())
+  tryOnScopeDispose(() => {
+    unsubscribe?.()
+    channel?.close()
+  })
+
+  const announced = new Set<string>()
+
+  /** Tells sibling tabs about this page's own operation, once per step. */
+  function announce(operation: BillingOperationState) {
+    if (scope === undefined || channel === undefined) return
+    const settled = page.value.kind === 'terminal'
+    const notice = `${operation.id}:${settled ? 'settled' : 'started'}`
+    if (announced.has(notice)) return
+    announced.add(notice)
+    channel.publish({
+      workspaceId: scope.workspace.id,
+      operationId: operation.id,
+      kind: settled ? 'settled' : 'started'
+    })
+  }
+
   watch(checkout.operation, (operation) => {
     if (operation === undefined) return
+    const own = page.value.kind === 'capture' && page.value.attempt === 'sent'
     dispatch({
       type: 'operationChanged',
       operation,
       ...outcomeFor(operation)
     })
+    if (own) announce(operation)
   })
 
   function onPaymentPhase(phase: StripePaymentPhase) {
