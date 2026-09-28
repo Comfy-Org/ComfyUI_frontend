@@ -1,14 +1,10 @@
 import { watch } from 'vue'
 import { v4 as uuidv4 } from 'uuid'
 
-import { i18n } from '@/i18n'
-import { reportError } from '@/platform/telemetry/reportError'
 import type { AgentInputMethod } from '@/platform/telemetry/types'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 
 import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
-import { isReportableSendFault } from './useAgentSession'
 import type { WorkflowReference } from '../../types/workflowReference'
 import type { SelectedNode, useCanvasSelection } from './useCanvasSelection'
 import { selectedNodeKey } from './useCanvasSelection'
@@ -48,7 +44,6 @@ export function useAgentDraftSubmission(
   options: UseAgentDraftSubmissionOptions
 ) {
   const composer = useAgentComposerStore()
-  const toast = useToastStore()
   const { selection } = options
 
   function recoverFailedSubmission(): void {
@@ -79,23 +74,20 @@ export function useAgentDraftSubmission(
     flush: 'sync'
   })
 
-  function isSendable(
-    text: string,
-    attachments: ComposerAttachment[]
-  ): boolean {
-    if (!options.canSubmit()) return false
-    if (composer.submission?.phase === 'pending') return false
-    if (!text.trim() && attachments.length === 0) return false
-    return !attachments.some((attachment) => attachment.uploading)
-  }
-
   async function submit(
     text: string,
     attachments: ComposerAttachment[],
     references: WorkflowReference[] = []
   ): Promise<void> {
     const target = options.target()
-    if (target === null || !isSendable(text, attachments)) return
+    if (
+      !options.canSubmit() ||
+      composer.submission?.phase === 'pending' ||
+      target === null ||
+      (!text.trim() && attachments.length === 0) ||
+      attachments.some((attachment) => attachment.uploading)
+    )
+      return
 
     const prompt = composer.prompt
     const inputMethod = composer.promptOrigin
@@ -113,30 +105,13 @@ export function useAgentDraftSubmission(
       target
     })
 
-    // A send that rejects rather than returning false would leave the
-    // submission 'pending' for the page's lifetime, and AgentPanelRoot reads
-    // that phase into isSending, which gates canSubmit — so the composer
-    // would refuse every later message until a reload. Reported rather than
-    // rethrown: the only caller is a template handler typed `=> void`
-    // (useComposer's onSend), so a rethrow lands as an untagged unhandled
-    // rejection that reaches neither error console.
-    let sent = false
-    try {
-      sent = await options.send(text, sentAttachments, nodes, sentReferences, {
-        clientMessageId: uuidv4(),
-        inputMethod
-      })
-    } catch (error) {
-      // The draft is gone by now (startSubmission cleared it) and
-      // takeFailedSubmission only restores it while the revision still
-      // matches, so without a toast the user loses their text to silence.
-      if (isReportableSendFault(error))
-        reportError(error, { errorType: 'agent_submit_failed' })
-      toast.add({
-        severity: 'error',
-        detail: i18n.global.t('agent.sendFailed')
-      })
-    }
+    const sent = await options.send(
+      text,
+      sentAttachments,
+      nodes,
+      sentReferences,
+      { clientMessageId: uuidv4(), inputMethod }
+    )
     composer.settleSubmission(submissionId, sent)
   }
 

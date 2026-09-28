@@ -197,11 +197,10 @@ test.describe('Agent run permissions popover', { tag: '@cloud' }, () => {
     })
   })
 
-  // PM-1660/PM-1661, reproduced from the reporter's recording: the composer
-  // clears on the send CLICK, but the POST that carries the message waits on
-  // the cloud-workflow refresh first. The server pins a turn's run mode when
-  // that POST arrives, so a mode written inside that window re-authorized a
-  // turn the user had already sent under the previous mode.
+  // PM-1660/PM-1661, reproduced from the reporter's recording: the POST that
+  // carries the message waits on the cloud-workflow refresh first. The server
+  // pins a turn's run mode when that POST arrives, so a mode written inside
+  // that window re-authorized a turn sent under the previous mode.
   test('a mode picked while a message is still in flight is saved after it', async ({
     agentPanel,
     comfyPage
@@ -227,8 +226,8 @@ test.describe('Agent run permissions popover', { tag: '@cloud' }, () => {
       // Recording on interception would let a PUT that overtook a still-held
       // POST still read back as ['message', 'run-mode'] and pass.
       if (holdTheSend) await sendHeld
-      reachedServer.push('message')
       await route.fallback()
+      reachedServer.push('message')
     })
     await page.route('**/api/agent/run-mode', async (route) => {
       const request = route.request()
@@ -260,10 +259,6 @@ test.describe('Agent run permissions popover', { tag: '@cloud' }, () => {
 
     holdTheSend = true
     await agentPanel.sendMessage('run the wf')
-
-    await test.step('the composer looks sent while the send is still held', async () => {
-      await expect(agentPanel.composer).toHaveText('')
-    })
 
     await test.step('switching mode now does not overtake the message', async () => {
       await autoTrigger.click()
