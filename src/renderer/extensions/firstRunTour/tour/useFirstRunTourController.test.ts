@@ -544,16 +544,14 @@ describe('useFirstRunTourController', () => {
       )
     })
 
-    it('recovers when a rejected renderer enable is retried', async () => {
+    it('restores the renderer after its enable fails to persist', async () => {
       useSettingStore().settingValues['Comfy.VueNodes.Enabled'] = false
-      vi.mocked(useSettingStore().set)
-        .mockImplementationOnce(async (key, value) => {
+      vi.mocked(useSettingStore().set).mockImplementationOnce(
+        async (key, value) => {
           Object.assign(useSettingStore().settingValues, { [key]: value })
           throw new Error('failed to persist renderer setting')
-        })
-        .mockImplementation(async (key, value) => {
-          Object.assign(useSettingStore().settingValues, { [key]: value })
-        })
+        }
+      )
       const controller = await freshController()
 
       await expect(controller.beginTour('image_z_image_turbo')).rejects.toThrow(
