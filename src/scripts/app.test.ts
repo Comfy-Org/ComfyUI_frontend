@@ -567,6 +567,40 @@ describe('ComfyApp', () => {
         expect(app.canvas.ds.scale).toBe(0.25)
       })
 
+      it('drops the queued fallback fit when a newer load starts', async () => {
+        const canvasEl = hideCanvas()
+        vi.spyOn(canvasEl, 'getBoundingClientRect').mockReturnValue(
+          fromPartial<DOMRect>({ width: 1600, height: 900 })
+        )
+        canvasEl.width = 1600
+        canvasEl.height = 900
+        // A restored viewport far from every node takes fitView's fallback
+        // branch, which is the one that queues an animation frame.
+        Object.assign(app.canvas.ds, {
+          computeVisibleArea: vi.fn(() => {
+            app.canvas.visible_area.set([100_000, 100_000, 800, 600])
+          })
+        })
+        const fitView = vi.fn()
+        vi.mocked(useLitegraphService).mockReturnValue({
+          ...useLitegraphService(),
+          fitView
+        })
+
+        const graphData = createWorkflowGraphData()
+        graphData.extra = { ds: { offset: [1, 2], scale: 0.5 } }
+        await app.loadGraphData(graphData, true, true, 'queued-fallback')
+        expect(fitView).not.toHaveBeenCalled()
+
+        // restore_view false so this load cannot fit on its own; it only
+        // needs to supersede the frame the previous load queued.
+        await app.loadGraphData(createWorkflowGraphData(), true, false, 'newer')
+        await new Promise((resolve) => requestAnimationFrame(() => resolve(0)))
+        await new Promise((resolve) => requestAnimationFrame(() => resolve(0)))
+
+        expect(fitView).not.toHaveBeenCalled()
+      })
+
       it('fits once the hidden canvas regains a size', async () => {
         const canvasEl = hideCanvas()
         const fitView = vi.fn()
