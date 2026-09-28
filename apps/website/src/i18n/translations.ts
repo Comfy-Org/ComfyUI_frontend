@@ -10562,8 +10562,8 @@ Enterprise`
     'zh-CN': '由 Comfy Cloud 运行'
   },
   'workshop.api.filesRead': {
-    en: 'Read and Base64-encoded when the code runs',
-    'zh-CN': '代码运行时读取并进行 Base64 编码'
+    en: 'Read from the paths in the code when it runs',
+    'zh-CN': '代码运行时从代码中的路径读取'
   },
   'workshop.api.filesUploaded': {
     en: 'Uploaded before the call, then read from their urls',

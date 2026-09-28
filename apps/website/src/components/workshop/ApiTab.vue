@@ -212,7 +212,7 @@ const facts = computed(() => [
     value: 'COMFY_API_KEY',
     mono: true
   },
-  ...(request.value?.files.length
+  ...(request.value?.files.some((file) => !file.sourceUrl)
     ? [
         {
           label: t('workshop.api.needsFiles', locale),

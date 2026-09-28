@@ -83,6 +83,7 @@ const facts = computed(() => [
           target="_blank"
           rel="noopener"
           class="w-full justify-center"
+          data-testid="api-get-key"
           >{{ t('workshop.api.getKey') }}</Button
         >
         <ApiFacts :where="t('workshop.api.runsOnCloud')" :rows="facts" />
