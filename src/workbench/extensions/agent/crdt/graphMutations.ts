@@ -176,11 +176,19 @@ export interface GraphMutationBatch {
   clearSemanticGraph(): void
 }
 
+export type GraphMutationBatchResult =
+  | { readonly kind: 'committed' }
+  | { readonly kind: 'rejected'; readonly reason: 'no-scope' | 'validation' }
+
 export interface GraphMutations {
   batch(
     context: RemoteMutationContext,
     define: (batch: GraphMutationBatch) => void
   ): boolean
+  batchResult(
+    context: RemoteMutationContext,
+    define: (batch: GraphMutationBatch) => void
+  ): GraphMutationBatchResult
   addNode(payload: SemanticNodePayload, context: RemoteMutationContext): boolean
   setWidget(
     nodeId: NodeId,
@@ -1905,9 +1913,18 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
    * changed locally (a human edit, or any write that reached the widget
    * without going through this module's own commit) since it was last read
    * from the doc. Overwriting it here would replay stale text over what the
-   * user is looking at (PM-1303/PM-1310 "hypothesis C"); an explicit
-   * single-widget `setWidget` op is unaffected, since it calls
-   * `setWidgetValue` directly rather than through this function.
+   * user is looking at (PM-1303/PM-1310 "hypothesis C").
+   *
+   * An incremental single-widget `setWidget` op is the SAME collision, not an
+   * exemption: the host echoes every human `set_widget` back as a doc frame,
+   * and each echo carries the whole value as of mint time. While the user is
+   * still typing, that echo is stale by however many keystrokes are in
+   * flight, and replaying it deletes those keystrokes under the cursor
+   * (PM-1191/PM-1697 — the agent-panel typing garble). An agent's
+   * `set_widget` onto a widget the user is mid-editing loses the same race.
+   * So `commit`'s `setWidget` case consults this guard too; the clearing
+   * rule below makes both paths converge the moment the document reflects
+   * the local value.
    *
    * Protection lasts until the document actually reflects the local value,
    * not for a single skipped reconcile: the follower has no invariant that
@@ -2144,13 +2161,22 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           break
         }
         case 'setWidget': {
-          setWidgetValue(
-            scope,
-            mutation.nodeId,
-            mutation.name,
-            mutation.value,
-            context
-          )
+          if (
+            !skipStaleReconcile(
+              scope,
+              mutation.nodeId,
+              mutation.name,
+              mutation.value
+            )
+          ) {
+            setWidgetValue(
+              scope,
+              mutation.nodeId,
+              mutation.name,
+              mutation.value,
+              context
+            )
+          }
           break
         }
         case 'connect': {
@@ -2283,54 +2309,65 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     }
   }
 
+  const runBatch = (
+    context: RemoteMutationContext,
+    define: (batch: GraphMutationBatch) => void
+  ): GraphMutationBatchResult => {
+    const scope = deps.getScope()
+    if (!scope) return { kind: 'rejected', reason: 'no-scope' }
+    const queued: QueuedMutation[] = []
+    define({
+      addNode(payload) {
+        queued.push({ kind: 'addNode', payload })
+      },
+      reconcileNode(payload) {
+        queued.push({ kind: 'reconcileNode', payload })
+      },
+      reconcileNodeFields(payload) {
+        queued.push({ kind: 'reconcileNodeFields', payload })
+      },
+      setWidget(nodeId, name, value) {
+        queued.push({ kind: 'setWidget', nodeId, name, value })
+      },
+      connect(link) {
+        queued.push({ kind: 'connect', link })
+      },
+      removeMissing(retainedNodeIds, retainedLinkIds) {
+        queued.push({
+          kind: 'removeMissing',
+          retainedNodeIds,
+          retainedLinkIds
+        })
+      },
+      removeLinks(linkIds) {
+        queued.push({ kind: 'removeLinks', linkIds })
+      },
+      deleteNode(nodeId, removedLinkIds = []) {
+        queued.push({ kind: 'deleteNode', nodeId, removedLinkIds })
+      },
+      clearSemanticGraph() {
+        queued.push({ kind: 'clearSemanticGraph' })
+      }
+    })
+    const existingIds = nodeStore
+      .getGraphNodesFor(scope.rootGraphId, scope.owningGraphId)
+      .map((node) => node.id)
+    const memory = autogrowMemory.draft()
+    const prepared = prepare(memory, scope, queued)
+    if (typeof prepared === 'string') {
+      fail(prepared)
+      return { kind: 'rejected', reason: 'validation' }
+    }
+    offsetInsertedBatch(scope, existingIds, prepared)
+    commit(scope, prepared, context, memory)
+    return { kind: 'committed' }
+  }
+
   const graphMutations: GraphMutations = {
     batch(context, define) {
-      const scope = deps.getScope()
-      if (!scope) return false
-      const queued: QueuedMutation[] = []
-      define({
-        addNode(payload) {
-          queued.push({ kind: 'addNode', payload })
-        },
-        reconcileNode(payload) {
-          queued.push({ kind: 'reconcileNode', payload })
-        },
-        reconcileNodeFields(payload) {
-          queued.push({ kind: 'reconcileNodeFields', payload })
-        },
-        setWidget(nodeId, name, value) {
-          queued.push({ kind: 'setWidget', nodeId, name, value })
-        },
-        connect(link) {
-          queued.push({ kind: 'connect', link })
-        },
-        removeMissing(retainedNodeIds, retainedLinkIds) {
-          queued.push({
-            kind: 'removeMissing',
-            retainedNodeIds,
-            retainedLinkIds
-          })
-        },
-        removeLinks(linkIds) {
-          queued.push({ kind: 'removeLinks', linkIds })
-        },
-        deleteNode(nodeId, removedLinkIds = []) {
-          queued.push({ kind: 'deleteNode', nodeId, removedLinkIds })
-        },
-        clearSemanticGraph() {
-          queued.push({ kind: 'clearSemanticGraph' })
-        }
-      })
-      const existingIds = nodeStore
-        .getGraphNodesFor(scope.rootGraphId, scope.owningGraphId)
-        .map((node) => node.id)
-      const memory = autogrowMemory.draft()
-      const prepared = prepare(memory, scope, queued)
-      if (typeof prepared === 'string') return fail(prepared)
-      offsetInsertedBatch(scope, existingIds, prepared)
-      commit(scope, prepared, context, memory)
-      return true
+      return runBatch(context, define).kind === 'committed'
     },
+    batchResult: runBatch,
     addNode(payload, context) {
       return graphMutations.batch(context, (batch) => batch.addNode(payload))
     },

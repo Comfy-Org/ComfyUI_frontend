@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue'
 
 import { i18n } from '@/i18n'
+import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import type {
   AgentStopClickedMetadata,
@@ -8,7 +9,11 @@ import type {
   AgentThreadStartSource,
   AgentWorkflowBindSource
 } from '@/platform/telemetry/types'
-import { useTelemetry } from '@/platform/telemetry'
+import { clearLegacyAgentStorage } from '@/platform/workflow/persistence/base/storageIO'
+import {
+  getWorkspaceId,
+  StorageKeys
+} from '@/platform/workflow/persistence/base/storageKeys'
 import { createUuidv4 } from '@/utils/uuid'
 import type {
   AgentActiveTabData,
@@ -89,6 +94,8 @@ export interface AgentSessionDeps {
   onThreadStarted?: (source: AgentSessionThreadStartSource) => void
   onAskResolved?: (askId: string) => void
   workflow?: {
+    /** Resolve fresh versus restored startup before asynchronous hydration. */
+    initialize?(hasThread: boolean): void
     // origin, when given, pins resolution to the tab that initiated the send
     // instead of the target selected when this is called - it is read
     // after prepare() so cloud ids it resolves are fresh, but must still
@@ -113,7 +120,6 @@ export interface AgentSessionDeps {
   }
 }
 
-const THREAD_STORAGE_KEY = 'Comfy.Agent.ThreadId'
 const PREPARE_TIMEOUT_MS = 3000
 
 let sessionGeneration = 0
@@ -161,6 +167,8 @@ function disownsWorkflow(error: unknown): boolean {
 
 export function useAgentSession(deps: AgentSessionDeps) {
   const { rest, events, onThreadStarted, onAskResolved, workflow } = deps
+  const threadStorageKey = StorageKeys.agentThread(getWorkspaceId())
+  clearLegacyAgentStorage()
 
   const conversationStore = useAgentConversationStore()
   const bindingStore = useAgentWorkflowTabBindingStore()
@@ -251,18 +259,23 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function start(): void {
     ownedGeneration = ++sessionGeneration
     everLive = false
+    const surviving = conversationStore.threadId
+    const stored =
+      conversationStore.messages.length === 0
+        ? localStorage.getItem(threadStorageKey)
+        : null
+    workflow?.initialize?.(surviving !== null || stored !== null)
     // The binding only outlives a remount together with its thread: a page
     // with no surviving thread has no resumed turn the binding could serve.
     if (
       conversationStore.threadId === null &&
-      localStorage.getItem(THREAD_STORAGE_KEY) === null
+      localStorage.getItem(threadStorageKey) === null
     ) {
       rememberedWorkflowId = null
       boundWorkflowId.value = null
     }
     unsubscribe = events.subscribe(onRaw)
     if (events.onStatus) unsubscribeStatus = events.onStatus(onStatus)
-    const surviving = conversationStore.threadId
     if (surviving !== null) {
       const generation = ++loadGeneration
       const isCurrent = () =>
@@ -274,18 +287,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
       })
       return
     }
-    if (conversationStore.messages.length === 0) {
-      const stored = localStorage.getItem(THREAD_STORAGE_KEY)
-      if (stored !== null) {
-        const generation = ++loadGeneration
-        conversationStore.setThreadId(stored)
-        void hydrateFromServer(
-          stored,
-          () =>
-            generation === loadGeneration &&
-            ownedGeneration === sessionGeneration
-        )
-      }
+    if (stored !== null) {
+      const generation = ++loadGeneration
+      conversationStore.setThreadId(stored)
+      void hydrateFromServer(
+        stored,
+        () =>
+          generation === loadGeneration && ownedGeneration === sessionGeneration
+      )
     }
   }
 
@@ -305,7 +314,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       if (error instanceof AgentApiError && error.status === 404) {
         if (conversationStore.threadId === threadId)
           conversationStore.setThreadId(null)
-        localStorage.removeItem(THREAD_STORAGE_KEY)
+        localStorage.removeItem(threadStorageKey)
         return false
       }
       pushError(error instanceof Error ? error.message : String(error))
@@ -321,6 +330,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const stoppedGeneration = ownedGeneration
     queueMicrotask(() => {
       if (stoppedGeneration !== sessionGeneration) return
+      loadGeneration++
       turnStartedAt.clear()
       conversationStore.abortActiveTurn()
       conversationStore.dropBackgroundTurns()
@@ -495,7 +505,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   ): void {
     const startsThread = conversationStore.threadId === null
     conversationStore.setThreadId(ack.thread_id)
-    localStorage.setItem(THREAD_STORAGE_KEY, ack.thread_id)
+    localStorage.setItem(threadStorageKey, ack.thread_id)
     if (ack.workflow_id !== undefined) {
       const boundAtAck = boundWorkflowId.value
       bindWorkflow(ack.workflow_id)
@@ -781,7 +791,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     boundWorkflowId.value = null
     rememberedWorkflowId = null
     pendingWorkflowBind = null
-    localStorage.removeItem(THREAD_STORAGE_KEY)
+    localStorage.removeItem(threadStorageKey)
     pendingThreadSource.value = source ?? null
   }
 
@@ -799,7 +809,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     rememberedWorkflowId = null
     pendingWorkflowBind = null
     conversationStore.setThreadId(threadId)
-    localStorage.setItem(THREAD_STORAGE_KEY, threadId)
+    localStorage.setItem(threadStorageKey, threadId)
     const hydrated = await hydrateFromServer(threadId, isCurrent)
     if (hydrated && isCurrent()) conversationStore.resumeBackgroundTurn()
     return hydrated && isCurrent()

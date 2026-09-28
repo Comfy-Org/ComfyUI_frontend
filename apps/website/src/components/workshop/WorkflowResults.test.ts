@@ -8,7 +8,11 @@ import { workflowDetailsBySlug } from '../../config/workshop-workflow-content'
 import { createWorkflowController } from '../../config/workshop-workflow-controller'
 import type { WorkflowState } from '../../config/workshop-workflow-state'
 import { workflowStorage } from '../../config/workshop-workflow-storage'
+import { captureWorkshopEvent } from '../../scripts/posthog'
+import { workshopModelAnalytics } from '../../scripts/workshop-analytics'
 import WorkflowResults from './WorkflowResults.vue'
+
+vi.mock(import('../../scripts/posthog'))
 
 const id = 'bafc696e-e5d4-42f1-9a3d-d01f82a0629b'
 
@@ -24,7 +28,7 @@ function completed(shortUrl: string) {
   })
 }
 
-async function mountResult() {
+async function mountResult(trackDelivery = false) {
   const model = workflowDetailsBySlug.get('workflows/remove-background')
   assert(model)
   const state = shallowRef<WorkflowState>({ phase: 'idle' })
@@ -56,15 +60,48 @@ async function mountResult() {
           busy: false,
           statusLabel: '',
           canStart: true,
+          analytics: trackDelivery
+            ? {
+                ...workshopModelAnalytics(model),
+                attempt_id: 'attempt-1',
+                user_id: 'user-1',
+                workspace_id: 'workspace-1'
+              }
+            : undefined,
           refreshOutput: controller.refreshOutput
         })
     })
   )
   await controller.start({ image: 'https://example.com/input.webp' })
-  return { fetch, state }
+  return { fetch, state, refreshOutput: controller.refreshOutput }
 }
 
 describe('WorkflowResults', () => {
+  it('reports delivery only after the actual generated preview loads and once across link refresh', async () => {
+    const f = await mountResult(true)
+    expect(captureWorkshopEvent).not.toHaveBeenCalled()
+    await fireEvent.load(screen.getByRole('img', { name: 'Output' }))
+    expect(captureWorkshopEvent).toHaveBeenCalledExactlyOnceWith({
+      name: 'delivery_finished',
+      properties: expect.objectContaining({
+        page_type: 'workflow',
+        render_engine: 'cloud',
+        workflow_id: 'workflows/remove-background',
+        attempt_id: 'attempt-1',
+        request_id: id,
+        status: 'succeeded',
+        output_kind: 'image'
+      })
+    })
+    assert(f.state.value.phase === 'settled')
+    const output = f.state.value.observation.outputs[0]
+    assert(output)
+    f.fetch.mockResolvedValueOnce(completed('/api/s/refreshed'))
+    await f.refreshOutput(output.id)
+    await fireEvent.load(screen.getByRole('img', { name: 'Output' }))
+    expect(captureWorkshopEvent).toHaveBeenCalledOnce()
+  })
+
   it.for(['/api/s/refreshed', '/api/s/expired'])(
     'refreshes a failed download to %s without losing the loaded preview or submitting another job',
     async (refreshed) => {
@@ -135,6 +172,14 @@ describe('WorkflowResults', () => {
     expect(open).toHaveBeenCalledWith(url, '_blank', 'noopener')
     expect(f.fetch).toHaveBeenCalledTimes(2)
     expect(f.state.value.phase).toBe('settled')
+    expect(captureWorkshopEvent).toHaveBeenCalledExactlyOnceWith({
+      name: 'output_download_clicked',
+      properties: expect.objectContaining({
+        page_type: 'workflow',
+        render_engine: 'cloud',
+        output_kind: 'image'
+      })
+    })
   })
 
   it('automatically refreshes a failed preview once and keeps manual refresh available', async () => {

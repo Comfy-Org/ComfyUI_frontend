@@ -99,7 +99,10 @@ function failureType(event: WorkshopAnalyticsEvent): string | undefined {
 
 const HEALTH_FIELDS = new Set([
   'model_slug',
+  'page_type',
+  'render_engine',
   'router_id',
+  'workflow_id',
   'provider',
   'modality',
   'request_id',
@@ -107,6 +110,7 @@ const HEALTH_FIELDS = new Set([
   'failure_stage',
   'http_status',
   'router_error_type',
+  'workflow_error_code',
   'field_error_codes',
   'field_error_names',
   'exception_name',

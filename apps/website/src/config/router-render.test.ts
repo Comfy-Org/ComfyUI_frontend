@@ -98,6 +98,57 @@ describe('shared Router rendering', () => {
     }
   })
 
+  it('sends a prepared request again without preparing its inputs a second time', async () => {
+    let grants = 0
+    const bodies: string[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>(async (url, init) => {
+        if (String(url).endsWith('/requests')) return queueNotEnabled()
+        if (String(url).endsWith('/customers/storage')) {
+          grants++
+          return Response.json({
+            upload_url: `https://storage.example/upload-${grants}`,
+            download_url: `https://storage.example/image-${grants}.png`
+          })
+        }
+        if (init?.method === 'PUT') return new Response(null)
+        bodies.push(String(init?.body))
+        return bodies.length === 1
+          ? new Response('Provider unavailable', { status: 502 })
+          : new Response(png, { headers: { 'Content-Type': 'image/png' } })
+      })
+    )
+    const slug = 'wavespeed--seedvr2-image--edit-images'
+    let prepared: RouterRenderOptions['prepared']
+    await expect(
+      router_render(
+        slug,
+        { source_images: [new Blob([png], { type: 'image/png' })] },
+        {
+          token: 'retry-token',
+          idempotencyKey: 'same-take',
+          onPrepared: (ready) => {
+            prepared = ready
+          }
+        }
+      )
+    ).rejects.toMatchObject({ reason: 'provider' })
+
+    const result = await router_render(
+      slug,
+      { source_images: [new Blob([png], { type: 'image/png' })] },
+      { token: 'retry-token', idempotencyKey: 'same-take', prepared }
+    )
+    try {
+      expect(grants).toBe(1)
+      expect(bodies).toHaveLength(2)
+      expect(bodies[1]).toBe(bodies[0])
+    } finally {
+      releaseRouterOutputs(result.outputs)
+    }
+  })
+
   it('uploads binary inputs through storage and renders its returned URL', async () => {
     const grant = {
       upload_url: 'https://storage.example/input-upload',

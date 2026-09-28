@@ -828,32 +828,21 @@ describe('useAgentConversationStore', () => {
     expect(store.isStreaming).toBe(false)
   })
 
-  it('resolves existing paywalls without resurrecting them after funds run out again', () => {
+  it('resolves existing paywalls without resurrecting them', () => {
     const store = useAgentConversationStore()
     store.recordPaywall(T1, 'subscribe')
+    store.resolvePaywalls()
 
-    store.setPaywallsResolved(true)
-    store.setPaywallsResolved(false)
-
-    expect(store.messages[0].parts).toEqual([])
-    expect(store.entries[0]).toMatchObject({ role: 'user', text: 'subscribe' })
-
-    store.recordPaywall(T2, 'top up')
-    expect(store.messages[1].parts).toEqual([
+    expect(store.entries).toMatchObject([{ role: 'user', text: 'subscribe' }])
+    expect(store.messages[0].parts).toEqual([
       { type: 'paywall', message: undefined }
     ])
-  })
-
-  it('shows a later paywall after resolving an earlier one', () => {
-    const store = useAgentConversationStore()
-    store.recordPaywall(T1, 'subscribe')
-    store.setPaywallsResolved(true)
 
     store.recordPaywall(T2, 'continue')
-
-    expect(store.messages[0].parts).toEqual([])
-    expect(store.messages[1].parts).toEqual([
-      { type: 'paywall', message: undefined }
+    expect(store.entries.map((entry) => entry.role)).toEqual([
+      'user',
+      'user',
+      'assistant'
     ])
   })
 })
