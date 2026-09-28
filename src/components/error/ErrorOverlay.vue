@@ -8,11 +8,26 @@
       <div
         role="status"
         data-testid="error-overlay"
-        class="pointer-events-auto relative flex w-fit max-w-120 min-w-80 flex-col gap-2 overflow-hidden rounded-lg border border-l-4 border-border-default border-l-destructive-background bg-base-background p-3 shadow-interface transition-colors duration-200 ease-in-out"
+        :class="
+          cn(
+            'pointer-events-auto relative flex w-fit max-w-120 min-w-80 flex-col gap-2 overflow-hidden rounded-lg border border-l-4 border-border-default bg-base-background p-3 shadow-interface transition-colors duration-200 ease-in-out',
+            hasError
+              ? 'border-l-destructive-background'
+              : 'border-l-warning-foreground'
+          )
+        "
       >
         <div class="flex w-full items-start gap-2 pr-8">
           <i
-            class="mt-0.5 icon-[lucide--circle-x] size-4 shrink-0 text-destructive-background"
+            aria-hidden="true"
+            :class="
+              cn(
+                'mt-0.5 size-4 shrink-0',
+                hasError
+                  ? 'icon-[lucide--circle-x] text-destructive-background'
+                  : 'icon-[lucide--triangle-alert] text-warning-foreground'
+              )
+            "
           />
           <span class="min-w-0 flex-1 truncate text-sm text-base-foreground">
             {{ overlayTitle }}
@@ -64,6 +79,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -76,7 +92,8 @@ const { t } = useI18n()
 const executionErrorStore = useExecutionErrorStore()
 const { viewErrorsInGraph } = useViewErrorsInGraph()
 
-const { isVisible, overlayMessage, overlayTitle } = useErrorOverlayState()
+const { hasError, isVisible, overlayMessage, overlayTitle } =
+  useErrorOverlayState()
 
 function dismiss() {
   executionErrorStore.dismissErrorOverlay()

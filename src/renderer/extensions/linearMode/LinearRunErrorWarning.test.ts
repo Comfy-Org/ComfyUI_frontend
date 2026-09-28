@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock<unknown>(import('@/components/error/useErrorOverlayState'), () => ({
   useErrorOverlayState: () => ({
+    hasError: true,
     overlayMessage: mocks.overlayMessage,
     overlayTitle: mocks.overlayTitle
   })

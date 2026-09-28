@@ -57,8 +57,9 @@ function createTestI18n() {
           dismiss: 'Dismiss'
         },
         errorOverlay: {
-          multipleErrorCount: '{count} error found | {count} errors found',
-          multipleErrorsMessage: 'Resolve them before running the workflow.',
+          multipleIssueCount: '{count} issue found | {count} issues found',
+          multipleIssuesMessage:
+            'Resolve these issues before running the workflow.',
           viewDetails: 'View details'
         },
         linearMode: {
