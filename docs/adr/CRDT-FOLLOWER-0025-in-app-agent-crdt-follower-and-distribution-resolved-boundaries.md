@@ -296,7 +296,7 @@ retries and graph watchers. Re-enabling starts a new lifetime against the
 current workflow.
 
 ```text
-PostHog agent-in-app-experience ─┐
+/features agent-in-app-experience ─┐
 existing development override ──┴─> agentPanelStore.enabled
                                       ├─> docked panel mount
                                       ├─> follower lifetime / transport
@@ -308,6 +308,13 @@ agentPanelStore.enabled ──────────────────�
 host document updates ─> follower ─> live graph API ─> stores / canvas
 human semantic operations ─> host applier (never raw shared-doc writes)
 ```
+
+`src/extensions/core/agentPanel.ts` now obtains the product flag from the
+general `useFeatureFlags` pipeline, backed by the server-evaluated `/features`
+payload; `utils/postHogFlagSource.ts` has been removed. It retains the existing
+development-mode override and settles the panel gate separately from flag
+enablement. The follower continues to consume the same store rather than adding
+a second server-feature reader.
 
 | Surface       | Product transport control                               | Diagnostics                                              |
 | ------------- | ------------------------------------------------------- | -------------------------------------------------------- |

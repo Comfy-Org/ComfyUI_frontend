@@ -24,6 +24,7 @@ import type {
   AgentStopMethod
 } from '@/platform/telemetry/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { formatWorkflowSyncErrorDetail } from '@/workbench/extensions/agent/crdt/workflowSyncErrorDetail'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -686,7 +687,15 @@ const {
         if (status.value === 'idle') graphActivity.finishTurn()
       }
     },
-    onReset: graphActivity.resetWorkflow
+    onReset: graphActivity.resetWorkflow,
+    onSyncError: (message, code) =>
+      toast.add({
+        severity: 'error',
+        summary: t('agent.workflowSyncFailedTitle'),
+        detail: formatWorkflowSyncErrorDetail(t, message, code),
+        // A permanent desync remains visible until the person dismisses it.
+        life: 0
+      })
   },
   {
     getCanvas: () => app.canvas,
