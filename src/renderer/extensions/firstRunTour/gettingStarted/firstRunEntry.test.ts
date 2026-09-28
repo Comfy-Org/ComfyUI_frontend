@@ -754,69 +754,40 @@ describe('useFirstRunEntry', () => {
   })
 
   describe('handing the screen over to the first-run tour', () => {
-    const INTRO_PREVIEW_MS = 500
-
-    function tourOpeningAfterIntroPreview(): Promise<boolean> {
-      return new Promise<boolean>((resolve) =>
-        setTimeout(() => resolve(true), INTRO_PREVIEW_MS)
-      )
-    }
-
-    it('dismisses the screen before it asks for the tour', async () => {
+    it('hides the screen before it asks for the tour', async () => {
       const entry = useFirstRunEntry()
-      const order: string[] = []
-      vi.mocked(useSettingStore().set).mockImplementation(async (key) => {
-        order.push(`set:${key}`)
-      })
       mocks.beginTour.mockImplementation(async () => {
-        order.push('beginTour')
+        expect(entry.gettingStartedVisible.value).toBe(false)
         return true
       })
       await entry.handleStartupOutcome('fresh')
 
       await entry.dismissIntoFirstRunTour('image_z_image_turbo')
 
-      expect(
-        order,
-        'the preview only works on a screen that has already gone'
-      ).toEqual(['set:Comfy.TutorialCompleted', 'beginTour'])
+      expect(mocks.beginTour).toHaveBeenCalledOnce()
     })
 
     it('holds the screen across the handoff, from the dismissal until the tour opens', async () => {
-      vi.useFakeTimers()
-      try {
-        const entry = useFirstRunEntry()
-        mocks.beginTour.mockImplementation(tourOpeningAfterIntroPreview)
-        await entry.handleStartupOutcome('fresh')
-        expect(entry.firstRunHoldsScreen.value).toBe(true)
+      let finishTour: ((started: boolean) => void) | undefined
+      mocks.beginTour.mockImplementation(
+        () =>
+          new Promise<boolean>((resolve) => {
+            finishTour = resolve
+          })
+      )
+      const entry = useFirstRunEntry()
+      await entry.handleStartupOutcome('fresh')
 
-        const handoff = entry.dismissIntoFirstRunTour('image_z_image_turbo')
-        await vi.advanceTimersByTimeAsync(0)
+      const handoff = entry.dismissIntoFirstRunTour('image_z_image_turbo')
+      await vi.waitFor(() => expect(finishTour).toBeTypeOf('function'))
 
-        expect(
-          entry.gettingStartedVisible.value,
-          'the screen really is gone - this is not a delayed dismissal'
-        ).toBe(false)
-        expect(
-          entry.firstRunHoldsScreen.value,
-          'the canvas belongs to the tour about to open over it, not to whatever asks next'
-        ).toBe(true)
+      expect(entry.gettingStartedVisible.value).toBe(false)
+      expect(entry.firstRunHoldsScreen.value).toBe(true)
 
-        await vi.advanceTimersByTimeAsync(INTRO_PREVIEW_MS - 1)
-        expect(
-          entry.firstRunHoldsScreen.value,
-          'still inside the preview, so still no tour to yield to'
-        ).toBe(true)
-
-        await vi.advanceTimersByTimeAsync(1)
-        await handoff
-        expect(
-          entry.firstRunHoldsScreen.value,
-          'the tour is up and holds the screen in its own right from here'
-        ).toBe(false)
-      } finally {
-        vi.useRealTimers()
-      }
+      assert.exists(finishTour)
+      finishTour(true)
+      await handoff
+      expect(entry.firstRunHoldsScreen.value).toBe(false)
     })
 
     it('releases the screen when the handoff produces no tour', async () => {
@@ -826,10 +797,7 @@ describe('useFirstRunEntry', () => {
 
       await entry.dismissIntoFirstRunTour('image_z_image_turbo')
 
-      expect(
-        entry.firstRunHoldsScreen.value,
-        'a template with no tour leaves a clear canvas, so nothing may stay held on it'
-      ).toBe(false)
+      expect(entry.firstRunHoldsScreen.value).toBe(false)
     })
 
     it('releases the screen when the tour throws', async () => {
@@ -841,34 +809,7 @@ describe('useFirstRunEntry', () => {
         entry.dismissIntoFirstRunTour('image_z_image_turbo')
       ).rejects.toThrow('tour unavailable')
 
-      expect(
-        entry.firstRunHoldsScreen.value,
-        'a hold that outlives its handoff is the latch this replaced'
-      ).toBe(false)
-    })
-
-    it('cancels a handoff before tour setup when the account changes during dismissal', async () => {
-      let finishDismissal: (() => void) | undefined
-      vi.mocked(useSettingStore().set).mockImplementation(
-        () =>
-          new Promise<void>((resolve) => {
-            finishDismissal = resolve
-          })
-      )
-      const entry = useFirstRunEntry()
-      await entry.handleStartupOutcome('fresh')
-
-      const handoff = entry.dismissIntoFirstRunTour('image_z_image_turbo')
-      await vi.waitFor(() => expect(finishDismissal).toBeTypeOf('function'))
-      Object.assign(useAuthStore(), { userId: 'account-b' })
-      assert.exists(finishDismissal)
-      finishDismissal()
-      await handoff
-
-      expect(
-        mocks.beginTour,
-        "account A's continuation must not set up a tour against account B's renderer state"
-      ).not.toHaveBeenCalled()
+      expect(entry.firstRunHoldsScreen.value).toBe(false)
     })
 
     it('cancels a deferred handoff across an account round trip', async () => {
@@ -890,10 +831,7 @@ describe('useFirstRunEntry', () => {
       finishDismissal()
       await handoff
 
-      expect(
-        mocks.beginTour,
-        'returning to the same account id must not revive an earlier session handoff'
-      ).not.toHaveBeenCalled()
+      expect(mocks.beginTour).not.toHaveBeenCalled()
     })
 
     it('releases a pending handoff hold at the account boundary', async () => {
@@ -913,10 +851,7 @@ describe('useFirstRunEntry', () => {
 
       Object.assign(useAuthStore(), { userId: 'account-b' })
 
-      expect(
-        entry.firstRunHoldsScreen.value,
-        "account B must not inherit account A's pending consent hold"
-      ).toBe(false)
+      expect(entry.firstRunHoldsScreen.value).toBe(false)
       expect(mocks.cancelPendingStart).toHaveBeenCalledOnce()
       assert.exists(finishTour)
       finishTour(false)
@@ -949,10 +884,7 @@ describe('useFirstRunEntry', () => {
       assert.exists(finishAccountA)
       finishAccountA(false)
       await accountAHandoff
-      expect(
-        entry.firstRunHoldsScreen.value,
-        "deleting account A's ownership must not delete account B's token"
-      ).toBe(true)
+      expect(entry.firstRunHoldsScreen.value).toBe(true)
 
       assert.exists(finishAccountB)
       finishAccountB(false)

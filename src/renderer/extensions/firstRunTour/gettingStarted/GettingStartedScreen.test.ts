@@ -115,14 +115,8 @@ describe('GettingStartedScreen', () => {
         'default'
       )
     )
-    expect(
-      mocks.dismissIntoTour,
-      'dismissing and touring separately would expose the gap between them'
-    ).toHaveBeenCalledWith(CURATED_TEMPLATE_IDS[0])
-    expect(
-      mocks.dismiss,
-      'the bare dismissal belongs to the exits, not to the template path'
-    ).not.toHaveBeenCalled()
+    expect(mocks.dismissIntoTour).toHaveBeenCalledWith(CURATED_TEMPLATE_IDS[0])
+    expect(mocks.dismiss).not.toHaveBeenCalled()
   })
 
   it('ignores a second pick while one is still loading', async () => {

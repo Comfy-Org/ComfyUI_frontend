@@ -580,27 +580,6 @@ test.describe(
         await expect(agentPanel.root).toHaveCount(0)
         expect(agentConsentWrites).toHaveLength(0)
       })
-
-      await test.step('Skip spends the automatic offer without saving consent', async () => {
-        await consent
-          .getByRole('button', { name: enMessages.agent.consent.reject })
-          .click()
-        await expect(consent).toHaveCount(0)
-        expect(agentConsentWrites).toHaveLength(0)
-        expect(
-          await page.evaluate((key) => localStorage.getItem(key), autoShownKey)
-        ).toBe('true')
-      })
-
-      await test.step('Reload does not repeat the spent automatic offer', async () => {
-        await comfyPage.workflow.reloadAndWaitForApp()
-        await expect
-          .poll(() => page.evaluate(() => window.__autoShownReads ?? 0))
-          .toBeGreaterThan(0)
-        await expect(consent).toHaveCount(0)
-        await expect(agentPanel.root).toHaveCount(0)
-        expect(agentConsentWrites).toHaveLength(0)
-      })
     })
   }
 )

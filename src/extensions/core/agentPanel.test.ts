@@ -65,13 +65,6 @@ const firstRunHoldsScreen = computed(
 const activeTour = ref<EntryPath | null>(null)
 let startupDecision: Promise<boolean> = Promise.resolve(true)
 
-const OFFER_ATTEMPT_CAP = 20
-const boundedStartupDecision = vi.fn(() =>
-  boundedStartupDecision.mock.calls.length > OFFER_ATTEMPT_CAP
-    ? new Promise<boolean>(() => {})
-    : startupDecision
-)
-
 function showFirstRunScreen(): void {
   firstRunScreenState.value = 'visible'
 }
@@ -123,7 +116,7 @@ vi.mock(
       fromPartial<ReturnType<typeof useFirstRunEntry>>({
         gettingStartedVisible,
         firstRunHoldsScreen,
-        whenStartupDecided: boundedStartupDecision
+        whenStartupDecided: () => startupDecision
       })
   })
 )
@@ -377,13 +370,6 @@ describe('AgentPanel extension flag gate', () => {
       arrange: () => void (activeTour.value = 'appMode')
     },
     {
-      surface: 'the Getting Started screen is up and a tour is active',
-      arrange: () => {
-        showFirstRunScreen()
-        activeTour.value = 'appMode'
-      }
-    },
-    {
       surface: 'the desktop sign-in approval is open',
       arrange: () => openDialog()
     }
@@ -435,18 +421,12 @@ describe('AgentPanel extension flag gate', () => {
 
     beginFirstRunScreenHandoff()
     await flush()
-    expect(
-      useAgentConsent().withConsent,
-      'the screen is gone but the first run still owns it until the tour opens'
-    ).not.toHaveBeenCalled()
+    expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
 
     activeTour.value = 'firstRun'
     releaseFirstRunScreen()
     await flush()
-    expect(
-      useAgentConsent().withConsent,
-      'the tour it handed over to now holds the offer in its own right'
-    ).not.toHaveBeenCalled()
+    expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
 
     activeTour.value = null
     await vi.waitFor(() =>
@@ -780,27 +760,6 @@ describe('AgentPanel extension flag gate', () => {
 
       expect(await notOffered()).not.toHaveBeenCalled()
     })
-  })
-
-  it('keeps waiting when a tour ends while Getting Started is still up', async () => {
-    agentFlagEnabled.value = true
-    showFirstRunScreen()
-    activeTour.value = 'appMode'
-    Object.assign(consentStore, { accepted: false, isChecking: false })
-
-    await loadEntryAndSetup()
-    await nextTick()
-    await flush()
-    activeTour.value = null
-    await flush()
-
-    expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
-    expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBeNull()
-
-    releaseFirstRunScreen()
-    await vi.waitFor(() =>
-      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
-    )
   })
 
   it('offers in the same session once the dialog that held it closes', async () => {

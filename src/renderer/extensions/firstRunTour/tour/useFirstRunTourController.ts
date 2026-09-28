@@ -35,10 +35,24 @@ const OFFLINE_GRACE_MS = 20_000
 /** How long a submitted run has to be accepted before the card stops promising. */
 const ACCEPT_DEADLINE_MS = 15_000
 
-interface RendererEnablement {
-  owner: symbol
-  write: Promise<void> | undefined
-}
+type TourStartState =
+  | { phase: 'idle' }
+  | {
+      phase: 'claimed'
+      ownership: symbol
+      restoreRenderer: boolean
+    }
+  | {
+      phase: 'writingRenderer'
+      ownership: symbol
+      restoreRenderer: boolean
+      write: Promise<void>
+    }
+  | {
+      phase: 'previewing'
+      ownership: symbol
+      restoreRenderer: boolean
+    }
 
 function useFirstRunTourControllerInternal() {
   const engine = useOnboardingTourStore()
@@ -51,8 +65,7 @@ function useFirstRunTourControllerInternal() {
   const desktopLayout = useBreakpoints(breakpointsTailwind).greaterOrEqual('md')
   const tourWorkflow = shallowRef<ComfyWorkflow | null>(null)
   const nudgeArmed = ref(false)
-  let rendererEnablement: RendererEnablement | undefined
-  let tourSetupOwner: symbol | undefined
+  let tourStart: TourStartState = { phase: 'idle' }
   /** Only a tour walked to the end made a first result to be congratulated for. */
   const tourWasCompleted = ref(false)
 
@@ -240,100 +253,95 @@ function useFirstRunTourControllerInternal() {
     nudgeArmed.value = false
   }
 
-  async function cleanUpFailedTourStart(
+  function ownsTourStart(ownership: symbol): boolean {
+    return tourStart.phase !== 'idle' && tourStart.ownership === ownership
+  }
+
+  function releaseTourStart(ownership: symbol): void {
+    if (ownsTourStart(ownership)) tourStart = { phase: 'idle' }
+  }
+
+  async function writeRenderer(
     ownership: symbol,
-    enabledForTour: boolean,
-    shouldCancel: () => boolean
-  ) {
-    if (tourSetupOwner !== ownership) return
-    releaseFirstRunTargets()
-    tourWorkflow.value = null
-    tourSetupOwner = undefined
-    const enablement = rendererEnablement
-    if (enabledForTour && enablement?.owner === ownership && !shouldCancel()) {
-      const write = settingStore.set('Comfy.VueNodes.Enabled', false)
-      enablement.write = write
-      try {
-        await write
-      } finally {
-        if (rendererEnablement === enablement && enablement.owner === ownership)
-          rendererEnablement = undefined
+    enabled: boolean,
+    restoreRenderer: boolean
+  ): Promise<void> {
+    const write = settingStore.set('Comfy.VueNodes.Enabled', enabled)
+    const writingState: TourStartState = {
+      phase: 'writingRenderer',
+      ownership,
+      restoreRenderer,
+      write
+    }
+    tourStart = writingState
+    try {
+      await write
+    } finally {
+      if (tourStart === writingState) {
+        tourStart = { phase: 'claimed', ownership, restoreRenderer }
       }
     }
+  }
+
+  async function cleanUpFailedTourStart(
+    ownership: symbol,
+    shouldCancel: () => boolean
+  ) {
+    const currentStart = tourStart
+    if (currentStart.phase === 'idle' || currentStart.ownership !== ownership)
+      return
+    releaseFirstRunTargets()
+    tourWorkflow.value = null
+    const { restoreRenderer } = currentStart
+    if (restoreRenderer && shouldCancel()) return
+    if (restoreRenderer) await writeRenderer(ownership, false, restoreRenderer)
+    releaseTourStart(ownership)
   }
 
   function canBeginTour(shouldCancel: () => boolean): boolean {
     return !shouldCancel() && !engine.activeTour && canvasContextHolds.value
   }
 
-  async function ignoreRendererPersistenceFailure(
-    enablement: RendererEnablement
-  ): Promise<void> {
-    await enablement.write?.catch(() => undefined)
-  }
+  async function claimTourStart(ownership: symbol): Promise<boolean> {
+    const previousStart = tourStart
+    const restoreRenderer =
+      previousStart.phase === 'idle'
+        ? !settingStore.get('Comfy.VueNodes.Enabled')
+        : previousStart.restoreRenderer
 
-  async function adoptRendererEnablement(ownership: symbol): Promise<void> {
-    const enablement = rendererEnablement
-    if (enablement === undefined) return
-    enablement.owner = ownership
-    await ignoreRendererPersistenceFailure(enablement)
-    if (
-      rendererEnablement !== enablement ||
-      enablement.owner !== ownership ||
-      settingStore.get('Comfy.VueNodes.Enabled')
-    )
-      return
-
-    const write = settingStore.set('Comfy.VueNodes.Enabled', true)
-    enablement.write = write
-    try {
-      await write
-    } finally {
-      if (enablement.write === write) enablement.write = undefined
+    if (previousStart.phase === 'writingRenderer') {
+      tourStart = { ...previousStart, ownership }
+      await previousStart.write.catch(() => undefined)
+      if (ownsTourStart(ownership))
+        tourStart = { phase: 'claimed', ownership, restoreRenderer }
+    } else {
+      tourStart = { phase: 'claimed', ownership, restoreRenderer }
     }
+    return restoreRenderer
   }
 
   async function claimRendererForTour(ownership: symbol): Promise<boolean> {
-    if (rendererEnablement !== undefined) {
-      await adoptRendererEnablement(ownership)
-      return true
-    }
-    if (settingStore.get('Comfy.VueNodes.Enabled')) return false
-
-    const enablement: RendererEnablement = {
-      owner: ownership,
-      write: undefined
-    }
-    rendererEnablement = enablement
-    const write = settingStore.set('Comfy.VueNodes.Enabled', true)
-    enablement.write = write
-    try {
-      await write
-    } finally {
-      if (enablement.write === write) enablement.write = undefined
-    }
-    return true
+    const restoreRenderer = await claimTourStart(ownership)
+    if (!ownsTourStart(ownership)) return restoreRenderer
+    if (restoreRenderer && !settingStore.get('Comfy.VueNodes.Enabled'))
+      await writeRenderer(ownership, true, restoreRenderer)
+    return restoreRenderer
   }
 
   async function cancelPendingStart(): Promise<void> {
-    const enablement = rendererEnablement
-    if (enablement === undefined) return
+    const previousStart = tourStart
+    if (previousStart.phase === 'idle') return
     const ownership = Symbol('cancelled-first-run-tour-start')
-    enablement.owner = ownership
     try {
-      await ignoreRendererPersistenceFailure(enablement)
+      const restoreRenderer = await claimTourStart(ownership)
       if (
-        rendererEnablement === enablement &&
-        enablement.owner === ownership &&
+        ownsTourStart(ownership) &&
+        restoreRenderer &&
         settingStore.get('Comfy.VueNodes.Enabled')
-      ) {
-        const write = settingStore.set('Comfy.VueNodes.Enabled', false)
-        enablement.write = write
-        await write
-      }
+      )
+        await writeRenderer(ownership, false, restoreRenderer)
     } finally {
-      if (rendererEnablement === enablement && enablement.owner === ownership)
-        rendererEnablement = undefined
+      releaseTourStart(ownership)
     }
   }
 
@@ -349,10 +357,10 @@ function useFirstRunTourControllerInternal() {
     // here, ahead of the renderer switch below, so nothing is left to undo.
     if (!canBeginTour(shouldCancel)) return false
 
-    const enabledForTour = await claimRendererForTour(ownership)
-    if (shouldCancel()) return false
+    const restoreRenderer = await claimRendererForTour(ownership)
+    if (!ownsTourStart(ownership) || shouldCancel()) return false
 
-    tourSetupOwner = ownership
+    tourStart = { phase: 'previewing', ownership, restoreRenderer }
     tourWorkflow.value = workflowStore.activeWorkflow ?? null
     runState.value = 'idle'
     nudgeArmed.value = false
@@ -366,14 +374,13 @@ function useFirstRunTourControllerInternal() {
     // the holds watcher cannot catch that: there is no active tour to end yet.
     const contextStillHolds = (): boolean => canvasContextHolds.value
     const started =
+      ownsTourStart(ownership) &&
       contextStillHolds() &&
       !shouldCancel() &&
       (await engine.startTour('firstRun'))
     if (!started) {
-      await cleanUpFailedTourStart(ownership, enabledForTour, shouldCancel)
-    } else if (rendererEnablement?.owner === ownership) {
-      rendererEnablement = undefined
-    }
+      await cleanUpFailedTourStart(ownership, shouldCancel)
+    } else releaseTourStart(ownership)
     return started
   }
 

@@ -172,6 +172,21 @@ function mountRunButton(
   return button
 }
 
+function deferRendererEnable(): () => void {
+  let finishRendererSetup: (() => void) | undefined
+  vi.mocked(useSettingStore().set).mockImplementation(async (key, value) => {
+    Object.assign(useSettingStore().settingValues, { [key]: value })
+    if (value !== true) return
+    await new Promise<void>((resolve) => {
+      finishRendererSetup = resolve
+    })
+  })
+  return () => {
+    assert.exists(finishRendererSetup)
+    finishRendererSetup()
+  }
+}
+
 beforeEach(() => {
   const billing = useBillingContext()
   billing.canRunWorkflows = computed(() => mocks.canRunWorkflows.value)
@@ -382,10 +397,24 @@ describe('useFirstRunTourController', () => {
       expect(
         vi.mocked(useOnboardingTourStore().startTour)
       ).not.toHaveBeenCalled()
+      expect(vi.mocked(useSettingStore().set)).not.toHaveBeenCalledWith(
+        'Comfy.VueNodes.Enabled',
+        false
+      )
+    })
+
+    it('starts only the latest overlapping preview', async () => {
+      const controller = await freshController()
+
+      const firstStart = controller.beginTour('image_z_image_turbo')
+      const secondStart = controller.beginTour('image_z_image_turbo')
+      await vi.advanceTimersByTimeAsync(INTRO_PREVIEW_MS)
+
+      await expect(firstStart).resolves.toBe(false)
+      await expect(secondStart).resolves.toBe(true)
       expect(
-        vi.mocked(useSettingStore().set),
-        'a stale owner must not compensate by writing under the replacement identity'
-      ).not.toHaveBeenCalledWith('Comfy.VueNodes.Enabled', false)
+        vi.mocked(useOnboardingTourStore().startTour)
+      ).toHaveBeenCalledOnce()
     })
 
     it('preserves an armed nudge when renderer setup is cancelled', async () => {
@@ -422,28 +451,16 @@ describe('useFirstRunTourController', () => {
       expect(
         vi.mocked(useOnboardingTourStore().startTour)
       ).not.toHaveBeenCalled()
-      expect(
-        controller.nudgeArmed.value,
-        'cancelled setup must not replace existing shared tour state'
-      ).toBe(true)
-      expect(
-        vi.mocked(useSettingStore().set),
-        'cancellation must not issue a compensating renderer write under the new owner'
-      ).toHaveBeenCalledExactlyOnceWith('Comfy.VueNodes.Enabled', true)
+      expect(controller.nudgeArmed.value).toBe(true)
+      expect(vi.mocked(useSettingStore().set)).toHaveBeenCalledExactlyOnceWith(
+        'Comfy.VueNodes.Enabled',
+        true
+      )
     })
 
     it('cleans up a cancelled renderer enable when no next handoff arrives', async () => {
       useSettingStore().settingValues['Comfy.VueNodes.Enabled'] = false
-      let finishRendererSetup: (() => void) | undefined
-      vi.mocked(useSettingStore().set).mockImplementation(
-        async (key, value) => {
-          Object.assign(useSettingStore().settingValues, { [key]: value })
-          if (value === true)
-            await new Promise<void>((resolve) => {
-              finishRendererSetup = resolve
-            })
-        }
-      )
+      const finishRendererSetup = deferRendererEnable()
       let accountAIsStale = false
       const controller = await freshController()
 
@@ -454,7 +471,6 @@ describe('useFirstRunTourController', () => {
       await vi.advanceTimersByTimeAsync(0)
       accountAIsStale = true
       const cancelling = controller.cancelPendingStart()
-      assert.exists(finishRendererSetup)
       finishRendererSetup()
       await expect(accountAStart).resolves.toBe(false)
       await cancelling
@@ -466,16 +482,7 @@ describe('useFirstRunTourController', () => {
 
     it('transfers a pending renderer enable to the next handoff for cleanup', async () => {
       useSettingStore().settingValues['Comfy.VueNodes.Enabled'] = false
-      let finishRendererSetup: (() => void) | undefined
-      vi.mocked(useSettingStore().set).mockImplementation(
-        async (key, value) => {
-          Object.assign(useSettingStore().settingValues, { [key]: value })
-          if (value === true)
-            await new Promise<void>((resolve) => {
-              finishRendererSetup = resolve
-            })
-        }
-      )
+      const finishRendererSetup = deferRendererEnable()
       let accountAIsStale = false
       const controller = await freshController()
 
@@ -487,7 +494,6 @@ describe('useFirstRunTourController', () => {
       accountAIsStale = true
       vi.mocked(useOnboardingTourStore().startTour).mockResolvedValue(false)
       const accountBStart = controller.beginTour('image_z_image_turbo')
-      assert.exists(finishRendererSetup)
       finishRendererSetup()
       await expect(accountAStart).resolves.toBe(false)
 
@@ -505,18 +511,36 @@ describe('useFirstRunTourController', () => {
       )
     })
 
+    it('keeps the renderer enabled when the next handoff starts its tour', async () => {
+      useSettingStore().settingValues['Comfy.VueNodes.Enabled'] = false
+      const finishRendererSetup = deferRendererEnable()
+      let accountAIsStale = false
+      const controller = await freshController()
+
+      const accountAStart = controller.beginTour(
+        'image_z_image_turbo',
+        () => accountAIsStale
+      )
+      await vi.advanceTimersByTimeAsync(0)
+      accountAIsStale = true
+      const cancelling = controller.cancelPendingStart()
+      const accountBStart = controller.beginTour('image_z_image_turbo')
+      finishRendererSetup()
+      await expect(accountAStart).resolves.toBe(false)
+      await cancelling
+
+      await vi.advanceTimersByTimeAsync(INTRO_PREVIEW_MS)
+      await expect(accountBStart).resolves.toBe(true)
+
+      expect(useSettingStore().settingValues['Comfy.VueNodes.Enabled']).toBe(
+        true
+      )
+      expect(vi.mocked(useSettingStore().set)).toHaveBeenCalledOnce()
+    })
+
     it('cleans up when the successor adopting a pending enable is cancelled', async () => {
       useSettingStore().settingValues['Comfy.VueNodes.Enabled'] = false
-      let finishRendererSetup: (() => void) | undefined
-      vi.mocked(useSettingStore().set).mockImplementation(
-        async (key, value) => {
-          Object.assign(useSettingStore().settingValues, { [key]: value })
-          if (value === true)
-            await new Promise<void>((resolve) => {
-              finishRendererSetup = resolve
-            })
-        }
-      )
+      const finishRendererSetup = deferRendererEnable()
       let accountAIsStale = false
       let accountBIsStale = false
       const controller = await freshController()
@@ -533,7 +557,6 @@ describe('useFirstRunTourController', () => {
       )
       accountBIsStale = true
       const cancelling = controller.cancelPendingStart()
-      assert.exists(finishRendererSetup)
       finishRendererSetup()
 
       await expect(accountAStart).resolves.toBe(false)
