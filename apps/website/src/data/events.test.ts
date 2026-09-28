@@ -9,6 +9,7 @@ import {
   directoryEvents,
   eventJsonLdNode,
   eventOgImage,
+  eventVideoThumbnail,
   eventStatus,
   pastEvents,
   toCalendarEvent,
@@ -394,5 +395,18 @@ describe('eventOgImage', () => {
     ['nothing without media', undefined, undefined]
   ] as const)('returns %s', ([, media, expected]) => {
     expect(eventOgImage({ ...baseEvent, media })).toBe(expected)
+  })
+})
+
+describe('eventVideoThumbnail', () => {
+  it('falls back to the default card for a video without a poster', () => {
+    const media = {
+      type: 'video',
+      src: 'https://cdn/clip.mp4',
+      alt: { en: 'Clip', 'zh-CN': '片段' }
+    } as const
+    expect(eventVideoThumbnail({ ...baseEvent, media })).toBe(
+      'https://media.comfy.org/website/comfy.webp'
+    )
   })
 })

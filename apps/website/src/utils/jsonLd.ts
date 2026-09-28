@@ -26,6 +26,8 @@ export interface Crumb {
   url?: string
 }
 
+export const DEFAULT_OG_IMAGE = 'https://media.comfy.org/website/comfy.webp'
+
 const sameAs = [
   externalLinks.githubOrg,
   externalLinks.x,

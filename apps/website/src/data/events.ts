@@ -2,7 +2,12 @@ import { localizeHref } from '../config/routes'
 import type { Locale, LocalizedText } from '../i18n/translations'
 import type { CalendarEvent } from '../utils/calendar'
 import type { JsonLdNode } from '../utils/jsonLd'
-import { absoluteUrl, eventNode, jsonLdId } from '../utils/jsonLd'
+import {
+  DEFAULT_OG_IMAGE,
+  absoluteUrl,
+  eventNode,
+  jsonLdId
+} from '../utils/jsonLd'
 
 export type EventCategory =
   | 'livestream'
@@ -121,6 +126,9 @@ export const eventVideoId = (event: ComfyEvent): string | undefined =>
 
 export const eventOgImage = ({ media }: ComfyEvent): string | undefined =>
   media?.type === 'image' ? media.src : media?.poster
+
+export const eventVideoThumbnail = (event: ComfyEvent): string =>
+  eventOgImage(event) ?? DEFAULT_OG_IMAGE
 
 const EVENT_DURATION_MS = 60 * 60 * 1000
 const SITE_ORIGIN = 'https://comfy.org'
