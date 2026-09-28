@@ -30,6 +30,52 @@ export class CanvasHelper {
     await nextFrame(this.page)
   }
 
+  async shiftViewport(dx: number, dy: number): Promise<void> {
+    await this.page.evaluate(
+      ({ dx, dy }) => {
+        const ds = window.app!.canvas.ds
+        ds.offset[0] += dx
+        ds.offset[1] += dy
+        window.app!.canvas.setDirty(true, true)
+      },
+      { dx, dy }
+    )
+    await nextFrame(this.page)
+  }
+
+  async getNodeCenterOnScreen(id: NodeId): Promise<Position> {
+    return this.page.evaluate((id) => {
+      const app = window.app!
+      const node = app.canvas.graph!.getNodeById(id)
+      if (!node) throw new Error(`Node ${id} not found`)
+      const [x, y] = app.canvasPosToClientPos([
+        node.pos[0] + node.size[0] / 2,
+        node.pos[1] + node.size[1] / 2
+      ])
+      return { x, y }
+    }, id)
+  }
+
+  async getNodesOutsideViewportCount(): Promise<number> {
+    return this.page.evaluate(() => {
+      const app = window.app!
+      const view = app.canvas.canvas.getBoundingClientRect()
+      return app.graph.nodes.filter((node) => {
+        const [left, top] = app.canvasPosToClientPos([node.pos[0], node.pos[1]])
+        const [right, bottom] = app.canvasPosToClientPos([
+          node.pos[0] + node.size[0],
+          node.pos[1] + node.size[1]
+        ])
+        return (
+          left < view.left ||
+          top < view.top ||
+          right > view.right ||
+          bottom > view.bottom
+        )
+      }).length
+    })
+  }
+
   async zoom(deltaY: number, steps: number = 1): Promise<void> {
     await this.page.mouse.move(10, 10)
     for (let i = 0; i < steps; i++) {
