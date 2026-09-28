@@ -1,11 +1,14 @@
 import { whenever } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed, ref, watch } from 'vue'
+import { computed, onScopeDispose, ref, watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
-import { remoteConfigState } from '@/platform/remoteConfig/remoteConfig'
+import {
+  authenticatedRemoteConfigState,
+  remoteConfigRevision
+} from '@/platform/remoteConfig/remoteConfig'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { AgentConsentNotOfferedReason } from '@/platform/telemetry/types'
@@ -329,20 +332,29 @@ export function registerAgentPanelExtension(): void {
           loadConsentIfEligible()
         }
       )
-      setupFlagGate(loadConsentIfEligible)
+      setupFlagGate(
+        loadConsentIfEligible,
+        () => resolvedUserInfo.value === null
+      )
     }
   })
 }
 
-function setupFlagGate(loadConsentIfEligible: () => void): void {
+function setupFlagGate(
+  loadConsentIfEligible: () => void,
+  isSignedOut: () => boolean
+): void {
   const agentPanelStore = useAgentPanelStore()
   const { flags } = useFeatureFlags()
 
   watch(
     () =>
-      import.meta.env.MODE === 'development' ||
-      flags.agentInAppExperienceEnabled,
-    (enabled) => {
+      [
+        import.meta.env.MODE === 'development' ||
+          flags.agentInAppExperienceEnabled,
+        remoteConfigRevision.value
+      ] as const,
+    ([enabled]) => {
       agentPanelStore.enabled = enabled
       loadConsentIfEligible()
       if (!enabled) {
@@ -360,15 +372,18 @@ function setupFlagGate(loadConsentIfEligible: () => void): void {
   watch(
     () =>
       import.meta.env.MODE === 'development' ||
-      remoteConfigState.value === 'authenticated' ||
-      remoteConfigState.value === 'error',
+      authenticatedRemoteConfigState.value === 'authenticated' ||
+      authenticatedRemoteConfigState.value === 'error',
     (decided) => {
-      if (decided) settle()
+      agentPanelStore.gateSettled = decided
     },
     { immediate: true }
   )
   // A signed-out session never runs the authenticated /features refresh
   // (WorkspaceAuthGate returns early with no user), so the watch above never
   // reaches a decided state for it.
-  setTimeout(settle, GATE_SETTLE_TIMEOUT_MS)
+  const settleTimer = setTimeout(() => {
+    if (isSignedOut()) settle()
+  }, GATE_SETTLE_TIMEOUT_MS)
+  onScopeDispose(() => clearTimeout(settleTimer))
 }

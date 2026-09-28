@@ -160,11 +160,11 @@ async function loadEntryAndSetup(): Promise<void> {
 }
 
 async function setRemoteConfigState(
-  state: 'unloaded' | 'anonymous' | 'authenticated' | 'error'
+  state: 'unloaded' | 'loading' | 'authenticated' | 'error'
 ): Promise<void> {
-  const { remoteConfigState } =
+  const { authenticatedRemoteConfigState } =
     await import('@/platform/remoteConfig/remoteConfig')
-  remoteConfigState.value = state
+  authenticatedRemoteConfigState.value = state
   await nextTick()
 }
 
@@ -1067,7 +1067,7 @@ describe('AgentPanel extension flag gate', () => {
   })
 
   it('leaves the gate unsettled while only the anonymous config has landed', async () => {
-    await setRemoteConfigState('anonymous')
+    await setRemoteConfigState('unloaded')
 
     await loadEntryAndSetup()
 
@@ -1092,7 +1092,8 @@ describe('AgentPanel extension flag gate', () => {
   })
 
   it('settles the gate on the fallback when no authenticated config ever lands', async () => {
-    await setRemoteConfigState('anonymous')
+    currentUser.value = null
+    await setRemoteConfigState('unloaded')
     await loadEntryAndSetup()
     expect(agentStore.gateSettled).toBe(false)
 
@@ -1100,6 +1101,40 @@ describe('AgentPanel extension flag gate', () => {
     await vi.advanceTimersByTimeAsync(GATE_SETTLE_TIMEOUT_MS)
 
     expect(agentStore.gateSettled).toBe(true)
+  })
+
+  it('does not settle a signed-in gate while authenticated config is slow', async () => {
+    await setRemoteConfigState('loading')
+    await loadEntryAndSetup()
+
+    const { GATE_SETTLE_TIMEOUT_MS } = await import('./agentPanel')
+    await vi.advanceTimersByTimeAsync(GATE_SETTLE_TIMEOUT_MS)
+
+    expect(agentStore.gateSettled).toBe(false)
+  })
+
+  it('returns the gate to unsettled when authenticated config reloads', async () => {
+    await setRemoteConfigState('authenticated')
+    await loadEntryAndSetup()
+    expect(agentStore.gateSettled).toBe(true)
+
+    await setRemoteConfigState('loading')
+
+    expect(agentStore.gateSettled).toBe(false)
+  })
+
+  it('retries consent after a completed refresh with the same flag value', async () => {
+    agentFlagEnabled.value = true
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    await loadEntryAndSetup()
+    vi.mocked(consentStore.load).mockClear()
+    const { remoteConfigRevision } =
+      await import('@/platform/remoteConfig/remoteConfig')
+
+    remoteConfigRevision.value++
+    await nextTick()
+
+    expect(consentStore.load).toHaveBeenCalledOnce()
   })
 
   it('disables the panel without closing it when the flag flips back to false', async () => {

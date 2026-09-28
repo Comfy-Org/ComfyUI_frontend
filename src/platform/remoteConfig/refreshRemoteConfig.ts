@@ -1,17 +1,21 @@
 import {
+  authenticatedRemoteConfigState,
   cachedBillingControlEnabled,
   cachedLegacyBillingMigrationEnabled,
   cachedV1PaymentRecovery,
   remoteConfig,
   remoteConfigErrorStatus,
+  remoteConfigRevision,
   remoteConfigState,
-  sessionAgentGrant
+  sessionAgentGrant,
+  sessionAgentGrantValidUntil
 } from './remoteConfig'
 
 // Cap the bootstrap fetch so a wedged /features endpoint can never block app.mount indefinitely.
 // A same-origin GET against the local comfyui server should resolve in well under a second;
 // on timeout consumers retain the last known config or use build-time defaults.
 const FEATURES_FETCH_TIMEOUT_MS = 5_000
+const AGENT_GRANT_FALLBACK_MS = 15 * 60_000
 
 interface RefreshRemoteConfigOptions {
   /**
@@ -40,19 +44,35 @@ export function invalidateRemoteConfig(): void {
   remoteConfig.value = retainedConfig
   remoteConfigErrorStatus.value = null
   remoteConfigState.value = 'unloaded'
+  authenticatedRemoteConfigState.value = 'unloaded'
   cachedLegacyBillingMigrationEnabled.value = undefined
   sessionAgentGrant.value = undefined
+  sessionAgentGrantValidUntil.value = undefined
 }
 
 async function fetchRemoteConfig(
   useAuth: boolean,
   signal?: AbortSignal
-): Promise<Response> {
+): Promise<{ response: Response; authenticated: boolean }> {
   const { api } = await import('@/scripts/api')
   if (!useAuth) {
-    return fetch(api.apiURL('/features'), { cache: 'no-store', signal })
+    return {
+      response: await fetch(api.apiURL('/features'), {
+        cache: 'no-store',
+        signal
+      }),
+      authenticated: false
+    }
   }
-  return api.fetchApi('/features', { cache: 'no-store', signal })
+  let authenticated = false
+  const response = await api.fetchApi('/features', {
+    cache: 'no-store',
+    signal,
+    onAuthHeader: (attached) => {
+      authenticated = attached
+    }
+  })
+  return { response, authenticated }
 }
 
 /**
@@ -68,6 +88,7 @@ export async function refreshRemoteConfig(
   options: RefreshRemoteConfigOptions = {}
 ): Promise<void> {
   const { useAuth = true, signal } = options
+  if (useAuth) authenticatedRemoteConfigState.value = 'loading'
   const generation = ++refreshGeneration
   const controller = new AbortController()
   activeRefreshControllers.add(controller)
@@ -81,7 +102,10 @@ export async function refreshRemoteConfig(
   )
 
   try {
-    const response = await fetchRemoteConfig(useAuth, controller.signal)
+    const { response, authenticated } = await fetchRemoteConfig(
+      useAuth,
+      controller.signal
+    )
     if (generation !== refreshGeneration) return
     if (signal?.aborted) return
 
@@ -89,11 +113,17 @@ export async function refreshRemoteConfig(
       const config = await response.json()
       if (generation !== refreshGeneration) return
       if (signal?.aborted) return
+      if (useAuth && !authenticated) {
+        authenticatedRemoteConfigState.value = 'error'
+        remoteConfigRevision.value++
+        return
+      }
       window.__CONFIG__ = config
       remoteConfig.value = config
       remoteConfigErrorStatus.value = null
       remoteConfigState.value = useAuth ? 'authenticated' : 'anonymous'
       if (useAuth) {
+        authenticatedRemoteConfigState.value = 'authenticated'
         cachedBillingControlEnabled.value = Boolean(
           config.billing_control_enabled
         )
@@ -102,28 +132,37 @@ export async function refreshRemoteConfig(
         )
         cachedV1PaymentRecovery.value = Boolean(config.v1_payment_recovery)
         sessionAgentGrant.value = config['agent-in-app-experience'] === true
+        sessionAgentGrantValidUntil.value = Date.now() + AGENT_GRANT_FALLBACK_MS
       }
+      remoteConfigRevision.value++
       return
     }
 
     console.warn('Failed to load remote config:', response.statusText)
     if (response.status === 401 || response.status === 403) {
-      window.__CONFIG__ = {}
-      remoteConfig.value = {}
       remoteConfigErrorStatus.value = response.status
-      sessionAgentGrant.value = undefined
+      if (useAuth) {
+        window.__CONFIG__ = {}
+        remoteConfig.value = {}
+        sessionAgentGrant.value = undefined
+        sessionAgentGrantValidUntil.value = undefined
+      }
     } else {
       remoteConfigErrorStatus.value = null
     }
     if (useAuth) cachedLegacyBillingMigrationEnabled.value = undefined
+    if (useAuth) authenticatedRemoteConfigState.value = 'error'
     remoteConfigState.value = 'error'
+    remoteConfigRevision.value++
   } catch (error) {
     if (generation !== refreshGeneration) return
     if (signal?.aborted) return
     console.error('Failed to fetch remote config:', error)
     remoteConfigErrorStatus.value = null
     if (useAuth) cachedLegacyBillingMigrationEnabled.value = undefined
+    if (useAuth) authenticatedRemoteConfigState.value = 'error'
     remoteConfigState.value = 'error'
+    remoteConfigRevision.value++
   } finally {
     clearTimeout(timeoutId)
     signal?.removeEventListener('abort', abort)

@@ -21,7 +21,8 @@ import {
   cachedV1PaymentRecovery,
   remoteConfig,
   remoteConfigState,
-  sessionAgentGrant
+  sessionAgentGrant,
+  sessionAgentGrantValidUntil
 } from '@/platform/remoteConfig/remoteConfig'
 import { useTelemetry } from '@/platform/telemetry'
 import { api } from '@/scripts/api'
@@ -1161,6 +1162,7 @@ describe('useFeatureFlags', () => {
       remoteConfigState.value = 'unloaded'
       remoteConfig.value = {}
       sessionAgentGrant.value = undefined
+      sessionAgentGrantValidUntil.value = undefined
     })
 
     afterEach(() => {
@@ -1168,6 +1170,7 @@ describe('useFeatureFlags', () => {
       remoteConfigState.value = 'unloaded'
       remoteConfig.value = {}
       sessionAgentGrant.value = undefined
+      sessionAgentGrantValidUntil.value = undefined
     })
 
     it('is false off-cloud even when the authenticated config grants it', () => {
@@ -1207,12 +1210,22 @@ describe('useFeatureFlags', () => {
       remoteConfigState.value = 'authenticated'
       remoteConfig.value = { 'agent-in-app-experience': true }
       sessionAgentGrant.value = true
+      sessionAgentGrantValidUntil.value = Date.now() + 60_000
       const { flags } = useFeatureFlags()
       expect(flags.agentInAppExperienceEnabled).toBe(true)
 
       remoteConfigState.value = 'error'
 
       expect(flags.agentInAppExperienceEnabled).toBe(true)
+    })
+
+    it('expires the transient session grant after its bounded fallback window', () => {
+      remoteConfigState.value = 'error'
+      sessionAgentGrant.value = true
+      sessionAgentGrantValidUntil.value = Date.now() - 1
+
+      const { flags } = useFeatureFlags()
+      expect(flags.agentInAppExperienceEnabled).toBe(false)
     })
 
     it('drops the grant when the session itself is gone', () => {

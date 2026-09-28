@@ -7,11 +7,14 @@ import {
   refreshRemoteConfig
 } from './refreshRemoteConfig'
 import {
+  authenticatedRemoteConfigState,
   cachedLegacyBillingMigrationEnabled,
-  sessionAgentGrant,
   remoteConfig,
   remoteConfigErrorStatus,
-  remoteConfigState
+  remoteConfigRevision,
+  remoteConfigState,
+  sessionAgentGrant,
+  sessionAgentGrantValidUntil
 } from './remoteConfig'
 
 vi.mock(import('@/scripts/api'))
@@ -40,6 +43,13 @@ describe('refreshRemoteConfig', () => {
     } as Response
   }
 
+  function mockAuthenticatedFetch(response: Response): void {
+    vi.mocked(api.fetchApi).mockImplementation(async (_route, options) => {
+      options?.onAuthHeader?.(true)
+      return response
+    })
+  }
+
   beforeEach(() => {
     vi.mocked(api.apiURL).mockImplementation(
       (route: string) => `/ComfyUI/api${route}`
@@ -48,8 +58,11 @@ describe('refreshRemoteConfig', () => {
     remoteConfig.value = {}
     remoteConfigErrorStatus.value = null
     remoteConfigState.value = 'unloaded'
+    authenticatedRemoteConfigState.value = 'unloaded'
+    remoteConfigRevision.value = 0
     cachedLegacyBillingMigrationEnabled.value = undefined
     sessionAgentGrant.value = undefined
+    sessionAgentGrantValidUntil.value = undefined
     window.__CONFIG__ = {}
   })
 
@@ -71,11 +84,13 @@ describe('refreshRemoteConfig', () => {
     })
     expect(window.__CONFIG__).toEqual(remoteConfig.value)
     expect(remoteConfigState.value).toBe('unloaded')
+    expect(authenticatedRemoteConfigState.value).toBe('unloaded')
+    expect(sessionAgentGrantValidUntil.value).toBeUndefined()
   })
 
   describe('with auth (default)', () => {
     it('uses api.fetchApi when useAuth is true', async () => {
-      vi.mocked(api.fetchApi).mockResolvedValue(mockSuccessResponse())
+      mockAuthenticatedFetch(mockSuccessResponse())
 
       await refreshRemoteConfig({ useAuth: true })
 
@@ -89,7 +104,7 @@ describe('refreshRemoteConfig', () => {
     })
 
     it('uses api.fetchApi by default', async () => {
-      vi.mocked(api.fetchApi).mockResolvedValue(mockSuccessResponse())
+      mockAuthenticatedFetch(mockSuccessResponse())
 
       await refreshRemoteConfig()
 
@@ -97,8 +112,23 @@ describe('refreshRemoteConfig', () => {
       expect(global.fetch).not.toHaveBeenCalled()
     })
 
+    it('rejects a successful response when no auth header was attached', async () => {
+      remoteConfig.value = { subscription_required: true }
+      window.__CONFIG__ = remoteConfig.value
+      vi.mocked(api.fetchApi).mockImplementation(async (_route, options) => {
+        options?.onAuthHeader?.(false)
+        return mockSuccessResponse({ 'agent-in-app-experience': true })
+      })
+
+      await refreshRemoteConfig()
+
+      expect(remoteConfig.value).toEqual({ subscription_required: true })
+      expect(authenticatedRemoteConfigState.value).toBe('error')
+      expect(remoteConfigRevision.value).toBe(1)
+    })
+
     it('caches authenticated legacy billing migration eligibility', async () => {
-      vi.mocked(api.fetchApi).mockResolvedValue(
+      mockAuthenticatedFetch(
         mockSuccessResponse({ legacy_billing_migration_enabled: true })
       )
 
@@ -108,7 +138,7 @@ describe('refreshRemoteConfig', () => {
     })
 
     it('passes an AbortSignal on the authenticated branch', async () => {
-      vi.mocked(api.fetchApi).mockResolvedValue(mockSuccessResponse())
+      mockAuthenticatedFetch(mockSuccessResponse())
 
       await refreshRemoteConfig({ useAuth: true })
 
@@ -120,14 +150,16 @@ describe('refreshRemoteConfig', () => {
       let resolveFirst: ((response: Response) => void) | undefined
       vi.mocked(api.fetchApi)
         .mockImplementationOnce(
-          () =>
+          (_route, options) =>
             new Promise<Response>((resolve) => {
+              options?.onAuthHeader?.(true)
               resolveFirst = resolve
             })
         )
-        .mockResolvedValueOnce(
-          mockSuccessResponse({ subscription_required: true })
-        )
+        .mockImplementationOnce(async (_route, options) => {
+          options?.onAuthHeader?.(true)
+          return mockSuccessResponse({ subscription_required: true })
+        })
 
       const firstRefresh = refreshRemoteConfig({ useAuth: true })
       await vi.waitFor(() => expect(api.fetchApi).toHaveBeenCalledTimes(1))
@@ -149,6 +181,7 @@ describe('refreshRemoteConfig', () => {
       vi.mocked(api.fetchApi).mockImplementation(
         (_route, options) =>
           new Promise<Response>((_, reject) => {
+            options?.onAuthHeader?.(true)
             if (options?.signal?.aborted) {
               reject(new DOMException('Aborted', 'AbortError'))
               return
@@ -191,6 +224,28 @@ describe('refreshRemoteConfig', () => {
       expect(window.__CONFIG__).toEqual(mockConfig)
       expect(cachedLegacyBillingMigrationEnabled.value).toBe(true)
     })
+
+    it('does not erase authenticated config or its grant on an anonymous 401', async () => {
+      const existingConfig = {
+        subscription_required: false,
+        'agent-in-app-experience': true
+      }
+      remoteConfig.value = existingConfig
+      window.__CONFIG__ = existingConfig
+      authenticatedRemoteConfigState.value = 'authenticated'
+      sessionAgentGrant.value = true
+      sessionAgentGrantValidUntil.value = Date.now() + 60_000
+      vi.mocked(global.fetch).mockResolvedValue(
+        mockErrorResponse(401, 'Unauthorized')
+      )
+
+      await refreshRemoteConfig({ useAuth: false })
+
+      expect(remoteConfig.value).toEqual(existingConfig)
+      expect(window.__CONFIG__).toEqual(existingConfig)
+      expect(sessionAgentGrant.value).toBe(true)
+      expect(authenticatedRemoteConfigState.value).toBe('authenticated')
+    })
   })
 
   describe('timeout', () => {
@@ -218,9 +273,7 @@ describe('refreshRemoteConfig', () => {
   describe('error handling', () => {
     it('clears config on 401 response', async () => {
       cachedLegacyBillingMigrationEnabled.value = true
-      vi.mocked(api.fetchApi).mockResolvedValue(
-        mockErrorResponse(401, 'Unauthorized')
-      )
+      mockAuthenticatedFetch(mockErrorResponse(401, 'Unauthorized'))
 
       await refreshRemoteConfig()
 
@@ -233,22 +286,21 @@ describe('refreshRemoteConfig', () => {
       sessionAgentGrant.value = undefined
       const localStorageBefore = storageEntries(localStorage)
       const sessionStorageBefore = storageEntries(sessionStorage)
-      vi.mocked(api.fetchApi).mockResolvedValue(
+      mockAuthenticatedFetch(
         mockSuccessResponse({ 'agent-in-app-experience': true })
       )
 
       await refreshRemoteConfig()
 
       expect(sessionAgentGrant.value).toBe(true)
+      expect(sessionAgentGrantValidUntil.value).toBeGreaterThan(Date.now())
       expect(storageEntries(localStorage)).toEqual(localStorageBefore)
       expect(storageEntries(sessionStorage)).toEqual(sessionStorageBefore)
     })
 
     it('keeps this session granted when the poll fails transiently', async () => {
       sessionAgentGrant.value = true
-      vi.mocked(api.fetchApi).mockResolvedValue(
-        mockErrorResponse(503, 'Service Unavailable')
-      )
+      mockAuthenticatedFetch(mockErrorResponse(503, 'Service Unavailable'))
 
       await refreshRemoteConfig()
 
@@ -257,9 +309,7 @@ describe('refreshRemoteConfig', () => {
 
     it('drops the grant when auth itself is rejected', async () => {
       sessionAgentGrant.value = true
-      vi.mocked(api.fetchApi).mockResolvedValue(
-        mockErrorResponse(401, 'Unauthorized')
-      )
+      mockAuthenticatedFetch(mockErrorResponse(401, 'Unauthorized'))
 
       await refreshRemoteConfig()
 
@@ -267,9 +317,7 @@ describe('refreshRemoteConfig', () => {
     })
 
     it('clears config on 403 response', async () => {
-      vi.mocked(api.fetchApi).mockResolvedValue(
-        mockErrorResponse(403, 'Forbidden')
-      )
+      mockAuthenticatedFetch(mockErrorResponse(403, 'Forbidden'))
 
       await refreshRemoteConfig()
 
@@ -299,9 +347,7 @@ describe('refreshRemoteConfig', () => {
       remoteConfig.value = existingConfig
       window.__CONFIG__ = existingConfig
 
-      vi.mocked(api.fetchApi).mockResolvedValue(
-        mockErrorResponse(500, 'Internal Server Error')
-      )
+      mockAuthenticatedFetch(mockErrorResponse(500, 'Internal Server Error'))
 
       await refreshRemoteConfig()
 
