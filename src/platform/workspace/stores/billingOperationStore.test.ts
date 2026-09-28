@@ -190,6 +190,18 @@ describe('billingOperationStore', () => {
       )
     })
 
+    it('withdraws the processing toast once the poll finds the checkout parked on a payment method, and stays quiet', async () => {
+      await pollPhase('awaiting_payment_method')
+      const processing = vi.mocked(useToastStore().add).mock.calls[0][0]
+
+      await vi.waitFor(() =>
+        expect(useToastStore().remove).toHaveBeenCalledWith(processing)
+      )
+
+      await vi.advanceTimersByTimeAsync(31_000)
+      expect(useToastStore().add).toHaveBeenCalledOnce()
+    })
+
     it('exposes an invoice phase without an action URL as needing the customer', async () => {
       const store = await pollPhase('awaiting_invoice_payment')
 

@@ -141,6 +141,12 @@ const VERIFICATION_OPERATION = {
   action_url: HOSTED_PAYMENT_URL
 } satisfies BillingOpStatusResponse
 
+/** A checkout whose hosted tab was closed before a card was entered. */
+const PARKED_OPERATION = {
+  ...PROCESSING_OPERATION,
+  phase: 'awaiting_payment_method'
+} satisfies BillingOpStatusResponse
+
 const SETTLED_OPERATION = {
   id: OPERATION_ID,
   status: 'succeeded',
@@ -295,6 +301,32 @@ test.describe('Billing progress toast parity', { tag: '@cloud' }, () => {
 
         await expect(page.getByText(SUBSCRIPTION_ACTION_REQUIRED)).toBeVisible()
         await expect(page.getByText(SUBSCRIPTION_PROCESSING)).toBeHidden()
+      })
+
+      test('stays quiet after a reload finds the subscribe parked on a payment method', async ({
+        page
+      }) => {
+        await setupToastParity(page, {
+          rails,
+          operation: PARKED_OPERATION,
+          status: {
+            ...ACTIVE_STANDARD,
+            pending_billing_op_id: OPERATION_ID,
+            pending_billing_op_type: 'subscription'
+          }
+        })
+
+        const adopted = page.waitForResponse(
+          `**/api/billing/ops/${OPERATION_ID}`
+        )
+        await page.goto(APP_URL)
+        await waitForCloudApp(page)
+        await adopted
+
+        await expect(page.getByText(SUBSCRIPTION_PROCESSING)).toHaveCount(0)
+        await expect(page.getByText(SUBSCRIPTION_ACTION_REQUIRED)).toHaveCount(
+          0
+        )
       })
 
       test('asks again for verification after a reload finds the subscribe still waiting', async ({

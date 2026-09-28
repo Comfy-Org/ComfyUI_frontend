@@ -218,6 +218,31 @@ describe('useBillingSdkStore', () => {
     expect(toasts.messagesToRemove.at(-1)).toMatchObject({ severity: 'warn' })
   })
 
+  it.for([
+    {
+      kind: 'subscription',
+      actionRequired: 'Verify your payment to finish setting up your workspace'
+    },
+    { kind: 'topup', actionRequired: 'Verify your payment to add your credits' }
+  ] as const)(
+    'raises no progress toast for a $kind parked on a payment method until the server serves a link',
+    ({ kind, actionRequired }) => {
+      useBillingSdkStore()
+      const toasts = useToastStore()
+      const parked = { kind, serverPhase: 'awaiting_payment_method' } as const
+
+      harness.publish(pendingTopup(parked))
+      expect(toasts.messagesToAdd).toEqual([])
+
+      harness.publish(
+        pendingTopup({ ...parked, actionUrl: 'https://verify.example/op-1' })
+      )
+      expect(toasts.messagesToAdd).toEqual([
+        expect.objectContaining({ severity: 'warn', summary: actionRequired })
+      ])
+    }
+  )
+
   it('shows no progress toast for a cancel', () => {
     useBillingSdkStore()
 

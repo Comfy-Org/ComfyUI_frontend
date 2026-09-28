@@ -25,6 +25,7 @@ import {
   OPERATION_POLL_TIMING
 } from './operationPolicy.js'
 import type {
+  BillingOperationState,
   BillingOpStatus,
   HostedBillingDestination
 } from './operationState.js'
@@ -851,6 +852,32 @@ describe('createBillingOperationLifecycle', () => {
       expect(telemetry[0]).toMatchObject({
         name: 'billing.operation.started',
         resumed: true
+      })
+    })
+
+    it("announces the backend's pending operation with the phase it read, never as an unread pending", async () => {
+      const { lifecycle, calls } = harness({
+        status: statusSnapshot({
+          pending_billing_op_id: 'op-1',
+          pending_billing_op_type: 'subscription'
+        }),
+        answers: [httpOk(opStatus({ phase: 'awaiting_payment_method' }))]
+      })
+      const announced: BillingOperationState[] = []
+      lifecycle.subscribe((state) => announced.push(state))
+
+      const recovered = await lifecycle.recover()
+      await flush()
+
+      expect(calls.map((call) => call.route)).toEqual([operationRoute('op-1')])
+      expect(
+        announced.map((state) =>
+          state.phase === 'pending' ? state.serverPhase : state.phase
+        )
+      ).toEqual(['awaiting_payment_method'])
+      expect(recovered).toMatchObject({
+        status: 'ok',
+        value: { id: 'op-1', phase: 'pending' }
       })
     })
 
