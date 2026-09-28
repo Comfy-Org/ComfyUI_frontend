@@ -20,7 +20,8 @@ import {
   isAgentEvent,
   parseAgentWsEvent,
   toTurnId,
-  zAgentAdmissionError
+  zAgentAdmissionError,
+  zDisownedWorkflowError
 } from '../../schemas/agentApiSchema'
 import { AgentApiError } from '../../services/agent/agentRestClient'
 import type {
@@ -106,6 +107,8 @@ export interface AgentSessionDeps {
       isCurrent: () => boolean
     ): Promise<void> | void
     prepare?(): Promise<void>
+    /** The server refused this workflow id; forget every cached trace of it. */
+    disowned?(workflowId: string): void
     tabs?(origin?: TurnOrigin): OpenTabsSnapshot | undefined
     activeTab?(data: AgentActiveTabData): void
     draft?(origin?: TurnOrigin): DraftSnapshot | undefined
@@ -549,6 +552,23 @@ export function useAgentSession(deps: AgentSessionDeps) {
     )
   }
 
+  function releaseDisownedWorkflow(
+    sent: WorkflowTurnContext | undefined,
+    error: unknown
+  ): void {
+    if (
+      sent?.id === undefined ||
+      !(error instanceof AgentApiError) ||
+      error.status !== 403 ||
+      !zDisownedWorkflowError.safeParse(error.body).success
+    )
+      return
+    bindingStore.unbindWorkflow(sent.id)
+    workflow?.disowned?.(sent.id)
+    if (boundWorkflowId.value === sent.id) boundWorkflowId.value = null
+    if (rememberedWorkflowId === sent.id) rememberedWorkflowId = null
+  }
+
   async function performSend(
     text: string,
     attachments?: SentAttachment[],
@@ -561,6 +581,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const originContext = workflow?.current()
     const origin: TurnOrigin =
       originContext === undefined ? null : { tabPath: originContext.tabPath }
+    let sentContext: WorkflowTurnContext | undefined
     try {
       await prepareWorkflow()
       if (sendWasSuperseded(generation)) return false
@@ -569,6 +590,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         recordUnavailableTarget(text)
         return false
       }
+      sentContext = wfContext
       const ack = await postTurn(
         threadAtSend,
         text,
@@ -583,6 +605,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       acceptTurn(ack, text, wfContext, attachments, tags, workflowReferences)
       return true
     } catch (error) {
+      releaseDisownedWorkflow(sentContext, error)
       if (sendWasSuperseded(generation)) return false
       recordSendError(error, text)
       return false

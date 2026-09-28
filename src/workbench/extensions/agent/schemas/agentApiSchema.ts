@@ -150,6 +150,11 @@ export type CloudWorkflowEntry = z.infer<
 
 export const zAgentError = z.union([zGeneratedAgentError, zAgentAdmissionError])
 
+/** The agent service refused the turn's workflow id for this workspace. */
+export const zDisownedWorkflowError = z.object({
+  error: z.literal('workflow not found or access denied')
+})
+
 const zAgentThinkingData = z
   .object({
     delta: z.string(),
