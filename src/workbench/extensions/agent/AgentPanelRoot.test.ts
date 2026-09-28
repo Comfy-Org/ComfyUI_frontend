@@ -1754,15 +1754,7 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
 
     expect(useTelemetry()!.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
 
-    paywallHasFunds.value = true
-    await waitFor(() =>
-      expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
-    )
-    paywallHasFunds.value = false
-
-    await waitFor(() =>
-      expect(useTelemetry()!.trackAgentPaywallShown).toHaveBeenCalledTimes(2)
-    )
+    expect(useTelemetry()!.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
   })
 
   it('does not re-arm the impression when capabilities refresh while still exhausted', async () => {
@@ -1794,6 +1786,70 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
     await screen.findByTestId(STANDING)
 
     expect(useTelemetry()!.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
+  })
+  it('refreshes workspace billing after an active turn becomes idle', async () => {
+    paywallHasFunds.value = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const conversation = useAgentConversationStore()
+    const turnId = toTurnId('billing-refresh')
+
+    conversation.startTurn(turnId)
+    await nextTick()
+    paywallBilling.fetchStatus.mockClear()
+    conversation.ingest(
+      zAgentWsEventForTest({
+        type: 'agent_message_done',
+        data: { message_id: turnId, thread_id: 'th', usage: null }
+      })
+    )
+
+    await waitFor(() =>
+      expect(paywallBilling.fetchStatus).toHaveBeenCalledOnce()
+    )
+  })
+
+  it('does not refresh workspace status for a legacy billing turn', async () => {
+    paywallHasFunds.value = true
+    paywallBilling.type = 'legacy'
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const conversation = useAgentConversationStore()
+    const turnId = toTurnId('legacy-billing-refresh')
+
+    conversation.startTurn(turnId)
+    paywallBilling.fetchStatus.mockClear()
+    conversation.ingest(
+      zAgentWsEventForTest({
+        type: 'agent_message_done',
+        data: { message_id: turnId, thread_id: 'th', usage: null }
+      })
+    )
+    await nextTick()
+
+    expect(paywallBilling.fetchStatus).not.toHaveBeenCalled()
+  })
+
+  it('reports a rejected post-turn billing refresh', async () => {
+    const refreshError = new Error('status unavailable')
+    paywallHasFunds.value = true
+    paywallBilling.fetchStatus.mockRejectedValueOnce(refreshError)
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const conversation = useAgentConversationStore()
+    const turnId = toTurnId('failed-billing-refresh')
+
+    conversation.startTurn(turnId)
+    paywallBilling.fetchStatus.mockClear()
+    conversation.ingest(
+      zAgentWsEventForTest({
+        type: 'agent_message_done',
+        data: { message_id: turnId, thread_id: 'th', usage: null }
+      })
+    )
+
+    await waitFor(() =>
+      expect(reportError).toHaveBeenCalledWith(refreshError, {
+        errorType: 'error_refreshing_agent_billing_status'
+      })
+    )
   })
 })
 

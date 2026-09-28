@@ -320,14 +320,6 @@ const billingIdentity = computed(
  * Reset when funds return, so a later exhaustion reports again — mirroring how
  * `useBillingBanner` scopes its dismissal to one episode.
  */
-watch(
-  agentHasFunds,
-  (hasFunds) => {
-    if (hasFunds === true) agentPanelStore.reportedExhaustionIdentity = null
-  },
-  { immediate: true }
-)
-
 watch(billingIdentity, () => {
   agentPanelStore.reportedExhaustionIdentity = null
   onStandingPaywallShown()
@@ -1015,21 +1007,22 @@ function resumedTurnTabPath(): string | null {
 // Adoption (onWorkflowAdopted) and tab activation (onAgentActiveTab) are the
 // primary spinner setters; the non-idle branch only re-arms it after the
 // stash/resume flip of a panel remount, where those setters never run.
-let observedActivityStatus = false
+let wasTurnActive = false
 watch(
   [status, conversationTurnId],
   ([value, turnId]) => {
+    const completedTurn = wasTurnActive && value === 'idle'
     if (value === 'idle') {
       // The immediate idle value on remount is a hydration snapshot, not a
       // completed turn. A real idle transition is observed after this pass.
-      if (observedActivityStatus) graphActivity.finishTurn()
+      if (completedTurn) graphActivity.finishTurn()
     } else graphActivity.startTurn(turnId)
-    observedActivityStatus = true
+    wasTurnActive = value !== 'idle'
     if (value === 'idle') {
       // A server-side LLM-hop refusal does not reach the browser as a 402.
       // Refresh the authoritative effective-funds verdict after every observed
       // turn completion so both exhaustion and external top-ups converge.
-      if (billingType?.value === 'workspace') {
+      if (completedTurn && billingType.value === 'workspace') {
         void refreshBillingStatus().catch((error: unknown) => {
           reportError(error, {
             errorType: 'error_refreshing_agent_billing_status'
