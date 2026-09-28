@@ -127,6 +127,26 @@ describe('API key authentication initialization', () => {
     expect(mockFetch).toHaveBeenCalledOnce()
   })
 
+  it('does not report success when the submitted key is cleared during validation', async () => {
+    let resolveLookup!: (response: unknown) => void
+    mockFetch.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveLookup = resolve
+        })
+    )
+    const apiKeyStore = useApiKeyAuthStore()
+
+    const stored = apiKeyStore.storeApiKey('pending-api-key')
+    await vi.waitFor(() => expect(mockFetch).toHaveBeenCalledOnce())
+    await apiKeyStore.clearStoredApiKey()
+    resolveLookup(customerResponse('stale-customer-id'))
+
+    await expect(stored).resolves.toBe(false)
+    expect(apiKeyStore.getApiKey()).toBeNull()
+    expect(apiKeyStore.currentUser).toBeNull()
+  })
+
   it('ignores a stale customer response after the key is replaced', async () => {
     const { apiKeyStore, resolve } = await initializeStoreWithPendingLookup()
 

@@ -75,6 +75,7 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
       apiKey.value = newApiKey
       currentUser.value = null
       await initializeUserFromApiKey(newApiKey)
+      if (apiKey.value !== newApiKey || !isAuthenticated.value) return false
       toastStore.add({
         severity: 'success',
         summary: t('auth.apiKey.stored'),
