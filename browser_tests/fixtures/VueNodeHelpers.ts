@@ -295,6 +295,34 @@ export class VueNodeHelpers {
     }
   }
 
+  async editAndCommitNumber(
+    nodeTitle: string,
+    widgetName: string,
+    value: string
+  ): Promise<void> {
+    const nodeId = await this.getNodeIdByTitle(nodeTitle)
+    const node = this.getNodeLocator(nodeId)
+    const widget = node.getByLabel(widgetName, { exact: true })
+    const { input } = this.getInputNumberControls(widget)
+    const fixture = new VueNodeFixture(node)
+    await widget.click()
+    await input.fill(value)
+    await input.press('Enter')
+    await expect
+      .poll(() =>
+        this.page.evaluate(
+          ({ nodeId, widgetName }) =>
+            window
+              .app!.graph.getNodeById(nodeId)
+              ?.widgets?.find((widget) => widget.name === widgetName)?.value,
+          { nodeId: toNodeId(nodeId), widgetName }
+        )
+      )
+      .toBe(Number(value))
+    await fixture.title.click()
+    await expect(input).toHaveValue(value)
+  }
+
   /**
    * Locator for the Enter Subgraph footer button.
    */
