@@ -64,19 +64,25 @@ test.describe('Load3D Viewer', { tag: '@vue-nodes' }, () => {
     await load3d.openViewerButton.click()
     await viewer.waitForOpen()
 
-    const dialogBox = await viewer.dialog.boundingBox()
-    const panelBox = await comfyPage.page
-      .getByTestId('docked-agent-panel')
-      .boundingBox()
     const viewport = comfyPage.page.viewportSize()
-    expect(dialogBox).not.toBeNull()
-    expect(panelBox).not.toBeNull()
     expect(viewport).not.toBeNull()
-    expect(dialogBox!.x).toBeGreaterThanOrEqual(0)
-    expect(dialogBox!.y).toBeGreaterThanOrEqual(0)
-    expect(dialogBox!.x + dialogBox!.width).toBeLessThanOrEqual(panelBox!.x + 1)
-    expect(dialogBox!.y + dialogBox!.height).toBeLessThanOrEqual(
-      viewport!.height + 1
-    )
+    if (!viewport) throw new Error('Viewport size not available')
+
+    await expect(async () => {
+      const dialogBox = await viewer.dialog.boundingBox()
+      const panelBox = await comfyPage.page
+        .getByTestId('docked-agent-panel')
+        .boundingBox()
+      expect(dialogBox).not.toBeNull()
+      expect(panelBox).not.toBeNull()
+      if (!dialogBox || !panelBox) return
+
+      expect(dialogBox.x).toBeGreaterThanOrEqual(0)
+      expect(dialogBox.y).toBeGreaterThanOrEqual(0)
+      expect(dialogBox.x + dialogBox.width).toBeLessThanOrEqual(panelBox.x + 1)
+      expect(dialogBox.y + dialogBox.height).toBeLessThanOrEqual(
+        viewport.height + 1
+      )
+    }).toPass()
   })
 })
