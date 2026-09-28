@@ -25,6 +25,8 @@ const UPGRADE: SummaryLedger = {
     }
   ],
   adjustments: [],
+  chips: [],
+  acceptsPromo: true,
   total: '$32.50',
   trailing: ['Existing credits are kept', 'Renews at $100.00 on July 28, 2026']
 }
@@ -115,6 +117,8 @@ describe('CheckoutSummaryColumn', () => {
       credits: { count: '1,772,400', qualifier: 'credits per year' },
       items: [],
       adjustments: [],
+      chips: [],
+      acceptsPromo: true,
       total: '$0.00',
       trailing: ['Renews at $100.00 on July 28, 2026']
     })
@@ -125,6 +129,39 @@ describe('CheckoutSummaryColumn', () => {
       'Renews at $100.00 on July 28, 2026'
     ])
     expect(screen.getByText('$0.00')).toBeInTheDocument()
+  })
+
+  it('prices a held discount, then the Subtotal an entered code applied to', () => {
+    render(CheckoutSummaryColumn, {
+      props: {
+        ledger: {
+          ...UPGRADE,
+          items: [UPGRADE.items[0]],
+          adjustments: [{ label: 'Education discount', amount: '−$10.00' }],
+          subtotal: '$40.00',
+          promo: { label: 'Promo code', amount: '−$7.50' }
+        }
+      },
+      global: { plugins: [createBillingI18n()] }
+    })
+
+    const expected = [
+      'Pro Plan - Prorated',
+      'Education discount',
+      '−$10.00',
+      'Subtotal',
+      '$40.00',
+      'Promo code',
+      '−$7.50',
+      'Total due today'
+    ]
+    const rendered = expected
+      .map((text) => screen.getByText(text))
+      .sort((a, b) =>
+        a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1
+      )
+      .map((node) => node.textContent.trim())
+    expect(rendered).toEqual(expected)
   })
 
   it('shows a scheduled rate beside the currency', () => {

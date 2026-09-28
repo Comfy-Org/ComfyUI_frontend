@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { SummaryLedger } from '@/checkout/summaryLedger'
@@ -7,8 +6,6 @@ import type { SummaryLedger } from '@/checkout/summaryLedger'
 const { ledger } = defineProps<{ ledger: SummaryLedger }>()
 
 const { t } = useI18n()
-
-const rows = computed(() => [...ledger.items, ...ledger.adjustments])
 </script>
 
 <template>
@@ -35,10 +32,14 @@ const rows = computed(() => [...ledger.items, ...ledger.adjustments])
     </p>
   </div>
 
-  <template v-if="rows.length > 0">
+  <template v-if="ledger.items.length + ledger.adjustments.length > 0">
     <hr class="mt-8 mb-0 border-border-default" />
     <ul class="m-0 flex list-none flex-col gap-4 p-0 pt-6">
-      <li v-for="row in rows" :key="row.label" class="flex flex-col gap-1">
+      <li
+        v-for="row in ledger.items"
+        :key="row.label"
+        class="flex flex-col gap-1"
+      >
         <div class="flex items-baseline justify-between gap-4">
           <span class="text-sm font-semibold text-base-foreground">
             {{ row.label }}
@@ -55,20 +56,42 @@ const rows = computed(() => [...ledger.items, ...ledger.adjustments])
           {{ subline }}
         </span>
       </li>
+      <li
+        v-for="row in ledger.adjustments"
+        :key="row.label"
+        class="flex items-baseline justify-between gap-4"
+      >
+        <span class="text-sm font-semibold text-base-foreground">
+          {{ row.label }}
+        </span>
+        <span class="shrink-0 text-sm text-base-foreground tabular-nums">
+          {{ row.amount }}
+        </span>
+      </li>
     </ul>
   </template>
 
   <template v-if="ledger.subtotal">
     <hr class="mt-6 mb-0 border-border-default" />
-    <div class="flex items-baseline justify-between gap-4 pt-4">
-      <span class="text-sm font-semibold text-base-foreground">
-        {{ t('checkout.fullPage.summary.subtotal') }}
-      </span>
-      <span class="text-sm text-base-foreground tabular-nums">
-        {{ ledger.subtotal }}
-      </span>
+    <div
+      class="flex items-baseline justify-between gap-4 pt-4 text-sm text-muted-foreground"
+    >
+      <span>{{ t('checkout.fullPage.summary.subtotal') }}</span>
+      <span class="tabular-nums">{{ ledger.subtotal }}</span>
     </div>
   </template>
+
+  <div
+    v-if="ledger.promo"
+    class="flex items-baseline justify-between gap-4 pt-4"
+  >
+    <span class="text-sm font-semibold text-base-foreground">
+      {{ ledger.promo.label }}
+    </span>
+    <span class="shrink-0 text-sm text-base-foreground tabular-nums">
+      {{ ledger.promo.amount }}
+    </span>
+  </div>
 
   <hr class="mt-6 mb-0 border-border-default" />
   <div class="flex items-center justify-between gap-4 pt-6">
