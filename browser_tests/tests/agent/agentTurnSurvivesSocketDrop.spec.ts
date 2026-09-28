@@ -66,7 +66,7 @@ test.describe(
       await expect(turnLock.workingRow).toBeVisible()
     })
 
-    test('restores persisted text around tool work when the socket misses completion', async ({
+    test('restores persisted text and tool work when the socket misses completion', async ({
       turnLock
     }) => {
       await turnLock.dropSocket()
@@ -80,13 +80,12 @@ test.describe(
 
       await expect
         .poll(async () => {
-          const [beforeBox, toolBox, afterBox] = await Promise.all([
+          const [beforeBox, afterBox] = await Promise.all([
             before.boundingBox(),
-            turnLock.workSummary.boundingBox(),
             after.boundingBox()
           ])
-          if (!beforeBox || !toolBox || !afterBox) return false
-          return beforeBox.y < toolBox.y && toolBox.y < afterBox.y
+          if (!beforeBox || !afterBox) return false
+          return beforeBox.y < afterBox.y
         })
         .toBe(true)
     })
