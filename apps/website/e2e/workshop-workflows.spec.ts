@@ -320,6 +320,38 @@ test('the background example pairs its input and output and restores edited inpu
   await expect(original).toBeVisible()
 })
 
+for (const { path, group, file } of [
+  {
+    path: '/models/workflows/remove-object/',
+    group: 'Edit mask',
+    file: 'remove-object-apple-mask.png'
+  },
+  {
+    path: '/models/workflows/virtual-try-on/',
+    group: 'Your character',
+    file: 'subject-templates_rob_fashion_shoot_vton-4in1.png'
+  }
+])
+  test(`${path} opens with every required input filled`, async ({
+    page,
+    context
+  }) => {
+    await mockWorkflowVisibility(context, true)
+    await context.route('https://comfy.org/workflow-inputs/**', (route) =>
+      route.fulfill({
+        path: `public/workflow-inputs/${new URL(route.request().url()).pathname.split('/').pop()}`
+      })
+    )
+    await page.goto(path)
+    const input = page.getByRole('group', { name: group, exact: true })
+    await expect(
+      input.getByRole('button', { name: `Replace ${file}` })
+    ).toBeVisible()
+    await expect(
+      input.getByRole('button', { name: `Remove ${file}` })
+    ).toBeVisible()
+  })
+
 const tabletToolbars = [640, 700, 768].flatMap((width) => [
   { width, half: 'Models', path: '/models/' },
   {
