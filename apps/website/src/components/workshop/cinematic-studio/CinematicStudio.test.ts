@@ -1043,6 +1043,24 @@ describe('CinematicStudio', () => {
       expect(signals[0].aborted).toBe(true)
     })
 
+    it('leaves the Hub mock for the side panel when an app is picked', async () => {
+      window.history.replaceState(null, '', '/cinematic-studio?ux=hub')
+      render(CinematicStudioPage, { props: { models } })
+      const user = userEvent.setup()
+      const pick = async (name: string) => {
+        await user.click(
+          await screen.findByRole('button', { name: /^Layout to review/ })
+        )
+        await user.click(await screen.findByRole('menuitemradio', { name }))
+      }
+
+      await pick('Re-shoot a video')
+      expect(window.location.search).toBe('?ux=d&app=reshoot')
+      await pick('Cinematic Studio')
+
+      expect(panel()).toBeInTheDocument()
+    })
+
     it('swaps to the Re-shoot app, which has a single layout', async () => {
       window.history.replaceState(null, '', '/cinematic-studio?ux=d')
       render(CinematicStudioPage, { props: { models } })
