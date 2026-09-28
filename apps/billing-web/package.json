@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "test:coverage": "vitest run --coverage",
     "test:unit": "vitest run",
-    "typecheck": "vue-tsc --noEmit -p tsconfig.json",
+    "typecheck": "tsx ../../scripts/vue-tsc-native.ts --noEmit -p tsconfig.json",
     "test:e2e": "playwright test",
     "test:e2e:local": "cross-env PLAYWRIGHT_LOCAL=1 playwright test"
   },
@@ -44,7 +44,6 @@
     "tailwindcss": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "vitest": "catalog:",
-    "vue-tsc": "catalog:"
+    "vitest": "catalog:"
   }
 }
