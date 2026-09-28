@@ -1080,4 +1080,53 @@ describe('CheckoutView', () => {
       'https://testcloud.comfy.org/'
     )
   })
+
+  it('shows the reason the server gave for a refused quote, as the app does', async () => {
+    await renderCheckout(CHECKOUT_PATH, {
+      preview: {
+        status: 'error',
+        code: 'REQUEST_FAILED',
+        httpStatus: 400,
+        serverMessage:
+          'team_credit_stop_id is required for the per-credit Team plan'
+      }
+    })
+
+    expect(
+      await screen.findByText(
+        'team_credit_stop_id is required for the per-credit Team plan'
+      )
+    ).toBeInTheDocument()
+  })
+
+  it.for([
+    {
+      name: 'a status-mapped refusal shows the server reason',
+      failure: {
+        code: 'CONFLICT',
+        httpStatus: 409,
+        serverMessage: 'That plan cannot be changed right now'
+      },
+      shown: 'That plan cannot be changed right now'
+    },
+    {
+      name: 'a code billing-web words itself keeps its own copy',
+      failure: {
+        code: 'OPERATION_ALREADY_PENDING',
+        httpStatus: 409,
+        serverMessage: 'a subscription change is already in progress'
+      },
+      shown:
+        'A payment you started earlier is still going through. It has to finish before you can choose a different plan.'
+    }
+  ] as const)('refused subscribe: $name', async ({ failure, shown }) => {
+    await renderCheckout(CHECKOUT_PATH, {
+      subscribe: { status: 'error', ...failure }
+    })
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+
+    reportConfirm('ctoken_1')
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(shown)
+  })
 })
