@@ -15,33 +15,21 @@ import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { loadSeedIntoActiveTab } from '@e2e/fixtures/utils/seedActiveTab'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 /**
  * A hand-wired link on an autogrow node's spare slot survives a later agent
  * turn that reconnects a different slot in the same group.
  *
- * `updateNodeSlots` used to replace a node's whole `inputs` array with
- * whatever slice the CRDT payload carried for it
- * (`state.inputs.splice(0, state.inputs.length, ...slots.inputs)`). The
- * payload only ever reflects slots the doc itself knows about; an autogrow
- * group's spare slot is grown client-side
+ * An autogrow group's spare slot is grown client-side
  * (`src/core/graph/widgets/dynamicWidgets.ts`) and the doc never hears about
- * it until something wires a link into it over the CRDT layer. A slot's link
- * is tracked by array INDEX in `linkStore`, not by the slot object's name
- * (`src/lib/litegraph/src/node/slotLinks.ts`), so replacing the array with a
- * shorter, doc-only slice silently renamed whichever slot the user's hand-wired
- * link's index landed on next time the graph read it — the reported symptom:
- * a link the user wired by hand attributed itself to the wrong slot name once
- * the graph was serialized, and this could happen on any later agent turn that
- * touched the same node.
- *
- * Fixed in `nodeDataStore.ts`'s `updateNodeSlots`/`mergeSlotsByName` (used by
- * `graphMutations.ts`'s `connect` and link-detach paths): a sync now matches
- * incoming slots by name, patches the ones it recognizes in place, and
- * inserts unmatched ones instead of overwriting the array wholesale — so a
- * live slot the payload doesn't mention keeps its name, its index, and (via
- * `linkStore`) its link.
+ * it until something wires a link into it. A slot's link is tracked by array
+ * INDEX in `linkStore` (`src/lib/litegraph/src/node/slotLinks.ts`), so any
+ * remote apply that rewrites the node's `inputs` array from the doc's view
+ * alone renames whichever slot the hand-wired link's index lands on. The
+ * follower must therefore apply an agent `connect` through the node's own
+ * graph API and leave slots the doc does not mention untouched.
  */
 
 const GPT_IMAGE_NODE_TYPE = 'OpenAIGPTImageNodeV2'
@@ -274,6 +262,7 @@ async function setUpFixture(page: Page) {
   const panel = page.locator('#agent-panel-root')
 
   await test.step('open the agent panel and target the workflow', async () => {
+    await loadSeedIntoActiveTab(page, seed)
     await page
       .getByRole('button', { name: enMessages.agent.entryButton })
       .click()
