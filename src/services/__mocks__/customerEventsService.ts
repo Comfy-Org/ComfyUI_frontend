@@ -5,9 +5,14 @@ import type * as real from '../customerEventsService'
 
 type CustomerEventsService = ReturnType<typeof real.useCustomerEventsService>
 
-export const { EventType } = await vi.importActual<typeof real>(
-  '../customerEventsService'
-)
+export const EventType = {
+  CREDIT_ADDED: 'credit_added',
+  ACCOUNT_CREATED: 'account_created',
+  API_USAGE_STARTED: 'api_usage_started',
+  API_USAGE_COMPLETED: 'api_usage_completed'
+} satisfies {
+  [K in keyof typeof real.EventType]: `${(typeof real.EventType)[K]}`
+}
 
 const eventLabels = new Map<string, string>([
   [EventType.CREDIT_ADDED, 'Credits Added'],
