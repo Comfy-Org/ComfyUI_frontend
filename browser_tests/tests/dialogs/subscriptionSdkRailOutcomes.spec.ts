@@ -312,6 +312,12 @@ async function returnToTab(page: Page) {
 const successHeading = (page: Page) =>
   page.getByRole('heading', { name: "You're all set" })
 
+const PROCESSING_OPERATION = {
+  id: OPERATION_ID,
+  status: 'pending',
+  started_at: '2026-09-21T00:00:00Z'
+} satisfies BillingOpStatusResponse
+
 test.describe('Subscription rail outcomes', { tag: '@cloud' }, () => {
   test('moves a team plan to a personal plan through the SDK transport', async ({
     page
@@ -379,6 +385,9 @@ test.describe('Subscription rail outcomes', { tag: '@cloud' }, () => {
     await expect.poll(() => routes.openedUrls()).toEqual([HOSTED_PAYMENT_URL])
     expect(routes.subscribeRequests).toHaveLength(1)
     expect(transport(routes.subscribeRequests[0])).toBe('fetch')
+    await expect(
+      page.getByText('Verify your payment to finish setting up your workspace')
+    ).toBeVisible()
 
     // A poll that still reports the same parked step must not offer it again.
     const pollsBefore = routes.opsRequests.length
@@ -396,6 +405,43 @@ test.describe('Subscription rail outcomes', { tag: '@cloud' }, () => {
     expect(await routes.openedUrls()).toEqual([HOSTED_PAYMENT_URL])
     expect(routes.subscribeRequests).toHaveLength(1)
     expect(routes.opsRequests.map(transport)).not.toContain('xhr')
+  })
+
+  test('shows the progress toast while a subscribe processes, and clears it when it settles', async ({
+    page
+  }) => {
+    let operation: BillingOpStatusResponse = PROCESSING_OPERATION
+    await setupRail(page, {
+      workspace: workspace('personal', 'owner'),
+      billingStatus: () => ACTIVE_STANDARD_STATUS,
+      plans: {
+        current_plan_slug: 'standard-annual',
+        plans: [STANDARD_ANNUAL_PLAN, CREATOR_ANNUAL_PLAN]
+      },
+      preview: quote('upgrade', CREATOR_ANNUAL_PLAN),
+      subscribeResponse: {
+        billing_op_id: OPERATION_ID,
+        status: 'pending_payment'
+      },
+      operation: () => operation
+    })
+
+    await page.goto(`${APP_URL}/?pricing=creator&cycle=yearly`)
+    await cloudAppExpect(
+      page.getByRole('heading', { name: 'Confirm your upgrade' })
+    ).toBeVisible()
+    await page.getByRole('button', { name: 'Confirm upgrade' }).click()
+
+    const progressToast = page.getByText(
+      'Processing payment — setting up your workspace...'
+    )
+    await expect(progressToast).toBeVisible()
+
+    operation = SETTLED_OPERATION
+    await returnToTab(page)
+
+    await expect(successHeading(page)).toBeVisible()
+    await expect(progressToast).toBeHidden()
   })
 
   test('keeps each write on its own rail when only the subscription rail is on', async ({
