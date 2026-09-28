@@ -52,8 +52,13 @@ const keep = process.argv.includes('--keep')
  * ESM refuses it with ERR_UNSUPPORTED_DIR_IMPORT. Every host that renders this
  * entry builds through a bundler, and the typed consumer still covers it, so
  * the exclusion is about the provider's packaging rather than ours.
+ * `@comfyorg/account-ui/billing/checkout` renders that same form, so it
+ * inherits the exclusion.
  */
-const BUNDLER_ONLY_ENTRIES = ['@comfyorg/account-ui/billing/stripe']
+const BUNDLER_ONLY_ENTRIES = [
+  '@comfyorg/account-ui/billing/stripe',
+  '@comfyorg/account-ui/billing/checkout'
+]
 
 const PUBLISHED_PACKAGES = [
   'account-core',
@@ -251,6 +256,10 @@ import type { Credits } from '@comfyorg/account-ui/billing'
 import { useCredits } from '@comfyorg/account-ui/billing'
 import type { StripePaymentPhase } from '@comfyorg/account-ui/billing/stripe'
 import { StripePaymentForm } from '@comfyorg/account-ui/billing/stripe'
+import type { CheckoutCopy } from '@comfyorg/account-ui/billing/checkout'
+import { CheckoutSubscribeConfirm } from '@comfyorg/account-ui/billing/checkout'
+import type { CatalogTierKey } from '@comfyorg/account-ui/billing/catalog'
+import { TIER_CATALOG } from '@comfyorg/account-ui/billing/catalog'
 import type { PasswordRulesCopy } from '@comfyorg/account-ui/auth/PasswordRules'
 import PasswordRules from '@comfyorg/account-ui/auth/PasswordRules'
 import SocialAuthButtons from '@comfyorg/account-ui/auth/SocialAuthButtons'
@@ -290,6 +299,8 @@ export const values = {
   zExchangeTokenResponse,
   useCredits,
   StripePaymentForm,
+  CheckoutSubscribeConfirm,
+  TIER_CATALOG,
   PasswordRules,
   SocialAuthButtons,
   TurnstileWidget,
@@ -329,6 +340,8 @@ export interface Types {
   ingestTypes: ExchangeTokenResponse
   accountUiBilling: Credits
   accountUiStripe: StripePaymentPhase
+  accountUiCheckout: CheckoutCopy
+  accountUiCatalog: CatalogTierKey
   passwordRules: PasswordRulesCopy
   socialAuthButtons: typeof SocialAuthButtons
   turnstileWidget: typeof TurnstileWidget
