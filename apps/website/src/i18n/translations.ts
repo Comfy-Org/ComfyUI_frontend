@@ -24,6 +24,7 @@ const translations = {
   },
   'workshop.hero.eyebrow': { en: 'Models', 'zh-CN': '模型' },
   'workshop.catalogue.apps': { en: 'Apps', 'zh-CN': '应用' },
+  'workshop.catalogue.eyebrow': { en: 'Hub', 'zh-CN': 'Hub' },
   'workshop.catalogue.categories': { en: 'Categories', 'zh-CN': '分类' },
   'workshop.catalogue.show': { en: 'Browse', 'zh-CN': '浏览' },
   'workshop.catalogue.subtitle': {
@@ -891,18 +892,22 @@ const translations = {
     en: 'Next featured workflow',
     'zh-CN': '下一个精选工作流'
   },
-  'modelDiscovery.label': { en: 'MODELS', 'zh-CN': '模型' },
+  'modelDiscovery.label': { en: 'HUB', 'zh-CN': 'HUB' },
   'modelDiscovery.heading': {
-    en: 'All the latest models,\nready to run',
+    en: 'The latest,\nready to run',
     'zh-CN': '最新模型，\n即刻运行'
   },
   'modelDiscovery.subtitle': {
-    en: 'Models from Google, ByteDance, Black Forest Labs, Kling and more, on Comfy Router. Pick one, set your inputs, hit Run.',
-    'zh-CN':
-      '来自 Google、ByteDance、Black Forest Labs、Kling 等提供商的模型，均由 Comfy Router 提供。选一个，设置输入，点击运行。'
+    en: 'Right in your browser. Nothing to install, nothing to set up.',
+    'zh-CN': '直接在浏览器中运行。无需安装，无需配置。'
   },
   'modelDiscovery.rowLabel': { en: 'Model providers', 'zh-CN': '模型提供商' },
   'modelDiscovery.browse': { en: 'Browse all models', 'zh-CN': '浏览全部模型' },
+  'modelDiscovery.workflowRowLabel': { en: 'Workflows', 'zh-CN': '工作流' },
+  'modelDiscovery.browseWorkflows': {
+    en: 'Browse all workflows',
+    'zh-CN': '浏览全部工作流'
+  },
 
   // Model release carousel (home page)
   'modelRelease.eyebrow': {
@@ -9725,6 +9730,15 @@ Enterprise`
   'workshop.filter.noMatches': { en: 'No matches', 'zh-CN': '没有匹配项' },
   'workshop.filter.clearAll': { en: 'Clear filters', 'zh-CN': '清除筛选' },
   'workshop.filter.applied': { en: '{n} selected', 'zh-CN': '已选 {n} 项' },
+  'workshop.filter.clear': { en: 'Clear', 'zh-CN': '清除' },
+  'workshop.filter.remove': {
+    en: 'Remove {filter}',
+    'zh-CN': '移除{filter}'
+  },
+  'workshop.filter.runsOn': {
+    en: 'Runs on {model}',
+    'zh-CN': '运行于 {model}'
+  },
   'workshop.launch.label': {
     en: 'Use cases',
     'zh-CN': '用例'
@@ -10602,15 +10616,46 @@ Enterprise`
   'workshop.hub.io.video': { en: 'Video', 'zh-CN': '视频' },
   'workshop.hub.io.audio': { en: 'Audio', 'zh-CN': '音频' },
   'workshop.hub.io.3d': { en: '3D', 'zh-CN': '3D' },
-  'workshop.workflow.templateBy': {
-    en: 'Template by {author}',
-    'zh-CN': '模板作者：{author}'
-  },
-  'workshop.workflow.makeYours': { en: 'Make it yours', 'zh-CN': '开始创作' },
   'workshop.workflow.sections': {
     en: 'Workflow sections',
     'zh-CN': '工作流栏目'
   },
+  'workshop.workflow.tabDetails': { en: 'Details', 'zh-CN': '详情' },
+  'workshop.workflow.graphAlt': {
+    en: 'The nodes of this workflow and the links between them',
+    'zh-CN': '此工作流的节点及其连接'
+  },
+  'workshop.workflow.graphHint': {
+    en: 'Read-only \u00b7 drag to pan',
+    'zh-CN': '仅供查看 \u00b7 拖动平移'
+  },
+  'workshop.workflow.graphLoading': {
+    en: 'Loading the graph',
+    'zh-CN': '正在加载节点图'
+  },
+  'workshop.workflow.graphFailed': {
+    en: 'The graph could not be loaded. The download still works.',
+    'zh-CN': '节点图加载失败，下载仍然可用。'
+  },
+  'workshop.workflow.zoomIn': { en: 'Zoom in', 'zh-CN': '放大' },
+  'workshop.workflow.zoomOut': { en: 'Zoom out', 'zh-CN': '缩小' },
+  'workshop.workflow.zoomReset': { en: 'Reset', 'zh-CN': '重置' },
+  'workshop.workflow.factWhere': { en: 'Where', 'zh-CN': '运行位置' },
+  'workshop.workflow.factOutput': { en: 'Output', 'zh-CN': '输出' },
+  'workshop.workflow.factAuthor': { en: 'Author', 'zh-CN': '作者' },
+  'workshop.workflow.runsCloud': {
+    en: 'Runs on Comfy Cloud',
+    'zh-CN': '在 Comfy Cloud 上运行'
+  },
+  'workshop.workflow.runsOwn': {
+    en: 'Runs on a deployment of your own',
+    'zh-CN': '在你自己的部署上运行'
+  },
+  'workshop.workflow.perRun': {
+    en: '{count} per run',
+    'zh-CN': '每次运行 {count} 个'
+  },
+  'workshop.workflow.runsOn': { en: 'Runs on', 'zh-CN': '运行于' },
   'workshop.workflow.inside': {
     en: 'Inside the workflow',
     'zh-CN': '查看工作流内部'
@@ -10627,6 +10672,14 @@ Enterprise`
     en: 'The request below uses the same prepared graph and settings as the Playground. Each submission can start a paid run; do not automatically retry a submission whose outcome is unknown.',
     'zh-CN':
       '以下请求使用与体验区相同的预设图和设置。每次提交都可能开始一次付费运行；如果提交结果未知，请勿自动重试。'
+  },
+  'workshop.workflow.apiNote': {
+    en: 'Needs a paid Cloud plan and available credits.',
+    'zh-CN': '需要付费的 Cloud 方案和可用额度。'
+  },
+  'workshop.workflow.apiDocs': {
+    en: 'API documentation',
+    'zh-CN': 'API 文档'
   },
   'workshop.workflow.apiUploads': {
     en: 'Upload media first',
@@ -10655,14 +10708,6 @@ Enterprise`
     en: 'An example from this template.',
     'zh-CN': '此模板的示例。'
   },
-  'workshop.workflow.inputHint': {
-    en: 'Upload your inputs and adjust the settings.',
-    'zh-CN': '上传素材并调整设置。'
-  },
-  'workshop.workflow.cloudBilling': {
-    en: 'Runs in your Cloud workspace. Your plan and compute credits apply.',
-    'zh-CN': '在你的 Cloud 工作区中运行，使用你的套餐和计算积分。'
-  },
   'workshop.output.refreshLink': {
     en: 'Refresh download link',
     'zh-CN': '刷新下载链接'
@@ -10671,8 +10716,15 @@ Enterprise`
     en: 'Preparing inputs…',
     'zh-CN': '正在准备输入…'
   },
-  'workshop.workflow.submitting': { en: 'Submitting…', 'zh-CN': '正在提交…' },
-  'workshop.workflow.queued': { en: 'Queued', 'zh-CN': '排队中' },
+  'workshop.workflow.submitting': {
+    en: 'Handing the workflow over',
+    'zh-CN': '正在提交工作流'
+  },
+  'workshop.workflow.queued': { en: 'Waiting its turn', 'zh-CN': '排队中' },
+  'workshop.workflow.cancelled': {
+    en: 'This run was cancelled before it finished.',
+    'zh-CN': '这次运行在完成前已取消。'
+  },
   'workshop.workflow.cancelling': {
     en: 'Waiting for cancellation…',
     'zh-CN': '正在等待取消确认…'

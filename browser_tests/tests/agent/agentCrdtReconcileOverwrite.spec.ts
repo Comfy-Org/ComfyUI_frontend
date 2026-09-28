@@ -388,13 +388,15 @@ test.describe(
 
       await agentConversation.sendPrompt(0)
 
-      await agentConversation.replayResponse(0, async () => {
-        await test.step('the user completes and leaves a widget edit', async () => {
-          await textField.fill(localValue)
-          await textField.press('Tab')
-          await expect(textField).not.toBeFocused()
-          await expect(textField).toHaveValue(localValue)
-        })
+      await agentConversation.replayResponse(0, {
+        beforeFirstGraphOps: async () => {
+          await test.step('the user completes and leaves a widget edit', async () => {
+            await textField.fill(localValue)
+            await textField.press('Tab')
+            await expect(textField).not.toBeFocused()
+            await expect(textField).toHaveValue(localValue)
+          })
+        }
       })
       await agentConversation.waitForTurnComplete()
 

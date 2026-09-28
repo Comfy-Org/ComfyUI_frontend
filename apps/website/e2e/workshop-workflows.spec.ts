@@ -66,7 +66,7 @@ test('workflow launch groups lead to the existing shared form', async ({
     'href',
     '/models/workflows/change-material/'
   )
-  await page.getByTestId('browse-all').click()
+  await page.getByTestId('browse-all-end').click()
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(
     'All workflows 30'
   )
@@ -88,6 +88,10 @@ test('workflow launch groups lead to the existing shared form', async ({
   await expect(
     page.getByRole('heading', { name: 'Change a material', exact: true })
   ).toBeVisible()
+  // The eyebrow names the shelf this workflow sits on, and leads back to it.
+  const shelf = page.getByTestId('workflow-use-case')
+  await expect(shelf).toHaveText('Edit images')
+  await expect(shelf).toHaveAttribute('href', '/models?useCase=edit-images')
   await expect(
     page.getByRole('group', { name: 'Your original image' })
   ).toBeVisible()
@@ -104,13 +108,13 @@ test('workflow launch groups lead to the existing shared form', async ({
     .click()
   await page.getByTestId('example-replace-keep').click()
   await expect(prompt).toHaveValue('Use the material from the second image.')
+  await page.getByRole('tab', { name: 'Details', exact: true }).click()
   await expect(
     page.getByRole('link', { name: 'Try in Cloud' })
   ).toHaveAttribute(
     'href',
     'https://testcloud.comfy.org/?template=image_qwen_image_edit_2511'
   )
-  await page.getByRole('tab', { name: 'Workflow', exact: true }).click()
   const graphFiles = [
     {
       link: page.getByRole('link', { name: 'Open full-size workflow preview' }),
@@ -134,6 +138,51 @@ test('workflow launch groups lead to the existing shared form', async ({
     'aria-pressed',
     'true'
   )
+})
+
+test('the Details graph waits for its tab, names its subgraphs, and zooms from its controls', async ({
+  page,
+  context
+}) => {
+  await mockWorkflowVisibility(context, true)
+  const graphRequests: string[] = []
+  page.on('request', (request) => {
+    if (request.url().endsWith('/workflow-graphs/image-to-video.json'))
+      graphRequests.push(request.url())
+  })
+  await page.goto('/models/workflows/image-to-video/')
+  const details = page.getByRole('tab', { name: 'Details', exact: true })
+  await expect(details).toBeVisible()
+  await page.waitForLoadState('networkidle')
+  expect(graphRequests).toHaveLength(0)
+
+  await details.click()
+  const graph = page.getByTestId('workflow-graph')
+  const drawing = graph.getByRole('img', {
+    name: 'The nodes of this workflow and the links between them'
+  })
+  await expect(drawing).toBeVisible()
+  expect(graphRequests).toHaveLength(1)
+  await expect(drawing).toContainText('Image to Video (LTX-2.3)')
+
+  // The controls sit inside the draggable frame; a press on them has to reach
+  // them rather than the frame.
+  await graph.getByRole('button', { name: 'Zoom in' }).click()
+  await expect(graph).toContainText('120%')
+  const frame = await graph.boundingBox()
+  const drawn = await drawing.locator('g').first().boundingBox()
+  const centre = {
+    x: drawn!.x + drawn!.width / 2,
+    y: drawn!.y + drawn!.height / 2
+  }
+  // Zooming keeps the drawing where it was rather than carrying it off-frame.
+  expect(centre.x).toBeGreaterThan(frame!.x)
+  expect(centre.x).toBeLessThan(frame!.x + frame!.width)
+  expect(centre.y).toBeGreaterThan(frame!.y)
+  expect(centre.y).toBeLessThan(frame!.y + frame!.height)
+
+  await graph.getByRole('button', { name: 'Reset' }).click()
+  await expect(graph).toContainText('100%')
 })
 
 test('withholds workflow discovery and direct pages when the workflow flag is off', async ({

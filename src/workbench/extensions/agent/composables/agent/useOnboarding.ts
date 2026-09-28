@@ -12,6 +12,7 @@ export interface CoachStep {
   body: string
   placement: 'left-center' | 'left-end' | 'graph-bottom' | 'left-start'
   toolbarTarget?: string
+  tooltip?: string
 }
 
 const SHARED_ONBOARDING_KEY = 'Comfy.AgentPanel.onboarded'
@@ -67,6 +68,19 @@ export function hasSeenCoach(scopedKey: string): boolean {
   }
 }
 
+/**
+ * Clear the persisted flag with no live tour to notify. Only for the deferred
+ * case, where no `useOnboarding` instance is mounted to take `restart()`; a
+ * mounted tour must go through the transition so it reacts without a remount.
+ */
+export function resetCoach(scopedKey: string): void {
+  try {
+    localStorage.removeItem(scopedKey)
+  } catch {
+    // Storage is unavailable, so the coach marks already run every time.
+  }
+}
+
 const shownScopes = new Set<string>()
 const reportedDeferrals = new Set<string>()
 /** A coach paused mid-way by App Mode or a tour was already shown, so it stays quiet. */
@@ -107,5 +121,20 @@ export function useOnboarding(
     else index.value += 1
   }
 
-  return { active, index, step, isLast, next, finish }
+  function previous(): void {
+    if (!active.value || index.value === 0) return
+    index.value -= 1
+  }
+
+  /**
+   * Replay from the first card. `seen` is the same reactive storage ref the
+   * tour reads, so clearing it here reaches every consumer; the caller does not
+   * have to poke localStorage and remount to be noticed.
+   */
+  function restart(): void {
+    index.value = 0
+    seen.value = false
+  }
+
+  return { active, index, step, isLast, next, previous, finish, restart }
 }
