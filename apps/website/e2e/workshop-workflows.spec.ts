@@ -143,11 +143,13 @@ test('workflow launch groups lead to the existing shared form', async ({
     'true'
   )
   await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
+  const filtered = page.getByTestId('workflow-search-results')
   await expect(
-    page
-      .getByTestId('workflow-search-results')
-      .getByTestId('workshop-model-card')
-  ).toHaveCount(6)
+    filtered.getByRole('link', { name: /Change a material/ })
+  ).toBeVisible()
+  await expect(
+    filtered.getByRole('link', { name: /Remove an image background/ })
+  ).toHaveCount(0)
 })
 
 test('the Details graph waits for its tab, names its subgraphs, and zooms from its controls', async ({
