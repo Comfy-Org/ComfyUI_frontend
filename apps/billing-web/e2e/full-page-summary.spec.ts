@@ -78,7 +78,7 @@ test('a tier upgrade reads the prorated charge and a dated credits delta', async
   await expectSummary(page, [
     'Upgrade to Pro Plan · Personal',
     '$32.50 USD',
-    '6,858 credits added today (expire July 28, 2026)',
+    '6,858 credits added today (expire July 28)',
     'Pro Plan - Prorated$32.50',
     'Remaining time for Pro plan, less unused time from Creator plan',
     'Credits refill to 21,100 each month',

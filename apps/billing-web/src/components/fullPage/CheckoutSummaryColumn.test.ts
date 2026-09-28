@@ -10,7 +10,7 @@ const UPGRADE: SummaryLedger = {
   headline: { amount: '$32.50', currency: 'USD' },
   credits: {
     count: '6,850',
-    qualifier: 'credits added today (expire July 28, 2026)'
+    qualifier: 'credits added today (expire July 28)'
   },
   items: [
     {
@@ -78,7 +78,7 @@ describe('CheckoutSummaryColumn', () => {
     expect(screen.getAllByText('$32.50')).toHaveLength(2)
     expect(screen.getByText('USD')).toBeInTheDocument()
     expect(screen.getByText(/credits added today/)).toHaveTextContent(
-      '6,850 credits added today (expire July 28, 2026)'
+      '6,850 credits added today (expire July 28)'
     )
     expect(ledgerOutline()).toEqual([
       '---',
