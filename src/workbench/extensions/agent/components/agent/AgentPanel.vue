@@ -360,6 +360,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
         <ConversationView
           v-else
           :entries
+          :conversation-id="sessionId"
           :editable-turn-id
           :answering-ask-ids
           :paywall-presentation
