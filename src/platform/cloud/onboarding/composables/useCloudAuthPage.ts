@@ -1,10 +1,11 @@
 import type { UserCredential } from 'firebase/auth'
-import { ref } from 'vue'
+import { onScopeDispose, ref } from 'vue'
 import type { RouteLocationRaw } from 'vue-router'
 
 import { isEmbeddedWebView } from '@comfyorg/account-core/webviewDetection'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'
+import type { SocialSignInOptions } from '@/stores/authStore'
 import { usePostAuthRedirect } from '@/platform/cloud/onboarding/composables/usePostAuthRedirect'
 
 /**
@@ -27,18 +28,28 @@ export function useCloudAuthPage(options: {
     defaultRedirect: options.defaultRedirect
   })
 
-  const providerOptions = options.isNewUser ? { isNewUser: true } : undefined
+  let pageOpen = true
+  onScopeDispose(() => {
+    pageOpen = false
+  })
 
   /** `undefined` means useAuthActions already toasted the failure. */
   const signInWith = async (
-    provider: (opts?: {
-      isNewUser?: boolean
-    }) => Promise<UserCredential | undefined>
+    provider: (
+      opts?: SocialSignInOptions
+    ) => Promise<UserCredential | undefined>,
+    resumed?: Promise<UserCredential>
   ) => {
     authError.value = ''
-    if (await provider(providerOptions)) {
-      await onAuthSuccess()
-    }
+    const signedIn = await provider({
+      isNewUser: options.isNewUser,
+      resumed,
+      popup: {
+        onResumed: (credential) => void signInWith(provider, credential),
+        keepLateResult: () => pageOpen
+      }
+    })
+    if (signedIn) await onAuthSuccess()
   }
 
   return {
