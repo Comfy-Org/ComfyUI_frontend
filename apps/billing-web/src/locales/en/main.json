@@ -93,9 +93,30 @@
         "terms": "Terms",
         "privacyPolicy": "Privacy Policy"
       },
-      "formFailed": {
-        "title": "The payment form couldn't load",
-        "body": "Nothing has been charged. Check your connection and try again — your order details are unaffected.",
+      "tabs": {
+        "saved": "Saved",
+        "new": "Add new payment"
+      },
+      "saved": {
+        "label": "Saved payment method",
+        "change": "Change",
+        "addNew": "Add new payment method",
+        "alipay": "Alipay",
+        "selectLabel": "Choose a saved payment method"
+      },
+      "railFailed": {
+        "column": {
+          "title": "The payment form couldn't load",
+          "body": "Nothing has been charged. Check your connection and try again — your order details are unaffected."
+        },
+        "element": {
+          "title": "The payment form couldn't load",
+          "body": "Nothing has been charged. Check your connection and try again, or pay with a saved payment method."
+        },
+        "saved": {
+          "title": "Your saved payment methods couldn't load",
+          "body": "Nothing has been charged. Try again, or pay with a new payment method."
+        },
         "retry": "Try again"
       },
       "refused": {

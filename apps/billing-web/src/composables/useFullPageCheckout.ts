@@ -3,13 +3,19 @@ import { computed, shallowReadonly, shallowRef } from 'vue'
 import {
   useBillingClient,
   useCheckout,
+  usePaymentMethods,
   usePreviewSubscribe
 } from '@comfyorg/account-ui/billing'
 import type { StripePaymentPhase } from '@comfyorg/account-ui/billing/stripe'
 import type { BillingEntry } from '@comfyorg/billing-contract'
 import { buildReturnUrl } from '@comfyorg/billing-contract'
 
-import type { CheckoutPage, CheckoutPageEvent } from '@/checkout/checkoutPage'
+import type {
+  CheckoutPage,
+  CheckoutPageEvent,
+  PaymentTab,
+  SavedArrival
+} from '@/checkout/checkoutPage'
 import {
   RESOLVING,
   railAcceptsPay,
@@ -26,10 +32,16 @@ import { awaitBillingWebStripeKey } from '@/config/stripeKey'
 import { useBillingEntry } from '@/entry/billingEntry'
 import { createDeferredStripeChallengePort } from '@/session/stripeChallengePort'
 
+/** What Pay charges: a new card's token, a saved method, or the method on file. */
+export type PayChoice =
+  | { readonly confirmationToken: string }
+  | { readonly savedMethodId: string }
+  | undefined
+
 /**
  * The full-page checkout's effects around one `CheckoutPage` state: the
- * capabilities read, the quote and the Stripe key on arrival, the payment
- * element's readiness, and the subscribe on Pay. Every change goes through
+ * capabilities read, the quote, the saved methods and the Stripe key on
+ * arrival, the payment element's readiness, and the subscribe on Pay. Every change goes through
  * `reduceCheckoutPage`; the quote itself stays with `usePreviewSubscribe`.
  * The key is awaited because the payment form reads it only when it mounts.
  */
@@ -38,6 +50,7 @@ export function useFullPageCheckout() {
   const billedWorkspace = useBilledWorkspace()
   const { capabilities } = useBillingClient<'capabilities'>(undefined)
   const { preview, quote } = usePreviewSubscribe()
+  const saved = usePaymentMethods({ immediate: false })
   const checkout = useCheckout({
     openUrl: (url) => window.location.assign(url),
     navigationMode: 'redirect',
@@ -52,7 +65,7 @@ export function useFullPageCheckout() {
 
   async function resolve(arrival: BillingEntry) {
     if (arrival.plan === undefined) return
-    const [allowed, quoted] = await Promise.all([
+    const [allowed, quoted, methods] = await Promise.all([
       capabilities.read(),
       quote({
         planSlug: arrival.plan,
@@ -60,6 +73,7 @@ export function useFullPageCheckout() {
           ? {}
           : { teamCreditStopId: arrival.teamCreditStopId })
       }),
+      saved.refresh(),
       awaitBillingWebStripeKey()
     ])
     if (allowed.status === 'error') {
@@ -71,15 +85,40 @@ export function useFullPageCheckout() {
       })
     } else if (quoted.status === 'error') {
       dispatch({ type: 'unavailable', code: quoted.code })
+    } else if (quoted.value.transition_type === 'new_subscription') {
+      dispatch({ type: 'quoted', method: 'collect', saved: arrivalOf(methods) })
     } else {
-      dispatch({
-        type: 'quoted',
-        method:
-          quoted.value.transition_type === 'new_subscription'
-            ? 'new_card'
-            : 'on_file'
-      })
+      dispatch({ type: 'quoted', method: 'on_file' })
     }
+  }
+
+  function arrivalOf(
+    read: Awaited<ReturnType<typeof saved.refresh>>
+  ): SavedArrival {
+    return read.status === 'ok' ? read.value.methods.length : 'failed'
+  }
+
+  async function retrySaved() {
+    dispatch({ type: 'savedRetried' })
+    const read = await saved.refresh()
+    const arrival = arrivalOf(read)
+    dispatch(
+      arrival === 'failed'
+        ? { type: 'savedFailed' }
+        : { type: 'savedLoaded', count: arrival }
+    )
+  }
+
+  /** The whole-column error retries every rail that is down. */
+  function retryColumn() {
+    dispatch({ type: 'elementRetried' })
+    const current = page.value
+    if (
+      current.kind === 'capture' &&
+      current.rail.method === 'collect' &&
+      current.rail.saved === 'failed'
+    )
+      void retrySaved()
   }
 
   if (entry.value !== undefined) void resolve(entry.value)
@@ -119,7 +158,7 @@ export function useFullPageCheckout() {
     return host ?? planCreditsSettingsUrl(workspace)
   })
 
-  async function pay(confirmationToken?: string) {
+  async function pay(choice: PayChoice) {
     const arrival = entry.value
     const quoted = preview.value
     if (arrival?.plan === undefined || !quoted || !canPay.value) return
@@ -128,7 +167,13 @@ export function useFullPageCheckout() {
         arrival,
         plan: arrival.plan,
         quoted,
-        confirmationToken,
+        confirmationToken:
+          choice && 'confirmationToken' in choice
+            ? choice.confirmationToken
+            : undefined,
+        ...(choice && 'savedMethodId' in choice
+          ? { savedPaymentMethodId: choice.savedMethodId }
+          : {}),
         confirmReactivation: false,
         returnUrl: checkoutResultUrl(
           arrival,
@@ -147,7 +192,12 @@ export function useFullPageCheckout() {
     payFailure,
     returnLink,
     onPaymentPhase,
+    savedMethods: saved.methods,
+    defaultSavedMethod: saved.defaultMethod,
     retryElement: () => dispatch({ type: 'elementRetried' }),
+    retrySaved: () => void retrySaved(),
+    retryColumn,
+    selectTab: (tab: PaymentTab) => dispatch({ type: 'tabSelected', tab }),
     pay
   }
 }

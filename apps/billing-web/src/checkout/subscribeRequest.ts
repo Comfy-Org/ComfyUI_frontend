@@ -35,6 +35,7 @@ export function buildSubscribeRequest({
   plan,
   quoted,
   confirmationToken,
+  savedPaymentMethodId,
   confirmReactivation,
   returnUrl
 }: {
@@ -42,6 +43,7 @@ export function buildSubscribeRequest({
   plan: string
   quoted: SubscriptionPreview
   confirmationToken: string | undefined
+  savedPaymentMethodId?: string
   confirmReactivation: boolean
   returnUrl: string | undefined
 }): SubscribeInput {
@@ -50,6 +52,9 @@ export function buildSubscribeRequest({
     ...(confirmationToken === undefined
       ? {}
       : { confirmation_token: confirmationToken }),
+    ...(savedPaymentMethodId === undefined
+      ? {}
+      : { saved_payment_method_id: savedPaymentMethodId }),
     ...(arrival.teamCreditStopId === undefined
       ? {}
       : { team_credit_stop_id: arrival.teamCreditStopId }),

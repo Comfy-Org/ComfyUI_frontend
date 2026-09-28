@@ -63,8 +63,8 @@ export interface FakeBillingClientOptions {
 export interface FakeBillingClient {
   readonly client: BillingClient
   readonly readPlans: () => Promise<BillingResult<PlansSnapshot>>
-  readonly readPaymentMethods: () => Promise<
-    BillingResult<PaymentMethodsSnapshot>
+  readonly readPaymentMethods: Mock<
+    () => Promise<BillingResult<PaymentMethodsSnapshot>>
   >
   readonly invalidatePaymentMethods: () => void
   readonly previewSubscribe: Mock<BillingClient['commands']['previewSubscribe']>
@@ -135,7 +135,9 @@ export function createFakeBillingClient(
         } satisfies BillingResult<PlansSnapshot>)
       : plans
   )
-  const readPaymentMethods = vi.fn(async () =>
+  const readPaymentMethods: Mock<
+    () => Promise<BillingResult<PaymentMethodsSnapshot>>
+  > = vi.fn(async () =>
     paymentMethods.status === 'ok'
       ? ({
           status: 'ok',

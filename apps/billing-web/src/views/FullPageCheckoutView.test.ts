@@ -1,8 +1,12 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { nextTick, ref } from 'vue'
+import type { VNode } from 'vue'
 
-import type { PreviewSubscribeResult } from '@comfyorg/account-core/billing'
+import type {
+  PreviewSubscribeResult,
+  SavedPaymentMethod
+} from '@comfyorg/account-core/billing'
 import type { AccountCredential } from '@comfyorg/account-core/session'
 import { BILLING_CLIENT_KEY } from '@comfyorg/account-ui/billing'
 import type { StripePaymentPhase } from '@comfyorg/account-ui/billing/stripe'
@@ -72,31 +76,40 @@ const form = vi.hoisted(() => ({
   emit: (() => {}) as (event: string, payload: unknown) => void
 }))
 
-vi.mock<unknown>(import('@comfyorg/account-ui/billing/stripe'), () => ({
-  StripePaymentForm: {
-    name: 'StripePaymentForm',
-    props: {
-      canSubmit: { type: Boolean, default: true },
-      isLoading: { type: Boolean, default: false }
-    },
-    emits: ['confirm', 'phase'],
-    setup(
-      props: { canSubmit: boolean; isLoading: boolean },
-      {
-        emit,
-        slots
-      }: {
-        emit: (event: string, payload: unknown) => void
-        slots: { submit?: (slotProps: Record<string, unknown>) => unknown }
+vi.mock<unknown>(import('@comfyorg/account-ui/billing/stripe'), async () => {
+  const { h } = await import('vue')
+  return {
+    StripePaymentForm: {
+      name: 'StripePaymentForm',
+      props: {
+        canSubmit: { type: Boolean, default: true },
+        isLoading: { type: Boolean, default: false }
+      },
+      emits: ['confirm', 'phase'],
+      setup(
+        props: { canSubmit: boolean; isLoading: boolean },
+        {
+          emit,
+          slots
+        }: {
+          emit: (event: string, payload: unknown) => void
+          slots: { submit?: (slotProps: Record<string, unknown>) => VNode[] }
+        }
+      ) {
+        form.mounts += 1
+        form.emit = emit
+        return () =>
+          h(
+            'div',
+            slots.submit?.({
+              disabled: !props.canSubmit,
+              loading: props.isLoading
+            })
+          )
       }
-    ) {
-      form.mounts += 1
-      form.emit = emit
-      return () =>
-        slots.submit?.({ disabled: !props.canSubmit, loading: props.isLoading })
     }
   }
-}))
+})
 
 function reportPhase(phase: StripePaymentPhase) {
   form.emit('phase', phase)
@@ -355,5 +368,165 @@ describe('FullPageCheckoutView', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Back' }))
 
     expect(assign).toHaveBeenCalledWith(href)
+  })
+})
+
+const VISA: SavedPaymentMethod = {
+  id: 'pm_visa',
+  type: 'card',
+  brand: 'visa',
+  last4: '4242',
+  is_default: false
+}
+const MASTERCARD: SavedPaymentMethod = {
+  id: 'pm_mastercard',
+  type: 'card',
+  brand: 'mastercard',
+  last4: '4402',
+  is_default: true
+}
+
+const tab = (name: 'Saved' | 'Add new payment') =>
+  screen.getByRole('tab', { name })
+
+async function renderQuoted(options: FakeBillingClientOptions = {}) {
+  const fake = await renderCheckout(options)
+  await screen.findByText('Subscribe to Creator Plan · Acme Team')
+  return fake
+}
+
+describe('FullPageCheckoutView saved methods and rail failures', () => {
+  beforeEach(() => {
+    form.mounts = 0
+  })
+
+  it('opens on Saved with the default method and charges it without a card token', async () => {
+    const fake = await renderQuoted({
+      paymentMethods: { status: 'ok', value: [VISA, MASTERCARD] }
+    })
+
+    expect(tab('Saved')).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('combobox')).toBeInTheDocument()
+    await userEvent.click(payButton())
+
+    await waitFor(() => expect(fake.subscribe).toHaveBeenCalledOnce())
+    const request = fake.subscribe.mock.calls[0][0]
+    expect(request).toMatchObject({ saved_payment_method_id: 'pm_mastercard' })
+    expect(request).not.toHaveProperty('confirmation_token')
+  })
+
+  it('shows a single saved method as a row, not a picker', async () => {
+    await renderQuoted({ paymentMethods: { status: 'ok', value: [VISA] } })
+
+    expect(screen.getByText('visa •••• 4242')).toBeInTheDocument()
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
+  })
+
+  it('keeps the card form mounted across tab switches, so typed details survive', async () => {
+    const fake = await renderQuoted({
+      paymentMethods: { status: 'ok', value: [VISA] }
+    })
+    reportPhase({ phase: 'payment_element_ready', element: 'payment' })
+
+    await userEvent.click(tab('Add new payment'))
+    await userEvent.click(tab('Saved'))
+    await userEvent.click(tab('Add new payment'))
+    form.emit('confirm', 'ctoken_new')
+
+    expect(form.mounts).toBe(1)
+    await waitFor(() =>
+      expect(fake.subscribe).toHaveBeenCalledWith(
+        expect.objectContaining({ confirmation_token: 'ctoken_new' })
+      )
+    )
+    expect(fake.subscribe.mock.calls[0][0]).not.toHaveProperty(
+      'saved_payment_method_id'
+    )
+  })
+
+  it('368-15401: a failed saved read errors on Saved only, hides the address, and Try again reads again', async () => {
+    const fake = await renderQuoted({
+      paymentMethods: { status: 'error', code: 'REQUEST_FAILED' }
+    })
+    reportPhase({ phase: 'payment_element_ready', element: 'payment' })
+
+    expect(tab('Saved')).toHaveAttribute('aria-selected', 'true')
+    expect(
+      screen.getByText("Your saved payment methods couldn't load")
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Pay and subscribe' })
+    ).not.toBeInTheDocument()
+
+    await userEvent.click(tab('Add new payment'))
+    expect(payButton()).toBeEnabled()
+
+    await userEvent.click(tab('Saved'))
+    fake.readPaymentMethods.mockResolvedValueOnce({
+      status: 'ok',
+      value: {
+        scope: { userId: 'uid-1', workspaceId: 'ws-1', role: 'owner' },
+        methods: [VISA],
+        readAt: 0
+      }
+    })
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
+
+    expect(await screen.findByText('visa •••• 4242')).toBeInTheDocument()
+    expect(tab('Saved')).toHaveAttribute('aria-selected', 'true')
+    expect(payButton()).toBeEnabled()
+    expect(form.mounts).toBe(1)
+  })
+
+  it('368-15319: a failed element beside saved methods errors on Add new only, and Saved stays payable', async () => {
+    await renderQuoted({ paymentMethods: { status: 'ok', value: [VISA] } })
+    reportPhase({
+      phase: 'payment_element_failed',
+      element: 'payment',
+      element_phase: 'mount'
+    })
+    await nextTick()
+
+    expect(tab('Saved')).toHaveAttribute('aria-selected', 'true')
+    expect(payButton()).toBeEnabled()
+
+    await userEvent.click(tab('Add new payment'))
+    expect(
+      screen.getByText(
+        'Nothing has been charged. Check your connection and try again, or pay with a saved payment method.'
+      )
+    ).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
+
+    expect(form.mounts).toBe(2)
+    expect(tab('Add new payment')).toHaveAttribute('aria-selected', 'true')
+    expect(payButton()).toBeDisabled()
+  })
+
+  it('takes the whole column when both rails are down, and Try again retries both', async () => {
+    const fake = await renderQuoted({
+      paymentMethods: { status: 'error', code: 'REQUEST_FAILED' }
+    })
+    reportPhase({
+      phase: 'payment_element_failed',
+      element: 'payment',
+      element_phase: 'init'
+    })
+
+    expect(
+      await screen.findByText(
+        'Nothing has been charged. Check your connection and try again — your order details are unaffected.'
+      )
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('tab')).not.toBeInTheDocument()
+    expect(fake.readPaymentMethods).toHaveBeenCalledOnce()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
+
+    expect(form.mounts).toBe(2)
+    await waitFor(() =>
+      expect(fake.readPaymentMethods).toHaveBeenCalledTimes(2)
+    )
   })
 })
