@@ -114,7 +114,7 @@
         {
           "name": "VIDEO",
           "type": "VIDEO",
-          "links": [18]
+          "links": [18, 34]
         }
       ],
       "title": "Detailed Texture Vid - MiniMax Hailuo Video",
@@ -154,7 +154,7 @@
         {
           "name": "VIDEO",
           "type": "VIDEO",
-          "links": [20]
+          "links": [20, 35]
         }
       ],
       "title": "Cinematic Pan Vid - MiniMax Hailuo Video",
@@ -194,7 +194,7 @@
         {
           "name": "VIDEO",
           "type": "VIDEO",
-          "links": [16]
+          "links": [16, 33]
         }
       ],
       "title": "360 Rotation Vid - MiniMax Hailuo Video",
@@ -248,6 +248,54 @@
       "bgcolor": "#353"
     },
     {
+      "id": 27,
+      "type": "ConcatenateVideo",
+      "pos": [4746.333153076701, 441.33329646024174],
+      "size": [270, 130],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "video0",
+          "name": "videos.video0",
+          "type": "VIDEO",
+          "link": 33
+        },
+        {
+          "label": "video1",
+          "name": "videos.video1",
+          "type": "VIDEO",
+          "link": 34
+        },
+        {
+          "label": "video2",
+          "name": "videos.video2",
+          "type": "VIDEO",
+          "link": 35
+        },
+        {
+          "label": "video3",
+          "name": "videos.video3",
+          "shape": 7,
+          "type": "VIDEO",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [41]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ConcatenateVideo"
+      },
+      "widgets_values": ["auto"],
+      "title": "Concatenate Video"
+    },
+    {
       "id": 17,
       "type": "SaveVideo",
       "pos": [4066.3332695243143, 441.33329646024185],
@@ -292,6 +340,28 @@
         "Node name for S&R": "SaveVideo"
       },
       "widgets_values": ["video/ComfyUI-1", "auto", "auto"]
+    },
+    {
+      "id": 30,
+      "type": "SaveVideo",
+      "pos": [4990, 441.33329646024185],
+      "size": [800, 863],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 41
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.6.0"
+      },
+      "widgets_values": ["video/ComfyUI", "auto", "auto"]
     }
   ],
   "links": [
@@ -302,7 +372,11 @@
     [18, 18, 0, 17, 0, "VIDEO"],
     [19, 10, 0, 18, 0, "IMAGE"],
     [20, 20, 0, 19, 0, "VIDEO"],
-    [21, 10, 0, 20, 0, "IMAGE"]
+    [21, 10, 0, 20, 0, "IMAGE"],
+    [33, 5, 0, 27, 0, "VIDEO"],
+    [34, 18, 0, 27, 1, "VIDEO"],
+    [35, 20, 0, 27, 2, "VIDEO"],
+    [41, 27, 0, 30, 0, "VIDEO"]
   ],
   "groups": [],
   "definitions": {
