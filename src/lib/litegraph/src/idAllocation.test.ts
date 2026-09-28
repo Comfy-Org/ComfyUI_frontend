@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import {
   AGENT_RESERVED_BIT,
@@ -167,6 +167,15 @@ describe('idAllocation', () => {
 
   it('checks the candidate after the last reserved ID', () => {
     expect(findNextAvailableId(new Set([1, 2, 3]), 1)).toBe(4)
+  })
+
+  it('throws instead of returning an occupied ID when the search is exhausted', () => {
+    const occupiedIds = new Set([1])
+    vi.spyOn(occupiedIds, 'has').mockReturnValue(true)
+
+    expect(() => findNextAvailableId(occupiedIds, 1)).toThrow(
+      'ID space exhausted'
+    )
   })
 
   it('skips a reserved ID above a stale counter', () => {

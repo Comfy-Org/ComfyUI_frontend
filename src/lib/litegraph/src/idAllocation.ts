@@ -36,6 +36,7 @@ export function findNextAvailableId(
     candidate = candidate === Number.MAX_SAFE_INTEGER ? 1 : candidate + 1
     attempts++
   }
+  if (usedIds.has(candidate)) throw new RangeError('ID space exhausted')
   return candidate
 }
 

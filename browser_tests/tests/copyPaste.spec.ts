@@ -191,6 +191,47 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
     })
   })
 
+  test('Sparse clipboard widget values keep their original indices', async ({
+    comfyPage
+  }) => {
+    // Regression: https://github.com/Comfy-Org/ComfyUI_frontend/pull/19239#discussion_r4123007404
+    const originalNodes = await comfyPage.nodeOps.getNodeRefsByType('KSampler')
+    const originalIds = new Set(originalNodes.map(({ id }) => id))
+
+    await comfyPage.page.evaluate(() => {
+      const node = window
+        .app!.graph.serialize()
+        .nodes.find(({ type }) => type === 'KSampler')
+      if (!node) throw new Error('KSampler node not found')
+      const clipboardNode = {
+        ...node,
+        widgets_values: { 0: 123, 2: 47, length: 3 }
+      }
+      const encoded = btoa(JSON.stringify({ nodes: [clipboardNode] }))
+      const dataTransfer = new DataTransfer()
+      dataTransfer.setData(
+        'text/html',
+        `<div data-comfy-metadata="${encoded}"></div>`
+      )
+      document.dispatchEvent(
+        new ClipboardEvent('paste', {
+          clipboardData: dataTransfer,
+          bubbles: true,
+          cancelable: true
+        })
+      )
+    })
+
+    await expect
+      .poll(async () => {
+        const nodes = await comfyPage.nodeOps.getNodeRefsByType('KSampler')
+        const pasted = nodes.find(({ id }) => !originalIds.has(id))
+        if (!pasted) return undefined
+        return await (await pasted.getWidget(2)).getValue()
+      })
+      .toBe(47)
+  })
+
   test('Can undo paste multiple nodes as single action', async ({
     comfyPage
   }) => {

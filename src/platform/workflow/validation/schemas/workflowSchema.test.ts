@@ -409,14 +409,25 @@ describe('zClipboardItems', () => {
     expect(result.data.nodes?.[0].widgets_values).toEqual(['first', 2])
   })
 
-  it('normalizes sparse widget values without allocating their declared length', () => {
+  it('preserves indices when normalizing sparse widget values', () => {
     const node = JSON.parse(JSON.stringify(defaultGraph.nodes[0]))
-    node.widgets_values = { 0: 'first', length: Number.MAX_SAFE_INTEGER }
+    node.widgets_values = { 0: 'first', 2: 'third', length: 3 }
 
     const result = zClipboardItems.safeParse({ nodes: [node] })
 
     expect(result.success).toBe(true)
     if (!result.success) throw result.error
-    expect(result.data.nodes?.[0].widgets_values).toEqual(['first'])
+    const values = result.data.nodes?.[0].widgets_values
+    expect(values).toHaveLength(3)
+    expect(values?.[0]).toBe('first')
+    expect(1 in (values ?? [])).toBe(false)
+    expect(values?.[2]).toBe('third')
+  })
+
+  it('rejects an impractically large sparse widget values length', () => {
+    const node = JSON.parse(JSON.stringify(defaultGraph.nodes[0]))
+    node.widgets_values = { 0: 'first', length: 10_001 }
+
+    expect(zClipboardItems.safeParse({ nodes: [node] }).success).toBe(false)
   })
 })

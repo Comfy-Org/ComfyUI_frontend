@@ -237,6 +237,17 @@ const zProperties = z
   .catchall(zNodeProperty.optional())
 
 const zWidgetValues = z.union([z.array(z.any()), z.record(z.any())])
+const MAX_CLIPBOARD_WIDGET_VALUES = 10_000
+
+function hasSupportedClipboardWidgetValuesLength(
+  values: z.output<typeof zWidgetValues> | undefined
+): boolean {
+  if (!values || Array.isArray(values)) return true
+  return (
+    typeof values.length !== 'number' ||
+    values.length <= MAX_CLIPBOARD_WIDGET_VALUES
+  )
+}
 
 function normalizeClipboardWidgetValues(
   values: z.output<typeof zWidgetValues> | undefined
@@ -244,13 +255,14 @@ function normalizeClipboardWidgetValues(
   if (!values || Array.isArray(values)) return values
   const length = values.length
   if (!Number.isSafeInteger(length) || length < 0) return []
-  return Object.entries(values)
-    .filter(([key]) => {
-      const index = Number(key)
-      return Number.isInteger(index) && index >= 0 && index < length
-    })
-    .sort(([left], [right]) => Number(left) - Number(right))
-    .map(([, value]) => value)
+  const normalized: TWidgetValue[] = []
+  normalized.length = length
+  for (const [key, value] of Object.entries(values)) {
+    const index = Number(key)
+    if (Number.isInteger(index) && index >= 0 && index < length)
+      normalized[index] = value
+  }
+  return normalized
 }
 
 const zComfyNode = z
@@ -542,19 +554,35 @@ const zSubgraphDefinition = zComfyWorkflow1
   })
   .passthrough()
 
-const zClipboardNode = zComfyNode.transform((node) => {
-  return {
-    ...node,
-    widgets_values: normalizeClipboardWidgetValues(node.widgets_values)
-  }
-})
+const zClipboardNode = zComfyNode
+  .refine(
+    (node) => hasSupportedClipboardWidgetValuesLength(node.widgets_values),
+    {
+      path: ['widgets_values'],
+      message: 'Clipboard widget values length is too large'
+    }
+  )
+  .transform((node) => {
+    return {
+      ...node,
+      widgets_values: normalizeClipboardWidgetValues(node.widgets_values)
+    }
+  })
 
-const zClipboardSubgraphInstance = zSubgraphInstance.transform((node) => {
-  return {
-    ...node,
-    widgets_values: normalizeClipboardWidgetValues(node.widgets_values)
-  }
-})
+const zClipboardSubgraphInstance = zSubgraphInstance
+  .refine(
+    (node) => hasSupportedClipboardWidgetValuesLength(node.widgets_values),
+    {
+      path: ['widgets_values'],
+      message: 'Clipboard widget values length is too large'
+    }
+  )
+  .transform((node) => {
+    return {
+      ...node,
+      widgets_values: normalizeClipboardWidgetValues(node.widgets_values)
+    }
+  })
 
 const zClipboardGroup = zGroup.extend({ id: z.number() })
 const zClipboardReroute = zReroute.extend({ linkIds: z.array(z.number()) })
