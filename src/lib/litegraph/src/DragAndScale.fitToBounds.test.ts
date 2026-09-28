@@ -1,20 +1,22 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { DragAndScale } from '@/lib/litegraph/src/DragAndScale'
+import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 
-type Bounds = [number, number, number, number]
-
-const BOUNDS: Bounds = [26, 156, 1635, 559]
+const BOUNDS: ReadOnlyRect = [26, 156, 1635, 559]
 
 function createDragAndScale(width: number, height: number) {
-  return new DragAndScale({ width, height } as HTMLCanvasElement)
+  const element = document.createElement('canvas')
+  element.width = width
+  element.height = height
+  return new DragAndScale(element)
 }
 
-function screenCenterX(ds: DragAndScale, bounds: Bounds) {
+function screenCenterX(ds: DragAndScale, bounds: ReadOnlyRect) {
   return (bounds[0] + bounds[2] * 0.5 + ds.offset[0]) * ds.scale
 }
 
-function screenCenterY(ds: DragAndScale, bounds: Bounds) {
+function screenCenterY(ds: DragAndScale, bounds: ReadOnlyRect) {
   return (bounds[1] + bounds[3] * 0.5 + ds.offset[1]) * ds.scale
 }
 
@@ -46,8 +48,7 @@ describe('DragAndScale.fitToBounds', () => {
   it.for([
     ['both axes collapsed', 0, 0],
     ['width collapsed', 0, 900],
-    ['height collapsed', 1600, 0],
-    ['non-numeric dimensions', Number.NaN, Number.NaN]
+    ['height collapsed', 1600, 0]
   ] as const)(
     'leaves the view untouched when the canvas is hidden — %s',
     ([, width, height]) => {

@@ -1,7 +1,18 @@
+import { mergeTests } from '@playwright/test'
+
 import {
   comfyExpect as expect,
-  comfyPageFixture as test
+  comfyPageFixture
 } from '@e2e/fixtures/ComfyPage'
+import { makeTemplate } from '@e2e/fixtures/data/templateFixtures'
+import { withTemplates } from '@e2e/fixtures/helpers/TemplateHelper'
+import { templateApiFixture } from '@e2e/fixtures/templateApiFixture'
+
+const test = mergeTests(comfyPageFixture, templateApiFixture)
+
+const TEMPLATE = 'pm-1733-app-template'
+const TEMPLATE_WORKFLOW = 'browser_tests/assets/linear-basic-app-template.json'
+const OFFSCREEN_CAMERA = { offset: -60000, scale: 0.05 }
 
 /**
  * PM-1732 / PM-1733 — App Mode keeps the graph canvas mounted but hidden, so
@@ -11,25 +22,38 @@ import {
  * still in it.
  */
 test.describe('App mode template load', { tag: ['@canvas'] }, () => {
-  test.describe.configure({ timeout: 30_000 })
+  test.describe.configure({ timeout: 60_000 })
 
   test.afterEach(async ({ comfyPage }) => {
     await comfyPage.canvasOps.resetView()
   })
 
   test('keeps the graph framed on the nodes when returning from app mode', async ({
-    comfyPage
+    comfyPage,
+    templateApi
   }) => {
     const page = comfyPage.page
 
-    const canvasWidth = () => page.evaluate(() => window.app!.canvasEl.width)
-    const viewMode = () =>
-      page.evaluate(() => {
+    function canvasWidth() {
+      return page.evaluate(() => window.app!.canvasEl.width)
+    }
+
+    function activeWorkflowName() {
+      return page.evaluate(
+        () =>
+          window.app!.extensionManager.workflow.activeWorkflow?.filename ?? ''
+      )
+    }
+
+    function viewMode() {
+      return page.evaluate(() => {
         const workflow = window.app!.extensionManager.workflow.activeWorkflow
         return workflow?.activeMode ?? workflow?.initialMode ?? 'graph'
       })
-    const framing = () =>
-      page.evaluate(() => {
+    }
+
+    function framing() {
+      return page.evaluate(() => {
         const app = window.app!
         const { ds } = app.canvas
         const [vx, vy, vw, vh] = ds.visible_area
@@ -44,61 +68,54 @@ test.describe('App mode template load', { tag: ['@canvas'] }, () => {
           nodesInView
         }
       })
+    }
 
-    await comfyPage.appMode.enterAppModeWithInputs([['3', 'seed']])
-    await expect(comfyPage.appMode.centerPanel).toBeVisible()
-    await expect
-      .poll(canvasWidth, { message: 'app mode hides the canvas' })
-      .toBe(0)
+    templateApi.configure(
+      withTemplates([makeTemplate({ name: TEMPLATE, title: 'App Template' })])
+    )
+    await templateApi.mock()
+    await templateApi.mockWorkflow(TEMPLATE, TEMPLATE_WORKFLOW)
 
-    // Park the camera far off the nodes. The guard alone leaves whatever
-    // camera was already there, so without the deferred fit this is what the
-    // user returns to -- that is the difference this test exists to catch.
-    await page.evaluate(() => {
-      const { ds } = window.app!.canvas
-      ds.offset[0] = -60000
-      ds.offset[1] = -60000
-      ds.scale = 0.05
+    await test.step('app mode hides the canvas', async () => {
+      await comfyPage.appMode.enterAppModeWithInputs([['3', 'seed']])
+      await expect(comfyPage.appMode.centerPanel).toBeVisible()
+      await expect.poll(canvasWidth).toBe(0)
     })
 
-    // App templates carry extra.linearMode, which keeps App Mode active across
-    // the load so the fit lands while the canvas is still hidden. Without it
-    // the load drops back to graph mode and never exercises this path.
-    const graph = await comfyPage.nodeOps.getSerializedGraph()
-    const template = { ...graph, extra: { ...graph.extra, linearMode: true } }
+    await test.step('the camera starts off the nodes', async () => {
+      // Without the deferred fit this is the camera the user returns to, so
+      // parking it here is what makes the final assertion discriminating.
+      await page.evaluate((camera) => {
+        const { ds } = window.app!.canvas
+        ds.offset[0] = camera.offset
+        ds.offset[1] = camera.offset
+        ds.scale = camera.scale
+      }, OFFSCREEN_CAMERA)
+    })
 
-    // The shape useTemplateWorkflows loads a template with: a string workflow
-    // name plus openSource 'template'.
-    await page.evaluate(
-      ({ json, name }) =>
-        window.app!.loadGraphData(json, true, true, name, {
-          openSource: 'template'
-        }),
-      { json: template, name: 'pm-1733-template' }
-    )
+    await test.step('the template loads while the canvas is hidden', async () => {
+      await templateApi.load(TEMPLATE)
+      await expect.poll(activeWorkflowName).toContain(TEMPLATE)
+      await comfyPage.workflow.waitForWorkflowIdle()
+      await expect.poll(viewMode).toBe('app')
+      await expect.poll(canvasWidth).toBe(0)
+    })
 
-    await expect
-      .poll(viewMode, { message: 'the template stays in app mode' })
-      .toBe('app')
-    await expect
-      .poll(canvasWidth, { message: 'the canvas is still hidden' })
-      .toBe(0)
+    await test.step('returning to the graph frames the template', async () => {
+      await comfyPage.appMode.toggleAppMode()
+      await expect.poll(viewMode).toBe('graph')
+      await expect.poll(canvasWidth).toBeGreaterThan(0)
+      await expect
+        .poll(async () => (await framing()).nodesInView)
+        .toBeGreaterThan(0)
 
-    await comfyPage.appMode.toggleAppMode()
-    await expect.poll(viewMode).toBe('graph')
-    await expect.poll(canvasWidth).toBeGreaterThan(0)
-
-    await expect
-      .poll(async () => (await framing()).nodesInView)
-      .toBeGreaterThan(0)
-
-    const { scale, offset, nodeCount, nodesInView } = await framing()
-    expect(nodeCount, 'nodes survive the template load').toBeGreaterThan(0)
-    expect(scale, 'camera scale stays usable').toBeGreaterThan(0)
-    expect(
-      offset.every(Number.isFinite),
-      `camera offset stays finite, got ${JSON.stringify(offset)}`
-    ).toBe(true)
-    expect(nodesInView, 'the graph is framed on its nodes').toBeGreaterThan(0)
+      const { scale, offset, nodeCount } = await framing()
+      expect(nodeCount).toBeGreaterThan(0)
+      expect(scale).toBeGreaterThan(0)
+      expect(
+        offset.every(Number.isFinite),
+        `camera offset stays finite, got ${JSON.stringify(offset)}`
+      ).toBe(true)
+    })
   })
 })

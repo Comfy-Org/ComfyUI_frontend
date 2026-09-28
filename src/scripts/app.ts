@@ -389,6 +389,7 @@ export class ComfyApp {
 
   private configuringGraphLevel: number = 0
   private pendingFitView: (() => void) | undefined
+  private graphLoadId = 0
   get configuringGraph() {
     return this.configuringGraphLevel > 0
   }
@@ -1109,8 +1110,8 @@ export class ComfyApp {
     canvas.width = Math.round(width * scale)
     canvas.height = Math.round(height * scale)
     canvas.getContext('2d')?.scale(scale, scale)
-    this.canvas.draw(true, true)
     this.flushPendingFitView(canvas)
+    this.canvas.draw(true, true)
   }
 
   /**
@@ -1329,6 +1330,7 @@ export class ComfyApp {
       silentAssetErrors = false,
       workflowNavigationId
     } = options
+    const loadId = ++this.graphLoadId
     this.pendingFitView = undefined
     useWorkflowService().beforeLoadNewGraph(clean)
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
@@ -1493,7 +1495,9 @@ export class ComfyApp {
       return false
     }
 
-    const canvasVisible = !!(this.canvasEl.width && this.canvasEl.height)
+    // Per use: an awaited hook below can enter App Mode and hide the canvas.
+    const canvasVisible = () => !!(this.canvasEl.width && this.canvasEl.height)
+    let viewFitted = false
     const viewRestoreEnabled = () =>
       restore_view && useSettingStore().get('Comfy.EnableWorkflowViewRestore')
 
@@ -1551,7 +1555,10 @@ export class ComfyApp {
           )
         }
 
-        if (canvasVisible) fitView()
+        if (canvasVisible()) {
+          fitView()
+          viewFitted = true
+        }
       } catch (error) {
         await this.reportGraphLoadFailure(error)
         // Resolves rather than throws: the close/replacement guards read this outcome.
@@ -1644,9 +1651,14 @@ export class ComfyApp {
       // below can hand control back and let the user switch to another one.
       activatedWorkflow = useWorkflowStore().activeWorkflow ?? undefined
 
-      // If the canvas was not visible and we're a fresh load, resize the canvas and fit the view
-      // This fixes switching from app mode to a new graph mode workflow (e.g. load template)
-      if (!canvasVisible && (!workflow || typeof workflow === 'string')) {
+      // The fit above is skipped while App Mode hides the canvas, and a load
+      // can also be superseded mid-flight. Defer it to the next resize that
+      // reports a real size, for this load only.
+      if (
+        !viewFitted &&
+        loadId === this.graphLoadId &&
+        (!workflow || typeof workflow === 'string')
+      ) {
         if (viewRestoreEnabled() && openSource !== 'template') {
           restoreSavedViewport()
         }

@@ -40,6 +40,7 @@ import type { NodeReplacement } from '@/platform/nodeReplacement/types'
 import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
 import type { NodeError } from '@/platform/remote/comfyui/types'
 import { ComfyApp, app as singletonApp } from './app'
+import { useLitegraphService } from '@/services/litegraphService'
 import * as litegraphUtil from '@/utils/litegraphUtil'
 import { createNode } from '@/utils/litegraphUtil'
 import {
@@ -124,6 +125,7 @@ vi.mock(
 )
 
 vi.mock(import('@/utils/litegraphUtil'))
+vi.mock(import('@/services/litegraphService'), { spy: true })
 
 vi.mock(import('@/composables/usePaste'), () => ({
   pasteAudioNode: vi.fn(),
@@ -455,6 +457,88 @@ describe('ComfyApp', () => {
         'workflow-load',
         undefined
       )
+    })
+
+    describe('a load that lands while the canvas is hidden', () => {
+      function hideCanvas() {
+        const canvasEl = document.createElement('canvas')
+        canvasEl.width = 0
+        canvasEl.height = 0
+        app.canvasElRef.value = canvasEl
+        Reflect.set(app, 'rootGraphInternal', new LGraph())
+        Object.assign(app.canvas, {
+          graph: app.rootGraph,
+          resize: vi.fn(),
+          viewport: undefined,
+          visible_area: new Float32Array(4),
+          ds: {
+            offset: [0, 0],
+            scale: 1,
+            computeVisibleArea: vi.fn()
+          }
+        })
+        useSettingStore().settingValues['Comfy.EnableWorkflowViewRestore'] =
+          true
+        return canvasEl
+      }
+
+      it('restores a saved viewport eagerly rather than waiting for the canvas', async () => {
+        hideCanvas()
+        const graphData = createWorkflowGraphData()
+        graphData.extra = { ds: { offset: [12, 34], scale: 0.5 } }
+
+        await app.loadGraphData(graphData, true, true, 'saved-workflow')
+
+        expect(app.canvas.ds.offset).toEqual([12, 34])
+        expect(app.canvas.ds.scale).toBe(0.5)
+      })
+
+      it('lets a superseded load fit the graph that replaced it', async () => {
+        const canvasEl = hideCanvas()
+        const fitView = vi.fn()
+        vi.mocked(useLitegraphService).mockReturnValue({
+          ...useLitegraphService(),
+          fitView
+        })
+
+        let releaseFirstLoad = () => {}
+        const firstLoadReachedHook = new Promise<void>((resolveReached) => {
+          const gate = new Promise<void>((release) => {
+            releaseFirstLoad = () => release()
+          })
+          mockWorkflowService.afterLoadNewGraph.mockImplementationOnce(
+            async () => {
+              resolveReached()
+              await gate
+            }
+          )
+        })
+
+        // The superseded load would fit; the load that replaces it would not.
+        const supersededLoad = app.loadGraphData(
+          createWorkflowGraphData(),
+          true,
+          true,
+          'superseded',
+          { openSource: 'template' }
+        )
+        await firstLoadReachedHook
+        await app.loadGraphData(
+          createWorkflowGraphData(),
+          true,
+          false,
+          'winner'
+        )
+
+        releaseFirstLoad()
+        await supersededLoad
+
+        canvasEl.width = 1600
+        canvasEl.height = 900
+        Reflect.get(app, 'flushPendingFitView')?.call(app, canvasEl)
+
+        expect(fitView).not.toHaveBeenCalled()
+      })
     })
 
     it('reports the load outcome explicitly: true on success', async () => {

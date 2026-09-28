@@ -181,10 +181,8 @@ export class DragAndScale {
   }
 
   /**
-   * Fits the view to the specified bounds. Does nothing when the element has
-   * no visible area, e.g. while App Mode hides the canvas: dividing by a zero
-   * dimension would leave the view at scale 0 with NaN offsets, which no later
-   * resize repairs.
+   * Fits the view to the specified bounds. No-ops when the element has no
+   * visible area.
    * @param bounds The bounds to fit the view to, defined by a rectangle.
    */
   fitToBounds(
