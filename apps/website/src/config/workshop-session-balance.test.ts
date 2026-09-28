@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MockInstance } from 'vitest'
-import { shallowRef } from 'vue'
+import type { Ref } from 'vue'
+import { nextTick, shallowRef } from 'vue'
 
 import type { User } from 'firebase/auth'
 
@@ -17,12 +18,16 @@ import {
 
 const BALANCE_URL = `${WORKSHOP_CLOUD_BASE_URL}/api/billing/balance`
 
-const SESSION: WebSession = {
-  user: { id: 'uid-1', email: 'ada@example.com', emailVerified: true },
-  csrfToken: 'csrf-1',
-  expiresAt: Date.now() + 60_000,
-  absoluteExpiresAt: Date.now() + 60_000
+function sessionFor(userId: string): WebSession {
+  return {
+    user: { id: userId, email: `${userId}@example.com`, emailVerified: true },
+    csrfToken: `csrf-${userId}`,
+    expiresAt: Date.now() + 60_000,
+    absoluteExpiresAt: Date.now() + 60_000
+  }
 }
+
+const SESSION = sessionFor('uid-1')
 
 const CREDENTIAL: AccountCredential = {
   token: 'jwt-1',
@@ -203,5 +208,103 @@ describe('useWorkshopSessionBalance', () => {
 
     window.dispatchEvent(new Event('focus'))
     await vi.waitFor(() => expect(sent).toHaveLength(2))
+  })
+
+  async function mountOn(session: Ref<WebSession | undefined>) {
+    const { useWorkshopSessionBalance } =
+      await import('./workshop-session-balance')
+    return useWorkshopSessionBalance(session)
+  }
+
+  it('reads once the session is published after mount', async () => {
+    const { sent, fetchImpl } = recordingFetch(() => answer(200, BALANCE_BODY))
+    vi.stubGlobal('fetch', fetchImpl)
+    const session = shallowRef<WebSession>()
+    const balance = await mountOn(session)
+
+    session.value = SESSION
+
+    await vi.waitFor(() =>
+      expect(balance.value).toEqual({ status: 'ok', credits: 445 })
+    )
+    expect(sent).toHaveLength(1)
+  })
+
+  it('clears the balance on sign-out', async () => {
+    vi.stubGlobal(
+      'fetch',
+      recordingFetch(() => answer(200, BALANCE_BODY)).fetchImpl
+    )
+    const session = shallowRef<WebSession | undefined>(SESSION)
+    const balance = await mountOn(session)
+    await vi.waitFor(() => expect(balance.value.status).toBe('ok'))
+
+    session.value = undefined
+    await nextTick()
+
+    expect(balance.value).toEqual({ status: 'unknown' })
+  })
+
+  it('reads again for a new account after the previous one ended', async () => {
+    const answers = [
+      answer(401, { code: 'session_expired' }),
+      answer(200, BALANCE_BODY)
+    ]
+    vi.stubGlobal(
+      'fetch',
+      recordingFetch(() => answers.shift() ?? answer(500, {})).fetchImpl
+    )
+    const session = shallowRef<WebSession | undefined>(SESSION)
+    const balance = await mountOn(session)
+    await vi.waitFor(() => expect(balance.value.status).toBe('session_ended'))
+
+    session.value = undefined
+    await nextTick()
+    session.value = sessionFor('uid-2')
+
+    await vi.waitFor(() =>
+      expect(balance.value).toEqual({ status: 'ok', credits: 445 })
+    )
+  })
+
+  it('never shows a read that resolves after the account changed', async () => {
+    const pending: ((response: Response) => void)[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>(
+        () =>
+          new Promise<Response>((resolve) => {
+            pending.push(resolve)
+          })
+      )
+    )
+    const session = shallowRef<WebSession | undefined>(SESSION)
+    const balance = await mountOn(session)
+    await vi.waitFor(() => expect(pending).toHaveLength(1))
+
+    session.value = sessionFor('uid-2')
+    await vi.waitFor(() => expect(pending).toHaveLength(2))
+    pending[1](answer(200, { ...BALANCE_BODY, effective_balance_micros: 422 }))
+    await vi.waitFor(() =>
+      expect(balance.value).toEqual({ status: 'ok', credits: 890 })
+    )
+    pending[0](answer(200, BALANCE_BODY))
+    await new Promise((resolve) => setTimeout(resolve))
+
+    expect(balance.value).toEqual({ status: 'ok', credits: 890 })
+  })
+
+  it('keeps the balance when the same account republishes its session', async () => {
+    const { sent, fetchImpl } = recordingFetch(() => answer(200, BALANCE_BODY))
+    vi.stubGlobal('fetch', fetchImpl)
+    const session = shallowRef<WebSession | undefined>(SESSION)
+    const balance = await mountOn(session)
+    await vi.waitFor(() => expect(balance.value.status).toBe('ok'))
+
+    session.value = { ...SESSION, csrfToken: 'csrf-rotated' }
+    await nextTick()
+
+    expect(balance.value).toEqual({ status: 'ok', credits: 445 })
+    expect(sent).toHaveLength(1)
   })
 })

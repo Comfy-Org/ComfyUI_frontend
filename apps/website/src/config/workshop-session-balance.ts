@@ -5,7 +5,7 @@
  * A refusal only hides the balance; the session header owns sign-out.
  */
 import type { Ref } from 'vue'
-import { readonly, shallowRef } from 'vue'
+import { effectScope, readonly, shallowRef, watch } from 'vue'
 
 import { createRequestAuthorizer } from '@comfyorg/account-core/requestAuth'
 import type { WebSession } from '@comfyorg/account-core/webSession'
@@ -71,35 +71,49 @@ export async function readSessionBalance(
 }
 
 const balance = shallowRef<SessionBalanceState>({ status: 'unknown' })
-let inFlight: Promise<void> | undefined
+let account: string | undefined
+let inFlight:
+  | { readonly account: string; readonly read: Promise<void> }
+  | undefined
 
 function refresh(session: WebSession): Promise<void> {
   if (balance.value.status === 'session_ended') return Promise.resolve()
-  inFlight ??= readSessionBalance(session, (...args) =>
+  const reader = session.user.id
+  if (inFlight?.account === reader) return inFlight.read
+  const read = readSessionBalance(session, (...args) =>
     globalThis.fetch(...args)
   )
     .then((next) => {
-      balance.value = next
+      if (account === reader) balance.value = next
     })
     .finally(() => {
-      inFlight = undefined
+      if (inFlight?.read === read) inFlight = undefined
     })
-  return inFlight
+  inFlight = { account: reader, read }
+  return read
+}
+
+function follow(session: WebSession | undefined) {
+  if (session?.user.id === account) return
+  account = session?.user.id
+  balance.value = { status: 'unknown' }
+  if (session) void refresh(session)
 }
 
 let started = false
 
-/** One read per page load, again on refocus, never after a 401. */
+/** Reads per signed-in account, again on refocus, never after a 401. */
 export function useWorkshopSessionBalance(
   session: Readonly<Ref<WebSession | undefined>>
 ): Readonly<Ref<SessionBalanceState>> {
   if (!started && typeof window !== 'undefined') {
     started = true
-    const refreshLive = () => {
+    effectScope(true).run(() => {
+      watch(session, follow, { immediate: true })
+    })
+    window.addEventListener('focus', () => {
       if (session.value) void refresh(session.value)
-    }
-    refreshLive()
-    window.addEventListener('focus', refreshLive)
+    })
   }
   return readonly(balance)
 }
