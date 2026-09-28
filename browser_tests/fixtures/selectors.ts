@@ -4,6 +4,9 @@
  */
 
 export const TestIds = {
+  agent: {
+    conversationScroll: 'agent-conversation-scroll'
+  },
   sidebar: {
     toolbar: 'side-toolbar',
     nodeLibrary: 'node-library-tree',
