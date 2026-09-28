@@ -994,21 +994,19 @@ describe('CinematicStudio', () => {
     ).toHaveAttribute('href', '/models?type=apps')
   })
 
-  it('tucks camera, direction and references under Advanced settings, closed at first', async () => {
+  it('shows every setting in the side panel, with Format last before the run button', async () => {
     render(CinematicStudioPage, { props: { models } })
 
-    const advanced = await screen.findByTestId('cinematic-advanced')
-    expect(advanced).not.toHaveAttribute('open')
+    const panel = await screen.findByRole('complementary', {
+      name: 'Shot settings'
+    })
+    expect(within(panel).queryByTestId('cinematic-advanced')).toBeNull()
     expect(
-      within(advanced).getByRole('heading', { name: 'Camera' })
-    ).toBeInTheDocument()
-    expect(
-      within(advanced).getByRole('heading', { name: 'Direction' })
-    ).toBeInTheDocument()
-    expect(
-      within(advanced).getByRole('heading', { name: 'References' })
-    ).toBeInTheDocument()
-    expect(within(advanced).queryByLabelText('Scene')).toBeNull()
+      within(panel)
+        .getAllByRole('heading', { level: 2 })
+        .map((heading) => heading.textContent.trim())
+        .slice(-4)
+    ).toEqual(['Camera', 'Direction', 'References', 'Format'])
   })
 
   describe('layout switch', () => {
