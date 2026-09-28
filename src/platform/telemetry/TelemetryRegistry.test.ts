@@ -465,9 +465,15 @@ describe('TelemetryRegistry', () => {
       },
       {
         method: 'trackAgentConsentNotOffered',
-        expected: { reason: 'first_run_screen' },
+        expected: {
+          reason: 'first_run_screen',
+          consent_read_outcome: 'known_absent'
+        },
         invoke: (registry) =>
-          registry.trackAgentConsentNotOffered({ reason: 'first_run_screen' })
+          registry.trackAgentConsentNotOffered({
+            reason: 'first_run_screen',
+            consent_read_outcome: 'known_absent'
+          })
       },
       {
         method: 'trackAgentOnboardingNotShown',

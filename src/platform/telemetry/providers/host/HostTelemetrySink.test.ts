@@ -418,8 +418,14 @@ describe('HostTelemetrySink', () => {
     {
       name: TelemetryEvents.AGENT_CONSENT_NOT_OFFERED,
       track: (sink: HostTelemetrySink) =>
-        sink.trackAgentConsentNotOffered({ reason: 'tour_active' }),
-      properties: { reason: 'tour_active' }
+        sink.trackAgentConsentNotOffered({
+          reason: 'tour_active',
+          consent_read_outcome: 'known_absent'
+        }),
+      properties: {
+        reason: 'tour_active',
+        consent_read_outcome: 'known_absent'
+      }
     },
     {
       name: TelemetryEvents.AGENT_ONBOARDING_NOT_SHOWN,
