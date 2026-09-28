@@ -432,6 +432,19 @@ export function useFullPageCheckout() {
     })
   }
 
+  /** A code the server now refuses has lapsed since Apply, so the plan is priced without it. */
+  async function requoteWithPromo(arrival: PlannedEntry) {
+    const code = promo.appliedCode.value
+    const withCode = await quoteArrival(arrival, code)
+    if (
+      code === undefined ||
+      withCode.status === 'ok' ||
+      promoRejectionOf(withCode) !== 'invalid'
+    )
+      return { requoted: withCode }
+    return { requoted: await quoteArrival(arrival), expiredPromo: code }
+  }
+
   /** A Pay the server refused for an operation already under way re-reads it, never a decline (rule 18). */
   async function settle(verdict: PayVerdict, arrival: PlannedEntry) {
     if (verdict.kind === 'settled') {
@@ -454,18 +467,11 @@ export function useFullPageCheckout() {
     because: Extract<PayVerdict, { kind: 'requote' }>['because'],
     arrival: BillingEntry & { plan: string }
   ) {
-    const code = promo.appliedCode.value
-    const withCode = await quoteArrival(arrival, code)
-    const lapsed =
-      code !== undefined &&
-      withCode.status === 'error' &&
-      promoRejectionOf(withCode) === 'invalid'
-    const requoted = lapsed ? await quoteArrival(arrival) : withCode
+    const { requoted, expiredPromo } = await requoteWithPromo(arrival)
     if (requoted.status !== 'ok') {
       dispatch({ type: 'requoteFailed', code: requoted.code })
       return
     }
-    const expiredPromo = lapsed ? code : undefined
     if (expiredPromo !== undefined) promo.expire()
     dispatch({
       type: 'requoted',
