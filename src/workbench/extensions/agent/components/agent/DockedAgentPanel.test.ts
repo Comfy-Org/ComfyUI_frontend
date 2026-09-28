@@ -10,10 +10,12 @@ import type { TurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema
 import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { useAgentRunModeStore } from '@/workbench/extensions/agent/stores/agent/agentRunModeStore'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 
 import DockedAgentPanel from './DockedAgentPanel.vue'
 
 vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@/composables/billing/useBillingContext'))
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
 }))
@@ -74,6 +76,9 @@ describe('DockedAgentPanel', () => {
     vi.mocked(reportError).mockClear()
     rootLiveness.live = 0
     rootLiveness.maxLive = 0
+    vi.mocked(useBillingContext).mockReturnValue({
+      subscription: ref({ hasFunds: false, agentHasFunds: false })
+    } as ReturnType<typeof useBillingContext>)
   })
 
   it('docks the panel at the store width when enabled and open', async () => {
@@ -121,6 +126,33 @@ describe('DockedAgentPanel', () => {
     renderPanel()
 
     expect(screen.queryByTestId('docked-agent-panel')).toBeNull()
+  })
+
+  it('re-arms an exhaustion impression when funds recover while closed', async () => {
+    const subscription = ref({ hasFunds: false, agentHasFunds: false })
+    vi.mocked(useBillingContext).mockReturnValue({
+      subscription
+    } as ReturnType<typeof useBillingContext>)
+    const store = openPanel()
+    store.reportedExhaustionIdentity = 'user:workspace'
+    store.isOpen = false
+    renderPanel()
+
+    subscription.value = { hasFunds: false, agentHasFunds: true }
+    await nextTick()
+
+    expect(store.reportedExhaustionIdentity).toBeNull()
+
+    subscription.value = { hasFunds: false, agentHasFunds: false }
+    store.isOpen = true
+    await nextTick()
+
+    expect(
+      await screen.findByTestId('agent-panel-root-stub', undefined, {
+        timeout: 5000
+      })
+    ).toBeTruthy()
+    expect(store.reportedExhaustionIdentity).toBeNull()
   })
 
   it('renders nothing while the feature is disabled', () => {
