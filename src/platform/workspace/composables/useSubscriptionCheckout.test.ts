@@ -427,6 +427,7 @@ const i18n = createI18n({
       subscription: {
         subscribeFailed: 'Subscription failed',
         resubscribeSuccess: 'Subscription restored',
+        planLoadErrorRetry: 'Try again',
         tiers: {
           standard: { name: 'Standard' },
           creator: { name: 'Creator' }
@@ -1456,7 +1457,7 @@ describe('useSubscriptionCheckout', () => {
       ['OUTSTANDING_PAYMENT_REQUIRED', null],
       ['TRANSITION_NOT_ALLOWED', 'payment_failed']
     ] as const)(
-      'routes %s previews to the billing portal in the same tab',
+      'routes %s previews to the billing portal',
       async ([code, status]) => {
         if (status) {
           mockGetBillingStatus.mockResolvedValueOnce({ billing_status: status })
@@ -1466,14 +1467,60 @@ describe('useSubscriptionCheckout', () => {
         expect(mockGetPaymentPortalUrl).toHaveBeenCalledWith(
           'https://app.test/subscribe'
         )
-        // Same-tab navigation, not a popup: a `window.open` here would run
-        // after an await with no user gesture behind it and get blocked.
-        expect(mockOpen).not.toHaveBeenCalled()
-        expect(globalThis.location.href).toBe(
-          'https://billing.stripe.com/portal'
+        expect(mockOpen).toHaveBeenCalledWith(
+          'https://billing.stripe.com/portal',
+          '_blank'
         )
+        expect(globalThis.location.href).toBe(
+          'https://app.test/subscribe?invite=secret#token'
+        )
+        expect(mockFetchStatus).not.toHaveBeenCalled()
+
+        window.dispatchEvent(new Event('focus'))
+        await vi.waitFor(() => expect(mockFetchStatus).toHaveBeenCalledOnce())
+        window.dispatchEvent(new Event('focus'))
+        expect(mockFetchStatus).toHaveBeenCalledOnce()
       }
     )
+
+    it('offers a retry action when the billing portal popup is blocked', async () => {
+      mockOpen.mockReturnValueOnce(null)
+      const checkout = await submitRejectedPreview(
+        'SUBSCRIPTION_PAYMENT_REQUIRED'
+      )
+
+      expect(checkout.selectedTierKey.value).toBe('standard')
+      expect(globalThis.location.href).toBe(
+        'https://app.test/subscribe?invite=secret#token'
+      )
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          group: 'payment-recovery',
+          severity: 'warn',
+          detail: expect.objectContaining({
+            text: 'Payment popup blocked',
+            actionLabel: 'Try again',
+            onAction: expect.any(Function)
+          })
+        })
+      )
+    })
+
+    it('opens the portal and arms the focus refresh when the retry action is clicked', async () => {
+      mockOpen.mockReturnValueOnce(null)
+      await submitRejectedPreview('SUBSCRIPTION_PAYMENT_REQUIRED')
+      const [{ detail }] = mockToastAdd.mock.calls.at(-1)!
+
+      mockOpen.mockReturnValueOnce({})
+      detail.onAction()
+
+      expect(mockOpen).toHaveBeenLastCalledWith(
+        'https://billing.stripe.com/portal',
+        '_blank'
+      )
+      window.dispatchEvent(new Event('focus'))
+      await vi.waitFor(() => expect(mockFetchStatus).toHaveBeenCalledOnce())
+    })
 
     it('keeps the original error path for non-payment transition failures', async () => {
       await submitRejectedPreview(
@@ -1599,8 +1646,9 @@ describe('useSubscriptionCheckout', () => {
 
         expect(readStatus).toHaveBeenCalledOnce()
         expect(mockGetBillingStatus).not.toHaveBeenCalled()
-        expect(globalThis.location.href).toBe(
-          'https://billing.stripe.com/portal'
+        expect(mockOpen).toHaveBeenCalledWith(
+          'https://billing.stripe.com/portal',
+          '_blank'
         )
       })
 
@@ -1641,7 +1689,7 @@ describe('useSubscriptionCheckout', () => {
           'https://app.test/subscribe'
         )
         expect(mockGetPaymentPortalUrl).not.toHaveBeenCalled()
-        expect(globalThis.location.href).toBe(RAIL_PORTAL)
+        expect(mockOpen).toHaveBeenCalledWith(RAIL_PORTAL, '_blank')
       })
 
       it('falls back to the legacy client when the route is not deployed', async () => {
@@ -1655,8 +1703,9 @@ describe('useSubscriptionCheckout', () => {
         expect(mockGetPaymentPortalUrl).toHaveBeenCalledWith(
           'https://app.test/subscribe'
         )
-        expect(globalThis.location.href).toBe(
-          'https://billing.stripe.com/portal'
+        expect(mockOpen).toHaveBeenCalledWith(
+          'https://billing.stripe.com/portal',
+          '_blank'
         )
       })
 
@@ -4250,8 +4299,13 @@ describe('useSubscriptionCheckout', () => {
 
       expect(mockToastAdd).toHaveBeenCalledWith(
         expect.objectContaining({
+          group: 'payment-recovery',
           severity: 'warn',
-          detail: 'Payment popup blocked'
+          detail: expect.objectContaining({
+            text: 'Payment popup blocked',
+            actionLabel: 'Try again',
+            onAction: expect.any(Function)
+          })
         })
       )
       expect(useBillingOperationStore().startOperation).toHaveBeenCalledWith(
@@ -4875,7 +4929,10 @@ describe('useSubscriptionCheckout', () => {
 
       await checkout.handleConfirmTransition()
 
-      expect(globalThis.location.href).toBe('https://billing.stripe.com/portal')
+      expect(mockOpen).toHaveBeenCalledWith(
+        'https://billing.stripe.com/portal',
+        '_blank'
+      )
       expect(mockToastAdd).not.toHaveBeenCalled()
     })
 

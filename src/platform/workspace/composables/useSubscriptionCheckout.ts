@@ -1,5 +1,6 @@
 import { useToast } from 'primevue/usetoast'
 import { computed, ref } from 'vue'
+import { useEventListener } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
@@ -178,8 +179,14 @@ export function useSubscriptionCheckout(
   let promotionPreviewRequestId = 0
   let checkoutMutationOwner = 0
   let checkoutMutationSeq = 0
+  let refreshStatusOnFocus = false
   let activeCheckoutAttemptStartedAt: number | undefined
   let lastEmittedPreviewRevision: string | undefined
+  useEventListener(window, 'focus', () => {
+    if (!refreshStatusOnFocus) return
+    refreshStatusOnFocus = false
+    void fetchStatus()
+  })
   // Some legacy-rail status reads cannot expose a scheduled cancellation even
   // though the subscribe authority can see it in Stripe. Once that authority
   // rejects an unconfirmed change, keep the consent screen in reactivation
@@ -599,8 +606,27 @@ export function useSubscriptionCheckout(
           })
         )
       }
-      // Same tab: a popup opened after the await above has no user gesture and is blocked.
-      globalThis.location.href = portalUrl.href
+      const paymentWindow = window.open(portalUrl.href, '_blank')
+      if (!paymentWindow) {
+        // The open above ran after an await, so it had no user gesture behind
+        // it and got blocked. The toast's own button click is a gesture, so
+        // retrying from there isn't blocked.
+        toast.add({
+          group: 'payment-recovery',
+          severity: 'warn',
+          summary: t('g.warning'),
+          detail: {
+            text: t('subscription.preview.paymentPopupBlocked'),
+            actionLabel: t('subscription.planLoadErrorRetry'),
+            onAction: () => {
+              window.open(portalUrl.href, '_blank')
+              refreshStatusOnFocus = true
+            }
+          }
+        })
+        return 'blocked'
+      }
+      refreshStatusOnFocus = true
       return 'opened'
     } catch (portalError) {
       if (!isCurrent()) return null
@@ -1528,13 +1554,20 @@ export function useSubscriptionCheckout(
       }
       initialActionUrl = response.payment_method_url
       // The open runs after `await subscribe(...)`, so it's not a direct user
-      // gesture and can be popup-blocked; warn instead of failing silently.
+      // gesture and can be popup-blocked; offer a button click as a retry
+      // gesture instead of failing silently.
       const paymentWindow = window.open(initialActionUrl, '_blank')
       if (!paymentWindow) {
+        const paymentMethodUrl = initialActionUrl
         toast.add({
+          group: 'payment-recovery',
           severity: 'warn',
           summary: t('g.warning'),
-          detail: t('subscription.preview.paymentPopupBlocked')
+          detail: {
+            text: t('subscription.preview.paymentPopupBlocked'),
+            actionLabel: t('subscription.planLoadErrorRetry'),
+            onAction: () => window.open(paymentMethodUrl, '_blank')
+          }
         })
       }
     }
