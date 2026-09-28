@@ -42,7 +42,14 @@ describe('the agentPanel store id', () => {
     expect(typeof store.width).toBe('number')
     expect(Number.isFinite(store.width)).toBe(true)
     expect(typeof store.toggleMaximize).toBe('function')
-    expect(Object.keys(pinia.state.value.agentPanel)).toContain('width')
+    // This assertion used to name `width`, which is a computed after this
+    // change and so is no longer pinia state. main retargeted it at
+    // `targetTracking`; this branch has no such field, and the change's own
+    // `reservedWorkspaceWidth` is internal rather than returned. The store
+    // returns exactly seven writable refs, of which this is one.
+    expect(Object.keys(pinia.state.value.agentPanel)).toContain(
+      'workflowTargetSelection'
+    )
   })
 
   it('maximizes the panel through the store the dock mount already registered', () => {
