@@ -17,14 +17,20 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 const PROMPTS = [
   {
     id: 'generate_image',
-    text: 'Build a workflow using my installed models'
+    text: 'Generate a realistic portrait of an astronaut'
   },
-  { id: 'list_workflows', text: 'Fix the errors in this workflow' },
-  { id: 'find_workflow', text: "Improve this workflow's image quality" },
-  { id: 'explain_selected_node', text: 'Explain the selected node' },
+  {
+    id: 'list_workflows',
+    text: 'Find an image-to-video workflow that works on my GPU'
+  },
+  { id: 'find_workflow', text: 'Explain the selected nodes' },
+  {
+    id: 'explain_selected_node',
+    text: 'Help me install the missing nodes for this workflow'
+  },
   {
     id: 'build_video_workflow',
-    text: 'Help me install the missing nodes for this workflow'
+    text: 'Fix the errors in this workflow'
   }
 ] as const
 
@@ -38,7 +44,7 @@ describe('EmptyState', () => {
     const { emitted } = render(EmptyState, {
       global: { plugins: [i18n] }
     })
-    const prompt = 'Help me install the missing nodes for this workflow'
+    const prompt = 'Fix the errors in this workflow'
     const suggestion = screen.getByRole('button', { name: prompt })
 
     expect(screen.getAllByRole('button')).toHaveLength(5)
@@ -68,7 +74,7 @@ describe('EmptyState', () => {
 
     expect(
       screen.getByRole('button', {
-        name: 'Turn an image into a short video'
+        name: 'Turn the product image into a short ad'
       })
     ).toBeVisible()
     expect(
