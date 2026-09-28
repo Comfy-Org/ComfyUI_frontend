@@ -986,6 +986,41 @@ describe('useAgentConversationStore', () => {
       )
     })
 
+    it('preserves the settled reason when dropping background turns', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.stashActiveTurn()
+      store.ingest(done('t1'))
+      store.dropBackgroundTurns()
+
+      store.ingest(runApproval('t1', 'turn-1:call-1'))
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          tags: expect.objectContaining({ reason: 'settled-turn' })
+        })
+      )
+    })
+
+    it('records malformed background settlement before deleting the turn', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.stashActiveTurn()
+      store.settleBackgroundTurn(T1)
+
+      store.ingest(runApproval('t1', 'turn-1:call-1'))
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          tags: expect.objectContaining({ reason: 'settled-turn' })
+        })
+      )
+    })
+
     it('reports after a settled active turn', () => {
       const store = useAgentConversationStore()
       store.setThreadId('th')
@@ -1010,6 +1045,31 @@ describe('useAgentConversationStore', () => {
       store.startTurn(T2)
 
       store.ingest(runApproval('t1', 'turn-1:call-1'))
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          tags: expect.objectContaining({ reason: 'no-live-turn' })
+        })
+      )
+    })
+
+    it('records an aborted turn under the thread that owns its transport', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('original-thread')
+      store.startTurn(T1)
+      store.setThreadId('replacement-thread')
+      store.abortActiveTurn()
+
+      store.ingest(
+        chat({
+          ...runApproval('t1', 'turn-1:call-1'),
+          data: {
+            ...runApproval('t1', 'turn-1:call-1').data,
+            thread_id: 'original-thread'
+          }
+        })
+      )
 
       expect(reportError).toHaveBeenCalledWith(
         expect.any(Error),

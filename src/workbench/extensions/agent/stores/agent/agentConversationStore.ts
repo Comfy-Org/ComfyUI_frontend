@@ -52,6 +52,7 @@ export const useAgentConversationStore = defineStore(
     const latestWorkflowId = ref<string>()
     const resolvedPaywallIds = ref(new Set<TurnId>())
     let transport: AgentEventTransport | null = null
+    let activeTransportThreadId: string | null = null
     let liveMessage: AssistantMessage | null = null
     // PM-1575: whether a newly-created transport should hold a tool-call's
     // chat "done" state back until canvas catch-up is confirmed (see
@@ -204,6 +205,7 @@ export const useAgentConversationStore = defineStore(
       liveMessage = message
       activeTurnId.value = turnId
       activeIndex.value = messages.value.push(message) - 1
+      activeTransportThreadId = threadId.value
       transport = createAgentEventTransport(
         message,
         replaceActive,
@@ -424,6 +426,7 @@ export const useAgentConversationStore = defineStore(
       }
       activeTurnId.value = entry.messageId
       activeIndex.value = index
+      activeTransportThreadId = threadId.value
       transport = entry.transport
       liveMessage = entry.message
     }
@@ -448,6 +451,7 @@ export const useAgentConversationStore = defineStore(
     function settleBackgroundTurn(turnId: string): void {
       for (const [key, entry] of backgroundTurns) {
         if (entry.messageId !== turnId) continue
+        rememberDepartedTurn(key, entry.messageId, 'settled-turn')
         entry.transport.settle()
         // This turn is being dropped from the map here, unlike the
         // agent_message_done path in ingestBackgroundTurnEvent -- nothing
@@ -463,7 +467,7 @@ export const useAgentConversationStore = defineStore(
         rememberDepartedTurn(
           backgroundThreadId,
           entry.messageId,
-          'no-live-turn'
+          entry.settled ? 'settled-turn' : 'no-live-turn'
         )
         entry.transport.settle()
         entry.transport.dispose()
@@ -491,12 +495,14 @@ export const useAgentConversationStore = defineStore(
     function rememberDepartedActiveTurn(
       reason: 'no-live-turn' | 'settled-turn'
     ): void {
-      if (threadId.value === null || activeTurnId.value === null) return
-      rememberDepartedTurn(threadId.value, activeTurnId.value, reason)
+      if (activeTransportThreadId === null || activeTurnId.value === null)
+        return
+      rememberDepartedTurn(activeTransportThreadId, activeTurnId.value, reason)
     }
 
     function clearActive(): void {
       transport = null
+      activeTransportThreadId = null
       liveMessage = null
       activeIndex.value = -1
       activeTurnId.value = null
@@ -561,6 +567,7 @@ export const useAgentConversationStore = defineStore(
         liveMessage = transcript.pending.message
         activeTurnId.value = transcript.pending.messageId
         activeIndex.value = messages.value.indexOf(transcript.pending.message)
+        activeTransportThreadId = threadId.value
         transport = createAgentEventTransport(
           transcript.pending.message,
           replaceActive,
