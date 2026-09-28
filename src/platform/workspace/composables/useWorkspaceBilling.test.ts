@@ -313,6 +313,30 @@ describe('useWorkspaceBilling', () => {
       ).toHaveBeenCalledWith('workspace-1', 'stripe')
     })
 
+    it.for([
+      { sharedFunds: true, scopedAgentFunds: undefined, expected: true },
+      { sharedFunds: false, scopedAgentFunds: undefined, expected: false },
+      { sharedFunds: true, scopedAgentFunds: false, expected: false },
+      { sharedFunds: false, scopedAgentFunds: true, expected: true }
+    ])(
+      'maps shared=$sharedFunds and scoped Agent=$scopedAgentFunds to $expected',
+      async ({ sharedFunds, scopedAgentFunds, expected }) => {
+        mockWorkspaceApi.getBillingStatus.mockResolvedValue({
+          ...activeStatus,
+          has_funds: sharedFunds,
+          scoped_effective_has_funds:
+            scopedAgentFunds === undefined
+              ? undefined
+              : { agent: scopedAgentFunds }
+        })
+
+        const billing = setupBilling()
+        await billing.fetchStatus()
+
+        expect(billing.subscription.value?.agentHasFunds).toBe(expected)
+      }
+    )
+
     it('maps a scheduled plan change into subscription info', async () => {
       const scheduledChange = {
         plan_slug: 'team-annual',
