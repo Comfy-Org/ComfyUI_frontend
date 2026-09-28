@@ -31,7 +31,7 @@ transport retries are exhausted. Transport retry exhaustion is not terminal
 discard.
 
 After the transport reconnects and the workflow subscription is acknowledged,
-`opSender` may replay the retained operation. Replay uses the operation's
+`opSender` replays the retained operation. Replay uses the operation's
 original `op_id`; it never re-mints identity. The normal host result remains
 the authority for settlement, and duplicate delivery remains safe through
 that stable identity.
