@@ -14,6 +14,7 @@
     "test:unit": "vitest run",
     "test:router-models": "tsx ./scripts/test-router-models.ts",
     "test:router-validation": "vitest run scripts/router-model-validation.test.ts src/config/workshop-input-validation.test.ts src/config/workshop-media-validation.test.ts src/config/workshop-media-metadata.test.ts",
+    "test:workflow-pages": "tsx ./scripts/test-workflow-pages.ts",
     "test:workshop-upload": "tsx ./scripts/test-workshop-upload.ts",
     "test:acceptance": "playwright test --config playwright.acceptance.config.ts",
     "test:coverage": "vitest run --coverage",
