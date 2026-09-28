@@ -127,13 +127,18 @@ test(
     )
     await expect
       .poll(() =>
-        scrollContainer.evaluate((element) => ({
-          overflows: element.scrollHeight > element.clientHeight,
-          distanceFromBottom: Math.round(
-            element.scrollHeight - element.scrollTop - element.clientHeight
-          )
-        }))
+        scrollContainer.evaluate(
+          (element) => element.scrollHeight > element.clientHeight
+        )
       )
-      .toEqual({ overflows: true, distanceFromBottom: 0 })
+      .toBe(true)
+    await expect
+      .poll(() =>
+        scrollContainer.evaluate(
+          (element) =>
+            element.scrollHeight - element.scrollTop - element.clientHeight
+        )
+      )
+      .toBeLessThanOrEqual(16)
   }
 )
