@@ -1,5 +1,7 @@
 type AssertReporter = (formatted: string) => void
 
+class DevAssertionError extends Error {}
+
 let reporter: AssertReporter | undefined
 
 function setDevAssertReporter(fn: AssertReporter) {
@@ -13,7 +15,7 @@ function devAssert(condition: boolean, message: string): asserts condition {
     reporter?.(formatted)
 
     if (import.meta.env.DEV) {
-      throw new Error(formatted)
+      throw new DevAssertionError(formatted)
     }
   }
 }
