@@ -1116,11 +1116,7 @@ describe('useAgentSession (v1 composition root)', () => {
     // PM-1199 / PM-1200. The server never learns the socket went away: it
     // keeps running the turn and keeps the row `streaming`. Aborting locally
     // on `false` therefore strands the user behind a 409 with a reply that
-    // looks finished. The turn must stay live across the blip; the only work
-    // on the way back up is one recovery job per live turn, which polls the
-    // persisted row (up to six GETs on the g17 schedule) to learn whether the
-    // turn ended while the socket was down. This case settles on the first
-    // GET, so it asserts exactly one.
+    // looks finished.
     const rest = fakeRest()
     const { source, emit, status } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
