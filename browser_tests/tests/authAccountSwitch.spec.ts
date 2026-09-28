@@ -556,7 +556,32 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
       await seedIdentitySentinel(page, ACCOUNT_B)
       await page.reload({ waitUntil: 'domcontentloaded' })
       await comfyPage.waitForAppReady()
-      await comfyPage.workflow.openPersistedWorkflow(IDENTITY_SENTINELS.b.draft)
+      await page.evaluate(async (name) => {
+        const store = (
+          window.app!.extensionManager as unknown as {
+            workflow: {
+              createTemporary: (
+                path: string,
+                data: Record<string, unknown>
+              ) => unknown
+              openWorkflow: (workflow: unknown) => Promise<void>
+            }
+          }
+        ).workflow
+        const workflow = store.createTemporary(name, {
+          last_node_id: 0,
+          last_link_id: 0,
+          nodes: [],
+          links: [],
+          groups: [],
+          config: {},
+          extra: { identitySentinel: name },
+          version: 0.4
+        })
+        await store.openWorkflow(workflow)
+      }, IDENTITY_SENTINELS.b.draft)
+      await comfyPage.workflow.waitForWorkflowIdle()
+      await comfyPage.vueNodes.waitForNodes()
       await expect(
         page.getByRole('tab', {
           name: IDENTITY_SENTINELS.b.draft,
