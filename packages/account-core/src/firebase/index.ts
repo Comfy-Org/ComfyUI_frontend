@@ -36,6 +36,7 @@ import { brandIdentity } from '../core/identity.js'
 import { isFirebaseAuthErrorLike } from '../firebaseAuthError.js'
 import type { CloudFeatures } from './configSource.js'
 import { fetchCloudFeatures } from './configSource.js'
+import { withPopupCloseSignal } from './popupCloseSignal.js'
 
 export interface FirebaseIdentityAppConfig {
   readonly options: FirebaseOptions | (() => FirebaseOptions)
@@ -62,6 +63,17 @@ export type FirebaseIdentityConfig =
   | FirebaseIdentityAppConfig
   | FirebaseIdentityAuthConfig
 
+export interface PopupSignInOptions {
+  /**
+   * Called at most once, shortly after the visitor closes the provider window,
+   * so a host can release controls instead of waiting out Firebase's own 8-10s
+   * rejection. Advisory: the returned promise stays the authority on the
+   * outcome, and a closed popup can still be a sign-in that succeeds, so
+   * release here but never report a failure.
+   */
+  readonly onPopupClosed?: () => void
+}
+
 export interface FirebaseIdentity extends AccountIdentity<User> {
   /**
    * Fires with the restored user (or null) once Firebase settles, then on
@@ -74,8 +86,8 @@ export interface FirebaseIdentity extends AccountIdentity<User> {
   initialize: () => void
   /** Null until `initialize()` or a subscribing/sign-in call has resolved `Auth`. */
   currentUser: () => User | null
-  signInWithGoogle: () => Promise<UserCredential>
-  signInWithGitHub: () => Promise<UserCredential>
+  signInWithGoogle: (options?: PopupSignInOptions) => Promise<UserCredential>
+  signInWithGitHub: (options?: PopupSignInOptions) => Promise<UserCredential>
   signInWithEmail: (email: string, password: string) => Promise<UserCredential>
   createUserWithEmail: (
     email: string,
@@ -175,6 +187,14 @@ function authResolver(config: FirebaseIdentityConfig): AuthResolver {
   return { resolve, peek: () => resolved }
 }
 
+function popupSignIn(
+  run: () => Promise<UserCredential>,
+  options: PopupSignInOptions | undefined
+): Promise<UserCredential> {
+  const { onPopupClosed } = options ?? {}
+  return onPopupClosed ? withPopupCloseSignal(run, onPopupClosed) : run()
+}
+
 export function createFirebaseIdentity(
   config: FirebaseIdentityConfig
 ): FirebaseIdentity {
@@ -189,8 +209,10 @@ export function createFirebaseIdentity(
       auth()
     },
     currentUser: () => peek()?.currentUser ?? null,
-    signInWithGoogle: () => signInWithPopup(auth(), googleProvider()),
-    signInWithGitHub: () => signInWithPopup(auth(), githubProvider()),
+    signInWithGoogle: (options) =>
+      popupSignIn(() => signInWithPopup(auth(), googleProvider()), options),
+    signInWithGitHub: (options) =>
+      popupSignIn(() => signInWithPopup(auth(), githubProvider()), options),
     signInWithEmail: (email, password) =>
       signInWithEmailAndPassword(auth(), email, password),
     createUserWithEmail: (email, password) =>

@@ -21,6 +21,13 @@ export type AuthSignInProvider = 'google' | 'github' | 'email'
 export type AuthSignInState =
   | { readonly step: 'idle' }
   | { readonly step: 'pending'; readonly provider: AuthSignInProvider }
+  /**
+   * Pop-up dismissed, controls handed back, attempt still running and still
+   * owning its outcome — Firebase can take 8-10s more and still answer with a
+   * credential. Not `idle`: that would let the restore listener mint that
+   * credential past the provisioning the attempt still has to run.
+   */
+  | { readonly step: 'detached'; readonly provider: AuthSignInProvider }
   | {
       readonly step: 'minting'
       readonly email: string
@@ -48,6 +55,7 @@ export type AuthSignInEvent =
   | { readonly type: 'mintRetried' }
   | { readonly type: 'signedOut' }
   | { readonly type: 'signInAbandoned' }
+  | { readonly type: 'signInDetached' }
 
 const SUPPORT_EMAIL = 'support@comfy.org'
 
@@ -140,13 +148,21 @@ export function authSignInTransition(
         ? { step: 'minting', email: state.email, origin: 'interactive' }
         : state
     case 'signedOut':
-      return state.step === 'pending' || state.step === 'minting'
+      return state.step === 'pending' ||
+        state.step === 'minting' ||
+        state.step === 'detached'
         ? state
         : { step: 'idle' }
     case 'signInAbandoned':
       // Drop an attempt a flag flip invalidated; leave settled states alone.
-      return state.step === 'pending' || state.step === 'minting'
+      return state.step === 'pending' ||
+        state.step === 'minting' ||
+        state.step === 'detached'
         ? { step: 'idle' }
+        : state
+    case 'signInDetached':
+      return state.step === 'pending'
+        ? { step: 'detached', provider: state.provider }
         : state
   }
 }
