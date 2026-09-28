@@ -91,7 +91,10 @@ test('workflow launch groups lead to the existing shared form', async ({
   // The eyebrow names the shelf this workflow sits on, and leads back to it.
   const shelf = page.getByTestId('workflow-use-case')
   await expect(shelf).toHaveText('Edit images')
-  await expect(shelf).toHaveAttribute('href', '/models?useCase=edit-images')
+  await expect(shelf).toHaveAttribute(
+    'href',
+    '/models?type=workflows&category=product'
+  )
   await expect(
     page.getByRole('group', { name: 'Your original image' })
   ).toBeVisible()
@@ -133,11 +136,20 @@ test('workflow launch groups lead to the existing shared form', async ({
     expect(response.ok()).toBe(true)
     expect(response.headers()['content-type']).toContain(type)
   }
-  await page.getByRole('link', { name: 'Back to workflows' }).click()
+  await shelf.click()
+  await expect(page).toHaveURL(/\/models\/?\?type=workflows&category=product$/)
   await expect(page.getByTestId('catalogue-tab-workflows')).toHaveAttribute(
     'aria-pressed',
     'true'
   )
+  await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
+  const filtered = page.getByTestId('workflow-search-results')
+  await expect(
+    filtered.getByRole('link', { name: /Change a material/ })
+  ).toBeVisible()
+  await expect(
+    filtered.getByRole('link', { name: /Remove an image background/ })
+  ).toHaveCount(0)
 })
 
 test('the Details graph waits for its tab, names its subgraphs, and zooms from its controls', async ({
