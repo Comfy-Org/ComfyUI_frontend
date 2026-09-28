@@ -20,7 +20,7 @@ import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import type { WorkspaceStore } from '@e2e/types/globals'
 
-const E2E_SCOPE = unsafeStorageScope('test-user-e2e:personal')
+const E2E_SCOPE = unsafeStorageScope('test-user-e2e:ws-personal')
 const BINDING_KEY = StorageKeys.agentWorkflowTabBindings(E2E_SCOPE)
 const THREAD_KEY = StorageKeys.agentThread(E2E_SCOPE)
 const PORTRAIT_PATH = 'workflows/Portrait.json'

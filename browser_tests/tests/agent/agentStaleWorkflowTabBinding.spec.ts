@@ -25,7 +25,7 @@ import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { loadAgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
-const E2E_SCOPE = unsafeStorageScope('test-user-e2e:personal')
+const E2E_SCOPE = unsafeStorageScope('test-user-e2e:ws-personal')
 const BINDING_KEY = StorageKeys.agentWorkflowTabBindings(E2E_SCOPE)
 const THREAD_KEY = StorageKeys.agentThread(E2E_SCOPE)
 const DEFAULT_TAB_PATH = 'workflows/Unsaved Workflow.json'

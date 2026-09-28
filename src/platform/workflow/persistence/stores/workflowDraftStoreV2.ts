@@ -50,7 +50,6 @@ interface LoadPersistedWorkflowOptions {
 }
 
 export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
-  // In-memory cache of the index per scope (synced with localStorage)
   const indexCacheByScope = ref<Record<string, DraftIndexV2>>({})
 
   /**

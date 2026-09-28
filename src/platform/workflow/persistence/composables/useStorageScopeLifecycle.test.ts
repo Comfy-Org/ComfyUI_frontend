@@ -115,4 +115,36 @@ describe('useStorageScopeLifecycle', () => {
     expect(getStorageWriteGate()).toBe('open')
     scope.stop()
   })
+
+  it('resets a ready API-key workspace before opening storage for a replacement key', async () => {
+    const teamWorkspaceStore = useTeamWorkspaceStore()
+    const resetSpy = vi.spyOn(teamWorkspaceStore, 'resetForIdentityChange')
+    const scope = effectScope()
+    scope.run(useStorageScopeLifecycle)
+
+    resolvedUser.value = { id: 'api-key-user-a' }
+    Object.assign(teamWorkspaceStore, {
+      activeWorkspaceId: 'workspace-a',
+      initState: 'ready'
+    })
+    await nextTick()
+    expect(getStorageScope()).toBe('api-key-user-a:workspace-a')
+
+    resolvedUser.value = { id: 'api-key-user-b' }
+
+    expect(resetSpy).toHaveBeenCalledOnce()
+    expect(teamWorkspaceStore.initState).toBe('uninitialized')
+    expect(getStorageScope()).toBeNull()
+    expect(getStorageWriteGate()).toBe('deferred')
+
+    Object.assign(teamWorkspaceStore, {
+      activeWorkspaceId: 'workspace-b',
+      initState: 'ready'
+    })
+    await nextTick()
+
+    expect(getStorageScope()).toBe('api-key-user-b:workspace-b')
+    expect(getStorageWriteGate()).toBe('open')
+    scope.stop()
+  })
 })
