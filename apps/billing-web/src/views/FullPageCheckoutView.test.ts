@@ -104,9 +104,10 @@ function reportPhase(phase: StripePaymentPhase) {
 
 async function renderCheckout(
   options: FakeBillingClientOptions = {},
-  arrange: (fake: FakeBillingClient) => void = () => {}
+  arrange: (fake: FakeBillingClient) => void = () => {},
+  path = CHECKOUT_PATH
 ) {
-  recordBillingEntry(parseBillingEntry(CHECKOUT_PATH))
+  recordBillingEntry(parseBillingEntry(path))
   const fake = createFakeBillingClient({
     preview: { status: 'ok', value: previewOf({ quote_id: 'q_1' }) },
     capabilities: { can_subscribe_self_serve: true },
@@ -327,5 +328,32 @@ describe('FullPageCheckoutView', () => {
       screen.queryByRole('button', { name: 'Pay and subscribe' })
     ).not.toBeInTheDocument()
     expect(form.mounts).toBe(0)
+  })
+
+  it.for<{ name: string; returnTo: string; href: string }>([
+    {
+      name: 'the product that sent the customer, in the billed workspace',
+      returnTo: 'comfyui_workspace',
+      href: 'https://testcloud.comfy.org/?workspace=ws-team'
+    },
+    {
+      name: "the workspace's Plan & Credits settings when this family has no destination for the target",
+      returnTo: 'platform_account',
+      href: 'https://testcloud.comfy.org/?settings=plan-credits&workspace=ws-team'
+    }
+  ])('the back arrow goes to $name', async ({ returnTo, href }) => {
+    const assign = vi
+      .spyOn(window.location, 'assign')
+      .mockImplementation(() => {})
+    await renderCheckout(
+      {},
+      () => {},
+      `/v1/checkout?product=comfyui&return_to=${returnTo}&plan=creator_monthly`
+    )
+    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Back' }))
+
+    expect(assign).toHaveBeenCalledWith(href)
   })
 })
