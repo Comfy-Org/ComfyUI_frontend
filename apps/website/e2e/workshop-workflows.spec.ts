@@ -449,7 +449,7 @@ test('keeps Run on screen beside a workflow form taller than the window', async 
   const run = page.getByTestId('workflow-run-footer')
   await expect(run.getByRole('link', { name: 'Sign in to run' })).toBeVisible()
   await page
-    .getByRole('heading', { name: 'Make it yours' })
+    .getByRole('heading', { name: 'Input', exact: true })
     .evaluate((heading) => heading.scrollIntoView({ block: 'start' }))
 
   await expect(run).toBeInViewport({ ratio: 1 })
