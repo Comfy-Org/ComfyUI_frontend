@@ -39,18 +39,20 @@ test.describe(
 
       await agentConversation.sendPrompt()
 
-      await agentConversation.replayResponse(0, async () => {
-        await test.step('user switches workflows before the agent edits arrive', async () => {
-          await expect(tabs).toHaveCount(1)
-          await expect(topbar.getTab(0)).toHaveClass(/p-togglebutton-checked/)
-          const inputs = await ksamplerInputs()
-          expect(inputs.steps).toBe(20)
-          expect(inputs.cfg).toBe(7)
-          await topbar.newWorkflowButton.click()
-          await expect(tabs).toHaveCount(2)
-          await expect(topbar.getTab(1)).toHaveClass(/p-togglebutton-checked/)
-          await expect(agentConversation.vueNodes.nodes).toHaveCount(0)
-        })
+      await agentConversation.replayResponse(0, {
+        beforeFirstGraphOps: async () => {
+          await test.step('user switches workflows before the agent edits arrive', async () => {
+            await expect(tabs).toHaveCount(1)
+            await expect(topbar.getTab(0)).toHaveClass(/p-togglebutton-checked/)
+            const inputs = await ksamplerInputs()
+            expect(inputs.steps).toBe(20)
+            expect(inputs.cfg).toBe(7)
+            await topbar.newWorkflowButton.click()
+            await expect(tabs).toHaveCount(2)
+            await expect(topbar.getTab(1)).toHaveClass(/p-togglebutton-checked/)
+            await expect(agentConversation.vueNodes.nodes).toHaveCount(0)
+          })
+        }
       })
 
       await test.step('agent finishes editing the background workflow', async () => {
