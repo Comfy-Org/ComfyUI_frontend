@@ -1115,6 +1115,11 @@ export class ComfyApp {
     this.canvas.draw(true, true)
   }
 
+  private armPendingFitView(loadId: number, run: () => void) {
+    if (loadId !== this.graphLoadId) return
+    this.pendingFitView = { loadId, run }
+  }
+
   private flushPendingFitView(canvas: HTMLCanvasElement) {
     const pending = this.pendingFitView
     if (!pending || !canvas.width || !canvas.height) return
@@ -1538,9 +1543,6 @@ export class ComfyApp {
     let resourceScanLoadCompleted = false
     try {
       try {
-        // Superseded: a newer load already owns the root graph and its camera.
-        if (loadId !== this.graphLoadId) return false
-
         // @ts-expect-error Discrepancies between zod and litegraph - in progress
         this.rootGraph.configure(graphData)
 
@@ -1566,7 +1568,7 @@ export class ComfyApp {
           // Armed here rather than after the awaits below so a throw in
           // between still leaves the recovery in place.
           if (viewRestoreEnabled()) restoreSavedViewport()
-          this.pendingFitView = { loadId, run: fitView }
+          this.armPendingFitView(loadId, fitView)
         }
       } catch (error) {
         await this.reportGraphLoadFailure(error)

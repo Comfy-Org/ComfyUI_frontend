@@ -564,14 +564,17 @@ describe('ComfyApp', () => {
         await app.loadGraphData(winnerData, true, true, 'winner')
 
         releaseSuperseded()
-        await expect(supersededLoad).resolves.toBe(false)
+        await supersededLoad
 
         driveResizeCanvas(canvasEl)
 
+        // Graph replacement itself is not serialised -- the superseded load
+        // still configures, as it does on main -- so what this pins is the
+        // camera owner, not which graph ends up live.
         const configuredMarkers = configure.mock.calls.map(
           ([data]) => (data as ComfyWorkflowJSON).extra?.loadMarker
         )
-        expect(configuredMarkers).toEqual(['winner'])
+        expect(configuredMarkers).toEqual(['winner', 'superseded'])
         expect(app.canvas.ds.computeVisibleArea).toHaveBeenCalled()
         expect(fitView).not.toHaveBeenCalled()
         expect(app.canvas.ds.offset).toEqual([7, 9])
