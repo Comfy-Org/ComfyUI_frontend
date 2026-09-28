@@ -237,7 +237,16 @@ describe('ConversationView', () => {
       streaming: false,
       thinking: false
     }
-    const scrollTo = vi.fn()
+    let scrollTop = 100
+    const scrollTo = vi.fn(
+      (optionsOrX?: ScrollToOptions | number, y?: number) => {
+        const top =
+          typeof optionsOrX === 'number'
+            ? (y ?? optionsOrX)
+            : (optionsOrX?.top ?? 0)
+        scrollTop = Math.min(top, 500)
+      }
+    )
     Element.prototype.scrollTo = scrollTo
 
     const { rerender } = render(ConversationView, {
@@ -252,16 +261,19 @@ describe('ConversationView', () => {
     const scrollContainer = screen.getByTestId('agent-conversation-scroll')
     Object.defineProperties(scrollContainer, {
       scrollHeight: { value: 1_000 },
-      scrollTop: { value: 100 },
+      scrollTop: { get: () => scrollTop },
       clientHeight: { value: 500 }
     })
     await nextTick()
+    scrollTop = 100
+    await userEvent.pointer([{ target: scrollContainer, keys: '[MouseLeft>]' }])
     await fireEvent.scroll(scrollContainer)
     const jump = await screen.findByRole('button', { name: 'Latest' })
     expect(jump).toHaveTextContent('')
 
     await userEvent.click(jump)
     expect(scrollTo).toHaveBeenCalled()
+    expect(scrollContainer.scrollTop).toBe(500)
     expect(
       screen.queryByRole('button', { name: 'Latest' })
     ).not.toBeInTheDocument()
