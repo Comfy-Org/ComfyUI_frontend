@@ -37,6 +37,8 @@ interface BackgroundTurn {
   settled: boolean
 }
 
+const MAX_DEPARTED_TURNS = 32
+
 export const useAgentConversationStore = defineStore(
   'agentConversation',
   () => {
@@ -86,7 +88,7 @@ export const useAgentConversationStore = defineStore(
     const approvalShownAtByAsk = new Map<string, number>()
     const shownApprovalIds = new Set<string>()
     const reportedUndeliverableAskIds = new Set<string>()
-    let abortedTurn: { threadId: string; messageId: TurnId } | null = null
+    const departedTurns = new Map<string, 'no-live-turn' | 'settled-turn'>()
     const activeIndex = ref(-1)
 
     function recordApprovalShown(askId: string, shownAt: number): boolean {
@@ -198,7 +200,6 @@ export const useAgentConversationStore = defineStore(
 
     function startTurn(turnId: TurnId): void {
       if (transport) abortActiveTurn()
-      abortedTurn = null
       const message = createAssistantMessage(turnId)
       liveMessage = message
       activeTurnId.value = turnId
@@ -246,7 +247,7 @@ export const useAgentConversationStore = defineStore(
      */
     function reportUndeliverableAsk(
       event: AgentChatEvent,
-      reason: 'no-live-turn'
+      reason: 'no-live-turn' | 'settled-turn'
     ): void {
       if (event.type !== 'agent_ask') return
       if (reportedUndeliverableAskIds.has(event.data.ask_id)) return
@@ -290,6 +291,7 @@ export const useAgentConversationStore = defineStore(
     // something pending -- a settled transport with nothing held has no
     // reason to stay reachable.
     function settleActiveTurn(activeTransport: AgentEventTransport): void {
+      rememberDepartedActiveTurn('settled-turn')
       activeTransport.settle()
       if (activeTransport.hasPendingCanvasSync())
         settledActiveTransports.add(activeTransport)
@@ -311,11 +313,12 @@ export const useAgentConversationStore = defineStore(
     ): void {
       const entry = backgroundTurns.get(eventThreadId)
       if (!entry || entry.messageId !== event.data.message_id) {
-        if (
-          abortedTurn?.threadId === eventThreadId &&
-          abortedTurn.messageId === event.data.message_id
-        )
-          reportUndeliverableAsk(event, 'no-live-turn')
+        const eventMessageId = event.data.message_id
+        const reason =
+          eventMessageId === undefined
+            ? undefined
+            : departedTurns.get(departedTurnKey(eventThreadId, eventMessageId))
+        if (reason) reportUndeliverableAsk(event, reason)
         return
       }
       if (event.type === 'agent_message_done') {
@@ -354,11 +357,7 @@ export const useAgentConversationStore = defineStore(
 
     function abortActiveTurn(): void {
       if (!transport) return
-      if (threadId.value !== null && activeTurnId.value !== null)
-        abortedTurn = {
-          threadId: threadId.value,
-          messageId: activeTurnId.value
-        }
+      rememberDepartedActiveTurn('no-live-turn')
       transport.settle()
       // Not `settledActiveTransports`: an abort is not a natural completion
       // whose held parts might still catch up, so flush them to `done` and
@@ -460,11 +459,40 @@ export const useAgentConversationStore = defineStore(
     }
 
     function dropBackgroundTurns(): void {
-      for (const entry of backgroundTurns.values()) {
+      for (const [backgroundThreadId, entry] of backgroundTurns) {
+        rememberDepartedTurn(
+          backgroundThreadId,
+          entry.messageId,
+          'no-live-turn'
+        )
         entry.transport.settle()
         entry.transport.dispose()
       }
       backgroundTurns.clear()
+    }
+
+    function departedTurnKey(threadId: string, messageId: string): string {
+      return `${threadId}\u0000${messageId}`
+    }
+
+    function rememberDepartedTurn(
+      departedThreadId: string,
+      messageId: TurnId,
+      reason: 'no-live-turn' | 'settled-turn'
+    ): void {
+      const key = departedTurnKey(departedThreadId, messageId)
+      departedTurns.delete(key)
+      departedTurns.set(key, reason)
+      if (departedTurns.size <= MAX_DEPARTED_TURNS) return
+      const oldestKey = departedTurns.keys().next().value
+      if (oldestKey !== undefined) departedTurns.delete(oldestKey)
+    }
+
+    function rememberDepartedActiveTurn(
+      reason: 'no-live-turn' | 'settled-turn'
+    ): void {
+      if (threadId.value === null || activeTurnId.value === null) return
+      rememberDepartedTurn(threadId.value, activeTurnId.value, reason)
     }
 
     function clearActive(): void {
@@ -511,7 +539,7 @@ export const useAgentConversationStore = defineStore(
       hydratedAssistantTurnIds = new Set()
       reportedPaywallImpressions.clear()
       reportedUndeliverableAskIds.clear()
-      abortedTurn = null
+      departedTurns.clear()
       clearActive()
     }
 

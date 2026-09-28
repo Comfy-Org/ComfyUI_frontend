@@ -969,6 +969,56 @@ describe('useAgentConversationStore', () => {
       expect(reportError).toHaveBeenCalledTimes(1)
     })
 
+    it('reports after a dropped background turn', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.stashActiveTurn()
+      store.dropBackgroundTurns()
+
+      store.ingest(runApproval('t1', 'turn-1:call-1'))
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          tags: expect.objectContaining({ reason: 'no-live-turn' })
+        })
+      )
+    })
+
+    it('reports after a settled active turn', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.ingest(done('t1'))
+
+      store.ingest(runApproval('t1', 'turn-1:call-1'))
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          tags: expect.objectContaining({ reason: 'settled-turn' })
+        })
+      )
+    })
+
+    it('keeps an aborted identity after an unrelated turn starts', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.abortActiveTurn()
+      store.startTurn(T2)
+
+      store.ingest(runApproval('t1', 'turn-1:call-1'))
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          tags: expect.objectContaining({ reason: 'no-live-turn' })
+        })
+      )
+    })
+
     it('reports an ask kind the panel has no card for', () => {
       const store = useAgentConversationStore()
       store.setThreadId('th')
