@@ -23,7 +23,9 @@ describe('WorkflowPage header', () => {
 
     const shelf = screen.getByTestId('workflow-use-case')
     expect(shelf.textContent.trim()).toBe('Edit images')
-    expect(shelf.getAttribute('href')).toBe('/models?useCase=edit-images')
+    expect(shelf.getAttribute('href')).toBe(
+      '/models?type=workflows&useCase=edit-images'
+    )
   })
 
   it('says nothing about a shelf a workflow has none of', () => {

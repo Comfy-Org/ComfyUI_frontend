@@ -19,11 +19,13 @@ const {
   active?: boolean
 }>()
 
-const template = model.workflow.template
+const template = computed(() => model.workflow.template)
 // What the workflow makes, hung in the node that hands it back. The samples
 // beneath it are results too, so there is no before to hang at the way in, and
 // a node cannot play a video.
-const samples = model.thumbnail?.kind === 'image' ? [model.thumbnail.url] : []
+const samples = computed(() =>
+  model.thumbnail?.kind === 'image' ? [model.thumbnail.url] : []
+)
 
 const OUTPUT_LABEL: Record<string, TranslationKey> = {
   image: 'workshop.task.image',
@@ -90,6 +92,7 @@ const facts = computed(() => {
       <div class="lg:col-span-8">
         <WorkflowGraph
           v-if="template?.downloadUrl"
+          :key="model.slug"
           :source="template.downloadUrl"
           :samples
           :fallback="template.previewUrl"

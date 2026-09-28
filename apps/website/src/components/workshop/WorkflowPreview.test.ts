@@ -112,6 +112,7 @@ describe('WorkflowPreview', () => {
     expect(
       await screen.findByRole('img', { name: /nodes of this workflow/i })
     ).toBeTruthy()
+    expect(await screen.findByText('SaveVideo')).toBeTruthy()
     expect(fetch).toHaveBeenCalledWith(template.downloadUrl)
   })
 
@@ -130,6 +131,30 @@ describe('WorkflowPreview', () => {
     await rerender({ model, cloudHref, active: false })
     await rerender({ model, cloudHref, active: true })
     expect(fetch).toHaveBeenCalledOnce()
+  })
+
+  it('replaces the graph when the workflow changes', async () => {
+    servingGraph(async () => Response.json(graphJson()))
+    const { rerender } = render(WorkflowPreview, {
+      props: { model, cloudHref }
+    })
+    await waitFor(() => expect(fetch).toHaveBeenCalledOnce())
+
+    const nextUrl = '/workflow-graphs/next-workflow.json'
+    await rerender({
+      model: {
+        ...model,
+        slug: 'workflows/next-workflow',
+        workflow: {
+          ...model.workflow,
+          template: { ...template, downloadUrl: nextUrl }
+        }
+      },
+      cloudHref
+    })
+
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(2))
+    expect(fetch).toHaveBeenLastCalledWith(nextUrl)
   })
 
   // The flat export is what this page showed before, so it is what a graph
