@@ -15,6 +15,7 @@ import SignInEmailForm from '@/components/auth/SignInEmailForm.vue'
 import { useHostedCopy } from '@/composables/useHostedCopy'
 import { BILLING_WEB_ENV } from '@/config/env'
 import { useBillingEntry } from '@/entry/billingEntry'
+import { billingWebSignInPort } from '@/session/billingWebAuth'
 
 const { t } = useI18n()
 const { coded } = useHostedCopy()
@@ -35,7 +36,7 @@ const {
   retryAvailability
 } = useSignInController(() => {
   void router.replace(safeReturnTo(route.query.returnTo))
-})
+}, billingWebSignInPort())
 
 const showEmailForm = ref(false)
 const emailForm = ref<InstanceType<typeof SignInEmailForm>>()
