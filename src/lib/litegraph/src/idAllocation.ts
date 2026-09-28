@@ -15,7 +15,15 @@ export interface LGraphState {
   lastRerouteId: RerouteId
 }
 
-type ReservedIds = ReadonlySet<number> | (() => ReadonlySet<number>)
+interface ReservedIdIndex {
+  has(id: number): boolean
+  collect(): ReadonlySet<number>
+}
+
+type ReservedIds =
+  | ReadonlySet<number>
+  | (() => ReadonlySet<number>)
+  | ReservedIdIndex
 
 export function createLGraphState(): LGraphState {
   return {
@@ -41,12 +49,20 @@ export function findNextAvailableId(
 }
 
 function mintSequentialId(lastId: number, reservedIds: ReservedIds): number {
-  const usedIds =
-    typeof reservedIds === 'function' ? reservedIds() : reservedIds
+  const hasReservedId = (id: number) =>
+    typeof reservedIds === 'function'
+      ? reservedIds().has(id)
+      : reservedIds.has(id)
   if (Number.isSafeInteger(lastId) && lastId >= 0) {
     const nextId = lastId + 1
-    if (Number.isSafeInteger(nextId) && !usedIds.has(nextId)) return nextId
+    if (Number.isSafeInteger(nextId) && !hasReservedId(nextId)) return nextId
   }
+  const usedIds =
+    typeof reservedIds === 'function'
+      ? reservedIds()
+      : 'collect' in reservedIds
+        ? reservedIds.collect()
+        : reservedIds
   return findNextAvailableId(usedIds, lastId + 1)
 }
 

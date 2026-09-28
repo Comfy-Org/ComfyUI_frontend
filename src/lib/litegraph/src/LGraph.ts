@@ -1406,17 +1406,23 @@ export class LGraph
       throw 'LiteGraph: max number of nodes in a graph reached'
     }
 
-    const collectReservedIds = () =>
-      new Set(
-        [...collectReservedNodeIds(this.rootGraph)]
-          .map(Number)
-          .filter(Number.isSafeInteger)
-      )
+    const reservedNodeIds = {
+      has: (candidate: number) =>
+        [this.rootGraph, ...this.rootGraph.subgraphs.values()].some(
+          (owner) => owner.getNodeById(toNodeId(candidate)) != null
+        ),
+      collect: () =>
+        new Set(
+          [...collectReservedNodeIds(this.rootGraph)]
+            .map(Number)
+            .filter(Number.isSafeInteger)
+        )
+    }
 
     // give him an id
     if (node.id === UNASSIGNED_NODE_ID) {
       const mintMode = nodeIdMintModeFor(this)
-      node.id = mintNodeId(state, mintMode, collectReservedIds)
+      node.id = mintNodeId(state, mintMode, reservedNodeIds)
     } else {
       observeNodeId(state, node.id)
     }
@@ -1431,7 +1437,7 @@ export class LGraph
     node.graph = this
 
     attachNodeToStores(this, node, () =>
-      mintNodeId(state, nodeIdMintModeFor(this), collectReservedIds)
+      mintNodeId(state, nodeIdMintModeFor(this), reservedNodeIds)
     )
 
     this._nodes.push(node)
