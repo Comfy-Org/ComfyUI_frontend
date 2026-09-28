@@ -8,13 +8,28 @@ import { test } from './fixtures/blockExternalMedia'
 // that load. It reached a committed visual baseline once: the pricing headline
 // and price, the only two elements on that page in the unpreloaded Light face,
 // were captured in the fallback while every preloaded weight matched exactly.
-const PAGES = ['/', '/pricing', '/download', '/about', '/customers']
+const PAGES = ['/', '/pricing', '/download', '/about', '/customers', '/models/']
 
 for (const path of PAGES) {
   test(`every PP Formula face rendered above the fold on ${path} is preloaded`, async ({
-    page
+    page,
+    context
   }) => {
+    // The Hub only draws its own toolbar and shelves once Workshop is on; with
+    // it off, /models/ shows the fallback and would hide the faces it uses.
+    await context.route('**/t.comfy.org/**', (route) =>
+      /\/(flags|decide)\//.test(route.request().url())
+        ? route.fulfill({
+            contentType: 'application/json',
+            json: {
+              featureFlags: { 'workshop-enabled': true },
+              featureFlagPayloads: {}
+            }
+          })
+        : route.abort('blockedbyclient')
+    )
     await page.goto(path)
+    if (path === '/models/') await page.getByTestId('workshop-hero').waitFor()
     await page.evaluate(() => document.fonts.ready)
 
     const gaps = await page.evaluate(() => {
