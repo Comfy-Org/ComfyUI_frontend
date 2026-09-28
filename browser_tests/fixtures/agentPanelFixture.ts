@@ -15,6 +15,13 @@ import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { AgentTurnAccepted } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import { cloudAppFixture, waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import {
+  AGENT_COMPOSER_THREAD_ID,
+  agentComposerRunMode,
+  createAgentComposerConversation,
+  createAgentComposerThreadList
+} from '@e2e/fixtures/data/agent/agentComposerPerformance'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -182,6 +189,49 @@ type AgentFixtures = {
 export const agentTest = cloudAppFixture.extend<AgentFixtures>({
   agentFlagEnabled: [true, { option: true }]
 })
+
+type AgentComposerPerformanceFixtures = {
+  agentComposerTurnCount: number
+  agentComposerPanel: AgentPanel
+}
+
+export const agentComposerPerformanceTest =
+  agentTest.extend<AgentComposerPerformanceFixtures>({
+    agentComposerTurnCount: [0, { option: true }],
+    agentComposerPanel: async (
+      { page, agentFlagEnabled, agentComposerTurnCount },
+      use
+    ) => {
+      const messages = createAgentComposerConversation(agentComposerTurnCount)
+      const threads = createAgentComposerThreadList(messages)
+
+      await page.route('**/api/experiment/models', (route) =>
+        route.fulfill(jsonRoute([]))
+      )
+      await page.route('**/api/agent/threads', (route) =>
+        route.fulfill(jsonRoute(threads))
+      )
+      await page.route('**/api/agent/run-mode', (route) =>
+        route.fulfill(jsonRoute(agentComposerRunMode))
+      )
+      await page.route('**/api/agent/threads/*/messages', (route) => {
+        if (route.request().method() !== 'GET') return route.fallback()
+        return route.fulfill(jsonRoute(messages))
+      })
+      await page.addInitScript(
+        ({ key, threadId }) => localStorage.setItem(key, threadId),
+        {
+          key: 'Comfy.Agent.ThreadId',
+          threadId: AGENT_COMPOSER_THREAD_ID
+        }
+      )
+      await bootAgentApp(page, agentFlagEnabled)
+
+      const agentPanel = new AgentPanel(page)
+      await agentPanel.open()
+      await use(agentPanel)
+    }
+  })
 
 export async function bootAgentApp(
   page: Page,

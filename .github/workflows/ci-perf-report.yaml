@@ -64,7 +64,48 @@ jobs:
         continue-on-error: true
         env:
           PERF_REPEAT: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && '3' || '2' }}
-        run: pnpm exec playwright test --project=performance --workers=1 --repeat-each=$PERF_REPEAT
+        run: pnpm exec playwright test --project=performance --workers=1 --repeat-each="$PERF_REPEAT" --grep-invert @cloud
+
+      - name: Preserve localhost performance metrics
+        if: always() && hashFiles('test-results/perf-metrics.json') != ''
+        run: mv test-results/perf-metrics.json /tmp/perf-metrics-localhost.json
+
+      # Cloud-only surfaces such as the Agent panel are compiled out of the
+      # localhost production artifact. Rebuild before measuring them instead
+      # of timing out without failing the PR job against a UI that cannot
+      # expose the workload.
+      - name: Build cloud frontend for cloud performance tests
+        run: pnpm build:cloud
+        env:
+          VITE_USE_LEGACY_DEFAULT_GRAPH: 'true'
+
+      - name: Run cloud performance tests
+        id: perf_cloud
+        continue-on-error: true
+        env:
+          DISTRIBUTION: cloud
+          PERF_REPEAT: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && '3' || '2' }}
+        run: pnpm exec playwright test --project=performance --workers=1 --repeat-each="$PERF_REPEAT" --grep @cloud
+
+      - name: Merge distribution performance metrics
+        if: always()
+        run: |
+          if [ -f /tmp/perf-metrics-localhost.json ] && [ -f test-results/perf-metrics.json ]; then
+            node -e '
+              const fs = require("node:fs");
+              const localhost = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+              const cloud = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
+              process.stdout.write(JSON.stringify({
+                ...cloud,
+                measurements: [...localhost.measurements, ...cloud.measurements]
+              }));
+            ' /tmp/perf-metrics-localhost.json test-results/perf-metrics.json \
+              > /tmp/perf-metrics-merged.json
+            mv /tmp/perf-metrics-merged.json test-results/perf-metrics.json
+          elif [ -f /tmp/perf-metrics-localhost.json ]; then
+            mkdir -p test-results
+            cp /tmp/perf-metrics-localhost.json test-results/perf-metrics.json
+          fi
 
       - name: Upload perf metrics
         if: always()
