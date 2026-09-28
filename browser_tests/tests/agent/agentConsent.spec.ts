@@ -537,10 +537,11 @@ test.describe(
       }
     })
 
-    test('stays silent for the session once Getting Started took the screen', async ({
+    test('defers the offer until Getting Started releases the screen', async ({
       comfyPage,
       agentPanel,
-      agentConsentReads
+      agentConsentReads,
+      agentConsentWrites
     }) => {
       const page = comfyPage.page
       const gettingStarted = page.getByRole('dialog', {
@@ -554,7 +555,7 @@ test.describe(
         await expect(gettingStarted).toBeVisible()
       })
 
-      await test.step('The automatic offer runs and stays silent', async () => {
+      await test.step('The automatic offer waits without spending its one-time attempt', async () => {
         await expect
           .poll(() => agentConsentReads.length, {
             message:
@@ -571,6 +572,53 @@ test.describe(
             )
           )
         ).toBeNull()
+      })
+
+      await test.step('Refresh retries the still-withheld offer', async () => {
+        const readsBeforeReload = agentConsentReads.length
+        await comfyPage.workflow.reloadAndWaitForApp()
+        await expect(gettingStarted).toBeVisible()
+        await expect
+          .poll(() => agentConsentReads.length)
+          .toBeGreaterThan(readsBeforeReload)
+        await expect(consent).toHaveCount(0)
+        expect(
+          await page.evaluate(() =>
+            localStorage.getItem(
+              'Comfy.AgentConsent.AutoShown.test-user-e2e.ws-personal'
+            )
+          )
+        ).toBeNull()
+      })
+
+      await test.step('Taking the blank canvas presents the deferred offer', async () => {
+        await page.getByTestId('getting-started-blank').click()
+        await expect(gettingStarted).toHaveCount(0)
+        await expect(consent).toBeVisible()
+        await expect(agentPanel.root).toHaveCount(0)
+        expect(agentConsentWrites).toHaveLength(0)
+      })
+
+      await test.step('Skip spends the automatic offer without saving consent', async () => {
+        await consent
+          .getByRole('button', { name: enMessages.agent.consent.reject })
+          .click()
+        await expect(consent).toHaveCount(0)
+        expect(agentConsentWrites).toHaveLength(0)
+        expect(
+          await page.evaluate(() =>
+            localStorage.getItem(
+              'Comfy.AgentConsent.AutoShown.test-user-e2e.ws-personal'
+            )
+          )
+        ).toBe('true')
+      })
+
+      await test.step('Reload does not repeat the spent automatic offer', async () => {
+        await comfyPage.workflow.reloadAndWaitForApp()
+        await expect(consent).toHaveCount(0)
+        await expect(agentPanel.root).toHaveCount(0)
+        expect(agentConsentWrites).toHaveLength(0)
       })
     })
   }
