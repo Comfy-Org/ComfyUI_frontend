@@ -8,6 +8,7 @@ import type {
   PendingBillingOperation
 } from './operationState.js'
 import { reduceBillingOperation, validateActionUrl } from './operationState.js'
+import { projectPaymentStep } from './paymentProjection.js'
 
 const SCOPE = { userId: 'uid-1', workspaceId: 'ws-1', role: 'owner' } as const
 
@@ -184,6 +185,15 @@ describe('reduceBillingOperation', () => {
     expect(
       (processing as PendingBillingOperation).declineReason
     ).toBeUndefined()
+  })
+
+  it('reads a retryable failure served without a reason as a generic decline', () => {
+    const failed = polled(pending(), {
+      authentication_state: 'failed_retryable'
+    })
+
+    expect(failed).toMatchObject({ declineReason: 'generic' })
+    expect(projectPaymentStep(failed, 'preview').step).toBe('processing_error')
   })
 
   it('switches presentation under the same id and restores a failed challenge on rollback', () => {
