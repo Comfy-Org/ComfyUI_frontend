@@ -3,6 +3,7 @@ import type { GetStaticPaths } from 'astro'
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import ModelsPage from '../../components/workshop/ModelsPage.vue'
 import ModelsShowcase from '../../components/models/ModelsShowcase.astro'
+import { isWorkflowSlug } from '../../config/models-catalogue'
 import { workshopPagePaths } from '../../config/workshop-page-content'
 import { t } from '../../i18n/translations'
 import { prepareModelPage } from './model-page'
@@ -27,7 +28,7 @@ const { model } = page
   ogImage={model.thumbnailUrl}
   noindex
 >
-  {model.slug.startsWith('workflows/') ? (
+  {isWorkflowSlug(model.slug) ? (
     <ModelsPage slug={model.slug} workflowId={model.workflowId} client:load>
       <ModelsShowcase slot="fallback" />
     </ModelsPage>

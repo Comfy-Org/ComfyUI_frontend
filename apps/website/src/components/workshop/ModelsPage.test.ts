@@ -5,6 +5,7 @@ import type { Ref } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 
 import { workshopModels } from '../../config/workshop-browse-content'
+import { workshopPages } from '../../config/workshop-page-content'
 import './ModelPage.vue'
 import './ModelsCatalogue.vue'
 import { prepareModelPage } from '../../routes/models/model-page'
@@ -88,6 +89,33 @@ describe('Models page entry', () => {
     }
   )
 
+  it('keeps a workflow page behind its gate while the workshop flag is off', async () => {
+    const fetchData = vi.fn<typeof fetch>()
+    vi.stubGlobal('fetch', fetchData)
+    workflowsEnabled.value = true
+    render(ModelsPage, {
+      props: { slug: 'workflows/change-material' },
+      slots: { fallback: '<h1>Public Models</h1>' }
+    })
+    expect(
+      await screen.findByRole('heading', { name: 'Public Models' })
+    ).toBeVisible()
+    expect(fetchData).not.toHaveBeenCalled()
+  })
+
+  it('adds workflows to a loaded catalogue when their flag answers late', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>().mockResolvedValue(Response.json(workshopPages))
+    )
+    render(ModelsPage)
+    expect(await screen.findByTestId('workshop-search')).toBeTruthy()
+    expect(screen.queryByTestId('catalogue-tabs')).toBeNull()
+
+    workflowsEnabled.value = true
+    expect(await screen.findByTestId('catalogue-tabs')).toBeTruthy()
+  })
+
   it.for([
     { slug: undefined, visible: 'workshop-search', flag: 'off' },
     { slug: modelSlug, visible: 'model-hero', flag: 'off' },
@@ -113,6 +141,7 @@ describe('Models page entry', () => {
           })
         ).toBeTruthy()
         expect(screen.getByTestId('model-detail')).toBeTruthy()
+        expect(screen.getByTestId('model-tags-rest')).toBeTruthy()
         expect(screen.getByTestId('related-models').textContent).toContain(
           'Browse all'
         )

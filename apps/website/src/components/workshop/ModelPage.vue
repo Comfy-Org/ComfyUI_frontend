@@ -7,7 +7,6 @@ import { getRoutes } from '../../config/routes'
 import type { ModelsPageData } from '../../config/models-page-data'
 import type { RouterWorkshopModelDetail } from '../../config/models-catalogue'
 import { t } from '../../i18n/translations'
-import { useWorkshopEnabled } from '../../scripts/posthog'
 import CatalogueBackLink from './CatalogueBackLink.vue'
 import ModelPrice from './ModelPrice.vue'
 import ModelDetail from './ModelDetail.vue'
@@ -21,7 +20,6 @@ const { page } = defineProps<{
   page: ModelsPageData & { model: RouterWorkshopModelDetail }
 }>()
 const routes = getRoutes()
-const enabled = useWorkshopEnabled()
 const modelUseCase = computed(() => useCaseFor(page.model))
 const pillClass =
   'inline-flex h-7 items-center rounded-full border border-transparency-white-t20 px-3 text-xs leading-none text-primary-comfy-canvas transition-colors hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow'
@@ -89,7 +87,7 @@ const restTags = computed(() =>
               </a>
             </li>
             <li v-if="page.restTagCount > 0">
-              <TagOverflow v-if="enabled" :tags="restTags" />
+              <TagOverflow :tags="restTags" />
             </li>
           </ul>
         </div>

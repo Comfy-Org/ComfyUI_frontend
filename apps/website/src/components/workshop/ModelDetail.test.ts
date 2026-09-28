@@ -29,7 +29,10 @@ import {
   refreshWorkshopCredits,
   useWorkshopCredits
 } from '../../config/workshop-credits'
-import { useWorkshopSession } from '../../config/workshop-session-state'
+import {
+  stopWorkshopSession,
+  useWorkshopSession
+} from '../../config/workshop-session-state'
 import * as draftStorage from '../../config/workshop-draft-storage'
 import {
   cancelWorkshopRun,
@@ -331,7 +334,7 @@ describe('ModelDetail', () => {
     expect(screen.getByTestId('run-rollout-note')).toHaveTextContent(
       'Running in the browser is rolling out.'
     )
-    expect(screen.getByTestId('playground-output')).toBeTruthy()
+    expect(screen.queryByTestId('playground-output')).toBeNull()
     expect(useWorkshopSession).not.toHaveBeenCalled()
     expect(useWorkshopCredits).not.toHaveBeenCalled()
     expect(runWorkshopRouter).not.toHaveBeenCalled()
@@ -342,6 +345,51 @@ describe('ModelDetail', () => {
       'aria-selected',
       'true'
     )
+  })
+
+  it('holds Run neutrally until the flag answers, then shows the note when it is off', async () => {
+    auth.workshopEnabled.value = false
+    auth.workshopEnabledSettled.value = false
+    mountDetail({ model: runnable })
+    await nextTick()
+    expect(screen.getByTestId('run-button').getAttribute('data-gate')).toBe(
+      'resolving'
+    )
+    expect(screen.getByTestId('run-button')).toHaveTextContent('Just a moment…')
+    expect(screen.queryByText('Checking your session…')).toBeNull()
+    expect(screen.queryByTestId('run-rollout-note')).toBeNull()
+
+    auth.workshopEnabledSettled.value = true
+    await nextTick()
+    expect(screen.queryByTestId('run-button')).toBeNull()
+    expect(screen.getByTestId('run-rollout-note')).toBeTruthy()
+  })
+
+  it('shows the example output to a flag-off visitor', async () => {
+    auth.workshopEnabled.value = false
+    mountDetail()
+    await nextTick()
+    expect(
+      screen.getByTestId('playground-output').getAttribute('data-state')
+    ).toBe('example')
+  })
+
+  it('stops account services when a returning visitor is rolled back', async () => {
+    vi.mocked(useWorkshopSession).mockClear()
+    vi.mocked(stopWorkshopSession).mockClear()
+    mountDetail({ model: runnable })
+    await nextTick()
+    expect(useWorkshopSession).toHaveBeenCalled()
+
+    auth.workshopEnabled.value = false
+    await nextTick()
+    expect(stopWorkshopSession).toHaveBeenCalledOnce()
+    expect(screen.getByTestId('run-rollout-note')).toBeTruthy()
+
+    vi.mocked(useWorkshopSession).mockClear()
+    auth.workshopEnabled.value = true
+    await nextTick()
+    expect(useWorkshopSession).toHaveBeenCalled()
   })
 
   it('reports API views only while Models is enabled', async () => {
@@ -1732,9 +1780,11 @@ describe('ModelDetail', () => {
     await nextTick()
     await user().type(screen.getByTestId('field-prompt'), 'A teapot')
     await user().click(screen.getByTestId('run-button'))
+    vi.mocked(stopWorkshopSession).mockClear()
     await vi.waitFor(() => expect(runWorkshopRouter).toHaveBeenCalledOnce())
     auth.workshopEnabled.value = false
     await nextTick()
+    expect(stopWorkshopSession).not.toHaveBeenCalled()
     expect(screen.queryByRole('button', { name: 'Run' })).toBeNull()
     expect(
       screen.getByTestId('playground-output').getAttribute('data-state')
