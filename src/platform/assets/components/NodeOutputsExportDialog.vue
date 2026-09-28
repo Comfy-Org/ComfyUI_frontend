@@ -16,10 +16,23 @@
       <li v-for="(item, index) in items" :key="index">
         <label class="flex cursor-pointer items-center gap-3">
           <img
+            v-if="!failedThumbnails.has(index)"
+            data-testid="output-thumbnail"
             :src="item.thumbnailUrl"
             alt=""
             class="size-10 shrink-0 rounded-sm bg-secondary-background object-cover"
+            @error="failedThumbnails.add(index)"
           />
+          <div
+            v-else
+            data-testid="output-thumbnail-placeholder"
+            class="flex size-10 shrink-0 items-center justify-center rounded-sm bg-secondary-background"
+          >
+            <i
+              aria-hidden="true"
+              class="icon-[lucide--image] size-4 text-text-secondary"
+            />
+          </div>
           <span class="min-w-0 flex-1 truncate text-sm">{{ item.name }}</span>
           <Checkbox
             class="bg-transparent"
@@ -64,6 +77,7 @@ const { items, onExport, onCancel } = defineProps<{
 }>()
 
 const selected = ref(items.map(() => true))
+const failedThumbnails = ref(new Set<number>())
 
 const selectedIndices = computed(() =>
   items.flatMap((_, index) => (selected.value[index] ? [index] : []))

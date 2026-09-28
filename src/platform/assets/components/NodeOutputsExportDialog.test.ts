@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -63,6 +63,18 @@ describe('NodeOutputsExportDialog', () => {
     await user.click(downloadButton())
 
     expect(onExport).toHaveBeenCalledWith([0, 1, 2])
+  })
+
+  it('shows a placeholder for a thumbnail that fails to load', async () => {
+    renderDialog()
+    const [, secondThumbnail] = screen.getAllByTestId('output-thumbnail')
+
+    await fireEvent.error(secondThumbnail)
+
+    expect(screen.getAllByTestId('output-thumbnail')).toHaveLength(2)
+    expect(screen.getAllByTestId('output-thumbnail-placeholder')).toHaveLength(
+      1
+    )
   })
 
   it('cancels without exporting', async () => {
