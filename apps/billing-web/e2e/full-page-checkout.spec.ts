@@ -199,3 +199,55 @@ test('a Pay that collides with a pending operation never shows a decline', async
     cloud.requests.some((request) => request.path === '/billing/subscribe')
   ).toBe(false)
 })
+
+test('553-9297: a plan change on a plan set to end needs the keep-subscription tick: Pay without it sends nothing, with it sends the consent', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.scenario.status = {
+    ...cloud.scenario.status,
+    cancel_at: '2026-07-28T00:00:00.000Z'
+  }
+  cloud.scenario.preview = {
+    ...cloud.scenario.preview,
+    transition_type: 'upgrade',
+    requires_reactivation_confirmation: true,
+    cost_next_period_cents: 10_000
+  }
+  await signIn(CHECKOUT)
+
+  const notice = page.getByTestId('keep-subscription-notice')
+  await expect(notice).toContainText(
+    'Your plan was set to end on July 28, 2026'
+  )
+  await expect(notice).toContainText(
+    'Upgrading keeps your subscription, and it renews that day at $100.00.'
+  )
+  const box = page.getByRole('checkbox', {
+    name: 'Keep my subscription and renew it'
+  })
+  await expect(payButton(page)).toBeEnabled()
+
+  await payButton(page).click()
+
+  await expect(box).toHaveAttribute('aria-invalid', 'true')
+  await expect(box).toBeFocused()
+  await expect(
+    notice.getByText('Check the box to keep your subscription, then pay.')
+  ).toBeVisible()
+  await expect(payButton(page)).toBeEnabled()
+  expect(
+    cloud.requests.some((request) => request.path === '/billing/subscribe')
+  ).toBe(false)
+
+  await notice.getByText('Keep my subscription and renew it').click()
+  await expect(box).toHaveAttribute('aria-invalid', 'false')
+  await payButton(page).click()
+
+  await expect
+    .poll(() =>
+      cloud.requests.find((request) => request.path === '/billing/subscribe')
+    )
+    .toMatchObject({ body: { confirm_reactivation: true } })
+})

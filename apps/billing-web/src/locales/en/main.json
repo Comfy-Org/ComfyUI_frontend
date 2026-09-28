@@ -132,9 +132,9 @@
           "title": "Payment couldn't be processed",
           "body": "There was a technical problem on the payment side. Try again, or refresh the page if it keeps happening."
         },
-        "verification_failed": {
-          "title": "Payment not verified",
-          "body": "Your bank didn't confirm this payment, so you haven't been charged. Pay to try again, or use a different payment method."
+        "not_completed": {
+          "title": "Payment not completed",
+          "body": "Your payment wasn't completed, so you haven't been charged. Pay to try again, or use a different payment method."
         },
         "price_updated": {
           "title": "The price has updated",
@@ -153,6 +153,20 @@
           "generic": "Unspecified"
         },
         "contactSupport": "Contact support"
+      },
+      "keepSubscription": {
+        "title": "Your plan was set to end on {date}",
+        "titleUndated": "Your plan was set to end",
+        "checkbox": "Keep my subscription and renew it",
+        "required": "Check the box to keep your subscription, then pay.",
+        "body": {
+          "upgrade": "Upgrading keeps your subscription, and it renews that day at {amount}.",
+          "downgrade": "Switching to {plan} keeps your subscription, and it renews that day at {amount}.",
+          "to_yearly": "Switching to yearly keeps your subscription. It renews on {date} at {amount}.",
+          "to_monthly": "Switching to monthly keeps your subscription, and it renews that day at {amount}.",
+          "commitment": "Changing your commitment keeps your subscription, and it renews that day at {amount}.",
+          "other": "This change keeps your subscription, and it renews that day at {amount}."
+        }
       }
     }
   },

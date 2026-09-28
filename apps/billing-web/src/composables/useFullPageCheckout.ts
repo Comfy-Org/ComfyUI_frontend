@@ -22,6 +22,7 @@ import type {
 } from '@/checkout/checkoutPage'
 import {
   RESOLVING,
+  needsConsent,
   railAcceptsPay,
   reduceCheckoutPage
 } from '@/checkout/checkoutPage'
@@ -54,7 +55,9 @@ export type PayChoice =
 export function useFullPageCheckout() {
   const { entry } = useBillingEntry()
   const billedWorkspace = useBilledWorkspace()
-  const { capabilities } = useBillingClient<'capabilities'>(undefined)
+  const { capabilities, status } = useBillingClient<'capabilities' | 'status'>(
+    undefined
+  )
   const { preview, quote } = usePreviewSubscribe()
   const saved = usePaymentMethods({ immediate: false })
   const checkout = useCheckout({
@@ -78,8 +81,22 @@ export function useFullPageCheckout() {
     })
   }
 
+  /** When the plan is set to end, for the notice's title; read only once a quote asks for consent. */
+  const cancelAt = shallowRef<string>()
+
+  async function readCancelAt() {
+    const read = await status.read()
+    cancelAt.value =
+      read.status === 'ok' ? read.value.status.cancel_at : undefined
+  }
+
   const asksReactivation = (quoted: SubscriptionPreview) =>
     quoted.requires_reactivation_confirmation === true
+
+  function consentAsked(asked: boolean): boolean {
+    if (asked) void readCancelAt()
+    return asked
+  }
 
   async function resolve(arrival: BillingEntry) {
     if (arrival.plan === undefined) return
@@ -103,13 +120,13 @@ export function useFullPageCheckout() {
         type: 'quoted',
         method: 'collect',
         saved: arrivalOf(methods),
-        reactivation: asksReactivation(quoted.value)
+        reactivation: consentAsked(asksReactivation(quoted.value))
       })
     } else {
       dispatch({
         type: 'quoted',
         method: 'on_file',
-        reactivation: asksReactivation(quoted.value)
+        reactivation: consentAsked(asksReactivation(quoted.value))
       })
     }
   }
@@ -224,18 +241,25 @@ export function useFullPageCheckout() {
       if (requoted.status !== 'ok') return
       dispatch({
         type: 'requoted',
-        reactivation:
+        reactivation: consentAsked(
           verdict.because === 'reactivation_required' ||
-          asksReactivation(requoted.value),
+            asksReactivation(requoted.value)
+        ),
         priceUpdated: verdict.because === 'quote_expired'
       })
     }
+  }
+
+  /** Pay stays live over an unticked consent; the click marks it invalid and sends nothing. */
+  function payWithoutConsent() {
+    dispatch({ type: 'consentMissing' })
   }
 
   async function pay(choice: PayChoice) {
     const arrival = entry.value
     const quoted = preview.value
     if (arrival?.plan === undefined || !quoted || !canPay.value) return
+    if (needsConsent(page.value)) return payWithoutConsent()
     const planned = { ...arrival, plan: arrival.plan }
     dispatch({ type: 'paySubmitted' })
     const result = await checkout.subscribe(requestFor(planned, quoted, choice))
@@ -257,6 +281,8 @@ export function useFullPageCheckout() {
     selectTab: (tab: PaymentTab) => dispatch({ type: 'tabSelected', tab }),
     confirmReactivation: (confirmed: boolean) =>
       dispatch({ type: 'reactivationConfirmed', confirmed }),
+    payWithoutConsent,
+    cancelAt: shallowReadonly(cancelAt),
     pay
   }
 }

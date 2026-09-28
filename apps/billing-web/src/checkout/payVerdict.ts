@@ -58,7 +58,7 @@ export function payVerdictOf(result: SubscriptionCommandResult): PayVerdict {
   if (projection.reasonKey === 'authentication_failed')
     return {
       kind: 'outcome',
-      outcome: { kind: 'verification_failed', operationId }
+      outcome: { kind: 'not_completed', operationId }
     }
   return {
     kind: 'outcome',

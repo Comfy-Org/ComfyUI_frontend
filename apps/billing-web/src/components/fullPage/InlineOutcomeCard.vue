@@ -23,10 +23,10 @@ onMounted(() => {
     ref="card"
     role="alert"
     tabindex="-1"
-    class="rounded-lg bg-secondary-background-hover p-4 focus-visible:outline-none"
+    class="flex flex-col gap-2 rounded-lg bg-tertiary-background p-4 focus-visible:outline-none"
   >
     <p
-      class="m-0 flex items-center gap-2 text-sm font-semibold text-base-foreground"
+      class="m-0 flex items-center gap-2 text-sm/5 font-medium text-base-foreground"
     >
       <i
         class="icon-[lucide--circle-alert] size-4 shrink-0 text-warning-background"
@@ -34,12 +34,12 @@ onMounted(() => {
       />
       {{ t(`checkout.fullPage.outcome.${outcome.kind}.title`) }}
     </p>
-    <p class="m-0 mt-2 text-sm/5 text-muted-foreground">
+    <p class="m-0 text-sm/5 text-muted-foreground">
       {{ t(`checkout.fullPage.outcome.${outcome.kind}.body`) }}
     </p>
     <p
       v-if="outcome.kind === 'declined' && outcome.reason"
-      class="m-0 mt-2 text-sm/5 text-muted-foreground"
+      class="m-0 text-sm/5 text-muted-foreground"
     >
       {{
         t('checkout.fullPage.outcome.reportedIssue', {
