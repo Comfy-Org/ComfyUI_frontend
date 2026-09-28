@@ -104,11 +104,47 @@ describe('WorkshopModelCard', () => {
     const video = screen.getByTestId<HTMLVideoElement>('model-card-media')
     expect(video).not.toHaveAttribute('src')
     expect(video.paused).toBe(true)
+    // The artwork is decorative; the name a reader hears comes from the link.
     expect(screen.getByRole('link', { name: /Flux/ })).toHaveAttribute(
       'href',
       base.href
     )
+    expect(screen.queryByLabelText('Flux')).toBeNull()
   })
+
+  // Artwork that repeats the name gives a screen reader the model twice. The
+  // card's name lives on the link; the picture is decorative, whichever kind it
+  // is, so it carries no accessible name of its own.
+  it.for(['image', 'video'] as const)(
+    'keeps %s artwork out of the accessible name',
+    (kind) => {
+      render(WorkshopModelCard, {
+        props: {
+          model: {
+            ...base,
+            thumbnail: { kind, url: 'https://assets.example/a' }
+          }
+        }
+      })
+
+      expect(
+        screen.queryAllByRole('img', { name: /./ }),
+        'Artwork that names itself is read out before the card it decorates'
+      ).toHaveLength(0)
+      expect(
+        screen.getByRole('link', { name: /Black Forest Labs/ })
+      ).toBeVisible()
+      expect(screen.queryByLabelText('Flux')).toBeNull()
+      if (kind === 'video')
+        expect(screen.getByTestId('model-card-media')).toHaveAttribute(
+          'aria-hidden',
+          'true'
+        )
+      expect(
+        screen.getByRole('link', { name: /Flux/ }).getAttribute('href')
+      ).toBe(base.href)
+    }
+  )
 
   it('attaches the video source once the card is on screen', async () => {
     stubIntersectionObserver()
