@@ -553,16 +553,18 @@ describe('ComfyApp', () => {
         releaseSuperseded()
         await supersededLoad
 
-        canvasEl.width = 1600
-        canvasEl.height = 900
-        const flushPendingFitView = Reflect.get(app, 'flushPendingFitView') as (
+        vi.spyOn(canvasEl, 'getBoundingClientRect').mockReturnValue(
+          fromPartial<DOMRect>({ width: 1600, height: 900 })
+        )
+        const resizeCanvas = Reflect.get(app, 'resizeCanvas') as (
           canvas: HTMLCanvasElement
         ) => void
-        expect(flushPendingFitView).toBeInstanceOf(Function)
-        flushPendingFitView.call(app, canvasEl)
+        resizeCanvas.call(app, canvasEl)
 
         expect(app.canvas.ds.computeVisibleArea).toHaveBeenCalled()
         expect(fitView).not.toHaveBeenCalled()
+        expect(app.canvas.ds.offset).toEqual([7, 9])
+        expect(app.canvas.ds.scale).toBe(0.25)
       })
 
       it('fits once the hidden canvas regains a size', async () => {

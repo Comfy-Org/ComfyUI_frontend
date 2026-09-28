@@ -1524,7 +1524,10 @@ export class ComfyApp {
         this.canvas.visible_area.height &&
         !anyItemOverlapsRect(this.rootGraph._nodes, this.canvas.visible_area)
       ) {
-        requestAnimationFrame(() => useLitegraphService().fitView())
+        requestAnimationFrame(() => {
+          if (loadId !== this.graphLoadId) return
+          useLitegraphService().fitView()
+        })
       }
     }
 
