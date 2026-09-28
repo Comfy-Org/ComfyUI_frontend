@@ -11,6 +11,7 @@ import {
   ref
 } from 'vue'
 import type { EffectScope } from 'vue'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 let setupScope: EffectScope
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { registerWorkflowTabActivityTracker } from '@/workbench/extensions/agent/services/agent/workflowTabActivityTracker'
@@ -126,6 +127,9 @@ vi.mock(import('@/composables/useFeatureFlags'), () => ({
     })
 }))
 
+const { registerAgentPanelExtension } = await import('./agentPanel')
+registerAgentPanelExtension()
+
 const flush = (): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, 0))
 
@@ -136,7 +140,6 @@ const notOffered = async () =>
   )
 
 async function loadEntryAndSetup(): Promise<void> {
-  const { registerAgentPanelExtension } = await import('./agentPanel')
   registerAgentPanelExtension()
   const ext = mocks.capturedExtensions.find(
     (e) => e.name === 'Comfy.AgentPanel'
@@ -171,9 +174,7 @@ function closeDialog(key = DESKTOP_APPROVAL_KEY): void {
 describe('AgentPanel extension flag gate', () => {
   afterEach(() => setupScope.stop())
 
-  beforeEach(async () => {
-    vi.resetModules()
-    const { useCurrentUser } = await import('@/composables/auth/useCurrentUser')
+  beforeEach(() => {
     const currentUserService = vi.mocked(useCurrentUser())
     currentUserService.resolvedUserInfo = computed(() => currentUser.value)
     currentUserService.isAuthInitialized = computed(
@@ -201,7 +202,6 @@ describe('AgentPanel extension flag gate', () => {
     nodeSelectionStore = vi.mocked(useAgentNodeSelectionStore())
     workflowStore = useWorkflowStore()
     nodeSelectionStore.restoreNodeIds.mockImplementation(() => {})
-    mocks.capturedExtensions.length = 0
     agentStore.close.mockClear()
     agentStore.enabled = false
     agentStore.isOpen = true
@@ -989,12 +989,6 @@ describe('AgentPanel extension flag gate', () => {
     expect(await notOffered()).not.toHaveBeenCalled()
   })
 
-  it('does not self-register when its module is imported', async () => {
-    await import('./agentPanel')
-
-    expect(mocks.capturedExtensions).toEqual([])
-  })
-
   it('forces the panel on in development even while the flag is false', async () => {
     vi.stubEnv('MODE', 'development')
     agentFlagEnabled.value = false
@@ -1049,6 +1043,7 @@ describe('AgentPanel extension flag gate', () => {
     agentStore.consentAccepted = false
     await extension!.beforeLoadGraph!({} as never)
     expect(nodeSelectionStore.beginWorkflowLoad).not.toHaveBeenCalled()
+    await extension!.afterConfigureGraph!([], {} as never)
   })
 
   it('enables the panel when the flag turns true', async () => {
@@ -1214,6 +1209,7 @@ describe('AgentPanel extension flag gate', () => {
     expect(selectItems).toHaveBeenCalledWith([secondNode])
     expect(nodeSelectionStore.restoreNodeIds).toHaveBeenCalledWith(['12'])
     expect(nodeSelectionStore.finishWorkflowLoad).not.toHaveBeenCalled()
+    await extension!.afterConfigureGraph!([], {} as never)
   })
 
   it('disarms the restore guard on an empty restore instead of leaving it armed', async () => {
@@ -1289,6 +1285,7 @@ describe('AgentPanel extension flag gate', () => {
     await extension!.beforeLoadGraph!({} as never)
 
     expect(nodeSelectionStore.beginWorkflowLoad).not.toHaveBeenCalled()
+    await extension!.afterConfigureGraph!([], {} as never)
   })
 
   it('finishes restoration when the panel closes during graph load', async () => {
@@ -1355,5 +1352,14 @@ describe('AgentPanel extension flag gate', () => {
     await extension!.beforeLoadGraph!({} as never)
 
     expect(nodeSelectionStore.beginWorkflowLoad).not.toHaveBeenCalled()
+    await extension!.afterConfigureGraph!([], {} as never)
+  })
+
+  it('does not self-register when its module is imported', async () => {
+    const registeredExtensions = mocks.capturedExtensions.length
+    vi.resetModules()
+    await import('./agentPanel')
+
+    expect(mocks.capturedExtensions).toHaveLength(registeredExtensions)
   })
 })

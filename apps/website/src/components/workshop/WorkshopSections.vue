@@ -43,7 +43,9 @@ const titleClass =
   'hover:text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 cursor-pointer rounded-lg text-xl font-medium text-primary-warm-white transition-colors outline-none focus-visible:ring-3'
 
 // The count belongs to the screen the link opens, not to the row, which loads
-// eight whatever the total says.
+// eight whatever the total says. A row already holding every match has no such
+// screen to offer — the link led back to the same cards — so it keeps only its
+// heading, which opens the shelf for anyone who wants it on its own.
 const seeAllClass =
   'group hover:text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-lg text-sm font-medium text-primary-warm-gray transition-colors outline-none focus-visible:ring-3'
 
@@ -115,6 +117,7 @@ function rememberModel(
 
         <template #actions>
           <button
+            v-if="section.total > ROW_LIMIT"
             type="button"
             :class="seeAllClass"
             :data-testid="`section-${section.useCase}-see-all`"
@@ -170,6 +173,7 @@ function rememberModel(
 
         <template #actions>
           <button
+            v-if="otherFormats.length > ROW_LIMIT"
             type="button"
             :class="seeAllClass"
             data-testid="section-other-formats-see-all"
