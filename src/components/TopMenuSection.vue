@@ -201,6 +201,7 @@ import {
   prefetchShareDialog
 } from '@/platform/workflow/sharing/composables/lazyShareDialog'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
+import { useManagerDialog } from '@/workbench/extensions/manager/composables/useManagerDialog'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { useManagerSurveyDialog } from '@/workbench/extensions/manager/composables/useManagerSurveyDialog'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
@@ -370,7 +371,7 @@ const openCustomNodeManager = async () => {
     return
   }
   try {
-    await managerState.openManager({
+    await useManagerDialog().openManager({
       initialTab: ManagerTab.All,
       showToastOnLegacyError: false
     })

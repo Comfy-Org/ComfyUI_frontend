@@ -11,7 +11,7 @@ import type { SubmissionMeta } from './useAgentDraftSubmission'
 import { useAgentDraftSubmission } from './useAgentDraftSubmission'
 import type { SelectedNode } from './useCanvasSelection'
 import { useCanvasSelection } from './useCanvasSelection'
-import type { ComposerAttachment } from './useComposer'
+import type { ComposerAttachment } from '../../types/composerPrompt'
 
 type ComposerStore = ReturnType<typeof useAgentComposerStore>
 type Send = (

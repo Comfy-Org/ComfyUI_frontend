@@ -210,7 +210,8 @@ import {
   SUBSCRIBE_CATCHUP_GRACE_MS,
   useAgentCrdtFollower
 } from './useAgentCrdtFollower'
-import type { AgentCrdtStatus, UndoBracket } from './useAgentCrdtFollower'
+import type { AgentCrdtStatus } from './agentCrdtStatus'
+import type { UndoBracket } from './useAgentCrdtFollower'
 
 const graphMutations = {} as GraphMutations
 const DOC_ID_KEY = 'Comfy.Agent.CrdtDocId'

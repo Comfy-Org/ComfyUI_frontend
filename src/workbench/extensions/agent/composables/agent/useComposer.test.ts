@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
-import type { ComposerAttachment } from './useComposer'
+import type { ComposerAttachment } from '../../types/composerPrompt'
 import { useComposer } from './useComposer'
 
 function setup(running = false) {

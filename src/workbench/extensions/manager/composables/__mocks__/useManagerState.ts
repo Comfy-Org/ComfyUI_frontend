@@ -5,18 +5,13 @@ import type { useManagerState as realUseManagerState } from '../useManagerState'
 type ManagerState = ReturnType<typeof realUseManagerState>
 type ManagerStateMock = Pick<
   ManagerState,
-  'isNewManagerUI' | 'shouldShowManagerButtons' | 'openManager'
+  'isNewManagerUI' | 'shouldShowManagerButtons'
 >
-
-const actionDefaults: Pick<ManagerStateMock, 'openManager'> = {
-  openManager: vi.fn(async () => {})
-}
 
 function createDefaultManagerState(): ManagerStateMock {
   return {
     isNewManagerUI: computed(() => false),
-    shouldShowManagerButtons: computed(() => false),
-    ...actionDefaults
+    shouldShowManagerButtons: computed(() => false)
   }
 }
 
