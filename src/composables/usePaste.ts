@@ -199,8 +199,9 @@ export const usePaste = () => {
   const canvasStore = useCanvasStore()
 
   useEventListener(document, 'paste', async (e) => {
-    // A rich-text surface such as the agent composer is not an input element,
-    // so it claims the paste by preventing the default rather than by target.
+    // An editor claims the paste it handles by cancelling it. Its target is not
+    // always editable: a caret inside an uneditable chip makes the chip the
+    // target, which shouldIgnoreCopyPaste would hand to the canvas.
     if (e.defaultPrevented) return
     if (shouldIgnoreCopyPaste(e.target)) {
       // Default system copy

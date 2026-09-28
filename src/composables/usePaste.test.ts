@@ -20,6 +20,7 @@ import type {
 import { app } from '@/scripts/app'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { createNode } from '@/utils/litegraphUtil'
+import { shouldIgnoreCopyPaste } from '@/workbench/eventHelpers'
 import {
   cloneDataTransfer,
   pasteAudioNode,
@@ -68,6 +69,28 @@ function createDataTransfer(files: File[] = []): DataTransfer {
   return dataTransfer
 }
 
+function pastedClipboard(kind: 'workflow JSON' | 'an image'): DataTransfer {
+  if (kind === 'an image') return createDataTransfer([createImageFile()])
+  const dataTransfer = new DataTransfer()
+  dataTransfer.setData(
+    'text/plain',
+    JSON.stringify({ version: '1.0', nodes: [], extra: {} })
+  )
+  return dataTransfer
+}
+
+function mountRichTextEditor() {
+  const editor = document.createElement('div')
+  editor.contentEditable = 'true'
+  const paragraph = editor.appendChild(document.createElement('p'))
+  const chip = paragraph.appendChild(document.createElement('span'))
+  chip.contentEditable = 'false'
+  const chipLabel = chip.appendChild(document.createElement('span'))
+  chipLabel.textContent = 'KSampler #5'
+  document.body.append(editor)
+  return { editor, paragraph, chipLabel }
+}
+
 const mockCanvas = {
   current_node: null as LGraphNode | null,
   graph: {
@@ -101,13 +124,7 @@ vi.mock(import('@/scripts/app'))
 
 vi.mock(import('@/utils/litegraphUtil'), { spy: true })
 
-vi.mock(
-  import('@/workbench/eventHelpers'),
-
-  () => ({
-    shouldIgnoreCopyPaste: vi.fn()
-  })
-)
+vi.mock(import('@/workbench/eventHelpers'), { spy: true })
 
 describe('pasteImageNode', () => {
   beforeEach(() => {
@@ -485,40 +502,51 @@ describe('usePaste', () => {
     })
   })
 
-  it('should leave the graph alone when another handler already claimed the paste', () => {
-    vi.mocked(createNode).mockResolvedValue(createMockNode())
+  it.for([
+    { clipboard: 'workflow JSON', target: 'editor' },
+    { clipboard: 'workflow JSON', target: 'paragraph' },
+    { clipboard: 'an image', target: 'paragraph' }
+  ] as const)(
+    'pasting $clipboard into a contenteditable $target leaves the graph alone',
+    ({ clipboard, target }) => {
+      const editor = mountRichTextEditor()
+      usePaste()
 
-    usePaste()
+      editor[target].dispatchEvent(
+        new ClipboardEvent('paste', {
+          bubbles: true,
+          clipboardData: pastedClipboard(clipboard)
+        })
+      )
 
-    const dataTransfer = createDataTransfer([createImageFile()])
-    const event = new ClipboardEvent('paste', {
-      clipboardData: dataTransfer,
-      cancelable: true
-    })
-    event.preventDefault()
-    document.dispatchEvent(event)
+      expect(app.loadGraphData).not.toHaveBeenCalled()
+      expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
+      expect(createNode).not.toHaveBeenCalled()
+    }
+  )
 
-    expect(createNode).not.toHaveBeenCalled()
-  })
+  // A caret can land inside an uneditable reference chip, which then becomes
+  // the paste target even though the editor still handles the paste.
+  it.for(['workflow JSON', 'an image'] as const)(
+    'leaves the graph alone when the editor claims %s pasted inside a chip',
+    (clipboard) => {
+      const editor = mountRichTextEditor()
+      editor.editor.addEventListener('paste', (event) => event.preventDefault())
+      usePaste()
 
-  it('leaves the graph alone when another handler claims workflow JSON', () => {
-    usePaste()
+      editor.chipLabel.dispatchEvent(
+        new ClipboardEvent('paste', {
+          bubbles: true,
+          cancelable: true,
+          clipboardData: pastedClipboard(clipboard)
+        })
+      )
 
-    const dataTransfer = new DataTransfer()
-    dataTransfer.setData(
-      'text/plain',
-      JSON.stringify({ version: '1.0', nodes: [], extra: {} })
-    )
-    const event = new ClipboardEvent('paste', {
-      clipboardData: dataTransfer,
-      cancelable: true
-    })
-    event.preventDefault()
-    document.dispatchEvent(event)
-
-    expect(app.loadGraphData).not.toHaveBeenCalled()
-    expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
-  })
+      expect(app.loadGraphData).not.toHaveBeenCalled()
+      expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
+      expect(createNode).not.toHaveBeenCalled()
+    }
+  )
 
   it('should handle workflow JSON paste', async () => {
     const workflow = { version: '1.0', nodes: [], extra: {} }
@@ -556,6 +584,7 @@ describe('usePaste', () => {
   })
 
   it('preserves text input paste for malformed workflow JSON', async () => {
+    vi.mocked(shouldIgnoreCopyPaste).mockReturnValue(false)
     usePaste()
     const input = document.createElement('input')
     input.type = 'text'
