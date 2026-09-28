@@ -1,5 +1,5 @@
 import type { ComputedRef, Ref } from 'vue'
-import { computed, ref, watch } from 'vue'
+import { computed, ref, unref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -65,7 +65,6 @@ export function useWorkflowActionsMenu(
   const { flags } = useFeatureFlags()
   const deployGate = useDeployToComfyApiGate()
   const showDeploy = ref(deployGate.enabled.value)
-  const canDeploy = () => deployGate.enabled.value
   let followWhileOpen = false
   watch(
     () => isOpen?.value ?? false,
@@ -75,6 +74,11 @@ export function useWorkflowActionsMenu(
       deployGate.check()
     }
   )
+  watch(deployGate.settled, (settled) => {
+    if (settled || !isOpen?.value) return
+    followWhileOpen = true
+    deployGate.check()
+  })
   if (!isOpen) deployGate.check()
   watch(
     [deployGate.enabled, deployGate.settled, () => isOpen?.value ?? false],
@@ -235,9 +239,9 @@ export function useWorkflowActionsMenu(
       label: t('deployToComfyApi.buttonLabel'),
       icon: 'icon-[lucide--rocket]',
       command: async () => {
-        if (!canDeploy()) return
+        if (!deployGate.enabled.value) return
         await ensureWorkflowActive(targetWorkflow.value)
-        if (!canDeploy()) return
+        if (!unref(deployGate.enabled)) return
         await openDeployToComfyApiDialog().catch(toastErrorHandler)
       },
       visible: isRoot && showDeploy.value,

@@ -13,10 +13,13 @@ const PLATFORM_FLAG_CORS = {
 export async function mockDistributionsFlag(
   context: BrowserContext,
   enabled: boolean
-): Promise<void> {
-  await context.route('**/api/flags/distributions-enabled', (route) =>
-    route.request().method() === 'OPTIONS'
-      ? route.fulfill({ status: 204, headers: PLATFORM_FLAG_CORS })
-      : route.fulfill({ json: { enabled }, headers: PLATFORM_FLAG_CORS })
-  )
+): Promise<{ readonly asked: number }> {
+  const calls = { asked: 0 }
+  await context.route('**/api/flags/distributions-enabled', (route) => {
+    if (route.request().method() === 'OPTIONS')
+      return route.fulfill({ status: 204, headers: PLATFORM_FLAG_CORS })
+    calls.asked++
+    return route.fulfill({ json: { enabled }, headers: PLATFORM_FLAG_CORS })
+  })
+  return calls
 }
