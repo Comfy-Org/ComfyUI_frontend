@@ -1,70 +1,27 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-
-import { cn } from '@comfyorg/tailwind-utils'
-
-import type { PromptSegment } from '../../../lib/workshop/cinematic-studio/prompt'
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 
-const { promptSegments, locale = 'en' } = defineProps<{
-  promptSegments: readonly PromptSegment[]
+const { locale = 'en' } = defineProps<{
   locale?: Locale
 }>()
 
 const scene = defineModel<string>('scene', { required: true })
 const enhance = defineModel<boolean>('enhance', { required: true })
 
-const showFullPrompt = ref(false)
 const labelClass =
   'text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase'
-const segmentClass: Record<PromptSegment['source'], string> = {
-  scene: 'text-primary-warm-white',
-  direction: 'text-primary-comfy-canvas',
-  enhance: 'text-primary-warm-gray',
-  reference: 'text-primary-warm-gray'
-}
 </script>
 
 <template>
   <section class="flex flex-col gap-2.5">
-    <div class="flex items-center justify-between">
-      <label for="cinematic-scene" :class="labelClass">
-        {{ tc('cinematic.section.scene', locale) }}
-      </label>
-      <button
-        type="button"
-        class="text-xs text-primary-comfy-canvas underline underline-offset-4 hover:text-primary-warm-white"
-        :aria-pressed="showFullPrompt"
-        @click="showFullPrompt = !showFullPrompt"
-      >
-        {{
-          tc(
-            showFullPrompt
-              ? 'cinematic.scene.edit'
-              : 'cinematic.scene.fullPrompt',
-            locale
-          )
-        }}
-      </button>
-    </div>
+    <label for="cinematic-scene" :class="labelClass">
+      {{ tc('cinematic.section.scene', locale) }}
+    </label>
     <div
       class="flex flex-col rounded-2xl border border-transparency-white-t20 bg-transparency-white-t4 focus-within:border-primary-warm-white/60"
     >
-      <p
-        v-if="showFullPrompt"
-        class="h-28 overflow-y-auto px-3.5 pt-3 pb-2 text-sm leading-relaxed"
-        data-testid="cinematic-full-prompt"
-      >
-        <span
-          v-for="(segment, index) in promptSegments"
-          :key="index"
-          :class="cn('me-1', segmentClass[segment.source])"
-          >{{ segment.text }}</span
-        >
-      </p>
       <textarea
-        v-else
         id="cinematic-scene"
         v-model="scene"
         rows="4"

@@ -771,8 +771,12 @@ describe('CinematicStudio', () => {
       }
     )
 
-    it('keeps credit amounts off the side panel', async () => {
+    it.for([
+      { layout: 'side panel', ux: '' },
+      { layout: 'bottom composer', ux: '?ux=e' }
+    ])('keeps credit amounts off the $layout', async ({ ux }) => {
       withBalance(5)
+      window.history.replaceState(null, '', `/cinematic-studio${ux}`)
       render(CinematicStudioPage, { props: { models: priced } })
 
       expect(

@@ -16,8 +16,13 @@ import CinematicStageCard from './CinematicStageCard.vue'
 import type { PickerKey } from './picker-key'
 import { pickerGroups, popoverTitle } from './picker-key'
 
-const { models, locale = 'en' } = defineProps<{
+const {
+  models,
+  showCredits = true,
+  locale = 'en'
+} = defineProps<{
   models: readonly CinematicModel[]
+  showCredits?: boolean
   locale?: Locale
 }>()
 
@@ -32,7 +37,6 @@ const {
   takes,
   cast,
   palette,
-  promptSegments,
   estimate,
   memberWorkspace,
   choose,
@@ -88,12 +92,12 @@ function generate() {
         v-model:cast="cast"
         v-model:palette="palette"
         :models
-        :prompt-segments="promptSegments"
         :gate="studio.gate.value"
         :workspace-name="studio.session.value?.workspace.name"
         :rendering="studio.rendering.value"
         :estimate
         :credits="studio.credits.value"
+        :show-credits="showCredits"
         :open-picker="picker"
         :locale
         @open="togglePicker"

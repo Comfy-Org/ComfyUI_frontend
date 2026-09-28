@@ -15,7 +15,6 @@ import {
 } from '../../../lib/workshop/cinematic-studio/catalog'
 import type { ShotEstimate } from '../../../lib/workshop/cinematic-studio/estimate'
 import type { StudioGate } from '../../../lib/workshop/cinematic-studio/gate'
-import type { PromptSegment } from '../../../lib/workshop/cinematic-studio/prompt'
 import type { Locale } from '../../../i18n/translations'
 import { t } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
@@ -31,22 +30,22 @@ import type { PickerKey } from './picker-key'
 
 const {
   models,
-  promptSegments,
   gate,
   workspaceName,
   rendering,
   estimate,
   credits,
+  showCredits = true,
   openPicker,
   locale = 'en'
 } = defineProps<{
   models: readonly CinematicModel[]
-  promptSegments: readonly PromptSegment[]
   gate: StudioGate
   workspaceName?: string
   rendering: boolean
   estimate?: ShotEstimate
   credits?: number
+  showCredits?: boolean
   openPicker?: PickerKey
   locale?: Locale
 }>()
@@ -143,7 +142,6 @@ const cardClass =
       <CinematicSceneField
         v-model:scene="scene"
         v-model:enhance="enhance"
-        :prompt-segments="promptSegments"
         :locale
       />
       <section class="flex flex-col gap-2.5">
@@ -267,7 +265,7 @@ const cardClass =
         :estimate
         :credits
         wide
-        :show-credits="false"
+        :show-credits="showCredits"
         :locale
         @generate="emit('generate')"
         @cancel="emit('cancel')"

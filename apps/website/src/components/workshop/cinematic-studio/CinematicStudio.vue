@@ -23,8 +23,13 @@ import CinematicStage from './CinematicStage.vue'
 import type { PopoverKey } from './picker-key'
 import { pickerGroups, popoverTitle } from './picker-key'
 
-const { models, locale = 'en' } = defineProps<{
+const {
+  models,
+  showCredits = true,
+  locale = 'en'
+} = defineProps<{
   models: readonly CinematicModel[]
+  showCredits?: boolean
   locale?: Locale
 }>()
 
@@ -208,6 +213,7 @@ function generateOn(slug: string) {
           :rendering="studio.rendering.value"
           :estimate
           :credits="studio.credits.value"
+          :show-credits="showCredits"
           :open-popover="popover"
           :locale
           @open="openPopover"

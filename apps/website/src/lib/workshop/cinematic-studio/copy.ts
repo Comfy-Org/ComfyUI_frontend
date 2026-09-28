@@ -170,14 +170,6 @@ const copy = {
     en: 'Direction',
     'zh-CN': '导演'
   },
-  'cinematic.scene.fullPrompt': {
-    en: 'View full prompt',
-    'zh-CN': '查看完整提示词'
-  },
-  'cinematic.scene.edit': {
-    en: 'Edit scene',
-    'zh-CN': '编辑场景'
-  },
   'cinematic.reference.optional': {
     en: 'Optional',
     'zh-CN': '可选'

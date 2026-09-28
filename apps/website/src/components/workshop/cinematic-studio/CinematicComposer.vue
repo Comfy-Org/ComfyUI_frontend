@@ -35,6 +35,7 @@ const {
   rendering,
   estimate,
   credits,
+  showCredits = true,
   openPopover,
   locale = 'en'
 } = defineProps<{
@@ -48,6 +49,7 @@ const {
   rendering: boolean
   estimate?: ShotEstimate
   credits?: number
+  showCredits?: boolean
   openPopover?: PopoverKey
   locale?: Locale
 }>()
@@ -159,7 +161,7 @@ const chipClass = (key: PopoverKey) =>
       class="flex flex-wrap items-center gap-2 border-t border-transparency-white-t8 px-3 py-2.5"
     >
       <div
-        class="-mx-1 scrollbar-hide flex min-w-0 flex-1 basis-full items-center gap-1.5 overflow-x-auto px-1 py-0.5 sm:basis-auto"
+        class="flex min-w-0 flex-1 basis-full flex-wrap items-center gap-2 py-0.5 sm:basis-auto"
       >
         <CinematicMenu
           v-model="modelSlug"
@@ -233,6 +235,7 @@ const chipClass = (key: PopoverKey) =>
         :blocked-note="blockedNote"
         :estimate
         :credits
+        :show-credits="showCredits"
         :locale
         class="ml-auto"
         @generate="emit('generate')"

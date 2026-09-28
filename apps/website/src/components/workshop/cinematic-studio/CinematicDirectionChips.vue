@@ -60,7 +60,7 @@ const description = computed(() =>
     :title="description"
     :class="
       cn(
-        'flex h-9 max-w-md min-w-0 shrink-0 items-center gap-2.5 rounded-xl pr-3 pl-1.5 text-[13px] whitespace-nowrap text-primary-comfy-canvas ring-1 ring-transparency-white-t8 transition-colors ring-inset hover:bg-transparency-white-t4 hover:text-primary-warm-white',
+        'flex h-9 max-w-xs min-w-0 shrink-0 items-center gap-2.5 rounded-xl pr-3 pl-1.5 text-[13px] whitespace-nowrap text-primary-comfy-canvas ring-1 ring-transparency-white-t8 transition-colors ring-inset hover:bg-transparency-white-t4 hover:text-primary-warm-white xl:max-w-md',
         open &&
           'bg-transparency-white-t8 text-primary-warm-white ring-transparency-white-t20'
       )
@@ -92,6 +92,6 @@ const description = computed(() =>
         />
       </span>
     </span>
-    <span class="hidden truncate min-[88rem]:block">{{ summary }}</span>
+    <span class="hidden truncate lg:block">{{ summary }}</span>
   </button>
 </template>

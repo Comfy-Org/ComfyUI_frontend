@@ -100,8 +100,13 @@ function pickApp(id: string) {
   <WorkshopGate :allowed="studioEnabled">
     <CinematicAppsHub v-if="layout === 'hub'" :locale />
     <ReshootStudio v-else-if="app === 'reshoot'" :locale />
-    <CinematicStudioPanel v-else-if="layout === 'd'" :models :locale />
-    <CinematicStudio v-else :models :locale />
+    <CinematicStudioPanel
+      v-else-if="layout === 'd'"
+      :models
+      :show-credits="false"
+      :locale
+    />
+    <CinematicStudio v-else :models :show-credits="false" :locale />
     <CinematicScenarioMenu
       v-if="reviewing"
       :app
