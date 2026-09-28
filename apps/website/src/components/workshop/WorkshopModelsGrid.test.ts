@@ -146,6 +146,25 @@ describe('WorkshopModelsGrid', () => {
     expect(cardNames()).toHaveLength(3)
   })
 
+  it('clears filter chips without leaving Browse all models', async () => {
+    const user = userEvent.setup()
+    render(WorkshopModelsGrid, { props: { models } })
+
+    await user.click(screen.getByRole('button', { name: 'Browse all models' }))
+    await user.click(screen.getByRole('button', { name: 'Use cases' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Use cases' })
+    await user.click(
+      within(dialog).getByRole('button', { name: 'Edit images 1' })
+    )
+    await user.click(screen.getByTestId('workshop-filter-chips-clear'))
+
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
+      'All models 3'
+    )
+    expect(screen.queryByTestId('workshop-hero')).toBeNull()
+    expect(cardNames()).toHaveLength(3)
+  })
+
   it('names the section it was browsing, and leaves it from that name', async () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })

@@ -28,6 +28,9 @@ import { buildPageGraph, pageContext } from '../utils/jsonLd'
 import type { Crumb, JsonLdNode, WebPageType } from '../utils/jsonLd'
 import JsonLdGraph from '../components/common/JsonLdGraph.astro'
 
+type PPFormulaFace =
+  'Light' | 'Regular' | 'Medium' | 'Semibold' | 'Bold' | 'NarrowSemibold'
+
 interface Props {
   title: string
   description?: string
@@ -40,7 +43,7 @@ interface Props {
   extraJsonLd?: (JsonLdNode | null | undefined)[]
   minimal?: boolean
   /** PP Formula faces this page renders above the fold beyond the site-wide set. */
-  preloadFonts?: readonly string[]
+  preloadFonts?: readonly PPFormulaFace[]
 }
 
 const {
