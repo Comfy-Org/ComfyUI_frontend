@@ -124,6 +124,7 @@ const emit = defineEmits<{
   feedback: [turnId: string, vote: 'up' | 'down' | null]
   paywallAction: [action: AgentPaywallAction]
   newChat: []
+  startTour: []
   toggleSize: []
   close: []
   openHistory: []
@@ -319,6 +320,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
     <PanelHeader
       :is-maximized
       @new-chat="onNewChat"
+      @start-tour="emit('startTour')"
       @toggle-size="emit('toggleSize')"
       @close="onClose"
     />
@@ -341,12 +343,12 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
       <div class="flex h-10 shrink-0 items-center px-2">
         <Button
           id="agent-chat-history"
-          v-tooltip.bottom="buildTooltipConfig(t('agent.showChatHistory'))"
+          v-tooltip.right="buildTooltipConfig(t('agent.showChatHistory'))"
           type="button"
           variant="muted-textonly"
           size="icon-sm"
           :aria-label="t('agent.showChatHistory')"
-          class="size-6 shrink-0"
+          class="size-6 shrink-0 data-coach-hover:bg-secondary-background-hover"
           @click="onOpenHistory"
         >
           <span class="icon-[lucide--history] size-4 shrink-0" />
@@ -432,6 +434,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
         <ConversationView
           v-else
           :entries
+          :conversation-id="sessionId"
           :editable-turn-id
           :answering-ask-ids
           :paywall-presentation
