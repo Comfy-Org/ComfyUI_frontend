@@ -165,7 +165,8 @@ test('Cloud upload, refresh, partial delivery and downloads retain one run @mobi
   expect(cloud.uploads).toEqual([image])
   expect(submissions()).toHaveLength(1)
   expect(submissions()[0].body).toMatchObject({
-    prompt: { '17': { class_type: 'LoadImage', inputs: { image: inputName } } }
+    prompt: { '17': { class_type: 'LoadImage', inputs: { image: inputName } } },
+    extra_data: { auth_token_comfy_org: 'mock-workspace-jwt' }
   })
 
   await page.reload()
@@ -190,11 +191,7 @@ test('Cloud upload, refresh, partial delivery and downloads retain one run @mobi
   ).toBeVisible()
   const panelRight = await page
     .getByRole('tabpanel', { name: 'Details', exact: true })
-    .evaluate(
-      (panel) =>
-        panel.getBoundingClientRect().right -
-        parseFloat(getComputedStyle(panel).paddingRight)
-    )
+    .evaluate((panel) => panel.getBoundingClientRect().right)
   const downloadRight = await page
     .getByRole('link', { name: 'Download workflow JSON' })
     .evaluate((link) => link.getBoundingClientRect().right)

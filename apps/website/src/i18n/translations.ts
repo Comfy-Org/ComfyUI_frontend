@@ -9834,6 +9834,7 @@ Enterprise`
     'zh-CN': '原型：此页面复刻 Cloud 登录页。真实账户请在此登录：'
   },
   'workshop.card.partnerNode': { en: 'Partner node', 'zh-CN': '合作伙伴节点' },
+  'workshop.card.comfyApp': { en: 'Comfy app', 'zh-CN': 'Comfy 应用' },
   'workshop.card.runs': { en: '{n} runs', 'zh-CN': '{n} 次运行' },
   'workshop.card.creditsPerRun': { en: 'credits / run', 'zh-CN': '积分 / 次' },
   'workshop.card.from': { en: 'from', 'zh-CN': '起' },
@@ -10616,11 +10617,14 @@ Enterprise`
   'workshop.hub.io.video': { en: 'Video', 'zh-CN': '视频' },
   'workshop.hub.io.audio': { en: 'Audio', 'zh-CN': '音频' },
   'workshop.hub.io.3d': { en: '3D', 'zh-CN': '3D' },
+  'workshop.workflow.templateBy': {
+    en: 'Template by {author}',
+    'zh-CN': '模板作者：{author}'
+  },
   'workshop.workflow.sections': {
     en: 'Workflow sections',
     'zh-CN': '工作流栏目'
   },
-  'workshop.workflow.tabDetails': { en: 'Details', 'zh-CN': '详情' },
   'workshop.workflow.graphAlt': {
     en: 'The nodes of this workflow and the links between them',
     'zh-CN': '此工作流的节点及其连接'

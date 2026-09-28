@@ -2,14 +2,24 @@
 import { computed, defineAsyncComponent, ref, watch } from 'vue'
 import { useMounted } from '@vueuse/core'
 
-import type { WorkshopModel } from '../../config/models-catalogue'
+import type {
+  AppWorkshopModel,
+  WorkflowWorkshopModel,
+  WorkshopModel
+} from '../../config/models-catalogue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import WorkshopHero from './WorkshopHero.vue'
 import WorkshopModelsGrid from './WorkshopModelsGrid.vue'
 import CatalogueTabs from './CatalogueTabs.vue'
 import type { CatalogueTab } from './CatalogueTabs.vue'
-import { captureWorkshopEvent, useWorkshopEnabled } from '../../scripts/posthog'
+import {
+  captureWorkshopEvent,
+  useWorkshopAppsEnabled,
+  useWorkshopEnabled
+} from '../../scripts/posthog'
+import type { CatalogueApp } from '../../lib/workshop/catalogue-apps'
+import { ac } from '../../lib/workshop/catalogue-apps'
 
 const WorkflowCatalogue = defineAsyncComponent(
   () => import('./WorkflowCatalogue.vue')
@@ -25,6 +35,7 @@ const inSection = ref(false)
 const browseAll = ref(false)
 const mounted = useMounted()
 const enabled = useWorkshopEnabled()
+const appsEnabled = useWorkshopAppsEnabled()
 const selectedTab = ref<CatalogueTab>('models')
 if (typeof location !== 'undefined') {
   const requested = new URLSearchParams(location.search).get('type')
@@ -38,10 +49,30 @@ const routerModels = computed(() =>
   models.filter((model) => model.routerId !== undefined)
 )
 const workflows = computed(() =>
-  models.filter((model) => model.routerId === undefined)
+  models.filter(
+    (model): model is WorkflowWorkshopModel =>
+      model.type === 'CLOUD' || model.type === 'SERVERLESS'
+  )
 )
+const apps = computed(() =>
+  models.filter((model): model is AppWorkshopModel => model.type === 'APP')
+)
+const appCards = computed<readonly CatalogueApp[]>(() =>
+  apps.value.map((app) => ({
+    key: app.slug,
+    name: app.name,
+    task: ac(app.appId === 'studio' ? 'studioTask' : 'reshootTask', locale),
+    href: app.href,
+    image: app.thumbnail?.url ?? app.thumbnailUrl
+  }))
+)
+const availableTabs = computed<readonly CatalogueTab[]>(() => [
+  'models',
+  ...(workflows.value.length ? (['workflows'] as const) : []),
+  ...(appsEnabled.value && apps.value.length ? (['apps'] as const) : [])
+])
 const activeTab = computed(() =>
-  workflows.value.length ? selectedTab.value : 'models'
+  availableTabs.value.includes(selectedTab.value) ? selectedTab.value : 'models'
 )
 
 const focusTabs = ref(false)
@@ -99,7 +130,8 @@ watch(
   >
     <template #tabs>
       <CatalogueTabs
-        v-if="workflows.length"
+        v-if="availableTabs.length > 1"
+        :tabs="availableTabs"
         :model-value="activeTab"
         :locale
         :focus-active="focusTabs"
@@ -117,6 +149,7 @@ watch(
   >
     <template #tabs>
       <CatalogueTabs
+        :tabs="availableTabs"
         :model-value="activeTab"
         :locale
         :focus-active="focusTabs"
@@ -128,11 +161,13 @@ watch(
   <AppCatalogue
     v-else
     v-model:browse-all="browseAll"
+    :apps="appCards"
     :locale
     @section="inSection = $event"
   >
     <template #tabs>
       <CatalogueTabs
+        :tabs="availableTabs"
         :model-value="activeTab"
         :locale
         :focus-active="focusTabs"
