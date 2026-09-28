@@ -231,6 +231,55 @@
           "body": "We couldn't load your quote. Nothing has been charged. Try again, or contact support if this keeps happening.",
           "codeLabel": "If this keeps happening, contact support with this code:"
         }
+      },
+      "summary": {
+        "label": "Order summary",
+        "verb": {
+          "subscribe": "Subscribe to {plan}",
+          "upgrade": "Upgrade to {plan}",
+          "switch": "Switch to {plan}",
+          "change": "Change to {plan}"
+        },
+        "scoped": "{action} · {workspace}",
+        "planWithCadence": "{tier} {cadence}",
+        "cadence": {
+          "monthly": "Monthly",
+          "yearly": "Yearly"
+        },
+        "rate": {
+          "monthly": "/ mo",
+          "yearly": "/ yr"
+        },
+        "credits": {
+          "perMonth": "credits per month",
+          "perYear": "credits per year",
+          "bare": "credits",
+          "addedToday": "credits added today",
+          "addedTodayExpire": "credits added today (expire {date})",
+          "refillMonthlyAfter": "credits refill monthly after {date}",
+          "refillYearlyAfter": "credits refill yearly after {date}"
+        },
+        "item": {
+          "prorated": "{plan} - Prorated",
+          "remainingTime": "Remaining time for {plan} plan, less unused time from {current} plan",
+          "billedMonthly": "{amount} /mo, billed monthly",
+          "billedYearly": "Billed yearly",
+          "rateMonthly": "{amount} /mo",
+          "rateYearly": "{amount} /yr",
+          "refillsMonthly": "Credits refill to {credits} each month",
+          "refillsYearly": "Credits refill to {credits} each year",
+          "startsMonthly": "Starts {date}, billed monthly",
+          "startsYearly": "Starts {date}, billed yearly"
+        },
+        "subtotal": "Subtotal",
+        "trailing": {
+          "renewsAt": "Renews at {amount} on {date}",
+          "renewsAtAmount": "Renews at {amount}",
+          "creditsKept": "Existing credits are kept",
+          "creditsOverlap": "This month's credits stay valid until {date}",
+          "keepUntil": "You'll keep {plan} until {date}",
+          "zeroDue": "You won't be charged today. Your payment method renews the plan at {amount} on {date}."
+        }
       }
     }
   },
