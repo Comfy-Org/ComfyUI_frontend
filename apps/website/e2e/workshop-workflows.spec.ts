@@ -91,10 +91,7 @@ test('workflow launch groups lead to the existing shared form', async ({
   // The eyebrow names the shelf this workflow sits on, and leads back to it.
   const shelf = page.getByTestId('workflow-use-case')
   await expect(shelf).toHaveText('Edit images')
-  await expect(shelf).toHaveAttribute(
-    'href',
-    '/models?type=workflows&useCase=edit-images'
-  )
+  await expect(shelf).toHaveAttribute('href', '/models?useCase=edit-images')
   await expect(
     page.getByRole('group', { name: 'Your original image' })
   ).toBeVisible()
