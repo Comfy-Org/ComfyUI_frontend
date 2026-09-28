@@ -44,7 +44,7 @@ function rememberedFirebase(remembered: User | null) {
 }
 
 function workspaceRoute(workspace: Response | (() => Response)) {
-  return (): Response =>
+  return (): Response | Promise<Response> =>
     typeof workspace === 'function' ? workspace() : workspace.clone()
 }
 
@@ -83,14 +83,15 @@ function setup({
     return endpoint.fetch(input, init)
   })
   const firebase = rememberedFirebase(remembered)
+  const entry = { workspaceId }
   const session = createUnifiedBillingSession({
     apiBaseUrl: API,
     fetchImpl,
     loadFirebase: firebase.loadFirebase,
-    workspaceId: () => workspaceId
+    workspaceId: () => entry.workspaceId
   })
   const paths = () => sent.map((r) => `${r.method} ${r.path}`)
-  return { session, sent, firebase, paths }
+  return { session, sent, firebase, paths, entry }
 }
 
 describe('billing-web on the shared web session', () => {
@@ -250,4 +251,35 @@ describe('billing-web on the shared web session', () => {
       expect(billing?.headers).not.toHaveProperty('authorization')
     }
   )
+
+  it.for([
+    {
+      name: 'a rebind to another workspace exposes none while it resolves',
+      from: 'ws-team',
+      to: 'ws-other',
+      during: undefined
+    },
+    {
+      name: 'a re-resolve of the same personal binding keeps its workspace',
+      from: undefined,
+      to: undefined,
+      during: 'ws-team'
+    }
+  ])('$name', async ({ from, to, during }) => {
+    const answers: (() => Response | Promise<Response>)[] = [
+      () => TEAM.clone(),
+      () => new Promise<Response>(() => {})
+    ]
+    const { session, entry } = setup({
+      workspaceId: from,
+      workspace: () => answers.shift()?.() ?? TEAM.clone()
+    })
+    await session.settledPhase()
+
+    entry.workspaceId = to
+    void session.resolveWorkspace()
+
+    expect(session.scopeSource.getScope()?.workspaceId).toBe(during)
+    expect(session.billedScope.value?.workspace.id).toBe(during)
+  })
 })

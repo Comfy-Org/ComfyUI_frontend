@@ -102,15 +102,17 @@ export function createUnifiedBillingSession(deps: UnifiedBillingSessionDeps) {
 
   const state = shallowRef<WebSessionIdentityState>(identity.getState())
   const workspace = shallowRef<WorkspaceResolution>()
+  let resolvedBinding: string | undefined
   let resolving: Promise<WorkspaceResolution> | undefined
 
   async function fetchWorkspace(
-    current: WebSession
+    current: WebSession,
+    binding: string | undefined
   ): Promise<WorkspaceResolution> {
     try {
       const auth = await authorize(
         { kind: 'session', session: current },
-        { target: 'ingest', method: 'GET', workspaceId: deps.workspaceId() }
+        { target: 'ingest', method: 'GET', workspaceId: binding }
       )
       const response = await deps.fetchImpl(
         `${deps.apiBaseUrl}/workspaces/current`,
@@ -133,11 +135,14 @@ export function createUnifiedBillingSession(deps: UnifiedBillingSessionDeps) {
     if (current.phase !== 'signed_in') {
       return { status: 'error', code: 'NOT_AUTHENTICATED' }
     }
-    const request = fetchWorkspace(current.session)
+    const binding = deps.workspaceId()
+    if (binding !== resolvedBinding) workspace.value = undefined
+    const request = fetchWorkspace(current.session, binding)
     resolving = request
     const result = await request
     if (resolving === request && state.value === current) {
       workspace.value = result
+      resolvedBinding = binding
     }
     return result
   }
