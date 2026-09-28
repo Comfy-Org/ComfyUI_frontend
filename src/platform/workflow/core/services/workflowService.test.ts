@@ -477,6 +477,70 @@ describe('useWorkflowService', () => {
       expect(loading.isLoaded).toBe(false)
     })
 
+    it('settles an already superseded opening without waiting for queued loads', async () => {
+      const workflows = useWorkflowStore()
+      const blocker = createModeTestWorkflow({ path: 'workflows/blocker.json' })
+      const stale = createModeTestWorkflow({
+        path: 'workflows/stale.json',
+        loaded: false
+      })
+      let finishBlocker = () => {}
+      const blocking = new Promise<void>((resolve) => {
+        finishBlocker = resolve
+      })
+      vi.mocked(app.loadGraphData).mockImplementationOnce(async () => {
+        await blocking
+        workflows.activeWorkflow = blocker
+        return true
+      })
+      const load = vi.spyOn(stale, 'load').mockResolvedValue(stale)
+      const service = useWorkflowService()
+      const first = service.openWorkflow(blocker)
+      const settled = vi.fn()
+
+      void service.openWorkflow(stale, { isCurrent: () => false }).then(settled)
+
+      await vi.waitFor(() => expect(settled).toHaveBeenCalledWith(false))
+      finishBlocker()
+      await expect(first).resolves.toBe(true)
+      expect(load).not.toHaveBeenCalled()
+      expect(app.loadGraphData).toHaveBeenCalledOnce()
+    })
+
+    it('skips an opening superseded while it waits behind another load', async () => {
+      const workflows = useWorkflowStore()
+      const blocker = createModeTestWorkflow({ path: 'workflows/blocker.json' })
+      const stale = createModeTestWorkflow({
+        path: 'workflows/stale.json',
+        loaded: false
+      })
+      let finishBlocker = () => {}
+      const blocking = new Promise<void>((resolve) => {
+        finishBlocker = resolve
+      })
+      vi.mocked(app.loadGraphData).mockImplementationOnce(async () => {
+        await blocking
+        workflows.activeWorkflow = blocker
+        return true
+      })
+      const load = vi.spyOn(stale, 'load').mockResolvedValue(stale)
+      const service = useWorkflowService()
+      const first = service.openWorkflow(blocker)
+      let currentRequest = true
+      const second = service.openWorkflow(stale, {
+        isCurrent: () => currentRequest
+      })
+
+      currentRequest = false
+      finishBlocker()
+
+      await expect(first).resolves.toBe(true)
+      await expect(second).resolves.toBe(false)
+      expect(load).not.toHaveBeenCalled()
+      expect(app.loadGraphData).toHaveBeenCalledOnce()
+      expect(workflows.activeWorkflow?.path).toBe(blocker.path)
+    })
+
     it('re-selecting the active workflow with no loads pending is a no-op', async () => {
       const workflowStore = useWorkflowStore()
       const active = createWorkflow(null, {
