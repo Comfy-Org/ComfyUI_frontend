@@ -134,6 +134,11 @@ describe('ApiTab', () => {
     })
     await waitFor(() => expect(facts.textContent).toContain('Your files'))
 
+    await userEvent.click(screen.getByTestId('snippet-curl'))
+    expect(facts.textContent).not.toContain('Your files')
+    await userEvent.click(screen.getByTestId('snippet-typescript'))
+    expect(facts.textContent).toContain('Your files')
+
     const fromUrl = getRouterWorkshopModelDetail(
       'bfl--flux-2-max--generate-images'
     )

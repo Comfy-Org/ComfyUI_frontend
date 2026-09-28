@@ -14,7 +14,10 @@ import CaseStudySpotlightSection from '../components/home/CaseStudySpotlightSect
 import GetStartedSection from '../components/home/GetStartedSection.vue'
 import { isWorkshopInBuild } from '../config/workshop-release'
 import { modelReleaseLinks } from '../config/model-release-links'
-import { resolveDiscoveryProviders } from '../components/home/modelDiscoveryProviders'
+import {
+  resolveDiscoveryProviders,
+  resolveDiscoveryWorkflows
+} from '../components/home/modelDiscoveryProviders'
 import { t } from '../i18n/translations'
 import {
   comfyUiApplicationNode,
@@ -30,6 +33,7 @@ const { siteUrl } = pageContext(
 )
 
 const discoveryProviders = await resolveDiscoveryProviders(isWorkshopInBuild())
+const discoveryWorkflows = await resolveDiscoveryWorkflows(isWorkshopInBuild())
 ---
 
 <BaseLayout
@@ -57,7 +61,11 @@ const discoveryProviders = await resolveDiscoveryProviders(isWorkshopInBuild())
   <DeveloperPlatformSection client:visible />
   <MinimaxLicenseHeroSection client:visible />
   {isWorkshopInBuild() && (
-    <ModelDiscoverySection providers={discoveryProviders} client:load />
+    <ModelDiscoverySection
+      providers={discoveryProviders}
+      workflows={discoveryWorkflows}
+      client:load
+    />
   )}
   <FeaturedWorkflowsSection client:load />
   <ProductShowcaseSection client:load />

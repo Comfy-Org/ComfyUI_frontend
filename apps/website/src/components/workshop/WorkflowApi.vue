@@ -4,11 +4,12 @@ import { computed } from 'vue'
 import Button from '@/components/ui/button/Button.vue'
 import CopyTextButton from '@/components/ui/copy-text-button/CopyTextButton.vue'
 import type { WorkflowWorkshopModelDetail } from '../../config/models-catalogue'
-import { apiKeysLink } from '../../config/routes'
+import { apiKeysLink, externalLinks } from '../../config/routes'
 import type { FormValues } from '../../config/workshop-playground'
 import { urlUploadField } from '../../config/workshop-playground'
 import { initialWorkshopPageState } from '../../config/workshop-page-state'
 import { useWorkshopSession } from '../../config/workshop-session-state'
+import { WORKSHOP_CLOUD_BASE_URL } from '../../config/workshop-env'
 import { workspaceLinkedHref } from '../../config/workshop-workspace-link'
 import {
   workflowCurl,
@@ -41,13 +42,18 @@ const code = computed(() => (request.value ? workflowCurl(request.value) : ''))
 const hasMedia = initialWorkshopPageState(model).schema.some((field) =>
   urlUploadField(field)
 )
+const endpoint = `${WORKSHOP_CLOUD_BASE_URL}/api/prompt`
 const facts = computed(() => [
   {
     label: t('workshop.api.needsEndpoint'),
-    value: 'POST /api/prompt',
+    value: `POST ${endpoint}`,
     mono: true
   },
-  { label: t('workshop.api.needsKey'), value: 'X-API-Key', mono: true },
+  {
+    label: t('workshop.api.needsKey'),
+    value: 'X-API-Key + extra_data.api_key_comfy_org',
+    mono: true
+  },
   ...(hasMedia
     ? [
         {
@@ -72,7 +78,6 @@ const facts = computed(() => [
         {{ t('workshop.workflow.apiHint') }}
       </p>
     </div>
-
     <div class="flex flex-col gap-8 lg:flex-row-reverse lg:items-start">
       <aside
         class="flex w-full flex-col gap-3 lg:sticky lg:top-24 lg:w-95 lg:shrink-0"
@@ -86,7 +91,12 @@ const facts = computed(() => [
           data-testid="api-get-key"
           >{{ t('workshop.api.getKey') }}</Button
         >
-        <ApiFacts :where="t('workshop.api.runsOnCloud')" :rows="facts" />
+        <div data-testid="workflow-api-endpoint">
+          <ApiFacts :where="t('workshop.api.runsOnCloud')" :rows="facts" />
+        </div>
+        <p class="text-sm/relaxed text-primary-warm-gray">
+          {{ t('workshop.workflow.apiNote') }}
+        </p>
       </aside>
 
       <div class="flex min-w-0 flex-1 flex-col gap-4">
@@ -129,6 +139,16 @@ const facts = computed(() => [
         <p class="text-sm/relaxed text-primary-warm-gray">
           {{ t('workshop.workflow.apiPoll') }}
         </p>
+        <a
+          :href="externalLinks.docsApi"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex min-h-11 items-center gap-2 self-start text-sm font-medium text-primary-comfy-yellow hover:text-primary-warm-white"
+          data-testid="api-docs"
+        >
+          {{ t('workshop.workflow.apiDocs') }}
+          <span aria-hidden="true">↗</span>
+        </a>
       </div>
     </div>
   </section>

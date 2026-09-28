@@ -65,8 +65,10 @@ test('the workflow API tab opens with the key action and what it needs beside th
   await page.getByRole('tab', { name: 'API', exact: true }).click()
 
   const facts = page.getByTestId('api-facts')
-  await expect(facts).toContainText('POST /api/prompt')
+  await expect(facts).toContainText('POST')
+  await expect(facts).toContainText('/api/prompt')
   await expect(facts).toContainText('X-API-Key')
+  await expect(facts).toContainText('extra_data.api_key_comfy_org')
 
   const action = await frame(page.getByTestId('api-get-key'))
   const code = await frame(page.getByTestId('workflow-api-snippet'))

@@ -178,13 +178,19 @@ const snippet = computed(() =>
     : ''
 )
 
+const hasLocalFiles = computed(() =>
+  Boolean(request.value?.files.some((file) => !file.sourceUrl))
+)
 const showFileNotice = computed(() => {
   if (!request.value) return false
   const { body, files } = request.value
   return language.value === 'curl'
     ? hasOmittedCurlFiles(body, files)
-    : files.some((file) => !file.sourceUrl)
+    : hasLocalFiles.value
 })
+const showLocalFilesFact = computed(
+  () => language.value !== 'curl' && hasLocalFiles.value
+)
 
 const languageLabel: Record<SnippetLanguage, string> = {
   python: 'Python',
@@ -212,7 +218,7 @@ const facts = computed(() => [
     value: 'COMFY_API_KEY',
     mono: true
   },
-  ...(request.value?.files.some((file) => !file.sourceUrl)
+  ...(showLocalFilesFact.value
     ? [
         {
           label: t('workshop.api.needsFiles', locale),
