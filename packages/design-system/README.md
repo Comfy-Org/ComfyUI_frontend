@@ -58,12 +58,11 @@ repurposing tokens, `@font-face` declarations, or an entire file from that
 surface is a **major** bump — even when no in-repo consumer breaks, because
 published consumers pin this package by version.
 
-Precedent (recorded 2026-09-03): #14790 ("move the brand layer into the
+Precedent (updated 2026-09-28): #14790 ("move the brand layer into the
 package") took brand tokens out of `_palette.css` and stopped `base.css`
-loading Inter. That PR was merged into a feature-branch stack with an
-in-tree version of `1.1.0`, and the review raised whether it should have been
-`2.0.0`. The verdict: the change **is breaking** — the PR's own body says so,
-and nothing was ever published to npm at `1.1.0` (the published versions are
-`1.0.0` and `1.0.1`), so there is no shipped `1.1.x` to defend. The next
-release that carries the brand-layer move must therefore be **`2.0.0`**, not
-`1.1.0`; do not let the in-tree `1.1.0` from that stack reach npm.
+loading Inter. The review raised whether that should be a major release. npm
+subsequently published `1.1.0` from `main` without the brand-layer move, while
+#14790's merge remains outside `main`. The verdict is unchanged: the move **is
+breaking** — the PR's own body says so — and now breaks the public surface of
+the shipped `1.1.0`. When the brand-layer move reaches `main`, its first npm
+release must therefore be **`2.0.0`**, not another `1.x` release.
