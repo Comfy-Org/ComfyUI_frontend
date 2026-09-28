@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useId } from 'vue'
+import { computed, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -29,6 +29,11 @@ const errorId = useId()
 
 const P = 'checkout.fullPage.summary.promo'
 
+/** One entered code per quote; held discounts do not count against it. */
+const takesCode = computed(
+  () => accepts && !chips.some((chip) => chip.removable)
+)
+
 function edit(event: Event) {
   if (event.target instanceof HTMLInputElement) emit('edit', event.target.value)
 }
@@ -38,10 +43,7 @@ const SECONDARY =
 </script>
 
 <template>
-  <div
-    v-if="chips.length > 0 || (accepts && entry.kind !== 'applied')"
-    class="flex flex-col gap-2"
-  >
+  <div v-if="chips.length > 0 || takesCode" class="flex flex-col gap-2">
     <ul v-if="chips.length > 0" class="m-0 flex list-none flex-wrap gap-2 p-0">
       <li
         v-for="chip in chips"
@@ -62,7 +64,7 @@ const SECONDARY =
       </li>
     </ul>
 
-    <template v-if="accepts">
+    <template v-if="takesCode">
       <div v-if="entry.kind === 'idle'">
         <button
           type="button"

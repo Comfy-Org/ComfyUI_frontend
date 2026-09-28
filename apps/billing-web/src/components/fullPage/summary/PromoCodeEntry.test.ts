@@ -36,11 +36,8 @@ describe('PromoCodeEntry', () => {
     expect(screen.getByRole('button', { name: 'Add promo code' })).toBeEnabled()
   })
 
-  it('hides the Add control while the one entered code is applied', () => {
-    renderEntry({
-      chips: [HELD, ENTERED],
-      entry: { kind: 'applied', code: 'COMFY50' }
-    })
+  it('hides the Add control while the quote carries the one entered code', () => {
+    renderEntry({ chips: [HELD, ENTERED] })
 
     expect(screen.getByRole('button', { name: 'Remove COMFY50' })).toBeEnabled()
     expect(
@@ -48,23 +45,38 @@ describe('PromoCodeEntry', () => {
     ).not.toBeInTheDocument()
   })
 
-  it.for<{ name: string; entry: PromoEntry; control: string }>([
+  it.for<{
+    name: string
+    chips: PromoChip[]
+    entry: PromoEntry
+    control: string
+  }>([
     {
       name: 'the Add control',
+      chips: [],
       entry: { kind: 'idle' },
       control: 'Add promo code'
     },
-    { name: 'Apply', entry: { kind: 'editing', draft: 'X' }, control: 'Apply' },
+    {
+      name: 'Apply',
+      chips: [],
+      entry: { kind: 'editing', draft: 'X' },
+      control: 'Apply'
+    },
     {
       name: 'a chip remove',
+      chips: [ENTERED],
       entry: { kind: 'applied', code: 'COMFY50' },
       control: 'Remove COMFY50'
     }
-  ])('locks $name while promo entry is not live', ({ entry, control }) => {
-    renderEntry({ chips: [ENTERED], entry, live: false })
+  ])(
+    'locks $name while promo entry is not live',
+    ({ chips, entry, control }) => {
+      renderEntry({ chips, entry, live: false })
 
-    expect(screen.getByRole('button', { name: control })).toBeDisabled()
-  })
+      expect(screen.getByRole('button', { name: control })).toBeDisabled()
+    }
+  )
 
   it('says a code it could not check apart from one the server refused', () => {
     renderEntry({
