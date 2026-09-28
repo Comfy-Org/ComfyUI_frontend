@@ -1049,4 +1049,53 @@ describe('useWorkflowPersistenceV2', () => {
     expect(localStorage.getItem(personalPayloadKey)).toBeNull()
     expect(localStorage.getItem(destinationPayloadKey)).not.toBeNull()
   })
+
+  it('drops edits made in a post-identity null gap before the next owner resolves', async () => {
+    distributionMocks.isCloud = true
+    const workflowStore = useWorkflowStore()
+    const workflow = await workflowStore
+      .createTemporary('IdentityGap.json')
+      .load()
+    workflowStore.activeWorkflow = workflow
+    const teamWorkspaceStore = useTeamWorkspaceStore()
+    mountWorkflowPersistence()
+
+    Object.assign(teamWorkspaceStore, {
+      activeWorkspaceId: 'workspace-a',
+      initState: 'ready'
+    })
+    resolveUser('user-a')
+    await nextTick()
+
+    logoutUser()
+    mocks.state.currentGraph = { marker: 'ownerless-gap-edit' }
+    mocks.state.graphChangedHandler?.()
+
+    resolveUser('user-b')
+    Object.assign(teamWorkspaceStore, {
+      activeWorkspaceId: 'workspace-b',
+      initState: 'ready'
+    })
+    await nextTick()
+    await vi.runAllTimersAsync()
+
+    const destinationPayloadKey = StorageKeys.draftPayload(
+      workflow.path,
+      scope('user-b:workspace-b')
+    )
+    expect(localStorage.getItem(destinationPayloadKey)).toBeNull()
+
+    mocks.state.currentGraph = { marker: 'destination-edit' }
+    mocks.state.graphChangedHandler?.()
+    await vi.runAllTimersAsync()
+
+    const destinationPayloadJson = localStorage.getItem(destinationPayloadKey)
+    expect(destinationPayloadJson).not.toBeNull()
+    if (destinationPayloadJson === null) {
+      throw new Error('Expected destination draft payload')
+    }
+    expect(JSON.parse(JSON.parse(destinationPayloadJson).data)).toEqual({
+      marker: 'destination-edit'
+    })
+  })
 })

@@ -68,12 +68,12 @@ export function useStorageScopeLifecycle(): void {
 
       stopPendingWorkspaceReadinessWatcher()
       if (isCloud) prepareWorkflowLogoutTransition()
-      if (isCloud) teamWorkspaceStore.resetForIdentityChange()
+      if (isCloud && getStorageIdentity() !== null) {
+        teamWorkspaceStore.resetForIdentityChange()
+      }
       setStorageIdentity(nextIdentity)
       setStorageWorkspaceId(null)
 
-      // A later resolved identity completes the fence once its workspace is
-      // known or initialization has terminally failed.
       if (isCloud && nextIdentity !== null) releaseIdentityFenceWhenReady()
     },
     { immediate: true, flush: 'sync' }

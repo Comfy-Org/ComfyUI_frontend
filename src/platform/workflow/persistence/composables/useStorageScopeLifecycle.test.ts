@@ -58,6 +58,10 @@ describe('useStorageScopeLifecycle', () => {
   })
 
   it('updates identity even when GraphCanvas persistence is never mounted', async () => {
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-a',
+      initState: 'ready'
+    })
     sessionStorage.setItem(
       WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE,
       JSON.stringify({ type: 'team', id: 'workspace-a' })
@@ -66,10 +70,6 @@ describe('useStorageScopeLifecycle', () => {
     scope.run(useStorageScopeLifecycle)
 
     resolvedUser.value = { id: 'user-a' }
-    Object.assign(useTeamWorkspaceStore(), {
-      activeWorkspaceId: 'workspace-a',
-      initState: 'ready'
-    })
     await nextTick()
 
     expect(getStorageIdentity()).toBe('user-a')
@@ -116,26 +116,35 @@ describe('useStorageScopeLifecycle', () => {
     scope.stop()
   })
 
-  it('invalidates a ready workspace before replacing an API-key identity', async () => {
-    const workspaceStore = useTeamWorkspaceStore()
-    const resetSpy = vi.spyOn(workspaceStore, 'resetForIdentityChange')
+  it('resets a ready API-key workspace before opening storage for a replacement key', async () => {
+    const teamWorkspaceStore = useTeamWorkspaceStore()
+    const resetSpy = vi.spyOn(teamWorkspaceStore, 'resetForIdentityChange')
     const scope = effectScope()
     scope.run(useStorageScopeLifecycle)
 
-    resolvedUser.value = { id: 'api-key-a' }
-    Object.assign(workspaceStore, {
+    resolvedUser.value = { id: 'api-key-user-a' }
+    Object.assign(teamWorkspaceStore, {
       activeWorkspaceId: 'workspace-a',
       initState: 'ready'
     })
     await nextTick()
-    expect(getStorageScope()).toBe('api-key-a:workspace-a')
+    expect(getStorageScope()).toBe('api-key-user-a:workspace-a')
 
-    resolvedUser.value = { id: 'api-key-b' }
+    resolvedUser.value = { id: 'api-key-user-b' }
 
-    expect(resetSpy).toHaveBeenCalledTimes(2)
-    expect(workspaceStore.initState).toBe('uninitialized')
+    expect(resetSpy).toHaveBeenCalledOnce()
+    expect(teamWorkspaceStore.initState).toBe('uninitialized')
     expect(getStorageScope()).toBeNull()
     expect(getStorageWriteGate()).toBe('deferred')
+
+    Object.assign(teamWorkspaceStore, {
+      activeWorkspaceId: 'workspace-b',
+      initState: 'ready'
+    })
+    await nextTick()
+
+    expect(getStorageScope()).toBe('api-key-user-b:workspace-b')
+    expect(getStorageWriteGate()).toBe('open')
     scope.stop()
   })
 })

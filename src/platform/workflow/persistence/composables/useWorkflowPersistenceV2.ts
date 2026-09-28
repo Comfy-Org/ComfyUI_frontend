@@ -78,7 +78,6 @@ export function useWorkflowPersistenceV2() {
   const lastSavedJsonByPath = ref<Record<string, string>>({})
   let hasPendingPersistence = false
   let pendingPersistenceOwnerId: string | null = null
-  let pendingPersistenceCanAdoptInitialIdentity = false
   let graphChangeRevision = 0
 
   watch(workflowPersistenceEnabled, (enabled) => {
@@ -92,14 +91,12 @@ export function useWorkflowPersistenceV2() {
     if (!workflowPersistenceEnabled.value) {
       hasPendingPersistence = false
       pendingPersistenceOwnerId = null
-      pendingPersistenceCanAdoptInitialIdentity = false
       return
     }
     const activeWorkflow = workflowStore.activeWorkflow
     if (!activeWorkflow) {
       hasPendingPersistence = false
       pendingPersistenceOwnerId = null
-      pendingPersistenceCanAdoptInitialIdentity = false
       return
     }
 
@@ -111,13 +108,11 @@ export function useWorkflowPersistenceV2() {
     if (workflowJson === lastSavedJsonByPath.value[workflowPath]) {
       hasPendingPersistence = false
       pendingPersistenceOwnerId = null
-      pendingPersistenceCanAdoptInitialIdentity = false
       return
     }
     if (getStorageWriteGate() === 'deferred') return
     hasPendingPersistence = false
     pendingPersistenceOwnerId = null
-    pendingPersistenceCanAdoptInitialIdentity = false
 
     // Save to V2 draft store
     const saved = draftStore.saveDraft(workflowPath, workflowJson, {
@@ -152,16 +147,12 @@ export function useWorkflowPersistenceV2() {
     graphChangeRevision++
     hasPendingPersistence = true
     pendingPersistenceOwnerId = getStorageIdentity()
-    pendingPersistenceCanAdoptInitialIdentity =
-      !hasResolvedStorageIdentity && pendingPersistenceOwnerId === null
     debouncedPersist()
   }
 
   function persistWorkflowForCurrentOwner(): void {
     hasPendingPersistence = true
     pendingPersistenceOwnerId = getStorageIdentity()
-    pendingPersistenceCanAdoptInitialIdentity =
-      !hasResolvedStorageIdentity && pendingPersistenceOwnerId === null
     persistCurrentWorkflow()
   }
 
@@ -179,7 +170,6 @@ export function useWorkflowPersistenceV2() {
     if (clearPending) {
       hasPendingPersistence = false
       pendingPersistenceOwnerId = null
-      pendingPersistenceCanAdoptInitialIdentity = false
     }
     lastSavedJsonByPath.value = {}
   }
@@ -192,15 +182,10 @@ export function useWorkflowPersistenceV2() {
       if (identity === observedStorageIdentity) return
       const previousIdentity = observedStorageIdentity
       observedStorageIdentity = identity
-      // Work produced before the first Cloud identity resolves belongs to that
-      // first resolved owner. Work from a known owner must never cross into a
-      // different identity.
-      const isInitialIdentityResolution =
-        !hasResolvedStorageIdentity &&
-        previousIdentity === null &&
-        identity !== null
+      resetPersistenceForIdentityChange(
+        previousIdentity !== null || hasResolvedStorageIdentity
+      )
       if (identity !== null) hasResolvedStorageIdentity = true
-      resetPersistenceForIdentityChange(!isInitialIdentityResolution)
     },
     { flush: 'sync' }
   )
@@ -211,9 +196,8 @@ export function useWorkflowPersistenceV2() {
       if (
         gate === 'open' &&
         hasPendingPersistence &&
-        (pendingPersistenceOwnerId === getStorageIdentity() ||
-          (pendingPersistenceCanAdoptInitialIdentity &&
-            pendingPersistenceOwnerId === null))
+        (pendingPersistenceOwnerId === null ||
+          pendingPersistenceOwnerId === getStorageIdentity())
       ) {
         debouncedPersist.cancel()
         persistCurrentWorkflow()
