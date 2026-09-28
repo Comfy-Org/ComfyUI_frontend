@@ -296,14 +296,17 @@ function useBillingContextInternal(): BillingContext {
 
   /**
    * Reads the checkout rail's status, which resumes any operation the server
-   * reports pending. True once one was reported, so a caller watching for a
-   * payment taken elsewhere can hand off to the operation's own polling.
+   * reports pending. True once that operation was adopted, so a caller
+   * watching for a payment taken elsewhere can hand off to its own polling.
    */
   async function readCheckoutOperation(): Promise<boolean> {
     const checkout = checkoutContext.value
-    await checkout.fetchStatus()
     const workspace = workspaceBillingRef.value
-    return checkout === workspace && workspace.hasPendingOperation.value
+    if (workspace === null || checkout !== workspace) {
+      await checkout.fetchStatus()
+      return false
+    }
+    return workspace.readAndAdoptPendingOperation()
   }
 
   async function subscribe(planSlug: string, options?: SubscribeOptions) {

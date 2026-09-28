@@ -129,7 +129,7 @@ export interface BillingState {
 export interface BillingContext extends BillingState, BillingActions {
   type: ComputedRef<BillingType>
   reconcileSubscriptionSuccess: () => Promise<void>
-  /** Reads the checkout rail's status; true once it reports a pending operation. */
+  /** Reads the checkout rail's status; true once its pending operation is adopted. */
   readCheckoutOperation: () => Promise<boolean>
   /**
    * True when the active team workspace is still on a pre-credit-slider
