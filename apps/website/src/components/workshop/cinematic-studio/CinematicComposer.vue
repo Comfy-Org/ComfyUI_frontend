@@ -92,6 +92,10 @@ const focalLabel = computed(() => {
   const focal = directionOption('focal', direction)
   return focal.id === 'auto' ? undefined : tc(focal.label, locale)
 })
+const cameraLabel = computed(
+  () =>
+    `${tc('cinematic.section.camera', locale)}: ${focalLabel.value ?? bodyLabel.value}`
+)
 const blockedNote = computed(() =>
   (cast.value || palette.value) && !model.value?.referenceSlug
     ? tc('cinematic.references.unsupported', locale, {
@@ -176,7 +180,7 @@ const chipClass = (key: PickerKey) =>
             type="button"
             aria-haspopup="dialog"
             :aria-expanded="openPopover === 'camera'"
-            :aria-label="cameraSummary"
+            :aria-label="cameraLabel"
             :class="chipClass('camera')"
             @click="emit('open', 'camera')"
           >

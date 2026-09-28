@@ -105,7 +105,13 @@ const notes = computed<readonly Note[]>(() => {
         )
       }
     : wide && note.value
-      ? { text: note.value, class: 'text-xs text-content-secondary lg:hidden' }
+      ? {
+          text: note.value,
+          class: cn(
+            'text-xs text-content-secondary',
+            creditGate.value && 'lg:hidden'
+          )
+        }
       : undefined
   const blocked: Note | undefined = blockedNote
     ? {

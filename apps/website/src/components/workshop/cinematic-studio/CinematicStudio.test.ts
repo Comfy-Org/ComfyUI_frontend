@@ -360,7 +360,7 @@ describe('CinematicStudio', () => {
 
   it.for([
     { control: /^Light:/, tooltip: /^Light: / },
-    { control: /Large format/, tooltip: /^Camera: Large format · / },
+    { control: /^Camera:/, tooltip: /^Camera: Large format · / },
     { control: 'Resolution: 2K', tooltip: 'Resolution: 2K' }
   ])(
     'names the composer control $control in a tooltip on hover',
@@ -430,7 +430,7 @@ describe('CinematicStudio', () => {
   it('keeps the camera picker open across columns until clicked away', async () => {
     const user = renderStudio()
 
-    await user.click(screen.getByRole('button', { name: /Large format/ }))
+    await user.click(screen.getByRole('button', { name: /^Camera:/ }))
     const picker = screen.getByRole('dialog', { name: 'Camera' })
     await user.click(within(picker).getByRole('radio', { name: '85mm' }))
     await user.click(within(picker).getByRole('radio', { name: 'f/4' }))
@@ -440,7 +440,7 @@ describe('CinematicStudio', () => {
     expect(screen.queryByRole('dialog')).toBeNull()
     expect(screen.getByLabelText('Scene')).toHaveFocus()
     expect(
-      screen.getByRole('button', { name: /Large format/ })
+      screen.getByRole('button', { name: 'Camera: 85mm' })
     ).toHaveTextContent('85mm')
   })
 
@@ -1126,7 +1126,16 @@ describe('CinematicStudio', () => {
     ).toBeInTheDocument()
   })
 
-  it('opens the camera picker beside the side panel and closes it again', async () => {
+  it('opens the camera picker centred on its row and closes it again', async () => {
+    vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(
+      function (this: Element) {
+        if (this.getAttribute('data-testid') === 'cinematic-picker')
+          return DOMRect.fromRect({ y: 0, height: 300 })
+        if (this.getAttribute('aria-expanded') === 'true')
+          return DOMRect.fromRect({ y: 400, height: 48 })
+        return DOMRect.fromRect({ y: 100, height: 1000 })
+      }
+    )
     render(CinematicStudioPage, { props: { apps: appModels, models } })
     const user = userEvent.setup()
     const panel = await screen.findByRole('complementary', {
@@ -1137,7 +1146,9 @@ describe('CinematicStudio', () => {
     await user.click(camera)
     const picker = await screen.findByTestId('cinematic-picker')
     expect(camera).toHaveAttribute('aria-expanded', 'true')
-    expect(picker.style.getPropertyValue('--anchor-top')).toMatch(/px$/)
+    await vi.waitFor(() =>
+      expect(picker.style.getPropertyValue('--anchor-top')).toBe('174px')
+    )
 
     await user.click(camera)
     expect(screen.queryByTestId('cinematic-picker')).toBeNull()
