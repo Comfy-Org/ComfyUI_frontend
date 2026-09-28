@@ -60,9 +60,8 @@ const activeTour = ref<EntryPath | null>(null)
 let startupDecision: Promise<boolean> = Promise.resolve(true)
 
 /**
- * Bounds the release watcher in the three single-holder cases below. If
- * release disagrees with hold, the offer is repeatedly released and re-held;
- * leaving the probe pending turns that cycle into an ordinary assertion.
+ * Bounds a release/hold disagreement in holder tests so assertions can fail
+ * normally instead of repeatedly releasing and re-holding the offer.
  */
 const OFFER_ATTEMPT_CAP = 20
 // Probe here rather than `consentStore.load`, which individual tests replace.

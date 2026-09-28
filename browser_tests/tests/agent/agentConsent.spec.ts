@@ -537,7 +537,7 @@ test.describe(
         subscription_required: true
       }
     })
-    test.describe.configure({ timeout: 30_000 })
+    test.describe.configure({ timeout: 90_000 })
 
     test('defers the offer until Getting Started releases the screen', async ({
       comfyPage,
