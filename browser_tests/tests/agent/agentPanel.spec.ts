@@ -242,6 +242,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
       await expect(
         agentPanel.root.getByRole('button', { name: 'Stop' })
       ).toBeVisible()
+      await expect(paywall).toHaveCount(0)
       pushEvent(ws, MESSAGE_DONE_EVENT)
       await expect(paywall).toBeVisible()
     })
