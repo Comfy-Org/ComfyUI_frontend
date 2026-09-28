@@ -28,15 +28,10 @@ const REFUSALS = new Map<string, RunFailure>([
   // the reader's own workspace — is the panel's to offer.
   ['insufficient_credits', 'noCredits'],
   // The same sentence in both.
-  ['rate_limited', 'rateLimit'],
-  // Both about a connection that went while a run may be alive and billed.
-  ['network', 'network'],
-  // A response that arrived and could not be read, which is what this page
-  // otherwise reports only as a run it could not check.
-  ['response', 'response'],
-  // One event, and the panel says more of it: the credits that may have gone
-  // without a result, and the request ID to quote.
-  ['execution_failed', 'provider']
+  ['rate_limited', 'rateLimit']
+  // Nothing else: network, response and execution failures reach 'failed'
+  // only while preparing a request. Once submission begins, those failures
+  // interrupt the run instead, so the panel's billing warnings would be wrong.
 ])
 
 /**

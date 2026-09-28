@@ -20,6 +20,7 @@ import {
 import { getRouterWorkshopModelDetail } from '../../../config/workshop-router-content'
 import { WorkshopRouterError } from '../../../config/workshop-router-errors'
 import { useWorkshopSession } from '../../../config/workshop-session-state'
+import { appModels } from '../../../config/workshop-app-content'
 import { prepareModelPage } from '../../../routes/models/model-page'
 import {
   useWorkshopEnabled,
@@ -441,7 +442,7 @@ describe('CinematicStudio', () => {
           )
         }
       )
-      render(CinematicStudioPage, { props: { models } })
+      render(CinematicStudioPage, { props: { apps: appModels, models } })
       const user = userEvent.setup()
 
       await user.type(await screen.findByLabelText('Scene'), 'A diner at dawn')
@@ -656,7 +657,7 @@ describe('CinematicStudio', () => {
     'opens the studio only to the Apps rollout (apps $apps)',
     async ({ apps, open }) => {
       vi.mocked(useWorkshopAppsEnabled).mockReturnValue(computed(() => apps))
-      render(CinematicStudioPage, { props: { models } })
+      render(CinematicStudioPage, { props: { apps: appModels, models } })
 
       await vi.waitFor(() => {
         expect(screen.queryAllByTestId('cinematic')).toHaveLength(open ? 1 : 0)
@@ -959,7 +960,7 @@ describe('CinematicStudio', () => {
     async ({ env, url, shown, menu }) => {
       deploy.env = env
       window.history.replaceState(null, '', `/cinematic-studio${url}`)
-      render(CinematicStudioPage, { props: { models } })
+      render(CinematicStudioPage, { props: { apps: appModels, models } })
 
       expect(await screen.findByTestId(shown)).toBeVisible()
       expect(
@@ -969,7 +970,7 @@ describe('CinematicStudio', () => {
   )
 
   it('leads back to the Apps tab of the catalogue', async () => {
-    render(CinematicStudioPage, { props: { models } })
+    render(CinematicStudioPage, { props: { apps: appModels, models } })
 
     expect(
       await screen.findByRole('link', { name: tc('cinematic.backToApps') })
@@ -981,7 +982,7 @@ describe('CinematicStudio', () => {
       screen.queryByRole('complementary', { name: 'Shot settings' })
 
     it('swaps to the side panel layout and remembers it in the address', async () => {
-      render(CinematicStudioPage, { props: { models } })
+      render(CinematicStudioPage, { props: { apps: appModels, models } })
       const user = userEvent.setup()
       expect(panel()).toBeNull()
 
@@ -1004,7 +1005,7 @@ describe('CinematicStudio', () => {
             if (options.signal) signals.push(options.signal)
           })
       )
-      render(CinematicStudioPage, { props: { models } })
+      render(CinematicStudioPage, { props: { apps: appModels, models } })
       const user = userEvent.setup()
 
       await user.type(await screen.findByLabelText('Scene'), 'A diner at dawn')
@@ -1036,7 +1037,7 @@ describe('CinematicStudio', () => {
         '',
         '/models/apps/cinematic-studio/?ux=d'
       )
-      render(CinematicStudioPage, { props: { models } })
+      render(CinematicStudioPage, { props: { apps: appModels, models } })
       const user = userEvent.setup()
 
       await user.click(
@@ -1061,7 +1062,7 @@ describe('CinematicStudio', () => {
         '',
         '/models/apps/cinematic-studio/?ux=hub'
       )
-      render(CinematicStudioPage, { props: { models } })
+      render(CinematicStudioPage, { props: { apps: appModels, models } })
 
       const tab = await screen.findByRole('button', { name: 'Apps' })
       expect(tab).toHaveAttribute('aria-pressed', 'true')
@@ -1085,7 +1086,7 @@ describe('CinematicStudio', () => {
       vi.mocked(router_render).mockImplementation(async (slug) =>
         rendered(slug)
       )
-      render(CinematicStudioPage, { props: { models } })
+      render(CinematicStudioPage, { props: { apps: appModels, models } })
       const user = userEvent.setup()
 
       await user.click(

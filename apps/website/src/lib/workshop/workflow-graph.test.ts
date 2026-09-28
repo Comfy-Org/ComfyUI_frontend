@@ -27,6 +27,8 @@ describe('readGraphPicture', () => {
     for (const node of picture.nodes) {
       expect(node.width).toBeGreaterThan(0)
       expect(node.height).toBeGreaterThan(0)
+      // A subgraph node's type is an id; nobody reading the canvas sees one.
+      expect(node.title).not.toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-/i)
     }
     // Every link joins two nodes the picture holds, or it is a line to
     // nowhere.
@@ -47,6 +49,43 @@ describe('readGraphPicture', () => {
       expect(picture.groups).toEqual([])
     }
   )
+
+  it('names a subgraph node after its subgraph', () => {
+    const id = '2454ad83-157c-4a3e-9c1e-0d2f6f7b8a90'
+    const picture = readGraphPicture({
+      nodes: [{ id: 1, type: id, pos: [0, 0] }],
+      definitions: { subgraphs: [{ id, name: 'Image to Video' }] }
+    })
+
+    expect(picture.nodes[0].title).toBe('Image to Video')
+  })
+
+  it('draws an unlinked widget input as no socket, and keeps later links on theirs', () => {
+    const picture = readGraphPicture({
+      nodes: [
+        {
+          id: 1,
+          type: 'Source',
+          pos: [0, 0],
+          outputs: [{ name: 'IMAGE', type: 'IMAGE' }]
+        },
+        {
+          id: 2,
+          type: 'Sink',
+          pos: [400, 0],
+          inputs: [
+            { name: 'seed', type: 'INT', widget: { name: 'seed' }, link: null },
+            { name: 'image', type: 'IMAGE', link: 7 }
+          ]
+        }
+      ],
+      links: [[7, 1, 0, 2, 1, 'IMAGE']]
+    })
+    const sink = picture.nodes.find((node) => node.id === '2')!
+
+    expect(sink.inputs.map((slot) => slot.name)).toEqual(['image'])
+    expect(picture.links[0].y2).toBe(sink.y + sink.inputs[0].y)
+  })
 
   it('keeps a node the graph drew in its own colours', () => {
     const picture = readGraphPicture({

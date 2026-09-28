@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ChevronLeft, ChevronRight } from '@lucide/vue'
 import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
+import type { ComponentExposed } from 'vue-component-type-helpers'
 
 import Button from '@/components/ui/button/Button.vue'
 import { groupModels } from '../../config/model-family'
@@ -62,6 +63,8 @@ onMounted(() => {
 
 const toolbar = useTemplateRef<HTMLElement>('toolbar')
 const heading = useTemplateRef<HTMLElement>('heading')
+const filterMenu =
+  useTemplateRef<ComponentExposed<typeof WorkshopFilterMenu>>('filterMenu')
 const sortOrders = sortOrdersFor(models)
 
 const useCaseOptions = computed<FacetMenuOption[]>(() => {
@@ -263,6 +266,7 @@ watch(browseAll, (on) => on && resetFilters())
 
           <div class="flex items-center gap-2" data-testid="workshop-filters">
             <WorkshopFilterMenu
+              ref="filterMenu"
               :use-cases="selectedUseCases"
               :use-case-options="useCaseOptions"
               :result-count="visible.length"
@@ -286,7 +290,8 @@ watch(browseAll, (on) => on && resetFilters())
         :chips
         :locale
         @remove="removeChip"
-        @clear="clearFilters"
+        @clear="resetFilters"
+        @emptied="filterMenu?.focus()"
       />
 
       <template v-if="browsing">
