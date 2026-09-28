@@ -48,7 +48,11 @@ export interface SummaryLedger {
   readonly items: readonly LedgerRow[]
   /** Discounts the customer already holds, priced before any entered code. */
   readonly adjustments: readonly DiscountRow[]
-  /** The base an entered code applied to, once two rows precede it. */
+  /**
+   * The pre-discount base an entered code applied to. The quote carries
+   * no such field today, so no builder populates this; it stays typed for
+   * when the server reports one, and the row renders only then.
+   */
   readonly subtotal?: string
   /** The row for the code the customer entered. */
   readonly promo?: DiscountRow
@@ -415,9 +419,11 @@ type Discount = NonNullable<SubscriptionPreview['discounts']>[number]
 
 /**
  * The `promotion` discount matching the quote's `promotion_code` is the
- * customer's entered code, any other is one the account already holds. A
- * Subtotal names the base the entered code applied to once two money rows
- * precede it: today's charge plus what the code took.
+ * customer's entered code, any other is one the account already holds.
+ * Subtotal would name the base the entered code applied to, but the quote
+ * carries no pre-discount total, so this builder never sets it. Computing
+ * one as today's charge plus what the code took would be a frontend guess
+ * at a number the server is supposed to report.
  */
 function discountSlots(r: QuoteReading, ledger: FamilyLedger): DiscountSlots {
   const enteredCode = r.quote.promotion_code
@@ -435,12 +441,8 @@ function discountSlots(r: QuoteReading, ledger: FamilyLedger): DiscountSlots {
           })
         })
   })
-  const enteredOff = entered?.amount_off_cents
-  const subtotaled =
-    enteredOff !== undefined && ledger.items.length + held.length >= 2
   return {
     adjustments: held.map(rowOf),
-    ...(subtotaled ? { subtotal: r.money(r.dueCents + enteredOff) } : {}),
     ...(entered === undefined ? {} : { promo: rowOf(entered) }),
     chips: [
       ...held.map(({ code }) => ({ code, removable: false })),
