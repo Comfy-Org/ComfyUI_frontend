@@ -49,4 +49,48 @@ describe('PerformanceHelper', () => {
     expect(send).toHaveBeenLastCalledWith('Performance.disable')
     expect(detach).toHaveBeenCalledOnce()
   })
+
+  it('can retry after the initial animation frame times out', async () => {
+    vi.useFakeTimers()
+    const send = vi.fn(async () => ({ metrics: [] }))
+    const cdp = fromPartial<CDPSession>({
+      send,
+      detach: vi.fn(async () => {})
+    })
+    const context = fromPartial<BrowserContext>({
+      newCDPSession: vi.fn(async () => cdp)
+    })
+    const page = fromPartial<Page>({
+      context: () => context,
+      evaluate: vi.fn(async (callback: () => unknown) => callback()),
+      isClosed: () => false
+    })
+    window.__perfLongtaskState = {
+      observer: fromPartial<PerformanceObserver>({ takeRecords: () => [] }),
+      tbtMs: 0
+    }
+    vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => {})
+    let frameRequestCount = 0
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+      frameRequestCount += 1
+      if (frameRequestCount === 2 || frameRequestCount === 4) {
+        const timestamp = frameRequestCount === 2 ? 100 : 116.7
+        queueMicrotask(() => callback(timestamp))
+      }
+      return frameRequestCount
+    })
+
+    const helper = new PerformanceHelper(page)
+    await helper.init()
+    const timedOutStart = helper.startMeasuring()
+    void timedOutStart.catch(() => {})
+    await vi.advanceTimersByTimeAsync(1_000)
+    await expect(timedOutStart).rejects.toThrow(
+      'Timed out waiting for the initial animation frame'
+    )
+
+    await helper.startMeasuring()
+    await helper.stopMeasuring('retry')
+    await helper.dispose()
+  })
 })

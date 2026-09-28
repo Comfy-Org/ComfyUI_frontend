@@ -196,7 +196,12 @@ export class PerformanceHelper {
       state.observer.takeRecords()
     })
     this.snapshot = await this.getSnapshot()
-    await this.startFrameMeasurement()
+    try {
+      await this.startFrameMeasurement()
+    } catch (error) {
+      this.snapshot = null
+      throw error
+    }
   }
 
   async stopMeasuring(name: string): Promise<PerfMeasurement> {
