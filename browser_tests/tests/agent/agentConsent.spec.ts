@@ -6,6 +6,12 @@ import frMessages from '@/locales/fr/main.json' with { type: 'json' }
 
 import { agentConsentTest as test } from '@e2e/fixtures/agentConsentFixture'
 
+declare global {
+  interface Window {
+    __autoShownReads: number
+  }
+}
+
 test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
   test.use({
     agentConsentAccepted: false,
@@ -540,10 +546,12 @@ test.describe(
     test('defers the offer until Getting Started releases the screen', async ({
       comfyPage,
       agentPanel,
-      agentConsentReads,
       agentConsentWrites
-    }) => {
+    }, testInfo) => {
+      testInfo.setTimeout(30_000)
       const page = comfyPage.page
+      const autoShownKey =
+        'Comfy.AgentConsent.AutoShown.test-user-e2e.ws-personal'
       const gettingStarted = page.getByRole('dialog', {
         name: enMessages.gettingStarted.title
       })
@@ -557,20 +565,16 @@ test.describe(
 
       await test.step('The automatic offer waits without spending its one-time attempt', async () => {
         await expect
-          .poll(() => agentConsentReads.length, {
+          .poll(() => page.evaluate(() => window.__autoShownReads), {
             message:
-              'the automatic offer runs once the consent read and the boot decision are both in; the fixture already waited past the decision (the loading overlay clears after it), so the read is the last input and the silence below is a decision, not a race',
+              'the held-offer decision reads the unspent one-shot marker',
             timeout: 15_000
           })
           .toBeGreaterThan(0)
         await expect(consent).toHaveCount(0)
         await expect(agentPanel.root).toHaveCount(0)
         expect(
-          await page.evaluate(() =>
-            localStorage.getItem(
-              'Comfy.AgentConsent.AutoShown.test-user-e2e.ws-personal'
-            )
-          )
+          await page.evaluate((key) => localStorage.getItem(key), autoShownKey)
         ).toBeNull()
       })
 
@@ -589,16 +593,15 @@ test.describe(
         await expect(consent).toHaveCount(0)
         expect(agentConsentWrites).toHaveLength(0)
         expect(
-          await page.evaluate(() =>
-            localStorage.getItem(
-              'Comfy.AgentConsent.AutoShown.test-user-e2e.ws-personal'
-            )
-          )
+          await page.evaluate((key) => localStorage.getItem(key), autoShownKey)
         ).toBe('true')
       })
 
       await test.step('Reload does not repeat the spent automatic offer', async () => {
         await comfyPage.workflow.reloadAndWaitForApp()
+        await expect
+          .poll(() => page.evaluate(() => window.__autoShownReads))
+          .toBeGreaterThan(0)
         await expect(consent).toHaveCount(0)
         await expect(agentPanel.root).toHaveCount(0)
         expect(agentConsentWrites).toHaveLength(0)

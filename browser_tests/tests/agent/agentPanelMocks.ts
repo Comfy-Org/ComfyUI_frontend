@@ -175,6 +175,14 @@ async function mockAgentBoot(
 
   await page.addInitScript(
     ({ initiallyOpen, onboardingCompleted, debugEnabled }) => {
+      const autoShownKey =
+        'Comfy.AgentConsent.AutoShown.test-user-e2e.ws-personal'
+      const originalGetItem = Storage.prototype.getItem
+      window.__autoShownReads = 0
+      Storage.prototype.getItem = function (candidate: string) {
+        if (candidate === autoShownKey) window.__autoShownReads++
+        return originalGetItem.call(this, candidate)
+      }
       if (localStorage.getItem('Comfy.AgentPanel.open') === null) {
         localStorage.setItem('Comfy.AgentPanel.open', String(initiallyOpen))
       }
