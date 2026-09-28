@@ -20,7 +20,7 @@ import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { useDialogService } from '@/services/dialogService'
 import type { ExecutionErrorWsMessage } from '@/platform/remote/comfyui/execution/types'
@@ -203,7 +203,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   function captureValidationErrorSurfaces(
     nodeErrors: Record<string, NodeError>
   ): void {
-    const rootGraph = app.rootGraphOrUndefined
+    const rootGraph = useApp().rootGraphOrUndefined
     if (!rootGraph) return
 
     for (const [rawNodeId, nodeError] of Object.entries(nodeErrors)) {
@@ -227,7 +227,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     const cached = validationErrorSurfaces.get(rawError)
     if (cached) return cached
 
-    const rootGraph = app.rootGraphOrUndefined
+    const rootGraph = useApp().rootGraphOrUndefined
     const surfaces = getValidationErrorSurfaces(
       rootGraph,
       executionId,
@@ -559,7 +559,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     slotName: string
   ): SlotNodeErrorClearTarget[] {
     const surfaced = surfacedNodeErrors.value
-    const rootGraph = app.rootGraphOrUndefined
+    const rootGraph = useApp().rootGraphOrUndefined
     if (!surfaced || !rootGraph) return []
 
     return Object.values(surfaced).flatMap((surface) =>
@@ -778,7 +778,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     const err = lastExecutionError.value
     if (!err) return null
     return executionIdToNodeLocatorId(
-      app.rootGraphOrUndefined,
+      useApp().rootGraphOrUndefined,
       String(err.node_id)
     )
   })
@@ -798,7 +798,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
   // Re-lifts only when the record changes; topology is assumed stable while errors are displayed.
   const surfacedNodeErrors = computed(() => {
-    const rootGraph = app.rootGraphOrUndefined
+    const rootGraph = useApp().rootGraphOrUndefined
     return lastNodeErrors.value && rootGraph
       ? liftNodeErrorsToBoundary(rootGraph, lastNodeErrors.value)
       : lastNodeErrors.value
@@ -828,7 +828,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     for (const executionId of executionIds) {
       for (const ancestorId of getAncestorExecutionIds(executionId)) {
         const locator = executionIdToNodeLocatorId(
-          app.rootGraphOrUndefined,
+          useApp().rootGraphOrUndefined,
           ancestorId
         )
         if (locator) locators.add(locator)
@@ -869,7 +869,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   /** Graph node IDs (as strings) that have errors in the current graph scope. */
   const activeGraphErrorNodeIds = computed<Set<string>>(() => {
     const ids = new Set<string>()
-    const rootGraph = app.rootGraphOrUndefined
+    const rootGraph = useApp().rootGraphOrUndefined
     if (!rootGraph) return ids
 
     // Fall back to rootGraph when currentGraph hasn't been initialized yet
@@ -906,7 +906,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
         surfacedNodeErrors.value
       )) {
         const locatorId = executionIdToNodeLocatorId(
-          app.rootGraphOrUndefined,
+          useApp().rootGraphOrUndefined,
           executionId
         )
         if (locatorId) {
@@ -954,7 +954,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
   /** True if the node has errors inside it at any nesting depth. */
   function isContainerWithInternalError(node: LGraphNode): boolean {
-    const rootGraph = app.rootGraphOrUndefined
+    const rootGraph = useApp().rootGraphOrUndefined
     if (!rootGraph) return false
     const execId = getExecutionIdByNode(rootGraph, node)
     if (!execId) return false
