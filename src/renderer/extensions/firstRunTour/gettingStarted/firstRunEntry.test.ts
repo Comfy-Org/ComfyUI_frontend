@@ -749,13 +749,7 @@ describe('useFirstRunEntry', () => {
   })
 
   describe('handing the screen over to the first-run tour', () => {
-    /**
-     * Stands in for the intro preview `beginTour` waits out before it starts the
-     * tour. That the real one exists, and that no tour is active until it is
-     * over, is pinned by `useFirstRunTourController.test.ts` ("leaves the
-     * workflow undimmed before taking the screen over"); what is pinned here is
-     * that the first run keeps hold of the screen for however long it lasts.
-     */
+    /** Stands in for the preview before `beginTour` activates the tour. */
     const INTRO_PREVIEW_MS = 500
 
     function tourOpeningAfterIntroPreview(): Promise<boolean> {

@@ -53,15 +53,7 @@ let consentStore: ReturnType<typeof useAgentConsentStore>
 let workspaceStore: ReturnType<typeof useTeamWorkspaceStore>
 
 const currentUser = ref<{ id: string } | null>({ id: 'account-a' })
-/**
- * Kept as two independent refs because production distinguishes them and this
- * guard only reads one. `gettingStartedVisible` says whether the screen is
- * rendered; `firstRunHoldsScreen` says whether the first run still owns the
- * screen, which outlasts the render on the template path while the coachmark
- * tour opens. How the two relate is `firstRunEntry`'s business and is pinned
- * there (`firstRunEntry.test.ts`, "holds the screen across the handoff…"); this
- * file must not restate it, or a guard reading the wrong one still looks green.
- */
+/** Independent because the rendered screen can close before ownership ends. */
 const gettingStartedVisible = ref(false)
 const firstRunHoldsScreen = ref(false)
 const activeTour = ref<EntryPath | null>(null)
@@ -79,12 +71,7 @@ function screenClosed(): void {
   firstRunHoldsScreen.value = false
 }
 
-/**
- * The screen goes and hands the canvas straight to the first-run tour: the
- * `template_selected` close. The screen stops rendering immediately; the tour
- * only opens once its intro preview is over, so the first run still holds the
- * screen in between.
- */
+/** The screen closes while first-run ownership passes to the tour. */
 function screenClosedIntoTour(): void {
   gettingStartedVisible.value = false
 }

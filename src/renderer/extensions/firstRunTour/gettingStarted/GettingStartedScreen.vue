@@ -234,8 +234,6 @@ async function onSelectTemplate(id: string) {
 
   const result = await loadWorkflowTemplate(id, 'default')
   if (result === 'loaded') {
-    // One call, not dismiss-then-tour: the handoff has to stay indivisible so
-    // nothing reads the screen as free between the two.
     try {
       await dismissIntoFirstRunTour(id)
     } catch (error) {

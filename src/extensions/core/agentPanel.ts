@@ -193,13 +193,6 @@ export function registerAgentPanelExtension(): void {
             ? 'dialog_open'
             : null
       /**
-       * Reads whether the first run has the screen *now*, not whether it had it
-       * at some point this boot. The distinction is the whole reason the offer
-       * used to be lost: `useFirstRunEntry` also exposes `firstRunTookScreen`,
-       * a latch that is only ever cleared by a change of user, so a guard built
-       * on it keeps reporting `first_run_screen` for the rest of the page's
-       * life and the hold below can never release.
-       *
        * `firstRunHoldsScreen` rather than `gettingStartedVisible`, which only
        * says whether the screen is rendered. On the template path the screen is
        * dismissed and the coachmark tour opens ~500 ms later, so there is a

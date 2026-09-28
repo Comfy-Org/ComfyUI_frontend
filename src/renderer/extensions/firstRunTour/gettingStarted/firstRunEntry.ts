@@ -40,18 +40,7 @@ export const useFirstRunEntry = createSharedComposable(() => {
   const isDesktopWidth =
     useBreakpoints(breakpointsTailwind).greaterOrEqual('md')
 
-  /**
-   * Whether the first run still owns the screen. A different question from
-   * "is the Getting Started screen rendered", and the one anything deciding
-   * whether the screen is free has to ask: the template path hands the screen
-   * straight to the coachmark tour, and that tour does not exist yet at the
-   * moment the screen goes. `beginTour` leaves the chosen workflow undimmed for
-   * `INTRO_PREVIEW_MS` before it starts the tour — pinned by
-   * `useFirstRunTourController.test.ts`, "leaves the workflow undimmed before
-   * taking the screen over" — so `gettingStartedVisible` is already `false`
-   * while no tour is active yet. Anything reading that as a free screen puts
-   * itself into the intro preview, in front of the tour about to open over it.
-   */
+  /** Keeps ownership through the gap between dismissal and tour activation. */
   const firstRunHoldsScreen = computed(
     () => gettingStartedVisible.value || tourHandoffs.value > 0
   )
@@ -187,14 +176,7 @@ export const useFirstRunEntry = createSharedComposable(() => {
     await markTutorialCompleted()
   }
 
-  /**
-   * The template path out of Getting Started: drop the screen, then tour the
-   * workflow it just loaded. Both halves live behind one call so the gap
-   * between them cannot be read as a free screen — see
-   * {@link firstRunHoldsScreen} for what is in that gap and why it matters.
-   * Rejects with whatever the tour threw; the screen is already gone and the
-   * graph is already loaded, so the caller decides what a failed tour means.
-   */
+  /** Dismisses into a tour without exposing the transition as a clear screen. */
   async function dismissIntoFirstRunTour(templateId: string): Promise<void> {
     const ownerId = authStore.userId
     const epoch = handoffEpoch
