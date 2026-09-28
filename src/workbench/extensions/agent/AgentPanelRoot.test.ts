@@ -1676,7 +1676,7 @@ async function expectLaterClickCannotRestoreAccumulatedNodes(
 
 // Records what actually reached the upload endpoint, so an exclusion can be
 // asserted on the request rather than on a chip that has not rendered yet.
-function stubUploadFetch(uploaded: string[] = []): string[] {
+function stubUploadFetch(uploaded: string[] = [], status = 200): string[] {
   vi.stubGlobal(
     'fetch',
     vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -1687,7 +1687,9 @@ function stubUploadFetch(uploaded: string[] = []): string[] {
         const file = body.get('image')
         if (file instanceof File) uploaded.push(file.name)
       }
-      return json(200, { name: 'uploaded', subfolder: '', type: 'input' })
+      return status === 200
+        ? json(200, { name: 'uploaded', subfolder: '', type: 'input' })
+        : json(status, {})
     })
   )
   return uploaded
@@ -2033,54 +2035,45 @@ describe('AgentPanelRoot attach flow', () => {
     expect([...selection.selectedItems]).toEqual(selection.nodes)
   })
 
-  it.for([
-    { name: 'image.png', expectedEvents: 1 },
-    { name: 'bad.png', expectedEvents: 0 }
-  ])(
-    'emits $expectedEvents paste event(s) for a pasted $name upload',
-    async ({ name, expectedEvents }) => {
-      const attempted: string[] = []
-      vi.stubGlobal(
-        'fetch',
-        vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-          const url = String(input)
-          if (!url.includes('/upload/')) return json(200, agentThreadList())
-          const body = init?.body
-          const file = body instanceof FormData ? body.get('image') : null
-          attempted.push(file instanceof File ? file.name : '')
-          if (name.startsWith('bad')) return json(500, {})
-          return json(200, { name: 'uploaded', subfolder: '', type: 'input' })
+  async function renderAndPasteScreenshot(): Promise<void> {
+    renderWithSelectedTarget()
+    await nextTick()
+    telemetry.trackAgentAttachButtonClicked.mockClear()
+    const clipboard = new DataTransfer()
+    clipboard.items.add(new File(['x'], 'image.png', { type: 'image/png' }))
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste(clipboard)
+  }
+
+  it('tracks a pasted attachment as a paste once its upload lands', async () => {
+    const uploaded = stubUploadFetch()
+
+    await renderAndPasteScreenshot()
+
+    await vi.waitFor(() => expect(uploaded).toEqual(['image.png']))
+    await vi.waitFor(() =>
+      expect(
+        telemetry.trackAgentAttachButtonClicked
+      ).toHaveBeenCalledExactlyOnceWith({ method: 'paste' })
+    )
+  })
+
+  it('tracks no paste when the pasted upload is rejected', async () => {
+    stubUploadFetch([], 500)
+
+    await renderAndPasteScreenshot()
+
+    await vi.waitFor(() =>
+      expect(useToastStore().messagesToAdd).toContainEqual(
+        expect.objectContaining({
+          severity: 'warn',
+          detail: 'image.png could not be uploaded'
         })
       )
-      renderWithSelectedTarget()
-      await nextTick()
-      telemetry.trackAgentAttachButtonClicked.mockClear()
-
-      const clipboard = new DataTransfer()
-      clipboard.items.add(new File(['x'], name, { type: 'image/png' }))
-      await userEvent.click(screen.getByRole('textbox'))
-      await userEvent.paste(clipboard)
-
-      await vi.waitFor(() => expect(attempted).toEqual([name]))
-      await vi.waitFor(() =>
-        expect(
-          screen.queryByLabelText(i18n.global.t('agent.uploading'))
-        ).not.toBeInTheDocument()
-      )
-      await nextTick()
-
-      if (expectedEvents === 0) {
-        expect(screen.queryByText(name)).not.toBeInTheDocument()
-        expect(telemetry.trackAgentAttachButtonClicked).not.toHaveBeenCalled()
-      } else {
-        await vi.waitFor(() =>
-          expect(
-            telemetry.trackAgentAttachButtonClicked
-          ).toHaveBeenCalledExactlyOnceWith({ method: 'paste' })
-        )
-      }
-    }
-  )
+    )
+    await nextTick()
+    expect(telemetry.trackAgentAttachButtonClicked).not.toHaveBeenCalled()
+  })
 
   it('names every approved format in the picker accept list', async () => {
     stubUploadFetch()
