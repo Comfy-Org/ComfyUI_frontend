@@ -1,6 +1,5 @@
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
-// eslint-disable-next-line unused-imports/no-unused-imports -- used in typeof
-import type { LGraphBadge } from '@/lib/litegraph/src/LGraphBadge'
+import type { LGraphBadge as LGraphBadgeClass } from '@/lib/litegraph/src/LGraphBadge'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LiteGraphGlobal } from '@/lib/litegraph/src/LiteGraphGlobal'
 import type { ComfyApp } from '@/scripts/app'
@@ -30,6 +29,17 @@ interface CapturedMessages {
   serverFeatureFlags: unknown
 }
 
+interface PerfFrameState {
+  frameRequestId: number
+  lastTimestamp: number | null
+  durationsMs: number[]
+}
+
+interface PerfLongtaskState {
+  observer: PerformanceObserver
+  tbtMs: number
+}
+
 declare global {
   interface Window {
     app?: ComfyApp
@@ -43,6 +53,8 @@ declare global {
     changeCount?: number
     widgetValue?: unknown
     __commandExecutionCounts?: Record<string, number>
+    __perfFrameState?: PerfFrameState
+    __perfLongtaskState?: PerfLongtaskState
 
     // Feature flags test globals
     __capturedMessages?: CapturedMessages
@@ -66,7 +78,7 @@ declare global {
   const app: ComfyApp | undefined
   const graph: LGraph | undefined
   const LiteGraph: LiteGraphGlobal | undefined
-  const LGraphBadge: typeof LGraphBadge | undefined
+  const LGraphBadge: typeof LGraphBadgeClass | undefined
 }
 
 /**

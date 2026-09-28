@@ -190,6 +190,20 @@ describe('createBalanceReader', () => {
     )
   })
 
+  it('settles on the unauthorized error when the re-mint rejects', async () => {
+    const session = fakeSession(credentialFor('uid-1', 'jwt-1'))
+    session.remint.mockRejectedValueOnce(new Error('mint unavailable'))
+    const reader = createBalanceReader(
+      session,
+      BALANCE_URL,
+      vi.fn<typeof fetch>(async () => balanceResponse({}, 401))
+    )
+
+    await reader.refresh()
+
+    expect(reader.getState()).toEqual({ status: 'error', unauthorized: true })
+  })
+
   it('settles on the error state when the retry also fails', async () => {
     const reader = createBalanceReader(
       fakeSession(credentialFor('uid-1', 'jwt-1')),

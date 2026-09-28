@@ -318,6 +318,100 @@ describe('EcsFollowerAdapter integration', () => {
     host.destroy()
   })
 
+  it.fails('retypes a same-id node even when its old link is stale', () => {
+    const host = mint(
+      {
+        nodes: [
+          {
+            id: 1,
+            type: 'Source',
+            widgets_values: { seed: 1, stale: 9 },
+            inputs: [],
+            outputs: [{ name: 'out', type: 'IMAGE', links: [9] }]
+          },
+          {
+            id: 2,
+            type: 'Sink',
+            inputs: [{ name: 'in', type: 'IMAGE', link: 9 }],
+            outputs: []
+          }
+        ],
+        links: [[9, 1, 0, 2, 0, 'IMAGE']]
+      },
+      catalog
+    )
+    const follower = new FollowerDoc()
+    const mutations = createGraphMutations({
+      placement: inertPlacementPort,
+      getScope: () => scope,
+      layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+    })
+    const adapter = new EcsFollowerAdapter(mutations)
+    adapter.bind('wf', follower)
+    onTestFinished(() => {
+      adapter.destroy()
+      follower.destroy()
+      host.destroy()
+    })
+    const bootstrap = Y.encodeStateAsUpdate(host)
+    follower.applyRemoteUpdate(bootstrap)
+    expect(
+      adapter.applyFrame({ workflowId: 'wf', seq: 1, update: bootstrap })
+    ).toBe(true)
+
+    const before = Y.encodeStateVector(host)
+    const operations: Parameters<typeof applyOps>[1] = [
+      {
+        op_id: 'retype',
+        actor: 'agent:test',
+        base_version: 2,
+        stamp: [2, 'agent:test'],
+        op: 'add_node',
+        node_id: 1,
+        class_type: 'Sink',
+        pos: [0, 0],
+        node: {
+          id: 1,
+          type: 'Sink',
+          inputs: [{ name: 'in', type: 'IMAGE', link: null }],
+          outputs: []
+        }
+      }
+    ]
+    expect(applyOps(host, operations, catalog).outcomes).toEqual([
+      { op_id: 'retype', outcome: 'applied' }
+    ])
+    const update = Y.encodeStateAsUpdate(host, before)
+    follower.applyRemoteUpdate(update)
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined)
+    adapter.applyFrame({ workflowId: 'wf', seq: 2, update })
+    consoleError.mockRestore()
+
+    const retyped = useNodeDataStore()
+      .getGraphNodesFor('root', 'root')
+      .find(({ id }) => id === toNodeId(1))
+    expect(retyped).toMatchObject({
+      type: 'Sink',
+      inputs: [{ name: 'in', type: 'IMAGE', link: null }],
+      outputs: []
+    })
+    expect(
+      useWidgetValueStore().getWidget(widgetId('root', toNodeId(1), 'seed'))
+    ).toBeUndefined()
+    expect(
+      useLinkStore().getTopology(scope.rootGraphId, toLinkId(9))
+    ).toBeUndefined()
+    expect(
+      useNodeDataStore()
+        .getGraphNodesFor('root', 'root')
+        .find(({ id }) => id === toNodeId(2))
+    ).toMatchObject({
+      inputs: [{ name: 'in', type: 'IMAGE', link: null }]
+    })
+  })
+
   it('retries authoritative reconciliation after a rejected first batch', () => {
     const deleteLayouts = vi.fn()
     let scopeAvailable = false

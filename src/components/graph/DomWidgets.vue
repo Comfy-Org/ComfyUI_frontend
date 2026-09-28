@@ -1,6 +1,10 @@
 <template>
   <!-- Create a new stacking context for widgets to avoid z-index issues -->
-  <div class="isolate">
+  <div
+    class="isolate"
+    data-testid="dom-widgets"
+    :inert="agentNodeSelectionStore.isActive"
+  >
     <DomWidget
       v-for="widgetState in widgetStates"
       :key="widgetState.widget.id"
@@ -19,9 +23,11 @@ import { getDomWidgetZIndex } from '@/components/graph/widgets/domWidgetZIndex'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { findFirstNode } from '@/lib/litegraph/src/utils/collections'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 
 const domWidgetStore = useDomWidgetStore()
+const agentNodeSelectionStore = useAgentNodeSelectionStore()
 
 const widgetStates = computed(() => [...domWidgetStore.widgetStates.values()])
 

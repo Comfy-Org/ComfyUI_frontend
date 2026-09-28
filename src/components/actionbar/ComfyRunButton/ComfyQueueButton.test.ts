@@ -28,9 +28,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
 
-vi.mock(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => null
-}))
+vi.mock(import('@/platform/telemetry'))
 
 const BatchCountEditStub = {
   template: '<div data-testid="batch-count-edit" />'

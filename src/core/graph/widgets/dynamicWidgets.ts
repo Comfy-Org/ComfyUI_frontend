@@ -243,7 +243,11 @@ function dynamicComboWidget(
     }
     const result = commitMutatedInputs(node, previous, inputLinks)
     if (!result.ok) return
-    for (const { input, link, slot } of result.replacements) {
+    //A callback can grow the group it lands on, shifting every input after
+    //it, so the slot captured before the batch is stale for later entries.
+    for (const { input, link } of result.replacements) {
+      const slot = node.inputs.indexOf(input)
+      if (slot === -1) continue
       node.onConnectionsChange?.(LiteGraph.INPUT, slot, true, link, input)
     }
     restoreRemovedValues(value, addedWidgetNames)
@@ -513,22 +517,34 @@ function addAutogrowGroup(
 }
 
 const ORDINAL_REGEX = /\d+$/
+
+/**
+ * Whether `key` -- an autogrow input name's segment after the group
+ * prefix -- is a member of an autogrow group: matched against an explicit
+ * `names` list when the group defines one, or (absent that) required to
+ * end in a numeric ordinal. The one membership rule a live autogrow
+ * registration (`resolveAutogrowOrdinal` below) and a node type's own
+ * static schema (`nodeDefAutogrowGroupOf` in `graphMutations.ts`) must
+ * agree on, so it is shared rather than reimplemented at each call site.
+ */
+export function isAutogrowGroupMember(
+  key: string,
+  names: readonly string[] | undefined
+): boolean {
+  return names ? names.includes(key) : ORDINAL_REGEX.test(key)
+}
+
 function resolveAutogrowOrdinal(
   inputName: string,
   groupName: string,
   node: AutogrowNode
 ): number | undefined {
-  //TODO preslice groupname?
   const name = inputName.slice(groupName.length + 1)
   const { names } = node.comfyDynamic.autogrow[groupName]
-  if (names) {
-    const ordinal = names.findIndex((s) => s === name)
-    return ordinal === -1 ? undefined : ordinal
-  }
+  if (!isAutogrowGroupMember(name, names)) return undefined
+  if (names) return names.indexOf(name)
   const match = name.match(ORDINAL_REGEX)
-  if (!match) return undefined
-  const ordinal = parseInt(match[0])
-  return ordinal !== ordinal ? undefined : ordinal
+  return match ? parseInt(match[0]) : undefined
 }
 function autogrowInputConnected(index: number, node: AutogrowNode) {
   const input = node.inputs.at(index)
@@ -546,6 +562,34 @@ function autogrowInputConnected(index: number, node: AutogrowNode) {
   )
     return
   addAutogrowGroup(ordinal + 1, groupName, node)
+}
+
+function hasAutogrowGroups(node: LGraphNode): node is AutogrowNode {
+  return !!node.comfyDynamic?.autogrow
+}
+
+/**
+ * The live autogrow group `name` belongs to, from the node's own
+ * `comfyDynamic.autogrow` registration -- real provenance from
+ * `applyAutogrow`/`addAutogrowGroup`, rather than inferred from the name's
+ * shape. Confirms membership with `resolveAutogrowOrdinal`, the same check
+ * growth and shrink use, so a name that merely starts with a group's prefix
+ * without resolving to one of its members doesn't false-match. Undefined
+ * when the node has no autogrow groups, or `name` isn't a member of any of
+ * them.
+ */
+export function liveAutogrowGroupOf(
+  node: LGraphNode,
+  name: string
+): string | undefined {
+  if (!hasAutogrowGroups(node)) return undefined
+  for (const groupName of Object.keys(node.comfyDynamic.autogrow)) {
+    if (!name.startsWith(`${groupName}.`)) continue
+    if (resolveAutogrowOrdinal(name, groupName, node) !== undefined) {
+      return groupName
+    }
+  }
+  return undefined
 }
 
 export function reconcileAutogrowInputs(node: LGraphNode): void {
@@ -574,7 +618,7 @@ function autogrowInputDisconnected(index: number, node: AutogrowNode) {
     : undefined
   if (!autogrowGroup) return
 
-  const { min = 1, inputSpecs } = autogrowGroup
+  const { min, inputSpecs } = autogrowGroup
   const ordinal = resolveAutogrowOrdinal(input.name, groupName, node)
   if (ordinal == undefined || ordinal + 1 < min) return
 

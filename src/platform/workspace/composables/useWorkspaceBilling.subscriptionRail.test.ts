@@ -3,7 +3,7 @@ import { effectScope } from 'vue'
 
 vi.mock(import('firebase/auth'), { spy: true })
 
-import type { BillingTelemetryEvent } from '@/platform/telemetry/types'
+import { useTelemetry } from '@/platform/telemetry'
 import type {
   BillingStatusResponse,
   PreviewSubscribeResponse
@@ -55,24 +55,13 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(
-  import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
-  () => ({ useSubscriptionDialog: () => ({ show: vi.fn() }) })
+vi.mock(
+  import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
 )
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingCapabilities'),
-  () => ({
-    useBillingCapabilities: () => ({ refresh: vi.fn(async () => undefined) })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
-const trackBillingEvent = vi.hoisted(() =>
-  vi.fn<(event: BillingTelemetryEvent) => void>()
-)
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({ trackBillingEvent })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 const mockCreateBillingSdk = vi.hoisted(() => vi.fn<() => BillingSdk>())
 vi.mock(import('@/platform/workspace/billing/sdk/createBillingSdk'), () => ({
@@ -154,7 +143,6 @@ function setupBilling() {
 
 beforeEach(() => {
   stubFirebaseAuthHarness()
-  trackBillingEvent.mockClear()
   harness = fakeBillingSdk()
   mockCreateBillingSdk.mockReturnValue(harness.sdk)
   flagState.billingSdkSubscriptionEnabled = false
@@ -275,8 +263,11 @@ describe('cancel subscription on the billing SDK rail', () => {
 })
 
 describe('cancel telemetry on the billing SDK rail', () => {
-  const stages = () =>
-    trackBillingEvent.mock.calls.map(([event]) => event.stage)
+  function stages() {
+    const trackBillingEvent = useTelemetry()?.trackBillingEvent
+    if (!trackBillingEvent) throw new Error('Telemetry mock unavailable')
+    return vi.mocked(trackBillingEvent).mock.calls.map(([event]) => event.stage)
+  }
 
   it('reports a rail cancel that settles as one started and one succeeded', async () => {
     flagState.billingSdkSubscriptionEnabled = true
@@ -302,7 +293,7 @@ describe('cancel telemetry on the billing SDK rail', () => {
     )
 
     expect(stages()).toEqual(['started', 'failed'])
-    expect(trackBillingEvent).toHaveBeenLastCalledWith(
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenLastCalledWith(
       expect.objectContaining({
         operation_type: 'cancel',
         failure_category: 'api_rejected'
@@ -509,13 +500,19 @@ describe('preview subscribe on the billing SDK rail', () => {
 })
 
 describe('payment portal on the billing SDK rail', () => {
+  let portalTab: { location: { href: string }; close: () => void }
+
+  beforeEach(() => {
+    portalTab = { location: { href: '' }, close: vi.fn() }
+    vi.mocked(window.open).mockReturnValue(portalTab as unknown as Window)
+  })
+
   it('opens the workspace client URL while the rail is off', async () => {
     await setupBilling().manageSubscription()
 
     expect(workspaceApi.getPaymentPortalUrl).toHaveBeenCalledOnce()
-    expect(window.open).toHaveBeenCalledWith(
-      'https://portal.legacy.example/session',
-      '_blank'
+    expect(portalTab.location.href).toBe(
+      'https://portal.legacy.example/session'
     )
   })
 
@@ -532,10 +529,7 @@ describe('payment portal on the billing SDK rail', () => {
       returnUrl: window.location.href
     })
     expect(workspaceApi.getPaymentPortalUrl).not.toHaveBeenCalled()
-    expect(window.open).toHaveBeenCalledWith(
-      'https://portal.sdk.example/session',
-      '_blank'
-    )
+    expect(portalTab.location.href).toBe('https://portal.sdk.example/session')
   })
 
   it('falls back to the workspace client when the route is missing', async () => {
@@ -547,9 +541,8 @@ describe('payment portal on the billing SDK rail', () => {
     await setupBilling().manageSubscription()
 
     expect(workspaceApi.getPaymentPortalUrl).toHaveBeenCalledOnce()
-    expect(window.open).toHaveBeenCalledWith(
-      'https://portal.legacy.example/session',
-      '_blank'
+    expect(portalTab.location.href).toBe(
+      'https://portal.legacy.example/session'
     )
   })
 })

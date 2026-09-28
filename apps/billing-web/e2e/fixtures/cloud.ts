@@ -1,8 +1,9 @@
 /**
- * The whole network the app can reach, answered from the test: the Firebase
- * identity endpoints an email sign-in touches, the Cloud token exchange, and
- * every billing route the SDK reads or commands. Anything else is refused, so
- * a spec that passes here has not talked to a real service.
+ * The whole network the app can reach, answered from the test: `/api/features`
+ * for the Firebase project the app resolves at runtime, the Firebase identity
+ * endpoints an email sign-in touches, the Cloud token exchange, and every
+ * billing route the SDK reads or commands. Anything else is refused, so a
+ * spec that passes here has not talked to a real service.
  *
  * Every answer is a cross-origin response as far as the browser is concerned,
  * so each one carries the CORS headers a real Cloud would, and a preflight is
@@ -10,7 +11,13 @@
  */
 import type { BrowserContext, Request, Route } from '@playwright/test'
 
-import { CLOUD_ORIGIN, E2E_ORIGIN, E2E_USER, PORTAL_URL } from './env'
+import {
+  CLOUD_ORIGIN,
+  E2E_FIREBASE_CONFIG,
+  E2E_ORIGIN,
+  E2E_USER,
+  PORTAL_URL
+} from './env'
 import type { CloudScenario } from './scenario'
 import { defaultScenario, inAnHour, succeededOperation } from './scenario'
 
@@ -136,6 +143,7 @@ const NO_SUCH_ROUTE: Reply = {
 const OPERATION_PATH = /^\/billing\/ops\/([^/]+)$/
 
 const GET_REPLIES = new Map<string, ScenarioReply>([
+  ['/features', () => ({ body: { firebase_config: E2E_FIREBASE_CONFIG } })],
   ['/billing/status', (scenario) => ({ body: scenario.status })],
   ['/billing/balance', (scenario) => ({ body: scenario.balance })],
   ['/billing/plans', (scenario) => ({ body: scenario.plans })],

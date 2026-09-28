@@ -2,7 +2,7 @@ import type { VariantProps } from 'cva'
 import { cva } from 'cva'
 
 export const brandButtonVariants = cva({
-  base: 'inline-flex flex-nowrap items-center justify-center cursor-pointer font-bold tracking-wider transition-colors gap-2 text-nowrap',
+  base: 'inline-flex cursor-pointer flex-nowrap items-center justify-center gap-2 font-bold tracking-wider text-nowrap transition-colors',
   variants: {
     variant: {
       solid:

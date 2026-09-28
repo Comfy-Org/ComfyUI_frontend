@@ -1,5 +1,9 @@
 <script setup lang="ts">
-import { useIntersectionObserver } from '@vueuse/core'
+import {
+  useEventListener,
+  useIntersectionObserver,
+  useResizeObserver
+} from '@vueuse/core'
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -35,15 +39,19 @@ const emit = defineEmits<{
   feedback: [turnId: string, vote: 'up' | 'down' | null]
   editPrompt: [prompt: PromptSnapshot]
   answerAsk: [askId: string, selection: 'run' | 'cancel']
-  openWorkflow: [workflowId: string, workflowName?: string]
+  openWorkflow: [askId: string, workflowId: string, workflowName?: string]
+  approvalShown: [askId: string, turnId: string, workflowId: string | null]
   openReferenceWorkflow: [workflowId: string, workflowName: string]
   paywallAction: [action: AgentPaywallAction]
 }>()
 
 const { t } = useI18n()
 
+const scrollContainer = ref<HTMLElement>()
+const content = ref<HTMLElement>()
 const bottom = ref<HTMLElement>()
 const atBottom = ref(true)
+const shouldFollowLatest = ref(true)
 
 useIntersectionObserver(bottom, ([entry]) => {
   atBottom.value = entry?.isIntersecting ?? true
@@ -57,8 +65,22 @@ useIntersectionObserver(top, ([entry]) => {
 })
 
 function scrollToLatest(): void {
-  bottom.value?.scrollIntoView({ block: 'end' })
+  scrollContainer.value?.scrollTo({ top: scrollContainer.value.scrollHeight })
 }
+
+useEventListener(scrollContainer, 'scroll', () => {
+  const element = scrollContainer.value
+  if (!element) return
+  shouldFollowLatest.value =
+    element.scrollHeight - element.scrollTop - element.clientHeight <= 1
+})
+
+function followLatestAfterResize(): void {
+  if (shouldFollowLatest.value) scrollToLatest()
+}
+
+useResizeObserver(content, followLatestAfterResize)
+useResizeObserver(scrollContainer, followLatestAfterResize)
 
 const latestContentSignal = computed(() => {
   const last = entries.at(-1)
@@ -74,17 +96,19 @@ const latestContentSignal = computed(() => {
 watch(
   latestContentSignal,
   async () => {
-    if (!atBottom.value) return
+    if (!shouldFollowLatest.value) return
     await nextTick()
     scrollToLatest()
   },
-  { flush: 'post' }
+  { flush: 'post', immediate: true }
 )
 </script>
 
 <template>
   <div class="relative h-full">
     <div
+      ref="scrollContainer"
+      data-testid="agent-conversation-scroll"
       :class="
         cn(
           'h-full overflow-y-auto',
@@ -94,7 +118,7 @@ watch(
       "
     >
       <div ref="top" />
-      <div class="mx-auto max-w-[640px] p-4">
+      <div ref="content" class="mx-auto max-w-[640px] p-4">
         <div class="flex flex-col gap-4">
           <template v-for="entry in entries" :key="`${entry.role}-${entry.id}`">
             <UserMessage
@@ -120,9 +144,13 @@ watch(
                 (askId: string, selection: 'run' | 'cancel') =>
                   emit('answerAsk', askId, selection)
               "
+              @approval-shown="
+                (askId, turnId, workflowId) =>
+                  emit('approvalShown', askId, turnId, workflowId)
+              "
               @open-workflow="
-                (workflowId: string, workflowName?: string) =>
-                  emit('openWorkflow', workflowId, workflowName)
+                (askId: string, workflowId: string, workflowName?: string) =>
+                  emit('openWorkflow', askId, workflowId, workflowName)
               "
               @paywall-action="emit('paywallAction', $event)"
             />

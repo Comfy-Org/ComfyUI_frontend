@@ -1,10 +1,6 @@
 import { definePreset } from '@primevue/themes'
 import Aura from '@primevue/themes/aura'
-import {
-  browserApiErrorsIntegration,
-  captureMessage,
-  init as sentryInit
-} from '@sentry/vue'
+import { captureMessage } from '@sentry/vue'
 import { createPinia } from 'pinia'
 import 'primeicons/primeicons.css'
 import PrimeVue from 'primevue/config'
@@ -22,6 +18,7 @@ import {
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
 import { reportAssertFailure } from '@/platform/telemetry/assertFailureReporter'
+import { initSentry } from '@/platform/telemetry/initSentry'
 import {
   markStoresPending,
   markStoresReady
@@ -105,31 +102,7 @@ const sentryDsn = isCloud
 const sentryEnabled = !import.meta.env.DEV && !!sentryDsn
 
 const phaseSentry = bootstrapTracer.startPhase('startup/sentry-init')
-sentryInit({
-  app,
-  dsn: sentryDsn,
-  enabled: sentryEnabled,
-  release: __COMFYUI_FRONTEND_VERSION__,
-  normalizeDepth: 8,
-  tracesSampleRate: isCloud ? 1.0 : 0,
-  replaysSessionSampleRate: 0,
-  replaysOnErrorSampleRate: 0,
-  // Only set these for non-cloud builds
-  ...(isCloud
-    ? {
-        integrations: [
-          // Disable event target wrapping to reduce overhead on high-frequency
-          // DOM events (pointermove, mousemove, wheel). Sentry still captures
-          // errors via window.onerror and unhandledrejection.
-          browserApiErrorsIntegration({ eventTarget: false })
-        ]
-      }
-    : {
-        integrations: [],
-        autoSessionTracking: false,
-        defaultIntegrations: false
-      })
-})
+initSentry({ app, dsn: sentryDsn, enabled: sentryEnabled, isCloud })
 phaseSentry.stop()
 
 flushErrorReports()
@@ -160,6 +133,11 @@ app.directive('tooltip', Tooltip)
 app
   .use(router)
   .use(PrimeVue, {
+    pt: {
+      popover: {
+        root: { 'aria-modal': false }
+      }
+    },
     zIndex: {
       modal: 1800,
       overlay: 1800,

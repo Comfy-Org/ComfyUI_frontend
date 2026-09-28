@@ -8,7 +8,8 @@ import {
   cachedLegacyBillingMigrationEnabled,
   cachedV1PaymentRecovery,
   isAuthenticatedConfigLoaded,
-  remoteConfig
+  remoteConfig,
+  sessionAgentGrant
 } from '@/platform/remoteConfig/remoteConfig'
 import { useTelemetry } from '@/platform/telemetry'
 import { api } from '@/scripts/api'
@@ -39,6 +40,7 @@ export enum ServerFeatureFlag {
   HOSTED_BILLING_DESTINATION = 'hosted_billing_destination',
   SHOW_SIGNIN_BUTTON = 'show_signin_button',
   UNIFIED_CLOUD_AUTH = 'unified_cloud_auth',
+  UNIFIED_WEB_SESSION = 'unified_web_session',
   BILLING_CONTROL_ENABLED = 'billing_control_enabled',
   LEGACY_BILLING_MIGRATION_ENABLED = 'legacy_billing_migration_enabled',
   EMBEDDED_CHECKOUT_ENABLED = 'embedded_checked_enabled',
@@ -49,7 +51,8 @@ export enum ServerFeatureFlag {
   CHURNKEY_APP_ID = 'churnkey_app_id',
   SIGNUP_TURNSTILE = 'signup_turnstile',
   SUPPORTS_MODEL_TYPE_TAGS = 'supports_model_type_tags',
-  ONBOARDING_TOUR_ENABLED = 'onboarding_tour_enabled'
+  ONBOARDING_TOUR_ENABLED = 'onboarding_tour_enabled',
+  AGENT_IN_APP_EXPERIENCE = 'agent-in-app-experience'
 }
 
 function reportFeatureFlagEvaluation<T>(flagKey: string, value: T): T {
@@ -115,6 +118,32 @@ function resolveAuthGatedFlag(
   if (!isAuthenticatedConfigLoaded.value) return cachedValue.value ?? false
 
   return remoteConfigValue ?? api.getServerFeature(flagKey, false)
+}
+
+/**
+ * Resolves a per-user allowlist flag. Before the first authenticated answer it
+ * is off; after one, a failed refresh falls back to that answer so a blip
+ * cannot pull a granted surface out from under the user mid-session. Unlike
+ * `resolveAuthGatedFlag` the fallback is never read from storage — a persisted
+ * grant is what let one browser show the surface while another hid it for the
+ * same account (PM-1707).
+ */
+function resolveWhitelistFlag(
+  flagKey: string,
+  remoteConfigValue: boolean | undefined,
+  grantedThisSession: Ref<boolean | undefined>
+): boolean {
+  const sessionOverride = getSessionOverride<boolean>(flagKey)
+  if (sessionOverride !== undefined) return sessionOverride
+
+  const override = getDevOverride<boolean>(flagKey)
+  if (override !== undefined) return override
+
+  if (!isCloud) return false
+  if (!isAuthenticatedConfigLoaded.value)
+    return grantedThisSession.value === true
+
+  return remoteConfigValue === true
 }
 
 /**
@@ -257,6 +286,18 @@ export function useFeatureFlags() {
         false
       )
     },
+    get unifiedWebSessionEnabled() {
+      if (!isCloud) return false
+
+      const key = ServerFeatureFlag.UNIFIED_WEB_SESSION
+      // Overrides skip the server's web_session_enabled pairing; whoever overrides
+      // this key must also be in the web_session_enabled set.
+      const value =
+        getSessionOverride<unknown>(key) ??
+        getDevOverride<unknown>(key) ??
+        remoteConfig.value.unified_web_session
+      return value === true
+    },
     get billingControlEnabled() {
       return resolveAuthGatedFlag(
         ServerFeatureFlag.BILLING_CONTROL_ENABLED,
@@ -344,6 +385,13 @@ export function useFeatureFlags() {
     },
     get assetsEnabled() {
       return isCloud || resolveFlag('assets', undefined, false)
+    },
+    get agentInAppExperienceEnabled() {
+      return resolveWhitelistFlag(
+        ServerFeatureFlag.AGENT_IN_APP_EXPERIENCE,
+        remoteConfig.value['agent-in-app-experience'],
+        sessionAgentGrant
+      )
     }
   })
 
@@ -404,6 +452,8 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.SIGNUP_TURNSTILE]: flags.signupTurnstileMode,
       [ServerFeatureFlag.SUPPORTS_MODEL_TYPE_TAGS]: flags.supportsModelTypeTags,
       [ServerFeatureFlag.ONBOARDING_TOUR_ENABLED]: flags.onboardingTourEnabled,
+      [ServerFeatureFlag.AGENT_IN_APP_EXPERIENCE]:
+        flags.agentInAppExperienceEnabled,
       assets: flags.assetsEnabled
     }
 

@@ -9,7 +9,7 @@ import AudioPreviewPlayer from '@/renderer/extensions/vueNodes/widgets/component
 const mockToastAdd = vi.fn()
 
 vi.mock<unknown>(
-  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
+  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
 
   () => ({
     useToast: () => ({ add: mockToastAdd })
@@ -36,8 +36,7 @@ function renderPlayer(modelValue?: string) {
       plugins: [i18n],
       components: { Button },
       stubs: {
-        TieredMenu: true,
-        Slider: true
+        TieredMenu: true
       }
     }
   })

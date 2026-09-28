@@ -85,7 +85,7 @@
     "prepack": "pnpm run build",
     "lint": "oxlint src --type-aware && eslint src",
     "test": "vitest run",
-    "typecheck": "vue-tsc --noEmit"
+    "typecheck": "tsx ../../scripts/vue-tsc-native.ts --noEmit"
   },
   "dependencies": {
     "@comfyorg/account-core": "workspace:^"
@@ -103,8 +103,7 @@
     "vite": "catalog:",
     "vite-plugin-dts": "catalog:",
     "vitest": "catalog:",
-    "vue": "catalog:",
-    "vue-tsc": "catalog:"
+    "vue": "catalog:"
   },
   "peerDependencies": {
     "@stripe/stripe-js": "^9.0.0",
