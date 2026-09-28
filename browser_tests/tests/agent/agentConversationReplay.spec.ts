@@ -86,22 +86,24 @@ test.describe(
         page
       }) => {
         test.setTimeout(90_000)
-        await agentConversation.runTurns(() =>
-          page.evaluate((nodeId) => {
-            const node = window.app!.graph.getNodeById(nodeId)
-            const steps = node?.widgets?.find(
-              (widget) => widget.name === 'steps'
-            )
-            if (!steps) throw new Error('KSampler steps widget not found')
-            steps.callback = (_value, _canvas, owner) => {
-              const sampler = owner?.widgets?.find(
-                (widget) => widget.name === 'sampler_name'
+        await agentConversation.runTurns({
+          beforeFirstGraphOps: () =>
+            page.evaluate((nodeId) => {
+              const node = window.app!.graph.getNodeById(nodeId)
+              const steps = node?.widgets?.find(
+                (widget) => widget.name === 'steps'
               )
-              if (!sampler) throw new Error('KSampler sampler widget not found')
-              sampler.options.values = ['euler', 'heun']
-            }
-          }, toNodeId(3))
-        )
+              if (!steps) throw new Error('KSampler steps widget not found')
+              steps.callback = (_value, _canvas, owner) => {
+                const sampler = owner?.widgets?.find(
+                  (widget) => widget.name === 'sampler_name'
+                )
+                if (!sampler)
+                  throw new Error('KSampler sampler widget not found')
+                sampler.options.values = ['euler', 'heun']
+              }
+            }, toNodeId(3))
+        })
 
         const sampler = agentConversation.vueNodes
           .getNodeLocator('3')
