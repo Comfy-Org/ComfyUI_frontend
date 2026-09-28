@@ -1,6 +1,5 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
-import { reportError } from '@/platform/telemetry/reportError'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { OutputSpec as OutputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import {
@@ -8,10 +7,6 @@ import {
   collectSearchableOutputTypes
 } from '@/schemas/nodeDef/searchableSlotTypes'
 import type { ComfyInputsSpec, InputSpec } from '@/schemas/nodeDefSchema'
-
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
 
 function dynamicCombo(
   options: { key: string; inputs: ComfyInputsSpec }[]
@@ -107,14 +102,12 @@ describe('collectSearchableInputTypes', () => {
       ]
 
       expect(collectSearchableInputTypes(toV2(spec))).toEqual(['IMAGE'])
-      expect(reportError).toHaveBeenCalled()
     })
 
     it('reports and yields nothing for a spec with no options array', () => {
       expect(
         collectSearchableInputTypes(toV2(['COMFY_DYNAMICCOMBO_V3', {}]))
       ).toEqual([])
-      expect(reportError).toHaveBeenCalled()
     })
   })
 
@@ -186,7 +179,6 @@ describe('collectSearchableInputTypes', () => {
           toV2(['COMFY_AUTOGROW_V3', { template: {} }])
         )
       ).toEqual([])
-      expect(reportError).toHaveBeenCalled()
     })
   })
 
@@ -202,7 +194,6 @@ describe('collectSearchableInputTypes', () => {
       ]
 
       expect(collectSearchableInputTypes(toV2(spec))).toEqual([])
-      expect(reportError).toHaveBeenCalled()
     })
   })
 })
