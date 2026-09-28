@@ -121,24 +121,6 @@ class AgentBillingFixture {
   }
 }
 
-class AcceptedAgentTurns {
-  private readonly turns: AgentTurnAccepted[] = []
-
-  get count(): number {
-    return this.turns.length
-  }
-
-  get latest(): AgentTurnAccepted {
-    const turn = this.turns.at(-1)
-    if (turn === undefined) throw new Error('No Agent turn has been accepted')
-    return turn
-  }
-
-  record(turn: AgentTurnAccepted): void {
-    this.turns.push(turn)
-  }
-}
-
 export const FUNDS_UNAVAILABLE_MESSAGE =
   'Billing status is temporarily unavailable; please retry.'
 const FUNDS_UNAVAILABLE = zAgentAdmissionError.parse({
@@ -484,7 +466,7 @@ async function mockAgentBoot(
             ? TURN_ID
             : `${TURN_ID}-${postedMessages.length}`
       }
-      acceptedTurns.record(accepted)
+      acceptedTurns.push(accepted)
       return route.fulfill({
         status: 202,
         contentType: 'application/json',
@@ -500,7 +482,7 @@ async function mockAgentBoot(
 }
 
 type AgentFixtures = {
-  acceptedTurns: AcceptedAgentTurns
+  acceptedTurns: AgentTurnAccepted[]
   agentBilling: AgentBillingFixture
   agentConsentAccepted: boolean
   agentConsentReads: boolean[]
@@ -519,7 +501,7 @@ type AgentFixtures = {
 
 export const agentTest = comfyPageFixture.extend<AgentFixtures>({
   acceptedTurns: async ({ agentFlagEnabled: _agentFlagEnabled }, use) => {
-    await use(new AcceptedAgentTurns())
+    await use([])
   },
   agentBilling: async ({ agentFlagEnabled: _agentFlagEnabled }, use) => {
     await use(new AgentBillingFixture())
