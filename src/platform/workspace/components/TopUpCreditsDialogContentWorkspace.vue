@@ -554,7 +554,8 @@ async function handleBuy() {
     telemetry?.trackBillingEvent({
       operation: 'topup',
       stage: 'started',
-      outcome: 'pending'
+      outcome: 'pending',
+      payment_intent_source: source
     })
     telemetry?.trackBillingEvent({
       operation: 'operation',
@@ -576,6 +577,7 @@ async function handleBuy() {
         operation: 'topup',
         stage: 'failed',
         outcome: 'failure',
+        payment_intent_source: source,
         failure_category: 'unknown',
         duration_ms: Date.now() - attemptStartedAt
       })
@@ -619,6 +621,7 @@ async function handleBuy() {
         stage: 'succeeded',
         outcome: 'success',
         billing_op_id: response.billing_op_id,
+        payment_intent_source: source,
         duration_ms: Date.now() - attemptStartedAt
       })
       telemetry?.trackBillingEvent({
@@ -641,6 +644,7 @@ async function handleBuy() {
       void billingOperationStore
         .startOperation(response.billing_op_id, 'topup', {
           attemptStartedAt,
+          paymentIntentSource: source,
           autoHandleRequiresAction: true
         })
         .then(() => {
@@ -657,6 +661,7 @@ async function handleBuy() {
         stage: 'failed',
         outcome: 'failure',
         billing_op_id: response.billing_op_id,
+        payment_intent_source: source,
         failure_category: 'provider_decline',
         duration_ms: Date.now() - attemptStartedAt
       })
@@ -695,6 +700,7 @@ function reportPurchaseError(
     stage: 'failed',
     outcome: 'failure',
     ...(billingOpId ? { billing_op_id: billingOpId } : {}),
+    payment_intent_source: source,
     failure_category:
       error === undefined ? 'unknown' : categorizeBillingApiError(error),
     duration_ms: Date.now() - attemptStartedAt
