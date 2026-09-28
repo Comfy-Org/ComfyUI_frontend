@@ -21,6 +21,7 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import type { Point } from '@/lib/litegraph/src/litegraph'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 import { openModelLibraryBrowser } from '@/platform/assets/composables/openModelLibraryBrowser'
 import { isSalesManagedTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import { isCloud } from '@/platform/distribution/types'
@@ -81,11 +82,8 @@ const moveSelectedNodesVersionAdded = '1.22.2'
 let onboardingReplayInProgress: Promise<void> | undefined
 
 export function useCoreCommands(): ComfyCommand[] {
-  const {
-    canAccessSubscriptionFeatures,
-    showSubscriptionDialog,
-    subscription
-  } = useBillingContext()
+  const { canAccessSubscriptionFeatures, subscription } = useBillingContext()
+  const { showSubscriptionRequiredDialog } = useBillingDialogs()
 
   function blockRunWithoutSubscription(): boolean {
     if (!isCloud || canAccessSubscriptionFeatures.value) return false
@@ -97,7 +95,7 @@ export function useCoreCommands(): ComfyCommand[] {
         life: 5000
       })
     } else {
-      showSubscriptionDialog({ reason: 'subscribe_to_run' })
+      void showSubscriptionRequiredDialog({ reason: 'subscribe_to_run' })
     }
     return true
   }

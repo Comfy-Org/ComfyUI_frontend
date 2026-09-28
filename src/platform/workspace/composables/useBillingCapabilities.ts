@@ -9,6 +9,7 @@ import { computed, onScopeDispose, shallowRef, watch } from 'vue'
 import { isCloud } from '@/platform/distribution/types'
 import { reportError } from '@/platform/telemetry/reportError'
 import { onCapabilityRevision } from '@/platform/workspace/api/capabilityRevision'
+import { onBillingRefresh } from '@/platform/workspace/billing/billingRefresh'
 import {
   WorkspaceApiError,
   workspaceApi
@@ -243,9 +244,12 @@ function useBillingCapabilitiesInternal() {
     void fetchCapabilities()
   })
 
+  const stopRefreshListener = onBillingRefresh(() => refresh())
+
   onScopeDispose(() => {
     clearRefreshTimer()
     stopRevisionListener()
+    stopRefreshListener()
   })
 
   /** Cancels the in-flight read and its timer, leaving the snapshot in place. */

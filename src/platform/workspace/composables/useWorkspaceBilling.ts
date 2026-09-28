@@ -12,8 +12,6 @@ import type { PreviewSubscribeInput } from '@comfyorg/account-core/billing'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
 import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBillingPlans'
-import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
-import type { SubscriptionDialogOptions } from '@/composables/billing/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -732,19 +730,6 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     }
   }
 
-  const subscriptionDialog = useSubscriptionDialog()
-
-  async function requireActiveSubscription(): Promise<void> {
-    await fetchStatus()
-    if (!canAccessSubscriptionFeatures.value) {
-      subscriptionDialog.show({ reason: 'subscription_required' })
-    }
-  }
-
-  function showSubscriptionDialog(options?: SubscriptionDialogOptions): void {
-    subscriptionDialog.show(options)
-  }
-
   return {
     // State
     isInitialized,
@@ -775,8 +760,6 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     cancelSubscription,
     resubscribe,
     topup,
-    fetchPlans,
-    requireActiveSubscription,
-    showSubscriptionDialog
+    fetchPlans
   }
 }

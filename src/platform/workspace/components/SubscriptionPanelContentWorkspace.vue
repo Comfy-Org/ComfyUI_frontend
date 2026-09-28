@@ -417,6 +417,7 @@ import DropdownMenu from '@/components/common/DropdownMenu.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
 import {
@@ -470,12 +471,12 @@ const {
   subscriptionStatus,
   isLoading,
   error,
-  showSubscriptionDialog,
   manageSubscription,
   initialize
 } = useBillingContext()
 
 const { showPricingTable } = useSubscriptionDialog()
+const { showSubscriptionRequiredDialog } = useBillingDialogs()
 
 const { isResubscribing, handleResubscribe } = useResubscribe()
 const { displayPrice, priceUnitLabel } = useWorkspacePlanPricing()
@@ -555,13 +556,13 @@ const showZeroState = computed(
 )
 
 function handleSubscribeWorkspace() {
-  showSubscriptionDialog({ reason: 'settings_billing_panel' })
+  void showSubscriptionRequiredDialog({ reason: 'settings_billing_panel' })
 }
 
 function handleUpgrade() {
   if (isFreeTierPlan.value)
     showPricingTable({ reason: 'settings_billing_panel' })
-  else showSubscriptionDialog({ reason: 'settings_billing_panel' })
+  else void showSubscriptionRequiredDialog({ reason: 'settings_billing_panel' })
 }
 
 function handleViewMoreDetails() {

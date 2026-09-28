@@ -1,5 +1,5 @@
 import { isAuthenticatedConfigLoaded } from '@/platform/remoteConfig/remoteConfig'
-import { computed, ref, shallowRef, toValue, watch } from 'vue'
+import { computed, onScopeDispose, ref, shallowRef, toValue, watch } from 'vue'
 import { createSharedComposable } from '@vueuse/core'
 
 import {
@@ -13,6 +13,8 @@ import type {
   PreviewSubscribeOptions,
   SubscribeOptions
 } from '@/platform/workspace/api/workspaceApi'
+import { onBillingRefresh } from '@/platform/workspace/billing/billingRefresh'
+import type { BillingRefreshScope } from '@/platform/workspace/billing/billingRefresh'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import type {
@@ -20,7 +22,6 @@ import type {
   BillingActions,
   BillingContext,
   BillingState,
-  SubscriptionDialogOptions,
   SubscriptionInfo
 } from './types'
 import { useBillingRouting } from './useBillingRouting'
@@ -295,6 +296,15 @@ function useBillingContextInternal(): BillingContext {
     await account.fetchBalance()
   }
 
+  async function refreshFor(scope: BillingRefreshScope): Promise<void> {
+    if (scope === 'subscription') return reconcileSubscriptionSuccess()
+    if (scope === 'account') {
+      await Promise.all([fetchStatus(), fetchBalance()])
+    }
+  }
+
+  onScopeDispose(onBillingRefresh(refreshFor))
+
   async function subscribe(planSlug: string, options?: SubscribeOptions) {
     return checkoutContext.value.subscribe(planSlug, options)
   }
@@ -337,14 +347,6 @@ function useBillingContextInternal(): BillingContext {
     return checkoutContext.value.fetchPlans()
   }
 
-  async function requireActiveSubscription() {
-    return activeContext.value.requireActiveSubscription()
-  }
-
-  function showSubscriptionDialog(options?: SubscriptionDialogOptions) {
-    return activeContext.value.showSubscriptionDialog(options)
-  }
-
   return {
     type,
     isInitialized,
@@ -380,9 +382,7 @@ function useBillingContextInternal(): BillingContext {
     cancelSubscription,
     resubscribe,
     topup,
-    fetchPlans,
-    requireActiveSubscription,
-    showSubscriptionDialog
+    fetchPlans
   }
 }
 

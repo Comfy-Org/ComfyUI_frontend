@@ -129,17 +129,6 @@ export interface BillingActions {
    */
   topup: (amountCents: number) => Promise<CreateTopupResponse | void>
   fetchPlans: () => Promise<void>
-  /**
-   * Ensures billing is initialized and subscription is active.
-   * Shows subscription dialog if not subscribed.
-   * Use this in extensions/entry points that require active subscription.
-   */
-  requireActiveSubscription: () => Promise<void>
-  /**
-   * Shows the subscription dialog. Pass a reason so the paywall open and any
-   * downstream checkout stay attributed to the triggering product moment.
-   */
-  showSubscriptionDialog: (options?: SubscriptionDialogOptions) => void
 }
 
 export interface BillingState {
