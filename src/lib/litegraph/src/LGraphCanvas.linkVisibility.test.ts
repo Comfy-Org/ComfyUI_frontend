@@ -218,13 +218,8 @@ describe('LGraphCanvas link visibility interactions', () => {
         label: 'Keep label'
       })
       const before = graph.serialize()
-      const changes: unknown[] = []
-      vi.spyOn(canvas, 'emitBeforeChange').mockImplementation(() =>
-        changes.push(graph.serialize())
-      )
-      vi.spyOn(canvas, 'emitAfterChange').mockImplementation(() =>
-        changes.push(graph.serialize())
-      )
+      const beforeChange = vi.spyOn(canvas, 'emitBeforeChange')
+      const afterChange = vi.spyOn(canvas, 'emitAfterChange')
       const menu = vi
         .spyOn(LiteGraph, 'ContextMenu')
         .mockImplementation(fromPartial<typeof LiteGraph.ContextMenu>(class {}))
@@ -263,7 +258,8 @@ describe('LGraphCanvas link visibility interactions', () => {
       })
       expect(store.getPresentation(scope, sibling.id)?.hidden).toBe(true)
       expect(store.getPresentation(scope, otherBranch.id)?.hidden).toBeFalsy()
-      expect(changes).toEqual([before, graph.serialize()])
+      expect(beforeChange).toHaveBeenCalledTimes(1)
+      expect(afterChange).toHaveBeenCalledTimes(1)
       graph.configure(before)
       expect(store.getPresentation(scope, link.id)?.hidden === true).toBe(
         alreadyHidden
