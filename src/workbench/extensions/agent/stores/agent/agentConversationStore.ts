@@ -631,29 +631,38 @@ export const useAgentConversationStore = defineStore(
         if (part.type !== 'tool') continue
         const alreadyLive = liveTools.get(part.callId)
         if (alreadyLive === undefined) {
-          const copy: ToolPart =
-            part.state === 'streaming'
-              ? { ...part, state: 'done', ok: part.ok ?? false }
-              : { ...part }
+          const copy = settledCopy(part)
           adopted.push(copy)
           transport?.adoptToolPart(copy)
-          continue
+        } else if (part.state === 'done' && !holdsOwnOutcome(alreadyLive)) {
+          settleFromRow(alreadyLive, part)
         }
-        if (part.state !== 'done' || alreadyLive.state === 'done') continue
-        // PM-1575: an `ok` already set while the state is still `streaming`
-        // is the canvas gate holding a call that DID succeed until its edit
-        // shows up on the graph -- not a call whose end the transport
-        // missed. Settling it here is the premature success glyph that gate
-        // exists to prevent, and would strand its entry in the transport's
-        // pending map besides.
-        if (alreadyLive.ok !== undefined) continue
-        alreadyLive.state = 'done'
-        alreadyLive.ok = part.ok ?? false
-        if (part.durationMs !== undefined)
-          alreadyLive.durationMs = part.durationMs
       }
       if (adopted.length === 0) return
       live.parts = spliceBeforeTrailingReply(live.parts, adopted)
+    }
+
+    /**
+     * PM-1575: an `ok` already set while the state is still `streaming` is
+     * the canvas gate holding a call that DID succeed until its edit shows up
+     * on the graph -- not a call whose end the transport missed. Settling
+     * that one from the row is the premature success glyph the gate exists to
+     * prevent, and would strand its entry in the transport's pending map.
+     */
+    function holdsOwnOutcome(live: ToolPart): boolean {
+      return live.state === 'done' || live.ok !== undefined
+    }
+
+    function settledCopy(row: ToolPart): ToolPart {
+      return row.state === 'streaming'
+        ? { ...row, state: 'done', ok: row.ok ?? false }
+        : { ...row }
+    }
+
+    function settleFromRow(live: ToolPart, row: ToolPart): void {
+      live.state = 'done'
+      live.ok = row.ok ?? false
+      if (row.durationMs !== undefined) live.durationMs = row.durationMs
     }
 
     /**
@@ -722,6 +731,22 @@ export const useAgentConversationStore = defineStore(
       )
     }
 
+    /**
+     * `index` is -1 for a copy resolved off `removedSameIdCopy`: that one was
+     * filtered out of `kept` before this ran, so there is no slot to splice.
+     */
+    function locateHydratedCopy(
+      hydratedTurnId: TurnId,
+      kept: AssistantMessage[],
+      removedSameIdCopy: AssistantMessage | undefined
+    ): { hydrated: AssistantMessage; index: number } | undefined {
+      const index = kept.findIndex((message) => message.id === hydratedTurnId)
+      if (index >= 0) return { hydrated: kept[index], index }
+      if (removedSameIdCopy?.id === hydratedTurnId)
+        return { hydrated: removedSameIdCopy, index: -1 }
+      return undefined
+    }
+
     function adoptHydratedTurn(
       entry: BackgroundTurn,
       kept: AssistantMessage[],
@@ -729,14 +754,13 @@ export const useAgentConversationStore = defineStore(
     ): { keeps: 'live' | 'hydrated'; turnId: TurnId } | undefined {
       const hydratedTurnId = hydratedTurnIdsByRowId.get(entry.messageId)
       if (hydratedTurnId === undefined) return undefined
-      const index = kept.findIndex((message) => message.id === hydratedTurnId)
-      const hydrated =
-        index >= 0
-          ? kept[index]
-          : removedSameIdCopy?.id === hydratedTurnId
-            ? removedSameIdCopy
-            : undefined
-      if (!hydrated || hydrated === entry.message) return undefined
+      const located = locateHydratedCopy(
+        hydratedTurnId,
+        kept,
+        removedSameIdCopy
+      )
+      if (!located || located.hydrated === entry.message) return undefined
+      const { hydrated, index } = located
       if (!hydratedStreamingTurnIds.has(hydratedTurnId)) {
         adoptLiveOnlyParts(hydrated, entry.message)
         adoptFresherLiveText(
