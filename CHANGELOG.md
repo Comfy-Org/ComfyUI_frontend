@@ -7,6 +7,31 @@ this package uses semantic versioning.
 
 ## Unreleased
 
+## 0.3.7 - 2026-09-26
+
+### Added
+
+- Consume every option of a dynamic combo from the catalog's `dynamic_combos`
+  map, so option sub-widgets (including nested dynamic combos and options other
+  than the default) can be named, validated, minted, written and projected.
+  Writes to a child of an inactive option are accepted, and a selector write
+  changes no stored values: option defaults are applied at read time, so the
+  result does not depend on the order ops arrive in (#240).
+
+### Changed
+
+- `project(mint(w, catalog), catalog)` now fills the selected option's
+  defaults for sub-widget slots `w` does not carry, matching how the frontend
+  loads such a node. Schema section 7 defines `canonical(w)` accordingly (#240).
+
+### Fixed
+
+- A legacy overflow slot (`_extra_N`) keeps projecting after a selector write
+  instead of making the node unprojectable; the selected option's child takes
+  that position while it is active (#240).
+- `applyConnect` rejects a non-string `grow.inputcount.widget` before any slot
+  growth, so a refused op leaves the document unchanged (#240).
+
 ## 0.3.6 - 2026-09-23
 
 ### Added
