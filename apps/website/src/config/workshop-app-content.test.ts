@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { workshopAppHref } from '../lib/workshop/apps'
-import { appModels } from './workshop-app-content'
+import { appModels, appPagePaths } from './workshop-app-content'
 import {
   parseAppCatalog,
   parseWorkflowCatalog
@@ -12,6 +12,15 @@ describe('Workshop apps', () => {
     expect(appModels.map(({ appId, href }) => ({ appId, href }))).toEqual([
       { appId: 'studio', href: '/models/apps/cinematic-studio/' },
       { appId: 'reshoot', href: '/models/apps/reshoot/' }
+    ])
+  })
+
+  it('builds one static page per app, keyed by its slug', () => {
+    expect(
+      appPagePaths().map(({ params, props }) => [params.app, props.model.appId])
+    ).toEqual([
+      ['cinematic-studio', 'studio'],
+      ['reshoot', 'reshoot']
     ])
   })
 

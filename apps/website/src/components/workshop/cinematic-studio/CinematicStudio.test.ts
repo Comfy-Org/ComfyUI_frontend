@@ -992,6 +992,7 @@ describe('CinematicStudio', () => {
         '',
         '/models/apps/cinematic-studio/?ux=d'
       )
+      const entries = window.history.length
       render(CinematicStudioPage, { props: { models } })
       const user = userEvent.setup()
 
@@ -1008,7 +1009,19 @@ describe('CinematicStudio', () => {
       expect(panel()).toBeNull()
       expect(window.location.pathname).toBe('/models/apps/reshoot/')
       expect(window.location.search).toBe('?ux=d')
+      expect(window.history.length).toBe(entries + 1)
       expect(document.title).toBe('Re-shoot a video - Comfy')
+
+      window.history.replaceState(
+        null,
+        '',
+        '/models/apps/cinematic-studio/?ux=d'
+      )
+      window.dispatchEvent(new PopStateEvent('popstate'))
+      expect(
+        await screen.findByRole('complementary', { name: 'Shot settings' })
+      ).toBeInTheDocument()
+      expect(document.title).toBe('Cinematic Studio - Comfy')
     })
 
     it('lists Cinematic Studio first and Re-shoot a video next in the Hub apps tab', async () => {

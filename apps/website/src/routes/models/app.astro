@@ -6,14 +6,10 @@ import { getRouterWorkshopModelDetail } from '../../config/workshop-router-conte
 import { runnableCinematicModels } from '../../lib/workshop/cinematic-studio/models'
 import { priceCinematicModels } from '../../lib/workshop/cinematic-studio/pricing'
 import { tc } from '../../lib/workshop/cinematic-studio/copy'
-import { appModels } from '../../config/workshop-app-content'
+import { appPagePaths } from '../../config/workshop-app-content'
 import type { AppWorkshopModel } from '../../config/models-catalogue'
 
-export const getStaticPaths: GetStaticPaths = () =>
-  appModels.map((model) => ({
-    params: { app: model.slug.replace(/^apps\//, '') },
-    props: { model }
-  }))
+export const getStaticPaths: GetStaticPaths = () => appPagePaths()
 
 interface Props {
   readonly model: AppWorkshopModel

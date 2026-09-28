@@ -51,3 +51,11 @@ export const appModels = appModelsFor(
   workshopDisplayEntriesSchema.parse(displayJson),
   appCatalog
 )
+
+/** Static paths for /models/apps/[app]: one page per app, from its slug. */
+export function appPagePaths(models: readonly AppWorkshopModel[] = appModels) {
+  return models.map((model) => ({
+    params: { app: model.slug.replace(/^apps\//, '') },
+    props: { model }
+  }))
+}

@@ -10,6 +10,17 @@ export function workshopAppHref(app: WorkshopAppId, locale: Locale): string {
   return app === 'reshoot' ? routes.reshoot : routes.cinematicStudio
 }
 
+/** The app whose page `pathname` is, if any. */
+export function workshopAppAt(
+  pathname: string,
+  locale: Locale
+): WorkshopAppId | undefined {
+  const page = pathname.replace(/\/$/, '')
+  return (['studio', 'reshoot'] as const).find(
+    (app) => workshopAppHref(app, locale) === page
+  )
+}
+
 export interface WorkshopAppCard {
   readonly key: string
   readonly name: CinematicCopyKey

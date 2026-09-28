@@ -1,9 +1,10 @@
 <script setup lang="ts">
+import { useEventListener } from '@vueuse/core'
 import { computed, onMounted, ref, shallowRef } from 'vue'
 
 import { provideStudioSwitchGuard } from '../../../composables/useStudioSwitchGuard'
 import type { WorkshopAppId } from '../../../lib/workshop/apps'
-import { workshopAppHref } from '../../../lib/workshop/apps'
+import { workshopAppAt, workshopAppHref } from '../../../lib/workshop/apps'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
@@ -52,17 +53,27 @@ onMounted(() => {
   if (LAYOUTS.some((option) => option.id === requestedLayout))
     layout.value = requestedLayout ?? layout.value
   const requestedApp = APPS.find((id) => id === params.get('app'))
-  if (requestedApp) showApp(requestedApp)
+  if (requestedApp) showApp(requestedApp, 'replace')
 })
 
-function showApp(id: WorkshopAppId) {
+useEventListener('popstate', () => {
+  const visited = workshopAppAt(window.location.pathname, locale)
+  if (visited) setApp(visited)
+})
+
+function setApp(id: WorkshopAppId) {
   app.value = id
   const name = appOptions.value.find((option) => option.id === id)?.label
   if (name) document.title = `${name} - Comfy`
+}
+
+function showApp(id: WorkshopAppId, history: 'push' | 'replace') {
+  setApp(id)
   const url = new URL(window.location.href)
   url.pathname = `${workshopAppHref(id, locale)}/`
   url.searchParams.delete('app')
-  window.history.replaceState(window.history.state, '', url)
+  if (history === 'push') window.history.pushState(null, '', url)
+  else window.history.replaceState(window.history.state, '', url)
 }
 
 function remember(key: string, value: string) {
@@ -98,7 +109,7 @@ function pickApp(id: string) {
   const picked = APPS.find((known) => known === id)
   if (!picked) return
   guarded(() => {
-    showApp(picked)
+    if (picked !== app.value) showApp(picked, 'push')
     if (layout.value === 'hub') setLayout('e')
   })
 }
