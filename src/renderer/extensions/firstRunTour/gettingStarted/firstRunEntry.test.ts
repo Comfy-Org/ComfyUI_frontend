@@ -910,5 +910,31 @@ describe('useFirstRunEntry', () => {
       Object.assign(useAuthStore(), { userId: 'account-b' })
       expect(shouldCancel()).toBe(true)
     })
+
+    it('releases a pending handoff hold at the account boundary', async () => {
+      let finishTour!: (started: boolean) => void
+      mocks.beginTour.mockImplementation(
+        () =>
+          new Promise<boolean>((resolve) => {
+            finishTour = resolve
+          })
+      )
+      const entry = useFirstRunEntry()
+      await entry.handleStartupOutcome('fresh')
+
+      const handoff = entry.dismissIntoFirstRunTour('image_z_image_turbo')
+      await vi.waitFor(() => expect(mocks.beginTour).toHaveBeenCalled())
+      expect(entry.firstRunHoldsScreen.value).toBe(true)
+
+      Object.assign(useAuthStore(), { userId: 'account-b' })
+
+      expect(
+        entry.firstRunHoldsScreen.value,
+        "account B must not inherit account A's pending consent hold"
+      ).toBe(false)
+      finishTour(false)
+      await handoff
+      expect(entry.firstRunHoldsScreen.value).toBe(false)
+    })
   })
 })

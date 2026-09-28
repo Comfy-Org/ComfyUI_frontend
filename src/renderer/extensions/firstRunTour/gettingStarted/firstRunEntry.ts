@@ -37,6 +37,7 @@ export const useFirstRunEntry = createSharedComposable(() => {
    * flag so an overlapping handoff cannot clear a hold it does not own.
    */
   const tourHandoffs = ref(0)
+  let handoffEpoch = 0
   const isDesktopWidth =
     useBreakpoints(breakpointsTailwind).greaterOrEqual('md')
 
@@ -62,6 +63,8 @@ export const useFirstRunEntry = createSharedComposable(() => {
       if (previousUserId === undefined || userId === previousUserId) return
       gettingStartedVisible.value = false
       firstRunTookScreen.value = false
+      handoffEpoch++
+      tourHandoffs.value = 0
       const tourStore = useOnboardingTourStore()
       if (tourStore.activeTour === 'firstRun') tourStore.postpone()
     },
@@ -198,6 +201,7 @@ export const useFirstRunEntry = createSharedComposable(() => {
    */
   async function dismissIntoFirstRunTour(templateId: string): Promise<void> {
     const ownerId = authStore.userId
+    const epoch = handoffEpoch
     tourHandoffs.value++
     try {
       await dismissGettingStarted()
@@ -206,7 +210,7 @@ export const useFirstRunEntry = createSharedComposable(() => {
         () => authStore.userId !== ownerId
       )
     } finally {
-      tourHandoffs.value--
+      if (epoch === handoffEpoch) tourHandoffs.value--
     }
   }
 
