@@ -12,6 +12,7 @@ import * as Y from 'yjs'
 
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { parseNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
@@ -942,6 +943,17 @@ function startAgentCrdtFollower(
       events
     )
   }
+  function reconcileAfterActivation(docId: string): void {
+    reconcileAndReportPending(docId)
+    void app
+      .refreshMissingModels({ silent: true, reloadDefs: false })
+      .catch((error: unknown) =>
+        reportError(error, {
+          errorType:
+            'error_refreshing_missing_models_after_agent_tab_activation'
+        })
+      )
+  }
   // Readiness only. The other ordering -- graph ready first, target activated
   // second -- cannot be caught here: `getGraph` does not change when activity
   // flips, and even if this watcher also took `isTargetActive` as a source it
@@ -1036,7 +1048,7 @@ function startAgentCrdtFollower(
           }
           subscribedWorkflowId.value = persisted
           retarget(persisted)
-          if (justActivated) reconcileAndReportPending(persisted)
+          if (justActivated) reconcileAfterActivation(persisted)
           return
         }
         clearPersistedDocId()
@@ -1056,7 +1068,7 @@ function startAgentCrdtFollower(
       }
       subscribedWorkflowId.value = next
       retarget(next)
-      if (justActivated) reconcileAndReportPending(next)
+      if (justActivated) reconcileAfterActivation(next)
     },
     { immediate: true }
   )
