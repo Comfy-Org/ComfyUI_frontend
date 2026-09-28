@@ -354,6 +354,7 @@ const requoted = (
   reactivation: boolean,
   priceUpdated: boolean
 ): CheckoutPageEvent => ({ type: 'requoted', reactivation, priceUpdated })
+const consentMissing: CheckoutPageEvent = { type: 'consentMissing' }
 
 describe('reduceCheckoutPage after Pay', () => {
   const live = [quoted(0), ready]
@@ -394,32 +395,46 @@ describe('reduceCheckoutPage after Pay', () => {
       pay: true
     },
     {
-      name: 'a quote that asks for reactivation locks Pay',
+      name: 'a quote that asks to keep the subscription leaves Pay live',
       events: [quoted(0, true), ready],
       outcome: undefined,
       reactivation: 'required',
-      pay: false
+      pay: true
     },
     {
-      name: 'ticking the reactivation charge frees Pay',
-      events: [quoted(0, true), ready, tick(true)],
+      name: 'Pay without the tick marks the consent invalid, Pay still live',
+      events: [quoted(0, true), ready, consentMissing],
+      outcome: undefined,
+      reactivation: 'invalid',
+      pay: true
+    },
+    {
+      name: 'ticking the consent clears the invalid state',
+      events: [quoted(0, true), ready, consentMissing, tick(true)],
       outcome: undefined,
       reactivation: 'confirmed',
       pay: true
     },
     {
-      name: 'unticking it locks Pay again',
+      name: 'unticking it asks again, without the red line',
       events: [quoted(0, true), ready, tick(true), tick(false)],
       outcome: undefined,
       reactivation: 'required',
-      pay: false
+      pay: true
     },
     {
-      name: 'the server asking for reactivation re-asks, even after a tick',
+      name: 'the server asking for consent re-asks unticked, even after a tick',
       events: [quoted(0, true), ready, tick(true), requoted(true, false)],
       outcome: undefined,
       reactivation: 'required',
-      pay: false
+      pay: true
+    },
+    {
+      name: 'a Pay refused for consent nobody asked for',
+      events: [...live, consentMissing],
+      outcome: undefined,
+      reactivation: 'not_required',
+      pay: true
     },
     {
       name: 'a tick nobody was asked for',
@@ -450,7 +465,8 @@ describe('reduceCheckoutPage after Pay', () => {
     { name: 'a decline', event: declined },
     { name: 'a new Pay', event: submitted },
     { name: 'a re-quote', event: requoted(false, true) },
-    { name: 'a reactivation tick', event: tick(true) }
+    { name: 'a reactivation tick', event: tick(true) },
+    { name: 'a Pay without consent', event: consentMissing }
   ])('holds reconciliation against $name', ({ event }) => {
     const reconciling = replay([...live, submitted, collided])
 

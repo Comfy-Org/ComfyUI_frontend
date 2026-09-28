@@ -7,13 +7,14 @@ import { CheckoutTermsNote } from '@comfyorg/account-ui/billing/checkout'
 import type { InlineOutcome } from '@/checkout/checkoutPage'
 import { supportLinkFor } from '@/checkout/payVerdict'
 import InlineOutcomeCard from '@/components/fullPage/InlineOutcomeCard.vue'
+import type { KeepSubscriptionConsent } from '@/components/fullPage/KeepSubscriptionNotice.vue'
+import KeepSubscriptionNotice from '@/components/fullPage/KeepSubscriptionNotice.vue'
 
-/** What the last Pay left, and the reactivation charge to agree to, around the button. */
+/** What the last Pay left, and the consent a plan set to end needs, around the button. */
 export interface PayContext {
   readonly failure?: string
   readonly outcome?: Exclude<InlineOutcome, { kind: 'reconciling' }>
-  readonly reactivation?: 'required' | 'confirmed'
-  readonly amount?: string
+  readonly consent?: KeepSubscriptionConsent
 }
 
 const {
@@ -21,8 +22,7 @@ const {
   loading = false,
   failure,
   outcome,
-  reactivation,
-  amount = ''
+  consent
 } = defineProps<
   PayContext & {
     disabled: boolean
@@ -30,20 +30,26 @@ const {
   }
 >()
 
-const emit = defineEmits<{ confirmReactivation: [confirmed: boolean] }>()
+const emit = defineEmits<{
+  confirmReactivation: [confirmed: boolean]
+  consentMissing: []
+}>()
 
 const { t } = useI18n()
 
-const confirmed = computed({
-  get: () => reactivation === 'confirmed',
-  set: (value: boolean) => emit('confirmReactivation', value)
-})
-
+/** Support is for a payment that failed; a notice over a fresh price is not one. */
 const supportLink = computed(() =>
-  outcome === undefined || outcome.kind === 'price_updated'
-    ? undefined
-    : supportLinkFor(outcome)
+  outcome !== undefined && 'operationId' in outcome
+    ? supportLinkFor(outcome)
+    : undefined
 )
+
+/** Pay without the tick submits nothing and hands the click back to the consent. */
+function guardConsent(event: Event) {
+  if (consent === undefined || consent.state === 'confirmed') return
+  event.preventDefault()
+  emit('consentMissing')
+}
 </script>
 
 <template>
@@ -60,18 +66,17 @@ const supportLink = computed(() =>
     >
       {{ failure }}
     </p>
-    <label
-      v-if="reactivation"
-      class="flex items-start gap-3 text-sm text-base-foreground"
-    >
-      <input v-model="confirmed" type="checkbox" class="mt-0.5 size-4" />
-      <span>{{ t('checkout.reactivationConfirm', { amount }) }}</span>
-    </label>
+    <KeepSubscriptionNotice
+      v-if="consent"
+      :consent
+      @confirm="emit('confirmReactivation', $event)"
+    />
     <button
       type="submit"
       :disabled="disabled || loading"
       :aria-busy="loading"
       class="h-10 w-full cursor-pointer rounded-lg bg-base-foreground px-4 text-sm font-semibold text-base-background transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-secondary-background focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
+      @click="guardConsent"
     >
       {{ t('checkout.payAndSubscribe') }}
     </button>

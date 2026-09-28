@@ -589,9 +589,9 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
     title: string
   }>([
     {
-      name: 'a failed verification',
+      name: 'a challenge the customer did not complete',
       declineReason: 'authentication_failed',
-      title: 'Payment not verified'
+      title: 'Payment not completed'
     },
     {
       name: 'a processing fault',
@@ -662,21 +662,58 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
     expect(payButton()).toBeEnabled()
   })
 
-  it('asks a cancelled subscriber to confirm the reactivation charge before Pay', async () => {
-    const fake = await renderQuoted({
+  it('553-9297: a plan change on a plan set to end asks to keep it; Pay without the tick sends nothing, with it sends the consent', async () => {
+    const fake = await renderCheckout({
       preview: {
         status: 'ok',
-        value: previewOf({ requires_reactivation_confirmation: true })
+        value: previewOf({
+          transition_type: 'upgrade',
+          requires_reactivation_confirmation: true,
+          cost_next_period_cents: 10_000,
+          renewal_at: '2026-07-28T00:00:00.000Z'
+        })
+      },
+      status: {
+        is_active: true,
+        has_funds: true,
+        max_seats: 1,
+        occupied_seats: 1,
+        scheduled_change: null,
+        team_credit_stop: null,
+        cancel_at: '2026-07-28T00:00:00.000Z'
       }
     })
-    reportPhase({ phase: 'payment_element_ready', element: 'payment' })
-    await nextTick()
+    await screen.findByText('Subscribe to Creator Plan · Acme Team')
 
-    expect(payButton()).toBeDisabled()
-    await userEvent.click(screen.getByRole('checkbox'))
-    await waitFor(() => expect(payButton()).toBeEnabled())
+    expect(
+      await screen.findByText('Your plan was set to end on July 28, 2026')
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        'Upgrading keeps your subscription, and it renews that day at $100.00.'
+      )
+    ).toBeInTheDocument()
+    const box = screen.getByRole('checkbox', {
+      name: 'Keep my subscription and renew it'
+    })
+    expect(payButton()).toBeEnabled()
 
-    form.emit('confirm', 'ctoken_1')
+    await userEvent.click(payButton())
+
+    expect(fake.subscribe).not.toHaveBeenCalled()
+    expect(box).toHaveAttribute('aria-invalid', 'true')
+    expect(box).toHaveFocus()
+    expect(box).toHaveAccessibleDescription(
+      'Check the box to keep your subscription, then pay.'
+    )
+    expect(payButton()).toBeEnabled()
+
+    await userEvent.click(box)
+
+    expect(box).toHaveAttribute('aria-invalid', 'false')
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+
+    await userEvent.click(payButton())
 
     await waitFor(() =>
       expect(fake.subscribe).toHaveBeenCalledWith(
@@ -685,7 +722,22 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
     )
   })
 
-  it('re-quotes and asks when the server wants the reactivation confirmed', async () => {
+  it('a token the form hands over without the tick sends nothing either', async () => {
+    const fake = await payReady({
+      preview: {
+        status: 'ok',
+        value: previewOf({ requires_reactivation_confirmation: true })
+      }
+    })
+
+    form.emit('confirm', 'ctoken_1')
+    await nextTick()
+
+    expect(fake.subscribe).not.toHaveBeenCalled()
+    expect(screen.getByRole('checkbox')).toHaveAttribute('aria-invalid', 'true')
+  })
+
+  it('re-quotes and asks unticked when the server wants the consent, with Pay still live', async () => {
     const fake = await payReady({
       subscribe: { status: 'error', code: 'REACTIVATION_CONFIRMATION_REQUIRED' }
     })
@@ -694,7 +746,8 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
 
     expect(await screen.findByRole('checkbox')).not.toBeChecked()
     expect(fake.previewSubscribe).toHaveBeenCalledTimes(2)
-    expect(payButton()).toBeDisabled()
+    expect(fake.readStatus).toHaveBeenCalledOnce()
+    expect(payButton()).toBeEnabled()
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 })

@@ -8,6 +8,7 @@ import type { CheckoutCharge } from '@/components/fullPage/CheckoutPaymentColumn
 import CheckoutPaymentColumn from '@/components/fullPage/CheckoutPaymentColumn.vue'
 import type { CheckoutSummary } from '@/components/fullPage/CheckoutSummaryColumn.vue'
 import CheckoutSummaryColumn from '@/components/fullPage/CheckoutSummaryColumn.vue'
+import { keepSubscriptionCopy } from '@/checkout/keepSubscription'
 import { useFullPageCheckout } from '@/composables/useFullPageCheckout'
 import { useHostedCopy } from '@/composables/useHostedCopy'
 import { useBillingWebStripeKey } from '@/config/stripeKey'
@@ -33,6 +34,8 @@ const {
   retryColumn,
   selectTab,
   confirmReactivation,
+  payWithoutConsent,
+  cancelAt,
   pay
 } = useFullPageCheckout()
 
@@ -69,6 +72,16 @@ const charge = computed<CheckoutCharge | undefined>(() => {
     currency: quoted.currency ?? 'usd',
     paymentMethodConfigurationId: quoted.payment_method_configuration_id ?? ''
   }
+})
+
+const keepSubscription = computed(() => {
+  const quoted = quote.value
+  if (!quoted) return undefined
+  return keepSubscriptionCopy(quoted, cancelAt.value, {
+    tierName: (tier) => coded('tier', tier),
+    t,
+    locale: locale.value
+  })
 })
 
 const payFailureCopy = computed(() =>
@@ -127,6 +140,7 @@ function returnToProduct() {
         :can-pay="canPay"
         :submitting
         :failure="payFailureCopy"
+        :keep-subscription="keepSubscription"
         :saved-methods="savedMethods"
         @phase="onPaymentPhase"
         @pay="pay"
@@ -135,6 +149,7 @@ function returnToProduct() {
         @retry-column="retryColumn"
         @select-tab="selectTab"
         @confirm-reactivation="confirmReactivation"
+        @consent-missing="payWithoutConsent"
       />
     </div>
   </main>

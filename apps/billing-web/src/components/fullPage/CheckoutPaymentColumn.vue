@@ -3,7 +3,6 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { SavedPaymentMethod } from '@comfyorg/account-core/billing'
-import { formatQuoteMoney } from '@comfyorg/account-ui/billing/checkout'
 import type {
   StripePaymentCopy,
   StripePaymentPhase
@@ -11,6 +10,7 @@ import type {
 import { StripePaymentForm } from '@comfyorg/account-ui/billing/stripe'
 
 import type { CheckoutPage, PaymentTab } from '@/checkout/checkoutPage'
+import type { KeepSubscriptionCopy } from '@/checkout/keepSubscription'
 import { railView } from '@/checkout/checkoutPage'
 import type { PayContext } from '@/components/fullPage/CheckoutPayAction.vue'
 import CheckoutPayAction from '@/components/fullPage/CheckoutPayAction.vue'
@@ -31,6 +31,7 @@ const {
   canPay,
   submitting,
   failure,
+  keepSubscription,
   savedMethods = []
 } = defineProps<{
   page: Extract<CheckoutPage, { kind: 'resolving' | 'capture' }>
@@ -39,6 +40,8 @@ const {
   canPay: boolean
   submitting: boolean
   failure?: string
+  /** The notice a plan set to end shows above Pay, worded for this quote. */
+  keepSubscription?: KeepSubscriptionCopy
   savedMethods?: readonly SavedPaymentMethod[]
 }>()
 
@@ -50,9 +53,10 @@ const emit = defineEmits<{
   retryColumn: []
   selectTab: [tab: PaymentTab]
   confirmReactivation: [confirmed: boolean]
+  consentMissing: []
 }>()
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
 
 /** A Pay that collided with another operation holds the skeleton until it is re-read. */
 const view = computed(() =>
@@ -69,16 +73,9 @@ const payContext = computed<PayContext>(() => {
     ...(outcome === undefined || outcome.kind === 'reconciling'
       ? {}
       : { outcome }),
-    ...(reactivation === 'not_required' ? {} : { reactivation }),
-    ...(charge === undefined
+    ...(reactivation === 'not_required' || keepSubscription === undefined
       ? {}
-      : {
-          amount: formatQuoteMoney(
-            charge.amountCents,
-            charge.currency,
-            locale.value
-          )
-        })
+      : { consent: { state: reactivation, copy: keepSubscription } })
   }
 })
 
@@ -132,6 +129,7 @@ const copy = computed<StripePaymentCopy>(() => ({
           :disabled="!canPay"
           :loading="submitting"
           @confirm-reactivation="emit('confirmReactivation', $event)"
+          @consent-missing="emit('consentMissing')"
         />
       </form>
       <div v-else class="flex flex-col gap-6">
@@ -150,6 +148,7 @@ const copy = computed<StripePaymentCopy>(() => ({
               :disabled="!canPay"
               :loading="submitting"
               @confirm-reactivation="emit('confirmReactivation', $event)"
+              @consent-missing="emit('consentMissing')"
             />
           </template>
         </PaymentTabsRail>
@@ -172,6 +171,7 @@ const copy = computed<StripePaymentCopy>(() => ({
               :disabled
               :loading
               @confirm-reactivation="emit('confirmReactivation', $event)"
+              @consent-missing="emit('consentMissing')"
             />
           </template>
         </StripePaymentForm>

@@ -42,12 +42,16 @@ export type InlineOutcome =
       readonly operationId?: string
     }
   | { readonly kind: 'processing_error'; readonly operationId?: string }
-  | { readonly kind: 'verification_failed'; readonly operationId?: string }
+  | { readonly kind: 'not_completed'; readonly operationId?: string }
   | { readonly kind: 'price_updated' }
   | { readonly kind: 'reconciling' }
 
-/** A cancelled subscription is reactivated only once the customer ticks the charge. */
-type Reactivation = 'not_required' | 'required' | 'confirmed'
+/**
+ * A plan set to end is kept only once the customer ticks the consent. Pay
+ * stays live meanwhile: a click without the tick sends nothing and marks
+ * the consent `invalid` until it is ticked.
+ */
+export type Reactivation = 'not_required' | 'required' | 'invalid' | 'confirmed'
 
 type Capture = {
   readonly kind: 'capture'
@@ -78,6 +82,8 @@ export type CheckoutPageEvent =
   | { readonly type: 'savedRetried' }
   | { readonly type: 'tabSelected'; readonly tab: PaymentTab }
   | { readonly type: 'reactivationConfirmed'; readonly confirmed: boolean }
+  /** Pay clicked while the keep-subscription consent was still unticked. */
+  | { readonly type: 'consentMissing' }
   | { readonly type: 'paySubmitted' }
   | {
       readonly type: 'payFailed'
@@ -197,6 +203,12 @@ export function reduceCheckoutPage(
               reactivation: event.confirmed ? 'confirmed' : 'required'
             }
       )
+    case 'consentMissing':
+      return withCapture(page, (capture) =>
+        needsConsent(capture)
+          ? { ...capture, reactivation: 'invalid' }
+          : undefined
+      )
     case 'paySubmitted':
       return withCapture(page, ({ outcome: _cleared, ...capture }) => capture)
     case 'payFailed':
@@ -243,14 +255,22 @@ export function railView(rail: PaymentRail): RailView {
   return { kind: 'tabs', tab, element, saved }
 }
 
+/** The keep-subscription consent was asked for and is not ticked. */
+export function needsConsent(page: CheckoutPage): boolean {
+  return (
+    page.kind === 'capture' &&
+    (page.reactivation === 'required' || page.reactivation === 'invalid')
+  )
+}
+
 /**
  * Pay waits for the quote and for the rail the customer is on: the ready
  * element on Add new, a loaded list on Saved, nothing for a method on file.
- * An unticked reactivation or a collided Pay keeps it locked.
+ * A collided Pay keeps it locked; an unticked consent does not, since Pay
+ * is what marks it invalid.
  */
 export function railAcceptsPay(page: CheckoutPage): boolean {
   if (page.kind !== 'capture') return false
-  if (page.reactivation === 'required') return false
   if (page.outcome?.kind === 'reconciling') return false
   const { rail } = page
   if (rail.method === 'on_file') return true

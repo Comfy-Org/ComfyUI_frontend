@@ -66,11 +66,11 @@ describe('payVerdictOf', () => {
       }
     },
     {
-      name: 'a failed bank verification',
+      name: 'a challenge the customer did not complete',
       result: settledAs(failedOperation('authentication_failed', 'op_3')),
       expected: {
         kind: 'outcome',
-        outcome: { kind: 'verification_failed', operationId: 'op_3' }
+        outcome: { kind: 'not_completed', operationId: 'op_3' }
       }
     },
     {
