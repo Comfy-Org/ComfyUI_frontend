@@ -1124,7 +1124,6 @@ export class ComfyApp {
     const pending = this.pendingFitView
     if (!pending || !canvas.width || !canvas.height) return
     this.pendingFitView = undefined
-    if (pending.loadId !== this.graphLoadId) return
     pending.run()
   }
 

@@ -167,6 +167,30 @@ export function createTemplateHelper(
   return new TemplateHelper(page, config)
 }
 
+/** Name of the App Mode template registered by {@link mockAppModeTemplate}. */
+export const APP_MODE_TEMPLATE = 'pm-1733-app-template'
+
+/**
+ * Registers a template whose workflow carries `extra.linearMode`, so loading
+ * it keeps App Mode active and the graph canvas hidden. Deliberately has no
+ * `extra.ds`: a saved viewport would overwrite the camera a framing test
+ * parked, and the regression would pass without the deferred fit.
+ */
+export async function mockAppModeTemplate(
+  templates: TemplateHelper
+): Promise<void> {
+  templates.configure(
+    withTemplates([
+      makeTemplate({ name: APP_MODE_TEMPLATE, title: 'App Template' })
+    ])
+  )
+  await templates.mock()
+  await templates.mockWorkflow(
+    APP_MODE_TEMPLATE,
+    'browser_tests/assets/linear-basic-app-template.json'
+  )
+}
+
 /**
  * Registers a single paid (partner-node) template whose workflow actually
  * contains a partner node, so tests can exercise the paid-template surfaces.
