@@ -4,6 +4,15 @@ export interface WorkflowCreditsRefusal {
   readonly credits: number | undefined
 }
 
+export function withRefusalBaseline(
+  refusal: WorkflowCreditsRefusal | undefined,
+  credits: number | undefined
+): WorkflowCreditsRefusal | undefined {
+  return refusal && refusal.credits === undefined && credits !== undefined
+    ? { credits }
+    : refusal
+}
+
 export function workflowCreditsGate({
   busy,
   member,

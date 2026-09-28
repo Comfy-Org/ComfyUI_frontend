@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
 import type { WorkflowCreditsGate } from './workflow-credits-gate'
-import { workflowCreditsGate } from './workflow-credits-gate'
+import {
+  withRefusalBaseline,
+  workflowCreditsGate
+} from './workflow-credits-gate'
 
 const idle = { busy: false, member: false, refusal: undefined }
 
@@ -49,5 +52,15 @@ describe('workflowCreditsGate', () => {
     }
   ])('offers $gate for $label', ({ input, gate }) => {
     expect(workflowCreditsGate(input)).toBe(gate)
+  })
+
+  it('returns to Run after a top-up that follows a refusal made before the balance was read', () => {
+    let refusal = withRefusalBaseline({ credits: undefined }, undefined)
+    const gates = [undefined, 12, 500].map((credits) => {
+      refusal = withRefusalBaseline(refusal, credits)
+      return workflowCreditsGate({ ...idle, credits, refusal })
+    })
+
+    expect(gates).toEqual(['noCredits', 'noCredits', 'run'])
   })
 })

@@ -16,8 +16,10 @@ const note = computed(() =>
   t(
     gate === 'memberNoCredits'
       ? 'workshop.error.memberNoCredits'
-      : 'workshop.error.noCreditsCloud'
-  ).replace('{workspace}', () => workspaceName)
+      : 'workshop.error.noCreditsCloud',
+    'en',
+    { workspace: workspaceName }
+  )
 )
 </script>
 

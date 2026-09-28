@@ -16,9 +16,15 @@ import {
   workflowErrorKey,
   workflowStatusKey
 } from '../../config/workshop-workflow-presentation'
-import { useWorkshopCredits } from '../../config/workshop-credits'
+import {
+  refreshWorkshopCredits,
+  useWorkshopCredits
+} from '../../config/workshop-credits'
 import type { WorkflowCreditsRefusal } from '../../lib/workshop/workflow-credits-gate'
-import { workflowCreditsGate } from '../../lib/workshop/workflow-credits-gate'
+import {
+  withRefusalBaseline,
+  workflowCreditsGate
+} from '../../lib/workshop/workflow-credits-gate'
 import { panelSaysRefusal } from '../../lib/workshop/workflow-refusal'
 import { useStickyFooterScrollPadding } from '../../composables/useStickyFooterScrollPadding'
 import { useTablist } from '../../composables/useTablist'
@@ -149,8 +155,12 @@ watch(
     state.value.error.code === 'insufficient_credits',
   (refused) => {
     refusal.value = refused ? { credits: credits.value } : undefined
+    if (refused) void refreshWorkshopCredits({ force: true })
   }
 )
+watch(credits, (known) => {
+  refusal.value = withRefusalBaseline(refusal.value, known)
+})
 const creditsGate = computed(() =>
   signedIn.value
     ? workflowCreditsGate({
