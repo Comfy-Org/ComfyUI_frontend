@@ -61,4 +61,23 @@ describe('useWorkspaceInsetRight', () => {
 
     expect(readInset()).toBe('')
   })
+
+  it.each([
+    ['graph to linear', 420, 960],
+    ['linear to graph', 960, 420]
+  ])(
+    'keeps the incoming inset during a %s host switch',
+    async (_direction, outgoingWidth, incomingWidth) => {
+      const outgoing = effectScope()
+      outgoing.run(() => useWorkspaceInsetRight(() => outgoingWidth))
+      const incoming = effectScope()
+      incoming.run(() => useWorkspaceInsetRight(() => incomingWidth))
+
+      outgoing.stop()
+      await nextTick()
+
+      expect(readInset()).toBe(`${incomingWidth}px`)
+      incoming.stop()
+    }
+  )
 })

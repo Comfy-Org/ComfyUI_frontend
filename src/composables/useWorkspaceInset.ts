@@ -9,14 +9,30 @@ import { onScopeDispose, watchEffect } from 'vue'
  */
 export const WORKSPACE_INSET_RIGHT = '--workspace-inset-right'
 
+const insetPublishers = new Map<symbol, number>()
+
+function publishCurrentInset(): void {
+  const widths = [...insetPublishers.values()]
+  const width = widths.at(-1)
+  if (width === undefined) {
+    document.documentElement.style.removeProperty(WORKSPACE_INSET_RIGHT)
+    return
+  }
+  document.documentElement.style.setProperty(
+    WORKSPACE_INSET_RIGHT,
+    `${width}px`
+  )
+}
+
 export function useWorkspaceInsetRight(widthPx: () => number): void {
+  const publisher = Symbol()
   watchEffect(() => {
-    document.documentElement.style.setProperty(
-      WORKSPACE_INSET_RIGHT,
-      `${widthPx()}px`
-    )
+    insetPublishers.delete(publisher)
+    insetPublishers.set(publisher, widthPx())
+    publishCurrentInset()
   })
   onScopeDispose(() => {
-    document.documentElement.style.removeProperty(WORKSPACE_INSET_RIGHT)
+    insetPublishers.delete(publisher)
+    publishCurrentInset()
   })
 }
