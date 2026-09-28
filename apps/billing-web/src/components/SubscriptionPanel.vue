@@ -1,46 +1,19 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRoute, useRouter } from 'vue-router'
 
-import type {
-  BillingPlansData,
-  BillingStatusData
-} from '@comfyorg/account-core/billing'
-import {
-  useBillingClient,
-  usePlans,
-  usePreviewSubscribe
-} from '@comfyorg/account-ui/billing'
-import { billingIntentPath } from '@comfyorg/billing-contract'
+import type { BillingStatusData } from '@comfyorg/account-core/billing'
+import { useBillingClient, usePlans } from '@comfyorg/account-ui/billing'
 
-import PlanCard from '@/components/PlanCard.vue'
 import SubscriptionActions from '@/components/SubscriptionActions.vue'
-import SubscriptionQuote from '@/components/SubscriptionQuote.vue'
 import { useHostedCopy } from '@/composables/useHostedCopy'
 
-type CatalogPlan = BillingPlansData['plans'][number]
-type CreditStop = NonNullable<
-  BillingPlansData['team_credit_stops']
->['stops'][number]
-
-const { t, n } = useI18n()
-const { coded, date, money } = useHostedCopy()
-const route = useRoute()
-const router = useRouter()
+const { t } = useI18n()
+const { coded, date } = useHostedCopy()
 const { plans, loading, failure, refresh } = usePlans()
-const {
-  preview,
-  loading: quoting,
-  failure: quoteFailure,
-  quote
-} = usePreviewSubscribe()
 
 const { status } = useBillingClient<'status'>(undefined)
 
-const selectedSlug = ref<string | undefined>()
-const quotedStopId = ref<string | undefined>()
-const chosenStopId = ref<string | undefined>()
 const billingStatus = ref<BillingStatusData | undefined>()
 
 async function readStatus() {
@@ -56,124 +29,18 @@ async function subscriptionChanged() {
 
 const endsAt = computed(() => billingStatus.value?.cancel_at)
 
-const creditStops = computed(() => plans.value?.team_credit_stops)
-
-/** The customer's pick, else the workspace's subscribed stop, else the server's default. */
-const activeStop = computed<CreditStop | undefined>(() => {
-  const ladder = creditStops.value
-  if (ladder === undefined) return undefined
-  const byId = (id: string | undefined) =>
-    ladder.stops.find((stop) => stop.id === id)
-  return (
-    byId(chosenStopId.value) ??
-    byId(billingStatus.value?.team_credit_stop?.id) ??
-    ladder.stops[ladder.default_stop_index]
+const currentName = computed(() => {
+  const catalog = plans.value
+  const current = catalog?.plans.find(
+    (plan) => plan.slug === catalog.current_plan_slug
   )
-})
-
-function stopPrice(plan: CatalogPlan, stop: CreditStop) {
-  return money(
-    plan.duration === 'ANNUAL'
-      ? stop.yearly.price_cents
-      : stop.monthly.price_cents
-  )
-}
-
-function stopCredits(stop: CreditStop) {
-  return t('hosted.plan.stopCredits', { credits: n(Number(stop.credits)) })
-}
-
-function stopPricing(plan: CatalogPlan, stop: CreditStop) {
-  return {
-    price: stopPrice(plan, stop),
-    credits: stopCredits(stop),
-    stopId: stop.id,
-    stops: (creditStops.value?.stops ?? []).map((option) => ({
-      id: option.id,
-      label: t('hosted.plan.stopOption', {
-        credits: stopCredits(option),
-        price: stopPrice(plan, option)
+  return current
+    ? t('hosted.plan.name', {
+        tier: coded('tier', current.tier),
+        duration: coded('duration', current.duration)
       })
-    }))
-  }
-}
-
-function chooseStop(stopId: string | undefined) {
-  chosenStopId.value = stopId
-  selectedSlug.value = undefined
-}
-
-const currentSlug = computed(() => plans.value?.current_plan_slug)
-
-/** A Team plan with no stop has no chargeable price, so it shows none. */
-function planPricing(plan: CatalogPlan, stop: CreditStop | undefined) {
-  if (stop !== undefined) return stopPricing(plan, stop)
-  if (plan.tier === 'TEAM') return {}
-  return {
-    price: money(plan.price_cents),
-    credits: t('hosted.plan.credits', { amount: money(plan.credits_cents) })
-  }
-}
-
-function planCard(plan: CatalogPlan) {
-  const seats = Number(plan.max_seats)
-  // The catalog prices the Team tier by its credit-stop ladder, not `price_cents`.
-  const stop = plan.tier === 'TEAM' ? activeStop.value : undefined
-  const stopMissing = plan.tier === 'TEAM' && stop === undefined
-  const available = plan.availability.available && !stopMissing
-  return {
-    slug: plan.slug,
-    stopId: stop?.id,
-    props: {
-      name: t('hosted.plan.name', {
-        tier: coded('tier', plan.tier),
-        duration: coded('duration', plan.duration)
-      }),
-      ...planPricing(plan, stop),
-      seats: t('hosted.plan.seats', { count: seats }, seats),
-      available,
-      current: plan.slug === currentSlug.value,
-      reason: available
-        ? undefined
-        : coded(
-            'availability',
-            plan.availability.available
-              ? 'credit_stop_unavailable'
-              : plan.availability.reason
-          )
-    }
-  }
-}
-
-const cards = computed(() => (plans.value?.plans ?? []).map(planCard))
-const currentName = computed(
-  () => cards.value.find((card) => card.props.current)?.props.name
-)
-
-async function selectPlan(slug: string, stopId: string | undefined) {
-  selectedSlug.value = slug
-  quotedStopId.value = stopId
-  await quote({
-    planSlug: slug,
-    ...(stopId === undefined ? {} : { teamCreditStopId: stopId })
-  })
-}
-
-/** The entry's product and return target travel with the plan the customer chose. */
-function goToCheckout() {
-  if (selectedSlug.value === undefined) return
-  const { team_credit_stop_id: _entryStopId, ...entryQuery } = route.query
-  void router.push({
-    path: billingIntentPath('checkout'),
-    query: {
-      ...entryQuery,
-      plan: selectedSlug.value,
-      ...(quotedStopId.value === undefined
-        ? {}
-        : { team_credit_stop_id: quotedStopId.value })
-    }
-  })
-}
+    : undefined
+})
 </script>
 
 <template>
@@ -197,23 +64,5 @@ function goToCheckout() {
     </p>
 
     <SubscriptionActions @changed="subscriptionChanged" />
-
-    <ul class="m-0 grid list-none gap-3 p-0 sm:grid-cols-2">
-      <PlanCard
-        v-for="card in cards"
-        :key="card.slug"
-        v-bind="card.props"
-        @choose="selectPlan(card.slug, card.stopId)"
-        @update:stop-id="chooseStop"
-      />
-    </ul>
-
-    <SubscriptionQuote
-      v-if="selectedSlug"
-      :preview="preview"
-      :loading="quoting"
-      :failure-code="quoteFailure?.code"
-      @checkout="goToCheckout"
-    />
   </section>
 </template>

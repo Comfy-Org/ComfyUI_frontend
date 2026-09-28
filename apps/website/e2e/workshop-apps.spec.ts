@@ -29,19 +29,47 @@ test('opens Cinematic Studio on the apps flag alone', async ({
   context
 }) => {
   await mockFlags(context, { apps: true, workflows: false })
-  await page.goto('/cinematic-studio/')
+  await page.goto('/models/apps/cinematic-studio/')
   await expect(page.getByTestId('cinematic')).toBeVisible()
   await expect(page.getByText('Cinematic Studio is not open yet')).toHaveCount(
     0
   )
 })
 
-test('keeps Cinematic Studio closed when only the workflows flag is on', async ({
+test('opens Cinematic Studio on the workflows flag alone', async ({
   page,
   context
 }) => {
   await mockFlags(context, { apps: false, workflows: true })
-  await page.goto('/cinematic-studio/')
+  await page.goto('/models/apps/cinematic-studio/')
   await expect(page.getByText('Cinematic Studio is not open yet')).toBeVisible()
   await expect(page.getByTestId('cinematic')).toHaveCount(0)
+})
+
+test('lists both apps in the catalogue Apps tab, on /models/apps/ pages', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: false })
+  await page.goto('/models/?type=apps')
+  const shelf = page.getByTestId('app-shelf')
+  const cards = shelf.getByRole('link')
+  await expect(cards).toHaveCount(2)
+  await expect(cards.nth(0)).toHaveAttribute(
+    'href',
+    '/models/apps/cinematic-studio/'
+  )
+  await expect(cards.nth(1)).toHaveAttribute('href', '/models/apps/reshoot/')
+  await expect(
+    page.getByRole('button', { name: /Browse all apps/ })
+  ).toHaveCount(0)
+})
+
+test('sends the old studio address to the app page it named', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: false })
+  await page.goto('/cinematic-studio/?app=reshoot&ux=d&model=flux')
+  await expect(page).toHaveURL(/\/models\/apps\/reshoot\/\?ux=d&model=flux$/)
 })

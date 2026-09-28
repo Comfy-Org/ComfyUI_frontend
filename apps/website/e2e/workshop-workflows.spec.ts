@@ -66,7 +66,7 @@ test('workflow launch groups lead to the existing shared form', async ({
     'href',
     '/models/workflows/change-material/'
   )
-  await page.getByTestId('browse-all').click()
+  await page.getByTestId('browse-all-end').click()
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(
     'All workflows 30'
   )
@@ -88,6 +88,10 @@ test('workflow launch groups lead to the existing shared form', async ({
   await expect(
     page.getByRole('heading', { name: 'Change a material', exact: true })
   ).toBeVisible()
+  // The eyebrow names the shelf this workflow sits on, and leads back to it.
+  const shelf = page.getByTestId('workflow-use-case')
+  await expect(shelf).toHaveText('Edit images')
+  await expect(shelf).toHaveAttribute('href', '/models?useCase=edit-images')
   await expect(
     page.getByRole('group', { name: 'Your original image' })
   ).toBeVisible()
@@ -104,13 +108,13 @@ test('workflow launch groups lead to the existing shared form', async ({
     .click()
   await page.getByTestId('example-replace-keep').click()
   await expect(prompt).toHaveValue('Use the material from the second image.')
+  await page.getByRole('tab', { name: 'Details', exact: true }).click()
   await expect(
     page.getByRole('link', { name: 'Try in Cloud' })
   ).toHaveAttribute(
     'href',
     'https://testcloud.comfy.org/?template=image_qwen_image_edit_2511'
   )
-  await page.getByRole('tab', { name: 'Workflow', exact: true }).click()
   const graphFiles = [
     {
       link: page.getByRole('link', { name: 'Open full-size workflow preview' }),

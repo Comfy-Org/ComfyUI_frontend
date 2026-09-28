@@ -3,19 +3,20 @@ import type { RouterHistory, RouteRecordRaw } from 'vue-router'
 import { createRouter, createWebHistory } from 'vue-router'
 
 import type { SessionSnapshot } from '@comfyorg/account-core/session'
-import type { BillingIntent } from '@comfyorg/billing-contract'
+import type { BillingEntry, BillingIntent } from '@comfyorg/billing-contract'
 import {
   BILLING_INTENTS,
   billingIntentPath,
+  buildReturnUrl,
   parseBillingEntry
 } from '@comfyorg/billing-contract'
 
+import { BILLING_WEB_ENV } from '@/config/env'
 import { recordBillingEntry } from '@/entry/billingEntry'
-import { bindEntryWorkspace } from '@/entry/workspaceBinding'
 import {
-  billingWebSessionClient,
-  billingWebSessionPhase
-} from '@/session/billingWebSession'
+  billingWebPhase,
+  onBillingWebEntryWorkspace
+} from '@/session/billingWebAuth'
 import BillingHomeView from '@/views/BillingHomeView.vue'
 import CheckoutView from '@/views/CheckoutView.vue'
 import EntryErrorView from '@/views/EntryErrorView.vue'
@@ -31,7 +32,7 @@ const APP_ENTRY_PATH = '/'
 export const SIGN_IN_PATH = '/sign-in'
 
 const INTENT_VIEWS: Record<BillingIntent, Component> = {
-  pricing: SubscriptionView,
+  pricing: EntryErrorView,
   subscription: SubscriptionView,
   checkout: CheckoutView,
   'payment-methods': PaymentMethodsView,
@@ -68,16 +69,25 @@ const routes: RouteRecordRaw[] = [
 
 export type BillingWebSessionPhase = SessionSnapshot['phase']
 
-/**
- * Rebinds the tab to a newly-arrived entry's workspace and, only when that
- * actually changes the binding, mints for it right away — so a credential
- * for the workspace this tab is leaving is never left to answer a request
- * meant for the new one. A signed-out tab's call is a no-op: `ensureFresh`
- * with no user to mint for resolves immediately.
- */
-function defaultOnEntryWorkspace(workspaceId: string): void {
-  if (!bindEntryWorkspace(workspaceId)) return
-  void billingWebSessionClient().ensureFresh(undefined, { workspaceId })
+/** Plan selection is the host app's: billing-web only takes a chosen plan to checkout. */
+function hostOwnsPlanSelection(entry: BillingEntry): boolean {
+  return (
+    entry.intent === 'pricing' ||
+    (entry.intent === 'checkout' && entry.plan === undefined)
+  )
+}
+
+/** Echoes the host's own workspace back, leaving this tab's binding alone. */
+function hostReturnHref(entry: BillingEntry): string | undefined {
+  return buildReturnUrl({
+    target: entry.returnTo,
+    environment: BILLING_WEB_ENV,
+    workspace: entry.workspaceId
+  })?.href
+}
+
+function leaveForHost(href: string): void {
+  window.location.replace(href)
 }
 
 /**
@@ -90,26 +100,61 @@ function defaultOnEntryWorkspace(workspaceId: string): void {
  * and signing in would not repair it. The sign-in page is the one route that
  * leaves the entry alone, because it is where that visitor was sent. The app's
  * own entry path carries no product request and clears what a previous link
- * left behind.
+ * left behind. A link that still needs a plan chosen goes back to its host
+ * before any session is asked for; with nowhere to go back to, it is an entry
+ * error. The phase is read on every route, sign-in included, because it is
+ * what settles which sign-in this page load runs on.
  */
 export function createBillingRouter(
   history: RouterHistory = createWebHistory(import.meta.env.BASE_URL),
-  readPhase: () => BillingWebSessionPhase = billingWebSessionPhase,
-  onEntryWorkspace: (workspaceId: string) => void = defaultOnEntryWorkspace
+  readPhase: () =>
+    | BillingWebSessionPhase
+    | Promise<BillingWebSessionPhase> = billingWebPhase,
+  onEntryWorkspace: (workspaceId: string) => void = onBillingWebEntryWorkspace,
+  leave: (href: string) => void = leaveForHost
 ) {
   const router = createRouter({ history, routes })
 
-  router.beforeEach((to) => {
-    if (to.path === APP_ENTRY_PATH) {
-      recordBillingEntry(undefined)
-    } else if (to.path !== SIGN_IN_PATH) {
-      const result = parseBillingEntry(to.fullPath)
+  function recordUnknownReturn(): boolean {
+    recordBillingEntry({ status: 'error', code: 'UNKNOWN_RETURN_TARGET' })
+    return true
+  }
+
+  /** False once the link has left this tab for its host. */
+  function sendToHost(entry: BillingEntry): boolean {
+    const href = hostReturnHref(entry)
+    if (href === undefined) return recordUnknownReturn()
+    leave(href)
+    return false
+  }
+
+  function admitEntry(entry: BillingEntry): boolean {
+    recordBillingEntry({ status: 'ok', entry })
+    if (entry.workspaceId !== undefined) onEntryWorkspace(entry.workspaceId)
+    return true
+  }
+
+  function readEntry(fullPath: string): boolean {
+    const result = parseBillingEntry(fullPath)
+    if (result.status === 'error') {
       recordBillingEntry(result)
-      if (result.status === 'ok' && result.entry.workspaceId !== undefined) {
-        onEntryWorkspace(result.entry.workspaceId)
-      }
+      return true
     }
-    if (to.path === SIGN_IN_PATH || readPhase() === 'authenticated') return true
+    const { entry } = result
+    if (hostOwnsPlanSelection(entry)) return sendToHost(entry)
+    // Every way out of checkout leads back to the host, so a checkout with
+    // no resolvable return is an entry error rather than a dead-ended form.
+    if (entry.intent === 'checkout' && hostReturnHref(entry) === undefined) {
+      return recordUnknownReturn()
+    }
+    return admitEntry(entry)
+  }
+
+  router.beforeEach(async (to) => {
+    if (to.path === APP_ENTRY_PATH) recordBillingEntry(undefined)
+    else if (to.path !== SIGN_IN_PATH && !readEntry(to.fullPath)) return false
+    const phase = await readPhase()
+    if (to.path === SIGN_IN_PATH || phase === 'authenticated') return true
     return { path: SIGN_IN_PATH, query: { returnTo: to.fullPath } }
   })
 

@@ -72,7 +72,8 @@ jobs:
 
       # Cloud-only surfaces such as the Agent panel are compiled out of the
       # localhost production artifact. Rebuild before measuring them instead
-      # of silently timing out against a UI that cannot expose the workload.
+      # of timing out without failing the PR job against a UI that cannot
+      # expose the workload.
       - name: Build cloud frontend for cloud performance tests
         run: pnpm build:cloud
         env:
