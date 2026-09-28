@@ -969,6 +969,56 @@ describe('useAgentConversationStore', () => {
       expect(reportError).toHaveBeenCalledTimes(1)
     })
 
+    it('dedupes one ask across the transport and store routing paths', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.stashActiveTurn()
+      store.ingest(done('t1'))
+
+      const ask = runApproval('t1', 'turn-1:call-1')
+      store.ingest(ask)
+      store.dropBackgroundTurns()
+      store.ingest(ask)
+
+      expect(reportError).toHaveBeenCalledTimes(1)
+    })
+
+    it('reports a late ask after hydrate retires an active turn', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+
+      store.hydrate([])
+      store.ingest(runApproval('t1', 'turn-1:call-1'))
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          tags: expect.objectContaining({ reason: 'no-live-turn' })
+        })
+      )
+    })
+
+    it('reports a late ask after resume discards a settled turn', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.stashActiveTurn()
+      store.ingest(done('t1'))
+
+      store.hydrate([])
+      store.resumeBackgroundTurn()
+      store.ingest(runApproval('t1', 'turn-1:call-1'))
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          tags: expect.objectContaining({ reason: 'settled-turn' })
+        })
+      )
+    })
+
     it('reports after a dropped background turn', () => {
       const store = useAgentConversationStore()
       store.setThreadId('th')

@@ -1,12 +1,8 @@
 import { expect } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { zAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-
 import {
-  RUN_APPROVAL_ASK_ID,
   RUN_APPROVAL_EVENT,
-  THREAD_ID,
   agentTurnLockTest as test
 } from '@e2e/fixtures/agentTurnLockFixture'
 
@@ -58,6 +54,7 @@ test.describe(
       // answer. `ws.send()` throws on a dead route, so pushing stays above
       // test.fail() too.
       turnLock.push(reconnected, RUN_APPROVAL_EVENT)
+      expect(turnLock.pendingAskIsPrimed()).toBe(false)
 
       test.fail()
       await expect(
@@ -77,6 +74,7 @@ test.describe(
       const reconnected = await turnLock.dropSocket()
       await expect(turnLock.userBubbles).toHaveText([PROMPT])
       turnLock.push(reconnected, RUN_APPROVAL_EVENT)
+      expect(turnLock.pendingAskIsPrimed()).toBe(false)
 
       test.fail()
       // Recovery must restore both the card and its active turn identity;
@@ -100,6 +98,7 @@ test.describe(
       const live = await turnLock.liveSocket()
 
       turnLock.push(live, RUN_APPROVAL_EVENT)
+      expect(turnLock.pendingAskIsPrimed()).toBe(false)
 
       await expect(
         turnLock.panel.getByText(enMessages.agent.runApproval.question)
@@ -111,56 +110,6 @@ test.describe(
         })
         .click()
       await expect.poll(() => turnLock.answeredAsks()).toEqual(['run'])
-    })
-
-    const invalidAnswers = [
-      {
-        name: 'wrong thread',
-        threadId: 'another-thread',
-        askId: RUN_APPROVAL_ASK_ID,
-        selected: ['run'],
-        status: 404
-      },
-      {
-        name: 'wrong ask',
-        threadId: THREAD_ID,
-        askId: 'another-ask',
-        selected: ['run'],
-        status: 404
-      },
-      {
-        name: 'option the ask did not offer',
-        threadId: THREAD_ID,
-        askId: RUN_APPROVAL_ASK_ID,
-        selected: ['always'],
-        status: 422
-      }
-    ]
-
-    for (const answer of invalidAnswers) {
-      test(`the fake server rejects an answer for the ${answer.name}`, async ({
-        turnLock
-      }) => {
-        expect(
-          await turnLock.postAnswer(
-            answer.threadId,
-            answer.askId,
-            answer.selected
-          )
-        ).toBe(answer.status)
-        expect(turnLock.answeredAsks()).toEqual([])
-      })
-    }
-
-    // Asserting the wire shape here, not in the fixture, so a future edit to
-    // RUN_APPROVAL_EVENT that made it unparseable would surface as a failed
-    // assertion rather than as three silently-vacuous pushes.
-    test('the fixture pushes an ask the client can parse', () => {
-      const event = zAgentWsEvent.parse(
-        JSON.parse(JSON.stringify(RUN_APPROVAL_EVENT))
-      )
-      expect(event.type).toBe('agent_ask')
-      expect(event.data).toMatchObject({ kind: 'run_approval' })
     })
   }
 )

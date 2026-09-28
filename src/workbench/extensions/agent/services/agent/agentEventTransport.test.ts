@@ -540,10 +540,18 @@ describe('agentEventTransport run approval', () => {
     expect(message.streaming).toBe(true)
   })
 
-  it('does not report the supported ask_user kind as an unknown ask', () => {
+  it('reports ask_user as a generated kind without a client renderer', () => {
     drive([runApproval('ask-user-1', 'ask_user')])
 
-    expect(reportError).not.toHaveBeenCalled()
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        tags: expect.objectContaining({
+          reason: 'unrendered-kind',
+          ask_kind: 'ask_user'
+        })
+      })
+    )
   })
 
   it('reports an unknown ask kind once with a bounded tag', () => {
@@ -563,6 +571,15 @@ describe('agentEventTransport run approval', () => {
         }
       })
     )
+  })
+
+  it('bounds reported ask identities and evicts the oldest', () => {
+    const asks = Array.from({ length: 33 }, (_, index) =>
+      runApproval(`unknown-${index}`, 'unsupported')
+    )
+    drive([...asks, asks[0]])
+
+    expect(reportError).toHaveBeenCalledTimes(34)
   })
 })
 

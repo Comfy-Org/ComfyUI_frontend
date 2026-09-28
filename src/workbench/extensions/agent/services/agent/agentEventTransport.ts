@@ -1,4 +1,3 @@
-import { reportError } from '@/platform/telemetry/reportError'
 import type { AgentWsEvent } from '../../schemas/agentApiSchema'
 
 import { STALE_AFTER_MS } from '../../crdt/agentCrdtDocLifecycle'
@@ -10,6 +9,11 @@ import type {
   ToolPart
 } from './agentMessageParts'
 import { snapshotMessage } from './agentMessageParts'
+import type {
+  UndeliverableAskContext,
+  UndeliverableAskReason
+} from './undeliverableAskReporter'
+import { createUndeliverableAskReporter } from './undeliverableAskReporter'
 
 export type AgentChatEvent = Extract<
   AgentWsEvent,
@@ -119,7 +123,12 @@ export function createAgentEventTransport(
    * `shouldAwaitCanvasSync` at its default) never spuriously looks "caught
    * up".
    */
-  getCanvasSyncOutcomeCount: () => number = () => 0
+  getCanvasSyncOutcomeCount: () => number = () => 0,
+  reportUndeliverableAsk: (
+    data: AgentAskEvent['data'],
+    reason: UndeliverableAskReason,
+    context?: UndeliverableAskContext
+  ) => void = createUndeliverableAskReporter().report
 ): AgentEventTransport {
   let openText: TextPart | null = null
   // The answer the model is still writing. Provisional: the round's first tool
@@ -137,7 +146,6 @@ export function createAgentEventTransport(
       .map((part) => [part.callId, part])
   )
   let settled = false
-  const reportedUndeliverableAskIds = new Set<string>()
   let lastTabTargetKey: string | undefined
   // Tool parts whose frame reported done but whose displayed state is held at
   // 'streaming' pending canvas catch-up. Each has its own bounded timer so a
@@ -312,12 +320,15 @@ export function createAgentEventTransport(
    *
    * That `false` reaches a live turn and still shows the user nothing, while
    * the server parks waiting for an answer — the same dead-panel outcome as an
-   * ask dropped in routing, so it is reported the same way. If cloud ever adds
-   * a second ask kind, this is what says so before a user has to.
+   * ask dropped in routing, so it is reported the same way. Generated-contract
+   * kinds without a client renderer are tagged separately from unknown input.
    */
   function handleAskEvent(data: AgentAskEvent['data']): boolean {
     if (data.kind !== 'run_approval') {
-      if (data.kind !== 'ask_user') reportUndeliverableAsk(data, 'unknown-kind')
+      reportUndeliverableAsk(
+        data,
+        data.kind === 'ask_user' ? 'unrendered-kind' : 'unknown-kind'
+      )
       return false
     }
     dropDraft()
@@ -333,25 +344,6 @@ export function createAgentEventTransport(
     }
     message.parts.push(part)
     return true
-  }
-
-  function reportUndeliverableAsk(
-    data: AgentAskEvent['data'],
-    reason: 'unknown-kind' | 'settled-turn'
-  ): void {
-    if (reportedUndeliverableAskIds.has(data.ask_id)) return
-    reportedUndeliverableAskIds.add(data.ask_id)
-    reportError(
-      new Error(`agent approval ask could not be delivered (${reason})`),
-      {
-        errorType: 'failure_delivering_agent_approval_ask',
-        level: 'warning',
-        tags: {
-          reason,
-          ask_kind: data.kind?.slice(0, 64) || 'missing'
-        }
-      }
-    )
   }
 
   /** Applies one `agent_thinking` frame: appends its delta to the open

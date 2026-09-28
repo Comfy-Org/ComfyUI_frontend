@@ -1,7 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-import { reportError } from '@/platform/telemetry/reportError'
 import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
 import type {
   AgentChatEvent,
@@ -11,6 +10,7 @@ import { createAgentEventTransport } from '../../services/agent/agentEventTransp
 import type { AssistantMessage } from '../../services/agent/agentMessageParts'
 import { createAssistantMessage } from '../../services/agent/agentMessageParts'
 import { normalizeAgentTranscript } from '../../services/agent/agentTranscript'
+import { createUndeliverableAskReporter } from '../../services/agent/undeliverableAskReporter'
 import type { UserAttachment } from '../../services/agent/agentTranscript'
 import type { WorkflowReference } from '../../types/workflowReference'
 
@@ -88,7 +88,7 @@ export const useAgentConversationStore = defineStore(
     const reportedPaywallImpressions = new Set<TurnId>()
     const approvalShownAtByAsk = new Map<string, number>()
     const shownApprovalIds = new Set<string>()
-    const reportedUndeliverableAskIds = new Set<string>()
+    const undeliverableAskReporter = createUndeliverableAskReporter()
     const departedTurns = new Map<string, 'no-live-turn' | 'settled-turn'>()
     const activeIndex = ref(-1)
 
@@ -210,7 +210,8 @@ export const useAgentConversationStore = defineStore(
         message,
         replaceActive,
         () => canvasSyncGate(),
-        () => canvasSyncOutcomeCount()
+        () => canvasSyncOutcomeCount(),
+        reportUndeliverableAskData
       )
     }
 
@@ -252,27 +253,23 @@ export const useAgentConversationStore = defineStore(
       reason: 'no-live-turn' | 'settled-turn'
     ): void {
       if (event.type !== 'agent_ask') return
-      if (reportedUndeliverableAskIds.has(event.data.ask_id)) return
-      reportedUndeliverableAskIds.add(event.data.ask_id)
-      reportError(
-        new Error(`agent approval ask could not be delivered (${reason})`),
-        {
-          errorType: 'failure_delivering_agent_approval_ask',
-          level: 'warning',
-          tags: {
-            reason,
-            ask_kind: event.data.kind?.slice(0, 64) || 'missing',
-            has_active_turn: activeTurnId.value !== null,
-            background_turn_count: backgroundTurns.size
-          },
-          context: {
-            threadId: event.data.thread_id,
-            messageId: event.data.message_id,
-            activeThreadId: threadId.value,
-            activeTurnId: activeTurnId.value
-          }
-        }
-      )
+      reportUndeliverableAskData(event.data, reason)
+    }
+
+    function reportUndeliverableAskData(
+      data: Extract<AgentChatEvent, { type: 'agent_ask' }>['data'],
+      reason:
+        | 'no-live-turn'
+        | 'settled-turn'
+        | 'unknown-kind'
+        | 'unrendered-kind'
+    ): void {
+      undeliverableAskReporter.report(data, reason, {
+        hasActiveTurn: activeTurnId.value !== null,
+        backgroundTurnCount: backgroundTurns.size,
+        activeThreadId: threadId.value,
+        activeTurnId: activeTurnId.value
+      })
     }
 
     function ingestActiveTurnEvent(
@@ -401,6 +398,7 @@ export const useAgentConversationStore = defineStore(
         !poppedHydratedCopy &&
         hydratedMessageIds.has(entry.messageId)
       ) {
+        rememberDepartedTurn(threadId.value, entry.messageId, 'settled-turn')
         // The persisted, authoritative copy is already on screen (kept, via
         // the filter above) -- this entry's transport is now discarded for
         // good, so flush anything it is still holding rather than leaving it
@@ -416,6 +414,7 @@ export const useAgentConversationStore = defineStore(
       const index = kept.push(entry.message) - 1
       messages.value = kept
       if (entry.settled) {
+        rememberDepartedTurn(threadId.value, entry.messageId, 'settled-turn')
         // PM-1575: this settled turn is kept on screen but not reactivated --
         // its transport is discarded for good right after this, same as the
         // hydrated-copy-dropped branch above, so flush anything it is still
@@ -544,12 +543,13 @@ export const useAgentConversationStore = defineStore(
       hydratedMessageIds = new Set()
       hydratedAssistantTurnIds = new Set()
       reportedPaywallImpressions.clear()
-      reportedUndeliverableAskIds.clear()
+      undeliverableAskReporter.reset()
       departedTurns.clear()
       clearActive()
     }
 
     function hydrate(history: AgentMessages): void {
+      if (transport) rememberDepartedActiveTurn('no-live-turn')
       disposeActiveAndSettledTransports()
       clearActive()
       const transcript = normalizeAgentTranscript(history)
@@ -572,7 +572,8 @@ export const useAgentConversationStore = defineStore(
           transcript.pending.message,
           replaceActive,
           () => canvasSyncGate(),
-          () => canvasSyncOutcomeCount()
+          () => canvasSyncOutcomeCount(),
+          reportUndeliverableAskData
         )
       }
     }

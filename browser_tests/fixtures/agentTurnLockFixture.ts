@@ -27,7 +27,7 @@ import { webSocketFixture } from '@e2e/fixtures/ws'
 
 const zAnswerRequest = z.object({ selected: z.array(z.string()) })
 
-export const THREAD_ID = 'b9d0a2a1-0f2c-4f1a-9a5e-6b0f4f2c1d77'
+const THREAD_ID = 'b9d0a2a1-0f2c-4f1a-9a5e-6b0f4f2c1d77'
 const TURN_ID = '2dd4f367-3399-4cb4-8127-547f531c289a'
 const WORKFLOW_ID = 'a81718a4-02ae-41e6-ae85-000000000001'
 
@@ -75,7 +75,7 @@ export const TURN_DONE_EVENT: AgentWsEvent = {
   data: { message_id: TURN_ID, thread_id: THREAD_ID }
 }
 
-export const RUN_APPROVAL_ASK_ID = `${TURN_ID}:call-run-workflow`
+const RUN_APPROVAL_ASK_ID = `${TURN_ID}:call-run-workflow`
 
 /**
  * The option ids this ask offers. Declared separately because `AgentWsEvent`
@@ -154,6 +154,10 @@ class TurnLockServer {
   /** Every ask answer the server accepted, in order, as the selected ids. */
   get answers(): string[][] {
     return this.answered
+  }
+
+  get askIsPending(): boolean {
+    return this.pendingAsk !== undefined
   }
 
   recordAnswer(selected: string[]): void {
@@ -372,8 +376,17 @@ export class AgentTurnLockHarness {
   }
 
   push(ws: WebSocketRoute, event: AgentWsEvent): void {
-    this.server.recordAsk(event)
     ws.send(JSON.stringify(event))
+  }
+
+  /** Makes an ask available through transcript hydration, independently of WS delivery. */
+  primePendingAsk(event: AgentWsEvent): void {
+    this.server.recordAsk(event)
+  }
+
+  /** True only when a test explicitly primed transcript-based recovery. */
+  pendingAskIsPrimed(): boolean {
+    return this.server.askIsPending
   }
 
   /**
