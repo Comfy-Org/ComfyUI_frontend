@@ -52,7 +52,7 @@ test.describe(
 
       await expect(dialog).toHaveCount(0)
       await expect(agentPanel.composer).toHaveText('')
-      expect(postedMessages).toHaveLength(1)
+      await expect.poll(() => postedMessages).toHaveLength(1)
     })
 
     test('keeps a cancelled held draft unsent and lets the user retry', async ({
