@@ -7,6 +7,9 @@ export const TestIds = {
   app: {
     loadingOverlay: 'app-loading-overlay'
   },
+  agent: {
+    conversationScroll: 'agent-conversation-scroll'
+  },
   sidebar: {
     toolbar: 'side-toolbar',
     nodeLibrary: 'node-library-tree',
