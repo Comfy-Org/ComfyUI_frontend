@@ -10,6 +10,13 @@ export function workshopAppHref(app: WorkshopAppId, locale: Locale): string {
   return app === 'reshoot' ? routes.reshoot : routes.cinematicStudio
 }
 
+const appRepos: Partial<Record<WorkshopAppId, string>> = {}
+
+/** The app's open-source repository, once it is published. */
+export function workshopAppRepo(app: WorkshopAppId): string | undefined {
+  return appRepos[app]
+}
+
 export interface WorkshopAppCard {
   readonly key: string
   readonly name: CinematicCopyKey
