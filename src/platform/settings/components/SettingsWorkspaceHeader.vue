@@ -2,12 +2,11 @@
   <div class="flex min-w-0 flex-1 items-center gap-3">
     <template v-if="!collapsed && workspaceName">
       <WorkspaceProfilePic
-        size="lg"
         :workspace-name="workspaceName"
         :subscription-tier="subscriptionTier"
       />
       <h1
-        class="m-0 truncate text-2xl font-semibold text-base-foreground select-none"
+        class="m-0 truncate text-base font-bold text-base-foreground select-none"
       >
         {{ workspaceName }}
       </h1>
