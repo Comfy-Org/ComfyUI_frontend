@@ -1,6 +1,8 @@
 import { expect } from '@playwright/test'
 
 import {
+  PERSISTED_AFTER_TOOL_TEXT,
+  PERSISTED_BEFORE_TOOL_TEXT,
   POST_RECONNECT_EVENT,
   POST_RECONNECT_TEXT,
   TURN_DONE_EVENT,
@@ -62,6 +64,31 @@ test.describe(
       await expect(turnLock.stopButton).toBeVisible()
       await expect(turnLock.workSummary).toHaveCount(0)
       await expect(turnLock.workingRow).toBeVisible()
+    })
+
+    test('restores persisted text around tool work when the socket misses completion', async ({
+      turnLock
+    }) => {
+      await turnLock.dropSocket()
+      turnLock.finishTurnOnServer()
+
+      const before = turnLock.panel.getByText(PERSISTED_BEFORE_TOOL_TEXT)
+      const after = turnLock.panel.getByText(PERSISTED_AFTER_TOOL_TEXT)
+      await expect(before).toBeVisible()
+      await expect(turnLock.workSummary).toBeVisible()
+      await expect(after).toBeVisible()
+
+      await expect
+        .poll(async () => {
+          const [beforeBox, toolBox, afterBox] = await Promise.all([
+            before.boundingBox(),
+            turnLock.workSummary.boundingBox(),
+            after.boundingBox()
+          ])
+          if (!beforeBox || !toolBox || !afterBox) return false
+          return beforeBox.y < toolBox.y && toolBox.y < afterBox.y
+        })
+        .toBe(true)
     })
 
     // PM-916 / PM-938. The composer remains editable while a turn is active,

@@ -372,7 +372,7 @@ describe('useAgentConversationStore', () => {
 
     store.hydrate([
       historyRow(1, 'user', 't1', 'go'),
-      historyRow(2, 'assistant', 't1', 'authoritative reply')
+      historyRow(2, 'assistant', 't1', 'authoritative reply', 't1')
     ])
 
     vi.advanceTimersByTime(30_000)
@@ -937,8 +937,15 @@ describe('useAgentConversationStore', () => {
       store.recordUser(T1, 'front prompt')
       store.ingest(delta('t1', 'front partial'))
 
-      store.settleTurn(settled, 'persisted final')
-      store.settleTurn(settled, 'persisted final')
+      const persistedParts = [
+        {
+          type: 'text' as const,
+          text: 'persisted final',
+          state: 'done' as const
+        }
+      ]
+      store.settleTurn(settled, persistedParts)
+      store.settleTurn(settled, persistedParts)
 
       expect(store.liveTurns()).toEqual(stillLive)
       store.setThreadId(settled.threadId)

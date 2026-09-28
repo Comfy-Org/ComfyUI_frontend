@@ -35,6 +35,8 @@ const TURN_IN_PROGRESS: AgentError = { error: TURN_IN_PROGRESS_MESSAGE }
 
 const TURN_THINKING_TEXT = 'Wiring the audio output node.'
 export const POST_RECONNECT_TEXT = 'Reconnected, and the graph is ready.'
+export const PERSISTED_BEFORE_TOOL_TEXT = 'Prepared the graph. '
+export const PERSISTED_AFTER_TOOL_TEXT = 'Audio output connected.'
 
 const TURN_THINKING_EVENT: AgentWsEvent = {
   type: 'agent_thinking',
@@ -101,7 +103,7 @@ class TurnLockServer {
   }
 
   transcript(): AgentMessage[] {
-    return [
+    const rows: AgentMessage[] = [
       {
         id: 'user-1',
         thread_id: THREAD_ID,
@@ -111,17 +113,61 @@ class TurnLockServer {
         status: 'complete',
         workflow_id: WORKFLOW_ID,
         content: { text: this.prompt }
-      },
-      {
-        id: TURN_ID,
-        thread_id: THREAD_ID,
-        turn_id: TURN_ID,
-        seq: 2,
-        role: 'assistant',
-        status: this.streaming ? 'streaming' : 'complete',
-        workflow_id: WORKFLOW_ID
       }
     ]
+    if (!this.streaming) {
+      rows.push(
+        {
+          id: TURN_ID,
+          thread_id: THREAD_ID,
+          turn_id: TURN_ID,
+          seq: 2,
+          role: 'assistant',
+          status: 'complete',
+          workflow_id: WORKFLOW_ID,
+          content: { text: PERSISTED_BEFORE_TOOL_TEXT }
+        },
+        {
+          id: 'tool-row',
+          thread_id: THREAD_ID,
+          turn_id: TURN_ID,
+          seq: 3,
+          role: 'assistant',
+          status: 'complete',
+          workflow_id: WORKFLOW_ID,
+          content: {
+            tool_calls: [
+              {
+                id: 'call-add-node',
+                tool_name: 'add_node',
+                status: 'success'
+              }
+            ]
+          }
+        },
+        {
+          id: 'final-row',
+          thread_id: THREAD_ID,
+          turn_id: TURN_ID,
+          seq: 4,
+          role: 'assistant',
+          status: 'complete',
+          workflow_id: WORKFLOW_ID,
+          content: { text: PERSISTED_AFTER_TOOL_TEXT }
+        }
+      )
+      return rows
+    }
+    rows.push({
+      id: TURN_ID,
+      thread_id: THREAD_ID,
+      turn_id: TURN_ID,
+      seq: 2,
+      role: 'assistant',
+      status: 'streaming',
+      workflow_id: WORKFLOW_ID
+    })
+    return rows
   }
 
   startTurn(prompt: string): AgentTurnAccepted {
@@ -265,6 +311,10 @@ export class AgentTurnLockHarness {
   finishTurn(ws: WebSocketRoute): void {
     this.server.completeTurn()
     this.push(ws, TURN_DONE_EVENT)
+  }
+
+  finishTurnOnServer(): void {
+    this.server.completeTurn()
   }
 
   /**

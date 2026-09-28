@@ -18,6 +18,7 @@ import {
 import { createUuidv4 } from '@/utils/uuid'
 import type {
   AgentActiveTabData,
+  AgentMessages,
   AgentTurnAccepted,
   AgentWsEvent,
   TurnId
@@ -36,6 +37,8 @@ import type {
   OpenTabsSnapshot,
   PostMessageInput
 } from '../../services/agent/agentRestClient'
+import type { AssistantMessage } from '../../services/agent/agentMessageParts'
+import { normalizeAgentTranscript } from '../../services/agent/agentTranscript'
 import type { LiveTurn } from '../../stores/agent/agentConversationStore'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
 import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
@@ -133,21 +136,38 @@ const TURN_RECOVERY_DELAYS_MS = [0, 1000, 2000, 4000, 8000, 16000]
 const TURN_RECOVERY_DEADLINE_MS = 60_000
 
 type TurnOutcome =
-  | { kind: 'terminal'; text: string }
+  | { kind: 'terminal'; parts: AssistantMessage['parts'] }
   | { kind: 'thread-missing' }
   | { kind: 'streaming' }
   | { kind: 'error'; message: string }
 
-const TERMINAL_TURN_STATUSES = new Set([
-  'complete',
-  'completed',
-  'success',
-  'error',
-  'failed',
-  'interrupted',
-  'cancelled',
-  'canceled'
-])
+function isTerminalTurnStatus(
+  status: AgentMessages[number]['status']
+): boolean {
+  switch (status) {
+    case 'complete':
+    case 'error':
+    case 'interrupted':
+      return true
+    case 'streaming':
+      return false
+  }
+}
+
+function mergeAdjacentTextParts(
+  parts: AssistantMessage['parts']
+): AssistantMessage['parts'] {
+  const merged: AssistantMessage['parts'] = []
+  for (const part of parts) {
+    const previous = merged.at(-1)
+    if (part.type === 'text' && previous?.type === 'text') {
+      previous.text += part.text
+      continue
+    }
+    merged.push(part)
+  }
+  return merged
+}
 
 /**
  * The status source reports its current state synchronously on subscribe
@@ -1005,7 +1025,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function settleFinishedTurn(turn: LiveTurn, outcome: TurnOutcome): boolean {
     switch (outcome.kind) {
       case 'terminal':
-        conversationStore.settleTurn(turn, outcome.text)
+        conversationStore.settleTurn(turn, outcome.parts)
         markStoppedTurnReady(turn)
         return true
       case 'thread-missing':
@@ -1049,15 +1069,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
           (entry) =>
             entry.role === 'assistant' && entry.turn_id === anchor.turn_id
         )
-        .toSorted((a, b) => a.seq - b.seq)
-      if (rows.some((row) => !TERMINAL_TURN_STATUSES.has(row.status)))
+        .sort((a, b) => a.seq - b.seq)
+      if (rows.some((row) => !isTerminalTurnStatus(row.status)))
         return { kind: 'streaming' }
-      const text = rows
-        .map((row) =>
-          typeof row.content?.text === 'string' ? row.content.text : ''
-        )
-        .join('')
-      return { kind: 'terminal', text }
+      const parts = mergeAdjacentTextParts(
+        normalizeAgentTranscript(rows).messages[0]?.parts ?? []
+      )
+      return { kind: 'terminal', parts }
     } catch (error) {
       if (signal.aborted) throw error
       return turnOutcomeFromError(error)

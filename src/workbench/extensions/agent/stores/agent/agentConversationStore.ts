@@ -42,27 +42,21 @@ export interface LiveTurn {
   messageId: TurnId
 }
 
-function finishWithPersistedText(
+function finishWithPersistedParts(
   message: AssistantMessage,
-  persistedText: string | undefined
+  persistedParts: AssistantMessage['parts'] | undefined
 ): void {
-  const kept = message.parts.filter((part) => part.type !== 'runApproval')
-  if (persistedText === undefined || persistedText === '') {
-    message.parts = kept
+  if (persistedParts === undefined) {
+    message.parts = message.parts.filter((part) => part.type !== 'runApproval')
     return
   }
-  const firstTextIndex = kept.findIndex((part) => part.type === 'text')
-  const withoutText = kept.filter((part) => part.type !== 'text')
-  withoutText.splice(
-    firstTextIndex < 0 ? withoutText.length : firstTextIndex,
-    0,
-    {
-      type: 'text',
-      text: persistedText,
-      state: 'done'
-    }
+  const localOnly = message.parts.filter(
+    (part) =>
+      part.type !== 'text' &&
+      part.type !== 'tool' &&
+      part.type !== 'runApproval'
   )
-  message.parts = withoutText
+  message.parts = [...localOnly, ...persistedParts]
 }
 
 export const useAgentConversationStore = defineStore(
@@ -452,19 +446,19 @@ export const useAgentConversationStore = defineStore(
 
     function settleTurn(
       turn: LiveTurn,
-      persistedText: string | undefined
+      persistedParts: AssistantMessage['parts'] | undefined
     ): void {
       const isActive =
         turn.threadId === threadId.value &&
         turn.messageId === activeTurnId.value
       if (isActive && transport && liveMessage) {
-        finishWithPersistedText(liveMessage, persistedText)
+        finishWithPersistedParts(liveMessage, persistedParts)
         abortActiveTurn()
         return
       }
       const entry = backgroundTurns.get(turn.threadId)
       if (!entry || entry.messageId !== turn.messageId || entry.settled) return
-      finishWithPersistedText(entry.message, persistedText)
+      finishWithPersistedParts(entry.message, persistedParts)
       entry.transport.settle()
       entry.settled = true
     }

@@ -1151,17 +1151,26 @@ describe('useAgentSession (v1 composition root)', () => {
     // on subscribe, so the very first callback can be `false` before any real
     // reconnect transition (e.g. the socket hasn't opened yet). That must not
     // abort a turn that survived a remount.
-    const rest = fakeRest()
+    const rest = fakeRest({
+      getMessages: vi.fn(
+        async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'msg-1', 'go'),
+          historyRow(2, 'assistant', 'msg-1', 'recovered', 'msg-1')
+        ]
+      )
+    })
     const { source, emit, status } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
     session.start()
 
+    status(false)
     await session.sendMessage('go')
     emit(delta('msg-1', 'partial'))
     expect(session.isStreaming.value).toBe(true)
 
-    status(false)
-    expect(session.isStreaming.value).toBe(true)
+    status(true)
+    await vi.waitFor(() => expect(session.isStreaming.value).toBe(false))
+    expect(rest.getMessages).toHaveBeenCalledWith('th-1', expect.anything())
   })
 
   // Backend invariant (cloud `newAssistantMessage` + the complete/fail writes):
@@ -1289,6 +1298,46 @@ describe('useAgentSession (v1 composition root)', () => {
     assert(assistant?.role === 'assistant')
     expect(assistant.parts).toEqual([
       { type: 'text', text: 'first second', state: 'done' }
+    ])
+  })
+
+  it('(g5b) recovery preserves text around a persisted tool call', async () => {
+    const toolRow = historyRow(3, 'assistant', 'msg-1', '')
+    toolRow.content = {
+      tool_calls: [{ id: 'tool-1', tool_name: 'add_node', status: 'success' }]
+    }
+    const rest = fakeRest({
+      getMessages: vi.fn(
+        async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'msg-1', 'go'),
+          historyRow(2, 'assistant', 'msg-1', 'before ', 'msg-1'),
+          toolRow,
+          historyRow(4, 'assistant', 'msg-1', 'after')
+        ]
+      )
+    })
+    const { source, emit, status } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+    status(true)
+
+    await session.sendMessage('go')
+    emit(delta('msg-1', 'partial'))
+    status(false)
+    status(true)
+
+    await vi.waitFor(() => expect(session.isStreaming.value).toBe(false))
+    const assistant = session.entries.value.at(-1)
+    assert(assistant?.role === 'assistant')
+    expect(assistant.parts.map((part) => part.type)).toEqual([
+      'text',
+      'tool',
+      'text'
+    ])
+    expect(assistant.parts).toMatchObject([
+      { type: 'text', text: 'before ' },
+      { type: 'tool', callId: 'tool-1' },
+      { type: 'text', text: 'after' }
     ])
   })
 
@@ -1565,12 +1614,15 @@ describe('useAgentSession (v1 composition root)', () => {
       >()
       .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
       .mockResolvedValueOnce({ thread_id: 'th-2', message_id: 'msg-2' })
+    const responses: Record<string, () => Promise<AgentMessages>> = {
+      'th-1': async () => {
+        throw new AgentApiError('gone', 404, undefined)
+      },
+      'th-2': async () => []
+    }
     const rest = fakeRest({
       postMessage,
-      getMessages: vi.fn(async (threadId: string): Promise<AgentMessages> => {
-        if (threadId === 'th-1') throw new AgentApiError('gone', 404, undefined)
-        return []
-      })
+      getMessages: vi.fn((threadId: string) => responses[threadId]())
     })
     const { source, emit, status } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
@@ -3283,6 +3335,32 @@ describe('thread resume (B17)', () => {
     expect(assistant).toMatchObject({ role: 'assistant', streaming: false })
     expect(session.threadId.value).toBe('th-9')
     expect(session.isStreaming.value).toBe(false)
+  })
+
+  it('reconciles a hydrated streaming turn without waiting for a socket transition', async () => {
+    localStorage.setItem(StorageKeys.agentThread('personal'), 'th-9')
+    const streaming = HISTORY.map((row) =>
+      row.role === 'assistant'
+        ? { ...row, status: 'streaming' as const, content: {} }
+        : row
+    )
+    const getMessages = vi
+      .fn<() => Promise<AgentMessages>>()
+      .mockResolvedValueOnce(streaming)
+      .mockResolvedValueOnce(HISTORY)
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages }),
+      events: fakeEvents().source
+    })
+
+    session.start()
+
+    await vi.waitFor(() => expect(getMessages).toHaveBeenCalledTimes(2))
+    await vi.waitFor(() => expect(session.isStreaming.value).toBe(false))
+    expect(session.entries.value.at(-1)).toMatchObject({
+      role: 'assistant',
+      parts: [{ type: 'text', text: 'Duck workflow ready.' }]
+    })
   })
 
   it('forgets a stale persisted thread on 404 without surfacing an error', async () => {
