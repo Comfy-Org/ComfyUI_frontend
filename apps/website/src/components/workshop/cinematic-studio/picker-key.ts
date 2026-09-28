@@ -12,18 +12,16 @@ import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 
 export type PickerKey = 'camera' | LookPart | 'grade'
 
-export type PopoverKey = PickerKey | 'direction' | 'references'
+export type PopoverKey = PickerKey | 'references'
 
 export function pickerGroups(key?: PopoverKey): readonly DirectionGroup[] {
   if (key === 'camera') return cameraGroups
   if (key === 'grade') return [gradeGroup]
-  if (key === 'direction') return [...lookGroups, gradeGroup]
   return lookGroups.filter((group) => group.part === key)
 }
 
 export function popoverTitle(key: PopoverKey, locale: Locale): string {
   if (key === 'camera') return tc('cinematic.section.camera', locale)
-  if (key === 'direction') return tc('cinematic.section.direction', locale)
   if (key === 'references') return tc('cinematic.section.references', locale)
   return tc(pickerGroups(key)[0].title, locale)
 }

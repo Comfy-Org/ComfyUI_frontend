@@ -8,7 +8,6 @@ import { cn } from '@comfyorg/tailwind-utils'
 import type {
   AspectRatio,
   Direction,
-  DirectionPart,
   Resolution
 } from '../../../lib/workshop/cinematic-studio/catalog'
 import { directionOption } from '../../../lib/workshop/cinematic-studio/catalog'
@@ -17,7 +16,7 @@ import type { StudioGate } from '../../../lib/workshop/cinematic-studio/gate'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
-import CinematicDirectionChips from './CinematicDirectionChips.vue'
+import CinematicDirectionSegments from './CinematicDirectionSegments.vue'
 import CinematicEnhanceSwitch from './CinematicEnhanceSwitch.vue'
 import CinematicFormatSegments from './CinematicFormatSegments.vue'
 import CinematicGenerateAction from './CinematicGenerateAction.vue'
@@ -52,7 +51,7 @@ const {
 }>()
 
 const emit = defineEmits<{
-  open: [key: PopoverKey, part?: DirectionPart]
+  open: [key: PopoverKey]
   generate: []
   cancel: []
 }>()
@@ -203,11 +202,11 @@ const chipClass = (key: PopoverKey) =>
             {{ focalLabel }}
           </span>
         </button>
-        <CinematicDirectionChips
+        <CinematicDirectionSegments
           :direction
-          :open="openPopover === 'direction'"
+          :open="openPopover"
           :locale
-          @open="emit('open', 'direction')"
+          @open="emit('open', $event)"
         />
         <CinematicFormatSegments
           v-model:aspect="aspect"

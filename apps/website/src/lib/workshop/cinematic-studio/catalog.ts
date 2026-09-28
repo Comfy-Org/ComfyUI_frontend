@@ -329,7 +329,7 @@ export const lookGroups: readonly DirectionGroup<LookPart>[] = [
   }
 ]
 
-export const gradeGroup: DirectionGroup = {
+export const gradeGroup: DirectionGroup<'grade'> = {
   part: 'grade',
   title: 'cinematic.part.grade',
   options: [

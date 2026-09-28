@@ -317,32 +317,40 @@ describe('CinematicStudio', () => {
       screen.getByRole('button', { name: tc('cinematic.firstRun.desert') })
     ).toHaveAttribute('aria-pressed', 'true')
     expect(
-      screen.getByRole('button', { name: /^Direction: Shot: Extreme wide/ })
+      screen.getByRole('button', { name: 'Shot: Extreme wide' })
     ).toBeInTheDocument()
   })
 
-  it('writes a picked option into the direction chip and the prompt', async () => {
+  it('opens each direction segment on its own picker and writes the pick into the prompt', async () => {
     vi.mocked(router_render).mockImplementation(async (slug) => rendered(slug))
     const user = renderStudio()
+    const direction = screen.getByRole('group', { name: 'Direction' })
 
-    await user.click(screen.getByRole('button', { name: /^Direction:/ }))
-    const picker = screen.getByRole('dialog', { name: 'Direction' })
-    await user.click(within(picker).getByRole('button', { name: /^Light/ }))
-    await user.click(within(picker).getByRole('radio', { name: 'Neon' }))
-    expect(
-      within(picker).getByRole('button', { name: 'Film' })
-    ).toHaveAttribute('aria-pressed', 'true')
-    await user.click(within(picker).getByRole('button', { name: /^Look/ }))
-    await user.click(within(picker).getByRole('radio', { name: 'Western' }))
-
-    expect(picker).toBeInTheDocument()
-    await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+    await user.click(within(direction).getByRole('button', { name: /^Light:/ }))
+    const light = screen.getByRole('dialog', { name: 'Light' })
+    expect(within(light).queryByRole('radio', { name: 'Western' })).toBeNull()
+    await user.click(within(light).getByRole('radio', { name: 'Neon' }))
     expect(screen.queryByRole('dialog')).toBeNull()
-    expect(
-      screen.getByRole('button', {
-        name: /^Direction: Shot: Medium, Light: Neon, .*Look: Western/
+
+    await user.click(within(direction).getByRole('button', { name: /^Look:/ }))
+    await user.click(
+      within(screen.getByRole('dialog', { name: 'Look' })).getByRole('radio', {
+        name: 'Western'
       })
-    ).toBeInTheDocument()
+    )
+
+    await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+    expect(
+      within(direction)
+        .getAllByRole('button')
+        .map((segment) => segment.getAttribute('aria-label'))
+    ).toEqual([
+      'Shot: Medium',
+      'Light: Neon',
+      expect.stringMatching(/^Film: /),
+      'Look: Western',
+      expect.stringMatching(/^Grade: /)
+    ])
     await user.click(generateButton())
     await screen.findByAltText(/A diner at dawn/)
     expect(vi.mocked(router_render).mock.calls[0][1]?.prompt).toContain(
@@ -595,7 +603,7 @@ describe('CinematicStudio', () => {
 
   it('moves focus into a picker and back to its chip on Escape', async () => {
     const user = renderStudio()
-    const chip = screen.getByRole('button', { name: /^Direction:/ })
+    const chip = screen.getByRole('button', { name: /^Shot:/ })
 
     await user.click(chip)
     expect(screen.getByRole('radio', { name: 'Medium' })).toHaveFocus()

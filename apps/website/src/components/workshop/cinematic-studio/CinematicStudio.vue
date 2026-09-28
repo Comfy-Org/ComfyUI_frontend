@@ -7,7 +7,6 @@ import { useCinematicLeaveGuard } from '../../../composables/useCinematicLeaveGu
 import { useCinematicPopover } from '../../../composables/useCinematicPopover'
 import { useCinematicShot } from '../../../composables/useCinematicShot'
 import { reportStudioBusy } from '../../../composables/useStudioSwitchGuard'
-import type { DirectionPart } from '../../../lib/workshop/cinematic-studio/catalog'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
 import type { StarterShot } from '../../../lib/workshop/cinematic-studio/starters'
 import type { Locale } from '../../../i18n/translations'
@@ -58,7 +57,6 @@ const {
 
 const POPOVER_WIDTH: Readonly<Partial<Record<PopoverKey, string>>> = {
   camera: 'lg:w-4xl',
-  direction: 'lg:w-2xl',
   references: 'lg:w-96'
 }
 const popoverClass = computed(() =>
@@ -69,17 +67,6 @@ const popoverClass = computed(() =>
 )
 
 const starter = ref<string>()
-
-const directionStart = ref<DirectionPart>()
-
-function openPopover(key: PopoverKey, part?: DirectionPart) {
-  const switchingTab =
-    key === 'direction' &&
-    popover.value === 'direction' &&
-    part !== directionStart.value
-  directionStart.value = part
-  if (!switchingTab) togglePopover(key)
-}
 
 const { leavingTo, leave, stay } = useCinematicLeaveGuard(
   () => studio.rendering.value,
@@ -147,9 +134,8 @@ function generateOn(slug: string) {
         />
         <CinematicPicker
           v-if="popover && pickerGroups(popover).length"
-          :key="`${popover}-${directionStart}`"
+          :key="popover"
           :groups="pickerGroups(popover)"
-          :start="directionStart"
           :direction
           :title="popoverTitle(popover, locale)"
           :locale
@@ -188,7 +174,7 @@ function generateOn(slug: string) {
           :show-credits="showCredits"
           :open-popover="popover"
           :locale
-          @open="openPopover"
+          @open="togglePopover"
           @generate="generate"
           @cancel="studio.cancel"
         />

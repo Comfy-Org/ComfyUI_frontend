@@ -132,10 +132,6 @@ const copy = {
     en: 'Slow now',
     'zh-CN': '当前较慢'
   },
-  'cinematic.picker.done': {
-    en: 'Done',
-    'zh-CN': '完成'
-  },
   'cinematic.stage.again': {
     en: 'Generate again',
     'zh-CN': '再生成一次'
