@@ -25,8 +25,9 @@ Failures remain in history with a retry affordance and existing error details;
 the selected row is their only feedback. A chat whose recorded workflow a
 successful Cloud listing no longer includes opens without a target, and the
 composer tip says the target workflow is no longer available until a workflow is
-chosen, New Chat starts or another chat is selected. Legacy chats without a
-recorded workflow can open without one. A restoration that fails with no loading
+chosen, New Chat starts or another chat is selected. Deleting the open chat's
+target workflow shows the same notice; closing its tab only clears the target.
+Legacy chats without a recorded workflow can open without one. A restoration that fails with no loading
 history row on screen, such as at startup, reports that the target workflow
 could not be opened.
 

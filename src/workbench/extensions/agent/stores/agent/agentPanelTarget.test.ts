@@ -49,6 +49,84 @@ describe('Agent target tab lifetime', () => {
   })
 })
 
+type TargetSetup = Awaited<ReturnType<typeof setup>>
+
+describe('Agent target deletion', () => {
+  it.for([
+    {
+      event: 'deleting the target after its tab closes',
+      act: async ({ workflows, target }: TargetSetup) => {
+        await workflows.closeWorkflow(target)
+        await nextTick()
+        await workflows.deleteWorkflow(target)
+      },
+      unavailable: true,
+      selected: undefined
+    },
+    {
+      event: 'deleting the target while its tab is open',
+      act: async ({ workflows, target }: TargetSetup) =>
+        workflows.deleteWorkflow(target),
+      unavailable: true,
+      selected: undefined
+    },
+    {
+      event: 'only closing the target',
+      act: async ({ workflows, target }: TargetSetup) =>
+        workflows.closeWorkflow(target),
+      unavailable: false,
+      selected: undefined
+    },
+    {
+      event: 'deleting another workflow',
+      act: async ({ workflows, other }: TargetSetup) => {
+        await workflows.closeWorkflow(other)
+        await nextTick()
+        await workflows.deleteWorkflow(other)
+      },
+      unavailable: false,
+      selected: 'workflows/a.json'
+    },
+    {
+      event: 'deleting the visible workflow a fresh chat follows',
+      act: async ({ workflows, panel, target, other }: TargetSetup) => {
+        panel.startFollowingVisibleWorkflow()
+        workflows.activeWorkflow = target
+        await nextTick()
+        workflows.activeWorkflow = other
+        await workflows.closeWorkflow(target)
+        await nextTick()
+        await workflows.deleteWorkflow(target)
+      },
+      unavailable: false,
+      selected: 'workflows/b.json'
+    },
+    {
+      event: 'deleting the old target after choosing another',
+      act: async ({ workflows, panel, target, other }: TargetSetup) => {
+        await workflows.closeWorkflow(target)
+        await nextTick()
+        panel.setWorkflowTarget(other)
+        await workflows.deleteWorkflow(target)
+      },
+      unavailable: false,
+      selected: 'workflows/b.json'
+    }
+  ])(
+    'reports the target unavailable after $event: $unavailable',
+    async ({ act, unavailable, selected }) => {
+      const context = await setup()
+      await nextTick()
+
+      await act(context)
+      await nextTick()
+
+      expect(context.panel.targetUnavailable).toBe(unavailable)
+      expect(context.panel.selectedWorkflow?.path).toBe(selected)
+    }
+  )
+})
+
 describe('Agent target tracking policy', () => {
   it('leaves the target undecided while startup is unresolved', async () => {
     const workflows = useWorkflowStore()

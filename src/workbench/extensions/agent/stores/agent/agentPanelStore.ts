@@ -1,7 +1,7 @@
 import { useEventListener, useLocalStorage, useWindowSize } from '@vueuse/core'
 import { clamp } from 'es-toolkit'
 import { defineStore } from 'pinia'
-import { computed, ref, shallowRef, watch } from 'vue'
+import { computed, ref, shallowRef, toRaw, watch } from 'vue'
 
 import {
   SIDEBAR_MIN_WIDTH,
@@ -25,7 +25,12 @@ type TargetTracking =
   | { mode: 'uninitialized' }
   | { mode: 'following' }
   | { mode: 'restoring' }
-  | { mode: 'retained'; workflow: ComfyWorkflow | null; unavailable?: true }
+  | {
+      mode: 'retained'
+      workflow: ComfyWorkflow | null
+      closed?: ComfyWorkflow
+      unavailable?: true
+    }
 
 export type AgentPanelView =
   | { screen: 'chat' }
@@ -131,9 +136,28 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
         target.workflow !== null &&
         !workflowStore.openWorkflows.includes(target.workflow)
       )
-        setWorkflowTarget(null)
+        targetTracking.value = {
+          mode: 'retained',
+          workflow: null,
+          closed: target.workflow
+        }
     }
   )
+
+  // Closing the target's tab only clears it; deleting the workflow means the
+  // chat's target is gone, which the chat then says.
+  workflowStore.$onAction(({ name, args, after }) => {
+    if (name !== 'deleteWorkflow') return
+    const [deleted] = args
+    after(() => {
+      const target = targetTracking.value
+      if (
+        target.mode === 'retained' &&
+        toRaw(target.workflow ?? target.closed) === toRaw(deleted)
+      )
+        markWorkflowTargetUnavailable()
+    })
+  })
 
   let openedAt: number | null = null
   // Guards the pagehide teardown report below: true once this open epoch has
