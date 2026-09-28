@@ -1040,10 +1040,23 @@ export function useAgentSession(deps: AgentSessionDeps) {
   ): Promise<TurnOutcome> {
     try {
       const history = await rest.getMessages(turn.threadId, { signal })
-      const row = history.find((entry) => entry.id === turn.messageId)
-      if (!row || !TERMINAL_TURN_STATUSES.has(row.status))
+      const anchor = history.find(
+        (entry) => entry.role === 'assistant' && entry.id === turn.messageId
+      )
+      if (!anchor) return { kind: 'streaming' }
+      const rows = history
+        .filter(
+          (entry) =>
+            entry.role === 'assistant' && entry.turn_id === anchor.turn_id
+        )
+        .toSorted((a, b) => a.seq - b.seq)
+      if (rows.some((row) => !TERMINAL_TURN_STATUSES.has(row.status)))
         return { kind: 'streaming' }
-      const text = typeof row.content?.text === 'string' ? row.content.text : ''
+      const text = rows
+        .map((row) =>
+          typeof row.content?.text === 'string' ? row.content.text : ''
+        )
+        .join('')
       return { kind: 'terminal', text }
     } catch (error) {
       if (signal.aborted) throw error

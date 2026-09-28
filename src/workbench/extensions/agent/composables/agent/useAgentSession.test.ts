@@ -1264,6 +1264,32 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(session.notices.value).toEqual([])
   })
 
+  it('(g5a) recovery preserves every persisted assistant row in a turn', async () => {
+    const rest = fakeRest({
+      getMessages: vi.fn(async (): Promise<AgentMessages> => [
+        historyRow(1, 'user', 'msg-1', 'go'),
+        historyRow(2, 'assistant', 'msg-1', 'first ', 'msg-1'),
+        historyRow(3, 'assistant', 'msg-1', 'second')
+      ])
+    })
+    const { source, emit, status } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+    status(true)
+
+    await session.sendMessage('go')
+    emit(delta('msg-1', 'partial'))
+    status(false)
+    status(true)
+
+    await vi.waitFor(() => expect(session.isStreaming.value).toBe(false))
+    const assistant = session.entries.value.at(-1)
+    assert(assistant?.role === 'assistant')
+    expect(assistant.parts).toEqual([
+      { type: 'text', text: 'first second', state: 'done' }
+    ])
+  })
+
   it('(g6) a row still streaming on the first check is polled with backoff until it goes terminal', async () => {
     const getMessages = vi
       .fn<() => Promise<AgentMessages>>()
