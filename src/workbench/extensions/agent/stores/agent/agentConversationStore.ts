@@ -365,7 +365,6 @@ export const useAgentConversationStore = defineStore(
         (message) => message.id === hydratedTurnIds.get(entry.messageId)
       )
       if (persisted && !persisted.streaming) {
-        entry.transport.settle()
         entry.transport.dispose()
         return
       }
