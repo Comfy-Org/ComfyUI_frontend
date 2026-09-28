@@ -47,6 +47,26 @@ describe('API Feature Flags', () => {
   })
 
   describe('Feature flags negotiation', () => {
+    it('dispatches Agent billing status websocket updates', () => {
+      const listener = vi.fn()
+      api.addEventListener('agent_billing_status', listener)
+      void api.init()
+
+      wsEventHandlers['message']({
+        data: JSON.stringify({
+          type: 'agent_billing_status',
+          data: { has_funds: false, as_of_ns: 1_790_000_000_000_000_000 }
+        })
+      })
+
+      expect(listener).toHaveBeenCalledOnce()
+      expect(listener.mock.calls[0][0].detail).toEqual({
+        has_funds: false,
+        as_of_ns: 1_790_000_000_000_000_000
+      })
+      api.removeEventListener('agent_billing_status', listener)
+    })
+
     it('should send client feature flags as first message on connection', async () => {
       // Initialize API connection
       const initPromise = api.init()
