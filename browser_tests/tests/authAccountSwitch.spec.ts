@@ -556,6 +556,8 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
       await page.reload({ waitUntil: 'domcontentloaded' })
       await comfyPage.waitForAppReady()
       await seedIdentitySentinel(page, ACCOUNT_B)
+      await page.reload({ waitUntil: 'domcontentloaded' })
+      await comfyPage.waitForAppReady()
       await comfyPage.workflow.openPersistedWorkflow(IDENTITY_SENTINELS.b.draft)
       await expect(
         page.getByRole('tab', {
