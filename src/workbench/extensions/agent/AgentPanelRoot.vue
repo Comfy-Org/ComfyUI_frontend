@@ -301,14 +301,6 @@ const billingIdentity = computed(
  * Reset when funds return, so a later exhaustion reports again — mirroring how
  * `useBillingBanner` scopes its dismissal to one episode.
  */
-watch(
-  agentHasFunds,
-  (hasFunds) => {
-    if (hasFunds === true) agentPanelStore.reportedExhaustionIdentity = null
-  },
-  { immediate: true }
-)
-
 watch(billingIdentity, () => {
   agentPanelStore.reportedExhaustionIdentity = null
   onStandingPaywallShown()
@@ -906,9 +898,12 @@ function resumedTurnTabPath(): string | null {
 // Adoption (onWorkflowAdopted) and tab activation (onAgentActiveTab) are the
 // primary spinner setters; the non-idle branch only re-arms it after the
 // stash/resume flip of a panel remount, where those setters never run.
+let wasTurnActive = false
 watch(status, (value) => {
+  const completedTurn = wasTurnActive && value === 'idle'
+  wasTurnActive = value !== 'idle'
   if (value === 'idle') {
-    if (billingType?.value === 'workspace') {
+    if (completedTurn && billingType.value === 'workspace') {
       void refreshBillingStatus().catch((error: unknown) => {
         reportError(error, {
           errorType: 'error_refreshing_agent_billing_status'
