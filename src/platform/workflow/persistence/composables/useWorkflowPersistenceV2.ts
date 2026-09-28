@@ -180,11 +180,8 @@ export function useWorkflowPersistenceV2() {
     getStorageIdentity,
     (identity) => {
       if (identity === observedStorageIdentity) return
-      const previousIdentity = observedStorageIdentity
       observedStorageIdentity = identity
-      resetPersistenceForIdentityChange(
-        previousIdentity !== null || hasResolvedStorageIdentity
-      )
+      resetPersistenceForIdentityChange(hasResolvedStorageIdentity)
       if (identity !== null) hasResolvedStorageIdentity = true
     },
     { flush: 'sync' }
