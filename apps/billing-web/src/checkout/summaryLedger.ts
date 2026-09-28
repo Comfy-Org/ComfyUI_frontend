@@ -329,9 +329,10 @@ function chargeNowLedger(r: QuoteReading): SummaryLedger {
 /**
  * Maps a quote onto the summary column. Every number is one the server
  * reported; a slot whose number the quote does not carry is left out rather
- * than derived. Only a same-cadence tier upgrade is prorated: a switch to
- * yearly charges in full, and a team commit change's proration is
- * unverified, so both read as a plain charge.
+ * than derived. The family is the server's too: an immediate `upgrade`
+ * priced at a `proration_at` instant is prorated, while a reset-to-yearly
+ * `duration_change` carries `proration_at` but charges in full. A team commit
+ * change is held at the neutral charge until its proration copy is confirmed.
  */
 export function buildSummaryLedger(
   quote: SubscriptionPreview,
@@ -341,8 +342,8 @@ export function buildSummaryLedger(
   if (!quote.is_immediate) return scheduledLedger(reading)
   if (
     quote.transition_type === 'upgrade' &&
-    !reading.commitChange &&
-    !reading.cadenceChanges
+    quote.proration_at !== undefined &&
+    !reading.commitChange
   )
     return proratedLedger(reading)
   return chargeNowLedger(reading)
