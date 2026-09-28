@@ -186,26 +186,19 @@ export class CanvasHelper {
     return this.page.evaluate(() => window.app!.canvasEl.width)
   }
 
-  /** Camera state plus how many root-graph nodes fall inside the visible area. */
+  /** Camera state and the root-graph node count. */
   async getFraming(): Promise<{
     scale: number
     offset: number[]
     nodeCount: number
-    nodesInView: number
   }> {
     return this.page.evaluate(() => {
       const app = window.app!
       const { ds } = app.canvas
-      const [vx, vy, vw, vh] = ds.visible_area
-      const nodesInView = app.rootGraph.nodes.filter((node) => {
-        const [x, y, w, h] = node.boundingRect
-        return x < vx + vw && vx < x + w && y < vy + vh && vy < y + h
-      }).length
       return {
         scale: ds.scale,
         offset: [...ds.offset],
-        nodeCount: app.rootGraph.nodes.length,
-        nodesInView
+        nodeCount: app.rootGraph.nodes.length
       }
     })
   }

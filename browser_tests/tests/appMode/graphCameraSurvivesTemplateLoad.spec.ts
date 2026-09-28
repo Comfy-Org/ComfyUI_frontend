@@ -16,9 +16,18 @@ const test = mergeTests(comfyPageFixture, templateApiFixture)
  * PM-1732 / PM-1733 — App Mode keeps the graph canvas mounted but hidden, so
  * its element measures 0x0. Loading a template from there fit the view against
  * that zero-size element, computing 0/0 and leaving the camera at scale 0 with
- * NaN offsets. Returning to the graph then showed a canvas that rendered
- * nothing and could not be recovered by panning, zooming or Fit View, with
- * every node still in the graph.
+ * NaN offsets. Returning to the graph then rendered nothing with every node
+ * still in the graph. Measured on the unguarded build: panning and zooming
+ * divide by that zero scale, and Fit View degrades it further (scale 0 to
+ * NaN); only Reset View recovered it.
+ *
+ * Known limitation, deliberately out of scope: the guard makes the hidden-
+ * canvas fit a no-op rather than deferring it, so a template loaded from App
+ * Mode is not re-framed. The camera returns holding the pre-App-Mode viewport,
+ * which shows empty space if that viewport was far from the new nodes. Unlike
+ * the bug above it is recoverable — Fit View works, because node bounds are
+ * camera-independent. Re-framing needs a load-ownership design rather than a
+ * patch here; four attempts on this branch are the evidence for that.
  */
 test.describe('App mode template load', { tag: ['@canvas'] }, () => {
   test.describe.configure({ timeout: 60_000 })

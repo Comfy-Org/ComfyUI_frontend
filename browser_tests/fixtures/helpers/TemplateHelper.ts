@@ -173,8 +173,8 @@ export const APP_MODE_TEMPLATE = 'pm-1733-app-template'
 /**
  * Registers a template whose workflow carries `extra.linearMode`, so loading
  * it keeps App Mode active and the graph canvas hidden. Deliberately has no
- * `extra.ds`: a saved viewport would overwrite the camera a framing test
- * parked, and the regression would pass without the deferred fit.
+ * `extra.ds`: with one, the load restores that saved viewport and never
+ * reaches the fit path the regression exercises.
  */
 export async function mockAppModeTemplate(
   templates: TemplateHelper
