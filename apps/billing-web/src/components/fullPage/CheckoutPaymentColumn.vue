@@ -2,15 +2,19 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import type { SavedPaymentMethod } from '@comfyorg/account-core/billing'
 import type {
   StripePaymentCopy,
   StripePaymentPhase
 } from '@comfyorg/account-ui/billing/stripe'
 import { StripePaymentForm } from '@comfyorg/account-ui/billing/stripe'
 
-import type { CheckoutPage } from '@/checkout/checkoutPage'
+import type { CheckoutPage, PaymentTab } from '@/checkout/checkoutPage'
+import { railView } from '@/checkout/checkoutPage'
 import CheckoutPayAction from '@/components/fullPage/CheckoutPayAction.vue'
 import PaymentFormError from '@/components/fullPage/PaymentFormError.vue'
+import PaymentTabsRail from '@/components/fullPage/PaymentTabsRail.vue'
+import type { PayChoice } from '@/composables/useFullPageCheckout'
 
 export interface CheckoutCharge {
   readonly amountCents: number
@@ -18,26 +22,53 @@ export interface CheckoutCharge {
   readonly paymentMethodConfigurationId: string
 }
 
-const { page, charge, publishableKey, canPay, submitting, failure } =
-  defineProps<{
-    page: Extract<CheckoutPage, { kind: 'resolving' | 'capture' }>
-    charge?: CheckoutCharge
-    publishableKey: string
-    canPay: boolean
-    submitting: boolean
-    failure?: string
-  }>()
+const {
+  page,
+  charge,
+  publishableKey,
+  canPay,
+  submitting,
+  failure,
+  savedMethods = []
+} = defineProps<{
+  page: Extract<CheckoutPage, { kind: 'resolving' | 'capture' }>
+  charge?: CheckoutCharge
+  publishableKey: string
+  canPay: boolean
+  submitting: boolean
+  failure?: string
+  savedMethods?: readonly SavedPaymentMethod[]
+}>()
 
 const emit = defineEmits<{
   phase: [phase: StripePaymentPhase]
-  pay: [confirmationToken?: string]
-  retry: []
+  pay: [choice: PayChoice]
+  retryElement: []
+  retrySaved: []
+  retryColumn: []
+  selectTab: [tab: PaymentTab]
 }>()
 
 const { t } = useI18n()
 
+const view = computed(() =>
+  page.kind === 'capture' ? railView(page.rail) : undefined
+)
+
+const tabbed = computed(() =>
+  view.value?.kind === 'tabs' ? view.value : undefined
+)
+
+const elementLive = computed(() => {
+  const current = view.value
+  return (
+    (current?.kind === 'tabs' || current?.kind === 'element_only') &&
+    current.element !== 'failed'
+  )
+})
+
 const copy = computed<StripePaymentCopy>(() => ({
-  paymentMethod: t('checkout.paymentMethod'),
+  paymentMethod: tabbed.value ? '' : t('checkout.paymentMethod'),
   methodChoice: t('checkout.methodChoice'),
   billingAddress: t('checkout.billingAddress'),
   alipayRenewalNote: t('checkout.alipayRenewalNote'),
@@ -49,7 +80,7 @@ const copy = computed<StripePaymentCopy>(() => ({
 <template>
   <section class="flex lg:w-1/2">
     <div class="flex w-full flex-col px-6 py-12 lg:max-w-lg lg:px-16">
-      <div v-if="page.kind === 'resolving'" class="flex flex-col gap-6">
+      <div v-if="!view" class="flex flex-col gap-6">
         <h3 class="m-0 text-base font-semibold text-base-foreground">
           {{ t('checkout.paymentMethod') }}
         </h3>
@@ -61,34 +92,52 @@ const copy = computed<StripePaymentCopy>(() => ({
         <CheckoutPayAction disabled />
       </div>
       <PaymentFormError
-        v-else-if="
-          page.rail.method === 'new_card' && page.rail.element === 'failed'
-        "
-        @retry="emit('retry')"
+        v-else-if="view.kind === 'column_error'"
+        @retry="emit('retryColumn')"
       />
-      <StripePaymentForm
-        v-else-if="page.rail.method === 'new_card' && charge"
-        :publishable-key
-        :amount-cents="charge.amountCents"
-        :currency="charge.currency"
-        :copy
-        :payment-method-configuration-id="charge.paymentMethodConfigurationId"
-        :is-loading="submitting"
-        :can-submit="canPay"
-        @phase="emit('phase', $event)"
-        @confirm="emit('pay', $event)"
-      >
-        <template #submit="{ disabled, loading }">
-          <CheckoutPayAction :disabled :loading :failure />
-        </template>
-      </StripePaymentForm>
       <form
-        v-else-if="page.rail.method === 'on_file'"
+        v-else-if="view.kind === 'on_file'"
         class="flex flex-col gap-6"
-        @submit.prevent="emit('pay')"
+        @submit.prevent="emit('pay', undefined)"
       >
         <CheckoutPayAction :disabled="!canPay" :loading="submitting" :failure />
       </form>
+      <div v-else class="flex flex-col gap-6">
+        <PaymentTabsRail
+          v-if="tabbed"
+          :rail="tabbed"
+          :methods="savedMethods"
+          @select-tab="emit('selectTab', $event)"
+          @pay-saved="emit('pay', { savedMethodId: $event })"
+          @retry-saved="emit('retrySaved')"
+          @retry-element="emit('retryElement')"
+        >
+          <template #pay>
+            <CheckoutPayAction
+              :disabled="!canPay"
+              :loading="submitting"
+              :failure
+            />
+          </template>
+        </PaymentTabsRail>
+        <StripePaymentForm
+          v-if="elementLive && charge"
+          v-show="!tabbed || tabbed.tab === 'new'"
+          :publishable-key
+          :amount-cents="charge.amountCents"
+          :currency="charge.currency"
+          :copy
+          :payment-method-configuration-id="charge.paymentMethodConfigurationId"
+          :is-loading="submitting"
+          :can-submit="canPay"
+          @phase="emit('phase', $event)"
+          @confirm="emit('pay', { confirmationToken: $event })"
+        >
+          <template #submit="{ disabled, loading }">
+            <CheckoutPayAction :disabled :loading :failure />
+          </template>
+        </StripePaymentForm>
+      </div>
     </div>
   </section>
 </template>

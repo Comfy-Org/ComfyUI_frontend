@@ -27,7 +27,11 @@ const {
   payFailure,
   returnLink,
   onPaymentPhase,
+  savedMethods,
   retryElement,
+  retrySaved,
+  retryColumn,
+  selectTab,
   pay
 } = useFullPageCheckout()
 
@@ -122,9 +126,13 @@ function returnToProduct() {
         :can-pay="canPay"
         :submitting
         :failure="payFailureCopy"
+        :saved-methods="savedMethods"
         @phase="onPaymentPhase"
         @pay="pay"
-        @retry="retryElement"
+        @retry-element="retryElement"
+        @retry-saved="retrySaved"
+        @retry-column="retryColumn"
+        @select-tab="selectTab"
       />
     </div>
   </main>
