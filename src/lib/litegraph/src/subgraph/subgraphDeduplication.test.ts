@@ -5,6 +5,7 @@ import {
 import { describe, expect, it } from 'vitest'
 
 import { toLinkId } from '@/types/linkId'
+import { toNodeId } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 
@@ -366,6 +367,74 @@ describe('normalizeSubgraphDefinitions', () => {
     expect(result.links![0].id).toBe(toLinkId(1))
     expect(result.inputs![0].linkIds).toEqual([toLinkId(1)])
     expect(subgraph.floatingLinks).toHaveLength(1)
+  })
+
+  it('allocates beyond the former fixed limit', () => {
+    const subgraph = makeSubgraph('sg', ['dummy'])
+    const state = freshState()
+    state.lastNodeId = 100_000_000
+
+    const result = normalizeSubgraphDefinitions(
+      [subgraph],
+      {
+        nodeIds: new Set([toNodeId(1)]),
+        groupIds: new Set(),
+        linkIds: new Set(),
+        rerouteIds: new Set()
+      },
+      state
+    )
+
+    expect(result.subgraphs[0].nodes![0].id).toBe(100_000_001)
+    expect(state.lastNodeId).toBe(100_000_001)
+  })
+
+  it('wraps colliding IDs at the safe-integer boundary', () => {
+    const subgraph = makeSubgraph('sg', ['dummy'])
+    subgraph.links = [chainedLink(1)]
+    const state = freshState()
+    state.lastLinkId = toLinkId(Number.MAX_SAFE_INTEGER)
+
+    const result = normalizeSubgraphDefinitions(
+      [subgraph],
+      {
+        nodeIds: new Set(),
+        groupIds: new Set(),
+        linkIds: new Set([1]),
+        rerouteIds: new Set()
+      },
+      state
+    )
+
+    expect(result.subgraphs[0].links![0].id).toBe(toLinkId(2))
+    expect(state.lastLinkId).toBe(toLinkId(Number.MAX_SAFE_INTEGER))
+  })
+
+  it('updates every root-level reference to a remapped interior node', () => {
+    const subgraph = makeSubgraph('sg', ['dummy'])
+    const rootNode = makeSubgraph('root', ['sg']).nodes![0]
+    rootNode.properties = {
+      proxyWidgets: [['1', 'seed']],
+      previewExposures: [{ sourceNodeId: '1' }]
+    }
+
+    const result = normalizeSubgraphDefinitions(
+      [subgraph],
+      {
+        nodeIds: new Set([toNodeId(1)]),
+        groupIds: new Set(),
+        linkIds: new Set(),
+        rerouteIds: new Set()
+      },
+      freshState(),
+      [rootNode]
+    )
+    const remappedId = result.subgraphs[0].nodes![0].id
+
+    expect(result.rootNodes![0].properties).toEqual({
+      proxyWidgets: [[String(remappedId), 'seed']],
+      previewExposures: [{ sourceNodeId: String(remappedId) }]
+    })
   })
 })
 

@@ -15,6 +15,8 @@ export interface LGraphState {
   lastRerouteId: RerouteId
 }
 
+type ReservedIds = ReadonlySet<number> | (() => ReadonlySet<number>)
+
 export function createLGraphState(): LGraphState {
   return {
     lastGroupId: 0,
@@ -24,8 +26,36 @@ export function createLGraphState(): LGraphState {
   }
 }
 
+export function findNextAvailableId(
+  usedIds: ReadonlySet<number>,
+  startAt = 1
+): number {
+  let candidate = Number.isSafeInteger(startAt) && startAt > 0 ? startAt : 1
+  let attempts = 0
+  while (usedIds.has(candidate) && attempts < usedIds.size) {
+    candidate = candidate === Number.MAX_SAFE_INTEGER ? 1 : candidate + 1
+    attempts++
+  }
+  return candidate
+}
+
+function mintSequentialId(lastId: number, reservedIds: ReservedIds): number {
+  if (Number.isSafeInteger(lastId) && lastId >= 0) {
+    const nextId = lastId + 1
+    if (
+      Number.isSafeInteger(nextId) &&
+      (typeof reservedIds === 'function' || !reservedIds.has(nextId))
+    )
+      return nextId
+  }
+  const usedIds =
+    typeof reservedIds === 'function' ? reservedIds() : reservedIds
+  return findNextAvailableId(usedIds, lastId + 1)
+}
+
 /**
- * `'sequential'` (default) is the plain-local `++lastNodeId` counter.
+ * `'sequential'` advances the local counter, wrapping to an unused safe integer
+ * at the boundary.
  * `'crdt-disjoint'` is for a graph bound to the in-app agent's collaborative
  * doc, where a local mint can otherwise land on an id the agent independently
  * mints for the same doc — see {@link mintCrdtDisjointNodeId}.
@@ -132,42 +162,69 @@ export function matchesReservedBitConvention(id: NodeId): boolean {
 
 export function mintNodeId(
   state: LGraphState,
-  mode: NodeIdMintMode = 'sequential'
+  mode: NodeIdMintMode,
+  reservedIds: ReservedIds
 ): NodeId {
-  return mode === 'crdt-disjoint'
-    ? mintCrdtDisjointNodeId()
-    : toNodeId(++state.lastNodeId)
+  if (mode === 'crdt-disjoint') return mintCrdtDisjointNodeId()
+  const id = mintSequentialId(state.lastNodeId, reservedIds)
+  if (id > state.lastNodeId) state.lastNodeId = id
+  return toNodeId(id)
 }
 
-export function mintGroupId(state: LGraphState): GroupId {
-  return toGroupId(++state.lastGroupId)
+export function mintGroupId(
+  state: LGraphState,
+  reservedIds: ReservedIds
+): GroupId {
+  const id = mintSequentialId(state.lastGroupId, reservedIds)
+  if (id > state.lastGroupId) state.lastGroupId = id
+  return toGroupId(id)
 }
 
-export function mintLinkId(state: LGraphState): LinkId {
-  state.lastLinkId = toLinkId(Number(state.lastLinkId) + 1)
-  return state.lastLinkId
+export function mintLinkId(
+  state: LGraphState,
+  reservedIds: ReservedIds
+): LinkId {
+  const lastLinkId = Number(state.lastLinkId)
+  const id = mintSequentialId(lastLinkId, reservedIds)
+  if (id > lastLinkId) state.lastLinkId = toLinkId(id)
+  return toLinkId(id)
 }
 
-export function mintRerouteId(state: LGraphState): RerouteId {
-  state.lastRerouteId = toRerouteId(Number(state.lastRerouteId) + 1)
-  return state.lastRerouteId
+export function mintRerouteId(
+  state: LGraphState,
+  reservedIds: ReservedIds
+): RerouteId {
+  const lastRerouteId = Number(state.lastRerouteId)
+  const id = mintSequentialId(lastRerouteId, reservedIds)
+  if (id > lastRerouteId) state.lastRerouteId = toRerouteId(id)
+  return toRerouteId(id)
 }
 
 export function observeNodeId(state: LGraphState, id: NodeId): void {
   const numericId = Number(id)
-  if (Number.isInteger(numericId) && numericId > state.lastNodeId) {
+  if (
+    Number.isSafeInteger(numericId) &&
+    numericId >= 0 &&
+    numericId > state.lastNodeId
+  ) {
     state.lastNodeId = numericId
   }
 }
 
 export function observeGroupId(state: LGraphState, id: GroupId): void {
-  if (id > state.lastGroupId) state.lastGroupId = id
+  if (Number.isSafeInteger(id) && id >= 0 && id > state.lastGroupId) {
+    state.lastGroupId = id
+  }
 }
 
 export function observeLinkId(state: LGraphState, id: LinkId): void {
-  if (id > state.lastLinkId) state.lastLinkId = id
+  if (Number.isSafeInteger(id) && id >= 0 && id > state.lastLinkId) {
+    state.lastLinkId = id
+  }
 }
 
 export function observeRerouteId(state: LGraphState, id: RerouteId): void {
-  if (id > state.lastRerouteId) state.lastRerouteId = id
+  if (Number.isSafeInteger(id) && id >= 0 && id > state.lastRerouteId) {
+    state.lastRerouteId = id
+  }
 }

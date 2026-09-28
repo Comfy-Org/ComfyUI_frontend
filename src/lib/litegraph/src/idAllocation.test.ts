@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   AGENT_RESERVED_BIT,
   createLGraphState,
+  findNextAvailableId,
   isReservedBitRangeNodeId,
   matchesReservedBitConvention,
   mintGroupId,
@@ -22,18 +23,31 @@ import { toRerouteId } from '@/types/rerouteId'
 describe('idAllocation', () => {
   it('mints increasing ids for each entity kind', () => {
     const state = createLGraphState()
+    const reservedIds = new Set<number>()
 
-    expect([mintNodeId(state), mintNodeId(state)]).toEqual(['1', '2'])
-    expect([mintGroupId(state), mintGroupId(state)]).toEqual([1, 2])
-    expect([mintLinkId(state), mintLinkId(state)]).toEqual([1, 2])
-    expect([mintRerouteId(state), mintRerouteId(state)]).toEqual([1, 2])
+    expect([
+      mintNodeId(state, 'sequential', reservedIds),
+      mintNodeId(state, 'sequential', reservedIds)
+    ]).toEqual(['1', '2'])
+    expect([
+      mintGroupId(state, reservedIds),
+      mintGroupId(state, reservedIds)
+    ]).toEqual([1, 2])
+    expect([
+      mintLinkId(state, reservedIds),
+      mintLinkId(state, reservedIds)
+    ]).toEqual([1, 2])
+    expect([
+      mintRerouteId(state, reservedIds),
+      mintRerouteId(state, reservedIds)
+    ]).toEqual([1, 2])
   })
 
   it("mints from a disjoint range in 'crdt-disjoint' mode, ignoring lastNodeId", () => {
     const state = createLGraphState()
     state.lastNodeId = 5
 
-    const id = BigInt(mintNodeId(state, 'crdt-disjoint'))
+    const id = BigInt(mintNodeId(state, 'crdt-disjoint', new Set()))
 
     expect(state.lastNodeId).toBe(5)
     // Bit 40 clear (never the agent's `2**40 | random52` range), bit 41 set.
@@ -68,6 +82,123 @@ describe('idAllocation', () => {
     observeNodeId(state, toNodeId('named'))
 
     expect(state.lastNodeId).toBe(12)
+  })
+
+  it.for([
+    {
+      name: 'node',
+      observe: (state: ReturnType<typeof createLGraphState>, value: number) =>
+        observeNodeId(state, toNodeId(value)),
+      mint: (state: ReturnType<typeof createLGraphState>) =>
+        mintNodeId(state, 'sequential', new Set())
+    },
+    {
+      name: 'group',
+      observe: (state: ReturnType<typeof createLGraphState>, value: number) =>
+        observeGroupId(state, toGroupId(value)),
+      mint: (state: ReturnType<typeof createLGraphState>) =>
+        mintGroupId(state, new Set())
+    },
+    {
+      name: 'link',
+      observe: (state: ReturnType<typeof createLGraphState>, value: number) =>
+        observeLinkId(state, toLinkId(value)),
+      mint: (state: ReturnType<typeof createLGraphState>) =>
+        mintLinkId(state, new Set())
+    },
+    {
+      name: 'reroute',
+      observe: (state: ReturnType<typeof createLGraphState>, value: number) =>
+        observeRerouteId(state, toRerouteId(value)),
+      mint: (state: ReturnType<typeof createLGraphState>) =>
+        mintRerouteId(state, new Set())
+    }
+  ])(
+    'continues $name allocation above the former limit',
+    ({ observe, mint }) => {
+      const state = createLGraphState()
+      observe(state, 100_000_001)
+
+      expect(Number(mint(state))).toBe(100_000_002)
+    }
+  )
+
+  it.for([
+    {
+      name: 'node',
+      setCounter: (state: ReturnType<typeof createLGraphState>) => {
+        state.lastNodeId = Number.MAX_SAFE_INTEGER
+      },
+      mint: (
+        state: ReturnType<typeof createLGraphState>,
+        reservedIds: ReadonlySet<number>
+      ) => mintNodeId(state, 'sequential', reservedIds)
+    },
+    {
+      name: 'group',
+      setCounter: (state: ReturnType<typeof createLGraphState>) => {
+        state.lastGroupId = Number.MAX_SAFE_INTEGER
+      },
+      mint: mintGroupId
+    },
+    {
+      name: 'link',
+      setCounter: (state: ReturnType<typeof createLGraphState>) => {
+        state.lastLinkId = toLinkId(Number.MAX_SAFE_INTEGER)
+      },
+      mint: mintLinkId
+    },
+    {
+      name: 'reroute',
+      setCounter: (state: ReturnType<typeof createLGraphState>) => {
+        state.lastRerouteId = toRerouteId(Number.MAX_SAFE_INTEGER)
+      },
+      mint: mintRerouteId
+    }
+  ])(
+    'wraps $name allocation to an available safe ID',
+    ({ setCounter, mint }) => {
+      const state = createLGraphState()
+      setCounter(state)
+
+      expect(Number(mint(state, new Set([1])))).toBe(2)
+    }
+  )
+
+  it('checks the candidate after the last reserved ID', () => {
+    expect(findNextAvailableId(new Set([1, 2, 3]), 1)).toBe(4)
+  })
+
+  it('skips a reserved ID above a stale counter', () => {
+    const state = createLGraphState()
+    state.lastGroupId = 1
+
+    expect(mintGroupId(state, new Set([2]))).toBe(3)
+  })
+
+  it('collects reservations only when the counter reaches its boundary', () => {
+    const state = createLGraphState()
+    let collections = 0
+    const collectReservedIds = () => {
+      collections++
+      return new Set([1])
+    }
+
+    expect(mintGroupId(state, collectReservedIds)).toBe(1)
+    expect(collections).toBe(0)
+
+    state.lastGroupId = Number.MAX_SAFE_INTEGER
+    expect(mintGroupId(state, collectReservedIds)).toBe(2)
+    expect(collections).toBe(1)
+  })
+
+  it('wraps a reserved maximum candidate to the first available ID', () => {
+    expect(
+      findNextAvailableId(
+        new Set([Number.MAX_SAFE_INTEGER, 1]),
+        Number.MAX_SAFE_INTEGER
+      )
+    ).toBe(2)
   })
 
   describe('isReservedBitRangeNodeId', () => {

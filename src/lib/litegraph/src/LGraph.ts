@@ -65,6 +65,7 @@ import { useEntityIdStore } from '@/stores/entityIdStore'
 import { useExecutionOrderStore } from '@/stores/executionOrderStore'
 import { useGraphMetadataStore } from '@/stores/graphMetadataStore'
 import { rekeyGraphId } from '@/stores/rekeyGraphId'
+import { toGroupId } from '@/types/groupId'
 import {
   UNASSIGNED_NODE_ID,
   compareNodeIds,
@@ -186,6 +187,7 @@ import {
 import {
   collectReservedGroupIds,
   collectReservedLinkIds,
+  collectReservedNodeIds,
   collectReservedRerouteIds,
   normalizeSubgraphDefinitions,
   topologicalSortSubgraphs
@@ -1373,7 +1375,9 @@ export class LGraph
         groupId === -1 ||
         layoutStore.getGroupLayout(this.rootGraph.id, groupId)
       ) {
-        node.id = mintGroupId(state)
+        node.id = mintGroupId(state, () =>
+          collectReservedGroupIds(this.rootGraph)
+        )
       }
       observeGroupId(state, node.id)
 
@@ -1405,7 +1409,16 @@ export class LGraph
     // give him an id
     if (node.id === UNASSIGNED_NODE_ID) {
       const mintMode = nodeIdMintModeFor(this)
-      node.id = mintNodeId(state, mintMode)
+      node.id = mintNodeId(
+        state,
+        mintMode,
+        () =>
+          new Set(
+            [...collectReservedNodeIds(this.rootGraph)]
+              .map(Number)
+              .filter(Number.isSafeInteger)
+          )
+      )
     } else {
       observeNodeId(state, node.id)
     }
@@ -1420,7 +1433,16 @@ export class LGraph
     node.graph = this
 
     attachNodeToStores(this, node, () =>
-      mintNodeId(state, nodeIdMintModeFor(this))
+      mintNodeId(
+        state,
+        nodeIdMintModeFor(this),
+        () =>
+          new Set(
+            [...collectReservedNodeIds(this.rootGraph)]
+              .map(Number)
+              .filter(Number.isSafeInteger)
+          )
+      )
     )
 
     this._nodes.push(node)
@@ -1877,7 +1899,9 @@ export class LGraph
 
   addFloatingLink(link: LLink): LLink | undefined {
     if (link.id === -1) {
-      link.id = mintLinkId(this.state)
+      link.id = mintLinkId(this.state, () =>
+        collectReservedLinkIds(this.rootGraph)
+      )
     }
 
     if (!registerLinkTopology(this, link)) return
@@ -1984,7 +2008,11 @@ export class LGraph
     floating
   }: OptionalProps<SerialisableReroute, 'id'>): Reroute | undefined {
     const rerouteId =
-      id === undefined ? mintRerouteId(this.state) : toRerouteId(id)
+      id === undefined
+        ? mintRerouteId(this.state, () =>
+            collectReservedRerouteIds(this.rootGraph)
+          )
+        : toRerouteId(id)
     observeRerouteId(this.state, rerouteId)
 
     const existingReroute = this.reroutes.get(rerouteId)
@@ -2118,34 +2146,27 @@ export class LGraph
     return this.createSubgraphs([data])[0]
   }
 
-  createSubgraphs(data: ExportedSubgraph[]): Subgraph[] {
+  createSubgraphs(
+    data: ExportedSubgraph[],
+    rootNodes?: ISerialisedNode[]
+  ): Subgraph[] {
     if (!data.length) return []
 
     const normalized = normalizeSubgraphDefinitions(
       data,
       {
-        nodeIds: this.collectReservedNodeIds(),
+        nodeIds: collectReservedNodeIds(this.rootGraph),
         groupIds: collectReservedGroupIds(this.rootGraph),
         linkIds: collectReservedLinkIds(this.rootGraph),
         rerouteIds: collectReservedRerouteIds(this.rootGraph)
       },
-      this.state
-    ).subgraphs
-    return this.createNormalizedSubgraphs(normalized)
-  }
-
-  private collectReservedNodeIds(
-    rootNodes: ISerialisedNode[] = []
-  ): Set<NodeId> {
-    const reserved = new Set<NodeId>()
-    for (const owner of [
-      this.rootGraph,
-      ...this.rootGraph.subgraphs.values()
-    ]) {
-      for (const node of owner.nodes) reserved.add(node.id)
+      this.state,
+      rootNodes
+    )
+    if (rootNodes && normalized.rootNodes) {
+      rootNodes.splice(0, rootNodes.length, ...normalized.rootNodes)
     }
-    for (const node of rootNodes) reserved.add(toNodeId(node.id))
-    return reserved
+    return this.createNormalizedSubgraphs(normalized.subgraphs)
   }
 
   private createNormalizedSubgraphs(data: ExportedSubgraph[]): Subgraph[] {
@@ -2703,7 +2724,9 @@ export class LGraph
     // Shared definitions may survive, so unpacked groups need fresh layout
     // ids, like the reroutes below.
     for (const groupInfo of groups) {
-      const groupId = mintGroupId(this.rootGraph.state)
+      const groupId = mintGroupId(this.rootGraph.state, () =>
+        collectReservedGroupIds(this.rootGraph)
+      )
       groupInfo.id = groupId
       const group = new LGraphGroup(groupInfo.title, groupId)
       this.add(group, true)
@@ -2793,7 +2816,9 @@ export class LGraph
     const rerouteIdMap = new Map<RerouteId, RerouteId>()
     const oldReroutes = subgraphNode.subgraph.reroutes
     for (const reroute of oldReroutes.values()) {
-      const migratedId = mintRerouteId(this.state)
+      const migratedId = mintRerouteId(this.state, () =>
+        collectReservedRerouteIds(this.rootGraph)
+      )
       const migratedReroute = this.setReroute({
         id: migratedId,
         pos: [reroute.pos[0] + offsetX, reroute.pos[1] + offsetY],
@@ -3134,17 +3159,13 @@ export class LGraph
           const runtimeLastNodeId = runtimeOptional(lastNodeId)
           const runtimeLastRerouteId = runtimeOptional(lastRerouteId)
           if (runtimeLastGroupId != null)
-            state.lastGroupId = Math.max(state.lastGroupId, runtimeLastGroupId)
+            observeGroupId(state, toGroupId(runtimeLastGroupId))
           if (runtimeLastLinkId != null)
-            state.lastLinkId = toLinkId(
-              Math.max(state.lastLinkId, runtimeLastLinkId)
-            )
+            observeLinkId(state, toLinkId(runtimeLastLinkId))
           if (runtimeLastNodeId != null)
-            state.lastNodeId = Math.max(state.lastNodeId, runtimeLastNodeId)
+            observeNodeId(state, toNodeId(runtimeLastNodeId))
           if (runtimeLastRerouteId != null)
-            state.lastRerouteId = toRerouteId(
-              Math.max(state.lastRerouteId, runtimeLastRerouteId)
-            )
+            observeRerouteId(state, toRerouteId(runtimeLastRerouteId))
         }
 
         // Links
@@ -3190,7 +3211,7 @@ export class LGraph
           ? normalizeSubgraphDefinitions(
               subgraphs,
               {
-                nodeIds: this.collectReservedNodeIds(nodesData),
+                nodeIds: collectReservedNodeIds(this.rootGraph, nodesData),
                 groupIds: collectReservedGroupIds(this, data.groups),
                 linkIds: collectReservedLinkIds(this, data.floatingLinks),
                 rerouteIds: collectReservedRerouteIds(this)
