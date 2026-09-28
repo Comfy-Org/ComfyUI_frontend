@@ -103,6 +103,7 @@ import type {
   WorkflowTurnContext
 } from './composables/agent/useAgentSession'
 import type { CoachStep } from './composables/agent/useOnboarding'
+import { useAgentConsent } from './composables/agent/useAgentConsent'
 import { useAgentWorkflowResolver } from './composables/agent/useAgentWorkflowResolver'
 import { useAgentWorkflowSelection } from './composables/agent/useAgentWorkflowSelection'
 import { useAgentSession } from './composables/agent/useAgentSession'
@@ -332,6 +333,7 @@ watch(
   { immediate: true }
 )
 const { accepted: consentAccepted } = storeToRefs(useAgentConsentStore())
+const { withConsent } = useAgentConsent()
 const workspaceStore = useTeamWorkspaceStore()
 const onboardingKey = computed(() =>
   scopedOnboardingKey(
@@ -1273,6 +1275,14 @@ const { submit: onSend } = useAgentDraftSubmission({
     exit: exitNodeSelectionMode
   },
   send: async (text, attachments, nodes, references, meta) => {
+    if (!consentAccepted.value) {
+      let hasConsent = false
+      await withConsent('first_message', () => {
+        hasConsent = true
+      })
+      if (!hasConsent) return false
+    }
+
     // The same origin `performSend` pins the turn to, taken in the same tick,
     // so the report follows the tab the turn is posted against. Everything but
     // the workflow id is captured now, like the thread; the id here is only
