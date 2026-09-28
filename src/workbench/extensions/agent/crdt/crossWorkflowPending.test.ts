@@ -592,24 +592,22 @@ describe('a human edit made while the document connection is down', () => {
 
     await enqueue([deleteNode('edited-during-outage')])
     vi.advanceTimersByTime(RETRY_BUDGET_MS)
-    const operationId = clientState.attempts[0].ops[0].op_id
 
     clientState.transportUp = true
     apiState.target.dispatchEvent(new Event('reconnected'))
     ackResubscribe('wf-a')
-    const sentAfterFirstAck = clientState.sent.length
+    await vi.waitFor(() => expect(clientState.sent).toHaveLength(1))
+    const replayedOperationId = clientState.sent[0].ops[0].op_id
 
-    // The host applies the replay, then the socket drops again. A retained
-    // batch that is never retired would go out a second time.
     dispatchOpsResult({
       workflowId: 'wf-a',
       ok: true,
-      applied: [operationId],
+      applied: [replayedOperationId],
       skipped: []
     })
     apiState.target.dispatchEvent(new Event('reconnected'))
     ackResubscribe('wf-a')
 
-    expect([sentAfterFirstAck, clientState.sent.length]).toEqual([1, 1])
+    expect(clientState.sent).toHaveLength(1)
   })
 })
