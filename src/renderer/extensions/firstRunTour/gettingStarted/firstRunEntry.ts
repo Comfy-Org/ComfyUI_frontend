@@ -38,6 +38,18 @@ type FirstRunScreenEvent =
   | { type: 'handoffStarted'; ownership: symbol }
   | { type: 'handoffFinished'; ownership: symbol }
 
+function finishFirstRunHandoff(
+  state: FirstRunScreenState,
+  ownership: symbol
+): FirstRunScreenState {
+  if (state.phase !== 'handoff' || !state.handoffs.has(ownership)) return state
+  const handoffs = new Set(state.handoffs)
+  handoffs.delete(ownership)
+  return handoffs.size === 0
+    ? { phase: 'released' }
+    : { phase: 'handoff', handoffs }
+}
+
 function transitionFirstRunScreen(
   state: FirstRunScreenState,
   event: FirstRunScreenEvent
@@ -57,15 +69,8 @@ function transitionFirstRunScreen(
           event.ownership
         ])
       }
-    case 'handoffFinished': {
-      if (state.phase !== 'handoff' || !state.handoffs.has(event.ownership))
-        return state
-      const handoffs = new Set(state.handoffs)
-      handoffs.delete(event.ownership)
-      return handoffs.size === 0
-        ? { phase: 'released' }
-        : { phase: 'handoff', handoffs }
-    }
+    case 'handoffFinished':
+      return finishFirstRunHandoff(state, event.ownership)
   }
 }
 
