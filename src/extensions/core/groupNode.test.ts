@@ -42,6 +42,7 @@ vi.mock(import('@/scripts/app'), () => ({
 import {
   GroupNodeConfig,
   GroupNodeHandler,
+  findUnconsumedWidgetIndex,
   replaceLegacySeparators
 } from './groupNode'
 
@@ -135,6 +136,60 @@ describe('GroupNodeConfig.getLinks', () => {
   })
 })
 
+describe('findUnconsumedWidgetIndex', () => {
+  it('pairs same-named widgets to distinct originating nodes in request order', () => {
+    // Two inner nodes (e.g. two CLIPTextEncode nodes both exposing `text`)
+    // that end up sharing an outer widget name. A plain `findIndex` by name
+    // would resolve both to the first "text" widget, copying that node's
+    // value into both inner nodes.
+    const outerWidgets = [
+      { name: 'text' },
+      { name: 'text' },
+      { name: 'denoise' }
+    ]
+    const consumed = new Set<number>()
+
+    const firstMatch = findUnconsumedWidgetIndex(outerWidgets, 'text', consumed)
+    expect(firstMatch).toBe(0)
+    consumed.add(firstMatch)
+
+    const secondMatch = findUnconsumedWidgetIndex(
+      outerWidgets,
+      'text',
+      consumed
+    )
+    expect(secondMatch).toBe(1)
+  })
+
+  it('never re-matches an index already recorded as consumed, even for a genuine name collision', () => {
+    const outerWidgets = [{ name: 'text' }, { name: 'text' }, { name: 'text' }]
+    const consumed = new Set<number>()
+
+    const indices = [0, 1, 2].map(() => {
+      const index = findUnconsumedWidgetIndex(outerWidgets, 'text', consumed)
+      consumed.add(index)
+      return index
+    })
+
+    expect(indices).toEqual([0, 1, 2])
+
+    // A fourth request has nothing left to consume.
+    expect(findUnconsumedWidgetIndex(outerWidgets, 'text', consumed)).toBe(-1)
+  })
+
+  it('ignores consumed indices and matches by name otherwise', () => {
+    const outerWidgets = [{ name: 'denoise' }, { name: 'filename_prefix' }]
+
+    expect(
+      findUnconsumedWidgetIndex(outerWidgets, 'filename_prefix', new Set())
+    ).toBe(1)
+    expect(
+      findUnconsumedWidgetIndex(outerWidgets, 'denoise', new Set([0]))
+    ).toBe(-1)
+    expect(findUnconsumedWidgetIndex(undefined, 'denoise', new Set())).toBe(-1)
+  })
+})
+
 describe('GroupNodeConfig.processInputSlots', () => {
   it('maps exposed inputs by name instead of definition index', () => {
     const config = new GroupNodeConfig('group', {
@@ -158,6 +213,54 @@ describe('GroupNodeConfig.processInputSlots', () => {
 
     expect(inputMap).toEqual({ model: 0, latent_image: 1 })
   })
+
+  it('falls back to the positional slot index when the synthesized input name matches no real input name (e.g. Reroute)', () => {
+    // A Reroute's def is keyed by type (e.g. 'MODEL'), but its real slot is
+    // unnamed (`addInput('', '*')`), so the name lookup always misses.
+    const config = new GroupNodeConfig('group', {
+      nodes: [{ index: 0, type: 'Reroute' }],
+      links: [],
+      external: []
+    })
+    const inputMap: Record<string, number> = {}
+    const link: GroupNodeLink = [null, 0, 0, 0, 0, 'MODEL']
+
+    config.processInputSlots(
+      { MODEL: ['MODEL', {}] },
+      fromPartial({ index: 0, type: 'Reroute', inputs: [{ name: '' }] }),
+      ['MODEL'],
+      { 0: link },
+      inputMap,
+      {}
+    )
+
+    // Recognized as internally linked via the positional fallback, so it's
+    // skipped rather than wrongly exposed as an external group input.
+    expect(inputMap).toEqual({})
+  })
+})
+
+describe('GroupNodeConfig.processWidgetInputs', () => {
+  it('keeps a forceInput combo as a slot, never a widget', () => {
+    const config = new GroupNodeConfig('group', {
+      nodes: [{ index: 0, type: 'KSampler' }],
+      links: [],
+      external: []
+    })
+
+    const { slots, converted } = config.processWidgetInputs(
+      {
+        sampler_name: [['euler', 'ddim'], { forceInput: true }],
+        steps: ['INT', {}]
+      },
+      { index: 0, type: 'KSampler' },
+      ['sampler_name', 'steps'],
+      {}
+    )
+
+    expect(slots).toEqual(['sampler_name'])
+    expect(converted.size).toBe(0)
+  })
 })
 
 describe('GroupNodeConfig.processConvertedWidgets', () => {
@@ -172,7 +275,6 @@ describe('GroupNodeConfig.processConvertedWidgets', () => {
     config.processConvertedWidgets(
       { seed: ['INT'], steps: ['INT'], cfg: ['FLOAT'] },
       { index: 0, type: 'KSampler' },
-      [],
       new Map([
         [10, 'cfg'],
         [2, 'steps'],
@@ -184,6 +286,32 @@ describe('GroupNodeConfig.processConvertedWidgets', () => {
     )
 
     expect(inputMap).toEqual({ seed: 0, steps: 1, cfg: 2 })
+  })
+
+  it('resolves a converted widget link by its own serialized slot index, not its position among converted widgets', () => {
+    const config = new GroupNodeConfig('group', {
+      nodes: [{ index: 0, type: 'KSampler' }],
+      links: [],
+      external: []
+    })
+    const inputMap: Record<string, number> = {}
+    const link: GroupNodeLink = [null, 0, 0, 0, 0, 'INT']
+
+    config.processConvertedWidgets(
+      { b: ['INT'] },
+      { index: 0, type: 'KSampler' },
+      // The converted widget's real slot index is 5 (the map key), which
+      // doesn't equal `slots.length + i` for any plausible `slots` this
+      // node could have had.
+      new Map([[5, 'b']]),
+      { 5: link },
+      inputMap,
+      {}
+    )
+
+    // Recognized as internally linked by its real slot index, so it's
+    // skipped rather than wrongly exposed as an external group input.
+    expect(inputMap).toEqual({})
   })
 })
 
