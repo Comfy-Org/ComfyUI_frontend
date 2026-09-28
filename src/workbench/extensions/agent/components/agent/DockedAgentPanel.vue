@@ -37,18 +37,10 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import {
-  computed,
-  defineAsyncComponent,
-  defineComponent,
-  h,
-  ref,
-  watch
-} from 'vue'
+import { defineAsyncComponent, defineComponent, h, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { reportError } from '@/platform/telemetry/reportError'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { useAgentRunModeStore } from '@/workbench/extensions/agent/stores/agent/agentRunModeStore'
 
@@ -86,15 +78,6 @@ const { hasOpaqueNeighbor = false } = defineProps<{
 
 const agentPanelStore = useAgentPanelStore()
 const { isVisible: docked, width } = storeToRefs(agentPanelStore)
-const { subscription } = useBillingContext()
-const agentHasFunds = computed(() => subscription.value?.agentHasFunds)
-watch(
-  agentHasFunds,
-  (hasFunds) => {
-    if (hasFunds === true) agentPanelStore.reportedExhaustionIdentity = null
-  },
-  { immediate: true }
-)
 const agentRunModeStore = useAgentRunModeStore()
 
 void agentRunModeStore.load().catch((error: unknown) => {
