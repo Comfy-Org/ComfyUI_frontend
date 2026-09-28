@@ -13,11 +13,39 @@ function appsOf(count: number): AppWorkshopModel[] {
     href: `/apps/${index}`,
     capabilities: [],
     type: 'APP',
-    appId: index % 2 ? 'reshoot' : 'studio'
+    appId: index % 2 ? 'reshoot' : 'studio',
+    thumbnail:
+      index % 2
+        ? undefined
+        : { url: `/images/primary-${index}.jpg`, kind: 'image' },
+    thumbnailUrl: `/images/fallback-${index}.jpg`
   }))
 }
 
 describe('AppCatalogue', () => {
+  it('maps app metadata into the visible catalogue cards', () => {
+    render(AppCatalogue, { props: { apps: appsOf(2) } })
+    const [studio, reshoot] = screen.getAllByTestId('workshop-app-card')
+
+    expect(studio).toHaveAttribute('href', '/apps/0')
+    expect(within(studio).getByTestId('app-card-task')).toHaveTextContent(
+      'Image to Video'
+    )
+    expect(within(studio).getByRole('img', { hidden: true })).toHaveAttribute(
+      'src',
+      '/images/primary-0.jpg'
+    )
+
+    expect(reshoot).toHaveAttribute('href', '/apps/1')
+    expect(within(reshoot).getByTestId('app-card-task')).toHaveTextContent(
+      'Video to Video'
+    )
+    expect(within(reshoot).getByRole('img', { hidden: true })).toHaveAttribute(
+      'src',
+      '/images/fallback-1.jpg'
+    )
+  })
+
   it.for([
     { count: 2, browseAll: 0 },
     { count: 8, browseAll: 0 },
