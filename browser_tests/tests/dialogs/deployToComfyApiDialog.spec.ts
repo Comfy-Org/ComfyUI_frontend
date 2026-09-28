@@ -31,20 +31,30 @@ test.describe('Deploy to Comfy API', { tag: '@auth' }, () => {
     platformFlag
   }) => {
     const actions = new WorkflowActionsDropdown(comfyPage.page)
-    expect(platformFlag.asked).toBe(0)
+    const deployItem = actions.menu.getByRole('menuitem', {
+      name: 'Deploy to Comfy API'
+    })
 
-    await actions.trigger.click()
-    await expect(
-      actions.menu.getByRole('menuitem', { name: 'Deploy to Comfy API' })
-    ).toBeVisible()
-    await comfyPage.page.keyboard.press('Escape')
-    await expect(actions.menu).toBeHidden()
-    await actions.trigger.click()
-    await expect(
-      actions.menu.getByRole('menuitem', { name: 'Deploy to Comfy API' })
-    ).toBeVisible()
+    await test.step('makes no request before the menu opens', async () => {
+      expect(platformFlag.asked).toBe(0)
+    })
 
-    expect(platformFlag.asked).toBe(1)
+    await test.step('asks once when the menu first opens', async () => {
+      await actions.trigger.click()
+      await expect(deployItem).toBeVisible()
+      expect(platformFlag.asked).toBe(1)
+    })
+
+    await test.step('closes the menu', async () => {
+      await comfyPage.page.keyboard.press('Escape')
+      await expect(actions.menu).toBeHidden()
+    })
+
+    await test.step('does not ask again when the menu reopens', async () => {
+      await actions.trigger.click()
+      await expect(deployItem).toBeVisible()
+      expect(platformFlag.asked).toBe(1)
+    })
   })
 })
 
