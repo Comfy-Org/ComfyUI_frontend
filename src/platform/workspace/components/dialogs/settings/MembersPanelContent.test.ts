@@ -310,11 +310,14 @@ describe('MembersPanelContent', () => {
         createInvite({ id: 'inv-exp-1', email: 'a@example.com' }),
         createInvite({ id: 'inv-exp-2', email: 'b@example.com' })
       ]
+      mockFilteredPendingInvites.value = mockPendingInvites.value
       renderComponent()
 
       expect(screen.getByText('1 pending invite')).toBeInTheDocument()
       expect(screen.getByText('Pending (1)')).toBeInTheDocument()
       expect(screen.queryByText(/3 pending/)).toBeNull()
+      expect(screen.getByText('a@example.com')).toBeInTheDocument()
+      expect(screen.getByText('b@example.com')).toBeInTheDocument()
     })
   })
 
