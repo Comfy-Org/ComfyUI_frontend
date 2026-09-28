@@ -365,17 +365,22 @@ export const useModelStore = defineStore('models', () => {
   async function loadModelFolders(): Promise<boolean> {
     const prepared = await prepareModelFolders()
     if (!prepared) return false
-    const previouslyLoaded = modelFolders.value
-      .filter((folder) => folder.state !== ResourceState.Uninitialized)
-      .map((folder) => folder.directory)
-    await Promise.all(
-      previouslyLoaded
-        .filter((name) => name in prepared.folders)
-        .map((name) => prepared.folders[name].load())
-    )
-    if (prepared.requestId !== modelFoldersRequestId) return false
-    commitModelFolders(prepared)
-    return true
+    while (prepared.requestId === modelFoldersRequestId) {
+      const pendingFolders = modelFolders.value
+        .filter(
+          (folder) =>
+            folder.state !== ResourceState.Uninitialized &&
+            folder.directory in prepared.folders
+        )
+        .map((folder) => prepared.folders[folder.directory])
+        .filter((folder) => folder.state === ResourceState.Uninitialized)
+      if (pendingFolders.length === 0) {
+        commitModelFolders(prepared)
+        return true
+      }
+      await Promise.all(pendingFolders.map((folder) => folder.load()))
+    }
+    return false
   }
 
   async function getLoadedModelFolder(
