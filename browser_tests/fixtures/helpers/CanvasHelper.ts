@@ -181,6 +181,21 @@ export class CanvasHelper {
     )
   }
 
+  async getElementWidth(): Promise<number> {
+    return this.page.evaluate(() => window.app!.canvasEl.width)
+  }
+
+  async getVisibleNodeCount(): Promise<number> {
+    return this.page.evaluate(() => {
+      const { canvas } = window.app!
+      if (!canvas.graph) return 0
+      canvas.ds.computeVisibleArea(canvas.viewport)
+      return canvas.graph.nodes.filter((node) =>
+        canvas.ds.visible_area.overlaps(node.boundingRect)
+      ).length
+    })
+  }
+
   async waitForViewToSettle(): Promise<void> {
     await this.page.waitForFunction(
       () =>
