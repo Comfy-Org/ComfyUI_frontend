@@ -48,6 +48,14 @@ function workspaceRoute(workspace: Response | (() => Response)) {
     typeof workspace === 'function' ? workspace() : workspace.clone()
 }
 
+function pendingResponse() {
+  let resolve: (response: Response) => void = () => {}
+  const promise = new Promise<Response>((settle) => {
+    resolve = settle
+  })
+  return { promise, resolve }
+}
+
 const TEAM = new Response(
   JSON.stringify({
     auth_method: 'session',
@@ -282,4 +290,63 @@ describe('billing-web on the shared web session', () => {
     expect(session.scopeSource.getScope()?.workspaceId).toBe(during)
     expect(session.billedScope.value?.workspace.id).toBe(during)
   })
+
+  it.for([
+    {
+      name: 'refused',
+      answerB: () =>
+        new Response(
+          JSON.stringify({
+            code: 'workspace_access_denied',
+            message: 'denied'
+          }),
+          { status: 403 }
+        ),
+      established: false,
+      scope: undefined
+    },
+    {
+      name: 'resolved',
+      answerB: () =>
+        new Response(
+          JSON.stringify({
+            auth_method: 'session',
+            id: 'ws-b',
+            name: 'B',
+            type: 'team',
+            role: 'owner'
+          })
+        ),
+      established: true,
+      scope: 'ws-b'
+    }
+  ])(
+    'a lookup superseded by binding B reports B once B is $name',
+    async ({ answerB, established, scope }) => {
+      const answerA = pendingResponse()
+      const lookupB = pendingResponse()
+      const answers: (() => Response | Promise<Response>)[] = [
+        () => TEAM.clone(),
+        () => answerA.promise,
+        () => lookupB.promise
+      ]
+      const { session, entry } = setup({
+        workspace: () => answers.shift()?.() ?? TEAM.clone()
+      })
+      await session.settledPhase()
+
+      entry.workspaceId = 'ws-a'
+      const outcome = vi.fn()
+      void session.signInPort.establish().then(outcome)
+      entry.workspaceId = 'ws-b'
+      void session.resolveWorkspace()
+      answerA.resolve(TEAM.clone())
+      await new Promise((resolve) => setTimeout(resolve))
+
+      expect(outcome).not.toHaveBeenCalled()
+      lookupB.resolve(answerB())
+      await vi.waitFor(() => expect(outcome).toHaveBeenCalledWith(established))
+      expect(session.scopeSource.getScope()?.workspaceId).toBe(scope)
+    }
+  )
 })

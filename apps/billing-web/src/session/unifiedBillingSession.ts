@@ -130,21 +130,27 @@ export function createUnifiedBillingSession(deps: UnifiedBillingSessionDeps) {
     }
   }
 
-  async function resolveWorkspace(): Promise<WorkspaceResolution> {
+  function resolveWorkspace(): Promise<WorkspaceResolution> {
     const current = state.value
     if (current.phase !== 'signed_in') {
-      return { status: 'error', code: 'NOT_AUTHENTICATED' }
+      return Promise.resolve({ status: 'error', code: 'NOT_AUTHENTICATED' })
     }
     const binding = deps.workspaceId()
     if (binding !== resolvedBinding) workspace.value = undefined
-    const request = fetchWorkspace(current.session, binding)
-    resolving = request
-    const result = await request
-    if (resolving === request && state.value === current) {
+    const outcome: Promise<WorkspaceResolution> = fetchWorkspace(
+      current.session,
+      binding
+    ).then((result) => {
+      if (resolving !== outcome) return resolving ?? result
+      if (state.value !== current) {
+        return { status: 'error', code: 'NOT_AUTHENTICATED' }
+      }
       workspace.value = result
       resolvedBinding = binding
-    }
-    return result
+      return result
+    })
+    resolving = outcome
+    return outcome
   }
 
   identity.subscribe((next) => {
