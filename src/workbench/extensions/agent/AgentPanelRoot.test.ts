@@ -2017,6 +2017,71 @@ describe('AgentPanelRoot attach flow', () => {
     await vi.waitFor(() => expect(uploaded).toEqual(['image.png']))
   })
 
+  // Pasting happens inside the composer, like typing or a drop; only the +
+  // menu's attach leaves the panel for the OS picker and ends node picking.
+  it('keeps picking nodes when a screenshot is pasted into the composer', async () => {
+    const uploaded = stubUploadFetch()
+    const selection = await startVueNodeSelection()
+
+    const clipboard = new DataTransfer()
+    clipboard.items.add(new File(['x'], 'image.png', { type: 'image/png' }))
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste(clipboard)
+
+    await vi.waitFor(() => expect(uploaded).toEqual(['image.png']))
+    expect(useAgentNodeSelectionStore().isActive).toBe(true)
+    expect([...selection.selectedItems]).toEqual(selection.nodes)
+  })
+
+  it.for([
+    { name: 'image.png', expectedEvents: 1 },
+    { name: 'bad.png', expectedEvents: 0 }
+  ])(
+    'emits $expectedEvents paste event(s) for a pasted $name upload',
+    async ({ name, expectedEvents }) => {
+      const attempted: string[] = []
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+          const url = String(input)
+          if (!url.includes('/upload/')) return json(200, agentThreadList())
+          const body = init?.body
+          const file = body instanceof FormData ? body.get('image') : null
+          attempted.push(file instanceof File ? file.name : '')
+          if (name.startsWith('bad')) return json(500, {})
+          return json(200, { name: 'uploaded', subfolder: '', type: 'input' })
+        })
+      )
+      renderWithSelectedTarget()
+      await nextTick()
+      telemetry.trackAgentAttachButtonClicked.mockClear()
+
+      const clipboard = new DataTransfer()
+      clipboard.items.add(new File(['x'], name, { type: 'image/png' }))
+      await userEvent.click(screen.getByRole('textbox'))
+      await userEvent.paste(clipboard)
+
+      await vi.waitFor(() => expect(attempted).toEqual([name]))
+      await vi.waitFor(() =>
+        expect(
+          screen.queryByLabelText(i18n.global.t('agent.uploading'))
+        ).not.toBeInTheDocument()
+      )
+      await nextTick()
+
+      if (expectedEvents === 0) {
+        expect(screen.queryByText(name)).not.toBeInTheDocument()
+        expect(telemetry.trackAgentAttachButtonClicked).not.toHaveBeenCalled()
+      } else {
+        await vi.waitFor(() =>
+          expect(
+            telemetry.trackAgentAttachButtonClicked
+          ).toHaveBeenCalledExactlyOnceWith({ method: 'paste' })
+        )
+      }
+    }
+  )
+
   it('names every approved format in the picker accept list', async () => {
     stubUploadFetch()
     renderWithSelectedTarget()

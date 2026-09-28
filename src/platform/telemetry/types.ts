@@ -700,7 +700,7 @@ export interface AgentAttachButtonClickedMetadata extends Record<
   string,
   unknown
 > {
-  method: 'menu' | 'drag_drop'
+  method: 'menu' | 'drag_drop' | 'paste'
 }
 export interface AgentWorkflowAppliedMetadata extends Record<string, unknown> {
   workflow_id: string

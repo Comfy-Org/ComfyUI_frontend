@@ -1456,8 +1456,8 @@ function onAttach(): void {
 }
 
 async function onAttachFiles(files: File[]): Promise<void> {
-  exitNodeSelectionMode()
-  await attachment.addFiles(files)
+  if (await attachment.addFiles(files))
+    useTelemetry()?.trackAgentAttachButtonClicked({ method: 'paste' })
 }
 
 function onOpenAssets(): void {
