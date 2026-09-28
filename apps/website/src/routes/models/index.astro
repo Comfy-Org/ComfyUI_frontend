@@ -22,7 +22,7 @@ const directory = workshopModels.toSorted((a, b) =>
       {t('workshop.hero.eyebrow')}
     </p>
     <h1 class="text-3xl font-light text-primary-comfy-canvas lg:text-5xl">
-      {t('workshop.hub.heading')}
+      {t('workshop.catalogue.heading')}
     </h1>
   </div>
   <ModelsPage client:load />
@@ -35,7 +35,7 @@ const directory = workshopModels.toSorted((a, b) =>
       id="models-directory-heading"
       class="text-2xl font-medium text-primary-warm-white"
     >
-      {t('workshop.hub.directory')}
+      {t('workshop.catalogue.directory')}
     </h2>
     <ul class="mt-6 gap-x-8 sm:columns-2 lg:columns-3 xl:columns-4">
       {directory.map((model) => <li class="break-inside-avoid py-1.5 text-sm">

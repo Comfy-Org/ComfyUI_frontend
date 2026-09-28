@@ -23,8 +23,11 @@ const translations = {
     'zh-CN': '在 Comfy 上浏览并运行最新的 AI 图像、视频和音频模型。'
   },
   'workshop.hero.eyebrow': { en: 'Models', 'zh-CN': '模型' },
-  'workshop.hub.heading': { en: 'ComfyUI models', 'zh-CN': 'ComfyUI 模型' },
-  'workshop.hub.directory': {
+  'workshop.catalogue.heading': {
+    en: 'ComfyUI models',
+    'zh-CN': 'ComfyUI 模型'
+  },
+  'workshop.catalogue.directory': {
     en: 'All models A to Z',
     'zh-CN': '全部模型（A 到 Z）'
   },
