@@ -169,13 +169,14 @@ describe('idAllocation', () => {
     expect(findNextAvailableId(new Set([1, 2, 3]), 1)).toBe(4)
   })
 
-  it('throws instead of returning an occupied ID when the search is exhausted', () => {
+  it('keeps searching past the reported set size', () => {
     const occupiedIds = new Set([1])
-    vi.spyOn(occupiedIds, 'has').mockReturnValue(true)
+    vi.spyOn(occupiedIds, 'has')
+      .mockReturnValueOnce(true)
+      .mockReturnValueOnce(true)
+      .mockReturnValue(false)
 
-    expect(() => findNextAvailableId(occupiedIds, 1)).toThrow(
-      'ID space exhausted'
-    )
+    expect(findNextAvailableId(occupiedIds, 1)).toBe(3)
   })
 
   it('skips a reserved ID above a stale counter', () => {

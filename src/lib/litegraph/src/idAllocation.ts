@@ -120,12 +120,9 @@ export function findNextAvailableId(
   startAt = 1
 ): number {
   let candidate = Number.isSafeInteger(startAt) && startAt > 0 ? startAt : 1
-  let attempts = 0
-  while (usedIds.has(candidate) && attempts < usedIds.size) {
+  while (usedIds.has(candidate)) {
     candidate = candidate === Number.MAX_SAFE_INTEGER ? 1 : candidate + 1
-    attempts++
   }
-  if (usedIds.has(candidate)) throw new RangeError('ID space exhausted')
   return candidate
 }
 
