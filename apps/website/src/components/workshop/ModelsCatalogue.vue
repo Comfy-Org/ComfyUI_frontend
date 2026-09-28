@@ -3,14 +3,22 @@ import { ChevronRight } from '@lucide/vue'
 import { computed, defineAsyncComponent, ref, watch } from 'vue'
 import { useMounted } from '@vueuse/core'
 
-import type { WorkshopModel } from '../../config/models-catalogue'
+import type {
+  WorkflowWorkshopModel,
+  WorkshopModel
+} from '../../config/models-catalogue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import WorkshopHero from './WorkshopHero.vue'
 import WorkshopModelsGrid from './WorkshopModelsGrid.vue'
 import CatalogueTabs from './CatalogueTabs.vue'
 import type { CatalogueTab } from './CatalogueTabs.vue'
-import { captureWorkshopEvent, useWorkshopEnabled } from '../../scripts/posthog'
+import {
+  captureWorkshopEvent,
+  useWorkshopAppsEnabled,
+  useWorkshopEnabled
+} from '../../scripts/posthog'
+import WorkshopModelCard from './WorkshopModelCard.vue'
 
 const WorkflowCatalogue = defineAsyncComponent(
   () => import('./WorkflowCatalogue.vue')
@@ -25,6 +33,7 @@ const inSection = ref(false)
 const browseAll = ref(false)
 const mounted = useMounted()
 const enabled = useWorkshopEnabled()
+const appsEnabled = useWorkshopAppsEnabled()
 const selectedTab = ref<CatalogueTab>('models')
 if (typeof location !== 'undefined') {
   const requested = new URLSearchParams(location.search).get('type')
@@ -38,10 +47,19 @@ const routerModels = computed(() =>
   models.filter((model) => model.routerId !== undefined)
 )
 const workflows = computed(() =>
-  models.filter((model) => model.routerId === undefined)
+  models.filter(
+    (model): model is WorkflowWorkshopModel =>
+      model.type === 'CLOUD' || model.type === 'SERVERLESS'
+  )
 )
+const apps = computed(() => models.filter((model) => model.type === 'APP'))
+const availableTabs = computed<readonly CatalogueTab[]>(() => [
+  'models',
+  ...(workflows.value.length ? (['workflows'] as const) : []),
+  ...(appsEnabled.value && apps.value.length ? (['apps'] as const) : [])
+])
 const activeTab = computed(() =>
-  workflows.value.length ? selectedTab.value : 'models'
+  availableTabs.value.includes(selectedTab.value) ? selectedTab.value : 'models'
 )
 
 const focusTabs = ref(false)
@@ -122,7 +140,8 @@ watch(
   >
     <template #tabs>
       <CatalogueTabs
-        v-if="workflows.length"
+        v-if="availableTabs.length > 1"
+        :tabs="availableTabs"
         :model-value="activeTab"
         :locale
         :focus-active="focusTabs"
@@ -140,6 +159,7 @@ watch(
   >
     <template #tabs>
       <CatalogueTabs
+        :tabs="availableTabs"
         :model-value="activeTab"
         :locale
         :focus-active="focusTabs"
@@ -149,13 +169,14 @@ watch(
     </template>
   </WorkflowCatalogue>
   <section v-else data-testid="apps-catalogue">
-    <!-- Apps has no list of its own yet, so the tabs bring their own bar
-      rather than leaving this half with no way back. -->
+    <!-- The apps half has no toolbar of its own, so the tabs bring their
+      own bar rather than leaving it with no way back. -->
     <div
       class="sticky top-20 z-30 -mx-1 mb-8 flex flex-wrap items-center gap-3 bg-page px-1 py-4 max-sm:mb-4 max-sm:py-2 lg:top-26"
       data-testid="workshop-toolbar"
     >
       <CatalogueTabs
+        :tabs="availableTabs"
         :model-value="activeTab"
         :locale
         :focus-active="focusTabs"
@@ -163,13 +184,14 @@ watch(
         @focused="focusTabs = false"
       />
     </div>
-    <div class="rounded-3xl bg-hub-surface p-8">
-      <h2 class="text-xl font-medium text-primary-comfy-canvas">
-        {{ t('workshop.catalogue.appsSoon', locale) }}
-      </h2>
-      <p class="mt-3 max-w-2xl text-content-secondary">
-        {{ t('workshop.catalogue.appsHint', locale) }}
-      </p>
-    </div>
+    <ul
+      class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5"
+      :aria-label="t('workshop.catalogue.apps', locale)"
+      data-testid="apps-list"
+    >
+      <li v-for="app in apps" :key="app.slug">
+        <WorkshopModelCard :model="app" :locale />
+      </li>
+    </ul>
   </section>
 </template>

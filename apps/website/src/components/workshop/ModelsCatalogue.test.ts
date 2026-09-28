@@ -4,18 +4,25 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { readonly, ref, nextTick } from 'vue'
 import type { Ref } from 'vue'
 
-import { useWorkshopEnabled, captureWorkshopEvent } from '../../scripts/posthog'
+import {
+  captureWorkshopEvent,
+  useWorkshopAppsEnabled,
+  useWorkshopEnabled
+} from '../../scripts/posthog'
 import ModelsCatalogue from './ModelsCatalogue.vue'
 import type { WorkshopModel } from '../../config/models-catalogue'
 
 vi.mock(import('../../scripts/posthog'))
 
 let enabled: Ref<boolean>
+let appsEnabled: Ref<boolean>
 
 beforeEach(() => {
   history.replaceState(null, '', '/models/')
   enabled = ref(false)
+  appsEnabled = ref(true)
   vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(enabled))
+  vi.mocked(useWorkshopAppsEnabled).mockReturnValue(readonly(appsEnabled))
 })
 
 const launchModels: WorkshopModel[] = [
@@ -56,6 +63,26 @@ const launchModels: WorkshopModel[] = [
     categoryLabel: { en: 'Edit & clean up photos', 'zh-CN': '编辑与修整照片' },
     models: ['BiRefNet'],
     modality: 'image'
+  },
+  {
+    type: 'APP',
+    appId: 'studio',
+    slug: 'apps/cinematic-studio',
+    name: 'Cinematic Studio',
+    href: '/models/apps/cinematic-studio/',
+    workflowCount: 0,
+    capabilities: [],
+    modality: 'image'
+  },
+  {
+    type: 'APP',
+    appId: 'reshoot',
+    slug: 'apps/reshoot',
+    name: 'Re-shoot a video',
+    href: '/models/apps/reshoot/',
+    workflowCount: 0,
+    capabilities: [],
+    modality: 'video'
   }
 ]
 
@@ -157,16 +184,52 @@ describe('ModelsCatalogue', () => {
     }
   )
 
-  it('keeps prototype app destinations out of the Apps tab', async () => {
+  it('lists the catalogue apps in the Apps tab, each on its own page', async () => {
     const user = userEvent.setup()
     render(ModelsCatalogue, { props: { models: launchModels } })
     await user.click(screen.getByRole('button', { name: 'Apps' }))
-    expect(
-      screen.getByRole('heading', { name: 'Apps are coming soon' })
-    ).toBeVisible()
-    expect(screen.queryByTestId('workshop-model-card')).toBeNull()
-    expect(screen.queryByRole('link')).toBeNull()
+
+    const cards = within(screen.getByTestId('apps-list')).getAllByTestId(
+      'workshop-model-card'
+    )
+    expect(cards.map((card) => card.getAttribute('href'))).toEqual([
+      '/models/apps/cinematic-studio/',
+      '/models/apps/reshoot/'
+    ])
+    expect(cards.map((card) => card.dataset.kind)).toEqual(['app', 'app'])
   })
+
+  it.for([
+    {
+      name: 'apps off',
+      apps: false,
+      workflows: true,
+      tabs: ['Models', 'Workflows']
+    },
+    {
+      name: 'workflows off',
+      apps: true,
+      workflows: false,
+      tabs: ['Models', 'Apps']
+    },
+    { name: 'both off', apps: false, workflows: false, tabs: [] }
+  ])(
+    'shows only the tabs a visitor can open: $name',
+    ({ apps, workflows, tabs }) => {
+      appsEnabled.value = apps
+      const models = launchModels.filter(
+        (model) =>
+          workflows || model.routerId !== undefined || model.type === 'APP'
+      )
+      render(ModelsCatalogue, { props: { models } })
+
+      expect(
+        screen
+          .queryAllByRole('button', { name: /^(Models|Workflows|Apps)$/ })
+          .map((button) => button.textContent.trim())
+      ).toEqual(tabs)
+    }
+  )
 
   it('opens all workflows with a count and returns to the use-case groups', async () => {
     history.replaceState(null, '', '/models/?type=workflows')

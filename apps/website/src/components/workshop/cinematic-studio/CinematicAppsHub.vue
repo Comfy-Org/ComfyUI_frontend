@@ -3,7 +3,8 @@ import { computed, ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { getRoutes } from '../../../config/routes'
+import { workshopApps } from '../../../lib/workshop/apps'
+import type { WorkshopAppCard } from '../../../lib/workshop/apps'
 import type { Locale } from '../../../i18n/translations'
 import type { CinematicCopyKey } from '../../../lib/workshop/cinematic-studio/copy'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
@@ -12,7 +13,6 @@ import CinematicAppCard from './CinematicAppCard.vue'
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const HUB_PROTOTYPE = 'https://comfy-website-preview-pr-17804.vercel.app/hub/'
-const RESHOOT_PROTOTYPE = `${HUB_PROTOTYPE}workflow/crossview_warp_h3/`
 
 const TAB_LABEL = {
   models: 'cinematic.hub.models',
@@ -23,34 +23,8 @@ type Tab = keyof typeof TAB_LABEL
 const TABS: readonly Tab[] = ['models', 'workflows', 'apps']
 const tab = ref<Tab>('apps')
 
-interface HubApp {
-  readonly key: string
-  readonly name: CinematicCopyKey
-  readonly summary: CinematicCopyKey
-  readonly badge: CinematicCopyKey
-  readonly meta?: CinematicCopyKey
-  readonly image?: string
-  readonly href?: string
-}
-
-const apps = computed<readonly HubApp[]>(() => [
-  {
-    key: 'cinematic-studio',
-    name: 'cinematic.title',
-    summary: 'cinematic.hub.studioSummary',
-    badge: 'cinematic.hub.beta',
-    meta: 'cinematic.hub.studioMeta',
-    image: '/images/cinematic-studio/neon-street.jpg',
-    href: `${getRoutes(locale).cinematicStudio}?ux=e`
-  },
-  {
-    key: 'reshoot',
-    name: 'cinematic.hub.reshoot',
-    summary: 'cinematic.hub.reshootSummary',
-    badge: 'cinematic.hub.prototype',
-    meta: 'cinematic.hub.reshootMeta',
-    href: RESHOOT_PROTOTYPE
-  },
+const apps = computed<readonly WorkshopAppCard[]>(() => [
+  ...workshopApps(locale),
   {
     key: 'image-to-3d',
     name: 'cinematic.hub.to3d',
