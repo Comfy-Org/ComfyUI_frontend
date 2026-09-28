@@ -18,11 +18,7 @@
       @click.stop="emitIfNotDragged('openErrors')"
     >
       <div class="flex size-full items-center justify-center gap-2">
-        <span class="truncate">{{
-          errorSeverity === 'missing'
-            ? t('rightSidePanel.errors')
-            : t('g.error')
-        }}</span>
+        <span class="truncate">{{ errorLabel }}</span>
         <i class="icon-[lucide--info] size-4 shrink-0" />
       </div>
     </Button>
@@ -72,11 +68,7 @@
       @click.stop="emitIfNotDragged('openErrors')"
     >
       <div class="flex size-full items-center justify-center gap-2">
-        <span class="truncate">{{
-          errorSeverity === 'missing'
-            ? t('rightSidePanel.errors')
-            : t('g.error')
-        }}</span>
+        <span class="truncate">{{ errorLabel }}</span>
         <i class="icon-[lucide--info] size-4 shrink-0" />
       </div>
     </Button>
@@ -131,11 +123,7 @@
       @click.stop="emitIfNotDragged('openErrors')"
     >
       <div class="flex size-full items-center justify-center gap-2">
-        <span class="truncate">{{
-          errorSeverity === 'missing'
-            ? t('rightSidePanel.errors')
-            : t('g.error')
-        }}</span>
+        <span class="truncate">{{ errorLabel }}</span>
         <i class="icon-[lucide--info] size-4 shrink-0" />
       </div>
     </Button>
@@ -253,6 +241,9 @@ const emit = defineEmits<{
 }>()
 
 const hasAnyError = computed(() => errorSeverity !== 'none')
+const errorLabel = computed(() =>
+  t(errorSeverity === 'missing' ? 'rightSidePanel.errors' : 'g.error')
+)
 const errorColorClass = computed(() =>
   errorSeverity === 'missing'
     ? 'bg-warning-background text-warning-on-background hover:bg-warning-background-hover'
