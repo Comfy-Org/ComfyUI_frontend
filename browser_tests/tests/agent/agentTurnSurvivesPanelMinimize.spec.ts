@@ -22,11 +22,11 @@ import {
 // destroyed locally. Nothing is sent to the server, which keeps streaming and
 // keeps answering posts with 409.
 //
-// Reopening remounts and hydrates from REST, but `applyAssistantRow` in
-// `agentTranscript.ts` only returns a `pending` entry when the streaming row
-// also carries a `pending_ask`; a plain mid-build row yields
-// `message.streaming = false`, so hydrate restores no active turn and the
-// indicator never comes back.
+// Reopening remounts and re-hydrates from REST, which is where the client
+// learns the turn is still running: `applyAssistantRow` in
+// `agentTranscript.ts` now reads `row.status === 'streaming'` as the live
+// turn, so hydrate rebuilds an active turn with a transport and the panel
+// comes back showing work in progress instead of a finished thread.
 //
 // Deliberately neither a refresh nor a socket drop: PM-1043 and PM-1199 cover
 // those triggers. Here the page is never reloaded and the socket never closes —
@@ -40,14 +40,11 @@ test.describe(
   () => {
     const PROMPT = 'add an audio output node'
 
-    // Minimizing and restoring around a turn the client has NOT abandoned.
-    // Nothing here is expected to fail, so this is what keeps `minimizePanel`,
-    // `restorePanel`, `workingRow`, `workSummary` and `sendButton` honest:
-    // `startTurn` only resolves once a live `Working...` row is on screen, and
-    // the summary below only resolves once a turn has actually ended.
-    // `stopButton` is covered instead by the pre-marker assertion in the first
-    // test below. That leaves only the `Thinking...` arm of `liveProgressRow`
-    // unproven, since nothing renders it until a fix restores a turn from REST.
+    // Minimizing and restoring around a turn the client never started, so it
+    // keeps `minimizePanel`, `restorePanel`, `workingRow`, `workSummary` and
+    // `sendButton` honest independently of any restore: `startTurn` only
+    // resolves once a live `Working...` row is on screen, and the summary
+    // below only resolves once a turn has actually ended.
     test('runs a turn to completion after a minimize and restore', async ({
       turnLock,
       getWebSocket
@@ -81,13 +78,10 @@ test.describe(
         await turnLock.minimizePanel()
         await turnLock.restorePanel()
 
-        // The thread itself must survive the minimize. A wipe here would be a
-        // different defect, and test.fail() below would swallow it.
         await expect(turnLock.userBubbles).toHaveText([PROMPT])
 
-        // The reported symptom, and the first assertion so the expected failure
-        // is this one rather than a later line.
-        test.fail()
+        // The reported symptom: the panel came back looking like a finished
+        // thread while the server was still building.
         await expect(turnLock.liveProgressRow).toBeVisible()
         await expect(turnLock.stopButton).toBeVisible()
         await expect(turnLock.workSummary).toHaveCount(0)
@@ -103,15 +97,11 @@ test.describe(
         await expect(turnLock.userBubbles).toHaveText([PROMPT])
 
         // The server never stopped running this turn, so it keeps broadcasting
-        // the same message_id. Sending stays above the marker: `ws.send()` throws
-        // on a dead route, and below test.fail() that throw would read as the
-        // expected failure without the assertion ever running.
+        // the same message_id. The restored turn has to be the one that
+        // receives it: without a transport keyed to that id,
+        // `agentConversationStore.ingest` drops the frame on the floor.
         turnLock.push(await getWebSocket(), POST_RECONNECT_EVENT)
 
-        // `agentConversationStore.ingest` drops the frame: `transport` is null
-        // after the abort, hydrate created no replacement, and
-        // `dropBackgroundTurns()` emptied the map it would fall back to.
-        test.fail()
         await expect(
           turnLock.panel.getByText(POST_RECONNECT_TEXT)
         ).toBeVisible()
@@ -123,44 +113,30 @@ test.describe(
         await turnLock.minimizePanel()
         await turnLock.restorePanel()
 
-        // Preconditions stay above the marker so a broken composer or a lost
-        // prompt reads as a real failure rather than the expected one.
         await expect(turnLock.composer).toBeVisible()
         await expect(turnLock.userBubbles).toHaveText([PROMPT])
 
         // Composer renders Stop and Send as one button whose label flips, so
-        // Stop being absent IS Send being offered -- the defect, asserted here
-        // rather than left implicit. Once PM-1776 is fixed this test cannot
-        // report "expected to fail, but passed": its arrange depends on Send,
-        // which a restored turn removes. It fails loudly instead, by name here
-        // and via the explicit 10s below, rather than burning the 120s file
-        // timeout across CI retries -- and it must be rewritten alongside the
-        // fix. All of it stays ABOVE test.fail(), which only sets the expected
-        // status once it executes, so a throw up here stays unexpected.
-        await expect(turnLock.stopButton).toHaveCount(0)
-        await turnLock.composer.fill('are you still there?')
-        await turnLock.sendButton.click({ timeout: 10_000 })
-        // Inequality, so a future client-side retry cannot fail this line in
-        // place of the alert assertion below.
-        await expect
-          .poll(() => turnLock.postAttempts())
-          .toBeGreaterThanOrEqual(2)
-        // `rejectedPosts` ticks synchronously inside the route handler, so the
-        // poll above resolves before the browser has painted anything. Settle
-        // on the rejected send's own bubble, which `recordFailedSend` pushes in
-        // the same update as the notice, so the alert assertion below is a real
-        // check rather than one that passes on an unrendered panel.
-        await expect(turnLock.userBubbles).toHaveText([
-          PROMPT,
-          'are you still there?'
-        ])
+        // Send being absent IS Stop being offered: the restored turn withholds
+        // the send the server would answer with 409.
+        await expect(turnLock.sendButton).toHaveCount(0)
+        await expect(turnLock.stopButton).toBeVisible()
 
-        test.fail()
+        // Enter is the one affordance left that could still post. A running
+        // turn swallows it, so the draft staying in the composer is the settle
+        // that makes the three negative assertions below real checks rather
+        // than ones that pass on a send still in flight.
+        await turnLock.composer.fill('are you still there?')
+        await turnLock.composer.press('Enter')
+        await expect(turnLock.composer).toHaveText('are you still there?')
+
+        await expect(turnLock.userBubbles).toHaveText([PROMPT])
         await expect(
           turnLock.panel
             .getByRole('alert')
             .filter({ hasText: TURN_IN_PROGRESS_MESSAGE })
         ).toHaveCount(0)
+        expect(turnLock.postAttempts()).toBe(1)
         expect(turnLock.rejectedPosts()).toBe(0)
       })
     })

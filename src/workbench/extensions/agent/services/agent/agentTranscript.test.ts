@@ -368,6 +368,25 @@ describe('normalizeAgentTranscript', () => {
     expect(transcript.pending?.messageId).toBe('row-1')
   })
 
+  // PM-1776 / PM-1682: the counterpart of the clamp above. The server leaves a
+  // row `streaming` for exactly as long as it is still running the turn, so a
+  // client hydrating mid-turn gets a live turn back, ask or no ask.
+  it('restores a row the server still reports as streaming as the live turn', () => {
+    const message = row(1, 'assistant', 'turn-a', '', 'row-1')
+    message.status = 'streaming'
+    message.content = {
+      tool_calls: [{ id: 'call-1', tool_name: 'add_node', status: 'running' }]
+    }
+
+    const transcript = normalizeAgentTranscript([message])
+
+    expect(transcript.pending?.messageId).toBe('row-1')
+    expect(transcript.messages[0].streaming).toBe(true)
+    expect(transcript.messages[0].parts).toEqual([
+      { type: 'tool', callId: 'call-1', name: 'add_node', state: 'streaming' }
+    ])
+  })
+
   it.for(['success', 'failed', 'cancelled', 'timeout', 'unrecognized'])(
     'maps terminal tool-call status %s through the broadened vocabulary',
     (status) => {

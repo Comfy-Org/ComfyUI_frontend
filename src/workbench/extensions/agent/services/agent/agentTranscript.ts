@@ -111,8 +111,8 @@ function parseUserWorkflowReferences(
  *
  * A restored (non-live) row has no transport left to ever settle its tool
  * parts, so a `pending`/`running` status there would otherwise spin forever;
- * only `isLive` (the row is the one actively backed by a live transport —
- * the run_approval mid-ask case) keeps it in `streaming` state.
+ * only `isLive` (the row the server still reports as `streaming`, which
+ * hydrate backs with a live transport) keeps it in `streaming` state.
  */
 function toolCallPartState(
   status: unknown,
@@ -255,25 +255,30 @@ function pendingRunApproval(
 
 /**
  * Applies one persisted assistant row onto its running message: appends any
- * parsed tool-call parts and text part, then, when the row is mid-ask,
- * attaches a `runApproval` part and marks the message still-streaming.
- * Returns the `pending` entry to record when the row is mid-ask, or
- * `undefined` otherwise.
+ * parsed tool-call parts and text part, then, for a row the server still
+ * reports as `streaming`, marks the message live and attaches a `runApproval`
+ * part when that row is also mid-ask. Returns the `pending` entry for a live
+ * row, or `undefined` for a terminal one.
+ *
+ * PM-1776/PM-1682: `row.status` is the only authority on whether the turn is
+ * still running. Reading a live row as finished unless it carried a
+ * `pending_ask` left every client that hydrates mid-turn — a reopened panel,
+ * a refreshed tab — showing a completed transcript and offering Send for a
+ * thread the server answers with 409.
  */
 function applyAssistantRow(
   row: AgentMessages[number],
   message: AssistantMessage,
   text: string
 ): NormalizedAgentTranscript['pending'] {
-  message.streaming = false
-  const runApproval =
-    row.status === 'streaming' ? pendingRunApproval(row) : undefined
-  appendAssistantContent(message, row, text, runApproval !== undefined)
+  const isLive = row.status === 'streaming'
+  message.streaming = isLive
+  appendAssistantContent(message, row, text, isLive)
 
-  if (!runApproval) return undefined
+  if (!isLive) return undefined
 
-  message.parts.push({ type: 'runApproval', ...runApproval })
-  message.streaming = true
+  const runApproval = pendingRunApproval(row)
+  if (runApproval) message.parts.push({ type: 'runApproval', ...runApproval })
   return { messageId: row.id as TurnId, message }
 }
 

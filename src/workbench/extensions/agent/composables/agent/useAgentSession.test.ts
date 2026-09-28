@@ -364,6 +364,37 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(conversation.activeTurnId).toBeNull()
   })
 
+  // PM-1776 / PM-1682. (b4) above is the minimize, which abandons the turn
+  // locally while the server keeps running it; this is the reopen.
+  it('(b4a) a reopen over a turn the server still runs restores it as live', async () => {
+    const conversation = useAgentConversationStore()
+    const rest = fakeRest({
+      getMessages: vi.fn(
+        async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'turn-1', 'add an audio output node'),
+          {
+            ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+            content: {},
+            status: 'streaming'
+          }
+        ]
+      )
+    })
+
+    const minimized = useAgentSession({ rest, events: fakeEvents().source })
+    minimized.start()
+    await minimized.sendMessage('add an audio output node')
+    minimized.stop()
+    await Promise.resolve()
+    expect(conversation.activeTurnId).toBeNull()
+
+    const reopened = useAgentSession({ rest, events: fakeEvents().source })
+    reopened.start()
+
+    await vi.waitFor(() => expect(reopened.isStreaming.value).toBe(true))
+    expect(conversation.activeTurnId).toBe('msg-1')
+  })
+
   it('does not persist a send that resolves after the session stops', async () => {
     let resolvePost: (value: AgentTurnAccepted) => void = () => {}
     const postMessage = vi.fn(
