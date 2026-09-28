@@ -386,6 +386,34 @@ describe('useModelStore', () => {
     expect(api.getModels).toHaveBeenCalledWith('vae')
   })
 
+  it('preserves models opened while a deferred startup folder load is pending', async () => {
+    enableMocks(true)
+    store = useModelStore()
+    await store.loadModelFolders()
+    let resolveFolders!: (
+      folders: Awaited<ReturnType<typeof api.getModelFolders>>
+    ) => void
+    vi.mocked(api.getModelFolders).mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveFolders = resolve
+      })
+    )
+    const startupLoad = store.loadModelFolders()
+
+    await store.getLoadedModelFolder('checkpoints')
+    resolveFolders([
+      { name: 'checkpoints', folders: ['/path/to/checkpoints'] },
+      { name: 'vae', folders: ['/path/to/vae'] }
+    ])
+    await startupLoad
+
+    expect(store.models.map((model) => model.file_name)).toEqual([
+      'sdxl.safetensors',
+      'sdv15.safetensors',
+      'noinfo.safetensors'
+    ])
+  })
+
   describe('refreshModelFolder races', () => {
     it('keeps the newer refresh when an older one for the same folder finishes last', async () => {
       enableMocks()
