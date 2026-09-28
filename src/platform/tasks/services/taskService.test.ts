@@ -12,20 +12,41 @@ describe('taskService.cancelTask', () => {
       new Response(null, { status: 204 })
     )
 
-    await taskService.cancelTask('task-123')
+    await expect(taskService.cancelTask('task-123')).resolves.toBe(true)
 
     expect(api.fetchApi).toHaveBeenCalledWith('/tasks/task-123', {
       method: 'DELETE'
     })
   })
 
-  it('surfaces rejected cancellations', async () => {
+  it.for([404, 409])(
+    'treats a %s terminal race as idempotent',
+    async (status) => {
+      vi.mocked(api.fetchApi).mockResolvedValue(new Response(null, { status }))
+
+      await expect(taskService.cancelTask('task-123')).resolves.toBe(false)
+    }
+  )
+
+  it('surfaces rejected cancellations with response detail', async () => {
     vi.mocked(api.fetchApi).mockResolvedValue(
-      new Response(null, { status: 409 })
+      new Response('queue unavailable', { status: 503 })
     )
 
     await expect(taskService.cancelTask('task-123')).rejects.toThrow(
-      'Failed to cancel task task-123: 409'
+      'Failed to cancel task task-123: 503 queue unavailable'
     )
+  })
+
+  it('encodes task ids before placing them in a request path', async () => {
+    vi.mocked(api.fetchApi).mockResolvedValue(
+      new Response(null, { status: 204 })
+    )
+
+    await taskService.cancelTask('../task/123')
+
+    expect(api.fetchApi).toHaveBeenCalledWith('/tasks/..%2Ftask%2F123', {
+      method: 'DELETE'
+    })
   })
 })

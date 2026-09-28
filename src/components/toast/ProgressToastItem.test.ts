@@ -79,4 +79,16 @@ describe('ProgressToastItem — cancellation', () => {
     expect(screen.getByText('Cancelled')).toBeVisible()
     expect(screen.queryByRole('button', { name: 'Cancel Download' })).toBeNull()
   })
+
+  it('disables duplicate cancellation while the request is pending', () => {
+    const running = { ...completedJob(), status: 'running' as const }
+    render(ProgressToastItem, {
+      props: { job: running, isCancelling: true },
+      global: { plugins: [i18n] }
+    })
+
+    expect(
+      screen.getByRole('button', { name: 'Cancel Download' })
+    ).toBeDisabled()
+  })
 })

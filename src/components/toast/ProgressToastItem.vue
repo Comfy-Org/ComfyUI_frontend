@@ -8,8 +8,9 @@ import Button from '@/components/ui/button/Button.vue'
 import type { AssetDownload } from '@/stores/assetDownloadStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { job } = defineProps<{
+const { job, isCancelling = false } = defineProps<{
   job: AssetDownload
+  isCancelling?: boolean
 }>()
 const emit = defineEmits<{ cancel: [taskId: string] }>()
 
@@ -70,6 +71,7 @@ const isCancelled = computed(() => job.status === 'cancelled')
         variant="muted-textonly"
         size="sm"
         :aria-label="t('electronFileDownload.cancel')"
+        :disabled="isCancelling"
         @click="emit('cancel', job.taskId)"
       >
         {{ t('g.cancel') }}

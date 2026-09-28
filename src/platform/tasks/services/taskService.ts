@@ -66,7 +66,9 @@ class TaskServiceError extends Error {
 
 function createTaskService() {
   async function getTask(taskId: TaskId): Promise<TaskResponse> {
-    const res = await api.fetchApi(`${TASKS_ENDPOINT}/${taskId}`)
+    const res = await api.fetchApi(
+      `${TASKS_ENDPOINT}/${encodeURIComponent(taskId)}`
+    )
 
     if (!res.ok) {
       if (res.status === 404) {
@@ -85,15 +87,19 @@ function createTaskService() {
     return result.data
   }
 
-  async function cancelTask(taskId: TaskId): Promise<void> {
-    const res = await api.fetchApi(`${TASKS_ENDPOINT}/${taskId}`, {
-      method: 'DELETE'
-    })
+  async function cancelTask(taskId: TaskId): Promise<boolean> {
+    const res = await api.fetchApi(
+      `${TASKS_ENDPOINT}/${encodeURIComponent(taskId)}`,
+      { method: 'DELETE' }
+    )
+    if (res.status === 404 || res.status === 409) return false
     if (!res.ok) {
+      const detail = await res.text()
       throw new TaskServiceError(
-        `Failed to cancel task ${taskId}: ${res.status}`
+        `Failed to cancel task ${taskId}: ${res.status}${detail ? ` ${detail}` : ''}`
       )
     }
+    return true
   }
 
   return { getTask, cancelTask }

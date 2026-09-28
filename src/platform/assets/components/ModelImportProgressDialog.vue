@@ -9,6 +9,7 @@ import HoneyToast from '@/components/honeyToast/HoneyToast.vue'
 import ProgressToastItem from '@/components/toast/ProgressToastItem.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -94,6 +95,10 @@ async function cancelDownload(taskId: string) {
   try {
     await assetDownloadStore.cancelDownload(taskId)
   } catch (error) {
+    reportError(error, {
+      errorType: 'asset_download_cancellation_failure',
+      logToConsole: false
+    })
     toastErrorHandler(error)
   }
 }
@@ -168,6 +173,9 @@ async function cancelDownload(taskId: string) {
             v-for="job in filteredJobs"
             :key="job.taskId"
             :job="job"
+            :is-cancelling="
+              assetDownloadStore.cancellingTaskIds.has(job.taskId)
+            "
             @cancel="cancelDownload"
           />
         </div>

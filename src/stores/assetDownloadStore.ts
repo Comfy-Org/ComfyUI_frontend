@@ -48,6 +48,7 @@ function generateDownloadTrackingPlaceholder(
 
 export const useAssetDownloadStore = defineStore('assetDownload', () => {
   const downloads = ref<Map<string, AssetDownload>>(new Map())
+  const cancellingTaskIds = ref(new Set<TaskId>())
   const lastCompletedDownload = ref<CompletedDownload | null>(null)
 
   const downloadList = computed(() => Array.from(downloads.value.values()))
@@ -120,7 +121,10 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
     // broadcast a premature terminal `failed` message for an error it goes
     // on to retry (and succeed at), so a `failed` download must stay open to
     // a later message for the same task_id updating it again.
-    if (existing?.status === 'completed' || existing?.status === 'cancelled') {
+    if (
+      existing?.status === 'completed' ||
+      (existing?.status === 'cancelled' && data.status !== 'completed')
+    ) {
       return
     }
 
@@ -175,7 +179,7 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
                 asset_name: result?.filename ?? download.assetName,
                 bytes_total: download.bytesTotal,
                 bytes_downloaded:
-                  result?.bytes_downloaded ?? download.bytesTotal,
+                  result?.bytes_downloaded ?? download.bytesDownloaded,
                 progress: task.status === 'completed' ? 100 : download.progress,
                 status: task.status,
                 error: task.error_message ?? result?.error
@@ -215,6 +219,7 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
   }
 
   async function cancelDownload(taskId: TaskId) {
+    if (cancellingTaskIds.value.has(taskId)) return
     const download = downloads.value.get(taskId)
     if (
       !download ||
@@ -222,17 +227,23 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
     ) {
       return
     }
-    await taskService.cancelTask(taskId)
-    const current = downloads.value.get(taskId)
-    if (
-      !current ||
-      current.status === 'completed' ||
-      current.status === 'cancelled'
-    ) {
-      return
+    cancellingTaskIds.value.add(taskId)
+    try {
+      const cancelled = await taskService.cancelTask(taskId)
+      const current = downloads.value.get(taskId)
+      if (
+        !cancelled ||
+        !current ||
+        current.status === 'completed' ||
+        current.status === 'cancelled'
+      ) {
+        return
+      }
+      current.status = 'cancelled'
+      current.lastUpdate = Date.now()
+    } finally {
+      cancellingTaskIds.value.delete(taskId)
     }
-    current.status = 'cancelled'
-    current.lastUpdate = Date.now()
   }
 
   return {
@@ -244,6 +255,7 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
     lastCompletedDownload,
     sessionDownloadCount,
     trackDownload,
+    cancellingTaskIds,
     cancelDownload,
     clearFinishedDownloads,
     isDownloadedThisSession,

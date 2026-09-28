@@ -380,17 +380,19 @@ export function useUploadModelWizard(
               await refreshModelCaches()
               stopAsyncWatch?.()
               stopAsyncWatch = undefined
-            } else if (status === 'failed') {
+            } else if (status === 'failed' || status === 'cancelled') {
               watchState.resolved = true
               const download = assetDownloadStore.downloadList.find(
                 (d) => d.taskId === result.task.task_id
               )
               uploadStatus.value = 'error'
               uploadError.value =
-                download?.error ||
-                t('assetBrowser.downloadFailed', {
-                  name: download?.assetName || ''
-                })
+                status === 'cancelled'
+                  ? t('electronFileDownload.cancelled')
+                  : download?.error ||
+                    t('assetBrowser.downloadFailed', {
+                      name: download?.assetName || ''
+                    })
               stopAsyncWatch?.()
               stopAsyncWatch = undefined
             }
