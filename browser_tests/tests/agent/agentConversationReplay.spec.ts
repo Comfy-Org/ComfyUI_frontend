@@ -25,6 +25,19 @@ test.describe(
         test.setTimeout(90_000)
         await agentConversation.runTurns()
 
+        const errorOverlay = page.getByTestId('error-overlay')
+        if (
+          (await errorOverlay.isVisible()) &&
+          (await errorOverlay.getByText('Comfy Agent error').isVisible())
+        ) {
+          await errorOverlay.getByTestId('error-overlay-see-errors').click()
+          const details = page.getByTestId('error-group-execution')
+          await expect(details).toBeVisible()
+          throw new Error(
+            `Unexpected Comfy Agent error:\n${await details.innerText()}`
+          )
+        }
+
         await expect(page.locator('#graph-canvas')).toHaveScreenshot(
           'two-turn-dependent-edit-wired.png',
           { mask: [agentConversation.panel] }
