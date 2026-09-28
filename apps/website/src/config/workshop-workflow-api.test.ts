@@ -259,6 +259,58 @@ describe('Workshop workflow HTTP client', () => {
     }
   )
 
+  it.for([
+    {
+      label: 'Cloud credit refusal sent as 429',
+      response: () =>
+        Response.json(
+          {
+            error: {
+              message: 'Insufficient credits to queue workflows',
+              type: 'PAYMENT_REQUIRED'
+            }
+          },
+          { status: 429 }
+        ),
+      code: 'insufficient_credits',
+      status: 429
+    },
+    {
+      label: 'genuine rate limit',
+      response: () =>
+        Response.json(
+          { error: { message: 'Slow down', type: 'RATE_LIMITED' } },
+          { status: 429 }
+        ),
+      code: 'rate_limited',
+      status: 429
+    },
+    {
+      label: 'unreadable 429 body',
+      response: () => new Response('<html>busy</html>', { status: 429 }),
+      code: 'rate_limited',
+      status: 429
+    },
+    {
+      label: 'plain 402',
+      response: () => new Response(null, { status: 402 }),
+      code: 'insufficient_credits',
+      status: 402
+    }
+  ])('classifies a $label as $code', async ({ response, code, status }) => {
+    const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(response())
+    const api = createWorkflowApi({
+      definition: definition(),
+      fetch,
+      token: 'caller'
+    })
+
+    await expect(
+      api.submit(request, new AbortController().signal)
+    ).rejects.toMatchObject({ code, status })
+    expect(fetch).toHaveBeenCalledOnce()
+  })
+
   it('bounds graph submission by encoded bytes before dispatch', async () => {
     const fetch = vi.fn<typeof globalThis.fetch>()
     const api = createWorkflowApi({

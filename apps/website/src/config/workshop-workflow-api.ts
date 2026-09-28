@@ -117,14 +117,38 @@ type WorkflowResponseSchema<T> = {
   safeParse(value: unknown): { success: true; data: T } | { success: false }
 }
 
+const cloudErrorSchema = z.object({
+  error: z.object({ type: z.string() })
+})
+
+async function cloudErrorType(response: Response): Promise<string | undefined> {
+  try {
+    const parsed = cloudErrorSchema.safeParse(
+      await workflowResponseJson(response)
+    )
+    return parsed.success ? parsed.data.error.type : undefined
+  } catch {
+    return undefined
+  }
+}
+
+async function failedResponseError(
+  response: Response
+): Promise<WorkshopWorkflowError> {
+  if ((await cloudErrorType(response)) === 'PAYMENT_REQUIRED')
+    return new WorkshopWorkflowError(
+      'insufficient_credits',
+      {},
+      response.status
+    )
+  return responseError(response.status)
+}
+
 async function parseResponse<T>(
   response: Response,
   schema: WorkflowResponseSchema<T>
 ): Promise<T> {
-  if (!response.ok) {
-    await response.body?.cancel()
-    throw responseError(response.status)
-  }
+  if (!response.ok) throw await failedResponseError(response)
   const parsed = schema.safeParse(await workflowResponseJson(response))
   if (!parsed.success) throw new WorkshopWorkflowError('response')
   return parsed.data
