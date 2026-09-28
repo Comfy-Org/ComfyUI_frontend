@@ -32,6 +32,7 @@ import type { PickerKey } from './picker-key'
 const {
   models,
   aspects,
+  colorCount = 0,
   direction,
   gate,
   workspaceName,
@@ -45,6 +46,7 @@ const {
   models: readonly CinematicModel[]
   /** The frames the chosen model can make; every frame when absent. */
   aspects?: readonly AspectRatio[]
+  colorCount?: number
   direction: Direction
   gate: StudioGate
   workspaceName?: string
@@ -58,6 +60,7 @@ const {
 
 const emit = defineEmits<{
   open: [key: PickerKey]
+  colors: []
   generate: []
   cancel: []
 }>()
@@ -136,7 +139,9 @@ const chipClass = (key: PickerKey) =>
       <CinematicReferenceMenu
         v-model:cast="cast"
         v-model:palette="palette"
+        :color-count="colorCount"
         :locale
+        @colors="emit('colors')"
       />
       <label for="cinematic-scene" class="sr-only">
         {{ tc('cinematic.section.scene', locale) }}

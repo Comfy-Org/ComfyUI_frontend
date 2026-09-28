@@ -19,6 +19,7 @@ import {
   shotAspects,
   takesReferences
 } from '../../../lib/workshop/cinematic-studio/models'
+import CinematicColors from './CinematicColors.vue'
 import CinematicGenerateAction from './CinematicGenerateAction.vue'
 import CinematicMenu from './CinematicMenu.vue'
 import CinematicOutputControls from './CinematicOutputControls.vue'
@@ -64,6 +65,8 @@ const resolution = defineModel<Resolution>('resolution', { required: true })
 const takes = defineModel<number>('takes', { required: true })
 const cast = defineModel<File | undefined>('cast')
 const palette = defineModel<File | undefined>('palette')
+const colors = defineModel<readonly string[]>('colors', { required: true })
+const mainColor = defineModel<number | undefined>('mainColor')
 
 const modelOptions = computed(() =>
   models.map((model) => ({
@@ -159,6 +162,7 @@ const cardClass =
           <CinematicReferenceSlot v-model="cast" kind="cast" :locale />
           <CinematicReferenceSlot v-model="palette" kind="palette" :locale />
         </div>
+        <CinematicColors v-model="colors" v-model:main="mainColor" :locale />
       </section>
       <section class="flex flex-col gap-2">
         <h2 :class="labelClass">

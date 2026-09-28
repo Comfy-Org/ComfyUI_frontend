@@ -573,6 +573,46 @@ const copy = {
     en: 'Remove reference',
     'zh-CN': '移除参考'
   },
+  'cinematic.colors.title': {
+    en: 'Colors',
+    'zh-CN': '颜色'
+  },
+  'cinematic.colors.hint': {
+    en: 'Sent as words, so every model can follow them',
+    'zh-CN': '以文字发送，所有模型都能使用'
+  },
+  'cinematic.colors.color': {
+    en: 'Color',
+    'zh-CN': '颜色'
+  },
+  'cinematic.colors.add': {
+    en: 'Add a color',
+    'zh-CN': '添加颜色'
+  },
+  'cinematic.colors.remove': {
+    en: 'Remove color',
+    'zh-CN': '移除颜色'
+  },
+  'cinematic.colors.makeMain': {
+    en: 'Make main color',
+    'zh-CN': '设为主色'
+  },
+  'cinematic.colors.main': {
+    en: 'Main color',
+    'zh-CN': '主色'
+  },
+  'cinematic.colors.sample': {
+    en: 'From an image',
+    'zh-CN': '从图片取色'
+  },
+  'cinematic.colors.sampleError': {
+    en: "Couldn't read colors from that image.",
+    'zh-CN': '无法从该图片读取颜色。'
+  },
+  'cinematic.colors.clear': {
+    en: 'Clear colors',
+    'zh-CN': '清除颜色'
+  },
   'cinematic.picker.close': {
     en: 'Close',
     'zh-CN': '关闭'

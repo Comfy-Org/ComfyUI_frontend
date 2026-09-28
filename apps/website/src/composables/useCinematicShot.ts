@@ -34,6 +34,8 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
   const takes = ref(1)
   const cast = shallowRef<File>()
   const palette = shallowRef<File>()
+  const colors = ref<readonly string[]>([])
+  const mainColor = ref<number>()
 
   onMounted(() => {
     const requested = new URLSearchParams(window.location.search).get('model')
@@ -46,7 +48,9 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
     direction: direction.value,
     enhance: enhance.value,
     cast: !!cast.value,
-    palette: !!palette.value
+    palette: !!palette.value,
+    colors: colors.value,
+    mainColor: mainColor.value
   }))
   const references = computed(() =>
     [cast.value, palette.value].filter((file): file is File => !!file)
@@ -125,6 +129,8 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
     takes,
     cast,
     palette,
+    colors,
+    mainColor,
     references,
     estimate,
     memberWorkspace,

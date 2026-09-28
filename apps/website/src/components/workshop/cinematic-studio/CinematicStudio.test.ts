@@ -172,17 +172,18 @@ describe('CinematicStudio', () => {
     const user = renderStudio()
 
     await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
-    await user.click(screen.getByRole('button', { name: 'Aspect ratio: 21:9' }))
-    await user.click(await screen.findByRole('menuitemradio', { name: /16:9/ }))
+    // Seedream 5.0 Pro, the first model, has no 21:9 size, so it opens on 16:9.
+    await user.click(screen.getByRole('button', { name: 'Aspect ratio: 16:9' }))
+    await user.click(await screen.findByRole('menuitemradio', { name: /1:1/ }))
     await user.click(screen.getByRole('switch', { name: 'AI prompt' }))
     await user.click(generateButton())
 
     await vi.waitFor(() => expect(router_render).toHaveBeenCalledTimes(1))
     expect(
-      screen.getByRole('button', { name: 'Aspect ratio: 16:9' })
+      screen.getByRole('button', { name: 'Aspect ratio: 1:1' })
     ).toBeInTheDocument()
     const [, parameters] = vi.mocked(router_render).mock.calls[0]
-    expect(parameters).toMatchObject({ aspect_ratio: '16:9' })
+    expect(parameters).toMatchObject({ aspect_ratio: '1:1' })
     expect(parameters?.prompt).not.toContain('Cinematic film still')
   })
 
