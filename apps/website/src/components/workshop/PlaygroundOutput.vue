@@ -35,6 +35,7 @@ const {
   retryDisabled = false,
   refreshable = false,
   memberWorkspace,
+  cancelledMessage,
   locale = 'en'
 } = defineProps<{
   state: RunState
@@ -46,6 +47,12 @@ const {
   retryDisabled?: boolean
   refreshable?: boolean
   memberWorkspace?: string
+  /**
+   * What a run stopped on purpose is called here. A model's run is abandoned
+   * by the page and may still be billed; a workflow's is cancelled by Cloud
+   * and is over. The same status, two different things to say.
+   */
+  cancelledMessage?: string
   locale?: Locale
 }>()
 
@@ -83,7 +90,7 @@ const statusMessage = computed(() => {
   if (state.status === 'running')
     return state.label ?? t('workshop.run.running', locale)
   if (state.status === 'cancelled')
-    return t('workshop.output.cancelled', locale)
+    return cancelledMessage ?? t('workshop.output.cancelled', locale)
   if (state.status === 'succeeded')
     return t(
       expired.value ? 'workshop.output.expired' : 'workshop.output.complete',
@@ -342,12 +349,15 @@ const earlierClass = (active: boolean) =>
       class="flex flex-1 flex-col items-center justify-center gap-4 p-6 text-center"
     >
       <Loader2
+        v-if="!state.stalled"
         class="size-8 text-primary-comfy-yellow motion-safe:animate-spin"
         aria-hidden="true"
+        data-testid="run-spinner"
       />
       <p class="flex items-baseline gap-2 text-sm text-primary-warm-white">
         {{ state.label ?? t('workshop.run.running', locale) }}
         <span
+          v-if="!state.stalled"
           class="text-primary-warm-gray tabular-nums"
           data-testid="run-elapsed"
         >
@@ -390,7 +400,7 @@ const earlierClass = (active: boolean) =>
       class="flex flex-1 flex-col items-center justify-center gap-4 p-6 text-center"
     >
       <p class="text-sm text-primary-comfy-canvas">
-        {{ t('workshop.output.cancelled', locale) }}
+        {{ statusMessage }}
       </p>
       <Button
         variant="outline"

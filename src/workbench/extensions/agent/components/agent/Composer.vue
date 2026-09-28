@@ -86,6 +86,7 @@ const emit = defineEmits<{
   ]
   stop: [method: AgentStopMethod]
   attach: []
+  attachFiles: [files: File[]]
   openAssets: []
   selectNodes: []
   removeTag: [id: string]
@@ -285,7 +286,7 @@ const composerContainerRef = useTemplateRef<HTMLDivElement>(
 // (src/platform/keybindings/keybindingService.ts), the mention picker closes
 // itself first via stopPropagation (useAgentMentionPicker.ts's
 // onComposerKeydown), select has its own stopEscapeToDocument
-// (src/components/ui/select/select.variants.ts), and the capture-phase
+// (packages/design-system/src/select.variants.ts), and the capture-phase
 // document listeners in OnboardingCoach.vue and TourSpotlight.vue let a
 // full-screen overlay pre-empt everything else. This handler only ever runs
 // when none of those more specific handlers claimed the event first.
@@ -534,6 +535,7 @@ defineExpose({
             @selection-change="onEditorSelectionChange"
             @click="syncMention"
             @blur="closeMention()"
+            @attach-files="emit('attachFiles', $event)"
             @open-reference-workflow="
               (id, name) => emit('openReferenceWorkflow', id, name)
             "

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-describe.sequential('registered LiteGraph type cleanup', () => {
+describe('registered LiteGraph type cleanup', { concurrent: false }, () => {
   it('tracks a singleton registered after a module reset', async () => {
     vi.resetModules()
     const { LGraphNode, LiteGraph } =
