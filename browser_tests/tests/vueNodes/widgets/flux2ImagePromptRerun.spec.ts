@@ -66,6 +66,25 @@ async function runGeneration(
   ).toBeVisible()
 }
 
+async function restoreOutputPreview(
+  comfyPage: ComfyPage,
+  exec: ExecutionHelper,
+  nodeId: string
+) {
+  const jobId = `preview-restoration-${crypto.randomUUID()}`
+  exec.executionStart(jobId)
+  exec.executing(jobId, nodeId)
+  exec.executed(jobId, nodeId, {
+    images: [{ filename: 'example.png', subfolder: '', type: 'input' }]
+  })
+  exec.executing(jobId, null)
+  exec.executionSuccess(jobId)
+  exec.status(0)
+  await expect(
+    getNode(comfyPage).getByRole('img', { name: 'View image 1 of 1' })
+  ).toBeVisible()
+}
+
 /** Prompt widget identity as the widget store and litegraph see it. */
 function readPromptWidget(comfyPage: ComfyPage) {
   return comfyPage.page.evaluate(() => {
@@ -233,26 +252,25 @@ test.describe(
       const initialSize = await savedSize()
       expect(initialSize).toBeDefined()
 
-      const { resizedSize, expandedHeight, beforeResize } =
+      const { resizedSize, resizedWorkflow, expandedHeight } =
         await test.step('resize and persist the authored height', async () => {
-          await runGeneration(comfyPage, exec, ws, nodeId)
+          await restoreOutputPreview(comfyPage, exec, nodeId)
           const beforeHeight = (await node.boundingBox())?.height
           expect(beforeHeight).toBeDefined()
-          const beforeResize = Date.now()
           await node.resizeFromCorner('SE', 0, 83)
           await expect.poll(savedSize).not.toEqual(initialSize)
           await expect
             .poll(async () => (await node.boundingBox())?.height)
             .toBeCloseTo(beforeHeight! + 83, 0)
           const resizedSize = await savedSize()
+          const resizedWorkflow = await comfyPage.workflow.getExportedWorkflow()
           const expandedHeight = (await node.boundingBox())?.height
           expect(expandedHeight).toBeDefined()
-          return { resizedSize, expandedHeight, beforeResize }
+          return { resizedSize, resizedWorkflow, expandedHeight }
         })
 
-      await test.step('reload and remove the output preview', async () => {
-        await comfyPage.workflow.waitForDraftIndexUpdatedSince(beforeResize)
-        await comfyPage.workflow.reloadAndWaitForApp()
+      await test.step('remove the output preview', async () => {
+        await comfyPage.workflow.loadGraphData(resizedWorkflow)
         await expect(
           getNode(comfyPage).getByRole('img', { name: 'View image 1 of 1' })
         ).toBeHidden()
@@ -264,10 +282,9 @@ test.describe(
 
       await test.step('restore the output preview', async () => {
         const restoredWs = await getWebSocket()
-        await runGeneration(
+        await restoreOutputPreview(
           comfyPage,
           new ExecutionHelper(comfyPage, restoredWs),
-          restoredWs,
           nodeId
         )
         await expect
