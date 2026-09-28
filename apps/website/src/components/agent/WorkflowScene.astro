@@ -12,6 +12,7 @@ interface Props {
   userRest?: Point
   holdDuration?: number
   agentRest?: Point
+  userCursorLabel: string
 }
 
 const {
@@ -21,7 +22,8 @@ const {
   holdDuration = 4,
   agentRest,
   userRest,
-  motionCss
+  motionCss,
+  userCursorLabel
 } = Astro.props
 const unit = width / 100
 
@@ -78,7 +80,7 @@ const { scene } = motion
           style={`animation-name:${scene.userCursor.name};${userRest ? `left:${userRest.x / unit}cqw;top:${userRest.y / unit}cqw` : ''}`}
           class="wf-user"
           role="img"
-          aria-label="User collaborating with the agent"
+          aria-label={userCursorLabel}
         >
           <img
             class="wf-user-pointer"

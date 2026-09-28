@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
+import { tAgent } from '../src/components/agent/agentTranslations'
 import { t } from '../src/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
 
@@ -11,11 +12,6 @@ const CANONICAL: Record<'en' | 'zh-CN', string> = {
   'zh-CN': 'https://comfy.org/zh-CN/agent/'
 }
 
-// The hero paints a permanently animated backdrop — a blurred radial gradient
-// plus a drifting masked dot grid — which pins the compositor for as long as
-// the page is open. Several parallel workers each holding an /agent tab starve
-// the main thread badly enough to time out unrelated navigations, so this spec
-// asserts a whole locale from a single visit rather than one visit per claim.
 async function assertLandingPage(
   page: Page,
   path: string,
@@ -23,9 +19,7 @@ async function assertLandingPage(
 ) {
   await page.goto(path)
 
-  await expect(page).toHaveTitle(t('agentPage.meta.title', locale))
-  // Both locales are real, indexable pages now — losing that would drop them
-  // from search.
+  await expect(page).toHaveTitle(tAgent('agentPage.meta.title', locale))
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
     'href',
     CANONICAL[locale]
@@ -35,23 +29,23 @@ async function assertLandingPage(
   await expect(
     page.getByRole('heading', {
       level: 1,
-      name: `${t('agentPage.hero.titleLine1', locale)} ${t('agentPage.hero.titleLine2', locale)}`
+      name: `${tAgent('agentPage.hero.titleLine1', locale)} ${tAgent('agentPage.hero.titleLine2', locale)}`
     })
   ).toBeVisible()
   await expect(
-    page.getByText(t('agentPage.hero.subtitle', locale))
+    page.getByText(tAgent('agentPage.hero.subtitle', locale))
   ).toBeVisible()
 
   await expect(
     page
-      .getByRole('link', { name: t('agentPage.cta', locale), exact: true })
+      .getByRole('link', { name: tAgent('agentPage.cta', locale), exact: true })
       .first()
   ).toHaveAttribute('href', 'https://cloud.comfy.org')
 
   await expect(
     page.getByRole('heading', {
       level: 2,
-      name: t('agentPage.capabilities.heading', locale)
+      name: tAgent('agentPage.capabilities.heading', locale)
     })
   ).toBeVisible()
   for (const key of [
@@ -60,23 +54,32 @@ async function assertLandingPage(
     'agentPage.capabilities.3.title'
   ] as const) {
     await expect(
-      page.getByRole('heading', { level: 3, name: t(key, locale) })
+      page.getByRole('heading', { level: 3, name: tAgent(key, locale) })
     ).toBeVisible()
   }
 
   await expect(
     page.getByRole('heading', {
       level: 2,
-      name: t('agentPage.usecases.heading', locale)
+      name: tAgent('agentPage.usecases.heading', locale)
     })
   ).toBeVisible()
 
   await expect(
     page.getByRole('heading', {
       level: 2,
-      name: t('agentPage.faq.heading', locale)
+      name: tAgent('agentPage.faq.heading', locale)
     })
   ).toBeVisible()
+
+  await page
+    .getByText(tAgent('agentPage.faq.6.q', locale), { exact: true })
+    .click()
+  await expect(
+    page.getByRole('link', {
+      name: tAgent('agentPage.faq.6.linkLabel', locale)
+    })
+  ).toHaveAttribute('href', locale === 'en' ? '/pricing' : '/zh-CN/pricing')
 }
 
 test.describe('Agent landing — desktop @smoke', () => {
@@ -86,6 +89,15 @@ test.describe('Agent landing — desktop @smoke', () => {
 
   test('renders the Chinese page at /zh-CN/agent', async ({ page }) => {
     await assertLandingPage(page, PATH_ZH, 'zh-CN')
+    await expect(
+      page.getByRole('img', { name: '一组创意图像与社区工作流' })
+    ).toBeAttached()
+    await expect(
+      page.getByRole('region', { name: 'Comfy Agent 构建工作流', exact: true })
+    ).toBeAttached()
+    await expect(
+      page.getByRole('img', { name: '用户与智能体协作' })
+    ).toBeAttached()
   })
 })
 

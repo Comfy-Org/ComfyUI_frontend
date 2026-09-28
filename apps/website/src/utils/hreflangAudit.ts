@@ -33,8 +33,7 @@ export interface BuiltSite {
 /**
  * Locales this path structurally routes to (per `supportsLocaleRoute`, which
  * already excludes locale-invariant routes like /affiliates or /models) AND
- * are not themselves noindexed. A locale that is routable but noindexed (the
- * zh-CN /agent preview while only the English page is public) is not a
+ * are not themselves noindexed. A routable but noindexed locale is not a
  * translation the site can point a crawler at, so it does not count toward
  * the "this route should cluster" threshold below.
  *
