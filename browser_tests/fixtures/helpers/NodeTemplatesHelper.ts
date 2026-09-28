@@ -55,7 +55,8 @@ export class NodeTemplatesHelper {
         response.url().includes(`/api/userdata/${TEMPLATES_FILE}`)
     )
     await this.comfyPage.nodeOps.fillPromptDialog(name)
-    expect((await storeResponse).ok()).toBe(true)
+    const response = await storeResponse
+    expect(response.ok()).toBe(true)
   }
 
   async insertTemplate(name: string): Promise<void> {
