@@ -817,6 +817,52 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(mockClearPendingTopup).not.toHaveBeenCalled()
   })
 
+  // Asserting the whole projected collection rather than one stage: a source
+  // dropped from any single emit site leaves the others green, and a funnel
+  // whose terminal events are attributed while its `started` is not reads as
+  // a conversion cliff rather than a gap.
+  it.for([
+    { outcome: 'completed', stages: ['started', 'succeeded'] },
+    { outcome: 'failed', stages: ['started', 'failed'] },
+    { outcome: 'no response', stages: ['started', 'failed'] },
+    { outcome: 'rejected', stages: ['started', 'failed'] }
+  ] as const)(
+    'carries the opening surface onto every top-up event when the purchase is $outcome',
+    async ({ outcome, stages }) => {
+      if (outcome === 'rejected')
+        mockTopup.mockRejectedValue(new Error('declined'))
+      else if (outcome === 'no response') mockTopup.mockResolvedValue(undefined)
+      else mockTopup.mockResolvedValue(topupResponse(outcome))
+
+      renderDialog({ source: 'agent_paywall' })
+      await clickAddCredits()
+      await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
+
+      await waitFor(() =>
+        expect(
+          mockTrackBillingEvent.mock.calls
+            .map(([event]) => event)
+            .filter((event) => event.operation === 'topup')
+            .map((event) => [event.stage, event.payment_intent_source])
+        ).toEqual(stages.map((stage) => [stage, 'agent_paywall']))
+      )
+    }
+  )
+
+  it('hands the opening surface to the poller for a pending top-up', async () => {
+    mockTopup.mockResolvedValue(topupResponse('pending'))
+
+    renderDialog({ source: 'agent_paywall' })
+    await clickAddCredits()
+    await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
+
+    expect(mockStartOperation).toHaveBeenCalledWith('op-1', 'topup', {
+      attemptStartedAt: expect.any(Number),
+      paymentIntentSource: 'agent_paywall',
+      autoHandleRequiresAction: true
+    })
+  })
+
   it('clears the pending top-up marker when the user closes the dialog', async () => {
     renderDialog()
     await userEvent.click(screen.getByRole('button', { name: 'Close' }))
