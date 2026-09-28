@@ -119,7 +119,17 @@
     "typescript/no-unsafe-declaration-merging": "off",
     "typescript/require-array-sort-compare": "error",
     "typescript/triple-slash-reference": "error",
-    "typescript/no-unused-vars": "off",
+    "typescript/no-unused-vars": [
+      "error",
+      {
+        "vars": "all",
+        "varsIgnorePattern": "^_",
+        "args": "none",
+        "caughtErrors": "none",
+        "ignoreRestSiblings": true,
+        "fix": { "imports": "safe-fix", "variables": "off" }
+      }
+    ],
     "unicorn/no-empty-file": "off",
     "vitest/require-mock-type-parameters": "off",
     "vitest/valid-expect": "error",
