@@ -1419,6 +1419,12 @@ export class ComfyApp {
 
     const fitView = () => {
       if (
+        workflow instanceof ComfyWorkflow &&
+        workflow.changeTracker?.ds !== undefined
+      ) {
+        return
+      }
+      if (
         restore_view &&
         useSettingStore().get('Comfy.EnableWorkflowViewRestore')
       ) {
