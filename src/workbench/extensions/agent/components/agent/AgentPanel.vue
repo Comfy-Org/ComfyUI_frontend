@@ -7,7 +7,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from 'reka-ui'
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -127,6 +127,7 @@ const emit = defineEmits<{
   removeWorkflowReference: [id: string]
   feedback: [turnId: string, vote: 'up' | 'down' | null]
   paywallAction: [action: AgentPaywallAction, surface: AgentPaywallSurface]
+  standingPaywallShown: []
   newChat: []
   toggleSize: []
   close: []
@@ -150,6 +151,14 @@ const targetNotice = computed(() => {
 })
 
 const showHistory = ref(false)
+
+watch(
+  [showHistory, () => creditsExhausted],
+  ([historyVisible, exhausted]) => {
+    if (!historyVisible && exhausted) emit('standingPaywallShown')
+  },
+  { immediate: true }
+)
 
 function onNewChat(): void {
   showHistory.value = false
