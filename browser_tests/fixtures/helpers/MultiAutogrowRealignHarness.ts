@@ -101,6 +101,12 @@ export class MultiAutogrowRealignHarness {
     return prompt
   }
 
+  outputImage(nodeId: number | string): Locator {
+    return this.vueNodes
+      .getNodeLocator(String(nodeId))
+      .locator('img[src*="/api/view"]')
+  }
+
   constructor(private readonly page: Page) {
     this.hostSocket = new AgentFollowerHostSocket(
       page,
@@ -124,7 +130,9 @@ export class MultiAutogrowRealignHarness {
     ).input
   }
 
-  async setUp(): Promise<void> {
+  async setUp(
+    options: { settings?: Record<string, unknown> } = {}
+  ): Promise<void> {
     const { page } = this
     // Registered before `bootAgentApp` (with `objectInfo: 'server'` below) so
     // it wins over the empty handler `mockCloudBootRoutes` would otherwise
@@ -212,7 +220,8 @@ export class MultiAutogrowRealignHarness {
       // DOM this test can query.
       settings: {
         'Comfy.VueNodes.Enabled': true,
-        'Comfy.Graph.CanvasInfo': false
+        'Comfy.Graph.CanvasInfo': false,
+        ...options.settings
       }
     })
 

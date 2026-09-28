@@ -40,7 +40,7 @@
     "prepack": "pnpm run build",
     "lint": "oxlint src --type-aware && eslint src",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsx ../../scripts/vue-tsc-native.ts --noEmit"
   },
   "devDependencies": {
     "@comfyorg/account-core": "workspace:^",

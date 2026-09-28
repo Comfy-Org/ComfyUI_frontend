@@ -4,11 +4,12 @@ import { computed } from 'vue'
 import Button from '@/components/ui/button/Button.vue'
 import CopyTextButton from '@/components/ui/copy-text-button/CopyTextButton.vue'
 import type { WorkflowWorkshopModelDetail } from '../../config/models-catalogue'
-import { apiKeysLink } from '../../config/routes'
+import { apiKeysLink, externalLinks } from '../../config/routes'
 import type { FormValues } from '../../config/workshop-playground'
 import { urlUploadField } from '../../config/workshop-playground'
 import { initialWorkshopPageState } from '../../config/workshop-page-state'
 import { useWorkshopSession } from '../../config/workshop-session-state'
+import { WORKSHOP_CLOUD_BASE_URL } from '../../config/workshop-env'
 import { workspaceLinkedHref } from '../../config/workshop-workspace-link'
 import {
   workflowCurl,
@@ -40,6 +41,7 @@ const code = computed(() => (request.value ? workflowCurl(request.value) : ''))
 const hasMedia = initialWorkshopPageState(model).schema.some((field) =>
   urlUploadField(field)
 )
+const endpoint = `${WORKSHOP_CLOUD_BASE_URL}/api/prompt`
 </script>
 
 <template>
@@ -53,6 +55,23 @@ const hasMedia = initialWorkshopPageState(model).schema.some((field) =>
       </h2>
       <p class="max-w-3xl text-sm/relaxed text-primary-warm-gray">
         {{ t('workshop.workflow.apiHint') }}
+      </p>
+    </div>
+    <div
+      class="flex flex-col gap-3 rounded-2xl border border-transparency-white-t20 p-5"
+      data-testid="workflow-api-endpoint"
+    >
+      <div class="flex flex-wrap items-center gap-3 text-sm">
+        <span
+          class="rounded-md bg-primary-comfy-yellow px-2 py-1 font-mono text-primary-comfy-ink"
+          >POST</span
+        >
+        <code class="min-w-0 break-all text-primary-warm-white">{{
+          endpoint
+        }}</code>
+      </div>
+      <p class="text-sm/relaxed text-primary-warm-gray">
+        {{ t('workshop.workflow.apiNote') }}
       </p>
     </div>
     <div
@@ -92,8 +111,18 @@ const hasMedia = initialWorkshopPageState(model).schema.some((field) =>
     <p class="max-w-3xl text-sm/relaxed text-primary-warm-gray">
       {{ t('workshop.workflow.apiPoll') }}
     </p>
-    <Button as="a" :href="keyHref" target="_blank" rel="noopener">{{
-      t('workshop.api.getKey')
-    }}</Button>
+    <div class="flex flex-wrap gap-3">
+      <Button as="a" :href="keyHref" target="_blank" rel="noopener">{{
+        t('workshop.api.getKey')
+      }}</Button>
+      <Button
+        as="a"
+        :href="externalLinks.docsApi"
+        target="_blank"
+        rel="noopener"
+        variant="outline"
+        >{{ t('workshop.workflow.apiDocs') }}</Button
+      >
+    </div>
   </section>
 </template>

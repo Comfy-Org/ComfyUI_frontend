@@ -27,19 +27,12 @@ const translations = {
   },
   'workshop.hero.eyebrow': { en: 'Models', 'zh-CN': '模型' },
   'workshop.catalogue.apps': { en: 'Apps', 'zh-CN': '应用' },
+  'workshop.catalogue.eyebrow': { en: 'Hub', 'zh-CN': 'Hub' },
   'workshop.catalogue.categories': { en: 'Categories', 'zh-CN': '分类' },
   'workshop.catalogue.show': { en: 'Browse', 'zh-CN': '浏览' },
   'workshop.catalogue.subtitle': {
     en: 'Models and the workflows built on them, by what you want to make.',
     'zh-CN': '按你想创作的内容浏览模型及其工作流。'
-  },
-  'workshop.catalogue.appsSoon': {
-    en: 'Apps are coming soon',
-    'zh-CN': '应用即将上线'
-  },
-  'workshop.catalogue.appsHint': {
-    en: 'For now, explore ready-to-run workflows or try a model with your own ideas.',
-    'zh-CN': '现在可以先探索现成的工作流，或用自己的创意试用模型。'
   },
   'workshop.catalogue.noWorkflows': {
     en: 'No workflows match your search and filters.',
@@ -902,18 +895,22 @@ const translations = {
     en: 'Next featured workflow',
     'zh-CN': '下一个精选工作流'
   },
-  'modelDiscovery.label': { en: 'MODELS', 'zh-CN': '模型' },
+  'modelDiscovery.label': { en: 'HUB', 'zh-CN': 'HUB' },
   'modelDiscovery.heading': {
-    en: 'All the latest models,\nready to run',
+    en: 'The latest,\nready to run',
     'zh-CN': '最新模型，\n即刻运行'
   },
   'modelDiscovery.subtitle': {
-    en: 'Models from Google, ByteDance, Black Forest Labs, Kling and more, on Comfy Router. Pick one, set your inputs, hit Run.',
-    'zh-CN':
-      '来自 Google、ByteDance、Black Forest Labs、Kling 等提供商的模型，均由 Comfy Router 提供。选一个，设置输入，点击运行。'
+    en: 'Right in your browser. Nothing to install, nothing to set up.',
+    'zh-CN': '直接在浏览器中运行。无需安装，无需配置。'
   },
   'modelDiscovery.rowLabel': { en: 'Model providers', 'zh-CN': '模型提供商' },
   'modelDiscovery.browse': { en: 'Browse all models', 'zh-CN': '浏览全部模型' },
+  'modelDiscovery.workflowRowLabel': { en: 'Workflows', 'zh-CN': '工作流' },
+  'modelDiscovery.browseWorkflows': {
+    en: 'Browse all workflows',
+    'zh-CN': '浏览全部工作流'
+  },
 
   // Model release carousel (home page)
   'modelRelease.eyebrow': {
@@ -2291,6 +2288,22 @@ Enterprise`
   'pricing.feature.shortRuntime': {
     en: '30 minute max workflow runtime',
     'zh-CN': '单个工作流最长运行 30 分钟'
+  },
+  'pricing.feature.apiConcurrency1': {
+    en: 'Run up to 1 concurrent workflow via Cloud API',
+    'zh-CN': '通过 Cloud API 最多并发运行 1 个工作流'
+  },
+  'pricing.feature.apiConcurrency3': {
+    en: 'Run up to 3 concurrent workflows via Cloud API',
+    'zh-CN': '通过 Cloud API 最多并发运行 3 个工作流'
+  },
+  'pricing.feature.apiConcurrency5': {
+    en: 'Run up to 5 concurrent workflows via Cloud API',
+    'zh-CN': '通过 Cloud API 最多并发运行 5 个工作流'
+  },
+  'pricing.feature.apiConcurrency25': {
+    en: 'Run up to 25 concurrent workflows via Cloud API',
+    'zh-CN': '通过 Cloud API 最多并发运行 25 个工作流'
   },
   'pricing.feature.addCredits': {
     en: 'Add more credits anytime',
@@ -9716,6 +9729,15 @@ Enterprise`
   'workshop.filter.noMatches': { en: 'No matches', 'zh-CN': '没有匹配项' },
   'workshop.filter.clearAll': { en: 'Clear filters', 'zh-CN': '清除筛选' },
   'workshop.filter.applied': { en: '{n} selected', 'zh-CN': '已选 {n} 项' },
+  'workshop.filter.clear': { en: 'Clear', 'zh-CN': '清除' },
+  'workshop.filter.remove': {
+    en: 'Remove {filter}',
+    'zh-CN': '移除{filter}'
+  },
+  'workshop.filter.runsOn': {
+    en: 'Runs on {model}',
+    'zh-CN': '运行于 {model}'
+  },
   'workshop.launch.label': {
     en: 'Use cases',
     'zh-CN': '用例'
@@ -9811,6 +9833,7 @@ Enterprise`
     'zh-CN': '原型：此页面复刻 Cloud 登录页。真实账户请在此登录：'
   },
   'workshop.card.partnerNode': { en: 'Partner node', 'zh-CN': '合作伙伴节点' },
+  'workshop.card.comfyApp': { en: 'Comfy app', 'zh-CN': 'Comfy 应用' },
   'workshop.card.runs': { en: '{n} runs', 'zh-CN': '{n} 次运行' },
   'workshop.card.creditsPerRun': { en: 'credits / run', 'zh-CN': '积分 / 次' },
   'workshop.card.from': { en: 'from', 'zh-CN': '起' },
@@ -10602,6 +10625,41 @@ Enterprise`
     en: 'Workflow sections',
     'zh-CN': '工作流栏目'
   },
+  'workshop.workflow.graphAlt': {
+    en: 'The nodes of this workflow and the links between them',
+    'zh-CN': '此工作流的节点及其连接'
+  },
+  'workshop.workflow.graphHint': {
+    en: 'Read-only \u00b7 drag to pan',
+    'zh-CN': '仅供查看 \u00b7 拖动平移'
+  },
+  'workshop.workflow.graphLoading': {
+    en: 'Loading the graph',
+    'zh-CN': '正在加载节点图'
+  },
+  'workshop.workflow.graphFailed': {
+    en: 'The graph could not be loaded. The download still works.',
+    'zh-CN': '节点图加载失败，下载仍然可用。'
+  },
+  'workshop.workflow.zoomIn': { en: 'Zoom in', 'zh-CN': '放大' },
+  'workshop.workflow.zoomOut': { en: 'Zoom out', 'zh-CN': '缩小' },
+  'workshop.workflow.zoomReset': { en: 'Reset', 'zh-CN': '重置' },
+  'workshop.workflow.factWhere': { en: 'Where', 'zh-CN': '运行位置' },
+  'workshop.workflow.factOutput': { en: 'Output', 'zh-CN': '输出' },
+  'workshop.workflow.factAuthor': { en: 'Author', 'zh-CN': '作者' },
+  'workshop.workflow.runsCloud': {
+    en: 'Runs on Comfy Cloud',
+    'zh-CN': '在 Comfy Cloud 上运行'
+  },
+  'workshop.workflow.runsOwn': {
+    en: 'Runs on a deployment of your own',
+    'zh-CN': '在你自己的部署上运行'
+  },
+  'workshop.workflow.perRun': {
+    en: '{count} per run',
+    'zh-CN': '每次运行 {count} 个'
+  },
+  'workshop.workflow.runsOn': { en: 'Runs on', 'zh-CN': '运行于' },
   'workshop.workflow.inside': {
     en: 'Inside the workflow',
     'zh-CN': '查看工作流内部'
@@ -10618,6 +10676,14 @@ Enterprise`
     en: 'The request below uses the same prepared graph and settings as the Playground. Each submission can start a paid run; do not automatically retry a submission whose outcome is unknown.',
     'zh-CN':
       '以下请求使用与体验区相同的预设图和设置。每次提交都可能开始一次付费运行；如果提交结果未知，请勿自动重试。'
+  },
+  'workshop.workflow.apiNote': {
+    en: 'Needs a paid Cloud plan and available credits.',
+    'zh-CN': '需要付费的 Cloud 方案和可用额度。'
+  },
+  'workshop.workflow.apiDocs': {
+    en: 'API documentation',
+    'zh-CN': 'API 文档'
   },
   'workshop.workflow.apiUploads': {
     en: 'Upload media first',
@@ -10662,8 +10728,15 @@ Enterprise`
     en: 'Preparing inputs…',
     'zh-CN': '正在准备输入…'
   },
-  'workshop.workflow.submitting': { en: 'Submitting…', 'zh-CN': '正在提交…' },
-  'workshop.workflow.queued': { en: 'Queued', 'zh-CN': '排队中' },
+  'workshop.workflow.submitting': {
+    en: 'Handing the workflow over',
+    'zh-CN': '正在提交工作流'
+  },
+  'workshop.workflow.queued': { en: 'Waiting its turn', 'zh-CN': '排队中' },
+  'workshop.workflow.cancelled': {
+    en: 'This run was cancelled before it finished.',
+    'zh-CN': '这次运行在完成前已取消。'
+  },
   'workshop.workflow.cancelling': {
     en: 'Waiting for cancellation…',
     'zh-CN': '正在等待取消确认…'

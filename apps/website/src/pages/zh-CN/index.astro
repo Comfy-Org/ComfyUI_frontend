@@ -15,7 +15,10 @@ import GetStartedSection from '../../components/home/GetStartedSection.vue'
 import { t } from '../../i18n/translations'
 import { isWorkshopInBuild } from '../../config/workshop-release'
 import { modelReleaseLinks } from '../../config/model-release-links'
-import { resolveDiscoveryProviders } from '../../components/home/modelDiscoveryProviders'
+import {
+  resolveDiscoveryProviders,
+  resolveDiscoveryWorkflows
+} from '../../components/home/modelDiscoveryProviders'
 import {
   comfyUiApplicationNode,
   comfyUiSoftwareId,
@@ -30,6 +33,7 @@ const { siteUrl } = pageContext(
 )
 
 const discoveryProviders = await resolveDiscoveryProviders(isWorkshopInBuild())
+const discoveryWorkflows = await resolveDiscoveryWorkflows(isWorkshopInBuild())
 ---
 
 <BaseLayout
@@ -66,6 +70,7 @@ const discoveryProviders = await resolveDiscoveryProviders(isWorkshopInBuild())
     <ModelDiscoverySection
       locale="zh-CN"
       providers={discoveryProviders}
+      workflows={discoveryWorkflows}
       client:load
     />
   )}
