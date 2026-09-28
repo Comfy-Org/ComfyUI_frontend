@@ -6,7 +6,7 @@ import { useMounted } from '@vueuse/core'
 import type { WorkshopModel } from '../../config/models-catalogue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
-import WorkshopHero from './WorkshopHero.vue'
+import SplitReveal from './SplitReveal.vue'
 import WorkshopModelsGrid from './WorkshopModelsGrid.vue'
 import CatalogueTabs from './CatalogueTabs.vue'
 import type { CatalogueTab } from './CatalogueTabs.vue'
@@ -77,40 +77,46 @@ watch(
 </script>
 
 <template>
-  <WorkshopHero
+  <div
     v-if="!inSection"
-    :subtitle="
-      t(
-        activeTab === 'models'
-          ? 'workshop.hero.subtitle'
-          : 'workshop.catalogue.subtitle',
-        locale
-      )
-    "
+    class="relative isolate -mx-6 mb-6 flex flex-wrap items-center justify-between gap-x-6 gap-y-4 overflow-hidden px-6 pb-2 max-sm:mb-4 max-sm:pb-0 lg:-mx-8 lg:px-8 sm:short:pb-0"
+    data-testid="workshop-hero"
   >
-    <template #aside>
-      <button
-        v-if="activeTab !== 'apps'"
-        type="button"
-        class="group -mx-1 inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-1 text-xl font-medium text-primary-warm-white transition-colors outline-none hover:text-primary-comfy-yellow focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
-        data-testid="browse-all"
-        @click="browseAll = true"
-      >
-        {{
+    <p class="text-lg text-primary-comfy-canvas/70">
+      <SplitReveal
+        :text="
           t(
             activeTab === 'models'
-              ? 'workshop.sections.browseAll'
-              : 'workshop.catalogue.browseAllWorkflows',
+              ? 'workshop.hero.subtitle'
+              : 'workshop.catalogue.subtitle',
             locale
           )
-        }}
-        <ChevronRight
-          class="size-5 transition-transform group-hover:translate-x-0.5"
-          aria-hidden="true"
-        />
-      </button>
-    </template>
-  </WorkshopHero>
+        "
+        :delay="260"
+        :stagger="50"
+      />
+    </p>
+    <button
+      v-if="activeTab !== 'apps'"
+      type="button"
+      class="group -mx-1 inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-1 text-xl font-medium text-primary-warm-white transition-colors outline-none hover:text-primary-comfy-yellow focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
+      data-testid="browse-all"
+      @click="browseAll = true"
+    >
+      {{
+        t(
+          activeTab === 'models'
+            ? 'workshop.sections.browseAll'
+            : 'workshop.catalogue.browseAllWorkflows',
+          locale
+        )
+      }}
+      <ChevronRight
+        class="size-5 transition-transform group-hover:translate-x-0.5"
+        aria-hidden="true"
+      />
+    </button>
+  </div>
   <WorkshopModelsGrid
     v-if="activeTab === 'models'"
     v-model:browse-all="browseAll"

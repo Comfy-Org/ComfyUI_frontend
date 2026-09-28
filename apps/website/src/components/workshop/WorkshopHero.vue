@@ -4,12 +4,16 @@ import { useSlots } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import SplitReveal from './SplitReveal.vue'
+import {
+  workshopEyebrowClass,
+  workshopHeadingClass
+} from './workshopHeadingClasses'
 
 // The copy arrives resolved, so the hero belongs to whichever catalogue renders
 // it rather than to one section's translation table.
 const { eyebrow, heading, subtitle } = defineProps<{
   eyebrow?: string
-  heading?: string
+  heading: string
   subtitle?: string
 }>()
 
@@ -20,8 +24,7 @@ const slots = useSlots()
   <header
     :class="
       cn(
-        'relative isolate -mx-6 overflow-hidden px-6 lg:-mx-8 lg:px-8',
-        heading && '-mt-8 pt-8 max-sm:-mt-5 max-sm:pt-5 lg:-mt-12 lg:pt-12',
+        'relative isolate -mx-6 -mt-8 overflow-hidden px-6 pt-8 max-sm:-mt-5 max-sm:pt-5 lg:-mx-8 lg:-mt-12 lg:px-8 lg:pt-12',
         slots.default
           ? 'mb-8 max-sm:mb-5'
           : 'mb-6 pb-2 max-sm:mb-4 max-sm:pb-0 sm:short:pb-0'
@@ -30,26 +33,15 @@ const slots = useSlots()
     data-testid="workshop-hero"
   >
     <slot name="eyebrow">
-      <p
-        v-if="eyebrow"
-        class="mb-5 text-sm font-medium tracking-widest text-primary-comfy-yellow uppercase max-sm:mb-2"
-      >
+      <p v-if="eyebrow" :class="workshopEyebrowClass">
         <SplitReveal :text="eyebrow" />
       </p>
     </slot>
-    <h1
-      v-if="heading"
-      class="text-3xl font-light text-primary-comfy-canvas lg:text-5xl"
-    >
+    <h1 :class="workshopHeadingClass">
       <SplitReveal :text="heading" :delay="90" />
     </h1>
     <div
-      :class="
-        cn(
-          'flex flex-wrap items-center justify-between gap-x-6 gap-y-4',
-          heading && 'mt-4 sm:short:mt-3'
-        )
-      "
+      class="mt-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-4 sm:short:mt-3"
     >
       <p v-if="subtitle" class="text-lg text-primary-comfy-canvas/70">
         <SplitReveal :text="subtitle" :delay="260" :stagger="50" />
