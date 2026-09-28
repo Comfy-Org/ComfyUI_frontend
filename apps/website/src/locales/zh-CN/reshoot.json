@@ -1,0 +1,165 @@
+{
+  "reshoot": {
+    "title": "重拍视频",
+    "prototype": "原型",
+    "panel": "重拍设置",
+    "section": {
+      "video": "视频",
+      "camera": "新机位",
+      "move": "运镜",
+      "prompt": "新视角中出现的内容",
+      "format": "格式"
+    },
+    "step": "第 {n} 步",
+    "step1": {
+      "label": "准备片段",
+      "hint": "选择片段、画面比例以及新视角要呈现的内容。深度只需分析一次，之后可自由取景。"
+    },
+    "step2": {
+      "label": "设置机位并生成",
+      "hint": "拖动预览或使用控件，需要时添加关键帧运镜，然后生成。"
+    },
+    "continue": "继续",
+    "back": "返回片段",
+    "edit": "编辑",
+    "credit": "基于 Cseti 的 CrossView-Warp LoRA 与节点",
+    "pick": {
+      "lead": "为片段设置新机位，从另一个角度得到同一时刻。",
+      "drop": "将视频拖到这里",
+      "upload": "上传视频",
+      "exampleMeta": "无需上传即可试用",
+      "exampleTitle": "科幻飞行员"
+    },
+    "aim": {
+      "globe": "围绕片段拖动机位",
+      "more": "更多：镜头、高度、保持朝向",
+      "less": "收起",
+      "reading": "正在读取场景"
+    },
+    "axis": {
+      "rotation": "旋转",
+      "tilt": "俯仰",
+      "lens": "镜头",
+      "height": "高度",
+      "azimuth": "水平角",
+      "elevation": "俯仰角",
+      "distance": "距离",
+      "fov": "镜头视角",
+      "shift": "垂直位移"
+    },
+    "view": {
+      "result": "结果",
+      "warp": "变形引导",
+      "source": "原片"
+    },
+    "views": "显示",
+    "sound": {
+      "label": "声音",
+      "generated": "生成的声音",
+      "original": "原片声音"
+    },
+    "warpNote": "真实运行时这里显示变形引导：片段被推到新机位，洋红色为需要生成的部分。",
+    "seed": "种子",
+    "prompt": {
+      "dialogue": "模型也会生成声音：如果视频中有对白，请在这里写下台词，新镜头就会说出来。",
+      "placeholder": "例如：她身后是一面石墙，左边有更多麦田"
+    },
+    "clip": {
+      "length": "该片段长 {seconds} 秒，请使用 5 到 15 秒的片段。",
+      "change": "更换",
+      "ready": "场景已读取",
+      "yours": "你的片段",
+      "example": "示例",
+      "replace": "选择其他片段",
+      "help": "5–15 秒，主体清晰，无黑边"
+    },
+    "reuse": "再次使用此机位",
+    "generate": {
+      "note": "需要 1.5 到 5 分钟，生成期间可以继续调整机位。",
+      "wait": "MoGe 会估算每一帧的深度，约 20 到 40 秒。闲置一段时间后的首次运行还需要启动服务器。",
+      "label": "生成"
+    },
+    "expand": "全屏",
+    "collapse": "退出全屏",
+    "sample": {
+      "street": "夜晚街道",
+      "diner": "餐馆对话",
+      "train": "火车车窗",
+      "meta": "示例"
+    },
+    "nudge": {
+      "up": "机位升高",
+      "down": "机位降低",
+      "left": "机位向左",
+      "right": "机位向右"
+    },
+    "advanced": {
+      "label": "高级",
+      "value": "提示词、对白、种子"
+    },
+    "distanceHelp": "距离只是近似值，角度的控制最精确。",
+    "keepAimHelp": "围绕主体移动，但保持原片的朝向，与训练数据一致。",
+    "promptHelp": "描述原机位未拍到的区域应填充什么内容。",
+    "generatingHelp": "闲置一段时间后的首次运行还需要加载模型。",
+    "take": {
+      "exampleHelp": "示例结果：该片段以 768p 从新角度重拍。在左侧设置你自己的机位。",
+      "aim": "取景",
+      "example": "示例结果",
+      "static": "第 {n} 条 · 水平 {az}° 俯仰 {el}°",
+      "move": "第 {n} 条 · 运镜，{keys} 个关键帧",
+      "cancelled": "已取消"
+    },
+    "frames": "{frames} 帧，24 fps（{seconds} 秒）",
+    "speed": {
+      "480p": "更快",
+      "768p": "更清晰"
+    },
+    "empty": {
+      "title": "重拍结果将显示在这里",
+      "hint": "在左侧上传片段，或试试下方的示例。"
+    },
+    "optional": "可选",
+    "aspect": {
+      "label": "画面比例",
+      "source": "与原片一致"
+    },
+    "size": {
+      "label": "输出尺寸",
+      "480p": "0.4 MP · 864×480 · 更快",
+      "768p": "1.0 MP · 1376×768 · 更清晰，更慢"
+    },
+    "keepAim": "保持原机位的朝向",
+    "zone": {
+      "green": "在 LoRA 验证过的范围内。",
+      "yellow": "训练过，但不太稳定。",
+      "red": "超出训练范围，看不到的一面将由模型想象。"
+    },
+    "dragHint": "拖动以环绕 · 滚动以靠近",
+    "needsDepth": "分析深度后即可设置新机位。",
+    "stale": "画面比例或尺寸已更改，需要重新分析深度。",
+    "move": {
+      "static": "固定机位",
+      "keys": "{count} 个关键帧",
+      "help": "拖到某一帧，调整机位，按“关键帧”。两个以上的关键帧构成运镜；第一个之前和最后一个之后机位保持不动。",
+      "frame": "帧",
+      "key": "关键帧",
+      "remove": "删除 {time} 处的关键帧",
+      "clear": "清除关键帧",
+      "motion": "运动曲线"
+    },
+    "motion": {
+      "linear": "线性",
+      "ease_in": "缓入",
+      "ease_out": "缓出",
+      "ease_in_out": "缓入缓出",
+      "smooth": "平滑样条"
+    },
+    "analyze": "分析深度",
+    "analyzing": "正在估算深度…",
+    "cancel": "取消",
+    "generating": "正在生成新视角",
+    "takes": "镜头",
+    "download": "下载",
+    "demoNote": "设计原型：不会运行任务，镜头显示示例结果。"
+  }
+}

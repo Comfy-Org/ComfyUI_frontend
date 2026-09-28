@@ -70,7 +70,7 @@ const optionClass = (active: boolean) =>
         v-if="view === 'result'"
         class="flex items-center rounded-full bg-transparency-white-t4 p-1 pl-2.5 ring-1 ring-transparency-white-t8 ring-inset"
         role="radiogroup"
-        :aria-label="rc('reshoot.sound', locale)"
+        :aria-label="rc('reshoot.sound.label', locale)"
       >
         <Volume2
           class="mr-1 size-3.5 text-primary-warm-gray"

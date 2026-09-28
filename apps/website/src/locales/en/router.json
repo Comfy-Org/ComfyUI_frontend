@@ -1,0 +1,135 @@
+{
+  "platform": {
+    "router": {
+      "badge": {
+        "label": "ROUTER"
+      },
+      "cta": {
+        "getApiKey": "Get an API Key",
+        "browseModels": "Browse Models"
+      },
+      "migrate": {
+        "title": "Migrate to Comfy Router with your agent",
+        "subtitle": "Help me migrate this project's existing model integration to Comfy Router.",
+        "copyPrompt": "COPY PROMPT",
+        "copied": "COPIED"
+      },
+      "proof": {
+        "caption": "The same models 3M+ ComfyUI users already use, now behind one API."
+      },
+      "code": {
+        "heading": "Choose the provider in one line.",
+        "supporting": "Change the provider. Keep everything else.",
+        "providerLabel": "Provider"
+      },
+      "video": {
+        "alt": "Comfy Router explained: one API, your choice of provider for every job"
+      },
+      "section1": {
+        "heading": "Integrate once. Add models as you go.",
+        "body": "Every provider you add brings another SDK, another key, another job lifecycle, and another set of errors. Build that once through Comfy Router, and the next model is one line."
+      },
+      "section2": {
+        "heading": "Better availability. Better prices. No subscription.",
+        "body": "Run the same model on fal, Runware, or Wavespeed, and switch with one parameter when one is rate limited or another is cheaper. Comfy never switches the route for you, and every job reports the provider that ran it.",
+        "providersLabel": "Supported providers",
+        "providers": "fal · Runware · Wavespeed"
+      },
+      "coverage": {
+        "heading": "Same models. More places to run them.",
+        "body": "Every model runs on Comfy by default, you can set `model_provider` to run them on another provider. We're starting with the highest-traffic models, more models and providers are coming soon.",
+        "modelColumn": "MODEL",
+        "moreModels": "+{count} more models",
+        "moreModelsSuffix": "run on Comfy",
+        "browseAll": "Browse all {count} models",
+        "served": "Served",
+        "notServed": "Not served"
+      },
+      "section3": {
+        "heading": "Hit a concurrency limit? Queue the job.",
+        "body": "And let Comfy handle the wait. Use `submit` to get a request ID immediately. The job runs when a slot opens, and you can use the ID to check progress and retrieve the result. Or use `subscribe` to submit the job and wait until it completes."
+      },
+      "roadmap": {
+        "1": {
+          "title": "Comfy workflows",
+          "description": "Run a ComfyUI workflow from the same SDK. Just like models.",
+          "details": "Workflows run today through the Comfy API on the Developer Platform. Router support brings them behind the same key, the same job surface, and the same credits as every model call, so a pipeline you build in ComfyUI ships to your app as one request."
+        },
+        "2": {
+          "title": "Routing strategies",
+          "description": "Name the policy: reliable, fast_start, fast_finish, or lowest_cost.",
+          "details": "Name the outcome you want instead of a provider. Comfy picks a route that fits the policy, and every job still reports the provider that ran it. Ordered fallback arrives alongside: a backup list Comfy uses only when a retry is known to be safe."
+        },
+        "3": {
+          "title": "Route by use case",
+          "description": "Request an upscale, a background removal, or an animation, and Comfy picks a model or workflow that can do it.",
+          "details": "Describe the task instead of the model. Comfy matches it to a model or workflow that can do it, on a provider that is up, so new models slot in without a change on your side."
+        },
+        "4": {
+          "title": "BYOK",
+          "description": "Use your own provider key for supported models while keeping the same Comfy Router integration.",
+          "details": "Connect your own provider credentials and run supported models through the same Comfy Router API. Keep one SDK and job lifecycle while usage and billing for those calls stay with your provider."
+        },
+        "eyebrow": "Roadmap",
+        "heading": "Coming soon to the same API.",
+        "subtitle": "Provider choice is the foundation. Everything below arrives on the integration you ship today.",
+        "learnMore": "LEARN MORE"
+      },
+      "faq": {
+        "1": {
+          "q": "Why not call fal, Runware, or Wavespeed directly?",
+          "a": "You can, and plenty of teams do. Comfy Router earns its place when you need more than one: the same model on more than one provider, one key and one job surface, and a route you pick. Each provider routes to itself. Comfy Router gives you one surface across them."
+        },
+        "2": {
+          "q": "Is Comfy Router “OpenRouter for media”?",
+          "a": "OpenRouter is known for routing language models. Comfy Router is built for generative media: large assets, model-specific controls, and jobs that run for minutes."
+        },
+        "3": {
+          "q": "Does Comfy pick the provider for me?",
+          "a": "Not at launch. You name the provider and Comfy runs it there. Nothing is swapped behind your back."
+        },
+        "4": {
+          "q": "What happens if my provider is unavailable?",
+          "a": "The request fails on the provider you chose, with no silent substitution. Ordered fallback is on the roadmap: a backup list, used only when a retry is known to be safe."
+        },
+        "5": {
+          "q": "What happens when I hit my concurrency limit?",
+          "a": "Queue the job instead of retrying on a 429. Use submit to send the job and receive a request ID immediately; use that ID to check progress and retrieve the result on your own terms. If you want Comfy to wait for the result, use subscribe, which submits the job and polls until it completes. Queueing is available for all supported models.\n\n<a href=\"https://docs.comfy.org/tutorials/partner-nodes/concurrency-limits\">Learn more about concurrency limits.</a>"
+        },
+        "6": {
+          "q": "How long do you keep my inputs and outputs?",
+          "a": "Inputs are kept for 24 hours after upload and outputs for 24 hours after generation. Then they’re deleted."
+        },
+        "7": {
+          "q": "I already use ComfyUI. What does Comfy Router add?",
+          "a": "More ways to run the models you use. Reach supported models across providers, choose where they run, and switch when price, speed, or availability changes."
+        },
+        "8": {
+          "q": "Can I call Comfy workflows too?",
+          "a": "Not through Comfy Router yet. Workflows run today through the Comfy API on the Developer Platform, and Router support is on the roadmap."
+        },
+        "9": {
+          "q": "Where do my API keys, usage, and billing live?",
+          "a": "On the Developer Platform. Your API keys, run history, credits, and payments live there."
+        },
+        "10": {
+          "q": "Can I bring my own provider key?",
+          "a": "BYOK is available for select models on Enterprise. Access is enabled by request.\n\n<a href=\"/enterprise\">Contact Enterprise Sales</a>"
+        },
+        "11": {
+          "q": "How is Comfy Router priced?",
+          "a": "Comfy Router uses the same Comfy credits that cover Partner Nodes, Comfy Cloud workflow runs, and other supported model calls. Per-model pricing is listed in the model catalog, so you can see the cost for each model before you run it."
+        },
+        "12": {
+          "q": "Do I need a Comfy subscription?",
+          "a": "No. Router runs on credits. Add credits and start calling models."
+        },
+        "heading": "FAQ"
+      },
+      "closing": {
+        "headingAfterBadge": "Start building with Comfy Router today.",
+        "subtitle": "Call frontier media models, choose your provider, get better pricing and availability. All behind one API."
+      }
+    }
+  }
+}

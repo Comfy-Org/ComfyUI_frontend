@@ -37,28 +37,37 @@ extension also reads this configuration.
 ## Localization
 
 The site ships English, Simplified Chinese (`zh-CN`) and Japanese (`ja`).
-Catalogs live in `src/locales/<locale>/main.json` in the same nested JSON
-layout and [vue-i18n message syntax](https://vue-i18n.intlify.dev/guide/essentials/syntax)
+Catalogs live in `src/locales/<locale>/*.json` in the same nested JSON layout
+and [vue-i18n message syntax](https://vue-i18n.intlify.dev/guide/essentials/syntax)
 as the application's `src/locales/` at the repository root:
 
 - Named placeholders: `"Show {n} models"`, filled with
-  `t('workshop.search.show', locale, { n })`.
+  `t('workshop.search.show', locale, { n })`. A value the caller leaves out
+  stays visible as `{n}`. List placeholders such as `{0}` are refused.
 - Plural forms separated by `|`: `"{count} node | {count} nodes"`, picked with
-  `tPlural('cloudNodesLaunch.models.nodeCount', count, locale)`.
+  `tPlural('cloudNodesLaunch.models.nodeCount', count, locale)`. The first form
+  is used when the locale's plural category for the count is `one`, the last
+  otherwise, judged by the locale the message came from.
 - The characters `{`, `}`, `@` and `|` are message syntax, so literal ones are
-  written as `{'@'}` and `{'|'}`. A bare `@` fails to compile; a bare `|`
-  silently truncates the message at the pipe.
+  written as `{'{'}`, `{'}'}`, `{'@'}` and `{'|'}`.
 
 `src/i18n/translations.ts` wraps a vue-i18n instance whose locale is passed
 explicitly on every call (`t(key, locale, named?)`), never switched globally,
 because the site is rendered statically per locale. Any key the requested
-locale lacks falls back to English. A unit test compiles every message in
-every locale, so a syntax mistake fails `pnpm test:unit` rather than a page.
+locale lacks falls back to English. `t()` throws on a key the English catalog
+does not have, on an unescaped `|`, and on a message that does not compile,
+naming the key and locale. A unit test renders every message in every locale,
+so those mistakes fail `pnpm test:unit` rather than a page.
 
-Add new English copy to `src/locales/en/main.json`. Existing translated copy
-remains in the corresponding locale catalog. Shared generation is introduced
-in the following stack change together with translation ownership and
-exclusion policy; this catalog migration does not enable generation.
+`main.json` is the site-wide catalog every page loads. A feature whose copy
+should ship only with its own pages keeps a catalog beside it and reads it
+through `createTranslator`: the Cinematic Studio (`cinematic.json`), its
+re-shoot app (`reshoot.json`) and the Router page (`router.json`).
+
+Add new English copy to the English catalog; translated copy lives in the
+matching file under each locale. Legal and content pages render their sections
+in the order they appear in the catalog, so keep `en/main.json` in document
+order and never sort its keys.
 
 ## Ashby careers integration
 
