@@ -10,7 +10,7 @@ const pillClass =
 <template>
   <a
     :href="app.href"
-    class="group flex cursor-pointer flex-col gap-3 overflow-hidden rounded-4xl bg-hub-surface px-2 pt-2 pb-4 transition-colors duration-200 outline-none hover:bg-hub-surface-hover focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
+    class="group flex cursor-pointer flex-col gap-4 overflow-hidden rounded-4xl bg-hub-surface px-2 pt-2 pb-4 transition-colors duration-200 outline-none hover:bg-hub-surface-hover focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
     data-testid="workshop-app-card"
   >
     <div
@@ -40,9 +40,9 @@ const pillClass =
       </div>
     </div>
 
-    <div class="flex flex-col gap-3 px-3">
+    <div class="flex flex-col gap-2 px-3">
       <h3
-        class="line-clamp-2 h-10 overflow-hidden text-xs/5 font-medium text-content-bright lg:text-sm/5"
+        class="truncate text-sm/5 font-medium text-content-bright"
         :title="app.name"
         data-testid="app-card-name"
       >
