@@ -207,7 +207,8 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
       endDate: status.cancel_at ?? null,
       isCancelled: status.subscription_status === 'canceled',
       hasFunds: status.has_funds,
-      agentHasFunds: status.agent_has_funds ?? status.has_funds
+      agentHasFunds:
+        status.scoped_effective_has_funds?.agent ?? status.has_funds
     }
   })
 

@@ -112,6 +112,7 @@ describe('useWorkspaceUI', () => {
       renewalDate: null,
       endDate: null,
       hasFunds: true,
+      agentHasFunds: true,
       isCancelled: mockIsCancelled.value
     }))
     vi.mocked(useBillingContext).mockReturnValue(billingContext)

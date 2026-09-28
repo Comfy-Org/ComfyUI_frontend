@@ -285,7 +285,8 @@ describe('useWorkspaceBilling', () => {
     it('maps status response into subscription info', async () => {
       mockWorkspaceApi.getBillingStatus.mockResolvedValue({
         ...activeStatus,
-        agent_has_funds: false,
+        scoped_effective_has_funds: { agent: false },
+        scoped_has_funds: { agent: false },
         billing_rail: 'stripe',
         subscription_status: 'canceled',
         cancel_at: '2026-06-01T00:00:00Z'

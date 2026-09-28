@@ -69,6 +69,7 @@ function subscription(
     endDate: null,
     isCancelled: false,
     hasFunds: true,
+    agentHasFunds: true,
     ...overrides
   }
 }

@@ -32,6 +32,7 @@ beforeEach(() => {
           scheduledChange: null,
           renewalDate: null,
           hasFunds: true,
+          agentHasFunds: true,
           ...mockSubscription.value
         }
       : null
