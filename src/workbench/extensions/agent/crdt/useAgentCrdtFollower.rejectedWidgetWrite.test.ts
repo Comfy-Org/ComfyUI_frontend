@@ -51,6 +51,12 @@ const NODE_ADD: GraphOperation = {
   }
 }
 
+const NODE_DELETE: GraphOperation = {
+  op: 'delete_node',
+  node_id: 9,
+  removed_links: []
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
 }
@@ -203,10 +209,10 @@ describe('a human edit the doc host rejects', () => {
 
   // `op_id` is optional on the wire — the relay omits it when it cannot map
   // the failing index. Resolving by index is the only path left, and an
-  // op_id-only or first-op-only implementation would misclassify this as generic.
+  // fixed-position implementation would misclassify this as generic.
   it('identifies the rejected op by index when the host sends no op_id', async () => {
     const { submitBatch } = mountFollower()
-    const frames = await submitBatch([NODE_ADD, WIDGET_EDIT])
+    const frames = await submitBatch([NODE_ADD, WIDGET_EDIT, NODE_DELETE])
     expect(frames).toHaveLength(1)
     const [[appliedId]] = frames
 
