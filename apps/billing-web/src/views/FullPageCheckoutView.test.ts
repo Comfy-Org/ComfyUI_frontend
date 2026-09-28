@@ -778,6 +778,29 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
       })
     })
 
+    it("goes to the workspace's Plan & Credits settings when this family has no destination for return_to", async () => {
+      const assign = vi
+        .spyOn(window.location, 'assign')
+        .mockImplementation(() => {})
+      await renderCheckout(
+        SETTLED,
+        () => {},
+        '/v1/checkout?product=comfyui&return_to=platform_account&plan=creator_monthly'
+      )
+      await screen.findByText('Subscribe to Creator Plan · Acme Team')
+      reportPhase({ phase: 'payment_element_ready', element: 'payment' })
+      await waitFor(() => expect(payButton()).toBeEnabled())
+      form.emit('confirm', 'ctoken_1')
+
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Close' })
+      )
+
+      expect(assign).toHaveBeenCalledWith(
+        'https://testcloud.comfy.org/?settings=plan-credits&workspace=ws-team'
+      )
+    })
+
     it('closes a tab a script opened, and navigates nowhere', async () => {
       Object.defineProperty(window, 'opener', {
         value: {},

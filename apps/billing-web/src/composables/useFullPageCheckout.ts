@@ -317,16 +317,12 @@ export function useFullPageCheckout() {
     return host ?? planCreditsSettingsUrl(workspace)
   })
 
-  /** Only a tab a script opened can close itself; any other goes back to `return_to`. */
-  const openedByScript = window.opener !== null
-  const canClose = computed(
-    () => openedByScript || returnLink.value !== undefined
-  )
+  /** Only a tab a script opened can close itself; any other goes back to `returnLink`. */
+  const openedByScript = Boolean(window.opener)
 
   function close() {
     if (openedByScript) window.close()
-    else if (returnLink.value !== undefined)
-      window.location.assign(returnLink.value)
+    else window.location.assign(returnLink.value)
   }
 
   function requestFor(
@@ -415,7 +411,6 @@ export function useFullPageCheckout() {
     submitting: checkout.submitting,
     payFailure,
     returnLink,
-    canClose,
     close,
     onPaymentPhase,
     savedMethods: saved.methods,

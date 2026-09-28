@@ -44,16 +44,10 @@ const ICON: Readonly<Record<Tone, string>> = {
   waiting: 'icon-[lucide--clock] text-warning-background'
 }
 
-const {
-  screen,
-  workspace,
-  plan,
-  canClose = false
-} = defineProps<{
+const { screen, workspace, plan } = defineProps<{
   screen: EndingScreen
   workspace: string
   plan?: EndingPlan
-  canClose?: boolean
 }>()
 
 const emit = defineEmits<{ close: [] }>()
@@ -65,10 +59,7 @@ const ending = computed(() => ENDINGS[screen.kind])
 const copyKey = computed(() => `checkout.fullPage.ending.${screen.kind}`)
 const code = computed(() => ('code' in screen ? screen.code : undefined))
 const supportLink = computed(() => supportLinkWithCode(code.value))
-const primary = computed(() => {
-  const action = ending.value.primary
-  return action === 'close' && !canClose ? undefined : action
-})
+const primary = computed(() => ending.value.primary)
 
 function act() {
   if (primary.value === 'close') emit('close')
