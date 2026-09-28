@@ -17,9 +17,11 @@ import {
   workflowInputs
 } from '../../config/workflow-snippets'
 import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 import { tHub } from '../../i18n/hub'
 import type { CodeLang } from '../../lib/highlight'
 import Button from '../ui/button/Button.vue'
+import ApiFacts from '../workshop/ApiFacts.vue'
 import HighlightedCode from '../workshop/HighlightedCode.vue'
 
 // What a developer runs to call this workflow themselves. A workflow with a
@@ -54,6 +56,42 @@ const inputs = computed(() =>
   )
 )
 const file = computed(() => `${slug}.api.json`)
+
+const facts = computed(() => [
+  {
+    label: t('workshop.api.needsEndpoint', locale),
+    value: `POST ${ownDeployment ? '$COMFY_BASE_URL' : WORKFLOW_API_BASE}${WORKFLOW_JOB_PATH}`,
+    mono: true
+  },
+  {
+    label: t('workshop.api.needsKey', locale),
+    value: 'COMFY_API_KEY',
+    mono: true
+  },
+  ...(ownDeployment
+    ? []
+    : [
+        {
+          label: t('workshop.api.needsPlan', locale),
+          value: tHub('workshop.v2.api.noteCloud', locale)
+        }
+      ]),
+  {
+    label: t('workshop.api.needsGraph', locale),
+    value: file.value,
+    mono: true
+  },
+  ...(inputs.value.length
+    ? [
+        {
+          label: t('workshop.api.needsFiles', locale),
+          value: inputs.value
+            .map((input) => `${input.label}: ${input.filename}`)
+            .join(' · ')
+        }
+      ]
+    : [])
+])
 
 const LANGUAGE_NAMES: Record<SnippetLanguage, string> = {
   python: 'Python',
@@ -105,141 +143,157 @@ function downloadGraph() {
       </p>
     </div>
 
-    <div
-      class="flex flex-col gap-3 rounded-2xl border border-transparency-white-t20 p-5"
-    >
-      <div class="flex flex-wrap items-center gap-3 text-sm">
-        <span
-          class="rounded-md bg-primary-comfy-yellow px-2 py-1 font-mono text-primary-comfy-ink"
-        >
-          POST
-        </span>
-        <code class="min-w-0 break-all text-primary-warm-white">
-          {{ ownDeployment ? '$COMFY_BASE_URL' : WORKFLOW_API_BASE
-          }}{{ WORKFLOW_JOB_PATH }}
-        </code>
-      </div>
-      <p class="text-sm/relaxed text-primary-warm-gray">
-        {{
-          tHub(
-            ownDeployment
-              ? 'workshop.v2.api.noteOwn'
-              : 'workshop.v2.api.noteCloud',
-            locale
-          )
-        }}
-      </p>
-      <a
-        v-if="ownDeployment"
-        href="https://docs.comfy.org/development/serverless/overview"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="inline-flex min-h-11 items-center text-sm text-primary-comfy-yellow"
+    <div class="flex flex-col gap-8 lg:flex-row-reverse lg:items-start">
+      <aside
+        class="flex w-full flex-col gap-3 lg:sticky lg:top-24 lg:w-95 lg:shrink-0"
       >
-        {{ tHub('workshop.v2.api.deployDocs', locale) }} ↗
-      </a>
-    </div>
+        <Button
+          v-if="ownDeployment"
+          as="a"
+          href="https://docs.comfy.org/development/serverless/overview"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="w-full justify-between"
+        >
+          <template #prepend>
+            <span
+              class="inline-flex size-6 items-center justify-center rounded-full bg-primary-comfy-ink/15 text-xs font-bold"
+            >
+              1
+            </span>
+          </template>
+          {{ tHub('workshop.v2.api.deployDocs', locale) }}
+          <template #append><span aria-hidden="true">↗</span></template>
+        </Button>
+        <Button
+          as="a"
+          :href="externalLinks.apiKeys"
+          target="_blank"
+          rel="noopener noreferrer"
+          :variant="ownDeployment ? 'outline' : undefined"
+          class="w-full justify-between"
+        >
+          <template #prepend>
+            <span
+              :class="
+                cn(
+                  'inline-flex size-6 items-center justify-center rounded-full text-xs font-bold',
+                  ownDeployment
+                    ? 'bg-primary-comfy-yellow/15'
+                    : 'bg-primary-comfy-ink/15'
+                )
+              "
+            >
+              {{ ownDeployment ? 2 : 1 }}
+            </span>
+          </template>
+          {{ tHub('workshop.v2.api.apiKey', locale) }}
+          <template #append><span aria-hidden="true">↗</span></template>
+        </Button>
+        <Button
+          variant="outline"
+          class="w-full justify-between"
+          @click="downloadGraph"
+        >
+          <template #prepend>
+            <span
+              class="inline-flex size-6 items-center justify-center rounded-full bg-primary-comfy-yellow/15 text-xs font-bold"
+            >
+              {{ ownDeployment ? 3 : 2 }}
+            </span>
+          </template>
+          {{ tHub('workshop.v2.api.downloadGraph', locale) }}
+          <template #append><span aria-hidden="true">&nbsp;</span></template>
+        </Button>
 
-    <div class="flex flex-col gap-3 text-sm/relaxed text-primary-warm-gray">
-      <p>
-        {{ tHub('workshop.v2.api.setup', locale).replace('{file}', file) }}
-      </p>
-      <code
-        class="block overflow-x-auto rounded-xl bg-transparency-white-t8 px-4 py-3 text-primary-warm-white"
-      >
-        {{ INSTALL[language] }}
-      </code>
-      <p v-if="inputs.length">
-        {{ tHub('workshop.v2.api.localFiles', locale) }}:
-        <span
-          v-for="(input, index) in inputs"
-          :key="`${input.node}.${input.input}`"
-        >
-          {{ index ? ' · ' : '' }}{{ input.label }}:
-          <code class="text-primary-warm-white">{{ input.filename }}</code>
-        </span>
-      </p>
-    </div>
-
-    <div
-      class="overflow-hidden rounded-2xl border border-transparency-white-t20 bg-transparency-white-t4"
-    >
-      <div
-        class="flex items-center justify-between border-b border-transparency-white-t8 px-3 py-2"
-      >
-        <div
-          role="tablist"
-          :aria-label="tHub('workshop.v2.api.language', locale)"
-          class="flex gap-1"
-          @keydown="onKeydown"
-        >
-          <button
-            v-for="option in SNIPPET_LANGUAGES"
-            :id="`workflow-snippet-${option}`"
-            :key="option"
-            type="button"
-            role="tab"
-            :aria-selected="language === option"
-            aria-controls="workflow-snippet-panel"
-            :tabindex="language === option ? 0 : -1"
-            :class="
-              cn(
-                'cursor-pointer rounded-xl px-3 py-1.5 text-xs font-bold tracking-wider uppercase transition-colors',
-                language === option
-                  ? 'bg-primary-comfy-yellow text-primary-comfy-ink'
-                  : 'text-primary-comfy-canvas hover:bg-transparency-white-t8 hover:text-primary-warm-white'
-              )
-            "
-            @click="language = option"
-          >
-            {{ LANGUAGE_NAMES[option] }}
-          </button>
-        </div>
-        <CopyTextButton
-          :value="snippet"
-          :label="tHub('workshop.v2.api.copy', locale)"
-          :copied-label="tHub('workshop.v2.api.copied', locale)"
+        <ApiFacts
+          :where="
+            t(
+              ownDeployment
+                ? 'workshop.api.runsOnOwn'
+                : 'workshop.api.runsOnCloud',
+              locale
+            )
+          "
+          :rows="facts"
+          :locale="locale"
         />
+      </aside>
+
+      <div class="flex min-w-0 flex-1 flex-col gap-4">
+        <code
+          class="block overflow-x-auto rounded-xl bg-transparency-white-t8 px-4 py-3 text-sm text-primary-warm-white"
+        >
+          {{ INSTALL[language] }}
+        </code>
+
+        <div
+          class="overflow-hidden rounded-2xl border border-transparency-white-t20 bg-transparency-white-t4"
+        >
+          <div
+            class="flex items-center justify-between border-b border-transparency-white-t8 px-3 py-2"
+          >
+            <div
+              role="tablist"
+              :aria-label="tHub('workshop.v2.api.language', locale)"
+              class="flex gap-1"
+              @keydown="onKeydown"
+            >
+              <button
+                v-for="option in SNIPPET_LANGUAGES"
+                :id="`workflow-snippet-${option}`"
+                :key="option"
+                type="button"
+                role="tab"
+                :aria-selected="language === option"
+                aria-controls="workflow-snippet-panel"
+                :tabindex="language === option ? 0 : -1"
+                :class="
+                  cn(
+                    'cursor-pointer rounded-xl px-3 py-1.5 text-xs font-bold tracking-wider uppercase transition-colors',
+                    language === option
+                      ? 'bg-primary-comfy-yellow text-primary-comfy-ink'
+                      : 'text-primary-comfy-canvas hover:bg-transparency-white-t8 hover:text-primary-warm-white'
+                  )
+                "
+                @click="language = option"
+              >
+                {{ LANGUAGE_NAMES[option] }}
+              </button>
+            </div>
+            <CopyTextButton
+              :value="snippet"
+              :label="tHub('workshop.v2.api.copy', locale)"
+              :copied-label="tHub('workshop.v2.api.copied', locale)"
+            />
+          </div>
+          <pre
+            id="workflow-snippet-panel"
+            role="tabpanel"
+            :aria-labelledby="`workflow-snippet-${language}`"
+            tabindex="0"
+            class="max-h-160 overflow-auto bg-primary-comfy-ink p-6 font-mono text-sm/relaxed text-primary-warm-white"
+            data-testid="workflow-snippet"
+          ><HighlightedCode :code="snippet" :language="HIGHLIGHT[language]" /></pre>
+        </div>
+
+        <p
+          v-if="language === 'curl'"
+          class="text-sm/relaxed text-primary-warm-gray"
+        >
+          {{ tHub('workshop.v2.api.curlNote', locale) }}
+        </p>
+
+        <a
+          href="https://docs.comfy.org/development/api-development/sdks"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex min-h-11 items-center gap-2 self-start text-sm font-medium text-primary-comfy-yellow hover:text-primary-warm-white"
+        >
+          {{ tHub('workshop.v2.api.docs', locale) }}
+          <span aria-hidden="true">↗</span>
+        </a>
       </div>
-      <pre
-        id="workflow-snippet-panel"
-        role="tabpanel"
-        :aria-labelledby="`workflow-snippet-${language}`"
-        tabindex="0"
-        class="max-h-160 overflow-auto bg-primary-comfy-ink p-6 font-mono text-sm/relaxed text-primary-warm-white"
-        data-testid="workflow-snippet"
-      ><HighlightedCode :code="snippet" :language="HIGHLIGHT[language]" /></pre>
-    </div>
-
-    <p
-      v-if="language === 'curl'"
-      class="text-sm/relaxed text-primary-warm-gray"
-    >
-      {{ tHub('workshop.v2.api.curlNote', locale) }}
-    </p>
-
-    <div class="flex flex-wrap gap-3">
-      <Button @click="downloadGraph">
-        {{ tHub('workshop.v2.api.downloadGraph', locale) }}
-      </Button>
-      <Button
-        as="a"
-        :href="externalLinks.apiKeys"
-        target="_blank"
-        rel="noopener noreferrer"
-        variant="outline"
-      >
-        {{ tHub('workshop.v2.api.apiKey', locale) }}
-      </Button>
-      <Button
-        as="a"
-        href="https://docs.comfy.org/development/api-development/sdks"
-        target="_blank"
-        rel="noopener noreferrer"
-        variant="outline"
-      >
-        {{ tHub('workshop.v2.api.docs', locale) }}
-      </Button>
     </div>
   </section>
 </template>

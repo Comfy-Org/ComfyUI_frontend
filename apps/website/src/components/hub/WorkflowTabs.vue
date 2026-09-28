@@ -16,16 +16,26 @@ import { tHub } from '../../i18n/hub'
 // Whether there is a playground is told rather than inferred: a slot that
 // renders nothing is still a slot, so asking the slots would draw the tab
 // empty.
-const { runs = true, locale = 'en' } = defineProps<{
+const {
+  runs = true,
+  api = true,
+  locale = 'en'
+} = defineProps<{
   /** Whether anything on this page can run the workflow. */
   runs?: boolean
+  /** Whether the page carries a snippet to call the workflow with. */
+  api?: boolean
   locale?: Locale
 }>()
 
 type Section = 'playground' | 'details' | 'api'
 
 const sections = computed<readonly Section[]>(() =>
-  runs ? ['playground', 'details', 'api'] : ['details', 'api']
+  [
+    ...(runs ? (['playground'] as const) : []),
+    'details' as const,
+    ...(api ? (['api'] as const) : [])
+  ].slice()
 )
 const sectionLabel: Record<Section, HubKey> = {
   playground: 'workshop.v2.workflow.tabRun',

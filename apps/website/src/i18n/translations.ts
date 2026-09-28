@@ -10480,6 +10480,38 @@ Enterprise`
   'workshop.api.copied': { en: 'Copied', 'zh-CN': '已复制' },
   'workshop.api.getKey': { en: 'Get API key', 'zh-CN': '获取 API 密钥' },
   'workshop.api.docs': { en: 'Router docs', 'zh-CN': 'Router 文档' },
+  'workshop.api.needs': { en: 'What you need', 'zh-CN': '你需要准备的' },
+  'workshop.api.needsEndpoint': { en: 'Endpoint', 'zh-CN': '接口地址' },
+  'workshop.api.needsKey': { en: 'Key', 'zh-CN': '密钥' },
+  'workshop.api.needsInputs': { en: 'Inputs', 'zh-CN': '输入' },
+  'workshop.api.needsFiles': { en: 'Your files', 'zh-CN': '你的文件' },
+  'workshop.api.needsGraph': { en: 'Graph', 'zh-CN': '节点图' },
+  'workshop.api.needsPlan': { en: 'Plan', 'zh-CN': '方案' },
+  'workshop.api.runsOnOwn': {
+    en: 'Your own deployment',
+    'zh-CN': '你自己的部署'
+  },
+  'workshop.api.runsOnRouter': {
+    en: 'Comfy Router runs it',
+    'zh-CN': '由 Comfy Router 运行'
+  },
+  'workshop.api.runsOnCloud': {
+    en: 'Comfy Cloud runs it',
+    'zh-CN': '由 Comfy Cloud 运行'
+  },
+  'workshop.api.inputsReady': {
+    en: 'Whatever the Playground holds now',
+    'zh-CN': '试用区当前填写的内容'
+  },
+  'workshop.api.inputsNotSet': { en: 'Not set yet', 'zh-CN': '尚未填写' },
+  'workshop.api.filesRead': {
+    en: 'Read and Base64-encoded when the code runs',
+    'zh-CN': '代码运行时读取并进行 Base64 编码'
+  },
+  'workshop.api.filesUploaded': {
+    en: 'Uploaded before the call, then read from their urls',
+    'zh-CN': '调用前先上传，再通过链接读取'
+  },
 
   // Workshop – examples
   'workshop.examples.start': {

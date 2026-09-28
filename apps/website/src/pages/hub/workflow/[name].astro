@@ -180,7 +180,7 @@ const tags = usefulTags(template.tags)
       </section>
     ) : crossView ? (
       <div class="mb-16" data-testid="workflow-crossview">
-        <WorkflowTabs client:load>
+        <WorkflowTabs api={false} client:load>
           <div slot="playground">
             <CrossViewPlayground client:only="vue" />
           </div>
