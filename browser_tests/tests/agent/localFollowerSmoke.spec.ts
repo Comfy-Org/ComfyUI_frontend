@@ -1,4 +1,5 @@
 import { expect } from '@playwright/test'
+import { z } from 'zod'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
@@ -8,18 +9,14 @@ const INJECTOR_URL = 'http://127.0.0.1:8199'
 const WORKFLOW_ID = 'wf-e2e-local'
 const NODE_ID = 970001
 
-interface HarnessHealth {
-  harness: string
-  upstream?: string
-}
-
-interface InjectResult {
-  applied: boolean
-  delivered: number
-  node_id: number
-  projected_nodes: number
-  update_bytes: number
-}
+const zHarnessHealth = z.object({ harness: z.string() })
+const zInjectResult = z.object({
+  applied: z.boolean(),
+  delivered: z.number(),
+  node_id: z.number(),
+  projected_nodes: z.number(),
+  update_bytes: z.number()
+})
 
 interface HarnessStore {
   activeWorkflow?: { path?: string }
@@ -53,7 +50,7 @@ test.describe('Local-product follower smoke', { tag: '@local-agent' }, () => {
     expect(comfy.ok, 'ComfyUI must answer on :8188').toBe(true)
     expect(follower.ok, 'follower Vite must answer on :5175').toBe(true)
     expect(health.ok, 'injector must answer on :8199').toBe(true)
-    const identity: HarnessHealth = await health.json()
+    const identity = zHarnessHealth.parse(await health.json())
     expect(identity.harness).toBe('local-follower-e2e-injector')
 
     const before = await page.evaluate(() => window.app!.graph._nodes.length)
@@ -93,7 +90,7 @@ test.describe('Local-product follower smoke', { tag: '@local-agent' }, () => {
       { headers: { authorization: `Bearer ${token}` } }
     )
     expect(response.ok, 'injector rejected the mutation').toBe(true)
-    const injected: InjectResult = await response.json()
+    const injected = zInjectResult.parse(await response.json())
     expect(injected).toMatchObject({
       applied: true,
       node_id: NODE_ID,
