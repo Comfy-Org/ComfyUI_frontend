@@ -3922,6 +3922,10 @@ export type BillingStatusResponse = {
    */
   cancel_at?: string
   /**
+   * Whether Agent admission can spend from either shared credits or the Agent-scoped balance. Omitted by older servers; clients may fall back to has_funds during rollout.
+   */
+  agent_has_funds?: boolean
+  /**
    * Whether the workspace has available credits
    */
   has_funds: boolean

@@ -285,6 +285,7 @@ describe('useWorkspaceBilling', () => {
     it('maps status response into subscription info', async () => {
       mockWorkspaceApi.getBillingStatus.mockResolvedValue({
         ...activeStatus,
+        agent_has_funds: false,
         billing_rail: 'stripe',
         subscription_status: 'canceled',
         cancel_at: '2026-06-01T00:00:00Z'
@@ -301,7 +302,8 @@ describe('useWorkspaceBilling', () => {
         renewalDate: '2026-05-01T00:00:00Z',
         endDate: '2026-06-01T00:00:00Z',
         isCancelled: true,
-        hasFunds: true
+        hasFunds: true,
+        agentHasFunds: false
       })
       expect(billing.canAccessSubscriptionFeatures.value).toBe(true)
       expect(billing.isFreeTier.value).toBe(false)
