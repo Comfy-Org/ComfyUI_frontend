@@ -257,8 +257,15 @@ test.describe('Enterprise workspace billing', { tag: '@cloud' }, () => {
       'Inactive'
     )
     await expect(content.getByTestId('subscription-state-card')).toHaveCount(0)
+    // Top-up is closed for a terminal sales-managed plan (cloud#8001), so the
+    // ended state offers no Add credits — restoring access goes through sales.
     await expect(
       content.getByRole('button', { name: 'Add credits' })
+    ).toHaveCount(0)
+    await expect(
+      content.getByText(
+        "You can't run workflows or add new members. Contact sales to restore access."
+      )
     ).toBeVisible()
     await expect(
       content.getByRole('button', { name: 'Billing & invoices' })

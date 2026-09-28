@@ -5,17 +5,22 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
 import type { SessionErrorCode } from '@comfyorg/account-core/session'
+import { buildReturnUrl } from '@comfyorg/billing-contract'
 import SocialAuthButtons from '@comfyorg/account-ui/auth/SocialAuthButtons'
 
 import { safeReturnTo } from '@/auth/returnTo'
 import { useSignInController } from '@/auth/useSignInController'
+import SessionFailureAction from '@/components/auth/SessionFailureAction.vue'
 import SignInEmailForm from '@/components/auth/SignInEmailForm.vue'
 import { useHostedCopy } from '@/composables/useHostedCopy'
+import { BILLING_WEB_ENV } from '@/config/env'
+import { useBillingEntry } from '@/entry/billingEntry'
 
 const { t } = useI18n()
 const { coded } = useHostedCopy()
 const route = useRoute()
 const router = useRouter()
+const { entry } = useBillingEntry()
 
 const {
   state,
@@ -73,11 +78,36 @@ const WORKSPACE_REFUSAL_CODES: readonly SessionErrorCode[] = [
   'ACCESS_DENIED',
   'WORKSPACE_NOT_FOUND'
 ]
-const sessionErrorMessage = computed(() => {
+const workspaceRefused = computed(() => {
   const code = sessionFailureCode.value
   return code !== undefined && WORKSPACE_REFUSAL_CODES.includes(code)
-    ? coded('failure', code)
+})
+const sessionErrorMessage = computed(() =>
+  workspaceRefused.value
+    ? coded('failure', sessionFailureCode.value)
     : t('auth.signIn.sessionError')
+)
+
+/**
+ * Retrying mints for the same refused workspace, so a refusal sends the
+ * customer back to the product to pick another one. The refused workspace is
+ * left off the link, and never swapped for the personal one.
+ */
+const appReturnLink = computed(() => {
+  const arrival = entry.value
+  if (!workspaceRefused.value || !arrival) return undefined
+  const url = buildReturnUrl({
+    target: arrival.returnTo,
+    environment: BILLING_WEB_ENV,
+    workspace: undefined
+  })
+  if (!url) return undefined
+  return {
+    href: url.href,
+    label: t('hosted.returnTo', {
+      product: coded('product', arrival.product)
+    })
+  }
 })
 
 const linkButtonClass =
@@ -179,9 +209,11 @@ const alertClass = 'rounded-lg bg-base-background p-3 text-sm'
           >
             {{ sessionErrorMessage }}
           </div>
-          <button type="button" :class="linkButtonClass" @click="retryMint">
-            {{ t('auth.signIn.retry') }}
-          </button>
+          <SessionFailureAction
+            :class="linkButtonClass"
+            :return-link="appReturnLink"
+            @retry="retryMint"
+          />
         </template>
       </div>
     </section>

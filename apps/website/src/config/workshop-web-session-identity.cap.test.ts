@@ -11,6 +11,9 @@ const identityModule = vi.hoisted(() => {
     getState: () => ({ phase: 'idle' as const }),
     subscribe: vi.fn(() => () => {}),
     boot: vi.fn(),
+    signedIn: vi.fn(),
+    signOut: vi.fn(),
+    getEpoch: () => 0,
     dispose: vi.fn()
   }
   return { arrives: promise, release: resolve, identity }

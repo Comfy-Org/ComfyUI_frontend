@@ -111,6 +111,10 @@ export function isUnknownTier(
 // Enterprise and unrecognized tiers share one presentation: no catalog price,
 // benefits, or pricing surfaces. The server hides their lifecycle capabilities
 // (billing-api hideLifecycleCapabilities); this helper only drives rendering.
+// Where a sales conversation starts. Shared by the pricing table's footnote
+// and the ended-plan Contact sales actions so the destination cannot drift.
+export const ENTERPRISE_URL = 'https://comfy.org/cloud/enterprise/'
+
 export function isSalesManagedTier(
   tier: IngestSubscriptionTier | null | undefined
 ): boolean {
