@@ -48,13 +48,9 @@ const { t } = useI18n()
 
 const scrollContainer = ref<HTMLElement>()
 const content = ref<HTMLElement>()
-const bottom = ref<HTMLElement>()
-const atBottom = ref(true)
 const shouldFollowLatest = ref(true)
-
-useIntersectionObserver(bottom, ([entry]) => {
-  atBottom.value = entry?.isIntersecting ?? true
-})
+const bottomTolerance = 16
+let ignoreProgrammaticScroll = false
 
 const top = ref<HTMLElement>()
 const atTop = ref(true)
@@ -64,18 +60,51 @@ useIntersectionObserver(top, ([entry]) => {
 })
 
 function scrollToLatest(): void {
-  scrollContainer.value?.scrollTo({ top: scrollContainer.value.scrollHeight })
+  const element = scrollContainer.value
+  if (!element) return
+  shouldFollowLatest.value = true
+  ignoreProgrammaticScroll = true
+  if (typeof element.scrollTo === 'function') {
+    element.scrollTo({ top: element.scrollHeight })
+  } else {
+    element.scrollTop = element.scrollHeight
+  }
+  requestAnimationFrame(() => {
+    ignoreProgrammaticScroll = false
+  })
 }
 
 useEventListener(scrollContainer, 'scroll', () => {
+  if (ignoreProgrammaticScroll) return
   const element = scrollContainer.value
   if (!element) return
   shouldFollowLatest.value =
-    element.scrollHeight - element.scrollTop - element.clientHeight <= 1
+    element.scrollHeight - element.scrollTop - element.clientHeight <=
+    bottomTolerance
+})
+
+useEventListener(scrollContainer, 'wheel', (event) => {
+  if (event.deltaY < 0) {
+    ignoreProgrammaticScroll = false
+    shouldFollowLatest.value = false
+  }
+})
+
+useEventListener(scrollContainer, 'touchmove', () => {
+  ignoreProgrammaticScroll = false
+  shouldFollowLatest.value = false
 })
 
 function followLatestAfterResize(): void {
-  if (shouldFollowLatest.value) scrollToLatest()
+  const element = scrollContainer.value
+  if (!element) return
+  if (
+    shouldFollowLatest.value ||
+    element.scrollHeight - element.scrollTop - element.clientHeight <=
+      bottomTolerance
+  ) {
+    scrollToLatest()
+  }
 }
 
 useResizeObserver(content, followLatestAfterResize)
@@ -93,10 +122,18 @@ const latestContentSignal = computed(() => {
 })
 
 watch(
+  () => entries[0]?.id,
+  () => {
+    shouldFollowLatest.value = true
+  }
+)
+
+watch(
   latestContentSignal,
   async () => {
     if (!shouldFollowLatest.value) return
     await nextTick()
+    if (!shouldFollowLatest.value) return
     scrollToLatest()
   },
   { flush: 'post', immediate: true }
@@ -112,7 +149,7 @@ watch(
         cn(
           'h-full overflow-y-auto',
           !atTop && 'mask-t-from-[calc(100%-2rem)]',
-          !atBottom && 'mask-b-from-[calc(100%-2rem)]'
+          !shouldFollowLatest && 'mask-b-from-[calc(100%-2rem)]'
         )
       "
     >
@@ -150,13 +187,13 @@ watch(
               @paywall-action="emit('paywallAction', $event)"
             />
           </template>
-          <div ref="bottom" />
+          <div />
         </div>
       </div>
     </div>
 
     <Button
-      v-if="!atBottom"
+      v-if="!shouldFollowLatest"
       v-tooltip.top="buildTooltipConfig(t('agent.latest'))"
       type="button"
       variant="secondary"
