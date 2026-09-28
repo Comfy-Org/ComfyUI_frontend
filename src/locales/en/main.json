@@ -5258,6 +5258,7 @@
     "showTargetWorkflow": "Show target workflow: {workflowName}",
     "runApproval": {
       "lead": "This tool wants to run the workflow:",
+      "leadBound": "This tool wants to run this workflow.",
       "question": "Do you approve?",
       "thisWorkflow": "this workflow",
       "cancel": "Cancel",
@@ -5396,6 +5397,9 @@
     "workflowReferenceUnavailableReason": "This referenced workflow is no longer available or you do not have access to it.",
     "removeWorkflowReference": "Remove {name} reference",
     "targetNavigationUnavailable": "This workflow target is no longer available.",
+    "workflowSyncFailedTitle": "This workflow can't sync",
+    "workflowSyncFailedDetail": "This workflow was created with an incompatible document version. Your canvas has been left unchanged.",
+    "workflowSyncFailedDetailCatalogMismatch": "This workflow uses a node catalog that is incompatible with this workspace. Your canvas has been left unchanged.",
     "runModeTriggerAutoLimit": "Auto (limited)",
     "runModeTriggerAutoLimitTooltip": "Ask when credit limit is reached",
     "showMore": "Show more",

@@ -1,3 +1,4 @@
+import { disarmHostedBillingReturnRefresh } from '@/platform/workspace/billing/openHostedBillingTab'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { billingOperation } from './billingOperationTestUtils'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -871,10 +872,7 @@ describe('useWorkspaceBilling', () => {
     })
 
     afterEach(() => {
-      // Flushes any return-refresh listener a test armed but never fired
-      // (openHostedBillingTab's own, independent of this instance's
-      // stopPortalReturnRefresh), so it cannot fire twice for a later test.
-      window.dispatchEvent(new Event('focus'))
+      disarmHostedBillingReturnRefresh()
       mockRail.enabled = false
       localStorage.clear()
       Object.defineProperty(window, 'location', {

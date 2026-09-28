@@ -33,6 +33,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { installNodeAddedTelemetry } from '@/platform/telemetry/nodeAdded/installNodeAddedTelemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import { normalizeExecutionTriggerSource } from '@/platform/telemetry/types'
 import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionContext'
 import { groupMissingNodesByPack } from '@/platform/telemetry/utils/groupMissingNodesByPack'
@@ -46,7 +47,6 @@ import type {
 } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
-import { reportError } from '@/platform/telemetry/reportError'
 import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import {
@@ -60,6 +60,7 @@ import type {
   ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { toNodeId } from '@/types/nodeId'
+import { zNodePackMetadata } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import {
   collectSubgraphDefinitions,
@@ -2224,9 +2225,15 @@ export class ComfyApp {
             ? parseJsonWithNonFinite<ComfyApiWorkflow>(prompt)
             : prompt
         if (this.isApiJson(promptObj)) {
-          await this.loadApiJson(promptObj, fileName, {
-            deferWarnings: options?.deferWarnings
-          })
+          try {
+            await this.loadApiJson(promptObj, fileName, {
+              deferWarnings: options?.deferWarnings
+            })
+          } catch (err) {
+            console.error('Failed to load API prompt:', err)
+            reportError(err, { errorType: 'api_prompt_load_failure' })
+            this.showErrorOnFileLoad(file)
+          }
           return
         }
       } catch (err) {
@@ -2455,6 +2462,15 @@ export class ComfyApp {
         | Extract<MissingNodeType, { type: string }>
         | undefined
       if (!node) {
+        const cnrId = zNodePackMetadata.shape.cnr_id.safeParse(
+          data._meta?.cnr_id
+        ).data
+        const auxId = zNodePackMetadata.shape.aux_id.safeParse(
+          data._meta?.aux_id
+        ).data
+        const packVersion = zNodePackMetadata.shape.ver.safeParse(
+          data._meta?.ver
+        ).data
         const missingNode = new LGraphNode(
           data._meta?.title ?? data.class_type,
           sanitizeNodeName(data.class_type)
@@ -2473,6 +2489,9 @@ export class ComfyApp {
             widgetValuesNamed[input] = widgetValue
           }
         }
+        if (cnrId) node.properties.cnr_id = cnrId
+        if (auxId) node.properties.aux_id = auxId
+        if (packVersion) node.properties.ver = packVersion
         node.last_serialization = {
           id: nodeId,
           type: data.class_type,
@@ -2485,6 +2504,7 @@ export class ComfyApp {
           inputs: node.inputs.map((input, i) =>
             inputAsSerialisable(input, missingNode, i)
           ),
+          properties: { ...node.properties },
           widgets_values: widgetValues,
           widgets_values_named: widgetValuesNamed
         }
@@ -2493,6 +2513,7 @@ export class ComfyApp {
         )
         placeholderEntry = {
           type: data.class_type,
+          cnrId: getCnrIdFromProperties(node.properties),
           isReplaceable: replacement !== null,
           replacement: replacement ?? undefined
         }

@@ -5,12 +5,12 @@ import type {
   BillingEventsResponse,
   BillingPlansResponse,
   BillingStatusResponse,
-  Plan,
   SavedPaymentMethod
 } from '@comfyorg/ingest-types'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
+import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
@@ -68,20 +68,13 @@ const ACTIVE_STATUS: BillingStatusResponse = {
   renewal_date: '2099-02-20T10:00:00Z'
 }
 
-const PRO_MONTHLY_PLAN = {
+const PRO_MONTHLY_PLAN = createPlan({
   slug: 'pro-monthly',
   tier: 'PRO',
   duration: 'MONTHLY',
-  price_cents: 2_000,
-  credits_cents: 2_110,
-  max_seats: 1,
-  availability: { available: true },
-  seat_summary: {
-    seat_count: 1,
-    total_cost_cents: 2_000,
-    total_credits_cents: 2_110
-  }
-} satisfies Plan
+  priceCents: 2_000,
+  monthlyCredits: 2_110
+})
 
 const PLANS = {
   current_plan_slug: 'pro-monthly',

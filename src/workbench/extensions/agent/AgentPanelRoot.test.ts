@@ -91,7 +91,9 @@ const ws = vi.hoisted(() => {
     listeners.get(type)?.delete(listener)
   }
   const emit = (type: string, data?: unknown): void => {
-    for (const listener of listeners.get(type) ?? []) listener({ detail: data })
+    // The doc-frame pipeline ignores events that are not CustomEvent instances.
+    const event = new CustomEvent(type, { detail: data })
+    for (const listener of listeners.get(type) ?? []) listener(event)
   }
   const clear = (): void => listeners.clear()
   return { add, remove, emit, clear }
@@ -1703,7 +1705,7 @@ async function expectLaterClickCannotRestoreAccumulatedNodes(
 
 // Records what actually reached the upload endpoint, so an exclusion can be
 // asserted on the request rather than on a chip that has not rendered yet.
-function stubUploadFetch(uploaded: string[] = []): string[] {
+function stubUploadFetch(uploaded: string[] = [], status = 200): string[] {
   vi.stubGlobal(
     'fetch',
     vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -1714,7 +1716,9 @@ function stubUploadFetch(uploaded: string[] = []): string[] {
         const file = body.get('image')
         if (file instanceof File) uploaded.push(file.name)
       }
-      return json(200, { name: 'uploaded', subfolder: '', type: 'input' })
+      return status === 200
+        ? json(200, { name: 'uploaded', subfolder: '', type: 'input' })
+        : json(status, {})
     })
   )
   return uploaded
@@ -2000,6 +2004,104 @@ describe('AgentPanelRoot attach flow', () => {
         telemetry.trackAgentAttachButtonClicked
       ).toHaveBeenCalledExactlyOnceWith({ method: 'drag_drop' })
     )
+  })
+
+  it('attaches a screenshot pasted into the composer and uploads it', async () => {
+    const uploaded = stubUploadFetch()
+    renderWithSelectedTarget()
+    await nextTick()
+
+    const clipboard = new DataTransfer()
+    clipboard.items.add(new File(['x'], 'image.png', { type: 'image/png' }))
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste(clipboard)
+
+    expect(
+      within(await screen.findByTestId('composer-asset-section')).getByText(
+        'image.png'
+      )
+    ).toBeInTheDocument()
+    await vi.waitFor(() => expect(uploaded).toEqual(['image.png']))
+  })
+
+  // A spreadsheet or document copy puts a bitmap on the clipboard next to the
+  // text, so neither representation may be dropped for the other.
+  it('keeps both the attachment and the text of a mixed clipboard', async () => {
+    const uploaded = stubUploadFetch()
+    renderWithSelectedTarget()
+    await nextTick()
+
+    const clipboard = new DataTransfer()
+    clipboard.items.add(new File(['x'], 'image.png', { type: 'image/png' }))
+    clipboard.setData('text/plain', 'Q3 revenue by region')
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste(clipboard)
+
+    expect(
+      within(await screen.findByTestId('composer-asset-section')).getByText(
+        'image.png'
+      )
+    ).toBeInTheDocument()
+    expect(screen.getByRole('textbox')).toHaveTextContent(
+      'Q3 revenue by region'
+    )
+    await vi.waitFor(() => expect(uploaded).toEqual(['image.png']))
+  })
+
+  // Pasting happens inside the composer, like typing or a drop; only the +
+  // menu's attach leaves the panel for the OS picker and ends node picking.
+  it('keeps picking nodes when a screenshot is pasted into the composer', async () => {
+    const uploaded = stubUploadFetch()
+    const selection = await startVueNodeSelection()
+
+    const clipboard = new DataTransfer()
+    clipboard.items.add(new File(['x'], 'image.png', { type: 'image/png' }))
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste(clipboard)
+
+    await vi.waitFor(() => expect(uploaded).toEqual(['image.png']))
+    expect(useAgentNodeSelectionStore().isActive).toBe(true)
+    expect([...selection.selectedItems]).toEqual(selection.nodes)
+  })
+
+  async function renderAndPasteScreenshot(): Promise<void> {
+    renderWithSelectedTarget()
+    await nextTick()
+    telemetry.trackAgentAttachButtonClicked.mockClear()
+    const clipboard = new DataTransfer()
+    clipboard.items.add(new File(['x'], 'image.png', { type: 'image/png' }))
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste(clipboard)
+  }
+
+  it('tracks a pasted attachment as a paste once its upload lands', async () => {
+    const uploaded = stubUploadFetch()
+
+    await renderAndPasteScreenshot()
+
+    await vi.waitFor(() => expect(uploaded).toEqual(['image.png']))
+    await vi.waitFor(() =>
+      expect(
+        telemetry.trackAgentAttachButtonClicked
+      ).toHaveBeenCalledExactlyOnceWith({ method: 'paste' })
+    )
+  })
+
+  it('tracks no paste when the pasted upload is rejected', async () => {
+    stubUploadFetch([], 500)
+
+    await renderAndPasteScreenshot()
+
+    await vi.waitFor(() =>
+      expect(useToastStore().messagesToAdd).toContainEqual(
+        expect.objectContaining({
+          severity: 'warn',
+          detail: 'image.png could not be uploaded'
+        })
+      )
+    )
+    await nextTick()
+    expect(telemetry.trackAgentAttachButtonClicked).not.toHaveBeenCalled()
   })
 
   it('names every approved format in the picker accept list', async () => {
@@ -3562,7 +3664,6 @@ describe('AgentPanelRoot run approval telemetry', () => {
     const now = vi.spyOn(Date, 'now').mockImplementation(() => currentTime)
     const workflow = addTab('workflows/Portrait workflow.json')
     workflowStore.activeWorkflow = workflow
-    useAgentWorkflowTabBindingStore().bind('workflow-1', workflow.path)
 
     const panel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
     const store = useAgentConversationStore()
@@ -5504,6 +5605,30 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(
       await screen.findByText(i18n.global.t('agent.working'))
     ).toBeInTheDocument()
+  })
+
+  it('shows a sticky error toast when the doc-host permanently refuses the subscribe', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+
+    await renderAndSend('add a node')
+
+    ws.emit('doc_subscribed', {
+      v: 1,
+      workflow_id: 'wf-42',
+      ok: false,
+      code: 'schema_version_mismatch',
+      message: 'Expected schema 2, found 1'
+    })
+
+    expect(useToastStore().messagesToAdd).toContainEqual(
+      expect.objectContaining({
+        severity: 'error',
+        summary: i18n.global.t('agent.workflowSyncFailedTitle'),
+        detail: `${i18n.global.t('agent.workflowSyncFailedDetail')} (Expected schema 2, found 1)`,
+        life: 0
+      })
+    )
   })
 
   it('moves the spinner to the tab the agent creates mid-turn', async () => {
