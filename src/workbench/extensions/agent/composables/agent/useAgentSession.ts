@@ -138,6 +138,17 @@ type TurnOutcome =
   | { kind: 'streaming' }
   | { kind: 'error'; message: string }
 
+const TERMINAL_TURN_STATUSES = new Set([
+  'complete',
+  'completed',
+  'success',
+  'error',
+  'failed',
+  'interrupted',
+  'cancelled',
+  'canceled'
+])
+
 /**
  * The status source reports its current state synchronously on subscribe
  * (see agentEventSource.onStatus), so the first callback is a snapshot, not a
@@ -1020,7 +1031,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     try {
       const history = await rest.getMessages(turn.threadId, { signal })
       const row = history.find((entry) => entry.id === turn.messageId)
-      if (!row || row.status === 'streaming') return { kind: 'streaming' }
+      if (!row || !TERMINAL_TURN_STATUSES.has(row.status))
+        return { kind: 'streaming' }
       const text = typeof row.content?.text === 'string' ? row.content.text : ''
       return { kind: 'terminal', text }
     } catch (error) {
