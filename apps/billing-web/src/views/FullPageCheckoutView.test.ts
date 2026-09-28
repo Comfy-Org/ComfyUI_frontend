@@ -248,7 +248,7 @@ describe('FullPageCheckoutView', () => {
         value: previewOf({ transition_type: 'upgrade' })
       }
     })
-    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+    await screen.findByText('Upgrade to Creator Plan · Acme Team')
 
     expect(form.mounts).toBe(0)
     await userEvent.click(payButton())
@@ -335,7 +335,7 @@ describe('FullPageCheckoutView', () => {
         value: previewOf({ transition_type: 'upgrade' })
       }
     })
-    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+    await screen.findByText('Upgrade to Creator Plan · Acme Team')
     expect(payButton()).toBeEnabled()
 
     fake.publishOperation(pendingOperation())
@@ -346,7 +346,7 @@ describe('FullPageCheckoutView', () => {
     )
     expect(payButton()).toBeDisabled()
     expect(
-      screen.getByText('Subscribe to Creator Plan · Acme Team')
+      screen.getByText('Upgrade to Creator Plan · Acme Team')
     ).toBeInTheDocument()
   })
 
@@ -928,13 +928,15 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
   })
 
   it('lands on the terminal for a plan the server activated with no operation to follow', async () => {
-    await payReady({
+    await renderCheckout({
       preview: {
         status: 'ok',
         value: previewOf({ transition_type: 'upgrade' })
       },
       subscribe: { status: 'ok', value: { phase: 'succeeded' } }
     })
+    await screen.findByText('Upgrade to Creator Plan · Acme Team')
+    await waitFor(() => expect(payButton()).toBeEnabled())
 
     await userEvent.click(payButton())
 

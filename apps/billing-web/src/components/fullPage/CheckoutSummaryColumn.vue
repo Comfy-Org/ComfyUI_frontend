@@ -3,15 +3,11 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-export interface CheckoutSummary {
-  readonly eyebrow: string
-  readonly price: string
-  readonly currency: string
-  readonly total: string
-}
+import type { SummaryLedger } from '@/checkout/summaryLedger'
+import CheckoutLedger from '@/components/fullPage/summary/CheckoutLedger.vue'
 
-const { summary, locked = false } = defineProps<{
-  summary?: CheckoutSummary
+const { ledger, locked = false } = defineProps<{
+  ledger?: SummaryLedger
   /** Money on its way: the back arrow goes with the rest of the page. */
   locked?: boolean
 }>()
@@ -27,7 +23,8 @@ const SKELETON_BAR =
 <template>
   <section
     class="flex bg-base-background lg:w-1/2 lg:justify-end"
-    :aria-busy="summary === undefined"
+    :aria-label="t('checkout.fullPage.summary.label')"
+    :aria-busy="ledger === undefined"
   >
     <div class="flex w-full flex-col px-6 py-12 lg:max-w-lg lg:px-16">
       <div class="relative flex h-5 items-center">
@@ -47,33 +44,22 @@ const SKELETON_BAR =
         />
       </div>
 
-      <div v-if="summary" class="mt-16 flex flex-col gap-2">
-        <p class="m-0 text-sm text-muted-foreground">{{ summary.eyebrow }}</p>
-        <p class="m-0 text-2xl font-semibold text-base-foreground tabular-nums">
-          {{ summary.price }}
-          <span class="text-base font-normal">{{ summary.currency }}</span>
-        </p>
-      </div>
-      <div v-else class="mt-16 flex flex-col gap-3">
-        <span class="sr-only">{{ t('hosted.loading') }}</span>
-        <span :class="cn(SKELETON_BAR, 'h-3 w-2/3')" />
-        <span :class="cn(SKELETON_BAR, 'h-4 w-2/3')" />
-      </div>
-
-      <div
-        class="mt-8 flex items-center justify-between gap-4 border-t border-border-default pt-6"
-      >
-        <span class="text-base font-semibold text-base-foreground">
-          {{ t('checkout.totalDueToday') }}
-        </span>
-        <span
-          v-if="summary"
-          class="text-base font-semibold text-base-foreground tabular-nums"
+      <CheckoutLedger v-if="ledger" :ledger />
+      <template v-else>
+        <div class="mt-16 flex flex-col gap-3">
+          <span class="sr-only">{{ t('hosted.loading') }}</span>
+          <span :class="cn(SKELETON_BAR, 'h-3 w-2/3')" />
+          <span :class="cn(SKELETON_BAR, 'h-4 w-2/3')" />
+        </div>
+        <div
+          class="mt-8 flex items-center justify-between gap-4 border-t border-border-default pt-6"
         >
-          {{ summary.total }}
-        </span>
-        <span v-else :class="cn(SKELETON_BAR, 'h-3 w-16')" />
-      </div>
+          <span class="text-base font-semibold text-base-foreground">
+            {{ t('checkout.totalDueToday') }}
+          </span>
+          <span :class="cn(SKELETON_BAR, 'h-3 w-16')" />
+        </div>
+      </template>
     </div>
   </section>
 </template>
