@@ -581,6 +581,39 @@ describe('ComfyApp', () => {
         expect(app.canvas.ds.scale).toBe(0.25)
       })
 
+      it('keeps a pending fit across an in-place reload of the same graph', async () => {
+        const canvasEl = hideCanvas()
+        const fitView = vi.fn()
+        vi.mocked(useLitegraphService).mockReturnValue({
+          ...useLitegraphService(),
+          fitView
+        })
+
+        await app.loadGraphData(
+          createWorkflowGraphData(),
+          true,
+          true,
+          'hidden-template',
+          { openSource: 'template' }
+        )
+
+        // The shape ChangeTracker undo/redo and App Mode's Rerun use: same
+        // graph, no clean, no view restore, and a ComfyWorkflow object.
+        await app.loadGraphData(
+          createWorkflowGraphData(),
+          false,
+          false,
+          new ComfyWorkflow({
+            path: 'workflows/in-place.json',
+            modified: 0,
+            size: 0
+          })
+        )
+        driveResizeCanvas(canvasEl)
+
+        expect(fitView).toHaveBeenCalledTimes(1)
+      })
+
       it('drops a pending fit when an API import replaces the graph', async () => {
         const canvasEl = hideCanvas()
         const fitView = vi.fn()
