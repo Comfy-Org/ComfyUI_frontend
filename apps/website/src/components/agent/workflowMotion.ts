@@ -16,7 +16,7 @@ export type MotionCurve = {
   to: Point
 }
 export type MotionEdge = { from: string; to: string; curves?: MotionCurve[] }
-export type MotionStep =
+type MotionStep =
   | {
       type: 'place'
       node: string

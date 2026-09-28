@@ -10,7 +10,15 @@ test.use({
   launchOptions: { args: ['--disable-blink-features=AutomationControlled'] }
 })
 
-const analyticsSchema = z.array(z.object({ event: z.string() }))
+const analyticsSchema = z.array(
+  z.object({
+    event: z.string(),
+    properties: z.object({
+      question: z.string().optional(),
+      video: z.string().optional()
+    })
+  })
+)
 
 async function captureAnalytics(context: BrowserContext) {
   const events: z.infer<typeof analyticsSchema> = []
@@ -36,8 +44,14 @@ async function captureAnalytics(context: BrowserContext) {
   return events
 }
 
-function eventCount(events: z.infer<typeof analyticsSchema>, name: string) {
-  return events.filter((event) => event.event === name).length
+function eventProperties(
+  events: z.infer<typeof analyticsSchema>,
+  name: string,
+  property: 'question' | 'video'
+) {
+  return events
+    .filter((event) => event.event === name)
+    .map((event) => event.properties[property])
 }
 
 async function assertVisitAnalytics(page: Page, phase: string) {
@@ -94,15 +108,30 @@ test('agent analytics survive two Astro return visits without duplicates', async
     })
   }
   await expect
-    .poll(() => eventCount(events, 'website:agent_faq_expanded'), {
-      timeout: 15_000
-    })
-    .toBe(3)
+    .poll(
+      () => eventProperties(events, 'website:agent_faq_expanded', 'question'),
+      {
+        timeout: 15_000
+      }
+    )
+    .toEqual([
+      'What model powers it?',
+      'What model powers it?',
+      'What model powers it?'
+    ])
   await expect
-    .poll(() => eventCount(events, 'website:agent_usecase_video_played'), {
-      timeout: 15_000
-    })
-    .toBe(3)
+    .poll(
+      () =>
+        eventProperties(events, 'website:agent_usecase_video_played', 'video'),
+      {
+        timeout: 15_000
+      }
+    )
+    .toEqual([
+      'Animation, from story to screen — by 852話 | Andidea',
+      'Animation, from story to screen — by 852話 | Andidea',
+      'Animation, from story to screen — by 852話 | Andidea'
+    ])
 })
 
 test('mobile hides the hero workflow while keeping the page usable @mobile', async ({
@@ -125,6 +154,7 @@ test.describe('agent workflow motion', () => {
     const workflow = page.locator('workflow-examples')
     await workflow.scrollIntoViewIfNeeded()
     await expect(workflow.locator('.wf-scene')).toBeVisible()
+    await expect(workflow.locator('video')).toHaveCount(2)
     expect(
       await workflow
         .locator('video')
@@ -134,9 +164,21 @@ test.describe('agent workflow motion', () => {
     ).toBe(true)
     expect(
       await workflow
-        .locator('.wf-scene')
-        .evaluate((scene) => scene.getAnimations({ subtree: true }).length)
-    ).toBe(0)
+        .locator('video')
+        .evaluateAll((videos) =>
+          videos.map((video) => video.getAttribute('poster'))
+        )
+    ).toEqual([
+      'https://media.comfy.org/website/comfy-agent/conditioner/motion-reference-poster.webp',
+      'https://media.comfy.org/website/comfy-agent/conditioner/keyframe-purple.webp'
+    ])
+    await expect
+      .poll(() =>
+        workflow
+          .locator('.wf-scene')
+          .evaluate((scene) => scene.getAnimations({ subtree: true }).length)
+      )
+      .toBe(0)
   })
 
   test('offscreen playback resumes in place, but reduced motion restores the poster until the next cue', async ({
@@ -172,11 +214,13 @@ test.describe('agent workflow motion', () => {
     await expect(video).toHaveJSProperty('paused', true)
     await expect(video).toHaveJSProperty('currentTime', 0)
     await expect(video).toHaveAttribute('poster', /\.webp$/)
-    expect(
-      await workflow.evaluate(
-        (element) => element.getAnimations({ subtree: true }).length
+    await expect
+      .poll(() =>
+        workflow.evaluate(
+          (element) => element.getAnimations({ subtree: true }).length
+        )
       )
-    ).toBe(0)
+      .toBe(0)
 
     await page.emulateMedia({ reducedMotion: 'no-preference' })
     await expect(video).not.toHaveAttribute('src')

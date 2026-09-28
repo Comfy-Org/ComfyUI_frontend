@@ -30,7 +30,7 @@ const { scene } = motion
       <div
         class="wf-scene"
         id={`workflow-${workflow.id}`}
-        style={`animation-name:wf-scene-${workflow.id}`}
+        style={`--wf-animation:wf-scene-${workflow.id}`}
       >
         <svg
           class="wf-connections"
@@ -41,7 +41,7 @@ const { scene } = motion
             <path
               d={wire.path}
               pathLength="1"
-              style={`animation-name:${wire.name}`}
+              style={`--wf-animation:${wire.name}`}
             />
           ))}
         </svg>
@@ -54,7 +54,7 @@ const { scene } = motion
           />
         ))}
         <div
-          style={`animation-name:${scene.userCursor.name};left:${userRest.x / unit}cqw;top:${userRest.y / unit}cqw`}
+          style={`--wf-animation:${scene.userCursor.name};left:${userRest.x / unit}cqw;top:${userRest.y / unit}cqw`}
           class="wf-user"
           role="img"
           aria-label={userCursorLabel}
@@ -81,7 +81,7 @@ const { scene } = motion
           /></span>
         </div>
         <div
-          style={`animation-name:${scene.agentCursor.name};left:${agentRest.x / unit}cqw;top:${agentRest.y / unit}cqw`}
+          style={`--wf-animation:${scene.agentCursor.name};left:${agentRest.x / unit}cqw;top:${agentRest.y / unit}cqw`}
           class="wf-agent"
           role="img"
           aria-label="Comfy Agent"

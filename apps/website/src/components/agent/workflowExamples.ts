@@ -94,7 +94,7 @@ export class WorkflowExamples extends HTMLElement {
     this.cleanup = () => {
       controller.abort()
       observer.disconnect()
-      videos().forEach((video) => video.pause())
+      videos().forEach(unload)
     }
   }
 

@@ -361,6 +361,26 @@ describe('workflow example playback', () => {
     ).toBe('/white.mp4')
   })
 
+  it('waits for a fresh output cue after the same element reconnects', () => {
+    root = mountExamples()
+    observers.instances[0].intersect(true)
+    cue()
+    const video = screen.getByLabelText<HTMLVideoElement>('White product video')
+    video.currentTime = 3
+    play.mockClear()
+
+    root.remove()
+    document.body.append(root)
+    observers.instances[1].intersect(true)
+
+    expect(video.hasAttribute('src')).toBe(false)
+    expect(video.currentTime).toBe(0)
+    expect(play).not.toHaveBeenCalled()
+
+    cue()
+    expect(play).toHaveBeenCalledTimes(1)
+  })
+
   it('disconnects observers and playback listeners when removed', () => {
     root = mountExamples()
     observers.instances[0].intersect(true)

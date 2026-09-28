@@ -28,7 +28,7 @@ const imageSizes = {
 } satisfies Record<WorkflowGraphNode['kind'], { width: number; height: number }>
 const imageSize = imageSizes[node.kind]
 const imageStyle = motion.imageName
-  ? `animation-name:${motion.imageName}`
+  ? `--wf-animation:${motion.imageName}`
   : undefined
 const ports = [node.input, node.output, ...(node.extraPorts ?? [])].filter(
   (port): port is Point => port !== undefined
@@ -40,7 +40,7 @@ const portStyle = (port: Point) =>
 <div
   data-node={node.id}
   class:list={['wf-node', nodeKindClasses[node.kind]]}
-  style={`left:${node.x / unit}cqw;top:${node.y / unit}cqw;width:${node.width / unit}cqw;height:${node.height / unit}cqw;animation-name:${motion.name}`}
+  style={`left:${node.x / unit}cqw;top:${node.y / unit}cqw;width:${node.width / unit}cqw;height:${node.height / unit}cqw;--wf-animation:${motion.name}`}
 >
   <div class="wf-node-heading">
     <span class="ppformula-text-center">{node.label}</span>
@@ -103,7 +103,7 @@ const portStyle = (port: Point) =>
   {motion.selectionName && (
     <span
       class="wf-selection"
-      style={`animation-name:${motion.selectionName}`}
+      style={`--wf-animation:${motion.selectionName}`}
       aria-hidden="true"
     />
   )}

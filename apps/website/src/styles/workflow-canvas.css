@@ -56,6 +56,7 @@ workflow-examples[data-paused] .wf-example * {
 .wf-generated-image,
 .wf-selection,
 .wf-video-cue {
+  animation-name: var(--wf-animation);
   animation-duration: var(--wf-duration);
   animation-timing-function: linear;
   animation-iteration-count: infinite;
