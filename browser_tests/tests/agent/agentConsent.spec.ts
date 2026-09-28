@@ -542,13 +542,13 @@ test.describe(
         subscription_required: true
       }
     })
+    test.describe.configure({ timeout: 30_000 })
 
     test('defers the offer until Getting Started releases the screen', async ({
       comfyPage,
       agentPanel,
       agentConsentWrites
-    }, testInfo) => {
-      testInfo.setTimeout(30_000)
+    }) => {
       const page = comfyPage.page
       const autoShownKey =
         'Comfy.AgentConsent.AutoShown.test-user-e2e.ws-personal'
