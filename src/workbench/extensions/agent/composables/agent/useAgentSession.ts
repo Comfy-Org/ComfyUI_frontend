@@ -351,7 +351,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
       hydrations.splice(hydrations.indexOf(armed), 1)
     const buffer: HydrationBuffer = {
       threadId,
-      events: superseded.flatMap((armed) => armed.events)
+      // Moved, not copied: a superseded hydrate still drains from its own
+      // `finally`, and a frame left behind there is replayed a second time
+      // into whatever is active by then.
+      events: superseded.flatMap((armed) => armed.events.splice(0))
     }
     hydrations.push(buffer)
     return buffer

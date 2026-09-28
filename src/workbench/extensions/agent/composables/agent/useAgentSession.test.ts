@@ -602,6 +602,52 @@ describe('useAgentSession (v1 composition root)', () => {
     }
   )
 
+  // (b4e) cannot see a frame left behind on the superseded buffer: whichever
+  // order it resolves in, the stray replay is either re-buffered and then
+  // dropped past the done, or arrives with nothing to land on. Here the stash
+  // is resumed between the two drains, so the turn is live and accepts it.
+  it('(b4g) does not replay a frame the superseding hydrate already took', async () => {
+    const deliver: ((history: AgentMessages) => void)[] = []
+    const history: AgentMessages = [
+      historyRow(1, 'user', 'turn-1', 'go'),
+      {
+        ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+        content: {},
+        status: 'streaming'
+      }
+    ]
+    const rest = fakeRest({
+      getMessages: vi.fn(
+        () =>
+          new Promise<AgentMessages>((resolve) => {
+            deliver.push(resolve)
+          })
+      )
+    })
+
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+    await session.sendMessage('go')
+
+    const superseded = session.loadThread('th-1')
+    emit(delta('msg-1', 'half '))
+    const reselect = session.loadThread('th-1')
+
+    deliver[1](history)
+    await reselect
+    deliver[0](history)
+    await superseded
+
+    const assistant = session.entries.value.at(-1)
+    assert(assistant !== undefined && 'parts' in assistant)
+    expect(
+      assistant.parts
+        .flatMap((part) => (part.type === 'text' ? [part.text] : []))
+        .join('')
+    ).toBe('half ')
+  })
+
   it('does not persist a send that resolves after the session stops', async () => {
     let resolvePost: (value: AgentTurnAccepted) => void = () => {}
     const postMessage = vi.fn(
