@@ -995,8 +995,21 @@ export function useAgentSession(deps: AgentSessionDeps) {
       workflow?.activeTab?.(event.data)
   }
 
+  /**
+   * A frame that reaches the active turn rather than a buffer proves this
+   * session has a stream for it, which is exactly what a snapshot-restored
+   * turn was missing. From here its liveness no longer rests on the snapshot,
+   * so a stop failure must leave it alone and let the stream settle it.
+   */
+  function observeLiveDelivery(event: AgentWsEvent): void {
+    const active = conversationStore.activeTurnId
+    if (active !== null && event.data.message_id === active)
+      snapshotTurns.delete(active)
+  }
+
   function handleAgentEvent(event: AgentWsEvent): void {
     if (heldForHydration(event)) return
+    observeLiveDelivery(event)
     if (event.type === 'agent_ask_resolved') {
       setAskAnswering(event.data.ask_id, false)
       onAskResolved?.(event.data.ask_id)

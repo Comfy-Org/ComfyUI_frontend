@@ -1107,14 +1107,15 @@ async function onAnswerAsk(
 
 void refreshCloudWorkflowIds()
 onBeforeUnmount(() => {
-  ++activeTabGeneration
   mintPortWiring.detach()
   exitNodeSelectionMode()
   stop()
-  // Again, because `stop()` drains any frames a hydrate was still holding and
-  // an `agent_active_tab` among them runs `enqueueActiveTab`, which mints a
-  // generation of its own -- one the bump above cannot have invalidated. Left
-  // at that, a tab is created and opened on the canvas after the panel is gone.
+  // After `stop()`, not before it: the drain it performs replays any frames a
+  // hydrate was holding, and an `agent_active_tab` among them runs
+  // `enqueueActiveTab`, which mints a generation an earlier bump could not
+  // have invalidated. Everything from the start of this hook is synchronous
+  // and `enqueueActiveTab` defers through `activeTabChain`, so nothing queued
+  // can slip past this single invalidation wherever it was queued from.
   ++activeTabGeneration
   tabActivity.setEditing(null)
   tabActivity.setCreating(false)

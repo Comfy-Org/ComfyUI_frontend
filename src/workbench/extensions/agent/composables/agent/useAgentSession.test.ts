@@ -1357,6 +1357,52 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(reopened.notices.value).toHaveLength(0)
   })
 
+  // A snapshot only says how the turn was restored, not that it stayed
+  // stream-less. One frame delivered to it proves this session has a stream
+  // after all, and from then on a stop failure has to leave it alone -- the
+  // stop is awaited while frames keep arriving, so the frame really can land
+  // first. Both statuses, because both retire a snapshot turn.
+  it.for([404, 409] as const)(
+    'keeps a restored turn a live frame reached when a stop fails with %i',
+    async (status) => {
+      const cancelMessage = vi
+        .fn()
+        .mockRejectedValue(new AgentApiError('no turn', status, undefined))
+      const rest = fakeRest({
+        cancelMessage,
+        getMessages: vi.fn(
+          async (): Promise<AgentMessages> => [
+            historyRow(1, 'user', 'turn-1', 'go'),
+            {
+              ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+              content: {},
+              status: 'streaming'
+            }
+          ]
+        )
+      })
+      const conversation = useAgentConversationStore()
+
+      const minimized = useAgentSession({ rest, events: fakeEvents().source })
+      minimized.start()
+      await minimized.sendMessage('go')
+      minimized.stop()
+      await Promise.resolve()
+
+      const { source, emit } = fakeEvents()
+      const reopened = useAgentSession({ rest, events: source })
+      reopened.start()
+      await vi.waitFor(() => expect(reopened.isStreaming.value).toBe(true))
+
+      const stopping = reopened.stopTurn('button')
+      emit(delta('msg-1', 'still here'))
+      await stopping
+
+      expect(conversation.activeTurnId).toBe('msg-1')
+      expect(reopened.isStreaming.value).toBe(true)
+    }
+  )
+
   // The rejection can outlive the turn it was issued for: the stop is awaited
   // while frames keep arriving, so by the time a 404 lands the user may have
   // sent again. Settling whatever is active then would abandon a turn that is
