@@ -6,6 +6,8 @@ import {
 import * as Y from 'yjs'
 
 import type {
+  GraphMutationBatch,
+  GraphMutationBatchResult,
   GraphMutations,
   SemanticLinkPayload,
   SemanticNodePayload
@@ -28,6 +30,17 @@ import type { DocUpdate } from './docFrameClient'
 import type { FollowerDoc } from './followerDoc'
 
 type NodeRootAction = 'add' | 'update' | 'delete'
+
+/**
+ * A rejected batch (no scope available) arms `reconcileNextFrame`, but that
+ * only fires on the next *incoming* frame, which may never arrive (e.g. the
+ * user never sends another agent message). This timed retry loop gives the
+ * scope race a fast, self-driven chance to resolve instead of leaving the
+ * stale doc/live mismatch on screen until some unrelated later frame lands.
+ */
+const RECONCILE_FAST_RETRY_LIMIT = 20
+const RECONCILE_RETRY_INTERVAL_MS = 200
+const RECONCILE_SLOW_RETRY_INTERVAL_MS = 2_000
 
 /**
  * Node-map keys whose by-key edits trigger a field resync. Structural keys
@@ -351,6 +364,20 @@ function frameContext(update: DocUpdate): RemoteMutationContext {
   }
 }
 
+function mergeRecoveryFrame(first: DocUpdate, latest: DocUpdate): DocUpdate {
+  const opIds = [...new Set([...(first.opIds ?? []), ...(latest.opIds ?? [])])]
+  return {
+    ...latest,
+    actor:
+      first.actor === latest.actor
+        ? first.actor
+        : first.actor || latest.actor
+          ? 'agent-reconcile'
+          : undefined,
+    ...(opIds.length > 0 ? { opIds } : { opIds: undefined })
+  }
+}
+
 interface TargetSession {
   readonly workflowId: string
   readonly follower: FollowerDoc
@@ -370,6 +397,38 @@ interface TargetSession {
   onLinksChanged: (event: Y.YMapEvent<unknown>) => void
   reconcileNextFrame: boolean
   applying: boolean
+  batchRecovery: BatchRecoveryState
+  liveSweepRecovery: LiveSweepRecoveryState
+}
+
+type BatchRecoveryState =
+  | { kind: 'idle' }
+  | {
+      kind: 'scheduled'
+      timer: ReturnType<typeof setTimeout>
+      attempt: number
+      frame: DocUpdate
+    }
+  | { kind: 'applying'; attempt: number; frame: DocUpdate }
+
+type LiveSweepRecoveryState =
+  | { kind: 'idle' }
+  | { kind: 'running' }
+  | { kind: 'scheduled'; timer: ReturnType<typeof setTimeout> }
+
+type BatchChanges = {
+  batch: GraphMutationBatch
+  session: TargetSession
+  doc: Y.Doc
+  definitions: () => SubgraphDefinitionIndex
+  reconcile: boolean
+  removedLinkIds: number[]
+  nodeActions: Map<string, NodeRootAction>
+  replacedWidgetMaps: Set<string>
+  replacedOpaqueWidgets: Set<string>
+  changedNodeFields: Set<string>
+  changedWidgets: Map<string, Set<string>>
+  changedLinks: Map<string, SemanticLinkPayload | null>
 }
 
 /**
@@ -383,7 +442,10 @@ export class EcsFollowerAdapter {
 
   constructor(
     private readonly mutations: MutationsForTarget,
-    private readonly intent: LocalIntent = NO_LOCAL_INTENT
+    private readonly intent: LocalIntent = NO_LOCAL_INTENT,
+    private readonly onReconcileRetryCommitted: (
+      workflowId: string
+    ) => void = () => undefined
   ) {}
 
   bind(workflowId: string, follower: FollowerDoc): void {
@@ -397,6 +459,8 @@ export class EcsFollowerAdapter {
   unbind(workflowId: string): void {
     const session = this.targets.get(workflowId)
     if (!session) return
+    this.clearReconcileRetry(session)
+    this.clearLiveSweepRetry(session)
     session.nodes.unobserveDeep(session.onNodesChanged)
     session.links.unobserve(session.onLinksChanged)
     this.targets.delete(workflowId)
@@ -429,12 +493,22 @@ export class EcsFollowerAdapter {
     const session = this.targets.get(workflowId)
     if (!session) return false
     this.discardSessionPending(session)
+    this.clearReconcileRetry(session)
+    this.clearLiveSweepRetry(session)
+    session.reconcileNextFrame = false
     return session.mutations.clearSemanticGraph(context)
   }
 
   discardPending(workflowId: string): void {
     const session = this.targets.get(workflowId)
-    if (session) this.discardSessionPending(session)
+    if (!session) return
+    this.discardSessionPending(session)
+    // Same reasoning as `clearForReset`: a schema-rejected frame is a
+    // fail-closed gate, and a stale retry firing later would silently
+    // re-apply the very state that gate just refused.
+    this.clearReconcileRetry(session)
+    this.clearLiveSweepRetry(session)
+    session.reconcileNextFrame = false
   }
 
   destroy(): void {
@@ -465,6 +539,8 @@ export class EcsFollowerAdapter {
       frameQueue: [],
       reconcileNextFrame: true,
       applying: false,
+      batchRecovery: { kind: 'idle' },
+      liveSweepRecovery: { kind: 'idle' },
       onNodesChanged: (_events): void => undefined,
       onLinksChanged: (_event): void => undefined
     }
@@ -531,158 +607,344 @@ export class EcsFollowerAdapter {
       const linkId = resolveLinkMapKey(id)
       return linkId === null ? [] : [linkId]
     })
-    const committed = session.mutations.batch(frameContext(update), (batch) => {
-      // A SubgraphNode host that is already live must never be rebuilt from
-      // its doc entry: `reconcileNode` (and delete + `addNode`) replaces the
-      // host's input list in place, which drops the `widgetId` /
-      // `_subgraphSlot` bindings its promoted widgets hang off, leaving the
-      // host with no widgets at all. Resync the host's scalar fields (title,
-      // mode, flags, properties, colors) and promoted values only;
-      // `readSemanticNode` has already keyed the values from the definition.
-      const isHost = (payload: SemanticNodePayload) =>
-        definitions().has(payload.type)
-      const upsertNode = (
-        payload: SemanticNodePayload,
-        mode: 'add' | 'reconcile'
-      ) => {
-        if (mode === 'add') batch.addNode(payload)
-        else if (isHost(payload)) batch.reconcileNodeFields(payload)
-        else batch.reconcileNode(payload)
-      }
-
-      if (reconcile) {
-        const pendingDeletes = this.intent.pendingDeletes(session.workflowId)
-        const nodes = [...session.nodes.keys()]
-          .filter((id) => !pendingDeletes.has(id))
-          .flatMap((id) => {
-            const payload = readSemanticNode(
-              doc,
-              id,
-              definitions,
-              session.reportedErrors
-            )
-            return payload ? [payload] : []
-          })
-        const links = excludeIncompatibleLinks(
-          [...session.links.keys()].flatMap((id) => {
-            const link = readSemanticLink(
-              doc,
-              id,
-              definitions(),
-              session.reportedErrors
-            )
-            return link &&
-              !pendingDeletes.has(String(link.originNodeId)) &&
-              !pendingDeletes.has(String(link.targetNodeId))
-              ? [link]
-              : []
-          }),
-          session.reportedErrors
-        )
-        batch.removeMissing(
-          nodes.map(({ id }) => toNodeId(id)),
-          links.map(({ id }) => id)
-        )
-        for (const payload of nodes) upsertNode(payload, 'reconcile')
-        for (const link of links) batch.connect(link)
-        return
-      }
-
-      batch.removeLinks(removedLinkIds)
-      const payloads = new Map(
-        [...nodeActions]
-          .filter(([, action]) => action !== 'delete')
-          .map(
-            ([id]) =>
-              [
-                id,
-                readSemanticNode(doc, id, definitions, session.reportedErrors)
-              ] as const
-          )
-      )
-      for (const [id, action] of nodeActions) {
-        if (action === 'delete') {
-          batch.deleteNode(toNodeId(id))
-          continue
-        }
-        const payload = payloads.get(id)
-        if (action === 'update' && !(payload && isHost(payload)))
-          batch.deleteNode(toNodeId(id))
-      }
-      for (const [id, payload] of payloads) {
-        if (!payload) continue
-        upsertNode(payload, nodeActions.get(id) === 'add' ? 'add' : 'reconcile')
-      }
-      // A node whose widget storage was replaced wholesale, either the named
-      // `widgets` map or the positional `__widgets_opaque` array (cmp writes
-      // both in one transaction when a host's storage flips to opaque, and
-      // deletes the opaque array when it flips back), is re-read in full.
-      for (const id of new Set([
-        ...replacedWidgetMaps,
-        ...replacedOpaqueWidgets
-      ])) {
-        if (nodeActions.has(id)) continue
-        const payload = readSemanticNode(
+    const result = session.mutations.batchResult(
+      frameContext(update),
+      (batch) =>
+        this.applyBatchChanges({
+          batch,
+          session,
           doc,
-          id,
           definitions,
-          session.reportedErrors
-        )
-        if (payload) upsertNode(payload, 'reconcile')
-      }
-      // A node whose scalar fields were edited by key (title, mode, flags,
-      // properties, colors) is re-read so a live host resyncs those fields
-      // without rebuilding its promoted widgets or slots.
-      for (const id of changedNodeFields) {
-        if (
-          nodeActions.has(id) ||
-          replacedWidgetMaps.has(id) ||
-          replacedOpaqueWidgets.has(id)
-        )
-          continue
-        const payload = readSemanticNode(
-          doc,
-          id,
-          definitions,
-          session.reportedErrors
-        )
-        if (payload) upsertNode(payload, 'reconcile')
-      }
-      for (const [id, names] of changedWidgets) {
-        if (nodeActions.has(id) || replacedWidgetMaps.has(id)) continue
-        const node = session.nodes.get(id)
-        const widgets = node?.get('widgets')
-        if (!(widgets instanceof Y.Map)) continue
-        if ([...names].some((name) => !widgets.has(name))) {
-          const payload = readSemanticNode(
-            doc,
-            id,
-            definitions,
-            session.reportedErrors
-          )
-          if (payload) upsertNode(payload, 'reconcile')
-          continue
-        }
-        for (const name of names) {
-          batch.setWidget(toNodeId(id), name, plain(widgets.get(name)))
-        }
-      }
-      const incomingLinks = excludeIncompatibleLinks(
-        [...changedLinks.values()].filter(
-          (link): link is SemanticLinkPayload => link !== null
-        ),
-        session.reportedErrors
-      )
-      for (const link of incomingLinks) batch.connect(link)
-    })
+          reconcile,
+          removedLinkIds,
+          nodeActions,
+          replacedWidgetMaps,
+          replacedOpaqueWidgets,
+          changedNodeFields,
+          changedWidgets,
+          changedLinks
+        })
+    )
 
     // The pending sets were snapshotted and cleared before `batch` ran, so a
     // rejected batch (no scope, or validation failure) has already lost the
     // incremental record of this frame. Arm a full reconcile for the next
     // frame so the dropped edits are re-read from the doc instead of falling
     // through to incremental handling that never revisits them.
+    const committed = result.kind === 'committed'
     session.reconcileNextFrame = !committed
+    this.handleReconcileOutcome(session, update, result)
     return committed
+  }
+
+  private applyBatchChanges(args: BatchChanges): void {
+    if (args.reconcile) this.applyFullReconcile(args)
+    else this.applyIncrementalChanges(args)
+  }
+
+  private applyFullReconcile({
+    batch,
+    session,
+    doc,
+    definitions
+  }: Pick<BatchChanges, 'batch' | 'session' | 'doc' | 'definitions'>): void {
+    const pendingDeletes = this.intent.pendingDeletes(session.workflowId)
+    const nodes = [...session.nodes.keys()]
+      .filter((id) => !pendingDeletes.has(id))
+      .flatMap((id) => {
+        const payload = readSemanticNode(
+          doc,
+          id,
+          definitions,
+          session.reportedErrors
+        )
+        return payload ? [payload] : []
+      })
+    const links = excludeIncompatibleLinks(
+      [...session.links.keys()].flatMap((id) => {
+        const link = readSemanticLink(
+          doc,
+          id,
+          definitions(),
+          session.reportedErrors
+        )
+        return link &&
+          !pendingDeletes.has(String(link.originNodeId)) &&
+          !pendingDeletes.has(String(link.targetNodeId))
+          ? [link]
+          : []
+      }),
+      session.reportedErrors
+    )
+    batch.removeMissing(
+      nodes.map(({ id }) => toNodeId(id)),
+      links.map(({ id }) => id)
+    )
+    for (const payload of nodes)
+      this.upsertNode(batch, payload, definitions, 'reconcile')
+    for (const link of links) batch.connect(link)
+  }
+
+  private applyIncrementalChanges(args: BatchChanges): void {
+    const { batch, session, doc, definitions, nodeActions } = args
+    batch.removeLinks(args.removedLinkIds)
+    const payloads = new Map(
+      [...nodeActions]
+        .filter(([, action]) => action !== 'delete')
+        .map(
+          ([id]) =>
+            [
+              id,
+              readSemanticNode(doc, id, definitions, session.reportedErrors)
+            ] as const
+        )
+    )
+    this.applyNodeActions(batch, definitions, nodeActions, payloads)
+    this.upsertChangedNodes(batch, definitions, nodeActions, payloads)
+    this.applyChangedNodeValues(args)
+    const incomingLinks = excludeIncompatibleLinks(
+      [...args.changedLinks.values()].filter(
+        (link): link is SemanticLinkPayload => link !== null
+      ),
+      session.reportedErrors
+    )
+    for (const link of incomingLinks) batch.connect(link)
+  }
+
+  private applyNodeActions(
+    batch: GraphMutationBatch,
+    definitions: () => SubgraphDefinitionIndex,
+    nodeActions: Map<string, NodeRootAction>,
+    payloads: Map<string, SemanticNodePayload | null>
+  ): void {
+    for (const [id, action] of nodeActions) {
+      if (action === 'delete') {
+        batch.deleteNode(toNodeId(id))
+        continue
+      }
+      const payload = payloads.get(id)
+      if (action === 'update' && !(payload && definitions().has(payload.type)))
+        batch.deleteNode(toNodeId(id))
+    }
+  }
+
+  private upsertChangedNodes(
+    batch: GraphMutationBatch,
+    definitions: () => SubgraphDefinitionIndex,
+    nodeActions: Map<string, NodeRootAction>,
+    payloads: Map<string, SemanticNodePayload | null>
+  ): void {
+    for (const [id, payload] of payloads) {
+      if (payload)
+        this.upsertNode(
+          batch,
+          payload,
+          definitions,
+          nodeActions.get(id) === 'add' ? 'add' : 'reconcile'
+        )
+    }
+  }
+
+  private applyChangedNodeValues(args: BatchChanges): void {
+    const {
+      batch,
+      session,
+      doc,
+      definitions,
+      nodeActions,
+      replacedWidgetMaps,
+      replacedOpaqueWidgets
+    } = args
+    for (const id of new Set([
+      ...replacedWidgetMaps,
+      ...replacedOpaqueWidgets
+    ])) {
+      if (nodeActions.has(id)) continue
+      const payload = readSemanticNode(
+        doc,
+        id,
+        definitions,
+        session.reportedErrors
+      )
+      if (payload) this.upsertNode(batch, payload, definitions, 'reconcile')
+    }
+    for (const id of args.changedNodeFields) {
+      if (
+        nodeActions.has(id) ||
+        replacedWidgetMaps.has(id) ||
+        replacedOpaqueWidgets.has(id)
+      )
+        continue
+      const payload = readSemanticNode(
+        doc,
+        id,
+        definitions,
+        session.reportedErrors
+      )
+      if (payload) this.upsertNode(batch, payload, definitions, 'reconcile')
+    }
+    this.applyChangedWidgets(args)
+  }
+
+  private applyChangedWidgets(args: BatchChanges): void {
+    const {
+      batch,
+      session,
+      doc,
+      definitions,
+      nodeActions,
+      replacedWidgetMaps
+    } = args
+    for (const [id, names] of args.changedWidgets) {
+      if (nodeActions.has(id) || replacedWidgetMaps.has(id)) continue
+      const widgets = session.nodes.get(id)?.get('widgets')
+      if (!(widgets instanceof Y.Map)) continue
+      if ([...names].some((name) => !widgets.has(name))) {
+        const payload = readSemanticNode(
+          doc,
+          id,
+          definitions,
+          session.reportedErrors
+        )
+        if (payload) this.upsertNode(batch, payload, definitions, 'reconcile')
+        continue
+      }
+      for (const name of names)
+        batch.setWidget(toNodeId(id), name, plain(widgets.get(name)))
+    }
+  }
+
+  private upsertNode(
+    batch: GraphMutationBatch,
+    payload: SemanticNodePayload,
+    definitions: () => SubgraphDefinitionIndex,
+    mode: 'add' | 'reconcile'
+  ): void {
+    if (mode === 'add') batch.addNode(payload)
+    else if (definitions().has(payload.type)) batch.reconcileNodeFields(payload)
+    else batch.reconcileNode(payload)
+  }
+
+  private handleReconcileOutcome(
+    session: TargetSession,
+    update: DocUpdate,
+    result: GraphMutationBatchResult
+  ): void {
+    if (result.kind === 'committed') {
+      this.clearReconcileRetry(session)
+      return
+    }
+    if (result.reason === 'validation') {
+      if (session.batchRecovery.kind === 'applying')
+        session.batchRecovery = { kind: 'idle' }
+      return
+    }
+
+    if (session.batchRecovery.kind === 'scheduled') {
+      session.batchRecovery.frame = mergeRecoveryFrame(
+        session.batchRecovery.frame,
+        update
+      )
+      return
+    }
+    if (session.batchRecovery.kind === 'applying') {
+      this.scheduleReconcileRetry(
+        session,
+        session.batchRecovery.frame,
+        session.batchRecovery.attempt
+      )
+      return
+    }
+    this.scheduleReconcileRetry(session, update, 0)
+  }
+
+  private scheduleReconcileRetry(
+    session: TargetSession,
+    frame: DocUpdate,
+    previousAttempts: number
+  ): void {
+    const attempt = previousAttempts + 1
+    const delay =
+      attempt <= RECONCILE_FAST_RETRY_LIMIT
+        ? RECONCILE_RETRY_INTERVAL_MS
+        : RECONCILE_SLOW_RETRY_INTERVAL_MS
+    const scheduled: Extract<BatchRecoveryState, { kind: 'scheduled' }> = {
+      kind: 'scheduled',
+      timer: setTimeout(() => {
+        if (this.targets.get(session.workflowId) !== session) return
+        if (session.batchRecovery !== scheduled) return
+        if (!session.reconcileNextFrame) return
+        const applying = {
+          kind: 'applying',
+          attempt: scheduled.attempt,
+          frame: scheduled.frame
+        } satisfies BatchRecoveryState
+        session.batchRecovery = applying
+        let committed: boolean
+        try {
+          committed = this.applyFrame(applying.frame)
+        } catch (error) {
+          reportError(
+            error instanceof Error ? error : new Error(String(error)),
+            {
+              errorType: 'error_agent_reconcile_retry_threw',
+              context: { workflowId: session.workflowId }
+            }
+          )
+          if (session.batchRecovery === applying)
+            this.scheduleReconcileRetry(
+              session,
+              applying.frame,
+              applying.attempt
+            )
+          return
+        }
+        if (committed) this.runLiveGraphSweep(session)
+      }, delay),
+      attempt,
+      frame
+    }
+    session.batchRecovery = scheduled
+  }
+
+  private runLiveGraphSweep(session: TargetSession): void {
+    if (session.liveSweepRecovery.kind === 'scheduled')
+      clearTimeout(session.liveSweepRecovery.timer)
+    const running = { kind: 'running' } satisfies LiveSweepRecoveryState
+    session.liveSweepRecovery = running
+    try {
+      this.onReconcileRetryCommitted(session.workflowId)
+      if (session.liveSweepRecovery === running)
+        session.liveSweepRecovery = { kind: 'idle' }
+    } catch (error) {
+      reportError(error instanceof Error ? error : new Error(String(error)), {
+        errorType: 'error_agent_reconcile_live_sweep_threw',
+        context: { workflowId: session.workflowId }
+      })
+      if (session.liveSweepRecovery !== running) return
+      const scheduled: Extract<LiveSweepRecoveryState, { kind: 'scheduled' }> =
+        {
+          kind: 'scheduled',
+          timer: setTimeout(() => {
+            if (this.targets.get(session.workflowId) !== session) return
+            if (session.liveSweepRecovery !== scheduled) return
+            this.runLiveGraphSweep(session)
+          }, RECONCILE_SLOW_RETRY_INTERVAL_MS)
+        }
+      session.liveSweepRecovery = scheduled
+    }
+  }
+
+  private clearReconcileRetry(session: TargetSession): void {
+    if (session.batchRecovery.kind === 'scheduled')
+      clearTimeout(session.batchRecovery.timer)
+    session.batchRecovery = { kind: 'idle' }
+  }
+
+  private clearLiveSweepRetry(session: TargetSession): void {
+    if (session.liveSweepRecovery.kind === 'scheduled')
+      clearTimeout(session.liveSweepRecovery.timer)
+    session.liveSweepRecovery = { kind: 'idle' }
   }
 
   private discardSessionPending(session: TargetSession): void {

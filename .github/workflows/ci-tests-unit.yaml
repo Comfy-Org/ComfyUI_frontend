@@ -50,7 +50,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: unit-shard-${{ matrix.shard }}
-          path: .vitest-reports/*.json
+          path: .vitest/blob/*.json
           include-hidden-files: true
           retention-days: 1
           if-no-files-found: error
@@ -68,11 +68,11 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           pattern: unit-shard-*
-          path: .vitest-reports
+          path: .vitest/blob
           merge-multiple: true
 
       - name: Merge reports and check coverage thresholds
-        run: pnpm test:coverage --merge-reports=.vitest-reports
+        run: pnpm test:coverage --merge-reports=.vitest/blob
 
       - name: Run package unit tests with coverage
         run: |
