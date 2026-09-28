@@ -316,7 +316,6 @@ describe('LGraphNode', () => {
       useWidgetValueStore().registerWidget(
         widgetId('graph-test', mockNodeData.id, 'prompt'),
         { name: 'prompt', type: 'customtext', value: '', options: {} },
-        {},
         {
           surfaces: { canvas: 'shown', vueNode: tier, panel: tier },
           suppression: { byExtension: false, byConnection: false }
