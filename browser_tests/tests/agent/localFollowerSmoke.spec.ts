@@ -10,7 +10,7 @@ import {
 } from '@e2e/fixtures/localFollowerHarnessFixture'
 
 const COMFY_URL = 'http://127.0.0.1:8188'
-const FOLLOWER_URL = 'http://127.0.0.1:5175'
+const FOLLOWER_URL = 'http://127.0.0.1:6255'
 const INJECTOR_URL = 'http://127.0.0.1:8199'
 const WORKFLOW_ID = 'wf-e2e-local'
 const NODE_ID = 970001
@@ -22,6 +22,10 @@ test.describe('Local-product follower smoke', { tag: '@local-agent' }, () => {
     const { page } = comfyPage
     const token = process.env.HARNESS_INJECT_TOKEN
     expect(token, 'HARNESS_INJECT_TOKEN must match the injector').toBeTruthy()
+    expect(
+      comfyPage.url,
+      'PLAYWRIGHT_TEST_URL must target the governed follower on :6255'
+    ).toBe(FOLLOWER_URL)
 
     const [comfy, follower, health] = await Promise.all([
       fetch(`${COMFY_URL}/system_stats`),
@@ -29,7 +33,7 @@ test.describe('Local-product follower smoke', { tag: '@local-agent' }, () => {
       fetch(`${INJECTOR_URL}/__health`)
     ])
     expect(comfy.ok, 'ComfyUI must answer on :8188').toBe(true)
-    expect(follower.ok, 'follower Vite must answer on :5175').toBe(true)
+    expect(follower.ok, 'follower Vite must answer on :6255').toBe(true)
     expect(health.ok, 'injector must answer on :8199').toBe(true)
     const identity = localFollowerHealthSchema.parse(await health.json())
     expect(identity.harness).toBe('local-follower-e2e-injector')
