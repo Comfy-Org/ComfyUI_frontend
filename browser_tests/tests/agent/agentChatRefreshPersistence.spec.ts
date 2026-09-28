@@ -3,6 +3,7 @@ import { expect } from '@playwright/test'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import { promptHistoryTest as test } from '@e2e/fixtures/agentPromptHistoryFixture'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 // PM-679: the transcript must survive a browser refresh with its content and
 // order intact. `promptHistory` mocks `/api/agent/threads*` statefully (POST
@@ -17,7 +18,7 @@ test.describe.configure({ timeout: 120_000 })
 test.use({ connectWebSocketToServer: false })
 
 test(
-  'keeps the transcript and its order after a browser refresh',
+  'restores the transcript at its latest message after a browser refresh',
   { tag: ['@cloud', '@ui'] },
   async ({ page, promptHistory, workflowSelection }) => {
     await expect(
@@ -50,7 +51,7 @@ test(
     workflowSelection.finishSave(true)
     const editor = panel.getByRole('textbox')
 
-    const firstMessage = 'What does this workflow do?'
+    const firstMessage = 'Earlier conversation context. '.repeat(80)
     await editor.fill(firstMessage)
     await panel
       .getByRole('button', { name: enMessages.agent.send, exact: true })
@@ -118,5 +119,21 @@ test(
     await expect(
       reopenedPanel.getByTestId('user-message-bubble').nth(1)
     ).toHaveText(secondMessage)
+    await expect(
+      reopenedPanel.getByTestId('user-message-bubble').nth(1)
+    ).toBeInViewport()
+    const scrollContainer = reopenedPanel.getByTestId(
+      TestIds.agent.conversationScroll
+    )
+    await expect
+      .poll(() =>
+        scrollContainer.evaluate((element) => ({
+          overflows: element.scrollHeight > element.clientHeight,
+          distanceFromBottom: Math.round(
+            element.scrollHeight - element.scrollTop - element.clientHeight
+          )
+        }))
+      )
+      .toEqual({ overflows: true, distanceFromBottom: 0 })
   }
 )
