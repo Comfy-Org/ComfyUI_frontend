@@ -1,5 +1,5 @@
 import { isAuthenticatedConfigLoaded } from '@/platform/remoteConfig/remoteConfig'
-import { computed, onScopeDispose, ref, shallowRef, toValue, watch } from 'vue'
+import { computed, ref, shallowRef, toValue, watch } from 'vue'
 import { createSharedComposable } from '@vueuse/core'
 
 import {
@@ -15,7 +15,6 @@ import type {
   SubscribeOptions
 } from '@/platform/workspace/api/workspaceApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { api } from '@/scripts/api'
 
 import type {
   BalanceInfo,
@@ -279,19 +278,6 @@ function useBillingContextInternal(): BillingContext {
   async function fetchStatus(): Promise<void> {
     return activeContext.value.fetchStatus()
   }
-
-  // The push carries the transition immediately; refresh the complete status
-  // so every billing consumer observes one authoritative snapshot (including
-  // the standing Agent exhaustion card and recovery).
-  const handleAgentBillingStatus = () => {
-    void fetchStatus().catch((err) => {
-      console.error('Failed to refresh billing after Agent funds changed:', err)
-    })
-  }
-  api.addEventListener('agent_billing_status', handleAgentBillingStatus)
-  onScopeDispose(() => {
-    api.removeEventListener('agent_billing_status', handleAgentBillingStatus)
-  })
 
   async function fetchBalance(): Promise<void> {
     return activeContext.value.fetchBalance()
