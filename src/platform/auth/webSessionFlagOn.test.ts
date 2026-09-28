@@ -529,6 +529,15 @@ describe('cloud API requests on the shared web session', () => {
     ])
   })
 
+  it('reports a request sent on the session as authenticated', async () => {
+    await bootOnSession()
+    const onAuthHeader = vi.fn()
+
+    await api.fetchApi('/queue', { onAuthHeader })
+
+    expect(onAuthHeader).toHaveBeenCalledExactlyOnceWith(true)
+  })
+
   it('refuses a switch into a workspace the session cannot enter', async () => {
     await bootOnSession()
     const workspaceAuth = useWorkspaceAuthStore()
