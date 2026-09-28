@@ -1,15 +1,11 @@
 import type { WebSocketRoute } from '@playwright/test'
 import { expect, mergeTests } from '@playwright/test'
-import type { BillingStatusResponse } from '@comfyorg/ingest-types'
 
+import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
 import { webSocketFixture } from '@e2e/fixtures/ws'
-import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type {
-  AgentTurnAccepted,
-  AgentWsEvent
-} from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import {
   zAgentAdmissionError,
   zAgentWsEvent
@@ -255,6 +251,8 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
   })
 
   test('keeps the standing paywall in sync across turn completion and panel close', async ({
+    acceptedTurns,
+    agentBilling,
     agentPanel,
     comfyPage,
     getWebSocket,
@@ -263,115 +261,79 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     test.setTimeout(30_000)
     const page = comfyPage.page
     const paywall = page.getByTestId('agent-credits-exhausted-paywall')
-    const fundedStatus = {
-      billing_rail: 'stripe',
-      billing_status: 'paid',
-      has_funds: true,
-      is_active: true,
-      max_seats: 1,
-      occupied_seats: 1,
-      scoped_effective_has_funds: { agent: true },
-      scheduled_change: null,
-      subscription_duration: 'MONTHLY',
-      subscription_status: 'active',
-      subscription_tier: 'STANDARD',
-      team_credit_stop: null
-    } satisfies BillingStatusResponse
-    let billingStatus: BillingStatusResponse = fundedStatus
-    let releaseFundedRefresh: (() => void) | undefined
-    let resolveFundedRefresh: (() => void) | undefined
-    const fundedRefreshSettled = new Promise<void>((resolve) => {
-      resolveFundedRefresh = resolve
-    })
-    let holdFundedRefresh = false
-
-    await page.route('**/api/billing/status', async (route) => {
-      const response = billingStatus
-      if (holdFundedRefresh && response.scoped_effective_has_funds?.agent) {
-        await new Promise<void>((resolve) => {
-          releaseFundedRefresh = resolve
-        })
-      }
-      await route.fulfill(jsonRoute(response))
-      if (response.scoped_effective_has_funds?.agent) {
-        resolveFundedRefresh?.()
-      }
-    })
-    await page.reload()
-
-    await agentPanel.open()
-    await agentPanel.selectWorkflow()
     const ws = await getWebSocket()
 
-    billingStatus = {
-      ...fundedStatus,
-      has_funds: false,
-      scoped_effective_has_funds: { agent: false }
-    }
-    await agentPanel.sendMessage('Complete this workflow without a refusal')
-    await expect.poll(() => postedMessages.length).toBe(1)
-    pushEvent(ws, THINKING_EVENT)
-    await expect(
-      agentPanel.root.getByRole('button', { name: 'Stop' })
-    ).toBeVisible()
-    pushEvent(ws, MESSAGE_DONE_EVENT)
-    await expect(paywall).toBeVisible()
-
-    billingStatus = fundedStatus
-    holdFundedRefresh = true
-    await paywall.getByRole('button', { name: 'Add Credits' }).click()
-    const topUpDialog = page.getByRole('dialog')
-    await expect(topUpDialog).toBeVisible()
-    await topUpDialog.getByRole('button', { name: enMessages.g.close }).click()
-    await agentPanel.root
-      .getByRole('button', { name: enMessages.g.close })
-      .click()
-    await expect(agentPanel.root).toHaveCount(0)
-    releaseFundedRefresh?.()
-    await fundedRefreshSettled
-    holdFundedRefresh = false
-
-    billingStatus = {
-      ...fundedStatus,
-      has_funds: false,
-      scoped_effective_has_funds: { agent: false }
-    }
-    const secondTurn: AgentTurnAccepted = {
-      message_id: '31e8d859-8e4b-4585-a7fd-6be159d09a76',
-      thread_id: 'd4c016c4-3b8c-44cf-97de-1ae27e43e718',
-      workflow_id: 'a81718a4-02ae-41e6-ae85-c33b7bb880f6'
-    }
-    let secondTurnPosts = 0
-    await page.route('**/api/agent/threads/*/messages', (route) => {
-      if (route.request().method() !== 'POST') return route.fallback()
-      secondTurnPosts += 1
-      return route.fulfill(jsonRoute(secondTurn))
+    await test.step('show the standing paywall after an accepted turn exhausts credits', async () => {
+      await agentPanel.open()
+      await agentPanel.selectWorkflow()
+      agentBilling.setAgentFunds(false)
+      await agentPanel.sendMessage('Complete this workflow without a refusal')
+      await expect.poll(() => postedMessages.length).toBe(1)
+      pushEvent(ws, THINKING_EVENT)
+      await expect(
+        agentPanel.root.getByRole('button', { name: 'Stop' })
+      ).toBeVisible()
+      pushEvent(ws, MESSAGE_DONE_EVENT)
+      await expect(paywall).toBeVisible()
     })
-    await agentPanel.open()
-    await agentPanel.sendMessage('Complete another workflow without a refusal')
-    await expect.poll(() => secondTurnPosts).toBe(1)
-    pushEvent(
-      ws,
-      zAgentWsEvent.parse({
-        ...THINKING_EVENT,
-        data: { ...THINKING_EVENT.data, message_id: secondTurn.message_id }
-      })
-    )
-    await expect(
-      agentPanel.root.getByRole('button', { name: 'Stop' })
-    ).toBeVisible()
-    pushEvent(
-      ws,
-      zAgentWsEvent.parse({
-        ...MESSAGE_DONE_EVENT,
-        data: { ...MESSAGE_DONE_EVENT.data, message_id: secondTurn.message_id }
-      })
-    )
-    await expect(paywall).toBeVisible()
 
-    billingStatus = fundedStatus
-    await paywall.getByRole('button', { name: 'Add Credits' }).click()
-    await expect(paywall).toHaveCount(0)
+    await test.step('finish the funded recovery while the panel is closed', async () => {
+      agentBilling.setAgentFunds(true)
+      const recovery = agentBilling.holdNextFundedRefresh()
+      await paywall.getByRole('button', { name: 'Add Credits' }).click()
+      const topUpDialog = new TopUpCreditsDialog(page)
+      await topUpDialog.waitForVisible()
+      await recovery.entered
+      await topUpDialog.close()
+      await agentPanel.root
+        .getByRole('button', { name: enMessages.g.close })
+        .click()
+      await expect(agentPanel.root).toHaveCount(0)
+      recovery.release()
+      await recovery.completed
+    })
+
+    await test.step('reopen without the stale paywall', async () => {
+      await agentPanel.open()
+      await expect(paywall).toHaveCount(0)
+    })
+
+    await test.step('show the standing paywall after a second exhaustion', async () => {
+      agentBilling.setAgentFunds(false)
+      await agentPanel.sendMessage(
+        'Complete another workflow without a refusal'
+      )
+      await expect.poll(() => postedMessages.length).toBe(2)
+      expect(acceptedTurns.count).toBe(2)
+      const secondTurn = acceptedTurns.latest
+      pushEvent(
+        ws,
+        zAgentWsEvent.parse({
+          ...THINKING_EVENT,
+          data: { ...THINKING_EVENT.data, message_id: secondTurn.message_id }
+        })
+      )
+      await expect(
+        agentPanel.root.getByRole('button', { name: 'Stop' })
+      ).toBeVisible()
+      pushEvent(
+        ws,
+        zAgentWsEvent.parse({
+          ...MESSAGE_DONE_EVENT,
+          data: {
+            ...MESSAGE_DONE_EVENT.data,
+            message_id: secondTurn.message_id
+          }
+        })
+      )
+      await expect(paywall).toBeVisible()
+    })
+
+    await test.step('remove the standing paywall after the final funded refresh', async () => {
+      agentBilling.setAgentFunds(true)
+      await paywall.getByRole('button', { name: 'Add Credits' }).click()
+      await expect(paywall).toHaveCount(0)
+    })
   })
 
   test.describe('diagnostic report', () => {
