@@ -307,6 +307,8 @@ const showStandingPaywall = computed(
     )
 )
 
+const agentPanelStore = useAgentPanelStore()
+
 /**
  * One impression per exhaustion episode, not per render: the surface is
  * standing, so it is visible for as long as the workspace is out of credits and
@@ -314,16 +316,19 @@ const showStandingPaywall = computed(
  * Reset when funds return, so a later exhaustion reports again — mirroring how
  * `useBillingBanner` scopes its dismissal to one episode.
  */
-let reportedExhaustionImpression = false
 watch(creditsExhausted, (exhausted) => {
-  if (!exhausted) reportedExhaustionImpression = false
+  if (!exhausted) agentPanelStore.hasReportedExhaustionImpression = false
 })
 
 function onStandingPaywallShown(): void {
-  if (!showStandingPaywall.value || reportedExhaustionImpression) return
+  if (
+    !showStandingPaywall.value ||
+    agentPanelStore.hasReportedExhaustionImpression
+  )
+    return
   const telemetry = useTelemetry()
   if (!telemetry) return
-  reportedExhaustionImpression = true
+  agentPanelStore.hasReportedExhaustionImpression = true
   telemetry.trackAgentPaywallShown({
     reason: snapshotAuthoritative.value
       ? toAgentPaywallReason(paywallPresentation.value)
@@ -335,7 +340,6 @@ function onStandingPaywallShown(): void {
 const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 const bindingStore = useAgentWorkflowTabBindingStore()
-const agentPanelStore = useAgentPanelStore()
 const composerStore = useAgentComposerStore()
 const { selectedWorkflow: selectedTarget } = storeToRefs(agentPanelStore)
 const { dismissedSelectionSignature, enabled: agentEnabled } =
