@@ -213,11 +213,19 @@ test.describe(
 
       const toast = page.getByRole('status').filter({ hasText: ASSET_NAME })
       await expect(toast).toBeVisible()
+      // The toast itself animates between its compact and expanded widths,
+      // which can keep Playwright's hit-target stability check unsettled.
+      // Dispatch directly because expansion is setup for the cancellation
+      // request/state behavior under test, not a hit-target assertion.
+      await toast.getByRole('button', { name: 'Expand' }).dispatchEvent('click')
+      await expect(
+        toast.getByRole('button', { name: 'Collapse' })
+      ).toBeVisible()
       const cancelButton = toast.getByRole('button', {
         name: 'Cancel Download'
       })
       await expect(cancelButton).toBeVisible()
-      await cancelButton.click()
+      await cancelButton.dispatchEvent('click')
       await cancellationRequest
 
       await dispatchAssetDownload(page, {
@@ -229,7 +237,9 @@ test.describe(
         status: 'cancelled'
       })
 
-      await expect(toast.getByText('Cancelled', { exact: true })).toBeVisible()
+      await expect(
+        toast.getByText('Cancelled', { exact: true }).first()
+      ).toBeVisible()
       await expect(
         toast.getByRole('button', { name: 'Cancel Download' })
       ).toBeHidden()
