@@ -1,0 +1,30 @@
+{
+ "website-branch": {
+  "disabledWhileOpen": true,
+  "disabledAt700": false,
+  "toastAt700": 1,
+  "toastMs": 777,
+  "toastsAfter": 1
+ },
+ "website-main": {
+  "disabledWhileOpen": true,
+  "disabledAt700": true,
+  "toastAt700": 0,
+  "toastMs": 10094,
+  "toastsAfter": 1
+ },
+ "cloud-branch": {
+  "disabledWhileOpen": false,
+  "disabledAt700": false,
+  "toastAt700": 1,
+  "toastMs": 804,
+  "toastsAfter": 1
+ },
+ "cloud-main": {
+  "disabledWhileOpen": false,
+  "disabledAt700": false,
+  "toastAt700": 0,
+  "toastMs": 10120,
+  "toastsAfter": 1
+ }
+}
