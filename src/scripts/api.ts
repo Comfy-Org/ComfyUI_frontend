@@ -145,6 +145,7 @@ const FETCH_RESPONSE_HEADERS_TIMEOUT_MS = 60_000
 
 interface FetchApiOptions extends RequestInit {
   timeoutMs?: number | null
+  onAuthHeader?: (attached: boolean) => void
 }
 
 const FETCH_ROUTE_GROUPS = new Set([
@@ -577,8 +578,11 @@ export class ComfyApi extends EventTarget {
   }
 
   async fetchApi(route: string, options?: FetchApiOptions) {
-    const { timeoutMs = FETCH_RESPONSE_HEADERS_TIMEOUT_MS, ...requestOptions } =
-      options ?? {}
+    const {
+      timeoutMs = FETCH_RESPONSE_HEADERS_TIMEOUT_MS,
+      onAuthHeader,
+      ...requestOptions
+    } = options ?? {}
     const headers: HeadersInit = requestOptions.headers ?? {}
     let unifiedRetryOn401 = false
 
@@ -597,6 +601,7 @@ export class ComfyApi extends EventTarget {
       }
 
       const authHeader = await getAuthHeaderIfAvailable()
+      onAuthHeader?.(authHeader !== null)
 
       if (authHeader) {
         for (const [key, value] of Object.entries(authHeader)) {
@@ -604,6 +609,8 @@ export class ComfyApi extends EventTarget {
         }
         unifiedRetryOn401 = await shouldRemintCloudRequest()
       }
+    } else {
+      onAuthHeader?.(false)
     }
 
     addHeaderEntry(headers, 'Comfy-User', this.user)

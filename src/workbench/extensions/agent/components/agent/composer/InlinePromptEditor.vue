@@ -10,7 +10,7 @@ import { onBeforeUnmount, onMounted, useTemplateRef, watch } from 'vue'
 import { default as DOMPurify } from 'dompurify'
 import { useI18n } from 'vue-i18n'
 
-import { buttonVariants } from '@/components/ui/button/button.variants'
+import { buttonVariants } from '@comfyorg/design-system/button.variants'
 import {
   tagRemoveButtonVariants,
   tagVariants

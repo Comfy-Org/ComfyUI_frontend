@@ -53,6 +53,7 @@ let consentStore: ReturnType<typeof useAgentConsentStore>
 let workspaceStore: ReturnType<typeof useTeamWorkspaceStore>
 
 const currentUser = ref<{ id: string } | null>({ id: 'account-a' })
+const isAuthInitialized = ref(true)
 const firstRunTookScreen = ref(false)
 const activeTour = ref<EntryPath | null>(null)
 let startupDecision: Promise<boolean> = Promise.resolve(true)
@@ -160,11 +161,11 @@ async function loadEntryAndSetup(): Promise<void> {
 }
 
 async function setRemoteConfigState(
-  state: 'unloaded' | 'anonymous' | 'authenticated' | 'error'
+  state: 'unloaded' | 'loading' | 'authenticated' | 'error'
 ): Promise<void> {
-  const { remoteConfigState } =
+  const { authenticatedRemoteConfigState } =
     await import('@/platform/remoteConfig/remoteConfig')
-  remoteConfigState.value = state
+  authenticatedRemoteConfigState.value = state
   await nextTick()
 }
 
@@ -187,9 +188,13 @@ describe('AgentPanel extension flag gate', () => {
     const { useCurrentUser } = await import('@/composables/auth/useCurrentUser')
     const currentUserService = vi.mocked(useCurrentUser())
     currentUserService.resolvedUserInfo = computed(() => currentUser.value)
+    currentUserService.isAuthInitialized = computed(
+      () => isAuthInitialized.value
+    )
     currentUserService.isLoggedIn = computed(() => currentUser.value !== null)
     setupScope = effectScope()
     currentUser.value = { id: 'account-a' }
+    isAuthInitialized.value = true
     consentStore = useAgentConsentStore()
     workspaceStore = useTeamWorkspaceStore()
     Object.assign(workspaceStore, {
@@ -1120,7 +1125,7 @@ describe('AgentPanel extension flag gate', () => {
   })
 
   it('leaves the gate unsettled while only the anonymous config has landed', async () => {
-    await setRemoteConfigState('anonymous')
+    await setRemoteConfigState('unloaded')
 
     await loadEntryAndSetup()
 
@@ -1145,7 +1150,8 @@ describe('AgentPanel extension flag gate', () => {
   })
 
   it('settles the gate on the fallback when no authenticated config ever lands', async () => {
-    await setRemoteConfigState('anonymous')
+    currentUser.value = null
+    await setRemoteConfigState('unloaded')
     await loadEntryAndSetup()
     expect(agentStore.gateSettled).toBe(false)
 
@@ -1153,6 +1159,65 @@ describe('AgentPanel extension flag gate', () => {
     await vi.advanceTimersByTimeAsync(GATE_SETTLE_TIMEOUT_MS)
 
     expect(agentStore.gateSettled).toBe(true)
+  })
+
+  it('does not settle a signed-in gate while authenticated config is slow', async () => {
+    await setRemoteConfigState('loading')
+    await loadEntryAndSetup()
+
+    const { GATE_SETTLE_TIMEOUT_MS } = await import('./agentPanel')
+    await vi.advanceTimersByTimeAsync(GATE_SETTLE_TIMEOUT_MS)
+
+    expect(agentStore.gateSettled).toBe(false)
+  })
+
+  it('does not treat unresolved auth as signed out', async () => {
+    currentUser.value = null
+    isAuthInitialized.value = false
+    await setRemoteConfigState('unloaded')
+    await loadEntryAndSetup()
+
+    const { GATE_SETTLE_TIMEOUT_MS } = await import('./agentPanel')
+    await vi.advanceTimersByTimeAsync(GATE_SETTLE_TIMEOUT_MS)
+
+    expect(agentStore.gateSettled).toBe(false)
+  })
+
+  it('re-arms the signed-out fallback after an identity change', async () => {
+    await setRemoteConfigState('authenticated')
+    await loadEntryAndSetup()
+    expect(agentStore.gateSettled).toBe(true)
+
+    currentUser.value = null
+    await setRemoteConfigState('unloaded')
+    const { GATE_SETTLE_TIMEOUT_MS } = await import('./agentPanel')
+    await vi.advanceTimersByTimeAsync(GATE_SETTLE_TIMEOUT_MS)
+
+    expect(agentStore.gateSettled).toBe(true)
+  })
+
+  it('returns the gate to unsettled when authenticated config reloads', async () => {
+    await setRemoteConfigState('authenticated')
+    await loadEntryAndSetup()
+    expect(agentStore.gateSettled).toBe(true)
+
+    await setRemoteConfigState('loading')
+
+    expect(agentStore.gateSettled).toBe(false)
+  })
+
+  it('retries consent after a completed refresh with the same flag value', async () => {
+    agentFlagEnabled.value = true
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    await loadEntryAndSetup()
+    vi.mocked(consentStore.load).mockClear()
+    const { remoteConfigRevision } =
+      await import('@/platform/remoteConfig/remoteConfig')
+
+    remoteConfigRevision.value++
+    await nextTick()
+
+    expect(consentStore.load).toHaveBeenCalledOnce()
   })
 
   it('disables the panel without closing it when the flag flips back to false', async () => {
