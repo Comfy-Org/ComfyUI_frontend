@@ -56,14 +56,27 @@ describe('curated workflow pages', () => {
     }
   )
 
-  it.for([
-    'workflows/product-photo-to-video',
-    'workflows/remove-object',
-    'workflows/virtual-try-on'
-  ])('withholds %s while it is disabled as non-functional', (slug) => {
-    expect(isWorkshopModelDisabled(slug)).toBe(true)
-    expect(getWorkshopPageDetail(slug)).toBeUndefined()
-    expect(workshopPagePaths).not.toContain(slug)
+  it.for(['workflows/product-photo-to-video'])(
+    'withholds %s while it is disabled as non-functional',
+    (slug) => {
+      expect(isWorkshopModelDisabled(slug)).toBe(true)
+      expect(getWorkshopPageDetail(slug)).toBeUndefined()
+      expect(workshopPagePaths).not.toContain(slug)
+    }
+  )
+
+  it('runs the Bria example with its website-owned apple mask', () => {
+    const detail = getWorkshopPageDetail('workflows/remove-object')
+    assert.exists(detail)
+    const { mask } = initialWorkshopPageState(detail).values
+    expect(mask).toBe(
+      'https://comfy.org/workflow-inputs/remove-object-apple-mask.png'
+    )
+    expect(
+      existsSync(
+        join(publicDirectory, 'workflow-inputs/remove-object-apple-mask.png')
+      )
+    ).toBe(true)
   })
 
   it('opens the inpainting example with the original image and its transparency mask', () => {
@@ -109,11 +122,11 @@ describe('curated workflow pages', () => {
     ).toMatchObject({
       videos: { length: 6 },
       characters: { length: 6 },
-      product: { length: 4 },
+      product: { length: 5 },
       upscale: { length: 6 },
-      cleanup: { length: 5 }
+      cleanup: { length: 6 }
     })
-    expect(workflows).toHaveLength(27)
+    expect(workflows).toHaveLength(29)
   })
 
   it.for(categories)('highlights one published workflow in $id', (category) => {
