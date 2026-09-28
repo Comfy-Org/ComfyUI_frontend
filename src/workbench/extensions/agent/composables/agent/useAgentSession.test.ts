@@ -1272,8 +1272,6 @@ describe('useAgentSession (v1 composition root)', () => {
   })
 
   it('(g6) a row still streaming on the first check is polled with backoff until it goes terminal', async () => {
-    vi.useFakeTimers()
-    try {
       const getMessages = vi
         .fn<() => Promise<AgentMessages>>()
         .mockResolvedValueOnce([
@@ -1312,9 +1310,6 @@ describe('useAgentSession (v1 composition root)', () => {
 
       await vi.advanceTimersByTimeAsync(60_000)
       expect(getMessages).toHaveBeenCalledTimes(2)
-    } finally {
-      vi.useRealTimers()
-    }
   })
 
   it('(g6a) a stopped turn settled from REST becomes editable after reconnect', async () => {
@@ -1347,8 +1342,6 @@ describe('useAgentSession (v1 composition root)', () => {
   })
 
   it('(g7) a flapping socket starts one recovery job per turn, not one per reconnect', async () => {
-    vi.useFakeTimers()
-    try {
       const rest = streamingTurnRest()
       const { source, emit, status } = fakeEvents()
       const session = useAgentSession({ rest, events: source })
@@ -1365,14 +1358,9 @@ describe('useAgentSession (v1 composition root)', () => {
       await vi.advanceTimersByTimeAsync(0)
 
       expect(rest.getMessages).toHaveBeenCalledTimes(1)
-    } finally {
-      vi.useRealTimers()
-    }
   })
 
   it('(g8) a recovery result landing after the session stopped touches nothing', async () => {
-    vi.useFakeTimers()
-    try {
       const pendingHistory: Array<(rows: AgentMessages) => void> = []
       const getMessages = vi.fn(
         () =>
@@ -1423,9 +1411,6 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(assistant.parts).toEqual([
         { type: 'text', text: 'partial still going', state: 'streaming' }
       ])
-    } finally {
-      vi.useRealTimers()
-    }
   })
 
   it('(g9) every backgrounded turn is checked on reconnect, each against its own thread', async () => {
@@ -1464,8 +1449,6 @@ describe('useAgentSession (v1 composition root)', () => {
   })
 
   it('(g10) a failing history fetch surfaces one notice and leaves the turn live for the socket', async () => {
-    vi.useFakeTimers()
-    try {
       const rest = fakeRest({
         getMessages: vi.fn(async (): Promise<AgentMessages> => {
           throw new TypeError('Failed to fetch')
@@ -1491,9 +1474,6 @@ describe('useAgentSession (v1 composition root)', () => {
 
       emit(done('msg-1'))
       expect(session.isStreaming.value).toBe(false)
-    } finally {
-      vi.useRealTimers()
-    }
   })
 
   it('(g11) a thread that no longer exists on the server settles its turn without inventing text', async () => {
@@ -1604,8 +1584,6 @@ describe('useAgentSession (v1 composition root)', () => {
   })
 
   it('(g18) a history fetch that never answers is abandoned at the recovery deadline', async () => {
-    vi.useFakeTimers()
-    try {
       const getMessages = vi.fn(hangingGetMessages)
       const rest = fakeRest({ getMessages })
       const { source, emit, status } = fakeEvents()
@@ -1633,14 +1611,9 @@ describe('useAgentSession (v1 composition root)', () => {
       status(true)
       await vi.advanceTimersByTimeAsync(0)
       expect(getMessages).toHaveBeenCalledTimes(2)
-    } finally {
-      vi.useRealTimers()
-    }
   })
 
   it('(g19) stopping the session cancels its in-flight history fetch', async () => {
-    vi.useFakeTimers()
-    try {
       const getMessages = vi.fn(hangingGetMessages)
       const rest = fakeRest({ getMessages })
       const { source, emit, status } = fakeEvents()
@@ -1664,13 +1637,9 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(getMessages).toHaveBeenCalledTimes(1)
       expect(session.notices.value).toEqual([])
       expect(reportError).not.toHaveBeenCalled()
-    } finally {
-      vi.useRealTimers()
-    }
   })
 
   it('(g20) finishing one recovery does not unmark a sibling turn whose ids concatenate identically', async () => {
-    vi.useFakeTimers()
     const postMessage = vi
       .fn<
         (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
@@ -1723,13 +1692,10 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(getMessages).toHaveBeenCalledTimes(2)
     } finally {
       session.stop()
-      vi.useRealTimers()
     }
   })
 
   it('(g21) a terminal event that beats the pending history fetch keeps the socket transcript', async () => {
-    vi.useFakeTimers()
-    try {
       const pendingHistory: Array<(rows: AgentMessages) => void> = []
       const getMessages = vi.fn(
         () =>
@@ -1768,9 +1734,6 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(assistant.parts).toEqual([
         { type: 'text', text: 'partial from socket', state: 'done' }
       ])
-    } finally {
-      vi.useRealTimers()
-    }
   })
 
   it('(g22) a settlement failure after the fetch is reported, not floated as an unhandled rejection', async () => {
