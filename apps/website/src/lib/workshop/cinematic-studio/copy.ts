@@ -162,6 +162,10 @@ const copy = {
     en: 'Format',
     'zh-CN': '画幅'
   },
+  'cinematic.section.shot': {
+    en: 'Shot',
+    'zh-CN': '镜头'
+  },
   'cinematic.section.direction': {
     en: 'Direction',
     'zh-CN': '导演'

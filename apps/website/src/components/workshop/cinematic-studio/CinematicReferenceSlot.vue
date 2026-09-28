@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Palette, Plus, UserRound, X } from '@lucide/vue'
+import { Plus, X } from '@lucide/vue'
 import { useObjectUrl } from '@vueuse/core'
 import { computed, useTemplateRef } from 'vue'
 
@@ -16,6 +16,14 @@ const { kind, locale = 'en' } = defineProps<{
 const file = defineModel<File | undefined>()
 const preview = useObjectUrl(file)
 const input = useTemplateRef<HTMLInputElement>('input')
+const label = computed(() =>
+  tc(
+    kind === 'cast'
+      ? 'cinematic.reference.cast'
+      : 'cinematic.reference.palette',
+    locale
+  )
+)
 const accessibleName = computed(() => {
   const action = tc(
     kind === 'cast'
@@ -41,56 +49,38 @@ function choose(event: Event) {
       type="button"
       :class="
         cn(
-          'group relative flex w-full overflow-hidden rounded-xl text-left transition-colors',
+          'group relative flex w-full overflow-hidden rounded-xl transition-colors',
           file
-            ? 'h-20 flex-col justify-end p-2.5 ring-1 ring-transparency-white-t20 ring-inset'
-            : 'h-11 items-center gap-2 border border-dashed border-transparency-white-t20 bg-transparency-white-t4 px-2 hover:border-primary-warm-white/50'
+            ? 'h-20 flex-col justify-end p-2.5 text-left ring-1 ring-transparency-white-t20 ring-inset'
+            : 'h-11 items-center justify-center gap-1.5 border border-dashed border-transparency-white-t20 text-sm text-primary-comfy-canvas hover:border-primary-warm-white/50 hover:bg-transparency-white-t4 hover:text-primary-warm-white'
         )
       "
       :aria-label="accessibleName"
       @click="input?.click()"
     >
-      <img
-        v-if="preview"
-        :src="preview"
-        alt=""
-        class="absolute inset-0 size-full object-cover"
-      />
-      <span
-        v-if="preview"
-        class="absolute inset-0 bg-linear-to-t from-primary-comfy-ink via-primary-comfy-ink/20 to-transparent"
-        aria-hidden="true"
-      />
-      <span
-        v-else
-        class="grid size-7 shrink-0 place-items-center rounded-lg bg-transparency-white-t8 text-primary-warm-gray group-hover:text-primary-warm-white"
-      >
-        <UserRound v-if="kind === 'cast'" class="size-3.5" aria-hidden="true" />
-        <Palette v-else class="size-3.5" aria-hidden="true" />
-      </span>
-      <span
-        class="relative text-[10px] font-bold tracking-widest text-primary-comfy-canvas uppercase"
-      >
-        {{
-          tc(
-            kind === 'cast'
-              ? 'cinematic.reference.cast'
-              : 'cinematic.reference.palette',
-            locale
-          )
-        }}
-      </span>
-      <span
-        v-if="file"
-        class="relative truncate text-xs text-primary-warm-white"
-      >
-        {{ file.name }}
-      </span>
-      <Plus
-        v-if="!file"
-        class="ml-auto size-4 shrink-0 text-primary-warm-gray"
-        aria-hidden="true"
-      />
+      <template v-if="preview">
+        <img
+          :src="preview"
+          alt=""
+          class="absolute inset-0 size-full object-cover"
+        />
+        <span
+          class="absolute inset-0 bg-linear-to-t from-primary-comfy-ink via-primary-comfy-ink/20 to-transparent"
+          aria-hidden="true"
+        />
+        <span
+          class="relative text-[10px] font-bold tracking-widest text-primary-comfy-canvas uppercase"
+        >
+          {{ label }}
+        </span>
+        <span class="relative truncate text-xs text-primary-warm-white">
+          {{ file?.name }}
+        </span>
+      </template>
+      <template v-else>
+        <Plus class="size-4 shrink-0" aria-hidden="true" />
+        {{ label }}
+      </template>
     </button>
     <button
       v-if="file"

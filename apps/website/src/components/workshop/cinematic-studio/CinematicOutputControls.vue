@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { Maximize, Minus, Plus } from '@lucide/vue'
-import { computed } from 'vue'
+import { Minus, Plus } from '@lucide/vue'
+
+import { cn } from '@comfyorg/tailwind-utils'
 
 import type {
   AspectRatio,
@@ -13,11 +14,9 @@ import {
 } from '../../../lib/workshop/cinematic-studio/catalog'
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
-import { framedStyle } from './aspect-style'
-import CinematicMenu from './CinematicMenu.vue'
+import CinematicTooltip from './CinematicTooltip.vue'
 
-const { menuSide = 'top', locale = 'en' } = defineProps<{
-  menuSide?: 'top' | 'bottom'
+const { locale = 'en' } = defineProps<{
   locale?: Locale
 }>()
 
@@ -25,89 +24,89 @@ const aspect = defineModel<AspectRatio>('aspect', { required: true })
 const resolution = defineModel<Resolution>('resolution', { required: true })
 const takes = defineModel<number>('takes', { required: true })
 
-const aspectOptions = computed(() =>
-  ASPECT_RATIOS.map((ratio) => ({
-    id: ratio.id,
-    label: ratio.id,
-    meta: tc(ratio.label, locale)
-  }))
-)
-const resolutionOptions = RESOLUTIONS.map((option) => ({
-  id: option.id,
-  label: option.id
-}))
-
-const aspectValue = computed({
-  get: () => aspect.value,
-  set: (id: string) => {
-    const match = ASPECT_RATIOS.find((ratio) => ratio.id === id)
-    if (match) aspect.value = match.id
-  }
-})
-const resolutionValue = computed({
-  get: () => resolution.value,
-  set: (id: string) => {
-    const match = RESOLUTIONS.find((option) => option.id === id)
-    if (match) resolution.value = match.id
-  }
-})
+const trackClass =
+  'flex h-10 items-center gap-0.5 rounded-xl bg-transparency-white-t4 p-1 ring-1 ring-transparency-white-t8 ring-inset'
+const optionClass = (chosen: boolean) =>
+  cn(
+    'h-full min-w-0 flex-1 rounded-lg px-2 text-sm tabular-nums transition-colors',
+    chosen
+      ? 'bg-primary-warm-white font-medium text-primary-comfy-ink'
+      : 'text-primary-warm-gray hover:text-primary-warm-white'
+  )
+const stepClass =
+  'grid h-full w-8 place-items-center rounded-lg text-primary-warm-gray transition-colors hover:bg-transparency-white-t8 hover:text-primary-warm-white disabled:pointer-events-none disabled:opacity-40'
 </script>
 
 <template>
-  <div class="grid grid-cols-[auto_1fr_1fr] gap-2">
+  <div class="flex flex-col gap-2">
     <div
-      class="flex h-10 items-center rounded-xl border border-transparency-white-t20"
-      role="group"
-      :aria-label="tc('cinematic.output.takes', locale)"
+      role="radiogroup"
+      :aria-label="tc('cinematic.output.aspect', locale)"
+      :class="trackClass"
     >
-      <button
-        type="button"
-        class="grid size-9 place-items-center text-primary-warm-gray hover:text-primary-warm-white disabled:opacity-40"
-        :disabled="takes <= 1"
-        :aria-label="tc('cinematic.output.fewerTakes', locale)"
-        @click="takes = takes - 1"
+      <CinematicTooltip
+        v-for="ratio in ASPECT_RATIOS"
+        :key="ratio.id"
+        :text="tc(ratio.label, locale)"
       >
-        <Minus class="size-3.5" aria-hidden="true" />
-      </button>
-      <span
-        class="w-4 text-center text-sm text-primary-warm-white tabular-nums"
-      >
-        {{ takes }}
-      </span>
-      <button
-        type="button"
-        class="grid size-9 place-items-center text-primary-warm-gray hover:text-primary-warm-white disabled:opacity-40"
-        :disabled="takes >= MAX_TAKES"
-        :aria-label="tc('cinematic.output.moreTakes', locale)"
-        @click="takes = takes + 1"
-      >
-        <Plus class="size-3.5" aria-hidden="true" />
-      </button>
+        <button
+          type="button"
+          role="radio"
+          :aria-checked="aspect === ratio.id"
+          :class="optionClass(aspect === ratio.id)"
+          @click="aspect = ratio.id"
+        >
+          {{ ratio.id }}
+        </button>
+      </CinematicTooltip>
     </div>
-    <CinematicMenu
-      v-model="aspectValue"
-      :options="aspectOptions"
-      :heading="tc('cinematic.output.aspect', locale)"
-      :side="menuSide"
-      trigger-class="h-10 justify-center gap-1.5 border border-transparency-white-t20 text-sm text-primary-warm-white hover:border-primary-warm-white/50"
-    >
-      <span class="grid size-3.5 place-items-center" aria-hidden="true">
+    <div class="flex gap-2">
+      <div
+        role="radiogroup"
+        :aria-label="tc('cinematic.output.resolution', locale)"
+        :class="cn(trackClass, 'flex-1')"
+      >
+        <button
+          v-for="option in RESOLUTIONS"
+          :key="option.id"
+          type="button"
+          role="radio"
+          :aria-checked="resolution === option.id"
+          :class="optionClass(resolution === option.id)"
+          @click="resolution = option.id"
+        >
+          {{ option.id }}
+        </button>
+      </div>
+      <div
+        role="group"
+        :aria-label="tc('cinematic.output.takes', locale)"
+        :class="trackClass"
+      >
+        <button
+          type="button"
+          :class="stepClass"
+          :disabled="takes <= 1"
+          :aria-label="tc('cinematic.output.fewerTakes', locale)"
+          @click="takes = takes - 1"
+        >
+          <Minus class="size-3.5" aria-hidden="true" />
+        </button>
         <span
-          class="block max-h-full rounded-xs border-[1.5px] border-primary-warm-gray"
-          :style="framedStyle(aspect, '0.875rem')"
-        />
-      </span>
-      {{ aspect }}
-    </CinematicMenu>
-    <CinematicMenu
-      v-model="resolutionValue"
-      :options="resolutionOptions"
-      :heading="tc('cinematic.output.resolution', locale)"
-      :side="menuSide"
-      trigger-class="h-10 justify-center gap-1.5 border border-transparency-white-t20 text-sm text-primary-warm-white hover:border-primary-warm-white/50"
-    >
-      <Maximize class="size-3.5 text-primary-warm-gray" aria-hidden="true" />
-      {{ resolution }}
-    </CinematicMenu>
+          class="w-6 text-center text-sm font-medium text-primary-warm-white tabular-nums"
+        >
+          {{ takes }}
+        </span>
+        <button
+          type="button"
+          :class="stepClass"
+          :disabled="takes >= MAX_TAKES"
+          :aria-label="tc('cinematic.output.moreTakes', locale)"
+          @click="takes = takes + 1"
+        >
+          <Plus class="size-3.5" aria-hidden="true" />
+        </button>
+      </div>
+    </div>
   </div>
 </template>

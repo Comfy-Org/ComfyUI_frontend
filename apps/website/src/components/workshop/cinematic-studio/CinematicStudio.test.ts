@@ -1052,8 +1052,27 @@ describe('CinematicStudio', () => {
       within(panel)
         .getAllByRole('heading', { level: 2 })
         .map((heading) => heading.textContent.trim())
-        .slice(-4)
-    ).toEqual(['References', 'Camera', 'Direction', 'Format'])
+    ).toEqual(['Model', 'Shot', 'References', 'Format'])
+  })
+
+  it('opens a direction part from its row in the side panel shot list', async () => {
+    render(CinematicStudioPage, { props: { models } })
+    const user = userEvent.setup()
+    const panel = await screen.findByRole('complementary', {
+      name: 'Shot settings'
+    })
+
+    await user.click(within(panel).getByRole('button', { name: /^Film/ }))
+    await user.click(
+      within(screen.getByRole('dialog', { name: 'Film' })).getByRole('radio', {
+        name: 'Daylight 250D'
+      })
+    )
+
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(
+      within(panel).getByRole('button', { name: /^Film.*Daylight 250D/ })
+    ).toBeInTheDocument()
   })
 
   it('opens the camera picker beside the side panel and closes it again', async () => {

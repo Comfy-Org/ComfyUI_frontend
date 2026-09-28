@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChevronDown, ChevronRight, Video } from '@lucide/vue'
+import { ChevronDown } from '@lucide/vue'
 import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -9,22 +9,18 @@ import type {
   Direction,
   Resolution
 } from '../../../lib/workshop/cinematic-studio/catalog'
-import {
-  cameraGroups,
-  directionOption
-} from '../../../lib/workshop/cinematic-studio/catalog'
 import type { ShotEstimate } from '../../../lib/workshop/cinematic-studio/estimate'
 import type { StudioGate } from '../../../lib/workshop/cinematic-studio/gate'
 import type { Locale } from '../../../i18n/translations'
 import { t } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
-import CinematicDirectionGrid from './CinematicDirectionGrid.vue'
 import CinematicGenerateAction from './CinematicGenerateAction.vue'
 import CinematicMenu from './CinematicMenu.vue'
 import CinematicOutputControls from './CinematicOutputControls.vue'
 import CinematicReferenceSlot from './CinematicReferenceSlot.vue'
 import CinematicSceneField from './CinematicSceneField.vue'
+import CinematicShotList from './CinematicShotList.vue'
 import type { PickerKey } from './picker-key'
 
 const {
@@ -75,13 +71,6 @@ const modelOptions = computed(() =>
 const model = computed(() =>
   models.find((candidate) => candidate.slug === modelSlug.value)
 )
-const cameraBody = computed(() => directionOption('body', direction.value))
-const cameraSpecs = computed(() =>
-  cameraGroups
-    .slice(1)
-    .map((group) => directionOption(group.part, direction.value))
-    .filter((option) => option.id !== 'auto')
-)
 const blockedNote = computed(() =>
   (cast.value || palette.value) && !model.value?.referenceSlug
     ? tc('cinematic.references.unsupported', locale).replace(
@@ -93,10 +82,9 @@ const blockedNote = computed(() =>
 const canGenerate = computed(
   () => gate === 'ready' && scene.value.trim().length > 0 && !blockedNote.value
 )
-const labelClass =
-  'text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase'
+const labelClass = 'text-xs font-medium text-primary-warm-gray'
 const cardClass =
-  'flex w-full items-center gap-3 rounded-2xl border border-transparency-white-t20 bg-transparency-white-t4 p-2.5 text-left transition-colors hover:border-primary-warm-white/50'
+  'flex w-full items-center gap-3 rounded-2xl border border-transparency-white-t8 p-2.5 text-left transition-colors hover:border-transparency-white-t20'
 </script>
 
 <template>
@@ -109,8 +97,8 @@ const cardClass =
     >
       {{ t('workshop.input.title', locale) }}
     </header>
-    <div class="flex flex-col gap-6 p-5">
-      <section class="flex flex-col gap-2.5">
+    <div class="flex flex-col gap-5 p-4">
+      <section class="flex flex-col gap-2">
         <h2 :class="labelClass">
           {{ tc('cinematic.model.heading', locale) }}
         </h2>
@@ -119,7 +107,7 @@ const cardClass =
           :options="modelOptions"
           :heading="tc('cinematic.model.heading', locale)"
           side="bottom"
-          :trigger-class="cn(cardClass, 'h-12 gap-3 px-3')"
+          :trigger-class="cn(cardClass, 'h-11 gap-3 px-3')"
         >
           <img
             v-if="model"
@@ -141,12 +129,23 @@ const cardClass =
         v-model:enhance="enhance"
         :locale
       />
-      <section class="flex flex-col gap-2.5">
+      <section class="flex flex-col gap-2">
+        <h2 :class="labelClass">
+          {{ tc('cinematic.section.shot', locale) }}
+        </h2>
+        <CinematicShotList
+          :direction
+          :open-picker="openPicker"
+          :locale
+          @open="emit('open', $event)"
+        />
+      </section>
+      <section class="flex flex-col gap-2">
         <div class="flex items-center justify-between">
           <h2 :class="labelClass">
             {{ tc('cinematic.section.references', locale) }}
           </h2>
-          <span class="text-[11px] text-primary-warm-gray">
+          <span class="text-xs text-primary-warm-gray">
             {{ tc('cinematic.reference.optional', locale) }}
           </span>
         </div>
@@ -155,61 +154,7 @@ const cardClass =
           <CinematicReferenceSlot v-model="palette" kind="palette" :locale />
         </div>
       </section>
-      <section class="flex flex-col gap-2.5">
-        <h2 :class="labelClass">
-          {{ tc('cinematic.section.camera', locale) }}
-        </h2>
-        <button
-          type="button"
-          :aria-expanded="openPicker === 'camera'"
-          aria-haspopup="dialog"
-          :class="
-            cn(
-              cardClass,
-              'h-12 px-3',
-              openPicker === 'camera' && 'border-primary-warm-white'
-            )
-          "
-          @click="emit('open', 'camera')"
-        >
-          <Video
-            class="size-5 shrink-0 text-primary-warm-white"
-            aria-hidden="true"
-          />
-          <span
-            class="text-sm font-semibold whitespace-nowrap text-primary-warm-white"
-          >
-            {{ tc(cameraBody.label, locale) }}
-          </span>
-          <span
-            class="flex min-w-0 flex-1 flex-wrap justify-end gap-1 text-[11px] text-primary-comfy-canvas"
-          >
-            <span
-              v-for="spec in cameraSpecs"
-              :key="spec.id"
-              class="rounded-md bg-transparency-white-t8 px-1.5 py-0.5"
-            >
-              {{ tc(spec.label, locale) }}
-            </span>
-          </span>
-          <ChevronRight
-            class="size-4 text-primary-warm-gray"
-            aria-hidden="true"
-          />
-        </button>
-      </section>
-      <section class="flex flex-col gap-2.5">
-        <h2 :class="labelClass">
-          {{ tc('cinematic.section.direction', locale) }}
-        </h2>
-        <CinematicDirectionGrid
-          :direction
-          :open-picker="openPicker"
-          :locale
-          @open="emit('open', $event)"
-        />
-      </section>
-      <section class="flex flex-col gap-2.5">
+      <section class="flex flex-col gap-2">
         <h2 :class="labelClass">
           {{ tc('cinematic.section.output', locale) }}
         </h2>
@@ -217,7 +162,6 @@ const cardClass =
           v-model:aspect="aspect"
           v-model:resolution="resolution"
           v-model:takes="takes"
-          menu-side="bottom"
           :locale
         />
       </section>
