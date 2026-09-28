@@ -1,4 +1,4 @@
-import { effectScope, readonly, ref } from 'vue'
+import { effectScope, readonly, shallowRef } from 'vue'
 import type { Ref } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -18,14 +18,17 @@ interface GateSources {
   onSignOut: (hide: () => void) => void
 }
 
+/**
+ * `generation` changes when the signed-in account does (a sign-in of a
+ * different user, or a sign-out), so a live flag change for the same account
+ * keeps it.
+ */
+export type DeployGateState =
+  | { status: 'awaiting' }
+  | { status: 'answered'; generation: number; enabled: boolean }
+
 interface DeployToComfyApiGate {
-  enabled: Readonly<Ref<boolean>>
-  /**
-   * The account generation `enabled` answers for: bumped on every sign-in and
-   * sign-out, and `undefined` while the current account's answer is awaited.
-   * A live flag change for the same account keeps the same generation.
-   */
-  answeredFor: Readonly<Ref<number | undefined>>
+  state: Readonly<Ref<DeployGateState>>
   /** Asks for an answer if none is in hand or on its way. Call on menu open. */
   check: () => void
 }
@@ -44,30 +47,29 @@ export function createDeployToComfyApiGate({
   onSignIn,
   onSignOut
 }: GateSources): DeployToComfyApiGate {
-  const enabled = ref(import.meta.env.MODE === 'development')
-  let session = 0
-  const answeredFor = ref<number | undefined>(session)
-  if (enabled.value)
-    return {
-      enabled: readonly(enabled),
-      answeredFor: readonly(answeredFor),
-      check: () => {}
-    }
+  let generation = 0
+  const developmentBuild = import.meta.env.MODE === 'development'
+  const state = shallowRef<DeployGateState>({
+    status: 'answered',
+    generation,
+    enabled: developmentBuild
+  })
+  if (developmentBuild) return { state: readonly(state), check: () => {} }
 
   let signedInUser: string | undefined
-  let askedInSession: number | undefined
+  let askedInGeneration: number | undefined
   let posthog: FlagReader | undefined
   let loading = false
 
+  function answer(enabled: boolean): void {
+    state.value = { status: 'answered', generation, enabled }
+  }
+
   function syncFromPostHog(): void {
-    const identified =
-      !!posthog &&
-      signedInUser !== undefined &&
-      posthog.get_distinct_id() === signedInUser
-    enabled.value =
-      identified && posthog?.isFeatureEnabled(DISTRIBUTIONS_FLAG) === true
-    answeredFor.value =
-      signedInUser === undefined || identified ? session : undefined
+    if (signedInUser === undefined) answer(false)
+    else if (posthog?.get_distinct_id() === signedInUser)
+      answer(posthog.isFeatureEnabled(DISTRIBUTIONS_FLAG) === true)
+    else state.value = { status: 'awaiting' }
   }
 
   function loadPostHog(): void {
@@ -78,9 +80,8 @@ export function createDeployToComfyApiGate({
         loading = false
         posthog = reader
         reader.onFeatureFlags((_flags, _variants, context) => {
-          if (!context?.errorsLoading) return syncFromPostHog()
-          enabled.value = false
-          answeredFor.value = session
+          if (context?.errorsLoading) answer(false)
+          else syncFromPostHog()
         })
         syncFromPostHog()
       })
@@ -91,33 +92,29 @@ export function createDeployToComfyApiGate({
   }
 
   function askPlatformOnce(): void {
-    if (signedInUser === undefined || askedInSession === session) return
-    const asked = (askedInSession = session)
-    void askPlatform().then((answer) => {
-      if (asked !== session) return
-      enabled.value = answer
-      answeredFor.value = session
+    if (signedInUser === undefined || askedInGeneration === generation) return
+    const asked = (askedInGeneration = generation)
+    void askPlatform().then((enabled) => {
+      if (asked === generation) answer(enabled)
     })
   }
 
   onSignOut(() => {
     signedInUser = undefined
-    session++
-    enabled.value = false
-    answeredFor.value = session
+    generation++
+    answer(false)
   })
   onSignIn((userId) => {
+    if (userId === signedInUser) return
     signedInUser = userId
-    session++
-    enabled.value = false
+    generation++
     if (isCloud) syncFromPostHog()
-    else answeredFor.value = undefined
+    else state.value = { status: 'awaiting' }
   })
   loadPostHog()
 
   return {
-    enabled: readonly(enabled),
-    answeredFor: readonly(answeredFor),
+    state: readonly(state),
     check: isCloud ? loadPostHog : askPlatformOnce
   }
 }

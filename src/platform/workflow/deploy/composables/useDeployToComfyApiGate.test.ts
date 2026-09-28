@@ -1,6 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import type { FeatureFlagsCallback } from 'posthog-js'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { loadPostHogFlags } from '@/platform/workflow/deploy/composables/postHogFlags'
@@ -93,7 +94,17 @@ function gate(
     onSignOut: user.onSignOut,
     ...overrides
   }
-  return { ...createDeployToComfyApiGate(sources), sources, user }
+  const created = createDeployToComfyApiGate(sources)
+  const enabled = computed(
+    () =>
+      created.state.value.status === 'answered' && created.state.value.enabled
+  )
+  const answeredFor = computed(() =>
+    created.state.value.status === 'answered'
+      ? created.state.value.generation
+      : undefined
+  )
+  return { ...created, enabled, answeredFor, sources, user }
 }
 
 describe('createDeployToComfyApiGate on Cloud', () => {
@@ -180,6 +191,22 @@ describe('createDeployToComfyApiGate on Cloud', () => {
     expect(enabled.value).toBe(false)
   })
 
+  it('treats the same account resolving again as no change', async () => {
+    const posthog = fakePostHog('alice', true)
+    const { answeredFor, enabled, user, state } = gate({
+      loadFlags: () => Promise.resolve(posthog.reader)
+    })
+    user.signIn('alice')
+    await posthog.subscribed
+    const before = state.value
+
+    user.signIn('alice')
+
+    expect(state.value).toBe(before)
+    expect(enabled.value).toBe(true)
+    expect(answeredFor.value).toBe(1)
+  })
+
   it('never asks the platform', () => {
     const { sources, user } = gate()
 
@@ -237,6 +264,24 @@ describe('createDeployToComfyApiGate on localhost and Desktop', () => {
       expect(answeredFor.value).toBeTypeOf('number')
     }
   )
+
+  it('treats the same account resolving again as no change, and does not ask twice', async () => {
+    const reply = deferred<boolean>()
+    const { answeredFor, enabled, sources, user, check } = gate({
+      askPlatform: vi.fn(() => reply.promise)
+    })
+    user.signIn('alice')
+    check()
+    reply.resolve(true)
+    await reply.promise
+
+    user.signIn('alice')
+    check()
+
+    expect(sources.askPlatform).toHaveBeenCalledOnce()
+    expect(enabled.value).toBe(true)
+    expect(answeredFor.value).toBe(1)
+  })
 
   it('asks again for the next account, and hides the entry until it answers', async () => {
     const aliceAnswer = deferred<boolean>()
@@ -324,11 +369,17 @@ describe('useDeployToComfyApiGate', () => {
 
     const mountedMenu = useDeployToComfyApiGate()
     await vi.waitFor(() => expect(reportError).toHaveBeenCalledOnce())
-    expect(mountedMenu.enabled.value).toBe(false)
+    expect(mountedMenu.state.value).toEqual({ status: 'awaiting' })
 
     mountedMenu.check()
 
-    expect(useDeployToComfyApiGate().enabled).toBe(mountedMenu.enabled)
-    await vi.waitFor(() => expect(mountedMenu.enabled.value).toBe(true))
+    expect(useDeployToComfyApiGate().state).toBe(mountedMenu.state)
+    await vi.waitFor(() =>
+      expect(mountedMenu.state.value).toEqual({
+        status: 'answered',
+        generation: 1,
+        enabled: true
+      })
+    )
   })
 })
