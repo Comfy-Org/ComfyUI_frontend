@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { appModels } from '../../config/workshop-app-content'
-import { workshopAppHref, workshopApps } from './apps'
+import { workshopAppHref, workshopAppRepo, workshopApps } from './apps'
 
 describe('workshopAppHref', () => {
   it.for([
@@ -19,4 +19,13 @@ describe('workshopAppHref', () => {
       workshopApps('en', appModels).find(({ key }) => key === 'reshoot')?.image
     ).toBe('/images/cinematic-studio/train.jpg')
   })
+})
+
+describe('workshopAppRepo', () => {
+  it.for(['studio', 'reshoot'] as const)(
+    'has no repository for $0 until one is published',
+    (app) => {
+      expect(workshopAppRepo(app)).toBeUndefined()
+    }
+  )
 })

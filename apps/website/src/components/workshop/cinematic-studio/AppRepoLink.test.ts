@@ -15,12 +15,13 @@ describe('AppRepoLink', () => {
       'https://github.com/Comfy-Org/comfy-examples'
     )
     expect(link).toHaveAttribute('target', '_blank')
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer')
   })
 
-  it('says the code is coming soon, without a link, until the repository exists', () => {
-    render(AppRepoLink, { props: { locale: 'zh-CN' } })
+  it('renders no link until the repository exists', () => {
+    render(AppRepoLink)
 
-    expect(screen.getByText('GitHub · 即将推出')).toBeInTheDocument()
+    expect(screen.getByText(/GitHub/)).toBeInTheDocument()
     expect(screen.queryByRole('link')).toBeNull()
   })
 })
