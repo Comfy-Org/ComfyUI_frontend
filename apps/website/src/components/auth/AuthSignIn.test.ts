@@ -1686,7 +1686,6 @@ describe('AuthSignIn when a closed pop-up’s result arrives late', () => {
       displayName: null
     })
   )
-  const flush = () => new Promise((resolve) => setTimeout(resolve, 0))
   const googleButton = () =>
     screen.getByRole('button', { name: /^sign in with google$/i })
 
@@ -1707,12 +1706,10 @@ describe('AuthSignIn when a closed pop-up’s result arrives late', () => {
       options: () => options,
       /** Firebase saves the identity before the popup promise resolves. */
       finishLate() {
-        const credential = new Promise<UserCredential>((resolve) =>
-          setTimeout(() => {
-            authUser.value = googleUser.user
-            setTimeout(() => resolve(googleUser), 0)
-          }, 0)
-        )
+        const credential = Promise.resolve().then(() => {
+          authUser.value = googleUser.user
+          return googleUser
+        })
         options?.onResumed?.(credential)
       }
     }
@@ -1749,8 +1746,7 @@ describe('AuthSignIn when a closed pop-up’s result arrives late', () => {
     const user = userEvent.setup()
     render(AuthSignIn)
     await clickGoogle()
-    await flush()
-    expect(popup.options()?.keepLateResult?.()).toBe(true)
+    await waitFor(() => expect(popup.options()?.keepLateResult?.()).toBe(true))
 
     await openEmailForm(user)
     await user.type(screen.getByLabelText('Email'), 'user@example.com')
@@ -1764,14 +1760,12 @@ describe('AuthSignIn when a closed pop-up’s result arrives late', () => {
     const popup = dismissedPopup()
     const { unmount } = render(AuthSignIn)
     await clickGoogle()
-    await flush()
+    await waitFor(() => expect(popup.options()?.keepLateResult?.()).toBe(true))
 
-    expect(popup.options()?.keepLateResult?.()).toBe(true)
     authFlag.value = false
-    await flush()
-    expect(popup.options()?.keepLateResult?.()).toBe(false)
+    await waitFor(() => expect(popup.options()?.keepLateResult?.()).toBe(false))
     authFlag.value = true
-    await flush()
+    await waitFor(() => expect(googleButton()).toBeTruthy())
     unmount()
     expect(popup.options()?.keepLateResult?.()).toBe(false)
   })

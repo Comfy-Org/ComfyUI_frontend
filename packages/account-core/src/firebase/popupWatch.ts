@@ -38,6 +38,7 @@ const CLOSED_POLL_MS = 100
 interface AuthEventLike {
   readonly type?: unknown
   readonly eventId?: unknown
+  readonly error?: unknown
 }
 
 interface AuthEventManagerLike {
@@ -69,7 +70,12 @@ interface WatchedAttempt {
 const attemptsByProvider = new WeakMap<object, WatchedAttempt>()
 const attemptsByEventId = new Map<string, WatchedAttempt>()
 const wrappedManagers = new WeakSet<object>()
-let observingResults = false
+// Only an Auth whose event manager is wrapped has results this can see.
+const observedAuths = new WeakSet<object>()
+
+function isObject(value: unknown): value is object {
+  return typeof value === 'object' && value !== null
+}
 
 function isResolverClass(value: unknown): value is ResolverClass {
   if (typeof value !== 'function') return false
@@ -119,16 +125,37 @@ function deliver(
       : undefined
   if (!attempt) return original(event)
   stopPolling(attempt)
-  if (attempt.abandoned) {
-    // Acknowledged so the handler page stops, never handed to Firebase.
-    if (attempt.callbacks.discardLateResult?.()) return true
-    attempt.abandoned = false
+  // A late failure is Firebase's to report; the host already heard the close.
+  if (!attempt.abandoned || event.error) return original(event)
+  // Acknowledged so the handler page stops, never handed to Firebase.
+  if (shouldDiscard(attempt)) return true
+  attempt.abandoned = false
+  try {
     attempt.callbacks.onResumed?.()
+  } catch {
+    // The result is kept either way; a host bug must not stall Firebase.
   }
   return original(event)
 }
 
-function watchWindow(attempt: WatchedAttempt, popup: PopupWindowLike): void {
+function shouldDiscard(attempt: WatchedAttempt): boolean {
+  try {
+    return attempt.callbacks.discardLateResult?.() ?? false
+  } catch {
+    return true
+  }
+}
+
+/** Ties the attempt to its latest popup, dropping any earlier one's watch. */
+function watchWindow(
+  attempt: WatchedAttempt,
+  eventId: string,
+  popup: PopupWindowLike
+): void {
+  stopPolling(attempt)
+  if (attempt.eventId) attemptsByEventId.delete(attempt.eventId)
+  attempt.eventId = eventId
+  attemptsByEventId.set(eventId, attempt)
   attempt.poll = setInterval(() => {
     if (popup.closed !== true) return
     stopPolling(attempt)
@@ -141,12 +168,13 @@ function watchingResolver(Base: ResolverClass): ResolverClass {
   return class WatchingPopupRedirectResolver extends Base {
     override async _initialize(auth: unknown): Promise<unknown> {
       const manager = await super._initialize(auth)
-      if (isEventManager(manager) && !wrappedManagers.has(manager)) {
+      if (!isEventManager(manager)) return manager
+      if (!wrappedManagers.has(manager)) {
         const original = manager.onEvent.bind(manager)
         manager.onEvent = (event) => deliver(original, event)
         wrappedManagers.add(manager)
-        observingResults = true
       }
+      if (isObject(auth)) observedAuths.add(auth)
       return manager
     }
 
@@ -157,17 +185,14 @@ function watchingResolver(Base: ResolverClass): ResolverClass {
       eventId?: string
     ): Promise<unknown> {
       const popup = await super._openPopup(auth, provider, authType, eventId)
-      const attempt =
-        typeof provider === 'object' && provider !== null
-          ? attemptsByProvider.get(provider)
-          : undefined
+      const attempt = isObject(provider)
+        ? attemptsByProvider.get(provider)
+        : undefined
       const popupWindow = popupWindowOf(popup)
       // Without results to compare against, a closed window proves nothing.
-      if (attempt && observingResults && eventId && popupWindow) {
-        attempt.eventId = eventId
-        attemptsByEventId.set(eventId, attempt)
-        watchWindow(attempt, popupWindow)
-      }
+      const observed = isObject(auth) && observedAuths.has(auth)
+      if (attempt && observed && eventId && popupWindow)
+        watchWindow(attempt, eventId, popupWindow)
       return popup
     }
   }

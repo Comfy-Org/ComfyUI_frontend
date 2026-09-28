@@ -12,7 +12,7 @@
  * This entry is the one place the package touches the Firebase SDK;
  * importGuard.test.ts holds `./core` to that boundary.
  */
-import type { FirebaseOptions } from 'firebase/app'
+import type { FirebaseApp, FirebaseOptions } from 'firebase/app'
 import { FirebaseError, getApps, initializeApp } from 'firebase/app'
 import type { Auth, Dependencies, User, UserCredential } from 'firebase/auth'
 import {
@@ -150,12 +150,14 @@ interface AuthResolver {
   peek: () => Auth | undefined
 }
 
-/** What `getAuth` hands `initializeAuth` in a browser. */
-const GET_AUTH_PERSISTENCE: Dependencies['persistence'] = [
-  indexedDBLocalPersistence,
-  browserLocalPersistence,
-  browserSessionPersistence
-]
+/** What `getAuth` hands `initializeAuth` in a browser; read only when needed. */
+function getAuthPersistence(): Dependencies['persistence'] {
+  return [
+    indexedDBLocalPersistence,
+    browserLocalPersistence,
+    browserSessionPersistence
+  ]
+}
 
 /**
  * A pre-existing app under this name must be the same Firebase project, or
@@ -186,10 +188,34 @@ function authDependencies(
 ): Dependencies | undefined {
   if (!persistence && !watchPopupSignIn) return undefined
   return {
-    persistence: persistence ?? GET_AUTH_PERSISTENCE,
+    persistence: persistence ?? getAuthPersistence(),
     popupRedirectResolver: watchPopupSignIn
       ? watchedPopupRedirectResolver
       : browserPopupRedirectResolver
+  }
+}
+
+/**
+ * When only the popup watch asked for `initializeAuth`, an Auth that already
+ * exists for the app is reused as `getAuth` would, unwatched, rather than
+ * failing sign-in.
+ */
+function initializeOrReuse(
+  app: FirebaseApp,
+  dependencies: Dependencies,
+  mayReuse: boolean
+): Auth {
+  try {
+    return initializeAuth(app, dependencies)
+  } catch (error) {
+    if (
+      mayReuse &&
+      isFirebaseAuthErrorLike(error) &&
+      error.code === 'auth/already-initialized'
+    ) {
+      return getAuth(app)
+    }
+    throw error
   }
 }
 
@@ -221,7 +247,9 @@ function authResolver(config: FirebaseIdentityConfig): AuthResolver {
       config.persistence,
       config.watchPopupSignIn
     )
-    resolved = dependencies ? initializeAuth(app, dependencies) : getAuth(app)
+    resolved = dependencies
+      ? initializeOrReuse(app, dependencies, !config.persistence)
+      : getAuth(app)
     return resolved
   }
   return { resolve, peek: () => resolved }
@@ -241,7 +269,17 @@ export function createFirebaseIdentity(
     const provider = createProvider()
     const signIn = () => signInWithPopup(auth(), provider)
     if (!config.watchPopupSignIn) return signIn()
-    const userAtStart = auth().currentUser?.uid
+    // Read once the session has restored, so a restore landing after the
+    // popup opened is not taken for someone else signing in.
+    let userAtStart: string | null | undefined = null
+    // Never on the sign-in path: if the restore cannot be read, late results
+    // stay discarded.
+    void Promise.resolve()
+      .then(() => auth().authStateReady())
+      .then(() => {
+        userAtStart = auth().currentUser?.uid
+      })
+      .catch(() => {})
     return new Promise((resolve, reject) => {
       const firebaseCall = runWatchedPopup(provider, signIn, {
         onAbandoned: () =>

@@ -61,9 +61,10 @@ async function load() {
   const Resolver =
     watch.watchedPopupRedirectResolver as unknown as new () => ResolverUnderTest
   const resolver = new Resolver()
+  const auth = {}
   // Firebase initializes the resolver before it opens any popup.
-  const manager = await resolver._initialize({})
-  return { ...watch, resolver, manager }
+  const manager = await resolver._initialize(auth)
+  return { ...watch, resolver, manager, auth }
 }
 
 /**
@@ -85,7 +86,12 @@ async function startSignIn(
   }
   const openPopup = async () => {
     sdk.state.windows.push(popupWindow)
-    await loaded.resolver._openPopup({}, provider, 'signInViaPopup', eventId)
+    await loaded.resolver._openPopup(
+      loaded.auth,
+      provider,
+      'signInViaPopup',
+      eventId
+    )
   }
   const outcome = loaded.runWatchedPopup(
     provider,
@@ -210,6 +216,132 @@ describe('runWatchedPopup', () => {
     expect(order).toEqual(['resumed', 'firebase', 'firebase'])
   })
 
+  it('lets a late failure through untouched instead of resuming it as a sign-in', async () => {
+    const onResumed = vi.fn()
+    const loaded = await load()
+    const popup = await startSignIn(loaded, 'e1', {
+      onAbandoned: vi.fn(),
+      onResumed,
+      discardLateResult: () => false
+    })
+    popup.close()
+    await vi.advanceTimersByTimeAsync(100)
+
+    const failure = { ...result('e1'), error: { code: 'auth/user-cancelled' } }
+    loaded.manager.onEvent(failure)
+
+    expect(onResumed).not.toHaveBeenCalled()
+    expect(firebaseOnEvent).toHaveBeenCalledWith(failure)
+  })
+
+  it('discards a late result when the caller’s check throws, never delivering it', async () => {
+    const loaded = await load()
+    const popup = await startSignIn(loaded, 'e1', {
+      onAbandoned: vi.fn(),
+      discardLateResult: () => {
+        throw new Error('host bug')
+      }
+    })
+    popup.close()
+    await vi.advanceTimersByTimeAsync(100)
+
+    expect(loaded.manager.onEvent(result('e1'))).toBe(true)
+    expect(firebaseOnEvent).not.toHaveBeenCalled()
+  })
+
+  it('still hands a kept late result to Firebase when the caller’s resume throws', async () => {
+    const loaded = await load()
+    const popup = await startSignIn(loaded, 'e1', {
+      onAbandoned: vi.fn(),
+      discardLateResult: () => false,
+      onResumed: () => {
+        throw new Error('host bug')
+      }
+    })
+    popup.close()
+    await vi.advanceTimersByTimeAsync(100)
+
+    loaded.manager.onEvent(result('e1'))
+
+    expect(firebaseOnEvent).toHaveBeenCalledWith(result('e1'))
+  })
+
+  it('watches only the latest window when one sign-in opens a popup twice', async () => {
+    const onAbandoned = vi.fn()
+    const loaded = await load()
+    const provider = {}
+    const first = { closed: false }
+    const second = { closed: false }
+    sdk.state.windows.push(first, second)
+    void loaded.runWatchedPopup(
+      provider,
+      async () => {
+        await loaded.resolver._openPopup(
+          loaded.auth,
+          provider,
+          'signInViaPopup',
+          'e1'
+        )
+        await loaded.resolver._openPopup(
+          loaded.auth,
+          provider,
+          'signInViaPopup',
+          'e2'
+        )
+        return new Promise(() => {})
+      },
+      { onAbandoned, discardLateResult: () => true }
+    )
+    await vi.advanceTimersByTimeAsync(0)
+
+    first.closed = true
+    await vi.advanceTimersByTimeAsync(500)
+    expect(
+      onAbandoned,
+      'the replaced window is no longer watched'
+    ).not.toHaveBeenCalled()
+
+    second.closed = true
+    await vi.advanceTimersByTimeAsync(100)
+    expect(onAbandoned).toHaveBeenCalledOnce()
+
+    loaded.manager.onEvent(result('e1'))
+    expect(
+      firebaseOnEvent,
+      'the replaced popup’s event id is Firebase’s again'
+    ).toHaveBeenCalledWith(result('e1'))
+  })
+
+  it('does not watch popups for an Auth whose results it cannot see, even when it sees another Auth’s', async () => {
+    const onAbandoned = vi.fn()
+    const loaded = await load()
+    sdk.state.manager = {}
+    const otherAuth = {}
+    await loaded.resolver._initialize(otherAuth)
+    const provider = {}
+    const otherWindow = { closed: false }
+    sdk.state.windows.push(otherWindow)
+    void loaded.runWatchedPopup(
+      provider,
+      async () => {
+        await loaded.resolver._openPopup(
+          otherAuth,
+          provider,
+          'signInViaPopup',
+          'e9'
+        )
+        return new Promise(() => {})
+      },
+      { onAbandoned }
+    )
+    await vi.advanceTimersByTimeAsync(0)
+
+    otherWindow.closed = true
+    await vi.advanceTimersByTimeAsync(500)
+
+    expect(onAbandoned).not.toHaveBeenCalled()
+  })
+
   it('watches each popup for its own sign-in when a second starts before the first opens its window', async () => {
     // Firebase cancels the first operation when the second starts, yet still
     // opens the first one's window once its resolver is ready.
@@ -246,6 +378,38 @@ describe('runWatchedPopup', () => {
     await vi.advanceTimersByTimeAsync(100)
     expect(second).toHaveBeenCalledOnce()
     expect(first).not.toHaveBeenCalled()
+  })
+
+  it('keeps watching the live popup when Firebase opens the cancelled one’s window after it', async () => {
+    const live = vi.fn()
+    const loaded = await load()
+    const cancelled = await startSignIn(
+      loaded,
+      'e1',
+      { onAbandoned: vi.fn() },
+      { open: false }
+    )
+    const current = await startSignIn(
+      loaded,
+      'e2',
+      { onAbandoned: live },
+      { open: false }
+    )
+    cancelled.settle().reject({ code: 'auth/cancelled-popup-request' })
+    await expect(cancelled.outcome).rejects.toBeTruthy()
+
+    await current.openPopup()
+    await cancelled.openPopup()
+    cancelled.close()
+    await vi.advanceTimersByTimeAsync(500)
+    expect(
+      live,
+      'the stray window opened last is not this sign-in'
+    ).not.toHaveBeenCalled()
+
+    current.close()
+    await vi.advanceTimersByTimeAsync(100)
+    expect(live).toHaveBeenCalledOnce()
   })
 
   it('watches a retry started right after a closed popup', async () => {
@@ -328,7 +492,12 @@ describe('runWatchedPopup', () => {
     await loaded.runWatchedPopup(
       provider,
       async () => {
-        await loaded.resolver._openPopup({}, provider, 'signInViaPopup', 'e1')
+        await loaded.resolver._openPopup(
+          loaded.auth,
+          provider,
+          'signInViaPopup',
+          'e1'
+        )
       },
       { onAbandoned }
     )
@@ -340,7 +509,7 @@ describe('runWatchedPopup', () => {
   it('wraps each event manager once, however many sign-ins initialize it', async () => {
     const loaded = await load()
     const wrapped = loaded.manager.onEvent
-    await loaded.resolver._initialize({})
+    await loaded.resolver._initialize(loaded.auth)
 
     expect(loaded.manager.onEvent).toBe(wrapped)
   })

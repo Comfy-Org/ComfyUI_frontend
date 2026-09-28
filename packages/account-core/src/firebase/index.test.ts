@@ -8,7 +8,10 @@ const sdk = vi.hoisted(() => {
   const unsubscribe = vi.fn()
   const listeners: Array<(user: unknown) => void> = []
   const tokenListeners: Array<(user: unknown) => void> = []
-  const resolvedAuth: { currentUser: unknown } = { currentUser: null }
+  const resolvedAuth: {
+    currentUser: unknown
+    authStateReady: () => Promise<void>
+  } = { currentUser: null, authStateReady: async () => {} }
   return {
     unsubscribe,
     listeners,
@@ -125,7 +128,10 @@ async function makeIdentity() {
   return createFirebaseIdentity({ options: { apiKey: 'test' } })
 }
 
-const hostAuth = { name: 'host-auth' } as Partial<Auth> as Auth
+const hostAuth = {
+  name: 'host-auth',
+  authStateReady: async () => {}
+} as Partial<Auth> as Auth
 
 const localStore = { type: 'LOCAL', store: 'localStorage' } as const
 const indexedDbStore = { type: 'LOCAL', store: 'indexedDB' } as const
@@ -162,6 +168,7 @@ beforeEach(() => {
   sdk.listeners.length = 0
   sdk.tokenListeners.length = 0
   sdk.resolvedAuth.currentUser = null
+  sdk.resolvedAuth.authStateReady = async () => {}
   app.existing.length = 0
   app.initializeApp.mockClear()
   vi.useFakeTimers()
@@ -369,6 +376,69 @@ describe('popup sign-in with the popup watched', () => {
       { name: 'comfy-account' },
       { persistence: [localStore], popupRedirectResolver: watch.resolver }
     )
+  })
+
+  it('reuses an Auth that already exists for the app instead of failing, when it only asked for the watch', async () => {
+    sdk.initializeAuth.mockImplementation(() => {
+      throw Object.assign(new Error('already'), {
+        code: 'auth/already-initialized'
+      })
+    })
+    sdk.getAuth.mockImplementation(() => sdk.resolvedAuth)
+    const identity = await watchedIdentity()
+
+    expect(() => identity.initialize()).not.toThrow()
+    expect(sdk.getAuth).toHaveBeenCalledWith({ name: 'comfy-account' })
+  })
+
+  it('still refuses an existing Auth when the host chose its own persistence', async () => {
+    sdk.initializeAuth.mockImplementation(() => {
+      throw Object.assign(new Error('already'), {
+        code: 'auth/already-initialized'
+      })
+    })
+    const { createFirebaseIdentity } = await import('./index.js')
+    const identity = createFirebaseIdentity({
+      options: { apiKey: 'test' },
+      persistence: [localStore],
+      watchPopupSignIn: true
+    })
+
+    expect(() => identity.initialize()).toThrow('already')
+  })
+
+  it('still signs in, discarding late results, on an Auth that cannot say when its session restored', async () => {
+    sdk.resolvedAuth.authStateReady = undefined as never
+    pendingPopup()
+    const identity = await watchedIdentity()
+    const outcome = identity.signInWithGoogle({ onResumed: vi.fn() })
+    await vi.advanceTimersByTimeAsync(0)
+
+    watch.abandon()
+
+    await expect(outcome).rejects.toMatchObject({
+      code: 'auth/popup-closed-by-user'
+    })
+    expect(watch.lateResult()).toBe('discarded')
+  })
+
+  it('keeps a late result when the only change since the popup opened is the session restoring', async () => {
+    let restored!: () => void
+    sdk.resolvedAuth.authStateReady = () =>
+      new Promise<void>((resolve) => {
+        restored = resolve
+      })
+    pendingPopup()
+    const identity = await watchedIdentity()
+    void identity.signInWithGoogle({ onResumed: vi.fn() }).catch(() => {})
+    await vi.advanceTimersByTimeAsync(0)
+
+    sdk.resolvedAuth.currentUser = { uid: 'restored-user' }
+    restored()
+    await vi.advanceTimersByTimeAsync(0)
+    watch.abandon()
+
+    expect(watch.lateResult()).toBe('kept')
   })
 
   it('rejects with Firebase’s own dismissal the moment the popup closes with no result', async () => {

@@ -1,11 +1,9 @@
-import type { UserCredential } from 'firebase/auth'
-import { onScopeDispose, ref } from 'vue'
+import { ref } from 'vue'
 import type { RouteLocationRaw } from 'vue-router'
 
 import { isEmbeddedWebView } from '@comfyorg/account-core/webviewDetection'
 
-import { useAuthActions } from '@/composables/auth/useAuthActions'
-import type { SocialSignInOptions } from '@/stores/authStore'
+import { useSocialSignIn } from '@/platform/auth/social/useSocialSignIn'
 import { usePostAuthRedirect } from '@/platform/cloud/onboarding/composables/usePostAuthRedirect'
 
 /**
@@ -18,7 +16,6 @@ export function useCloudAuthPage(options: {
   successSummary: string
   defaultRedirect: () => RouteLocationRaw
 }) {
-  const authActions = useAuthActions()
   const authError = ref('')
   const showEmailForm = ref(false)
 
@@ -28,29 +25,10 @@ export function useCloudAuthPage(options: {
     defaultRedirect: options.defaultRedirect
   })
 
-  let pageOpen = true
-  onScopeDispose(() => {
-    pageOpen = false
+  const social = useSocialSignIn({
+    isNewUser: () => options.isNewUser,
+    onSignedIn: onAuthSuccess
   })
-
-  /** `undefined` means useAuthActions already toasted the failure. */
-  const signInWith = async (
-    provider: (
-      opts?: SocialSignInOptions
-    ) => Promise<UserCredential | undefined>,
-    resumed?: Promise<UserCredential>
-  ) => {
-    authError.value = ''
-    const signedIn = await provider({
-      isNewUser: options.isNewUser,
-      resumed,
-      popup: {
-        onResumed: (credential) => void signInWith(provider, credential),
-        keepLateResult: () => pageOpen
-      }
-    })
-    if (signedIn) await onAuthSuccess()
-  }
 
   return {
     authError,
@@ -65,7 +43,13 @@ export function useCloudAuthPage(options: {
     switchToSocialLogin: () => {
       showEmailForm.value = false
     },
-    signInWithGoogle: () => signInWith(authActions.signInWithGoogle),
-    signInWithGithub: () => signInWith(authActions.signInWithGithub)
+    signInWithGoogle: () => {
+      authError.value = ''
+      return social.signInWithGoogle()
+    },
+    signInWithGithub: () => {
+      authError.value = ''
+      return social.signInWithGithub()
+    }
   }
 }
