@@ -73,3 +73,21 @@ test('sends the old studio address to the app page it named', async ({
   await page.goto('/cinematic-studio/?app=reshoot&ux=d&model=flux')
   await expect(page).toHaveURL(/\/models\/apps\/reshoot\/\?ux=d&model=flux$/)
 })
+
+test.describe('GitHub link before an app repo is published', () => {
+  for (const path of [
+    '/models/apps/cinematic-studio/',
+    '/models/apps/reshoot/'
+  ])
+    test(`shows a placeholder, not a link, on ${path}`, async ({
+      page,
+      context
+    }) => {
+      await mockFlags(context, { apps: true, workflows: false })
+      await page.goto(path)
+      await expect(page.getByText('GitHub · Coming soon').first()).toBeVisible()
+      await expect(
+        page.getByRole('link', { name: 'View on GitHub' })
+      ).toHaveCount(0)
+    })
+})
