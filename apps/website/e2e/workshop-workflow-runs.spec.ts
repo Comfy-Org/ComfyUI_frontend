@@ -21,6 +21,7 @@ const image = readFileSync('e2e/assets/placeholder-1x1.webp')
 
 async function setup(context: BrowserContext) {
   let enabled = true
+  let creditRefusal = false
   let generation = 0
   await context.route('https://apis.google.com/js/api.js*', (route) =>
     route.abort('blockedbyclient')
@@ -100,6 +101,16 @@ async function setup(context: BrowserContext) {
     })
     if (url.pathname === '/api/prompt') {
       expect(request.headers()).toHaveProperty('authorization')
+      if (creditRefusal)
+        return route.fulfill({
+          status: 429,
+          json: {
+            error: {
+              message: 'Insufficient credits to queue workflows',
+              type: 'PAYMENT_REQUIRED'
+            }
+          }
+        })
       return route.fulfill({ json: { prompt_id: runId } })
     }
     if (url.pathname.endsWith('/cancel'))
@@ -115,13 +126,16 @@ async function setup(context: BrowserContext) {
     disable() {
       enabled = false
     },
+    refuseForCredits() {
+      creditRefusal = true
+    },
     cancel() {
       current = { ...current, status: 'cancelled', update_time: Date.now() }
     }
   }
 }
 
-async function signInAndRun(
+async function signInAndSubmit(
   page: Page,
   account: { email: string; password: string }
 ) {
@@ -143,6 +157,13 @@ async function signInAndRun(
     page.getByRole('button', { name: 'Replace photo.webp' })
   ).toBeVisible()
   await page.getByTestId('workflow-run').click()
+}
+
+async function signInAndRun(
+  page: Page,
+  account: { email: string; password: string }
+) {
+  await signInAndSubmit(page, account)
   await expect(page.getByTestId('workflow-run')).toHaveText('Queued')
 }
 
@@ -314,6 +335,31 @@ test('workflow cancellation survives disabled admission and hides on sign-out', 
   await page.locator('[data-testid="header-account"]:visible').click()
   await page.getByTestId('account-sign-out').click()
   await expect(page.getByTestId('workflow-hero')).not.toBeVisible()
+  expect(
+    cloud.commands.filter(
+      (command) => command.method === 'POST' && command.path === '/api/prompt'
+    )
+  ).toHaveLength(1)
+})
+
+test('a Cloud credit refusal sent as 429 asks for credits instead of reporting a rate limit', async ({
+  page,
+  context,
+  modelsAccount
+}) => {
+  const cloud = await setup(context)
+  cloud.refuseForCredits()
+  await signInAndSubmit(page, modelsAccount)
+  await expect(
+    page.getByText('Not enough credits. Add credits to continue.', {
+      exact: true
+    })
+  ).toBeVisible()
+  await expect(
+    page.getByText('Too many runs right now. Wait a moment and try again.', {
+      exact: true
+    })
+  ).toHaveCount(0)
   expect(
     cloud.commands.filter(
       (command) => command.method === 'POST' && command.path === '/api/prompt'
