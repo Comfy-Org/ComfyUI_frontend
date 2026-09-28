@@ -130,11 +130,10 @@ test(
       .toBe(true)
     await expect
       .poll(() =>
-        scrollContainer.evaluate(
-          (element) =>
-            Math.abs(
-              element.scrollHeight - element.scrollTop - element.clientHeight
-            )
+        scrollContainer.evaluate((element) =>
+          Math.abs(
+            element.scrollHeight - element.scrollTop - element.clientHeight
+          )
         )
       )
       .toBeLessThanOrEqual(1)

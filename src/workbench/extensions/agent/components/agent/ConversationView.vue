@@ -54,9 +54,7 @@ const shouldFollowLatest = ref(true)
 const atBottom = ref(true)
 const bottomGracePx = 16
 const followIntentTolerancePx = 1
-let pendingProgrammaticScroll:
-  | { target: number; frame: number }
-  | undefined
+let pendingProgrammaticScroll: { target: number; frame: number } | undefined
 let pendingConversationId: string | undefined
 
 const top = ref<HTMLElement>()

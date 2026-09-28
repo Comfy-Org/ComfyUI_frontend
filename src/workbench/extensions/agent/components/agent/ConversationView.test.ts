@@ -187,7 +187,7 @@ describe('ConversationView', () => {
 
   it('starts a restored conversation at the latest message', async () => {
     const assistant = assistantMessage({
-      parts: [{ type: 'text', text: 'latest reply', state: 'done' }],
+      parts: [{ type: 'text', text: 'latest reply', state: 'done' }]
     })
     render(ConversationView, {
       props: { entries: [assistant] },
@@ -297,7 +297,7 @@ describe('ConversationView', () => {
 
   it('resumes following when the conversation identity changes', async () => {
     const assistant = assistantMessage({
-      parts: [{ type: 'text', text: 'first thread', state: 'done' }],
+      parts: [{ type: 'text', text: 'first thread', state: 'done' }]
     })
     const scrollTo = vi.fn()
     Element.prototype.scrollTo = scrollTo
