@@ -282,6 +282,7 @@ jobs:
 
       - name: Check website E2E result
         env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
           SHOULD_RUN: ${{ needs.changes.outputs.app-website-changes == 'true' || needs.changes.outputs.packages-changes == 'true' }}
           SHARD_RESULT: ${{ needs.website-e2e-shard.result }}
           REPORT_RESULT: ${{ needs.website-e2e-report.result }}
