@@ -1,7 +1,7 @@
 import { inputLink } from '@/lib/litegraph/src/node/slotLinks'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LLink, replaceLinkTopology } from '@/lib/litegraph/src/LLink'
-import { mintLinkId } from '../idAllocation'
+import { linkIdReservations, mintLinkId } from '../idAllocation'
 import { anchorRerouteChain } from '@/lib/litegraph/src/Reroute'
 import type { RerouteId } from '@/lib/litegraph/src/Reroute'
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
@@ -19,7 +19,6 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { SubgraphInputNode } from './SubgraphInputNode'
 import type { SubgraphOutput } from './SubgraphOutput'
 import { SubgraphSlot } from './SubgraphSlotBase'
-import { collectReservedLinkIds } from './subgraphDeduplication'
 import { isNodeSlot, isSubgraphOutput } from './subgraphUtils'
 
 /**
@@ -88,8 +87,9 @@ export class SubgraphInput extends SubgraphSlot {
       subgraph.beforeChange()
     }
 
-    const linkId = mintLinkId(subgraph.state, () =>
-      collectReservedLinkIds(subgraph.rootGraph)
+    const linkId = mintLinkId(
+      subgraph.state,
+      linkIdReservations(subgraph.rootGraph)
     )
 
     const link = new LLink(

@@ -54,7 +54,7 @@ export type GroupNodeLink = [
   targetNodeIndex: number,
   targetSlot: number,
   sourceNodeId: SerializedNodeId,
-  type: ISlotType
+  type?: unknown
 ]
 type SlotLinks = Partial<Record<number, GroupNodeLink>>
 type LinksFromMap = Partial<
@@ -327,7 +327,7 @@ export class GroupNodeConfig {
       } else {
         // Reroute used as a pipe
         for (const l of this.nodeData.links) {
-          if (l[2] === node.index) {
+          if (l[2] === node.index && isSlotType(l[5])) {
             rerouteType = l[5]
             break
           }

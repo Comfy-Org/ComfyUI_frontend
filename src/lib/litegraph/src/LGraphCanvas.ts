@@ -4305,10 +4305,16 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
       remapClipboardSubgraphIds(items)
       createClipboardSubgraphs(context)
-      createClipboardGroups(context)
+      for (const info of items.groups) {
+        info.id = -1
+        const group = new LGraphGroup()
+        group.configure(info)
+        graph.add(group)
+        result.created.push(group)
+      }
       createClipboardNodes(context)
       createClipboardReroutes(context)
-      createClipboardLinks(context)
+      for (const info of items.links) createClipboardLink(context, info)
       removeUnusedClipboardReroutes(context)
       positionClipboardItems(context)
       updateClipboardNodeLayout(context)
@@ -8886,17 +8892,6 @@ function createClipboardSubgraphs(context: ClipboardPasteContext): void {
   }
 }
 
-function createClipboardGroups(context: ClipboardPasteContext): void {
-  const { graph, items, result } = context
-  for (const info of items.groups) {
-    info.id = -1
-    const group = new LGraphGroup()
-    group.configure(info)
-    graph.add(group)
-    result.created.push(group)
-  }
-}
-
 function createClipboardNodes(context: ClipboardPasteContext): void {
   const { dx, dy, graph, items, result, targetSlotByLink } = context
   for (const info of items.nodes) {
@@ -8962,10 +8957,6 @@ function createClipboardReroutes(context: ClipboardPasteContext): void {
     const parent = result.reroutes.get(reroute.parentId)
     if (parent) reroute.parentId = parent.id
   }
-}
-
-function createClipboardLinks(context: ClipboardPasteContext): void {
-  for (const info of context.items.links) createClipboardLink(context, info)
 }
 
 function createClipboardLink(

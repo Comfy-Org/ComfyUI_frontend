@@ -1,3 +1,9 @@
+import type { LGraph } from './LGraph'
+import type {
+  ISerialisedGroup,
+  ISerialisedNode,
+  SerialisableLLink
+} from './types/serialisation'
 import { toGroupId } from '@/types/groupId'
 import type { GroupId } from '@/types/groupId'
 import { toLinkId } from '@/types/linkId'
@@ -15,7 +21,7 @@ export interface LGraphState {
   lastRerouteId: RerouteId
 }
 
-interface ReservedIdIndex {
+export interface ReservedIdIndex {
   has(id: number): boolean
   collect(): ReadonlySet<number>
 }
@@ -31,6 +37,81 @@ export function createLGraphState(): LGraphState {
     lastNodeId: 0,
     lastLinkId: toLinkId(0),
     lastRerouteId: toRerouteId(0)
+  }
+}
+
+export function collectReservedNodeIds(
+  rootGraph: Pick<LGraph, 'nodes' | 'subgraphs'>,
+  rootNodes: ISerialisedNode[] = []
+): Set<NodeId> {
+  return new Set([
+    ...rootNodes.map((node) => toNodeId(node.id)),
+    ...[rootGraph, ...rootGraph.subgraphs.values()].flatMap((owner) =>
+      owner.nodes.map((node) => node.id)
+    )
+  ])
+}
+
+export function collectReservedGroupIds(
+  graph: Pick<LGraph, 'groups' | 'subgraphs'>,
+  serializedGroups: ISerialisedGroup[] = []
+): Set<number> {
+  return new Set<number>([
+    ...serializedGroups.map((group) => group.id),
+    ...[graph, ...graph.subgraphs.values()].flatMap((owner) =>
+      owner.groups.map((group) => group.id)
+    )
+  ])
+}
+
+export function collectReservedLinkIds(
+  graph: Pick<LGraph, 'links' | 'floatingLinks' | 'subgraphs'>,
+  serializedFloatingLinks: SerialisableLLink[] = []
+): Set<number> {
+  return new Set([
+    ...serializedFloatingLinks.map((link) => link.id),
+    ...[graph, ...graph.subgraphs.values()].flatMap((owner) => [
+      ...owner.links.keys(),
+      ...owner.floatingLinks.keys()
+    ])
+  ])
+}
+
+export function linkIdReservations(
+  graph: Pick<LGraph, 'links' | 'floatingLinks' | 'subgraphs'>
+): ReservedIdIndex {
+  return {
+    has: (id) => {
+      const linkId = toLinkId(id)
+      return [graph, ...graph.subgraphs.values()].some(
+        (owner) => owner.links.has(linkId) || owner.floatingLinks.has(linkId)
+      )
+    },
+    collect: () => collectReservedLinkIds(graph)
+  }
+}
+
+export function collectReservedRerouteIds(
+  graph: Pick<LGraph, 'reroutes' | 'subgraphs'>
+): Set<number> {
+  return new Set<number>(
+    [graph, ...graph.subgraphs.values()].flatMap((owner) =>
+      [...owner.reroutes.values()].map((reroute) => reroute.id)
+    )
+  )
+}
+
+export function rerouteIdReservations(
+  graph: Pick<LGraph, 'reroutes' | 'subgraphs'>
+): ReservedIdIndex {
+  return {
+    has: (id) => {
+      const rerouteId = toRerouteId(id)
+      return [graph, ...graph.subgraphs.values()].some((owner) =>
+        owner.reroutes.has(rerouteId)
+      )
+    },
+    collect: () => collectReservedRerouteIds(graph)
   }
 }
 

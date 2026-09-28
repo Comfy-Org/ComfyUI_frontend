@@ -123,7 +123,7 @@ describe('GroupNodeConfig.getLinks', () => {
   })
 
   it('normalizes a missing primitive link type to null', () => {
-    const linkWithoutType = [0, 0, 1, 0, 1] as unknown as GroupNodeLink
+    const linkWithoutType = [0, 0, 1, 0, 1] satisfies GroupNodeLink
     const config = configFrom([linkWithoutType])
 
     expect(
@@ -134,7 +134,7 @@ describe('GroupNodeConfig.getLinks', () => {
   test.for([{ unexpected: true }, ['IMAGE', 42]])(
     'normalizes an invalid primitive link type to null',
     (invalidType) => {
-      const link = [0, 0, 1, 0, 1, invalidType] as unknown as GroupNodeLink
+      const link = [0, 0, 1, 0, 1, invalidType] satisfies GroupNodeLink
       const config = configFrom([link])
 
       expect(

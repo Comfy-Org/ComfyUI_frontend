@@ -24,7 +24,6 @@ import {
   LGraphCanvas,
   LGraphNode,
   LiteGraph,
-  Subgraph,
   SubgraphNode,
   createUuidv4
 } from '@/lib/litegraph/src/litegraph'
@@ -203,33 +202,78 @@ describe('clipboard ID allocation', () => {
     expect(rootGraph.nodes).toEqual([])
   })
 
-  it('releases registered subgraphs when their configuration throws', () => {
+  it('releases registered subgraphs after partial configuration', () => {
+    const nodeType = 'test/subgraph-partial-configuration'
+    let removalRan = false
+    class PartiallyConfiguredNode extends LGraphNode {
+      override configure(info: ISerialisedNode): void {
+        super.configure(info)
+        throw new Error('subgraph configure failed')
+      }
+
+      override onRemoved(): void {
+        removalRan = true
+      }
+    }
+    LiteGraph.registerNodeType(nodeType, PartiallyConfiguredNode)
     const rootGraph = new LGraph()
     const canvas = createCanvas(rootGraph)
     const subgraph = createClipboardSubgraph(createUuidv4())
-    let configureRan = false
-    const configure = vi
-      .spyOn(Subgraph.prototype, 'configure')
-      .mockImplementationOnce(() => {
-        configureRan = true
-        throw new Error('subgraph configure failed')
-      })
-    onTestFinished(() => configure.mockRestore())
+    subgraph.nodes = [createSerialisedNode(1, nodeType)]
 
     expect(() =>
       canvas._deserializeItems({ subgraphs: [subgraph] }, {})
     ).toThrow('subgraph configure failed')
-    expect(configureRan).toBe(true)
+    expect(removalRan).toBe(true)
+    expect(rootGraph.subgraphs.size).toBe(0)
+  })
+
+  it('retains configuration and rollback failures', () => {
+    const nodeType = 'test/subgraph-failed-rollback'
+    const configurationError = new Error('subgraph configure failed')
+    const rollbackError = new Error('subgraph rollback failed')
+    class FailedRollbackNode extends LGraphNode {
+      override configure(info: ISerialisedNode): void {
+        super.configure(info)
+        throw configurationError
+      }
+
+      override onRemoved(): void {
+        throw rollbackError
+      }
+    }
+    LiteGraph.registerNodeType(nodeType, FailedRollbackNode)
+    const rootGraph = new LGraph()
+    const canvas = createCanvas(rootGraph)
+    const subgraph = createClipboardSubgraph(createUuidv4())
+    subgraph.nodes = [createSerialisedNode(1, nodeType)]
+
+    let thrown: unknown
+    try {
+      canvas._deserializeItems({ subgraphs: [subgraph] }, {})
+    } catch (error) {
+      thrown = error
+    }
+
+    expect(thrown).toBeInstanceOf(AggregateError)
+    if (!(thrown instanceof AggregateError)) return
+    expect(thrown.cause).toBe(configurationError)
+    expect(thrown.errors).toEqual([configurationError, rollbackError])
     expect(rootGraph.subgraphs.size).toBe(0)
   })
 
   it('rolls back nodes, links, and reroutes after a late lifecycle failure', () => {
     const nodeType = 'test/clipboard-rollback-late'
-    let callbackRan = false
+    let topologyExisted = false
     class ThrowingConfiguredNode extends LGraphNode {
       override onGraphConfigured(): void {
-        callbackRan = true
+        topologyExisted =
+          this.graph?.links.size === 1 && this.graph.reroutes.size === 1
         throw new Error('graph configured failed')
+      }
+
+      override onRemoved(): void {
+        throw new Error('node removal failed')
       }
     }
     LiteGraph.registerNodeType(nodeType, ThrowingConfiguredNode)
@@ -260,7 +304,7 @@ describe('clipboard ID allocation', () => {
         {}
       )
     ).toThrow('graph configured failed')
-    expect(callbackRan).toBe(true)
+    expect(topologyExisted).toBe(true)
     expect(rootGraph.nodes).toEqual([])
     expect(rootGraph.links.size).toBe(0)
     expect(rootGraph.reroutes.size).toBe(0)

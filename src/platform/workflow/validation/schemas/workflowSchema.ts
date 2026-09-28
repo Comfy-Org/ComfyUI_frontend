@@ -6,6 +6,7 @@ import type {
   ClipboardItems,
   ExportedSubgraph
 } from '@/lib/litegraph/src/types/serialisation'
+import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { parseLinkId, toLinkId } from '@/types/linkId'
 import type { LinkPresentation } from '@/types/linkPresentation'
@@ -236,7 +237,9 @@ const zProperties = z
   })
   .catchall(zNodeProperty.optional())
 
-const zWidgetValues = z.union([z.array(z.any()), z.record(z.any())])
+const zWidgetValue: z.ZodType<TWidgetValue> = z.custom(isWidgetValue)
+const zWidgetValues: z.ZodType<TWidgetValue[] | Record<string, TWidgetValue>> =
+  z.union([z.array(zWidgetValue), z.record(zWidgetValue)])
 const MAX_CLIPBOARD_WIDGET_VALUES = 10_000
 
 function hasSupportedClipboardWidgetValuesLength(
@@ -249,12 +252,16 @@ function hasSupportedClipboardWidgetValuesLength(
   )
 }
 
+function isArrayLikeLength(value: TWidgetValue): value is number {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0
+}
+
 function normalizeClipboardWidgetValues(
   values: z.output<typeof zWidgetValues> | undefined
 ): TWidgetValue[] | undefined {
   if (!values || Array.isArray(values)) return values
   const length = values.length
-  if (!Number.isSafeInteger(length) || length < 0) return []
+  if (!isArrayLikeLength(length)) return []
   const normalized: TWidgetValue[] = []
   normalized.length = length
   for (const [key, value] of Object.entries(values)) {

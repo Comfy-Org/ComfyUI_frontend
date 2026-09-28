@@ -1,4 +1,3 @@
-import type { LGraph } from '../LGraph'
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 import { toGroupId } from '@/types/groupId'
 import {
@@ -25,7 +24,6 @@ import { createUuidv4 } from '@/utils/uuid'
 import type {
   ExportedSubgraph,
   ExposedWidget,
-  ISerialisedGroup,
   ISerialisedNode,
   SerialisableLLink
 } from '../types/serialisation'
@@ -226,30 +224,19 @@ function deduplicateClonedSubgraphNodeIds(
   clonedRootNodes?: ISerialisedNode[]
 ): void {
   const usedNodeIdKeys = new Set(reservedNodeIdKeys)
-  const usedNodeIds = new Set<number>()
-  for (const id of reservedNodeIdKeys) {
-    const numericId = numericSerializedNodeId(id)
-    if (numericId !== null) usedNodeIds.add(numericId)
-  }
+  const usedNodeIds = collectNumericNodeIds(reservedNodeIdKeys)
   const subgraphIdSet = new Set(clonedSubgraphs.map((sg) => sg.id))
   const remapBySubgraph = new Map<string, Map<NodeId, SerializedNodeId>>()
 
   for (const subgraph of clonedSubgraphs) {
-    const remappedIds = remapNodeIds(
-      subgraph.nodes ?? [],
+    const remappedIds = remapSubgraphNodeIds(
+      subgraph,
       usedNodeIdKeys,
       usedNodeIds,
       state
     )
-
     if (remappedIds.size === 0) continue
     remapBySubgraph.set(subgraph.id, remappedIds)
-
-    patchSerialisedLinks(
-      [...(subgraph.links ?? []), ...(subgraph.floatingLinks ?? [])],
-      remappedIds
-    )
-    patchPromotedWidgets(subgraph.widgets ?? [], remappedIds)
   }
 
   for (const subgraph of clonedSubgraphs) {
@@ -260,9 +247,41 @@ function deduplicateClonedSubgraphNodeIds(
     )
   }
 
-  if (clonedRootNodes) {
-    patchSubgraphNodeReferences(clonedRootNodes, subgraphIdSet, remapBySubgraph)
+  patchSubgraphNodeReferences(
+    clonedRootNodes ?? [],
+    subgraphIdSet,
+    remapBySubgraph
+  )
+}
+
+function collectNumericNodeIds(ids: ReadonlySet<NodeId>): Set<number> {
+  const numericIds = new Set<number>()
+  for (const id of ids) {
+    const numericId = numericSerializedNodeId(id)
+    if (numericId !== null) numericIds.add(numericId)
   }
+  return numericIds
+}
+
+function remapSubgraphNodeIds(
+  subgraph: ExportedSubgraph,
+  usedNodeIdKeys: Set<NodeId>,
+  usedNodeIds: Set<number>,
+  state: LGraphState
+): Map<NodeId, SerializedNodeId> {
+  const remappedIds = remapNodeIds(
+    subgraph.nodes ?? [],
+    usedNodeIdKeys,
+    usedNodeIds,
+    state
+  )
+  if (remappedIds.size === 0) return remappedIds
+  patchSerialisedLinks(
+    [...(subgraph.links ?? []), ...(subgraph.floatingLinks ?? [])],
+    remappedIds
+  )
+  patchPromotedWidgets(subgraph.widgets ?? [], remappedIds)
+  return remappedIds
 }
 
 /**
@@ -305,18 +324,6 @@ function remapNodeIds(
   return remappedIds
 }
 
-export function collectReservedNodeIds(
-  rootGraph: Pick<LGraph, 'nodes' | 'subgraphs'>,
-  rootNodes: ISerialisedNode[] = []
-): Set<NodeId> {
-  return new Set([
-    ...rootNodes.map((node) => toNodeId(node.id)),
-    ...[rootGraph, ...rootGraph.subgraphs.values()].flatMap((owner) =>
-      owner.nodes.map((node) => node.id)
-    )
-  ])
-}
-
 /** Parses a serialized node ID as an integer, or `null` when non-numeric. */
 function numericSerializedNodeId(id: SerializedNodeId): number | null {
   const key = toNodeId(id)
@@ -349,31 +356,6 @@ function patchPromotedWidgets(
     const newId = remappedIds.get(toNodeId(widget.id))
     if (newId !== undefined) widget.id = newId
   }
-}
-
-export function collectReservedGroupIds(
-  graph: Pick<LGraph, 'groups' | 'subgraphs'>,
-  serializedGroups: ISerialisedGroup[] = []
-): Set<number> {
-  return new Set<number>([
-    ...serializedGroups.map((group) => group.id),
-    ...[graph, ...graph.subgraphs.values()].flatMap((g) =>
-      g.groups.map((group) => group.id)
-    )
-  ])
-}
-
-export function collectReservedLinkIds(
-  graph: Pick<LGraph, 'links' | 'floatingLinks' | 'subgraphs'>,
-  serializedFloatingLinks: SerialisableLLink[] = []
-): Set<number> {
-  return new Set([
-    ...serializedFloatingLinks.map((link) => link.id),
-    ...[graph, ...graph.subgraphs.values()].flatMap((owner) => [
-      ...owner.links.keys(),
-      ...owner.floatingLinks.keys()
-    ])
-  ])
 }
 
 export function deduplicateSubgraphLinkIds(
@@ -418,16 +400,6 @@ export function deduplicateSubgraphGroupIds(
       'group'
     )
   }
-}
-
-export function collectReservedRerouteIds(
-  graph: Pick<LGraph, 'reroutes' | 'subgraphs'>
-): Set<number> {
-  return new Set<number>(
-    [graph, ...graph.subgraphs.values()].flatMap((g) =>
-      [...g.reroutes.values()].map((reroute) => reroute.id)
-    )
-  )
 }
 
 /**

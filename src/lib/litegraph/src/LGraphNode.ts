@@ -27,7 +27,7 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import type { GraphScope } from '@/types/graphScopeId'
-import { mintLinkId } from './idAllocation'
+import { linkIdReservations, mintLinkId } from './idAllocation'
 import { UNASSIGNED_NODE_ID, toNodeId, serializeNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import type { NodeProperty, NodeState } from '@/types/nodeState'
@@ -75,7 +75,6 @@ import {
   resolveInputSlotView
 } from './node/slotDescriptorView'
 import { initializeWidgetsView } from './node/widgetsView'
-import { collectReservedLinkIds } from './subgraph/subgraphDeduplication'
 import {
   extensionConfigureView,
   hydrateExtensionPayload,
@@ -3226,9 +3225,7 @@ export class LGraphNode
     const maybeCommonType =
       input.type && output.type && commonType(input.type, output.type)
 
-    const linkId = mintLinkId(graph.state, () =>
-      collectReservedLinkIds(graph.rootGraph)
-    )
+    const linkId = mintLinkId(graph.state, linkIdReservations(graph.rootGraph))
 
     const link = new LLink(
       linkId,
