@@ -1628,6 +1628,21 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
       expect(useTelemetry()!.trackAgentPaywallShown).toHaveBeenCalledTimes(2)
     )
   })
+
+  it('does not report the same exhaustion episode after a panel remount', async () => {
+    paywallHasFunds.value = false
+    const firstPanel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByTestId(STANDING)
+    await waitFor(() =>
+      expect(useTelemetry()!.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
+    )
+
+    firstPanel.unmount()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByTestId(STANDING)
+
+    expect(useTelemetry()!.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
+  })
 })
 
 describe('AgentPanelRoot session notices', () => {
