@@ -387,6 +387,23 @@ describe('normalizeAgentTranscript', () => {
     ])
   })
 
+  it('ignores a streaming row an older turn left behind', () => {
+    const stale = row(1, 'assistant', 'turn-a', '', 'row-1')
+    stale.status = 'streaming'
+
+    const transcript = normalizeAgentTranscript([
+      stale,
+      row(2, 'user', 'turn-b', 'next', 'row-2'),
+      row(3, 'assistant', 'turn-b', 'all done', 'row-3')
+    ])
+
+    expect(transcript.pending).toBeUndefined()
+    expect(transcript.messages.map((message) => message.streaming)).toEqual([
+      false,
+      false
+    ])
+  })
+
   it.for(['success', 'failed', 'cancelled', 'timeout', 'unrecognized'])(
     'maps terminal tool-call status %s through the broadened vocabulary',
     (status) => {

@@ -305,29 +305,39 @@ export function useAgentSession(deps: AgentSessionDeps) {
    * live turn has no background entry to fall back on either, so they are
    * dropped outright. Losing an `agent_message_done` that way leaves the turn
    * the transcript then restores running for good (PM-1776); losing a delta
-   * silently truncates the reply. Scoped to the one thread, so a hydrate that
-   * is abandoned discards only frames its own thread would have replayed.
+   * silently truncates the reply.
    */
-  let hydration: { threadId: string; events: AgentWsEvent[] } | null = null
+  interface HydrationBuffer {
+    threadId: string
+    events: AgentWsEvent[]
+  }
 
-  function drainHydration(): void {
-    const buffered = hydration
-    hydration = null
-    if (buffered === null) return
-    for (const event of buffered.events) handleAgentEvent(event)
+  let hydration: HydrationBuffer | null = null
+
+  /**
+   * Deferred, never dropped. `ingest` routes each frame by thread and turn, so
+   * replaying one whose hydrate was superseded or failed still reaches the
+   * background turn it belongs to -- and a background turn that never receives
+   * its own `agent_message_done` is one `resumeBackgroundTurn` later restores
+   * as permanently running. Frames taken while a newer hydrate owns the slot
+   * land in that hydrate's buffer and are deferred again rather than lost.
+   */
+  function drainHydration(buffer: HydrationBuffer): void {
+    if (hydration === buffer) hydration = null
+    for (const event of buffer.events.splice(0)) handleAgentEvent(event)
   }
 
   async function hydrateFromServer(
     threadId: string,
     isCurrent: () => boolean = () => true
   ): Promise<boolean> {
-    const buffer: NonNullable<typeof hydration> = { threadId, events: [] }
+    const buffer: HydrationBuffer = { threadId, events: [] }
     hydration = buffer
     try {
       const history = await rest.getMessages(threadId)
       if (conversationStore.threadId !== threadId || !isCurrent()) return false
       conversationStore.hydrate(history)
-      drainHydration()
+      drainHydration(buffer)
       await workflow?.restored?.(conversationStore.latestWorkflowId, isCurrent)
       if (conversationStore.threadId !== threadId || !isCurrent()) return false
       return true
@@ -342,9 +352,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       pushError(error instanceof Error ? error.message : String(error))
       return false
     } finally {
-      // Only the owner clears the slot: a hydrate that superseded this one has
-      // its own buffer waiting on a GET that has not landed yet.
-      if (hydration === buffer) hydration = null
+      drainHydration(buffer)
     }
   }
 

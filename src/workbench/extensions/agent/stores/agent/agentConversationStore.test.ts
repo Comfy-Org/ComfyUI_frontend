@@ -664,11 +664,30 @@ describe('useAgentConversationStore', () => {
     store.setThreadId('th')
     store.hydrate([
       historyRow(1, 'user', 'turn-a', 'go'),
-      { ...historyRow(2, 'assistant', 'turn-a', '', 't1'), status: 'streaming' }
+      {
+        ...historyRow(2, 'assistant', 'turn-a', '', 't1'),
+        status: 'streaming',
+        content: {
+          tool_calls: [
+            { id: 'call-1', tool_name: 'add_node', status: 'running' }
+          ]
+        }
+      }
     ])
 
     expect(store.activeTurnId).toBeNull()
     expect(store.messages[0].streaming).toBe(false)
+    // No transport was created for this copy, so nothing could ever settle a
+    // part left in flight on it.
+    expect(store.messages[0].parts).toEqual([
+      {
+        type: 'tool',
+        callId: 'call-1',
+        name: 'add_node',
+        state: 'done',
+        ok: false
+      }
+    ])
 
     store.ingest(done('t1'))
     store.resumeBackgroundTurn()

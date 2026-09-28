@@ -257,9 +257,9 @@ function pendingRunApproval(
 /**
  * Applies one persisted assistant row onto its running message: appends any
  * parsed tool-call parts and text part, then, for a row the server still
- * reports as `streaming`, marks the message live and attaches a `runApproval`
- * part when that row is also mid-ask. Returns the `pending` entry for a live
- * row, or `undefined` for a terminal one.
+ * reports as `streaming`, attaches a `runApproval` part when that row is also
+ * mid-ask. Returns the `pending` entry for a live row, or `undefined` for a
+ * terminal one; `normalizeAgentTranscript` owns `message.streaming` itself.
  *
  * PM-1776/PM-1682: `row.status` is the only authority on whether the turn is
  * still running. Reading a live row as finished unless it carried a
@@ -273,7 +273,6 @@ function applyAssistantRow(
   text: string
 ): NormalizedAgentTranscript['pending'] {
   const isLive = row.status === 'streaming'
-  message.streaming = isLive
   appendAssistantContent(message, row, text, isLive)
 
   if (!isLive) return undefined
@@ -390,6 +389,16 @@ export function normalizeAgentTranscript(
       if (rowPending) pending = rowPending
     }
   }
+
+  // Only the thread's newest turn can still be running. A `streaming` row an
+  // older one left behind is a stale write the thread has moved past, and
+  // restoring it would hand the composer a turn nothing will ever settle.
+  const liveTurn = turnOrder.at(-1)
+  if (
+    pending &&
+    (liveTurn === undefined || pending.message !== assistants.get(liveTurn))
+  )
+    pending = undefined
 
   const messages = turnOrder.map((turnId) => {
     const message = assistants.get(turnId) ?? createAssistantMessage(turnId)

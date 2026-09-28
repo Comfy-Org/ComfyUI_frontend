@@ -440,6 +440,43 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(conversation.activeTurnId).toBeNull()
   })
 
+  // A buffered frame defers, it does not disappear: the hydrate that armed the
+  // buffer may never reach its own replay, and the background turn waiting on
+  // that done is the one `resumeBackgroundTurn` would otherwise restore as
+  // permanently running.
+  it('(b4c) a superseded hydrate still delivers the done its stashed turn waits on', async () => {
+    const conversation = useAgentConversationStore()
+    let deliverHistory!: (history: AgentMessages) => void
+    const rest = fakeRest({
+      getMessages: vi.fn(
+        () =>
+          new Promise<AgentMessages>((resolve) => {
+            deliverHistory = resolve
+          })
+      )
+    })
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+    await session.sendMessage('add an audio output node')
+    emit(thinking('msg-1', 'planning'))
+    expect(session.isStreaming.value).toBe(true)
+
+    // Re-selecting the open thread stashes the live turn and starts a hydrate;
+    // New chat abandons that hydrate while its GET is still in flight.
+    const reselect = session.loadThread('th-1')
+    session.newChat('new_chat_button')
+
+    emit(done('msg-1'))
+    deliverHistory([])
+    await reselect
+
+    conversation.setThreadId('th-1')
+    conversation.resumeBackgroundTurn()
+
+    expect(conversation.isStreaming).toBe(false)
+  })
+
   it('does not persist a send that resolves after the session stops', async () => {
     let resolvePost: (value: AgentTurnAccepted) => void = () => {}
     const postMessage = vi.fn(
