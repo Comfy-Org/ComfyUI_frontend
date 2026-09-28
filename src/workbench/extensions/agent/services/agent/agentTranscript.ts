@@ -412,14 +412,13 @@ export function normalizeAgentTranscript(
   if (
     pending &&
     (liveTurn === undefined || pending.message !== assistants.get(liveTurn))
-  ) {
-    settleLiveMessage(pending.message)
+  )
     pending = undefined
-  }
 
   const messages = turnOrder.map((turnId) => {
     const message = assistants.get(turnId) ?? createAssistantMessage(turnId)
-    message.streaming = message === pending?.message
+    if (message === pending?.message) message.streaming = true
+    else settleLiveMessage(message)
     return message
   })
 

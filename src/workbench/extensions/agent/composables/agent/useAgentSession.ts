@@ -298,50 +298,77 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
-  /**
-   * Frames for the thread a hydrate is currently fetching. `subscribe()` runs
-   * before the GET resolves, and until the transcript installs a transport
-   * there is nothing for `ingest` to route them to -- a panel reopened over a
-   * live turn has no background entry to fall back on either, so they are
-   * dropped outright. Losing an `agent_message_done` that way leaves the turn
-   * the transcript then restores running for good (PM-1776); losing a delta
-   * silently truncates the reply.
-   */
   interface HydrationBuffer {
     threadId: string
     events: AgentWsEvent[]
   }
 
-  let hydration: HydrationBuffer | null = null
+  /**
+   * Buffers held by hydrates still fetching, in the order they were armed.
+   * `subscribe()` runs before the GET resolves, and until the transcript
+   * installs a transport there is nothing for `ingest` to route a frame to --
+   * a panel reopened over a live turn has no background entry to fall back on
+   * either, so they are dropped outright. Losing an `agent_message_done` that
+   * way leaves the turn the transcript then restores running for good
+   * (PM-1776); losing a delta silently truncates the reply.
+   *
+   * More than one at a time is ordinary: `start()`'s hydrate is often still
+   * fetching when the user picks a thread out of history.
+   */
+  const hydrations: HydrationBuffer[] = []
+
+  function bufferFor(
+    threadId: string | undefined
+  ): HydrationBuffer | undefined {
+    if (threadId === undefined) return undefined
+    for (let index = hydrations.length - 1; index >= 0; index--) {
+      const buffer = hydrations[index]
+      if (buffer.threadId === threadId) return buffer
+    }
+    return undefined
+  }
 
   /**
-   * Deferred, never dropped. `ingest` routes each frame by thread and turn, so
-   * replaying one whose hydrate was superseded or failed still reaches the
-   * background turn it belongs to -- and a background turn that never receives
-   * its own `agent_message_done` is one `resumeBackgroundTurn` later restores
-   * as permanently running.
+   * Arms a buffer for the thread a hydrate is about to fetch, taking over the
+   * frames any earlier in-flight hydrate of that thread is holding.
    *
-   * A newer hydrate of the same thread inherits them rather than taking them
-   * through `handleAgentEvent`, which would append: these were buffered first,
-   * and an `agent_message_done` replayed ahead of an older delta clears the
-   * turn that delta still has to reach.
+   * Claimed here rather than when that earlier hydrate finishes, because the
+   * two GETs can resolve in either order and only this end of the overlap is
+   * ordered. Replayed after ours, its older delta lands on a turn our
+   * `agent_message_done` has already settled -- and both `ingest` and a
+   * settled transport drop what they cannot place.
+   */
+  function armHydration(threadId: string): HydrationBuffer {
+    const buffer: HydrationBuffer = {
+      threadId,
+      events: hydrations
+        .filter((armed) => armed.threadId === threadId)
+        .flatMap((armed) => armed.events.splice(0))
+    }
+    hydrations.push(buffer)
+    return buffer
+  }
+
+  /**
+   * Replays a hydrate's frames and retires its buffer. Deferred, never
+   * dropped: `ingest` routes each one by thread and turn, so a frame whose
+   * hydrate was superseded or failed still reaches the background turn it
+   * belongs to -- and a background turn that never receives its own
+   * `agent_message_done` is one `resumeBackgroundTurn` later restores as
+   * permanently running. Idempotent, so the success path and the `finally`
+   * can both call it.
    */
   function drainHydration(buffer: HydrationBuffer): void {
-    const events = buffer.events.splice(0)
-    if (hydration === buffer) hydration = null
-    else if (hydration?.threadId === buffer.threadId) {
-      hydration.events.unshift(...events)
-      return
-    }
-    for (const event of events) handleAgentEvent(event)
+    const index = hydrations.indexOf(buffer)
+    if (index >= 0) hydrations.splice(index, 1)
+    for (const event of buffer.events.splice(0)) handleAgentEvent(event)
   }
 
   async function hydrateFromServer(
     threadId: string,
     isCurrent: () => boolean = () => true
   ): Promise<boolean> {
-    const buffer: HydrationBuffer = { threadId, events: [] }
-    hydration = buffer
+    const buffer = armHydration(threadId)
     try {
       const history = await rest.getMessages(threadId)
       if (conversationStore.threadId !== threadId || !isCurrent()) return false
@@ -370,10 +397,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     unsubscribeStatus?.()
     unsubscribe = null
     unsubscribeStatus = null
-    // The buffer belongs to this instance, so a hydrate still in flight would
+    // The buffers belong to this instance, so a hydrate still in flight would
     // replay into whatever the successor has set up by then. Deliver now,
-    // while the turn these frames describe is still the one on the store.
-    if (hydration !== null) drainHydration(hydration)
+    // while the turns these frames describe are still the ones on the store.
+    for (const buffer of hydrations.splice(0)) drainHydration(buffer)
     const stoppedGeneration = ownedGeneration
     queueMicrotask(() => {
       if (stoppedGeneration !== sessionGeneration) return
@@ -905,9 +932,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   function handleAgentEvent(event: AgentWsEvent): void {
-    if (hydration !== null && event.data.thread_id === hydration.threadId) {
-      hydration.events.push(event)
-      return
+    // A frame for the turn already on the store has a transport waiting for
+    // it; only the ones a hydrate has nowhere to put need holding.
+    if (event.data.message_id !== conversationStore.activeTurnId) {
+      const buffer = bufferFor(event.data.thread_id)
+      if (buffer) {
+        buffer.events.push(event)
+        return
+      }
     }
     if (event.type === 'agent_ask_resolved') {
       setAskAnswering(event.data.ask_id, false)
