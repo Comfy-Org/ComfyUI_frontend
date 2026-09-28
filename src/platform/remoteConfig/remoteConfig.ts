@@ -61,6 +61,14 @@ export const cachedBillingControlEnabled = useStorage<boolean | undefined>(
 
 export const cachedLegacyBillingMigrationEnabled = ref<boolean | undefined>()
 
+/**
+ * Last authenticated answer for the agent allowlist, so a transient /features
+ * failure cannot unmount the panel mid-session. Deliberately NOT `useStorage`
+ * like its neighbours above: a persisted grant is what let two browsers
+ * disagree for one account (PM-1707).
+ */
+export const sessionAgentGrant = ref<boolean | undefined>()
+
 export const cachedV1PaymentRecovery = useStorage<boolean | undefined>(
   'v1_payment_recovery' satisfies `${ServerFeatureFlag.V1_PAYMENT_RECOVERY}`,
   undefined
