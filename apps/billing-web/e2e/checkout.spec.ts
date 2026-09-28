@@ -4,6 +4,8 @@
  * gap (e.g. `Idempotency-Key` missing from `Access-Control-Allow-Headers`)
  * — that is covered by the live test plan, not here.
  */
+import type { BillingOpStatusResponse } from '@comfyorg/ingest-types'
+
 import type { MockCloud } from './fixtures/cloud'
 import { E2E_USER } from './fixtures/env'
 import {
@@ -31,6 +33,9 @@ const test = base.extend<{ stripeFake: void }>({
 })
 
 const CHECKOUT = entryPath('checkout', { plan: 'pro_monthly' })
+
+// Above the 8 s poll backoff cap, well below the 30 s parked cadence.
+const FAST_BACKOFF_DEADLINE_MS = 15_000
 
 /** The only scenarios in this fixture set with a payment method configured. */
 function withEmbeddedPaymentMethod(cloud: MockCloud): void {
@@ -253,32 +258,26 @@ test('a challenge whose authentication state lags the client secret is still dri
     'op_subscribe',
     'seti_e2e_secret'
   )
+  const blocked: BillingOpStatusResponse = {
+    ...challenge,
+    phase: 'awaiting_invoice_payment'
+  }
+  const actionless: BillingOpStatusResponse = {
+    ...blocked,
+    authentication_state: 'processing'
+  }
+  const replies = [actionless, actionless, blocked]
   let polls = 0
-  cloud.reply('GET', '/billing/ops/op_subscribe', () => {
-    polls += 1
-    if (polls === 1) {
-      return {
-        body: {
-          ...challenge,
-          phase: 'awaiting_invoice_payment',
-          authentication_state: 'processing'
-        }
-      }
-    }
-    return {
-      body:
-        polls === 2
-          ? { ...challenge, phase: 'awaiting_invoice_payment' }
-          : succeededOperation('op_subscribe')
-    }
-  })
+  cloud.reply('GET', '/billing/ops/op_subscribe', () => ({
+    body: replies[polls++] ?? succeededOperation('op_subscribe')
+  }))
   await signIn(CHECKOUT)
 
   await page.getByRole('button', { name: 'Pay and subscribe' }).click()
 
   await expect(
     page.getByRole('heading', { name: "You're all set" })
-  ).toBeVisible()
+  ).toBeVisible({ timeout: FAST_BACKOFF_DEADLINE_MS })
   expect(await fakeStripeNextActionCalls(page)).toEqual([
     { clientSecret: 'seti_e2e_secret' }
   ])
@@ -329,4 +328,39 @@ test('reloading on the result page while pending recovers it and shows the settl
   expect(
     cloud.requests.some((request) => request.path === '/billing/ops/op_pending')
   ).toBe(true)
+})
+
+test('a checkout link naming a team credit stop quotes it along with the plan', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  await signIn(
+    entryPath('checkout', {
+      plan: 'pro_monthly',
+      team_credit_stop_id: 'stop_700'
+    })
+  )
+
+  await expect(
+    page.getByRole('heading', { name: 'Confirm your payment' })
+  ).toBeVisible()
+  const preview = cloud.requests.find(
+    (request) => request.path === '/billing/preview-subscribe'
+  )
+  expect(preview?.body).toStrictEqual({
+    plan_slug: 'pro_monthly',
+    team_credit_stop_id: 'stop_700'
+  })
+})
+
+test('a checkout link that names no plan goes back to the host to choose one', async ({
+  page
+}) => {
+  await page.goto(entryPath('checkout', { workspace: 'ws_team_e2e' }))
+
+  await expect(page).toHaveURL(
+    'https://testcloud.comfy.org/?workspace=ws_team_e2e'
+  )
+  await expect(page.getByRole('heading', { name: 'Host app' })).toBeVisible()
 })

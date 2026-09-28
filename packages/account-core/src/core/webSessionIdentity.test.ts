@@ -237,6 +237,20 @@ describe('network errors', () => {
     expect(login.signOutLocally).not.toHaveBeenCalled()
   })
 
+  it('adopts a live session even when the remembered-login lookup throws', async () => {
+    const login = fakeRememberedLogin('user-2')
+    login.currentUserId.mockRejectedValueOnce(new Error('provider offline'))
+    const { endpoint, scheduler, identity } = bootIdentity({
+      state: { kind: 'live', user: SESSION_USER },
+      login
+    })
+
+    expect(summarize(await nextRest(identity))).toBe('signed_in:user-1')
+    expect(scheduler.delays()).toEqual([])
+    expect(requestLog(endpoint)).toEqual(['GET'])
+    expect(login.signOutLocally).not.toHaveBeenCalled()
+  })
+
   it.for([
     { name: 'a pending session read', pending: 'read' },
     { name: 'a pending identity proof', pending: 'proof' }

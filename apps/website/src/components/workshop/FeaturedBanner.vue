@@ -12,6 +12,8 @@ import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import { usePreviewVideo } from '../../composables/usePreviewVideo'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import { cn } from '@comfyorg/tailwind-utils'
+
 import Badge from '../ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
 
@@ -39,11 +41,15 @@ const AUTOPLAY_MS = 7000
 const {
   slides,
   locale = 'en',
-  autoplay = true
+  autoplay = true,
+  compact = false
 } = defineProps<{
   slides: readonly FeaturedSlide[]
   locale?: Locale
   autoplay?: boolean
+  /** Where outcome rows follow immediately, the banner gives up height so the
+   * first of them is on screen with it. */
+  compact?: boolean
 }>()
 
 const activeIndex = ref(0)
@@ -120,7 +126,14 @@ const fill = computed(() =>
     data-testid="section-featured"
   >
     <div
-      class="group relative block h-84 short:h-57 sm:short:h-60"
+      :class="
+        cn(
+          'group relative flex',
+          compact
+            ? 'min-h-68 short:min-h-48 sm:short:min-h-50'
+            : 'min-h-84 short:min-h-57 sm:short:min-h-60'
+        )
+      "
       data-testid="featured-slide"
     >
       <a
@@ -157,7 +170,13 @@ const fill = computed(() =>
       />
 
       <div
-        class="pointer-events-none relative flex h-full flex-col justify-end gap-4 p-8 pt-6 pb-16 max-sm:gap-3 max-sm:p-6 max-sm:pb-14 sm:max-w-2xl sm:justify-center lg:p-12 lg:pt-8 lg:pb-18 short:gap-3 short:pt-5 short:pb-14"
+        :class="
+          cn(
+            'pointer-events-none relative flex w-full min-w-0 flex-col justify-end gap-4 p-8 pt-6 pb-16 max-sm:gap-3 max-sm:p-6 max-sm:pb-14 sm:max-w-2xl sm:justify-center lg:p-12 lg:pt-8 lg:pb-18 short:gap-3 short:pt-5 short:pb-14',
+            compact &&
+              'gap-3 p-7 pt-7 pb-12 max-sm:p-5 max-sm:pb-11 lg:p-9 lg:pt-8 lg:pb-12'
+          )
+        "
       >
         <div class="flex flex-wrap items-center gap-2">
           <Badge

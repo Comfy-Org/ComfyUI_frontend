@@ -1,6 +1,8 @@
 import { FirebaseError } from 'firebase/app'
 import { AuthErrorCodes, getAdditionalUserInfo } from 'firebase/auth'
 import type { User, UserCredential } from 'firebase/auth'
+
+import type { PopupSignInOptions } from '@comfyorg/account-core/firebase'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
@@ -51,6 +53,14 @@ type AccessBillingPortalResponse =
   operations['AccessBillingPortal']['responses']['200']['content']['application/json']
 type AccessBillingPortalReqBody =
   operations['AccessBillingPortal']['requestBody']
+export interface SocialSignInOptions {
+  readonly isNewUser?: boolean
+  /** How a closed popup's late result is finished or discarded. */
+  readonly popup?: PopupSignInOptions
+  /** A closed popup's late credential to finish instead of opening a popup. */
+  readonly resumed?: Promise<UserCredential>
+}
+
 export type BillingPortalTargetTier = NonNullable<
   NonNullable<
     NonNullable<AccessBillingPortalReqBody>['content']
@@ -650,12 +660,13 @@ export const useAuthStore = defineStore('auth', () => {
     await createCustomer(payload, completedCredential)
   }
 
-  const loginWithGoogle = async (options?: {
-    isNewUser?: boolean
-  }): Promise<UserCredential> => {
+  const loginWithGoogle = async (
+    options?: SocialSignInOptions
+  ): Promise<UserCredential> => {
     const result = await executeAuthAction(() =>
       socialSignInWithProvisioning({
-        signIn: firebaseIdentity.signInWithGoogle,
+        signIn: () =>
+          options?.resumed ?? firebaseIdentity.signInWithGoogle(options?.popup),
         provisionCustomer: (credential) =>
           provisionCustomerForSignedInUser(undefined, credential)
       })
@@ -674,12 +685,13 @@ export const useAuthStore = defineStore('auth', () => {
     return result
   }
 
-  const loginWithGithub = async (options?: {
-    isNewUser?: boolean
-  }): Promise<UserCredential> => {
+  const loginWithGithub = async (
+    options?: SocialSignInOptions
+  ): Promise<UserCredential> => {
     const result = await executeAuthAction(() =>
       socialSignInWithProvisioning({
-        signIn: firebaseIdentity.signInWithGitHub,
+        signIn: () =>
+          options?.resumed ?? firebaseIdentity.signInWithGitHub(options?.popup),
         provisionCustomer: (credential) =>
           provisionCustomerForSignedInUser(undefined, credential)
       })
