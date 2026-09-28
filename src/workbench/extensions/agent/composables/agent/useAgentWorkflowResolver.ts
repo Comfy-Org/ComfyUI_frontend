@@ -151,6 +151,11 @@ export function useAgentWorkflowResolver({
       : null
   }
 
+  /** Whether the last successful Cloud listing included `workflowId`. */
+  function isCloudWorkflowListed(workflowId: string): boolean {
+    return indexedNameFor(workflowId) !== undefined
+  }
+
   function storedWorkflowFor(workflowId: string): ComfyWorkflow | null {
     return resolveWorkflow(workflowId, workflows.workflows)
   }
@@ -224,6 +229,7 @@ export function useAgentWorkflowResolver({
     boundOrOpenWorkflowFor,
     cachedOpenWorkflowFor,
     storedWorkflowFor,
+    isCloudWorkflowListed,
     openWorkflowFor,
     availableWorkflowReferences,
     openTabsSnapshot,

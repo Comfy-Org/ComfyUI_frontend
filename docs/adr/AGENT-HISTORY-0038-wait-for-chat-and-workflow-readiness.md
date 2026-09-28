@@ -21,8 +21,14 @@ Keep the row in its existing section until then. The Current marker follows
 successful session activation, not the transport thread ID set before hydration.
 Mounting an existing session preserves its current identity; the readiness wait
 applies to selecting a different conversation from history.
-Failures remain in history with a retry affordance and existing error details.
-Legacy chats without a recorded workflow can open without one.
+Failures remain in history with a retry affordance and existing error details;
+the selected row is their only feedback. A chat whose recorded workflow a
+successful Cloud listing no longer includes opens without a target, and the
+composer tip says the target workflow is no longer available until a workflow is
+chosen, New Chat starts or another chat is selected. Legacy chats without a
+recorded workflow can open without one. A restoration that fails with no loading
+history row on screen, such as at startup, reports that the target workflow
+could not be opened.
 
 The panel store owns navigation presentation across panel remounts; the panel
 supplies the current-selection guard to session loading. Workflow restoration reports success instead of treating
@@ -66,3 +72,6 @@ The user gets one visible transition into a usable conversation, at the cost of
 waiting for workflow readiness before reading it. Back may need another fetch.
 The session's underlying data can hydrate while history remains visible; the
 panel must not use thread-ID changes alone as proof of navigation success.
+Absence from the Cloud listing is the only proof that a workflow is gone: a
+listing truncated by a broken cursor is treated as complete, and a listing
+superseded by a newer refresh counts as a failure.

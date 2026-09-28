@@ -19,7 +19,7 @@ type TargetTracking =
   | { mode: 'uninitialized' }
   | { mode: 'following' }
   | { mode: 'restoring' }
-  | { mode: 'retained'; workflow: ComfyWorkflow | null }
+  | { mode: 'retained'; workflow: ComfyWorkflow | null; unavailable?: true }
 
 export type AgentPanelView =
   | { screen: 'chat' }
@@ -56,6 +56,11 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     if (target.mode === 'following') return workflowStore.activeWorkflow
     return target.mode === 'retained' ? target.workflow : null
   })
+  const targetUnavailable = computed(
+    () =>
+      targetTracking.value.mode === 'retained' &&
+      targetTracking.value.unavailable === true
+  )
   const canRestoreWorkflow = computed(
     () => targetTracking.value.mode === 'restoring'
   )
@@ -91,6 +96,14 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
 
   function setWorkflowTarget(workflow: ComfyWorkflow | null): void {
     targetTracking.value = { mode: 'retained', workflow }
+  }
+
+  function markWorkflowTargetUnavailable(): void {
+    targetTracking.value = {
+      mode: 'retained',
+      workflow: null,
+      unavailable: true
+    }
   }
 
   // Only a retained target can become detached. A following target belongs to
@@ -217,6 +230,8 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     retainWorkflowTarget,
     startFollowingVisibleWorkflow,
     selectedWorkflow,
+    targetUnavailable,
+    markWorkflowTargetUnavailable,
     canRestoreWorkflow,
     beginWorkflowRestoration,
     setWorkflowTarget,

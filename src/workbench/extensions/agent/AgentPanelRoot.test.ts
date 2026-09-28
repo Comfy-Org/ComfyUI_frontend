@@ -457,6 +457,46 @@ function agentThreadList(
   }
 }
 
+function stubHistoryWithWorkflowListing(
+  listingStatus: number | Promise<number>
+): void {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (url: string) => {
+      if (url.includes('/messages'))
+        return json(200, [
+          {
+            id: 'history-user',
+            thread_id: 'th-history',
+            seq: 1,
+            role: 'user',
+            status: 'complete',
+            turn_id: 'history-turn',
+            workflow_id: 'wf-gone',
+            content: { text: 'Historical prompt' }
+          }
+        ] satisfies AgentMessages)
+      if (url.includes('/agent/threads'))
+        return json(
+          200,
+          agentThreadList([
+            agentThread({
+              id: 'th-history',
+              title: 'Earlier chat',
+              last_message_at: '2026-09-01T00:00:00Z'
+            })
+          ])
+        )
+      if (url.includes('/workflows'))
+        return json(await listingStatus, {
+          data: [],
+          pagination: { offset: 0, limit: 100, total: 0, has_more: false }
+        })
+      return json(200, {})
+    })
+  )
+}
+
 function ack(workflowId: string, messageId = 'm-1') {
   return { thread_id: 'th-1', message_id: messageId, workflow_id: workflowId }
 }
@@ -4669,6 +4709,9 @@ describe('AgentPanelRoot workflow binding', () => {
         expect(await screen.findByRole('alert')).toHaveTextContent(
           i18n.global.t('agent.historyOpenFailed')
         )
+        expect(useToastStore().messagesToAdd).not.toContainEqual(
+          expect.objectContaining({ severity: 'warn' })
+        )
         expect(useAgentChatHistoryStore().activeId).toBe('th-1')
         expect(useAgentPanelStore().selectedWorkflow?.path).toBe(target.path)
         await userEvent.click(
@@ -5048,12 +5091,12 @@ describe('AgentPanelRoot workflow binding', () => {
   )
 
   it.for([
-    { failure: 'missing messages', status: 404 },
-    { failure: 'message server error', status: 500 },
-    { failure: 'unavailable workflow', status: 200 }
+    { failure: 'missing messages', status: 404, listingStatus: 200 },
+    { failure: 'message server error', status: 500, listingStatus: 200 },
+    { failure: 'failed workflow listing', status: 200, listingStatus: 500 }
   ])(
     'preserves Current after deleting a chat with $failure',
-    async ({ status }) => {
+    async ({ status, listingStatus }) => {
       makeTab('wf-current')
       useAgentConversationStore().setThreadId('th-current')
       localStorage.setItem(StorageKeys.agentThread('personal'), 'th-current')
@@ -5086,7 +5129,7 @@ describe('AgentPanelRoot workflow binding', () => {
               }
             ])
           if (url.includes('/workflows'))
-            return json(200, {
+            return json(listingStatus, {
               data: [],
               pagination: { offset: 0, limit: 100, total: 0, has_more: false }
             })
@@ -5349,6 +5392,106 @@ describe('AgentPanelRoot workflow binding', () => {
     }
   )
 
+  it('opens a history chat whose workflow the Cloud no longer lists and marks its target unavailable', async () => {
+    makeTab('wf-42')
+    stubHistoryWithWorkflowListing(200)
+    renderWithSelectedTarget()
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await userEvent.click(await screen.findByText('Earlier chat'))
+
+    await screen.findAllByText('Historical prompt')
+    expect(
+      screen.getByText(i18n.global.t('agent.targetWorkflowUnavailable'))
+    ).toBeVisible()
+    expect(useAgentPanelStore().selectedWorkflow).toBeNull()
+    expect(useAgentChatHistoryStore().activeId).toBe('th-history')
+    expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBe(
+      'th-history'
+    )
+    expect(useToastStore().messagesToAdd).not.toContainEqual(
+      expect.objectContaining({ severity: 'warn' })
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: 'New chat' }))
+    expect(
+      screen.queryByText(i18n.global.t('agent.targetWorkflowUnavailable'))
+    ).not.toBeInTheDocument()
+  })
+
+  it.for([
+    {
+      listing: 'omits the workflow',
+      listingStatus: 200,
+      notices: [i18n.global.t('agent.targetWorkflowUnavailable')],
+      toasts: []
+    },
+    {
+      listing: 'fails',
+      listingStatus: 500,
+      notices: [],
+      toasts: [i18n.global.t('agent.targetWorkflowOpenFailed')]
+    }
+  ])(
+    'restores a stored chat on startup when the workflow listing $listing',
+    async ({ listingStatus, notices, toasts }) => {
+      makeTab('wf-42')
+      useAgentConversationStore().setThreadId('th-history')
+      localStorage.setItem(StorageKeys.agentThread('personal'), 'th-history')
+      stubHistoryWithWorkflowListing(listingStatus)
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+      await screen.findAllByText('Historical prompt')
+      await vi.waitFor(() => {
+        expect(
+          useToastStore()
+            .messagesToAdd.filter(({ severity }) => severity === 'warn')
+            .map(({ detail }) => detail)
+        ).toEqual(toasts)
+        expect(
+          screen
+            .queryAllByText(i18n.global.t('agent.targetWorkflowUnavailable'))
+            .map((notice) => notice.textContent.trim())
+        ).toEqual(notices)
+      })
+      expect(useAgentPanelStore().selectedWorkflow).toBeNull()
+    }
+  )
+
+  it('toasts a startup restoration failure that lands while history is open without a selection', async () => {
+    let failListing = () => {}
+    const listing = new Promise<number>((resolve) => {
+      failListing = () => resolve(500)
+    })
+    makeTab('wf-42')
+    useAgentConversationStore().setThreadId('th-history')
+    localStorage.setItem(StorageKeys.agentThread('personal'), 'th-history')
+    stubHistoryWithWorkflowListing(listing)
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findAllByText('Historical prompt')
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await screen.findByRole('heading', { name: 'Chat history' })
+
+    failListing()
+
+    await vi.waitFor(() =>
+      expect(useToastStore().messagesToAdd).toContainEqual(
+        expect.objectContaining({
+          severity: 'warn',
+          detail: i18n.global.t('agent.targetWorkflowOpenFailed')
+        })
+      )
+    )
+    expect(screen.queryByRole('alert')).toBeNull()
+  })
+
   it.for(['false', 'throw', 'missing-id'])(
     'handles a history restoration with %s without showing an unready chat',
     async (outcome) => {
@@ -5415,14 +5558,8 @@ describe('AgentPanelRoot workflow binding', () => {
           screen.getByRole('heading', { name: 'Chat history' })
         ).toBeVisible()
         expect(screen.queryByText('Historical prompt')).not.toBeInTheDocument()
-        await vi.waitFor(() =>
-          expect(useToastStore().messagesToAdd).toEqual(
-            expect.arrayContaining([
-              expect.objectContaining({
-                detail: i18n.global.t('agent.targetNavigationUnavailable')
-              })
-            ])
-          )
+        expect(useToastStore().messagesToAdd).not.toContainEqual(
+          expect.objectContaining({ severity: 'warn' })
         )
         expect(useAgentPanelStore().selectedWorkflow).toBeNull()
         expect(useAgentChatHistoryStore().activeId).toBeNull()

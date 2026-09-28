@@ -21,6 +21,7 @@ interface WorkflowSelectionOptions {
   resolver: ReturnType<typeof useAgentWorkflowResolver>
   canSelectTarget: () => boolean
   warnWorkflowUnavailable: () => void
+  warnRestoreFailed: () => void
   onTargetBound?: (
     workflowId: string,
     previousWorkflowId: string | null,
@@ -32,6 +33,7 @@ export function useAgentWorkflowSelection({
   resolver,
   canSelectTarget,
   warnWorkflowUnavailable,
+  warnRestoreFailed,
   onTargetBound
 }: WorkflowSelectionOptions) {
   const workflowStore = useWorkflowStore()
@@ -51,7 +53,8 @@ export function useAgentWorkflowSelection({
     nextSaveFilename,
     boundOrOpenWorkflowFor,
     cachedOpenWorkflowFor,
-    storedWorkflowFor
+    storedWorkflowFor,
+    isCloudWorkflowListed
   } = resolver
   const editableWorkflowId = computed(() =>
     selectedTarget.value ? cloudIdFor(selectedTarget.value) : undefined
@@ -224,10 +227,16 @@ export function useAgentWorkflowSelection({
     if (workflowId === undefined) return true
     let target = cachedOpenWorkflowFor(workflowId)
     if (target === null) {
-      await refreshCloudWorkflowIds()
+      const listed = await refreshCloudWorkflowIds()
       if (!isCurrent()) return false
       target =
         boundOrOpenWorkflowFor(workflowId) ?? storedWorkflowFor(workflowId)
+      // A successful listing without the id means the workflow is gone; a
+      // failed listing stays a retryable restoration failure.
+      if (target === null && listed && !isCloudWorkflowListed(workflowId)) {
+        panelStore.markWorkflowTargetUnavailable()
+        return true
+      }
     }
     return openRestoredWorkflow(target, workflowId, isCurrent)
   }
@@ -245,21 +254,21 @@ export function useAgentWorkflowSelection({
       }
       if (target === null) {
         panelStore.setWorkflowTarget(null)
-        warnWorkflowUnavailable()
+        warnRestoreFailed()
         return false
       }
       const opened = await workflowService.openWorkflow(target, { isCurrent })
       if (!isCurrent()) return false
       if (!opened) {
         panelStore.setWorkflowTarget(null)
-        warnWorkflowUnavailable()
+        warnRestoreFailed()
         return false
       }
       commitWorkflowTarget(target, workflowId, 'restored')
       return true
     } catch {
       if (!isCurrent()) return false
-      warnWorkflowUnavailable()
+      warnRestoreFailed()
       return false
     }
   }

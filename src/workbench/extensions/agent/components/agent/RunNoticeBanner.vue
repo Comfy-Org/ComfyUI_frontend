@@ -10,7 +10,7 @@ const {
 } = defineProps<{
   expanded?: boolean
   workflowName?: string
-  context?: 'following' | 'mismatch'
+  context?: 'following' | 'mismatch' | 'unavailable'
 }>()
 
 const emit = defineEmits<{ showTarget: [] }>()
@@ -43,6 +43,9 @@ const dismissed = useStorage('Comfy.AgentPanel.runNoticeDismissed', false)
           {{ $t('agent.showTarget') }}
           <span class="icon-[lucide--arrow-up-right] size-4" />
         </Button>
+      </template>
+      <template v-else-if="context === 'unavailable'">
+        {{ $t('agent.targetWorkflowUnavailable') }}
       </template>
       <i18n-t
         v-else-if="workflowName"

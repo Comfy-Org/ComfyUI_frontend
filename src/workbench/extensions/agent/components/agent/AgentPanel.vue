@@ -65,6 +65,7 @@ const {
   selectingTabPath = null,
   selectTab = async () => false,
   workflowDetached = false,
+  targetUnavailable = false,
   getMentionNodes = () => [],
   paywallPresentation = DEFAULT_AGENT_PAYWALL_PRESENTATION,
   sessionId = null,
@@ -96,6 +97,7 @@ const {
   selectingTabPath?: string | null
   selectTab?: (path: string) => Promise<boolean>
   workflowDetached?: boolean
+  targetUnavailable?: boolean
   getMentionNodes?: () => SelectedNode[]
   paywallPresentation?: AgentPaywallPresentation
   sessionId?: string | null
@@ -137,6 +139,7 @@ const emit = defineEmits<{
 }>()
 
 const targetNotice = computed(() => {
+  if (targetUnavailable) return 'unavailable'
   if (workflowDetached || activeTab === null) return undefined
   if (visibleTabPath !== null && visibleTabPath !== activeTab.path)
     return 'mismatch'

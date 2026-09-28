@@ -273,6 +273,7 @@ const {
   resolver: workflowResolver,
   canSelectTarget: () => !isSending.value && status.value === 'idle',
   warnWorkflowUnavailable,
+  warnRestoreFailed,
   onTargetBound: (workflowId, previousWorkflowId, source) =>
     reportWorkflowBound(workflowId, previousWorkflowId, source)
 })
@@ -666,6 +667,17 @@ function warnWorkflowUnavailable(): void {
   })
 }
 
+function warnRestoreFailed(): void {
+  const { view } = agentPanelStore
+  // A loading history row reports its own failure.
+  if (view.screen === 'history' && view.selection.status === 'loading') return
+  toast.add({
+    severity: 'warn',
+    detail: t('agent.targetWorkflowOpenFailed'),
+    life: 5000
+  })
+}
+
 /**
  * The sent message, held from the moment the user sends until the cloud ids
  * are refreshed, alongside the turn's origin. Scoped to one `sendMessage`
@@ -969,7 +981,8 @@ async function onNavigateToReferenceWorkflow(
 }
 
 async function onShowTarget(
-  isNavigationCurrent: () => boolean = () => true
+  isNavigationCurrent: () => boolean = () => true,
+  warnOpenFailed: () => void = warnWorkflowUnavailable
 ): Promise<boolean> {
   const target = selectedTarget.value
   if (target === null) return false
@@ -978,10 +991,10 @@ async function onShowTarget(
   try {
     const opened = await workflowService.openWorkflow(target, { isCurrent })
     if (!isCurrent()) return false
-    if (!opened) warnWorkflowUnavailable()
+    if (!opened) warnOpenFailed()
     return opened
   } catch {
-    if (isCurrent()) warnWorkflowUnavailable()
+    if (isCurrent()) warnOpenFailed()
     return false
   }
 }
@@ -1190,7 +1203,7 @@ async function onSelectHistory(
     id === threadId.value &&
     selectedTarget.value !== null
   )
-    return onShowTarget(isCurrent)
+    return onShowTarget(isCurrent, warnRestoreFailed)
 
   composerStore.invalidateSubmission()
   cancelWorkflowSelection()
@@ -1643,6 +1656,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       :selecting-tab-path="selectingTarget?.path ?? null"
       :select-tab="onSelectWorkflowTarget"
       :workflow-detached="workflowDetached"
+      :target-unavailable="agentPanelStore.targetUnavailable"
       :get-mention-nodes="mentionableNodes"
       :paywall-presentation="paywallPresentation"
       @send="onSend"
