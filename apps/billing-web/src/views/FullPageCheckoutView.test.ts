@@ -1677,3 +1677,255 @@ describe('FullPageCheckoutView payment authentication', () => {
     expect(request.return_url).not.toContain('/v1/result')
   })
 })
+
+const LAUNCH20_QUOTE = previewOf({
+  quote_id: 'q_promo',
+  amount_due_cents: 2240,
+  promotion_code: 'LAUNCH20',
+  discounts: [{ kind: 'promotion', code: 'LAUNCH20', amount_off_cents: 560 }]
+})
+
+function refusedWith(serverCode: string): PreviewSubscribeResult {
+  return {
+    status: 'error',
+    code: 'REQUEST_FAILED',
+    httpStatus: 400,
+    serverCode: readBillingErrorCode({ code: serverCode, message: 'refused' })
+  }
+}
+
+/** Answers a quote by the code it was asked for: none, LAUNCH20, or anything else. */
+function quotesByCode(
+  fake: FakeBillingClient,
+  launch20: PreviewSubscribeResult = { status: 'ok', value: LAUNCH20_QUOTE }
+) {
+  fake.previewSubscribe.mockImplementation(async ({ promotionCode }) => {
+    if (promotionCode === undefined)
+      return { status: 'ok', value: previewOf({ quote_id: 'q_1' }) }
+    return promotionCode.toUpperCase() === 'LAUNCH20'
+      ? launch20
+      : refusedWith('PROMOTION_CODE_INVALID')
+  })
+}
+
+const promoField = () => screen.getByRole('textbox', { name: 'Promo code' })
+
+async function enterCode(code: string) {
+  await userEvent.click(screen.getByRole('button', { name: 'Add promo code' }))
+  await userEvent.type(promoField(), code)
+  await userEvent.click(screen.getByRole('button', { name: 'Apply' }))
+}
+
+describe('FullPageCheckoutView promo codes', () => {
+  beforeEach(() => {
+    form.mounts = 0
+  })
+
+  it('applies a code: its row, its removable chip, the new total, and Pay binds the code', async () => {
+    const fake = await renderCheckout({}, quotesByCode)
+    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+    reportPhase({ phase: 'payment_element_ready', element: 'payment' })
+
+    await enterCode('launch20')
+
+    expect(await screen.findByText('Promo code')).toBeInTheDocument()
+    expect(screen.getByText('−$5.60')).toBeInTheDocument()
+    expect(screen.getAllByText('$22.40')).toHaveLength(2)
+    expect(
+      screen.getByRole('button', { name: 'Remove LAUNCH20' })
+    ).toBeEnabled()
+    expect(
+      screen.queryByRole('button', { name: 'Add promo code' })
+    ).not.toBeInTheDocument()
+    expect(fake.previewSubscribe).toHaveBeenLastCalledWith(
+      expect.objectContaining({ promotionCode: 'launch20' }),
+      expect.anything()
+    )
+
+    await waitFor(() => expect(payButton()).toBeEnabled())
+    form.emit('confirm', 'ctoken_1')
+    await waitFor(() =>
+      expect(fake.subscribe).toHaveBeenCalledWith(
+        expect.objectContaining({
+          promotion_code: 'LAUNCH20',
+          quote_id: 'q_promo'
+        })
+      )
+    )
+  })
+
+  it('removing the chip re-quotes without the code', async () => {
+    const fake = await renderCheckout({}, quotesByCode)
+    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+    await enterCode('LAUNCH20')
+    await screen.findByText('−$5.60')
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Remove LAUNCH20' })
+    )
+
+    expect(
+      await screen.findByRole('button', { name: 'Add promo code' })
+    ).toBeInTheDocument()
+    expect(screen.queryByText('−$5.60')).not.toBeInTheDocument()
+    expect(screen.getAllByText('$28.00')).toHaveLength(2)
+    expect(fake.previewSubscribe).toHaveBeenLastCalledWith(
+      expect.not.objectContaining({ promotionCode: expect.anything() }),
+      expect.anything()
+    )
+  })
+
+  it('says an invalid code under the field, keeps it typed, and leaves the total alone', async () => {
+    await renderCheckout({}, quotesByCode)
+    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+
+    await enterCode('NOPE')
+
+    expect(await screen.findByText("This code isn't valid.")).toBeVisible()
+    expect(promoField()).toHaveValue('NOPE')
+    expect(promoField()).toHaveAttribute('aria-invalid', 'true')
+    expect(screen.getAllByText('$28.00')).toHaveLength(2)
+    expect(screen.queryByText('Promo code')).not.toBeInTheDocument()
+  })
+
+  it('prefills a code from the URL without pricing it until Apply', async () => {
+    const fake = await renderCheckout(
+      {},
+      quotesByCode,
+      `${CHECKOUT_PATH}&promo=LAUNCH20`
+    )
+    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+
+    expect(promoField()).toHaveValue('LAUNCH20')
+    expect(screen.getAllByText('$28.00')).toHaveLength(2)
+    expect(fake.previewSubscribe).toHaveBeenCalledOnce()
+    expect(fake.previewSubscribe).toHaveBeenCalledWith(
+      expect.not.objectContaining({ promotionCode: expect.anything() }),
+      expect.anything()
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }))
+    expect(await screen.findByText('−$5.60')).toBeInTheDocument()
+  })
+
+  it('lets the URL prefill be removed before it is applied', async () => {
+    await renderCheckout({}, quotesByCode, `${CHECKOUT_PATH}&promo=LAUNCH20`)
+    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Close promo code' })
+    )
+
+    expect(
+      screen.getByRole('button', { name: 'Add promo code' })
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('textbox', { name: 'Promo code' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('a code that lapsed before Pay: back to capture, chip gone, the expired card instead of a decline', async () => {
+    const fake = await renderCheckout(
+      {
+        subscribe: {
+          status: 'error',
+          code: 'REQUEST_FAILED',
+          serverCode: readBillingErrorCode({
+            code: 'SUBSCRIPTION_QUOTE_STALE',
+            message: 'stale'
+          })
+        }
+      },
+      quotesByCode
+    )
+    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+    reportPhase({ phase: 'payment_element_ready', element: 'payment' })
+    await enterCode('LAUNCH20')
+    await screen.findByText('−$5.60')
+    quotesByCode(fake, refusedWith('PROMOTION_CODE_INVALID'))
+
+    form.emit('confirm', 'ctoken_1')
+
+    const card = await screen.findByRole('alert')
+    expect(card).toHaveTextContent('Your promo code expired')
+    expect(card).toHaveTextContent(
+      'The LAUNCH20 code expired, so the total was updated.'
+    )
+    expect(card).not.toHaveTextContent('declined')
+    expect(
+      screen.queryByRole('button', { name: 'Remove LAUNCH20' })
+    ).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Add promo code' })).toBeEnabled()
+    expect(screen.getAllByText('$28.00')).toHaveLength(2)
+    expect(payButton()).toBeEnabled()
+  })
+
+  it('locks promo entry from the Pay click until the attempt resolves', async () => {
+    let settle: () => void = () => {}
+    const fake = await renderCheckout({}, (scripted) => {
+      quotesByCode(scripted)
+      scripted.subscribe.mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            settle = () =>
+              resolve({
+                status: 'ok',
+                value: {
+                  phase: 'failed',
+                  operation: failedOperation('card_declined')
+                }
+              })
+          })
+      )
+    })
+    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+    reportPhase({ phase: 'payment_element_ready', element: 'payment' })
+    await waitFor(() => expect(payButton()).toBeEnabled())
+
+    form.emit('confirm', 'ctoken_1')
+
+    await waitFor(() => expect(fake.subscribe).toHaveBeenCalledOnce())
+    expect(
+      screen.getByRole('button', { name: 'Add promo code' })
+    ).toBeDisabled()
+
+    settle()
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Add promo code' })
+      ).toBeEnabled()
+    )
+  })
+
+  it('holds Pay while a code is being priced, so the old total cannot be charged', async () => {
+    let answer: (result: PreviewSubscribeResult) => void = () => {}
+    const fake = await renderCheckout({}, quotesByCode)
+    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+    reportPhase({ phase: 'payment_element_ready', element: 'payment' })
+    await waitFor(() => expect(payButton()).toBeEnabled())
+    fake.previewSubscribe.mockImplementationOnce(
+      () => new Promise((resolve) => (answer = resolve))
+    )
+
+    await enterCode('LAUNCH20')
+
+    expect(payButton()).toBeDisabled()
+    answer({ status: 'ok', value: LAUNCH20_QUOTE })
+    await waitFor(() => expect(payButton()).toBeEnabled())
+  })
+
+  it('offers no promo entry on a change that charges nothing today', async () => {
+    await renderCheckout({
+      preview: {
+        status: 'ok',
+        value: previewOf({ transition_type: 'downgrade', is_immediate: false })
+      }
+    })
+    await screen.findByText(/Switch to Creator Plan/)
+
+    expect(
+      screen.queryByRole('button', { name: 'Add promo code' })
+    ).not.toBeInTheDocument()
+  })
+})

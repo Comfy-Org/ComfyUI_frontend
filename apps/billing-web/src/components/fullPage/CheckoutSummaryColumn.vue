@@ -44,7 +44,9 @@ const SKELETON_BAR =
         />
       </div>
 
-      <CheckoutLedger v-if="ledger" :ledger />
+      <CheckoutLedger v-if="ledger" :ledger>
+        <slot :ledger />
+      </CheckoutLedger>
       <template v-else>
         <div class="mt-16 flex flex-col gap-3">
           <span class="sr-only">{{ t('hosted.loading') }}</span>

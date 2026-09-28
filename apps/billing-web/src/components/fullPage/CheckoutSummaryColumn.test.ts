@@ -142,6 +142,7 @@ describe('CheckoutSummaryColumn', () => {
           promo: { label: 'Promo code', amount: '−$7.50' }
         }
       },
+      slots: { default: '<p>chips and entry</p>' },
       global: { plugins: [createBillingI18n()] }
     })
 
@@ -153,6 +154,7 @@ describe('CheckoutSummaryColumn', () => {
       '$40.00',
       'Promo code',
       '−$7.50',
+      'chips and entry',
       'Total due today'
     ]
     const rendered = expected
