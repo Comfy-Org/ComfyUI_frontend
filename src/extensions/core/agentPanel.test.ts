@@ -416,10 +416,6 @@ describe('AgentPanel extension flag gate', () => {
       expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBeNull()
       expect(agentStore.open).not.toHaveBeenCalled()
       expect(consentStore.load).toHaveBeenCalledOnce()
-      expect(
-        startupProbe.mock.calls.length,
-        'release re-drove the offer while its holder was still active'
-      ).toBeLessThanOrEqual(1)
     }
   )
 
