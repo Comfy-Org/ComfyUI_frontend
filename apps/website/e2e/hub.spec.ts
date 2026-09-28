@@ -151,7 +151,7 @@ test.describe('V2 catalogue', () => {
     await expect(page.getByTestId('workflow-about')).toHaveCount(0)
 
     await page.getByTestId('tab-details').click()
-    await expect(page.getByTestId('playground-tab')).toHaveCount(0)
+    await expect(page.getByTestId('playground-tab')).not.toBeVisible()
     // The form says what goes in and the output says what comes back, so the
     // model it calls is the one thing left for the page to name.
     await expect(page.getByTestId('workflow-runs-on')).toBeVisible()

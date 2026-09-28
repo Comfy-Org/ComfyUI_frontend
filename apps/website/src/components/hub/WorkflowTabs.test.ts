@@ -17,17 +17,18 @@ const mount = (runs: boolean) =>
 
 describe('WorkflowTabs', () => {
   // The page opens on the thing to do, and how the workflow is built waits
-  // behind its own tab rather than sitting under the form.
+  // behind its own tab rather than sitting under the form. The form only
+  // hides, so what was typed into it and any run it started survive the trip.
   it('opens on the playground and keeps the details behind their tab', async () => {
     mount(true)
 
-    expect(screen.getByText('the form')).toBeTruthy()
+    expect(screen.getByText('the form')).toBeVisible()
     expect(screen.queryByText('how it is built')).toBeNull()
 
     await userEvent.setup().click(screen.getByTestId('tab-details'))
 
-    expect(screen.queryByText('the form')).toBeNull()
-    expect(screen.getByText('how it is built')).toBeTruthy()
+    expect(screen.getByText('the form')).not.toBeVisible()
+    expect(screen.getByText('how it is built')).toBeVisible()
   })
 
   // A workflow nothing shared can run has no playground to offer. An empty
@@ -37,7 +38,7 @@ describe('WorkflowTabs', () => {
     mount(false)
 
     expect(screen.queryByTestId('tab-playground')).toBeNull()
-    expect(screen.getByTestId('tab-details')).toBeTruthy()
+    expect(screen.queryByText('the form')).toBeNull()
     expect(screen.getByText('how it is built')).toBeTruthy()
   })
 

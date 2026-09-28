@@ -16,6 +16,10 @@ import { tHub } from '../../i18n/hub'
 // Whether there is a playground is told rather than inferred: a slot that
 // renders nothing is still a slot, so asking the slots would draw the tab
 // empty.
+// The playground stays mounted and hides instead, because it owns the form
+// and the run: unmounting it would throw away what was typed and lose track
+// of a job already on its way. The other two hold nothing to lose, so they
+// wait to be asked for.
 const {
   runs = true,
   api = true,
@@ -84,7 +88,8 @@ const { onKeydown } = useTablist(() => sections.value, activeSection)
     </div>
 
     <section
-      v-if="runs && activeSection === 'playground'"
+      v-if="runs"
+      v-show="activeSection === 'playground'"
       id="panel-playground"
       role="tabpanel"
       aria-labelledby="tab-playground"
@@ -94,7 +99,7 @@ const { onKeydown } = useTablist(() => sections.value, activeSection)
     </section>
 
     <section
-      v-else-if="activeSection === 'details'"
+      v-if="activeSection === 'details'"
       id="panel-details"
       role="tabpanel"
       aria-labelledby="tab-details"
@@ -104,7 +109,7 @@ const { onKeydown } = useTablist(() => sections.value, activeSection)
     </section>
 
     <section
-      v-else
+      v-else-if="api && activeSection === 'api'"
       id="panel-api"
       role="tabpanel"
       aria-labelledby="tab-api"
