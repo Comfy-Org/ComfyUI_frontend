@@ -21,11 +21,17 @@ test.describe('Workflow tabs', () => {
       comfyPage
     }) => {
       const topbar = comfyPage.menu.topbar
+      const firstWorkflow = 'path-backed-first'
+      const secondWorkflow = 'path-backed-second'
+
+      await topbar.saveWorkflow(firstWorkflow)
       await topbar.newWorkflowButton.click()
-      const names = await topbar.getTabNames()
+      await topbar.saveWorkflow(secondWorkflow)
       await topbar.getTab(0).click()
 
-      await expect.poll(() => topbar.getActiveTabName()).toContain(names[0])
+      await expect
+        .poll(() => comfyPage.workflow.getActiveWorkflowPath())
+        .toContain(firstWorkflow)
     })
 
     test('activates a valid neighbor when the active workflow is closed', async ({
