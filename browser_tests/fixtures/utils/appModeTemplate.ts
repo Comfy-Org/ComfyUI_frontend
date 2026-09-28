@@ -10,9 +10,9 @@ export const APP_MODE_TEMPLATE_NODE_COUNT = 7
 
 /**
  * Registers a template whose workflow carries `extra.linearMode`, so loading
- * it keeps App Mode active and the graph canvas hidden. Deliberately has no
- * `extra.ds`: with one, the load restores that saved viewport and never
- * reaches the fit path the regression exercises.
+ * it keeps App Mode active and the graph canvas hidden. Kept minimal; whether
+ * it carries `extra.ds` is irrelevant, because a template load always takes
+ * the unconditional fit branch (`app.ts`, `openSource === 'template'`).
  */
 export async function mockAppModeTemplate(
   templates: TemplateHelper

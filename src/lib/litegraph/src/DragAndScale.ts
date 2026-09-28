@@ -197,6 +197,10 @@ export class DragAndScale {
         : [this.element.width, this.element.height]
     const cw = width / window.devicePixelRatio
     const ch = height / window.devicePixelRatio
+    // Nothing to fit against when the canvas is hidden (App Mode) or still
+    // being measured: dividing by a zero size yields scale 0 and NaN offsets,
+    // a camera no pan, zoom or fit can recover. Negated so NaN is rejected
+    // too, which resizeCanvas writes transiently while measuring.
     if (!(cw > 0) || !(ch > 0)) return
     let targetScale = this.scale
 
