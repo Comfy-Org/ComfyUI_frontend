@@ -116,10 +116,9 @@ function sampleCurves(curves: MotionCurve[]): Point[] {
   return samples
 }
 
-function placementDuration(step: StepOf<'place'>) {
-  const duration = step.duration ?? 0.4
-  if (!Number.isFinite(duration) || duration < 0.1)
-    throw new Error('Workflow placement needs at least 0.1 seconds')
+function checkedDuration(duration: number, minimum = 0) {
+  if (!Number.isFinite(duration) || duration < minimum)
+    throw new Error(`Workflow duration needs at least ${minimum} seconds`)
   return duration
 }
 
@@ -249,7 +248,7 @@ export function createWorkflowMotion(workflow: MotionWorkflow) {
         throw new Error(`Workflow node was already placed: ${node.id}`)
       const cursor = cursors[step.actor]
       const point = node.clickPoint ?? { x: node.x + 24, y: node.y + portY }
-      const duration = placementDuration(step)
+      const duration = checkedDuration(step.duration ?? 0.4, 0.1)
       moveCursor(cursor, point, time, duration)
       time += duration
       const shownAt = reveal(state, time + 0.1)
@@ -315,9 +314,7 @@ export function createWorkflowMotion(workflow: MotionWorkflow) {
     }
 
     function revealImages(step: StepOf<'images'>) {
-      const delay = step.delay ?? 0.25
-      if (!Number.isFinite(delay) || delay < 0)
-        throw new Error('Workflow image delay must be nonnegative')
+      const delay = checkedDuration(step.delay ?? 0.25)
       const states = step.nodes.map((id) => requireShown(id, time))
       for (const state of states) {
         if (
@@ -358,9 +355,7 @@ export function createWorkflowMotion(workflow: MotionWorkflow) {
     for (const step of workflow.steps) {
       switch (step.type) {
         case 'pause':
-          if (!Number.isFinite(step.duration) || step.duration < 0)
-            throw new Error('Workflow pauses must be nonnegative')
-          time += step.duration
+          time += checkedDuration(step.duration)
           break
         case 'place':
           placeNode(step)

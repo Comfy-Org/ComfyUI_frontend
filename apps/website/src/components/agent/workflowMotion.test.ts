@@ -22,6 +22,37 @@ function animation(
 }
 
 describe('workflow motion', () => {
+  it.for([
+    { type: 'pause', duration: -0.01 },
+    { type: 'pause', duration: NaN },
+    { type: 'pause', duration: Infinity },
+    { type: 'place', node: 'base', actor: 'agent', duration: 0.099 },
+    { type: 'images', nodes: [], delay: -0.01 }
+  ] satisfies MotionWorkflow['steps'])(
+    'rejects invalid $type duration',
+    (step) => {
+      expect(() =>
+        createWorkflowMotion({ ...productWorkflow, steps: [step] })
+      ).toThrow('Workflow duration')
+    }
+  )
+
+  it.for([
+    { step: { type: 'pause', duration: 0 }, duration: 10.4 },
+    {
+      step: { type: 'place', node: 'base', actor: 'agent', duration: 0.1 },
+      duration: 10.85
+    },
+    { step: { type: 'images', nodes: [], delay: 0 }, duration: 10.7 }
+  ] satisfies { step: MotionWorkflow['steps'][number]; duration: number }[])(
+    'accepts the minimum $step.type duration',
+    ({ step, duration }) => {
+      expect(
+        createWorkflowMotion({ ...productWorkflow, steps: [step] }).duration
+      ).toBeCloseTo(duration)
+    }
+  )
+
   it.for(['base', 'keyframe-white'])(
     'grows the %s window from zero to full size in 250ms without fading',
     (id) => {
