@@ -360,6 +360,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     unsubscribe = null
     unsubscribeStatus = null
     for (const recovery of recoveringTurns.values()) recovery.abort()
+    recoveringTurns.clear()
     const stoppedGeneration = ownedGeneration
     queueMicrotask(() => {
       if (stoppedGeneration !== sessionGeneration) return
