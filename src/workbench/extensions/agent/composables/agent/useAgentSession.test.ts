@@ -1487,11 +1487,7 @@ describe('useAgentSession (v1 composition root)', () => {
     status(true)
 
     await vi.waitFor(() => expect(session.isStreaming.value).toBe(false))
-    const assistant = session.entries.value.at(-1)
-    assert(assistant?.role === 'assistant')
-    expect(assistant.parts).toEqual([
-      { type: 'text', text: 'partial', state: 'done' }
-    ])
+    expect(session.entries.value).toEqual([])
     expect(session.notices.value).toEqual([])
   })
 

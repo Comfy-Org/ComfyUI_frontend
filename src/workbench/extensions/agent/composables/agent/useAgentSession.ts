@@ -1035,9 +1035,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   function forgetDeletedThread(turn: LiveTurn): void {
-    conversationStore.settleTurn(turn, undefined)
-    if (conversationStore.threadId !== turn.threadId) return
-    conversationStore.setThreadId(null)
+    if (conversationStore.threadId !== turn.threadId) {
+      conversationStore.settleTurn(turn, undefined)
+      return
+    }
+    conversationStore.reset()
     boundWorkflowId.value = null
     rememberedWorkflowId = null
     localStorage.removeItem(threadStorageKey)
