@@ -58,7 +58,7 @@ import { createDeferredStripeChallengePort } from '@/session/stripeChallengePort
 import { useWorkspaceInvites } from '@/session/workspaceInvites'
 
 const { locale, t } = useI18n()
-const { coded } = useHostedCopy()
+const { coded, refusal } = useHostedCopy()
 const { copy, successCopy, inviteCopy, tierName } = useCheckoutCopy()
 const invites = useWorkspaceInvites()
 const { entry } = useBillingEntry()
@@ -185,8 +185,7 @@ async function applyPromotionCode(code: string) {
     code.trim()
   )
   applyingPromotionCode.value = false
-  if (result?.status === 'error')
-    submitFailure.value = coded('failure', result.code)
+  if (result?.status === 'error') submitFailure.value = refusal(result)
 }
 
 /**
@@ -513,7 +512,7 @@ async function pay(choice: PaymentChoice) {
     )
     return
   }
-  submitFailure.value = coded('failure', result.code)
+  submitFailure.value = refusal(result)
 }
 
 function payWithoutCard() {
@@ -545,7 +544,7 @@ function leaveForHost() {
         class="rounded-xl border border-border-subtle bg-secondary-background p-6"
       >
         <p class="m-0 text-sm text-destructive-background">
-          {{ coded('failure', failure.code) }}
+          {{ refusal(failure) }}
         </p>
         <button
           v-if="returnLink"
