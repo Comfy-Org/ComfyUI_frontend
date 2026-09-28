@@ -208,6 +208,10 @@ function onPaywallAction(
     openAccountPrecondition('credits', { source: 'agent_paywall' })
     return
   }
+  useTelemetry()?.trackSubscription('subscribe_clicked', {
+    current_tier: subscriptionTier.value?.toLowerCase(),
+    reason: 'agent_paywall'
+  })
   openAccountPrecondition('subscription', { source: 'agent_paywall' })
 }
 

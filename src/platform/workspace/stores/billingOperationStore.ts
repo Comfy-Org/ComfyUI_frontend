@@ -803,6 +803,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
           stage: 'succeeded',
           outcome: 'success',
           billing_op_id: opId,
+          payment_intent_source: operation.paymentIntentSource,
           duration_ms: now - operation.businessAttemptStartedAt
         })
       }
@@ -942,6 +943,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         stage: 'failed',
         outcome: 'failure',
         billing_op_id: opId,
+        payment_intent_source: operation.paymentIntentSource,
         failure_category: failureCategory,
         duration_ms: now - operation.businessAttemptStartedAt
       })
@@ -1025,6 +1027,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         stage: 'failed',
         outcome: 'failure',
         billing_op_id: opId,
+        payment_intent_source: operation.paymentIntentSource,
         failure_category: 'reconciliation_needed',
         duration_ms: now - operation.businessAttemptStartedAt
       })
@@ -1094,6 +1097,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         stage: 'failed',
         outcome: 'failure',
         billing_op_id: opId,
+        payment_intent_source: operation.paymentIntentSource,
         failure_category: 'poll_timeout',
         duration_ms: now - operation.businessAttemptStartedAt
       })
