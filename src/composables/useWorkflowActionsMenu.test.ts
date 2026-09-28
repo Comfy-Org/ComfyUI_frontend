@@ -436,8 +436,42 @@ describe('useWorkflowActionsMenu', () => {
 
     isOpen.value = true
     await nextTick()
+    isOpen.value = false
+    await nextTick()
+    isOpen.value = true
+    await nextTick()
 
+    expect(check).toHaveBeenCalledTimes(2)
+  })
+
+  it('asks for the account that signs in while the menu is already open, and shows its answer in that open', async () => {
+    const enabled = ref(false)
+    const settled = ref(true)
+    const check = vi.fn()
+    vi.mocked(useDeployToComfyApiGate).mockReturnValue({
+      enabled,
+      settled,
+      check
+    })
+    const isOpen = ref(false)
+    const { menuItems } = useWorkflowActionsMenu(vi.fn(), {
+      isRoot: true,
+      isOpen
+    })
+    isOpen.value = true
+    await nextTick()
     expect(check).toHaveBeenCalledOnce()
+
+    settled.value = false
+    await nextTick()
+    expect(check).toHaveBeenCalledTimes(2)
+
+    enabled.value = true
+    settled.value = true
+    await nextTick()
+    expect(menuLabels(menuItems.value)).toContain(
+      'deployToComfyApi.buttonLabel'
+    )
   })
 
   it('shows the row in the same open when the menu opened before the account had an answer', async () => {

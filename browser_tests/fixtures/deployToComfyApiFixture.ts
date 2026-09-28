@@ -12,8 +12,13 @@ type CreateCustomerResponse =
  * at boot, and `@auth` mocks none of them. The flag answer overrides the
  * shared default of `false`.
  */
-export const deployToComfyApiTest = comfyPageFixture.extend({
-  page: async ({ page }, use) => {
+export const deployToComfyApiTest = comfyPageFixture.extend<{
+  platformFlag: { readonly asked: number }
+}>({
+  platformFlag: async ({ context }, use) => {
+    await use(await mockDistributionsFlag(context, true))
+  },
+  page: async ({ page, platformFlag: _installedBeforeBoot }, use) => {
     const context = page.context()
     await mockWorkspace(context, workspace('personal', 'owner'), [])
     await mockBilling(page)
@@ -25,7 +30,6 @@ export const deployToComfyApiTest = comfyPageFixture.extend({
           })
         : route.fallback()
     )
-    await mockDistributionsFlag(context, true)
     await use(page)
   }
 })
