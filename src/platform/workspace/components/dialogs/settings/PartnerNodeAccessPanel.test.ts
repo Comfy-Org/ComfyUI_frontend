@@ -11,7 +11,7 @@ import { createI18n } from 'vue-i18n'
 import enMessages from '@/locales/en/main.json'
 import type { PartnerNodePolicy } from '@/platform/workspace/api/partnerNodePolicyApi'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 
 import PartnerNodeAccessPanel from './PartnerNodeAccessPanel.vue'
 

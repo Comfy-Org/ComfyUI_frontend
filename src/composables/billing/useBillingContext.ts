@@ -6,7 +6,7 @@ import {
   KEY_TO_TIER,
   getTierFeatures
 } from '@/platform/cloud/subscription/constants/tierPricing'
-import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
+import type { TierKey } from '@/platform/cloud/subscription/constants/tierKey'
 import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
 import { isCloud } from '@/platform/distribution/types'
 import type {

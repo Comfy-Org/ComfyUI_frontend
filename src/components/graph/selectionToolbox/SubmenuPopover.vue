@@ -66,10 +66,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import Popover from 'primevue/popover'
 import { computed, ref } from 'vue'
 
-import type {
-  MenuOption,
-  SubMenuOption
-} from '@/composables/graph/useMoreOptionsMenu'
+import type { MenuOption, SubMenuOption } from '@/composables/graph/menuOption'
 import { useNodeCustomization } from '@/composables/graph/useNodeCustomization'
 
 interface Props {

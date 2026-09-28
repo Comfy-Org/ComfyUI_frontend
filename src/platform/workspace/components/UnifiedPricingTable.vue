@@ -444,7 +444,6 @@ import {
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
   RegistrySubscriptionTier,
-  TierKey,
   TierPricing
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBillingPlans'
@@ -455,7 +454,10 @@ import {
   mapApiTeamCreditStops
 } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
-import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
+import type {
+  BillingCycle,
+  TierKey
+} from '@/platform/cloud/subscription/constants/tierKey'
 import { isCloud } from '@/platform/distribution/types'
 import type { Plan } from '@/platform/workspace/api/workspaceApi'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'

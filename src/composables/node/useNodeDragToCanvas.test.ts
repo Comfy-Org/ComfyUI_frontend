@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useNodeDragToCanvas } from './useNodeDragToCanvas'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'

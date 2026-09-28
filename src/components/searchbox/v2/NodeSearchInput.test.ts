@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { testI18n } from '@/components/searchbox/v2/__test__/testUtils'
 import NodeSearchInput from '@/components/searchbox/v2/NodeSearchInput.vue'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import type { FuseFilter, FuseFilterWithValue } from '@/utils/fuseUtil'
 
 vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({

@@ -16,7 +16,7 @@ import type {
   ComfyNodeDef as ComfyNodeDefV1,
   InputSpec
 } from '@/schemas/nodeDefSchema'
-import type { DOMWidget, DOMWidgetOptions } from '@/scripts/domWidget'
+import type { DOMWidget, DOMWidgetOptions } from '@/types/domWidget'
 import type { CONFIG, GET_CONFIG } from '@/services/litegraphService'
 import type { SerializedNodeId } from '@/types/nodeId'
 

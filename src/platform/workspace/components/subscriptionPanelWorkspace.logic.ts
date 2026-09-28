@@ -1,4 +1,4 @@
-import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
+import type { TierKey } from '@/platform/cloud/subscription/constants/tierKey'
 import { toTierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { SubscriptionTier } from '@/platform/workspace/api/workspaceApi'
 

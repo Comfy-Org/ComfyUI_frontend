@@ -1,13 +1,12 @@
 import type { SubscriptionTier as IngestSubscriptionTier } from '@comfyorg/ingest-types'
 
+import type { TierKey } from '@/platform/cloud/subscription/constants/tierKey'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import type { components } from '@/types/comfyRegistryTypes'
 
 export type { IngestSubscriptionTier }
 
 export type RegistrySubscriptionTier = components['schemas']['SubscriptionTier']
-
-export type TierKey = 'free' | 'standard' | 'creator' | 'pro' | 'founder'
 
 const TIER_TO_KEY: Record<RegistrySubscriptionTier, TierKey> = {
   FREE: 'free',

@@ -6,7 +6,7 @@ import {
   toTierKey,
   getTierPrice
 } from '@/platform/cloud/subscription/constants/tierPricing'
-import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
+import type { TierKey } from '@/platform/cloud/subscription/constants/tierKey'
 import { formatUsdCents } from '@/utils/numberUtil'
 
 /**

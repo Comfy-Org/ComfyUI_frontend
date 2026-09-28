@@ -1,5 +1,5 @@
 import type { Settings } from '@/platform/settings/types'
-import type { ComfyApp } from '@/types/comfy'
+import type { ComfySettingsDialog } from '@/scripts/ui/settings'
 
 import type { ComfyComponent } from '.'
 import { $el } from '../../ui'
@@ -18,7 +18,7 @@ type ComfyButtonProps = {
   action?: (e: Event, btn: ComfyButton) => void
   classList?: ClassList
   visibilitySetting?: { id: keyof Settings; showValue: boolean }
-  app?: ComfyApp
+  app?: { ui: { settings: ComfySettingsDialog } }
 }
 
 export class ComfyButton implements ComfyComponent {

@@ -6,7 +6,7 @@ import { createI18n } from 'vue-i18n'
 
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import type {
   TreeExplorerDragAndDropData,
   TreeExplorerNode,

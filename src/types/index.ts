@@ -54,7 +54,7 @@ export type {
   parseNodeExecutionId,
   createNodeExecutionId
 } from './nodeIdentification'
-export type { DOMWidget, DOMWidgetOptions } from '@/scripts/domWidget'
+export type { DOMWidget, DOMWidgetOptions } from '@/types/domWidget'
 export type {
   EmbeddingsResponse,
   ExtensionsResponse,

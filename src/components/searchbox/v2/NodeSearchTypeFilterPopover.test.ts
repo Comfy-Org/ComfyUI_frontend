@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import NodeSearchTypeFilterPopover from '@/components/searchbox/v2/NodeSearchTypeFilterPopover.vue'
-import type { FilterChip } from '@/components/searchbox/v2/NodeSearchFilterBar.vue'
+import type { FilterChip } from '@/components/searchbox/v2/filterChip'
 import { testI18n } from '@/components/searchbox/v2/__test__/testUtils'
 
 function createMockChip(

@@ -2,7 +2,6 @@ import { storeToRefs } from 'pinia'
 
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
-import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import {
   createPendingSubscriptionCheckoutAttempt,
   persistPendingSubscriptionCheckoutAttempt,
@@ -18,7 +17,10 @@ import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 
-import type { BillingCycle } from './subscriptionTierRank'
+import type {
+  BillingCycle,
+  TierKey
+} from '@/platform/cloud/subscription/constants/tierKey'
 
 type CheckoutTier = TierKey | `${TierKey}-yearly`
 
