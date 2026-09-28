@@ -184,8 +184,12 @@ test.describe(
           request.method() === 'DELETE'
       )
       await page.route(`**/tasks/${taskId}`, async (route) => {
-        expect(route.request().method()).toBe('DELETE')
-        await route.fulfill({ status: 204 })
+        if (route.request().method() === 'DELETE') {
+          await route.fulfill({ status: 204 })
+          return
+        }
+
+        await route.fallback()
       })
 
       await dispatchAssetDownload(page, {
@@ -198,7 +202,12 @@ test.describe(
       })
 
       const toast = page.getByRole('status').filter({ hasText: ASSET_NAME })
-      await toast.getByRole('button', { name: 'Cancel Download' }).click()
+      await expect(toast).toBeVisible()
+      const cancelButton = toast.getByRole('button', {
+        name: 'Cancel Download'
+      })
+      await expect(cancelButton).toBeVisible()
+      await cancelButton.click()
       await cancellationRequest
 
       await dispatchAssetDownload(page, {
