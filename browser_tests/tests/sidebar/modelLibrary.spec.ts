@@ -1,6 +1,9 @@
-import { expect } from '@playwright/test'
+import { expect, mergeTests } from '@playwright/test'
 
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import { modelLibraryFixture } from '@e2e/fixtures/modelLibraryFixture'
+
+const test = mergeTests(comfyPageFixture, modelLibraryFixture)
 
 const MOCK_FOLDERS: Record<string, string[]> = {
   checkpoints: [
@@ -12,21 +15,13 @@ const MOCK_FOLDERS: Record<string, string[]> = {
   vae: ['sdxl_vae.safetensors']
 }
 
+test.use({ initialModelFolders: MOCK_FOLDERS })
+
 // ==========================================================================
 // 1. Tab open/close
 // ==========================================================================
 
 test.describe('Model library sidebar - tab', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.modelLibrary.mockFoldersWithFiles(MOCK_FOLDERS)
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-    await comfyPage.setup()
-  })
-
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.modelLibrary.clearMocks()
-  })
-
   test('Opens model library tab and shows tree', async ({ comfyPage }) => {
     const tab = comfyPage.menu.modelLibraryTab
     await tab.open()
@@ -49,18 +44,6 @@ test.describe('Model library sidebar - tab', () => {
 // ==========================================================================
 
 test.describe('Model library sidebar - folders', () => {
-  // Mocks are set up before setup(), so app.ts's loadModelFolders()
-  // call during initialization hits the mock and populates the store.
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.modelLibrary.mockFoldersWithFiles(MOCK_FOLDERS)
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-    await comfyPage.setup()
-  })
-
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.modelLibrary.clearMocks()
-  })
-
   test('Displays model folders after opening tab', async ({ comfyPage }) => {
     const tab = comfyPage.menu.modelLibraryTab
     await tab.open()
@@ -101,16 +84,6 @@ test.describe('Model library sidebar - folders', () => {
 // ==========================================================================
 
 test.describe('Model library sidebar - search', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.modelLibrary.mockFoldersWithFiles(MOCK_FOLDERS)
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-    await comfyPage.setup()
-  })
-
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.modelLibrary.clearMocks()
-  })
-
   test('Search filters models by filename', async ({ comfyPage }) => {
     const tab = comfyPage.menu.modelLibraryTab
     await tab.open()
@@ -159,47 +132,40 @@ test.describe('Model library sidebar - search', () => {
 // ==========================================================================
 
 test.describe('Model library sidebar - refresh', () => {
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.modelLibrary.clearMocks()
-  })
+  test.describe('Initial checkpoint folder', () => {
+    test.use({ initialModelFolders: { checkpoints: ['model_a.safetensors'] } })
 
-  test('Refresh button reloads folder list', async ({ comfyPage }) => {
-    await comfyPage.modelLibrary.mockFoldersWithFiles({
-      checkpoints: ['model_a.safetensors']
+    test('Refresh button reloads folder list', async ({
+      comfyPage,
+      modelLibraryMocks
+    }) => {
+      const tab = comfyPage.menu.modelLibraryTab
+      await tab.open()
+
+      await expect(tab.getFolderByLabel('checkpoints')).toBeVisible()
+
+      // Update mock to include a new folder
+      await modelLibraryMocks.clearMocks()
+      await modelLibraryMocks.mockFoldersWithFiles({
+        checkpoints: ['model_a.safetensors'],
+        loras: ['lora_b.safetensors']
+      })
+
+      // Wait for the refresh request to complete
+      const refreshRequest = comfyPage.page.waitForRequest(
+        (req) => req.url().endsWith('/experiment/models'),
+        { timeout: 5000 }
+      )
+      await tab.refreshButton.click()
+      await refreshRequest
+
+      await expect(tab.getFolderByLabel('loras')).toBeVisible()
     })
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-    await comfyPage.setup()
-
-    const tab = comfyPage.menu.modelLibraryTab
-    await tab.open()
-
-    await expect(tab.getFolderByLabel('checkpoints')).toBeVisible()
-
-    // Update mock to include a new folder
-    await comfyPage.modelLibrary.clearMocks()
-    await comfyPage.modelLibrary.mockFoldersWithFiles({
-      checkpoints: ['model_a.safetensors'],
-      loras: ['lora_b.safetensors']
-    })
-
-    // Wait for the refresh request to complete
-    const refreshRequest = comfyPage.page.waitForRequest(
-      (req) => req.url().endsWith('/experiment/models'),
-      { timeout: 5000 }
-    )
-    await tab.refreshButton.click()
-    await refreshRequest
-
-    await expect(tab.getFolderByLabel('loras')).toBeVisible()
   })
 
   test('Load all folders button triggers loading all model data', async ({
     comfyPage
   }) => {
-    await comfyPage.modelLibrary.mockFoldersWithFiles(MOCK_FOLDERS)
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-    await comfyPage.setup()
-
     const tab = comfyPage.menu.modelLibraryTab
     await tab.open()
 
@@ -221,35 +187,24 @@ test.describe('Model library sidebar - refresh', () => {
 // ==========================================================================
 
 test.describe('Model library sidebar - empty state', () => {
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.modelLibrary.clearMocks()
-  })
+  test.describe('No initial folders', () => {
+    test.use({ initialModelFolders: {} })
 
-  test('Shows empty tree when no model folders exist', async ({
-    comfyPage
-  }) => {
-    await comfyPage.modelLibrary.mockFoldersWithFiles({})
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-    await comfyPage.setup()
+    test('Shows empty tree when no model folders exist', async ({
+      comfyPage
+    }) => {
+      const tab = comfyPage.menu.modelLibraryTab
+      await tab.open()
 
-    const tab = comfyPage.menu.modelLibraryTab
-    await tab.open()
-
-    await expect(tab.modelTree).toBeVisible()
-    await expect(tab.folderNodes).toHaveCount(0)
-    await expect(tab.leafNodes).toHaveCount(0)
+      await expect(tab.modelTree).toBeVisible()
+      await expect(tab.folderNodes).toHaveCount(0)
+      await expect(tab.leafNodes).toHaveCount(0)
+    })
   })
 
   test.describe('Model library sidebar - add node', () => {
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.modelLibrary.mockFoldersWithFiles(MOCK_FOLDERS)
-      // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-      await comfyPage.setup()
       await comfyPage.nodeOps.clearGraph()
-    })
-
-    test.afterEach(async ({ comfyPage }) => {
-      await comfyPage.modelLibrary.clearMocks()
     })
 
     test('Clicking a model defers creation until placed on the canvas', async ({
