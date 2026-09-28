@@ -302,8 +302,11 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
         'Complete another workflow without a refusal'
       )
       await expect.poll(() => postedMessages.length).toBe(2)
-      expect(acceptedTurns.count).toBe(2)
-      const secondTurn = acceptedTurns.latest
+      expect(acceptedTurns).toHaveLength(2)
+      const secondTurn = acceptedTurns.at(-1)
+      if (secondTurn === undefined) {
+        throw new Error('No second Agent turn was accepted')
+      }
       pushEvent(
         ws,
         zAgentWsEvent.parse({
