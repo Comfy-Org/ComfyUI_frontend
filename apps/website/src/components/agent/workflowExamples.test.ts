@@ -1,4 +1,3 @@
-import userEvent from '@testing-library/user-event'
 import { screen } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MockInstance } from 'vitest'
@@ -32,30 +31,20 @@ function controlMedia() {
   }
 }
 
-function mountExamples({ single = false } = {}) {
+function mountExamples() {
   const root = document.createElement('test-workflow-examples')
-  const picker = single
-    ? ''
-    : `
-    <fieldset>
-      <legend>Choose a workflow example</legend>
-      <label><input type="radio" name="workflow-example" value="peanut" checked>Product image</label>
-      <label><input type="radio" name="workflow-example" value="conditioner">Product video</label>
-    </fieldset>
-    <div class="wf-example" data-example="peanut"><div class="wf-scene"></div></div>`
-  root.innerHTML = `${picker}
-    <div class="wf-example" data-example="conditioner">
-      <div class="wf-scene" data-testid="video-scene">
-        <div>
-          <video aria-label="White product video" data-src="/white.mp4" poster="/white.webp" muted></video>
-          <span class="wf-video-cue" data-testid="white-cue" aria-hidden="true"></span>
-        </div>
-        <div>
-          <video aria-label="Gold product video" data-src="/gold.mp4" poster="/gold.webp" muted></video>
-          <span class="wf-video-cue" data-testid="gold-cue" aria-hidden="true"></span>
-        </div>
+  root.innerHTML = `
+    <div class="wf-scene" data-testid="video-scene">
+      <div>
+        <video aria-label="White product video" data-src="/white.mp4" poster="/white.webp" muted></video>
+        <span class="wf-video-cue" data-testid="white-cue" aria-hidden="true"></span>
       </div>
-    </div>`
+      <div>
+        <video aria-label="Gold product video" data-src="/gold.mp4" poster="/gold.webp" muted></video>
+        <span class="wf-video-cue" data-testid="gold-cue" aria-hidden="true"></span>
+      </div>
+    </div>
+  `
   document.body.append(root)
   return root
 }
@@ -72,10 +61,8 @@ describe('workflow example playback', () => {
   let play: MockInstance<HTMLVideoElement['play']>
   let pause: MockInstance<HTMLVideoElement['pause']>
   let root: HTMLElement | undefined
-  let user: ReturnType<typeof userEvent.setup>
 
   beforeEach(() => {
-    user = userEvent.setup()
     media = controlMedia()
     observers = stubIntersectionObserver()
     vi.spyOn(document, 'hidden', 'get').mockReturnValue(false)
@@ -93,7 +80,7 @@ describe('workflow example playback', () => {
   })
 
   it('plays the sole workflow without a picker and resumes queued output after an offscreen pause', () => {
-    root = mountExamples({ single: true })
+    root = mountExamples()
     observers.instances[0].intersect(true)
     const video = screen.getByLabelText<HTMLVideoElement>('White product video')
 
@@ -117,9 +104,8 @@ describe('workflow example playback', () => {
     expect(play).toHaveBeenCalledTimes(2)
   })
 
-  it('loads and starts the selected video only when its output is revealed', async () => {
+  it('loads and starts a video only when its output is revealed', () => {
     root = mountExamples()
-    await user.click(screen.getByRole('radio', { name: 'Product video' }))
     observers.instances[0].intersect(true)
     const video = screen.getByLabelText<HTMLVideoElement>('White product video')
 
@@ -135,20 +121,8 @@ describe('workflow example playback', () => {
     expect(play).toHaveBeenCalledTimes(1)
   })
 
-  it('ignores a queued reveal event from the inactive example', () => {
+  it('pauses offscreen and resumes the revealed video without rewinding it', () => {
     root = mountExamples()
-    observers.instances[0].intersect(true)
-    cue()
-
-    expect(
-      screen.getByLabelText('White product video').hasAttribute('src')
-    ).toBe(false)
-    expect(play).not.toHaveBeenCalled()
-  })
-
-  it('pauses offscreen and resumes the revealed video without rewinding it', async () => {
-    root = mountExamples()
-    await user.click(screen.getByRole('radio', { name: 'Product video' }))
     observers.instances[0].intersect(true)
     cue()
     const video = screen.getByLabelText<HTMLVideoElement>('White product video')
@@ -171,9 +145,8 @@ describe('workflow example playback', () => {
     expect(video.currentTime).toBe(4)
   })
 
-  it('starts a queued reveal once when the workflow returns to view', async () => {
+  it('starts a queued reveal once when the workflow returns to view', () => {
     root = mountExamples()
-    await user.click(screen.getByRole('radio', { name: 'Product video' }))
     observers.instances[0].intersect(true)
     const video = screen.getByLabelText<HTMLVideoElement>('White product video')
     video.currentTime = 6
@@ -209,13 +182,6 @@ describe('workflow example playback', () => {
       }
     },
     {
-      name: 'the selected example changes',
-      reset: async () => {
-        await user.click(screen.getByRole('radio', { name: 'Product image' }))
-        await user.click(screen.getByRole('radio', { name: 'Product video' }))
-      }
-    },
-    {
       name: 'reduced motion resets the animation',
       reset: () => {
         media.reduced(true)
@@ -229,14 +195,13 @@ describe('workflow example playback', () => {
         media.desktop(true)
       }
     }
-  ])('discards a queued reveal when $name', async ({ reset }) => {
+  ])('discards a queued reveal when $name', ({ reset }) => {
     root = mountExamples()
-    await user.click(screen.getByRole('radio', { name: 'Product video' }))
     observers.instances[0].intersect(true)
     observers.instances[0].intersect(false)
     cue()
 
-    await reset()
+    reset()
     observers.instances[0].intersect(true)
 
     expect(play).not.toHaveBeenCalled()
@@ -248,37 +213,9 @@ describe('workflow example playback', () => {
     expect(play).toHaveBeenCalledTimes(1)
   })
 
-  it('waits for a fresh output cue after switching away from and back to the video example', async () => {
-    root = mountExamples()
-    await user.click(screen.getByRole('radio', { name: 'Product video' }))
-    observers.instances[0].intersect(true)
-    cue()
-    play.mockClear()
-    pause.mockClear()
-
-    await user.click(screen.getByRole('radio', { name: 'Product image' }))
-    await user.click(screen.getByRole('radio', { name: 'Product video' }))
-
-    expect(pause).toHaveBeenCalled()
-    expect(play).not.toHaveBeenCalled()
-    expect(screen.getByRole('radio', { name: 'Product video' })).toHaveProperty(
-      'checked',
-      true
-    )
-    expect(root.hasAttribute('data-paused')).toBe(false)
-    expect(screen.getByRole('radio', { name: 'Product image' })).toHaveProperty(
-      'checked',
-      false
-    )
-
-    cue()
-    expect(play).toHaveBeenCalledTimes(1)
-  })
-
-  it('keeps the static poster under reduced motion without loading or playing video', async () => {
+  it('keeps the static poster under reduced motion without loading or playing video', () => {
     media.reduced(true)
     root = mountExamples()
-    await user.click(screen.getByRole('radio', { name: 'Product video' }))
     observers.instances[0].intersect(true)
     cue()
     const video = screen.getByLabelText<HTMLVideoElement>('White product video')
@@ -287,6 +224,26 @@ describe('workflow example playback', () => {
     expect(video.hasAttribute('src')).toBe(false)
     expect(video.getAttribute('poster')).toBe('/white.webp')
     expect(play).not.toHaveBeenCalled()
+  })
+
+  it('restores the poster when reduced motion is enabled during playback', () => {
+    root = mountExamples()
+    observers.instances[0].intersect(true)
+    cue()
+    const video = screen.getByLabelText<HTMLVideoElement>('White product video')
+
+    video.currentTime = 3
+    media.reduced(true)
+
+    expect(video.hasAttribute('src')).toBe(false)
+    expect(video.currentTime).toBe(0)
+
+    play.mockClear()
+    media.reduced(false)
+    expect(play).not.toHaveBeenCalled()
+
+    cue()
+    expect(play).toHaveBeenCalledTimes(1)
   })
 
   it.for([
@@ -302,9 +259,8 @@ describe('workflow example playback', () => {
     }
   ])(
     'waits for a new output cue when $name cancels and restarts the CSS animation',
-    async ({ stop, restart }) => {
+    ({ stop, restart }) => {
       root = mountExamples()
-      await user.click(screen.getByRole('radio', { name: 'Product video' }))
       observers.instances[0].intersect(true)
       cue()
       play.mockClear()
@@ -313,15 +269,17 @@ describe('workflow example playback', () => {
       restart(media)
 
       expect(play).not.toHaveBeenCalled()
+      expect(
+        screen.getByLabelText('White product video').hasAttribute('src')
+      ).toBe(false)
 
       cue()
       expect(play).toHaveBeenCalledTimes(1)
     }
   )
 
-  it('pauses a hidden document and resumes at the same playback position', async () => {
+  it('pauses a hidden document and resumes at the same playback position', () => {
     root = mountExamples()
-    await user.click(screen.getByRole('radio', { name: 'Product video' }))
     observers.instances[0].intersect(true)
     cue()
     const video = screen.getByLabelText<HTMLVideoElement>('White product video')
@@ -340,9 +298,8 @@ describe('workflow example playback', () => {
     expect(video.currentTime).toBe(3)
   })
 
-  it('rewinds to the opening frame when the output cue repeats on the next loop', async () => {
+  it('rewinds to the opening frame when the output cue repeats on the next loop', () => {
     root = mountExamples()
-    await user.click(screen.getByRole('radio', { name: 'Product video' }))
     observers.instances[0].intersect(true)
     cue()
     const video = screen.getByLabelText<HTMLVideoElement>('White product video')
@@ -355,9 +312,8 @@ describe('workflow example playback', () => {
     expect(play).toHaveBeenCalledTimes(1)
   })
 
-  it('stops playback through the next workflow intro until the output is generated again', async () => {
+  it('stops playback through the next workflow intro until the output is generated again', () => {
     root = mountExamples()
-    await user.click(screen.getByRole('radio', { name: 'Product video' }))
     observers.instances[0].intersect(true)
     cue()
     play.mockClear()
@@ -376,9 +332,8 @@ describe('workflow example playback', () => {
     expect(play).toHaveBeenCalledTimes(1)
   })
 
-  it('keeps the ending frame when a completed video returns to view', async () => {
+  it('keeps the ending frame when a completed video returns to view', () => {
     root = mountExamples()
-    await user.click(screen.getByRole('radio', { name: 'Product video' }))
     observers.instances[0].intersect(true)
     cue()
     const video = screen.getByLabelText<HTMLVideoElement>('White product video')
@@ -391,9 +346,23 @@ describe('workflow example playback', () => {
     expect(play).not.toHaveBeenCalled()
   })
 
-  it('disconnects observers and playback listeners when removed', async () => {
+  it('handles rejected playback without unloading the revealed video', async () => {
+    play.mockRejectedValue(
+      new DOMException('Playback blocked', 'NotAllowedError')
+    )
     root = mountExamples()
-    await user.click(screen.getByRole('radio', { name: 'Product video' }))
+    observers.instances[0].intersect(true)
+
+    cue()
+    await Promise.resolve()
+
+    expect(
+      screen.getByLabelText('White product video').getAttribute('src')
+    ).toBe('/white.mp4')
+  })
+
+  it('disconnects observers and playback listeners when removed', () => {
+    root = mountExamples()
     observers.instances[0].intersect(true)
     cue()
     const disconnect = vi.spyOn(observers.instances[0], 'disconnect')
