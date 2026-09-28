@@ -407,7 +407,20 @@ describe('normalizeSubgraphDefinitions', () => {
     )
 
     expect(result.subgraphs[0].links![0].id).toBe(toLinkId(2))
-    expect(state.lastLinkId).toBe(toLinkId(Number.MAX_SAFE_INTEGER))
+    expect(state.lastLinkId).toBe(toLinkId(2))
+
+    const next = normalizeSubgraphDefinitions(
+      [{ ...makeSubgraph('next'), links: [chainedLink(1)] }],
+      {
+        nodeIds: new Set(),
+        groupIds: new Set(),
+        linkIds: new Set([1, 2]),
+        rerouteIds: new Set()
+      },
+      state
+    )
+    expect(next.subgraphs[0].links![0].id).toBe(toLinkId(3))
+    expect(state.lastLinkId).toBe(toLinkId(3))
   })
 
   it('updates every root-level reference to a remapped interior node', () => {
