@@ -133,9 +133,6 @@ async function installIdentitySentinels(page: Page): Promise<void> {
     )
   }
   await page.addInitScript((storageEntries) => {
-    const seededKey = 'e2e-identity-sentinels-seeded'
-    if (sessionStorage.getItem(seededKey) === 'true') return
-    sessionStorage.setItem(seededKey, 'true')
     for (const [key, value] of storageEntries) localStorage.setItem(key, value)
   }, entries)
 
