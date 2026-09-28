@@ -14,6 +14,7 @@ const { isMaximized = false } = defineProps<{
 
 const emit = defineEmits<{
   newChat: []
+  startTour: []
   toggleSize: []
   close: []
 }>()
@@ -32,12 +33,24 @@ const sizeToggleLabel = computed(() =>
   <header
     class="flex h-12 shrink-0 items-center gap-2 border-b border-component-node-border px-4"
   >
-    <h1
-      id="agent-panel-title"
-      class="my-0 text-sm font-normal whitespace-nowrap text-base-foreground"
-    >
-      {{ t('agent.title') }}
-    </h1>
+    <div class="flex items-center gap-1">
+      <h1
+        id="agent-panel-title"
+        class="my-0 text-sm font-normal whitespace-nowrap text-base-foreground"
+      >
+        {{ t('agent.title') }}
+      </h1>
+      <Button
+        v-tooltip.bottom="buildTooltipConfig(t('agent.takeTour'))"
+        variant="muted-textonly"
+        size="icon-sm"
+        :aria-label="t('agent.takeTour')"
+        class="size-6 shrink-0"
+        @click="emit('startTour')"
+      >
+        <span class="icon-[lucide--info] size-4" />
+      </Button>
+    </div>
     <span
       class="shrink-0 rounded-full border border-border-default px-2 py-0.5 text-xs text-muted-foreground"
     >

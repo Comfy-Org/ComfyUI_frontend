@@ -225,35 +225,6 @@ function extractTitle(raw: unknown): string {
 const DEFAULT_DEPARTMENT = 'Other'
 const DEFAULT_LOCATION = 'Remote'
 
-const ROLE_DEPARTMENT_OVERRIDES: ReadonlyMap<string, string> = new Map([
-  ['Sr./Staff Product Designer, Developer Platform', 'Design']
-])
-
-export function applyRoleDepartmentOverrides(
-  departments: readonly Department[]
-): Department[] {
-  const roles = departments.flatMap((dept) =>
-    dept.roles.map((role) => {
-      const targetName = ROLE_DEPARTMENT_OVERRIDES.get(role.title)
-      return targetName ? { ...role, department: capitalize(targetName) } : role
-    })
-  )
-
-  const byKey = new Map<string, Department>()
-  for (const role of roles) {
-    const name = role.department.toUpperCase()
-    const key = slugify(name)
-    const existing = byKey.get(key)
-    if (existing) {
-      existing.roles.push(role)
-    } else {
-      byKey.set(key, { name, key, roles: [role] })
-    }
-  }
-
-  return [...byKey.values()].sort((a, b) => a.name.localeCompare(b.name))
-}
-
 function groupByDepartment(jobs: readonly AshbyJobPosting[]): Department[] {
   const byKey = new Map<string, Department>()
   for (const job of jobs) {
