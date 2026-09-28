@@ -1,14 +1,20 @@
 <script setup lang="ts">
 import { useNow } from '@vueuse/core'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import type { WorkflowWorkshopModelDetail } from '../../config/models-catalogue'
-import type { RunState } from '../../config/workshop-run'
+import type { RunOutput, RunState } from '../../config/workshop-run'
+import { useWorkshopDelivery } from '../../composables/useWorkshopDelivery'
 import type { WorkflowState } from '../../config/workshop-workflow-state'
 import { workflowOutputs } from '../../config/workshop-workflow-response'
 import { outputLabels } from '../../lib/workshop/output-labels'
+import { requestWorkshopBuyCredits } from '../../config/workshop-buy-credits'
+import { workflowRunFailure } from '../../lib/workshop/workflow-refusal'
 import { t } from '../../i18n/translations'
+import { captureWorkshopEvent } from '../../scripts/posthog'
+import type { WorkshopRunAnalytics } from '../../scripts/workshop-analytics'
+import { workshopModelAnalytics } from '../../scripts/workshop-analytics'
 import PlaygroundOutput from './PlaygroundOutput.vue'
 
 const {
@@ -18,7 +24,9 @@ const {
   busy,
   statusLabel,
   canStart,
-  refreshOutput
+  refreshOutput,
+  analytics,
+  visible = true
 } = defineProps<{
   model: WorkflowWorkshopModelDetail
   state: WorkflowState
@@ -27,6 +35,8 @@ const {
   statusLabel: string
   canStart: boolean
   refreshOutput: (id: string) => Promise<void> | undefined
+  analytics?: WorkshopRunAnalytics
+  visible?: boolean
 }>()
 const emit = defineEmits<{ retry: []; retryDelivery: [] }>()
 const now = useNow({ interval: 1000 })
@@ -40,24 +50,51 @@ const runningState = computed<RunState>(() => ({
       observation.value?.run.createdAt ??
       now.value.toISOString()
   ),
-  label: statusLabel
+  label: statusLabel,
+  stalled: state.phase === 'interrupted'
 }))
 const outputs = computed(() =>
   observation.value ? workflowOutputs(observation.value) : []
 )
-const outputState = computed<RunState>(() => {
+// What Cloud last said about a run it accepted. Undefined while it has said
+// nothing the panel can draw yet, including a finished run whose outputs have
+// not arrived.
+const observedState = computed<RunState | undefined>(() => {
   const result = observation.value
-  if (result?.run.state === 'succeeded' && outputs.value[0]) {
-    return {
-      status: 'succeeded',
-      output: outputs.value[0],
-      nsfw: false,
-      completedAt: Date.parse(result.run.completedAt ?? result.run.updatedAt)
-    }
-  }
-  if (result?.run.state === 'cancelled') return { status: 'idle' }
-  if (result?.run.state === 'failed')
+  if (!result) return undefined
+  const output = outputs.value[0]
+  if (result.run.state === 'succeeded')
+    return output
+      ? {
+          status: 'succeeded',
+          output,
+          nsfw: false,
+          completedAt: Date.parse(
+            result.run.completedAt ?? result.run.updatedAt
+          )
+        }
+      : undefined
+  // A run the reader stopped used to leave an empty panel, so the one state
+  // they caused was the one the page said nothing about.
+  if (result.run.state === 'cancelled') return { status: 'cancelled' }
+  if (result.run.state === 'failed')
     return { status: 'failed', reason: 'provider', fieldErrors: {} }
+  return undefined
+})
+// A request Cloud turned down used to fall through to the example, so the panel
+// showed what the workflow makes while the run had just been refused. Where the
+// panel has the words for it, it says so; where it does not, the page says it
+// beside the form and the panel shows nothing, because nothing was made.
+const refusedState = computed<RunState | undefined>(() => {
+  if (state.phase !== 'failed') return undefined
+  const reason = workflowRunFailure(state.error)
+  return reason
+    ? { status: 'failed', reason, fieldErrors: state.error.fieldErrors }
+    : { status: 'idle' }
+})
+const outputState = computed<RunState>(() => {
+  if (observedState.value) return observedState.value
+  if (refusedState.value) return refusedState.value
   if (busy) return runningState.value
   if (state.phase === 'settled') return { status: 'idle' }
   return exampleState.value
@@ -83,6 +120,41 @@ const retryableDelivery = computed(
 const refreshing = ref<ReadonlySet<string>>(new Set())
 const failedMedia = ref<ReadonlySet<string>>(new Set())
 const automaticRefreshes = new Set<string>()
+const delivery = useWorkshopDelivery()
+let deliveryRunId: string | undefined
+watch(
+  () => [state, analytics, visible] as const,
+  () => {
+    if (!visible || state.phase !== 'settled') {
+      delivery.cancel()
+      return
+    }
+    const result = observation.value
+    if (
+      !analytics ||
+      result?.run.state !== 'succeeded' ||
+      deliveryRunId === result.run.id
+    )
+      return
+    deliveryRunId = result.run.id
+    const output = outputs.value[0]
+    if (output) delivery.start(analytics, result.run.id, output)
+    else
+      captureWorkshopEvent({
+        name: 'delivery_finished',
+        properties: {
+          ...analytics,
+          request_id: result.run.id,
+          duration_ms: 0,
+          output_kind: model.modality ?? 'other',
+          status: 'failed',
+          reason: 'media_error',
+          failure_stage: 'delivery'
+        }
+      })
+  },
+  { immediate: true }
+)
 const unavailableOutputs = computed(() => {
   const items = observation.value?.outputs ?? []
   const labels = outputLabels(items)
@@ -111,6 +183,7 @@ function refreshUrl(url: string) {
 }
 
 function onDelivery(url: string, status: 'succeeded' | 'failed' | 'cancelled') {
+  delivery.settle(url, status)
   const id = outputs.value.find((item) => item.url === url)?.id
   if (!id || status === 'cancelled') return
   failedMedia.value =
@@ -122,6 +195,13 @@ function onDelivery(url: string, status: 'succeeded' | 'failed' | 'cancelled') {
     void refreshAccess(id)
   }
 }
+
+function captureDownload(kind: RunOutput['kind']) {
+  captureWorkshopEvent({
+    name: 'output_download_clicked',
+    properties: { ...workshopModelAnalytics(model), output_kind: kind }
+  })
+}
 </script>
 
 <template>
@@ -132,20 +212,17 @@ function onDelivery(url: string, status: 'succeeded' | 'failed' | 'cancelled') {
     :model-name="model.name"
     :modality="model.modality"
     :retry-disabled="!canStart"
+    :cancelled-message="t('workshop.workflow.cancelled')"
     refreshable
     @retry="emit('retry')"
+    @buy-credits="requestWorkshopBuyCredits"
     @refresh="refreshUrl"
     @delivery="onDelivery"
+    @playback-started="delivery.beginPlayback"
+    @download="captureDownload"
   >
     <template #example-hint>{{ t('workshop.workflow.exampleHint') }}</template>
   </PlaygroundOutput>
-  <p
-    v-if="observation?.run.state === 'cancelled'"
-    role="status"
-    class="text-sm text-primary-warm-gray"
-  >
-    {{ t('workshop.workflow.cancelRequested') }}
-  </p>
   <div
     v-if="retryableDelivery || failedMedia.size"
     class="space-y-3 rounded-xl border border-transparency-white-t20 p-4"

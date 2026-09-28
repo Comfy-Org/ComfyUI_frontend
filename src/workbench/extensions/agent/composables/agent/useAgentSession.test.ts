@@ -1172,59 +1172,67 @@ describe('useAgentSession (v1 composition root)', () => {
       )
     })
 
-  it.fails('(g3) KNOWN BUG: a reconnect leaves the turn running instead of settling it', async () => {
-    const rest = streamingTurnRest()
-    const { source, emit, status } = fakeEvents()
-    const session = useAgentSession({ rest, events: source })
-    session.start()
-    status(true)
+  it.fails(
+    '(g3) KNOWN BUG: a reconnect leaves the turn running instead of settling it',
+    { retry: 0 },
+    async () => {
+      const rest = streamingTurnRest()
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
 
-    await session.sendMessage('go')
-    emit(delta('msg-1', 'partial'))
-    expect(session.isStreaming.value).toBe(true)
+      await session.sendMessage('go')
+      emit(delta('msg-1', 'partial'))
+      expect(session.isStreaming.value).toBe(true)
 
-    status(false)
-    status(true)
+      status(false)
+      status(true)
 
-    // Generous on purpose, and matched in (g4). Under it.fails a waitFor that
-    // runs out its budget THROWS, and a throw is what marks the case green — so
-    // a tight budget here would quietly disarm the tripwire against any repair
-    // that debounces recovery after the socket flaps.
-    await vi.waitFor(() => expect(session.isStreaming.value).toBe(true), {
-      timeout: 2000
-    })
-  })
+      // Generous on purpose, and matched in (g4). Under it.fails a waitFor that
+      // runs out its budget THROWS, and a throw is what marks the case green — so
+      // a tight budget here would quietly disarm the tripwire against any repair
+      // that debounces recovery after the socket flaps.
+      await vi.waitFor(() => expect(session.isStreaming.value).toBe(true), {
+        timeout: 2000
+      })
+    }
+  )
 
-  it.fails('(g4) KNOWN BUG: deltas that arrive after a reconnect still reach the turn', async () => {
-    const rest = streamingTurnRest()
-    const { source, emit, status } = fakeEvents()
-    const session = useAgentSession({ rest, events: source })
-    session.start()
-    status(true)
+  it.fails(
+    '(g4) KNOWN BUG: deltas that arrive after a reconnect still reach the turn',
+    { retry: 0 },
+    async () => {
+      const rest = streamingTurnRest()
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
 
-    await session.sendMessage('go')
-    emit(delta('msg-1', 'partial'))
+      await session.sendMessage('go')
+      emit(delta('msg-1', 'partial'))
 
-    status(false)
-    status(true)
-    emit(delta('msg-1', ' and the rest'))
+      status(false)
+      status(true)
+      emit(delta('msg-1', ' and the rest'))
 
-    // Retried, because a re-hydrate repair reaches the reply through an async
-    // getMessages. Joined rather than part-by-part: a re-attach that opens a
-    // fresh text part on reconnect still shows the user the whole reply, and
-    // must count as fixed.
-    await vi.waitFor(
-      () => {
-        const assistant = session.entries.value.at(-1)
-        assert(assistant !== undefined && 'parts' in assistant)
-        const replyText = assistant.parts
-          .flatMap((part) => (part.type === 'text' ? [part.text] : []))
-          .join('')
-        expect(replyText).toBe('partial and the rest')
-      },
-      { timeout: 2000 }
-    )
-  })
+      // Retried, because a re-hydrate repair reaches the reply through an async
+      // getMessages. Joined rather than part-by-part: a re-attach that opens a
+      // fresh text part on reconnect still shows the user the whole reply, and
+      // must count as fixed.
+      await vi.waitFor(
+        () => {
+          const assistant = session.entries.value.at(-1)
+          assert(assistant !== undefined && 'parts' in assistant)
+          const replyText = assistant.parts
+            .flatMap((part) => (part.type === 'text' ? [part.text] : []))
+            .join('')
+          expect(replyText).toBe('partial and the rest')
+        },
+        { timeout: 2000 }
+      )
+    }
+  )
 
   it('(h) attachments pass through to the postMessage wire body', async () => {
     const rest = fakeRest()

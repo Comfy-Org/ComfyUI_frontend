@@ -1,9 +1,15 @@
-<script setup lang="ts">
+<script setup lang="ts" generic="T extends string = UseCase">
 import { ChevronDown, ListFilter } from '@lucide/vue'
-import { computed, ref, useTemplateRef, watchEffect } from 'vue'
+import {
+  computed,
+  defineAsyncComponent,
+  ref,
+  useTemplateRef,
+  watchEffect
+} from 'vue'
 
 import { onClickOutside, useMediaQuery, useWindowSize } from '@vueuse/core'
-import { FocusScope } from 'reka-ui'
+import type { ComponentExposed } from 'vue-component-type-helpers'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -11,27 +17,37 @@ import { useVisualViewport } from '../../composables/useVisualViewport'
 import type { UseCase } from '../../config/models-catalogue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import { filterLabel } from '../../lib/workshop/filter-label'
 import type { FacetSheetGroup } from './FacetSheet.vue'
-import FacetSheet from './FacetSheet.vue'
 
-export interface FacetMenuOption {
-  readonly value: UseCase
+export interface FacetMenuOption<T extends string = UseCase> {
+  readonly value: T
   readonly label: string
   readonly count: number
 }
 
+const WorkshopFilterPanel = defineAsyncComponent(
+  () => import('./WorkshopFilterPanel.vue')
+)
+
 const {
   useCaseOptions,
+  modelOptions,
   resultCount,
+  kind = 'models',
   locale = 'en'
 } = defineProps<{
-  useCaseOptions: readonly FacetMenuOption[]
+  useCaseOptions: readonly FacetMenuOption<T>[]
+  /** The models the listing runs on, where it stands on more than its own. */
+  modelOptions?: readonly FacetMenuOption<string>[]
   /** What the catalogue holds under the current choices, for the way out. */
   resultCount: number
+  kind?: 'models' | 'workflows'
   locale?: Locale
 }>()
 
-const useCases = defineModel<UseCase[]>('useCases', { required: true })
+const useCases = defineModel<T[]>('useCases', { required: true })
+const models = defineModel<string[]>('models', { default: () => [] })
 
 const open = ref(false)
 // A dropdown anchored to a crowded toolbar leaves a phone no room, so there
@@ -46,11 +62,18 @@ const phoneBottom = computed(() => {
     windowHeight.value - (visualOffsetTop.value + visualHeight.value)
   )
 })
-const panel = useTemplateRef<HTMLElement>('panel')
+const menu = useTemplateRef<HTMLElement>('menu')
+const panel =
+  useTemplateRef<ComponentExposed<typeof WorkshopFilterPanel>>('panel')
 const trigger = useTemplateRef<HTMLButtonElement>('trigger')
-onClickOutside(panel, () => (open.value = false), {
-  ignore: ['[data-testid="workshop-filter"]']
-})
+onClickOutside(
+  () => {
+    const element: unknown = panel.value?.$el
+    return element instanceof HTMLElement ? element : menu.value
+  },
+  () => (open.value = false),
+  { ignore: ['[data-testid="workshop-filter"]'] }
+)
 
 watchEffect((onCleanup) => {
   if (!open.value || !isPhone.value) return
@@ -62,17 +85,42 @@ watchEffect((onCleanup) => {
 const groups = computed<FacetSheetGroup[]>(() => [
   {
     key: 'useCase',
-    label: t('workshop.launch.label', locale),
+    label: t(
+      kind === 'workflows'
+        ? 'workshop.catalogue.categories'
+        : 'workshop.launch.label',
+      locale
+    ),
     options: useCaseOptions,
     selected: useCases.value
-  }
+  },
+  ...(modelOptions?.length
+    ? [
+        {
+          key: 'model',
+          label: t('workshop.hub.models', locale),
+          options: modelOptions,
+          selected: models.value
+        }
+      ]
+    : [])
 ])
 
 const selectedCount = computed(() =>
   groups.value.reduce((total, group) => total + group.selected.length, 0)
 )
 
-function toggle(_facet: string, value: string) {
+const label = computed(() =>
+  filterLabel(groups.value, t('workshop.filter.label', locale))
+)
+
+function toggle(facet: string, value: string) {
+  if (facet === 'model') {
+    models.value = models.value.includes(value)
+      ? models.value.filter((item) => item !== value)
+      : [...models.value, value]
+    return
+  }
   const useCase = useCaseOptions.find((option) => option.value === value)?.value
   if (!useCase) return
   useCases.value = useCases.value.includes(useCase)
@@ -82,28 +130,36 @@ function toggle(_facet: string, value: string) {
 
 function clearAll() {
   useCases.value = []
+  models.value = []
 }
 
+defineExpose({ focus: () => trigger.value?.focus() })
+
 const sheetLabels = computed(() => ({
-  title: t('workshop.filter.label', locale),
+  title: label.value,
   search: t('workshop.filter.search', locale),
   noMatches: t('workshop.filter.noMatches', locale),
   applied: t('workshop.filter.applied', locale),
   clearAll: t('workshop.filter.clearAll', locale),
-  show: t('workshop.search.show', locale),
+  show: t(
+    kind === 'models'
+      ? 'workshop.search.show'
+      : 'workshop.catalogue.showWorkflows',
+    locale
+  ),
   close: t('workshop.search.close', locale),
   resize: t('workshop.filter.resize', locale)
 }))
 </script>
 
 <template>
-  <div class="relative" @keydown.escape="open = false">
+  <div ref="menu" class="relative" @keydown.escape="open = false">
     <button
       ref="trigger"
       type="button"
       data-testid="workshop-filter"
       :aria-expanded="open"
-      :aria-label="t('workshop.filter.label', locale)"
+      :aria-label="label"
       :class="
         cn(
           'relative inline-flex h-11 cursor-pointer items-center gap-2 rounded-2xl bg-transparency-white-t4 px-4 text-sm font-medium transition-colors outline-none hover:bg-transparency-white-t8 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 max-sm:size-10 max-sm:justify-center max-sm:rounded-xl max-sm:bg-white/8 max-sm:px-0',
@@ -116,11 +172,11 @@ const sheetLabels = computed(() => ({
     >
       <ListFilter class="size-4 shrink-0" aria-hidden="true" />
       <span class="max-sm:hidden">
-        {{ t('workshop.filter.label', locale) }}
+        {{ label }}
       </span>
       <span
         v-if="selectedCount"
-        class="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary-comfy-yellow px-1 text-[10px] leading-none font-bold text-primary-comfy-ink tabular-nums max-sm:absolute max-sm:-top-1 max-sm:-right-1"
+        class="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary-comfy-yellow px-1 text-3xs leading-none font-bold text-primary-comfy-ink tabular-nums max-sm:absolute max-sm:-top-1 max-sm:-right-1"
         data-testid="workshop-filter-count"
       >
         {{ selectedCount }}
@@ -143,35 +199,19 @@ const sheetLabels = computed(() => ({
         data-testid="workshop-filter-backdrop"
         @click="open = false"
       />
-      <FocusScope
+      <WorkshopFilterPanel
         v-if="open"
-        as-child
-        :trapped="isPhone"
-        loop
-        @unmount-auto-focus.prevent="trigger?.focus()"
-      >
-        <div
-          ref="panel"
-          role="dialog"
-          :aria-label="t('workshop.filter.label', locale)"
-          :aria-modal="isPhone || undefined"
-          data-testid="workshop-filter-menu"
-          :style="{
-            bottom: phoneBottom !== undefined ? `${phoneBottom}px` : undefined
-          }"
-          class="z-50 flex flex-col overflow-y-auto border border-white/10 bg-site-dropdown shadow-2xl shadow-black/50 outline-none max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:rounded-t-3xl sm:absolute sm:top-full sm:right-0 sm:mt-2 sm:max-h-[75vh] sm:w-96 sm:max-w-[calc(100vw-2rem)] sm:rounded-2xl"
-          @keydown.escape.stop.prevent="open = false"
-        >
-          <FacetSheet
-            :groups
-            :labels="sheetLabels"
-            :result-count
-            @toggle="toggle"
-            @clear-all="clearAll"
-            @close="open = false"
-          />
-        </div>
-      </FocusScope>
+        ref="panel"
+        :groups
+        :labels="sheetLabels"
+        :result-count
+        :is-phone
+        :bottom="phoneBottom"
+        @toggle="toggle"
+        @clear-all="clearAll"
+        @close="open = false"
+        @restore-focus="trigger?.focus()"
+      />
     </Teleport>
   </div>
 </template>

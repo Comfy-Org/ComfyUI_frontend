@@ -37,6 +37,7 @@ import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import { createOpCoalescer } from './opCoalescer'
 import type { OpsResultView } from './opSender'
 import { createOpSender } from './opSender'
+import { createRejectedOpNotifier } from './rejectedOpNotice'
 
 export { apiTransport, STALE_AFTER_MS, SUBSCRIBE_CATCHUP_GRACE_MS }
 
@@ -127,6 +128,36 @@ function emitPendingMaterializations(
   events.onMaterialized?.({ workflowId, actor, nodeIds })
 }
 
+interface SubscribeRefusalOutcome {
+  shouldNotify: boolean
+  message?: string
+  code?: string
+}
+
+// PM-1604 / BE-11437: a subscribe refusal carries a `code` that is either
+// retryable (the lifecycle keeps retrying on its own) or one of
+// `PERMANENT_SUBSCRIBE_REFUSAL_CODES`, which the lifecycle won't recover
+// from by itself — surface those to the person via `onSyncError`, except
+// `unsupported`, which the lifecycle already declines to notify (a
+// deployment with the doc surface off shouldn't toast every user). The
+// caller notifies only after its own held-ops cleanup, matching
+// `onDocReset`'s cleanup-before-notify order, so a throw from consumer code
+// reaching into the toast store can't strand an in-flight op batch. `code`
+// rides along so the presentation layer can pick accurate copy instead of
+// collapsing every permanent code to the same message.
+function handleSubscribeRefusal(
+  detail: { code?: unknown; message?: unknown } | null,
+  lifecycle: AgentCrdtDocLifecycle
+): SubscribeRefusalOutcome {
+  const code = typeof detail?.code === 'string' ? detail.code : undefined
+  if (!lifecycle.onSubscribeRefused(code)) return { shouldNotify: false }
+  return {
+    shouldNotify: true,
+    message: typeof detail?.message === 'string' ? detail.message : undefined,
+    code
+  }
+}
+
 function notifyAgentMaterialization(
   update: ClassifiedDocUpdate,
   added: readonly string[],
@@ -183,6 +214,20 @@ export interface AgentCrdtFollowerEvents {
     nodeIds: readonly NodeId[]
   }) => void
   onReset?: (workflowId: string) => void
+  /**
+   * PM-1604 / BE-11437: the doc-host classified a resync refusal as
+   * permanent (one of `PERMANENT_SUBSCRIBE_REFUSAL_CODES`) — the lifecycle
+   * has already stopped retrying it, so this is the one chance to tell the
+   * person their canvas is out of sync instead of leaving them to notice a
+   * channel that silently stopped updating. Not fired for `unsupported`
+   * (the doc surface is off for this deployment; every user hits it, so it
+   * latches silently) or for a refusal that repeats on reconnect for a
+   * workflow already notified. `code` is the doc-host's permanent refusal
+   * code (e.g. `schema_version_mismatch`, `catalog_mismatch`) so the
+   * presentation layer can choose accurate localized copy instead of a
+   * single message for every permanent reason.
+   */
+  onSyncError?: (message?: string, code?: string) => void
 }
 
 // Nothing is re-thrown: an error escaping onBeforeUnmount reaches Vue's
@@ -201,6 +246,36 @@ function runFollowerTeardown(cleanups: readonly (() => void)[]): void {
   }
 }
 
+/** The `beforeChange`/`afterChange` pair of a workflow's ChangeTracker. */
+export interface UndoBracket {
+  beforeChange(): void
+  afterChange(): void
+}
+
+interface DocResetDetail {
+  workflowId?: string
+  actor?: string
+  seq?: number
+}
+
+function readDocResetDetail(event: Event): DocResetDetail | undefined {
+  return event instanceof CustomEvent
+    ? (event.detail as DocResetDetail | undefined)
+    : undefined
+}
+
+function targetsActiveSubscription(
+  detail: DocResetDetail | undefined,
+  isTargetActive: boolean,
+  subscribedWorkflowId: string | null
+): detail is DocResetDetail & { workflowId: string } {
+  return (
+    isTargetActive &&
+    detail?.workflowId !== undefined &&
+    detail.workflowId === subscribedWorkflowId
+  )
+}
+
 export function useAgentCrdtFollower(
   workflowId: Ref<string | null>,
   graphMutations: MutationsForTarget,
@@ -212,7 +287,14 @@ export function useAgentCrdtFollower(
    * reconcile without waiting for the next remote frame.
    */
   getGraph: () => MaterializableGraph | null = () => null,
-  events: AgentCrdtFollowerEvents = {}
+  events: AgentCrdtFollowerEvents = {},
+  /**
+   * Undo tracker of the bound workflow. Remote frames mutate the live graph
+   * outside any human gesture, so without a `beforeChange`/`afterChange`
+   * bracket the ChangeTracker never captures the post-frame state and Ctrl+Z
+   * skips straight past what the agent drew (QAF-52).
+   */
+  getChangeTracker: () => UndoBracket | null = () => null
 ) {
   const productGate = useAgentPanelStore()
   const follower = shallowRef<ReturnType<typeof startAgentCrdtFollower>>()
@@ -251,7 +333,8 @@ export function useAgentCrdtFollower(
           userId,
           isTargetActive,
           getGraph,
-          events
+          events,
+          getChangeTracker
         )
       )
     },
@@ -279,8 +362,18 @@ function startAgentCrdtFollower(
   userId: () => string | null,
   isTargetActive: Ref<boolean>,
   getGraph: () => MaterializableGraph | null,
-  events: AgentCrdtFollowerEvents
+  events: AgentCrdtFollowerEvents,
+  getChangeTracker: () => UndoBracket | null
 ) {
+  const withUndoBracket = <T>(fn: () => T): T => {
+    const tracker = getChangeTracker()
+    tracker?.beforeChange()
+    try {
+      return fn()
+    } finally {
+      tracker?.afterChange()
+    }
+  }
   const connected = ref(false)
   const updatesApplied = ref(0)
   const lastFrameType = ref<string | null>(null)
@@ -310,21 +403,15 @@ function startAgentCrdtFollower(
   // frame has not yet removed them from the doc. Kept pending for the
   // reconcile so the result-to-effect window cannot resurrect them.
   const confirmedDeletes = new Set<string>()
+  const rejectedOpNotifier = createRejectedOpNotifier()
   const sender = createOpSender({
     sendOps: (target, tab, ops) => client.sendOps(target, tab, ops),
     onOpsResult(listener) {
       const handler: EventListener = (event) => {
-        if (!(event instanceof CustomEvent)) return
-        const detail = event.detail as OpsResultView & { failed?: unknown }
-        listener({
-          workflowId: detail.workflowId,
-          ok: detail.ok,
-          applied: detail.applied,
-          skipped: detail.skipped,
-          ...(detail.failed && typeof detail.failed === 'object'
-            ? { failure: detail.failed }
-            : {})
-        })
+        // `docFrameClient` already validated this into a DocOpsResult, which
+        // OpsResultView is derived from, so it travels whole.
+        if (event instanceof CustomEvent)
+          listener(event.detail as OpsResultView)
       }
       bridge.addEventListener('doc_ops_result', handler)
       return () => bridge.removeEventListener('doc_ops_result', handler)
@@ -342,6 +429,7 @@ function startAgentCrdtFollower(
           if (op.op === 'delete_node' && applied.has(op.op_id))
             confirmedDeletes.add(String(op.node_id))
         }
+        rejectedOpNotifier.notify(outcome.ops, outcome.result)
       }
       recordDevEvent('human_ops_settled', outcome)
     }
@@ -423,7 +511,12 @@ function startAgentCrdtFollower(
   const onSubscribed: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
     if (!isTargetActive.value) return
-    const ok = event.detail?.ok === true
+    const detail = event.detail as {
+      ok?: unknown
+      code?: unknown
+      message?: unknown
+    } | null
+    const ok = detail?.ok === true
     connected.value = ok
     lastFrameType.value = event.type
     recordDevEvent('doc_subscribed', event.detail ?? null)
@@ -431,12 +524,14 @@ function startAgentCrdtFollower(
       lifecycle.onSubscribeConfirmed()
       resumeHeldOpsIfSubscribed()
     } else {
-      lifecycle.onSubscribeRefused()
+      const refusal = handleSubscribeRefusal(detail, lifecycle)
       // FE #16637 residual: a refusal is the earliest signal the sender can
       // get that its in-flight batch's doc is gone — don't make it wait out
       // the 10 s result-silence window to notice on its own.
       releaseHeldOps()
       sender.abortIfUnbound()
+      if (refusal.shouldNotify)
+        events.onSyncError?.(refusal.message, refusal.code)
     }
   }
   const onUpdate: EventListener = (event) => {
@@ -450,7 +545,7 @@ function startAgentCrdtFollower(
     lifecycle.onDocumentUpdate()
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
-    const materialized = applyAndReconcile(update)
+    const materialized = withUndoBracket(() => applyAndReconcile(update))
     recordDevEvent('doc_update', {
       workflowId: update.workflowId,
       seq: update.seq,
@@ -486,35 +581,50 @@ function startAgentCrdtFollower(
     recordDevEvent('doc_ops_result', event.detail ?? null)
   }
   const onDocReset: EventListener = (event) => {
-    const detail =
-      event instanceof CustomEvent
-        ? (event.detail as {
-            workflowId?: string
-            actor?: string
-            seq?: number
-          })
-        : undefined
+    const detail = readDocResetDetail(event)
+    if (
+      !targetsActiveSubscription(
+        detail,
+        isTargetActive.value,
+        subscribedWorkflowId.value
+      )
+    )
+      return
+    const resetWorkflowId = detail.workflowId
     incrementOutcome('reset')
-    if (!isCurrentWorkflow(detail?.workflowId)) return
     const context: RemoteMutationContext = {
       source: 'agent-remote',
       actor: detail.actor ?? 'agent-reset',
       opId: `doc-reset:${detail.seq ?? 'unknown'}`
     }
-    projection.clearForReset(detail.workflowId, context)
-    sender.abortAll()
-    events.onReset?.(detail.workflowId)
-    connected.value = false
-    updatesApplied.value = 0
-    lastFrameType.value = event.type
-    lifecycle.clearStaleProbe()
-    knownDocNodeIds = new Set()
-    pendingLiveNodeIds.clear()
-    confirmedDeletes.clear()
-    recordDevEvent(
-      'doc_reset',
-      event instanceof CustomEvent ? (event.detail ?? null) : null
-    )
+    // `afterChange()` runs on the way out of the bracket and can throw (undo
+    // capture serializes the graph, so one custom node is enough). The clear
+    // has already emptied the stores by then, so the bookkeeping that mirrors
+    // it must still run — otherwise the follower reports connected, keeps the
+    // stale probe, and retains node ids for a document that is gone. The
+    // capture error still propagates; only a clear that never completed skips
+    // the bookkeeping.
+    const clear = { completed: false }
+    try {
+      withUndoBracket(() => {
+        projection.clearForReset(resetWorkflowId, context)
+        clear.completed = true
+      })
+    } finally {
+      if (clear.completed) {
+        sender.abortAll()
+        events.onReset?.(resetWorkflowId)
+        connected.value = false
+        updatesApplied.value = 0
+        lastFrameType.value = event.type
+        lifecycle.clearStaleProbe()
+        lifecycle.resetNotifiedGiveUp()
+        knownDocNodeIds = new Set()
+        pendingLiveNodeIds.clear()
+        confirmedDeletes.clear()
+        recordDevEvent('doc_reset', detail)
+      }
+    }
   }
   const onFollowerReplaced: EventListener = (event) => {
     // Gate on this composable's own INTENT, not the bridge's send REALITY
@@ -532,12 +642,22 @@ function startAgentCrdtFollower(
     ) {
       updatesApplied.value = 0
       confirmedDeletes.clear()
-      projection.clearForReset(workflowId, {
-        source: 'agent-remote',
-        actor: 'agent-lineage',
-        opId: `follower-replaced:${workflowId}`
-      })
-      projection.bind(workflowId, bridge.follower)
+      // Same bracket hazard as onDocReset: a throwing undo capture must not
+      // leave the adapter observing the destroyed document. The rebind mirrors
+      // a completed clear, so it runs even when `afterChange()` throws.
+      const clear = { completed: false }
+      try {
+        withUndoBracket(() => {
+          projection.clearForReset(workflowId, {
+            source: 'agent-remote',
+            actor: 'agent-lineage',
+            opId: `follower-replaced:${workflowId}`
+          })
+          clear.completed = true
+        })
+      } finally {
+        if (clear.completed) projection.bind(workflowId, bridge.follower)
+      }
     }
   }
   const onSchemaError: EventListener = (event) => {
@@ -769,6 +889,7 @@ function startAgentCrdtFollower(
       () => bridge.removeEventListener('doc_stale', onStale),
       () => bridge.removeEventListener('doc_subscribe_sent', onSubscribeSent),
       () => sender.detach(),
+      () => rejectedOpNotifier.cancel(),
       () => coalescer.detach(),
       () => projection.destroy(),
       () => bridge.destroy(),

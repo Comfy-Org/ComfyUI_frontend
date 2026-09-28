@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/vue'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import VideoPlayer from './VideoPlayer.vue'
 
@@ -93,6 +94,47 @@ describe('VideoPlayer', () => {
       if (!(video instanceof HTMLVideoElement))
         throw new Error('Expected the labelled video element')
       expect(video.crossOrigin).toBe(crossOrigin)
+    }
+  )
+
+  // A pointer that hovers keeps the bar up for as long as it rests on the
+  // player. A finger cannot: the window after playback starts is the whole of
+  // the bar's visit, and 800ms was long enough to see the controls and too
+  // short to hit one.
+  it.for([
+    { hover: true, after: 1000, reachable: false },
+    { hover: false, after: 1000, reachable: true },
+    { hover: false, after: 5000, reachable: false }
+  ])(
+    'leaves the bar reachable $reachable $after ms into playback (hover: $hover)',
+    async ({ hover, after, reachable }) => {
+      vi.stubGlobal('matchMedia', (query: string) => ({
+        matches: query === '(hover: hover)' ? hover : false,
+        media: query,
+        addEventListener: () => {},
+        removeEventListener: () => {}
+      }))
+      vi.useFakeTimers()
+      onTestFinished(() => {
+        vi.useRealTimers()
+      })
+      vi.spyOn(HTMLMediaElement.prototype, 'paused', 'get').mockReturnValue(
+        false
+      )
+      render(VideoPlayer, {
+        props: { src: 'https://example.com/clip.mp4', controlsOnHover: true }
+      })
+
+      // Playback starting is what summons the bar, and the only thing that does
+      // on a device with no pointer to rest here.
+      await vi.waitFor(() =>
+        expect(screen.getByRole('button', { name: 'Pause' })).toBeTruthy()
+      )
+      vi.advanceTimersByTime(after)
+      await nextTick()
+
+      const bar = screen.getByTestId('player-control-bar')
+      expect(bar.className.includes('pointer-events-none')).toBe(!reachable)
     }
   )
 

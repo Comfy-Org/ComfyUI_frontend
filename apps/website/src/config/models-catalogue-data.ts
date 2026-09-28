@@ -46,10 +46,26 @@ export const workflowModelSchema = presentationSchema.extend({
   type: z.enum(['CLOUD', 'SERVERLESS']),
   workflowId: z.string(),
   routerId: z.never().optional(),
-  category: z.string().optional()
+  category: z.string().optional(),
+  categoryLabel: z.object({ en: z.string(), 'zh-CN': z.string() }).optional(),
+  categoryOrder: z.number().optional(),
+  categoryHighlight: z.boolean().optional(),
+  models: z.array(z.string()).optional(),
+  author: z.string().optional()
 })
 
-export const modelSchema = z.union([routerModelSchema, workflowModelSchema])
+const appModelSchema = presentationSchema.extend({
+  type: z.literal('APP'),
+  appId: z.enum(['studio', 'reshoot']),
+  routerId: z.never().optional(),
+  workflowId: z.never().optional()
+})
+
+export const modelSchema = z.union([
+  routerModelSchema,
+  workflowModelSchema,
+  appModelSchema
+])
 
 export async function readModelsData(path: string): Promise<unknown> {
   const response = await fetch(path)

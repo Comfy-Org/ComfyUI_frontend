@@ -3,7 +3,11 @@ import { readFileSync } from 'node:fs'
 import type { BrowserContext, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import type { JobDetailResponse } from '@comfyorg/ingest-types'
+import type {
+  BillingBalanceResponse,
+  JobDetailResponse
+} from '@comfyorg/ingest-types'
+import { centsToCredits } from '@comfyorg/shared-frontend-utils/creditsUtil'
 
 import { test } from './fixtures/modelsAccount'
 
@@ -18,6 +22,7 @@ const image = readFileSync('e2e/assets/placeholder-1x1.webp')
 async function setup(context: BrowserContext) {
   let enabled = true
   let generation = 0
+  let reachable = true
   await context.route('https://apis.google.com/js/api.js*', (route) =>
     route.abort('blockedbyclient')
   )
@@ -89,6 +94,7 @@ async function setup(context: BrowserContext) {
     const request = route.request()
     const url = new URL(request.url())
     const method = request.method()
+    if (!reachable) return route.abort('failed')
     commands.push({
       method,
       path: url.pathname,
@@ -110,6 +116,9 @@ async function setup(context: BrowserContext) {
     succeed,
     disable() {
       enabled = false
+    },
+    drop() {
+      reachable = false
     },
     cancel() {
       current = { ...current, status: 'cancelled', update_time: Date.now() }
@@ -139,7 +148,7 @@ async function signInAndRun(
     page.getByRole('button', { name: 'Replace photo.webp' })
   ).toBeVisible()
   await page.getByTestId('workflow-run').click()
-  await expect(page.getByTestId('workflow-run')).toHaveText('Queued')
+  await expect(page.getByTestId('workflow-run')).toHaveText('Waiting its turn')
 }
 
 test('Cloud upload, refresh, partial delivery and downloads retain one run @mobile', async ({
@@ -156,29 +165,33 @@ test('Cloud upload, refresh, partial delivery and downloads retain one run @mobi
   expect(cloud.uploads).toEqual([image])
   expect(submissions()).toHaveLength(1)
   expect(submissions()[0].body).toMatchObject({
-    prompt: { '17': { class_type: 'LoadImage', inputs: { image: inputName } } }
+    prompt: { '17': { class_type: 'LoadImage', inputs: { image: inputName } } },
+    extra_data: { auth_token_comfy_org: 'mock-workspace-jwt' }
   })
 
   await page.reload()
-  await expect(page.getByTestId('workflow-run')).toHaveText('Queued')
+  await expect(page.getByTestId('workflow-run')).toHaveText('Waiting its turn')
   expect(cloud.uploads).toHaveLength(1)
   expect(submissions()).toHaveLength(1)
   await page.getByRole('tab', { name: 'API', exact: true }).click()
+  // The address a run is posted to, before the snippet that posts to it.
+  await expect(page.getByTestId('workflow-api-endpoint')).toContainText(
+    '/api/prompt'
+  )
+  await expect(
+    page.getByRole('link', { name: 'API documentation' })
+  ).toBeVisible()
   const snippet = await page.getByTestId('workflow-api-snippet').textContent()
   expect(snippet).toContain('/api/prompt')
   expect(snippet).toContain('X-API-Key:')
   await page.setViewportSize({ width: 320, height: 851 })
-  await page.getByRole('tab', { name: 'Workflow', exact: true }).click()
+  await page.getByRole('tab', { name: 'Details', exact: true }).click()
   await expect(
-    page.getByRole('img', { name: 'Workflow', exact: true })
+    page.getByRole('img', { name: /nodes of this workflow/i })
   ).toBeVisible()
   const panelRight = await page
-    .getByRole('tabpanel', { name: 'Workflow', exact: true })
-    .evaluate(
-      (panel) =>
-        panel.getBoundingClientRect().right -
-        parseFloat(getComputedStyle(panel).paddingRight)
-    )
+    .getByRole('tabpanel', { name: 'Details', exact: true })
+    .evaluate((panel) => panel.getBoundingClientRect().right)
   const downloadRight = await page
     .getByRole('link', { name: 'Download workflow JSON' })
     .evaluate((link) => link.getBoundingClientRect().right)
@@ -221,7 +234,7 @@ test('Cloud upload, refresh, partial delivery and downloads retain one run @mobi
       (command) => command.path === '/api/prompt' || command.path === path
     )
   ).toBe(true)
-  await page.getByRole('button', { name: /Template example 1/ }).click()
+  await page.getByRole('button', { name: /The lily veil/ }).click()
   await page.getByTestId('example-replace-confirm').click()
   await expect(page.getByTestId('playground-output')).toHaveAttribute(
     'data-state',
@@ -231,6 +244,47 @@ test('Cloud upload, refresh, partial delivery and downloads retain one run @mobi
     page.getByRole('button', { name: 'Replace the_lily_veil.png' })
   ).toBeVisible()
   expect(submissions()).toHaveLength(1)
+})
+
+test('the credit chip shows a charge Cloud books after the run finishes', async ({
+  page,
+  context,
+  modelsAccount
+}) => {
+  const cloud = await setup(context)
+  let reads = 0
+  let chargedAfterRead = Number.POSITIVE_INFINITY
+  await context.route('**/api/billing/balance', (route) => {
+    reads++
+    const cents = reads > chargedAfterRead ? 483_200 : 583_200
+    return route.fulfill({
+      json: {
+        amount_micros: cents,
+        effective_balance_micros: cents,
+        currency: 'usd'
+      } satisfies BillingBalanceResponse
+    })
+  })
+  const chip = page.getByTestId('desktop-nav-cta').getByTestId('header-account')
+  const showing = (balance: number) =>
+    new RegExp(`, ${centsToCredits(balance).toLocaleString('en-US')} credits$`)
+  await signInAndRun(page, modelsAccount)
+  await expect(chip).toHaveAccessibleName(showing(583_200))
+  const readsBeforeCompletion = reads
+  chargedAfterRead = readsBeforeCompletion + 1
+
+  cloud.succeed(false)
+  await page.clock.fastForward(2100)
+  await expect(page.getByTestId('playground-output')).toHaveAttribute(
+    'data-state',
+    'succeeded'
+  )
+  await page.clock.fastForward(1)
+  await expect.poll(() => reads).toBeGreaterThan(readsBeforeCompletion)
+  await expect(chip).toHaveAccessibleName(showing(583_200))
+  await page.clock.fastForward(2_000)
+
+  await expect(chip).toHaveAccessibleName(showing(483_200))
 })
 
 test('workflow cancellation survives disabled admission and hides on sign-out', async ({
@@ -257,13 +311,10 @@ test('workflow cancellation survives disabled admission and hides on sign-out', 
   await page.clock.fastForward(2100)
   await expect(page.getByTestId('playground-output')).toHaveAttribute(
     'data-state',
-    'idle'
+    'cancelled'
   )
   await expect(
-    page.getByText(
-      'Cancellation requested. Check Cloud for the final job status.',
-      { exact: true }
-    )
+    page.getByText('This run was cancelled before it finished.').first()
   ).toBeVisible()
   await expect(page.getByTestId('workflow-run')).toBeDisabled()
   await page.locator('[data-testid="header-account"]:visible').click()
@@ -274,4 +325,32 @@ test('workflow cancellation survives disabled admission and hides on sign-out', 
       (command) => command.method === 'POST' && command.path === '/api/prompt'
     )
   ).toHaveLength(1)
+})
+
+test('a run the page stops hearing about holds the panel still', async ({
+  page,
+  context,
+  modelsAccount
+}) => {
+  const cloud = await setup(context)
+  await signInAndRun(page, modelsAccount)
+  const panel = page.getByTestId('playground-output')
+  const run = page.getByTestId('workflow-run')
+  await expect(panel).toHaveAttribute('data-state', 'running')
+  await expect(panel.getByTestId('run-spinner')).toBeVisible()
+  await expect(panel.getByTestId('run-elapsed')).toBeVisible()
+  await expect(run.getByTestId('run-button-spinner')).toBeVisible()
+
+  cloud.drop()
+  await page.clock.fastForward(2100)
+
+  await expect(panel.getByRole('status')).toHaveText('Connection interrupted')
+  await expect(panel).toHaveAttribute('data-state', 'running')
+  await expect(panel.getByTestId('run-spinner')).toHaveCount(0)
+  await expect(panel.getByTestId('run-elapsed')).toHaveCount(0)
+  await expect(run).toHaveText('Connection interrupted')
+  await expect(run.getByTestId('run-button-spinner')).toHaveCount(0)
+  await expect(
+    page.getByRole('button', { name: 'Reconnect to this run' })
+  ).toBeVisible()
 })
