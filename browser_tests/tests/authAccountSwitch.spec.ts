@@ -76,63 +76,12 @@ async function installIdentitySentinels(page: Page): Promise<void> {
   const workspaceId = TEAM_WORKSPACE.id
   const entries: Array<[string, string]> = []
   for (const account of [ACCOUNT_A, ACCOUNT_B]) {
-    const sentinel = IDENTITY_SENTINELS[account.id]
-    const scope = unsafeStorageScope(`${account.uid}:${workspaceId}`)
-    const path = `workflows/${sentinel.draft}.json`
-    const draftKey = StorageKeys.draftKey(path)
-    const updatedAt = Date.now()
-    const index: DraftIndexV2 = {
-      v: 2,
-      updatedAt,
-      order: [draftKey],
-      entries: {
-        [draftKey]: {
-          path,
-          name: sentinel.draft,
-          isTemporary: true,
-          updatedAt
-        }
-      }
-    }
-    const payload: DraftPayloadV2 = {
-      data: JSON.stringify({
-        last_node_id: 0,
-        last_link_id: 0,
-        nodes: [],
-        links: [],
-        groups: [],
-        config: {},
-        extra: { identitySentinel: sentinel.draft },
-        version: 0.4
-      }),
-      updatedAt
-    }
-    entries.push(
-      [StorageKeys.draftIndex(scope), JSON.stringify(index)],
-      [StorageKeys.draftPayload(path, scope), JSON.stringify(payload)],
-      [
-        StorageKeys.lastActivePath(scope),
-        JSON.stringify({ workspaceId: scope, path })
-      ],
-      [
-        StorageKeys.lastOpenPaths(scope),
-        JSON.stringify({ workspaceId: scope, paths: [path], activeIndex: 0 })
-      ],
-      [StorageKeys.agentThread(scope), sentinel.thread],
-      [
-        StorageKeys.agentWorkflowTabBindings(scope),
-        JSON.stringify({
-          [sentinel.binding]: {
-            tabPath: path,
-            graphId: null,
-            confirmedAt: updatedAt
-          }
-        })
-      ],
-      [`Comfy.AgentPanel.onboarded.${account.uid}.${workspaceId}`, 'true']
-    )
+    entries.push(...identitySentinelEntries(account, workspaceId))
   }
   await page.addInitScript((storageEntries) => {
+    const seededKey = 'e2e-identity-sentinels-seeded'
+    if (sessionStorage.getItem(seededKey) === 'true') return
+    sessionStorage.setItem(seededKey, 'true')
     for (const [key, value] of storageEntries) localStorage.setItem(key, value)
   }, entries)
 
@@ -188,6 +137,72 @@ async function installIdentitySentinels(page: Page): Promise<void> {
     `**/api/global-settings/${AGENT_CONSENT_SETTING_ID}`,
     (route) => route.fulfill(jsonRoute(consent))
   )
+}
+
+function identitySentinelEntries(
+  account: MockAccount,
+  workspaceId: string
+): Array<[string, string]> {
+  const sentinel = IDENTITY_SENTINELS[account.id]
+  const scope = unsafeStorageScope(`${account.uid}:${workspaceId}`)
+  const path = `workflows/${sentinel.draft}.json`
+  const draftKey = StorageKeys.draftKey(path)
+  const updatedAt = Date.now()
+  const index: DraftIndexV2 = {
+    v: 2,
+    updatedAt,
+    order: [draftKey],
+    entries: {
+      [draftKey]: { path, name: sentinel.draft, isTemporary: true, updatedAt }
+    }
+  }
+  const payload: DraftPayloadV2 = {
+    data: JSON.stringify({
+      last_node_id: 0,
+      last_link_id: 0,
+      nodes: [],
+      links: [],
+      groups: [],
+      config: {},
+      extra: { identitySentinel: sentinel.draft },
+      version: 0.4
+    }),
+    updatedAt
+  }
+  return [
+    [StorageKeys.draftIndex(scope), JSON.stringify(index)],
+    [StorageKeys.draftPayload(path, scope), JSON.stringify(payload)],
+    [
+      StorageKeys.lastActivePath(scope),
+      JSON.stringify({ workspaceId: scope, path })
+    ],
+    [
+      StorageKeys.lastOpenPaths(scope),
+      JSON.stringify({ workspaceId: scope, paths: [path], activeIndex: 0 })
+    ],
+    [StorageKeys.agentThread(scope), sentinel.thread],
+    [
+      StorageKeys.agentWorkflowTabBindings(scope),
+      JSON.stringify({
+        [sentinel.binding]: {
+          tabPath: path,
+          graphId: null,
+          confirmedAt: updatedAt
+        }
+      })
+    ],
+    [`Comfy.AgentPanel.onboarded.${account.uid}.${workspaceId}`, 'true']
+  ]
+}
+
+async function seedIdentitySentinel(
+  page: Page,
+  account: MockAccount
+): Promise<void> {
+  const entries = identitySentinelEntries(account, TEAM_WORKSPACE.id)
+  await page.evaluate((storageEntries) => {
+    for (const [key, value] of storageEntries) localStorage.setItem(key, value)
+  }, entries)
 }
 
 interface FirebasePasswordSignInResponse {
@@ -536,6 +551,7 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
       expect(credentialEvents.indexOf(`session:${ACCOUNT_B.id}`)).toBeLessThan(
         credentialEvents.indexOf(`workspace:${ACCOUNT_B.id}`)
       )
+      await seedIdentitySentinel(page, ACCOUNT_B)
       await page.reload({ waitUntil: 'domcontentloaded' })
       await comfyPage.waitForAppReady()
       await comfyPage.workflow.openPersistedWorkflow(IDENTITY_SENTINELS.b.draft)
