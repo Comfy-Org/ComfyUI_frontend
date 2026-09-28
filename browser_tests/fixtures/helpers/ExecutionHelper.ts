@@ -205,6 +205,20 @@ export class ExecutionHelper {
     )
   }
 
+  /** Send the complete successful-output lifecycle for a single node. */
+  completeWithOutput(
+    jobId: string,
+    nodeId: string,
+    output: Record<string, unknown>
+  ): void {
+    this.executionStart(jobId)
+    this.executing(jobId, nodeId)
+    this.executed(jobId, nodeId, output)
+    this.executing(jobId, null)
+    this.executionSuccess(jobId)
+    this.status(0)
+  }
+
   /** Send `execution_success` WS event. */
   executionSuccess(jobId: string): void {
     this.requireWs().send(
