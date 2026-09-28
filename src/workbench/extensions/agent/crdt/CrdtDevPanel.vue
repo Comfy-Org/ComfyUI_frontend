@@ -337,7 +337,7 @@ const visibleLogRows = computed<readonly LogRow[]>(() =>
 
 const level = ref<string | undefined>(crdtLogLevel())
 
-function onLevelChange(next: string | undefined) {
+function onLevelChange(next: string | number | undefined) {
   const value = CRDT_LOG_LEVELS.find((candidate) => candidate === next)
   if (value) setCrdtLogLevel(value)
 }
@@ -371,7 +371,7 @@ watch(testerNote, (next) => {
   }
 })
 
-function selectScenario(id: string | undefined) {
+function selectScenario(id: string | number | undefined) {
   if (!id) return
   const next = mergeScenarios.find((candidate) => candidate.id === id)
   if (!next) return
