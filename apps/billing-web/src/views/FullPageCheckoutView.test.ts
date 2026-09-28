@@ -1,5 +1,5 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen, waitFor } from '@testing-library/vue'
+import { cleanup, render, screen, waitFor } from '@testing-library/vue'
 import { nextTick, ref } from 'vue'
 import type { VNode } from 'vue'
 
@@ -14,6 +14,8 @@ import type { AccountCredential } from '@comfyorg/account-core/session'
 import { BILLING_CLIENT_KEY } from '@comfyorg/account-ui/billing'
 import type { StripePaymentPhase } from '@comfyorg/account-ui/billing/stripe'
 import { parseBillingEntry } from '@comfyorg/billing-contract'
+
+import type { OperationNotice } from '@/checkout/operationChannel'
 
 import { recordBillingEntry } from '@/entry/billingEntry'
 import { createBillingI18n } from '@/i18n'
@@ -52,6 +54,41 @@ vi.mock(import('@/session/stripeChallengePort'), () => ({
 vi.mock(import('@/entry/workspaceBinding'), () => ({
   boundWorkspaceId: () => undefined,
   bindEntryWorkspace: () => false
+}))
+
+/** The cross-tab channel, held so a test can play a sibling tab. */
+const siblings = vi.hoisted(() => ({
+  scope: undefined as { uid: string; workspaceId: string } | undefined,
+  listeners: new Set<(notice: OperationNotice) => void>(),
+  published: [] as OperationNotice[],
+  closed: 0,
+  nudge(notice: OperationNotice) {
+    for (const listener of this.listeners) listener(notice)
+  },
+  reset() {
+    this.scope = undefined
+    this.listeners.clear()
+    this.published = []
+    this.closed = 0
+  }
+}))
+
+vi.mock(import('@/checkout/operationChannel'), () => ({
+  createOperationChannel: (uid: string, workspaceId: string) => {
+    siblings.scope = { uid, workspaceId }
+    return {
+      publish: (notice: OperationNotice) => {
+        siblings.published.push(notice)
+      },
+      subscribe: (listener: (notice: OperationNotice) => void) => {
+        siblings.listeners.add(listener)
+        return () => siblings.listeners.delete(listener)
+      },
+      close: () => {
+        siblings.closed += 1
+      }
+    }
+  }
 }))
 
 const SESSION: AccountCredential = {
@@ -996,5 +1033,143 @@ describe('FullPageCheckoutView mount reconciliation', () => {
       )
     ).toBeInTheDocument()
     expect(form.mounts).toBe(0)
+  })
+})
+
+function pageShow(persisted: boolean): Event {
+  const event = new Event('pageshow')
+  Object.defineProperty(event, 'persisted', { value: persisted })
+  return event
+}
+
+describe('FullPageCheckoutView re-reconciliation', () => {
+  beforeEach(() => {
+    form.mounts = 0
+    siblings.reset()
+  })
+
+  it('re-reads the operation when the page is restored from the back-forward cache, and lands on what it finds', async () => {
+    const fake = await payReady()
+    fake.recover.mockImplementationOnce(async () => {
+      fake.publishOperation(pendingOperation('op_moved_on'))
+      return { status: 'ok', value: pendingOperation('op_moved_on') }
+    })
+
+    window.dispatchEvent(pageShow(true))
+
+    expect(await waitingStatus()).toBeInTheDocument()
+    expect(fake.recover).toHaveBeenCalledTimes(2)
+    expect(
+      screen.queryByRole('button', { name: 'Pay and subscribe' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('leaves a fresh navigation alone', async () => {
+    const fake = await payReady()
+
+    window.dispatchEvent(pageShow(false))
+    await nextTick()
+
+    expect(fake.recover).toHaveBeenCalledOnce()
+    expect(payButton()).toBeEnabled()
+  })
+
+  it('lets the newest reconciliation win over a slower, older one', async () => {
+    let answerFirst: (
+      result: BillingResult<BillingOperationState | undefined>
+    ) => void = () => {}
+    const fake = await renderCheckout({}, (fake) =>
+      fake.recover.mockImplementationOnce(
+        () => new Promise((resolve) => (answerFirst = resolve))
+      )
+    )
+    await waitFor(() => expect(fake.recover).toHaveBeenCalledOnce())
+    fake.recover.mockImplementationOnce(async () => {
+      fake.publishOperation(pendingOperation('op_newer'))
+      return { status: 'ok', value: pendingOperation('op_newer') }
+    })
+
+    window.dispatchEvent(pageShow(true))
+    await waitingStatus()
+    answerFirst({ status: 'ok', value: undefined })
+    await capturePromisesFlushed()
+
+    expect(screen.getByRole('status')).toBeInTheDocument()
+    expect(form.mounts).toBe(0)
+  })
+
+  it('listens on a channel scoped to the signed-in user and the workspace, and lets go on unmount', async () => {
+    await renderQuoted()
+
+    expect(siblings.scope).toEqual({ uid: 'uid-1', workspaceId: 'ws-team' })
+    expect(siblings.listeners.size).toBe(1)
+
+    cleanup()
+
+    expect(siblings.listeners.size).toBe(0)
+    expect(siblings.closed).toBe(1)
+  })
+
+  it("re-reads the server on a sibling tab's nudge, trusting nothing in the notice itself", async () => {
+    const fake = await payReady()
+    fake.recover.mockImplementationOnce(async () => {
+      fake.publishOperation(succeededOperation('op_from_server'))
+      return { status: 'ok', value: succeededOperation('op_from_server') }
+    })
+
+    siblings.nudge({
+      workspaceId: 'ws-team',
+      operationId: 'op_claimed_by_notice',
+      kind: 'settled'
+    })
+
+    expect(
+      await screen.findByRole('heading', { name: 'Already completed' })
+    ).toBeInTheDocument()
+    expect(screen.getByText('Reference: op_from_server')).toBeInTheDocument()
+    expect(fake.recover).toHaveBeenCalledTimes(2)
+  })
+
+  it('tells sibling tabs when its own Pay starts an operation and when it settles, once each', async () => {
+    const fake = await payReady({
+      subscribe: {
+        status: 'ok',
+        value: { phase: 'succeeded', operation: succeededOperation('op_mine') }
+      }
+    })
+    fake.subscribe.mockImplementationOnce(async () => {
+      fake.publishOperation(pendingOperation('op_mine'))
+      await nextTick()
+      fake.publishOperation({
+        ...pendingOperation('op_mine'),
+        serverPhase: 'in_progress'
+      })
+      await nextTick()
+      fake.publishOperation(succeededOperation('op_mine'))
+      return {
+        status: 'ok',
+        value: { phase: 'succeeded', operation: succeededOperation('op_mine') }
+      }
+    })
+
+    form.emit('confirm', 'ctoken_1')
+
+    await screen.findByRole('heading', { name: "You're all set" })
+    expect(siblings.published).toEqual([
+      { workspaceId: 'ws-team', operationId: 'op_mine', kind: 'started' },
+      { workspaceId: 'ws-team', operationId: 'op_mine', kind: 'settled' }
+    ])
+  })
+
+  it('never announces an operation it only heard about', async () => {
+    const fake = await renderCheckout({
+      recover: { status: 'ok', value: pendingOperation('op_theirs') }
+    })
+    await waitingStatus()
+
+    fake.publishOperation(succeededOperation('op_theirs'))
+    await screen.findByRole('heading', { name: 'Already completed' })
+
+    expect(siblings.published).toEqual([])
   })
 })

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useEventListener } from '@vueuse/core'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -38,8 +39,15 @@ const {
   confirmReactivation,
   payWithoutConsent,
   cancelAt,
-  pay
+  pay,
+  reconcile
 } = useFullPageCheckout()
+
+// A page restored from the back-forward cache is whatever it was when the
+// customer left, which may be a form over money that has since moved (rule 16).
+useEventListener(window, 'pageshow', (event: PageTransitionEvent) => {
+  if (event.persisted) void reconcile()
+})
 
 const quote = computed(() =>
   page.value.kind === 'capture' || page.value.kind === 'waiting'
