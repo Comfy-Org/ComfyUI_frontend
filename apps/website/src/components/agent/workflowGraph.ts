@@ -9,7 +9,6 @@ export type WorkflowGraphNode = MotionNode & {
   video?: string
   loopVideo?: boolean
   poster?: string
-  pending?: string
   images?: { src: string; alt: string }[]
   extraPorts?: Point[]
 }

@@ -16,28 +16,35 @@ test('Comfy Agent preview supports keyboard FAQ disclosure and product navigatio
     'Comfy Agent: The first agent for craft'
   )
 
-  const answer = page.getByText(
-    'Yes. Open any workflow and the agent reads the whole graph.',
-    { exact: false }
-  )
-  const question = page.getByText('Does it work with my existing workflows?', {
-    exact: true
+  await test.step('FAQ keyboard disclosure', async () => {
+    const answer = page.getByText(
+      'Yes. Open any workflow and the agent reads the whole graph.',
+      { exact: false }
+    )
+    const question = page.getByText(
+      'Does it work with my existing workflows?',
+      {
+        exact: true
+      }
+    )
+    await expect(answer).toBeHidden()
+    await question.focus()
+    await page.keyboard.press('Enter')
+    await expect(answer).toBeVisible()
+    await page.keyboard.press('Enter')
+    await expect(answer).toBeHidden()
   })
-  await expect(answer).toBeHidden()
-  await question.focus()
-  await page.keyboard.press('Enter')
-  await expect(answer).toBeVisible()
-  await page.keyboard.press('Enter')
-  await expect(answer).toBeHidden()
 
-  await page
-    .getByRole('navigation', { name: 'Breadcrumb' })
-    .getByRole('link', { name: 'Products' })
-    .click()
-  await expect(page).toHaveURL(/#products$/)
-  await expect(
-    page.getByRole('link', { name: /Comfy Desktop Run ComfyUI/ })
-  ).toBeVisible()
+  await test.step('Products breadcrumb navigation', async () => {
+    await page
+      .getByRole('navigation', { name: 'Breadcrumb' })
+      .getByRole('link', { name: 'Products' })
+      .click()
+    await expect(page).toHaveURL(/#products$/)
+    await expect(
+      page.getByRole('link', { name: /Comfy Desktop Run ComfyUI/ })
+    ).toBeVisible()
+  })
 })
 
 test('the product workflow animates without a picker or JavaScript @smoke', async ({
@@ -154,8 +161,6 @@ test('the product workflow animates without a picker or JavaScript @smoke', asyn
   )
   await expect(motionReference).not.toHaveAttribute('src')
   await expect(motionReference).toHaveCSS('opacity', '1')
-  await expect(videoExample.locator('.wf-pending')).toHaveCount(0)
-  await expect(videoExample.locator('.wf-typed-character')).toHaveCount(0)
   await expect(
     videoExample.getByText(
       'Use the motion reference and keyframe to render a video ad.',

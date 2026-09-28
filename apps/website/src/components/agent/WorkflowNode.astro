@@ -76,12 +76,6 @@ const portStyle = (port: Point) =>
       />
     ))}
   </div>}
-  {node.pending && <div
-    class:list={['wf-pending', { 'wf-generated-image': motion.imageName }]}
-    style={imageStyle}
-  >
-    <span>{node.pending}</span>
-  </div>}
   {node.video && (
     <>
       <div class="wf-image-well" aria-hidden="true" />

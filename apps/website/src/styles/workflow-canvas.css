@@ -1,5 +1,5 @@
 .wf-showcase {
-  --wf-accent: #f2ff59;
+  --wf-accent: var(--color-primary-comfy-yellow);
   --wf-duration: 21s;
   position: relative;
   left: -1px;
@@ -111,7 +111,7 @@ video.wf-node-image {
   position: absolute;
   margin: 0;
   padding: 0.75cqw 0.875cqw 0.375cqw;
-  background: #3c3c3c;
+  background: var(--color-secondary-cool-gray);
   border-radius: 0.322cqw;
   font-family: var(--font-formula);
   font-size: max(7px, 0.6875cqw);
@@ -131,7 +131,7 @@ video.wf-node-image {
   letter-spacing: 0;
   white-space: nowrap;
 }
-.wf-kind-landscape :is(.wf-node-image, .wf-image-well, .wf-pending),
+.wf-kind-landscape :is(.wf-node-image, .wf-image-well),
 .wf-kind-featured :is(.wf-node-image, .wf-image-well) {
   position: absolute;
   left: 0.5cqw;
@@ -142,14 +142,6 @@ video.wf-node-image {
 }
 .wf-kind-featured {
   border-radius: 0.644cqw;
-}
-.wf-pending {
-  display: grid;
-  place-items: center;
-  border: 1px dashed color-mix(in srgb, currentcolor 20%, transparent);
-  background: var(--color-primary-comfy-ink);
-  color: var(--color-primary-comfy-canvas);
-  font-size: max(9px, 0.875cqw);
 }
 .wf-product-references {
   position: absolute;

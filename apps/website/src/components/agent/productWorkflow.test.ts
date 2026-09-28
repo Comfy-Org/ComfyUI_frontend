@@ -272,8 +272,7 @@ describe('conditioner workflow', () => {
     }
   )
 
-  it('uses the supplied scene, motion, and final video with no pending frames', () => {
-    expect(productWorkflow.nodes.filter((node) => node.pending)).toEqual([])
+  it('uses the supplied scene, motion, and final video', () => {
     expect(
       productWorkflow.nodes.find((node) => node.id === 'base')?.image
     ).toBe('conditioner/base-scene.webp')
