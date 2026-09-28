@@ -14,6 +14,7 @@ import { captureWorkshopEvent, useWorkshopEnabled } from '../../scripts/posthog'
 const WorkflowCatalogue = defineAsyncComponent(
   () => import('./WorkflowCatalogue.vue')
 )
+const AppCatalogue = defineAsyncComponent(() => import('./AppCatalogue.vue'))
 
 const { models, locale = 'en' } = defineProps<{
   models: readonly WorkshopModel[]
@@ -124,13 +125,13 @@ watch(
       />
     </template>
   </WorkflowCatalogue>
-  <section v-else data-testid="apps-catalogue">
-    <!-- Apps has no list of its own yet, so the tabs bring their own bar
-      rather than leaving this half with no way back. -->
-    <div
-      class="sticky top-20 z-30 -mx-1 mb-8 flex flex-wrap items-center gap-3 bg-page px-1 py-4 max-sm:mb-4 max-sm:py-2 lg:top-26"
-      data-testid="workshop-toolbar"
-    >
+  <AppCatalogue
+    v-else
+    v-model:browse-all="browseAll"
+    :locale
+    @section="inSection = $event"
+  >
+    <template #tabs>
       <CatalogueTabs
         :model-value="activeTab"
         :locale
@@ -138,14 +139,6 @@ watch(
         @update:model-value="changeTab"
         @focused="focusTabs = false"
       />
-    </div>
-    <div class="rounded-3xl bg-hub-surface p-8">
-      <h2 class="text-xl font-medium text-primary-comfy-canvas">
-        {{ t('workshop.catalogue.appsSoon', locale) }}
-      </h2>
-      <p class="mt-3 max-w-2xl text-content-secondary">
-        {{ t('workshop.catalogue.appsHint', locale) }}
-      </p>
-    </div>
-  </section>
+    </template>
+  </AppCatalogue>
 </template>

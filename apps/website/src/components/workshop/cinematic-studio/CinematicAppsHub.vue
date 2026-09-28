@@ -49,25 +49,8 @@ const apps = computed<readonly HubApp[]>(() => [
     summary: 'cinematic.hub.reshootSummary',
     badge: 'cinematic.hub.prototype',
     meta: 'cinematic.hub.reshootMeta',
+    image: '/images/cinematic-studio/train.jpg',
     href: RESHOOT_PROTOTYPE
-  },
-  {
-    key: 'image-to-3d',
-    name: 'cinematic.hub.to3d',
-    summary: 'cinematic.hub.to3dSummary',
-    badge: 'cinematic.hub.soon'
-  },
-  {
-    key: 'product-shots',
-    name: 'cinematic.hub.product',
-    summary: 'cinematic.hub.productSummary',
-    badge: 'cinematic.hub.soon'
-  },
-  {
-    key: 'storyboard',
-    name: 'cinematic.hub.storyboard',
-    summary: 'cinematic.hub.storyboardSummary',
-    badge: 'cinematic.hub.soon'
   }
 ])
 

@@ -7,7 +7,7 @@ import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
-const href = `${getRoutes(locale).cinematicStudio}?ux=hub`
+const href = `${getRoutes(locale).workshop}?type=apps`
 </script>
 
 <template>

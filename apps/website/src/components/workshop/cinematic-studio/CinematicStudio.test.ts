@@ -24,7 +24,8 @@ import { prepareModelPage } from '../../../routes/models/model-page'
 import {
   useWorkshopEnabled,
   useWorkshopEnabledSettled,
-  useWorkshopAppsEnabled
+  useWorkshopAppsEnabled,
+  useWorkshopWorkflowsEnabled
 } from '../../../scripts/posthog'
 import { t } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
@@ -38,6 +39,15 @@ vi.mock(import('../../../config/workshop-session-state'))
 vi.mock(import('../../../config/workshop-credits'))
 vi.mock(import('../../../scripts/posthog'))
 vi.mock(import('../../../config/router-render'), { spy: true })
+
+const deploy = vi.hoisted(() => ({ env: '' }))
+vi.mock(import('astro:env/client'), () => ({
+  WORKSHOP_LOCAL_DEV: false,
+  WORKSHOP_RELEASE: 'test',
+  get WORKSHOP_DEPLOY_ENV() {
+    return deploy.env
+  }
+}))
 
 const models = runnableCinematicModels(getRouterWorkshopModelDetail)
 const [first, second] = models
@@ -88,6 +98,7 @@ const generateButton = () => screen.getByTestId('cinematic-generate')
 
 describe('CinematicStudio', () => {
   beforeEach(() => {
+    deploy.env = ''
     vi.stubEnv('PUBLIC_WORKSHOP_ROUTER_RUN', '1')
     vi.mocked(useWorkshopEnabled).mockReturnValue(computed(() => true))
     vi.mocked(useWorkshopEnabledSettled).mockReturnValue(computed(() => true))
@@ -635,15 +646,27 @@ describe('CinematicStudio', () => {
     expect(router_render).not.toHaveBeenCalled()
   })
 
-  it('withholds the studio from visitors outside the staff rollout', async () => {
-    vi.mocked(useWorkshopAppsEnabled).mockReturnValue(computed(() => false))
-    render(CinematicStudioPage, { props: { models } })
+  it.for([
+    { apps: false, workflows: false, open: false },
+    { apps: true, workflows: false, open: true },
+    { apps: false, workflows: true, open: true }
+  ])(
+    'opens the studio to the apps or workflows rollout (apps $apps, workflows $workflows)',
+    async ({ apps, workflows, open }) => {
+      vi.mocked(useWorkshopAppsEnabled).mockReturnValue(computed(() => apps))
+      vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(
+        computed(() => workflows)
+      )
+      render(CinematicStudioPage, { props: { models } })
 
-    expect(
-      await screen.findByText(tc('cinematic.unavailable.title'))
-    ).toBeInTheDocument()
-    expect(screen.queryByTestId('cinematic')).toBeNull()
-  })
+      await vi.waitFor(() => {
+        expect(screen.queryAllByTestId('cinematic')).toHaveLength(open ? 1 : 0)
+        expect(
+          screen.queryAllByText(tc('cinematic.unavailable.title'))
+        ).toHaveLength(open ? 0 : 1)
+      })
+    }
+  )
 
   describe('credits', () => {
     const priced: readonly CinematicModel[] = models.map((model) =>
@@ -928,6 +951,32 @@ describe('CinematicStudio', () => {
     })
   })
 
+  it.for([
+    { env: 'preview', url: '?ux=hub', shown: 'cinematic-apps-hub', menu: 1 },
+    { env: 'production', url: '?ux=hub', shown: 'cinematic', menu: 0 },
+    { env: 'production', url: '?app=reshoot', shown: 'reshoot', menu: 0 }
+  ])(
+    'keeps review layouts and their menu off production ($env $url)',
+    async ({ env, url, shown, menu }) => {
+      deploy.env = env
+      window.history.replaceState(null, '', `/cinematic-studio${url}`)
+      render(CinematicStudioPage, { props: { models } })
+
+      expect(await screen.findByTestId(shown)).toBeVisible()
+      expect(
+        screen.queryAllByRole('button', { name: /^Layout to review/ })
+      ).toHaveLength(menu)
+    }
+  )
+
+  it('leads back to the Apps tab of the catalogue', async () => {
+    render(CinematicStudioPage, { props: { models } })
+
+    expect(
+      await screen.findByRole('link', { name: tc('cinematic.backToApps') })
+    ).toHaveAttribute('href', '/models?type=apps')
+  })
+
   describe('layout switch', () => {
     const panel = () =>
       screen.queryByRole('complementary', { name: 'Shot settings' })
@@ -1001,13 +1050,15 @@ describe('CinematicStudio', () => {
       expect(window.location.search).toBe('?ux=d&app=reshoot')
     })
 
-    it('lists Cinematic Studio first and Re-shoot a video next in the Hub apps tab', async () => {
+    it('lists only Cinematic Studio and Re-shoot a video in the Hub apps tab', async () => {
       window.history.replaceState(null, '', '/cinematic-studio?ux=hub')
       render(CinematicStudioPage, { props: { models } })
 
       const tab = await screen.findByRole('button', { name: 'Apps' })
       expect(tab).toHaveAttribute('aria-pressed', 'true')
-      const [firstApp, secondApp] = screen.getAllByRole('listitem')
+      const apps = screen.getAllByRole('listitem')
+      expect(apps, 'Apps that do not open yet stay off the Hub').toHaveLength(2)
+      const [firstApp, secondApp] = apps
       expect(
         within(firstApp).getByRole('link', { name: 'Cinematic Studio' })
       ).toHaveAttribute('href', '/cinematic-studio?ux=e')
