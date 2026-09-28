@@ -55,6 +55,24 @@ const getCheckoutAttributionForCloud =
     }
   }
 
+async function getCheckoutAttributionPayload(): Promise<CheckoutAttributionMetadata> {
+  const attribution = await getCheckoutAttributionForCloud()
+  if (attribution.ok) return attribution.attribution
+
+  reportError(attribution.error, {
+    errorType: 'cloud_checkout_attribution_fallback',
+    tags: {
+      failure_kind: 'degraded',
+      feature_area: 'billing',
+      operation: 'load',
+      outcome: 'recovered'
+    },
+    context: { attribution_stage: attribution.stage },
+    level: 'warning'
+  })
+  return {}
+}
+
 interface PerformSubscriptionCheckoutOptions {
   openInNewTab?: boolean
   paymentIntentSource?: PaymentIntentSource
@@ -115,21 +133,7 @@ async function initiateSubscriptionCheckout(
   }
 
   const checkoutTier = getCheckoutTier(tierKey, currentBillingCycle)
-  const attribution = await getCheckoutAttributionForCloud()
-  if (!attribution.ok) {
-    reportError(attribution.error, {
-      errorType: 'cloud_checkout_attribution_fallback',
-      tags: {
-        failure_kind: 'degraded',
-        feature_area: 'billing',
-        operation: 'load',
-        outcome: 'recovered'
-      },
-      context: { attribution_stage: attribution.stage },
-      level: 'warning'
-    })
-  }
-  const checkoutAttribution = attribution.ok ? attribution.attribution : {}
+  const checkoutAttribution = await getCheckoutAttributionPayload()
   const checkoutPayload = { ...checkoutAttribution }
 
   const response = await authStore.fetchWithCustomerRecovery(
