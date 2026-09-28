@@ -35,6 +35,11 @@ interface PerfFrameState {
   durationsMs: number[]
 }
 
+interface PerfLongtaskState {
+  observer: PerformanceObserver
+  tbtMs: number
+}
+
 declare global {
   interface Window {
     app?: ComfyApp
@@ -49,6 +54,7 @@ declare global {
     widgetValue?: unknown
     __commandExecutionCounts?: Record<string, number>
     __perfFrameState?: PerfFrameState
+    __perfLongtaskState?: PerfLongtaskState
 
     // Feature flags test globals
     __capturedMessages?: CapturedMessages

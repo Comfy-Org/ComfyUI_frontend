@@ -66,12 +66,14 @@ test.describe(
             'Keep the lighting soft, preserve the framing, and render four variations.'
 
           await test.step('warm the composer twice', async () => {
-            for (let warmup = 0; warmup < 2; warmup++) {
-              await editor.pressSequentially(text)
-              await expect(editor).toHaveText(text)
-              await editor.fill('')
-              await expect(editor).toBeEmpty()
-            }
+            await editor.pressSequentially(text)
+            await expect(editor).toHaveText(text)
+            await editor.fill('')
+            await expect(editor).toBeEmpty()
+            await editor.pressSequentially(text)
+            await expect(editor).toHaveText(text)
+            await editor.fill('')
+            await expect(editor).toBeEmpty()
           })
 
           await test.step('measure composer typing', async () => {

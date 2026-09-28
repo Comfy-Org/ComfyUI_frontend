@@ -7,7 +7,7 @@ import { PerformanceHelper } from '@e2e/fixtures/helpers/PerformanceHelper'
 describe('PerformanceHelper', () => {
   afterEach(() => {
     delete window.__perfFrameState
-    delete (window as unknown as Record<string, unknown>).__perfLongtaskState
+    delete window.__perfLongtaskState
   })
 
   it('stops an active frame measurement before detaching CDP on dispose', async () => {
@@ -25,9 +25,17 @@ describe('PerformanceHelper', () => {
     const cancelAnimationFrame = vi
       .spyOn(window, 'cancelAnimationFrame')
       .mockImplementation(() => {})
-    vi.spyOn(window, 'requestAnimationFrame').mockReturnValue(17)
-    ;(window as unknown as Record<string, unknown>).__perfLongtaskState = {
-      observer: { takeRecords: () => [] },
+    let frameRequestCount = 0
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+      frameRequestCount += 1
+      if (frameRequestCount === 1 || frameRequestCount === 3) {
+        const timestamp = frameRequestCount === 1 ? 100 : 116.7
+        queueMicrotask(() => callback(timestamp))
+      }
+      return 17
+    })
+    window.__perfLongtaskState = {
+      observer: fromPartial<PerformanceObserver>({ takeRecords: () => [] }),
       tbtMs: 0
     }
 

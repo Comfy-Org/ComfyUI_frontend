@@ -91,10 +91,7 @@ export class PerformanceHelper {
    */
   private async collectTBT(): Promise<number> {
     return this.page.evaluate(() => {
-      const state = (window as unknown as Record<string, unknown>)
-        .__perfLongtaskState as
-        | { observer: PerformanceObserver; tbtMs: number }
-        | undefined
+      const state = window.__perfLongtaskState
       if (!state) return 0
 
       // Flush any queued-but-undelivered entries into our accumulator
@@ -108,7 +105,7 @@ export class PerformanceHelper {
   }
 
   private async startFrameMeasurement(): Promise<void> {
-    await this.page.evaluate(() => {
+    await this.page.evaluate(async () => {
       const state: NonNullable<Window['__perfFrameState']> = {
         frameRequestId: 0,
         lastTimestamp: null,
@@ -123,20 +120,52 @@ export class PerformanceHelper {
         state.frameRequestId = requestAnimationFrame(tick)
       }
 
-      state.frameRequestId = requestAnimationFrame(tick)
       window.__perfFrameState = state
+      await new Promise<void>((resolve, reject) => {
+        const timeoutId = window.setTimeout(() => {
+          cancelAnimationFrame(state.frameRequestId)
+          delete window.__perfFrameState
+          reject(new Error('Timed out waiting for the initial animation frame'))
+        }, 1_000)
+        state.frameRequestId = requestAnimationFrame((timestamp) => {
+          window.clearTimeout(timeoutId)
+          state.lastTimestamp = timestamp
+          state.frameRequestId = requestAnimationFrame(tick)
+          resolve()
+        })
+      })
     })
   }
 
   private async stopFrameMeasurement(): Promise<number[]> {
-    return this.page.evaluate(() => {
-      const state = window.__perfFrameState
-      if (!state) return []
+    if (this.page.isClosed()) return []
+    try {
+      return await this.page.evaluate(async () => {
+        const state = window.__perfFrameState
+        if (!state) return []
 
-      cancelAnimationFrame(state.frameRequestId)
-      delete window.__perfFrameState
-      return state.durationsMs
-    })
+        cancelAnimationFrame(state.frameRequestId)
+        return new Promise<number[]>((resolve) => {
+          let finished = false
+          const finish = (timestamp?: number) => {
+            if (finished) return
+            finished = true
+            window.clearTimeout(timeoutId)
+            cancelAnimationFrame(state.frameRequestId)
+            if (timestamp !== undefined && state.lastTimestamp !== null) {
+              state.durationsMs.push(timestamp - state.lastTimestamp)
+            }
+            delete window.__perfFrameState
+            resolve(state.durationsMs)
+          }
+          const timeoutId = window.setTimeout(() => finish(), 1_000)
+          state.frameRequestId = requestAnimationFrame(finish)
+        })
+      })
+    } catch (error) {
+      if (this.page.isClosed()) return []
+      throw error
+    }
   }
 
   async startMeasuring(): Promise<void> {
@@ -148,15 +177,11 @@ export class PerformanceHelper {
     // Install longtask observer if not already present, then reset the
     // accumulator so old longtasks don't bleed into the new measurement window.
     await this.page.evaluate(() => {
-      const win = window as unknown as Record<string, unknown>
-      if (!win.__perfLongtaskState) {
-        const state: { observer: PerformanceObserver; tbtMs: number } = {
+      if (!window.__perfLongtaskState) {
+        const state: NonNullable<Window['__perfLongtaskState']> = {
           observer: new PerformanceObserver((list) => {
-            const self = (window as unknown as Record<string, unknown>)
-              .__perfLongtaskState as {
-              observer: PerformanceObserver
-              tbtMs: number
-            }
+            const self = window.__perfLongtaskState
+            if (!self) return
             for (const entry of list.getEntries()) {
               if (entry.duration > 50) self.tbtMs += entry.duration - 50
             }
@@ -164,12 +189,9 @@ export class PerformanceHelper {
           tbtMs: 0
         }
         state.observer.observe({ type: 'longtask', buffered: true })
-        win.__perfLongtaskState = state
+        window.__perfLongtaskState = state
       }
-      const state = win.__perfLongtaskState as {
-        observer: PerformanceObserver
-        tbtMs: number
-      }
+      const state = window.__perfLongtaskState
       state.tbtMs = 0
       state.observer.takeRecords()
     })
