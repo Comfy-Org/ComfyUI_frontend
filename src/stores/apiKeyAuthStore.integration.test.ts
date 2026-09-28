@@ -111,6 +111,22 @@ describe('API key authentication initialization', () => {
     )
   })
 
+  it('does not store or authenticate a key rejected by the customer lookup', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      statusText: 'Unauthorized'
+    })
+    const apiKeyStore = useApiKeyAuthStore()
+
+    const stored = await apiKeyStore.storeApiKey('rejected-api-key')
+
+    expect(stored).toBeUndefined()
+    expect(apiKeyStore.getApiKey()).toBeNull()
+    expect(apiKeyStore.currentUser).toBeNull()
+    expect(mockFetch).toHaveBeenCalledOnce()
+  })
+
   it('ignores a stale customer response after the key is replaced', async () => {
     const { apiKeyStore, resolve } = await initializeStoreWithPendingLookup()
 

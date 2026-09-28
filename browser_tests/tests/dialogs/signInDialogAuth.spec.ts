@@ -54,6 +54,37 @@ test.describe('Sign In dialog — live auth', () => {
     ).toBeVisible()
   })
 
+  // Regression: https://github.com/Comfy-Org/ComfyUI_frontend/pull/15272
+  test('keeps the dialog open when an API key is rejected', async ({
+    comfyPage
+  }) => {
+    await comfyPage.page.route('**/customers', (route) =>
+      route.fulfill({ status: 401 })
+    )
+
+    const dialog = new SignInDialog(comfyPage.page)
+    await dialog.open()
+    await dialog.apiKeyButton.click()
+    await dialog.apiKeyInput.fill(
+      'comfyui-0000000000000000000000000000000000000000000000000000000000000000'
+    )
+    await dialog.root.getByRole('button', { name: 'Save' }).click()
+
+    await expect(
+      dialog.root,
+      'a rejected API key must not advance the sign-in dialog'
+    ).toBeVisible()
+    await expect(
+      comfyPage.page.getByText(
+        'There is no Comfy user associated with the provided API key'
+      )
+    ).toBeVisible()
+    await expect(
+      comfyPage.page.getByText('API Key Stored'),
+      'failed authentication must never render the success toast'
+    ).toBeHidden()
+  })
+
   test('creates an account with email, password, and confirmation', async ({
     comfyPage
   }) => {
