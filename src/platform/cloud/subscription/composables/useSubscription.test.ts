@@ -18,6 +18,7 @@ const {
   mockGetCheckoutAttribution,
   mockTelemetry,
   mockIsLoggedIn,
+  mockCurrentUser,
 
   mockIsCloud,
 
@@ -27,45 +28,49 @@ const {
   mockReportTelemetryError,
   mockReportError,
   mockAccessBillingPortal
-} = vi.hoisted(() => ({
-  mockIsLoggedIn: { value: false },
-  mockIsCloud: { value: true },
+} = vi.hoisted(() => {
+  const mockIsLoggedIn = { value: false }
+  return {
+    mockIsLoggedIn,
+    mockCurrentUser: { isLoggedIn: mockIsLoggedIn },
+    mockIsCloud: { value: true },
 
-  mockGetBillingStatus: vi.fn(),
+    mockGetBillingStatus: vi.fn(),
 
-  mockReportTelemetryError: vi.fn(),
-  mockReportError: vi.fn(),
-  mockAccessBillingPortal: vi.fn(),
-  mockGetCheckoutAttribution: vi.fn(() => ({
-    im_ref: 'impact-click-001',
-    utm_source: 'impact'
-  })),
-  mockTelemetry: {
-    trackSubscription: vi.fn(),
-    trackMonthlySubscriptionSucceeded: vi.fn(),
-    trackMonthlySubscriptionCancelled: vi.fn(),
-    trackBillingEvent: vi.fn()
-  },
-  mockLocalStorage: (() => {
-    const store = new Map<string, string>()
+    mockReportTelemetryError: vi.fn(),
+    mockReportError: vi.fn(),
+    mockAccessBillingPortal: vi.fn(),
+    mockGetCheckoutAttribution: vi.fn(() => ({
+      im_ref: 'impact-click-001',
+      utm_source: 'impact'
+    })),
+    mockTelemetry: {
+      trackSubscription: vi.fn(),
+      trackMonthlySubscriptionSucceeded: vi.fn(),
+      trackMonthlySubscriptionCancelled: vi.fn(),
+      trackBillingEvent: vi.fn()
+    },
+    mockLocalStorage: (() => {
+      const store = new Map<string, string>()
 
-    return {
-      getItem: vi.fn((key: string) => store.get(key) ?? null),
-      setItem: vi.fn((key: string, value: string) => {
-        store.set(key, value)
-      }),
-      removeItem: vi.fn((key: string) => {
-        store.delete(key)
-      }),
-      clear: vi.fn(() => {
-        store.clear()
-      }),
-      __reset: () => {
-        store.clear()
+      return {
+        getItem: vi.fn((key: string) => store.get(key) ?? null),
+        setItem: vi.fn((key: string, value: string) => {
+          store.set(key, value)
+        }),
+        removeItem: vi.fn((key: string) => {
+          store.delete(key)
+        }),
+        clear: vi.fn(() => {
+          store.clear()
+        }),
+        __reset: () => {
+          store.clear()
+        }
       }
-    }
-  })()
-}))
+    })()
+  }
+})
 
 let scope: ReturnType<typeof effectScope> | undefined
 type Distribution = 'desktop' | 'localhost' | 'cloud'
@@ -100,9 +105,7 @@ Object.defineProperty(globalThis, 'localStorage', {
 })
 
 vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: vi.fn(() => ({
-    isLoggedIn: mockIsLoggedIn
-  }))
+  useCurrentUser: vi.fn(() => mockCurrentUser)
 }))
 
 vi.mock<unknown>(import('@/platform/telemetry'), () => ({
@@ -227,6 +230,7 @@ beforeEach(() => {
   vi.mocked(useAuthStore().fetchWithCustomerRecovery).mockImplementation(
     (input, init) => fetch(input, init)
   )
+  mockAccessBillingPortal.mockResolvedValue(true)
 })
 
 describe('useSubscription', () => {
@@ -243,6 +247,8 @@ describe('useSubscription', () => {
     setDistribution('cloud')
 
     mockLocalStorage.__reset()
+    mockIsLoggedIn.value = false
+    mockCurrentUser.isLoggedIn = mockIsLoggedIn
     railState.rail = null
     Object.assign(useAuthStore(), { userId: 'user-123' })
     mockIsCloud.value = true
