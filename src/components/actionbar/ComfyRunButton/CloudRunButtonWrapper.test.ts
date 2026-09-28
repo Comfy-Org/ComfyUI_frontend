@@ -123,6 +123,53 @@ function renderWrapper() {
   return render(CloudRunButtonWrapper)
 }
 
+function setCanManageSubscription(value: boolean) {
+  const permissions = useWorkspaceUI().permissions.value
+  vi.mocked(useWorkspaceUI()).permissions = computed(() => ({
+    ...permissions,
+    canManageSubscription: value
+  }))
+}
+
+function subscription(tier: string | null): SubscriptionInfo | null {
+  if (!tier) return null
+  const result: SubscriptionInfo = {
+    isActive: true,
+    tier: null,
+    duration: null,
+    planSlug: null,
+    scheduledChange: null,
+    renewalDate: null,
+    endDate: null,
+    isCancelled: false,
+    hasFunds: true,
+    agentHasFunds: true
+  }
+  Object.defineProperty(result, 'tier', { value: tier })
+  return result
+}
+
+function getPaymentRecoveryDialog(index = 0) {
+  const call = vi
+    .mocked(useDialogService().showLayoutDialog)
+    .mock.calls.at(index)
+  assert(call)
+  const { props } = call[0]
+  assert('canManage' in props)
+  assert('status' in props)
+  assert('isUpdatingPayment' in props)
+  assert('onClose' in props)
+  assert('onUpdatePayment' in props)
+  const { canManage, status, isUpdatingPayment, onClose, onUpdatePayment } =
+    props
+  assert(typeof canManage === 'boolean')
+  assert(typeof status === 'string')
+  assert(typeof isUpdatingPayment === 'boolean')
+  assert(typeof onClose === 'function')
+  assert(typeof onUpdatePayment === 'function')
+  return { canManage, status, isUpdatingPayment, onClose, onUpdatePayment }
+}
+
 describe('CloudRunButtonWrapper', () => {
   beforeEach(() => {
     mockCanRunWorkflows.value = true

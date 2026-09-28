@@ -41,6 +41,33 @@ async function setup() {
 
 describe('useTeamPlan', () => {
   beforeEach(() => {
+    const billingContext = useBillingContext()
+    billingContext.canAccessSubscriptionFeatures = computed(
+      () => mockIsActiveSubscription.value
+    )
+    billingContext.isInitialized = mockIsInitialized
+    billingContext.isTeamPlan = computed(() => mockIsTeamPlan.value)
+    billingContext.maxSeats = computed(() => mockMaxSeats.value)
+    billingContext.subscription = computed(() =>
+      mockSubscription.value
+        ? {
+            isActive: true,
+            tier: null,
+            duration: null,
+            planSlug: null,
+            scheduledChange: null,
+            renewalDate: null,
+            endDate: null,
+            hasFunds: true,
+            agentHasFunds: true,
+            ...mockSubscription.value
+          }
+        : null
+    )
+    billingContext.subscriptionStatus = computed(
+      () => mockSubscriptionStatus.value
+    )
+    vi.mocked(useBillingContext).mockReturnValue(billingContext)
     mockIsActiveSubscription.value = true
     mockIsInitialized.value = true
     mockIsTeamPlan.value = true

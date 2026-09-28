@@ -157,6 +157,48 @@ function expectRekaPricingDialogProps(
   expect(dialogComponentProps).not.toHaveProperty('pt')
 }
 
+beforeEach(() => {
+  vi.mocked(useDialogService().showLayoutDialog).mockImplementation(
+    mockShowLayoutDialog
+  )
+  vi.mocked(useDialogService().showTeamWorkspacesDialog).mockImplementation(
+    mockShowTeamWorkspacesDialog
+  )
+  const billing = useBillingContext()
+  billing.isFreeTier = computed(() => mockIsFreeTier.value)
+  billing.isLegacyTeamPlan = computed(() => mockIsLegacyTeamPlan.value)
+  billing.isTeamPlan = computed(() => mockIsTeamPlan.value)
+  billing.currentPlanSlug = computed(() => mockCurrentPlanSlug.value)
+  billing.tier = computed(() => mockTier.value)
+  billing.teamCreditStops = computed(() => mockTeamCreditStops.value)
+  billing.currentTeamCreditStop = computed(
+    () => mockCurrentTeamCreditStop.value
+  )
+  billing.subscription = computed(() =>
+    mockSubscription.value
+      ? {
+          isActive: true,
+          tier: null,
+          planSlug: null,
+          scheduledChange: null,
+          renewalDate: null,
+          endDate: null,
+          isCancelled: false,
+          hasFunds: true,
+          agentHasFunds: true,
+          ...mockSubscription.value
+        }
+      : null
+  )
+  billing.subscriptionStatus = computed(() => mockSubscriptionStatus.value)
+  vi.mocked(useBillingContext).mockReturnValue(billing)
+  Object.assign(useAuthStore(), { userId: 'user-1' })
+  vi.mocked(useBillingOperationStore().startOperation).mockImplementation(
+    mockStartOperation
+  )
+  mockCreateBillingSdk.mockReturnValue(fakeBillingSdk().sdk)
+})
+
 describe('useSubscriptionDialog', () => {
   beforeEach(() => {
     mockIsCloud.value = true

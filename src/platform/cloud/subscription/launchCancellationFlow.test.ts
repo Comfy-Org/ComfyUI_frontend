@@ -61,6 +61,43 @@ function session(
   return { show }
 }
 
+beforeEach(() => {
+  const billing = useBillingContext()
+  vi.mocked(useBillingContext).mockReturnValue(billing)
+  billing.type = computed(() => mocks.billingType.value)
+  billing.tier = computed(() => mocks.tier.value)
+  billing.subscription = computed(() =>
+    mocks.subscription.value
+      ? {
+          isActive: true,
+          tier: mocks.tier.value,
+          planSlug: null,
+          scheduledChange: null,
+          renewalDate: null,
+          isCancelled: false,
+          hasFunds: true,
+          agentHasFunds: true,
+          ...mocks.subscription.value
+        }
+      : null
+  )
+
+  vi.spyOn(
+    useTeamWorkspaceStore(),
+    'activeWorkspaceId',
+    'get'
+  ).mockImplementation(() => {
+    return mocks.activeWorkspaceId
+  })
+  vi.spyOn(
+    useTeamWorkspaceStore(),
+    'activeWorkspaceBillingRail',
+    'get'
+  ).mockImplementation(() => {
+    return mocks.billingRail
+  })
+})
+
 describe('launchCancellationFlow', () => {
   beforeEach(() => {
     mocks.billingType.value = 'workspace'

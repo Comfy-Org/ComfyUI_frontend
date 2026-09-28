@@ -65,6 +65,49 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', async () => {
 import { useBillingBanner } from './useBillingBanner'
 
 describe('useBillingBanner', () => {
+  let scope: EffectScope
+
+  function useBillingBanner() {
+    const banner = scope.run(createBillingBanner)
+    if (!banner) throw new Error('Failed to create billing banner')
+    return banner
+  }
+
+  function setupBilling() {
+    const billing = {
+      canAccessSubscriptionFeatures: ref(true),
+      isTeamPlan: ref(true),
+      billingStatus: ref<BillingStatus | null>('paid'),
+      subscription: ref<Pick<SubscriptionInfo, 'hasFunds'> | null>({
+        hasFunds: true
+      })
+    }
+    const billingContext = useBillingContext()
+    billingContext.canAccessSubscriptionFeatures = computed(
+      () => billing.canAccessSubscriptionFeatures.value
+    )
+    billingContext.isTeamPlan = computed(() => billing.isTeamPlan.value)
+    billingContext.billingStatus = computed(() => billing.billingStatus.value)
+    billingContext.subscription = computed(() =>
+      billing.subscription.value
+        ? {
+            isActive: true,
+            tier: null,
+            duration: null,
+            planSlug: null,
+            scheduledChange: null,
+            renewalDate: null,
+            endDate: null,
+            isCancelled: false,
+            ...billing.subscription.value,
+            agentHasFunds: billing.subscription.value.hasFunds
+          }
+        : null
+    )
+    vi.mocked(useBillingContext).mockReturnValue(billingContext)
+    return billing
+  }
+
   beforeEach(() => {
     const b = mocks.billing!
     b.canAccessSubscriptionFeatures.value = true

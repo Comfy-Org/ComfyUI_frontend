@@ -17,11 +17,27 @@ const { mockSubscription } = vi.hoisted(() => ({
   }
 }))
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
-  useBillingContext: () => ({
-    subscription: computed(() => mockSubscription.value)
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
+
+beforeEach(() => {
+  const billingContext = useBillingContext()
+  billingContext.subscription = computed(() =>
+    mockSubscription.value
+      ? {
+          isActive: true,
+          tier: null,
+          duration: null,
+          planSlug: null,
+          scheduledChange: null,
+          renewalDate: null,
+          hasFunds: true,
+          agentHasFunds: true,
+          ...mockSubscription.value
+        }
+      : null
+  )
+  vi.mocked(useBillingContext).mockReturnValue(billingContext)
+})
 
 const i18n = createI18n({
   legacy: false,

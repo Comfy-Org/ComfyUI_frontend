@@ -12,12 +12,25 @@ import type {
 import SubscriptionTransitionPreviewWorkspace from './SubscriptionTransitionPreviewWorkspace.vue'
 
 // Not cancelled: keeps the reactivation banner out of these baseline scenarios.
-vi.mock('@/composables/billing/useBillingContext', () => ({
-  useBillingContext: () => ({
-    subscription: { value: { isCancelled: false, endDate: null } },
-    isInitialized: { value: true }
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
+
+beforeEach(() => {
+  const billingContext = useBillingContext()
+  billingContext.subscription = computed(() => ({
+    isActive: true,
+    tier: null,
+    duration: null,
+    planSlug: null,
+    scheduledChange: null,
+    renewalDate: null,
+    endDate: null,
+    isCancelled: false,
+    hasFunds: true,
+    agentHasFunds: true
+  }))
+  billingContext.isInitialized = ref(true)
+  vi.mocked(useBillingContext).mockReturnValue(billingContext)
+})
 
 // Only the renewal messages are supplied, so the renewal assertions verify
 // real interpolated output while every other key still renders as itself.
