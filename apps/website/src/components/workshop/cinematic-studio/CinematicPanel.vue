@@ -119,6 +119,7 @@ const cardClass =
           v-model="modelSlug"
           :options="modelOptions"
           :heading="tc('cinematic.model.heading', locale)"
+          side="bottom"
           :trigger-class="cn(cardClass, 'h-12 gap-3 px-3')"
         >
           <img
@@ -129,9 +130,6 @@ const cardClass =
           />
           <span class="flex-1 text-sm font-semibold text-primary-warm-white">
             {{ model?.name }}
-          </span>
-          <span class="text-xs text-primary-warm-gray">
-            {{ model?.provider }}
           </span>
           <ChevronDown
             class="size-4 text-primary-warm-gray"
@@ -144,6 +142,20 @@ const cardClass =
         v-model:enhance="enhance"
         :locale
       />
+      <section class="flex flex-col gap-2.5">
+        <div class="flex items-center justify-between">
+          <h2 :class="labelClass">
+            {{ tc('cinematic.section.references', locale) }}
+          </h2>
+          <span class="text-[11px] text-primary-warm-gray">
+            {{ tc('cinematic.reference.optional', locale) }}
+          </span>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <CinematicReferenceSlot v-model="cast" kind="cast" :locale />
+          <CinematicReferenceSlot v-model="palette" kind="palette" :locale />
+        </div>
+      </section>
       <section class="flex flex-col gap-2.5">
         <h2 :class="labelClass">
           {{ tc('cinematic.section.camera', locale) }}
@@ -207,20 +219,6 @@ const cardClass =
         />
       </section>
       <section class="flex flex-col gap-2.5">
-        <div class="flex items-center justify-between">
-          <h2 :class="labelClass">
-            {{ tc('cinematic.section.references', locale) }}
-          </h2>
-          <span class="text-[11px] text-primary-warm-gray">
-            {{ tc('cinematic.reference.optional', locale) }}
-          </span>
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          <CinematicReferenceSlot v-model="cast" kind="cast" :locale />
-          <CinematicReferenceSlot v-model="palette" kind="palette" :locale />
-        </div>
-      </section>
-      <section class="flex flex-col gap-2.5">
         <h2 :class="labelClass">
           {{ tc('cinematic.section.output', locale) }}
         </h2>
@@ -228,6 +226,7 @@ const cardClass =
           v-model:aspect="aspect"
           v-model:resolution="resolution"
           v-model:takes="takes"
+          menu-side="bottom"
           :locale
         />
       </section>

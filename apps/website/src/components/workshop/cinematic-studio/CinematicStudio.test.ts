@@ -192,7 +192,7 @@ describe('CinematicStudio', () => {
 
     expect(
       await screen.findByRole('button', {
-        name: `Model · via Comfy Router: ${second.name}`
+        name: `Model: ${second.name}`
       })
     ).toBeInTheDocument()
   })
@@ -1006,7 +1006,7 @@ describe('CinematicStudio', () => {
         .getAllByRole('heading', { level: 2 })
         .map((heading) => heading.textContent.trim())
         .slice(-4)
-    ).toEqual(['Camera', 'Direction', 'References', 'Format'])
+    ).toEqual(['References', 'Camera', 'Direction', 'Format'])
   })
 
   describe('layout switch', () => {
@@ -1137,9 +1137,7 @@ describe('CinematicStudio', () => {
       render(CinematicStudioPage, { props: { models } })
       const user = userEvent.setup()
 
-      await user.click(
-        await screen.findByRole('button', { name: /^Model · via Comfy Router/ })
-      )
+      await user.click(await screen.findByRole('button', { name: /^Model:/ }))
       await user.click(
         await screen.findByRole('menuitemradio', {
           name: new RegExp(second.name)

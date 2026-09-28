@@ -16,7 +16,10 @@ import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import { framedStyle } from './aspect-style'
 import CinematicMenu from './CinematicMenu.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { menuSide = 'top', locale = 'en' } = defineProps<{
+  menuSide?: 'top' | 'bottom'
+  locale?: Locale
+}>()
 
 const aspect = defineModel<AspectRatio>('aspect', { required: true })
 const resolution = defineModel<Resolution>('resolution', { required: true })
@@ -85,6 +88,7 @@ const resolutionValue = computed({
       v-model="aspectValue"
       :options="aspectOptions"
       :heading="tc('cinematic.output.aspect', locale)"
+      :side="menuSide"
       trigger-class="h-10 justify-center gap-1.5 border border-transparency-white-t20 text-sm text-primary-warm-white hover:border-primary-warm-white/50"
     >
       <span class="grid size-3.5 place-items-center" aria-hidden="true">
@@ -99,6 +103,7 @@ const resolutionValue = computed({
       v-model="resolutionValue"
       :options="resolutionOptions"
       :heading="tc('cinematic.output.resolution', locale)"
+      :side="menuSide"
       trigger-class="h-10 justify-center gap-1.5 border border-transparency-white-t20 text-sm text-primary-warm-white hover:border-primary-warm-white/50"
     >
       <Maximize class="size-3.5 text-primary-warm-gray" aria-hidden="true" />

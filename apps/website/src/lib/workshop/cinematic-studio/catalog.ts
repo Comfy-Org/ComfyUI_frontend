@@ -152,7 +152,7 @@ export const lookGroups: readonly DirectionGroup<LookPart>[] = [
         id: 'medium',
         label: 'cinematic.option.medium',
         phrase: 'medium shot',
-        preview: frame('bus-stop')
+        preview: frame('red-coat')
       },
       {
         id: 'close',
@@ -244,7 +244,7 @@ export const lookGroups: readonly DirectionGroup<LookPart>[] = [
         id: 't500',
         label: 'cinematic.option.tungsten500',
         phrase: 'tungsten 500T film',
-        preview: frame('bus-stop')
+        preview: frame('diner')
       },
       {
         id: 'd250',
@@ -262,7 +262,7 @@ export const lookGroups: readonly DirectionGroup<LookPart>[] = [
         id: 'slide',
         label: 'cinematic.option.reversal',
         phrase: 'reversal slide film',
-        preview: frame('diner')
+        preview: frame('neon-street')
       },
       {
         id: 'expired',

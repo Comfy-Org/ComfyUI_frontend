@@ -19,10 +19,16 @@ interface MenuOption {
   readonly logo?: string
 }
 
-const { options, heading, triggerClass } = defineProps<{
+const {
+  options,
+  heading,
+  triggerClass,
+  side = 'top'
+} = defineProps<{
   options: readonly MenuOption[]
   heading: string
   triggerClass?: string
+  side?: 'top' | 'bottom'
 }>()
 
 const value = defineModel<string>({ required: true })
@@ -47,7 +53,7 @@ const triggerLabel = computed(() => {
     </DropdownMenuTrigger>
     <DropdownMenuPortal>
       <DropdownMenuContent
-        side="top"
+        :side
         align="start"
         :side-offset="8"
         :collision-padding="8"

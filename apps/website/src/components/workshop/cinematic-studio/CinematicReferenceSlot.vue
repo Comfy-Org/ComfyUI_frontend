@@ -41,10 +41,10 @@ function choose(event: Event) {
       type="button"
       :class="
         cn(
-          'group relative flex h-24 w-full flex-col justify-end overflow-hidden rounded-xl p-2.5 text-left transition-colors',
+          'group relative flex w-full overflow-hidden rounded-xl text-left transition-colors',
           file
-            ? 'ring-1 ring-transparency-white-t20 ring-inset'
-            : 'border border-dashed border-transparency-white-t20 bg-transparency-white-t4 hover:border-primary-warm-white/50'
+            ? 'h-20 flex-col justify-end p-2.5 ring-1 ring-transparency-white-t20 ring-inset'
+            : 'h-11 items-center gap-2 border border-dashed border-transparency-white-t20 bg-transparency-white-t4 px-2 hover:border-primary-warm-white/50'
         )
       "
       :aria-label="accessibleName"
@@ -63,7 +63,7 @@ function choose(event: Event) {
       />
       <span
         v-else
-        class="absolute top-2.5 left-2.5 grid size-7 place-items-center rounded-lg bg-transparency-white-t8 text-primary-warm-gray group-hover:text-primary-warm-white"
+        class="grid size-7 shrink-0 place-items-center rounded-lg bg-transparency-white-t8 text-primary-warm-gray group-hover:text-primary-warm-white"
       >
         <UserRound v-if="kind === 'cast'" class="size-3.5" aria-hidden="true" />
         <Palette v-else class="size-3.5" aria-hidden="true" />
@@ -80,21 +80,15 @@ function choose(event: Event) {
           )
         }}
       </span>
-      <span class="relative truncate text-xs text-primary-warm-white">
-        {{
-          file
-            ? file.name
-            : tc(
-                kind === 'cast'
-                  ? 'cinematic.reference.castHint'
-                  : 'cinematic.reference.paletteHint',
-                locale
-              )
-        }}
+      <span
+        v-if="file"
+        class="relative truncate text-xs text-primary-warm-white"
+      >
+        {{ file.name }}
       </span>
       <Plus
         v-if="!file"
-        class="absolute top-3 right-3 size-4 text-primary-warm-gray"
+        class="ml-auto size-4 shrink-0 text-primary-warm-gray"
         aria-hidden="true"
       />
     </button>

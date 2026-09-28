@@ -11,10 +11,10 @@ import type { DirectionPart } from '../../../lib/workshop/cinematic-studio/catal
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
 import type { StarterShot } from '../../../lib/workshop/cinematic-studio/starters'
 import type { Locale } from '../../../i18n/translations'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import RunLeaveDialog from '../RunLeaveDialog.vue'
 import AppsBackLink from './AppsBackLink.vue'
 import CinematicComposer from './CinematicComposer.vue'
+import CinematicEnhanceSwitch from './CinematicEnhanceSwitch.vue'
 import CinematicOutputControls from './CinematicOutputControls.vue'
 import CinematicPicker from './CinematicPicker.vue'
 import CinematicPopover from './CinematicPopover.vue'
@@ -179,24 +179,7 @@ function generateOn(slug: string) {
               v-model:takes="takes"
               :locale
             />
-            <label
-              class="flex cursor-pointer items-center gap-2.5 rounded-xl px-1 text-xs text-primary-warm-white"
-            >
-              <input
-                v-model="enhance"
-                type="checkbox"
-                role="switch"
-                class="peer sr-only"
-              />
-              <span
-                class="relative h-4 w-7 shrink-0 rounded-full bg-transparency-white-t20 transition-colors peer-checked:bg-primary-comfy-yellow peer-focus-visible:ring-3 peer-focus-visible:ring-primary-comfy-yellow/50 after:absolute after:top-0.5 after:left-0.5 after:size-3 after:rounded-full after:bg-primary-comfy-ink after:transition-transform peer-checked:after:translate-x-3"
-                aria-hidden="true"
-              />
-              {{ tc('cinematic.scene.enhance', locale) }}
-              <span class="truncate text-primary-warm-gray">
-                {{ tc('cinematic.scene.enhanceHint', locale) }}
-              </span>
-            </label>
+            <CinematicEnhanceSwitch v-model="enhance" :locale class="px-1" />
           </div>
         </CinematicPopover>
         <CinematicComposer

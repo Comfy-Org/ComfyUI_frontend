@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useTemplateRef } from 'vue'
+import { nextTick, ref, useTemplateRef } from 'vue'
 
 import { useCinematicLeaveGuard } from '../../../composables/useCinematicLeaveGuard'
 import { useCinematicPopover } from '../../../composables/useCinematicPopover'
@@ -54,6 +54,19 @@ const {
 } = useCinematicPopover<PickerKey>()
 
 const output = useTemplateRef<HTMLElement>('output')
+const layout = useTemplateRef<HTMLElement>('layout')
+const anchorTop = ref(0)
+
+async function openPicker(key: PickerKey) {
+  togglePicker(key)
+  await nextTick()
+  const trigger = layout.value?.querySelector(
+    '[aria-haspopup="dialog"][aria-expanded="true"]'
+  )
+  const bounds = layout.value?.getBoundingClientRect()
+  if (trigger && bounds)
+    anchorTop.value = trigger.getBoundingClientRect().top - bounds.top
+}
 
 function generate() {
   closePicker()
@@ -79,7 +92,8 @@ function generate() {
       </span>
     </div>
     <div
-      class="grid items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]"
+      ref="layout"
+      class="relative grid items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]"
     >
       <CinematicPanel
         v-model:model="modelSlug"
@@ -100,7 +114,7 @@ function generate() {
         :show-credits="showCredits"
         :open-picker="picker"
         :locale
-        @open="togglePicker"
+        @open="openPicker"
         @generate="generate"
         @cancel="studio.cancel"
       />
@@ -117,23 +131,24 @@ function generate() {
           @select="studio.select"
           @retry="studio.retry"
         />
-        <div
-          v-if="picker"
-          class="fixed inset-0 z-50 bg-black/60 lg:hidden"
-          aria-hidden="true"
-        />
-        <CinematicPicker
-          v-if="picker"
-          :key="picker"
-          :groups="pickerGroups(picker)"
-          :direction
-          :title="popoverTitle(picker, locale)"
-          :locale
-          class="fixed inset-x-0 bottom-0 z-50 max-h-[85svh] rounded-b-none lg:absolute lg:inset-x-0 lg:top-0 lg:bottom-auto lg:z-20 lg:max-h-[calc(100svh-8rem)] lg:rounded-b-2xl"
-          @choose="choose"
-          @close="closePicker"
-        />
       </div>
+      <div
+        v-if="picker"
+        class="fixed inset-0 z-50 bg-black/60 lg:hidden"
+        aria-hidden="true"
+      />
+      <CinematicPicker
+        v-if="picker"
+        :key="picker"
+        :groups="pickerGroups(picker)"
+        :direction
+        :title="popoverTitle(picker, locale)"
+        :locale
+        class="fixed inset-x-0 bottom-0 z-50 max-h-[85svh] rounded-b-none lg:absolute lg:top-(--anchor-top) lg:right-0 lg:bottom-auto lg:left-[calc((100%-1.5rem)*0.4+1.5rem)] lg:z-20 lg:max-h-[calc(100svh-8rem)] lg:rounded-b-2xl"
+        :style="{ '--anchor-top': `${anchorTop}px` }"
+        @choose="choose"
+        @close="closePicker"
+      />
     </div>
     <RunLeaveDialog
       :open="leavingTo !== undefined"

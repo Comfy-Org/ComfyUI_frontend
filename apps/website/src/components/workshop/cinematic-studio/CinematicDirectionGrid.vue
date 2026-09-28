@@ -37,7 +37,7 @@ const grade = computed(() => directionOption('grade', direction))
 </script>
 
 <template>
-  <div class="grid grid-cols-2 gap-2 md:grid-cols-4 lg:grid-cols-2">
+  <div class="grid grid-cols-2 gap-2 md:grid-cols-4">
     <button
       v-for="tile in tiles"
       :key="tile.key"
@@ -46,7 +46,7 @@ const grade = computed(() => directionOption('grade', direction))
       :aria-expanded="openPicker === tile.key"
       :class="
         cn(
-          'group relative flex aspect-8/5 flex-col justify-end overflow-hidden rounded-xl bg-transparency-white-t4 p-2.5 text-left ring-1 ring-transparency-white-t20 ring-inset hover:ring-primary-warm-white/50',
+          'group relative flex aspect-4/3 flex-col justify-end overflow-hidden rounded-xl bg-transparency-white-t4 p-2 text-left ring-1 ring-transparency-white-t20 ring-inset hover:ring-primary-warm-white/50',
           openPicker === tile.key && 'ring-2 ring-primary-warm-white'
         )
       "
@@ -68,7 +68,7 @@ const grade = computed(() => directionOption('grade', direction))
         {{ tile.title }}
       </span>
       <span
-        class="relative truncate text-sm font-semibold text-primary-warm-white"
+        class="relative truncate text-xs font-semibold text-primary-warm-white"
       >
         {{ tc(tile.option.label, locale) }}
       </span>
@@ -79,7 +79,7 @@ const grade = computed(() => directionOption('grade', direction))
       :aria-expanded="openPicker === 'grade'"
       :class="
         cn(
-          'col-span-2 flex items-center gap-3 rounded-xl bg-transparency-white-t4 p-2 text-left ring-1 ring-transparency-white-t20 ring-inset hover:ring-primary-warm-white/50 md:col-span-4 lg:col-span-2',
+          'col-span-2 flex items-center gap-3 rounded-xl bg-transparency-white-t4 p-2 text-left ring-1 ring-transparency-white-t20 ring-inset hover:ring-primary-warm-white/50 md:col-span-4',
           openPicker === 'grade' && 'ring-2 ring-primary-warm-white'
         )
       "

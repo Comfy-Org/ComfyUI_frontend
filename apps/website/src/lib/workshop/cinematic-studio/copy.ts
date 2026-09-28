@@ -204,8 +204,8 @@ const copy = {
     'zh-CN': '浏览模型'
   },
   'cinematic.model.heading': {
-    en: 'Model · via Comfy Router',
-    'zh-CN': '模型 · 通过 Comfy Router'
+    en: 'Model',
+    'zh-CN': '模型'
   },
   'cinematic.composer.label': {
     en: 'Direct the shot',
@@ -547,10 +547,6 @@ const copy = {
     en: 'Character',
     'zh-CN': '角色'
   },
-  'cinematic.reference.castHint': {
-    en: 'Same face across shots',
-    'zh-CN': '在各镜头中保持同一张脸'
-  },
   'cinematic.reference.castAction': {
     en: 'Add a character reference',
     'zh-CN': '添加角色参考'
@@ -558,10 +554,6 @@ const copy = {
   'cinematic.reference.palette': {
     en: 'Palette',
     'zh-CN': '色板'
-  },
-  'cinematic.reference.paletteHint': {
-    en: 'Match its colors',
-    'zh-CN': '匹配其色彩'
   },
   'cinematic.reference.paletteAction': {
     en: 'Add a palette reference',

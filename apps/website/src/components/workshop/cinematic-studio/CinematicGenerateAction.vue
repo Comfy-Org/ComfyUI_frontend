@@ -106,7 +106,7 @@ const notes = computed<readonly Note[]>(() => {
         )
       }
     : wide && note.value
-      ? { text: note.value, class: 'text-xs text-content-secondary' }
+      ? { text: note.value, class: 'text-xs text-content-secondary lg:hidden' }
       : undefined
   const blocked: Note | undefined = blockedNote
     ? {
@@ -178,7 +178,7 @@ const layout = computed(() =>
         :rendering
         :can-generate="canGenerate"
         :note
-        :tooltip="!wide && !!note && !shortfall"
+        :tooltip="!!note && !shortfall"
         :wide
         :locale
         @generate="emit('generate')"
