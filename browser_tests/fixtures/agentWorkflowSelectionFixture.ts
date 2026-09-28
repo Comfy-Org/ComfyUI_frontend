@@ -14,11 +14,14 @@ type WorkflowSelection = {
   savedPaths: string[]
   postedMessages: string[]
   finishSave: (success: boolean) => void
+  failNextWorkflowMessage: () => void
   pauseWorkflowLookups: () => void
   refuseNextWorkflowMessage: () => void
   resumeWorkflowLookups: () => void
   workflowLookups: () => number
 }
+
+type NextWorkflowMessageResponse = 'accept' | 'fail' | 'refuse'
 
 export const workflowSelectionTest = base.extend<{
   nodeDefinitions: Record<string, ComfyNodeDef> | undefined
@@ -38,7 +41,7 @@ export const workflowSelectionTest = base.extend<{
     let pendingLookup: Promise<void> | undefined
     let resumeWorkflowLookups = () => {}
     let lookupCount = 0
-    let refuseNextWorkflowMessage = false
+    let nextWorkflowMessageResponse: NextWorkflowMessageResponse = 'accept'
     await page.route('**/api/workflows?*', async (route) => {
       lookupCount++
       await pendingLookup
@@ -61,8 +64,15 @@ export const workflowSelectionTest = base.extend<{
         new URL(request.url()).pathname.endsWith('/messages')
       ) {
         postedMessages.push(route.request().postData() ?? '')
-        if (refuseNextWorkflowMessage) {
-          refuseNextWorkflowMessage = false
+        const response = nextWorkflowMessageResponse
+        nextWorkflowMessageResponse = 'accept'
+        if (response === 'fail') {
+          return route.fulfill({
+            ...jsonRoute({ error: 'send unavailable' }),
+            status: 500
+          })
+        }
+        if (response === 'refuse') {
           const refusedId = route.request().postDataJSON().workflow_id
           const refusedIndex = workflows.findIndex(({ id }) => id === refusedId)
           if (refusedIndex !== -1) workflows.splice(refusedIndex, 1)
@@ -131,13 +141,16 @@ export const workflowSelectionTest = base.extend<{
       savedPaths,
       postedMessages,
       finishSave: (success) => finishSave(success),
+      failNextWorkflowMessage: () => {
+        nextWorkflowMessageResponse = 'fail'
+      },
       pauseWorkflowLookups: () => {
         pendingLookup = new Promise<void>((resolve) => {
           resumeWorkflowLookups = resolve
         })
       },
       refuseNextWorkflowMessage: () => {
-        refuseNextWorkflowMessage = true
+        nextWorkflowMessageResponse = 'refuse'
       },
       resumeWorkflowLookups: () => resumeWorkflowLookups(),
       workflowLookups: () => lookupCount

@@ -1,6 +1,7 @@
 import type { Locator, Page, TestInfo } from '@playwright/test'
 import { expect } from '@playwright/test'
 import type { ApplyOutcome } from '@comfyorg/comfy-multi-player'
+import type { AgentThreadListResponse } from '@comfyorg/ingest-types'
 import { z } from 'zod'
 
 import { createI18n } from 'vue-i18n'
@@ -629,8 +630,12 @@ export class AgentConversationHarness {
 
   private async mockAgentApi(): Promise<void> {
     const { page } = this
+    const threads: AgentThreadListResponse = {
+      threads: [],
+      pagination: { offset: 0, limit: 100, total: 0, has_more: false }
+    }
     await page.route('**/api/agent/threads', (route) =>
-      route.fulfill(jsonRoute({ threads: [] }))
+      route.fulfill(jsonRoute(threads))
     )
     await page.route('**/api/agent/threads/*/messages', (route) => {
       const request = route.request()

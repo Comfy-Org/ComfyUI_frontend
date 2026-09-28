@@ -1932,7 +1932,7 @@
   },
   "ByteDanceSeedreamLayerSeparationNode": {
     "description": "פירוק תמונה לפלטת רקע ועד 16 שכבות שקופות הניתנות להזזה, כל אחת עם סדר ערימה, תיבת גבול, שם ותיאור.",
-    "display_name": "ByteDance Seedream 5.0 Pro הפרדת שכבות",
+    "display_name": "הפרדת שכבות ByteDance Seedream 5.0 Pro (מדור קודם)",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -1990,6 +1990,62 @@
       "5": {
         "name": "layer_stack",
         "tooltip": "מסמך שכבות מוכן לעריכה עבור Create Layered Image: פלטת הבסיס וכל אלמנט כשכבה משלו, חתוכה הדוק, במיקום האמיתי ובסדר הערימה. חבר ישירות, או הרחב עם Add Layer."
+      }
+    }
+  },
+  "ByteDanceSeedreamLayerSeparationNodeV2": {
+    "description": "פירוק תמונה ללוח רקע ועד 16 שכבות שקופות שניתן למקם מחדש, שלכל אחת מהן סדר ערימה, תיבה תוחמת, שם ותיאור.",
+    "display_name": "הפרדת שכבות ByteDance Seedream 5.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_crop_layers": {
+        "name": "crop_layers"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_prompt_optimization": {
+        "name": "prompt_optimization"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_size": {
+        "name": "size"
+      },
+      "model_watermark": {
+        "name": "watermark"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "base_image",
+        "tooltip": "תמונת הבסיס (לוח הרקע) שעליה נערמות השכבות."
+      },
+      "1": {
+        "name": "base_mask",
+        "tooltip": "שקיפות תמונת הבסיס (1 = שקוף, בהתאם למוסכמה של LoadImage); כרגע תמיד אטומה לחלוטין."
+      },
+      "2": {
+        "name": "layers",
+        "tooltip": "שכבות שקופות המסודרות מלמטה למעלה. מצב קנבס מלא: ממוקמות על קנבס שחור בגודל הבסיס, במיקום התיבה התוחמת שלהן. מצב גודל מינימלי: נחתכות לתיבה התוחמת שלהן, מעוגנות לפינה השמאלית העליונה ומרופדות לגודל השכבה הגדולה ביותר."
+      },
+      "3": {
+        "name": "masks",
+        "tooltip": "שקיפות לכל שכבה, מיושרת לפי אינדקס עם אצוות layers (1 = שקוף, בהתאם למוסכמה של LoadImage). לקומפוזיציה בסגנון ImageCompositeMasked, יש להוסיף תחילה InvertMask."
+      },
+      "4": {
+        "name": "bboxes",
+        "tooltip": "תיבת מיקום אחת לכל שכבה, מיושרת לפי אינדקס עם אצוות layers (יש להזין את שתיהן, וכן masks, אל Layers From Bounding Boxes כדי לבנות מחדש את מיקום כל שכבה): {x, y, width, height, metadata: {name, desc, z_index, native_size, content_rect, flags}}. ‏content_rect = [left, top, width, height] הוא אזור התוכן של השכבה במסגרת שלה; הוא ממוקם על הקנבס במיקום התיבה בתוספת היסט זה."
+      },
+      "5": {
+        "name": "layer_stack",
+        "tooltip": "מסמך שכבות מוכן לעריכה עבור Create Layered Image: לוח הבסיס וכל רכיב כשכבה נפרדת בעלת שם, חתוכה היטב, במיקומה ובסדר הערימה האמיתיים שלה. ניתן לחבר ישירות או להרחיב באמצעות Add Layer."
       }
     }
   },
@@ -16893,7 +16949,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "מידת ההסקה שהמודל מבצע לפני המענה. 'default' משאיר את הבחירה למודל. הרמות הנתמכות משתנות לפי מודל: GPT-6 Astra low-max, GPT-5.6 none-max (ללא minimal), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, o-series low-high; ל-GPT-4.1 אין יכולת הסקה. רמות שאינן נתמכות נדחות לפני שליחת הבקשה."
+        "tooltip": "מידת החשיבה של המודל לפני המענה. 'default' משאיר את הבחירה למודל. הרמות הנתמכות שונות לפי מודל: GPT-6 Astra low-max, GPT-6 Sol/Luna ו-GPT-5.6 none-max (ללא minimal), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, o-series low-high; ל-GPT-4.1 אין יכולת חשיבה. רמות שאינן נתמכות נדחות לפני שליחת הבקשה."
       },
       "truncation": {
         "name": "truncation",
@@ -23884,6 +23940,30 @@
       },
       "2": {
         "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeMingImageEdit": {
+    "display_name": "קידוד טקסט לעריכת תמונה Ming",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "תמונות ייחוס אופציונליות, הנראות למקודד הטקסט ומתווספות לרצף ה-latent כמסגרות נקיות. תמונות מאוחרות יותר משנות את גודלן בהתאם לתמונה הראשונה, וה-latent הנדגם צריך להתאים לגודלה."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "ללא VAE, התמונות מתנות את מקודד הטקסט רק דרך מגדל הראייה."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

@@ -1932,7 +1932,7 @@
   },
   "ByteDanceSeedreamLayerSeparationNode": {
     "description": "Décompose une image en une plaque de fond et jusqu'à 16 couches transparentes repositionnables, chacune avec un ordre d'empilement, une boîte englobante, un nom et une description.",
-    "display_name": "ByteDance Seedream 5.0 Pro Séparation de Couches",
+    "display_name": "Séparation des calques ByteDance Seedream 5.0 Pro (héritée)",
     "inputs": {
       "control_after_generate": {
         "name": "contrôle après génération"
@@ -1990,6 +1990,62 @@
       "5": {
         "name": "pile_de_couches",
         "tooltip": "Document de couches prêt à éditer pour Créer une Image à Couches : la plaque de base plus chaque élément comme sa propre couche nommée, découpée précisément à sa position réelle et ordre d'empilement. Connectez directement, ou étendez avec Ajouter une Couche."
+      }
+    }
+  },
+  "ByteDanceSeedreamLayerSeparationNodeV2": {
+    "description": "Décompose une image en une plaque d’arrière-plan et jusqu’à 16 calques transparents repositionnables, chacun avec un ordre d’empilement, une boîte englobante, un nom et une description.",
+    "display_name": "Séparation des calques ByteDance Seedream 5.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_crop_layers": {
+        "name": "crop_layers"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_prompt_optimization": {
+        "name": "prompt_optimization"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_size": {
+        "name": "taille"
+      },
+      "model_watermark": {
+        "name": "filigrane"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "base_image",
+        "tooltip": "L’image de base (plaque d’arrière-plan) sur laquelle les calques s’empilent."
+      },
+      "1": {
+        "name": "base_mask",
+        "tooltip": "Transparence de l’image de base (1 = transparent, convention LoadImage) ; actuellement toujours entièrement opaque."
+      },
+      "2": {
+        "name": "layers",
+        "tooltip": "Calques transparents ordonnés de bas en haut. Mode canevas complet : placés sur un canevas noir de la taille de la base à la position de leur boîte englobante. Mode taille minimale : recadrés à leur boîte englobante, ancrés en haut à gauche et complétés jusqu’à la taille du plus grand calque."
+      },
+      "3": {
+        "name": "masks",
+        "tooltip": "Transparence par calque, alignée par index avec le lot de calques (1 = transparent, convention LoadImage). Pour une composition de type ImageCompositeMasked, ajoutez d’abord InvertMask."
+      },
+      "4": {
+        "name": "bboxes",
+        "tooltip": "Une boîte de placement par calque, alignée par index avec le lot de calques (envoyez les deux, ainsi que masks, dans Layers From Bounding Boxes pour reconstruire le placement de chaque calque) : {x, y, width, height, metadata: {name, desc, z_index, native_size, content_rect, flags}}. content_rect = [left, top, width, height] est la région de contenu du calque dans son propre cadre ; elle est placée sur le canevas à la position de la boîte, plus ce décalage."
+      },
+      "5": {
+        "name": "layer_stack",
+        "tooltip": "Document de calques prêt à modifier pour Create Layered Image : la plaque de base et chaque élément dans son propre calque nommé, recadré au plus juste, à sa position et dans son ordre d’empilement réels. Connectez-le directement ou étendez-le avec Add Layer."
       }
     }
   },
@@ -16893,7 +16949,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "Détermine dans quelle mesure le modèle raisonne avant de répondre. « default » laisse le choix au modèle. Les niveaux pris en charge diffèrent selon le modèle : GPT-6 Astra low-max, GPT-5.6 none-max (sans minimal), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, série o low-high ; GPT-4.1 n’a pas de raisonnement. Les niveaux non pris en charge sont rejetés avant l’envoi de la requête."
+        "tooltip": "Détermine le niveau de raisonnement du modèle avant de répondre. « default » laisse le choix au modèle. Les niveaux pris en charge diffèrent selon le modèle : GPT-6 Astra low-max, GPT-6 Sol/Luna et GPT-5.6 none-max (sans minimal), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, série o low-high ; GPT-4.1 ne propose aucun raisonnement. Les niveaux non pris en charge sont rejetés avant l’envoi de la requête."
       },
       "truncation": {
         "name": "troncature",
@@ -23884,6 +23940,30 @@
       },
       "2": {
         "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeMingImageEdit": {
+    "display_name": "Encodage de texte Ming Image Edit",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Images de référence facultatives, visibles par l’encodeur de texte et ajoutées à la séquence latent comme images propres. Les images suivantes sont redimensionnées à la taille de la première, et le latent échantillonné doit correspondre à sa taille."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Sans VAE, les images ne conditionnent l’encodeur de texte qu’au moyen de la tour de vision."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
