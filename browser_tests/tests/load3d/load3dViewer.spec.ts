@@ -1,6 +1,5 @@
 import { expect } from '@playwright/test'
 
-import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { load3dViewerTest as test } from '@e2e/fixtures/helpers/Load3DFixtures'
 
@@ -52,37 +51,4 @@ test.describe('Load3D Viewer', { tag: '@vue-nodes' }, () => {
       await viewer.waitForClosed()
     }
   )
-
-  test('keeps the full-screen viewer inside the visible workspace inset', async ({
-    comfyPage,
-    load3d,
-    viewer
-  }) => {
-    await comfyPage.page.setViewportSize({ width: 500, height: 800 })
-    const agentPanel = new AgentPanel(comfyPage.page)
-    await agentPanel.open()
-    await load3d.openViewerButton.click()
-    await viewer.waitForOpen()
-
-    const viewport = comfyPage.page.viewportSize()
-    expect(viewport).not.toBeNull()
-    if (!viewport) throw new Error('Viewport size not available')
-
-    await expect(async () => {
-      const dialogBox = await viewer.dialog.boundingBox()
-      const panelBox = await comfyPage.page
-        .getByTestId('docked-agent-panel')
-        .boundingBox()
-      expect(dialogBox).not.toBeNull()
-      expect(panelBox).not.toBeNull()
-      if (!dialogBox || !panelBox) return
-
-      expect(dialogBox.x).toBeGreaterThanOrEqual(0)
-      expect(dialogBox.y).toBeGreaterThanOrEqual(0)
-      expect(dialogBox.x + dialogBox.width).toBeLessThanOrEqual(panelBox.x + 1)
-      expect(dialogBox.y + dialogBox.height).toBeLessThanOrEqual(
-        viewport.height + 1
-      )
-    }).toPass({ timeout: 5000 })
-  })
 })

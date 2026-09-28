@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { load3dAgentTest as test } from '@e2e/fixtures/load3dAgentFixture'
+import { Load3DViewerHelper } from '@e2e/tests/load3d/Load3DViewerHelper'
 
 test.describe('Load3D agent updates', { tag: '@cloud' }, () => {
   test.describe.configure({ timeout: 60_000 })
@@ -50,5 +51,40 @@ test.describe('Load3D agent updates', { tag: '@cloud' }, () => {
         contentType: 'image/png'
       })
     })
+  })
+
+  test('keeps the full-screen viewer inside the visible workspace inset', async ({
+    load3dAgent,
+    page
+  }) => {
+    load3dAgent.setModelFromAgent('cube.obj')
+    await load3dAgent.expectModel('cube.obj')
+    await load3dAgent.viewer.waitForModelLoaded()
+
+    const viewer = new Load3DViewerHelper(page)
+    await load3dAgent.viewer.openViewerButton.click()
+    await viewer.waitForOpen()
+    await page.setViewportSize({ width: 500, height: 800 })
+
+    const viewport = page.viewportSize()
+    expect(viewport).not.toBeNull()
+    if (!viewport) throw new Error('Viewport size not available')
+
+    await expect(async () => {
+      const dialogBox = await viewer.dialog.boundingBox()
+      const panelBox = await page
+        .getByTestId('docked-agent-panel')
+        .boundingBox()
+      expect(dialogBox).not.toBeNull()
+      expect(panelBox).not.toBeNull()
+      if (!dialogBox || !panelBox) return
+
+      expect(dialogBox.x).toBeGreaterThanOrEqual(0)
+      expect(dialogBox.y).toBeGreaterThanOrEqual(0)
+      expect(dialogBox.x + dialogBox.width).toBeLessThanOrEqual(panelBox.x + 1)
+      expect(dialogBox.y + dialogBox.height).toBeLessThanOrEqual(
+        viewport.height + 1
+      )
+    }).toPass({ timeout: 5000 })
   })
 })
