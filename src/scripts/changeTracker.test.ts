@@ -289,6 +289,7 @@ describe('ChangeTracker', () => {
       const editor = document.createElement('div')
       Object.defineProperty(editor, 'isContentEditable', { value: true })
       vi.spyOn(document, 'activeElement', 'get').mockReturnValue(editor)
+      useQueueSettingsStore().mode = 'disabled'
       const querySelectorAll = vi.spyOn(document, 'querySelectorAll')
       const frames: FrameRequestCallback[] = []
       vi.spyOn(window, 'requestAnimationFrame').mockImplementation((frame) =>
@@ -308,6 +309,35 @@ describe('ChangeTracker', () => {
 
       expect(querySelectorAll).not.toHaveBeenCalled()
       expect(frames).toHaveLength(0)
+    })
+
+    it('captures editor changes when store-backed auto-queue uses change mode', async () => {
+      const editor = document.createElement('input')
+      vi.spyOn(document, 'activeElement', 'get').mockReturnValue(editor)
+      useQueueSettingsStore().mode = 'change'
+      app.ui.autoQueueEnabled = false
+      const tracker = createTracker(createState(1))
+      mockCanvasState(createState(2))
+      const frames: FrameRequestCallback[] = []
+      vi.spyOn(window, 'requestAnimationFrame').mockImplementation((frame) =>
+        frames.push(frame)
+      )
+      const addEventListener = vi
+        .spyOn(window, 'addEventListener')
+        .mockImplementation(() => {})
+      ChangeTracker.init()
+      const keydown = addEventListener.mock.calls.find(
+        ([type]) => type === 'keydown'
+      )?.[1]
+      if (typeof keydown !== 'function')
+        throw new Error('keydown listener missing')
+
+      keydown(new KeyboardEvent('keydown', { key: 'a' }))
+      expect(frames).toHaveLength(1)
+      await frames[0](0)
+
+      expect(dispatchedEventNames()).toContain('autoQueueGraphChanged')
+      expect(tracker.activeState.nodes).toHaveLength(2)
     })
   })
 

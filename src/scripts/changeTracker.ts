@@ -534,7 +534,7 @@ export class ChangeTracker {
 
         const activeEl = document.activeElement
         if (
-          (!app.ui.autoQueueEnabled || app.ui.autoQueueMode === 'instant') &&
+          !isAutoQueueOnChange() &&
           (activeEl?.tagName === 'INPUT' ||
             activeEl?.tagName === 'TEXTAREA' ||
             (activeEl instanceof HTMLElement && activeEl.isContentEditable))
@@ -552,7 +552,7 @@ export class ChangeTracker {
         requestAnimationFrame(async () => {
           let bindInputEl: Element | null = null
           // If we are auto queue in change mode then we do want to trigger on inputs
-          if (!app.ui.autoQueueEnabled || app.ui.autoQueueMode === 'instant') {
+          if (!isAutoQueueOnChange()) {
             bindInputEl = activeEl
           }
 
