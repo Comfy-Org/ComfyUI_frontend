@@ -45,6 +45,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
    * the panel gives way the moment it would meet the sidebar.
    */
   const reservedWorkspaceWidth = ref(SIDE_TOOLBAR_WIDTH + SIDEBAR_MIN_WIDTH)
+  const hasReportedExhaustionImpression = ref(false)
   const dismissedSelectionSignature = ref<string | null>(null)
   const workflowTargetSelection = ref<WorkflowTargetSelection>({
     status: 'uninitialized'
@@ -172,6 +173,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     isVisible,
     hasEverOpened,
     gateSettled,
+    hasReportedExhaustionImpression,
     width,
     isMaximized,
     dismissedSelectionSignature,
