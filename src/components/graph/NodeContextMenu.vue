@@ -47,7 +47,7 @@ import {
   registerNodeOptionsInstance,
   useMoreOptionsMenu
 } from '@/composables/graph/useMoreOptionsMenu'
-import type { MenuOption } from '@/composables/graph/useMoreOptionsMenu'
+import type { MenuOption } from '@/composables/graph/menuOption'
 import { useNodeCustomization } from '@/composables/graph/useNodeCustomization'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 

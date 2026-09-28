@@ -6,7 +6,7 @@ import * as apiModule from '@/scripts/api'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import { usePartnerNodesInGraph } from './usePartnerNodesInGraph'

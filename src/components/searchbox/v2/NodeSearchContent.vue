@@ -120,8 +120,8 @@ import { RootCategory } from '@/components/searchbox/v2/rootCategories'
 import type { RootCategoryId } from '@/components/searchbox/v2/rootCategories'
 import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   BLUEPRINT_CATEGORY,
@@ -153,7 +153,6 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const { flags } = useFeatureFlags()
 const nodeDefStore = useNodeDefStore()
-const nodeFrequencyStore = useNodeFrequencyStore()
 const nodeBookmarkStore = useNodeBookmarkStore()
 
 const nodeAvailability = computed(() => {
@@ -262,7 +261,7 @@ function onSelectCategory(category: RootCategoryId) {
 
 const searchResults = computed(() => {
   if (!searchQuery.value && filters.length === 0) {
-    return nodeFrequencyStore.topNodeDefs
+    return nodeDefStore.topNodeDefs
   }
   return nodeDefStore.nodeSearchService.searchNode(searchQuery.value, filters, {
     limit: 64
@@ -288,7 +287,7 @@ function getMostRelevantResults(baseNodes: ComfyNodeDefImpl[]) {
     const rootSet = new Set(baseNodes.map((n) => n.name))
     return searched.filter((n) => rootSet.has(n.name))
   }
-  return rootFilter.value ? baseNodes : nodeFrequencyStore.topNodeDefs
+  return rootFilter.value ? baseNodes : nodeDefStore.topNodeDefs
 }
 
 function getCategoryResults(baseNodes: ComfyNodeDefImpl[], category: string) {
