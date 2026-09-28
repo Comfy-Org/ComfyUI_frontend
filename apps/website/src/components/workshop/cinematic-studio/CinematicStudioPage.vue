@@ -56,15 +56,9 @@ onMounted(() => {
   if (requestedApp) showApp(requestedApp, 'replace')
 })
 
-// Back and Forward between the two apps stay in this document, so the page's
-// beforeunload guard never fires: a rendering take would be cancelled with no
-// warning. Put the address back and ask first, as an in-page switch does.
 useEventListener('popstate', () => {
   const visited = workshopAppAt(window.location.pathname, locale)
-  if (!visited || visited === app.value) return
-  if (!busy()) return setApp(visited)
-  window.history.pushState(null, '', appUrl(app.value))
-  pendingSwitch.value = () => showApp(visited, 'push')
+  if (visited) setApp(visited)
 })
 
 function setApp(id: WorkshopAppId) {
@@ -73,17 +67,13 @@ function setApp(id: WorkshopAppId) {
   if (name) document.title = `${name} - Comfy`
 }
 
-function appUrl(id: WorkshopAppId): URL {
+function showApp(id: WorkshopAppId, history: 'push' | 'replace') {
+  setApp(id)
   const url = new URL(window.location.href)
   url.pathname = `${workshopAppHref(id, locale)}/`
   url.searchParams.delete('app')
-  return url
-}
-
-function showApp(id: WorkshopAppId, history: 'push' | 'replace') {
-  setApp(id)
-  if (history === 'push') window.history.pushState(null, '', appUrl(id))
-  else window.history.replaceState(window.history.state, '', appUrl(id))
+  if (history === 'push') window.history.pushState(null, '', url)
+  else window.history.replaceState(window.history.state, '', url)
 }
 
 function remember(key: string, value: string) {
