@@ -365,6 +365,15 @@ export const useModelStore = defineStore('models', () => {
   async function loadModelFolders(): Promise<boolean> {
     const prepared = await prepareModelFolders()
     if (!prepared) return false
+    const previouslyLoaded = modelFolders.value
+      .filter((folder) => folder.state !== ResourceState.Uninitialized)
+      .map((folder) => folder.directory)
+    await Promise.all(
+      previouslyLoaded
+        .filter((name) => name in prepared.folders)
+        .map((name) => prepared.folders[name].load())
+    )
+    if (prepared.requestId !== modelFoldersRequestId) return false
     commitModelFolders(prepared)
     return true
   }
@@ -446,26 +455,7 @@ export const useModelStore = defineStore('models', () => {
    */
   async function reloadModels(): Promise<boolean> {
     assetService.invalidateModelBuckets()
-    // Loading counts as previously loaded: a scan-complete reload can land
-    // while the eager load is still in flight, and replacing those folder
-    // objects without re-loading them would strand the sidebar on
-    // uninitialized folders whose original loads finish into detached
-    // objects.
-    const previouslyLoaded = modelFolders.value
-      .filter((folder) => folder.state !== ResourceState.Uninitialized)
-      .map((folder) => folder.directory)
-    const prepared = await prepareModelFolders()
-    if (!prepared) return false
-    await Promise.all(
-      previouslyLoaded
-        .filter((name) => name in prepared.folders)
-        .map((name) => prepared.folders[name].load())
-    )
-    // Re-check before the swap: a newer request may have started while the
-    // off-screen contents loaded.
-    if (prepared.requestId !== modelFoldersRequestId) return false
-    commitModelFolders(prepared)
-    return true
+    return loadModelFolders()
   }
 
   /**

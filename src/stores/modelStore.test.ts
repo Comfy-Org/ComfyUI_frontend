@@ -475,10 +475,11 @@ describe('useModelStore', () => {
       resolveContents([{ name: 'stale.safetensors', pathIndex: 0 }])
       await refresh
 
-      const entry = store.modelFolders.find(
-        (f) => f.directory === 'checkpoints'
-      )!
-      expect(entry.state).toBe(ResourceState.Uninitialized)
+      expect(store.models.map((model) => model.file_name)).toEqual([
+        'sdxl.safetensors',
+        'sdv15.safetensors',
+        'noinfo.safetensors'
+      ])
     })
 
     it('does not resurrect a stale folder over a fresher structure', async () => {
