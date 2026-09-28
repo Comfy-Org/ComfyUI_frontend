@@ -13,7 +13,7 @@ test.describe(
   { tag: ['@cloud', '@vue-nodes'] },
   () => {
     test.describe('wire evidence', () => {
-      test.use({ conversationCase: WIRING_CASE })
+      test.use({ conversationCase: WIRING_CASE, replayTiming: 'recorded' })
 
       // The second turn's only edit is a connect, so what the canvas shows after
       // it is the wire itself: the app's own render loop paints it, and the

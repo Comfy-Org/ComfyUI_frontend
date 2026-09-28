@@ -11,7 +11,6 @@ import { toNodeId } from '@/types/nodeId'
 import type {
   AgentCancelAccepted,
   AgentMessages,
-  AgentTurnAccepted,
   AgentWsEvent
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
@@ -637,13 +636,14 @@ export class AgentConversationHarness {
       const request = route.request()
       if (request.method() === 'POST') {
         this.postedTurns += 1
-        const accepted: AgentTurnAccepted = {
-          thread_id: THREAD_ID,
-          message_id: turnId(this.postedTurns - 1)
-        }
         return route.fulfill({
-          ...jsonRoute(accepted),
-          status: 202
+          status: 202,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            thread_id: THREAD_ID,
+            message_id: turnId(this.postedTurns - 1),
+            workflow_id: this.conversation.workflow.id
+          })
         })
       }
       const history: AgentMessages = []
