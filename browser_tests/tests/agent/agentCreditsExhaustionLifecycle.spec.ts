@@ -49,11 +49,29 @@ test.describe(
       getWebSocket
     }) => {
       let billingStatus = FUNDED_STATUS
+      let holdNextFundedRefresh = false
+      let markFundedRefreshStarted!: () => void
+      let releaseFundedRefresh!: () => void
+      const fundedRefreshStarted = new Promise<void>((resolve) => {
+        markFundedRefreshStarted = resolve
+      })
+      const fundedRefreshReleased = new Promise<void>((resolve) => {
+        releaseFundedRefresh = resolve
+      })
       await page.route('**/api/billing/status', async (route) => {
+        const response = billingStatus
+        if (
+          holdNextFundedRefresh &&
+          response.scoped_effective_has_funds?.agent
+        ) {
+          holdNextFundedRefresh = false
+          markFundedRefreshStarted()
+          await fundedRefreshReleased
+        }
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify(billingStatus)
+          body: JSON.stringify(response)
         })
       })
       await page.reload()
@@ -68,7 +86,8 @@ test.describe(
 
       async function completeTurn(
         prompt: string,
-        nextStatus: BillingStatusResponse
+        nextStatus: BillingStatusResponse,
+        expectOpenPanel = true
       ): Promise<void> {
         const acceptedResponse = page.waitForResponse(
           (response) =>
@@ -100,9 +119,11 @@ test.describe(
           }
         })
         await billingRefresh
-        await expect(
-          agentPanel.root.getByRole('button', { name: enMessages.agent.send })
-        ).toBeVisible()
+        if (expectOpenPanel) {
+          await expect(
+            agentPanel.root.getByRole('button', { name: enMessages.agent.send })
+          ).toBeVisible()
+        }
       }
 
       await completeTurn('Build a red fox workflow', EXHAUSTED_STATUS)
@@ -118,7 +139,20 @@ test.describe(
       await agentPanel.open()
       await expect(paywall).toBeVisible()
 
-      await completeTurn('Make the lighting warmer', FUNDED_STATUS)
+      holdNextFundedRefresh = true
+      const fundedTurn = completeTurn(
+        'Make the lighting warmer',
+        FUNDED_STATUS,
+        false
+      )
+      await fundedRefreshStarted
+      await agentPanel.root
+        .getByRole('button', { name: enMessages.agent.close })
+        .click()
+      await expect(agentPanel.root).toHaveCount(0)
+      releaseFundedRefresh()
+      await fundedTurn
+      await agentPanel.open()
       await expect(paywall).toHaveCount(0)
 
       await completeTurn('Add shallow depth of field', EXHAUSTED_STATUS)
