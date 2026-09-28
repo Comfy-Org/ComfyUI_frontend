@@ -58,4 +58,29 @@ describe('DragAndScale.fitToBounds', () => {
     expect(dragAndScale.offset[0]).toBeCloseTo(150)
     expect(dragAndScale.offset[1]).toBeCloseTo(75)
   })
+
+  it('centers and scales bounds inside the supplied viewport', () => {
+    const dragAndScale = new DragAndScale(createCanvas(1000, 500))
+
+    dragAndScale.fitToBounds([0, 0, 500, 250], {
+      viewport: [200, 0, 600, 500]
+    })
+
+    expect(dragAndScale.scale).toBeCloseTo(0.9)
+    expect((250 + dragAndScale.offset[0]) * dragAndScale.scale).toBeCloseTo(500)
+    expect((125 + dragAndScale.offset[1]) * dragAndScale.scale).toBeCloseTo(250)
+  })
+
+  it('returns early for an empty supplied viewport', () => {
+    const dragAndScale = new DragAndScale(createCanvas(1000, 500))
+    dragAndScale.offset = [13, 29]
+    dragAndScale.scale = 2
+
+    dragAndScale.fitToBounds([0, 0, 500, 250], {
+      viewport: [200, 0, 0, 500]
+    })
+
+    expect(dragAndScale.offset).toEqual([13, 29])
+    expect(dragAndScale.scale).toBe(2)
+  })
 })
