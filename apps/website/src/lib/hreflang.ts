@@ -1,3 +1,4 @@
+import { isNoindexPathname } from '../config/indexing'
 import type { Hreflang, Locale } from '../config/locales'
 import {
   LOCALE_CODES,
@@ -27,50 +28,15 @@ export function hreflangAlternates(
   origin: string
 ): Alternate[] {
   const en = englishPath(pathname)
-<<<<<<< HEAD
-  // Japanese has one page and no twin rule yet, so anything under /ja/ emits
-  // nothing rather than a cluster. Without this the homepage advertises
-  // /zh-CN/ja/, which does not exist: the same lie this function's English-only
-  // guard exists to prevent. Read off the English path so a locale-prefixed
-  // request is suppressed too. Clustering ja properly is BE-11285.
-  if (en === '/ja' || en.startsWith('/ja/')) return []
-  if (en === '/404' || isLocaleInvariantPath(en)) return []
-  const zh = `${LOCALE_PREFIX}${en === '/' ? '' : en}`
-  if (isNoindexPathname(en) || isNoindexPathname(zh)) return []
-  const enHref = new URL(withSlash(en), origin).href
-  return [
-    { hreflang: 'en', href: enHref },
-    {
-      hreflang: 'zh-CN',
-      href: new URL(withSlash(zh), origin).href
-    },
-    { hreflang: 'x-default', href: enHref }
-  ]
-||||||| d37324f7b
-  // Japanese has one page and no twin rule yet, so anything under /ja/ emits
-  // nothing rather than a cluster. Without this the homepage advertises
-  // /zh-CN/ja/, which does not exist: the same lie this function's English-only
-  // guard exists to prevent. Read off the English path so a locale-prefixed
-  // request is suppressed too. Clustering ja properly is BE-11285.
-  if (en === '/ja' || en.startsWith('/ja/')) return []
-  if (en === '/404' || isLocaleInvariantPath(en)) return []
-  const enHref = new URL(withSlash(en), origin).href
-  return [
-    { hreflang: 'en', href: enHref },
-    {
-      hreflang: 'zh-CN',
-      href: new URL(
-        withSlash(`${LOCALE_PREFIX}${en === '/' ? '' : en}`),
-        origin
-      ).href
-    },
-    { hreflang: 'x-default', href: enHref }
-  ]
-=======
-  const locales = LOCALE_CODES.filter((locale) =>
-    supportsLocaleRoute(locale, en)
-  )
-  if (locales.length === 0) return []
+  const locales = LOCALE_CODES.filter((locale) => {
+    if (!supportsLocaleRoute(locale, en)) return false
+    const localePath = `${LOCALES[locale].prefix}${en === '/' ? '' : en}`
+    return !isNoindexPathname(localePath)
+  })
+  // A cluster needs at least one translation to link to; a lone indexable
+  // page (or one whose only published locale is itself noindexed, like
+  // /comfy-agent) has nothing to pair with, so hreflang has nothing to say.
+  if (locales.length < 2) return []
 
   const enHref = new URL(withRouteSlash(en), origin).href
   const alternates: Alternate[] = locales.map((locale) => ({
@@ -82,7 +48,6 @@ export function hreflangAlternates(
   }))
   alternates.push({ hreflang: 'x-default', href: enHref })
   return alternates
->>>>>>> refs/rewritten/origin-main
 }
 
 export function sitemapAlternates(
