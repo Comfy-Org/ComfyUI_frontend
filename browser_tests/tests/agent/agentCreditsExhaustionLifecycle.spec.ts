@@ -1,41 +1,8 @@
-import type { WebSocketRoute } from '@playwright/test'
-import { expect, mergeTests } from '@playwright/test'
-
-import type { BillingStatusResponse } from '@comfyorg/ingest-types'
-
-import { waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
-import { webSocketFixture } from '@e2e/fixtures/ws'
+import { expect } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-import { zAgentTurnAccepted } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
-import { agentTest } from '@e2e/tests/agent/agentPanelMocks'
-
-const test = mergeTests(agentTest, webSocketFixture)
-
-const FUNDED_STATUS: BillingStatusResponse = {
-  is_active: true,
-  has_funds: true,
-  scoped_effective_has_funds: { agent: true },
-  subscription_status: 'active',
-  subscription_tier: 'PRO',
-  subscription_duration: 'MONTHLY',
-  billing_status: 'paid',
-  max_seats: 1,
-  occupied_seats: 1,
-  team_credit_stop: null,
-  scheduled_change: null
-}
-
-const EXHAUSTED_STATUS: BillingStatusResponse = {
-  ...FUNDED_STATUS,
-  scoped_effective_has_funds: { agent: false }
-}
-
-function pushEvent(ws: WebSocketRoute, event: AgentWsEvent): void {
-  ws.send(JSON.stringify(event))
-}
+import { test } from '@e2e/tests/agent/agentCreditsExhaustionLifecycleMocks'
 
 test.describe(
   'Agent standing credits-exhaustion lifecycle',
@@ -44,125 +11,72 @@ test.describe(
     test.use({ connectWebSocketToServer: false })
 
     test('refreshes, survives remount, recovers, and re-arms without a send refusal', async ({
-      page,
+      agentBilling,
       agentPanel,
-      getWebSocket
+      creditsLifecycle
     }) => {
-      let billingStatus = FUNDED_STATUS
-      let holdNextFundedRefresh = false
-      let markFundedRefreshStarted!: () => void
-      let releaseFundedRefresh!: () => void
-      const fundedRefreshStarted = new Promise<void>((resolve) => {
-        markFundedRefreshStarted = resolve
-      })
-      const fundedRefreshReleased = new Promise<void>((resolve) => {
-        releaseFundedRefresh = resolve
-      })
-      await page.route('**/api/billing/status', async (route) => {
-        const response = billingStatus
-        if (
-          holdNextFundedRefresh &&
-          response.scoped_effective_has_funds?.agent
-        ) {
-          holdNextFundedRefresh = false
-          markFundedRefreshStarted()
-          await fundedRefreshReleased
-        }
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify(response)
-        })
-      })
-      await page.reload()
-      await waitForCloudApp(page)
-
-      await agentPanel.open()
-      await agentPanel.selectWorkflow()
-      const ws = await getWebSocket()
       const paywall = agentPanel.root.getByRole('alert').filter({
         hasText: enMessages.agent.paywall.title
       })
+      const sendButton = agentPanel.root.getByRole('button', {
+        name: enMessages.agent.send
+      })
 
-      async function completeTurn(
-        prompt: string,
-        nextStatus: BillingStatusResponse,
-        expectOpenPanel = true
-      ): Promise<void> {
-        const acceptedResponse = page.waitForResponse(
-          (response) =>
-            response.request().method() === 'POST' &&
-            /\/api\/agent\/threads\/[^/]+\/messages$/.test(
-              new URL(response.url()).pathname
-            )
+      await agentPanel.open()
+      await agentPanel.selectWorkflow()
+
+      await test.step('show exhaustion after a successful turn', async () => {
+        await creditsLifecycle.completeTurn('Build a red fox workflow', false)
+        await expect(sendButton).toBeVisible()
+        await expect(paywall).toBeVisible()
+        await expect(paywall).toContainText(
+          enMessages.agent.paywall.body.subscribed
         )
-        await agentPanel.sendMessage(prompt)
-        const accepted = zAgentTurnAccepted.parse(
-          await (await acceptedResponse).json()
+      })
+
+      await test.step('preserve exhaustion across a panel remount', async () => {
+        await agentPanel.root
+          .getByRole('button', { name: enMessages.agent.close })
+          .click()
+        await expect(agentPanel.root).toHaveCount(0)
+        await agentPanel.open()
+        await expect(paywall).toBeVisible()
+      })
+
+      await test.step('apply accepted-turn recovery while the panel is closed', async () => {
+        const heldRefresh = agentBilling.holdNextFundedRefresh()
+        const completedTurn = creditsLifecycle.completeTurn(
+          'Make the lighting warmer',
+          true
         )
+        await heldRefresh.entered
+        await agentPanel.root
+          .getByRole('button', { name: enMessages.agent.close })
+          .click()
+        await expect(agentPanel.root).toHaveCount(0)
+        agentBilling.failSubsequentRefreshes()
+        heldRefresh.release()
+        await heldRefresh.completed
+        await completedTurn
+        await agentPanel.open()
+        await expect(paywall).toHaveCount(0)
+        agentBilling.resumeRefreshes()
+      })
+
+      await test.step('re-arm exhaustion after another successful turn', async () => {
+        await creditsLifecycle.completeTurn('Add shallow depth of field', false)
+        await expect(sendButton).toBeVisible()
+        await expect(paywall).toBeVisible()
+      })
+
+      await test.step('recover again and preserve the conversation', async () => {
+        await creditsLifecycle.completeTurn('Finish the workflow', true)
+        await expect(sendButton).toBeVisible()
+        await expect(paywall).toHaveCount(0)
         await expect(
-          agentPanel.root.getByRole('button', { name: enMessages.agent.stop })
+          agentPanel.root.getByText('Finish the workflow')
         ).toBeVisible()
-
-        billingStatus = nextStatus
-        const billingRefresh = page.waitForResponse(
-          (response) =>
-            response.request().method() === 'GET' &&
-            new URL(response.url()).pathname === '/api/billing/status'
-        )
-        pushEvent(ws, {
-          type: 'agent_message_done',
-          data: {
-            message_id: accepted.message_id,
-            thread_id: accepted.thread_id,
-            usage: null
-          }
-        })
-        await billingRefresh
-        if (expectOpenPanel) {
-          await expect(
-            agentPanel.root.getByRole('button', { name: enMessages.agent.send })
-          ).toBeVisible()
-        }
-      }
-
-      await completeTurn('Build a red fox workflow', EXHAUSTED_STATUS)
-      await expect(paywall).toBeVisible()
-      await expect(paywall).toContainText(
-        enMessages.agent.paywall.body.subscribed
-      )
-
-      await agentPanel.root
-        .getByRole('button', { name: enMessages.agent.close })
-        .click()
-      await expect(agentPanel.root).toHaveCount(0)
-      await agentPanel.open()
-      await expect(paywall).toBeVisible()
-
-      holdNextFundedRefresh = true
-      const fundedTurn = completeTurn(
-        'Make the lighting warmer',
-        FUNDED_STATUS,
-        false
-      )
-      await fundedRefreshStarted
-      await agentPanel.root
-        .getByRole('button', { name: enMessages.agent.close })
-        .click()
-      await expect(agentPanel.root).toHaveCount(0)
-      releaseFundedRefresh()
-      await fundedTurn
-      await agentPanel.open()
-      await expect(paywall).toHaveCount(0)
-
-      await completeTurn('Add shallow depth of field', EXHAUSTED_STATUS)
-      await expect(paywall).toBeVisible()
-
-      await completeTurn('Finish the workflow', FUNDED_STATUS)
-      await expect(paywall).toHaveCount(0)
-      await expect(
-        agentPanel.root.getByText('Finish the workflow')
-      ).toBeVisible()
+      })
     })
   }
 )
