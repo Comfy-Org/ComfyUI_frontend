@@ -14,12 +14,15 @@
  *
  * Usage: node .github/scripts/crdt-skew-override.mjs --spec <tarball-url>
  */
+/* global process */
+
 import { readFileSync, writeFileSync } from 'node:fs'
 
 const PACKAGE = '@comfyorg/comfy-multi-player'
 const WORKSPACE_FILE = 'pnpm-workspace.yaml'
 
 function parseArgs(argv) {
+  /** @type {{ spec: string | null, file: string }} */
   const args = { spec: null, file: WORKSPACE_FILE }
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === '--spec') args.spec = argv[++i]

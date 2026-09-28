@@ -13,6 +13,8 @@
  * Environment (supplied by the workflow):
  *   CMP_PACKAGE, CMP_SHA, CMP_SPEC, PINNED_VERSION, TESTS_OUTCOME
  */
+/* global process */
+
 import {
   appendFileSync,
   existsSync,
@@ -21,6 +23,7 @@ import {
 } from 'node:fs'
 
 function parseArgs(argv) {
+  /** @type {{ report: string | null, out: string | null }} */
   const args = { report: null, out: null }
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === '--report') args.report = argv[++i]
