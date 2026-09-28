@@ -46,6 +46,9 @@ function useFirstRunTourControllerInternal() {
   const desktopLayout = useBreakpoints(breakpointsTailwind).greaterOrEqual('md')
   const tourWorkflow = shallowRef<ComfyWorkflow | null>(null)
   const nudgeArmed = ref(false)
+  let rendererEnableOwner: symbol | undefined
+  let rendererEnableWrite: Promise<void> | undefined
+  let tourSetupOwner: symbol | undefined
   /** Only a tour walked to the end made a first result to be congratulated for. */
   const tourWasCompleted = ref(false)
 
@@ -234,13 +237,24 @@ function useFirstRunTourControllerInternal() {
   }
 
   async function cleanUpFailedTourStart(
+    ownership: symbol,
     enabledForTour: boolean,
     shouldCancel: () => boolean
   ) {
+    if (tourSetupOwner !== ownership) return
     releaseFirstRunTargets()
     tourWorkflow.value = null
-    if (enabledForTour && !shouldCancel()) {
-      await settingStore.set('Comfy.VueNodes.Enabled', false)
+    tourSetupOwner = undefined
+    if (
+      enabledForTour &&
+      rendererEnableOwner === ownership &&
+      !shouldCancel()
+    ) {
+      const write = settingStore.set('Comfy.VueNodes.Enabled', false)
+      rendererEnableWrite = write
+      await write
+      if (rendererEnableOwner === ownership) rendererEnableOwner = undefined
+      if (rendererEnableWrite === write) rendererEnableWrite = undefined
     }
   }
 
@@ -248,21 +262,44 @@ function useFirstRunTourControllerInternal() {
     return !shouldCancel() && !engine.activeTour && canvasContextHolds.value
   }
 
+  async function claimRendererForTour(ownership: symbol): Promise<boolean> {
+    if (rendererEnableOwner !== undefined) {
+      rendererEnableOwner = ownership
+      await rendererEnableWrite
+      if (!settingStore.get('Comfy.VueNodes.Enabled')) {
+        const write = settingStore.set('Comfy.VueNodes.Enabled', true)
+        rendererEnableWrite = write
+        await write
+        if (rendererEnableWrite === write) rendererEnableWrite = undefined
+      }
+      return true
+    }
+    if (settingStore.get('Comfy.VueNodes.Enabled')) return false
+
+    rendererEnableOwner = ownership
+    const write = settingStore.set('Comfy.VueNodes.Enabled', true)
+    rendererEnableWrite = write
+    await write
+    if (rendererEnableWrite === write) rendererEnableWrite = undefined
+    return true
+  }
+
   /** False when there is no tour to give; any renderer switch is undone. */
   async function beginTour(
     templateId?: string,
     shouldCancel: () => boolean = () => false
   ): Promise<boolean> {
+    const ownership = Symbol('first-run-tour-start')
     // Holds only ever end a tour that is already running, and only when they
     // change — a context lost before the tour opens (`?template=X&mode=linear`
     // boots straight into linear mode) never produces that change. Refused
     // here, ahead of the renderer switch below, so nothing is left to undo.
     if (!canBeginTour(shouldCancel)) return false
 
-    const enabledForTour = !settingStore.get('Comfy.VueNodes.Enabled')
-    if (enabledForTour) await settingStore.set('Comfy.VueNodes.Enabled', true)
+    const enabledForTour = await claimRendererForTour(ownership)
     if (shouldCancel()) return false
 
+    tourSetupOwner = ownership
     tourWorkflow.value = workflowStore.activeWorkflow ?? null
     runState.value = 'idle'
     nudgeArmed.value = false
@@ -280,7 +317,9 @@ function useFirstRunTourControllerInternal() {
       !shouldCancel() &&
       (await engine.startTour('firstRun'))
     if (!started) {
-      await cleanUpFailedTourStart(enabledForTour, shouldCancel)
+      await cleanUpFailedTourStart(ownership, enabledForTour, shouldCancel)
+    } else if (rendererEnableOwner === ownership) {
+      rendererEnableOwner = undefined
     }
     return started
   }

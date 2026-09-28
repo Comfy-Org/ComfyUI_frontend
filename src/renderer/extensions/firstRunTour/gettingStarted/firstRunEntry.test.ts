@@ -867,8 +867,33 @@ describe('useFirstRunEntry', () => {
       ).not.toHaveBeenCalled()
     })
 
+    it('cancels a deferred handoff across an account round trip', async () => {
+      let finishDismissal: (() => void) | undefined
+      vi.mocked(useSettingStore().set).mockImplementation(
+        () =>
+          new Promise<void>((resolve) => {
+            finishDismissal = resolve
+          })
+      )
+      const entry = useFirstRunEntry()
+      await entry.handleStartupOutcome('fresh')
+
+      const handoff = entry.dismissIntoFirstRunTour('image_z_image_turbo')
+      await vi.waitFor(() => expect(finishDismissal).toBeTypeOf('function'))
+      Object.assign(useAuthStore(), { userId: 'account-b' })
+      Object.assign(useAuthStore(), { userId: 'account-a' })
+      assert.exists(finishDismissal)
+      finishDismissal()
+      await handoff
+
+      expect(
+        mocks.beginTour,
+        'returning to the same account id must not revive an earlier session handoff'
+      ).not.toHaveBeenCalled()
+    })
+
     it('releases a pending handoff hold at the account boundary', async () => {
-      let finishTour!: (started: boolean) => void
+      let finishTour: ((started: boolean) => void) | undefined
       mocks.beginTour.mockImplementation(
         () =>
           new Promise<boolean>((resolve) => {
@@ -888,6 +913,7 @@ describe('useFirstRunEntry', () => {
         entry.firstRunHoldsScreen.value,
         "account B must not inherit account A's pending consent hold"
       ).toBe(false)
+      assert.exists(finishTour)
       finishTour(false)
       await handoff
       expect(entry.firstRunHoldsScreen.value).toBe(false)

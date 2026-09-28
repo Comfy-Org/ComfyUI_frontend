@@ -32,6 +32,7 @@ export const useFirstRunEntry = createSharedComposable(() => {
   const gettingStartedVisible = ref(false)
   const startupDecided = ref(false)
   const activeTourHandoffs = ref<ReadonlySet<symbol>>(new Set())
+  let authGeneration = 0
   const isDesktopWidth =
     useBreakpoints(breakpointsTailwind).greaterOrEqual('md')
 
@@ -44,6 +45,7 @@ export const useFirstRunEntry = createSharedComposable(() => {
     () => authStore.userId,
     (userId, previousUserId) => {
       if (previousUserId === undefined || userId === previousUserId) return
+      authGeneration++
       gettingStartedVisible.value = false
       activeTourHandoffs.value = new Set()
       const tourStore = useOnboardingTourStore()
@@ -173,14 +175,16 @@ export const useFirstRunEntry = createSharedComposable(() => {
   /** Dismisses into a tour without exposing the transition as a clear screen. */
   async function dismissIntoFirstRunTour(templateId: string): Promise<void> {
     const ownerId = authStore.userId
+    const ownerGeneration = authGeneration
     const ownership = Symbol('first-run-tour-handoff')
     activeTourHandoffs.value = new Set([...activeTourHandoffs.value, ownership])
     try {
       await dismissGettingStarted()
-      if (authStore.userId !== ownerId) return
+      if (authStore.userId !== ownerId || authGeneration !== ownerGeneration)
+        return
       await useFirstRunTourController().beginTour(
         templateId,
-        () => authStore.userId !== ownerId
+        () => authStore.userId !== ownerId || authGeneration !== ownerGeneration
       )
     } finally {
       if (activeTourHandoffs.value.has(ownership)) {
