@@ -1420,36 +1420,39 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
   it.for([
     {
       subscription: null,
-      effectiveFunds: true,
-      expectedVisible: false
-    },
-    {
-      subscription: null,
-      effectiveFunds: false,
-      expectedVisible: true
+      effectiveFunds: true
     },
     {
       subscription: 'STANDARD' as const,
-      effectiveFunds: true,
-      expectedVisible: false
-    },
-    {
-      subscription: 'STANDARD' as const,
-      effectiveFunds: false,
-      expectedVisible: true
+      effectiveFunds: true
     }
   ])(
-    'applies the subscription=$subscription effectiveFunds=$effectiveFunds contract',
-    async ({ subscription, effectiveFunds, expectedVisible }) => {
+    'stays hidden for subscription=$subscription with effective funds',
+    async ({ subscription, effectiveFunds }) => {
       paywallBilling.tier = subscription
       paywallHasFunds.value = effectiveFunds
       render(AgentPanelRoot, { global: { plugins: [i18n] } })
       await screen.findByRole('textbox')
 
-      if (!expectedVisible) {
-        expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
-        return
-      }
+      expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
+    }
+  )
+
+  it.for([
+    {
+      subscription: null,
+      effectiveFunds: false
+    },
+    {
+      subscription: 'STANDARD' as const,
+      effectiveFunds: false
+    }
+  ])(
+    'shows for subscription=$subscription without effective funds',
+    async ({ subscription, effectiveFunds }) => {
+      paywallBilling.tier = subscription
+      paywallHasFunds.value = effectiveFunds
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
       expect(await screen.findByTestId(STANDING)).toBeInTheDocument()
     }
@@ -1464,6 +1467,28 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
     expect(
       within(card).getByRole('button', { name: 'Add credits' })
     ).toBeInTheDocument()
+  })
+
+  it('allows a new turn while the standing card is visible', async () => {
+    const messageBodies: unknown[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (url.endsWith('/api/agent/threads'))
+          return json(200, agentThreadList())
+        messageBodies.push(JSON.parse(String(init?.body)))
+        return json(202, { thread_id: 'th-1', message_id: 'm-1' })
+      })
+    )
+    paywallHasFunds.value = false
+    workflowStore.activeWorkflow = addTab('workflows/current.json')
+    renderWithSelectedTarget()
+    await screen.findByTestId(STANDING)
+
+    await sendFromComposer('continue anyway')
+
+    expect(messageBodies).toHaveLength(1)
+    expect(messageBodies[0]).toMatchObject({ content: 'continue anyway' })
   })
 
   it('reports the impression against the credits_exhausted surface', async () => {
@@ -1674,6 +1699,47 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
         surface: 'credits_exhausted'
       })
     )
+  })
+
+  it('reports a new identity only after its standing card is shown', async () => {
+    const accountId = ref('account-a')
+    useCurrentUser().resolvedUserInfo = computed(() => ({
+      id: accountId.value
+    }))
+    paywallHasFunds.value = false
+    const firstPanel = render(AgentPanelRoot, {
+      global: { plugins: [i18n] }
+    })
+    await screen.findByTestId(STANDING)
+    await waitFor(() =>
+      expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
+    )
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await screen.findByRole('heading', { name: i18n.global.t('agent.history') })
+    accountId.value = 'account-b'
+    await nextTick()
+
+    expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.backToPreviousChat')
+      })
+    )
+    await waitFor(() =>
+      expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledTimes(2)
+    )
+
+    firstPanel.unmount()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByTestId(STANDING)
+
+    expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledTimes(2)
   })
 
   it('disappears once funds arrive', async () => {
