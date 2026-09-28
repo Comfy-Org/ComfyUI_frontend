@@ -5,6 +5,7 @@ import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
@@ -19,6 +20,8 @@ const mockToastAdd = vi.fn()
 const mockShouldUseWorkspaceBilling = vi.hoisted(() => ({ value: false }))
 
 vi.mock(import('@/composables/auth/useAuthActions'))
+
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock(import('@/composables/billing/useBillingRouting'))
 
@@ -98,11 +101,24 @@ async function clickBuyCredits() {
 
 describe('TopUpCreditsDialogContentLegacy', () => {
   beforeEach(() => {
+    const billing = useBillingContext()
+    vi.mocked(useBillingContext).mockReturnValue(billing)
+    billing.canAccessSubscriptionFeatures = computed(() => true)
     useBillingRouting().shouldUseWorkspaceBilling = computed(
       () => mockShouldUseWorkspaceBilling.value
     )
     vi.mocked(useSubscription().isSubscriptionEnabled).mockReturnValue(true)
     mockShouldUseWorkspaceBilling.value = false
+  })
+
+  it('does not start a purchase without subscription features', async () => {
+    useBillingContext().canAccessSubscriptionFeatures = computed(() => false)
+
+    renderDialog()
+    await clickBuyCredits()
+
+    expect(useAuthActions().purchaseCreditsDirect).not.toHaveBeenCalled()
+    expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
   })
 
   it('shows Plan & Credits after a successful Cloud purchase', async () => {

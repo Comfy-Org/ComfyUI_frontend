@@ -802,7 +802,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(useBillingContext().manageSubscription).toHaveBeenCalledOnce()
 
     await user.click(screen.getByRole('button', { name: 'Change plan' }))
-    expect(useBillingContext().showSubscriptionDialog).toHaveBeenCalledOnce()
+    expect(
+      useBillingDialogs().showSubscriptionRequiredDialog
+    ).toHaveBeenCalledOnce()
   })
 
   it('hides Change plan when the server denies seat changes to a client-side owner', () => {
@@ -973,7 +975,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
       screen.getByRole('button', { name: 'Resume subscription' })
     )
     expect(useBillingContext().resubscribe).toHaveBeenCalledOnce()
-    expect(useBillingContext().showSubscriptionDialog).not.toHaveBeenCalled()
+    expect(
+      useBillingDialogs().showSubscriptionRequiredDialog
+    ).not.toHaveBeenCalled()
   })
 
   it('drops the state card for an inactive ended subscription without a date', () => {
@@ -1060,7 +1064,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
       screen.getByRole('button', { name: 'Resume subscription' })
     )
 
-    expect(useBillingContext().showSubscriptionDialog).toHaveBeenCalledWith({
+    expect(
+      useBillingDialogs().showSubscriptionRequiredDialog
+    ).toHaveBeenCalledWith({
       reason: 'settings_billing_panel'
     })
     expect(useBillingContext().resubscribe).not.toHaveBeenCalled()
@@ -1269,7 +1275,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(useBillingContext().manageSubscription).toHaveBeenCalledOnce()
 
     await user.click(screen.getByRole('button', { name: 'Subscribe' }))
-    expect(useBillingContext().showSubscriptionDialog).toHaveBeenCalledOnce()
+    expect(
+      useBillingDialogs().showSubscriptionRequiredDialog
+    ).toHaveBeenCalledOnce()
   })
 
   it.for([

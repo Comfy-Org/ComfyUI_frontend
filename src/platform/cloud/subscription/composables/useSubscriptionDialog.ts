@@ -58,7 +58,6 @@ export const useSubscriptionDialog = () => {
   // Fired here — the choke point every paywall/pricing dialog variant passes
   // through — so both the legacy and workspace billing paths emit it.
   function trackModalOpened(reason?: PaymentIntentSource) {
-    // Resolved lazily to avoid the useBillingContext import cycle (see below).
     const { tier } = useBillingContext()
     useTelemetry()?.trackSubscription('modal_opened', {
       current_tier: tier.value?.toLowerCase(),
@@ -110,10 +109,6 @@ export const useSubscriptionDialog = () => {
     if (shouldUseUnifiedPricing.value) {
       // Existing per-member (legacy) team subscribers keep the old tier-based
       // team table; the unified credit-slider table is for everyone else.
-      // Resolved lazily (not at composable setup): these three composables form
-      // an import cycle (useBillingContext -> useWorkspaceBilling ->
-      // useSubscriptionDialog), so a setup-time read would deref the shared
-      // context before its state is constructed.
       const { currentPlanSlug, isLegacyTeamPlan, isTeamPlan } =
         useBillingContext()
       if (isLegacyTeamPlan.value) {

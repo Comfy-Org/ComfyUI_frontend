@@ -15,6 +15,7 @@ import { onBeforeUnmount, ref, watch } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -37,8 +38,8 @@ const emit = defineEmits<{
   subscribed: []
 }>()
 
-const { canAccessSubscriptionFeatures, showSubscriptionDialog, tier } =
-  useBillingContext()
+const { canAccessSubscriptionFeatures, tier } = useBillingContext()
+const { showSubscriptionRequiredDialog } = useBillingDialogs()
 const isAwaitingStripeSubscription = ref(false)
 
 watch(
@@ -56,7 +57,7 @@ const handleSubscribe = () => {
     current_tier: tier.value?.toLowerCase()
   })
   isAwaitingStripeSubscription.value = true
-  showSubscriptionDialog({ reason: 'subscribe_now_button' })
+  void showSubscriptionRequiredDialog({ reason: 'subscribe_now_button' })
 }
 
 onBeforeUnmount(() => {

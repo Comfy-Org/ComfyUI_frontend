@@ -158,6 +158,7 @@ import { creditsToUsd, usdToCredits } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
 import FormattedNumberStepper from '@/components/ui/stepper/FormattedNumberStepper.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useTelemetry } from '@/platform/telemetry'
 import { usePendingTopup } from '@/composables/billing/usePendingTopup'
@@ -172,6 +173,7 @@ const { isInsufficientCredits = false } = defineProps<{
 
 const { t } = useI18n()
 const authActions = useAuthActions()
+const { canAccessSubscriptionFeatures } = useBillingContext()
 const dialogStore = useDialogStore()
 const settingsDialog = useSettingsDialog()
 const telemetry = useTelemetry()
@@ -248,6 +250,7 @@ function handleClose(clearTracking = true) {
 async function handleBuy() {
   // Prevent double-clicks
   if (loading.value || !isValidAmount.value) return
+  if (!canAccessSubscriptionFeatures.value) return
 
   loading.value = true
   try {

@@ -25,7 +25,6 @@ import { until, useEventListener } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, shallowRef } from 'vue'
 
-import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
@@ -45,8 +44,8 @@ import type {
   SubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApiUrl } from '@/platform/workspace/api/workspaceApiUrl'
+import { refreshBilling } from '@/platform/workspace/billing/billingRefresh'
 import { needsCustomerAttention } from '@/platform/workspace/billing/customerAttention'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -325,12 +324,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
 
   async function settleResumed(state: BillingOperationState) {
     if (state.phase === 'succeeded') {
-      const billingContext = useBillingContext()
-      await Promise.allSettled([
-        billingContext.fetchStatus(),
-        billingContext.fetchBalance(),
-        useBillingCapabilities().refresh()
-      ])
+      await refreshBilling('account')
       useDialogStore().closeDialog({ key: 'top-up-credits' })
       useSettingsDialog().show(isCloud ? 'workspace' : 'credits')
       toastStore.add({
@@ -384,7 +378,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     amountCents: number
   ): Promise<CreateTopupResponse | undefined> {
     const result = await sdk.topup.createTopupCheckout({ amountCents })
-    if (result.status === 'ok') void useBillingCapabilities().refresh()
+    if (result.status === 'ok') void refreshBilling('capabilities')
     return projectTopupResult(result, amountCents)
   }
 
@@ -413,21 +407,12 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
 
   // What the poller refreshes when one of its operations succeeds, so the
   // panels read the same state whichever rail settled the operation.
-  async function refreshAfterCancel(): Promise<void> {
-    const billingContext = useBillingContext()
-    await Promise.allSettled([
-      billingContext.fetchStatus(),
-      billingContext.fetchBalance(),
-      useBillingCapabilities().refresh()
-    ])
+  function refreshAfterCancel(): Promise<void> {
+    return refreshBilling('account')
   }
 
-  async function refreshAfterSubscriptionChange(): Promise<void> {
-    const billingContext = useBillingContext()
-    await Promise.allSettled([
-      billingContext.reconcileSubscriptionSuccess(),
-      useBillingCapabilities().refresh()
-    ])
+  function refreshAfterSubscriptionChange(): Promise<void> {
+    return refreshBilling('subscription')
   }
 
   function cancelSubscription(): Promise<SubscriptionRailOutcome> {
