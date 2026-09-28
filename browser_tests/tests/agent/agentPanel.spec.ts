@@ -1,3 +1,5 @@
+import assert from 'node:assert/strict'
+
 import type { WebSocketRoute } from '@playwright/test'
 import { expect, mergeTests } from '@playwright/test'
 
@@ -275,9 +277,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
       await expect.poll(() => postedMessages.length).toBe(2)
       expect(acceptedTurns).toHaveLength(2)
       const secondTurn = acceptedTurns.at(-1)
-      if (secondTurn === undefined) {
-        throw new Error('No second Agent turn was accepted')
-      }
+      assert(secondTurn)
       pushEvent(
         ws,
         zAgentWsEvent.parse({
