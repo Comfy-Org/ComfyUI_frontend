@@ -96,8 +96,8 @@ test.describe(
       const submittedPrompt = await realign.submitAndReadPrompt()
       expect(Object.keys(submittedPrompt).sort()).toEqual([
         String(SOURCE_NODE_ID),
-         TARGET_ID
-       ])
-     })
+        TARGET_ID
+      ])
+    })
   }
 )
