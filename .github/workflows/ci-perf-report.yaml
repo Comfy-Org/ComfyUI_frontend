@@ -57,14 +57,54 @@ jobs:
       - name: Start ComfyUI server
         uses: ./.github/actions/start-comfyui-server
 
-      # PRs run each test once to keep wall time bounded; main runs 3× so the
+      # PRs run each test twice to expose noise; main runs 3× so the
       # baseline saved to perf-data has enough samples to median over noise.
-      - name: Run performance tests
-        id: perf
+      - name: Run localhost performance tests
+        id: perf_localhost
         continue-on-error: true
         env:
           PERF_REPEAT: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && '3' || '2' }}
-        run: pnpm exec playwright test --project=performance --workers=1 --repeat-each=$PERF_REPEAT
+        run: pnpm exec playwright test --project=performance --workers=1 --repeat-each="$PERF_REPEAT" --grep-invert @cloud
+
+      - name: Preserve localhost performance metrics
+        if: always() && hashFiles('test-results/perf-metrics.json') != ''
+        run: mv test-results/perf-metrics.json /tmp/perf-metrics-localhost.json
+
+      # Cloud-only surfaces such as the Agent panel are compiled out of the
+      # localhost production artifact. Rebuild before measuring them instead
+      # of silently timing out against a UI that cannot expose the workload.
+      - name: Build cloud frontend for cloud performance tests
+        run: pnpm build:cloud
+        env:
+          VITE_USE_LEGACY_DEFAULT_GRAPH: 'true'
+
+      - name: Run cloud performance tests
+        id: perf_cloud
+        continue-on-error: true
+        env:
+          DISTRIBUTION: cloud
+          PERF_REPEAT: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && '3' || '2' }}
+        run: pnpm exec playwright test --project=performance --workers=1 --repeat-each="$PERF_REPEAT" --grep @cloud
+
+      - name: Merge distribution performance metrics
+        if: always()
+        run: |
+          if [ -f /tmp/perf-metrics-localhost.json ] && [ -f test-results/perf-metrics.json ]; then
+            node -e '
+              const fs = require("node:fs");
+              const localhost = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+              const cloud = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
+              process.stdout.write(JSON.stringify({
+                ...cloud,
+                measurements: [...localhost.measurements, ...cloud.measurements]
+              }));
+            ' /tmp/perf-metrics-localhost.json test-results/perf-metrics.json \
+              > /tmp/perf-metrics-merged.json
+            mv /tmp/perf-metrics-merged.json test-results/perf-metrics.json
+          elif [ -f /tmp/perf-metrics-localhost.json ]; then
+            mkdir -p test-results
+            cp /tmp/perf-metrics-localhost.json test-results/perf-metrics.json
+          fi
 
       - name: Upload perf metrics
         if: always()
@@ -76,7 +116,7 @@ jobs:
           if-no-files-found: warn
 
       # Save whenever metrics exist, not only when every perf test passed.
-      # Gating on steps.perf.outcome == 'success' let a single failing test
+      # Gating on a test step's success let a single failing test
       # silently kill the baseline pipeline for months (issue #15545).
       - name: Save perf baseline to perf-data branch
         if: github.event_name == 'push' && github.ref == 'refs/heads/main' && hashFiles('test-results/perf-metrics.json') != ''
@@ -120,13 +160,13 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Fail if performance tests failed
-        if: steps.perf.outcome == 'failure' && github.event_name == 'push'
+        if: (steps.perf_localhost.outcome == 'failure' || steps.perf_cloud.outcome == 'failure') && github.event_name == 'push'
         run: |
           echo "::error::Performance tests failed; partial metrics were saved when available."
           exit 1
 
       - name: Warn if performance tests failed on a PR
-        if: steps.perf.outcome == 'failure' && github.event_name == 'pull_request'
+        if: (steps.perf_localhost.outcome == 'failure' || steps.perf_cloud.outcome == 'failure') && github.event_name == 'pull_request'
         run: echo "::warning::Performance tests failed; the metrics may be incomplete."
 
   perf-baseline-freshness:

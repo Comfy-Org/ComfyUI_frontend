@@ -1,14 +1,15 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { getActivePinia } from 'pinia'
-import { render, screen } from '@testing-library/vue'
+import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { defineComponent, nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { useIntersectionObserver } from '@vueuse/core'
+import { useIntersectionObserver, useResizeObserver } from '@vueuse/core'
 
 const intersectionCallbacks = vi.hoisted(
   () => [] as ((entries: { isIntersecting: boolean }[]) => void)[]
 )
+const resizeCallbacks = vi.hoisted(() => [] as (() => void)[])
 vi.mock(import('@vueuse/core'), { spy: true })
 vi.mocked(useIntersectionObserver).mockImplementation((_target, callback) => {
   intersectionCallbacks.push((entries) =>
@@ -17,6 +18,10 @@ vi.mocked(useIntersectionObserver).mockImplementation((_target, callback) => {
       fromPartial({})
     )
   )
+  return fromPartial({ stop: vi.fn() })
+})
+vi.mocked(useResizeObserver).mockImplementation((_target, callback) => {
+  resizeCallbacks.push(() => callback([], fromPartial({})))
   return fromPartial({ stop: vi.fn() })
 })
 
@@ -86,8 +91,13 @@ describe('ConversationView', () => {
         return fromPartial({ stop: vi.fn() })
       }
     )
-    Element.prototype.scrollIntoView = vi.fn()
+    vi.mocked(useResizeObserver).mockImplementation((_target, callback) => {
+      resizeCallbacks.push(() => callback([], fromPartial({})))
+      return fromPartial({ stop: vi.fn() })
+    })
+    Element.prototype.scrollTo = vi.fn()
     intersectionCallbacks.length = 0
+    resizeCallbacks.length = 0
   })
 
   it('wire-driven v1 turn renders user pill, spinner, reasoning-free text, work summary', async () => {
@@ -122,48 +132,100 @@ describe('ConversationView', () => {
     store.startTurn(T)
     await settle()
 
-    const scrollIntoView = vi.fn()
-    Element.prototype.scrollIntoView = scrollIntoView
+    const scrollTo = vi.fn()
+    Element.prototype.scrollTo = scrollTo
 
     // a new part
     store.ingest(thinking('msg-1', 'pondering'))
     await settle()
-    expect(scrollIntoView).toHaveBeenCalled()
+    expect(scrollTo).toHaveBeenCalled()
 
     // the tail part growing
-    scrollIntoView.mockClear()
+    scrollTo.mockClear()
     store.ingest(delta('msg-1', 'Here is a cat'))
     await settle()
-    expect(scrollIntoView).toHaveBeenCalled()
+    expect(scrollTo).toHaveBeenCalled()
 
     // a tool call starting
-    scrollIntoView.mockClear()
+    scrollTo.mockClear()
     store.ingest(toolCall('msg-1', 'add_node', 'running'))
     await settle()
-    expect(scrollIntoView).toHaveBeenCalled()
+    expect(scrollTo).toHaveBeenCalled()
 
     // the same tool call settling
-    scrollIntoView.mockClear()
+    scrollTo.mockClear()
     store.ingest(toolCall('msg-1', 'add_node', 'success'))
     await settle()
-    expect(scrollIntoView).toHaveBeenCalled()
+    expect(scrollTo).toHaveBeenCalled()
 
     // a tool call settling behind a text tail
     store.ingest(toolCall('msg-1', 'ls_nodes', 'running'))
     store.ingest(delta('msg-1', 'Checking the graph'))
     await settle()
-    scrollIntoView.mockClear()
+    scrollTo.mockClear()
     store.ingest(toolCall('msg-1', 'ls_nodes', 'success'))
     await settle()
-    expect(scrollIntoView).toHaveBeenCalled()
+    expect(scrollTo).toHaveBeenCalled()
 
     // the turn settling with a text tail
     store.ingest(delta('msg-1', 'Done.'))
     await settle()
-    scrollIntoView.mockClear()
+    scrollTo.mockClear()
     store.ingest(done('msg-1'))
     await settle()
-    expect(scrollIntoView).toHaveBeenCalled()
+    expect(scrollTo).toHaveBeenCalled()
+  })
+
+  it('starts a restored conversation at the latest message', async () => {
+    const assistant: AssistantMessage = {
+      id: 'msg-1' as TurnId,
+      role: 'assistant',
+      parts: [{ type: 'text', text: 'latest reply', state: 'done' }],
+      streaming: false,
+      thinking: false
+    }
+    const scrollTo = vi.fn()
+    Element.prototype.scrollTo = scrollTo
+
+    render(ConversationView, {
+      props: { entries: [assistant] },
+      global: { plugins: [i18n] }
+    })
+    Object.defineProperty(
+      screen.getByTestId('agent-conversation-scroll'),
+      'scrollHeight',
+      {
+        value: 512
+      }
+    )
+    await nextTick()
+
+    expect(scrollTo).toHaveBeenCalledWith({ top: 512 })
+  })
+
+  it('does not follow new content after the user scrolls up', async () => {
+    const { store } = mountHarness()
+    store.recordUser(T, 'make a cat')
+    store.startTurn(T)
+    await nextTick()
+    await nextTick()
+
+    const scrollTo = vi.fn()
+    Element.prototype.scrollTo = scrollTo
+    const scrollContainer = screen.getByTestId('agent-conversation-scroll')
+    Object.defineProperties(scrollContainer, {
+      scrollHeight: { value: 1_000 },
+      scrollTop: { value: 0 },
+      clientHeight: { value: 500 }
+    })
+    await fireEvent.scroll(scrollContainer)
+    for (const callback of resizeCallbacks) callback()
+
+    store.ingest(delta('msg-1', 'Here is a cat'))
+    await nextTick()
+    await nextTick()
+
+    expect(scrollTo).not.toHaveBeenCalled()
   })
 
   it('shows a scroll-to-latest button when scrolled up and returns to bottom on click', async () => {
@@ -174,8 +236,8 @@ describe('ConversationView', () => {
       streaming: false,
       thinking: false
     }
-    const scrollIntoView = vi.fn()
-    Element.prototype.scrollIntoView = scrollIntoView
+    const scrollTo = vi.fn()
+    Element.prototype.scrollTo = scrollTo
 
     render(ConversationView, {
       props: { entries: [assistant] },
@@ -191,7 +253,7 @@ describe('ConversationView', () => {
     expect(jump).toHaveTextContent('')
 
     await userEvent.click(jump)
-    expect(scrollIntoView).toHaveBeenCalled()
+    expect(scrollTo).toHaveBeenCalled()
   })
 
   it('fades only the edges where content continues past the view', async () => {
