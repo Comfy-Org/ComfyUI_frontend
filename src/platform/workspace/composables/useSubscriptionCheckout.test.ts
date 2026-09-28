@@ -1598,6 +1598,32 @@ describe('useSubscriptionCheckout', () => {
       await vi.waitFor(() => expect(mockFetchStatus).toHaveBeenCalledOnce())
     })
 
+    it('refreshes status on return after checkout is disposed when the portal opened first time', async () => {
+      mockOpen.mockReturnValueOnce({})
+      mockPreviewSubscribe.mockRejectedValueOnce(
+        errorWithCode('SUBSCRIPTION_PAYMENT_REQUIRED', 'error')
+      )
+      let checkout!: ReturnType<typeof useSubscriptionCheckout>
+      const { unmount } = render(
+        {
+          setup() {
+            checkout = useSubscriptionCheckout(emit)
+            return () => null
+          }
+        },
+        { global: { plugins: [i18n] } }
+      )
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+      expect(mockOpen).toHaveBeenCalledOnce()
+      unmount()
+
+      window.dispatchEvent(new Event('focus'))
+      await vi.waitFor(() => expect(mockFetchStatus).toHaveBeenCalledOnce())
+    })
+
     it('keeps the original error path for non-payment transition failures', async () => {
       await submitRejectedPreview(
         'TRANSITION_NOT_ALLOWED',
