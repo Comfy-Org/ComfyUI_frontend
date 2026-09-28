@@ -68,12 +68,14 @@ function isNamedAttachment(name: unknown): name is string {
 
 function attachmentRefNames(value: unknown): string[] {
   if (!Array.isArray(value)) return []
-  return (value as unknown[]).flatMap((entry) => {
+  const names: string[] = []
+  for (const entry of value as unknown[]) {
     if (typeof entry !== 'object' || entry === null || !('name' in entry))
-      return []
+      continue
     const { name } = entry
-    return isNamedAttachment(name) ? [name] : []
-  })
+    if (isNamedAttachment(name)) names.push(name)
+  }
+  return names
 }
 
 function isAttachmentKind(value: unknown): value is AttachmentKind {
