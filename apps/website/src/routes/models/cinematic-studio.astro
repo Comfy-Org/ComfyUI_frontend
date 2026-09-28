@@ -3,9 +3,13 @@ import BaseLayout from '../../layouts/BaseLayout.astro'
 import CinematicStudioPage from '../../components/workshop/cinematic-studio/CinematicStudioPage.vue'
 import { getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
 import { runnableCinematicModels } from '../../lib/workshop/cinematic-studio/models'
+import { priceCinematicModels } from '../../lib/workshop/cinematic-studio/pricing'
 import { tc } from '../../lib/workshop/cinematic-studio/copy'
 
-const models = runnableCinematicModels(getRouterWorkshopModelDetail)
+const models = await priceCinematicModels(
+  runnableCinematicModels(getRouterWorkshopModelDetail),
+  getRouterWorkshopModelDetail
+)
 if (!models.length) throw new Error('Cinematic Studio has no runnable models')
 ---
 

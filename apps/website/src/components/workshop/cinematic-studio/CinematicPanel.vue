@@ -13,6 +13,7 @@ import {
   cameraGroups,
   directionOption
 } from '../../../lib/workshop/cinematic-studio/catalog'
+import type { ShotEstimate } from '../../../lib/workshop/cinematic-studio/estimate'
 import type { StudioGate } from '../../../lib/workshop/cinematic-studio/gate'
 import type { PromptSegment } from '../../../lib/workshop/cinematic-studio/prompt'
 import type { Locale } from '../../../i18n/translations'
@@ -34,6 +35,8 @@ const {
   gate,
   workspaceName,
   rendering,
+  estimate,
+  credits,
   openPicker,
   locale = 'en'
 } = defineProps<{
@@ -42,6 +45,8 @@ const {
   gate: StudioGate
   workspaceName?: string
   rendering: boolean
+  estimate?: ShotEstimate
+  credits?: number
   openPicker?: PickerKey
   locale?: Locale
 }>()
@@ -242,10 +247,13 @@ const cardClass =
         :rendering
         :can-generate="canGenerate"
         :blocked-note="blockedNote"
+        :estimate
+        :credits
         wide
         :locale
         @generate="emit('generate')"
         @cancel="emit('cancel')"
+        @reduce-takes="takes = $event"
       />
     </footer>
   </aside>

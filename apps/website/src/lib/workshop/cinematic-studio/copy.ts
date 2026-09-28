@@ -100,6 +100,46 @@ const copy = {
     en: 'Edit scene',
     'zh-CN': '修改场景'
   },
+  'cinematic.credits.estimate': {
+    en: '~{credits} credits',
+    'zh-CN': '约 {credits} 积分'
+  },
+  'cinematic.credits.perTake': {
+    en: '{takes} takes × ~{credits} credits',
+    'zh-CN': '{takes} 条 × 约 {credits} 积分'
+  },
+  'cinematic.credits.varies': {
+    en: 'Cost varies',
+    'zh-CN': '费用不定'
+  },
+  'cinematic.credits.variesHint': {
+    en: 'This model has no published price yet. Each take is charged what the model bills for it.',
+    'zh-CN': '该模型暂无公开价格，每一条按模型实际计费扣除积分。'
+  },
+  'cinematic.credits.short': {
+    en: '{takes} takes need ~{credits} credits; you have {balance}.',
+    'zh-CN': '{takes} 条需要约 {credits} 积分，你有 {balance} 积分。'
+  },
+  'cinematic.credits.shortOne': {
+    en: '1 take needs ~{credits} credits; you have {balance}.',
+    'zh-CN': '1 条需要约 {credits} 积分，你有 {balance} 积分。'
+  },
+  'cinematic.credits.reduce': {
+    en: 'Use {takes} takes',
+    'zh-CN': '改为 {takes} 条'
+  },
+  'cinematic.credits.reduceOne': {
+    en: 'Use 1 take',
+    'zh-CN': '改为 1 条'
+  },
+  'cinematic.credits.skipped': {
+    en: '{failed} of {total} takes weren’t run: not enough credits',
+    'zh-CN': '{total} 条中有 {failed} 条因积分不足未运行'
+  },
+  'cinematic.credits.retrySkipped': {
+    en: 'Run them now',
+    'zh-CN': '立即运行'
+  },
   'cinematic.output.checking': {
     en: 'Checking…',
     'zh-CN': '检查中…'

@@ -40,6 +40,8 @@ const {
   cast,
   palette,
   references,
+  estimate,
+  memberWorkspace,
   choose,
   start: startShot,
   generate: generateShot
@@ -122,6 +124,7 @@ function generateOn(slug: string) {
       :models
       :locale
       :starter
+      :member-workspace="memberWorkspace"
       @select="studio.select"
       @start="start"
       @again="generate"
@@ -194,15 +197,17 @@ function generateOn(slug: string) {
         <CinematicComposer
           v-model:scene="scene"
           v-model:model="modelSlug"
+          v-model:takes="takes"
           :models
           :direction
           :aspect
           :resolution
-          :takes
           :references
           :gate="studio.gate.value"
           :workspace-name="studio.session.value?.workspace.name"
           :rendering="studio.rendering.value"
+          :estimate
+          :credits="studio.credits.value"
           :open-popover="popover"
           :locale
           @open="openPopover"

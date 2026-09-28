@@ -6,7 +6,7 @@ import { computed, nextTick } from 'vue'
 
 import type { WorkshopModel } from '../../config/models-catalogue'
 import { lastShelf } from '../../lib/workshop/shelf-memory'
-import { useWorkshopWorkflowsEnabled } from '../../scripts/posthog'
+import { useWorkshopAppsEnabled } from '../../scripts/posthog'
 import WorkshopModelsGrid from './WorkshopModelsGrid.vue'
 
 vi.mock(import('../../scripts/posthog'))
@@ -198,9 +198,7 @@ describe('WorkshopModelsGrid', () => {
   ])(
     'keeps Flux 3 out of the featured models (studio flag $studio)',
     ({ studio, lead }) => {
-      vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(
-        computed(() => studio)
-      )
+      vi.mocked(useWorkshopAppsEnabled).mockReturnValue(computed(() => studio))
       const featured = [
         {
           slug: 'byteplus--seedance-2-fast-text-to-video--generate-videos',
