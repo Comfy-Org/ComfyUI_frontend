@@ -4,7 +4,6 @@ import { computed, ref } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import { workshopApps } from '../../../lib/workshop/apps'
-import type { WorkshopAppCard } from '../../../lib/workshop/apps'
 import type { Locale } from '../../../i18n/translations'
 import type { CinematicCopyKey } from '../../../lib/workshop/cinematic-studio/copy'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
@@ -23,27 +22,7 @@ type Tab = keyof typeof TAB_LABEL
 const TABS: readonly Tab[] = ['models', 'workflows', 'apps']
 const tab = ref<Tab>('apps')
 
-const apps = computed<readonly WorkshopAppCard[]>(() => [
-  ...workshopApps(locale),
-  {
-    key: 'image-to-3d',
-    name: 'cinematic.hub.to3d',
-    summary: 'cinematic.hub.to3dSummary',
-    badge: 'cinematic.hub.soon'
-  },
-  {
-    key: 'product-shots',
-    name: 'cinematic.hub.product',
-    summary: 'cinematic.hub.productSummary',
-    badge: 'cinematic.hub.soon'
-  },
-  {
-    key: 'storyboard',
-    name: 'cinematic.hub.storyboard',
-    summary: 'cinematic.hub.storyboardSummary',
-    badge: 'cinematic.hub.soon'
-  }
-])
+const apps = computed(() => workshopApps(locale))
 
 const markerOffset = computed(
   () => `translateX(${TABS.indexOf(tab.value) * 100}%)`

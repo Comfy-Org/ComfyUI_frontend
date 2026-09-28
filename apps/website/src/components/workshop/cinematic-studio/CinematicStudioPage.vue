@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { WORKSHOP_DEPLOY_ENV } from 'astro:env/client'
 import { computed, onMounted, ref, shallowRef } from 'vue'
 
 import { provideStudioSwitchGuard } from '../../../composables/useStudioSwitchGuard'
@@ -34,6 +35,7 @@ const LAYOUTS = [
 ] as const
 
 const APPS = ['studio', 'reshoot'] as const
+const reviewing = WORKSHOP_DEPLOY_ENV !== 'production'
 
 const studioEnabled = useWorkshopAppsEnabled()
 const layout = ref('e')
@@ -49,7 +51,7 @@ const appOptions = computed(() => [
 onMounted(() => {
   const params = new URLSearchParams(window.location.search)
   const requestedLayout = params.get('ux')
-  if (LAYOUTS.some((option) => option.id === requestedLayout))
+  if (reviewing && LAYOUTS.some((option) => option.id === requestedLayout))
     layout.value = requestedLayout ?? layout.value
   const requestedApp = APPS.find((id) => id === params.get('app'))
   if (requestedApp) showApp(requestedApp)
@@ -111,6 +113,7 @@ function pickApp(id: string) {
     <CinematicStudioPanel v-else-if="layout === 'd'" :models :locale />
     <CinematicStudio v-else :models :locale />
     <CinematicScenarioMenu
+      v-if="reviewing"
       :app
       :layout
       :apps="appOptions"

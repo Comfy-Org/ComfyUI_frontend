@@ -1,5 +1,5 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen, waitFor } from '@testing-library/vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import { assert, describe, expect, it, vi } from 'vitest'
 import { readonly, ref } from 'vue'
 
@@ -45,5 +45,25 @@ describe('WorkflowPlayground analytics', () => {
     expect(
       vi.mocked(captureWorkshopEvent).mock.calls.map(([event]) => event.name)
     ).toEqual(['model_viewed', 'api_viewed'])
+  })
+})
+
+describe('WorkflowPlayground input panel', () => {
+  // The way out of the page lives on Details beside the graph, so the panel
+  // that asks the questions carries the run control and nothing else.
+  it('heads the questions and leaves the ways out to Details', () => {
+    const model = workflowDetailsBySlug.get('workflows/remove-background')
+    assert(model)
+    vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(ref(true)))
+    vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(readonly(ref(true)))
+    render(WorkflowPlayground, {
+      props: { model, scope: 'anonymous', cloudHref: 'https://cloud/?t=1' }
+    })
+
+    const panel = screen.getByRole('tabpanel', { name: 'Playground' })
+    expect(panel).toHaveTextContent('Input')
+    expect(
+      within(panel).queryByRole('link', { name: 'Try in Cloud' })
+    ).toBeNull()
   })
 })
