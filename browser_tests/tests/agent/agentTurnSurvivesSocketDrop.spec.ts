@@ -103,8 +103,6 @@ test.describe(
       await test.step('send the next message', async () => {
         await turnLock.composer.fill(nextPrompt)
         await turnLock.sendButton.click()
-        // Inequality, so a future client-side retry cannot fail this line in
-        // place of the alert assertion below.
         await expect
           .poll(() => turnLock.postAttempts())
           .toBeGreaterThanOrEqual(2)
