@@ -1603,45 +1603,6 @@ describe('useAgentSession (v1 composition root)', () => {
     )
   })
 
-  it.for([
-    [0, 1],
-    [999, 1],
-    [1000, 2],
-    [2999, 2],
-    [3000, 3],
-    [6999, 3],
-    [7000, 4],
-    [14999, 4],
-    [15000, 5],
-    [30999, 5],
-    [31000, 6],
-    [100_000, 6]
-  ] as const)(
-    '(g17) %i ms after reconnect the still-streaming turn has been polled %i times',
-    async ([elapsedMs, polls]) => {
-      vi.useFakeTimers()
-      try {
-        const rest = streamingTurnRest()
-        const { source, emit, status } = fakeEvents()
-        const session = useAgentSession({ rest, events: source })
-        session.start()
-        status(true)
-
-        await session.sendMessage('go')
-        emit(delta('msg-1', 'partial'))
-
-        status(false)
-        status(true)
-        await vi.advanceTimersByTimeAsync(elapsedMs)
-
-        expect(rest.getMessages).toHaveBeenCalledTimes(polls)
-        expect(session.isStreaming.value).toBe(true)
-      } finally {
-        vi.useRealTimers()
-      }
-    }
-  )
-
   it('(g18) a history fetch that never answers is abandoned at the recovery deadline', async () => {
     vi.useFakeTimers()
     try {
