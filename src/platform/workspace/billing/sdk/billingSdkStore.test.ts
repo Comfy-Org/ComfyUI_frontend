@@ -966,6 +966,19 @@ describe('useBillingSdkStore operation projections', () => {
       pendingSubscription({ authenticationState: 'failed_retryable' }),
       false
     ],
+    [
+      'a checkout parked on a payment method is not setting up',
+      pendingSubscription({ serverPhase: 'awaiting_payment_method' }),
+      false
+    ],
+    [
+      'a parked checkout the server serves a link for is setting up again',
+      pendingSubscription({
+        serverPhase: 'awaiting_payment_method',
+        actionUrl: 'https://pay.example/op-1'
+      }),
+      true
+    ],
     ['a top-up is not a subscription setup', pendingTopup(), false],
     [
       'another workspace’s subscribe does not set this one up',

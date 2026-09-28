@@ -3393,6 +3393,31 @@ describe('billingOperationStore', () => {
 
       expect(store.isSettingUp).toBe(false)
     })
+
+    it.for([
+      { served: undefined, expected: false },
+      { served: 'https://pay.example/op-1', expected: true }
+    ] as const)(
+      'is setting up a checkout parked on a payment method only while a link is served ($served)',
+      async ({ served, expected }) => {
+        vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+          id: 'op-1',
+          status: 'pending',
+          phase: 'awaiting_payment_method',
+          started_at: new Date().toISOString(),
+          ...(served ? { action_url: served } : {})
+        })
+
+        const store = useBillingOperationStore()
+        void store.startOperation('op-1', 'subscription')
+        await vi.advanceTimersByTimeAsync(0)
+
+        expect(store.getOperation('op-1')?.phase).toBe(
+          'awaiting_payment_method'
+        )
+        expect(store.isSettingUp).toBe(expected)
+      }
+    )
   })
 
   describe('isAddingCredits', () => {
