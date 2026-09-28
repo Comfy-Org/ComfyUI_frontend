@@ -11,6 +11,7 @@ import { toNodeId } from '@/types/nodeId'
 import type {
   AgentCancelAccepted,
   AgentMessages,
+  AgentRunModePreference,
   AgentWsEvent
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
@@ -629,6 +630,13 @@ export class AgentConversationHarness {
 
   private async mockAgentApi(): Promise<void> {
     const { page } = this
+    const runModePreference: AgentRunModePreference = {
+      mode: 'ask_approval',
+      credit_limit: null
+    }
+    await page.route('**/api/agent/run-mode', (route) =>
+      route.fulfill(jsonRoute(runModePreference))
+    )
     await page.route('**/api/agent/threads', (route) =>
       route.fulfill(jsonRoute({ threads: [] }))
     )
