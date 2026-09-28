@@ -4,6 +4,27 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { PerformanceHelper } from '@e2e/fixtures/helpers/PerformanceHelper'
 
+async function createInitializedHarness() {
+  const send = vi.fn(async () => ({ metrics: [] }))
+  const detach = vi.fn(async () => {})
+  const cdp = fromPartial<CDPSession>({ send, detach })
+  const context = fromPartial<BrowserContext>({
+    newCDPSession: vi.fn(async () => cdp)
+  })
+  const page = fromPartial<Page>({
+    context: () => context,
+    evaluate: vi.fn(async (callback: () => unknown) => callback()),
+    isClosed: () => false
+  })
+  window.__perfLongtaskState = {
+    observer: fromPartial<PerformanceObserver>({ takeRecords: () => [] }),
+    tbtMs: 0
+  }
+  const helper = new PerformanceHelper(page)
+  await helper.init()
+  return { detach, helper, send }
+}
+
 describe('PerformanceHelper', () => {
   afterEach(() => {
     delete window.__perfFrameState
@@ -11,17 +32,7 @@ describe('PerformanceHelper', () => {
   })
 
   it('stops an active frame measurement before detaching CDP on dispose', async () => {
-    const send = vi.fn(async () => ({ metrics: [] }))
-    const detach = vi.fn(async () => {})
-    const cdp = fromPartial<CDPSession>({ send, detach })
-    const context = fromPartial<BrowserContext>({
-      newCDPSession: vi.fn(async () => cdp)
-    })
-    const page = fromPartial<Page>({
-      context: () => context,
-      evaluate: vi.fn(async (callback: () => unknown) => callback()),
-      isClosed: () => false
-    })
+    const { detach, helper, send } = await createInitializedHarness()
     const cancelAnimationFrame = vi
       .spyOn(window, 'cancelAnimationFrame')
       .mockImplementation(() => {})
@@ -34,13 +45,6 @@ describe('PerformanceHelper', () => {
       }
       return 17
     })
-    window.__perfLongtaskState = {
-      observer: fromPartial<PerformanceObserver>({ takeRecords: () => [] }),
-      tbtMs: 0
-    }
-
-    const helper = new PerformanceHelper(page)
-    await helper.init()
     await helper.startMeasuring()
     await helper.dispose()
 
@@ -52,23 +56,7 @@ describe('PerformanceHelper', () => {
 
   it('can retry after the initial animation frame times out', async () => {
     vi.useFakeTimers()
-    const send = vi.fn(async () => ({ metrics: [] }))
-    const cdp = fromPartial<CDPSession>({
-      send,
-      detach: vi.fn(async () => {})
-    })
-    const context = fromPartial<BrowserContext>({
-      newCDPSession: vi.fn(async () => cdp)
-    })
-    const page = fromPartial<Page>({
-      context: () => context,
-      evaluate: vi.fn(async (callback: () => unknown) => callback()),
-      isClosed: () => false
-    })
-    window.__perfLongtaskState = {
-      observer: fromPartial<PerformanceObserver>({ takeRecords: () => [] }),
-      tbtMs: 0
-    }
+    const { helper } = await createInitializedHarness()
     vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => {})
     let frameRequestCount = 0
     vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
@@ -80,8 +68,6 @@ describe('PerformanceHelper', () => {
       return frameRequestCount
     })
 
-    const helper = new PerformanceHelper(page)
-    await helper.init()
     const timedOutStart = helper.startMeasuring()
     void timedOutStart.catch(() => {})
     await vi.advanceTimersByTimeAsync(1_000)
